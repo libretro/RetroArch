@@ -302,7 +302,7 @@ static void linuxraw_joypad_destroy(void)
    linuxraw_hotplug = false;
 }
 
-static int16_t linuxraw_joypad_button(unsigned port, uint16_t joykey)
+static int32_t linuxraw_joypad_button(unsigned port, uint16_t joykey)
 {
    const struct linuxraw_joypad    *pad = (const struct linuxraw_joypad*)
       &linuxraw_pads[port];
@@ -401,6 +401,7 @@ input_device_driver_t linuxraw_joypad = {
    linuxraw_joypad_get_buttons,
    linuxraw_joypad_axis,
    linuxraw_joypad_poll,
+   NULL,
    NULL,
    linuxraw_joypad_name,
    "linuxraw",

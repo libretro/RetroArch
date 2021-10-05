@@ -54,7 +54,6 @@ ldflags := -dynamiclib
    MINVERFLAGS=
    ifeq ($(shell uname -p),arm)
       MINVERFLAGS = -mmacosx-version-min=10.15 -stdlib=libc++ # macOS  (Metal, ARM 64bit)
-      MINVERFLAGS += -DDONT_WANT_ARM_OPTIMIZATIONS
    else ifeq ($(HAVE_METAL),1)
       MINVERFLAGS = -mmacosx-version-min=10.13 -stdlib=libc++  # macOS  (Metal, x86 64bit)
    else ifeq ($(shell uname -p),powerpc)
@@ -68,7 +67,6 @@ ldflags := -dynamiclib
 	# Build for a specific architecture when ARCH is defined as a switch
    ifeq ($(ARCH),arm64)
       MINVERFLAGS  = -mmacosx-version-min=10.15 -stdlib=libc++ # macOS  (Metal, ARM 64bit)
-      MINVERFLAGS += -DDONT_WANT_ARM_OPTIMIZATIONS
       ARCHFLAGS    = -arch arm64
    else ifeq ($(ARCH),x86_64)
       ifeq ($(HAVE_METAL),1)
@@ -128,7 +126,8 @@ objects += blargg_ntsc_snes.$(DYLIB) \
 			  dot_matrix_3x.$(DYLIB) \
 			  dot_matrix_4x.$(DYLIB) \
 			  upscale_1_5x.$(DYLIB) \
-			  upscale_256x_320x240.$(DYLIB)
+			  upscale_256x_320x240.$(DYLIB) \
+			  picoscale_256x_320x240.$(DYLIB)
 
 all: build;
 

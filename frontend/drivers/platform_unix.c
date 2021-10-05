@@ -1792,7 +1792,10 @@ static void frontend_unix_get_env(int *argc,
    }
 #else
    char base_path[PATH_MAX] = {0};
-#if defined(DINGUX)
+#if defined(RARCH_UNIX_CWD_ENV)
+   /* The entire path is zero initialized. */
+   base_path[0] = '.';
+#elif defined(DINGUX)
    dingux_get_base_path(base_path, sizeof(base_path));
 #else
    const char *xdg          = getenv("XDG_CONFIG_HOME");
@@ -2123,34 +2126,41 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
             FILE_TYPE_DIRECTORY, 0, 0);
    }
    else
-   {
       menu_entries_append_enum(list,
             "/storage/emulated/0",
             msg_hash_to_str(MSG_REMOVABLE_STORAGE),
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0);
-   }
+
    menu_entries_append_enum(list,
          "/storage",
          msg_hash_to_str(MSG_REMOVABLE_STORAGE),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);
    if (!string_is_empty(internal_storage_app_path))
-   {
       menu_entries_append_enum(list,
             internal_storage_app_path,
             msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0);
-   }
    if (!string_is_empty(app_dir))
-   {
       menu_entries_append_enum(list,
             app_dir,
             msg_hash_to_str(MSG_APPLICATION_DIR),
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0);
-   }
+#elif defined(WEBOS)
+   if (path_is_directory("/media/internal"))
+      menu_entries_append_enum(list, "/media/internal",
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0);
+
+   if (path_is_directory("/tmp/usb"))
+      menu_entries_append_enum(list, "/tmp/usb",
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0);
 #else
    char base_path[PATH_MAX] = {0};
    char udisks_media_path[PATH_MAX] = {0};

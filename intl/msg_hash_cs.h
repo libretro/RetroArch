@@ -454,22 +454,6 @@ MSG_HASH(
    "Firmware:"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Chybí"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Přítomen:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Volitelné:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Požadováno:"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "Zamknout nainstalované jádro"
    )
@@ -1053,6 +1037,8 @@ MSG_HASH(
    "Zabránit aktivaci spořiče obrazovky."
    )
 #if defined(DINGUX)
+#if defined(RS90)
+#endif
 #endif
 
 /* Settings > Video > CRT SwitchRes */
@@ -1077,6 +1063,9 @@ MSG_HASH(
 
 #if defined(DINGUX)
 #endif
+
+/* Settings > Video > HDR */
+
 
 /* Settings > Video > Synchronization */
 
@@ -1109,8 +1098,6 @@ MSG_HASH(
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-#endif
 
 /* Settings > Input > Menu Controls */
 

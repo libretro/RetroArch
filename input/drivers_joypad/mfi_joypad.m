@@ -375,7 +375,7 @@ void *apple_gamecontroller_joypad_init(void *data)
 
 static void apple_gamecontroller_joypad_destroy(void) { }
 
-static int16_t apple_gamecontroller_joypad_button(
+static int32_t apple_gamecontroller_joypad_button(
       unsigned port, uint16_t joykey)
 {
    if (port >= DEFAULT_MAX_PADS)
@@ -480,6 +480,7 @@ input_device_driver_t mfi_joypad = {
     apple_gamecontroller_joypad_get_buttons,
     apple_gamecontroller_joypad_axis,
     apple_gamecontroller_joypad_poll,
+    NULL,
     NULL,
     apple_gamecontroller_joypad_name,
     "mfi",

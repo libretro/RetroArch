@@ -58,9 +58,9 @@
 /* Context has to be global as joypads also ride on this context. */
 LPDIRECTINPUT8 g_dinput_ctx;
 
-struct pointer_status
+struct dinput_pointer_status
 {
-   struct pointer_status *next;
+   struct dinput_pointer_status *next;
    int pointer_id;
    int pointer_x;
    int pointer_y;
@@ -72,7 +72,7 @@ struct dinput_input
    LPDIRECTINPUTDEVICE8 keyboard;
    LPDIRECTINPUTDEVICE8 mouse;
    const input_device_driver_t *joypad;
-   struct pointer_status pointer_head;  /* dummy head for easier iteration */
+   struct dinput_pointer_status pointer_head;  /* dummy head for easier iteration */
 
    int window_pos_x;
    int window_pos_y;
@@ -387,7 +387,7 @@ static int16_t dinput_lightgun_aiming_state(
    int y                       = 0;
    unsigned num                = 0;
 
-   struct pointer_status 
+   struct dinput_pointer_status 
       *check_pos               = di->pointer_head.next;
 
    vp.x                        = 0;
@@ -668,7 +668,7 @@ static int16_t dinput_input_state(
             int16_t res_screen_x        = 0;
             int16_t res_screen_y        = 0;
             unsigned num                = 0;
-            struct pointer_status *
+            struct dinput_pointer_status *
                check_pos                = di->pointer_head.next;
 
             vp.x                        = 0;
@@ -818,7 +818,7 @@ static int16_t dinput_input_state(
 
 /* Stores x/y in client coordinates. */
 static void dinput_pointer_store_pos(
-      struct pointer_status *pointer, WPARAM lParam)
+      struct dinput_pointer_status *pointer, WPARAM lParam)
 {
    POINT point;
 
@@ -830,9 +830,9 @@ static void dinput_pointer_store_pos(
 }
 
 static void dinput_add_pointer(struct dinput_input *di,
-      struct pointer_status *new_pointer)
+      struct dinput_pointer_status *new_pointer)
 {
-   struct pointer_status *insert_pos = NULL;
+   struct dinput_pointer_status *insert_pos = NULL;
 
    new_pointer->next                 = NULL;
    insert_pos                        = &di->pointer_head;
@@ -844,13 +844,13 @@ static void dinput_add_pointer(struct dinput_input *di,
 
 static void dinput_delete_pointer(struct dinput_input *di, int pointer_id)
 {
-   struct pointer_status *check_pos  = &di->pointer_head;
+   struct dinput_pointer_status *check_pos  = &di->pointer_head;
 
    while (check_pos && check_pos->next)
    {
       if (check_pos->next->pointer_id == pointer_id)
       {
-         struct pointer_status *to_delete = check_pos->next;
+         struct dinput_pointer_status *to_delete = check_pos->next;
          check_pos->next                  = check_pos->next->next;
          free(to_delete);
       }
@@ -858,10 +858,10 @@ static void dinput_delete_pointer(struct dinput_input *di, int pointer_id)
    }
 }
 
-static struct pointer_status *dinput_find_pointer(
+static struct dinput_pointer_status *dinput_find_pointer(
       struct dinput_input *di, int pointer_id)
 {
-   struct pointer_status *check_pos = di->pointer_head.next;
+   struct dinput_pointer_status *check_pos = di->pointer_head.next;
 
    while (check_pos)
    {
@@ -875,11 +875,11 @@ static struct pointer_status *dinput_find_pointer(
 
 static void dinput_clear_pointers(struct dinput_input *di)
 {
-   struct pointer_status *pointer = &di->pointer_head;
+   struct dinput_pointer_status *pointer = &di->pointer_head;
 
    while (pointer->next)
    {
-      struct pointer_status *del = pointer->next;
+      struct dinput_pointer_status *del = pointer->next;
 
       pointer->next = pointer->next->next;
       free(del);
@@ -909,8 +909,8 @@ bool dinput_handle_message(void *data,
          break;
       case WM_POINTERDOWN:
          {
-            struct pointer_status *new_pointer =
-               (struct pointer_status *)malloc(sizeof(struct pointer_status));
+            struct dinput_pointer_status *new_pointer =
+               (struct dinput_pointer_status *)malloc(sizeof(struct dinput_pointer_status));
 
             if (!new_pointer)
                return false;
@@ -929,7 +929,7 @@ bool dinput_handle_message(void *data,
       case WM_POINTERUPDATE:
          {
             int pointer_id                 = GET_POINTERID_WPARAM(wParam);
-            struct pointer_status *pointer = dinput_find_pointer(di, pointer_id);
+            struct dinput_pointer_status *pointer = dinput_find_pointer(di, pointer_id);
             if (pointer)
                dinput_pointer_store_pos(pointer, lParam);
             return true;

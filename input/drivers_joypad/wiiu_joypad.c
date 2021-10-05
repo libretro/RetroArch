@@ -60,7 +60,7 @@ static void wiiu_joypad_destroy(void)
 #endif
 }
 
-static int16_t wiiu_joypad_button(unsigned port, uint16_t joykey)
+static int32_t wiiu_joypad_button(unsigned port, uint16_t joykey)
 {
    if (!wiiu_joypad_query_pad(port))
       return 0;
@@ -152,6 +152,7 @@ input_device_driver_t wiiu_joypad =
   wiiu_joypad_get_buttons,
   wiiu_joypad_axis,
   wiiu_joypad_poll,
+  NULL,
   NULL,
   wiiu_joypad_name,
   "wiiu",

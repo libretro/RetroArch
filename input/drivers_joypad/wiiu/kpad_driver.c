@@ -92,7 +92,7 @@ static void kpad_destroy(void)
    kpad_ready = false;
 }
 
-static int16_t kpad_button(unsigned port, uint16_t joykey)
+static int32_t kpad_button(unsigned port, uint16_t joykey)
 {
    int channel;
    if (!kpad_query_pad(port))
@@ -298,6 +298,7 @@ input_device_driver_t kpad_driver =
    kpad_get_buttons,
    kpad_axis,
    kpad_poll,
+   NULL,
    NULL,
    kpad_name,
    "wiimote",

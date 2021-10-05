@@ -7,10 +7,10 @@
 
 #define Test86MSByte(b) ((((b) + 1) & 0xFE) == 0)
 
-SizeT x86_Convert(Byte *data, SizeT size, UInt32 ip, UInt32 *state, int encoding)
+SizeT x86_Convert(Byte *data, SizeT size, uint32_t ip, uint32_t *state, int encoding)
 {
   SizeT pos = 0;
-  UInt32 mask = *state & 7;
+  uint32_t mask = *state & 7;
   if (size < 5)
     return 0;
   size -= 4;
@@ -48,8 +48,8 @@ SizeT x86_Convert(Byte *data, SizeT size, UInt32 ip, UInt32 *state, int encoding
 
     if (Test86MSByte(p[4]))
     {
-      UInt32 v = ((UInt32)p[4] << 24) | ((UInt32)p[3] << 16) | ((UInt32)p[2] << 8) | ((UInt32)p[1]);
-      UInt32 cur = ip + (UInt32)pos;
+      uint32_t v = ((uint32_t)p[4] << 24) | ((uint32_t)p[3] << 16) | ((uint32_t)p[2] << 8) | ((uint32_t)p[1]);
+      uint32_t cur = ip + (uint32_t)pos;
       pos += 5;
       if (encoding)
         v += cur;
@@ -60,7 +60,7 @@ SizeT x86_Convert(Byte *data, SizeT size, UInt32 ip, UInt32 *state, int encoding
         unsigned sh = (mask & 6) << 2;
         if (Test86MSByte((Byte)(v >> sh)))
         {
-          v ^= (((UInt32)0x100 << sh) - 1);
+          v ^= (((uint32_t)0x100 << sh) - 1);
           if (encoding)
             v += cur;
           else

@@ -675,19 +675,6 @@ bool netplay_lan_ad_server(netplay_t *netplay);
  **************************************************************/
 
 /**
- * netplay_load_savestate
- * @netplay              : pointer to netplay object
- * @serial_info          : the savestate being loaded, NULL means
- *                         "load it yourself"
- * @save                 : Whether to save the provided serial_info
- *                         into the frame buffer
- *
- * Inform Netplay of a savestate load and send it to the other side
- **/
-void netplay_load_savestate(netplay_t *netplay,
-      retro_ctx_serialize_info_t *serial_info, bool save);
-
-/**
  * input_poll_net
  *
  * Poll the network if necessary.

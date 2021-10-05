@@ -247,7 +247,7 @@ static int rc_runtime_progress_read_condset(rc_runtime_progress_t* progress, rc_
   rc_condition_t* cond;
   unsigned flags;
 
-  condset->is_paused = rc_runtime_progress_read_uint(progress);
+  condset->is_paused = (char)rc_runtime_progress_read_uint(progress);
 
   cond = condset->conditions;
   while (cond) {
@@ -257,12 +257,18 @@ static int rc_runtime_progress_read_condset(rc_runtime_progress_t* progress, rc_
     cond->is_true = (flags & RC_COND_FLAG_IS_TRUE) ? 1 : 0;
 
     if (flags & RC_COND_FLAG_OPERAND1_IS_INDIRECT_MEMREF) {
+      if (!rc_operand_is_memref(&cond->operand1)) /* this should never happen, but better safe than sorry */
+        return RC_INVALID_STATE;
+
       cond->operand1.value.memref->value.value = rc_runtime_progress_read_uint(progress);
       cond->operand1.value.memref->value.prior = rc_runtime_progress_read_uint(progress);
       cond->operand1.value.memref->value.changed = (flags & RC_COND_FLAG_OPERAND1_MEMREF_CHANGED_THIS_FRAME) ? 1 : 0;
     }
 
     if (flags & RC_COND_FLAG_OPERAND2_IS_INDIRECT_MEMREF) {
+      if (!rc_operand_is_memref(&cond->operand2)) /* this should never happen, but better safe than sorry */
+        return RC_INVALID_STATE;
+
       cond->operand2.value.memref->value.value = rc_runtime_progress_read_uint(progress);
       cond->operand2.value.memref->value.prior = rc_runtime_progress_read_uint(progress);
       cond->operand2.value.memref->value.changed = (flags & RC_COND_FLAG_OPERAND2_MEMREF_CHANGED_THIS_FRAME) ? 1 : 0;
@@ -305,7 +311,7 @@ static int rc_runtime_progress_read_trigger(rc_runtime_progress_t* progress, rc_
   rc_condset_t* condset;
   int result;
 
-  trigger->state = rc_runtime_progress_read_uint(progress);
+  trigger->state = (char)rc_runtime_progress_read_uint(progress);
   trigger->measured_value = rc_runtime_progress_read_uint(progress);
 
   if (trigger->requirement) {

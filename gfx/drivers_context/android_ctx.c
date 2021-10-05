@@ -29,10 +29,6 @@
 #include "../common/egl_common.h"
 #endif
 
-#ifdef HAVE_OPENGLES
-#include "../common/gl_common.h"
-#endif
-
 #include "../../frontend/frontend_driver.h"
 #include "../../frontend/drivers/platform_unix.h"
 #include "../../verbosity.h"

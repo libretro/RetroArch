@@ -326,7 +326,7 @@ bool gfx_widget_start_load_content_animation(void)
    {
       const struct playlist_entry *entry = NULL;
 #ifdef HAVE_MENU
-      menu_handle_t *menu                = menu_driver_get_ptr();
+      menu_handle_t *menu                = menu_state_get_ptr()->driver_data;
 
       /* If we have an active menu, playlist entry
        * index can be obtained directly */
@@ -662,7 +662,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
 
 #ifdef HAVE_MENU
       /* Draw nothing if menu is currently active */
-      if (menu_driver_is_alive())
+      if (menu_state_get_ptr()->alive)
          return;
 #endif
 
@@ -737,7 +737,8 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                video_height,
                video_width,
                video_height,
-               state->bg_underlay_color);
+               state->bg_underlay_color,
+               NULL);
 
          /* > Background shadow */
          gfx_display_draw_quad(
@@ -751,7 +752,8 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                state->bg_shadow_height,
                video_width,
                video_height,
-               state->bg_shadow_top_color);
+               state->bg_shadow_top_color,
+               NULL);
 
          gfx_display_draw_quad(
                p_disp,
@@ -764,7 +766,8 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                state->bg_shadow_height,
                video_width,
                video_height,
-               state->bg_shadow_bottom_color);
+               state->bg_shadow_bottom_color,
+               NULL);
 
          /* > Background */
          gfx_display_draw_quad(
@@ -778,7 +781,8 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                state->bg_height,
                video_width,
                video_height,
-               state->bg_color);
+               state->bg_color,
+               NULL);
       }
 
       /* Draw icon */
@@ -822,7 +826,8 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                   state->icon_size,
                   video_width,
                   video_height,
-                  state->icon_color);
+                  state->icon_color,
+		  NULL);
       }
 
       /* Draw text */
@@ -906,7 +911,8 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                state->bg_height,
                video_width,
                video_height,
-               state->margin_shadow_left_color);
+               state->margin_shadow_left_color,
+	       NULL);
 
          /* > Right */
          gfx_display_draw_quad(
@@ -920,7 +926,8 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                state->bg_height,
                video_width,
                video_height,
-               state->margin_shadow_right_color);
+               state->margin_shadow_right_color,
+	       NULL);
       }
    }
 }

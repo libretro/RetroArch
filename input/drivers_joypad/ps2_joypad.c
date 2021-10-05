@@ -86,7 +86,7 @@ static void *ps2_joypad_init(void *data)
    return (void*)-1;
 }
 
-static int16_t ps2_joypad_button(unsigned port, uint16_t joykey)
+static int32_t ps2_joypad_button(unsigned port, uint16_t joykey)
 {
    if (port >= DEFAULT_MAX_PADS)
       return 0;
@@ -261,6 +261,7 @@ input_device_driver_t ps2_joypad = {
    ps2_joypad_axis,
    ps2_joypad_poll,
    ps2_joypad_rumble,
+   NULL,
    ps2_joypad_name,
    "ps2",
 };

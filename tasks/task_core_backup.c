@@ -1061,7 +1061,7 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
 
    /* If core to be restored is currently loaded, must
     * unload it before pushing the task */
-   if (rarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
+   if (retroarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
    {
       command_event(CMD_EVENT_UNLOAD_CORE, NULL);
       *core_loaded = true;

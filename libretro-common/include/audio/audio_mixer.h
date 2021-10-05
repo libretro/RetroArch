@@ -34,6 +34,8 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include <audio/audio_resampler.h>
+
 RETRO_BEGIN_DECLS
 
 enum audio_mixer_type
@@ -60,7 +62,8 @@ void audio_mixer_init(unsigned rate);
 
 void audio_mixer_done(void);
 
-audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size);
+audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
+      const char *resampler_ident, enum resampler_quality quality);
 audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, int32_t size);
 audio_mixer_sound_t* audio_mixer_load_mod(void *buffer, int32_t size);
 audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, int32_t size);
@@ -69,7 +72,10 @@ audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, int32_t size);
 void audio_mixer_destroy(audio_mixer_sound_t* sound);
 
 audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
-      bool repeat, float volume, audio_mixer_stop_cb_t stop_cb);
+      bool repeat, float volume,
+      const char *resampler_ident,
+      enum resampler_quality quality,
+      audio_mixer_stop_cb_t stop_cb);
 
 void audio_mixer_stop(audio_mixer_voice_t* voice);
 

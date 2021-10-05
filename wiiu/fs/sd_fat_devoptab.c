@@ -292,8 +292,8 @@ static ssize_t sd_fat_write_r (struct _reent *r, void* fd, const char *ptr, size
         }
     } else {
         size_t len_aligned = FS_ALIGN(len);
-        if(len_aligned > 0x4000)
-            len_aligned = 0x4000;
+        if(len_aligned > 128*1024)
+            len_aligned = 128*1024;
 
         unsigned char *tmpBuf = (unsigned char *)memalign(FS_ALIGNMENT, len_aligned);
         if(!tmpBuf) {
@@ -362,8 +362,8 @@ static ssize_t sd_fat_read_r (struct _reent *r, void* fd, char *ptr, size_t len)
         }
     } else {
         size_t len_aligned = FS_ALIGN(len);
-        if(len_aligned > 0x4000)
-            len_aligned = 0x4000;
+        if(len_aligned > 128*1024)
+            len_aligned = 128*1024;
 
         unsigned char *tmpBuf = (unsigned char *)memalign(FS_ALIGNMENT, len_aligned);
         if(!tmpBuf) {

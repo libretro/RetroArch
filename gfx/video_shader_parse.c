@@ -29,13 +29,20 @@
 #include <lrc_hash.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
+#include <lists/dir_list.h>
 #include <lists/string_list.h>
+
+#ifdef HAVE_MENU
+#include "../menu/menu_driver.h"
+#include "../menu/menu_shader.h"
+#endif
 
 #include "../configuration.h"
 #include "../verbosity.h"
 #include "../frontend/frontend_driver.h"
 #include "../command.h"
 #include "../file_path_special.h"
+#include "../paths.h"
 #include "../retroarch.h"
 #include "video_shader_parse.h"
 
@@ -1967,4 +1974,366 @@ bool video_shader_check_for_changes(void)
       return false;
 
    return frontend_driver_check_for_path_changes(file_change_data);
+}
+
+void dir_free_shader(
+      struct rarch_dir_shader_list *dir_list,
+      bool shader_remember_last_dir)
+{
+   if (dir_list->shader_list)
+   {
+      dir_list_free(dir_list->shader_list);
+      dir_list->shader_list = NULL;
+   }
+
+   if (dir_list->directory)
+   {
+      free(dir_list->directory);
+      dir_list->directory = NULL;
+   }
+
+   dir_list->selection                = 0;
+   dir_list->shader_loaded            = false;
+   dir_list->remember_last_preset_dir = shader_remember_last_dir;
+}
+
+void dir_init_shader(
+      void *menu_driver_data_,
+      settings_t *settings,
+      struct rarch_dir_shader_list *dir_list)
+{
+   bool show_hidden_files                         = settings->bools.show_hidden_files;
+   bool shader_remember_last_dir                  = settings->bools.video_shader_remember_last_dir;
+   const char *directory_video_shader             = settings->paths.directory_video_shader;
+   const char *directory_menu_config              = settings->paths.directory_menu_config;
+   bool video_shader_remember_last_dir            = settings->bools.video_shader_remember_last_dir;
+   const char *last_shader_preset_dir             = NULL;
+   const char *last_shader_preset_file_name       = NULL;
+#if defined(HAVE_MENU)
+   menu_handle_t *menu                            = (menu_handle_t*)menu_driver_data_;
+   enum rarch_shader_type last_shader_preset_type = menu ? menu->last_shader_selection.preset_type : RARCH_SHADER_NONE;
+   menu_driver_get_last_shader_preset_path(
+         &last_shader_preset_dir, &last_shader_preset_file_name);
+#else
+   enum rarch_shader_type last_shader_preset_type = RARCH_SHADER_NONE;
+#endif
+
+   /* Always free existing shader list */
+   dir_free_shader(dir_list,
+         video_shader_remember_last_dir);
+
+   /* Try directory of last selected shader preset */
+   if (shader_remember_last_dir &&
+       (last_shader_preset_type != RARCH_SHADER_NONE) &&
+       !string_is_empty(last_shader_preset_dir) &&
+       dir_init_shader_internal(
+          video_shader_remember_last_dir,
+          dir_list,
+          last_shader_preset_dir,
+          last_shader_preset_file_name,
+          show_hidden_files))
+      return;
+
+   /* Try video shaders directory */
+   if (!string_is_empty(directory_video_shader) &&
+       dir_init_shader_internal(
+            video_shader_remember_last_dir,
+            dir_list,
+            directory_video_shader, NULL, show_hidden_files))
+      return;
+
+   /* Try config directory */
+   if (!string_is_empty(directory_menu_config) &&
+       dir_init_shader_internal(
+            video_shader_remember_last_dir,
+            dir_list,
+            directory_menu_config, NULL, show_hidden_files))
+      return;
+
+   /* Try 'top level' directory containing main
+    * RetroArch config file */
+   if (!path_is_empty(RARCH_PATH_CONFIG))
+   {
+      char *rarch_config_directory = strdup(path_get(RARCH_PATH_CONFIG));
+      path_basedir(rarch_config_directory);
+
+      if (!string_is_empty(rarch_config_directory))
+         dir_init_shader_internal(
+               video_shader_remember_last_dir,
+               dir_list,
+               rarch_config_directory, NULL, show_hidden_files);
+
+      free(rarch_config_directory);
+   }
+}
+
+void dir_check_shader(
+      void *menu_driver_data_,
+      settings_t *settings,
+      struct rarch_dir_shader_list *dir_list,
+      bool pressed_next,
+      bool pressed_prev)
+{
+   bool video_shader_remember_last_dir            = settings->bools.video_shader_remember_last_dir;
+   const char *last_shader_preset_dir             = NULL;
+   const char *last_shader_preset_file_name       = NULL;
+   const char *set_shader_path                    = NULL;
+   bool dir_list_initialised                      = false;
+#if defined(HAVE_MENU)
+   void *menu_ptr                                 = menu_driver_data_;
+   menu_handle_t *menu                            = (menu_handle_t*)menu_ptr;
+   enum rarch_shader_type last_shader_preset_type = menu ? menu->last_shader_selection.preset_type : RARCH_SHADER_NONE;
+   menu_driver_get_last_shader_preset_path(
+         &last_shader_preset_dir, &last_shader_preset_file_name);
+#else
+   void *menu_ptr                                 = NULL;
+   enum rarch_shader_type last_shader_preset_type = RARCH_SHADER_NONE;
+#endif
+
+   /* Check whether shader list needs to be
+    * (re)initialised */
+   if (!dir_list->shader_list ||
+       (dir_list->remember_last_preset_dir != video_shader_remember_last_dir) ||
+       (video_shader_remember_last_dir &&
+        (last_shader_preset_type != RARCH_SHADER_NONE) &&
+        !string_is_equal(dir_list->directory, last_shader_preset_dir)))
+   {
+      dir_init_shader(menu_ptr, settings, dir_list);
+      dir_list_initialised = true;
+   }
+
+   if (!dir_list->shader_list ||
+       (dir_list->shader_list->size < 1))
+      return;
+
+   /* Check whether a 'last used' shader file
+    * name is provided
+    * > Note: We can end up calling
+    *   string_is_equal(dir_list->directory, last_shader_preset_dir)
+    *   twice. This is wasteful, but we cannot safely cache
+    *   the first result since dir_init_shader() is called
+    *   in-between the two invocations... */
+   if (video_shader_remember_last_dir &&
+       (last_shader_preset_type != RARCH_SHADER_NONE) &&
+       string_is_equal(dir_list->directory, last_shader_preset_dir) &&
+       !string_is_empty(last_shader_preset_file_name))
+   {
+      /* Ensure that we start with a dir_list selection
+       * index matching the last used shader */
+      if (!dir_list_initialised)
+      {
+         const char *current_file_path = NULL;
+         const char *current_file_name = NULL;
+
+         if (dir_list->selection < dir_list->shader_list->size)
+            current_file_path = dir_list->shader_list->elems[dir_list->selection].data;
+
+         if (!string_is_empty(current_file_path))
+            current_file_name = path_basename(current_file_path);
+
+         if (!string_is_empty(current_file_name) &&
+             !string_is_equal(current_file_name, last_shader_preset_file_name))
+         {
+            size_t i;
+            for (i = 0; i < dir_list->shader_list->size; i++)
+            {
+               const char *file_path = dir_list->shader_list->elems[i].data;
+               const char *file_name = NULL;
+
+               if (string_is_empty(file_path))
+                  continue;
+
+               file_name = path_basename(file_path);
+
+               if (string_is_empty(file_name))
+                  continue;
+
+               if (string_is_equal(file_name, last_shader_preset_file_name))
+               {
+                  dir_list->selection = i;
+                  break;
+               }
+            }
+         }
+      }
+
+      /* Check whether the shader referenced by the
+       * current selection index is already loaded */
+      if (!dir_list->shader_loaded)
+      {
+         struct video_shader *shader = menu_shader_get();
+
+         if (shader && !string_is_empty(shader->loaded_preset_path))
+         {
+            char last_shader_path[PATH_MAX_LENGTH];
+            last_shader_path[0] = '\0';
+
+            fill_pathname_join(last_shader_path,
+                  last_shader_preset_dir, last_shader_preset_file_name,
+                  sizeof(last_shader_path));
+
+            if (string_is_equal(last_shader_path, shader->loaded_preset_path))
+               dir_list->shader_loaded = true;
+         }
+      }
+   }
+
+   /* Select next shader in list */
+   if (pressed_next)
+   {
+      /* Only increment selection if a shader
+       * from this list has already been loaded
+       * (otherwise first entry in the list may
+       * be skipped) */
+      if (dir_list->shader_loaded)
+      {
+         if (dir_list->selection < dir_list->shader_list->size - 1)
+            dir_list->selection++;
+         else
+            dir_list->selection = 0;
+      }
+   }
+   /* Select previous shader in list */
+   else if (pressed_prev)
+   {
+      if (dir_list->selection > 0)
+         dir_list->selection--;
+      else
+         dir_list->selection = dir_list->shader_list->size - 1;
+   }
+   else
+      return;
+
+   set_shader_path = dir_list->shader_list->elems[dir_list->selection].data;
+#if defined(HAVE_MENU)
+   menu_driver_set_last_shader_preset_path(set_shader_path);
+#endif
+   command_set_shader(NULL, set_shader_path);
+   dir_list->shader_loaded = true;
+}
+
+static bool retroarch_load_shader_preset_internal(
+      char *s,
+      size_t len,
+      const char *shader_directory,
+      const char *core_name,
+      const char *special_name)
+{
+   unsigned i;
+
+   static enum rarch_shader_type types[] =
+   {
+      /* Shader preset priority, highest to lowest
+       * only important for video drivers with multiple shader backends */
+      RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG, RARCH_SHADER_HLSL
+   };
+
+   for (i = 0; i < ARRAY_SIZE(types); i++)
+   {
+      if (!video_shader_is_supported(types[i]))
+         continue;
+
+      /* Concatenate strings into full paths */
+      if (!string_is_empty(core_name))
+         fill_pathname_join_special_ext(s,
+               shader_directory, core_name,
+               special_name,
+               video_shader_get_preset_extension(types[i]),
+               len);
+      else
+      {
+         if (string_is_empty(special_name))
+            break;
+
+         fill_pathname_join(s, shader_directory, special_name, len);
+         strlcat(s, video_shader_get_preset_extension(types[i]), len);
+      }
+
+      if (path_is_valid(s))
+         return true;
+   }
+
+   return false;
+}
+
+bool load_shader_preset(settings_t *settings, const char *core_name,
+      char *s, size_t len)
+{
+   const char *video_shader_directory = settings->paths.directory_video_shader;
+   const char *menu_config_directory  = settings->paths.directory_menu_config;
+   const char *rarch_path_basename    = path_get(RARCH_PATH_BASENAME);
+
+   const char *game_name              = path_basename(rarch_path_basename);
+   const char *dirs[3]                = {0};
+   size_t i                           = 0;
+
+   char shader_path[PATH_MAX_LENGTH];
+   char content_dir_name[PATH_MAX_LENGTH];
+   char config_file_directory[PATH_MAX_LENGTH];
+   char old_presets_directory[PATH_MAX_LENGTH];
+
+   shader_path[0]                     = '\0';
+   content_dir_name[0]                = '\0';
+   config_file_directory[0]           = '\0';
+   old_presets_directory[0]           = '\0';
+
+   if (!string_is_empty(rarch_path_basename))
+      fill_pathname_parent_dir_name(content_dir_name,
+            rarch_path_basename, sizeof(content_dir_name));
+
+   config_file_directory[0]           = '\0';
+
+   if (!path_is_empty(RARCH_PATH_CONFIG))
+      fill_pathname_basedir(config_file_directory,
+            path_get(RARCH_PATH_CONFIG), sizeof(config_file_directory));
+
+   old_presets_directory[0]           = '\0';
+
+   if (!string_is_empty(video_shader_directory))
+      fill_pathname_join(old_presets_directory,
+         video_shader_directory, "presets", sizeof(old_presets_directory));
+
+   dirs[0]                            = menu_config_directory;
+   dirs[1]                            = config_file_directory;
+   dirs[2]                            = old_presets_directory;
+
+   for (i = 0; i < ARRAY_SIZE(dirs); i++)
+   {
+      if (string_is_empty(dirs[i]))
+         continue;
+      /* Game-specific shader preset found? */
+      if (retroarch_load_shader_preset_internal(
+               shader_path,
+               sizeof(shader_path),
+               dirs[i], core_name,
+               game_name))
+         goto success;
+      /* Folder-specific shader preset found? */
+      if (retroarch_load_shader_preset_internal(
+               shader_path,
+               sizeof(shader_path),
+               dirs[i], core_name,
+               content_dir_name))
+         goto success;
+      /* Core-specific shader preset found? */
+      if (retroarch_load_shader_preset_internal(
+               shader_path,
+               sizeof(shader_path),
+               dirs[i], core_name,
+               core_name))
+         goto success;
+      /* Global shader preset found? */
+      if (retroarch_load_shader_preset_internal(
+               shader_path,
+               sizeof(shader_path),
+               dirs[i], NULL,
+               "global"))
+         goto success;
+   }
+   return false;
+
+success:
+   /* Shader preset exists, load it. */
+   strlcpy(s, shader_path, len);
+   return true;
 }

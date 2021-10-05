@@ -22,6 +22,7 @@
 #define to_QWORD(w0, w1) (((u64)(w0) << 32ull) | (w1))
 #define to_LE(x) (__builtin_bswap32(x))
 #else
+printf("broke the build");
 #define to_QWORD(w0, w1) (((u64)(w1) << 32ull) | (w0))
 #define to_LE(x) (x)
 #endif
@@ -59,7 +60,7 @@
 #define KC0(x) (x + ALU_SRC_KCACHE0_BASE)
 #define KC1(x) (x + ALU_SRC_KCACHE1_BASE)
 
-#define NO_BARRIER      & ~to_QWORD(0,to_LE(1 << 31))
+#define NO_BARRIER      & (~to_QWORD(0,to_LE(1 << 31)))
 #define END_OF_PROGRAM  | to_QWORD(0,to_LE(1 << 21))
 #define VALID_PIX       | to_QWORD(0,to_LE(1 << 22))
 #define WHOLE_QUAD_MODE | to_QWORD(0,to_LE(1 << 30))

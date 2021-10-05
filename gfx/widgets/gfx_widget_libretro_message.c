@@ -153,10 +153,10 @@ static void gfx_widget_libretro_message_slide_in_cb(void *userdata)
 
 /* Widget interface */
 
-void gfx_widget_set_libretro_message(void *data,
+void gfx_widget_set_libretro_message(
       const char *msg, unsigned duration)
 {
-   dispgfx_widget_t *p_dispwidget             = (dispgfx_widget_t*)data;
+   dispgfx_widget_t *p_dispwidget             = dispwidget_get_ptr();
    gfx_widget_libretro_message_state_t *state = &p_w_libretro_message_st;
    gfx_widget_font_data_t *font_msg_queue     = &p_dispwidget->gfx_widget_fonts.msg_queue;
 
@@ -412,7 +412,8 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
                state->bg_height,
                video_width,
                video_height,
-               bg_color);
+               bg_color, 
+               NULL);
 
          /* Frame */
          gfx_display_draw_quad(
@@ -426,7 +427,8 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
                state->frame_width,
                video_width,
                video_height,
-               state->frame_color);
+               state->frame_color,
+               NULL);
 
          gfx_display_draw_quad(
                p_disp,
@@ -439,7 +441,8 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
                state->bg_height,
                video_width,
                video_height,
-               state->frame_color);
+               state->frame_color,
+               NULL);
       }
 
       /* Draw text */

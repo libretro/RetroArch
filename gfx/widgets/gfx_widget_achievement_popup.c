@@ -38,6 +38,7 @@ struct gfx_widget_achievement_popup_state
    slock_t* queue_lock;
 #endif
    cheevo_popup queue[CHEEVO_QUEUE_SIZE]; /* ptr alignment */
+   const dispgfx_widget_t *dispwidget_ptr;
    int queue_read_index;
    int queue_write_index;
    unsigned width;
@@ -64,6 +65,8 @@ static bool gfx_widget_achievement_popup_init(
 {
    gfx_widget_achievement_popup_state_t* state = &p_w_achievement_popup_st;
    memset(state, 0, sizeof(*state));
+   state->dispwidget_ptr   = (const dispgfx_widget_t*)
+      dispwidget_get_ptr();
 
    state->queue_read_index = -1;
 
@@ -91,8 +94,9 @@ static void gfx_widget_achievement_popup_free(void)
 
 #ifdef HAVE_THREADS
    slock_free(state->queue_lock);
-   state->queue_lock = NULL;
+   state->queue_lock     = NULL;
 #endif
+   state->dispwidget_ptr = NULL;
 }
 
 static void gfx_widget_achievement_popup_context_destroy(void)
@@ -146,7 +150,8 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
                state->height,
                state->height,
                video_width, video_height,
-               p_dispwidget->backdrop_orig);
+               p_dispwidget->backdrop_orig,
+               NULL);
 
          /* Icon */
          if (p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_ACHIEVEMENT])
@@ -212,7 +217,8 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
             state->height,
             video_width,
             video_height,
-            p_dispwidget->backdrop_orig);
+            p_dispwidget->backdrop_orig,
+	    NULL);
 
       /* Title */
       gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
@@ -291,9 +297,9 @@ static void gfx_widget_achievement_popup_next(void* userdata)
 static void gfx_widget_achievement_popup_dismiss(void *userdata)
 {
    gfx_animation_ctx_entry_t entry;
-   const dispgfx_widget_t        *p_dispwidget = (const dispgfx_widget_t*)
-      dispwidget_get_ptr();
    gfx_widget_achievement_popup_state_t *state = &p_w_achievement_popup_st;
+   const dispgfx_widget_t        *p_dispwidget = (const dispgfx_widget_t*)
+      state->dispwidget_ptr;
 
    /* Slide up animation */
    entry.cb             = gfx_widget_achievement_popup_next;
@@ -310,9 +316,9 @@ static void gfx_widget_achievement_popup_dismiss(void *userdata)
 static void gfx_widget_achievement_popup_fold(void *userdata)
 {
    gfx_animation_ctx_entry_t entry;
-   const dispgfx_widget_t        *p_dispwidget = (const dispgfx_widget_t*)
-      dispwidget_get_ptr();
    gfx_widget_achievement_popup_state_t *state = &p_w_achievement_popup_st;
+   const dispgfx_widget_t        *p_dispwidget = (const dispgfx_widget_t*)
+      state->dispwidget_ptr;
 
    /* Fold */
    entry.cb             = gfx_widget_achievement_popup_dismiss;
@@ -330,9 +336,9 @@ static void gfx_widget_achievement_popup_unfold(void *userdata)
 {
    gfx_timer_ctx_entry_t timer;
    gfx_animation_ctx_entry_t entry;
-   const dispgfx_widget_t        *p_dispwidget = (const dispgfx_widget_t*)
-      dispwidget_get_ptr();
    gfx_widget_achievement_popup_state_t *state = &p_w_achievement_popup_st;
+   const dispgfx_widget_t        *p_dispwidget = (const dispgfx_widget_t*)
+      state->dispwidget_ptr;
 
    /* Unfold */
    entry.cb             = NULL;
@@ -356,8 +362,9 @@ static void gfx_widget_achievement_popup_unfold(void *userdata)
 static void gfx_widget_achievement_popup_start(
    gfx_widget_achievement_popup_state_t* state)
 {
-   const dispgfx_widget_t* p_dispwidget = (const dispgfx_widget_t*)dispwidget_get_ptr();
    gfx_animation_ctx_entry_t entry;
+   const dispgfx_widget_t *p_dispwidget = (const dispgfx_widget_t*)
+      state->dispwidget_ptr;
 
    state->height = p_dispwidget->gfx_widget_fonts.regular.line_height * 4;
    state->width  = MAX(

@@ -722,7 +722,7 @@ static void menu_action_setting_disp_set_label_input_desc(
    remap_idx   = settings->uints.input_remap_ids[user_idx][btn_idx];
 
    if (remap_idx != RARCH_UNMAPPED)
-      descriptor = runloop_get_system_info()->input_desc_btn[mapped_port][remap_idx];
+      descriptor = runloop_state_get_ptr()->system.input_desc_btn[mapped_port][remap_idx];
 
    s[0] = '-';
    s[1] = '-';
@@ -1006,7 +1006,7 @@ static void menu_action_setting_disp_set_label_menu_disk_index(
 {
    unsigned images             = 0;
    unsigned current            = 0;
-   rarch_system_info_t *system = runloop_get_system_info();
+   rarch_system_info_t *system = &runloop_state_get_ptr()->system;
 
    if (!system)
       return;
@@ -1036,20 +1036,27 @@ static void menu_action_setting_disp_set_label_menu_video_resolution(
       char *s2, size_t len2)
 {
    unsigned width = 0, height = 0;
-
+   char desc[64] = {0};
    *w = 19;
    *s = '\0';
 
    strlcpy(s2, path, len2);
 
-   if (video_driver_get_video_output_size(&width, &height))
+   if (video_driver_get_video_output_size(&width, &height, desc, sizeof(desc)))
    {
 #ifdef GEKKO
       if (width == 0 || height == 0)
-         strcpy_literal(s, "DEFAULT");
+         snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE));
       else
 #endif
-         snprintf(s, len, "%ux%u", width, height);
+      {
+         if (!string_is_empty(desc))
+            snprintf(s, len, msg_hash_to_str(MSG_SCREEN_RESOLUTION_FORMAT_DESC), 
+               width, height, desc);
+         else
+            snprintf(s, len, msg_hash_to_str(MSG_SCREEN_RESOLUTION_FORMAT_NO_DESC), 
+               width, height);
+      }
    }
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
@@ -1297,7 +1304,7 @@ static void menu_action_setting_disp_set_label_core_option_override_info(
 
    if (!string_is_empty(override_path))
       options_file = path_basename_nocompression(override_path);
-   else if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+   else if (retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
    {
       const char *options_path = coreopts->conf_path;
       if (!string_is_empty(options_path))
@@ -1498,13 +1505,48 @@ static void menu_action_setting_disp_set_label_core_options(
       const char *path,
       char *s2, size_t len2)
 {
+   const char *category = path;
+   const char *desc     = NULL;
+
+   /* Add 'more' value text */
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MORE), len);
+   *w = 19;
+
+   /* If this is an options subcategory, fetch
+    * the category description */
+   if (!string_is_empty(category))
+   {
+      core_option_manager_t *coreopts = NULL;
+
+      if (retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+         desc = core_option_manager_get_category_desc(
+               coreopts, category);
+   }
+
+   /* If this isn't a subcategory (or something
+    * went wrong...), use top level core options
+    * menu label */
+   if (string_is_empty(desc))
+      desc = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS);
+
+   strlcpy(s2, desc, len2);
+}
+
+static void menu_action_setting_disp_set_label_core_option(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
    core_option_manager_t *coreopts = NULL;
    const char *coreopt_label       = NULL;
 
    *s = '\0';
    *w = 19;
 
-   if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+   if (retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
    {
       coreopt_label = core_option_manager_get_val_label(coreopts,
             type - MENU_SETTINGS_CORE_OPTION_START);
@@ -1783,11 +1825,14 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_menu_video_resolution);
             break;
+         case MENU_ENUM_LABEL_CORE_OPTIONS:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_core_options);
+            break;
          case MENU_ENUM_LABEL_PLAYLISTS_TAB:
          case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
          case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
          case MENU_ENUM_LABEL_FAVORITES:
-         case MENU_ENUM_LABEL_CORE_OPTIONS:
          case MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_LIST:
          case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
          case MENU_ENUM_LABEL_SHADER_OPTIONS:
@@ -2176,7 +2221,7 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
        (type < MENU_SETTINGS_CHEEVOS_START))
    {
       BIND_ACTION_GET_VALUE(cbs,
-         menu_action_setting_disp_set_label_core_options);
+         menu_action_setting_disp_set_label_core_option);
       return 0;
    }
 

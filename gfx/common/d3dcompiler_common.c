@@ -140,7 +140,8 @@ bool d3d_compile(const char* src, size_t size, LPCSTR src_name, LPCSTR entrypoin
    {
       if (error_msg)
       {
-         RARCH_ERR("D3DCompile failed :\n%s\n", (const char*)D3DGetBufferPointer(error_msg));
+         const char* msg = (const char*)D3DGetBufferPointer(error_msg);
+         RARCH_ERR("D3DCompile failed :\n%s\n", msg);						/* Place a breakpoint here, if you want, to see shader compilation issues */
          Release(error_msg);
       }
       return false;

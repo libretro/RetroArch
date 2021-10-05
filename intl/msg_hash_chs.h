@@ -454,22 +454,6 @@ MSG_HASH(
    "固件"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "缺失"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "具备"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "可选"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "必需"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "锁定已安装核心"
    )
@@ -1353,6 +1337,24 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "最近邻"
    )
+#if defined(RS90)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "图像插值"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "当“整数缩放”被禁用时，指定图像内插法。“最近的邻里”对性能影响最小。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "最近的邻里点"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   "半线性"
+   )
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -1465,6 +1467,10 @@ MSG_HASH(
    "GPU 编号"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   "选择要使用的显卡。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "垂直刷新率"
    )
@@ -1557,10 +1563,6 @@ MSG_HASH(
    "窗口缩放"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   "根据核心视角大小来设置窗口大小。或者，您可以在下方设置窗口的宽度和高度获取固定窗口大小。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    "窗口不透明度"
    )
@@ -1571,10 +1573,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
    "记住窗口位置和大小"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "记住窗口尺寸和位置，此选项的优先级高于「窗口缩放」选项。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1610,10 +1608,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    "自定义宽高比"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "视频宽高比的浮点数值 (宽度/高度)，如果宽高比设置为「自定义宽高比」，则使用此数值。"
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1665,6 +1659,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    "在图像边缘切掉一些像素，这通常是游戏开发者有意留下的白边或黑边，甚至也有可能包含垃圾像素。"
    )
+
+/* Settings > Video > HDR */
+
 
 /* Settings > Video > Synchronization */
 
@@ -2213,16 +2210,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "启用设备振动 (对支持的核心)"
    )
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
-   "振动强度 (需要重启)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN,
-   "指定触觉反馈效果的强弱。"
-   )
-#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -9863,14 +9850,6 @@ MSG_HASH(
    "收到来自「%s (%s)」的连接"
    )
 MSG_HASH(
-   MSG_PUBLIC_ADDRESS,
-   "端口映射成功"
-   )
-MSG_HASH(
-   MSG_UPNP_FAILED,
-   "端口映射失败"
-   )
-MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
    "未提供参数也没有内建菜单，正在显示帮助..."
    )
@@ -10267,14 +10246,6 @@ MSG_HASH(
    "从有效端口断开设备。"
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "已关闭"
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "已弹出"
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "正在下载"
    )
@@ -10341,10 +10312,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_SAVING_CONFIG_TO,
    "无法将配置文件保存到"
-   )
-MSG_HASH(
-   MSG_FAILED_TO,
-   "失败："
    )
 MSG_HASH(
    MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
@@ -10695,10 +10662,6 @@ MSG_HASH(
    "读取第一条数据轨..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "接收完毕"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "录制因改变大小而停止。"
    )
@@ -10915,10 +10878,6 @@ MSG_HASH(
    "取消暂停。"
    )
 MSG_HASH(
-   MSG_UNRECOGNIZED_COMMAND,
-   "无法识别的指令"
-   )
-MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
    "使用核心名称作为新配置。"
    )
@@ -10949,26 +10908,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "可视区域尺寸计算失败！将继续使用原始数据，这很可能不会正常工作。"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "虚拟光驱托盘。"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "弹出"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "关闭"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "已失败"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "已成功"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -11389,10 +11328,6 @@ MSG_HASH(
    "分开 Joy-Con 手柄"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-   "内部存储状态"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
    "图形部件缩放倍数"
    )
@@ -11651,14 +11586,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOCAL,
    "本地"
-   )
-MSG_HASH(
-   MSG_READ_WRITE,
-   "读写"
-   )
-MSG_HASH(
-   MSG_READ_ONLY,
-   "只读"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,

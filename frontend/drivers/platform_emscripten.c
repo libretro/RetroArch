@@ -73,9 +73,6 @@ void cmd_take_screenshot(void)
 static void frontend_emscripten_get_env(int *argc, char *argv[],
       void *args, void *params_data)
 {
-   (void)args;
-
-   unsigned i;
    char base_path[PATH_MAX] = {0};
    char user_path[PATH_MAX] = {0};
    const char *home         = getenv("HOME");

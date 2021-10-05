@@ -3,64 +3,107 @@ Struct ordering
 
 For POD-types, try to order structs as follows (first to last):
 
-* long double     (8 bytes, 16 bytes [64bit x86], 12 bytes [32bit x86])
-* double          (8 bytes)
-* int64_t         (8 bytes,         8 bytes [32bit ARM], 4 bytes [32bit x86])
-* uint64_t        (4 bytes [32bit], 8 bytes [32bit ARM], 8 bytes [64bit])
-* pointer         (4 bytes [32bit], 8 bytes [64bit] [1])
-* intptr_t        (4 bytes [32bit], 8 bytes [64bit] [1])
-* uintptr_t       (4 bytes [32bit], 8 bytes [64bit] [1])
-* ptrdiff_t       (4 bytes [32bit], 8 bytes [64bit] [1])
-* ssize_t         (4 bytes [32bit], 8 bytes [64bit])
-* size_t          (4 bytes [32bit], 8 bytes [64bit])
-* jmp_buf         (4 bytes)
-* long            (4 bytes [64bit Win], 8 bytes [64bit non-Win], 4 bytes [32bit])
-* int32_t         (4 bytes)
-* unsigned        (4 bytes)
-* float           (4 bytes)
-* int             (4 bytes)
-* enum            (4 bytes)
-* int16_t         (2 bytes)
-* char            (1 byte)
+   * long double     (8 bytes, 16 bytes [64bit x86], 12 bytes [32bit x86])
+   * double          (8 bytes)
+   * int64_t         (8 bytes,         8 bytes [32bit ARM], 
+                      4 bytes [32bit x86])
+   * uint64_t        (4 bytes [32bit], 8 bytes [32bit ARM], 8 bytes [64bit])
+   * pointer         (4 bytes [32bit], 8 bytes [64bit] [1])
+   * intptr_t        (4 bytes [32bit], 8 bytes [64bit] [1])
+   * uintptr_t       (4 bytes [32bit], 8 bytes [64bit] [1])
+   * ptrdiff_t       (4 bytes [32bit], 8 bytes [64bit] [1])
+   * ssize_t         (4 bytes [32bit], 8 bytes [64bit])
+   * size_t          (4 bytes [32bit], 8 bytes [64bit])
+   * jmp_buf         (4 bytes)
+   * long            (4 bytes [64bit Win], 8 bytes [64bit non-Win], 
+                      4 bytes [32bit])
+   * int32_t         (4 bytes)
+   * unsigned        (4 bytes)
+   * float           (4 bytes)
+   * int             (4 bytes)
+   * enum            (4 bytes)
+   * int16_t         (2 bytes)
+   * char            (1 byte)
 * bool            (1 byte)
 
-[1] PS3 uses 4 byte pointers despite having a 64bit processor
+   [1] PS3 uses 4 byte pointers despite having a 64bit processor
 
-Struct members should be sorted by alignment. Therefore, structs
-should be sorted by the largest type inside them.
+   Struct members should be sorted by alignment. Therefore, structs
+   should be sorted by the largest type inside them.
 
-For example, take a struct like this:
+   For example, take a struct like this:
 
-typedef struct
-{
-   size_t capacity;
-   bool old_format;
-   bool compress;
-   bool fuzzy_archive_match;
-   bool autofix_paths;   
-   char path[PATH_MAX_LENGTH];
-   char base_content_directory[PATH_MAX_LENGTH];
-} playlist_config_t;
+   typedef struct
+   {
+      size_t capacity;
+      bool old_format;
+      bool compress;
+      bool fuzzy_archive_match;
+      bool autofix_paths;   
+      char path[PATH_MAX_LENGTH];
+      char base_content_directory[PATH_MAX_LENGTH];
+   } playlist_config_t;
 
-size_t has the biggest alignment here, so 'struct playlist_config_t' inside a struct should come before or after size_t.
+size_t has the biggest alignment here, so 'struct playlist_config_t' 
+inside a struct should come before or after size_t.
 
 *** BEST PRACTICES ***
 
-* If we have pointers and size variable pairs, it's best to interleave them to increase the probability they go in the same cacheline. It also makes the code more readable, that these two variables are connected.
+* If we have pointers and size variable pairs, it's best to 
+interleave them to increase the probability they go in the 
+same cacheline. It also makes the code more readable, that 
+these two variables are connected.
 
 Example:
 
-struct a
-{
-   char* b;
-   size_t b_len;
-   char* c;
-   size_t c_len;
-};
+   struct a
+   {
+      char* b;
+      size_t b_len;
+      char* c;
+      size_t c_len;
+   };
 
 Stack size
 ----------
 
-You have to assume that stack size is going to be limited in RetroArch. Some game consoles (and other embedded systems) might have a default stack size as low as 128Kb or less. Be conservative with stack size but don't try to put very small structs on heap either [to avoid memory fragmentation among other things].
+You have to assume that stack size is going to be limited in 
+RetroArch. Some game consoles (and other embedded systems) 
+might have a default stack size as low as 128Kb or less. 
+Be conservative with stack size but don't try to put very 
+small structs on heap either [to avoid memory fragmentation 
+among other things]. A balancing act here is necessary.
 
 Be mindful that heap allocations are slow compared to stack.
+
+Functions
+---------
+- Avoid doing small getter/setter functions. We want a function 
+to justify its function call overhead by doing a significant 
+body of work. Small one-line getter/setter functions for what 
+is predominantly C-style structs is not useful, plus it leads 
+to people thinking this function is more complex than it 
+actually is, thus obfuscating the sourcecode instead of it 
+being easier to read.
+
+If you can find examples in the codebase that violate this 
+guideline, do not hesitate to point them out to us.
+
+Variable declaration
+--------------------
+For C source files, we have to insist you stick to the following:
+
+- Declare variables either at the start of a function or the start 
+   of a code block, depending on the scope they need.
+- Do not do initial for loop declarations. Refer to the bulletpoint above:
+   either declare them at the start of the function, or at the start
+   of the code block.
+
+Not doing this would break compilation on platforms where we are compiling
+these C source files in C89 compatibility mode. If such issues occur in pull
+requests, we have to request that it be fixed.
+
+VLA (Variable Length Array)
+---------------------------
+Do not use VLAs (Variable Length Array) in C source files. These are not
+C89-compliant.

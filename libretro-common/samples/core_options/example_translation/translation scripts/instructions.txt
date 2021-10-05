@@ -1,0 +1,47 @@
+Place 'crowdin.yml' & the 'intl' and '.github' folder, including content, into the root of the repo.
+
+In '.github/workflows' are two files: 'crowdin_intl.yml' & 'crowdin_prep.yml'
+In each of those are place holders, which need to be replaced as follows:
+
+<path/to/libretro_core_options.h directory>
+-> replace with the path from the root of the repo to the directory containing
+'libretro_core_options.h' (it is assumed that 'libretro_core_options.h' &
+'libretro_core_options_intl.h' are in the same directory)
+
+<path/to/libretro_core_options.h file>
+-> replace with the full path from the root of the repo to the 'libretro_core_options.h' file
+
+<path/to/libretro_core_options_intl.h file>
+-> replace with the full path from the root of the repo to the 'libretro_core_options_intl.h' file
+
+
+From the root of the repo run (using bash):
+python3 intl/core_opt_translation.py '<path/to/libretro_core_options.h directory>'
+
+(If python3 doesn't work, try just python)
+
+Push changes to repo. Once merged, request Crowdin integration.
+
+
+Crowdin integration:
+
+On the project page, go to the Applications tab. Choose GitHub.
+There are two options: connecting a GitHub account, which has write/commit permissions to the repo
+or providing a GitHub token, which will unlock these permissions.
+
+Then add a repository, a new interface opens. Pick the repository as well as the branch, which you want to sync.
+On the right, Crowdin will display the default name of the repository it will use for creating PRs.
+Below, set the sync schedule and then save. With that the synchronisation should be set up.
+If there are still problems, you might need to manually modify the configuration (double click on the branch in the lower frame).
+
+Here's what the file paths should look like (the '/' at the start is very important!):
+
+Source files path:
+/intl/_us/*.json
+
+Translated files path:
+/intl/_%two_letters_code%/%original_file_name%
+
+
+Once Crowdin successfully creates the PR & it has been merged, the automatically created branch can be deleted on GitHub.
+

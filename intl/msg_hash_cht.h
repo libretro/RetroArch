@@ -414,22 +414,6 @@ MSG_HASH(
    "韌體"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "遺失內容"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "目前"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "選用"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "必要項目"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "鎖定已安裝的核心"
    )
@@ -1245,6 +1229,8 @@ MSG_HASH(
    "硬件雙線性過濾"
    )
 #if defined(DINGUX)
+#if defined(RS90)
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -1385,10 +1371,6 @@ MSG_HASH(
    "記住視窗位置與大小"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "記憶視窗的大小及位置，本項設定優先於視窗縮放選項."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    "視窗寬度"
    )
@@ -1419,10 +1401,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    "自定義畫面比例"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "如果長寬比設定為「自訂長寬比」，畫面比例 (長/寬) 可以為浮點數。"
-   )
 #if defined(DINGUX)
 #endif
 MSG_HASH(
@@ -1441,6 +1419,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "自定義畫面高度"
    )
+
+/* Settings > Video > HDR */
+
 
 /* Settings > Video > Synchronization */
 
@@ -1825,8 +1806,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "啟用設備振動(對於支援的內核)"
    )
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -4555,10 +4534,6 @@ MSG_HASH(
    "連接來自： \"%s (%s)\""
    )
 MSG_HASH(
-   MSG_PUBLIC_ADDRESS,
-   "連接埠映射成功"
-   )
-MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
    "設定光碟機裡光碟"
    )
@@ -4807,14 +4782,6 @@ MSG_HASH(
    "從連接埠離開."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "已關閉"
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "已彈出"
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "正在下載"
    )
@@ -4869,10 +4836,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_SAVING_CONFIG_TO,
    "無法儲存設定到"
-   )
-MSG_HASH(
-   MSG_FAILED_TO,
-   "執行失敗"
    )
 MSG_HASH(
    MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
@@ -5191,10 +5154,6 @@ MSG_HASH(
    "讀取第一條數據軌..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "接收完畢"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "錄製因改變大小而停止。"
    )
@@ -5351,10 +5310,6 @@ MSG_HASH(
    "取消暫停。"
    )
 MSG_HASH(
-   MSG_UNRECOGNIZED_COMMAND,
-   "無法識別的指令"
-   )
-MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
    "使用核心模擬器名稱當新的設定檔名稱"
    )
@@ -5381,22 +5336,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "退出"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "關閉"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "已失敗"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "已成功"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -5639,14 +5578,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOCAL,
    "本地端"
-   )
-MSG_HASH(
-   MSG_READ_WRITE,
-   "讀取/寫入"
-   )
-MSG_HASH(
-   MSG_READ_ONLY,
-   "唯讀"
    )
 
 #ifdef HAVE_LAKKA_SWITCH

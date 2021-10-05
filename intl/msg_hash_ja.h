@@ -454,22 +454,6 @@ MSG_HASH(
    "ファームウェア"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "欠損"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "存在"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "任意"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "必須"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "インストール済みコアをロック"
    )
@@ -1285,6 +1269,10 @@ MSG_HASH(
    "ビデオスケーリングの設定を変更します."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
+   "HDRの設定を変更します。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    "同期"
    )
@@ -1345,6 +1333,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
    "バイリニア (双線形)"
    )
+#if defined(RS90)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "ニアレストネイバー"
+   )
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -1453,6 +1447,10 @@ MSG_HASH(
    "GPUインデックス"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   "使用するグラフィックカードを選択します。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "リフレッシュレート"
    )
@@ -1529,16 +1527,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    "フルスクリーンモードの高さを設定します. 設定しないとデスクトップの解像度を使用します."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
+   "解像度をフルスクリーンサイズに強制します。0に設定すると、3840 x 2160が使用されます。"
+   )
 
 /* Settings > Video > Windowed Mode */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
    "ウィンドウの拡大率"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   "コアの表示領域サイズを基準にウィンドウを拡大します. または, 一定の幅と高さが適用される固定ウィンドウサイズも設定できます."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -1551,10 +1549,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
    "ウィンドウの位置とサイズを記憶"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "ウィンドウの位置とサイズを記憶します. 'ウィンドウの拡大率'設定より優先されます."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1590,10 +1584,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    "'Config'のアスペクト比"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "ビデオのアスペクト比(幅/高さ)の浮動小数点値です. 'アスペクト比'に'Config'を設定しているときに使用されます."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1645,6 +1635,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    "画面端の数ピクセルを切り取ります. この部分はゴミが含まれていることもあり, 開発者が慣例的に空白にしています."
    )
+
+/* Settings > Video > HDR */
+
 
 /* Settings > Video > Synchronization */
 
@@ -2189,16 +2182,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "(対応コアで)デバイスの振動を有効"
    )
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
-   "振動の強さ (再起動が必要)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN,
-   "触覚フィードバック効果の大きさを指定します."
-   )
-#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -9327,14 +9310,6 @@ MSG_HASH(
    "\"%s (%s)\" からの接続を確立:"
    )
 MSG_HASH(
-   MSG_PUBLIC_ADDRESS,
-   "グローバルIPアドレス"
-   )
-MSG_HASH(
-   MSG_UPNP_FAILED,
-   "ポートマッピングに失敗しました"
-   )
-MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
    "ディスクがトレイに入りました"
    )
@@ -9699,14 +9674,6 @@ MSG_HASH(
    "デバイスを有効なポートから切断してください"
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "ディスクを挿入しました"
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "ディスクを排出しました"
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "ダウンロード中"
    )
@@ -9773,10 +9740,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_SAVING_CONFIG_TO,
    "コンフィグの保存に失敗しました to"
-   )
-MSG_HASH(
-   MSG_FAILED_TO,
-   "失敗しました to"
    )
 MSG_HASH(
    MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
@@ -10319,10 +10282,6 @@ MSG_HASH(
    "一時停止解除"
    )
 MSG_HASH(
-   MSG_UNRECOGNIZED_COMMAND,
-   "認識できないコマンド"
-   )
-MSG_HASH(
    MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
    "Libretroダミーコアを使用します. 録画をスキップします."
    )
@@ -10349,26 +10308,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "仮想ディスクトレイ."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "取り出し"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "閉じる"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "失敗しました"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "成功しました"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -10769,10 +10708,6 @@ MSG_HASH(
 /* Environment Specific Settings */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-   "内蔵ストレージ状態"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
    "スクリーン解像度"
    )
@@ -11003,14 +10938,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOCAL,
    "ローカル"
-   )
-MSG_HASH(
-   MSG_READ_WRITE,
-   "読み込み/書き込み"
-   )
-MSG_HASH(
-   MSG_READ_ONLY,
-   "読み込みのみ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,

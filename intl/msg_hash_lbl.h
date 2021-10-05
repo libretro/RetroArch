@@ -23,6 +23,10 @@ MSG_HASH(
    "retro_achievements"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "toggle_cheevos_hardcore"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_ACCOUNTS_TWITCH,
    "twitch"
    )
@@ -1069,6 +1073,10 @@ MSG_HASH(
    "deferred_video_scaling_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_VIDEO_HDR_SETTINGS_LIST,
+   "deferred_video_hdr_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_VIDEO_SYNCHRONIZATION_SETTINGS_LIST,
    "deferred_video_synchronization_settings_list"
    )
@@ -1175,6 +1183,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE,
    "check_for_missing_firmware"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_OPTION_CATEGORY_ENABLE,
+   "core_option_category_enable"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE,
@@ -1315,6 +1327,10 @@ MSG_HASH(
    "core_options_reset"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CORE_OPTIONS_FLUSH,
+   "core_options_flush"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE,
    "game_specific_options_create"
    )
@@ -1407,6 +1423,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE,
    "input_sensors_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB,
+   "input_auto_mouse_grab"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_AUTO_GAME_FOCUS,
@@ -1513,6 +1533,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    "input_menu_toggle_gamepad_combo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   "input_quit_gamepad_combo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY,
@@ -2293,6 +2317,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
    "playlist_manager_clean_playlist"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "playlist_manager_refresh_playlist"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_PLAYLIST_SETTINGS_BEGIN,
@@ -3289,6 +3317,14 @@ MSG_HASH(
    "video_monitor_index"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_X,
+   "video_window_offset_x"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_Y,
+   "video_window_offset_y"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_POST_FILTER_RECORD,
    "video_post_filter_record"
    )
@@ -3339,6 +3375,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS,
    "video_scaling_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS,
+   "video_hdr_settings"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
@@ -3517,6 +3557,14 @@ MSG_HASH(
    "video_window_height"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "video_window_auto_width_max"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "video_window_auto_height_max"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_FULLSCREEN_X,
    "video_fullscreen_x"
    )
@@ -3663,10 +3711,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
    "disconnect_device_from_a_valid_port"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Failed to set disk"
    )
 MSG_HASH(
    MSG_FAILED_TO_START_AUDIO_DRIVER,
@@ -4055,6 +4099,10 @@ MSG_HASH(
    "quick_menu_show_options"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "quick_menu_show_core_options_flush"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_CONTROLS,
    "quick_menu_show_controls"
    )
@@ -4165,6 +4213,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION,
    "video_window_save_position"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "video_window_custom_size_enable"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
@@ -4971,6 +5023,10 @@ MSG_HASH(
    "manual_content_scan_overwrite"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   "manual_content_scan_validate_entries"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_START,
    "manual_content_scan_start"
    )
@@ -5002,12 +5058,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "input_haptic_feedback_settings"
    )
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
 MSG_HASH(
-   MENU_ENUM_LABEL_INPUT_DINGUX_RUMBLE_GAIN,
-   "input_dingux_rumble_gain"
+   MENU_ENUM_LABEL_INPUT_RUMBLE_GAIN,
+   "input_rumble_gain"
    )
-#endif
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_TURBO_MODE,
    "input_turbo_mode"

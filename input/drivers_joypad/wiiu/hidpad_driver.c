@@ -56,7 +56,7 @@ static void hidpad_destroy(void)
    hid_deinit(&hid_instance);
 }
 
-static int16_t hidpad_button(unsigned port, uint16_t joykey)
+static int32_t hidpad_button(unsigned port, uint16_t joykey)
 {
    if (!hidpad_query_pad(port))
       return 0;
@@ -129,6 +129,7 @@ input_device_driver_t hidpad_driver =
   hidpad_get_buttons,
   hidpad_axis,
   hidpad_poll,
+  NULL,
   NULL,
   hidpad_name,
   "hid"

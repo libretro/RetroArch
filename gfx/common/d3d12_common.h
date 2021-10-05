@@ -1385,6 +1385,9 @@ typedef struct
    {
       DXGISwapChain               handle;
       D3D12Resource               renderTargets[2];
+#ifdef HAVE_DXGI_HDR
+      d3d12_texture_t             back_buffer;
+#endif
       D3D12_CPU_DESCRIPTOR_HANDLE desc_handles[2];
       D3D12_VIEWPORT              viewport;
       D3D12_RECT                  scissorRect;
@@ -1392,6 +1395,11 @@ typedef struct
       int                         frame_index;
       bool                        vsync;
       unsigned                    swap_interval;
+#ifdef HAVE_DXGI_HDR
+      enum dxgi_swapchain_bit_depth bit_depth;
+      DXGI_COLOR_SPACE_TYPE       color_space;
+      DXGI_FORMAT                 formats[DXGI_SWAPCHAIN_BIT_DEPTH_COUNT];
+#endif
    } chain;
 
    struct
@@ -1406,6 +1414,21 @@ typedef struct
       float4_t                        output_size;
       int                             rotation;
    } frame;
+
+#ifdef HAVE_DXGI_HDR
+   struct
+   {
+      dxgi_hdr_uniform_t               ubo_values;
+      D3D12Resource                    ubo;
+      D3D12_CONSTANT_BUFFER_VIEW_DESC  ubo_view;
+      float                            max_output_nits;
+      float                            min_output_nits;
+      float                            max_cll;
+      float                            max_fall;
+      bool                             support;
+      bool                             enable;
+   } hdr;
+#endif
 
    struct
    {
@@ -1490,19 +1513,20 @@ typedef enum {
    ROOT_ID_SAMPLER_T,
    ROOT_ID_UBO,
    ROOT_ID_PC,
-   ROOT_ID_MAX,
+   ROOT_ID_MAX
 } root_signature_parameter_index_t;
 
 typedef enum {
    CS_ROOT_ID_TEXTURE_T = 0,
    CS_ROOT_ID_UAV_T,
    CS_ROOT_ID_CONSTANTS,
-   CS_ROOT_ID_MAX,
+   CS_ROOT_ID_MAX
 } compute_root_index_t;
 
 RETRO_BEGIN_DECLS
 
 extern D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_enable_desc;
+extern D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_disable_desc;
 
 bool d3d12_init_base(d3d12_video_t* d3d12);
 

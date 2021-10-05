@@ -45,6 +45,8 @@ char *rootDevicePath(enum BootDeviceIDs device_id);
 
 enum BootDeviceIDs getBootDeviceID(char *path);
 
+bool getMountInfo(char *path, char *mountString, char *mountPoint, char *newCWD);
+
 bool waitUntilDeviceIsReady(char *path);
 
 #endif

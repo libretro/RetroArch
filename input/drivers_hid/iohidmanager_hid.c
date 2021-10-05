@@ -33,9 +33,9 @@
 
 typedef struct apple_input_rec
 {
-  IOHIDElementCookie cookie;
-  uint32_t id;
-  struct apple_input_rec *next;
+   IOHIDElementCookie cookie;
+   uint32_t id;
+   struct apple_input_rec *next;
 } apple_input_rec_t;
 
 typedef struct apple_hid
@@ -51,14 +51,12 @@ struct iohidmanager_hid_adapter
 {
    uint32_t slot;
    IOHIDDeviceRef handle;
+   uint32_t locationId;
    char name[PATH_MAX_LENGTH];
    apple_input_rec_t *axes;
    apple_input_rec_t *hats;
    apple_input_rec_t *buttons;
    uint8_t data[2048];
-#if !(defined(__ppc__) || defined(__ppc64__))
-   uint32_t uniqueId;
-#endif
 };
 
 CFComparisonResult iohidmanager_sort_elements(const void *val1, const void *val2, void *context)
@@ -234,11 +232,11 @@ static int16_t iohidmanager_hid_joypad_state(
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
-               (uint16_t)joykey != NO_BTN 
+               (uint16_t)joykey != NO_BTN
             && iohidmanager_hid_joypad_button(data, port_idx, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(iohidmanager_hid_joypad_axis(data, port_idx, joyaxis)) 
+            ((float)abs(iohidmanager_hid_joypad_axis(data, port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
@@ -477,14 +475,29 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
    }
 }
 
-static void iohidmanager_hid_device_remove(void *data,
-      IOReturn result, void* sender)
+static void iohidmanager_hid_device_remove(IOHIDDeviceRef device, iohidmanager_hid_t* hid)
 {
-   struct iohidmanager_hid_adapter *adapter =
-      (struct iohidmanager_hid_adapter*)data;
-   iohidmanager_hid_t *hid = (iohidmanager_hid_t*)
-      hid_driver_get_data();
-
+   struct iohidmanager_hid_adapter *adapter = NULL;
+   int i;
+   
+   /*loop though the controller ports and find the device with a matching IOHINDeviceRef*/
+   for (i=0; i<MAX_USERS; i++)
+   {
+      struct iohidmanager_hid_adapter *a = (struct iohidmanager_hid_adapter*)hid->slots[i].data;
+      if (!a)
+         continue;
+      if (a->handle == device)
+      {
+         adapter = a;
+         break;
+      }
+   }
+   if (!adapter)
+   {
+      RARCH_LOG("Error removing device %p\n",device, hid);
+      return;
+   }
+   int slot = adapter->slot;
    if (hid && adapter && (adapter->slot < MAX_USERS))
    {
       input_autoconfigure_disconnect(adapter->slot, adapter->name);
@@ -520,6 +533,7 @@ static void iohidmanager_hid_device_remove(void *data,
       }
       free(adapter);
    }
+   RARCH_LOG("Device removed from port %d\n", slot);
 }
 
 static int32_t iohidmanager_hid_device_get_int_property(
@@ -555,15 +569,7 @@ static uint32_t iohidmanager_hid_device_get_location_id(IOHIDDeviceRef device)
          CFSTR(kIOHIDLocationIDKey));
 }
 
-#if !(defined(__ppc__) || defined(__ppc64__))
-static uint32_t iohidmanager_hid_device_get_unique_id(IOHIDDeviceRef device)
-{
-	/* osx seems to assign an unique id to each device when they are plugged in
-	 * the id change if device is unplugged/plugged, but it's unique amongst the
-	 * other device plugged */
-  return iohidmanager_hid_device_get_int_property(device,CFSTR(kIOHIDUniqueIDKey));
-}
-#endif
+
 
 static void iohidmanager_hid_device_get_product_string(
       IOHIDDeviceRef device, char *buf, size_t len)
@@ -591,20 +597,10 @@ static void iohidmanager_hid_device_add_autodetect(unsigned idx,
    RARCH_LOG("Port %d: %s.\n", idx, device_name);
 }
 
-#if defined(__ppc__) || defined(__ppc64__)
-static void iohidmanager_hid_device_add(IOHIDDeviceRef device,
-      iohidmanager_hid_t* hid)
-#else
-static void iohidmanager_hid_device_add_device(
-      IOHIDDeviceRef device, iohidmanager_hid_t* hid)
-#endif
+
+static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_t* hid)
 {
    int i;
-
-	/* get device unique id */
-#if !(defined(__ppc__) || defined(__ppc64__))
-	uint32_t deviceUniqueId = iohidmanager_hid_device_get_unique_id(device);
-#endif
 
     static const uint32_t axis_use_ids[11] =
     {
@@ -621,18 +617,22 @@ static void iohidmanager_hid_device_add_device(
         kHIDUsage_Sim_Brake
     };
 
-#if !(defined(__ppc__) || defined(__ppc64__))
-	/* check if pad was already registered previously (by deterministic method)
-	 * if so do not re-add the pad */
-	for (i=0; i<MAX_USERS; i++)
-	{
-		struct iohidmanager_hid_adapter *a = (struct iohidmanager_hid_adapter*)hid->slots[i].data;
-		if (!a)
-			continue;
-		if (a->uniqueId == deviceUniqueId)
-			return;
-	}
-#endif
+   /* check if pad was already registered previously when the application was
+    started (by deterministic method). if so do not re-add the pad */
+   uint32_t deviceLocationId = iohidmanager_hid_device_get_location_id(device);
+   for (i=0; i<MAX_USERS; i++)
+   {
+      struct iohidmanager_hid_adapter *a = (struct iohidmanager_hid_adapter*)hid->slots[i].data;
+      if (!a)
+         continue;
+      if (a->locationId == deviceLocationId)
+      {
+         a->handle = device;
+       /* while we're not re-adding the controller, we are re-assigning the
+        handle so it can be removed properly upon disconnect */
+         return;
+      }
+   }
 
    IOReturn ret;
    uint16_t dev_vid, dev_pid;
@@ -654,6 +654,7 @@ static void iohidmanager_hid_device_add_device(
       goto error;
 
    adapter->handle        = device;
+   adapter->locationId = deviceLocationId;
 
    ret = IOHIDDeviceOpen(device, kIOHIDOptionsTypeNone);
 
@@ -663,8 +664,6 @@ static void iohidmanager_hid_device_add_device(
    /* Move the device's run loop to this thread. */
    IOHIDDeviceScheduleWithRunLoop(device, CFRunLoopGetCurrent(),
          kCFRunLoopCommonModes);
-   IOHIDDeviceRegisterRemovalCallback(device,
-         iohidmanager_hid_device_remove, adapter);
 
 #ifndef IOS
    iohidmanager_hid_device_get_product_string(device, adapter->name,
@@ -673,9 +672,6 @@ static void iohidmanager_hid_device_add_device(
 
    dev_vid = iohidmanager_hid_device_get_vendor_id  (device);
    dev_pid = iohidmanager_hid_device_get_product_id (device);
-#if !(defined(__ppc__) || defined(__ppc64__))
-   adapter->uniqueId = deviceUniqueId;
-#endif
 
    adapter->slot = pad_connection_pad_init(hid->slots,
          adapter->name, dev_vid, dev_pid, adapter,
@@ -701,6 +697,8 @@ static void iohidmanager_hid_device_add_device(
    elements     = CFArrayCreateMutableCopy(
          kCFAllocatorDefault,(CFIndex)count,elements_raw);
    range        = CFRangeMake(0,count);
+
+   CFRelease(elements_raw);
 
    CFArraySortValues(elements,
          range, iohidmanager_sort_elements, NULL);
@@ -861,6 +859,8 @@ static void iohidmanager_hid_device_add_device(
       }
    }
 
+   CFRelease(elements);
+
    /* take care of buttons/axes with duplicate 'use' values */
    for (i = 0; i < 11; i++)
    {
@@ -896,7 +896,6 @@ static void iohidmanager_hid_device_add_device(
 
    iohidmanager_hid_device_add_autodetect(adapter->slot,
          adapter->name, iohidmanager_hid.ident, dev_vid, dev_pid);
-
    return;
 
 error:
@@ -936,14 +935,21 @@ error:
    }
 }
 
-#if !(defined(__ppc__) || defined(__ppc64__))
-static void iohidmanager_hid_device_add(void *data, IOReturn result,
-   void* sender, IOHIDDeviceRef device)
+
+static void iohidmanager_hid_device_matched(void *data, IOReturn result,
+                                            void* sender, IOHIDDeviceRef device)
 {
-	iohidmanager_hid_t *hid = (iohidmanager_hid_t*)	hid_driver_get_data();
-	iohidmanager_hid_device_add_device(device, hid);
+   iohidmanager_hid_t *hid = (iohidmanager_hid_t*) hid_driver_get_data();
+   
+   iohidmanager_hid_device_add(device, hid);
 }
-#endif
+static void iohidmanager_hid_device_removed(void *data, IOReturn result,
+                                            void* sender, IOHIDDeviceRef device)
+{
+   iohidmanager_hid_t *hid = (iohidmanager_hid_t*) hid_driver_get_data();
+   iohidmanager_hid_device_remove(device, hid);
+}
+
 
 static void iohidmanager_hid_append_matching_dictionary(
       CFMutableArrayRef array,
@@ -976,7 +982,6 @@ static int iohidmanager_hid_manager_init(iohidmanager_hid_t *hid)
 
    if (!hid->ptr)
       return -1;
-
    IOHIDManagerSetDeviceMatching(hid->ptr, NULL);
    IOHIDManagerScheduleWithRunLoop(hid->ptr, CFRunLoopGetCurrent(),
          kCFRunLoopDefaultMode);
@@ -1000,102 +1005,29 @@ static int iohidmanager_hid_manager_free(iohidmanager_hid_t *hid)
 static int iohidmanager_hid_manager_set_device_matching(
       iohidmanager_hid_t *hid)
 {
-	/* deterministically add all device currently plugged when lanching retroarch
-	 * order by location id which seems to correspond to usb port number */
-	CFSetRef set                 = IOHIDManagerCopyDevices(hid->ptr);
-	CFIndex num_devices          = CFSetGetCount(set);
-	IOHIDDeviceRef *device_array = (IOHIDDeviceRef*)calloc(num_devices, sizeof(IOHIDDeviceRef));
-	CFSetGetValues(set, (const void **) device_array);
+   /* register call back to dynamically add device plugged when retroarch is
+    * running
+    * those will be added after the one plugged when retroarch was launched,
+    * and by order they are plugged in (so not deterministic) */
+   CFMutableArrayRef matcher = CFArrayCreateMutable(kCFAllocatorDefault, 0,
+      &kCFTypeArrayCallBacks);
 
-	/* re order device by location id */
-	typedef struct hid_list
-	{
-	  IOHIDDeviceRef device;
-	  uint32_t lid;
-	  struct hid_list *next;
-	} hid_list_t;
+   if (!matcher)
+      return -1;
 
-	hid_list_t* devList = NULL;
-	for (long i=0; i<num_devices;i++)
-	{
-		IOHIDDeviceRef dev = device_array[i];
-		/* filter gamepad/joystick devices */
-		if (	IOHIDDeviceConformsTo(dev, kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick)
-			||	IOHIDDeviceConformsTo(dev, kHIDPage_GenericDesktop, kHIDUsage_GD_GamePad)
-			)
-		{
-			if (!devList)
-			{
-				devList             = (hid_list_t *)malloc(sizeof(hid_list_t));
-				devList->device     = dev;
-				devList->lid        = iohidmanager_hid_device_get_location_id(dev);
-				devList->next       = NULL;
-			}
-			else
-			{
-				hid_list_t * devnew = (hid_list_t *)malloc(sizeof(hid_list_t));
-				devnew->device      = dev;
-				devnew->lid         = iohidmanager_hid_device_get_location_id(dev);
-				devnew->next        = NULL;
+   iohidmanager_hid_append_matching_dictionary(matcher,
+      kHIDPage_GenericDesktop,
+      kHIDUsage_GD_Joystick);
+   iohidmanager_hid_append_matching_dictionary(matcher,
+      kHIDPage_GenericDesktop,
+      kHIDUsage_GD_GamePad);
+   
+   IOHIDManagerSetDeviceMatchingMultiple(hid->ptr, matcher);
+   IOHIDManagerRegisterDeviceMatchingCallback(hid->ptr,iohidmanager_hid_device_matched, 0);
+   IOHIDManagerRegisterDeviceRemovalCallback(hid->ptr,iohidmanager_hid_device_removed, 0);
+   
+   CFRelease(matcher);
 
-				hid_list_t * ptr = devList;
-				if (devnew->lid < ptr->lid)
-				{
-					devnew->next = ptr;
-					devList      = devnew;
-				}
-				else
-				{
-					while ( ( ptr->lid < devnew->lid ) && (ptr->next != NULL) )
-						ptr = ptr->next;
-					devnew->next = ptr->next;
-					ptr->next    = devnew;
-				}
-			}
-		}
-	}
-
-	/* register devices */
-	hid_list_t * ptr = devList;
-	while (ptr != NULL)
-	{
-#if defined(__ppc__) || defined(__ppc64__)
-      iohidmanager_hid_device_add(ptr->device, hid);
-#else
-		iohidmanager_hid_device_add_device(ptr->device, hid);
-#endif
-
-		//printf("%d\n",ptr->lid);
-		ptr = ptr->next;
-		free(devList);
-		devList = ptr;
-	}
-	free(device_array);
-
-#if !(defined(__ppc__) || defined(__ppc64__))
-	/* register call back to dynamically add device plugged when retroarch is
-	 * running
-	 * those will be added after the one plugged when retroarch was launched,
-	 * and by order they are plugged in (so not deterministic) */
-	CFMutableArrayRef matcher = CFArrayCreateMutable(kCFAllocatorDefault, 0,
-		&kCFTypeArrayCallBacks);
-
-	if (!matcher)
-		return -1;
-
-	iohidmanager_hid_append_matching_dictionary(matcher,
-		kHIDPage_GenericDesktop,
-		kHIDUsage_GD_Joystick);
-	iohidmanager_hid_append_matching_dictionary(matcher,
-		kHIDPage_GenericDesktop,
-		kHIDUsage_GD_GamePad);
-
-	IOHIDManagerSetDeviceMatchingMultiple(hid->ptr, matcher);
-	IOHIDManagerRegisterDeviceMatchingCallback(hid->ptr,
-		iohidmanager_hid_device_add, 0);
-
-	CFRelease(matcher);
-#endif
 
    return 0;
 }

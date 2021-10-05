@@ -293,6 +293,8 @@ MSG_HASH(
    "برونداده"
    )
 #if defined(DINGUX)
+#if defined(RS90)
+#endif
 #endif
 
 /* Settings > Video > CRT SwitchRes */
@@ -313,6 +315,9 @@ MSG_HASH(
 
 #if defined(DINGUX)
 #endif
+
+/* Settings > Video > HDR */
+
 
 /* Settings > Video > Synchronization */
 
@@ -377,8 +382,6 @@ MSG_HASH(
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-#endif
 
 /* Settings > Input > Menu Controls */
 

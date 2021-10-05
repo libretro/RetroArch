@@ -112,6 +112,18 @@ MSG_HASH(
    "Mostrar Menu do Ambiente de trabalho"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   "Abre o menu tradicional do desktop."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Desativar o Modo Kiosk (Reinicialização necessária)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+   "Mostrar todas as definições relacionadas às configurações."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
    "Atualizador online"
    )
@@ -367,8 +379,16 @@ MSG_HASH(
    "Informação de rede"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
+   "Veja interface(s) de rede e endereços IP associados."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
    "Informações do sistema"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
+   "Ver informações específicas para o dispositivo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
@@ -428,22 +448,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
    "API Gráficos Necessária"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Em falta"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Atual"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Opcional"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Obrigatório"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
@@ -827,6 +831,14 @@ MSG_HASH(
    "Edição da revista Edge"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   "Mês de lançamento"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
+   "Ano de lançamento"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
    "Classificação BBFC"
    )
@@ -963,6 +975,10 @@ MSG_HASH(
    "Entrada"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
+   "Alterar as definições de um comando, teclado ou rato."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
    "Latência"
    )
@@ -1005,6 +1021,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    "Explorador de ficheiros"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
+   "Alterar definições do explorador de ficheiros."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -1261,6 +1281,8 @@ MSG_HASH(
    "Filtragem bilinear"
    )
 #if defined(DINGUX)
+#if defined(RS90)
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -1421,10 +1443,6 @@ MSG_HASH(
    "Lembrar posição e tamanho da janela"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Lembrar tamanho e posição da janela, habilitando isto tem precedência sobre a Escala do Janela."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    "Largura da janela"
    )
@@ -1454,10 +1472,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    "Dimensões personalizadas"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Valor do ponto flutuante para proporção de vídeo (largura / altura), usado se a proporção de aspeto estiver definida para \"Proporção de Aspeto personalizada\"."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1493,6 +1507,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "Personalizar a altura da janela de exibição que é usada se a opção 'Proporção de ecrã' estiver definida como 'Personalizado'."
    )
+
+/* Settings > Video > HDR */
+
 
 /* Settings > Video > Synchronization */
 
@@ -1697,8 +1714,6 @@ MSG_HASH(
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -4039,10 +4054,6 @@ MSG_HASH(
    "O ficheiro já existe. A guardar no buffer de cópia de segurança"
    )
 MSG_HASH(
-   MSG_PUBLIC_ADDRESS,
-   "Endereço público"
-   )
-MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
    "Colocando o disco na área de notificação"
    )
@@ -4259,14 +4270,6 @@ MSG_HASH(
    "Dispositivo desconectado de uma porta válida."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Fechado"
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Ejetado"
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "Transferindo"
    )
@@ -4317,10 +4320,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_SAVING_CONFIG_TO,
    "Falha ao guardar a configuração em"
-   )
-MSG_HASH(
-   MSG_FAILED_TO,
-   "Falha ao"
    )
 MSG_HASH(
    MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
@@ -4639,10 +4638,6 @@ MSG_HASH(
    "Lendo a primeira pista de dados..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "Recebido"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "A gravação terminou devido ao redimensionamento."
    )
@@ -4819,10 +4814,6 @@ MSG_HASH(
    "Sem interrupções."
    )
 MSG_HASH(
-   MSG_UNRECOGNIZED_COMMAND,
-   "Comando não reconhecido"
-   )
-MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
    "Utilizando o nome do núcleo para uma nova configuração."
    )
@@ -4853,18 +4844,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Falha no cálculo do tamanho da janela de visualização! Continuarão a serem utilizados dados em bruto. Provavelmente, irão surgir erros ..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "Ícone do disco virtual na área de notificações."
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "Falha"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "Sucesso"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -5040,6 +5019,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
    "Tela Inferior 3DS"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_RESUME,
+   "Continuar"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_SAVE_STATE,
+   "Criar ponto de\nrestauração"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_LOAD_STATE,
+   "Carregar ponto de\nrestauração"
    )
 #endif
 #ifdef HAVE_QT

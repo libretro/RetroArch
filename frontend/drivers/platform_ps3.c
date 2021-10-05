@@ -101,7 +101,7 @@ static void callback_sysutil_exit(uint64_t status,
             if (frontend)
                frontend->shutdown = frontend_ps3_shutdown;
 
-            rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+            retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
          }
          break;
    }

@@ -1162,6 +1162,7 @@ void fill_pathname_abbreviated_or_relative(char *out_path, const char *in_refpat
    
    in_path_conformed[0]    = '\0';
    in_refpath_conformed[0] = '\0';
+   expanded_path[0]        = '\0';
    absolute_path[0]        = '\0';
    relative_path[0]        = '\0';
    abbreviated_path[0]     = '\0';

@@ -18,6 +18,7 @@
 #define _MENU_SHADER_MANAGER_H
 
 #include <retro_common_api.h>
+#include <lists/string_list.h>
 
 #include "../gfx/video_shader_parse.h"
 
@@ -29,6 +30,13 @@ enum auto_shader_type
    SHADER_PRESET_CORE,
    SHADER_PRESET_PARENT,
    SHADER_PRESET_GAME
+};
+
+enum auto_shader_operation
+{
+   AUTO_SHADER_OP_SAVE = 0,
+   AUTO_SHADER_OP_REMOVE,
+   AUTO_SHADER_OP_EXISTS
 };
 
 struct video_shader *menu_shader_get(void);
@@ -140,6 +148,37 @@ bool menu_shader_manager_auto_preset_exists(
       enum auto_shader_type type,
       const char *dir_video_shader,
       const char *dir_menu_config);
+
+bool menu_shader_manager_save_preset_internal(
+      bool save_reference,
+      const struct video_shader *shader,
+      const char *basename,
+      const char *dir_video_shader,
+      bool apply,
+      const char **target_dirs,
+      size_t num_target_dirs);
+
+bool menu_shader_manager_operate_auto_preset(
+      struct retro_system_info *system,
+      bool video_shader_preset_save_reference_enable,
+      enum auto_shader_operation op,
+      const struct video_shader *shader,
+      const char *dir_video_shader,
+      const char *dir_menu_config,
+      enum auto_shader_type type, bool apply);
+
+void menu_driver_set_last_shader_path_int(
+      const char *shader_path,
+      enum rarch_shader_type *type,
+      char *shader_dir, size_t dir_len,
+      char *shader_file, size_t file_len);
+
+bool dir_init_shader_internal(
+      bool shader_remember_last_dir,
+      struct rarch_dir_shader_list *dir_list,
+      const char *shader_dir,
+      const char *shader_file_name,
+      bool show_hidden_files);
 
 RETRO_END_DECLS
 

@@ -16,7 +16,7 @@ extern "C" {
   /* generates a hash from a block of memory.
    * returns non-zero on success, or zero on failure.
    */
-  int rc_hash_generate_from_buffer(char hash[33], int console_id, uint8_t* buffer, size_t buffer_size);
+  int rc_hash_generate_from_buffer(char hash[33], int console_id, const uint8_t* buffer, size_t buffer_size);
 
   /* generates a hash from a file.
    * returns non-zero on success, or zero on failure.

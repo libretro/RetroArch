@@ -26,22 +26,12 @@
 #include "../../config.h"
 #endif
 
-#ifdef HAVE_OPENGLES2
-#include <GLES2/gl2.h>
-#elif HAVE_OPENGLES3
-#include <GLES3/gl3.h>
-#endif
-
 #ifdef HAVE_EGL
 #include <EGL/egl.h>
 #endif
 
 #ifdef HAVE_EGL
 #include "../common/egl_common.h"
-#endif
-
-#ifdef HAVE_OPENGLES
-#include "../common/gl_common.h"
 #endif
 
 #include "../../configuration.h"

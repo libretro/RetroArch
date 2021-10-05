@@ -450,20 +450,20 @@ MSG_HASH(
    "API gráficas necesarias"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Faltante"
+   MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
+   "No encontrado, necesario:"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Presente"
+   MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   "No encontrado, necesario:"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Opcional"
+   MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
+   "Presente, necesario:"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Necesario"
+   MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   "Presente, opcional:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
@@ -570,7 +570,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-   "Altura de imagen (mm)"
+   "Alto de imagen (mm)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
@@ -1269,6 +1269,10 @@ MSG_HASH(
    "Cambia los ajustes del escalado de vídeo."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
+   "Cambia los ajustes de vídeo relacionados con el HDR."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    "Sincronización"
    )
@@ -1337,6 +1341,24 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "Vecino más próximo"
    )
+#if defined(RS90)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Interpolación de imagen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Indica el método de interpolación de imagen que se utilizará cuando el ajuste «Escalar usando números enteros» esté desactivado. «Vecino más cercano» afecta en menor medida al rendimiento."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "Vecino más próximo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   "Semilineal"
+   )
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -1449,6 +1471,10 @@ MSG_HASH(
    "Índice de la GPU"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   "Selecciona la tarjeta gráfica que quieras utilizar."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "Frecuencia de actualización vertical"
    )
@@ -1479,7 +1505,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
-   "Ajusta la frecuencia de actualización vertical de la imagen. La opción 50 Hz mostrará una imagen más fluida al ejecutar contenidos en formato PAL."
+   "Establece la frecuencia de actualización vertical de la imagen. La opción 50 Hz mostrará una imagen más fluida al ejecutar contenidos en formato PAL."
    )
 #endif
 MSG_HASH(
@@ -1515,15 +1541,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   "Establece el ancho en pantalla completa. En caso de no asignar un valor, se usará la resolución del escritorio."
+   "Establece una anchura personalizada para la imagen a pantalla completa. En caso de no asignar un valor, se usará la resolución del escritorio."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   "Altura en pantalla completa"
+   "Alto en pantalla completa"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   "Establece la altura a pantalla completa. En caso de no asignar un valor, se usará la resolución del escritorio."
+   "Establece una altura personalizada para la imagen a pantalla completa. En caso de no asignar un valor, se usará la resolución del escritorio."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
@@ -1542,7 +1568,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   "Cambia el tamaño de la ventana de forma relativa al tamaño de pantalla asignado por el núcleo. También se puede configurar un alto y ancho de pantalla personalizados más abajo."
+   "Establece el tamaño de la ventana al múltiplo especificado del tamaño del área de visualización del núcleo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -1558,7 +1584,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Recuerda el tamaño y la posición de la ventana, ignorando la configuración del ajuste Escala en ventana."
+   "Muestra todos los contenidos en una ventana de tamaño fijo, cuyas dimensiones estarán especificadas por los valores de «Ancho de ventana» y «Alto de ventana», y guardará el tamaño y posición de la ventana actual al cerrar RetroArch. Al desactivar esta opción, el tamaño de la ventana se cambiará de forma dinámica según el ajuste «Escala en ventana»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Usar un tamaño de ventana personalizado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Muestra todos los contenidos en una ventana de tamaño fijo, cuyas dimensiones estarán especificadas por los valores de «Ancho de ventana» y «Alto de ventana». Al desactivar esta opción, el tamaño de la ventana se cambiará de forma dinámica según el ajuste «Escala en ventana»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1566,15 +1600,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   "Establece un ancho personalizado para la ventana."
+   "Establece una anchura personalizada para la ventana."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   "Altura de la ventana"
+   "Alto de la ventana"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
    "Establece una altura personalizada para la ventana."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Ancho máximo de ventana"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Establece la anchura máxima de la ventana al reescalarla automáticamente según el valor de «Escala en ventana»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Alto máximo de ventana"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Establece la altura máxima de la ventana al reescalarla automáticamente según el valor de «Escala en ventana»."
    )
 
 /* Settings > Video > Scaling */
@@ -1593,7 +1643,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Hace que el escalado por números enteros redondee siempre a un valor superior en vez de a uno inferior."
+   "Obliga al escalado por números enteros a redondear siempre a un valor superior en vez de a uno inferior."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -1605,7 +1655,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Indica el valor en coma flotante (ancho/alto) de la relación de aspecto si se ha elegido la opción «Personalizado»."
+   "Valor en coma flotante (ancho/alto) de la relación de aspecto del vídeo si su valor es «Personalizado»."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1623,7 +1673,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Indica el diferencial de posición respecto al eje X de la pantalla.\nEste valor se ignorará si la opción «Escalar usando números enteros» está activada."
+   "Indica el diferencial de posición respecto al eje X del área de visualización.\nEste valor se ignorará si la opción «Escalar usando números enteros» está activada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1631,7 +1681,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Indica el diferencial de posición respecto al eje Y de la pantalla.\nEste valor se ignorará si la opción «Escalar usando números enteros» está activada."
+   "Indica el diferencial de posición respecto al eje Y del área de visualización.\nEste valor se ignorará si la opción «Escalar usando números enteros» está activada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -1639,15 +1689,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   "Ancho personalizado de la imagen. Este valor se utilizará si se ha elegido la opción «Personalizado» para la relación de aspecto."
+   "Establece la anchura personalizada del área de visualización. Este valor se utilizará si se ha elegido «Personalizado» en el ajuste «Relación de aspecto»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   "Relación de aspecto personalizada (altura)"
+   "Relación de aspecto personalizada (alto)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   "Altura personalizada de la imagen. Este valor se utilizará si se ha elegido la opción «Personalizado» para la relación de aspecto."
+   "Establece la altura personalizada del área de visualización. Este valor se utilizará si se ha elegido «Personalizado» en el ajuste «Relación de aspecto»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
@@ -1656,6 +1706,49 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    "Quita unos píxeles a los bordes de la imagen que los desarrolladores suelen dejar en blanco o con basura."
+   )
+
+/* Settings > Video > HDR */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
+   "Activar HDR"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "Activa el HDR si la pantalla es compatible con este sistema."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
+   "Luminancia máxima"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
+   "Establece la luminancia máxima (en cd/m²) que puede reproducir tu monitor. Para averiguar cuál es la luminancia máxima de tu monitor, visita la web RTings."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Luminosidad de blanco «papel»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Establece la luminancia con la que el blanco de una hoja de papel tendría un texto legible, o la luminancia máxima del rango SDR (rango dinámico estándar). Sirve para ajustarse a la variación en la iluminación de tu entorno."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
+   "Contraste"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
+   "Controla el gama/contraste del HDR. Aumenta el rango general de colores de la imagen entre las áreas más brillantes y las más oscuras. A mayor contraste de HDR, mayor diferencia, mientras que con un contraste menor, la imagen se hará más pálida. Este ajuste ayuda a calibrar la imagen a gusto del usuario."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "Ampliar gama"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "Cuando el espacio de color es convertido a espacio lineal, esta opción decide si se debería utilizar una gama de colores expandida y compatible el formato HDR10."
    )
 
 /* Settings > Video > Synchronization */
@@ -1706,7 +1799,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   "Ajusta la cantidad de fotogramas que puede utilizar la CPU para anticiparse a la GPU al utilizar la sincronía estricta de GPU."
+   "Establece la cantidad de fotogramas que puede utilizar la CPU para anticiparse a la GPU al utilizar la sincronía estricta de GPU."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
@@ -1758,6 +1851,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    "Sonidos del menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   "Cambia los ajustes de sonido del menú."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
@@ -1933,7 +2030,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_VOLUME,
-   "Ajusta el volumen de salida (en porcentaje)."
+   "Establece el volumen de salida (en porcentaje)."
    )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
@@ -2065,6 +2162,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
    "Activa la entrada de acelerómetros, giroscopios y sensores de iluminación si el hardware actual los soporta. Podría afectar al rendimiento o aumentar el consumo de energía en algunas plataformas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   "Captura automática del ratón"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
+   "Captura el ratón automáticamente cuando la aplicación pase a estar en primer plano."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
@@ -2201,16 +2306,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "Activar vibración de dispositivo (en núcleos compatibles)"
    )
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
-   "Intensidad de vibración (es necesario reiniciar)"
+   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
+   "Intensidad de vibración"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN,
+   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    "Especifica la fuerza de los efectos de respuesta háptica."
    )
-#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -2256,6 +2359,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    "Asigna una combinación de botones en el mando para mostrar el menú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   "Combinación de mando para cerrar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   "Asigna una combinación de botones en el mando para cerrar RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
@@ -2867,6 +2978,14 @@ MSG_HASH(
    "Verifica que el firmware necesario esté disponible antes de cargar el contenido."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
+   "Categorías en las opciones de los núcleos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
+   "Permite a los núcleos presentar las opciones en submenús agrupados por categorías. Nota: es necesario volver a cargar el núcleo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
    "Caché de archivos de información de núcleos"
    )
@@ -3111,7 +3230,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   "Ajusta el nivel de registro del front-end. Si el valor de un registro es inferior a este, será ignorado."
+   "Establece el nivel de registro del front-end. Si el valor de un registro es inferior a este, será ignorado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
@@ -3119,7 +3238,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
-   "Asigna el nivel de registro de los núcleos. Si el valor de un registro del núcleo es inferior a este, será ignorado."
+   "Establece el nivel de registro de los núcleos. Si el valor de un registro del núcleo es inferior a este, será ignorado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
@@ -4047,7 +4166,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
-   "Indica el retraso inicial (en milisegundos) entre que se pulsa un botón de dirección y el desplazamiento."
+   "Indica el retraso inicial (en milisegundos) entre la pulsación de un botón de dirección y el desplazamiento correspondiente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -4194,7 +4313,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
-   "Establecer contraseña para activar la sección de Ajustes"
+   "Contraseña para activar la sección de Ajustes"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
@@ -4442,6 +4561,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
    "Muestra la opción «Opciones»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "Mostrar Escribir opciones en disco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "Muestra la opción «Escribir opciones en disco» dentro del menú Opciones -> Administrar opciones del núcleo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
@@ -5299,7 +5426,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-   "Ajusta el formato de la fecha y hora mostradas en la información de la última partida. Las opciones AM/PM afectarán levemente al rendimiento en algunas plataformas."
+   "Establece el formato de la fecha y hora mostradas en la información de la última partida. Las opciones AM/PM afectarán levemente al rendimiento en algunas plataformas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
@@ -5377,6 +5504,14 @@ MSG_HASH(
    "Confirma las asociaciones a núcleos y elimina los elementos no válidos y duplicados."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "Actualizar lista de reproducción"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "Añade contenidos nuevos y elimina los elementos no válidos repitiendo la última operación de búsqueda manual con la que se creó o modificó la lista de reproducción."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    "Eliminar lista de reproducción"
    )
@@ -5417,7 +5552,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_LANGUAGE,
-   "Ajusta el idioma de la interfaz de usuario."
+   "Establece el idioma de la interfaz de usuario."
    )
 
 /* Settings > User > Privacy */
@@ -5949,6 +6084,14 @@ MSG_HASH(
    "Si se activa esta opción, se eliminará cualquier lista de reproducción existente antes de buscar contenidos. Al desactivarla, se preservarán los elementos ya existentes en las listas de reproducción y solo se añadirán aquellos contenidos que no se encuentren."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   "Validar elementos ya existentes"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   "Al activar esta opción, se comprobarán los elementos de todas las listas de reproducción existentes antes de buscar contenidos nuevos. Todo elemento que apunte a un contenido desaparecido o a archivos con extensiones no válidas será eliminado."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
    "Comenzar búsqueda"
    )
@@ -6343,6 +6486,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
    "Cambia todas las opciones del núcleo a su configuración predeterminada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
+   "Escribir opciones en disco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
+   "Obliga a que se guarden los ajustes actuales al archivo activo de opciones, garantizando que se conserve la configuración en caso de que un fallo en el núcleo provoque un cierre inesperado del front-end."
    )
 
 /* - Legacy (unused) */
@@ -7009,6 +7160,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "No se ha iniciado sesión"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
+   "Error de red"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
+   "Juego desconocido"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
@@ -9259,6 +9418,10 @@ MSG_HASH(
    "Puerto"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
+   "Nombre del dispositivo del puerto %d: %s (n.º %d)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
    "Ajustes de trucos"
    )
@@ -9812,19 +9975,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM,
-   "Conexión recibida desde: \"%s\""
+   "Conexión recibida desde: «%s»"
    )
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM_NAME,
-   "Conexión recibida desde: \"%s (%s)\""
+   "Conexión recibida desde: «%s (%s)»"
    )
 MSG_HASH(
    MSG_PUBLIC_ADDRESS,
-   "Asignación de puertos completada"
+   "Asignación de puertos para juego en red completada"
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
-   "Error al asignar puertos"
+   "Error al asignar puertos UPNP para juego en red"
    )
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
@@ -10043,6 +10206,30 @@ MSG_HASH(
    "Se ha limpiado la lista de reproducción: "
    )
 MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_MISSING_CONFIG,
+   "Error al actualizar, la lista de reproducción no contiene un historial de búsqueda válido: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
+   "Error al actualizar, el directorio de contenidos no es válido o no existe: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_SYSTEM_NAME,
+   "Error al actualizar, el nombre del sistema no es válido o no existe: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CORE,
+   "Error al actualizar, el núcleo no es válido: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_DAT_FILE,
+   "Error al actualizar, el archivo DAT de arcade no es válido o no existe: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE,
+   "Error al actualizar, el archivo DAT de arcade es demasiado grande (no hay suficiente memoria): "
+   )
+MSG_HASH(
    MSG_ADDED_TO_FAVORITES,
    "Favorito agregado"
    )
@@ -10163,6 +10350,14 @@ MSG_HASH(
    "Todas las opciones del núcleo han sido restablecidas."
    )
 MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSHED,
+   "Se han guardado las opciones del núcleo en:"
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSH_FAILED,
+   "Error al guardar las opciones del núcleo en:"
+   )
+MSG_HASH(
    MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
    "No se encontró otro controlador."
    )
@@ -10208,7 +10403,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DETECTED_VIEWPORT_OF,
-   "Se ha detectado una ventana con resolución"
+   "Se ha detectado un área de visualización con resolución"
    )
 MSG_HASH(
    MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
@@ -10220,11 +10415,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DISK_CLOSED,
-   "Cerrando"
+   "Se ha cerrado la bandeja de disco virtual."
    )
 MSG_HASH(
    MSG_DISK_EJECTED,
-   "Expulsando"
+   "Se ha abierto la bandeja de disco virtual."
    )
 MSG_HASH(
    MSG_DOWNLOADING,
@@ -10289,10 +10484,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_SAVING_CONFIG_TO,
    "Error al guardar configuración en"
-   )
-MSG_HASH(
-   MSG_FAILED_TO,
-   "Error:"
    )
 MSG_HASH(
    MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
@@ -10385,6 +10576,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_SAVE_SRAM,
    "Error al guardar la SRAM"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_SRAM,
+   "Error al cargar la SRAM"
    )
 MSG_HASH(
    MSG_FAILED_TO_SAVE_STATE_TO,
@@ -10639,10 +10834,6 @@ MSG_HASH(
    "Leyendo la primera pista de datos..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "recibido"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "Grabación terminada debido al cambio de tamaño."
    )
@@ -10856,7 +11047,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNRECOGNIZED_COMMAND,
-   "Comando no reconocido"
+   "Se ha recibido un comando no reconocido: «%s».\n"
    )
 MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
@@ -10888,27 +11079,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
-   "¡Error al calcular el tamaño de la ventana! Se continuará utilizando datos en bruto. Probablemente no funcionará bien..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "la bandeja de discos virtual."
+   "¡Error al calcular el tamaño del área de visualización! Se continuará utilizando datos en bruto. Probablemente no funcionará bien..."
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "expulsar"
+   "Error al abrir la bandeja de discos virtual."
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "cerrar"
+   "Error al cerrar la bandeja de discos virtual."
    )
 MSG_HASH(
-   MSG_FAILED,
-   "fallida"
+   MSG_AUTOLOADING_SAVESTATE_FAILED,
+   "Error al cargar automáticamente el guardado rápido «%s»."
    )
 MSG_HASH(
-   MSG_SUCCEEDED,
-   "completada"
+   MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
+   "Se ha cargado automáticamente el guardado rápido «%s»."
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -11203,6 +11390,10 @@ MSG_HASH(
    "Buscando contenido: "
    )
 MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP,
+   "Comprobando los elementos actuales: "
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
    "Buscando: "
    )
@@ -11298,6 +11489,10 @@ MSG_HASH(
    MSG_UNSUPPORTED_VIDEO_MODE,
    "Modo de vídeo no soportado"
    )
+MSG_HASH(
+   MSG_CORE_INFO_CACHE_UNSUPPORTED,
+   "No se puede escribir en el directorio de información del núcleo: se desactivará la caché de información del núcleo"
+   )
 
 /* Lakka */
 
@@ -11325,10 +11520,6 @@ MSG_HASH(
    "Joy-Con separados"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-   "Estado del almacenamiento interno"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
    "Personalizar escala de widgets gráficos"
    )
@@ -11339,6 +11530,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
    "Resolución de pantalla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
+   "Selecciona el modo de vídeo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
@@ -11578,11 +11773,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_READ_WRITE,
-   "Lectura/escritura"
+   "Estado del almacenamiento interno: lectura/escritura"
    )
 MSG_HASH(
    MSG_READ_ONLY,
-   "Solo lectura"
+   "Estado del almacenamiento interno: solo lectura"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
@@ -11752,6 +11947,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
    "2D (alta resolución)"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_DEFAULT,
+   "Toca aquí para acceder\nal menú de RetroArch"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
+   "No se ha encontrado\nel archivo bottom_menu.png\nen la carpeta assets/ctr."
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
+   "No hay datos"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
+   "No hay\ncapturas\nde pantalla"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_RESUME,
+   "Continuar"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_SAVE_STATE,
+   "Crear guardado\nrápido"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_LOAD_STATE,
+   "Cargar\nguardado\nrápido"
    )
 #endif
 #ifdef HAVE_QT
