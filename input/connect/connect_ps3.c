@@ -175,8 +175,8 @@ static void ds3_packet_handler(void *data, uint8_t *packet, uint16_t size)
 
    if (size > sizeof(instance->data))
    {
-      RARCH_ERR("[ds3]: Expecting packet to be %d but was %d\n",
-         sizeof(instance->data), size);
+      RARCH_ERR("[ds3]: Expecting packet to be %ld but was %d\n",
+         (long)sizeof(instance->data), size);
       return;
    }
 
