@@ -10267,6 +10267,60 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
 
          break;
 
+      case RETRO_ENVIRONMENT_SET_VARIABLE:
+         {
+            unsigned log_level               = settings->uints.libretro_log_level;
+            const struct retro_variable *var = (const struct retro_variable*)data;
+            size_t opt_idx;
+            size_t val_idx;
+
+            /* If core passes NULL to the callback, return
+             * value indicates whether callback is supported */
+            if (!var)
+               return true;
+
+            if (string_is_empty(var->key) ||
+                string_is_empty(var->value))
+               return false;
+
+            if (!runloop_state.core_options)
+            {
+               RARCH_LOG("[Environ]: SET_VARIABLE %s: not implemented.\n",
+                     var->key);
+               return false;
+            }
+
+            /* Check whether key is valid */
+            if (!core_option_manager_get_idx(runloop_state.core_options,
+                  var->key, &opt_idx))
+            {
+               RARCH_LOG("[Environ]: SET_VARIABLE %s: invalid key.\n",
+                     var->key);
+               return false;
+            }
+
+            /* Check whether value is valid */
+            if (!core_option_manager_get_val_idx(runloop_state.core_options,
+                  opt_idx, var->value, &val_idx))
+            {
+               RARCH_LOG("[Environ]: SET_VARIABLE %s: invalid value: %s\n",
+                     var->key, var->value);
+               return false;
+            }
+
+            /* Update option value if core-requested value
+             * is not currently set */
+            if (val_idx != runloop_state.core_options->opts[opt_idx].index)
+               core_option_manager_set_val(runloop_state.core_options,
+                     opt_idx, val_idx, true);
+
+            if (log_level == RETRO_LOG_DEBUG)
+               RARCH_LOG("[Environ]: SET_VARIABLE %s:\n\t%s\n",
+                     var->key, var->value);
+         }
+
+         break;
+
       /* SET_VARIABLES: Legacy path */
       case RETRO_ENVIRONMENT_SET_VARIABLES:
          RARCH_LOG("[Environ]: SET_VARIABLES.\n");
