@@ -178,6 +178,14 @@ const char * hidpad_ps4_hori_mini_get_name(void *data)
 	return "HORI mini wired PS4";
 }
 
+static int32_t hidpad_ps4_hori_mini_button(void *data, uint16_t joykey)
+{
+   struct hidpad_ps4_hori_mini_data *pad = (struct hidpad_ps4_hori_mini_data*)data;
+   if (!pad || joykey > 31)
+      return 0;
+   return pad->buttons & (1 << joykey);
+}
+
 pad_connection_interface_t pad_connection_ps4_hori_mini = {
    hidpad_ps4_hori_mini_init,
    hidpad_ps4_hori_mini_deinit,
@@ -186,4 +194,6 @@ pad_connection_interface_t pad_connection_ps4_hori_mini = {
    hidpad_ps4_hori_mini_get_buttons,
    hidpad_ps4_hori_mini_get_axis,
    hidpad_ps4_hori_mini_get_name,
+   hidpad_ps4_hori_mini_button, /* button */
+   false
 };

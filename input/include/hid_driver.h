@@ -54,31 +54,4 @@ struct hid_driver
    int32_t (*read)(void *handle, void *buf, size_t size);
 };
 
-#define HID_GET_BUTTONS(pad, state) hid_instance.os_driver->get_buttons( \
-   hid_instance.os_driver_data, pad, state)
-#define HID_BUTTON(pad, key) hid_instance.os_driver->button( \
-   hid_instance.os_driver_data, pad, key)
-#define HID_AXIS(pad, a) hid_instance.os_driver->axis( \
-   hid_instance.os_driver_data, pad, (a))
-#define HID_PAD_NAME(pad) \
-   hid_instance.os_driver->name(hid_instance.os_driver_data, pad)
-#define HID_SET_PROTOCOL(pad, protocol) \
-   hid_instance.os_driver->set_protocol(pad, protocol)
-#define HID_SET_REPORT(pad, rpttype, rptid, data, len) \
-   hid_instance.os_driver->set_report(pad, rpttype, rptid, data, len)
-#define HID_SEND_CONTROL(pad, data, len) \
-   hid_instance.os_driver->send_control(pad, data, len)
-#define HID_POLL() hid_instance.os_driver->poll( \
-   hid_instance.os_driver_data)
-#define HID_MAX_SLOT() hid_instance.max_slot
-#define HID_PAD_CONNECTION_PTR(slot) &(hid_instance.pad_list[(slot)])
-
-struct hid_driver_instance {
-   hid_driver_t *os_driver;
-   void *os_driver_data;
-   input_device_driver_t *pad_driver;
-   joypad_connection_t *pad_list;
-   unsigned max_slot;
-};
-
 #endif /* HID_DRIVER_H__ */

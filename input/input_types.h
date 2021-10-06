@@ -106,9 +106,6 @@ typedef struct input_keyboard_line input_keyboard_line_t;
 typedef struct rarch_joypad_info rarch_joypad_info_t;
 typedef struct input_driver input_driver_t;
 typedef struct input_keyboard_ctx_wait input_keyboard_ctx_wait_t;
-
-typedef struct joypad_connection joypad_connection_t;
-typedef struct pad_connection_listener_interface pad_connection_listener_t;
 typedef struct turbo_buttons turbo_buttons_t;
-
+typedef struct joypad_connection joypad_connection_t;
 #endif /* __INPUT_TYPES__H */

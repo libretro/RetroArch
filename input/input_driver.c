@@ -306,6 +306,9 @@ hid_driver_t *hid_drivers[] = {
 #ifdef HW_RVL
    &wiiusb_hid,
 #endif
+#if defined(WIIU)
+   &wiiu_hid,
+#endif
    &null_hid,
    NULL,
 };
@@ -3294,22 +3297,13 @@ void input_overlay_init(void)
 }
 #endif
 
-void set_connection_listener(pad_connection_listener_t *listener)
-{
-   input_driver_st.pad_connection_listener = listener;
-}
-
 void input_pad_connect(unsigned port, input_device_driver_t *driver)
 {
-   input_driver_state_t *input_st = &input_driver_st;
    if (port >= MAX_USERS || !driver)
    {
       RARCH_ERR("[Input]: input_pad_connect: bad parameters\n");
       return;
    }
-
-   if (input_st->pad_connection_listener)
-      input_st->pad_connection_listener->connected(port, driver);
 
    input_autoconfigure_connect(driver->name(port), NULL, driver->ident,
           port, 0, 0);

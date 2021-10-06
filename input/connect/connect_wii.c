@@ -26,7 +26,6 @@
 
 #include "joypad_connection.h"
 #include "../input_defines.h"
-#include "../common/hid/hid_device_driver.h"
 
 /* wiimote state flags*/
 #define WIIMOTE_STATE_DEV_FOUND              0x0001
@@ -723,6 +722,8 @@ static void hidpad_wii_set_rumble(void *data,
    (void)strength;
 }
 
+/* TODO: implement hidpad_wii_button(). */
+
 pad_connection_interface_t pad_connection_wii = {
    hidpad_wii_init,
    hidpad_wii_deinit,
@@ -730,5 +731,7 @@ pad_connection_interface_t pad_connection_wii = {
    hidpad_wii_set_rumble,
    hidpad_wii_get_buttons,
    hidpad_wii_get_axis,
-   NULL,
+   NULL, /* get_name */
+   NULL, /* button */
+   false,
 };

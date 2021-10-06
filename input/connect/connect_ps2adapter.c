@@ -174,6 +174,14 @@ const char * hidpad_ps2adapter_get_name(void *data)
 	return "PS2/PSX Controller Adapter";
 }
 
+static int32_t hidpad_ps2adapter_button(void *data, uint16_t joykey)
+{
+   struct hidpad_ps2adapter_data *pad = (struct hidpad_ps2adapter_data*)data;
+   if (!pad || joykey > 31)
+      return 0;
+   return pad->buttons & (1 << joykey);
+}
+
 pad_connection_interface_t pad_connection_ps2adapter = {
    hidpad_ps2adapter_init,
    hidpad_ps2adapter_deinit,
@@ -182,4 +190,6 @@ pad_connection_interface_t pad_connection_ps2adapter = {
    hidpad_ps2adapter_get_buttons,
    hidpad_ps2adapter_get_axis,
    hidpad_ps2adapter_get_name,
+   hidpad_ps2adapter_button,
+   false,
 };

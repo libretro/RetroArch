@@ -183,6 +183,14 @@ const char * hidpad_psxadapter_get_name(void *data)
 	return "PSX to PS3 Controller Adapter";
 }
 
+static int32_t hidpad_psxadapter_button(void *data, uint16_t joykey)
+{
+   struct hidpad_psxadapter_data *pad = (struct hidpad_psxadapter_data*)data;
+   if (!pad || joykey > 31)
+      return 0;
+   return pad->buttons & (1 << joykey);
+}
+
 pad_connection_interface_t pad_connection_psxadapter = {
    hidpad_psxadapter_init,
    hidpad_psxadapter_deinit,
@@ -191,4 +199,6 @@ pad_connection_interface_t pad_connection_psxadapter = {
    hidpad_psxadapter_get_buttons,
    hidpad_psxadapter_get_axis,
    hidpad_psxadapter_get_name,
+   hidpad_psxadapter_button,
+   false
 };
