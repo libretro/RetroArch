@@ -488,10 +488,6 @@ bool video_driver_init_input(
       settings_t *settings,
       bool verbosity_enabled);
 
-bool input_driver_grab_mouse(void);
-
-bool input_driver_ungrab_mouse(void);
-
 /**
  * Get an enumerated list of all joypad driver names
  *

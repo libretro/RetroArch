@@ -7421,8 +7421,13 @@ bool command_event(enum event_command cmd, void *data)
                {
                   input_driver_state_t *input_st = input_state_get_ptr();
                   video_driver_show_mouse();
-                  if (input_driver_ungrab_mouse())
+                  if (input_st && input_st->current_driver &&
+                        input_st->current_driver->grab_mouse)
+                  {
+                     input_st->current_driver->grab_mouse(
+                           input_st->current_data, false);
                      input_st->grab_mouse_state = false;
+                  }
                }
             }
 #endif
@@ -8382,15 +8387,30 @@ bool command_event(enum event_command cmd, void *data)
             {
                video_driver_hide_mouse();
                if (!settings->bools.video_windowed_fullscreen)
-                  if (input_driver_grab_mouse())
+               {
+                  if ((input_st->current_driver &&
+                           input_st->current_driver->grab_mouse))
+                  {
+                     input_st->current_driver->grab_mouse(
+                           input_st->current_data, true);
                      input_st->grab_mouse_state = true;
+                  }
+               }
             }
             else
             {
                video_driver_show_mouse();
                if (!settings->bools.video_windowed_fullscreen)
-                  if (input_driver_ungrab_mouse())
+               {
+                  input_driver_state_t *input_st = input_state_get_ptr();
+                  if (input_st && input_st->current_driver &&
+                        input_st->current_driver->grab_mouse)
+                  {
+                     input_st->current_driver->grab_mouse(
+                           input_st->current_data, false);
                      input_st->grab_mouse_state = false;
+                  }
+               }
             }
 
             p_rarch->rarch_is_switching_display_mode = false;
@@ -8561,13 +8581,23 @@ bool command_event(enum event_command cmd, void *data)
 
             if (grab_mouse_state)
             {
-               if ((ret = input_driver_grab_mouse()))
+               if ((ret = input_st->current_driver &&
+input_st->current_driver->grab_mouse))
+               {
+                  input_st->current_driver->grab_mouse(
+                        input_st->current_data, true);
                   input_st->grab_mouse_state = true;
+               }
             }
             else
             {
-               if ((ret = input_driver_ungrab_mouse()))
+               if ((ret = input_st && input_st->current_driver &&
+                     input_st->current_driver->grab_mouse))
+               {
+                  input_st->current_driver->grab_mouse(
+                        input_st->current_data, false);
                   input_st->grab_mouse_state = false;
+               }
             }
 
             if (!ret)
@@ -8660,16 +8690,26 @@ bool command_event(enum event_command cmd, void *data)
 
                if (input_st->game_focus_state.enabled)
                {
-                  if (input_driver_grab_mouse())
+                  if ((input_st->current_driver &&
+                           input_st->current_driver->grab_mouse))
+                  {
+                     input_st->current_driver->grab_mouse(
+                           input_st->current_data, true);
                      input_st->grab_mouse_state = true;
+                  }
                   video_driver_hide_mouse();
                }
                /* Ungrab only if windowed and auto mouse grab is disabled */
                else if (!video_fullscreen &&
                      !settings->bools.input_auto_mouse_grab)
                {
-                  if (input_driver_ungrab_mouse())
+                  if ((input_st && input_st->current_driver &&
+                           input_st->current_driver->grab_mouse))
+                  {
+                     input_st->current_driver->grab_mouse(
+                           input_st->current_data, false);
                      input_st->grab_mouse_state = false;
+                  }
                   video_driver_show_mouse();
                }
 
@@ -18410,15 +18450,27 @@ static bool video_driver_init_internal(
    if (input_st->grab_mouse_state)
    {
       video_driver_hide_mouse();
-      if (input_driver_grab_mouse())
+      if ((input_st->current_driver &&
+               input_st->current_driver->grab_mouse))
+      {
+         input_st->current_driver->grab_mouse(
+               input_st->current_data, true);
          input_st->grab_mouse_state = true;
+      }
    }
    else if (video.fullscreen)
    {
       video_driver_hide_mouse();
       if (!settings->bools.video_windowed_fullscreen)
-         if (input_driver_grab_mouse())
+      {
+         if ((input_st->current_driver &&
+                  input_st->current_driver->grab_mouse))
+         {
+            input_st->current_driver->grab_mouse(
+                  input_st->current_data, true);
             input_st->grab_mouse_state = true;
+         }
+      }
    }
 
    return true;
