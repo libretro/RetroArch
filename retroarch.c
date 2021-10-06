@@ -7290,8 +7290,8 @@ bool command_event(enum event_command cmd, void *data)
          return true;
 #endif
       case CMD_EVENT_LOAD_STATE:
-#ifdef HAVE_BSV_MOVIE
          {
+#ifdef HAVE_BSV_MOVIE
             /* Immutable - disallow savestate load when
              * we absolutely cannot change game state. */
             input_driver_state_t *input_st   = input_state_get_ptr();
