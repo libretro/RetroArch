@@ -3762,7 +3762,8 @@ static void path_init_savefile_internal(
       path_init_savefile_rtc(global->name.savefile);
 }
 
-static void path_fill_names(struct rarch_state *p_rarch)
+static void path_fill_names(struct rarch_state *p_rarch,
+      input_driver_state_t *input_st)
 {
    global_t            *global = &p_rarch->g_extern;
 
@@ -3770,9 +3771,9 @@ static void path_fill_names(struct rarch_state *p_rarch)
 
 #ifdef HAVE_BSV_MOVIE
    if (global)
-      strlcpy(p_rarch->bsv_movie_state.movie_path,
+      strlcpy(input_st->bsv_movie_state.movie_path,
             global->name.savefile,
-            sizeof(p_rarch->bsv_movie_state.movie_path));
+            sizeof(input_st->bsv_movie_state.movie_path));
 #endif
 
    if (string_is_empty(p_rarch->path_main_basename))
@@ -5951,6 +5952,7 @@ static bool command_event_disk_control_append_image(
       rarch_system_info_t *sys_info,
       const char *path)
 {
+   input_driver_state_t *input_st = input_state_get_ptr();
    if (  !sys_info ||
          !disk_control_append_image(&sys_info->disk_control, path))
       return false;
@@ -5968,7 +5970,7 @@ static bool command_event_disk_control_append_image(
        * started out in a single disk case, and that this way
        * of doing it makes the most sense. */
       path_set(RARCH_PATH_NAMES, path);
-      path_fill_names(p_rarch);
+      path_fill_names(p_rarch, input_st);
    }
 
    command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
@@ -6040,7 +6042,8 @@ static void command_event_deinit_core(
 
 static bool event_init_content(
       settings_t *settings,
-      struct rarch_state *p_rarch)
+      struct rarch_state *p_rarch,
+      input_driver_state_t *input_st)
 {
    bool contentless                             = false;
    bool is_inited                               = false;
@@ -6070,7 +6073,7 @@ static bool event_init_content(
    content_get_status(&contentless, &is_inited);
 
    if (!contentless)
-      path_fill_names(p_rarch);
+      path_fill_names(p_rarch, input_st);
 
    if (!content_init())
       return false;
@@ -6095,8 +6098,8 @@ static bool event_init_content(
          command_event_load_auto_state(global);
 
 #ifdef HAVE_BSV_MOVIE
-   bsv_movie_deinit(p_rarch);
-   if (bsv_movie_init(p_rarch))
+   bsv_movie_deinit(input_st);
+   if (bsv_movie_init(p_rarch, input_st))
    {
       /* Set granularity upon success */
       configuration_set_uint(settings,
@@ -6247,6 +6250,7 @@ static INLINE float retroarch_get_runloop_fastforward_ratio(
 static bool command_event_init_core(
       settings_t *settings,
       struct rarch_state *p_rarch,
+      input_driver_state_t *input_st,
       enum rarch_core_type type)
 {
 #ifdef HAVE_CONFIGFILE
@@ -6352,7 +6356,7 @@ static bool command_event_init_core(
          path_get(RARCH_PATH_CONTENT),
          p_rarch->current_savefile_dir);
 
-   if (!event_init_content(settings, p_rarch))
+   if (!event_init_content(settings, p_rarch, input_st))
    {
       runloop_state.core_running = false;
       return false;
@@ -6808,7 +6812,7 @@ void input_remapping_set_defaults(bool clear_cache)
 static void command_event_reinit(struct rarch_state *p_rarch,
       const int flags)
 {
-   settings_t *settings           = p_rarch->configuration_settings;
+   settings_t *settings           = config_get_ptr();
    input_driver_state_t *input_st = input_state_get_ptr();
 #ifdef HAVE_MENU
    bool video_fullscreen          = settings->bools.video_fullscreen;
@@ -7070,13 +7074,16 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_BSV_RECORDING_TOGGLE:
+         {
 #ifdef HAVE_BSV_MOVIE
-         if (!recording_is_enabled())
-            command_event(CMD_EVENT_RECORD_INIT, NULL);
-         else
-            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-         bsv_movie_check(p_rarch, settings);
+            input_driver_state_t *input_st = input_state_get_ptr();
+            if (!recording_is_enabled())
+               command_event(CMD_EVENT_RECORD_INIT, NULL);
+            else
+               command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+            bsv_movie_check(input_st, settings);
 #endif
+         }
          break;
       case CMD_EVENT_AI_SERVICE_TOGGLE:
          {
@@ -7283,19 +7290,22 @@ bool command_event(enum event_command cmd, void *data)
          return true;
 #endif
       case CMD_EVENT_LOAD_STATE:
+         {
 #ifdef HAVE_BSV_MOVIE
-         /* Immutable - disallow savestate load when
-          * we absolutely cannot change game state. */
-         if (p_rarch->bsv_movie_state_handle)
-            return false;
+            /* Immutable - disallow savestate load when
+             * we absolutely cannot change game state. */
+            input_driver_state_t *input_st   = input_state_get_ptr();
+            if (input_st->bsv_movie_state_handle)
+               return false;
 #endif
 
 #ifdef HAVE_CHEEVOS
-         if (rcheevos_hardcore_active())
-            return false;
+            if (rcheevos_hardcore_active())
+               return false;
 #endif
-         if (!command_event_main_state(p_rarch, cmd))
-            return false;
+            if (!command_event_main_state(p_rarch, cmd))
+               return false;
+         }
          break;
       case CMD_EVENT_UNDO_LOAD_STATE:
       case CMD_EVENT_UNDO_SAVE_STATE:
@@ -7866,6 +7876,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             enum rarch_core_type *type    = (enum rarch_core_type*)data;
             rarch_system_info_t *sys_info = &runloop_state.system;
+            input_driver_state_t *input_st= input_state_get_ptr();
 
             content_reset_savestate_backups();
 
@@ -7873,7 +7884,7 @@ bool command_event(enum event_command cmd, void *data)
             if (sys_info)
                disk_control_set_ext_callback(&sys_info->disk_control, NULL);
 
-            if (!type || !command_event_init_core(settings, p_rarch, *type))
+            if (!type || !command_event_init_core(settings, p_rarch, input_st, *type))
                return false;
          }
          break;
@@ -13890,398 +13901,6 @@ void recording_driver_update_streaming_url(void)
    }
 }
 
-#ifdef HAVE_BSV_MOVIE
-/* BSV MOVIE */
-static bool bsv_movie_init_playback(
-      bsv_movie_t *handle, const char *path)
-{
-   uint32_t state_size       = 0;
-   uint32_t content_crc      = 0;
-   uint32_t header[4]        = {0};
-   intfstream_t *file        = intfstream_open_file(path,
-         RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (!file)
-   {
-      RARCH_ERR("Could not open BSV file for playback, path : \"%s\".\n", path);
-      return false;
-   }
-
-   handle->file              = file;
-   handle->playback          = true;
-
-   intfstream_read(handle->file, header, sizeof(uint32_t) * 4);
-   /* Compatibility with old implementation that
-    * used incorrect documentation. */
-   if (swap_if_little32(header[MAGIC_INDEX]) != BSV_MAGIC
-         && swap_if_big32(header[MAGIC_INDEX]) != BSV_MAGIC)
-   {
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE));
-      return false;
-   }
-
-   content_crc               = content_get_crc();
-
-   if (content_crc != 0)
-      if (swap_if_big32(header[CRC_INDEX]) != content_crc)
-         RARCH_WARN("%s.\n", msg_hash_to_str(MSG_CRC32_CHECKSUM_MISMATCH));
-
-   state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
-
-#if 0
-   RARCH_ERR("----- debug %u -----\n", header[0]);
-   RARCH_ERR("----- debug %u -----\n", header[1]);
-   RARCH_ERR("----- debug %u -----\n", header[2]);
-   RARCH_ERR("----- debug %u -----\n", header[3]);
-#endif
-
-   if (state_size)
-   {
-      retro_ctx_size_info_t info;
-      retro_ctx_serialize_info_t serial_info;
-      uint8_t *buf       = (uint8_t*)malloc(state_size);
-
-      if (!buf)
-         return false;
-
-      handle->state      = buf;
-      handle->state_size = state_size;
-      if (intfstream_read(handle->file,
-               handle->state, state_size) != state_size)
-      {
-         RARCH_ERR("%s\n", msg_hash_to_str(MSG_COULD_NOT_READ_STATE_FROM_MOVIE));
-         return false;
-      }
-
-      core_serialize_size( &info);
-
-      if (info.size == state_size)
-      {
-         serial_info.data_const = handle->state;
-         serial_info.size       = state_size;
-         core_unserialize(&serial_info);
-      }
-      else
-         RARCH_WARN("%s\n",
-               msg_hash_to_str(MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION));
-   }
-
-   handle->min_file_pos = sizeof(header) + state_size;
-
-   return true;
-}
-
-static bool bsv_movie_init_record(
-      bsv_movie_t *handle, const char *path)
-{
-   retro_ctx_size_info_t info;
-   uint32_t state_size       = 0;
-   uint32_t content_crc      = 0;
-   uint32_t header[4]        = {0};
-   intfstream_t *file        = intfstream_open_file(path,
-         RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (!file)
-   {
-      RARCH_ERR("Could not open BSV file for recording, path : \"%s\".\n", path);
-      return false;
-   }
-
-   handle->file             = file;
-
-   content_crc              = content_get_crc();
-
-   /* This value is supposed to show up as
-    * BSV1 in a HEX editor, big-endian. */
-   header[MAGIC_INDEX]      = swap_if_little32(BSV_MAGIC);
-   header[CRC_INDEX]        = swap_if_big32(content_crc);
-
-   core_serialize_size(&info);
-
-   state_size               = (unsigned)info.size;
-
-   header[STATE_SIZE_INDEX] = swap_if_big32(state_size);
-
-   intfstream_write(handle->file, header, 4 * sizeof(uint32_t));
-
-   handle->min_file_pos     = sizeof(header) + state_size;
-   handle->state_size       = state_size;
-
-   if (state_size)
-   {
-      retro_ctx_serialize_info_t serial_info;
-      uint8_t *st      = (uint8_t*)malloc(state_size);
-
-      if (!st)
-         return false;
-
-      handle->state    = st;
-
-      serial_info.data = handle->state;
-      serial_info.size = state_size;
-
-      core_serialize(&serial_info);
-
-      intfstream_write(handle->file,
-            handle->state, state_size);
-   }
-
-   return true;
-}
-
-static void bsv_movie_free(bsv_movie_t *handle)
-{
-   intfstream_close(handle->file);
-   free(handle->file);
-
-   free(handle->state);
-   free(handle->frame_pos);
-   free(handle);
-}
-
-static bsv_movie_t *bsv_movie_init_internal(const char *path,
-      enum rarch_movie_type type)
-{
-   size_t *frame_pos   = NULL;
-   bsv_movie_t *handle = (bsv_movie_t*)calloc(1, sizeof(*handle));
-
-   if (!handle)
-      return NULL;
-
-   if (type == RARCH_MOVIE_PLAYBACK)
-   {
-      if (!bsv_movie_init_playback(handle, path))
-         goto error;
-   }
-   else if (!bsv_movie_init_record(handle, path))
-      goto error;
-
-   /* Just pick something really large
-    * ~1 million frames rewind should do the trick. */
-   if (!(frame_pos = (size_t*)calloc((1 << 20), sizeof(size_t))))
-      goto error;
-
-   handle->frame_pos       = frame_pos;
-
-   handle->frame_pos[0]    = handle->min_file_pos;
-   handle->frame_mask      = (1 << 20) - 1;
-
-   return handle;
-
-error:
-   if (handle)
-      bsv_movie_free(handle);
-   return NULL;
-}
-
-void bsv_movie_frame_rewind(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   bsv_movie_t         *handle = p_rarch->bsv_movie_state_handle;
-
-   if (!handle)
-      return;
-
-   handle->did_rewind = true;
-
-   if (     (handle->frame_ptr <= 1)
-         && (handle->frame_pos[0] == handle->min_file_pos))
-   {
-      /* If we're at the beginning... */
-      handle->frame_ptr = 0;
-      intfstream_seek(handle->file, (int)handle->min_file_pos, SEEK_SET);
-   }
-   else
-   {
-      /* First time rewind is performed, the old frame is simply replayed.
-       * However, playing back that frame caused us to read data, and push
-       * data to the ring buffer.
-       *
-       * Sucessively rewinding frames, we need to rewind past the read data,
-       * plus another. */
-      handle->frame_ptr = (handle->frame_ptr -
-            (handle->first_rewind ? 1 : 2)) & handle->frame_mask;
-      intfstream_seek(handle->file,
-            (int)handle->frame_pos[handle->frame_ptr], SEEK_SET);
-   }
-
-   if (intfstream_tell(handle->file) <= (long)handle->min_file_pos)
-   {
-      /* We rewound past the beginning. */
-
-      if (!handle->playback)
-      {
-         retro_ctx_serialize_info_t serial_info;
-
-         /* If recording, we simply reset
-          * the starting point. Nice and easy. */
-
-         intfstream_seek(handle->file, 4 * sizeof(uint32_t), SEEK_SET);
-
-         serial_info.data = handle->state;
-         serial_info.size = handle->state_size;
-
-         core_serialize(&serial_info);
-
-         intfstream_write(handle->file, handle->state, handle->state_size);
-      }
-      else
-         intfstream_seek(handle->file, (int)handle->min_file_pos, SEEK_SET);
-   }
-}
-
-static bool bsv_movie_init(struct rarch_state *p_rarch)
-{
-   bsv_movie_t *state = NULL;
-   if (p_rarch->bsv_movie_state.movie_start_playback)
-   {
-      if (!(state = bsv_movie_init_internal(
-               p_rarch->bsv_movie_state.movie_start_path,
-               RARCH_MOVIE_PLAYBACK)))
-      {
-         RARCH_ERR("%s: \"%s\".\n",
-               msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE),
-               p_rarch->bsv_movie_state.movie_start_path);
-         return false;
-      }
-
-      p_rarch->bsv_movie_state_handle         = state;
-      p_rarch->bsv_movie_state.movie_playback = true;
-      runloop_msg_queue_push(msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK),
-            2, 180, false,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_LOG("%s.\n", msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK));
-
-      return true;
-   }
-   else if (p_rarch->bsv_movie_state.movie_start_recording)
-   {
-      char msg[8192];
-
-      if (!(state = bsv_movie_init_internal(
-               p_rarch->bsv_movie_state.movie_start_path,
-               RARCH_MOVIE_RECORD)))
-      {
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
-               1, 180, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_ERR("%s.\n",
-               msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
-         return false;
-      }
-
-      p_rarch->bsv_movie_state_handle         = state;
-      snprintf(msg, sizeof(msg),
-            "%s \"%s\".",
-            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
-            p_rarch->bsv_movie_state.movie_start_path);
-
-      runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_LOG("%s \"%s\".\n",
-            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
-            p_rarch->bsv_movie_state.movie_start_path);
-
-      return true;
-   }
-
-   return false;
-}
-
-static void bsv_movie_deinit(struct rarch_state *p_rarch)
-{
-   if (p_rarch->bsv_movie_state_handle)
-      bsv_movie_free(p_rarch->bsv_movie_state_handle);
-   p_rarch->bsv_movie_state_handle = NULL;
-}
-
-static bool runloop_check_movie_init(struct rarch_state *p_rarch,
-      settings_t *settings)
-{
-   char msg[16384], path[8192];
-   bsv_movie_t *state          = NULL;
-   int state_slot              = settings->ints.state_slot;
-
-   msg[0] = path[0]            = '\0';
-
-   configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
-
-   if (state_slot > 0)
-      snprintf(path, sizeof(path), "%s%d.bsv",
-            p_rarch->bsv_movie_state.movie_path,
-            state_slot);
-   else
-      snprintf(path, sizeof(path), "%s.bsv",
-            p_rarch->bsv_movie_state.movie_path);
-
-   snprintf(msg, sizeof(msg), "%s \"%s\".",
-         msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
-         path);
-
-   state = bsv_movie_init_internal(path, RARCH_MOVIE_RECORD);
-
-   if (!state)
-   {
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
-            2, 180, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_ERR("%s\n",
-            msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
-      return false;
-   }
-
-   p_rarch->bsv_movie_state_handle         = state;
-
-   runloop_msg_queue_push(msg, 2, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("%s \"%s\".\n",
-         msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
-         path);
-
-   return true;
-}
-
-static bool bsv_movie_check(struct rarch_state *p_rarch,
-      settings_t *settings)
-{
-   if (!p_rarch->bsv_movie_state_handle)
-      return runloop_check_movie_init(p_rarch, settings);
-
-   if (p_rarch->bsv_movie_state.movie_playback)
-   {
-      /* Checks if movie is being played back. */
-      if (!p_rarch->bsv_movie_state.movie_end)
-         return false;
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED), 2, 180, false,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
-
-      bsv_movie_deinit(p_rarch);
-
-      p_rarch->bsv_movie_state.movie_end      = false;
-      p_rarch->bsv_movie_state.movie_playback = false;
-
-      return true;
-   }
-
-   /* Checks if movie is being recorded. */
-   if (!p_rarch->bsv_movie_state_handle)
-      return false;
-
-   runloop_msg_queue_push(
-         msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED), 2, 180, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
-
-   bsv_movie_deinit(p_rarch);
-
-   return true;
-}
-#endif
-
 /* INPUT OVERLAY */
 
 #ifdef HAVE_OVERLAY
@@ -14398,267 +14017,6 @@ abort_load:
 const char* config_get_input_driver_options(void)
 {
    return char_list_new_special(STRING_LIST_INPUT_DRIVERS, NULL);
-}
-
-int16_t input_state_internal(unsigned port, unsigned device,
-      unsigned idx, unsigned id)
-{
-   rarch_joypad_info_t joypad_info;
-   unsigned mapped_port;
-   struct rarch_state *p_rarch             = &rarch_st;
-   input_driver_state_t *input_st          = input_state_get_ptr();
-   settings_t *settings                    = p_rarch->configuration_settings;
-   float input_analog_deadzone             = settings->floats.input_analog_deadzone;
-   float input_analog_sensitivity          = settings->floats.input_analog_sensitivity;
-   unsigned *input_remap_port_map          = settings->uints.input_remap_port_map[port];
-   bool input_driver_analog_requested      = input_st->analog_requested[port];
-   const input_device_driver_t *joypad     = input_st->primary_joypad;
-#ifdef HAVE_MFI
-   const input_device_driver_t *sec_joypad = input_st->secondary_joypad;
-#else
-   const input_device_driver_t *sec_joypad = NULL;
-#endif
-#ifdef HAVE_MENU
-   struct menu_state *menu_st              = menu_state_get_ptr();
-   bool input_blocked                      = (menu_st->input_driver_flushing_input > 0) ||
-                                             input_st->block_libretro_input;
-#else
-   bool input_blocked                      = input_st->block_libretro_input;
-#endif
-   bool bitmask_enabled                    = false;
-   unsigned max_users                      = settings->uints.input_max_users;
-   int16_t result                          = 0;
-
-   device                                 &= RETRO_DEVICE_MASK;
-   bitmask_enabled                         = (device == RETRO_DEVICE_JOYPAD) &&
-                                             (id == RETRO_DEVICE_ID_JOYPAD_MASK);
-   joypad_info.axis_threshold              = settings->floats.input_axis_threshold;
-
-   /* Loop over all 'physical' ports mapped to specified
-    * 'virtual' port index */
-   while ((mapped_port = *(input_remap_port_map++)) < MAX_USERS)
-   {
-      int16_t ret                     = 0;
-      int16_t port_result             = 0;
-      unsigned input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[mapped_port];
-
-      joypad_info.joy_idx             = settings->uints.input_joypad_index[mapped_port];
-      joypad_info.auto_binds          = input_autoconf_binds[joypad_info.joy_idx];
-
-      /* Skip disabled input devices */
-      if (mapped_port >= max_users)
-         continue;
-
-      /* If core has requested analog input, disable
-       * analog to dpad mapping (unless forced) */
-      switch (input_analog_dpad_mode)
-      {
-         case ANALOG_DPAD_LSTICK:
-         case ANALOG_DPAD_RSTICK:
-            if (input_driver_analog_requested)
-               input_analog_dpad_mode = ANALOG_DPAD_NONE;
-            break;
-         case ANALOG_DPAD_LSTICK_FORCED:
-            input_analog_dpad_mode = ANALOG_DPAD_LSTICK;
-            break;
-         case ANALOG_DPAD_RSTICK_FORCED:
-            input_analog_dpad_mode = ANALOG_DPAD_RSTICK;
-            break;
-         default:
-            break;
-      }
-
-      /* TODO/FIXME: This code is gibberish - a mess of nested
-       * refactors that make no sense whatsoever. The entire
-       * thing needs to be rewritten from scratch... */
-
-      ret = input_state_wrap(
-            input_st->current_driver,
-            input_st->current_data,
-            joypad,
-            sec_joypad,
-            &joypad_info,
-            input_st->libretro_input_binds,
-            input_st->keyboard_mapping_blocked,
-            mapped_port, device, idx, id);
-
-      if ((device == RETRO_DEVICE_ANALOG) &&
-          (ret == 0))
-      {
-         if (input_st->libretro_input_binds[mapped_port])
-         {
-            if (idx == RETRO_DEVICE_INDEX_ANALOG_BUTTON)
-            {
-               if (id < RARCH_FIRST_CUSTOM_BIND)
-               {
-                  bool valid_bind = input_st->libretro_input_binds[mapped_port][id].valid;
-
-                  if (valid_bind)
-                  {
-                     if (sec_joypad)
-                        ret = input_joypad_analog_button(
-                              input_analog_deadzone,
-                              input_analog_sensitivity,
-                              sec_joypad, &joypad_info,
-                              id,
-                              &input_st->libretro_input_binds[mapped_port][id]);
-
-                     if (joypad && (ret == 0))
-                        ret = input_joypad_analog_button(
-                              input_analog_deadzone,
-                              input_analog_sensitivity,
-                              joypad, &joypad_info,
-                              id,
-                              &input_st->libretro_input_binds[mapped_port][id]);
-                  }
-               }
-            }
-            else
-            {
-               if (sec_joypad)
-                  ret = input_joypad_analog_axis(
-                        input_analog_dpad_mode,
-                        input_analog_deadzone,
-                        input_analog_sensitivity,
-                        sec_joypad,
-                        &joypad_info,
-                        idx,
-                        id,
-                        input_st->libretro_input_binds[mapped_port]);
-
-               if (joypad && (ret == 0))
-                  ret = input_joypad_analog_axis(
-                        input_analog_dpad_mode,
-                        input_analog_deadzone,
-                        input_analog_sensitivity,
-                        joypad,
-                        &joypad_info,
-                        idx,
-                        id,
-                        input_st->libretro_input_binds[mapped_port]);
-            }
-         }
-      }
-
-      if (!input_blocked)
-      {
-         input_mapper_t *handle = &input_st->mapper;
-
-         if (bitmask_enabled)
-         {
-            unsigned i;
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-               if (input_state_device(input_st,
-                        settings, handle,
-                        input_analog_dpad_mode, ret, mapped_port,
-                        device, idx, i, true))
-                  port_result |= (1 << i);
-         }
-         else
-            port_result = input_state_device(input_st,
-                  settings, handle,
-                  input_analog_dpad_mode, ret, mapped_port,
-                  device, idx, id, false);
-      }
-
-      /* Digital values are represented by a bitmap;
-       * we can just perform the logical OR of
-       * successive samples.
-       * Analog values are an integer corresponding
-       * to the extent of the analog motion; these
-       * cannot be OR'd together, we must instead
-       * keep the value with the largest magnitude */
-      if (device == RETRO_DEVICE_ANALOG)
-      {
-         if (result == 0)
-            result = port_result;
-         else
-         {
-            int16_t port_result_abs = (port_result >= 0) ?
-               port_result : -port_result;
-            int16_t result_abs      = (result >= 0) ?
-               result : -result;
-
-            if (port_result_abs > result_abs)
-               result = port_result;
-         }
-      }
-      else
-         result |= port_result;
-   }
-
-#ifdef HAVE_BSV_MOVIE
-   /* Save input to BSV record, if enabled */
-   if (BSV_MOVIE_IS_PLAYBACK_OFF())
-   {
-      result = swap_if_big16(result);
-      intfstream_write(
-            p_rarch->bsv_movie_state_handle->file, &result, 2);
-   }
-#endif
-
-   return result;
-}
-
-/**
- * input_state:
- * @port                 : user number.
- * @device               : device identifier of user.
- * @idx                  : index value of user.
- * @id                   : identifier of key pressed by user.
- *
- * Input state callback function.
- *
- * Returns: Non-zero if the given key (identified by @id)
- * was pressed by the user (assigned to @port).
- **/
-static int16_t input_state(unsigned port, unsigned device,
-      unsigned idx, unsigned id)
-{
-   input_driver_state_t 
-      *input_st                = input_state_get_ptr();
-   int16_t result              = 0;
-#ifdef HAVE_BSV_MOVIE
-   struct rarch_state *p_rarch = &rarch_st;
-
-   /* Load input from BSV record, if enabled */
-   if (BSV_MOVIE_IS_PLAYBACK_ON())
-   {
-      int16_t bsv_result = 0;
-      if (intfstream_read(
-               p_rarch->bsv_movie_state_handle->file,
-               &bsv_result, 2) == 2)
-      {
-#ifdef HAVE_CHEEVOS
-         rcheevos_pause_hardcore();
-#endif
-         return swap_if_big16(bsv_result);
-      }
-
-      p_rarch->bsv_movie_state.movie_end = true;
-   }
-#endif
-
-   /* Read input state */
-   result = input_state_internal(port, device, idx, id);
-
-   /* Register any analog stick input requests for
-    * this 'virtual' (core) port */
-   if (     (device == RETRO_DEVICE_ANALOG) &&
-       (    (idx    == RETRO_DEVICE_INDEX_ANALOG_LEFT) ||
-            (idx    == RETRO_DEVICE_INDEX_ANALOG_RIGHT)))
-      input_st->analog_requested[port] = true;
-
-#ifdef HAVE_BSV_MOVIE
-   /* Save input to BSV record, if enabled */
-   if (BSV_MOVIE_IS_PLAYBACK_OFF())
-   {
-      result = swap_if_big16(result);
-      intfstream_write(p_rarch->bsv_movie_state_handle->file, &result, 2);
-   }
-#endif
-
-   return result;
 }
 
 /* MENU INPUT */
@@ -22673,20 +22031,26 @@ static bool retroarch_parse_input_and_config(
    #endif
             case 'P':
 #ifdef HAVE_BSV_MOVIE
-               strlcpy(p_rarch->bsv_movie_state.movie_start_path, optarg,
-                     sizeof(p_rarch->bsv_movie_state.movie_start_path));
+               {
+                  input_driver_state_t *input_st = input_state_get_ptr();
+                  strlcpy(input_st->bsv_movie_state.movie_start_path, optarg,
+                        sizeof(input_st->bsv_movie_state.movie_start_path));
 
-               p_rarch->bsv_movie_state.movie_start_playback  = true;
-               p_rarch->bsv_movie_state.movie_start_recording = false;
+                  input_st->bsv_movie_state.movie_start_playback  = true;
+                  input_st->bsv_movie_state.movie_start_recording = false;
+               }
 #endif
                break;
             case 'R':
 #ifdef HAVE_BSV_MOVIE
-               strlcpy(p_rarch->bsv_movie_state.movie_start_path, optarg,
-                     sizeof(p_rarch->bsv_movie_state.movie_start_path));
+               {
+                  input_driver_state_t *input_st = input_state_get_ptr();
+                  strlcpy(input_st->bsv_movie_state.movie_start_path, optarg,
+                        sizeof(input_st->bsv_movie_state.movie_start_path));
 
-               p_rarch->bsv_movie_state.movie_start_playback  = false;
-               p_rarch->bsv_movie_state.movie_start_recording = true;
+                  input_st->bsv_movie_state.movie_start_playback  = false;
+                  input_st->bsv_movie_state.movie_start_recording = true;
+               }
 #endif
                break;
 
@@ -22872,7 +22236,10 @@ static bool retroarch_parse_input_and_config(
 
             case RA_OPT_EOF_EXIT:
 #ifdef HAVE_BSV_MOVIE
-               p_rarch->bsv_movie_state.eof_exit = true;
+               {
+                  input_driver_state_t *input_st = input_state_get_ptr();
+                  input_st->bsv_movie_state.eof_exit = true;
+               }
 #endif
                break;
 
@@ -23260,7 +22627,7 @@ bool retroarch_main_init(int argc, char *argv[])
          settings->bools.apply_cheats_after_load,
          settings->paths.path_cheat_database,
 #ifdef HAVE_BSV_MOVIE
-         p_rarch->bsv_movie_state_handle
+         input_st->bsv_movie_state_handle
 #else
          NULL
 #endif
@@ -23734,7 +23101,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
          return runloop_state.core_running;
 #ifdef HAVE_BSV_MOVIE
       case RARCH_CTL_BSV_MOVIE_IS_INITED:
-         return (p_rarch->bsv_movie_state_handle != NULL);
+         return (input_state_get_ptr()->bsv_movie_state_handle != NULL);
 #endif
 #ifdef HAVE_PATCH
       case RARCH_CTL_IS_PATCH_BLOCKED:
@@ -23819,7 +23186,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
             cheat_manager_state_free();
 #endif
 #ifdef HAVE_BSV_MOVIE
-            bsv_movie_deinit(p_rarch);
+            bsv_movie_deinit(input_st);
 #endif
 
             command_event(CMD_EVENT_CORE_DEINIT, NULL);
@@ -25933,9 +25300,9 @@ int runloop_iterate(void)
 
 #ifdef HAVE_BSV_MOVIE
    /* Used for rewinding while playback/record. */
-   if (p_rarch->bsv_movie_state_handle)
-      p_rarch->bsv_movie_state_handle->frame_pos[p_rarch->bsv_movie_state_handle->frame_ptr]
-         = intfstream_tell(p_rarch->bsv_movie_state_handle->file);
+   if (input_st->bsv_movie_state_handle)
+      input_st->bsv_movie_state_handle->frame_pos[input_st->bsv_movie_state_handle->frame_ptr]
+         = intfstream_tell(input_st->bsv_movie_state_handle->file);
 #endif
 
    if (  p_rarch->camera_cb.caps &&
@@ -26080,15 +25447,15 @@ int runloop_iterate(void)
    }
 
 #ifdef HAVE_BSV_MOVIE
-   if (p_rarch->bsv_movie_state_handle)
+   if (input_st->bsv_movie_state_handle)
    {
-      p_rarch->bsv_movie_state_handle->frame_ptr    =
-         (p_rarch->bsv_movie_state_handle->frame_ptr + 1)
-         & p_rarch->bsv_movie_state_handle->frame_mask;
+      input_st->bsv_movie_state_handle->frame_ptr    =
+         (input_st->bsv_movie_state_handle->frame_ptr + 1)
+         & input_st->bsv_movie_state_handle->frame_mask;
 
-      p_rarch->bsv_movie_state_handle->first_rewind =
-         !p_rarch->bsv_movie_state_handle->did_rewind;
-      p_rarch->bsv_movie_state_handle->did_rewind   = false;
+      input_st->bsv_movie_state_handle->first_rewind =
+         !input_st->bsv_movie_state_handle->did_rewind;
+      input_st->bsv_movie_state_handle->did_rewind   = false;
    }
 #endif
 
@@ -26303,7 +25670,7 @@ static int16_t core_input_state_poll_late(unsigned port,
       input_driver_poll();
    p_rarch->current_core.input_polled = true;
 
-   return input_state(port, device, idx, id);
+   return input_state_wrapper(port, device, idx, id);
 }
 
 static retro_input_state_t core_input_state_poll_return_cb(void)
@@ -26316,7 +25683,7 @@ static retro_input_state_t core_input_state_poll_return_cb(void)
       : p_rarch->current_core.poll_type;
    if (new_poll_type == POLL_TYPE_LATE)
       return core_input_state_poll_late;
-   return input_state;
+   return input_state_wrapper;
 }
 
 static void core_input_state_poll_maybe(void)

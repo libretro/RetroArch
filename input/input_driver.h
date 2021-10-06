@@ -100,6 +100,12 @@
 
 RETRO_BEGIN_DECLS
 
+enum rarch_movie_type
+{
+   RARCH_MOVIE_PLAYBACK = 0,
+   RARCH_MOVIE_RECORD
+};
+
 /**
  * line_complete callback (when carriage return is pressed)
  *
@@ -382,6 +388,9 @@ typedef struct
 #ifdef HAVE_COMMAND
    command_t *command[MAX_CMD_DRIVERS];
 #endif
+#ifdef HAVE_BSV_MOVIE
+   bsv_movie_t     *bsv_movie_state_handle;              /* ptr alignment */
+#endif
 #ifdef HAVE_OVERLAY
    input_overlay_t *overlay_ptr;
    enum overlay_visibility *overlay_visibility;
@@ -405,6 +414,10 @@ typedef struct
 #endif
 
    enum osk_type osk_idx;
+
+#ifdef HAVE_BSV_MOVIE
+   struct bsv_state bsv_movie_state;            /* char alignment */
+#endif
 
    /* primitives */
    bool        nonblocking_flag;
@@ -962,12 +975,39 @@ int16_t input_state_device(
       unsigned idx, unsigned id,
       bool button_mask);
 
+#ifdef HAVE_BSV_MOVIE
+void bsv_movie_frame_rewind(void);
+
+bool bsv_movie_init(struct rarch_state *p_rarch,
+      input_driver_state_t *input_st);
+
+void bsv_movie_deinit(input_driver_state_t *input_st);
+
+bool bsv_movie_check(input_driver_state_t *input_st,
+      settings_t *settings);
+#endif
+
 /**
  * input_poll:
  *
  * Input polling callback function.
  **/
 void input_driver_poll(void);
+
+/**
+ * input_state_wrapper:
+ * @port                 : user number.
+ * @device               : device identifier of user.
+ * @idx                  : index value of user.
+ * @id                   : identifier of key pressed by user.
+ *
+ * Input state callback function.
+ *
+ * Returns: Non-zero if the given key (identified by @id)
+ * was pressed by the user (assigned to @port).
+ **/
+int16_t input_state_wrapper(unsigned port, unsigned device,
+      unsigned idx, unsigned id);
 
 extern input_device_driver_t *joypad_drivers[];
 extern input_driver_t *input_drivers[];

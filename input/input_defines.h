@@ -216,6 +216,12 @@ enum input_turbo_default_button
 #define GET_HAT_DIR(x)     (x & HAT_MASK)
 #define GET_HAT(x)         (x & (~HAT_MASK))
 
+#ifdef HAVE_BSV_MOVIE
+#define BSV_MOVIE_IS_PLAYBACK_ON() (input_st->bsv_movie_state_handle && input_st->bsv_movie_state.movie_playback)
+#define BSV_MOVIE_IS_PLAYBACK_OFF() (input_st->bsv_movie_state_handle && \
+!input_st->bsv_movie_state.movie_playback)
+#endif
+
 RETRO_END_DECLS
 
 #endif
