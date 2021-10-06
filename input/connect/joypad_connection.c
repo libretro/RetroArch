@@ -25,9 +25,8 @@
 
 #include "joypad_connection.h"
 
-
-
-/* we init the hid/vid to 0 because we need to do endian magic that we can't do during the declaration */
+/* We init the HID/VID to 0 because we need to do 
+   endian magic that we can't do during the declaration */
 joypad_connection_entry_t pad_map[] = {
    { "Nintendo RVL-CNT-01",           0,     0,  &pad_connection_wii },
    { "Nintendo RVL-CNT-01-UC",        0,     0,  &pad_connection_wiiupro },
@@ -47,36 +46,35 @@ joypad_connection_entry_t pad_map[] = {
 
 static bool joypad_is_end_of_list(joypad_connection_t *pad)
 {
-  return pad
-     && !pad->connected
-     && !pad->iface
-     &&  (pad->data == (void *)0xdeadbeef);
+   return pad
+      && !pad->connected
+      && !pad->iface
+      &&  (pad->data == (void *)0xdeadbeef);
 }
 
 int pad_connection_find_vacant_pad(joypad_connection_t *joyconn)
 {
-  unsigned i;
+   unsigned i;
 
-  if (!joyconn)
-    return -1;
+   if (!joyconn)
+      return -1;
 
-  for (i = 0; !joypad_is_end_of_list(&joyconn[i]); i++)
-  {
-    if(!joyconn[i].connected)
-      return i;
-  }
+   for (i = 0; !joypad_is_end_of_list(&joyconn[i]); i++)
+   {
+      if(!joyconn[i].connected)
+         return i;
+   }
 
-  return -1;
+   return -1;
 }
 
 static void set_end_of_list(joypad_connection_t *list, unsigned end)
 {
-  joypad_connection_t *entry = (joypad_connection_t *)&list[end];
-  entry->connected           = false;
-  entry->iface               = NULL;
-  entry->data                = (void*)0xdeadbeef;
+   joypad_connection_t *entry = (joypad_connection_t *)&list[end];
+   entry->connected           = false;
+   entry->iface               = NULL;
+   entry->data                = (void*)0xdeadbeef;
 }
-
 
 /**
  * Since the pad_connection_destroy() call needs to iterate through this
@@ -114,7 +112,8 @@ joypad_connection_t *pad_connection_init(unsigned pads)
    return joyconn;
 }
 
-void init_pad_map() {
+void init_pad_map(void)
+{
    pad_map[0].vid         = VID_NINTENDO;
    pad_map[0].pid         = PID_NINTENDO_PRO;
    pad_map[1].vid         = VID_NINTENDO;
@@ -143,49 +142,53 @@ void init_pad_map() {
    pad_map[12].pid        = PID_HORI_MINI_WIRED_PS4;
 }
 
-
-joypad_connection_entry_t *find_connection_entry(int16_t vid, int16_t pid, const char *name) {
+joypad_connection_entry_t *find_connection_entry(int16_t vid, int16_t pid, const char *name)
+{
    unsigned i;
    const bool has_name = !string_is_empty(name);
 
-   if(pad_map[0].vid == 0) {
+   if(pad_map[0].vid == 0)
       init_pad_map();
-   }
 
-   for(i = 0; pad_map[i].name != NULL; i++) {
+   for(i = 0; pad_map[i].name != NULL; i++)
+   {
       const char *name_match = has_name ? strstr(pad_map[i].name, name) : NULL;
       /* The Wii Pro Controller and Wii U pro controller have the same VID/PID, so we have to use the
-         * descriptor string to differentiate them. */
+       * descriptor string to differentiate them. */
       if(pad_map[i].vid == VID_NINTENDO && pad_map[i].pid == PID_NINTENDO_PRO)
       {
          if(!string_is_equal(pad_map[i].name, name))
             continue;
       }      
 
-      if(name_match || (pad_map[i].vid == vid && pad_map[i].pid == pid)) {
+      if(name_match || (pad_map[i].vid == vid && pad_map[i].pid == pid))
          return &pad_map[i];
-      }
    }
 
    return NULL;
 }
 
-void pad_connection_pad_deregister(joypad_connection_t *joyconn, pad_connection_interface_t *iface, void *pad_data) {
+void pad_connection_pad_deregister(joypad_connection_t *joyconn, pad_connection_interface_t *iface, void *pad_data)
+{
    int i;
 
    RARCH_LOG("pad_connection_pad_deregister\n");
    RARCH_LOG("joyconn: 0x%08lx iface: 0x%08lx pad_data: 0x%08lx\n", (unsigned long)joyconn, (unsigned long)iface, (unsigned long)pad_data);
-   for(i = 0; !joypad_is_end_of_list(&joyconn[i]); i++) {
+
+   for(i = 0; !joypad_is_end_of_list(&joyconn[i]); i++)
+   {
       RARCH_LOG("joyconn[i].connected = %d, joyconn[i].iface == iface = %d\n", joyconn[i].connected, joyconn[i].iface == iface);
       if(joyconn[i].connected && joyconn[i].iface == iface && iface != NULL) {
-         if(iface->set_rumble) {
+         if(iface->set_rumble)
+         {
             RARCH_LOG("set_rumble");
             iface->set_rumble(joyconn[i].connection, RETRO_RUMBLE_STRONG, 0);
             iface->set_rumble(joyconn[i].connection, RETRO_RUMBLE_WEAK, 0);
          }
          RARCH_LOG("deregistering pad");
          input_autoconfigure_disconnect(i, iface->get_name(joyconn[i].connection));
-         if(iface->multi_pad) {
+         if(iface->multi_pad)
+         {
             RARCH_LOG("multi-pad cleanup");
             iface->pad_deinit(&joyconn[i].connection);
          }
@@ -195,40 +198,45 @@ void pad_connection_pad_deregister(joypad_connection_t *joyconn, pad_connection_
    }
 }
 
-static int joypad_to_slot(joypad_connection_t *haystack, joypad_connection_t *needle) {
+static int joypad_to_slot(joypad_connection_t *haystack, joypad_connection_t *needle)
+{
    int i;
 
-   for(i = 0; !joypad_is_end_of_list(&haystack[i]); i++) {
-      if(&haystack[i] == needle) {
+   for(i = 0; !joypad_is_end_of_list(&haystack[i]); i++)
+   {
+      if(&haystack[i] == needle)
          return i;
-      }
    }
    return -1;
 }
 
-void pad_connection_pad_refresh(joypad_connection_t *joyconn, pad_connection_interface_t *iface, void *device_data, void *handle, input_device_driver_t *input_driver) {
+void pad_connection_pad_refresh(joypad_connection_t *joyconn, pad_connection_interface_t *iface, void *device_data, void *handle, input_device_driver_t *input_driver)
+{
    int i, slot;
    int8_t state;
    joypad_connection_t *joypad;
 
-   if(!iface->multi_pad || iface->max_pad < 1) {
+   if (!iface->multi_pad || iface->max_pad < 1)
       return;
-   }
 
-   for(i = 0; i < iface->max_pad; i++) {
+   for (i = 0; i < iface->max_pad; i++)
+   {
       state = iface->status(device_data, i);
-      switch(state) {
-         /* The pad slot is bound to a joypad that's no longer connected */
+      switch(state)
+      {
+         /* The pad slot is bound to a joypad 
+            that's no longer connected */
          case PAD_CONNECT_BOUND:
             RARCH_LOG("PAD_CONNECT_BOUND (0x%02x)\n", state);
             joypad = iface->joypad(device_data, i);
             slot = joypad_to_slot(joyconn, joypad);
-            input_autoconfigure_disconnect(slot, iface->get_name(joypad->connection));
-            
+            input_autoconfigure_disconnect(slot,
+                  iface->get_name(joypad->connection));
+
             iface->pad_deinit(joypad->connection);
             memset(joypad, 0, sizeof(joypad_connection_t));
             break;
-         /* The joypad is connected but has not been bound */
+            /* The joypad is connected but has not been bound */
          case PAD_CONNECT_READY:
             slot = pad_connection_find_vacant_pad(joyconn);
             if(slot >= 0) {
@@ -242,45 +250,47 @@ void pad_connection_pad_refresh(joypad_connection_t *joyconn, pad_connection_int
             }
             break;
          default:
-            if(state > 0x03) {
+            if(state > 0x03)
                RARCH_LOG("Unrecognized state: 0x%02x", state);
-            }
             break;
       }
    }
 }
 
-void pad_connection_pad_register(joypad_connection_t *joyconn, pad_connection_interface_t *iface, void *device_data, void *handle, input_device_driver_t *input_driver, int slot) {
+void pad_connection_pad_register(joypad_connection_t *joyconn, pad_connection_interface_t *iface, void *device_data, void *handle, input_device_driver_t *input_driver, int slot)
+{
    int i, status;
    int found_slot;
    int max_pad;
    void *connection;
-   
-   if(iface->multi_pad && (iface->max_pad <= 1 || !iface->status || !iface->pad_init)) {
+
+   if(iface->multi_pad && (iface->max_pad <= 1 || !iface->status || !iface->pad_init))
+   {
       RARCH_ERR("pad_connection_pad_register: multi-pad driver has incomplete implementation\n");
       return;
    }
 
    max_pad = iface->multi_pad ? iface->max_pad : 1;
 
-   for(i = 0; i < max_pad; i++) {
+   for(i = 0; i < max_pad; i++)
+   {
       status = iface->multi_pad ? iface->status(device_data, i) : PAD_CONNECT_READY;
       if(status == PAD_CONNECT_READY) {
          found_slot = (slot == SLOT_AUTO) ? pad_connection_find_vacant_pad(joyconn) : slot;
-         if(found_slot < 0) {
+         if(found_slot < 0)
             continue;
-         }
          connection = device_data;
-         if(iface->multi_pad) {
+         if(iface->multi_pad)
+         {
             RARCH_LOG("pad_connection_pad_register: multi-pad detected, initializing pad %d\n", i);
             connection = iface->pad_init(device_data, i, &joyconn[found_slot]);
          }
 
-         joyconn[found_slot].iface = iface;
-         joyconn[found_slot].data  = handle;
-         joyconn[found_slot].connection = connection;
+         joyconn[found_slot].iface        = iface;
+         joyconn[found_slot].data         = handle;
+         joyconn[found_slot].connection   = connection;
          joyconn[found_slot].input_driver = input_driver;
-         joyconn[found_slot].connected = true;
+         joyconn[found_slot].connected    = true;
 
          RARCH_LOG("connecting pad to slot %d\n", found_slot);
          input_pad_connect(found_slot, input_driver);
@@ -288,30 +298,32 @@ void pad_connection_pad_register(joypad_connection_t *joyconn, pad_connection_in
    }
 }
 
-int32_t pad_connection_pad_init_entry(joypad_connection_t *joyconn, joypad_connection_entry_t *entry, void *data, hid_driver_t *driver) {
+int32_t pad_connection_pad_init_entry(joypad_connection_t *joyconn, joypad_connection_entry_t *entry, void *data, hid_driver_t *driver)
+{
    joypad_connection_t *conn = NULL;
    int pad = pad_connection_find_vacant_pad(joyconn);
 
-   if(pad < 0) {
+   if (pad < 0)
       return -1;
-   }
 
-   conn = &joyconn[pad];
-   if(!conn) {
+   if (!(conn = &joyconn[pad]))
       return -1;
-   }
 
-   if(entry) {
-      conn->iface = entry->iface;
-      conn->data  = data;
+   if (entry)
+   {
+      conn->iface      = entry->iface;
+      conn->data       = data;
       conn->connection = conn->iface->init(data, pad, driver);
-      conn->connected = true;
-   } else {
-      /* We failed to find a matching pad, set up one without an interface */
+      conn->connected  = true;
+   }
+   else
+   {
+      /* We failed to find a matching pad. 
+       * Set up one without an interface */
       RARCH_DBG("Pad was not matched. Setting up without an interface.\n");
-      conn->iface     = NULL;
-      conn->data      = data;
-      conn->connected = true;
+      conn->iface      = NULL;
+      conn->data       = data;
+      conn->connected  = true;
    }
 
    return pad;
@@ -323,9 +335,8 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
 {
    joypad_connection_entry_t *entry = NULL;
 
-   if(pad_map[0].vid == 0) {
+   if(pad_map[0].vid == 0)
       init_pad_map();
-   }
 
    entry = find_connection_entry(vid, pid, name);
 
