@@ -238,12 +238,12 @@ static void hidpad_ps4_get_buttons(void *data, input_bits_t* state)
 static int16_t hidpad_ps4_get_axis(void *data, unsigned axis)
 {
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
-   struct ps4 *rpt = device ? (struct ps4*)&device->data : NULL;
 
    if (device && (axis < 4))
    {
-      int val = rpt ? rpt->hatvalue[axis] : 0;
-      val = (val << 8) - 0x8000;
+      struct ps4 *rpt = device ? (struct ps4*)&device->data : NULL;
+      int val         = rpt ? rpt->hatvalue[axis] : 0;
+      val             = (val << 8) - 0x8000;
       return (abs(val) > 0x1000) ? val : 0;
    }
 
@@ -288,12 +288,13 @@ static void hidpad_ps4_set_rumble(void *data,
 static int32_t hidpad_ps4_button(void *data, uint16_t joykey)
 {
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
-   struct ps4             *rpt = device ?
+   struct ps4             *rpt    = device ?
       (struct ps4*)&device->data : NULL;
    if (!device || !rpt || joykey > 31)
       return 0;
 
-   switch(joykey) {
+   switch (joykey)
+   {
       case RETRO_DEVICE_ID_JOYPAD_R3:
          return rpt->btn.r3;
       case RETRO_DEVICE_ID_JOYPAD_L3:
@@ -326,10 +327,11 @@ static int32_t hidpad_ps4_button(void *data, uint16_t joykey)
       case RARCH_MENU_TOGGLE:
          return rpt->btn.ps;
       default:
-         return 0;
+         break;
    }
-}
 
+   return 0;
+}
 
 pad_connection_interface_t pad_connection_ps4 = {
    hidpad_ps4_init,

@@ -26,7 +26,8 @@
 #define DS3_ACTIVATION_REPORT_ID 0xf4
 #define DS3_RUMBLE_REPORT_ID     0x01
 
-typedef struct ds3_instance {
+typedef struct ds3_instance
+{
    hid_driver_t *hid_driver;
    void *handle;
    int slot;
@@ -40,13 +41,14 @@ typedef struct ds3_instance {
 static void ds3_update_pad_state(ds3_instance_t *instance);
 static void ds3_update_analog_state(ds3_instance_t *instance);
 
-static uint8_t ds3_activation_packet[] = {
+static uint8_t ds3_activation_packet[] =
+{
 #if defined(IOS)
-  0x53, 0xF4,
+   0x53, 0xF4,
 #elif defined(HAVE_WIIUSB_HID)
-  0x02,
+   0x02,
 #endif
-  0x42, 0x0c, 0x00, 0x00
+   0x42, 0x0c, 0x00, 0x00
 };
 
 #if defined(WIIU)
@@ -76,7 +78,9 @@ static uint8_t ds3_control_packet[] = {
 };
 
 
-static int32_t ds3_send_control_packet(void *data, uint32_t slot, hid_driver_t *driver) {
+static int32_t ds3_send_control_packet(
+      void *data, uint32_t slot, hid_driver_t *driver)
+{
    int32_t result = 0;
    uint8_t packet_buffer[64] = {0};
    memcpy(packet_buffer, ds3_control_packet, sizeof(ds3_control_packet));
@@ -98,19 +102,21 @@ static int32_t ds3_send_control_packet(void *data, uint32_t slot, hid_driver_t *
    return result;
 }
 
-static int32_t ds3_send_activation_packet(void *data, uint32_t slot, hid_driver_t *driver) {
-   #ifdef WIIU
+static int32_t ds3_send_activation_packet(void *data,
+      uint32_t slot, hid_driver_t *driver)
+{
+#ifdef WIIU
    return driver->set_report(data, HID_REPORT_FEATURE, DS3_ACTIVATION_REPORT_ID, ds3_activation_packet, sizeof(ds3_activation_packet));
-   #else
+#else
    driver->send_control(data, ds3_activation_packet, sizeof(ds3_activation_packet));
    return 0;
-   #endif
+#endif
 }
 
 static void *ds3_pad_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
+   int errors               = 0;
    ds3_instance_t *instance = (ds3_instance_t *)calloc(1, sizeof(ds3_instance_t));
-   int errors = 0;
 
    driver->set_protocol(data, 1);
 
@@ -125,13 +131,13 @@ static void *ds3_pad_init(void *data, uint32_t slot, hid_driver_t *driver)
       goto error;
 
    instance->hid_driver = driver;
-   instance->handle = data;
-   instance->slot = slot;
-   instance->led_set = true;
+   instance->handle     = data;
+   instance->slot       = slot;
+   instance->led_set    = true;
 
    return instance;
 
-   error:
+error:
    free(instance);
    return NULL;
 }
@@ -160,16 +166,17 @@ static void ds3_get_buttons(void *data, input_bits_t *state)
    }
 }
 
-static void ds3_packet_handler(void *data, uint8_t *packet, uint16_t size)
+static void ds3_packet_handler(void *data,
+      uint8_t *packet, uint16_t size)
 {
    ds3_instance_t *instance = (ds3_instance_t *)data;
-   if(!instance) {
+   if(!instance)
       return;
-   }
 
    if (!instance->led_set)
    {
-      ds3_send_control_packet(instance->handle, instance->slot, instance->hid_driver);
+      ds3_send_control_packet(instance->handle,
+            instance->slot, instance->hid_driver);
       instance->led_set = true;
    }
 
@@ -244,12 +251,12 @@ static void ds3_update_pad_state(ds3_instance_t *instance)
    instance->buttons = 0;
 
    pressed_keys = instance->data[2]        | 
-                  (instance->data[3] << 8) |
-                  ((instance->data[4] & 0x01) << 16);
+      (instance->data[3] << 8) |
+      ((instance->data[4] & 0x01) << 16);
 
    for (i = 0; i < 17; i++)
-     instance->buttons |= (pressed_keys & (1 << i)) ?
-        (1 << button_mapping[i]) : 0;
+      instance->buttons |= (pressed_keys & (1 << i)) ?
+         (1 << button_mapping[i]) : 0;
 }
 
 static void ds3_update_analog_state(ds3_instance_t *instance)

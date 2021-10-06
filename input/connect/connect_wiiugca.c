@@ -58,14 +58,14 @@ struct hidpad_wiiugca_data
 
 const char *GAMECUBE_PAD = "GameCube controller";
 const char *WAVEBIRD_PAD = "WaveBird controller";
-const char *DEVICE_NAME = "Wii U GC Controller Adapter";
+const char *DEVICE_NAME  = "Wii U GC Controller Adapter";
 
 static void* hidpad_wiiugca_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
 #ifdef WIIU
-   static uint8_t magic_data[]         = {0x13}; /* Special command to enable reading */
+   static uint8_t magic_data[] = {0x13      }; /* Special command to enable reading */
 #else
-   static uint8_t magic_data[]         = {0x01, 0x13}; /* Special command to enable reading */
+   static uint8_t magic_data[] = {0x01, 0x13}; /* Special command to enable reading */
 #endif
    int i;
    gca_device_data_t * device  = (gca_device_data_t *)calloc(1, sizeof(gca_device_data_t));
@@ -79,15 +79,16 @@ static void* hidpad_wiiugca_init(void *data, uint32_t slot, hid_driver_t *driver
       return NULL;
    }
 
-   device->handle = data;
-   for(i = 0; i < GCA_MAX_PAD; i++) {
-      device->pad_data[i].datatype = GCA_TYPE_PAD;
+   device->handle                     = data;
+   for (i = 0; i < GCA_MAX_PAD; i++)
+   {
+      device->pad_data[i].datatype    = GCA_TYPE_PAD;
       device->pad_data[i].device_data = device;
-      device->pad_data[i].joypad = NULL;
-      device->pad_data[i].pad_index = i;
+      device->pad_data[i].joypad      = NULL;
+      device->pad_data[i].pad_index   = i;
    }
    
-   device->driver     = driver;
+   device->driver                     = driver;
 
    device->driver->send_control(device->handle, magic_data, sizeof(magic_data));
 
@@ -105,10 +106,14 @@ static void hidpad_wiiugca_deinit(void *device_data)
 static void hidpad_wiiugca_get_buttons(void *pad_data, input_bits_t *state)
 {
    gca_pad_data_t *pad = (gca_pad_data_t *)pad_data;
-   if (pad) {
-      if(pad->datatype == GCA_TYPE_PAD) {
+   if (pad)
+   {
+      if(pad->datatype == GCA_TYPE_PAD)
+      {
          BITS_COPY16_PTR(state, pad->buttons);
-      } else {
+      }
+      else
+      {
          gca_device_data_t *device = (gca_device_data_t *)pad_data;
          BITS_COPY16_PTR(state, device->pad_data[0].buttons);
       }
@@ -121,8 +126,8 @@ static void hidpad_wiiugca_get_buttons(void *pad_data, input_bits_t *state)
 
 static int16_t hidpad_wiiugca_get_axis(void *pad_data, unsigned axis)
 {
-   gca_pad_data_t *pad = (gca_pad_data_t *)pad_data;
    axis_data axis_data;
+   gca_pad_data_t *pad = (gca_pad_data_t *)pad_data;
 
    gamepad_read_axis_data(axis, &axis_data);
 
@@ -131,13 +136,12 @@ static int16_t hidpad_wiiugca_get_axis(void *pad_data, unsigned axis)
 
    if(pad->datatype == GCA_TYPE_PAD)
       return gamepad_get_axis_value(pad->analog, &axis_data);
-   else {
-      gca_device_data_t *device = (gca_device_data_t *)pad_data;
-      return gamepad_get_axis_value(device->pad_data[0].analog, &axis_data);
-   }
+   gca_device_data_t *device = (gca_device_data_t *)pad_data;
+   return gamepad_get_axis_value(device->pad_data[0].analog, &axis_data);
 }
 
-static void update_button_state(gca_pad_data_t *pad) {
+static void update_button_state(gca_pad_data_t *pad)
+{
    uint32_t i, pressed_keys;
 
    static const uint32_t button_mapping[12] =
@@ -167,7 +171,8 @@ static void update_button_state(gca_pad_data_t *pad) {
          (1 << button_mapping[i]) : 0;
 }
 
-static void update_analog_state(gca_pad_data_t *pad) {
+static void update_analog_state(gca_pad_data_t *pad)
+{
    int pad_axis;
    int16_t interpolated;
    unsigned stick, axis;
@@ -189,17 +194,15 @@ static void update_analog_state(gca_pad_data_t *pad) {
    }
 }
 
-static void hidpad_wiiugca_pad_packet_handler(gca_pad_data_t *pad, uint8_t *packet, size_t size) {
-   if(size > 9) {
+static void hidpad_wiiugca_pad_packet_handler(gca_pad_data_t *pad, uint8_t *packet, size_t size)
+{
+   if (size > 9)
       return;
-   }
 
    memcpy(pad->data, packet, size);
    update_button_state(pad);
    update_analog_state(pad);
 }
-
-
 
 static void hidpad_wiiugca_packet_handler(void *device_data, uint8_t *packet, uint16_t size)
 {
@@ -225,9 +228,7 @@ static void hidpad_wiiugca_packet_handler(void *device_data, uint8_t *packet, ui
          hidpad_wiiugca_pad_packet_handler(&device->pad_data[port], &device->data[i], 9);
       }
       else
-      {
          device->connected[port] = 0;
-      }
    }
 }
 
@@ -242,81 +243,86 @@ static void hidpad_wiiugca_set_rumble(void *data,
 const char *hidpad_wiiugca_get_name(void *pad_data)
 {
    gca_pad_data_t *pad = (gca_pad_data_t *)pad_data;
-   if(!pad || pad->datatype != GCA_TYPE_PAD) {
+   if(!pad || pad->datatype != GCA_TYPE_PAD)
       return DEVICE_NAME;
-   }
 
-   switch(pad->device_data->connected[pad->pad_index]) {
+   switch(pad->device_data->connected[pad->pad_index])
+   {
       case 0:
          return DEVICE_NAME;
       case GCA_WAVEBIRD_CONNECTED:
          return WAVEBIRD_PAD;
       default:
-         return GAMECUBE_PAD;
+         break;
    }
-   
-  /* For now we return a single static name */
-  
+
+   /* For now we return a single static name */
+   return GAMECUBE_PAD;
 }
 
-static int32_t hidpad_wiiugca_button(void *pad_data, uint16_t joykey) {
+static int32_t hidpad_wiiugca_button(void *pad_data, uint16_t joykey)
+{
    gca_pad_data_t *pad = (gca_pad_data_t *)pad_data;
 
-   if(!pad) return 0;
+   if (!pad)
+      return 0;
 
-   if(pad->datatype != GCA_TYPE_PAD) {
+   if (pad->datatype != GCA_TYPE_PAD)
+   {
       gca_device_data_t *device = (gca_device_data_t *)pad_data;
       pad = &device->pad_data[0];
    }
-   
-   if (!pad->device_data || joykey > 31 || pad->joypad == NULL)
+
+   if (!pad->device_data || joykey > 31 || !pad->joypad)
       return 0;
 
    return pad->buttons & (1 << joykey);
 }
 
-static void *hidpad_wiiugca_pad_init(void *device_data, int pad_index, joypad_connection_t *joypad) {
+static void *hidpad_wiiugca_pad_init(void *device_data, int pad_index, joypad_connection_t *joypad)
+{
    gca_device_data_t *device = (gca_device_data_t *)device_data;
 
-   if(!device || pad_index < 0 || pad_index >= GCA_MAX_PAD || joypad == NULL || device->pad_data[pad_index].joypad != NULL || !device->connected[pad_index]) {
+   if(!device || pad_index < 0 || pad_index >= GCA_MAX_PAD || !joypad || device->pad_data[pad_index].joypad || !device->connected[pad_index])
       return NULL;
-   }
 
    device->pad_data[pad_index].joypad = joypad;
    return &device->pad_data[pad_index];
 }
 
-static void hidpad_wiiugca_pad_deinit(void *pad_data) {
+static void hidpad_wiiugca_pad_deinit(void *pad_data)
+{
    gca_pad_data_t *pad = (gca_pad_data_t *)pad_data;
 
-   if(!pad) {
+   if(!pad)
       return;
-   }
 
    pad->joypad = NULL;
 }
 
-static int8_t hidpad_wiiugca_status(void *device_data, int pad_index) {
+static int8_t hidpad_wiiugca_status(void *device_data, int pad_index)
+{
    gca_device_data_t *device = (gca_device_data_t *)device_data;
    int8_t result = 0;
 
-   if(!device || pad_index < 0 || pad_index >= GCA_MAX_PAD) return 0;
+   if(!device || pad_index < 0 || pad_index >= GCA_MAX_PAD)
+      return 0;
 
-   if(device->connected[pad_index]) {
+   if (device->connected[pad_index])
       result |= PAD_CONNECT_READY;
-   }
 
-   if(device->pad_data[pad_index].joypad != NULL) {
+   if (device->pad_data[pad_index].joypad)
       result |= PAD_CONNECT_BOUND;
-   }
 
    return result;
 }
 
-static joypad_connection_t *hidpad_wiiugca_joypad(void *device_data, int pad_index) {
+static joypad_connection_t *hidpad_wiiugca_joypad(void *device_data, int pad_index)
+{
    gca_device_data_t *device = (gca_device_data_t *)device_data;
 
-   if(!device || pad_index < 0 || pad_index >= GCA_MAX_PAD) return 0;
+   if(!device || pad_index < 0 || pad_index >= GCA_MAX_PAD)
+      return 0;
 
    return device->pad_data[pad_index].joypad;
 }
