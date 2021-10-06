@@ -118,7 +118,9 @@ static void *ds3_pad_init(void *data, uint32_t slot, hid_driver_t *driver)
    int errors               = 0;
    ds3_instance_t *instance = (ds3_instance_t *)calloc(1, sizeof(ds3_instance_t));
 
-   driver->set_protocol(data, 1);
+   if(driver->set_protocol) {
+      driver->set_protocol(data, 1);
+   }
 
    if (ds3_send_control_packet(data, slot, driver) < 0)
       errors++;
