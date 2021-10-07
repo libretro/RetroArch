@@ -31,7 +31,6 @@
 #include "SDL.h"
 #include "SDL_audio.h"
 
-
 typedef struct sdl_audio
 {
 #ifdef HAVE_THREADS

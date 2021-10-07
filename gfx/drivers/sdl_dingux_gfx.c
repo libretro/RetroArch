@@ -425,7 +425,7 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
    const char *input_driver_name                 = settings->arrays.input_driver;
    const char *joypad_driver_name                = settings->arrays.input_joypad_driver;
    uint32_t surface_flags                        = (video->vsync) ?
-         (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN) :     
+         (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN) :
          (SDL_HWSURFACE | SDL_FULLSCREEN);
 
    /* Initialise graphics subsystem, if required */

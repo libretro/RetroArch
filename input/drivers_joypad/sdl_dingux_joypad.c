@@ -624,7 +624,7 @@ static void sdl_dingux_joypad_poll(void)
                   break;
                case SDL_DINGUX_SDLK_Y:
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_Y);
-                  break;               
+                  break;
                case SDL_DINGUX_SDLK_L:
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_L);
                   break;
