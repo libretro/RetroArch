@@ -1218,7 +1218,6 @@ ifeq ($(HAVE_WAYLAND), 1)
         input/common/wayland_common.o \
         input/drivers/wayland_input.o \
         gfx/common/wayland/xdg-shell.o \
-        gfx/common/wayland/xdg-shell-unstable-v6.o \
         gfx/common/wayland/idle-inhibit-unstable-v1.o \
         gfx/common/wayland/xdg-decoration-unstable-v1.o
 
