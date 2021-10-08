@@ -81,7 +81,7 @@
 #define RGUI_MAX_FB_WIDTH 426
 
 #if defined(DINGUX)
-#if defined(RS90)
+#if defined(RS90) && !defined(MIYOO)
 /* The RS-90 uses a fixed framebuffer size
  * of 240x160 */
 #define RGUI_DINGUX_ASPECT_RATIO RGUI_ASPECT_RATIO_3_2

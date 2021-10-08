@@ -1567,6 +1567,8 @@ else ifeq ($(HAVE_SDL_DINGUX), 1)
 
    ifeq ($(RS90), 1)
       OBJ += gfx/drivers/sdl_rs90_gfx.o
+   else ifeq ($(MIYOO), 1)
+      OBJ += gfx/drivers/sdl_rs90_gfx.o
    else
       OBJ += gfx/drivers/sdl_dingux_gfx.o
    endif

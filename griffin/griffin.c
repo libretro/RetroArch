@@ -477,7 +477,7 @@ VIDEO DRIVER
 #endif
 
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 #include "../gfx/drivers/sdl_rs90_gfx.c"
 #else
 #include "../gfx/drivers/sdl_dingux_gfx.c"
