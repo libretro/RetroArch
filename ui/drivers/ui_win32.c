@@ -116,7 +116,9 @@ static void ui_window_win32_set_visible(void *data,
 static void ui_window_win32_set_title(void *data, char *buf)
 {
    ui_window_win32_t *window = (ui_window_win32_t*)data;
-   SetWindowText(window->hwnd, buf);
+   wchar_t *title_wide = utf8_to_utf16_string_alloc(buf);
+   SetWindowTextW(window->hwnd, title_wide);
+   free(title_wide);
 }
 
 void ui_window_win32_set_droppable(void *data, bool droppable)
