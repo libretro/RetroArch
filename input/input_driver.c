@@ -29,6 +29,10 @@
 #include "input_osk.h"
 #include "input_types.h"
 
+#ifdef HAVE_CHEEVOS
+#include "../cheevos/cheevos.h"
+#endif
+
 #ifdef HAVE_NETWORKING
 #include <net/net_compat.h>
 #include <net/net_socket.h>
