@@ -1006,7 +1006,7 @@ void input_driver_poll(void);
  * Returns: Non-zero if the given key (identified by @id)
  * was pressed by the user (assigned to @port).
  **/
-int16_t input_state_wrapper(unsigned port, unsigned device,
+int16_t input_driver_state_wrapper(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 
 extern input_device_driver_t *joypad_drivers[];

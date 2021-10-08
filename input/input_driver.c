@@ -4741,7 +4741,7 @@ int16_t input_state_internal(unsigned port, unsigned device,
    return result;
 }
 
-int16_t input_state_wrapper(unsigned port, unsigned device,
+int16_t input_driver_state_wrapper(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
    input_driver_state_t 

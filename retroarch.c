@@ -25724,7 +25724,7 @@ static int16_t core_input_state_poll_late(unsigned port,
       input_driver_poll();
    p_rarch->current_core.input_polled = true;
 
-   return input_state_wrapper(port, device, idx, id);
+   return input_driver_state_wrapper(port, device, idx, id);
 }
 
 static retro_input_state_t core_input_state_poll_return_cb(void)
@@ -25737,7 +25737,7 @@ static retro_input_state_t core_input_state_poll_return_cb(void)
       : p_rarch->current_core.poll_type;
    if (new_poll_type == POLL_TYPE_LATE)
       return core_input_state_poll_late;
-   return input_state_wrapper;
+   return input_driver_state_wrapper;
 }
 
 static void core_input_state_poll_maybe(void)
