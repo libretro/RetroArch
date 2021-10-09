@@ -37,7 +37,6 @@
 #endif
 
 #include "SDL.h"
-
 #include "SDL_syswm.h"
 
 #include "../font_driver.h"
