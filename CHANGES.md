@@ -1,5 +1,23 @@
 # Future
 
+# 1.9.11
+- ANDROID: New launcher logo - will fill the corners on the homescreen
+- D3D9: Driver works again (RGUI only and software rendered cores work, no shader support yet)
+- HID/MAC: WiiU GameCube Adapter now works
+- HID/WIIU: WiiU and general HID subsystem unified/merged
+- INPUT: Refactor menu toggle combo button logic to allow quit combo button
+- INPUT/UDEV: Add mouse relative check and set appropriately to fix issue
+- LIBNX/SWITCH: Splitted Joycon button mapping
+- LIBRETRO: Add environment callback to enable cores to notify the frontend that a core otion value has changed
+- MIYOO: Add initial port
+- OPENDINGUX/RG350: Enable tinyalsa for the RG350
+- PS2: Add 'Change Resolution' option
+- PS2: Add option to change video windows offsets
+- STEAM/LINUX: Move to new 'soldier' runtime
+- WAYLAND: Remove xdg-shell-v6 protocol
+- WINDOWS: Fix non-ASCII text display in window title
+- UWP: Further improvements to WinRT VFS layer
+
 # 1.9.10
 - 3DS: Add bottom screen idle state
 - 3DS: Add unique IDs for Gearboy/Gearcoleco/Gearsystem, correct CAP32 code
