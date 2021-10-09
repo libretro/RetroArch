@@ -23,7 +23,6 @@
 #include "joypad_connection.h"
 #include "../input_defines.h"
 #include "../../driver.h"
-#include "../common/hid/hid_device_driver.h"
 
 struct wiiupro_buttons
 {
@@ -249,6 +248,56 @@ static void hidpad_wiiupro_set_rumble(void *data,
    /* TODO */
 }
 
+static int32_t hidpad_wiiupro_button(void *data, uint16_t joykey)
+{
+   struct hidpad_wiiupro_data *device = (struct hidpad_wiiupro_data*)data;
+   struct wiiupro                *rpt = device ?
+      (struct wiiupro*)&device->data : NULL;
+
+   if (!device || !rpt)
+      return 0;
+
+   switch(joykey) {
+      case RETRO_DEVICE_ID_JOYPAD_R3:
+         return rpt->btn.r3;
+      case RETRO_DEVICE_ID_JOYPAD_L3:
+         return rpt->btn.l3;
+      case RETRO_DEVICE_ID_JOYPAD_START:
+         return rpt->btn.plus;
+      case RETRO_DEVICE_ID_JOYPAD_SELECT:
+         return rpt->btn.minus;
+      case RETRO_DEVICE_ID_JOYPAD_R2:
+         return rpt->btn.zr;
+      case RETRO_DEVICE_ID_JOYPAD_L2:
+         return rpt->btn.zl;
+      case RETRO_DEVICE_ID_JOYPAD_R:
+         return rpt->btn.r;
+      case RETRO_DEVICE_ID_JOYPAD_L:
+         return rpt->btn.l;
+      case RETRO_DEVICE_ID_JOYPAD_X:
+         return rpt->btn.x;
+      case RETRO_DEVICE_ID_JOYPAD_A:
+         return rpt->btn.a;
+      case RETRO_DEVICE_ID_JOYPAD_B:
+         return rpt->btn.b;
+      case RETRO_DEVICE_ID_JOYPAD_Y:
+         return rpt->btn.y;
+      case RETRO_DEVICE_ID_JOYPAD_LEFT:
+         return rpt->btn.left;
+      case RETRO_DEVICE_ID_JOYPAD_RIGHT:
+         return rpt->btn.right;
+      case RETRO_DEVICE_ID_JOYPAD_DOWN:
+         return rpt->btn.down;
+      case RETRO_DEVICE_ID_JOYPAD_UP:
+         return rpt->btn.up;
+      case RARCH_MENU_TOGGLE:
+         return rpt->btn.home;
+      default:
+         return 0;
+   }
+
+}
+
 pad_connection_interface_t pad_connection_wiiupro = {
    hidpad_wiiupro_init,
    hidpad_wiiupro_deinit,
@@ -256,5 +305,7 @@ pad_connection_interface_t pad_connection_wiiupro = {
    hidpad_wiiupro_set_rumble,
    hidpad_wiiupro_get_buttons,
    hidpad_wiiupro_get_axis,
-   NULL,
+   NULL, /* get_name */
+   hidpad_wiiupro_button,
+   false
 };

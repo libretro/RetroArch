@@ -50,8 +50,6 @@ static bool secondary_core_ensure_exists(struct rarch_state *p_rarch,
 static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id);
 #endif
-static int16_t input_state(unsigned port, unsigned device,
-      unsigned idx, unsigned id);
 static void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch);
 static void retro_frame_null(const void *data, unsigned width,
@@ -99,13 +97,6 @@ static bool video_driver_find_driver(
       struct rarch_state *p_rarch,
       settings_t *settings,
       const char *prefix, bool verbosity_enabled);
-
-#ifdef HAVE_BSV_MOVIE
-static void bsv_movie_deinit(struct rarch_state *p_rarch);
-static bool bsv_movie_init(struct rarch_state *p_rarch);
-static bool bsv_movie_check(struct rarch_state *p_rarch,
-      settings_t *settings);
-#endif
 
 static void driver_uninit(struct rarch_state *p_rarch, int flags);
 static void drivers_init(struct rarch_state *p_rarch,

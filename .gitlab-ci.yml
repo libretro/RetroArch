@@ -488,6 +488,29 @@ build-retroarch-retrofw-mips32:
     - "cp -f libretro-common/audio/dsp_filters/*.dsp ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
     - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
 
+build-retroarch-miyoo-arm32:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-dingux:latest
+  stage: build
+  variables:
+    MEDIA_PATH: .media
+    STRIP_BIN:  1
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    - retroarch
+    - ${MEDIA_PATH}
+    expire_in: 10 min
+  dependencies: []
+  script:
+    - "make -j$NUMPROC -f Makefile.miyoo"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+    - "cp -f libretro-common/audio/dsp_filters/*.dsp ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
+    - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "cp -f pkg/miyoo/20a-retroarch ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+
 build-retroarch-android-normal:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
   stage: build

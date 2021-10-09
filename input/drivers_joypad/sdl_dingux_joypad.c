@@ -35,7 +35,7 @@
 #if defined(MIYOO)
 #define SDL_DINGUX_HAS_ANALOG      0
 #define SDL_DINGUX_HAS_MENU_TOGGLE 1
-#elif defined(RS90) || defined(RETROFW) || defined(MIYOO)
+#elif defined(RS90) || defined(RETROFW)
 #define SDL_DINGUX_HAS_ANALOG      0
 #define SDL_DINGUX_HAS_MENU_TOGGLE 0
 #else
@@ -627,7 +627,11 @@ static void sdl_dingux_joypad_poll(void)
                   break;
                case SDL_DINGUX_SDLK_Y:
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_Y);
+<<<<<<< HEAD
                   break;               
+=======
+                  break;
+>>>>>>> a9125fffaa981cab811ba6caf4d756fa6ef9a561
                case SDL_DINGUX_SDLK_L:
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_L);
                   break;

@@ -26,7 +26,6 @@
 #include "joypad_connection.h"
 #include "../input_defines.h"
 #include "../../driver.h"
-#include "../common/hid/hid_device_driver.h"
 
 enum connect_ps4_dpad_states
 {
@@ -239,12 +238,12 @@ static void hidpad_ps4_get_buttons(void *data, input_bits_t* state)
 static int16_t hidpad_ps4_get_axis(void *data, unsigned axis)
 {
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
-   struct ps4 *rpt = device ? (struct ps4*)&device->data : NULL;
 
    if (device && (axis < 4))
    {
-      int val = rpt ? rpt->hatvalue[axis] : 0;
-      val = (val << 8) - 0x8000;
+      struct ps4 *rpt = device ? (struct ps4*)&device->data : NULL;
+      int val         = rpt ? rpt->hatvalue[axis] : 0;
+      val             = (val << 8) - 0x8000;
       return (abs(val) > 0x1000) ? val : 0;
    }
 
@@ -286,6 +285,54 @@ static void hidpad_ps4_set_rumble(void *data,
 #endif
 }
 
+static int32_t hidpad_ps4_button(void *data, uint16_t joykey)
+{
+   struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
+   struct ps4             *rpt    = device ?
+      (struct ps4*)&device->data : NULL;
+   if (!device || !rpt || joykey > 31)
+      return 0;
+
+   switch (joykey)
+   {
+      case RETRO_DEVICE_ID_JOYPAD_R3:
+         return rpt->btn.r3;
+      case RETRO_DEVICE_ID_JOYPAD_L3:
+         return rpt->btn.l3;
+      case RETRO_DEVICE_ID_JOYPAD_START:
+         return rpt->btn.options;
+      case RETRO_DEVICE_ID_JOYPAD_SELECT:
+         return rpt->btn.share;
+      case RETRO_DEVICE_ID_JOYPAD_R2:
+         return rpt->btn.r2;
+      case RETRO_DEVICE_ID_JOYPAD_L2:
+         return rpt->btn.l2;
+      case RETRO_DEVICE_ID_JOYPAD_R:
+         return rpt->btn.r1;
+      case RETRO_DEVICE_ID_JOYPAD_L:
+         return rpt->btn.l1;
+      case RETRO_DEVICE_ID_JOYPAD_X:
+         return rpt->btn.triangle;
+      case RETRO_DEVICE_ID_JOYPAD_A:
+         return rpt->btn.circle;
+      case RETRO_DEVICE_ID_JOYPAD_B:
+         return rpt->btn.cross;
+      case RETRO_DEVICE_ID_JOYPAD_Y:
+         return rpt->btn.square;
+      case RETRO_DEVICE_ID_JOYPAD_LEFT:
+      case RETRO_DEVICE_ID_JOYPAD_RIGHT:
+      case RETRO_DEVICE_ID_JOYPAD_DOWN:
+      case RETRO_DEVICE_ID_JOYPAD_UP:
+         return hidpad_ps4_check_dpad(rpt, joykey);
+      case RARCH_MENU_TOGGLE:
+         return rpt->btn.ps;
+      default:
+         break;
+   }
+
+   return 0;
+}
+
 pad_connection_interface_t pad_connection_ps4 = {
    hidpad_ps4_init,
    hidpad_ps4_deinit,
@@ -293,5 +340,7 @@ pad_connection_interface_t pad_connection_ps4 = {
    hidpad_ps4_set_rumble,
    hidpad_ps4_get_buttons,
    hidpad_ps4_get_axis,
-   NULL,
+   NULL, /* get_name */
+   hidpad_ps4_button,
+   false
 };

@@ -160,7 +160,8 @@
                 "${workspaceFolder}/**"
             ],
             "defines": [
-                "WIIU"
+                "WIIU",
+                "WIIU_HID"
             ],
             "windowsSdkVersion": "10.0.17763.0",
             "compilerPath": "/opt/devkitpro/devkitPPC/bin/powerpc-eabi-gcc",

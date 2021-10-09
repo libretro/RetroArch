@@ -29,6 +29,10 @@
 #include "input_osk.h"
 #include "input_types.h"
 
+#ifdef HAVE_CHEEVOS
+#include "../cheevos/cheevos.h"
+#endif
+
 #ifdef HAVE_NETWORKING
 #include <net/net_compat.h>
 #include <net/net_socket.h>
@@ -46,6 +50,9 @@
 #include "../configuration.h"
 #include "../list_special.h"
 #include "../performance_counters.h"
+#ifdef HAVE_BSV_MOVIE
+#include "../tasks/task_content.h"
+#endif
 #include "../tasks/tasks_internal.h"
 
 #define HOLD_BTN_DELAY_SEC 2
@@ -305,6 +312,9 @@ hid_driver_t *hid_drivers[] = {
 #endif
 #ifdef HW_RVL
    &wiiusb_hid,
+#endif
+#if defined(WIIU)
+   &wiiu_hid,
 #endif
    &null_hid,
    NULL,
@@ -3034,15 +3044,15 @@ void input_driver_init_command(
       input_driver_state_t *input_st,
       settings_t *settings)
 {
-   bool input_network_cmd_enable = settings->bools.network_cmd_enable;
-   unsigned network_cmd_port     = settings->uints.network_cmd_port;
+   bool input_network_cmd_enable     = settings->bools.network_cmd_enable;
+   unsigned network_cmd_port         = settings->uints.network_cmd_port;
 #ifdef HAVE_STDIN_CMD
-   bool input_stdin_cmd_enable   = settings->bools.stdin_cmd_enable;
+   bool input_stdin_cmd_enable       = settings->bools.stdin_cmd_enable;
 
    if (input_stdin_cmd_enable)
    {
-      input_driver_state_t *input_st= input_state_get_ptr();
-      bool grab_stdin               = 
+      input_driver_state_t *input_st = &input_driver_st;
+      bool grab_stdin                = 
          input_st->current_driver->grab_stdin &&
          input_st->current_driver->grab_stdin(input_st->current_data);
       if (grab_stdin)
@@ -3294,22 +3304,13 @@ void input_overlay_init(void)
 }
 #endif
 
-void set_connection_listener(pad_connection_listener_t *listener)
-{
-   input_driver_st.pad_connection_listener = listener;
-}
-
 void input_pad_connect(unsigned port, input_device_driver_t *driver)
 {
-   input_driver_state_t *input_st = &input_driver_st;
    if (port >= MAX_USERS || !driver)
    {
       RARCH_ERR("[Input]: input_pad_connect: bad parameters\n");
       return;
    }
-
-   if (input_st->pad_connection_listener)
-      input_st->pad_connection_listener->connected(port, driver);
 
    input_autoconfigure_connect(driver->name(port), NULL, driver->ident,
           port, 0, 0);
@@ -4141,3 +4142,649 @@ void input_driver_poll(void)
    }
 #endif
 }
+
+#ifdef HAVE_BSV_MOVIE
+#define MAGIC_INDEX        0
+#define SERIALIZER_INDEX   1
+#define CRC_INDEX          2
+#define STATE_SIZE_INDEX   3
+
+#define BSV_MAGIC          0x42535631
+
+static bool bsv_movie_init_playback(
+      bsv_movie_t *handle, const char *path)
+{
+   uint32_t state_size       = 0;
+   uint32_t content_crc      = 0;
+   uint32_t header[4]        = {0};
+   intfstream_t *file        = intfstream_open_file(path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!file)
+   {
+      RARCH_ERR("Could not open BSV file for playback, path : \"%s\".\n", path);
+      return false;
+   }
+
+   handle->file              = file;
+   handle->playback          = true;
+
+   intfstream_read(handle->file, header, sizeof(uint32_t) * 4);
+   /* Compatibility with old implementation that
+    * used incorrect documentation. */
+   if (swap_if_little32(header[MAGIC_INDEX]) != BSV_MAGIC
+         && swap_if_big32(header[MAGIC_INDEX]) != BSV_MAGIC)
+   {
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE));
+      return false;
+   }
+
+   content_crc               = content_get_crc();
+
+   if (content_crc != 0)
+      if (swap_if_big32(header[CRC_INDEX]) != content_crc)
+         RARCH_WARN("%s.\n", msg_hash_to_str(MSG_CRC32_CHECKSUM_MISMATCH));
+
+   state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
+
+#if 0
+   RARCH_ERR("----- debug %u -----\n", header[0]);
+   RARCH_ERR("----- debug %u -----\n", header[1]);
+   RARCH_ERR("----- debug %u -----\n", header[2]);
+   RARCH_ERR("----- debug %u -----\n", header[3]);
+#endif
+
+   if (state_size)
+   {
+      retro_ctx_size_info_t info;
+      retro_ctx_serialize_info_t serial_info;
+      uint8_t *buf       = (uint8_t*)malloc(state_size);
+
+      if (!buf)
+         return false;
+
+      handle->state      = buf;
+      handle->state_size = state_size;
+      if (intfstream_read(handle->file,
+               handle->state, state_size) != state_size)
+      {
+         RARCH_ERR("%s\n", msg_hash_to_str(MSG_COULD_NOT_READ_STATE_FROM_MOVIE));
+         return false;
+      }
+
+      core_serialize_size( &info);
+
+      if (info.size == state_size)
+      {
+         serial_info.data_const = handle->state;
+         serial_info.size       = state_size;
+         core_unserialize(&serial_info);
+      }
+      else
+         RARCH_WARN("%s\n",
+               msg_hash_to_str(MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION));
+   }
+
+   handle->min_file_pos = sizeof(header) + state_size;
+
+   return true;
+}
+
+static bool bsv_movie_init_record(
+      bsv_movie_t *handle, const char *path)
+{
+   retro_ctx_size_info_t info;
+   uint32_t state_size       = 0;
+   uint32_t content_crc      = 0;
+   uint32_t header[4]        = {0};
+   intfstream_t *file        = intfstream_open_file(path,
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!file)
+   {
+      RARCH_ERR("Could not open BSV file for recording, path : \"%s\".\n", path);
+      return false;
+   }
+
+   handle->file             = file;
+
+   content_crc              = content_get_crc();
+
+   /* This value is supposed to show up as
+    * BSV1 in a HEX editor, big-endian. */
+   header[MAGIC_INDEX]      = swap_if_little32(BSV_MAGIC);
+   header[CRC_INDEX]        = swap_if_big32(content_crc);
+
+   core_serialize_size(&info);
+
+   state_size               = (unsigned)info.size;
+
+   header[STATE_SIZE_INDEX] = swap_if_big32(state_size);
+
+   intfstream_write(handle->file, header, 4 * sizeof(uint32_t));
+
+   handle->min_file_pos     = sizeof(header) + state_size;
+   handle->state_size       = state_size;
+
+   if (state_size)
+   {
+      retro_ctx_serialize_info_t serial_info;
+      uint8_t *st      = (uint8_t*)malloc(state_size);
+
+      if (!st)
+         return false;
+
+      handle->state    = st;
+
+      serial_info.data = handle->state;
+      serial_info.size = state_size;
+
+      core_serialize(&serial_info);
+
+      intfstream_write(handle->file,
+            handle->state, state_size);
+   }
+
+   return true;
+}
+
+static void bsv_movie_free(bsv_movie_t *handle)
+{
+   intfstream_close(handle->file);
+   free(handle->file);
+
+   free(handle->state);
+   free(handle->frame_pos);
+   free(handle);
+}
+
+static bsv_movie_t *bsv_movie_init_internal(const char *path,
+      enum rarch_movie_type type)
+{
+   size_t *frame_pos   = NULL;
+   bsv_movie_t *handle = (bsv_movie_t*)calloc(1, sizeof(*handle));
+
+   if (!handle)
+      return NULL;
+
+   if (type == RARCH_MOVIE_PLAYBACK)
+   {
+      if (!bsv_movie_init_playback(handle, path))
+         goto error;
+   }
+   else if (!bsv_movie_init_record(handle, path))
+      goto error;
+
+   /* Just pick something really large
+    * ~1 million frames rewind should do the trick. */
+   if (!(frame_pos = (size_t*)calloc((1 << 20), sizeof(size_t))))
+      goto error;
+
+   handle->frame_pos       = frame_pos;
+
+   handle->frame_pos[0]    = handle->min_file_pos;
+   handle->frame_mask      = (1 << 20) - 1;
+
+   return handle;
+
+error:
+   if (handle)
+      bsv_movie_free(handle);
+   return NULL;
+}
+
+static bool runloop_check_movie_init(input_driver_state_t *input_st,
+      settings_t *settings)
+{
+   char msg[16384], path[8192];
+   bsv_movie_t *state          = NULL;
+   int state_slot              = settings->ints.state_slot;
+
+   msg[0] = path[0]            = '\0';
+
+   configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
+
+   if (state_slot > 0)
+      snprintf(path, sizeof(path), "%s%d.bsv",
+            input_st->bsv_movie_state.movie_path,
+            state_slot);
+   else
+      snprintf(path, sizeof(path), "%s.bsv",
+            input_st->bsv_movie_state.movie_path);
+
+   snprintf(msg, sizeof(msg), "%s \"%s\".",
+         msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+         path);
+
+   state = bsv_movie_init_internal(path, RARCH_MOVIE_RECORD);
+
+   if (!state)
+   {
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
+            2, 180, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      RARCH_ERR("%s\n",
+            msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
+      return false;
+   }
+
+   input_st->bsv_movie_state_handle         = state;
+
+   runloop_msg_queue_push(msg, 2, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   RARCH_LOG("%s \"%s\".\n",
+         msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+         path);
+
+   return true;
+}
+
+void bsv_movie_frame_rewind(void)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   bsv_movie_t         *handle    = input_st->bsv_movie_state_handle;
+
+   if (!handle)
+      return;
+
+   handle->did_rewind = true;
+
+   if (     (handle->frame_ptr <= 1)
+         && (handle->frame_pos[0] == handle->min_file_pos))
+   {
+      /* If we're at the beginning... */
+      handle->frame_ptr = 0;
+      intfstream_seek(handle->file, (int)handle->min_file_pos, SEEK_SET);
+   }
+   else
+   {
+      /* First time rewind is performed, the old frame is simply replayed.
+       * However, playing back that frame caused us to read data, and push
+       * data to the ring buffer.
+       *
+       * Sucessively rewinding frames, we need to rewind past the read data,
+       * plus another. */
+      handle->frame_ptr = (handle->frame_ptr -
+            (handle->first_rewind ? 1 : 2)) & handle->frame_mask;
+      intfstream_seek(handle->file,
+            (int)handle->frame_pos[handle->frame_ptr], SEEK_SET);
+   }
+
+   if (intfstream_tell(handle->file) <= (long)handle->min_file_pos)
+   {
+      /* We rewound past the beginning. */
+
+      if (!handle->playback)
+      {
+         retro_ctx_serialize_info_t serial_info;
+
+         /* If recording, we simply reset
+          * the starting point. Nice and easy. */
+
+         intfstream_seek(handle->file, 4 * sizeof(uint32_t), SEEK_SET);
+
+         serial_info.data = handle->state;
+         serial_info.size = handle->state_size;
+
+         core_serialize(&serial_info);
+
+         intfstream_write(handle->file, handle->state, handle->state_size);
+      }
+      else
+         intfstream_seek(handle->file, (int)handle->min_file_pos, SEEK_SET);
+   }
+}
+
+bool bsv_movie_init(struct rarch_state *p_rarch,
+      input_driver_state_t *input_st)
+{
+   bsv_movie_t *state = NULL;
+   if (input_st->bsv_movie_state.movie_start_playback)
+   {
+      if (!(state = bsv_movie_init_internal(
+               input_st->bsv_movie_state.movie_start_path,
+               RARCH_MOVIE_PLAYBACK)))
+      {
+         RARCH_ERR("%s: \"%s\".\n",
+               msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE),
+               input_st->bsv_movie_state.movie_start_path);
+         return false;
+      }
+
+      input_st->bsv_movie_state_handle        = state;
+      input_st->bsv_movie_state.movie_playback = true;
+      runloop_msg_queue_push(msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK),
+            2, 180, false,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      RARCH_LOG("%s.\n", msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK));
+
+      return true;
+   }
+   else if (input_st->bsv_movie_state.movie_start_recording)
+   {
+      char msg[8192];
+
+      if (!(state = bsv_movie_init_internal(
+               input_st->bsv_movie_state.movie_start_path,
+               RARCH_MOVIE_RECORD)))
+      {
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
+               1, 180, true,
+               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_ERR("%s.\n",
+               msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
+         return false;
+      }
+
+      input_st->bsv_movie_state_handle         = state;
+      snprintf(msg, sizeof(msg),
+            "%s \"%s\".",
+            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+            input_st->bsv_movie_state.movie_start_path);
+
+      runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+            input_st->bsv_movie_state.movie_start_path);
+
+      return true;
+   }
+
+   return false;
+}
+
+void bsv_movie_deinit(input_driver_state_t *input_st)
+{
+   if (input_st->bsv_movie_state_handle)
+      bsv_movie_free(input_st->bsv_movie_state_handle);
+   input_st->bsv_movie_state_handle = NULL;
+}
+
+bool bsv_movie_check(input_driver_state_t *input_st,
+      settings_t *settings)
+{
+   if (!input_st->bsv_movie_state_handle)
+      return runloop_check_movie_init(input_st, settings);
+
+   if (input_st->bsv_movie_state.movie_playback)
+   {
+      /* Checks if movie is being played back. */
+      if (!input_st->bsv_movie_state.movie_end)
+         return false;
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED), 2, 180, false,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
+
+      bsv_movie_deinit(input_st);
+
+      input_st->bsv_movie_state.movie_end      = false;
+      input_st->bsv_movie_state.movie_playback = false;
+
+      return true;
+   }
+
+   /* Checks if movie is being recorded. */
+   if (!input_st->bsv_movie_state_handle)
+      return false;
+
+   runloop_msg_queue_push(
+         msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED), 2, 180, true,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
+
+   bsv_movie_deinit(input_st);
+
+   return true;
+}
+#endif
+
+int16_t input_state_internal(unsigned port, unsigned device,
+      unsigned idx, unsigned id)
+{
+   rarch_joypad_info_t joypad_info;
+   unsigned mapped_port;
+   input_driver_state_t *input_st          = &input_driver_st;
+   settings_t *settings                    = config_get_ptr();
+   float input_analog_deadzone             = settings->floats.input_analog_deadzone;
+   float input_analog_sensitivity          = settings->floats.input_analog_sensitivity;
+   unsigned *input_remap_port_map          = settings->uints.input_remap_port_map[port];
+   bool input_driver_analog_requested      = input_st->analog_requested[port];
+   const input_device_driver_t *joypad     = input_st->primary_joypad;
+#ifdef HAVE_MFI
+   const input_device_driver_t *sec_joypad = input_st->secondary_joypad;
+#else
+   const input_device_driver_t *sec_joypad = NULL;
+#endif
+#ifdef HAVE_MENU
+   struct menu_state *menu_st              = menu_state_get_ptr();
+   bool input_blocked                      = (menu_st->input_driver_flushing_input > 0) ||
+                                             input_st->block_libretro_input;
+#else
+   bool input_blocked                      = input_st->block_libretro_input;
+#endif
+   bool bitmask_enabled                    = false;
+   unsigned max_users                      = settings->uints.input_max_users;
+   int16_t result                          = 0;
+
+   device                                 &= RETRO_DEVICE_MASK;
+   bitmask_enabled                         = (device == RETRO_DEVICE_JOYPAD) &&
+                                             (id == RETRO_DEVICE_ID_JOYPAD_MASK);
+   joypad_info.axis_threshold              = settings->floats.input_axis_threshold;
+
+   /* Loop over all 'physical' ports mapped to specified
+    * 'virtual' port index */
+   while ((mapped_port = *(input_remap_port_map++)) < MAX_USERS)
+   {
+      int16_t ret                     = 0;
+      int16_t port_result             = 0;
+      unsigned input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[mapped_port];
+
+      joypad_info.joy_idx             = settings->uints.input_joypad_index[mapped_port];
+      joypad_info.auto_binds          = input_autoconf_binds[joypad_info.joy_idx];
+
+      /* Skip disabled input devices */
+      if (mapped_port >= max_users)
+         continue;
+
+      /* If core has requested analog input, disable
+       * analog to dpad mapping (unless forced) */
+      switch (input_analog_dpad_mode)
+      {
+         case ANALOG_DPAD_LSTICK:
+         case ANALOG_DPAD_RSTICK:
+            if (input_driver_analog_requested)
+               input_analog_dpad_mode = ANALOG_DPAD_NONE;
+            break;
+         case ANALOG_DPAD_LSTICK_FORCED:
+            input_analog_dpad_mode = ANALOG_DPAD_LSTICK;
+            break;
+         case ANALOG_DPAD_RSTICK_FORCED:
+            input_analog_dpad_mode = ANALOG_DPAD_RSTICK;
+            break;
+         default:
+            break;
+      }
+
+      /* TODO/FIXME: This code is gibberish - a mess of nested
+       * refactors that make no sense whatsoever. The entire
+       * thing needs to be rewritten from scratch... */
+
+      ret = input_state_wrap(
+            input_st->current_driver,
+            input_st->current_data,
+            joypad,
+            sec_joypad,
+            &joypad_info,
+            input_st->libretro_input_binds,
+            input_st->keyboard_mapping_blocked,
+            mapped_port, device, idx, id);
+
+      if ((device == RETRO_DEVICE_ANALOG) &&
+          (ret == 0))
+      {
+         if (input_st->libretro_input_binds[mapped_port])
+         {
+            if (idx == RETRO_DEVICE_INDEX_ANALOG_BUTTON)
+            {
+               if (id < RARCH_FIRST_CUSTOM_BIND)
+               {
+                  bool valid_bind = input_st->libretro_input_binds[mapped_port][id].valid;
+
+                  if (valid_bind)
+                  {
+                     if (sec_joypad)
+                        ret = input_joypad_analog_button(
+                              input_analog_deadzone,
+                              input_analog_sensitivity,
+                              sec_joypad, &joypad_info,
+                              id,
+                              &input_st->libretro_input_binds[mapped_port][id]);
+
+                     if (joypad && (ret == 0))
+                        ret = input_joypad_analog_button(
+                              input_analog_deadzone,
+                              input_analog_sensitivity,
+                              joypad, &joypad_info,
+                              id,
+                              &input_st->libretro_input_binds[mapped_port][id]);
+                  }
+               }
+            }
+            else
+            {
+               if (sec_joypad)
+                  ret = input_joypad_analog_axis(
+                        input_analog_dpad_mode,
+                        input_analog_deadzone,
+                        input_analog_sensitivity,
+                        sec_joypad,
+                        &joypad_info,
+                        idx,
+                        id,
+                        input_st->libretro_input_binds[mapped_port]);
+
+               if (joypad && (ret == 0))
+                  ret = input_joypad_analog_axis(
+                        input_analog_dpad_mode,
+                        input_analog_deadzone,
+                        input_analog_sensitivity,
+                        joypad,
+                        &joypad_info,
+                        idx,
+                        id,
+                        input_st->libretro_input_binds[mapped_port]);
+            }
+         }
+      }
+
+      if (!input_blocked)
+      {
+         input_mapper_t *handle = &input_st->mapper;
+
+         if (bitmask_enabled)
+         {
+            unsigned i;
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+               if (input_state_device(input_st,
+                        settings, handle,
+                        input_analog_dpad_mode, ret, mapped_port,
+                        device, idx, i, true))
+                  port_result |= (1 << i);
+         }
+         else
+            port_result = input_state_device(input_st,
+                  settings, handle,
+                  input_analog_dpad_mode, ret, mapped_port,
+                  device, idx, id, false);
+      }
+
+      /* Digital values are represented by a bitmap;
+       * we can just perform the logical OR of
+       * successive samples.
+       * Analog values are an integer corresponding
+       * to the extent of the analog motion; these
+       * cannot be OR'd together, we must instead
+       * keep the value with the largest magnitude */
+      if (device == RETRO_DEVICE_ANALOG)
+      {
+         if (result == 0)
+            result = port_result;
+         else
+         {
+            int16_t port_result_abs = (port_result >= 0) ?
+               port_result : -port_result;
+            int16_t result_abs      = (result >= 0) ?
+               result : -result;
+
+            if (port_result_abs > result_abs)
+               result = port_result;
+         }
+      }
+      else
+         result |= port_result;
+   }
+
+#ifdef HAVE_BSV_MOVIE
+   /* Save input to BSV record, if enabled */
+   if (BSV_MOVIE_IS_PLAYBACK_OFF())
+   {
+      result = swap_if_big16(result);
+      intfstream_write(
+            input_st->bsv_movie_state_handle->file, &result, 2);
+   }
+#endif
+
+   return result;
+}
+
+int16_t input_driver_state_wrapper(unsigned port, unsigned device,
+      unsigned idx, unsigned id)
+{
+   input_driver_state_t 
+      *input_st                = &input_driver_st;
+   int16_t result              = 0;
+#ifdef HAVE_BSV_MOVIE
+   /* Load input from BSV record, if enabled */
+   if (BSV_MOVIE_IS_PLAYBACK_ON())
+   {
+      int16_t bsv_result = 0;
+      if (intfstream_read(
+               input_st->bsv_movie_state_handle->file,
+               &bsv_result, 2) == 2)
+      {
+#ifdef HAVE_CHEEVOS
+         rcheevos_pause_hardcore();
+#endif
+         return swap_if_big16(bsv_result);
+      }
+
+      input_st->bsv_movie_state.movie_end = true;
+   }
+#endif
+
+   /* Read input state */
+   result = input_state_internal(port, device, idx, id);
+
+   /* Register any analog stick input requests for
+    * this 'virtual' (core) port */
+   if (     (device == RETRO_DEVICE_ANALOG) &&
+       (    (idx    == RETRO_DEVICE_INDEX_ANALOG_LEFT) ||
+            (idx    == RETRO_DEVICE_INDEX_ANALOG_RIGHT)))
+      input_st->analog_requested[port] = true;
+
+#ifdef HAVE_BSV_MOVIE
+   /* Save input to BSV record, if enabled */
+   if (BSV_MOVIE_IS_PLAYBACK_OFF())
+   {
+      result = swap_if_big16(result);
+      intfstream_write(input_st->bsv_movie_state_handle->file, &result, 2);
+   }
+#endif
+
+   return result;
+}
+

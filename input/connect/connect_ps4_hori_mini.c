@@ -32,8 +32,10 @@ struct hidpad_ps4_hori_mini_data
 
 static void* hidpad_ps4_hori_mini_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
-   struct pad_connection            *connection = (struct pad_connection*)data;
-   struct hidpad_ps4_hori_mini_data *device     = (struct hidpad_ps4_hori_mini_data*)calloc(1, sizeof(struct hidpad_ps4_hori_mini_data));
+   struct pad_connection *connection        = (struct pad_connection*)data;
+   struct hidpad_ps4_hori_mini_data *device = 
+	   (struct hidpad_ps4_hori_mini_data*)
+	   calloc(1, sizeof(struct hidpad_ps4_hori_mini_data));
 
    if (!device)
       return NULL;
@@ -59,9 +61,12 @@ static void hidpad_ps4_hori_mini_deinit(void *data)
       free(device);
 }
 
-static void hidpad_ps4_hori_mini_get_buttons(void *data, input_bits_t *state)
+static void hidpad_ps4_hori_mini_get_buttons(
+      void *data, input_bits_t *state)
 {
-	struct hidpad_ps4_hori_mini_data *device = (struct hidpad_ps4_hori_mini_data*)data;
+	struct hidpad_ps4_hori_mini_data *device = 
+      (struct hidpad_ps4_hori_mini_data*)data;
+
 	if ( device )
 	{
 		/* copy 32 bits : needed for PS button? */
@@ -74,7 +79,8 @@ static void hidpad_ps4_hori_mini_get_buttons(void *data, input_bits_t *state)
 static int16_t hidpad_ps4_hori_mini_get_axis(void *data, unsigned axis)
 {
    int val;
-   struct hidpad_ps4_hori_mini_data *device = (struct hidpad_ps4_hori_mini_data*)data;
+   struct hidpad_ps4_hori_mini_data *device = 
+      (struct hidpad_ps4_hori_mini_data*)data;
 
    if (!device || axis >= 4)
       return 0;
@@ -109,7 +115,8 @@ static void hidpad_ps4_hori_mini_packet_handler(void *data,
       17,
       18
    };
-   struct hidpad_ps4_hori_mini_data *device = (struct hidpad_ps4_hori_mini_data*)data;
+   struct hidpad_ps4_hori_mini_data *device = 
+      (struct hidpad_ps4_hori_mini_data*)data;
 
    if (!device)
       return;
@@ -173,9 +180,18 @@ static void hidpad_ps4_hori_mini_set_rumble(void *data,
 
 const char * hidpad_ps4_hori_mini_get_name(void *data)
 {
-	(void)data;
-	/* For now we return a single static name */
-	return "HORI mini wired PS4";
+   (void)data;
+   /* For now we return a single static name */
+   return "HORI mini wired PS4";
+}
+
+static int32_t hidpad_ps4_hori_mini_button(void *data, uint16_t joykey)
+{
+   struct hidpad_ps4_hori_mini_data *pad = 
+      (struct hidpad_ps4_hori_mini_data*)data;
+   if (!pad || joykey > 31)
+      return 0;
+   return pad->buttons & (1 << joykey);
 }
 
 pad_connection_interface_t pad_connection_ps4_hori_mini = {
@@ -186,4 +202,6 @@ pad_connection_interface_t pad_connection_ps4_hori_mini = {
    hidpad_ps4_hori_mini_get_buttons,
    hidpad_ps4_hori_mini_get_axis,
    hidpad_ps4_hori_mini_get_name,
+   hidpad_ps4_hori_mini_button, /* button */
+   false
 };

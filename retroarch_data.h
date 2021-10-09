@@ -59,18 +59,6 @@
 
 #define DEBUG_INFO_FILENAME "debug_info.txt"
 
-#define MAGIC_INDEX        0
-#define SERIALIZER_INDEX   1
-#define CRC_INDEX          2
-#define STATE_SIZE_INDEX   3
-
-#ifdef HAVE_BSV_MOVIE
-#define BSV_MAGIC          0x42535631
-
-#define BSV_MOVIE_IS_PLAYBACK_ON() (p_rarch->bsv_movie_state_handle && p_rarch->bsv_movie_state.movie_playback)
-#define BSV_MOVIE_IS_PLAYBACK_OFF() (p_rarch->bsv_movie_state_handle && !p_rarch->bsv_movie_state.movie_playback)
-#endif
-
 #define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
 
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
@@ -145,7 +133,8 @@
 #define VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(p_rarch) (&p_rarch->hw_render)
 
 #ifdef HAVE_BSV_MOVIE
-#define BSV_MOVIE_IS_EOF(p_rarch) || (p_rarch->bsv_movie_state.movie_end && p_rarch->bsv_movie_state.eof_exit)
+#define BSV_MOVIE_IS_EOF(p_rarch) || (input_st->bsv_movie_state.movie_end && \
+input_st->bsv_movie_state.eof_exit)
 #else
 #define BSV_MOVIE_IS_EOF(p_rarch)
 #endif
@@ -889,12 +878,6 @@ enum
    RA_OPT_LOAD_MENU_ON_ERROR
 };
 
-enum rarch_movie_type
-{
-   RARCH_MOVIE_PLAYBACK = 0,
-   RARCH_MOVIE_RECORD
-};
-
 enum poll_type_override_t
 {
    POLL_TYPE_OVERRIDE_DONTCARE = 0,
@@ -1098,9 +1081,6 @@ struct rarch_state
    gfx_ctx_driver_t current_video_context;               /* ptr alignment */
    content_state_t            content_st;                /* ptr alignment */
    struct retro_hw_render_callback hw_render;            /* ptr alignment */
-#ifdef HAVE_BSV_MOVIE
-   bsv_movie_t     *bsv_movie_state_handle;              /* ptr alignment */
-#endif
    retro_input_state_t input_state_callback_original;    /* ptr alignment */
    struct retro_audio_callback audio_callback;           /* ptr alignment */
    video_driver_frame_t frame_bak;                       /* ptr alignment */
@@ -1253,9 +1233,6 @@ struct rarch_state
    gfx_ctx_flags_t deferred_flag_data;          /* uint32_t alignment */
    retro_bits_t has_set_libretro_device;        /* uint32_t alignment */
 
-#ifdef HAVE_BSV_MOVIE
-   struct bsv_state bsv_movie_state;            /* char alignment */
-#endif
    char cached_video_driver[32];
    char video_driver_title_buf[64];
    char video_driver_gpu_device_string[128];

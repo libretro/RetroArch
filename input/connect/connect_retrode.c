@@ -189,6 +189,14 @@ const char * hidpad_retrode_get_name(void *data)
     return "Retrode";
 }
 
+static int32_t hidpad_retrode_button(void *data, uint16_t joykey)
+{
+   struct hidpad_retrode_data *pad = (struct hidpad_retrode_data*)data;
+   if (!pad || joykey > 31)
+      return 0;
+   return pad->buttons & (1 << joykey);
+}
+
 pad_connection_interface_t pad_connection_retrode = {
    hidpad_retrode_init,
    hidpad_retrode_deinit,
@@ -197,4 +205,6 @@ pad_connection_interface_t pad_connection_retrode = {
    hidpad_retrode_get_buttons,
    hidpad_retrode_get_axis,
    hidpad_retrode_get_name,
+   hidpad_retrode_button,
+   false,
 };

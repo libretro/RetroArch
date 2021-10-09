@@ -807,7 +807,7 @@ static const bool default_systemfiles_in_content_dir = false;
 static const bool default_screenshots_in_content_dir = false;
 
 #if defined(RS90) || defined(RETROFW) || defined(MIYOO)
-#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_START_SELECT
+#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_COMBO_START_SELECT
 #elif defined(_XBOX1) || defined(__PS3__) || defined(_XBOX360) || defined(DINGUX)
 #define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_COMBO_L3_R3
 #elif defined(PS2) || defined(PSP)

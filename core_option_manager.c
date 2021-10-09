@@ -725,12 +725,19 @@ static bool core_option_manager_parse_variable(
    if (!option->val_labels)
       goto error;
 
-   /* > Loop over values and 'extract' labels */
+   /* > Loop over values and:
+    *   - Set value hashes
+    *   - 'Extract' labels */
    for (i = 0; i < option->vals->size; i++)
    {
       const char *value       = option->vals->elems[i].data;
+      uint32_t *value_hash    = (uint32_t *)malloc(sizeof(uint32_t));
       const char *value_label = core_option_manager_parse_value_label(
             value, NULL);
+
+      /* Set value hash */
+      *value_hash = core_option_manager_hash_string(value);
+      option->vals->elems[i].userdata = (void*)value_hash;
 
       /* Redundant safely check... */
       value_label = string_is_empty(value_label) ?
@@ -753,9 +760,15 @@ static bool core_option_manager_parse_variable(
    /* Set current config value */
    if (entry && !string_is_empty(entry->value))
    {
+      uint32_t entry_value_hash = core_option_manager_hash_string(entry->value);
+
       for (i = 0; i < option->vals->size; i++)
       {
-         if (string_is_equal(option->vals->elems[i].data, entry->value))
+         const char *value   = option->vals->elems[i].data;
+         uint32_t value_hash = *((uint32_t*)option->vals->elems[i].userdata);
+
+         if ((value_hash == entry_value_hash) &&
+             string_is_equal(value, entry->value))
          {
             option->index = i;
             break;
@@ -998,11 +1011,16 @@ static bool core_option_manager_parse_option(
    for (i = 0; i < num_vals; i++)
    {
       const char *value       = values[i].value;
+      uint32_t *value_hash    = (uint32_t *)malloc(sizeof(uint32_t));
       const char *value_label = values[i].label;
 
       /* Append value string
        * > We know that 'value' is always valid */
       string_list_append(option->vals, value, attr);
+
+      /* > Set value hash */
+      *value_hash = core_option_manager_hash_string(value);
+      option->vals->elems[option->vals->size - 1].userdata = (void*)value_hash;
 
       /* Value label requires additional processing */
       value_label = core_option_manager_parse_value_label(
@@ -1034,9 +1052,15 @@ static bool core_option_manager_parse_option(
    /* Set current config value */
    if (entry && !string_is_empty(entry->value))
    {
+      uint32_t entry_value_hash = core_option_manager_hash_string(entry->value);
+
       for (i = 0; i < option->vals->size; i++)
       {
-         if (string_is_equal(option->vals->elems[i].data, entry->value))
+         const char *value   = option->vals->elems[i].data;
+         uint32_t value_hash = *((uint32_t*)option->vals->elems[i].userdata);
+
+         if ((value_hash == entry_value_hash) &&
+             string_is_equal(value, entry->value))
          {
             option->index = i;
             break;
@@ -1472,6 +1496,57 @@ bool core_option_manager_get_idx(core_option_manager_t *opt,
           string_is_equal(key, option->key))
       {
          *idx = i;
+         return true;
+      }
+   }
+
+   return false;
+}
+
+/**
+ * core_option_manager_get_val_idx:
+ *
+ * @opt     : options manager handle
+ * @idx     : core option index
+ * @val     : string representation of the
+ *            core option value
+ * @val_idx : index of core option value
+ *            corresponding to @val
+ *
+ * Fetches the index of the core option value
+ * identified by the specified core option @idx
+ * and @val string.
+ *
+ * Returns: true if option value matching the
+ * specified option index and value string
+ * was found, otherwise false.
+ **/
+bool core_option_manager_get_val_idx(core_option_manager_t *opt,
+      size_t idx, const char *val, size_t *val_idx)
+{
+   struct core_option *option = NULL;
+   uint32_t val_hash;
+   size_t i;
+
+   if (!opt ||
+       (idx >= opt->size) ||
+       string_is_empty(val) ||
+       !val_idx)
+      return false;
+
+   val_hash = core_option_manager_hash_string(val);
+   option   = (struct core_option*)&opt->opts[idx];
+
+   for (i = 0; i < option->vals->size; i++)
+   {
+      const char *option_val   = option->vals->elems[i].data;
+      uint32_t option_val_hash = *((uint32_t*)option->vals->elems[i].userdata);
+
+      if ((val_hash == option_val_hash) &&
+          !string_is_empty(option_val) &&
+          string_is_equal(val, option_val))
+      {
+         *val_idx = i;
          return true;
       }
    }
