@@ -16,6 +16,7 @@
 - STEAM/LINUX: Move to new 'soldier' runtime
 - WAYLAND: Remove xdg-shell-v6 protocol
 - WINDOWS: Fix non-ASCII text display in window title
+- WINDOWS 11: Shows Windows 11 version name now (Information -> System Information)
 - UWP: Further improvements to WinRT VFS layer
 
 # 1.9.10
