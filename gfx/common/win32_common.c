@@ -1615,20 +1615,22 @@ bool win32_window_create(void *data, unsigned style,
    bool    window_save_positions = settings->bools.video_window_save_positions;
    unsigned    user_width        = width;
    unsigned    user_height       = height;
+   wchar_t *title_wide     = utf8_to_utf16_string_alloc(msg_hash_to_str(MSG_PROGRAM));
 
    if (window_save_positions && !fullscreen)
    {
       user_width                 = g_win32->pos_width;
       user_height                = g_win32->pos_height;
    }
-   main_window.hwnd              = CreateWindowEx(0,
-         "RetroArch", msg_hash_to_str(MSG_PROGRAM),
+   main_window.hwnd              = CreateWindowExW(0,
+         L"RetroArch", title_wide,
          style,
          fullscreen ? mon_rect->left : g_win32->pos_x,
          fullscreen ? mon_rect->top  : g_win32->pos_y,
          user_width,
          user_height,
          NULL, NULL, NULL, data);
+   free(title_wide);
    if (!main_window.hwnd)
       return false;
 
