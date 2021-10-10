@@ -23,8 +23,8 @@
 #include "../input_defines.h"
 #include "verbosity.h"
 
-#define DS3_ACTIVATION_REPORT_ID 0xf4
-#define DS3_RUMBLE_REPORT_ID     0x01
+#define SIXAXIS_REPORT_0xF2_SIZE 17
+#define SIXAXIS_REPORT_0xF5_SIZE 8
 
 typedef struct ds3_instance
 {
@@ -36,249 +36,140 @@ typedef struct ds3_instance
    int16_t analog_state[3][2];
    uint16_t motors[2];
    uint8_t data[64];
+   uint8_t led_state[4];
 } ds3_instance_t;
 
-static void ds3_update_pad_state(ds3_instance_t *instance);
-static void ds3_update_analog_state(ds3_instance_t *instance);
+struct sixaxis_led {
+    uint8_t time_enabled; /* the total time the led is active (0xff means forever) */
+    uint8_t duty_length;  /* how long a cycle is in deciseconds (0 means "really fast") */
+    uint8_t enabled;
+    uint8_t duty_off; /* % of duty_length the led is off (0xff means 100%) */
+    uint8_t duty_on;  /* % of duty_length the led is on (0xff mean 100%) */
+} __packed;
 
-static uint8_t ds3_activation_packet[] =
-{
-#if defined(IOS)
-   0x53, 0xF4,
-#elif defined(HAVE_WIIUSB_HID)
-   0x02,
-#endif
-   0x42, 0x0c, 0x00, 0x00
+struct sixaxis_rumble {
+    uint8_t padding;
+    uint8_t right_duration; /* Right motor duration (0xff means forever) */
+    uint8_t right_motor_on; /* Right (small) motor on/off, only supports values of 0 or 1 (off/on) */
+    uint8_t left_duration;    /* Left motor duration (0xff means forever) */
+    uint8_t left_motor_force; /* left (large) motor, supports force values from 0 to 255 */
+} __packed;
+
+struct sixaxis_output_report {
+    uint8_t report_id;
+    struct sixaxis_rumble rumble;
+    uint8_t padding[4];
+    uint8_t leds_bitmap; /* bitmap of enabled LEDs: LED_1 = 0x02, LED_2 = 0x04, ... */
+    struct sixaxis_led led[4];    /* LEDx at (4 - x) */
+    struct sixaxis_led _reserved; /* LED5, not actually soldered */
+} __packed;
+
+union sixaxis_output_report_01 {
+    struct sixaxis_output_report data;
+    uint8_t buf[36];
 };
 
-#if defined(WIIU)
-#define PACKET_OFFSET 2
-#elif defined(HAVE_WIIUSB_HID)
-#define PACKET_OFFSET 1
-#else
-#define PACKET_OFFSET 0
-#endif
-
-#define LED_OFFSET 11
-#define MOTOR1_OFFSET 4
-#define MOTOR2_OFFSET 6
-
-static uint8_t ds3_control_packet[] = {
-   0x52, 0x01,
-   0x00, 0xff, 0x00, 0xff, 0x00,
-   0x00, 0x00, 0x00, 0x00, 0x00,
-   0xff, 0x27, 0x10, 0x00, 0x32,
-   0xff, 0x27, 0x10, 0x00, 0x32,
-   0xff, 0x27, 0x10, 0x00, 0x32,
-   0xff, 0x27, 0x10, 0x00, 0x32,
-   0x00, 0x00, 0x00, 0x00, 0x00,
-   0x00, 0x00, 0x00, 0x00, 0x00,
-   0x00, 0x00, 0x00, 0x00, 0x00,
-   0x00, 0x00, 0x00
+static const union sixaxis_output_report_01 default_report = {
+    .buf = {
+        0x01,
+        0x01, 0xff, 0x00, 0xff, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00,
+        0xff, 0x27, 0x10, 0x00, 0x32,
+        0xff, 0x27, 0x10, 0x00, 0x32,
+        0xff, 0x27, 0x10, 0x00, 0x32,
+        0xff, 0x27, 0x10, 0x00, 0x32,
+        0x00, 0x00, 0x00, 0x00, 0x00
+    }
 };
 
+/* forward declarations */
+static void set_leds_from_id(ds3_instance_t *instance);
+static int ds3_set_operational(ds3_instance_t *instance);
 
-static int32_t ds3_send_control_packet(
-      void *data, uint32_t slot, hid_driver_t *driver)
-{
-   int32_t result = 0;
-   uint8_t packet_buffer[64] = {0};
-   memcpy(packet_buffer, ds3_control_packet, sizeof(ds3_control_packet));
-
-   packet_buffer[LED_OFFSET] = 0;
-   packet_buffer[LED_OFFSET] = 1 << ((slot % 4) + 1);
-   packet_buffer[MOTOR1_OFFSET] = 0;
-   packet_buffer[MOTOR2_OFFSET] = 0;
-
-#if defined(HAVE_WIIUSB_HID)
-   packet_buffer[1] = 0x03;
-#endif
-
-#if defined(WIIU)   
-   result = driver->set_report(data, HID_REPORT_OUTPUT, DS3_RUMBLE_REPORT_ID, packet_buffer+PACKET_OFFSET, 64-PACKET_OFFSET);
-#else
-   driver->send_control(data, packet_buffer+PACKET_OFFSET, 64-PACKET_OFFSET);
-#endif /* WIIU */
-   return result;
-}
-
-static int32_t ds3_send_activation_packet(void *data,
-      uint32_t slot, hid_driver_t *driver)
-{
-#ifdef WIIU
-   return driver->set_report(data, HID_REPORT_FEATURE, DS3_ACTIVATION_REPORT_ID, ds3_activation_packet, sizeof(ds3_activation_packet));
-#else
-   driver->send_control(data, ds3_activation_packet, sizeof(ds3_activation_packet));
-   return 0;
-#endif
-}
-
-static void *ds3_pad_init(void *data, uint32_t slot, hid_driver_t *driver)
-{
-   int errors               = 0;
-   ds3_instance_t *instance = (ds3_instance_t *)calloc(1, sizeof(ds3_instance_t));
-
-   if(driver->set_protocol) {
-      driver->set_protocol(data, 1);
+static void *ds3_init(void *handle, uint32_t slot, hid_driver_t *driver) {
+   ds3_instance_t *instance = (ds3_instance_t *)malloc(sizeof(ds3_instance_t));
+   if(!instance) {
+      return NULL;
    }
 
-   if (ds3_send_control_packet(data, slot, driver) < 0)
-      errors++;
-
-   /* Sending activation packet.. */
-   if (ds3_send_activation_packet(data, slot, driver) < 0)
-      errors++;
-
-   if (errors)
-      goto error;
-
+   instance->handle = handle;
    instance->hid_driver = driver;
-   instance->handle     = data;
-   instance->slot       = slot;
-   instance->led_set    = true;
+   instance->slot = slot;
+   set_leds_from_id(instance);
 
-   return instance;
 
-error:
-   free(instance);
-   return NULL;
 }
 
-static void ds3_pad_deinit(void *data)
-{
-   ds3_instance_t *pad = (ds3_instance_t *)data;
-   if (pad)
-      free(pad);
+static void ds3_deinit(void *device_data) {
+
 }
 
-static void ds3_get_buttons(void *data, input_bits_t *state)
-{
-   ds3_instance_t *pad = (ds3_instance_t *)data;
+static void ds3_packet_handler(void *device_data, uint8_t *packet, uint16_t size) {
 
-   if (pad)
-   {
-      BITS_COPY16_PTR(state, pad->buttons);
-
-      if (pad->buttons & 0x10000)
-         BIT256_SET_PTR(state, RARCH_MENU_TOGGLE);
-   }
-   else
-   {
-      BIT256_CLEAR_ALL_PTR(state);
-   }
 }
 
-static void ds3_packet_handler(void *data,
-      uint8_t *packet, uint16_t size)
-{
-   ds3_instance_t *instance = (ds3_instance_t *)data;
-   if(!instance)
-      return;
+static void ds3_set_rumble(void *device_data, enum retro_rumble_effect effect, uint16_t strength) {
 
-   if (!instance->led_set)
-   {
-      ds3_send_control_packet(instance->handle,
-            instance->slot, instance->hid_driver);
-      instance->led_set = true;
-   }
-
-   if (size > sizeof(instance->data))
-   {
-      RARCH_ERR("[ds3]: Expecting packet to be %ld but was %d\n",
-         (long)sizeof(instance->data), size);
-      return;
-   }
-
-   memcpy(instance->data, packet, size);
-   ds3_update_pad_state(instance);
-   ds3_update_analog_state(instance);
 }
 
-const char * ds3_get_name(void *data)
-{
-	(void)data;
-	/* For now we return a single static name */
-	return "PLAYSTATION(R)3 Controller";
+static void ds3_get_buttons(void *device_data, input_bits_t *state) {
+
 }
 
-static void ds3_set_rumble(void *data,
-      enum retro_rumble_effect effect, uint16_t strength) { }
-
-static int16_t ds3_get_axis(void *data, unsigned axis)
-{
-   axis_data axis_data;
-   ds3_instance_t *pad = (ds3_instance_t *)data;
-
-   gamepad_read_axis_data(axis, &axis_data);
-
-   if (!pad || axis_data.axis >= 4)
-      return 0;
-
-   return gamepad_get_axis_value(pad->analog_state, &axis_data);
+static int16_t ds3_get_axis(void *device_data, unsigned axis) {
+   return 0;
 }
 
-static int32_t ds3_button(void *data, uint16_t joykey)
-{
-   ds3_instance_t *pad = (ds3_instance_t *)data;
-   if (!pad || joykey > 31)
-      return 0;
-   return pad->buttons & (1 << joykey);
+static const char *ds3_get_name(void *device_data) {
+   return "PLAYSTATION(R)3 Controller";
 }
 
-static void ds3_update_pad_state(ds3_instance_t *instance)
-{
-   uint32_t i, pressed_keys;
+static int32_t ds3_button(void *device_data, uint16_t joykey) {
+   return 0;
+}
 
-   static const uint32_t button_mapping[17] =
-   {
-      RETRO_DEVICE_ID_JOYPAD_SELECT,
-      RETRO_DEVICE_ID_JOYPAD_L3,
-      RETRO_DEVICE_ID_JOYPAD_R3,
-      RETRO_DEVICE_ID_JOYPAD_START,
-      RETRO_DEVICE_ID_JOYPAD_UP,
-      RETRO_DEVICE_ID_JOYPAD_RIGHT,
-      RETRO_DEVICE_ID_JOYPAD_DOWN,
-      RETRO_DEVICE_ID_JOYPAD_LEFT,
-      RETRO_DEVICE_ID_JOYPAD_L2,
-      RETRO_DEVICE_ID_JOYPAD_R2,
-      RETRO_DEVICE_ID_JOYPAD_L,
-      RETRO_DEVICE_ID_JOYPAD_R,
-      RETRO_DEVICE_ID_JOYPAD_X,
-      RETRO_DEVICE_ID_JOYPAD_A,
-      RETRO_DEVICE_ID_JOYPAD_B,
-      RETRO_DEVICE_ID_JOYPAD_Y,
-      16 /* PS button */
+static void set_leds_from_id(ds3_instance_t *instance)
+{
+   /* for pads 0-3, we just light up the appropriate LED. */
+   /* for higher pads, we sum up the numbers on the LEDs  */
+   /* themselves, so e.g. pad 5 is 4 + 1, pad 6 is 4 + 2, */
+   /* and so on. We max out at 10 because 4+3+2+1 = 10    */
+   static const u8 sixaxis_leds[10][4] = {
+            { 0x01, 0x00, 0x00, 0x00 },
+            { 0x00, 0x01, 0x00, 0x00 },
+            { 0x00, 0x00, 0x01, 0x00 },
+            { 0x00, 0x00, 0x00, 0x01 },
+            { 0x01, 0x00, 0x00, 0x01 },
+            { 0x00, 0x01, 0x00, 0x01 },
+            { 0x00, 0x00, 0x01, 0x01 },
+            { 0x01, 0x00, 0x01, 0x01 },
+            { 0x00, 0x01, 0x01, 0x01 },
+            { 0x01, 0x01, 0x01, 0x01 }
    };
 
-   instance->buttons = 0;
+   int id = instance->slot;
 
-   pressed_keys = instance->data[2]        | 
-      (instance->data[3] << 8) |
-      ((instance->data[4] & 0x01) << 16);
+   if (id < 0)
+      return;
 
-   for (i = 0; i < 17; i++)
-      instance->buttons |= (pressed_keys & (1 << i)) ?
-         (1 << button_mapping[i]) : 0;
+   id %= 10;
+   memcpy(instance->led_state, sixaxis_leds[id], sizeof(sixaxis_leds[id]));
 }
 
-static void ds3_update_analog_state(ds3_instance_t *instance)
-{
-   int pad_axis;
-   int16_t interpolated;
-   unsigned stick, axis;
+static int ds3_set_operational(ds3_instance_t *instance) {
+   const int buf_size = SIXAXIS_REPORT_0xF2_SIZE;
+   uint8_t *buf = (uint8_t *)malloc(buf_size);
 
-   for (pad_axis = 0; pad_axis < 4; pad_axis++)
-   {
-      axis         = pad_axis % 2 ? 0 : 1;
-      stick        = pad_axis / 2;
-      interpolated = instance->data[6+pad_axis];
-      instance->analog_state[stick][axis] = (interpolated - 128) * 256;
+   if(!buf) {
+      return -1;
    }
+
+   instance->hid_driver->send_control(instance->handle,);
 }
 
 pad_connection_interface_t pad_connection_ps3 = {
-   ds3_pad_init,
-   ds3_pad_deinit,
+   ds3_init,
+   ds3_deinit,
    ds3_packet_handler,
    ds3_set_rumble,
    ds3_get_buttons,
