@@ -38,6 +38,7 @@
 #ifdef HAVE_AUDIOMIXER
 #include <audio/audio_mixer.h>
 #endif
+#include <audio/audio_resampler.h>
 
 #include "audio_defines.h"
 
