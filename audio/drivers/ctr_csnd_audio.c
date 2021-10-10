@@ -19,7 +19,7 @@
 #include <retro_miscellaneous.h>
 #include <retro_timers.h>
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 
 typedef struct
 {

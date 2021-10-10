@@ -55,6 +55,7 @@
 #include "../../core.h"
 #include "../../configuration.h"
 #include "../../core_info.h"
+#include "../../audio/audio_driver.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../defaults.h"
 #include "../../core_option_manager.h"

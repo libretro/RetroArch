@@ -39,6 +39,7 @@
 #endif
 #include "../../file_path_special.h"
 #include "../../retroarch.h"
+#include "../../audio/audio_driver.h"
 #include "../../verbosity.h"
 #include "../../ui/ui_companion_driver.h"
 #include "../../network/netplay/netplay.h"

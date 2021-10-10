@@ -27,7 +27,7 @@
 #include "../../config.h"
 #endif
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 #include "../../verbosity.h"
 
 #define DEFAULT_DEV "/dev/audio"

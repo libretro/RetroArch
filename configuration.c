@@ -46,6 +46,7 @@
 #include "retroarch.h"
 #include "verbosity.h"
 
+#include "audio/audio_driver.h"
 #include "gfx/gfx_animation.h"
 
 #include "tasks/task_content.h"

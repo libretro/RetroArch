@@ -21,7 +21,7 @@
 
 #include <alsa/asoundlib.h>
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 #include "../../verbosity.h"
 
 typedef struct alsa

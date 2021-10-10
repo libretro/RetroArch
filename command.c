@@ -44,6 +44,7 @@
 #include "network/netplay/netplay.h"
 #endif
 
+#include "audio/audio_driver.h"
 #include "command.h"
 #include "cheat_manager.h"
 #include "content.h"

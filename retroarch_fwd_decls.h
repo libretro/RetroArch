@@ -73,23 +73,6 @@ static void ui_companion_driver_init_first(
       settings_t *settings,
       struct rarch_state *p_rarch);
 
-static bool audio_driver_stop(struct rarch_state *p_rarch);
-static bool audio_driver_start(struct rarch_state *p_rarch,
-      bool is_shutdown);
-
-static bool recording_init(settings_t *settings,
-      struct rarch_state *p_rarch);
-static bool recording_deinit(struct rarch_state *p_rarch);
-
-#ifdef HAVE_AUDIOMIXER
-static void audio_mixer_play_stop_sequential_cb(
-      audio_mixer_sound_t *sound, unsigned reason);
-static void audio_mixer_play_stop_cb(
-      audio_mixer_sound_t *sound, unsigned reason);
-static void audio_mixer_menu_stop_cb(
-      audio_mixer_sound_t *sound, unsigned reason);
-#endif
-
 static void video_driver_gpu_record_deinit(struct rarch_state *p_rarch);
 static retro_proc_address_t video_driver_get_proc_address(const char *sym);
 static uintptr_t video_driver_get_current_framebuffer(void);

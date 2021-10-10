@@ -39,7 +39,7 @@
 #include <queues/fifo_queue.h>
 #include <string/stdstring.h>
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 #include "../../verbosity.h"
 
 #ifdef _XBOX

@@ -29,6 +29,7 @@
 #ifdef HAVE_CHEEVOS
 #include "../../cheevos/cheevos_menu.h"
 #endif
+#include "../../audio/audio_driver.h"
 #include "../../core_info.h"
 #include "../../verbosity.h"
 #include "../../bluetooth/bluetooth_driver.h"

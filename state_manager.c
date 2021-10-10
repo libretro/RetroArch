@@ -33,6 +33,7 @@
 #include "retroarch.h"
 #include "verbosity.h"
 #include "content.h"
+#include "audio/audio_driver.h"
 
 #ifdef HAVE_NETWORKING
 #include "network/netplay/netplay.h"
