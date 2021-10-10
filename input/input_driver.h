@@ -22,84 +22,89 @@
 #include <stddef.h>
 #include <sys/types.h>
 
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
-#endif /* HAVE_CONFIG_H */
-
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <retro_inline.h>
 #include <libretro.h>
 #include <retro_miscellaneous.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif /* HAVE_CONFIG_H */
+
 #include "input_defines.h"
 #include "input_types.h"
 #ifdef HAVE_OVERLAY
 #include "input_overlay.h"
 #endif
+#include "input_osk.h"
 
 #include "../msg_hash.h"
 #include "include/hid_types.h"
 #include "include/hid_driver.h"
 #include "include/gamepad.h"
 #include "../configuration.h"
+#include "../performance_counters.h"
+
+#ifdef HAVE_COMMAND
+#include "../command.h"
+#endif
+
+#if defined(ANDROID)
+#define DEFAULT_MAX_PADS 8
+#define ANDROID_KEYBOARD_PORT DEFAULT_MAX_PADS
+#elif defined(_3DS)
+#define DEFAULT_MAX_PADS 1
+#elif defined(SWITCH) || defined(HAVE_LIBNX)
+#define DEFAULT_MAX_PADS 8
+#elif defined(WIIU)
+#ifdef WIIU_HID
+#define DEFAULT_MAX_PADS 16
+#else
+#define DEFAULT_MAX_PADS 5
+#endif /* WIIU_HID */
+#elif defined(DJGPP)
+#define DEFAULT_MAX_PADS 1
+#define DOS_KEYBOARD_PORT DEFAULT_MAX_PADS
+#elif defined(XENON)
+#define DEFAULT_MAX_PADS 4
+#elif defined(VITA) || defined(SN_TARGET_PSP2)
+#define DEFAULT_MAX_PADS 4
+#elif defined(PSP)
+#define DEFAULT_MAX_PADS 1
+#elif defined(PS2)
+#define DEFAULT_MAX_PADS 8
+#elif defined(GEKKO) || defined(HW_RVL)
+#define DEFAULT_MAX_PADS 4
+#elif defined(HAVE_ODROIDGO2)
+#define DEFAULT_MAX_PADS 1
+#elif defined(__linux__) || (defined(BSD) && !defined(__MACH__))
+#define DEFAULT_MAX_PADS 8
+#elif defined(__QNX__)
+#define DEFAULT_MAX_PADS 8
+#elif defined(__PS3__)
+#define DEFAULT_MAX_PADS 7
+#elif defined(_XBOX)
+#define DEFAULT_MAX_PADS 4
+#elif defined(HAVE_XINPUT) && !defined(HAVE_DINPUT)
+#define DEFAULT_MAX_PADS 4
+#elif defined(DINGUX)
+#define DEFAULT_MAX_PADS 2
+#else
+#define DEFAULT_MAX_PADS 16
+#endif /* defined(ANDROID) */
+
+#define MAPPER_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
+#define MAPPER_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
+#define MAPPER_UNSET_KEY(state, key) (state)->keys[(key) / 32] &= ~(1 << ((key) % 32))
 
 RETRO_BEGIN_DECLS
 
-struct retro_keybind
+enum rarch_movie_type
 {
-   /**
-    * Human-readable label for the control.
-    */
-   char     *joykey_label;
-
-   /**
-    * Human-readable label for an analog axis.
-    */
-   char     *joyaxis_label;
-
-   /**
-    * Joypad axis. Negative and positive axes are both represented by this variable.
-    */
-   uint32_t joyaxis;
-
-   /**
-    * Default joy axis binding value for resetting bind to default.
-    */
-   uint32_t def_joyaxis;
-
-   /**
-    * Used by input_{push,pop}_analog_dpad().
-    */
-   uint32_t orig_joyaxis;
-
-   enum msg_hash_enums enum_idx;
-
-   enum retro_key key;
-
-   uint16_t id;
-
-   /**
-    * What mouse button ID has been mapped to this control.
-    */
-   uint16_t mbutton;
-
-   /**
-    * Joypad key. Joypad POV (hats) are embedded into this key as well.
-    **/
-   uint16_t joykey;
-
-   /**
-    * Default key binding value (for resetting bind).
-    */
-   uint16_t def_joykey;
-
-   /**
-    * Determines whether or not the binding is valid.
-    */
-   bool valid;
+   RARCH_MOVIE_PLAYBACK = 0,
+   RARCH_MOVIE_RECORD
 };
-
 
 /**
  * line_complete callback (when carriage return is pressed)
@@ -346,16 +351,85 @@ struct rarch_joypad_driver
    const char *ident;
 };
 
+/**
+ * Callback for keypress events
+ * 
+ * @param userdata The user data that was passed through from the keyboard press callback.
+ * @param code      keycode
+ **/
+typedef bool (*input_keyboard_press_t)(void *userdata, unsigned code);
+
+struct input_keyboard_ctx_wait
+{
+   void *userdata;
+   input_keyboard_press_t cb;
+};
+
 typedef struct
 {
+   /**
+    * Array of timers, one for each entry in enum input_combo_type.
+    */
+   rarch_timer_t combo_timers[INPUT_COMBO_LAST];
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+   input_remote_state_t remote_st_ptr;        /* uint64_t alignment */
+#endif
+
    /* pointers */
+   void *keyboard_press_data;
+   input_keyboard_line_t keyboard_line;                  /* ptr alignment */
+   input_keyboard_press_t keyboard_press_cb;             /* ptr alignment */
    input_driver_t                *current_driver;
    void                          *current_data;
    const input_device_driver_t   *primary_joypad;        /* ptr alignment */
    const input_device_driver_t   *secondary_joypad;      /* ptr alignment */
+   const struct retro_keybind *libretro_input_binds[MAX_USERS];
+#ifdef HAVE_COMMAND
+   command_t *command[MAX_CMD_DRIVERS];
+#endif
+#ifdef HAVE_BSV_MOVIE
+   bsv_movie_t     *bsv_movie_state_handle;              /* ptr alignment */
+#endif
+#ifdef HAVE_OVERLAY
+   input_overlay_t *overlay_ptr;
+   enum overlay_visibility *overlay_visibility;
+#endif
+#ifdef HAVE_NETWORKGAMEPAD
+   input_remote_t *remote;
+#endif
+   char    *osk_grid[45];                                /* ptr alignment */ 
+
+   int osk_ptr;
+   turbo_buttons_t turbo_btns; /* int32_t alignment */
+
+   input_mapper_t mapper;          /* uint32_t alignment */
+   input_device_info_t input_device_info[MAX_INPUT_DEVICES]; /* unsigned alignment */
+   input_mouse_info_t input_mouse_info[MAX_INPUT_DEVICES];
+   unsigned osk_last_codepoint;
+   unsigned osk_last_codepoint_len;
+   unsigned input_hotkey_block_counter;
+#ifdef HAVE_ACCESSIBILITY
+   unsigned gamepad_input_override;
+#endif
+
+   enum osk_type osk_idx;
+
+#ifdef HAVE_BSV_MOVIE
+   struct bsv_state bsv_movie_state;            /* char alignment */
+#endif
 
    /* primitives */
    bool        nonblocking_flag;
+   bool keyboard_linefeed_enable;
+
+   bool block_hotkey;
+   bool block_libretro_input;
+   bool grab_mouse_state;
+   bool analog_requested[MAX_USERS];
+   bool keyboard_mapping_blocked;
+   retro_bits_512_t keyboard_mapping_bits;    /* bool alignment */
+   input_game_focus_state_t game_focus_state; /* bool alignment */
 } input_driver_state_t;
 
 
@@ -380,25 +454,23 @@ const char* config_get_input_driver_options(void);
  * @return true if the rumble state has been successfully set
  **/
 bool input_driver_set_rumble(
-         input_driver_state_t *driver_state, unsigned port, unsigned joy_idx, 
+         unsigned port, unsigned joy_idx, 
          enum retro_rumble_effect effect, uint16_t strength);
 /**
  * Sets the rumble gain.
  *
- * @param driver_state
  * @param gain             Rumble gain, 0-100 [%]
  * @param input_max_users
  *
  * @return true if the rumble gain has been successfully set
  **/
 bool input_driver_set_rumble_gain(
-         input_driver_state_t *driver_state, unsigned gain,
+         unsigned gain,
          unsigned input_max_users);
 
 /**
  * Sets the sensor state.
  * 
- * @param driver_state
  * @param port
  * @param sensors_enable
  * @param effect        Sensor action
@@ -407,13 +479,12 @@ bool input_driver_set_rumble_gain(
  * @return true if the sensor state has been successfully set
  **/
 bool input_driver_set_sensor(
-         input_driver_state_t *driver_state, unsigned port, bool sensors_enable,
+         unsigned port, bool sensors_enable,
          enum retro_sensor_action action, unsigned rate);
 
 /**
  * Retrieves the sensor state associated with the provided port and ID. 
  * 
- * @param driver_state
  * @param port
  * @param sensors_enable
  * @param id            Sensor ID
@@ -421,8 +492,18 @@ bool input_driver_set_sensor(
  * @return The current state associated with the port and ID as a float
  **/
 float input_driver_get_sensor(
-         input_driver_state_t *driver_state,
          unsigned port, bool sensors_enable, unsigned id);
+
+uint64_t input_driver_get_capabilities(void);
+
+bool video_driver_init_input(
+      input_driver_t *tmp,
+      settings_t *settings,
+      bool verbosity_enabled);
+
+bool input_driver_grab_mouse(void);
+
+bool input_driver_ungrab_mouse(void);
 
 /**
  * Get an enumerated list of all joypad driver names
@@ -482,21 +563,6 @@ const input_device_driver_t *input_joypad_init_driver(
  **/
 void input_pad_connect(unsigned port, input_device_driver_t *driver);
 
-
-/**
- * Callback for keypress events
- * 
- * @param userdata The user data that was passed through from the keyboard press callback.
- * @param code      keycode
- **/
-typedef bool (*input_keyboard_press_t)(void *userdata, unsigned code);
-
-struct input_keyboard_ctx_wait
-{
-   void *userdata;
-   input_keyboard_press_t cb;
-};
-
 /**
  * Called by drivers when keyboard events are fired. Interfaces with the global
  * driver struct and libretro callbacks.
@@ -509,6 +575,7 @@ struct input_keyboard_ctx_wait
 void input_keyboard_event(bool down, unsigned code, uint32_t character,
       uint16_t mod, unsigned device);
 
+input_driver_state_t *input_state_get_ptr(void);
 
 /*************************************/
 #ifdef HAVE_HID
@@ -533,7 +600,7 @@ const hid_driver_t *input_hid_init_first(void);
  * 
  * @return Pointer to hid_data struct
  **/
-const void *hid_driver_get_data(void);
+void *hid_driver_get_data(void);
 
 /**
  * This should be called after we've invoked free() on the HID driver; the
@@ -624,14 +691,6 @@ void input_config_set_device_name_index(unsigned port, unsigned name_index);
  */
 void input_config_set_device(unsigned port, unsigned id);
 
-/**
- * Registers a pad_connection_listener_interface with a function pointer that
- * is called when a joypad is connected. Only used by the wiiu_joypad driver.
- *
- * @param listener  a struct that implements pad_connection_listener_interface
- */
-void set_connection_listener(pad_connection_listener_t *listener);
-
 /* Clear input_device_info */
 void input_config_clear_device_name(unsigned port);
 void input_config_clear_device_display_name(unsigned port);
@@ -718,13 +777,12 @@ char *input_config_get_device_name_ptr(unsigned port);
  */
 size_t input_config_get_device_name_size(unsigned port);
 
-bool input_driver_toggle_button_combo(
+bool input_driver_button_combo(
       unsigned mode,
       retro_time_t current_time,
       input_bits_t* p_input);
 
 bool input_driver_find_driver(
-      input_driver_state_t *input_driver_state,
       settings_t *settings,
       const char *prefix,
       bool verbosity_enabled);
@@ -819,6 +877,8 @@ input_remote_t *input_driver_init_remote(
 void input_remote_free(input_remote_t *handle, unsigned max_users);
 #endif
 
+void input_game_focus_free(void);
+
 void input_config_get_bind_string_joyaxis(
       bool input_descriptor_label_show,
       char *buf, const char *prefix,
@@ -832,56 +892,122 @@ void input_config_get_bind_string_joykey(
 int16_t input_state_internal(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 
-/*****************************************************************************/
+bool input_key_pressed(int key, bool keyboard_pressed);
+
+bool input_set_rumble_state(unsigned port,
+      enum retro_rumble_effect effect, uint16_t strength);
+
+/**
+ * input_keyboard_line_event:
+ * @state                    : Input keyboard line handle.
+ * @character                : Inputted character.
+ *
+ * Called on every keyboard character event.
+ *
+ * Returns: true (1) on success, otherwise false (0).
+ **/
+bool input_keyboard_line_event(
+      input_driver_state_t *input_st,
+      input_keyboard_line_t *state, uint32_t character);
+
+bool input_set_rumble_gain(unsigned gain);
+
+float input_get_sensor_state(unsigned port, unsigned id);
+
+bool input_set_sensor_state(unsigned port,
+      enum retro_sensor_action action, unsigned rate);
+
+void *input_driver_init_wrap(input_driver_t *input, const char *name);
 
 const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id);
 
 void input_config_reset_autoconfig_binds(unsigned port);
+
 void input_config_reset(void);
 
-#if defined(ANDROID)
-#define DEFAULT_MAX_PADS 8
-#define ANDROID_KEYBOARD_PORT DEFAULT_MAX_PADS
-#elif defined(_3DS)
-#define DEFAULT_MAX_PADS 1
-#elif defined(SWITCH) || defined(HAVE_LIBNX)
-#define DEFAULT_MAX_PADS 8
-#elif defined(WIIU)
-#ifdef WIIU_HID
-#define DEFAULT_MAX_PADS 16
-#else
-#define DEFAULT_MAX_PADS 5
-#endif /* WIIU_HID */
-#elif defined(DJGPP)
-#define DEFAULT_MAX_PADS 1
-#define DOS_KEYBOARD_PORT DEFAULT_MAX_PADS
-#elif defined(XENON)
-#define DEFAULT_MAX_PADS 4
-#elif defined(VITA) || defined(SN_TARGET_PSP2)
-#define DEFAULT_MAX_PADS 4
-#elif defined(PSP)
-#define DEFAULT_MAX_PADS 1
-#elif defined(PS2)
-#define DEFAULT_MAX_PADS 8
-#elif defined(GEKKO) || defined(HW_RVL)
-#define DEFAULT_MAX_PADS 4
-#elif defined(HAVE_ODROIDGO2)
-#define DEFAULT_MAX_PADS 1
-#elif defined(__linux__) || (defined(BSD) && !defined(__MACH__))
-#define DEFAULT_MAX_PADS 8
-#elif defined(__QNX__)
-#define DEFAULT_MAX_PADS 8
-#elif defined(__PS3__)
-#define DEFAULT_MAX_PADS 7
-#elif defined(_XBOX)
-#define DEFAULT_MAX_PADS 4
-#elif defined(HAVE_XINPUT) && !defined(HAVE_DINPUT)
-#define DEFAULT_MAX_PADS 4
-#elif defined(DINGUX)
-#define DEFAULT_MAX_PADS 2
-#else
-#define DEFAULT_MAX_PADS 16
-#endif /* defined(ANDROID) */
+const char *joypad_driver_name(unsigned i);
+
+void joypad_driver_reinit(void *data, const char *joypad_driver_name);
+
+#ifdef HAVE_COMMAND
+void input_driver_init_command(
+      input_driver_state_t *input_st,
+      settings_t *settings);
+
+void input_driver_deinit_command(input_driver_state_t *input_st);
+#endif
+
+#ifdef HAVE_OVERLAY
+/*
+ * input_poll_overlay:
+ *
+ * Poll pressed buttons/keys on currently active overlay.
+ **/
+void input_poll_overlay(
+      bool keyboard_mapping_blocked,
+      settings_t *settings,
+      void *ol_data,
+      enum overlay_visibility *overlay_visibility,
+      float opacity,
+      unsigned analog_dpad_mode,
+      float axis_threshold);
+
+void input_overlay_deinit(void);
+
+void input_overlay_set_visibility(int overlay_idx,
+      enum overlay_visibility vis);
+
+void input_overlay_init(void);
+#endif
+
+bool input_keys_pressed_other_sources(
+      input_driver_state_t *input_st,
+      unsigned i,
+      input_bits_t* p_new_state);
+
+int16_t input_state_device(
+      input_driver_state_t *input_st,
+      settings_t *settings,
+      input_mapper_t *handle,
+      unsigned input_analog_dpad_mode,
+      int16_t ret,
+      unsigned port, unsigned device,
+      unsigned idx, unsigned id,
+      bool button_mask);
+
+#ifdef HAVE_BSV_MOVIE
+void bsv_movie_frame_rewind(void);
+
+bool bsv_movie_init(struct rarch_state *p_rarch,
+      input_driver_state_t *input_st);
+
+void bsv_movie_deinit(input_driver_state_t *input_st);
+
+bool bsv_movie_check(input_driver_state_t *input_st,
+      settings_t *settings);
+#endif
+
+/**
+ * input_poll:
+ *
+ * Input polling callback function.
+ **/
+void input_driver_poll(void);
+
+/**
+ * input_state_wrapper:
+ * @port                 : user number.
+ * @device               : device identifier of user.
+ * @idx                  : index value of user.
+ * @id                   : identifier of key pressed by user.
+ *
+ * Input state callback function.
+ *
+ * Returns: Non-zero if the given key (identified by @id)
+ * was pressed by the user (assigned to @port).
+ **/
+int16_t input_driver_state_wrapper(unsigned port, unsigned device,
+      unsigned idx, unsigned id);
 
 extern input_device_driver_t *joypad_drivers[];
 extern input_driver_t *input_drivers[];
@@ -942,6 +1068,7 @@ extern hid_driver_t iohidmanager_hid;
 extern hid_driver_t btstack_hid;
 extern hid_driver_t libusb_hid;
 extern hid_driver_t wiiusb_hid;
+extern hid_driver_t wiiu_hid;
 #endif /* HAVE_HID */
 
 RETRO_END_DECLS

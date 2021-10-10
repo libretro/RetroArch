@@ -18,7 +18,7 @@
 #include <file/file_path.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 #include <lists/dir_list.h>
 #endif
 
@@ -317,14 +317,14 @@ int dingux_get_battery_level(void)
 void dingux_get_base_path(char *path, size_t len)
 {
    const char *home             = NULL;
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
    struct string_list *dir_list = NULL;
 #endif
 
    if (!path || (len < 1))
       return;
 
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
    /* The RS-90 home directory is located on the
     * device's internal storage. This has limited
     * space (a total of only 256MB), such that it

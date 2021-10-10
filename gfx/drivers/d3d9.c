@@ -15,6 +15,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Direct3D 9 driver.
+ *
+ * Minimum version : Direct3D 9.0 (2002)
+ * Minimum OS      : Windows 98, Windows 2000, Windows ME
+ * Recommended OS  : Windows XP
+ */
+
 #define CINTERFACE
 
 #ifdef _XBOX
@@ -1556,6 +1563,7 @@ static bool d3d9_frame(void *data, const void *frame,
    d3d9_set_viewports(d3d->dev, &screen_vp);
    d3d9_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
+   d3d9_set_mvp(d3d->dev, &d3d->mvp_transposed);
    if (!d3d->renderchain_driver->render(
             d3d, frame, frame_width, frame_height,
             pitch, d3d->dev_rotation))
@@ -1604,7 +1612,7 @@ static bool d3d9_frame(void *data, const void *frame,
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled)
    {
-      d3d9_set_mvp(d3d->dev, &d3d->mvp);
+      d3d9_set_mvp(d3d->dev, &d3d->mvp_transposed);
       for (i = 0; i < d3d->overlays_size; i++)
          d3d9_overlay_render(d3d, width, height, &d3d->overlays[i], true);
    }

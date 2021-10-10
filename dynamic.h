@@ -22,7 +22,7 @@
 #include <retro_common_api.h>
 #include <libretro.h>
 
-#include "core_type.h"
+#include "retroarch_types.h"
 
 RETRO_BEGIN_DECLS
 

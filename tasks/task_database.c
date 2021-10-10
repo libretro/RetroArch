@@ -743,7 +743,7 @@ static int database_info_list_iterate_found_match(
    playlist_config_set_path(&_db->playlist_config, db_playlist_path);
    playlist = playlist_init(&_db->playlist_config);
 
-   snprintf(db_crc, str_len, "%08X|crc", db_info_entry->crc32);
+   snprintf(db_crc, str_len, "%08lX|crc", (unsigned long)db_info_entry->crc32);
 
    if (entry_path)
       strlcpy(entry_path_str, entry_path, str_len);
@@ -903,8 +903,8 @@ static int task_database_iterate_crc_lookup(
       }
 
       snprintf(query, sizeof(query),
-            "{crc:or(b\"%08X\",b\"%08X\")}",
-            db_state->crc, db_state->archive_crc);
+            "{crc:or(b\"%08lX\",b\"%08lX\")}",
+            (unsigned long)db_state->crc, (unsigned long)db_state->archive_crc);
 
       database_info_list_iterate_new(db_state, query);
    }

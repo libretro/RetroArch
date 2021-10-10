@@ -391,7 +391,7 @@ static int general_push(menu_displaylist_info_t *info,
    char newstring2[PATH_MAX_LENGTH];
    core_info_list_t           *list           = NULL;
    settings_t                  *settings      = config_get_ptr();
-   menu_handle_t                  *menu       = menu_driver_get_ptr();
+   menu_handle_t                  *menu       = menu_state_get_ptr()->driver_data;
    bool 
       multimedia_builtin_mediaplayer_enable   = settings->bools.multimedia_builtin_mediaplayer_enable;
    bool multimedia_builtin_imageviewer_enable = settings->bools.multimedia_builtin_imageviewer_enable;
@@ -451,7 +451,7 @@ static int general_push(menu_displaylist_info_t *info,
       case PUSH_ARCHIVE_OPEN:
          {
             struct retro_system_info *system = 
-               runloop_get_libretro_system_info();
+               &runloop_state_get_ptr()->system.info;
             if (system)
                if (!string_is_empty(system->valid_extensions))
                   strlcpy(newstring2, system->valid_extensions,
@@ -468,7 +468,7 @@ static int general_push(menu_displaylist_info_t *info,
             else
             {
                struct retro_system_info *system = 
-                  runloop_get_libretro_system_info();
+                  &runloop_state_get_ptr()->system.info;
                if (system && !string_is_empty(system->valid_extensions))
                {
                   new_exts           = strdup(system->valid_extensions);
@@ -514,7 +514,8 @@ static int general_push(menu_displaylist_info_t *info,
             union string_list_elem_attr attr;
             char newstring[PATH_MAX_LENGTH];
             struct string_list str_list2     = {0};
-            struct retro_system_info *system = runloop_get_libretro_system_info();
+            struct retro_system_info *system = 
+               &runloop_state_get_ptr()->system.info;
 
             newstring[0]                     = '\0';
             attr.i                           = 0;

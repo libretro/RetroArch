@@ -231,6 +231,7 @@ CHEATS
 #endif
 #include "../libretro-common/hash/lrc_hash.c"
 
+#include "../gfx/video_driver.c"
 /*============================================================
 UI COMMON CONTEXT
 ============================================================ */
@@ -242,6 +243,10 @@ UI COMMON CONTEXT
 VIDEO CONTEXT
 ============================================================ */
 #include "../gfx/drivers_context/gfx_null_ctx.c"
+
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_VULKAN) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
+#include "../gfx/common/gl_common.c"
+#endif
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 
@@ -472,7 +477,7 @@ VIDEO DRIVER
 #endif
 
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 #include "../gfx/drivers/sdl_rs90_gfx.c"
 #else
 #include "../gfx/drivers/sdl_dingux_gfx.c"
@@ -501,13 +506,13 @@ VIDEO DRIVER
 #endif
 
 #ifdef HAVE_OPENGL_CORE
-#include "../gfx/drivers/gl_core.c"
-#include "../gfx/drivers_display/gfx_display_gl_core.c"
+#include "../gfx/drivers/gl3.c"
+#include "../gfx/drivers_display/gfx_display_gl3.c"
 #endif
 
 #ifdef HAVE_OPENGL
-#include "../gfx/drivers/gl.c"
-#include "../gfx/drivers_display/gfx_display_gl.c"
+#include "../gfx/drivers/gl2.c"
+#include "../gfx/drivers_display/gfx_display_gl2.c"
 #endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE)
@@ -604,11 +609,11 @@ FONTS
 #endif
 
 #if defined(HAVE_OPENGL)
-#include "../gfx/drivers_font/gl_raster_font.c"
+#include "../gfx/drivers_font/gl2_raster_font.c"
 #endif
 
 #ifdef HAVE_OPENGL_CORE
-#include "../gfx/drivers_font/gl_core_raster_font.c"
+#include "../gfx/drivers_font/gl3_raster_font.c"
 #endif
 
 #if defined(_XBOX1)

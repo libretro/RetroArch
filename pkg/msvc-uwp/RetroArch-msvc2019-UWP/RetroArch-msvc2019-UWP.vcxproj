@@ -535,7 +535,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\uwp\uwp_async.h" />
-    <ClInclude Include="..\..\..\uwp\uwp_file_handle_access.h" />
     <ClInclude Include="..\..\..\uwp\uwp_func.h" />
     <ClInclude Include="..\..\..\uwp\uwp_main.h" />
   </ItemGroup>

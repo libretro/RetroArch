@@ -16,66 +16,52 @@
 
 #include "../../include/wiiu/input.h"
 
-/* TODO/FIXME - static global variables */
-static bool hidpad_ready = false;
-
-static bool init_hid_driver(void)
-{
-   return hid_init(&hid_instance, &wiiu_hid, &hidpad_driver, MAX_USERS);
-}
-
 static void hidpad_poll(void)
 {
-   if (hidpad_ready)
-      HID_POLL();
+   if (joypad_state.hid.ready)
+      wiiu_hid.poll(hid_driver_get_data());
 }
 
 static void *hidpad_init(void *data)
 {
-   if(!init_hid_driver())
-   {
-      RARCH_ERR("Failed to initialize HID driver.\n");
-      return NULL;
-   }
-
    hidpad_poll();
-   hidpad_ready = true;
+   joypad_state.hid.ready = true;
 
    return (void*)-1;
 }
 
 static bool hidpad_query_pad(unsigned port)
 {
-   return hidpad_ready && port < MAX_USERS;
+   return joypad_state.hid.ready && port < MAX_USERS;
 }
 
 static void hidpad_destroy(void)
 {
-   hidpad_ready = false;
-
-   hid_deinit(&hid_instance);
+   joypad_state.hid.ready = false;
 }
 
 static int32_t hidpad_button(unsigned port, uint16_t joykey)
 {
    if (!hidpad_query_pad(port))
       return 0;
-   return (HID_BUTTON(port, joykey));
+
+   return wiiu_hid.button(hid_driver_get_data(), port, joykey);
 }
 
 static void hidpad_get_buttons(unsigned port, input_bits_t *state)
 {
-  if (!hidpad_query_pad(port))
-    BIT256_CLEAR_ALL_PTR(state);
+   if (!hidpad_query_pad(port))
+      BIT256_CLEAR_ALL_PTR(state);
 
-  HID_GET_BUTTONS(port, state);
+   wiiu_hid.get_buttons(hid_driver_get_data(), port, state);
 }
 
 static int16_t hidpad_axis(unsigned port, uint32_t axis)
 {
    if (!hidpad_query_pad(port))
       return 0;
-   return HID_AXIS(port, axis);
+
+   return wiiu_hid.axis(hid_driver_get_data(), port, axis);
 }
 
 static int16_t hidpad_state(
@@ -99,11 +85,11 @@ static int16_t hidpad_state(
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
                (uint16_t)joykey != NO_BTN
-            && HID_BUTTON(port_idx, (uint16_t)joykey)
+            && wiiu_hid.button(hid_driver_get_data(), port_idx, (uint16_t)joykey)
          )
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(HID_AXIS(port_idx, joyaxis)) 
+            ((float)abs(wiiu_hid.axis(hid_driver_get_data(), port_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
@@ -116,7 +102,7 @@ static const char *hidpad_name(unsigned port)
    if (!hidpad_query_pad(port))
       return "N/A";
 
-   return HID_PAD_NAME(port);
+   return wiiu_hid.name(hid_driver_get_data(), port);
 }
 
 input_device_driver_t hidpad_driver =
@@ -129,8 +115,8 @@ input_device_driver_t hidpad_driver =
   hidpad_get_buttons,
   hidpad_axis,
   hidpad_poll,
-  NULL,
-  NULL,
+  NULL, /* set_rumble */
+  NULL, /* set_rumble_gain */
   hidpad_name,
   "hid"
 };

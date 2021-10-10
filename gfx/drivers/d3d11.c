@@ -14,6 +14,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Direct3D 11 driver.
+ *
+ * Minimum version : Direct3D 11.0 (Feature Level 11.0) (2009)
+ * Minimum OS      : Windows Vista, Windows 7
+ * Recommended OS  : Windows 7 and/or later
+ */
+
 #define CINTERFACE
 #define COBJMACROS
 
@@ -1524,12 +1531,12 @@ error:
    d3d11_gfx_free(d3d11);
 
 #ifdef HAVE_OPENGL
-   retroarch_force_video_driver_fallback("gl");
+   video_driver_force_fallback("gl");
 #elif !defined(__WINRT__)
 #ifdef HAVE_OPENGL1
-   retroarch_force_video_driver_fallback("gl1");
+   video_driver_force_fallback("gl1");
 #else
-   retroarch_force_video_driver_fallback("gdi");
+   video_driver_force_fallback("gdi");
 #endif
 #endif
 
@@ -2318,9 +2325,9 @@ static bool d3d11_get_hw_render_interface(
 
 #ifndef __WINRT__
 static void d3d11_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
-   win32_get_video_output_size(width, height);
+   win32_get_video_output_size(width, height, desc, desc_len);
 }
 
 static void d3d11_get_video_output_prev(void *data)

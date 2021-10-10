@@ -3293,7 +3293,6 @@ static bool materialui_render_process_entry_playlist_desktop(
       bool network_on_demand_thumbnails)
 {
    gfx_animation_t *p_anim            = anim_get_ptr();
-   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
    bool is_selected                   = (entry_idx == selection);
    /* We want to load (and keep in memory)
     * thumbnails for the currently selected
@@ -3375,7 +3374,7 @@ static bool materialui_render_process_entry_playlist_desktop(
                   runtime_date_separator       =
                         (enum playlist_sublabel_last_played_date_separator_type)
                               settings->uints.menu_timedate_date_separator;
-            float fade_duration                = p_gfx_thumb->fade_duration;
+            float fade_duration                = gfx_thumb_get_ptr()->fade_duration;
             const struct playlist_entry *entry = NULL;
             const char *core_name              = NULL;
             const char *runtime_str            = NULL;
@@ -6269,7 +6268,6 @@ static void materialui_hide_fullscreen_thumbnails(
       materialui_handle_t *mui, bool animate)
 {
    uintptr_t alpha_tag = (uintptr_t)&mui->fullscreen_thumbnail_alpha;
-   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
 
    /* Kill any existing fade in/out animations */
    gfx_animation_kill_by_tag(&alpha_tag);
@@ -6282,7 +6280,7 @@ static void materialui_hide_fullscreen_thumbnails(
       /* Configure fade out animation */
       animation_entry.easing_enum  = EASING_OUT_QUAD;
       animation_entry.tag          = alpha_tag;
-      animation_entry.duration     = p_gfx_thumb->fade_duration;
+      animation_entry.duration     = gfx_thumb_get_ptr()->fade_duration;
       animation_entry.target_value = 0.0f;
       animation_entry.subject      = &mui->fullscreen_thumbnail_alpha;
       animation_entry.cb           = NULL;
@@ -6311,7 +6309,6 @@ static void materialui_show_fullscreen_thumbnails(
    uintptr_t                  alpha_tag = (uintptr_t)
       &mui->fullscreen_thumbnail_alpha;
    const char *thumbnail_label          = NULL;
-   gfx_thumbnail_state_t *p_gfx_thumb   = gfx_thumb_get_ptr();
 
    /* Before showing fullscreen thumbnails, must
     * ensure that any existing fullscreen thumbnail
@@ -6378,7 +6375,7 @@ static void materialui_show_fullscreen_thumbnails(
    /* Configure fade in animation */
    animation_entry.easing_enum  = EASING_OUT_QUAD;
    animation_entry.tag          = alpha_tag;
-   animation_entry.duration     = p_gfx_thumb->fade_duration;
+   animation_entry.duration     = gfx_thumb_get_ptr()->fade_duration;
    animation_entry.target_value = 1.0f;
    animation_entry.subject      = &mui->fullscreen_thumbnail_alpha;
    animation_entry.cb           = NULL;
@@ -7062,16 +7059,19 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
             video_height / 4, msg);
 
       /* Draw onscreen keyboard */
-      gfx_display_draw_keyboard(
-            p_disp,
-            userdata,
-            video_width,
-            video_height,
-            mui->textures.list[MUI_TEXTURE_KEY_HOVER],
-            mui->font_data.list.font,
-            input_event_get_osk_grid(),
-            input_event_get_osk_ptr(),
-            0xFFFFFFFF);
+      {
+         input_driver_state_t *input_st = input_state_get_ptr();
+         gfx_display_draw_keyboard(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               mui->textures.list[MUI_TEXTURE_KEY_HOVER],
+               mui->font_data.list.font,
+               input_st->osk_grid,
+               input_st->osk_ptr,
+               0xFFFFFFFF);
+      }
 
       /* Flush message box & osk text
        * > Message box & osk only use list font */
@@ -8266,7 +8266,7 @@ static void materialui_populate_nav_bar(
     * > Menu driver must be alive at this point, and retroarch
     *   must be initialised, so all we have to do (or can do)
     *   is check whether a non-dummy core is loaded) */
-   mui->nav_bar.resume_tab.enabled = !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL);
+   mui->nav_bar.resume_tab.enabled = !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL);
 
    /* Menu tabs */
 
@@ -9211,7 +9211,7 @@ static int materialui_list_push(void *data, void *userdata,
       case DISPLAYLIST_MAIN_MENU:
          {
             settings_t   *settings      = config_get_ptr();
-            rarch_system_info_t *system = runloop_get_system_info();
+            rarch_system_info_t *system = &runloop_state_get_ptr()->system;
 
             /* If navigation bar is hidden, use default
              * main menu */
@@ -9220,9 +9220,9 @@ static int materialui_list_push(void *data, void *userdata,
 
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-            if (rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+            if (retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
             {
-               if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+               if (!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                {
                   MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
                         info->list,
@@ -10682,7 +10682,6 @@ static void materialui_refresh_thumbnail_image(void *userdata, unsigned i)
    materialui_handle_t *mui           = (materialui_handle_t*)userdata;
    size_t selection                   = menu_navigation_get_selection();
    bool refresh_enabled               = false;
-   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
 
    if (!mui)
       return;
@@ -10706,7 +10705,7 @@ static void materialui_refresh_thumbnail_image(void *userdata, unsigned i)
    {
       file_list_t *list       = menu_entries_get_selection_buf_ptr(0);
       materialui_node_t *node = NULL;
-      float stream_delay      = p_gfx_thumb->stream_delay;
+      float stream_delay      = gfx_thumb_get_ptr()->stream_delay;
 
       if (!list)
          return;

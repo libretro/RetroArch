@@ -188,7 +188,7 @@ static void filebrowser_parse(
    {
       if (filebrowser_type == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
       {
-         rarch_system_info_t *system          = runloop_get_system_info();
+         rarch_system_info_t *system          = &runloop_state_get_ptr()->system;
          /* Core fully loaded, use the subsystem data */
          if (system->subsystem.data)
             subsystem = system->subsystem.data + content_get_subsystem();
@@ -218,7 +218,7 @@ static void filebrowser_parse(
 
       if (filebrowser_type == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
       {
-         rarch_system_info_t *system          = runloop_get_system_info();
+         rarch_system_info_t *system          = &runloop_state_get_ptr()->system;
          /* Core fully loaded, use the subsystem data */
          if (system->subsystem.data)
             subsystem = system->subsystem.data + content_get_subsystem();
@@ -616,12 +616,12 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
       firmware_info.path             = core_info->path;
       firmware_info.directory.system = settings->paths.directory_system;
 
-      rarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
+      retroarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
 
       update_missing_firmware        = core_info_list_update_missing_firmware(&firmware_info, &set_missing_firmware);
 
       if (set_missing_firmware)
-         rarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
+         retroarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
 
       if (update_missing_firmware)
       {
@@ -951,7 +951,7 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
    unsigned j;
 
    /* Fetch options */
-   rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+   retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
    if (!coreopts)
       goto end;
@@ -1031,10 +1031,10 @@ static unsigned menu_displaylist_parse_core_option_override_list(
       menu_displaylist_info_t *info, settings_t *settings)
 {
    unsigned count               = 0;
-   bool core_has_options        = !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL) &&
-         rarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL);
-   bool game_options_active     = rarch_ctl(RARCH_CTL_IS_GAME_OPTIONS_ACTIVE, NULL);
-   bool folder_options_active   = rarch_ctl(RARCH_CTL_IS_FOLDER_OPTIONS_ACTIVE, NULL);
+   bool core_has_options        = !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL) &&
+         retroarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL);
+   bool game_options_active     = retroarch_ctl(RARCH_CTL_IS_GAME_OPTIONS_ACTIVE, NULL);
+   bool folder_options_active   = retroarch_ctl(RARCH_CTL_IS_FOLDER_OPTIONS_ACTIVE, NULL);
    bool show_core_options_flush = settings ?
          settings->bools.quick_menu_show_core_options_flush : false;
 
@@ -1255,7 +1255,7 @@ static unsigned menu_displaylist_parse_supported_cores(menu_displaylist_info_t *
           string_is_empty(exts))
 #endif
       {
-         struct retro_system_info *system = runloop_get_libretro_system_info();
+         struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
          const char *core_path            = core_path_current;
          const char *core_name            = system ? system->library_name : NULL;
 
@@ -2149,7 +2149,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
       crc_str[0] = tmp[0] = thumbnail_content[0] = '\0';
 
-      snprintf(crc_str, sizeof(crc_str), "%08X", db_info_entry->crc32);
+      snprintf(crc_str, sizeof(crc_str), "%08lX", (unsigned long)db_info_entry->crc32);
 
       /* This allows thumbnails to be shown while viewing database
        * entries...
@@ -2858,14 +2858,14 @@ static int menu_displaylist_parse_load_content_settings(
 {
    unsigned count         = 0;
 
-   if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+   if (!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
 #ifdef HAVE_LAKKA
       bool show_advanced_settings         = settings->bools.menu_show_advanced_settings;
 #endif
       bool quickmenu_show_resume_content  = settings->bools.quick_menu_show_resume_content;
       bool quickmenu_show_restart_content = settings->bools.quick_menu_show_restart_content;
-      rarch_system_info_t *system         = runloop_get_system_info();
+      rarch_system_info_t *system         = &runloop_state_get_ptr()->system;
 
       if (quickmenu_show_resume_content)
          if (menu_entries_append_enum(list,
@@ -3123,7 +3123,7 @@ static int menu_displaylist_parse_load_content_settings(
       }
 #endif
 
-      if ((!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+      if ((!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
             && disk_control_enabled(&system->disk_control))
          if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS),
@@ -3199,7 +3199,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
    if (playlist)
       playlist_get_index(playlist, idx, &entry);
 
-   content_loaded = !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
+   content_loaded = !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
          && string_is_equal(menu->deferred_path, fullpath);
 
    if (content_loaded)
@@ -3395,7 +3395,7 @@ static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
 {
    unsigned count                   = 0;
    core_info_t   *core_info         = NULL;
-   struct retro_system_info *system = runloop_get_libretro_system_info();
+   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
 
    core_info_get_current_core(&core_info);
 
@@ -3467,7 +3467,7 @@ static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
       count++;
 #endif
 
-   if (rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
+   if (retroarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
    {
       if (menu_entries_append_enum(info_list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS),
@@ -4134,7 +4134,7 @@ static unsigned menu_displaylist_parse_content_information(
    const char *db_name                 = NULL;
    bool playlist_valid                 = false;
    unsigned count                      = 0;
-   bool content_loaded                 = !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
+   bool content_loaded                 = !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
       && string_is_equal(menu->deferred_path, loaded_content_path);
 
    core_name[0]                        = '\0';
@@ -4361,7 +4361,7 @@ static unsigned menu_displaylist_parse_disk_options(
       file_list_t *list)
 {
    unsigned count                = 0;
-   rarch_system_info_t *sys_info = runloop_get_system_info();
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
    bool disk_ejected             = false;
 
    /* Sanity Check */
@@ -4431,7 +4431,7 @@ static int menu_displaylist_parse_input_device_type_list(
    const struct retro_controller_description *desc = NULL;
    const char *name             = NULL;
 
-   rarch_system_info_t *system  = runloop_get_system_info();
+   rarch_system_info_t *system  = &runloop_state_get_ptr()->system;
 
    enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info->path);
    rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
@@ -4530,7 +4530,7 @@ end:
 static int menu_displaylist_parse_input_device_index_list(
       menu_displaylist_info_t *info, settings_t *settings)
 {
-   rarch_system_info_t *system  = runloop_get_system_info();
+   rarch_system_info_t *system  = &runloop_state_get_ptr()->system;
    enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info->path);
    rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
    size_t menu_index            = 0;
@@ -4642,7 +4642,7 @@ static int menu_displaylist_parse_input_description_list(
       menu_displaylist_info_t *info, settings_t *settings)
 {
    unsigned count              = 0;
-   rarch_system_info_t *system = runloop_get_system_info();
+   rarch_system_info_t *system = &runloop_state_get_ptr()->system;
    size_t menu_index           = 0;
    bool current_input_mapped   = false;
    unsigned user_idx;
@@ -5496,8 +5496,7 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_SUBSYSTEM_SETTINGS_LIST:
          {
             const struct retro_subsystem_info* subsystem = subsystem_data;
-            rarch_system_info_t *sys_info                =
-               runloop_get_system_info();
+            rarch_system_info_t *sys_info                = &runloop_state_get_ptr()->system;
             /* Core not loaded completely, use the data we
              * peeked on load core */
 
@@ -5595,7 +5594,6 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST:
          {
             const char *input_driver_id  = settings->arrays.input_driver;
-            const char *joypad_driver_id = settings->arrays.input_joypad_driver;
 
             if (string_is_equal(input_driver_id, "android"))
             {
@@ -5625,6 +5623,10 @@ unsigned menu_displaylist_build_list(
                count++;
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_INPUT_QUIT_GAMEPAD_COMBO,
                      PARSE_ONLY_UINT, false) == 0)
                count++;
 
@@ -6151,7 +6153,7 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
                      PARSE_ONLY_UINT, false) == 0)
                count++;
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
                      PARSE_ONLY_UINT, false) == 0)
@@ -6213,7 +6215,7 @@ unsigned menu_displaylist_build_list(
                      MENU_SETTING_ACTION, 0, 0))
                count++;
 
-            if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
+            if (retroarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE),
                         msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE),
@@ -6221,7 +6223,7 @@ unsigned menu_displaylist_build_list(
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
 
-            if (rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
+            if (retroarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME),
                         msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME),
@@ -6229,7 +6231,7 @@ unsigned menu_displaylist_build_list(
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
 
-            if (rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL))
+            if (retroarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL))
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR),
                         msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR),
@@ -7155,7 +7157,7 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, list);
          {
-            rarch_system_info_t *sys_info = runloop_get_system_info();
+            rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
 
             if (sys_info)
             {
@@ -7891,7 +7893,7 @@ unsigned menu_displaylist_build_list(
                      PARSE_ONLY_UINT, false) == 0)
                count++;
 
-#if defined(GEKKO) || !defined(__PSL1GHT__) && defined(__PS3__)
+#if defined(GEKKO) || defined(PS2) || !defined(__PSL1GHT__) && defined(__PS3__)
             if (true)
 #else
                if (video_display_server_has_resolution_list())
@@ -7902,7 +7904,17 @@ unsigned menu_displaylist_build_list(
                            PARSE_ACTION, false) == 0)
                      count++;
                }
+#if defined(HAVE_WINDOW_OFFSET)
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_X,
+                     PARSE_ONLY_INT, false) == 0)
+               count++;
 
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_Y,
+                     PARSE_ONLY_INT, false) == 0)
+               count++;
+#endif
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_PAL60_ENABLE,
                      PARSE_ONLY_BOOL, false) == 0)
@@ -9514,7 +9526,7 @@ static bool history_needs_navigation_clear(
 
    /* If content is running, compare last selected path
     * with current content path */
-   if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+   if (!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
       return string_is_equal(menu->deferred_path, path_get(RARCH_PATH_CONTENT));
 
    /* If content is not running, have to examine the
@@ -9807,8 +9819,7 @@ static unsigned print_buf_lines(file_list_t *list, char *buf,
 bool menu_displaylist_has_subsystems(void)
 {
    const struct retro_subsystem_info* subsystem = subsystem_data;
-   rarch_system_info_t *sys_info                =
-      runloop_get_system_info();
+   rarch_system_info_t *sys_info                = &runloop_state_get_ptr()->system;
    /* Core not loaded completely, use the data we
     * peeked on load core */
    /* Core fully loaded, use the subsystem data */
@@ -9827,7 +9838,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
    static bool core_selected     = false;
    unsigned count                = 0;
    int ret                       = 0;
-   menu_handle_t *menu           = menu_driver_get_ptr();
+   menu_handle_t *menu           = menu_state_get_ptr()->driver_data;
 
    disp_list.info                = info;
    disp_list.type                = type;
@@ -11486,7 +11497,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-            if (rarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL))
+            if (retroarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL))
             {
                bool game_specific_options      = settings->bools.game_specific_options;
                const char *category            = info->path;
@@ -11501,7 +11512,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_SETTING_ACTION_CORE_OPTION_OVERRIDE_LIST, 0, 0))
                      count++;
 
-               if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+               if (retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
                {
                   nested_list_item_t *category_item = NULL;
                   nested_list_t *option_list        = NULL;
@@ -12224,15 +12235,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_MAIN_MENU:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          {
-            rarch_system_info_t *sys_info  = runloop_get_system_info();
+            rarch_system_info_t *sys_info  = &runloop_state_get_ptr()->system;
             bool show_add_content          = false;
 #if defined(HAVE_RGUI) || defined(HAVE_MATERIALUI) || defined(HAVE_OZONE) || defined(HAVE_XMB)
             const char *menu_ident         = menu_driver_ident();
 #endif
 
-            if (rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+            if (retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
             {
-               if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+               if (!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
                            MENU_ENUM_LABEL_CONTENT_SETTINGS,
                            PARSE_ACTION, false) == 0)

@@ -1535,6 +1535,10 @@ MSG_HASH(
    "input_menu_toggle_gamepad_combo"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   "input_quit_gamepad_combo"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY,
    "input_overlay"
    )
@@ -3205,7 +3209,7 @@ MSG_HASH(
    "video_dingux_refresh_rate"
    )
 #endif
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
    "video_dingux_rs90_softfilter_type"
@@ -3311,6 +3315,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX,
    "video_monitor_index"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_X,
+   "video_window_offset_x"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_Y,
+   "video_window_offset_y"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_POST_FILTER_RECORD,

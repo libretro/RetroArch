@@ -58,10 +58,18 @@
 struct joypad_connection
 {
     struct pad_connection_interface *iface;
+    input_device_driver_t *input_driver;
     void* data;
     void* connection;
     bool connected;
 };
+
+#define PAD_CONNECT_OFFLINE     0x00 /* the pad is offline and cannot be used */
+#define PAD_CONNECT_READY       0x01 /* the pad is ready but is not bound to a RA slot */
+#define PAD_CONNECT_BOUND       0x02 /* the pad is offline and is bound to a RA slot */
+#define PAD_CONNECT_IN_USE      0x03 /* the pad is ready and is bound to a RA slot */
+
+#define SLOT_AUTO -1
 
 typedef struct pad_connection_interface
 {
@@ -73,8 +81,23 @@ typedef struct pad_connection_interface
    void			(*get_buttons)(void *data, input_bits_t *state);
    int16_t  	(*get_axis)(void *data, unsigned axis);
    const char*	(*get_name)(void *data);
-   int32_t      (*button)(void *data, uint16_t joykey);
+   int32_t     (*button)(void *data, uint16_t joykey);
+   /* all fields/methods below this point are only required for multi-pad devices */
+   bool        multi_pad;  /* does the device provide multiple pads? */
+   int8_t      max_pad;    /* number of pads this device can provide */
+   void*       (*pad_init)(void *data, int pad_index, joypad_connection_t *joyconn);
+   void        (*pad_deinit)(void *pad_data);
+   /* pad_index is a number from 0 to max_pad-1 */
+   int8_t      (*status)(void *data, int pad_index); /* returns a PAD_CONNECT_* state */
+   joypad_connection_t* (*joypad)(void *device_data, int pad_index);
 } pad_connection_interface_t;
+
+typedef struct joypad_connection_entry {
+   const char* name;
+   uint16_t vid;
+   uint16_t pid;
+   pad_connection_interface_t *iface;
+} joypad_connection_entry_t;
 
 extern pad_connection_interface_t pad_connection_wii;
 extern pad_connection_interface_t pad_connection_wiiupro;
@@ -122,4 +145,9 @@ bool pad_connection_rumble(joypad_connection_t *s,
 const char* pad_connection_get_name(joypad_connection_t *joyconn,
    unsigned idx);
 
+joypad_connection_entry_t *find_connection_entry(int16_t vid, int16_t pid, const char *name);
+int32_t pad_connection_pad_init_entry(joypad_connection_t *joyconn, joypad_connection_entry_t *entry, void *data, hid_driver_t *driver);
+void pad_connection_pad_register(joypad_connection_t *joyconn, pad_connection_interface_t *iface, void *pad_data, void *handle, input_device_driver_t *input_driver, int slot);
+void pad_connection_pad_deregister(joypad_connection_t *joyconn, pad_connection_interface_t *iface, void *pad_data);
+void pad_connection_pad_refresh(joypad_connection_t *joyconn, pad_connection_interface_t *iface, void *device_data, void *handle, input_device_driver_t *input_driver);
 #endif

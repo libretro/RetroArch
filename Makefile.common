@@ -309,11 +309,12 @@ OBJ += \
        input/input_driver.o \
        input/common/input_hid_common.o \
        led/led_driver.o \
-       gfx/video_coord_array.o \
-		 gfx/gfx_display.o \
+       gfx/video_driver.o \
+       gfx/gfx_display.o \
        gfx/gfx_animation.o \
-		 gfx/gfx_thumbnail_path.o \
-		 gfx/gfx_thumbnail.o \
+       gfx/gfx_thumbnail_path.o \
+       gfx/gfx_thumbnail.o \
+       gfx/video_coord_array.o \
        configuration.o \
        $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
        cores/dynamic_dummy.o \
@@ -1181,12 +1182,6 @@ ifeq ($(TARGET), retroarch_wiiu)
 			INCLUDE_DIRS += -Iinput/include
          OBJ += input/drivers_joypad/wiiu/hidpad_driver.o
          OBJ += input/drivers_hid/wiiu_hid.o
-         OBJ += input/connect/joypad_connection.o \
-                input/common/hid/hid_device_driver.o \
-                input/common/hid/device_wiiu_gca.o \
-                input/common/hid/device_ds3.o \
-                input/common/hid/device_ds4.o \
-                input/common/hid/device_null.o
       endif
 endif
 
@@ -1223,7 +1218,6 @@ ifeq ($(HAVE_WAYLAND), 1)
         input/common/wayland_common.o \
         input/drivers/wayland_input.o \
         gfx/common/wayland/xdg-shell.o \
-        gfx/common/wayland/xdg-shell-unstable-v6.o \
         gfx/common/wayland/idle-inhibit-unstable-v1.o \
         gfx/common/wayland/xdg-decoration-unstable-v1.o
 
@@ -1444,12 +1438,13 @@ ifeq ($(HAVE_VITAGLES), 1)
 endif
 
 ifeq ($(HAVE_GL_CONTEXT), 1)
+   OBJ += gfx/common/gl_common.o
    ifeq ($(HAVE_GL_MODERN), 1)
       DEFINES += -DHAVE_OPENGL
-      OBJ += gfx/drivers/gl.o \
+      OBJ += gfx/drivers/gl2.o \
              $(LIBRETRO_COMM_DIR)/gfx/gl_capabilities.o \
-             gfx/drivers_font/gl_raster_font.o \
-				 gfx/drivers_display/gfx_display_gl.o
+             gfx/drivers_font/gl2_raster_font.o \
+	     gfx/drivers_display/gfx_display_gl2.o
    endif
 
    OBJ += $(LIBRETRO_COMM_DIR)/glsym/rglgen.o
@@ -1458,7 +1453,7 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
       DEFINES += -DHAVE_OPENGL1
       OBJ += gfx/drivers/gl1.o \
              gfx/drivers_font/gl1_raster_font.o \
-				 gfx/drivers_display/gfx_display_gl1.o
+	     gfx/drivers_display/gfx_display_gl1.o
    endif
 
    ifeq ($(HAVE_VIDEOCORE), 1)
@@ -1572,6 +1567,8 @@ else ifeq ($(HAVE_SDL_DINGUX), 1)
 
    ifeq ($(RS90), 1)
       OBJ += gfx/drivers/sdl_rs90_gfx.o
+   else ifeq ($(MIYOO), 1)
+      OBJ += gfx/drivers/sdl_rs90_gfx.o
    else
       OBJ += gfx/drivers/sdl_dingux_gfx.o
    endif
@@ -1626,10 +1623,10 @@ ifeq ($(HAVE_VULKAN), 1)
 endif
 
 ifeq ($(HAVE_OPENGL_CORE), 1)
-   OBJ += gfx/drivers/gl_core.o \
-          gfx/drivers_font/gl_core_raster_font.o \
-			 gfx/drivers_shader/shader_gl_core.o \
-			 gfx/drivers_display/gfx_display_gl_core.o
+   OBJ += gfx/drivers/gl3.o \
+          gfx/drivers_font/gl3_raster_font.o \
+	  gfx/drivers_shader/shader_gl3.o \
+	  gfx/drivers_display/gfx_display_gl3.o
 
    DEFINES += -DHAVE_OPENGL_CORE
    NEED_CXX_LINKER  = 1

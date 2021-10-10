@@ -459,7 +459,7 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
 
    BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
 
-   if (!rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+   if (!retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
    {
       if (!ctr->bottom_is_idle)
       {
@@ -592,7 +592,7 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
    }
 
    if (ctr->bottom_menu == CTR_BOTTOM_MENU_NOT_AVAILABLE ||
-         !rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+         !retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
       return;
 
 
@@ -629,14 +629,16 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
       ctr->refresh_bottom_menu = true;
    }
 
-   if (menu_driver_is_alive())
+#ifdef HAVE_MENU
+   if (menu_state_get_ptr()->alive)
       ctr->bottom_menu = CTR_BOTTOM_MENU_SELECT;
    else
+#endif
       ctr->bottom_menu = CTR_BOTTOM_MENU_DEFAULT;
 
    if (ctr->prev_bottom_menu != ctr->bottom_menu)
    {
-      ctr->prev_bottom_menu = ctr->bottom_menu;
+      ctr->prev_bottom_menu    = ctr->bottom_menu;
       ctr->refresh_bottom_menu = true;
    }
 }
@@ -913,35 +915,46 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
       ctr->p3d_event_pending = false;
    }
 
-   if ((hook == APTHOOK_ONSUSPEND) && (ctr->video_mode == CTR_VIDEO_MODE_2D_400X240))
+   switch (hook)
    {
-      memcpy(gfxTopRightFramebuffers[ctr->current_buffer_top],
-            gfxTopLeftFramebuffers[ctr->current_buffer_top],
-            400 * 240 * 3);
-      GSPGPU_FlushDataCache(gfxTopRightFramebuffers[ctr->current_buffer_top], 400 * 240 * 3);
+      case APTHOOK_ONSUSPEND:
+         if (ctr->video_mode == CTR_VIDEO_MODE_2D_400X240)
+         {
+            memcpy(gfxTopRightFramebuffers[ctr->current_buffer_top],
+               gfxTopLeftFramebuffers[ctr->current_buffer_top],
+               400 * 240 * 3);
+            GSPGPU_FlushDataCache(gfxTopRightFramebuffers[ctr->current_buffer_top], 400 * 240 * 3);
+         }
+         if (ctr->supports_parallax_disable)
+            ctr_set_parallax_layer(*(float*)0x1FF81080 != 0.0);
+         ctr_set_bottom_screen_enable(true, ctr->bottom_is_idle);
+         save_state_to_file(ctr);
+         break;  
+      case APTHOOK_ONRESTORE:
+      case APTHOOK_ONWAKEUP:
+         ctr_set_bottom_screen_enable(false, ctr->bottom_is_idle);
+         save_state_to_file(ctr);
+         break;
+      default:
+         break;
    }
 
-   if ((hook == APTHOOK_ONSUSPEND) && ctr->supports_parallax_disable)
-      ctr_set_parallax_layer(*(float*)0x1FF81080 != 0.0);
-
-   if ((hook == APTHOOK_ONSUSPEND) || (hook == APTHOOK_ONRESTORE) || (hook == APTHOOK_ONWAKEUP))
-   {
-      ctr_set_bottom_screen_enable(hook == APTHOOK_ONSUSPEND, ctr->bottom_is_idle);
-
-      save_state_to_file(ctr);
-   }
    
-   if (menu_driver_is_alive())
-   {
+#ifdef HAVE_MENU
+   if (menu_state_get_ptr()->alive)
       return;
-   }
-   else if ((hook == APTHOOK_ONSUSPEND) || (hook == APTHOOK_ONSLEEP))
+#endif
+
+   switch (hook)
    {
-      command_event(CMD_EVENT_AUDIO_STOP, NULL);
-   }
-   else if ((hook == APTHOOK_ONRESTORE) || (hook == APTHOOK_ONWAKEUP))
-   {
-      command_event(CMD_EVENT_AUDIO_START, NULL);
+      case APTHOOK_ONSUSPEND:
+      case APTHOOK_ONSLEEP:
+         command_event(CMD_EVENT_AUDIO_STOP, NULL);
+         break;
+      case APTHOOK_ONRESTORE:
+      case APTHOOK_ONWAKEUP:
+         command_event(CMD_EVENT_AUDIO_START, NULL);
+         break;
    }
 }
 
@@ -949,11 +962,13 @@ static void ctr_vsync_hook(ctr_video_t* ctr)
 {
    ctr->vsync_event_pending = false;
 }
+
 #ifndef HAVE_THREADS
 static bool ctr_tasks_finder(retro_task_t *task,void *userdata)
 {
    return task;
 }
+
 task_finder_data_t ctr_tasks_finder_data = {ctr_tasks_finder, NULL};
 #endif
 
@@ -1203,7 +1218,7 @@ static bool ctr_frame(void* data, const void* frame,
    lcd_bottom = settings->bools.video_3ds_lcd_bottom;
    if (lcd_bottom != ctr_bottom_screen_enabled)
    {
-      if (rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+      if (retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
       {
          ctr_set_bottom_screen_enable(lcd_bottom, false);
          if (lcd_bottom)
@@ -1528,7 +1543,9 @@ static bool ctr_frame(void* data, const void* frame,
       }
 
       ctr->msg_rendering_enabled = true;
+#ifdef HAVE_MENU
       menu_driver_frame(menu_is_alive, video_info);
+#endif
       ctr->msg_rendering_enabled = false;
    }
    else if (statistics_show)
@@ -1553,7 +1570,7 @@ static bool ctr_frame(void* data, const void* frame,
 
 #ifndef CONSOLE_LOG
    if (ctr_bottom_screen_enabled && 
-         rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+         retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
    {
       if ( !ctr->bottom_is_idle )
       {

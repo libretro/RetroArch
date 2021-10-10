@@ -187,13 +187,11 @@ static int action_start_input_desc(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings        = config_get_ptr();
-   rarch_system_info_t *system = runloop_get_system_info();
    unsigned user_idx;
    unsigned btn_idx;
    unsigned mapped_port;
-
-   (void)label;
+   settings_t *settings        = config_get_ptr();
+   rarch_system_info_t *system = &runloop_state_get_ptr()->system;
 
    if (!settings || !system)
       return 0;
@@ -283,7 +281,7 @@ static int action_start_shader_pass(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_handle_t *menu       = menu_driver_get_ptr();
+   menu_handle_t *menu       = menu_state_get_ptr()->driver_data;
 
    if (!menu)
       return menu_cbs_exit();
@@ -368,7 +366,7 @@ static int action_start_core_setting(
    unsigned core_idx               = type - MENU_SETTINGS_CORE_OPTION_START;
    core_option_manager_t *coreopts = NULL;
 
-   if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+   if (retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
       core_option_manager_set_default(coreopts, core_idx, true);
 
    return 0;
@@ -488,14 +486,15 @@ static int action_start_video_resolution(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-#if defined(GEKKO) || !defined(__PSL1GHT__) && !defined(__PS3__)
+#if defined(GEKKO) || defined(PS2) || !defined(__PSL1GHT__) && !defined(__PS3__)
    unsigned width = 0, height = 0;
+   char desc[64] = {0};
    global_t *global = global_get_ptr();
 
    /*  Reset the resolution id to zero */
    global->console.screen.resolutions.current.id = 0;
 
-   if (video_driver_get_video_output_size(&width, &height))
+   if (video_driver_get_video_output_size(&width, &height, desc, sizeof(desc)))
    {
       char msg[PATH_MAX_LENGTH];
 
@@ -510,8 +509,15 @@ static int action_start_video_resolution(
          strlcpy(msg, "Resetting to: DEFAULT", sizeof(msg));
       else
 #endif
-         snprintf(msg, sizeof(msg),
-               "Resetting to: %dx%d", width, height);
+      {
+         if (!string_is_empty(desc))
+            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_RESETTING_DESC), 
+               width, height, desc);
+         else
+            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC), 
+               width, height);
+      }
+
       runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 #endif

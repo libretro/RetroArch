@@ -569,7 +569,7 @@ bool netplay_lan_ad_server(netplay_t *netplay)
                if (strstr(interfaces.entries[k].host, sub) &&
                   !strstr(interfaces.entries[k].host, "127.0.0.1"))
                {
-                  struct retro_system_info *info = runloop_get_libretro_system_info();
+                  struct retro_system_info *info = &runloop_state_get_ptr()->system.info;
 
                   RARCH_LOG ("[Discovery] Query received on common interface: %s/%s (theirs / ours) \n",
                      reply_addr, interfaces.entries[k].host);
@@ -623,7 +623,7 @@ bool netplay_lan_ad_server(netplay_t *netplay)
                         NETPLAY_HOST_STR_LEN);
                   }
 
-                  snprintf(s, sizeof(s), "%d", content_crc);
+                  snprintf(s, sizeof(s), "%ld", (long)content_crc);
                   strlcpy(ad_packet_buffer.content_crc, s,
                      NETPLAY_HOST_STR_LEN);
 
@@ -851,7 +851,7 @@ static void handshake_password(void *ignore, const char *line)
    netplay_t *netplay                    = handshake_password_netplay;
    struct netplay_connection *connection = &netplay->connections[0];
 
-   snprintf(password, sizeof(password), "%08X", connection->salt);
+   snprintf(password, sizeof(password), "%08lX", (unsigned long)connection->salt);
    if (!string_is_empty(line))
       strlcpy(password + 8, line, sizeof(password)-8);
 
@@ -1077,7 +1077,7 @@ static bool netplay_handshake_info(netplay_t *netplay,
 {
    struct info_buf_s info_buf;
    uint32_t      content_crc        = 0;
-   struct retro_system_info *system = runloop_get_libretro_system_info();
+   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
 
    memset(&info_buf, 0, sizeof(info_buf));
    info_buf.cmd[0] = htonl(NETPLAY_CMD_INFO);
@@ -1363,7 +1363,7 @@ static bool netplay_handshake_pre_password(netplay_t *netplay,
 
    /* Calculate the correct password hash(es) and compare */
    correct = false;
-   snprintf(password, sizeof(password), "%08X", connection->salt);
+   snprintf(password, sizeof(password), "%08lX", (unsigned long)connection->salt);
 
    if (settings->paths.netplay_password[0])
    {
@@ -1417,7 +1417,7 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
    ssize_t recvd;
    uint32_t content_crc             = 0;
    const char *dmsg                 = NULL;
-   struct retro_system_info *system = runloop_get_libretro_system_info();
+   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
 
    RECV(&info_buf, sizeof(info_buf.cmd)) {}
 
@@ -3134,7 +3134,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       if (netplay->catch_up)
       {
          netplay->catch_up = false;
-         input_unset_nonblock_state();
+         input_state_get_ptr()->nonblocking_flag = false;
          driver_set_nonblock_state();
       }
       return;
@@ -3327,7 +3327,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       if (netplay->self_frame_count + 1 >= lo_frame_count)
       {
          netplay->catch_up = false;
-         input_unset_nonblock_state();
+         input_state_get_ptr()->nonblocking_flag = false;
          driver_set_nonblock_state();
       }
 
@@ -3354,9 +3354,9 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
             if (netplay->catch_up_behind <= cur_behind)
             {
                /* We're definitely falling behind! */
-               netplay->catch_up      = true;
-               netplay->catch_up_time = 0;
-               input_set_nonblock_state();
+               netplay->catch_up                       = true;
+               netplay->catch_up_time                  = 0;
+               input_state_get_ptr()->nonblocking_flag = true;
                driver_set_nonblock_state();
             }
             else

@@ -1269,6 +1269,10 @@ MSG_HASH(
    "ビデオスケーリングの設定を変更します."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
+   "HDRの設定を変更します。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    "同期"
    )
@@ -1330,6 +1334,10 @@ MSG_HASH(
    "バイリニア (双線形)"
    )
 #if defined(RS90)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "ニアレストネイバー"
+   )
 #endif
 #endif
 MSG_HASH(
@@ -1439,6 +1447,10 @@ MSG_HASH(
    "GPUインデックス"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   "使用するグラフィックカードを選択します。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "リフレッシュレート"
    )
@@ -1514,6 +1526,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    "フルスクリーンモードの高さを設定します. 設定しないとデスクトップの解像度を使用します."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
+   "解像度をフルスクリーンサイズに強制します。0に設定すると、3840 x 2160が使用されます。"
    )
 
 /* Settings > Video > Windowed Mode */

@@ -54,12 +54,8 @@
 #endif
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+#if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
 #include "../common/gl_common.h"
-#elif defined(HAVE_OPENGL_CORE)
-#include "../common/gl_core_common.h"
-#elif defined(HAVE_OPENGL1)
-#include "../common/gl1_common.h"
 #endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
@@ -548,7 +544,7 @@ static void gfx_ctx_wgl_destroy(void *data)
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
          if (win32_hrc)
          {
-            glFinish();
+            gl_finish();
             wglMakeCurrent(NULL, NULL);
 
             if (!video_driver_is_video_cache_context())
@@ -840,9 +836,9 @@ static void gfx_ctx_wgl_set_flags(void *data, uint32_t flags)
 }
 
 static void gfx_ctx_wgl_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
-   win32_get_video_output_size(width, height);
+   win32_get_video_output_size(width, height, desc, desc_len);
 }
 
 static void gfx_ctx_wgl_get_video_output_prev(void *data) { }

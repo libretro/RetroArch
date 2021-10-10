@@ -36,16 +36,9 @@ static void deinit_netplay(struct rarch_state *p_rarch);
 static void retroarch_deinit_drivers(struct rarch_state *p_rarch,
       struct retro_callbacks *cbs);
 
-static void retroarch_deinit_core_options(
-      bool game_options_active,
-      const char *path_core_options,
-      core_option_manager_t *core_options);
 static core_option_manager_t *retroarch_init_core_variables(
       settings_t *settings,
       const struct retro_variable *vars);
-static core_option_manager_t *rarch_init_core_options(
-      settings_t *settings,
-      const struct retro_core_options_v2 *options_v2);
 #ifdef HAVE_RUNAHEAD
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 static bool secondary_core_create(struct rarch_state *p_rarch,
@@ -57,8 +50,6 @@ static bool secondary_core_ensure_exists(struct rarch_state *p_rarch,
 static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id);
 #endif
-static int16_t input_state(unsigned port, unsigned device,
-      unsigned idx, unsigned id);
 static void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch);
 static void retro_frame_null(const void *data, unsigned width,
@@ -68,8 +59,6 @@ static void retro_input_poll_null(void);
 static void runloop_apply_fastmotion_override(
       struct rarch_state *p_rarch, runloop_state_t *p_runloop,
       settings_t *settings);
-
-static uint64_t input_driver_get_capabilities(void);
 
 static void uninit_libretro_symbols(
       struct rarch_state *p_rarch,
@@ -92,11 +81,6 @@ static bool recording_init(settings_t *settings,
       struct rarch_state *p_rarch);
 static bool recording_deinit(struct rarch_state *p_rarch);
 
-#ifdef HAVE_OVERLAY
-static void retroarch_overlay_init(struct rarch_state *p_rarch);
-static void retroarch_overlay_deinit(struct rarch_state *p_rarch);
-#endif
-
 #ifdef HAVE_AUDIOMIXER
 static void audio_mixer_play_stop_sequential_cb(
       audio_mixer_sound_t *sound, unsigned reason);
@@ -114,13 +98,6 @@ static bool video_driver_find_driver(
       settings_t *settings,
       const char *prefix, bool verbosity_enabled);
 
-#ifdef HAVE_BSV_MOVIE
-static void bsv_movie_deinit(struct rarch_state *p_rarch);
-static bool bsv_movie_init(struct rarch_state *p_rarch);
-static bool bsv_movie_check(struct rarch_state *p_rarch,
-      settings_t *settings);
-#endif
-
 static void driver_uninit(struct rarch_state *p_rarch, int flags);
 static void drivers_init(struct rarch_state *p_rarch,
       settings_t *settings,
@@ -131,7 +108,7 @@ static bool core_load(struct rarch_state *p_rarch,
       unsigned poll_type_behavior);
 static bool core_unload_game(struct rarch_state *p_rarch);
 
-static bool rarch_environment_cb(unsigned cmd, void *data);
+static bool retroarch_environment_cb(unsigned cmd, void *data);
 
 static void driver_camera_stop(void);
 static bool driver_camera_start(void);

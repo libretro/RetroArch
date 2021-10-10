@@ -280,6 +280,12 @@
 #define DEFAULT_FULLSCREEN_Y 0
 #endif
 
+#if defined(HAVE_WINDOW_OFFSET)
+/* Screen offsets to center content in CTRs */
+#define DEFAULT_WINDOW_OFFSET_X 0
+#define DEFAULT_WINDOW_OFFSET_Y 0
+#endif
+
 /* Number of threads to use for video recording */
 #define DEFAULT_VIDEO_RECORD_THREADS 2
 
@@ -473,7 +479,7 @@
  * in Dingux devices */
 #define DEFAULT_DINGUX_REFRESH_RATE DINGUX_REFRESH_RATE_60HZ
 #endif
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 /* Sets image filtering method on the RS90
  * when integer scaling is disabled */
 #define DEFAULT_DINGUX_RS90_SOFTFILTER_TYPE DINGUX_RS90_SOFTFILTER_POINT
@@ -800,21 +806,23 @@ static const bool default_savefiles_in_content_dir = false;
 static const bool default_systemfiles_in_content_dir = false;
 static const bool default_screenshots_in_content_dir = false;
 
-#if defined(RS90) || defined(RETROFW)
-#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_START_SELECT
+#if defined(RS90) || defined(RETROFW) || defined(MIYOO)
+#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_COMBO_START_SELECT
 #elif defined(_XBOX1) || defined(__PS3__) || defined(_XBOX360) || defined(DINGUX)
-#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_L3_R3
+#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_COMBO_L3_R3
 #elif defined(PS2) || defined(PSP)
-#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_HOLD_START
+#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_COMBO_HOLD_START
 #elif defined(VITA)
-#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_L1_R1_START_SELECT
+#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_COMBO_L1_R1_START_SELECT
 #elif defined(SWITCH) || defined(ORBIS)
-#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_START_SELECT
+#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_COMBO_START_SELECT
 #elif TARGET_OS_TV
-#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_DOWN_Y_L_R
+#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_COMBO_DOWN_Y_L_R
 #else
-#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_NONE
+#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_COMBO_NONE
 #endif
+
+#define DEFAULT_QUIT_GAMEPAD_COMBO INPUT_COMBO_NONE
 
 #if defined(VITA)
 static const unsigned input_backtouch_enable       = false;
@@ -1010,7 +1018,7 @@ static const bool audio_enable_menu_bgm    = false;
 /* Output samplerate. */
 #ifdef GEKKO
 #define DEFAULT_OUTPUT_RATE 32000
-#elif defined(_3DS) || defined(RETROFW)
+#elif defined(_3DS) || defined(RETROFW) || defined(MIYOO)
 #define DEFAULT_OUTPUT_RATE 32730
 #else
 #define DEFAULT_OUTPUT_RATE 48000
@@ -1021,7 +1029,7 @@ static const bool audio_enable_menu_bgm    = false;
 
 /* Desired audio latency in milliseconds. Might not be honored
  * if driver can't provide given latency. */
-#if defined(ANDROID) || defined(EMSCRIPTEN) || defined(RETROFW)
+#if defined(ANDROID) || defined(EMSCRIPTEN) || defined(RETROFW) || defined(MIYOO)
 /* For most Android devices, 64ms is way too low. */
 #define DEFAULT_OUT_LATENCY 128
 #else
@@ -1095,7 +1103,7 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_APPLY_CHEATS_AFTER_LOAD false
 
 
-#if defined(RETROFW)
+#if defined(RETROFW) || defined(MIYOO)
 /*RETROFW jz4760 has signficant slowdown with default settings */
 #define DEFAULT_REWIND_BUFFER_SIZE (1 << 20)
 #define DEFAULT_REWIND_BUFFER_SIZE_STEP 1 
@@ -1394,7 +1402,7 @@ static const unsigned menu_left_thumbnails_default = 0;
 static const unsigned gfx_thumbnail_upscale_threshold = 0;
 
 #ifdef HAVE_MENU
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 /* The RS-90 has a hardware clock that is neither
  * configurable nor persistent, rendering it useless.
  * We therefore hide it in the menu by default. */

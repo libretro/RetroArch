@@ -36,9 +36,6 @@
 /* Generated from idle-inhibit-unstable-v1.xml */
 #include "../../gfx/common/wayland/idle-inhibit-unstable-v1.h"
 
-/* Generated from xdg-shell-unstable-v6.xml */
-#include "../../gfx/common/wayland/xdg-shell-unstable-v6.h"
-
 /* Generated from xdg-shell.xml */
 #include "../../gfx/common/wayland/xdg-shell.h"
 
@@ -120,9 +117,6 @@ typedef struct gfx_ctx_wayland_data
    struct wl_registry *registry;
    struct wl_compositor *compositor;
    struct wl_surface *surface;
-   struct zxdg_surface_v6 *zxdg_surface;
-   struct zxdg_shell_v6 *zxdg_shell;
-   struct zxdg_toplevel_v6 *zxdg_toplevel;
    struct xdg_surface *xdg_surface;
    struct xdg_wm_base *xdg_shell;
    struct xdg_toplevel *xdg_toplevel;
@@ -183,9 +177,6 @@ void gfx_ctx_wl_show_mouse(void *data, bool state);
 void handle_toplevel_close(void *data,
       struct xdg_toplevel *xdg_toplevel);
 
-void handle_zxdg_toplevel_close(void *data,
-      struct zxdg_toplevel_v6 *zxdg_toplevel);
-
 void flush_wayland_fd(void *data);
 
 extern const struct wl_keyboard_listener keyboard_listener;
@@ -201,10 +192,6 @@ extern const struct wl_surface_listener wl_surface_listener;
 extern const struct xdg_wm_base_listener xdg_shell_listener;
 
 extern const struct xdg_surface_listener xdg_surface_listener;
-
-extern const struct zxdg_shell_v6_listener zxdg_shell_v6_listener;
-
-extern const struct zxdg_surface_v6_listener zxdg_surface_v6_listener;
 
 extern const struct wl_output_listener output_listener;
 

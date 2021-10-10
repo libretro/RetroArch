@@ -490,7 +490,7 @@ static bool video_thread_alive(void *data)
    bool ret;
    thread_video_t *thr = (thread_video_t*)data;
 
-   if (rarch_ctl(RARCH_CTL_IS_PAUSED, NULL))
+   if (retroarch_ctl(RARCH_CTL_IS_PAUSED, NULL))
    {
       thread_packet_t pkt;
 
@@ -1012,7 +1012,7 @@ static void thread_set_hdr_expand_gamut(void *data, bool expand_gamut)
 }
 
 static void thread_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
@@ -1022,7 +1022,7 @@ static void thread_get_video_output_size(void *data,
    if (thr->poke && thr->poke->get_video_output_size)
       thr->poke->get_video_output_size(thr->driver_data,
             width,
-            height);
+            height, desc, desc_len);
 }
 
 static void thread_get_video_output_prev(void *data)

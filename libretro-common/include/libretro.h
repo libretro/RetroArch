@@ -1722,7 +1722,32 @@ enum retro_mod
                                             * Must be called in retro_set_environment().
                                             */
 
-#define RETRO_ENVIRONMENT_GET_THROTTLE_STATE (70 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+#define RETRO_ENVIRONMENT_SET_VARIABLE 70
+                                           /* const struct retro_variable * --
+                                            * Allows an implementation to notify the frontend
+                                            * that a core option value has changed.
+                                            *
+                                            * retro_variable::key and retro_variable::value
+                                            * must match strings that have been set previously
+                                            * via one of the following:
+                                            *
+                                            * - RETRO_ENVIRONMENT_SET_VARIABLES
+                                            * - RETRO_ENVIRONMENT_SET_CORE_OPTIONS
+                                            * - RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL
+                                            * - RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
+                                            * - RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL
+                                            *
+                                            * After changing a core option value via this
+                                            * callback, RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE
+                                            * will return true.
+                                            *
+                                            * If data is NULL, no changes will be registered
+                                            * and the callback will return true; an
+                                            * implementation may therefore pass NULL in order
+                                            * to test whether the callback is supported.
+                                            */
+
+#define RETRO_ENVIRONMENT_GET_THROTTLE_STATE (71 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* struct retro_throttle_state * --
                                             * Allows an implementation to get details on the actual rate
                                             * the frontend is attempting to call retro_run().

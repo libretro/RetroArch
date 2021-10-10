@@ -2361,6 +2361,14 @@ MSG_HASH(
    "Asigna una combinación de botones en el mando para mostrar el menú."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   "Combinación de mando para cerrar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   "Asigna una combinación de botones en el mando para cerrar RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
    "Retraso para activar teclas rápidas (en fotogramas)"
    )
@@ -9967,11 +9975,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM,
-   "Conexión recibida desde: \"%s\""
+   "Conexión recibida desde: «%s»"
    )
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM_NAME,
-   "Conexión recibida desde: \"%s (%s)\""
+   "Conexión recibida desde: «%s (%s)»"
    )
 MSG_HASH(
    MSG_PUBLIC_ADDRESS,

@@ -25,7 +25,7 @@
 #include <formats/image.h>
 #include <queues/task_queue.h>
 
-#include "input_driver.h"
+#include "input_types.h"
 
 #define OVERLAY_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
 #define OVERLAY_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)

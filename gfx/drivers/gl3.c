@@ -15,15 +15,15 @@
 
 /* Modern OpenGL driver.
  *
- * Minimum version (desktop): OpenGL 3.2+
- * Minimum version (mobile) : OpenGLES 3.0+
+ * Minimum version (desktop): OpenGL   3.2+ (2009)
+ * Minimum version (mobile) : OpenGLES 3.0+ (2012)
  */
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
-#include "../common/gl_core_common.h"
+#include "../common/gl3_common.h"
 
 #include <gfx/gl_capabilities.h>
 #include <gfx/video_frame.h>
@@ -1271,12 +1271,12 @@ static void *gl_core_init(const video_info_t *video,
    }
 
 #ifdef _WIN32
-   if (string_is_equal(vendor, "Microsoft Corporation"))
+   if (   string_is_equal(vendor,   "Microsoft Corporation"))
       if (string_is_equal(renderer, "GDI Generic"))
 #ifdef HAVE_OPENGL1
-         retroarch_force_video_driver_fallback("gl1");
+         video_driver_force_fallback("gl1");
 #else
-         retroarch_force_video_driver_fallback("gdi");
+         video_driver_force_fallback("gdi");
 #endif
 #endif
 
@@ -1353,7 +1353,7 @@ static void *gl_core_init(const video_info_t *video,
    return gl;
 
 error:
-   video_context_driver_destroy();
+   video_context_driver_free();
    gl_core_destroy_resources(gl);
    if (gl)
       free(gl);
@@ -2221,14 +2221,14 @@ static void gl_core_set_texture_enable(void *data, bool state, bool full_screen)
 }
 
 static void gl_core_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
    gl_core_t   *gl = (gl_core_t*)data;
    if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_size)
       return;
    gl->ctx_driver->get_video_output_size(
          gl->ctx_data,
-         width, height);
+         width, height, desc, desc_len);
 }
 
 static void gl_core_get_video_output_prev(void *data)

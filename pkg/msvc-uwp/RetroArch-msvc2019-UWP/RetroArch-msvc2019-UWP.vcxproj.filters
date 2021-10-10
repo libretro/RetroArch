@@ -41,9 +41,6 @@
     <ClInclude Include="..\..\..\uwp\uwp_async.h">
       <Filter>uwp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\uwp\uwp_file_handle_access.h">
-      <Filter>uwp</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\griffin\griffin.c">

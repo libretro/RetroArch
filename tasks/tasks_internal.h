@@ -23,6 +23,7 @@
 #include <retro_miscellaneous.h>
 
 #include <queues/task_queue.h>
+#include <gfx/scaler/scaler.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -205,6 +206,31 @@ void *task_push_decompress(
       bool mute);
 
 void task_file_load_handler(retro_task_t *task);
+
+typedef struct screenshot_task_state screenshot_task_state_t;
+
+struct screenshot_task_state
+{
+   struct scaler_ctx scaler;
+   uint8_t *out_buffer;
+   const void *frame;
+   void *userbuf;
+
+   int pitch;
+   unsigned width;
+   unsigned height;
+   unsigned pixel_format_type;
+
+   char filename[PATH_MAX_LENGTH];
+   char shotname[256];
+
+   bool bgr24;
+   bool silence;
+   bool is_idle;
+   bool is_paused;
+   bool history_list_enable;
+   bool widgets_ready;
+};
 
 bool take_screenshot(
       const char *screenshot_dir,

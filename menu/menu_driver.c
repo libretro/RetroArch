@@ -20,17 +20,26 @@
 #include "../config.h"
 #endif
 
+#include <locale.h>
+
 #include <retro_timers.h>
 #include <lists/dir_list.h>
 #include <string/stdstring.h>
+#include <compat/strcasestr.h>
+#include <encodings/utf.h>
 #include <streams/file_stream.h>
+#include <time/rtime.h>
 
 #include "menu_driver.h"
 #include "menu_cbs.h"
+#include "../driver.h"
 #include "../list_special.h"
 #include "../paths.h"
+#include "../tasks/task_powerstate.h"
 #include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
+
+#include "../frontend/frontend_driver.h"
 
 #ifdef HAVE_LANGEXTRA
 /* This file has a UTF8 BOM, we assume HAVE_LANGEXTRA
@@ -42,9 +51,255 @@
 #include "../cheevos/cheevos_menu.h"
 #endif
 
+#include "../gfx/gfx_animation.h"
 #include "../input/input_driver.h"
 #include "../input/input_remapping.h"
 #include "../performance_counters.h"
+#include "../version.h"
+
+#ifdef HAVE_LIBNX
+#include <switch.h>
+#endif
+
+#if defined(HAVE_LAKKA) || defined(HAVE_LIBNX)
+#include "../switch_performance_profiles.h"
+#endif
+
+#ifdef HAVE_LIBNX
+#define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
+
+/* TODO/FIXME - public global variable */
+extern u32 __nx_applet_type;
+#endif
+
+struct key_desc key_descriptors[RARCH_MAX_KEYS] =
+{
+   {RETROK_FIRST,         "Unmapped"},
+   {RETROK_BACKSPACE,     "Backspace"},
+   {RETROK_TAB,           "Tab"},
+   {RETROK_CLEAR,         "Clear"},
+   {RETROK_RETURN,        "Return"},
+   {RETROK_PAUSE,         "Pause"},
+   {RETROK_ESCAPE,        "Escape"},
+   {RETROK_SPACE,         "Space"},
+   {RETROK_EXCLAIM,       "!"},
+   {RETROK_QUOTEDBL,      "\""},
+   {RETROK_HASH,          "#"},
+   {RETROK_DOLLAR,        "$"},
+   {RETROK_AMPERSAND,     "&"},
+   {RETROK_QUOTE,         "\'"},
+   {RETROK_LEFTPAREN,     "("},
+   {RETROK_RIGHTPAREN,    ")"},
+   {RETROK_ASTERISK,      "*"},
+   {RETROK_PLUS,          "+"},
+   {RETROK_COMMA,         ","},
+   {RETROK_MINUS,         "-"},
+   {RETROK_PERIOD,        "."},
+   {RETROK_SLASH,         "/"},
+   {RETROK_0,             "0"},
+   {RETROK_1,             "1"},
+   {RETROK_2,             "2"},
+   {RETROK_3,             "3"},
+   {RETROK_4,             "4"},
+   {RETROK_5,             "5"},
+   {RETROK_6,             "6"},
+   {RETROK_7,             "7"},
+   {RETROK_8,             "8"},
+   {RETROK_9,             "9"},
+   {RETROK_COLON,         ":"},
+   {RETROK_SEMICOLON,     ";"},
+   {RETROK_LESS,          "<"},
+   {RETROK_EQUALS,        "="},
+   {RETROK_GREATER,       ">"},
+   {RETROK_QUESTION,      "?"},
+   {RETROK_AT,            "@"},
+   {RETROK_LEFTBRACKET,   "["},
+   {RETROK_BACKSLASH,     "\\"},
+   {RETROK_RIGHTBRACKET,  "]"},
+   {RETROK_CARET,         "^"},
+   {RETROK_UNDERSCORE,    "_"},
+   {RETROK_BACKQUOTE,     "`"},
+   {RETROK_a,             "A"},
+   {RETROK_b,             "B"},
+   {RETROK_c,             "C"},
+   {RETROK_d,             "D"},
+   {RETROK_e,             "E"},
+   {RETROK_f,             "F"},
+   {RETROK_g,             "G"},
+   {RETROK_h,             "H"},
+   {RETROK_i,             "I"},
+   {RETROK_j,             "J"},
+   {RETROK_k,             "K"},
+   {RETROK_l,             "L"},
+   {RETROK_m,             "M"},
+   {RETROK_n,             "N"},
+   {RETROK_o,             "O"},
+   {RETROK_p,             "P"},
+   {RETROK_q,             "Q"},
+   {RETROK_r,             "R"},
+   {RETROK_s,             "S"},
+   {RETROK_t,             "T"},
+   {RETROK_u,             "U"},
+   {RETROK_v,             "V"},
+   {RETROK_w,             "W"},
+   {RETROK_x,             "X"},
+   {RETROK_y,             "Y"},
+   {RETROK_z,             "Z"},
+   {RETROK_DELETE,        "Delete"},
+
+   {RETROK_KP0,           "Numpad 0"},
+   {RETROK_KP1,           "Numpad 1"},
+   {RETROK_KP2,           "Numpad 2"},
+   {RETROK_KP3,           "Numpad 3"},
+   {RETROK_KP4,           "Numpad 4"},
+   {RETROK_KP5,           "Numpad 5"},
+   {RETROK_KP6,           "Numpad 6"},
+   {RETROK_KP7,           "Numpad 7"},
+   {RETROK_KP8,           "Numpad 8"},
+   {RETROK_KP9,           "Numpad 9"},
+   {RETROK_KP_PERIOD,     "Numpad ."},
+   {RETROK_KP_DIVIDE,     "Numpad /"},
+   {RETROK_KP_MULTIPLY,   "Numpad *"},
+   {RETROK_KP_MINUS,      "Numpad -"},
+   {RETROK_KP_PLUS,       "Numpad +"},
+   {RETROK_KP_ENTER,      "Numpad Enter"},
+   {RETROK_KP_EQUALS,     "Numpad ="},
+
+   {RETROK_UP,            "Up"},
+   {RETROK_DOWN,          "Down"},
+   {RETROK_RIGHT,         "Right"},
+   {RETROK_LEFT,          "Left"},
+   {RETROK_INSERT,        "Insert"},
+   {RETROK_HOME,          "Home"},
+   {RETROK_END,           "End"},
+   {RETROK_PAGEUP,        "Page Up"},
+   {RETROK_PAGEDOWN,      "Page Down"},
+
+   {RETROK_F1,            "F1"},
+   {RETROK_F2,            "F2"},
+   {RETROK_F3,            "F3"},
+   {RETROK_F4,            "F4"},
+   {RETROK_F5,            "F5"},
+   {RETROK_F6,            "F6"},
+   {RETROK_F7,            "F7"},
+   {RETROK_F8,            "F8"},
+   {RETROK_F9,            "F9"},
+   {RETROK_F10,           "F10"},
+   {RETROK_F11,           "F11"},
+   {RETROK_F12,           "F12"},
+   {RETROK_F13,           "F13"},
+   {RETROK_F14,           "F14"},
+   {RETROK_F15,           "F15"},
+
+   {RETROK_NUMLOCK,       "Num Lock"},
+   {RETROK_CAPSLOCK,      "Caps Lock"},
+   {RETROK_SCROLLOCK,     "Scroll Lock"},
+   {RETROK_RSHIFT,        "Right Shift"},
+   {RETROK_LSHIFT,        "Left Shift"},
+   {RETROK_RCTRL,         "Right Control"},
+   {RETROK_LCTRL,         "Left Control"},
+   {RETROK_RALT,          "Right Alt"},
+   {RETROK_LALT,          "Left Alt"},
+   {RETROK_RMETA,         "Right Meta"},
+   {RETROK_LMETA,         "Left Meta"},
+   {RETROK_RSUPER,        "Right Super"},
+   {RETROK_LSUPER,        "Left Super"},
+   {RETROK_MODE,          "Mode"},
+   {RETROK_COMPOSE,       "Compose"},
+
+   {RETROK_HELP,          "Help"},
+   {RETROK_PRINT,         "Print"},
+   {RETROK_SYSREQ,        "Sys Req"},
+   {RETROK_BREAK,         "Break"},
+   {RETROK_MENU,          "Menu"},
+   {RETROK_POWER,         "Power"},
+   {RETROK_EURO,          {-30, -126, -84, 0}}, /* "�" */
+   {RETROK_UNDO,          "Undo"},
+   {RETROK_OEM_102,       "OEM-102"}
+};
+
+static void *null_menu_init(void **userdata, bool video_is_threaded)
+{
+   menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
+   if (!menu)
+      return NULL;
+   return menu;
+}
+
+static int null_menu_list_bind_init(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx) { return 0; }
+
+static menu_ctx_driver_t menu_ctx_null = {
+  NULL,  /* set_texture */
+  NULL,  /* render_messagebox */
+  NULL,  /* render */
+  NULL,  /* frame */
+  null_menu_init,
+  NULL,  /* free */
+  NULL,  /* context_reset */
+  NULL,  /* context_destroy */
+  NULL,  /* populate_entries */
+  NULL,  /* toggle */
+  NULL,  /* navigation_clear */
+  NULL,  /* navigation_decrement */
+  NULL,  /* navigation_increment */
+  NULL,  /* navigation_set */
+  NULL,  /* navigation_set_last */
+  NULL,  /* navigation_descend_alphabet */
+  NULL,  /* navigation_ascend_alphabet */
+  NULL,  /* lists_init */
+  NULL,  /* list_insert */
+  NULL,  /* list_prepend */
+  NULL,  /* list_delete */
+  NULL,  /* list_clear */
+  NULL,  /* list_cache */
+  NULL,  /* list_push */
+  NULL,  /* list_get_selection */
+  NULL,  /* list_get_size */
+  NULL,  /* list_get_entry */
+  NULL,  /* list_set_selection */
+  null_menu_list_bind_init,
+  NULL,  /* load_image */
+  "null",
+  NULL,  /* environ */
+  NULL,  /* update_thumbnail_path */
+  NULL,  /* update_thumbnail_image */
+  NULL,  /* refresh_thumbnail_image */
+  NULL,  /* set_thumbnail_system */
+  NULL,  /* get_thumbnail_system */
+  NULL,  /* set_thumbnail_content */
+  NULL,  /* osk_ptr_at_pos */
+  NULL,  /* update_savestate_thumbnail_path */
+  NULL,  /* update_savestate_thumbnail_image */
+  NULL,  /* pointer_down */
+  NULL,  /* pointer_up   */
+  NULL   /* entry_action */
+};
+
+/* Menu drivers */
+const menu_ctx_driver_t *menu_ctx_drivers[] = {
+#if defined(HAVE_MATERIALUI)
+   &menu_ctx_mui,
+#endif
+#if defined(HAVE_OZONE)
+   &menu_ctx_ozone,
+#endif
+#if defined(HAVE_RGUI)
+   &menu_ctx_rgui,
+#endif
+#if defined(HAVE_XMB)
+   &menu_ctx_xmb,
+#endif
+   &menu_ctx_null,
+   NULL
+};
+
+static struct menu_state menu_driver_state = { 0 };
+
+struct menu_state *menu_state_get_ptr(void)
+{
+   return &menu_driver_state;
+}
 
 static bool menu_should_pop_stack(const char *label)
 {
@@ -68,6 +323,773 @@ static bool menu_should_pop_stack(const char *label)
          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION)))
       return true;
    return false;
+}
+
+size_t menu_navigation_get_selection(void)
+{
+   struct menu_state *menu_st  = &menu_driver_state;
+   return menu_st->selection_ptr;
+}
+
+void menu_navigation_set_selection(size_t val)
+{
+   struct menu_state *menu_st  = &menu_driver_state;
+   menu_st->selection_ptr      = val;
+}
+
+void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
+      size_t i, void *userdata, bool use_representation)
+{
+   char newpath[255];
+   const char *path            = NULL;
+   const char *entry_label     = NULL;
+   menu_file_list_cbs_t *cbs   = NULL;
+   struct menu_state *menu_st  = &menu_driver_state;
+   file_list_t *selection_buf  = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(menu_st, stack_idx);
+   file_list_t *list           = (userdata) ? (file_list_t*)userdata : selection_buf;
+   bool path_enabled           = entry->path_enabled;
+
+   newpath[0]                  = '\0';
+
+   if (!list)
+      return;
+
+   path                       = list->list[i].path;
+   entry_label                = list->list[i].label;
+   entry->type                = list->list[i].type;
+   entry->entry_idx           = list->list[i].entry_idx;
+
+   cbs                        = (menu_file_list_cbs_t*)list->list[i].actiondata;
+   entry->idx                 = (unsigned)i;
+
+   if (entry->label_enabled && !string_is_empty(entry_label))
+      strlcpy(entry->label, entry_label, sizeof(entry->label));
+
+   if (cbs)
+   {
+      const char *label             = NULL;
+
+      entry->enum_idx               = cbs->enum_idx;
+      entry->checked                = cbs->checked;
+
+      file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
+            NULL, &label, NULL, NULL);
+
+      if (entry->rich_label_enabled && cbs->action_label)
+      {
+         cbs->action_label(list,
+               entry->type, (unsigned)i,
+               label, path,
+               entry->rich_label,
+               sizeof(entry->rich_label));
+
+         if (string_is_empty(entry->rich_label))
+            path_enabled = true;
+      }
+
+      if ((path_enabled || entry->value_enabled) &&
+          cbs->action_get_value &&
+          use_representation)
+      {
+         cbs->action_get_value(list,
+               &entry->spacing, entry->type,
+               (unsigned)i, label,
+               entry->value,
+               entry->value_enabled ? sizeof(entry->value) : 0,
+               path,
+               newpath,
+               path_enabled ? sizeof(newpath) : 0);
+
+         if (!string_is_empty(entry->value))
+         {
+            if (entry->enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
+            {
+               size_t j;
+               size_t size = strlcpy(entry->password_value, entry->value,
+                     sizeof(entry->password_value));
+               for (j = 0; j < size; j++)
+                  entry->password_value[j] = '*';
+            }
+         }
+      }
+
+      if (entry->sublabel_enabled)
+      {
+         if (!string_is_empty(cbs->action_sublabel_cache))
+            strlcpy(entry->sublabel,
+                     cbs->action_sublabel_cache, sizeof(entry->sublabel));
+         else if (cbs->action_sublabel)
+         {
+            /* If this function callback returns true,
+             * we know that the value won't change - so we
+             * can cache it instead. */
+            if (cbs->action_sublabel(list,
+                     entry->type, (unsigned)i,
+                     label, path,
+                     entry->sublabel,
+                     sizeof(entry->sublabel)) > 0)
+               strlcpy(cbs->action_sublabel_cache,
+                     entry->sublabel,
+                     sizeof(cbs->action_sublabel_cache));
+         }
+      }
+   }
+
+   if (path_enabled)
+   {
+      if (!string_is_empty(path) && !use_representation)
+         strlcpy(entry->path, path, sizeof(entry->path));
+      else if (
+                cbs
+            &&  cbs->setting
+            &&  cbs->setting->enum_value_idx != MSG_UNKNOWN
+            && !cbs->setting->dont_use_enum_idx_representation)
+         strlcpy(entry->path,
+               msg_hash_to_str(cbs->setting->enum_value_idx),
+               sizeof(entry->path));
+      else
+         if (!string_is_empty(newpath))
+            strlcpy(entry->path, newpath, sizeof(entry->path));
+   }
+}
+
+menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
+{
+   struct menu_state *menu_st  = &menu_driver_state;
+   if (menu_st->entries.list)
+   {
+      const file_list_t *list  = MENU_LIST_GET(menu_st->entries.list, 0);
+      return (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata;
+   }
+   return NULL;
+}
+
+file_list_t *menu_entries_get_menu_stack_ptr(size_t idx)
+{
+   struct menu_state   *menu_st   = &menu_driver_state;
+   menu_list_t *menu_list         = menu_st->entries.list;
+   if (!menu_list)
+      return NULL;
+   return MENU_LIST_GET(menu_list, (unsigned)idx);
+}
+
+file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
+{
+   struct menu_state   *menu_st   = &menu_driver_state;
+   menu_list_t *menu_list         = menu_st->entries.list;
+   if (!menu_list)
+      return NULL;
+   return MENU_LIST_GET_SELECTION(menu_list, (unsigned)idx);
+}
+
+size_t menu_entries_get_stack_size(size_t idx)
+{
+   struct menu_state   *menu_st   = &menu_driver_state;
+   menu_list_t *menu_list         = menu_st->entries.list;
+   if (!menu_list)
+      return 0;
+   return MENU_LIST_GET_STACK_SIZE(menu_list, idx);
+}
+
+size_t menu_entries_get_size(void)
+{
+   struct menu_state   *menu_st   = &menu_driver_state;
+   menu_list_t *menu_list         = menu_st->entries.list;
+   if (!menu_list)
+      return 0;
+   return MENU_LIST_GET_SELECTION(menu_list, 0)->size;
+}
+
+menu_search_terms_t *menu_entries_search_get_terms_internal(void)
+{
+   struct menu_state *menu_st  = &menu_driver_state;
+   file_list_t *list           = MENU_LIST_GET(menu_st->entries.list, 0);
+   menu_file_list_cbs_t *cbs   = NULL;
+
+   if (!list ||
+       (list->size < 1))
+      return NULL;
+
+   cbs = (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata;
+
+   if (!cbs)
+      return NULL;
+
+   return &cbs->search;
+}
+
+/* Searches current menu list for specified 'needle'
+ * string. If string is found, returns true and sets
+ * 'idx' to the matching list entry index. */
+bool menu_entries_list_search(const char *needle, size_t *idx)
+{
+   struct menu_state *menu_st  = &menu_driver_state;
+   menu_list_t *menu_list      = menu_st->entries.list;
+   file_list_t *list           = MENU_LIST_GET_SELECTION(menu_list, (unsigned)0);
+   bool match_found            = false;
+   bool char_search            = false;
+   char needle_char            = 0;
+   size_t i;
+
+   if (   !list
+       || string_is_empty(needle)
+       || !idx)
+      return match_found;
+
+   /* Check if we are searching for a single
+    * Latin alphabet character */
+   char_search    = ((needle[1] == '\0') && (ISALPHA(needle[0])));
+   if (char_search)
+      needle_char = TOLOWER(needle[0]);
+
+   for (i = 0; i < list->size; i++)
+   {
+      const char *entry_label = NULL;
+      menu_entry_t entry;
+
+      /* Note the we have to get the actual menu
+       * entry here, since we need the exact label
+       * that is currently displayed by the menu
+       * driver */
+      MENU_ENTRY_INIT(entry);
+      entry.value_enabled    = false;
+      entry.sublabel_enabled = false;
+      menu_entry_get(&entry, 0, i, NULL, true);
+
+      /* When using the file browser, one or more
+       * 'utility' entries will be added to the top
+       * of the list (e.g. 'Parent Directory'). These
+       * have no bearing on the actual content of the
+       * list, and should be excluded from the search */
+      if ((entry.type == FILE_TYPE_SCAN_DIRECTORY) ||
+          (entry.type == FILE_TYPE_MANUAL_SCAN_DIRECTORY) ||
+          (entry.type == FILE_TYPE_USE_DIRECTORY) ||
+          (entry.type == FILE_TYPE_PARENT_DIRECTORY))
+         continue;
+
+      /* Get displayed entry label */
+      if (!string_is_empty(entry.rich_label))
+         entry_label = entry.rich_label;
+      else
+         entry_label = entry.path;
+
+      if (string_is_empty(entry_label))
+         continue;
+
+      /* If we are performing a single character
+       * search, jump to the first entry whose
+       * first character matches */
+      if (char_search)
+      {
+         if (needle_char == TOLOWER(entry_label[0]))
+         {
+            *idx        = i;
+            match_found = true;
+            break;
+         }
+      }
+      /* Otherwise perform an exhaustive string
+       * comparison */
+      else
+      {
+         const char *found_str = (const char *)strcasestr(entry_label, needle);
+
+         /* Found a match with the first characters
+          * of the label -> best possible match,
+          * so quit immediately */
+         if (found_str == entry_label)
+         {
+            *idx        = i;
+            match_found = true;
+            break;
+         }
+         /* Found a mid-string match; this is a valid
+          * result, but keep searching for the best
+          * possible match */
+         else if (found_str)
+         {
+            *idx        = i;
+            match_found = true;
+         }
+      }
+   }
+
+   return match_found;
+}
+
+/* Time format strings with AM-PM designation require special
+ * handling due to platform dependence */
+static void strftime_am_pm(char* ptr, size_t maxsize, const char* format,
+      const struct tm* timeptr)
+{
+   char *local = NULL;
+
+   /* Ensure correct locale is set
+    * > Required for localised AM/PM strings */
+   setlocale(LC_TIME, "");
+
+   strftime(ptr, maxsize, format, timeptr);
+#if !(defined(__linux__) && !defined(ANDROID))
+   local = local_to_utf8_string_alloc(ptr);
+
+   if (!string_is_empty(local))
+      strlcpy(ptr, local, maxsize);
+
+   if (local)
+   {
+      free(local);
+      local = NULL;
+   }
+#endif
+}
+
+
+/* Display the date and time - time_mode will influence how
+ * the time representation will look like.
+ * */
+void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
+{
+   struct menu_state *menu_st  = &menu_driver_state;
+   if (!datetime)
+      return;
+
+   /* Trigger an update, if required */
+   if (menu_st->current_time_us - menu_st->datetime_last_time_us >=
+         DATETIME_CHECK_INTERVAL)
+   {
+      time_t time_;
+      struct tm tm_;
+      bool has_am_pm         = false;
+      const char *format_str = "";
+
+      menu_st->datetime_last_time_us = menu_st->current_time_us;
+
+      /* Get current time */
+      time(&time_);
+      rtime_localtime(&time_, &tm_);
+
+      /* Format string representation */
+      switch (datetime->time_mode)
+      {
+         case MENU_TIMEDATE_STYLE_YMD_HMS: /* YYYY-MM-DD HH:MM:SS */
+            /* Using switch statements to set the format
+             * string is verbose, but has far less performance
+             * impact than setting the date separator dynamically
+             * (i.e. no snprintf() or character replacement...) */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%Y/%m/%d %H:%M:%S";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%Y.%m.%d %H:%M:%S";
+                  break;
+               default:
+                  format_str = "%Y-%m-%d %H:%M:%S";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_YMD_HM: /* YYYY-MM-DD HH:MM */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%Y/%m/%d %H:%M";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%Y.%m.%d %H:%M";
+                  break;
+               default:
+                  format_str = "%Y-%m-%d %H:%M";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_YMD: /* YYYY-MM-DD */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%Y/%m/%d";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%Y.%m.%d";
+                  break;
+               default:
+                  format_str = "%Y-%m-%d";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_YM: /* YYYY-MM */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%Y/%m";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%Y.%m";
+                  break;
+               default:
+                  format_str = "%Y-%m";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_HMS: /* MM-DD-YYYY HH:MM:SS */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d/%Y %H:%M:%S";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d.%Y %H:%M:%S";
+                  break;
+               default:
+                  format_str = "%m-%d-%Y %H:%M:%S";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_HM: /* MM-DD-YYYY HH:MM */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d/%Y %H:%M";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d.%Y %H:%M";
+                  break;
+               default:
+                  format_str = "%m-%d-%Y %H:%M";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MD_HM: /* MM-DD HH:MM */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d %H:%M";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d %H:%M";
+                  break;
+               default:
+                  format_str = "%m-%d %H:%M";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY: /* MM-DD-YYYY */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d/%Y";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d.%Y";
+                  break;
+               default:
+                  format_str = "%m-%d-%Y";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MD: /* MM-DD */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d";
+                  break;
+               default:
+                  format_str = "%m-%d";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS: /* DD-MM-YYYY HH:MM:SS */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m/%Y %H:%M:%S";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m.%Y %H:%M:%S";
+                  break;
+               default:
+                  format_str = "%d-%m-%Y %H:%M:%S";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HM: /* DD-MM-YYYY HH:MM */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m/%Y %H:%M";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m.%Y %H:%M";
+                  break;
+               default:
+                  format_str = "%d-%m-%Y %H:%M";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMM_HM: /* DD-MM HH:MM */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m %H:%M";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m %H:%M";
+                  break;
+               default:
+                  format_str = "%d-%m %H:%M";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY: /* DD-MM-YYYY */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m/%Y";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m.%Y";
+                  break;
+               default:
+                  format_str = "%d-%m-%Y";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMM: /* DD-MM */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m";
+                  break;
+               default:
+                  format_str = "%d-%m";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_HMS: /* HH:MM:SS */
+            format_str = "%H:%M:%S";
+            break;
+         case MENU_TIMEDATE_STYLE_HM: /* HH:MM */
+            format_str = "%H:%M";
+            break;
+         case MENU_TIMEDATE_STYLE_YMD_HMS_AMPM: /* YYYY-MM-DD HH:MM:SS (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%Y/%m/%d %I:%M:%S %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%Y.%m.%d %I:%M:%S %p";
+                  break;
+               default:
+                  format_str = "%Y-%m-%d %I:%M:%S %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_YMD_HM_AMPM: /* YYYY-MM-DD HH:MM (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%Y/%m/%d %I:%M %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%Y.%m.%d %I:%M %p";
+                  break;
+               default:
+                  format_str = "%Y-%m-%d %I:%M %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_HMS_AMPM: /* MM-DD-YYYY HH:MM:SS (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d/%Y %I:%M:%S %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d.%Y %I:%M:%S %p";
+                  break;
+               default:
+                  format_str = "%m-%d-%Y %I:%M:%S %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_HM_AMPM: /* MM-DD-YYYY HH:MM (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d/%Y %I:%M %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d.%Y %I:%M %p";
+                  break;
+               default:
+                  format_str = "%m-%d-%Y %I:%M %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MD_HM_AMPM: /* MM-DD HH:MM (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d %I:%M %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d %I:%M %p";
+                  break;
+               default:
+                  format_str = "%m-%d %I:%M %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS_AMPM: /* DD-MM-YYYY HH:MM:SS (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m/%Y %I:%M:%S %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m.%Y %I:%M:%S %p";
+                  break;
+               default:
+                  format_str = "%d-%m-%Y %I:%M:%S %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HM_AMPM: /* DD-MM-YYYY HH:MM (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m/%Y %I:%M %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m.%Y %I:%M %p";
+                  break;
+               default:
+                  format_str = "%d-%m-%Y %I:%M %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMM_HM_AMPM: /* DD-MM HH:MM (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m %I:%M %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m %I:%M %p";
+                  break;
+               default:
+                  format_str = "%d-%m %I:%M %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_HMS_AMPM: /* HH:MM:SS (AM/PM) */
+            has_am_pm  = true;
+            format_str = "%I:%M:%S %p";
+            break;
+         case MENU_TIMEDATE_STYLE_HM_AMPM: /* HH:MM (AM/PM) */
+            has_am_pm  = true;
+            format_str = "%I:%M %p";
+            break;
+      }
+
+      if (has_am_pm)
+         strftime_am_pm(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+               format_str, &tm_);
+      else
+         strftime(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+               format_str, &tm_);
+   }
+
+   /* Copy cached datetime string to input
+    * menu_display_ctx_datetime_t struct */
+   strlcpy(datetime->s, menu_st->datetime_cache, datetime->len);
+}
+
+/* Display current (battery) power state */
+void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate)
+{
+   int percent                    = 0;
+   struct menu_state    *menu_st  = &menu_driver_state;
+   enum frontend_powerstate state = FRONTEND_POWERSTATE_NONE;
+
+   if (!powerstate)
+      return;
+
+   /* Trigger an update, if required */
+   if (menu_st->current_time_us - menu_st->powerstate_last_time_us >=
+         POWERSTATE_CHECK_INTERVAL)
+   {
+      menu_st->powerstate_last_time_us = menu_st->current_time_us;
+      task_push_get_powerstate();
+   }
+
+   /* Get last recorded state */
+   state                       = get_last_powerstate(&percent);
+
+   /* Populate gfx_display_ctx_powerstate_t */
+   powerstate->battery_enabled = (state != FRONTEND_POWERSTATE_NONE) &&
+                                 (state != FRONTEND_POWERSTATE_NO_SOURCE);
+   powerstate->percent         = 0;
+   powerstate->charging        = false;
+
+   if (powerstate->battery_enabled)
+   {
+      if (state == FRONTEND_POWERSTATE_CHARGING)
+         powerstate->charging  = true;
+      if (percent > 0)
+         powerstate->percent   = (unsigned)percent;
+      snprintf(powerstate->s, powerstate->len, "%u%%", powerstate->percent);
+   }
+}
+
+
+/* Sets title to what the name of the current menu should be. */
+int menu_entries_get_title(char *s, size_t len)
+{
+   unsigned menu_type            = 0;
+   const char *path              = NULL;
+   const char *label             = NULL;
+   struct menu_state   *menu_st  = &menu_driver_state;
+   const file_list_t *list       = menu_st->entries.list ?
+      MENU_LIST_GET(menu_st->entries.list, 0) : NULL;
+   menu_file_list_cbs_t *cbs     = list
+      ? (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata
+      : NULL;
+
+   if (!cbs)
+      return -1;
+
+   if (cbs && cbs->action_get_title)
+   {
+      int ret;
+      if (!string_is_empty(cbs->action_title_cache))
+      {
+         strlcpy(s, cbs->action_title_cache, len);
+         return 0;
+      }
+      file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
+            &path, &label, &menu_type, NULL);
+      ret = cbs->action_get_title(path, label, menu_type, s, len);
+      if (ret == 1)
+         strlcpy(cbs->action_title_cache, s, sizeof(cbs->action_title_cache));
+      return ret;
+   }
+   return 0;
 }
 
 /* Used to close an active message box (help or info)
@@ -1237,7 +2259,7 @@ static bool menu_driver_displaylist_push_internal(
 
 #if 0
 #ifdef HAVE_SCREENSHOTS
-      if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+      if (!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT),
                msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT),
@@ -1523,6 +2545,89 @@ int menu_cbs_exit(void)
 }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+void menu_driver_set_last_shader_preset_path(const char *path)
+{
+   menu_handle_t *menu         = menu_driver_state.driver_data;
+   if (menu)
+      menu_driver_set_last_shader_path_int(
+            path,
+            &menu->last_shader_selection.preset_type,
+            menu->last_shader_selection.preset_dir,
+            sizeof(menu->last_shader_selection.preset_dir),
+            menu->last_shader_selection.preset_file_name,
+            sizeof(menu->last_shader_selection.preset_file_name));
+}
+
+void menu_driver_set_last_shader_pass_path(const char *path)
+{
+   menu_handle_t *menu         = menu_driver_state.driver_data;
+   if (menu)
+      menu_driver_set_last_shader_path_int(
+            path,
+            &menu->last_shader_selection.pass_type,
+            menu->last_shader_selection.pass_dir,
+            sizeof(menu->last_shader_selection.pass_dir),
+            menu->last_shader_selection.pass_file_name,
+            sizeof(menu->last_shader_selection.pass_file_name));
+}
+
+enum rarch_shader_type menu_driver_get_last_shader_preset_type(void)
+{
+   menu_handle_t *menu         = menu_driver_state.driver_data;
+   if (!menu)
+      return RARCH_SHADER_NONE;
+   return menu->last_shader_selection.preset_type;
+}
+
+enum rarch_shader_type menu_driver_get_last_shader_pass_type(void)
+{
+   menu_handle_t *menu         = menu_driver_state.driver_data;
+   if (!menu)
+      return RARCH_SHADER_NONE;
+   return menu->last_shader_selection.pass_type;
+}
+
+void menu_driver_get_last_shader_preset_path(
+      const char **directory, const char **file_name)
+{
+   settings_t *settings         = config_get_ptr();
+   menu_handle_t *menu          = menu_driver_state.driver_data;
+   enum rarch_shader_type type  = RARCH_SHADER_NONE;
+   const char *shader_dir       = NULL;
+   const char *shader_file_name = NULL;
+
+   if (menu)
+   {
+      type                      = menu->last_shader_selection.preset_type;
+      shader_dir                = menu->last_shader_selection.preset_dir;
+      shader_file_name          = menu->last_shader_selection.preset_file_name;
+   }
+
+   menu_driver_get_last_shader_path_int(settings, type,
+         shader_dir, shader_file_name,
+         directory, file_name);
+}
+
+void menu_driver_get_last_shader_pass_path(
+      const char **directory, const char **file_name)
+{
+   menu_handle_t *menu          = menu_driver_state.driver_data;
+   settings_t *settings         = config_get_ptr();
+   enum rarch_shader_type type  = RARCH_SHADER_NONE;
+   const char *shader_dir       = NULL;
+   const char *shader_file_name = NULL;
+
+   if (menu)
+   {
+      type                      = menu->last_shader_selection.pass_type;
+      shader_dir                = menu->last_shader_selection.pass_dir;
+      shader_file_name          = menu->last_shader_selection.pass_file_name;
+   }
+
+   menu_driver_get_last_shader_path_int(settings, type,
+         shader_dir, shader_file_name,
+         directory, file_name);
+}
 void menu_driver_get_last_shader_path_int(
       settings_t *settings, enum rarch_shader_type type,
       const char *shader_dir, const char *shader_file_name,
@@ -1723,6 +2828,119 @@ void menu_shader_manager_apply_changes(
    }
 
    menu_shader_manager_set_preset(NULL, type, NULL, true);
+}
+
+/**
+ * menu_shader_manager_save_preset:
+ * @shader                   : shader to save
+ * @type                     : type of shader preset which determines save path
+ * @basename                 : basename of preset
+ * @apply                    : immediately set preset after saving
+ *
+ * Save a shader preset to disk.
+ **/
+bool menu_shader_manager_save_preset(const struct video_shader *shader,
+      const char *basename,
+      const char *dir_video_shader,
+      const char *dir_menu_config,
+      bool apply)
+{
+   char config_directory[PATH_MAX_LENGTH];
+   const char *preset_dirs[3]  = {0};
+   settings_t *settings        = config_get_ptr();
+
+   config_directory[0]         = '\0';
+
+   if (!path_is_empty(RARCH_PATH_CONFIG))
+      fill_pathname_basedir(
+            config_directory,
+            path_get(RARCH_PATH_CONFIG),
+            sizeof(config_directory));
+
+   preset_dirs[0] = dir_video_shader;
+   preset_dirs[1] = dir_menu_config;
+   preset_dirs[2] = config_directory;
+
+   return menu_shader_manager_save_preset_internal(
+         settings->bools.video_shader_preset_save_reference_enable,
+         shader, basename,
+         dir_video_shader,
+         apply,
+         preset_dirs,
+         ARRAY_SIZE(preset_dirs));
+}
+
+/**
+ * menu_shader_manager_remove_auto_preset:
+ * @type                     : type of shader preset to delete
+ *
+ * Deletes an auto-shader.
+ **/
+bool menu_shader_manager_remove_auto_preset(
+      enum auto_shader_type type,
+      const char *dir_video_shader,
+      const char *dir_menu_config)
+{
+   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
+   settings_t *settings             = config_get_ptr();
+   return menu_shader_manager_operate_auto_preset(
+         system, settings->bools.video_shader_preset_save_reference_enable,
+         AUTO_SHADER_OP_REMOVE, NULL,
+         dir_video_shader,
+         dir_menu_config,
+         type, false);
+}
+
+/**
+ * menu_shader_manager_auto_preset_exists:
+ * @type                     : type of shader preset
+ *
+ * Tests if an auto-shader of the given type exists.
+ **/
+bool menu_shader_manager_auto_preset_exists(
+      enum auto_shader_type type,
+      const char *dir_video_shader,
+      const char *dir_menu_config)
+{
+   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
+   settings_t *settings             = config_get_ptr();
+   return menu_shader_manager_operate_auto_preset(
+         system, settings->bools.video_shader_preset_save_reference_enable,
+         AUTO_SHADER_OP_EXISTS, NULL,
+         dir_video_shader,
+         dir_menu_config,
+         type, false);
+}
+
+/**
+ * menu_shader_manager_save_auto_preset:
+ * @shader                   : shader to save
+ * @type                     : type of shader preset which determines save path
+ * @apply                    : immediately set preset after saving
+ *
+ * Save a shader as an auto-shader to it's appropriate path:
+ *    SHADER_PRESET_GLOBAL: <target dir>/global
+ *    SHADER_PRESET_CORE:   <target dir>/<core name>/<core name>
+ *    SHADER_PRESET_PARENT: <target dir>/<core name>/<parent>
+ *    SHADER_PRESET_GAME:   <target dir>/<core name>/<game name>
+ * Needs to be consistent with load_shader_preset()
+ * Auto-shaders will be saved as a reference if possible
+ **/
+bool menu_shader_manager_save_auto_preset(
+      const struct video_shader *shader,
+      enum auto_shader_type type,
+      const char *dir_video_shader,
+      const char *dir_menu_config,
+      bool apply)
+{
+   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
+   settings_t *settings             = config_get_ptr();
+   return menu_shader_manager_operate_auto_preset(
+         system, settings->bools.video_shader_preset_save_reference_enable,
+         AUTO_SHADER_OP_SAVE, shader,
+         dir_video_shader,
+         dir_menu_config,
+         type, apply);
 }
 #endif
 
@@ -2145,6 +3363,39 @@ bool generic_menu_init_list(struct menu_state *menu_st,
    menu_displaylist_info_free(&info);
 
    return true;
+}
+
+/* This function gets called at first startup on Android/iOS
+ * when we need to extract the APK contents/zip file. This
+ * file contains assets which then get extracted to the
+ * user's asset directories. */
+static void bundle_decompressed(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *err)
+{
+   settings_t        *settings = config_get_ptr();
+   decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
+
+   if (err)
+      RARCH_ERR("%s", err);
+
+   if (dec)
+   {
+      if (!err)
+         command_event(CMD_EVENT_REINIT, NULL);
+
+      /* delete bundle? */
+      free(dec->source_file);
+      free(dec);
+   }
+
+   configuration_set_uint(settings,
+         settings->uints.bundle_assets_extract_last_version,
+         settings->uints.bundle_assets_extract_version_current);
+
+   configuration_set_bool(settings, settings->bools.bundle_finished, true);
+
+   command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 }
 
 bool rarch_menu_init(
@@ -2919,4 +4170,1927 @@ void get_current_menu_sublabel(struct menu_state *menu_st,
    entry.value_enabled         = false;
    menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
    strlcpy(s, entry.sublabel, len);
+}
+
+void menu_entries_get_last_stack(const char **path, const char **label,
+      unsigned *file_type, enum msg_hash_enums *enum_idx, size_t *entry_idx)
+{
+   file_list_t *list              = NULL;
+   struct menu_state    *menu_st  = &menu_driver_state;
+   if (!menu_st->entries.list)
+      return;
+
+   list                           = MENU_LIST_GET(menu_st->entries.list, 0);
+
+   if (list && list->size)
+      file_list_get_at_offset(list, list->size - 1, path, label, file_type, entry_idx);
+
+   if (enum_idx)
+   {
+      menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)
+         list->list[list->size - 1].actiondata;
+
+      if (cbs)
+         *enum_idx = cbs->enum_idx;
+   }
+}
+
+int menu_driver_deferred_push_content_list(file_list_t *list)
+{
+   settings_t *settings           = config_get_ptr();
+   struct menu_state    *menu_st  = &menu_driver_state;
+   menu_list_t *menu_list         = menu_st->entries.list;
+   file_list_t *selection_buf     = MENU_LIST_GET_SELECTION(menu_list, (unsigned)0);
+
+   menu_st->selection_ptr         = 0;
+
+   if (!menu_driver_displaylist_push(
+            menu_st,
+            settings,
+            list,
+            selection_buf))
+      return -1;
+   return 0;
+}
+
+bool menu_driver_screensaver_supported(void)
+{
+   struct menu_state    *menu_st  = &menu_driver_state;
+   return menu_st->screensaver_supported;
+}
+
+retro_time_t menu_driver_get_current_time(void)
+{
+   struct menu_state    *menu_st  = &menu_driver_state;
+   return menu_st->current_time_us;
+}
+
+const char *menu_driver_get_pending_selection(void)
+{
+   struct menu_state   *menu_st  = &menu_driver_state;
+   return menu_st->pending_selection;
+}
+
+void menu_driver_set_pending_selection(const char *pending_selection)
+{
+   struct menu_state *menu_st  = &menu_driver_state;
+   char *selection             = menu_st->pending_selection;
+
+   /* Reset existing cache */
+   selection[0] = '\0';
+
+   /* If path is empty, do nothing */
+   if (string_is_empty(pending_selection))
+      return;
+
+   strlcpy(selection, pending_selection,
+         sizeof(menu_st->pending_selection));
+}
+
+void menu_input_search_cb(void *userdata, const char *str)
+{
+   const char *label           = NULL;
+   unsigned type               = MENU_SETTINGS_NONE;
+   struct menu_state *menu_st  = &menu_driver_state;
+
+   if (string_is_empty(str))
+      goto end;
+
+   /* Determine whether we are currently
+    * viewing a menu list with 'search
+    * filter' support */
+   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
+         NULL, &label, &type, NULL);
+
+   /* Do not apply search filter if string
+    * consists of a single Latin alphabet
+    * character */
+   if (((str[1] != '\0') || (!ISALPHA(str[0]))) &&
+       menu_driver_search_filter_enabled(label, type))
+   {
+      /* Add search term */
+      if (menu_entries_search_push(str))
+      {
+         bool refresh = false;
+
+         /* Reset navigation pointer */
+         menu_st->selection_ptr = 0;
+         menu_driver_navigation_set(false);
+
+         /* Refresh menu */
+         menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+         menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+      }
+   }
+   /* Perform a regular search: jump to the
+    * first matching entry */
+   else
+   {
+      size_t idx = 0;
+
+      if (menu_entries_list_search(str, &idx))
+      {
+         menu_st->selection_ptr = idx;
+         menu_driver_navigation_set(true);
+      }
+   }
+
+end:
+   menu_input_dialog_end();
+}
+
+const char *menu_driver_get_last_start_directory(void)
+{
+   menu_handle_t *menu           = menu_driver_state.driver_data;
+   settings_t *settings          = config_get_ptr();
+   bool use_last                 = settings->bools.use_last_start_directory;
+   const char *default_directory = settings->paths.directory_menu_content;
+
+   /* Return default directory if there is no
+    * last directory or it's invalid */
+   if (!menu ||
+       !use_last ||
+       string_is_empty(menu->last_start_content.directory) ||
+       !path_is_directory(menu->last_start_content.directory))
+      return default_directory;
+
+   return menu->last_start_content.directory;
+}
+
+const char *menu_driver_get_last_start_file_name(void)
+{
+   menu_handle_t *menu         = menu_driver_state.driver_data;
+   settings_t *settings        = config_get_ptr();
+   bool use_last               = settings->bools.use_last_start_directory;
+
+   /* Return NULL if there is no last 'file name' */
+   if (!menu ||
+       !use_last ||
+       string_is_empty(menu->last_start_content.file_name))
+      return NULL;
+
+   return menu->last_start_content.file_name;
+}
+
+void menu_driver_set_last_start_content(const char *start_content_path)
+{
+   char archive_path[PATH_MAX_LENGTH];
+   menu_handle_t *menu         = menu_driver_state.driver_data;
+   settings_t *settings        = config_get_ptr();
+   bool use_last               = settings->bools.use_last_start_directory;
+   const char *archive_delim   = NULL;
+   const char *file_name       = NULL;
+
+   if (!menu)
+      return;
+
+   /* Reset existing cache */
+   menu->last_start_content.directory[0] = '\0';
+   menu->last_start_content.file_name[0] = '\0';
+
+   /* If 'use_last_start_directory' is disabled or
+    * path is empty, do nothing */
+   if (!use_last ||
+       string_is_empty(start_content_path))
+      return;
+
+   /* Cache directory */
+   fill_pathname_parent_dir(menu->last_start_content.directory,
+         start_content_path, sizeof(menu->last_start_content.directory));
+
+   /* Cache file name */
+   archive_delim      = path_get_archive_delim(start_content_path);
+   if (archive_delim)
+   {
+      /* If path references a file inside an
+       * archive, must extract the string segment
+       * before the archive delimiter (i.e. path of
+       * 'parent' archive file) */
+      size_t len;
+
+      archive_path[0] = '\0';
+      len             = (size_t)(1 + archive_delim - start_content_path);
+      len             = (len < PATH_MAX_LENGTH) ? len : PATH_MAX_LENGTH;
+
+      strlcpy(archive_path, start_content_path, len * sizeof(char));
+
+      file_name       = path_basename(archive_path);
+   }
+   else
+      file_name       = path_basename_nocompression(start_content_path);
+
+   if (!string_is_empty(file_name))
+      strlcpy(menu->last_start_content.file_name, file_name,
+            sizeof(menu->last_start_content.file_name));
+}
+
+int menu_entry_action(
+      menu_entry_t *entry, size_t i, enum menu_action action)
+{
+   struct menu_state *menu_st     = &menu_driver_state;
+   if (     menu_st->driver_ctx
+         && menu_st->driver_ctx->entry_action)
+      return menu_st->driver_ctx->entry_action(
+            menu_st->userdata, entry, i, action);
+   return -1;
+}
+
+void menu_entries_append(
+      file_list_t *list,
+      const char *path,
+      const char *label,
+      unsigned type,
+      size_t directory_ptr,
+      size_t entry_idx)
+{
+   menu_ctx_list_t list_info;
+   size_t i;
+   size_t idx;
+   const char *menu_path           = NULL;
+   menu_file_list_cbs_t *cbs       = NULL;
+   struct menu_state  *menu_st     = &menu_driver_state;
+   if (!list || !label)
+      return;
+
+   file_list_append(list, path, label, type, directory_ptr, entry_idx);
+   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
+         &menu_path, NULL, NULL, NULL);
+
+   idx                = list->size - 1;
+
+   list_info.list     = list;
+   list_info.path     = path;
+   list_info.fullpath = NULL;
+
+   if (!string_is_empty(menu_path))
+      list_info.fullpath = strdup(menu_path);
+
+   list_info.label       = label;
+   list_info.idx         = idx;
+   list_info.entry_type  = type;
+
+   if (  menu_st->driver_ctx &&
+         menu_st->driver_ctx->list_insert)
+      menu_st->driver_ctx->list_insert(
+            menu_st->userdata,
+            list_info.list,
+            list_info.path,
+            list_info.fullpath,
+            list_info.label,
+            list_info.idx,
+            list_info.entry_type);
+
+   if (list_info.fullpath)
+      free(list_info.fullpath);
+
+   file_list_free_actiondata(list, idx);
+   cbs                             = (menu_file_list_cbs_t*)
+      malloc(sizeof(menu_file_list_cbs_t));
+
+   if (!cbs)
+      return;
+
+   cbs->action_sublabel_cache[0]   = '\0';
+   cbs->action_title_cache[0]      = '\0';
+   cbs->enum_idx                   = MSG_UNKNOWN;
+   cbs->checked                    = false;
+   cbs->setting                    = menu_setting_find(label);
+   cbs->action_iterate             = NULL;
+   cbs->action_deferred_push       = NULL;
+   cbs->action_select              = NULL;
+   cbs->action_get_title           = NULL;
+   cbs->action_ok                  = NULL;
+   cbs->action_cancel              = NULL;
+   cbs->action_scan                = NULL;
+   cbs->action_start               = NULL;
+   cbs->action_info                = NULL;
+   cbs->action_left                = NULL;
+   cbs->action_right               = NULL;
+   cbs->action_label               = NULL;
+   cbs->action_sublabel            = NULL;
+   cbs->action_get_value           = NULL;
+
+   cbs->search.size                = 0;
+   for (i = 0; i < MENU_SEARCH_FILTER_MAX_TERMS; i++)
+      cbs->search.terms[i][0]      = '\0';
+
+   list->list[idx].actiondata      = cbs;
+
+   menu_cbs_init(menu_st,
+         menu_st->driver_ctx,
+         list, cbs, path, label, type, idx);
+}
+
+bool menu_entries_append_enum(
+      file_list_t *list,
+      const char *path,
+      const char *label,
+      enum msg_hash_enums enum_idx,
+      unsigned type,
+      size_t directory_ptr,
+      size_t entry_idx)
+{
+   menu_ctx_list_t list_info;
+   size_t i;
+   size_t idx;
+   const char *menu_path           = NULL;
+   menu_file_list_cbs_t *cbs       = NULL;
+   struct menu_state  *menu_st     = &menu_driver_state;
+
+   if (!list || !label)
+      return false;
+
+   file_list_append(list, path, label, type, directory_ptr, entry_idx);
+   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
+         &menu_path, NULL, NULL, NULL);
+
+   idx                   = list->size - 1;
+
+   list_info.fullpath    = NULL;
+
+   if (!string_is_empty(menu_path))
+      list_info.fullpath = strdup(menu_path);
+   list_info.list        = list;
+   list_info.path        = path;
+   list_info.label       = label;
+   list_info.idx         = idx;
+   list_info.entry_type  = type;
+
+   if (  menu_st->driver_ctx &&
+         menu_st->driver_ctx->list_insert)
+      menu_st->driver_ctx->list_insert(
+            menu_st->userdata,
+            list_info.list,
+            list_info.path,
+            list_info.fullpath,
+            list_info.label,
+            list_info.idx,
+            list_info.entry_type);
+
+   if (list_info.fullpath)
+      free(list_info.fullpath);
+
+   file_list_free_actiondata(list, idx);
+   cbs                             = (menu_file_list_cbs_t*)
+      malloc(sizeof(menu_file_list_cbs_t));
+
+   if (!cbs)
+      return false;
+
+   cbs->action_sublabel_cache[0]   = '\0';
+   cbs->action_title_cache[0]      = '\0';
+   cbs->enum_idx                   = enum_idx;
+   cbs->checked                    = false;
+   cbs->setting                    = NULL;
+   cbs->action_iterate             = NULL;
+   cbs->action_deferred_push       = NULL;
+   cbs->action_select              = NULL;
+   cbs->action_get_title           = NULL;
+   cbs->action_ok                  = NULL;
+   cbs->action_cancel              = NULL;
+   cbs->action_scan                = NULL;
+   cbs->action_start               = NULL;
+   cbs->action_info                = NULL;
+   cbs->action_left                = NULL;
+   cbs->action_right               = NULL;
+   cbs->action_label               = NULL;
+   cbs->action_sublabel            = NULL;
+   cbs->action_get_value           = NULL;
+
+   cbs->search.size                = 0;
+   for (i = 0; i < MENU_SEARCH_FILTER_MAX_TERMS; i++)
+      cbs->search.terms[i][0]      = '\0';
+
+   list->list[idx].actiondata      = cbs;
+
+   if (   enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY
+       && enum_idx != MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY
+       && enum_idx != MENU_ENUM_LABEL_EXPLORE_ITEM
+       && enum_idx != MENU_ENUM_LABEL_RDB_ENTRY)
+      cbs->setting                 = menu_setting_find_enum(enum_idx);
+
+   menu_cbs_init(menu_st,
+         menu_st->driver_ctx,
+         list, cbs, path, label, type, idx);
+
+   return true;
+}
+
+void menu_entries_prepend(file_list_t *list,
+      const char *path, const char *label,
+      enum msg_hash_enums enum_idx,
+      unsigned type, size_t directory_ptr, size_t entry_idx)
+{
+   menu_ctx_list_t list_info;
+   size_t i;
+   size_t idx                      = 0;
+   const char *menu_path           = NULL;
+   menu_file_list_cbs_t *cbs       = NULL;
+   struct menu_state  *menu_st     = &menu_driver_state;
+   if (!list || !label)
+      return;
+
+   file_list_prepend(list, path, label, type, directory_ptr, entry_idx);
+   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
+         &menu_path, NULL, NULL, NULL);
+
+   list_info.fullpath    = NULL;
+
+   if (!string_is_empty(menu_path))
+      list_info.fullpath = strdup(menu_path);
+   list_info.list        = list;
+   list_info.path        = path;
+   list_info.label       = label;
+   list_info.idx         = idx;
+   list_info.entry_type  = type;
+
+   if (  menu_st->driver_ctx &&
+         menu_st->driver_ctx->list_insert)
+      menu_st->driver_ctx->list_insert(
+            menu_st->userdata,
+            list_info.list,
+            list_info.path,
+            list_info.fullpath,
+            list_info.label,
+            list_info.idx,
+            list_info.entry_type);
+
+   if (list_info.fullpath)
+      free(list_info.fullpath);
+
+   file_list_free_actiondata(list, idx);
+   cbs                             = (menu_file_list_cbs_t*)
+      malloc(sizeof(menu_file_list_cbs_t));
+
+   if (!cbs)
+      return;
+
+   cbs->action_sublabel_cache[0]   = '\0';
+   cbs->action_title_cache[0]      = '\0';
+   cbs->enum_idx                   = enum_idx;
+   cbs->checked                    = false;
+   cbs->setting                    = menu_setting_find_enum(cbs->enum_idx);
+   cbs->action_iterate             = NULL;
+   cbs->action_deferred_push       = NULL;
+   cbs->action_select              = NULL;
+   cbs->action_get_title           = NULL;
+   cbs->action_ok                  = NULL;
+   cbs->action_cancel              = NULL;
+   cbs->action_scan                = NULL;
+   cbs->action_start               = NULL;
+   cbs->action_info                = NULL;
+   cbs->action_left                = NULL;
+   cbs->action_right               = NULL;
+   cbs->action_label               = NULL;
+   cbs->action_sublabel            = NULL;
+   cbs->action_get_value           = NULL;
+
+   cbs->search.size                = 0;
+   for (i = 0; i < MENU_SEARCH_FILTER_MAX_TERMS; i++)
+      cbs->search.terms[i][0]      = '\0';
+
+   list->list[idx].actiondata      = cbs;
+
+   menu_cbs_init(menu_st,
+         menu_st->driver_ctx,
+         list, cbs, path, label, type, idx);
+}
+
+void menu_entries_flush_stack(const char *needle, unsigned final_type)
+{
+   struct menu_state  *menu_st    = &menu_driver_state;
+   menu_list_t *menu_list         = menu_st->entries.list;
+   if (menu_list)
+      menu_list_flush_stack(
+            menu_st->driver_ctx,
+            menu_st->userdata,
+            menu_st,
+            menu_list, 0, needle, final_type);
+}
+
+void menu_entries_pop_stack(size_t *ptr, size_t idx, bool animate)
+{
+   struct menu_state    *menu_st            = &menu_driver_state;
+   const menu_ctx_driver_t *menu_driver_ctx = menu_st->driver_ctx;
+   menu_list_t *menu_list                   = menu_st->entries.list;
+   if (!menu_list)
+      return;
+
+   if (MENU_LIST_GET_STACK_SIZE(menu_list, idx) > 1)
+   {
+      bool refresh             = false;
+      if (animate)
+      {
+         if (menu_driver_ctx->list_cache)
+            menu_driver_ctx->list_cache(menu_st->userdata,
+                  MENU_LIST_PLAIN, 0);
+      }
+      menu_list_pop_stack(menu_driver_ctx,
+            menu_st->userdata, menu_list, idx, ptr);
+
+      if (animate)
+         menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   }
+}
+
+bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
+{
+   struct menu_state    *menu_st  = &menu_driver_state;
+
+   switch (state)
+   {
+      case MENU_ENTRIES_CTL_NEEDS_REFRESH:
+         return MENU_ENTRIES_NEEDS_REFRESH(menu_st);
+      case MENU_ENTRIES_CTL_SETTINGS_GET:
+         {
+            rarch_setting_t **settings  = (rarch_setting_t**)data;
+            if (!settings)
+               return false;
+            *settings = menu_st->entries.list_settings;
+         }
+         break;
+      case MENU_ENTRIES_CTL_SET_REFRESH:
+         {
+            bool *nonblocking = (bool*)data;
+
+            if (*nonblocking)
+               menu_st->entries_nonblocking_refresh = true;
+            else
+               menu_st->entries_need_refresh        = true;
+         }
+         break;
+      case MENU_ENTRIES_CTL_UNSET_REFRESH:
+         {
+            bool *nonblocking = (bool*)data;
+
+            if (*nonblocking)
+               menu_st->entries_nonblocking_refresh = false;
+            else
+               menu_st->entries_need_refresh        = false;
+         }
+         break;
+      case MENU_ENTRIES_CTL_SET_START:
+         {
+            size_t *idx = (size_t*)data;
+            if (idx)
+               menu_st->entries.begin = *idx;
+         }
+      case MENU_ENTRIES_CTL_START_GET:
+         {
+            size_t *idx = (size_t*)data;
+            if (!idx)
+               return 0;
+
+            *idx = menu_st->entries.begin;
+         }
+         break;
+      case MENU_ENTRIES_CTL_REFRESH:
+         /**
+          * Before a refresh, we could have deleted a
+          * file on disk, causing selection_ptr to
+          * suddendly be out of range.
+          *
+          * Ensure it doesn't overflow.
+          **/
+         {
+            size_t list_size;
+            file_list_t *list               = (file_list_t*)data;
+            if (!list)
+               return false;
+            if (list->size)
+               menu_entries_build_scroll_indices(menu_st, list);
+            list_size                       = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
+
+            if (list_size)
+            {
+               size_t          selection    = menu_st->selection_ptr;
+               if (selection >= list_size)
+               {
+                  size_t idx                = list_size - 1;
+                  menu_st->selection_ptr    = idx;
+
+                  menu_driver_navigation_set(true);
+               }
+            }
+            else
+            {
+               bool pending_push = true;
+               menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+            }
+         }
+         break;
+      case MENU_ENTRIES_CTL_CLEAR:
+         {
+            unsigned i;
+            file_list_t              *list = (file_list_t*)data;
+
+            if (!list)
+               return false;
+
+            /* Clear all the menu lists. */
+            if (menu_st->driver_ctx->list_clear)
+               menu_st->driver_ctx->list_clear(list);
+
+            for (i = 0; i < list->size; i++)
+            {
+               if (list->list[i].actiondata)
+                  free(list->list[i].actiondata);
+               list->list[i].actiondata = NULL;
+            }
+
+            file_list_clear(list);
+         }
+         break;
+      case MENU_ENTRIES_CTL_SHOW_BACK:
+         /* Returns true if a Back button should be shown
+          * (i.e. we are at least
+          * one level deep in the menu hierarchy). */
+         if (!menu_st->entries.list)
+            return false;
+         return (MENU_LIST_GET_STACK_SIZE(menu_st->entries.list, 0) > 1);
+      case MENU_ENTRIES_CTL_NONE:
+      default:
+         break;
+   }
+
+   return true;
+}
+
+/* TODO/FIXME - seems only RGUI uses this - can this be
+ * refactored away or we can have one common function used
+ * across all menu drivers? */
+#ifdef HAVE_RGUI
+void menu_display_handle_thumbnail_upload(
+      retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *err)
+{
+   struct menu_state    *menu_st = &menu_driver_state;
+   menu_display_common_image_upload(
+         menu_st->driver_ctx,
+         menu_st->userdata,
+         (struct texture_image*)task_data,
+         user_data,
+         MENU_IMAGE_THUMBNAIL);
+}
+
+void menu_display_handle_left_thumbnail_upload(
+      retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *err)
+{
+   struct menu_state    *menu_st = &menu_driver_state;
+   menu_display_common_image_upload(
+         menu_st->driver_ctx,
+         menu_st->userdata,
+         (struct texture_image*)task_data,
+         user_data,
+         MENU_IMAGE_LEFT_THUMBNAIL);
+}
+#endif
+
+void menu_display_handle_savestate_thumbnail_upload(
+      retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *err)
+{
+   struct menu_state    *menu_st = &menu_driver_state;
+   menu_display_common_image_upload(
+         menu_st->driver_ctx,
+         menu_st->userdata,
+         (struct texture_image*)task_data,
+         user_data,
+         MENU_IMAGE_SAVESTATE_THUMBNAIL);
+}
+
+/* Function that gets called when we want to load in a
+ * new menu wallpaper.
+ */
+void menu_display_handle_wallpaper_upload(
+      retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *err)
+{
+   struct menu_state    *menu_st = &menu_driver_state;
+   menu_display_common_image_upload(
+         menu_st->driver_ctx,
+         menu_st->userdata,
+         (struct texture_image*)task_data,
+         user_data,
+         MENU_IMAGE_WALLPAPER);
+}
+
+void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info)
+{
+   struct menu_state    *menu_st = &menu_driver_state;
+   if (menu_is_alive && menu_st->driver_ctx->frame)
+      menu_st->driver_ctx->frame(menu_st->userdata, video_info);
+}
+
+bool menu_driver_list_cache(menu_ctx_list_t *list)
+{
+   struct menu_state    *menu_st = &menu_driver_state;
+   if (!list || !menu_st->driver_ctx || !menu_st->driver_ctx->list_cache)
+      return false;
+
+   menu_st->driver_ctx->list_cache(menu_st->userdata,
+         list->type, list->action);
+   return true;
+}
+
+void menu_driver_navigation_set(bool scroll)
+{
+   struct menu_state       *menu_st  = &menu_driver_state;
+   if (menu_st->driver_ctx->navigation_set)
+      menu_st->driver_ctx->navigation_set(menu_st->userdata, scroll);
+}
+
+void menu_driver_populate_entries(menu_displaylist_info_t *info)
+{
+   struct menu_state       *menu_st  = &menu_driver_state;
+   if (menu_st->driver_ctx && menu_st->driver_ctx->populate_entries)
+      menu_st->driver_ctx->populate_entries(
+            menu_st->userdata, info->path,
+            info->label, info->type);
+}
+
+bool menu_driver_push_list(menu_ctx_displaylist_t *disp_list)
+{
+   struct menu_state       *menu_st  = &menu_driver_state;
+   if (menu_st->driver_ctx->list_push)
+      if (menu_st->driver_ctx->list_push(
+               menu_st->driver_data,
+               menu_st->userdata,
+               disp_list->info, disp_list->type) == 0)
+         return true;
+   return false;
+}
+
+void menu_driver_set_thumbnail_system(char *s, size_t len)
+{
+   struct menu_state       *menu_st  = &menu_driver_state;
+   if (     menu_st->driver_ctx
+         && menu_st->driver_ctx->set_thumbnail_system)
+      menu_st->driver_ctx->set_thumbnail_system(
+            menu_st->userdata, s, len);
+}
+
+void menu_driver_get_thumbnail_system(char *s, size_t len)
+{
+   struct menu_state       *menu_st  = &menu_driver_state;
+   if (     menu_st->driver_ctx
+         && menu_st->driver_ctx->get_thumbnail_system)
+      menu_st->driver_ctx->get_thumbnail_system(
+            menu_st->userdata, s, len);
+}
+
+void menu_driver_set_thumbnail_content(char *s, size_t len)
+{
+   struct menu_state       *menu_st  = &menu_driver_state;
+   if (     menu_st->driver_ctx
+         && menu_st->driver_ctx->set_thumbnail_content)
+      menu_st->driver_ctx->set_thumbnail_content(
+            menu_st->userdata, s);
+}
+
+/* Teardown function for the menu driver. */
+void menu_driver_destroy(
+      struct menu_state *menu_st)
+{
+   menu_st->pending_quick_menu          = false;
+   menu_st->prevent_populate            = false;
+   menu_st->data_own                    = false;
+   menu_st->driver_ctx                  = NULL;
+   menu_st->userdata                    = NULL;
+   menu_st->input_driver_flushing_input = 0;
+   menu_st->alive                       = false;
+}
+
+bool menu_driver_list_get_entry(menu_ctx_list_t *list)
+{
+   struct menu_state       *menu_st  = &menu_driver_state;
+   if (  !menu_st->driver_ctx ||
+         !menu_st->driver_ctx->list_get_entry)
+   {
+      list->entry = NULL;
+      return false;
+   }
+   list->entry = menu_st->driver_ctx->list_get_entry(
+         menu_st->userdata,
+         list->type, (unsigned int)list->idx);
+   return true;
+}
+
+bool menu_driver_list_get_selection(menu_ctx_list_t *list)
+{
+   struct menu_state       *menu_st  = &menu_driver_state;
+   if (  !menu_st->driver_ctx ||
+         !menu_st->driver_ctx->list_get_selection)
+   {
+      list->selection = 0;
+      return false;
+   }
+   list->selection    = menu_st->driver_ctx->list_get_selection(
+         menu_st->userdata);
+
+   return true;
+}
+
+bool menu_driver_list_get_size(menu_ctx_list_t *list)
+{
+   struct menu_state       *menu_st  = &menu_driver_state;
+   if (  !menu_st->driver_ctx ||
+         !menu_st->driver_ctx->list_get_size)
+   {
+      list->size = 0;
+      return false;
+   }
+   list->size = menu_st->driver_ctx->list_get_size(
+         menu_st->userdata, list->type);
+   return true;
+}
+
+void menu_input_get_pointer_state(menu_input_pointer_t *copy_target)
+{
+   struct menu_state    *menu_st  = &menu_driver_state;
+   menu_input_t       *menu_input = &menu_st->input_state;
+
+   if (!copy_target)
+      return;
+
+   /* Copy parameters from global menu_input_state
+    * (i.e. don't pass by reference)
+    * This is a fast operation */
+   memcpy(copy_target, &menu_input->pointer, sizeof(menu_input_pointer_t));
+}
+
+unsigned menu_input_get_pointer_selection(void)
+{
+   struct menu_state    *menu_st  = &menu_driver_state;
+   menu_input_t       *menu_input = &menu_st->input_state;
+   return menu_input->ptr;
+}
+
+void menu_input_set_pointer_selection(unsigned selection)
+{
+   struct menu_state    *menu_st  = &menu_driver_state;
+   menu_input_t       *menu_input = &menu_st->input_state;
+
+   menu_input->ptr                = selection;
+}
+
+void menu_input_set_pointer_y_accel(float y_accel)
+{
+   struct menu_state    *menu_st  = &menu_driver_state;
+   menu_input_t    *menu_input    = &menu_st->input_state;
+
+   menu_input->pointer.y_accel    = y_accel;
+}
+
+bool menu_input_key_bind_set_min_max(menu_input_ctx_bind_limits_t *lim)
+{
+   struct menu_state    *menu_st  = &menu_driver_state;
+   struct menu_bind_state *binds  = &menu_st->input_binds;
+   if (!lim)
+      return false;
+
+   binds->begin = lim->min;
+   binds->last  = lim->max;
+
+   return true;
+}
+
+const char *menu_input_dialog_get_buffer(void)
+{
+   struct menu_state    *menu_st  = &menu_driver_state;
+   if (!(*menu_st->input_dialog_keyboard_buffer))
+      return "";
+   return *menu_st->input_dialog_keyboard_buffer;
+}
+
+void menu_input_key_event(bool down, unsigned keycode,
+      uint32_t character, uint16_t mod)
+{
+   struct menu_state *menu_st  = &menu_driver_state;
+   enum retro_key          key = (enum retro_key)keycode;
+
+   if (key == RETROK_UNKNOWN)
+   {
+      unsigned i;
+
+      for (i = 0; i < RETROK_LAST; i++)
+         menu_st->kb_key_state[i] =
+            (menu_st->kb_key_state[(enum retro_key)i] & 1) << 1;
+   }
+   else
+      menu_st->kb_key_state[key]  =
+         ((menu_st->kb_key_state[key] & 1) << 1) | down;
+}
+
+const char *menu_input_dialog_get_label_setting_buffer(void)
+{
+   struct menu_state *menu_st  = &menu_driver_state;
+   return menu_st->input_dialog_kb_label_setting;
+}
+
+const char *menu_input_dialog_get_label_buffer(void)
+{
+   struct menu_state *menu_st  = &menu_driver_state;
+   return menu_st->input_dialog_kb_label;
+}
+
+unsigned menu_input_dialog_get_kb_idx(void)
+{
+   struct menu_state *menu_st  = &menu_driver_state;
+   return menu_st->input_dialog_kb_idx;
+}
+
+void menu_input_dialog_end(void)
+{
+   struct menu_state *menu_st                 = &menu_driver_state;
+   menu_st->input_dialog_kb_type              = 0;
+   menu_st->input_dialog_kb_idx               = 0;
+   menu_st->input_dialog_kb_display           = false;
+   menu_st->input_dialog_kb_label[0]          = '\0';
+   menu_st->input_dialog_kb_label_setting[0]  = '\0';
+
+   /* Avoid triggering states on pressing return. */
+   /* Inhibits input for 2 frames
+    * > Required, since input is ignored for 1 frame
+    *   after certain events - e.g. closing the OSK */
+   menu_st->input_driver_flushing_input       = 2;
+}
+
+void menu_dialog_unset_pending_push(void)
+{
+   struct menu_state    *menu_st  = &menu_driver_state;
+   menu_dialog_t        *p_dialog = &menu_st->dialog_st;
+
+   p_dialog->pending_push  = false;
+}
+
+void menu_dialog_push_pending(enum menu_dialog_type type)
+{
+   struct menu_state    *menu_st  = &menu_driver_state;
+   menu_dialog_t        *p_dialog = &menu_st->dialog_st;
+   p_dialog->current_type         = type;
+   p_dialog->pending_push         = true;
+}
+
+void menu_dialog_set_current_id(unsigned id)
+{
+   struct menu_state    *menu_st  = &menu_driver_state;
+   menu_dialog_t        *p_dialog = &menu_st->dialog_st;
+
+   p_dialog->current_id    = id;
+}
+
+#if defined(_MSC_VER)
+static const char * msvc_vercode_to_str(const unsigned vercode)
+{
+   switch (vercode)
+   {
+      case 1200:
+         return " msvc6";
+      case 1300:
+         return " msvc2002";
+      case 1310:
+         return " msvc2003";
+      case 1400:
+         return " msvc2005";
+      case 1500:
+         return " msvc2008";
+      case 1600:
+         return " msvc2010";
+      case 1700:
+         return " msvc2012";
+      case 1800:
+         return " msvc2013";
+      case 1900:
+         return " msvc2015";
+      default:
+         if (vercode >= 1910 && vercode < 1920)
+            return " msvc2017";
+         else if (vercode >= 1920 && vercode < 2000)
+            return " msvc2019";
+         break;
+   }
+
+   return "";
+}
+#endif
+
+/* Sets 's' to the name of the current core
+ * (shown at the top of the UI). */
+int menu_entries_get_core_title(char *s, size_t len)
+{
+   struct retro_system_info *system  = &runloop_state_get_ptr()->system.info;
+   const char *core_name             = 
+       (system && !string_is_empty(system->library_name))
+      ? system->library_name
+      : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
+   const char *core_version          = 
+      (system && system->library_version) 
+      ? system->library_version 
+      : "";
+
+   if (!string_is_empty(core_version))
+   {
+#if defined(_MSC_VER)
+      snprintf(s, len, PACKAGE_VERSION "%s"        " - %s (%s)", msvc_vercode_to_str(_MSC_VER), core_name, core_version);
+#else
+      snprintf(s, len, PACKAGE_VERSION             " - %s (%s)",                                core_name, core_version);
+#endif
+   }
+   else
+   {
+#if defined(_MSC_VER)
+      snprintf(s, len, PACKAGE_VERSION "%s"        " - %s", msvc_vercode_to_str(_MSC_VER), core_name);
+#else
+      snprintf(s, len, PACKAGE_VERSION             " - %s",                                core_name);
+#endif
+   }
+
+   return 0;
+}
+
+static bool menu_driver_init_internal(
+      gfx_display_t *p_disp,
+      settings_t *settings,
+      bool video_is_threaded)
+{
+   menu_ctx_environment_t menu_environ;
+   struct menu_state *menu_st  = &menu_driver_state;;
+
+   if (menu_st->driver_ctx)
+   {
+      const char *ident = menu_st->driver_ctx->ident;
+      /* ID must be set first, since it is required for
+       * the proper determination of pixel/dpi scaling
+       * parameters (and some menu drivers fetch the
+       * current pixel/dpi scale during 'menu_driver_ctx->init()') */
+      if (ident)
+         p_disp->menu_driver_id                  = menu_driver_set_id(ident);
+      else
+         p_disp->menu_driver_id                  = MENU_DRIVER_ID_UNKNOWN;
+
+      if (menu_st->driver_ctx->init)
+      {
+         menu_st->driver_data               = (menu_handle_t*)
+            menu_st->driver_ctx->init(&menu_st->userdata,
+                  video_is_threaded);
+         menu_st->driver_data->userdata     = menu_st->userdata;
+         menu_st->driver_data->driver_ctx   = menu_st->driver_ctx;
+      }
+   }
+
+   if (!menu_st->driver_data || !rarch_menu_init(
+            menu_st,
+            &menu_st->dialog_st,
+            menu_st->driver_ctx,
+            &menu_st->input_state,
+            &menu_st->input_pointer_hw_state,
+            settings))
+      return false;
+
+   gfx_display_init();
+
+   /* TODO/FIXME - can we get rid of this? Is this needed? */
+   configuration_set_string(settings,
+         settings->arrays.menu_driver, menu_st->driver_ctx->ident);
+
+   if (menu_st->driver_ctx->lists_init)
+   {
+      if (!menu_st->driver_ctx->lists_init(menu_st->driver_data))
+         return false;
+   }
+   else
+      generic_menu_init_list(menu_st, settings);
+
+   /* Initialise menu screensaver */
+   menu_environ.type              = MENU_ENVIRON_DISABLE_SCREENSAVER;
+   menu_environ.data              = NULL;
+   menu_st->input_last_time_us    = cpu_features_get_time_usec();
+   menu_st->screensaver_active    = false;
+   menu_st->screensaver_supported = menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+
+   return true;
+}
+
+bool menu_driver_init(bool video_is_threaded)
+{
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   settings_t             *settings  = config_get_ptr();
+   struct menu_state       *menu_st  = &menu_driver_state;
+
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+   command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+
+   if (  menu_st->driver_data ||
+         menu_driver_init_internal(
+            p_disp,
+            settings,
+            video_is_threaded))
+   {
+      if (menu_st->driver_ctx && menu_st->driver_ctx->context_reset)
+      {
+         menu_st->driver_ctx->context_reset(menu_st->userdata,
+               video_is_threaded);
+         return true;
+      }
+   }
+
+   /* If driver initialisation failed, must reset
+    * driver id to 'unknown' */
+   p_disp->menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
+
+   return false;
+}
+
+const char *menu_driver_ident(void)
+{
+   struct menu_state    *menu_st  = &menu_driver_state;
+   if (menu_st->alive)
+      if (menu_st->driver_ctx && menu_st->driver_ctx->ident)
+         return menu_st->driver_ctx->ident;
+   return NULL;
+}
+
+const menu_ctx_driver_t *menu_driver_find_driver(
+      settings_t *settings,
+      const char *prefix,
+      bool verbosity_enabled)
+{
+   int i = (int)driver_find_index("menu_driver",
+         settings->arrays.menu_driver);
+
+   if (i >= 0)
+      return (const menu_ctx_driver_t*)menu_ctx_drivers[i];
+
+   if (verbosity_enabled)
+   {
+      unsigned d;
+      RARCH_WARN("Couldn't find any %s named \"%s\"\n", prefix,
+            settings->arrays.menu_driver);
+      RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
+      for (d = 0; menu_ctx_drivers[d]; d++)
+      {
+         if (menu_ctx_drivers[d])
+         {
+            RARCH_LOG_OUTPUT("\t%s\n", menu_ctx_drivers[d]->ident);
+         }
+      }
+      RARCH_WARN("Going to default to first %s...\n", prefix);
+   }
+
+   return (const menu_ctx_driver_t*)menu_ctx_drivers[0];
+}
+
+bool menu_input_key_bind_custom_bind_keyboard_cb(
+      void *data, unsigned code)
+{
+   uint64_t current_usec;
+   input_driver_state_t *input_st = input_state_get_ptr();
+   struct menu_state *menu_st     = &menu_driver_state;
+   settings_t     *settings       = config_get_ptr();
+   struct menu_bind_state *binds  = &menu_st->input_binds;
+   uint64_t input_bind_hold_us    = settings->uints.input_bind_hold    * 1000000;
+   uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
+
+   /* Clear old mapping bit */
+   BIT512_CLEAR_PTR(&input_st->keyboard_mapping_bits, binds->buffer.key);
+
+   /* store key in bind */
+   binds->buffer.key = (enum retro_key)code;
+
+   /* Store new mapping bit */
+   BIT512_SET_PTR(&input_st->keyboard_mapping_bits, binds->buffer.key);
+
+   /* write out the bind */
+   *(binds->output)  = binds->buffer;
+
+   /* next bind */
+   binds->begin++;
+   binds->output++;
+   binds->buffer    =* (binds->output);
+
+   current_usec     = cpu_features_get_time_usec();
+
+   binds->timer_hold.timeout_us     = input_bind_hold_us;
+   binds->timer_hold.current        = current_usec;
+   binds->timer_hold.timeout_end    = current_usec + input_bind_hold_us;
+   binds->timer_timeout.timeout_us  = input_bind_timeout_us;
+   binds->timer_timeout.current     = current_usec;
+   binds->timer_timeout.timeout_end = current_usec +input_bind_timeout_us; 
+
+   return (binds->begin <= binds->last);
+}
+
+bool menu_input_key_bind_set_mode(
+      enum menu_input_binds_ctl_state state, void *data)
+{
+   uint64_t current_usec;
+   unsigned index_offset;
+   rarch_setting_t  *setting           = (rarch_setting_t*)data;
+   input_driver_state_t *input_st      = input_state_get_ptr();
+   struct menu_state *menu_st          = &menu_driver_state;
+   menu_handle_t       *menu           = menu_st->driver_data;
+   const input_device_driver_t 
+      *joypad                          = input_st->primary_joypad;
+#ifdef HAVE_MFI
+   const input_device_driver_t
+      *sec_joypad                      = input_st->secondary_joypad;
+#else
+   const input_device_driver_t
+      *sec_joypad                      = NULL;
+#endif
+   menu_input_t *menu_input            = &menu_st->input_state;
+   settings_t     *settings            = config_get_ptr();
+   struct menu_bind_state *binds       = &menu_st->input_binds;
+   uint64_t input_bind_hold_us         = settings->uints.input_bind_hold
+      * 1000000;
+   uint64_t input_bind_timeout_us      = settings->uints.input_bind_timeout
+      * 1000000;
+
+   if (!setting || !menu)
+      return false;
+   if (menu_input_key_bind_set_mode_common(menu_st,
+            binds, state, setting, settings) == -1)
+      return false;
+
+   index_offset                        = setting->index_offset;
+   binds->port                         = settings->uints.input_joypad_index[
+      index_offset];
+
+   menu_input_key_bind_poll_bind_get_rested_axes(
+         joypad,
+         sec_joypad,
+         binds);
+   menu_input_key_bind_poll_bind_state(
+         input_st,
+         input_st->libretro_input_binds,
+         settings->floats.input_axis_threshold,
+         settings->uints.input_joypad_index[binds->port],
+         binds, false,
+         input_st->keyboard_mapping_blocked);
+
+   current_usec                        = cpu_features_get_time_usec();
+
+   binds->timer_hold   . timeout_us    = input_bind_hold_us;
+   binds->timer_hold   . current       = current_usec;
+   binds->timer_hold   . timeout_end   = current_usec + input_bind_hold_us;
+
+   binds->timer_timeout. timeout_us    = input_bind_timeout_us;
+   binds->timer_timeout. current       = current_usec;
+   binds->timer_timeout. timeout_end   = current_usec + input_bind_timeout_us;
+
+   input_st->keyboard_press_cb         =
+      menu_input_key_bind_custom_bind_keyboard_cb;
+   input_st->keyboard_press_data       = menu;
+   /* While waiting for input, we have to block all hotkeys. */
+   input_st->keyboard_mapping_blocked  = true;
+
+   /* Upon triggering an input bind operation,
+    * pointer input must be inhibited - otherwise
+    * attempting to bind mouse buttons will cause
+    * spurious menu actions */
+   menu_input->select_inhibit         = true;
+   menu_input->cancel_inhibit         = true;
+
+   return true;
+}
+
+bool menu_input_key_bind_iterate(
+      settings_t *settings,
+      menu_input_ctx_bind_t *bind,
+      retro_time_t current_time)
+{
+   bool               timed_out   = false;
+   input_driver_state_t *input_st = input_state_get_ptr();
+   struct menu_state *menu_st     = &menu_driver_state;
+   struct menu_bind_state *_binds = &menu_st->input_binds;
+   menu_input_t *menu_input       = &menu_st->input_state;
+   uint64_t input_bind_hold_us    = settings->uints.input_bind_hold * 1000000;
+   uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
+
+   snprintf(bind->s, bind->len,
+         "[%s]\nPress keyboard, mouse or joypad\n(Timeout %d %s)",
+         input_config_bind_map_get_desc(
+            _binds->begin - MENU_SETTINGS_BIND_BEGIN),
+         (int)(_binds->timer_timeout.timeout_us / 1000000),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS));
+
+   /* Tick main timers */
+   _binds->timer_timeout.current    = current_time;
+   _binds->timer_timeout.timeout_us = _binds->timer_timeout.timeout_end -
+current_time;
+   _binds->timer_hold   .current    = current_time;
+   _binds->timer_hold   .timeout_us = _binds->timer_hold   .timeout_end -
+current_time;
+
+   if (_binds->timer_timeout.timeout_us <= 0)
+   {
+      uint64_t current_usec              = cpu_features_get_time_usec();
+
+      input_st->keyboard_mapping_blocked = false;
+
+      /*skip to next bind*/
+      _binds->begin++;
+      _binds->output++;
+      _binds->timer_hold   . timeout_us    = input_bind_hold_us;
+      _binds->timer_hold   . current       = current_usec;
+      _binds->timer_hold   . timeout_end   = current_usec + input_bind_hold_us;
+
+      _binds->timer_timeout. timeout_us    = input_bind_timeout_us;
+      _binds->timer_timeout. current       = current_usec;
+      _binds->timer_timeout. timeout_end   = current_usec + input_bind_timeout_us;
+
+      timed_out = true;
+   }
+
+   /* binds.begin is updated in keyboard_press callback. */
+   if (_binds->begin > _binds->last)
+   {
+      /* Avoid new binds triggering things right away. */
+      /* Inhibits input for 2 frames
+       * > Required, since input is ignored for 1 frame
+       *   after certain events - e.g. closing the OSK */
+      menu_st->input_driver_flushing_input = 2;
+
+      /* We won't be getting any key events, so just cancel early. */
+      if (timed_out)
+      {
+         input_st->keyboard_press_cb        = NULL;
+         input_st->keyboard_press_data      = NULL;
+         input_st->keyboard_mapping_blocked = false;
+      }
+
+      return true;
+   }
+
+   {
+      bool complete                         = false;
+      struct menu_bind_state new_binds      = *_binds;
+
+      input_st->keyboard_mapping_blocked    = false;
+
+      menu_input_key_bind_poll_bind_state(
+            input_st,
+            input_st->libretro_input_binds,
+            settings->floats.input_axis_threshold,
+            settings->uints.input_joypad_index[new_binds.port],
+            &new_binds, timed_out,
+            input_st->keyboard_mapping_blocked);
+
+#ifdef ANDROID
+      /* Keep resetting bind during the hold period,
+       * or we'll potentially bind joystick and mouse, etc.*/
+      new_binds.buffer                     = *(new_binds.output);
+
+      if (menu_input_key_bind_poll_find_hold(
+               settings->uints.input_max_users,
+               &new_binds, &new_binds.buffer))
+      {
+         uint64_t current_usec = cpu_features_get_time_usec();
+         /* Inhibit timeout*/
+         new_binds.timer_timeout. timeout_us    = input_bind_timeout_us;
+         new_binds.timer_timeout. current       = current_usec;
+         new_binds.timer_timeout. timeout_end   = current_usec + input_bind_timeout_us;
+
+         /* Run hold timer*/
+         new_binds.timer_hold.current    = current_time;
+         new_binds.timer_hold.timeout_us = 
+            new_binds.timer_hold.timeout_end - current_time;
+
+         snprintf(bind->s, bind->len,
+               "[%s]\npress keyboard, mouse or joypad\nand hold ...",
+               input_config_bind_map_get_desc(
+                  _binds->begin - MENU_SETTINGS_BIND_BEGIN));
+
+         /* Hold complete? */
+         if (new_binds.timer_hold.timeout_us <= 0)
+            complete = true;
+      }
+      else
+      {
+         uint64_t current_usec = cpu_features_get_time_usec();
+
+         /* Reset hold countdown*/
+         new_binds.timer_hold   .timeout_us     = input_bind_hold_us;
+         new_binds.timer_hold   .current        = current_usec;
+         new_binds.timer_hold   .timeout_end    = current_usec + input_bind_hold_us;
+      }
+#else
+      if ((new_binds.skip && !_binds->skip) ||
+            menu_input_key_bind_poll_find_trigger(
+               settings->uints.input_max_users,
+               _binds, &new_binds, &(new_binds.buffer)))
+         complete = true;
+#endif
+
+      if (complete)
+      {
+	      /* Update bind */
+         uint64_t current_usec             = cpu_features_get_time_usec();
+         *(new_binds.output)               = new_binds.buffer;
+
+         input_st->keyboard_mapping_blocked= false;
+
+         /* Avoid new binds triggering things right away. */
+         /* Inhibits input for 2 frames
+          * > Required, since input is ignored for 1 frame
+          *   after certain events - e.g. closing the OSK */
+         menu_st->input_driver_flushing_input = 2;
+
+         new_binds.begin++;
+
+         if (new_binds.begin > new_binds.last)
+         {
+            input_st->keyboard_press_cb        = NULL;
+            input_st->keyboard_press_data      = NULL;
+            input_st->keyboard_mapping_blocked = false;
+            return true;
+         }
+
+         /*next bind*/
+         new_binds.output++;
+         new_binds.buffer = *(new_binds.output);
+         new_binds.timer_hold   .timeout_us     = input_bind_hold_us;
+         new_binds.timer_hold   .current        = current_usec;
+         new_binds.timer_hold   .timeout_end    = current_usec + input_bind_hold_us;
+         new_binds.timer_timeout. timeout_us    = input_bind_timeout_us;
+         new_binds.timer_timeout. current       = current_usec;
+         new_binds.timer_timeout. timeout_end   = current_usec + input_bind_timeout_us;
+      }
+
+      *(_binds) = new_binds;
+   }
+
+   /* Pointer input must be inhibited on each
+    * frame that the bind operation is active -
+    * otherwise attempting to bind mouse buttons
+    * will cause spurious menu actions */
+   menu_input->select_inhibit     = true;
+   menu_input->cancel_inhibit     = true;
+
+   /* Menu screensaver should be inhibited on each
+    * frame that the bind operation is active */
+   menu_st->input_last_time_us    = menu_st->current_time_us;
+
+   return false;
+}
+
+bool menu_input_dialog_get_display_kb(void)
+{
+   struct menu_state *menu_st     = menu_state_get_ptr();
+#ifdef HAVE_LIBNX
+   input_driver_state_t *input_st = input_state_get_ptr();
+   SwkbdConfig kbd;
+   Result rc;
+   /* Indicates that we are "typing" from the swkbd
+    * result to RetroArch with repeated calls to input_keyboard_event
+    * This prevents input_keyboard_event from calling back
+    * menu_input_dialog_get_display_kb, looping indefinintely */
+   static bool typing = false;
+
+   if (typing)
+      return false;
+
+
+   /* swkbd only works on "real" titles */
+   if (     __nx_applet_type != AppletType_Application
+         && __nx_applet_type != AppletType_SystemApplication)
+      return menu_st->input_dialog_kb_display;
+
+   if (!menu_st->input_dialog_kb_display)
+      return false;
+
+   rc = swkbdCreate(&kbd, 0);
+
+   if (R_SUCCEEDED(rc))
+   {
+      unsigned i;
+      char buf[LIBNX_SWKBD_LIMIT] = {'\0'};
+      swkbdConfigMakePresetDefault(&kbd);
+
+      swkbdConfigSetGuideText(&kbd,
+            menu_st->input_dialog_kb_label);
+
+      rc = swkbdShow(&kbd, buf, sizeof(buf));
+
+      swkbdClose(&kbd);
+
+      /* RetroArch uses key-by-key input
+         so we need to simulate it */
+      typing = true;
+      for (i = 0; i < LIBNX_SWKBD_LIMIT; i++)
+      {
+         /* In case a previous "Enter" press closed the keyboard */
+         if (!menu_st->input_dialog_kb_display)
+            break;
+
+         if (buf[i] == '\n' || buf[i] == '\0')
+            input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+         else
+         {
+            const char *word = &buf[i];
+            /* input_keyboard_line_append expects a null-terminated
+               string, so just make one (yes, the touch keyboard is
+               a list of "null-terminated characters") */
+            char oldchar     = buf[i+1];
+            buf[i+1]         = '\0';
+
+            input_keyboard_line_append(&input_st->keyboard_line, word);
+
+            osk_update_last_codepoint(
+                  &input_st->osk_last_codepoint,
+                  &input_st->osk_last_codepoint_len,
+                  word);
+            buf[i+1]     = oldchar;
+         }
+      }
+
+      /* fail-safe */
+      if (menu_st->input_dialog_kb_display)
+         input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+
+      typing = false;
+      libnx_apply_overclock();
+      return false;
+   }
+   libnx_apply_overclock();
+#endif /* HAVE_LIBNX */
+   return menu_st->input_dialog_kb_display;
+}
+
+unsigned menu_event(
+      settings_t *settings,
+      input_bits_t *p_input,
+      input_bits_t *p_trigger_input,
+      bool display_kb)
+{
+   /* Used for key repeat */
+   static float delay_timer                        = 0.0f;
+   static float delay_count                        = 0.0f;
+   static bool initial_held                        = true;
+   static bool first_held                          = false;
+   static unsigned ok_old                          = 0;
+   unsigned ret                                    = MENU_ACTION_NOOP;
+   bool set_scroll                                 = false;
+   size_t new_scroll_accel                         = 0;
+   struct menu_state                     *menu_st  = menu_state_get_ptr();
+   menu_input_t *menu_input                        = &menu_st->input_state;
+   input_driver_state_t *input_st                  = input_state_get_ptr();
+   input_driver_t *current_input                   = input_st->current_driver;
+   const input_device_driver_t
+      *joypad                                      = input_st->primary_joypad;
+#ifdef HAVE_MFI
+   const input_device_driver_t *sec_joypad         =
+      input_st->secondary_joypad;
+#else
+   const input_device_driver_t *sec_joypad         = NULL;
+#endif
+   gfx_display_t *p_disp                           = disp_get_ptr();
+   menu_input_pointer_hw_state_t *pointer_hw_state = &menu_st->input_pointer_hw_state;
+   menu_handle_t             *menu                 = menu_st->driver_data;
+   bool keyboard_mapping_blocked                   = input_st->keyboard_mapping_blocked;
+   bool menu_mouse_enable                          = settings->bools.menu_mouse_enable;
+   bool menu_pointer_enable                        = settings->bools.menu_pointer_enable;
+   bool swap_ok_cancel_btns                        = settings->bools.input_menu_swap_ok_cancel_buttons;
+   bool menu_scroll_fast                           = settings->bools.menu_scroll_fast;
+   bool pointer_enabled                            = settings->bools.menu_pointer_enable;
+   unsigned input_touch_scale                      = settings->uints.input_touch_scale;
+   unsigned menu_scroll_delay                      =
+      settings->uints.menu_scroll_delay;
+#ifdef HAVE_OVERLAY
+   bool input_overlay_enable                       = settings->bools.input_overlay_enable;
+   bool overlay_active                             = input_overlay_enable 
+      && input_st->overlay_ptr
+      && input_st->overlay_ptr->alive;
+#else
+   bool input_overlay_enable                       = false;
+   bool overlay_active                             = false;
+#endif
+   unsigned menu_ok_btn                            = swap_ok_cancel_btns ?
+         RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_A;
+   unsigned menu_cancel_btn                        = swap_ok_cancel_btns ?
+         RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
+   unsigned ok_current                             = BIT256_GET_PTR(p_input, menu_ok_btn);
+   unsigned ok_trigger                             = ok_current & ~ok_old;
+   unsigned i                                      = 0;
+   static unsigned navigation_initial              = 0;
+   unsigned navigation_current                     = 0;
+   unsigned navigation_buttons[6] =
+   {
+      RETRO_DEVICE_ID_JOYPAD_UP,
+      RETRO_DEVICE_ID_JOYPAD_DOWN,
+      RETRO_DEVICE_ID_JOYPAD_LEFT,
+      RETRO_DEVICE_ID_JOYPAD_RIGHT,
+      RETRO_DEVICE_ID_JOYPAD_L,
+      RETRO_DEVICE_ID_JOYPAD_R
+   };
+
+   ok_old                                          = ok_current;
+
+   /* Get pointer (mouse + touchscreen) input
+    * Note: Must be done regardless of menu screensaver
+    *       state */
+
+   /* > If pointer input is disabled, do nothing */
+   if (!menu_mouse_enable && !menu_pointer_enable)
+      menu_input->pointer.type = MENU_POINTER_DISABLED;
+   else
+   {
+      menu_input_pointer_hw_state_t mouse_hw_state       = {0};
+      menu_input_pointer_hw_state_t touchscreen_hw_state = {0};
+
+      /* Read mouse */
+      if (menu_mouse_enable)
+         menu_input_get_mouse_hw_state(
+               p_disp,
+               menu,
+               input_st,
+               current_input,
+               joypad,
+               sec_joypad,
+               keyboard_mapping_blocked,
+               menu_mouse_enable,
+               input_overlay_enable,
+               overlay_active,
+               &mouse_hw_state);
+
+      /* Read touchscreen
+       * Note: Could forgo this if mouse is currently active,
+       * but this is 'cleaner' code... (if performance is a
+       * concern - and it isn't - user can just disable touch
+       * screen support) */
+      if (menu_pointer_enable)
+         menu_input_get_touchscreen_hw_state(
+               p_disp,
+               menu,
+               input_st,
+               current_input,
+               joypad,
+               sec_joypad,
+               keyboard_mapping_blocked,
+               overlay_active,
+               pointer_enabled,
+               input_touch_scale,
+               &touchscreen_hw_state);
+
+      /* Mouse takes precedence */
+      if (mouse_hw_state.active)
+         menu_input->pointer.type = MENU_POINTER_MOUSE;
+      else if (touchscreen_hw_state.active)
+         menu_input->pointer.type = MENU_POINTER_TOUCHSCREEN;
+
+      /* Copy input from the current device */
+      if (menu_input->pointer.type == MENU_POINTER_MOUSE)
+         memcpy(pointer_hw_state, &mouse_hw_state, sizeof(menu_input_pointer_hw_state_t));
+      else if (menu_input->pointer.type == MENU_POINTER_TOUCHSCREEN)
+         memcpy(pointer_hw_state, &touchscreen_hw_state, sizeof(menu_input_pointer_hw_state_t));
+
+      if (pointer_hw_state->active)
+         menu_st->input_last_time_us = menu_st->current_time_us;
+   }
+
+   /* Populate menu_input_state
+    * Note: dx, dy, ptr, y_accel, etc. entries are set elsewhere */
+   menu_input->pointer.x          = pointer_hw_state->x;
+   menu_input->pointer.y          = pointer_hw_state->y;
+   if (menu_input->select_inhibit || menu_input->cancel_inhibit)
+   {
+      menu_input->pointer.active  = false;
+      menu_input->pointer.pressed = false;
+   }
+   else
+   {
+      menu_input->pointer.active  = pointer_hw_state->active;
+      menu_input->pointer.pressed = pointer_hw_state->select_pressed;
+   }
+
+   /* If menu screensaver is active, any input
+    * is intercepted and used to switch it off */
+   if (menu_st->screensaver_active)
+   {
+      /* Check pointer input */
+      bool input_active = (menu_input->pointer.type != MENU_POINTER_DISABLED) &&
+            menu_input->pointer.active;
+
+      /* Check regular input */
+      if (!input_active)
+         input_active = bits_any_set(p_input->data, ARRAY_SIZE(p_input->data));
+
+      if (!input_active)
+         input_active = bits_any_set(p_trigger_input->data, ARRAY_SIZE(p_trigger_input->data));
+
+      /* Disable screensaver if required */
+      if (input_active)
+      {
+         menu_ctx_environment_t menu_environ;
+         menu_environ.type           = MENU_ENVIRON_DISABLE_SCREENSAVER;
+         menu_environ.data           = NULL;
+         menu_st->screensaver_active = false;
+         menu_st->input_last_time_us = menu_st->current_time_us;
+         menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+      }
+
+      /* Annul received input */
+      menu_input->pointer.active      = false;
+      menu_input->pointer.pressed     = false;
+      menu_input->select_inhibit      = true;
+      menu_input->cancel_inhibit      = true;
+      pointer_hw_state->up_pressed    = false;
+      pointer_hw_state->down_pressed  = false;
+      pointer_hw_state->left_pressed  = false;
+      pointer_hw_state->right_pressed = false;
+      return MENU_ACTION_NOOP;
+   }
+
+   /* Accelerate only navigation buttons */
+   for (i = 0; i < 6; i++)
+   {
+      if (BIT256_GET_PTR(p_input, navigation_buttons[i]))
+         navigation_current        |= (1 << navigation_buttons[i]);
+   }
+
+   if (navigation_current)
+   {
+      if (!first_held)
+      {
+         /* Store first direction in order to block "diagonals" */
+         if (!navigation_initial)
+            navigation_initial      = navigation_current;
+
+         /* don't run anything first frame, only capture held inputs
+          * for old_input_state. */
+
+         first_held                 = true;
+         if (initial_held)
+            delay_timer             = menu_scroll_delay;
+         else
+            delay_timer             = menu_scroll_fast ? 100 : 20;
+         delay_count                = 0;
+      }
+
+      if (delay_count >= delay_timer)
+      {
+         uint32_t input_repeat      = 0;
+         for (i = 0; i < 6; i++)
+            BIT32_SET(input_repeat, navigation_buttons[i]);
+
+         set_scroll                 = true;
+         first_held                 = false;
+         p_trigger_input->data[0]  |= p_input->data[0] & input_repeat;
+         new_scroll_accel           = menu_st->scroll.acceleration;
+
+         if (menu_scroll_fast)
+            new_scroll_accel        = MIN(new_scroll_accel + 1, 64);
+         else
+            new_scroll_accel        = MIN(new_scroll_accel + 1, 5);
+      }
+
+      initial_held                  = false;
+   }
+   else
+   {
+      set_scroll                    = true;
+      first_held                    = false;
+      initial_held                  = true;
+      navigation_initial            = 0;
+   }
+
+   if (set_scroll)
+      menu_st->scroll.acceleration  = (unsigned)(new_scroll_accel);
+
+   delay_count                     += anim_get_ptr()->delta_time;
+
+   if (display_kb)
+   {
+      bool show_osk_symbols = input_event_osk_show_symbol_pages(menu_st->driver_data);
+
+      input_event_osk_iterate(input_st->osk_grid, input_st->osk_idx);
+
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
+      {
+         menu_st->input_last_time_us = menu_st->current_time_us;
+         if (input_st->osk_ptr < 33)
+            input_st->osk_ptr += OSK_CHARS_PER_LINE;
+      }
+
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
+      {
+         menu_st->input_last_time_us = menu_st->current_time_us;
+         if (input_st->osk_ptr >= OSK_CHARS_PER_LINE)
+            input_st->osk_ptr -= OSK_CHARS_PER_LINE;
+      }
+
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      {
+         menu_st->input_last_time_us = menu_st->current_time_us;
+         if (input_st->osk_ptr < 43)
+            input_st->osk_ptr += 1;
+      }
+
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
+      {
+         menu_st->input_last_time_us = menu_st->current_time_us;
+         if (input_st->osk_ptr >= 1)
+            input_st->osk_ptr -= 1;
+      }
+
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
+      {
+         menu_st->input_last_time_us = menu_st->current_time_us;
+         if (input_st->osk_idx > OSK_TYPE_UNKNOWN + 1)
+            input_st->osk_idx = ((enum osk_type)
+                  (input_st->osk_idx - 1));
+         else
+            input_st->osk_idx = ((enum osk_type)(show_osk_symbols
+                     ? OSK_TYPE_LAST - 1
+                     : OSK_SYMBOLS_PAGE1));
+      }
+
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
+      {
+         menu_st->input_last_time_us = menu_st->current_time_us;
+         if (input_st->osk_idx < (show_osk_symbols
+                  ? OSK_TYPE_LAST - 1
+                  : OSK_SYMBOLS_PAGE1))
+            input_st->osk_idx = ((enum osk_type)(
+                     input_st->osk_idx + 1));
+         else
+            input_st->osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
+      }
+
+      if (BIT256_GET_PTR(p_trigger_input, menu_ok_btn))
+      {
+         if (input_st->osk_ptr >= 0)
+            input_event_osk_append(
+                  &input_st->keyboard_line,
+                  &input_st->osk_idx,
+                  &input_st->osk_last_codepoint,
+                  &input_st->osk_last_codepoint_len,
+                  input_st->osk_ptr,
+                  show_osk_symbols,
+                  input_st->osk_grid[input_st->osk_ptr]);
+      }
+
+      if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
+         input_keyboard_event(true, '\x7f', '\x7f',
+               0, RETRO_DEVICE_KEYBOARD);
+
+      /* send return key to close keyboard input window */
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START))
+         input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+
+      BIT256_CLEAR_ALL_PTR(p_trigger_input);
+   }
+   else
+   {
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
+      {
+         if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_UP))
+            ret = MENU_ACTION_UP;
+      }
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
+      {
+         if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
+            ret = MENU_ACTION_DOWN;
+      }
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
+      {
+         if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+            ret = MENU_ACTION_LEFT;
+      }
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      {
+         if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+            ret = MENU_ACTION_RIGHT;
+      }
+
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
+         ret = MENU_ACTION_SCROLL_UP;
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
+         ret = MENU_ACTION_SCROLL_DOWN;
+      else if (ok_trigger)
+         ret = MENU_ACTION_OK;
+      else if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
+         ret = MENU_ACTION_CANCEL;
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_X))
+         ret = MENU_ACTION_SEARCH;
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_Y))
+         ret = MENU_ACTION_SCAN;
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START))
+         ret = MENU_ACTION_START;
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+         ret = MENU_ACTION_INFO;
+      else if (BIT256_GET_PTR(p_trigger_input, RARCH_MENU_TOGGLE))
+         ret = MENU_ACTION_TOGGLE;
+
+      if (ret != MENU_ACTION_NOOP)
+         menu_st->input_last_time_us = menu_st->current_time_us;
+   }
+
+   return ret;
 }

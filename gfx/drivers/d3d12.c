@@ -14,6 +14,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Direct3D 12 driver.
+ *
+ * Minimum version : Direct3D 12.0 (2015)
+ * Minimum OS      : Windows 7, Windows 8
+ * Recommended OS  : Windows 10
+ */
+
 #define CINTERFACE
 
 #include <assert.h>
@@ -906,7 +913,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
 
    {
       static const char shader[] =
-#include "d3d_shaders/mimpapgen_sm5.h"
+#include "d3d_shaders/mipmapgen_sm5.h"
             ;
       D3D12_COMPUTE_PIPELINE_STATE_DESC desc = { d3d12->desc.cs_rootSignature };
       if (!d3d_compile(shader, sizeof(shader), NULL, "CSMain", "cs_5_0", &cs_code))
@@ -2201,9 +2208,9 @@ static uint32_t d3d12_get_flags(void *data)
 
 #ifndef __WINRT__
 static void d3d12_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
-   win32_get_video_output_size(width, height);
+   win32_get_video_output_size(width, height, desc, desc_len);
 }
 
 static void d3d12_get_video_output_prev(void *data)

@@ -34,7 +34,7 @@
 
 #include "../video_coord_array.h"
 #include "../../retroarch.h"
-#include "../drivers_shader/shader_gl_core.h"
+#include "../drivers_shader/shader_gl3.h"
 
 RETRO_BEGIN_DECLS
 

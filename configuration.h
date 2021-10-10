@@ -141,6 +141,10 @@ typedef struct settings
 #ifdef HAVE_D3D12
       int d3d12_gpu_index;
 #endif
+#ifdef HAVE_WINDOW_OFFSET
+      int video_window_offset_x;
+      int video_window_offset_y;
+#endif
       int content_favorites_size;
    } ints;
 
@@ -187,6 +191,7 @@ typedef struct settings
 #endif
       unsigned input_touch_scale;
       unsigned input_hotkey_block_delay;
+      unsigned input_quit_gamepad_combo;
       unsigned input_menu_toggle_gamepad_combo;
       unsigned input_keyboard_gamepad_mapping_type;
       unsigned input_poll_type_behavior;

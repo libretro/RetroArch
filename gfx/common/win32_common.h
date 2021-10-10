@@ -113,7 +113,7 @@ void win32_set_window(unsigned *width, unsigned *height,
       bool fullscreen, bool windowed_full, void *rect_data);
 
 void win32_get_video_output_size(
-      unsigned *width, unsigned *height);
+      unsigned *width, unsigned *height, char *desc, size_t desc_len);
 
 void win32_get_video_output_prev(
       unsigned *width, unsigned *height);

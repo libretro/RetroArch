@@ -2249,6 +2249,14 @@ MSG_HASH(
    "Підтвердити вихід"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   "Комбінація кнопок для виходу"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   "Комбінація кнопок контролера для виходу з RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
    "Перемотування (перемикач)"
    )

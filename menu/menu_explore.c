@@ -1149,7 +1149,7 @@ SKIP_ENTRY:;
       int pl_idx;
       const struct playlist_entry *pl_entry = 
          explore_state->entries[current_type - EXPLORE_TYPE_FIRSTITEM].playlist_entry;
-      menu_handle_t                   *menu = menu_driver_get_ptr();
+      menu_handle_t                   *menu = menu_state_get_ptr()->driver_data;
 
       strlcpy(explore_state->title,
             pl_entry->label, sizeof(explore_state->title));

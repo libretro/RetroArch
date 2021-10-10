@@ -10402,6 +10402,14 @@ MSG_HASH(
    "Irrota laite kelvollisesta portista."
    )
 MSG_HASH(
+   MSG_DISK_CLOSED,
+   "Suljettiin virtuaalinen levyasema."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Avattiin virtuaalinen levyasema."
+   )
+MSG_HASH(
    MSG_DOWNLOADING,
    "Ladataan"
    )
@@ -11034,6 +11042,10 @@ MSG_HASH(
    "Jatkuu."
    )
 MSG_HASH(
+   MSG_UNRECOGNIZED_COMMAND,
+   "Tuntematon komento \"%s\" vastaanotettu.\n"
+   )
+MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
    "Käytetään ytimen nimeä uudelle kokoonpanolle."
    )
@@ -11064,6 +11076,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Ikkunan koon laskenta epäonnistui! jatketaan raakadatan käyttöä. Tämä ei varmaan toimi oikein..."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Virtuaalisen levyaseman avaaminen epäonnistui."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Virtuaalisen levyaseman sulkeminen epäonnistui."
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,

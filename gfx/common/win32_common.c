@@ -852,7 +852,7 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          if (mode >= ID_M_WINDOW_SCALE_1X && mode <= ID_M_WINDOW_SCALE_10X)
          {
             unsigned idx = (mode - (ID_M_WINDOW_SCALE_1X-1));
-            rarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
+            retroarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
             command_event(CMD_EVENT_RESIZE_WINDOWED_SCALE, NULL);
          }
          else if (mode == ID_M_STATE_INDEX_AUTO)
@@ -1053,11 +1053,11 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
          break;
 #ifdef HAVE_CLIP_WINDOW
       case WM_SETFOCUS:
-         if (input_mouse_grabbed())
+         if (input_state_get_ptr()->grab_mouse_state)
             win32_clip_window(true);
          break;
       case WM_KILLFOCUS:
-         if (input_mouse_grabbed())
+         if (input_state_get_ptr()->grab_mouse_state)
             win32_clip_window(false);
          break;
 #endif
@@ -1128,7 +1128,7 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
          break;
       case WM_SETFOCUS:
 #ifdef HAVE_CLIP_WINDOW
-         if (input_mouse_grabbed())
+         if (input_state_get_ptr()->grab_mouse_state)
             win32_clip_window(true);
 #endif
 #if !defined(_XBOX)
@@ -1138,7 +1138,7 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
          break;
       case WM_KILLFOCUS:
 #ifdef HAVE_CLIP_WINDOW
-         if (input_mouse_grabbed())
+         if (input_state_get_ptr()->grab_mouse_state)
             win32_clip_window(false);
 #endif
 #if !defined(_XBOX)
@@ -1264,11 +1264,11 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
          break;
 #ifdef HAVE_CLIP_WINDOW
       case WM_SETFOCUS:
-         if (input_mouse_grabbed())
+         if (input_state_get_ptr()->grab_mouse_state)
             win32_clip_window(true);
          break;
       case WM_KILLFOCUS:
-         if (input_mouse_grabbed())
+         if (input_state_get_ptr()->grab_mouse_state)
             win32_clip_window(false);
          break;
 #endif
@@ -1281,8 +1281,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
 }
 #endif
 
-#if defined(HAVE_D3D) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
-
+#if defined(HAVE_D3D) || defined(HAVE_D3D8) || defined(HAVE_D3D9) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
 LRESULT CALLBACK wnd_proc_d3d_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
@@ -1616,20 +1615,22 @@ bool win32_window_create(void *data, unsigned style,
    bool    window_save_positions = settings->bools.video_window_save_positions;
    unsigned    user_width        = width;
    unsigned    user_height       = height;
+   wchar_t *title_wide     = utf8_to_utf16_string_alloc(msg_hash_to_str(MSG_PROGRAM));
 
    if (window_save_positions && !fullscreen)
    {
       user_width                 = g_win32->pos_width;
       user_height                = g_win32->pos_height;
    }
-   main_window.hwnd              = CreateWindowEx(0,
-         "RetroArch", msg_hash_to_str(MSG_PROGRAM),
+   main_window.hwnd              = CreateWindowExW(0,
+         L"RetroArch", title_wide,
          style,
          fullscreen ? mon_rect->left : g_win32->pos_x,
          fullscreen ? mon_rect->top  : g_win32->pos_y,
          user_width,
          user_height,
          NULL, NULL, NULL, data);
+   free(title_wide);
    if (!main_window.hwnd)
       return false;
 
@@ -2528,7 +2529,7 @@ bool win32_get_video_output(DEVMODE *dm, int mode, size_t len)
    return true;
 }
 
-void win32_get_video_output_size(unsigned *width, unsigned *height)
+void win32_get_video_output_size(unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
    DEVMODE dm;
 

@@ -1381,7 +1381,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "Nearest Neighbor"
    )
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
    "Image Interpolation"
@@ -1513,6 +1513,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
    "Select which graphics card to use."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
+   "Screen Horizontal Offset"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
+   "Forces a certain offset horizontally to the video. The offset is applied globally."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
+   "Screen Vertical Offset"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
+   "Forces a certain offset vertically to the video. The offset is applied globally."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
@@ -1772,7 +1788,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Set the peak luminance (in cd/m2) your display can reproduce. See RTings for your display's peak luminance"
+   "Set the peak luminance (in cd/m2) your display can reproduce. See RTings for your display's peak luminance."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
@@ -2415,6 +2431,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    "Controller button combination to toggle menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   "Quit Controller Combo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   "Controller button combination to quit RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
@@ -12258,6 +12282,50 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
    "Screen Resolution"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_FORMAT_NO_DESC,
+   "%ux%u"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_FORMAT_DESC,
+   "%ux%u - %s"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DEFAULT,
+   "Screen Resolution: Default"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_NO_DESC,
+   "Screen Resolution: %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DESC,
+   "Screen Resolution: %dx%d - %s"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
+   "Applying: Default"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
+   "Applying: %dx%d\nSTART to reset"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DESC,
+   "Applying: %dx%d - %s\nSTART to reset"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
+   "Resetting to: Default"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC,
+   "Resetting to: %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DESC,
+   "Resetting to: %dx%d - %s"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,

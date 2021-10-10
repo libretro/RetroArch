@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2019 - Brad Parker
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  copyright (c) 2011-2017 - Daniel De Matteis
+ *  copyright (c) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,19 +15,35 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __CORE_TYPE_H
-#define __CORE_TYPE_H
-
-enum rarch_core_type
-{
-   CORE_TYPE_PLAIN = 0,
-   CORE_TYPE_DUMMY,
-   CORE_TYPE_FFMPEG,
-   CORE_TYPE_MPV,
-   CORE_TYPE_IMAGEVIEWER,
-   CORE_TYPE_NETRETROPAD,
-   CORE_TYPE_VIDEO_PROCESSOR,
-   CORE_TYPE_GONG
-};
-
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
 #endif
+
+#include <glsym/glsym.h>
+
+void gl_flush(void)
+{
+   glFlush();
+}
+
+void gl_clear(void)
+{
+   glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void gl_disable(unsigned _cap)
+{
+   GLenum cap = (GLenum)_cap;
+   glDisable(cap);
+}
+
+void gl_enable(unsigned _cap)
+{
+   GLenum cap = (GLenum)_cap;
+   glEnable(cap);
+}
+
+void gl_finish(void)
+{
+   glFinish();
+}

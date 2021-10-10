@@ -316,6 +316,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_shader_delay,            MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_black_frame_insertion,   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_systeminfo_cpu_cores,          MENU_ENUM_SUBLABEL_CPU_CORES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_toggle_gamepad_combo,          MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quit_gamepad_combo,            MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_show_hidden_files,             MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_log_verbosity,                 MENU_ENUM_SUBLABEL_LOG_VERBOSITY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_log_to_file,                   MENU_ENUM_SUBLABEL_LOG_TO_FILE)
@@ -884,7 +885,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_dingux_ipu_filter_type,       
 #if defined(DINGUX_BETA)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_dingux_refresh_rate,             MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE)
 #endif
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_dingux_rs90_softfilter_type,     MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE)
 #endif
 #endif
@@ -932,6 +933,11 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_3ds_display_mode,         MENU
 #if defined(GEKKO)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_overscan_correction_top,    MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_overscan_correction_bottom, MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM)
+#endif
+
+#if defined(HAVE_WINDOW_OFFSET)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_offset_x,            MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_offset_y,            MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y)
 #endif
 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_playlist_show_sublabels,                       MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS)
@@ -1087,8 +1093,8 @@ static int action_bind_sublabel_subsystem_add(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   rarch_system_info_t *system                  = runloop_get_system_info();
    const struct retro_subsystem_info *subsystem;
+   rarch_system_info_t *system                  = &runloop_state_get_ptr()->system;
 
    /* Core fully loaded, use the subsystem data */
    if (system->subsystem.data)
@@ -1140,8 +1146,8 @@ static int action_bind_sublabel_disk_image_append(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   rarch_system_info_t *sys_info = runloop_get_system_info();
    enum msg_hash_enums enum_idx  = MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND;
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
 
    /* Check whether disk is currently ejected */
    if (sys_info &&
@@ -1337,14 +1343,14 @@ static int action_bind_sublabel_netplay_room(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)))
    {
       snprintf(s, len,
-         "%s: %s (%s)\n%s: %s (%s)\nGame: %s (%08x)",
+         "%s: %s (%s)\n%s: %s (%s)\nGame: %s (%08lx)",
          msg_hash_to_str(MSG_PROGRAM),
          string_is_empty(ra_version)    ? na : ra_version,
          string_is_empty(frontend)      ? na : frontend,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME),
          corename, core_ver,
          !string_is_equal(gamename, na) ? gamename : na,
-         gamecrc);
+         (unsigned long)gamecrc);
    }
    else
    {
@@ -1381,14 +1387,14 @@ static int action_bind_sublabel_netplay_room(
       else
       {
          snprintf(s, len,
-            "%s: %s (%s)\n%s: %s (%s)\nSubsystem: %s\nGame: %s (%08x)",
+            "%s: %s (%s)\n%s: %s (%s)\nSubsystem: %s\nGame: %s (%08lx)",
             msg_hash_to_str(MSG_PROGRAM),
             string_is_empty(ra_version)    ? na : ra_version,
             string_is_empty(frontend)      ? na : frontend,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME),
             corename, core_ver, subsystem,
             !string_is_equal(gamename, na) ? gamename : na,
-            gamecrc);
+            (unsigned long)gamecrc);
       }
    }
    return 0;
@@ -1535,7 +1541,7 @@ static int action_bind_sublabel_core_options(
    {
       core_option_manager_t *coreopts = NULL;
 
-      if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+      if (retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
          info = core_option_manager_get_category_info(
                coreopts, category);
    }
@@ -1564,7 +1570,7 @@ static int action_bind_sublabel_core_option(
    core_option_manager_t *opt = NULL;
    const char *info           = NULL;
 
-   if (!rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &opt))
+   if (!retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &opt))
       return 0;
 
    info = core_option_manager_get_info(opt,
@@ -2028,7 +2034,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_dingux_refresh_rate);
             break;
 #endif
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
          case MENU_ENUM_LABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_dingux_rs90_softfilter_type);
             break;
@@ -3762,6 +3768,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_monitor_index);
             break;
+#if defined(HAVE_WINDOW_OFFSET)
+         case MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_X:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_offset_x);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_Y:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_offset_y);
+            break;
+#endif
          case MENU_ENUM_LABEL_LOG_VERBOSITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_log_verbosity);
             break;
@@ -3782,6 +3796,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_toggle_gamepad_combo);
+            break;
+         case MENU_ENUM_LABEL_INPUT_QUIT_GAMEPAD_COMBO:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quit_gamepad_combo);
             break;
          case MENU_ENUM_LABEL_CPU_CORES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_systeminfo_cpu_cores);
@@ -4236,6 +4253,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_overscan_correction_bottom);
+            break;
+#endif
+#if defined(HAVE_WINDOW_OFFSET)
+         case MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_offset_x);
+            break;
+         case MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_offset_y);
             break;
 #endif
          case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD:

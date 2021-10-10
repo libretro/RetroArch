@@ -684,9 +684,9 @@ static void gdi_unload_texture(void *data,
 static uint32_t gdi_get_flags(void *data) { return 0; }
 
 static void gdi_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
-   win32_get_video_output_size(width, height);
+   win32_get_video_output_size(width, height, desc, desc_len);
 }
 
 static void gdi_get_video_output_prev(void *data)

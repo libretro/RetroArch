@@ -195,8 +195,6 @@ void picoscale_upscale_rgb_snn_256_320x224_240(uint16_t *PICOSCALE_restrict di, 
 {
    uint16_t y, j;
 
-   uint16_t *di_start = di;
-
    for (y = 0; y < 224; y += 16)
    {
       for (j = 0; j < 8; j++)

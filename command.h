@@ -29,9 +29,10 @@
 
 #include <streams/interface_stream.h>
 
-#include "retroarch.h"
+#include "retroarch_types.h"
 #include "input/input_defines.h"
 
+#include "configuration.h"
 
 RETRO_BEGIN_DECLS
 

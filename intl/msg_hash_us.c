@@ -2011,6 +2011,16 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "2 - Press L3 + R3 simultaneously. \n"
                              "3 - Press Start + Select simultaneously.");
             break;
+        case MENU_ENUM_LABEL_INPUT_QUIT_GAMEPAD_COMBO:
+            snprintf(s, len,
+                     "Gamepad button combination to quit. \n"
+                             " \n"
+                             "0 - None \n"
+                             "1 - Press L + R + Y + D-Pad Down \n"
+                             "simultaneously. \n"
+                             "2 - Press L3 + R3 simultaneously. \n"
+                             "3 - Press Start + Select simultaneously.");
+            break;
         case MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU:
             snprintf(s, len, "Allows any user to control the menu. \n"
                     " \n"

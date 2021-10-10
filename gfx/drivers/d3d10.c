@@ -14,6 +14,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Direct3D 10 driver.
+ *
+ * Minimum version : Direct3D 10.0 (2006)
+ * Minimum OS      : Windows Vista
+ * Recommended OS  : Windows Vista and/or later
+ */
+
 #define CINTERFACE
 #define COBJMACROS
 
@@ -1743,9 +1750,9 @@ static uint32_t d3d10_get_flags(void *data)
 
 #ifndef __WINRT__
 static void d3d10_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
-   win32_get_video_output_size(width, height);
+   win32_get_video_output_size(width, height, desc, desc_len);
 }
 
 static void d3d10_get_video_output_prev(void *data)

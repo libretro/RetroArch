@@ -411,7 +411,7 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL;
 #elif defined(HAVE_SDL2)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL2;
 #elif defined(HAVE_SDL_DINGUX)
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL_RS90;
 #else
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL_DINGUX;
@@ -494,7 +494,7 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_EXT;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_NULL;
 #endif
 
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 static const enum audio_resampler_driver_enum AUDIO_DEFAULT_RESAMPLER_DRIVER = AUDIO_RESAMPLER_NEAREST;
 #elif defined(PSP) || defined(EMSCRIPTEN)
 static const enum audio_resampler_driver_enum AUDIO_DEFAULT_RESAMPLER_DRIVER = AUDIO_RESAMPLER_CC;
@@ -2075,6 +2075,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("fps_update_interval",          &settings->uints.fps_update_interval, true, DEFAULT_FPS_UPDATE_INTERVAL, false);
    SETTING_UINT("memory_update_interval",       &settings->uints.memory_update_interval, true, DEFAULT_MEMORY_UPDATE_INTERVAL, false);
    SETTING_UINT("input_menu_toggle_gamepad_combo", &settings->uints.input_menu_toggle_gamepad_combo, true, DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO, false);
+   SETTING_UINT("input_quit_gamepad_combo",     &settings->uints.input_quit_gamepad_combo, true, DEFAULT_QUIT_GAMEPAD_COMBO, false);
    SETTING_UINT("input_hotkey_block_delay",     &settings->uints.input_hotkey_block_delay, true, DEFAULT_INPUT_HOTKEY_BLOCK_DELAY, false);
 #ifdef GEKKO
    SETTING_UINT("input_mouse_scale",            &settings->uints.input_mouse_scale, true, DEFAULT_MOUSE_SCALE, false);
@@ -2251,7 +2252,7 @@ static struct config_uint_setting *populate_settings_uint(
 #if defined(DINGUX_BETA)
    SETTING_UINT("video_dingux_refresh_rate",    &settings->uints.video_dingux_refresh_rate, true, DEFAULT_DINGUX_REFRESH_RATE, false);
 #endif
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
    SETTING_UINT("video_dingux_rs90_softfilter_type", &settings->uints.video_dingux_rs90_softfilter_type, true, DEFAULT_DINGUX_RS90_SOFTFILTER_TYPE, false);
 #endif
 #endif
@@ -2326,6 +2327,10 @@ static struct config_int_setting *populate_settings_int(
 #endif
 #ifdef HAVE_D3D12
    SETTING_INT("d3d12_gpu_index",              &settings->ints.d3d12_gpu_index, true, DEFAULT_D3D12_GPU_INDEX, false);
+#endif
+#ifdef HAVE_WINDOW_OFFSET
+   SETTING_INT("video_window_offset_x",        &settings->ints.video_window_offset_x, true, DEFAULT_WINDOW_OFFSET_X, false);
+   SETTING_INT("video_window_offset_y",        &settings->ints.video_window_offset_y, true, DEFAULT_WINDOW_OFFSET_Y, false);
 #endif
    SETTING_INT("content_favorites_size",       &settings->ints.content_favorites_size, true, default_content_favorites_size, false);
 
@@ -2640,9 +2645,9 @@ void config_set_defaults(void *data)
    *settings->paths.directory_video_filter = '\0';
    *settings->paths.directory_audio_filter = '\0';
 
-   rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
+   retroarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
+   retroarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
+   retroarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
 
    if (global)
    {
@@ -2878,9 +2883,9 @@ void config_set_defaults(void *data)
 #ifdef HAVE_CONFIGFILE
    /* Avoid reloading config on every content load */
    if (DEFAULT_BLOCK_CONFIG_READ)
-      rarch_ctl(RARCH_CTL_SET_BLOCK_CONFIG_READ, NULL);
+      retroarch_ctl(RARCH_CTL_SET_BLOCK_CONFIG_READ, NULL);
    else
-      rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
+      retroarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
 #endif
 
 #ifdef HAVE_MENU
@@ -2955,13 +2960,17 @@ static bool check_menu_driver_compatibility(settings_t *settings)
  **/
 static config_file_t *open_default_config_file(void)
 {
-   char application_data[PATH_MAX_LENGTH];
    char conf_path[PATH_MAX_LENGTH];
    char app_path[PATH_MAX_LENGTH];
-   bool has_application_data              = false;
    config_file_t *conf                    = NULL;
 
-   application_data[0] = conf_path[0] = app_path[0] = '\0';
+   #ifndef RARCH_CONSOLE
+   char application_data[PATH_MAX_LENGTH];
+   bool has_application_data              = false;
+   application_data[0] = '\0';
+   #endif
+
+   conf_path[0] = app_path[0] = '\0';
 
 #if defined(_WIN32) && !defined(_XBOX)
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
@@ -3258,7 +3267,7 @@ static bool config_load_file(global_t *global,
 
    /* Overrides */
 
-   if (rarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL))
+   if (retroarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL))
       override_username = strdup(settings->paths.username);
 
    /* Boolean settings */
@@ -3421,7 +3430,7 @@ static bool config_load_file(global_t *global,
 
    /* Post-settings load */
 
-   if (rarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL) && override_username)
+   if (retroarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL) && override_username)
    {
       configuration_set_string(settings,
             settings->paths.username,
@@ -4018,7 +4027,7 @@ bool config_load_remap(const char *directory_input_remapping,
       RARCH_LOG("[Remaps]: Game-specific remap found at \"%s\".\n", game_path);
       if (ret)
       {
-         rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
+         retroarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
          /* msg_remap_loaded is set to MSG_GAME_REMAP_FILE_LOADED
           * by default - no need to change it here */
          goto success;
@@ -4034,7 +4043,7 @@ bool config_load_remap(const char *directory_input_remapping,
       RARCH_LOG("[Remaps]: Content-dir-specific remap found at \"%s\".\n", content_path);
       if (ret)
       {
-         rarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
+         retroarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
          msg_remap_loaded = MSG_DIRECTORY_REMAP_FILE_LOADED;
          goto success;
       }
@@ -4049,7 +4058,7 @@ bool config_load_remap(const char *directory_input_remapping,
       RARCH_LOG("[Remaps]: Core-specific remap found at \"%s\".\n", core_path);
       if (ret)
       {
-         rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
+         retroarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
          msg_remap_loaded = MSG_CORE_REMAP_FILE_LOADED;
          goto success;
       }
@@ -4508,7 +4517,7 @@ bool config_save_file(const char *path)
    if (!conf)
       conf = config_file_new_alloc();
 
-   if (!conf || rarch_ctl(RARCH_CTL_IS_OVERRIDES_ACTIVE, NULL))
+   if (!conf || retroarch_ctl(RARCH_CTL_IS_OVERRIDES_ACTIVE, NULL))
    {
       if (conf)
          config_file_free(conf);
@@ -4655,7 +4664,7 @@ bool config_save_file(const char *path)
       config_set_bool(conf, "log_verbosity",
             verbosity_is_enabled());
    config_set_bool(conf, "perfcnt_enable",
-         rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL));
+         retroarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL));
 
    msg_color = (((int)(settings->floats.video_msg_color_r * 255.0f) & 0xff) << 16) +
                (((int)(settings->floats.video_msg_color_g * 255.0f) & 0xff) <<  8) +
@@ -4981,7 +4990,7 @@ bool config_replace(bool config_replace_save_on_exit, char *path)
 
    path_set(RARCH_PATH_CONFIG, path);
 
-   rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
+   retroarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
 
    /* Load core in new (salamander) config. */
    path_clear(RARCH_PATH_CORE);

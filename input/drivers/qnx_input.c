@@ -668,9 +668,8 @@ static void qnx_handle_navigator_event(
 
    return;
 
-   shutdown:
-       rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
-       return;
+shutdown:
+   retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
 }
 
 static void *qnx_input_init(const char *joypad_driver)

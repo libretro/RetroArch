@@ -1021,6 +1021,8 @@ static int iohidmanager_hid_manager_set_device_matching(
    iohidmanager_hid_append_matching_dictionary(matcher,
       kHIDPage_GenericDesktop,
       kHIDUsage_GD_GamePad);
+   /* The GameCube Adapter reports usage id 0x00 */
+   iohidmanager_hid_append_matching_dictionary(matcher, kHIDPage_Game, 0x00);
    
    IOHIDManagerSetDeviceMatchingMultiple(hid->ptr, matcher);
    IOHIDManagerRegisterDeviceMatchingCallback(hid->ptr,iohidmanager_hid_device_matched, 0);

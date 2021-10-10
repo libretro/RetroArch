@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "shader_gl_core.h"
+#include "shader_gl3.h"
 #include "glslang_util.h"
 #include "glslang_util_cxx.h"
 
@@ -32,7 +32,7 @@
 #include "slang_reflection.hpp"
 #include "spirv_glsl.hpp"
 
-#include "../common/gl_core_common.h"
+#include "../common/gl3_common.h"
 
 #include "../../verbosity.h"
 #include "../../msg_hash.h"

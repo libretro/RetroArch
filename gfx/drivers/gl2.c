@@ -15,10 +15,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* Middle of the road OpenGL driver.
+/* Middle of the road OpenGL 2.x driver.
  *
- * Minimum version (desktop): OpenGL 2.0+
- * Minimum version (mobile) : OpenGLES 2.0+
+ * Minimum version (desktop): OpenGL   2.0+ (2004)
+ * Minimum version (mobile) : OpenGLES 2.0+ (2007)
  */
 
 #ifdef _MSC_VER
@@ -56,7 +56,7 @@
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
-#include "../common/gl_common.h"
+#include "../common/gl2_common.h"
 
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
@@ -254,7 +254,7 @@ static unsigned gl2_get_alignment(unsigned pitch)
    return 8;
 }
 
-static bool gl2_shader_info(gl_t *gl,
+static bool gl2_shader_info(gl2_t *gl,
       video_shader_ctx_info_t *shader_info)
 {
    if (!shader_info)
@@ -265,7 +265,7 @@ static bool gl2_shader_info(gl_t *gl,
    return true;
 }
 
-static bool gl2_shader_scale(gl_t *gl,
+static bool gl2_shader_scale(gl2_t *gl,
       video_shader_ctx_scale_t *scaler)
 {
    if (!scaler || !scaler->scale)
@@ -367,7 +367,7 @@ static bool gl2_recreate_fbo(
    return false;
 }
 
-static void gl2_set_projection(gl_t *gl,
+static void gl2_set_projection(gl2_t *gl,
       struct video_ortho *ortho, bool allow_rotate)
 {
    math_matrix_4x4 rot;
@@ -386,7 +386,7 @@ static void gl2_set_projection(gl_t *gl,
    matrix_4x4_multiply(gl->mvp, rot, gl->mvp_no_rot);
 }
 
-static void gl2_set_viewport(gl_t *gl,
+static void gl2_set_viewport(gl2_t *gl,
       unsigned viewport_width,
       unsigned viewport_height,
       bool force_full, bool allow_rotate)
@@ -483,7 +483,7 @@ static void gl2_set_viewport(gl_t *gl,
 }
 
 static void gl2_renderchain_render(
-      gl_t *gl,
+      gl2_t *gl,
       gl2_renderchain_data_t *chain,
       uint64_t frame_count,
       const struct video_tex_info *tex_info,
@@ -640,7 +640,7 @@ static void gl2_renderchain_render(
    gl->coords.tex_coord = gl->tex_info.coord;
 }
 
-static void gl2_renderchain_deinit_fbo(gl_t *gl,
+static void gl2_renderchain_deinit_fbo(gl2_t *gl,
       gl2_renderchain_data_t *chain)
 {
    if (gl)
@@ -670,7 +670,7 @@ static void gl2_renderchain_deinit_fbo(gl_t *gl,
 }
 
 static void gl2_renderchain_deinit_hw_render(
-      gl_t *gl,
+      gl2_t *gl,
       gl2_renderchain_data_t *chain)
 {
    if (!gl)
@@ -687,7 +687,7 @@ static void gl2_renderchain_deinit_hw_render(
    gl2_context_bind_hw_render(gl, false);
 }
 
-static bool gl2_create_fbo_targets(gl_t *gl, gl2_renderchain_data_t *chain)
+static bool gl2_create_fbo_targets(gl2_t *gl, gl2_renderchain_data_t *chain)
 {
    unsigned i;
 
@@ -775,7 +775,7 @@ static GLenum gl2_min_filter_to_mag(GLenum type)
    return type;
 }
 
-static void gl2_create_fbo_texture(gl_t *gl,
+static void gl2_create_fbo_texture(gl2_t *gl,
       gl2_renderchain_data_t *chain,
       unsigned i, GLuint texture)
 {
@@ -814,7 +814,7 @@ static void gl2_create_fbo_texture(gl_t *gl,
 
    wrap_enum  = gl2_wrap_type_to_enum(wrap_type);
 
-   GL_BIND_TEXTURE(texture, wrap_enum, mag_filter, min_filter);
+   GL2_BIND_TEXTURE(texture, wrap_enum, mag_filter, min_filter);
 
    fp_fbo   = chain->fbo_scale[i].fp_fbo;
 
@@ -890,7 +890,7 @@ static void gl2_create_fbo_texture(gl_t *gl,
    }
 }
 
-static void gl2_create_fbo_textures(gl_t *gl,
+static void gl2_create_fbo_textures(gl2_t *gl,
       gl2_renderchain_data_t *chain)
 {
    int i;
@@ -918,7 +918,7 @@ static void gl2_create_fbo_textures(gl_t *gl,
  * we have to recalculate geometry of our FBO. */
 
 static void gl2_renderchain_recompute_pass_sizes(
-      gl_t *gl,
+      gl2_t *gl,
       gl2_renderchain_data_t *chain,
       unsigned width, unsigned height,
       unsigned vp_width, unsigned vp_height)
@@ -1022,7 +1022,7 @@ static void gl2_renderchain_recompute_pass_sizes(
 }
 
 static void gl2_renderchain_start_render(
-      gl_t *gl,
+      gl2_t *gl,
       gl2_renderchain_data_t *chain)
 {
    /* Used when rendering to an FBO.
@@ -1055,7 +1055,7 @@ static void gl2_renderchain_start_render(
 
 /* Set up render to texture. */
 static void gl2_renderchain_init(
-      gl_t *gl,
+      gl2_t *gl,
       gl2_renderchain_data_t *chain,
       unsigned fbo_width, unsigned fbo_height)
 {
@@ -1164,7 +1164,7 @@ static void gl2_renderchain_init(
 }
 
 static bool gl2_renderchain_init_hw_render(
-      gl_t *gl,
+      gl2_t *gl,
       gl2_renderchain_data_t *chain,
       unsigned width, unsigned height)
 {
@@ -1265,7 +1265,7 @@ static bool gl2_renderchain_init_hw_render(
 }
 
 static void gl2_renderchain_bind_prev_texture(
-      gl_t *gl,
+      gl2_t *gl,
       gl2_renderchain_data_t *chain,
       const struct video_tex_info *tex_info)
 {
@@ -1288,7 +1288,7 @@ static void gl2_renderchain_bind_prev_texture(
 }
 
 static bool gl2_renderchain_read_viewport(
-      gl_t *gl,
+      gl2_t *gl,
       uint8_t *buffer, bool is_idle)
 {
    unsigned                     num_pixels = 0;
@@ -1401,7 +1401,7 @@ error:
 #endif
 
 static void gl2_renderchain_copy_frame(
-      gl_t *gl,
+      gl2_t *gl,
       gl2_renderchain_data_t *chain,
       bool use_rgba,
       const void *frame,
@@ -1544,7 +1544,7 @@ static void gl2_renderchain_copy_frame(
 #endif
 
 static void gl2_renderchain_readback(
-      gl_t *gl,
+      gl2_t *gl,
       void *chain_data,
       unsigned alignment,
       unsigned fmt, unsigned type,
@@ -1604,7 +1604,7 @@ static void gl2_renderchain_fence_free(void *data,
 }
 
 static void gl2_renderchain_init_texture_reference(
-      gl_t *gl,
+      gl2_t *gl,
       gl2_renderchain_data_t *chain,
       unsigned i,
       unsigned internal_fmt, unsigned texture_fmt,
@@ -1630,7 +1630,7 @@ static void gl2_renderchain_init_texture_reference(
 #endif
 }
 
-static void gl2_renderchain_resolve_extensions(gl_t *gl,
+static void gl2_renderchain_resolve_extensions(gl2_t *gl,
       gl2_renderchain_data_t *chain,
       const char *context_ident,
       const video_info_t *video)
@@ -1710,7 +1710,7 @@ static void gl_load_texture_data(
          break;
    }
 
-   GL_BIND_TEXTURE(id, wrap, mag_filter, min_filter);
+   GL2_BIND_TEXTURE(id, wrap, mag_filter, min_filter);
 
    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
    glTexImage2D(GL_TEXTURE_2D,
@@ -1771,7 +1771,7 @@ static bool gl2_add_lut(
    return true;
 }
 
-bool gl_load_luts(
+bool gl2_load_luts(
       const void *shader_data,
       GLuint *textures_lut)
 {
@@ -1801,7 +1801,7 @@ bool gl_load_luts(
 }
 
 #ifdef HAVE_OVERLAY
-static void gl2_free_overlay(gl_t *gl)
+static void gl2_free_overlay(gl2_t *gl)
 {
    glDeleteTextures(gl->overlays, gl->overlay_tex);
 
@@ -1822,7 +1822,7 @@ static void gl2_overlay_vertex_geom(void *data,
       float w, float h)
 {
    GLfloat *vertex = NULL;
-   gl_t *gl        = (gl_t*)data;
+   gl2_t *gl       = (gl2_t*)data;
 
    if (!gl)
       return;
@@ -1855,7 +1855,7 @@ static void gl2_overlay_tex_geom(void *data,
       GLfloat w, GLfloat h)
 {
    GLfloat *tex = NULL;
-   gl_t *gl     = (gl_t*)data;
+   gl2_t *gl    = (gl2_t*)data;
 
    if (!gl)
       return;
@@ -1872,7 +1872,7 @@ static void gl2_overlay_tex_geom(void *data,
    tex[7]       = y + h;
 }
 
-static void gl2_render_overlay(gl_t *gl)
+static void gl2_render_overlay(gl2_t *gl)
 {
    unsigned i;
    unsigned width                      = gl->video_width;
@@ -1914,7 +1914,7 @@ static void gl2_render_overlay(gl_t *gl)
 static void gl2_set_viewport_wrapper(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
-   gl_t               *gl = (gl_t*)data;
+   gl2_t              *gl = (gl2_t*)data;
    gl2_set_viewport(gl,
          viewport_width, viewport_height, force_full, allow_rotate);
 }
@@ -2030,7 +2030,7 @@ static bool gl_shader_driver_init(video_shader_ctx_init_t *init)
    return true;
 }
 
-static bool gl2_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
+static bool gl2_shader_init(gl2_t *gl, const gfx_ctx_driver_t *ctx_driver,
       struct retro_hw_render_callback *hwr
       )
 {
@@ -2093,7 +2093,7 @@ static bool gl2_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
 
 static uintptr_t gl2_get_current_framebuffer(void *data)
 {
-   gl_t *gl = (gl_t*)data;
+   gl2_t *gl = (gl2_t*)data;
    if (!gl || !gl->has_fbo)
       return 0;
    return gl->hw_render_fbo[(gl->tex_index + 1) % gl->textures];
@@ -2101,7 +2101,7 @@ static uintptr_t gl2_get_current_framebuffer(void *data)
 
 static void gl2_set_rotation(void *data, unsigned rotation)
 {
-   gl_t               *gl = (gl_t*)data;
+   gl2_t               *gl = (gl2_t*)data;
 
    if (!gl)
       return;
@@ -2113,13 +2113,13 @@ static void gl2_set_rotation(void *data, unsigned rotation)
 static void gl2_set_video_mode(void *data, unsigned width, unsigned height,
       bool fullscreen)
 {
-   gl_t               *gl = (gl_t*)data;
+   gl2_t               *gl = (gl2_t*)data;
    if (gl->ctx_driver->set_video_mode)
       gl->ctx_driver->set_video_mode(gl->ctx_data,
             width, height, fullscreen);
 }
 
-static void gl2_update_input_size(gl_t *gl, unsigned width,
+static void gl2_update_input_size(gl2_t *gl, unsigned width,
       unsigned height, unsigned pitch, bool clear)
 {
    float xamt, yamt;
@@ -2162,7 +2162,7 @@ static void gl2_update_input_size(gl_t *gl, unsigned width,
    SET_TEXTURE_COORDS(gl->tex_info.coord, xamt, yamt);
 }
 
-static void gl2_init_textures_data(gl_t *gl)
+static void gl2_init_textures_data(gl2_t *gl)
 {
    unsigned i;
 
@@ -2183,7 +2183,7 @@ static void gl2_init_textures_data(gl_t *gl)
    }
 }
 
-static void gl2_init_textures(gl_t *gl)
+static void gl2_init_textures(gl2_t *gl)
 {
    unsigned i;
    GLenum internal_fmt = gl->internal_fmt;
@@ -2226,7 +2226,7 @@ static void gl2_init_textures(gl_t *gl)
 
    for (i = 0; i < gl->textures; i++)
    {
-      GL_BIND_TEXTURE(gl->texture[i], gl->wrap_mode, gl->tex_mag_filter,
+      GL2_BIND_TEXTURE(gl->texture[i], gl->wrap_mode, gl->tex_mag_filter,
             gl->tex_min_filter);
 
       gl2_renderchain_init_texture_reference(
@@ -2238,7 +2238,7 @@ static void gl2_init_textures(gl_t *gl)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 
-static INLINE void gl2_set_shader_viewports(gl_t *gl)
+static INLINE void gl2_set_shader_viewports(gl2_t *gl)
 {
    unsigned i;
    unsigned width                = gl->video_width;
@@ -2261,7 +2261,7 @@ static void gl2_set_texture_frame(void *data,
       ? TEXTURE_FILTER_LINEAR 
       : TEXTURE_FILTER_NEAREST;
    unsigned base_size              = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-   gl_t *gl                        = (gl_t*)data;
+   gl2_t *gl                       = (gl2_t*)data;
    if (!gl)
       return;
 
@@ -2284,7 +2284,7 @@ static void gl2_set_texture_frame(void *data,
 
 static void gl2_set_texture_enable(void *data, bool state, bool full_screen)
 {
-   gl_t *gl                     = (gl_t*)data;
+   gl2_t *gl                     = (gl2_t*)data;
 
    if (!gl)
       return;
@@ -2293,7 +2293,7 @@ static void gl2_set_texture_enable(void *data, bool state, bool full_screen)
    gl->menu_texture_full_screen = full_screen;
 }
 
-static void gl2_render_osd_background(gl_t *gl, const char *msg)
+static void gl2_render_osd_background(gl2_t *gl, const char *msg)
 {
    video_coords_t coords;
    struct uniform_info uniform_param;
@@ -2406,7 +2406,7 @@ static void gl2_render_osd_background(gl_t *gl, const char *msg)
 
 static void gl2_show_mouse(void *data, bool state)
 {
-   gl_t                            *gl = (gl_t*)data;
+   gl2_t                            *gl = (gl2_t*)data;
 
    if (gl && gl->ctx_driver->show_mouse)
       gl->ctx_driver->show_mouse(gl->ctx_data, state);
@@ -2414,7 +2414,7 @@ static void gl2_show_mouse(void *data, bool state)
 
 static struct video_shader *gl2_get_current_shader(void *data)
 {
-   gl_t                            *gl = (gl_t*)data;
+   gl2_t                            *gl = (gl2_t*)data;
 
    if (!gl)
       return NULL;
@@ -2423,7 +2423,7 @@ static struct video_shader *gl2_get_current_shader(void *data)
 }
 
 #if defined(HAVE_MENU)
-static INLINE void gl2_draw_texture(gl_t *gl)
+static INLINE void gl2_draw_texture(gl2_t *gl)
 {
    GLfloat color[16];
    unsigned width         = gl->video_width;
@@ -2479,7 +2479,7 @@ static INLINE void gl2_draw_texture(gl_t *gl)
 }
 #endif
 
-static void gl2_pbo_async_readback(gl_t *gl)
+static void gl2_pbo_async_readback(gl2_t *gl)
 {
 #ifdef HAVE_OPENGLES
    GLenum fmt  = GL_RGBA;
@@ -2510,7 +2510,7 @@ static float video_layout_layer_tex_coord[] = {
    1.0f, 0.0f,
 };
 
-static void gl2_video_layout_fbo_init(gl_t *gl, unsigned width, unsigned height)
+static void gl2_video_layout_fbo_init(gl2_t *gl, unsigned width, unsigned height)
 {
    glGenTextures(1, &gl->video_layout_fbo_texture);
    glBindTexture(GL_TEXTURE_2D, gl->video_layout_fbo_texture);
@@ -2531,7 +2531,7 @@ static void gl2_video_layout_fbo_init(gl_t *gl, unsigned width, unsigned height)
    gl2_bind_fb(0);
 }
 
-static void gl2_video_layout_fbo_free(gl_t *gl)
+static void gl2_video_layout_fbo_free(gl2_t *gl)
 {
    if (gl->video_layout_fbo)
    {
@@ -2546,7 +2546,7 @@ static void gl2_video_layout_fbo_free(gl_t *gl)
    }
 }
 
-static void gl2_video_layout_viewport(gl_t *gl)
+static void gl2_video_layout_viewport(gl2_t *gl)
 {
    if (!video_layout_valid())
       return;
@@ -2585,7 +2585,7 @@ static void gl2_video_layout_viewport(gl_t *gl)
    }
 }
 
-static void gl2_video_layout_render(gl_t *gl)
+static void gl2_video_layout_render(gl2_t *gl)
 {
    int i;
 
@@ -2601,7 +2601,7 @@ static void gl2_video_layout_render(gl_t *gl)
    glDisable(GL_BLEND);
 }
 
-static void gl2_video_layout_init(gl_t *gl)
+static void gl2_video_layout_init(gl2_t *gl)
 {
    uint32_t px;
 
@@ -2616,7 +2616,7 @@ static void gl2_video_layout_init(gl_t *gl)
       sizeof(uint32_t), 1, 1, &px, sizeof(uint32_t));
 }
 
-static void gl2_video_layout_free(gl_t *gl)
+static void gl2_video_layout_free(gl2_t *gl)
 {
    gl2_video_layout_fbo_free(gl);
 
@@ -2652,8 +2652,8 @@ static void gl2_video_layout_free_image(void *video_driver_data, void *image)
 
 static void gl2_video_layout_layer_begin(const video_layout_render_info_t *info)
 {
-   gl_t *gl;
-   gl = (gl_t*)info->video_driver_data;
+   gl2_t *gl;
+   gl = (gl2_t*)info->video_driver_data;
 
    gl2_bind_fb(gl->video_layout_fbo);
 
@@ -2674,7 +2674,7 @@ static void gl2_video_layout_image(
    int i;
    float coord[8];
    float color[16];
-   gl_t                *gl = (gl_t*)info->video_driver_data;
+   gl2_t                *gl = (gl2_t*)info->video_driver_data;
    video_layout_bounds_t b = info->bounds;
 
    b.x /= gl->video_width;
@@ -2724,8 +2724,8 @@ static void gl2_video_layout_counter(const video_layout_render_info_t *info, int
 
 static void gl2_video_layout_rect(const video_layout_render_info_t *info)
 {
-   gl_t *gl;
-   gl = (gl_t*)info->video_driver_data;
+   gl2_t *gl;
+   gl = (gl2_t*)info->video_driver_data;
 
    gl2_video_layout_image(info, (void*)(uintptr_t)gl->video_layout_white_texture, NULL);
 }
@@ -2752,8 +2752,8 @@ static void gl2_video_layout_led_seg(const video_layout_render_info_t *info, vid
 
 static void gl2_video_layout_layer_end(const video_layout_render_info_t *info, video_layout_blend_t blend_type)
 {
-   gl_t *gl;
-   gl = (gl_t*)info->video_driver_data;
+   gl2_t *gl;
+   gl = (gl2_t*)info->video_driver_data;
 
    switch (blend_type)
    {
@@ -2814,7 +2814,7 @@ static bool gl2_frame(void *data, const void *frame,
 {
    video_shader_ctx_params_t params;
    struct video_tex_info feedback_info;
-   gl_t                            *gl = (gl_t*)data;
+   gl2_t                            *gl = (gl2_t*)data;
    gl2_renderchain_data_t       *chain = (gl2_renderchain_data_t*)gl->renderchain_data;
    unsigned width                      = gl->video_width;
    unsigned height                     = gl->video_height;
@@ -3150,7 +3150,7 @@ static bool gl2_frame(void *data, const void *frame,
    return true;
 }
 
-static void gl2_destroy_resources(gl_t *gl)
+static void gl2_destroy_resources(gl2_t *gl)
 {
    if (gl)
    {
@@ -3164,7 +3164,7 @@ static void gl2_destroy_resources(gl_t *gl)
    gl_query_core_context_unset();
 }
 
-static void gl2_deinit_chain(gl_t *gl)
+static void gl2_deinit_chain(gl2_t *gl)
 {
    if (!gl)
       return;
@@ -3176,7 +3176,7 @@ static void gl2_deinit_chain(gl_t *gl)
 
 static void gl2_free(void *data)
 {
-   gl_t *gl = (gl_t*)data;
+   gl2_t *gl = (gl2_t*)data;
    if (!gl)
       return;
 
@@ -3247,7 +3247,7 @@ static void gl2_set_nonblock_state(
       unsigned swap_interval)
 {
    int interval                = 0;
-   gl_t             *gl        = (gl_t*)data;
+   gl2_t             *gl        = (gl2_t*)data;
 
    if (!gl)
       return;
@@ -3266,7 +3266,7 @@ static void gl2_set_nonblock_state(
    gl2_context_bind_hw_render(gl, true);
 }
 
-static bool gl2_resolve_extensions(gl_t *gl, const char *context_ident, const video_info_t *video)
+static bool gl2_resolve_extensions(gl2_t *gl, const char *context_ident, const video_info_t *video)
 {
    settings_t *settings          = config_get_ptr();
    bool video_hard_sync          = settings->bools.video_hard_sync;
@@ -3344,7 +3344,7 @@ static bool gl2_resolve_extensions(gl_t *gl, const char *context_ident, const vi
    return true;
 }
 
-static INLINE void gl2_set_texture_fmts(gl_t *gl, bool rgb32)
+static INLINE void gl2_set_texture_fmts(gl2_t *gl, bool rgb32)
 {
    gl->internal_fmt = RARCH_GL_INTERNAL_FORMAT16;
    gl->texture_type = RARCH_GL_TEXTURE_TYPE16;
@@ -3377,7 +3377,7 @@ static INLINE void gl2_set_texture_fmts(gl_t *gl, bool rgb32)
 #endif
 }
 
-static bool gl2_init_pbo_readback(gl_t *gl)
+static bool gl2_init_pbo_readback(gl2_t *gl)
 {
 #if !defined(HAVE_OPENGLES2) && !defined(HAVE_PSGL)
    unsigned i;
@@ -3423,7 +3423,7 @@ static bool gl2_init_pbo_readback(gl_t *gl)
 #endif
 }
 
-static const gfx_ctx_driver_t *gl2_get_context(gl_t *gl)
+static const gfx_ctx_driver_t *gl2_get_context(gl2_t *gl)
 {
    const gfx_ctx_driver_t *gfx_ctx      = NULL;
    void                      *ctx_data  = NULL;
@@ -3565,7 +3565,7 @@ static void DEBUG_CALLBACK_TYPE gl2_debug_cb(GLenum source, GLenum type,
    }
 }
 
-static void gl2_begin_debug(gl_t *gl)
+static void gl2_begin_debug(gl2_t *gl)
 {
    if (gl_check_capability(GL_CAPS_DEBUG))
    {
@@ -3617,7 +3617,7 @@ static void *gl2_init(const video_info_t *video,
    const char *version                  = NULL;
    struct retro_hw_render_callback *hwr = NULL;
    char *error_string                   = NULL;
-   gl_t *gl                             = (gl_t*)calloc(1, sizeof(gl_t));
+   gl2_t *gl                             = (gl2_t*)calloc(1, sizeof(gl2_t));
    const gfx_ctx_driver_t *ctx_driver   = gl2_get_context(gl);
 
    if (!gl || !ctx_driver)
@@ -3719,12 +3719,12 @@ static void *gl2_init(const video_info_t *video,
    }
 
 #ifdef _WIN32
-   if (string_is_equal(vendor, "Microsoft Corporation"))
+   if (   string_is_equal(vendor,   "Microsoft Corporation"))
       if (string_is_equal(renderer, "GDI Generic"))
 #ifdef HAVE_OPENGL1
-         retroarch_force_video_driver_fallback("gl1");
+         video_driver_force_fallback("gl1");
 #else
-         retroarch_force_video_driver_fallback("gdi");
+         video_driver_force_fallback("gdi");
 #endif
 #endif
 
@@ -3981,7 +3981,7 @@ static void *gl2_init(const video_info_t *video,
    return gl;
 
 error:
-   video_context_driver_destroy();
+   video_context_driver_free();
    gl2_destroy_resources(gl);
    return NULL;
 }
@@ -3991,7 +3991,7 @@ static bool gl2_alive(void *data)
    bool ret             = false;
    bool quit            = false;
    bool resize          = false;
-   gl_t         *gl     = (gl_t*)data;
+   gl2_t         *gl     = (gl2_t*)data;
    unsigned temp_width  = gl->video_width;
    unsigned temp_height = gl->video_height;
 
@@ -4018,14 +4018,14 @@ static bool gl2_alive(void *data)
 static bool gl2_suppress_screensaver(void *data, bool enable)
 {
    bool enabled = enable;
-   gl_t *gl     = (gl_t*)data;
+   gl2_t *gl     = (gl2_t*)data;
 
    if (gl->ctx_data && gl->ctx_driver->suppress_screensaver)
       return gl->ctx_driver->suppress_screensaver(gl->ctx_data, enabled);
    return false;
 }
 
-static void gl2_update_tex_filter_frame(gl_t *gl)
+static void gl2_update_tex_filter_frame(gl2_t *gl)
 {
    unsigned i, mip_level;
    GLenum wrap_mode;
@@ -4067,7 +4067,7 @@ static void gl2_update_tex_filter_frame(gl_t *gl)
       if (!gl->texture[i])
          continue;
 
-      GL_BIND_TEXTURE(gl->texture[i], gl->wrap_mode, gl->tex_mag_filter,
+      GL2_BIND_TEXTURE(gl->texture[i], gl->wrap_mode, gl->tex_mag_filter,
             gl->tex_min_filter);
    }
 
@@ -4082,7 +4082,7 @@ static bool gl2_set_shader(void *data,
    unsigned textures;
    video_shader_ctx_init_t init_data;
    enum rarch_shader_type fallback;
-   gl_t *gl = (gl_t*)data;
+   gl2_t *gl = (gl2_t*)data;
 
    if (!gl)
       return false;
@@ -4188,7 +4188,7 @@ error:
 static void gl2_viewport_info(void *data, struct video_viewport *vp)
 {
    unsigned top_y, top_dist;
-   gl_t *gl        = (gl_t*)data;
+   gl2_t *gl        = (gl2_t*)data;
    unsigned width  = gl->video_width;
    unsigned height = gl->video_height;
 
@@ -4204,7 +4204,7 @@ static void gl2_viewport_info(void *data, struct video_viewport *vp)
 
 static bool gl2_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
-   gl_t *gl             = (gl_t*)data;
+   gl2_t *gl             = (gl2_t*)data;
 
    if (!gl)
       return false;
@@ -4220,7 +4220,7 @@ static bool gl2_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 static void* gl2_read_frame_raw(void *data, unsigned *width_p,
 unsigned *height_p, size_t *pitch_p)
 {
-   gl_t *gl             = (gl_t*)data;
+   gl2_t *gl             = (gl2_t*)data;
    unsigned width       = gl->last_width[gl->tex_index];
    unsigned height      = gl->last_height[gl->tex_index];
    size_t pitch         = gl->tex_w * gl->base_size;
@@ -4272,7 +4272,7 @@ static bool gl2_overlay_load(void *data,
       const void *image_data, unsigned num_images)
 {
    unsigned i, j;
-   gl_t *gl = (gl_t*)data;
+   gl2_t *gl = (gl2_t*)data;
    const struct texture_image *images =
       (const struct texture_image*)image_data;
 
@@ -4331,7 +4331,7 @@ static bool gl2_overlay_load(void *data,
 
 static void gl2_overlay_enable(void *data, bool state)
 {
-   gl_t *gl = (gl_t*)data;
+   gl2_t *gl = (gl2_t*)data;
 
    if (!gl)
       return;
@@ -4344,7 +4344,7 @@ static void gl2_overlay_enable(void *data, bool state)
 
 static void gl2_overlay_full_screen(void *data, bool enable)
 {
-   gl_t *gl = (gl_t*)data;
+   gl2_t *gl = (gl2_t*)data;
 
    if (gl)
       gl->overlay_full_screen = enable;
@@ -4353,7 +4353,7 @@ static void gl2_overlay_full_screen(void *data, bool enable)
 static void gl2_overlay_set_alpha(void *data, unsigned image, float mod)
 {
    GLfloat *color;
-   gl_t *gl = (gl_t*)data;
+   gl2_t *gl = (gl2_t*)data;
 
    if (!gl)
       return;
@@ -4385,7 +4385,7 @@ static void gl2_get_overlay_interface(void *data,
 
 static retro_proc_address_t gl2_get_proc_address(void *data, const char *sym)
 {
-   gl_t *gl = (gl_t*)data;
+   gl2_t *gl = (gl2_t*)data;
 
    if (gl && gl->ctx_driver->get_proc_address)
       return gl->ctx_driver->get_proc_address(sym);
@@ -4395,7 +4395,7 @@ static retro_proc_address_t gl2_get_proc_address(void *data, const char *sym)
 
 static void gl2_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
-   gl_t *gl = (gl_t*)data;
+   gl2_t *gl = (gl2_t*)data;
 
    if (!gl)
       return;
@@ -4410,26 +4410,26 @@ static void gl2_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 
 static void gl2_apply_state_changes(void *data)
 {
-   gl_t *gl = (gl_t*)data;
+   gl2_t *gl = (gl2_t*)data;
 
    if (gl)
       gl->should_resize = true;
 }
 
 static void gl2_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
-   gl_t *gl         = (gl_t*)data;
+   gl2_t *gl         = (gl2_t*)data;
    if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_size)
       return;
    gl->ctx_driver->get_video_output_size(
          gl->ctx_data,
-         width, height);
+         width, height, desc, desc_len);
 }
 
 static void gl2_get_video_output_prev(void *data)
 {
-   gl_t *gl = (gl_t*)data;
+   gl2_t *gl = (gl2_t*)data;
    if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_prev)
       return;
    gl->ctx_driver->get_video_output_prev(gl->ctx_data);
@@ -4437,7 +4437,7 @@ static void gl2_get_video_output_prev(void *data)
 
 static void gl2_get_video_output_next(void *data)
 {
-   gl_t *gl = (gl_t*)data;
+   gl2_t *gl = (gl2_t*)data;
    if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_next)
       return;
    gl->ctx_driver->get_video_output_next(gl->ctx_data);
@@ -4503,7 +4503,7 @@ static uintptr_t gl2_load_texture(void *video_data, void *data,
 #ifdef HAVE_THREADS
    if (threaded)
    {
-      gl_t *gl                     = (gl_t*)video_data;
+      gl2_t *gl                     = (gl2_t*)video_data;
       custom_command_method_t func = video_texture_load_wrap_gl2;
 
       if (gl->ctx_driver->make_current)
@@ -4536,7 +4536,7 @@ static void gl2_unload_texture(void *data,
 #ifdef HAVE_THREADS
    if (threaded)
    {
-      gl_t *gl = (gl_t*)data;
+      gl2_t *gl = (gl2_t*)data;
       if (gl && gl->ctx_driver)
          if (gl->ctx_driver->make_current)
             gl->ctx_driver->make_current(false);
@@ -4612,7 +4612,7 @@ static bool gl2_gfx_widgets_enabled(void *data)
 
 static bool gl2_has_windowed(void *data)
 {
-   gl_t *gl        = (gl_t*)data;
+   gl2_t *gl        = (gl2_t*)data;
    if (gl && gl->ctx_driver)
       return gl->ctx_driver->has_windowed;
    return false;
@@ -4620,7 +4620,7 @@ static bool gl2_has_windowed(void *data)
 
 static bool gl2_focus(void *data)
 {
-   gl_t *gl        = (gl_t*)data;
+   gl2_t *gl        = (gl2_t*)data;
    if (gl && gl->ctx_driver && gl->ctx_driver->has_focus)
       return gl->ctx_driver->has_focus(gl->ctx_data);
    return true;

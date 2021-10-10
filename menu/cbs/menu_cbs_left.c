@@ -134,14 +134,13 @@ static int action_left_cheat(unsigned type, const char *label,
 static int action_left_input_desc(unsigned type, const char *label,
    bool wraparound)
 {
-   rarch_system_info_t *system           = runloop_get_system_info();
-   settings_t *settings                  = config_get_ptr();
    unsigned btn_idx;
    unsigned user_idx;
    unsigned remap_idx;
    unsigned bind_idx;
    unsigned mapped_port;
-
+   settings_t *settings                  = config_get_ptr();
+   rarch_system_info_t *system           = &runloop_state_get_ptr()->system;
    if (!settings || !system)
       return 0;
 
@@ -796,7 +795,7 @@ static int core_setting_left(unsigned type, const char *label,
 {
    unsigned idx     = type - MENU_SETTINGS_CORE_OPTION_START;
 
-   rarch_ctl(RARCH_CTL_CORE_OPTION_PREV, &idx);
+   retroarch_ctl(RARCH_CTL_CORE_OPTION_PREV, &idx);
 
    return 0;
 }
