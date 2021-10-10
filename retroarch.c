@@ -15207,11 +15207,12 @@ static void audio_driver_menu_sample(void)
    const struct retro_system_timing *info =
       (const struct retro_system_timing*)&av_info->timing;
    unsigned sample_count                  = (info->sample_rate / info->fps) * 2;
+   audio_driver_state_t *audio_st         = audio_state_get_ptr();
    bool check_flush                       = !(
-         runloop_state.paused               ||
-         !audio_state_get_ptr()->active     ||
-         !audio_state_get_ptr()->output_samples_buf);
-   if (audio_state_get_ptr()->suspended)
+             runloop_state.paused              
+         || !audio_st->active     
+         || !audio_st->output_samples_buf);
+   if (audio_st->suspended)
       check_flush                         = false;
 
    while (sample_count > 1024)
@@ -18435,10 +18436,11 @@ static void driver_adjust_system_rates(
 
    if (input_sample_rate > 0.0)
    {
+      audio_driver_state_t *audio_st      = audio_state_get_ptr();
       if (vrr_runloop_enable)
-         audio_state_get_ptr()->input = input_sample_rate;
+         audio_st->input = input_sample_rate;
       else
-         audio_state_get_ptr()->input =
+         audio_st->input =
             audio_driver_monitor_adjust_system_rates(
                   input_sample_rate,
                   input_fps,
@@ -18447,7 +18449,7 @@ static void driver_adjust_system_rates(
                   audio_max_timing_skew);
 
       RARCH_LOG("[Audio]: Set audio input rate to: %.2f Hz.\n",
-            audio_state_get_ptr()->input);
+            audio_st->input);
    }
 
    runloop_state.force_nonblock = false;
