@@ -733,7 +733,7 @@ static void wiiu_poll_adapters(wiiu_hid_t *hid)
          wiiu_poll_adapter(it);
 
       if (it->state == ADAPTER_STATE_DONE) {
-         RARCH_LOG("poll_adapters: read done, ready for garbage collection");
+         
          it->state = ADAPTER_STATE_GC;
       }
    }
