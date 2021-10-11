@@ -43,8 +43,6 @@
 
 RETRO_BEGIN_DECLS
 
-#define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
-
 #define RETRO_ENVIRONMENT_RETROARCH_START_BLOCK 0x800000
 
 #define RETRO_ENVIRONMENT_SET_SAVE_STATE_IN_BACKGROUND (2 | RETRO_ENVIRONMENT_RETROARCH_START_BLOCK)
@@ -85,14 +83,10 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void
 
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, void *data);
 
-bool retroarch_is_forced_fullscreen(void);
-
 void retroarch_set_current_core_type(
       enum rarch_core_type type, bool explicitly_set);
 
 const char* retroarch_get_shader_preset(void);
-
-bool retroarch_is_switching_display_mode(void);
 
 /**
  * retroarch_main_init:

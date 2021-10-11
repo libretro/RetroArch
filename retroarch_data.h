@@ -64,60 +64,6 @@
 #define DEFAULT_NETWORK_GAMEPAD_PORT 55400
 #define UDP_FRAME_PACKETS 16
 
-#ifdef HAVE_THREADS
-#define VIDEO_DRIVER_IS_THREADED_INTERNAL() ((!video_driver_is_hw_context() && p_rarch->video_driver_threaded) ? true : false)
-#else
-#define VIDEO_DRIVER_IS_THREADED_INTERNAL() (false)
-#endif
-
-#ifdef HAVE_THREADS
-#define VIDEO_DRIVER_LOCK() \
-   if (p_rarch->display_lock) \
-      slock_lock(p_rarch->display_lock)
-
-#define VIDEO_DRIVER_UNLOCK() \
-   if (p_rarch->display_lock) \
-      slock_unlock(p_rarch->display_lock)
-
-#define VIDEO_DRIVER_CONTEXT_LOCK() \
-   if (p_rarch->context_lock) \
-      slock_lock(p_rarch->context_lock)
-
-#define VIDEO_DRIVER_CONTEXT_UNLOCK() \
-   if (p_rarch->context_lock) \
-      slock_unlock(p_rarch->context_lock)
-
-#define VIDEO_DRIVER_LOCK_FREE() \
-   slock_free(p_rarch->display_lock); \
-   slock_free(p_rarch->context_lock); \
-   p_rarch->display_lock = NULL; \
-   p_rarch->context_lock = NULL
-
-#define VIDEO_DRIVER_THREADED_LOCK(is_threaded) \
-   if (is_threaded) \
-      VIDEO_DRIVER_LOCK()
-
-#define VIDEO_DRIVER_THREADED_UNLOCK(is_threaded) \
-   if (is_threaded) \
-      VIDEO_DRIVER_UNLOCK()
-#else
-#define VIDEO_DRIVER_LOCK()            ((void)0)
-#define VIDEO_DRIVER_UNLOCK()          ((void)0)
-#define VIDEO_DRIVER_LOCK_FREE()       ((void)0)
-#define VIDEO_DRIVER_THREADED_LOCK(is_threaded)   ((void)0)
-#define VIDEO_DRIVER_THREADED_UNLOCK(is_threaded) ((void)0)
-#define VIDEO_DRIVER_CONTEXT_LOCK()    ((void)0)
-#define VIDEO_DRIVER_CONTEXT_UNLOCK()  ((void)0)
-#endif
-
-#ifdef HAVE_THREADS
-#define VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch) ((VIDEO_DRIVER_IS_THREADED_INTERNAL()) ? video_thread_get_ptr(p_rarch) : p_rarch->video_driver_data)
-#else
-#define VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch) (p_rarch->video_driver_data)
-#endif
-
-#define VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(p_rarch) (&p_rarch->hw_render)
-
 #ifdef HAVE_BSV_MOVIE
 #define BSV_MOVIE_IS_EOF(p_rarch) || (input_st->bsv_movie_state.movie_end && \
 input_st->bsv_movie_state.eof_exit)
@@ -125,7 +71,7 @@ input_st->bsv_movie_state.eof_exit)
 #define BSV_MOVIE_IS_EOF(p_rarch)
 #endif
 
-#define VIDEO_HAS_FOCUS(p_rarch) (p_rarch->current_video->focus ? (p_rarch->current_video->focus(p_rarch->video_driver_data)) : true)
+#define VIDEO_HAS_FOCUS(video_st) (video_st->current_video->focus ? (video_st->current_video->focus(video_st->data)) : true)
 
 #if HAVE_DYNAMIC
 #define RUNAHEAD_RUN_SECONDARY(p_rarch) \
@@ -134,10 +80,10 @@ input_st->bsv_movie_state.eof_exit)
 #endif
 
 #define RUNAHEAD_RESUME_VIDEO(p_rarch) \
-   if (p_rarch->runahead_video_driver_is_active) \
-      p_rarch->video_driver_active = true; \
+   if (video_st->runahead_is_active) \
+      video_st->active = true; \
    else \
-      p_rarch->video_driver_active = false
+      video_st->active = false
 
 #define _PSUPP_BUF(buf, var, name, desc) \
    strlcat(buf, "  ", sizeof(buf)); \
@@ -305,21 +251,6 @@ input_st->bsv_movie_state.eof_exit)
 #endif
 
 /* DRIVERS */
-
-static const video_display_server_t dispserv_null = {
-   NULL, /* init */
-   NULL, /* destroy */
-   NULL, /* set_window_opacity */
-   NULL, /* set_window_progress */
-   NULL, /* set_window_decorations */
-   NULL, /* set_resolution */
-   NULL, /* get_resolution_list */
-   NULL, /* get_output_options */
-   NULL, /* set_screen_orientation */
-   NULL, /* get_screen_orientation */
-   NULL, /* get_flags */
-   "null"
-};
 
 #ifdef HAVE_VULKAN
 static const gfx_ctx_driver_t *gfx_ctx_vk_drivers[] = {
@@ -640,16 +571,10 @@ typedef struct discord_state discord_state_t;
 
 struct rarch_state
 {
-   struct retro_system_av_info video_driver_av_info; /* double alignment */
-#ifdef HAVE_CRTSWITCHRES
-   videocrt_switch_t crt_switch_st;                  /* double alignment */
-#endif
    retro_time_t frame_limit_minimum_time;
    retro_time_t frame_limit_last_time;
    retro_time_t libretro_core_runtime_last;
    retro_time_t libretro_core_runtime_usec;
-   retro_time_t video_driver_frame_time_samples[
-      MEASURE_FRAME_TIME_SAMPLES_COUNT];
    struct global              g_extern;         /* retro_time_t alignment */
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    rarch_timer_t shader_delay_timer;            /* int64_t alignment */
@@ -668,24 +593,16 @@ struct rarch_state
    uint64_t runahead_last_frame_count;
 #endif
 
-   uint64_t video_driver_frame_time_count;
-   uint64_t video_driver_frame_count;
    struct retro_camera_callback camera_cb;    /* uint64_t alignment */
 
    struct string_list *subsystem_fullpaths;
 
-   uint8_t *video_driver_record_gpu_buffer;
    bool    *load_no_content_hook;
 #if defined(HAVE_RUNAHEAD)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    char    *secondary_library_path;
 #endif
    retro_ctx_load_content_info_t *load_content_info;
-#endif
-
-#ifdef HAVE_THREADS
-   slock_t *display_lock;
-   slock_t *context_lock;
 #endif
 
    const camera_driver_t *camera_driver;
@@ -704,31 +621,6 @@ struct rarch_state
 
    const wifi_driver_t *wifi_driver;
    void *wifi_data;
-
-   void *current_display_server_data;
-
-#ifdef HAVE_VIDEO_FILTER
-   rarch_softfilter_t *video_driver_state_filter;
-   void               *video_driver_state_buffer;
-#endif
-
-   const void *frame_cache_data;
-
-   void *video_driver_data;
-   video_driver_t *current_video;
-
-   /* Interface for "poking". */
-   const video_poke_interface_t *video_driver_poke;
-
-   /* Used for 15-bit -> 16-bit conversions that take place before
-    * being passed to video driver. */
-   video_pixel_scaler_t *video_driver_scaler_ptr;
-
-   const struct
-      retro_hw_render_context_negotiation_interface *
-      hw_render_context_negotiation;
-
-   void *video_context_data;
 
 #ifdef HAVE_HID
    const void *hid_data;
@@ -758,12 +650,8 @@ struct rarch_state
       subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS]
       [SUBSYSTEM_MAX_SUBSYSTEM_ROMS];                    /* ptr alignment */
 
-   gfx_ctx_driver_t current_video_context;               /* ptr alignment */
    content_state_t            content_st;                /* ptr alignment */
-   struct retro_hw_render_callback hw_render;            /* ptr alignment */
    retro_input_state_t input_state_callback_original;    /* ptr alignment */
-   video_driver_frame_t frame_bak;                       /* ptr alignment */
-   struct rarch_dir_shader_list dir_shader_list;         /* ptr alignment */
 #ifdef HAVE_RUNAHEAD
    function_t retro_reset_callback_original;             /* ptr alignment */
    function_t original_retro_deinit;                     /* ptr alignment */
@@ -788,14 +676,6 @@ struct rarch_state
    dylib_t secondary_lib_handle;                         /* ptr alignment */
 #endif
 #endif
-
-   /* Opaque handles to currently running window.
-    * Used by e.g. input drivers which bind to a window.
-    * Drivers are responsible for setting these if an input driver
-    * could potentially make use of this. */
-   uintptr_t video_driver_display_userdata;
-   uintptr_t video_driver_display;
-   uintptr_t video_driver_window;
 
    size_t frame_cache_pitch;
 
@@ -833,14 +713,6 @@ struct rarch_state
 #endif
    unsigned fastforward_after_frames;
 
-#ifdef HAVE_VIDEO_FILTER
-   unsigned video_driver_state_scale;
-   unsigned video_driver_state_out_bpp;
-#endif
-   unsigned frame_cache_width;
-   unsigned frame_cache_height;
-   unsigned video_driver_width;
-   unsigned video_driver_height;
 #ifdef HAVE_NETWORKING
    unsigned server_port_deferred;
 #endif
@@ -848,42 +720,19 @@ struct rarch_state
    unsigned perf_ptr_rarch;
    unsigned perf_ptr_libretro;
 
-   float video_driver_core_hz;
-   float video_driver_aspect_ratio;
-   float video_refresh_rate_original;
-
    enum rarch_core_type current_core_type;
    enum rarch_core_type explicit_current_core_type;
-   enum rotation initial_screen_orientation;
-   enum rotation current_screen_orientation;
-   enum retro_pixel_format video_driver_pix_fmt;
 #if defined(HAVE_COMMAND)
    enum cmd_source_t lastcmd_source;
 #endif
 #if defined(HAVE_RUNAHEAD)
    enum rarch_core_type last_core_type;
 #endif
-   enum rarch_display_type video_driver_display_type;
    enum poll_type_override_t core_poll_type_override;
 
-   /**
-    * dynamic.c:dynamic_request_hw_context will try to set flag data when the context
-    * is in the middle of being rebuilt; in these cases we will save flag
-    * data and set this to true.
-    * When the context is reinit, it checks this, reads from
-    * deferred_flag_data and cleans it.
-    *
-    * TODO - Dirty hack, fix it better
-    */
-   gfx_ctx_flags_t deferred_flag_data;          /* uint32_t alignment */
    retro_bits_t has_set_libretro_device;        /* uint32_t alignment */
 
-   char cached_video_driver[32];
-   char video_driver_title_buf[64];
-   char video_driver_gpu_device_string[128];
-   char video_driver_gpu_api_version_string[128];
    char error_string[255];
-   char video_driver_window_title[512];
 #ifdef HAVE_NETWORKING
    char server_address_deferred[512];
 #endif
@@ -926,7 +775,6 @@ struct rarch_state
 #endif
    bool has_set_username;
    bool rarch_error_on_init;
-   bool rarch_force_fullscreen;
    bool has_set_core;
    bool has_set_verbosity;
    bool has_set_libretro;
@@ -943,7 +791,6 @@ struct rarch_state
 #endif
    bool has_set_log_to_file;
    bool rarch_is_inited;
-   bool rarch_is_switching_display_mode;
    bool rarch_is_sram_load_disabled;
    bool rarch_is_sram_save_disabled;
    bool rarch_use_sram;
@@ -953,48 +800,10 @@ struct rarch_state
 #ifdef HAVE_PATCH
    bool rarch_patch_blocked;
 #endif
-   bool video_driver_window_title_update;
 
-   /**
-    * dynamic.c:dynamic_request_hw_context will try to set
-    * flag data when the context
-    * is in the middle of being rebuilt; in these cases we will save flag
-    * data and set this to true.
-    * When the context is reinit, it checks this, reads from
-    * deferred_flag_data and cleans it.
-    *
-    * TODO - Dirty hack, fix it better
-    */
-   bool deferred_video_context_driver_set_flags;
    bool ignore_environment_cb;
    bool core_set_shared_context;
 
-   /* Graphics driver requires RGBA byte order data (ABGR on little-endian)
-    * for 32-bit.
-    * This takes effect for overlay and shader cores that wants to load
-    * data into graphics driver. Kinda hackish to place it here, it is only
-    * used for GLES.
-    * TODO: Refactor this better. */
-   bool video_driver_use_rgba;
-
-   /* Graphics driver supports HDR displays
-    * Currently only D3D11/D3D12 supports HDR displays and 
-    * whether we've enabled it */
-   bool video_driver_hdr_support;
-
-   /* If set during context deinit, the driver should keep
-    * graphics context alive to avoid having to reset all
-    * context state. */
-   bool video_driver_cache_context;
-
-   /* Set to true by driver if context caching succeeded. */
-   bool video_driver_cache_context_ack;
-
-#ifdef HAVE_GFX_WIDGETS
-   bool gfx_widgets_paused;
-   bool gfx_widgets_fast_forward;
-   bool gfx_widgets_rewinding;
-#endif
 #ifdef HAVE_ACCESSIBILITY
    /* Is text-to-speech accessibility turned on? */
    bool accessibility_enabled;
@@ -1009,15 +818,7 @@ struct rarch_state
    bool location_driver_active;
    bool bluetooth_driver_active;
    bool wifi_driver_active;
-   bool video_driver_active;
    bool camera_driver_active;
-#ifdef HAVE_VIDEO_FILTER
-   bool video_driver_state_out_rgb32;
-#endif
-   bool video_driver_crt_switching_active;
-   bool video_driver_threaded;
-
-   bool video_started_fullscreen;
 
 #ifdef HAVE_RUNAHEAD
    bool runahead_save_state_size_known;
@@ -1041,7 +842,6 @@ struct rarch_state
    bool shader_presets_need_reload;
 #endif
 #ifdef HAVE_RUNAHEAD
-   bool runahead_video_driver_is_active;
    bool runahead_available;
    bool runahead_secondary_core_available;
    bool runahead_force_input_dirty;

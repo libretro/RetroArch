@@ -73,11 +73,7 @@ static void ui_companion_driver_init_first(
       settings_t *settings,
       struct rarch_state *p_rarch);
 
-static void video_driver_gpu_record_deinit(struct rarch_state *p_rarch);
-static retro_proc_address_t video_driver_get_proc_address(const char *sym);
-static uintptr_t video_driver_get_current_framebuffer(void);
 static bool video_driver_find_driver(
-      struct rarch_state *p_rarch,
       settings_t *settings,
       const char *prefix, bool verbosity_enabled);
 
@@ -121,8 +117,7 @@ static bool retroarch_apply_shader(
       enum rarch_shader_type type, const char *preset_path,
       bool message);
 
-static void video_driver_restore_cached(struct rarch_state *p_rarch,
-      settings_t *settings);
+static void video_driver_restore_cached(settings_t *settings);
 
 static const void *find_driver_nonempty(
       const char *label, int i,
