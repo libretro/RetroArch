@@ -43,6 +43,7 @@
 #include "../../playlist.h"
 #include "../../manual_content_scan.h"
 
+#include "../../audio/audio_driver.h"
 #include "../../input/input_remapping.h"
 
 #include "../../config.def.h"

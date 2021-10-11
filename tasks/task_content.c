@@ -90,6 +90,7 @@
 #include "../playlist.h"
 #include "../paths.h"
 #include "../retroarch.h"
+#include "../runloop.h"
 #include "../verbosity.h"
 
 #include "../msg_hash.h"

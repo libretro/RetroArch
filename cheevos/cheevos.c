@@ -54,6 +54,7 @@
 #include "cheevos_locals.h"
 #include "cheevos_parser.h"
 
+#include "../audio/audio_driver.h"
 #include "../file_path_special.h"
 #include "../paths.h"
 #include "../command.h"

@@ -23,7 +23,7 @@
 
 #include <switch.h>
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 #include "../../verbosity.h"
 
 #define BUFFER_COUNT 5

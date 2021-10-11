@@ -40,6 +40,7 @@
 #include "../../file_path_special.h"
 #include "../../driver.h"
 #include "../../retroarch.h"
+#include "../../audio/audio_driver.h"
 #include "../../network/netplay/netplay.h"
 #include "../../playlist.h"
 #include "../../manual_content_scan.h"

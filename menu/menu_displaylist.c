@@ -76,6 +76,7 @@
 #include <media/media_detect_cd.h>
 #endif
 
+#include "../audio/audio_driver.h"
 #include "menu_cbs.h"
 #include "menu_driver.h"
 #include "menu_entries.h"

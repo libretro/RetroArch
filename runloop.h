@@ -35,7 +35,7 @@
 
 #include "core_option_manager.h"
 
-enum  runloop_state
+enum  runloop_state_enum
 {
    RUNLOOP_STATE_ITERATE = 0,
    RUNLOOP_STATE_POLLED_AND_SLEEP,

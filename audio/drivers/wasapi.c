@@ -22,7 +22,7 @@
 #include "../common/mmdevice_common.h"
 #include "../common/mmdevice_common_inline.h"
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 

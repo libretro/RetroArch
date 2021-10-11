@@ -61,20 +61,6 @@
 
 #define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
 
-#define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
-
-#define MENU_SOUND_FORMATS "ogg|mod|xm|s3m|mp3|flac|wav"
-
-/**
- * db_to_gain:
- * @db          : Decibels.
- *
- * Converts decibels to voltage gain.
- *
- * Returns: voltage gain value.
- **/
-#define DB_TO_GAIN(db) (powf(10.0f, (db) / 20.0f))
-
 #define DEFAULT_NETWORK_GAMEPAD_PORT 55400
 #define UDP_FRAME_PACKETS 16
 
@@ -319,114 +305,6 @@ input_st->bsv_movie_state.eof_exit)
 #endif
 
 /* DRIVERS */
-
-audio_driver_t audio_null = {
-   NULL, /* init */
-   NULL, /* write */
-   NULL, /* stop */
-   NULL, /* start */
-   NULL, /* alive */
-   NULL, /* set_nonblock_state */
-   NULL, /* free */
-   NULL, /* use_float */
-   "null",
-   NULL,
-   NULL,
-   NULL, /* write_avail */
-   NULL
-};
-
-static const audio_driver_t *audio_drivers[] = {
-#ifdef HAVE_ALSA
-   &audio_alsa,
-#if !defined(__QNX__) && defined(HAVE_THREADS)
-   &audio_alsathread,
-#endif
-#endif
-#ifdef HAVE_TINYALSA
-	&audio_tinyalsa,
-#endif
-#if defined(HAVE_AUDIOIO)
-   &audio_audioio,
-#endif
-#if defined(HAVE_OSS) || defined(HAVE_OSS_BSD)
-   &audio_oss,
-#endif
-#ifdef HAVE_RSOUND
-   &audio_rsound,
-#endif
-#ifdef HAVE_COREAUDIO
-   &audio_coreaudio,
-#endif
-#ifdef HAVE_COREAUDIO3
-   &audio_coreaudio3,
-#endif
-#ifdef HAVE_AL
-   &audio_openal,
-#endif
-#ifdef HAVE_SL
-   &audio_opensl,
-#endif
-#ifdef HAVE_ROAR
-   &audio_roar,
-#endif
-#ifdef HAVE_JACK
-   &audio_jack,
-#endif
-#if defined(HAVE_SDL) || defined(HAVE_SDL2)
-   &audio_sdl,
-#endif
-#ifdef HAVE_XAUDIO
-   &audio_xa,
-#endif
-#ifdef HAVE_DSOUND
-   &audio_dsound,
-#endif
-#ifdef HAVE_WASAPI
-   &audio_wasapi,
-#endif
-#ifdef HAVE_PULSE
-   &audio_pulse,
-#endif
-#if defined(__PSL1GHT__) || defined(__PS3__)
-   &audio_ps3,
-#endif
-#ifdef XENON
-   &audio_xenon360,
-#endif
-#ifdef GEKKO
-   &audio_gx,
-#endif
-#ifdef WIIU
-   &audio_ax,
-#endif
-#ifdef EMSCRIPTEN
-   &audio_rwebaudio,
-#endif
-#if defined(PSP) || defined(VITA) || defined(ORBIS)
-  &audio_psp,
-#endif
-#if defined(PS2)
-  &audio_ps2,
-#endif
-#ifdef _3DS
-   &audio_ctr_csnd,
-   &audio_ctr_dsp,
-#ifdef HAVE_THREADS
-   &audio_ctr_dsp_thread,
-#endif
-#endif
-#ifdef SWITCH
-   &audio_switch,
-   &audio_switch_thread,
-#ifdef HAVE_LIBNX
-   &audio_switch_libnx_audren,
-   &audio_switch_libnx_audren_thread,
-#endif
-#endif
-   &audio_null,
-   NULL,
-};
 
 static const video_display_server_t dispserv_null = {
    NULL, /* init */
@@ -762,8 +640,6 @@ typedef struct discord_state discord_state_t;
 
 struct rarch_state
 {
-   double audio_source_ratio_original;
-   double audio_source_ratio_current;
    struct retro_system_av_info video_driver_av_info; /* double alignment */
 #ifdef HAVE_CRTSWITCHRES
    videocrt_switch_t crt_switch_st;                  /* double alignment */
@@ -788,8 +664,6 @@ struct rarch_state
 #endif
 #endif
 
-   uint64_t audio_driver_free_samples_count;
-
 #ifdef HAVE_RUNAHEAD
    uint64_t runahead_last_frame_count;
 #endif
@@ -799,20 +673,15 @@ struct rarch_state
    struct retro_camera_callback camera_cb;    /* uint64_t alignment */
 
    struct string_list *subsystem_fullpaths;
-   struct string_list *audio_driver_devices_list;
 
    uint8_t *video_driver_record_gpu_buffer;
    bool    *load_no_content_hook;
-   float   *audio_driver_output_samples_buf;
 #if defined(HAVE_RUNAHEAD)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    char    *secondary_library_path;
 #endif
    retro_ctx_load_content_info_t *load_content_info;
 #endif
-
-   const record_driver_t *recording_driver;
-   void *recording_data;
 
 #ifdef HAVE_THREADS
    slock_t *display_lock;
@@ -861,20 +730,6 @@ struct rarch_state
 
    void *video_context_data;
 
-#ifdef HAVE_REWIND
-   int16_t *audio_driver_rewind_buf;
-#endif
-   int16_t *audio_driver_output_samples_conv_buf;
-
-#ifdef HAVE_DSP_FILTER
-   retro_dsp_filter_t *audio_driver_dsp;
-#endif
-   const retro_resampler_t *audio_driver_resampler;
-
-   void *audio_driver_resampler_data;
-   const audio_driver_t *current_audio;
-   void *audio_driver_context_audio_data;
-
 #ifdef HAVE_HID
    const void *hid_data;
 #endif
@@ -907,7 +762,6 @@ struct rarch_state
    content_state_t            content_st;                /* ptr alignment */
    struct retro_hw_render_callback hw_render;            /* ptr alignment */
    retro_input_state_t input_state_callback_original;    /* ptr alignment */
-   struct retro_audio_callback audio_callback;           /* ptr alignment */
    video_driver_frame_t frame_bak;                       /* ptr alignment */
    struct rarch_dir_shader_list dir_shader_list;         /* ptr alignment */
 #ifdef HAVE_RUNAHEAD
@@ -922,11 +776,6 @@ struct rarch_state
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    struct retro_callbacks secondary_callbacks;           /* ptr alignment */
 #endif
-#endif
-#ifdef HAVE_AUDIOMIXER
-   struct audio_mixer_stream
-      audio_mixer_streams[AUDIO_MIXER_MAX_SYSTEM_STREAMS];
-                                                         /* ptr alignment */
 #endif
 #ifdef HAVE_NETWORKING
    struct netplay_room netplay_host_room;                /* ptr alignment */
@@ -948,21 +797,7 @@ struct rarch_state
    uintptr_t video_driver_display;
    uintptr_t video_driver_window;
 
-   size_t recording_gpu_width;
-   size_t recording_gpu_height;
-
    size_t frame_cache_pitch;
-
-   size_t audio_driver_chunk_size;
-   size_t audio_driver_chunk_nonblock_size;
-   size_t audio_driver_chunk_block_size;
-
-#ifdef HAVE_REWIND
-   size_t audio_driver_rewind_ptr;
-   size_t audio_driver_rewind_size;
-#endif
-   size_t audio_driver_buffer_size;
-   size_t audio_driver_data_ptr;
 
 #ifdef HAVE_RUNAHEAD
    size_t runahead_save_state_size;
@@ -998,9 +833,6 @@ struct rarch_state
 #endif
    unsigned fastforward_after_frames;
 
-   unsigned recording_width;
-   unsigned recording_height;
-
 #ifdef HAVE_VIDEO_FILTER
    unsigned video_driver_state_scale;
    unsigned video_driver_state_out_bpp;
@@ -1013,23 +845,12 @@ struct rarch_state
    unsigned server_port_deferred;
 #endif
 
-   unsigned audio_driver_free_samples_buf[
-      AUDIO_BUFFER_FREE_SAMPLES_COUNT];
    unsigned perf_ptr_rarch;
    unsigned perf_ptr_libretro;
 
-   float *audio_driver_input_data;
    float video_driver_core_hz;
    float video_driver_aspect_ratio;
    float video_refresh_rate_original;
-
-#ifdef HAVE_AUDIOMIXER
-   float audio_driver_mixer_volume_gain;
-#endif
-
-   float audio_driver_rate_control_delta;
-   float audio_driver_input;
-   float audio_driver_volume_gain;
 
    enum rarch_core_type current_core_type;
    enum rarch_core_type explicit_current_core_type;
@@ -1044,7 +865,6 @@ struct rarch_state
 #endif
    enum rarch_display_type video_driver_display_type;
    enum poll_type_override_t core_poll_type_override;
-   enum resampler_quality audio_driver_resampler_quality;
 
    /**
     * dynamic.c:dynamic_request_hw_context will try to set flag data when the context
@@ -1090,7 +910,6 @@ struct rarch_state
    char current_savefile_dir[PATH_MAX_LENGTH];
    char current_savestate_dir[PATH_MAX_LENGTH];
    char dir_savestate[PATH_MAX_LENGTH];
-   char audio_driver_resampler_ident[64];
 
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active;
@@ -1191,7 +1010,6 @@ struct rarch_state
    bool bluetooth_driver_active;
    bool wifi_driver_active;
    bool video_driver_active;
-   bool audio_driver_active;
    bool camera_driver_active;
 #ifdef HAVE_VIDEO_FILTER
    bool video_driver_state_out_rgb32;
@@ -1201,16 +1019,9 @@ struct rarch_state
 
    bool video_started_fullscreen;
 
-   bool audio_driver_control;
-   bool audio_driver_mute_enable;
-   bool audio_driver_use_float;
-
-   bool audio_suspended;
-
 #ifdef HAVE_RUNAHEAD
    bool runahead_save_state_size_known;
    bool request_fast_savestate;
-   bool hard_disable_audio;
 
    bool input_is_dirty;
 #endif
@@ -1223,7 +1034,6 @@ struct rarch_state
    bool has_set_netplay_check_frames;
 #endif
 
-   bool recording_enable;
    bool streaming_enable;
    bool main_ui_companion_is_on_foreground;
 
@@ -1235,10 +1045,5 @@ struct rarch_state
    bool runahead_available;
    bool runahead_secondary_core_available;
    bool runahead_force_input_dirty;
-#endif
-
-#ifdef HAVE_AUDIOMIXER
-   bool audio_driver_mixer_mute_enable;
-   bool audio_mixer_active;
 #endif
 };
