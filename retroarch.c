@@ -11843,6 +11843,89 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_THROTTLE_STATE:
+      {
+         struct retro_throttle_state *throttle_state =
+               (struct retro_throttle_state *)data;
+
+         bool menu_opened = false;
+         bool core_paused = runloop_state.paused;
+         bool no_audio    = (p_rarch->audio_suspended || !p_rarch->audio_driver_active);
+         float core_fps   = (float)p_rarch->video_driver_av_info.timing.fps;
+
+#ifdef HAVE_REWIND
+         if (p_rarch->rewind_st.frame_is_reversed)
+         {
+            throttle_state->mode = RETRO_THROTTLE_REWINDING;
+            throttle_state->rate = 0.0f;
+            break; /* ignore vsync */
+         }
+#endif
+
+#ifdef HAVE_MENU
+         menu_opened = menu_state_get_ptr()->alive;
+         if (menu_opened)
+            core_paused = settings->bools.menu_pause_libretro;
+#endif
+
+         if (core_paused)
+         {
+            throttle_state->mode = RETRO_THROTTLE_FRAME_STEPPING;
+            throttle_state->rate = 0.0f;
+            break; /* ignore vsync */
+         }
+
+         /* Base mode and rate. */
+         throttle_state->mode = RETRO_THROTTLE_NONE;
+         throttle_state->rate = core_fps;
+
+         if (runloop_state.fastmotion)
+         {
+            throttle_state->mode = RETRO_THROTTLE_FAST_FORWARD;
+            throttle_state->rate *= retroarch_get_runloop_fastforward_ratio(
+                  settings, &runloop_state.fastmotion_override.current);
+         }
+         else if (runloop_state.slowmotion && !no_audio)
+         {
+            throttle_state->mode = RETRO_THROTTLE_SLOW_MOTION;
+            throttle_state->rate /= (settings->floats.slowmotion_ratio > 0.0f ?
+                  settings->floats.slowmotion_ratio : 1.0f);
+         }
+
+         /* VSync overrides the mode if the rate is limited by the display. */
+         if (menu_opened || /* Menu currently always runs with vsync on. */
+               (settings->bools.video_vsync && !runloop_state.force_nonblock
+                     && !input_state_get_ptr()->nonblocking_flag))
+         {
+            float refresh_rate = video_driver_get_refresh_rate();
+            if (refresh_rate == 0.0f)
+               refresh_rate = settings->floats.video_refresh_rate;
+            if (refresh_rate < throttle_state->rate || !throttle_state->rate)
+            {
+               /* Keep the mode as fast forward even if vsync limits it. */
+               if (refresh_rate < core_fps)
+                  throttle_state->mode = RETRO_THROTTLE_VSYNC;
+               throttle_state->rate = refresh_rate;
+            }
+         }
+
+         /* Special behavior while audio output is not available. */
+         if (no_audio && throttle_state->mode != RETRO_THROTTLE_FAST_FORWARD
+                      && throttle_state->mode != RETRO_THROTTLE_VSYNC)
+         {
+            /* Keep base if frame limiter matching the core is active. */
+            retro_time_t core_limit  = (core_fps ? 
+                  (retro_time_t)(1000000.0f / core_fps) : (retro_time_t)0);
+            retro_time_t frame_limit = p_rarch->frame_limit_minimum_time;
+            if (abs((int)(core_limit - frame_limit)) > 10)
+            {
+               throttle_state->mode = RETRO_THROTTLE_UNBLOCKED;
+               throttle_state->rate = 0.0f;
+            }
+         }
+         break;
+      }
+
       case RETRO_ENVIRONMENT_GET_INPUT_BITMASKS:
          /* Just falldown, the function will return true */
          break;
