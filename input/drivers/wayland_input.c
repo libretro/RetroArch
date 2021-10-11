@@ -176,7 +176,8 @@ static int16_t input_wl_state(
                   /*if (wl_mouse_button_pressed(udev, port, binds[port][i].mbutton))
                      ret |= (1 << i);
                   */
-                  return 0; /* TODO: support custom mouse-to-retropad binds */
+
+                  /* TODO: support custom mouse-to-retropad binds */
                }
             }
 
