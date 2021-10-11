@@ -11889,7 +11889,8 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
          else if (runloop_state.slowmotion && !no_audio)
          {
             throttle_state->mode = RETRO_THROTTLE_SLOW_MOTION;
-            throttle_state->rate /= settings->floats.slowmotion_ratio;
+            throttle_state->rate /= (settings->floats.slowmotion_ratio > 0.0f ?
+                  settings->floats.slowmotion_ratio : 1.0f);
          }
 
          /* VSync overrides the mode if the rate is limited by the display. */
@@ -11914,7 +11915,8 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
                       && throttle_state->mode != RETRO_THROTTLE_VSYNC)
          {
             /* Keep base if frame limiter matching the core is active. */
-            retro_time_t core_limit  = (retro_time_t)(1000000 / core_fps);
+            retro_time_t core_limit  = (core_fps ? 
+                  (retro_time_t)(1000000.0f / core_fps) : (retro_time_t)0);
             retro_time_t frame_limit = p_rarch->frame_limit_minimum_time;
             if (abs((int)(core_limit - frame_limit)) > 10)
             {
