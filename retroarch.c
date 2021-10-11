@@ -13458,7 +13458,7 @@ const char* config_get_record_driver_options(void)
 static void find_record_driver(const char *prefix,
       bool verbosity_enabled)
 {
-   settings_t *settings = config_get_ptr;
+   settings_t *settings = config_get_ptr();
    int i                = (int)driver_find_index(
          "record_driver",
          settings->arrays.record_driver);
