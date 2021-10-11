@@ -58,6 +58,7 @@ static void *kpad_init(void *data)
 
    for(int i = 0; i < WIIU_WIIMOTE_CHANNELS; i++) {
       joypad_state.kpad.channel_slot_map[i] = -1;
+      joypad_state.kpad.wiimotes[i].type = WIIMOTE_TYPE_NONE;
    }
 
    kpad_poll();
