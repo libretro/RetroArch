@@ -11847,10 +11847,12 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
       {
          struct retro_throttle_state *throttle_state =
                (struct retro_throttle_state *)data;
+         audio_driver_state_t *audio_st              =
+            audio_state_get_ptr();
 
          bool menu_opened = false;
          bool core_paused = runloop_state.paused;
-         bool no_audio    = (p_rarch->audio_suspended || !p_rarch->audio_driver_active);
+         bool no_audio    = (audio_st->suspended || !audio_st->active);
          float core_fps   = (float)p_rarch->video_driver_av_info.timing.fps;
 
 #ifdef HAVE_REWIND
