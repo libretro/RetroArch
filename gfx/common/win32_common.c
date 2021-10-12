@@ -1615,10 +1615,11 @@ bool win32_window_create(void *data, unsigned style,
    bool    window_save_positions = settings->bools.video_window_save_positions;
    unsigned    user_width        = width;
    unsigned    user_height       = height;
+   const char *new_label         = msg_hash_to_str(MSG_PROGRAM);
 #ifdef LEGACY_WIN32
-   char *title_local       = utf8_to_local_string_alloc(new_label2);
+   char *title_local             = utf8_to_local_string_alloc(new_label);
 #else
-   wchar_t *title_local    = utf8_to_utf16_string_alloc(msg_hash_to_str(MSG_PROGRAM));
+   wchar_t *title_local          = utf8_to_utf16_string_alloc(new_label);
 #endif
 
    if (window_save_positions && !fullscreen)
