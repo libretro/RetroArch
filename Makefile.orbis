@@ -158,7 +158,7 @@ PS4_LIBS += -luser_mem_sys -lkernel_stub  -lSceLibcInternal_stub  -lSceSysmodule
 ifeq ($(HAVE_STATIC_DUMMY),1)
   LIBS	:= $(PS4_LIBS)
 else
-  LIBS	:= $(WHOLE_START) -lretro_ps4 $(WHOLE_END) $(PS4_LIBS)
+  LIBS	:= $(WHOLE_START) -lretro_orbis $(WHOLE_END) $(PS4_LIBS)
 endif
 
 
