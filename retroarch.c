@@ -13974,110 +13974,6 @@ void recording_driver_update_streaming_url(void)
    }
 }
 
-/* INPUT OVERLAY */
-
-#ifdef HAVE_OVERLAY
-static bool video_driver_overlay_interface(
-      const video_overlay_interface_t **iface);
-
-/* task_data = overlay_task_data_t* */
-void input_overlay_loaded(retro_task_t *task,
-      void *task_data, void *user_data, const char *err)
-{
-   size_t i;
-   overlay_task_data_t              *data = (overlay_task_data_t*)task_data;
-   input_overlay_t                    *ol = NULL;
-   const video_overlay_interface_t *iface = NULL;
-   settings_t *settings                   = config_get_ptr();
-   bool input_overlay_show_mouse_cursor   = settings->bools.input_overlay_show_mouse_cursor;
-   bool inp_overlay_auto_rotate           = settings->bools.input_overlay_auto_rotate;
-   bool input_overlay_enable              = settings->bools.input_overlay_enable;
-   video_driver_state_t *video_st         = video_state_get_ptr();
-   input_driver_state_t *input_st         = input_state_get_ptr();
-   if (err)
-      return;
-
-   if (data->overlay_enable)
-   {
-#ifdef HAVE_MENU
-      /* We can't display when the menu is up */
-      if (data->hide_in_menu && menu_state_get_ptr()->alive)
-         goto abort_load;
-#endif
-
-      /* If 'hide_when_gamepad_connected' is enabled,
-       * we can't display when a gamepad is connected */
-      if (data->hide_when_gamepad_connected &&
-          (input_config_get_device_name(0) != NULL))
-         goto abort_load;
-   }
-
-   if (  !data->overlay_enable                   ||
-         !video_driver_overlay_interface(&iface) ||
-         !iface)
-   {
-      RARCH_ERR("Overlay interface is not present in video driver,"
-            " or not enabled.\n");
-      goto abort_load;
-   }
-
-   ol             = (input_overlay_t*)calloc(1, sizeof(*ol));
-   ol->overlays   = data->overlays;
-   ol->size       = data->size;
-   ol->active     = data->active;
-   ol->iface      = iface;
-   ol->iface_data = video_st->data;
-
-   input_overlay_load_active(input_st->overlay_visibility,
-         ol, data->overlay_opacity);
-
-   /* Enable or disable the overlay. */
-   ol->enable = data->overlay_enable;
-
-   if (ol->iface->enable)
-      ol->iface->enable(ol->iface_data, data->overlay_enable);
-
-   input_overlay_set_scale_factor(ol, &data->layout_desc,
-         video_st->width, video_st->height);
-
-   ol->next_index = (unsigned)((ol->index + 1) % ol->size);
-   ol->state      = OVERLAY_STATUS_NONE;
-   ol->alive      = true;
-
-   /* Due to the asynchronous nature of overlay loading
-    * it is possible for overlay_ptr to be non-NULL here
-    * > Ensure it is free()'d before assigning new pointer */
-   if (input_st->overlay_ptr)
-   {
-      input_overlay_free_overlays(input_st->overlay_ptr);
-      free(input_st->overlay_ptr);
-   }
-   input_st->overlay_ptr = ol;
-
-   free(data);
-
-   if (!input_overlay_show_mouse_cursor)
-      video_driver_hide_mouse();
-
-   /* Attempt to automatically rotate overlay, if required */
-   if (inp_overlay_auto_rotate)
-      input_overlay_auto_rotate_(
-            video_st->width,
-            video_st->height,
-            input_overlay_enable,
-            input_st->overlay_ptr);
-
-   return;
-
-abort_load:
-   for (i = 0; i < data->size; i++)
-      input_overlay_free_overlay(&data->overlays[i]);
-
-   free(data->overlays);
-   free(data);
-}
-#endif
-
 /* INPUT */
 
 /**
@@ -15781,17 +15677,6 @@ void video_driver_set_texture_frame(const void *frame, bool rgb32,
             frame, rgb32, width, height, alpha);
 }
 
-#ifdef HAVE_OVERLAY
-static bool video_driver_overlay_interface(
-      const video_overlay_interface_t **iface)
-{
-   video_driver_state_t *video_st = video_state_get_ptr();
-   if (!video_st->current_video || !video_st->current_video->overlay_interface)
-      return false;
-   video_st->current_video->overlay_interface(video_st->data, iface);
-   return true;
-}
-#endif
 
 #ifdef HAVE_VIDEO_LAYOUT
 const video_layout_render_interface_t *video_driver_layout_render_interface(void)
