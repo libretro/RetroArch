@@ -16,7 +16,7 @@ PC_DEVELOPMENT_UDP_PORT	   = 18194
 
 AUTH_INFO = 000000000000000000000000001C004000FF000000000080000000000000000000000000000000000000008000400040000000000000008000000000000000080040FFFF000000F000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
-OBJ += deps/xxHash/xxhash.c \
+OBJ += deps/xxHash/xxhash.o \
 # 	input/drivers/ps4_input.o \
 # 	input/drivers_joypad/ps4_joypad.o \
 # 	audio/drivers/psp_audio.o \
@@ -164,7 +164,7 @@ endif
 
 CFLAGS   := $(ARCHFLAGS) $(INCDIRS) $(DEFINES)
 CXXFLAGS := $(ARCHFLAGS) $(INCDIRS) $(DEFINES)
-LDFLAGS  := $(LIBDIRS) -Wl,--gc-sections -Wl,-z -Wl,max-page-size=0x4000 -Wl,--dynamic-linker="/libexec/ld-elf.so.1" -Wl,-pie -Wl,--eh-frame-hdr -target x86_64-scei-ps4-elf -T $(ORBISDEV)/linker.x
+LDFLAGS  := $(LIBDIRS) -Wl,--gc-sections -Wl,-z -Wl,max-page-size=0x4000 -Wl,--dynamic-linker="/libexec/ld-elf.so.1" -Wl,-pie -Wl,--eh-frame-hdr -target x86_64-scei-ps4-elf -T $(ORBISDEV)/usr/lib/linker.x
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -fno-inline
@@ -193,7 +193,7 @@ OBJOUT   = -o
 	$(CC) -c $(OBJOUT)$@ $<
 
 $(TARGET).elf: $(OBJ)
-	$(LD) $(ORBISDEV)/crt0.s $(OBJ)  $(LDFLAGS) $(LIBS) -o $(TARGET).elf
+	$(LD) $(ORBISDEV)/usr/lib/crt0.o $(OBJ) $(LDFLAGS) $(LIBS) -o $(TARGET).elf
 
 install:
 	@cp homebrew.self $(SELF_PATH_INSTALL)
