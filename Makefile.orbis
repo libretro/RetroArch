@@ -150,10 +150,10 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
   WHOLE_END := --no-whole-archive
 endif
 
-
-PS4_LIBS += -luser_mem_sys -lkernel_stub  -lSceLibcInternal_stub  -lSceSysmodule_stub -lSceSystemService_stub -lSceNet_stub \
-				-lSceUserService_stub -lScePigletv2VSH_stub -lSceVideoOut_stub -lSceGnmDriver_stub -lorbisGl2 -lorbis -lScePad_stub \
-				-lSceAudioOut_stub -lSceIme_stub -lSceNetCtl_stub 
+PS4_LIBS += -luser_mem_sys -lkernel_stub -lSceLibcInternal_stub -lunwind -lc++ -lc++abi -lc++experimental \
+				-lSceSysmodule_stub -lSceSystemService_stub -lSceNet_stub -lSceUserService_stub -lScePigletv2VSH_stub \
+				-lSceVideoOut_stub -lSceGnmDriver_stub -lorbisGl2 -lorbis -lScePad_stub -lSceAudioOut_stub \
+				-lSceIme_stub -lSceNetCtl_stub
 
 ifeq ($(HAVE_STATIC_DUMMY),1)
   LIBS	:= $(PS4_LIBS)
