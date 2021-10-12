@@ -19,6 +19,7 @@
 #define __WIFI_DRIVER__H
 
 #include <stdint.h>
+#include <time.h>
 
 #include <boolean.h>
 #include <retro_common_api.h>
