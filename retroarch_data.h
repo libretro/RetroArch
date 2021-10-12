@@ -677,8 +677,6 @@ struct rarch_state
 #endif
 #endif
 
-   size_t frame_cache_pitch;
-
 #ifdef HAVE_RUNAHEAD
    size_t runahead_save_state_size;
 #endif

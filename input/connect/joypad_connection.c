@@ -205,16 +205,18 @@ void pad_connection_pad_deregister(joypad_connection_t *joyconn,
 {
    int i; 
    int slot;
-   joypad_connection_t *pad;
 
-   if(!iface->multi_pad) {
+   if(!iface->multi_pad)
+   {
       legacy_pad_connection_pad_deregister(joyconn, iface, pad_data);
       return;
    }
 
-   for(i = 0; i < iface->max_pad; i++) {
+   for(i = 0; i < iface->max_pad; i++)
+   {
       slot = joypad_to_slot(joyconn, iface->joypad(pad_data, i));
-      if(slot >= 0) {
+      if(slot >= 0)
+      {
          input_autoconfigure_disconnect(slot, iface->get_name(joyconn[slot].connection));
          iface->pad_deinit(joyconn[slot].connection);
       }
@@ -245,7 +247,7 @@ void pad_connection_pad_refresh(joypad_connection_t *joyconn,
          case PAD_CONNECT_BOUND:
             RARCH_LOG("PAD_CONNECT_BOUND (0x%02x)\n", state);
             joypad = iface->joypad(device_data, i);
-            slot = joypad_to_slot(joyconn, joypad);
+            slot   = joypad_to_slot(joyconn, joypad);
             input_autoconfigure_disconnect(slot,
                   iface->get_name(joypad->connection));
 

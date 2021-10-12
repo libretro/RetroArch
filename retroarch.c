@@ -13985,7 +13985,6 @@ void input_overlay_loaded(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
    size_t i;
-   struct rarch_state            *p_rarch = &rarch_st;
    overlay_task_data_t              *data = (overlay_task_data_t*)task_data;
    input_overlay_t                    *ol = NULL;
    const video_overlay_interface_t *iface = NULL;
@@ -18004,8 +18003,6 @@ static void driver_adjust_system_rates(
  **/
 void driver_set_nonblock_state(void)
 {
-   struct rarch_state 
-      *p_rarch                 = &rarch_st;
    input_driver_state_t 
       *input_st                = input_state_get_ptr();
    audio_driver_state_t 
@@ -18450,7 +18447,6 @@ static void retroarch_deinit_drivers(
 
 bool driver_ctl(enum driver_ctl_state state, void *data)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    driver_ctx_info_t      *drv = (driver_ctx_info_t*)data;
 
    switch (state)
