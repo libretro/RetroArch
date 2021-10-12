@@ -16,8 +16,7 @@ PC_DEVELOPMENT_UDP_PORT	   = 18194
 
 AUTH_INFO = 000000000000000000000000001C004000FF000000000080000000000000000000000000000000000000008000400040000000000000008000000000000000080040FFFF000000F000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
-OBJ += memory/ps4/user_mem.o \
-   deps/xxHash/xxhash.c \
+OBJ += deps/xxHash/xxhash.c \
 # 	input/drivers/ps4_input.o \
 # 	input/drivers_joypad/ps4_joypad.o \
 # 	audio/drivers/psp_audio.o \
@@ -116,8 +115,8 @@ STRIP   := $(PREFIX)strip
 NM      := $(PREFIX)nm
 LD      := clang
 
-LIBDIRS += -L. -Lcores -Lmemory/ps4 -Lbuild -L$(ORBISDEV)/usr/lib
-INCDIRS += -I. -Idefines -Imemory/ps4 -Ideps -Ideps/7zip -Ideps/libz -Ilibretro-common/include -Ideps/stb \
+LIBDIRS += -L. -Lcores -Lbuild -L$(ORBISDEV)/usr/lib
+INCDIRS += -I. -Idefines -Ideps -Ideps/7zip -Ideps/libz -Ilibretro-common/include -Ideps/stb \
 					 -Ilibretro-common/include/compat/zlib -Ideps/rcheevos/include -I$(ORBISDEV)/usr/include -I$(ORBISDEV)/usr/include/c++/v1 -I$(ORBISDEV)/usr/include/orbis
 
 ARCHFLAGS += --target=x86_64-scei-ps4 -DORBIS -D__PS4__ -D_BSD_SOURCE
@@ -152,9 +151,9 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
 endif
 
 
-PS4_LIBS += -lkernel_stub  -lSceLibcInternal_stub  -lSceSysmodule_stub -lSceSystemService_stub -lSceNet_stub -lSceUserService_stub \
-				-lScePigletv2VSH_stub -lSceVideoOut_stub -lSceGnmDriver_stub -lorbisGl2 -lorbis -lScePad_stub -lSceAudioOut_stub \
-				-lSceIme_stub -lSceNetCtl_stub 
+PS4_LIBS += -luser_mem_sys -lkernel_stub  -lSceLibcInternal_stub  -lSceSysmodule_stub -lSceSystemService_stub -lSceNet_stub \
+				-lSceUserService_stub -lScePigletv2VSH_stub -lSceVideoOut_stub -lSceGnmDriver_stub -lorbisGl2 -lorbis -lScePad_stub \
+				-lSceAudioOut_stub -lSceIme_stub -lSceNetCtl_stub 
 
 ifeq ($(HAVE_STATIC_DUMMY),1)
   LIBS	:= $(PS4_LIBS)
