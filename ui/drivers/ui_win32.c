@@ -118,10 +118,11 @@ static void ui_window_win32_set_title(void *data, char *buf)
    ui_window_win32_t *window = (ui_window_win32_t*)data;
 #ifdef LEGACY_WIN32
    char         *title_local = utf8_to_local_string_alloc(buf);
+   SetWindowText(window->hwnd, title_local);
 #else
    wchar_t      *title_local = utf8_to_utf16_string_alloc(buf);
-#endif
    SetWindowTextW(window->hwnd, title_local);
+#endif
    free(title_local);
 }
 
