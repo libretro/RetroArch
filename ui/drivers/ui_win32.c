@@ -116,9 +116,14 @@ static void ui_window_win32_set_visible(void *data,
 static void ui_window_win32_set_title(void *data, char *buf)
 {
    ui_window_win32_t *window = (ui_window_win32_t*)data;
-   wchar_t *title_wide = utf8_to_utf16_string_alloc(buf);
-   SetWindowTextW(window->hwnd, title_wide);
-   free(title_wide);
+#ifdef LEGACY_WIN32
+   char *title_local = utf8_to_local_string_alloc(new_label2);
+   SetWindowText(window->hwnd, title_local);
+#else
+   wchar_t *title_local = utf8_to_utf16_string_alloc(buf);
+   SetWindowTextW(window->hwnd, title_local);
+#endif
+   free(title_local);
 }
 
 void ui_window_win32_set_droppable(void *data, bool droppable)
