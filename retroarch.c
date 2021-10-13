@@ -9151,6 +9151,7 @@ void emscripten_mainloop(void)
    int ret;
    static unsigned emscripten_frame_count = 0;
    struct rarch_state *p_rarch            = &rarch_st;
+   video_driver_state_t *video_st         = video_state_get_ptr();
    settings_t        *settings            = p_rarch->configuration_settings;
    input_driver_state_t *input_st         = input_state_get_ptr();
    bool black_frame_insertion             = settings->uints.video_black_frame_insertion;
