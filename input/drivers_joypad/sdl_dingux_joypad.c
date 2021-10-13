@@ -32,12 +32,21 @@
 #include "../../config.def.h"
 #endif
 
-#if defined(RS90) || defined(RETROFW) || defined(MIYOO)
-#define SDL_DINGUX_HAS_ANALOG      0
-#define SDL_DINGUX_HAS_MENU_TOGGLE 0
-#else
+/* RS-90 and RetroFW devices:
+ * - Analog input: No
+ * - Menu button:  No
+ * Miyoo devices:
+ * - Analog input: No
+ * - Menu button:  Yes
+ * All other OpenDingux devices:
+ * - Analog input: Yes
+ * - Menu button:  Yes
+ */
+#if !(defined(RS90) || defined(RETROFW))
+#if !defined(MIYOO)
 #define SDL_DINGUX_HAS_ANALOG      1
-#define SDL_DINGUX_HAS_MENU_TOGGLE 1  
+#endif
+#define SDL_DINGUX_HAS_MENU_TOGGLE 1
 #endif
 
 /* Simple joypad driver designed to rationalise
