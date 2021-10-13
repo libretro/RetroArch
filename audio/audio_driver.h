@@ -333,20 +333,6 @@ audio_driver_state_t *audio_state_get_ptr(void);
 extern audio_driver_t *audio_drivers[];
 
 /**
- * audio_driver_flush:
- * @data                 : pointer to audio buffer.
- * @right                : amount of samples to write.
- *
- * Writes audio samples to audio driver. Will first
- * perform DSP processing (if enabled) and resampling.
- **/
-void audio_driver_flush(
-      float slowmotion_ratio,
-      bool audio_fastforward_mute,
-      const int16_t *data, size_t samples,
-      bool is_slowmotion, bool is_fastmotion);
-
-/**
  * audio_compute_buffer_statistics:
  *
  * Computes audio buffer statistics.

@@ -368,14 +368,22 @@ bool audio_driver_find_driver(
    return true;
 }
 
-void audio_driver_flush(
+/**
+ * audio_driver_flush:
+ * @data                 : pointer to audio buffer.
+ * @right                : amount of samples to write.
+ *
+ * Writes audio samples to audio driver. Will first
+ * perform DSP processing (if enabled) and resampling.
+ **/
+static void audio_driver_flush(
+      audio_driver_state_t *audio_st,
       float slowmotion_ratio,
       bool audio_fastforward_mute,
       const int16_t *data, size_t samples,
       bool is_slowmotion, bool is_fastmotion)
 {
    struct resampler_data src_data;
-   audio_driver_state_t *audio_st    = &audio_driver_st;
    float audio_volume_gain           = (audio_st->mute_enable ||
          (audio_fastforward_mute && is_fastmotion))
                ? 0.0f 
@@ -784,7 +792,7 @@ void audio_driver_sample(int16_t left, int16_t right)
    if (!(    runloop_st->paused
 		   || !audio_st->active
 		   || !audio_st->output_samples_buf))
-      audio_driver_flush(
+      audio_driver_flush(audio_st,
             config_get_ptr()->floats.slowmotion_ratio,
             config_get_ptr()->bools.audio_fastforward_mute,
             audio_st->output_samples_conv_buf,
@@ -822,7 +830,7 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
              runloop_st->paused          
          || !audio_st->active
          || !audio_st->output_samples_buf))
-      audio_driver_flush(
+      audio_driver_flush(audio_st,
             config_get_ptr()->floats.slowmotion_ratio,
             config_get_ptr()->bools.audio_fastforward_mute,
             data,
@@ -1631,6 +1639,7 @@ bool audio_driver_stop(void)
 #ifdef HAVE_REWIND
 void audio_driver_frame_is_reverse(void)
 {
+   audio_driver_state_t *audio_st  = &audio_driver_st;
    recording_state_t *recording_st = recording_state_get_ptr();
    runloop_state_t *runloop_st     = runloop_state_get_ptr();
 
@@ -1641,10 +1650,10 @@ void audio_driver_frame_is_reverse(void)
    {
       struct record_audio_data ffemu_data;
 
-      ffemu_data.data                    = audio_driver_st.rewind_buf +
-         audio_driver_st.rewind_ptr;
-      ffemu_data.frames                  = (audio_driver_st.rewind_size -
-            audio_driver_st.rewind_ptr) / 2;
+      ffemu_data.data              = audio_st->rewind_buf +
+         audio_st->rewind_ptr;
+      ffemu_data.frames            = (audio_st->rewind_size -
+            audio_st->rewind_ptr) / 2;
 
       recording_st->driver->push_audio(
             recording_st->data,
@@ -1652,19 +1661,22 @@ void audio_driver_frame_is_reverse(void)
    }
 
    if (!(
-          runloop_st->paused          ||
-         !audio_driver_st.active        ||
-         !audio_driver_st.output_samples_buf))
-      if (!audio_driver_st.suspended)
-         audio_driver_flush(
-               config_get_ptr()->floats.slowmotion_ratio,
-               config_get_ptr()->bools.audio_fastforward_mute,
-               audio_driver_st.rewind_buf  +
-               audio_driver_st.rewind_ptr,
-               audio_driver_st.rewind_size -
-               audio_driver_st.rewind_ptr,
-               runloop_state_get_ptr()->slowmotion,
-               runloop_state_get_ptr()->fastmotion);
+             runloop_st->paused
+         || !audio_st->active
+         || !audio_st->output_samples_buf))
+      if (!audio_st->suspended)
+      {
+         settings_t *settings = config_get_ptr();
+         audio_driver_flush(audio_st,
+               settings->floats.slowmotion_ratio,
+               settings->bools.audio_fastforward_mute,
+               audio_st->rewind_buf  +
+               audio_st->rewind_ptr,
+               audio_st->rewind_size -
+               audio_st->rewind_ptr,
+               runloop_st->slowmotion,
+               runloop_st->fastmotion);
+      }
 }
 #endif
 
@@ -1787,3 +1799,70 @@ bool audio_compute_buffer_statistics(audio_statistics_t *stats)
 
    return true;
 }
+
+#ifdef HAVE_MENU
+void audio_driver_menu_sample(void)
+{
+   static int16_t samples_buf[1024]       = {0};
+   settings_t *settings                   = config_get_ptr();
+   video_driver_state_t *video_st         = video_state_get_ptr();
+   runloop_state_t *runloop_st            = runloop_state_get_ptr();
+   recording_state_t *recording_st        = recording_state_get_ptr();
+   struct retro_system_av_info *av_info   = &video_st->av_info;
+   const struct retro_system_timing *info =
+      (const struct retro_system_timing*)&av_info->timing;
+   unsigned sample_count                  = (info->sample_rate / info->fps) * 2;
+   audio_driver_state_t *audio_st         = audio_state_get_ptr();
+   bool check_flush                       = !(
+             runloop_st->paused              
+         || !audio_st->active     
+         || !audio_st->output_samples_buf);
+   if (audio_st->suspended)
+      check_flush                         = false;
+
+   while (sample_count > 1024)
+   {
+      if (  recording_st->data   &&
+            recording_st->driver &&
+            recording_st->driver->push_audio)
+      {
+         struct record_audio_data ffemu_data;
+
+         ffemu_data.data                    = samples_buf;
+         ffemu_data.frames                  = 1024 / 2;
+
+         recording_st->driver->push_audio(
+               recording_st->data, &ffemu_data);
+      }
+      if (check_flush)
+         audio_driver_flush(audio_st,
+               settings->floats.slowmotion_ratio,
+               settings->bools.audio_fastforward_mute,
+               samples_buf,
+               1024,
+               runloop_st->slowmotion,
+               runloop_st->fastmotion);
+      sample_count -= 1024;
+   }
+   if (  recording_st->data   &&
+         recording_st->driver &&
+         recording_st->driver->push_audio)
+   {
+      struct record_audio_data ffemu_data;
+
+      ffemu_data.data                    = samples_buf;
+      ffemu_data.frames                  = sample_count / 2;
+
+      recording_st->driver->push_audio(
+            recording_st->data, &ffemu_data);
+   }
+   if (check_flush)
+      audio_driver_flush(audio_st,
+            settings->floats.slowmotion_ratio,
+            settings->bools.audio_fastforward_mute,
+            samples_buf,
+            sample_count,
+            runloop_st->slowmotion,
+            runloop_st->fastmotion);
+}
+#endif
