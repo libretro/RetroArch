@@ -856,7 +856,9 @@ int generic_menu_entry_action(
       void *userdata, menu_entry_t *entry, size_t i, enum menu_action action)
 {
    int ret                        = 0;
+#ifdef HAVE_ACCESSIBILITY
    struct rarch_state *p_rarch    = &rarch_st;
+#endif
    struct menu_state *menu_st     = menu_state_get_ptr();
    const menu_ctx_driver_t
       *menu_driver_ctx            = menu_st->driver_ctx;
@@ -10070,8 +10072,10 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
 {
    unsigned p;
    struct rarch_state *p_rarch            = &rarch_st;
+   runloop_state_t *runloop_st            = runloop_state_get_ptr();
+
    settings_t         *settings           = p_rarch->configuration_settings;
-   rarch_system_info_t *system            = &runloop_state.system;
+   rarch_system_info_t *system            = &runloop_st->system;
    bool ignore_environment_cb             = p_rarch->ignore_environment_cb;
 
    if (ignore_environment_cb)
@@ -10083,8 +10087,8 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
     * (enormous) case statement */
    if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE)
    {
-      if (runloop_state.core_options)
-         *(bool*)data = runloop_state.core_options->updated;
+      if (runloop_st->core_options)
+         *(bool*)data = runloop_st->core_options->updated;
       else
          *(bool*)data = false;
 
@@ -10118,7 +10122,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
 
             var->value = NULL;
 
-            if (!runloop_state.core_options)
+            if (!runloop_st->core_options)
             {
                RARCH_LOG("[Environ]: GET_VARIABLE %s: not implemented.\n",
                      var->key);
@@ -10126,15 +10130,15 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
             }
 
 #ifdef HAVE_RUNAHEAD
-            if (runloop_state.core_options->updated)
-               runloop_state.has_variable_update = true;
+            if (runloop_st->core_options->updated)
+               runloop_st->has_variable_update = true;
 #endif
-            runloop_state.core_options->updated = false;
+            runloop_st->core_options->updated = false;
 
-            if (core_option_manager_get_idx(runloop_state.core_options,
+            if (core_option_manager_get_idx(runloop_st->core_options,
                   var->key, &opt_idx))
                var->value = core_option_manager_get_val(
-                     runloop_state.core_options, opt_idx);
+                     runloop_st->core_options, opt_idx);
 
             if (log_level == RETRO_LOG_DEBUG)
             {
@@ -10166,7 +10170,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
                 string_is_empty(var->value))
                return false;
 
-            if (!runloop_state.core_options)
+            if (!runloop_st->core_options)
             {
                RARCH_LOG("[Environ]: SET_VARIABLE %s: not implemented.\n",
                      var->key);
@@ -10174,7 +10178,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
             }
 
             /* Check whether key is valid */
-            if (!core_option_manager_get_idx(runloop_state.core_options,
+            if (!core_option_manager_get_idx(runloop_st->core_options,
                   var->key, &opt_idx))
             {
                RARCH_LOG("[Environ]: SET_VARIABLE %s: invalid key.\n",
@@ -10183,7 +10187,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
             }
 
             /* Check whether value is valid */
-            if (!core_option_manager_get_val_idx(runloop_state.core_options,
+            if (!core_option_manager_get_val_idx(runloop_st->core_options,
                   opt_idx, var->value, &val_idx))
             {
                RARCH_LOG("[Environ]: SET_VARIABLE %s: invalid value: %s\n",
@@ -10193,8 +10197,8 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
 
             /* Update option value if core-requested value
              * is not currently set */
-            if (val_idx != runloop_state.core_options->opts[opt_idx].index)
-               core_option_manager_set_val(runloop_state.core_options,
+            if (val_idx != runloop_st->core_options->opts[opt_idx].index)
+               core_option_manager_set_val(runloop_st->core_options,
                      opt_idx, val_idx, true);
 
             if (log_level == RETRO_LOG_DEBUG)
@@ -10210,20 +10214,20 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
 
          {
             core_option_manager_t *new_vars = NULL;
-            if (runloop_state.core_options)
+            if (runloop_st->core_options)
             {
                runloop_deinit_core_options(
-                     runloop_state.game_options_active,
+                     runloop_st->game_options_active,
                      path_get(RARCH_PATH_CORE_OPTIONS),
-                     runloop_state.core_options);
-               runloop_state.game_options_active   = false;
-               runloop_state.folder_options_active = false;
-               runloop_state.core_options          = NULL;
+                     runloop_st->core_options);
+               runloop_st->game_options_active   = false;
+               runloop_st->folder_options_active = false;
+               runloop_st->core_options          = NULL;
             }
             if ((new_vars = runloop_init_core_variables(
                   settings,
                   (const struct retro_variable *)data)))
-               runloop_state.core_options = new_vars;
+               runloop_st->core_options = new_vars;
          }
 
          break;
@@ -10238,15 +10242,15 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
                   core_option_manager_convert_v1(
                         (const struct retro_core_option_definition*)data);
 
-            if (runloop_state.core_options)
+            if (runloop_st->core_options)
             {
                runloop_deinit_core_options(
-                     runloop_state.game_options_active,
+                     runloop_st->game_options_active,
                      path_get(RARCH_PATH_CORE_OPTIONS),
-                     runloop_state.core_options);
-               runloop_state.game_options_active   = false;
-               runloop_state.folder_options_active = false;
-               runloop_state.core_options          = NULL;
+                     runloop_st->core_options);
+               runloop_st->game_options_active   = false;
+               runloop_st->folder_options_active = false;
+               runloop_st->core_options          = NULL;
             }
 
             if (options_v2)
@@ -10254,7 +10258,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
                /* Initialise core options */
                core_option_manager_t *new_vars = runloop_init_core_options(settings, options_v2);
                if (new_vars)
-                  runloop_state.core_options   = new_vars;
+                  runloop_st->core_options   = new_vars;
                /* Clean up */
                core_option_manager_free_converted(options_v2);
             }
@@ -10271,15 +10275,15 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
                   core_option_manager_convert_v1_intl(
                         (const struct retro_core_options_intl*)data);
 
-            if (runloop_state.core_options)
+            if (runloop_st->core_options)
             {
                runloop_deinit_core_options(
-                     runloop_state.game_options_active,
+                     runloop_st->game_options_active,
                      path_get(RARCH_PATH_CORE_OPTIONS),
-                     runloop_state.core_options);
-               runloop_state.game_options_active   = false;
-               runloop_state.folder_options_active = false;
-               runloop_state.core_options          = NULL;
+                     runloop_st->core_options);
+               runloop_st->game_options_active   = false;
+               runloop_st->folder_options_active = false;
+               runloop_st->core_options          = NULL;
             }
 
             if (options_v2)
@@ -10288,7 +10292,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
                core_option_manager_t *new_vars = runloop_init_core_options(settings, options_v2);
 
                if (new_vars)
-                  runloop_state.core_options = new_vars;
+                  runloop_st->core_options = new_vars;
 
                /* Clean up */
                core_option_manager_free_converted(options_v2);
@@ -10306,22 +10310,22 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
             bool categories_enabled                        =
                   settings->bools.core_option_category_enable;
 
-            if (runloop_state.core_options)
+            if (runloop_st->core_options)
             {
                runloop_deinit_core_options(
-                     runloop_state.game_options_active,
+                     runloop_st->game_options_active,
                      path_get(RARCH_PATH_CORE_OPTIONS),
-                     runloop_state.core_options);
-               runloop_state.game_options_active   = false;
-               runloop_state.folder_options_active = false;
-               runloop_state.core_options          = NULL;
+                     runloop_st->core_options);
+               runloop_st->game_options_active   = false;
+               runloop_st->folder_options_active = false;
+               runloop_st->core_options          = NULL;
             }
 
             if (options_v2)
             {
                new_vars = runloop_init_core_options(settings, options_v2);
                if (new_vars)
-                  runloop_state.core_options = new_vars;
+                  runloop_st->core_options = new_vars;
             }
 
             /* Return value does not indicate success.
@@ -10345,15 +10349,15 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
             bool categories_enabled                  =
                   settings->bools.core_option_category_enable;
 
-            if (runloop_state.core_options)
+            if (runloop_st->core_options)
             {
                runloop_deinit_core_options(
-                     runloop_state.game_options_active,
+                     runloop_st->game_options_active,
                      path_get(RARCH_PATH_CORE_OPTIONS),
-                     runloop_state.core_options);
-               runloop_state.game_options_active   = false;
-               runloop_state.folder_options_active = false;
-               runloop_state.core_options          = NULL;
+                     runloop_st->core_options);
+               runloop_st->game_options_active   = false;
+               runloop_st->folder_options_active = false;
+               runloop_st->core_options          = NULL;
             }
 
             if (options_v2)
@@ -10361,7 +10365,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
                /* Initialise core options */
                new_vars = runloop_init_core_options(settings, options_v2);
                if (new_vars)
-                  runloop_state.core_options = new_vars;
+                  runloop_st->core_options = new_vars;
 
                /* Clean up */
                core_option_manager_free_converted(options_v2);
@@ -10382,9 +10386,9 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
             const struct retro_core_option_display *core_options_display =
                   (const struct retro_core_option_display *)data;
 
-            if (runloop_state.core_options && core_options_display)
+            if (runloop_st->core_options && core_options_display)
                core_option_manager_set_visible(
-                     runloop_state.core_options,
+                     runloop_st->core_options,
                      core_options_display->key,
                      core_options_display->visible);
          }
@@ -10400,10 +10404,10 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
 
             if (update_display_callback &&
                 update_display_callback->callback)
-               runloop_state.core_options_callback.update_display =
+               runloop_st->core_options_callback.update_display =
                      update_display_callback->callback;
             else
-               runloop_state.core_options_callback.update_display = NULL;
+               runloop_st->core_options_callback.update_display = NULL;
          }
          break;
 
@@ -10462,8 +10466,6 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
          /* Display message via OSD, if required */
          if (msg->target != RETRO_MESSAGE_TARGET_LOG)
          {
-            runloop_state_t *runloop_st   = runloop_state_get_ptr();
-
             switch (msg->type)
             {
                /* Handle 'status' messages */
@@ -10594,16 +10596,16 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
           * - Disable any active config overrides
           * - Unload any active input remaps */
 #ifdef HAVE_CONFIGFILE
-         if (runloop_state.overrides_active)
+         if (runloop_st->overrides_active)
          {
             /* Reload the original config */
             config_unload_override();
-            runloop_state.overrides_active = false;
+            runloop_st->overrides_active = false;
          }
 #endif
-         if (     runloop_state.remaps_core_active
-               || runloop_state.remaps_content_dir_active
-               || runloop_state.remaps_game_active
+         if (     runloop_st->remaps_core_active
+               || runloop_st->remaps_content_dir_active
+               || runloop_st->remaps_game_active
             )
          {
             input_remapping_deinit();
@@ -10612,8 +10614,8 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
          else
             input_remapping_restore_global_config(true);
 
-         runloop_state.shutdown_initiated      = true;
-         runloop_state.core_shutdown_initiated = true;
+         runloop_st->shutdown_initiated      = true;
+         runloop_st->core_shutdown_initiated = true;
          break;
 
       case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
@@ -10823,8 +10825,8 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
             *input_st                               = input_state_get_ptr();
          const struct retro_keyboard_callback *info =
             (const struct retro_keyboard_callback*)data;
-         retro_keyboard_event_t *frontend_key_event = &runloop_state.frontend_key_event;
-         retro_keyboard_event_t *key_event          = &runloop_state.key_event;
+         retro_keyboard_event_t *frontend_key_event = &runloop_st->frontend_key_event;
+         retro_keyboard_event_t *key_event          = &runloop_st->key_event;
 
          RARCH_LOG("[Environ]: SET_KEYBOARD_CALLBACK.\n");
          if (key_event)
@@ -11039,7 +11041,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
          if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
             return false;
 #endif
-         runloop_state.frame_time = *info;
+         runloop_st->frame_time = *info;
          break;
       }
 
@@ -11051,9 +11053,9 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("[Environ]: SET_AUDIO_BUFFER_STATUS_CALLBACK.\n");
 
          if (info)
-            runloop_state.audio_buffer_status.callback = info->callback;
+            runloop_st->audio_buffer_status.callback = info->callback;
          else
-            runloop_state.audio_buffer_status.callback = NULL;
+            runloop_st->audio_buffer_status.callback = NULL;
 
          break;
       }
@@ -11062,32 +11064,32 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
       {
          unsigned audio_latency_default = settings->uints.audio_latency;
          unsigned audio_latency_current =
-               (runloop_state.audio_latency > audio_latency_default) ?
-                     runloop_state.audio_latency : audio_latency_default;
+               (runloop_st->audio_latency > audio_latency_default) ?
+                     runloop_st->audio_latency : audio_latency_default;
          unsigned audio_latency_new;
 
          RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY.\n");
 
          /* Sanitise input latency value */
-         runloop_state.audio_latency    = 0;
+         runloop_st->audio_latency    = 0;
          if (data)
-            runloop_state.audio_latency = *(const unsigned*)data;
-         if (runloop_state.audio_latency > 512)
+            runloop_st->audio_latency = *(const unsigned*)data;
+         if (runloop_st->audio_latency > 512)
          {
             RARCH_WARN("[Environ]: Requested audio latency of %u ms - limiting to maximum of 512 ms.\n",
-                  runloop_state.audio_latency);
-            runloop_state.audio_latency = 512;
+                  runloop_st->audio_latency);
+            runloop_st->audio_latency = 512;
          }
 
          /* Determine new set-point latency value */
-         if (runloop_state.audio_latency >= audio_latency_default)
-            audio_latency_new = runloop_state.audio_latency;
+         if (runloop_st->audio_latency >= audio_latency_default)
+            audio_latency_new = runloop_st->audio_latency;
          else
          {
-            if (runloop_state.audio_latency != 0)
+            if (runloop_st->audio_latency != 0)
                RARCH_WARN("[Environ]: Requested audio latency of %u ms is less than frontend default of %u ms."
                      " Using frontend default...\n",
-                     runloop_state.audio_latency, audio_latency_default);
+                     runloop_st->audio_latency, audio_latency_default);
 
             audio_latency_new = audio_latency_default;
          }
@@ -11737,7 +11739,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_GET_FASTFORWARDING:
-         *(bool *)data = runloop_state.fastmotion;
+         *(bool *)data = runloop_st->fastmotion;
          break;
 
       case RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE:
@@ -11750,10 +11752,10 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
           * runloop_check_state() */
          if (fastforwarding_override)
          {
-            memcpy(&runloop_state.fastmotion_override.next,
+            memcpy(&runloop_st->fastmotion_override.next,
                   fastforwarding_override,
-                  sizeof(runloop_state.fastmotion_override.next));
-            runloop_state.fastmotion_override.pending = true;
+                  sizeof(runloop_st->fastmotion_override.next));
+            runloop_st->fastmotion_override.pending = true;
          }
          break;
       }
@@ -11769,7 +11771,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
             audio_state_get_ptr();
 
          bool menu_opened = false;
-         bool core_paused = runloop_state.paused;
+         bool core_paused = runloop_st->paused;
          bool no_audio    = (audio_st->suspended || !audio_st->active);
          float core_fps   = (float)video_st->av_info.timing.fps;
 
@@ -11799,13 +11801,13 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
          throttle_state->mode = RETRO_THROTTLE_NONE;
          throttle_state->rate = core_fps;
 
-         if (runloop_state.fastmotion)
+         if (runloop_st->fastmotion)
          {
             throttle_state->mode  = RETRO_THROTTLE_FAST_FORWARD;
             throttle_state->rate *= runloop_get_fastforward_ratio(
-                  settings, &runloop_state.fastmotion_override.current);
+                  settings, &runloop_st->fastmotion_override.current);
          }
-         else if (runloop_state.slowmotion && !no_audio)
+         else if (runloop_st->slowmotion && !no_audio)
          {
             throttle_state->mode = RETRO_THROTTLE_SLOW_MOTION;
             throttle_state->rate /= (settings->floats.slowmotion_ratio > 0.0f ?
@@ -11814,7 +11816,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
 
          /* VSync overrides the mode if the rate is limited by the display. */
          if (menu_opened || /* Menu currently always runs with vsync on. */
-               (settings->bools.video_vsync && !runloop_state.force_nonblock
+               (settings->bools.video_vsync && !runloop_st->force_nonblock
                      && !input_state_get_ptr()->nonblocking_flag))
          {
             float refresh_rate = video_driver_get_refresh_rate();
