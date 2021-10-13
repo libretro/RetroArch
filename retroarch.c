@@ -9150,9 +9150,8 @@ void emscripten_mainloop(void)
 {
    int ret;
    static unsigned emscripten_frame_count = 0;
-   struct rarch_state *p_rarch            = &rarch_st;
    video_driver_state_t *video_st         = video_state_get_ptr();
-   settings_t        *settings            = p_rarch->configuration_settings;
+   settings_t        *settings            = config_get_ptr();
    input_driver_state_t *input_st         = input_state_get_ptr();
    bool black_frame_insertion             = settings->uints.video_black_frame_insertion;
    bool input_driver_nonblock_state       = input_st ? input_st->nonblocking_flag : false;
