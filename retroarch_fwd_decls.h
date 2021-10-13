@@ -36,9 +36,6 @@ static void deinit_netplay(struct rarch_state *p_rarch);
 static void retroarch_deinit_drivers(struct rarch_state *p_rarch,
       struct retro_callbacks *cbs);
 
-static core_option_manager_t *retroarch_init_core_variables(
-      settings_t *settings,
-      const struct retro_variable *vars);
 #ifdef HAVE_RUNAHEAD
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 static bool secondary_core_create(struct rarch_state *p_rarch,

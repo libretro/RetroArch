@@ -4409,7 +4409,7 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 
 /* MESSAGE QUEUE */
 
-static void retroarch_msg_queue_deinit(void)
+static void runloop_msg_queue_deinit(void)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
@@ -4425,13 +4425,15 @@ static void retroarch_msg_queue_deinit(void)
    runloop_st->msg_queue_size = 0;
 }
 
-static void retroarch_msg_queue_init(void)
+static void runloop_msg_queue_init(void)
 {
-   retroarch_msg_queue_deinit();
-   msg_queue_initialize(&runloop_state.msg_queue, 8);
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+
+   runloop_msg_queue_deinit();
+   msg_queue_initialize(&runloop_st->msg_queue, 8);
 
 #ifdef HAVE_THREADS
-   runloop_state.msg_queue_lock   = slock_new();
+   runloop_st->msg_queue_lock   = slock_new();
 #endif
 }
 
@@ -4693,7 +4695,7 @@ bool command_set_shader(command_t *cmd, const char *arg)
 {
    enum  rarch_shader_type type = video_shader_parse_type(arg);
    struct rarch_state  *p_rarch = &rarch_st;
-   settings_t  *settings        = p_rarch->configuration_settings;
+   settings_t  *settings        = config_get_ptr();
 
    if (!string_is_empty(arg))
    {
@@ -4725,7 +4727,7 @@ static void task_auto_translate_handler(retro_task_t *task)
    int               *mode_ptr = (int*)task->user_data;
    struct rarch_state *p_rarch = &rarch_st;
 #ifdef HAVE_ACCESSIBILITY
-   settings_t *settings        = p_rarch->configuration_settings;
+   settings_t *settings        = config_get_ptr();
 #endif
 
    if (task_get_cancelled(task))
@@ -4741,7 +4743,8 @@ static void task_auto_translate_handler(retro_task_t *task)
          break;
       case 2: /* Narrator Mode */
 #ifdef HAVE_ACCESSIBILITY
-         if (!is_narrator_running(p_rarch, settings->bools.accessibility_enable))
+         if (!is_narrator_running(p_rarch,
+                  settings->bools.accessibility_enable))
             goto task_finished;
 #endif
          break;
@@ -4825,7 +4828,7 @@ static void handle_translation_cb(
    char* auto_string                 = NULL;
    char* key_string                  = NULL;
    struct rarch_state *p_rarch       = &rarch_st;
-   settings_t* settings              = p_rarch->configuration_settings;
+   settings_t* settings              = config_get_ptr();
    bool was_paused                   = runloop_state.paused;
    video_driver_state_t 
       *video_st                      = video_state_get_ptr();
@@ -6163,7 +6166,7 @@ static void command_event_runtime_log_init(struct rarch_state *p_rarch)
             sizeof(p_rarch->runtime_core_path));
 }
 
-static INLINE float retroarch_set_frame_limit(
+static INLINE float runloop_set_frame_limit(
       const struct retro_system_av_info *av_info,
       float fastforward_ratio)
 {
@@ -6173,7 +6176,7 @@ static INLINE float retroarch_set_frame_limit(
          (av_info->timing.fps * fastforward_ratio));
 }
 
-static INLINE float retroarch_get_runloop_fastforward_ratio(
+static INLINE float runloop_get_fastforward_ratio(
       settings_t *settings,
       struct retro_fastforwarding_override *fastmotion_override)
 {
@@ -6246,7 +6249,7 @@ static bool command_event_init_core(
 #endif
    show_set_initial_disk_msg = settings->bools.notification_show_set_initial_disk;
    poll_type_behavior        = settings->uints.input_poll_type_behavior;
-   fastforward_ratio         = retroarch_get_runloop_fastforward_ratio(
+   fastforward_ratio         = runloop_get_fastforward_ratio(
          settings, &runloop_state.fastmotion_override.current);
 
 #ifdef HAVE_CHEEVOS
@@ -6308,7 +6311,7 @@ static bool command_event_init_core(
       return false;
 
    runloop_st->frame_limit_minimum_time = 
-     retroarch_set_frame_limit(&video_st->av_info,
+     runloop_set_frame_limit(&video_st->av_info,
            fastforward_ratio);
    runloop_st->frame_limit_last_time    = cpu_features_get_time_usec();
 
@@ -6871,9 +6874,7 @@ static void runloop_audio_buffer_status_free(void)
    runloop_st->audio_latency = 0;
 }
 
-static void retroarch_fastmotion_override_free(
-      struct rarch_state *p_rarch,
-      runloop_state_t *runloop_st)
+static void runloop_fastmotion_override_free(runloop_state_t *runloop_st)
 {
    video_driver_state_t 
       *video_st            = video_state_get_ptr();
@@ -6897,8 +6898,7 @@ static void retroarch_fastmotion_override_free(
 
    if (reset_frame_limit)
       runloop_st->frame_limit_minimum_time                = 
-         retroarch_set_frame_limit(
-            &video_st->av_info, fastforward_ratio);
+         runloop_set_frame_limit(&video_st->av_info, fastforward_ratio);
 }
 
 static void runloop_core_options_cb_free(runloop_state_t *runloop_st)
@@ -6907,9 +6907,9 @@ static void runloop_core_options_cb_free(runloop_state_t *runloop_st)
    runloop_st->core_options_callback.update_display = NULL;
 }
 
-static void retroarch_system_info_free(runloop_state_t *runloop_st)
+static void runloop_system_info_free(runloop_state_t *runloop_st)
 {
-   rarch_system_info_t *sys_info                      = &runloop_st->system;
+   rarch_system_info_t *sys_info = &runloop_st->system;
 
    if (sys_info->subsystem.data)
       free(sys_info->subsystem.data);
@@ -7431,7 +7431,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 #ifdef HAVE_DYNAMIC
             path_clear(RARCH_PATH_CORE);
-            retroarch_system_info_free(&runloop_state);
+            runloop_system_info_free(&runloop_state);
 #endif
             {
                audio_driver_state_t 
@@ -8710,8 +8710,8 @@ bool command_event(enum event_command cmd, void *data)
                *video_st                        = video_state_get_ptr();
             runloop_state_t *runloop_st         = runloop_state_get_ptr();
             runloop_st->frame_limit_minimum_time= 
-               retroarch_set_frame_limit(&video_st->av_info,
-                     retroarch_get_runloop_fastforward_ratio(
+               runloop_set_frame_limit(&video_st->av_info,
+                     runloop_get_fastforward_ratio(
                         settings,
                         &runloop_state.fastmotion_override.current));
          }
@@ -9099,7 +9099,7 @@ void main_exit(void *args)
    p_rarch->rarch_block_config_read = false;
 #endif
 
-   retroarch_msg_queue_deinit();
+   runloop_msg_queue_deinit();
    driver_uninit(p_rarch, DRIVERS_CMD_ALL);
 
    retro_main_log_file_deinit();
@@ -9201,7 +9201,7 @@ int rarch_main(int argc, char *argv[], void *data)
          input_config_set_device(i, RETRO_DEVICE_JOYPAD);
    }
 
-   retroarch_msg_queue_init();
+   runloop_msg_queue_init();
 
    if (p_rarch->current_frontend_ctx)
    {
@@ -10151,6 +10151,27 @@ static core_option_manager_t *runloop_init_core_options(
    return NULL;
 }
 
+static core_option_manager_t *runloop_init_core_variables(
+      settings_t *settings, const struct retro_variable *vars)
+{
+   char options_path[PATH_MAX_LENGTH];
+   char src_options_path[PATH_MAX_LENGTH];
+
+   /* Ensure these are NULL-terminated */
+   options_path[0]     = '\0';
+   src_options_path[0] = '\0';
+
+   /* Get core options file path */
+   runloop_init_core_options_path(
+         settings,
+         options_path, sizeof(options_path),
+         src_options_path, sizeof(src_options_path));
+
+   if (!string_is_empty(options_path))
+      return core_option_manager_new_vars(options_path, src_options_path, vars);
+   return NULL;
+}
+
 
 /**
  * retroarch_environment_cb:
@@ -10316,7 +10337,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
                runloop_state.folder_options_active = false;
                runloop_state.core_options          = NULL;
             }
-            if ((new_vars = retroarch_init_core_variables(
+            if ((new_vars = runloop_init_core_variables(
                   settings,
                   (const struct retro_variable *)data)))
                runloop_state.core_options = new_vars;
@@ -11897,8 +11918,8 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
 
          if (runloop_state.fastmotion)
          {
-            throttle_state->mode = RETRO_THROTTLE_FAST_FORWARD;
-            throttle_state->rate *= retroarch_get_runloop_fastforward_ratio(
+            throttle_state->mode  = RETRO_THROTTLE_FAST_FORWARD;
+            throttle_state->rate *= runloop_get_fastforward_ratio(
                   settings, &runloop_state.fastmotion_override.current);
          }
          else if (runloop_state.slowmotion && !no_audio)
@@ -12445,13 +12466,13 @@ static void uninit_libretro_symbols(
       runloop_state.folder_options_active        = false;
       runloop_state.core_options                 = NULL;
    }
-   retroarch_system_info_free(&runloop_state);
+   runloop_system_info_free(&runloop_state);
    audio_st->callback.callback                   = NULL;
    audio_st->callback.set_state                  = NULL;
    runloop_frame_time_free();
    runloop_audio_buffer_status_free();
    input_game_focus_free();
-   retroarch_fastmotion_override_free(p_rarch, &runloop_state);
+   runloop_fastmotion_override_free(&runloop_state);
    runloop_core_options_cb_free(&runloop_state);
    p_rarch->camera_driver_active      = false;
    p_rarch->location_driver_active    = false;
@@ -19151,7 +19172,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
             runloop_frame_time_free();
             runloop_audio_buffer_status_free();
             input_game_focus_free();
-            retroarch_fastmotion_override_free(p_rarch, &runloop_state);
+            runloop_fastmotion_override_free(&runloop_state);
             runloop_core_options_cb_free(&runloop_state);
             memset(&input_st->analog_requested, 0,
                   sizeof(input_st->analog_requested));
@@ -19214,28 +19235,6 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
    }
 
    return true;
-}
-
-static core_option_manager_t *retroarch_init_core_variables(
-      settings_t *settings,
-      const struct retro_variable *vars)
-{
-   char options_path[PATH_MAX_LENGTH];
-   char src_options_path[PATH_MAX_LENGTH];
-
-   /* Ensure these are NULL-terminated */
-   options_path[0]     = '\0';
-   src_options_path[0] = '\0';
-
-   /* Get core options file path */
-   runloop_init_core_options_path(
-         settings,
-         options_path, sizeof(options_path),
-         src_options_path, sizeof(src_options_path));
-
-   if (!string_is_empty(options_path))
-      return core_option_manager_new_vars(options_path, src_options_path, vars);
-   return NULL;
 }
 
 /* get the name of the current shader preset */
@@ -19724,7 +19723,7 @@ static void runloop_apply_fastmotion_override(
 
    if (fastforward_ratio_current != fastforward_ratio_last)
          runloop_st->frame_limit_minimum_time = 
-            retroarch_set_frame_limit(&video_st->av_info,
+            runloop_set_frame_limit(&video_st->av_info,
                   fastforward_ratio_current);
 }
 
@@ -20513,8 +20512,7 @@ static enum runloop_state_enum runloop_check_state(
 
    if (menu_st->alive)
    {
-      float fastforward_ratio = retroarch_get_runloop_fastforward_ratio(
-            settings,
+      float fastforward_ratio = runloop_get_fastforward_ratio(settings,
             &runloop_st->fastmotion_override.current);
 
       if (!settings->bools.menu_throttle_framerate && !fastforward_ratio)
@@ -21328,13 +21326,12 @@ end:
 
       if (runloop_st->fastmotion)
          runloop_st->frame_limit_minimum_time = 
-            retroarch_set_frame_limit(&video_st->av_info,
-                  retroarch_get_runloop_fastforward_ratio(
-                     settings,
+            runloop_set_frame_limit(&video_st->av_info,
+                  runloop_get_fastforward_ratio(settings,
                      &runloop_st->fastmotion_override.current));
       else
          runloop_st->frame_limit_minimum_time = 
-            retroarch_set_frame_limit(&video_st->av_info,
+            runloop_set_frame_limit(&video_st->av_info,
                   1.0f);
    }
 
