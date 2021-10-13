@@ -120,6 +120,8 @@ static INLINE void ctr_check_3D_slider(ctr_video_t* ctr, ctr_video_mode_enum vid
       case CTR_VIDEO_MODE_2D:
       default:
          ctr->video_mode = CTR_VIDEO_MODE_2D;
+         if (ctr->supports_parallax_disable)
+            ctr_set_parallax_layer(false);
          ctr->enable_3d = false;
          break;
    }
