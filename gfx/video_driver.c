@@ -1075,8 +1075,12 @@ bool video_driver_started_fullscreen(void)
 
 bool video_driver_is_threaded(void)
 {
+#ifdef HAVE_THREADS
    video_driver_state_t *video_st                 = &video_driver_st;
    return VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
+#else
+   return false;
+#endif
 }
 
 bool *video_driver_get_threaded(void)
@@ -1703,10 +1707,8 @@ bool video_monitor_fps_statistics(double *refresh_rate,
       return false;
 #endif
 
-   samples = MIN(MEASURE_FRAME_TIME_SAMPLES_COUNT,
-         (unsigned)video_st->frame_time_count);
-
-   if (samples < 2)
+   if ((samples = MIN(MEASURE_FRAME_TIME_SAMPLES_COUNT,
+         (unsigned)video_st->frame_time_count)) < 2)
       return false;
 
    /* Measure statistics on frame time (microsecs), *not* FPS. */
