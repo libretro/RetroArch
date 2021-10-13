@@ -18242,10 +18242,13 @@ bool retroarch_main_init(int argc, char *argv[])
    bool accessibility_enable    = false;
    unsigned accessibility_narrator_speech_speed = 0;
 #endif
+#ifdef HAVE_MENU
+   struct menu_state *menu_st   = menu_state_get_ptr();
+#endif
 
-   input_st->osk_idx             = OSK_LOWERCASE_LATIN;
-   video_st->active              = true;
-   audio_state_get_ptr()->active = true;
+   input_st->osk_idx            = OSK_LOWERCASE_LATIN;
+   video_st->active             = true;
+   audio_state_get_ptr()->active= true;
 
    if (setjmp(p_rarch->error_sjlj_context) > 0)
    {
@@ -18405,7 +18408,6 @@ bool retroarch_main_init(int argc, char *argv[])
          "location driver", verbosity_enabled);
 #ifdef HAVE_MENU
    {
-      struct menu_state *menu_st  = menu_state_get_ptr();
       if (!(menu_st->driver_ctx = menu_driver_find_driver(settings,
                   "menu driver", verbosity_enabled)))
          retroarch_fail(p_rarch, 1, "menu_driver_find_driver()");
@@ -18433,9 +18435,9 @@ bool retroarch_main_init(int argc, char *argv[])
 #ifdef HAVE_DYNAMIC
       /* Check if menu was active prior to core initialization */
       if (   !global->launched_from_cli
-          || global->cli_load_menu_on_error
+          ||  global->cli_load_menu_on_error
 #ifdef HAVE_MENU
-          || menu_state_get_ptr()->alive
+          ||  menu_st->alive
 #endif
          )
 #endif
@@ -18550,163 +18552,6 @@ static bool retroarch_is_on_main_thread(shtread_tls_t *tls)
 #else
    return true;
 #endif
-}
-#endif
-
-#ifdef HAVE_MENU
-/* Gets called when we want to toggle the menu.
- * If the menu is already running, it will be turned off.
- * If the menu is off, then the menu will be started.
- */
-static void menu_driver_toggle(
-      video_driver_t *current_video,
-      void *video_driver_data,
-      menu_handle_t *menu,
-      menu_input_t *menu_input,
-      settings_t *settings,
-      bool menu_driver_alive,
-      bool overlay_alive,
-      retro_keyboard_event_t *key_event,
-      retro_keyboard_event_t *frontend_key_event,
-      bool on)
-{
-   /* TODO/FIXME - retroarch_main_quit calls menu_driver_toggle -
-    * we might have to redesign this to avoid EXXC_BAD_ACCESS errors
-    * on OSX - for now we work around this by checking if the settings
-    * struct is NULL
-    */
-   bool pause_libretro                = false;
-#ifdef HAVE_AUDIOMIXER
-   bool audio_enable_menu             = false;
-#if 0
-   bool audio_enable_menu_bgm         = false;
-#endif
-#endif
-   bool runloop_shutdown_initiated    = runloop_state.shutdown_initiated;
-#ifdef HAVE_OVERLAY
-   bool input_overlay_hide_in_menu    = false;
-   bool input_overlay_enable          = false;
-#endif
-   bool video_adaptive_vsync          = false;
-   bool video_swap_interval           = false;
-
-   if (settings)
-   {
-      pause_libretro                  = settings->bools.menu_pause_libretro;
-#ifdef HAVE_AUDIOMIXER
-      audio_enable_menu               = settings->bools.audio_enable_menu;
-#if 0
-      audio_enable_menu_bgm           = settings->bools.audio_enable_menu_bgm ;
-#endif
-#endif
-#ifdef HAVE_OVERLAY
-      input_overlay_hide_in_menu      = settings->bools.input_overlay_hide_in_menu;
-      input_overlay_enable            = settings->bools.input_overlay_enable;
-#endif
-      video_adaptive_vsync            = settings->bools.video_adaptive_vsync;
-      video_swap_interval             = settings->uints.video_swap_interval;
-   }
-
-   if (on) 
-   {
-#ifdef HAVE_LAKKA
-      set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_MENU);
-#endif
-#ifdef HAVE_OVERLAY
-      /* If an overlay was displayed before the toggle
-       * and overlays are disabled in menu, need to
-       * inhibit 'select' input */
-      if (input_overlay_hide_in_menu)
-      {
-         if (input_overlay_enable && overlay_alive)
-         {
-            /* Inhibits pointer 'select' and 'cancel' actions
-             * (until the next time 'select'/'cancel' are released) */
-            menu_input->select_inhibit= true;
-            menu_input->cancel_inhibit= true;
-         }
-      }
-#endif
-   }
-   else
-   {
-#ifdef HAVE_LAKKA
-      set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_CORE);
-#endif
-#ifdef HAVE_OVERLAY
-      /* Inhibits pointer 'select' and 'cancel' actions
-       * (until the next time 'select'/'cancel' are released) */
-      menu_input->select_inhibit      = false;
-      menu_input->cancel_inhibit      = false;
-#endif
-   }
-
-   if (menu_driver_alive)
-   {
-      bool refresh                    = false;
-
-#ifdef WIIU
-      /* Enable burn-in protection menu is running */
-      IMEnableDim();
-#endif
-
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-
-      /* Menu should always run with vsync on. */
-      if (current_video->set_nonblock_state)
-         current_video->set_nonblock_state(
-               video_driver_data,
-               false,
-               video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
-               video_adaptive_vsync,
-               video_swap_interval
-               );
-      /* Stop all rumbling before entering the menu. */
-      command_event(CMD_EVENT_RUMBLE_STOP, NULL);
-
-      if (pause_libretro && !audio_enable_menu)
-         command_event(CMD_EVENT_AUDIO_STOP, NULL);
-
-#if 0
-     if (audio_enable_menu && audio_enable_menu_bgm)
-         audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
-#endif
-
-      /* Override keyboard callback to redirect to menu instead.
-       * We'll use this later for something ... */
-
-      if (key_event && frontend_key_event)
-      {
-         *frontend_key_event          = *key_event;
-         *key_event                   = menu_input_key_event;
-
-         runloop_state.frame_time_last= 0;
-      }
-   }
-   else
-   {
-#ifdef WIIU
-      /* Disable burn-in protection while core is running; this is needed
-       * because HID inputs don't count for the purpose of Wii U
-       * power-saving. */
-      IMDisableDim();
-#endif
-
-      if (!runloop_shutdown_initiated)
-         driver_set_nonblock_state();
-
-      if (pause_libretro && !audio_enable_menu)
-         command_event(CMD_EVENT_AUDIO_START, NULL);
-
-#if 0
-      if (audio_enable_menu && audio_enable_menu_bgm)
-         audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
-#endif
-
-      /* Restore libretro keyboard callback. */
-      if (key_event && frontend_key_event)
-         *key_event                   = *frontend_key_event;
-   }
 }
 #endif
 
