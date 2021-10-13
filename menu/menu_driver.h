@@ -897,6 +897,21 @@ int menu_input_post_iterate(
       unsigned action,
       retro_time_t current_time);
 
+/* Gets called when we want to toggle the menu.
+ * If the menu is already running, it will be turned off.
+ * If the menu is off, then the menu will be started.
+ */
+void menu_driver_toggle(
+      void *curr_video_data,
+      void *video_driver_data,
+      menu_handle_t *menu,
+      menu_input_t *menu_input,
+      settings_t *settings,
+      bool menu_driver_alive,
+      bool overlay_alive,
+      retro_keyboard_event_t *key_event,
+      retro_keyboard_event_t *frontend_key_event,
+      bool on);
 
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 

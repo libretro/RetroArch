@@ -86,6 +86,8 @@ typedef struct core_options_callbacks
 
 struct runloop
 {
+   retro_time_t frame_limit_minimum_time;
+   retro_time_t frame_limit_last_time;
    retro_usec_t frame_time_last;        /* int64_t alignment */
 
    msg_queue_t msg_queue;                        /* ptr alignment */
@@ -139,14 +141,6 @@ struct runloop
 };
 
 typedef struct runloop runloop_state_t;
-
-#ifdef HAVE_THREADS
-#define RUNLOOP_MSG_QUEUE_LOCK(runloop) slock_lock(runloop.msg_queue_lock)
-#define RUNLOOP_MSG_QUEUE_UNLOCK(runloop) slock_unlock(runloop.msg_queue_lock)
-#else
-#define RUNLOOP_MSG_QUEUE_LOCK(p_runloop)
-#define RUNLOOP_MSG_QUEUE_UNLOCK(p_runloop)
-#endif
 
 /* Time to exit out of the main loop?
  * Reasons for exiting:

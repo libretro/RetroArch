@@ -549,8 +549,6 @@ typedef struct discord_state discord_state_t;
 
 struct rarch_state
 {
-   retro_time_t frame_limit_minimum_time;
-   retro_time_t frame_limit_last_time;
    retro_time_t libretro_core_runtime_last;
    retro_time_t libretro_core_runtime_usec;
    struct global              g_extern;         /* retro_time_t alignment */
@@ -736,10 +734,6 @@ struct rarch_state
    char current_savestate_dir[PATH_MAX_LENGTH];
    char dir_savestate[PATH_MAX_LENGTH];
 
-#ifdef HAVE_GFX_WIDGETS
-   bool widgets_active;
-   bool widgets_persisting;
-#endif
 #ifdef HAVE_NETWORKING
 /* Only used before init_netplay */
    bool netplay_enabled;

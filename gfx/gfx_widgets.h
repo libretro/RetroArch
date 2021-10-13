@@ -225,8 +225,10 @@ typedef struct dispgfx_widget
 
    /* There can only be one message animation at a time to 
     * avoid confusing users */
-   bool widgets_moving;
-   bool widgets_inited;
+   bool moving;
+   bool inited;
+   bool active;
+   bool persisting;
    bool msg_queue_has_icons;
 } dispgfx_widget_t;
 
@@ -370,6 +372,8 @@ bool gfx_widget_start_load_content_animation(void);
  * the video driver - once they are all added, set
  * enable_menu_widgets to true for that driver */
 void gfx_widgets_frame(void *data);
+
+bool gfx_widgets_ready(void);
 
 dispgfx_widget_t *dispwidget_get_ptr(void);
 
