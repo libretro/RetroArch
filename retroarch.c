@@ -262,6 +262,14 @@
 #include "lakka.h"
 #endif
 
+#ifdef HAVE_THREADS
+#define RUNLOOP_MSG_QUEUE_LOCK(runloop) slock_lock(runloop->msg_queue_lock)
+#define RUNLOOP_MSG_QUEUE_UNLOCK(runloop) slock_unlock(runloop->msg_queue_lock)
+#else
+#define RUNLOOP_MSG_QUEUE_LOCK(p_runloop)
+#define RUNLOOP_MSG_QUEUE_UNLOCK(p_runloop)
+#endif
+
 /* Custom forward declarations */
 static bool recording_init(settings_t *settings, struct rarch_state *p_rarch);
 static bool recording_deinit(void);
@@ -4289,16 +4297,6 @@ static bool is_accessibility_enabled(bool accessibility_enable,
 }
 #endif
 
-bool gfx_widgets_ready(void)
-{
-#ifdef HAVE_GFX_WIDGETS
-   struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->widgets_active;
-#else
-   return false;
-#endif
-}
-
 #ifdef HAVE_MENU
 bool menu_input_dialog_start_search(void)
 {
@@ -4413,17 +4411,18 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 
 static void retroarch_msg_queue_deinit(void)
 {
-   RUNLOOP_MSG_QUEUE_LOCK(runloop_state);
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
 
-   msg_queue_deinitialize(&runloop_state.msg_queue);
+   msg_queue_deinitialize(&runloop_st->msg_queue);
 
-   RUNLOOP_MSG_QUEUE_UNLOCK(runloop_state);
+   RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
 #ifdef HAVE_THREADS
-   slock_free(runloop_state.msg_queue_lock);
-   runloop_state.msg_queue_lock = NULL;
+   slock_free(runloop_st->msg_queue_lock);
+   runloop_st->msg_queue_lock = NULL;
 #endif
 
-   runloop_state.msg_queue_size = 0;
+   runloop_st->msg_queue_size = 0;
 }
 
 static void retroarch_msg_queue_init(void)
@@ -4656,7 +4655,7 @@ static bool retroarch_apply_shader(
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE)
                      );
 #ifdef HAVE_GFX_WIDGETS
-            if (p_rarch->widgets_active)
+            if (dispwidget_get_ptr()->active)
                gfx_widget_set_generic_message(msg, 2000);
             else
 #endif
@@ -6800,17 +6799,17 @@ static void command_event_reinit(const int flags)
 #endif
 }
 
-static void retroarch_pause_checks(struct rarch_state *p_rarch)
+static void retroarch_pause_checks(void)
 {
 #ifdef HAVE_DISCORD
    discord_userdata_t userdata;
 #endif
-   bool is_paused                 = runloop_state.paused;
-   bool is_idle                   = runloop_state.idle;
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
+   bool is_paused                 = runloop_st->paused;
+   bool is_idle                   = runloop_st->idle;
 #if defined(HAVE_GFX_WIDGETS)
-   bool widgets_active            = p_rarch->widgets_active;
-   video_driver_state_t *video_st = 
-      video_state_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   bool widgets_active            = dispwidget_get_ptr()->active;
    if (widgets_active)
       video_st->widgets_paused    = is_paused;
 #endif
@@ -7291,7 +7290,7 @@ bool command_event(enum event_command cmd, void *data)
          core_reset();
 #ifdef HAVE_CHEEVOS
 #ifdef HAVE_GFX_WIDGETS
-         rcheevos_reset_game(p_rarch->widgets_active);
+         rcheevos_reset_game(dispwidget_get_ptr()->active);
 #else
          rcheevos_reset_game(false);
 #endif
@@ -7573,7 +7572,7 @@ bool command_event(enum event_command cmd, void *data)
                !audio_st->mute_enable;
 
 #if defined(HAVE_GFX_WIDGETS)
-            if (p_rarch->widgets_active)
+            if (dispwidget_get_ptr()->active)
                gfx_widget_volume_update_and_show(
                      settings->floats.audio_volume,
                      audio_st->mute_enable);
@@ -8100,18 +8099,18 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 
             runloop_state.paused = boolean;
-            retroarch_pause_checks(p_rarch);
+            retroarch_pause_checks();
          }
          break;
       case CMD_EVENT_UNPAUSE:
          boolean                 = false;
          runloop_state.paused = boolean;
-         retroarch_pause_checks(p_rarch);
+         retroarch_pause_checks();
          break;
       case CMD_EVENT_PAUSE:
          boolean                 = true;
          runloop_state.paused = boolean;
-         retroarch_pause_checks(p_rarch);
+         retroarch_pause_checks();
          break;
       case CMD_EVENT_MENU_PAUSE_LIBRETRO:
 #ifdef HAVE_MENU
@@ -8678,7 +8677,7 @@ bool command_event(enum event_command cmd, void *data)
                *audio_st              = audio_state_get_ptr();
             command_event_set_volume(settings, 0.5f,
 #if defined(HAVE_GFX_WIDGETS)
-                  p_rarch->widgets_active,
+                  dispwidget_get_ptr()->active,
 #else
                   false,
 #endif
@@ -8688,7 +8687,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_VOLUME_DOWN:
          command_event_set_volume(settings, -0.5f,
 #if defined(HAVE_GFX_WIDGETS)
-               p_rarch->widgets_active,
+               dispwidget_get_ptr()->active,
 #else
                false,
 #endif
@@ -9063,7 +9062,7 @@ void main_exit(void *args)
 
 #if defined(HAVE_GFX_WIDGETS)
    /* Do not want display widgets to live any more. */
-   p_rarch->widgets_persisting = false;
+   dispwidget_get_ptr()->persisting = false;
 #endif
 #ifdef HAVE_MENU
    /* Do not want menu context to live any more. */
@@ -10510,7 +10509,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
          const struct retro_message *msg = (const struct retro_message*)data;
          RARCH_LOG("[Environ]: SET_MESSAGE: %s\n", msg->msg);
 #if defined(HAVE_GFX_WIDGETS)
-         if (p_rarch->widgets_active)
+         if (dispwidget_get_ptr()->active)
             gfx_widget_set_libretro_message(
                   msg->msg,
                   roundf((float)msg->frames / 60.0f * 1000.0f));
@@ -10554,6 +10553,8 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
          /* Display message via OSD, if required */
          if (msg->target != RETRO_MESSAGE_TARGET_LOG)
          {
+            runloop_state_t *runloop_st   = runloop_state_get_ptr();
+
             switch (msg->type)
             {
                /* Handle 'status' messages */
@@ -10568,7 +10569,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
                    *   _runloop_msg_queue_lock is already available
                    * We therefore just call runloop_msg_queue_lock()/
                    * runloop_msg_queue_unlock() in this case */
-                  RUNLOOP_MSG_QUEUE_LOCK(runloop_state);
+                  RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
 
                   /* If a message is already set, only overwrite
                    * it if the new message has the same or higher
@@ -10595,7 +10596,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
                      }
                   }
 
-                  RUNLOOP_MSG_QUEUE_UNLOCK(runloop_state);
+                  RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
                   break;
 
 #if defined(HAVE_GFX_WIDGETS)
@@ -10604,7 +10605,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
                   {
                      video_driver_state_t *video_st = 
                         video_state_get_ptr();
-                     if (p_rarch->widgets_active)
+                     if (dispwidget_get_ptr()->active)
                         gfx_widget_set_libretro_message(
                               msg->msg, msg->duration);
                      else
@@ -10619,7 +10620,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
                   {
                      video_driver_state_t *video_st = 
                         video_state_get_ptr();
-                     if (p_rarch->widgets_active)
+                     if (dispwidget_get_ptr()->active)
                         gfx_widget_set_progress_message(
                               msg->msg, msg->duration,
                               msg->priority, msg->progress);
@@ -14765,14 +14766,14 @@ static void video_driver_frame(const void *data, unsigned width,
    static uint64_t last_used_memory, last_total_memory;
    retro_time_t new_time;
    video_frame_info_t video_info;
-   struct rarch_state *p_rarch   = &rarch_st;
    video_driver_state_t *video_st= video_state_get_ptr();
+   runloop_state_t *runloop_st   = runloop_state_get_ptr();
    const enum retro_pixel_format
       video_driver_pix_fmt       = video_st->pix_fmt;
-   bool runloop_idle             = runloop_state.idle;
+   bool runloop_idle             = runloop_st->idle;
    bool video_driver_active      = video_st->active;
 #if defined(HAVE_GFX_WIDGETS)
-   bool widgets_active           = p_rarch->widgets_active;
+   bool widgets_active           = dispwidget_get_ptr()->active;
 #endif
 
    status_text[0]                = '\0';
@@ -14908,7 +14909,7 @@ static void video_driver_frame(const void *data, unsigned width,
        *   _runloop_msg_queue_lock is already available
        * We therefore just call runloop_msg_queue_lock()/
        * runloop_msg_queue_unlock() in this case */
-      RUNLOOP_MSG_QUEUE_LOCK(runloop_state);
+      RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
 
       /* Check whether duration timer has elapsed */
       runloop_core_status_msg.duration -= anim_get_ptr()->delta_time;
@@ -14936,7 +14937,7 @@ static void video_driver_frame(const void *data, unsigned width,
                   sizeof(status_text));
       }
 
-      RUNLOOP_MSG_QUEUE_UNLOCK(runloop_state);
+      RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
    }
 
    /* Slightly messy code,
@@ -14990,7 +14991,7 @@ static void video_driver_frame(const void *data, unsigned width,
    }
 #endif
 
-   if (runloop_state.msg_queue_size > 0)
+   if (runloop_st->msg_queue_size > 0)
    {
       /* If widgets are currently enabled, then
        * messages were pushed to the queue before
@@ -15004,12 +15005,12 @@ static void video_driver_frame(const void *data, unsigned width,
          msg_queue_entry_t msg_entry;
          bool msg_found = false;
 
-         RUNLOOP_MSG_QUEUE_LOCK(runloop_state);
+         RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
          msg_found                       = msg_queue_extract(
-               &runloop_state.msg_queue, &msg_entry);
-         runloop_state.msg_queue_size = msg_queue_size(
-               &runloop_state.msg_queue);
-         RUNLOOP_MSG_QUEUE_UNLOCK(runloop_state);
+               &runloop_st->msg_queue, &msg_entry);
+         runloop_st->msg_queue_size = msg_queue_size(
+               &runloop_st->msg_queue);
+         RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
 
          if (msg_found)
             gfx_widgets_msg_queue_push(
@@ -15036,12 +15037,12 @@ static void video_driver_frame(const void *data, unsigned width,
 #endif
       {
          const char *msg                 = NULL;
-         RUNLOOP_MSG_QUEUE_LOCK(runloop_state);
-         msg                             = msg_queue_pull(&runloop_state.msg_queue);
-         runloop_state.msg_queue_size = msg_queue_size(&runloop_state.msg_queue);
+         RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
+         msg                             = msg_queue_pull(&runloop_st->msg_queue);
+         runloop_st->msg_queue_size = msg_queue_size(&runloop_st->msg_queue);
          if (msg)
             strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
-         RUNLOOP_MSG_QUEUE_UNLOCK(runloop_state);
+         RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
       }
    }
 
@@ -15206,7 +15207,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
 #endif
    custom_vp                               = &settings->video_viewport_custom;
 #ifdef HAVE_GFX_WIDGETS
-   video_info->widgets_active              = p_rarch->widgets_active;
+   video_info->widgets_active              = dispwidget_get_ptr()->active;
 #else
    video_info->widgets_active              = false;
 #endif
@@ -15997,7 +15998,7 @@ static void drivers_init(struct rarch_state *p_rarch,
    bool menu_enable_widgets    = settings->bools.menu_enable_widgets;
 
    /* By default, we want display widgets to persist through driver reinits. */
-   p_rarch->widgets_persisting = true;
+   dispwidget_get_ptr()->persisting = true;
 #endif
 
 #ifdef HAVE_MENU
@@ -16118,11 +16119,11 @@ static void drivers_init(struct rarch_state *p_rarch,
       bool video_is_fullscreen    = settings->bools.video_fullscreen ||
             rarch_force_fullscreen;
 
-      p_rarch->widgets_active     = gfx_widgets_init(
+      dispwidget_get_ptr()->active= gfx_widgets_init(
             p_disp,
             anim_get_ptr(),
             settings,
-            (uintptr_t)&p_rarch->widgets_active,
+            (uintptr_t)&dispwidget_get_ptr()->active,
             video_is_threaded,
             video_st->width,
             video_st->height,
@@ -16212,10 +16213,10 @@ static void driver_uninit(struct rarch_state *p_rarch, int flags)
    /* This absolutely has to be done before video_driver_free_internal()
     * is called/completes, otherwise certain menu drivers
     * (e.g. Vulkan) will segfault */
-   if (dispwidget_get_ptr()->widgets_inited)
+   if (dispwidget_get_ptr()->inited)
    {
-      gfx_widgets_deinit(p_rarch->widgets_persisting);
-      p_rarch->widgets_active = false;
+      gfx_widgets_deinit(dispwidget_get_ptr()->persisting);
+      dispwidget_get_ptr()->active = false;
    }
 #endif
 
@@ -16295,11 +16296,11 @@ static void retroarch_deinit_drivers(
     * in case the handle is lost in the threaded
     * video driver in the meantime
     * (breaking video_driver_has_widgets) */
-   if (dispwidget_get_ptr()->widgets_inited)
+   if (dispwidget_get_ptr()->inited)
    {
       gfx_widgets_deinit(
-            p_rarch->widgets_persisting);
-      p_rarch->widgets_active = false;
+            dispwidget_get_ptr()->persisting);
+      dispwidget_get_ptr()->active = false;
    }
 #endif
 
@@ -18862,11 +18863,12 @@ static void runloop_task_msg_queue_push(
    bool accessibility_enable   = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
 #endif
-   bool widgets_active         = p_rarch->widgets_active;
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   bool widgets_active         = dispwidget_get_ptr()->active;
 
    if (widgets_active && task->title && !task->mute)
    {
-      RUNLOOP_MSG_QUEUE_LOCK(runloop_state);
+      RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
       ui_companion_driver_msg_queue_push(p_rarch, msg,
             prio, task ? duration : duration * 60 / 1000, flush);
 #ifdef HAVE_ACCESSIBILITY
@@ -18893,7 +18895,7 @@ static void runloop_task_msg_queue_push(
             false
 #endif
             );
-      RUNLOOP_MSG_QUEUE_UNLOCK(runloop_state);
+      RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
    }
    else
 #endif
@@ -19546,15 +19548,16 @@ void runloop_msg_queue_push(const char *msg,
 {
    struct rarch_state *p_rarch = &rarch_st;
 #if defined(HAVE_GFX_WIDGETS)
-   bool widgets_active         = p_rarch->widgets_active;
+   bool widgets_active         = dispwidget_get_ptr()->active;
 #endif
 #ifdef HAVE_ACCESSIBILITY
    settings_t *settings        = config_get_ptr();
    bool accessibility_enable   = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
 #endif
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
 
-   RUNLOOP_MSG_QUEUE_LOCK(runloop_state);
+   RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(
             accessibility_enable,
@@ -19588,21 +19591,21 @@ void runloop_msg_queue_push(const char *msg,
 #endif
    {
       if (flush)
-         msg_queue_clear(&runloop_state.msg_queue);
+         msg_queue_clear(&runloop_st->msg_queue);
 
-      msg_queue_push(&runloop_state.msg_queue, msg,
+      msg_queue_push(&runloop_st->msg_queue, msg,
             prio, duration,
             title, icon, category);
 
-      runloop_state.msg_queue_size = msg_queue_size(
-            &runloop_state.msg_queue);
+      runloop_st->msg_queue_size = msg_queue_size(
+            &runloop_st->msg_queue);
    }
 
    ui_companion_driver_msg_queue_push(p_rarch,
          msg,
          prio, duration, flush);
 
-   RUNLOOP_MSG_QUEUE_UNLOCK(runloop_state);
+   RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
 }
 
 #ifdef HAVE_MENU
@@ -19701,7 +19704,7 @@ static void runloop_apply_fastmotion_override(
        * (required if RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE
        * is called during core de-initialisation) */
 #if defined(HAVE_GFX_WIDGETS)
-      if (p_rarch->widgets_active && !p_runloop->fastmotion)
+      if (dispwidget_get_ptr()->active && !p_runloop->fastmotion)
          video_st->widgets_fast_forward = false;
 #endif
    }
@@ -19729,6 +19732,7 @@ static enum runloop_state_enum runloop_check_state(
 #endif
    input_driver_state_t *input_st      = input_state_get_ptr();
    video_driver_state_t *video_st      = video_state_get_ptr();
+   runloop_state_t *runloop_st         = runloop_state_get_ptr();
    static bool old_focus               = true;
    struct retro_callbacks *cbs         = &p_rarch->retro_ctx;
    bool is_focused                     = false;
@@ -19736,7 +19740,7 @@ static enum runloop_state_enum runloop_check_state(
    uint64_t frame_count                = 0;
    bool focused                        = true;
    bool rarch_is_initialized           = p_rarch->rarch_is_inited;
-   bool runloop_paused                 = runloop_state.paused;
+   bool runloop_paused                 = runloop_st->paused;
    bool pause_nonactive                = settings->bools.pause_nonactive;
 #ifdef HAVE_MENU
    struct menu_state *menu_st          = menu_state_get_ptr();
@@ -19749,7 +19753,7 @@ static enum runloop_state_enum runloop_check_state(
    bool display_kb                     = menu_input_dialog_get_display_kb();
 #endif
 #if defined(HAVE_GFX_WIDGETS)
-   bool widgets_active                 = p_rarch->widgets_active;
+   bool widgets_active                 = dispwidget_get_ptr()->active;
 #endif
 #ifdef HAVE_CHEEVOS
    bool cheevos_hardcore_active        = rcheevos_hardcore_active();
@@ -20010,10 +20014,10 @@ static enum runloop_state_enum runloop_check_state(
    /* Automatic mouse grab on focus */
    if (settings->bools.input_auto_mouse_grab &&
          is_focused &&
-         is_focused != runloop_state.focused &&
+         is_focused != runloop_st->focused &&
          !input_st->grab_mouse_state)
       command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
-   runloop_state.focused = is_focused;
+   runloop_st->focused = is_focused;
 
 #ifdef HAVE_OVERLAY
    if (settings->bools.input_overlay_enable)
@@ -20154,21 +20158,21 @@ static enum runloop_state_enum runloop_check_state(
       {
          bool quit_runloop           = false;
 #ifdef HAVE_SCREENSHOTS
-         unsigned runloop_max_frames = runloop_state.max_frames;
+         unsigned runloop_max_frames = runloop_st->max_frames;
 
          if ((runloop_max_frames != 0)
                && (frame_count >= runloop_max_frames)
-               && runloop_state.max_frames_screenshot)
+               && runloop_st->max_frames_screenshot)
          {
             const char *screenshot_path = NULL;
             bool fullpath               = false;
 
-            if (string_is_empty(runloop_state.max_frames_screenshot_path))
+            if (string_is_empty(runloop_st->max_frames_screenshot_path))
                screenshot_path          = path_get(RARCH_PATH_BASENAME);
             else
             {
                fullpath                 = true;
-               screenshot_path          = runloop_state.max_frames_screenshot_path;
+               screenshot_path          = runloop_st->max_frames_screenshot_path;
             }
 
             RARCH_LOG("Taking a screenshot before exiting...\n");
@@ -20186,7 +20190,7 @@ static enum runloop_state_enum runloop_check_state(
          if (runloop_exec)
             runloop_exec = false;
 
-         if (runloop_state.core_shutdown_initiated &&
+         if (runloop_st->core_shutdown_initiated &&
                settings->bools.load_dummy_on_core_shutdown)
          {
             content_ctx_info_t content_info;
@@ -20200,8 +20204,8 @@ static enum runloop_state_enum runloop_check_state(
             {
                /* Loads dummy core instead of exiting RetroArch completely.
                 * Aborts core shutdown if invoked. */
-               runloop_state.shutdown_initiated      = false;
-               runloop_state.core_shutdown_initiated = false;
+               runloop_st->shutdown_initiated      = false;
+               runloop_st->core_shutdown_initiated = false;
             }
             else
                quit_runloop              = true;
@@ -20209,7 +20213,7 @@ static enum runloop_state_enum runloop_check_state(
          else
             quit_runloop                 = true;
 
-         runloop_state.core_running   = false;
+         runloop_st->core_running   = false;
 
          if (quit_runloop)
          {
@@ -20235,7 +20239,7 @@ static enum runloop_state_enum runloop_check_state(
       bool video_is_fullscreen    = settings->bools.video_fullscreen ||
             rarch_force_fullscreen;
 
-      RUNLOOP_MSG_QUEUE_LOCK(runloop_state);
+      RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
       gfx_widgets_iterate(
             p_disp,
             settings,
@@ -20245,7 +20249,7 @@ static enum runloop_state_enum runloop_check_state(
             settings->paths.directory_assets,
             settings->paths.path_font,
             VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st));
-      RUNLOOP_MSG_QUEUE_UNLOCK(runloop_state);
+      RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
    }
 #endif
 
@@ -20364,7 +20368,7 @@ static enum runloop_state_enum runloop_check_state(
             retroarch_menu_running_finished(false);
       }
 
-      if (focused || !runloop_state.idle)
+      if (focused || !runloop_st->idle)
       {
          bool rarch_is_inited        = p_rarch->rarch_is_inited;
          bool menu_pause_libretro    = settings->bools.menu_pause_libretro;
@@ -20404,10 +20408,10 @@ static enum runloop_state_enum runloop_check_state(
                         menu->userdata,
                         video_st->width,
                         video_st->height,
-                        runloop_state.idle);
+                        runloop_st->idle);
             }
 
-            if (menu_st->alive && !runloop_state.idle)
+            if (menu_st->alive && !runloop_st->idle)
                if (display_menu_libretro(p_rarch, input_st,
                         settings->floats.slowmotion_ratio,
                         libretro_running, current_time))
@@ -20427,14 +20431,14 @@ static enum runloop_state_enum runloop_check_state(
       old_input                 = current_bits;
       old_action                = action;
 
-      if (!focused || runloop_state.idle)
+      if (!focused || runloop_st->idle)
          return RUNLOOP_STATE_POLLED_AND_SLEEP;
    }
    else
 #endif
 #endif
    {
-      if (runloop_state.idle)
+      if (runloop_st->idle)
       {
          cbs->poll_cb();
          return RUNLOOP_STATE_POLLED_AND_SLEEP;
@@ -20504,7 +20508,7 @@ static enum runloop_state_enum runloop_check_state(
    {
       float fastforward_ratio = retroarch_get_runloop_fastforward_ratio(
             settings,
-            &runloop_state.fastmotion_override.current);
+            &runloop_st->fastmotion_override.current);
 
       if (!settings->bools.menu_throttle_framerate && !fastforward_ratio)
          return RUNLOOP_STATE_MENU_ITERATE;
@@ -20562,7 +20566,7 @@ static enum runloop_state_enum runloop_check_state(
          static int unpaused_frames = 0;
 
          /* Frame advance is not allowed when achievement hardcore is active */
-         if (!runloop_state.paused)
+         if (!runloop_st->paused)
          {
             /* Limit pause to approximately three times per second (depending on core framerate) */
             if (unpaused_frames < 20)
@@ -20581,7 +20585,7 @@ static enum runloop_state_enum runloop_check_state(
          trig_frameadvance    = frameadvance_pressed && !old_frameadvance;
 
          /* FRAMEADVANCE will set us into pause mode. */
-         pause_pressed       |= !runloop_state.paused
+         pause_pressed       |= !runloop_st->paused
             && trig_frameadvance;
       }
 
@@ -20602,9 +20606,9 @@ static enum runloop_state_enum runloop_check_state(
       old_pause_pressed   = pause_pressed;
       old_frameadvance    = frameadvance_pressed;
 
-      if (runloop_state.paused)
+      if (runloop_st->paused)
       {
-         bool toggle = !runloop_state.idle ? true : false;
+         bool toggle = !runloop_st->idle ? true : false;
 
          HOTKEY_CHECK(RARCH_FULLSCREEN_TOGGLE_KEY,
                CMD_EVENT_FULLSCREEN_TOGGLE, true, &toggle);
@@ -20656,11 +20660,11 @@ static enum runloop_state_enum runloop_check_state(
 
    /* Apply any pending fastmotion override
     * parameters */
-   if (runloop_state.fastmotion_override.pending)
+   if (runloop_st->fastmotion_override.pending)
    {
       runloop_apply_fastmotion_override(
-            p_rarch, &runloop_state, settings);
-      runloop_state.fastmotion_override.pending = false;
+            p_rarch, runloop_st, settings);
+      runloop_st->fastmotion_override.pending = false;
    }
 
    /* Check if we have pressed the fast forward button */
@@ -20668,7 +20672,7 @@ static enum runloop_state_enum runloop_check_state(
     * that the button must go from pressed to unpressed back to pressed
     * to be able to toggle between them.
     */
-   if (!runloop_state.fastmotion_override.current.inhibit_toggle)
+   if (!runloop_st->fastmotion_override.current.inhibit_toggle)
    {
       static bool old_button_state            = false;
       static bool old_hold_button_state       = false;
@@ -20686,20 +20690,20 @@ static enum runloop_state_enum runloop_check_state(
          if (input_st->nonblocking_flag)
          {
             input_st->nonblocking_flag        = false;
-            runloop_state.fastmotion          = false;
+            runloop_st->fastmotion            = false;
             p_rarch->fastforward_after_frames = 1;
          }
          else
          {
             input_st->nonblocking_flag        = true;
-            runloop_state.fastmotion          = true;
+            runloop_st->fastmotion            = true;
          }
 
          driver_set_nonblock_state();
 
          /* Reset frame time counter when toggling
           * fast-forward off, if required */
-         if (!runloop_state.fastmotion &&
+         if (!runloop_st->fastmotion &&
              settings->bools.frame_time_counter_reset_after_fastforwarding)
             video_st->frame_time_count  = 0;
       }
@@ -20710,21 +20714,21 @@ static enum runloop_state_enum runloop_check_state(
 
    /* Display fast-forward notification, unless
     * disabled via override */
-   if (!runloop_state.fastmotion_override.current.fastforward ||
-       runloop_state.fastmotion_override.current.notification)
+   if (!runloop_st->fastmotion_override.current.fastforward ||
+       runloop_st->fastmotion_override.current.notification)
    {
       /* > Use widgets, if enabled */
 #if defined(HAVE_GFX_WIDGETS)
       if (widgets_active)
          video_st->widgets_fast_forward =
                settings->bools.notification_show_fast_forward ?
-                     runloop_state.fastmotion : false;
+                     runloop_st->fastmotion : false;
       else
 #endif
       {
          /* > If widgets are disabled, display fast-forward
           *   status via OSD text for 1 frame every frame */
-         if (runloop_state.fastmotion &&
+         if (runloop_st->fastmotion &&
              settings->bools.notification_show_fast_forward)
             runloop_msg_queue_push(
                msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -20798,7 +20802,7 @@ static enum runloop_state_enum runloop_check_state(
                &p_rarch->rewind_st,
                BIT256_GET(current_bits, RARCH_REWIND),
                settings->uints.rewind_granularity,
-               runloop_state.paused,
+               runloop_st->paused,
                s, sizeof(s), &t);
 
 #if defined(HAVE_GFX_WIDGETS)
@@ -20824,14 +20828,14 @@ static enum runloop_state_enum runloop_check_state(
                current_bits, RARCH_SLOWMOTION_HOLD_KEY);
 
          if (new_slowmotion_button_state && !old_slowmotion_button_state)
-            runloop_state.slowmotion = !runloop_state.slowmotion;
+            runloop_st->slowmotion = !runloop_st->slowmotion;
          else if (old_slowmotion_hold_button_state != new_slowmotion_hold_button_state)
-            runloop_state.slowmotion = new_slowmotion_hold_button_state;
+            runloop_st->slowmotion = new_slowmotion_hold_button_state;
 
-         if (runloop_state.slowmotion)
+         if (runloop_st->slowmotion)
          {
             if (settings->uints.video_black_frame_insertion)
-               if (!runloop_state.idle)
+               if (!runloop_st->idle)
                   video_driver_cached_frame();
 
 #if defined(HAVE_GFX_WIDGETS)
@@ -20974,15 +20978,16 @@ int runloop_iterate(void)
    audio_driver_state_t               *audio_st = audio_state_get_ptr();
    video_driver_state_t               *video_st = video_state_get_ptr();
    settings_t *settings                         = config_get_ptr();
+   runloop_state_t                  *runloop_st = runloop_state_get_ptr();
    unsigned video_frame_delay                   = settings->uints.video_frame_delay;
    bool vrr_runloop_enable                      = settings->bools.vrr_runloop_enable;
    unsigned max_users                           = settings->uints.input_max_users;
    retro_time_t current_time                    = cpu_features_get_time_usec();
 #ifdef HAVE_MENU
    bool menu_pause_libretro                     = settings->bools.menu_pause_libretro;
-   bool core_paused                             = runloop_state.paused || (menu_pause_libretro && menu_state_get_ptr()->alive);
+   bool core_paused                             = runloop_st->paused || (menu_pause_libretro && menu_state_get_ptr()->alive);
 #else
-   bool core_paused                             = runloop_state.paused;
+   bool core_paused                             = runloop_st->paused;
 #endif
    float slowmotion_ratio                       = settings->floats.slowmotion_ratio;
 #ifdef HAVE_CHEEVOS
@@ -21003,42 +21008,42 @@ int runloop_iterate(void)
    }
 #endif
 
-   if (runloop_state.frame_time.callback)
+   if (runloop_st->frame_time.callback)
    {
       /* Updates frame timing if frame timing callback is in use by the core.
        * Limits frame time if fast forward ratio throttle is enabled. */
-      retro_usec_t runloop_last_frame_time = runloop_state.frame_time_last;
+      retro_usec_t runloop_last_frame_time = runloop_st->frame_time_last;
       retro_time_t current                 = current_time;
-      bool is_locked_fps                   = (runloop_state.paused
+      bool is_locked_fps                   = (runloop_st->paused
             || input_st->nonblocking_flag)
             | !!recording_state.data;
       retro_time_t delta                   = (!runloop_last_frame_time || is_locked_fps)
-         ? runloop_state.frame_time.reference
+         ? runloop_st->frame_time.reference
          : (current - runloop_last_frame_time);
 
       if (is_locked_fps)
-         runloop_state.frame_time_last  = 0;
+         runloop_st->frame_time_last  = 0;
       else
       {
-         runloop_state.frame_time_last  = current;
+         runloop_st->frame_time_last  = current;
 
-         if (runloop_state.slowmotion)
+         if (runloop_st->slowmotion)
             delta /= slowmotion_ratio;
       }
 
       if (!core_paused)
-         runloop_state.frame_time.callback(delta);
+         runloop_st->frame_time.callback(delta);
    }
 
    /* Update audio buffer occupancy if buffer status
     * callback is in use by the core */
-   if (runloop_state.audio_buffer_status.callback)
+   if (runloop_st->audio_buffer_status.callback)
    {
       bool audio_buf_active        = false;
       unsigned audio_buf_occupancy = 0;
       bool audio_buf_underrun      = false;
 
-      if (!(runloop_state.paused       ||
+      if (!(runloop_st->paused         ||
             !audio_st->active          ||
             !audio_st->output_samples_buf) &&
           audio_st->current_audio->write_avail &&
@@ -21066,7 +21071,7 @@ int runloop_iterate(void)
       }
 
       if (!core_paused)
-         runloop_state.audio_buffer_status.callback(
+         runloop_st->audio_buffer_status.callback(
                audio_buf_active, audio_buf_occupancy, audio_buf_underrun);
    }
 
@@ -21075,7 +21080,7 @@ int runloop_iterate(void)
    {
       case RUNLOOP_STATE_QUIT:
          p_rarch->frame_limit_last_time = 0.0;
-         runloop_state.core_running  = false;
+         runloop_st->core_running       = false;
          command_event(CMD_EVENT_QUIT, NULL);
          return -1;
       case RUNLOOP_STATE_POLLED_AND_SLEEP:
@@ -21106,12 +21111,12 @@ int runloop_iterate(void)
 #endif
          return 0;
       case RUNLOOP_STATE_ITERATE:
-         runloop_state.core_running = true;
+         runloop_st->core_running = true;
          break;
    }
 
 #ifdef HAVE_THREADS
-   if (runloop_state.autosave)
+   if (runloop_st->autosave)
       autosave_lock();
 #endif
 
@@ -21277,7 +21282,7 @@ int runloop_iterate(void)
 #endif
 
 #ifdef HAVE_THREADS
-   if (runloop_state.autosave)
+   if (runloop_st->autosave)
       autosave_unlock();
 #endif
 
@@ -21314,12 +21319,12 @@ end:
          }
       }
 
-      if (runloop_state.fastmotion)
+      if (runloop_st->fastmotion)
          p_rarch->frame_limit_minimum_time = 
             retroarch_set_frame_limit(&video_st->av_info,
                   retroarch_get_runloop_fastforward_ratio(
                      settings,
-                     &runloop_state.fastmotion_override.current));
+                     &runloop_st->fastmotion_override.current));
       else
          p_rarch->frame_limit_minimum_time = 
             retroarch_set_frame_limit(&video_st->av_info,

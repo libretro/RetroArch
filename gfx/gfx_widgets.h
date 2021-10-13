@@ -225,8 +225,10 @@ typedef struct dispgfx_widget
 
    /* There can only be one message animation at a time to 
     * avoid confusing users */
-   bool widgets_moving;
-   bool widgets_inited;
+   bool moving;
+   bool inited;
+   bool active;
+   bool persisting;
    bool msg_queue_has_icons;
 } dispgfx_widget_t;
 

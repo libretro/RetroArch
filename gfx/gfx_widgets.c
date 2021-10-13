@@ -408,7 +408,7 @@ static void gfx_widgets_unfold_end(void *userdata)
    dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
 
    unfold->unfolding                = false;
-   p_dispwidget->widgets_moving     = false;
+   p_dispwidget->moving             = false;
 }
 
 static void gfx_widgets_move_end(void *userdata)
@@ -434,7 +434,7 @@ static void gfx_widgets_move_end(void *userdata)
       unfold->unfolding            = true;
    }
    else
-      p_dispwidget->widgets_moving = false;
+      p_dispwidget->moving         = false;
 }
 
 static void gfx_widgets_msg_queue_expired(void *userdata)
@@ -481,7 +481,7 @@ static void gfx_widgets_msg_queue_move(dispgfx_widget_t *p_dispwidget)
 
          gfx_animation_push(&entry);
 
-         p_dispwidget->widgets_moving = true;
+         p_dispwidget->moving = true;
       }
    }
 
@@ -525,7 +525,7 @@ static void gfx_widgets_msg_queue_free(
    if (msg->msg_new)
       free(msg->msg_new);
 
-   p_dispwidget->widgets_moving = false;
+   p_dispwidget->moving = false;
 }
 
 static void gfx_widgets_msg_queue_kill_end(void *userdata)
@@ -566,7 +566,7 @@ static void gfx_widgets_msg_queue_kill(
    if (!msg)
       return;
 
-   p_dispwidget->widgets_moving = true;
+   p_dispwidget->moving         = true;
    msg->dying                   = true;
 
    p_dispwidget->msg_queue_kill = idx;
@@ -962,7 +962,7 @@ void gfx_widgets_iterate(
 
    /* Consume one message if available */
    if ((FIFO_READ_AVAIL_NONPTR(p_dispwidget->msg_queue) > 0)
-         && !p_dispwidget->widgets_moving 
+         && !p_dispwidget->moving 
          && (p_dispwidget->current_msgs_size < ARRAY_SIZE(p_dispwidget->current_msgs)))
    {
       disp_widget_msg_t *msg_widget = NULL;
@@ -1032,7 +1032,7 @@ void gfx_widgets_iterate(
          if (!msg_widget->expiration_timer_started)
             gfx_widgets_start_msg_expiration_timer(msg_widget, TASK_FINISHED_DURATION);
 
-      if (msg_widget->expired && !p_dispwidget->widgets_moving)
+      if (msg_widget->expired && !p_dispwidget->moving)
       {
          gfx_widgets_msg_queue_kill(p_dispwidget,
                (unsigned)i);
@@ -1753,7 +1753,7 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
 {
    size_t i;
 
-   p_dispwidget->widgets_inited     = false;
+   p_dispwidget->inited     = false;
 
    for (i = 0; i < ARRAY_SIZE(widgets); i++)
    {
@@ -1996,7 +1996,7 @@ bool gfx_widgets_init(
    p_dispwidget->msg_queue_bg[14] = HEX_B(color);
    p_dispwidget->msg_queue_bg[15] = 1.0f;
 
-   if (!p_dispwidget->widgets_inited)
+   if (!p_dispwidget->inited)
    {
       size_t i;
 
@@ -2021,7 +2021,7 @@ bool gfx_widgets_init(
       p_dispwidget->current_msgs_lock = slock_new();
 #endif
 
-      p_dispwidget->widgets_inited = true;
+      p_dispwidget->inited = true;
    }
 
    gfx_widgets_context_reset(
@@ -2173,4 +2173,13 @@ void task_screenshot_callback(retro_task_t *task,
 dispgfx_widget_t *dispwidget_get_ptr(void)
 {
    return &dispwidget_st;
+}
+
+bool gfx_widgets_ready(void)
+{
+#ifdef HAVE_GFX_WIDGETS
+   return dispwidget_st.active;
+#else
+   return false;
+#endif
 }
