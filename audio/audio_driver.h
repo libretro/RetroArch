@@ -408,6 +408,10 @@ size_t audio_driver_sample_batch_rewind(
       const int16_t *data, size_t frames);
 #endif
 
+#ifdef HAVE_MENU
+void audio_driver_menu_sample(void);
+#endif
+
 RETRO_END_DECLS
 
 #endif /* __AUDIO_DRIVER__H */

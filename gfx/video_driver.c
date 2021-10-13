@@ -2353,3 +2353,81 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
    vp->x      = padding_x / 2;
    vp->y      = padding_y / 2;
 }
+
+void video_driver_display_type_set(enum rarch_display_type type)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   video_st->display_type         = type;
+}
+
+uintptr_t video_driver_display_get(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   return video_st->display;
+}
+
+uintptr_t video_driver_display_userdata_get(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   return video_st->display_userdata;
+}
+
+void video_driver_display_userdata_set(uintptr_t idx)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   video_st->display_userdata     = idx;
+}
+
+void video_driver_display_set(uintptr_t idx)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   video_st->display              = idx;
+}
+
+enum rarch_display_type video_driver_display_type_get(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   return video_st->display_type;
+}
+
+void video_driver_window_set(uintptr_t idx)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   video_st->window               = idx;
+}
+
+uintptr_t video_driver_window_get(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   return video_st->window;
+}
+
+bool video_driver_texture_load(void *data,
+      enum texture_filter_type  filter_type,
+      uintptr_t *id)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   if (     !id
+         || !video_st->poke
+         || !video_st->poke->load_texture)
+      return false;
+   *id = video_st->poke->load_texture(
+         video_st->data, data,
+         VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st),
+         filter_type);
+   return true;
+}
+
+bool video_driver_texture_unload(uintptr_t *id)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   if (     !video_st->poke
+         || !video_st->poke->unload_texture)
+      return false;
+   video_st->poke->unload_texture(
+         video_st->data,
+         VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st),
+         *id);
+   *id = 0;
+   return true;
+}
