@@ -99,10 +99,6 @@
 #include <net/net_http.h>
 #endif
 
-#ifdef WIIU
-#include <wiiu/os/energy.h>
-#endif
-
 #ifdef EMSCRIPTEN
 #include <emscripten/emscripten.h>
 #endif

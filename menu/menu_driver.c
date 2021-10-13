@@ -30,6 +30,10 @@
 #include <streams/file_stream.h>
 #include <time/rtime.h>
 
+#ifdef WIIU
+#include <wiiu/os/energy.h>
+#endif
+
 #include "menu_driver.h"
 #include "menu_cbs.h"
 #include "../driver.h"
