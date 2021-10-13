@@ -2219,3 +2219,137 @@ bool video_driver_read_viewport(uint8_t *buffer, bool is_idle)
       return true;
    return false;
 }
+
+bool video_driver_is_hw_context(void)
+{
+   bool            is_hw_context  = false;
+   video_driver_state_t *video_st = &video_driver_st;
+
+   VIDEO_DRIVER_CONTEXT_LOCK(video_st);
+   is_hw_context                 = (video_st->hw_render.context_type
+         != RETRO_HW_CONTEXT_NONE);
+   VIDEO_DRIVER_CONTEXT_UNLOCK(video_st);
+
+   return is_hw_context;
+}
+
+const struct retro_hw_render_context_negotiation_interface *
+   video_driver_get_context_negotiation_interface(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   return video_st->hw_render_context_negotiation;
+}
+
+bool video_driver_is_video_cache_context(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   return video_st->cache_context;
+}
+
+void video_driver_set_video_cache_context_ack(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   video_st->cache_context_ack    = true;
+}
+
+bool video_driver_get_viewport_info(struct video_viewport *viewport)
+{
+   video_driver_state_t *video_st  = &video_driver_st;
+   if (!video_st->current_video || !video_st->current_video->viewport_info)
+      return false;
+   video_st->current_video->viewport_info(video_st->data, viewport);
+   return true;
+}
+
+/**
+ * video_viewport_get_scaled_integer:
+ * @vp            : Viewport handle
+ * @width         : Width.
+ * @height        : Height.
+ * @aspect_ratio  : Aspect ratio (in float).
+ * @keep_aspect   : Preserve aspect ratio?
+ *
+ * Gets viewport scaling dimensions based on
+ * scaled integer aspect ratio.
+ **/
+void video_viewport_get_scaled_integer(struct video_viewport *vp,
+      unsigned width, unsigned height,
+      float aspect_ratio, bool keep_aspect)
+{
+   int padding_x                   = 0;
+   int padding_y                   = 0;
+   settings_t *settings            = config_get_ptr();
+   video_driver_state_t *video_st  = &video_driver_st;
+   unsigned video_aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
+   bool overscale                  = settings->bools.video_scale_integer_overscale;
+
+   if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+   {
+      struct video_viewport *custom = &settings->video_viewport_custom;
+
+      if (custom)
+      {
+         padding_x = width - custom->width;
+         padding_y = height - custom->height;
+         width     = custom->width;
+         height    = custom->height;
+      }
+   }
+   else
+   {
+      unsigned base_width;
+      /* Use system reported sizes as these define the
+       * geometry for the "normal" case. */
+      unsigned base_height  =
+         video_st->av_info.geometry.base_height;
+      unsigned int rotation = retroarch_get_rotation();
+
+      if (rotation % 2)
+         base_height = video_st->av_info.geometry.base_width;
+
+      if (base_height == 0)
+         base_height = 1;
+
+      /* Account for non-square pixels.
+       * This is sort of contradictory with the goal of integer scale,
+       * but it is desirable in some cases.
+       *
+       * If square pixels are used, base_height will be equal to
+       * system->av_info.base_height. */
+      base_width = (unsigned)roundf(base_height * aspect_ratio);
+
+      /* Make sure that we don't get 0x scale ... */
+      if (width >= base_width && height >= base_height)
+      {
+         if (keep_aspect)
+         {
+            /* X/Y scale must be same. */
+            unsigned max_scale = 1;
+
+            if (overscale)
+               max_scale = MIN((width / base_width) + !!(width % base_width),
+                     (height / base_height) + !!(height % base_height));
+            else
+               max_scale = MIN(width / base_width,
+                     height / base_height);
+
+            padding_x          = width - base_width * max_scale;
+            padding_y          = height - base_height * max_scale;
+         }
+         else
+         {
+            /* X/Y can be independent, each scaled as much as possible. */
+            padding_x = width % base_width;
+            padding_y = height % base_height;
+         }
+      }
+
+      width     -= padding_x;
+      height    -= padding_y;
+   }
+
+   vp->width  = width;
+   vp->height = height;
+   vp->x      = padding_x / 2;
+   vp->y      = padding_y / 2;
+}
