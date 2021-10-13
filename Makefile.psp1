@@ -96,3 +96,6 @@ pspsh-run:
 debug: clean all pspsh-debug
 
 run: clean all pspsh-run
+
+sim:
+	/Applications/PPSSPPSDL.app/Contents/MacOS/PPSSPPSDL $(shell pwd)/EBOOT.PBP
