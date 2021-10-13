@@ -1444,6 +1444,21 @@ void video_driver_filter_free(void);
 void *video_thread_get_ptr(video_driver_state_t *video_st);
 #endif
 
+void video_driver_lock_new(void);
+
+bool video_driver_find_driver(
+      void *settings_data,
+      const char *prefix, bool verbosity_enabled);
+
+void video_driver_restore_cached(void *settings_data);
+
+void video_driver_set_viewport_config(
+      struct retro_game_geometry *geom,
+      float video_aspect_ratio,
+      bool video_aspect_ratio_auto);
+
+void video_driver_set_viewport_square_pixel(struct retro_game_geometry *geom);
+
 extern const video_driver_t *video_drivers[];
 
 extern video_driver_t video_gl_core;
