@@ -27,6 +27,7 @@
 #include "menu_defines.h"
 #include "../input/input_types.h"
 #include "../input/input_driver.h"
+#include "../gfx/gfx_display.h"
 #include "../performance_counters.h"
 
 RETRO_BEGIN_DECLS

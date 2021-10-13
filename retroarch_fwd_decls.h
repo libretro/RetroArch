@@ -99,15 +99,6 @@ static bool accessibility_speak_priority(
       const char* speak_text, int priority);
 #endif
 
-#ifdef HAVE_MENU
-static int menu_input_post_iterate(
-      struct rarch_state *p_rarch,
-      gfx_display_t *p_disp,
-      struct menu_state *menu_st,
-      unsigned action,
-      retro_time_t current_time);
-#endif
-
 static bool retroarch_apply_shader(
       struct rarch_state *p_rarch,
       settings_t *settings,

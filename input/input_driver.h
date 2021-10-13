@@ -1009,6 +1009,25 @@ void input_driver_poll(void);
 int16_t input_driver_state_wrapper(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 
+/**
+ * input_keys_pressed:
+ *
+ * Grab an input sample for this frame.
+ *
+ * Returns: Input sample containing a mask of all pressed keys.
+ */
+void input_keys_pressed(
+      unsigned port,
+      bool is_menu,
+      int input_hotkey_block_delay,
+      input_bits_t *p_new_state,
+      const struct retro_keybind **binds,
+      const struct retro_keybind *binds_norm,
+      const struct retro_keybind *binds_auto,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      rarch_joypad_info_t *joypad_info);
+
 extern input_device_driver_t *joypad_drivers[];
 extern input_driver_t *input_drivers[];
 #ifdef HAVE_HID

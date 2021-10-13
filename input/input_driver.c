@@ -62,7 +62,31 @@
 
 #define INPUT_REMOTE_KEY_PRESSED(input_st, key, port) (input_st->remote_st_ptr.buttons[(port)] & (UINT64_C(1) << (key)))
 
+/**
+ * check_input_driver_block_hotkey:
+ *
+ * Checks if 'hotkey enable' key is pressed.
+ *
+ * If we haven't bound anything to this,
+ * always allow hotkeys.
+
+ * If we hold ENABLE_HOTKEY button, block all libretro input to allow
+ * hotkeys to be bound to same keys as RetroPad.
+ **/
+#define CHECK_INPUT_DRIVER_BLOCK_HOTKEY(normal_bind, autoconf_bind) \
+( \
+         (((normal_bind)->key      != RETROK_UNKNOWN) \
+      || ((normal_bind)->mbutton   != NO_BTN) \
+      || ((normal_bind)->joykey    != NO_BTN) \
+      || ((normal_bind)->joyaxis   != AXIS_NONE) \
+      || ((autoconf_bind)->key     != RETROK_UNKNOWN) \
+      || ((autoconf_bind)->joykey  != NO_BTN) \
+      || ((autoconf_bind)->joyaxis != AXIS_NONE)) \
+)
+
 /**************************************/
+/* TODO/FIXME - turn these into static global variable */
+uint64_t lifecycle_state                                        = 0;
 
 static void *input_null_init(const char *joypad_driver) { return (void*)-1; }
 static void input_null_poll(void *data) { }
@@ -3244,7 +3268,7 @@ static void input_overlay_loaded(retro_task_t *task,
    bool inp_overlay_auto_rotate           = settings->bools.input_overlay_auto_rotate;
    bool input_overlay_enable              = settings->bools.input_overlay_enable;
    video_driver_state_t *video_st         = video_state_get_ptr();
-   input_driver_state_t *input_st         = input_state_get_ptr();
+   input_driver_state_t *input_st         = &input_driver_st;
    if (err)
       return;
 
@@ -3448,6 +3472,139 @@ bool input_keys_pressed_other_sources(
 #endif
 
    return false;
+}
+
+void input_keys_pressed(
+      unsigned port,
+      bool is_menu,
+      int input_hotkey_block_delay,
+      input_bits_t *p_new_state,
+      const struct retro_keybind **binds,
+      const struct retro_keybind *binds_norm,
+      const struct retro_keybind *binds_auto,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      rarch_joypad_info_t *joypad_info)
+{
+   unsigned i;
+   input_driver_state_t *input_st = &input_driver_st;
+
+   if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
+   {
+      if (  input_state_wrap(
+               input_st->current_driver,
+               input_st->current_data,
+               input_st->primary_joypad,
+               sec_joypad,
+               joypad_info,
+               &binds[port],
+               input_st->keyboard_mapping_blocked,
+               port, RETRO_DEVICE_JOYPAD, 0,
+               RARCH_ENABLE_HOTKEY))
+      {
+         if (input_st->input_hotkey_block_counter < input_hotkey_block_delay)
+            input_st->input_hotkey_block_counter++;
+         else
+            input_st->block_libretro_input    = true;
+      }
+      else
+      {
+         input_st->input_hotkey_block_counter = 0;
+         input_st->block_hotkey               = true;
+      }
+   }
+
+   if (     !is_menu
+         && binds[port][RARCH_GAME_FOCUS_TOGGLE].valid)
+   {
+      const struct retro_keybind *focus_binds_auto =
+         &input_autoconf_binds[port][RARCH_GAME_FOCUS_TOGGLE];
+      const struct retro_keybind *focus_normal     =
+         &binds[port][RARCH_GAME_FOCUS_TOGGLE];
+
+      /* Allows rarch_focus_toggle hotkey to still work
+       * even though every hotkey is blocked */
+      if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(
+               focus_normal, focus_binds_auto))
+      {
+         if (input_state_wrap(
+                  input_st->current_driver,
+                  input_st->current_data,
+                  input_st->primary_joypad,
+                  sec_joypad,
+                  joypad_info,
+                  &binds[port],
+                  input_st->keyboard_mapping_blocked,
+                  port,
+                  RETRO_DEVICE_JOYPAD, 0, RARCH_GAME_FOCUS_TOGGLE))
+            input_st->block_hotkey = false;
+      }
+   }
+
+   {
+      int16_t ret = 0;
+
+      /* Check the libretro input first */
+      if (!input_st->block_libretro_input)
+         ret = input_state_wrap(
+               input_st->current_driver,
+               input_st->current_data,
+               input_st->primary_joypad,
+               sec_joypad,
+               joypad_info, &binds[port],
+               input_st->keyboard_mapping_blocked,
+               port, RETRO_DEVICE_JOYPAD, 0,
+               RETRO_DEVICE_ID_JOYPAD_MASK);
+
+      for (i = 0; i < RARCH_FIRST_META_KEY; i++)
+      {
+         if (
+               (ret & (UINT64_C(1) <<  i)) ||
+               input_keys_pressed_other_sources(input_st,
+                  i, p_new_state))
+         {
+            BIT256_SET_PTR(p_new_state, i);
+         }
+      }
+   }
+
+   /* Check the hotkeys */
+   if (input_st->block_hotkey)
+   {
+      for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
+      {
+         if (
+                  BIT64_GET(lifecycle_state, i)
+               || input_keys_pressed_other_sources(input_st,
+                  i, p_new_state))
+         {
+            BIT256_SET_PTR(p_new_state, i);
+         }
+      }
+   }
+   else
+   {
+      for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
+      {
+         bool bit_pressed = binds[port][i].valid
+            && input_state_wrap(
+                  input_st->current_driver,
+                  input_st->current_data,
+                  input_st->primary_joypad,
+                  sec_joypad,
+                  joypad_info,
+                  &binds[port],
+                  input_st->keyboard_mapping_blocked,
+                  port, RETRO_DEVICE_JOYPAD, 0, i);
+         if (     bit_pressed
+               || BIT64_GET(lifecycle_state, i)
+               || input_keys_pressed_other_sources(input_st,
+                  i, p_new_state))
+         {
+            BIT256_SET_PTR(p_new_state, i);
+         }
+      }
+   }
 }
 
 int16_t input_state_device(
@@ -4891,4 +5048,3 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
 
    return result;
 }
-

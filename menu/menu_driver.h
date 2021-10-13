@@ -891,6 +891,13 @@ unsigned menu_event(
       input_bits_t *p_trigger_input,
       bool display_kb);
 
+int menu_input_post_iterate(
+      gfx_display_t *p_disp,
+      struct menu_state *menu_st,
+      unsigned action,
+      retro_time_t current_time);
+
+
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 
 RETRO_END_DECLS
