@@ -633,9 +633,11 @@ static void win32_save_position(void)
    }
    if (window_save_positions)
    {
+      video_driver_state_t *video_st = video_state_get_ptr();
+
       if (  !video_fullscreen && 
-            !retroarch_is_forced_fullscreen() &&
-            !retroarch_is_switching_display_mode())
+            !video_st->force_fullscreen &&
+            !video_st->is_switching_display_mode)
       {
          settings->uints.window_position_x      = g_win32->pos_x;
          settings->uints.window_position_y      = g_win32->pos_y;

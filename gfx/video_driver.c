@@ -16,15 +16,23 @@
 
 #include <math.h>
 #include <string/stdstring.h>
+#include <retro_math.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
 
 #include "video_driver.h"
+#include "video_filter.h"
+#include "video_display_server.h"
+
+#ifdef HAVE_THREADS
+#include "video_thread_wrapper.h"
+#endif
 
 #include "../frontend/frontend_driver.h"
 #include "../ui/ui_companion_driver.h"
+#include "../file_path_special.h"
 #include "../list_special.h"
 #include "../retroarch.h"
 #include "../verbosity.h"
@@ -40,6 +48,21 @@ static gfx_api_gpu_map gpu_map[] = {
    { NULL,                   GFX_CTX_DIRECT3D10_API },
    { NULL,                   GFX_CTX_DIRECT3D11_API },
    { NULL,                   GFX_CTX_DIRECT3D12_API }
+};
+
+static const video_display_server_t dispserv_null = {
+   NULL, /* init */
+   NULL, /* destroy */
+   NULL, /* set_window_opacity */
+   NULL, /* set_window_progress */
+   NULL, /* set_window_decorations */
+   NULL, /* set_resolution */
+   NULL, /* get_resolution_list */
+   NULL, /* get_output_options */
+   NULL, /* set_screen_orientation */
+   NULL, /* get_screen_orientation */
+   NULL, /* get_flags */
+   "null"
 };
 
 static void *video_null_init(const video_info_t *video,
@@ -216,6 +239,50 @@ const video_driver_t *video_drivers[] = {
    &video_null,
    NULL,
 };
+
+static video_driver_state_t video_driver_st = { 0 };
+static const video_display_server_t *current_display_server = 
+&dispserv_null;
+
+struct retro_hw_render_callback *video_driver_get_hw_context(void)
+{
+   video_driver_state_t *video_st         = &video_driver_st;
+   return VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st);
+}
+
+video_driver_state_t *video_state_get_ptr(void)
+{
+   return &video_driver_st;
+}
+
+#ifdef HAVE_THREADS
+void *video_thread_get_ptr(video_driver_state_t *video_st)
+{
+   const thread_video_t *thr   = (const thread_video_t*)video_st->data;
+   if (thr)
+      return thr->driver_data;
+   return NULL;
+}
+#endif
+
+/**
+ * video_driver_get_ptr:
+ *
+ * Use this if you need the real video driver
+ * and driver data pointers.
+ *
+ * Returns: video driver's userdata.
+ **/
+void *video_driver_get_ptr(void)
+{
+   video_driver_state_t *video_st         = &video_driver_st;
+   return VIDEO_DRIVER_GET_PTR_INTERNAL(video_st);
+}
+
+void *video_driver_get_data(void)
+{
+   return video_driver_st.data;
+}
 
 video_driver_t *hw_render_context_driver(
       enum retro_hw_context_type type, int major, int minor)
@@ -496,6 +563,9 @@ void video_driver_force_fallback(const char *driver)
    exit(1);
 }
 
+static bool get_metrics_null(void *data, enum display_metric_types type,
+      float *value) { return false; }
+
 static bool video_context_driver_get_metrics_null(
       void *data, enum display_metric_types type,
       float *value) { return false; }
@@ -691,4 +761,577 @@ void video_driver_reset_custom_viewport(settings_t *settings)
    custom_vp->height = 0;
    custom_vp->x      = 0;
    custom_vp->y      = 0;
+}
+
+struct retro_system_av_info *video_viewport_get_system_av_info(void)
+{
+   return &video_driver_st.av_info;
+}
+
+void video_driver_gpu_record_deinit(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   if (video_st->record_gpu_buffer)
+      free(video_st->record_gpu_buffer);
+   video_st->record_gpu_buffer = NULL;
+}
+
+void recording_dump_frame(
+      const void *data, unsigned width,
+      unsigned height, size_t pitch, bool is_idle)
+{
+   struct record_video_data ffemu_data;
+   video_driver_state_t 
+	   *video_st   = &video_driver_st;
+   recording_state_t 
+      *record_st       = recording_state_get_ptr();
+
+   ffemu_data.data     = data;
+   ffemu_data.width    = width;
+   ffemu_data.height   = height;
+   ffemu_data.pitch    = (int)pitch;
+   ffemu_data.is_dupe  = false;
+
+   if (video_st->record_gpu_buffer)
+   {
+      struct video_viewport vp;
+
+      vp.x                        = 0;
+      vp.y                        = 0;
+      vp.width                    = 0;
+      vp.height                   = 0;
+      vp.full_width               = 0;
+      vp.full_height              = 0;
+
+      video_driver_get_viewport_info(&vp);
+
+      if (!vp.width || !vp.height)
+      {
+         RARCH_WARN("[recording] %s \n",
+               msg_hash_to_str(MSG_VIEWPORT_SIZE_CALCULATION_FAILED));
+         video_driver_gpu_record_deinit();
+         recording_dump_frame(
+               data, width, height, pitch, is_idle);
+         return;
+      }
+
+      /* User has resized. We kinda have a problem now. */
+      if (  vp.width  != record_st->gpu_width ||
+            vp.height != record_st->gpu_height)
+      {
+         RARCH_WARN("[recording] %s\n",
+               msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE));
+
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE),
+               1, 180, true,
+               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+         return;
+      }
+
+      /* Big bottleneck.
+       * Since we might need to do read-backs asynchronously,
+       * it might take 3-4 times before this returns true. */
+      if (!video_driver_read_viewport(video_st->record_gpu_buffer, is_idle))
+         return;
+
+      ffemu_data.pitch  = (int)(record_st->gpu_width * 3);
+      ffemu_data.width  = (unsigned)record_st->gpu_width;
+      ffemu_data.height = (unsigned)record_st->gpu_height;
+      ffemu_data.data   = video_st->record_gpu_buffer + (ffemu_data.height - 1) * ffemu_data.pitch;
+
+      ffemu_data.pitch  = -ffemu_data.pitch;
+   }
+   else
+      ffemu_data.is_dupe = !data;
+
+   record_st->driver->push_video(record_st->data, &ffemu_data);
+}
+
+const char *video_display_server_get_ident(void)
+{
+   if (!current_display_server)
+      return FILE_PATH_UNKNOWN;
+   return current_display_server->ident;
+}
+
+void* video_display_server_init(enum rarch_display_type type)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   video_display_server_destroy();
+
+   switch (type)
+   {
+      case RARCH_DISPLAY_WIN32:
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+         current_display_server = &dispserv_win32;
+#endif
+         break;
+      case RARCH_DISPLAY_X11:
+#if defined(HAVE_X11)
+         current_display_server = &dispserv_x11;
+#endif
+         break;
+      default:
+#if defined(ANDROID)
+         current_display_server = &dispserv_android;
+#else
+         current_display_server = &dispserv_null;
+#endif
+         break;
+   }
+
+   if (current_display_server)
+   {
+      if (current_display_server->init)
+         video_st->current_display_server_data = current_display_server->init();
+
+      if (!string_is_empty(current_display_server->ident))
+      {
+         RARCH_LOG("[Video]: Found display server: %s\n",
+               current_display_server->ident);
+      }
+   }
+
+   video_st->initial_screen_orientation =
+      video_display_server_get_screen_orientation();
+   video_st->current_screen_orientation =
+      video_st->initial_screen_orientation;
+
+   return video_st->current_display_server_data;
+}
+
+void video_display_server_destroy(void)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   const enum rotation initial_screen_orientation = video_st->initial_screen_orientation;
+   const enum rotation current_screen_orientation = video_st->current_screen_orientation;
+
+   if (initial_screen_orientation != current_screen_orientation)
+      video_display_server_set_screen_orientation(initial_screen_orientation);
+
+   if (current_display_server)
+      if (video_st->current_display_server_data)
+         current_display_server->destroy(video_st->current_display_server_data);
+}
+
+bool video_display_server_set_window_opacity(unsigned opacity)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   if (current_display_server && current_display_server->set_window_opacity)
+      return current_display_server->set_window_opacity(
+            video_st->current_display_server_data, opacity);
+   return false;
+}
+
+bool video_display_server_set_window_progress(int progress, bool finished)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   if (current_display_server && current_display_server->set_window_progress)
+      return current_display_server->set_window_progress(
+            video_st->current_display_server_data, progress, finished);
+   return false;
+}
+
+bool video_display_server_set_window_decorations(bool on)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   if (current_display_server && current_display_server->set_window_decorations)
+      return current_display_server->set_window_decorations(
+            video_st->current_display_server_data, on);
+   return false;
+}
+
+bool video_display_server_set_resolution(unsigned width, unsigned height,
+      int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   if (current_display_server && current_display_server->set_resolution)
+      return current_display_server->set_resolution(
+            video_st->current_display_server_data, width, height, int_hz,
+            hz, center, monitor_index, xoffset, padjust);
+   return false;
+}
+
+bool video_display_server_has_resolution_list(void)
+{
+   return (current_display_server
+         && current_display_server->get_resolution_list);
+}
+
+void *video_display_server_get_resolution_list(unsigned *size)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   if (video_display_server_has_resolution_list())
+      return current_display_server->get_resolution_list(
+            video_st->current_display_server_data, size);
+   return NULL;
+}
+
+bool video_display_server_has_refresh_rate(float hz)
+{
+   unsigned i, size            = 0;
+   bool rate_exists            = false;
+
+   struct video_display_config *video_list = (struct video_display_config*)
+         video_display_server_get_resolution_list(&size);
+
+   if (video_list)
+   {
+   video_driver_state_t *video_st    = &video_driver_st;
+      unsigned video_driver_width    = video_st->width;
+      unsigned video_driver_height   = video_st->height;
+
+      for (i = 0; i < size && !rate_exists; i++)
+      {
+         if (video_list[i].width       == video_driver_width &&
+             video_list[i].height      == video_driver_height &&
+             video_list[i].refreshrate == floor(hz))
+            rate_exists = true;
+      }
+
+      free(video_list);
+   }
+
+   return rate_exists;
+}
+
+bool video_display_server_set_refresh_rate(float hz)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   if (current_display_server && current_display_server->set_resolution)
+      return current_display_server->set_resolution(
+            video_st->current_display_server_data, 0, 0, (int)hz,
+            hz, 0, 0, 0, 0);
+   return false;
+}
+
+void video_display_server_restore_refresh_rate(void)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   settings_t *settings        = config_get_ptr();
+   float refresh_rate_original = video_st->video_refresh_rate_original;
+   float refresh_rate_current  = settings->floats.video_refresh_rate;
+
+   if (!refresh_rate_original || refresh_rate_current == refresh_rate_original)
+      return;
+
+   video_monitor_set_refresh_rate(refresh_rate_original);
+   video_display_server_set_refresh_rate(refresh_rate_original);
+}
+
+const char *video_display_server_get_output_options(void)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   if (current_display_server && current_display_server->get_output_options)
+      return current_display_server->get_output_options(
+            video_st->current_display_server_data);
+   return NULL;
+}
+
+void video_display_server_set_screen_orientation(enum rotation rotation)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   if (current_display_server && current_display_server->set_screen_orientation)
+   {
+      RARCH_LOG("[Video]: Setting screen orientation to %d.\n", rotation);
+      video_st->current_screen_orientation    = rotation;
+      current_display_server->set_screen_orientation(video_st->current_display_server_data, rotation);
+   }
+}
+
+bool video_display_server_can_set_screen_orientation(void)
+{
+   return (current_display_server && current_display_server->set_screen_orientation);
+}
+
+enum rotation video_display_server_get_screen_orientation(void)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   if (current_display_server && current_display_server->get_screen_orientation)
+      return current_display_server->get_screen_orientation(
+            video_st->current_display_server_data);
+   return ORIENTATION_NORMAL;
+}
+
+bool video_display_server_get_flags(gfx_ctx_flags_t *flags)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   if (!flags || !current_display_server || !current_display_server->get_flags)
+      return false;
+   flags->flags = current_display_server->get_flags(
+         video_st->current_display_server_data);
+   return true;
+}
+
+bool video_driver_started_fullscreen(void)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   return video_st->started_fullscreen;
+}
+
+bool video_driver_is_threaded(void)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   return VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
+}
+
+bool *video_driver_get_threaded(void)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+#if defined(__MACH__) && defined(__APPLE__)
+   /* TODO/FIXME - force threaded video to disabled on Apple for now
+    * until NSWindow/UIWindow concurrency issues are taken care of */
+   video_st->threaded = false;
+#endif
+   return &video_st->threaded;
+}
+
+void video_driver_set_threaded(bool val)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+#if defined(__MACH__) && defined(__APPLE__)
+   /* TODO/FIXME - force threaded video to disabled on Apple for now
+    * until NSWindow/UIWindow concurrency issues are taken care of */
+   video_st->threaded = false;
+#else
+   video_st->threaded = val;
+#endif
+}
+
+const char *video_driver_get_ident(void)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   if (!video_st->current_video)
+      return NULL;
+#ifdef HAVE_THREADS
+   if (VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st))
+   {
+      const thread_video_t *thr   = (const thread_video_t*)video_st->data;
+      if (!thr || !thr->driver)
+         return NULL;
+      return thr->driver->ident;
+   }
+#endif
+
+   return video_st->current_video->ident;
+}
+
+void video_context_driver_reset(void)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   if (!video_st->current_video_context.get_metrics)
+      video_st->current_video_context.get_metrics = get_metrics_null;
+}
+
+bool video_context_driver_set(const gfx_ctx_driver_t *data)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   if (!data)
+      return false;
+   video_st->current_video_context = *data;
+   video_context_driver_reset();
+   return true;
+}
+
+uintptr_t video_driver_get_current_framebuffer(void)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   if (     video_st->poke
+         && video_st->poke->get_current_framebuffer)
+      return video_st->poke->get_current_framebuffer(video_st->data);
+   return 0;
+}
+
+retro_proc_address_t video_driver_get_proc_address(const char *sym)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   if (     video_st->poke
+         && video_st->poke->get_proc_address)
+      return video_st->poke->get_proc_address(video_st->data, sym);
+   return NULL;
+}
+
+#ifdef HAVE_VIDEO_FILTER
+void video_driver_filter_free(void)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   if (video_st->state_filter)
+      rarch_softfilter_free(video_st->state_filter);
+   video_st->state_filter   = NULL;
+
+   if (video_st->state_buffer)
+   {
+#ifdef _3DS
+      linearFree(video_st->state_buffer);
+#else
+      free(video_st->state_buffer);
+#endif
+   }
+   video_st->state_buffer    = NULL;
+
+   video_st->state_scale     = 0;
+   video_st->state_out_bpp   = 0;
+   video_st->state_out_rgb32 = false;
+}
+
+void video_driver_init_filter(enum retro_pixel_format colfmt_int,
+      settings_t *settings)
+{
+   unsigned pow2_x, pow2_y, maxsize;
+   void *buf                            = NULL;
+   video_driver_state_t *video_st       = &video_driver_st;
+   struct retro_game_geometry *geom     = &video_st->av_info.geometry;
+   unsigned width                       = geom->max_width;
+   unsigned height                      = geom->max_height;
+   /* Deprecated format. Gets pre-converted. */
+   enum retro_pixel_format colfmt       =
+      (colfmt_int == RETRO_PIXEL_FORMAT_0RGB1555) ?
+      RETRO_PIXEL_FORMAT_RGB565 : colfmt_int;
+
+   if (video_driver_is_hw_context())
+   {
+      RARCH_WARN("[Video]: Cannot use CPU filters when hardware rendering is used.\n");
+      return;
+   }
+
+   video_st->state_filter   = rarch_softfilter_new(
+         settings->paths.path_softfilter_plugin,
+         RARCH_SOFTFILTER_THREADS_AUTO, colfmt, width, height);
+
+   if (!video_st->state_filter)
+   {
+      RARCH_ERR("[Video]: Failed to load filter.\n");
+      return;
+   }
+
+   rarch_softfilter_get_max_output_size(
+         video_st->state_filter,
+         &width, &height);
+
+   pow2_x                              = next_pow2(width);
+   pow2_y                              = next_pow2(height);
+   maxsize                             = MAX(pow2_x, pow2_y);
+
+#ifdef _3DS
+   /* On 3DS, video is disabled if the output resolution
+    * exceeds 2048x2048. To avoid the user being presented
+    * with a black screen, we therefore have to check that
+    * the filter upscaling buffer fits within this limit. */
+   if (maxsize >= 2048)
+   {
+      RARCH_ERR("[Video]: Softfilter initialization failed."
+            " Upscaling buffer exceeds hardware limitations.\n");
+      video_driver_filter_free();
+      return;
+   }
+#endif
+
+   video_st->state_scale     = maxsize / RARCH_SCALE_BASE;
+   video_st->state_out_rgb32 = rarch_softfilter_get_output_format(
+         video_st->state_filter) == RETRO_PIXEL_FORMAT_XRGB8888;
+
+   video_st->state_out_bpp   =
+      video_st->state_out_rgb32
+      ? sizeof(uint32_t)
+      : sizeof(uint16_t);
+
+   /* TODO: Aligned output. */
+#ifdef _3DS
+   buf = linearMemAlign(
+         width * height * video_st->state_out_bpp, 0x80);
+#else
+   buf = malloc(
+         width * height * video_st->state_out_bpp);
+#endif
+   if (!buf)
+   {
+      RARCH_ERR("[Video]: Softfilter initialization failed.\n");
+      video_driver_filter_free();
+      return;
+   }
+
+   video_st->state_buffer    = buf;
+}
+#endif
+
+void video_driver_free_hw_context(void)
+{
+   video_driver_state_t *video_st       = &video_driver_st;
+   VIDEO_DRIVER_CONTEXT_LOCK(video_st);
+
+   if (video_st->hw_render.context_destroy)
+      video_st->hw_render.context_destroy();
+
+   memset(&video_st->hw_render, 0, sizeof(video_st->hw_render));
+
+   VIDEO_DRIVER_CONTEXT_UNLOCK(video_st);
+
+   video_st->hw_render_context_negotiation = NULL;
+}
+
+void video_driver_free_internal(void)
+{
+   input_driver_state_t *input_st    = input_state_get_ptr();
+   video_driver_state_t *video_st    = &video_driver_st;
+#ifdef HAVE_THREADS
+   bool        is_threaded           =
+VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
+#endif
+
+#ifdef HAVE_VIDEO_LAYOUT
+   video_layout_deinit();
+#endif
+
+   command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
+
+   if (!video_driver_is_video_cache_context())
+      video_driver_free_hw_context();
+
+   if (!(input_st->current_data == video_st->data))
+   {
+      if (input_st->current_driver)
+         if (input_st->current_driver->free)
+            input_st->current_driver->free(input_st->current_data);
+      if (input_st->primary_joypad)
+      {
+         const input_device_driver_t *tmp   = input_st->primary_joypad;
+         input_st->primary_joypad    = NULL;
+         tmp->destroy();
+      }
+#ifdef HAVE_MFI
+      if (input_st->secondary_joypad)
+      {
+         const input_device_driver_t *tmp   = input_st->secondary_joypad;
+         input_st->secondary_joypad         = NULL;
+         tmp->destroy();
+      }
+#endif
+      input_st->keyboard_mapping_blocked    = false;
+      input_st->current_data                = NULL;
+   }
+
+   if (     video_st->data
+         && video_st->current_video
+         && video_st->current_video->free)
+      video_st->current_video->free(video_st->data);
+
+   if (video_st->scaler_ptr)
+      video_driver_pixel_converter_free(video_st->scaler_ptr);
+   video_st->scaler_ptr = NULL;
+#ifdef HAVE_VIDEO_FILTER
+   video_driver_filter_free();
+#endif
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   dir_free_shader(
+         (struct rarch_dir_shader_list*)&video_st->dir_shader_list,
+         config_get_ptr()->bools.video_shader_remember_last_dir);
+#endif
+#ifdef HAVE_THREADS
+   if (is_threaded)
+      return;
+#endif
+
+   video_monitor_compute_fps_statistics(video_st->frame_time_count);
 }
