@@ -6730,12 +6730,7 @@ void menu_driver_toggle(
     */
    video_driver_t *current_video      = (video_driver_t*)curr_video_data;
    bool pause_libretro                = false;
-#ifdef HAVE_AUDIOMIXER
    bool audio_enable_menu             = false;
-#if 0
-   bool audio_enable_menu_bgm         = false;
-#endif
-#endif
    runloop_state_t *runloop_st        = runloop_state_get_ptr();
    bool runloop_shutdown_initiated    = runloop_st->shutdown_initiated;
 #ifdef HAVE_OVERLAY
@@ -6750,9 +6745,6 @@ void menu_driver_toggle(
       pause_libretro                  = settings->bools.menu_pause_libretro;
 #ifdef HAVE_AUDIOMIXER
       audio_enable_menu               = settings->bools.audio_enable_menu;
-#if 0
-      audio_enable_menu_bgm           = settings->bools.audio_enable_menu_bgm ;
-#endif
 #endif
 #ifdef HAVE_OVERLAY
       input_overlay_hide_in_menu      = settings->bools.input_overlay_hide_in_menu;
@@ -6822,11 +6814,6 @@ void menu_driver_toggle(
       if (pause_libretro && !audio_enable_menu)
          command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
-#if 0
-     if (audio_enable_menu && audio_enable_menu_bgm)
-         audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
-#endif
-
       /* Override keyboard callback to redirect to menu instead.
        * We'll use this later for something ... */
 
@@ -6852,11 +6839,6 @@ void menu_driver_toggle(
 
       if (pause_libretro && !audio_enable_menu)
          command_event(CMD_EVENT_AUDIO_START, NULL);
-
-#if 0
-      if (audio_enable_menu && audio_enable_menu_bgm)
-         audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
-#endif
 
       /* Restore libretro keyboard callback. */
       if (key_event && frontend_key_event)
