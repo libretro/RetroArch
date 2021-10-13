@@ -230,8 +230,6 @@ extern camera_driver_t camera_avfoundation;
  **/
 const char* config_get_camera_driver_options(void);
 
-bool gfx_widgets_ready(void);
-
 unsigned int retroarch_get_rotation(void);
 
 void retroarch_init_task_queue(void);

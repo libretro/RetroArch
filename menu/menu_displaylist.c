@@ -102,6 +102,9 @@
 #include "../frontend/frontend_driver.h"
 #include "../ui/ui_companion_driver.h"
 #include "../gfx/video_display_server.h"
+#ifdef HAVE_GFX_WIDGETS
+#include "../gfx/gfx_widgets.h"
+#endif
 #include "../config.features.h"
 #include "../version_git.h"
 #include "../list_special.h"

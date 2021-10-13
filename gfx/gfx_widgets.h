@@ -373,6 +373,8 @@ bool gfx_widget_start_load_content_animation(void);
  * enable_menu_widgets to true for that driver */
 void gfx_widgets_frame(void *data);
 
+bool gfx_widgets_ready(void);
+
 dispgfx_widget_t *dispwidget_get_ptr(void);
 
 extern const gfx_widget_t gfx_widget_screenshot;
