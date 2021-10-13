@@ -16299,12 +16299,12 @@ void video_driver_hide_mouse(void)
 static void video_driver_restore_cached(settings_t *settings)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
-   if (video_st->cached[0])
+   if (video_st->cached_driver_id[0])
    {
       configuration_set_string(settings,
-            settings->arrays.video_driver, video_st->cached);
+            settings->arrays.video_driver, video_st->cached_driver_id);
 
-      video_st->cached[0] = 0;
+      video_st->cached_driver_id[0] = 0;
       RARCH_LOG("[Video]: Restored video driver to \"%s\".\n",
             settings->arrays.video_driver);
    }
@@ -16342,9 +16342,9 @@ static bool video_driver_find_driver(
                if (!string_is_equal(settings->arrays.video_driver,
                         rdr_context_name))
                {
-                  strlcpy(video_st->cached,
+                  strlcpy(video_st->cached_driver_id,
                         settings->arrays.video_driver,
-                        sizeof(video_st->cached));
+                        sizeof(video_st->cached_driver_id));
                   configuration_set_string(settings,
                         settings->arrays.video_driver,
                         rdr_context_name);
@@ -16367,9 +16367,9 @@ static bool video_driver_find_driver(
                if (  !string_is_equal(settings->arrays.video_driver, "gl") &&
                      !string_is_equal(settings->arrays.video_driver, "glcore"))
                {
-                  strlcpy(video_st->cached,
+                  strlcpy(video_st->cached_driver_id,
                         settings->arrays.video_driver,
-                        sizeof(video_st->cached));
+                        sizeof(video_st->cached_driver_id));
                   configuration_set_string(settings,
                         settings->arrays.video_driver,
                         "glcore");
@@ -16381,9 +16381,9 @@ static bool video_driver_find_driver(
 #else
                if (  !string_is_equal(settings->arrays.video_driver, "gl"))
                {
-                  strlcpy(video_st->cached,
+                  strlcpy(video_st->cached_driver_id,
                         settings->arrays.video_driver,
-                        sizeof(video_st->cached));
+                        sizeof(video_st->cached_driver_id));
                   configuration_set_string(settings,
                         settings->arrays.video_driver,
                         "gl");

@@ -956,7 +956,7 @@ typedef struct
     */
    gfx_ctx_flags_t deferred_flag_data;          /* uint32_t alignment */
 
-   char cached[32];
+   char cached_driver_id[32];
    char title_buf[64];
    char gpu_device_string[128];
    char gpu_api_version_string[128];
