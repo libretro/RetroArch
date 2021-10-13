@@ -1761,7 +1761,9 @@ enum retro_pixel_format video_driver_get_pixel_format(void)
 
 void video_driver_lock_new(void)
 {
+#ifdef HAVE_THREADS
    video_driver_state_t *video_st = &video_driver_st;
+#endif
    VIDEO_DRIVER_LOCK_FREE(video_st);
 #ifdef HAVE_THREADS
    if (!video_st->display_lock)
