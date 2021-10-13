@@ -1644,8 +1644,8 @@ void video_driver_cached_frame_get(const void **data, unsigned *width,
 
 void video_driver_get_size(unsigned *width, unsigned *height)
 {
-#ifdef HAVE_THREADS
    video_driver_state_t *video_st = &video_driver_st;
+#ifdef HAVE_THREADS
    bool is_threaded = VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
 
    VIDEO_DRIVER_THREADED_LOCK(video_st, is_threaded);
