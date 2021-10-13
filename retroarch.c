@@ -263,11 +263,11 @@
 #endif
 
 #ifdef HAVE_THREADS
-#define RUNLOOP_MSG_QUEUE_LOCK(runloop) slock_lock(runloop->msg_queue_lock)
-#define RUNLOOP_MSG_QUEUE_UNLOCK(runloop) slock_unlock(runloop->msg_queue_lock)
+#define RUNLOOP_MSG_QUEUE_LOCK(runloop_st) slock_lock((runloop_st)->msg_queue_lock)
+#define RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st) slock_unlock((runloop_st)->msg_queue_lock)
 #else
-#define RUNLOOP_MSG_QUEUE_LOCK(p_runloop)
-#define RUNLOOP_MSG_QUEUE_UNLOCK(p_runloop)
+#define RUNLOOP_MSG_QUEUE_LOCK(runloop_st)
+#define RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st)
 #endif
 
 /* Custom forward declarations */
@@ -6189,6 +6189,7 @@ static bool command_event_init_core(
       input_driver_state_t *input_st,
       enum rarch_core_type type)
 {
+   runloop_state_t *runloop_st     = runloop_state_get_ptr();
    video_driver_state_t *video_st  = video_state_get_ptr();
 #ifdef HAVE_CONFIGFILE
    bool auto_overrides_enable      = settings->bools.auto_overrides_enable;
@@ -6306,10 +6307,10 @@ static bool command_event_init_core(
    if (!core_load(p_rarch, poll_type_behavior))
       return false;
 
-  p_rarch->frame_limit_minimum_time = 
+   runloop_st->frame_limit_minimum_time = 
      retroarch_set_frame_limit(&video_st->av_info,
            fastforward_ratio);
-   p_rarch->frame_limit_last_time   = cpu_features_get_time_usec();
+   runloop_st->frame_limit_last_time    = cpu_features_get_time_usec();
 
    command_event_runtime_log_init(p_rarch);
    return true;
@@ -6799,7 +6800,7 @@ static void command_event_reinit(const int flags)
 #endif
 }
 
-static void retroarch_pause_checks(void)
+static void runloop_pause_checks(void)
 {
 #ifdef HAVE_DISCORD
    discord_userdata_t userdata;
@@ -6853,54 +6854,57 @@ static void retroarch_pause_checks(void)
 #endif
 }
 
-static void retroarch_frame_time_free(void)
+static void runloop_frame_time_free(void)
 {
-   memset(&runloop_state.frame_time, 0,
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
+   memset(&runloop_st->frame_time, 0,
          sizeof(struct retro_frame_time_callback));
-   runloop_state.frame_time_last  = 0;
-   runloop_state.max_frames       = 0;
+   runloop_st->frame_time_last    = 0;
+   runloop_st->max_frames         = 0;
 }
 
-static void retroarch_audio_buffer_status_free(void)
+static void runloop_audio_buffer_status_free(void)
 {
-   memset(&runloop_state.audio_buffer_status, 0,
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
+   memset(&runloop_st->audio_buffer_status, 0,
          sizeof(struct retro_audio_buffer_status_callback));
-   runloop_state.audio_latency = 0;
+   runloop_st->audio_latency = 0;
 }
 
 static void retroarch_fastmotion_override_free(
       struct rarch_state *p_rarch,
-      runloop_state_t *p_runloop)
+      runloop_state_t *runloop_st)
 {
    video_driver_state_t 
       *video_st            = video_state_get_ptr();
    settings_t *settings    = config_get_ptr();
    float fastforward_ratio = settings->floats.fastforward_ratio;
-   bool reset_frame_limit  = p_runloop->fastmotion_override.current.fastforward &&
-         (p_runloop->fastmotion_override.current.ratio >= 0.0f) &&
-         (p_runloop->fastmotion_override.current.ratio != fastforward_ratio);
+   bool reset_frame_limit  = runloop_st->fastmotion_override.current.fastforward &&
+         (runloop_st->fastmotion_override.current.ratio >= 0.0f) &&
+         (runloop_st->fastmotion_override.current.ratio != fastforward_ratio);
 
-   p_runloop->fastmotion_override.current.ratio          = 0.0f;
-   p_runloop->fastmotion_override.current.fastforward    = false;
-   p_runloop->fastmotion_override.current.notification   = false;
-   p_runloop->fastmotion_override.current.inhibit_toggle = false;
+   runloop_st->fastmotion_override.current.ratio          = 0.0f;
+   runloop_st->fastmotion_override.current.fastforward    = false;
+   runloop_st->fastmotion_override.current.notification   = false;
+   runloop_st->fastmotion_override.current.inhibit_toggle = false;
 
-   p_runloop->fastmotion_override.next.ratio             = 0.0f;
-   p_runloop->fastmotion_override.next.fastforward       = false;
-   p_runloop->fastmotion_override.next.notification      = false;
-   p_runloop->fastmotion_override.next.inhibit_toggle    = false;
+   runloop_st->fastmotion_override.next.ratio             = 0.0f;
+   runloop_st->fastmotion_override.next.fastforward       = false;
+   runloop_st->fastmotion_override.next.notification      = false;
+   runloop_st->fastmotion_override.next.inhibit_toggle    = false;
 
-   p_runloop->fastmotion_override.pending                = false;
+   runloop_st->fastmotion_override.pending                = false;
 
    if (reset_frame_limit)
-      p_rarch->frame_limit_minimum_time = retroarch_set_frame_limit(
+      runloop_st->frame_limit_minimum_time                = 
+         retroarch_set_frame_limit(
             &video_st->av_info, fastforward_ratio);
 }
 
-static void retroarch_core_options_callback_free(runloop_state_t *p_runloop)
+static void runloop_core_options_cb_free(runloop_state_t *runloop_st)
 {
    /* Only a single core options callback is used at present */
-   p_runloop->core_options_callback.update_display = NULL;
+   runloop_st->core_options_callback.update_display = NULL;
 }
 
 static void retroarch_system_info_free(runloop_state_t *runloop_st)
@@ -8099,18 +8103,18 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 
             runloop_state.paused = boolean;
-            retroarch_pause_checks();
+            runloop_pause_checks();
          }
          break;
       case CMD_EVENT_UNPAUSE:
          boolean                 = false;
          runloop_state.paused = boolean;
-         retroarch_pause_checks();
+         runloop_pause_checks();
          break;
       case CMD_EVENT_PAUSE:
          boolean                 = true;
          runloop_state.paused = boolean;
-         retroarch_pause_checks();
+         runloop_pause_checks();
          break;
       case CMD_EVENT_MENU_PAUSE_LIBRETRO:
 #ifdef HAVE_MENU
@@ -8704,7 +8708,8 @@ bool command_event(enum event_command cmd, void *data)
          {
             video_driver_state_t 
                *video_st                        = video_state_get_ptr();
-            p_rarch->frame_limit_minimum_time = 
+            runloop_state_t *runloop_st         = runloop_state_get_ptr();
+            runloop_st->frame_limit_minimum_time= 
                retroarch_set_frame_limit(&video_st->av_info,
                      retroarch_get_runloop_fastforward_ratio(
                         settings,
@@ -11925,13 +11930,15 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
                       && throttle_state->mode != RETRO_THROTTLE_VSYNC)
          {
             /* Keep base if frame limiter matching the core is active. */
-            retro_time_t core_limit  = (core_fps ? 
-                  (retro_time_t)(1000000.0f / core_fps) : (retro_time_t)0);
-            retro_time_t frame_limit = p_rarch->frame_limit_minimum_time;
+            retro_time_t core_limit     = (core_fps 
+                  ? (retro_time_t)(1000000.0f / core_fps)
+                  : (retro_time_t)0);
+            runloop_state_t *runloop_st = runloop_state_get_ptr();
+            retro_time_t frame_limit    = runloop_st->frame_limit_minimum_time;
             if (abs((int)(core_limit - frame_limit)) > 10)
             {
-               throttle_state->mode = RETRO_THROTTLE_UNBLOCKED;
-               throttle_state->rate = 0.0f;
+               throttle_state->mode     = RETRO_THROTTLE_UNBLOCKED;
+               throttle_state->rate     = 0.0f;
             }
          }
          break;
@@ -12441,11 +12448,11 @@ static void uninit_libretro_symbols(
    retroarch_system_info_free(&runloop_state);
    audio_st->callback.callback                   = NULL;
    audio_st->callback.set_state                  = NULL;
-   retroarch_frame_time_free();
-   retroarch_audio_buffer_status_free();
+   runloop_frame_time_free();
+   runloop_audio_buffer_status_free();
    input_game_focus_free();
    retroarch_fastmotion_override_free(p_rarch, &runloop_state);
-   retroarch_core_options_callback_free(&runloop_state);
+   runloop_core_options_cb_free(&runloop_state);
    p_rarch->camera_driver_active      = false;
    p_rarch->location_driver_active    = false;
 
@@ -19141,11 +19148,11 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
             runloop_state.overrides_active = false;
 #endif
             runloop_state.autosave         = false;
-            retroarch_frame_time_free();
-            retroarch_audio_buffer_status_free();
+            runloop_frame_time_free();
+            runloop_audio_buffer_status_free();
             input_game_focus_free();
             retroarch_fastmotion_override_free(p_rarch, &runloop_state);
-            retroarch_core_options_callback_free(&runloop_state);
+            runloop_core_options_cb_free(&runloop_state);
             memset(&input_st->analog_requested, 0,
                   sizeof(input_st->analog_requested));
          }
@@ -19653,7 +19660,7 @@ static bool display_menu_libretro(
 #endif
 
 static void runloop_apply_fastmotion_override(
-      struct rarch_state *p_rarch, runloop_state_t *p_runloop,
+      struct rarch_state *p_rarch, runloop_state_t *runloop_st,
       settings_t *settings)
 {
    video_driver_state_t *video_st      = video_state_get_ptr();
@@ -19662,40 +19669,40 @@ static void runloop_apply_fastmotion_override(
    float fastforward_ratio_default                    = settings ?
          settings->floats.fastforward_ratio : 0.0f;
    float fastforward_ratio_last                       =
-            (p_runloop->fastmotion_override.current.fastforward &&
-                  (p_runloop->fastmotion_override.current.ratio >= 0.0f)) ?
-                        p_runloop->fastmotion_override.current.ratio :
+            (runloop_st->fastmotion_override.current.fastforward &&
+                  (runloop_st->fastmotion_override.current.ratio >= 0.0f)) ?
+                        runloop_st->fastmotion_override.current.ratio :
                               fastforward_ratio_default;
    float fastforward_ratio_current;
 
-   memcpy(&p_runloop->fastmotion_override.current,
-         &p_runloop->fastmotion_override.next,
-         sizeof(p_runloop->fastmotion_override.current));
+   memcpy(&runloop_st->fastmotion_override.current,
+         &runloop_st->fastmotion_override.next,
+         sizeof(runloop_st->fastmotion_override.current));
 
    /* Check if 'fastmotion' state has changed */
-   if (p_runloop->fastmotion !=
-         p_runloop->fastmotion_override.current.fastforward)
+   if (runloop_st->fastmotion !=
+         runloop_st->fastmotion_override.current.fastforward)
    {
       input_driver_state_t *input_st = input_state_get_ptr();
-      p_runloop->fastmotion =
-            p_runloop->fastmotion_override.current.fastforward;
+      runloop_st->fastmotion =
+            runloop_st->fastmotion_override.current.fastforward;
 
       if (input_st)
       {
-         if (p_runloop->fastmotion)
+         if (runloop_st->fastmotion)
             input_st->nonblocking_flag = true;
          else
             input_st->nonblocking_flag = false;
       }
 
-      if (!p_runloop->fastmotion)
+      if (!runloop_st->fastmotion)
          p_rarch->fastforward_after_frames    = 1;
 
       driver_set_nonblock_state();
 
       /* Reset frame time counter when toggling
        * fast-forward off, if required */
-      if (!p_runloop->fastmotion &&
+      if (!runloop_st->fastmotion &&
           frame_time_counter_reset_after_fastforwarding)
          video_st->frame_time_count = 0;
 
@@ -19704,19 +19711,19 @@ static void runloop_apply_fastmotion_override(
        * (required if RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE
        * is called during core de-initialisation) */
 #if defined(HAVE_GFX_WIDGETS)
-      if (dispwidget_get_ptr()->active && !p_runloop->fastmotion)
+      if (dispwidget_get_ptr()->active && !runloop_st->fastmotion)
          video_st->widgets_fast_forward = false;
 #endif
    }
 
    /* Update frame limit, if required */
-   fastforward_ratio_current = (p_runloop->fastmotion_override.current.fastforward &&
-         (p_runloop->fastmotion_override.current.ratio >= 0.0f)) ?
-               p_runloop->fastmotion_override.current.ratio :
+   fastforward_ratio_current = (runloop_st->fastmotion_override.current.fastforward &&
+         (runloop_st->fastmotion_override.current.ratio >= 0.0f)) ?
+               runloop_st->fastmotion_override.current.ratio :
                      fastforward_ratio_default;
 
    if (fastforward_ratio_current != fastforward_ratio_last)
-         p_rarch->frame_limit_minimum_time = 
+         runloop_st->frame_limit_minimum_time = 
             retroarch_set_frame_limit(&video_st->av_info,
                   fastforward_ratio_current);
 }
@@ -21079,8 +21086,8 @@ int runloop_iterate(void)
             settings, current_time))
    {
       case RUNLOOP_STATE_QUIT:
-         p_rarch->frame_limit_last_time = 0.0;
-         runloop_st->core_running       = false;
+         runloop_st->frame_limit_last_time = 0.0;
+         runloop_st->core_running          = false;
          command_event(CMD_EVENT_QUIT, NULL);
          return -1;
       case RUNLOOP_STATE_POLLED_AND_SLEEP:
@@ -21320,23 +21327,24 @@ end:
       }
 
       if (runloop_st->fastmotion)
-         p_rarch->frame_limit_minimum_time = 
+         runloop_st->frame_limit_minimum_time = 
             retroarch_set_frame_limit(&video_st->av_info,
                   retroarch_get_runloop_fastforward_ratio(
                      settings,
                      &runloop_st->fastmotion_override.current));
       else
-         p_rarch->frame_limit_minimum_time = 
+         runloop_st->frame_limit_minimum_time = 
             retroarch_set_frame_limit(&video_st->av_info,
                   1.0f);
    }
 
    /* if there's a fast forward limit, inject sleeps to keep from going too fast. */
-   if (p_rarch->frame_limit_minimum_time)
+   if (runloop_st->frame_limit_minimum_time)
    {
       const retro_time_t end_frame_time = cpu_features_get_time_usec();
       const retro_time_t to_sleep_ms = (
-            (p_rarch->frame_limit_last_time + p_rarch->frame_limit_minimum_time)
+            (  runloop_st->frame_limit_last_time 
+             + runloop_st->frame_limit_minimum_time)
             - end_frame_time) / 1000;
 
       if (to_sleep_ms > 0)
@@ -21344,7 +21352,8 @@ end:
          unsigned               sleep_ms = (unsigned)to_sleep_ms;
 
          /* Combat jitter a bit. */
-         p_rarch->frame_limit_last_time += p_rarch->frame_limit_minimum_time;
+         runloop_st->frame_limit_last_time += 
+            runloop_st->frame_limit_minimum_time;
 
          if (sleep_ms > 0)
          {
@@ -21357,7 +21366,7 @@ end:
          return 1;
       }
 
-      p_rarch->frame_limit_last_time = end_frame_time;
+      runloop_st->frame_limit_last_time = end_frame_time;
    }
 
    return 0;

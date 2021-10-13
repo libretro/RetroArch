@@ -549,8 +549,6 @@ typedef struct discord_state discord_state_t;
 
 struct rarch_state
 {
-   retro_time_t frame_limit_minimum_time;
-   retro_time_t frame_limit_last_time;
    retro_time_t libretro_core_runtime_last;
    retro_time_t libretro_core_runtime_usec;
    struct global              g_extern;         /* retro_time_t alignment */

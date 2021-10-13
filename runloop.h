@@ -86,6 +86,8 @@ typedef struct core_options_callbacks
 
 struct runloop
 {
+   retro_time_t frame_limit_minimum_time;
+   retro_time_t frame_limit_last_time;
    retro_usec_t frame_time_last;        /* int64_t alignment */
 
    msg_queue_t msg_queue;                        /* ptr alignment */
