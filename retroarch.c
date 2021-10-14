@@ -14644,7 +14644,6 @@ VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
  **/
 void video_driver_cached_frame(void)
 {
-   struct rarch_state *p_rarch    = &rarch_st;
    runloop_state_t *runloop_st    = &runloop_state;
    video_driver_state_t *video_st = video_state_get_ptr();
    void             *recording    = recording_state.data;
@@ -15149,7 +15148,6 @@ char* crt_switch_core_name(void)
 void video_driver_build_info(video_frame_info_t *video_info)
 {
    video_viewport_t *custom_vp             = NULL;
-   struct rarch_state       *p_rarch       = &rarch_st;
    runloop_state_t             *runloop_st = &runloop_state;
    settings_t *settings                    = config_get_ptr();
    video_driver_state_t *video_st          = video_state_get_ptr();
@@ -21285,7 +21283,6 @@ static void retro_input_poll_null(void) { }
 static int16_t core_input_state_poll_late(unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   struct rarch_state     *p_rarch = &rarch_st;
    runloop_state_t     *runloop_st = &runloop_state;
    if (!runloop_st->current_core.input_polled)
       input_driver_poll();
