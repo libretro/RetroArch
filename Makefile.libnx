@@ -53,6 +53,7 @@ HAVE_CHEEVOS = 1
 HAVE_CHD = 0 # disabled due to static libretro-common and libchdr conflicts between different cores
 HAVE_STB_VORBIS = 1
 HAVE_IBXM = 1
+HAVE_CORE_INFO_CACHE = 1
 
 # RetroArch libnx useful flags
 HAVE_THREADS = 1

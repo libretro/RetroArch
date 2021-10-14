@@ -9886,12 +9886,14 @@ static bool setting_append_list(
             bool_entries[listing].flags          = SD_FLAG_NONE;
             listing++;
 
+#ifdef HAVE_CORE_INFO_CACHE
             bool_entries[listing].target         = &settings->bools.core_info_cache_enable;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE;
             bool_entries[listing].default_value  = DEFAULT_CORE_INFO_CACHE_ENABLE;
             bool_entries[listing].flags          = SD_FLAG_NONE;
             listing++;
+#endif
 
 #ifndef HAVE_DYNAMIC
             bool_entries[listing].target         = &settings->bools.always_reload_core_on_run_content;

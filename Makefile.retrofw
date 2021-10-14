@@ -110,6 +110,7 @@ HAVE_PATCH = 1
 HAVE_CHEATS = 1
 HAVE_CHEEVOS = 0
 HAVE_LIBSHAKE = 0
+HAVE_CORE_INFO_CACHE = 1
 
 #comment out for now not working
 #HAVE_OSS =1

@@ -341,6 +341,10 @@ ifeq ($(HAVE_CHEATS), 1)
    OBJ     += cheat_manager.o
 endif
 
+ifeq ($(HAVE_CORE_INFO_CACHE), 1)
+   DEFINES += -DHAVE_CORE_INFO_CACHE
+endif
+
 OBJ += \
        core_info.o \
        core_backup.o \

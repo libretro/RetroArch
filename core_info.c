@@ -1815,6 +1815,7 @@ static core_info_list_t *core_info_list_new(const char *path,
    core_info_list->list  = core_info;
    core_info_list->count = path_list->core_list->size;
 
+#ifdef HAVE_CORE_INFO_CACHE
    /* Read core info cache, if enabled */
    if (enable_cache)
    {
@@ -1822,6 +1823,7 @@ static core_info_list_t *core_info_list_new(const char *path,
       if (!core_info_cache_list)
          goto error;
    }
+#endif
 
    for (i = 0; i < path_list->core_list->size; i++)
    {
