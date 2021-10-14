@@ -11910,7 +11910,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
             const unsigned *poll_type_data = (const unsigned*)data;
 
             if (poll_type_data)
-               p_rarch->core_poll_type_override = (enum poll_type_override_t)*poll_type_data;
+               runloop_st->core_poll_type_override = (enum poll_type_override_t)*poll_type_data;
          }
          break;
 
@@ -12516,7 +12516,7 @@ static void secondary_core_destroy(struct rarch_state *p_rarch)
    /* unload game from core */
    if (runloop_st->secondary_core.retro_unload_game)
       runloop_st->secondary_core.retro_unload_game();
-   p_rarch->core_poll_type_override = POLL_TYPE_OVERRIDE_DONTCARE;
+   runloop_st->core_poll_type_override = POLL_TYPE_OVERRIDE_DONTCARE;
 
    /* deinit */
    if (runloop_st->secondary_core.retro_deinit)
@@ -16792,7 +16792,7 @@ static void unload_hook(void)
    secondary_core_destroy(p_rarch);
    if (runloop_st->current_core.retro_unload_game)
       runloop_st->current_core.retro_unload_game();
-   p_rarch->core_poll_type_override = POLL_TYPE_OVERRIDE_DONTCARE;
+   runloop_st->core_poll_type_override = POLL_TYPE_OVERRIDE_DONTCARE;
 }
 
 static void runahead_deinit_hook(void)
@@ -21293,10 +21293,9 @@ static int16_t core_input_state_poll_late(unsigned port,
 
 static retro_input_state_t core_input_state_poll_return_cb(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    runloop_state_t *runloop_st = &runloop_state;
    const enum poll_type_override_t
-      core_poll_type_override  = p_rarch->core_poll_type_override;
+      core_poll_type_override  = runloop_st->core_poll_type_override;
    unsigned new_poll_type      = (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
       ? (core_poll_type_override - 1)
       : runloop_st->current_core.poll_type;
@@ -21307,10 +21306,9 @@ static retro_input_state_t core_input_state_poll_return_cb(void)
 
 static void core_input_state_poll_maybe(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    runloop_state_t *runloop_st = &runloop_state;
    const enum poll_type_override_t
-      core_poll_type_override  = p_rarch->core_poll_type_override;
+      core_poll_type_override  = runloop_st->core_poll_type_override;
    unsigned new_poll_type      = (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
       ? (core_poll_type_override - 1)
       : runloop_st->current_core.poll_type;
@@ -21670,7 +21668,7 @@ static bool core_unload_game(struct rarch_state *p_rarch)
    {
       RARCH_LOG("[Core]: Unloading game..\n");
       runloop_st->current_core.retro_unload_game();
-      p_rarch->core_poll_type_override  = POLL_TYPE_OVERRIDE_DONTCARE;
+      runloop_st->core_poll_type_override  = POLL_TYPE_OVERRIDE_DONTCARE;
       runloop_st->current_core.game_loaded = false;
    }
 
@@ -21687,7 +21685,7 @@ bool core_run(void)
    struct retro_core_t *
       current_core             = &runloop_st->current_core;
    const enum poll_type_override_t
-      core_poll_type_override  = p_rarch->core_poll_type_override;
+      core_poll_type_override  = runloop_st->core_poll_type_override;
    unsigned new_poll_type      = (core_poll_type_override != POLL_TYPE_OVERRIDE_DONTCARE)
       ? (core_poll_type_override - 1)
       : current_core->poll_type;

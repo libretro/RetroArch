@@ -490,14 +490,6 @@ enum
    RA_OPT_LOAD_MENU_ON_ERROR
 };
 
-enum poll_type_override_t
-{
-   POLL_TYPE_OVERRIDE_DONTCARE = 0,
-   POLL_TYPE_OVERRIDE_EARLY,
-   POLL_TYPE_OVERRIDE_NORMAL,
-   POLL_TYPE_OVERRIDE_LATE
-};
-
 typedef void *(*constructor_t)(void);
 typedef void  (*destructor_t )(void*);
 
@@ -624,9 +616,6 @@ struct rarch_state
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    dylib_t secondary_lib_handle;                         /* ptr alignment */
 #endif
-#endif
-
-#ifdef HAVE_RUNAHEAD
    size_t runahead_save_state_size;
 #endif
 
@@ -675,7 +664,6 @@ struct rarch_state
 #if defined(HAVE_RUNAHEAD)
    enum rarch_core_type last_core_type;
 #endif
-   enum poll_type_override_t core_poll_type_override;
 
    retro_bits_t has_set_libretro_device;        /* uint32_t alignment */
 

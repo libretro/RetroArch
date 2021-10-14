@@ -46,6 +46,15 @@ enum  runloop_state_enum
    RUNLOOP_STATE_QUIT
 };
 
+enum poll_type_override_t
+{
+   POLL_TYPE_OVERRIDE_DONTCARE = 0,
+   POLL_TYPE_OVERRIDE_EARLY,
+   POLL_TYPE_OVERRIDE_NORMAL,
+   POLL_TYPE_OVERRIDE_LATE
+};
+
+
 typedef struct runloop_ctx_msg_info
 {
    const char *msg;
@@ -135,6 +144,7 @@ struct runloop
    unsigned audio_latency;
 
    fastmotion_overrides_t fastmotion_override; /* float alignment */
+   enum poll_type_override_t core_poll_type_override;
 
    bool missing_bios;
    bool force_nonblock;
