@@ -24,6 +24,7 @@
 #include <boolean.h>
 #include <retro_inline.h>
 #include <retro_common_api.h>
+#include <dynamic/dylib.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -33,6 +34,7 @@
 #include <rthreads/rthreads.h>
 #endif
 
+#include "dynamic.h"
 #include "core_option_manager.h"
 
 enum  runloop_state_enum
@@ -84,13 +86,36 @@ typedef struct core_options_callbacks
    retro_core_options_update_display_callback_t update_display;
 } core_options_callbacks_t;
 
+#ifdef HAVE_RUNAHEAD
+typedef bool(*runahead_load_state_function)(const void*, size_t);
+#endif
+
 struct runloop
 {
    retro_time_t frame_limit_minimum_time;
    retro_time_t frame_limit_last_time;
-   retro_usec_t frame_time_last;        /* int64_t alignment */
+   retro_usec_t frame_time_last;                /* int64_t alignment */
 
-   msg_queue_t msg_queue;                        /* ptr alignment */
+   struct retro_core_t        current_core;     /* uint64_t alignment */
+#if defined(HAVE_RUNAHEAD)
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+   struct retro_core_t secondary_core;          /* uint64_t alignment */
+#endif
+#endif
+
+   struct retro_callbacks retro_ctx;                     /* ptr alignment */
+   msg_queue_t msg_queue;                                /* ptr alignment */
+   retro_input_state_t input_state_callback_original;    /* ptr alignment */
+#ifdef HAVE_RUNAHEAD
+   function_t retro_reset_callback_original;             /* ptr alignment */
+   function_t original_retro_deinit;                     /* ptr alignment */
+   function_t original_retro_unload;                     /* ptr alignment */
+   runahead_load_state_function
+      retro_unserialize_callback_original;               /* ptr alignment */
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+   struct retro_callbacks secondary_callbacks;           /* ptr alignment */
+#endif
+#endif
 #ifdef HAVE_THREADS
    slock_t *msg_queue_lock;
 #endif
@@ -137,6 +162,7 @@ struct runloop
 #endif
 #ifdef HAVE_RUNAHEAD
    bool has_variable_update;
+   bool input_is_dirty;
 #endif
 };
 

@@ -510,10 +510,6 @@ typedef struct my_list_t
    int size;
 } my_list;
 
-#ifdef HAVE_RUNAHEAD
-typedef bool(*runahead_load_state_function)(const void*, size_t);
-#endif
-
 #ifdef HAVE_DISCORD
 /* The Discord API specifies these variables:
 - userId --------- char[24]   - the userId of the player asking to join
@@ -558,21 +554,12 @@ struct rarch_state
 #ifdef HAVE_DISCORD
    discord_state_t discord_st;                  /* int64_t alignment */
 #endif
-   struct retro_core_t        current_core;     /* uint64_t alignment */
-#if defined(HAVE_RUNAHEAD)
-#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-   struct retro_core_t secondary_core;          /* uint64_t alignment */
-#endif
-#endif
-
 #ifdef HAVE_RUNAHEAD
    uint64_t runahead_last_frame_count;
 #endif
 
    struct retro_camera_callback camera_cb;    /* uint64_t alignment */
-
    struct string_list *subsystem_fullpaths;
-
    bool    *load_no_content_hook;
 #if defined(HAVE_RUNAHEAD)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
@@ -627,20 +614,6 @@ struct rarch_state
       [SUBSYSTEM_MAX_SUBSYSTEM_ROMS];                    /* ptr alignment */
 
    content_state_t            content_st;                /* ptr alignment */
-   retro_input_state_t input_state_callback_original;    /* ptr alignment */
-#ifdef HAVE_RUNAHEAD
-   function_t retro_reset_callback_original;             /* ptr alignment */
-   function_t original_retro_deinit;                     /* ptr alignment */
-   function_t original_retro_unload;                     /* ptr alignment */
-   runahead_load_state_function
-      retro_unserialize_callback_original;               /* ptr alignment */
-#endif
-   struct retro_callbacks     retro_ctx;                 /* ptr alignment */
-#if defined(HAVE_RUNAHEAD)
-#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-   struct retro_callbacks secondary_callbacks;           /* ptr alignment */
-#endif
-#endif
 #ifdef HAVE_NETWORKING
    struct netplay_room netplay_host_room;                /* ptr alignment */
 #endif
@@ -793,10 +766,7 @@ struct rarch_state
 #ifdef HAVE_RUNAHEAD
    bool runahead_save_state_size_known;
    bool request_fast_savestate;
-
-   bool input_is_dirty;
 #endif
-
 #if defined(HAVE_NETWORKING)
    bool has_set_netplay_mode;
    bool has_set_netplay_ip_address;
