@@ -9882,8 +9882,8 @@ static bool validate_game_options(
 static bool validate_game_specific_options(char **output)
 {
    char game_options_path[PATH_MAX_LENGTH];
-   game_options_path[0]        = '\0';
    runloop_state_t *runloop_st = &runloop_state;
+   game_options_path[0]        = '\0';
 
    if (!validate_game_options(
             runloop_st->system.info.library_name,
