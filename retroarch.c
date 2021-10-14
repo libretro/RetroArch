@@ -5814,7 +5814,7 @@ static void command_event_deinit_core(
       *video_st                = video_state_get_ptr();
    runloop_state_t *runloop_st = &runloop_state;
 
-   core_unload_game(p_rarch);
+   core_unload_game();
 
    video_driver_set_cached_frame_ptr(NULL);
 
@@ -6201,7 +6201,7 @@ static bool command_event_init_core(
    disk_control_verify_initial_index(&sys_info->disk_control,
          show_set_initial_disk_msg);
 
-   if (!core_load(p_rarch, poll_type_behavior))
+   if (!core_load(poll_type_behavior))
       return false;
 
    runloop_st->frame_limit_minimum_time = 
@@ -20480,7 +20480,7 @@ static enum runloop_state_enum runloop_check_state(
       bool check2                             = new_button_state && !old_button_state;
 
       if (!check2)
-         check2                               = old_hold_button_state != new_hold_button_state;
+         check2                               = old_hold_button_state           != new_hold_button_state;
 
       if (check2)
       {
@@ -21323,9 +21323,7 @@ static void core_input_state_poll_maybe(void)
  * Initializes libretro callbacks, and binds the libretro callbacks
  * to default callback functions.
  **/
-static bool core_init_libretro_cbs(
-      struct rarch_state *p_rarch,
-      struct retro_callbacks *cbs)
+static bool core_init_libretro_cbs(struct retro_callbacks *cbs)
 {
    runloop_state_t *runloop_st  = &runloop_state;
    retro_input_state_t state_cb = core_input_state_poll_return_cb();
@@ -21656,7 +21654,7 @@ bool core_reset(void)
    return true;
 }
 
-static bool core_unload_game(struct rarch_state *p_rarch)
+static bool core_unload_game(void)
 {
    runloop_state_t *runloop_st  = &runloop_state;
 
@@ -21679,8 +21677,6 @@ static bool core_unload_game(struct rarch_state *p_rarch)
 
 bool core_run(void)
 {
-   struct rarch_state
-      *p_rarch                 = &rarch_st;
    runloop_state_t *runloop_st = &runloop_state;
    struct retro_core_t *
       current_core             = &runloop_st->current_core;
@@ -21722,7 +21718,7 @@ bool core_run(void)
    return true;
 }
 
-static bool core_verify_api_version(struct rarch_state *p_rarch)
+static bool core_verify_api_version(void)
 {
    runloop_state_t *runloop_st = &runloop_state;
    unsigned api_version        = runloop_st->current_core.retro_api_version();
@@ -21743,18 +21739,15 @@ static bool core_verify_api_version(struct rarch_state *p_rarch)
    return true;
 }
 
-static bool core_load(
-      struct rarch_state *p_rarch,
-      unsigned poll_type_behavior)
+static bool core_load(unsigned poll_type_behavior)
 {
    video_driver_state_t *video_st     = video_state_get_ptr();
    runloop_state_t *runloop_st        = &runloop_state;
    runloop_st->current_core.poll_type = poll_type_behavior;
 
-   if (!core_verify_api_version(p_rarch))
+   if (!core_verify_api_version())
       return false;
-   if (!core_init_libretro_cbs(p_rarch,
-            &runloop_st->retro_ctx))
+   if (!core_init_libretro_cbs(&runloop_st->retro_ctx))
       return false;
 
    runloop_st->current_core.retro_get_system_av_info(&video_st->av_info);
