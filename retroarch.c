@@ -12117,6 +12117,7 @@ static bool libretro_get_system_info(
 #ifdef HAVE_DYNAMIC
    dylib_t lib;
 #endif
+   runloop_state_t *runloop_st  = &runloop_state;
 
    if (string_ends_with_size(path,
             "builtin", strlen(path), STRLEN_CONST("builtin")))
@@ -12143,7 +12144,7 @@ static bool libretro_get_system_info(
 #else
    if (load_no_content)
    {
-      p_rarch->load_no_content_hook = load_no_content;
+      runloop_st->load_no_content_hook = load_no_content;
 
       /* load_no_content gets set in this callback. */
       retro_set_environment(environ_cb_get_system_info);
