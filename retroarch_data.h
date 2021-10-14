@@ -722,18 +722,12 @@ struct rarch_state
 #endif
    bool has_set_log_to_file;
    bool rarch_is_inited;
-   bool rarch_is_sram_load_disabled;
-   bool rarch_is_sram_save_disabled;
-   bool rarch_use_sram;
    bool rarch_ups_pref;
    bool rarch_bps_pref;
    bool rarch_ips_pref;
 #ifdef HAVE_PATCH
    bool rarch_patch_blocked;
 #endif
-
-   bool ignore_environment_cb;
-   bool core_set_shared_context;
 
 #ifdef HAVE_ACCESSIBILITY
    /* Is text-to-speech accessibility turned on? */

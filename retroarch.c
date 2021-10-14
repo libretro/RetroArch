@@ -3685,14 +3685,14 @@ static bool path_init_subsystem(struct rarch_state *p_rarch)
    return true;
 }
 
-static void path_init_savefile(struct rarch_state *p_rarch)
+static void path_init_savefile(runloop_state_t *runloop_st)
 {
-   bool    should_sram_be_used = p_rarch->rarch_use_sram
-      && !p_rarch->rarch_is_sram_save_disabled;
+   bool    should_sram_be_used = runloop_st->use_sram
+      && !runloop_st->is_sram_save_disabled;
 
-   p_rarch->rarch_use_sram     = should_sram_be_used;
+   runloop_st->use_sram     = should_sram_be_used;
 
-   if (!p_rarch->rarch_use_sram)
+   if (!runloop_st->use_sram)
    {
       RARCH_LOG("[SRAM]: %s\n",
             msg_hash_to_str(MSG_SRAM_WILL_NOT_BE_SAVED));
@@ -5780,13 +5780,14 @@ static bool command_event_disk_control_append_image(
       rarch_system_info_t *sys_info,
       const char *path)
 {
+   runloop_state_t *runloop_st    = &runloop_state;
    input_driver_state_t *input_st = input_state_get_ptr();
    if (  !sys_info ||
          !disk_control_append_image(&sys_info->disk_control, path))
       return false;
 
 #ifdef HAVE_THREADS
-   if (p_rarch->rarch_use_sram)
+   if (runloop_st->use_sram)
       autosave_deinit();
 #endif
 
@@ -5877,6 +5878,7 @@ static bool event_init_content(
       struct rarch_state *p_rarch,
       input_driver_state_t *input_st)
 {
+   runloop_state_t *runloop_st                  = &runloop_state;
    bool contentless                             = false;
    bool is_inited                               = false;
 #ifdef HAVE_CHEEVOS
@@ -5890,7 +5892,7 @@ static bool event_init_content(
 
    content_get_status(&contentless, &is_inited);
 
-   p_rarch->rarch_use_sram   = (current_core_type == CORE_TYPE_PLAIN);
+   runloop_st->use_sram   = (current_core_type == CORE_TYPE_PLAIN);
 
    /* No content to be loaded for dummy core,
     * just successfully exit. */
@@ -5914,7 +5916,7 @@ static bool event_init_content(
 
    command_event_set_savestate_auto_index(settings, global);
 
-   if (!event_load_save_files(p_rarch->rarch_is_sram_load_disabled))
+   if (!event_load_save_files(runloop_st->is_sram_load_disabled))
       RARCH_LOG("[SRAM]: %s\n",
             msg_hash_to_str(MSG_SKIPPING_SRAM_LOAD));
 
@@ -6869,6 +6871,7 @@ bool command_event(enum event_command cmd, void *data)
 {
    bool boolean                = false;
    struct rarch_state *p_rarch = &rarch_st;
+   runloop_state_t *runloop_st = &runloop_state;
 #ifdef HAVE_MENU
    struct menu_state *menu_st  = menu_state_get_ptr();
 #endif
@@ -6879,7 +6882,7 @@ bool command_event(enum event_command cmd, void *data)
    switch (cmd)
    {
       case CMD_EVENT_SAVE_FILES:
-         event_save_files(p_rarch->rarch_use_sram);
+         event_save_files(runloop_st->use_sram);
          break;
       case CMD_EVENT_OVERLAY_DEINIT:
 #ifdef HAVE_OVERLAY
@@ -7433,7 +7436,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_AUTOSAVE_INIT:
 #ifdef HAVE_THREADS
-         if (p_rarch->rarch_use_sram)
+         if (runloop_st->use_sram)
             autosave_deinit();
          {
 #ifdef HAVE_NETWORKING
@@ -8893,9 +8896,9 @@ static void global_free(struct rarch_state *p_rarch)
 
    retro_main_log_file_deinit();
 
-   p_rarch->rarch_is_sram_load_disabled               = false;
-   p_rarch->rarch_is_sram_save_disabled               = false;
-   p_rarch->rarch_use_sram                            = false;
+   runloop_st->is_sram_load_disabled                  = false;
+   runloop_st->is_sram_save_disabled                  = false;
+   runloop_st->use_sram                               = false;
 #ifdef HAVE_PATCH
    p_rarch->rarch_bps_pref                            = false;
    p_rarch->rarch_ips_pref                            = false;
@@ -10095,9 +10098,9 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
    struct rarch_state *p_rarch            = &rarch_st;
    runloop_state_t *runloop_st            = &runloop_state;
 
-   settings_t         *settings           = p_rarch->configuration_settings;
+   settings_t         *settings           = config_get_ptr();
    rarch_system_info_t *system            = &runloop_st->system;
-   bool ignore_environment_cb             = p_rarch->ignore_environment_cb;
+   bool ignore_environment_cb             = runloop_st->ignore_environment_cb;
 
    if (ignore_environment_cb)
       return false;
@@ -11651,7 +11654,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
          return false;
 #else
          RARCH_LOG("[Environ]: SET_HW_SHARED_CONTEXT.\n");
-         p_rarch->core_set_shared_context = true;
+         runloop_st->core_set_shared_context = true;
 #endif
          break;
 
@@ -12002,6 +12005,7 @@ static void libretro_get_environment_info(
       bool *load_no_content)
 {
    struct rarch_state *p_rarch   = &rarch_st;
+   runloop_state_t *runloop_st   = &runloop_state;
 
    p_rarch->load_no_content_hook = load_no_content;
 
@@ -12014,9 +12018,9 @@ static void libretro_get_environment_info(
     * Make sure we reset it to the actual environment callback.
     * Ignore any environment callbacks here in case we're running
     * on the non-current core. */
-   p_rarch->ignore_environment_cb = true;
+   runloop_st->ignore_environment_cb = true;
    func(retroarch_environment_cb);
-   p_rarch->ignore_environment_cb = false;
+   runloop_st->ignore_environment_cb = false;
 }
 
 static dylib_t load_dynamic_core(
@@ -12150,9 +12154,9 @@ static bool libretro_get_system_info(
        * Make sure we reset it to the actual environment callback.
        * Ignore any environment callbacks here in case we're running
        * on the non-current core. */
-      p_rarch->ignore_environment_cb = true;
+      runloop_st->ignore_environment_cb = true;
       retro_set_environment(retroarch_environment_cb);
-      p_rarch->ignore_environment_cb = false;
+      runloop_st->ignore_environment_cb = false;
    }
 
    retro_get_system_info(&dummy_info);
@@ -12330,9 +12334,8 @@ static bool init_libretro_symbols(
 
 bool libretro_get_shared_context(void)
 {
-   struct rarch_state *p_rarch  = &rarch_st;
-   bool core_set_shared_context = p_rarch->core_set_shared_context;
-   return core_set_shared_context;
+   runloop_state_t *runloop_st = &runloop_state;
+   return runloop_st->core_set_shared_context;
 }
 
 /**
@@ -12348,6 +12351,8 @@ static void uninit_libretro_symbols(
       struct rarch_state *p_rarch,
       struct retro_core_t *current_core)
 {
+   runloop_state_t 
+	   *runloop_st = &runloop_state;
    input_driver_state_t 
       *input_st        = input_state_get_ptr();
    audio_driver_state_t 
@@ -12360,7 +12365,7 @@ static void uninit_libretro_symbols(
 
    memset(current_core, 0, sizeof(struct retro_core_t));
 
-   p_rarch->core_set_shared_context   = false;
+   runloop_st->core_set_shared_context   = false;
 
    if (runloop_state.core_options)
    {
@@ -15299,7 +15304,7 @@ void video_driver_get_window_title(char *buf, unsigned len)
 
 #ifdef HAVE_VULKAN
 static const gfx_ctx_driver_t *vk_context_driver_init_first(
-      struct rarch_state *p_rarch,
+      runloop_state_t *runloop_st,
       settings_t *settings,
       void *data,
       const char *ident, enum gfx_ctx_api api, unsigned major,
@@ -15321,7 +15326,7 @@ static const gfx_ctx_driver_t *vk_context_driver_init_first(
    if (i >= 0)
    {
       const gfx_ctx_driver_t *ctx = video_context_driver_init(
-            p_rarch->core_set_shared_context,
+            runloop_st->core_set_shared_context,
             settings,
             data,
             gfx_ctx_vk_drivers[i], ident,
@@ -15337,7 +15342,7 @@ static const gfx_ctx_driver_t *vk_context_driver_init_first(
    {
       const gfx_ctx_driver_t *ctx =
          video_context_driver_init(
-               p_rarch->core_set_shared_context,
+               runloop_st->core_set_shared_context,
                settings,
                data,
                gfx_ctx_vk_drivers[i], ident,
@@ -15355,7 +15360,7 @@ static const gfx_ctx_driver_t *vk_context_driver_init_first(
 #endif
 
 static const gfx_ctx_driver_t *gl_context_driver_init_first(
-      struct rarch_state *p_rarch,
+      runloop_state_t *runloop_st,
       settings_t *settings,
       void *data,
       const char *ident, enum gfx_ctx_api api, unsigned major,
@@ -15377,7 +15382,7 @@ static const gfx_ctx_driver_t *gl_context_driver_init_first(
    if (i >= 0)
    {
       const gfx_ctx_driver_t *ctx = video_context_driver_init(
-            p_rarch->core_set_shared_context,
+            runloop_st->core_set_shared_context,
             settings,
             data,
             gfx_ctx_gl_drivers[i], ident,
@@ -15393,7 +15398,7 @@ static const gfx_ctx_driver_t *gl_context_driver_init_first(
    {
       const gfx_ctx_driver_t *ctx =
          video_context_driver_init(
-               p_rarch->core_set_shared_context,
+               runloop_st->core_set_shared_context,
                settings,
                data,
                gfx_ctx_gl_drivers[i], ident,
@@ -15427,8 +15432,8 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
       const char *ident, enum gfx_ctx_api api, unsigned major,
       unsigned minor, bool hw_render_ctx, void **ctx_data)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   settings_t *settings        = p_rarch->configuration_settings;
+   runloop_state_t *runloop_st = &runloop_state;
+   settings_t *settings        = config_get_ptr();
 
    switch (api)
    {
@@ -15436,7 +15441,7 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
 #ifdef HAVE_VULKAN
          {
             const gfx_ctx_driver_t *ptr = vk_context_driver_init_first(
-                  p_rarch, settings,
+                  runloop_st, settings,
                   data, ident, api, major, minor, hw_render_ctx, ctx_data);
             if (ptr && !string_is_equal(ptr->ident, "null"))
                return ptr;
@@ -15449,7 +15454,7 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
       case GFX_CTX_METAL_API:
       case GFX_CTX_RSX_API:
          return gl_context_driver_init_first(
-               p_rarch, settings,
+               runloop_st, settings,
                data, ident, api, major, minor,
                hw_render_ctx, ctx_data);
       case GFX_CTX_NONE:
@@ -17854,13 +17859,13 @@ static bool retroarch_parse_input_and_config(
             case 'M':
                if (string_is_equal(optarg, "noload-nosave"))
                {
-                  p_rarch->rarch_is_sram_load_disabled = true;
-                  p_rarch->rarch_is_sram_save_disabled = true;
+                  runloop_st->is_sram_load_disabled = true;
+                  runloop_st->is_sram_save_disabled = true;
                }
                else if (string_is_equal(optarg, "noload-save"))
-                  p_rarch->rarch_is_sram_load_disabled = true;
+                  runloop_st->is_sram_load_disabled = true;
                else if (string_is_equal(optarg, "load-nosave"))
-                  p_rarch->rarch_is_sram_save_disabled = true;
+                  runloop_st->is_sram_save_disabled = true;
                else if (string_is_not_equal(optarg, "load-save"))
                {
                   RARCH_ERR("Invalid argument in --sram-mode.\n");
@@ -18179,6 +18184,7 @@ bool retroarch_main_init(int argc, char *argv[])
    bool verbosity_enabled       = false;
    bool           init_failed   = false;
    struct rarch_state *p_rarch  = &rarch_st;
+   runloop_state_t *runloop_st  = &runloop_state;
    input_driver_state_t 
       *input_st                 = input_state_get_ptr();
    video_driver_state_t*video_st= video_state_get_ptr();
@@ -18457,7 +18463,7 @@ bool retroarch_main_init(int argc, char *argv[])
    if (!string_is_empty(global->record.path))
       command_event(CMD_EVENT_RECORD_INIT, NULL);
 
-   path_init_savefile(p_rarch);
+   path_init_savefile(runloop_st);
 
    command_event(CMD_EVENT_SET_PER_GAME_RESOLUTION, NULL);
 
@@ -18817,7 +18823,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
             input_mapper_reset(&input_st->mapper);
 
 #ifdef HAVE_THREADS
-            if (p_rarch->rarch_use_sram)
+            if (runloop_st->use_sram)
                autosave_deinit();
 #endif
 

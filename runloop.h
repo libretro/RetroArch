@@ -174,6 +174,11 @@ struct runloop
    bool has_variable_update;
    bool input_is_dirty;
 #endif
+   bool is_sram_load_disabled;
+   bool is_sram_save_disabled;
+   bool use_sram;
+   bool ignore_environment_cb;
+   bool core_set_shared_context;
 };
 
 typedef struct runloop runloop_state_t;
