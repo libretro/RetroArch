@@ -644,7 +644,6 @@ struct rarch_state
 #ifdef HAVE_THREAD_STORAGE
    sthread_tls_t rarch_tls;               /* unsigned alignment */
 #endif
-   unsigned fastforward_after_frames;
 
 #ifdef HAVE_NETWORKING
    unsigned server_port_deferred;
@@ -653,8 +652,6 @@ struct rarch_state
    unsigned perf_ptr_rarch;
    unsigned perf_ptr_libretro;
 
-   enum rarch_core_type current_core_type;
-   enum rarch_core_type explicit_current_core_type;
 #if defined(HAVE_COMMAND)
    enum cmd_source_t lastcmd_source;
 #endif
@@ -703,7 +700,6 @@ struct rarch_state
 #endif
    bool has_set_username;
    bool rarch_error_on_init;
-   bool has_set_core;
    bool has_set_verbosity;
    bool has_set_libretro;
    bool has_set_libretro_directory;

@@ -5832,8 +5832,7 @@ static void command_event_deinit_core(
     * > Check for any pending updates */
    if (runloop_st->fastmotion_override.pending)
    {
-      runloop_apply_fastmotion_override(p_rarch,
-            runloop_st, p_rarch->configuration_settings);
+      runloop_apply_fastmotion_override(runloop_st, p_rarch->configuration_settings);
       runloop_st->fastmotion_override.pending = false;
    }
 
@@ -5888,7 +5887,7 @@ static bool event_init_content(
       settings->bools.cheevos_hardcore_mode_enable;
 #endif
    global_t   *global                           = &p_rarch->g_extern;
-   const enum rarch_core_type current_core_type = p_rarch->current_core_type;
+   const enum rarch_core_type current_core_type = runloop_st->current_core_type;
 
    content_get_status(&contentless, &is_inited);
 
@@ -7276,7 +7275,7 @@ bool command_event(enum event_command cmd, void *data)
                   settings->paths.directory_runtime_log,
                   settings->paths.directory_playlist);
             command_event_save_auto_state(settings->bools.savestate_auto_save,
-                  global, p_rarch->current_core_type);
+                  global, runloop_st->current_core_type);
 
 #ifdef HAVE_CONFIGFILE
             if (runloop_state.overrides_active)
@@ -7391,7 +7390,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_REWIND_DEINIT:
 #ifdef HAVE_REWIND
          {
-	    bool core_type_is_dummy   = p_rarch->current_core_type == CORE_TYPE_DUMMY;
+	    bool core_type_is_dummy   = runloop_st->current_core_type == CORE_TYPE_DUMMY;
 	    if (core_type_is_dummy)
                return false;
             state_manager_event_deinit(&p_rarch->rewind_st);
@@ -7403,7 +7402,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             bool rewind_enable        = settings->bools.rewind_enable;
             size_t rewind_buf_size    = settings->sizes.rewind_buffer_size;
-	    bool core_type_is_dummy   = p_rarch->current_core_type == CORE_TYPE_DUMMY;
+	    bool core_type_is_dummy   = runloop_st->current_core_type == CORE_TYPE_DUMMY;
 	    if (core_type_is_dummy)
                return false;
 #ifdef HAVE_CHEEVOS
@@ -13656,7 +13655,7 @@ static bool recording_init(
    bool video_gpu_record                = settings->bools.video_gpu_record;
    bool video_force_aspect              = settings->bools.video_force_aspect;
    const enum rarch_core_type
-      current_core_type                 = p_rarch->current_core_type;
+      current_core_type                 = runloop_st->current_core_type;
    const enum retro_pixel_format
       video_driver_pix_fmt              = video_st->pix_fmt;
    bool recording_enable                = recording_state.enable;
@@ -17524,7 +17523,7 @@ static bool retroarch_parse_input_and_config(
     * bogus arguments.
     */
 
-   if (!p_rarch->has_set_core)
+   if (!runloop_st->has_set_core)
       retroarch_set_current_core_type(CORE_TYPE_DUMMY, false);
 
    path_clear(RARCH_PATH_SUBSYSTEM);
@@ -18123,7 +18122,7 @@ static bool retroarch_parse_input_and_config(
 
    /* Check whether a core has been set via the
     * command line interface */
-   cli_core_set = (p_rarch->current_core_type != CORE_TYPE_DUMMY);
+   cli_core_set = (runloop_st->current_core_type != CORE_TYPE_DUMMY);
 
    /* Update global 'content launched from command
     * line' status flag */
@@ -18371,15 +18370,15 @@ bool retroarch_main_init(int argc, char *argv[])
       frontend_driver_set_screen_brightness(settings->uints.screen_brightness);
 
    /* Attempt to initialize core */
-   if (p_rarch->has_set_core)
+   if (runloop_st->has_set_core)
    {
-      p_rarch->has_set_core = false;
+      runloop_st->has_set_core = false;
       if (!command_event(CMD_EVENT_CORE_INIT,
-               &p_rarch->explicit_current_core_type))
+               &runloop_st->explicit_current_core_type))
          init_failed = true;
    }
    else if (!command_event(CMD_EVENT_CORE_INIT,
-            &p_rarch->current_core_type))
+            &runloop_st->current_core_type))
       init_failed = true;
 
    /* Handle core initialization failure */
@@ -18419,8 +18418,8 @@ bool retroarch_main_init(int argc, char *argv[])
             input_remapping_restore_global_config(true);
 
          /* Attempt initializing dummy core */
-         p_rarch->current_core_type = CORE_TYPE_DUMMY;
-         if (!command_event(CMD_EVENT_CORE_INIT, &p_rarch->current_core_type))
+         runloop_st->current_core_type = CORE_TYPE_DUMMY;
+         if (!command_event(CMD_EVENT_CORE_INIT, &runloop_st->current_core_type))
             goto error;
       }
 #ifdef HAVE_DYNAMIC
@@ -18589,7 +18588,7 @@ void retroarch_menu_running(void)
 
 void retroarch_menu_running_finished(bool quit)
 {
-   struct rarch_state *p_rarch     = &rarch_st;
+   runloop_state_t *runloop_st     = &runloop_state;
    video_driver_state_t*video_st   = video_state_get_ptr();
 #if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
    settings_t *settings            = config_get_ptr();
@@ -18639,7 +18638,7 @@ void retroarch_menu_running_finished(bool quit)
 #endif
 
       /* Enable game focus mode, if required */
-      if (p_rarch->current_core_type != CORE_TYPE_DUMMY)
+      if (runloop_st->current_core_type != CORE_TYPE_DUMMY)
       {
          enum input_auto_game_focus_type auto_game_focus_type = settings ?
             (enum input_auto_game_focus_type)settings->uints.input_auto_game_focus :
@@ -18776,7 +18775,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
          break;
 #endif
       case RARCH_CTL_IS_DUMMY_CORE:
-         return (p_rarch->current_core_type == CORE_TYPE_DUMMY);
+         return runloop_st->current_core_type == CORE_TYPE_DUMMY;
       case RARCH_CTL_IS_CORE_LOADED:
          {
             const char *core_path = (const char*)data;
@@ -19238,17 +19237,17 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
 void retroarch_set_current_core_type(
       enum rarch_core_type type, bool explicitly_set)
 {
-   struct rarch_state *p_rarch = &rarch_st;
+   runloop_state_t *runloop_st                = &runloop_state;
 
-   if (p_rarch->has_set_core)
+   if (runloop_st->has_set_core)
       return;
 
    if (explicitly_set)
    {
-      p_rarch->has_set_core                = true;
-      p_rarch->explicit_current_core_type  = type;
+      runloop_st->has_set_core                = true;
+      runloop_st->explicit_current_core_type  = type;
    }
-   p_rarch->current_core_type              = type;
+   runloop_st->current_core_type              = type;
 }
 
 /**
@@ -19274,9 +19273,10 @@ static void retroarch_fail(struct rarch_state *p_rarch,
 bool retroarch_main_quit(void)
 {
    struct rarch_state *p_rarch   = &rarch_st;
+   runloop_state_t *runloop_st   = &runloop_state;
    video_driver_state_t*video_st = video_state_get_ptr();
    settings_t *settings          = config_get_ptr();
-   global_t            *global   = &p_rarch->g_extern;
+   global_t            *global   = global_get_ptr();
 #ifdef HAVE_DISCORD
    discord_state_t *discord_st   = &p_rarch->discord_st;
    if (discord_is_inited)
@@ -19307,7 +19307,7 @@ bool retroarch_main_quit(void)
       command_event_save_auto_state(
             settings->bools.savestate_auto_save,
             global,
-            p_rarch->current_core_type);
+            runloop_st->current_core_type);
 
       /* If any save states are in progress, wait
        * until all tasks are complete (otherwise
@@ -19457,11 +19457,9 @@ static bool display_menu_libretro(
 }
 #endif
 
-static void runloop_apply_fastmotion_override(
-      struct rarch_state *p_rarch, runloop_state_t *runloop_st,
-      settings_t *settings)
+static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st, settings_t *settings)
 {
-   video_driver_state_t *video_st      = video_state_get_ptr();
+   video_driver_state_t *video_st                     = video_state_get_ptr();
    bool frame_time_counter_reset_after_fastforwarding = settings ?
          settings->bools.frame_time_counter_reset_after_fastforwarding : false;
    float fastforward_ratio_default                    = settings ?
@@ -19494,7 +19492,7 @@ static void runloop_apply_fastmotion_override(
       }
 
       if (!runloop_st->fastmotion)
-         p_rarch->fastforward_after_frames    = 1;
+         runloop_st->fastforward_after_frames = 1;
 
       driver_set_nonblock_state();
 
@@ -20179,7 +20177,7 @@ static enum runloop_state_enum runloop_check_state(
          bool menu_pause_libretro    = settings->bools.menu_pause_libretro;
          bool libretro_running       = !menu_pause_libretro
             && rarch_is_inited
-            && (p_rarch->current_core_type != CORE_TYPE_DUMMY);
+            && (runloop_st->current_core_type != CORE_TYPE_DUMMY);
 
          if (menu)
          {
@@ -20268,7 +20266,7 @@ static enum runloop_state_enum runloop_check_state(
       bool pressed            = BIT256_GET(
             current_bits, RARCH_MENU_TOGGLE) &&
          !string_is_equal(menu_driver, "null");
-      bool core_type_is_dummy = p_rarch->current_core_type == CORE_TYPE_DUMMY;
+      bool core_type_is_dummy = runloop_st->current_core_type == CORE_TYPE_DUMMY;
 
       if (menu_st->kb_key_state[RETROK_F1] == 1)
       {
@@ -20466,8 +20464,7 @@ static enum runloop_state_enum runloop_check_state(
     * parameters */
    if (runloop_st->fastmotion_override.pending)
    {
-      runloop_apply_fastmotion_override(
-            p_rarch, runloop_st, settings);
+      runloop_apply_fastmotion_override(runloop_st, settings);
       runloop_st->fastmotion_override.pending = false;
    }
 
@@ -20495,7 +20492,7 @@ static enum runloop_state_enum runloop_check_state(
          {
             input_st->nonblocking_flag        = false;
             runloop_st->fastmotion            = false;
-            p_rarch->fastforward_after_frames = 1;
+            runloop_st->fastforward_after_frames = 1;
          }
          else
          {
@@ -21094,9 +21091,9 @@ end:
    if (vrr_runloop_enable)
    {
       /* Sync on video only, block audio later. */
-      if (p_rarch->fastforward_after_frames && audio_sync)
+      if (runloop_st->fastforward_after_frames && audio_sync)
       {
-         if (p_rarch->fastforward_after_frames == 1)
+         if (runloop_st->fastforward_after_frames == 1)
          {
             /* Nonblocking audio */
             if (audio_st->active &&
@@ -21107,9 +21104,9 @@ end:
                audio_st->chunk_nonblock_size;
          }
 
-         p_rarch->fastforward_after_frames++;
+         runloop_st->fastforward_after_frames++;
 
-         if (p_rarch->fastforward_after_frames == 6)
+         if (runloop_st->fastforward_after_frames == 6)
          {
             /* Blocking audio */
             if (audio_st->active &&
@@ -21119,7 +21116,7 @@ end:
                      audio_sync ? false : true);
 
             audio_st->chunk_size = audio_st->chunk_block_size;
-            p_rarch->fastforward_after_frames = 0;
+            runloop_st->fastforward_after_frames = 0;
          }
       }
 

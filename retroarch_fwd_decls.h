@@ -53,9 +53,7 @@ static void retro_frame_null(const void *data, unsigned width,
       unsigned height, size_t pitch);
 static void retro_run_null(void);
 static void retro_input_poll_null(void);
-static void runloop_apply_fastmotion_override(
-      struct rarch_state *p_rarch, runloop_state_t *p_runloop,
-      settings_t *settings);
+static void runloop_apply_fastmotion_override(runloop_state_t *p_runloop, settings_t *settings);
 
 static void uninit_libretro_symbols(
       struct rarch_state *p_rarch,

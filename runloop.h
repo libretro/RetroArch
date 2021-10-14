@@ -145,8 +145,11 @@ struct runloop
    unsigned pending_windowed_scale;
    unsigned max_frames;
    unsigned audio_latency;
+   unsigned fastforward_after_frames;
 
    fastmotion_overrides_t fastmotion_override; /* float alignment */
+   enum rarch_core_type current_core_type;
+   enum rarch_core_type explicit_current_core_type;
    enum poll_type_override_t core_poll_type_override;
 
    bool missing_bios;
@@ -182,6 +185,7 @@ struct runloop
    bool use_sram;
    bool ignore_environment_cb;
    bool core_set_shared_context;
+   bool has_set_core;
 };
 
 typedef struct runloop runloop_state_t;
