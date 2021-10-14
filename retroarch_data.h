@@ -537,8 +537,6 @@ typedef struct discord_state discord_state_t;
 
 struct rarch_state
 {
-   retro_time_t libretro_core_runtime_last;
-   retro_time_t libretro_core_runtime_usec;
    struct global              g_extern;         /* retro_time_t alignment */
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    rarch_timer_t shader_delay_timer;            /* int64_t alignment */
@@ -552,7 +550,6 @@ struct rarch_state
 
    struct retro_camera_callback camera_cb;    /* uint64_t alignment */
    struct string_list *subsystem_fullpaths;
-   bool    *load_no_content_hook;
 #if defined(HAVE_RUNAHEAD)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    char    *secondary_library_path;

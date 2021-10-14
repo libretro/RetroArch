@@ -101,6 +101,8 @@ typedef bool(*runahead_load_state_function)(const void*, size_t);
 
 struct runloop
 {
+   retro_time_t core_runtime_last;
+   retro_time_t core_runtime_usec;
    retro_time_t frame_limit_minimum_time;
    retro_time_t frame_limit_last_time;
    retro_usec_t frame_time_last;                /* int64_t alignment */
@@ -112,6 +114,7 @@ struct runloop
 #endif
 #endif
 
+   bool    *load_no_content_hook;
    struct retro_callbacks retro_ctx;                     /* ptr alignment */
    msg_queue_t msg_queue;                                /* ptr alignment */
    retro_input_state_t input_state_callback_original;    /* ptr alignment */
