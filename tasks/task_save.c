@@ -2072,14 +2072,18 @@ bool event_save_files(bool is_sram_used)
 bool event_load_save_files(bool is_sram_load_disabled)
 {
    unsigned i;
+   bool success = false;
 
    if (!task_save_files || is_sram_load_disabled)
       return false;
 
+   /* Report a successful load operation if
+    * any type of ram file is found and
+    * processed correctly */
    for (i = 0; i < task_save_files->size; i++)
-      content_load_ram_file(i);
+      success |= content_load_ram_file(i);
 
-   return true;
+   return success;
 }
 
 void path_init_savefile_rtc(const char *savefile_path)

@@ -5882,10 +5882,7 @@ static bool event_init_content(
 
    content_get_status(&contentless, &is_inited);
 
-   /* TODO/FIXME - just because we have a contentless core does not
-    * necessarily mean there should be no SRAM, try to find a solution here */
-   p_rarch->rarch_use_sram   = (current_core_type == CORE_TYPE_PLAIN)
-      && !contentless;
+   p_rarch->rarch_use_sram   = (current_core_type == CORE_TYPE_PLAIN);
 
    /* No content to be loaded for dummy core,
     * just successfully exit. */
@@ -5896,7 +5893,12 @@ static bool event_init_content(
 
    content_get_status(&contentless, &is_inited);
 
-   if (!contentless)
+   /* If core is contentless, just initialise SRAM
+    * interface, otherwise fill all content-related
+    * paths */
+   if (contentless)
+      path_init_savefile_internal(global, p_rarch);
+   else
       path_fill_names(p_rarch, input_st);
 
    if (!content_init())
@@ -5904,8 +5906,8 @@ static bool event_init_content(
 
    command_event_set_savestate_auto_index(settings, global);
 
-   if (event_load_save_files(p_rarch->rarch_is_sram_load_disabled))
-      RARCH_LOG("[SRAM]: %s.\n",
+   if (!event_load_save_files(p_rarch->rarch_is_sram_load_disabled))
+      RARCH_LOG("[SRAM]: %s\n",
             msg_hash_to_str(MSG_SKIPPING_SRAM_LOAD));
 
 /*
