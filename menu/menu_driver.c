@@ -34,6 +34,8 @@
 #include <wiiu/os/energy.h>
 #endif
 
+#include "../audio/audio_driver.h"
+
 #include "menu_driver.h"
 #include "menu_cbs.h"
 #include "../driver.h"
@@ -6848,4 +6850,171 @@ void menu_driver_toggle(
       if (key_event && frontend_key_event)
          *key_event                   = *frontend_key_event;
    }
+}
+
+void retroarch_menu_running(void)
+{
+   runloop_state_t *runloop_st     = runloop_state_get_ptr();
+   video_driver_state_t *video_st  = video_state_get_ptr();
+#if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
+   settings_t *settings            = config_get_ptr();
+#endif
+#ifdef HAVE_OVERLAY
+   bool input_overlay_hide_in_menu = settings->bools.input_overlay_hide_in_menu;
+#endif
+#ifdef HAVE_AUDIOMIXER
+   bool audio_enable_menu          = settings->bools.audio_enable_menu;
+   bool audio_enable_menu_bgm      = settings->bools.audio_enable_menu_bgm;
+#endif
+   input_driver_state_t *input_st  = input_state_get_ptr();
+#ifdef HAVE_MENU
+   struct menu_state *menu_st      = &menu_driver_state;
+   menu_handle_t *menu             = menu_st->driver_data;
+   menu_input_t *menu_input        = &menu_st->input_state;
+   if (menu)
+   {
+      if (menu->driver_ctx && menu->driver_ctx->toggle)
+         menu->driver_ctx->toggle(menu->userdata, true);
+
+      menu_st->alive               = true;
+      menu_driver_toggle(
+            video_st->current_video,
+            video_st->data,
+            menu,
+            menu_input,
+            settings,
+            menu_st->alive,
+#ifdef HAVE_OVERLAY
+            input_st->overlay_ptr &&
+            input_st->overlay_ptr->alive,
+#else
+            false,
+#endif
+            &runloop_st->key_event,
+            &runloop_st->frontend_key_event,
+            true);
+   }
+
+   /* Prevent stray input (for a single frame) */
+   menu_st->input_driver_flushing_input = 1;
+
+#ifdef HAVE_AUDIOMIXER
+   if (audio_enable_menu && audio_enable_menu_bgm)
+      audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+#endif
+
+   /* Ensure that game focus mode is disabled when
+    * running the menu (note: it is not currently
+    * possible for game focus to be enabled at this
+    * point, but must safeguard against future changes) */
+   if (input_st->game_focus_state.enabled)
+   {
+      enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_OFF;
+      command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
+   }
+
+   /* Ensure that menu screensaver is disabled when
+    * first switching to the menu */
+   if (menu_st->screensaver_active)
+   {
+      menu_ctx_environment_t menu_environ;
+      menu_environ.type           = MENU_ENVIRON_DISABLE_SCREENSAVER;
+      menu_environ.data           = NULL;
+      menu_st->screensaver_active = false;
+      menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+   }
+   menu_st->input_last_time_us = cpu_features_get_time_usec();
+#endif
+
+#ifdef HAVE_OVERLAY
+   if (input_overlay_hide_in_menu)
+      command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
+#endif
+}
+
+void retroarch_menu_running_finished(bool quit)
+{
+   runloop_state_t *runloop_st     = runloop_state_get_ptr();
+   video_driver_state_t*video_st   = video_state_get_ptr();
+#if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
+   settings_t *settings            = config_get_ptr();
+#endif
+   input_driver_state_t *input_st  = input_state_get_ptr();
+#ifdef HAVE_MENU
+   struct menu_state *menu_st      = menu_state_get_ptr();
+   menu_handle_t *menu             = menu_st->driver_data;
+   menu_input_t *menu_input        = &menu_st->input_state;
+   if (menu)
+   {
+      if (menu->driver_ctx && menu->driver_ctx->toggle)
+         menu->driver_ctx->toggle(menu->userdata, false);
+
+      menu_st->alive   = false;
+      menu_driver_toggle(
+            video_st->current_video,
+            video_st->data,
+            menu,
+            menu_input,
+            settings,
+            menu_st->alive,
+#ifdef HAVE_OVERLAY
+            input_st->overlay_ptr &&
+            input_st->overlay_ptr->alive,
+#else
+            false,
+#endif
+            &runloop_st->key_event,
+            &runloop_st->frontend_key_event,
+            false);
+   }
+
+   /* Prevent stray input
+    * (for a single frame) */
+   menu_st->input_driver_flushing_input = 1;
+
+   if (!quit)
+   {
+#ifdef HAVE_AUDIOMIXER
+      /* Stop menu background music before we exit the menu */
+      if (  settings &&
+            settings->bools.audio_enable_menu &&
+            settings->bools.audio_enable_menu_bgm
+         )
+         audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+#endif
+
+      /* Enable game focus mode, if required */
+      if (runloop_st->current_core_type != CORE_TYPE_DUMMY)
+      {
+         enum input_auto_game_focus_type auto_game_focus_type = settings ?
+            (enum input_auto_game_focus_type)settings->uints.input_auto_game_focus :
+            AUTO_GAME_FOCUS_OFF;
+
+         if ((auto_game_focus_type == AUTO_GAME_FOCUS_ON) ||
+               ((auto_game_focus_type == AUTO_GAME_FOCUS_DETECT) &&
+                input_st->game_focus_state.core_requested))
+         {
+            enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_ON;
+            command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
+         }
+      }
+   }
+
+   /* Ensure that menu screensaver is disabled when
+    * switching off the menu */
+   if (menu_st->screensaver_active)
+   {
+      menu_ctx_environment_t menu_environ;
+      menu_environ.type           = MENU_ENVIRON_DISABLE_SCREENSAVER;
+      menu_environ.data           = NULL;
+      menu_st->screensaver_active = false;
+      menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+   }
+#endif
+   video_driver_set_texture_enable(false, false);
+#ifdef HAVE_OVERLAY
+   if (!quit)
+      if (settings && settings->bools.input_overlay_hide_in_menu)
+         input_overlay_init();
+#endif
 }

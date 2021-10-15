@@ -16941,7 +16941,7 @@ static bool runahead_load_state_secondary(struct rarch_state *p_rarch)
 }
 #endif
 
-static bool runahead_core_run_use_last_input(struct rarch_state *p_rarch)
+static void runahead_core_run_use_last_input(void)
 {
    runloop_state_t     *runloop_st        = &runloop_state;
    struct retro_callbacks *cbs            = &runloop_st->retro_ctx;
@@ -16961,8 +16961,6 @@ static bool runahead_core_run_use_last_input(struct rarch_state *p_rarch)
 
    runloop_st->current_core.retro_set_input_poll(cbs->poll_cb);
    runloop_st->current_core.retro_set_input_state(cbs->state_cb);
-
-   return true;
 }
 
 static void do_runahead(
@@ -17027,7 +17025,7 @@ static void do_runahead(
          if (frame_number == 0)
             core_run();
          else
-            runahead_core_run_use_last_input(p_rarch);
+            runahead_core_run_use_last_input();
 
          if (suspended_frame)
          {
@@ -17525,7 +17523,7 @@ static bool retroarch_parse_input_and_config(
     */
 
    if (!runloop_st->has_set_core)
-      retroarch_set_current_core_type(CORE_TYPE_DUMMY, false);
+      runloop_set_current_core_type(CORE_TYPE_DUMMY, false);
 
    path_clear(RARCH_PATH_SUBSYSTEM);
 
@@ -17822,7 +17820,7 @@ static bool retroarch_parse_input_and_config(
                      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
 
                      /* We requested explicit core, so use PLAIN core type. */
-                     retroarch_set_current_core_type(CORE_TYPE_PLAIN, false);
+                     runloop_set_current_core_type(CORE_TYPE_PLAIN, false);
                   }
                   else
                   {
@@ -18099,7 +18097,7 @@ static bool retroarch_parse_input_and_config(
           *
           * This seems to still be the case for Android, which
           * should be properly fixed. */
-         retroarch_set_current_core_type(CORE_TYPE_DUMMY, false);
+         runloop_set_current_core_type(CORE_TYPE_DUMMY, false);
       }
 #endif
    }
@@ -18109,7 +18107,7 @@ static bool retroarch_parse_input_and_config(
       bool subsystem_path_is_empty = path_is_empty(RARCH_PATH_SUBSYSTEM);
 
       /* We requested explicit ROM, so use PLAIN core type. */
-      retroarch_set_current_core_type(CORE_TYPE_PLAIN, false);
+      runloop_set_current_core_type(CORE_TYPE_PLAIN, false);
 
       if (subsystem_path_is_empty)
          path_set(RARCH_PATH_NAMES, (const char*)argv[optind]);
@@ -18310,10 +18308,10 @@ bool retroarch_main_init(int argc, char *argv[])
                    * switch between FFmpeg and MPV at runtime */
 #if defined(HAVE_MPV)
                   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-                  retroarch_set_current_core_type(CORE_TYPE_MPV, false);
+                  runloop_set_current_core_type(CORE_TYPE_MPV, false);
 #elif defined(HAVE_FFMPEG)
                   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-                  retroarch_set_current_core_type(CORE_TYPE_FFMPEG, false);
+                  runloop_set_current_core_type(CORE_TYPE_FFMPEG, false);
 #endif
                }
                break;
@@ -18322,14 +18320,14 @@ bool retroarch_main_init(int argc, char *argv[])
                if (builtin_imageviewer)
                {
                   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-                  retroarch_set_current_core_type(CORE_TYPE_IMAGEVIEWER, false);
+                  runloop_set_current_core_type(CORE_TYPE_IMAGEVIEWER, false);
                }
                break;
 #endif
 #ifdef HAVE_GONG
             case RARCH_CONTENT_GONG:
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-               retroarch_set_current_core_type(CORE_TYPE_GONG, false);
+               runloop_set_current_core_type(CORE_TYPE_GONG, false);
                break;
 #endif
             default:
@@ -18508,172 +18506,6 @@ static bool retroarch_is_on_main_thread(shtread_tls_t *tls)
 }
 #endif
 
-void retroarch_menu_running(void)
-{
-   video_driver_state_t *video_st  = video_state_get_ptr();
-#if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
-   settings_t *settings            = config_get_ptr();
-#endif
-#ifdef HAVE_OVERLAY
-   bool input_overlay_hide_in_menu = settings->bools.input_overlay_hide_in_menu;
-#endif
-#ifdef HAVE_AUDIOMIXER
-   bool audio_enable_menu          = settings->bools.audio_enable_menu;
-   bool audio_enable_menu_bgm      = settings->bools.audio_enable_menu_bgm;
-#endif
-   input_driver_state_t *input_st  = input_state_get_ptr();
-#ifdef HAVE_MENU
-   struct menu_state *menu_st      = menu_state_get_ptr();
-   menu_handle_t *menu             = menu_st->driver_data;
-   menu_input_t *menu_input        = &menu_st->input_state;
-   if (menu)
-   {
-      if (menu->driver_ctx && menu->driver_ctx->toggle)
-         menu->driver_ctx->toggle(menu->userdata, true);
-
-      menu_st->alive               = true;
-      menu_driver_toggle(
-            video_st->current_video,
-            video_st->data,
-            menu,
-            menu_input,
-            settings,
-            menu_st->alive,
-#ifdef HAVE_OVERLAY
-            input_st->overlay_ptr &&
-            input_st->overlay_ptr->alive,
-#else
-            false,
-#endif
-            &runloop_state.key_event,
-            &runloop_state.frontend_key_event,
-            true);
-   }
-
-   /* Prevent stray input (for a single frame) */
-   menu_st->input_driver_flushing_input = 1;
-
-#ifdef HAVE_AUDIOMIXER
-   if (audio_enable_menu && audio_enable_menu_bgm)
-      audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
-#endif
-
-   /* Ensure that game focus mode is disabled when
-    * running the menu (note: it is not currently
-    * possible for game focus to be enabled at this
-    * point, but must safeguard against future changes) */
-   if (input_st->game_focus_state.enabled)
-   {
-      enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_OFF;
-      command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
-   }
-
-   /* Ensure that menu screensaver is disabled when
-    * first switching to the menu */
-   if (menu_st->screensaver_active)
-   {
-      menu_ctx_environment_t menu_environ;
-      menu_environ.type           = MENU_ENVIRON_DISABLE_SCREENSAVER;
-      menu_environ.data           = NULL;
-      menu_st->screensaver_active = false;
-      menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
-   }
-   menu_st->input_last_time_us = cpu_features_get_time_usec();
-#endif
-
-#ifdef HAVE_OVERLAY
-   if (input_overlay_hide_in_menu)
-      command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
-#endif
-}
-
-void retroarch_menu_running_finished(bool quit)
-{
-   runloop_state_t *runloop_st     = &runloop_state;
-   video_driver_state_t*video_st   = video_state_get_ptr();
-#if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
-   settings_t *settings            = config_get_ptr();
-#endif
-   input_driver_state_t *input_st  = input_state_get_ptr();
-#ifdef HAVE_MENU
-   struct menu_state *menu_st      = menu_state_get_ptr();
-   menu_handle_t *menu             = menu_st->driver_data;
-   menu_input_t *menu_input        = &menu_st->input_state;
-   if (menu)
-   {
-      if (menu->driver_ctx && menu->driver_ctx->toggle)
-         menu->driver_ctx->toggle(menu->userdata, false);
-
-      menu_st->alive   = false;
-      menu_driver_toggle(
-            video_st->current_video,
-            video_st->data,
-            menu,
-            menu_input,
-            settings,
-            menu_st->alive,
-#ifdef HAVE_OVERLAY
-            input_st->overlay_ptr &&
-            input_st->overlay_ptr->alive,
-#else
-            false,
-#endif
-            &runloop_state.key_event,
-            &runloop_state.frontend_key_event,
-            false);
-   }
-
-   /* Prevent stray input
-    * (for a single frame) */
-   menu_st->input_driver_flushing_input = 1;
-
-   if (!quit)
-   {
-#ifdef HAVE_AUDIOMIXER
-      /* Stop menu background music before we exit the menu */
-      if (  settings &&
-            settings->bools.audio_enable_menu &&
-            settings->bools.audio_enable_menu_bgm
-         )
-         audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
-#endif
-
-      /* Enable game focus mode, if required */
-      if (runloop_st->current_core_type != CORE_TYPE_DUMMY)
-      {
-         enum input_auto_game_focus_type auto_game_focus_type = settings ?
-            (enum input_auto_game_focus_type)settings->uints.input_auto_game_focus :
-            AUTO_GAME_FOCUS_OFF;
-
-         if ((auto_game_focus_type == AUTO_GAME_FOCUS_ON) ||
-               ((auto_game_focus_type == AUTO_GAME_FOCUS_DETECT) &&
-                input_st->game_focus_state.core_requested))
-         {
-            enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_ON;
-            command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
-         }
-      }
-   }
-
-   /* Ensure that menu screensaver is disabled when
-    * switching off the menu */
-   if (menu_st->screensaver_active)
-   {
-      menu_ctx_environment_t menu_environ;
-      menu_environ.type           = MENU_ENVIRON_DISABLE_SCREENSAVER;
-      menu_environ.data           = NULL;
-      menu_st->screensaver_active = false;
-      menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
-   }
-#endif
-   video_driver_set_texture_enable(false, false);
-#ifdef HAVE_OVERLAY
-   if (!quit)
-      if (settings && settings->bools.input_overlay_hide_in_menu)
-         input_overlay_init();
-#endif
-}
-
 static void runloop_task_msg_queue_push(
       retro_task_t *task, const char *msg,
       unsigned prio, unsigned duration,
@@ -18751,7 +18583,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_HAS_SET_SUBSYSTEMS:
          return runloop_st->current_core.has_set_subsystems;
       case RARCH_CTL_CORE_IS_RUNNING:
-         return runloop_state.core_running;
+         return runloop_st->core_running;
 #ifdef HAVE_BSV_MOVIE
       case RARCH_CTL_BSV_MOVIE_IS_INITED:
          return (input_state_get_ptr()->bsv_movie_state_handle != NULL);
@@ -18796,10 +18628,10 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
          return false;
 #if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
       case RARCH_CTL_IS_SECOND_CORE_AVAILABLE:
-         return runloop_state.core_running &&
+         return runloop_st->core_running &&
                p_rarch->runahead_secondary_core_available;
       case RARCH_CTL_IS_SECOND_CORE_LOADED:
-         return runloop_state.core_running &&
+         return runloop_st->core_running &&
                (p_rarch->secondary_lib_handle != NULL);
 #endif
       case RARCH_CTL_HAS_SET_USERNAME:
@@ -18869,25 +18701,25 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
             unsigned *idx = (unsigned*)data;
             if (!idx)
                return false;
-            if (runloop_state.core_options)
-               *idx = (unsigned)runloop_state.core_options->size;
+            if (runloop_st->core_options)
+               *idx = (unsigned)runloop_st->core_options->size;
             else
                *idx = 0;
          }
          break;
       case RARCH_CTL_HAS_CORE_OPTIONS:
-         return (runloop_state.core_options != NULL);
+         return (runloop_st->core_options != NULL);
       case RARCH_CTL_CORE_OPTIONS_LIST_GET:
          {
             core_option_manager_t **coreopts = (core_option_manager_t**)data;
-            if (!coreopts || !runloop_state.core_options)
+            if (!coreopts || !runloop_st->core_options)
                return false;
-            *coreopts = runloop_state.core_options;
+            *coreopts = runloop_st->core_options;
          }
          break;
       case RARCH_CTL_CORE_OPTION_UPDATE_DISPLAY:
-         if (runloop_state.core_options &&
-             runloop_state.core_options_callback.update_display)
+         if (runloop_st->core_options &&
+             runloop_st->core_options_callback.update_display)
          {
             /* Note: The update_display() callback may read
              * core option values via RETRO_ENVIRONMENT_GET_VARIABLE.
@@ -18895,79 +18727,79 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
              * We therefore have to cache the current 'options updated'
              * state and restore it after the update_display() function
              * returns */
-            bool values_updated  = runloop_state.core_options->updated;
-            bool display_updated = runloop_state.core_options_callback.update_display();
+            bool values_updated  = runloop_st->core_options->updated;
+            bool display_updated = runloop_st->core_options_callback.update_display();
 
-            runloop_state.core_options->updated = values_updated;
+            runloop_st->core_options->updated = values_updated;
             return display_updated;
          }
          return false;
 #ifdef HAVE_CONFIGFILE
       case RARCH_CTL_IS_OVERRIDES_ACTIVE:
-         return runloop_state.overrides_active;
+         return runloop_st->overrides_active;
       case RARCH_CTL_SET_REMAPS_CORE_ACTIVE:
-         runloop_state.remaps_core_active = true;
+         runloop_st->remaps_core_active = true;
          break;
       case RARCH_CTL_IS_REMAPS_CORE_ACTIVE:
-         return runloop_state.remaps_core_active;
+         return runloop_st->remaps_core_active;
       case RARCH_CTL_SET_REMAPS_GAME_ACTIVE:
-         runloop_state.remaps_game_active = true;
+         runloop_st->remaps_game_active = true;
          break;
       case RARCH_CTL_IS_REMAPS_GAME_ACTIVE:
-         return runloop_state.remaps_game_active;
+         return runloop_st->remaps_game_active;
       case RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE:
-         runloop_state.remaps_content_dir_active = true;
+         runloop_st->remaps_content_dir_active = true;
          break;
       case RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE:
-         return runloop_state.remaps_content_dir_active;
+         return runloop_st->remaps_content_dir_active;
 #endif
       case RARCH_CTL_SET_MISSING_BIOS:
-         runloop_state.missing_bios = true;
+         runloop_st->missing_bios = true;
          break;
       case RARCH_CTL_UNSET_MISSING_BIOS:
-         runloop_state.missing_bios = false;
+         runloop_st->missing_bios = false;
          break;
       case RARCH_CTL_IS_MISSING_BIOS:
-         return runloop_state.missing_bios;
+         return runloop_st->missing_bios;
       case RARCH_CTL_IS_GAME_OPTIONS_ACTIVE:
-         return runloop_state.game_options_active;
+         return runloop_st->game_options_active;
       case RARCH_CTL_IS_FOLDER_OPTIONS_ACTIVE:
-         return runloop_state.folder_options_active;
+         return runloop_st->folder_options_active;
       case RARCH_CTL_GET_PERFCNT:
          {
             bool **perfcnt = (bool**)data;
             if (!perfcnt)
                return false;
-            *perfcnt = &runloop_state.perfcnt_enable;
+            *perfcnt = &runloop_st->perfcnt_enable;
          }
          break;
       case RARCH_CTL_SET_PERFCNT_ENABLE:
-         runloop_state.perfcnt_enable = true;
+         runloop_st->perfcnt_enable = true;
          break;
       case RARCH_CTL_UNSET_PERFCNT_ENABLE:
-         runloop_state.perfcnt_enable = false;
+         runloop_st->perfcnt_enable = false;
          break;
       case RARCH_CTL_IS_PERFCNT_ENABLE:
-         return runloop_state.perfcnt_enable;
+         return runloop_st->perfcnt_enable;
       case RARCH_CTL_SET_WINDOWED_SCALE:
          {
             unsigned *idx = (unsigned*)data;
             if (!idx)
                return false;
-            runloop_state.pending_windowed_scale = *idx;
+            runloop_st->pending_windowed_scale = *idx;
          }
          break;
       case RARCH_CTL_STATE_FREE:
          {
             input_driver_state_t *input_st = input_state_get_ptr();
-            runloop_state.perfcnt_enable   = false;
-            runloop_state.idle             = false;
-            runloop_state.paused           = false;
-            runloop_state.slowmotion       = false;
+            runloop_st->perfcnt_enable   = false;
+            runloop_st->idle             = false;
+            runloop_st->paused           = false;
+            runloop_st->slowmotion       = false;
 #ifdef HAVE_CONFIGFILE
-            runloop_state.overrides_active = false;
+            runloop_st->overrides_active = false;
 #endif
-            runloop_state.autosave         = false;
+            runloop_st->autosave         = false;
             runloop_frame_time_free();
             runloop_audio_buffer_status_free();
             input_game_focus_free();
@@ -18978,13 +18810,13 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
          }
          break;
       case RARCH_CTL_IS_IDLE:
-         return runloop_state.idle;
+         return runloop_st->idle;
       case RARCH_CTL_SET_IDLE:
          {
             bool *ptr = (bool*)data;
             if (!ptr)
                return false;
-            runloop_state.idle = *ptr;
+            runloop_st->idle = *ptr;
          }
          break;
       case RARCH_CTL_SET_PAUSED:
@@ -18992,13 +18824,13 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
             bool *ptr = (bool*)data;
             if (!ptr)
                return false;
-            runloop_state.paused = *ptr;
+            runloop_st->paused = *ptr;
          }
          break;
       case RARCH_CTL_IS_PAUSED:
-         return runloop_state.paused;
+         return runloop_st->paused;
       case RARCH_CTL_SET_SHUTDOWN:
-         runloop_state.shutdown_initiated = true;
+         runloop_st->shutdown_initiated = true;
          break;
       case RARCH_CTL_CORE_OPTION_PREV:
          /*
@@ -19007,9 +18839,9 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
           */
          {
             unsigned *idx = (unsigned*)data;
-            if (!idx || !runloop_state.core_options)
+            if (!idx || !runloop_st->core_options)
                return false;
-            core_option_manager_adjust_val(runloop_state.core_options,
+            core_option_manager_adjust_val(runloop_st->core_options,
                   *idx, -1, true);
          }
          break;
@@ -19020,9 +18852,9 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
           */
          {
             unsigned* idx = (unsigned*)data;
-            if (!idx || !runloop_state.core_options)
+            if (!idx || !runloop_st->core_options)
                return false;
-            core_option_manager_adjust_val(runloop_state.core_options,
+            core_option_manager_adjust_val(runloop_st->core_options,
                   *idx, 1, true);
          }
          break;
@@ -19042,7 +18874,8 @@ const char *retroarch_get_shader_preset(void)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    struct rarch_state *p_rarch = &rarch_st;
    settings_t *settings        = config_get_ptr();
-   const char *core_name       = runloop_state.system.info.library_name;
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   const char *core_name       = runloop_st->system.info.library_name;
    bool video_shader_enable    = settings->bools.video_shader_enable;
    unsigned video_shader_delay = settings->uints.video_shader_delay;
    bool auto_shaders_enable    = settings->bools.auto_shaders_enable;
@@ -19075,7 +18908,7 @@ const char *retroarch_get_shader_preset(void)
          {
             if (load_shader_preset(
                      settings,
-                     runloop_state.system.info.library_name,
+                     runloop_st->system.info.library_name,
                      p_rarch->runtime_shader_preset,
                      sizeof(p_rarch->runtime_shader_preset)))
             {
@@ -19235,7 +19068,7 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
    return 0;
 }
 
-void retroarch_set_current_core_type(
+void runloop_set_current_core_type(
       enum rarch_core_type type, bool explicitly_set)
 {
    runloop_state_t *runloop_st                = &runloop_state;
