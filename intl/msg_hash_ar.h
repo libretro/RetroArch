@@ -6266,6 +6266,10 @@ MSG_HASH(
    "قرصان القلوب"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
+   "الظلام المشمس"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
    "الصورة المصغرة الثانية"
    )
