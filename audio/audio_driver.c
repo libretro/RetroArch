@@ -1590,7 +1590,7 @@ bool audio_driver_callback(void)
 
 bool audio_driver_has_callback(void)
 {
-   return audio_driver_st.callback.callback;
+   return audio_driver_st.callback.callback != NULL;
 }
 
 static INLINE bool audio_driver_alive(void)

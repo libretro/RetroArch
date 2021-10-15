@@ -24,6 +24,7 @@
 #include <boolean.h>
 #include <retro_inline.h>
 #include <retro_common_api.h>
+#include <dynamic/dylib.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -33,6 +34,7 @@
 #include <rthreads/rthreads.h>
 #endif
 
+#include "dynamic.h"
 #include "core_option_manager.h"
 
 enum  runloop_state_enum
@@ -43,6 +45,15 @@ enum  runloop_state_enum
    RUNLOOP_STATE_END,
    RUNLOOP_STATE_QUIT
 };
+
+enum poll_type_override_t
+{
+   POLL_TYPE_OVERRIDE_DONTCARE = 0,
+   POLL_TYPE_OVERRIDE_EARLY,
+   POLL_TYPE_OVERRIDE_NORMAL,
+   POLL_TYPE_OVERRIDE_LATE
+};
+
 
 typedef struct runloop_ctx_msg_info
 {
@@ -84,13 +95,39 @@ typedef struct core_options_callbacks
    retro_core_options_update_display_callback_t update_display;
 } core_options_callbacks_t;
 
+#ifdef HAVE_RUNAHEAD
+typedef bool(*runahead_load_state_function)(const void*, size_t);
+#endif
+
 struct runloop
 {
+   retro_time_t core_runtime_last;
+   retro_time_t core_runtime_usec;
    retro_time_t frame_limit_minimum_time;
    retro_time_t frame_limit_last_time;
-   retro_usec_t frame_time_last;        /* int64_t alignment */
+   retro_usec_t frame_time_last;                /* int64_t alignment */
 
-   msg_queue_t msg_queue;                        /* ptr alignment */
+   struct retro_core_t        current_core;     /* uint64_t alignment */
+#if defined(HAVE_RUNAHEAD)
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+   struct retro_core_t secondary_core;          /* uint64_t alignment */
+#endif
+#endif
+
+   bool    *load_no_content_hook;
+   struct retro_callbacks retro_ctx;                     /* ptr alignment */
+   msg_queue_t msg_queue;                                /* ptr alignment */
+   retro_input_state_t input_state_callback_original;    /* ptr alignment */
+#ifdef HAVE_RUNAHEAD
+   function_t retro_reset_callback_original;             /* ptr alignment */
+   function_t original_retro_deinit;                     /* ptr alignment */
+   function_t original_retro_unload;                     /* ptr alignment */
+   runahead_load_state_function
+      retro_unserialize_callback_original;               /* ptr alignment */
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+   struct retro_callbacks secondary_callbacks;           /* ptr alignment */
+#endif
+#endif
 #ifdef HAVE_THREADS
    slock_t *msg_queue_lock;
 #endif
@@ -108,8 +145,12 @@ struct runloop
    unsigned pending_windowed_scale;
    unsigned max_frames;
    unsigned audio_latency;
+   unsigned fastforward_after_frames;
 
    fastmotion_overrides_t fastmotion_override; /* float alignment */
+   enum rarch_core_type current_core_type;
+   enum rarch_core_type explicit_current_core_type;
+   enum poll_type_override_t core_poll_type_override;
 
    bool missing_bios;
    bool force_nonblock;
@@ -137,7 +178,14 @@ struct runloop
 #endif
 #ifdef HAVE_RUNAHEAD
    bool has_variable_update;
+   bool input_is_dirty;
 #endif
+   bool is_sram_load_disabled;
+   bool is_sram_save_disabled;
+   bool use_sram;
+   bool ignore_environment_cb;
+   bool core_set_shared_context;
+   bool has_set_core;
 };
 
 typedef struct runloop runloop_state_t;

@@ -490,14 +490,6 @@ enum
    RA_OPT_LOAD_MENU_ON_ERROR
 };
 
-enum poll_type_override_t
-{
-   POLL_TYPE_OVERRIDE_DONTCARE = 0,
-   POLL_TYPE_OVERRIDE_EARLY,
-   POLL_TYPE_OVERRIDE_NORMAL,
-   POLL_TYPE_OVERRIDE_LATE
-};
-
 typedef void *(*constructor_t)(void);
 typedef void  (*destructor_t )(void*);
 
@@ -509,10 +501,6 @@ typedef struct my_list_t
    int capacity;
    int size;
 } my_list;
-
-#ifdef HAVE_RUNAHEAD
-typedef bool(*runahead_load_state_function)(const void*, size_t);
-#endif
 
 #ifdef HAVE_DISCORD
 /* The Discord API specifies these variables:
@@ -549,8 +537,6 @@ typedef struct discord_state discord_state_t;
 
 struct rarch_state
 {
-   retro_time_t libretro_core_runtime_last;
-   retro_time_t libretro_core_runtime_usec;
    struct global              g_extern;         /* retro_time_t alignment */
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    rarch_timer_t shader_delay_timer;            /* int64_t alignment */
@@ -558,22 +544,12 @@ struct rarch_state
 #ifdef HAVE_DISCORD
    discord_state_t discord_st;                  /* int64_t alignment */
 #endif
-   struct retro_core_t        current_core;     /* uint64_t alignment */
-#if defined(HAVE_RUNAHEAD)
-#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-   struct retro_core_t secondary_core;          /* uint64_t alignment */
-#endif
-#endif
-
 #ifdef HAVE_RUNAHEAD
    uint64_t runahead_last_frame_count;
 #endif
 
    struct retro_camera_callback camera_cb;    /* uint64_t alignment */
-
    struct string_list *subsystem_fullpaths;
-
-   bool    *load_no_content_hook;
 #if defined(HAVE_RUNAHEAD)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    char    *secondary_library_path;
@@ -627,20 +603,6 @@ struct rarch_state
       [SUBSYSTEM_MAX_SUBSYSTEM_ROMS];                    /* ptr alignment */
 
    content_state_t            content_st;                /* ptr alignment */
-   retro_input_state_t input_state_callback_original;    /* ptr alignment */
-#ifdef HAVE_RUNAHEAD
-   function_t retro_reset_callback_original;             /* ptr alignment */
-   function_t original_retro_deinit;                     /* ptr alignment */
-   function_t original_retro_unload;                     /* ptr alignment */
-   runahead_load_state_function
-      retro_unserialize_callback_original;               /* ptr alignment */
-#endif
-   struct retro_callbacks     retro_ctx;                 /* ptr alignment */
-#if defined(HAVE_RUNAHEAD)
-#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-   struct retro_callbacks secondary_callbacks;           /* ptr alignment */
-#endif
-#endif
 #ifdef HAVE_NETWORKING
    struct netplay_room netplay_host_room;                /* ptr alignment */
 #endif
@@ -651,9 +613,6 @@ struct rarch_state
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    dylib_t secondary_lib_handle;                         /* ptr alignment */
 #endif
-#endif
-
-#ifdef HAVE_RUNAHEAD
    size_t runahead_save_state_size;
 #endif
 
@@ -685,7 +644,6 @@ struct rarch_state
 #ifdef HAVE_THREAD_STORAGE
    sthread_tls_t rarch_tls;               /* unsigned alignment */
 #endif
-   unsigned fastforward_after_frames;
 
 #ifdef HAVE_NETWORKING
    unsigned server_port_deferred;
@@ -694,15 +652,12 @@ struct rarch_state
    unsigned perf_ptr_rarch;
    unsigned perf_ptr_libretro;
 
-   enum rarch_core_type current_core_type;
-   enum rarch_core_type explicit_current_core_type;
 #if defined(HAVE_COMMAND)
    enum cmd_source_t lastcmd_source;
 #endif
 #if defined(HAVE_RUNAHEAD)
    enum rarch_core_type last_core_type;
 #endif
-   enum poll_type_override_t core_poll_type_override;
 
    retro_bits_t has_set_libretro_device;        /* uint32_t alignment */
 
@@ -745,7 +700,6 @@ struct rarch_state
 #endif
    bool has_set_username;
    bool rarch_error_on_init;
-   bool has_set_core;
    bool has_set_verbosity;
    bool has_set_libretro;
    bool has_set_libretro_directory;
@@ -761,18 +715,12 @@ struct rarch_state
 #endif
    bool has_set_log_to_file;
    bool rarch_is_inited;
-   bool rarch_is_sram_load_disabled;
-   bool rarch_is_sram_save_disabled;
-   bool rarch_use_sram;
    bool rarch_ups_pref;
    bool rarch_bps_pref;
    bool rarch_ips_pref;
 #ifdef HAVE_PATCH
    bool rarch_patch_blocked;
 #endif
-
-   bool ignore_environment_cb;
-   bool core_set_shared_context;
 
 #ifdef HAVE_ACCESSIBILITY
    /* Is text-to-speech accessibility turned on? */
@@ -793,10 +741,7 @@ struct rarch_state
 #ifdef HAVE_RUNAHEAD
    bool runahead_save_state_size_known;
    bool request_fast_savestate;
-
-   bool input_is_dirty;
 #endif
-
 #if defined(HAVE_NETWORKING)
    bool has_set_netplay_mode;
    bool has_set_netplay_ip_address;

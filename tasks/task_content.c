@@ -2061,7 +2061,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
 
    /* Preliminary stuff that has to be done before we
     * load the actual content. Can differ per mode. */
-   retroarch_set_current_core_type(CORE_TYPE_PLAIN, true);
+   runloop_set_current_core_type(CORE_TYPE_PLAIN, true);
 
    /* Load content */
    if (firmware_update_status(&content_ctx))
@@ -2122,7 +2122,7 @@ bool task_push_load_new_core(
 
    /* Preliminary stuff that has to be done before we
     * load the actual content. Can differ per mode. */
-   retroarch_set_current_core_type(type, true);
+   runloop_set_current_core_type(type, true);
 
    return true;
 }
@@ -2448,7 +2448,7 @@ bool task_push_start_builtin_core(
 
    /* Preliminary stuff that has to be done before we
     * load the actual content. Can differ per mode. */
-   retroarch_set_current_core_type(type, true);
+   runloop_set_current_core_type(type, true);
 
    /* Load content */
    if (!task_load_content_internal(content_info, true, false, false))

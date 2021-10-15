@@ -53,9 +53,7 @@ static void retro_frame_null(const void *data, unsigned width,
       unsigned height, size_t pitch);
 static void retro_run_null(void);
 static void retro_input_poll_null(void);
-static void runloop_apply_fastmotion_override(
-      struct rarch_state *p_rarch, runloop_state_t *p_runloop,
-      settings_t *settings);
+static void runloop_apply_fastmotion_override(runloop_state_t *p_runloop, settings_t *settings);
 
 static void uninit_libretro_symbols(
       struct rarch_state *p_rarch,
@@ -77,9 +75,8 @@ static void drivers_init(struct rarch_state *p_rarch,
       int flags,
       bool verbosity_enabled);
 
-static bool core_load(struct rarch_state *p_rarch,
-      unsigned poll_type_behavior);
-static bool core_unload_game(struct rarch_state *p_rarch);
+static bool core_load(unsigned poll_type_behavior);
+static bool core_unload_game(void);
 
 static bool retroarch_environment_cb(unsigned cmd, void *data);
 

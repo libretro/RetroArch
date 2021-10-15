@@ -83,7 +83,7 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void
 
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, void *data);
 
-void retroarch_set_current_core_type(
+void runloop_set_current_core_type(
       enum rarch_core_type type, bool explicitly_set);
 
 const char* retroarch_get_shader_preset(void);
