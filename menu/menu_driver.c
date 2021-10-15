@@ -6941,7 +6941,7 @@ void retroarch_menu_running_finished(bool quit)
 #endif
    input_driver_state_t *input_st  = input_state_get_ptr();
 #ifdef HAVE_MENU
-   struct menu_state *menu_st      = menu_state_get_ptr();
+   struct menu_state *menu_st      = &menu_driver_state;
    menu_handle_t *menu             = menu_st->driver_data;
    menu_input_t *menu_input        = &menu_st->input_state;
    if (menu)
