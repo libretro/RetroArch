@@ -16562,7 +16562,6 @@ static int16_t input_state_get_last(unsigned port,
 static int16_t input_state_with_logging(unsigned port,
       unsigned device, unsigned index, unsigned id)
 {
-   struct rarch_state      *p_rarch = &rarch_st;
    runloop_state_t     *runloop_st  = &runloop_state;
 
    if (runloop_st->input_state_callback_original)
