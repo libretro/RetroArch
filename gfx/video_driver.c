@@ -2435,3 +2435,31 @@ bool video_driver_texture_unload(uintptr_t *id)
    *id = 0;
    return true;
 }
+
+/**
+ * video_driver_cached_frame:
+ *
+ * Renders the current video frame.
+ **/
+void video_driver_cached_frame(void)
+{
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
+   recording_state_t *recording_st= recording_state_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   void             *recording    = recording_st->data;
+   struct retro_callbacks *cbs    = &runloop_st->retro_ctx;
+
+   /* Cannot allow recording when pushing duped frames. */
+   recording_st->data             = NULL;
+
+   if (runloop_st->current_core.inited)
+      cbs->frame_cb(
+            (video_st->frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID)
+            ? video_st->frame_cache_data 
+            : NULL,
+            video_st->frame_cache_width,
+            video_st->frame_cache_height,
+            video_st->frame_cache_pitch);
+
+   recording_st->data             = recording;
+}

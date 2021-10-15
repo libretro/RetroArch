@@ -14104,14 +14104,18 @@ static const char *accessibility_lut_name(char key)
  * @character                : Character inputted.
  * @mod                      : TODO/FIXME: ???
  *
- * Keyboard event utils. Called by drivers when keyboard events are fired.
- * This interfaces with the global system driver struct and libretro callbacks.
+ * Keyboard event utils. Called by drivers when keyboard events 
+ * are fired.
+ * This interfaces with the global system driver struct 
+ * and libretro callbacks.
  **/
 void input_keyboard_event(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device)
 {
    static bool deferred_wait_keys;
    runloop_state_t *runloop_st   = &runloop_state;
+   retro_keyboard_event_t 
+	   *key_event                 = &runloop_st->key_event;
    input_driver_state_t 
       *input_st                  = input_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
@@ -14290,11 +14294,8 @@ void input_keyboard_event(bool down, unsigned code,
             return;
       }
 
-      {
-         retro_keyboard_event_t *key_event = &runloop_st->key_event;
-         if (*key_event)
-            (*key_event)(down, code, character, mod);
-      }
+      if (*key_event)
+         (*key_event)(down, code, character, mod);
    }
 }
 
@@ -14316,7 +14317,6 @@ const char *config_get_audio_driver_options(void)
 /* Stub functions */
 
 static bool video_driver_init_internal(
-      struct rarch_state *p_rarch,
       settings_t *settings,
       bool *video_is_threaded,
       bool verbosity_enabled
@@ -14641,33 +14641,6 @@ VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
    }
 
    return true;
-}
-
-/**
- * video_driver_cached_frame:
- *
- * Renders the current video frame.
- **/
-void video_driver_cached_frame(void)
-{
-   runloop_state_t *runloop_st    = &runloop_state;
-   video_driver_state_t *video_st = video_state_get_ptr();
-   void             *recording    = recording_state.data;
-   struct retro_callbacks *cbs    = &runloop_st->retro_ctx;
-
-   /* Cannot allow recording when pushing duped frames. */
-   recording_state.data           = NULL;
-
-   if (runloop_st->current_core.inited)
-      cbs->frame_cb(
-            (video_st->frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID)
-            ? video_st->frame_cache_data 
-            : NULL,
-            video_st->frame_cache_width,
-            video_st->frame_cache_height,
-            video_st->frame_cache_pitch);
-
-   recording_state.data         = recording;
 }
 
 static void video_driver_reinit_context(struct rarch_state *p_rarch,
@@ -15988,7 +15961,7 @@ static void drivers_init(struct rarch_state *p_rarch,
       video_driver_filter_free();
 #endif
       video_driver_set_cached_frame_ptr(NULL);
-      if (!video_driver_init_internal(p_rarch, settings, &video_is_threaded,
+      if (!video_driver_init_internal(settings, &video_is_threaded,
                verbosity_enabled))
          retroarch_fail(p_rarch, 1, "video_driver_init_internal()");
 
