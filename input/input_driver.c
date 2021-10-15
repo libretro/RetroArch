@@ -5048,3 +5048,58 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
 
    return result;
 }
+
+#ifdef HAVE_HID
+void *hid_driver_get_data(void)
+{
+   return (void *)input_driver_st.hid_data;
+}
+
+/* This is only to be called after we've invoked free() on the
+ * HID driver; the memory will have already been freed, so we need to
+ * reset the pointer.
+ */
+void hid_driver_reset_data(void)
+{
+   input_driver_st.hid_data = NULL;
+}
+
+/**
+ * config_get_hid_driver_options:
+ *
+ * Get an enumerated list of all HID driver names, separated by '|'.
+ *
+ * Returns: string listing of all HID driver names, separated by '|'.
+ **/
+const char* config_get_hid_driver_options(void)
+{
+   return char_list_new_special(STRING_LIST_INPUT_HID_DRIVERS, NULL);
+}
+
+/**
+ * input_hid_init_first:
+ *
+ * Finds first suitable HID driver and initializes.
+ *
+ * Returns: HID driver if found, otherwise NULL.
+ **/
+const hid_driver_t *input_hid_init_first(void)
+{
+   unsigned i;
+   input_driver_state_t *input_st = &input_driver_st;
+
+   for (i = 0; hid_drivers[i]; i++)
+   {
+      input_st->hid_data = hid_drivers[i]->init();
+
+      if (input_st->hid_data)
+      {
+         RARCH_LOG("[Input]: Found HID driver: \"%s\".\n",
+               hid_drivers[i]->ident);
+         return hid_drivers[i];
+      }
+   }
+
+   return NULL;
+}
+#endif

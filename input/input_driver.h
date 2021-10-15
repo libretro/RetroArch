@@ -377,6 +377,9 @@ typedef struct
 #endif
 
    /* pointers */
+#ifdef HAVE_HID
+   const void *hid_data;
+#endif
    void *keyboard_press_data;
    input_keyboard_line_t keyboard_line;                  /* ptr alignment */
    input_keyboard_press_t keyboard_press_cb;             /* ptr alignment */

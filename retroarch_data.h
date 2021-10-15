@@ -574,9 +574,6 @@ struct rarch_state
    const wifi_driver_t *wifi_driver;
    void *wifi_data;
 
-#ifdef HAVE_HID
-   const void *hid_data;
-#endif
    settings_t *configuration_settings;
 #ifdef HAVE_NETWORKING
    /* Used while Netplay is running */

@@ -13972,63 +13972,6 @@ const char* config_get_joypad_driver_options(void)
    return char_list_new_special(STRING_LIST_INPUT_JOYPAD_DRIVERS, NULL);
 }
 
-#ifdef HAVE_HID
-void *hid_driver_get_data(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return (void *)p_rarch->hid_data;
-}
-
-/* This is only to be called after we've invoked free() on the
- * HID driver; the memory will have already been freed, so we need to
- * reset the pointer.
- */
-void hid_driver_reset_data(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   p_rarch->hid_data = NULL;
-}
-
-/**
- * config_get_hid_driver_options:
- *
- * Get an enumerated list of all HID driver names, separated by '|'.
- *
- * Returns: string listing of all HID driver names, separated by '|'.
- **/
-const char* config_get_hid_driver_options(void)
-{
-   return char_list_new_special(STRING_LIST_INPUT_HID_DRIVERS, NULL);
-}
-
-/**
- * input_hid_init_first:
- *
- * Finds first suitable HID driver and initializes.
- *
- * Returns: HID driver if found, otherwise NULL.
- **/
-const hid_driver_t *input_hid_init_first(void)
-{
-   unsigned i;
-   struct rarch_state *p_rarch = &rarch_st;
-
-   for (i = 0; hid_drivers[i]; i++)
-   {
-      p_rarch->hid_data = hid_drivers[i]->init();
-
-      if (p_rarch->hid_data)
-      {
-         RARCH_LOG("[Input]: Found HID driver: \"%s\".\n",
-               hid_drivers[i]->ident);
-         return hid_drivers[i];
-      }
-   }
-
-   return NULL;
-}
-#endif
-
 #if defined(HAVE_MENU) && defined(HAVE_ACCESSIBILITY)
 static const char *accessibility_lut_name(char key)
 {
@@ -14128,7 +14071,7 @@ void input_keyboard_event(bool down, unsigned code,
    static bool deferred_wait_keys;
    runloop_state_t *runloop_st   = &runloop_state;
    retro_keyboard_event_t 
-	   *key_event                 = &runloop_st->key_event;
+	   *key_event            = &runloop_st->key_event;
    input_driver_state_t 
       *input_st                  = input_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
