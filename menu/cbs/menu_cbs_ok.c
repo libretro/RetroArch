@@ -1126,7 +1126,7 @@ int generic_action_ok_displaylist_push(const char *path,
          {
             content_ctx_info_t content_info = {0};
             filebrowser_clear_type();
-            task_push_load_subsystem_with_core_from_menu(
+            task_push_load_subsystem_with_core(
                   NULL, &content_info,
                   CORE_TYPE_PLAIN, NULL, NULL);
          }
@@ -2138,7 +2138,7 @@ static int default_action_ok_load_content_with_core_from_menu(const char *_path,
    content_info.argv                   = NULL;
    content_info.args                   = NULL;
    content_info.environ_get            = NULL;
-   if (!task_push_load_content_with_core_from_menu(
+   if (!task_push_load_content_with_core(
             _path, &content_info,
             (enum rarch_core_type)_type, NULL, NULL))
       return -1;
@@ -2502,7 +2502,7 @@ static int action_ok_playlist_entry_collection(const char *path,
       for (i = 0; i < entry->subsystem_roms->size; i++)
          content_add_subsystem(entry->subsystem_roms->elems[i].data);
 
-      task_push_load_subsystem_with_core_from_menu(
+      task_push_load_subsystem_with_core(
             NULL, &content_info,
             CORE_TYPE_PLAIN, NULL, NULL);
 
@@ -2692,7 +2692,7 @@ static int action_ok_load_cdrom(const char *path,
          content_info.args        = NULL;
          content_info.environ_get = NULL;
 
-         task_push_load_content_with_core_from_menu(cdrom_path, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+         task_push_load_content_with_core(cdrom_path, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
       }
 #else
       frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);

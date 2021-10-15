@@ -1682,9 +1682,7 @@ bool menu_shader_manager_set_preset(struct video_shader *shader,
    ret = true;
 
 end:
-#ifdef HAVE_MENU
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-#endif
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
    return ret;
 
