@@ -52,7 +52,7 @@ RARCH_DEFINES = -DPSP \
 
 LIBDIR =
 LDFLAGS =
-LIBS = $(WHOLE_START) -lretro_psp1 $(WHOLE_END) -lstdc++ -lpspgu -lpspgum -lm -lpspaudio -lpspfpu -lpsppower -lpsprtc -lpthread-psp
+LIBS = $(WHOLE_START) -lretro_psp1 $(WHOLE_END) -lstdc++ -lpspgu -lpspgum -lm -lpspaudio -lpspfpu -lpsppower -lpsprtc -lpthread
 
 ifeq ($(HAVE_THREADS), 1)
 RARCH_DEFINES += -DHAVE_THREADS
