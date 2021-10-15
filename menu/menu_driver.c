@@ -2683,9 +2683,7 @@ int menu_shader_manager_clear_num_passes(struct video_shader *shader)
 
    shader->passes = 0;
 
-#ifdef HAVE_MENU
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-#endif
 
    video_shader_resolve_parameters(shader);
 
@@ -6865,7 +6863,6 @@ void retroarch_menu_running(void)
    bool audio_enable_menu          = settings->bools.audio_enable_menu;
    bool audio_enable_menu_bgm      = settings->bools.audio_enable_menu_bgm;
 #endif
-#ifdef HAVE_MENU
    struct menu_state *menu_st      = &menu_driver_state;
    menu_handle_t *menu             = menu_st->driver_data;
    menu_input_t *menu_input        = &menu_st->input_state;
@@ -6922,7 +6919,6 @@ void retroarch_menu_running(void)
       menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
    }
    menu_st->input_last_time_us = cpu_features_get_time_usec();
-#endif
 
 #ifdef HAVE_OVERLAY
    if (input_overlay_hide_in_menu)
@@ -6934,11 +6930,8 @@ void retroarch_menu_running_finished(bool quit)
 {
    runloop_state_t *runloop_st     = runloop_state_get_ptr();
    video_driver_state_t*video_st   = video_state_get_ptr();
-#if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
    settings_t *settings            = config_get_ptr();
-#endif
    input_driver_state_t *input_st  = input_state_get_ptr();
-#ifdef HAVE_MENU
    struct menu_state *menu_st      = &menu_driver_state;
    menu_handle_t *menu             = menu_st->driver_data;
    menu_input_t *menu_input        = &menu_st->input_state;
@@ -7008,7 +7001,6 @@ void retroarch_menu_running_finished(bool quit)
       menu_st->screensaver_active = false;
       menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
    }
-#endif
    video_driver_set_texture_enable(false, false);
 #ifdef HAVE_OVERLAY
    if (!quit)
