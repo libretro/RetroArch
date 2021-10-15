@@ -549,7 +549,6 @@ struct rarch_state
 #endif
 
    struct retro_camera_callback camera_cb;    /* uint64_t alignment */
-   struct string_list *subsystem_fullpaths;
 #if defined(HAVE_RUNAHEAD)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    char    *secondary_library_path;
@@ -591,14 +590,9 @@ struct rarch_state
    struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
    struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
 
-
 #ifdef HAVE_REWIND
    struct state_manager_rewind_state rewind_st;
 #endif
-   struct retro_subsystem_rom_info
-      subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS]
-      [SUBSYSTEM_MAX_SUBSYSTEM_ROMS];                    /* ptr alignment */
-
    content_state_t            content_st;                /* ptr alignment */
 #ifdef HAVE_NETWORKING
    struct netplay_room netplay_host_room;                /* ptr alignment */
@@ -621,19 +615,19 @@ struct rarch_state
 #endif
 #endif
 
-#ifdef HAVE_TRANSLATE
-   int ai_service_auto;
-#endif
-
 #if defined(HAVE_RUNAHEAD)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    int port_map[MAX_USERS];
 #endif
 #endif
 
-#if defined(HAVE_ACCESSIBILITY) && defined(HAVE_TRANSLATE)
+#if defined(HAVE_TRANSLATE)
+   int ai_service_auto;
+#if defined(HAVE_ACCESSIBILITY)
    int ai_gamepad_state[MAX_USERS];
 #endif
+#endif
+
 #ifdef HAVE_NETWORKING
    int reannounce;
 #endif
@@ -662,18 +656,10 @@ struct rarch_state
 #ifdef HAVE_NETWORKING
    char server_address_deferred[512];
 #endif
-   char current_library_name[256];
-   char current_library_version[256];
-   char current_valid_extensions[256];
    char launch_arguments[4096];
-   char path_main_basename[8192];
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    char cli_shader[PATH_MAX_LENGTH];
-   char runtime_shader_preset[PATH_MAX_LENGTH];
 #endif
-   char runtime_content_path[PATH_MAX_LENGTH];
-   char runtime_core_path[PATH_MAX_LENGTH];
-   char subsystem_path[256];
    char path_default_shader_preset[PATH_MAX_LENGTH];
    char path_content[PATH_MAX_LENGTH];
    char path_libretro[PATH_MAX_LENGTH];

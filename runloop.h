@@ -115,6 +115,7 @@ struct runloop
 #endif
 
    bool    *load_no_content_hook;
+   struct string_list *subsystem_fullpaths;
    struct retro_callbacks retro_ctx;                     /* ptr alignment */
    msg_queue_t msg_queue;                                /* ptr alignment */
    retro_input_state_t input_state_callback_original;    /* ptr alignment */
@@ -133,8 +134,11 @@ struct runloop
 #endif
    size_t msg_queue_size;
 
+   struct retro_subsystem_rom_info
+      subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS]
+      [SUBSYSTEM_MAX_SUBSYSTEM_ROMS];             /* ptr alignment */
    core_option_manager_t *core_options;
-   core_options_callbacks_t core_options_callback; /* ptr alignment */
+   core_options_callbacks_t core_options_callback;/* ptr alignment */
 
    retro_keyboard_event_t key_event;             /* ptr alignment */
    retro_keyboard_event_t frontend_key_event;    /* ptr alignment */
@@ -151,6 +155,20 @@ struct runloop
    enum rarch_core_type current_core_type;
    enum rarch_core_type explicit_current_core_type;
    enum poll_type_override_t core_poll_type_override;
+
+   char runtime_content_path_basename[8192];
+   char current_library_name[256];
+   char current_library_version[256];
+   char current_valid_extensions[256];
+   char subsystem_path[256];
+#ifdef HAVE_SCREENSHOTS
+   char max_frames_screenshot_path[PATH_MAX_LENGTH];
+#endif
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   char runtime_shader_preset_path[PATH_MAX_LENGTH];
+#endif
+   char runtime_content_path[PATH_MAX_LENGTH];
+   char runtime_core_path[PATH_MAX_LENGTH];
 
    bool missing_bios;
    bool force_nonblock;
@@ -174,7 +192,6 @@ struct runloop
    bool remaps_content_dir_active;
 #ifdef HAVE_SCREENSHOTS
    bool max_frames_screenshot;
-   char max_frames_screenshot_path[PATH_MAX_LENGTH];
 #endif
 #ifdef HAVE_RUNAHEAD
    bool has_variable_update;
