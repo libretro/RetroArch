@@ -1549,6 +1549,7 @@ static const void *find_driver_nonempty(
    return NULL;
 }
 
+#ifdef HAVE_MENU
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 struct video_shader *menu_shader_get(void)
 {
@@ -1699,6 +1700,7 @@ clear:
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
    return ret;
 }
+#endif
 #endif
 
 #ifdef HAVE_DISCORD
@@ -6920,14 +6922,24 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_SHADER_NEXT:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+#ifdef HAVE_MENU
          dir_check_shader(menu_st->driver_data, settings,
                &video_st->dir_shader_list, true, false);
+#else
+         dir_check_shader(NULL, settings,
+               &video_st->dir_shader_list, true, false);
+#endif
 #endif
          break;
       case CMD_EVENT_SHADER_PREV:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+#ifdef HAVE_MENU
          dir_check_shader(menu_st->driver_data, settings,
                &video_st->dir_shader_list, false, true);
+#else
+         dir_check_shader(NULL, settings,
+               &video_st->dir_shader_list, false, true);
+#endif
 #endif
          break;
       case CMD_EVENT_BSV_RECORDING_TOGGLE:
@@ -7843,7 +7855,9 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_RESUME:
+#ifdef HAVE_MENU
          retroarch_menu_running_finished(false);
+#endif
          if (p_rarch->main_ui_companion_is_on_foreground)
          {
 #ifdef HAVE_QT
@@ -19147,7 +19161,9 @@ bool retroarch_main_quit(void)
    }
 
    runloop_state.shutdown_initiated = true;
+#ifdef HAVE_MENU
    retroarch_menu_running_finished(true);
+#endif
 
    return true;
 }
@@ -19343,6 +19359,7 @@ static enum runloop_state_enum runloop_check_state(
 #endif
    input_driver_state_t *input_st      = input_state_get_ptr();
    video_driver_state_t *video_st      = video_state_get_ptr();
+   gfx_display_t            *p_disp    = disp_get_ptr();
    runloop_state_t *runloop_st         = &runloop_state;
    static bool old_focus               = true;
    struct retro_callbacks *cbs         = &runloop_st->retro_ctx;
@@ -19353,12 +19370,11 @@ static enum runloop_state_enum runloop_check_state(
    bool rarch_is_initialized           = p_rarch->rarch_is_inited;
    bool runloop_paused                 = runloop_st->paused;
    bool pause_nonactive                = settings->bools.pause_nonactive;
+   unsigned quit_gamepad_combo         = settings->uints.input_quit_gamepad_combo;
 #ifdef HAVE_MENU
    struct menu_state *menu_st          = menu_state_get_ptr();
    menu_handle_t *menu                 = menu_st->driver_data;
    unsigned menu_toggle_gamepad_combo  = settings->uints.input_menu_toggle_gamepad_combo;
-   unsigned quit_gamepad_combo         = settings->uints.input_quit_gamepad_combo;
-   gfx_display_t            *p_disp    = disp_get_ptr();
    bool menu_driver_binding_state      = menu_st->is_binding;
    bool menu_is_alive                  = menu_st->alive;
    bool display_kb                     = menu_input_dialog_get_display_kb();
@@ -20098,9 +20114,7 @@ static enum runloop_state_enum runloop_check_state(
                retroarch_menu_running_finished(false);
          }
          else
-         {
             retroarch_menu_running();
-         }
       }
       else
          menu_st->kb_key_state[RETROK_F1] =

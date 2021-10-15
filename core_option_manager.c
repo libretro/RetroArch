@@ -25,6 +25,7 @@
 #endif
 
 #include "core_option_manager.h"
+#include "msg_hash.h"
 
 #define CORE_OPTION_MANAGER_MAP_TAG "#"
 #define CORE_OPTION_MANAGER_MAP_DELIM ":"

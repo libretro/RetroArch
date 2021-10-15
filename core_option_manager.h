@@ -23,8 +23,10 @@
 #include <retro_common_api.h>
 #include <lists/string_list.h>
 #include <lists/nested_list.h>
+#include <file/config_file.h>
+#include <libretro.h>
 
-#include "retroarch.h"
+#include <retro_miscellaneous.h>
 
 RETRO_BEGIN_DECLS
 

@@ -279,8 +279,6 @@ typedef enum apple_view_type
 
 bool retroarch_get_current_savestate_path(char *path, size_t len);
 
-runloop_state_t *runloop_state_get_ptr(void);
-
 struct recording
 {
    const record_driver_t *driver;

@@ -1505,8 +1505,10 @@ static bool content_load(content_ctx_info_t *info,
 #endif
 #endif
 
+#ifdef HAVE_MENU
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    menu_shader_manager_init();
+#endif
 #endif
 
    command_event(CMD_EVENT_HISTORY_INIT, NULL);
@@ -1855,7 +1857,6 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
 }
 
 #ifdef HAVE_MENU
-
 bool task_push_load_content_from_playlist_from_menu(
       const char *core_path,
       const char *fullpath,
@@ -2077,7 +2078,9 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
          free(error_string);
       }
 
+#ifdef HAVE_MENU
       retroarch_menu_running();
+#endif
       goto end;
    }
 
@@ -2154,7 +2157,7 @@ bool task_push_load_content_with_new_core_from_menu(
    if (!force_core_reload &&
        (type == CORE_TYPE_PLAIN) &&
        retroarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
-      return task_push_load_content_with_core_from_menu(
+      return task_push_load_content_with_core(
             fullpath, content_info,
             type, cb, user_data);
 #endif
@@ -2453,7 +2456,9 @@ bool task_push_start_builtin_core(
    /* Load content */
    if (!task_load_content_internal(content_info, true, false, false))
    {
+#ifdef HAVE_MENU
       retroarch_menu_running();
+#endif
       return false;
    }
 
@@ -2465,7 +2470,7 @@ bool task_push_start_builtin_core(
    return true;
 }
 
-bool task_push_load_content_with_core_from_menu(
+bool task_push_load_content_with_core(
       const char *fullpath,
       content_ctx_info_t *content_info,
       enum rarch_core_type type,
@@ -2477,7 +2482,9 @@ bool task_push_load_content_with_core_from_menu(
    /* Load content */
    if (!task_load_content_internal(content_info, true, false, false))
    {
+#ifdef HAVE_MENU
       retroarch_menu_running();
+#endif
       return false;
    }
 
@@ -2508,12 +2515,28 @@ bool task_push_load_content_with_current_core_from_companion_ui(
     * > TODO/FIXME: Set loading_from_companion_ui 'false' for
     *   now, until someone can implement the required higher
     *   level functionality in 'win32_common.c' and 'ui_cocoa.m' */
-   return task_push_load_content_with_core_from_menu(fullpath,
-         content_info, type, cb, user_data);
+   path_set(RARCH_PATH_CONTENT, fullpath);
+
+   /* Load content */
+   if (!task_load_content_internal(content_info, true, false, false))
+   {
+#ifdef HAVE_MENU
+      retroarch_menu_running();
+#endif
+      return false;
+   }
+
+#ifdef HAVE_MENU
+   /* Push quick menu onto menu stack */
+   if (type != CORE_TYPE_DUMMY)
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+#endif
+
+   return true;
 }
 
 
-bool task_push_load_subsystem_with_core_from_menu(
+bool task_push_load_subsystem_with_core(
       const char *fullpath,
       content_ctx_info_t *content_info,
       enum rarch_core_type type,
@@ -2527,7 +2550,9 @@ bool task_push_load_subsystem_with_core_from_menu(
    /* Load content */
    if (!task_load_content_internal(content_info, true, false, false))
    {
+#ifdef HAVE_MENU
       retroarch_menu_running();
+#endif
       return false;
    }
 

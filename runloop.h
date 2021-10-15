@@ -202,6 +202,8 @@ typedef struct runloop runloop_state_t;
 
 RETRO_BEGIN_DECLS
 
+runloop_state_t *runloop_state_get_ptr(void);
+
 RETRO_END_DECLS
 
 #endif
