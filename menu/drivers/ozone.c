@@ -931,9 +931,36 @@ static float ozone_sidebar_gradient_bottom_dracula[16] = {
       0.2666666, 0.2784314, 0.3529412, 1.0f,
       0.2666666, 0.2784314, 0.3529412, 1.0f,
       0.2666666, 0.2784314, 0.3529412, 1.0f,
-      0.2666666, 0.2784314, 0.3529412, 1.0f,
+      0.2666666, 0.2784314, 0.3529412, 1.0f, 
 };
 
+static float ozone_background_libretro_running_solarized_dark[16] = {
+      0.0000000, 0.1294118, 0.1725490, .85f,
+      0.0000000, 0.1294118, 0.1725490, .85f,
+      0.0000000, 0.1294118, 0.1725490, 1.0f,
+      0.0000000, 0.1294118, 0.1725490, 1.0f,
+};
+
+static float ozone_sidebar_background_solarized_dark[16] = {
+      0.0000000, 0.1294118, 0.1725490, 1.0f,
+      0.0000000, 0.1294118, 0.1725490, 1.0f,
+      0.0000000, 0.1294118, 0.1725490, 1.0f,
+      0.0000000, 0.1294118, 0.1725490, 1.0f,
+};
+
+static float ozone_sidebar_gradient_top_solarized_dark[16] = {
+      0.0000000, 0.1294118, 0.1725490, 1.0f,
+      0.0000000, 0.1294118, 0.1725490, 1.0f,
+      0.0000000, 0.1294118, 0.1725490, 1.0f,
+      0.0000000, 0.1294118, 0.1725490, 1.0f,
+};
+
+static float ozone_sidebar_gradient_bottom_solarized_dark[16] = {
+      0.0000000, 0.1294118, 0.1725490, 1.0f,
+      0.0000000, 0.1294118, 0.1725490, 1.0f,
+      0.0000000, 0.1294118, 0.1725490, 1.0f,
+      0.0000000, 0.1294118, 0.1725490, 1.0f,
+};
 
 static float ozone_border_0_light[16] = COLOR_HEX_TO_FLOAT(0x50EFD9, 1.00);
 static float ozone_border_1_light[16] = COLOR_HEX_TO_FLOAT(0x0DB6D5, 1.00);
@@ -958,6 +985,9 @@ static float ozone_border_1_twilight_zone[16] = COLOR_HEX_TO_FLOAT(0x9B61CC, 1.0
 
 static float ozone_border_0_dracula[16] = COLOR_HEX_TO_FLOAT(0xC3A0E0, 1.0f);
 static float ozone_border_1_dracula[16] = COLOR_HEX_TO_FLOAT(0x9B61CC, 1.0f);
+
+static float ozone_border_0_solarized_dark[16] = COLOR_HEX_TO_FLOAT(0xC3A0E0, 1.0f);
+static float ozone_border_1_solarized_dark[16] = COLOR_HEX_TO_FLOAT(0x9B61CC, 1.0f);
 
 ozone_theme_t ozone_theme_light = {
    COLOR_HEX_TO_FLOAT(0xEBEBEB, 1.00),                   /* background */
@@ -1245,6 +1275,43 @@ ozone_theme_t ozone_theme_dracula = {
    "dracula"                                             /* name */
 };
 
+ozone_theme_t ozone_theme_solarized_dark = {
+   /* Background color */
+   COLOR_HEX_TO_FLOAT(0x002B36, 1.0f),                   /* background */
+   ozone_background_libretro_running_solarized_dark,     /* background_libretro_running */
+
+   /* Float colors for quads and icons */
+   COLOR_HEX_TO_FLOAT(0x839496, 1.0f),                   /* header_footer_separator */
+   COLOR_HEX_TO_FLOAT(0x839496, 1.0f),                   /* text */
+   COLOR_HEX_TO_FLOAT(0x073642, 1.0f),                   /* selection */
+   COLOR_HEX_TO_FLOAT(0x2AA198, 1.0f),                   /* selection_border */
+   COLOR_HEX_TO_FLOAT(0x073642, 1.0f),                   /* entries_border */
+   COLOR_HEX_TO_FLOAT(0x268BD2, 1.0f),                   /* entries_icon */
+   COLOR_HEX_TO_FLOAT(0x93A1A1, 1.0f),                   /* text_selected */
+   COLOR_HEX_TO_FLOAT(0x6C71C4, 1.0f),                   /* message_background */
+
+   /* RGBA colors for text */
+   0x839496FF,                                           /* text_rgba */
+   0x2AA198FF,                                           /* text_selected_rgba */
+   0x586E75FF,                                           /* text_sublabel_rgba */
+
+   /* Screensaver 'tint' (RGB24) */
+   0x073642,                                             /* screensaver_tint */
+
+   /* Sidebar color */
+   ozone_sidebar_background_solarized_dark,              /* sidebar_background */
+   ozone_sidebar_gradient_top_solarized_dark,            /* sidebar_top_gradient */
+   ozone_sidebar_gradient_bottom_solarized_dark,         /* sidebar_bottom_gradient */
+
+   /* Fancy cursor colors */
+   ozone_border_0_solarized_dark,                        /* cursor_border_0 */
+   ozone_border_1_solarized_dark,                        /* cursor_border_1 */
+
+   {0},                                                  /* textures */
+
+   "solarized dark"                                      /* name */
+
+};
 
 ozone_theme_t *ozone_themes[] = {
    &ozone_theme_light,
@@ -1254,7 +1321,8 @@ ozone_theme_t *ozone_themes[] = {
    &ozone_theme_boysenberry,
    &ozone_theme_hacking_the_kernel,
    &ozone_theme_twilight_zone,
-   &ozone_theme_dracula
+   &ozone_theme_dracula,
+   &ozone_theme_solarized_dark
 
 };
 
@@ -1380,6 +1448,9 @@ static void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
          break;
       case OZONE_COLOR_THEME_DRACULA:
          theme = &ozone_theme_dracula;
+         break;
+      case OZONE_COLOR_THEME_SOLARIZED_DARK:
+         theme = &ozone_theme_solarized_dark;
          break;
       default:
          break;

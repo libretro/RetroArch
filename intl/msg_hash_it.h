@@ -8466,6 +8466,10 @@ MSG_HASH(
    "Zona Crepuscolare"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
+   "Scuro Solarizzato"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
    "Seconda Copertina"
    )
