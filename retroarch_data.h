@@ -76,10 +76,10 @@ input_st->bsv_movie_state.eof_exit)
 #if HAVE_DYNAMIC
 #define RUNAHEAD_RUN_SECONDARY(p_rarch) \
    if (!secondary_core_run_use_last_input(p_rarch)) \
-      p_rarch->runahead_secondary_core_available = false
+      runloop_st->runahead_secondary_core_available = false
 #endif
 
-#define RUNAHEAD_RESUME_VIDEO(p_rarch) \
+#define RUNAHEAD_RESUME_VIDEO(video_st) \
    if (video_st->runahead_is_active) \
       video_st->active = true; \
    else \
@@ -490,18 +490,6 @@ enum
    RA_OPT_LOAD_MENU_ON_ERROR
 };
 
-typedef void *(*constructor_t)(void);
-typedef void  (*destructor_t )(void*);
-
-typedef struct my_list_t
-{
-   void **data;
-   constructor_t constructor;
-   destructor_t destructor;
-   int capacity;
-   int size;
-} my_list;
-
 #ifdef HAVE_DISCORD
 /* The Discord API specifies these variables:
 - userId --------- char[24]   - the userId of the player asking to join
@@ -544,17 +532,7 @@ struct rarch_state
 #ifdef HAVE_DISCORD
    discord_state_t discord_st;                  /* int64_t alignment */
 #endif
-#ifdef HAVE_RUNAHEAD
-   uint64_t runahead_last_frame_count;
-#endif
-
    struct retro_camera_callback camera_cb;    /* uint64_t alignment */
-#if defined(HAVE_RUNAHEAD)
-#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-   char    *secondary_library_path;
-#endif
-   retro_ctx_load_content_info_t *load_content_info;
-#endif
 
    const camera_driver_t *camera_driver;
    void *camera_data;
@@ -565,7 +543,6 @@ struct rarch_state
 #ifdef HAVE_QT
    void *ui_companion_qt_data;
 #endif
-
 
    const bluetooth_driver_t *bluetooth_driver;
    void *bluetooth_data;
@@ -582,31 +559,15 @@ struct rarch_state
    struct video_shader *menu_driver_shader;
 #endif
    frontend_ctx_driver_t *current_frontend_ctx;
-#ifdef HAVE_RUNAHEAD
-   my_list *runahead_save_state_list;
-   my_list *input_state_list;
-#endif
 
    struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
-   struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
 
 #ifdef HAVE_REWIND
    struct state_manager_rewind_state rewind_st;
 #endif
-   content_state_t            content_st;                /* ptr alignment */
 #ifdef HAVE_NETWORKING
    struct netplay_room netplay_host_room;                /* ptr alignment */
 #endif
-#ifdef HAVE_DYNAMIC
-   dylib_t lib_handle;                                   /* ptr alignment */
-#endif
-#if defined(HAVE_RUNAHEAD)
-#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-   dylib_t secondary_lib_handle;                         /* ptr alignment */
-#endif
-   size_t runahead_save_state_size;
-#endif
-
    jmp_buf error_sjlj_context;              /* 4-byte alignment,
                                                put it right before long */
 #if defined(HAVE_COMMAND)
@@ -627,7 +588,6 @@ struct rarch_state
    int ai_gamepad_state[MAX_USERS];
 #endif
 #endif
-
 #ifdef HAVE_NETWORKING
    int reannounce;
 #endif
@@ -635,21 +595,14 @@ struct rarch_state
 #ifdef HAVE_THREAD_STORAGE
    sthread_tls_t rarch_tls;               /* unsigned alignment */
 #endif
-
 #ifdef HAVE_NETWORKING
    unsigned server_port_deferred;
 #endif
-
    unsigned perf_ptr_rarch;
-   unsigned perf_ptr_libretro;
 
 #if defined(HAVE_COMMAND)
    enum cmd_source_t lastcmd_source;
 #endif
-#if defined(HAVE_RUNAHEAD)
-   enum rarch_core_type last_core_type;
-#endif
-
    retro_bits_t has_set_libretro_device;        /* uint32_t alignment */
 
    char error_string[255];
@@ -721,10 +674,6 @@ struct rarch_state
    bool wifi_driver_active;
    bool camera_driver_active;
 
-#ifdef HAVE_RUNAHEAD
-   bool runahead_save_state_size_known;
-   bool request_fast_savestate;
-#endif
 #if defined(HAVE_NETWORKING)
    bool has_set_netplay_mode;
    bool has_set_netplay_ip_address;
@@ -738,10 +687,5 @@ struct rarch_state
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    bool shader_presets_need_reload;
-#endif
-#ifdef HAVE_RUNAHEAD
-   bool runahead_available;
-   bool runahead_secondary_core_available;
-   bool runahead_force_input_dirty;
 #endif
 };

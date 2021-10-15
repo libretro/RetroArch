@@ -39,10 +39,10 @@ static void retroarch_deinit_drivers(struct rarch_state *p_rarch,
 #ifdef HAVE_RUNAHEAD
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 static bool secondary_core_create(struct rarch_state *p_rarch,
-      settings_t *settings);
-static void secondary_core_destroy(struct rarch_state *p_rarch);
+      runloop_state_t *runloop_st, settings_t *settings);
+static void secondary_core_destroy(runloop_state_t *runloop_st);
 static bool secondary_core_ensure_exists(struct rarch_state *p_rarch,
-      settings_t *settings);
+      runloop_state_t *runloop_st, settings_t *settings);
 #endif
 static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id);
@@ -60,6 +60,7 @@ static void uninit_libretro_symbols(
       struct retro_core_t *current_core);
 static bool init_libretro_symbols(
       struct rarch_state *p_rarch,
+      runloop_state_t *runloop_st,
       enum rarch_core_type type,
       struct retro_core_t *current_core);
 
