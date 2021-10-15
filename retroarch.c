@@ -11865,7 +11865,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
             retro_time_t core_limit     = (core_fps 
                   ? (retro_time_t)(1000000.0f / core_fps)
                   : (retro_time_t)0);
-	    runloop_state_t *runloop_st = &runloop_state;
+            runloop_state_t *runloop_st = &runloop_state;
             retro_time_t frame_limit    = runloop_st->frame_limit_minimum_time;
             if (abs((int)(core_limit - frame_limit)) > 10)
             {
@@ -12025,6 +12025,7 @@ static void libretro_get_environment_info(
 }
 
 static dylib_t load_dynamic_core(
+      struct rarch_state *p_rarch,
       const char *path, char *buf, size_t size)
 {
 #if defined(ANDROID)
@@ -12049,7 +12050,7 @@ static dylib_t load_dynamic_core(
       RARCH_ERR("This could happen if other modules RetroArch depends on "
             "link against libretro directly.\n");
       RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
-      return NULL;
+      retroarch_fail(p_rarch, 1, "load_dynamic_core()");
    }
 #endif
 
@@ -12233,6 +12234,7 @@ static bool init_libretro_symbols_custom(
                      path);
 
                if (!(p_rarch->lib_handle = load_dynamic_core(
+                           p_rarch,
                            path,
                            path_get_ptr(RARCH_PATH_CORE),
                            path_get_realsize(RARCH_PATH_CORE)
@@ -12241,7 +12243,6 @@ static bool init_libretro_symbols_custom(
                   RARCH_ERR("%s: \"%s\"\nError(s): %s\n",
                         msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
                         path, dylib_error());
-		  retroarch_fail(p_rarch, 1, "load_dynamic_core()");
                   runloop_msg_queue_push(msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
                         1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   return false;
@@ -20288,10 +20289,11 @@ static enum runloop_state_enum runloop_check_state(
             current_bits, RARCH_FAST_FORWARD_KEY);
       bool new_hold_button_state              = BIT256_GET(
             current_bits, RARCH_FAST_FORWARD_HOLD_KEY);
-      bool check2                             = new_button_state && !old_button_state;
+      bool check2                             = new_button_state 
+         && !old_button_state;
 
       if (!check2)
-         check2                               = old_hold_button_state           != new_hold_button_state;
+         check2 = old_hold_button_state != new_hold_button_state;
 
       if (check2)
       {

@@ -6856,9 +6856,8 @@ void retroarch_menu_running(void)
 {
    runloop_state_t *runloop_st     = runloop_state_get_ptr();
    video_driver_state_t *video_st  = video_state_get_ptr();
-#if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
    settings_t *settings            = config_get_ptr();
-#endif
+   input_driver_state_t *input_st  = input_state_get_ptr();
 #ifdef HAVE_OVERLAY
    bool input_overlay_hide_in_menu = settings->bools.input_overlay_hide_in_menu;
 #endif
@@ -6866,7 +6865,6 @@ void retroarch_menu_running(void)
    bool audio_enable_menu          = settings->bools.audio_enable_menu;
    bool audio_enable_menu_bgm      = settings->bools.audio_enable_menu_bgm;
 #endif
-   input_driver_state_t *input_st  = input_state_get_ptr();
 #ifdef HAVE_MENU
    struct menu_state *menu_st      = &menu_driver_state;
    menu_handle_t *menu             = menu_st->driver_data;
