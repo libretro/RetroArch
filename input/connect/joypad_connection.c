@@ -406,8 +406,11 @@ void pad_connection_packet(joypad_connection_t *joyconn, uint32_t pad,
    if (     
             joyconn->connection 
          && joyconn->iface
-         && joyconn->iface->packet_handler)
+       && joyconn->iface->packet_handler) {
+
       joyconn->iface->packet_handler(joyconn->connection, data, length);
+
+       }
 }
 
 void pad_connection_get_buttons(joypad_connection_t *joyconn,

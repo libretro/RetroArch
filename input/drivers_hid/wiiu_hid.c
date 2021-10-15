@@ -239,6 +239,23 @@ static int32_t wiiu_hid_set_report(void *data, uint8_t report_type,
          NULL, NULL);
 }
 
+static int32_t wiiu_hid_get_report(void *handle, uint8_t report_type, uint8_t report_id, void *data_buf, size_t size)
+{
+   wiiu_adapter_t *adapter = (wiiu_adapter_t *)handle;
+   if (!adapter || size > adapter->tx_size)
+      return -1;
+
+   memset(adapter->tx_buffer, 0, adapter->tx_size);
+   memcpy(adapter->tx_buffer, data_buf, size);
+
+   return HIDGetReport(adapter->handle,
+         report_type,
+         report_id,
+         adapter->tx_buffer,
+         adapter->tx_size,
+         NULL, NULL);
+}
+
 static int32_t wiiu_hid_set_idle(void *data, uint8_t duration)
 {
    wiiu_adapter_t *adapter = (wiiu_adapter_t *)data;
@@ -910,6 +927,15 @@ void *alloc_zeroed(size_t alignment, size_t size)
    return result;
 }
 
+/*
+   void (*send_control)(void *handle, uint8_t *buf, size_t size);
+   int32_t (*set_report)(void *handle, uint8_t, uint8_t, void *data, uint32_t size);
+   int32_t (*get_report)(void *handle, uint8_t report_type, uint8_t report_id, void *buffer, size_t length);
+   int32_t (*set_idle)(void *handle, uint8_t amount);
+   int32_t (*set_protocol)(void *handle, uint8_t protocol);
+   int32_t (*read)(void *handle, void *buf, size_t size);
+*/
+
 hid_driver_t wiiu_hid = {
    wiiu_hid_init,
    wiiu_hid_joypad_query,
@@ -924,6 +950,7 @@ hid_driver_t wiiu_hid = {
    "wiiu",
    wiiu_hid_send_control,
    wiiu_hid_set_report,
+   wiiu_hid_get_report,
    wiiu_hid_set_idle,
    wiiu_hid_set_protocol,
    wiiu_hid_read,
