@@ -95,7 +95,6 @@ static bool accessibility_speak_priority(
 #endif
 
 static bool retroarch_apply_shader(
-      struct rarch_state *p_rarch,
       settings_t *settings,
       enum rarch_shader_type type, const char *preset_path,
       bool message);

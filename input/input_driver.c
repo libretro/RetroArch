@@ -4698,8 +4698,7 @@ void bsv_movie_frame_rewind(void)
    }
 }
 
-bool bsv_movie_init(struct rarch_state *p_rarch,
-      input_driver_state_t *input_st)
+bool bsv_movie_init(input_driver_state_t *input_st)
 {
    bsv_movie_t *state = NULL;
    if (input_st->bsv_movie_state.movie_start_playback)
