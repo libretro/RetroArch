@@ -526,9 +526,6 @@ typedef struct discord_state discord_state_t;
 struct rarch_state
 {
    struct global              g_extern;         /* retro_time_t alignment */
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   rarch_timer_t shader_delay_timer;            /* int64_t alignment */
-#endif
 #ifdef HAVE_DISCORD
    discord_state_t discord_st;                  /* int64_t alignment */
 #endif
@@ -562,9 +559,6 @@ struct rarch_state
 
    struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
 
-#ifdef HAVE_REWIND
-   struct state_manager_rewind_state rewind_st;
-#endif
 #ifdef HAVE_NETWORKING
    struct netplay_room netplay_host_room;                /* ptr alignment */
 #endif
@@ -621,8 +615,6 @@ struct rarch_state
    char path_core_options_file[PATH_MAX_LENGTH];
    char dir_system[PATH_MAX_LENGTH];
    char dir_savefile[PATH_MAX_LENGTH];
-   char current_savefile_dir[PATH_MAX_LENGTH];
-   char current_savestate_dir[PATH_MAX_LENGTH];
    char dir_savestate[PATH_MAX_LENGTH];
 
 #ifdef HAVE_NETWORKING
@@ -650,7 +642,6 @@ struct rarch_state
    bool qt_is_inited;
 #endif
    bool has_set_log_to_file;
-   bool rarch_is_inited;
    bool rarch_ups_pref;
    bool rarch_bps_pref;
    bool rarch_ips_pref;

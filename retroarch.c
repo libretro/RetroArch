@@ -333,10 +333,7 @@ recording_state_t *recording_state_get_ptr(void)
 #ifdef HAVE_REWIND
 bool state_manager_frame_is_reversed(void)
 {
-   struct rarch_state   *p_rarch  = &rarch_st;
-   struct state_manager_rewind_state
-                       *rewind_st = &p_rarch->rewind_st;
-   return rewind_st->frame_is_reversed;
+   return runloop_state.rewind_st.frame_is_reversed;
 }
 #endif
 
@@ -3538,7 +3535,7 @@ void path_set_special(char **argv, unsigned num_content)
    struct rarch_state         *p_rarch = &rarch_st;
    runloop_state_t         *runloop_st = &runloop_state;
    global_t   *global                  = &p_rarch->g_extern;
-   const char *savestate_dir           = p_rarch->current_savestate_dir;
+   const char *savestate_dir           = runloop_st->savestate_dir;
 
 
    /* First content file is the significant one. */
@@ -3596,7 +3593,7 @@ static bool path_init_subsystem(struct rarch_state *p_rarch)
    runloop_state_t             *runloop_st = &runloop_state;
    rarch_system_info_t             *system = &runloop_st->system;
    bool subsystem_path_empty               = path_is_empty(RARCH_PATH_SUBSYSTEM);
-   const char                *savefile_dir = p_rarch->current_savefile_dir;
+   const char                *savefile_dir = runloop_st->savefile_dir;
 
 
    if (!system || subsystem_path_empty)
@@ -4159,6 +4156,7 @@ static void path_deinit_subsystem(runloop_state_t *runloop_st)
 size_t dir_get_size(enum rarch_dir_type type)
 {
    struct rarch_state *p_rarch = &rarch_st;
+   runloop_state_t *runloop_st = &runloop_state;
 
    switch (type)
    {
@@ -4167,11 +4165,11 @@ size_t dir_get_size(enum rarch_dir_type type)
       case RARCH_DIR_SAVESTATE:
          return sizeof(p_rarch->dir_savestate);
       case RARCH_DIR_CURRENT_SAVESTATE:
-         return sizeof(p_rarch->current_savestate_dir);
+         return sizeof(runloop_st->savestate_dir);
       case RARCH_DIR_SAVEFILE:
          return sizeof(p_rarch->dir_savefile);
       case RARCH_DIR_CURRENT_SAVEFILE:
-         return sizeof(p_rarch->current_savefile_dir);
+         return sizeof(runloop_st->savefile_dir);
       case RARCH_DIR_NONE:
          break;
    }
@@ -4184,6 +4182,7 @@ size_t dir_get_size(enum rarch_dir_type type)
 void dir_clear(enum rarch_dir_type type)
 {
    struct rarch_state *p_rarch = &rarch_st;
+   runloop_state_t *runloop_st = &runloop_state;
 
    switch (type)
    {
@@ -4191,13 +4190,13 @@ void dir_clear(enum rarch_dir_type type)
          *p_rarch->dir_savefile = '\0';
          break;
       case RARCH_DIR_CURRENT_SAVEFILE:
-         *p_rarch->current_savefile_dir = '\0';
+         *runloop_st->savefile_dir = '\0';
          break;
       case RARCH_DIR_SAVESTATE:
          *p_rarch->dir_savestate = '\0';
          break;
       case RARCH_DIR_CURRENT_SAVESTATE:
-         *p_rarch->current_savestate_dir = '\0';
+         *runloop_st->savestate_dir = '\0';
          break;
       case RARCH_DIR_SYSTEM:
          *p_rarch->dir_system = '\0';
@@ -4219,17 +4218,18 @@ static void dir_clear_all(void)
 char *dir_get_ptr(enum rarch_dir_type type)
 {
    struct rarch_state *p_rarch = &rarch_st;
+   runloop_state_t *runloop_st = &runloop_state;
 
    switch (type)
    {
       case RARCH_DIR_SAVEFILE:
          return p_rarch->dir_savefile;
       case RARCH_DIR_CURRENT_SAVEFILE:
-         return p_rarch->current_savefile_dir;
+         return runloop_st->savefile_dir;
       case RARCH_DIR_SAVESTATE:
          return p_rarch->dir_savestate;
       case RARCH_DIR_CURRENT_SAVESTATE:
-         return p_rarch->current_savestate_dir;
+         return runloop_st->savestate_dir;
       case RARCH_DIR_SYSTEM:
          return p_rarch->dir_system;
       case RARCH_DIR_NONE:
@@ -4242,20 +4242,21 @@ char *dir_get_ptr(enum rarch_dir_type type)
 void dir_set(enum rarch_dir_type type, const char *path)
 {
    struct rarch_state *p_rarch = &rarch_st;
+   runloop_state_t *runloop_st = &runloop_state;
 
    switch (type)
    {
       case RARCH_DIR_CURRENT_SAVEFILE:
-         strlcpy(p_rarch->current_savefile_dir, path,
-               sizeof(p_rarch->current_savefile_dir));
+         strlcpy(runloop_st->savefile_dir, path,
+               sizeof(runloop_st->savefile_dir));
          break;
       case RARCH_DIR_SAVEFILE:
          strlcpy(p_rarch->dir_savefile, path,
                sizeof(p_rarch->dir_savefile));
          break;
       case RARCH_DIR_CURRENT_SAVESTATE:
-         strlcpy(p_rarch->current_savestate_dir, path,
-               sizeof(p_rarch->current_savestate_dir));
+         strlcpy(runloop_st->savestate_dir, path,
+               sizeof(runloop_st->savestate_dir));
          break;
       case RARCH_DIR_SAVESTATE:
          strlcpy(p_rarch->dir_savestate, path,
@@ -6162,9 +6163,9 @@ static bool command_event_init_core(
 
    /* Load auto-shaders on the next occasion */
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   p_rarch->shader_presets_need_reload     = true;
-   p_rarch->shader_delay_timer.timer_begin = false; /* not initialized */
-   p_rarch->shader_delay_timer.timer_end   = false; /* not expired */
+   p_rarch->shader_presets_need_reload        = true;
+   runloop_st->shader_delay_timer.timer_begin = false; /* not initialized */
+   runloop_st->shader_delay_timer.timer_end   = false; /* not expired */
 #endif
 
    /* reset video format to libretro's default */
@@ -6198,7 +6199,7 @@ static bool command_event_init_core(
    disk_control_set_initial_index(
          &sys_info->disk_control,
          path_get(RARCH_PATH_CONTENT),
-         p_rarch->current_savefile_dir);
+         runloop_st->savefile_dir);
 
    if (!event_init_content(settings, p_rarch, input_st))
    {
@@ -7406,7 +7407,7 @@ bool command_event(enum event_command cmd, void *data)
 	    bool core_type_is_dummy   = runloop_st->current_core_type == CORE_TYPE_DUMMY;
 	    if (core_type_is_dummy)
                return false;
-            state_manager_event_deinit(&p_rarch->rewind_st);
+            state_manager_event_deinit(&runloop_st->rewind_st);
          }
 #endif
          break;
@@ -7431,7 +7432,7 @@ bool command_event(enum event_command cmd, void *data)
                         RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
 #endif
                {
-                  state_manager_event_init(&p_rarch->rewind_st,
+                  state_manager_event_init(&runloop_st->rewind_st,
                         (unsigned)rewind_buf_size);
                }
             }
@@ -8084,7 +8085,7 @@ bool command_event(enum event_command cmd, void *data)
             /* Disable rewind & SRAM autosave if it was enabled
              * TODO/FIXME: Add a setting for these tweaks */
 #ifdef HAVE_REWIND
-            state_manager_event_deinit(&p_rarch->rewind_st);
+            state_manager_event_deinit(&runloop_st->rewind_st);
 #endif
 #ifdef HAVE_THREADS
             autosave_deinit();
@@ -8127,7 +8128,7 @@ bool command_event(enum event_command cmd, void *data)
             /* Disable rewind if it was enabled
                TODO/FIXME: Add a setting for these tweaks */
 #ifdef HAVE_REWIND
-            state_manager_event_deinit(&p_rarch->rewind_st);
+            state_manager_event_deinit(&runloop_st->rewind_st);
 #endif
 #ifdef HAVE_THREADS
             autosave_deinit();
@@ -8167,7 +8168,7 @@ bool command_event(enum event_command cmd, void *data)
             /* Disable rewind if it was enabled
              * TODO/FIXME: Add a setting for these tweaks */
 #ifdef HAVE_REWIND
-            state_manager_event_deinit(&p_rarch->rewind_st);
+            state_manager_event_deinit(&runloop_st->rewind_st);
 #endif
 #ifdef HAVE_THREADS
             autosave_deinit();
@@ -9012,7 +9013,7 @@ void main_exit(void *args)
          p_rarch->launch_arguments);
 
    p_rarch->has_set_username        = false;
-   p_rarch->rarch_is_inited         = false;
+   runloop_st->is_inited            = false;
    p_rarch->rarch_error_on_init     = false;
 #ifdef HAVE_CONFIGFILE
    p_rarch->rarch_block_config_read = false;
@@ -9105,7 +9106,7 @@ int rarch_main(int argc, char *argv[], void *data)
 
    frontend_driver_init_first(data);
 
-   if (p_rarch->rarch_is_inited)
+   if (runloop_st->is_inited)
       driver_uninit(p_rarch, DRIVERS_CMD_ALL);
 
 #ifdef HAVE_THREAD_STORAGE
@@ -10706,7 +10707,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
          RARCH_LOG("[Environ]: GET_SAVE_DIRECTORY.\n");
-         *(const char**)data = p_rarch->current_savefile_dir;
+         *(const char**)data = runloop_st->savefile_dir;
          break;
 
       case RETRO_ENVIRONMENT_GET_USERNAME:
@@ -11822,7 +11823,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
          float core_fps   = (float)video_st->av_info.timing.fps;
 
 #ifdef HAVE_REWIND
-         if (p_rarch->rewind_st.frame_is_reversed)
+         if (runloop_st->rewind_st.frame_is_reversed)
          {
             throttle_state->mode = RETRO_THROTTLE_REWINDING;
             throttle_state->rate = 0.0f;
@@ -18404,7 +18405,7 @@ bool retroarch_main_init(int argc, char *argv[])
    command_event(CMD_EVENT_SET_PER_GAME_RESOLUTION, NULL);
 
    p_rarch->rarch_error_on_init     = false;
-   p_rarch->rarch_is_inited         = true;
+   runloop_st->is_inited            = true;
 
 #ifdef HAVE_DISCORD
    if (command_event(CMD_EVENT_DISCORD_INIT, NULL))
@@ -18427,7 +18428,7 @@ bool retroarch_main_init(int argc, char *argv[])
 
 error:
    command_event(CMD_EVENT_CORE_DEINIT, NULL);
-   p_rarch->rarch_is_inited         = false;
+   runloop_st->is_inited         = false;
 
    return false;
 }
@@ -18576,11 +18577,11 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_HAS_SET_USERNAME:
          return p_rarch->has_set_username;
       case RARCH_CTL_IS_INITED:
-         return p_rarch->rarch_is_inited;
+         return runloop_st->is_inited;
       case RARCH_CTL_MAIN_DEINIT:
          {
             input_driver_state_t *input_st = input_state_get_ptr();
-            if (!p_rarch->rarch_is_inited)
+            if (!runloop_st->is_inited)
                return false;
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 #ifdef HAVE_COMMAND
@@ -18620,7 +18621,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
             path_deinit_subsystem(runloop_st);
             path_deinit_savefile();
 
-            p_rarch->rarch_is_inited         = false;
+            runloop_st->is_inited         = false;
 
 #ifdef HAVE_THREAD_STORAGE
             sthread_tls_delete(&p_rarch->rarch_tls);
@@ -18823,7 +18824,7 @@ const char *retroarch_get_shader_preset(void)
    if (!video_shader_enable)
       return NULL;
 
-   if (video_shader_delay && !p_rarch->shader_delay_timer.timer_end)
+   if (video_shader_delay && !runloop_st->shader_delay_timer.timer_end)
       return NULL;
 
    /* Disallow loading auto-shaders when no core is loaded */
@@ -19318,7 +19319,7 @@ static enum runloop_state_enum runloop_check_state(
    bool is_alive                       = false;
    uint64_t frame_count                = 0;
    bool focused                        = true;
-   bool rarch_is_initialized           = p_rarch->rarch_is_inited;
+   bool rarch_is_initialized           = runloop_st->is_inited;
    bool runloop_paused                 = runloop_st->paused;
    bool pause_nonactive                = settings->bools.pause_nonactive;
    unsigned quit_gamepad_combo         = settings->uints.input_quit_gamepad_combo;
@@ -19948,10 +19949,10 @@ static enum runloop_state_enum runloop_check_state(
 
       if (focused || !runloop_st->idle)
       {
-         bool rarch_is_inited        = p_rarch->rarch_is_inited;
+         bool runloop_is_inited      = runloop_st->is_inited;
          bool menu_pause_libretro    = settings->bools.menu_pause_libretro;
          bool libretro_running       = !menu_pause_libretro
-            && rarch_is_inited
+            && runloop_is_inited
             && (runloop_st->current_core_type != CORE_TYPE_DUMMY);
 
          if (menu)
@@ -20374,7 +20375,7 @@ static enum runloop_state_enum runloop_check_state(
          s[0]           = '\0';
 
          rewinding      = state_manager_check_rewind(
-               &p_rarch->rewind_st,
+               &runloop_st->rewind_st,
                BIT256_GET(current_bits, RARCH_REWIND),
                settings->uints.rewind_granularity,
                runloop_st->paused,
@@ -20419,7 +20420,7 @@ static enum runloop_state_enum runloop_check_state(
             {
 #ifdef HAVE_REWIND
                struct state_manager_rewind_state
-                  *rewind_st = &p_rarch->rewind_st;
+                  *rewind_st = &runloop_st->rewind_st;
                if (rewind_st->frame_is_reversed)
                   runloop_msg_queue_push(
                         msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 1, 1, false, NULL,
@@ -20501,29 +20502,29 @@ static enum runloop_state_enum runloop_check_state(
       }
    }
 
-   if (   settings->uints.video_shader_delay &&
-         !p_rarch->shader_delay_timer.timer_end)
+   if (      settings->uints.video_shader_delay
+         && !runloop_st->shader_delay_timer.timer_end)
    {
-      if (!p_rarch->shader_delay_timer.timer_begin)
+      if (!runloop_st->shader_delay_timer.timer_begin)
       {
          uint64_t current_usec = cpu_features_get_time_usec();
          RARCH_TIMER_BEGIN_NEW_TIME_USEC(
-               p_rarch->shader_delay_timer,
+               runloop_st->shader_delay_timer,
                current_usec,
                settings->uints.video_shader_delay * 1000);
-         p_rarch->shader_delay_timer.timer_begin = true;
-         p_rarch->shader_delay_timer.timer_end   = false;
+         runloop_st->shader_delay_timer.timer_begin = true;
+         runloop_st->shader_delay_timer.timer_end   = false;
       }
       else
       {
-         RARCH_TIMER_TICK(p_rarch->shader_delay_timer, current_time);
+         RARCH_TIMER_TICK(runloop_st->shader_delay_timer, current_time);
 
-         if (RARCH_TIMER_HAS_EXPIRED(p_rarch->shader_delay_timer))
+         if (RARCH_TIMER_HAS_EXPIRED(runloop_st->shader_delay_timer))
          {
-            RARCH_TIMER_END(p_rarch->shader_delay_timer);
+            RARCH_TIMER_END(runloop_st->shader_delay_timer);
 
             {
-               const char *preset = retroarch_get_shader_preset();
+               const char *preset          = retroarch_get_shader_preset();
                enum rarch_shader_type type = video_shader_parse_type(preset);
                retroarch_apply_shader(p_rarch, settings, type, preset, false);
             }
@@ -21157,7 +21158,7 @@ bool core_set_rewind_callbacks(void)
    struct rarch_state *p_rarch  = &rarch_st;
    runloop_state_t *runloop_st  = &runloop_state;
    struct state_manager_rewind_state
-      *rewind_st                = &p_rarch->rewind_st;
+      *rewind_st                = &runloop_st->rewind_st;
 
    if (rewind_st->frame_is_reversed)
    {

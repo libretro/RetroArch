@@ -36,6 +36,7 @@
 
 #include "dynamic.h"
 #include "core_option_manager.h"
+#include "state_manager.h"
 
 enum  runloop_state_enum
 {
@@ -113,6 +114,9 @@ typedef struct my_list_t
 
 struct runloop
 {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   rarch_timer_t shader_delay_timer;            /* int64_t alignment */
+#endif
    retro_time_t core_runtime_last;
    retro_time_t core_runtime_usec;
    retro_time_t frame_limit_minimum_time;
@@ -133,6 +137,9 @@ struct runloop
    my_list *input_state_list;
 #endif
 
+#ifdef HAVE_REWIND
+   struct state_manager_rewind_state rewind_st;
+#endif
    struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
    bool    *load_no_content_hook;
    struct string_list *subsystem_fullpaths;
@@ -204,7 +211,10 @@ struct runloop
 #endif
    char runtime_content_path[PATH_MAX_LENGTH];
    char runtime_core_path[PATH_MAX_LENGTH];
+   char savefile_dir[PATH_MAX_LENGTH];
+   char savestate_dir[PATH_MAX_LENGTH];
 
+   bool is_inited;
    bool missing_bios;
    bool force_nonblock;
    bool paused;
