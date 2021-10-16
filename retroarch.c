@@ -21153,7 +21153,6 @@ static bool core_set_default_callbacks(struct retro_callbacks *cbs)
  **/
 bool core_set_rewind_callbacks(void)
 {
-   struct rarch_state *p_rarch  = &rarch_st;
    runloop_state_t *runloop_st  = &runloop_state;
    struct state_manager_rewind_state
       *rewind_st                = &runloop_st->rewind_st;
