@@ -45,7 +45,7 @@
 #include <sys/event.h>
 #endif
 #include <poll.h>
-//#undef HAVE_X11
+
 #include <libudev.h>
 #if defined(__linux__)
 #include <linux/types.h>
