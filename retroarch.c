@@ -16750,10 +16750,8 @@ static void runahead_deinit_hook(void)
       runloop_st->current_core.retro_deinit();
 }
 
-static void runahead_add_hooks(void)
+static void runahead_add_hooks(runloop_state_t *runloop_st)
 {
-   runloop_state_t     *runloop_st          = &runloop_state;
-
    if (!runloop_st->original_retro_deinit)
    {
       runloop_st->original_retro_deinit     = 
@@ -16800,7 +16798,7 @@ static bool runahead_create(runloop_state_t *runloop_st)
       return false;
    }
 
-   runahead_add_hooks();
+   runahead_add_hooks(runloop_st);
    runloop_st->runahead_force_input_dirty = true;
    if (runloop_st->runahead_save_state_list)
       mylist_resize(runloop_st->runahead_save_state_list, 1, true);
