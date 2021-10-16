@@ -986,8 +986,8 @@ static float ozone_border_1_twilight_zone[16] = COLOR_HEX_TO_FLOAT(0x9B61CC, 1.0
 static float ozone_border_0_dracula[16] = COLOR_HEX_TO_FLOAT(0xC3A0E0, 1.0f);
 static float ozone_border_1_dracula[16] = COLOR_HEX_TO_FLOAT(0x9B61CC, 1.0f);
 
-static float ozone_border_0_solarized_dark[16] = COLOR_HEX_TO_FLOAT(0xC3A0E0, 1.0f);
-static float ozone_border_1_solarized_dark[16] = COLOR_HEX_TO_FLOAT(0x9B61CC, 1.0f);
+static float ozone_border_0_solarized_dark[16] = COLOR_HEX_TO_FLOAT(0x67ECE2, 1.0f);
+static float ozone_border_1_solarized_dark[16] = COLOR_HEX_TO_FLOAT(0x2AA198, 1.0f);
 
 ozone_theme_t ozone_theme_light = {
    COLOR_HEX_TO_FLOAT(0xEBEBEB, 1.00),                   /* background */
@@ -1282,18 +1282,18 @@ ozone_theme_t ozone_theme_solarized_dark = {
 
    /* Float colors for quads and icons */
    COLOR_HEX_TO_FLOAT(0x839496, 1.0f),                   /* header_footer_separator */
-   COLOR_HEX_TO_FLOAT(0x839496, 1.0f),                   /* text */
+   COLOR_HEX_TO_FLOAT(0x93A1A1, 1.0f),                   /* text */
    COLOR_HEX_TO_FLOAT(0x073642, 1.0f),                   /* selection */
    COLOR_HEX_TO_FLOAT(0x2AA198, 1.0f),                   /* selection_border */
    COLOR_HEX_TO_FLOAT(0x073642, 1.0f),                   /* entries_border */
    COLOR_HEX_TO_FLOAT(0x268BD2, 1.0f),                   /* entries_icon */
    COLOR_HEX_TO_FLOAT(0x93A1A1, 1.0f),                   /* text_selected */
-   COLOR_HEX_TO_FLOAT(0x6C71C4, 1.0f),                   /* message_background */
+   COLOR_HEX_TO_FLOAT(0x002B36, 1.0f),                   /* message_background */
 
    /* RGBA colors for text */
-   0x839496FF,                                           /* text_rgba */
+   0x93A1A1FF,                                           /* text_rgba */
    0x2AA198FF,                                           /* text_selected_rgba */
-   0x586E75FF,                                           /* text_sublabel_rgba */
+   0x657B83FF,                                           /* text_sublabel_rgba */
 
    /* Screensaver 'tint' (RGB24) */
    0x073642,                                             /* screensaver_tint */
@@ -1309,7 +1309,7 @@ ozone_theme_t ozone_theme_solarized_dark = {
 
    {0},                                                  /* textures */
 
-   "solarized dark"                                      /* name */
+   "solarized_dark"                                      /* name */
 
 };
 
