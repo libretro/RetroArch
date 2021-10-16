@@ -189,12 +189,17 @@ static int joypad_to_slot(joypad_connection_t *haystack,
    return -1;
 }
 
+void release_joypad(joypad_connection_t *joypad) {
+
+}
+
 void legacy_pad_connection_pad_deregister(joypad_connection_t *pad_list, pad_connection_interface_t *iface, void *pad_data) {
    int i;
    for(i = 0; !joypad_is_end_of_list(&pad_list[i]); i++)
    {
       if(pad_list[i].connection == pad_data) {
          input_autoconfigure_disconnect(i, iface->get_name(pad_data));
+         memset(&pad_list[i], 0, sizeof(joypad_connection_t));
          return;
       }
    }
@@ -219,6 +224,7 @@ void pad_connection_pad_deregister(joypad_connection_t *joyconn,
       {
          input_autoconfigure_disconnect(slot, iface->get_name(joyconn[slot].connection));
          iface->pad_deinit(joyconn[slot].connection);
+         memset(&joyconn[slot], 0, sizeof(joypad_connection_t));
       }
    }
 }

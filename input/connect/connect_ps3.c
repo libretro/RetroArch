@@ -23,6 +23,8 @@
 #include "../input_defines.h"
 #include "verbosity.h"
 
+#define DS3_ACTIVATION_REPORT_ID 0xf4
+
 #define SIXAXIS_REPORT_0xF2_SIZE 17
 #define SIXAXIS_REPORT_0xF5_SIZE 8
 
@@ -36,7 +38,6 @@ typedef struct ds3_instance
    int16_t analog_state[3][2];
    uint16_t motors[2];
    uint8_t data[64];
-   uint8_t led_state[4];
 } ds3_instance_t;
 
 struct __attribute__((__packed__)) sixaxis_led {
@@ -48,7 +49,6 @@ struct __attribute__((__packed__)) sixaxis_led {
 };
 
 struct __attribute__((__packed__)) sixaxis_rumble {
-    uint8_t padding;
     uint8_t right_duration; /* Right motor duration (0xff means forever) */
     uint8_t right_motor_on; /* Right (small) motor on/off, only supports values of 0 or 1 (off/on) */
     uint8_t left_duration;    /* Left motor duration (0xff means forever) */
@@ -57,33 +57,54 @@ struct __attribute__((__packed__)) sixaxis_rumble {
 
 struct __attribute__((__packed__)) sixaxis_output_report {
     uint8_t report_id;
+    uint8_t padding1;
     struct sixaxis_rumble rumble;
-    uint8_t padding[4];
+    uint8_t padding2[4];
     uint8_t leds_bitmap; /* bitmap of enabled LEDs: LED_1 = 0x02, LED_2 = 0x04, ... */
     struct sixaxis_led led[4];    /* LEDx at (4 - x) */
     struct sixaxis_led _reserved; /* LED5, not actually soldered */
+    uint8_t unknown[13];
+};
+
+struct __attribute__((__packed__)) sixaxis_activation_report {
+   uint8_t report_id;
+   uint8_t unknown[4];
+};
+
+union sixaxis_activation_report_f4 {
+   struct sixaxis_activation_report data;
+   uint8_t buf[5];
 };
 
 union sixaxis_output_report_01 {
     struct sixaxis_output_report data;
-    uint8_t buf[36];
+    uint8_t buf[49];
 };
 
 static const union sixaxis_output_report_01 default_report = {
     .buf = {
-        0x01,
-        0x01, 0xff, 0x00, 0xff, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00,
-        0xff, 0x27, 0x10, 0x00, 0x32,
-        0xff, 0x27, 0x10, 0x00, 0x32,
-        0xff, 0x27, 0x10, 0x00, 0x32,
-        0xff, 0x27, 0x10, 0x00, 0x32,
-        0x00, 0x00, 0x00, 0x00, 0x00
+      0x01, /* report ID */
+      0x00, /* padding */
+      0xff, 0x00, /* right rumble */
+      0xff, 0x00, /* left rumble */
+      0x00, 0x00, 0x00, 0x00, /* padding */
+      0x00, /* LED bitmap */
+      0xff, 0x27, 0x10, 0x00, 0x32, /* LED 1 config */
+      0xff, 0x27, 0x10, 0x00, 0x32, /* LED 2 config */
+      0xff, 0x27, 0x10, 0x00, 0x32, /* LED 3 config */
+      0xff, 0x27, 0x10, 0x00, 0x32, /* LED 4 config */
+      0x00, 0x00, 0x00, 0x00, 0x00, /* LED 5 config (unusable/unsoldered) */
+      0x00, 0x00, 0x00, 0x00, 0x00, /* unknown */
+      0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00
     }
 };
 
+static const union sixaxis_activation_report_f4 ds3_activation_packet = {
+   .buf = { 0xF4, 0x42, 0x0c, 0x00, 0x00 }
+};
+
 /* forward declarations */
-static void set_leds_from_id(ds3_instance_t *instance);
 static int ds3_set_operational(ds3_instance_t *instance);
 static int ds3_send_output_report(ds3_instance_t *instance);
 static void ds3_update_pad_state(ds3_instance_t *instance);
@@ -99,16 +120,20 @@ static void *ds3_init(void *handle, uint32_t slot, hid_driver_t *driver) {
    instance->handle = handle;
    instance->hid_driver = driver;
    instance->slot = slot;
-   set_leds_from_id(instance);
 
+   if(instance->hid_driver->set_protocol) {
+      instance->hid_driver->set_protocol(instance->handle, 1);
+   }
+
+   if((ret = ds3_send_output_report(instance)) < 0) {
+      RARCH_LOG("Failed to send output report\n");
+      goto error;
+   }
    if((ret = ds3_set_operational(instance)) < 0) {
       RARCH_LOG("Failed to set operational mode\n");
       goto error;
    }
-   if((ret = ds3_send_output_report(instance)) < 0) {
-      RARCH_LOG("Failed to send output report\n");
-      goto error;
-   } 
+
 
    return instance;
 error:
@@ -201,36 +226,9 @@ static int32_t ds3_button(void *device_data, uint16_t joykey) {
    return device->buttons & (1 << joykey);
 }
 
-static void set_leds_from_id(ds3_instance_t *instance)
-{
-   /* for pads 0-3, we just light up the appropriate LED. */
-   /* for higher pads, we sum up the numbers on the LEDs  */
-   /* themselves, so e.g. pad 5 is 4 + 1, pad 6 is 4 + 2, */
-   /* and so on. We max out at 10 because 4+3+2+1 = 10    */
-   static const uint8_t sixaxis_leds[10][4] = {
-            { 0x01, 0x00, 0x00, 0x00 },
-            { 0x00, 0x01, 0x00, 0x00 },
-            { 0x00, 0x00, 0x01, 0x00 },
-            { 0x00, 0x00, 0x00, 0x01 },
-            { 0x01, 0x00, 0x00, 0x01 },
-            { 0x00, 0x01, 0x00, 0x01 },
-            { 0x00, 0x00, 0x01, 0x01 },
-            { 0x01, 0x00, 0x01, 0x01 },
-            { 0x00, 0x01, 0x01, 0x01 },
-            { 0x01, 0x01, 0x01, 0x01 }
-   };
-
-   int id = instance->slot;
-
-   if (id < 0)
-      return;
-
-   id %= 10;
-   memcpy(instance->led_state, sixaxis_leds[id], sizeof(sixaxis_leds[id]));
-}
-
 static int ds3_set_operational(ds3_instance_t *instance) {
    const int buf_size = SIXAXIS_REPORT_0xF2_SIZE;
+
    uint8_t *buf = (uint8_t *)malloc(buf_size);
    int ret;
 
@@ -238,40 +236,48 @@ static int ds3_set_operational(ds3_instance_t *instance) {
       return -1;
    }
 
-   ret = instance->hid_driver->get_report(instance->handle, HID_REPORT_FEATURE, 0xf2, buf, SIXAXIS_REPORT_0xF2_SIZE);
+   ret = instance->hid_driver->set_report(instance->handle, HID_REPORT_FEATURE, ds3_activation_packet.data.report_id, ds3_activation_packet.buf, sizeof(ds3_activation_packet));
    if(ret < 0) {
-      RARCH_LOG("Failed to set operational mode step 1\n");
-      goto out;
+      RARCH_LOG("Failed to send activation packet\n");
    }
 
-   ret = instance->hid_driver->get_report(instance->handle, HID_REPORT_FEATURE, 0xf5, buf, SIXAXIS_REPORT_0xF5_SIZE);
-   if(ret < 0) {
-      RARCH_LOG("Failed to set operational mode step 2\n");
-      goto out;
-   }
-
-   ret = instance->hid_driver->set_report(instance->handle, HID_REPORT_OUTPUT, buf[0], buf, 1);
-   if(ret < 0) {
-      RARCH_LOG("Failed to set operational mode step 3, ignoring\n");
-      ret = 0;
-   }
-out:
    free(buf);
    return ret;
 }
 
+static uint8_t get_leds(unsigned slot) {
+   unsigned pad_number = slot+1;
+   switch(pad_number) {
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+         return 1 << pad_number; 
+      case 5:
+         return (1 << 1) | (1 << 4);
+      case 6:
+         return (1 << 2) | (1 << 4);
+      case 7:
+         return (1 << 3) | (1 << 4);
+      case 8:
+         return (1 << 3) | (1 << 1) | (1 << 4);
+      case 9:
+         return (1 << 2) | (1 << 3) | (1 << 4);
+      case 10:
+      default:
+         return (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4);
+   }
+}
+
 static int ds3_send_output_report(ds3_instance_t *instance) {
    struct sixaxis_output_report report = {0};
-   int n;
+   uint8_t *packet = (uint8_t *)&report;
 
    /* Initialize the report with default values */
    memcpy(&report, &default_report, sizeof(struct sixaxis_output_report));
-   report.leds_bitmap |= instance->led_state[0] << 1;
-   report.leds_bitmap |= instance->led_state[1] << 2;
-   report.leds_bitmap |= instance->led_state[2] << 3;
-   report.leds_bitmap |= instance->led_state[3] << 4;
+   report.leds_bitmap = get_leds(instance->slot);
 
-   return instance->hid_driver->set_report(instance->handle, HID_REPORT_OUTPUT, report.report_id, (uint8_t *)&report, sizeof(report));
+   return instance->hid_driver->set_report(instance->handle, HID_REPORT_OUTPUT, report.report_id, packet, sizeof(report));
 }
 
 static void ds3_update_pad_state(ds3_instance_t *instance)

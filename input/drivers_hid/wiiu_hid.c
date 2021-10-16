@@ -135,7 +135,7 @@ static bool wiiu_hid_joypad_rumble(void *data, unsigned slot,
 
 static void *wiiu_hid_init(void)
 {
-   RARCH_LOG("[hid]: initializing HID subsystem\n");
+   RARCH_LOG("[hid]: initializing\n");
    wiiu_hid_t *hid = new_hid();
    HIDClient *client = new_hidclient();
 
@@ -150,7 +150,6 @@ static void *wiiu_hid_init(void)
    HIDAddClient(client, wiiu_attach_callback);
    hid->client = client;
 
-   RARCH_LOG("[hid]: init success\n");
    return hid;
 
 error:
@@ -221,12 +220,21 @@ static void wiiu_hid_send_control(void *data, uint8_t *buf, size_t size)
    }
 }
 
+static void _fixup_report_buffer(uint8_t **buffer, uint8_t report_id, size_t *length) {
+   if((*buffer)[0] == report_id) {
+      *buffer = (*buffer)+ 1;
+      *length = *length - 1;
+   }
+}
+
 static int32_t wiiu_hid_set_report(void *data, uint8_t report_type,
-               uint8_t report_id, void *report_data, uint32_t report_length)
+               uint8_t report_id, uint8_t *report_data, size_t report_length)
 {
    wiiu_adapter_t *adapter = (wiiu_adapter_t *)data;
    if (!adapter || report_length > adapter->tx_size)
       return -1;
+
+   _fixup_report_buffer(&report_data, report_id, &report_length);
 
    memset(adapter->tx_buffer, 0, adapter->tx_size);
    memcpy(adapter->tx_buffer, report_data, report_length);
@@ -239,14 +247,16 @@ static int32_t wiiu_hid_set_report(void *data, uint8_t report_type,
          NULL, NULL);
 }
 
-static int32_t wiiu_hid_get_report(void *handle, uint8_t report_type, uint8_t report_id, void *data_buf, size_t size)
+static int32_t wiiu_hid_get_report(void *handle, uint8_t report_type, uint8_t report_id, uint8_t *report_data, size_t report_length)
 {
    wiiu_adapter_t *adapter = (wiiu_adapter_t *)handle;
-   if (!adapter || size > adapter->tx_size)
+   if (!adapter || report_length > adapter->tx_size)
       return -1;
 
+   _fixup_report_buffer(&report_data, report_id, &report_length);
+
    memset(adapter->tx_buffer, 0, adapter->tx_size);
-   memcpy(adapter->tx_buffer, data_buf, size);
+   memcpy(adapter->tx_buffer, report_data, report_length);
 
    return HIDGetReport(adapter->handle,
          report_type,
@@ -422,7 +432,6 @@ static uint8_t try_init_driver(wiiu_adapter_t *adapter)
       return ADAPTER_STATE_DONE;
    }
 
-   RARCH_LOG("driver initialized, registering pad\n");
    pad_connection_pad_register(joypad_state.pads, adapter->pad_driver, adapter->pad_driver_data, adapter, &hidpad_driver, slot);
 
    return ADAPTER_STATE_READY;
@@ -454,7 +463,6 @@ static void synchronized_process_adapters(wiiu_hid_t *hid)
             break;
          case ADAPTER_STATE_GC:
             {
-               RARCH_LOG("ADAPTER_STATE_GC");
                /* remove from the list */
                if (!prev)
                   adapters.list = adapter->next;
@@ -524,12 +532,7 @@ static int32_t wiiu_attach_callback(HIDClient *client,
 
    if (attach)
    {
-      RARCH_LOG("[hid]: Device attach event generated.\n");
       log_device(device);
-   }
-   else
-   {
-      RARCH_LOG("[hid]: Device detach event generated.\n");
    }
 
    if (device)
@@ -788,36 +791,30 @@ static OSThread *new_thread(void)
 
 static void wiiu_hid_init_lists(void)
 {
-   RARCH_LOG("[hid]: Initializing events list\n");
    memset(&events, 0, sizeof(events));
    OSFastMutex_Init(&(events.lock), "attach_events");
-   RARCH_LOG("[hid]: Initializing adapters list\n");
    memset(&adapters, 0, sizeof(adapters));
    OSFastMutex_Init(&(adapters.lock), "adapters");
 }
 
 static wiiu_hid_t *new_hid(void)
 {
-   RARCH_LOG("[hid]: new_hid()\n");
    return alloc_zeroed(4, sizeof(wiiu_hid_t));
 }
 
 static void delete_hid(wiiu_hid_t *hid)
 {
-   RARCH_LOG("[hid]: delete_hid()\n");
    if (hid)
       free(hid);
 }
 
 static HIDClient *new_hidclient(void)
 {
-   RARCH_LOG("[hid]: new_hidclient()\n");
    return alloc_zeroed(32, sizeof(HIDClient));
 }
 
 static void delete_hidclient(HIDClient *client)
 {
-   RARCH_LOG("[hid]: delete_hidclient()\n");
    if (client)
       free(client);
 }
@@ -926,15 +923,6 @@ void *alloc_zeroed(size_t alignment, size_t size)
 
    return result;
 }
-
-/*
-   void (*send_control)(void *handle, uint8_t *buf, size_t size);
-   int32_t (*set_report)(void *handle, uint8_t, uint8_t, void *data, uint32_t size);
-   int32_t (*get_report)(void *handle, uint8_t report_type, uint8_t report_id, void *buffer, size_t length);
-   int32_t (*set_idle)(void *handle, uint8_t amount);
-   int32_t (*set_protocol)(void *handle, uint8_t protocol);
-   int32_t (*read)(void *handle, void *buf, size_t size);
-*/
 
 hid_driver_t wiiu_hid = {
    wiiu_hid_init,

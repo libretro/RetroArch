@@ -50,8 +50,8 @@ struct hid_driver
    const char *(*name)(void *handle, unsigned pad);
    const char *ident;
    void (*send_control)(void *handle, uint8_t *buf, size_t size);
-   int32_t (*set_report)(void *handle, uint8_t, uint8_t, void *data, uint32_t size);
-   int32_t (*get_report)(void *handle, uint8_t report_type, uint8_t report_id, void *buffer, size_t length);
+   int32_t (*set_report)(void *handle, uint8_t report_type, uint8_t report_id, uint8_t *data, size_t length);
+   int32_t (*get_report)(void *handle, uint8_t report_type, uint8_t report_id, uint8_t *data, size_t length);
    int32_t (*set_idle)(void *handle, uint8_t amount);
    int32_t (*set_protocol)(void *handle, uint8_t protocol);
    int32_t (*read)(void *handle, void *buf, size_t size);

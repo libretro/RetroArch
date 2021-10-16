@@ -1096,7 +1096,7 @@ static void iohidmanager_hid_poll(void *data)
    (void)data;
 }
 
-static int32_t iohidmanager_set_report(void *handle, uint8_t report_type, uint8_t report_id, void *data_buf, uint32_t size)
+static int32_t iohidmanager_set_report(void *handle, uint8_t report_type, uint8_t report_id, uint8_t *data_buf, size_t size)
 {
    struct iohidmanager_hid_adapter *adapter =
       (struct iohidmanager_hid_adapter*)handle;
@@ -1104,7 +1104,7 @@ static int32_t iohidmanager_set_report(void *handle, uint8_t report_type, uint8_
    int retval = -1;
 
    if (adapter) {
-      retval = IOHIDDeviceSetReport(adapter->handle, translate_hid_report_type(report_type), report_type, data_buf + 1, size - 1);
+      retval = IOHIDDeviceSetReport(adapter->handle, translate_hid_report_type(report_type), report_type, data_buf, size);
    }
 
    return retval;
@@ -1119,7 +1119,7 @@ static int32_t iohidmanager_get_report(void *handle, uint8_t report_type, uint8_
    if (adapter) {
       CFIndex length = size;
 
-      retval = IOHIDDeviceGetReport(adapter->handle, translate_hid_report_type(report_type), report_id, data_buf+1, &length);
+      retval = IOHIDDeviceGetReport(adapter->handle, translate_hid_report_type(report_type), report_id, data_buf, &length);
    }
 
    return retval;
@@ -1141,6 +1141,6 @@ hid_driver_t iohidmanager_hid = {
    iohidmanager_set_report,
    iohidmanager_get_report,
    NULL, /* set_idle */
-   NULL, /* set_protocol */
+   NULL, /* set protocol */
    NULL  /* read */
 };
