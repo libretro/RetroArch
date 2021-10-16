@@ -8542,6 +8542,11 @@ MSG_HASH(
    "Solarisé sombre"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT,
+   "Solarisé clair"
+   )
+
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
    "Miniature secondaire"
    )
