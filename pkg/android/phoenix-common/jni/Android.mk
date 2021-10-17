@@ -130,7 +130,7 @@ DEFINES += -DRARCH_MOBILE \
 	   -DHAVE_DR_MP3 \
 	   -DHAVE_CHD \
 	   -DWANT_SUBCODE \
-	   -DWANT_RAW_DATA_SECTOR \V
+	   -DWANT_RAW_DATA_SECTOR \
 	   -DHAVE_RUNAHEAD \
 	   -DENABLE_HLSL \
 	   -DHAVE_AUDIOMIXER \
@@ -161,7 +161,9 @@ DEFINES += -DHAVE_CHEEVOS \
 	   -DRC_DISABLE_LUA
 endif
 
-DEFINES += -DFLAC_PACKAGE_VERSION="\"retroarch\"" -DHAVE_LROUND -DFLAC__HAS_OGG=0
+DEFINES += -DFLAC_PACKAGE_VERSION="\"retroarch\"" \
+	   -DHAVE_LROUND \
+	   -DFLAC__HAS_OGG=0
 
 LOCAL_CFLAGS   += -Wall -std=gnu99 -pthread -Wno-unused-function -fno-stack-protector -funroll-loops $(DEFINES)
 LOCAL_CPPFLAGS := -fexceptions -fpermissive -std=gnu++11 -fno-rtti -Wno-reorder $(DEFINES)
