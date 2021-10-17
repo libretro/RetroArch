@@ -17012,7 +17012,7 @@ static void do_runahead(
       core_run();
       RUNAHEAD_RESUME_VIDEO(p_rarch);
 
-      if (     runloop_st->input_is_dirty
+      if (     runloop_state.input_is_dirty
             || p_rarch->runahead_force_input_dirty)
       {
          runloop_state.input_is_dirty       = false;
