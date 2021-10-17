@@ -198,7 +198,7 @@ void legacy_pad_connection_pad_deregister(joypad_connection_t *pad_list, pad_con
    for(i = 0; !joypad_is_end_of_list(&pad_list[i]); i++)
    {
       if(pad_list[i].connection == pad_data) {
-         input_autoconfigure_disconnect(i, iface->get_name(pad_data));
+         input_autoconfigure_disconnect(i, iface ? iface->get_name(pad_data) : NULL);
          memset(&pad_list[i], 0, sizeof(joypad_connection_t));
          return;
       }
@@ -211,7 +211,7 @@ void pad_connection_pad_deregister(joypad_connection_t *joyconn,
    int i; 
    int slot;
 
-   if(!iface->multi_pad)
+   if(!iface || !iface->multi_pad)
    {
       legacy_pad_connection_pad_deregister(joyconn, iface, pad_data);
       return;
