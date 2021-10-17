@@ -83,7 +83,7 @@
    else if (recvd < 0)
 
 #define NETPLAY_MAGIC 0x52414E50 /* RANP */
-
+#define POKE_MAGIC    0x504F4B45 /* POKE */
 
 /*
  * AD PACKET FORMAT:
@@ -872,6 +872,37 @@ static void handshake_password(void *ignore, const char *line)
 #endif
 
 /**
+ * netplay_deinit_socket_buffer
+ *
+ * Free a socket buffer.
+ */
+static void netplay_deinit_socket_buffer(struct socket_buffer *sbuf)
+{
+   if (sbuf->data)
+      free(sbuf->data);
+}
+
+
+static bool netplay_poke(netplay_t *netplay, struct netplay_connection *connection, uint32_t netplay_magic)
+{
+   if (!netplay || !netplay->is_server)
+      return false;
+   if (!connection || !connection->active)
+      return false;
+   if (netplay_magic != POKE_MAGIC)
+      return false;
+
+   socket_close(connection->fd);
+
+   connection->active = false;
+
+   netplay_deinit_socket_buffer(&connection->send_packet_buffer);
+   netplay_deinit_socket_buffer(&connection->recv_packet_buffer);
+
+   return true;
+}
+
+/**
  * netplay_handshake_init
  *
  * Data receiver for the initial part of the handshake, i.e., waiting for the
@@ -883,6 +914,7 @@ bool netplay_handshake_init(netplay_t *netplay,
    ssize_t recvd;
    struct nick_buf_s nick_buf;
    uint32_t header[6];
+   uint32_t netplay_magic                = 0;
    uint32_t local_pmagic                 = 0;
    uint32_t remote_pmagic                = 0;
    uint32_t remote_version               = 0;
@@ -898,7 +930,12 @@ bool netplay_handshake_init(netplay_t *netplay,
       goto error;
    }
 
-   if (ntohl(header[0]) != NETPLAY_MAGIC)
+   netplay_magic = ntohl(header[0]);
+
+   if (netplay_poke(netplay, connection, netplay_magic))
+      return true;
+
+   if (netplay_magic != NETPLAY_MAGIC)
    {
       dmsg = msg_hash_to_str(MSG_NETPLAY_NOT_RETROARCH);
       goto error;
@@ -2054,17 +2091,6 @@ static bool netplay_resize_socket_buffer(
     sbuf->bufsz    = newsize;
 
     return true;
-}
-
-/**
- * netplay_deinit_socket_buffer
- *
- * Free a socket buffer.
- */
-static void netplay_deinit_socket_buffer(struct socket_buffer *sbuf)
-{
-   if (sbuf->data)
-      free(sbuf->data);
 }
 
 #if 0
