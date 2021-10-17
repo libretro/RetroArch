@@ -5102,3 +5102,159 @@ const hid_driver_t *input_hid_init_first(void)
    return NULL;
 }
 #endif
+
+void input_remapping_cache_global_config(void)
+{
+   unsigned i;
+   settings_t *settings        = config_get_ptr();
+   global_t *global            = global_get_ptr();
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      global->old_analog_dpad_mode[i] = settings->uints.input_analog_dpad_mode[i];
+      global->old_libretro_device[i]  = settings->uints.input_libretro_device[i];
+   }
+
+   global->old_analog_dpad_mode_set = true;
+   global->old_libretro_device_set  = true;
+}
+
+void input_remapping_enable_global_config_restore(void)
+{
+   global_t *global               = global_get_ptr();
+   global->remapping_cache_active = true;
+}
+
+void input_remapping_restore_global_config(bool clear_cache)
+{
+   unsigned i;
+   settings_t *settings        = config_get_ptr();
+   global_t *global            = global_get_ptr();
+
+   if (!global->remapping_cache_active)
+      goto end;
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      if (global->old_analog_dpad_mode_set &&
+          (settings->uints.input_analog_dpad_mode[i] !=
+               global->old_analog_dpad_mode[i]))
+         configuration_set_uint(settings,
+               settings->uints.input_analog_dpad_mode[i],
+               global->old_analog_dpad_mode[i]);
+
+      if (global->old_libretro_device_set &&
+          (settings->uints.input_libretro_device[i] !=
+               global->old_libretro_device[i]))
+         configuration_set_uint(settings,
+               settings->uints.input_libretro_device[i],
+               global->old_libretro_device[i]);
+   }
+
+end:
+   if (clear_cache)
+   {
+      global->old_analog_dpad_mode_set = false;
+      global->old_libretro_device_set  = false;
+      global->remapping_cache_active   = false;
+   }
+}
+
+void input_remapping_update_port_map(void)
+{
+   unsigned i, j;
+   settings_t *settings               = config_get_ptr();
+   unsigned port_map_index[MAX_USERS] = {0};
+
+   /* First pass: 'reset' port map */
+   for (i = 0; i < MAX_USERS; i++)
+      for (j = 0; j < (MAX_USERS + 1); j++)
+         settings->uints.input_remap_port_map[i][j] = MAX_USERS;
+
+   /* Second pass: assign port indices from
+    * 'input_remap_ports' */
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      unsigned remap_port = settings->uints.input_remap_ports[i];
+
+      if (remap_port < MAX_USERS)
+      {
+         /* 'input_remap_port_map' provides a list of
+          * 'physical' ports for each 'virtual' port
+          * sampled in input_state().
+          * (Note: in the following explanation, port
+          * index starts from 0, rather than the frontend
+          * display convention of 1)
+          * For example - the following remap configuration
+          * will map input devices 0+1 to port 0, and input
+          * device 2 to port 1
+          * > input_remap_ports[0] = 0;
+          *   input_remap_ports[1] = 0;
+          *   input_remap_ports[2] = 1;
+          * This gives a port map of:
+          * > input_remap_port_map[0] = { 0, 1, MAX_USERS, ... };
+          *   input_remap_port_map[1] = { 2, MAX_USERS, ... }
+          *   input_remap_port_map[2] = { MAX_USERS, ... }
+          *   ...
+          * A port map value of MAX_USERS indicates the end
+          * of the 'physical' port list */
+         settings->uints.input_remap_port_map[remap_port]
+               [port_map_index[remap_port]] = i;
+         port_map_index[remap_port]++;
+      }
+   }
+}
+
+void input_remapping_deinit(void)
+{
+   global_t *global                        = global_get_ptr();
+   runloop_state_t *runloop_st             = runloop_state_get_ptr();
+   if (global->name.remapfile)
+      free(global->name.remapfile);
+   global->name.remapfile                  = NULL;
+   runloop_st->remaps_core_active          = false;
+   runloop_st->remaps_content_dir_active   = false;
+   runloop_st->remaps_game_active          = false;
+}
+
+void input_remapping_set_defaults(bool clear_cache)
+{
+   unsigned i, j;
+   settings_t *settings        = config_get_ptr();
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      /* Button/keyboard remaps */
+      for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
+      {
+         const struct retro_keybind *keybind = &input_config_binds[i][j];
+
+         configuration_set_uint(settings,
+               settings->uints.input_remap_ids[i][j],
+                     keybind ? keybind->id : RARCH_UNMAPPED);
+
+         configuration_set_uint(settings,
+               settings->uints.input_keymapper_ids[i][j], RETROK_UNKNOWN);
+      }
+
+      /* Analog stick remaps */
+      for (j = RARCH_FIRST_CUSTOM_BIND; j < (RARCH_FIRST_CUSTOM_BIND + 8); j++)
+         configuration_set_uint(settings,
+               settings->uints.input_remap_ids[i][j], j);
+
+      /* Controller port remaps */
+      configuration_set_uint(settings,
+            settings->uints.input_remap_ports[i], i);
+   }
+
+   /* Need to call 'input_remapping_update_port_map()'
+    * whenever 'settings->uints.input_remap_ports'
+    * is modified */
+   input_remapping_update_port_map();
+
+   /* Restore 'global' settings that were cached on
+    * the last core init
+    * > Prevents remap changes from 'bleeding through'
+    *   into the main config file */
+   input_remapping_restore_global_config(clear_cache);
+}
