@@ -1028,9 +1028,11 @@ static int16_t udev_pointer_state(udev_input_t *udev,
       case RETRO_DEVICE_ID_POINTER_Y:
          return udev_mouse_get_pointer_y(mouse, screen);
       case RETRO_DEVICE_ID_POINTER_PRESSED:
-         return mouse->pp;
+         if(mouse->x_min < mouse->x_max)
+           return mouse->pp;
+         else 
+           return mouse->l;
    }
-
    return 0;
 }
 

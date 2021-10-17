@@ -149,8 +149,15 @@ static void kpad_register(unsigned channel, uint8_t device_type)
    {
       int slot;
 
-      kpad_deregister(channel);
-      slot = get_slot_for_channel(channel);
+      if(device_type == WIIMOTE_TYPE_NONE) {
+         kpad_deregister(channel);
+         return;
+      }
+
+      slot = joypad_state.kpad.channel_slot_map[channel];
+      if(slot < 0) {
+         slot = get_slot_for_channel(channel);
+      }
 
       if (slot < 0)
       {
@@ -158,8 +165,10 @@ static void kpad_register(unsigned channel, uint8_t device_type)
          return;
       }
 
-      joypad_state.kpad.wiimotes[channel].type = device_type;
-      joypad_state.pads[slot].input_driver = &kpad_driver;
+      joypad_state.kpad.wiimotes[channel].type    = device_type;
+      joypad_state.kpad.channel_slot_map[channel] = slot;
+      joypad_state.pads[slot].input_driver        = &kpad_driver;
+      joypad_state.pads[slot].connected           = true;
       input_pad_connect(slot, &kpad_driver);
    }
 }
@@ -232,8 +241,9 @@ static void kpad_poll(void)
       if (result == 0)
       {
          joypad_state.kpad.poll_failures[channel]++;
-         if (joypad_state.kpad.poll_failures[channel] > 5)
+         if (joypad_state.kpad.poll_failures[channel] > 5) {
             kpad_deregister(channel);
+         }
          continue;
       }
       joypad_state.kpad.poll_failures[channel] = 0;

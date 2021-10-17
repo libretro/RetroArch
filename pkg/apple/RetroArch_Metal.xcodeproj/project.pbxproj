@@ -55,6 +55,8 @@
 		D27C508A2228360D00113BC0 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50892228360D00113BC0 /* AudioToolbox.framework */; };
 		D27C508B2228361D00113BC0 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50872228360000113BC0 /* AVFoundation.framework */; };
 		D27C508C2228362700113BC0 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50892228360D00113BC0 /* AudioToolbox.framework */; };
+		F0B12390270D73A90006E60F /* connect in Resources */ = {isa = PBXBuildFile; fileRef = F0B1238F270D73A90006E60F /* connect */; };
+		F0B12391270D73A90006E60F /* connect in Resources */ = {isa = PBXBuildFile; fileRef = F0B1238F270D73A90006E60F /* connect */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -532,6 +534,7 @@
 		A9020FA64527ED74C836B41D /* cocoa_gl_ctx_metal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = cocoa_gl_ctx_metal.m; sourceTree = "<group>"; };
 		D27C50872228360000113BC0 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		D27C50892228360D00113BC0 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
+		F0B1238F270D73A90006E60F /* connect */ = {isa = PBXFileReference; lastKnownFileType = folder; path = connect; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1197,6 +1200,7 @@
 		05C5D53220E3DD0900654EE4 /* input */ = {
 			isa = PBXGroup;
 			children = (
+				F0B1238F270D73A90006E60F /* connect */,
 				05C5D57520E3DD0900654EE4 /* common */,
 				05C5D53520E3DD0900654EE4 /* drivers */,
 				05C5D56E20E3DD0900654EE4 /* drivers_hid */,
@@ -1526,6 +1530,7 @@
 				05422E402140C8DB00F09961 /* retroarch.icns in Resources */,
 				9254B33825FA72F100A1E0DA /* assets.zip in Resources */,
 				0502387C2179713000789627 /* MainMenu_Metal.xib in Resources */,
+				F0B12391270D73A90006E60F /* connect in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1537,6 +1542,7 @@
 				84DD5EB81A89F1C7007336C1 /* retroarch.icns in Resources */,
 				9254B33125FA0BA300A1E0DA /* assets.zip in Resources */,
 				A90209ED44A1161587F10CA4 /* MainMenu_Metal.xib in Resources */,
+				F0B12390270D73A90006E60F /* connect in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

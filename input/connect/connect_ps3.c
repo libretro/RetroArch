@@ -24,7 +24,9 @@
 #include "verbosity.h"
 
 #define DS3_ACTIVATION_REPORT_ID 0xf4
-#define DS3_RUMBLE_REPORT_ID     0x01
+
+#define SIXAXIS_REPORT_0xF2_SIZE 17
+#define SIXAXIS_REPORT_0xF5_SIZE 8
 
 typedef struct ds3_instance
 {
@@ -38,191 +40,244 @@ typedef struct ds3_instance
    uint8_t data[64];
 } ds3_instance_t;
 
+struct __attribute__((__packed__)) sixaxis_led {
+    uint8_t time_enabled; /* the total time the led is active (0xff means forever) */
+    uint8_t duty_length;  /* how long a cycle is in deciseconds (0 means "really fast") */
+    uint8_t enabled;
+    uint8_t duty_off; /* % of duty_length the led is off (0xff means 100%) */
+    uint8_t duty_on;  /* % of duty_length the led is on (0xff mean 100%) */
+};
+
+struct __attribute__((__packed__)) sixaxis_rumble {
+    uint8_t right_duration; /* Right motor duration (0xff means forever) */
+    uint8_t right_motor_on; /* Right (small) motor on/off, only supports values of 0 or 1 (off/on) */
+    uint8_t left_duration;    /* Left motor duration (0xff means forever) */
+    uint8_t left_motor_force; /* left (large) motor, supports force values from 0 to 255 */
+};
+
+struct __attribute__((__packed__)) sixaxis_output_report {
+    uint8_t report_id;
+    uint8_t padding1;
+    struct sixaxis_rumble rumble;
+    uint8_t padding2[4];
+    uint8_t leds_bitmap; /* bitmap of enabled LEDs: LED_1 = 0x02, LED_2 = 0x04, ... */
+    struct sixaxis_led led[4];    /* LEDx at (4 - x) */
+    struct sixaxis_led _reserved; /* LED5, not actually soldered */
+    uint8_t unknown[13];
+};
+
+struct __attribute__((__packed__)) sixaxis_activation_report {
+   uint8_t report_id;
+   uint8_t unknown[4];
+};
+
+union sixaxis_activation_report_f4 {
+   struct sixaxis_activation_report data;
+   uint8_t buf[5];
+};
+
+union sixaxis_output_report_01 {
+    struct sixaxis_output_report data;
+    uint8_t buf[49];
+};
+
+static const union sixaxis_output_report_01 default_report = {
+    .buf = {
+      0x01, /* report ID */
+      0x00, /* padding */
+      0xff, 0x00, /* right rumble */
+      0xff, 0x00, /* left rumble */
+      0x00, 0x00, 0x00, 0x00, /* padding */
+      0x00, /* LED bitmap */
+      0xff, 0x27, 0x10, 0x00, 0x32, /* LED 1 config */
+      0xff, 0x27, 0x10, 0x00, 0x32, /* LED 2 config */
+      0xff, 0x27, 0x10, 0x00, 0x32, /* LED 3 config */
+      0xff, 0x27, 0x10, 0x00, 0x32, /* LED 4 config */
+      0x00, 0x00, 0x00, 0x00, 0x00, /* LED 5 config (unusable/unsoldered) */
+      0x00, 0x00, 0x00, 0x00, 0x00, /* unknown */
+      0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00
+    }
+};
+
+static const union sixaxis_activation_report_f4 ds3_activation_packet = {
+   .buf = { 0xF4, 0x42, 0x0c, 0x00, 0x00 }
+};
+
+/* forward declarations */
+static int ds3_set_operational(ds3_instance_t *instance);
+static int ds3_send_output_report(ds3_instance_t *instance);
 static void ds3_update_pad_state(ds3_instance_t *instance);
 static void ds3_update_analog_state(ds3_instance_t *instance);
 
-static uint8_t ds3_activation_packet[] =
-{
-#if defined(IOS)
-   0x53, 0xF4,
-#elif defined(HAVE_WIIUSB_HID)
-   0x02,
-#endif
-   0x42, 0x0c, 0x00, 0x00
-};
-
-#if defined(WIIU)
-#define PACKET_OFFSET 2
-#elif defined(HAVE_WIIUSB_HID)
-#define PACKET_OFFSET 1
-#else
-#define PACKET_OFFSET 0
-#endif
-
-#define LED_OFFSET 11
-#define MOTOR1_OFFSET 4
-#define MOTOR2_OFFSET 6
-
-static uint8_t ds3_control_packet[] = {
-   0x52, 0x01,
-   0x00, 0xff, 0x00, 0xff, 0x00,
-   0x00, 0x00, 0x00, 0x00, 0x00,
-   0xff, 0x27, 0x10, 0x00, 0x32,
-   0xff, 0x27, 0x10, 0x00, 0x32,
-   0xff, 0x27, 0x10, 0x00, 0x32,
-   0xff, 0x27, 0x10, 0x00, 0x32,
-   0x00, 0x00, 0x00, 0x00, 0x00,
-   0x00, 0x00, 0x00, 0x00, 0x00,
-   0x00, 0x00, 0x00, 0x00, 0x00,
-   0x00, 0x00, 0x00
-};
-
-
-static int32_t ds3_send_control_packet(
-      void *data, uint32_t slot, hid_driver_t *driver)
-{
-   int32_t result = 0;
-   uint8_t packet_buffer[64] = {0};
-   memcpy(packet_buffer, ds3_control_packet, sizeof(ds3_control_packet));
-
-   packet_buffer[LED_OFFSET] = 0;
-   packet_buffer[LED_OFFSET] = 1 << ((slot % 4) + 1);
-   packet_buffer[MOTOR1_OFFSET] = 0;
-   packet_buffer[MOTOR2_OFFSET] = 0;
-
-#if defined(HAVE_WIIUSB_HID)
-   packet_buffer[1] = 0x03;
-#endif
-
-#if defined(WIIU)   
-   result = driver->set_report(data, HID_REPORT_OUTPUT, DS3_RUMBLE_REPORT_ID, packet_buffer+PACKET_OFFSET, 64-PACKET_OFFSET);
-#else
-   driver->send_control(data, packet_buffer+PACKET_OFFSET, 64-PACKET_OFFSET);
-#endif /* WIIU */
-   return result;
-}
-
-static int32_t ds3_send_activation_packet(void *data,
-      uint32_t slot, hid_driver_t *driver)
-{
-#ifdef WIIU
-   return driver->set_report(data, HID_REPORT_FEATURE, DS3_ACTIVATION_REPORT_ID, ds3_activation_packet, sizeof(ds3_activation_packet));
-#else
-   driver->send_control(data, ds3_activation_packet, sizeof(ds3_activation_packet));
-   return 0;
-#endif
-}
-
-static void *ds3_pad_init(void *data, uint32_t slot, hid_driver_t *driver)
-{
-   int errors               = 0;
-   ds3_instance_t *instance = (ds3_instance_t *)calloc(1, sizeof(ds3_instance_t));
-
-   if(driver->set_protocol) {
-      driver->set_protocol(data, 1);
+static void *ds3_init(void *handle, uint32_t slot, hid_driver_t *driver) {
+   ds3_instance_t *instance = (ds3_instance_t *)malloc(sizeof(ds3_instance_t));
+   int ret;
+   if(!instance) {
+      return NULL;
    }
 
-   if (ds3_send_control_packet(data, slot, driver) < 0)
-      errors++;
-
-   /* Sending activation packet.. */
-   if (ds3_send_activation_packet(data, slot, driver) < 0)
-      errors++;
-
-   if (errors)
-      goto error;
-
+   instance->handle = handle;
    instance->hid_driver = driver;
-   instance->handle     = data;
-   instance->slot       = slot;
-   instance->led_set    = true;
+   instance->slot = slot;
+
+   if(instance->hid_driver->set_protocol) {
+      instance->hid_driver->set_protocol(instance->handle, 1);
+   }
+
+   if((ret = ds3_send_output_report(instance)) < 0) {
+      RARCH_LOG("Failed to send output report\n");
+      goto error;
+   }
+   if((ret = ds3_set_operational(instance)) < 0) {
+      RARCH_LOG("Failed to set operational mode\n");
+      goto error;
+   }
+
 
    return instance;
-
 error:
    free(instance);
    return NULL;
 }
 
-static void ds3_pad_deinit(void *data)
-{
-   ds3_instance_t *pad = (ds3_instance_t *)data;
-   if (pad)
-      free(pad);
-}
-
-static void ds3_get_buttons(void *data, input_bits_t *state)
-{
-   ds3_instance_t *pad = (ds3_instance_t *)data;
-
-   if (pad)
-   {
-      BITS_COPY16_PTR(state, pad->buttons);
-
-      if (pad->buttons & 0x10000)
-         BIT256_SET_PTR(state, RARCH_MENU_TOGGLE);
-   }
-   else
-   {
-      BIT256_CLEAR_ALL_PTR(state);
+static void ds3_deinit(void *device_data) {
+   if(device_data) {
+      free(device_data);
    }
 }
 
-static void ds3_packet_handler(void *data,
-      uint8_t *packet, uint16_t size)
-{
-   ds3_instance_t *instance = (ds3_instance_t *)data;
-   if(!instance)
+static void ds3_packet_handler(void *device_data, uint8_t *packet, uint16_t size) {
+   ds3_instance_t *device = (ds3_instance_t *)device_data;
+   static long packet_count = 0;
+
+   if(!device)
       return;
 
-   if (!instance->led_set)
+   if (!device->led_set)
    {
-      ds3_send_control_packet(instance->handle,
-            instance->slot, instance->hid_driver);
-      instance->led_set = true;
+      ds3_send_output_report(device);
+      device->led_set = true;
    }
 
-   if (size > sizeof(instance->data))
+   if (size > sizeof(device->data))
    {
       RARCH_ERR("[ds3]: Expecting packet to be %ld but was %d\n",
-         (long)sizeof(instance->data), size);
+         (long)sizeof(device->data), size);
       return;
    }
+   packet_count++;
 
-   memcpy(instance->data, packet, size);
-   ds3_update_pad_state(instance);
-   ds3_update_analog_state(instance);
+#if defined(__APPLE__) && defined(HAVE_IOHIDMANAGER)
+   packet++;
+   size -= 2;
+#endif
+
+   memcpy(device->data, packet, size);
+   ds3_update_pad_state(device);
+   ds3_update_analog_state(device);
 }
 
-const char * ds3_get_name(void *data)
-{
-	(void)data;
-	/* For now we return a single static name */
-	return "PLAYSTATION(R)3 Controller";
+static void ds3_set_rumble(void *device_data, enum retro_rumble_effect effect, uint16_t strength) {
+
 }
 
-static void ds3_set_rumble(void *data,
-      enum retro_rumble_effect effect, uint16_t strength) { }
+static void ds3_get_buttons(void *device_data, input_bits_t *state) {
+   ds3_instance_t *device = (ds3_instance_t *)device_data;
+   if (device)
+   {
+      /* copy 32 bits : needed for PS button? */
+      BITS_COPY32_PTR(state, device->buttons);
+   }
+   else
+      BIT256_CLEAR_ALL_PTR(state);
+}
 
-static int16_t ds3_get_axis(void *data, unsigned axis)
-{
-   axis_data axis_data;
-   ds3_instance_t *pad = (ds3_instance_t *)data;
+static int16_t ds3_get_axis(void *device_data, unsigned axis) {
+   union joyaxis {
+      uint32_t encoded;
+      int16_t axis[2];
+   } joyaxis;
+   axis_data axis_data = {0};
+   ds3_instance_t *device = (ds3_instance_t *)device_data;
 
+   joyaxis.encoded = axis;
    gamepad_read_axis_data(axis, &axis_data);
 
-   if (!pad || axis_data.axis >= 4)
+   if (!device || axis_data.axis >= 4)
       return 0;
 
-   return gamepad_get_axis_value(pad->analog_state, &axis_data);
+   if(joyaxis.axis[0] < 0 || joyaxis.axis[1] < 0) {
+      return gamepad_get_axis_value(device->analog_state, &axis_data);
+   } else {
+      return gamepad_get_axis_value_raw(device->analog_state, &axis_data, false);
+   }
 }
 
-static int32_t ds3_button(void *data, uint16_t joykey)
-{
-   ds3_instance_t *pad = (ds3_instance_t *)data;
-   if (!pad || joykey > 31)
+static const char *ds3_get_name(void *device_data) {
+   return "PLAYSTATION(R)3 Controller";
+}
+
+static int32_t ds3_button(void *device_data, uint16_t joykey) {
+   ds3_instance_t *device = (ds3_instance_t *)device_data;
+
+   if (!device || joykey > 31)
       return 0;
-   return pad->buttons & (1 << joykey);
+   return device->buttons & (1 << joykey);
+}
+
+static int ds3_set_operational(ds3_instance_t *instance) {
+   const int buf_size = SIXAXIS_REPORT_0xF2_SIZE;
+
+   uint8_t *buf = (uint8_t *)malloc(buf_size);
+   int ret;
+
+   if(!buf) {
+      return -1;
+   }
+
+   ret = instance->hid_driver->set_report(instance->handle, HID_REPORT_FEATURE, ds3_activation_packet.data.report_id, ds3_activation_packet.buf, sizeof(ds3_activation_packet));
+   if(ret < 0) {
+      RARCH_LOG("Failed to send activation packet\n");
+   }
+
+   free(buf);
+   return ret;
+}
+
+static uint8_t get_leds(unsigned slot) {
+   unsigned pad_number = slot+1;
+   switch(pad_number) {
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+         return 1 << pad_number; 
+      case 5:
+         return (1 << 1) | (1 << 4);
+      case 6:
+         return (1 << 2) | (1 << 4);
+      case 7:
+         return (1 << 3) | (1 << 4);
+      case 8:
+         return (1 << 3) | (1 << 1) | (1 << 4);
+      case 9:
+         return (1 << 2) | (1 << 3) | (1 << 4);
+      case 10:
+      default:
+         return (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4);
+   }
+}
+
+static int ds3_send_output_report(ds3_instance_t *instance) {
+   struct sixaxis_output_report report = {0};
+   uint8_t *packet = (uint8_t *)&report;
+
+   /* Initialize the report with default values */
+   memcpy(&report, &default_report, sizeof(struct sixaxis_output_report));
+   report.leds_bitmap = get_leds(instance->slot);
+
+   return instance->hid_driver->set_report(instance->handle, HID_REPORT_OUTPUT, report.report_id, packet, sizeof(report));
 }
 
 static void ds3_update_pad_state(ds3_instance_t *instance)
@@ -252,7 +307,7 @@ static void ds3_update_pad_state(ds3_instance_t *instance)
 
    instance->buttons = 0;
 
-   pressed_keys = instance->data[2]        | 
+   pressed_keys = instance->data[2]        |
       (instance->data[3] << 8) |
       ((instance->data[4] & 0x01) << 16);
 
@@ -269,16 +324,21 @@ static void ds3_update_analog_state(ds3_instance_t *instance)
 
    for (pad_axis = 0; pad_axis < 4; pad_axis++)
    {
-      axis         = pad_axis % 2 ? 0 : 1;
+      axis         = (pad_axis % 2) ? 0 : 1;
       stick        = pad_axis / 2;
-      interpolated = instance->data[6+pad_axis];
-      instance->analog_state[stick][axis] = (interpolated - 128) * 256;
+      interpolated = instance->data[6 + pad_axis];
+
+      /* libretro requires "up" to be negative, so we invert the y axis */
+      interpolated = (axis) ?
+         ((interpolated - 128) * 256) :
+         ((interpolated - 128) * -256);
+      instance->analog_state[stick][axis] = interpolated;
    }
 }
 
 pad_connection_interface_t pad_connection_ps3 = {
-   ds3_pad_init,
-   ds3_pad_deinit,
+   ds3_init,
+   ds3_deinit,
    ds3_packet_handler,
    ds3_set_rumble,
    ds3_get_buttons,

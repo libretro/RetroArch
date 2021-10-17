@@ -262,8 +262,8 @@
 #define RUNLOOP_MSG_QUEUE_LOCK(runloop_st) slock_lock((runloop_st)->msg_queue_lock)
 #define RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st) slock_unlock((runloop_st)->msg_queue_lock)
 #else
-#define RUNLOOP_MSG_QUEUE_LOCK(runloop_st)
-#define RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st)
+#define RUNLOOP_MSG_QUEUE_LOCK(runloop_st) (void)(runloop_st)
+#define RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st) (void)(runloop_st)
 #endif
 
 /* Custom forward declarations */
@@ -5777,14 +5777,13 @@ static bool command_event_disk_control_append_image(
       rarch_system_info_t *sys_info,
       const char *path)
 {
-   runloop_state_t *runloop_st    = &runloop_state;
    input_driver_state_t *input_st = input_state_get_ptr();
    if (  !sys_info ||
          !disk_control_append_image(&sys_info->disk_control, path))
       return false;
 
 #ifdef HAVE_THREADS
-   if (runloop_st->use_sram)
+   if (runloop_state.use_sram)
       autosave_deinit();
 #endif
 
@@ -16741,8 +16740,6 @@ static void do_runahead(
 #else
    const bool have_dynamic = false;
 #endif
-   runloop_state_t     
-      *runloop_st          = &runloop_state;
    video_driver_state_t 
       *video_st            = video_state_get_ptr();
    settings_t *settings    = config_get_ptr();
@@ -16837,7 +16834,7 @@ static void do_runahead(
       if (     runloop_st->input_is_dirty
             || runloop_st->runahead_force_input_dirty)
       {
-         runloop_st->input_is_dirty       = false;
+         runloop_state.input_is_dirty       = false;
 
          if (!runahead_save_state(runloop_st))
          {
@@ -18856,12 +18853,12 @@ static void retroarch_fail(struct rarch_state *p_rarch,
 
 bool retroarch_main_quit(void)
 {
-   struct rarch_state *p_rarch   = &rarch_st;
    runloop_state_t *runloop_st   = &runloop_state;
    video_driver_state_t*video_st = video_state_get_ptr();
    settings_t *settings          = config_get_ptr();
    global_t            *global   = global_get_ptr();
 #ifdef HAVE_DISCORD
+   struct rarch_state *p_rarch   = &rarch_st;
    discord_state_t *discord_st   = &p_rarch->discord_st;
    if (discord_is_inited)
    {
@@ -21031,9 +21028,9 @@ bool core_unset_netplay_callbacks(void)
 
 bool core_set_cheat(retro_ctx_cheat_info_t *info)
 {
-   struct rarch_state *p_rarch       = &rarch_st;
    runloop_state_t *runloop_st       = &runloop_state;
 #if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+   struct rarch_state *p_rarch       = &rarch_st;
    settings_t *settings              = config_get_ptr();
    bool run_ahead_enabled            = false;
    unsigned run_ahead_frames         = 0;
@@ -21070,9 +21067,9 @@ bool core_set_cheat(retro_ctx_cheat_info_t *info)
 
 bool core_reset_cheat(void)
 {
-   struct rarch_state *p_rarch       = &rarch_st;
    runloop_state_t *runloop_st       = &runloop_state;
 #if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+   struct rarch_state *p_rarch       = &rarch_st;
    settings_t *settings              = config_get_ptr();
    bool run_ahead_enabled            = false;
    unsigned run_ahead_frames         = 0;
