@@ -5774,6 +5774,7 @@ static bool is_narrator_running(struct rarch_state *p_rarch,
  * Appends disk image to disk image list.
  **/
 static bool command_event_disk_control_append_image(
+      runloop_state_t *runloop_st,
       rarch_system_info_t *sys_info,
       const char *path)
 {
@@ -5783,7 +5784,7 @@ static bool command_event_disk_control_append_image(
       return false;
 
 #ifdef HAVE_THREADS
-   if (runloop_state.use_sram)
+   if (runloop_st->use_sram)
       autosave_deinit();
 #endif
 
@@ -8145,7 +8146,9 @@ bool command_event(enum event_command cmd, void *data)
                rarch_system_info_t *
                   sys_info                = &runloop_state.system;
                /* Append disk image */
-               bool success               = command_event_disk_control_append_image(sys_info, path);
+               bool success               =
+                  command_event_disk_control_append_image(&runloop_state,
+                        sys_info, path);
 
 #if defined(HAVE_MENU)
                /* Appending a disk image may or may not affect
@@ -16728,6 +16731,7 @@ static void runahead_core_run_use_last_input(runloop_state_t *runloop_st)
 
 static void do_runahead(
       struct rarch_state *p_rarch,
+      runloop_state_t *runloop_st,
       int runahead_count,
       bool runahead_hide_warnings,
       bool use_secondary)
@@ -16742,7 +16746,6 @@ static void do_runahead(
 #endif
    video_driver_state_t 
       *video_st            = video_state_get_ptr();
-   settings_t *settings    = config_get_ptr();
    uint64_t frame_count    = video_st->frame_count;
    audio_driver_state_t 
       *audio_st            = audio_state_get_ptr();
@@ -16818,7 +16821,7 @@ static void do_runahead(
    {
 #if HAVE_DYNAMIC
       if (!secondary_core_ensure_exists(p_rarch,
-               runloop_st, settings))
+               runloop_st, config_get_ptr()))
       {
          secondary_core_destroy(runloop_st);
          runloop_st->runahead_secondary_core_available = false;
@@ -18321,7 +18324,6 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
 {
    struct rarch_state     *p_rarch = &rarch_st;
    runloop_state_t     *runloop_st = runloop_state_get_ptr();
-   settings_t            *settings = config_get_ptr();
 
    switch(state)
    {
@@ -18397,7 +18399,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
 #ifdef HAVE_NETWORKGAMEPAD
             if (input_st->remote)
                input_remote_free(input_st->remote,
-                     settings->uints.input_max_users);
+                     config_get_ptr()->uints.input_max_users);
             input_st->remote = NULL;
 #endif
             input_mapper_reset(&input_st->mapper);
@@ -20606,6 +20608,7 @@ int runloop_iterate(void)
       if (want_runahead)
          do_runahead(
                p_rarch,
+               runloop_st,
                run_ahead_num_frames,
                run_ahead_hide_warnings,
                run_ahead_secondary_instance);
