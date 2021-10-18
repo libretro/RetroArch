@@ -5616,6 +5616,8 @@ bool menu_input_dialog_get_display_kb(void)
       char buf[LIBNX_SWKBD_LIMIT] = {'\0'};
       swkbdConfigMakePresetDefault(&kbd);
 
+      swkbdConfigSetType(&kbd,  SwkbdType_All);
+      
       swkbdConfigSetGuideText(&kbd,
             menu_st->input_dialog_kb_label);
 
