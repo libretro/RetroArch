@@ -520,6 +520,7 @@ static int udev_input_add_device(udev_input_t *udev,
    udev_input_device_t **tmp                = NULL;
    udev_input_device_t *device              = NULL;
    int has_absolutes                        = 0;
+   struct input_absinfo absinfo;
    int fd                                   = -1;
    int ret                                  = 0;
    struct stat st;
@@ -590,7 +591,6 @@ static int udev_input_add_device(udev_input_t *udev,
 
       if (has_absolutes)
       {
-         struct input_absinfo absinfo;
          if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) == -1)
             goto end;
          device->mouse.x_min = absinfo.minimum;
@@ -605,7 +605,32 @@ static int udev_input_add_device(udev_input_t *udev,
       if (!mouse)
          goto end;
 
+      /* Ive been through the source with a fine tooth comb the dolphin bar must have abs but is not advertising it or has no button so we will add a check here */
+
+      if ( !has_absolutes )
+      {
+         if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) >= 0)
+         {
+            if (absinfo.minimum < absinfo.maximum )
+            {
+               RARCH_LOG("[udev]: pointer device with (ABS_X) that failed find with button check found\n");
+               device->mouse.x_min = absinfo.minimum;
+               device->mouse.x_max = absinfo.maximum;
+            }
+          }
+
+          if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) >= 0)
+          {
+             if (absinfo.minimum < absinfo.maximum )
+             {
+               RARCH_LOG("[udev]: pointer device with (ABS_X) that failed find with button check found \n");
+               device->mouse.y_min = absinfo.minimum;
+               device->mouse.y_max = absinfo.maximum;
+            }
+          }
+      }
    }
+
    if (ioctl(fd, EVIOCGNAME(sizeof(device->ident)), device->ident) < 0)
       device->ident[0] = '\0';
    tmp = (udev_input_device_t**)realloc(udev->devices,
