@@ -519,10 +519,15 @@ build-retroarch-android-normal:
     - retroarch-precompiled/
     expire_in: 10 min
   script:
-    - "cd pkg/android/phoenix && ./gradlew assembleNormalRelease && cd -"
-    - "mkdir .retroarch-precompiled"
-    - "cp -r ./* .retroarch-precompiled/"
-    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+  script:
+    - |
+      set -e
+      cd pkg/android/phoenix
+      ./gradlew assembleNormalRelease
+      cd -
+      mkdir .retroarch-precompiled
+      cp -r ./* .retroarch-precompiled/
+      mv .retroarch-precompiled/ retroarch-precompiled/
 
 build-retroarch-android-aarch64:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
@@ -532,10 +537,14 @@ build-retroarch-android-aarch64:
     - retroarch-precompiled/
     expire_in: 10 min
   script:
-    - "cd pkg/android/phoenix && ./gradlew assembleAarch64Release && cd -"
-    - "mkdir .retroarch-precompiled"
-    - "cp -r ./* .retroarch-precompiled/"
-    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+    - |
+      set -e
+      cd pkg/android/phoenix
+      ./gradlew assembleAarch64Release
+      cd -
+      mkdir .retroarch-precompiled
+      cp -r ./* .retroarch-precompiled/
+      mv .retroarch-precompiled/ retroarch-precompiled/
 
 build-retroarch-android-ra32:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
@@ -545,10 +554,14 @@ build-retroarch-android-ra32:
     - retroarch-precompiled/
     expire_in: 10 min
   script:
-    - "cd pkg/android/phoenix && ./gradlew assembleRa32Release && cd -"
-    - "mkdir .retroarch-precompiled"
-    - "cp -r ./* .retroarch-precompiled/"
-    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+    - |
+      set -e
+      cd pkg/android/phoenix
+      ./gradlew assembleRa32Release
+      cd -
+      mkdir .retroarch-precompiled
+      cp -r ./* .retroarch-precompiled/
+      mv .retroarch-precompiled/ retroarch-precompiled/
 
 build-retroarch-android-playstore-normal:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
@@ -558,10 +571,14 @@ build-retroarch-android-playstore-normal:
     - retroarch-precompiled/
     expire_in: 10 min
   script:
-    - "cd pkg/android/phoenix && ./gradlew bundlePlayStoreNormalRelease && cd -"
-    - "mkdir .retroarch-precompiled"
-    - "cp -r ./* .retroarch-precompiled/"
-    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+    - |
+      set -e
+      cd pkg/android/phoenix
+      ./gradlew bundlePlayStoreNormalRelease
+      cd -
+      mkdir .retroarch-precompiled
+      cp -r ./* .retroarch-precompiled/
+      mv .retroarch-precompiled/ retroarch-precompiled/
 
 build-retroarch-android-playstore-plus:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
@@ -571,10 +588,14 @@ build-retroarch-android-playstore-plus:
     - retroarch-precompiled/
     expire_in: 10 min
   script:
-    - "cd pkg/android/phoenix && ./gradlew bundlePlayStorePlusRelease && cd -"
-    - "mkdir .retroarch-precompiled"
-    - "cp -r ./* .retroarch-precompiled/"
-    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+    - |
+      set -e
+      cd pkg/android/phoenix
+      ./gradlew bundlePlayStorePlusRelease
+      cd -
+      mkdir .retroarch-precompiled
+      cp -r ./* .retroarch-precompiled/
+      mv .retroarch-precompiled/ retroarch-precompiled/
 
 build-static-retroarch-libnx-aarch64:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-libnx-devkitpro:latest
