@@ -36,6 +36,7 @@
 
 #include "dynamic.h"
 #include "core_option_manager.h"
+#include "state_manager.h"
 
 enum  runloop_state_enum
 {
@@ -97,10 +98,25 @@ typedef struct core_options_callbacks
 
 #ifdef HAVE_RUNAHEAD
 typedef bool(*runahead_load_state_function)(const void*, size_t);
+
+typedef void *(*constructor_t)(void);
+typedef void  (*destructor_t )(void*);
+
+typedef struct my_list_t
+{
+   void **data;
+   constructor_t constructor;
+   destructor_t destructor;
+   int capacity;
+   int size;
+} my_list;
 #endif
 
 struct runloop
 {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   rarch_timer_t shader_delay_timer;            /* int64_t alignment */
+#endif
    retro_time_t core_runtime_last;
    retro_time_t core_runtime_usec;
    retro_time_t frame_limit_minimum_time;
@@ -109,11 +125,22 @@ struct runloop
 
    struct retro_core_t        current_core;     /* uint64_t alignment */
 #if defined(HAVE_RUNAHEAD)
+   uint64_t runahead_last_frame_count;          /* uint64_t alignment */
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    struct retro_core_t secondary_core;          /* uint64_t alignment */
 #endif
+   retro_ctx_load_content_info_t *load_content_info;
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+   char    *secondary_library_path;
+#endif
+   my_list *runahead_save_state_list;
+   my_list *input_state_list;
 #endif
 
+#ifdef HAVE_REWIND
+   struct state_manager_rewind_state rewind_st;
+#endif
+   struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
    bool    *load_no_content_hook;
    struct string_list *subsystem_fullpaths;
    struct retro_callbacks retro_ctx;                     /* ptr alignment */
@@ -132,8 +159,8 @@ struct runloop
 #ifdef HAVE_THREADS
    slock_t *msg_queue_lock;
 #endif
-   size_t msg_queue_size;
 
+   content_state_t            content_st;                /* ptr alignment */
    struct retro_subsystem_rom_info
       subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS]
       [SUBSYSTEM_MAX_SUBSYSTEM_ROMS];             /* ptr alignment */
@@ -146,15 +173,30 @@ struct runloop
    rarch_system_info_t system;                   /* ptr alignment */
    struct retro_frame_time_callback frame_time;  /* ptr alignment */
    struct retro_audio_buffer_status_callback audio_buffer_status; /* ptr alignment */
+#ifdef HAVE_DYNAMIC
+   dylib_t lib_handle;                                   /* ptr alignment */
+#endif
+#if defined(HAVE_RUNAHEAD)
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+   dylib_t secondary_lib_handle;                         /* ptr alignment */
+#endif
+   size_t runahead_save_state_size;
+#endif
+   size_t msg_queue_size;
+
    unsigned pending_windowed_scale;
    unsigned max_frames;
    unsigned audio_latency;
    unsigned fastforward_after_frames;
+   unsigned perf_ptr_libretro;
 
    fastmotion_overrides_t fastmotion_override; /* float alignment */
    enum rarch_core_type current_core_type;
    enum rarch_core_type explicit_current_core_type;
    enum poll_type_override_t core_poll_type_override;
+#if defined(HAVE_RUNAHEAD)
+   enum rarch_core_type last_core_type;
+#endif
 
    char runtime_content_path_basename[8192];
    char current_library_name[256];
@@ -169,7 +211,10 @@ struct runloop
 #endif
    char runtime_content_path[PATH_MAX_LENGTH];
    char runtime_core_path[PATH_MAX_LENGTH];
+   char savefile_dir[PATH_MAX_LENGTH];
+   char savestate_dir[PATH_MAX_LENGTH];
 
+   bool is_inited;
    bool missing_bios;
    bool force_nonblock;
    bool paused;
@@ -196,6 +241,11 @@ struct runloop
 #ifdef HAVE_RUNAHEAD
    bool has_variable_update;
    bool input_is_dirty;
+   bool runahead_save_state_size_known;
+   bool request_fast_savestate;
+   bool runahead_available;
+   bool runahead_secondary_core_available;
+   bool runahead_force_input_dirty;
 #endif
    bool is_sram_load_disabled;
    bool is_sram_save_disabled;

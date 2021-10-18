@@ -981,8 +981,7 @@ int16_t input_state_device(
 #ifdef HAVE_BSV_MOVIE
 void bsv_movie_frame_rewind(void);
 
-bool bsv_movie_init(struct rarch_state *p_rarch,
-      input_driver_state_t *input_st);
+bool bsv_movie_init(input_driver_state_t *input_st);
 
 void bsv_movie_deinit(input_driver_state_t *input_st);
 
