@@ -550,6 +550,9 @@ static int udev_input_add_device(udev_input_t *udev,
 
    strlcpy(device->devnode, devnode, sizeof(device->devnode));
 
+   if (ioctl(fd, EVIOCGNAME(sizeof(device->ident)), device->ident) < 0)
+      device->ident[0] = '\0';
+
    /* UDEV_INPUT_MOUSE may report in absolute coords too */
    if (type == UDEV_INPUT_MOUSE || type == UDEV_INPUT_TOUCHPAD )
    {
@@ -565,8 +568,10 @@ static int udev_input_add_device(udev_input_t *udev,
       {
          if ( (test_bit(relcaps, REL_X)) && (test_bit(relcaps, REL_Y)) )
          {
+            mouse = 1;
+
             if (test_bit(keycaps, BTN_MOUSE))
-               mouse = 1;
+               RARCH_LOG("[udev]: REL pointer device (%s) has no mouse button\n",device->ident);
          }
       }
 
@@ -583,6 +588,9 @@ static int udev_input_add_device(udev_input_t *udev,
             /* check for light gun or any other device that might not have a touch button */
             else
                device->mouse.abs = 2;
+
+            if ( !test_bit(keycaps, BTN_TOUCH) && !test_bit(keycaps, BTN_MOUSE) )
+               RARCH_LOG("[udev]: ABS pointer device (%s) has no touch or mouse button\n",device->ident);
          }
       }
 
@@ -605,12 +613,12 @@ static int udev_input_add_device(udev_input_t *udev,
       }
 
       if (!mouse)
+      {
+         ret = 0;
          goto end;
+      }
 
    }
-
-   if (ioctl(fd, EVIOCGNAME(sizeof(device->ident)), device->ident) < 0)
-      device->ident[0] = '\0';
 
    tmp = (udev_input_device_t**)realloc(udev->devices,
          (udev->num_devices + 1) * sizeof(*udev->devices));
@@ -1420,9 +1428,10 @@ static void *udev_input_init(const char *joypad_driver)
    {
       if (udev->devices[i]->type != UDEV_INPUT_KEYBOARD)
       {
-         RARCH_LOG("[udev]: Mouse #%u: \"%s\" (%s).\n",
+         RARCH_LOG("[udev]: Mouse #%u: \"%s\" (%s) %s\n",
             mouse,
             udev->devices[i]->ident,
+            udev->devices[i]->mouse.abs ? "ABS" : "REL",
             udev->devices[i]->devnode);
 
          input_config_set_mouse_display_name(mouse, udev->devices[i]->ident);
