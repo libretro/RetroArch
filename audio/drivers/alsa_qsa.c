@@ -19,7 +19,7 @@
 #include <sys/asoundlib.h>
 #include <retro_math.h>
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 
 #define MAX_FRAG_SIZE 3072
 #define DEFAULT_RATE 48000

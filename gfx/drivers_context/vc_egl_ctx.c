@@ -41,10 +41,6 @@
 #include "../common/egl_common.h"
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
-#include "../common/gl_common.h"
-#endif
-
 #ifdef HAVE_EGL
 #include <EGL/eglext_brcm.h>
 #endif

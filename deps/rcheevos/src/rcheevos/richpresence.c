@@ -383,7 +383,7 @@ static const char* rc_parse_richpresence_lookup(rc_richpresence_lookup_t* lookup
         base = 10;
       }
 
-      first = strtoul(line, &endptr, base);
+      first = (unsigned)strtoul(line, &endptr, base);
 
       /* check for a range */
       if (*endptr != '-') {
@@ -401,7 +401,7 @@ static const char* rc_parse_richpresence_lookup(rc_richpresence_lookup_t* lookup
           base = 10;
         }
 
-        last = strtoul(line, &endptr, base);
+        last = (unsigned)strtoul(line, &endptr, base);
       }
 
       /* ignore spaces after the number - was previously ignored as string was split on equals */
@@ -493,7 +493,7 @@ void rc_parse_richpresence_internal(rc_richpresence_t* self, const char* script,
         memcpy(format, line, chars);
         format[chars] = '\0';
 
-        lookup->format = rc_parse_format(format);
+        lookup->format = (unsigned short)rc_parse_format(format);
       } else {
         lookup->format = RC_FORMAT_VALUE;
       }

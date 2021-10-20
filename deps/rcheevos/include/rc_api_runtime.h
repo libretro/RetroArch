@@ -36,9 +36,9 @@ int rc_api_init_fetch_image_request(rc_api_request_t* request, const rc_api_fetc
  * API parameters for a resolve hash request.
  */
 typedef struct rc_api_resolve_hash_request_t {
-  /* The username of the player */
+  /* Unused - hash lookup does not require credentials */
   const char* username;
-  /* The API token from the login request */
+  /* Unused - hash lookup does not require credentials */
   const char* api_token;
   /* The generated hash of the game to be identified */
   const char* game_hash;

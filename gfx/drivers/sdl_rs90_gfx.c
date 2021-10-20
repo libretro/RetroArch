@@ -51,10 +51,22 @@
 #define likely(x)   __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
 
+#if defined(MIYOO)
+#define SDL_RS90_WIDTH  320
+#define SDL_RS90_HEIGHT 240
+#else
 #define SDL_RS90_WIDTH  240
 #define SDL_RS90_HEIGHT 160
+#endif
 
 #define SDL_RS90_NUM_FONT_GLYPHS 256
+
+#if defined(MIYOO)
+#define SDL_RS90_SURFACE_FLAGS_VSYNC_ON  (SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN)
+#else
+#define SDL_RS90_SURFACE_FLAGS_VSYNC_ON  (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN)
+#endif
+#define SDL_RS90_SURFACE_FLAGS_VSYNC_OFF (SDL_HWSURFACE | SDL_FULLSCREEN)
 
 typedef struct sdl_rs90_video sdl_rs90_video_t;
 struct sdl_rs90_video
@@ -794,8 +806,8 @@ static void *sdl_rs90_gfx_init(const video_info_t *video,
    const char *input_driver_name                 = settings->arrays.input_driver;
    const char *joypad_driver_name                = settings->arrays.input_joypad_driver;
    uint32_t surface_flags                        = (video->vsync) ?
-         (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN) :
-         (SDL_HWSURFACE | SDL_FULLSCREEN);
+         SDL_RS90_SURFACE_FLAGS_VSYNC_ON :
+         SDL_RS90_SURFACE_FLAGS_VSYNC_OFF;
 
    /* Initialise graphics subsystem, if required */
    if (sdl_subsystem_flags == 0)
@@ -918,8 +930,8 @@ static void sdl_rs90_set_output(
       unsigned width, unsigned height, bool rgb32)
 {
    uint32_t surface_flags = (vid->vsync) ?
-         (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN) :
-         (SDL_HWSURFACE | SDL_FULLSCREEN);
+         SDL_RS90_SURFACE_FLAGS_VSYNC_ON :
+         SDL_RS90_SURFACE_FLAGS_VSYNC_OFF;
 
    vid->content_width  = width;
    vid->content_height = height;
@@ -1393,7 +1405,11 @@ static const video_poke_interface_t sdl_rs90_poke_interface = {
    NULL, /* sdl_grab_mouse_toggle */
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
-   NULL  /* get_hw_render_interface */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void sdl_rs90_get_poke_interface(void *data, const video_poke_interface_t **iface)

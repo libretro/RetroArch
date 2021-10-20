@@ -34,7 +34,7 @@
 #endif
 
 #ifdef HAVE_OPENGL
-#include "../common/gl_common.h"
+#include "../common/gl2_common.h"
 #include "../include/Cg/cgGL.h"
 #endif
 
@@ -733,7 +733,7 @@ static bool gl_cg_load_preset(void *data, const char *path)
       }
    }
 
-   if (!gl_load_luts(cg->shader, cg->lut_textures))
+   if (!gl2_load_luts(cg->shader, cg->lut_textures))
    {
       RARCH_ERR("Failed to load lookup textures ...\n");
       return false;

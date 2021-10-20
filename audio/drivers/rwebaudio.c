@@ -18,7 +18,7 @@
 #include <unistd.h>
 #include <boolean.h>
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 
 /* forward declarations */
 unsigned RWebAudioSampleRate(void);
@@ -49,7 +49,7 @@ static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency,
    rweb_audio_t *rwebaudio = (rweb_audio_t*)calloc(1, sizeof(rweb_audio_t));
    if (!rwebaudio)
       return NULL;
-   if (RWebAudioInit(latency) == 1)
+   if (RWebAudioInit(latency))
       *new_rate         = RWebAudioSampleRate();
    return rwebaudio;
 }

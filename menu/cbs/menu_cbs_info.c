@@ -20,6 +20,7 @@
 #include "../menu_dialog.h"
 
 #include "../../configuration.h"
+#include "../../audio/audio_driver.h"
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay_discovery.h"

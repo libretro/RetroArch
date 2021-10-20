@@ -22,7 +22,7 @@
 #include "../common/mmdevice_common.h"
 #include "../common/mmdevice_common_inline.h"
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 
@@ -736,7 +736,7 @@ static ssize_t wasapi_write_ex(wasapi_t *w, const void * data, size_t size, DWOR
    if (!write_avail)
    {
       if (WaitForSingleObject(w->write_event, ms) != WAIT_OBJECT_0)
-         return -1;
+         return 0;
 
       if (!wasapi_flush_buffer(w, w->engine_buffer_size))
          return -1;

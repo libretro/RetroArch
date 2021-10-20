@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2020 The RetroArch team
+/* Copyright  (C) 2010-2021 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (float_to_s16.c).
@@ -28,37 +28,75 @@
 #include <altivec.h>
 #endif
 
-#if (defined(__ARM_NEON__) && !defined(DONT_WANT_ARM_OPTIMIZATIONS)) || defined(HAVE_NEON)
-#ifndef HAVE_ARM_NEON_OPTIMIZATIONS
-#define HAVE_ARM_NEON_OPTIMIZATIONS
-#endif
-#endif
-
 #include <features/features_cpu.h>
 #include <audio/conversion/float_to_s16.h>
 
-#if defined(HAVE_ARM_NEON_OPTIMIZATIONS)
+#if (defined(__ARM_NEON__) || defined(HAVE_NEON))
 static bool float_to_s16_neon_enabled = false;
-void convert_float_s16_asm(int16_t *out, const float *in, size_t samples);
+#ifdef HAVE_ARM_NEON_ASM_OPTIMIZATIONS
+void convert_float_s16_asm(int16_t *out,
+      const float *in, size_t samples);
+#else
+#include <arm_neon.h>
 #endif
 
-/**
- * convert_float_to_s16:
- * @out               : output buffer
- * @in                : input buffer
- * @samples           : size of samples to be converted
- *
- * Converts floating point
- * to signed integer 16-bit.
- *
- * C implementation callback function.
- **/
 void convert_float_to_s16(int16_t *out,
       const float *in, size_t samples)
 {
-   size_t i      = 0;
+   size_t i           = 0;
+   if (float_to_s16_neon_enabled)
+   {
+      float        gf = (1<<15);
+      float32x4_t vgf = {gf, gf, gf, gf};
+      while (samples >= 8)
+      {
+#ifdef HAVE_ARM_NEON_ASM_OPTIMIZATIONS
+         size_t aligned_samples = samples & ~7;
+         if (aligned_samples)
+            convert_float_s16_asm(out, in, aligned_samples);
+
+         out                += aligned_samples;
+         in                 += aligned_samples;
+         samples            -= aligned_samples;
+         i                   = 0;
+#else
+         int16x4x2_t oreg;
+         int32x4x2_t creg;
+         float32x4x2_t inreg = vld2q_f32(in);
+         creg.val[0]         = vcvtq_s32_f32(vmulq_f32(inreg.val[0], vgf));
+         creg.val[1]         = vcvtq_s32_f32(vmulq_f32(inreg.val[1], vgf));
+         oreg.val[0]         = vqmovn_s32(creg.val[0]);
+         oreg.val[1]         = vqmovn_s32(creg.val[1]);
+         vst2_s16(out, oreg);
+         in                 += 8;
+         out                += 8;
+         samples            -= 8;
+#endif
+      }
+   }
+
+   for (; i < samples; i++)
+   {
+      int32_t val = (int32_t)(in[i] * 0x8000);
+      out[i]      = (val > 0x7FFF) ? 0x7FFF :
+         (val < -0x8000 ? -0x8000 : (int16_t)val);
+   }
+}
+
+void convert_float_to_s16_init_simd(void)
+{
+   uint64_t cpu = cpu_features_get();
+
+   if (cpu & RETRO_SIMD_NEON)
+      float_to_s16_neon_enabled = true;
+}
+#else
+void convert_float_to_s16(int16_t *out,
+      const float *in, size_t samples)
+{
+   size_t i          = 0;
 #if defined(__SSE2__)
-   __m128 factor = _mm_set1_ps((float)0x8000);
+   __m128 factor     = _mm_set1_ps((float)0x8000);
 
    for (i = 0; i + 8 <= samples; i += 8, in += 8, out += 8)
    {
@@ -73,10 +111,10 @@ void convert_float_to_s16(int16_t *out,
       _mm_storeu_si128((__m128i *)out, packed);
    }
 
-   samples = samples - i;
-   i       = 0;
+   samples           = samples - i;
+   i                 = 0;
 #elif defined(__ALTIVEC__)
-   int samples_in = samples;
+   int samples_in    = samples;
 
    /* Unaligned loads/store is a bit expensive,
     * so we optimize for the good path (very likely). */
@@ -92,25 +130,12 @@ void convert_float_to_s16(int16_t *out,
          vec_st(vec_packs(result0, result1), 0, out);
       }
 
-      samples_in -= i;
+      samples_in    -= i;
    }
 
-   samples = samples_in;
-   i       = 0;
-#elif defined(HAVE_ARM_NEON_OPTIMIZATIONS)
-   if (float_to_s16_neon_enabled)
-   {
-      size_t aligned_samples = samples & ~7;
-      if (aligned_samples)
-         convert_float_s16_asm(out, in, aligned_samples);
-
-      out     = out     + aligned_samples;
-      in      = in      + aligned_samples;
-      samples = samples - aligned_samples;
-      i       = 0;
-   }
+   samples           = samples_in;
+   i                 = 0;
 #elif defined(_MIPS_ARCH_ALLEGREX)
-
 #ifdef DEBUG
    /* Make sure the buffers are 16 byte aligned, this should be
     * the default behaviour of malloc in the PSPSDK.
@@ -138,29 +163,16 @@ void convert_float_to_s16(int16_t *out,
             ".set    pop                  \n"
             :: "r"(in + i), "r"(out + i));
    }
-
 #endif
 
    for (; i < samples; i++)
    {
-      int32_t val = (int32_t)(in[i] * 0x8000);
-      out[i]      = (val > 0x7FFF) ? 0x7FFF :
-         (val < -0x8000 ? -0x8000 : (int16_t)val);
+      int32_t val    = (int32_t)(in[i] * 0x8000);
+      out[i]         = (val > 0x7FFF) 
+         ? 0x7FFF 
+         : (val < -0x8000 ? -0x8000 : (int16_t)val);
    }
 }
 
-/**
- * convert_float_to_s16_init_simd:
- *
- * Sets up function pointers for conversion
- * functions based on CPU features.
- **/
-void convert_float_to_s16_init_simd(void)
-{
-#if defined(HAVE_ARM_NEON_OPTIMIZATIONS)
-   unsigned cpu = cpu_features_get();
-
-   if (cpu & RETRO_SIMD_NEON)
-      float_to_s16_neon_enabled = true;
+void convert_float_to_s16_init_simd(void) { }
 #endif
-}

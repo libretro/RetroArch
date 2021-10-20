@@ -24,10 +24,7 @@
 		040A5A5722953F3300BD075F /* GCDWebUploader.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 040A5A4622953F3300BD075F /* GCDWebUploader.bundle */; };
 		040A5A5822953F3300BD075F /* GCDWebUploader.m in Sources */ = {isa = PBXBuildFile; fileRef = 040A5A4822953F3300BD075F /* GCDWebUploader.m */; };
 		04306A8724A2C600002CAEFE /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 04306A8624A2C600002CAEFE /* libz.tbd */; };
-		0FDA2A721BE1AFA800F2B5DA /* cc_resampler_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */; };
 		0FDA2A731BE1AFA800F2B5DA /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
-		0FDA2A741BE1AFA800F2B5DA /* s16_to_float_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CD192E5FE30063A359 /* s16_to_float_neon.S */; };
-		0FDA2A751BE1AFA800F2B5DA /* sinc_resampler_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */; };
 		0FDA2A761BE1AFA800F2B5DA /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
 		0FDA2A791BE1AFA800F2B5DA /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50C3B1AD1AB1107100F478D3 /* QuartzCore.framework */; };
 		0FDA2A7A1BE1AFA800F2B5DA /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 963C3C33186E3DED00A6EB1E /* GameController.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
@@ -45,7 +42,6 @@
 		0FDA2A861BE1AFA800F2B5DA /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; platformFilter = ios; };
 		0FDA2A891BE1AFA800F2B5DA /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 967894611788EBD800D6CA69 /* InfoPlist.strings */; };
 		0FDA2A8A1BE1AFA800F2B5DA /* iOS/Resources/Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */; };
-		507E056D1CE9C69400E023D3 /* float_to_s16_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 507E056A1CE9C67500E023D3 /* float_to_s16_neon.S */; };
 		92411A35260E4E120069C692 /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 92411A34260E4E120069C692 /* assets.zip */; };
 		92411A38260E4E2C0069C692 /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 92411A37260E4E2C0069C692 /* modules */; };
 		92CC05C521FEDC9F00FF79F0 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */; };
@@ -90,15 +86,11 @@
 		0FDA2A911BE1AFA800F2B5DA /* RetroArchiOS9.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArchiOS9.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0FDA2A921BE1AFA800F2B5DA /* RetroArch_iOS9-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "RetroArch_iOS9-Info.plist"; sourceTree = SOURCE_ROOT; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
-		501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = sinc_resampler_neon.S; path = "../../libretro-common/audio/resampler/drivers/sinc_resampler_neon.S"; sourceTree = SOURCE_ROOT; };
-		501232CD192E5FE30063A359 /* s16_to_float_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = s16_to_float_neon.S; path = "../../libretro-common/audio/conversion/s16_to_float_neon.S"; sourceTree = SOURCE_ROOT; };
 		501881EB184BAD6D006F665D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		501881ED184BB54C006F665D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
 		50521A431AA23BF500185CC9 /* griffin_objc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = griffin_objc.m; path = ../../griffin/griffin_objc.m; sourceTree = SOURCE_ROOT; };
-		507E056A1CE9C67500E023D3 /* float_to_s16_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = float_to_s16_neon.S; path = "../../libretro-common/audio/conversion/float_to_s16_neon.S"; sourceTree = SOURCE_ROOT; };
 		50C3B1AD1AB1107100F478D3 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
-		50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; name = cc_resampler_neon.S; path = ../../audio/drivers_resampler/cc_resampler_neon.S; sourceTree = SOURCE_ROOT; };
 		50E7189E184B88AA001956CE /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		696012F119F3389A006A1088 /* CoreText.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreText.framework; path = System/Library/Frameworks/CoreText.framework; sourceTree = SDKROOT; };
 		69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = iOS/Resources/Media.xcassets; sourceTree = SOURCE_ROOT; };
@@ -229,14 +221,6 @@
 			path = GCDWebUploader;
 			sourceTree = "<group>";
 		};
-		508E6B1420185D3200A16D1F /* Recovered References */ = {
-			isa = PBXGroup;
-			children = (
-				501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */,
-			);
-			name = "Recovered References";
-			sourceTree = "<group>";
-		};
 		83D632D719ECFCC4009E3161 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
@@ -252,9 +236,7 @@
 			children = (
 				92411A37260E4E2C0069C692 /* modules */,
 				D42013DA260825EE00A1DEFD /* RetroArchiOS9.entitlements */,
-				507E056A1CE9C67500E023D3 /* float_to_s16_neon.S */,
 				83D632D719ECFCC4009E3161 /* Assets */,
-				50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */,
 				96AFAE9C16C1D976009DE44C /* core */,
 				96AFAE2816C1D4EA009DE44C /* Frameworks */,
 				96AFAE2616C1D4EA009DE44C /* Products */,
@@ -317,15 +299,6 @@
 				96AFAF3116C1E00A009DE44C /* gfx */,
 			);
 			name = core;
-			sourceTree = "<group>";
-		};
-		96AFAEE516C1DC73009DE44C /* audio */ = {
-			isa = PBXGroup;
-			children = (
-				501232CD192E5FE30063A359 /* s16_to_float_neon.S */,
-			);
-			name = audio;
-			path = ../audio;
 			sourceTree = "<group>";
 		};
 		96AFAF3116C1E00A009DE44C /* gfx */ = {
@@ -447,11 +420,7 @@
 				040A5A4A22953F3300BD075F /* GCDWebServerRequest.m in Sources */,
 				040A5A5222953F3300BD075F /* GCDWebServerURLEncodedFormRequest.m in Sources */,
 				040A5A5022953F3300BD075F /* GCDWebServerDataResponse.m in Sources */,
-				507E056D1CE9C69400E023D3 /* float_to_s16_neon.S in Sources */,
-				0FDA2A721BE1AFA800F2B5DA /* cc_resampler_neon.S in Sources */,
 				0FDA2A731BE1AFA800F2B5DA /* griffin_objc.m in Sources */,
-				0FDA2A741BE1AFA800F2B5DA /* s16_to_float_neon.S in Sources */,
-				0FDA2A751BE1AFA800F2B5DA /* sinc_resampler_neon.S in Sources */,
 				040A5A4B22953F3300BD075F /* GCDWebServerFunctions.m in Sources */,
 				040A5A5122953F3300BD075F /* GCDWebServerStreamedResponse.m in Sources */,
 				0FDA2A761BE1AFA800F2B5DA /* griffin.c in Sources */,
@@ -531,12 +500,14 @@
 					"-DHAVE_REWIND",
 					"-DHAVE_SCREENSHOTS",
 					"-DHAVE_CHEATS",
+					"-DHAVE_CORE_INFO_CACHE",
 					"-DHAVE_MENU",
 					"-DHAVE_GFX_WIDGETS",
 					"-DHAVE_LIBRETRODB",
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_RWAV",
 					"-DIOS",
+					"-DDONT_WANT_ARM_OPTIMIZATIONS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
@@ -632,12 +603,14 @@
 					"-DHAVE_REWIND",
 					"-DHAVE_SCREENSHOTS",
 					"-DHAVE_CHEATS",
+					"-DHAVE_CORE_INFO_CACHE",
 					"-DHAVE_MENU",
 					"-DHAVE_GFX_WIDGETS",
 					"-DHAVE_LIBRETRODB",
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_RWAV",
 					"-DIOS",
+					"-DDONT_WANT_ARM_OPTIMIZATIONS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
@@ -698,12 +671,14 @@
 					"-DHAVE_REWIND",
 					"-DHAVE_SCREENSHOTS",
 					"-DHAVE_CHEATS",
+					"-DHAVE_CORE_INFO_CACHE",
 					"-DHAVE_MENU",
 					"-DHAVE_GFX_WIDGETS",
 					"-DHAVE_LIBRETRODB",
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_RWAV",
 					"-DIOS",
+					"-DDONT_WANT_ARM_OPTIMIZATIONS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
@@ -799,6 +774,7 @@
 					"-DHAVE_REWIND",
 					"-DHAVE_SCREENSHOTS",
 					"-DHAVE_CHEATS",
+					"-DHAVE_CORE_INFO_CACHE",
 					"-DHAVE_MENU",
 					"-DHAVE_GFX_WIDGETS",
 					"-DHAVE_LIBRETRODB",
@@ -806,6 +782,7 @@
 					"-DHAVE_RWAV",
 					"-DIOS",
 					"-DHAVE_DYNAMIC",
+					"-DDONT_WANT_ARM_OPTIMIZATIONS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
@@ -882,6 +859,7 @@
 					"-DHAVE_REWIND",
 					"-DHAVE_SCREENSHOTS",
 					"-DHAVE_CHEATS",
+					"-DHAVE_CORE_INFO_CACHE",
 					"-DHAVE_MENU",
 					"-DHAVE_GFX_WIDGETS",
 					"-DHAVE_LIBRETRODB",
@@ -889,6 +867,7 @@
 					"-DHAVE_RWAV",
 					"-DIOS",
 					"-DHAVE_DYNAMIC",
+					"-DDONT_WANT_ARM_OPTIMIZATIONS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",

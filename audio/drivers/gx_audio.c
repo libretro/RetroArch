@@ -27,8 +27,9 @@
 #include <boolean.h>
 #include <retro_inline.h>
 
-#include "../../retroarch.h"
 #include <defines/gx_defines.h>
+
+#include "../audio_driver.h"
 
 typedef struct
 {

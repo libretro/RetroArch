@@ -21,6 +21,7 @@
 #include <rthreads/rthreads.h>
 
 #include "audio_thread_wrapper.h"
+#include "audio_driver.h"
 #include "../verbosity.h"
 
 typedef struct audio_thread

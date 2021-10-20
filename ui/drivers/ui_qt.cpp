@@ -2483,12 +2483,12 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
       firmware_info.path             = core_info->path;
       firmware_info.directory.system = settings->paths.directory_system;
 
-      rarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
+      retroarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
 
       update_missing_firmware        = core_info_list_update_missing_firmware(&firmware_info, &set_missing_firmware);
 
       if (set_missing_firmware)
-         rarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
+         retroarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
 
       if (update_missing_firmware)
       {
@@ -2514,23 +2514,20 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
                if (core_info->firmware[i].missing)
                {
                   missing        = true;
-                  labelText     += msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_MISSING);
+                  if (core_info->firmware[i].optional)
+                     labelText  += msg_hash_to_str(
+                           MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL);
+                  else
+                     labelText  += msg_hash_to_str(
+                           MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED);
                }
                else
-                  labelText     += msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_PRESENT);
-
-               labelText        += ", ";
-
-               if (core_info->firmware[i].optional)
-                  labelText     += msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_OPTIONAL);
-               else
-                  labelText     += msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_REQUIRED);
-
-               labelText        += ":";
+                  if (core_info->firmware[i].optional)
+                     labelText  += msg_hash_to_str(
+                           MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL);
+                  else
+                     labelText  += msg_hash_to_str(
+                           MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED);
 
                if (core_info->firmware[i].desc)
                   valueText      = core_info->firmware[i].desc;
@@ -2949,7 +2946,7 @@ void MainWindow::onRunClicked()
 
 bool MainWindow::isContentLessCore()
 {
-   rarch_system_info_t *system = runloop_get_system_info();
+   rarch_system_info_t *system = &runloop_state_get_ptr()->system;
 
    return system->load_no_content;
 }
@@ -3674,7 +3671,7 @@ void MainWindow::onStopClicked()
 void MainWindow::setCurrentCoreLabel()
 {
    bool update                      = false;
-   struct retro_system_info *system = runloop_get_libretro_system_info();
+   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
    QString libraryName              = system->library_name;
    const char *no_core_str          = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
 
@@ -4946,7 +4943,7 @@ static void ui_companion_qt_toggle(void *data, bool force)
    settings_t *settings        = config_get_ptr();
    bool ui_companion_toggle    = settings->bools.ui_companion_toggle;
    bool video_fullscreen       = settings->bools.video_fullscreen;
-   bool mouse_grabbed          = input_mouse_grabbed();
+   bool mouse_grabbed          = input_state_get_ptr()->grab_mouse_state;
 
    if (ui_companion_toggle || force)
    {

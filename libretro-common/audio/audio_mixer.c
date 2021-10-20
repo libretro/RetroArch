@@ -267,28 +267,27 @@ static bool wav_to_float(const rwav_t* wav, float** pcm, size_t samples_out)
 }
 
 static bool one_shot_resample(const float* in, size_t samples_in,
-      unsigned rate, float** out, size_t* samples_out)
+      unsigned rate, const char *resampler_ident, enum resampler_quality quality,
+      float** out, size_t* samples_out)
 {
    struct resampler_data info;
    void* data                         = NULL;
    const retro_resampler_t* resampler = NULL;
    float ratio                        = (double)s_rate / (double)rate;
 
-   if (!retro_resampler_realloc(&data, &resampler, NULL,
-            RESAMPLER_QUALITY_DONTCARE, ratio))
+   if (!retro_resampler_realloc(&data, &resampler,
+         resampler_ident, quality, ratio))
       return false;
 
-   /*
-    * Allocate on a 16-byte boundary, and pad to a multiple of 16 bytes. We
+   /* Allocate on a 16-byte boundary, and pad to a multiple of 16 bytes. We
     * add four more samples in the formula below just as safeguard, because
     * resampler->process sometimes reports more output samples than the
     * formula below calculates. Ideally, audio resamplers should have a
     * function to return the number of samples they will output given a
-    * count of input samples.
-    */
-   *samples_out                       = samples_in * ratio + 4;
+    * count of input samples. */
+   *samples_out                       = (size_t)(samples_in * ratio);
    *out                               = (float*)memalign_alloc(16,
-         ((*samples_out + 15) & ~15) * sizeof(float));
+         (((*samples_out + 4) + 15) & ~15) * sizeof(float));
 
    if (*out == NULL)
       return false;
@@ -323,7 +322,8 @@ void audio_mixer_done(void)
       s_voices[i].type = AUDIO_MIXER_TYPE_NONE;
 }
 
-audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size)
+audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
+      const char *resampler_ident, enum resampler_quality quality)
 {
 #ifdef HAVE_RWAV
    /* WAV data */
@@ -333,9 +333,15 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size)
    size_t samples             = 0;
    /* Result */
    audio_mixer_sound_t* sound = NULL;
-   enum rwav_state rwav_ret   = rwav_load(&wav, buffer, size);
 
-   if (rwav_ret != RWAV_ITERATE_DONE)
+   wav.bitspersample          = 0;
+   wav.numchannels            = 0;
+   wav.samplerate             = 0;
+   wav.numsamples             = 0;
+   wav.subchunk2size          = 0;
+   wav.samples                = NULL;
+
+   if ((rwav_load(&wav, buffer, size)) != RWAV_ITERATE_DONE)
       return NULL;
 
    samples       = wav.numsamples * 2;
@@ -347,8 +353,9 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size)
    {
       float* resampled           = NULL;
 
-      if (!one_shot_resample(pcm, samples,
-               wav.samplerate, &resampled, &samples))
+      if (!one_shot_resample(pcm, samples, wav.samplerate,
+            resampler_ident, quality,
+            &resampled, &samples))
          return NULL;
 
       memalign_free((void*)pcm);
@@ -508,6 +515,8 @@ static bool audio_mixer_play_ogg(
       audio_mixer_sound_t* sound,
       audio_mixer_voice_t* voice,
       bool repeat, float volume,
+      const char *resampler_ident,
+      enum resampler_quality quality,
       audio_mixer_stop_cb_t stop_cb)
 {
    stb_vorbis_info info;
@@ -531,14 +540,20 @@ static bool audio_mixer_play_ogg(
       ratio = (double)s_rate / (double)info.sample_rate;
 
       if (!retro_resampler_realloc(&resampler_data,
-               &resamp, NULL, RESAMPLER_QUALITY_DONTCARE,
+               &resamp, resampler_ident, quality,
                ratio))
          goto error;
    }
 
+   /* Allocate on a 16-byte boundary, and pad to a multiple of 16 bytes. We
+    * add four more samples in the formula below just as safeguard, because
+    * resampler->process sometimes reports more output samples than the
+    * formula below calculates. Ideally, audio resamplers should have a
+    * function to return the number of samples they will output given a
+    * count of input samples. */
    samples                         = (unsigned)(AUDIO_MIXER_TEMP_BUFFER * ratio);
    ogg_buffer                      = (float*)memalign_alloc(16,
-         ((samples + 15) & ~15) * sizeof(float));
+         (((samples + 4) + 15) & ~15) * sizeof(float));
 
    if (!ogg_buffer)
    {
@@ -656,6 +671,8 @@ static bool audio_mixer_play_flac(
       audio_mixer_sound_t* sound,
       audio_mixer_voice_t* voice,
       bool repeat, float volume,
+      const char *resampler_ident,
+      enum resampler_quality quality,
       audio_mixer_stop_cb_t stop_cb)
 {
    float ratio                     = 1.0f;
@@ -672,14 +689,20 @@ static bool audio_mixer_play_flac(
       ratio = (double)s_rate / (double)(dr_flac->sampleRate);
 
       if (!retro_resampler_realloc(&resampler_data,
-               &resamp, NULL, RESAMPLER_QUALITY_DONTCARE,
+               &resamp, resampler_ident, quality,
                ratio))
          goto error;
    }
 
+   /* Allocate on a 16-byte boundary, and pad to a multiple of 16 bytes. We
+    * add four more samples in the formula below just as safeguard, because
+    * resampler->process sometimes reports more output samples than the
+    * formula below calculates. Ideally, audio resamplers should have a
+    * function to return the number of samples they will output given a
+    * count of input samples. */
    samples                         = (unsigned)(AUDIO_MIXER_TEMP_BUFFER * ratio);
-   flac_buffer                      = (float*)memalign_alloc(16,
-         ((samples + 15) & ~15) * sizeof(float));
+   flac_buffer                     = (float*)memalign_alloc(16,
+         (((samples + 4) + 15) & ~15) * sizeof(float));
 
    if (!flac_buffer)
    {
@@ -717,6 +740,8 @@ static bool audio_mixer_play_mp3(
       audio_mixer_sound_t* sound,
       audio_mixer_voice_t* voice,
       bool repeat, float volume,
+      const char *resampler_ident,
+      enum resampler_quality quality,
       audio_mixer_stop_cb_t stop_cb)
 {
    float ratio                     = 1.0f;
@@ -742,14 +767,20 @@ static bool audio_mixer_play_mp3(
       ratio = (double)s_rate / (double)(voice->types.mp3.stream.sampleRate);
 
       if (!retro_resampler_realloc(&resampler_data,
-               &resamp, NULL, RESAMPLER_QUALITY_DONTCARE,
+               &resamp, resampler_ident, quality,
                ratio))
          goto error;
    }
 
+   /* Allocate on a 16-byte boundary, and pad to a multiple of 16 bytes. We
+    * add four more samples in the formula below just as safeguard, because
+    * resampler->process sometimes reports more output samples than the
+    * formula below calculates. Ideally, audio resamplers should have a
+    * function to return the number of samples they will output given a
+    * count of input samples. */
    samples                         = (unsigned)(AUDIO_MIXER_TEMP_BUFFER * ratio);
    mp3_buffer                      = (float*)memalign_alloc(16,
-         ((samples + 15) & ~15) * sizeof(float));
+         (((samples + 4) + 15) & ~15) * sizeof(float));
 
    if (!mp3_buffer)
    {
@@ -780,8 +811,11 @@ error:
 }
 #endif
 
-audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
-      float volume, audio_mixer_stop_cb_t stop_cb)
+audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
+      bool repeat, float volume,
+      const char *resampler_ident,
+      enum resampler_quality quality,
+      audio_mixer_stop_cb_t stop_cb)
 {
    unsigned i;
    bool res                   = false;
@@ -802,7 +836,8 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
             break;
          case AUDIO_MIXER_TYPE_OGG:
 #ifdef HAVE_STB_VORBIS
-            res = audio_mixer_play_ogg(sound, voice, repeat, volume, stop_cb);
+            res = audio_mixer_play_ogg(sound, voice, repeat, volume,
+                  resampler_ident, quality, stop_cb);
 #endif
             break;
          case AUDIO_MIXER_TYPE_MOD:
@@ -812,12 +847,14 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
             break;
          case AUDIO_MIXER_TYPE_FLAC:
 #ifdef HAVE_DR_FLAC
-            res = audio_mixer_play_flac(sound, voice, repeat, volume, stop_cb);
+            res = audio_mixer_play_flac(sound, voice, repeat, volume,
+                  resampler_ident, quality, stop_cb);
 #endif
             break;
          case AUDIO_MIXER_TYPE_MP3:
 #ifdef HAVE_DR_MP3
-            res = audio_mixer_play_mp3(sound, voice, repeat, volume, stop_cb);
+            res = audio_mixer_play_mp3(sound, voice, repeat, volume,
+                  resampler_ident, quality, stop_cb);
 #endif
             break;
          case AUDIO_MIXER_TYPE_NONE:

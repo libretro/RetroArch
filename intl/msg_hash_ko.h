@@ -454,20 +454,20 @@ MSG_HASH(
    "펌웨어"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "누락"
+   MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
+   "누락됨, 필수:"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "사용 중"
+   MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   "누락됨, 선택:"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "선택"
+   MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
+   "존재함, 필수:"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "필수"
+   MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   "존재함, 선택:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
@@ -1020,7 +1020,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-   "코어설정을 변경합니다."
+   "코어 설정을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
@@ -1044,7 +1044,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-   "로그파일 설정을 변경합니다."
+   "로그 설정을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -1289,6 +1289,10 @@ MSG_HASH(
    "비디오 크기 설정을 변경합니다."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
+   "비디오 HDR 설정을 변경합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    "동기화"
    )
@@ -1357,6 +1361,24 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "최근접 이웃"
    )
+#if defined(RS90)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "이미지 보간"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "'정수 단위 화면 크기'를 사용하지 않을 때 이미지를 보간할 방식을 지정합니다. '최근접 이웃'이 성능에 가장 영향이 적습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "최근접 이웃"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   "반선형"
+   )
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -1469,6 +1491,10 @@ MSG_HASH(
    "GPU 인덱스"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   "사용할 그래픽 카드를 선택합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "주사율"
    )
@@ -1562,7 +1588,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   "창 크기를 코어의 뷰포트 크기에 맞춰 조정합니다. 또는 아래에서 창의 고정된 폭과 넓이를 설정할 수 있습니다."
+   "창 크기를 코어의 뷰포트 크기의 배수로 지정합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -1574,11 +1600,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
-   "창 위치와 크기를 기억합니다."
+   "창 위치와 크기 기억"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "창 크기와 위치를 기억합니다. 사용 시 창 크기 설정보다 우선 적용됩니다."
+   "모든 컨텐츠를 '창 너비'와 '창 높이'에서 지정한 크기의 창 안에 표시하고, RetroArch 종료 시 현재 창 크기와 위치를 기억해둡니다. 비활성화할 경우, 창 크기는 '창 모드 크기'에서 지정한 배율에 맞춰 동적으로 설정됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "사용자 정의 창 크기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "모든 컨텐츠를 '창 너비'와 '창 높이'에서 지정한 크기의 창 안에 표시합니다. 비활성화할 경우, 창 크기는 '창 모드 크기'에서 지정한 배율에 맞춰 동적으로 설정됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1595,6 +1629,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
    "표시 창의 사용자 높이 크기를 설정합니다. 값을 0으로 두면 최대 크기로 창을 설정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "최대 창 너비"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "창 크기를 '창 모드 크기' 설정에 맞춰 변경할 때 사용할 창의 최대 너비를 지정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "최대 창 높이"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "창 크기를 '창 모드 크기' 설정에 맞춰 변경할 때 사용할 창의 최대 높이를 지정합니다."
    )
 
 /* Settings > Video > Scaling */
@@ -1625,7 +1675,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "비디오 화면비를 나타내는 부동소수점 값입니다(너비/높이). 화면비가 '설정'으로 되어있을 때 사용됩니다."
+   "사용될 비디오 화면비를 나타내는 부동소수점 값(너비/높이)입니다. 화면비가 'Config'로 설정되어 있을 때 사용됩니다."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1676,6 +1726,49 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    "개발자가 의도적으로 비워두는 화면 가장자리 픽셀을 잘라냅니다."
+   )
+
+/* Settings > Video > HDR */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
+   "HDR 활성화"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "지원되는 디스플레이에서 HDR을 활성화합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
+   "최대 휘도"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
+   "디스플레이가 표시할 수 있는 최대 휘도(cd/m2)를 설정합니다. RTINGS 등의 사이트에서 관련 수치를 확인할 수 있습니다"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
+   "페이퍼 화이트 휘도"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "흰 종이의 휘도(읽을 수 있는 글자 또는 SDR 상태에서의 최대 휘도)를 설정합니다. 주변 환경의 밝기에 맞춰 화면 밝기를 조정하는 데 사용됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
+   "명암"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
+   "HDR의 감마/명암을 조절합니다. 어두운 색과 밝은 색 사이의 격차를 증가시킵니다. HDR 명암이 높을수록 해당 격차가 커지며, 낮을수록 화면이 바래집니다. 화면을 사용자가 보기 좋도록 원하는 대로 조정하는 데 도움이 됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "색 영역 확장"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "색 영역을 선형으로 변환한 후에 HDR10에 대응하는 확장 색 영역을 사용할지 설정합니다."
    )
 
 /* Settings > Video > Synchronization */
@@ -1782,6 +1875,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    "메뉴 사운드"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   "메뉴 소리 설정을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
@@ -2095,6 +2192,14 @@ MSG_HASH(
    "가능한 경우 가속도계, 자이로스코프, 조도 센서로부터의 입력을 사용합니다. 일부 플랫폼에서는 성능에 영향을 미치거나 전력 사용량이 증가할 수 있습니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   "자동 마우스 잡기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
+   "앱이 활성화될 때 자동으로 마우스 잡기를 활성화합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    "게임 포커스 모드 자동 활성화"
    )
@@ -2229,16 +2334,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "장치 진동 사용 (지원 코어 한정)"
    )
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
-   "진동 세기 (재시작 필요)"
+   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
+   "진동 세기"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN,
-   "햅틱 피드백으로 사용될 진동의 세기를 설정합니다."
+   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
+   "햅틱 피드백 효과의 세기를 설정합니다."
    )
-#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -2284,6 +2387,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    "메뉴를 호출하는 버튼 조합입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   "종료 버튼 조합"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   "RetroArch를 종료하는 버튼 조합입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
@@ -2575,11 +2686,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
-   "마우스 (켜기/끄기)"
+   "마우스 잡기 (켜기/끄기)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE,
-   "마우스를 사용하거나 사용해제 합니다. 사용시에는 시스템 커서는 숨겨지고 RetroArch 화면내로 움직임이 제한됩니다."
+   "마우스 잡기를 사용하거나 사용해제합니다. 사용 시 시스템 커서가 숨겨지고 마우스 움직임이 RetroArch 창 내로 제한되어 상대적 입력이 향상됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
@@ -2897,6 +3008,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "콘텐츠를 불러오기 전에 필요한 펌웨어가 모두 있는지 확인합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
+   "코어 옵션 카테고리"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
+   "코어가 옵션을 카테고리에 따른 하위 메뉴 형식으로 표시할 수 있게 합니다. 참고: 변경 사항을 적용하려면 코어를 다시 불러와야 합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
@@ -4480,6 +4599,14 @@ MSG_HASH(
    "'설정' 항목을 표시합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "'옵션 디스크에 저장' 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "'옵션 디스크에 저장' 항목을 '옵션 > 코어 옵션 관리'에 표시합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
    "'컨트롤' 표시"
    )
@@ -5413,6 +5540,14 @@ MSG_HASH(
    "코어 연결을 확인하고 잘못되었거나 중복된 항목들을 삭제합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "실행목록 새로 고침"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "실행목록에 마지막으로 수행한 '수동 검색'을 반복하여 새로운 컨텐츠를 추가하고 올바르지 않은 항목을 제거합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    "실행목록 삭제"
    )
@@ -5989,6 +6124,14 @@ MSG_HASH(
    "사용할 경우, 컨텐츠를 검색하기 전 이미 존재하는 실행목록은 삭제됩니다. 그렇지 않을 경우, 이미 존재하는 실행목록은 유지되고 실행목록에 없는 새 항목만 실행목록에 추가됩니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   "기존 항목 검증"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   "사용할 경우, 새로운 컨텐츠를 검색하기 전에 실행목록에 현재 등록된 항목들을 검증합니다. 가리키는 파일이 없거나 올바르지 않은 확장자의 파일을 가리키는 항목은 제거됩니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
    "검색 시작"
    )
@@ -6387,6 +6530,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
    "모든 코어 옵션을 기본값으로 초기화합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
+   "옵션 디스크에 저장"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
+   "현재 설정을 활성 옵션 파일에 강제로 작성합니다. 코어의 버그로 프론트엔드가 비정상 종료되는 등의 상황이 발생하더라도 변경한 옵션이 제대로 보존되게 합니다."
    )
 
 /* - Legacy (unused) */
@@ -7065,6 +7216,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "로그인 되지 않음"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
+   "네트워크 오류"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
+   "알 수 없는 게임"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
@@ -8451,6 +8610,14 @@ MSG_HASH(
    "드라큘라"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
+   "솔라라이즈 다크"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT,
+   "솔라라이즈 라이트"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
    "두 번째 미리보기"
    )
@@ -9363,6 +9530,10 @@ MSG_HASH(
    "포트"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
+   "%d번 포트 디바이스명: %s (#%d)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
    "치트 설정"
    )
@@ -9924,11 +10095,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PUBLIC_ADDRESS,
-   "공개 주소"
+   "넷플레이 포트 매핑 성공"
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
-   "포트 맵핑 실패"
+   "넷플레이 UPNP 포트 매핑 실패"
    )
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
@@ -10147,6 +10318,30 @@ MSG_HASH(
    "실행목록 정리됨: "
    )
 MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_MISSING_CONFIG,
+   "새로 고침 실패 - 실행 목록에 검색 이력이 없음: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
+   "새로 고침 실패 - 컨텐츠 디렉토리가 올바르지 않음: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_SYSTEM_NAME,
+   "새로 고침 실패 - 올바르지 않은 시스템 이름: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CORE,
+   "새로 고침 실패 - 올바르지 않은 코어: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_DAT_FILE,
+   "새로 고침 실패 - 올바르지 않은 아케이드 DAT 파일: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE,
+   "새로 고침 실패 - 아케이드 DAT 파일이 너무 큼 (메모리 부족): "
+   )
+MSG_HASH(
    MSG_ADDED_TO_FAVORITES,
    "즐겨찾기에 추가됨"
    )
@@ -10271,6 +10466,14 @@ MSG_HASH(
    "모든 코어 옵션이 기본값으로 초기화되었습니다."
    )
 MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSHED,
+   "코어 옵션 저장됨:"
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSH_FAILED,
+   "코어 옵션을 저장할 수 없음:"
+   )
+MSG_HASH(
    MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
    "다음 드라이버를 찾을 수 없음"
    )
@@ -10328,11 +10531,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DISK_CLOSED,
-   "닫힘"
+   "가상 디스크 트레이를 닫았습니다."
    )
 MSG_HASH(
    MSG_DISK_EJECTED,
-   "꺼냄"
+   "가상 디스크 트레이를 꺼냈습니다."
    )
 MSG_HASH(
    MSG_DOWNLOADING,
@@ -10401,10 +10604,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_SAVING_CONFIG_TO,
    "설정 저장 오류:"
-   )
-MSG_HASH(
-   MSG_FAILED_TO,
-   "실패:"
    )
 MSG_HASH(
    MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
@@ -10497,6 +10696,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_SAVE_SRAM,
    "SRAM 세이브 실패"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_SRAM,
+   "SRAM을 불러올 수 없음"
    )
 MSG_HASH(
    MSG_FAILED_TO_SAVE_STATE_TO,
@@ -10751,10 +10954,6 @@ MSG_HASH(
    "첫 데이터 트랙 읽는 중..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "받음"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "리사이즈 때문에 기록 중지됨."
    )
@@ -10972,7 +11171,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNRECOGNIZED_COMMAND,
-   "알 수 없는 명령"
+   "알 수 없는 커맨드 \"%s\"을(를) 받았습니다.\n"
    )
 MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
@@ -11007,24 +11206,20 @@ MSG_HASH(
    "뷰포트 크기 계산 실패! 원시 데이터를 계속 사용합니다. 정상 적인 동작을 보장할 수 없습니다..."
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "가상 디스크 트레이."
-   )
-MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "꺼내기"
+   "가상 디스크 트레이를 꺼내지 못했습니다."
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "닫기"
+   "가상 디스크 트레이를 닫지 못했습니다."
    )
 MSG_HASH(
-   MSG_FAILED,
-   "실패"
+   MSG_AUTOLOADING_SAVESTATE_FAILED,
+   "\"%s\"에서 상태저장을 자동으로 불러오지 못했습니다."
    )
 MSG_HASH(
-   MSG_SUCCEEDED,
-   "성공"
+   MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
+   "\"%s\"에서 상태저장을 자동으로 불러왔습니다."
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -11323,6 +11518,10 @@ MSG_HASH(
    "컨텐츠 검색 중: "
    )
 MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP,
+   "확인중인 항목: "
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
    "검색 중: "
    )
@@ -11418,6 +11617,10 @@ MSG_HASH(
    MSG_UNSUPPORTED_VIDEO_MODE,
    "지원되지 않는 비디오 모드"
    )
+MSG_HASH(
+   MSG_CORE_INFO_CACHE_UNSUPPORTED,
+   "코어 정보 디렉토리에 쓸 수 없음 - 코어 정보 캐시가 비활성화됩니다"
+   )
 
 /* Lakka */
 
@@ -11445,10 +11648,6 @@ MSG_HASH(
    "Joy-Con 분할하기"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-   "내부 저장공간 상태"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
    "그래픽 위젯 크기조절 우선설정"
    )
@@ -11459,6 +11658,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
    "화면 해상도"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
+   "디스플레이 모드를 선택합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
@@ -11714,11 +11917,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_READ_WRITE,
-   "읽기/쓰기"
+   "내부 저장소 상태: 읽기/쓰기"
    )
 MSG_HASH(
    MSG_READ_ONLY,
-   "읽기 전용"
+   "내부 저장소 상태: 읽기 전용"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
@@ -11896,6 +12099,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
    "2D (고해상도)"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_DEFAULT,
+   "터치해서\nRetroArch 메뉴로"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
+   "assets/ctr 폴더에\nbottom_menu.png가 없습니다"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
+   "데이터\n없음"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
+   "스크린샷\n없음"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_RESUME,
+   "이어하기"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_SAVE_STATE,
+   "상태저장\n생성하기"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_LOAD_STATE,
+   "상태저장\n불러오기"
    )
 #endif
 #ifdef HAVE_QT

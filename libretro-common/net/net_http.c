@@ -682,6 +682,11 @@ const char *net_http_connection_url(struct http_connection_t *conn)
    return conn->urlcopy;
 }
 
+const char* net_http_connection_method(struct http_connection_t* conn)
+{
+   return conn->methodcopy;
+}
+
 struct http_t *net_http_new(struct http_connection_t *conn)
 {
    bool error            = false;

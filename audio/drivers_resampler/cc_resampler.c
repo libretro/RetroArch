@@ -29,12 +29,6 @@
 
 #include <audio/audio_resampler.h>
 
-#if (defined(__ARM_NEON__) && !defined(DONT_WANT_ARM_OPTIMIZATIONS)) || defined(HAVE_NEON)
-#ifndef HAVE_ARM_NEON_OPTIMIZATIONS
-#define HAVE_ARM_NEON_OPTIMIZATIONS
-#endif
-#endif
-
 /* Since SSE and NEON don't provide support for trigonometric functions
  * we approximate those with polynoms
  *
@@ -350,7 +344,7 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
    data->output_frames = outp - (audio_frame_float_t*)data->data_out;
 }
 
-#elif defined(HAVE_ARM_NEON_OPTIMIZATIONS)
+#elif defined(HAVE_ARM_NEON_ASM_OPTIMIZATIONS)
 
 #define CC_RESAMPLER_IDENT "NEON"
 

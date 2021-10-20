@@ -29,6 +29,7 @@
 #include <queues/task_queue.h>
 
 #include "../file_path_special.h"
+#include "../audio/audio_driver.h"
 #include "../retroarch.h"
 #include "../verbosity.h"
 

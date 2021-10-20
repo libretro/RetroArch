@@ -148,7 +148,7 @@ void core_info_free_core_updater_info(core_updater_info_t *info);
 
 core_info_t *core_info_get(core_info_list_t *list, size_t i);
 
-void core_info_free_current_core(core_info_state_t *p_coreinfo);
+void core_info_free_current_core(void);
 
 bool core_info_init_current_core(void);
 
@@ -171,8 +171,7 @@ bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info,
 bool core_info_find(const char *core_path,
       core_info_t **core_info);
 
-bool core_info_load(const char *core_path,
-      core_info_state_t *p_coreinfo);
+bool core_info_load(const char *core_path);
 
 bool core_info_database_supports_content_path(const char *database_path, const char *path);
 
@@ -200,8 +199,6 @@ bool core_info_set_core_lock(const char *core_path, bool lock);
  *   safe, but validity of specified core path
  *   must be checked externally */
 bool core_info_get_core_lock(const char *core_path, bool validate_path);
-
-core_info_state_t *coreinfo_get_ptr(void);
 
 bool core_info_core_file_id_is_equal(const char *core_path_a, const char *core_path_b);
 

@@ -54,7 +54,6 @@ else ifeq ($(platform), osx)
    MINVERFLAGS=
    ifeq ($(shell uname -p),arm)
       MINVERFLAGS = -mmacosx-version-min=10.15 -stdlib=libc++ # macOS  (Metal, ARM 64bit)
-      MINVERFLAGS += -DDONT_WANT_ARM_OPTIMIZATIONS
    else ifeq ($(HAVE_METAL),1)
       MINVERFLAGS = -mmacosx-version-min=10.13 -stdlib=libc++  # macOS  (Metal, x86 64bit)
    else ifeq ($(shell uname -p),powerpc)
@@ -68,7 +67,6 @@ else ifeq ($(platform), osx)
 	# Build for a specific architecture when ARCH is defined as a switch
    ifeq ($(ARCH),arm64)
       MINVERFLAGS  = -mmacosx-version-min=10.15 -stdlib=libc++ # macOS  (Metal, ARM 64bit)
-      MINVERFLAGS += -DDONT_WANT_ARM_OPTIMIZATIONS
       ARCHFLAGS    = -arch arm64
    else ifeq ($(ARCH),x86_64)
       ifeq ($(HAVE_METAL),1)

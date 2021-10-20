@@ -1,5 +1,6 @@
 HAVE_LIBRETRO=             # Libretro library used
 HAVE_ASSETS_DIR=           # Assets install directory
+HAVE_CORE_INFO_CACHE=yes   # Core info cache support
 HAVE_NVDA=yes              # NVDA support
 HAVE_PATCH=yes             # Softpatching support (BPS/IPS/UPS)
 HAVE_SAPI=no               # SAPI support
@@ -22,7 +23,6 @@ HAVE_RGUI=auto             # RGUI menu
 HAVE_MATERIALUI=auto       # MaterialUI menu
 HAVE_XMB=auto              # XMB menu
 HAVE_OZONE=auto            # Ozone menu
-HAVE_STRIPES=no            # Stripes menu
 HAVE_RUNAHEAD=yes          # Runahead support
 HAVE_DSOUND=auto           # DirectSound support
 HAVE_XAUDIO=auto           # XAudio support

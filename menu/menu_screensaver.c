@@ -773,7 +773,8 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
          0, 0,
          screensaver->last_width, screensaver->last_height,
          screensaver->last_width, screensaver->last_height,
-         screensaver->bg_color);
+         screensaver->bg_color,
+         NULL);
 
    /* Draw particle effect, if required */
    if ((screensaver->effect != MENU_SCREENSAVER_BLANK) &&

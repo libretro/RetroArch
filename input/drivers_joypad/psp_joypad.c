@@ -117,7 +117,7 @@ static void *psp_joypad_init(void *data)
    return (void*)-1;
 }
 
-static int16_t psp_joypad_button(unsigned port, uint16_t joykey)
+static int32_t psp_joypad_button(unsigned port, uint16_t joykey)
 {
    if (port >= DEFAULT_MAX_PADS)
       return 0;
@@ -432,6 +432,7 @@ input_device_driver_t psp_joypad = {
    psp_joypad_axis,
    psp_joypad_poll,
    psp_joypad_rumble,
+   NULL,
    psp_joypad_name,
 #ifdef VITA
    "vita",

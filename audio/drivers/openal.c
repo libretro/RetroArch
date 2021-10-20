@@ -33,7 +33,7 @@
 #include <retro_miscellaneous.h>
 #include <retro_timers.h>
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 #include "../../verbosity.h"
 
 #define BUFSIZE 1024

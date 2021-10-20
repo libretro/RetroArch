@@ -111,8 +111,7 @@ static INLINE void d3d9_renderchain_set_vertices_on_change(
       unsigned rotation
       )
 {
-   struct D3D9Vertex vert[4];
-   unsigned i;
+   struct Vertex vert[4];
    void *verts       = NULL;
    const struct
       LinkInfo *info = (const struct LinkInfo*)&pass->info;
@@ -122,64 +121,49 @@ static INLINE void d3d9_renderchain_set_vertices_on_change(
    pass->last_width  = width;
    pass->last_height = height;
 
-   vert[0].x         = 0.0f;
-   vert[0].y         = out_height;
-   vert[0].z         = 0.5f;
-   vert[0].u         = 0.0f;
-   vert[0].v         = 0.0f;
-   vert[0].lut_u     = 0.0f;
-   vert[0].lut_v     = 0.0f;
-   vert[0].r         = 1.0f;
-   vert[0].g         = 1.0f;
-   vert[0].b         = 1.0f;
-   vert[0].a         = 1.0f;
+   /* Copied from d3d8 driver */
+   vert[0].x        =  0.0f;
+   vert[0].y        =  1.0f;
+   vert[0].z        =  1.0f;
 
-   vert[1].x         = out_width;
-   vert[1].y         = out_height;
-   vert[1].z         = 0.5f;
-   vert[1].u         = _u;
-   vert[1].v         = 0.0f;
-   vert[1].lut_u     = 1.0f;
-   vert[1].lut_v     = 0.0f;
-   vert[1].r         = 1.0f;
-   vert[1].g         = 1.0f;
-   vert[1].b         = 1.0f;
-   vert[1].a         = 1.0f;
+   vert[1].x        =  1.0f;
+   vert[1].y        =  1.0f;
+   vert[1].z        =  1.0f;
 
-   vert[2].x         = 0.0f;
-   vert[2].y         = 0.0f;
-   vert[2].z         = 0.5f;
-   vert[2].u         = 0.0f;
-   vert[2].v         = _v;
-   vert[2].lut_u     = 0.0f;
-   vert[2].lut_v     = 1.0f;
-   vert[2].r         = 1.0f;
-   vert[2].g         = 1.0f;
-   vert[2].b         = 1.0f;
-   vert[2].a         = 1.0f;
+   vert[2].x        =  0.0f;
+   vert[2].y        =  0.0f;
+   vert[2].z        =  1.0f;
 
-   vert[3].x         = out_width;
-   vert[3].y         = 0.0f;
-   vert[3].z         = 0.5f;
-   vert[3].u         = _u;
-   vert[3].v         = _v;
-   vert[3].lut_u     = 1.0f;
-   vert[3].lut_v     = 1.0f;
-   vert[3].r         = 1.0f;
-   vert[3].g         = 1.0f;
-   vert[3].b         = 1.0f;
-   vert[3].a         = 1.0f;
+   vert[3].x        =  1.0f;
+   vert[3].y        =  0.0f;
+   vert[3].z        =  1.0f;
+
+   vert[0].u        = 0.0f;
+   vert[0].v        = 0.0f;
+   vert[1].v        = 0.0f;
+   vert[2].u        = 0.0f;
+   vert[1].u        = _u;
+   vert[2].v        = _v;
+   vert[3].u        = _u;
+   vert[3].v        = _v;
+
+   vert[0].color    = 0xFFFFFFFF;
+   vert[1].color    = 0xFFFFFFFF;
+   vert[2].color    = 0xFFFFFFFF;
+   vert[3].color    = 0xFFFFFFFF;
 
    /* Align texels and vertices.
     *
     * Fixes infamous 'half-texel offset' issue of D3D9
     *	http://msdn.microsoft.com/en-us/library/bb219690%28VS.85%29.aspx.
     */
+   /* Maybe we do need something like this left out for now
    for (i = 0; i < 4; i++)
    {
       vert[i].x     -= 0.5f;
       vert[i].y     += 0.5f;
    }
+   */
 
    verts             = d3d9_vertex_buffer_lock(pass->vertex_buf);
    memcpy(verts, vert, sizeof(vert));
@@ -193,7 +177,7 @@ static INLINE bool d3d9_renderchain_add_pass(d3d9_renderchain_t *chain,
    LPDIRECT3DTEXTURE9      tex;
    LPDIRECT3DVERTEXBUFFER9 vertbuf = (LPDIRECT3DVERTEXBUFFER9)
       d3d9_vertex_buffer_new(chain->dev,
-            4 * sizeof(struct D3D9Vertex),
+            4 * sizeof(struct Vertex),
             D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, NULL);
 
    if (!vertbuf)

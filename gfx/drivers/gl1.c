@@ -15,10 +15,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* OpenGL driver.
+/* OpenGL 1.x driver. 
  *
- * We are targeting a minimum of OpenGL 1.1 and the Microsoft "GDI Generic" software GL implementation.
- * Any additional features added for later 1.x versions should only be enabled if they are detected at runtime. */
+ * Minimum version : OpenGL 1.1 (1997)
+ *
+ * We are targeting a minimum of OpenGL 1.1 and the Microsoft 
+ * "GDI Generic" * software GL implementation.
+ * Any additional features added for later 1.x versions should only be 
+ * enabled if they are detected at runtime. */
 
 #include <stddef.h>
 #include <retro_miscellaneous.h>
@@ -425,7 +429,7 @@ static void *gl1_gfx_init(const video_info_t *video,
    return gl1;
 
 error:
-   video_context_driver_destroy();
+   video_context_driver_free();
    if (gl1)
    {
       if (gl1->extensions)
@@ -1210,14 +1214,14 @@ static void gl1_set_texture_frame(void *data,
 }
 
 static void gl1_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
    gl1_t *gl         = (gl1_t*)data;
    if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_size)
       return;
    gl->ctx_driver->get_video_output_size(
          gl->ctx_data,
-         width, height);
+         width, height, desc, desc_len);
 }
 
 static void gl1_get_video_output_prev(void *data)
@@ -1448,7 +1452,11 @@ static const video_poke_interface_t gl1_poke_interface = {
    NULL,                         /* grab_mouse_toggle */
    NULL,                         /* get_current_shader */
    NULL,                         /* get_current_software_framebuffer */
-   NULL                          /* get_hw_render_interface */
+   NULL,                         /* get_hw_render_interface */
+   NULL,                         /* set_hdr_max_nits */
+   NULL,                         /* set_hdr_paper_white_nits */
+   NULL,                         /* set_hdr_contrast */
+   NULL                          /* set_hdr_expand_gamut */
 };
 
 static void gl1_gfx_get_poke_interface(void *data,

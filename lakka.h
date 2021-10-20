@@ -29,6 +29,4 @@
 #define DEFAULT_TIMEZONE "UTC"
 #define TIMEZONE_LENGTH 255
 
-#include "switch_performance_profiles.h"
-
 #endif

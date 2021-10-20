@@ -28,7 +28,8 @@
 #endif
 
 #include <queues/fifo_queue.h>
-#include "../../retroarch.h"
+
+#include "../audio_driver.h"
 #include "../../verbosity.h"
 
 #include "../../tasks/tasks_internal.h"
@@ -141,7 +142,7 @@ static void *switch_thread_audio_init(const char *device, unsigned rate, unsigne
 {
    Result rc;
    unsigned i;
-   uint32_t prio;
+   int32_t prio;
 #ifndef HAVE_LIBNX
    char names[8][0x20];
    uint32_t num_names  = 0;

@@ -169,22 +169,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
    "קושחה"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "חסר"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "קיים"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "אופציונלי"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "נדרש"
-   )
 
 /* Main Menu > Information > System Information */
 
@@ -353,6 +337,8 @@ MSG_HASH(
    "סינכרון"
    )
 #if defined(DINGUX)
+#if defined(RS90)
+#endif
 #endif
 
 /* Settings > Video > CRT SwitchRes */
@@ -385,6 +371,9 @@ MSG_HASH(
    )
 #if defined(DINGUX)
 #endif
+
+/* Settings > Video > HDR */
+
 
 /* Settings > Video > Synchronization */
 
@@ -485,8 +474,6 @@ MSG_HASH(
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-#endif
 
 /* Settings > Input > Menu Controls */
 

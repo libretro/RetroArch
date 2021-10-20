@@ -330,7 +330,7 @@ static void parport_joypad_destroy(void)
       parport_pads[i].fd = -1;
 }
 
-static int16_t parport_joypad_button(unsigned port, uint16_t joykey)
+static int32_t parport_joypad_button(unsigned port, uint16_t joykey)
 {
    const struct parport_joypad     *pad = (const struct parport_joypad*)
       &parport_pads[port];
@@ -411,6 +411,7 @@ input_device_driver_t parport_joypad = {
    parport_joypad_get_buttons,
    parport_joypad_axis,
    parport_joypad_poll,
+   NULL,
    NULL,
    parport_joypad_name,
    "parport",

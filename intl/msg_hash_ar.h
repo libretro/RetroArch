@@ -454,22 +454,6 @@ MSG_HASH(
    "البرنامج الثابت فيرموير"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "مفقود"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "هديه"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "إختياري"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "مطلوب"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "قفل النواة المثبتة"
    )
@@ -1349,6 +1333,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "أقرب جوار"
    )
+#if defined(RS90)
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -1513,10 +1499,6 @@ MSG_HASH(
    "تذكر موقع النافذة وحجمها"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "تذكر حجم النافذة ومكانها، تمكين هذا له الأسبقية على مقياس النافذة."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    "عرض النافذة"
    )
@@ -1547,10 +1529,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    "نسبة الجوانب المخصصة"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "قيمة النقاط العائمة لنسبة عرض الفيديو (العرض / الارتفاع)، تستخدم إذا تم تعيين نسبة الجوانب إلى 'نسبة الجوانب المخصصة'."
-   )
 #if defined(DINGUX)
 #endif
 MSG_HASH(
@@ -1577,6 +1555,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "ارتفاع العرض المخصص الذي يتم استخدامه إذا تم تعيين نسبة الجانب إلى 'نسبة الجوانب المخصصة'."
    )
+
+/* Settings > Video > HDR */
+
 
 /* Settings > Video > Synchronization */
 
@@ -2021,8 +2002,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "تمكين اهتزاز الجهاز (للنواة المدعومة)"
    )
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -6287,6 +6266,14 @@ MSG_HASH(
    "قرصان القلوب"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
+   "الظلام المشمس"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT,
+   "النور المشمس"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
    "الصورة المصغرة الثانية"
    )
@@ -7723,14 +7710,6 @@ MSG_HASH(
    "حصلت على اتصال من: \"%s (%s)\""
    )
 MSG_HASH(
-   MSG_PUBLIC_ADDRESS,
-   "تم تخطيط المنفذ بنجاح"
-   )
-MSG_HASH(
-   MSG_UPNP_FAILED,
-   "فشل تخطيط المنفذ"
-   )
-MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
    "لا توجد حجج مقدمة ولا قائمة مدمجة، عرض المساعدة..."
    )
@@ -8099,14 +8078,6 @@ MSG_HASH(
    "فصل الجهاز من منفذ صالح."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "مغلق"
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "إخراج"
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "يتم التنزيل"
    )
@@ -8169,10 +8140,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_SAVING_CONFIG_TO,
    "فشل حفظ الإعدادات إلى"
-   )
-MSG_HASH(
-   MSG_FAILED_TO,
-   "فشل في"
    )
 MSG_HASH(
    MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
@@ -8503,10 +8470,6 @@ MSG_HASH(
    "قراءة أول مسار بيانات..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "مستلم"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "انتهى التسجيل بسبب تغيير الحجم."
    )
@@ -8719,10 +8682,6 @@ MSG_HASH(
    "غير متوقف."
    )
 MSG_HASH(
-   MSG_UNRECOGNIZED_COMMAND,
-   "أمر غير معروف"
-   )
-MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
    "استخدام اسم النواة لتكوين جديد."
    )
@@ -8753,26 +8712,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "فشل حساب حجم العرض! سوف يستمر في استخدام البيانات الخام. ربما لن يعمل هذا بشكل صحيح..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "صورة القرص الافتراضي."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "إخراج"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "غلق"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "فشل"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "نجح"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,

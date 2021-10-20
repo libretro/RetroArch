@@ -450,22 +450,6 @@ MSG_HASH(
    "Cadarnwedd"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Ar goll"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Presennol"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Dewisol"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Angenrheidiol"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "Cloi Craidd wedi'i osod"
    )
@@ -1021,6 +1005,8 @@ MSG_HASH(
 /* Settings > Video */
 
 #if defined(DINGUX)
+#if defined(RS90)
+#endif
 #endif
 
 /* Settings > Video > CRT SwitchRes */
@@ -1041,6 +1027,9 @@ MSG_HASH(
 
 #if defined(DINGUX)
 #endif
+
+/* Settings > Video > HDR */
+
 
 /* Settings > Video > Synchronization */
 
@@ -1093,8 +1082,6 @@ MSG_HASH(
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -1575,18 +1562,6 @@ MSG_HASH(
    "Yn Ailgychwyn..."
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "cau"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "wedi methu"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "wedi llwyddo"
-   )
-MSG_HASH(
    MSG_ENABLING_WIRELESS,
    "Yn galluogi Wi-Fi..."
    )
@@ -1651,10 +1626,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOCAL,
    "Lleol"
-   )
-MSG_HASH(
-   MSG_READ_WRITE,
-   "Darllen/Ysgrifennu"
    )
 
 #ifdef HAVE_LAKKA_SWITCH

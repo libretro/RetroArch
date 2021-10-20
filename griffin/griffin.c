@@ -191,9 +191,13 @@ ACHIEVEMENTS
 #include "../network/net_http_special.c"
 
 #include "../cheevos/cheevos.c"
+#include "../cheevos/cheevos_client.c"
 #include "../cheevos/cheevos_menu.c"
 #include "../cheevos/cheevos_parser.c"
 
+#include "../deps/rcheevos/src/rapi/rc_api_common.c"
+#include "../deps/rcheevos/src/rapi/rc_api_runtime.c"
+#include "../deps/rcheevos/src/rapi/rc_api_user.c"
 #include "../deps/rcheevos/src/rcheevos/alloc.c"
 #include "../deps/rcheevos/src/rcheevos/compat.c"
 #include "../deps/rcheevos/src/rcheevos/condition.c"
@@ -227,6 +231,7 @@ CHEATS
 #endif
 #include "../libretro-common/hash/lrc_hash.c"
 
+#include "../gfx/video_driver.c"
 /*============================================================
 UI COMMON CONTEXT
 ============================================================ */
@@ -238,6 +243,10 @@ UI COMMON CONTEXT
 VIDEO CONTEXT
 ============================================================ */
 #include "../gfx/drivers_context/gfx_null_ctx.c"
+
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_VULKAN) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
+#include "../gfx/common/gl_common.c"
+#endif
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 
@@ -468,7 +477,7 @@ VIDEO DRIVER
 #endif
 
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 #include "../gfx/drivers/sdl_rs90_gfx.c"
 #else
 #include "../gfx/drivers/sdl_dingux_gfx.c"
@@ -497,13 +506,13 @@ VIDEO DRIVER
 #endif
 
 #ifdef HAVE_OPENGL_CORE
-#include "../gfx/drivers/gl_core.c"
-#include "../gfx/drivers_display/gfx_display_gl_core.c"
+#include "../gfx/drivers/gl3.c"
+#include "../gfx/drivers_display/gfx_display_gl3.c"
 #endif
 
 #ifdef HAVE_OPENGL
-#include "../gfx/drivers/gl.c"
-#include "../gfx/drivers_display/gfx_display_gl.c"
+#include "../gfx/drivers/gl2.c"
+#include "../gfx/drivers_display/gfx_display_gl2.c"
 #endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE)
@@ -600,11 +609,11 @@ FONTS
 #endif
 
 #if defined(HAVE_OPENGL)
-#include "../gfx/drivers_font/gl_raster_font.c"
+#include "../gfx/drivers_font/gl2_raster_font.c"
 #endif
 
 #ifdef HAVE_OPENGL_CORE
-#include "../gfx/drivers_font/gl_core_raster_font.c"
+#include "../gfx/drivers_font/gl3_raster_font.c"
 #endif
 
 #if defined(_XBOX1)
@@ -660,14 +669,19 @@ FONTS
 /*============================================================
 INPUT
 ============================================================ */
+
+#include "../input/input_driver.c"
+#include "../input/input_keymaps.c"
 #include "../tasks/task_autodetect.c"
+#include "../input/input_autodetect_builtin.c"
+
 #ifdef HAVE_BLISSBOX
 #include "../tasks/task_autodetect_blissbox.c"
 #endif
+
 #ifdef HAVE_AUDIOMIXER
 #include "../tasks/task_audio_mixer.c"
 #endif
-#include "../input/input_keymaps.c"
 
 #ifdef HAVE_OVERLAY
 #include "../led/drivers/led_overlay.c"
@@ -684,8 +698,6 @@ INPUT
 #include "../input/drivers/winraw_input.c"
 #endif
 #endif
-
-#include "../input/input_autodetect_builtin.c"
 
 #if defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
 #include "../input/drivers/psp_input.c"
@@ -900,6 +912,7 @@ RSOUND
 /*============================================================
 AUDIO
 ============================================================ */
+#include "../audio/audio_driver.c"
 #if defined(__PS3__) || defined (__PSL1GHT__)
 #include "../audio/drivers/ps3_audio.c"
 #elif defined(XENON)
@@ -1029,6 +1042,7 @@ FILTERS
 #include "../gfx/video_filters/dot_matrix_4x.c"
 #include "../gfx/video_filters/upscale_1_5x.c"
 #include "../gfx/video_filters/upscale_256x_320x240.c"
+#include "../gfx/video_filters/picoscale_256x_320x240.c"
 #endif
 
 #ifdef HAVE_DSP_FILTER
@@ -1077,6 +1091,7 @@ FILE
 #include "../file_path_special.c"
 #include "../libretro-common/lists/dir_list.c"
 #include "../libretro-common/lists/string_list.c"
+#include "../libretro-common/lists/nested_list.c"
 #include "../libretro-common/lists/file_list.c"
 #include "../libretro-common/file/retro_dirent.c"
 #include "../libretro-common/streams/file_stream.c"
@@ -1179,6 +1194,7 @@ FRONTEND
 
 #include "../core_info.c"
 #include "../core_backup.c"
+#include "../core_option_manager.c"
 
 #if defined(HAVE_NETWORKING)
 #include "../core_updater_list.c"
@@ -1204,6 +1220,8 @@ RETROARCH
 ============================================================ */
 #include "../retroarch.c"
 #include "../command.c"
+#include "../midi_driver.c"
+#include "../location_driver.c"
 #include "../libretro-common/queues/task_queue.c"
 
 #include "../msg_hash.c"
@@ -1280,9 +1298,7 @@ THREAD
 NETPLAY
 ============================================================ */
 #ifdef HAVE_NETWORKING
-#include "../network/netplay/netplay_handshake.c"
-#include "../network/netplay/netplay_io.c"
-#include "../network/netplay/netplay_discovery.c"
+#include "../network/netplay/netplay_frontend.c"
 #include "../network/netplay/netplay_room_parse.c"
 #include "../libretro-common/net/net_compat.c"
 #include "../libretro-common/net/net_socket.c"
@@ -1360,6 +1376,7 @@ MENU
 #endif
 
 #ifdef HAVE_MENU
+#include "../menu/menu_driver.c"
 #include "../menu/menu_setting.c"
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
 #include "../menu/menu_screensaver.c"
@@ -1397,16 +1414,7 @@ MENU
 #endif
 
 #ifdef HAVE_OZONE
-#include "../menu/drivers/ozone/ozone.c"
-#include "../menu/drivers/ozone/ozone_display.c"
-#include "../menu/drivers/ozone/ozone_entries.c"
-#include "../menu/drivers/ozone/ozone_sidebar.c"
-#include "../menu/drivers/ozone/ozone_texture.c"
-#include "../menu/drivers/ozone/ozone_theme.c"
-#endif
-
-#ifdef HAVE_STRIPES
-#include "../menu/drivers/stripes.c"
+#include "../menu/drivers/ozone.c"
 #endif
 
 #ifdef HAVE_MATERIALUI

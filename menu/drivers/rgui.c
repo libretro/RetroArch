@@ -81,7 +81,7 @@
 #define RGUI_MAX_FB_WIDTH 426
 
 #if defined(DINGUX)
-#if defined(RS90)
+#if defined(RS90) && !defined(MIYOO)
 /* The RS-90 uses a fixed framebuffer size
  * of 240x160 */
 #define RGUI_DINGUX_ASPECT_RATIO RGUI_ASPECT_RATIO_3_2
@@ -4131,8 +4131,10 @@ static void rgui_render_osk(
    unsigned osk_width, osk_height;
    unsigned osk_x, osk_y;
    
-   int osk_ptr              = input_event_get_osk_ptr();
-   char **osk_grid          = input_event_get_osk_grid();
+   input_driver_state_t 
+      *input_st             = input_state_get_ptr();
+   int osk_ptr              = input_st->osk_ptr;
+   char **osk_grid          = input_st->osk_grid;
    const char *input_str    = menu_input_dialog_get_buffer();
    const char *input_label  = menu_input_dialog_get_label_buffer();
    
@@ -5820,7 +5822,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    rgui->widgets_supported = gfx_widgets_ready();
 
    if (rgui->widgets_supported)
-      gfx_display_init_white_texture(gfx_display_white_texture);
+      gfx_display_init_white_texture();
 #endif
 
    rgui->menu_title[0]    = '\0';
@@ -5927,10 +5929,7 @@ static void rgui_free(void *data)
    {
 #ifdef HAVE_GFX_WIDGETS
       if (rgui->widgets_supported)
-      {
-         if (gfx_display_white_texture)
-            video_driver_texture_unload(&gfx_display_white_texture);
-      }
+         gfx_display_deinit_white_texture();
 #endif
       if (rgui->thumbnail_path_data)
          free(rgui->thumbnail_path_data);
@@ -6882,9 +6881,8 @@ static void rgui_context_reset(void *data, bool is_threaded)
 #ifdef HAVE_GFX_WIDGETS
    if (rgui->widgets_supported)
    {
-      if (gfx_display_white_texture)
-         video_driver_texture_unload(&gfx_display_white_texture);
-      gfx_display_init_white_texture(gfx_display_white_texture);
+      gfx_display_deinit_white_texture();
+      gfx_display_init_white_texture();
    }
 #endif
    video_driver_monitor_reset();
@@ -6899,7 +6897,7 @@ static void rgui_context_destroy(void *data)
 
 #ifdef HAVE_GFX_WIDGETS
    if (rgui->widgets_supported)
-      video_driver_texture_unload(&gfx_display_white_texture);
+      gfx_display_deinit_white_texture();
 #endif
 }
 

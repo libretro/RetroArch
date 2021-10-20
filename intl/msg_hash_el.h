@@ -454,24 +454,8 @@ MSG_HASH(
    "Λογισμικό"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Λείπει"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Παρόν"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Προεραιτικό"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Απαραίτητο"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
-   "Κλείδωμα Εγκατεστημένο Πυρήνα"
+   "Κλείδωμα Εγκατεστημένου Πυρήνα"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
@@ -1305,6 +1289,8 @@ MSG_HASH(
    "Διγραμμικό Φιλτράρισμα"
    )
 #if defined(DINGUX)
+#if defined(RS90)
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -1497,6 +1483,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    "Αφαιρεί μερικά pixel γύρω από την εικόνα όπου εθιμικά οι προγραμματιστές άφηναν κενά ή και που περιέχουν άχρηστα pixel."
    )
+
+/* Settings > Video > HDR */
+
 
 /* Settings > Video > Synchronization */
 
@@ -1833,8 +1822,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "Ενεργοποίηση Δόνησης Συσκευής (Για Υποστηριζόμενους Πυρήνες)"
    )
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -4879,14 +4866,6 @@ MSG_HASH(
    "Λήφθηκε σύνδεση από: \"%s (%s)\""
    )
 MSG_HASH(
-   MSG_PUBLIC_ADDRESS,
-   "Δημόσια διεύθυνση"
-   )
-MSG_HASH(
-   MSG_UPNP_FAILED,
-   "Αποτυχία Καθορισμού Θυρών"
-   )
-MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
    "Τοποθέτηση δίσκου στην μονάδα δίσκου"
    )
@@ -5171,10 +5150,6 @@ MSG_HASH(
    "Παύση."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "ελήφθη"
-   )
-MSG_HASH(
    MSG_RECORDING_TO,
    "Εγγραφή σε"
    )
@@ -5217,22 +5192,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "εξάγει"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "κλείσει"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "απέτυχε"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "επιτεύχθηκε"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -5515,14 +5474,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOCAL,
    "Τοπικό"
-   )
-MSG_HASH(
-   MSG_READ_WRITE,
-   "Ανάγνωση/Εγγραφή"
-   )
-MSG_HASH(
-   MSG_READ_ONLY,
-   "Μόνο για Ανάγνωση"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,

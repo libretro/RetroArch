@@ -238,7 +238,6 @@ void gfx_animation_timer_start(gfx_timer_t *timer,
       gfx_timer_ctx_entry_t *timer_entry);
 
 bool gfx_animation_update(
-      gfx_animation_t *p_anim,
       retro_time_t current_time,
       bool timedate_enable,
       float ticker_speed,
@@ -259,7 +258,7 @@ bool gfx_animation_push(gfx_animation_ctx_entry_t *entry);
 
 void gfx_animation_push_delayed(unsigned delay, gfx_animation_ctx_entry_t *entry);
 
-void gfx_animation_deinit(gfx_animation_t *p_anim);
+void gfx_animation_deinit(void);
 
 gfx_animation_t *anim_get_ptr(void);
 

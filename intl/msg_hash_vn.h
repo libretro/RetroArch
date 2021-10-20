@@ -457,6 +457,8 @@ MSG_HASH(
    "Kích hoạt GPU Screenshot"
    )
 #if defined(DINGUX)
+#if defined(RS90)
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -505,6 +507,9 @@ MSG_HASH(
 
 #if defined(DINGUX)
 #endif
+
+/* Settings > Video > HDR */
+
 
 /* Settings > Video > Synchronization */
 
@@ -629,8 +634,6 @@ MSG_HASH(
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -1471,10 +1474,6 @@ MSG_HASH(
    "Ttệp đã tồn tại. Đang lưu vào backup buffer"
    )
 MSG_HASH(
-   MSG_PUBLIC_ADDRESS,
-   "Public address"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Đang đợi máy khách  ..."
    )
@@ -1605,14 +1604,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "Bị Lỗi"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "Đã thành công"
    )
 
 /* Lakka */

@@ -392,6 +392,7 @@
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../libretro-common/include/compat/zlib",
+					"$(SRCROOT)/../../deps/discord-rpc/include",
 					"$(SRCROOT)/../../deps/libFLAC/include",
 					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/7zip",
@@ -434,6 +435,7 @@
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../libretro-common/include/compat/zlib",
+					"$(SRCROOT)/../../deps/discord-rpc/include",
 					"$(SRCROOT)/../../deps/libFLAC/include",
 					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/7zip",
@@ -479,6 +481,7 @@
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../libretro-common/include/compat/zlib",
+					"$(SRCROOT)/../../deps/discord-rpc/include",
 					"$(SRCROOT)/../../deps/libFLAC/include",
 					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/7zip",
@@ -518,6 +521,7 @@
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../libretro-common/include/compat/zlib",
+					"$(SRCROOT)/../../deps/discord-rpc/include",
 					"$(SRCROOT)/../../deps/libFLAC/include",
 					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/7zip",
@@ -579,6 +583,7 @@
 					"-DHAVE_REWIND",
 					"-DHAVE_SCREENSHOTS",
 					"-DHAVE_CHEATS",
+					"-DHAVE_CORE_INFO_CACHE",
 					"-DHAVE_MENU",
 					"-DHAVE_GFX_WIDGETS",
 					"-DOSX",
@@ -616,7 +621,6 @@
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_RWAV",
 					"-DHAVE_GETOPT_LONG",
-					"-DDONT_WANT_ARM_OPTIMIZATIONS",
 				);
 				PREBINDING = NO;
 				SDKROOT = macosx;
@@ -666,6 +670,7 @@
 					"-DHAVE_REWIND",
 					"-DHAVE_SCREENSHOTS",
 					"-DHAVE_CHEATS",
+					"-DHAVE_CORE_INFO_CACHE",
 					"-DHAVE_MENU",
 					"-DHAVE_GFX_WIDGETS",
 					"-DOSX",
@@ -703,7 +708,6 @@
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_RWAV",
 					"-DHAVE_GETOPT_LONG",
-					"-DDONT_WANT_ARM_OPTIMIZATIONS",
 				);
 				PREBINDING = NO;
 				SDKROOT = macosx;

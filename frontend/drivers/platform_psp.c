@@ -91,11 +91,7 @@ static enum frontend_fork psp_fork_mode = FRONTEND_FORK_NONE;
 static void frontend_psp_get_env_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
-   unsigned i;
    struct rarch_main_wrap *params = NULL;
-
-   (void)args;
-
 #ifdef VITA
    strcpy_literal(eboot_path, "app0:/");
    strlcpy(g_defaults.dirs[DEFAULT_DIR_PORT], eboot_path, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));

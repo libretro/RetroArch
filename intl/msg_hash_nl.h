@@ -418,22 +418,6 @@ MSG_HASH(
    "Vereiste Graphics API"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Ontbrekend"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Aanwezig"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Optioneel"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Vereist"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "De Geïnstalleerde Core Vergrendelen"
    )
@@ -1185,6 +1169,8 @@ MSG_HASH(
    "Bilineaire Filtering"
    )
 #if defined(DINGUX)
+#if defined(RS90)
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -1329,10 +1315,6 @@ MSG_HASH(
    "Onthoudt Venster Positie en Grootte"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Onthoud de venstergrootte en -positie, dit inschakelen heeft voorrang op Venster Schaal."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    "Window Breedte"
    )
@@ -1363,10 +1345,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    "Aangepaste beeldverhoudingen"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Waarde drijvende komma voor video-beeldverhouding (breedte / hoogte), gebruikt als de Beeldverhouding is ingesteld op 'Aangepaste Beeldverhouding'."
-   )
 #if defined(DINGUX)
 #endif
 MSG_HASH(
@@ -1393,6 +1371,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "Aangepaste viewport-hoogte die wordt gebruikt als de Beeldverhouding is ingesteld op 'Aangepaste Beeldverhouding'."
    )
+
+/* Settings > Video > HDR */
+
 
 /* Settings > Video > Synchronization */
 
@@ -1801,8 +1782,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "Toestel trillen inschakelen (voor ondersteunde Cores)"
    )
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -3975,14 +3954,6 @@ MSG_HASH(
    "Verbonden met: \"%s (%s)\""
    )
 MSG_HASH(
-   MSG_PUBLIC_ADDRESS,
-   "Poorttoewijzing succesvol"
-   )
-MSG_HASH(
-   MSG_UPNP_FAILED,
-   "Poorttoewijzing mislukt"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Wachten op client ..."
    )
@@ -4119,14 +4090,6 @@ MSG_HASH(
    "CRC32 checksum mismatch between content file and saved content checksum in replay file header) replay highly likely to desync on playback."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Gesloten"
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Uitgeworpen"
-   )
-MSG_HASH(
    MSG_DOWNLOAD_FAILED,
    "Download mislukt"
    )
@@ -4227,10 +4190,6 @@ MSG_HASH(
    "Gepauzeerd."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "ontvangen"
-   )
-MSG_HASH(
    MSG_REWINDING,
    "Terugspoelen."
    )
@@ -4277,10 +4236,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "gefaald"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -4424,6 +4379,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_3DS_DISPLAY_MODE,
    "3DS weergavemodus"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_DEFAULT,
+   "Raak aan voor\nRetroArch-menu"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_RESUME,
+   "Spel\nhervatten"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_SAVE_STATE,
+   "Bewaarpunt\ncreëren"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_LOAD_STATE,
+   "Bewaarpunt\nladen"
    )
 #endif
 #ifdef HAVE_QT

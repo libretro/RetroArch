@@ -32,8 +32,8 @@ struct hidpad_psxadapter_data
 
 static void* hidpad_psxadapter_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
-   struct pad_connection* connection = (struct pad_connection*)data;
-   struct hidpad_psxadapter_data* device    = (struct hidpad_psxadapter_data*)
+   struct pad_connection* connection     = (struct pad_connection*)data;
+   struct hidpad_psxadapter_data* device = (struct hidpad_psxadapter_data*)
       calloc(1, sizeof(struct hidpad_psxadapter_data));
 
    if (!device)
@@ -53,7 +53,8 @@ static void* hidpad_psxadapter_init(void *data, uint32_t slot, hid_driver_t *dri
 
 static void hidpad_psxadapter_deinit(void *data)
 {
-   struct hidpad_psxadapter_data *device = (struct hidpad_psxadapter_data*)data;
+   struct hidpad_psxadapter_data *device = 
+      (struct hidpad_psxadapter_data*)data;
 
    if (device)
       free(device);
@@ -61,24 +62,26 @@ static void hidpad_psxadapter_deinit(void *data)
 
 static void hidpad_psxadapter_get_buttons(void *data, input_bits_t *state)
 {
-	struct hidpad_psxadapter_data *device = (struct hidpad_psxadapter_data*)
-      data;
+   struct hidpad_psxadapter_data *device = 
+      (struct hidpad_psxadapter_data*)data;
 
-	if (device)
+   if (device)
    {
-		BITS_COPY16_PTR(state, device->buttons);
-	}
+      BITS_COPY16_PTR(state, device->buttons);
+   }
    else
-		BIT256_CLEAR_ALL_PTR(state);
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t hidpad_psxadapter_get_axis(void *data, unsigned axis)
 {
    int val                               = 0;
-   struct hidpad_psxadapter_data *device = (struct hidpad_psxadapter_data*)data;
+   struct hidpad_psxadapter_data *device = 
+      (struct hidpad_psxadapter_data*)data;
 
-   if (!device || axis >= 4   ||
-       (device->data[2]==0x7F) ) /* digital mode detection */
+   if (     !device 
+         || axis >= 4   
+         || (device->data[2]==0x7F) ) /* digital mode detection */
       return 0;
 
    switch (axis)
@@ -105,13 +108,14 @@ static int16_t hidpad_psxadapter_get_axis(void *data, unsigned axis)
    return 0;
 }
 
-#define PSX_H_GET(a) (a & 0x0F) /*HAT MASK = 0x0F */
-#define PSX_H_LEFT(a) (a == 0x05) || (a == 0x06) || (a == 0x07)
+#define PSX_H_GET(a)   (a & 0x0F) /*HAT MASK = 0x0F */
+#define PSX_H_LEFT(a)  (a == 0x05) || (a == 0x06) || (a == 0x07)
 #define PSX_H_RIGHT(a) (a == 0x01) || (a == 0x02) || (a == 0x03)
-#define PSX_H_UP(a) (a == 0x07) || (a == 0x00) || (a == 0x01)
-#define PSX_H_DOWN(a) (a == 0x03) || (a == 0x04) || (a == 0x05)
+#define PSX_H_UP(a)    (a == 0x07) || (a == 0x00) || (a == 0x01)
+#define PSX_H_DOWN(a)  (a == 0x03) || (a == 0x04) || (a == 0x05)
 
-static void hidpad_psxadapter_packet_handler(void *data, uint8_t *packet, uint16_t size)
+static void hidpad_psxadapter_packet_handler(void *data,
+      uint8_t *packet, uint16_t size)
 {
    uint32_t i, pressed_keys;
    int16_t hat_value;
@@ -134,7 +138,8 @@ static void hidpad_psxadapter_packet_handler(void *data, uint8_t *packet, uint16
       RETRO_DEVICE_ID_JOYPAD_B,
       RETRO_DEVICE_ID_JOYPAD_Y,
    };
-   struct hidpad_psxadapter_data *device = (struct hidpad_psxadapter_data*)data;
+   struct hidpad_psxadapter_data *device = 
+      (struct hidpad_psxadapter_data*)data;
 
    if (!device)
       return;
@@ -143,7 +148,7 @@ static void hidpad_psxadapter_packet_handler(void *data, uint8_t *packet, uint16
 
    device->buttons = 0;
 
-   pressed_keys  = device->data[7] | (device->data[6] << 8);
+   pressed_keys    = device->data[7] | (device->data[6] << 8);
 
    for (i = 0; i < 16; i ++)
       if (button_mapping[i] != NO_BTN)
@@ -183,6 +188,15 @@ const char * hidpad_psxadapter_get_name(void *data)
 	return "PSX to PS3 Controller Adapter";
 }
 
+static int32_t hidpad_psxadapter_button(void *data, uint16_t joykey)
+{
+   struct hidpad_psxadapter_data *pad = 
+      (struct hidpad_psxadapter_data*)data;
+   if (!pad || joykey > 31)
+      return 0;
+   return pad->buttons & (1 << joykey);
+}
+
 pad_connection_interface_t pad_connection_psxadapter = {
    hidpad_psxadapter_init,
    hidpad_psxadapter_deinit,
@@ -191,4 +205,6 @@ pad_connection_interface_t pad_connection_psxadapter = {
    hidpad_psxadapter_get_buttons,
    hidpad_psxadapter_get_axis,
    hidpad_psxadapter_get_name,
+   hidpad_psxadapter_button,
+   false
 };

@@ -14,6 +14,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Direct3D 10 driver.
+ *
+ * Minimum version : Direct3D 10.0 (2006)
+ * Minimum OS      : Windows Vista
+ * Recommended OS  : Windows Vista and/or later
+ */
+
 #define CINTERFACE
 #define COBJMACROS
 
@@ -652,6 +659,10 @@ static void *d3d10_gfx_init(const video_info_t* video,
    if (string_is_equal(settings->arrays.input_driver, "dinput"))
       wndclass.lpfnWndProc = wnd_proc_d3d_dinput;
 #endif
+#ifdef HAVE_WINRAWINPUT
+   if (string_is_equal(settings->arrays.input_driver, "raw"))
+      wndclass.lpfnWndProc = wnd_proc_d3d_winraw;
+#endif
 #ifdef HAVE_WINDOW
    win32_window_init(&wndclass, true, NULL);
 #endif
@@ -1004,7 +1015,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
 #else
    DXGICreateFactory(&d3d10->factory);
 #endif
-
+   
    {
       int         i = 0;
       int gpu_index = settings->ints.d3d10_gpu_index;
@@ -1739,9 +1750,9 @@ static uint32_t d3d10_get_flags(void *data)
 
 #ifndef __WINRT__
 static void d3d10_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
-   win32_get_video_output_size(width, height);
+   win32_get_video_output_size(width, height, desc, desc_len);
 }
 
 static void d3d10_get_video_output_prev(void *data)
@@ -1796,6 +1807,10 @@ static const video_poke_interface_t d3d10_poke_interface = {
 #else
    NULL, /* get_hw_render_interface */
 #endif
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void d3d10_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)

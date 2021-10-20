@@ -116,7 +116,14 @@ static void ui_window_win32_set_visible(void *data,
 static void ui_window_win32_set_title(void *data, char *buf)
 {
    ui_window_win32_t *window = (ui_window_win32_t*)data;
-   SetWindowText(window->hwnd, buf);
+#ifdef LEGACY_WIN32
+   char         *title_local = utf8_to_local_string_alloc(buf);
+   SetWindowText(window->hwnd, title_local);
+#else
+   wchar_t      *title_local = utf8_to_utf16_string_alloc(buf);
+   SetWindowTextW(window->hwnd, title_local);
+#endif
+   free(title_local);
 }
 
 void ui_window_win32_set_droppable(void *data, bool droppable)
@@ -228,7 +235,7 @@ static enum ui_msg_window_response ui_msg_window_win32_warning(
          MessageBoxA(NULL, (LPCSTR)state->text, (LPCSTR)state->title, flags));
 }
 
-static ui_msg_window_t ui_msg_window_win32 = {
+ui_msg_window_t ui_msg_window_win32 = {
    ui_msg_window_win32_error,
    ui_msg_window_win32_information,
    ui_msg_window_win32_question,

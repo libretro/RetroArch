@@ -152,7 +152,7 @@ bool core_backup_get_backup_path(
 
    /* Generate backup filename */
    snprintf(backup_filename, sizeof(backup_filename),
-         "%s.%04u%02u%02uT%02u%02u%02u.%08x.%u%s",
+         "%s.%04u%02u%02uT%02u%02u%02u.%08lx.%u%s",
          core_filename,
          (unsigned)time_info.tm_year + 1900,
          (unsigned)time_info.tm_mon + 1,
@@ -160,7 +160,7 @@ bool core_backup_get_backup_path(
          (unsigned)time_info.tm_hour,
          (unsigned)time_info.tm_min,
          (unsigned)time_info.tm_sec,
-         crc,
+         (unsigned long)crc,
          (unsigned)backup_mode,
          FILE_PATH_CORE_BACKUP_EXTENSION);
 
@@ -423,6 +423,7 @@ static bool core_backup_add_entry(core_backup_list_t *backup_list,
 {
    char *backup_filename           = NULL;
    core_backup_list_entry_t *entry = NULL;
+   unsigned long crc               = 0;
    unsigned backup_mode            = 0;
 
    if (!backup_list ||
@@ -449,12 +450,13 @@ static bool core_backup_add_entry(core_backup_list_t *backup_list,
    entry = &backup_list->entries[backup_list->size];
 
    if (sscanf(backup_filename + strlen(core_filename),
-       ".%04u%02u%02uT%02u%02u%02u.%08x.%u",
+       ".%04u%02u%02uT%02u%02u%02u.%08lx.%u",
        &entry->date.year, &entry->date.month, &entry->date.day,
        &entry->date.hour, &entry->date.minute, &entry->date.second,
-       &entry->crc, &backup_mode) != 8)
+       &crc, &backup_mode) != 8)
       goto error;
 
+   entry->crc         = (uint32_t)crc;
    entry->backup_mode = (enum core_backup_mode)backup_mode;
 
    /* Cache backup path */
@@ -748,6 +750,6 @@ bool core_backup_list_get_entry_crc_str(
    if (!entry || (len < 9))
       return false;
 
-   snprintf(crc, len, "%08x", entry->crc);
+   snprintf(crc, len, "%08lx", (unsigned long)entry->crc);
    return true;
 }

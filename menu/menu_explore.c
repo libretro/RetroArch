@@ -596,7 +596,7 @@ static explore_state_t *explore_build_list(settings_t *settings)
             key_str                         = key->val.string.buff;
             if (string_is_equal(key_str, "crc"))
             {
-               switch (strlen(val->val.binary.buff))
+               switch (val->val.binary.len)
                {
                   case 1:
                      crc32 = *(uint8_t*)val->val.binary.buff;
@@ -1149,7 +1149,7 @@ SKIP_ENTRY:;
       int pl_idx;
       const struct playlist_entry *pl_entry = 
          explore_state->entries[current_type - EXPLORE_TYPE_FIRSTITEM].playlist_entry;
-      menu_handle_t                   *menu = menu_driver_get_ptr();
+      menu_handle_t                   *menu = menu_state_get_ptr()->driver_data;
 
       strlcpy(explore_state->title,
             pl_entry->label, sizeof(explore_state->title));

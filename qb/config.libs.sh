@@ -590,9 +590,12 @@ if [ "$HAVE_MENU" != 'no' ]; then
 fi
 
 if [ "$HAVE_STEAM" = 'yes' ]; then
+   add_opt CORE_INFO_CACHE no
    add_opt ONLINE_UPDATER no
    add_opt UPDATE_CORES no
-   die : 'Notice: Steam build enabled, disabling online updater as well.'
+   die : 'Notice: Steam build enabled, disabling:'
+   die : '* Core info cache.'
+   die : '* Online updater.'
 fi
 
 check_enabled CXX SLANG slang 'The C++ compiler is' false

@@ -22,6 +22,9 @@
 #include <retro_miscellaneous.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
+#include <lists/string_list.h>
+
+#include "../configuration.h"
 
 RETRO_BEGIN_DECLS
 
@@ -100,6 +103,15 @@ struct video_shader_parameter
    float step;
    char id[64];
    char desc[64];
+};
+
+struct rarch_dir_shader_list
+{
+   struct string_list *shader_list;
+   char *directory;
+   size_t selection;
+   bool shader_loaded;
+   bool remember_last_preset_dir;
 };
 
 struct video_shader_pass
@@ -235,6 +247,57 @@ bool video_shader_any_supported(void);
 bool video_shader_check_for_changes(void);
 
 const char *video_shader_type_to_str(enum rarch_shader_type type);
+
+void dir_free_shader(
+      struct rarch_dir_shader_list *dir_list,
+      bool shader_remember_last_dir);
+
+void dir_init_shader(
+      void *menu_driver_data_,
+      settings_t *settings,
+      struct rarch_dir_shader_list *dir_list);
+
+/**
+ * dir_check_shader:
+ * @pressed_next         : Was next shader key pressed?
+ * @pressed_prev         : Was previous shader key pressed?
+ *
+ * Checks if any one of the shader keys has been pressed for this frame:
+ * a) Next shader index.
+ * b) Previous shader index.
+ *
+ * Will also immediately apply the shader.
+ **/
+void dir_check_shader(
+      void *menu_driver_data_,
+      settings_t *settings,
+      struct rarch_dir_shader_list *dir_list,
+      bool pressed_next,
+      bool pressed_prev);
+
+/**
+ * load_shader_preset:
+ *
+ * Tries to load a supported core-, game-, folder-specific or global
+ * shader preset from its respective location:
+ *
+ * global:          $CONFIG_DIR/global.$PRESET_EXT
+ * core-specific:   $CONFIG_DIR/$CORE_NAME/$CORE_NAME.$PRESET_EXT
+ * folder-specific: $CONFIG_DIR/$CORE_NAME/$FOLDER_NAME.$PRESET_EXT
+ * game-specific:   $CONFIG_DIR/$CORE_NAME/$GAME_NAME.$PRESET_EXT
+ *
+ * $CONFIG_DIR is expected to be Menu Config directory, or failing that, the
+ * directory where retroarch.cfg is stored.
+ *
+ * For compatibility purposes with versions 1.8.7 and older, the presets
+ * subdirectory on the Video Shader path is used as a fallback directory.
+ *
+ * Note: Uses video_shader_is_supported() which only works after
+ *       context driver initialization.
+ *
+ * Returns: false if there was an error or no action was performed.
+ */
+bool load_shader_preset(settings_t *settings, const char *core_name, char *s, size_t len);
 
 const char *video_shader_get_preset_extension(enum rarch_shader_type type);
 

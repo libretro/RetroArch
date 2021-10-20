@@ -30,10 +30,10 @@
 #include <retro_endianness.h>
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include "../../config.h"
 #endif
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 #include "../../verbosity.h"
 
 #ifdef HAVE_OSS_BSD

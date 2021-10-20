@@ -173,9 +173,24 @@ static int16_t input_wl_state(
             {
                if (binds[port][i].valid)
                {
-                  if (BIT_GET(wl->key_state,
-                           rarch_keysym_lut[binds[port][i].key]) )
+                  /*if (wl_mouse_button_pressed(udev, port, binds[port][i].mbutton))
                      ret |= (1 << i);
+                  */
+
+                  /* TODO: support custom mouse-to-retropad binds */
+               }
+            }
+
+            if(!keyboard_mapping_blocked)
+            {
+               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+               {
+                  if (binds[port][i].valid)
+                  {
+                     if (BIT_GET(wl->key_state,
+                              rarch_keysym_lut[binds[port][i].key]) )
+                        ret |= (1 << i);
+                  }
                }
             }
 
@@ -184,10 +199,24 @@ static int16_t input_wl_state(
 
          if (id < RARCH_BIND_LIST_END)
          {
-            if (binds[port][id].valid)
-               if (BIT_GET(wl->key_state,
-                        rarch_keysym_lut[binds[port][id].key]))
+            if (binds[port][id].valid && binds[port][id].key < RETROK_LAST)
+            {
+               if(id != RARCH_GAME_FOCUS_TOGGLE && !keyboard_mapping_blocked)
+               {
+                  if(BIT_GET(wl->key_state, rarch_keysym_lut[binds[port][id].key]))
+                     return 1;
+               }
+               else if(id == RARCH_GAME_FOCUS_TOGGLE)
+               {
+                  if(BIT_GET(wl->key_state, rarch_keysym_lut[binds[port][id].key]))
+                     return 1;
+               }
+            
+               /* TODO: support default mouse-to-retropad bindings */
+               /* else if (wl_mouse_button_pressed(udev, port, binds[port][i].mbutton))
                   return 1;
+               */
+            }
          }
          break;
       case RETRO_DEVICE_ANALOG:
@@ -231,6 +260,7 @@ static int16_t input_wl_state(
       case RARCH_DEVICE_MOUSE_SCREEN:
          {
             bool screen = device == RARCH_DEVICE_MOUSE_SCREEN;
+            if (port > 0) return 0; /* TODO: support mouse on additional ports */
             switch (id)
             {
                case RETRO_DEVICE_ID_MOUSE_X:
@@ -248,6 +278,7 @@ static int16_t input_wl_state(
          }
          break;
       case RETRO_DEVICE_POINTER:
+         /* TODO: support pointers on additional ports */
          if (idx == 0)
          {
             struct video_viewport vp;
@@ -299,27 +330,43 @@ static int16_t input_wl_state(
          }
          break;
       case RARCH_DEVICE_POINTER_SCREEN:
+         if (port > 0 ) return 0; /* TODO: support pointers on additional ports */
          if (idx < MAX_TOUCHES)
             return input_wl_touch_state(wl, idx, id,
                   device == RARCH_DEVICE_POINTER_SCREEN);
          break;
       case RETRO_DEVICE_LIGHTGUN:
+         if (port > 0 ) return 0; /* TODO: support lightguns on additional ports */
          switch (id)
-         {
-            case RETRO_DEVICE_ID_LIGHTGUN_X:
-               return wl->mouse.delta_x;
-            case RETRO_DEVICE_ID_LIGHTGUN_Y:
-               return wl->mouse.delta_y;
+         { 
+            case RETRO_DEVICE_ID_LIGHTGUN_X: /* TODO: migrate to RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X */
+               return wl->mouse.delta_x; /* deprecated relative coordinates */
+            case RETRO_DEVICE_ID_LIGHTGUN_Y: /* TODO: migrate to RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y */
+               return wl->mouse.delta_y; /* deprecated relative coordinates */
+            case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN: /* TODO: implement this status check*/
+               return 0;
             case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
                return wl->mouse.left;
-            case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:
+            case RETRO_DEVICE_ID_LIGHTGUN_RELOAD: /* forced/faked off-screen shot */
                return wl->mouse.middle;
-            case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
-               return wl->mouse.right;
+            case RETRO_DEVICE_ID_LIGHTGUN_AUX_A: /* TODO */
+               return 0;
+            case RETRO_DEVICE_ID_LIGHTGUN_AUX_B: /* TODO */
+               return 0;
             case RETRO_DEVICE_ID_LIGHTGUN_START:
-               return wl->mouse.middle && wl->mouse.right;
-            case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-               return wl->mouse.middle && wl->mouse.left;
+               return wl->mouse.right;
+            case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
+               return wl->mouse.left && wl->mouse.right;
+            case RETRO_DEVICE_ID_LIGHTGUN_AUX_C: /* TODO */
+               return 0;
+            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP: /* TODO */
+               return 0;
+            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN: /* TODO */
+               return 0;
+            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT: /* TODO */
+               return 0;
+            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT: /* TODO */
+               return 0;
          }
          break;
    }

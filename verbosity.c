@@ -360,7 +360,7 @@ void RARCH_DBG(const char *fmt, ...)
       return;
 
    va_start(ap, fmt);
-   RARCH_LOG_V(FILE_PATH_LOG_INFO, fmt, ap);
+   RARCH_LOG_V(FILE_PATH_LOG_DBG, fmt, ap);
    va_end(ap);
 }
 

@@ -65,6 +65,7 @@ IMPORT(DCInvalidateRange);
 IMPORT(DCFlushRange);
 IMPORT(DCStoreRange);
 IMPORT(DCStoreRangeNoSync);
+IMPORT(ICInvalidateRange);
 
 IMPORT(__gh_errno_ptr);
 

@@ -57,6 +57,11 @@ enum thread_cmd
    CMD_POKE_SHOW_MOUSE,
    CMD_POKE_GRAB_MOUSE_TOGGLE,
 
+   CMD_POKE_SET_HDR_MAX_NITS,
+   CMD_POKE_SET_HDR_PAPER_WHITE_NITS,
+   CMD_POKE_SET_HDR_CONTRAST,
+   CMD_POKE_SET_HDR_EXPAND_GAMUT,   
+
    CMD_DUMMY = INT_MAX
 };
 
@@ -150,6 +155,14 @@ struct thread_packet
          bool is_threaded;
          enum font_driver_render_api api;
       } font_init;
+
+      struct
+      {
+         float max_nits;
+         float paper_white_nits;
+         float contrast;
+         bool expand_gamut;
+      } hdr;
    } data;
    enum thread_cmd type;
 };

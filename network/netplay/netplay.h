@@ -96,4 +96,92 @@ int netplay_rooms_get_count(void);
 
 void netplay_rooms_free(void);
 
+/**
+* netplay_frontend_paused
+ * @netplay              : pointer to netplay object
+ * @paused               : true if frontend is paused
+ *
+ * Inform Netplay of the frontend's pause state (paused or otherwise)
+ */
+void netplay_frontend_paused(netplay_t *netplay, bool paused);
+
+/**
+ * netplay_toggle_play_spectate
+ *
+ * Toggle between play mode and spectate mode
+ */
+void netplay_toggle_play_spectate(netplay_t *netplay);
+
+/**
+ * netplay_load_savestate
+ * @netplay              : pointer to netplay object
+ * @serial_info          : the savestate being loaded, NULL means
+ *                         "load it yourself"
+ * @save                 : Whether to save the provided serial_info
+ *                         into the frame buffer
+ *
+ * Inform Netplay of a savestate load and send it to the other side
+ **/
+void netplay_load_savestate(netplay_t *netplay,
+      retro_ctx_serialize_info_t *serial_info, bool save);
+
+/**
+ * netplay_core_reset
+ * @netplay              : pointer to netplay object
+ *
+ * Indicate that the core has been reset to netplay peers
+ **/
+void netplay_core_reset(netplay_t *netplay);
+
+int16_t netplay_input_state(netplay_t *netplay,
+      unsigned port, unsigned device,
+      unsigned idx, unsigned id);
+
+/**
+ * netplay_poll:
+ * @netplay              : pointer to netplay object
+ *
+ * Polls network to see if we have anything new. If our
+ * network buffer is full, we simply have to block
+ * for new input data.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool netplay_poll(
+      bool block_libretro_input,
+      void *settings_data,
+      netplay_t *netplay);
+
+/**
+ * netplay_is_alive:
+ * @netplay              : pointer to netplay object
+ *
+ * Checks if input port/index is controlled by netplay or not.
+ *
+ * Returns: true (1) if alive, otherwise false (0).
+ **/
+bool netplay_is_alive(netplay_t *netplay);
+
+/**
+ * netplay_should_skip:
+ * @netplay              : pointer to netplay object
+ *
+ * If we're fast-forward replaying to resync, check if we
+ * should actually show frame.
+ *
+ * Returns: bool (1) if we should skip this frame, otherwise
+ * false (0).
+ **/
+bool netplay_should_skip(netplay_t *netplay);
+
+/**
+ * netplay_post_frame:
+ * @netplay              : pointer to netplay object
+ *
+ * Post-frame for Netplay.
+ * We check if we have new input and replay from recorded input.
+ * Call this after running retro_run().
+ **/
+void netplay_post_frame(netplay_t *netplay);
+
 #endif

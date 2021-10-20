@@ -288,9 +288,9 @@ static void *vg_init(const video_info_t *video,
    return vg;
 
 error:
+   video_context_driver_free();
    if (vg)
       free(vg);
-   video_context_driver_destroy();
    return NULL;
 }
 

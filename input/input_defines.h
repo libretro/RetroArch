@@ -135,20 +135,20 @@ enum analog_dpad_mode
    ANALOG_DPAD_LAST
 };
 
-enum input_toggle_type
+enum input_combo_type
 {
-   INPUT_TOGGLE_NONE = 0,
-   INPUT_TOGGLE_DOWN_Y_L_R,
-   INPUT_TOGGLE_L3_R3,
-   INPUT_TOGGLE_L1_R1_START_SELECT,
-   INPUT_TOGGLE_START_SELECT,
-   INPUT_TOGGLE_L3_R,
-   INPUT_TOGGLE_L_R,
-   INPUT_TOGGLE_HOLD_START,
-   INPUT_TOGGLE_HOLD_SELECT,
-   INPUT_TOGGLE_DOWN_SELECT,
-   INPUT_TOGGLE_L2_R2,
-   INPUT_TOGGLE_LAST
+   INPUT_COMBO_NONE = 0,
+   INPUT_COMBO_DOWN_Y_L_R,
+   INPUT_COMBO_L3_R3,
+   INPUT_COMBO_L1_R1_START_SELECT,
+   INPUT_COMBO_START_SELECT,
+   INPUT_COMBO_L3_R,
+   INPUT_COMBO_L_R,
+   INPUT_COMBO_HOLD_START,
+   INPUT_COMBO_HOLD_SELECT,
+   INPUT_COMBO_DOWN_SELECT,
+   INPUT_COMBO_L2_R2,
+   INPUT_COMBO_LAST
 };
 
 enum input_turbo_mode
@@ -172,13 +172,6 @@ enum input_turbo_default_button
    INPUT_TURBO_DEFAULT_BUTTON_L3,
    INPUT_TURBO_DEFAULT_BUTTON_R3,
    INPUT_TURBO_DEFAULT_BUTTON_LAST
-};
-
-enum input_action
-{
-   INPUT_ACTION_NONE = 0,
-   INPUT_ACTION_AXIS_THRESHOLD,
-   INPUT_ACTION_MAX_USERS
 };
 
 /* Specialized _MOUSE that targets the full screen regardless of viewport.
@@ -222,6 +215,12 @@ enum input_action
 #define HAT_MASK           (HAT_UP_MASK | HAT_DOWN_MASK | HAT_LEFT_MASK | HAT_RIGHT_MASK)
 #define GET_HAT_DIR(x)     (x & HAT_MASK)
 #define GET_HAT(x)         (x & (~HAT_MASK))
+
+#ifdef HAVE_BSV_MOVIE
+#define BSV_MOVIE_IS_PLAYBACK_ON() (input_st->bsv_movie_state_handle && input_st->bsv_movie_state.movie_playback)
+#define BSV_MOVIE_IS_PLAYBACK_OFF() (input_st->bsv_movie_state_handle && \
+!input_st->bsv_movie_state.movie_playback)
+#endif
 
 RETRO_END_DECLS
 

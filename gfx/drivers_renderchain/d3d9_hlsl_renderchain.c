@@ -228,10 +228,14 @@ static bool hlsl_d3d9_renderchain_init_shader_fvf(
       d3d9_renderchain_t *chain,
       struct shader_pass *pass)
 {
-   static const D3DVERTEXELEMENT9 decl[] =
+   static const D3DVERTEXELEMENT9 decl[4] =
    {
-      { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-      D3D9_DECL_FVF_TEXCOORD(0, 2, 0),
+      {0, offsetof(Vertex, x),  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT,
+         D3DDECLUSAGE_POSITION, 0},
+      {0, offsetof(Vertex, color), D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT,
+         D3DDECLUSAGE_COLOR, 0},
+      {0, offsetof(Vertex, u), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT,
+         D3DDECLUSAGE_TEXCOORD, 0},
       D3DDECL_END()
    };
 
@@ -265,7 +269,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
       chain->prev.last_height[i] = 0;
       chain->prev.vertex_buf[i]  = (LPDIRECT3DVERTEXBUFFER9)
          d3d9_vertex_buffer_new(
-            chain->dev, 4 * sizeof(struct D3D9Vertex),
+            chain->dev, 4 * sizeof(struct Vertex),
             D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, NULL);
 
       if (!chain->prev.vertex_buf[i])
@@ -471,21 +475,25 @@ static void hlsl_d3d9_renderchain_render_pass(
       struct shader_pass *pass,
       unsigned pass_index)
 {
-   unsigned i;
-
-   d3d9_hlsl_bind_program(pass, chain->chain.dev);
+   /* Currently we override the passes shader program with the stock shader as at least the last pass is not setup correctly */
+   /*d3d9_hlsl_bind_program(pass, chain->chain.dev);*/
+   d3d9_hlsl_bind_program(&chain->stock_shader, chain->chain.dev);
 
    d3d9_set_texture(chain->chain.dev, 0, pass->tex);
+
+   /* d3d8 sets the sampler address modes - I've left them out for the time being but maybe this is a bug in d3d9 */
+   /*d3d9_set_sampler_address_u(chain->chain.dev, 0, D3DTADDRESS_BORDER);*/
+   /*d3d9_set_sampler_address_v(chain->chain.dev, 0, D3DTADDRESS_BORDER);*/
    d3d9_set_sampler_minfilter(chain->chain.dev, 0,
          d3d_translate_filter(pass->info.pass->filter));
    d3d9_set_sampler_magfilter(chain->chain.dev, 0,
          d3d_translate_filter(pass->info.pass->filter));
 
    d3d9_set_vertex_declaration(chain->chain.dev, pass->vertex_decl);
-   for (i = 0; i < 4; i++)
-      d3d9_set_stream_source(chain->chain.dev, i,
-            pass->vertex_buf, 0,
-            sizeof(struct D3D9Vertex));
+
+   d3d9_set_stream_source(chain->chain.dev, 0,
+         pass->vertex_buf, 0,
+         sizeof(struct Vertex));
 
 #if 0
    /* Set orig texture. */

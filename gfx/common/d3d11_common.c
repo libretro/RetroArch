@@ -226,30 +226,52 @@ bool d3d11_init_shader(
       LPCSTR                          gs_entry,
       const D3D11_INPUT_ELEMENT_DESC* input_element_descs,
       UINT                            num_elements,
-      d3d11_shader_t*                 out)
+      d3d11_shader_t*                 out,
+      enum d3d11_feature_level_hint   hint)
 {
-   D3DBlob vs_code = NULL;
-   D3DBlob ps_code = NULL;
-   D3DBlob gs_code = NULL;
+   D3DBlob vs_code    = NULL;
+   D3DBlob ps_code    = NULL;
+   D3DBlob gs_code    = NULL;
+   bool success       = true;
+   const char *vs_str = NULL;
+   const char *ps_str = NULL;
+   const char *gs_str = NULL;
 
-   bool success = true;
+   switch (hint)
+   {
+      case D3D11_FEATURE_LEVEL_HINT_11_0:
+      case D3D11_FEATURE_LEVEL_HINT_11_1:
+      case D3D11_FEATURE_LEVEL_HINT_12_0:
+      case D3D11_FEATURE_LEVEL_HINT_12_1:
+      case D3D11_FEATURE_LEVEL_HINT_12_2:
+         vs_str       = "vs_5_0";
+         ps_str       = "ps_5_0";
+         gs_str       = "gs_5_0";
+         break;
+      case D3D11_FEATURE_LEVEL_HINT_DONTCARE:
+      default:
+         vs_str       = "vs_4_0";
+         ps_str       = "ps_4_0";
+         gs_str       = "gs_4_0";
+         break;
+   }
 
    if (!src) /* LPCWSTR filename */
    {
-      if (vs_entry && !d3d_compile_from_file((LPCWSTR)src_name, vs_entry, "vs_4_0", &vs_code))
+      if (vs_entry && !d3d_compile_from_file((LPCWSTR)src_name, vs_entry, vs_str, &vs_code))
          success = false;
-      if (ps_entry && !d3d_compile_from_file((LPCWSTR)src_name, ps_entry, "ps_4_0", &ps_code))
+      if (ps_entry && !d3d_compile_from_file((LPCWSTR)src_name, ps_entry, ps_str, &ps_code))
          success = false;
-      if (gs_entry && !d3d_compile_from_file((LPCWSTR)src_name, gs_entry, "gs_4_0", &gs_code))
+      if (gs_entry && !d3d_compile_from_file((LPCWSTR)src_name, gs_entry, gs_str, &gs_code))
          success = false;
    }
    else /* char array */
    {
-      if (vs_entry && !d3d_compile(src, size, (LPCSTR)src_name, vs_entry, "vs_4_0", &vs_code))
+      if (vs_entry && !d3d_compile(src, size, (LPCSTR)src_name, vs_entry, vs_str, &vs_code))
          success = false;
-      if (ps_entry && !d3d_compile(src, size, (LPCSTR)src_name, ps_entry, "ps_4_0", &ps_code))
+      if (ps_entry && !d3d_compile(src, size, (LPCSTR)src_name, ps_entry, ps_str, &ps_code))
          success = false;
-      if (gs_entry && !d3d_compile(src, size, (LPCSTR)src_name, gs_entry, "gs_4_0", &gs_code))
+      if (gs_entry && !d3d_compile(src, size, (LPCSTR)src_name, gs_entry, gs_str, &gs_code))
          success = false;
    }
 

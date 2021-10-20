@@ -50,6 +50,7 @@
 
 @property (readonly) struct font_atlas *atlas;
 
+- (void)deinit;
 - (instancetype)initWithDriver:(MetalDriver *)driver fontPath:(const char *)font_path fontSize:(unsigned)font_size;
 
 - (int)getWidthForMessage:(const char *)msg length:(NSUInteger)length scale:(float)scale;
@@ -57,6 +58,12 @@
 @end
 
 @implementation MetalRaster
+
+- (void)deinit
+{
+   if (_font_driver && _font_data)
+      _font_driver->free(_font_data);
+}
 
 - (instancetype)initWithDriver:(MetalDriver *)driver fontPath:(const char *)font_path fontSize:(unsigned)font_size
 {
@@ -511,6 +518,8 @@ static void *metal_raster_font_init_font(void *data,
 static void metal_raster_font_free_font(void *data, bool is_threaded)
 {
    MetalRaster *r = (__bridge_transfer MetalRaster *)data;
+   
+   [r deinit];
    r = nil;
 }
 

@@ -15,6 +15,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Direct3D 9 driver.
+ *
+ * Minimum version : Direct3D 9.0 (2002)
+ * Minimum OS      : Windows 98, Windows 2000, Windows ME
+ * Recommended OS  : Windows XP
+ */
+
 #define CINTERFACE
 
 #ifdef _XBOX
@@ -1153,6 +1160,10 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
    if (string_is_equal(settings->arrays.input_driver, "dinput"))
       d3d->windowClass.lpfnWndProc = wnd_proc_d3d_dinput;
 #endif
+#ifdef HAVE_WINRAWINPUT
+   if (string_is_equal(settings->arrays.input_driver, "raw"))
+      d3d->windowClass.lpfnWndProc = wnd_proc_d3d_winraw;
+#endif
    win32_window_init(&d3d->windowClass, true, NULL);
 #endif
 
@@ -1552,6 +1563,7 @@ static bool d3d9_frame(void *data, const void *frame,
    d3d9_set_viewports(d3d->dev, &screen_vp);
    d3d9_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
+   d3d9_set_mvp(d3d->dev, &d3d->mvp_transposed);
    if (!d3d->renderchain_driver->render(
             d3d, frame, frame_width, frame_height,
             pitch, d3d->dev_rotation))
@@ -1574,7 +1586,7 @@ static bool d3d9_frame(void *data, const void *frame,
 #ifdef HAVE_MENU
    if (d3d->menu && d3d->menu->enabled)
    {
-      d3d9_set_mvp(d3d->dev, &d3d->mvp);
+      d3d9_set_mvp(d3d->dev, &d3d->mvp_transposed);
       d3d9_overlay_render(d3d, width, height, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
@@ -1600,7 +1612,7 @@ static bool d3d9_frame(void *data, const void *frame,
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled)
    {
-      d3d9_set_mvp(d3d->dev, &d3d->mvp);
+      d3d9_set_mvp(d3d->dev, &d3d->mvp_transposed);
       for (i = 0; i < d3d->overlays_size; i++)
          d3d9_overlay_render(d3d, width, height, &d3d->overlays[i], true);
    }
@@ -1972,7 +1984,11 @@ static const video_poke_interface_t d3d9_poke_interface = {
    NULL,                         /* grab_mouse_toggle */
    NULL,                         /* get_current_shader */
    NULL,                         /* get_current_software_framebuffer */
-   NULL                          /* get_hw_render_interface */
+   NULL,                         /* get_hw_render_interface */
+   NULL,                         /* set_hdr_max_nits */
+   NULL,                         /* set_hdr_paper_white_nits */
+   NULL,                         /* set_hdr_contrast */
+   NULL                          /* set_hdr_expand_gamut */
 };
 
 static void d3d9_get_poke_interface(void *data,

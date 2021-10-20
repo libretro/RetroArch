@@ -133,7 +133,7 @@ static void *ps4_joypad_init(void *data)
    return (void*)-1;
 }
 
-static int16_t ps4_joypad_button(unsigned port, uint16_t joykey)
+static int32_t ps4_joypad_button(unsigned port, uint16_t joykey)
 {
    if (port >= PS4_MAX_ORBISPADS)
       return 0;
@@ -242,6 +242,7 @@ input_device_driver_t ps4_joypad = {
    ps4_joypad_axis,
    ps4_joypad_poll,
    ps4_joypad_rumble,
+   NULL,
    ps4_joypad_name,
    "ps4",
 };

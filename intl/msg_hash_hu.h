@@ -249,10 +249,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
    "Engedélyek"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Hiányzó"
-   )
 
 /* Main Menu > Information > System Information */
 
@@ -313,6 +309,8 @@ MSG_HASH(
 /* Settings > Video */
 
 #if defined(DINGUX)
+#if defined(RS90)
+#endif
 #endif
 
 /* Settings > Video > CRT SwitchRes */
@@ -333,6 +331,9 @@ MSG_HASH(
 
 #if defined(DINGUX)
 #endif
+
+/* Settings > Video > HDR */
+
 
 /* Settings > Video > Synchronization */
 
@@ -365,8 +366,6 @@ MSG_HASH(
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-#endif
 
 /* Settings > Input > Menu Controls */
 

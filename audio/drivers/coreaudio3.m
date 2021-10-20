@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <memory.h>
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 #include "../../verbosity.h"
 
 #pragma mark - ringbuffer

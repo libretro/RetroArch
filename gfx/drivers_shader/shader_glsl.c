@@ -30,7 +30,7 @@
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #include <gfx/gl_capabilities.h>
-#include "../common/gl_common.h"
+#include "../common/gl2_common.h"
 #endif
 
 #include "shader_glsl.h"
@@ -1041,7 +1041,7 @@ static void *gl_glsl_init(void *data, const char *path)
    if (!gl_glsl_compile_programs(glsl, &glsl->prg[1]))
       goto error;
 
-   if (!gl_load_luts(glsl->shader, glsl->lut_textures))
+   if (!gl2_load_luts(glsl->shader, glsl->lut_textures))
    {
       RARCH_ERR("[GL]: Failed to load LUTs.\n");
       goto error;

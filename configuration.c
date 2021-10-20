@@ -45,8 +45,8 @@
 #include "paths.h"
 #include "retroarch.h"
 #include "verbosity.h"
-#include "lakka.h"
 
+#include "audio/audio_driver.h"
 #include "gfx/gfx_animation.h"
 
 #include "tasks/task_content.h"
@@ -56,6 +56,12 @@
 
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
 #include "uwp/uwp_func.h"
+#endif
+
+#include "lakka.h"
+
+#if defined(HAVE_LAKKA) || defined(HAVE_LIBNX)
+#include "switch_performance_profiles.h"
 #endif
 
 enum video_driver_enum
@@ -254,6 +260,100 @@ enum midi_driver_enum
    MIDI_NULL
 };
 
+#define DECLARE_BIND(base, bind, desc) { #base, desc, 0, bind, true }
+#define DECLARE_META_BIND(level, base, bind, desc) { #base, desc, level, bind, true }
+
+const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
+   DECLARE_BIND(b,                             RETRO_DEVICE_ID_JOYPAD_B,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B),
+   DECLARE_BIND(y,                             RETRO_DEVICE_ID_JOYPAD_Y,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y),
+   DECLARE_BIND(select,                        RETRO_DEVICE_ID_JOYPAD_SELECT,MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT),
+   DECLARE_BIND(start,                         RETRO_DEVICE_ID_JOYPAD_START, MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START),
+   DECLARE_BIND(up,                            RETRO_DEVICE_ID_JOYPAD_UP,    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_UP),
+   DECLARE_BIND(down,                          RETRO_DEVICE_ID_JOYPAD_DOWN,  MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN),
+   DECLARE_BIND(left,                          RETRO_DEVICE_ID_JOYPAD_LEFT,  MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_LEFT),
+   DECLARE_BIND(right,                         RETRO_DEVICE_ID_JOYPAD_RIGHT, MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_RIGHT),
+   DECLARE_BIND(a,                             RETRO_DEVICE_ID_JOYPAD_A,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A),
+   DECLARE_BIND(x,                             RETRO_DEVICE_ID_JOYPAD_X,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X),
+   DECLARE_BIND(l,                             RETRO_DEVICE_ID_JOYPAD_L,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L),
+   DECLARE_BIND(r,                             RETRO_DEVICE_ID_JOYPAD_R,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R),
+   DECLARE_BIND(l2,                            RETRO_DEVICE_ID_JOYPAD_L2,    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2),
+   DECLARE_BIND(r2,                            RETRO_DEVICE_ID_JOYPAD_R2,    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2),
+   DECLARE_BIND(l3,                            RETRO_DEVICE_ID_JOYPAD_L3,    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L3),
+   DECLARE_BIND(r3,                            RETRO_DEVICE_ID_JOYPAD_R3,    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3),
+   DECLARE_BIND(l_x_plus,                      RARCH_ANALOG_LEFT_X_PLUS,     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS),
+   DECLARE_BIND(l_x_minus,                     RARCH_ANALOG_LEFT_X_MINUS,    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS),
+   DECLARE_BIND(l_y_plus,                      RARCH_ANALOG_LEFT_Y_PLUS,     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS),
+   DECLARE_BIND(l_y_minus,                     RARCH_ANALOG_LEFT_Y_MINUS,    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS),
+   DECLARE_BIND(r_x_plus,                      RARCH_ANALOG_RIGHT_X_PLUS,    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS),
+   DECLARE_BIND(r_x_minus,                     RARCH_ANALOG_RIGHT_X_MINUS,   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS),
+   DECLARE_BIND(r_y_plus,                      RARCH_ANALOG_RIGHT_Y_PLUS,    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS),
+   DECLARE_BIND(r_y_minus,                     RARCH_ANALOG_RIGHT_Y_MINUS,   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS),
+
+   DECLARE_BIND(gun_trigger,                   RARCH_LIGHTGUN_TRIGGER,       MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER ),
+   DECLARE_BIND(gun_offscreen_shot,            RARCH_LIGHTGUN_RELOAD,        MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD ),
+   DECLARE_BIND(gun_aux_a,                     RARCH_LIGHTGUN_AUX_A,         MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A ),
+   DECLARE_BIND(gun_aux_b,                     RARCH_LIGHTGUN_AUX_B,         MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B ),
+   DECLARE_BIND(gun_aux_c,                     RARCH_LIGHTGUN_AUX_C,         MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C ),
+   DECLARE_BIND(gun_start,                     RARCH_LIGHTGUN_START,         MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START ),
+   DECLARE_BIND(gun_select,                    RARCH_LIGHTGUN_SELECT,        MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT ),
+   DECLARE_BIND(gun_dpad_up,                   RARCH_LIGHTGUN_DPAD_UP,       MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP ),
+   DECLARE_BIND(gun_dpad_down,                 RARCH_LIGHTGUN_DPAD_DOWN,     MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN ),
+   DECLARE_BIND(gun_dpad_left,                 RARCH_LIGHTGUN_DPAD_LEFT,     MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT ),
+   DECLARE_BIND(gun_dpad_right,                RARCH_LIGHTGUN_DPAD_RIGHT,    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT ),
+
+   DECLARE_BIND(turbo,                         RARCH_TURBO_ENABLE,           MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE),
+
+   DECLARE_META_BIND(1, toggle_fast_forward,   RARCH_FAST_FORWARD_KEY,       MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY),
+   DECLARE_META_BIND(2, hold_fast_forward,     RARCH_FAST_FORWARD_HOLD_KEY,  MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY),
+   DECLARE_META_BIND(1, toggle_slowmotion,     RARCH_SLOWMOTION_KEY,         MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY),
+   DECLARE_META_BIND(2, hold_slowmotion,       RARCH_SLOWMOTION_HOLD_KEY,    MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY),
+   DECLARE_META_BIND(1, load_state,            RARCH_LOAD_STATE_KEY,         MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY),
+   DECLARE_META_BIND(1, save_state,            RARCH_SAVE_STATE_KEY,         MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY),
+   DECLARE_META_BIND(2, toggle_fullscreen,     RARCH_FULLSCREEN_TOGGLE_KEY,  MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY),
+   DECLARE_META_BIND(2, close_content,         RARCH_CLOSE_CONTENT_KEY,      MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY),
+#ifdef HAVE_LAKKA
+   DECLARE_META_BIND(2, exit_emulator,         RARCH_QUIT_KEY,               MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY),
+#else
+   DECLARE_META_BIND(2, exit_emulator,         RARCH_QUIT_KEY,               MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY),
+#endif
+   DECLARE_META_BIND(2, state_slot_increase,   RARCH_STATE_SLOT_PLUS,        MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS),
+   DECLARE_META_BIND(2, state_slot_decrease,   RARCH_STATE_SLOT_MINUS,       MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS),
+   DECLARE_META_BIND(1, rewind,                RARCH_REWIND,                 MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND),
+   DECLARE_META_BIND(2, movie_record_toggle,   RARCH_BSV_RECORD_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE),
+   DECLARE_META_BIND(2, pause_toggle,          RARCH_PAUSE_TOGGLE,           MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE),
+   DECLARE_META_BIND(2, frame_advance,         RARCH_FRAMEADVANCE,           MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE),
+   DECLARE_META_BIND(2, reset,                 RARCH_RESET,                  MENU_ENUM_LABEL_VALUE_INPUT_META_RESET),
+   DECLARE_META_BIND(2, shader_next,           RARCH_SHADER_NEXT,            MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT),
+   DECLARE_META_BIND(2, shader_prev,           RARCH_SHADER_PREV,            MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV),
+   DECLARE_META_BIND(2, cheat_index_plus,      RARCH_CHEAT_INDEX_PLUS,       MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS),
+   DECLARE_META_BIND(2, cheat_index_minus,     RARCH_CHEAT_INDEX_MINUS,      MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS),
+   DECLARE_META_BIND(2, cheat_toggle,          RARCH_CHEAT_TOGGLE,           MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE),
+   DECLARE_META_BIND(2, screenshot,            RARCH_SCREENSHOT,             MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT),
+   DECLARE_META_BIND(2, audio_mute,            RARCH_MUTE,                   MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE),
+   DECLARE_META_BIND(2, osk_toggle,            RARCH_OSK,                    MENU_ENUM_LABEL_VALUE_INPUT_META_OSK),
+   DECLARE_META_BIND(2, fps_toggle,            RARCH_FPS_TOGGLE,             MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE),
+   DECLARE_META_BIND(2, send_debug_info,       RARCH_SEND_DEBUG_INFO,        MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO),
+   DECLARE_META_BIND(2, netplay_host_toggle,   RARCH_NETPLAY_HOST_TOGGLE,    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE),
+   DECLARE_META_BIND(2, netplay_game_watch,    RARCH_NETPLAY_GAME_WATCH,     MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH),
+   DECLARE_META_BIND(2, enable_hotkey,         RARCH_ENABLE_HOTKEY,          MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY),
+   DECLARE_META_BIND(2, volume_up,             RARCH_VOLUME_UP,              MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP),
+   DECLARE_META_BIND(2, volume_down,           RARCH_VOLUME_DOWN,            MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN),
+   DECLARE_META_BIND(2, overlay_next,          RARCH_OVERLAY_NEXT,           MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT),
+   DECLARE_META_BIND(2, disk_eject_toggle,     RARCH_DISK_EJECT_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE),
+   DECLARE_META_BIND(2, disk_next,             RARCH_DISK_NEXT,              MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT),
+   DECLARE_META_BIND(2, disk_prev,             RARCH_DISK_PREV,              MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV),
+   DECLARE_META_BIND(2, grab_mouse_toggle,     RARCH_GRAB_MOUSE_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE),
+   DECLARE_META_BIND(2, game_focus_toggle,     RARCH_GAME_FOCUS_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE),
+   DECLARE_META_BIND(2, desktop_menu_toggle,   RARCH_UI_COMPANION_TOGGLE,    MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE),
+#ifdef HAVE_MENU
+   DECLARE_META_BIND(1, menu_toggle,           RARCH_MENU_TOGGLE,            MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE),
+#endif
+   DECLARE_META_BIND(2, recording_toggle,      RARCH_RECORDING_TOGGLE,       MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE),
+   DECLARE_META_BIND(2, streaming_toggle,      RARCH_STREAMING_TOGGLE,       MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE),
+   DECLARE_META_BIND(2, runahead_toggle,       RARCH_RUNAHEAD_TOGGLE,        MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE),
+   DECLARE_META_BIND(2, ai_service,            RARCH_AI_SERVICE,             MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE),
+};
+
 #if defined(HAVE_METAL)
 /* iOS supports both the OpenGL and Metal video drivers; default to OpenGL since Metal support is preliminary */
 #if defined(HAVE_COCOATOUCH) && defined(HAVE_OPENGL)
@@ -312,7 +412,7 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL;
 #elif defined(HAVE_SDL2)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL2;
 #elif defined(HAVE_SDL_DINGUX)
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL_RS90;
 #else
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL_DINGUX;
@@ -395,7 +495,7 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_EXT;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_NULL;
 #endif
 
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 static const enum audio_resampler_driver_enum AUDIO_DEFAULT_RESAMPLER_DRIVER = AUDIO_RESAMPLER_NEAREST;
 #elif defined(PSP) || defined(EMSCRIPTEN)
 static const enum audio_resampler_driver_enum AUDIO_DEFAULT_RESAMPLER_DRIVER = AUDIO_RESAMPLER_CC;
@@ -426,6 +526,8 @@ static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_XINPUT;
 #elif defined(ANDROID)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_ANDROID;
 #elif defined(EMSCRIPTEN) && defined(HAVE_SDL2)
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
+#elif defined(WEBOS) && defined(HAVE_SDL2)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
 #elif defined(EMSCRIPTEN)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_RWEBINPUT;
@@ -479,6 +581,8 @@ static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XINPUT;
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_GX;
 #elif defined(WIIU)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_WIIU;
+#elif defined(WEBOS)
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_SDL;
 #elif defined(_XBOX)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XDK;
 #elif defined(PS2)
@@ -1514,7 +1618,12 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("input_descriptor_hide_unbound", &settings->bools.input_descriptor_hide_unbound, true, input_descriptor_hide_unbound, false);
    SETTING_BOOL("load_dummy_on_core_shutdown",   &settings->bools.load_dummy_on_core_shutdown, true, DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN, false);
    SETTING_BOOL("check_firmware_before_loading", &settings->bools.check_firmware_before_loading, true, DEFAULT_CHECK_FIRMWARE_BEFORE_LOADING, false);
+   SETTING_BOOL("core_option_category_enable",   &settings->bools.core_option_category_enable, true, DEFAULT_CORE_OPTION_CATEGORY_ENABLE, false);
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+   SETTING_BOOL("core_info_cache_enable",        &settings->bools.core_info_cache_enable, false, DEFAULT_CORE_INFO_CACHE_ENABLE, false);
+#else
    SETTING_BOOL("core_info_cache_enable",        &settings->bools.core_info_cache_enable, true, DEFAULT_CORE_INFO_CACHE_ENABLE, false);
+#endif
 #ifndef HAVE_DYNAMIC
    SETTING_BOOL("always_reload_core_on_run_content", &settings->bools.always_reload_core_on_run_content, true, DEFAULT_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT, false);
 #endif
@@ -1548,7 +1657,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("video_scale_integer",           &settings->bools.video_scale_integer, true, DEFAULT_SCALE_INTEGER, false);
    SETTING_BOOL("video_scale_integer_overscale", &settings->bools.video_scale_integer_overscale, true, DEFAULT_SCALE_INTEGER_OVERSCALE, false);
    SETTING_BOOL("video_smooth",                  &settings->bools.video_smooth, true, DEFAULT_VIDEO_SMOOTH, false);
-   SETTING_BOOL("video_ctx_scaling",              &settings->bools.video_ctx_scaling, true, DEFAULT_VIDEO_CTX_SCALING, false);
+   SETTING_BOOL("video_ctx_scaling",             &settings->bools.video_ctx_scaling, true, DEFAULT_VIDEO_CTX_SCALING, false);
    SETTING_BOOL("video_force_aspect",            &settings->bools.video_force_aspect, true, DEFAULT_FORCE_ASPECT, false);
 #if defined(DINGUX)
    SETTING_BOOL("video_dingux_ipu_keep_aspect",  &settings->bools.video_dingux_ipu_keep_aspect, true, DEFAULT_DINGUX_IPU_KEEP_ASPECT, false);
@@ -1558,9 +1667,8 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("auto_screenshot_filename",      &settings->bools.auto_screenshot_filename, true, DEFAULT_AUTO_SCREENSHOT_FILENAME, false);
    SETTING_BOOL("video_force_srgb_disable",      &settings->bools.video_force_srgb_disable, true, false, false);
    SETTING_BOOL("video_fullscreen",              &settings->bools.video_fullscreen, true, DEFAULT_FULLSCREEN, false);
-#ifdef __WINRT__
-   SETTING_BOOL("video_force_resolution",         &settings->bools.video_force_resolution, true, DEFAULT_FORCE_RESOLUTION, false);
-#endif
+   SETTING_BOOL("video_hdr_enable",              &settings->bools.video_hdr_enable, true, DEFAULT_VIDEO_HDR_ENABLE, false);
+   SETTING_BOOL("video_hdr_expand_gamut",        &settings->bools.video_hdr_expand_gamut, true, DEFAULT_VIDEO_HDR_EXPAND_GAMUT, false);
    SETTING_BOOL("bundle_assets_extract_enable",  &settings->bools.bundle_assets_extract_enable, true, DEFAULT_BUNDLE_ASSETS_EXTRACT_ENABLE, false);
    SETTING_BOOL("video_vsync",                   &settings->bools.video_vsync, true, DEFAULT_VSYNC, false);
    SETTING_BOOL("video_adaptive_vsync",          &settings->bools.video_adaptive_vsync, true, DEFAULT_ADAPTIVE_VSYNC, false);
@@ -1672,6 +1780,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("quick_menu_show_set_core_association",       &settings->bools.quick_menu_show_set_core_association, true, quick_menu_show_set_core_association, false);
    SETTING_BOOL("quick_menu_show_reset_core_association",     &settings->bools.quick_menu_show_reset_core_association, true, quick_menu_show_reset_core_association, false);
    SETTING_BOOL("quick_menu_show_options",                    &settings->bools.quick_menu_show_options, true, quick_menu_show_options, false);
+   SETTING_BOOL("quick_menu_show_core_options_flush",         &settings->bools.quick_menu_show_core_options_flush, true, DEFAULT_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH, false);
    SETTING_BOOL("quick_menu_show_controls",                   &settings->bools.quick_menu_show_controls, true, quick_menu_show_controls, false);
    SETTING_BOOL("quick_menu_show_cheats",                     &settings->bools.quick_menu_show_cheats, true, quick_menu_show_cheats, false);
    SETTING_BOOL("quick_menu_show_shaders",                    &settings->bools.quick_menu_show_shaders, true, quick_menu_show_shaders, false);
@@ -1814,6 +1923,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("show_hidden_files",            &settings->bools.show_hidden_files, true, DEFAULT_SHOW_HIDDEN_FILES, false);
    SETTING_BOOL("use_last_start_directory",     &settings->bools.use_last_start_directory, true, DEFAULT_USE_LAST_START_DIRECTORY, false);
    SETTING_BOOL("input_autodetect_enable",      &settings->bools.input_autodetect_enable, true, input_autodetect_enable, false);
+   SETTING_BOOL("input_auto_mouse_grab",        &settings->bools.input_auto_mouse_grab, true, false, false);
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
    SETTING_BOOL("input_nowinkey_enable",        &settings->bools.input_nowinkey_enable, true, false, false);
 #endif
@@ -1831,7 +1941,8 @@ static struct config_bool_setting *populate_settings_bool(
 
    SETTING_BOOL("video_msg_bgcolor_enable",      &settings->bools.video_msg_bgcolor_enable, true, message_bgcolor_enable, false);
    SETTING_BOOL("video_window_show_decorations", &settings->bools.video_window_show_decorations, true, DEFAULT_WINDOW_DECORATIONS, false);
-   SETTING_BOOL("video_window_save_positions", &settings->bools.video_window_save_positions, true, false, false);
+   SETTING_BOOL("video_window_save_positions", &settings->bools.video_window_save_positions, true, DEFAULT_WINDOW_SAVE_POSITIONS, false);
+   SETTING_BOOL("video_window_custom_size_enable", &settings->bools.video_window_custom_size_enable, true, DEFAULT_WINDOW_CUSTOM_SIZE_ENABLE, false);
 
    SETTING_BOOL("sustained_performance_mode",    &settings->bools.sustained_performance_mode, true, sustained_performance_mode, false);
 
@@ -1926,10 +2037,14 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT("video_font_size",          &settings->floats.video_font_size,      true, DEFAULT_FONT_SIZE, false);
    SETTING_FLOAT("fastforward_ratio",        &settings->floats.fastforward_ratio,    true, DEFAULT_FASTFORWARD_RATIO, false);
    SETTING_FLOAT("slowmotion_ratio",         &settings->floats.slowmotion_ratio,     true, DEFAULT_SLOWMOTION_RATIO, false);
-   SETTING_FLOAT("input_axis_threshold",     input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD), true, DEFAULT_AXIS_THRESHOLD, false);
+   SETTING_FLOAT("input_axis_threshold",     &settings->floats.input_axis_threshold, true, DEFAULT_AXIS_THRESHOLD, false);
    SETTING_FLOAT("input_analog_deadzone",    &settings->floats.input_analog_deadzone, true, DEFAULT_ANALOG_DEADZONE, false);
    SETTING_FLOAT("input_analog_sensitivity",    &settings->floats.input_analog_sensitivity, true, DEFAULT_ANALOG_SENSITIVITY, false);
    SETTING_FLOAT("video_msg_bgcolor_opacity", &settings->floats.video_msg_bgcolor_opacity, true, message_bgcolor_opacity, false);
+
+   SETTING_FLOAT("video_hdr_max_nits",          &settings->floats.video_hdr_max_nits, true, DEFAULT_VIDEO_HDR_MAX_NITS, false);
+   SETTING_FLOAT("video_hdr_paper_white_nits",  &settings->floats.video_hdr_paper_white_nits, true, DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS, false);
+   SETTING_FLOAT("video_hdr_display_contrast",  &settings->floats.video_hdr_display_contrast, true, DEFAULT_VIDEO_HDR_CONTRAST, false);
 
    *size = count;
 
@@ -1957,18 +2072,17 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("input_duty_cycle",             &settings->uints.input_turbo_duty_cycle, true, turbo_duty_cycle, false);
    SETTING_UINT("input_turbo_mode",             &settings->uints.input_turbo_mode, true, turbo_mode, false);
    SETTING_UINT("input_turbo_default_button",   &settings->uints.input_turbo_default_button, true, turbo_default_btn, false);
-   SETTING_UINT("input_max_users",              input_driver_get_uint(INPUT_ACTION_MAX_USERS),        true, input_max_users, false);
+   SETTING_UINT("input_max_users",              &settings->uints.input_max_users,          true, input_max_users, false);
    SETTING_UINT("fps_update_interval",          &settings->uints.fps_update_interval, true, DEFAULT_FPS_UPDATE_INTERVAL, false);
    SETTING_UINT("memory_update_interval",       &settings->uints.memory_update_interval, true, DEFAULT_MEMORY_UPDATE_INTERVAL, false);
    SETTING_UINT("input_menu_toggle_gamepad_combo", &settings->uints.input_menu_toggle_gamepad_combo, true, DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO, false);
+   SETTING_UINT("input_quit_gamepad_combo",     &settings->uints.input_quit_gamepad_combo, true, DEFAULT_QUIT_GAMEPAD_COMBO, false);
    SETTING_UINT("input_hotkey_block_delay",     &settings->uints.input_hotkey_block_delay, true, DEFAULT_INPUT_HOTKEY_BLOCK_DELAY, false);
 #ifdef GEKKO
    SETTING_UINT("input_mouse_scale",            &settings->uints.input_mouse_scale, true, DEFAULT_MOUSE_SCALE, false);
 #endif
    SETTING_UINT("input_touch_scale",            &settings->uints.input_touch_scale, true, DEFAULT_TOUCH_SCALE, false);
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-   SETTING_UINT("input_dingux_rumble_gain",     &settings->uints.input_dingux_rumble_gain, true, DEFAULT_DINGUX_RUMBLE_GAIN, false);
-#endif
+   SETTING_UINT("input_rumble_gain",            &settings->uints.input_rumble_gain, true, DEFAULT_RUMBLE_GAIN, false);
    SETTING_UINT("input_auto_game_focus",        &settings->uints.input_auto_game_focus, true, DEFAULT_INPUT_AUTO_GAME_FOCUS, false);
    SETTING_UINT("audio_latency",                &settings->uints.audio_latency, false, 0 /* TODO */, false);
    SETTING_UINT("audio_resampler_quality",      &settings->uints.audio_resampler_quality, true, audio_resampler_quality_level, false);
@@ -2116,8 +2230,10 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("video_stream_scale_factor",            &settings->uints.video_stream_scale_factor,    true, 1, false);
    SETTING_UINT("video_windowed_position_x",            &settings->uints.window_position_x,    true, 0, false);
    SETTING_UINT("video_windowed_position_y",            &settings->uints.window_position_y,    true, 0, false);
-   SETTING_UINT("video_windowed_position_width",            &settings->uints.window_position_width,    true, DEFAULT_WINDOW_WIDTH, false);
-   SETTING_UINT("video_windowed_position_height",            &settings->uints.window_position_height,    true, DEFAULT_WINDOW_HEIGHT, false);
+   SETTING_UINT("video_windowed_position_width",        &settings->uints.window_position_width,    true, DEFAULT_WINDOW_WIDTH, false);
+   SETTING_UINT("video_windowed_position_height",       &settings->uints.window_position_height,    true, DEFAULT_WINDOW_HEIGHT, false);
+   SETTING_UINT("video_window_auto_width_max",          &settings->uints.window_auto_width_max,    true, DEFAULT_WINDOW_AUTO_WIDTH_MAX, false);
+   SETTING_UINT("video_window_auto_height_max",         &settings->uints.window_auto_height_max,    true, DEFAULT_WINDOW_AUTO_HEIGHT_MAX, false);
    SETTING_UINT("ai_service_mode",            &settings->uints.ai_service_mode,    true, DEFAULT_AI_SERVICE_MODE, false);
    SETTING_UINT("ai_service_target_lang",            &settings->uints.ai_service_target_lang,    true, 0, false);
    SETTING_UINT("ai_service_source_lang",            &settings->uints.ai_service_source_lang,    true, 0, false);
@@ -2137,7 +2253,7 @@ static struct config_uint_setting *populate_settings_uint(
 #if defined(DINGUX_BETA)
    SETTING_UINT("video_dingux_refresh_rate",    &settings->uints.video_dingux_refresh_rate, true, DEFAULT_DINGUX_REFRESH_RATE, false);
 #endif
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
    SETTING_UINT("video_dingux_rs90_softfilter_type", &settings->uints.video_dingux_rs90_softfilter_type, true, DEFAULT_DINGUX_RS90_SOFTFILTER_TYPE, false);
 #endif
 #endif
@@ -2212,6 +2328,10 @@ static struct config_int_setting *populate_settings_int(
 #endif
 #ifdef HAVE_D3D12
    SETTING_INT("d3d12_gpu_index",              &settings->ints.d3d12_gpu_index, true, DEFAULT_D3D12_GPU_INDEX, false);
+#endif
+#ifdef HAVE_WINDOW_OFFSET
+   SETTING_INT("video_window_offset_x",        &settings->ints.video_window_offset_x, true, DEFAULT_WINDOW_OFFSET_X, false);
+   SETTING_INT("video_window_offset_y",        &settings->ints.video_window_offset_y, true, DEFAULT_WINDOW_OFFSET_Y, false);
 #endif
    SETTING_INT("content_favorites_size",       &settings->ints.content_favorites_size, true, default_content_favorites_size, false);
 
@@ -2486,10 +2606,10 @@ void config_set_defaults(void *data)
       settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_NONE;
 #endif
       input_config_set_device(i, RETRO_DEVICE_JOYPAD);
-      settings->uints.input_mouse_index[i] = 0;
+      settings->uints.input_mouse_index[i] = i;
    }
 
-   video_driver_reset_custom_viewport();
+   video_driver_reset_custom_viewport(settings);
 
    /* Make sure settings from other configs carry over into defaults
     * for another config. */
@@ -2526,9 +2646,9 @@ void config_set_defaults(void *data)
    *settings->paths.directory_video_filter = '\0';
    *settings->paths.directory_audio_filter = '\0';
 
-   rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
+   retroarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
+   retroarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
+   retroarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
 
    if (global)
    {
@@ -2764,9 +2884,9 @@ void config_set_defaults(void *data)
 #ifdef HAVE_CONFIGFILE
    /* Avoid reloading config on every content load */
    if (DEFAULT_BLOCK_CONFIG_READ)
-      rarch_ctl(RARCH_CTL_SET_BLOCK_CONFIG_READ, NULL);
+      retroarch_ctl(RARCH_CTL_SET_BLOCK_CONFIG_READ, NULL);
    else
-      rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
+      retroarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
 #endif
 
 #ifdef HAVE_MENU
@@ -2841,13 +2961,17 @@ static bool check_menu_driver_compatibility(settings_t *settings)
  **/
 static config_file_t *open_default_config_file(void)
 {
-   char application_data[PATH_MAX_LENGTH];
    char conf_path[PATH_MAX_LENGTH];
    char app_path[PATH_MAX_LENGTH];
-   bool has_application_data              = false;
    config_file_t *conf                    = NULL;
 
-   application_data[0] = conf_path[0] = app_path[0] = '\0';
+   #ifndef RARCH_CONSOLE
+   char application_data[PATH_MAX_LENGTH];
+   bool has_application_data              = false;
+   application_data[0] = '\0';
+   #endif
+
+   conf_path[0] = app_path[0] = '\0';
 
 #if defined(_WIN32) && !defined(_XBOX)
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
@@ -3067,9 +3191,9 @@ static bool config_load_file(global_t *global,
 {
    unsigned i;
    char tmp_str[PATH_MAX_LENGTH];
-   bool ret                                        = false;
    unsigned tmp_uint                               = 0;
    bool tmp_bool                                   = false;
+   static bool first_load                          = true;
    unsigned msg_color                              = 0;
    char *save                                      = NULL;
    char *override_username                         = NULL;
@@ -3081,23 +3205,32 @@ static bool config_load_file(global_t *global,
    int size_settings_size                          = sizeof(settings->sizes)  / sizeof(settings->sizes.placeholder);
    int array_settings_size                         = sizeof(settings->arrays) / sizeof(settings->arrays.placeholder);
    int path_settings_size                          = sizeof(settings->paths)  / sizeof(settings->paths.placeholder);
-   struct config_bool_setting *bool_settings       = populate_settings_bool  (settings, &bool_settings_size);
-   struct config_float_setting *float_settings     = populate_settings_float (settings, &float_settings_size);
-   struct config_int_setting *int_settings         = populate_settings_int   (settings, &int_settings_size);
-   struct config_uint_setting *uint_settings       = populate_settings_uint  (settings, &uint_settings_size);
-   struct config_size_setting *size_settings       = populate_settings_size  (settings, &size_settings_size);
-   struct config_array_setting *array_settings     = populate_settings_array (settings, &array_settings_size);
-   struct config_path_setting *path_settings       = populate_settings_path  (settings, &path_settings_size);
+   struct config_bool_setting *bool_settings       = NULL;
+   struct config_float_setting *float_settings     = NULL;
+   struct config_int_setting *int_settings         = NULL;
+   struct config_uint_setting *uint_settings       = NULL;
+   struct config_size_setting *size_settings       = NULL;
+   struct config_array_setting *array_settings     = NULL;
+   struct config_path_setting *path_settings       = NULL;
    config_file_t *conf                             = path ? config_file_new_from_path_to_string(path) : open_default_config_file();
 
-   tmp_str[0] = '\0';
+   tmp_str[0]                                      = '\0';
 
    if (!conf)
    {
+      first_load = false;
       if (!path)
-         ret = true;
-      goto end;
+         return true;
+      return false;
    }
+
+   bool_settings                                   = populate_settings_bool  (settings, &bool_settings_size);
+   float_settings                                  = populate_settings_float (settings, &float_settings_size);
+   int_settings                                    = populate_settings_int   (settings, &int_settings_size);
+   uint_settings                                   = populate_settings_uint  (settings, &uint_settings_size);
+   size_settings                                   = populate_settings_size  (settings, &size_settings_size);
+   array_settings                                  = populate_settings_array (settings, &array_settings_size);
+   path_settings                                   = populate_settings_path  (settings, &path_settings_size);
 
    if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
    {
@@ -3135,7 +3268,7 @@ static bool config_load_file(global_t *global,
 
    /* Overrides */
 
-   if (rarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL))
+   if (retroarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL))
       override_username = strdup(settings->paths.username);
 
    /* Boolean settings */
@@ -3161,12 +3294,23 @@ static bool config_load_file(global_t *global,
                settings->bools.network_remote_enable_user[i], tmp_bool);
    }
 #endif
-   if (config_get_bool(conf, "log_verbosity", &tmp_bool))
+   /* Set verbosity according to config only if the 'v' command line argument was not used
+    * or if it is not the first config load. */
+   if (config_get_bool(conf, "log_verbosity", &tmp_bool) &&
+      (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL) ||
+      !first_load))
    {
       if (tmp_bool)
          verbosity_enable();
       else
          verbosity_disable();
+   }
+   /* On first config load, make sure log_to_file is true if 'log-file' command line 
+    * argument was used. */
+   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LOG_TO_FILE, NULL) &&
+      first_load)
+   {
+      configuration_set_bool(settings,settings->bools.log_to_file,true);
    }
    if (config_get_uint(conf, "frontend_log_level", &tmp_uint))
    {
@@ -3287,7 +3431,7 @@ static bool config_load_file(global_t *global,
 
    /* Post-settings load */
 
-   if (rarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL) && override_username)
+   if (retroarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL) && override_username)
    {
       configuration_set_string(settings,
             settings->paths.username,
@@ -3580,8 +3724,6 @@ static bool config_load_file(global_t *global,
          settings->ints.content_favorites_size = (int)settings->uints.content_history_size;
    }
 
-   ret = true;
-end:
    if (conf)
       config_file_free(conf);
    if (bool_settings)
@@ -3598,7 +3740,8 @@ end:
       free(path_settings);
    if (size_settings)
       free(size_settings);
-   return ret;
+   first_load = false;
+   return true;
 }
 
 /**
@@ -3885,7 +4028,7 @@ bool config_load_remap(const char *directory_input_remapping,
       RARCH_LOG("[Remaps]: Game-specific remap found at \"%s\".\n", game_path);
       if (ret)
       {
-         rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
+         retroarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
          /* msg_remap_loaded is set to MSG_GAME_REMAP_FILE_LOADED
           * by default - no need to change it here */
          goto success;
@@ -3901,7 +4044,7 @@ bool config_load_remap(const char *directory_input_remapping,
       RARCH_LOG("[Remaps]: Content-dir-specific remap found at \"%s\".\n", content_path);
       if (ret)
       {
-         rarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
+         retroarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
          msg_remap_loaded = MSG_DIRECTORY_REMAP_FILE_LOADED;
          goto success;
       }
@@ -3916,7 +4059,7 @@ bool config_load_remap(const char *directory_input_remapping,
       RARCH_LOG("[Remaps]: Core-specific remap found at \"%s\".\n", core_path);
       if (ret)
       {
-         rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
+         retroarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
          msg_remap_loaded = MSG_CORE_REMAP_FILE_LOADED;
          goto success;
       }
@@ -3944,15 +4087,15 @@ success:
  */
 static void config_parse_file(global_t *global)
 {
+   const char *config_path = path_get(RARCH_PATH_CONFIG);
    if (path_is_empty(RARCH_PATH_CONFIG))
    {
       RARCH_LOG("[Config]: Loading default config.\n");
    }
+   else
+       RARCH_LOG("[Config]: Loading config from: \"%s\".\n", config_path);
 
    {
-      const char *config_path = path_get(RARCH_PATH_CONFIG);
-      RARCH_LOG("[Config]: Loading config from: \"%s\".\n", config_path);
-
       if (!config_load_file(global, config_path, config_get_ptr()))
       {
          RARCH_ERR("[Config]: Couldn't find config at path: \"%s\".\n",
@@ -3976,6 +4119,245 @@ static void video_driver_save_settings(global_t *global, config_file_t *conf)
          global->console.screen.resolutions.current.id);
    config_set_int(conf, "flicker_filter_index",
          global->console.screen.flicker_filter_index);
+}
+
+static void save_keybind_hat(config_file_t *conf, const char *key,
+      const struct retro_keybind *bind)
+{
+   char config[16];
+   unsigned hat     = (unsigned)GET_HAT(bind->joykey);
+   const char *dir  = NULL;
+
+   config[0]        = '\0';
+
+   switch (GET_HAT_DIR(bind->joykey))
+   {
+      case HAT_UP_MASK:
+         dir = "up";
+         break;
+
+      case HAT_DOWN_MASK:
+         dir = "down";
+         break;
+
+      case HAT_LEFT_MASK:
+         dir = "left";
+         break;
+
+      case HAT_RIGHT_MASK:
+         dir = "right";
+         break;
+
+      default:
+         break;
+   }
+
+   snprintf(config, sizeof(config), "h%u%s", hat, dir);
+   config_set_string(conf, key, config);
+}
+
+static void save_keybind_joykey(config_file_t *conf,
+      const char *prefix,
+      const char *base,
+      const struct retro_keybind *bind, bool save_empty)
+{
+   char key[64];
+
+   key[0] = '\0';
+
+   fill_pathname_join_delim_concat(key, prefix,
+         base, '_', "_btn", sizeof(key));
+
+   if (bind->joykey == NO_BTN)
+   {
+       if (save_empty)
+         config_set_string(conf, key, "nul");
+   }
+   else if (GET_HAT_DIR(bind->joykey))
+      save_keybind_hat(conf, key, bind);
+   else
+      config_set_uint64(conf, key, bind->joykey);
+}
+
+static void save_keybind_axis(config_file_t *conf,
+      const char *prefix,
+      const char *base,
+      const struct retro_keybind *bind, bool save_empty)
+{
+   char key[64];
+   unsigned axis   = 0;
+   char dir        = '\0';
+
+   key[0] = '\0';
+
+   fill_pathname_join_delim_concat(key,
+         prefix, base, '_',
+         "_axis",
+         sizeof(key));
+
+   if (bind->joyaxis == AXIS_NONE)
+   {
+      if (save_empty)
+         config_set_string(conf, key, "nul");
+   }
+   else if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
+   {
+      dir = '-';
+      axis = AXIS_NEG_GET(bind->joyaxis);
+   }
+   else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
+   {
+      dir = '+';
+      axis = AXIS_POS_GET(bind->joyaxis);
+   }
+
+   if (dir)
+   {
+      char config[16];
+
+      config[0] = '\0';
+
+      snprintf(config, sizeof(config), "%c%u", dir, axis);
+      config_set_string(conf, key, config);
+   }
+}
+
+static void save_keybind_mbutton(config_file_t *conf,
+      const char *prefix,
+      const char *base,
+      const struct retro_keybind *bind, bool save_empty)
+{
+   char key[64];
+
+   key[0] = '\0';
+
+   fill_pathname_join_delim_concat(key, prefix,
+      base, '_', "_mbtn", sizeof(key));
+
+   switch (bind->mbutton)
+   {
+      case RETRO_DEVICE_ID_MOUSE_LEFT:
+         config_set_uint64(conf, key, 1);
+         break;
+      case RETRO_DEVICE_ID_MOUSE_RIGHT:
+         config_set_uint64(conf, key, 2);
+         break;
+      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         config_set_uint64(conf, key, 3);
+         break;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+         config_set_uint64(conf, key, 4);
+         break;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+         config_set_uint64(conf, key, 5);
+         break;
+      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+         config_set_string(conf, key, "wu");
+         break;
+      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+         config_set_string(conf, key, "wd");
+         break;
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+         config_set_string(conf, key, "whu");
+         break;
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+         config_set_string(conf, key, "whd");
+         break;
+      default:
+         if (save_empty)
+            config_set_string(conf, key, "nul");
+         break;
+   }
+}
+
+
+
+/**
+ * input_config_save_keybind:
+ * @conf               : pointer to config file object
+ * @prefix             : prefix name of keybind
+ * @base               : base name   of keybind
+ * @bind               : pointer to key binding object
+ * @kb                 : save keyboard binds
+ *
+ * Save a key binding to the config file.
+ */
+static void input_config_save_keybind(config_file_t *conf,
+      const char *prefix,
+      const char *base,
+      const struct retro_keybind *bind,
+      bool save_empty)
+{
+   save_keybind_joykey (conf, prefix, base, bind, save_empty);
+   save_keybind_axis   (conf, prefix, base, bind, save_empty);
+   save_keybind_mbutton(conf, prefix, base, bind, save_empty);
+}
+
+const char *input_config_get_prefix(unsigned user, bool meta)
+{
+   static const char *bind_user_prefix[MAX_USERS] = {
+      "input_player1",
+      "input_player2",
+      "input_player3",
+      "input_player4",
+      "input_player5",
+      "input_player6",
+      "input_player7",
+      "input_player8",
+      "input_player9",
+      "input_player10",
+      "input_player11",
+      "input_player12",
+      "input_player13",
+      "input_player14",
+      "input_player15",
+      "input_player16",
+   };
+   if (meta)
+   {
+      if (user == 0)
+         return "input";
+      /* Don't bother with meta bind for anyone else than first user. */
+      return NULL;
+   }
+   return bind_user_prefix[user];
+}
+
+/**
+ * input_config_save_keybinds_user:
+ * @conf               : pointer to config file object
+ * @user               : user number
+ *
+ * Save the current keybinds of a user (@user) to the config file (@conf).
+ */
+static void input_config_save_keybinds_user(config_file_t *conf, unsigned user)
+{
+   unsigned i = 0;
+
+   for (i = 0; input_config_bind_map_get_valid(i); i++)
+   {
+      char key[64];
+      char btn[64];
+      const struct input_bind_map *keybind =
+         (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
+      bool meta                            = keybind ? keybind->meta : false;
+      const char *prefix                   = input_config_get_prefix(user, meta);
+      const struct retro_keybind *bind     = &input_config_binds[user][i];
+      const char                 *base     = NULL;
+
+      if (!prefix || !bind->valid || !keybind)
+         continue;
+
+      base                                 = keybind->base;
+      key[0] = btn[0]                      = '\0';
+
+      fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
+
+      input_keymaps_translate_rk_to_str(bind->key, btn, sizeof(btn));
+      config_set_string(conf, key, btn);
+
+      input_config_save_keybind(conf, prefix, base, bind, true);
+   }
 }
 
 /**
@@ -4136,7 +4518,7 @@ bool config_save_file(const char *path)
    if (!conf)
       conf = config_file_new_alloc();
 
-   if (!conf || rarch_ctl(RARCH_CTL_IS_OVERRIDES_ACTIVE, NULL))
+   if (!conf || retroarch_ctl(RARCH_CTL_IS_OVERRIDES_ACTIVE, NULL))
    {
       if (conf)
          config_file_free(conf);
@@ -4283,7 +4665,7 @@ bool config_save_file(const char *path)
       config_set_bool(conf, "log_verbosity",
             verbosity_is_enabled());
    config_set_bool(conf, "perfcnt_enable",
-         rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL));
+         retroarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL));
 
    msg_color = (((int)(settings->floats.video_msg_color_r * 255.0f) & 0xff) << 16) +
                (((int)(settings->floats.video_msg_color_g * 255.0f) & 0xff) <<  8) +
@@ -4485,8 +4867,26 @@ bool config_save_overrides(enum override_type type, void *data)
       for (i = 0; i < (unsigned)array_settings_size; i++)
       {
          if (!string_is_equal(array_settings[i].ptr, array_overrides[i].ptr))
+         {
+#ifdef HAVE_CHEEVOS
+            /* As authentication doesn't occur until after content is loaded,
+             * the achievement authentication token might only exist in the
+             * override set, and therefore differ from the master config set.
+             * Storing the achievement authentication token in an override
+             * is a recipe for disaster. If it expires and the user generates
+             * a new token, then the override will be out of date and the
+             * user will have to reauthenticate for each override (and also
+             * remember to update each override). Also exclude the username
+             * as it's directly tied to the token and password.
+             */
+            if (string_is_equal(array_settings[i].ident, "cheevos_token") ||
+                string_is_equal(array_settings[i].ident, "cheevos_password") ||
+                string_is_equal(array_settings[i].ident, "cheevos_username"))
+               continue;
+#endif
             config_set_string(conf, array_overrides[i].ident,
                   array_overrides[i].ptr);
+         }
       }
 
       for (i = 0; i < (unsigned)path_settings_size; i++)
@@ -4591,7 +4991,7 @@ bool config_replace(bool config_replace_save_on_exit, char *path)
 
    path_set(RARCH_PATH_CONFIG, path);
 
-   rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
+   retroarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
 
    /* Load core in new (salamander) config. */
    path_clear(RARCH_PATH_CORE);
@@ -4676,7 +5076,7 @@ bool input_remapping_load_file(void *data, const char *path)
          }
          else
          {
-            char stk_ident[128];
+            char stk_ident[256];
             char key_ident[128];
             int stk_remap = -1;
             int key_remap = -1;
@@ -4752,8 +5152,8 @@ bool input_remapping_save_file(const char *path)
       "a", "x", "l", "r", "l2", "r2",
       "l3", "r3", "l_x+", "l_x-", "l_y+", "l_y-", "r_x+", "r_x-", "r_y+", "r_y-" };
    config_file_t               *conf = NULL;
-   unsigned max_users                = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
    settings_t              *settings = config_get_ptr();
+   unsigned max_users                = settings->uints.input_max_users;
    const char *dir_input_remapping   = settings->paths.directory_input_remapping;
 
    remap_file[0]                     = '\0';
@@ -5000,3 +5400,317 @@ end:
       config_file_free(config);
 }
 #endif
+
+bool input_config_bind_map_get_valid(unsigned bind_index)
+{
+   const struct input_bind_map *keybind =
+      (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(bind_index);
+   if (!keybind)
+      return false;
+   return keybind->valid;
+}
+
+unsigned input_config_bind_map_get_meta(unsigned bind_index)
+{
+   const struct input_bind_map *keybind =
+      (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(bind_index);
+   if (!keybind)
+      return 0;
+   return keybind->meta;
+}
+
+const char *input_config_bind_map_get_base(unsigned bind_index)
+{
+   const struct input_bind_map *keybind =
+      (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(bind_index);
+   if (!keybind)
+      return NULL;
+   return keybind->base;
+}
+
+const char *input_config_bind_map_get_desc(unsigned bind_index)
+{
+   const struct input_bind_map *keybind =
+      (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(bind_index);
+   if (!keybind)
+      return NULL;
+   return msg_hash_to_str(keybind->desc);
+}
+
+uint8_t input_config_bind_map_get_retro_key(unsigned bind_index)
+{
+   const struct input_bind_map *keybind =
+      (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(bind_index);
+   if (!keybind)
+      return 0;
+   return keybind->retro_key;
+}
+
+void input_config_reset_autoconfig_binds(unsigned port)
+{
+   unsigned i;
+
+   if (port >= MAX_USERS)
+      return;
+
+   for (i = 0; i < RARCH_BIND_LIST_END; i++)
+   {
+      input_autoconf_binds[port][i].joykey  = NO_BTN;
+      input_autoconf_binds[port][i].joyaxis = AXIS_NONE;
+
+      if (input_autoconf_binds[port][i].joykey_label)
+      {
+         free(input_autoconf_binds[port][i].joykey_label);
+         input_autoconf_binds[port][i].joykey_label = NULL;
+      }
+
+      if (input_autoconf_binds[port][i].joyaxis_label)
+      {
+         free(input_autoconf_binds[port][i].joyaxis_label);
+         input_autoconf_binds[port][i].joyaxis_label = NULL;
+      }
+   }
+}
+
+void input_config_set_autoconfig_binds(unsigned port, void *data)
+{
+   unsigned i;
+   config_file_t *config       = (config_file_t*)data;
+   struct retro_keybind *binds = NULL;
+
+   if ((port >= MAX_USERS) || !config)
+      return;
+
+   binds = input_autoconf_binds[port];
+
+   for (i = 0; i < RARCH_BIND_LIST_END; i++)
+   {
+      const struct input_bind_map *keybind =
+         (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
+      if (keybind)
+      {
+         char str[256];
+         const char *base = keybind->base;
+         str[0]                     = '\0';
+
+         fill_pathname_join_delim(str, "input", base,  '_', sizeof(str));
+
+         input_config_parse_joy_button(str, config, "input", base, &binds[i]);
+         input_config_parse_joy_axis  (str, config, "input", base, &binds[i]);
+      }
+   }
+}
+
+void input_config_parse_mouse_button(
+      char *s,
+      void *conf_data, const char *prefix,
+      const char *btn, void *bind_data)
+{
+   int val;
+   char tmp[64];
+   char key[64];
+   config_file_t *conf        = (config_file_t*)conf_data;
+   struct retro_keybind *bind = (struct retro_keybind*)bind_data;
+
+   tmp[0] = key[0]     = '\0';
+
+   fill_pathname_join_delim(key, s, "mbtn", '_', sizeof(key));
+
+   if (config_get_array(conf, key, tmp, sizeof(tmp)))
+   {
+      bind->mbutton = NO_BTN;
+
+      if (tmp[0]=='w')
+      {
+         switch (tmp[1])
+         {
+            case 'u':
+               bind->mbutton = RETRO_DEVICE_ID_MOUSE_WHEELUP;
+               break;
+            case 'd':
+               bind->mbutton = RETRO_DEVICE_ID_MOUSE_WHEELDOWN;
+               break;
+            case 'h':
+               switch (tmp[2])
+               {
+                  case 'u':
+                     bind->mbutton = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP;
+                     break;
+                  case 'd':
+                     bind->mbutton = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN;
+                     break;
+               }
+               break;
+         }
+      }
+      else
+      {
+         val = atoi(tmp);
+         switch (val)
+         {
+            case 1:
+               bind->mbutton = RETRO_DEVICE_ID_MOUSE_LEFT;
+               break;
+            case 2:
+               bind->mbutton = RETRO_DEVICE_ID_MOUSE_RIGHT;
+               break;
+            case 3:
+               bind->mbutton = RETRO_DEVICE_ID_MOUSE_MIDDLE;
+               break;
+            case 4:
+               bind->mbutton = RETRO_DEVICE_ID_MOUSE_BUTTON_4;
+               break;
+            case 5:
+               bind->mbutton = RETRO_DEVICE_ID_MOUSE_BUTTON_5;
+               break;
+         }
+      }
+   }
+}
+
+void input_config_parse_joy_axis(
+      char *s,
+      void *conf_data, const char *prefix,
+      const char *axis, void *bind_data)
+{
+   char       tmp[64];
+   char       key[64];
+   char key_label[64];
+   config_file_t *conf                     = (config_file_t*)conf_data;
+   struct retro_keybind *bind              = (struct retro_keybind*)bind_data;
+   struct config_entry_list *tmp_a         = NULL;
+
+   tmp[0] = key[0] = key_label[0] = '\0';
+
+   fill_pathname_join_delim(key, s,
+         "axis", '_', sizeof(key));
+   fill_pathname_join_delim(key_label, s,
+         "axis_label", '_', sizeof(key_label));
+
+   if (config_get_array(conf, key, tmp, sizeof(tmp)))
+   {
+      if (     tmp[0] == 'n'
+            && tmp[1] == 'u'
+            && tmp[2] == 'l'
+            && tmp[3] == '\0'
+         )
+         bind->joyaxis = AXIS_NONE;
+      else if (strlen(tmp) >= 2 && (*tmp == '+' || *tmp == '-'))
+      {
+         int i_axis = (int)strtol(tmp + 1, NULL, 0);
+         if (*tmp == '+')
+            bind->joyaxis = AXIS_POS(i_axis);
+         else
+            bind->joyaxis = AXIS_NEG(i_axis);
+      }
+
+      /* Ensure that D-pad emulation doesn't screw this over. */
+      bind->orig_joyaxis = bind->joyaxis;
+   }
+
+   tmp_a = config_get_entry(conf, key_label);
+
+   if (tmp_a && (!string_is_empty(tmp_a->value)))
+   {
+      if (bind->joyaxis_label &&
+            !string_is_empty(bind->joyaxis_label))
+         free(bind->joyaxis_label);
+      bind->joyaxis_label = strdup(tmp_a->value);
+   }
+}
+
+static uint16_t input_config_parse_hat(const char *dir)
+{
+   if (     dir[0] == 'u'
+         && dir[1] == 'p'
+         && dir[2] == '\0'
+      )
+      return HAT_UP_MASK;
+   else if (
+            dir[0] == 'd'
+         && dir[1] == 'o'
+         && dir[2] == 'w'
+         && dir[3] == 'n'
+         && dir[4] == '\0'
+         )
+      return HAT_DOWN_MASK;
+   else if (
+            dir[0] == 'l'
+         && dir[1] == 'e'
+         && dir[2] == 'f'
+         && dir[3] == 't'
+         && dir[4] == '\0'
+         )
+      return HAT_LEFT_MASK;
+   else if (
+            dir[0] == 'r'
+         && dir[1] == 'i'
+         && dir[2] == 'g'
+         && dir[3] == 'h'
+         && dir[4] == 't'
+         && dir[5] == '\0'
+         )
+      return HAT_RIGHT_MASK;
+
+   return 0;
+}
+
+
+void input_config_parse_joy_button(
+      char *s,
+      void *data, const char *prefix,
+      const char *btn, void *bind_data)
+{
+   char tmp[64];
+   char key[64];
+   char key_label[64];
+   config_file_t *conf                     = (config_file_t*)data;
+   struct retro_keybind *bind              = (struct retro_keybind*)bind_data;
+   struct config_entry_list *tmp_a         = NULL;
+
+   tmp[0] = key[0] = key_label[0] = '\0';
+
+   fill_pathname_join_delim(key, s,
+         "btn", '_', sizeof(key));
+   fill_pathname_join_delim(key_label, s,
+         "btn_label", '_', sizeof(key_label));
+
+   if (config_get_array(conf, key, tmp, sizeof(tmp)))
+   {
+      btn = tmp;
+      if (     btn[0] == 'n'
+            && btn[1] == 'u'
+            && btn[2] == 'l'
+            && btn[3] == '\0'
+         )
+         bind->joykey = NO_BTN;
+      else
+      {
+         if (*btn == 'h')
+         {
+            const char *str = btn + 1;
+            /* Parse hat? */
+            if (str && ISDIGIT((int)*str))
+            {
+               char        *dir = NULL;
+               uint16_t     hat = strtoul(str, &dir, 0);
+               uint16_t hat_dir = dir ? input_config_parse_hat(dir) : 0;
+               if (hat_dir)
+                  bind->joykey = HAT_MAP(hat, hat_dir);
+            }
+         }
+         else
+            bind->joykey = strtoull(tmp, NULL, 0);
+      }
+   }
+
+   tmp_a = config_get_entry(conf, key_label);
+
+   if (tmp_a && !string_is_empty(tmp_a->value))
+   {
+      if (!string_is_empty(bind->joykey_label))
+         free(bind->joykey_label);
+
+      bind->joykey_label = strdup(tmp_a->value);
+   }
+}

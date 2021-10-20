@@ -20,11 +20,6 @@
 
 #include "../input_driver.h"
 
-struct pad_connection_listener_interface
-{
-   void (*connected)(unsigned port, input_device_driver_t *driver);
-};
-
 typedef struct _axis_data
 {
    int32_t axis;
@@ -33,5 +28,5 @@ typedef struct _axis_data
 
 void gamepad_read_axis_data(uint32_t axis, axis_data *data);
 int16_t gamepad_get_axis_value(int16_t state[3][2], axis_data *data);
-
+int16_t gamepad_get_axis_value_raw(int16_t state[3][2], axis_data *data, bool do_clamp);
 #endif /* GAMEPAD_H__ */

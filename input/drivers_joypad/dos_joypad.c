@@ -160,7 +160,7 @@ static void *dos_joypad_init(void *data)
    return (void*)-1;
 }
 
-static int16_t dos_joypad_button_state(
+static int32_t dos_joypad_button_state(
       uint16_t *buf, uint16_t joykey)
 {
    switch (key)
@@ -190,7 +190,7 @@ static int16_t dos_joypad_button_state(
    return 0;
 }
 
-static int16_t dos_joypad_button(unsigned port_num, uint16_t joykey)
+static int32_t dos_joypad_button(unsigned port_num, uint16_t joykey)
 {
    uint16_t *buf = dos_keyboard_state_get(port_num);
 
@@ -270,6 +270,7 @@ input_device_driver_t dos_joypad = {
    NULL,
    dos_joypad_axis,
    dos_joypad_poll,
+   NULL,
    NULL,
    dos_joypad_name,
    "dos",
