@@ -226,20 +226,18 @@ static int32_t ds3_button(void *device_data, uint16_t joykey) {
    return device->buttons & (1 << joykey);
 }
 
-static int ds3_set_operational(ds3_instance_t *instance) {
-   const int buf_size = SIXAXIS_REPORT_0xF2_SIZE;
-
-   uint8_t *buf = (uint8_t *)malloc(buf_size);
+static int ds3_set_operational(ds3_instance_t *instance)
+{
    int ret;
+   const int buf_size = SIXAXIS_REPORT_0xF2_SIZE;
+   uint8_t *buf = (uint8_t *)malloc(buf_size);
 
-   if(!buf) {
+   if(!buf)
       return -1;
-   }
 
-   ret = instance->hid_driver->set_report(instance->handle, HID_REPORT_FEATURE, ds3_activation_packet.data.report_id, ds3_activation_packet.buf, sizeof(ds3_activation_packet));
-   if(ret < 0) {
+   ret = instance->hid_driver->set_report(instance->handle, HID_REPORT_FEATURE, ds3_activation_packet.data.report_id, (uint8_t*)ds3_activation_packet.buf, sizeof(ds3_activation_packet));
+   if(ret < 0)
       RARCH_LOG("Failed to send activation packet\n");
-   }
 
    free(buf);
    return ret;
