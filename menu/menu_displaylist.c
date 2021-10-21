@@ -6253,7 +6253,7 @@ unsigned menu_displaylist_build_list(
 
             for (p = 0; p < max_users; p++)
             {
-               char val_s[16], val_d[16];
+               char val_s[256], val_d[256];
                snprintf(val_s, sizeof(val_s),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS),
                      p+1);
