@@ -60,10 +60,8 @@
 #include "../../paths.h"
 #include "../../verbosity.h"
 
-#if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
-#ifndef VITA
+#if defined(PSP) && defined(HAVE_KERNEL_PRX)
 #include "../../bootstrap/psp1/kernel_functions.h"
-#endif
 #endif
 
 #if defined(HAVE_VITAGLES)
@@ -305,16 +303,13 @@ static void frontend_psp_init(void *data)
 
 #endif
 
-#if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
-#ifndef VITA
+#if defined(PSP) && defined(HAVE_KERNEL_PRX) 
    pspSdkLoadStartModule("kernel_functions.prx", PSP_MEMORY_PARTITION_KERNEL);
-#endif
 #endif
 }
 
 static void frontend_psp_exec(const char *path, bool should_load_game)
 {
-#if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER) || defined(VITA)
 #ifdef IS_SALAMANDER
    char boot_params[1024];
    char core_name[256];
@@ -322,7 +317,7 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
    char argp[512] = {0};
    SceSize   args = 0;
 
-#if !defined(VITA)
+#if defined(PSP)
    strlcpy(argp, eboot_path, sizeof(argp));
    args = strlen(argp) + 1;
 #endif
@@ -388,9 +383,8 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
       int ret =  sceAppMgrLoadExec(path, args == 0 ? NULL : (char * const*)((const char*[]){argp, 0}), NULL);
       RARCH_LOG("Attempt to load executable: [%d].\n", ret);
    }
-#else
+#elif defined(PSP) && defined(HAVE_KERNEL_PRX)
    exitspawn_kernel(path, args, argp);
-#endif
 #endif
 }
 
