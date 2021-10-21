@@ -116,7 +116,7 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
    if (!sl)
       goto error;
 
-   RARCH_LOG("[OpenSL]: Requested audio latency: %u ms.", latency);
+   RARCH_LOG("[OpenSL]: Requested audio latency: %u ms.\n", latency);
 
    GOTO_IF_FAIL(slCreateEngine(&sl->engine_object, 0, NULL, 0, NULL, NULL));
    GOTO_IF_FAIL(SLObjectItf_Realize(sl->engine_object, SL_BOOLEAN_FALSE));

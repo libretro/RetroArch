@@ -59,8 +59,11 @@ struct iohidmanager_hid_adapter
    uint8_t data[2048];
 };
 
-enum IOHIDReportType translate_hid_report_type(int report_type) {
-   switch(report_type) {
+enum IOHIDReportType translate_hid_report_type(
+   int report_type)
+{
+   switch (report_type)
+   {
       case HID_REPORT_FEATURE:
          return kIOHIDReportTypeFeature;
       case HID_REPORT_INPUT:
@@ -1101,28 +1104,24 @@ static int32_t iohidmanager_set_report(void *handle, uint8_t report_type, uint8_
    struct iohidmanager_hid_adapter *adapter =
       (struct iohidmanager_hid_adapter*)handle;
 
-   int retval = -1;
+   if (adapter)
+      return IOHIDDeviceSetReport(adapter->handle, translate_hid_report_type(report_type), report_type, data_buf, size);
 
-   if (adapter) {
-      retval = IOHIDDeviceSetReport(adapter->handle, translate_hid_report_type(report_type), report_type, data_buf, size);
-   }
-
-   return retval;
+   return -1;
 }
 
-static int32_t iohidmanager_get_report(void *handle, uint8_t report_type, uint8_t report_id, void *data_buf, size_t size)
+static int32_t iohidmanager_get_report(void *handle, uint8_t report_type, uint8_t report_id, uint8_t *data_buf, size_t size)
 {
    struct iohidmanager_hid_adapter *adapter =
       (struct iohidmanager_hid_adapter*)handle;
-   int retval = -1;
 
-   if (adapter) {
+   if (adapter)
+   {
       CFIndex length = size;
-
-      retval = IOHIDDeviceGetReport(adapter->handle, translate_hid_report_type(report_type), report_id, data_buf, &length);
+      return IOHIDDeviceGetReport(adapter->handle, translate_hid_report_type(report_type), report_id, data_buf, &length);
    }
 
-   return retval;
+   return -1;
 }
 
 hid_driver_t iohidmanager_hid = {

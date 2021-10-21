@@ -23,6 +23,7 @@
 #endif
 
 #include "../../configuration.h"
+#include "../../gfx/video_defines.h"
 #include "../../verbosity.h"
 
 #include "SDL.h"
