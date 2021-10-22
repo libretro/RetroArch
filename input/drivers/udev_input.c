@@ -570,7 +570,7 @@ static int udev_input_add_device(udev_input_t *udev,
          {
             mouse = 1;
 
-            if (test_bit(keycaps, BTN_MOUSE))
+            if (!test_bit(keycaps, BTN_MOUSE))
                RARCH_LOG("[udev]: Waring REL pointer device (%s) has no mouse button\n",device->ident);
          }
       }
