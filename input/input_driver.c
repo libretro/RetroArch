@@ -3088,7 +3088,7 @@ void input_driver_init_command(
       else
       {
          input_st->command[0] = command_stdin_new();
-         if (!input_st->command[1])
+         if (!input_st->command[0])
             RARCH_ERR("Failed to initialize the stdin command interface.\n");
       }
    }
