@@ -571,7 +571,7 @@ static int udev_input_add_device(udev_input_t *udev,
             mouse = 1;
 
             if (test_bit(keycaps, BTN_MOUSE))
-               RARCH_LOG("[udev]: REL pointer device (%s) has no mouse button\n",device->ident);
+               RARCH_LOG("[udev]: Waring REL pointer device (%s) has no mouse button\n",device->ident);
          }
       }
 
@@ -590,7 +590,7 @@ static int udev_input_add_device(udev_input_t *udev,
                device->mouse.abs = 2;
 
             if ( !test_bit(keycaps, BTN_TOUCH) && !test_bit(keycaps, BTN_MOUSE) )
-               RARCH_LOG("[udev]: ABS pointer device (%s) has no touch or mouse button\n",device->ident);
+               RARCH_LOG("[udev]: Warning ABS pointer device (%s) has no touch or mouse button\n",device->ident);
          }
       }
 
@@ -601,22 +601,27 @@ static int udev_input_add_device(udev_input_t *udev,
 
       if (device->mouse.abs)
       {
+
          if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) == -1)
+         {
+            RARCH_LOG("[udev]: ABS pointer device (%s) Failed to get ABS_X parameters \n",device->ident);
             goto end;
+         }
+
          device->mouse.x_min = absinfo.minimum;
          device->mouse.x_max = absinfo.maximum;
 
          if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) == -1)
+         {
+            RARCH_LOG("[udev]: ABS pointer device (%s) Failed to get ABS_Y parameters \n",device->ident);
             goto end;
+         }
          device->mouse.y_min = absinfo.minimum;
          device->mouse.y_max = absinfo.maximum;
       }
 
       if (!mouse)
-      {
-         ret = 0;
          goto end;
-      }
 
    }
 
@@ -636,14 +641,14 @@ static int udev_input_add_device(udev_input_t *udev,
    /* Shouldn't happen, but just check it. */
    if (epoll_ctl(udev->fd, EPOLL_CTL_ADD, fd, &event) < 0)
    {
-      RARCH_ERR("Failed to add FD (%d) to epoll list (%s).\n",
+      RARCH_ERR("udev]: Failed to add FD (%d) to epoll list (%s).\n",
             fd, strerror(errno));
    }
 #elif defined(HAVE_KQUEUE)
    EV_SET(&event, fd, EVFILT_READ, EV_ADD, 0, 0, LISTENSOCKET);
    if (kevent(udev->fd, &event, 1, NULL, 0, NULL) == -1)
    {
-      RARCH_ERR("Failed to add FD (%d) to kqueue list (%s).\n",
+      RARCH_ERR("udev]: Failed to add FD (%d) to kqueue list (%s).\n",
             fd, strerror(errno));
    }
 #endif
@@ -1340,7 +1345,7 @@ static bool open_devices(udev_input_t *udev,
          {
             int check = udev_input_add_device(udev, type, devnode, cb);
             if (check == 0)
-               RARCH_LOG("[udev] udev_input_add_device error : %s (%s).\n",
+               RARCH_LOG("[udev]: udev_input_add_device error : %s (%s).\n",
                      devnode, strerror(errno));
 
             (void)check;
