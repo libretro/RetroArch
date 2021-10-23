@@ -1293,7 +1293,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "Nächste-Nachbarn"
    )
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
    "Bildinterpolation"
@@ -1421,6 +1421,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
    "Zu verwendende Grafikkarte auswählen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
+   "Horizontaler Versatz der Anzeige"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
+   "Erzwingt einen horizontalen Versatz des Videos. Der Versatz wird global angewendet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
+   "Vertikaler Versatz der Anzeige"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
+   "Erzwingt einen vertikalen Versatz des Videos. Der Versatz wird global angewendet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
@@ -1669,6 +1685,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
    "Maximale Leuchtdichte"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
+   "Die Spitzenleuchtdichte (in cd/m2) einstellen, die der Bildschirm wiedergeben kann. Spitzenluminanzwerte findet man z. B. bei RTings."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
@@ -3549,19 +3569,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
-   "(Querformat) Overlay X Offset"
+   "(Querformat) X-Versatz des Overlays"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_LANDSCAPE,
-   "Horizontaler Overlay-Offset bei Verwendung der Querformatanzeige. Positive Werte verschieben die Überlagerung nach rechts, negative Werte nach links."
+   "Horizontaler Versatz des Overlays bei Verwendung der Querformatanzeige. Positive Werte verschieben das Overlay nach rechts, negative Werte nach links."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_LANDSCAPE,
-   "(Querformat) Overlay Y Offset"
+   "(Querformat) Y-Versatz des Overlays"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_LANDSCAPE,
-   "Vertikaler Overlay-Offset bei Verwendung der Querformatanzeige. Positive Werte verschieben die Überlagerung nach oben, negative Werte nach unten."
+   "Vertikaler Versatz des Overlays bei Verwendung der Querformatanzeige. Positive Werte verschieben das Overlay nach oben, negative Werte nach unten."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
@@ -3597,19 +3617,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_PORTRAIT,
-   "(Hochformat) Overlay X Offset"
+   "(Hochformat) X-Versatz des Overlays"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT,
-   "Horizontaler Overlay-Offset bei Verwendung der Hochformatanzeige. Positive Werte verschieben die Überlagerung nach rechts, negative Werte nach links."
+   "Horizontaler Versatz des Overlays bei Verwendung der Hochformatanzeige. Positive Werte verschieben das Overlay nach rechts, negative Werte nach links."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_PORTRAIT,
-   "(Hochformat) Overlay Y Offset"
+   "(Hochformat) Y-Versatz des Overlays"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
-   "Vertikaler Overlay-Offset bei Verwendung der Hochformatanzeige. Positive Werte verschieben die Überlagerung nach oben, negative Werte nach unten."
+   "Vertikaler Versatz des Overlays bei Verwendung der Hochformatanzeige. Positive Werte verschieben das Overlay nach oben, negative Werte nach unten."
    )
 
 /* Settings > On-Screen Display > Video Layout */
@@ -11233,7 +11253,43 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
-   "Bildschirm-Auflösung"
+   "Bildschirmauflösung"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DEFAULT,
+   "Bildschirmauflösung: Standard"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_NO_DESC,
+   "Bildschirmauflösung: %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DESC,
+   "Bildschirmauflösung: %dx%d - %s"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
+   "Angewendet: Standard"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
+   "Angewendet: %dx%d\nSTART zum Zurücksetzen"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DESC,
+   "Angewendet: %dx%d - %s\nSTART zum Zurücksetzen"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
+   "Wiederhergestellt: Standard"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC,
+   "Wiederhergestellt: %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DESC,
+   "Wiederhergestellt: %dx%d - %s"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,

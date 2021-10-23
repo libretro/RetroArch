@@ -1005,11 +1005,19 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "Controlador do telemando de xogo a empregar."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
+   "Vídeo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
+   "Son"
+   )
 
 /* Settings > Video */
 
 #if defined(DINGUX)
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 #endif
 #endif
 
@@ -1040,9 +1048,17 @@ MSG_HASH(
 
 /* Settings > Audio */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
+   "Cambia os axustes da saída de son."
+   )
 
 /* Settings > Audio > Output */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
+   "Son"
+   )
 
 /* Settings > Audio > Resampler */
 
@@ -1153,6 +1169,10 @@ MSG_HASH(
 /* Settings > User Interface */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
+   "Neve"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
    "Compatibilidade con rato"
    )
@@ -1243,6 +1263,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
    "Descargas"
    )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   "Explorador de ficheiros"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
    "Listaxes de reprodución"
@@ -1291,6 +1315,10 @@ MSG_HASH(
 /* Playlist Item > Information */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
+   "Nome"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
    "Núcleo"
    )
@@ -1334,6 +1362,10 @@ MSG_HASH(
 
 /* Quick Menu > Cheats > Cheat Details */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
+   "Descrición"
+   )
 
 /* Quick Menu > Disc Control */
 
@@ -1375,12 +1407,24 @@ MSG_HASH(
 /* Settings Options */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
+   "Ningún"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NONE,
+   "Ningún"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNKNOWN,
    "Descoñecido"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_DOES_NOT_CHANGE,
    "Non cambia"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
+   "Ningún"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_YES,
@@ -1479,8 +1523,16 @@ MSG_HASH(
    "Cargar un núcleo"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_NAME,
+   "Nome"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    "Listaxes de reprodución"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
+   "Explorador de ficheiros"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CORE,
@@ -1489,6 +1541,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
    "Información"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
+   "Nome:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
@@ -1528,6 +1584,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "Axuda"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
+   "Descrición"
+   )
 
 /* Unused (Needs Confirmation) */
 
@@ -1560,6 +1620,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "O núcleo non é compatible co gardado rápido."
+   )
+MSG_HASH(
+   MSG_UNKNOWN,
+   "Descoñecido"
    )
 
 /* Lakka */

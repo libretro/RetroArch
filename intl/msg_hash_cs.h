@@ -1037,7 +1037,7 @@ MSG_HASH(
    "Zabránit aktivaci spořiče obrazovky."
    )
 #if defined(DINGUX)
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 #endif
 #endif
 
@@ -1072,18 +1072,46 @@ MSG_HASH(
 
 /* Settings > Audio */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+   "Výstup"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
+   "Změnit nastavení zvuku."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   "Synchronizace"
+   )
 
 /* Settings > Audio > Output */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
+   "Zvuk"
+   )
 
 /* Settings > Audio > Resampler */
 
 
 /* Settings > Audio > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
+   "Synchronizace"
+   )
 
 /* Settings > Audio > MIDI */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
+   "Vstup"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
+   "Výstup"
+   )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
@@ -1104,6 +1132,14 @@ MSG_HASH(
 
 /* Settings > Input > Hotkeys */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+   "Ukončit program"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
+   "Služba AI"
+   )
 
 /* Settings > Input > Port # Controls */
 
@@ -1167,6 +1203,18 @@ MSG_HASH(
 
 /* Settings > User Interface > Menu Item Visibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+   "Rychlé menu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
+   "Nastavení"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
+   "Hlavní nabídka"
+   )
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
@@ -1187,6 +1235,10 @@ MSG_HASH(
 
 /* Settings > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
+   "Úspěchy"
+   )
 
 /* Settings > Network */
 
@@ -1196,6 +1248,14 @@ MSG_HASH(
 
 /* Settings > Playlists */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
+   "Historie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
+   "Jádro:"
+   )
 
 /* Settings > Playlists > Playlist Management */
 
@@ -1223,6 +1283,18 @@ MSG_HASH(
 
 /* Settings > Directory */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
+   "Stažené položky"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   "Správce souborů"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
+   "Seznamy"
+   )
 
 /* Music */
 
@@ -1243,20 +1315,40 @@ MSG_HASH(
 
 /* Import Content > Manual Scan */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+   "Systémový název"
+   )
 
 /* Explore tab */
 
 /* Playlist > Playlist Item */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INFORMATION,
+   "Informace"
+   )
 
 /* Playlist Item > Set Core Association */
 
 
 /* Playlist Item > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
+   "Jméno"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
+   "Jádro"
+   )
 
 /* Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
+   "Úspěchy"
+   )
 
 /* Quick Menu > Options */
 
@@ -1286,6 +1378,10 @@ MSG_HASH(
 
 /* Quick Menu > Cheats > Cheat Details */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
+   "Popis"
+   )
 
 /* Quick Menu > Disc Control */
 
@@ -1350,15 +1446,103 @@ MSG_HASH(
 
 /* Qt (Desktop Menu) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_INFO,
+   "Informace"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
+   "Nastavení"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
+   "&Nápověda"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
+   "Načíst Jádro"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_NAME,
+   "Jméno"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
+   "Seznamy"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
+   "Správce souborů"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CORE,
+   "Jádro"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
+   "Informace"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
+   "Jméno:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
+   "Jádro:"
+   )
 
 /* Unsorted */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
+   "Historie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER,
+   "Uživatel"
+   )
 
 /* Unused (Only Exist in Translation Files) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
+   "Online hraní"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP,
+   "Nápověda"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
+   "Popis"
+   )
 
 /* Unused (Needs Confirmation) */
 
+MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
+   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
+   "Stažené položky"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO,
+   "Informace"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
+   "Ukončit"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
+   "Posunout nahoru"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD,
+   "Otevřít/Zavřít klávesnici"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU,
+   "Otevřít/zavřít Hlavní menu"
+   )
 
 /* Discord Status */
 
@@ -1371,6 +1555,10 @@ MSG_HASH(
 
 /* Environment Specific Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
+   "Restartovat RetroArch"
+   )
 
 #ifdef HAVE_LAKKA_SWITCH
 #endif

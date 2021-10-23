@@ -454,6 +454,22 @@ MSG_HASH(
    "ファームウェア"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
+   "見つかりません, 必須:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   "見つかりません, オプション:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
+   "使用可能, 必須:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   "使用可能, オプション:"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "インストール済みコアをロック"
    )
@@ -1333,7 +1349,11 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
    "バイリニア (双線形)"
    )
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "画像の補間"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
    "ニアレストネイバー"
@@ -1638,6 +1658,10 @@ MSG_HASH(
 
 /* Settings > Video > HDR */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
+   "コントラスト"
+   )
 
 /* Settings > Video > Synchronization */
 
@@ -2027,7 +2051,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
-   "自動設定を有効"
+   "オートコンフィグ"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
@@ -2050,6 +2074,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
    "現在のハードウェアでサポートされている場合は, 加速度センサ, ジャイロスコープ, 照明センサからの入力を有効にします. いくつかのプラットフォームでは, パフォーマンス低下や消費電力増加の可能性があります."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   "ウィンドウ内にマウスカーソルを維持する"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
+   "アプリのフォーカス時にマウスをウィンドウから出ないようにします."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
@@ -2181,6 +2213,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "(対応コアで)デバイスの振動を有効"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
+   "振動の強さ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
+   "振動の大きさを指定します."
    )
 
 /* Settings > Input > Menu Controls */
@@ -3618,8 +3658,16 @@ MSG_HASH(
    "指定されたフレーム数おきにメモリ使用量の表示を更新します."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   "「コンテンツをロード」起動時の通知"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
    "コンテンツの読み込み時に, 短い起動フィードバックアニメーションを表示します."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
+   "入力デバイス接続通知 (オートコンフィグ)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
@@ -6562,6 +6610,10 @@ MSG_HASH(
    "ディスクの取り出し"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
+   "仮想ディスクトレイを開き、現在ロードされているディスクを取り出します. 「メニュー表示中はコンテンツを一時停止」が有効な場合, いくつかのコアでは, ディスク操作の後に数秒間おいてコンテンツを再開しないと、変更が反映されない可能性があります."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "ディスクイメージを挿入"
    )
@@ -6788,6 +6840,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "ログインしていません"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
+   "ネットワークエラー"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
@@ -7220,7 +7276,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
-   "普通"
+   "通常"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCROLL_FAST,
+   "高速"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ON,

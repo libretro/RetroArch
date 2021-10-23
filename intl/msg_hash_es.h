@@ -1341,7 +1341,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "Vecino más próximo"
    )
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
    "Interpolación de imagen"
@@ -1473,6 +1473,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
    "Selecciona la tarjeta gráfica que quieras utilizar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
+   "Desplazamiento horizontal de la pantalla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
+   "Fuerza un reajuste horizontal en la señal de vídeo. Este desplazamiento se aplicará de forma global."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
+   "Desplazamiento vertical de la pantalla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
+   "Fuerza un reajuste vertical en la señal de vídeo. Este desplazamiento se aplicará de forma global."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
@@ -1740,7 +1756,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Controla el gama/contraste del HDR. Aumenta el rango general de colores de la imagen entre las áreas más brillantes y las más oscuras. A mayor contraste de HDR, mayor diferencia, mientras que con un contraste menor, la imagen se hará más pálida. Este ajuste ayuda a calibrar la imagen a gusto del usuario."
+   "Controla el gamma/contraste del HDR. Aumenta el rango general de colores de la imagen entre las áreas más brillantes y las más oscuras. A mayor contraste de HDR, mayor diferencia, mientras que con un contraste menor la imagen se hará más pálida. Este ajuste ayuda a calibrar la imagen a gusto del usuario."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -1748,7 +1764,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Cuando el espacio de color es convertido a espacio lineal, esta opción decide si se debería utilizar una gama de colores expandida y compatible el formato HDR10."
+   "Cuando el espacio de color es convertido a espacio lineal, esta opción indica si se debería utilizar una gama de colores expandida y compatible con el formato HDR10."
    )
 
 /* Settings > Video > Synchronization */
@@ -8531,7 +8547,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
-   "Solarizado (oscuro)"
+   "Solarized (oscuro)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT,
@@ -11538,6 +11554,42 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
    "Resolución de pantalla"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DEFAULT,
+   "Resolución de pantalla: predeterminada"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_NO_DESC,
+   "Resolución de pantalla: %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DESC,
+   "Resolución de pantalla: %dx%d - %s"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
+   "Aplicando: predeterminada"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
+   "Aplicando: %dx%d\nSTART para restablecer"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DESC,
+   "Aplicando: %dx%d - %s\nSTART para restablecer"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
+   "Restableciendo a: predeterminada"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC,
+   "Restableciendo a: %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DESC,
+   "Restableciendo a: %dx%d - %s"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,

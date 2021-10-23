@@ -1329,7 +1329,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "Vizinho mais próximo"
    )
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
    "Interpolação de imagem"
@@ -1461,6 +1461,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
    "Escolha qual a placa de vídeo será usada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
+   "Posição horizontal da tela"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
+   "Força uma certa posição horizontal ao vídeo. A posição é aplicada globalmente."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
+   "Posição vertical da tela"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
+   "Força uma certa posição vertical ao vídeo. A posição é aplicada globalmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
@@ -1712,7 +1728,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Defina o pico da luminosidade que sua tela pode reproduzir (em cd/m2). Veja RTings o pico de luminosidade da sua tela"
+   "Define o pico da luminosidade que a sua tela pode reproduzir (em cd/m2). Consulte RTings para ver o pico de luminosidade da sua tela."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
@@ -2338,11 +2354,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
-   "Encerre o controlador combo"
+   "Combinação de controle para fechar"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
-   "A combinação dos botões do controle para encerrar o RetroArch."
+   "A combinação dos botões do controle para sair do RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
@@ -8491,7 +8507,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
-   "Escuro solarizado"
+   "Solarizado (escuro)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT,
@@ -11015,7 +11031,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNRECOGNIZED_COMMAND,
-   "Um comando \"%s\" desconhecido foi recebido.\n"
+   "Comando desconhecido \"%s\" foi recebido.\n"
    )
 MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
@@ -11500,6 +11516,42 @@ MSG_HASH(
    "Resolução da tela"
    )
 MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DEFAULT,
+   "Resolução da tela: padrão"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_NO_DESC,
+   "Resolução da tela: %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DESC,
+   "Resolução da tela: %dx%d - %s"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
+   "Aplicando: padrão"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
+   "Aplicando: %dx%d\nSTART para redefinir"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DESC,
+   "Aplicando: %dx%d - %s\nSTART para redefinir"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
+   "Redefinindo para: padrão"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC,
+   "Redefinindo para: %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DESC,
+   "Redefinindo para: %dx%d - %s"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
    "Escolha o modo de exibição."
    )
@@ -11930,23 +11982,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
-   "Nenhum\nDado"
+   "Nenhum\ndado"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
-   "Nenhuma\nCaptura de tela"
+   "Nenhuma\ncaptura de tela"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_RESUME,
-   "Resumir o jogo"
+   "Continuar o jogo"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_SAVE_STATE,
-   "Crie um Ponto\nde restauração"
+   "Criar um ponto\nde restauração"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
-   "Carregue\num Ponto de\nrestauração"
+   "Carregar\num ponto de\nrestauração"
    )
 #endif
 #ifdef HAVE_QT

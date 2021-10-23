@@ -105,7 +105,7 @@ MSG_HASH(
 /* Settings > Video */
 
 #if defined(DINGUX)
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 #endif
 #endif
 

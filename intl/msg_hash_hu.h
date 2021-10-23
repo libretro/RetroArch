@@ -220,6 +220,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
    "Videók"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
+   "Felfedezés"
+   )
 
 /* Main Menu > Online Updater */
 
@@ -309,7 +313,7 @@ MSG_HASH(
 /* Settings > Video */
 
 #if defined(DINGUX)
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 #endif
 #endif
 
