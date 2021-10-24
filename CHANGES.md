@@ -1,5 +1,23 @@
 # Future
 
+# 1.9.12
+- 3DS: Ensure parallax barrier is disabled when '3DS Display Mode' is '2D'
+- COMMAND: Command interface should work again
+- INPUT/HID: Rewrote the HID deregistration algorithm; it should no longer cause issues when dealing with multiple pads of the same HID/VID combo
+- INPUT/HID: Fix initialization bug that caused wiimotes to fail to register without an accessory attached
+- INPUT/HID: Fix Wiimote regression
+- INPUT/HID/MAC: Get Sony Sixaxis (DualShock 3) working on MacOS
+- INPUT/UDEV: Add extra abs check for dolphinbar
+- INPUT/UDEV: Add relative left mouse button when pointer device is not abs
+- INPUT/WAYLAND: Fix keyboard input on Wayland - fixes 'Certain cores ignore user input'
+- NETPLAY: Improvements from Cthulhu
+- OPENDINGUX: Fix HAS_ANALOG/HAS_MENU_TOGGLE defines in sdl_dingux joypad driver
+- LIBRETRO: Enable SRAM for contentless cores
+- LIBRETRO: Add environment callback to get the rate retro_run is called - GET_THROTTLE_STATE and RETRO_THROTTLE_UNBLOCKED environment callback
+- LINUX: Update metadata manifest
+- MENU/OZONE: New themes - Solarized Light, Solarized Dark
+- WINDOWS/WIN9X: Fix non-ASCII text display in window title
+
 # 1.9.11
 - ANDROID: New launcher logo - will fill the corners on the homescreen
 - D3D9: Driver works again (RGUI only and software rendered cores work, no shader support yet)
