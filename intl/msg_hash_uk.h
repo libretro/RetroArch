@@ -1333,7 +1333,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "Найближчий сусід"
    )
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
    "Інтерполяція зображення"
@@ -1721,10 +1721,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
    "Пікова яскравість"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Встановити максимальну яскравість (в кд/м2), яка підтримується дисплеєм. Значення пікової яскравості можна дізнатися на сайті RTings."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
@@ -2744,6 +2740,10 @@ MSG_HASH(
 #if defined(ANDROID)
 #endif
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS,
+   "Показати елементи керування на накладці"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
    "Показувати вказівник миші при використанні накладки"
    )
@@ -2793,6 +2793,10 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Notifications */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
+   "Сповіщення на екрані"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_SHOW,
    "Відображати частоту кадрів"
@@ -4375,6 +4379,10 @@ MSG_HASH(
    "Найближчі"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR,
+   "<Каталог вмісту>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CUSTOM,
    "<Користувацька>"
    )
@@ -5131,11 +5139,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
-   "Салорайзед темна"
+   "Solarized темна"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT,
-   "Салорайзед світла"
+   "Solarized світла"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
@@ -5951,6 +5959,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESUME,
    "Продовжити"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESUME,
+   "Відновити актуальний вміст та залишити панель швидкого меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_CREATE_OPTION,

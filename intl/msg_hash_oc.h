@@ -64,6 +64,10 @@ MSG_HASH(
    "Listas de lectura"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY,
+   "Jòc en ret"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
    "Paramètres"
    )
@@ -100,6 +104,26 @@ MSG_HASH(
 
 /* Main Menu > Load Content > Playlists */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
+   "Favorits"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
+   "Musica"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
+   "Imatges"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
+   "Vidèos"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
+   "Explorar"
+   )
 
 /* Main Menu > Online Updater */
 
@@ -175,6 +199,14 @@ MSG_HASH(
 /* Settings */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
+   "Vidèo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
+   "Listas de lectura"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
    "Utilizaire"
    )
@@ -193,7 +225,7 @@ MSG_HASH(
 /* Settings > Video */
 
 #if defined(DINGUX)
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 #endif
 #endif
 
@@ -256,6 +288,10 @@ MSG_HASH(
 
 /* Settings > Input > Hotkeys */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+   "Quitar RetroArch"
+   )
 
 /* Settings > Input > Port # Controls */
 
@@ -311,6 +347,18 @@ MSG_HASH(
 
 /* Settings > User Interface > Menu Item Visibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+   "Menú rapid"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
+   "Paramètres"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
+   "Menú principal"
+   )
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
@@ -340,6 +388,10 @@ MSG_HASH(
 
 /* Settings > Playlists */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
+   "Istoric"
+   )
 
 /* Settings > Playlists > Playlist Management */
 
@@ -367,6 +419,10 @@ MSG_HASH(
 
 /* Settings > Directory */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
+   "Listas de lectura"
+   )
 
 /* Music */
 
@@ -398,6 +454,10 @@ MSG_HASH(
 
 /* Playlist Item > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
+   "Nom"
+   )
 
 /* Quick Menu */
 
@@ -430,6 +490,10 @@ MSG_HASH(
 
 /* Quick Menu > Cheats > Cheat Details */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
+   "Descripcion"
+   )
 
 /* Quick Menu > Disc Control */
 
@@ -486,12 +550,56 @@ MSG_HASH(
 
 /* Qt (Desktop Menu) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
+   "Paramètres"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
+   "&Ajuda"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_NAME,
+   "Nom"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
+   "Listas de lectura"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
+   "Nom:"
+   )
 
 /* Unsorted */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
+   "Istoric"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER,
+   "Utilizaire"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BROWSE_START,
+   "Lançar"
+   )
 
 /* Unused (Only Exist in Translation Files) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
+   "Jòc en ret"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP,
+   "Ajuda"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
+   "Descripcion"
+   )
 
 /* Unused (Needs Confirmation) */
 
@@ -507,6 +615,10 @@ MSG_HASH(
 
 /* Environment Specific Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
+   "Reaviar RetroArch"
+   )
 
 #ifdef HAVE_LAKKA_SWITCH
 #endif

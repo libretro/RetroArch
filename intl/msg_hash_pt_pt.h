@@ -1281,7 +1281,7 @@ MSG_HASH(
    "Filtragem bilinear"
    )
 #if defined(DINGUX)
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 #endif
 #endif
 MSG_HASH(
@@ -1391,6 +1391,10 @@ MSG_HASH(
    "A taxa de atualização como relatado pelo driver de exibição."
    )
 #if defined(DINGUX) && defined(DINGUX_BETA)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
+   "Taxa de atualização"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
@@ -2241,6 +2245,10 @@ MSG_HASH(
    "Envolver o início e/ou o final, caso o limite da lista seja alcançado horizontal ou verticalmente."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
+   "Neve"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
    "Suporte de rato"
    )
@@ -2731,6 +2739,10 @@ MSG_HASH(
 /* Playlist Item > Information */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
+   "Nome"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
    "Núcleo"
    )
@@ -2913,6 +2925,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
    "Ativado"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
+   "Descrição"
    )
 
 /* Quick Menu > Disc Control */
@@ -3099,6 +3115,10 @@ MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
    "Compilador desconhecido"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
+   "Nenhum"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
    "DESLIGADO"
    )
@@ -3129,6 +3149,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
    "<Nenhum>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NONE,
+   "Nenhum"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNKNOWN,
+   "Desconhecido"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
+   "Nenhum"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
@@ -3240,6 +3272,10 @@ MSG_HASH(
 
 /* RGUI: Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
+   "Nenhum"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    "DESLIGADO"
@@ -3551,6 +3587,10 @@ MSG_HASH(
    "Carregar núcleo"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_NAME,
+   "Nome"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    "Selecionar de Listas de Reprodução"
    )
@@ -3581,6 +3621,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
    "Apagar a lista de reprodução"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
+   "Nome:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
@@ -4808,6 +4852,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
    "Desfazendo a gravação do estado"
+   )
+MSG_HASH(
+   MSG_UNKNOWN,
+   "Desconhecido"
    )
 MSG_HASH(
    MSG_UNPAUSED,

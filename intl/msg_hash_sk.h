@@ -1285,10 +1285,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "Najbližší sused"
    )
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
    "Interpolácia obrazu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "Najbližší sused"
    )
 #endif
 #endif
@@ -1552,7 +1556,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Nastaviť najvyšší jas (v cd/m2), ktorú vie displej zobraziť. Pozri stránku RTINGS.com na zistenie najvyššieho jasu displeja"
+   "Nastaviť najvyšší jas (v cd/m2), ktorú vie displej zobraziť. Pozri stránku RTINGS.com na zistenie najvyššieho jasu displeja."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
@@ -1603,6 +1607,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    "Synchronizácia"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
+   "Zmiešavač"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
@@ -1934,6 +1942,10 @@ MSG_HASH(
 
 /* Settings > Frame Throttle */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
+   "Previnúť"
+   )
 
 /* Settings > Frame Throttle > Rewind */
 
@@ -1988,6 +2000,10 @@ MSG_HASH(
 
 /* Settings > User Interface */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
+   "Sneh"
+   )
 
 /* Settings > User Interface > Menu Item Visibility */
 
@@ -2027,6 +2043,10 @@ MSG_HASH(
 
 /* Settings > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
+   "Úspechy"
+   )
 
 /* Settings > Network */
 
@@ -2159,12 +2179,20 @@ MSG_HASH(
 /* Playlist Item > Information */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
+   "Názov"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
    "Jadro"
    )
 
 /* Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
+   "Zavrieť obsah"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
    "Nastavenia"
@@ -2176,6 +2204,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
    "Cheaty"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
+   "Úspechy"
    )
 
 /* Quick Menu > Options */
@@ -2214,6 +2246,10 @@ MSG_HASH(
 
 /* Quick Menu > Cheats > Cheat Details */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
+   "Popis"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_TYPE,
    "Typ"
@@ -2303,6 +2339,10 @@ MSG_HASH(
    "Hlasovať"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
+   "Žiadne"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
    "VYP"
    )
@@ -2311,8 +2351,16 @@ MSG_HASH(
    "Nikdy"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NONE,
+   "Žiadne"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_PORT_16,
    "Všetko"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
+   "Žiadne"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
@@ -2393,8 +2441,20 @@ MSG_HASH(
 /* RGUI: Settings Options */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
+   "Bilineárna"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
+   "Žiadny"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    "VYP"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
+   "Celočíselné škálovanie"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
@@ -2501,6 +2561,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
    "Načítať jadro"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_NAME,
+   "Názov"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
@@ -2619,6 +2683,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
    "Čo je jadro?"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
+   "Odoslať ladiace informácie"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
+   "Odoslať diagnostické informácie o zariadení a nastaveniach RetroArch na naše serveri na analýzu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
+   "Popis"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_START_SEARCH,

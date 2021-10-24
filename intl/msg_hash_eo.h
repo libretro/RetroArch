@@ -277,7 +277,7 @@ MSG_HASH(
    "GPU Screenshot Enable"
    )
 #if defined(DINGUX)
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 #endif
 #endif
 

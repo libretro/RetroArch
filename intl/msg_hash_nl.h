@@ -1169,7 +1169,7 @@ MSG_HASH(
    "Bilineaire Filtering"
    )
 #if defined(DINGUX)
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 #endif
 #endif
 MSG_HASH(
@@ -1259,6 +1259,10 @@ MSG_HASH(
    "De vernieuwingsfrequentie zoals gerapporteerd door het beeldschermstuurprogramma."
    )
 #if defined(DINGUX) && defined(DINGUX_BETA)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
+   "Verticale Refresh Rate"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
@@ -2621,6 +2625,10 @@ MSG_HASH(
    "Navigatie Wrap-Around"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
+   "Sneeuw"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
    "Muis Ondersteuning"
    )
@@ -2959,6 +2967,10 @@ MSG_HASH(
 /* Playlist Item > Information */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
+   "Naam"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH,
    "Bestandspad"
    )
@@ -3106,6 +3118,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
    "Ingeschakeld"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
+   "Omschrijving"
+   )
 
 /* Quick Menu > Disc Control */
 
@@ -3239,6 +3255,10 @@ MSG_HASH(
    "Stem"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
+   "Geen"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE,
    "Geen Voorkeur"
    )
@@ -3269,6 +3289,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
    "<Niets>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NONE,
+   "Geen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNKNOWN,
+   "Onbekend"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
+   "Geen"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
@@ -3352,6 +3384,10 @@ MSG_HASH(
 
 /* RGUI: Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
+   "Geen"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO,
    "Automatisch"
@@ -3647,6 +3683,10 @@ MSG_HASH(
    "Core Laden"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_NAME,
+   "Naam"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    "Afspeellijsten"
    )
@@ -3669,6 +3709,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
    "Afspeellijst verwijderen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
+   "Naam:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE,
@@ -4220,6 +4264,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
    "Save state ongedaan maken"
+   )
+MSG_HASH(
+   MSG_UNKNOWN,
+   "Onbekend"
    )
 MSG_HASH(
    MSG_VALUE_REBOOTING,

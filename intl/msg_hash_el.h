@@ -1289,7 +1289,7 @@ MSG_HASH(
    "Διγραμμικό Φιλτράρισμα"
    )
 #if defined(DINGUX)
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 #endif
 #endif
 MSG_HASH(
@@ -2387,6 +2387,10 @@ MSG_HASH(
    )
 #if defined(ANDROID)
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS,
+   "Εμφάνιση Εισαγωγών Στο Επικάλλυμα"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "Επικάλλυμα"
@@ -3607,6 +3611,10 @@ MSG_HASH(
    "Μέσος Όρος"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
+   "Κανείς"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE,
    "Καμία προτίμηση"
    )
@@ -3663,6 +3671,10 @@ MSG_HASH(
    "<Κανένα>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NONE,
+   "Τίποτα"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNKNOWN,
    "Άγνωστο"
    )
@@ -3693,6 +3705,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_ALPHABETICAL,
    "Αλφαβητικά"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
+   "Κανείς"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
@@ -3943,6 +3959,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_SINC,
    "Sinc/Lanczos3 (Αργό)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
+   "Κανείς"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE,
@@ -4673,6 +4693,10 @@ MSG_HASH(
    "Αποστολή Πληροφοριων Εκσφαλματωσης (Debuging)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
+   "Στέλνει διαγνωστικές πληροφορίες σχετικά με τη συσκευή σας και τις ρυθμίσεις του RetroArch στους διακομιστές μας για ανάλυση."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGEMENT,
    "Ρυθμίσεις Βάσης Δεδομένων"
    )
@@ -5178,6 +5202,10 @@ MSG_HASH(
    "Γρήγορη κίνηση."
    )
 MSG_HASH(
+   MSG_UNKNOWN,
+   "Άγνωστο"
+   )
+MSG_HASH(
    MSG_VALUE_REBOOTING,
    "Επανεκκίνηση..."
    )
@@ -5406,6 +5434,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
    "Ανάλυση Οθόνης"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DEFAULT,
+   "Ανάλυση Οθόνης: Προεπιλογή"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,

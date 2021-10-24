@@ -454,6 +454,22 @@ MSG_HASH(
    "Laiteohjelmisto"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
+   "Puuttuu, Pakollinen:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   "Puuttuu, Valinnainen:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
+   "Löytyy, Pakollinen:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   "Löytyy, Valinnainen:"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "Lukitse asennettu ydin"
    )
@@ -1317,7 +1333,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "Lähin naapuri"
    )
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
    "Kuvan interpolointi"
@@ -1449,6 +1465,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
    "Valitse käytettävä näytönohjain."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
+   "Näytön vaakasiirtymä"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
+   "Pakottaa tietyn siirtymän videolle vaakasuunnassa. Siirtymä on käytössä kaikkialla."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
+   "Näytön pystysiirtymä"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
+   "Pakottaa tietyn siirtymän videolle pystysuunnassa. Siirtymä on käytössä kaikkialla."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
@@ -1668,7 +1700,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Aseta näytön luminanssin (cd/m2) huippu. Tarkista näytön RT -lukemat suurimmalle kirkkaudelle"
+   "Aseta näytön luminanssin (cd/m2) huippu. Tarkista näytön RT -lukemat suurimmalle kirkkaudelle."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
@@ -2299,6 +2331,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    "Ohjaimen nappiyhdistelmä valikon vaihtamiseksi."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   "Ohjaimen nappiyhdistelmä lopettamiseksi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   "Ohjaimen nappiyhdistelmä RetroArchin lopettamiseksi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
@@ -6025,7 +6065,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
-   "Vahvista omassa olevat tietueet"
+   "Vahvista olemassa olevat kohteet"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
@@ -8521,7 +8561,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT,
    "Solarized, vaalea"
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
    "Toinen esikatselukuva"
@@ -9417,6 +9456,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT,
    "Portti"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
+   "Portti %d laitteen nimi: %s (#%d)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
@@ -11533,6 +11576,34 @@ MSG_HASH(
    "Näytön resoluutio"
    )
 MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DEFAULT,
+   "Näytön resoluutio: oletus"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_NO_DESC,
+   "Näytön resoluutio: %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DESC,
+   "Näytön resoluutio: %dx%d - %s"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
+   "Toteutetaan: oletus"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
+   "Palautetaan arvoon: Oletus"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC,
+   "Palautetaan arvoon: %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DESC,
+   "Palautetaan arvoon: %dx%d - %s"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
    "Valitse näytön tila."
    )
@@ -11779,6 +11850,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOCAL,
    "Paikallinen"
+   )
+MSG_HASH(
+   MSG_READ_WRITE,
+   "Sisäisen tallennustilan tila: luku/kirjoitus"
+   )
+MSG_HASH(
+   MSG_READ_ONLY,
+   "Sisäisen tallennustilan tila: vain luku"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,

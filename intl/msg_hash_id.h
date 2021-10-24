@@ -1261,7 +1261,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "Tetangga Terdekat"
    )
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
    "Interpolasi Gambar"
@@ -2006,6 +2006,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "Aktifkan Getaran Perangkat (Untuk Core yang Didukung)"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
+   "Tentukan besarnya efek umpan balik haptic."
+   )
 
 /* Settings > Input > Menu Controls */
 
@@ -2217,6 +2221,10 @@ MSG_HASH(
 /* Playlist > Playlist Item */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
+   "Hapus"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,
    "Informasi"
    )
@@ -2226,9 +2234,17 @@ MSG_HASH(
 
 /* Playlist Item > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
+   "Nama"
+   )
 
 /* Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
+   "Ambil Tangkapan Layar"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
    "Pencapaian"
@@ -2262,12 +2278,20 @@ MSG_HASH(
 
 /* Quick Menu > Cheats > Cheat Details */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
+   "Deskripsi"
+   )
 
 /* Quick Menu > Disc Control */
 
 
 /* Quick Menu > Shaders */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
+   "Hapus"
+   )
 
 /* Quick Menu > Shaders > Save */
 
@@ -2300,6 +2324,10 @@ MSG_HASH(
 
 /* RGUI: Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
+   "Skala Bilangan Bulat"
+   )
 
 /* XMB: Settings > User Interface > Appearance */
 
@@ -2331,6 +2359,10 @@ MSG_HASH(
    "Muat Core"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_NAME,
+   "Nama"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    "Daftar Putar"
    )
@@ -2341,6 +2373,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
    "Informasi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_STOP,
+   "Hentikan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
+   "Nama:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_REMOVE,
+   "Hapus"
    )
 
 /* Unsorted */
@@ -2353,6 +2397,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER,
    "Pengguna"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BROWSE_START,
+   "Mulai"
+   )
 
 /* Unused (Only Exist in Translation Files) */
 
@@ -2360,12 +2408,32 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "Bantuan"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
+   "Deskripsi"
+   )
 
 /* Unused (Needs Confirmation) */
 
 MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
    "Unduhan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
+   "Berhenti"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
+   "Gulir ke atas"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD,
+   "Alihkan Papan Ketik"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU,
+   "Beralih Menu"
    )
 
 /* Discord Status */

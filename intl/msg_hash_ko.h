@@ -1361,7 +1361,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "최근접 이웃"
    )
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
    "이미지 보간"
@@ -1493,6 +1493,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
    "사용할 그래픽 카드를 선택합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
+   "화면 가로 오프셋"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
+   "화면에 강제로 일정량의 가로 방향 오프셋을 적용합니다. 이 설정은 전역적으로 적용됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
+   "화면 세로 오프셋"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
+   "화면에 강제로 일정량의 세로 방향 오프셋을 적용합니다. 이 설정은 전역적으로 적용됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
@@ -1744,7 +1760,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "디스플레이가 표시할 수 있는 최대 휘도(cd/m2)를 설정합니다. RTINGS 등의 사이트에서 관련 수치를 확인할 수 있습니다"
+   "디스플레이가 표시할 수 있는 최대 휘도(cd/m2)를 설정합니다. RTINGS 등의 사이트에서 관련 수치를 확인할 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
@@ -11658,6 +11674,42 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
    "화면 해상도"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DEFAULT,
+   "화면 해상도: 기본"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_NO_DESC,
+   "화면 해상도: %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DESC,
+   "화면 해상도: %dx%d - %s"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
+   "적용 중: 기본"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
+   "적용 중: %dx%d\nSTART를 눌러 초기화"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DESC,
+   "적용 중: %dx%d - %s\nSTART를 눌러 초기화"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
+   "초기화 중: 기본"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC,
+   "초기화 중: %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DESC,
+   "초기화 중: %dx%d - %s"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,

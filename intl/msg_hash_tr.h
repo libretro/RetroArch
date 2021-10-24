@@ -1333,7 +1333,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "En Yakın İlişki"
    )
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
    "Görüntü İnterpolasyonu"
@@ -1465,6 +1465,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
    "Hangi grafik kartının kullanılacağını seçin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
+   "Yatay Ekran Dengeleyici"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
+   "Videoyu yatay olarak belirli bir düzene zorlar. Düzen genel ayar olarak uygulanır."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
+   "Dikey Ekran Dengeleyici"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
+   "Videoyu dikey olarak belirli bir düzene zorlar. Düzen genel ayar olarak uygulanır."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
@@ -1716,7 +1732,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Ekranınızın yeniden üretebileceği tepe parlaklığını (cd/m2 olarak) ayarlayın. Ekranınızın en yüksek parlaklığı için RT'lere bakın"
+   "Ekranınızın yeniden üretebileceği tepe parlaklığını (cd/m2 olarak) ayarlayın. Ekranınızın en yüksek parlaklığı için RT'lere bakın."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
@@ -8619,7 +8635,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
-   "Solarize Koyu"
+   "Solar Koyu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT,
@@ -11642,6 +11658,42 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
    "Ekran Çözünürlüğü"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DEFAULT,
+   "Ekran Çözünürlüğü: Varsayılan"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_NO_DESC,
+   "Ekran Çözünürlüğü: %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DESC,
+   "Ekran Çözünürlüğü: %dx%d - %s"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
+   "Uygulanıyor: Varsayılan"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
+   "Uygulanıyor: %dx%d\nSTART ile sıfırla"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DESC,
+   "Uygulanıyor: %dx%d - %s\nSTART ile sıfırla"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
+   "Sıfırlanan: Varsayılan"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC,
+   "Sıfırlanan: %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DESC,
+   "Sıfırlanan: %dx%d - %s"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
