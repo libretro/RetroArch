@@ -62,6 +62,7 @@
 #include "../input/input_remapping.h"
 #include "../performance_counters.h"
 #include "../version.h"
+#include "../misc/cpufreq/cpufreq.h"
 
 #ifdef HAVE_LIBNX
 #include <switch.h>
