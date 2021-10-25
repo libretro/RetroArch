@@ -42,7 +42,7 @@ static sr_mode srm;
 #include "../config.h"
 #endif
 
-#if defined(HAVE_VIDEOCORE)
+#if defined(HAVE_VIDEOCORE) /* need to add video core to SR2 */
 #include "include/userland/interface/vmcs_host/vc_vchi_gencmd.h"
 static void crt_rpi_switch(videocrt_switch_t *p_switch,int width, int height, float hz, int xoffset, int native_width);
 #endif
@@ -85,7 +85,7 @@ static void switch_crt_hz(videocrt_switch_t *p_switch)
 
 static void crt_aspect_ratio_switch(
       videocrt_switch_t *p_switch,
-      unsigned width, unsigned height, unsigned srm_width, unsigned srm_height)
+      unsigned width, unsigned height, float srm_width, float srm_height)
 {
    /* send aspect float to video_driver */
    p_switch->fly_aspect = (float)width / (float)height;
@@ -102,7 +102,7 @@ static void crt_aspect_ratio_switch(
 
 static void set_aspect(videocrt_switch_t *p_switch, unsigned int width, 
       unsigned int height, unsigned int srm_width, unsigned srm_height,
-      unsigned int srm_xscale, unsigned srm_yscale, bool srm_isstretched )
+      float srm_xscale, float srm_yscale, bool srm_isstretched )
 {
    unsigned int patched_width = 0;
    unsigned int patched_height = 0;
@@ -120,11 +120,18 @@ static void set_aspect(videocrt_switch_t *p_switch, unsigned int width,
       patched_width = width;
       patched_height = height;
    }
-   if (srm_isstretched && srm_width > 0)
+   if (srm_width >= 1920)
    {
-      srm_xscale = srm_width/width;
-      srm_yscale = srm_height/height;
+      srm_xscale = (float)srm_width/width;
+      RARCH_LOG("[CRT]: Super resolution detected. Fractal scaling @ X:%f Y:%d \n", srm_xscale, (int)srm_yscale);
    }
+   else if (srm_isstretched && srm_width > 0 ){
+      srm_xscale = (float)srm_width/width;
+      srm_yscale = (float)srm_height/height;
+      RARCH_LOG("[CRT]: Resolution is stretched. Fractal scaling @ X:%f Y:%f \n", srm_xscale, srm_yscale);
+   }
+   else
+      RARCH_LOG("[CRT]: SR integer scaled  X:%d Y:%d \n",srm.x_scale, srm.y_scale);
 
    scaled_width = roundf(patched_width*srm_xscale);
    scaled_height = roundf(patched_height*srm_yscale);
@@ -252,12 +259,10 @@ static void switch_res_crt(
       }
       p_switch->sr_core_hz = srm.refresh;
 
-      set_aspect(p_switch, w , h, srm.width, srm.height, srm.x_scale, srm.y_scale, srm.is_stretched);
-      
-      RARCH_LOG("[CRT]: SR scaled  X:%d Y:%d \n",srm.x_scale, srm.y_scale);
+      set_aspect(p_switch, w , h, srm.width, srm.height, (float)srm.x_scale, (float)srm.y_scale, srm.is_stretched);
 
    }else {
-      set_aspect(p_switch, width , height, width, height ,1,1, false);
+      set_aspect(p_switch, width , height, width, height ,(float)1,(float)1, false);
       video_driver_set_size(width , height); 
       video_driver_apply_state_changes();
 
@@ -310,7 +315,7 @@ static void crt_fix_hh_res(videocrt_switch_t *p_switch, int native_width, int wi
    int corrected_height = 240;
 
    switch_res_crt(p_switch, corrected_width, corrected_height , crt_mode, corrected_width, monitor_index-1, super_width);
-   set_aspect(p_switch, native_width , height, native_width, height ,1,1, false);
+   set_aspect(p_switch, native_width , height, native_width, height ,(float)1,(float)1, false);
    video_driver_set_size(native_width , height);
             
 
@@ -385,7 +390,7 @@ void crt_switch_res_core(
       /* Detect resolution change and switch */
       if (crt_check_for_changes(p_switch))
       {
-         RARCH_LOG("[CRT]: Requested Reolution: %dx%d@%f \n", native_width, height, hz);
+         RARCH_LOG("[CRT]: Requested Resolution: %dx%d@%f \n", native_width, height, hz);
          #if defined(HAVE_VIDEOCORE)
          crt_rpi_switch(p_switch, width, height, hz, 0, native_width);
          #else
@@ -489,7 +494,7 @@ static void crt_rpi_switch(videocrt_switch_t *p_switch, int width, int height, f
 
    set_aspect(p_switch, width, 
       height, width, height,
-      1, 1, false);
+      (float)1, (float)1, false);
    int w = width;
    while (w < 1920) 
    {
