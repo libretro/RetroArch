@@ -1041,6 +1041,10 @@ ifeq ($(HAVE_LAKKA_SWITCH), 1)
    DEFINES += -DHAVE_LAKKA_SWITCH
 endif
 
+ifeq ($(HAVE_LAKKA_NIGHTLY), 1)
+   DEFINES += -DHAVE_LAKKA_NIGHTLY
+endif
+
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_setting.o \
           menu/menu_driver.o \
