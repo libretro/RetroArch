@@ -9811,7 +9811,7 @@ static unsigned print_buf_lines(file_list_t *list, char *buf,
       line_start     = buf + i + 1;
    }
 
-   if (append)
+   if (append && type != FILE_TYPE_DOWNLOAD_LAKKA)
       file_list_sort_on_alt(list);
    /* If the buffer was completely full, and didn't end
     * with a newline, just ignore the partial last line. */
