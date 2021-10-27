@@ -1039,6 +1039,7 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
                break;
             case MENU_ENUM_LABEL_NO_ITEMS:
             case MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
+            case MENU_ENUM_LABEL_EXPLORE_INITIALISING_LIST:
                if (
                         string_ends_with_size(menu_label, "_tab",
                            strlen(menu_label),

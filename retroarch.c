@@ -1183,6 +1183,10 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          core_updater_list_free_cached();
 #endif
 #if defined(HAVE_MENU) && defined(HAVE_LIBRETRODB)
+         /* Before freeing the explore menu, we
+          * must wait for any explore menu initialisation
+          * tasks to complete */
+         menu_explore_wait_for_init_task();
          menu_explore_free();
 #endif
 
