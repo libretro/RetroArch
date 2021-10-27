@@ -1398,6 +1398,7 @@ MENU
 #include "../menu/menu_displaylist.c"
 #ifdef HAVE_LIBRETRODB
 #include "../menu/menu_explore.c"
+#include "../tasks/task_menu_explore.c"
 #endif
 #endif
 

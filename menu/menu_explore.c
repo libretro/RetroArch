@@ -21,6 +21,7 @@
 #include "../configuration.h"
 #include "../playlist.h"
 #include "../libretro-db/libretrodb.h"
+#include "../tasks/tasks_internal.h"
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
 #include <array/rbuf.h>
@@ -81,7 +82,7 @@ typedef struct
 #endif
 } explore_entry_t;
 
-typedef struct 
+struct explore_state
 {
    ex_arena arena; /* ptr alignment */
    explore_string_t **by[EXPLORE_CAT_COUNT];
@@ -95,7 +96,8 @@ typedef struct
    char title[1024];
    char find_string[1024];
    bool has_unknown[EXPLORE_CAT_COUNT];
-} explore_state_t;
+   bool menu_initialised;
+};
 
 static const struct
 {
@@ -329,26 +331,6 @@ static void explore_unload_icons(explore_state_t *state)
          video_driver_texture_unload(&state->icons[i]);
 }
 
-static void explore_free(explore_state_t *state)
-{
-   unsigned i;
-   if (!state)
-      return;
-   for (i = 0; i != EXPLORE_CAT_COUNT; i++)
-      RBUF_FREE(state->by[i]);
-
-   RBUF_FREE(state->entries);
-
-   for (i = 0; i != RBUF_LEN(state->playlists); i++)
-      playlist_free(state->playlists[i]);
-   RBUF_FREE(state->playlists);
-
-   explore_unload_icons(state);
-   RBUF_FREE(state->icons);
-
-   ex_arena_free(&state->arena);
-}
-
 static void explore_load_icons(explore_state_t *state)
 {
    char path[PATH_MAX_LENGTH];
@@ -399,7 +381,8 @@ static void explore_load_icons(explore_state_t *state)
    }
 }
 
-static explore_state_t *explore_build_list(settings_t *settings)
+explore_state_t *menu_explore_build_list(const char *directory_playlist,
+      const char *directory_database)
 {
    unsigned i;
    char tmp[PATH_MAX_LENGTH];
@@ -415,8 +398,6 @@ static explore_state_t *explore_build_list(settings_t *settings)
    int *rdb_indices                               = NULL;
    explore_string_t **cat_maps[EXPLORE_CAT_COUNT] = {NULL};
    explore_string_t **split_buf                   = NULL;
-   const char *directory_playlist                 = settings->paths.directory_playlist;
-   const char *directory_database                 = settings->paths.path_content_database;
    libretro_vfs_implementation_dir *dir           = NULL;
 
    explore_state_t *explore                       = (explore_state_t*)calloc(
@@ -740,6 +721,14 @@ static explore_state_t *explore_build_list(settings_t *settings)
    return explore;
 }
 
+static int explore_action_get_title_default(
+      const char *path, const char *label,
+      unsigned menu_type, char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_TAB), len);
+   return 0;
+}
+
 static int explore_action_get_title(
       const char *path, const char *label,
       unsigned menu_type, char *s, size_t len)
@@ -844,9 +833,32 @@ unsigned menu_displaylist_explore(file_list_t *list,
 
    if (!explore_state)
    {
-      explore_state             = explore_build_list(settings);
+      if (!menu_explore_init_in_progress(NULL))
+         task_push_menu_explore_init(
+               settings->paths.directory_playlist,
+               settings->paths.path_content_database);
+
+      menu_entries_append_enum(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST),
+            msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_INITIALISING_LIST),
+            MENU_ENUM_LABEL_EXPLORE_INITIALISING_LIST,
+            FILE_TYPE_NONE, 0, 0);
+
+      if (menu_stack->size > 1)
+      {
+         struct item_file *stack   = &menu_stack->list[menu_stack->size - 1];
+         menu_file_list_cbs_t* cbs = ((menu_file_list_cbs_t*)stack->actiondata);
+         cbs->action_get_title     = explore_action_get_title_default;
+      }
+
+      return list->size;
+   }
+
+   if (!explore_state->menu_initialised)
+   {
       explore_state->top_depth  = (unsigned)menu_stack->size - 1;
       explore_load_icons(explore_state);
+      explore_state->menu_initialised = true;
    }
 
    if (menu_stack->size > 1)
@@ -1223,12 +1235,43 @@ void menu_explore_context_deinit(void)
    explore_unload_icons(explore_state);
 }
 
+void menu_explore_free_state(explore_state_t *state)
+{
+   unsigned i;
+   if (!state)
+      return;
+   for (i = 0; i != EXPLORE_CAT_COUNT; i++)
+      RBUF_FREE(state->by[i]);
+
+   RBUF_FREE(state->entries);
+
+   for (i = 0; i != RBUF_LEN(state->playlists); i++)
+      playlist_free(state->playlists[i]);
+   RBUF_FREE(state->playlists);
+
+   explore_unload_icons(state);
+   RBUF_FREE(state->icons);
+
+   ex_arena_free(&state->arena);
+}
+
 void menu_explore_free(void)
 {
    if (!explore_state)
       return;
 
-   explore_free(explore_state);
+   menu_explore_free_state(explore_state);
    free(explore_state);
    explore_state = NULL;
+}
+
+void menu_explore_set_state(explore_state_t *state)
+{
+   if (!state)
+      return;
+
+   if (explore_state)
+      menu_explore_free();
+
+   explore_state = state;
 }

@@ -63,6 +63,10 @@ MSG_HASH(
    "explore_item"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_INITIALISING_LIST,
+   "explore_initialising_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_ADD_TAB,
    "add_tab"
    )

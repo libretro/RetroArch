@@ -267,6 +267,14 @@ void set_save_state_in_background(bool state);
 void task_push_cdrom_dump(const char *drive);
 #endif
 
+/* Menu explore tasks */
+#if defined(HAVE_MENU) && defined(HAVE_LIBRETRODB)
+bool task_push_menu_explore_init(const char *directory_playlist,
+      const char *directory_database);
+bool menu_explore_init_in_progress(void *data);
+void menu_explore_wait_for_init_task(void);
+#endif
+
 RETRO_END_DECLS
 
 #endif

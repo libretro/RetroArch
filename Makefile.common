@@ -563,7 +563,8 @@ ifeq ($(HAVE_LIBRETRODB), 1)
           tasks/task_database_cue.o
 
    ifeq ($(HAVE_MENU), 1)
-      OBJ += menu/menu_explore.o
+      OBJ += menu/menu_explore.o \
+             tasks/task_menu_explore.o
    endif
 endif
 
