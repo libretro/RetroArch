@@ -552,9 +552,6 @@ struct rarch_state
    /* Used while Netplay is running */
    netplay_t *netplay_data;
 #endif
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   struct video_shader *menu_driver_shader;
-#endif
    frontend_ctx_driver_t *current_frontend_ctx;
 
    struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
@@ -656,10 +653,6 @@ struct rarch_state
 #ifdef HAVE_CONFIGFILE
    bool rarch_block_config_read;
 #endif
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   bool cli_shader_disable;
-#endif
-
    bool location_driver_active;
    bool bluetooth_driver_active;
    bool wifi_driver_active;
@@ -675,8 +668,4 @@ struct rarch_state
 
    bool streaming_enable;
    bool main_ui_companion_is_on_foreground;
-
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   bool shader_presets_need_reload;
-#endif
 };

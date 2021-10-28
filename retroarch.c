@@ -1177,7 +1177,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
          playlist_free_cached();
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-         menu_shader_manager_free(p_rarch);
+         menu_shader_manager_free();
 #endif
 #ifdef HAVE_NETWORKING
          core_updater_list_free_cached();
@@ -1550,19 +1550,21 @@ static const void *find_driver_nonempty(
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 struct video_shader *menu_shader_get(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
+   video_driver_state_t 
+      *video_st                = video_state_get_ptr();
    if (video_shader_any_supported())
-      if (p_rarch)
-         return p_rarch->menu_driver_shader;
+      if (video_st)
+         return video_st->menu_driver_shader;
    return NULL;
 }
 
-void menu_shader_manager_free(void *data)
+void menu_shader_manager_free(void)
 {
-   struct rarch_state *p_rarch = (struct rarch_state*)data;
-   if (p_rarch->menu_driver_shader)
-      free(p_rarch->menu_driver_shader);
-   p_rarch->menu_driver_shader = NULL;
+   video_driver_state_t 
+      *video_st                = video_state_get_ptr();
+   if (video_st->menu_driver_shader)
+      free(video_st->menu_driver_shader);
+   video_st->menu_driver_shader = NULL;
 }
 
 /**
@@ -1572,7 +1574,8 @@ void menu_shader_manager_free(void *data)
  **/
 bool menu_shader_manager_init(void)
 {
-   struct rarch_state *p_rarch      = &rarch_st;
+   video_driver_state_t 
+      *video_st                     = video_state_get_ptr();
    enum rarch_shader_type type      = RARCH_SHADER_NONE;
    bool ret                         = true;
    bool is_preset                   = false;
@@ -1594,7 +1597,7 @@ bool menu_shader_manager_init(void)
    else
       path_shader = retroarch_get_shader_preset();
 
-   menu_shader_manager_free(p_rarch);
+   menu_shader_manager_free();
 
    menu_shader          = (struct video_shader*)
       calloc(1, sizeof(*menu_shader));
@@ -1634,7 +1637,7 @@ bool menu_shader_manager_init(void)
    }
 
 end:
-   p_rarch->menu_driver_shader = menu_shader;
+   video_st->menu_driver_shader = menu_shader;
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
    return ret;
 }
@@ -6158,7 +6161,7 @@ static bool command_event_init_core(
 
    /* Load auto-shaders on the next occasion */
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   p_rarch->shader_presets_need_reload        = true;
+   video_st->shader_presets_need_reload       = true;
    runloop_st->shader_delay_timer.timer_begin = false; /* not initialized */
    runloop_st->shader_delay_timer.timer_end   = false; /* not expired */
 #endif
@@ -8906,7 +8909,7 @@ int rarch_main(int argc, char *argv[], void *data)
    runloop_state_t *runloop_st         = &runloop_state;
    video_driver_state_t *video_st      = video_state_get_ptr();
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   p_rarch->shader_presets_need_reload                           = true;
+   video_st->shader_presets_need_reload                          = true;
 #endif
 #ifdef HAVE_RUNAHEAD
    video_st->runahead_is_active                                  = true;
@@ -17537,7 +17540,7 @@ static bool retroarch_parse_input_and_config(
                /* disable auto-shaders */
                if (string_is_empty(optarg))
                {
-                  p_rarch->cli_shader_disable = true;
+                  video_state_get_ptr()->cli_shader_disable = true;
                   break;
                }
 
@@ -18625,14 +18628,15 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
 const char *retroarch_get_shader_preset(void)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   struct rarch_state *p_rarch = &rarch_st;
-   settings_t *settings        = config_get_ptr();
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
-   const char *core_name       = runloop_st->system.info.library_name;
-   bool video_shader_enable    = settings->bools.video_shader_enable;
-   unsigned video_shader_delay = settings->uints.video_shader_delay;
-   bool auto_shaders_enable    = settings->bools.auto_shaders_enable;
-   bool cli_shader_disable     = p_rarch->cli_shader_disable;
+   struct rarch_state *p_rarch    = &rarch_st;
+   settings_t *settings           = config_get_ptr();
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   const char *core_name          = runloop_st->system.info.library_name;
+   bool video_shader_enable       = settings->bools.video_shader_enable;
+   unsigned video_shader_delay    = settings->uints.video_shader_delay;
+   bool auto_shaders_enable       = settings->bools.auto_shaders_enable;
+   bool cli_shader_disable        = video_st->cli_shader_disable;
 
    if (!video_shader_enable)
       return NULL;
@@ -18648,9 +18652,9 @@ const char *retroarch_get_shader_preset(void)
       return runloop_st->runtime_shader_preset_path;
 
    /* load auto-shader once, --set-shader works like a global auto-shader */
-   if (p_rarch->shader_presets_need_reload && !cli_shader_disable)
+   if (video_st->shader_presets_need_reload && !cli_shader_disable)
    {
-      p_rarch->shader_presets_need_reload = false;
+      video_st->shader_presets_need_reload = false;
       if (video_shader_is_supported(video_shader_parse_type(p_rarch->cli_shader)))
          strlcpy(runloop_st->runtime_shader_preset_path,
                p_rarch->cli_shader,

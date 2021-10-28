@@ -847,6 +847,10 @@ typedef struct
       retro_hw_render_context_negotiation_interface *
       hw_render_context_negotiation;
 
+#ifdef HAVE_MENU
+   struct video_shader *menu_driver_shader;
+#endif
+
    void *context_data;
 
    /* Opaque handles to currently running window.
@@ -942,7 +946,8 @@ typedef struct
    bool force_fullscreen;
    bool threaded;
    bool is_switching_display_mode;
-
+   bool shader_presets_need_reload;
+   bool cli_shader_disable;
 #ifdef HAVE_RUNAHEAD
    bool runahead_is_active;
 #endif
