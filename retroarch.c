@@ -636,30 +636,26 @@ static int generic_menu_iterate(
                         accessibility_enable,
                         p_rarch->accessibility_enabled))
                {
+                  char current_sublabel[255];
+                  const char *speak_text = menu->menu_state_msg;
+
                   if (string_is_equal(menu->menu_state_msg,
                            msg_hash_to_str(
                               MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
                   {
-                     char current_sublabel[255];
                      get_current_menu_sublabel(
                            menu_st,
-                           current_sublabel, sizeof(current_sublabel));
-                     if (string_is_equal(current_sublabel, ""))
-                        accessibility_speak_priority(p_rarch,
-                              accessibility_enable,
-                              accessibility_narrator_speech_speed,
-                              menu->menu_state_msg, 10);
-                     else
-                        accessibility_speak_priority(p_rarch,
-                              accessibility_enable,
-                              accessibility_narrator_speech_speed,
-                              current_sublabel, 10);
+                           current_sublabel,
+                           sizeof(current_sublabel));
+
+                     if (!string_is_equal(current_sublabel, ""))
+                        speak_text = current_sublabel;
                   }
-                  else
-                     accessibility_speak_priority(p_rarch,
-                           accessibility_enable,
-                           accessibility_narrator_speech_speed,
-                           menu->menu_state_msg, 10);
+
+                  accessibility_speak_priority(p_rarch,
+                        accessibility_enable,
+                        accessibility_narrator_speech_speed,
+                        speak_text, 10);
                }
 #endif
             }
@@ -7309,18 +7305,13 @@ bool command_event(enum event_command cmd, void *data)
             if (is_accessibility_enabled(
                   accessibility_enable,
                   p_rarch->accessibility_enabled))
-            {
-               if (boolean)
-                  accessibility_speak_priority(p_rarch,
+               accessibility_speak_priority(p_rarch,
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
-                     (char*)msg_hash_to_str(MSG_PAUSED), 10);
-               else
-                  accessibility_speak_priority(p_rarch,
-                     accessibility_enable,
-                     accessibility_narrator_speech_speed,
-                     (char*)msg_hash_to_str(MSG_UNPAUSED), 10);
-            }
+                     boolean 
+                     ? (char*)msg_hash_to_str(MSG_PAUSED)
+                     : (char*)msg_hash_to_str(MSG_UNPAUSED),
+                     10);
 #endif
 
             runloop_state.paused = boolean;
@@ -13464,30 +13455,27 @@ void input_keyboard_event(bool down, unsigned code,
 
          if (say_char)
          {
+            const char *speak_text = NULL;
             char c    = (char) character;
             *say_char = c;
             say_char[1] = '\0';
 
             if (character == 127 || character == 8)
+               speak_text = "backspace";
+            else
+            {
+               const char *lut_name   = accessibility_lut_name(c);
+               speak_text             = lut_name 
+                  ? lut_name : (character != 0) 
+                  ? say_char : NULL;
+
+            }
+
+            if (!string_is_empty(speak_text))
                accessibility_speak_priority(p_rarch,
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
-                     "backspace", 10);
-            else
-            {
-               const char *lut_name = accessibility_lut_name(c);
-
-               if (lut_name)
-                  accessibility_speak_priority(p_rarch,
-                        accessibility_enable,
-                        accessibility_narrator_speech_speed,
-                        lut_name, 10);
-               else if (character != 0)
-                  accessibility_speak_priority(p_rarch,
-                        accessibility_enable,
-                        accessibility_narrator_speech_speed,
-                        say_char, 10);
-            }
+                     speak_text, 10);
             free(say_char);
          }
       }
@@ -20835,25 +20823,20 @@ unsigned int retroarch_get_rotation(void)
 }
 
 #ifdef HAVE_ACCESSIBILITY
-static bool accessibility_speak_priority(
+static void accessibility_speak_priority(
       struct rarch_state *p_rarch,
       bool accessibility_enable,
       unsigned accessibility_narrator_speech_speed,
       const char* speak_text, int priority)
 {
-   if (is_accessibility_enabled(
-            accessibility_enable,
-            p_rarch->accessibility_enabled))
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   bool do_tts                     = is_accessibility_enabled(
+         accessibility_enable,
+         p_rarch->accessibility_enabled);
+   if (!do_tts)
+      return;
+   if (!frontend || !frontend->accessibility_speak)
    {
-      frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
-
-      RARCH_LOG("Spoke: %s\n", speak_text);
-
-      if (frontend && frontend->accessibility_speak)
-         return frontend->accessibility_speak(accessibility_narrator_speech_speed, speak_text,
-               priority);
-
-      RARCH_LOG("Platform not supported for accessibility.\n");
       /* The following method is a fallback for other platforms to use the
          AI Service url to do the TTS.  However, since the playback is done
          via the audio mixer, which only processes the audio while the
@@ -20862,12 +20845,13 @@ static bool accessibility_speak_priority(
          we can use this. */
 #if 0
 #if defined(HAVE_NETWORKING)
-      return accessibility_speak_ai_service(speak_text, voice, priority);
+      accessibility_speak_ai_service(speak_text, voice, priority);
 #endif
 #endif
    }
-
-   return true;
+   else
+      frontend->accessibility_speak(accessibility_narrator_speech_speed, speak_text,
+            priority);
 }
 
 #endif
