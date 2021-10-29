@@ -8053,8 +8053,9 @@ void retroarch_override_setting_set(
             unsigned *val = (unsigned*)data;
             if (val)
             {
-               unsigned bit = *val;
-               BIT256_SET(p_rarch->has_set_libretro_device, bit);
+               unsigned                bit = *val;
+	       runloop_state_t *runloop_st = &runloop_state;
+               BIT256_SET(runloop_st->has_set_libretro_device, bit);
             }
          }
          break;
@@ -8126,8 +8127,9 @@ void retroarch_override_setting_unset(
             unsigned *val = (unsigned*)data;
             if (val)
             {
-               unsigned bit = *val;
-               BIT256_CLEAR(p_rarch->has_set_libretro_device, bit);
+               unsigned                bit = *val;
+	       runloop_state_t *runloop_st = &runloop_state;
+               BIT256_CLEAR(runloop_st->has_set_libretro_device, bit);
             }
          }
          break;
@@ -18106,8 +18108,9 @@ bool retroarch_override_setting_is_set(
             unsigned *val = (unsigned*)data;
             if (val)
             {
-               unsigned bit = *val;
-               return BIT256_GET(p_rarch->has_set_libretro_device, bit);
+               unsigned                bit = *val;
+	       runloop_state_t *runloop_st = &runloop_state;
+               return BIT256_GET(runloop_st->has_set_libretro_device, bit);
             }
          }
          break;

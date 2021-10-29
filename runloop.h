@@ -200,6 +200,9 @@ struct runloop
    unsigned subsystem_current_count;
 
    fastmotion_overrides_t fastmotion_override; /* float alignment */
+
+   retro_bits_t has_set_libretro_device;        /* uint32_t alignment */
+
    enum rarch_core_type current_core_type;
    enum rarch_core_type explicit_current_core_type;
    enum poll_type_override_t core_poll_type_override;

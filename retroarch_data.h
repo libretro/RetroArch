@@ -585,8 +585,6 @@ struct rarch_state
 #endif
    unsigned perf_ptr_rarch;
 
-   retro_bits_t has_set_libretro_device;        /* uint32_t alignment */
-
    char error_string[255];
 #ifdef HAVE_NETWORKING
    char server_address_deferred[512];
