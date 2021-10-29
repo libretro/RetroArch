@@ -24,6 +24,7 @@
 #include <boolean.h>
 #include <retro_inline.h>
 #include <retro_common_api.h>
+#include <libretro.h>
 #include <dynamic/dylib.h>
 
 #ifdef HAVE_CONFIG_H
@@ -37,6 +38,12 @@
 #include "dynamic.h"
 #include "core_option_manager.h"
 #include "state_manager.h"
+
+/* Arbitrary twenty subsystems limit */
+#define SUBSYSTEM_MAX_SUBSYSTEMS 20
+
+/* Arbitrary 10 roms for each subsystem limit */
+#define SUBSYSTEM_MAX_SUBSYSTEM_ROMS 10
 
 enum  runloop_state_enum
 {
@@ -143,6 +150,7 @@ struct runloop
    struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
    bool    *load_no_content_hook;
    struct string_list *subsystem_fullpaths;
+   struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
    struct retro_callbacks retro_ctx;                     /* ptr alignment */
    msg_queue_t msg_queue;                                /* ptr alignment */
    retro_input_state_t input_state_callback_original;    /* ptr alignment */
@@ -189,6 +197,7 @@ struct runloop
    unsigned audio_latency;
    unsigned fastforward_after_frames;
    unsigned perf_ptr_libretro;
+   unsigned subsystem_current_count;
 
    fastmotion_overrides_t fastmotion_override; /* float alignment */
    enum rarch_core_type current_core_type;

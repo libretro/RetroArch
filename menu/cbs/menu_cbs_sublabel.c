@@ -1094,17 +1094,18 @@ static int action_bind_sublabel_subsystem_add(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   const struct retro_subsystem_info *subsystem;
-   rarch_system_info_t *system                  = &runloop_state_get_ptr()->system;
+   const struct retro_subsystem_info *subsystem = NULL;
+   runloop_state_t *runloop_st                  = runloop_state_get_ptr();
+   rarch_system_info_t *system                  = &runloop_st->system;
 
    /* Core fully loaded, use the subsystem data */
    if (system->subsystem.data)
       subsystem = system->subsystem.data + (type - MENU_SETTINGS_SUBSYSTEM_ADD);
    /* Core not loaded completely, use the data we peeked on load core */
    else
-      subsystem = subsystem_data + (type - MENU_SETTINGS_SUBSYSTEM_ADD);
+      subsystem = runloop_st->subsystem_data + (type - MENU_SETTINGS_SUBSYSTEM_ADD);
 
-   if (subsystem && subsystem_current_count > 0)
+   if (subsystem && runloop_st->subsystem_current_count > 0)
    {
       if (content_get_subsystem_rom_id() < subsystem->num_roms)
          snprintf(s, len, " Current Content: %s",

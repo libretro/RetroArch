@@ -2597,20 +2597,21 @@ void content_clear_subsystem(void)
 /* Set the current subsystem*/
 void content_set_subsystem(unsigned idx)
 {
-   const struct retro_subsystem_info *subsystem;
-   rarch_system_info_t                  *system = &runloop_state_get_ptr()->system;
+   const struct retro_subsystem_info *subsystem = NULL;
+   runloop_state_t                  *runloop_st = runloop_state_get_ptr();
    content_state_t  *p_content                  = content_state_get_ptr();
+   rarch_system_info_t                  *system = &runloop_st->system;
 
    /* Core fully loaded, use the subsystem data */
    if (system->subsystem.data)
-      subsystem = system->subsystem.data + idx;
+      subsystem                    = system->subsystem.data + idx;
    /* Core not loaded completely, use the data we peeked on load core */
    else
-      subsystem = subsystem_data + idx;
+      subsystem                    = runloop_st->subsystem_data + idx;
 
    p_content->pending_subsystem_id = idx;
 
-   if (subsystem && subsystem_current_count > 0)
+   if (subsystem && runloop_st->subsystem_current_count > 0)
    {
       strlcpy(p_content->pending_subsystem_ident,
          subsystem->ident, sizeof(p_content->pending_subsystem_ident));
@@ -2627,17 +2628,18 @@ void content_set_subsystem(unsigned idx)
 /* Sets the subsystem by name */
 bool content_set_subsystem_by_name(const char* subsystem_name)
 {
-   rarch_system_info_t                  *system = &runloop_state_get_ptr()->system;
-   unsigned i                                   = 0;
+   runloop_state_t         *runloop_st = runloop_state_get_ptr();
+   rarch_system_info_t         *system = &runloop_st->system;
+   unsigned i                          = 0;
    /* Core not loaded completely, use the data we peeked on load core */
    const struct retro_subsystem_info 
-      *subsystem                                = subsystem_data;
+      *subsystem                       = runloop_st->subsystem_data;
 
    /* Core fully loaded, use the subsystem data */
    if (system->subsystem.data)
-      subsystem = system->subsystem.data;
+      subsystem                        = system->subsystem.data;
 
-   for (i = 0; i < subsystem_current_count; i++, subsystem++)
+   for (i = 0; i < runloop_st->subsystem_current_count; i++, subsystem++)
    {
       if (string_is_equal(subsystem_name, subsystem->ident))
       {
@@ -2651,16 +2653,17 @@ bool content_set_subsystem_by_name(const char* subsystem_name)
 
 void content_get_subsystem_friendly_name(const char* subsystem_name, char* subsystem_friendly_name, size_t len)
 {
-   rarch_system_info_t                  *system = &runloop_state_get_ptr()->system;
    unsigned i                                   = 0;
+   runloop_state_t *runloop_st                  = runloop_state_get_ptr();
+   rarch_system_info_t                  *system = &runloop_st->system;
    /* Core not loaded completely, use the data we peeked on load core */
-   const struct retro_subsystem_info *subsystem = subsystem_data;
+   const struct retro_subsystem_info *subsystem = runloop_st->subsystem_data;
 
    /* Core fully loaded, use the subsystem data */
    if (system->subsystem.data)
       subsystem = system->subsystem.data;
 
-   for (i = 0; i < subsystem_current_count; i++, subsystem++)
+   for (i = 0; i < runloop_st->subsystem_current_count; i++, subsystem++)
    {
       if (string_is_equal(subsystem_name, subsystem->ident))
       {

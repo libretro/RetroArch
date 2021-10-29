@@ -192,15 +192,16 @@ static void filebrowser_parse(
    {
       if (filebrowser_type == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
       {
-         rarch_system_info_t *system          = &runloop_state_get_ptr()->system;
+         runloop_state_t *runloop_st          = runloop_state_get_ptr();
+         rarch_system_info_t *system          = &runloop_st->system;
          /* Core fully loaded, use the subsystem data */
          if (system->subsystem.data)
             subsystem = system->subsystem.data + content_get_subsystem();
          /* Core not loaded completely, use the data we peeked on load core */
          else
-            subsystem = subsystem_data + content_get_subsystem();
+            subsystem = runloop_st->subsystem_data + content_get_subsystem();
 
-         if (subsystem && subsystem_current_count > 0)
+         if (subsystem && runloop_st->subsystem_current_count > 0)
             ret = file_archive_get_file_list_noalloc(&str_list,
                   path,
                   subsystem->roms[
@@ -222,15 +223,16 @@ static void filebrowser_parse(
 
       if (filebrowser_type == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
       {
-         rarch_system_info_t *system          = &runloop_state_get_ptr()->system;
+         runloop_state_t *runloop_st = runloop_state_get_ptr();
+         rarch_system_info_t *system = &runloop_st->system;
          /* Core fully loaded, use the subsystem data */
          if (system->subsystem.data)
             subsystem = system->subsystem.data + content_get_subsystem();
          /* Core not loaded completely, use the data we peeked on load core */
          else
-            subsystem = subsystem_data + content_get_subsystem();
+            subsystem = runloop_st->subsystem_data + content_get_subsystem();
 
-         if (subsystem && subsystem_current_count > 0 && content_get_subsystem_rom_id() < subsystem->num_roms)
+         if (subsystem && runloop_st->subsystem_current_count > 0 && content_get_subsystem_rom_id() < subsystem->num_roms)
             ret = dir_list_initialize(&str_list,
                   path,
                   filter_ext ? subsystem->roms[content_get_subsystem_rom_id()].valid_extensions : NULL,
@@ -5337,7 +5339,9 @@ static unsigned menu_displaylist_populate_subsystem(
 
    if (menu_displaylist_has_subsystems())
    {
-      for (i = 0; i < subsystem_current_count; i++, subsystem++)
+      runloop_state_t *runloop_st = runloop_state_get_ptr();
+
+      for (i = 0; i < runloop_st->subsystem_current_count; i++, subsystem++)
       {
          char s[PATH_MAX_LENGTH];
          if (content_get_subsystem() == i)
@@ -5499,8 +5503,9 @@ unsigned menu_displaylist_build_list(
    {
       case DISPLAYLIST_SUBSYSTEM_SETTINGS_LIST:
          {
-            const struct retro_subsystem_info* subsystem = subsystem_data;
-            rarch_system_info_t *sys_info                = &runloop_state_get_ptr()->system;
+            runloop_state_t *runloop_st                  = runloop_state_get_ptr();
+            const struct retro_subsystem_info* subsystem = runloop_st->subsystem_data;
+            rarch_system_info_t *sys_info                = &runloop_st->system;
             /* Core not loaded completely, use the data we
              * peeked on load core */
 
@@ -9822,14 +9827,15 @@ static unsigned print_buf_lines(file_list_t *list, char *buf,
 
 bool menu_displaylist_has_subsystems(void)
 {
-   const struct retro_subsystem_info* subsystem = subsystem_data;
-   rarch_system_info_t *sys_info                = &runloop_state_get_ptr()->system;
+   runloop_state_t *runloop_st                  = runloop_state_get_ptr();
+   const struct retro_subsystem_info* subsystem = runloop_st->subsystem_data;
+   rarch_system_info_t *sys_info                = &runloop_st->system;
    /* Core not loaded completely, use the data we
     * peeked on load core */
    /* Core fully loaded, use the subsystem data */
    if (sys_info && sys_info->subsystem.data)
       subsystem = sys_info->subsystem.data;
-   return (subsystem && subsystem_current_count > 0);
+   return (subsystem && runloop_st->subsystem_current_count > 0);
 }
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,

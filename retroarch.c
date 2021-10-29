@@ -309,10 +309,8 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
 #ifdef HAVE_DISCORD
 bool discord_is_inited                                          = false;
 #endif
-unsigned subsystem_current_count                                = 0;
 struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
 struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
-struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
 
 static runloop_core_status_msg_t runloop_core_status_msg         =
 {
@@ -6434,8 +6432,8 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_LOAD_CORE:
          {
-            bool success            = false;
-            subsystem_current_count = 0;
+            bool success                        = false;
+            runloop_st->subsystem_current_count = 0;
             content_clear_subsystem();
             success = command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
             (void)success;
@@ -6660,7 +6658,7 @@ bool command_event(enum event_command cmd, void *data)
             }
             if (is_inited)
             {
-               subsystem_current_count = 0;
+               runloop_st->subsystem_current_count = 0;
                content_clear_subsystem();
             }
          }
@@ -8625,7 +8623,7 @@ static bool runloop_environ_cb_get_system_info(unsigned cmd, void *data)
          settings_t *settings    = config_get_ptr();
          unsigned log_level      = settings->uints.libretro_log_level;
 
-         subsystem_current_count = 0;
+         runloop_st->subsystem_current_count = 0;
 
          RARCH_LOG("[Environ]: SET_SUBSYSTEM_INFO.\n");
 
@@ -8661,47 +8659,52 @@ static bool runloop_environ_cb_get_system_info(unsigned cmd, void *data)
          {
             for (i = 0; i < size && i < SUBSYSTEM_MAX_SUBSYSTEMS; i++)
             {
+               struct retro_subsystem_info *subsys_info = &runloop_st->subsystem_data[i];
+               struct retro_subsystem_rom_info *subsys_rom_info = runloop_st->subsystem_data_roms[i];
                /* Nasty, but have to do it like this since
                 * the pointers are const char *
                 * (if we don't free them, we get a memory leak) */
-               if (!string_is_empty(subsystem_data[i].desc))
-                  free((char *)subsystem_data[i].desc);
-               if (!string_is_empty(subsystem_data[i].ident))
-                  free((char *)subsystem_data[i].ident);
-               subsystem_data[i].desc     = strdup(info[i].desc);
-               subsystem_data[i].ident    = strdup(info[i].ident);
-               subsystem_data[i].id       = info[i].id;
-               subsystem_data[i].num_roms = info[i].num_roms;
+               if (!string_is_empty(subsys_info->desc))
+                  free((char *)subsys_info->desc);
+               if (!string_is_empty(subsys_info->ident))
+                  free((char *)subsys_info->ident);
+               subsys_info->desc     = strdup(info[i].desc);
+               subsys_info->ident    = strdup(info[i].ident);
+               subsys_info->id       = info[i].id;
+               subsys_info->num_roms = info[i].num_roms;
 
                if (log_level == RETRO_LOG_DEBUG)
-                  if (subsystem_data[i].num_roms > SUBSYSTEM_MAX_SUBSYSTEM_ROMS)
+                  if (subsys_info->num_roms > SUBSYSTEM_MAX_SUBSYSTEM_ROMS)
                      RARCH_WARN("Subsystems exceed subsystem max roms, clamping to %d\n", SUBSYSTEM_MAX_SUBSYSTEM_ROMS);
 
-               for (j = 0; j < subsystem_data[i].num_roms && j < SUBSYSTEM_MAX_SUBSYSTEM_ROMS; j++)
+               for (j = 0; j < subsys_info->num_roms && j < SUBSYSTEM_MAX_SUBSYSTEM_ROMS; j++)
                {
                   /* Nasty, but have to do it like this since
                    * the pointers are const char *
                    * (if we don't free them, we get a memory leak) */
-                  if (!string_is_empty(
-                           runloop_st->subsystem_data_roms[i][j].desc))
+                  if (!string_is_empty(subsys_rom_info[j].desc))
                      free((char *)
-                           runloop_st->subsystem_data_roms[i][j].desc);
+                           subsys_rom_info[j].desc);
                   if (!string_is_empty(
-                           runloop_st->subsystem_data_roms[i][j].valid_extensions))
+                           subsys_rom_info[j].valid_extensions))
                      free((char *)
-                           runloop_st->subsystem_data_roms[i][j].valid_extensions);
-                  runloop_st->subsystem_data_roms[i][j].desc             = strdup(info[i].roms[j].desc);
-                  runloop_st->subsystem_data_roms[i][j].valid_extensions = strdup(info[i].roms[j].valid_extensions);
-                  runloop_st->subsystem_data_roms[i][j].required         = info[i].roms[j].required;
-                  runloop_st->subsystem_data_roms[i][j].block_extract    = info[i].roms[j].block_extract;
-                  runloop_st->subsystem_data_roms[i][j].need_fullpath    = info[i].roms[j].need_fullpath;
+                           subsys_rom_info[j].valid_extensions);
+                  subsys_rom_info[j].desc             = 
+                     strdup(info[i].roms[j].desc);
+                  subsys_rom_info[j].valid_extensions = 
+                     strdup(info[i].roms[j].valid_extensions);
+                  subsys_rom_info[j].required         = 
+                     info[i].roms[j].required;
+                  subsys_rom_info[j].block_extract    = 
+                     info[i].roms[j].block_extract;
+                  subsys_rom_info[j].need_fullpath    = 
+                     info[i].roms[j].need_fullpath;
                }
 
-               subsystem_data[i].roms               = 
-                  runloop_st->subsystem_data_roms[i];
+               subsys_info->roms = subsys_rom_info;
             }
 
-            subsystem_current_count =
+            runloop_st->subsystem_current_count =
                size <= SUBSYSTEM_MAX_SUBSYSTEMS
                ? size
                : SUBSYSTEM_MAX_SUBSYSTEMS;
