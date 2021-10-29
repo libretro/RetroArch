@@ -6948,3 +6948,257 @@ void retroarch_menu_running_finished(bool quit)
          input_overlay_init();
 #endif
 }
+
+bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
+{
+   gfx_display_t         *p_disp  = disp_get_ptr();
+   struct menu_state    *menu_st  = menu_state_get_ptr();
+
+   switch (state)
+   {
+      case RARCH_MENU_CTL_SET_PENDING_QUICK_MENU:
+         menu_entries_flush_stack(NULL, MENU_SETTINGS);
+         menu_st->pending_quick_menu = true;
+         break;
+      case RARCH_MENU_CTL_SET_PREVENT_POPULATE:
+         menu_st->prevent_populate = true;
+         break;
+      case RARCH_MENU_CTL_UNSET_PREVENT_POPULATE:
+         menu_st->prevent_populate = false;
+         break;
+      case RARCH_MENU_CTL_IS_PREVENT_POPULATE:
+         return menu_st->prevent_populate;
+      case RARCH_MENU_CTL_DEINIT:
+         if (     menu_st->driver_ctx
+               && menu_st->driver_ctx->context_destroy)
+            menu_st->driver_ctx->context_destroy(menu_st->userdata);
+
+         if (menu_st->data_own)
+            return true;
+
+         playlist_free_cached();
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+         menu_shader_manager_free();
+#endif
+#ifdef HAVE_NETWORKING
+         core_updater_list_free_cached();
+#endif
+#if defined(HAVE_MENU) && defined(HAVE_LIBRETRODB)
+         /* Before freeing the explore menu, we
+          * must wait for any explore menu initialisation
+          * tasks to complete */
+         menu_explore_wait_for_init_task();
+         menu_explore_free();
+#endif
+
+         if (menu_st->driver_data)
+         {
+            unsigned i;
+
+            menu_st->scroll.acceleration = 0;
+            menu_st->selection_ptr       = 0;
+            menu_st->scroll.index_size   = 0;
+
+            for (i = 0; i < SCROLL_INDEX_SIZE; i++)
+               menu_st->scroll.index_list[i] = 0;
+
+            memset(&menu_st->input_state, 0, sizeof(menu_input_t));
+            memset(&menu_st->input_pointer_hw_state, 0, sizeof(menu_input_pointer_hw_state_t));
+
+            if (     menu_st->driver_ctx
+                  && menu_st->driver_ctx->free)
+               menu_st->driver_ctx->free(menu_st->userdata);
+
+            if (menu_st->userdata)
+               free(menu_st->userdata);
+            menu_st->userdata = NULL;
+            p_disp->menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
+
+#ifndef HAVE_DYNAMIC
+            if (frontend_driver_has_fork())
+#endif
+            {
+               rarch_system_info_t *system = &runloop_state_get_ptr()->system;
+               libretro_free_system_info(&system->info);
+               memset(&system->info, 0, sizeof(struct retro_system_info));
+            }
+
+            gfx_animation_deinit();
+            gfx_display_free();
+
+            menu_entries_settings_deinit(menu_st);
+            menu_entries_list_deinit(menu_st->driver_ctx, menu_st);
+
+            if (menu_st->driver_data->core_buf)
+               free(menu_st->driver_data->core_buf);
+            menu_st->driver_data->core_buf  = NULL;
+
+            menu_st->entries_need_refresh        = false;
+            menu_st->entries_nonblocking_refresh = false;
+            menu_st->entries.begin               = 0;
+
+            command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
+            rarch_favorites_deinit();
+
+            menu_st->dialog_st.pending_push  = false;
+            menu_st->dialog_st.current_id    = 0;
+            menu_st->dialog_st.current_type  = MENU_DIALOG_NONE;
+
+            free(menu_st->driver_data);
+         }
+         menu_st->driver_data = NULL;
+         break;
+      case RARCH_MENU_CTL_ENVIRONMENT:
+         {
+            menu_ctx_environment_t *menu_environ =
+               (menu_ctx_environment_t*)data;
+
+            if (menu_st->driver_ctx->environ_cb)
+            {
+               if (menu_st->driver_ctx->environ_cb(menu_environ->type,
+                        menu_environ->data, menu_st->userdata) == 0)
+                  return true;
+            }
+         }
+         return false;
+      case RARCH_MENU_CTL_POINTER_DOWN:
+         {
+            menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
+            if (!menu_st->driver_ctx || !menu_st->driver_ctx->pointer_down)
+            {
+               point->retcode = 0;
+               return false;
+            }
+            point->retcode = menu_st->driver_ctx->pointer_down(
+                  menu_st->userdata,
+                  point->x, point->y, point->ptr,
+                  point->cbs, point->entry, point->action);
+         }
+         break;
+      case RARCH_MENU_CTL_POINTER_UP:
+         {
+            menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
+            if (!menu_st->driver_ctx || !menu_st->driver_ctx->pointer_up)
+            {
+               point->retcode = 0;
+               return false;
+            }
+            point->retcode = menu_st->driver_ctx->pointer_up(
+                  menu_st->userdata,
+                  point->x, point->y, point->ptr,
+                  point->gesture,
+                  point->cbs, point->entry, point->action);
+         }
+         break;
+      case RARCH_MENU_CTL_OSK_PTR_AT_POS:
+         {
+            video_driver_state_t 
+               *video_st              = video_state_get_ptr();
+            unsigned width            = video_st->width;
+            unsigned height           = video_st->height;
+            menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
+            if (!menu_st->driver_ctx || !menu_st->driver_ctx->osk_ptr_at_pos)
+            {
+               point->retcode = 0;
+               return false;
+            }
+            point->retcode = menu_st->driver_ctx->osk_ptr_at_pos(
+                  menu_st->userdata,
+                  point->x, point->y, width, height);
+         }
+         break;
+      case RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH:
+         {
+            size_t selection = menu_st->selection_ptr;
+
+            if (!menu_st->driver_ctx || !menu_st->driver_ctx->update_thumbnail_path)
+               return false;
+            menu_st->driver_ctx->update_thumbnail_path(
+                  menu_st->userdata, (unsigned)selection, 'L');
+            menu_st->driver_ctx->update_thumbnail_path(
+                  menu_st->userdata, (unsigned)selection, 'R');
+         }
+         break;
+      case RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE:
+         {
+            if (!menu_st->driver_ctx || !menu_st->driver_ctx->update_thumbnail_image)
+               return false;
+            menu_st->driver_ctx->update_thumbnail_image(menu_st->userdata);
+         }
+         break;
+      case RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE:
+         {
+            unsigned *i = (unsigned*)data;
+
+            if (!i || !menu_st->driver_ctx ||
+                  !menu_st->driver_ctx->refresh_thumbnail_image)
+               return false;
+            menu_st->driver_ctx->refresh_thumbnail_image(
+                  menu_st->userdata, *i);
+         }
+         break;
+      case RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH:
+         {
+            size_t selection = menu_st->selection_ptr;
+
+            if (  !menu_st->driver_ctx ||
+                  !menu_st->driver_ctx->update_savestate_thumbnail_path)
+               return false;
+            menu_st->driver_ctx->update_savestate_thumbnail_path(
+                  menu_st->userdata, (unsigned)selection);
+         }
+         break;
+      case RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE:
+         if (  !menu_st->driver_ctx ||
+               !menu_st->driver_ctx->update_savestate_thumbnail_image)
+            return false;
+         menu_st->driver_ctx->update_savestate_thumbnail_image(
+               menu_st->userdata);
+         break;
+      case MENU_NAVIGATION_CTL_CLEAR:
+         {
+            bool *pending_push     = (bool*)data;
+
+            /* Always set current selection to first entry */
+            menu_st->selection_ptr = 0;
+
+            /* menu_driver_navigation_set() will be called
+             * at the next 'push'.
+             * If a push is *not* pending, have to do it here
+             * instead */
+            if (!(*pending_push))
+            {
+               menu_driver_navigation_set(true);
+
+               if (menu_st->driver_ctx->navigation_clear)
+                  menu_st->driver_ctx->navigation_clear(
+                        menu_st->userdata, *pending_push);
+            }
+         }
+         break;
+      case MENU_NAVIGATION_CTL_SET_LAST:
+         {
+            size_t menu_list_size     = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
+            size_t new_selection      = menu_list_size - 1;
+
+            menu_st->selection_ptr    = new_selection;
+
+            if (menu_st->driver_ctx->navigation_set_last)
+               menu_st->driver_ctx->navigation_set_last(menu_st->userdata);
+         }
+         break;
+      case MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL:
+         {
+            size_t *sel = (size_t*)data;
+            if (!sel)
+               return false;
+            *sel = menu_st->scroll.acceleration;
+         }
+         break;
+      default:
+      case RARCH_MENU_CTL_NONE:
+         break;
+   }
+
+   return true;
+}
