@@ -892,11 +892,12 @@ typedef struct
     */
    gfx_ctx_flags_t deferred_flag_data;          /* uint32_t alignment */
 
-   char cached_driver_id[32];
-   char title_buf[64];
+   char cli_shader_path[PATH_MAX_LENGTH];
+   char window_title[512];
    char gpu_device_string[128];
    char gpu_api_version_string[128];
-   char window_title[512];
+   char title_buf[64];
+   char cached_driver_id[32];
 
    /**
     * dynamic.c:dynamic_request_hw_context will try to set

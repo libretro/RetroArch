@@ -601,9 +601,6 @@ struct rarch_state
    char server_address_deferred[512];
 #endif
    char launch_arguments[4096];
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   char cli_shader[PATH_MAX_LENGTH];
-#endif
    char path_default_shader_preset[PATH_MAX_LENGTH];
    char path_content[PATH_MAX_LENGTH];
    char path_libretro[PATH_MAX_LENGTH];
