@@ -18122,8 +18122,9 @@ const char *retroarch_get_shader_preset(void)
    if (video_st->shader_presets_need_reload && !cli_shader_disable)
    {
       video_st->shader_presets_need_reload = false;
-      if
-(video_shader_is_supported(video_shader_parse_type(video_st->cli_shader_path)))
+
+      if (video_shader_is_supported(
+               video_shader_parse_type(video_st->cli_shader_path)))
          strlcpy(runloop_st->runtime_shader_preset_path,
                video_st->cli_shader_path,
                sizeof(runloop_st->runtime_shader_preset_path));
