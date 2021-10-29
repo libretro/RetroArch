@@ -94,11 +94,6 @@ static bool accessibility_speak_priority(
       const char* speak_text, int priority);
 #endif
 
-static bool retroarch_apply_shader(
-      settings_t *settings,
-      enum rarch_shader_type type, const char *preset_path,
-      bool message);
-
 static const void *find_driver_nonempty(
       const char *label, int i,
       char *s, size_t len);

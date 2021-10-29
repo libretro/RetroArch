@@ -45,6 +45,11 @@
 #include "../file_path_special.h"
 #include "../paths.h"
 #include "../retroarch.h"
+
+#if defined(HAVE_GFX_WIDGETS)
+#include "gfx_widgets.h"
+#endif
+
 #include "video_shader_parse.h"
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
@@ -2402,3 +2407,96 @@ success:
    return true;
 }
 
+bool apply_shader(
+      settings_t *settings,
+      enum rarch_shader_type type,
+      const char *preset_path, bool message)
+{
+   char msg[256];
+   video_driver_state_t 
+      *video_st                 = video_state_get_ptr();
+   runloop_state_t *runloop_st  = runloop_state_get_ptr();
+   const char      *core_name   = runloop_st->system.info.library_name;
+   const char      *preset_file = NULL;
+#ifdef HAVE_MENU
+   struct video_shader *shader  = menu_shader_get();
+#endif
+
+   /* Disallow loading shaders when no core is loaded */
+   if (string_is_empty(core_name))
+      return false;
+
+   if (!string_is_empty(preset_path))
+      preset_file = path_basename_nocompression(preset_path);
+
+   /* TODO/FIXME - This loads the shader into the video driver
+    * But then we load the shader from disk twice more to put it in the menu
+    * We need to reconfigure this at some point to only load it once */
+   if (video_st->current_video->set_shader)
+   {
+      if ((video_st->current_video->set_shader(
+                  video_st->data, type, preset_path)))
+      {
+         configuration_set_bool(settings, settings->bools.video_shader_enable, true);
+         if (!string_is_empty(preset_path))
+         {
+            strlcpy(runloop_st->runtime_shader_preset_path, preset_path,
+                  sizeof(runloop_st->runtime_shader_preset_path));
+#ifdef HAVE_MENU
+            /* reflect in shader manager */
+            if (menu_shader_manager_set_preset(
+                     shader, type, preset_path, false))
+               shader->modified = false;
+#endif
+         }
+         else
+            runloop_st->runtime_shader_preset_path[0] = '\0';
+
+         if (message)
+         {
+            /* Display message */
+            if (preset_file)
+               snprintf(msg, sizeof(msg),
+                     "%s: \"%s\"",
+                     msg_hash_to_str(MSG_SHADER),
+                     preset_file);
+            else
+               snprintf(msg, sizeof(msg),
+                     "%s: %s", 
+                     msg_hash_to_str(MSG_SHADER),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE)
+                     );
+#ifdef HAVE_GFX_WIDGETS
+            if (dispwidget_get_ptr()->active)
+               gfx_widget_set_generic_message(msg, 2000);
+            else
+#endif
+               runloop_msg_queue_push(msg, 1, 120, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+
+         RARCH_LOG("%s \"%s\".\n",
+               msg_hash_to_str(MSG_APPLYING_SHADER),
+               preset_path ? preset_path : "null");
+
+         return true;
+      }
+   }
+
+#ifdef HAVE_MENU
+   /* reflect in shader manager */
+   menu_shader_manager_set_preset(shader, type, NULL, false);
+#endif
+
+   /* Display error message */
+   fill_pathname_join_delim(msg,
+         msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER_PRESET),
+         preset_file ? preset_file : "null",
+         ' ',
+         sizeof(msg));
+
+   runloop_msg_queue_push(
+         msg, 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+   return false;
+}

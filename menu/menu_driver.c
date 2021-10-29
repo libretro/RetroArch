@@ -6952,7 +6952,7 @@ void retroarch_menu_running_finished(bool quit)
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    gfx_display_t         *p_disp  = disp_get_ptr();
-   struct menu_state    *menu_st  = menu_state_get_ptr();
+   struct menu_state    *menu_st  = &menu_driver_state;
 
    switch (state)
    {
@@ -7202,3 +7202,154 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
    return true;
 }
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+struct video_shader *menu_shader_get(void)
+{
+   video_driver_state_t 
+      *video_st                = video_state_get_ptr();
+   if (video_shader_any_supported())
+      if (video_st)
+         return video_st->menu_driver_shader;
+   return NULL;
+}
+
+void menu_shader_manager_free(void)
+{
+   video_driver_state_t 
+      *video_st                = video_state_get_ptr();
+   if (video_st->menu_driver_shader)
+      free(video_st->menu_driver_shader);
+   video_st->menu_driver_shader = NULL;
+}
+
+/**
+ * menu_shader_manager_init:
+ *
+ * Initializes shader manager.
+ **/
+bool menu_shader_manager_init(void)
+{
+   video_driver_state_t 
+      *video_st                     = video_state_get_ptr();
+   enum rarch_shader_type type      = RARCH_SHADER_NONE;
+   bool ret                         = true;
+   bool is_preset                   = false;
+   const char *path_shader          = NULL;
+   struct video_shader *menu_shader = NULL;
+
+   /* We get the shader preset directly from the video driver, so that
+    * we are in sync with it (it could fail loading an auto-shader)
+    * If we can't (e.g. get_current_shader is not implemented),
+    * we'll load retroarch_get_shader_preset() like always */
+   video_shader_ctx_t shader_info = {0};
+
+   video_shader_driver_get_current_shader(&shader_info);
+
+   if (shader_info.data)
+      /* Use the path of the originally loaded preset because it could
+       * have been a preset with a #reference in it to another preset */
+      path_shader = shader_info.data->loaded_preset_path;
+   else
+      path_shader = retroarch_get_shader_preset();
+
+   menu_shader_manager_free();
+
+   menu_shader          = (struct video_shader*)
+      calloc(1, sizeof(*menu_shader));
+
+   if (!menu_shader)
+   {
+      ret = false;
+      goto end;
+   }
+
+   if (string_is_empty(path_shader))
+      goto end;
+
+   type = video_shader_get_type_from_ext(path_get_extension(path_shader),
+         &is_preset);
+
+   if (!video_shader_is_supported(type))
+   {
+      ret = false;
+      goto end;
+   }
+
+   if (is_preset)
+   {
+      if (!video_shader_load_preset_into_shader(path_shader, menu_shader))
+      {
+         ret = false;
+         goto end;
+      }
+      menu_shader->modified = false;
+   }
+   else
+   {
+      strlcpy(menu_shader->pass[0].source.path, path_shader,
+            sizeof(menu_shader->pass[0].source.path));
+      menu_shader->passes = 1;
+   }
+
+end:
+   video_st->menu_driver_shader = menu_shader;
+   command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
+   return ret;
+}
+
+/**
+ * menu_shader_manager_set_preset:
+ * @shader                   : Shader handle.
+ * @type                     : Type of shader.
+ * @preset_path              : Preset path to load from.
+ * @apply                    : Whether to apply the shader or just update shader information
+ *
+ * Sets shader preset.
+ **/
+bool menu_shader_manager_set_preset(struct video_shader *shader,
+      enum rarch_shader_type type, const char *preset_path, bool apply)
+{
+   bool refresh                  = false;
+   bool ret                      = false;
+   settings_t *settings          = config_get_ptr();
+
+   if (apply && !apply_shader(settings, type, preset_path, true))
+      goto clear;
+
+   if (string_is_empty(preset_path))
+   {
+      ret = true;
+      goto clear;
+   }
+
+   /* Load stored Preset into menu on success.
+    * Used when a preset is directly loaded.
+    * No point in updating when the Preset was
+    * created from the menu itself. */
+   if (  !shader ||
+         !(video_shader_load_preset_into_shader(preset_path, shader)))
+      goto end;
+
+   RARCH_LOG("Menu shader set to: %s.\n", preset_path);
+
+   ret = true;
+
+end:
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
+   return ret;
+
+clear:
+   /* We don't want to disable shaders entirely here,
+    * just reset number of passes
+    * > Note: Disabling shaders at this point would in
+    *   fact be dangerous, since it changes the number of
+    *   entries in the shader options menu which can in
+    *   turn lead to the menu selection pointer going out
+    *   of bounds. This causes undefined behaviour/segfaults */
+   menu_shader_manager_clear_num_passes(shader);
+   command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
+   return ret;
+}
+#endif

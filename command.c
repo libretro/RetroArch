@@ -45,6 +45,9 @@
 #endif
 
 #include "audio/audio_driver.h"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+#include "gfx/video_shader_parse.h"
+#endif
 #include "command.h"
 #include "core_info.h"
 #include "cheat_manager.h"
@@ -1273,3 +1276,32 @@ void command_event_set_savestate_garbage_collect(
 
    dir_list_free(dir_list);
 }
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+bool command_set_shader(command_t *cmd, const char *arg)
+{
+   enum  rarch_shader_type type = video_shader_parse_type(arg);
+   settings_t  *settings        = config_get_ptr();
+
+   if (!string_is_empty(arg))
+   {
+      if (!video_shader_is_supported(type))
+         return false;
+
+      /* rebase on shader directory */
+      if (!path_is_absolute(arg))
+      {
+         static char abs_arg[PATH_MAX_LENGTH];
+         const char *ref_path = settings->paths.directory_video_shader;
+         fill_pathname_join(abs_arg,
+               ref_path, arg, sizeof(abs_arg));
+         /* TODO/FIXME - pointer to local variable -
+          * making abs_arg static for now to workaround this
+          */
+         arg = abs_arg;
+      }
+   }
+
+   return apply_shader(settings, type, arg, true);
+}
+#endif
