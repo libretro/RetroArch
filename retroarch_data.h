@@ -552,7 +552,6 @@ struct rarch_state
    /* Used while Netplay is running */
    netplay_t *netplay_data;
 #endif
-   frontend_ctx_driver_t *current_frontend_ctx;
 
    struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
 
