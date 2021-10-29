@@ -561,12 +561,6 @@ struct rarch_state
 #endif
    jmp_buf error_sjlj_context;              /* 4-byte alignment,
                                                put it right before long */
-#if defined(HAVE_COMMAND)
-#ifdef HAVE_NETWORK_CMD
-   int lastcmd_net_fd;
-#endif
-#endif
-
 #if defined(HAVE_RUNAHEAD)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    int port_map[MAX_USERS];
@@ -591,9 +585,6 @@ struct rarch_state
 #endif
    unsigned perf_ptr_rarch;
 
-#if defined(HAVE_COMMAND)
-   enum cmd_source_t lastcmd_source;
-#endif
    retro_bits_t has_set_libretro_device;        /* uint32_t alignment */
 
    char error_string[255];
