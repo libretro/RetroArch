@@ -16660,6 +16660,7 @@ static bool retroarch_parse_input_and_config(
    bool                 cli_active = false;
    bool               cli_core_set = false;
    bool            cli_content_set = false;
+   video_driver_state_t *video_st  = video_state_get_ptr();
    runloop_state_t     *runloop_st = &runloop_state;
    settings_t          *settings   = config_get_ptr();
 
@@ -16974,7 +16975,7 @@ static bool retroarch_parse_input_and_config(
                break;
 
             case 'f':
-               video_state_get_ptr()->force_fullscreen = true;
+               video_st->force_fullscreen = true;
                break;
 
             case 'N':
@@ -17008,20 +17009,18 @@ static bool retroarch_parse_input_and_config(
                /* disable auto-shaders */
                if (string_is_empty(optarg))
                {
-                  video_state_get_ptr()->cli_shader_disable = true;
+                  video_st->cli_shader_disable = true;
                   break;
                }
 
                /* rebase on shader directory */
-               if (!path_is_absolute(optarg))
-               {
-                  char       *ref_path = settings->paths.directory_video_shader;
-                  fill_pathname_join(p_rarch->cli_shader,
-                        ref_path, optarg, sizeof(p_rarch->cli_shader));
-                  break;
-               }
-
-               strlcpy(p_rarch->cli_shader, optarg, sizeof(p_rarch->cli_shader));
+               if (path_is_absolute(optarg))
+                  strlcpy(video_st->cli_shader_path, optarg,
+                        sizeof(video_st->cli_shader_path));
+               else
+                  fill_pathname_join(video_st->cli_shader_path,
+                        settings->paths.directory_video_shader,
+                        optarg, sizeof(video_st->cli_shader_path));
 #endif
                break;
 
@@ -18123,9 +18122,10 @@ const char *retroarch_get_shader_preset(void)
    if (video_st->shader_presets_need_reload && !cli_shader_disable)
    {
       video_st->shader_presets_need_reload = false;
-      if (video_shader_is_supported(video_shader_parse_type(p_rarch->cli_shader)))
+      if
+(video_shader_is_supported(video_shader_parse_type(video_st->cli_shader_path)))
          strlcpy(runloop_st->runtime_shader_preset_path,
-               p_rarch->cli_shader,
+               video_st->cli_shader_path,
                sizeof(runloop_st->runtime_shader_preset_path));
       else
       {
