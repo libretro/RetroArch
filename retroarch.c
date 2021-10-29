@@ -18091,65 +18091,6 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
    return true;
 }
 
-/* get the name of the current shader preset */
-const char *retroarch_get_shader_preset(void)
-{
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   struct rarch_state *p_rarch    = &rarch_st;
-   settings_t *settings           = config_get_ptr();
-   runloop_state_t *runloop_st    = runloop_state_get_ptr();
-   video_driver_state_t *video_st = video_state_get_ptr();
-   const char *core_name          = runloop_st->system.info.library_name;
-   bool video_shader_enable       = settings->bools.video_shader_enable;
-   unsigned video_shader_delay    = settings->uints.video_shader_delay;
-   bool auto_shaders_enable       = settings->bools.auto_shaders_enable;
-   bool cli_shader_disable        = video_st->cli_shader_disable;
-
-   if (!video_shader_enable)
-      return NULL;
-
-   if (video_shader_delay && !runloop_st->shader_delay_timer.timer_end)
-      return NULL;
-
-   /* Disallow loading auto-shaders when no core is loaded */
-   if (string_is_empty(core_name))
-      return NULL;
-
-   if (!string_is_empty(runloop_st->runtime_shader_preset_path))
-      return runloop_st->runtime_shader_preset_path;
-
-   /* load auto-shader once, --set-shader works like a global auto-shader */
-   if (video_st->shader_presets_need_reload && !cli_shader_disable)
-   {
-      video_st->shader_presets_need_reload = false;
-
-      if (video_shader_is_supported(
-               video_shader_parse_type(video_st->cli_shader_path)))
-         strlcpy(runloop_st->runtime_shader_preset_path,
-               video_st->cli_shader_path,
-               sizeof(runloop_st->runtime_shader_preset_path));
-      else
-      {
-         if (auto_shaders_enable) /* sets runtime_shader_preset_path */
-         {
-            if (load_shader_preset(
-                     settings,
-                     runloop_st->system.info.library_name,
-                     runloop_st->runtime_shader_preset_path,
-                     sizeof(runloop_st->runtime_shader_preset_path)))
-            {
-               RARCH_LOG("[Shaders]: Specific shader preset found at %s.\n",
-                     runloop_st->runtime_shader_preset_path);
-            }
-         }
-      }
-      return runloop_st->runtime_shader_preset_path;
-   }
-#endif
-
-   return NULL;
-}
-
 bool retroarch_override_setting_is_set(
       enum rarch_override_setting enum_idx, void *data)
 {
