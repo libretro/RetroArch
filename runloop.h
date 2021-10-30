@@ -259,6 +259,9 @@ struct runloop
    bool runahead_secondary_core_available;
    bool runahead_force_input_dirty;
 #endif
+#ifdef HAVE_PATCH
+   bool patch_blocked;
+#endif
    bool is_sram_load_disabled;
    bool is_sram_save_disabled;
    bool use_sram;

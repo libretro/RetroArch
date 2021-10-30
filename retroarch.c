@@ -8227,7 +8227,7 @@ static void global_free(struct rarch_state *p_rarch)
    p_rarch->rarch_bps_pref                            = false;
    p_rarch->rarch_ips_pref                            = false;
    p_rarch->rarch_ups_pref                            = false;
-   p_rarch->rarch_patch_blocked                       = false;
+   runloop_st->patch_blocked                          = false;
 #endif
 #ifdef HAVE_CONFIGFILE
    p_rarch->rarch_block_config_read                   = false;
@@ -17201,7 +17201,7 @@ static bool retroarch_parse_input_and_config(
 
             case RA_OPT_NO_PATCH:
 #ifdef HAVE_PATCH
-               p_rarch->rarch_patch_blocked = true;
+               runloop_st->patch_blocked = true;
 #endif
                break;
 
@@ -17816,8 +17816,6 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
          return (input_state_get_ptr()->bsv_movie_state_handle != NULL);
 #endif
 #ifdef HAVE_PATCH
-      case RARCH_CTL_IS_PATCH_BLOCKED:
-         return p_rarch->rarch_patch_blocked;
       case RARCH_CTL_IS_BPS_PREF:
          return p_rarch->rarch_bps_pref;
       case RARCH_CTL_UNSET_BPS_PREF:

@@ -627,9 +627,6 @@ struct rarch_state
    bool rarch_ups_pref;
    bool rarch_bps_pref;
    bool rarch_ips_pref;
-#ifdef HAVE_PATCH
-   bool rarch_patch_blocked;
-#endif
 
 #ifdef HAVE_ACCESSIBILITY
    /* Is text-to-speech accessibility turned on? */

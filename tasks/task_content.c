@@ -1775,7 +1775,8 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
-   rarch_system_info_t *sys_info              = &runloop_state_get_ptr()->system;
+   runloop_state_t *runloop_st                = runloop_state_get_ptr();
+   rarch_system_info_t *sys_info              = &runloop_st->system;
    const char *path_dir_system                = settings->paths.directory_system;
    bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
 
@@ -1787,7 +1788,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    content_ctx.is_ips_pref                    = retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
-   content_ctx.patch_is_blocked               = retroarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+   content_ctx.patch_is_blocked               = runloop_st->patch_blocked;
 #endif
    content_ctx.bios_is_missing                = retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.directory_system               = NULL;
@@ -1872,7 +1873,8 @@ bool task_push_load_content_from_playlist_from_menu(
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
-   rarch_system_info_t *sys_info              = &runloop_state_get_ptr()->system;
+   runloop_state_t *runloop_st                = runloop_state_get_ptr();
+   rarch_system_info_t *sys_info              = &runloop_st->system;
    const char *path_dir_system                = settings->paths.directory_system;
 #ifndef HAVE_DYNAMIC
    bool force_core_reload                     = settings->bools.always_reload_core_on_run_content;
@@ -1883,7 +1885,7 @@ bool task_push_load_content_from_playlist_from_menu(
    content_ctx.is_ips_pref                    = retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
-   content_ctx.patch_is_blocked               = retroarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+   content_ctx.patch_is_blocked               = runloop_st->patch_blocked;
 #endif
    content_ctx.bios_is_missing                = retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.directory_system               = NULL;
@@ -2014,6 +2016,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
+   runloop_state_t *runloop_st                = runloop_state_get_ptr();
    const char *path_dir_system                = settings->paths.directory_system;
    bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
 
@@ -2025,7 +2028,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    content_ctx.is_ips_pref                    = retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
-   content_ctx.patch_is_blocked               = retroarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+   content_ctx.patch_is_blocked               = runloop_st->patch_blocked;
 #endif
    content_ctx.bios_is_missing                = retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.directory_system               = NULL;
@@ -2146,6 +2149,7 @@ bool task_push_load_content_with_new_core_from_menu(
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
+   runloop_state_t *runloop_st                = runloop_state_get_ptr();
    bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
    const char *path_dir_system                = settings->paths.directory_system;
 #ifndef HAVE_DYNAMIC
@@ -2167,7 +2171,7 @@ bool task_push_load_content_with_new_core_from_menu(
    content_ctx.is_ips_pref                    = retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
-   content_ctx.patch_is_blocked               = retroarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+   content_ctx.patch_is_blocked               = runloop_st->patch_blocked;
 #endif
    content_ctx.bios_is_missing                = retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.directory_system               = NULL;
@@ -2266,7 +2270,8 @@ static bool task_load_content_internal(
    bool ret                                   = false;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
-   rarch_system_info_t *sys_info              = &runloop_state_get_ptr()->system;
+   runloop_state_t *runloop_st                = runloop_state_get_ptr();
+   rarch_system_info_t *sys_info              = &runloop_st->system;
    settings_t *settings                       = config_get_ptr();
    bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
    bool set_supports_no_game_enable           = settings->bools.set_supports_no_game_enable;
@@ -2278,7 +2283,7 @@ static bool task_load_content_internal(
    content_ctx.is_ips_pref                    = retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
-   content_ctx.patch_is_blocked               = retroarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+   content_ctx.patch_is_blocked               = runloop_st->patch_blocked;
 #endif
    content_ctx.bios_is_missing                = retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.directory_system               = NULL;
@@ -2771,7 +2776,8 @@ bool content_init(void)
    bool ret                                   = true;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
-   rarch_system_info_t *sys_info              = &runloop_state_get_ptr()->system;
+   runloop_state_t *runloop_st                = runloop_state_get_ptr();
+   rarch_system_info_t *sys_info              = &runloop_st->system;
    settings_t *settings                       = config_get_ptr();
    bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
    bool set_supports_no_game_enable           = settings->bools.set_supports_no_game_enable;
@@ -2786,7 +2792,7 @@ bool content_init(void)
    content_ctx.is_ips_pref                    = retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
-   content_ctx.patch_is_blocked               = retroarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+   content_ctx.patch_is_blocked               = runloop_st->patch_blocked;
 #endif
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
