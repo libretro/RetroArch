@@ -25,3 +25,8 @@ jobs:
         run: |
           cd intl
           python3 crowdin_sync.py "$CROWDIN_API_KEY"
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit -m "Fetch translations from Crowdin"
+          git push
