@@ -76,6 +76,8 @@ struct retro_keybind
    bool valid;
 };
 
+typedef struct retro_keybind retro_keybind_set[RARCH_BIND_LIST_END];
+
 typedef struct
 {
    uint32_t data[8];

@@ -95,7 +95,7 @@ static int16_t input_null_input_state(
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **retro_keybinds,
+      const retro_keybind_set *retro_keybinds,
       bool keyboard_mapping_blocked,
       unsigned port, unsigned device, unsigned index, unsigned id) { return 0; }
 static void input_null_free(void *data) { }
@@ -644,7 +644,7 @@ int16_t input_state_wrap(
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds,
+      const retro_keybind_set *binds,
       bool keyboard_mapping_blocked,
       unsigned _port,
       unsigned device,
@@ -652,6 +652,10 @@ int16_t input_state_wrap(
       unsigned id)
 {
    int16_t ret                   = 0;
+
+   if(!binds || !binds[_port]) {
+      return 0;
+   }
 
    /* Do a bitwise OR to combine input states together */
 
@@ -2678,7 +2682,7 @@ void input_config_reset(void)
 
       input_config_reset_autoconfig_binds(i);
 
-      input_st->libretro_input_binds[i] = input_config_binds[i];
+      input_st->libretro_input_binds[i] = &input_config_binds[i];
    }
 }
 
@@ -3479,7 +3483,7 @@ void input_keys_pressed(
       bool is_menu,
       int input_hotkey_block_delay,
       input_bits_t *p_new_state,
-      const struct retro_keybind **binds,
+      retro_keybind_set *binds,
       const struct retro_keybind *binds_norm,
       const struct retro_keybind *binds_auto,
       const input_device_driver_t *joypad,
@@ -3488,6 +3492,10 @@ void input_keys_pressed(
 {
    unsigned i;
    input_driver_state_t *input_st = &input_driver_st;
+
+   if(!binds || !binds[port]) {
+      return;
+   }
 
    if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
    {
@@ -3513,9 +3521,7 @@ void input_keys_pressed(
          input_st->block_hotkey               = true;
       }
    }
-
-   if (     !is_menu
-         && binds[port][RARCH_GAME_FOCUS_TOGGLE].valid)
+   if (!is_menu && binds[port][RARCH_GAME_FOCUS_TOGGLE].valid)
    {
       const struct retro_keybind *focus_binds_auto =
          &input_autoconf_binds[port][RARCH_GAME_FOCUS_TOGGLE];
@@ -3634,7 +3640,7 @@ int16_t input_state_device(
 #endif
             {
                bool bind_valid       = input_st->libretro_input_binds[port]
-                  && input_st->libretro_input_binds[port][id].valid;
+                  && (*input_st->libretro_input_binds[port])[id].valid;
                unsigned remap_button = settings->uints.input_remap_ids[port][id];
 
                /* TODO/FIXME: What on earth is this code doing...? */
@@ -3844,7 +3850,7 @@ int16_t input_state_device(
                if (id < RARCH_FIRST_META_KEY)
                {
                   bool bind_valid         = input_st->libretro_input_binds[port]
-                     && input_st->libretro_input_binds[port][id].valid;
+                     && (*input_st->libretro_input_binds[port])[id].valid;
 
                   if (bind_valid)
                   {
@@ -3933,7 +3939,7 @@ int16_t input_state_device(
          if (id < RARCH_FIRST_META_KEY)
          {
             bool bind_valid = input_st->libretro_input_binds[port]
-               && input_st->libretro_input_binds[port][id].valid;
+               && (*input_st->libretro_input_binds[port])[id].valid;
 
             if (bind_valid)
             {
@@ -4000,14 +4006,14 @@ void input_driver_poll(void)
       joypad_info[i].joy_idx                     = settings->uints.input_joypad_index[i];
       joypad_info[i].auto_binds                  = input_autoconf_binds[joypad_info[i].joy_idx];
 
-      input_st->turbo_btns.frame_enable[i]       = input_st->libretro_input_binds[i][RARCH_TURBO_ENABLE].valid ?
+      input_st->turbo_btns.frame_enable[i]       = (*input_st->libretro_input_binds[i])[RARCH_TURBO_ENABLE].valid ?
          input_state_wrap(
                input_st->current_driver,
                input_st->current_data,
                joypad,
                sec_joypad,
                &joypad_info[i],
-               input_st->libretro_input_binds,
+               (*input_st->libretro_input_binds),
                input_st->keyboard_mapping_blocked,
                (unsigned)i,
                RETRO_DEVICE_JOYPAD,
@@ -4105,7 +4111,7 @@ void input_driver_poll(void)
                         input_st->primary_joypad,
                         sec_joypad,
                         &joypad_info[i],
-                        input_st->libretro_input_binds,
+                        (*input_st->libretro_input_binds),
                         input_st->keyboard_mapping_blocked,
                         (unsigned)i, RETRO_DEVICE_JOYPAD,
                         0, RETRO_DEVICE_ID_JOYPAD_MASK);
@@ -4115,7 +4121,7 @@ void input_driver_poll(void)
                      if (ret & (1 << k))
                      {
                         bool valid_bind  =
-                           input_st->libretro_input_binds[i][k].valid;
+                           (*input_st->libretro_input_binds[i])[k].valid;
 
                         if (valid_bind)
                         {
@@ -4126,7 +4132,7 @@ void input_driver_poll(void)
                                     joypad,
                                     &joypad_info[i],
                                     k,
-                                    &input_st->libretro_input_binds[i][k]
+                                    &(*input_st->libretro_input_binds[i])[k]
                                     );
                            if (val)
                               p_new_state->analog_buttons[k] = val;
@@ -4152,7 +4158,7 @@ void input_driver_poll(void)
                               &joypad_info[i],
                               k,
                               j,
-                              input_st->libretro_input_binds[i]);
+                              (*input_st->libretro_input_binds[i]));
 
                         if (val >= 0)
                            p_new_state->analogs[offset]   = val;
@@ -4879,7 +4885,7 @@ int16_t input_state_internal(unsigned port, unsigned device,
             joypad,
             sec_joypad,
             &joypad_info,
-            input_st->libretro_input_binds,
+            (*input_st->libretro_input_binds),
             input_st->keyboard_mapping_blocked,
             mapped_port, device, idx, id);
 
@@ -4892,7 +4898,7 @@ int16_t input_state_internal(unsigned port, unsigned device,
             {
                if (id < RARCH_FIRST_CUSTOM_BIND)
                {
-                  bool valid_bind = input_st->libretro_input_binds[mapped_port][id].valid;
+                  bool valid_bind = (*input_st->libretro_input_binds[mapped_port])[id].valid;
 
                   if (valid_bind)
                   {
@@ -4902,7 +4908,7 @@ int16_t input_state_internal(unsigned port, unsigned device,
                               input_analog_sensitivity,
                               sec_joypad, &joypad_info,
                               id,
-                              &input_st->libretro_input_binds[mapped_port][id]);
+                              &(*input_st->libretro_input_binds[mapped_port])[id]);
 
                      if (joypad && (ret == 0))
                         ret = input_joypad_analog_button(
@@ -4910,7 +4916,7 @@ int16_t input_state_internal(unsigned port, unsigned device,
                               input_analog_sensitivity,
                               joypad, &joypad_info,
                               id,
-                              &input_st->libretro_input_binds[mapped_port][id]);
+                              &(*input_st->libretro_input_binds[mapped_port])[id]);
                   }
                }
             }
@@ -4925,7 +4931,7 @@ int16_t input_state_internal(unsigned port, unsigned device,
                         &joypad_info,
                         idx,
                         id,
-                        input_st->libretro_input_binds[mapped_port]);
+                        (*input_st->libretro_input_binds[mapped_port]));
 
                if (joypad && (ret == 0))
                   ret = input_joypad_analog_axis(
@@ -4936,7 +4942,7 @@ int16_t input_state_internal(unsigned port, unsigned device,
                         &joypad_info,
                         idx,
                         id,
-                        input_st->libretro_input_binds[mapped_port]);
+                        (*input_st->libretro_input_binds[mapped_port]));
             }
          }
       }

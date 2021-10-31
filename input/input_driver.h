@@ -257,7 +257,7 @@ struct input_driver
          const input_device_driver_t *joypad_data,
          const input_device_driver_t *sec_joypad_data,
          rarch_joypad_info_t *joypad_info,
-         const struct retro_keybind **retro_keybinds,
+         const retro_keybind_set *retro_keybinds,
          bool keyboard_mapping_blocked,
          unsigned port, unsigned device, unsigned index, unsigned id);
 
@@ -387,7 +387,7 @@ typedef struct
    void                          *current_data;
    const input_device_driver_t   *primary_joypad;        /* ptr alignment */
    const input_device_driver_t   *secondary_joypad;      /* ptr alignment */
-   const struct retro_keybind *libretro_input_binds[MAX_USERS];
+   const retro_keybind_set *libretro_input_binds[MAX_USERS];
 #ifdef HAVE_COMMAND
    command_t *command[MAX_CMD_DRIVERS];
 #endif
@@ -796,7 +796,7 @@ int16_t input_state_wrap(
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds,
+      const retro_keybind_set *binds,
       bool keyboard_mapping_blocked,
       unsigned _port,
       unsigned device,
@@ -1023,7 +1023,7 @@ void input_keys_pressed(
       bool is_menu,
       int input_hotkey_block_delay,
       input_bits_t *p_new_state,
-      const struct retro_keybind **binds,
+      retro_keybind_set *binds,
       const struct retro_keybind *binds_norm,
       const struct retro_keybind *binds_auto,
       const input_device_driver_t *joypad,
