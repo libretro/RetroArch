@@ -6,7 +6,9 @@ import yaml
 
 with open("crowdin.yaml", 'r') as config_file:
    config = yaml.safe_load(config_file)
-   r = requests.get('https://api.crowdin.com/api/project/' + config['project_identifier'] + '/status?key=' + config['api_key'] + '&json')
+   headers = { 'Authorization': 'Bearer ' + config['api_token']}
+   url = 
+   r = requests.get('https://api.crowdin.com/api/project/' + config['project_identifier'] + '/status?key=' + config['api_key'] + '&json', headers=headers)
    output = ''
    for lang in r.json():
       output += '/* ' + lang['name'] + ' */\n'
