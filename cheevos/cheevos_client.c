@@ -587,7 +587,6 @@ static void rcheevos_client_login(const char* username, const char* password, co
    }
    else
    {
-      const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
       rc_api_login_request_t api_params;
 
       memset(&api_params, 0, sizeof(api_params));
@@ -649,7 +648,6 @@ void rcheevos_client_identify_game(const char* hash, rcheevos_client_callback ca
    }
    else
    {
-      const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
       rc_api_resolve_hash_request_t api_params;
 
       memset(&api_params, 0, sizeof(api_params));

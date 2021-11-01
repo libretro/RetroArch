@@ -431,7 +431,6 @@ void rcheevos_menu_populate(void* data)
    menu_displaylist_info_t* info            = (menu_displaylist_info_t*)data;
    rcheevos_locals_t* rcheevos_locals       = get_rcheevos_locals();
    const settings_t* settings               = config_get_ptr();
-   const bool cheevos_test_unofficial       = settings->bools.cheevos_test_unofficial;
    unsigned num_locked                      = 0;
    unsigned num_unlocked                    = 0;
    unsigned num_recently_unlocked           = 0;

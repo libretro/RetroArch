@@ -549,7 +549,6 @@ static bool rcheevos_timer_check(void* userdata)
 
 bool rcheevos_unload(void)
 {
-   bool running          = false;
    settings_t* settings  = config_get_ptr();
 
 #ifdef HAVE_THREADS
@@ -639,7 +638,7 @@ static void rcheevos_toggle_hardcore_achievements(rcheevos_locals_t *locals)
    }
 }
 
-static void rcheevos_activate_leaderboards()
+static void rcheevos_activate_leaderboards(void)
 {
    rcheevos_ralboard_t* leaderboard = rcheevos_locals.game.leaderboards;
    const settings_t* settings = config_get_ptr();
@@ -782,7 +781,7 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
 
          /* Reactivate leaderboards */
          if (locals->leaderboards_enabled)
-            rcheevos_activate_leaderboards(locals);
+            rcheevos_activate_leaderboards();
 
          /* reset the game */
          command_event(CMD_EVENT_RESET, NULL);
@@ -811,7 +810,7 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
          CHEEVOS_LOG(RCHEEVOS_TAG "Hardcore paused\n");
 
          /* deactivate leaderboards */
-         rcheevos_deactivate_leaderboards(locals);
+         rcheevos_deactivate_leaderboards();
       }
 
       /* re-init rewind */
