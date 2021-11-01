@@ -283,7 +283,6 @@ bool frontend_driver_get_salamander_basename(char *s, size_t len)
 #endif
 }
 
-
 frontend_ctx_driver_t *frontend_get_ptr(void)
 {
    frontend_state_t *frontend_st = &frontend_driver_st;
@@ -294,38 +293,31 @@ int frontend_driver_parse_drive_list(void *data, bool load_content)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-
-   if (!frontend->parse_drive_list)
-      return -1;
-   return frontend->parse_drive_list(data, load_content);
+   if (frontend && frontend->parse_drive_list)
+      return frontend->parse_drive_list(data, load_content);
+   return -1;
 }
 
 void frontend_driver_content_loaded(void)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-
-   if (!frontend->content_loaded)
-      return;
-   frontend->content_loaded();
+   if (frontend && frontend->content_loaded)
+      frontend->content_loaded();
 }
 
 bool frontend_driver_has_fork(void)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-
-   if (!frontend->set_fork)
-      return false;
-   return true;
+   return frontend && frontend->set_fork;
 }
 
 bool frontend_driver_set_fork(enum frontend_fork fork_mode)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-
-   if (!frontend_driver_has_fork())
+   if (!frontend || !frontend_driver_has_fork())
       return false;
    return frontend->set_fork(fork_mode);
 }
@@ -334,7 +326,7 @@ void frontend_driver_process_args(int *argc, char *argv[])
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (frontend->process_args)
+   if (frontend && frontend->process_args)
       frontend->process_args(argc, argv);
 }
 
@@ -367,16 +359,14 @@ bool frontend_driver_has_get_video_driver_func(void)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (!frontend->get_video_driver)
-      return false;
-   return true;
+   return frontend && frontend->get_video_driver;
 }
 
 const struct video_driver *frontend_driver_get_video_driver(void)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (!frontend->get_video_driver)
+   if (!frontend || !frontend->get_video_driver)
       return NULL;
    return frontend->get_video_driver();
 }
@@ -385,7 +375,7 @@ void frontend_driver_exitspawn(char *s, size_t len, char *args)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (frontend->exitspawn)
+   if (frontend && frontend->exitspawn)
       frontend->exitspawn(s, len, args);
 }
 
@@ -393,7 +383,7 @@ void frontend_driver_deinit(void *args)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (frontend->deinit)
+   if (frontend && frontend->deinit)
       frontend->deinit(args);
 }
 
@@ -401,7 +391,7 @@ void frontend_driver_shutdown(bool a)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (frontend->shutdown)
+   if (frontend && frontend->shutdown)
       frontend->shutdown(a);
 }
 
@@ -409,9 +399,9 @@ enum frontend_architecture frontend_driver_get_cpu_architecture(void)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (!frontend->get_architecture)
-      return FRONTEND_ARCH_NONE;
-   return frontend->get_architecture();
+   if (frontend && frontend->get_architecture)
+      return frontend->get_architecture();
+   return FRONTEND_ARCH_NONE;
 }
 
 const void *frontend_driver_get_cpu_architecture_str(
@@ -460,25 +450,25 @@ uint64_t frontend_driver_get_total_memory(void)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (!frontend->get_total_mem)
-      return 0;
-   return frontend->get_total_mem();
+   if (frontend && frontend->get_total_mem)
+      return frontend->get_total_mem();
+   return 0;
 }
 
 uint64_t frontend_driver_get_free_memory(void)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (!frontend->get_free_mem)
-      return 0;
-   return frontend->get_free_mem();
+   if (frontend && frontend->get_free_mem)
+      return frontend->get_free_mem();
+   return 0;
 }
 
 void frontend_driver_install_signal_handler(void)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (frontend->install_signal_handler)
+   if (frontend && frontend->install_signal_handler)
       frontend->install_signal_handler();
 }
 
@@ -486,16 +476,16 @@ int frontend_driver_get_signal_handler_state(void)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (!frontend->get_signal_handler_state)
-      return -1;
-   return frontend->get_signal_handler_state();
+   if (frontend && frontend->get_signal_handler_state)
+      return frontend->get_signal_handler_state();
+   return -1;
 }
 
 void frontend_driver_set_signal_handler_state(int value)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (frontend->set_signal_handler_state)
+   if (frontend && frontend->set_signal_handler_state)
       frontend->set_signal_handler_state(value);
 }
 
@@ -503,7 +493,7 @@ void frontend_driver_attach_console(void)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (frontend->attach_console)
+   if (frontend && frontend->attach_console)
       frontend->attach_console();
 }
 
@@ -511,7 +501,7 @@ void frontend_driver_set_screen_brightness(int value)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (frontend->set_screen_brightness)
+   if (frontend && frontend->set_screen_brightness)
       frontend->set_screen_brightness(value);
 }
 
@@ -526,7 +516,7 @@ void frontend_driver_detach_console(void)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (frontend->detach_console)
+   if (frontend && frontend->detach_console)
       frontend->detach_console();
 }
 
@@ -534,7 +524,7 @@ void frontend_driver_destroy_signal_handler_state(void)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (frontend->destroy_signal_handler_state)
+   if (frontend && frontend->destroy_signal_handler_state)
       frontend->destroy_signal_handler_state();
 }
 
@@ -542,9 +532,7 @@ bool frontend_driver_can_watch_for_changes(void)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (!frontend->watch_path_for_changes)
-      return false;
-   return true;
+   return frontend && frontend->watch_path_for_changes;
 }
 
 void frontend_driver_watch_path_for_changes(
@@ -553,7 +541,7 @@ void frontend_driver_watch_path_for_changes(
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (frontend->watch_path_for_changes)
+   if (frontend && frontend->watch_path_for_changes)
       frontend->watch_path_for_changes(list, flags, change_data);
 }
 
@@ -561,16 +549,16 @@ bool frontend_driver_check_for_path_changes(path_change_data_t *change_data)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (!frontend->check_for_path_changes)
-      return false;
-   return frontend->check_for_path_changes(change_data);
+   if (frontend && frontend->check_for_path_changes)
+      return frontend->check_for_path_changes(change_data);
+   return false;
 }
 
 void frontend_driver_set_sustained_performance_mode(bool on)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (frontend->set_sustained_performance_mode)
+   if (frontend && frontend->set_sustained_performance_mode)
       frontend->set_sustained_performance_mode(on);
 }
 
@@ -578,16 +566,16 @@ const char* frontend_driver_get_cpu_model_name(void)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (!frontend->get_cpu_model_name)
-      return NULL;
-   return frontend->get_cpu_model_name();
+   if (frontend && frontend->get_cpu_model_name)
+      return frontend->get_cpu_model_name();
+   return NULL;
 }
 
 enum retro_language frontend_driver_get_user_language(void)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (!frontend->get_user_language)
-      return RETRO_LANGUAGE_ENGLISH;
-   return frontend->get_user_language();
+   if (frontend && frontend->get_user_language)
+      return frontend->get_user_language();
+   return RETRO_LANGUAGE_ENGLISH;
 }
