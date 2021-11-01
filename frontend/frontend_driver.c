@@ -491,10 +491,19 @@ void frontend_driver_set_signal_handler_state(int value)
 
 void frontend_driver_attach_console(void)
 {
-   frontend_state_t *frontend_st   = &frontend_driver_st;
-   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (frontend && frontend->attach_console)
-      frontend->attach_console();
+   /* TODO/FIXME - the frontend driver code is garbage and needs to be
+      redesigned. Apparently frontend_driver_attach_console can be called
+      BEFORE frontend_driver_init_first is called, hence why we need 
+      to resort to the check for non-NULL below. This is just awful, 
+      BEFORE we make any frontend function call, we should be 100% 
+      sure frontend_driver_init_first has already been called first.
+
+      For now, we do this hack, but this absolutely should be redesigned
+      as soon as possible.
+    */
+   if(      frontend_driver_st.current_frontend_ctx 
+         && frontend_driver_st.current_frontend_ctx->attach_console)
+      frontend_driver_st.current_frontend_ctx->attach_console();
 }
 
 void frontend_driver_set_screen_brightness(int value)
