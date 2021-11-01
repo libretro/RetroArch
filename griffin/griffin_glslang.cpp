@@ -1,4 +1,4 @@
-﻿
+
 #ifdef WANT_GLSLANG
 
 #ifdef _MSC_VER

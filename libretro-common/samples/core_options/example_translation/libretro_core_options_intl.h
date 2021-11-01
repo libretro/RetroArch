@@ -1,4 +1,4 @@
-﻿#ifndef LIBRETRO_CORE_OPTIONS_INTL_H__
+#ifndef LIBRETRO_CORE_OPTIONS_INTL_H__
 #define LIBRETRO_CORE_OPTIONS_INTL_H__
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
