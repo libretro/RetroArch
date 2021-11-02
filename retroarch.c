@@ -18553,7 +18553,7 @@ static void collect_system_input(struct rarch_state *p_rarch, settings_t *settin
 {
    unsigned port;
    rarch_joypad_info_t joypad_info;
-   input_bits_t loop_bits, cumulative_bits;
+   input_bits_t loop_bits;
    int block_delay                     = settings->uints.input_hotkey_block_delay;
    input_driver_state_t *input_st      = input_state_get_ptr();
    const input_device_driver_t *joypad = input_st->primary_joypad;
@@ -18572,7 +18572,6 @@ static void collect_system_input(struct rarch_state *p_rarch, settings_t *settin
 #endif
    input_driver_t *current_input       = input_st->current_driver;
 
-   BIT256_CLEAR_ALL_PTR(&cumulative_bits);
    #if !defined(HAVE_ACCESSIBILITY) || !defined(HAVE_TRANSLATE)
    (void)p_rarch;
    #endif
@@ -18722,9 +18721,8 @@ static void collect_system_input(struct rarch_state *p_rarch, settings_t *settin
 #endif /* defined(HAVE_ACCESSIBILITY) && defined(HAVE_TRANSLATE) */
       }
 
-      merge_input_bits(&cumulative_bits, &loop_bits);
+      merge_input_bits(current_bits, &loop_bits);
    }
-   memcpy(current_bits, &cumulative_bits, sizeof(input_bits_t));
 }
 
 
