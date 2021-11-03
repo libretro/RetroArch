@@ -760,7 +760,7 @@ void menu_input_pointer_close_messagebox(struct menu_state *menu_st);
 
 void menu_input_key_bind_poll_bind_state(
       input_driver_state_t *input_driver_st,
-      const struct retro_keybind **binds,
+      const retro_keybind_set *binds,
       float input_axis_threshold,
       unsigned joy_idx,
       struct menu_bind_state *state,

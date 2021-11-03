@@ -2038,7 +2038,7 @@ void menu_input_get_touchscreen_hw_state(
    unsigned fb_width, fb_height;
    int pointer_x                                = 0;
    int pointer_y                                = 0;
-   const struct retro_keybind *binds[MAX_USERS] = {NULL};
+   const retro_keybind_set *binds[MAX_USERS] = {NULL};
    /* Is a background texture set for the current menu driver?
     * Checks if the menu framebuffer is set.
     * This would usually only return true
@@ -2095,7 +2095,7 @@ void menu_input_get_touchscreen_hw_state(
             input_driver_st->current_data,
             joypad,
             sec_joypad,
-            &joypad_info, binds,
+            &joypad_info, (*binds),
             keyboard_mapping_blocked,
             0, pointer_device,
             0, RETRO_DEVICE_ID_POINTER_X);
@@ -2126,7 +2126,7 @@ void menu_input_get_touchscreen_hw_state(
             input_driver_st->current_data,
             joypad,
             sec_joypad,
-            &joypad_info, binds,
+            &joypad_info, (*binds),
             keyboard_mapping_blocked,
             0, pointer_device,
             0, RETRO_DEVICE_ID_POINTER_Y);
@@ -2153,7 +2153,7 @@ void menu_input_get_touchscreen_hw_state(
             input_driver_st->current_data,
             joypad,
             sec_joypad,
-            &joypad_info, binds,
+            &joypad_info, (*binds),
             keyboard_mapping_blocked,
             0, pointer_device,
             0, RETRO_DEVICE_ID_POINTER_PRESSED);
@@ -2168,7 +2168,7 @@ void menu_input_get_touchscreen_hw_state(
             input_driver_st->current_data,
             joypad,
             sec_joypad,
-            &joypad_info, binds,
+            &joypad_info, (*binds),
             keyboard_mapping_blocked,
             0, pointer_device,
             0, RARCH_DEVICE_ID_POINTER_BACK);
@@ -3021,7 +3021,7 @@ bool menu_driver_search_filter_enabled(const char *label, unsigned type)
 
 void menu_input_key_bind_poll_bind_state(
       input_driver_state_t *input_driver_st,
-      const struct retro_keybind **binds,
+      const retro_keybind_set *binds,
       float input_axis_threshold,
       unsigned joy_idx,
       struct menu_bind_state *state,
@@ -5372,7 +5372,7 @@ bool menu_input_key_bind_set_mode(
          binds);
    menu_input_key_bind_poll_bind_state(
          input_st,
-         input_st->libretro_input_binds,
+         (*input_st->libretro_input_binds),
          settings->floats.input_axis_threshold,
          settings->uints.input_joypad_index[binds->port],
          binds, false,
@@ -5480,7 +5480,7 @@ current_time;
 
       menu_input_key_bind_poll_bind_state(
             input_st,
-            input_st->libretro_input_binds,
+            (*input_st->libretro_input_binds),
             settings->floats.input_axis_threshold,
             settings->uints.input_joypad_index[new_binds.port],
             &new_binds, timed_out,
