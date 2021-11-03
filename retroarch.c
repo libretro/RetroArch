@@ -18646,13 +18646,17 @@ static void collect_system_input(struct rarch_state *p_rarch,
       }
 #endif /* HAVE_MENU */
 
-      if ((port == 0) && !all_users_control_menu)
+      /* we write port 0 directly to input_bits to save one iteration of this loop */
+      if (port != 0)
+      {
+         /* Update compound 'current_bits' record
+          * Note: Only digital inputs are considered */
+         for(i = 0; i < sizeof(current_bits->data) / sizeof(current_bits->data[0]); i++)
+            current_bits->data[i] |= loop_bits->data[i];
+      }
+      else if (!all_users_control_menu)
          break;
 
-      /* Update compound 'current_bits' record
-       * Note: Only digital inputs are considered */
-      for(i = 0; i < sizeof(current_bits->data) / sizeof(current_bits->data[0]); i++)
-         current_bits->data[i] |= loop_bits->data[i];
    }
 
 #ifdef HAVE_MENU
