@@ -512,6 +512,8 @@ void command_event_save_current_config(enum override_type type);
  **/
 bool command_event_disk_control_append_image(const char *path);
 
+void command_event_reinit(const int flags);
+
 bool command_event_main_state(unsigned cmd);
 
 RETRO_END_DECLS

@@ -40,6 +40,10 @@
 #include "gfx/gfx_widgets.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "menu/menu_driver.h"
+#endif
+
 #ifdef HAVE_NETWORKING
 #include "network/netplay/netplay.h"
 #endif
@@ -1594,4 +1598,53 @@ bool command_event_disk_control_append_image(
    command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
 
    return true;
+}
+
+void command_event_reinit(const int flags)
+{
+   settings_t *settings           = config_get_ptr();
+   input_driver_state_t *input_st = input_state_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+#ifdef HAVE_MENU
+   gfx_display_t *p_disp          = disp_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   bool video_fullscreen          = settings->bools.video_fullscreen;
+   bool adaptive_vsync            = settings->bools.video_adaptive_vsync;
+   unsigned swap_interval         = settings->uints.video_swap_interval;
+#endif
+   enum input_game_focus_cmd_type 
+      game_focus_cmd              = GAME_FOCUS_CMD_REAPPLY;
+   const input_device_driver_t 
+      *joypad                     = input_st->primary_joypad;
+#ifdef HAVE_MFI
+   const input_device_driver_t 
+      *sec_joypad                 = input_st->secondary_joypad;
+#else
+   const input_device_driver_t 
+      *sec_joypad                 = NULL;
+#endif
+
+   video_driver_reinit(flags);
+   /* Poll input to avoid possibly stale data to corrupt things. */
+   if (  joypad && joypad->poll)
+      joypad->poll();
+   if (  sec_joypad && sec_joypad->poll)
+      sec_joypad->poll();
+   if (  input_st->current_driver &&
+         input_st->current_driver->poll)
+      input_st->current_driver->poll(input_st->current_data);
+   command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
+
+#ifdef HAVE_MENU
+   p_disp->framebuf_dirty = true;
+   if (video_fullscreen)
+      video_driver_hide_mouse();
+   if (     menu_st->alive 
+         && video_st->current_video->set_nonblock_state)
+      video_st->current_video->set_nonblock_state(
+            video_st->data, false,
+            video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
+            adaptive_vsync,
+            swap_interval);
+#endif
 }
