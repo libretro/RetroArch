@@ -531,6 +531,7 @@ else ifeq ($(platform), windows_msvc2005_x86)
    endif
 else ifneq (,$(findstring windows_msvc2010,$(platform)))
    HAVE_GDI                 := 1
+   HAVE_CHEEVOS             := 1
    HAVE_SCREENSHOTS         := 1
    HAVE_REWIND              := 1
    HAVE_AUDIOMIXER          := 1
