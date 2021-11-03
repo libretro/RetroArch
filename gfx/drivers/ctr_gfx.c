@@ -301,12 +301,11 @@ static bool ctr_update_state_date_from_file(void *data)
    char state_path[PATH_MAX_LENGTH];
 #ifdef USE_CTRULIB_2
    time_t mtime;
-   struct tm *t     = NULL;
 #else
    time_t ft;
    u64 mtime;
-   struct tm *t     = NULL;
 #endif
+   struct tm *t     = NULL;
    ctr_video_t *ctr = (ctr_video_t*)data;
 
    if (!retroarch_get_current_savestate_path(
