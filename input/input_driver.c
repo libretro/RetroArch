@@ -5264,3 +5264,203 @@ void input_remapping_set_defaults(bool clear_cache)
     *   into the main config file */
    input_remapping_restore_global_config(clear_cache);
 }
+
+void input_driver_collect_system_input(input_driver_state_t *input_st,
+      settings_t *settings, input_bits_t *current_bits)
+{
+   unsigned port;
+   rarch_joypad_info_t joypad_info;
+   int block_delay                     = settings->uints.input_hotkey_block_delay;
+   const input_device_driver_t *joypad = input_st->primary_joypad;
+#ifdef HAVE_MFI
+   const input_device_driver_t
+      *sec_joypad                      = input_st->secondary_joypad;
+#else
+   const input_device_driver_t
+      *sec_joypad                      = NULL;
+#endif
+#ifdef HAVE_MENU
+   bool display_kb                     = menu_input_dialog_get_display_kb();
+   bool menu_input_active              = menu_state_get_ptr()->alive &&
+         !(settings->bools.menu_unified_controls && !display_kb);
+#endif
+   input_driver_t *current_input       = input_st->current_driver;
+   unsigned max_users                  = settings->uints.input_max_users;
+   bool all_users_control_menu         = settings->bools.input_all_users_control_menu;
+   joypad_info.axis_threshold          = settings->floats.input_axis_threshold;
+
+   /* Gather input from each (enabled) joypad */
+   for(port = 0; port < max_users; port++)
+   {
+      const struct retro_keybind *binds_norm = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
+      const struct retro_keybind *binds_auto = &input_autoconf_binds[port][RARCH_ENABLE_HOTKEY];
+      struct retro_keybind *auto_binds       = input_autoconf_binds[port];
+      struct retro_keybind *general_binds    = input_config_binds[port];
+      joypad_info.joy_idx                    = settings->uints.input_joypad_index[port];
+      joypad_info.auto_binds                 = input_autoconf_binds[joypad_info.joy_idx];
+      input_bits_t *loop_bits                = NULL;
+      input_bits_t tmp_bits;
+      unsigned i;
+
+      if (port == 0)
+         loop_bits = current_bits;
+      else
+      {
+         loop_bits = &tmp_bits;
+         BIT256_CLEAR_ALL_PTR(loop_bits);
+      }
+
+#ifdef HAVE_MENU
+      if (menu_input_active)
+      {
+         unsigned k;
+         unsigned x_plus  = RARCH_ANALOG_LEFT_X_PLUS;
+         unsigned y_plus  = RARCH_ANALOG_LEFT_Y_PLUS;
+         unsigned x_minus = RARCH_ANALOG_LEFT_X_MINUS;
+         unsigned y_minus = RARCH_ANALOG_LEFT_Y_MINUS;
+
+         /* Push analog to D-Pad mappings to binds. */
+         for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
+         {
+            (auto_binds)[k].orig_joyaxis    = (auto_binds)[k].joyaxis;
+            (general_binds)[k].orig_joyaxis = (general_binds)[k].joyaxis;
+         }
+
+         if (!INHERIT_JOYAXIS(auto_binds))
+         {
+            unsigned j = x_plus + 3;
+            /* Inherit joyaxis from analogs. */
+            for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
+               (auto_binds)[k].joyaxis = (auto_binds)[j--].joyaxis;
+         }
+
+         if (!INHERIT_JOYAXIS(general_binds))
+         {
+            unsigned j = x_plus + 3;
+            /* Inherit joyaxis from analogs. */
+            for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
+               (general_binds)[k].joyaxis = (general_binds)[j--].joyaxis;
+         }
+      }
+#endif /* HAVE_MENU */
+
+      input_keys_pressed(port,
+            menu_input_active,
+            block_delay,
+            loop_bits,
+            input_config_binds,
+            binds_norm,
+            binds_auto,
+            joypad,
+            sec_joypad,
+            &joypad_info);
+
+#ifdef HAVE_MENU
+      if (menu_input_active)
+      {
+         unsigned j;
+
+         /* Restores analog D-pad binds temporarily overridden. */
+         for (j = RETRO_DEVICE_ID_JOYPAD_UP; j <= RETRO_DEVICE_ID_JOYPAD_RIGHT; j++)
+         {
+            (auto_binds)[j].joyaxis    = (auto_binds)[j].orig_joyaxis;
+            (general_binds)[j].joyaxis = (general_binds)[j].orig_joyaxis;
+         }
+      }
+#endif /* HAVE_MENU */
+
+      /* we write port 0 directly to input_bits to save one iteration of this loop */
+      if (port != 0)
+      {
+         /* Update compound 'current_bits' record
+          * Note: Only digital inputs are considered */
+         for(i = 0; i < sizeof(current_bits->data) / sizeof(current_bits->data[0]); i++)
+            current_bits->data[i] |= loop_bits->data[i];
+      }
+      else if (!all_users_control_menu)
+         break;
+
+   }
+
+#ifdef HAVE_MENU
+   if (menu_input_active)
+   {
+      /* Gather keyboard input, if enabled
+       * Note: Keyboard input always read from
+       * port 0 */
+      if (     !display_kb
+            &&  current_input->input_state)
+      {
+         unsigned i;
+         unsigned ids[][2] =
+         {
+            {RETROK_SPACE,     RETRO_DEVICE_ID_JOYPAD_START   },
+            {RETROK_SLASH,     RETRO_DEVICE_ID_JOYPAD_X       },
+            {RETROK_RSHIFT,    RETRO_DEVICE_ID_JOYPAD_SELECT  },
+            {RETROK_RIGHT,     RETRO_DEVICE_ID_JOYPAD_RIGHT   },
+            {RETROK_LEFT,      RETRO_DEVICE_ID_JOYPAD_LEFT    },
+            {RETROK_DOWN,      RETRO_DEVICE_ID_JOYPAD_DOWN    },
+            {RETROK_UP,        RETRO_DEVICE_ID_JOYPAD_UP      },
+            {RETROK_PAGEUP,    RETRO_DEVICE_ID_JOYPAD_L       },
+            {RETROK_PAGEDOWN,  RETRO_DEVICE_ID_JOYPAD_R       },
+            {0,                RARCH_QUIT_KEY                 },
+            {0,                RARCH_FULLSCREEN_TOGGLE_KEY    },
+            {RETROK_BACKSPACE, RETRO_DEVICE_ID_JOYPAD_B      },
+            {RETROK_RETURN,    RETRO_DEVICE_ID_JOYPAD_A      },
+            {RETROK_DELETE,    RETRO_DEVICE_ID_JOYPAD_Y      },
+            {0,                RARCH_UI_COMPANION_TOGGLE     },
+            {0,                RARCH_FPS_TOGGLE              },
+            {0,                RARCH_SEND_DEBUG_INFO         },
+            {0,                RARCH_NETPLAY_HOST_TOGGLE     },
+            {0,                RARCH_MENU_TOGGLE             },
+         };
+
+         ids[9][0]  = input_config_binds[0][RARCH_QUIT_KEY].key;
+         ids[10][0] = input_config_binds[0][RARCH_FULLSCREEN_TOGGLE_KEY].key;
+         ids[14][0] = input_config_binds[0][RARCH_UI_COMPANION_TOGGLE].key;
+         ids[15][0] = input_config_binds[0][RARCH_FPS_TOGGLE].key;
+         ids[16][0] = input_config_binds[0][RARCH_SEND_DEBUG_INFO].key;
+         ids[17][0] = input_config_binds[0][RARCH_NETPLAY_HOST_TOGGLE].key;
+         ids[18][0] = input_config_binds[0][RARCH_MENU_TOGGLE].key;
+
+         if (settings->bools.input_menu_swap_ok_cancel_buttons)
+         {
+            ids[11][1] = RETRO_DEVICE_ID_JOYPAD_A;
+            ids[12][1] = RETRO_DEVICE_ID_JOYPAD_B;
+         }
+
+         for (i = 0; i < ARRAY_SIZE(ids); i++)
+         {
+            if (current_input->input_state(
+                     input_st->current_data,
+                     joypad,
+                     sec_joypad,
+                     &joypad_info, input_config_binds,
+                     input_st->keyboard_mapping_blocked,
+                     0,
+                     RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
+               BIT256_SET_PTR(current_bits, ids[i][1]);
+         }
+      }
+   }
+   else
+#endif /* HAVE_MENU */
+   {
+#if defined(HAVE_ACCESSIBILITY) && defined(HAVE_TRANSLATE)
+      if (settings->bools.ai_service_enable)
+      {
+         unsigned i;
+
+         input_st->gamepad_input_override = 0;
+
+         for (i = 0; i < MAX_USERS; i++)
+         {
+            /* Set gamepad input override */
+            if (input_st->ai_gamepad_state[i] == 2)
+               input_st->gamepad_input_override |= (1 << i);
+            input_st->ai_gamepad_state[i] = 0;
+         }
+      }
+#endif /* defined(HAVE_ACCESSIBILITY) && defined(HAVE_TRANSLATE) */
+   }
+}

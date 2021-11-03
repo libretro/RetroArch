@@ -122,8 +122,6 @@ input_st->bsv_movie_state.eof_exit)
       old_pressed3                              = pressed3; \
    }
 
-#define INHERIT_JOYAXIS(binds) (((binds)[x_plus].joyaxis == (binds)[x_minus].joyaxis) || (  (binds)[y_plus].joyaxis == (binds)[y_minus].joyaxis))
-
 #define CDN_URL "https://cdn.discordapp.com/avatars"
 
 #ifdef HAVE_DYNAMIC
@@ -568,9 +566,6 @@ struct rarch_state
 
 #if defined(HAVE_TRANSLATE)
    int ai_service_auto;
-#if defined(HAVE_ACCESSIBILITY)
-   int ai_gamepad_state[MAX_USERS];
-#endif
 #endif
 #ifdef HAVE_NETWORKING
    int reannounce;

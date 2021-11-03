@@ -98,6 +98,8 @@
 #define MAPPER_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
 #define MAPPER_UNSET_KEY(state, key) (state)->keys[(key) / 32] &= ~(1 << ((key) % 32))
 
+#define INHERIT_JOYAXIS(binds) (((binds)[x_plus].joyaxis == (binds)[x_minus].joyaxis) || (  (binds)[y_plus].joyaxis == (binds)[y_minus].joyaxis))
+
 RETRO_BEGIN_DECLS
 
 enum rarch_movie_type
@@ -402,7 +404,11 @@ typedef struct
    input_remote_t *remote;
 #endif
    char    *osk_grid[45];                                /* ptr alignment */ 
-
+#if defined(HAVE_TRANSLATE)
+#if defined(HAVE_ACCESSIBILITY)
+   int ai_gamepad_state[MAX_USERS];
+#endif
+#endif
    int osk_ptr;
    turbo_buttons_t turbo_btns; /* int32_t alignment */
 
@@ -1029,6 +1035,9 @@ void input_keys_pressed(
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info);
+
+void input_driver_collect_system_input(input_driver_state_t *input_st,
+      settings_t *settings, input_bits_t *current_bits);
 
 extern input_device_driver_t *joypad_drivers[];
 extern input_driver_t *input_drivers[];
