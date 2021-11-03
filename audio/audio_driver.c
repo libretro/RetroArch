@@ -316,9 +316,9 @@ static void audio_driver_mixer_deinit(void)
 }
 #endif
 
-bool audio_driver_deinit(void *settings_data)
+bool audio_driver_deinit(void)
 {
-   settings_t *settings = (settings_t*)settings_data;
+   settings_t *settings = config_get_ptr();
 #ifdef HAVE_AUDIOMIXER
    audio_driver_mixer_deinit();
 #endif
@@ -758,7 +758,7 @@ bool audio_driver_init_internal(
    return true;
 
 error:
-   return audio_driver_deinit(settings);
+   return audio_driver_deinit();
 }
 
 void audio_driver_sample(int16_t left, int16_t right)

@@ -65,9 +65,7 @@ static bool init_libretro_symbols(
       struct retro_core_t *current_core);
 
 static void ui_companion_driver_deinit(struct rarch_state *p_rarch);
-static void ui_companion_driver_init_first(
-      settings_t *settings,
-      struct rarch_state *p_rarch);
+static void ui_companion_driver_init_first(struct rarch_state *p_rarch);
 
 static void driver_uninit(struct rarch_state *p_rarch, int flags);
 

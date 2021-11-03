@@ -783,6 +783,13 @@ static void config_parse_file(global_t *global);
 
 struct defaults g_defaults;
 
+static settings_t *config_st = NULL;
+
+settings_t *config_get_ptr(void)
+{
+   return config_st;
+}
+
 /**
  * config_get_default_audio:
  *
@@ -2365,7 +2372,7 @@ void config_set_defaults(void *data)
    static bool first_initialized   = true;
 #endif
    global_t *global                = (global_t*)data;
-   settings_t *settings            = config_get_ptr();
+   settings_t *settings            = config_st;
    int bool_settings_size          = sizeof(settings->bools)   / sizeof(settings->bools.placeholder);
    int float_settings_size         = sizeof(settings->floats)  / sizeof(settings->floats.placeholder);
    int int_settings_size           = sizeof(settings->ints)    / sizeof(settings->ints.placeholder);
@@ -3777,7 +3784,7 @@ bool config_load_override(void *data)
       system->info.library_name : NULL;
    const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
    const char *game_name                  = path_basename(rarch_path_basename);
-   settings_t *settings                   = config_get_ptr();
+   settings_t *settings                   = config_st;
 
    if (!string_is_empty(rarch_path_basename))
       fill_pathname_parent_dir_name(content_dir_name,
@@ -3935,7 +3942,7 @@ bool config_unload_override(void)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH,  NULL);
 
    if (!config_load_file(global_get_ptr(),
-            path_get(RARCH_PATH_CONFIG), config_get_ptr()))
+            path_get(RARCH_PATH_CONFIG), config_st))
       return false;
 
    RARCH_LOG("[Overrides]: Configuration overrides unloaded, original configuration restored.\n");
@@ -3978,7 +3985,7 @@ bool config_load_remap(const char *directory_input_remapping,
    const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
    const char *game_name                  = path_basename(rarch_path_basename);
    enum msg_hash_enums msg_remap_loaded   = MSG_GAME_REMAP_FILE_LOADED;
-   settings_t *settings                   = config_get_ptr();
+   settings_t *settings                   = config_st;
    bool notification_show_remap_load      = settings->bools.notification_show_remap_load;
 
    if (string_is_empty(core_name))
@@ -4097,7 +4104,7 @@ static void config_parse_file(global_t *global)
        RARCH_LOG("[Config]: Loading config from: \"%s\".\n", config_path);
 
    {
-      if (!config_load_file(global, config_path, config_get_ptr()))
+      if (!config_load_file(global, config_path, config_st))
       {
          RARCH_ERR("[Config]: Couldn't find config at path: \"%s\".\n",
                config_path);
@@ -4382,7 +4389,7 @@ bool config_save_autoconf_profile(const
    int32_t pid_user                     = 0;
    int32_t vid_user                     = 0;
    bool ret                             = false;
-   settings_t *settings                 = config_get_ptr();
+   settings_t *settings                 = config_st;
    const char *autoconf_dir             = settings->paths.directory_autoconfig;
    const char *joypad_driver_fallback   = settings->arrays.input_joypad_driver;
    const char *joypad_driver            = NULL;
@@ -4506,7 +4513,7 @@ bool config_save_file(const char *path)
    struct config_array_setting     *array_settings   = NULL;
    struct config_path_setting     *path_settings     = NULL;
    config_file_t                              *conf  = config_file_new_from_path_to_string(path);
-   settings_t                              *settings = config_get_ptr();
+   settings_t                              *settings = config_st;
    global_t *global                                  = global_get_ptr();
    int bool_settings_size                            = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
    int float_settings_size                           = sizeof(settings->floats)/ sizeof(settings->floats.placeholder);
@@ -4742,7 +4749,7 @@ bool config_save_overrides(enum override_type type, void *data)
    char core_path[PATH_MAX_LENGTH];
    char game_path[PATH_MAX_LENGTH];
    char content_path[PATH_MAX_LENGTH];
-   settings_t *overrides                       = config_get_ptr();
+   settings_t *overrides                       = config_st;
    int bool_settings_size                      = sizeof(settings->bools)  / sizeof(settings->bools.placeholder);
    int float_settings_size                     = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
    int int_settings_size                       = sizeof(settings->ints)   / sizeof(settings->ints.placeholder);
@@ -5012,7 +5019,7 @@ bool input_remapping_load_file(void *data, const char *path)
 {
    unsigned i, j;
    config_file_t *conf                              = (config_file_t*)data;
-   settings_t *settings                             = config_get_ptr();
+   settings_t *settings                             = config_st;
    global_t *global                                 = global_get_ptr();
    char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8] = {
       "b", "y", "select", "start",
@@ -5153,7 +5160,7 @@ bool input_remapping_save_file(const char *path)
       "a", "x", "l", "r", "l2", "r2",
       "l3", "r3", "l_x+", "l_x-", "l_y+", "l_y-", "r_x+", "r_x-", "r_y+", "r_y-" };
    config_file_t               *conf = NULL;
-   settings_t              *settings = config_get_ptr();
+   settings_t              *settings = config_st;
    unsigned max_users                = settings->uints.input_max_users;
    const char *dir_input_remapping   = settings->paths.directory_input_remapping;
 
@@ -5656,7 +5663,6 @@ static uint16_t input_config_parse_hat(const char *dir)
    return 0;
 }
 
-
 void input_config_parse_joy_button(
       char *s,
       void *data, const char *prefix,
@@ -5714,4 +5720,18 @@ void input_config_parse_joy_button(
 
       bind->joykey_label = strdup(tmp_a->value);
    }
+}
+
+void config_deinit(void)
+{
+   if (config_st)
+      free(config_st);
+   config_st = NULL;
+}
+
+void config_init(void)
+{
+   if (config_st)
+      return;
+   config_st = (settings_t*)calloc(1, sizeof(settings_t));
 }

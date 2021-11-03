@@ -351,7 +351,7 @@ bool audio_driver_init_internal(
       void *settings_data,
       bool audio_cb_inited);
 
-bool audio_driver_deinit(void *settings_data);
+bool audio_driver_deinit(void);
 
 bool audio_driver_find_driver(
       void *settings_data,

@@ -353,12 +353,6 @@ int content_get_subsystem(void)
    return runloop_state.content_st.pending_subsystem_id;
 }
 
-settings_t *config_get_ptr(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->configuration_settings;
-}
-
 global_t *global_get_ptr(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -8343,9 +8337,7 @@ void main_exit(void *args)
    global_free(p_rarch);
    task_queue_deinit();
 
-   if (p_rarch->configuration_settings)
-      free(p_rarch->configuration_settings);
-   p_rarch->configuration_settings = NULL;
+   config_deinit();
 
    ui_companion_driver_deinit(p_rarch);
 
@@ -8413,7 +8405,7 @@ int rarch_main(int argc, char *argv[], void *data)
    command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
    rarch_favorites_deinit();
 
-   p_rarch->configuration_settings = (settings_t*)calloc(1, sizeof(settings_t));
+   config_init();
 
    retroarch_deinit_drivers(p_rarch, &runloop_st->retro_ctx);
    retroarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
@@ -8458,9 +8450,7 @@ int rarch_main(int argc, char *argv[], void *data)
          return 1;
    }
 
-   ui_companion_driver_init_first(p_rarch->configuration_settings,
-         p_rarch);
-
+   ui_companion_driver_init_first(p_rarch);
 #if !defined(HAVE_MAIN) || defined(HAVE_QT)
    for (;;)
    {
@@ -12677,10 +12667,9 @@ static void ui_companion_driver_toggle(
 #endif
 }
 
-static void ui_companion_driver_init_first(
-      settings_t *settings,
-      struct rarch_state *p_rarch)
+static void ui_companion_driver_init_first(struct rarch_state *p_rarch)
 {
+   settings_t *settings                = config_get_ptr();
 #ifdef HAVE_QT
    bool desktop_menu_enable            = settings->bools.desktop_menu_enable;
    bool ui_companion_toggle            = settings->bools.ui_companion_toggle;
@@ -15496,7 +15485,7 @@ static void driver_uninit(struct rarch_state *p_rarch, int flags)
    }
 
    if (flags & DRIVER_AUDIO_MASK)
-      audio_driver_deinit(p_rarch->configuration_settings);
+      audio_driver_deinit();
 
    if ((flags & DRIVER_VIDEO_MASK))
       video_st->data = NULL;
