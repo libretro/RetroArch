@@ -32,7 +32,7 @@ jar_name = 'crowdin-cli.jar'
 if not os.path.isfile(jar_name):
    print('download crowdin-cli.jar')
    crowdin_cli_file = 'crowdin-cli.zip'
-   crowdin_cli_url = 'https://downloads.crowdin.com/cli/v2/' + crowdin_cli_file
+   crowdin_cli_url = 'https://downloads.crowdin.com/cli/v3/' + crowdin_cli_file
    urllib.request.urlretrieve(crowdin_cli_url, crowdin_cli_file)
    with zipfile.ZipFile(crowdin_cli_file, 'r') as zip_ref:
       jar_dir = zip_ref.namelist()[0]
@@ -56,7 +56,7 @@ print('wait for crowdin server to process data')
 time.sleep(10)
 
 print('download translation *.json')
-subprocess.run(['java', '-jar', 'crowdin-cli.jar', 'download', 'translations'])
+subprocess.run(['java', '-jar', 'crowdin-cli.jar', 'download'])
 
 print('convert *.json to *.h')
 for file in os.listdir(dir_path):
