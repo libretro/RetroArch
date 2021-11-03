@@ -482,6 +482,37 @@ static const struct cmd_map map[] = {
 };
 #endif
 
+#ifdef HAVE_CONFIGFILE
+/**
+ * command_event_save_core_config:
+ *
+ * Saves a new (core) configuration to a file. Filename is based
+ * on heuristics to avoid typing.
+ *
+ * Returns: true (1) on success, otherwise false (0).
+ **/
+bool command_event_save_core_config(
+      const char *dir_menu_config,
+      const char *rarch_path_config);
+
+/**
+ * command_event_save_current_config:
+ *
+ * Saves current configuration file to disk, and (optionally)
+ * autosave state.
+ **/
+void command_event_save_current_config(enum override_type type);
+#endif
+
+/**
+ * command_event_disk_control_append_image:
+ * @path                 : Path to disk image.
+ *
+ * Appends disk image to disk image list.
+ **/
+bool command_event_disk_control_append_image(const char *path);
+
+bool command_event_main_state(unsigned cmd);
 
 RETRO_END_DECLS
 

@@ -302,7 +302,6 @@ static bool ctr_update_state_date_from_file(void *data)
 #ifdef USE_CTRULIB_2
    time_t mtime;
    struct tm *t     = NULL;
-   bool file_exists = false;
 #else
    time_t ft;
    u64 mtime;
@@ -315,17 +314,12 @@ static bool ctr_update_state_date_from_file(void *data)
       return false;
 
 #ifdef USE_CTRULIB_2
-   file_exists = archive_getmtime(state_path + 5, &mtime) == 0;
+   if (archive_getmtime(state_path + 5, &mtime) != 0)
+	   goto error;
 #else
-   file_exists = sdmc_getmtime(state_path + 5, &mtime) == 0;
+   if (sdmc_getmtime(   state_path + 5, &mtime) != 0)
+	   goto error;
 #endif 
-
-   if (!file_exists)
-   {
-      ctr->state_data_exist = false;
-      snprintf(ctr->state_date, sizeof(ctr->state_date), "00/00/0000");
-      return false;
-   }
 
    ctr->state_data_exist = true;
 
@@ -339,6 +333,11 @@ static bool ctr_update_state_date_from_file(void *data)
       t->tm_mon + 1, t->tm_mday, t->tm_year + 1900);
       
   return true;
+
+error:
+  ctr->state_data_exist = false;
+  snprintf(ctr->state_date, sizeof(ctr->state_date), "00/00/0000");
+  return false;
 }
 
 static void ctr_state_thumbnail_geom(void *data)

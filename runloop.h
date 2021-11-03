@@ -284,6 +284,8 @@ typedef struct runloop runloop_state_t;
 
 RETRO_BEGIN_DECLS
 
+void runloop_path_fill_names(void);
+
 runloop_state_t *runloop_state_get_ptr(void);
 
 RETRO_END_DECLS

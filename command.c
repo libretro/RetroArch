@@ -48,6 +48,7 @@
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "gfx/video_shader_parse.h"
 #endif
+#include "autosave.h"
 #include "command.h"
 #include "core_info.h"
 #include "cheat_manager.h"
@@ -1305,3 +1306,292 @@ bool command_set_shader(command_t *cmd, const char *arg)
    return apply_shader(settings, type, arg, true);
 }
 #endif
+
+#ifdef HAVE_CONFIGFILE
+bool command_event_save_core_config(
+      const char *dir_menu_config,
+      const char *rarch_path_config)
+{
+   char msg[128];
+   char config_name[PATH_MAX_LENGTH];
+   char config_path[PATH_MAX_LENGTH];
+   char config_dir[PATH_MAX_LENGTH];
+   bool found_path                 = false;
+   bool overrides_active           = false;
+   const char *core_path           = NULL;
+   runloop_state_t *runloop_st     = runloop_state_get_ptr();
+
+   msg[0]                          = '\0';
+   config_dir[0]                   = '\0';
+
+   if (!string_is_empty(dir_menu_config))
+      strlcpy(config_dir, dir_menu_config, sizeof(config_dir));
+   else if (!string_is_empty(rarch_path_config)) /* Fallback */
+      fill_pathname_basedir(config_dir, rarch_path_config,
+            sizeof(config_dir));
+
+   if (string_is_empty(config_dir))
+   {
+      runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      RARCH_ERR("[Config]: %s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
+      return false;
+   }
+
+   core_path                       = path_get(RARCH_PATH_CORE);
+   config_name[0]                  = '\0';
+   config_path[0]                  = '\0';
+
+   /* Infer file name based on libretro core. */
+   if (path_is_valid(core_path))
+   {
+      unsigned i;
+      RARCH_LOG("%s\n", msg_hash_to_str(MSG_USING_CORE_NAME_FOR_NEW_CONFIG));
+
+      /* In case of collision, find an alternative name. */
+      for (i = 0; i < 16; i++)
+      {
+         char tmp[64];
+
+         fill_pathname_base_noext(
+               config_name,
+               core_path,
+               sizeof(config_name));
+
+         fill_pathname_join(config_path, config_dir, config_name,
+               sizeof(config_path));
+
+         if (i)
+            snprintf(tmp, sizeof(tmp), "-%u.cfg", i);
+         else
+         {
+            tmp[0] = '\0';
+            strlcpy(tmp, ".cfg", sizeof(tmp));
+         }
+
+         strlcat(config_path, tmp, sizeof(config_path));
+
+         if (!path_is_valid(config_path))
+         {
+            found_path = true;
+            break;
+         }
+      }
+   }
+
+   if (!found_path)
+   {
+      /* Fallback to system time... */
+      RARCH_WARN("[Config]: %s\n",
+            msg_hash_to_str(MSG_CANNOT_INFER_NEW_CONFIG_PATH));
+      fill_dated_filename(config_name, ".cfg", sizeof(config_name));
+      fill_pathname_join(config_path, config_dir, config_name,
+            sizeof(config_path));
+   }
+
+   if (runloop_st->overrides_active)
+   {
+      /* Overrides block config file saving,
+       * make it appear as overrides weren't enabled
+       * for a manual save. */
+      runloop_st->overrides_active      = false;
+      overrides_active                  = true;
+   }
+
+#ifdef HAVE_CONFIGFILE
+   command_event_save_config(config_path, msg, sizeof(msg));
+#endif
+
+   if (!string_is_empty(msg))
+      runloop_msg_queue_push(msg, 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+   runloop_st->overrides_active = overrides_active;
+
+   return true;
+}
+
+void command_event_save_current_config(enum override_type type)
+{
+   runloop_state_t *runloop_st     = runloop_state_get_ptr();
+
+   switch (type)
+   {
+      case OVERRIDE_NONE:
+         {
+            if (path_is_empty(RARCH_PATH_CONFIG))
+            {
+               char msg[128];
+               msg[0] = '\0';
+               strcpy_literal(msg, "[Config]: Config directory not set, cannot save configuration.");
+               runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
+            else
+            {
+               char msg[256];
+               msg[0] = '\0';
+               command_event_save_config(path_get(RARCH_PATH_CONFIG), msg, sizeof(msg));
+               runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
+         }
+         break;
+      case OVERRIDE_GAME:
+      case OVERRIDE_CORE:
+      case OVERRIDE_CONTENT_DIR:
+         {
+            char msg[128];
+            msg[0] = '\0';
+            if (config_save_overrides(type, &runloop_st->system))
+            {
+               strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_SAVED_SUCCESSFULLY), sizeof(msg));
+               /* set overrides to active so the original config can be
+                  restored after closing content */
+               runloop_st->overrides_active = true;
+            }
+            else
+               strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_SAVING), sizeof(msg));
+            RARCH_LOG("[Config - Overrides]: %s\n", msg);
+            runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+         break;
+   }
+}
+#endif
+
+bool command_event_main_state(unsigned cmd)
+{
+   retro_ctx_size_info_t info;
+   char msg[128];
+   char state_path[16384];
+   const global_t *global      = global_get_ptr();
+   settings_t *settings        = config_get_ptr();
+   bool ret                    = false;
+   bool push_msg               = true;
+
+   state_path[0] = msg[0]      = '\0';
+
+   retroarch_get_current_savestate_path(state_path, sizeof(state_path));
+
+   core_serialize_size(&info);
+
+   if (info.size)
+   {
+      switch (cmd)
+      {
+         case CMD_EVENT_SAVE_STATE:
+         case CMD_EVENT_SAVE_STATE_TO_RAM:
+            {
+               video_driver_state_t *video_st                 = 
+                  video_state_get_ptr();
+               bool savestate_auto_index                      =
+                     settings->bools.savestate_auto_index;
+               unsigned savestate_max_keep                    =
+                     settings->uints.savestate_max_keep;
+               bool frame_time_counter_reset_after_save_state =
+                     settings->bools.frame_time_counter_reset_after_save_state;
+
+               if (cmd == CMD_EVENT_SAVE_STATE)
+                  content_save_state(state_path, true, false);
+               else
+                  content_save_state_to_ram();
+
+               /* Clean up excess savestates if necessary */
+               if (savestate_auto_index && (savestate_max_keep > 0))
+                  command_event_set_savestate_garbage_collect(global,
+                        settings->uints.savestate_max_keep,
+                        settings->bools.show_hidden_files
+                        );
+
+               if (frame_time_counter_reset_after_save_state)
+                  video_st->frame_time_count = 0;
+
+               ret      = true;
+               push_msg = false;
+            }
+            break;
+         case CMD_EVENT_LOAD_STATE:
+         case CMD_EVENT_LOAD_STATE_FROM_RAM:
+            {
+               bool res = false;
+               if (cmd == CMD_EVENT_LOAD_STATE)
+                  res = content_load_state(state_path, false, false);
+               else
+                  res = content_load_state_from_ram();
+
+               if (res)
+               {
+#ifdef HAVE_CHEEVOS
+                  if (rcheevos_hardcore_active())
+                  {
+                     rcheevos_pause_hardcore();
+                     runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  }
+#endif
+                  ret = true;
+#ifdef HAVE_NETWORKING
+                  netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
+#endif
+                  {
+                     video_driver_state_t *video_st                 = 
+                        video_state_get_ptr();
+                     bool frame_time_counter_reset_after_load_state =
+                        settings->bools.frame_time_counter_reset_after_load_state;
+                     if (frame_time_counter_reset_after_load_state)
+                        video_st->frame_time_count = 0;
+                  }
+               }
+            }
+            push_msg = false;
+            break;
+         case CMD_EVENT_UNDO_LOAD_STATE:
+            command_event_undo_load_state(msg, sizeof(msg));
+            ret = true;
+            break;
+         case CMD_EVENT_UNDO_SAVE_STATE:
+            command_event_undo_save_state(msg, sizeof(msg));
+            ret = true;
+            break;
+      }
+   }
+   else
+      strlcpy(msg, msg_hash_to_str(
+               MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES), sizeof(msg));
+
+   if (push_msg)
+      runloop_msg_queue_push(msg, 2, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+   if (!string_is_empty(msg))
+      RARCH_LOG("%s\n", msg);
+
+   return ret;
+}
+
+bool command_event_disk_control_append_image(
+      const char *path)
+{
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
+   rarch_system_info_t *sys_info  = runloop_st ? (rarch_system_info_t*)&runloop_st->system : NULL;
+   if (  !sys_info ||
+         !disk_control_append_image(&sys_info->disk_control, path))
+      return false;
+
+#ifdef HAVE_THREADS
+   if (runloop_st->use_sram)
+      autosave_deinit();
+#endif
+
+   /* TODO/FIXME: Need to figure out what to do with subsystems case. */
+   if (path_is_empty(RARCH_PATH_SUBSYSTEM))
+   {
+      /* Update paths for our new image.
+       * If we actually use append_image, we assume that we
+       * started out in a single disk case, and that this way
+       * of doing it makes the most sense. */
+      path_set(RARCH_PATH_NAMES, path);
+      runloop_path_fill_names();
+   }
+
+   command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
+
+   return true;
+}
