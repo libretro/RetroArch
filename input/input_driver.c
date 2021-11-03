@@ -5292,15 +5292,15 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
    /* Gather input from each (enabled) joypad */
    for(port = 0; port < max_users; port++)
    {
+      unsigned i;
+      input_bits_t tmp_bits;
+      input_bits_t *loop_bits                = NULL;
       const struct retro_keybind *binds_norm = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
       const struct retro_keybind *binds_auto = &input_autoconf_binds[port][RARCH_ENABLE_HOTKEY];
       struct retro_keybind *auto_binds       = input_autoconf_binds[port];
       struct retro_keybind *general_binds    = input_config_binds[port];
       joypad_info.joy_idx                    = settings->uints.input_joypad_index[port];
       joypad_info.auto_binds                 = input_autoconf_binds[joypad_info.joy_idx];
-      input_bits_t *loop_bits                = NULL;
-      input_bits_t tmp_bits;
-      unsigned i;
 
       if (port == 0)
          loop_bits = current_bits;
