@@ -1006,6 +1006,7 @@ static void rcheevos_validate_memrefs(rcheevos_locals_t* locals)
 {
    if (!rcheevos_init_memory(locals))
    {
+      const settings_t* settings = config_get_ptr();
       /* some cores (like Mupen64-Plus) don't expose the memory until the
        * first call to retro_run. in that case, there will be a total_size
        * of memory reported by the core, but init will return false, as
@@ -1024,7 +1025,6 @@ static void rcheevos_validate_memrefs(rcheevos_locals_t* locals)
          }
       }
 
-      const settings_t* settings = config_get_ptr();
       rcheevos_locals.core_supports = false;
 
       CHEEVOS_ERR(RCHEEVOS_TAG "No memory exposed by core\n");
