@@ -128,6 +128,7 @@ static int16_t hidpad_wiiugca_get_axis(void *pad_data, unsigned axis)
 {
    axis_data axis_data;
    gca_pad_data_t *pad = (gca_pad_data_t *)pad_data;
+   gca_device_data_t *device = (gca_device_data_t *)pad_data;
 
    gamepad_read_axis_data(axis, &axis_data);
 
@@ -136,7 +137,7 @@ static int16_t hidpad_wiiugca_get_axis(void *pad_data, unsigned axis)
 
    if(pad->datatype == GCA_TYPE_PAD)
       return gamepad_get_axis_value(pad->analog, &axis_data);
-   gca_device_data_t *device = (gca_device_data_t *)pad_data;
+
    return gamepad_get_axis_value(device->pad_data[0].analog, &axis_data);
 }
 

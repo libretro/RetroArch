@@ -132,8 +132,8 @@ struct input_keyboard_line
    bool enabled;
 };
 
-extern struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
-extern struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
+extern retro_keybind_set input_config_binds[MAX_USERS];
+extern retro_keybind_set input_autoconf_binds[MAX_USERS];
 
 struct rarch_joypad_info
 {
@@ -1029,7 +1029,7 @@ void input_keys_pressed(
       bool is_menu,
       int input_hotkey_block_delay,
       input_bits_t *p_new_state,
-      retro_keybind_set *binds,
+      const retro_keybind_set *binds,
       const struct retro_keybind *binds_norm,
       const struct retro_keybind *binds_auto,
       const input_device_driver_t *joypad,
