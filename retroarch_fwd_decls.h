@@ -30,7 +30,7 @@ static bool is_narrator_running(struct rarch_state *p_rarch, bool accessibility_
 #endif
 
 #ifdef HAVE_NETWORKING
-static void deinit_netplay(struct rarch_state *p_rarch);
+static void deinit_netplay(void);
 #endif
 
 static void retroarch_deinit_drivers(struct rarch_state *p_rarch,

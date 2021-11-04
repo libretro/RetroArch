@@ -116,8 +116,6 @@
 #endif
 
 #ifdef HAVE_DISCORD
-#include <discord_rpc.h>
-#include "deps/discord-rpc/include/discord_rpc.h"
 #include "network/discord.h"
 #endif
 
@@ -175,10 +173,6 @@
 #include <formats/rpng.h>
 #include <formats/rjson.h>
 #include "translation_defines.h"
-#endif
-
-#ifdef HAVE_DISCORD
-#include "network/discord.h"
 #endif
 
 #ifdef HAVE_NETWORKING
@@ -1284,17 +1278,25 @@ static const void *find_driver_nonempty(
 }
 
 #ifdef HAVE_DISCORD
+#define CDN_URL "https://cdn.discordapp.com/avatars"
+
+static discord_state_t discord_state_st; /* int64_t alignment */
+
+discord_state_t *discord_state_get_ptr(void)
+{
+   return &discord_state_st;
+}
+
 bool discord_is_ready(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   discord_state_t *discord_st = &p_rarch->discord_st;
+   discord_state_t *discord_st = &discord_state_st;
    return discord_st->ready;
 }
 
-static char *discord_get_own_username(struct rarch_state *p_rarch)
+static char *discord_get_own_username(void)
 {
-   discord_state_t *discord_st = &p_rarch->discord_st;
-
+   discord_state_t *discord_st = &discord_state_st;
    if (discord_st->ready)
       return discord_st->user_name;
    return NULL;
@@ -1302,8 +1304,7 @@ static char *discord_get_own_username(struct rarch_state *p_rarch)
 
 char *discord_get_own_avatar(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   discord_state_t *discord_st = &p_rarch->discord_st;
+   discord_state_t *discord_st = &discord_state_st;
    if (discord_st->ready)
       return discord_st->user_avatar;
    return NULL;
@@ -1316,8 +1317,7 @@ bool discord_avatar_is_ready(void)
 
 void discord_avatar_set_ready(bool ready)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   discord_state_t *discord_st = &p_rarch->discord_st;
+   discord_state_t *discord_st = &discord_state_st;
    discord_st->avatar_ready    = ready;
 }
 
@@ -1331,8 +1331,6 @@ static bool discord_download_avatar(
    static char full_path[PATH_MAX_LENGTH];
    static char buf[PATH_MAX_LENGTH];
    file_transfer_t     *transf = NULL;
-
-   RARCH_LOG("[DISCORD]: User avatar ID: %s\n", user_id);
 
    fill_pathname_application_special(buf,
             sizeof(buf),
@@ -1357,7 +1355,6 @@ static bool discord_download_avatar(
    strlcpy(transf->path, buf, sizeof(transf->path));
    transf->user_data = NULL;
 
-   RARCH_LOG("[DISCORD]: Downloading avatar from: %s\n", url_encoded);
    task_push_http_transfer_file(url_encoded, true, NULL, cb_generic_download, transf);
 
    return false;
@@ -1366,15 +1363,9 @@ static bool discord_download_avatar(
 
 static void handle_discord_ready(const DiscordUser* connectedUser)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   discord_state_t *discord_st = &p_rarch->discord_st;
-
+   discord_state_t *discord_st = &discord_state_st;
    strlcpy(discord_st->user_name,
          connectedUser->username, sizeof(discord_st->user_name));
-
-   RARCH_LOG("[DISCORD]: Connected to user: %s#%s\n",
-      connectedUser->username,
-      connectedUser->discriminator);
 
 #ifdef HAVE_MENU
    discord_download_avatar(discord_st,
@@ -1384,12 +1375,10 @@ static void handle_discord_ready(const DiscordUser* connectedUser)
 
 static void handle_discord_disconnected(int errcode, const char* message)
 {
-   RARCH_LOG("[DISCORD]: Disconnected (%d: %s)\n", errcode, message);
 }
 
 static void handle_discord_error(int errcode, const char* message)
 {
-   RARCH_LOG("[DISCORD]: Error (%d: %s)\n", errcode, message);
 }
 
 static void handle_discord_join_cb(retro_task_t *task,
@@ -1398,8 +1387,7 @@ static void handle_discord_join_cb(retro_task_t *task,
    char join_hostname[PATH_MAX_LENGTH];
    struct netplay_room *room         = NULL;
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
-   struct rarch_state *p_rarch       = &rarch_st;
-   discord_state_t *discord_st       = &p_rarch->discord_st;
+   discord_state_t *discord_st       = &discord_state_st;
 
    if (!data || err || !data->data)
       goto finish;
@@ -1417,13 +1405,12 @@ static void handle_discord_join_cb(retro_task_t *task,
       unsigned srv_port        = host_method_is_mitm ? room->mitm_port : room->port;
 
       if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-         deinit_netplay(p_rarch);
+         deinit_netplay();
       netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
       snprintf(join_hostname, sizeof(join_hostname), "%s|%d",
             srv_address, srv_port);
 
-      RARCH_LOG("[DISCORD]: Joining lobby at: %s\n", join_hostname);
       task_push_netplay_crc_scan(room->gamecrc,
          room->gamename, join_hostname, room->corename, room->subsystem_name);
       discord_st->connecting = true;
@@ -1444,22 +1431,18 @@ static void handle_discord_join(const char* secret)
 {
    char url[2048];
    struct string_list    *list = string_split(secret, "|");
-   struct rarch_state *p_rarch = &rarch_st;
-   discord_state_t *discord_st = &p_rarch->discord_st;
+   discord_state_t *discord_st = &discord_state_st;
 
    strlcpy(discord_st->peer_party_id,
          list->elems[0].data, sizeof(discord_st->peer_party_id));
    snprintf(url, sizeof(url), FILE_PATH_LOBBY_LIBRETRO_URL "%s/",
          discord_st->peer_party_id);
 
-   RARCH_LOG("[DISCORD]: Querying lobby id: %s at %s\n",
-         discord_st->peer_party_id, url);
    task_push_http_transfer(url, true, NULL, handle_discord_join_cb, NULL);
 }
 
 static void handle_discord_spectate(const char* secret)
 {
-   RARCH_LOG("[DISCORD]: Spectate (%s)\n", secret);
 }
 
 #ifdef HAVE_MENU
@@ -1485,7 +1468,7 @@ static void handle_discord_join_request(const DiscordUser* request)
    char buf[PATH_MAX_LENGTH];
    menu_input_ctx_line_t line;
 #endif
-   struct rarch_state *p_rarch = &rarch_st;
+   discord_state_t *discord_st = &discord_state_st;
 
    RARCH_LOG("[DISCORD]: Join request from %s#%s - %s %s\n",
       request->username,
@@ -1493,8 +1476,7 @@ static void handle_discord_join_request(const DiscordUser* request)
       request->userId,
       request->avatar);
 
-   discord_download_avatar(&p_rarch->discord_st,
-         request->userId, request->avatar);
+   discord_download_avatar(discord_st, request->userId, request->avatar);
 
 #if 0
    /* TODO/FIXME: Needs in-game widgets */
@@ -1520,8 +1502,7 @@ static void handle_discord_join_request(const DiscordUser* request)
 
 void discord_update(enum discord_presence presence)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   discord_state_t *discord_st = &p_rarch->discord_st;
+   discord_state_t *discord_st = &discord_state_st;
 #ifdef HAVE_CHEEVOS
    char cheevos_richpresence[256];
 #endif
@@ -1633,10 +1614,11 @@ void discord_update(enum discord_presence presence)
       case DISCORD_PRESENCE_NETPLAY_HOSTING:
          {
             char join_secret[128];
-            struct netplay_room *room = &p_rarch->netplay_host_room;
-            bool host_method_is_mitm  = room->host_method == NETPLAY_HOST_METHOD_MITM;
-            const char *srv_address   = host_method_is_mitm ? room->mitm_address : room->address;
-            unsigned srv_port         = host_method_is_mitm ? room->mitm_port : room->port;
+	    struct rarch_state *p_rarch = &rarch_st;
+            struct netplay_room *room   = &p_rarch->netplay_host_room;
+            bool host_method_is_mitm    = room->host_method == NETPLAY_HOST_METHOD_MITM;
+            const char *srv_address     = host_method_is_mitm ? room->mitm_address : room->address;
+            unsigned srv_port           = host_method_is_mitm ? room->mitm_port : room->port;
             if (room->id == 0)
                return;
 
@@ -1701,10 +1683,6 @@ void discord_update(enum discord_presence presence)
          break;
    }
 
-#ifdef DEBUG
-   RARCH_LOG("[DISCORD]: Updating (%d)\n", presence);
-#endif
-
    Discord_UpdatePresence(&discord_st->presence);
 #ifdef DISCORD_DISABLE_IO_THREAD
    Discord_UpdateConnection();
@@ -1712,15 +1690,14 @@ void discord_update(enum discord_presence presence)
    discord_st->status = presence;
 }
 
-static void discord_init(
-      discord_state_t *discord_st,
-      const char *discord_app_id, char *args)
+void discord_init(const char *discord_app_id, char *args)
 {
    DiscordEventHandlers handlers;
 #ifdef _WIN32
    char full_path[PATH_MAX_LENGTH];
 #endif
    char command[PATH_MAX_LENGTH];
+   discord_state_t *discord_st = &discord_state_st;
 
    discord_st->start_time      = time(0);
 
@@ -1987,7 +1964,7 @@ static void netplay_announce_cb(retro_task_t *task,
    }
 }
 
-static void netplay_announce(struct rarch_state *p_rarch)
+static void netplay_announce(void)
 {
    char buf[4600];
    char frontend_architecture[PATH_MAX_LENGTH];
@@ -2045,7 +2022,7 @@ static void netplay_announce(struct rarch_state *p_rarch)
 
 #ifdef HAVE_DISCORD
    if (discord_is_ready())
-      net_http_urlencode(&username, discord_get_own_username(p_rarch));
+      net_http_urlencode(&username, discord_get_own_username());
    else
 #endif
    net_http_urlencode(&username, settings->paths.username);
@@ -2105,16 +2082,14 @@ static int16_t input_state_net(unsigned port, unsigned device,
  *
  * Returns: true (1) if successful. At present, cannot fail.
  **/
-static void netplay_disconnect(
-      struct rarch_state *p_rarch,
-      netplay_t *netplay)
+static void netplay_disconnect(netplay_t *netplay)
 {
    size_t i;
 
    for (i = 0; i < netplay->connections_size; i++)
       netplay_hangup(netplay, &netplay->connections[i]);
 
-   deinit_netplay(p_rarch);
+   deinit_netplay();
 
 #ifdef HAVE_DISCORD
    if (discord_is_inited)
@@ -2137,12 +2112,12 @@ static void netplay_disconnect(
  * if we're stalled or paused
  **/
 static bool netplay_pre_frame(
-      struct rarch_state *p_rarch,
       bool netplay_public_announce,
       bool netplay_use_mitm_server,
       netplay_t *netplay)
 {
-   bool sync_stalled     = false;
+   bool sync_stalled           = false;
+   struct rarch_state *p_rarch = &rarch_st;
 
    retro_assert(netplay);
 
@@ -2152,7 +2127,7 @@ static bool netplay_pre_frame(
       if (
             (netplay->is_server || p_rarch->is_mitm) &&
             (p_rarch->reannounce % 300 == 0))
-         netplay_announce(p_rarch);
+         netplay_announce();
    }
    /* Make sure that if announcement is turned on mid-game, it gets announced */
    else
@@ -2198,7 +2173,7 @@ static bool netplay_pre_frame(
    /* If we're disconnected, deinitialize */
    if (!netplay->is_server && !netplay->connections[0].active)
    {
-      netplay_disconnect(p_rarch, netplay);
+      netplay_disconnect(netplay);
       return true;
    }
 
@@ -2214,8 +2189,10 @@ static bool netplay_pre_frame(
    return true;
 }
 
-static void deinit_netplay(struct rarch_state *p_rarch)
+static void deinit_netplay(void)
 {
+   struct rarch_state *p_rarch   = &rarch_st;
+
    if (p_rarch->netplay_data)
    {
       netplay_free(p_rarch->netplay_data);
@@ -2240,7 +2217,6 @@ static void deinit_netplay(struct rarch_state *p_rarch)
  * Returns: true (1) if successful, otherwise false (0).
  **/
 static bool init_netplay(
-      struct rarch_state *p_rarch,
       settings_t *settings,
       void *direct_host,
       const char *server, unsigned port)
@@ -2248,6 +2224,7 @@ static bool init_netplay(
    struct retro_callbacks cbs    = {0};
    uint64_t serialization_quirks = 0;
    uint64_t quirks               = 0;
+   struct rarch_state *p_rarch   = &rarch_st;
    bool _netplay_is_client       = p_rarch->netplay_is_client;
    bool _netplay_enabled         = p_rarch->netplay_enabled;
 
@@ -2289,7 +2266,7 @@ static bool init_netplay(
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
       if (settings->bools.netplay_public_announce)
-         netplay_announce(p_rarch);
+         netplay_announce();
    }
 
    p_rarch->netplay_data = (netplay_t*)netplay_new(
@@ -2310,8 +2287,8 @@ static bool init_netplay(
          &cbs,
          settings->bools.netplay_nat_traversal && !settings->bools.netplay_use_mitm_server,
 #ifdef HAVE_DISCORD
-         discord_get_own_username(p_rarch)
-         ? discord_get_own_username(p_rarch)
+         discord_get_own_username()
+         ? discord_get_own_username()
          :
 #endif
          settings->paths.username,
@@ -2424,10 +2401,10 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          netplay_post_frame(netplay);
 	 /* If we're disconnected, deinitialize */
 	 if (!netplay->is_server && !netplay->connections[0].active)
-		 netplay_disconnect(p_rarch, netplay);
+		 netplay_disconnect(netplay);
          break;
       case RARCH_NETPLAY_CTL_PRE_FRAME:
-         ret = netplay_pre_frame(p_rarch,
+         ret = netplay_pre_frame(
                settings->bools.netplay_public_announce,
                settings->bools.netplay_use_mitm_server,
                netplay);
@@ -2452,7 +2429,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
       case RARCH_NETPLAY_CTL_DISCONNECT:
          ret    = true;
          if (netplay)
-            netplay_disconnect(p_rarch, netplay);
+            netplay_disconnect(netplay);
          goto done;
       case RARCH_NETPLAY_CTL_FINISHED_NAT_TRAVERSAL:
          netplay->nat_traversal_task_oustanding = false;
@@ -7001,7 +6978,7 @@ bool command_event(enum event_command cmd, void *data)
          netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
          break;
       case CMD_EVENT_NETPLAY_DEINIT:
-         deinit_netplay(p_rarch);
+         deinit_netplay();
          break;
       case CMD_EVENT_NETWORK_INIT:
          network_init();
@@ -7015,7 +6992,7 @@ bool command_event(enum event_command cmd, void *data)
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            if (!init_netplay(p_rarch,
+            if (!init_netplay(
                      settings,
                      NULL,
                      hostname
@@ -7054,7 +7031,6 @@ bool command_event(enum event_command cmd, void *data)
                   : netplay_port);
 
             if (!init_netplay(
-                     p_rarch,
                      settings,
                      NULL,
                      hostname->elems[0].data,
@@ -7583,29 +7559,26 @@ bool command_event(enum event_command cmd, void *data)
          {
             bool discord_enable        = settings ? settings->bools.discord_enable : false;
             const char *discord_app_id = settings ? settings->arrays.discord_app_id : NULL;
-            discord_state_t *discord_st = &p_rarch->discord_st;
-
+            discord_state_t *discord_st = &discord_state_st;
             if (!settings)
                return false;
             if (!discord_enable)
                return false;
             if (discord_st->ready)
                return true;
-            discord_init(discord_st,
-                  discord_app_id,
-                  p_rarch->launch_arguments);
+            discord_init(discord_app_id, p_rarch->launch_arguments);
          }
 #endif
          break;
       case CMD_EVENT_DISCORD_UPDATE:
          {
 #ifdef HAVE_DISCORD
-            discord_state_t *discord_st  = &p_rarch->discord_st;
+            discord_userdata_t *userdata = NULL;
+            discord_state_t *discord_st  = &discord_state_st;
             if (!data || !discord_st->ready)
                return false;
 
-            discord_userdata_t *userdata = (discord_userdata_t*)data;
-
+            userdata = (discord_userdata_t*)data;
             if (discord_st->ready)
                discord_update(userdata->status);
 #endif
@@ -17924,8 +17897,7 @@ bool retroarch_main_quit(void)
    settings_t *settings          = config_get_ptr();
    global_t            *global   = global_get_ptr();
 #ifdef HAVE_DISCORD
-   struct rarch_state *p_rarch   = &rarch_st;
-   discord_state_t *discord_st   = &p_rarch->discord_st;
+   discord_state_t *discord_st   = &discord_state_st;
    if (discord_is_inited)
    {
       discord_userdata_t userdata;
@@ -19284,10 +19256,8 @@ int runloop_iterate(void)
    bool cheevos_enable                          = settings->bools.cheevos_enable;
 #endif
    bool audio_sync                              = settings->bools.audio_sync;
-
-
 #ifdef HAVE_DISCORD
-   discord_state_t *discord_st                  = &p_rarch->discord_st;
+   discord_state_t *discord_st                  = &discord_state_st;
 
    if (discord_is_inited)
    {

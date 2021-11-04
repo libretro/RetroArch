@@ -122,8 +122,6 @@ input_st->bsv_movie_state.eof_exit)
       old_pressed3                              = pressed3; \
    }
 
-#define CDN_URL "https://cdn.discordapp.com/avatars"
-
 #ifdef HAVE_DYNAMIC
 #define SYMBOL(x) do { \
    function_t func = dylib_proc(lib_handle_local, #x); \
@@ -488,45 +486,9 @@ enum
    RA_OPT_LOAD_MENU_ON_ERROR
 };
 
-#ifdef HAVE_DISCORD
-/* The Discord API specifies these variables:
-- userId --------- char[24]   - the userId of the player asking to join
-- username ------- char[344]  - the username of the player asking to join
-- discriminator -- char[8]    - the discriminator of the player asking to join
-- spectateSecret - char[128] - secret used for spectatin matches
-- joinSecret     - char[128] - secret used to join matches
-- partyId        - char[128] - the party you would be joining
-*/
-
-struct discord_state
-{
-   int64_t start_time;
-   int64_t pause_time;
-   int64_t elapsed_time;
-
-   DiscordRichPresence presence;       /* int64_t alignment */
-
-   unsigned status;
-
-   char self_party_id[128];
-   char peer_party_id[128];
-   char user_name[344];
-   char user_avatar[344];
-
-   bool ready;
-   bool avatar_ready;
-   bool connecting;
-};
-
-typedef struct discord_state discord_state_t;
-#endif
-
 struct rarch_state
 {
    struct global              g_extern;         /* retro_time_t alignment */
-#ifdef HAVE_DISCORD
-   discord_state_t discord_st;                  /* int64_t alignment */
-#endif
    struct retro_camera_callback camera_cb;    /* uint64_t alignment */
 
    const camera_driver_t *camera_driver;
