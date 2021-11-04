@@ -1,0 +1,24 @@
+# Upload sources to Crowdin for translation
+
+name: RetroArch CI
+
+on:
+  push:
+    branches:
+      - master
+      - github-actions
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  linux-c89:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Configure
+        run: ./configure
+      - name: Build
+        run: make C89_BUILD=1
+
