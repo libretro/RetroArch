@@ -1737,10 +1737,9 @@ void discord_init(const char *discord_app_id, char *args)
 #endif
 
 #ifdef HAVE_NETWORKING
-static bool init_netplay_deferred(
-      struct rarch_state *p_rarch,
-      const char* server, unsigned port)
+static bool init_netplay_deferred(const char* server, unsigned port)
 {
+   struct rarch_state *p_rarch = &rarch_st;
    if (!string_is_empty(server) && port != 0)
    {
       strlcpy(p_rarch->server_address_deferred, server,
@@ -1820,7 +1819,7 @@ static void netplay_announce_cb(retro_task_t *task,
       if (data->len == 0)
          return;
 
-      buf = (char*)calloc(1, data->len + 1);
+      buf   = (char*)calloc(1, data->len + 1);
 
       memcpy(buf, data->data, data->len);
 
@@ -1842,8 +1841,8 @@ static void netplay_announce_cb(retro_task_t *task,
          if (!string_is_empty(line))
          {
             struct string_list *kv = string_split(line, "=");
-            const char *key = NULL;
-            const char *val = NULL;
+            const char        *key = NULL;
+            const char        *val = NULL;
 
             if (!kv)
                continue;
@@ -1882,36 +1881,42 @@ static void netplay_announce_cb(retro_task_t *task,
             if (string_is_equal(key, "core_version"))
                strlcpy(host_room->coreversion, val, sizeof(host_room->coreversion));
             if (string_is_equal(key, "game_name"))
-               strlcpy(host_room->gamename, val, sizeof(host_room->gamename));
+               strlcpy(host_room->gamename, val,
+                     sizeof(host_room->gamename));
             if (string_is_equal(key, "game_crc"))
                sscanf(val, "%08d", &host_room->gamecrc);
             if (string_is_equal(key, "host_method"))
                sscanf(val, "%i", &host_room->host_method);
             if (string_is_equal(key, "has_password"))
             {
-               if (string_is_equal_noncase(val, "true") || string_is_equal(val, "1"))
+               if (     string_is_equal_noncase(val, "true") 
+                     || string_is_equal(val, "1"))
                   host_room->has_password = true;
                else
                   host_room->has_password = false;
             }
             if (string_is_equal(key, "has_spectate_password"))
             {
-               if (string_is_equal_noncase(val, "true") || string_is_equal(val, "1"))
+               if (     string_is_equal_noncase(val, "true") 
+                     || string_is_equal(val, "1"))
                   host_room->has_spectate_password = true;
                else
                   host_room->has_spectate_password = false;
             }
             if (string_is_equal(key, "fixed"))
             {
-               if (string_is_equal_noncase(val, "true") || string_is_equal(val, "1"))
+               if (     string_is_equal_noncase(val, "true") 
+                     || string_is_equal(val, "1"))
                   host_room->fixed = true;
                else
                   host_room->fixed = false;
             }
             if (string_is_equal(key, "retroarch_version"))
-               strlcpy(host_room->retroarch_version, val, sizeof(host_room->retroarch_version));
+               strlcpy(host_room->retroarch_version, val,
+                     sizeof(host_room->retroarch_version));
             if (string_is_equal(key, "country"))
-               strlcpy(host_room->country, val, sizeof(host_room->country));
+               strlcpy(host_room->country, val,
+                     sizeof(host_room->country));
 
             string_list_free(kv);
          }
@@ -2216,14 +2221,13 @@ static void deinit_netplay(void)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-static bool init_netplay(
-      settings_t *settings,
-      void *direct_host,
+static bool init_netplay(void *direct_host,
       const char *server, unsigned port)
 {
    struct retro_callbacks cbs    = {0};
    uint64_t serialization_quirks = 0;
    uint64_t quirks               = 0;
+   settings_t *settings          = config_get_ptr();
    struct rarch_state *p_rarch   = &rarch_st;
    bool _netplay_is_client       = p_rarch->netplay_is_client;
    bool _netplay_enabled         = p_rarch->netplay_enabled;
@@ -2253,13 +2257,8 @@ static bool init_netplay(
    if (serialization_quirks & NETPLAY_QUIRK_MAP_PLATFORM_DEPENDENT)
       quirks |= NETPLAY_QUIRK_PLATFORM_DEPENDENT;
 
-   if (_netplay_is_client)
+   if (!_netplay_is_client)
    {
-      RARCH_LOG("[Netplay]: %s\n", msg_hash_to_str(MSG_CONNECTING_TO_NETPLAY_HOST));
-   }
-   else
-   {
-      RARCH_LOG("[Netplay]: %s\n", msg_hash_to_str(MSG_WAITING_FOR_CLIENT));
       runloop_msg_queue_push(
          msg_hash_to_str(MSG_WAITING_FOR_CLIENT),
          0, 180, false,
@@ -6993,7 +6992,6 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
             if (!init_netplay(
-                     settings,
                      NULL,
                      hostname
                      ? hostname
@@ -7031,7 +7029,6 @@ bool command_event(enum event_command cmd, void *data)
                   : netplay_port);
 
             if (!init_netplay(
-                     settings,
                      NULL,
                      hostname->elems[0].data,
                      !string_is_empty(hostname->elems[1].data)
@@ -7072,7 +7069,7 @@ bool command_event(enum event_command cmd, void *data)
                   ? atoi(hostname->elems[1].data)
                   : netplay_port);
 
-            if (!init_netplay_deferred(p_rarch,
+            if (!init_netplay_deferred(
                      hostname->elems[0].data,
                      !string_is_empty(hostname->elems[1].data)
                      ? atoi(hostname->elems[1].data)
