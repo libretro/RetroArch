@@ -2682,7 +2682,7 @@ void input_config_reset(void)
 
       input_config_reset_autoconfig_binds(i);
 
-      input_st->libretro_input_binds[i] = &input_config_binds[i];
+      input_st->libretro_input_binds[i] = (const retro_keybind_set *)&input_config_binds[i];
    }
 }
 
@@ -3483,7 +3483,7 @@ void input_keys_pressed(
       bool is_menu,
       int input_hotkey_block_delay,
       input_bits_t *p_new_state,
-      retro_keybind_set *binds,
+      const retro_keybind_set *binds,
       const struct retro_keybind *binds_norm,
       const struct retro_keybind *binds_auto,
       const input_device_driver_t *joypad,
@@ -5348,7 +5348,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             menu_input_active,
             block_delay,
             loop_bits,
-            input_config_binds,
+            (const retro_keybind_set *)input_config_binds,
             binds_norm,
             binds_auto,
             joypad,
@@ -5435,7 +5435,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
                      input_st->current_data,
                      joypad,
                      sec_joypad,
-                     &joypad_info, input_config_binds,
+                     &joypad_info, (const retro_keybind_set *)input_config_binds,
                      input_st->keyboard_mapping_blocked,
                      0,
                      RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))

@@ -72,17 +72,17 @@ struct __attribute__((__packed__)) sixaxis_activation_report {
 };
 
 union sixaxis_activation_report_f4 {
-   struct sixaxis_activation_report data;
    uint8_t buf[5];
+   struct sixaxis_activation_report data;
 };
 
 union sixaxis_output_report_01 {
-    struct sixaxis_output_report data;
     uint8_t buf[49];
+    struct sixaxis_output_report data;
 };
 
 static const union sixaxis_output_report_01 default_report = {
-    .buf = {
+    {
       0x01, /* report ID */
       0x00, /* padding */
       0xff, 0x00, /* right rumble */
@@ -101,7 +101,7 @@ static const union sixaxis_output_report_01 default_report = {
 };
 
 static const union sixaxis_activation_report_f4 ds3_activation_packet = {
-   .buf = { 0xF4, 0x42, 0x0c, 0x00, 0x00 }
+   { 0xF4, 0x42, 0x0c, 0x00, 0x00 }
 };
 
 /* forward declarations */

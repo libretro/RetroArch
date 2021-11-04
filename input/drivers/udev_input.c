@@ -746,11 +746,12 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    if ( dev_type  != UDEV_INPUT_KEYBOARD)
    {
       /*first clear all */
-      for (int i = 0; i < MAX_USERS; i++)
+      int i;
+      for (i = 0; i < MAX_USERS; i++)
         input_config_set_mouse_display_name(i, "N/A");
 
      /* Add what devices we have now */
-      for (int i = 0; i < udev->num_devices; ++i)
+      for (i = 0; i < udev->num_devices; ++i)
       {
          if (udev->devices[i]->type != UDEV_INPUT_KEYBOARD)
          {
@@ -1373,6 +1374,7 @@ static void *udev_input_init(const char *joypad_driver)
    int mouse = 0;
    int keyboard=0;
    int fd;
+   int i;
 #ifdef UDEV_XKB_HANDLING
    gfx_ctx_ident_t ctx_ident;
 #endif
@@ -1437,7 +1439,7 @@ static void *udev_input_init(const char *joypad_driver)
    RARCH_WARN("[udev]: Full-screen pointer won't be available.\n");
 #endif
 
-   for (int i = 0; i < udev->num_devices; ++i)
+   for (i = 0; i < udev->num_devices; ++i)
    {
       if (udev->devices[i]->type != UDEV_INPUT_KEYBOARD)
       {

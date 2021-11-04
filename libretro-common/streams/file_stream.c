@@ -241,7 +241,11 @@ int filestream_vscanf(RFILE *stream, const char* format, va_list *args)
     *   cause the va_list to have an indeterminate value
     *   in the function calling filestream_vscanf(),
     *   leading to unexpected behaviour */
+#ifdef __va_copy
+   __va_copy(args_copy, *args);
+#else
    va_copy(args_copy, *args);
+#endif
 
    while (*format)
    {
