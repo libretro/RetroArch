@@ -1,4 +1,4 @@
-# Upload sources to Crowdin for translation
+# Validates compilation of RetroArch binary
 
 name: RetroArch CI
 
@@ -11,7 +11,7 @@ on:
       - master
 
 jobs:
-  linux-c89:
+  linux-c89: # Smoketest build using most restrictive compiler and default options
     runs-on: ubuntu-latest
     steps:
       - name: Dependencies
