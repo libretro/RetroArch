@@ -31,6 +31,7 @@
 #include "video_filter.h"
 #include "video_display_server.h"
 
+#include "gfx_animation.h"
 #ifdef HAVE_GFX_WIDGETS
 #include "gfx_widgets.h"
 #endif
