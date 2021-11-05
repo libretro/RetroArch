@@ -3576,12 +3576,8 @@ void netplay_hangup(netplay_t *netplay,
    size_t i;
    bool was_playing                 = false;
    settings_t *settings             = config_get_ptr();
-#if 0
    /* TODO/FIXME - doesn't exist yet */
    bool extra_notifications         = settings->bools.notification_show_netplay_extra;
-#else
-   bool extra_notifications         = false;
-#endif
 
    if (!netplay)
       return;
