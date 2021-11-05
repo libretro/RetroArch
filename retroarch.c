@@ -1273,7 +1273,6 @@ discord_state_t *discord_state_get_ptr(void)
 
 bool discord_is_ready(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    discord_state_t *discord_st = &discord_state_st;
    return discord_st->ready;
 }
@@ -3257,7 +3256,9 @@ static void path_init_savefile_internal(global_t *global)
 void runloop_path_fill_names(void)
 {
    runloop_state_t *runloop_st    = runloop_state_get_ptr();
+#ifdef HAVE_BSV_MOVIE
    input_driver_state_t *input_st = input_state_get_ptr();
+#endif
    global_t            *global    = global_get_ptr();
 
    path_init_savefile_internal(global);
