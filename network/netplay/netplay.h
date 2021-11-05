@@ -26,21 +26,6 @@
 
 #include "../../core.h"
 
-typedef struct netplay netplay_t;
-
-typedef struct mitm_server
-{
-   const char *name;
-   const char *description;
-} mitm_server_t;
-
-static const mitm_server_t netplay_mitm_server_list[] = {
-   { "nyc", "New York City, USA" },
-   { "madrid", "Madrid, Spain" },
-   { "montreal", "Montreal, Canada" },
-   { "saopaulo", "Sao Paulo, Brazil" },
-};
-
 enum rarch_netplay_ctl_state
 {
    RARCH_NETPLAY_CTL_NONE = 0,
@@ -85,6 +70,69 @@ enum rarch_netplay_share_analog_preference
    RARCH_NETPLAY_SHARE_ANALOG_AVERAGE,
    RARCH_NETPLAY_SHARE_ANALOG_LAST
 };
+
+typedef struct netplay netplay_t;
+
+typedef struct mitm_server
+{
+   const char *name;
+   const char *description;
+} mitm_server_t;
+
+static const mitm_server_t netplay_mitm_server_list[] = {
+   { "nyc", "New York City, USA" },
+   { "madrid", "Madrid, Spain" },
+   { "montreal", "Montreal, Canada" },
+   { "saopaulo", "Sao Paulo, Brazil" },
+};
+
+struct netplay_room
+{
+   struct netplay_room *next;
+   int id;
+   int  port;
+   int  mitm_port;
+   int  gamecrc;
+   int  timestamp;
+   int  host_method;
+   char country           [3];
+   char retroarch_version [33];
+   char nickname          [33];
+   char subsystem_name    [256];
+   char corename          [256];
+   char frontend          [256];
+   char coreversion       [256];
+   char gamename          [256];
+   char address           [256];
+   char mitm_address      [256];
+   bool has_password;
+   bool has_spectate_password;
+   bool lan;
+   bool fixed;
+};
+
+typedef struct
+{
+   netplay_t *data; /* Used while Netplay is running */
+   struct netplay_room host_room; /* ptr alignment */
+   int reannounce;
+   unsigned server_port_deferred;
+   /* Only used before init_netplay */
+   bool netplay_enabled;
+   bool netplay_is_client;
+   /* Used to avoid recursive netplay calls */
+   bool in_netplay;
+   bool netplay_client_deferred;
+   bool is_mitm;
+   char server_address_deferred[512];
+   bool has_set_netplay_mode;
+   bool has_set_netplay_ip_address;
+   bool has_set_netplay_ip_port;
+   bool has_set_netplay_stateless_mode;
+   bool has_set_netplay_check_frames;
+} net_driver_state_t;
+
+net_driver_state_t *networking_state_get_ptr(void);
 
 bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data);
 
@@ -183,5 +231,30 @@ bool netplay_should_skip(netplay_t *netplay);
  * Call this after running retro_run().
  **/
 void netplay_post_frame(netplay_t *netplay);
+
+void deinit_netplay(void);
+
+/**
+ * init_netplay
+ * @direct_host          : Host to connect to directly, if applicable (client only)
+ * @server               : server address to connect to (client only)
+ * @port                 : TCP port to host on/connect to
+ *
+ * Initializes netplay.
+ *
+ * If netplay is already initialized, will return false (0).
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool init_netplay(void *direct_host, const char *server, unsigned port);
+
+bool init_netplay_deferred(const char* server, unsigned port);
+
+void video_frame_net(const void *data, unsigned width,
+      unsigned height, size_t pitch);
+void audio_sample_net(int16_t left, int16_t right);
+size_t audio_sample_batch_net(const int16_t *data, size_t frames);
+int16_t input_state_net(unsigned port, unsigned device,
+      unsigned idx, unsigned id);
 
 #endif

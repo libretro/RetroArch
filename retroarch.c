@@ -1249,7 +1249,7 @@ bool discord_is_ready(void)
    return discord_st->ready;
 }
 
-static char *discord_get_own_username(void)
+char *discord_get_own_username(void)
 {
    discord_state_t *discord_st = &discord_state_st;
    if (discord_st->ready)
@@ -1570,7 +1570,7 @@ void discord_update(enum discord_presence presence)
          {
             char join_secret[128];
 	    struct rarch_state *p_rarch = &rarch_st;
-            struct netplay_room *room   = &p_rarch->netplay_host_room;
+            struct netplay_room *room   = &networking_state_get_ptr()->host_room;
             bool host_method_is_mitm    = room->host_method == NETPLAY_HOST_METHOD_MITM;
             const char *srv_address     = host_method_is_mitm ? room->mitm_address : room->address;
             unsigned srv_port           = host_method_is_mitm ? room->mitm_port : room->port;
@@ -1688,728 +1688,6 @@ void discord_init(const char *discord_app_id, char *args)
    Discord_UpdateConnection();
 #endif
    discord_st->ready = true;
-}
-#endif
-
-#ifdef HAVE_NETWORKING
-static bool init_netplay_deferred(const char* server, unsigned port)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   if (!string_is_empty(server) && port != 0)
-   {
-      strlcpy(p_rarch->server_address_deferred, server,
-            sizeof(p_rarch->server_address_deferred));
-      p_rarch->server_port_deferred    = port;
-      p_rarch->netplay_client_deferred = true;
-   }
-   else
-      p_rarch->netplay_client_deferred = false;
-
-   return p_rarch->netplay_client_deferred;
-}
-
-/**
- * input_poll_net
- *
- * Poll the network if necessary.
- */
-void input_poll_net(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   netplay_t          *netplay = p_rarch->netplay_data;
-   if (!netplay_should_skip(netplay) && netplay && netplay->can_poll)
-   {
-      input_driver_state_t 
-         *input_st      = input_state_get_ptr();
-      netplay->can_poll = false;
-      netplay_poll(
-            input_st->block_libretro_input,
-            config_get_ptr(),
-            netplay);
-   }
-}
-
-/* Netplay polling callbacks */
-static void video_frame_net(const void *data, unsigned width,
-      unsigned height, size_t pitch)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   netplay_t          *netplay = p_rarch->netplay_data;
-   if (!netplay_should_skip(netplay))
-      netplay->cbs.frame_cb(data, width, height, pitch);
-}
-
-static void audio_sample_net(int16_t left, int16_t right)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   netplay_t          *netplay = p_rarch->netplay_data;
-   if (!netplay_should_skip(netplay) && !netplay->stall)
-      netplay->cbs.sample_cb(left, right);
-}
-
-static size_t audio_sample_batch_net(const int16_t *data, size_t frames)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   netplay_t          *netplay = p_rarch->netplay_data;
-   if (!netplay_should_skip(netplay) && !netplay->stall)
-      return netplay->cbs.sample_batch_cb(data, frames);
-   return frames;
-}
-
-static void netplay_announce_cb(retro_task_t *task,
-      void *task_data, void *user_data, const char *error)
-{
-   if (task_data)
-   {
-      unsigned i, ip_len, port_len;
-      struct rarch_state *p_rarch    = &rarch_st;
-      http_transfer_data_t *data     = (http_transfer_data_t*)task_data;
-      struct netplay_room *host_room = &p_rarch->netplay_host_room;
-      struct string_list *lines      = NULL;
-      char *mitm_ip                  = NULL;
-      char *mitm_port                = NULL;
-      char *buf                      = NULL;
-      char *host_string              = NULL;
-
-      if (data->len == 0)
-         return;
-
-      buf   = (char*)calloc(1, data->len + 1);
-
-      memcpy(buf, data->data, data->len);
-
-      lines = string_split(buf, "\n");
-
-      if (lines->size == 0)
-      {
-         string_list_free(lines);
-         free(buf);
-         return;
-      }
-
-      memset(host_room, 0, sizeof(*host_room));
-
-      for (i = 0; i < lines->size; i++)
-      {
-         const char *line = lines->elems[i].data;
-
-         if (!string_is_empty(line))
-         {
-            struct string_list *kv = string_split(line, "=");
-            const char        *key = NULL;
-            const char        *val = NULL;
-
-            if (!kv)
-               continue;
-
-            if (kv->size != 2)
-            {
-               string_list_free(kv);
-               continue;
-            }
-
-            key = kv->elems[0].data;
-            val = kv->elems[1].data;
-
-            if (string_is_equal(key, "id"))
-               sscanf(val, "%i", &host_room->id);
-            if (string_is_equal(key, "username"))
-               strlcpy(host_room->nickname, val, sizeof(host_room->nickname));
-            if (string_is_equal(key, "ip"))
-               strlcpy(host_room->address, val, sizeof(host_room->address));
-            if (string_is_equal(key, "mitm_ip"))
-            {
-               mitm_ip = strdup(val);
-               strlcpy(host_room->mitm_address, val, sizeof(host_room->mitm_address));
-            }
-            if (string_is_equal(key, "port"))
-               sscanf(val, "%i", &host_room->port);
-            if (string_is_equal(key, "mitm_port"))
-            {
-               mitm_port = strdup(val);
-               sscanf(mitm_port, "%i", &host_room->mitm_port);
-            }
-            if (string_is_equal(key, "core_name"))
-               strlcpy(host_room->corename, val, sizeof(host_room->corename));
-            if (string_is_equal(key, "frontend"))
-               strlcpy(host_room->frontend, val, sizeof(host_room->frontend));
-            if (string_is_equal(key, "core_version"))
-               strlcpy(host_room->coreversion, val, sizeof(host_room->coreversion));
-            if (string_is_equal(key, "game_name"))
-               strlcpy(host_room->gamename, val,
-                     sizeof(host_room->gamename));
-            if (string_is_equal(key, "game_crc"))
-               sscanf(val, "%08d", &host_room->gamecrc);
-            if (string_is_equal(key, "host_method"))
-               sscanf(val, "%i", &host_room->host_method);
-            if (string_is_equal(key, "has_password"))
-            {
-               if (     string_is_equal_noncase(val, "true") 
-                     || string_is_equal(val, "1"))
-                  host_room->has_password = true;
-               else
-                  host_room->has_password = false;
-            }
-            if (string_is_equal(key, "has_spectate_password"))
-            {
-               if (     string_is_equal_noncase(val, "true") 
-                     || string_is_equal(val, "1"))
-                  host_room->has_spectate_password = true;
-               else
-                  host_room->has_spectate_password = false;
-            }
-            if (string_is_equal(key, "fixed"))
-            {
-               if (     string_is_equal_noncase(val, "true") 
-                     || string_is_equal(val, "1"))
-                  host_room->fixed = true;
-               else
-                  host_room->fixed = false;
-            }
-            if (string_is_equal(key, "retroarch_version"))
-               strlcpy(host_room->retroarch_version, val,
-                     sizeof(host_room->retroarch_version));
-            if (string_is_equal(key, "country"))
-               strlcpy(host_room->country, val,
-                     sizeof(host_room->country));
-
-            string_list_free(kv);
-         }
-      }
-
-      if (mitm_ip && mitm_port)
-      {
-         ip_len   = (unsigned)strlen(mitm_ip);
-         port_len = (unsigned)strlen(mitm_port);
-
-         /* Enable Netplay client mode */
-         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-         {
-            command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-            p_rarch->is_mitm       = true;
-            host_room->host_method = NETPLAY_HOST_METHOD_MITM;
-         }
-
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
-
-         host_string = (char*)calloc(1, ip_len + port_len + 2);
-
-         memcpy(host_string, mitm_ip, ip_len);
-         memcpy(host_string + ip_len, "|", 1);
-         memcpy(host_string + ip_len + 1, mitm_port, port_len);
-
-         /* Enable Netplay */
-         command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, (void*)host_string);
-         command_event(CMD_EVENT_NETPLAY_INIT, (void*)host_string);
-
-         free(host_string);
-      }
-
-#ifdef HAVE_DISCORD
-      if (discord_is_inited)
-      {
-         discord_userdata_t userdata;
-         userdata.status = DISCORD_PRESENCE_NETPLAY_HOSTING;
-         command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-      }
-#endif
-
-      string_list_free(lines);
-      free(buf);
-
-      if (mitm_ip)
-         free(mitm_ip);
-      if (mitm_port)
-         free(mitm_port);
-   }
-}
-
-static void netplay_announce(void)
-{
-   char buf[4600];
-   char frontend_architecture[PATH_MAX_LENGTH];
-   char frontend_architecture_tmp[32];
-   const frontend_ctx_driver_t
-      *frontend_drv                 =  NULL;
-   char url[2048]                   = "http://lobby.libretro.com/add/";
-   char *username                   = NULL;
-   char *corename                   = NULL;
-   char *gamename                   = NULL;
-   char *subsystemname              = NULL;
-   char *coreversion                = NULL;
-   char *frontend_ident             = NULL;
-   settings_t *settings             = config_get_ptr();
-   runloop_state_t *runloop_st      = &runloop_state;
-   struct retro_system_info *system = &runloop_st->system.info;
-   uint32_t content_crc             = content_get_crc();
-   struct string_list *subsystem    = path_get_subsystem_list();
-
-   frontend_architecture[0]         = '\0';
-   buf[0]                           = '\0';
-
-   if (subsystem)
-   {
-      unsigned i;
-
-      for (i = 0; i < subsystem->size; i++)
-      {
-         strlcat(buf, path_basename(subsystem->elems[i].data), sizeof(buf));
-         if (i < subsystem->size - 1)
-            strlcat(buf, "|", sizeof(buf));
-      }
-      net_http_urlencode(&gamename, buf);
-      net_http_urlencode(&subsystemname, path_get(RARCH_PATH_SUBSYSTEM));
-      content_crc = 0;
-   }
-   else
-   {
-      const char *base = path_basename(path_get(RARCH_PATH_BASENAME));
-
-      net_http_urlencode(&gamename,
-         !string_is_empty(base) ? base : "N/A");
-      /* TODO/FIXME - subsystem should be implemented later? */
-      net_http_urlencode(&subsystemname, "N/A");
-   }
-
-   frontend_drv =
-      (const frontend_ctx_driver_t*)frontend_driver_get_cpu_architecture_str(
-            frontend_architecture_tmp, sizeof(frontend_architecture_tmp));
-   snprintf(frontend_architecture, 
-         sizeof(frontend_architecture),
-         "%s %s",
-         frontend_drv->ident,
-         frontend_architecture_tmp);
-
-#ifdef HAVE_DISCORD
-   if (discord_is_ready())
-      net_http_urlencode(&username, discord_get_own_username());
-   else
-#endif
-   net_http_urlencode(&username, settings->paths.username);
-   net_http_urlencode(&corename, system->library_name);
-   net_http_urlencode(&coreversion, system->library_version);
-   net_http_urlencode(&frontend_ident, frontend_architecture);
-
-   buf[0] = '\0';
-
-   snprintf(buf, sizeof(buf), "username=%s&core_name=%s&core_version=%s&"
-      "game_name=%s&game_crc=%08lX&port=%d&mitm_server=%s"
-      "&has_password=%d&has_spectate_password=%d&force_mitm=%d"
-      "&retroarch_version=%s&frontend=%s&subsystem_name=%s",
-      username, corename, coreversion, gamename, (unsigned long)content_crc,
-      settings->uints.netplay_port,
-      settings->arrays.netplay_mitm_server,
-      *settings->paths.netplay_password ? 1 : 0,
-      *settings->paths.netplay_spectate_password ? 1 : 0,
-      settings->bools.netplay_use_mitm_server,
-      PACKAGE_VERSION, frontend_architecture, subsystemname);
-   task_push_http_post_transfer(url, buf, true, NULL,
-         netplay_announce_cb, NULL);
-
-   if (username)
-      free(username);
-   if (corename)
-      free(corename);
-   if (gamename)
-      free(gamename);
-   if (coreversion)
-      free(coreversion);
-   if (frontend_ident)
-      free(frontend_ident);
-}
-
-static int16_t input_state_net(unsigned port, unsigned device,
-      unsigned idx, unsigned id)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   netplay_t          *netplay = p_rarch->netplay_data;
-   if (netplay)
-   {
-      if (netplay_is_alive(netplay))
-         return netplay_input_state(netplay, port, device, idx, id);
-      return netplay->cbs.state_cb(port, device, idx, id);
-   }
-   return 0;
-}
-
-/* ^^^ Netplay polling callbacks */
-
-/**
- * netplay_disconnect
- * @netplay              : pointer to netplay object
- *
- * Disconnect netplay.
- *
- * Returns: true (1) if successful. At present, cannot fail.
- **/
-static void netplay_disconnect(netplay_t *netplay)
-{
-   size_t i;
-
-   for (i = 0; i < netplay->connections_size; i++)
-      netplay_hangup(netplay, &netplay->connections[i]);
-
-   deinit_netplay();
-
-#ifdef HAVE_DISCORD
-   if (discord_is_inited)
-   {
-      discord_userdata_t userdata;
-      userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;
-      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-   }
-#endif
-}
-
-/**
- * netplay_pre_frame:
- * @netplay              : pointer to netplay object
- *
- * Pre-frame for Netplay.
- * Call this before running retro_run().
- *
- * Returns: true (1) if the frontend is cleared to emulate the frame, false (0)
- * if we're stalled or paused
- **/
-static bool netplay_pre_frame(
-      bool netplay_public_announce,
-      bool netplay_use_mitm_server,
-      netplay_t *netplay)
-{
-   bool sync_stalled           = false;
-   struct rarch_state *p_rarch = &rarch_st;
-
-   retro_assert(netplay);
-
-   if (netplay_public_announce)
-   {
-      p_rarch->reannounce++;
-      if (
-            (netplay->is_server || p_rarch->is_mitm) &&
-            (p_rarch->reannounce % 300 == 0))
-         netplay_announce();
-   }
-   /* Make sure that if announcement is turned on mid-game, it gets announced */
-   else
-      p_rarch->reannounce = -1;
-
-   /* FIXME: This is an ugly way to learn we're not paused anymore */
-   if (netplay->local_paused)
-      if (netplay->local_paused != false)
-         netplay_frontend_paused(netplay, false);
-
-   /* Are we ready now? */
-   if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
-      netplay_try_init_serialization(netplay);
-
-   if (netplay->is_server && !netplay_use_mitm_server)
-   {
-#ifdef HAVE_NETPLAYDISCOVERY
-      /* Advertise our server */
-      netplay_lan_ad_server(netplay);
-#endif
-
-      /* NAT traversal if applicable */
-      if (netplay->nat_traversal &&
-          !netplay->nat_traversal_task_oustanding &&
-          netplay->nat_traversal_state.request_outstanding &&
-          !netplay->nat_traversal_state.have_inet4)
-      {
-         struct timeval tmptv = {0};
-         fd_set fds = netplay->nat_traversal_state.fds;
-         if (socket_select(netplay->nat_traversal_state.nfds, &fds, NULL, NULL, &tmptv) > 0)
-            natt_read(&netplay->nat_traversal_state);
-
-#ifndef HAVE_SOCKET_LEGACY
-         if (!netplay->nat_traversal_state.request_outstanding ||
-             netplay->nat_traversal_state.have_inet4)
-            netplay_announce_nat_traversal(netplay);
-#endif
-      }
-   }
-
-   sync_stalled = !netplay_sync_pre_frame(netplay);
-
-   /* If we're disconnected, deinitialize */
-   if (!netplay->is_server && !netplay->connections[0].active)
-   {
-      netplay_disconnect(netplay);
-      return true;
-   }
-
-   if (sync_stalled ||
-       ((!netplay->is_server || (netplay->connected_players>1)) &&
-        (netplay->stall || netplay->remote_paused)))
-   {
-      /* We may have received data even if we're stalled, so run post-frame
-       * sync */
-      netplay_sync_post_frame(netplay, true);
-      return false;
-   }
-   return true;
-}
-
-static void deinit_netplay(void)
-{
-   struct rarch_state *p_rarch   = &rarch_st;
-
-   if (p_rarch->netplay_data)
-   {
-      netplay_free(p_rarch->netplay_data);
-      p_rarch->netplay_enabled   = false;
-      p_rarch->netplay_is_client = false;
-      p_rarch->is_mitm           = false;
-   }
-   p_rarch->netplay_data         = NULL;
-   core_unset_netplay_callbacks();
-}
-
-/**
- * init_netplay
- * @direct_host          : Host to connect to directly, if applicable (client only)
- * @server               : server address to connect to (client only)
- * @port                 : TCP port to host on/connect to
- *
- * Initializes netplay.
- *
- * If netplay is already initialized, will return false (0).
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-static bool init_netplay(void *direct_host,
-      const char *server, unsigned port)
-{
-   struct retro_callbacks cbs    = {0};
-   uint64_t serialization_quirks = 0;
-   uint64_t quirks               = 0;
-   settings_t *settings          = config_get_ptr();
-   struct rarch_state *p_rarch   = &rarch_st;
-   bool _netplay_is_client       = p_rarch->netplay_is_client;
-   bool _netplay_enabled         = p_rarch->netplay_enabled;
-
-   if (!_netplay_enabled)
-      return false;
-
-   core_set_default_callbacks(&cbs);
-   if (!core_set_netplay_callbacks())
-      return false;
-
-   /* Map the core's quirks to our quirks */
-   serialization_quirks = core_serialization_quirks();
-
-   /* Quirks we don't support! Just disable everything. */
-   if (serialization_quirks & ~((uint64_t) NETPLAY_QUIRK_MAP_UNDERSTOOD))
-      quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
-
-   if (serialization_quirks & NETPLAY_QUIRK_MAP_NO_SAVESTATES)
-      quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
-   if (serialization_quirks & NETPLAY_QUIRK_MAP_NO_TRANSMISSION)
-      quirks |= NETPLAY_QUIRK_NO_TRANSMISSION;
-   if (serialization_quirks & NETPLAY_QUIRK_MAP_INITIALIZATION)
-      quirks |= NETPLAY_QUIRK_INITIALIZATION;
-   if (serialization_quirks & NETPLAY_QUIRK_MAP_ENDIAN_DEPENDENT)
-      quirks |= NETPLAY_QUIRK_ENDIAN_DEPENDENT;
-   if (serialization_quirks & NETPLAY_QUIRK_MAP_PLATFORM_DEPENDENT)
-      quirks |= NETPLAY_QUIRK_PLATFORM_DEPENDENT;
-
-   if (!_netplay_is_client)
-   {
-      runloop_msg_queue_push(
-         msg_hash_to_str(MSG_WAITING_FOR_CLIENT),
-         0, 180, false,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-      if (settings->bools.netplay_public_announce)
-         netplay_announce();
-   }
-
-   p_rarch->netplay_data = (netplay_t*)netplay_new(
-         _netplay_is_client
-         ? direct_host
-         : NULL,
-         _netplay_is_client
-         ? (!p_rarch->netplay_client_deferred
-            ? server
-            : p_rarch->server_address_deferred)
-            : NULL,
-         _netplay_is_client ? (!p_rarch->netplay_client_deferred
-            ? port
-            : p_rarch->server_port_deferred)
-            : (port != 0 ? port : RARCH_DEFAULT_PORT),
-         settings->bools.netplay_stateless_mode,
-         settings->ints.netplay_check_frames,
-         &cbs,
-         settings->bools.netplay_nat_traversal && !settings->bools.netplay_use_mitm_server,
-#ifdef HAVE_DISCORD
-         discord_get_own_username()
-         ? discord_get_own_username()
-         :
-#endif
-         settings->paths.username,
-         quirks);
-
-   if (p_rarch->netplay_data)
-   {
-      if (      p_rarch->netplay_data->is_server
-            && !settings->bools.netplay_start_as_spectator)
-         netplay_toggle_play_spectate(p_rarch->netplay_data);
-      return true;
-   }
-
-   RARCH_WARN("%s\n", msg_hash_to_str(MSG_NETPLAY_FAILED));
-
-   runloop_msg_queue_push(
-         msg_hash_to_str(MSG_NETPLAY_FAILED),
-         0, 180, false,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   return false;
-}
-
-/**
- * netplay_driver_ctl
- *
- * Frontend access to Netplay functionality
- */
-bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   settings_t *settings        = config_get_ptr();
-   netplay_t *netplay          = p_rarch->netplay_data;
-   bool ret                    = true;
-
-   if (p_rarch->in_netplay)
-      return true;
-   p_rarch->in_netplay         = true;
-
-   if (!netplay)
-   {
-      switch (state)
-      {
-         case RARCH_NETPLAY_CTL_ENABLE_SERVER:
-            p_rarch->netplay_enabled    = true;
-            p_rarch->netplay_is_client  = false;
-            goto done;
-
-         case RARCH_NETPLAY_CTL_ENABLE_CLIENT:
-            p_rarch->netplay_enabled    = true;
-            p_rarch->netplay_is_client  = true;
-            break;
-
-         case RARCH_NETPLAY_CTL_DISABLE:
-            p_rarch->netplay_enabled    = false;
-#ifdef HAVE_DISCORD
-            if (discord_is_inited)
-            {
-               discord_userdata_t userdata;
-               userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;
-               command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-            }
-#endif
-            goto done;
-
-         case RARCH_NETPLAY_CTL_IS_ENABLED:
-            ret = p_rarch->netplay_enabled;
-            goto done;
-
-         case RARCH_NETPLAY_CTL_IS_REPLAYING:
-         case RARCH_NETPLAY_CTL_IS_DATA_INITED:
-            ret = false;
-            goto done;
-
-         case RARCH_NETPLAY_CTL_IS_SERVER:
-            ret =  p_rarch->netplay_enabled
-               && !p_rarch->netplay_is_client;
-            goto done;
-
-         case RARCH_NETPLAY_CTL_IS_CONNECTED:
-            ret = false;
-            goto done;
-
-         default:
-            goto done;
-      }
-   }
-
-   switch (state)
-   {
-      case RARCH_NETPLAY_CTL_ENABLE_SERVER:
-      case RARCH_NETPLAY_CTL_ENABLE_CLIENT:
-      case RARCH_NETPLAY_CTL_IS_DATA_INITED:
-         goto done;
-      case RARCH_NETPLAY_CTL_DISABLE:
-         ret = false;
-         goto done;
-      case RARCH_NETPLAY_CTL_IS_ENABLED:
-         goto done;
-      case RARCH_NETPLAY_CTL_IS_REPLAYING:
-         ret = netplay->is_replay;
-         goto done;
-      case RARCH_NETPLAY_CTL_IS_SERVER:
-         ret =  p_rarch->netplay_enabled
-            && !p_rarch->netplay_is_client;
-         goto done;
-      case RARCH_NETPLAY_CTL_IS_CONNECTED:
-         ret = netplay->is_connected;
-         goto done;
-      case RARCH_NETPLAY_CTL_POST_FRAME:
-         netplay_post_frame(netplay);
-	 /* If we're disconnected, deinitialize */
-	 if (!netplay->is_server && !netplay->connections[0].active)
-		 netplay_disconnect(netplay);
-         break;
-      case RARCH_NETPLAY_CTL_PRE_FRAME:
-         ret = netplay_pre_frame(
-               settings->bools.netplay_public_announce,
-               settings->bools.netplay_use_mitm_server,
-               netplay);
-         goto done;
-      case RARCH_NETPLAY_CTL_GAME_WATCH:
-         netplay_toggle_play_spectate(netplay);
-         break;
-      case RARCH_NETPLAY_CTL_PAUSE:
-         if (netplay->local_paused != true)
-            netplay_frontend_paused(netplay, true);
-         break;
-      case RARCH_NETPLAY_CTL_UNPAUSE:
-         if (netplay->local_paused != false)
-            netplay_frontend_paused(netplay, false);
-         break;
-      case RARCH_NETPLAY_CTL_LOAD_SAVESTATE:
-         netplay_load_savestate(netplay, (retro_ctx_serialize_info_t*)data, true);
-         break;
-      case RARCH_NETPLAY_CTL_RESET:
-         netplay_core_reset(netplay);
-         break;
-      case RARCH_NETPLAY_CTL_DISCONNECT:
-         ret    = true;
-         if (netplay)
-            netplay_disconnect(netplay);
-         goto done;
-      case RARCH_NETPLAY_CTL_FINISHED_NAT_TRAVERSAL:
-         netplay->nat_traversal_task_oustanding = false;
-#ifndef HAVE_SOCKET_LEGACY
-         netplay_announce_nat_traversal(netplay);
-#endif
-         goto done;
-      case RARCH_NETPLAY_CTL_DESYNC_PUSH:
-         netplay->desync++;
-         break;
-      case RARCH_NETPLAY_CTL_DESYNC_POP:
-         if (netplay->desync)
-         {
-            netplay->desync--;
-            if (!netplay->desync)
-               netplay_load_savestate(netplay, NULL, true);
-         }
-         break;
-      default:
-      case RARCH_NETPLAY_CTL_NONE:
-         ret = false;
-   }
-
-done:
-   p_rarch->in_netplay = false;
-   return ret;
 }
 #endif
 
@@ -7613,6 +6891,10 @@ void retroarch_override_setting_set(
       enum rarch_override_setting enum_idx, void *data)
 {
    struct rarch_state            *p_rarch = &rarch_st;
+#ifdef HAVE_NETWORKING
+   net_driver_state_t *net_st  = networking_state_get_ptr();
+   netplay_t *netplay          = net_st->data;
+#endif
 
    switch (enum_idx)
    {
@@ -7644,19 +6926,19 @@ void retroarch_override_setting_set(
          break;
 #ifdef HAVE_NETWORKING
       case RARCH_OVERRIDE_SETTING_NETPLAY_MODE:
-         p_rarch->has_set_netplay_mode = true;
+         net_st->has_set_netplay_mode = true;
          break;
       case RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS:
-         p_rarch->has_set_netplay_ip_address = true;
+         net_st->has_set_netplay_ip_address = true;
          break;
       case RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT:
-         p_rarch->has_set_netplay_ip_port = true;
+         net_st->has_set_netplay_ip_port = true;
          break;
       case RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE:
-         p_rarch->has_set_netplay_stateless_mode = true;
+         net_st->has_set_netplay_stateless_mode = true;
          break;
       case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
-         p_rarch->has_set_netplay_check_frames = true;
+         net_st->has_set_netplay_check_frames = true;
          break;
 #endif
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
@@ -7686,7 +6968,11 @@ void retroarch_override_setting_set(
 void retroarch_override_setting_unset(
       enum rarch_override_setting enum_idx, void *data)
 {
-   struct rarch_state            *p_rarch = &rarch_st;
+   struct rarch_state *p_rarch = &rarch_st;
+#ifdef HAVE_NETWORKING
+   net_driver_state_t *net_st  = networking_state_get_ptr();
+   netplay_t *netplay          = net_st->data;
+#endif
 
    switch (enum_idx)
    {
@@ -7718,19 +7004,19 @@ void retroarch_override_setting_unset(
          break;
 #ifdef HAVE_NETWORKING
       case RARCH_OVERRIDE_SETTING_NETPLAY_MODE:
-         p_rarch->has_set_netplay_mode = false;
+         net_st->has_set_netplay_mode = false;
          break;
       case RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS:
-         p_rarch->has_set_netplay_ip_address = false;
+         net_st->has_set_netplay_ip_address = false;
          break;
       case RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT:
-         p_rarch->has_set_netplay_ip_port = false;
+         net_st->has_set_netplay_ip_port = false;
          break;
       case RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE:
-         p_rarch->has_set_netplay_stateless_mode = false;
+         net_st->has_set_netplay_stateless_mode = false;
          break;
       case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
-         p_rarch->has_set_netplay_check_frames = false;
+         net_st->has_set_netplay_check_frames = false;
          break;
 #endif
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
@@ -16318,7 +15604,10 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
 bool retroarch_override_setting_is_set(
       enum rarch_override_setting enum_idx, void *data)
 {
-   struct rarch_state            *p_rarch = &rarch_st;
+   struct rarch_state *p_rarch = &rarch_st;
+#ifdef HAVE_NETWORKING
+   net_driver_state_t *net_st  = networking_state_get_ptr();
+#endif
 
    switch (enum_idx)
    {
@@ -16345,15 +15634,15 @@ bool retroarch_override_setting_is_set(
          return p_rarch->has_set_state_path;
 #ifdef HAVE_NETWORKING
       case RARCH_OVERRIDE_SETTING_NETPLAY_MODE:
-         return p_rarch->has_set_netplay_mode;
+         return net_st->has_set_netplay_mode;
       case RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS:
-         return p_rarch->has_set_netplay_ip_address;
+         return net_st->has_set_netplay_ip_address;
       case RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT:
-         return p_rarch->has_set_netplay_ip_port;
+         return net_st->has_set_netplay_ip_port;
       case RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE:
-         return p_rarch->has_set_netplay_stateless_mode;
+         return net_st->has_set_netplay_stateless_mode;
       case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
-         return p_rarch->has_set_netplay_check_frames;
+         return net_st->has_set_netplay_check_frames;
 #endif
 #ifdef HAVE_PATCH
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
@@ -18416,21 +17705,16 @@ static bool core_init_libretro_cbs(struct retro_callbacks *cbs)
    return true;
 }
 
-/**
- * core_set_default_callbacks:
- * @data           : pointer to retro_callbacks object
- *
- * Binds the libretro callbacks to default callback functions.
- **/
-static bool core_set_default_callbacks(struct retro_callbacks *cbs)
+bool core_set_default_callbacks(void *data)
 {
+   struct retro_callbacks *cbs  = (struct retro_callbacks*)data;
    retro_input_state_t state_cb = core_input_state_poll_return_cb();
 
-   cbs->frame_cb        = video_driver_frame;
-   cbs->sample_cb       = audio_driver_sample;
-   cbs->sample_batch_cb = audio_driver_sample_batch;
-   cbs->state_cb        = state_cb;
-   cbs->poll_cb         = input_driver_poll;
+   cbs->frame_cb                = video_driver_frame;
+   cbs->sample_cb               = audio_driver_sample;
+   cbs->sample_batch_cb         = audio_driver_sample_batch;
+   cbs->state_cb                = state_cb;
+   cbs->poll_cb                 = input_driver_poll;
 
    return true;
 }

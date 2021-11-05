@@ -405,16 +405,9 @@ struct rarch_state
    const wifi_driver_t *wifi_driver;
    void *wifi_data;
 
-#ifdef HAVE_NETWORKING
-   /* Used while Netplay is running */
-   netplay_t *netplay_data;
-#endif
 
    struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
 
-#ifdef HAVE_NETWORKING
-   struct netplay_room netplay_host_room;                /* ptr alignment */
-#endif
    jmp_buf error_sjlj_context;              /* 4-byte alignment,
                                                put it right before long */
 #if defined(HAVE_RUNAHEAD)
@@ -426,22 +419,13 @@ struct rarch_state
 #if defined(HAVE_TRANSLATE)
    int ai_service_auto;
 #endif
-#ifdef HAVE_NETWORKING
-   int reannounce;
-#endif
 
 #ifdef HAVE_THREAD_STORAGE
    sthread_tls_t rarch_tls;               /* unsigned alignment */
 #endif
-#ifdef HAVE_NETWORKING
-   unsigned server_port_deferred;
-#endif
    unsigned perf_ptr_rarch;
 
    char error_string[255];
-#ifdef HAVE_NETWORKING
-   char server_address_deferred[512];
-#endif
    char launch_arguments[4096];
    char path_default_shader_preset[PATH_MAX_LENGTH];
    char path_content[PATH_MAX_LENGTH];
@@ -452,16 +436,6 @@ struct rarch_state
    char dir_system[PATH_MAX_LENGTH];
    char dir_savefile[PATH_MAX_LENGTH];
    char dir_savestate[PATH_MAX_LENGTH];
-
-#ifdef HAVE_NETWORKING
-/* Only used before init_netplay */
-   bool netplay_enabled;
-   bool netplay_is_client;
-   /* Used to avoid recursive netplay calls */
-   bool in_netplay;
-   bool netplay_client_deferred;
-   bool is_mitm;
-#endif
    bool has_set_username;
    bool rarch_error_on_init;
    bool has_set_verbosity;
@@ -493,14 +467,6 @@ struct rarch_state
    bool bluetooth_driver_active;
    bool wifi_driver_active;
    bool camera_driver_active;
-
-#if defined(HAVE_NETWORKING)
-   bool has_set_netplay_mode;
-   bool has_set_netplay_ip_address;
-   bool has_set_netplay_ip_port;
-   bool has_set_netplay_stateless_mode;
-   bool has_set_netplay_check_frames;
-#endif
 
    bool streaming_enable;
    bool main_ui_companion_is_on_foreground;

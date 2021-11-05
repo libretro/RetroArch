@@ -22,6 +22,7 @@
 #include <string/stdstring.h>
 #include <compat/strl.h>
 #include <formats/rjson.h>
+#include "netplay.h"
 #include "netplay_discovery.h"
 #include "../../verbosity.h"
 

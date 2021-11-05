@@ -85,6 +85,8 @@ bool discord_avatar_is_ready(void);
 
 char* discord_get_own_avatar(void);
 
+char *discord_get_own_username(void);
+
 discord_state_t *discord_state_get_ptr(void);
 
 void discord_init(const char *discord_app_id, char *args);

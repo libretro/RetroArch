@@ -54,31 +54,6 @@ enum netplay_host_method
    NETPLAY_HOST_METHOD_MITM
 };
 
-struct netplay_room
-{
-   struct netplay_room *next;
-   int id;
-   int  port;
-   int  mitm_port;
-   int  gamecrc;
-   int  timestamp;
-   int  host_method;
-   char country           [3];
-   char retroarch_version [33];
-   char nickname          [33];
-   char subsystem_name    [256];
-   char corename          [256];
-   char frontend          [256];
-   char coreversion       [256];
-   char gamename          [256];
-   char address           [256];
-   char mitm_address      [256];
-   bool has_password;
-   bool has_spectate_password;
-   bool lan;
-   bool fixed;
-};
-
 #ifdef HAVE_NETPLAYDISCOVERY
 enum rarch_netplay_discovery_ctl_state
 {

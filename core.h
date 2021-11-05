@@ -67,6 +67,14 @@ bool core_set_controller_port_device(retro_ctx_controller_info_t *pad);
 
 bool core_has_set_input_descriptor(void);
 
+/**
+ * core_set_default_callbacks:
+ * @data           : pointer to retro_callbacks object
+ *
+ * Binds the libretro callbacks to default callback functions.
+ **/
+bool core_set_default_callbacks(void *data);
+
 RETRO_END_DECLS
 
 #endif

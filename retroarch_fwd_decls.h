@@ -29,10 +29,6 @@ static bool is_narrator_running(struct rarch_state *p_rarch, bool accessibility_
 #endif
 #endif
 
-#ifdef HAVE_NETWORKING
-static void deinit_netplay(void);
-#endif
-
 static void retroarch_deinit_drivers(struct rarch_state *p_rarch,
       struct retro_callbacks *cbs);
 
@@ -91,7 +87,5 @@ static bool accessibility_speak_priority(
 static const void *find_driver_nonempty(
       const char *label, int i,
       char *s, size_t len);
-
-static bool core_set_default_callbacks(struct retro_callbacks *cbs);
 
 #endif
