@@ -130,6 +130,7 @@ void *glkitview_init(void);
 
 - (BOOL)performDragOperation:(id<NSDraggingInfo>)sender
 {
+#if 0
     NSPasteboard *pboard = [sender draggingPasteboard];
 
     if ( [[pboard types] containsObject:NSURLPboardType])
@@ -137,6 +138,7 @@ void *glkitview_init(void);
         NSURL *fileURL = [NSURL URLFromPasteboard:pboard];
         NSString    *s = [fileURL path];
     }
+#endif
     return YES;
 }
 

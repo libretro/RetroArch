@@ -17368,7 +17368,6 @@ bool core_set_cheat(retro_ctx_cheat_info_t *info)
 {
    runloop_state_t *runloop_st       = &runloop_state;
 #if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
-   struct rarch_state *p_rarch       = &rarch_st;
    settings_t *settings              = config_get_ptr();
    bool run_ahead_enabled            = false;
    unsigned run_ahead_frames         = 0;
@@ -17407,7 +17406,6 @@ bool core_reset_cheat(void)
 {
    runloop_state_t *runloop_st       = &runloop_state;
 #if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
-   struct rarch_state *p_rarch       = &rarch_st;
    settings_t *settings              = config_get_ptr();
    bool run_ahead_enabled            = false;
    unsigned run_ahead_frames         = 0;
@@ -17450,7 +17448,6 @@ bool core_set_poll_type(unsigned type)
 
 bool core_set_controller_port_device(retro_ctx_controller_info_t *pad)
 {
-   struct rarch_state   *p_rarch  = &rarch_st;
    runloop_state_t *runloop_st    = &runloop_state;
    input_driver_state_t *input_st = input_state_get_ptr();
    if (!pad)
@@ -17490,7 +17487,6 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
    bool             contentless = false;
    bool             is_inited   = false;
    bool             game_loaded = false;
-   struct rarch_state *p_rarch  = &rarch_st;
    runloop_state_t *runloop_st  = &runloop_state;
 
    video_driver_set_cached_frame_ptr(NULL);
