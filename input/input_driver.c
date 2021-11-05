@@ -685,7 +685,7 @@ int16_t input_state_wrap(
             float axis_threshold           = joypad_info->axis_threshold;
             const uint64_t joykey          = (bind_joykey != NO_BTN)
                ? bind_joykey  : autobind_joykey;
-            const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
+            const uint64_t joyaxis         = (bind_joyaxis != AXIS_NONE)
                ? bind_joyaxis : autobind_joyaxis;
 
             if (joypad)
@@ -694,7 +694,7 @@ int16_t input_state_wrap(
                         port, (uint16_t)joykey))
                   return 1;
                if (joyaxis != AXIS_NONE &&
-                     ((float)abs(joypad->axis(port, joyaxis))
+                     ((float)abs(joypad->axis(port, (uint32_t)joyaxis))
                       / 0x8000) > axis_threshold)
                   return 1;
             }
@@ -704,7 +704,7 @@ int16_t input_state_wrap(
                         port, (uint16_t)joykey))
                   return 1;
                if (joyaxis != AXIS_NONE &&
-                     ((float)abs(sec_joypad->axis(port, joyaxis))
+                     ((float)abs(sec_joypad->axis(port, (uint32_t)joyaxis))
                       / 0x8000) > axis_threshold)
                   return 1;
             }
@@ -2573,14 +2573,14 @@ bool input_key_pressed(int key, bool keyboard_pressed)
       float axis_threshold           = settings->floats.input_axis_threshold;
       const uint64_t joykey          = (bind_joykey != NO_BTN)
          ? bind_joykey  : autobind_joykey;
-      const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
+      const uint64_t joyaxis         = (bind_joyaxis != AXIS_NONE)
          ? bind_joyaxis : autobind_joyaxis;
 
       if ((uint16_t)joykey != NO_BTN && joypad->button(
                port, (uint16_t)joykey))
          return true;
       if (joyaxis != AXIS_NONE &&
-            ((float)abs(joypad->axis(port, joyaxis))
+            ((float)abs(joypad->axis(port, (uint32_t)joyaxis))
              / 0x8000) > axis_threshold)
          return true;
       return false;
