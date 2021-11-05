@@ -1322,27 +1322,26 @@ static int action_bind_sublabel_netplay_room(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   uint32_t gamecrc           = 0;
-   const char *ra_version     = NULL;
-   const char *corename       = NULL;
-   const char *gamename       = NULL;
-   const char *core_ver       = NULL;
-   const char *frontend       = NULL;
-   const char *na             = NULL;
-   const char *subsystem      = NULL;
-   net_driver_state_t *net_st = networking_state_get_ptr();
-   unsigned room_index        = type - MENU_SETTINGS_NETPLAY_ROOMS_START;
+   uint32_t gamecrc       = 0;
+   const char *ra_version = NULL;
+   const char *corename   = NULL;
+   const char *gamename   = NULL;
+   const char *core_ver   = NULL;
+   const char *frontend   = NULL;
+   const char *na         = NULL;
+   const char *subsystem  = NULL;
+   unsigned room_index    = type - MENU_SETTINGS_NETPLAY_ROOMS_START;
 
-   if (room_index >= (unsigned)net_st->room_count)
+   if (room_index >= (unsigned)netplay_room_count)
       return menu_cbs_exit();
 
-   ra_version = net_st->room_list[room_index].retroarch_version;
-   corename   = net_st->room_list[room_index].corename;
-   gamename   = net_st->room_list[room_index].gamename;
-   core_ver   = net_st->room_list[room_index].coreversion;
-   gamecrc    = net_st->room_list[room_index].gamecrc;
-   frontend   = net_st->room_list[room_index].frontend;
-   subsystem  = net_st->room_list[room_index].subsystem_name;
+   ra_version = netplay_room_list[room_index].retroarch_version;
+   corename   = netplay_room_list[room_index].corename;
+   gamename   = netplay_room_list[room_index].gamename;
+   core_ver   = netplay_room_list[room_index].coreversion;
+   gamecrc    = netplay_room_list[room_index].gamecrc;
+   frontend   = netplay_room_list[room_index].frontend;
+   subsystem  = netplay_room_list[room_index].subsystem_name;
    na         = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
 
    if (string_is_empty(subsystem) || string_is_equal(subsystem,

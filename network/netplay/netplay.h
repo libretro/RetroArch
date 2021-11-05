@@ -81,24 +81,6 @@ enum rarch_netplay_share_analog_preference
 
 typedef struct netplay netplay_t;
 
-#ifdef HAVE_NETPLAYDISCOVERY
-struct ad_packet
-{
-   uint32_t header;
-   uint32_t protocol_version;
-   uint32_t port;
-   char address[NETPLAY_HOST_STR_LEN];
-   char retroarch_version[NETPLAY_HOST_STR_LEN];
-   char nick[NETPLAY_HOST_STR_LEN];
-   char frontend[NETPLAY_HOST_STR_LEN];
-   char core[NETPLAY_HOST_STR_LEN];
-   char core_version[NETPLAY_HOST_STR_LEN];
-   char content[NETPLAY_HOST_LONGSTR_LEN];
-   char content_crc[NETPLAY_HOST_STR_LEN];
-   char subsystem_name[NETPLAY_HOST_STR_LEN];
-};
-#endif
-
 typedef struct mitm_server
 {
    const char *name;
@@ -142,17 +124,13 @@ typedef struct
    netplay_t *data; /* Used while Netplay is running */
    struct netplay_room host_room; /* ptr alignment */
    netplay_t *handshake_password;
-   struct netplay_room *room_list;
    /* List of discovered hosts */
    struct netplay_host_list discovered_hosts;
 #ifdef HAVE_NETPLAYDISCOVERY
    size_t discovered_hosts_allocated;
 #endif
-   int room_count;
    int reannounce;
    unsigned server_port_deferred;
-   /* Packet buffer for advertisement and responses */
-   struct ad_packet ad_packet_buffer; /* uint32_t alignment */
    uint16_t mapping[RETROK_LAST];
    char server_address_deferred[512];
    /* Only used before init_netplay */
