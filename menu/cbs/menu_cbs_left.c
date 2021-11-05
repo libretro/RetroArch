@@ -41,7 +41,9 @@
 #include "../../driver.h"
 #include "../../retroarch.h"
 #include "../../audio/audio_driver.h"
+#ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
+#endif
 #include "../../playlist.h"
 #include "../../manual_content_scan.h"
 #include "../misc/cpufreq/cpufreq.h"

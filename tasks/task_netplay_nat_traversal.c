@@ -23,11 +23,8 @@
 
 #ifdef HAVE_NETWORKING
 #include <net/net_natt.h>
-#endif
-
 #include "../network/netplay/netplay.h"
 
-#ifdef HAVE_NETWORKING
 struct nat_traversal_state_data
 {
    struct natt_status *nat_traversal_state;
