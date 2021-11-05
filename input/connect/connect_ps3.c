@@ -110,26 +110,27 @@ static int ds3_send_output_report(ds3_instance_t *instance);
 static void ds3_update_pad_state(ds3_instance_t *instance);
 static void ds3_update_analog_state(ds3_instance_t *instance);
 
-static void *ds3_init(void *handle, uint32_t slot, hid_driver_t *driver) {
+static void *ds3_init(void *handle, uint32_t slot, hid_driver_t *driver)
+{
    ds3_instance_t *instance = (ds3_instance_t *)malloc(sizeof(ds3_instance_t));
-   int ret;
-   if(!instance) {
+   if(!instance)
       return NULL;
-   }
 
-   instance->handle = handle;
+   instance->handle     = handle;
    instance->hid_driver = driver;
-   instance->slot = slot;
+   instance->slot       = slot;
 
-   if(instance->hid_driver->set_protocol) {
+   if(instance->hid_driver->set_protocol)
       instance->hid_driver->set_protocol(instance->handle, 1);
-   }
 
-   if((ret = ds3_send_output_report(instance)) < 0) {
+   if (ds3_send_output_report(instance) < 0)
+   {
       RARCH_LOG("Failed to send output report\n");
       goto error;
    }
-   if((ret = ds3_set_operational(instance)) < 0) {
+    
+   if (ds3_set_operational(instance) < 0)
+   {
       RARCH_LOG("Failed to set operational mode\n");
       goto error;
    }
