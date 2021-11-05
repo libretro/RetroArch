@@ -377,6 +377,9 @@ void discord_update(enum discord_presence presence)
          {
             char join_secret[128];
             struct netplay_room *room   = &networking_state_get_ptr()->host_room;
+            bool host_method_is_mitm    = room->host_method == NETPLAY_HOST_METHOD_MITM;
+            const char *srv_address     = host_method_is_mitm ? room->mitm_address : room->address;
+            unsigned srv_port           = host_method_is_mitm ? room->mitm_port : room->port;
             if (room->id == 0)
                return;
 
