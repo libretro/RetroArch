@@ -200,7 +200,6 @@ typedef struct settings
       unsigned input_max_users;
 
       unsigned netplay_port;
-      unsigned netplay_max_connections;
       unsigned netplay_input_latency_frames_min;
       unsigned netplay_input_latency_frames_range;
       unsigned netplay_share_digital;
@@ -625,7 +624,6 @@ typedef struct settings
       bool notification_show_screenshot;
 #endif
       bool notification_show_refresh_rate;
-      bool notification_show_netplay_extra;
       bool menu_widget_scale_auto;
       bool menu_show_start_screen;
       bool menu_pause_libretro;

@@ -1019,10 +1019,6 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_NOTIFICATION_SHOW_REFRESH_RATE true
 #endif
 
-#ifdef HAVE_NETWORKING
-#define DEFAULT_NOTIFICATION_SHOW_NETPLAY_EXTRA false
-#endif
-
 /* Output samplerate. */
 #ifdef GEKKO
 #define DEFAULT_OUTPUT_RATE 32000
@@ -1174,7 +1170,6 @@ static const bool netplay_use_mitm_server = false;
 #define DEFAULT_NETPLAY_MITM_SERVER "nyc"
 
 #ifdef HAVE_NETWORKING
-static const unsigned netplay_max_connections = 3;
 static const unsigned netplay_share_digital = RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE;
 
 static const unsigned netplay_share_analog = RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE;

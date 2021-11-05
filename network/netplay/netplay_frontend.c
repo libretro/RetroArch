@@ -89,7 +89,6 @@
    else if (recvd < 0)
 
 #define NETPLAY_MAGIC 0x52414E50 /* RANP */
-#define FULL_MAGIC    0x46554C4C /* FULL */
 #define POKE_MAGIC    0x504F4B45 /* POKE */
 
 /*
@@ -808,34 +807,6 @@ static uint32_t simple_rand_uint32(void)
             parts[2]);
 }
 
-/*
- * netplay_init_socket_buffer
- *
- * Initialize a new socket buffer.
- */
-static bool netplay_init_socket_buffer(
-      struct socket_buffer *sbuf, size_t size)
-{
-   sbuf->data  = (unsigned char*)malloc(size);
-   if (!sbuf->data)
-      return false;
-   sbuf->bufsz = size;
-   sbuf->start = sbuf->read = sbuf->end = 0;
-   return true;
-}
-
-/**
- * netplay_deinit_socket_buffer
- *
- * Free a socket buffer.
- */
-static void netplay_deinit_socket_buffer(struct socket_buffer *sbuf)
-{
-   if (sbuf->data)
-      free(sbuf->data);
-}
-
-
 /**
  * netplay_handshake_init_send
  *
@@ -908,6 +879,37 @@ static void handshake_password(void *ignore, const char *line)
 #endif
 
 /**
+ * netplay_deinit_socket_buffer
+ *
+ * Free a socket buffer.
+ */
+static void netplay_deinit_socket_buffer(struct socket_buffer *sbuf)
+{
+   if (sbuf->data)
+      free(sbuf->data);
+}
+
+
+static bool netplay_poke(netplay_t *netplay, struct netplay_connection *connection, uint32_t netplay_magic)
+{
+   if (!netplay || !netplay->is_server)
+      return false;
+   if (!connection || !connection->active)
+      return false;
+   if (netplay_magic != POKE_MAGIC)
+      return false;
+
+   socket_close(connection->fd);
+
+   connection->active = false;
+
+   netplay_deinit_socket_buffer(&connection->send_packet_buffer);
+   netplay_deinit_socket_buffer(&connection->recv_packet_buffer);
+
+   return true;
+}
+
+/**
  * netplay_handshake_init
  *
  * Data receiver for the initial part of the handshake, i.e., waiting for the
@@ -926,43 +928,19 @@ bool netplay_handshake_init(netplay_t *netplay,
    uint32_t compression                  = 0;
    struct compression_transcoder *ctrans = NULL;
    const char *dmsg                      = NULL;
-   settings_t *settings                  = config_get_ptr();
-   bool extra_notifications              = settings->bools.notification_show_netplay_extra;
 
    memset(header, 0, sizeof(header));
 
-   RECV(header, sizeof(header[0]))
+   RECV(header, sizeof(uint32_t))
    {
-      dmsg = msg_hash_to_str(
-            netplay->is_server 
-            ? MSG_FAILED_TO_CONNECT_TO_CLIENT 
-            : MSG_FAILED_TO_CONNECT_TO_HOST);
+      dmsg = msg_hash_to_str(MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT);
       goto error;
    }
 
    netplay_magic = ntohl(header[0]);
 
-   if (netplay->is_server)
-   {
-      /* Poking the server for information? Just disconnect */
-      if (netplay_magic == POKE_MAGIC)
-      {
-         socket_close(connection->fd);
-         connection->active = false;
-         netplay_deinit_socket_buffer(&connection->send_packet_buffer);
-         netplay_deinit_socket_buffer(&connection->recv_packet_buffer);
-         return true;
-      }
-   }
-   else
-   {
-      if (netplay_magic == FULL_MAGIC)
-      {
-         dmsg = msg_hash_to_str(MSG_NETPLAY_HOST_FULL);
-         goto error;
-      }
-   }
-
+   if (netplay_poke(netplay, connection, netplay_magic))
+      return true;
 
    if (netplay_magic != NETPLAY_MAGIC)
    {
@@ -970,13 +948,9 @@ bool netplay_handshake_init(netplay_t *netplay,
       goto error;
    }
 
-   RECV(header + 1, sizeof(header) - sizeof(header[0]))
+   RECV(header + 1, sizeof(header) - sizeof(uint32_t))
    {
-      dmsg = msg_hash_to_str(
-            netplay->is_server 
-            ? MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT 
-            : MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST);
-
+      dmsg = msg_hash_to_str(MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT);
       goto error;
    }
 
@@ -987,6 +961,14 @@ bool netplay_handshake_init(netplay_t *netplay,
       goto error;
    }
 
+   if (ntohl(header[5]) != netplay_impl_magic())
+   {
+      /* We allow the connection but warn that this could cause issues. */
+      dmsg = msg_hash_to_str(MSG_NETPLAY_DIFFERENT_VERSIONS);
+      RARCH_WARN("%s\n", dmsg);
+      runloop_msg_queue_push(dmsg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
+
    /* We only care about platform magic if our core is quirky */
    local_pmagic  = netplay_platform_magic();
    remote_pmagic = ntohl(header[1]);
@@ -994,27 +976,17 @@ bool netplay_handshake_init(netplay_t *netplay,
    if ((netplay->quirks & NETPLAY_QUIRK_ENDIAN_DEPENDENT) &&
        netplay_endian_mismatch(local_pmagic, remote_pmagic))
    {
+      RARCH_ERR("Endianness mismatch with an endian-sensitive core.\n");
       dmsg = msg_hash_to_str(MSG_NETPLAY_ENDIAN_DEPENDENT);
       goto error;
    }
    if ((netplay->quirks & NETPLAY_QUIRK_PLATFORM_DEPENDENT) &&
        (local_pmagic != remote_pmagic))
    {
+      RARCH_ERR("Platform mismatch with a platform-sensitive core.\n");
       dmsg = msg_hash_to_str(MSG_NETPLAY_PLATFORM_DEPENDENT);
       goto error;
    }
-
-   if (ntohl(header[5]) != netplay_impl_magic())
-   {
-      /* We allow the connection but warn that this could cause issues. */
-      dmsg = msg_hash_to_str(MSG_NETPLAY_DIFFERENT_VERSIONS);
-      RARCH_WARN("%s\n", dmsg);
-      if (extra_notifications)
-         runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      dmsg = NULL;
-   }
-
 
    /* Check what compression is supported */
    compression  = ntohl(header[2]);
@@ -1048,11 +1020,15 @@ bool netplay_handshake_init(netplay_t *netplay,
 
    /* Allocate our compression stream */
    if (!ctrans->compression_stream)
+   {
       ctrans->compression_stream   = ctrans->compression_backend->stream_new();
-   if (!ctrans->decompression_stream)
       ctrans->decompression_stream = ctrans->decompression_backend->stream_new();
+   }
    if (!ctrans->compression_stream || !ctrans->decompression_stream)
+   {
+      RARCH_ERR("Failed to allocate compression transcoder!\n");
       return false;
+   }
 
    /* If a password is demanded, ask for it */
    if (!netplay->is_server && (connection->salt = ntohl(header[3])))
@@ -1094,12 +1070,7 @@ error:
    if (dmsg)
    {
       RARCH_ERR("%s\n", dmsg);
-      /* These notifications are useful to the client in figuring out what caused its premature disconnection,
-         but they are quite useless (annoying) to the server.
-         Let them be optional if server. */
-      if (!netplay->is_server || extra_notifications)
-         runloop_msg_queue_push(dmsg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
+      runloop_msg_queue_push(dmsg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
    return false;
 }
@@ -1108,8 +1079,6 @@ static void netplay_handshake_ready(netplay_t *netplay,
       struct netplay_connection *connection)
 {
    char msg[512];
-   settings_t *settings             = config_get_ptr();
-   bool extra_notifications         = settings->bools.notification_show_netplay_extra;
    msg[0] = '\0';
 
    if (netplay->is_server)
@@ -1135,13 +1104,7 @@ static void netplay_handshake_ready(netplay_t *netplay,
    }
 
    RARCH_LOG("%s\n", msg);
-   /* Useful notification to the client in figuring out if a connection was successfully made before an error,
-      but not as useful to the server.
-      Let it be optional if server. */
-   if (!netplay->is_server || extra_notifications)
-      runloop_msg_queue_push(msg, 1, 180, false, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT,
-            MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    /* Unstall if we were waiting for this */
    if (netplay->stall == NETPLAY_STALL_NO_CONNECTION)
@@ -1352,9 +1315,9 @@ static bool netplay_handshake_pre_nick(netplay_t *netplay,
 {
    struct nick_buf_s nick_buf;
    ssize_t recvd;
-   const char *dmsg     = NULL;
-   settings_t *settings = config_get_ptr();
-   bool extra_notifications         = settings->bools.notification_show_netplay_extra;
+   char msg[512];
+
+   msg[0] = '\0';
 
    RECV(&nick_buf, sizeof(nick_buf)) {}
 
@@ -1363,18 +1326,15 @@ static bool netplay_handshake_pre_nick(netplay_t *netplay,
        ntohl(nick_buf.cmd[0]) != NETPLAY_CMD_NICK ||
        ntohl(nick_buf.cmd[1]) != sizeof(nick_buf.nick))
    {
-      dmsg = msg_hash_to_str(
-            netplay->is_server 
-            ? MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT 
-            : MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST);
-      RARCH_ERR("%s\n", dmsg);
-      /* Useful to the client in figuring out 
-         what caused its premature disconnection,
-         but not as useful to the server.
-         Let it be optional if server. */
-      if (!netplay->is_server || extra_notifications)
-         runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      if (netplay->is_server)
+         strlcpy(msg, msg_hash_to_str(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT),
+            sizeof(msg));
+      else
+         strlcpy(msg,
+            msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST),
+            sizeof(msg));
+      RARCH_ERR("%s\n", msg);
+      runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return false;
    }
 
@@ -1384,6 +1344,8 @@ static bool netplay_handshake_pre_nick(netplay_t *netplay,
 
    if (netplay->is_server)
    {
+      settings_t *settings = config_get_ptr();
+
       /* There's a password, so just put them in PRE_PASSWORD mode */
       if (  settings->paths.netplay_password[0] ||
             settings->paths.netplay_spectate_password[0])
@@ -1418,12 +1380,11 @@ static bool netplay_handshake_pre_password(netplay_t *netplay,
    char password[8+NETPLAY_PASS_LEN]; /* 8 for salt */
    char hash[NETPLAY_PASS_HASH_LEN+1]; /* + NULL terminator */
    ssize_t recvd;
+   char msg[512];
    bool correct         = false;
    settings_t *settings = config_get_ptr();
 
-   /* Only the server should call this */
-   if (!netplay->is_server)
-      return false;
+   msg[0] = '\0';
 
    RECV(&password_buf, sizeof(password_buf)) {}
 
@@ -1432,7 +1393,15 @@ static bool netplay_handshake_pre_password(netplay_t *netplay,
        ntohl(password_buf.cmd[0]) != NETPLAY_CMD_PASSWORD ||
        ntohl(password_buf.cmd[1]) != sizeof(password_buf.password))
    {
-      RARCH_ERR("Failed to receive netplay password.\n");
+      if (netplay->is_server)
+         strlcpy(msg, msg_hash_to_str(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT),
+            sizeof(msg));
+      else
+         strlcpy(msg,
+            msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST),
+            sizeof(msg));
+      RARCH_ERR("%s\n", msg);
+      runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return false;
    }
 
@@ -1466,10 +1435,7 @@ static bool netplay_handshake_pre_password(netplay_t *netplay,
 
    /* Just disconnect if it was wrong */
    if (!correct)
-   {
-      RARCH_WARN("A client tried to connect with the wrong password.\n");
       return false;
-   }
 
    /* Otherwise, exchange info */
    if (!netplay_handshake_info(netplay, connection))
@@ -1496,20 +1462,8 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
    uint32_t content_crc             = 0;
    const char *dmsg                 = NULL;
    struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
-   settings_t *settings             = config_get_ptr();
-   bool extra_notifications         = settings->bools.notification_show_netplay_extra;
 
-   RECV(&info_buf, sizeof(info_buf.cmd))
-   {
-      if (!netplay->is_server)
-      {
-         dmsg = msg_hash_to_str(MSG_NETPLAY_INCORRECT_PASSWORD);
-         RARCH_ERR("%s\n", dmsg);
-         runloop_msg_queue_push(dmsg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         return false;
-      }
-
-   }
+   RECV(&info_buf, sizeof(info_buf.cmd)) {}
 
    if (recvd < 0 ||
        ntohl(info_buf.cmd[0]) != NETPLAY_CMD_INFO)
@@ -1519,10 +1473,9 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
    }
 
    cmd_size = ntohl(info_buf.cmd[1]);
-   if (cmd_size != sizeof(info_buf) - sizeof(info_buf.cmd))
+   if (cmd_size != sizeof(info_buf) - 2*sizeof(uint32_t))
    {
-      /* Either the host doesn't have anything loaded, 
-         or this is just screwy */
+      /* Either the host doesn't have anything loaded, or this is just screwy */
       if (cmd_size != 0)
       {
          /* Huh? */
@@ -1540,7 +1493,10 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
    }
 
    RECV(&info_buf.content_crc, cmd_size)
+   {
+      RARCH_ERR("Failed to receive netplay info payload.\n");
       return false;
+   }
 
    /* Check the core info */
    if (system)
@@ -1551,15 +1507,8 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
          /* Wrong core! */
          dmsg = msg_hash_to_str(MSG_NETPLAY_DIFFERENT_CORES);
          RARCH_ERR("%s\n", dmsg);
-         /* Useful to the client in figuring out 
-            what caused its premature disconnection,
-            but not as useful to the server.
-            Let it be optional if server. */
-         if (!netplay->is_server || extra_notifications)
-            runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
-                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         /* FIXME: Should still send INFO, so the 
-            other side knows what's what */
+         runloop_msg_queue_push(dmsg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         /* FIXME: Should still send INFO, so the other side knows what's what */
          return false;
       }
       if (strncmp(info_buf.core_version,
@@ -1567,9 +1516,7 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
       {
          dmsg = msg_hash_to_str(MSG_NETPLAY_DIFFERENT_CORE_VERSIONS);
          RARCH_WARN("%s\n", dmsg);
-         if (extra_notifications)
-            runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
-                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(dmsg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
    }
 
@@ -1582,10 +1529,7 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
       {
          dmsg = msg_hash_to_str(MSG_CONTENT_CRC32S_DIFFER);
          RARCH_WARN("%s\n", dmsg);
-         if (extra_notifications)
-            runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
-                  MESSAGE_QUEUE_ICON_DEFAULT,
-                  MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(dmsg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
    }
 
@@ -1626,19 +1570,21 @@ static bool netplay_handshake_pre_sync(netplay_t *netplay,
    char new_nick[NETPLAY_NICK_LEN];
    retro_ctx_memory_info_t mem_info;
 
-   /* Only the client should call this */
-   if (netplay->is_server)
+   RECV(cmd, sizeof(cmd))
+   {
+      const char *msg = msg_hash_to_str(MSG_NETPLAY_INCORRECT_PASSWORD);
+      RARCH_ERR("%s\n", msg);
+      runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return false;
-
-   RECV(cmd, sizeof(cmd)) {}
+   }
 
    /* Only expecting a sync command */
-   if (recvd < 0 ||
-         ntohl(cmd[0]) != NETPLAY_CMD_SYNC ||
+   if (ntohl(cmd[0]) != NETPLAY_CMD_SYNC ||
          ntohl(cmd[1]) < (2+2*MAX_INPUT_DEVICES)*sizeof(uint32_t) + (MAX_INPUT_DEVICES)*sizeof(uint8_t) +
          NETPLAY_NICK_LEN)
    {
-      RARCH_ERR("Failed to receive netplay sync.\n");
+      RARCH_ERR("%s\n",
+            msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
       return false;
    }
 
@@ -2094,6 +2040,22 @@ static size_t buf_remaining(struct socket_buffer *sbuf)
 }
 
 /**
+ * netplay_init_socket_buffer
+ *
+ * Initialize a new socket buffer.
+ */
+static bool netplay_init_socket_buffer(
+      struct socket_buffer *sbuf, size_t size)
+{
+   sbuf->data = (unsigned char*)malloc(size);
+   if (!sbuf->data)
+      return false;
+   sbuf->bufsz = size;
+   sbuf->start = sbuf->read = sbuf->end = 0;
+   return true;
+}
+
+/**
  * netplay_resize_socket_buffer
  *
  * Resize the given socket_buffer's buffer to the requested size.
@@ -2137,6 +2099,13 @@ static bool netplay_resize_socket_buffer(
 
     return true;
 }
+
+#if 0
+static void netplay_clear_socket_buffer(struct socket_buffer *sbuf)
+{
+   sbuf->start = sbuf->read = sbuf->end = 0;
+}
+#endif
 
 /**
  * netplay_send
@@ -2385,46 +2354,6 @@ void netplay_recv_reset(struct socket_buffer *sbuf)
 void netplay_recv_flush(struct socket_buffer *sbuf)
 {
    sbuf->start = sbuf->read;
-}
-
-static bool netplay_full(netplay_t *netplay, int sockfd)
-{
-   size_t i;
-   settings_t *settings     = config_get_ptr();
-   unsigned max_connections = settings->uints.netplay_max_connections;
-   unsigned total           = 0;
-
-   if (max_connections)
-   {
-      for (i = 0; i < netplay->connections_size; i++)
-         if (netplay->connections[i].active) total++;
-
-      if (total >= max_connections)
-      {
-         /* We send a header to let the client 
-            know we are full */
-         uint32_t header[6];
-
-         /* The only parameter that we need to set is 
-            netplay magic;
-            we set the protocol version parameter 
-            too for backwards compatibility */
-         memset(header, 0, sizeof(header));
-         header[0] = htonl(FULL_MAGIC);
-         header[4] = htonl(NETPLAY_PROTOCOL_VERSION);
-
-         /* The kernel might close the socket before 
-            sending our data.
-            This is fine; the header is just a warning 
-            for the client. */
-         socket_send_all_nonblocking(sockfd, header,
-               sizeof(header), false);
-
-         return true;
-      }
-   }
-
-   return false;
 }
 
 /**
@@ -3091,7 +3020,10 @@ bool netplay_sync_pre_frame(netplay_t *netplay)
                (struct sockaddr*)&their_addr, &addr_size);
 
          if (new_fd < 0)
+         {
+            RARCH_ERR("%s\n", msg_hash_to_str(MSG_NETPLAY_FAILED));
             goto process;
+         }
 
          /* Set the socket nonblocking */
          if (!socket_nonblock(new_fd))
@@ -3103,8 +3035,15 @@ bool netplay_sync_pre_frame(netplay_t *netplay)
 
 #if defined(IPPROTO_TCP) && defined(TCP_NODELAY)
          {
-            int on = 1;
-            if (setsockopt(new_fd, IPPROTO_TCP, TCP_NODELAY, (const char*) &on, sizeof(on)) < 0)
+            int flag = 1;
+            if (setsockopt(new_fd, IPPROTO_TCP, TCP_NODELAY,
+#ifdef _WIN32
+               (const char*)
+#else
+               (const void*)
+#endif
+               &flag,
+               sizeof(int)) < 0)
                RARCH_WARN("Could not set netplay TCP socket to nodelay. Expect jitter.\n");
          }
 #endif
@@ -3114,13 +3053,6 @@ bool netplay_sync_pre_frame(netplay_t *netplay)
          if (fcntl(new_fd, F_SETFD, FD_CLOEXEC) < 0)
             RARCH_WARN("Cannot set Netplay port to close-on-exec. It may fail to reopen if the client disconnects.\n");
 #endif
-
-         if (netplay_full(netplay, new_fd))
-         {
-            /* Not accepting any more connections. */
-            socket_close(new_fd);
-            goto process;
-         }
 
          /* Allocate a connection */
          for (connection_num = 0; connection_num < netplay->connections_size; connection_num++)
@@ -3574,33 +3506,20 @@ void netplay_hangup(netplay_t *netplay,
    char msg[512];
    const char *dmsg;
    size_t i;
-   bool was_playing                 = false;
-   settings_t *settings             = config_get_ptr();
-#if 0
-   /* TODO/FIXME - doesn't exist yet */
-   bool extra_notifications         = settings->bools.notification_show_netplay_extra;
-#else
-   bool extra_notifications         = false;
-#endif
 
    if (!netplay)
       return;
    if (!connection->active)
       return;
 
-   was_playing = 
-         connection->mode == NETPLAY_CONNECTION_PLAYING
-      || connection->mode == NETPLAY_CONNECTION_SLAVE;
+   msg[0] = msg[sizeof(msg)-1] = '\0';
+   dmsg = msg;
 
    /* Report this disconnection */
    if (netplay->is_server)
    {
       if (connection->nick[0])
-      {
-         snprintf(msg, sizeof(msg),
-               msg_hash_to_str(MSG_NETPLAY_SERVER_NAMED_HANGUP), connection->nick);
-         dmsg = msg;
-      }
+         snprintf(msg, sizeof(msg)-1, msg_hash_to_str(MSG_NETPLAY_SERVER_NAMED_HANGUP), connection->nick);
       else
          dmsg = msg_hash_to_str(MSG_NETPLAY_SERVER_HANGUP);
    }
@@ -3617,13 +3536,8 @@ void netplay_hangup(netplay_t *netplay,
 #endif
       netplay->is_connected = false;
    }
-   RARCH_LOG("%s\n", dmsg);
-   /* This notification is really only important to the server if the client was playing.
-    * Let it be optional if server and the client wasn't playing. */
-   if (!netplay->is_server || was_playing || extra_notifications)
-      runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT,
-            MESSAGE_QUEUE_CATEGORY_INFO);
+   RARCH_LOG("[netplay] %s\n", dmsg);
+   runloop_msg_queue_push(dmsg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    socket_close(connection->fd);
    connection->active = false;
@@ -3636,8 +3550,9 @@ void netplay_hangup(netplay_t *netplay,
       netplay->connected_players &= (1L<<netplay->self_client_num);
       for (i = 0; i < MAX_CLIENTS; i++)
       {
-         if (i != netplay->self_client_num)
-            netplay->client_devices[i] = 0;
+         if (i == netplay->self_client_num)
+            continue;
+         netplay->client_devices[i] = 0;
       }
       for (i = 0; i < MAX_INPUT_DEVICES; i++)
          netplay->device_clients[i] &= (1L<<netplay->self_client_num);
@@ -3646,17 +3561,16 @@ void netplay_hangup(netplay_t *netplay,
    }
    else
    {
-      /* Mark the player for removal */
-      if (was_playing)
-      {
-         uint32_t client_num = (uint32_t)
-            (connection - netplay->connections + 1);
+      uint32_t client_num = (uint32_t)(connection - netplay->connections + 1);
 
-         /* This special mode keeps the connection object 
-            alive long enough to send the disconnection 
-            message at the correct time */
-         connection->mode         = NETPLAY_CONNECTION_DELAYED_DISCONNECT;
-         connection->delay_frame  = netplay->read_frame_count[client_num];
+      /* Mark the player for removal */
+      if (connection->mode == NETPLAY_CONNECTION_PLAYING ||
+          connection->mode == NETPLAY_CONNECTION_SLAVE)
+      {
+         /* This special mode keeps the connection object alive long enough to
+          * send the disconnection message at the correct time */
+         connection->mode = NETPLAY_CONNECTION_DELAYED_DISCONNECT;
+         connection->delay_frame = netplay->read_frame_count[client_num];
 
          /* Mark them as not playing anymore */
          netplay->connected_players &= ~(1L<<client_num);
@@ -4048,29 +3962,26 @@ static void announce_play_spectate(netplay_t *netplay,
       enum rarch_netplay_connection_mode mode, uint32_t devices)
 {
    char msg[512];
-   const char *dmsg = NULL;
+   msg[0] = msg[sizeof(msg) - 1] = '\0';
 
    switch (mode)
    {
       case NETPLAY_CONNECTION_SPECTATING:
          if (nick)
-         {
-            snprintf(msg, sizeof(msg),
-                  msg_hash_to_str(MSG_NETPLAY_PLAYER_S_LEFT),
-                  NETPLAY_NICK_LEN, nick);
-            dmsg = msg;
-         }
+            snprintf(msg, sizeof(msg) - 1,
+                  msg_hash_to_str(MSG_NETPLAY_PLAYER_S_LEFT), NETPLAY_NICK_LEN,
+                  nick);
          else
-            dmsg = msg_hash_to_str(MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME);
+            strlcpy(msg, msg_hash_to_str(MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME), sizeof(msg));
          break;
 
       case NETPLAY_CONNECTION_PLAYING:
       case NETPLAY_CONNECTION_SLAVE:
       {
-         char device_str[256];
          uint32_t device;
          uint32_t one_device = (uint32_t) -1;
-         char *pdevice_str   = NULL;
+         char device_str[512];
+         size_t device_str_len;
 
          for (device = 0; device < MAX_INPUT_DEVICES; device++)
          {
@@ -4089,59 +4000,57 @@ static void announce_play_spectate(netplay_t *netplay,
          {
             /* Only have one device, simpler message */
             if (nick)
-               snprintf(msg, sizeof(msg),
-                     msg_hash_to_str(
-                        MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N),
+               snprintf(msg, sizeof(msg) - 1,
+                     msg_hash_to_str(MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N),
                      NETPLAY_NICK_LEN, nick, one_device + 1);
             else
-               snprintf(msg, sizeof(msg),
-                     msg_hash_to_str(
-                        MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N),
+               snprintf(msg, sizeof(msg) - 1,
+                     msg_hash_to_str(MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N),
                      one_device + 1);
          }
          else
          {
-            /* Multiple devices, so step one is to make the 
-               device string listing them all */
-            pdevice_str = device_str;
-
+            /* Multiple devices, so step one is to make the device string listing them all */
+            device_str[0] = 0;
+            device_str_len = 0;
             for (device = 0; device < MAX_INPUT_DEVICES; device++)
-               if (devices & (1<<device))
-                  pdevice_str += snprintf(pdevice_str,
-                        sizeof(device_str) - (size_t)
-                        (pdevice_str - device_str),
-                        "%u, ",
-			(unsigned) (device+1));
-            if (pdevice_str > device_str)
-               pdevice_str -= 2;
+            {
+               if (!(devices & (1<<device)))
+                  continue;
+               if (device_str_len)
+                  device_str_len += snprintf(device_str + device_str_len,
+                        sizeof(device_str) - 1 - device_str_len, ", ");
+               device_str_len += snprintf(device_str + device_str_len,
+                     sizeof(device_str) - 1 - device_str_len, "%u",
+                     (unsigned) (device+1));
+            }
 
             /* Then we make the final string */
             if (nick)
-               snprintf(msg, sizeof(msg),
+               snprintf(msg, sizeof(msg) - 1,
                      msg_hash_to_str(
-                        MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S),
-                     NETPLAY_NICK_LEN, nick,
-                     sizeof(device_str), device_str);
-            else
-               snprintf(msg, sizeof(msg),
-                     msg_hash_to_str(
-                        MSG_NETPLAY_YOU_HAVE_JOINED_WITH_INPUT_DEVICES_S),
-                     sizeof(device_str),
+                           MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S),
+                     NETPLAY_NICK_LEN, nick, sizeof(device_str),
                      device_str);
+            else
+               snprintf(msg, sizeof(msg) - 1,
+                     msg_hash_to_str(
+                           MSG_NETPLAY_YOU_HAVE_JOINED_WITH_INPUT_DEVICES_S),
+                     sizeof(device_str), device_str);
          }
 
-         dmsg = msg;
          break;
       }
 
       default: /* wrong usage */
-         return;
+         break;
    }
 
-   RARCH_LOG("%s\n", dmsg);
-   runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT,
-         MESSAGE_QUEUE_CATEGORY_INFO);
+   if (msg[0])
+   {
+      RARCH_LOG("[netplay] %s\n", msg);
+      runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 }
 
 /**
@@ -4149,10 +4058,8 @@ static void announce_play_spectate(netplay_t *netplay,
  *
  * Handle a play or spectate request
  */
-static void handle_play_spectate(netplay_t *netplay,
-      uint32_t client_num,
-      struct netplay_connection *connection,
-      uint32_t cmd, uint32_t cmd_size,
+static void handle_play_spectate(netplay_t *netplay, uint32_t client_num,
+      struct netplay_connection *connection, uint32_t cmd, uint32_t cmd_size,
       uint32_t *in_payload)
 {
    /*
@@ -4469,15 +4376,9 @@ static bool netplay_get_cmd(netplay_t *netplay,
                client_num = (uint32_t)(connection - netplay->connections + 1);
             }
 
-            if (client_num >= MAX_CLIENTS)
+            if (client_num > MAX_CLIENTS)
             {
                RARCH_ERR("NETPLAY_CMD_INPUT received data for an unsupported client.\n");
-               return netplay_cmd_nak(netplay, connection);
-            }
-
-            if (!(netplay->connected_players & (1<<client_num)))
-            {
-               RARCH_ERR("Invalid NETPLAY_CMD_INPUT player number.\n");
                return netplay_cmd_nak(netplay, connection);
             }
 
@@ -4491,6 +4392,12 @@ static bool netplay_get_cmd(netplay_t *netplay,
                return netplay_cmd_nak(netplay, connection);
             }
 
+            if (client_num >= MAX_CLIENTS || !(netplay->connected_players & (1<<client_num)))
+            {
+               RARCH_ERR("Invalid NETPLAY_CMD_INPUT player number.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
+
             /* Check the frame number only if they're not in slave mode */
             if (connection->mode == NETPLAY_CONNECTION_PLAYING)
             {
@@ -4501,7 +4408,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   for (; input_size; input_size--)
                   {
                      RECV(&buf, sizeof(uint32_t))
-                        return false;
+                        return netplay_cmd_nak(netplay, connection);
                   }
                   break;
                }
@@ -4586,15 +4493,11 @@ static bool netplay_get_cmd(netplay_t *netplay,
                return netplay_cmd_nak(netplay, connection);
             }
 
-            if (cmd_size != sizeof(frame))
+            RECV(&frame, sizeof(frame))
             {
-               RARCH_ERR("NETPLAY_CMD_NOINPUT received" 
-                     " an unexpected payload size.\n");
+               RARCH_ERR("Failed to receive NETPLAY_CMD_NOINPUT payload.\n");
                return netplay_cmd_nak(netplay, connection);
             }
-
-            RECV(&frame, sizeof(frame))
-               return false;
 
             frame = ntohl(frame);
 
@@ -4633,11 +4536,10 @@ static bool netplay_get_cmd(netplay_t *netplay,
             return netplay_cmd_nak(netplay, connection);
          }
 
-         if (   connection->mode != NETPLAY_CONNECTION_PLAYING
-             && connection->mode != NETPLAY_CONNECTION_SLAVE)
+         if (connection->mode != NETPLAY_CONNECTION_PLAYING &&
+             connection->mode != NETPLAY_CONNECTION_SLAVE)
          {
             /* They were confused */
-            RARCH_ERR("NETPLAY_CMD_SPECTATE from client not currently playing.\n");
             return netplay_cmd_nak(netplay, connection);
          }
 
@@ -4650,7 +4552,18 @@ static bool netplay_get_cmd(netplay_t *netplay,
       case NETPLAY_CMD_PLAY:
       {
          uint32_t client_num;
-         uint32_t payload;
+         uint32_t payload[1];
+
+         if (cmd_size != sizeof(uint32_t))
+         {
+            RARCH_ERR("Incorrect NETPLAY_CMD_PLAY payload size.\n");
+            return netplay_cmd_nak(netplay, connection);
+         }
+         RECV(payload, sizeof(uint32_t))
+         {
+            RARCH_ERR("Failed to receive NETPLAY_CMD_PLAY payload.\n");
+            return netplay_cmd_nak(netplay, connection);
+         }
 
          if (!netplay->is_server)
          {
@@ -4658,30 +4571,19 @@ static bool netplay_get_cmd(netplay_t *netplay,
             return netplay_cmd_nak(netplay, connection);
          }
 
-         if (cmd_size != sizeof(payload))
-         {
-            RARCH_ERR("Incorrect NETPLAY_CMD_PLAY payload size.\n");
-            return netplay_cmd_nak(netplay, connection);
-         }
-
-         RECV(&payload, sizeof(payload))
-            return false;
-
          if (connection->delay_frame)
          {
-            /* Can't switch modes while a mode switch 
-               is already in progress. */
-            payload = htonl(NETPLAY_CMD_MODE_REFUSED_REASON_TOO_FAST);
-            netplay_send_raw_cmd(netplay, connection, NETPLAY_CMD_MODE_REFUSED, &payload, sizeof(payload));
+            /* Can't switch modes while a mode switch is already in progress. */
+            payload[0] = htonl(NETPLAY_CMD_MODE_REFUSED_REASON_TOO_FAST);
+            netplay_send_raw_cmd(netplay, connection, NETPLAY_CMD_MODE_REFUSED, payload, sizeof(uint32_t));
             break;
          }
 
          if (!connection->can_play)
          {
             /* Not allowed to play */
-            payload = htonl(NETPLAY_CMD_MODE_REFUSED_REASON_UNPRIVILEGED);
-            netplay_send_raw_cmd(netplay, connection,
-                  NETPLAY_CMD_MODE_REFUSED, &payload, sizeof(payload));
+            payload[0] = htonl(NETPLAY_CMD_MODE_REFUSED_REASON_UNPRIVILEGED);
+            netplay_send_raw_cmd(netplay, connection, NETPLAY_CMD_MODE_REFUSED, payload, sizeof(uint32_t));
             break;
          }
 
@@ -4689,14 +4591,11 @@ static bool netplay_get_cmd(netplay_t *netplay,
          if (
                   connection->mode == NETPLAY_CONNECTION_PLAYING
                || connection->mode == NETPLAY_CONNECTION_SLAVE)
-         {
-            RARCH_ERR("NETPLAY_CMD_PLAY from client already playing.\n");
             return netplay_cmd_nak(netplay, connection);
-         }
 
          client_num = (unsigned)(connection - netplay->connections + 1);
 
-         handle_play_spectate(netplay, client_num, connection, cmd, cmd_size, &payload);
+         handle_play_spectate(netplay, client_num, connection, cmd, cmd_size, payload);
          break;
       }
 
@@ -4732,7 +4631,10 @@ static bool netplay_get_cmd(netplay_t *netplay,
          }
 
          RECV(payload, sizeof(payload))
-            return false;
+         {
+            RARCH_ERR("NETPLAY_CMD_MODE failed to receive payload.\n");
+            return netplay_cmd_nak(netplay, connection);
+         }
 
          frame = ntohl(payload[0]);
 
@@ -4740,7 +4642,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
          if (frame < netplay->self_frame_count)
             netplay->force_rewind = true;
 
-         mode       = ntohl(payload[1]);
+         mode = ntohl(payload[1]);
          client_num = mode & 0xFFFF;
          if (client_num >= MAX_CLIENTS)
          {
@@ -4947,15 +4849,17 @@ static bool netplay_get_cmd(netplay_t *netplay,
                return netplay_cmd_nak(netplay, connection);
             }
 
-            if (cmd_size != sizeof(reason))
+            if (cmd_size != sizeof(uint32_t))
             {
                RARCH_ERR("Received invalid payload size for NETPLAY_CMD_MODE_REFUSED.\n");
                return netplay_cmd_nak(netplay, connection);
             }
 
             RECV(&reason, sizeof(reason))
-               return false;
-
+            {
+               RARCH_ERR("Failed to receive NETPLAY_CMD_MODE_REFUSED payload.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
             reason = ntohl(reason);
 
             switch (reason)
@@ -4976,11 +4880,13 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   dmsg = msg_hash_to_str(MSG_NETPLAY_CANNOT_PLAY);
             }
 
-            RARCH_LOG("%s\n", dmsg);
-            runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
-                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            if (dmsg)
+            {
+               RARCH_LOG("[netplay] %s\n", dmsg);
+               runloop_msg_queue_push(dmsg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
+            break;
          }
-         break;
 
       case NETPLAY_CMD_DISCONNECT:
          netplay_hangup(netplay, connection);
@@ -4999,7 +4905,10 @@ static bool netplay_get_cmd(netplay_t *netplay,
             }
 
             RECV(buffer, sizeof(buffer))
-               return false;
+            {
+               RARCH_ERR("NETPLAY_CMD_CRC failed to receive payload.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
 
             buffer[0] = ntohl(buffer[0]);
             buffer[1] = ntohl(buffer[1]);
@@ -5109,15 +5018,17 @@ static bool netplay_get_cmd(netplay_t *netplay,
             /* Check the payload size */
             if ((cmd == NETPLAY_CMD_LOAD_SAVESTATE &&
                  (cmd_size < 2*sizeof(uint32_t) || cmd_size > netplay->zbuffer_size + 2*sizeof(uint32_t))) ||
-                (cmd == NETPLAY_CMD_RESET && cmd_size != sizeof(frame)))
+                (cmd == NETPLAY_CMD_RESET && cmd_size != sizeof(uint32_t)))
             {
                RARCH_ERR("CMD_LOAD_SAVESTATE received an unexpected payload size.\n");
                return netplay_cmd_nak(netplay, connection);
             }
 
             RECV(&frame, sizeof(frame))
-               return false;
-
+            {
+               RARCH_ERR("CMD_LOAD_SAVESTATE failed to receive savestate frame.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
             frame = ntohl(frame);
 
             if (netplay->is_server)
@@ -5147,8 +5058,10 @@ static bool netplay_get_cmd(netplay_t *netplay,
             if (cmd == NETPLAY_CMD_LOAD_SAVESTATE)
             {
                RECV(&isize, sizeof(isize))
-                  return false;
-
+               {
+                  RARCH_ERR("CMD_LOAD_SAVESTATE failed to receive inflated size.\n");
+                  return netplay_cmd_nak(netplay, connection);
+               }
                isize = ntohl(isize);
 
                if (isize != netplay->state_size)
@@ -5158,7 +5071,10 @@ static bool netplay_get_cmd(netplay_t *netplay,
                }
 
                RECV(netplay->zbuffer, cmd_size - 2*sizeof(uint32_t))
-                  return false;
+               {
+                  RARCH_ERR("CMD_LOAD_SAVESTATE failed to receive savestate.\n");
+                  return netplay_cmd_nak(netplay, connection);
+               }
 
                /* And decompress it */
                switch (connection->compression_supported)
@@ -5234,6 +5150,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
       case NETPLAY_CMD_PAUSE:
          {
             char msg[512], nick[NETPLAY_NICK_LEN];
+            msg[sizeof(msg)-1] = '\0';
 
             /* Read in the paused nick */
             if (cmd_size != sizeof(nick))
@@ -5241,10 +5158,11 @@ static bool netplay_get_cmd(netplay_t *netplay,
                RARCH_ERR("NETPLAY_CMD_PAUSE received invalid payload size.\n");
                return netplay_cmd_nak(netplay, connection);
             }
-
             RECV(nick, sizeof(nick))
-               return false;
-
+            {
+               RARCH_ERR("Failed to receive paused nickname.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
             nick[sizeof(nick)-1] = '\0';
 
             /* We outright ignore pausing from spectators and slaves */
@@ -5256,9 +5174,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             if (netplay->is_server)
             {
                /* Inform peers */
-               snprintf(msg, sizeof(msg),
-                     msg_hash_to_str(MSG_NETPLAY_PEER_PAUSED),
-                     connection->nick);
+               snprintf(msg, sizeof(msg)-1, msg_hash_to_str(MSG_NETPLAY_PEER_PAUSED), connection->nick);
                netplay_send_raw_cmd_all(netplay, connection, NETPLAY_CMD_PAUSE,
                      connection->nick, NETPLAY_NICK_LEN);
 
@@ -5267,9 +5183,10 @@ static bool netplay_get_cmd(netplay_t *netplay,
                netplay_send_flush_all(netplay, connection);
             }
             else
-               snprintf(msg, sizeof(msg),
-                     msg_hash_to_str(MSG_NETPLAY_PEER_PAUSED), nick);
-            RARCH_LOG("%s\n", msg);
+            {
+               snprintf(msg, sizeof(msg)-1, msg_hash_to_str(MSG_NETPLAY_PEER_PAUSED), nick);
+            }
+            RARCH_LOG("[netplay] %s\n", msg);
             runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             break;
          }
@@ -5282,26 +5199,27 @@ static bool netplay_get_cmd(netplay_t *netplay,
          {
             uint32_t frames;
 
-            if (netplay->is_server)
-            {
-               /* Only servers can request a stall! */
-               RARCH_ERR("Netplay client requested a stall?\n");
-               return netplay_cmd_nak(netplay, connection);
-            }
-
-            if (cmd_size != sizeof(frames))
+            if (cmd_size != sizeof(uint32_t))
             {
                RARCH_ERR("NETPLAY_CMD_STALL with incorrect payload size.\n");
                return netplay_cmd_nak(netplay, connection);
             }
 
             RECV(&frames, sizeof(frames))
-               return false;
-
+            {
+               RARCH_ERR("Failed to receive NETPLAY_CMD_STALL payload.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
             frames = ntohl(frames);
-
             if (frames > NETPLAY_MAX_REQ_STALL_TIME)
                frames = NETPLAY_MAX_REQ_STALL_TIME;
+
+            if (netplay->is_server)
+            {
+               /* Only servers can request a stall! */
+               RARCH_ERR("Netplay client requested a stall?\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
 
             /* We can only stall for one reason at a time */
             if (!netplay->stall)
@@ -5314,8 +5232,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
          }
 
       default:
-         RARCH_ERR("%s\n",
-               msg_hash_to_str(MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED));
+         RARCH_ERR("%s.\n", msg_hash_to_str(MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED));
          return netplay_cmd_nak(netplay, connection);
    }
 
@@ -5396,14 +5313,10 @@ int netplay_poll_net_input(netplay_t *netplay, bool block)
             if (socket_select(max_fd, &fds, NULL, NULL, &tv) < 0)
                return -1;
 
-            RARCH_LOG(
-                  "Network is stalling at frame %u, count %u of %d ...\n",
-                  netplay->run_frame_count,
-                  netplay->timeout_cnt,
-                  MAX_RETRIES);
+            RARCH_LOG("[netplay] Network is stalling at frame %u, count %u of %d ...\n",
+                  netplay->run_frame_count, netplay->timeout_cnt, MAX_RETRIES);
 
-            if (      netplay->timeout_cnt >= MAX_RETRIES 
-                  && !netplay->remote_paused)
+            if (netplay->timeout_cnt >= MAX_RETRIES && !netplay->remote_paused)
                return -1;
          }
       }
@@ -5489,51 +5402,40 @@ void netplay_handle_slaves(netplay_t *netplay)
 void netplay_announce_nat_traversal(netplay_t *netplay)
 {
 #ifndef HAVE_SOCKET_LEGACY
-   char msg[512], host[256], port[6];
-   const char *dmsg = NULL;
-  
+   char msg[4200], host[PATH_MAX_LENGTH], port[6];
+
    if (netplay->nat_traversal_state.have_inet4)
    {
-      if (!getnameinfo(
-               (const struct sockaddr *)
-               &netplay->nat_traversal_state.ext_inet4_addr,
-               sizeof(netplay->nat_traversal_state.ext_inet4_addr),
-               host, sizeof(host), port, sizeof(port),
-               NI_NUMERICHOST|NI_NUMERICSERV))
-      {
-         snprintf(msg, sizeof(msg), "%s: %s:%s",
-               msg_hash_to_str(MSG_PUBLIC_ADDRESS),
-               host, port);
-         dmsg = msg;
-      }
-
+      if (getnameinfo((const struct sockaddr *) &netplay->nat_traversal_state.ext_inet4_addr,
+               sizeof(struct sockaddr_in),
+               host, PATH_MAX_LENGTH, port, 6, NI_NUMERICHOST|NI_NUMERICSERV) != 0)
+         return;
 
    }
 #ifdef HAVE_INET6
    else if (netplay->nat_traversal_state.have_inet6)
    {
-      if (!getnameinfo(
-               (const struct sockaddr *)
-               &netplay->nat_traversal_state.ext_inet6_addr,
-               sizeof(netplay->nat_traversal_state.ext_inet6_addr),
-               host, sizeof(host), port, sizeof(port),
-               NI_NUMERICHOST|NI_NUMERICSERV))
-      {
-         snprintf(msg, sizeof(msg), "%s: %s|%s",
-               msg_hash_to_str(MSG_PUBLIC_ADDRESS),
-               host, port);
-         dmsg = msg;
-      }
+      if (getnameinfo((const struct sockaddr *) &netplay->nat_traversal_state.ext_inet6_addr,
+               sizeof(struct sockaddr_in6),
+               host, PATH_MAX_LENGTH, port, 6, NI_NUMERICHOST|NI_NUMERICSERV) != 0)
+         return;
+
    }
 #endif
    else
-      dmsg = msg_hash_to_str(MSG_UPNP_FAILED);
-
-   if (dmsg)
    {
-      RARCH_LOG("%s\n", dmsg);
-      runloop_msg_queue_push(dmsg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      snprintf(msg, sizeof(msg), "%s\n",
+            msg_hash_to_str(MSG_UPNP_FAILED));
+      runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      RARCH_LOG("[netplay] %s\n", msg);
+      return;
    }
+
+   snprintf(msg, sizeof(msg), "%s: %s:%s\n",
+         msg_hash_to_str(MSG_PUBLIC_ADDRESS),
+         host, port);
+   runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   RARCH_LOG("[netplay] %s\n", msg);
 #endif
 }
 
@@ -5553,20 +5455,26 @@ static int init_tcp_connection(const struct addrinfo *res,
       bool server,
       struct sockaddr *other_addr, socklen_t addr_size)
 {
-   char host[256], port[6];
-   char msg[512];
-   const char *dmsg = NULL;
-   int           fd = socket(res->ai_family,
-         res->ai_socktype, res->ai_protocol);
+   bool ret = true;
+   int fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 
    if (fd < 0)
-      return -1;
+   {
+      ret = false;
+      goto end;
+   }
 
 #if defined(IPPROTO_TCP) && defined(TCP_NODELAY)
    {
-      int on = 1;
+      int flag = 1;
       if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY,
-               (const char*) &on, sizeof(on)) < 0)
+#ifdef _WIN32
+         (const char*)
+#else
+         (const void*)
+#endif
+         &flag,
+         sizeof(int)) < 0)
          RARCH_WARN("Could not set netplay TCP socket to nodelay. Expect jitter.\n");
    }
 #endif
@@ -5579,125 +5487,83 @@ static int init_tcp_connection(const struct addrinfo *res,
 
    if (server)
    {
-      if (!socket_connect(fd, (void*)res, false))
-         return fd;
-
-      if (!getnameinfo(res->ai_addr, res->ai_addrlen,
-               host, sizeof(host), port, sizeof(port),
-               NI_NUMERICHOST|NI_NUMERICSERV))
+      if (socket_connect(fd, (void*)res, false) < 0)
       {
-         snprintf(msg, sizeof(msg),
-               "Failed to connect to host %s on port %s.",
-               host, port);
-         dmsg = msg;
+         ret = false;
+         goto end;
       }
    }
    else
    {
 #if defined(HAVE_INET6) && defined(IPPROTO_IPV6) && defined(IPV6_V6ONLY)
       /* Make sure we accept connections on both IPv6 and IPv4 */
+      int on = 0;
       if (res->ai_family == AF_INET6)
       {
-         int on = 0;
-         if (setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY,
-                  (const char*)&on, sizeof(on)) < 0)
+         if (setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&on, sizeof(on)) < 0)
             RARCH_WARN("Failed to listen on both IPv6 and IPv4\n");
       }
 #endif
-      if (socket_bind(fd, (void*)res))
+      if (  !socket_bind(fd, (void*)res) ||
+            listen(fd, 1024) < 0)
       {
-         if (!listen(fd, 1024))
-            return fd;
-      }
-      else
-      {
-         if (!getnameinfo(res->ai_addr, res->ai_addrlen,
-                  NULL, 0, port, sizeof(port), NI_NUMERICSERV))
-         {
-            snprintf(msg, sizeof(msg), "Failed to bind port %s.", port);
-            dmsg = msg;
-         }
+         ret = false;
+         goto end;
       }
    }
 
-   socket_close(fd);
+end:
+   if (!ret && fd >= 0)
+   {
+      socket_close(fd);
+      fd = -1;
+   }
 
-   if (dmsg)
-      RARCH_ERR("%s\n", dmsg);
-
-   return -1;
+   return fd;
 }
 
 static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
       const char *server, uint16_t port)
 {
-   struct addrinfo *res;
-   const struct addrinfo *tmp_info;
-   struct sockaddr_storage sad;
-   struct addrinfo hints = {0};
-   int fd                = -1;
+   char port_buf[16];
+   bool ret                        = false;
+   const struct addrinfo *tmp_info = NULL;
+   struct addrinfo *res            = NULL;
+   struct addrinfo hints           = {0};
+
+   port_buf[0] = '\0';
 
    if (!direct_host)
    {
 #ifdef HAVE_INET6
-      char port_buf[6];
-      snprintf(port_buf, sizeof(port_buf), "%hu", port);
-
+      /* Default to hosting on IPv6 and IPv4 */
       if (!server)
-      {
-         hints.ai_flags  = AI_PASSIVE;
-#ifdef HAVE_INET6
-         /* Default to hosting on IPv6 and IPv4 */
          hints.ai_family = AF_INET6;
-#else
-         hints.ai_family = AF_INET;
-#endif
-      }
 #endif
       hints.ai_socktype = SOCK_STREAM;
+      if (!server)
+         hints.ai_flags = AI_PASSIVE;
 
-      if (getaddrinfo_retro(server, port_buf, &hints, &res))
+      snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
+      if (getaddrinfo_retro(server, port_buf, &hints, &res) != 0)
       {
+#ifdef HAVE_INET6
+      try_wildcard:
          if (!server)
          {
-#ifdef HAVE_INET6
-try_ipv4:
-            /* Didn't work with IPv6, try IPv4 */
-            hints.ai_family = AF_INET;
-            if (getaddrinfo_retro(server, port_buf, &hints, &res))
-#endif
-            {
-               RARCH_ERR("Failed to set a hosting address.\n");
-
+            /* Didn't work with IPv6, try wildcard */
+            hints.ai_family = 0;
+            if (getaddrinfo_retro(server, port_buf, &hints, &res) != 0)
                return false;
-            }
          }
          else
-         {
-            char msg[512];
-            snprintf(msg, sizeof(msg),
-                  "Failed to resolve host: %s\n", server);
-            RARCH_ERR(msg);
-            return false;
-         }
+#endif
+         return false;
       }
 
       if (!res)
          return false;
 
-      /* If we're serving on IPv6, make sure we accept all connections, including
-       * IPv4 */
-#ifdef HAVE_INET6
-      if (!server && res->ai_family == AF_INET6)
-      {
-         struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) res->ai_addr;
-#if defined(_MSC_VER) && _MSC_VER <= 1200
-         IN6ADDR_SETANY(sin6);
-#else
-         sin6->sin6_addr           = in6addr_any;
-#endif
-      }
-#endif
    }
    else
    {
@@ -5709,47 +5575,68 @@ try_ipv4:
       hints.ai_addrlen          = host->addrlen;
       hints.ai_addr             = &host->addr;
       res                       = &hints;
+
    }
+
+   /* If we're serving on IPv6, make sure we accept all connections, including
+    * IPv4 */
+#ifdef HAVE_INET6
+   if (!direct_host && !server && res->ai_family == AF_INET6)
+   {
+      struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) res->ai_addr;
+#if defined(_MSC_VER) && _MSC_VER <= 1200
+	  IN6ADDR_SETANY(sin6);
+#else
+      sin6->sin6_addr           = in6addr_any;
+#endif
+   }
+#endif
 
    /* If "localhost" is used, it is important to check every possible
     * address for IPv4/IPv6. */
    tmp_info = res;
 
-   do
+   while (tmp_info)
    {
-      fd = init_tcp_connection(
-            tmp_info, direct_host || server,
-         (struct sockaddr *)
-         memset(&sad, 0, sizeof(sad)), sizeof(sad));
+      struct sockaddr_storage sad = {0};
+      int fd = init_tcp_connection(
+            tmp_info,
+            direct_host || server,
+            (struct sockaddr*)&sad,
+            sizeof(sad));
 
       if (fd >= 0)
+      {
+         ret = true;
+         if (direct_host || server)
+         {
+            netplay->connections[0].active = true;
+            netplay->connections[0].fd     = fd;
+            netplay->connections[0].addr   = sad;
+         }
+         else
+         {
+            netplay->listen_fd = fd;
+         }
          break;
-   } while ((tmp_info = tmp_info->ai_next));
+      }
 
-   if (!direct_host)
+      tmp_info = tmp_info->ai_next;
+   }
+
+   if (res && !direct_host)
       freeaddrinfo_retro(res);
-   res = NULL;
 
-   if (fd < 0)
+   if (!ret)
    {
 #ifdef HAVE_INET6
-      if (!direct_host && !server && hints.ai_family == AF_INET6)
-         goto try_ipv4;
+      if (!direct_host && (hints.ai_family == AF_INET6))
+         goto try_wildcard;
 #endif
       RARCH_ERR("Failed to set up netplay sockets.\n");
-      return false;
    }
 
-   if (direct_host || server)
-   {
-      netplay->connections[0].active = true;
-      netplay->connections[0].fd     = fd;
-      netplay->connections[0].addr   = sad;
-   }
-   else
-      netplay->listen_fd             = fd;
-
-   return true;
+   return ret;
 }
 
 static bool init_socket(netplay_t *netplay, void *direct_host,
@@ -6095,16 +5982,15 @@ void netplay_free(netplay_t *netplay)
       free(netplay->zbuffer);
 
    if (netplay->compress_nil.compression_stream)
-      netplay->compress_nil.compression_backend->stream_free(
-            netplay->compress_nil.compression_stream);
-   if (netplay->compress_nil.decompression_stream)
-      netplay->compress_nil.decompression_backend->stream_free(
-            netplay->compress_nil.decompression_stream);
-
+   {
+      netplay->compress_nil.compression_backend->stream_free(netplay->compress_nil.compression_stream);
+      netplay->compress_nil.decompression_backend->stream_free(netplay->compress_nil.decompression_stream);
+   }
    if (netplay->compress_zlib.compression_stream)
+   {
       netplay->compress_zlib.compression_backend->stream_free(netplay->compress_zlib.compression_stream);
-   if (netplay->compress_zlib.decompression_stream)
       netplay->compress_zlib.decompression_backend->stream_free(netplay->compress_zlib.decompression_stream);
+   }
 
    if (netplay->addr)
       freeaddrinfo_retro(netplay->addr);
