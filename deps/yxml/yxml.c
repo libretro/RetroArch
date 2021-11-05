@@ -22,7 +22,7 @@
   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include <retro_INLINE.h>
+#include <retro_inline.h>
 #include <string.h>
 
 #include "yxml.h"
