@@ -5776,7 +5776,8 @@ bool command_event(enum event_command cmd, void *data)
                      {
                         netplay_server = strdup(tmp_netplay_server);
 
-                        // This way we free netplay_server aswell when done.
+                        /* This way we free netplay_server 
+                           as well when done. */
                         free(p_rarch->connect_host);
                         p_rarch->connect_host = strdup(netplay_server);
                      }
