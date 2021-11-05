@@ -9636,6 +9636,7 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
    char s[8300];
    int i                                = 0;
    unsigned count                       = 0;
+   net_driver_state_t *net_st           = networking_state_get_ptr();
 
    s[0]                                 = '\0';
 
@@ -9681,15 +9682,15 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
          MENU_SETTING_ACTION, 0, 0))
       count++;
 
-   if (netplay_room_count != 0)
+   if (net_st->room_count != 0)
    {
-      for (i = 0; i < netplay_room_count; i++)
+      for (i = 0; i < net_st->room_count; i++)
       {
          char country[PATH_MAX_LENGTH];
 
-         if (*netplay_room_list[i].country)
+         if (*net_st->room_list[i].country)
             snprintf(country, sizeof(country),
-                  "(%s)", netplay_room_list[i].country);
+                  "(%s)", net_st->room_list[i].country);
 
          /* Uncomment this to debug mismatched room parameters*/
 #if 0
@@ -9702,23 +9703,25 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
                "Game:             %s\n"
                "Game CRC:         %08x\n"
                "Timestamp:        %d\n", room_data->elems[j + 6].data,
-               netplay_room_list[i].nickname,
-               netplay_room_list[i].address,
-               netplay_room_list[i].port,
-               netplay_room_list[i].corename,
-               netplay_room_list[i].coreversion,
-               netplay_room_list[i].gamename,
-               netplay_room_list[i].gamecrc,
-               netplay_room_list[i].timestamp);
+               net_st->room_list[i].nickname,
+               net_st->room_list[i].address,
+               net_st->room_list[i].port,
+               net_st->room_list[i].corename,
+               net_st->room_list[i].coreversion,
+               net_st->room_list[i].gamename,
+               net_st->room_list[i].gamecrc,
+               net_st->room_list[i].timestamp);
 #endif
 
          snprintf(s, sizeof(s), "%s: %s%s",
-            netplay_room_list[i].lan 
+            net_st->room_list[i].lan 
             ? msg_hash_to_str(MSG_LOCAL) 
-            : (netplay_room_list[i].host_method == NETPLAY_HOST_METHOD_MITM 
+            : (net_st->room_list[i].host_method 
+               == NETPLAY_HOST_METHOD_MITM 
                ? msg_hash_to_str(MSG_INTERNET_RELAY) 
                : msg_hash_to_str(MSG_INTERNET)),
-            netplay_room_list[i].nickname, country);
+            net_st->room_list[i].nickname,
+            country);
 
          if (menu_entries_append_enum(list,
                s,

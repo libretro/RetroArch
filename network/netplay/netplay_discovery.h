@@ -73,8 +73,4 @@ void deinit_netplay_discovery(void);
 bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, void *data);
 #endif
 
-/* TODO/FIXME - globals */
-extern struct netplay_room *netplay_room_list;
-extern int netplay_room_count;
-
 #endif
