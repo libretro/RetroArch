@@ -5307,9 +5307,18 @@ static bool netplay_get_cmd(netplay_t *netplay,
          }
 
       default:
-         RARCH_ERR("%s\n",
-               msg_hash_to_str(MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED));
-         return netplay_cmd_nak(netplay, connection);
+         {
+            unsigned char buf[1024];
+            while (cmd_size)
+            {
+               RECV(buf, (cmd_size > sizeof(buf)) ? sizeof(buf) : cmd_size)
+                  return false;
+               cmd_size -= recvd;
+            }
+            RARCH_ERR("%s\n",
+                  msg_hash_to_str(MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED));
+         }
+         break;
    }
 
    netplay_recv_flush(&connection->recv_packet_buffer);
