@@ -869,6 +869,8 @@ typedef struct
    unsigned state_scale;
    unsigned state_out_bpp;
 #endif
+   unsigned frame_delay_target;
+   unsigned frame_delay_effective;
    unsigned frame_cache_width;
    unsigned frame_cache_height;
    unsigned width;

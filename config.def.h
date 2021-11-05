@@ -344,6 +344,7 @@
  */
 #define DEFAULT_FRAME_DELAY 0
 #define MAXIMUM_FRAME_DELAY 19
+#define DEFAULT_FRAME_DELAY_AUTO false
 
 /* Inserts black frame(s) inbetween frames.
  * Useful for Higher Hz monitors (set to multiples of 60 Hz) who want to play 60 Hz 

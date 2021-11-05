@@ -3281,6 +3281,10 @@ MSG_HASH(
    "video_frame_delay"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO,
+   "video_frame_delay_auto"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_DELAY,
    "video_shader_delay"
    )
