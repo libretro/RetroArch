@@ -306,14 +306,6 @@ bool discord_is_inited                                          = false;
 retro_keybind_set input_config_binds[MAX_USERS];
 retro_keybind_set input_autoconf_binds[MAX_USERS];
 
-static runloop_core_status_msg_t runloop_core_status_msg         =
-{
-   0,
-   0.0f,
-   "",
-   false
-};
-
 static runloop_state_t runloop_state;
 static recording_state_t recording_state;
 
@@ -9435,7 +9427,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
                case RETRO_MESSAGE_TYPE_STATUS:
 
                   /* Note: We need to lock a mutex here. Strictly
-                   * speaking, runloop_core_status_msg is not part
+                   * speaking, 'core_status_msg' is not part
                    * of the message queue, but:
                    * - It may be implemented as a queue in the future
                    * - It seems unnecessary to create a new slock_t
@@ -9448,25 +9440,25 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
                   /* If a message is already set, only overwrite
                    * it if the new message has the same or higher
                    * priority */
-                  if (!runloop_core_status_msg.set ||
-                      (runloop_core_status_msg.priority <= msg->priority))
+                  if (!runloop_st->core_status_msg.set ||
+                      (runloop_st->core_status_msg.priority <= msg->priority))
                   {
                      if (!string_is_empty(msg->msg))
                      {
-                        strlcpy(runloop_core_status_msg.str, msg->msg,
-                              sizeof(runloop_core_status_msg.str));
+                        strlcpy(runloop_st->core_status_msg.str, msg->msg,
+                              sizeof(runloop_st->core_status_msg.str));
 
-                        runloop_core_status_msg.duration = (float)msg->duration;
-                        runloop_core_status_msg.set      = true;
+                        runloop_st->core_status_msg.duration = (float)msg->duration;
+                        runloop_st->core_status_msg.set      = true;
                      }
                      else
                      {
                         /* Ensure sane behaviour if core sends an
                          * empty message */
-                        runloop_core_status_msg.str[0] = '\0';
-                        runloop_core_status_msg.priority = 0;
-                        runloop_core_status_msg.duration = 0.0f;
-                        runloop_core_status_msg.set      = false;
+                        runloop_st->core_status_msg.str[0] = '\0';
+                        runloop_st->core_status_msg.priority = 0;
+                        runloop_st->core_status_msg.duration = 0.0f;
+                        runloop_st->core_status_msg.set      = false;
                      }
                   }
 
@@ -13731,14 +13723,14 @@ static void video_driver_frame(const void *data, unsigned width,
       RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
 
       /* Check whether duration timer has elapsed */
-      runloop_core_status_msg.duration -= anim_get_ptr()->delta_time;
+      runloop_st->core_status_msg.duration -= anim_get_ptr()->delta_time;
 
-      if (runloop_core_status_msg.duration < 0.0f)
+      if (runloop_st->core_status_msg.duration < 0.0f)
       {
-         runloop_core_status_msg.str[0]   = '\0';
-         runloop_core_status_msg.priority = 0;
-         runloop_core_status_msg.duration = 0.0f;
-         runloop_core_status_msg.set      = false;
+         runloop_st->core_status_msg.str[0]   = '\0';
+         runloop_st->core_status_msg.priority = 0;
+         runloop_st->core_status_msg.duration = 0.0f;
+         runloop_st->core_status_msg.set      = false;
       }
       else
       {
@@ -13749,10 +13741,12 @@ static void video_driver_frame(const void *data, unsigned width,
             strlcat(status_text,
                   " || ", sizeof(status_text));
             strlcat(status_text,
-                  runloop_core_status_msg.str, sizeof(status_text));
+                  runloop_st->core_status_msg.str,
+                  sizeof(status_text));
          }
          else
-            strlcpy(status_text, runloop_core_status_msg.str,
+            strlcpy(status_text,
+                  runloop_st->core_status_msg.str,
                   sizeof(status_text));
       }
 
@@ -14009,580 +14003,6 @@ void crt_switch_driver_refresh(void)
 char* crt_switch_core_name(void)
 {
    return (char*)runloop_state.system.info.library_name;
-}
-
-void video_driver_build_info(video_frame_info_t *video_info)
-{
-   video_viewport_t *custom_vp             = NULL;
-   runloop_state_t             *runloop_st = &runloop_state;
-   settings_t *settings                    = config_get_ptr();
-   video_driver_state_t *video_st          = video_state_get_ptr();
-   input_driver_state_t *input_st          = input_state_get_ptr();
-#ifdef HAVE_THREADS
-   bool is_threaded                        =
-      VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
-
-   VIDEO_DRIVER_THREADED_LOCK(video_st, is_threaded);
-#endif
-   custom_vp                               = &settings->video_viewport_custom;
-#ifdef HAVE_GFX_WIDGETS
-   video_info->widgets_active              = dispwidget_get_ptr()->active;
-#else
-   video_info->widgets_active              = false;
-#endif
-   video_info->refresh_rate                = settings->floats.video_refresh_rate;
-   video_info->crt_switch_resolution       = settings->uints.crt_switch_resolution;
-   video_info->crt_switch_resolution_super = settings->uints.crt_switch_resolution_super;
-   video_info->crt_switch_center_adjust    = settings->ints.crt_switch_center_adjust;
-   video_info->crt_switch_porch_adjust     = settings->ints.crt_switch_porch_adjust;
-   video_info->crt_switch_hires_menu       = settings->bools.crt_switch_hires_menu;
-   video_info->black_frame_insertion       = settings->uints.video_black_frame_insertion;
-   video_info->hard_sync                   = settings->bools.video_hard_sync;
-   video_info->hard_sync_frames            = settings->uints.video_hard_sync_frames;
-   video_info->fps_show                    = settings->bools.video_fps_show;
-   video_info->memory_show                 = settings->bools.video_memory_show;
-   video_info->statistics_show             = settings->bools.video_statistics_show;
-   video_info->framecount_show             = settings->bools.video_framecount_show;
-   video_info->core_status_msg_show        = runloop_core_status_msg.set;
-   video_info->aspect_ratio_idx            = settings->uints.video_aspect_ratio_idx;
-   video_info->post_filter_record          = settings->bools.video_post_filter_record;
-   video_info->input_menu_swap_ok_cancel_buttons    = settings->bools.input_menu_swap_ok_cancel_buttons;
-   video_info->max_swapchain_images        = settings->uints.video_max_swapchain_images;
-   video_info->windowed_fullscreen         = settings->bools.video_windowed_fullscreen;
-   video_info->fullscreen                  = settings->bools.video_fullscreen
-      || video_st->force_fullscreen;
-   video_info->menu_mouse_enable           = settings->bools.menu_mouse_enable;
-   video_info->monitor_index               = settings->uints.video_monitor_index;
-
-   video_info->font_enable                 = settings->bools.video_font_enable;
-   video_info->font_msg_pos_x              = settings->floats.video_msg_pos_x;
-   video_info->font_msg_pos_y              = settings->floats.video_msg_pos_y;
-   video_info->font_msg_color_r            = settings->floats.video_msg_color_r;
-   video_info->font_msg_color_g            = settings->floats.video_msg_color_g;
-   video_info->font_msg_color_b            = settings->floats.video_msg_color_b;
-   video_info->custom_vp_x                 = custom_vp->x;
-   video_info->custom_vp_y                 = custom_vp->y;
-   video_info->custom_vp_width             = custom_vp->width;
-   video_info->custom_vp_height            = custom_vp->height;
-   video_info->custom_vp_full_width        = custom_vp->full_width;
-   video_info->custom_vp_full_height       = custom_vp->full_height;
-
-#if defined(HAVE_GFX_WIDGETS)
-   video_info->widgets_userdata            = dispwidget_get_ptr();
-   video_info->widgets_is_paused           = video_st->widgets_paused;
-   video_info->widgets_is_fast_forwarding  = video_st->widgets_fast_forward;
-   video_info->widgets_is_rewinding        = video_st->widgets_rewinding;
-#else
-   video_info->widgets_userdata            = NULL;
-   video_info->widgets_is_paused           = false;
-   video_info->widgets_is_fast_forwarding  = false;
-   video_info->widgets_is_rewinding        = false;
-#endif
-
-   video_info->width                       = video_st->width;
-   video_info->height                      = video_st->height;
-
-   video_info->use_rgba                    = video_st->use_rgba;
-   video_info->hdr_enable                  = settings->bools.video_hdr_enable;
-
-   video_info->libretro_running            = false;
-   video_info->msg_bgcolor_enable          =
-      settings->bools.video_msg_bgcolor_enable;
-
-   video_info->fps_update_interval         = settings->uints.fps_update_interval;
-   video_info->memory_update_interval      = settings->uints.memory_update_interval;
-
-#ifdef HAVE_MENU
-   video_info->menu_is_alive               = menu_state_get_ptr()->alive;
-   video_info->menu_screensaver_active     = menu_state_get_ptr()->screensaver_active;
-   video_info->menu_footer_opacity         = settings->floats.menu_footer_opacity;
-   video_info->menu_header_opacity         = settings->floats.menu_header_opacity;
-   video_info->materialui_color_theme      = settings->uints.menu_materialui_color_theme;
-   video_info->ozone_color_theme           = settings->uints.menu_ozone_color_theme;
-   video_info->menu_shader_pipeline        = settings->uints.menu_xmb_shader_pipeline;
-   video_info->xmb_theme                   = settings->uints.menu_xmb_theme;
-   video_info->xmb_color_theme             = settings->uints.menu_xmb_color_theme;
-   video_info->timedate_enable             = settings->bools.menu_timedate_enable;
-   video_info->battery_level_enable        = settings->bools.menu_battery_level_enable;
-   video_info->xmb_shadows_enable          =
-      settings->bools.menu_xmb_shadows_enable;
-   video_info->xmb_alpha_factor            =
-      settings->uints.menu_xmb_alpha_factor;
-   video_info->menu_wallpaper_opacity      =
-      settings->floats.menu_wallpaper_opacity;
-   video_info->menu_framebuffer_opacity    =
-      settings->floats.menu_framebuffer_opacity;
-
-   video_info->libretro_running            = runloop_st->current_core.game_loaded;
-#else
-   video_info->menu_is_alive               = false;
-   video_info->menu_screensaver_active     = false;
-   video_info->menu_footer_opacity         = 0.0f;
-   video_info->menu_header_opacity         = 0.0f;
-   video_info->materialui_color_theme      = 0;
-   video_info->menu_shader_pipeline        = 0;
-   video_info->xmb_color_theme             = 0;
-   video_info->xmb_theme                   = 0;
-   video_info->timedate_enable             = false;
-   video_info->battery_level_enable        = false;
-   video_info->xmb_shadows_enable          = false;
-   video_info->xmb_alpha_factor            = 0.0f;
-   video_info->menu_framebuffer_opacity    = 0.0f;
-   video_info->menu_wallpaper_opacity      = 0.0f;
-#endif
-
-   video_info->runloop_is_paused             = runloop_st->paused;
-   video_info->runloop_is_slowmotion         = runloop_st->slowmotion;
-
-   video_info->input_driver_nonblock_state   = input_st ?
-      input_st->nonblocking_flag : false;
-   video_info->input_driver_grab_mouse_state = input_st->grab_mouse_state;
-   video_info->disp_userdata                 = disp_get_ptr();
-
-   video_info->userdata                      =
-VIDEO_DRIVER_GET_PTR_INTERNAL(video_st);
-
-#ifdef HAVE_THREADS
-   VIDEO_DRIVER_THREADED_UNLOCK(video_st, is_threaded);
-#endif
-}
-
-bool video_driver_has_focus(void)
-{
-   video_driver_state_t *video_st = video_state_get_ptr();
-   return VIDEO_HAS_FOCUS(video_st);
-}
-
-void video_driver_get_window_title(char *buf, unsigned len)
-{
-   video_driver_state_t *video_st = video_state_get_ptr();
-   if (buf && video_st->window_title_update)
-   {
-      strlcpy(buf, video_st->window_title, len);
-      video_st->window_title_update = false;
-   }
-}
-
-#ifdef HAVE_VULKAN
-static const gfx_ctx_driver_t *vk_context_driver_init_first(
-      runloop_state_t *runloop_st,
-      settings_t *settings,
-      void *data,
-      const char *ident, enum gfx_ctx_api api, unsigned major,
-      unsigned minor, bool hw_render_ctx, void **ctx_data)
-{
-   unsigned j;
-   int i = -1;
-   video_driver_state_t *video_st = video_state_get_ptr();
-
-   for (j = 0; gfx_ctx_vk_drivers[j]; j++)
-   {
-      if (string_is_equal_noncase(ident, gfx_ctx_vk_drivers[j]->ident))
-      {
-         i = j;
-         break;
-      }
-   }
-
-   if (i >= 0)
-   {
-      const gfx_ctx_driver_t *ctx = video_context_driver_init(
-            runloop_st->core_set_shared_context,
-            settings,
-            data,
-            gfx_ctx_vk_drivers[i], ident,
-            api, major, minor, hw_render_ctx, ctx_data);
-      if (ctx)
-      {
-         video_st->context_data = *ctx_data;
-         return ctx;
-      }
-   }
-
-   for (i = 0; gfx_ctx_vk_drivers[i]; i++)
-   {
-      const gfx_ctx_driver_t *ctx =
-         video_context_driver_init(
-               runloop_st->core_set_shared_context,
-               settings,
-               data,
-               gfx_ctx_vk_drivers[i], ident,
-               api, major, minor, hw_render_ctx, ctx_data);
-
-      if (ctx)
-      {
-         video_st->context_data = *ctx_data;
-         return ctx;
-      }
-   }
-
-   return NULL;
-}
-#endif
-
-static const gfx_ctx_driver_t *gl_context_driver_init_first(
-      runloop_state_t *runloop_st,
-      settings_t *settings,
-      void *data,
-      const char *ident, enum gfx_ctx_api api, unsigned major,
-      unsigned minor, bool hw_render_ctx, void **ctx_data)
-{
-   unsigned j;
-   int i = -1;
-   video_driver_state_t *video_st = video_state_get_ptr();
-
-   for (j = 0; gfx_ctx_gl_drivers[j]; j++)
-   {
-      if (string_is_equal_noncase(ident, gfx_ctx_gl_drivers[j]->ident))
-      {
-         i = j;
-         break;
-      }
-   }
-
-   if (i >= 0)
-   {
-      const gfx_ctx_driver_t *ctx = video_context_driver_init(
-            runloop_st->core_set_shared_context,
-            settings,
-            data,
-            gfx_ctx_gl_drivers[i], ident,
-            api, major, minor, hw_render_ctx, ctx_data);
-      if (ctx)
-      {
-         video_st->context_data = *ctx_data;
-         return ctx;
-      }
-   }
-
-   for (i = 0; gfx_ctx_gl_drivers[i]; i++)
-   {
-      const gfx_ctx_driver_t *ctx =
-         video_context_driver_init(
-               runloop_st->core_set_shared_context,
-               settings,
-               data,
-               gfx_ctx_gl_drivers[i], ident,
-               api, major, minor, hw_render_ctx, ctx_data);
-
-      if (ctx)
-      {
-         video_st->context_data = *ctx_data;
-         return ctx;
-      }
-   }
-
-   return NULL;
-}
-
-/**
- * video_context_driver_init_first:
- * @data                    : Input data.
- * @ident                   : Identifier of graphics context driver to find.
- * @api                     : API of higher-level graphics API.
- * @major                   : Major version number of higher-level graphics API.
- * @minor                   : Minor version number of higher-level graphics API.
- * @hw_render_ctx           : Request a graphics context driver capable of
- *                            hardware rendering?
- *
- * Finds first suitable graphics context driver and initializes.
- *
- * Returns: graphics context driver if found, otherwise NULL.
- **/
-const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
-      const char *ident, enum gfx_ctx_api api, unsigned major,
-      unsigned minor, bool hw_render_ctx, void **ctx_data)
-{
-   runloop_state_t *runloop_st = &runloop_state;
-   settings_t *settings        = config_get_ptr();
-
-   switch (api)
-   {
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         {
-            const gfx_ctx_driver_t *ptr = vk_context_driver_init_first(
-                  runloop_st, settings,
-                  data, ident, api, major, minor, hw_render_ctx, ctx_data);
-            if (ptr && !string_is_equal(ptr->ident, "null"))
-               return ptr;
-            /* fall-through if no valid driver was found */
-         }
-#endif
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
-      case GFX_CTX_METAL_API:
-      case GFX_CTX_RSX_API:
-         return gl_context_driver_init_first(
-               runloop_st, settings,
-               data, ident, api, major, minor,
-               hw_render_ctx, ctx_data);
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-
-
-   return NULL;
-}
-
-void video_context_driver_free(void)
-{
-   video_driver_state_t *video_st  = video_state_get_ptr();
-   video_context_driver_destroy(&video_st->current_video_context);
-   video_st->context_data    = NULL;
-}
-
-bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics)
-{
-   video_driver_state_t *video_st  = video_state_get_ptr();
-   if (video_st->current_video_context.get_metrics)
-      return video_st->current_video_context.get_metrics(
-            video_st->context_data,
-            metrics->type,
-            metrics->value);
-   return false;
-}
-
-bool video_context_driver_get_refresh_rate(float *refresh_rate)
-{
-   video_driver_state_t *video_st  = video_state_get_ptr();
-   if (!video_st->current_video_context.get_refresh_rate || !refresh_rate)
-      return false;
-   if (!video_st->context_data)
-      return false;
-
-   if (!video_st->crt_switching_active)
-   {
-      if (refresh_rate)
-         *refresh_rate =
-             video_st->current_video_context.get_refresh_rate(
-                   video_st->context_data);
-   }
-   else
-   {
-      float refresh_holder      = 0;
-      if (refresh_rate)
-         refresh_holder         =
-             video_st->current_video_context.get_refresh_rate(
-                   video_st->context_data);
-
-      /* Fix for incorrect interlacing detection --
-       * HARD SET VSYNC TO REQUIRED REFRESH FOR CRT*/
-      if (refresh_holder != video_st->core_hz)
-         *refresh_rate          = video_st->core_hz;
-   }
-
-   return true;
-}
-
-bool video_context_driver_get_ident(gfx_ctx_ident_t *ident)
-{
-   video_driver_state_t *video_st  = video_state_get_ptr();
-   if (!ident)
-      return false;
-   ident->ident = video_st->current_video_context.ident;
-   return true;
-}
-
-bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
-{
-   video_driver_state_t *video_st  = video_state_get_ptr();
-   if (!video_st->current_video_context.get_flags)
-      return false;
-
-   if (video_st->deferred_video_context_driver_set_flags)
-   {
-      flags->flags                                     =
-         video_st->deferred_flag_data.flags;
-      video_st->deferred_video_context_driver_set_flags = false;
-      return true;
-   }
-
-   flags->flags = video_st->current_video_context.get_flags(
-         video_st->context_data);
-   return true;
-}
-
-static bool video_driver_get_flags(gfx_ctx_flags_t *flags)
-{
-   video_driver_state_t *video_st  = video_state_get_ptr();
-   if (!video_st->poke || !video_st->poke->get_flags)
-      return false;
-   flags->flags = video_st->poke->get_flags(video_st->data);
-   return true;
-}
-
-gfx_ctx_flags_t video_driver_get_flags_wrapper(void)
-{
-   gfx_ctx_flags_t flags;
-   flags.flags                 = 0;
-
-   if (!video_driver_get_flags(&flags))
-      video_context_driver_get_flags(&flags);
-
-   return flags;
-}
-
-/**
- * video_driver_test_all_flags:
- * @testflag          : flag to test
- *
- * Poll both the video and context driver's flags and test
- * whether @testflag is set or not.
- **/
-bool video_driver_test_all_flags(enum display_flags testflag)
-{
-   gfx_ctx_flags_t flags;
-
-   if (video_driver_get_flags(&flags))
-      if (BIT32_GET(flags.flags, testflag))
-         return true;
-
-   if (video_context_driver_get_flags(&flags))
-      if (BIT32_GET(flags.flags, testflag))
-         return true;
-
-   return false;
-}
-
-bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
-{
-   video_driver_state_t *video_st  = video_state_get_ptr();
-   if (!flags)
-      return false;
-
-   if (video_st->current_video_context.set_flags)
-   {
-      video_st->current_video_context.set_flags(
-            video_st->context_data, flags->flags);
-      return true;
-   }
-
-   video_st->deferred_flag_data.flags                = flags->flags;
-   video_st->deferred_video_context_driver_set_flags = true;
-   return false;
-}
-
-enum gfx_ctx_api video_context_driver_get_api(void)
-{
-   video_driver_state_t *video_st   = video_state_get_ptr();
-   enum gfx_ctx_api         ctx_api = video_st->context_data ?
-      video_st->current_video_context.get_api(
-            video_st->context_data) : GFX_CTX_NONE;
-
-   if (ctx_api == GFX_CTX_NONE)
-   {
-      const char *video_ident  = (video_st->current_video)
-         ? video_st->current_video->ident
-         : NULL;
-      if (string_starts_with_size(video_ident, "d3d", STRLEN_CONST("d3d")))
-      {
-         if (string_is_equal(video_ident, "d3d9"))
-            return GFX_CTX_DIRECT3D9_API;
-         else if (string_is_equal(video_ident, "d3d10"))
-            return GFX_CTX_DIRECT3D10_API;
-         else if (string_is_equal(video_ident, "d3d11"))
-            return GFX_CTX_DIRECT3D11_API;
-         else if (string_is_equal(video_ident, "d3d12"))
-            return GFX_CTX_DIRECT3D12_API;
-      }
-      if (string_starts_with_size(video_ident, "gl", STRLEN_CONST("gl")))
-      {
-         if (string_is_equal(video_ident, "gl"))
-            return GFX_CTX_OPENGL_API;
-         else if (string_is_equal(video_ident, "gl1"))
-            return GFX_CTX_OPENGL_API;
-         else if (string_is_equal(video_ident, "glcore"))
-            return GFX_CTX_OPENGL_API;
-      }
-      else if (string_is_equal(video_ident, "vulkan"))
-         return GFX_CTX_VULKAN_API;
-      else if (string_is_equal(video_ident, "metal"))
-         return GFX_CTX_METAL_API;
-
-      return GFX_CTX_NONE;
-   }
-
-   return ctx_api;
-}
-
-bool video_driver_has_windowed(void)
-{
-#if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
-   video_driver_state_t *video_st   = video_state_get_ptr();
-   if (video_st->data && video_st->current_video->has_windowed)
-      return video_st->current_video->has_windowed(video_st->data);
-#endif
-   return false;
-}
-
-bool video_driver_cached_frame_has_valid_framebuffer(void)
-{
-   video_driver_state_t *video_st  = video_state_get_ptr();
-   if (video_st->frame_cache_data)
-      return (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID);
-   return false;
-}
-
-
-bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
-{
-   video_driver_state_t *video_st           = video_state_get_ptr();
-   void *video_driver                       = video_st->data;
-   const video_poke_interface_t *video_poke = video_st->poke;
-
-   shader->data = NULL;
-   if (!video_poke || !video_driver || !video_poke->get_current_shader)
-      return false;
-   shader->data = video_poke->get_current_shader(video_driver);
-   return true;
-}
-
-float video_driver_get_refresh_rate(void)
-{
-   video_driver_state_t *video_st           = video_state_get_ptr();
-   if (video_st->poke && video_st->poke->get_refresh_rate)
-      return video_st->poke->get_refresh_rate(video_st->data);
-
-   return 0.0f;
-}
-
-#if defined(HAVE_GFX_WIDGETS)
-bool video_driver_has_widgets(void)
-{
-   video_driver_state_t *video_st           = video_state_get_ptr();
-   return   video_st->current_video
-         && video_st->current_video->gfx_widgets_enabled
-         && video_st->current_video->gfx_widgets_enabled(video_st->data);
-}
-#endif
-
-void video_driver_set_gpu_device_string(const char *str)
-{
-   video_driver_state_t *video_st           = video_state_get_ptr();
-   strlcpy(video_st->gpu_device_string, str,
-         sizeof(video_st->gpu_device_string));
-}
-
-const char* video_driver_get_gpu_device_string(void)
-{
-   video_driver_state_t *video_st           = video_state_get_ptr();
-   return video_st->gpu_device_string;
-}
-
-void video_driver_set_gpu_api_version_string(const char *str)
-{
-   video_driver_state_t *video_st           = video_state_get_ptr();
-   strlcpy(video_st->gpu_api_version_string, str,
-         sizeof(video_st->gpu_api_version_string));
-}
-
-const char* video_driver_get_gpu_api_version_string(void)
-{
-   video_driver_state_t *video_st           = video_state_get_ptr();
-   return video_st->gpu_api_version_string;
 }
 
 /* CAMERA */

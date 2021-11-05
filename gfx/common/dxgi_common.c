@@ -380,9 +380,9 @@ inline static int dxgi_compute_intersection_area(
       int ax1, int ay1, int ax2, int ay2,
       int bx1, int by1, int bx2, int by2)
 {
-    return   max(0, min(ax2, bx2) - 
-             max(ax1, bx1)) 
-           * max(0, min(ay2, by2) - max(ay1, by1));
+    return   MAX(0, MIN(ax2, bx2) - 
+             MAX(ax1, bx1)) 
+           * MAX(0, MIN(ay2, by2) - MAX(ay1, by1));
 }
 
 #ifdef __WINRT__

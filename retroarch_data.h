@@ -71,8 +71,6 @@ input_st->bsv_movie_state.eof_exit)
 #define BSV_MOVIE_IS_EOF(p_rarch)
 #endif
 
-#define VIDEO_HAS_FOCUS(video_st) (video_st->current_video->focus ? (video_st->current_video->focus(video_st->data)) : true)
-
 #if HAVE_DYNAMIC
 #define RUNAHEAD_RUN_SECONDARY(p_rarch) \
    if (!secondary_core_run_use_last_input(p_rarch)) \
@@ -225,104 +223,6 @@ input_st->bsv_movie_state.eof_exit)
 #endif
 
 /* DRIVERS */
-
-#ifdef HAVE_VULKAN
-static const gfx_ctx_driver_t *gfx_ctx_vk_drivers[] = {
-#if defined(__APPLE__)
-   &gfx_ctx_cocoavk,
-#endif
-#if defined(_WIN32) && !defined(__WINRT__)
-   &gfx_ctx_w_vk,
-#endif
-#if defined(ANDROID)
-   &gfx_ctx_vk_android,
-#endif
-#if defined(HAVE_WAYLAND)
-   &gfx_ctx_vk_wayland,
-#endif
-#if defined(HAVE_X11)
-   &gfx_ctx_vk_x,
-#endif
-#if defined(HAVE_VULKAN_DISPLAY)
-   &gfx_ctx_khr_display,
-#endif
-   &gfx_ctx_null,
-   NULL
-};
-#endif
-
-static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
-#if defined(ORBIS)
-   &orbis_ctx,
-#endif
-#if defined(HAVE_VITAGL) | defined(HAVE_VITAGLES)
-   &vita_ctx,
-#endif
-#if !defined(__PSL1GHT__) && defined(__PS3__)
-   &gfx_ctx_ps3,
-#endif
-#if defined(HAVE_LIBNX) && defined(HAVE_OPENGL)
-   &switch_ctx,
-#endif
-#if defined(HAVE_VIDEOCORE)
-   &gfx_ctx_videocore,
-#endif
-#if defined(HAVE_MALI_FBDEV)
-   &gfx_ctx_mali_fbdev,
-#endif
-#if defined(HAVE_VIVANTE_FBDEV)
-   &gfx_ctx_vivante_fbdev,
-#endif
-#if defined(HAVE_OPENDINGUX_FBDEV)
-   &gfx_ctx_opendingux_fbdev,
-#endif
-#if defined(_WIN32) && !defined(__WINRT__) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE))
-   &gfx_ctx_wgl,
-#endif
-#if defined(__WINRT__) && defined(HAVE_OPENGLES)
-   &gfx_ctx_uwp,
-#endif
-#if defined(HAVE_WAYLAND)
-   &gfx_ctx_wayland,
-#endif
-#if defined(HAVE_X11) && !defined(HAVE_OPENGLES)
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-   &gfx_ctx_x,
-#endif
-#endif
-#if defined(HAVE_X11) && defined(HAVE_OPENGL) && defined(HAVE_EGL)
-   &gfx_ctx_x_egl,
-#endif
-#if defined(HAVE_KMS)
-#if defined(HAVE_ODROIDGO2)
-   &gfx_ctx_go2_drm,
-#endif
-   &gfx_ctx_drm,
-#endif
-#if defined(ANDROID)
-   &gfx_ctx_android,
-#endif
-#if defined(__QNX__)
-   &gfx_ctx_qnx,
-#endif
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
-   &gfx_ctx_cocoagl,
-#endif
-#endif
-#if (defined(HAVE_SDL) || defined(HAVE_SDL2)) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE))
-   &gfx_ctx_sdl_gl,
-#endif
-#ifdef HAVE_OSMESA
-   &gfx_ctx_osmesa,
-#endif
-#ifdef EMSCRIPTEN
-   &gfx_ctx_emscripten,
-#endif
-   &gfx_ctx_null,
-   NULL
-};
-
 static bluetooth_driver_t bluetooth_null = {
    NULL, /* init */
    NULL, /* free */
