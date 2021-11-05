@@ -263,34 +263,6 @@ static struct rarch_state         rarch_st;
 static const void *MAGIC_POINTER                                 = (void*)(uintptr_t)0x0DEFACED;
 #endif
 
-struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
-   { 1.3333f,         "4:3"           },
-   { 1.7778f,         "16:9"          },
-   { 1.6f,            "16:10"         },
-   { 16.0f / 15.0f,   "16:15"         },
-   { 21.0f / 9.0f,    "21:9"          },
-   { 1.0f,            "1:1"           },
-   { 2.0f,            "2:1"           },
-   { 1.5f,            "3:2"           },
-   { 0.75f,           "3:4"           },
-   { 4.0f,            "4:1"           },
-   { 0.5625f,         "9:16"          },
-   { 1.25f,           "5:4"           },
-   { 1.2f,            "6:5"           },
-   { 0.7777f,         "7:9"           },
-   { 2.6666f,         "8:3"           },
-   { 1.1428f,         "8:7"           },
-   { 1.5833f,         "19:12"         },
-   { 1.3571f,         "19:14"         },
-   { 1.7647f,         "30:17"         },
-   { 3.5555f,         "32:9"          },
-   { 0.0f,            "Config"        },
-   { 1.0f,            "Square pixel"  },
-   { 1.0f,            "Core provided" },
-   { 0.0f,            "Custom"        },
-   { 1.3333f,         "Full" }
-};
-
 /* TODO/FIXME - turn these into static global variable */
 #ifdef HAVE_DISCORD
 bool discord_is_inited                                          = false;
