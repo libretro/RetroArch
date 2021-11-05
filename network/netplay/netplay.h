@@ -100,7 +100,6 @@ enum rarch_netplay_discovery_ctl_state
 
 typedef struct netplay netplay_t;
 
-#ifdef HAVE_NETPLAYDISCOVERY
 struct ad_packet
 {
    uint32_t header;
@@ -116,7 +115,6 @@ struct ad_packet
    char content_crc[NETPLAY_HOST_STR_LEN];
    char subsystem_name[NETPLAY_HOST_STR_LEN];
 };
-#endif
 
 typedef struct mitm_server
 {
