@@ -264,9 +264,6 @@ static const void *MAGIC_POINTER                                 = (void*)(uintp
 #endif
 
 /* TODO/FIXME - turn these into static global variable */
-#ifdef HAVE_DISCORD
-bool discord_is_inited                                          = false;
-#endif
 retro_keybind_set input_config_binds[MAX_USERS];
 retro_keybind_set input_autoconf_binds[MAX_USERS];
 
@@ -5491,7 +5488,7 @@ bool command_event(enum event_command cmd, void *data)
                   return false;
             }
 #ifdef HAVE_DISCORD
-            if (discord_is_inited)
+            if (discord_state_get_ptr()->inited)
             {
                discord_userdata_t userdata;
                userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;
@@ -15200,15 +15197,19 @@ bool retroarch_main_init(int argc, char *argv[])
    runloop_st->is_inited            = true;
 
 #ifdef HAVE_DISCORD
-   if (command_event(CMD_EVENT_DISCORD_INIT, NULL))
-      discord_is_inited = true;
-
-   if (discord_is_inited)
    {
-      discord_userdata_t userdata;
-      userdata.status = DISCORD_PRESENCE_MENU;
+      discord_state_t *discord_st = discord_state_get_ptr();
 
-      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+	   if (command_event(CMD_EVENT_DISCORD_INIT, NULL))
+		   discord_st->inited = true;
+
+	   if (discord_st->inited)
+	   {
+		   discord_userdata_t userdata;
+		   userdata.status = DISCORD_PRESENCE_MENU;
+
+		   command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+	   }
    }
 #endif
 
@@ -15790,7 +15791,7 @@ bool retroarch_main_quit(void)
    global_t            *global   = global_get_ptr();
 #ifdef HAVE_DISCORD
    discord_state_t *discord_st   = &discord_state_st;
-   if (discord_is_inited)
+   if (discord_st->inited)
    {
       discord_userdata_t userdata;
       userdata.status = DISCORD_PRESENCE_SHUTDOWN;
@@ -15805,7 +15806,7 @@ bool retroarch_main_quit(void)
       Discord_Shutdown();
       discord_st->ready       = false;
    }
-   discord_is_inited          = false;
+   discord_st->inited         = false;
 #endif
 
    /* Restore original refresh rate, if it has been changed
@@ -17151,7 +17152,7 @@ int runloop_iterate(void)
 #ifdef HAVE_DISCORD
    discord_state_t *discord_st                  = &discord_state_st;
 
-   if (discord_is_inited)
+   if (discord_st->inited)
    {
       Discord_RunCallbacks();
 #ifdef DISCORD_DISABLE_IO_THREAD
@@ -17399,7 +17400,7 @@ int runloop_iterate(void)
    cheat_manager_apply_retro_cheats();
 #endif
 #ifdef HAVE_DISCORD
-   if (discord_is_inited && discord_st->ready)
+   if (discord_st->inited && discord_st->ready)
       discord_update(DISCORD_PRESENCE_GAME);
 #endif
 

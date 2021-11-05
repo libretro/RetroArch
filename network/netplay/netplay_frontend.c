@@ -152,17 +152,11 @@ struct ad_packet
 };
 #endif
 
-/* Forward declarations */
-#ifdef HAVE_DISCORD
-extern bool discord_is_inited;
-#endif
-
 /* TODO/FIXME - globals */
 struct netplay_room *netplay_room_list       = NULL;
 int netplay_room_count                       = 0;
 static netplay_t *handshake_password_netplay = NULL;
 static unsigned long simple_rand_next        = 1;
-
 
 #ifdef HAVE_NETPLAYDISCOVERY
 /* LAN discovery sockets */
@@ -3533,7 +3527,7 @@ void netplay_hangup(netplay_t *netplay,
    {
       dmsg = msg_hash_to_str(MSG_NETPLAY_CLIENT_HANGUP);
 #ifdef HAVE_DISCORD
-      if (discord_is_inited)
+      if (discord_state_get_ptr()->inited)
       {
          discord_userdata_t userdata;
          userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;
@@ -6957,7 +6951,7 @@ static void netplay_announce_cb(retro_task_t *task,
       }
 
 #ifdef HAVE_DISCORD
-      if (discord_is_inited)
+      if (discord_state_get_ptr()->inited)
       {
          discord_userdata_t userdata;
          userdata.status = DISCORD_PRESENCE_NETPLAY_HOSTING;
@@ -7103,7 +7097,7 @@ static void netplay_disconnect(netplay_t *netplay)
    deinit_netplay();
 
 #ifdef HAVE_DISCORD
-   if (discord_is_inited)
+   if (discord_state_get_ptr()->inited)
    {
       discord_userdata_t userdata;
       userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;
@@ -7336,7 +7330,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          case RARCH_NETPLAY_CTL_DISABLE:
             net_st->netplay_enabled    = false;
 #ifdef HAVE_DISCORD
-            if (discord_is_inited)
+            if (discord_state_get_ptr()->inited)
             {
                discord_userdata_t userdata;
                userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;

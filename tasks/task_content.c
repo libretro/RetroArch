@@ -104,9 +104,6 @@
 
 #ifdef HAVE_DISCORD
 #include "../network/discord.h"
-
-/* TODO/FIXME - get rid of this public global */
-extern bool discord_is_inited;
 #endif
 
 #define MAX_ARGS 32
@@ -2337,7 +2334,7 @@ static bool task_load_content_internal(
       goto end;
 
 #ifdef HAVE_DISCORD
-   if (discord_is_inited)
+   if (discord_state_get_ptr()->inited)
    {
       discord_userdata_t userdata;
       userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;

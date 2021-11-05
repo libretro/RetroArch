@@ -71,6 +71,7 @@ struct discord_state
    bool ready;
    bool avatar_ready;
    bool connecting;
+   bool inited;
 };
 
 typedef struct discord_state discord_state_t;
