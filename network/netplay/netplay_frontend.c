@@ -192,6 +192,13 @@ const uint16_t netplay_key_ntoh_mapping[] = {
 /* TODO/FIXME - static global variables */
 static uint16_t netplay_mapping[RETROK_LAST];
 
+static net_driver_state_t networking_driver_st = {0};
+
+net_driver_state_t *networking_state_get_ptr(void)
+{
+   return &networking_driver_st;
+}
+
 #ifdef HAVE_NETPLAYDISCOVERY
 #ifdef HAVE_SOCKET_LEGACY
 
@@ -210,13 +217,6 @@ static int16_t htons_for_morons(int16_t value)
 #endif
 
 #endif
-
-static net_driver_state_t networking_driver_st = {0};
-
-net_driver_state_t *networking_state_get_ptr(void)
-{
-   return &networking_driver_st;
-}
 
 static bool netplay_lan_ad_client(void)
 {
