@@ -23,10 +23,9 @@ static void retroarch_deinit_drivers(struct rarch_state *p_rarch,
 
 #ifdef HAVE_RUNAHEAD
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-static bool secondary_core_create(struct rarch_state *p_rarch,
-      runloop_state_t *runloop_st, settings_t *settings);
+static bool secondary_core_create(runloop_state_t *runloop_st, settings_t *settings);
 static void secondary_core_destroy(runloop_state_t *runloop_st);
-static bool secondary_core_ensure_exists(struct rarch_state *p_rarch,
+static bool secondary_core_ensure_exists(
       runloop_state_t *runloop_st, settings_t *settings);
 #endif
 static int16_t input_state_get_last(unsigned port,

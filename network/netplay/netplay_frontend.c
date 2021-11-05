@@ -5546,8 +5546,10 @@ static int init_tcp_connection(const struct addrinfo *res,
       bool server,
       struct sockaddr *other_addr, socklen_t addr_size)
 {
-   char host[256], port[6];
+#ifndef HAVE_SOCKET_LEGACY
    char msg[512];
+   char host[256], port[6];
+#endif
    const char *dmsg = NULL;
    int           fd = socket(res->ai_family,
          res->ai_socktype, res->ai_protocol);

@@ -63,15 +63,15 @@
 #define UDP_FRAME_PACKETS 16
 
 #ifdef HAVE_BSV_MOVIE
-#define BSV_MOVIE_IS_EOF(p_rarch) || (input_st->bsv_movie_state.movie_end && \
+#define BSV_MOVIE_IS_EOF() || (input_st->bsv_movie_state.movie_end && \
 input_st->bsv_movie_state.eof_exit)
 #else
-#define BSV_MOVIE_IS_EOF(p_rarch)
+#define BSV_MOVIE_IS_EOF()
 #endif
 
 #if HAVE_DYNAMIC
-#define RUNAHEAD_RUN_SECONDARY(p_rarch) \
-   if (!secondary_core_run_use_last_input(p_rarch)) \
+#define RUNAHEAD_RUN_SECONDARY(runloop_st) \
+   if (!secondary_core_run_use_last_input()) \
       runloop_st->runahead_secondary_core_available = false
 #endif
 
@@ -410,12 +410,6 @@ struct rarch_state
 
    jmp_buf error_sjlj_context;              /* 4-byte alignment,
                                                put it right before long */
-#if defined(HAVE_RUNAHEAD)
-#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-   int port_map[MAX_USERS];
-#endif
-#endif
-
 #if defined(HAVE_TRANSLATE)
    int ai_service_auto;
 #endif

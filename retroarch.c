@@ -4842,7 +4842,7 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          if (runloop_st->secondary_lib_handle)
             return true;
-         if (!secondary_core_ensure_exists(p_rarch, runloop_st, settings))
+         if (!secondary_core_ensure_exists(runloop_st, settings))
          {
             secondary_core_destroy(runloop_st);
             runloop_st->runahead_secondary_core_available = false;
@@ -10245,49 +10245,43 @@ static void secondary_core_destroy(runloop_state_t *runloop_st)
    runloop_st->secondary_library_path = NULL;
 }
 
-static bool secondary_core_ensure_exists(
-      struct rarch_state *p_rarch,
-      runloop_state_t *runloop_st,
+static bool secondary_core_ensure_exists(runloop_state_t *runloop_st,
       settings_t *settings)
 {
    if (!runloop_st->secondary_lib_handle)
-      if (!secondary_core_create(p_rarch, runloop_st, settings))
+      if (!secondary_core_create(runloop_st, settings))
          return false;
    return true;
 }
 
 #if defined(HAVE_RUNAHEAD) && defined(HAVE_DYNAMIC)
-static bool secondary_core_deserialize(
-      struct rarch_state *p_rarch,
-      settings_t *settings,
+static bool secondary_core_deserialize(settings_t *settings,
       const void *buffer, int size)
 {
    runloop_state_t *runloop_st   = &runloop_state;
-   if (secondary_core_ensure_exists(p_rarch, runloop_st, settings))
+   if (secondary_core_ensure_exists(runloop_st, settings))
       return runloop_st->secondary_core.retro_unserialize(buffer, size);
    secondary_core_destroy(runloop_st);
    return false;
 }
 #endif
 
-static void remember_controller_port_device(
-      struct rarch_state *p_rarch,
-      long port, long device)
+static void remember_controller_port_device(long port, long device)
 {
    runloop_state_t *runloop_st   = &runloop_state;
    if (port >= 0 && port < MAX_USERS)
-      p_rarch->port_map[port] = (int)device;
+      runloop_st->port_map[port] = (int)device;
    if (     runloop_st->secondary_lib_handle
          && runloop_st->secondary_core.retro_set_controller_port_device)
       runloop_st->secondary_core.retro_set_controller_port_device((unsigned)port, (unsigned)device);
 }
 
-static void clear_controller_port_map(struct rarch_state *p_rarch)
+static void clear_controller_port_map(void)
 {
    unsigned port;
-
+   runloop_state_t *runloop_st   = &runloop_state;
    for (port = 0; port < MAX_USERS; port++)
-      p_rarch->port_map[port] = -1;
+      runloop_st->port_map[port] = -1;
 }
 
 static char *get_tmpdir_alloc(const char *override_dir)
@@ -10500,12 +10494,13 @@ static bool runloop_environment_secondary_core_hook(
    return result;
 }
 
-static bool secondary_core_create(struct rarch_state *p_rarch,
-      runloop_state_t *runloop_st, settings_t *settings)
+static bool secondary_core_create(runloop_state_t *runloop_st,
+      settings_t *settings)
 {
    unsigned port;
    bool contentless            = false;
    bool is_inited              = false;
+   struct rarch_state *p_rarch = &rarch_st;
    const enum rarch_core_type
       last_core_type           = runloop_st->last_core_type;
    rarch_system_info_t *info   = &runloop_st->system;
@@ -10591,14 +10586,14 @@ static bool secondary_core_create(struct rarch_state *p_rarch,
          if (port < info->ports.size)
          {
             unsigned device = (port < num_active_users) ?
-                  p_rarch->port_map[port] : RETRO_DEVICE_NONE;
+                  runloop_st->port_map[port] : RETRO_DEVICE_NONE;
 
             runloop_st->secondary_core.retro_set_controller_port_device(
                   port, device);
          }
       }
 
-   clear_controller_port_map(p_rarch);
+   clear_controller_port_map();
 
    return true;
 
@@ -10609,14 +10604,13 @@ error:
 
 static void secondary_core_input_poll_null(void) { }
 
-static bool secondary_core_run_use_last_input(struct rarch_state *p_rarch)
+static bool secondary_core_run_use_last_input(void)
 {
    retro_input_poll_t old_poll_function;
    retro_input_state_t old_input_function;
    runloop_state_t *runloop_st = &runloop_state;
 
-   if (!secondary_core_ensure_exists(p_rarch, runloop_st,
-            config_get_ptr()))
+   if (!secondary_core_ensure_exists(runloop_st, config_get_ptr()))
    {
       secondary_core_destroy(runloop_st);
       return false;
@@ -10645,11 +10639,9 @@ static bool secondary_core_run_use_last_input(struct rarch_state *p_rarch)
    return true;
 }
 #else
-static void secondary_core_destroy(runloop_state_t *runloop_st) { }
-static void remember_controller_port_device(
-      struct rarch_state *p_rarch,
-      long port, long device) { }
-static void clear_controller_port_map(struct rarch_state *p_rarch) { }
+static void secondary_core_destroy(runloop_state_t *runloop_st)     { }
+static void remember_controller_port_device(long port, long device) { }
+static void clear_controller_port_map(void)                         { }
 #endif
 
 #endif
@@ -13202,7 +13194,7 @@ static bool runahead_load_state(runloop_state_t *runloop_st)
 }
 
 #if HAVE_DYNAMIC
-static bool runahead_load_state_secondary(struct rarch_state *p_rarch)
+static bool runahead_load_state_secondary(void)
 {
    bool okay                                  = false;
    runloop_state_t                *runloop_st = &runloop_state;
@@ -13212,7 +13204,7 @@ static bool runahead_load_state_secondary(struct rarch_state *p_rarch)
 
    runloop_st->request_fast_savestate         = true;
    okay                                       = 
-      secondary_core_deserialize(p_rarch, settings,
+      secondary_core_deserialize(settings,
          serialize_info->data_const, (int)serialize_info->size);
    runloop_st->request_fast_savestate         = false;
 
@@ -13249,7 +13241,6 @@ static void runahead_core_run_use_last_input(runloop_state_t *runloop_st)
 }
 
 static void do_runahead(
-      struct rarch_state *p_rarch,
       runloop_state_t *runloop_st,
       int runahead_count,
       bool runahead_hide_warnings,
@@ -13339,8 +13330,7 @@ static void do_runahead(
    else
    {
 #if HAVE_DYNAMIC
-      if (!secondary_core_ensure_exists(p_rarch,
-               runloop_st, config_get_ptr()))
+      if (!secondary_core_ensure_exists(runloop_st, config_get_ptr()))
       {
          secondary_core_destroy(runloop_st);
          runloop_st->runahead_secondary_core_available = false;
@@ -13364,7 +13354,7 @@ static void do_runahead(
             return;
          }
 
-         if (!runahead_load_state_secondary(p_rarch))
+         if (!runahead_load_state_secondary())
          {
             runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             return;
@@ -13375,7 +13365,7 @@ static void do_runahead(
             video_st->active             = false;
             audio_st->suspended          = true;
             audio_st->hard_disable       = true;
-            RUNAHEAD_RUN_SECONDARY(p_rarch);
+            RUNAHEAD_RUN_SECONDARY(runloop_st);
             audio_st->hard_disable       = false;
             audio_st->suspended          = false;
             RUNAHEAD_RESUME_VIDEO(video_st);
@@ -13383,7 +13373,7 @@ static void do_runahead(
       }
       audio_st->suspended                = true;
       audio_st->hard_disable             = true;
-      RUNAHEAD_RUN_SECONDARY(p_rarch);
+      RUNAHEAD_RUN_SECONDARY(runloop_st);
       audio_st->hard_disable             = false;
       audio_st->suspended                = false;
 #endif
@@ -16913,7 +16903,6 @@ int runloop_iterate(void)
 
       if (want_runahead)
          do_runahead(
-               p_rarch,
                runloop_st,
                run_ahead_num_frames,
                run_ahead_hide_warnings,
@@ -17360,7 +17349,7 @@ bool core_set_cheat(retro_ctx_cheat_info_t *info)
    if (     want_runahead
          && run_ahead_secondary_instance
          && runloop_st->runahead_secondary_core_available 
-         && secondary_core_ensure_exists(p_rarch, runloop_st, settings)
+         && secondary_core_ensure_exists(runloop_st, settings)
          && runloop_st->secondary_core.retro_cheat_set)
       runloop_st->secondary_core.retro_cheat_set(
             info->index, info->enabled, info->code);
@@ -17399,7 +17388,7 @@ bool core_reset_cheat(void)
    if (   want_runahead
        && run_ahead_secondary_instance
        && runloop_st->runahead_secondary_core_available
-       && secondary_core_ensure_exists(p_rarch, runloop_st, settings)
+       && secondary_core_ensure_exists(runloop_st, settings)
        && runloop_st->secondary_core.retro_cheat_reset)
       runloop_st->secondary_core.retro_cheat_reset();
 #endif
@@ -17434,7 +17423,7 @@ bool core_set_controller_port_device(retro_ctx_controller_info_t *pad)
          sizeof(input_st->analog_requested));
 
 #ifdef HAVE_RUNAHEAD
-   remember_controller_port_device(p_rarch, pad->port, pad->device);
+   remember_controller_port_device(pad->port, pad->device);
 #endif
 
    runloop_st->current_core.retro_set_controller_port_device(pad->port, pad->device);
@@ -17463,7 +17452,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
 
 #ifdef HAVE_RUNAHEAD
    set_load_content_info(runloop_st, load_info);
-   clear_controller_port_map(p_rarch);
+   clear_controller_port_map();
 #endif
 
    content_get_status(&contentless, &is_inited);
