@@ -13651,6 +13651,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].offset_by = 1;
             menu_settings_list_current_add_range(list, list_info, 1, 65536, 1, true, true);
 
+
             CONFIG_UINT(
                list, list_info,
                &settings->uints.video_stream_quality,
@@ -14563,6 +14564,23 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
+
+#ifdef HAVE_NETWORKING
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.notification_show_netplay_extra,
+               MENU_ENUM_LABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+               DEFAULT_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+#endif
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -19030,6 +19048,21 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, 65535, 1, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.netplay_max_connections,
+                  MENU_ENUM_LABEL_NETPLAY_MAX_CONNECTIONS,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
+                  netplay_max_connections,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_SPINBOX;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 1, 31, 1, true, true);
 
             CONFIG_STRING(
                   list, list_info,
