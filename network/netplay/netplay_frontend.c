@@ -156,6 +156,7 @@ struct ad_packet
 /* TODO/FIXME - globals */
 struct netplay_room *netplay_room_list       = NULL;
 int netplay_room_count                       = 0;
+static netplay_t *handshake_password_netplay = NULL;
 static unsigned long simple_rand_next        = 1;
 
 #ifdef HAVE_NETPLAYDISCOVERY
@@ -165,6 +166,11 @@ static int lan_ad_client_fd            = -1;
 
 /* Packet buffer for advertisement and responses */
 static struct ad_packet ad_packet_buffer;
+
+/* List of discovered hosts */
+static struct netplay_host_list discovered_hosts;
+
+static size_t discovered_hosts_allocated;
 #endif
 
 /* The mapping of keys from netplay (network) to libretro (host) */
@@ -177,6 +183,9 @@ const uint16_t netplay_key_ntoh_mapping[] = {
 #undef K
    0
 };
+
+/* TODO/FIXME - static global variables */
+static uint16_t netplay_mapping[RETROK_LAST];
 
 static net_driver_state_t networking_driver_st = {0};
 
@@ -210,8 +219,7 @@ static bool netplay_lan_ad_client(void)
    fd_set fds;
    socklen_t addr_size;
    struct sockaddr their_addr;
-   struct timeval tmp_tv      = {0};
-   net_driver_state_t *net_st = &networking_driver_st;
+   struct timeval tmp_tv    = {0};
 
    if (lan_ad_client_fd < 0)
       return false;
@@ -274,9 +282,9 @@ static bool netplay_lan_ad_client(void)
             continue;
 
          /* Allocate space for it */
-         if (net_st->discovered_hosts.size >= net_st->discovered_hosts_allocated)
+         if (discovered_hosts.size >= discovered_hosts_allocated)
          {
-            size_t allocated               = net_st->discovered_hosts_allocated;
+            size_t allocated               = discovered_hosts_allocated;
             struct netplay_host *new_hosts = NULL;
 
             if (allocated == 0)
@@ -284,9 +292,9 @@ static bool netplay_lan_ad_client(void)
             else
                allocated *= 2;
 
-            if (net_st->discovered_hosts.hosts)
+            if (discovered_hosts.hosts)
                new_hosts  = (struct netplay_host *)
-                  realloc(net_st->discovered_hosts.hosts, allocated * sizeof(struct
+                  realloc(discovered_hosts.hosts, allocated * sizeof(struct
                   netplay_host));
             else
                /* Should be equivalent to realloc, 
@@ -297,12 +305,12 @@ static bool netplay_lan_ad_client(void)
             if (!new_hosts)
                return false;
 
-            net_st->discovered_hosts.hosts     = new_hosts;
-            net_st->discovered_hosts_allocated = allocated;
+            discovered_hosts.hosts     = new_hosts;
+            discovered_hosts_allocated = allocated;
          }
 
          /* Get our host structure */
-         host = &net_st->discovered_hosts.hosts[net_st->discovered_hosts.size++];
+         host = &discovered_hosts.hosts[discovered_hosts.size++];
 
          /* Copy in the response */
          memset(host, 0, sizeof(struct netplay_host));
@@ -381,8 +389,7 @@ bool netplay_discovery_driver_ctl(
 {
    int ret;
    char port_str[6];
-   unsigned                 k = 0;
-   net_driver_state_t *net_st = &networking_driver_st;
+   unsigned k = 0;
 
    if (lan_ad_client_fd < 0)
       return false;
@@ -437,11 +444,11 @@ bool netplay_discovery_driver_ctl(
       case RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES:
          if (!netplay_lan_ad_client())
             return false;
-         *((struct netplay_host_list **) data) = &net_st->discovered_hosts;
+         *((struct netplay_host_list **) data) = &discovered_hosts;
          break;
 
       case RARCH_NETPLAY_DISCOVERY_CTL_LAN_CLEAR_RESPONSES:
-         net_st->discovered_hosts.size = 0;
+         discovered_hosts.size = 0;
          break;
 
       default:
@@ -763,7 +770,7 @@ static uint32_t netplay_platform_magic(void)
 {
    uint32_t ret =
        ((1 == htonl(1)) << 30)
-      |(sizeof(size_t)  << 15)
+      |(sizeof(size_t) << 15)
       |(sizeof(long));
    return ret;
 }
@@ -785,12 +792,20 @@ static int simple_rand(void)
    return((unsigned)(simple_rand_next / 65536) % 32768);
 }
 
+static void simple_srand(unsigned int seed)
+{
+   simple_rand_next = seed;
+}
+
 static uint32_t simple_rand_uint32(void)
 {
-   uint32_t part0 = simple_rand();
-   uint32_t part1 = simple_rand();
-   uint32_t part2 = simple_rand();
-   return ((part0 << 30) + (part1 << 15) + part2);
+   uint32_t parts[3];
+   parts[0] = simple_rand();
+   parts[1] = simple_rand();
+   parts[2] = simple_rand();
+   return ((parts[0] << 30) +
+           (parts[1] << 15) +
+            parts[2]);
 }
 
 /*
@@ -846,7 +861,7 @@ bool netplay_handshake_init_send(netplay_t *netplay,
    {
       /* Demand a password */
       if (simple_rand_next == 1)
-         simple_rand_next = (unsigned int)time(NULL);
+         simple_srand((unsigned int) time(NULL));
       connection->salt = simple_rand_uint32();
       if (connection->salt == 0)
          connection->salt = 1;
@@ -869,8 +884,7 @@ static void handshake_password(void *ignore, const char *line)
    struct password_buf_s password_buf;
    char password[8+NETPLAY_PASS_LEN]; /* 8 for salt, 128 for password */
    char hash[NETPLAY_PASS_HASH_LEN+1]; /* + NULL terminator */
-   net_driver_state_t *net_st            = &networking_driver_st;
-   netplay_t *netplay                    = net_st->handshake_password;
+   netplay_t *netplay                    = handshake_password_netplay;
    struct netplay_connection *connection = &netplay->connections[0];
 
    snprintf(password, sizeof(password), "%08lX", (unsigned long)connection->salt);
@@ -912,7 +926,6 @@ bool netplay_handshake_init(netplay_t *netplay,
    uint32_t compression                  = 0;
    struct compression_transcoder *ctrans = NULL;
    const char *dmsg                      = NULL;
-   net_driver_state_t *net_st            = &networking_driver_st;
    settings_t *settings                  = config_get_ptr();
    bool extra_notifications              = settings->bools.notification_show_netplay_extra;
 
@@ -1049,7 +1062,7 @@ bool netplay_handshake_init(netplay_t *netplay,
       retroarch_menu_running();
 #endif
 
-      net_st->handshake_password = netplay;
+      handshake_password_netplay = netplay;
 
 #ifdef HAVE_MENU
       memset(&line, 0, sizeof(line));
@@ -1842,10 +1855,9 @@ bool netplay_handshake(netplay_t *netplay,
 /* The mapping of keys from libretro (host) to netplay (network) */
 uint32_t netplay_key_hton(unsigned key)
 {
-   net_driver_state_t *net_st  = &networking_driver_st;
    if (key >= RETROK_LAST)
       return NETPLAY_KEY_UNKNOWN;
-   return net_st->mapping[key];
+   return netplay_mapping[key];
 }
 
 /* Because the hton keymapping has to be generated, call this before using
@@ -1853,13 +1865,12 @@ uint32_t netplay_key_hton(unsigned key)
 void netplay_key_hton_init(void)
 {
    static bool mapping_defined = false;
-   net_driver_state_t *net_st  = &networking_driver_st;
 
    if (!mapping_defined)
    {
       uint16_t i;
       for (i = 0; i < NETPLAY_KEY_LAST; i++)
-         net_st->mapping[NETPLAY_KEY_NTOH(i)] = i;
+         netplay_mapping[NETPLAY_KEY_NTOH(i)] = i;
       mapping_defined = true;
    }
 }
