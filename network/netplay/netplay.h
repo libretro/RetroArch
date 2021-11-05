@@ -28,9 +28,9 @@
 #include "../../config.h"
 #endif
 
-#ifdef HAVE_NETPLAYDISCOVERY
-#include "netplay_discovery.h"
-#endif
+#include <net/net_compat.h>
+#include <net/net_ifinfo.h>
+#include <retro_miscellaneous.h>
 
 #include "../../core.h"
 
@@ -80,6 +80,22 @@ enum rarch_netplay_share_analog_preference
    RARCH_NETPLAY_SHARE_ANALOG_MAX,
    RARCH_NETPLAY_SHARE_ANALOG_AVERAGE,
    RARCH_NETPLAY_SHARE_ANALOG_LAST
+};
+
+enum netplay_host_method
+{
+   NETPLAY_HOST_METHOD_UNKNOWN = 0,
+   NETPLAY_HOST_METHOD_MANUAL,
+   NETPLAY_HOST_METHOD_UPNP,
+   NETPLAY_HOST_METHOD_MITM
+};
+
+enum rarch_netplay_discovery_ctl_state
+{
+    RARCH_NETPLAY_DISCOVERY_CTL_NONE = 0,
+    RARCH_NETPLAY_DISCOVERY_CTL_LAN_SEND_QUERY,
+    RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES,
+    RARCH_NETPLAY_DISCOVERY_CTL_LAN_CLEAR_RESPONSES
 };
 
 typedef struct netplay netplay_t;
@@ -161,7 +177,6 @@ struct netplay_host_list
    struct netplay_host *hosts;
    size_t size;
 };
-
 
 typedef struct
 {
@@ -319,5 +334,17 @@ void audio_sample_net(int16_t left, int16_t right);
 size_t audio_sample_batch_net(const int16_t *data, size_t frames);
 int16_t input_state_net(unsigned port, unsigned device,
       unsigned idx, unsigned id);
+
+#ifdef HAVE_NETPLAYDISCOVERY
+/** Initialize Netplay discovery */
+bool init_netplay_discovery(void);
+
+/** Deinitialize and free Netplay discovery */
+void deinit_netplay_discovery(void);
+
+/** Discovery control */
+bool netplay_discovery_driver_ctl(
+      enum rarch_netplay_discovery_ctl_state state, void *data);
+#endif
 
 #endif

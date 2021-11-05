@@ -27,7 +27,6 @@
 
 #ifdef HAVE_NETWORKING
 #include "netplay/netplay.h"
-#include "netplay/netplay_discovery.h"
 #endif
 
 #include "../paths.h"

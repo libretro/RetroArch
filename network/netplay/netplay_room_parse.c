@@ -23,7 +23,6 @@
 #include <compat/strl.h>
 #include <formats/rjson.h>
 #include "netplay.h"
-#include "netplay_discovery.h"
 #include "../../verbosity.h"
 
 enum netplay_parse_state

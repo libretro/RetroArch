@@ -23,7 +23,7 @@
 #include "../../audio/audio_driver.h"
 
 #ifdef HAVE_NETWORKING
-#include "../../network/netplay/netplay_discovery.h"
+#include "../../network/netplay/netplay.h"
 #endif
 
 #ifndef BIND_ACTION_INFO

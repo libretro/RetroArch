@@ -178,7 +178,6 @@
 #ifdef HAVE_NETWORKING
 #include "network/netplay/netplay.h"
 #include "network/netplay/netplay_private.h"
-#include "network/netplay/netplay_discovery.h"
 #endif
 
 #ifdef HAVE_THREADS

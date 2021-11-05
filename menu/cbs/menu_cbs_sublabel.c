@@ -37,7 +37,6 @@
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
-#include "../../network/netplay/netplay_discovery.h"
 #endif
 
 #include "../../retroarch.h"

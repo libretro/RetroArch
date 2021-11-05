@@ -26,7 +26,7 @@
 #endif
 
 #include "../verbosity.h"
-#include "../network/netplay/netplay_discovery.h"
+#include "../network/netplay/netplay.h"
 
 #ifdef HAVE_NETPLAYDISCOVERY
 static void task_netplay_lan_scan_handler(retro_task_t *task)
