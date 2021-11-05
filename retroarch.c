@@ -1569,7 +1569,6 @@ void discord_update(enum discord_presence presence)
       case DISCORD_PRESENCE_NETPLAY_HOSTING:
          {
             char join_secret[128];
-	    struct rarch_state *p_rarch = &rarch_st;
             struct netplay_room *room   = &networking_state_get_ptr()->host_room;
             bool host_method_is_mitm    = room->host_method == NETPLAY_HOST_METHOD_MITM;
             const char *srv_address     = host_method_is_mitm ? room->mitm_address : room->address;
@@ -6893,7 +6892,6 @@ void retroarch_override_setting_set(
    struct rarch_state            *p_rarch = &rarch_st;
 #ifdef HAVE_NETWORKING
    net_driver_state_t *net_st  = networking_state_get_ptr();
-   netplay_t *netplay          = net_st->data;
 #endif
 
    switch (enum_idx)
@@ -6971,7 +6969,6 @@ void retroarch_override_setting_unset(
    struct rarch_state *p_rarch = &rarch_st;
 #ifdef HAVE_NETWORKING
    net_driver_state_t *net_st  = networking_state_get_ptr();
-   netplay_t *netplay          = net_st->data;
 #endif
 
    switch (enum_idx)
