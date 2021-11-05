@@ -404,7 +404,7 @@ struct rarch_state
 
    const wifi_driver_t *wifi_driver;
    void *wifi_data;
-
+   char *connect_host; /* Netplay hostname passed from CLI */
 
    struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
 

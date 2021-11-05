@@ -5755,8 +5755,42 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETPLAY_INIT:
          {
             char       *hostname       = (char*)data;
-            const char *netplay_server = settings->paths.netplay_server;
-            unsigned netplay_port      = settings->uints.netplay_port;
+            const char *netplay_server = NULL;
+            unsigned netplay_port      = 0; 
+
+            if (p_rarch->connect_host && !hostname)
+            {
+               struct string_list *addr_port = string_split(p_rarch->connect_host, "|");
+
+               if (addr_port && addr_port->size == 2)
+               {
+                  char *tmp_netplay_server = addr_port->elems[0].data;
+                  char *tmp_netplay_port   = addr_port->elems[1].data;
+
+                  if (   !string_is_empty(tmp_netplay_server)
+                      && !string_is_empty(tmp_netplay_port))
+                  {
+                     netplay_port = strtoul(tmp_netplay_port, NULL, 10);
+
+                     if (netplay_port && netplay_port <= 0xFFFF)
+                     {
+                        netplay_server = strdup(tmp_netplay_server);
+
+                        // This way we free netplay_server aswell when done.
+                        free(p_rarch->connect_host);
+                        p_rarch->connect_host = strdup(netplay_server);
+                     }
+                  }
+               }
+
+               string_list_free(addr_port);
+            }
+
+            if (!netplay_server || !netplay_port)
+            {
+               netplay_server = settings->paths.netplay_server;
+               netplay_port   = settings->uints.netplay_port;
+            }
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
@@ -5767,7 +5801,20 @@ bool command_event(enum event_command cmd, void *data)
                      : netplay_server, netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+
+               if (p_rarch->connect_host)
+               {
+                  free(p_rarch->connect_host);
+                  p_rarch->connect_host = NULL;
+               }
+
                return false;
+            }
+
+            if (p_rarch->connect_host)
+            {
+               free(p_rarch->connect_host);
+               p_rarch->connect_host = NULL;
             }
 
             /* Disable rewind & SRAM autosave if it was enabled
@@ -14155,11 +14202,8 @@ static bool retroarch_parse_input_and_config(
             case 'C':
                retroarch_override_setting_set(
                      RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
-               retroarch_override_setting_set(
-                     RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
                netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
-               configuration_set_string(settings,
-                     settings->paths.netplay_server, optarg);
+               p_rarch->connect_host = strdup(optarg);
                break;
 
             case RA_OPT_STATELESS:
