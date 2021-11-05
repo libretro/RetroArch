@@ -24,6 +24,14 @@
 #include <boolean.h>
 #include <libretro.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#ifdef HAVE_NETPLAYDISCOVERY
+#include "netplay_discovery.h"
+#endif
+
 #include "../../core.h"
 
 enum rarch_netplay_ctl_state
@@ -115,8 +123,16 @@ typedef struct
 {
    netplay_t *data; /* Used while Netplay is running */
    struct netplay_room host_room; /* ptr alignment */
+   netplay_t *handshake_password;
+   /* List of discovered hosts */
+   struct netplay_host_list discovered_hosts;
+#ifdef HAVE_NETPLAYDISCOVERY
+   size_t discovered_hosts_allocated;
+#endif
    int reannounce;
    unsigned server_port_deferred;
+   uint16_t mapping[RETROK_LAST];
+   char server_address_deferred[512];
    /* Only used before init_netplay */
    bool netplay_enabled;
    bool netplay_is_client;
@@ -124,7 +140,6 @@ typedef struct
    bool in_netplay;
    bool netplay_client_deferred;
    bool is_mitm;
-   char server_address_deferred[512];
    bool has_set_netplay_mode;
    bool has_set_netplay_ip_address;
    bool has_set_netplay_ip_port;
