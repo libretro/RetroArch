@@ -91,7 +91,7 @@ static rcheevos_locals_t rcheevos_locals =
    0,    /* menuitem_capacity */
    0,    /* menuitem_count */
 #endif
-   {0},  /* load_info */
+   {RCHEEVOS_LOAD_STATE_NONE, 0, 0 },  /* load_info */
    false,/* hardcore_active */
    false,/* loaded */
    true, /* core_supports */
