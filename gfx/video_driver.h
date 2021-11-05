@@ -1399,6 +1399,20 @@ void video_driver_set_viewport_config(
 
 void video_driver_set_viewport_square_pixel(struct retro_game_geometry *geom);
 
+bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled);
+
+/**
+ * video_driver_frame:
+ * @data                 : pointer to data of the video frame.
+ * @width                : width of the video frame.
+ * @height               : height of the video frame.
+ * @pitch                : pitch of the video frame.
+ *
+ * Video frame render callback function.
+ **/
+void video_driver_frame(const void *data, unsigned width,
+      unsigned height, size_t pitch);
+
 extern const video_driver_t *video_drivers[];
 
 extern video_driver_t video_gl_core;

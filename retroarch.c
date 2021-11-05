@@ -252,14 +252,6 @@
 #include "lakka.h"
 #endif
 
-#ifdef HAVE_THREADS
-#define RUNLOOP_MSG_QUEUE_LOCK(runloop_st) slock_lock((runloop_st)->msg_queue_lock)
-#define RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st) slock_unlock((runloop_st)->msg_queue_lock)
-#else
-#define RUNLOOP_MSG_QUEUE_LOCK(runloop_st) (void)(runloop_st)
-#define RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st) (void)(runloop_st)
-#endif
-
 /* Custom forward declarations */
 static bool recording_init(settings_t *settings,
       struct rarch_state *p_rarch);
@@ -5571,7 +5563,7 @@ static bool command_event_init_core(
    /* reset video format to libretro's default */
    video_st->pix_fmt = RETRO_PIXEL_FORMAT_0RGB1555;
 
-   runloop_st->current_core.retro_set_environment(retroarch_environment_cb);
+   runloop_st->current_core.retro_set_environment(runloop_environment_cb);
 
    /* Load any input remap files
     * > Note that we always cache the current global
@@ -9013,17 +9005,7 @@ static core_option_manager_t *runloop_init_core_variables(
 }
 
 
-/**
- * retroarch_environment_cb:
- * @cmd                          : Identifier of command.
- * @data                         : Pointer to data.
- *
- * Environment callback function implementation.
- *
- * Returns: true (1) if environment callback command could
- * be performed, otherwise false (0).
- **/
-static bool retroarch_environment_cb(unsigned cmd, void *data)
+bool runloop_environment_cb(unsigned cmd, void *data)
 {
    unsigned p;
    struct rarch_state *p_rarch            = &rarch_st;
@@ -10950,7 +10932,7 @@ static void libretro_get_environment_info(
     * Ignore any environment callbacks here in case we're running
     * on the non-current core. */
    runloop_st->ignore_environment_cb = true;
-   func(retroarch_environment_cb);
+   func(runloop_environment_cb);
    runloop_st->ignore_environment_cb = false;
 }
 
@@ -11086,7 +11068,7 @@ static bool libretro_get_system_info(
        * Ignore any environment callbacks here in case we're running
        * on the non-current core. */
       runloop_st->ignore_environment_cb = true;
-      retro_set_environment(retroarch_environment_cb);
+      retro_set_environment(runloop_environment_cb);
       runloop_st->ignore_environment_cb = false;
    }
 
@@ -11706,11 +11688,11 @@ end:
    return NULL;
 }
 
-static bool retroarch_environment_secondary_core_hook(
+static bool runloop_environment_secondary_core_hook(
       unsigned cmd, void *data)
 {
    runloop_state_t *runloop_st    = &runloop_state;
-   bool result                    = retroarch_environment_cb(cmd, data);
+   bool result                    = runloop_environment_cb(cmd, data);
 
    if (runloop_st->has_variable_update)
    {
@@ -11762,7 +11744,7 @@ static bool secondary_core_create(struct rarch_state *p_rarch,
 
    runloop_st->secondary_core.symbols_inited = true;
    runloop_st->secondary_core.retro_set_environment(
-         retroarch_environment_secondary_core_hook);
+         runloop_environment_secondary_core_hook);
 #ifdef HAVE_RUNAHEAD
    runloop_st->has_variable_update  = true;
 #endif
@@ -12053,7 +12035,7 @@ bool driver_wifi_connection_info(wifi_network_info_t *netinfo)
    return p_rarch->wifi_driver->connection_info(p_rarch->wifi_data, netinfo);
 }
 
-wifi_network_scan_t* driver_wifi_get_ssids()
+wifi_network_scan_t* driver_wifi_get_ssids(void)
 {
    struct rarch_state       *p_rarch = &rarch_st;
    return p_rarch->wifi_driver->get_ssids(p_rarch->wifi_data);
@@ -13193,335 +13175,6 @@ const char *config_get_audio_driver_options(void)
 }
 
 /* VIDEO */
-/* Stub functions */
-
-static bool video_driver_init_internal(
-      settings_t *settings,
-      bool *video_is_threaded,
-      bool verbosity_enabled
-     )
-{
-   video_info_t video;
-   unsigned max_dim, scale, width, height;
-   video_viewport_t *custom_vp            = NULL;
-   input_driver_t *tmp                    = NULL;
-   static uint16_t dummy_pixels[32]       = {0};
-   runloop_state_t *runloop_st            = &runloop_state;
-   input_driver_state_t *input_st         = input_state_get_ptr();
-   video_driver_state_t *video_st         = video_state_get_ptr();
-   struct retro_game_geometry *geom       = &video_st->av_info.geometry;
-   const enum retro_pixel_format
-      video_driver_pix_fmt                = video_st->pix_fmt;
-#ifdef HAVE_VIDEO_FILTER
-   const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
-
-   if (!string_is_empty(path_softfilter_plugin))
-      video_driver_init_filter(video_driver_pix_fmt, settings);
-#endif
-
-   max_dim   = MAX(geom->max_width, geom->max_height);
-   scale     = next_pow2(max_dim) / RARCH_SCALE_BASE;
-   scale     = MAX(scale, 1);
-
-#ifdef HAVE_VIDEO_FILTER
-   if (video_st->state_filter)
-      scale  = video_st->state_scale;
-#endif
-
-   /* Update core-dependent aspect ratio values. */
-   video_driver_set_viewport_square_pixel(geom);
-   video_driver_set_viewport_core();
-   video_driver_set_viewport_config(geom,
-         settings->floats.video_aspect_ratio,
-         settings->bools.video_aspect_ratio_auto);
-
-   /* Update CUSTOM viewport. */
-   custom_vp = &settings->video_viewport_custom;
-
-   if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-   {
-      float default_aspect = aspectratio_lut[ASPECT_RATIO_CORE].value;
-      aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-         (custom_vp->width && custom_vp->height) ?
-         (float)custom_vp->width / custom_vp->height : default_aspect;
-   }
-
-   {
-      /* Guard against aspect ratio index possibly being out of bounds */
-      unsigned new_aspect_idx = settings->uints.video_aspect_ratio_idx;
-      if (new_aspect_idx > ASPECT_RATIO_END)
-         new_aspect_idx = settings->uints.video_aspect_ratio_idx = 0;
-
-      video_driver_set_aspect_ratio_value(
-            aspectratio_lut[new_aspect_idx].value);
-   }
-
-   if (settings->bools.video_fullscreen || video_st->force_fullscreen)
-   {
-      width  = settings->uints.video_fullscreen_x;
-      height = settings->uints.video_fullscreen_y;
-   }
-   else
-   {
-#ifdef __WINRT__
-      if (is_running_on_xbox())
-      {
-         width  = settings->uints.video_fullscreen_x != 0 ? settings->uints.video_fullscreen_x : 3840;
-         height = settings->uints.video_fullscreen_y != 0 ? settings->uints.video_fullscreen_y : 2160;
-      }
-      else
-#endif
-      {
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-         bool window_custom_size_enable = settings->bools.video_window_save_positions;
-#else
-         bool window_custom_size_enable = settings->bools.video_window_custom_size_enable;
-#endif
-         /* TODO: remove when the new window resizing core is hooked */
-         if (window_custom_size_enable &&
-            settings->uints.window_position_width &&
-            settings->uints.window_position_height)
-         {
-            width = settings->uints.window_position_width;
-            height = settings->uints.window_position_height;
-         }
-         else
-         {
-            float video_scale = settings->floats.video_scale;
-            /* Determine maximum allowed window dimensions
-             * NOTE: We cannot read the actual display
-             * metrics here, because the context driver
-             * has not yet been initialised... */
-
-             /* > Try explicitly configured values */
-            unsigned max_win_width = settings->uints.window_auto_width_max;
-            unsigned max_win_height = settings->uints.window_auto_height_max;
-
-            /* > Handle invalid settings */
-            if ((max_win_width == 0) || (max_win_height == 0))
-            {
-               /* > Try configured fullscreen width/height */
-               max_win_width = settings->uints.video_fullscreen_x;
-               max_win_height = settings->uints.video_fullscreen_y;
-
-               if ((max_win_width == 0) || (max_win_height == 0))
-               {
-                  /* Maximum window width/size *must* be non-zero;
-                   * if all else fails, used defined default
-                   * maximum window size */
-                  max_win_width = DEFAULT_WINDOW_AUTO_WIDTH_MAX;
-                  max_win_height = DEFAULT_WINDOW_AUTO_HEIGHT_MAX;
-               }
-            }
-
-            /* Determine nominal window size based on
-             * core geometry */
-            if (settings->bools.video_force_aspect)
-            {
-               /* Do rounding here to simplify integer
-                * scale correctness. */
-               unsigned base_width = roundf(geom->base_height *
-                  video_st->aspect_ratio);
-               width = roundf(base_width * video_scale);
-            }
-            else
-               width = roundf(geom->base_width * video_scale);
-
-            height = roundf(geom->base_height * video_scale);
-
-            /* Cap window size to maximum allowed values */
-            if ((width > max_win_width) || (height > max_win_height))
-            {
-               unsigned geom_width = (width > 0) ? width : 1;
-               unsigned geom_height = (height > 0) ? height : 1;
-               float geom_aspect = (float)geom_width / (float)geom_height;
-               float max_win_aspect = (float)max_win_width / (float)max_win_height;
-
-               if (geom_aspect > max_win_aspect)
-               {
-                  width = max_win_width;
-                  height = geom_height * max_win_width / geom_width;
-                  /* Account for any possible rounding errors... */
-                  height = (height < 1) ? 1 : height;
-                  height = (height > max_win_height) ? max_win_height : height;
-               }
-               else
-               {
-                  height = max_win_height;
-                  width = geom_width * max_win_height / geom_height;
-                  /* Account for any possible rounding errors... */
-                  width = (width < 1) ? 1 : width;
-                  width = (width > max_win_width) ? max_win_width : width;
-               }
-            }
-         }
-      }
-   }
-
-   if (width && height)
-      RARCH_LOG("[Video]: Video @ %ux%u\n", width, height);
-   else
-      RARCH_LOG("[Video]: Video @ fullscreen\n");
-
-   video_st->display_type     = RARCH_DISPLAY_NONE;
-   video_st->display          = 0;
-   video_st->display_userdata = 0;
-   video_st->window           = 0;
-
-   video_st->scaler_ptr       = video_driver_pixel_converter_init(
-         video_st->pix_fmt,
-         VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st),
-         RARCH_SCALE_BASE * scale);
-
-   video.width                       = width;
-   video.height                      = height;
-   video.fullscreen                  = settings->bools.video_fullscreen ||
-                                       video_st->force_fullscreen;
-   video.vsync                       = settings->bools.video_vsync &&
-      !runloop_st->force_nonblock;
-   video.force_aspect                = settings->bools.video_force_aspect;
-   video.font_enable                 = settings->bools.video_font_enable;
-   video.swap_interval               = settings->uints.video_swap_interval;
-   video.adaptive_vsync              = settings->bools.video_adaptive_vsync;
-#ifdef GEKKO
-   video.viwidth                     = settings->uints.video_viwidth;
-   video.vfilter                     = settings->bools.video_vfilter;
-#endif
-   video.smooth                      = settings->bools.video_smooth;
-   video.ctx_scaling                 = settings->bools.video_ctx_scaling;
-   video.input_scale                 = scale;
-   video.font_size                   = settings->floats.video_font_size;
-   video.path_font                   = settings->paths.path_font;
-#ifdef HAVE_VIDEO_FILTER
-   video.rgb32                       =
-        video_st->state_filter
-      ? video_st->state_out_rgb32
-      : (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
-#else
-   video.rgb32                       =
-      (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
-#endif
-   video.parent                      = 0;
-
-   video_st->started_fullscreen      = video.fullscreen;
-   /* Reset video frame count */
-   video_st->frame_count             = 0;
-
-   tmp                               = input_state_get_ptr()->current_driver;
-   /* Need to grab the "real" video driver interface on a reinit. */
-   video_driver_find_driver(settings,
-         "video driver", verbosity_enabled);
-
-#ifdef HAVE_THREADS
-   video.is_threaded                 =
-VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
-   *video_is_threaded                = video.is_threaded;
-
-   if (video.is_threaded)
-   {
-      bool ret;
-      /* Can't do hardware rendering with threaded driver currently. */
-      RARCH_LOG("[Video]: Starting threaded video driver ...\n");
-
-      ret = video_init_thread(
-            (const video_driver_t**)&video_st->current_video,
-            &video_st->data,
-            &input_state_get_ptr()->current_driver,
-            (void**)&input_state_get_ptr()->current_data,
-            video_st->current_video,
-            video);
-      if (!ret)
-      {
-         RARCH_ERR("[Video]: Cannot open threaded video driver ... Exiting ...\n");
-         return false;
-      }
-   }
-   else
-#endif
-      video_st->data = video_st->current_video->init(
-            &video,
-            &input_state_get_ptr()->current_driver,
-            (void**)&input_state_get_ptr()->current_data);
-
-   if (!video_st->data)
-   {
-      RARCH_ERR("[Video]: Cannot open video driver ... Exiting ...\n");
-      return false;
-   }
-
-   video_st->poke = NULL;
-   if (video_st->current_video->poke_interface)
-      video_st->current_video->poke_interface(
-            video_st->data, &video_st->poke);
-
-   if (video_st->current_video->viewport_info &&
-         (!custom_vp->width  ||
-          !custom_vp->height))
-   {
-      /* Force custom viewport to have sane parameters. */
-      custom_vp->width = width;
-      custom_vp->height = height;
-
-      video_driver_get_viewport_info(custom_vp);
-   }
-
-   video_driver_set_rotation(retroarch_get_rotation() % 4);
-
-   video_st->current_video->suppress_screensaver(video_st->data,
-         settings->bools.ui_suspend_screensaver_enable);
-
-   if (!video_driver_init_input(tmp, settings, verbosity_enabled))
-         return false;
-
-#ifdef HAVE_OVERLAY
-   input_overlay_deinit();
-   input_overlay_init();
-#endif
-
-#ifdef HAVE_VIDEO_LAYOUT
-   if (settings->bools.video_layout_enable)
-   {
-      video_layout_init(video_st->data,
-            video_driver_layout_render_interface());
-      video_layout_load(settings->paths.path_video_layout);
-      video_layout_view_select(settings->uints.video_layout_selected_view);
-   }
-#endif
-
-   if (!runloop_st->current_core.game_loaded)
-      video_driver_cached_frame_set(&dummy_pixels, 4, 4, 8);
-
-#if defined(PSP)
-   video_driver_set_texture_frame(&dummy_pixels, false, 1, 1, 1.0f);
-#endif
-
-   video_context_driver_reset();
-
-   video_display_server_init(video_st->display_type);
-
-   if ((enum rotation)settings->uints.screen_orientation != ORIENTATION_NORMAL)
-      video_display_server_set_screen_orientation((enum rotation)settings->uints.screen_orientation);
-
-   /* Ensure that we preserve the 'grab mouse'
-    * state if it was enabled prior to driver
-    * (re-)initialisation */
-   if (input_st->grab_mouse_state)
-   {
-      video_driver_hide_mouse();
-      if (input_driver_grab_mouse())
-         input_st->grab_mouse_state = true;
-   }
-   else if (video.fullscreen)
-   {
-      video_driver_hide_mouse();
-      if (!settings->bools.video_windowed_fullscreen)
-         if (input_driver_grab_mouse())
-            input_st->grab_mouse_state = true;
-   }
-
-   return true;
-}
-
 static void video_driver_reinit_context(struct rarch_state *p_rarch,
       settings_t *settings, int flags)
 {
@@ -13555,443 +13208,6 @@ void video_driver_reinit(int flags)
    video_st->cache_context_ack = false;
    video_driver_reinit_context(p_rarch, settings, flags);
    video_st->cache_context     = false;
-}
-
-/**
- * video_driver_frame:
- * @data                 : pointer to data of the video frame.
- * @width                : width of the video frame.
- * @height               : height of the video frame.
- * @pitch                : pitch of the video frame.
- *
- * Video frame render callback function.
- **/
-static void video_driver_frame(const void *data, unsigned width,
-      unsigned height, size_t pitch)
-{
-   char status_text[128];
-   static char video_driver_msg[256];
-   static retro_time_t curr_time;
-   static retro_time_t fps_time;
-   static float last_fps, frame_time;
-   static uint64_t last_used_memory, last_total_memory;
-   retro_time_t new_time;
-   video_frame_info_t video_info;
-   video_driver_state_t *video_st= video_state_get_ptr();
-   runloop_state_t *runloop_st   = &runloop_state;
-   const enum retro_pixel_format
-      video_driver_pix_fmt       = video_st->pix_fmt;
-   bool runloop_idle             = runloop_st->idle;
-   bool video_driver_active      = video_st->active;
-#if defined(HAVE_GFX_WIDGETS)
-   bool widgets_active           = dispwidget_get_ptr()->active;
-#endif
-
-   status_text[0]                = '\0';
-   video_driver_msg[0]           = '\0';
-
-   if (!video_driver_active)
-      return;
-
-   new_time                      = cpu_features_get_time_usec();
-
-   if (data)
-      video_st->frame_cache_data = data;
-   video_st->frame_cache_width   = width;
-   video_st->frame_cache_height  = height;
-   video_st->frame_cache_pitch   = pitch;
-
-   if (
-            video_st->scaler_ptr
-         && data
-         && (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
-         && (data != RETRO_HW_FRAME_BUFFER_VALID)
-         && video_pixel_frame_scale(
-            video_st->scaler_ptr->scaler,
-            video_st->scaler_ptr->scaler_out,
-            data, width, height, pitch)
-      )
-   {
-      data                = video_st->scaler_ptr->scaler_out;
-      pitch               = video_st->scaler_ptr->scaler->out_stride;
-   }
-
-   video_driver_build_info(&video_info);
-
-   /* Get the amount of frames per seconds. */
-   if (video_st->frame_count)
-   {
-      unsigned fps_update_interval                 =
-         video_info.fps_update_interval;
-      unsigned memory_update_interval              =
-         video_info.memory_update_interval;
-      size_t buf_pos                               = 1;
-      /* set this to 1 to avoid an offset issue */
-      unsigned write_index                         =
-         video_st->frame_time_count++ &
-         (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
-      frame_time                                   = new_time - fps_time;
-      video_st->frame_time_samples
-         [write_index]                             = frame_time;
-      fps_time                                     = new_time;
-
-      if (video_info.fps_show)
-         buf_pos = snprintf(
-               status_text, sizeof(status_text),
-               "FPS: %6.2f", last_fps);
-
-      if (video_info.framecount_show)
-      {
-         char frames_text[64];
-         if (status_text[buf_pos-1] != '\0')
-            strlcat(status_text, " || ", sizeof(status_text));
-         snprintf(frames_text,
-               sizeof(frames_text),
-               "%s: %" PRIu64, msg_hash_to_str(MSG_FRAMES),
-               (uint64_t)video_st->frame_count);
-         buf_pos = strlcat(status_text, frames_text, sizeof(status_text));
-      }
-
-      if (video_info.memory_show)
-      {
-         char mem[128];
-
-         if ((video_st->frame_count % memory_update_interval) == 0)
-         {
-            last_total_memory = frontend_driver_get_total_memory();
-            last_used_memory  = last_total_memory - frontend_driver_get_free_memory();
-         }
-
-         mem[0] = '\0';
-         snprintf(
-               mem, sizeof(mem), "MEM: %.2f/%.2fMB", last_used_memory / (1024.0f * 1024.0f),
-               last_total_memory / (1024.0f * 1024.0f));
-         if (status_text[buf_pos-1] != '\0')
-            strlcat(status_text, " || ", sizeof(status_text));
-         strlcat(status_text, mem, sizeof(status_text));
-      }
-
-      if ((video_st->frame_count % fps_update_interval) == 0)
-      {
-         last_fps = TIME_TO_FPS(curr_time, new_time,
-               fps_update_interval);
-
-         strlcpy(video_st->window_title,
-               video_st->title_buf,
-               sizeof(video_st->window_title));
-
-         if (!string_is_empty(status_text))
-         {
-            strlcat(video_st->window_title,
-                  " || ", sizeof(video_st->window_title));
-            strlcat(video_st->window_title,
-                  status_text, sizeof(video_st->window_title));
-         }
-
-         curr_time                     = new_time;
-         video_st->window_title_update = true;
-      }
-   }
-   else
-   {
-      curr_time = fps_time = new_time;
-
-      strlcpy(video_st->window_title,
-            video_st->title_buf,
-            sizeof(video_st->window_title));
-
-      if (video_info.fps_show)
-         strlcpy(status_text,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-               sizeof(status_text));
-
-      video_st->window_title_update = true;
-   }
-
-   /* Add core status message to status text */
-   if (video_info.core_status_msg_show)
-   {
-      /* Note: We need to lock a mutex here. Strictly
-       * speaking, runloop_core_status_msg is not part
-       * of the message queue, but:
-       * - It may be implemented as a queue in the future
-       * - It seems unnecessary to create a new slock_t
-       *   object for this type of message when
-       *   _runloop_msg_queue_lock is already available
-       * We therefore just call runloop_msg_queue_lock()/
-       * runloop_msg_queue_unlock() in this case */
-      RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
-
-      /* Check whether duration timer has elapsed */
-      runloop_st->core_status_msg.duration -= anim_get_ptr()->delta_time;
-
-      if (runloop_st->core_status_msg.duration < 0.0f)
-      {
-         runloop_st->core_status_msg.str[0]   = '\0';
-         runloop_st->core_status_msg.priority = 0;
-         runloop_st->core_status_msg.duration = 0.0f;
-         runloop_st->core_status_msg.set      = false;
-      }
-      else
-      {
-         /* If status text is already set, add status
-          * message at the end */
-         if (!string_is_empty(status_text))
-         {
-            strlcat(status_text,
-                  " || ", sizeof(status_text));
-            strlcat(status_text,
-                  runloop_st->core_status_msg.str,
-                  sizeof(status_text));
-         }
-         else
-            strlcpy(status_text,
-                  runloop_st->core_status_msg.str,
-                  sizeof(status_text));
-      }
-
-      RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
-   }
-
-   /* Slightly messy code,
-    * but we really need to do processing before blocking on VSync
-    * for best possible scheduling.
-    */
-   if (
-         (
-#ifdef HAVE_VIDEO_FILTER
-             !video_st->state_filter ||
-#endif
-             !video_info.post_filter_record
-          || !data
-          || video_st->record_gpu_buffer
-         ) && recording_state.data
-           && recording_state.driver
-           && recording_state.driver->push_video)
-      recording_dump_frame(
-            data, width, height,
-            pitch, runloop_idle);
-
-#ifdef HAVE_VIDEO_FILTER
-   if (data && video_st->state_filter)
-   {
-      unsigned output_width                             = 0;
-      unsigned output_height                            = 0;
-      unsigned output_pitch                             = 0;
-
-      rarch_softfilter_get_output_size(video_st->state_filter,
-            &output_width, &output_height, width, height);
-
-      output_pitch = (output_width) * video_st->state_out_bpp;
-
-      rarch_softfilter_process(video_st->state_filter,
-            video_st->state_buffer, output_pitch,
-            data, width, height, pitch);
-
-      if (video_info.post_filter_record
-            && recording_state.data
-            && recording_state.driver
-            && recording_state.driver->push_video)
-         recording_dump_frame(
-               video_st->state_buffer,
-               output_width, output_height, output_pitch,
-               runloop_idle);
-
-      data   = video_st->state_buffer;
-      width  = output_width;
-      height = output_height;
-      pitch  = output_pitch;
-   }
-#endif
-
-   if (runloop_st->msg_queue_size > 0)
-   {
-      /* If widgets are currently enabled, then
-       * messages were pushed to the queue before
-       * widgets were initialised - in this case, the
-       * first item in the message queue should be
-       * extracted and pushed to the widget message
-       * queue instead */
-#if defined(HAVE_GFX_WIDGETS)
-      if (widgets_active)
-      {
-         msg_queue_entry_t msg_entry;
-         bool msg_found = false;
-
-         RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
-         msg_found                       = msg_queue_extract(
-               &runloop_st->msg_queue, &msg_entry);
-         runloop_st->msg_queue_size = msg_queue_size(
-               &runloop_st->msg_queue);
-         RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
-
-         if (msg_found)
-            gfx_widgets_msg_queue_push(
-                  NULL,
-                  msg_entry.msg,
-                  roundf((float)msg_entry.duration / 60.0f * 1000.0f),
-                  msg_entry.title,
-                  msg_entry.icon,
-                  msg_entry.category,
-                  msg_entry.prio,
-                  false,
-#ifdef HAVE_MENU
-                  menu_state_get_ptr()->alive
-#else
-                  false
-#endif
-            );
-      }
-      /* ...otherwise, just output message via
-       * regular OSD notification text (if enabled) */
-      else if (video_info.font_enable)
-#else
-      if (video_info.font_enable)
-#endif
-      {
-         const char *msg                 = NULL;
-         RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
-         msg                             = msg_queue_pull(&runloop_st->msg_queue);
-         runloop_st->msg_queue_size = msg_queue_size(&runloop_st->msg_queue);
-         if (msg)
-            strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
-         RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
-      }
-   }
-
-   if (video_info.statistics_show)
-   {
-      audio_statistics_t audio_stats;
-      double stddev                          = 0.0;
-      struct retro_system_av_info *av_info   = &video_st->av_info;
-      unsigned red                           = 255;
-      unsigned green                         = 255;
-      unsigned blue                          = 255;
-      unsigned alpha                         = 255;
-
-      audio_stats.samples                    = 0;
-      audio_stats.average_buffer_saturation  = 0.0f;
-      audio_stats.std_deviation_percentage   = 0.0f;
-      audio_stats.close_to_underrun          = 0.0f;
-      audio_stats.close_to_blocking          = 0.0f;
-
-      video_monitor_fps_statistics(NULL, &stddev, NULL);
-
-      video_info.osd_stat_params.x           = 0.010f;
-      video_info.osd_stat_params.y           = 0.950f;
-      video_info.osd_stat_params.scale       = 1.0f;
-      video_info.osd_stat_params.full_screen = true;
-      video_info.osd_stat_params.drop_x      = -2;
-      video_info.osd_stat_params.drop_y      = -2;
-      video_info.osd_stat_params.drop_mod    = 0.3f;
-      video_info.osd_stat_params.drop_alpha  = 1.0f;
-      video_info.osd_stat_params.color       = COLOR_ABGR(
-            red, green, blue, alpha);
-
-      audio_compute_buffer_statistics(&audio_stats);
-
-      snprintf(video_info.stat_text,
-            sizeof(video_info.stat_text),
-            "Video Statistics:\n -Frame rate: %6.2f fps\n -Frame time: %6.2f ms\n -Frame time deviation: %.3f %%\n"
-            " -Frame count: %" PRIu64"\n -Viewport: %d x %d x %3.2f\n"
-            "Audio Statistics:\n -Average buffer saturation: %.2f %%\n -Standard deviation: %.2f %%\n -Time spent close to underrun: %.2f %%\n -Time spent close to blocking: %.2f %%\n -Sample count: %d\n"
-            "Core Geometry:\n -Size: %u x %u\n -Max Size: %u x %u\n -Aspect: %3.2f\nCore Timing:\n -FPS: %3.2f\n -Sample Rate: %6.2f\n",
-            last_fps,
-            frame_time / 1000.0f,
-            100.0f * stddev,
-            video_st->frame_count,
-            video_info.width,
-            video_info.height,
-            video_info.refresh_rate,
-            audio_stats.average_buffer_saturation,
-            audio_stats.std_deviation_percentage,
-            audio_stats.close_to_underrun,
-            audio_stats.close_to_blocking,
-            audio_stats.samples,
-            av_info->geometry.base_width,
-            av_info->geometry.base_height,
-            av_info->geometry.max_width,
-            av_info->geometry.max_height,
-            av_info->geometry.aspect_ratio,
-            av_info->timing.fps,
-            av_info->timing.sample_rate);
-
-      /* TODO/FIXME - add OSD chat text here */
-   }
-
-   if (video_st->current_video && video_st->current_video->frame)
-      video_st->active = video_st->current_video->frame(
-            video_st->data, data, width, height,
-            video_st->frame_count, (unsigned)pitch,
-            video_info.menu_screensaver_active ? "" : video_driver_msg,
-            &video_info);
-
-   video_st->frame_count++;
-
-   /* Display the status text, with a higher priority. */
-   if (  (   video_info.fps_show
-          || video_info.framecount_show
-          || video_info.memory_show
-          || video_info.core_status_msg_show
-         )
-       && !video_info.menu_screensaver_active
-      )
-   {
-#if defined(HAVE_GFX_WIDGETS)
-      if (widgets_active)
-         strlcpy(
-               dispwidget_get_ptr()->gfx_widgets_status_text,
-               status_text,
-               sizeof(dispwidget_get_ptr()->gfx_widgets_status_text)
-               );
-      else
-#endif
-      {
-         runloop_msg_queue_push(status_text, 2, 1, true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      }
-   }
-
-#if defined(HAVE_CRTSWITCHRES)
-   /* trigger set resolution*/
-   if (video_info.crt_switch_resolution)
-   {
-      unsigned native_width                      = width;
-      bool dynamic_super_width                   = false;
-
-      video_st->crt_switching_active             = true;
-
-      switch (video_info.crt_switch_resolution_super)
-      {
-         case 2560:
-         case 3840:
-         case 1920:
-            width               = video_info.crt_switch_resolution_super;
-            dynamic_super_width = false;
-            break;
-         case 1:
-            dynamic_super_width = true;
-            break;
-         default:
-            break;
-      }
-
-      crt_switch_res_core(
-            &video_st->crt_switch_st,
-            native_width, width,
-            height,
-            video_st->core_hz,
-            video_info.crt_switch_resolution,
-            video_info.crt_switch_center_adjust,
-            video_info.crt_switch_porch_adjust,
-            video_info.monitor_index,
-            dynamic_super_width,
-            video_info.crt_switch_resolution_super,
-            video_info.crt_switch_hires_menu);
-   }
-   else if (!video_info.crt_switch_resolution)
-#endif
-      video_st->crt_switching_active = false;
 }
 
 void crt_switch_driver_refresh(void)
@@ -14274,7 +13490,7 @@ static void drivers_init(
       video_driver_filter_free();
 #endif
       video_driver_set_cached_frame_ptr(NULL);
-      if (!video_driver_init_internal(settings, &video_is_threaded,
+      if (!video_driver_init_internal(&video_is_threaded,
                verbosity_enabled))
          retroarch_fail(p_rarch, 1, "video_driver_init_internal()");
 
@@ -17826,7 +17042,7 @@ static enum runloop_state_enum runloop_check_state(
          {
             float target_hz = 0.0;
 
-            retroarch_environment_cb(
+            runloop_environment_cb(
                   RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE, &target_hz);
 
             runloop_msg_queue_push(msg_hash_to_str(MSG_PRESS_AGAIN_TO_QUIT), 1,

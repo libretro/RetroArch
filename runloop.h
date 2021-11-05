@@ -45,6 +45,14 @@
 /* Arbitrary 10 roms for each subsystem limit */
 #define SUBSYSTEM_MAX_SUBSYSTEM_ROMS 10
 
+#ifdef HAVE_THREADS
+#define RUNLOOP_MSG_QUEUE_LOCK(runloop_st) slock_lock((runloop_st)->msg_queue_lock)
+#define RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st) slock_unlock((runloop_st)->msg_queue_lock)
+#else
+#define RUNLOOP_MSG_QUEUE_LOCK(runloop_st) (void)(runloop_st)
+#define RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st) (void)(runloop_st)
+#endif
+
 enum  runloop_state_enum
 {
    RUNLOOP_STATE_ITERATE = 0,
@@ -287,6 +295,18 @@ typedef struct runloop runloop_state_t;
 RETRO_BEGIN_DECLS
 
 void runloop_path_fill_names(void);
+
+/**
+ * runloop_environment_cb:
+ * @cmd                          : Identifier of command.
+ * @data                         : Pointer to data.
+ *
+ * Environment callback function implementation.
+ *
+ * Returns: true (1) if environment callback command could
+ * be performed, otherwise false (0).
+ **/
+bool runloop_environment_cb(unsigned cmd, void *data);
 
 runloop_state_t *runloop_state_get_ptr(void);
 

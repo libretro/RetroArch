@@ -47,8 +47,6 @@ static bool secondary_core_ensure_exists(struct rarch_state *p_rarch,
 static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id);
 #endif
-static void video_driver_frame(const void *data, unsigned width,
-      unsigned height, size_t pitch);
 static void retro_frame_null(const void *data, unsigned width,
       unsigned height, size_t pitch);
 static void retro_run_null(void);
@@ -76,8 +74,6 @@ static void drivers_init(struct rarch_state *p_rarch,
 
 static bool core_load(unsigned poll_type_behavior);
 static bool core_unload_game(void);
-
-static bool retroarch_environment_cb(unsigned cmd, void *data);
 
 static void driver_camera_stop(void);
 static bool driver_camera_start(void);

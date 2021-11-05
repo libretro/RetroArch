@@ -59,8 +59,6 @@
 
 #define DEBUG_INFO_FILENAME "debug_info.txt"
 
-#define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
-
 #define DEFAULT_NETWORK_GAMEPAD_PORT 55400
 #define UDP_FRAME_PACKETS 16
 
