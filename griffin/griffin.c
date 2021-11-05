@@ -1575,6 +1575,7 @@ XML
 HTTP SERVER
 ============================================================ */
 #if defined(HAVE_DISCORD)
+#include "../network/discord.c"
 #if defined(_WIN32)
 #include "../deps/discord-rpc/src/discord_register_win.c"
 #endif

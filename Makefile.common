@@ -2197,6 +2197,8 @@ ifeq ($(HAVE_NETWORKING), 1)
                  deps/discord-rpc/src/rpc_connection.o \
                  deps/discord-rpc/src/serialization.o
 
+      OBJ     += network/discord.o
+
       ifneq ($(findstring Win32,$(OS)),)
          OBJ  += deps/discord-rpc/src/discord_register_win.o \
                  deps/discord-rpc/src/connection_win.o

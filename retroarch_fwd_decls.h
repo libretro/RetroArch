@@ -1,17 +1,6 @@
 #ifndef _RETROARCH_FWD_DECLS_H
 #define _RETROARCH_FWD_DECLS_H
 
-#ifdef HAVE_DISCORD
-#if defined(__cplusplus) && !defined(CXX_BUILD)
-extern "C"
-{
-#endif
-   void Discord_Register(const char *a, const char *b);
-#if defined(__cplusplus) && !defined(CXX_BUILD)
-}
-#endif
-#endif
-
 static void retroarch_fail(struct rarch_state *p_rarch,
       int error_code, const char *error);
 static void ui_companion_driver_toggle(
