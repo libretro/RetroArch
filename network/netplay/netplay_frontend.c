@@ -5642,7 +5642,6 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
    {
       char port_buf[6];
       snprintf(port_buf, sizeof(port_buf), "%hu", port);
-#ifdef HAVE_INET6
       if (!server)
       {
          hints.ai_flags  = AI_PASSIVE;
@@ -5653,7 +5652,6 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
          hints.ai_family = AF_INET;
 #endif
       }
-#endif
       hints.ai_socktype = SOCK_STREAM;
 
       if (getaddrinfo_retro(server, port_buf, &hints, &res))
