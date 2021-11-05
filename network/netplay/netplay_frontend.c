@@ -143,8 +143,20 @@ static int lan_ad_server_fd            = -1;
 static int lan_ad_client_fd            = -1;
 #endif
 
+/* The keys supported by netplay */
+enum netplay_keys
+{
+   NETPLAY_KEY_UNKNOWN = 0,
+#define K(k) NETPLAY_KEY_ ## k,
+#define KL(k,l) K(k)
+#include "netplay_keys.h"
+#undef KL
+#undef K
+   NETPLAY_KEY_LAST
+};
+
 /* The mapping of keys from netplay (network) to libretro (host) */
-const uint16_t netplay_key_ntoh_mapping[] = {
+static const uint16_t netplay_key_ntoh_mapping[] = {
    (uint16_t) RETROK_UNKNOWN,
 #define K(k) (uint16_t) RETROK_ ## k,
 #define KL(k,l) (uint16_t) l,
@@ -153,6 +165,8 @@ const uint16_t netplay_key_ntoh_mapping[] = {
 #undef K
    0
 };
+
+#define NETPLAY_KEY_NTOH(k) (netplay_key_ntoh_mapping[k])
 
 static net_driver_state_t networking_driver_st = {0};
 

@@ -154,6 +154,12 @@ struct netplay_room
    bool fixed;
 };
 
+struct netplay_rooms
+{
+   struct netplay_room *head;
+   struct netplay_room *cur;
+};
+
 struct netplay_host
 {
    struct sockaddr addr;
@@ -182,6 +188,7 @@ typedef struct
    struct netplay_room host_room; /* ptr alignment */
    netplay_t *handshake_password;
    struct netplay_room *room_list;
+   struct netplay_rooms *rooms_data;
    /* List of discovered hosts */
    struct netplay_host_list discovered_hosts;
 #ifdef HAVE_NETPLAYDISCOVERY
