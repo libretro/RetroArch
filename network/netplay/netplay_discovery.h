@@ -20,31 +20,6 @@
 #include <net/net_ifinfo.h>
 #include <retro_miscellaneous.h>
 
-#define NETPLAY_HOST_STR_LEN 32
-#define NETPLAY_HOST_LONGSTR_LEN 256
-
-struct netplay_host
-{
-   struct sockaddr addr;
-   socklen_t addrlen;
-   int  content_crc;
-   int  port;
-   char address[NETPLAY_HOST_STR_LEN];
-   char nick[NETPLAY_HOST_STR_LEN];
-   char frontend[NETPLAY_HOST_STR_LEN];
-   char core[NETPLAY_HOST_STR_LEN];
-   char core_version[NETPLAY_HOST_STR_LEN];
-   char retroarch_version[NETPLAY_HOST_STR_LEN];
-   char content[NETPLAY_HOST_LONGSTR_LEN];
-   char subsystem_name[NETPLAY_HOST_LONGSTR_LEN];
-};
-
-struct netplay_host_list
-{
-   struct netplay_host *hosts;
-   size_t size;
-};
-
 /* Keep these in order, they coincide with a server-side enum and must match. */
 enum netplay_host_method
 {

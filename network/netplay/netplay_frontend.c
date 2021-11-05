@@ -4096,14 +4096,18 @@ static void announce_play_spectate(netplay_t *netplay,
             pdevice_str = device_str;
 
             for (device = 0; device < MAX_INPUT_DEVICES; device++)
+            {
                if (devices & (1<<device))
                   pdevice_str += snprintf(pdevice_str,
                         sizeof(device_str) - (size_t)
                         (pdevice_str - device_str),
                         "%u, ",
 			(unsigned) (device+1));
+            }
+
             if (pdevice_str > device_str)
                pdevice_str -= 2;
+            *pdevice_str = '\0';
 
             /* Then we make the final string */
             if (nick)
@@ -5489,7 +5493,7 @@ void netplay_announce_nat_traversal(netplay_t *netplay)
                &netplay->nat_traversal_state.ext_inet4_addr,
                sizeof(netplay->nat_traversal_state.ext_inet4_addr),
                host, sizeof(host), port, sizeof(port),
-               NI_NUMERICHOST|NI_NUMERICSERV))
+               NI_NUMERICHOST | NI_NUMERICSERV))
       {
          snprintf(msg, sizeof(msg), "%s: %s:%s",
                msg_hash_to_str(MSG_PUBLIC_ADDRESS),
@@ -5507,7 +5511,7 @@ void netplay_announce_nat_traversal(netplay_t *netplay)
                &netplay->nat_traversal_state.ext_inet6_addr,
                sizeof(netplay->nat_traversal_state.ext_inet6_addr),
                host, sizeof(host), port, sizeof(port),
-               NI_NUMERICHOST|NI_NUMERICSERV))
+               NI_NUMERICHOST | NI_NUMERICSERV))
       {
          snprintf(msg, sizeof(msg), "%s: %s|%s",
                msg_hash_to_str(MSG_PUBLIC_ADDRESS),
@@ -5572,15 +5576,19 @@ static int init_tcp_connection(const struct addrinfo *res,
       if (!socket_connect(fd, (void*)res, false))
          return fd;
 
+#ifndef HAVE_SOCKET_LEGACY
       if (!getnameinfo(res->ai_addr, res->ai_addrlen,
                host, sizeof(host), port, sizeof(port),
-               NI_NUMERICHOST|NI_NUMERICSERV))
+               NI_NUMERICHOST | NI_NUMERICSERV))
       {
          snprintf(msg, sizeof(msg),
                "Failed to connect to host %s on port %s.",
                host, port);
          dmsg = msg;
       }
+#else
+         dmsg = "Failed to connect to host.";
+#endif
    }
    else
    {
@@ -5601,12 +5609,16 @@ static int init_tcp_connection(const struct addrinfo *res,
       }
       else
       {
+#ifndef HAVE_SOCKET_LEGACY
          if (!getnameinfo(res->ai_addr, res->ai_addrlen,
                   NULL, 0, port, sizeof(port), NI_NUMERICSERV))
          {
             snprintf(msg, sizeof(msg), "Failed to bind port %s.", port);
             dmsg = msg;
          }
+#else
+         dmsg = "Failed to bind port.";
+#endif
       }
    }
 
@@ -5629,10 +5641,9 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
 
    if (!direct_host)
    {
-#ifdef HAVE_INET6
       char port_buf[6];
       snprintf(port_buf, sizeof(port_buf), "%hu", port);
-
+#ifdef HAVE_INET6
       if (!server)
       {
          hints.ai_flags  = AI_PASSIVE;

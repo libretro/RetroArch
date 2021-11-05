@@ -34,6 +34,9 @@
 
 #include "../../core.h"
 
+#define NETPLAY_HOST_STR_LEN 32
+#define NETPLAY_HOST_LONGSTR_LEN 256
+
 enum rarch_netplay_ctl_state
 {
    RARCH_NETPLAY_CTL_NONE = 0,
@@ -136,6 +139,29 @@ struct netplay_room
    bool lan;
    bool fixed;
 };
+
+struct netplay_host
+{
+   struct sockaddr addr;
+   socklen_t addrlen;
+   int  content_crc;
+   int  port;
+   char address[NETPLAY_HOST_STR_LEN];
+   char nick[NETPLAY_HOST_STR_LEN];
+   char frontend[NETPLAY_HOST_STR_LEN];
+   char core[NETPLAY_HOST_STR_LEN];
+   char core_version[NETPLAY_HOST_STR_LEN];
+   char retroarch_version[NETPLAY_HOST_STR_LEN];
+   char content[NETPLAY_HOST_LONGSTR_LEN];
+   char subsystem_name[NETPLAY_HOST_LONGSTR_LEN];
+};
+
+struct netplay_host_list
+{
+   struct netplay_host *hosts;
+   size_t size;
+};
+
 
 typedef struct
 {
