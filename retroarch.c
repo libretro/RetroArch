@@ -234,9 +234,7 @@
 
 #include "retroarch.h"
 
-#ifdef HAVE_ACCESSIBILITY
 #include "accessibility.h"
-#endif
 
 #if defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX)
 #include "SDL.h"
@@ -268,6 +266,13 @@ retro_keybind_set input_autoconf_binds[MAX_USERS];
 
 static runloop_state_t runloop_state;
 static recording_state_t recording_state;
+static access_state_t access_state_st = {0};
+
+access_state_t *access_state_get_ptr(void)
+{
+   return &access_state_st;
+}
+
 
 recording_state_t *recording_state_get_ptr(void)
 {
@@ -395,15 +400,6 @@ static bool driver_find_next(const char *label, char *s, size_t len)
          s);
    return false;
 }
-
-#if defined(HAVE_ACCESSIBILITY) || defined(HAVE_TRANSLATE)
-static access_state_t access_state_st = {0};
-
-access_state_t *access_state_get_ptr(void)
-{
-   return &access_state_st;
-}
-#endif
 
 /**
  * find_driver_nonempty:
