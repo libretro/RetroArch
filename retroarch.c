@@ -396,7 +396,7 @@ static bool driver_find_next(const char *label, char *s, size_t len)
    return false;
 }
 
-#ifdef HAVE_ACCESSIBILITY
+#if defined(HAVE_ACCESSIBILITY) || defined(HAVE_TRANSLATE)
 static access_state_t access_state_st = {0};
 
 access_state_t *access_state_get_ptr(void)
