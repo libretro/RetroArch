@@ -396,6 +396,15 @@ static bool driver_find_next(const char *label, char *s, size_t len)
    return false;
 }
 
+#ifdef HAVE_ACCESSIBILITY
+static access_state_t access_state_st = {0};
+
+access_state_t *access_state_get_ptr(void)
+{
+   return &access_state_st;
+}
+#endif
+
 #ifdef HAVE_MENU
 /**
  * menu_iterate:
@@ -421,6 +430,7 @@ static int generic_menu_iterate(
 #ifdef HAVE_ACCESSIBILITY
    static enum action_iterate_type
       last_iterate_type            = ITERATE_TYPE_DEFAULT;
+   access_state_t *access_st       = access_state_get_ptr();
    bool accessibility_enable       = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
 #endif
@@ -457,8 +467,8 @@ static int generic_menu_iterate(
          if (     (iterate_type != last_iterate_type)
                && is_accessibility_enabled(
                   accessibility_enable,
-                  p_rarch->accessibility_enabled))
-            accessibility_speak_priority(p_rarch,
+                  access_st->enabled))
+            accessibility_speak_priority(
                   accessibility_enable,
                   accessibility_narrator_speech_speed,
                   menu->menu_state_msg, 10);
@@ -572,7 +582,7 @@ static int generic_menu_iterate(
                if (  (iterate_type != last_iterate_type) &&
                      is_accessibility_enabled(
                         accessibility_enable,
-                        p_rarch->accessibility_enabled))
+                        access_st->enabled))
                {
                   if (string_is_equal(menu->menu_state_msg,
                            msg_hash_to_str(
@@ -583,18 +593,18 @@ static int generic_menu_iterate(
                            menu_st,
                            current_sublabel, sizeof(current_sublabel));
                      if (string_is_equal(current_sublabel, ""))
-                        accessibility_speak_priority(p_rarch,
+                        accessibility_speak_priority(
                               accessibility_enable,
                               accessibility_narrator_speech_speed,
                               menu->menu_state_msg, 10);
                      else
-                        accessibility_speak_priority(p_rarch,
+                        accessibility_speak_priority(
                               accessibility_enable,
                               accessibility_narrator_speech_speed,
                               current_sublabel, 10);
                   }
                   else
-                     accessibility_speak_priority(p_rarch,
+                     accessibility_speak_priority(
                            accessibility_enable,
                            accessibility_narrator_speech_speed,
                            menu->menu_state_msg, 10);
@@ -744,8 +754,8 @@ static int generic_menu_iterate(
          && last_iterate_type != iterate_type
          && is_accessibility_enabled(
             accessibility_enable,
-            p_rarch->accessibility_enabled))
-      accessibility_speak_priority(p_rarch,
+            access_st->enabled))
+      accessibility_speak_priority(
             accessibility_enable,
             accessibility_narrator_speech_speed,
             "Closed dialog.", 10);
@@ -807,6 +817,7 @@ int generic_menu_entry_action(
 #ifdef HAVE_ACCESSIBILITY
    bool accessibility_enable      = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
+   access_state_t *access_st      = access_state_get_ptr();
 #endif
 
    switch (action)
@@ -967,7 +978,7 @@ int generic_menu_entry_action(
    if (     action != 0
          && is_accessibility_enabled(
             accessibility_enable,
-            p_rarch->accessibility_enabled)
+            access_st->enabled)
          && !menu_input_dialog_get_display_kb())
    {
       char current_label[128];
@@ -1034,7 +1045,7 @@ int generic_menu_entry_action(
       }
 
       if (!string_is_empty(speak_string))
-         accessibility_speak_priority(p_rarch,
+         accessibility_speak_priority(
                accessibility_enable,
                accessibility_narrator_speech_speed,
                speak_string, 10);
@@ -2649,6 +2660,7 @@ bool menu_input_dialog_start_search(void)
    settings_t *settings        = config_get_ptr();
    bool accessibility_enable   = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
+   access_state_t *access_st   = access_state_get_ptr();
 #endif
    struct menu_state *menu_st  = menu_state_get_ptr();
    menu_handle_t         *menu = menu_st->driver_data;
@@ -2673,8 +2685,8 @@ bool menu_input_dialog_start_search(void)
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(
             accessibility_enable,
-            p_rarch->accessibility_enabled))
-         accessibility_speak_priority(p_rarch,
+            access_st->enabled))
+         accessibility_speak_priority(
             accessibility_enable,
             accessibility_narrator_speech_speed,
             (char*)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH), 10);
@@ -2698,6 +2710,7 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    settings_t *settings             = config_get_ptr();
    bool accessibility_enable        = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
+   access_state_t *access_st        = access_state_get_ptr();
 #endif
    struct menu_state *menu_st       = menu_state_get_ptr();
    menu_handle_t         *menu      = menu_st->driver_data;
@@ -2731,8 +2744,8 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(
             accessibility_enable,
-            p_rarch->accessibility_enabled))
-      accessibility_speak_priority(p_rarch,
+            access_st->enabled))
+      accessibility_speak_priority(
             accessibility_enable,
             accessibility_narrator_speech_speed,
             "Keyboard input:", 10);
@@ -2833,6 +2846,7 @@ static void task_auto_translate_handler(retro_task_t *task)
    struct rarch_state *p_rarch = &rarch_st;
 #ifdef HAVE_ACCESSIBILITY
    settings_t *settings        = config_get_ptr();
+   access_state_t *access_st   = access_state_get_ptr();
 #endif
 
    if (task_get_cancelled(task))
@@ -2860,8 +2874,8 @@ static void task_auto_translate_handler(retro_task_t *task)
    return;
 
 task_finished:
-   if (p_rarch->ai_service_auto == 1)
-      p_rarch->ai_service_auto = 2;
+   if (access_st->ai_service_auto == 1)
+      access_st->ai_service_auto = 2;
 
    task_set_finished(task, true);
 
@@ -2879,13 +2893,14 @@ static void call_auto_translate_task(
       settings_t *settings,
       bool *was_paused)
 {
-   int ai_service_mode  = settings->uints.ai_service_mode;
+   int ai_service_mode       = settings->uints.ai_service_mode;
+   access_state_t *access_st = access_state_get_ptr();
 
    /*Image Mode*/
    if (ai_service_mode == 0)
    {
-      if (p_rarch->ai_service_auto == 1)
-         p_rarch->ai_service_auto = 2;
+      if (access_st->ai_service_auto == 1)
+         access_st->ai_service_auto = 2;
 
       command_event(CMD_EVENT_AI_SERVICE_CALL, was_paused);
    }
@@ -2948,6 +2963,7 @@ static void handle_translation_cb(
 #ifdef HAVE_ACCESSIBILITY
    bool accessibility_enable         = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
+   access_state_t *access_st         = access_state_get_ptr();
 #endif
 #ifdef HAVE_GFX_WIDGETS
    bool gfx_widgets_paused           = video_st->widgets_paused;
@@ -2955,12 +2971,12 @@ static void handle_translation_cb(
    /* When auto mode is on, we turn off the overlay
     * once we have the result for the next call.*/
    if (dispwidget_get_ptr()->ai_service_overlay_state != 0
-       && p_rarch->ai_service_auto == 2)
+       && access_st->ai_service_auto == 2)
       gfx_widgets_ai_service_overlay_unload();
 #endif
 
 #ifdef DEBUG
-   if (p_rarch->ai_service_auto != 2)
+   if (access_st->ai_service_auto != 2)
       RARCH_LOG("RESULT FROM AI SERVICE...\n");
 #endif
 
@@ -3060,7 +3076,7 @@ static void handle_translation_cb(
    if (     !raw_image_file_data
          && !raw_sound_data
          && !text_string
-         && (p_rarch->ai_service_auto != 2)
+         && (access_st->ai_service_auto != 2)
          && !key_string)
    {
       error = "Invalid JSON body.";
@@ -3364,10 +3380,11 @@ static void handle_translation_cb(
    }
 
 #ifdef HAVE_ACCESSIBILITY
-   if (text_string && is_accessibility_enabled(
+   if (     text_string 
+         && is_accessibility_enabled(
             accessibility_enable,
-            p_rarch->accessibility_enabled))
-      accessibility_speak_priority(p_rarch,
+            access_st->enabled))
+      accessibility_speak_priority(
             accessibility_enable,
             accessibility_narrator_speech_speed,
             text_string, 10);
@@ -3399,7 +3416,7 @@ finish:
 
    if (string_is_equal(auto_string, "auto"))
    {
-      if (     (p_rarch->ai_service_auto != 0)
+      if (     (access_st->ai_service_auto != 0)
             && !settings->bools.ai_service_pause)
          call_auto_translate_task(p_rarch, settings, &was_paused);
    }
@@ -3620,6 +3637,7 @@ static bool run_translation_service(
    const enum retro_pixel_format
       video_driver_pix_fmt               = video_st->pix_fmt;
 #ifdef HAVE_ACCESSIBILITY
+   access_state_t *access_st             = access_state_get_ptr();
 #ifdef HAVE_TRANSLATE
    input_driver_state_t *input_st        = input_state_get_ptr();
 #endif
@@ -3628,7 +3646,7 @@ static bool run_translation_service(
 #ifdef HAVE_GFX_WIDGETS
    /* For the case when ai service pause is disabled. */
    if (  (dispwidget_get_ptr()->ai_service_overlay_state != 0)
-         && (p_rarch->ai_service_auto == 1))
+         && (access_st->ai_service_auto == 1))
    {
       gfx_widgets_ai_service_overlay_unload();
       goto finish;
@@ -3851,7 +3869,7 @@ static bool run_translation_service(
       goto finish; /* ran out of memory */
 
 #ifdef DEBUG
-   if (p_rarch->ai_service_auto != 2)
+   if (access_st->ai_service_auto != 2)
       RARCH_LOG("Request size: %d\n", bmp64_length);
 #endif
    {
@@ -3947,7 +3965,7 @@ static bool run_translation_service(
                  sizeof(new_ai_service_url));
       }
 #ifdef DEBUG
-      if (p_rarch->ai_service_auto != 2)
+      if (access_st->ai_service_auto != 2)
          RARCH_LOG("SENDING... %s\n", new_ai_service_url);
 #endif
       task_push_http_post_transfer(new_ai_service_url,
@@ -3980,9 +3998,10 @@ finish:
 static bool is_narrator_running(struct rarch_state *p_rarch,
       bool accessibility_enable)
 {
+   access_state_t *access_st = access_state_get_ptr();
    if (is_accessibility_enabled(
             accessibility_enable,
-            p_rarch->accessibility_enabled))
+            access_st->enabled))
    {
       frontend_ctx_driver_t *frontend = 
          frontend_state_get_ptr()->current_frontend_ctx;
@@ -4671,11 +4690,12 @@ bool command_event(enum event_command cmd, void *data)
                {
 #ifdef HAVE_ACCESSIBILITY
                   bool accessibility_enable = settings->bools.accessibility_enable;
+                  access_state_t *access_st = access_state_get_ptr();
                   unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
                   if (is_accessibility_enabled(
                            accessibility_enable,
-                           p_rarch->accessibility_enabled))
-                     accessibility_speak_priority(p_rarch,
+                           access_st->enabled))
+                     accessibility_speak_priority(
                            accessibility_enable,
                            accessibility_narrator_speech_speed,
                            (char*)msg_hash_to_str(MSG_UNPAUSED), 10);
@@ -4693,11 +4713,12 @@ bool command_event(enum event_command cmd, void *data)
                 * Also, this mode is required for "auto" translation
                 * packages, since you don't want to pause for that.
                 */
-               if (p_rarch->ai_service_auto == 2)
+               access_state_t *access_st = access_state_get_ptr();
+               if (access_st->ai_service_auto == 2)
                {
                   /* Auto mode was turned on, but we pressed the
                    * toggle button, so turn it off now. */
-                  p_rarch->ai_service_auto = 0;
+                  access_st->ai_service_auto = 0;
 #ifdef HAVE_MENU_WIDGETS
                   gfx_widgets_ai_service_overlay_unload();
 #endif
@@ -5690,6 +5711,7 @@ bool command_event(enum event_command cmd, void *data)
          {
 #ifdef HAVE_ACCESSIBILITY
             bool accessibility_enable                    = settings->bools.accessibility_enable;
+            access_state_t *access_st                    = access_state_get_ptr();
             unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
 #endif
             boolean                                      = runloop_st->paused;
@@ -5698,15 +5720,15 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_ACCESSIBILITY
             if (is_accessibility_enabled(
                   accessibility_enable,
-                  p_rarch->accessibility_enabled))
+                  access_st->enabled))
             {
                if (boolean)
-                  accessibility_speak_priority(p_rarch,
+                  accessibility_speak_priority(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
                      (char*)msg_hash_to_str(MSG_PAUSED), 10);
                else
-                  accessibility_speak_priority(p_rarch,
+                  accessibility_speak_priority(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
                      (char*)msg_hash_to_str(MSG_UNPAUSED), 10);
@@ -6407,6 +6429,7 @@ bool command_event(enum event_command cmd, void *data)
          {
 #ifdef HAVE_TRANSLATE
 #ifdef HAVE_ACCESSIBILITY
+            access_state_t *access_st = access_state_get_ptr();
             bool accessibility_enable = settings->bools.accessibility_enable;
             unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
 #endif
@@ -6420,8 +6443,8 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_ACCESSIBILITY
                if (is_accessibility_enabled(
                         accessibility_enable,
-                        p_rarch->accessibility_enabled))
-                  accessibility_speak_priority(p_rarch,
+                        access_st->enabled))
+                  accessibility_speak_priority(
                         accessibility_enable,
                         accessibility_narrator_speech_speed,
                         "stopped.", 10);
@@ -6432,10 +6455,10 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_ACCESSIBILITY
             if (is_accessibility_enabled(
                      accessibility_enable,
-                     p_rarch->accessibility_enabled) &&
-                  ai_service_mode == 2 &&
-                  is_narrator_running(p_rarch, accessibility_enable))
-               accessibility_speak_priority(p_rarch,
+                     access_st->enabled)
+                  && ai_service_mode == 2
+                  && is_narrator_running(p_rarch, accessibility_enable))
+               accessibility_speak_priority(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
                      "stopped.", 10);
@@ -6446,9 +6469,9 @@ bool command_event(enum event_command cmd, void *data)
                if (data)
                   paused = *((bool*)data);
 
-               if (      p_rarch->ai_service_auto == 0
+               if (      access_st->ai_service_auto == 0
                      && !settings->bools.ai_service_pause)
-                  p_rarch->ai_service_auto = 1;
+                  access_st->ai_service_auto = 1;
 
                run_translation_service(settings,
                      p_rarch, paused);
@@ -11820,6 +11843,7 @@ void input_keyboard_event(bool down, unsigned code,
       *input_st                  = input_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
    struct rarch_state *p_rarch   = &rarch_st;
+   access_state_t *access_st     = access_state_get_ptr();
    settings_t *settings          = config_get_ptr();
    bool accessibility_enable     = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
@@ -11880,7 +11904,7 @@ void input_keyboard_event(bool down, unsigned code,
    if (menu_input_dialog_get_display_kb()
          && down && is_accessibility_enabled(
             accessibility_enable,
-            p_rarch->accessibility_enabled))
+            access_st->enabled))
    {
       if (code != 303 && code != 0)
       {
@@ -11893,7 +11917,7 @@ void input_keyboard_event(bool down, unsigned code,
             say_char[1] = '\0';
 
             if (character == 127 || character == 8)
-               accessibility_speak_priority(p_rarch,
+               accessibility_speak_priority(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
                      "backspace", 10);
@@ -11902,12 +11926,12 @@ void input_keyboard_event(bool down, unsigned code,
                const char *lut_name = accessibility_lut_name(c);
 
                if (lut_name)
-                  accessibility_speak_priority(p_rarch,
+                  accessibility_speak_priority(
                         accessibility_enable,
                         accessibility_narrator_speech_speed,
                         lut_name, 10);
                else if (character != 0)
-                  accessibility_speak_priority(p_rarch,
+                  accessibility_speak_priority(
                         accessibility_enable,
                         accessibility_narrator_speech_speed,
                         say_char, 10);
@@ -13753,6 +13777,9 @@ static bool retroarch_parse_input_and_config(
    video_driver_state_t *video_st  = video_state_get_ptr();
    runloop_state_t     *runloop_st = &runloop_state;
    settings_t          *settings   = config_get_ptr();
+#ifdef HAVE_ACCESSIBILITY
+   access_state_t *access_st       = access_state_get_ptr();
+#endif
 
    const struct option opts[]      = {
 #ifdef HAVE_DYNAMIC
@@ -14372,7 +14399,7 @@ static bool retroarch_parse_input_and_config(
                retroarch_fail(p_rarch, 1, "retroarch_parse_input()");
             case RA_OPT_ACCESSIBILITY:
 #ifdef HAVE_ACCESSIBILITY
-               p_rarch->accessibility_enabled = true;
+               access_st->enabled = true;
 #endif
                break;
             case RA_OPT_LOAD_MENU_ON_ERROR:
@@ -14500,6 +14527,7 @@ bool retroarch_main_init(int argc, char *argv[])
 #ifdef HAVE_ACCESSIBILITY
    bool accessibility_enable    = false;
    unsigned accessibility_narrator_speech_speed = 0;
+   access_state_t *access_st    = access_state_get_ptr();
 #endif
 #ifdef HAVE_MENU
    struct menu_state *menu_st   = menu_state_get_ptr();
@@ -14530,8 +14558,8 @@ bool retroarch_main_init(int argc, char *argv[])
       item we're on at startup. */
    if (is_accessibility_enabled(
             accessibility_enable,
-            p_rarch->accessibility_enabled))
-      accessibility_speak_priority(p_rarch,
+            access_st->enabled))
+      accessibility_speak_priority(
             accessibility_enable,
             accessibility_narrator_speech_speed,
             "RetroArch accessibility on.  Main Menu Load Core.",
@@ -14832,6 +14860,7 @@ static void runloop_task_msg_queue_push(
    settings_t *settings        = config_get_ptr();
    bool accessibility_enable   = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
+   access_state_t *access_st   = access_state_get_ptr();
 #endif
    runloop_state_t *runloop_st = &runloop_state;
    bool widgets_active         = dispwidget_get_ptr()->active;
@@ -14844,8 +14873,8 @@ static void runloop_task_msg_queue_push(
 #ifdef HAVE_ACCESSIBILITY
       if (is_accessibility_enabled(
             accessibility_enable,
-            p_rarch->accessibility_enabled))
-         accessibility_speak_priority(p_rarch,
+            access_st->enabled))
+         accessibility_speak_priority(
                accessibility_enable,
                accessibility_narrator_speech_speed,
                (char*)msg, 0);
@@ -15454,6 +15483,7 @@ void runloop_msg_queue_push(const char *msg,
    settings_t *settings        = config_get_ptr();
    bool accessibility_enable   = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
+   access_state_t *access_st   = access_state_get_ptr();
 #endif
    runloop_state_t *runloop_st = &runloop_state;
 
@@ -15461,8 +15491,8 @@ void runloop_msg_queue_push(const char *msg,
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(
             accessibility_enable,
-            p_rarch->accessibility_enabled))
-      accessibility_speak_priority(p_rarch,
+            access_st->enabled))
+      accessibility_speak_priority(
             accessibility_enable,
             accessibility_narrator_speech_speed,
             (char*) msg, 0);
@@ -17775,14 +17805,14 @@ unsigned int retroarch_get_rotation(void)
 
 #ifdef HAVE_ACCESSIBILITY
 static bool accessibility_speak_priority(
-      struct rarch_state *p_rarch,
       bool accessibility_enable,
       unsigned accessibility_narrator_speech_speed,
       const char* speak_text, int priority)
 {
+   access_state_t *access_st   = access_state_get_ptr();
    if (is_accessibility_enabled(
             accessibility_enable,
-            p_rarch->accessibility_enabled))
+            access_st->enabled))
    {
       frontend_ctx_driver_t *frontend = 
          frontend_state_get_ptr()->current_frontend_ctx;
@@ -17809,7 +17839,6 @@ static bool accessibility_speak_priority(
 
    return true;
 }
-
 #endif
 
 /* Creates folder and core options stub file for subsequent runs */

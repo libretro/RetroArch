@@ -410,10 +410,6 @@ struct rarch_state
 
    jmp_buf error_sjlj_context;              /* 4-byte alignment,
                                                put it right before long */
-#if defined(HAVE_TRANSLATE)
-   int ai_service_auto;
-#endif
-
 #ifdef HAVE_THREAD_STORAGE
    sthread_tls_t rarch_tls;               /* unsigned alignment */
 #endif
@@ -450,10 +446,6 @@ struct rarch_state
    bool rarch_bps_pref;
    bool rarch_ips_pref;
 
-#ifdef HAVE_ACCESSIBILITY
-   /* Is text-to-speech accessibility turned on? */
-   bool accessibility_enabled;
-#endif
 #ifdef HAVE_CONFIGFILE
    bool rarch_block_config_read;
 #endif

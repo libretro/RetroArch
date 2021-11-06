@@ -30,4 +30,13 @@
 #include "config.h"
 #endif
 
+typedef struct
+{
+   int ai_service_auto;
+   /* Is text-to-speech accessibility turned on? */
+   bool enabled;
+} access_state_t;
+
+access_state_t *access_state_get_ptr(void);
+
 #endif
