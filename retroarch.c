@@ -254,19 +254,19 @@ static bool recording_init(settings_t *settings,
       struct rarch_state *p_rarch);
 static bool recording_deinit(void);
 
-static struct rarch_state         rarch_st;
+static struct rarch_state         rarch_st = {0};
 
 #ifdef HAVE_THREAD_STORAGE
-static const void *MAGIC_POINTER                                 = (void*)(uintptr_t)0x0DEFACED;
+static const void *MAGIC_POINTER           = (void*)(uintptr_t)0x0DEFACED;
 #endif
 
 /* TODO/FIXME - turn these into static global variable */
 retro_keybind_set input_config_binds[MAX_USERS];
 retro_keybind_set input_autoconf_binds[MAX_USERS];
 
-static runloop_state_t runloop_state;
-static recording_state_t recording_state;
-static access_state_t access_state_st = {0};
+static runloop_state_t runloop_state      = {0};
+static recording_state_t recording_state  = {0};
+static access_state_t access_state_st     = {0};
 
 access_state_t *access_state_get_ptr(void)
 {
