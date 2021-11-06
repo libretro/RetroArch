@@ -797,9 +797,6 @@ int generic_menu_entry_action(
       void *userdata, menu_entry_t *entry, size_t i, enum menu_action action)
 {
    int ret                        = 0;
-#ifdef HAVE_ACCESSIBILITY
-   struct rarch_state *p_rarch    = &rarch_st;
-#endif
    struct menu_state *menu_st     = menu_state_get_ptr();
    const menu_ctx_driver_t
       *menu_driver_ctx            = menu_st->driver_ctx;
@@ -2656,7 +2653,6 @@ bool menu_input_dialog_start_search(void)
    input_driver_state_t 
       *input_st                = input_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
-   struct rarch_state *p_rarch = &rarch_st;
    settings_t *settings        = config_get_ptr();
    bool accessibility_enable   = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
@@ -2706,7 +2702,6 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 {
    input_driver_state_t *input_st   = input_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
-   struct rarch_state *p_rarch      = &rarch_st;
    settings_t *settings             = config_get_ptr();
    bool accessibility_enable        = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
@@ -11842,7 +11837,6 @@ void input_keyboard_event(bool down, unsigned code,
    input_driver_state_t 
       *input_st                  = input_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
-   struct rarch_state *p_rarch   = &rarch_st;
    access_state_t *access_st     = access_state_get_ptr();
    settings_t *settings          = config_get_ptr();
    bool accessibility_enable     = settings->bools.accessibility_enable;
