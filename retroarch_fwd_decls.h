@@ -12,11 +12,6 @@ static void ui_companion_driver_toggle(
 #ifdef HAVE_LIBNX
 void libnx_apply_overclock(void);
 #endif
-#ifdef HAVE_ACCESSIBILITY
-#ifdef HAVE_TRANSLATE
-static bool is_narrator_running(struct rarch_state *p_rarch, bool accessibility_enable);
-#endif
-#endif
 
 static void retroarch_deinit_drivers(struct rarch_state *p_rarch,
       struct retro_callbacks *cbs);

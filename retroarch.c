@@ -2038,7 +2038,6 @@ static void task_auto_translate_handler(retro_task_t *task)
 {
    int               *mode_ptr = (int*)task->user_data;
    runloop_state_t *runloop_st = &runloop_state;
-   struct rarch_state *p_rarch = &rarch_st;
 #ifdef HAVE_ACCESSIBILITY
    settings_t *settings        = config_get_ptr();
    access_state_t *access_st   = access_state_get_ptr();
@@ -2057,7 +2056,7 @@ static void task_auto_translate_handler(retro_task_t *task)
          break;
       case 2: /* Narrator Mode */
 #ifdef HAVE_ACCESSIBILITY
-         if (!is_narrator_running(p_rarch,
+         if (!is_narrator_running(
                   settings->bools.accessibility_enable))
             goto task_finished;
 #endif
@@ -2084,7 +2083,6 @@ task_finished:
 }
 
 static void call_auto_translate_task(
-      struct rarch_state *p_rarch,
       settings_t *settings,
       bool *was_paused)
 {
@@ -2142,7 +2140,6 @@ static void handle_translation_cb(
    char* text_string                 = NULL;
    char* auto_string                 = NULL;
    char* key_string                  = NULL;
-   struct rarch_state *p_rarch       = &rarch_st;
    settings_t* settings              = config_get_ptr();
    runloop_state_t *runloop_st       = &runloop_state;
 #ifdef HAVE_ACCESSIBILITY
@@ -2613,7 +2610,7 @@ finish:
    {
       if (     (access_st->ai_service_auto != 0)
             && !settings->bools.ai_service_pause)
-         call_auto_translate_task(p_rarch, settings, &was_paused);
+         call_auto_translate_task(settings, &was_paused);
    }
    if (auto_string)
       free(auto_string);
@@ -2761,47 +2758,7 @@ static const char *ai_service_get_str(enum translation_lang id)
    return "";
 }
 
-
-/*
-   This function does all the stuff needed to translate the game screen,
-   using the URL given in the settings.  Once the image from the frame
-   buffer is sent to the server, the callback will write the translated
-   image to the screen.
-
-   Supported client/services (thus far)
-   -VGTranslate client ( www.gitlab.com/spherebeaker/vg_translate )
-   -Ztranslate client/service ( www.ztranslate.net/docs/service )
-
-   To use a client, download the relevant code/release, configure
-   them, and run them on your local machine, or network.  Set the
-   retroarch configuration to point to your local client (usually
-   listening on localhost:4404 ) and enable translation service.
-
-   If you don't want to run a client, you can also use a service,
-   which is basically like someone running a client for you.  The
-   downside here is that your retroarch device will have to have
-   an internet connection, and you may have to sign up for it.
-
-   To make your own server, it must listen for a POST request, which
-   will consist of a JSON body, with the "image" field as a base64
-   encoded string of a 24bit-BMP/PNG that the will be translated.
-   The server must output the translated image in the form of a
-   JSON body, with the "image" field also as a base64 encoded
-   24bit-BMP, or as an alpha channel png.
-
-  "paused" boolean is passed in to indicate if the current call
-   was made during a paused frame.  Due to how the menu widgets work,
-   if the ai service is called in "auto" mode, then this call will
-   be made while the menu widgets unpause the core for a frame to update
-   the on-screen widgets.  To tell the ai service what the pause
-   mode is honestly, we store the runloop_paused variable from before
-   the handle_translation_cb wipes the widgets, and pass that in here.
-*/
-
-static bool run_translation_service(
-      settings_t *settings,
-      struct rarch_state *p_rarch,
-      bool paused)
+bool run_translation_service(settings_t *settings, bool paused)
 {
    struct video_viewport vp;
    uint8_t header[54];
@@ -3190,8 +3147,7 @@ finish:
 }
 
 #ifdef HAVE_ACCESSIBILITY
-static bool is_narrator_running(struct rarch_state *p_rarch,
-      bool accessibility_enable)
+bool is_narrator_running(bool accessibility_enable)
 {
    access_state_t *access_st = access_state_get_ptr();
    if (is_accessibility_enabled(
@@ -5652,7 +5608,7 @@ bool command_event(enum event_command cmd, void *data)
                      accessibility_enable,
                      access_st->enabled)
                   && ai_service_mode == 2
-                  && is_narrator_running(p_rarch, accessibility_enable))
+                  && is_narrator_running(accessibility_enable))
                accessibility_speak_priority(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
@@ -5668,8 +5624,7 @@ bool command_event(enum event_command cmd, void *data)
                      && !settings->bools.ai_service_pause)
                   access_st->ai_service_auto = 1;
 
-               run_translation_service(settings,
-                     p_rarch, paused);
+               run_translation_service(settings, paused);
             }
 #endif
             break;
