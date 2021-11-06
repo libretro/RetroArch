@@ -34,6 +34,10 @@
 #include <wiiu/os/energy.h>
 #endif
 
+#ifdef HAVE_ACCESSIBILITY
+#include "../accessibility.h"
+#endif
+
 #include "../audio/audio_driver.h"
 
 #include "menu_driver.h"
@@ -7353,3 +7357,795 @@ clear:
    return ret;
 }
 #endif
+
+/**
+ * menu_iterate:
+ * @input                    : input sample for this frame
+ * @old_input                : input sample of the previous frame
+ * @trigger_input            : difference' input sample - difference
+ *                             between 'input' and 'old_input'
+ *
+ * Runs RetroArch menu for one frame.
+ *
+ * Returns: 0 on success, -1 if we need to quit out of the loop.
+ **/
+static int generic_menu_iterate(
+      struct menu_state *menu_st,
+      gfx_display_t *p_disp,
+      gfx_animation_t *p_anim,
+      settings_t *settings,
+      menu_handle_t *menu,
+      void *userdata, enum menu_action action,
+      retro_time_t current_time)
+{
+#ifdef HAVE_ACCESSIBILITY
+   static enum action_iterate_type
+      last_iterate_type            = ITERATE_TYPE_DEFAULT;
+   access_state_t *access_st       = access_state_get_ptr();
+   bool accessibility_enable       = settings->bools.accessibility_enable;
+   unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
+#endif
+   enum action_iterate_type iterate_type;
+   unsigned file_type              = 0;
+   int ret                         = 0;
+   const char *label               = NULL;
+   file_list_t *list               = MENU_LIST_GET(menu_st->entries.list, 0);
+
+   if (list && list->size)
+      file_list_get_at_offset(list, list->size - 1, NULL, &label, &file_type, NULL);
+
+   menu->menu_state_msg[0]         = '\0';
+
+   iterate_type                    = action_iterate_type(label);
+   menu_st->is_binding             = false;
+
+   if (     action != MENU_ACTION_NOOP
+         || MENU_ENTRIES_NEEDS_REFRESH(menu_st)
+         || GFX_DISPLAY_GET_UPDATE_PENDING(p_anim, p_disp))
+   {
+      BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
+   }
+
+   switch (iterate_type)
+   {
+      case ITERATE_TYPE_HELP:
+         ret = menu_dialog_iterate(
+               &menu_st->dialog_st,  settings,
+               menu->menu_state_msg, sizeof(menu->menu_state_msg),
+               current_time);
+
+#ifdef HAVE_ACCESSIBILITY
+         if (     (iterate_type != last_iterate_type)
+               && is_accessibility_enabled(
+                  accessibility_enable,
+                  access_st->enabled))
+            accessibility_speak_priority(
+                  accessibility_enable,
+                  accessibility_narrator_speech_speed,
+                  menu->menu_state_msg, 10);
+#endif
+
+         BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
+         BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
+
+         {
+            bool pop_stack = false;
+            if (  ret == 1 ||
+                  action == MENU_ACTION_OK ||
+                  action == MENU_ACTION_CANCEL
+               )
+               pop_stack   = true;
+
+            if (pop_stack)
+               BIT64_SET(menu->state, MENU_STATE_POP_STACK);
+         }
+         break;
+      case ITERATE_TYPE_BIND:
+         {
+            menu_input_ctx_bind_t bind;
+
+            menu_st->is_binding = true;
+
+            bind.s              = menu->menu_state_msg;
+            bind.len            = sizeof(menu->menu_state_msg);
+
+            if (menu_input_key_bind_iterate(
+                     settings,
+                     &bind, current_time))
+            {
+               size_t selection = menu_st->selection_ptr;
+               menu_entries_pop_stack(&selection, 0, 0);
+               menu_st->selection_ptr      = selection;
+            }
+            else
+               BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
+         }
+         break;
+      case ITERATE_TYPE_INFO:
+         {
+            menu_list_t *menu_list     = menu_st->entries.list;
+            file_list_t *selection_buf = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
+            size_t selection           = menu_st->selection_ptr;
+            menu_file_list_cbs_t *cbs  = selection_buf ?
+               (menu_file_list_cbs_t*)selection_buf->list[selection].actiondata
+               : NULL;
+
+            if (cbs && cbs->enum_idx != MSG_UNKNOWN)
+            {
+               /* Core updater/manager entries require special treatment */
+               switch (cbs->enum_idx)
+               {
+#ifdef HAVE_NETWORKING
+                  case MENU_ENUM_LABEL_CORE_UPDATER_ENTRY:
+                     {
+                        core_updater_list_t *core_list         =
+                           core_updater_list_get_cached();
+                        const core_updater_list_entry_t *entry = NULL;
+                        const char *path                       =
+                           selection_buf->list[selection].path;
+
+                        /* Search for specified core */
+                        if (
+                                 core_list
+                              && path
+                              && core_updater_list_get_filename(core_list,
+                                 path, &entry)
+                              && !string_is_empty(entry->description)
+                           )
+                           strlcpy(menu->menu_state_msg, entry->description,
+                                 sizeof(menu->menu_state_msg));
+                        else
+                           strlcpy(menu->menu_state_msg,
+                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE),
+                                 sizeof(menu->menu_state_msg));
+
+                        ret = 0;
+                     }
+                     break;
+#endif
+                  case MENU_ENUM_LABEL_CORE_MANAGER_ENTRY:
+                     {
+                        core_info_t *core_info = NULL;
+                        const char *path       = selection_buf->list[selection].path;
+
+                        /* Search for specified core */
+                        if (     path
+                              && core_info_find(path, &core_info)
+                              && !string_is_empty(core_info->description))
+                           strlcpy(menu->menu_state_msg,
+                                 core_info->description,
+                                 sizeof(menu->menu_state_msg));
+                        else
+                           strlcpy(menu->menu_state_msg,
+                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE),
+                                 sizeof(menu->menu_state_msg));
+
+                        ret = 0;
+                     }
+                     break;
+                  default:
+                     ret = msg_hash_get_help_enum(cbs->enum_idx,
+                           menu->menu_state_msg, sizeof(menu->menu_state_msg));
+                     break;
+               }
+
+#ifdef HAVE_ACCESSIBILITY
+               if (  (iterate_type != last_iterate_type) &&
+                     is_accessibility_enabled(
+                        accessibility_enable,
+                        access_st->enabled))
+               {
+                  if (string_is_equal(menu->menu_state_msg,
+                           msg_hash_to_str(
+                              MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
+                  {
+                     char current_sublabel[255];
+                     get_current_menu_sublabel(
+                           menu_st,
+                           current_sublabel, sizeof(current_sublabel));
+                     if (string_is_equal(current_sublabel, ""))
+                        accessibility_speak_priority(
+                              accessibility_enable,
+                              accessibility_narrator_speech_speed,
+                              menu->menu_state_msg, 10);
+                     else
+                        accessibility_speak_priority(
+                              accessibility_enable,
+                              accessibility_narrator_speech_speed,
+                              current_sublabel, 10);
+                  }
+                  else
+                     accessibility_speak_priority(
+                           accessibility_enable,
+                           accessibility_narrator_speech_speed,
+                           menu->menu_state_msg, 10);
+               }
+#endif
+            }
+            else
+            {
+               enum msg_hash_enums enum_idx = MSG_UNKNOWN;
+               size_t selection             = menu_st->selection_ptr;
+               unsigned type                = selection_buf->list[selection].type;
+
+               switch (type)
+               {
+                  case FILE_TYPE_FONT:
+                  case FILE_TYPE_VIDEO_FONT:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_FONT;
+                     break;
+                  case FILE_TYPE_RDB:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_RDB;
+                     break;
+                  case FILE_TYPE_OVERLAY:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_OVERLAY;
+                     break;
+#ifdef HAVE_VIDEO_LAYOUT
+                  case FILE_TYPE_VIDEO_LAYOUT:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_VIDEO_LAYOUT;
+                     break;
+#endif
+                  case FILE_TYPE_CHEAT:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_CHEAT;
+                     break;
+                  case FILE_TYPE_SHADER_PRESET:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_SHADER_PRESET;
+                     break;
+                  case FILE_TYPE_SHADER:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_SHADER;
+                     break;
+                  case FILE_TYPE_REMAP:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_REMAP;
+                     break;
+                  case FILE_TYPE_RECORD_CONFIG:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_RECORD_CONFIG;
+                     break;
+                  case FILE_TYPE_CURSOR:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_CURSOR;
+                     break;
+                  case FILE_TYPE_CONFIG:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_CONFIG;
+                     break;
+                  case FILE_TYPE_CARCHIVE:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_COMPRESSED_ARCHIVE;
+                     break;
+                  case FILE_TYPE_DIRECTORY:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
+                     break;
+                  case FILE_TYPE_VIDEOFILTER:            /* TODO/FIXME */
+                  case FILE_TYPE_AUDIOFILTER:            /* TODO/FIXME */
+                  case FILE_TYPE_SHADER_SLANG:           /* TODO/FIXME */
+                  case FILE_TYPE_SHADER_GLSL:            /* TODO/FIXME */
+                  case FILE_TYPE_SHADER_HLSL:            /* TODO/FIXME */
+                  case FILE_TYPE_SHADER_CG:              /* TODO/FIXME */
+                  case FILE_TYPE_SHADER_PRESET_GLSLP:    /* TODO/FIXME */
+                  case FILE_TYPE_SHADER_PRESET_HLSLP:    /* TODO/FIXME */
+                  case FILE_TYPE_SHADER_PRESET_CGP:      /* TODO/FIXME */
+                  case FILE_TYPE_SHADER_PRESET_SLANGP:   /* TODO/FIXME */
+                  case FILE_TYPE_PLAIN:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_PLAIN_FILE;
+                     break;
+                  default:
+                     break;
+               }
+
+               if (enum_idx != MSG_UNKNOWN)
+                  ret = msg_hash_get_help_enum(enum_idx,
+                        menu->menu_state_msg, sizeof(menu->menu_state_msg));
+               else
+               {
+                  strlcpy(menu->menu_state_msg,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE),
+                        sizeof(menu->menu_state_msg));
+
+                  ret = 0;
+               }
+            }
+         }
+         BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
+         BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
+         if (action == MENU_ACTION_OK || action == MENU_ACTION_CANCEL)
+         {
+            BIT64_SET(menu->state, MENU_STATE_POP_STACK);
+         }
+         break;
+      case ITERATE_TYPE_DEFAULT:
+         {
+            menu_entry_t entry;
+            menu_list_t *menu_list = menu_st->entries.list;
+            size_t selection       = menu_st->selection_ptr;
+            size_t menu_list_size  = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
+            /* FIXME: Crappy hack, needed for mouse controls
+             * to not be completely broken in case we press back.
+             *
+             * We need to fix this entire mess, mouse controls
+             * should not rely on a hack like this in order to work. */
+            selection = MAX(MIN(selection, (menu_list_size - 1)), 0);
+
+            MENU_ENTRY_INIT(entry);
+            /* NOTE: If menu_entry_action() is modified,
+             * will have to verify that these parameters
+             * remain unused... */
+            entry.rich_label_enabled = false;
+            entry.value_enabled      = false;
+            entry.sublabel_enabled   = false;
+            menu_entry_get(&entry, 0, selection, NULL, false);
+            ret                      = menu_entry_action(&entry,
+                  selection, (enum menu_action)action);
+            if (ret)
+               return -1;
+
+            BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
+
+            /* Have to defer it so we let settings refresh. */
+            if (menu_st->dialog_st.pending_push)
+            {
+               const char *label;
+               menu_displaylist_info_t info;
+
+               menu_displaylist_info_init(&info);
+
+               info.list                 = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
+               info.enum_idx             = MENU_ENUM_LABEL_HELP;
+
+               /* Set the label string, if it exists. */
+               label                     = msg_hash_to_str(MENU_ENUM_LABEL_HELP);
+               if (label)
+                  info.label             = strdup(label);
+
+               menu_displaylist_ctl(DISPLAYLIST_HELP, &info, settings);
+            }
+         }
+         break;
+   }
+
+#ifdef HAVE_ACCESSIBILITY
+   if ((last_iterate_type == ITERATE_TYPE_HELP
+            || last_iterate_type == ITERATE_TYPE_INFO)
+         && last_iterate_type != iterate_type
+         && is_accessibility_enabled(
+            accessibility_enable,
+            access_st->enabled))
+      accessibility_speak_priority(
+            accessibility_enable,
+            accessibility_narrator_speech_speed,
+            "Closed dialog.", 10);
+
+   last_iterate_type = iterate_type;
+#endif
+
+   BIT64_SET(menu->state, MENU_STATE_BLIT);
+
+   if (BIT64_GET(menu->state, MENU_STATE_POP_STACK))
+   {
+      size_t selection         = menu_st->selection_ptr;
+      size_t new_selection_ptr = selection;
+      menu_entries_pop_stack(&new_selection_ptr, 0, 0);
+      menu_st->selection_ptr   = selection;
+   }
+
+   if (BIT64_GET(menu->state, MENU_STATE_POST_ITERATE))
+   {
+      menu_input_t     *menu_input  = &menu_st->input_state;
+      /* If pointer devices are disabled, just ensure mouse
+       * cursor is hidden */
+      if (menu_input->pointer.type == MENU_POINTER_DISABLED)
+         ret = 0;
+      else
+         ret = menu_input_post_iterate(p_disp, menu_st, action,
+               current_time);
+      menu_input_set_pointer_visibility(
+            &menu_st->input_pointer_hw_state,
+             menu_input, current_time);
+   }
+
+   if (ret)
+      return -1;
+   return 0;
+}
+
+int generic_menu_entry_action(
+      void *userdata, menu_entry_t *entry, size_t i, enum menu_action action)
+{
+   int ret                        = 0;
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   const menu_ctx_driver_t
+      *menu_driver_ctx            = menu_st->driver_ctx;
+   menu_handle_t  *menu           = menu_st->driver_data;
+   settings_t   *settings         = config_get_ptr();
+   void *menu_userdata            = menu_st->userdata;
+   bool wraparound_enable         = settings->bools.menu_navigation_wraparound_enable;
+   size_t scroll_accel            = menu_st->scroll.acceleration;
+   menu_list_t *menu_list         = menu_st->entries.list;
+   file_list_t *selection_buf     = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
+   file_list_t *menu_stack        = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
+   size_t selection_buf_size      = selection_buf ? selection_buf->size : 0;
+   menu_file_list_cbs_t *cbs      = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+#ifdef HAVE_ACCESSIBILITY
+   bool accessibility_enable      = settings->bools.accessibility_enable;
+   unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
+   access_state_t *access_st      = access_state_get_ptr();
+#endif
+
+   switch (action)
+   {
+      case MENU_ACTION_UP:
+         if (selection_buf_size > 0)
+         {
+            unsigned scroll_speed  = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
+            if (!(menu_st->selection_ptr == 0 && !wraparound_enable))
+            {
+               size_t idx             = 0;
+               if (menu_st->selection_ptr >= scroll_speed)
+                  idx = menu_st->selection_ptr - scroll_speed;
+               else
+               {
+                  idx  = selection_buf_size - 1;
+                  if (!wraparound_enable)
+                     idx = 0;
+               }
+
+               menu_st->selection_ptr = idx;
+               menu_driver_navigation_set(true);
+
+               if (menu_driver_ctx->navigation_decrement)
+                  menu_driver_ctx->navigation_decrement(menu_userdata);
+            }
+         }
+         break;
+      case MENU_ACTION_DOWN:
+         if (selection_buf_size > 0)
+         {
+            unsigned scroll_speed  = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
+            if (!(menu_st->selection_ptr >= selection_buf_size - 1
+                  && !wraparound_enable))
+            {
+               if ((menu_st->selection_ptr + scroll_speed) < selection_buf_size)
+               {
+                  size_t idx  = menu_st->selection_ptr + scroll_speed;
+
+                  menu_st->selection_ptr = idx;
+                  menu_driver_navigation_set(true);
+               }
+               else
+               {
+                  if (wraparound_enable)
+                  {
+                     bool pending_push = false;
+                     menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+                  }
+                  else
+                     menu_driver_ctl(MENU_NAVIGATION_CTL_SET_LAST,  NULL);
+               }
+
+               if (menu_driver_ctx->navigation_increment)
+                  menu_driver_ctx->navigation_increment(menu_userdata);
+            }
+         }
+         break;
+      case MENU_ACTION_SCROLL_UP:
+         if (
+                  menu_st->scroll.index_size
+               && menu_st->selection_ptr != 0
+            )
+         {
+            size_t l   = menu_st->scroll.index_size - 1;
+
+            while (l
+                  && menu_st->scroll.index_list[l - 1]
+                  >= menu_st->selection_ptr)
+               l--;
+
+            if (l > 0)
+               menu_st->selection_ptr = menu_st->scroll.index_list[l - 1];
+
+            if (menu_driver_ctx->navigation_descend_alphabet)
+               menu_driver_ctx->navigation_descend_alphabet(
+                     menu_userdata, &menu_st->selection_ptr);
+         }
+         break;
+      case MENU_ACTION_SCROLL_DOWN:
+         if (menu_st->scroll.index_size)
+         {
+            if (menu_st->selection_ptr == menu_st->scroll.index_list[menu_st->scroll.index_size - 1])
+               menu_st->selection_ptr = selection_buf_size - 1;
+            else
+            {
+               size_t l               = 0;
+               while (l < menu_st->scroll.index_size - 1
+                     && menu_st->scroll.index_list[l + 1] <= menu_st->selection_ptr)
+                  l++;
+               menu_st->selection_ptr = menu_st->scroll.index_list[l + 1];
+
+               if (menu_st->selection_ptr >= selection_buf_size)
+                  menu_st->selection_ptr = selection_buf_size - 1;
+            }
+
+            if (menu_driver_ctx->navigation_ascend_alphabet)
+               menu_driver_ctx->navigation_ascend_alphabet(
+                     menu_userdata, &menu_st->selection_ptr);
+         }
+         break;
+      case MENU_ACTION_CANCEL:
+         if (cbs && cbs->action_cancel)
+            ret = cbs->action_cancel(entry->path,
+                  entry->label, entry->type, i);
+         break;
+      case MENU_ACTION_OK:
+         if (cbs && cbs->action_ok)
+            ret = cbs->action_ok(entry->path,
+                  entry->label, entry->type, i, entry->entry_idx);
+         break;
+      case MENU_ACTION_START:
+         if (cbs && cbs->action_start)
+            ret = cbs->action_start(entry->path,
+                  entry->label, entry->type, i, entry->entry_idx);
+         break;
+      case MENU_ACTION_LEFT:
+         if (cbs && cbs->action_left)
+            ret = cbs->action_left(entry->type, entry->label, false);
+         break;
+      case MENU_ACTION_RIGHT:
+         if (cbs && cbs->action_right)
+            ret = cbs->action_right(entry->type, entry->label, false);
+         break;
+      case MENU_ACTION_INFO:
+         if (cbs && cbs->action_info)
+            ret = cbs->action_info(entry->type, entry->label);
+         break;
+      case MENU_ACTION_SELECT:
+         if (cbs && cbs->action_select)
+            ret = cbs->action_select(entry->path,
+                  entry->label, entry->type, i, entry->entry_idx);
+         break;
+      case MENU_ACTION_SEARCH:
+         menu_input_dialog_start_search();
+         break;
+      case MENU_ACTION_SCAN:
+         if (cbs && cbs->action_scan)
+            ret = cbs->action_scan(entry->path,
+                  entry->label, entry->type, i);
+         break;
+      default:
+         break;
+   }
+
+   if (MENU_ENTRIES_NEEDS_REFRESH(menu_st))
+   {
+      bool refresh            = false;
+      menu_driver_displaylist_push(
+            menu_st,
+            settings,
+            selection_buf,
+            menu_stack);
+      menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
+   }
+
+#ifdef HAVE_ACCESSIBILITY
+   if (     action != 0
+         && is_accessibility_enabled(
+            accessibility_enable,
+            access_st->enabled)
+         && !menu_input_dialog_get_display_kb())
+   {
+      char current_label[128];
+      char current_value[128];
+      char title_name[255];
+      char speak_string[512];
+
+      speak_string[0]  = '\0';
+      title_name  [0]  = '\0';
+      current_label[0] = '\0';
+
+      get_current_menu_value(menu_st,
+            current_value, sizeof(current_value));
+
+      switch (action)
+      {
+         case MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE:
+            menu_entries_get_title(title_name, sizeof(title_name));
+            break;
+         case MENU_ACTION_START:
+            /* if equal to '..' we break, else we fall-through */
+            if (string_is_equal(current_value, "..."))
+               break;
+            /* fall-through */
+         case MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE_LABEL:
+         case MENU_ACTION_OK:
+         case MENU_ACTION_LEFT:
+         case MENU_ACTION_RIGHT:
+         case MENU_ACTION_CANCEL:
+            menu_entries_get_title(title_name, sizeof(title_name));
+            get_current_menu_label(menu_st, current_label, sizeof(current_label));
+            break;
+         case MENU_ACTION_UP:
+         case MENU_ACTION_DOWN:
+         case MENU_ACTION_SCROLL_UP:
+         case MENU_ACTION_SCROLL_DOWN:
+         case MENU_ACTION_SELECT:
+         case MENU_ACTION_SEARCH:
+         case MENU_ACTION_ACCESSIBILITY_SPEAK_LABEL:
+            get_current_menu_label(menu_st, current_label, sizeof(current_label));
+            break;
+         case MENU_ACTION_SCAN:
+         case MENU_ACTION_INFO:
+         default:
+            break;
+      }
+
+      if (!string_is_empty(title_name))
+      {
+         if (!string_is_equal(current_value, "..."))
+            snprintf(speak_string, sizeof(speak_string),
+                  "%s %s %s", title_name, current_label, current_value);
+         else
+            snprintf(speak_string, sizeof(speak_string),
+                  "%s %s", title_name, current_label);
+      }
+      else
+      {
+         if (!string_is_equal(current_value, "..."))
+            snprintf(speak_string, sizeof(speak_string),
+                  "%s %s", current_label, current_value);
+         else
+            strlcpy(speak_string, current_label, sizeof(speak_string));
+      }
+
+      if (!string_is_empty(speak_string))
+         accessibility_speak_priority(
+               accessibility_enable,
+               accessibility_narrator_speech_speed,
+               speak_string, 10);
+   }
+#endif
+
+   if (menu_st->pending_close_content)
+   {
+      const char *content_path  = path_get(RARCH_PATH_CONTENT);
+      const char *menu_flush_to = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
+
+      /* Flush to playlist entry menu if launched via playlist */
+      if (menu &&
+          !string_is_empty(menu->deferred_path) &&
+          !string_is_empty(content_path) &&
+          string_is_equal(menu->deferred_path, content_path))
+         menu_flush_to = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
+
+      command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+      menu_entries_flush_stack(menu_flush_to, 0);
+      menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
+      menu_st->selection_ptr         = 0;
+      menu_st->pending_close_content = false;
+   }
+
+   return ret;
+}
+
+/* Iterate the menu driver for one frame. */
+bool menu_driver_iterate(
+      struct menu_state *menu_st,
+      gfx_display_t *p_disp,
+      gfx_animation_t *p_anim,
+      settings_t *settings,
+      enum menu_action action,
+      retro_time_t current_time)
+{
+   return (menu_st->driver_data &&
+         generic_menu_iterate(
+            menu_st,
+            p_disp,
+            p_anim,
+            settings,
+            menu_st->driver_data,
+            menu_st->userdata, action,
+            current_time) != -1);
+}
+
+bool menu_input_dialog_start_search(void)
+{
+   input_driver_state_t
+      *input_st                = input_state_get_ptr();
+#ifdef HAVE_ACCESSIBILITY
+   settings_t *settings        = config_get_ptr();
+   bool accessibility_enable   = settings->bools.accessibility_enable;
+   unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
+   access_state_t *access_st   = access_state_get_ptr();
+#endif
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   menu_handle_t         *menu = menu_st->driver_data;
+
+   if (!menu)
+      return false;
+
+   menu_st->input_dialog_kb_display = true;
+   strlcpy(menu_st->input_dialog_kb_label,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
+         sizeof(menu_st->input_dialog_kb_label));
+
+   if (input_st->keyboard_line.buffer)
+      free(input_st->keyboard_line.buffer);
+   input_st->keyboard_line.buffer                    = NULL;
+   input_st->keyboard_line.ptr                       = 0;
+   input_st->keyboard_line.size                      = 0;
+   input_st->keyboard_line.cb                        = NULL;
+   input_st->keyboard_line.userdata                  = NULL;
+   input_st->keyboard_line.enabled                   = false;
+
+#ifdef HAVE_ACCESSIBILITY
+   if (is_accessibility_enabled(
+            accessibility_enable,
+            access_st->enabled))
+         accessibility_speak_priority(
+            accessibility_enable,
+            accessibility_narrator_speech_speed,
+            (char*)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH), 10);
+#endif
+
+   menu_st->input_dialog_keyboard_buffer   =
+      input_keyboard_start_line(menu,
+            &input_st->keyboard_line,
+            menu_input_search_cb);
+   /* While reading keyboard line input, we have to block all hotkeys. */
+   input_st->keyboard_mapping_blocked = true;
+
+   return true;
+}
+
+bool menu_input_dialog_start(menu_input_ctx_line_t *line)
+{
+   input_driver_state_t *input_st   = input_state_get_ptr();
+#ifdef HAVE_ACCESSIBILITY
+   settings_t *settings             = config_get_ptr();
+   bool accessibility_enable        = settings->bools.accessibility_enable;
+   unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
+   access_state_t *access_st        = access_state_get_ptr();
+#endif
+   struct menu_state *menu_st       = menu_state_get_ptr();
+   menu_handle_t         *menu      = menu_st->driver_data;
+   if (!line || !menu)
+      return false;
+
+   menu_st->input_dialog_kb_display = true;
+
+   /* Only copy over the menu label and setting if they exist. */
+   if (line->label)
+      strlcpy(menu_st->input_dialog_kb_label,
+            line->label,
+            sizeof(menu_st->input_dialog_kb_label));
+   if (line->label_setting)
+      strlcpy(menu_st->input_dialog_kb_label_setting,
+            line->label_setting,
+            sizeof(menu_st->input_dialog_kb_label_setting));
+
+   menu_st->input_dialog_kb_type   = line->type;
+   menu_st->input_dialog_kb_idx    = line->idx;
+
+   if (input_st->keyboard_line.buffer)
+      free(input_st->keyboard_line.buffer);
+   input_st->keyboard_line.buffer                    = NULL;
+   input_st->keyboard_line.ptr                       = 0;
+   input_st->keyboard_line.size                      = 0;
+   input_st->keyboard_line.cb                        = NULL;
+   input_st->keyboard_line.userdata                  = NULL;
+   input_st->keyboard_line.enabled                   = false;
+
+#ifdef HAVE_ACCESSIBILITY
+   if (is_accessibility_enabled(
+            accessibility_enable,
+            access_st->enabled))
+      accessibility_speak_priority(
+            accessibility_enable,
+            accessibility_narrator_speech_speed,
+            "Keyboard input:", 10);
+#endif
+
+   menu_st->input_dialog_keyboard_buffer =
+      input_keyboard_start_line(menu,
+            &input_st->keyboard_line,
+            line->cb);
+   /* While reading keyboard line input, we have to block all hotkeys. */
+   input_st->keyboard_mapping_blocked = true;
+
+   return true;
+}

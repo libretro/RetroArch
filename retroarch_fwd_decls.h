@@ -62,15 +62,6 @@ static bool core_unload_game(void);
 static void driver_camera_stop(void);
 static bool driver_camera_start(void);
 
-#ifdef HAVE_ACCESSIBILITY
-static bool is_accessibility_enabled(bool accessibility_enable,
-      bool accessibility_enabled);
-static bool accessibility_speak_priority(
-      bool accessibility_enable,
-      unsigned accessibility_narrator_speech_speed,
-      const char* speak_text, int priority);
-#endif
-
 static const void *find_driver_nonempty(
       const char *label, int i,
       char *s, size_t len);

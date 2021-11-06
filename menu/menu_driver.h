@@ -40,6 +40,7 @@
 #include "menu_input_bind_dialog.h"
 #include "menu_entries.h"
 #include "menu_shader.h"
+#include "../gfx/gfx_animation.h"
 #include "../gfx/gfx_display.h"
 
 #include "../gfx/font_driver.h"
@@ -917,6 +918,15 @@ void menu_driver_toggle(
       retro_keyboard_event_t *key_event,
       retro_keyboard_event_t *frontend_key_event,
       bool on);
+
+/* Iterate the menu driver for one frame. */
+bool menu_driver_iterate(
+      struct menu_state *menu_st,
+      gfx_display_t *p_disp,
+      gfx_animation_t *p_anim,
+      settings_t *settings,
+      enum menu_action action,
+      retro_time_t current_time);
 
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 
