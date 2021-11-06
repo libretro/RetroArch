@@ -4951,7 +4951,8 @@ bool command_event(enum event_command cmd, void *data)
                         /* This way we free netplay_server 
                            as well when done. */
                         free(p_rarch->connect_host);
-                        p_rarch->connect_host = strdup(netplay_server);
+
+                        p_rarch->connect_host = netplay_server;
                      }
                   }
                }
