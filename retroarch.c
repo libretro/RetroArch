@@ -3740,6 +3740,7 @@ bool command_event(enum event_command cmd, void *data)
    bool boolean                = false;
    struct rarch_state *p_rarch = &rarch_st;
    runloop_state_t *runloop_st = &runloop_state;
+   access_state_t *access_st   = access_state_get_ptr();
 #ifdef HAVE_MENU
    struct menu_state *menu_st  = menu_state_get_ptr();
 #endif
@@ -3838,7 +3839,6 @@ bool command_event(enum event_command cmd, void *data)
                {
 #ifdef HAVE_ACCESSIBILITY
                   bool accessibility_enable = settings->bools.accessibility_enable;
-                  access_state_t *access_st = access_state_get_ptr();
                   unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
                   if (is_accessibility_enabled(
                            accessibility_enable,
@@ -3861,7 +3861,6 @@ bool command_event(enum event_command cmd, void *data)
                 * Also, this mode is required for "auto" translation
                 * packages, since you don't want to pause for that.
                 */
-               access_state_t *access_st = access_state_get_ptr();
                if (access_st->ai_service_auto == 2)
                {
                   /* Auto mode was turned on, but we pressed the
@@ -4859,7 +4858,6 @@ bool command_event(enum event_command cmd, void *data)
          {
 #ifdef HAVE_ACCESSIBILITY
             bool accessibility_enable                    = settings->bools.accessibility_enable;
-            access_state_t *access_st                    = access_state_get_ptr();
             unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
 #endif
             boolean                                      = runloop_st->paused;
@@ -5577,7 +5575,6 @@ bool command_event(enum event_command cmd, void *data)
          {
 #ifdef HAVE_TRANSLATE
 #ifdef HAVE_ACCESSIBILITY
-            access_state_t *access_st = access_state_get_ptr();
             bool accessibility_enable = settings->bools.accessibility_enable;
             unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
 #endif
@@ -10988,8 +10985,8 @@ void input_keyboard_event(bool down, unsigned code,
 	   *key_event            = &runloop_st->key_event;
    input_driver_state_t 
       *input_st                  = input_state_get_ptr();
-#ifdef HAVE_ACCESSIBILITY
    access_state_t *access_st     = access_state_get_ptr();
+#ifdef HAVE_ACCESSIBILITY
    settings_t *settings          = config_get_ptr();
    bool accessibility_enable     = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
@@ -12923,9 +12920,7 @@ static bool retroarch_parse_input_and_config(
    video_driver_state_t *video_st  = video_state_get_ptr();
    runloop_state_t     *runloop_st = &runloop_state;
    settings_t          *settings   = config_get_ptr();
-#ifdef HAVE_ACCESSIBILITY
    access_state_t *access_st       = access_state_get_ptr();
-#endif
 
    const struct option opts[]      = {
 #ifdef HAVE_DYNAMIC
@@ -13670,10 +13665,10 @@ bool retroarch_main_init(int argc, char *argv[])
    video_driver_state_t*video_st= video_state_get_ptr();
    settings_t *settings         = config_get_ptr();
    global_t            *global  = &p_rarch->g_extern;
+   access_state_t *access_st    = access_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
    bool accessibility_enable    = false;
    unsigned accessibility_narrator_speech_speed = 0;
-   access_state_t *access_st    = access_state_get_ptr();
 #endif
 #ifdef HAVE_MENU
    struct menu_state *menu_st   = menu_state_get_ptr();
@@ -14002,11 +13997,11 @@ static void runloop_task_msg_queue_push(
 #ifdef HAVE_MENU
    struct menu_state *menu_st  = menu_state_get_ptr();
 #endif
+   access_state_t *access_st   = access_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
    settings_t *settings        = config_get_ptr();
    bool accessibility_enable   = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
-   access_state_t *access_st   = access_state_get_ptr();
 #endif
    runloop_state_t *runloop_st = &runloop_state;
    bool widgets_active         = dispwidget_get_ptr()->active;
@@ -14629,8 +14624,8 @@ void runloop_msg_queue_push(const char *msg,
    settings_t *settings        = config_get_ptr();
    bool accessibility_enable   = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
-   access_state_t *access_st   = access_state_get_ptr();
 #endif
+   access_state_t *access_st   = access_state_get_ptr();
    runloop_state_t *runloop_st = &runloop_state;
 
    RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
