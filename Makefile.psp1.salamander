@@ -12,7 +12,7 @@ else
 endif
 
 INCDIR = $(PSPPATH)/include libretro-common/include
-CFLAGS = $(OPTIMIZE_LV) -std=gnu99 -ffast-math -fsingle-precision-constant
+CFLAGS = $(OPTIMIZE_LV) -ffast-math -fsingle-precision-constant
 ASFLAGS = $(CFLAGS)
 
 RARCH_DEFINES = -DPSP -DIS_SALAMANDER -DRARCH_CONSOLE
