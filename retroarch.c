@@ -4927,7 +4927,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETPLAY_INIT:
          {
             char       *hostname       = (char*)data;
-            const char *netplay_server = NULL;
+            char       *netplay_server = NULL;
             unsigned netplay_port      = 0; 
 
             if (p_rarch->connect_host && !hostname)
