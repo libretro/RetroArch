@@ -2038,9 +2038,9 @@ static void task_auto_translate_handler(retro_task_t *task)
 {
    int               *mode_ptr = (int*)task->user_data;
    runloop_state_t *runloop_st = &runloop_state;
+   access_state_t *access_st   = access_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
    settings_t *settings        = config_get_ptr();
-   access_state_t *access_st   = access_state_get_ptr();
 #endif
 
    if (task_get_cancelled(task))
@@ -2156,7 +2156,6 @@ static void handle_translation_cb(
    bool accessibility_enable         = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
    access_state_t *access_st         = access_state_get_ptr();
-#endif
 #ifdef HAVE_GFX_WIDGETS
    bool gfx_widgets_paused           = video_st->widgets_paused;
 
@@ -2165,6 +2164,7 @@ static void handle_translation_cb(
    if (dispwidget_get_ptr()->ai_service_overlay_state != 0
        && access_st->ai_service_auto == 2)
       gfx_widgets_ai_service_overlay_unload();
+#endif
 #endif
 
 #ifdef DEBUG
