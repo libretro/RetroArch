@@ -15867,7 +15867,12 @@ int runloop_iterate(void)
             /* Calculate average frame time to balance spikes */
             for (i = 1; i < frame_time_frames + 1; i++)
             {
-               unsigned frame_time_i = video_st->frame_time_samples[frame_time_index - i];
+               unsigned frame_time_i = 0;
+
+               if (i > frame_time_index)
+                  continue;
+
+               frame_time_i = video_st->frame_time_samples[frame_time_index - i];
 
                /* Ignore values when core is doing internal frame skipping */
                if (frame_time_i > frame_time_limit_ign)
