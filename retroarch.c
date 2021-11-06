@@ -2148,13 +2148,14 @@ static void handle_translation_cb(
       *video_st                      = video_state_get_ptr();
    const enum retro_pixel_format
       video_driver_pix_fmt           = video_st->pix_fmt;
+#ifdef HAVE_GFX_WIDGETS
+   bool gfx_widgets_paused           = video_st->widgets_paused;
+#endif
 #ifdef HAVE_ACCESSIBILITY
    bool accessibility_enable         = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
    access_state_t *access_st         = access_state_get_ptr();
 #ifdef HAVE_GFX_WIDGETS
-   bool gfx_widgets_paused           = video_st->widgets_paused;
-
    /* When auto mode is on, we turn off the overlay
     * once we have the result for the next call.*/
    if (dispwidget_get_ptr()->ai_service_overlay_state != 0
