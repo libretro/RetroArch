@@ -570,6 +570,9 @@ bool rcheevos_unload(void)
 {
    settings_t* settings  = config_get_ptr();
 
+   /* immediately mark the game as unloaded so the ping thread will terminate normally */
+   rcheevos_locals.game.id = -1;
+
 #ifdef HAVE_THREADS
    if (rcheevos_locals.load_info.state < RCHEEVOS_LOAD_STATE_DONE &&
        rcheevos_locals.load_info.state != RCHEEVOS_LOAD_STATE_NONE)

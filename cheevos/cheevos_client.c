@@ -363,17 +363,15 @@ static void rcheevos_async_http_task_callback(
 {
    rcheevos_async_io_request *request = (rcheevos_async_io_request*)user_data;
    http_transfer_data_t      *data    = (http_transfer_data_t*)task_data;
+   const bool                 aborted = rcheevos_load_aborted();
    char buffer[224];
 
-   if (rcheevos_load_aborted())
+   if (aborted)
    {
-      CHEEVOS_LOG(RCHEEVOS_TAG "Load aborted\n");
-      rc_api_destroy_request(&request->request);
-      free(request);
-      return;
+      /* load was aborted. don't process the response */
+      strlcpy(buffer, "Load aborted", sizeof(buffer));
    }
-
-   if (error)
+   else if (error)
    {
       /* there was a communication error */
       /* automatically requeued, don't process any further */
@@ -382,8 +380,11 @@ static void rcheevos_async_http_task_callback(
 
       strlcpy(buffer, error, sizeof(buffer));
    }
-   else if (!data) /* Server did not return HTTP headers */
+   else if (!data)
+   {
+      /* Server did not return HTTP headers */
       strlcpy(buffer, "Server communication error", sizeof(buffer));
+   }
    else if (!data->data || !data->len)
    {
       if (data->status <= 0)
@@ -435,46 +436,49 @@ static void rcheevos_async_http_task_callback(
          snprintf(errbuf, sizeof(errbuf), "%s: %s",
                request->failure_message, buffer);
 
-      switch (request->type)
+      if (!aborted)
       {
-         case CHEEVOS_ASYNC_RICHPRESENCE:
-         case CHEEVOS_ASYNC_FETCH_BADGE:
-            /* Don't bother informing user when these fail */
-            break;
+         switch (request->type)
+         {
+            case CHEEVOS_ASYNC_RICHPRESENCE:
+            case CHEEVOS_ASYNC_FETCH_BADGE:
+               /* Don't bother informing user when these fail */
+               break;
 
-         case CHEEVOS_ASYNC_LOGIN:
-         case CHEEVOS_ASYNC_RESOLVE_HASH:
-            if (error)
-            {
-               rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
-               size_t len = 0;
-               char* ptr;
+            case CHEEVOS_ASYNC_LOGIN:
+            case CHEEVOS_ASYNC_RESOLVE_HASH:
+               if (error)
+               {
+                  rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+                  size_t len = 0;
+                  char* ptr;
 
-               if (     rcheevos_locals->load_info.state 
+                  if (rcheevos_locals->load_info.state
                      == RCHEEVOS_LOAD_STATE_NETWORK_ERROR)
-                  break;
+                     break;
 
-               rcheevos_locals->load_info.state = 
-                  RCHEEVOS_LOAD_STATE_NETWORK_ERROR;
+                  rcheevos_locals->load_info.state =
+                     RCHEEVOS_LOAD_STATE_NETWORK_ERROR;
 
-               while (
+                  while (
                      /* find the first single slash */
-                        request->request.url[len]     != '/'
+                     request->request.url[len] != '/'
                      || request->request.url[len + 1] == '/'
                      || request->request.url[len - 1] == '/')
-                  ++len;
+                     ++len;
 
-               ptr = errbuf + snprintf(errbuf, sizeof(errbuf),
+                  ptr = errbuf + snprintf(errbuf, sizeof(errbuf),
                      "Could not communicate with ");
-               memcpy(ptr, request->request.url, len);
-               ptr[len] = '\0';
-            }
-            /* fallthrough to default */
+                  memcpy(ptr, request->request.url, len);
+                  ptr[len] = '\0';
+               }
+               /* fallthrough to default */
 
-         default:
-            runloop_msg_queue_push(errbuf, 0, 5 * 60, false, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-            break;
+            default:
+               runloop_msg_queue_push(errbuf, 0, 5 * 60, false, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+               break;
+         }
       }
 
       CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", errbuf);
@@ -482,7 +486,7 @@ static void rcheevos_async_http_task_callback(
 
    rc_api_destroy_request(&request->request);
 
-   if (request->callback)
+   if (request->callback && !aborted)
       request->callback(request->callback_data);
 
    /* rich presence request will be reused on next ping - reset the attempt
@@ -1095,10 +1099,12 @@ static void rcheevos_async_ping_handler(retro_task_t* task)
    const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
    if (request->id != (int)rcheevos_locals->game.id)
    {
+      CHEEVOS_LOG(RCHEEVOS_TAG
+         "Stopping periodic rich presence update task for game %u\n", request->id);
       /* game changed; stop the recurring task - a new one will
        * be scheduled if a new game is loaded */
       task_set_finished(task, 1);
-      /* request->request was destroyed 
+      /* request->request was destroyed
        * in rcheevos_async_http_task_callback */
       free(request);
       return;
@@ -1109,9 +1115,7 @@ static void rcheevos_async_ping_handler(retro_task_t* task)
    task->when = rcheevos_client_prepare_ping(request);
 
    /* start the HTTP request */
-   task_push_http_post_transfer_with_user_agent(request->request.url,
-         request->request.post_data, true, "POST", request->user_agent,
-         rcheevos_async_http_task_callback, request);
+   rcheevos_async_begin_http_request(request);
 }
 
 /****************************
@@ -1165,6 +1169,8 @@ void rcheevos_client_start_session(unsigned game_id)
          task->when               = cpu_features_get_time_usec() +
                                     CHEEVOS_PING_FREQUENCY / 4;
 
+         CHEEVOS_LOG(RCHEEVOS_TAG
+            "Starting periodic rich presence update task for game %u\n", game_id);
          task_queue_push(task);
       }
    }
