@@ -1039,6 +1039,21 @@ void input_keys_pressed(
 void input_driver_collect_system_input(input_driver_state_t *input_st,
       settings_t *settings, input_bits_t *current_bits);
 
+/**
+ * input_keyboard_event:
+ * @down                     : Keycode was pressed down?
+ * @code                     : Keycode.
+ * @character                : Character inputted.
+ * @mod                      : TODO/FIXME: ???
+ *
+ * Keyboard event utils. Called by drivers when keyboard events 
+ * are fired.
+ * This interfaces with the global system driver struct 
+ * and libretro callbacks.
+ **/
+void input_keyboard_event(bool down, unsigned code,
+      uint32_t character, uint16_t mod, unsigned device);
+
 extern input_device_driver_t *joypad_drivers[];
 extern input_driver_t *input_drivers[];
 #ifdef HAVE_HID
