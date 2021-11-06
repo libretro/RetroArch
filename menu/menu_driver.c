@@ -7745,10 +7745,11 @@ static int generic_menu_iterate(
 }
 
 int generic_menu_entry_action(
-      void *userdata, menu_entry_t *entry, size_t i, enum menu_action action)
+      void *userdata, menu_entry_t *entry, size_t i,
+      enum menu_action action)
 {
    int ret                        = 0;
-   struct menu_state *menu_st     = menu_state_get_ptr();
+   struct menu_state *menu_st     = &menu_driver_state;
    const menu_ctx_driver_t
       *menu_driver_ctx            = menu_st->driver_ctx;
    menu_handle_t  *menu           = menu_st->driver_data;
@@ -8052,7 +8053,7 @@ bool menu_input_dialog_start_search(void)
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
    access_state_t *access_st   = access_state_get_ptr();
 #endif
-   struct menu_state *menu_st  = menu_state_get_ptr();
+   struct menu_state *menu_st  = &menu_driver_state;
    menu_handle_t         *menu = menu_st->driver_data;
 
    if (!menu)
@@ -8101,7 +8102,7 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
    access_state_t *access_st        = access_state_get_ptr();
 #endif
-   struct menu_state *menu_st       = menu_state_get_ptr();
+   struct menu_state *menu_st       = &menu_driver_state;
    menu_handle_t         *menu      = menu_st->driver_data;
    if (!line || !menu)
       return false;
