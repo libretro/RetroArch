@@ -23,7 +23,7 @@ p = re.compile(
 
 
 def c89_cut(old_str):
-    if old_str.endswith('[...]')
+    if old_str.endswith('[...]'):
         return old_str
     new_str = ''
     byte_count = 0
