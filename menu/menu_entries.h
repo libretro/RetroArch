@@ -115,6 +115,7 @@ typedef struct menu_file_list_cbs
    int (*action_start)(const char *path, const char *label, unsigned type,
          size_t idx, size_t entry_idx);
    int (*action_info)(unsigned type,  const char *label);
+   int (*action_context)(unsigned type,  const char *label);
    int (*action_left)(unsigned type, const char *label, bool wraparound);
    int (*action_right)(unsigned type, const char *label, bool wraparound);
    int (*action_label)(file_list_t *list,

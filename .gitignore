@@ -16,6 +16,7 @@
 .tmp.cxx
 .moc.h
 .moc.cpp
+.ccls-cache
 config.log
 /.project
 /.externalToolBuilders/
