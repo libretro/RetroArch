@@ -58,7 +58,9 @@ public final class MainMenuActivity extends PreferenceActivity
 
 	public void checkRuntimePermissions()
 	{
-		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+				&& !(getApplicationInfo().targetSdkVersion > Build.VERSION_CODES.Q
+				&& Build.VERSION.SDK_INT > Build.VERSION_CODES.Q))
 		{
 			// Android 6.0+ needs runtime permission checks
 			List<String> permissionsNeeded = new ArrayList<String>();

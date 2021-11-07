@@ -25,8 +25,8 @@ allprojects {
 apply plugin: 'com.android.application'
 
 android {
-  compileSdkVersion 29
-  buildToolsVersion "29.0.3"
+  compileSdkVersion 30
+  buildToolsVersion "30.0.3"
   ndkVersion "22.0.7026061"
 
   flavorDimensions "variant"
@@ -90,6 +90,15 @@ android {
       applicationIdSuffix '.aarch64'
       resValue "string", "app_name", "RetroArch Plus"
       buildConfigField "boolean", "PLAY_STORE_BUILD", "true"
+
+      dimension "variant"
+    }
+    // Temporary variant for testing scoped storage support
+    scopedStorageTest {
+      targetSdkVersion 30
+
+      resValue "string", "app_name", "RetroArch"
+      buildConfigField "boolean", "PLAY_STORE_BUILD", "false"
 
       dimension "variant"
     }

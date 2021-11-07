@@ -9,6 +9,7 @@ import com.google.android.play.core.splitinstall.model.SplitInstallSessionStatus
 import com.google.android.play.core.tasks.OnFailureListener;
 import com.google.android.play.core.tasks.OnSuccessListener;
 import com.retroarch.BuildConfig;
+import com.retroarch.browser.filehelper.FileHelper;
 import com.retroarch.browser.preferences.util.UserPreferences;
 import android.annotation.TargetApi;
 import android.app.NativeActivity;
@@ -64,8 +65,10 @@ public class RetroActivityCommon extends NativeActivity
   public static int INSTALL_STATUS_INSTALLING = 1;
   public static int INSTALL_STATUS_INSTALLED = 2;
   public static int INSTALL_STATUS_FAILED = 3;
+  public static final int REQUEST_ADD_DIRECTORY = 123;
   public boolean sustainedPerformanceMode = true;
   public int screenOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+  public FileHelper fileHelper;
 
   private final SplitInstallStateUpdatedListener listener = new SplitInstallStateUpdatedListener() {
     @Override
@@ -103,6 +106,10 @@ public class RetroActivityCommon extends NativeActivity
 
     SplitInstallManager manager = SplitInstallManagerFactory.create(this);
     manager.registerListener(listener);
+
+    if(isSAFRequired()) {
+      fileHelper = new FileHelper(getApplicationContext());
+    }
 
     super.onCreate(savedInstanceState);
   }
@@ -473,6 +480,57 @@ public class RetroActivityCommon extends NativeActivity
     manager.deferredUninstall(Collections.singletonList(sanitizeCoreName(coreName)));
   }
 
+  /**
+   * Checks if we are required to use SAF for managing files.
+   * @return true if SAF is required, false if not
+   */
+  public boolean isSAFRequired() {
+    boolean returnVal = getApplicationInfo().targetSdkVersion > Build.VERSION_CODES.Q
+            && Build.VERSION.SDK_INT > Build.VERSION_CODES.Q;
+
+    Log.i("RetroActivity", "isSAFRequired: " + returnVal);
+    return returnVal;
+  }
+
+  /**
+   * Opens the native Android directory picker
+   */
+  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+  public void addDirectoryViaSAF() {
+    Log.i("RetroActivity", "addDirectoryViaSAF");
+
+    Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+    i.addCategory(Intent.CATEGORY_DEFAULT);
+    i.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+    i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+    i.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+
+    startActivityForResult(Intent.createChooser(i, "Choose a directory"), REQUEST_ADD_DIRECTORY);
+  }
+
+  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+  @Override
+  public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    super.onActivityResult(requestCode, resultCode, data);
+
+    if(requestCode != REQUEST_ADD_DIRECTORY || resultCode != RESULT_OK || data.getData() == null)
+      return;
+
+    String uri = data.getDataString();
+    try {
+      getContentResolver().takePersistableUriPermission(
+              data.getData(),
+              Intent.FLAG_GRANT_READ_URI_PERMISSION
+      );
+
+      Log.i("RetroActivity","Permission successfully granted for " + uri);
+      directoryAddedViaSAF(uri);
+    } catch (Exception e) {
+      Log.i("RetroActivity","Failed to take persistable permission for " + uri);
+      e.printStackTrace();
+    }
+  }
+
 
 
   /////////////// JNI methods ///////////////
@@ -497,6 +555,13 @@ public class RetroActivityCommon extends NativeActivity
    * @param totalBytesToDownload Total number of bytes to download.
    */
   private native void coreInstallStatusChanged(String[] coreNames, int status, long bytesDownloaded, long totalBytesToDownload);
+
+  /**
+   * Called when a directory has been successfully added via SAF.
+   *
+   * @param uri The URI for the directory
+   */
+  private native void directoryAddedViaSAF(String uri);
 
 
 
