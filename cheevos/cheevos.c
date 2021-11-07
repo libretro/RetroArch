@@ -307,7 +307,7 @@ void rcheevos_award_achievement(rcheevos_locals_t* locals,
    /* Show the on screen message. */
 #if defined(HAVE_GFX_WIDGETS)
    if (widgets_ready)
-      gfx_widgets_push_achievement(cheevo->title, cheevo->badge);
+      gfx_widgets_push_achievement(msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED), cheevo->title, cheevo->badge);
    else
 #endif
    {
@@ -1285,7 +1285,14 @@ static void rcheevos_show_game_placard()
    CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", msg);
 
    if (settings->bools.cheevos_verbose_enable)
-      runloop_msg_queue_push(msg, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   {
+#if defined (HAVE_GFX_WIDGETS)
+      if (gfx_widgets_ready())
+         gfx_widgets_push_achievement(rcheevos_locals.game.title, msg, rcheevos_locals.game.badge_name);
+      else
+#endif
+         runloop_msg_queue_push(msg, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 }
 
 static void rcheevos_end_load(void)
