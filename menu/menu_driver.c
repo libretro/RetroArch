@@ -2509,6 +2509,10 @@ void menu_cbs_init(
    menu_cbs_init_bind_select(cbs, path, label, type, idx);
 
    /* It will try to find a corresponding callback function inside
+    * menu_cbs_context.c, then map this callback to the entry. */
+   menu_cbs_init_bind_context(cbs, path, label, type, idx);
+
+   /* It will try to find a corresponding callback function inside
     * menu_cbs_info.c, then map this callback to the entry. */
    menu_cbs_init_bind_info(cbs, path, label, type, idx);
 
@@ -3054,7 +3058,7 @@ void menu_input_key_bind_poll_bind_state(
    {
       /* Poll mouse (on the relevant port)
        *
-       * Check if key was being pressed by 
+       * Check if key was being pressed by
        * user with mouse number 'port'
        *
        * NOTE: We start iterating on 2 (RETRO_DEVICE_ID_MOUSE_LEFT),
@@ -5133,13 +5137,13 @@ static const char * msvc_vercode_to_str(const unsigned vercode)
 int menu_entries_get_core_title(char *s, size_t len)
 {
    struct retro_system_info *system  = &runloop_state_get_ptr()->system.info;
-   const char *core_name             = 
+   const char *core_name             =
        (system && !string_is_empty(system->library_name))
       ? system->library_name
       : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
-   const char *core_version          = 
-      (system && system->library_version) 
-      ? system->library_version 
+   const char *core_version          =
+      (system && system->library_version)
+      ? system->library_version
       : "";
 
    if (!string_is_empty(core_version))
@@ -5329,7 +5333,7 @@ bool menu_input_key_bind_custom_bind_keyboard_cb(
    binds->timer_hold.timeout_end    = current_usec + input_bind_hold_us;
    binds->timer_timeout.timeout_us  = input_bind_timeout_us;
    binds->timer_timeout.current     = current_usec;
-   binds->timer_timeout.timeout_end = current_usec +input_bind_timeout_us; 
+   binds->timer_timeout.timeout_end = current_usec +input_bind_timeout_us;
 
    return (binds->begin <= binds->last);
 }
@@ -5343,7 +5347,7 @@ bool menu_input_key_bind_set_mode(
    input_driver_state_t *input_st      = input_state_get_ptr();
    struct menu_state *menu_st          = &menu_driver_state;
    menu_handle_t       *menu           = menu_st->driver_data;
-   const input_device_driver_t 
+   const input_device_driver_t
       *joypad                          = input_st->primary_joypad;
 #ifdef HAVE_MFI
    const input_device_driver_t
@@ -5507,7 +5511,7 @@ current_time;
 
          /* Run hold timer*/
          new_binds.timer_hold.current    = current_time;
-         new_binds.timer_hold.timeout_us = 
+         new_binds.timer_hold.timeout_us =
             new_binds.timer_hold.timeout_end - current_time;
 
          snprintf(bind->s, bind->len,
@@ -5712,7 +5716,7 @@ unsigned menu_event(
       settings->uints.menu_scroll_delay;
 #ifdef HAVE_OVERLAY
    bool input_overlay_enable                       = settings->bools.input_overlay_enable;
-   bool overlay_active                             = input_overlay_enable 
+   bool overlay_active                             = input_overlay_enable
       && input_st->overlay_ptr
       && input_st->overlay_ptr->alive;
 #else
@@ -6702,7 +6706,7 @@ void menu_driver_toggle(
       video_swap_interval             = settings->uints.video_swap_interval;
    }
 
-   if (on) 
+   if (on)
    {
 #ifdef HAVE_LAKKA
       set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_MENU);
@@ -7096,7 +7100,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_OSK_PTR_AT_POS:
          {
-            video_driver_state_t 
+            video_driver_state_t
                *video_st              = video_state_get_ptr();
             unsigned width            = video_st->width;
             unsigned height           = video_st->height;
@@ -7210,7 +7214,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 struct video_shader *menu_shader_get(void)
 {
-   video_driver_state_t 
+   video_driver_state_t
       *video_st                = video_state_get_ptr();
    if (video_shader_any_supported())
       if (video_st)
@@ -7220,7 +7224,7 @@ struct video_shader *menu_shader_get(void)
 
 void menu_shader_manager_free(void)
 {
-   video_driver_state_t 
+   video_driver_state_t
       *video_st                = video_state_get_ptr();
    if (video_st->menu_driver_shader)
       free(video_st->menu_driver_shader);
@@ -7234,7 +7238,7 @@ void menu_shader_manager_free(void)
  **/
 bool menu_shader_manager_init(void)
 {
-   video_driver_state_t 
+   video_driver_state_t
       *video_st                     = video_state_get_ptr();
    enum rarch_shader_type type      = RARCH_SHADER_NONE;
    bool ret                         = true;
