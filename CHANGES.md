@@ -1,5 +1,20 @@
 # Future
 
+# 1.9.13
+- CHEEVOS/MSVC2010: Add Cheevos support
+- CRT/SWITCHRES: Fixes some issue where scaling is incorrect in some video modes for CRT output.
+- FRAMEDELAY: Add 'Automatic Frame Delay' option
+- INPUT: Add 'All users control the menu' setting - any gamepad can control the menu when this is enabled. Only limitation right now is that only player 1 can toggle the menu, but any set Menu Toggle Controller Combo will work fine for all users, so this should be acceptable for now
+- INPUT/UDEV: Fix Dolphin bar and safeguard against not adding devices with no mouse or touch buttons detected
+- NETPLAY/CLI: -C/--connect commandline fix
+- NETPLAY: Other improvements
+- NETPLAY: Remove forced disconnection on unknown netplay command -
+will be backwards compatible with any version that removed this
+disconnect. instead of disconnecting, we just read the data and
+ignore, like most network implementations do
+- TASKS/CHEEVOS: Replace coroutines with tasks/thread
+- TASKS/DATABASE/EXPLORE: Initialise 'Explore' menu on a background thread - no more stall when hovering over the Explore tab
+
 # 1.9.12
 - 3DS: Ensure parallax barrier is disabled when '3DS Display Mode' is '2D'
 - COMMAND: Command interface should work again
