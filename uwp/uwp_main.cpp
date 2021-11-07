@@ -16,7 +16,7 @@
 #include <ppltasks.h>
 #include <collection.h>
 #include <windows.devices.enumeration.h>
-
+#include <boolean.h>
 #include <encodings/utf.h>
 #include <string/stdstring.h>
 #include <lists/string_list.h>

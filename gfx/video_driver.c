@@ -44,6 +44,10 @@
 #include "../menu/menu_driver.h"
 #endif
 
+#ifdef _WIN32
+#include "common/win32_common.h"
+#endif
+
 #include "../audio/audio_driver.h"
 #include "../frontend/frontend_driver.h"
 #include "../ui/ui_companion_driver.h"
