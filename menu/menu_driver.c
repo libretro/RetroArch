@@ -7904,6 +7904,11 @@ int generic_menu_entry_action(
             ret = cbs->action_select(entry->path,
                   entry->label, entry->type, i, entry->entry_idx);
          break;
+      case MENU_ACTION_CONTEXT:
+         if (cbs && cbs->action_select)
+            ret = cbs->action_context(entry->path,
+                  entry->label, entry->type, i, entry->entry_idx);
+         break;
       case MENU_ACTION_SEARCH:
          menu_input_dialog_start_search();
          break;
