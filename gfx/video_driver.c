@@ -3940,3 +3940,36 @@ void video_driver_frame(const void *data, unsigned width,
 #endif
       video_st->crt_switching_active = false;
 }
+
+static void video_driver_reinit_context(settings_t *settings, int flags)
+{
+   /* RARCH_DRIVER_CTL_UNINIT clears the callback struct so we
+    * need to make sure to keep a copy */
+   struct retro_hw_render_callback hwr_copy;
+   video_driver_state_t *video_st       = &video_driver_st;
+   struct retro_hw_render_callback *hwr =
+      VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st);
+   const struct retro_hw_render_context_negotiation_interface *iface =
+      video_st->hw_render_context_negotiation;
+   memcpy(&hwr_copy, hwr, sizeof(hwr_copy));
+
+   driver_uninit(flags);
+
+   memcpy(hwr, &hwr_copy, sizeof(*hwr));
+   video_st->hw_render_context_negotiation = iface;
+
+   drivers_init(settings, flags, verbosity_is_enabled());
+}
+
+void video_driver_reinit(int flags)
+{
+   settings_t *settings                    = config_get_ptr();
+   video_driver_state_t *video_st          = &video_driver_st;
+   struct retro_hw_render_callback *hwr    =
+      VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st);
+
+   video_st->cache_context     = (hwr->cache_context != false);
+   video_st->cache_context_ack = false;
+   video_driver_reinit_context(settings, flags);
+   video_st->cache_context     = false;
+}

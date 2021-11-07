@@ -5555,7 +5555,7 @@ void input_keyboard_event(bool down, unsigned code,
    retro_keyboard_event_t 
 	   *key_event            = &runloop_st->key_event;
    input_driver_state_t 
-      *input_st                  = input_state_get_ptr();
+      *input_st                  = &input_driver_st;
    access_state_t *access_st     = access_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
    settings_t *settings          = config_get_ptr();

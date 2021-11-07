@@ -3162,9 +3162,7 @@ bool is_narrator_running(bool accessibility_enable)
 
 #endif
 
-static void command_event_deinit_core(
-      struct rarch_state *p_rarch,
-      bool reinit)
+static void command_event_deinit_core(void)
 {
    video_driver_state_t 
       *video_st                = video_state_get_ptr();
@@ -3194,7 +3192,7 @@ static void command_event_deinit_core(
    }
 
    RARCH_LOG("[Core]: Unloading core symbols..\n");
-   uninit_libretro_symbols(p_rarch, &runloop_st->current_core);
+   uninit_libretro_symbols(&runloop_st->current_core);
    runloop_st->current_core.symbols_inited = false;
 
    /* Restore original refresh rate, if it has been changed
@@ -3206,8 +3204,7 @@ static void command_event_deinit_core(
    if (settings->bools.video_frame_delay_auto)
       video_st->frame_delay_target = 0;
 
-   if (reinit)
-      driver_uninit(p_rarch, DRIVERS_CMD_ALL);
+   driver_uninit(DRIVERS_CMD_ALL);
 
 #ifdef HAVE_CONFIGFILE
    if (runloop_st->overrides_active)
@@ -3461,7 +3458,7 @@ static bool command_event_init_core(
    float fastforward_ratio         = 0.0f;
    rarch_system_info_t *sys_info   = &runloop_st->system;
 
-   if (!init_libretro_symbols(p_rarch, runloop_st,
+   if (!init_libretro_symbols(runloop_st,
             type, &runloop_st->current_core))
       return false;
    if (!runloop_st->current_core.retro_run)
@@ -4594,7 +4591,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_CHEEVOS
             rcheevos_unload();
 #endif
-            command_event_deinit_core(p_rarch, true);
+            command_event_deinit_core();
 
 #ifdef HAVE_RUNAHEAD
             /* If 'runahead_available' is false, then
@@ -4695,8 +4692,8 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_AUDIO_REINIT:
-         driver_uninit(p_rarch, DRIVER_AUDIO_MASK);
-         drivers_init(p_rarch, settings, DRIVER_AUDIO_MASK, verbosity_is_enabled());
+         driver_uninit(DRIVER_AUDIO_MASK);
+         drivers_init(settings, DRIVER_AUDIO_MASK, verbosity_is_enabled());
 #if defined(HAVE_AUDIOMIXER)
          audio_driver_load_system_sounds();
 #endif
@@ -5931,7 +5928,7 @@ void main_exit(void *args)
 #endif
 
    runloop_msg_queue_deinit();
-   driver_uninit(p_rarch, DRIVERS_CMD_ALL);
+   driver_uninit(DRIVERS_CMD_ALL);
 
    retro_main_log_file_deinit();
 
@@ -5945,7 +5942,7 @@ void main_exit(void *args)
 
    frontend_driver_shutdown(false);
 
-   retroarch_deinit_drivers(p_rarch, &runloop_st->retro_ctx);
+   retroarch_deinit_drivers(&runloop_st->retro_ctx);
    p_rarch->ui_companion = NULL;
    frontend_driver_free();
 
@@ -6009,14 +6006,14 @@ int rarch_main(int argc, char *argv[], void *data)
 
    config_init();
 
-   retroarch_deinit_drivers(p_rarch, &runloop_st->retro_ctx);
+   retroarch_deinit_drivers(&runloop_st->retro_ctx);
    retroarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
    global_free(p_rarch);
 
    frontend_driver_init_first(data);
 
    if (runloop_st->is_inited)
-      driver_uninit(p_rarch, DRIVERS_CMD_ALL);
+      driver_uninit(DRIVERS_CMD_ALL);
 
 #ifdef HAVE_THREAD_STORAGE
    sthread_tls_create(&p_rarch->rarch_tls);
@@ -8951,9 +8948,8 @@ static void libretro_get_environment_info(
    runloop_st->ignore_environment_cb = false;
 }
 
-static dylib_t load_dynamic_core(
-      struct rarch_state *p_rarch,
-      const char *path, char *buf, size_t size)
+static dylib_t load_dynamic_core(const char *path, char *buf, 
+		size_t size)
 {
 #if defined(ANDROID)
    /* Can't resolve symlinks when dealing with cores
@@ -8977,7 +8973,7 @@ static dylib_t load_dynamic_core(
       RARCH_ERR("This could happen if other modules RetroArch depends on "
             "link against libretro directly.\n");
       RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
-      retroarch_fail(p_rarch, 1, "load_dynamic_core()");
+      retroarch_fail(1, "load_dynamic_core()");
    }
 #endif
 
@@ -9130,7 +9126,6 @@ static bool libretro_get_system_info(
  * or false if symbols could not be loaded.
  **/
 static bool init_libretro_symbols_custom(
-      struct rarch_state *p_rarch,
       runloop_state_t *runloop_st,
       enum rarch_core_type type,
       struct retro_core_t *current_core,
@@ -9158,14 +9153,13 @@ static bool init_libretro_symbols_custom(
                {
                   RARCH_ERR("[Core]: Frontend is built for dynamic libretro cores, but "
                         "path is not set. Cannot continue.\n");
-                  retroarch_fail(p_rarch, 1, "init_libretro_symbols()");
+                  retroarch_fail(1, "init_libretro_symbols()");
                }
 
                RARCH_LOG("[Core]: Loading dynamic libretro core from: \"%s\"\n",
                      path);
 
                if (!(runloop_st->lib_handle = load_dynamic_core(
-                           p_rarch,
                            path,
                            path_get_ptr(RARCH_PATH_CORE),
                            path_get_realsize(RARCH_PATH_CORE)
@@ -9248,13 +9242,12 @@ static bool init_libretro_symbols_custom(
  * or false if symbols could not be loaded.
  **/
 static bool init_libretro_symbols(
-      struct rarch_state *p_rarch,
       runloop_state_t *runloop_st,
       enum rarch_core_type type,
       struct retro_core_t *current_core)
 {
    /* Load symbols */
-   if (!init_libretro_symbols_custom(p_rarch, runloop_st,
+   if (!init_libretro_symbols_custom(runloop_st,
             type, current_core, NULL, NULL))
       return false;
 
@@ -9282,11 +9275,12 @@ bool libretro_get_shared_context(void)
  * unbind all libretro callback symbols.
  **/
 static void uninit_libretro_symbols(
-      struct rarch_state *p_rarch,
       struct retro_core_t *current_core)
 {
+   struct rarch_state 
+      *p_rarch         = &rarch_st;
    runloop_state_t 
-	   *runloop_st = &runloop_state;
+	   *runloop_st      = &runloop_state;
    input_driver_state_t 
       *input_st        = input_state_get_ptr();
    audio_driver_state_t 
@@ -9724,7 +9718,6 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
    unsigned port;
    bool contentless            = false;
    bool is_inited              = false;
-   struct rarch_state *p_rarch = &rarch_st;
    const enum rarch_core_type
       last_core_type           = runloop_st->last_core_type;
    rarch_system_info_t *info   = &runloop_st->system;
@@ -9746,7 +9739,7 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
       return false;
 
    /* Load Core */
-   if (!init_libretro_symbols_custom(p_rarch, runloop_st,
+   if (!init_libretro_symbols_custom(runloop_st,
             CORE_TYPE_PLAIN, &runloop_st->secondary_core,
             runloop_st->secondary_library_path,
             &runloop_st->secondary_lib_handle))
@@ -9965,7 +9958,7 @@ bool bluetooth_driver_ctl(enum rarch_bluetooth_ctl_state state, void *data)
                p_rarch->bluetooth_driver = (const bluetooth_driver_t*)bluetooth_drivers[0];
 
                if (!p_rarch->bluetooth_driver)
-                  retroarch_fail(p_rarch, 1, "find_bluetooth_driver()");
+                  retroarch_fail(1, "find_bluetooth_driver()");
             }
          }
          break;
@@ -10113,7 +10106,7 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
                p_rarch->wifi_driver = (const wifi_driver_t*)wifi_drivers[0];
 
                if (!p_rarch->wifi_driver)
-                  retroarch_fail(p_rarch, 1, "find_wifi_driver()");
+                  retroarch_fail(1, "find_wifi_driver()");
             }
          }
          break;
@@ -10457,7 +10450,7 @@ static void find_record_driver(const char *prefix,
       recording_state.driver = (const record_driver_t*)record_drivers[0];
 
       if (!recording_state.driver)
-         retroarch_fail(p_rarch, 1, "find_record_driver()");
+         retroarch_fail(1, "find_record_driver()");
    }
 }
 
@@ -10899,40 +10892,6 @@ const char *config_get_audio_driver_options(void)
 }
 
 /* VIDEO */
-static void video_driver_reinit_context(struct rarch_state *p_rarch,
-      settings_t *settings, int flags)
-{
-   /* RARCH_DRIVER_CTL_UNINIT clears the callback struct so we
-    * need to make sure to keep a copy */
-   struct retro_hw_render_callback hwr_copy;
-   video_driver_state_t *video_st       = video_state_get_ptr();
-   struct retro_hw_render_callback *hwr =
-      VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st);
-   const struct retro_hw_render_context_negotiation_interface *iface =
-      video_st->hw_render_context_negotiation;
-   memcpy(&hwr_copy, hwr, sizeof(hwr_copy));
-
-   driver_uninit(p_rarch, flags);
-
-   memcpy(hwr, &hwr_copy, sizeof(*hwr));
-   video_st->hw_render_context_negotiation = iface;
-
-   drivers_init(p_rarch, settings, flags, verbosity_is_enabled());
-}
-
-void video_driver_reinit(int flags)
-{
-   settings_t *settings                    = config_get_ptr();
-   struct rarch_state   *p_rarch           = &rarch_st;
-   video_driver_state_t *video_st          = video_state_get_ptr();
-   struct retro_hw_render_callback *hwr    =
-      VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st);
-
-   video_st->cache_context     = (hwr->cache_context != false);
-   video_st->cache_context_ack = false;
-   video_driver_reinit_context(p_rarch, settings, flags);
-   video_st->cache_context     = false;
-}
 
 void crt_switch_driver_refresh(void)
 {
@@ -11023,7 +10982,7 @@ static void camera_driver_find_driver(
       p_rarch->camera_driver = (const camera_driver_t*)camera_drivers[0];
 
       if (!p_rarch->camera_driver)
-         retroarch_fail(p_rarch, 1, "find_camera_driver()");
+         retroarch_fail(1, "find_camera_driver()");
    }
 }
 
@@ -11153,19 +11112,12 @@ void driver_set_nonblock_state(void)
       : audio_st->chunk_block_size;
 }
 
-/**
- * drivers_init:
- * @flags              : Bitmask of drivers to initialize.
- *
- * Initializes drivers.
- * @flags determines which drivers get initialized.
- **/
-static void drivers_init(
-      struct rarch_state *p_rarch,
+void drivers_init(
       settings_t *settings,
       int flags,
       bool verbosity_enabled)
 {
+	struct rarch_state *p_rarch = &rarch_st;
    runloop_state_t *runloop_st = &runloop_state;
    audio_driver_state_t 
       *audio_st                = audio_state_get_ptr();
@@ -11216,7 +11168,7 @@ static void drivers_init(
       video_driver_set_cached_frame_ptr(NULL);
       if (!video_driver_init_internal(&video_is_threaded,
                verbosity_enabled))
-         retroarch_fail(p_rarch, 1, "video_driver_init_internal()");
+         retroarch_fail(1, "video_driver_init_internal()");
 
       if (!video_st->cache_context_ack
             && hwr->context_reset)
@@ -11371,26 +11323,12 @@ static void drivers_init(
 #endif
 }
 
-/**
- * Driver ownership - set this to true if the platform in
- * question needs to 'own'
- * the respective handle and therefore skip regular RetroArch
- * driver teardown/reiniting procedure.
- *
- * If  to true, the 'free' function will get skipped. It is
- * then up to the driver implementation to properly handle
- * 'reiniting' inside the 'init' function and make sure it
- * returns the existing handle instead of allocating and
- * returning a pointer to a new handle.
- *
- * Typically, if a driver intends to make use of this, it should
- * set this to true at the end of its 'init' function.
- **/
-static void driver_uninit(struct rarch_state *p_rarch, int flags)
+void driver_uninit(int flags)
 {
-   runloop_state_t *runloop_st = &runloop_state;
+   struct rarch_state  *p_rarch = &rarch_st;
+   runloop_state_t *runloop_st  = &runloop_state;
    video_driver_state_t 
-      *video_st                = video_state_get_ptr();
+      *video_st                 = video_state_get_ptr();
 
    core_info_deinit_list();
    core_info_free_current_core();
@@ -11471,9 +11409,9 @@ static void driver_uninit(struct rarch_state *p_rarch, int flags)
 #endif
 }
 
-static void retroarch_deinit_drivers(
-      struct rarch_state *p_rarch, struct retro_callbacks *cbs)
+static void retroarch_deinit_drivers(struct retro_callbacks *cbs)
 {
+   struct rarch_state  *p_rarch    = &rarch_st;
    input_driver_state_t *input_st  = input_state_get_ptr();
    video_driver_state_t *video_st  = video_state_get_ptr();
    runloop_state_t     *runloop_st = &runloop_state;
@@ -12847,7 +12785,7 @@ static bool retroarch_parse_input_and_config(
             /* Must handle '?' otherwise you get an infinite loop */
             case '?':
                retroarch_print_help(argv[0]);
-               retroarch_fail(p_rarch, 1, "retroarch_parse_input()");
+               retroarch_fail(1, "retroarch_parse_input()");
                break;
             /* All other arguments are handled in the second pass */
          }
@@ -12920,7 +12858,7 @@ static bool retroarch_parse_input_and_config(
                   {
                      RARCH_ERR("%s\n", msg_hash_to_str(MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT));
                      retroarch_print_help(argv[0]);
-                     retroarch_fail(p_rarch, 1, "retroarch_parse_input()");
+                     retroarch_fail(1, "retroarch_parse_input()");
                   }
                   new_port = port -1;
 
@@ -12940,7 +12878,7 @@ static bool retroarch_parse_input_and_config(
                   {
                      RARCH_ERR("Connect dualanalog to a valid port.\n");
                      retroarch_print_help(argv[0]);
-                     retroarch_fail(p_rarch, 1, "retroarch_parse_input()");
+                     retroarch_fail(1, "retroarch_parse_input()");
                   }
                   new_port = port - 1;
 
@@ -12964,7 +12902,7 @@ static bool retroarch_parse_input_and_config(
                      RARCH_ERR("%s\n",
                            msg_hash_to_str(MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT));
                      retroarch_print_help(argv[0]);
-                     retroarch_fail(p_rarch, 1, "retroarch_parse_input()");
+                     retroarch_fail(1, "retroarch_parse_input()");
                   }
                   new_port = port - 1;
                   input_config_set_device(port - 1, RETRO_DEVICE_NONE);
@@ -13083,7 +13021,7 @@ static bool retroarch_parse_input_and_config(
                {
                   RARCH_ERR("Invalid argument in --sram-mode.\n");
                   retroarch_print_help(argv[0]);
-                  retroarch_fail(p_rarch, 1, "retroarch_parse_input()");
+                  retroarch_fail(1, "retroarch_parse_input()");
                }
                break;
 
@@ -13132,7 +13070,7 @@ static bool retroarch_parse_input_and_config(
                if (command_network_send((const char*)optarg))
                   exit(0);
                else
-                  retroarch_fail(p_rarch, 1, "network_cmd_send()");
+                  retroarch_fail(1, "network_cmd_send()");
 #endif
                break;
 #endif
@@ -13194,7 +13132,7 @@ static bool retroarch_parse_input_and_config(
                {
                   RARCH_ERR("Wrong format for --size.\n");
                   retroarch_print_help(argv[0]);
-                  retroarch_fail(p_rarch, 1, "retroarch_parse_input()");
+                  retroarch_fail(1, "retroarch_parse_input()");
                }
                break;
 
@@ -13255,7 +13193,7 @@ static bool retroarch_parse_input_and_config(
 
             case '?':
                retroarch_print_help(argv[0]);
-               retroarch_fail(p_rarch, 1, "retroarch_parse_input()");
+               retroarch_fail(1, "retroarch_parse_input()");
             case RA_OPT_ACCESSIBILITY:
 #ifdef HAVE_ACCESSIBILITY
                access_st->enabled = true;
@@ -13266,7 +13204,7 @@ static bool retroarch_parse_input_and_config(
                break;
             default:
                RARCH_ERR("%s\n", msg_hash_to_str(MSG_ERROR_PARSING_ARGUMENTS));
-               retroarch_fail(p_rarch, 1, "retroarch_parse_input()");
+               retroarch_fail(1, "retroarch_parse_input()");
          }
       }
    }
@@ -13281,7 +13219,7 @@ static bool retroarch_parse_input_and_config(
       if (optind < argc)
       {
          RARCH_ERR("--menu was used, but content file was passed as well.\n");
-         retroarch_fail(p_rarch, 1, "retroarch_parse_input()");
+         retroarch_fail(1, "retroarch_parse_input()");
       }
 #ifdef HAVE_DYNAMIC
       else
@@ -13337,26 +13275,26 @@ static bool retroarch_parse_input_and_config(
  * Make sure we haven't compiled for something we cannot run.
  * Ideally, code would get swapped out depending on CPU support,
  * but this will do for now. */
-static void retroarch_validate_cpu_features(struct rarch_state *p_rarch)
+static void retroarch_validate_cpu_features(void)
 {
    uint64_t cpu = cpu_features_get();
    (void)cpu;
 
 #ifdef __MMX__
    if (!(cpu & RETRO_SIMD_MMX))
-      FAIL_CPU(p_rarch, "MMX");
+      FAIL_CPU("MMX");
 #endif
 #ifdef __SSE__
    if (!(cpu & RETRO_SIMD_SSE))
-      FAIL_CPU(p_rarch, "SSE");
+      FAIL_CPU("SSE");
 #endif
 #ifdef __SSE2__
    if (!(cpu & RETRO_SIMD_SSE2))
-      FAIL_CPU(p_rarch, "SSE2");
+      FAIL_CPU("SSE2");
 #endif
 #ifdef __AVX__
    if (!(cpu & RETRO_SIMD_AVX))
-      FAIL_CPU(p_rarch, "AVX");
+      FAIL_CPU("AVX");
 #endif
 }
 
@@ -13479,7 +13417,7 @@ bool retroarch_main_init(int argc, char *argv[])
    ExcHndlSetLogFileNameA(log_file_name);
 #endif
 
-   retroarch_validate_cpu_features(p_rarch);
+   retroarch_validate_cpu_features();
    retroarch_init_task_queue();
 
    {
@@ -13537,14 +13475,14 @@ bool retroarch_main_init(int argc, char *argv[])
     */
    if (!(audio_driver_find_driver(settings,
          "audio driver", verbosity_enabled)))
-      retroarch_fail(p_rarch, 1, "audio_driver_find()");
+      retroarch_fail(1, "audio_driver_find()");
    if (!video_driver_find_driver(settings,
          "video driver", verbosity_enabled))
-      retroarch_fail(p_rarch, 1, "video_driver_find_driver()");
+      retroarch_fail(1, "video_driver_find_driver()");
    if (!input_driver_find_driver(
             settings,
             "input driver", verbosity_enabled))
-      retroarch_fail(p_rarch, 1, "input_driver_find_driver()");
+      retroarch_fail(1, "input_driver_find_driver()");
 
    camera_driver_find_driver(p_rarch, settings,
          "camera driver", verbosity_enabled);
@@ -13556,7 +13494,7 @@ bool retroarch_main_init(int argc, char *argv[])
    {
       if (!(menu_st->driver_ctx = menu_driver_find_driver(settings,
                   "menu driver", verbosity_enabled)))
-         retroarch_fail(p_rarch, 1, "menu_driver_find_driver()");
+         retroarch_fail(1, "menu_driver_find_driver()");
    }
 #endif
    /* Enforce stored brightness if needed */
@@ -13634,7 +13572,7 @@ bool retroarch_main_init(int argc, char *argv[])
 #endif
          );
 #endif
-   drivers_init(p_rarch, settings, DRIVERS_CMD_ALL, verbosity_enabled);
+   drivers_init(settings, DRIVERS_CMD_ALL, verbosity_enabled);
 #ifdef HAVE_COMMAND
    input_driver_deinit_command(input_st);
    input_driver_init_command(input_st, settings);
@@ -14239,9 +14177,9 @@ void runloop_set_current_core_type(
  *
  * Sanely kills the program.
  **/
-static void retroarch_fail(struct rarch_state *p_rarch,
-      int error_code, const char *error)
+static void retroarch_fail(int error_code, const char *error)
 {
+   struct rarch_state  *p_rarch    = &rarch_st;
    /* We cannot longjmp unless we're in retroarch_main_init().
     * If not, something went very wrong, and we should
     * just exit right away. */

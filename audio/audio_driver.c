@@ -1812,7 +1812,7 @@ void audio_driver_menu_sample(void)
    const struct retro_system_timing *info =
       (const struct retro_system_timing*)&av_info->timing;
    unsigned sample_count                  = (info->sample_rate / info->fps) * 2;
-   audio_driver_state_t *audio_st         = audio_state_get_ptr();
+   audio_driver_state_t *audio_st         = &audio_driver_st;
    bool check_flush                       = !(
              runloop_st->paused              
          || !audio_st->active     
