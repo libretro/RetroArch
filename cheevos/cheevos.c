@@ -239,33 +239,31 @@ static void rcheevos_activate_achievements(void)
    int result;
    rcheevos_racheevo_t* achievement = rcheevos_locals.game.achievements;
    settings_t* settings = config_get_ptr();
+   const uint8_t active_flag = rcheevos_locals.hardcore_active ? RCHEEVOS_ACTIVE_HARDCORE : RCHEEVOS_ACTIVE_SOFTCORE;
 
    for (i = 0; i < rcheevos_locals.game.achievement_count;
          i++, achievement++)
    {
-      if ((achievement->active & (RCHEEVOS_ACTIVE_HARDCORE | RCHEEVOS_ACTIVE_SOFTCORE)) != 0)
+      if ((achievement->active & active_flag) != 0)
       {
-         if (!rcheevos_locals.hardcore_active || (achievement->active & RCHEEVOS_ACTIVE_HARDCORE) != 0)
+         result = rc_runtime_activate_achievement(&rcheevos_locals.runtime, achievement->id, achievement->memaddr, NULL, 0);
+         if (result != RC_OK)
          {
-            result = rc_runtime_activate_achievement(&rcheevos_locals.runtime, achievement->id, achievement->memaddr, NULL, 0);
-            if (result != RC_OK)
-            {
-               char buffer[256];
-               snprintf(buffer, sizeof(buffer),
-                  "Could not activate achievement %u \"%s\": %s",
-                  achievement->id, achievement->title, rc_error_str(result));
+            char buffer[256];
+            snprintf(buffer, sizeof(buffer),
+               "Could not activate achievement %u \"%s\": %s",
+               achievement->id, achievement->title, rc_error_str(result));
 
-               if (settings->bools.cheevos_verbose_enable)
-                  runloop_msg_queue_push(buffer, 0, 4 * 60, false, NULL,
-                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            if (settings->bools.cheevos_verbose_enable)
+               runloop_msg_queue_push(buffer, 0, 4 * 60, false, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-               CHEEVOS_ERR(RCHEEVOS_TAG "%s: mem %s\n", buffer, achievement->memaddr);
-               achievement->active &= ~(RCHEEVOS_ACTIVE_HARDCORE | RCHEEVOS_ACTIVE_SOFTCORE);
-               achievement->active |= RCHEEVOS_ACTIVE_UNSUPPORTED;
+            CHEEVOS_ERR(RCHEEVOS_TAG "%s: mem %s\n", buffer, achievement->memaddr);
+            achievement->active &= ~(RCHEEVOS_ACTIVE_HARDCORE | RCHEEVOS_ACTIVE_SOFTCORE);
+            achievement->active |= RCHEEVOS_ACTIVE_UNSUPPORTED;
 
-               CHEEVOS_FREE(achievement->memaddr);
-               achievement->memaddr = NULL;
-            }
+            CHEEVOS_FREE(achievement->memaddr);
+            achievement->memaddr = NULL;
          }
       }
    }
