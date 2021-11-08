@@ -4585,6 +4585,7 @@ void menu_entries_prepend(file_list_t *list,
    cbs->action_iterate             = NULL;
    cbs->action_deferred_push       = NULL;
    cbs->action_select              = NULL;
+   cbs->action_context             = NULL;
    cbs->action_get_title           = NULL;
    cbs->action_ok                  = NULL;
    cbs->action_cancel              = NULL;

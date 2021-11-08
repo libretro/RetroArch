@@ -1383,6 +1383,7 @@ MENU
 #include "../menu/cbs/menu_cbs_ok.c"
 #include "../menu/cbs/menu_cbs_cancel.c"
 #include "../menu/cbs/menu_cbs_select.c"
+#include "../menu/cbs/menu_cbs_context.c"
 #include "../menu/cbs/menu_cbs_start.c"
 #include "../menu/cbs/menu_cbs_info.c"
 #include "../menu/cbs/menu_cbs_left.c"
