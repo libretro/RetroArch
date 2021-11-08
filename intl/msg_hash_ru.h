@@ -976,7 +976,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
-   "Изменить драйвера, используемые системой."
+   "Изменить драйверы, используемые системой."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
@@ -1028,7 +1028,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
-   "Сохранение"
+   "Сохранения"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
@@ -1199,7 +1199,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Используемый драйвер bluetooth."
+   "Используемый драйвер Bluetooth."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_DRIVER,
@@ -1772,7 +1772,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Настройка гаммы/контрастности HDR. Анализирует цвета и расширяет общий диапазон между самыми светлыми и самыми тёмными частями изображения. Чем выше контраст HDR, тем сильнее разница и чем ниже контраст, тем более размытым будет изображение. Помогает пользователям настроит[[...]"
+   "Настройка гаммы/контрастности HDR. Расширяет диапазон между самыми светлыми и самыми тёмными частями изображения. Чем выше контраст HDR, тем сильнее разница и чем ниже контраст, тем более размытым будет изображение. Позволяет достичь наилучшего качества картинки на экране."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -1985,7 +1985,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-   "Изменить устройство, используемое аудиодрайвером по умолчанию. Зависит от драйвера."
+   "Изменить стандартное устройство, используемое драйвером звука. Зависит от драйвера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
@@ -2446,7 +2446,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
-   "Загрузить сохранение"
+   "Загрузить"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
@@ -2454,7 +2454,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
-   "Сделать сохранение"
+   "Сохранить"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
@@ -2470,7 +2470,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
-   "Закрыть контент"
+   "Закрыть"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CLOSE_CONTENT_KEY,
@@ -2952,7 +2952,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-   "Обрабатывать логику ядра на один или более кадров вперед и затем загружать сохранение для уменьшения задержки ввода."
+   "Обрабатывать логику ядра на один или более кадров вперёд и затем загружать сохранение для уменьшения полученной задержки ввода."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
@@ -3147,7 +3147,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
-   "Блокировать SaveRAM от перезаписи при загрузке быстрых сохранений. Может приводить к ошибкам в играх."
+   "Блокировать перезапись SaveRAM при загрузке быстрых сохранений. Может приводить к ошибкам в играх."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
@@ -3171,7 +3171,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
-   "Ограничивает количество сохранений состояния, если включена опция 'Автоматически повышать слот сохранения'. При превышении значения создание нового сохранения удалит существующее сохранение с наименьшим индексом. Значение '0' снимает ограничение на количество сохранен[[...]"
+   "Ограничивает количество сохранений, если включено 'Автоматически повышать слот сохранения'. При превышении значения создание нового сохранения удалит существующее сохранение с наименьшим индексом. Значение '0' снимает ограничение на количество сохранений."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -3179,7 +3179,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Автоматически сохранять состояние при закрытии контента. RetroArch будет автоматически загружать это сохранение, если включена 'Автозагрузка сохранений'."
+   "Автоматически создавать сохранение при закрытии контента. RetroArch будет автоматически загружать данное сохранение, если включена 'Автозагрузка сохранений'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -3795,7 +3795,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
-   "Применяет заданный вручную коэффициент масштабирования при отображении виджетов в полноэкранном режиме. Должно быть выключено 'Автомасштабирование виджетов'. Позволяет изменять размер уведомлений, индикаторов и элементов управления независимо от заданного масштаба м[[...]"
+   "Ручная установка коэффициента масштабирования для виджетов в полноэкранном режиме. Учитывается только если выключено 'Автомасштабирование виджетов'. Позволяет изменять размер уведомлений, индикаторов и элементов управления независимо от заданного масштаба меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
@@ -3803,7 +3803,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
-   "Применяет заданный вручную коэффициент масштабирования при отображении виджетов в оконном режиме. Должно быть выключено 'Автомасштабирование виджетов'. Позволяет изменять размер уведомлений, индикаторов и элементов управления независимо от заданного масштаба меню."
+   "Ручная установка коэффициента масштабирования для виджетов в оконном режиме. Учитывается только если выключено 'Автомасштабирование виджетов'. Позволяет изменять размер уведомлений, индикаторов и элементов управления независимо от заданного масштаба меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_SHOW,
@@ -4528,11 +4528,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Показывать 'Закрыть контент'"
+   "Показывать 'Закрыть'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Показывать опцию 'Закрыть контент'."
+   "Показывать опцию 'Закрыть'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
@@ -4544,7 +4544,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-   "Показывать 'Сохранить/Загрузить состояние'"
+   "Показывать 'Сохранить/Загрузить'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
@@ -4600,11 +4600,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
-   "Показывать 'Опции'"
+   "Показывать 'Опции ядра'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
-   "Показывать элемент 'Опции'."
+   "Показывать элемент 'Опции ядра'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
@@ -5053,7 +5053,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Удваивает количество заработанных очков. Отключает для всех игр сохранение состояния, читы, перемотку, паузу и замедление. Включение опции при работе ядра перезапустит игру."
+   "Удваивает количество заработанных очков. Отключает для всех игр сохранения, чит-коды, перемотку, паузу и замедление. Включение настройки при работе ядра перезапустит игру."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -6150,6 +6150,10 @@ MSG_HASH(
 
 /* Explore tab */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST,
+   "Создание списка..."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
    "Год выпуска"
    )
@@ -6347,7 +6351,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
-   "Закрыть контент"
+   "Закрыть"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
@@ -6367,11 +6371,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STATE_SLOT,
-   "Изменить текущий слот сохранения."
+   "Выбрать текущий слот сохранения."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_STATE,
-   "Сохранить состояние"
+   "Сохранить"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_STATE,
@@ -6379,7 +6383,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
-   "Загрузить состояние"
+   "Загрузить"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_STATE,
@@ -6443,7 +6447,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
-   "Опции"
+   "Опции ядра"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS,
@@ -6608,7 +6612,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
-   "Загрузить файл чит-кодов с заменой существующих."
+   "Загрузить чит-коды из файла и заменить существующие."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND,
@@ -7203,7 +7207,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Приостановить хардкорный режим достижений для текущего сеанса. Это действие активирует сохранение состояния, читы, перемотку, паузу и замедление."
+   "Приостановить хардкорный режим достижений для текущего сеанса. Это действие активирует сохранения, чит-коды, перемотку, паузу и замедление."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
@@ -7211,7 +7215,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Продолжить хардкорный режим достижений для текущего сеанса. Это действие отключит сохранение состояния, читы, перемотку, паузу, замедление и перезапустит игру."
+   "Продолжить хардкорный режим достижений для текущего сеанса. Это действие отключит сохранения, чит-коды, перемотку, паузу, замедление и перезапустит игру."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
@@ -10099,7 +10103,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
-   "Файл уже существует. Сохранение в резервном буфере"
+   "Файл уже существует. Сохранение в резервный буфер."
    )
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM,
@@ -10515,7 +10519,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
-   "Не удалось прочитать сохранение из видео."
+   "Невозможно прочитать сохранение из видео."
    )
 MSG_HASH(
    MSG_CRC32_CHECKSUM_MISMATCH,
@@ -11071,7 +11075,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVING_STATE,
-   "Сохранение состояния"
+   "Создание сохранения"
    )
 MSG_HASH(
    MSG_SCANNING,
@@ -11669,7 +11673,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
-   "Применяет заданный вручную коэффициент масштабирования при отображении виджетов. Должно быть выключено 'Автомасштабирование виджетов'. Позволяет изменять размер уведомлений, индикаторов и элементов управления независимо от заданного масштаба меню."
+   "Ручная установка коэффициента масштабирования при отображении виджетов. Учитывается только если выключено 'Автомасштабирование виджетов'. Позволяет изменять размер уведомлений, индикаторов и элементов управления независимо от заданного масштаба меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,

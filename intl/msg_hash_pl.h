@@ -6042,6 +6042,10 @@ MSG_HASH(
 
 /* Explore tab */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST,
+   "Inicjowanie listy..."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
    "Rok wydania"
    )

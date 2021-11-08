@@ -1571,6 +1571,10 @@ MSG_HASH(
    "ウィンドウの位置とサイズを記憶"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "カスタムウインドウサイズを使用"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    "ウィンドウの幅"
    )
@@ -1585,6 +1589,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
    "ウィンドウの高さを指定します."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "最大ウインドウ幅"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "最大ウインドウ高さ"
    )
 
 /* Settings > Video > Scaling */
@@ -1658,6 +1670,22 @@ MSG_HASH(
 
 /* Settings > Video > HDR */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
+   "HDRを有効"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "ディスプレイが対応している場合, HDRを有効にします."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
+   "最大輝度"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
+   "ディスプレイの最大輝度(cd/m2) を設定します. ディスプレイの最大輝度についてはRTingsを参照してください."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
    "コントラスト"
@@ -5869,6 +5897,10 @@ MSG_HASH(
    )
 
 /* Explore tab */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST,
+   "リストを初期化中..."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
    "発売年"

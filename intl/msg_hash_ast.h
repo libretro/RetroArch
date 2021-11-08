@@ -1699,7 +1699,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
-   "Los llogros nun puen activase col usu d'esti nucleu"
+   "Los llogros nun se puen activar con esti nucleu"
 )
 
 /* Quick Menu > Information */
@@ -2707,7 +2707,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_CANNOT_PLAY,
-   "Nun pue cambiase al mou de xuegu"
+   "Nun se pue cambiar el mou de xuegu"
    )
 MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,

@@ -1626,6 +1626,14 @@ MSG_HASH(
    "Skaalaa video vain kokonaisluvuilla. Peruskoko riippuu järjestelmän raportoidusta geometriasta ja kuvasuhteesta. Jos 'pakota kuvasuhde' ei ole asetettu, X/Y on itsenäisesti kokonaisluvuin skaalattu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Kokonaisluku skaalauksen yliskaalaus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Pakota kokonaisluku skaalaus pyöristämään seuraavaan suurempaan kokonaislukuun sen sijaan, että pyöristettäisiin alaspäin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "Kuvasuhde"
    )
@@ -6078,6 +6086,10 @@ MSG_HASH(
 
 /* Explore tab */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST,
+   "Alustetaan luetteloa..."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
    "Julkaisuvuosi"
    )
@@ -10246,6 +10258,10 @@ MSG_HASH(
    "Soittolista siivottu: "
    )
 MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_MISSING_CONFIG,
+   "Päivitys epäonnistui - soittolista ei sisällä kelvollista skannaus historiaa: "
+   )
+MSG_HASH(
    MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
    "Päivitys epäonnistui - virheellinen/puuttuva sisältöhakemisto: "
    )
@@ -11138,6 +11154,14 @@ MSG_HASH(
    "Virtuaalisen levyaseman sulkeminen epäonnistui."
    )
 MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FAILED,
+   "Pelitila tallennuksen automaattinen lataus kohteesta \"%s\" epäonnistui."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
+   "Pelitila tallennuksen automaattinen lataus kohteesta \"%s\" onnistui."
+   )
+MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
    "ei määritelty"
    )
@@ -11590,6 +11614,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
    "Toteutetaan: oletus"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
+   "Asetetaan: %dx%d\nSTART nollataksesi"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DESC,
+   "Asetetaan: %dx%d - %s\nSTART nollataksesi"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,

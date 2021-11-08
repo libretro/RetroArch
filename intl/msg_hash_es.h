@@ -3946,14 +3946,6 @@ MSG_HASH(
    "Muestra un mensaje en pantalla al cambiar la frecuencia de actualización."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
-   "Notificaciones extras de netplay"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
-   "Muestra mensajes no esenciales de netplay en la pantalla."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "Fuente de notificaciones"
    )
@@ -5151,10 +5143,6 @@ MSG_HASH(
    "Indica el puerto del servidor a conectar. Puede ser TCP o UDP."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
-   "Max Conexiones Simultáneas"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
    "Contraseña del servidor"
    )
@@ -6129,6 +6117,10 @@ MSG_HASH(
    )
 
 /* Explore tab */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST,
+   "Inicializando lista..."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
    "Año de lanzamiento"
@@ -12042,11 +12034,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_SAVE_STATE,
-   "Crear guardado\nrápido"
+   "Crear\npunto de\nrestauración"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
-   "Cargar\nguardado\nrápido"
+   "Cargar\npunto de\nrestauración"
    )
 #endif
 #ifdef HAVE_QT

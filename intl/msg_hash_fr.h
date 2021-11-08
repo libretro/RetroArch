@@ -6114,6 +6114,10 @@ MSG_HASH(
 
 /* Explore tab */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST,
+   "Liste en cours d'initialisation..."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
    "Année de sortie"
    )
@@ -11135,7 +11139,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_BLUETOOTH_DEVICES,
-   "Recherche de périphériques Bluetooth…"
+   "Recherche de périphériques Bluetooth..."
    )
 MSG_HASH(
    MSG_SCANNING_WIRELESS_NETWORKS,
