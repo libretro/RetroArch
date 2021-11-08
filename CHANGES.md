@@ -1,4 +1,11 @@
 # Future
+- ANDROID/PLAYSTORE: Implement MANAGE_EXTERNAL_STORAGE permission
+- ANDROID/PLAYSTORE: Bump up SDK level to 30 to comply with Play Store policies
+- CHEEVOS: Fix need-to-activate achievement logic for non-hardcore
+- CHEEVOS: Don't queue rewind re-init if already on main thread
+- CHEEVOS: Ignore unofficial achievements unless setting is enabled
+- VIDEO/ROTATION: Always return false if rotation can't occur. RETRO_ENVIRONMENT_SET_ROTATION should return false when rotation has been forcefully disabled in frontend, that way the core can decide if aspect ratio should be rotated or not for vertical games. Useful for FBNeo for instance.
+- WIIU: Make wiiu_gfx_load_texture code safer
 
 # 1.9.13
 - CHEEVOS/MSVC2010: Add Cheevos support
