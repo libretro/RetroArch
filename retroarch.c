@@ -7510,7 +7510,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
          RARCH_LOG("[Environ]: SET_ROTATION: %u\n", rotation);
          if (!video_allow_rotate)
-            break;
+            return false;
 
          if (system)
             system->rotation = rotation;
