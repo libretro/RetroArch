@@ -3,10 +3,11 @@ package com.retroarch.browser.mainmenu;
 import com.retroarch.browser.preferences.util.UserPreferences;
 import com.retroarch.browser.retroactivity.RetroActivityFuture;
 
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.ApplicationInfo;
 import android.media.AudioManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -21,6 +22,7 @@ import android.Manifest;
 import android.content.DialogInterface;
 import android.app.AlertDialog;
 import android.util.Log;
+import android.widget.Toast;
 
 /**
  * {@link PreferenceActivity} subclass that provides all of the
@@ -31,6 +33,7 @@ public final class MainMenuActivity extends PreferenceActivity
 	final private int REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS = 124;
 	public static String PACKAGE_NAME;
 	boolean checkPermissions = false;
+	boolean checkManageExternalStoragePermission = false;
 
 	public void showMessageOKCancel(String message, DialogInterface.OnClickListener onClickListener)
 	{
@@ -64,12 +67,25 @@ public final class MainMenuActivity extends PreferenceActivity
 			List<String> permissionsNeeded = new ArrayList<String>();
 			final List<String> permissionsList = new ArrayList<String>();
 
-			if (!addPermission(permissionsList, Manifest.permission.READ_EXTERNAL_STORAGE))
-				permissionsNeeded.add("Read External Storage");
-			if (!addPermission(permissionsList, Manifest.permission.WRITE_EXTERNAL_STORAGE))
-				permissionsNeeded.add("Write External Storage");
+			final boolean requiresManageExternalStoragePermission =
+					getApplicationInfo().targetSdkVersion > Build.VERSION_CODES.Q
+							&& Build.VERSION.SDK_INT > Build.VERSION_CODES.Q;
 
-			if (permissionsList.size() > 0)
+			boolean shouldRequestManageExternalStoragePermission = false;
+
+			if (requiresManageExternalStoragePermission) {
+				if (!Environment.isExternalStorageManager()) {
+					shouldRequestManageExternalStoragePermission = true;
+					permissionsNeeded.add("Manage External Storage");
+				}
+			} else {
+				if (!addPermission(permissionsList, Manifest.permission.READ_EXTERNAL_STORAGE))
+					permissionsNeeded.add("Read External Storage");
+				if (!addPermission(permissionsList, Manifest.permission.WRITE_EXTERNAL_STORAGE))
+					permissionsNeeded.add("Write External Storage");
+			}
+
+			if (permissionsList.size() > 0 || shouldRequestManageExternalStoragePermission)
 			{
 				checkPermissions = true;
 
@@ -91,10 +107,26 @@ public final class MainMenuActivity extends PreferenceActivity
 							{
 								if (which == AlertDialog.BUTTON_POSITIVE)
 								{
-									if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
-									{
+									if (requiresManageExternalStoragePermission) {
+										checkManageExternalStoragePermission = true;
+
+										Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+										intent.setData(Uri.fromParts("package", getPackageName(), null));
+
+										try {
+											startActivity(intent);
+										} catch (ActivityNotFoundException e) {
+											// Redirect to app info page instead, so that the user can manually grant the permission
+											String text = "Navigate to Permissions -> Files and media -> Allow all the time";
+											Toast.makeText(MainMenuActivity.this, text, Toast.LENGTH_LONG).show();
+
+											intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+											intent.setData(Uri.fromParts("package", getPackageName(), null));
+											startActivity(intent);
+										}
+									} else {
 										requestPermissions(permissionsList.toArray(new String[permissionsList.size()]),
-											REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
+												REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
 
 										Log.i("MainMenuActivity", "User accepted request for external storage permissions.");
 									}
@@ -193,5 +225,14 @@ public final class MainMenuActivity extends PreferenceActivity
 		UserPreferences.updateConfigFile(this);
 
 		checkRuntimePermissions();
+	}
+
+	@Override
+	public void onTopResumedActivityChanged(boolean onTop) {
+		if(onTop && checkManageExternalStoragePermission) {
+			checkPermissions = false;
+			checkManageExternalStoragePermission = false;
+			checkRuntimePermissions();
+		}
 	}
 }
