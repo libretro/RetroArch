@@ -1,14 +1,14 @@
 import re
 
-# 0: full struct; 1: up to & including first []; 2: content between first {}
-p_struct = re.compile(r'(struct\s*[a-zA-Z0-9_\s]+\[])\s*'
-                      r'(?:(?:\/\*(?:.|[\r\n])*?\*\/|\/\/.*[\r\n]+)\s*)*'
+# 0: full struct; 1: up to & including first []; 2 & 3: comments; 4: content between first {}
+p_struct = re.compile(r'(\bstruct\b\s*[a-zA-Z0-9_\s]+\[])\s*'  # 1st capturing group
+                      r'(?:(?=(\/\*(?:.|[\r\n])*?\*\/|\/\/.*[\r\n]+))\2\s*)*'  # 2nd capturing group
                       r'=\s*'  # =
-                      r'(?:(?:\/\*(?:.|[\r\n])*?\*\/|\/\/.*[\r\n]+)\s*)*'
+                      r'(?:(?=(\/\*(?:.|[\r\n])*?\*\/|\/\/.*[\r\n]+))\3\s*)*'  # 3rd capturing group
                       r'{((?:.|[\r\n])*?)\{\s*NULL,\s*NULL,\s*NULL\s*(?:.|[\r\n])*?},?(?:.|[\r\n])*?};')  # captures full struct, it's beginning and it's content
 # 0: type name[]; 1: type; 2: name
-p_type_name = re.compile(r'(retro_core_option_[a-zA-Z0-9_]+)\s*'
-                         r'(option_cats([a-z_]{0,8})|option_defs([a-z_]{0,8}))\s*\[]')
+p_type_name = re.compile(r'(\bretro_core_option_[a-zA-Z0-9_]+)\s*'
+                         r'(\boption_cats([a-z_]{0,8})|\boption_defs([a-z_]*))\s*\[]')
 # 0: full option; 1: key; 2: description; 3: additional info; 4: key/value pairs
 p_option = re.compile(r'{\s*'  # opening braces
                       r'(?:(?:\/\*(?:.|[\r\n])*?\*\/|\/\/.*[\r\n]+|#.*[\r\n]+)\s*)*'
@@ -76,9 +76,9 @@ p_key_value = re.compile(r'{\s*'  # opening braces
 
 p_masked = re.compile(r'([A-Z_][A-Z0-9_]+)\s*(\"(?:"\s*"|\\\s*|.)*\")')
 
-p_intl = re.compile(r'(struct retro_core_option_definition \*option_defs_intl\[RETRO_LANGUAGE_LAST]) = {'
+p_intl = re.compile(r'(\bstruct retro_core_option_definition \*option_defs_intl\[RETRO_LANGUAGE_LAST]) = {'
                     r'((?:.|[\r\n])*?)};')
-p_set = re.compile(r'static INLINE void libretro_set_core_options\(retro_environment_t environ_cb\)'
+p_set = re.compile(r'\bstatic INLINE void libretro_set_core_options\(retro_environment_t environ_cb\)'
                    r'(?:.|[\r\n])*?};?\s*#ifdef __cplusplus\s*}\s*#endif')
 
 p_yaml = re.compile(r'"project_id": "[0-9]+".*\s*'

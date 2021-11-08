@@ -1,0 +1,92 @@
+## Requirements
+
+Make sure the core is libretro conformant:
+both `libretro_core_options.h`, containing the English texts, and
+`libretro_core_options_intl.h`, containing all already existing
+translations, if any, must be present in the same directory.
+
+> Please note: `libretro_core_options_intl.h` does not need to contain
+anything, if no translations exist or none of them should be preserved.
+
+The scripts are not compatible with text filled in by macros or during run time.
+The procedure should not fail - but those texts will not be made translatable.
+
+Also, please verify the existence and correct use of
+
+   `#ifdef HAVE_LANGEXTRA`
+   
+and/or
+   
+   `#ifndef NAVE_NO_LANGEXTRA`
+   
+pre-compiler instructions in `libretro_core_options.h` to remove any
+references to additional languages on platforms which cannot handle them,
+e.g. due to limited RAM.
+For an example, refer to an up-to-date core, like [gambatte-libretro](https://github.com/libretro/gambatte-libretro/blob/master/libgambatte/libretro/libretro_core_options.h).
+
+> Make sure `options_intl` in `libretro_core_options.h` correctly references the `intl` options, or the translations will not be applied!
+
+## Adding automatic Crowdin sync
+
+Place the `intl` and `.github` folders, including content, into the root
+of the repository.
+
+In `.github/workflows` are two files:
+`crowdin_prep.yml` & `crowdin_translate.yml`.
+In each of those are placeholders, which need to be replaced.
+
+For convenience, one can run `intl/activate.py`, which will try to find
+the `libretro_core_options.h` file as well as identify the core name to
+fill those placeholders with.
+
+Even then, one should still check, if it produced the correct result:
+
+For `crowdin_prep.yml`:
+> **NOTE:** Please verify, that this workflow watches the correct branch!
+Uploads happen, whenever `libretro_core_options.h` of that branch is changed.
+
+- <PATH/TO/libretro_core_options.h FILE> (x2)
+	- replace with the full path from the root of the repo to the
+           `libretro_core_options.h` file
+
+- <CORE_NAME>
+	- the name of the core (or repo)
+
+And for crowdin_translate.yml:
+- <0-59> <0-23>
+	- Minute and hour at which the sync will happen.
+      The script will generate a random time for this, to avoid
+      stressing GitHub & Crowdin with many simultaneous runs.
+
+- <CORE_NAME>
+    - same as above
+
+- <PATH/TO/libretro_core_options_intl.h FILE> (x2)
+    - replace with the full path from the root of the repo to the
+      'libretro_core_options_intl.h' file
+
+Create a Pull Request and ask a Crowdin project manager, either on [Crowdin](https://crowdin.com/project/retroarch) or, preferably, on [discord](https://discord.gg/xuMbcVuF) in the `retroarch-translations` channel, to provide you with an access key. Create an Actions repository secret on GitHub named CROWDIN_API_KEY for this access token.
+
+<!-- TODO: set correct permissions https://github.com/marketplace/actions/github-push --> 
+When everything is ready, run the "Crowdin Translations Initial Setup" workflow manually to upload the source texts and any translations to Crowdin.
+
+> You may either disable the initial workflow or even remove it from your repository. Running it more than once is very much discouraged! That may mess with the newest translations, which are usually not yet incorporated into the repository.
+
+Finally, it is recommended to run the "Crowdin Translation Sync" workflow manually once. If a "Permission to \<repository> denied" error occurs, you might need to configure the GITHUB_TOKEN with the appropriate access rights, [see here](https://github.com/marketplace/actions/github-push#requirements-and-prerequisites).
+
+## (For Crowdin project managers) Creating an access token
+
+To create an access token, navigate to the account settings via your profile picture in the top right. Change to the API tab. Here you should find a `New Token` button.
+
+Name the token after the core/repository, which will receive it. The following permissions should be set:
+
+- Projects
+  - read
+- Source files & strings
+  - read & write
+- Translations
+  - read & write
+- (optional) Translation status
+  - read
+
+> Please provide these access tokens to the core developers in a private message and delete those after successful setup. Do not share tokens publicly or store them in plain text long term!
