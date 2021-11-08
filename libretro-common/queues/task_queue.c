@@ -66,7 +66,7 @@ static struct retro_task_impl *impl_current = NULL;
 static bool task_threaded_enable            = false;
 
 #ifdef HAVE_THREADS
-static uintptr_t main_thread_id             = NULL;
+static uintptr_t main_thread_id             = 0;
 static slock_t *running_lock                = NULL;
 static slock_t *finished_lock               = NULL;
 static slock_t *property_lock               = NULL;
