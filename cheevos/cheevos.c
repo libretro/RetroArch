@@ -1641,6 +1641,8 @@ bool rcheevos_load(const void *data)
 
    /* reset hardcore mode and leaderboard settings based on configs */
    rcheevos_hardcore_enabled_changed();
+   CHEEVOS_LOG(RCHEEVOS_TAG "Load started, hardcore %sactive\n", rcheevos_hardcore_active() ? "" : "not ");
+
    rcheevos_validate_config_settings();
    rcheevos_leaderboards_enabled_changed();
 
