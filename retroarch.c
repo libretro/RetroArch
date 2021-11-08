@@ -14829,7 +14829,6 @@ static enum runloop_state_enum runloop_check_state(
       struct menu_state *menu_st    = menu_state_get_ptr();
       bool focused                  = false;
       input_bits_t trigger_input    = current_bits;
-      global_t *global              = global_get_ptr();
       unsigned screensaver_timeout  = settings->uints.menu_screensaver_timeout;
 
       /* Get current time */
@@ -14846,45 +14845,42 @@ static enum runloop_state_enum runloop_check_state(
       focused                   = focused &&
          !p_rarch->main_ui_companion_is_on_foreground;
 
-      if (global)
+      if (action == old_action)
       {
-         if (action == old_action)
-         {
-            retro_time_t press_time           = current_time;
+	      retro_time_t press_time           = current_time;
 
-            if (action == MENU_ACTION_NOOP)
-               global->menu.noop_press_time   = press_time - global->menu.noop_start_time;
-            else
-               global->menu.action_press_time = press_time - global->menu.action_start_time;
-         }
-         else
-         {
-            if (action == MENU_ACTION_NOOP)
-            {
-               global->menu.noop_start_time      = current_time;
-               global->menu.noop_press_time      = 0;
+	      if (action == MENU_ACTION_NOOP)
+		      menu_st->noop_press_time   = press_time - menu_st->noop_start_time;
+	      else
+		      menu_st->action_press_time = press_time - menu_st->action_start_time;
+      }
+      else
+      {
+	      if (action == MENU_ACTION_NOOP)
+	      {
+		      menu_st->noop_start_time      = current_time;
+		      menu_st->noop_press_time      = 0;
 
-               if (global->menu_prev_action == old_action)
-                  global->menu.action_start_time = global->menu.prev_start_time;
-               else
-                  global->menu.action_start_time = current_time;
-            }
-            else
-            {
-               if (  global->menu_prev_action == action &&
-                     global->menu.noop_press_time < 200000) /* 250ms */
-               {
-                  global->menu.action_start_time = global->menu.prev_start_time;
-                  global->menu.action_press_time = current_time - global->menu.action_start_time;
-               }
-               else
-               {
-                  global->menu.prev_start_time   = current_time;
-                  global->menu_prev_action       = action;
-                  global->menu.action_press_time = 0;
-               }
-            }
-         }
+		      if (menu_st->prev_action == old_action)
+			      menu_st->action_start_time = menu_st->prev_start_time;
+		      else
+			      menu_st->action_start_time = current_time;
+	      }
+	      else
+	      {
+		      if (  menu_st->prev_action == action &&
+				      menu_st->noop_press_time < 200000) /* 250ms */
+		      {
+			      menu_st->action_start_time = menu_st->prev_start_time;
+			      menu_st->action_press_time = current_time - menu_st->action_start_time;
+		      }
+		      else
+		      {
+			      menu_st->prev_start_time   = current_time;
+			      menu_st->prev_action       = action;
+			      menu_st->action_press_time = 0;
+		      }
+	      }
       }
 
       /* Check whether menu screensaver should be enabled */
