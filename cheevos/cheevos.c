@@ -821,13 +821,16 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
       if (rewind_enable)
       {
 #ifdef HAVE_THREADS
-         /* have to "schedule" this. 
-          * CMD_EVENT_REWIND_DEINIT should 
-          * only be called on the main thread */
-         rcheevos_locals.queued_command = CMD_EVENT_REWIND_DEINIT;
-#else
-         command_event(CMD_EVENT_REWIND_DEINIT, NULL);
+         if (!task_is_on_main_thread())
+         {
+            /* have to "schedule" this.
+             * CMD_EVENT_REWIND_DEINIT should
+             * only be called on the main thread */
+            rcheevos_locals.queued_command = CMD_EVENT_REWIND_DEINIT;
+         }
+         else
 #endif
+            command_event(CMD_EVENT_REWIND_DEINIT, NULL);
       }
    }
    else
@@ -847,13 +850,16 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
       if (rewind_enable)
       {
 #ifdef HAVE_THREADS
-         /* have to "schedule" this. 
-          * CMD_EVENT_REWIND_INIT should 
-          * only be called on the main thread */
-         rcheevos_locals.queued_command = CMD_EVENT_REWIND_INIT;
-#else
-         command_event(CMD_EVENT_REWIND_INIT, NULL);
+         if (!task_is_on_main_thread())
+         {
+            /* have to "schedule" this.
+             * CMD_EVENT_REWIND_INIT should
+             * only be called on the main thread */
+            rcheevos_locals.queued_command = CMD_EVENT_REWIND_INIT;
+         }
+         else
 #endif
+            command_event(CMD_EVENT_REWIND_INIT, NULL);
       }
    }
 
@@ -1341,12 +1347,15 @@ static void rcheevos_start_session(void)
       if (settings->bools.rewind_enable)
       {
 #ifdef HAVE_THREADS
-         /* Have to "schedule" this. CMD_EVENT_REWIND_INIT should 
-          * only be called on the main thread */
-         rcheevos_locals.queued_command = CMD_EVENT_REWIND_INIT;
-#else
-         command_event(CMD_EVENT_REWIND_INIT, NULL);
+         if (!task_is_on_main_thread())
+         {
+            /* Have to "schedule" this. CMD_EVENT_REWIND_INIT should
+             * only be called on the main thread */
+            rcheevos_locals.queued_command = CMD_EVENT_REWIND_INIT;
+         }
+         else
 #endif
+            command_event(CMD_EVENT_REWIND_INIT, NULL);
       }
    }
 #endif
@@ -1420,15 +1429,18 @@ static void rcheevos_fetch_game_data(void)
       if (settings->bools.rewind_enable)
       {
 #ifdef HAVE_THREADS
-         /* have to "schedule" this. CMD_EVENT_REWIND_DEINIT should only be called on the main thread */
-         rcheevos_locals.queued_command = CMD_EVENT_REWIND_DEINIT;
+         if (!task_is_on_main_thread())
+         {
+            /* have to "schedule" this. CMD_EVENT_REWIND_DEINIT should only be called on the main thread */
+            rcheevos_locals.queued_command = CMD_EVENT_REWIND_DEINIT;
 
-         /* wait for rewind to be disabled */
-         while (rcheevos_locals.queued_command != CMD_EVENT_NONE)
-            retro_sleep(1);
-#else
-         command_event(CMD_EVENT_REWIND_DEINIT, NULL);
+            /* wait for rewind to be disabled */
+            while (rcheevos_locals.queued_command != CMD_EVENT_NONE)
+               retro_sleep(1);
+         }
+         else
 #endif
+            command_event(CMD_EVENT_REWIND_DEINIT, NULL);
       }
    }
 #endif
