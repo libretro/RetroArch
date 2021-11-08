@@ -1,3 +1,0 @@
-files:
-  - source: /intl/_us/*.json
-    translation: /intl/_%two_letters_code%/%original_file_name%
