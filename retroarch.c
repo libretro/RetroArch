@@ -15459,10 +15459,9 @@ static enum runloop_state_enum runloop_check_state(
 
          if (!timer.timer_begin)
          {
-            uint64_t current_usec = cpu_features_get_time_usec();
-            RARCH_TIMER_BEGIN_NEW_TIME_USEC(timer,
-                  current_usec,
-                  SHADER_FILE_WATCH_DELAY_MSEC * 1000);
+            timer.timeout_us  = SHADER_FILE_WATCH_DELAY_MSEC * 1000;
+            timer.current     = cpu_features_get_time_usec();
+            timer.timeout_end = timer.current + timer.timeout_us;
             timer.timer_begin = true;
             timer.timer_end   = false;
          }
@@ -15478,12 +15477,16 @@ static enum runloop_state_enum runloop_check_state(
        */
       if (need_to_apply)
       {
-         RARCH_TIMER_TICK(timer, current_time);
+         timer.current        = current_time; 
+         timer.timeout_us     = timer.timeout_end - timer.current;
 
-         if (!timer.timer_end && RARCH_TIMER_HAS_EXPIRED(timer))
+         if (     !timer.timer_end 
+               &&  timer.timeout_us <= 0)
          {
-            RARCH_TIMER_END(timer);
-            need_to_apply = false;
+            timer.timer_end   = true;
+            timer.timer_begin = false;
+            timer.timeout_end = 0;
+            need_to_apply     = false;
             command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
          }
       }
@@ -15494,21 +15497,24 @@ static enum runloop_state_enum runloop_check_state(
    {
       if (!runloop_st->shader_delay_timer.timer_begin)
       {
-         uint64_t current_usec = cpu_features_get_time_usec();
-         RARCH_TIMER_BEGIN_NEW_TIME_USEC(
-               runloop_st->shader_delay_timer,
-               current_usec,
-               settings->uints.video_shader_delay * 1000);
-         runloop_st->shader_delay_timer.timer_begin = true;
-         runloop_st->shader_delay_timer.timer_end   = false;
+         runloop_st->shader_delay_timer.timeout_us     = settings->uints.video_shader_delay * 1000;
+         runloop_st->shader_delay_timer.current        = cpu_features_get_time_usec();
+         runloop_st->shader_delay_timer.timeout_end    = runloop_st->shader_delay_timer.current 
+                                                       + runloop_st->shader_delay_timer.timeout_us;
+         runloop_st->shader_delay_timer.timer_begin    = true;
+         runloop_st->shader_delay_timer.timer_end      = false;
       }
       else
       {
-         RARCH_TIMER_TICK(runloop_st->shader_delay_timer, current_time);
+         runloop_st->shader_delay_timer.current        = current_time;
+         runloop_st->shader_delay_timer.timeout_us     = runloop_st->shader_delay_timer.timeout_end 
+                                                       - runloop_st->shader_delay_timer.current;
 
-         if (RARCH_TIMER_HAS_EXPIRED(runloop_st->shader_delay_timer))
+         if (runloop_st->shader_delay_timer.timeout_us <= 0)
          {
-            RARCH_TIMER_END(runloop_st->shader_delay_timer);
+            runloop_st->shader_delay_timer.timer_end   = true;
+            runloop_st->shader_delay_timer.timer_begin = false;
+            runloop_st->shader_delay_timer.timeout_end = 0;
 
             {
                const char *preset          = retroarch_get_shader_preset();
