@@ -720,15 +720,16 @@ static void rcheevos_client_copy_achievements(
 
       if (definition->category != 3)
       {
-         achievement->active = RCHEEVOS_ACTIVE_UNOFFICIAL;
+         if (!settings->bools.cheevos_test_unofficial)
+            continue;
 
-         if (settings->bools.cheevos_test_unofficial)
-            achievement->active |=  RCHEEVOS_ACTIVE_SOFTCORE 
-                                  | RCHEEVOS_ACTIVE_HARDCORE;
+         achievement->active =  RCHEEVOS_ACTIVE_UNOFFICIAL
+                              | RCHEEVOS_ACTIVE_SOFTCORE
+                              | RCHEEVOS_ACTIVE_HARDCORE;
       }
       else
       {
-         achievement->active =  RCHEEVOS_ACTIVE_SOFTCORE 
+         achievement->active =  RCHEEVOS_ACTIVE_SOFTCORE
                               | RCHEEVOS_ACTIVE_HARDCORE;
 
          for (j = 0; j < 
