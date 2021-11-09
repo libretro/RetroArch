@@ -1056,8 +1056,6 @@ void *video_driver_get_ptr(void);
 
 video_driver_state_t *video_state_get_ptr(void);
 
-void *video_driver_get_data(void);
-
 bool video_driver_set_rotation(unsigned rotation);
 
 bool video_driver_set_video_mode(unsigned width,
@@ -1298,8 +1296,6 @@ float video_driver_get_refresh_rate(void);
 #if defined(HAVE_GFX_WIDGETS)
 bool video_driver_has_widgets(void);
 #endif
-
-bool video_driver_started_fullscreen(void);
 
 bool video_driver_is_threaded(void);
 

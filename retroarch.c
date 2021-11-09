@@ -249,6 +249,13 @@
 #include "lakka.h"
 #endif
 
+#define SHADER_FILE_WATCH_DELAY_MSEC 500
+
+#define QUIT_DELAY_USEC 3 * 1000000 /* 3 seconds */
+
+#define DEFAULT_NETWORK_GAMEPAD_PORT 55400
+#define UDP_FRAME_PACKETS 16
+
 /* Custom forward declarations */
 static bool recording_init(settings_t *settings,
       struct rarch_state *p_rarch);
@@ -543,6 +550,12 @@ static const void *find_driver_nonempty(
 
    return NULL;
 }
+
+#ifdef _WIN32
+#define PERF_LOG_FMT "[PERF]: Avg (%s): %I64u ticks, %I64u runs.\n"
+#else
+#define PERF_LOG_FMT "[PERF]: Avg (%s): %llu ticks, %llu runs.\n"
+#endif
 
 static void log_counters(
       struct retro_perf_counter **counters, unsigned num)
@@ -933,7 +946,6 @@ static void path_set_redirect(struct rarch_state *p_rarch,
    char content_dir_name[PATH_MAX_LENGTH];
    char new_savefile_dir[PATH_MAX_LENGTH];
    char new_savestate_dir[PATH_MAX_LENGTH];
-   global_t   *global                          = global_get_ptr();
    const char *old_savefile_dir                = p_rarch->dir_savefile;
    const char *old_savestate_dir               = p_rarch->dir_savestate;
    runloop_state_t *runloop_st                 = &runloop_state;
@@ -1073,60 +1085,60 @@ static void path_set_redirect(struct rarch_state *p_rarch,
          RARCH_LOG("Saving save states in content directory is set. This overrides other save state file directory settings.\n");
    }
 
-   if (global && system && !string_is_empty(system->library_name))
+   if (system && !string_is_empty(system->library_name))
    {
       bool savefile_is_dir  = path_is_directory(new_savefile_dir);
       bool savestate_is_dir = path_is_directory(new_savestate_dir);
       if (savefile_is_dir)
-         strlcpy(global->name.savefile, new_savefile_dir,
-               sizeof(global->name.savefile));
+         strlcpy(runloop_st->name.savefile, new_savefile_dir,
+               sizeof(runloop_st->name.savefile));
       else
-         savefile_is_dir    = path_is_directory(global->name.savefile);
+         savefile_is_dir    = path_is_directory(runloop_st->name.savefile);
 
       if (savestate_is_dir)
-         strlcpy(global->name.savestate, new_savestate_dir,
-               sizeof(global->name.savestate));
+         strlcpy(runloop_st->name.savestate, new_savestate_dir,
+               sizeof(runloop_st->name.savestate));
       else
-         savestate_is_dir   = path_is_directory(global->name.savestate);
+         savestate_is_dir   = path_is_directory(runloop_st->name.savestate);
 
       if (savefile_is_dir)
       {
-         fill_pathname_dir(global->name.savefile,
+         fill_pathname_dir(runloop_st->name.savefile,
                !string_is_empty(runloop_st->runtime_content_path_basename)
                ? runloop_st->runtime_content_path_basename
                : system->library_name,
                FILE_PATH_SRM_EXTENSION,
-               sizeof(global->name.savefile));
+               sizeof(runloop_st->name.savefile));
          RARCH_LOG("[Overrides]: %s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
-               global->name.savefile);
+               runloop_st->name.savefile);
       }
 
       if (savestate_is_dir)
       {
-         fill_pathname_dir(global->name.savestate,
+         fill_pathname_dir(runloop_st->name.savestate,
                !string_is_empty(runloop_st->runtime_content_path_basename)
                ? runloop_st->runtime_content_path_basename
                : system->library_name,
                FILE_PATH_STATE_EXTENSION,
-               sizeof(global->name.savestate));
+               sizeof(runloop_st->name.savestate));
          RARCH_LOG("[Overrides]: %s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
-               global->name.savestate);
+               runloop_st->name.savestate);
       }
 
 #ifdef HAVE_CHEATS
-      if (path_is_directory(global->name.cheatfile))
+      if (path_is_directory(runloop_st->name.cheatfile))
       {
-         fill_pathname_dir(global->name.cheatfile,
+         fill_pathname_dir(runloop_st->name.cheatfile,
                !string_is_empty(runloop_st->runtime_content_path_basename)
                ? runloop_st->runtime_content_path_basename
                : system->library_name,
                FILE_PATH_CHT_EXTENSION,
-               sizeof(global->name.cheatfile));
+               sizeof(runloop_st->name.cheatfile));
          RARCH_LOG("[Overrides]: %s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_CHEATFILE_TO),
-               global->name.cheatfile);
+               runloop_st->name.cheatfile);
       }
 #endif
    }
@@ -1183,9 +1195,9 @@ void path_set_special(char **argv, unsigned num_content)
    unsigned i;
    char str[PATH_MAX_LENGTH];
    union string_list_elem_attr attr;
+   bool is_dir                         = false;
    struct string_list subsystem_paths  = {0};
    runloop_state_t         *runloop_st = runloop_state_get_ptr();
-   global_t   *global                  = global_get_ptr();
    const char *savestate_dir           = runloop_st->savestate_dir;
 
 
@@ -1213,26 +1225,23 @@ void path_set_special(char **argv, unsigned num_content)
 
    /* We defer SRAM path updates until we can resolve it.
     * It is more complicated for special content types. */
-   if (global)
+   is_dir = path_is_directory(savestate_dir);
+
+   if (is_dir)
+      strlcpy(runloop_st->name.savestate, savestate_dir,
+            sizeof(runloop_st->name.savestate));
+   else
+      is_dir   = path_is_directory(runloop_st->name.savestate);
+
+   if (is_dir)
    {
-      bool is_dir = path_is_directory(savestate_dir);
-
-      if (is_dir)
-         strlcpy(global->name.savestate, savestate_dir,
-               sizeof(global->name.savestate));
-      else
-         is_dir   = path_is_directory(global->name.savestate);
-
-      if (is_dir)
-      {
-         fill_pathname_dir(global->name.savestate,
-               str,
-               ".state",
-               sizeof(global->name.savestate));
-         RARCH_LOG("%s \"%s\".\n",
-               msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
-               global->name.savestate);
-      }
+      fill_pathname_dir(runloop_st->name.savestate,
+            str,
+            ".state",
+            sizeof(runloop_st->name.savestate));
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
+            runloop_st->name.savestate);
    }
 }
 
@@ -1240,7 +1249,6 @@ static bool path_init_subsystem(void)
 {
    unsigned i, j;
    const struct retro_subsystem_info *info = NULL;
-   global_t   *global                      = global_get_ptr();
    runloop_state_t             *runloop_st = &runloop_state;
    rarch_system_info_t             *system = &runloop_st->system;
    bool subsystem_path_empty               = path_is_empty(RARCH_PATH_SUBSYSTEM);
@@ -1305,26 +1313,24 @@ static bool path_init_subsystem(void)
       }
    }
 
-   if (global)
-   {
-      /* Let other relevant paths be inferred from the main SRAM location. */
-      if (!retroarch_override_setting_is_set(
-               RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
-         fill_pathname_noext(global->name.savefile,
-               runloop_st->runtime_content_path_basename,
-               ".srm",
-               sizeof(global->name.savefile));
+   /* Let other relevant paths be inferred 
+      from the main SRAM location. */
+   if (!retroarch_override_setting_is_set(
+            RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
+      fill_pathname_noext(runloop_st->name.savefile,
+            runloop_st->runtime_content_path_basename,
+            ".srm",
+            sizeof(runloop_st->name.savefile));
 
-      if (path_is_directory(global->name.savefile))
-      {
-         fill_pathname_dir(global->name.savefile,
-               runloop_st->runtime_content_path_basename,
-               ".srm",
-               sizeof(global->name.savefile));
-         RARCH_LOG("%s \"%s\".\n",
-               msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
-               global->name.savefile);
-      }
+   if (path_is_directory(runloop_st->name.savefile))
+   {
+      fill_pathname_dir(runloop_st->name.savefile,
+            runloop_st->runtime_content_path_basename,
+            ".srm",
+            sizeof(runloop_st->name.savefile));
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
+            runloop_st->name.savefile);
    }
 
    return true;
@@ -1347,13 +1353,13 @@ static void path_init_savefile(runloop_state_t *runloop_st)
    command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
 }
 
-static void path_init_savefile_internal(global_t *global)
+static void path_init_savefile_internal(runloop_state_t *runloop_st)
 {
    path_deinit_savefile();
    path_init_savefile_new();
 
    if (!path_init_subsystem())
-      path_init_savefile_rtc(global->name.savefile);
+      path_init_savefile_rtc(runloop_st->name.savefile);
 }
 
 void runloop_path_fill_names(void)
@@ -1362,40 +1368,35 @@ void runloop_path_fill_names(void)
 #ifdef HAVE_BSV_MOVIE
    input_driver_state_t *input_st = input_state_get_ptr();
 #endif
-   global_t            *global    = global_get_ptr();
 
-   path_init_savefile_internal(global);
+   path_init_savefile_internal(runloop_st);
 
 #ifdef HAVE_BSV_MOVIE
-   if (global)
-      strlcpy(input_st->bsv_movie_state.movie_path,
-            global->name.savefile,
-            sizeof(input_st->bsv_movie_state.movie_path));
+   strlcpy(input_st->bsv_movie_state.movie_path,
+         runloop_st->name.savefile,
+         sizeof(input_st->bsv_movie_state.movie_path));
 #endif
 
    if (string_is_empty(runloop_st->runtime_content_path_basename))
       return;
 
-   if (global)
-   {
-      if (string_is_empty(global->name.ups))
-         fill_pathname_noext(global->name.ups,
-               runloop_st->runtime_content_path_basename,
-               ".ups",
-               sizeof(global->name.ups));
+   if (string_is_empty(runloop_st->name.ups))
+      fill_pathname_noext(runloop_st->name.ups,
+            runloop_st->runtime_content_path_basename,
+            ".ups",
+            sizeof(runloop_st->name.ups));
 
-      if (string_is_empty(global->name.bps))
-         fill_pathname_noext(global->name.bps,
-               runloop_st->runtime_content_path_basename,
-               ".bps",
-               sizeof(global->name.bps));
+   if (string_is_empty(runloop_st->name.bps))
+      fill_pathname_noext(runloop_st->name.bps,
+            runloop_st->runtime_content_path_basename,
+            ".bps",
+            sizeof(runloop_st->name.bps));
 
-      if (string_is_empty(global->name.ips))
-         fill_pathname_noext(global->name.ips,
-               runloop_st->runtime_content_path_basename,
-               ".ips",
-               sizeof(global->name.ips));
-   }
+   if (string_is_empty(runloop_st->name.ips))
+      fill_pathname_noext(runloop_st->name.ips,
+            runloop_st->runtime_content_path_basename,
+            ".ips",
+            sizeof(runloop_st->name.ips));
 }
 
 char *path_get_ptr(enum rarch_path_type type)
@@ -1503,30 +1504,26 @@ size_t path_get_realsize(enum rarch_path_type type)
    return 0;
 }
 
-static void runloop_path_set_names(runloop_state_t *runloop_st,
-      global_t *global)
+static void runloop_path_set_names(runloop_state_t *runloop_st)
 {
-   if (global)
-   {
-      if (!retroarch_override_setting_is_set(
-               RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
-         fill_pathname_noext(global->name.savefile,
-               runloop_st->runtime_content_path_basename,
-               ".srm", sizeof(global->name.savefile));
+   if (!retroarch_override_setting_is_set(
+            RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
+      fill_pathname_noext(runloop_st->name.savefile,
+            runloop_st->runtime_content_path_basename,
+            ".srm", sizeof(runloop_st->name.savefile));
 
-      if (!retroarch_override_setting_is_set(
-               RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
-         fill_pathname_noext(global->name.savestate,
-               runloop_st->runtime_content_path_basename,
-               ".state", sizeof(global->name.savestate));
+   if (!retroarch_override_setting_is_set(
+            RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
+      fill_pathname_noext(runloop_st->name.savestate,
+            runloop_st->runtime_content_path_basename,
+            ".state", sizeof(runloop_st->name.savestate));
 
 #ifdef HAVE_CHEATS
-      if (!string_is_empty(runloop_st->runtime_content_path_basename))
-         fill_pathname_noext(global->name.cheatfile,
-               runloop_st->runtime_content_path_basename,
-               ".cht", sizeof(global->name.cheatfile));
+   if (!string_is_empty(runloop_st->runtime_content_path_basename))
+      fill_pathname_noext(runloop_st->name.cheatfile,
+            runloop_st->runtime_content_path_basename,
+            ".cht", sizeof(runloop_st->name.cheatfile));
 #endif
-   }
 }
 
 bool path_set(enum rarch_path_type type, const char *path)
@@ -1545,7 +1542,7 @@ bool path_set(enum rarch_path_type type, const char *path)
          break;
       case RARCH_PATH_NAMES:
          runloop_path_set_basename(runloop_st, path);
-         runloop_path_set_names(runloop_st, global_get_ptr());
+         runloop_path_set_names(runloop_st);
          path_set_redirect(p_rarch, config_get_ptr());
          break;
       case RARCH_PATH_CORE:
@@ -1691,15 +1688,15 @@ void ram_state_to_file(void)
 
 bool retroarch_get_current_savestate_path(char *path, size_t len)
 {
-   const global_t *global      = global_get_ptr();
+   runloop_state_t *runloop_st = &runloop_state;
    settings_t *settings        = config_get_ptr();
    int state_slot              = settings ? settings->ints.state_slot : 0;
    const char *name_savestate  = NULL;
 
-   if (!path || !global)
+   if (!path)
       return false;
 
-   name_savestate = global->name.savestate;
+   name_savestate              = runloop_st->name.savestate;
    if (string_is_empty(name_savestate))
       return false;
 
@@ -3243,7 +3240,6 @@ static bool event_init_content(
    bool cheevos_hardcore_mode_enable            =
       settings->bools.cheevos_hardcore_mode_enable;
 #endif
-   global_t   *global                           = global_get_ptr();
    const enum rarch_core_type current_core_type = runloop_st->current_core_type;
 
    content_get_status(&contentless, &is_inited);
@@ -3263,14 +3259,14 @@ static bool event_init_content(
     * interface, otherwise fill all content-related
     * paths */
    if (contentless)
-      path_init_savefile_internal(global);
+      path_init_savefile_internal(runloop_st);
    else
       runloop_path_fill_names();
 
    if (!content_init())
       return false;
 
-   command_event_set_savestate_auto_index(settings, global);
+   command_event_set_savestate_auto_index(settings);
 
    if (!event_load_save_files(runloop_st->is_sram_load_disabled))
       RARCH_LOG("[SRAM]: %s\n",
@@ -3286,8 +3282,8 @@ static bool event_init_content(
 #ifdef HAVE_CHEEVOS
    if (!cheevos_enable || !cheevos_hardcore_mode_enable)
 #endif
-      if (global && settings->bools.savestate_auto_load)
-         command_event_load_auto_state(global);
+      if (settings->bools.savestate_auto_load)
+         command_event_load_auto_state();
 
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_deinit(input_st);
@@ -4147,8 +4143,9 @@ bool command_event(enum event_command cmd, void *data)
                   settings->bools.content_runtime_log_aggregate,
                   settings->paths.directory_runtime_log,
                   settings->paths.directory_playlist);
-            command_event_save_auto_state(settings->bools.savestate_auto_save,
-                  global, runloop_st->current_core_type);
+            command_event_save_auto_state(
+                  settings->bools.savestate_auto_save,
+                  runloop_st->current_core_type);
 
 #ifdef HAVE_CONFIGFILE
             if (runloop_st->overrides_active)
@@ -5846,12 +5843,19 @@ static void global_free(struct rarch_state *p_rarch)
    path_clear_all();
    dir_clear_all();
 
+   if (!string_is_empty(runloop_st->name.remapfile))
+      free(runloop_st->name.remapfile);
+   runloop_st->name.remapfile = NULL;
+   *runloop_st->name.ups                 = '\0';
+   *runloop_st->name.bps                 = '\0';
+   *runloop_st->name.ips                 = '\0';
+   *runloop_st->name.savefile            = '\0';
+   *runloop_st->name.savestate           = '\0';
+   *runloop_st->name.cheatfile           = '\0';
+   *runloop_st->name.label               = '\0';
+
    if (global)
-   {
-      if (!string_is_empty(global->name.remapfile))
-         free(global->name.remapfile);
       memset(global, 0, sizeof(struct global));
-   }
    retroarch_override_setting_free_state();
 }
 
@@ -12183,7 +12187,7 @@ static void do_runahead(
 
          if (suspended_frame)
          {
-            RUNAHEAD_RESUME_VIDEO(video_st);
+            video_st->active        = video_st->runahead_is_active;
             audio_st->suspended     = false;
          }
 
@@ -12220,7 +12224,7 @@ static void do_runahead(
       /* run main core with video suspended */
       video_st->active     = false;
       core_run();
-      RUNAHEAD_RESUME_VIDEO(video_st);
+      video_st->active     = video_st->runahead_is_active;
 
       if (     runloop_st->input_is_dirty
             || runloop_st->runahead_force_input_dirty)
@@ -12244,15 +12248,17 @@ static void do_runahead(
             video_st->active             = false;
             audio_st->suspended          = true;
             audio_st->hard_disable       = true;
-            RUNAHEAD_RUN_SECONDARY(runloop_st);
+            runloop_st->runahead_secondary_core_available =
+               secondary_core_run_use_last_input();
             audio_st->hard_disable       = false;
             audio_st->suspended          = false;
-            RUNAHEAD_RESUME_VIDEO(video_st);
+            video_st->active             = video_st->runahead_is_active;
          }
       }
       audio_st->suspended                = true;
       audio_st->hard_disable             = true;
-      RUNAHEAD_RUN_SECONDARY(runloop_st);
+      runloop_st->runahead_secondary_core_available =
+secondary_core_run_use_last_input();
       audio_st->hard_disable             = false;
       audio_st->suspended                = false;
 #endif
@@ -12301,6 +12307,14 @@ static retro_time_t runloop_core_runtime_tick(
 
    return frame_time;
 }
+
+#define _PSUPP_BUF(buf, var, name, desc) \
+   strlcat(buf, "  ", sizeof(buf)); \
+   strlcat(buf, name, sizeof(buf)); \
+   strlcat(buf, ":\n\t\t", sizeof(buf)); \
+   strlcat(buf, desc, sizeof(buf)); \
+   strlcat(buf, ": ", sizeof(buf)); \
+   strlcat(buf, var ? "yes\n" : "no\n", sizeof(buf))
 
 static void retroarch_print_features(void)
 {
@@ -12551,6 +12565,39 @@ static void retroarch_print_help(const char *arg0)
    }
 }
 
+/* Descriptive names for options without short variant.
+ *
+ * Please keep the name in sync with the option name.
+ * Order does not matter. */
+enum
+{
+   RA_OPT_MENU = 256, /* must be outside the range of a char */
+   RA_OPT_STATELESS,
+   RA_OPT_CHECK_FRAMES,
+   RA_OPT_PORT,
+   RA_OPT_SPECTATE,
+   RA_OPT_NICK,
+   RA_OPT_COMMAND,
+   RA_OPT_APPENDCONFIG,
+   RA_OPT_BPS,
+   RA_OPT_IPS,
+   RA_OPT_NO_PATCH,
+   RA_OPT_RECORDCONFIG,
+   RA_OPT_SUBSYSTEM,
+   RA_OPT_SIZE,
+   RA_OPT_FEATURES,
+   RA_OPT_VERSION,
+   RA_OPT_EOF_EXIT,
+   RA_OPT_LOG_FILE,
+   RA_OPT_MAX_FRAMES,
+   RA_OPT_MAX_FRAMES_SCREENSHOT,
+   RA_OPT_MAX_FRAMES_SCREENSHOT_PATH,
+   RA_OPT_SET_SHADER,
+   RA_OPT_ACCESSIBILITY,
+   RA_OPT_LOAD_MENU_ON_ERROR
+};
+
+
 /**
  * retroarch_parse_input_and_config:
  * @argc                 : Count of (commandline) arguments.
@@ -12691,9 +12738,9 @@ static bool retroarch_parse_input_and_config(
    p_rarch->rarch_ups_pref               = false;
    p_rarch->rarch_ips_pref               = false;
    p_rarch->rarch_bps_pref               = false;
-   *global->name.ups                     = '\0';
-   *global->name.bps                     = '\0';
-   *global->name.ips                     = '\0';
+   *runloop_st->name.ups                 = '\0';
+   *runloop_st->name.bps                 = '\0';
+   *runloop_st->name.ips                 = '\0';
 #endif
 #ifdef HAVE_CONFIGFILE
    runloop_st->overrides_active          = false;
@@ -12753,15 +12800,15 @@ static bool retroarch_parse_input_and_config(
 #endif
 
             case 's':
-               strlcpy(global->name.savefile, optarg,
-                     sizeof(global->name.savefile));
+               strlcpy(runloop_st->name.savefile, optarg,
+                     sizeof(runloop_st->name.savefile));
                retroarch_override_setting_set(
                      RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
                break;
 
             case 'S':
-               strlcpy(global->name.savestate, optarg,
-                     sizeof(global->name.savestate));
+               strlcpy(runloop_st->name.savestate, optarg,
+                     sizeof(runloop_st->name.savestate));
                retroarch_override_setting_set(
                      RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
                break;
@@ -13079,8 +13126,8 @@ static bool retroarch_parse_input_and_config(
 
             case RA_OPT_BPS:
 #ifdef HAVE_PATCH
-               strlcpy(global->name.bps, optarg,
-                     sizeof(global->name.bps));
+               strlcpy(runloop_st->name.bps, optarg,
+                     sizeof(runloop_st->name.bps));
                p_rarch->rarch_bps_pref = true;
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_BPS_PREF, NULL);
 #endif
@@ -13088,8 +13135,8 @@ static bool retroarch_parse_input_and_config(
 
             case 'U':
 #ifdef HAVE_PATCH
-               strlcpy(global->name.ups, optarg,
-                     sizeof(global->name.ups));
+               strlcpy(runloop_st->name.ups, optarg,
+                     sizeof(runloop_st->name.ups));
                p_rarch->rarch_ups_pref = true;
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_UPS_PREF, NULL);
 #endif
@@ -13097,8 +13144,8 @@ static bool retroarch_parse_input_and_config(
 
             case RA_OPT_IPS:
 #ifdef HAVE_PATCH
-               strlcpy(global->name.ips, optarg,
-                     sizeof(global->name.ips));
+               strlcpy(runloop_st->name.ips, optarg,
+                     sizeof(runloop_st->name.ips));
                p_rarch->rarch_ips_pref = true;
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_IPS_PREF, NULL);
 #endif
@@ -13261,12 +13308,12 @@ static bool retroarch_parse_input_and_config(
 
    /* Copy SRM/state dirs used, so they can be reused on reentrancy. */
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
-         path_is_directory(global->name.savefile))
-      dir_set(RARCH_DIR_SAVEFILE, global->name.savefile);
+         path_is_directory(runloop_st->name.savefile))
+      dir_set(RARCH_DIR_SAVEFILE, runloop_st->name.savefile);
 
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL) &&
-         path_is_directory(global->name.savestate))
-      dir_set(RARCH_DIR_SAVESTATE, global->name.savestate);
+         path_is_directory(runloop_st->name.savestate))
+      dir_set(RARCH_DIR_SAVESTATE, runloop_st->name.savestate);
 
    return verbosity_enabled;
 }
@@ -14195,7 +14242,6 @@ bool retroarch_main_quit(void)
    runloop_state_t *runloop_st   = &runloop_state;
    video_driver_state_t*video_st = video_state_get_ptr();
    settings_t *settings          = config_get_ptr();
-   global_t            *global   = global_get_ptr();
 #ifdef HAVE_DISCORD
    discord_state_t *discord_st   = discord_state_get_ptr();
    if (discord_st->inited)
@@ -14225,7 +14271,6 @@ bool retroarch_main_quit(void)
    {
       command_event_save_auto_state(
             settings->bools.savestate_auto_save,
-            global,
             runloop_st->current_core_type);
 
       /* If any save states are in progress, wait
@@ -14445,6 +14490,35 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st, setti
             runloop_set_frame_limit(&video_st->av_info,
                   fastforward_ratio_current);
 }
+
+#define HOTKEY_CHECK(cmd1, cmd2, cond, cond2) \
+   { \
+      static bool old_pressed                   = false; \
+      bool pressed                              = BIT256_GET(current_bits, cmd1); \
+      if (pressed && !old_pressed) \
+         if (cond) \
+            command_event(cmd2, cond2); \
+      old_pressed                               = pressed; \
+   }
+
+#define HOTKEY_CHECK3(cmd1, cmd2, cmd3, cmd4, cmd5, cmd6) \
+   { \
+      static bool old_pressed                   = false; \
+      static bool old_pressed2                  = false; \
+      static bool old_pressed3                  = false; \
+      bool pressed                              = BIT256_GET(current_bits, cmd1); \
+      bool pressed2                             = BIT256_GET(current_bits, cmd3); \
+      bool pressed3                             = BIT256_GET(current_bits, cmd5); \
+      if (pressed && !old_pressed) \
+         command_event(cmd2, (void*)(intptr_t)0); \
+      else if (pressed2 && !old_pressed2) \
+         command_event(cmd4, (void*)(intptr_t)0); \
+      else if (pressed3 && !old_pressed3) \
+         command_event(cmd6, (void*)(intptr_t)0); \
+      old_pressed                               = pressed; \
+      old_pressed2                              = pressed2; \
+      old_pressed3                              = pressed3; \
+   }
 
 static enum runloop_state_enum runloop_check_state(
       struct rarch_state *p_rarch,
@@ -14829,7 +14903,6 @@ static enum runloop_state_enum runloop_check_state(
       struct menu_state *menu_st    = menu_state_get_ptr();
       bool focused                  = false;
       input_bits_t trigger_input    = current_bits;
-      global_t *global              = global_get_ptr();
       unsigned screensaver_timeout  = settings->uints.menu_screensaver_timeout;
 
       /* Get current time */
@@ -14846,45 +14919,42 @@ static enum runloop_state_enum runloop_check_state(
       focused                   = focused &&
          !p_rarch->main_ui_companion_is_on_foreground;
 
-      if (global)
+      if (action == old_action)
       {
-         if (action == old_action)
-         {
-            retro_time_t press_time           = current_time;
+	      retro_time_t press_time           = current_time;
 
-            if (action == MENU_ACTION_NOOP)
-               global->menu.noop_press_time   = press_time - global->menu.noop_start_time;
-            else
-               global->menu.action_press_time = press_time - global->menu.action_start_time;
-         }
-         else
-         {
-            if (action == MENU_ACTION_NOOP)
-            {
-               global->menu.noop_start_time      = current_time;
-               global->menu.noop_press_time      = 0;
+	      if (action == MENU_ACTION_NOOP)
+		      menu_st->noop_press_time   = press_time - menu_st->noop_start_time;
+	      else
+		      menu_st->action_press_time = press_time - menu_st->action_start_time;
+      }
+      else
+      {
+	      if (action == MENU_ACTION_NOOP)
+	      {
+		      menu_st->noop_start_time      = current_time;
+		      menu_st->noop_press_time      = 0;
 
-               if (global->menu_prev_action == old_action)
-                  global->menu.action_start_time = global->menu.prev_start_time;
-               else
-                  global->menu.action_start_time = current_time;
-            }
-            else
-            {
-               if (  global->menu_prev_action == action &&
-                     global->menu.noop_press_time < 200000) /* 250ms */
-               {
-                  global->menu.action_start_time = global->menu.prev_start_time;
-                  global->menu.action_press_time = current_time - global->menu.action_start_time;
-               }
-               else
-               {
-                  global->menu.prev_start_time   = current_time;
-                  global->menu_prev_action       = action;
-                  global->menu.action_press_time = 0;
-               }
-            }
-         }
+		      if (menu_st->prev_action == old_action)
+			      menu_st->action_start_time = menu_st->prev_start_time;
+		      else
+			      menu_st->action_start_time = current_time;
+	      }
+	      else
+	      {
+		      if (  menu_st->prev_action == action &&
+				      menu_st->noop_press_time < 200000) /* 250ms */
+		      {
+			      menu_st->action_start_time = menu_st->prev_start_time;
+			      menu_st->action_press_time = current_time - menu_st->action_start_time;
+		      }
+		      else
+		      {
+			      menu_st->prev_start_time   = current_time;
+			      menu_st->prev_action       = action;
+			      menu_st->action_press_time = 0;
+		      }
+	      }
       }
 
       /* Check whether menu screensaver should be enabled */
@@ -15459,10 +15529,9 @@ static enum runloop_state_enum runloop_check_state(
 
          if (!timer.timer_begin)
          {
-            uint64_t current_usec = cpu_features_get_time_usec();
-            RARCH_TIMER_BEGIN_NEW_TIME_USEC(timer,
-                  current_usec,
-                  SHADER_FILE_WATCH_DELAY_MSEC * 1000);
+            timer.timeout_us  = SHADER_FILE_WATCH_DELAY_MSEC * 1000;
+            timer.current     = cpu_features_get_time_usec();
+            timer.timeout_end = timer.current + timer.timeout_us;
             timer.timer_begin = true;
             timer.timer_end   = false;
          }
@@ -15478,12 +15547,16 @@ static enum runloop_state_enum runloop_check_state(
        */
       if (need_to_apply)
       {
-         RARCH_TIMER_TICK(timer, current_time);
+         timer.current        = current_time; 
+         timer.timeout_us     = timer.timeout_end - timer.current;
 
-         if (!timer.timer_end && RARCH_TIMER_HAS_EXPIRED(timer))
+         if (     !timer.timer_end 
+               &&  timer.timeout_us <= 0)
          {
-            RARCH_TIMER_END(timer);
-            need_to_apply = false;
+            timer.timer_end   = true;
+            timer.timer_begin = false;
+            timer.timeout_end = 0;
+            need_to_apply     = false;
             command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
          }
       }
@@ -15494,21 +15567,24 @@ static enum runloop_state_enum runloop_check_state(
    {
       if (!runloop_st->shader_delay_timer.timer_begin)
       {
-         uint64_t current_usec = cpu_features_get_time_usec();
-         RARCH_TIMER_BEGIN_NEW_TIME_USEC(
-               runloop_st->shader_delay_timer,
-               current_usec,
-               settings->uints.video_shader_delay * 1000);
-         runloop_st->shader_delay_timer.timer_begin = true;
-         runloop_st->shader_delay_timer.timer_end   = false;
+         runloop_st->shader_delay_timer.timeout_us     = settings->uints.video_shader_delay * 1000;
+         runloop_st->shader_delay_timer.current        = cpu_features_get_time_usec();
+         runloop_st->shader_delay_timer.timeout_end    = runloop_st->shader_delay_timer.current 
+                                                       + runloop_st->shader_delay_timer.timeout_us;
+         runloop_st->shader_delay_timer.timer_begin    = true;
+         runloop_st->shader_delay_timer.timer_end      = false;
       }
       else
       {
-         RARCH_TIMER_TICK(runloop_st->shader_delay_timer, current_time);
+         runloop_st->shader_delay_timer.current        = current_time;
+         runloop_st->shader_delay_timer.timeout_us     = runloop_st->shader_delay_timer.timeout_end 
+                                                       - runloop_st->shader_delay_timer.current;
 
-         if (RARCH_TIMER_HAS_EXPIRED(runloop_st->shader_delay_timer))
+         if (runloop_st->shader_delay_timer.timeout_us <= 0)
          {
-            RARCH_TIMER_END(runloop_st->shader_delay_timer);
+            runloop_st->shader_delay_timer.timer_end   = true;
+            runloop_st->shader_delay_timer.timer_begin = false;
+            runloop_st->shader_delay_timer.timeout_end = 0;
 
             {
                const char *preset          = retroarch_get_shader_preset();

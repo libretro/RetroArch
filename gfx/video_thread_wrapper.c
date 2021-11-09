@@ -23,6 +23,7 @@
 #include <features/features_cpu.h>
 #include <string/stdstring.h>
 
+#include "video_driver.h"
 #include "video_thread_wrapper.h"
 #include "font_driver.h"
 
@@ -1343,8 +1344,8 @@ bool video_thread_font_init(const void **font_driver, void **font_handle,
       bool is_threaded)
 {
    thread_packet_t pkt;
-   thread_video_t *thr            = (thread_video_t*)
-      video_driver_get_data();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr            = video_st ? (thread_video_t*)video_st->data : NULL;
 
    if (!thr)
       return false;
@@ -1368,7 +1369,8 @@ unsigned video_thread_texture_load(void *data,
       custom_command_method_t func)
 {
    thread_packet_t pkt;
-   thread_video_t *thr  = (thread_video_t*)video_driver_get_data();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr            = video_st ? (thread_video_t*)video_st->data : NULL;
 
    if (!thr)
       return 0;

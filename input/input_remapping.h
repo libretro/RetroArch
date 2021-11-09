@@ -84,7 +84,7 @@ void input_remapping_restore_global_config(bool clear_cache);
 void input_remapping_update_port_map(void);
 
 /**
- * Frees global->name.remapfile and sets these runloop_state flags to false: 
+ * Frees runloop_st->name.remapfile and sets these runloop_state flags to false: 
  * remaps_core_active, remaps_content_dir_active, and remaps_game_active.
  */
 void input_remapping_deinit(void);

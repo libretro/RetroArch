@@ -433,6 +433,12 @@ struct menu_state
    retro_time_t input_last_time_us;
    menu_input_t input_state;               /* retro_time_t alignment */
 
+   retro_time_t prev_start_time;
+   retro_time_t noop_press_time;
+   retro_time_t noop_start_time;
+   retro_time_t action_start_time;
+   retro_time_t action_press_time;
+
    struct menu_bind_state input_binds;     /* uint64_t alignment */
 
    menu_handle_t *driver_data;
@@ -465,6 +471,8 @@ struct menu_state
 
    /* int16_t alignment */
    menu_input_pointer_hw_state_t input_pointer_hw_state;
+
+   enum menu_action prev_action;
 
    /* When generating a menu list in menu_displaylist_build_list(),
     * the entry with a label matching 'pending_selection' will

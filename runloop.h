@@ -242,6 +242,18 @@ struct runloop
    char savefile_dir[PATH_MAX_LENGTH];
    char savestate_dir[PATH_MAX_LENGTH];
 
+   struct
+   {
+      char *remapfile;
+      char savefile[8192];
+      char savestate[8192];
+      char cheatfile[8192];
+      char ups[8192];
+      char bps[8192];
+      char ips[8192];
+      char label[8192];
+   } name;
+
    bool is_inited;
    bool missing_bios;
    bool force_nonblock;
@@ -287,6 +299,13 @@ struct runloop
 };
 
 typedef struct runloop runloop_state_t;
+
+#ifdef HAVE_BSV_MOVIE
+#define BSV_MOVIE_IS_EOF() || (input_st->bsv_movie_state.movie_end && \
+input_st->bsv_movie_state.eof_exit)
+#else
+#define BSV_MOVIE_IS_EOF()
+#endif
 
 /* Time to exit out of the main loop?
  * Reasons for exiting:

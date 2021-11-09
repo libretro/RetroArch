@@ -332,28 +332,6 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
-#ifdef HAVE_MENU
-   struct
-   {
-      retro_time_t prev_start_time;
-      retro_time_t noop_press_time;
-      retro_time_t noop_start_time;
-      retro_time_t action_start_time;
-      retro_time_t action_press_time;
-   } menu;
-#endif
-   struct
-   {
-      char *remapfile;
-      char savefile[8192];
-      char savestate[8192];
-      char cheatfile[8192];
-      char ups[8192];
-      char bps[8192];
-      char ips[8192];
-      char label[8192];
-   } name;
-
    /* Recording. */
    struct
    {
@@ -393,15 +371,7 @@ typedef struct global
       bool softfilter_enable;
 
    } console;
-   unsigned old_analog_dpad_mode[MAX_USERS];
-   unsigned old_libretro_device[MAX_USERS];
-   bool old_analog_dpad_mode_set;
-   bool old_libretro_device_set;
-   bool remapping_cache_active;
    /* Settings and/or global states specific to menus */
-#ifdef HAVE_MENU
-   enum menu_action menu_prev_action;
-#endif
    bool launched_from_cli;
    bool cli_load_menu_on_error;
 } global_t;

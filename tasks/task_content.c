@@ -1535,6 +1535,7 @@ static void task_push_to_history_list(
 {
    bool            contentless = false;
    bool            is_inited   = false;
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
 
    content_get_status(&contentless, &is_inited);
 
@@ -1570,7 +1571,6 @@ static void task_push_to_history_list(
          const char *db_name        = NULL;
          playlist_t *playlist_hist  = g_defaults.content_history;
          settings_t *settings       = config_get_ptr();
-         global_t *global           = global_get_ptr();
 
          switch (path_is_media_type(tmp))
          {
@@ -1641,8 +1641,8 @@ static void task_push_to_history_list(
             }
          }
 
-         if (global && !string_is_empty(global->name.label))
-            label = global->name.label;
+         if (!string_is_empty(runloop_st->name.label))
+            label = runloop_st->name.label;
 
          if (
               settings && settings->bools.history_list_enable 
@@ -1770,7 +1770,6 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
    char *error_string                         = NULL;
-   global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
    runloop_state_t *runloop_st                = runloop_state_get_ptr();
    rarch_system_info_t *sys_info              = &runloop_st->system;
@@ -1801,15 +1800,12 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
 
-   if (global)
-   {
-      if (!string_is_empty(global->name.ips))
-         content_ctx.name_ips                 = strdup(global->name.ips);
-      if (!string_is_empty(global->name.bps))
-         content_ctx.name_bps                 = strdup(global->name.bps);
-      if (!string_is_empty(global->name.ups))
-         content_ctx.name_ups                 = strdup(global->name.ups);
-   }
+   if (!string_is_empty(runloop_st->name.ips))
+      content_ctx.name_ips                 = strdup(runloop_st->name.ips);
+   if (!string_is_empty(runloop_st->name.bps))
+      content_ctx.name_bps                 = strdup(runloop_st->name.bps);
+   if (!string_is_empty(runloop_st->name.ups))
+      content_ctx.name_ups                 = strdup(runloop_st->name.ups);
 
    if (!string_is_empty(path_dir_system))
       content_ctx.directory_system            = strdup(path_dir_system);
@@ -1868,7 +1864,6 @@ bool task_push_load_content_from_playlist_from_menu(
    content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
    char *error_string                         = NULL;
-   global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
    runloop_state_t *runloop_st                = runloop_state_get_ptr();
    rarch_system_info_t *sys_info              = &runloop_st->system;
@@ -1898,19 +1893,16 @@ bool task_push_load_content_from_playlist_from_menu(
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
 
-   if (global)
-   {
-      if (!string_is_empty(global->name.ips))
-         content_ctx.name_ips                 = strdup(global->name.ips);
-      if (!string_is_empty(global->name.bps))
-         content_ctx.name_bps                 = strdup(global->name.bps);
-      if (!string_is_empty(global->name.ups))
-         content_ctx.name_ups                 = strdup(global->name.ups);
-      if (label)
-         strlcpy(global->name.label, label, sizeof(global->name.label));
-      else
-         global->name.label[0] = '\0';
-   }
+   if (!string_is_empty(runloop_st->name.ips))
+      content_ctx.name_ips                 = strdup(runloop_st->name.ips);
+   if (!string_is_empty(runloop_st->name.bps))
+      content_ctx.name_bps                 = strdup(runloop_st->name.bps);
+   if (!string_is_empty(runloop_st->name.ups))
+      content_ctx.name_ups                 = strdup(runloop_st->name.ups);
+   if (label)
+      strlcpy(runloop_st->name.label, label, sizeof(runloop_st->name.label));
+   else
+      runloop_st->name.label[0] = '\0';
 
    if (!string_is_empty(path_dir_system))
       content_ctx.directory_system            = strdup(path_dir_system);
@@ -2011,7 +2003,6 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
    char *error_string                         = NULL;
-   global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
    runloop_state_t *runloop_st                = runloop_state_get_ptr();
    const char *path_dir_system                = settings->paths.directory_system;
@@ -2041,15 +2032,12 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
 
-   if (global)
-   {
-      if (!string_is_empty(global->name.ips))
-         content_ctx.name_ips                 = strdup(global->name.ips);
-      if (!string_is_empty(global->name.bps))
-         content_ctx.name_bps                 = strdup(global->name.bps);
-      if (!string_is_empty(global->name.ups))
-         content_ctx.name_ups                 = strdup(global->name.ups);
-   }
+   if (!string_is_empty(runloop_st->name.ips))
+      content_ctx.name_ips                 = strdup(runloop_st->name.ips);
+   if (!string_is_empty(runloop_st->name.bps))
+      content_ctx.name_bps                 = strdup(runloop_st->name.bps);
+   if (!string_is_empty(runloop_st->name.ups))
+      content_ctx.name_ups                 = strdup(runloop_st->name.ups);
 
    if (!string_is_empty(path_dir_system))
       content_ctx.directory_system            = strdup(path_dir_system);
@@ -2144,7 +2132,6 @@ bool task_push_load_content_with_new_core_from_menu(
    content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
    char *error_string                         = NULL;
-   global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
    runloop_state_t *runloop_st                = runloop_state_get_ptr();
    bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
@@ -2184,17 +2171,14 @@ bool task_push_load_content_with_new_core_from_menu(
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
 
-   if (global)
-   {
-      if (!string_is_empty(global->name.ips))
-         content_ctx.name_ips                 = strdup(global->name.ips);
-      if (!string_is_empty(global->name.bps))
-         content_ctx.name_bps                 = strdup(global->name.bps);
-      if (!string_is_empty(global->name.ups))
-         content_ctx.name_ups                 = strdup(global->name.ups);
+   if (!string_is_empty(runloop_st->name.ips))
+      content_ctx.name_ips                 = strdup(runloop_st->name.ips);
+   if (!string_is_empty(runloop_st->name.bps))
+      content_ctx.name_bps                 = strdup(runloop_st->name.bps);
+   if (!string_is_empty(runloop_st->name.ups))
+      content_ctx.name_ups                 = strdup(runloop_st->name.ups);
 
-      global->name.label[0]                   = '\0';
-   }
+   runloop_st->name.label[0]                   = '\0';
 
    if (!string_is_empty(path_dir_system))
       content_ctx.directory_system            = strdup(path_dir_system);
@@ -2266,7 +2250,6 @@ static bool task_load_content_internal(
    content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = false;
    char *error_string                         = NULL;
-   global_t *global                           = global_get_ptr();
    runloop_state_t *runloop_st                = runloop_state_get_ptr();
    rarch_system_info_t *sys_info              = &runloop_st->system;
    settings_t *settings                       = config_get_ptr();
@@ -2314,15 +2297,12 @@ static bool task_load_content_internal(
       content_ctx.subsystem.size              = sys_info->subsystem.size;
    }
 
-   if (global)
-   {
-      if (!string_is_empty(global->name.ips))
-         content_ctx.name_ips                 = strdup(global->name.ips);
-      if (!string_is_empty(global->name.bps))
-         content_ctx.name_bps                 = strdup(global->name.bps);
-      if (!string_is_empty(global->name.ups))
-         content_ctx.name_ups                 = strdup(global->name.ups);
-   }
+   if (!string_is_empty(runloop_st->name.ips))
+      content_ctx.name_ips                 = strdup(runloop_st->name.ips);
+   if (!string_is_empty(runloop_st->name.bps))
+      content_ctx.name_bps                 = strdup(runloop_st->name.bps);
+   if (!string_is_empty(runloop_st->name.ups))
+      content_ctx.name_ups                 = strdup(runloop_st->name.ups);
 
    if (!string_is_empty(path_dir_system))
       content_ctx.directory_system            = strdup(path_dir_system);
@@ -2389,6 +2369,7 @@ bool task_push_load_content_with_new_core_from_companion_ui(
       void *user_data)
 {
    global_t *global            = global_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
    content_state_t  *p_content = content_state_get_ptr();
 
    path_set(RARCH_PATH_CONTENT, fullpath);
@@ -2411,13 +2392,10 @@ bool task_push_load_content_with_new_core_from_companion_ui(
 
    global->launched_from_cli = false;
 
-   if (global)
-   {
-      if (label)
-         strlcpy(global->name.label, label, sizeof(global->name.label));
-      else
-         global->name.label[0] = '\0';
-   }
+   if (label)
+      strlcpy(runloop_st->name.label, label, sizeof(runloop_st->name.label));
+   else
+      runloop_st->name.label[0] = '\0';
 
    /* Load content */
    if (!task_load_content_internal(content_info, true, false, true))
@@ -2772,7 +2750,6 @@ bool content_init(void)
 
    bool ret                                   = true;
    char *error_string                         = NULL;
-   global_t *global                           = global_get_ptr();
    runloop_state_t *runloop_st                = runloop_state_get_ptr();
    rarch_system_info_t *sys_info              = &runloop_st->system;
    settings_t *settings                       = config_get_ptr();
@@ -2804,15 +2781,12 @@ bool content_init(void)
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
 
-   if (global)
-   {
-      if (!string_is_empty(global->name.ips))
-         content_ctx.name_ips                 = strdup(global->name.ips);
-      if (!string_is_empty(global->name.bps))
-         content_ctx.name_bps                 = strdup(global->name.bps);
-      if (!string_is_empty(global->name.ups))
-         content_ctx.name_ups                 = strdup(global->name.ups);
-   }
+   if (!string_is_empty(runloop_st->name.ips))
+      content_ctx.name_ips                 = strdup(runloop_st->name.ips);
+   if (!string_is_empty(runloop_st->name.bps))
+      content_ctx.name_bps                 = strdup(runloop_st->name.bps);
+   if (!string_is_empty(runloop_st->name.ups))
+      content_ctx.name_ups                 = strdup(runloop_st->name.ups);
 
    if (sys_info)
    {

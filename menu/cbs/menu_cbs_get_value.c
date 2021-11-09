@@ -142,12 +142,12 @@ static void menu_action_setting_disp_set_label_remap_file_load(
       const char *path,
       char *s2, size_t len2)
 {
-   global_t *global = global_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
 
    *w = 19;
    strlcpy(s2, path, len2);
-   if (global && !string_is_empty(global->name.remapfile))
-      fill_pathname_base(s, global->name.remapfile,
+   if (!string_is_empty(runloop_st->name.remapfile))
+      fill_pathname_base(s, runloop_st->name.remapfile,
             len);
 }
 
