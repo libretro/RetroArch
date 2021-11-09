@@ -3211,6 +3211,7 @@ static bool config_load_file(global_t *global,
    char *save                                      = NULL;
    char *override_username                         = NULL;
    const char *path_config                         = NULL;
+   runloop_state_t *runloop_st                     = runloop_state_get_ptr();
    int bool_settings_size                          = sizeof(settings->bools)  / sizeof(settings->bools.placeholder);
    int float_settings_size                         = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
    int int_settings_size                           = sizeof(settings->ints)   / sizeof(settings->ints.placeholder);
@@ -3665,15 +3666,12 @@ static bool config_load_file(global_t *global,
       {
          dir_set(RARCH_DIR_SAVEFILE, tmp_str);
 
-         if (global)
-         {
-            strlcpy(global->name.savefile, tmp_str,
-                  sizeof(global->name.savefile));
-            fill_pathname_dir(global->name.savefile,
-                  path_get(RARCH_PATH_BASENAME),
-                  FILE_PATH_SRM_EXTENSION,
-                  sizeof(global->name.savefile));
-         }
+         strlcpy(runloop_st->name.savefile, tmp_str,
+               sizeof(runloop_st->name.savefile));
+         fill_pathname_dir(runloop_st->name.savefile,
+               path_get(RARCH_PATH_BASENAME),
+               FILE_PATH_SRM_EXTENSION,
+               sizeof(runloop_st->name.savefile));
       }
       else
          RARCH_WARN("[Config]: 'savefile_directory' is not a directory, ignoring ...\n");
@@ -3688,15 +3686,12 @@ static bool config_load_file(global_t *global,
       {
          dir_set(RARCH_DIR_SAVESTATE, tmp_str);
 
-         if (global)
-         {
-            strlcpy(global->name.savestate, tmp_str,
-                  sizeof(global->name.savestate));
-            fill_pathname_dir(global->name.savestate,
-                  path_get(RARCH_PATH_BASENAME),
-                  ".state",
-                  sizeof(global->name.savestate));
-         }
+         strlcpy(runloop_st->name.savestate, tmp_str,
+               sizeof(runloop_st->name.savestate));
+         fill_pathname_dir(runloop_st->name.savestate,
+               path_get(RARCH_PATH_BASENAME),
+               ".state",
+               sizeof(runloop_st->name.savestate));
       }
       else
          RARCH_WARN("[Config]: 'savestate_directory' is not a directory, ignoring ...\n");
@@ -5025,7 +5020,7 @@ bool input_remapping_load_file(void *data, const char *path)
    unsigned i, j;
    config_file_t *conf                              = (config_file_t*)data;
    settings_t *settings                             = config_st;
-   global_t *global                                 = global_get_ptr();
+   runloop_state_t *runloop_st                      = runloop_state_get_ptr();
    char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8] = {
       "b", "y", "select", "start",
       "up", "down", "left", "right",
@@ -5035,12 +5030,12 @@ bool input_remapping_load_file(void *data, const char *path)
    if (!conf || string_is_empty(path))
       return false;
 
-   if (!string_is_empty(global->name.remapfile))
+   if (!string_is_empty(runloop_st->name.remapfile))
    {
       input_remapping_deinit();
       input_remapping_set_defaults(false);
    }
-   global->name.remapfile = strdup(path);
+   runloop_st->name.remapfile = strdup(path);
 
    for (i = 0; i < MAX_USERS; i++)
    {

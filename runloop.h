@@ -242,6 +242,18 @@ struct runloop
    char savefile_dir[PATH_MAX_LENGTH];
    char savestate_dir[PATH_MAX_LENGTH];
 
+   struct
+   {
+      char *remapfile;
+      char savefile[8192];
+      char savestate[8192];
+      char cheatfile[8192];
+      char ups[8192];
+      char bps[8192];
+      char ips[8192];
+      char label[8192];
+   } name;
+
    bool is_inited;
    bool missing_bios;
    bool force_nonblock;

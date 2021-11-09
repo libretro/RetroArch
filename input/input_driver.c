@@ -5214,11 +5214,10 @@ void input_remapping_update_port_map(void)
 
 void input_remapping_deinit(void)
 {
-   global_t *global                        = global_get_ptr();
    runloop_state_t *runloop_st             = runloop_state_get_ptr();
-   if (global->name.remapfile)
-      free(global->name.remapfile);
-   global->name.remapfile                  = NULL;
+   if (runloop_st->name.remapfile)
+      free(runloop_st->name.remapfile);
+   runloop_st->name.remapfile              = NULL;
    runloop_st->remaps_core_active          = false;
    runloop_st->remaps_content_dir_active   = false;
    runloop_st->remaps_game_active          = false;

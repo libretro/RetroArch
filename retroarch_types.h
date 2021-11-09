@@ -332,18 +332,6 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
-   struct
-   {
-      char *remapfile;
-      char savefile[8192];
-      char savestate[8192];
-      char cheatfile[8192];
-      char ups[8192];
-      char bps[8192];
-      char ips[8192];
-      char label[8192];
-   } name;
-
    /* Recording. */
    struct
    {

@@ -1037,13 +1037,13 @@ bool command_event_resize_windowed_scale(settings_t *settings,
 
 bool command_event_save_auto_state(
       bool savestate_auto_save,
-      global_t *global,
       const enum rarch_core_type current_core_type)
 {
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
    bool ret                    = false;
    char savestate_name_auto[PATH_MAX_LENGTH];
 
-   if (!global || !savestate_auto_save)
+   if (!savestate_auto_save)
       return false;
    if (current_core_type == CORE_TYPE_DUMMY)
       return false;
@@ -1058,7 +1058,8 @@ bool command_event_save_auto_state(
 
    savestate_name_auto[0]      = '\0';
 
-   fill_pathname_noext(savestate_name_auto, global->name.savestate,
+   fill_pathname_noext(savestate_name_auto,
+         runloop_st->name.savestate,
          ".auto", sizeof(savestate_name_auto));
 
    ret = content_save_state((const char*)savestate_name_auto, true, true);
@@ -1099,9 +1100,10 @@ void command_event_init_cheats(
 }
 #endif
 
-void command_event_load_auto_state(global_t *global)
+void command_event_load_auto_state(void)
 {
    char savestate_name_auto[PATH_MAX_LENGTH];
+   runloop_state_t *runloop_st     = runloop_state_get_ptr();
    bool ret                        = false;
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
@@ -1114,7 +1116,7 @@ void command_event_load_auto_state(global_t *global)
 
    savestate_name_auto[0] = '\0';
 
-   fill_pathname_noext(savestate_name_auto, global->name.savestate,
+   fill_pathname_noext(savestate_name_auto, runloop_st->name.savestate,
          ".auto", sizeof(savestate_name_auto));
 
    if (!path_is_valid(savestate_name_auto))
@@ -1130,9 +1132,7 @@ void command_event_load_auto_state(global_t *global)
          );
 }
 
-void command_event_set_savestate_auto_index(
-      settings_t *settings,
-      const global_t *global)
+void command_event_set_savestate_auto_index(settings_t *settings)
 {
    size_t i;
    char state_dir[PATH_MAX_LENGTH];
@@ -1140,21 +1140,22 @@ void command_event_set_savestate_auto_index(
 
    struct string_list *dir_list      = NULL;
    unsigned max_idx                  = 0;
+   runloop_state_t *runloop_st       = runloop_state_get_ptr();
    bool savestate_auto_index         = settings->bools.savestate_auto_index;
    bool show_hidden_files            = settings->bools.show_hidden_files;
 
-   if (!global || !savestate_auto_index)
+   if (!savestate_auto_index)
       return;
 
    state_dir[0] = state_base[0]      = '\0';
 
-   /* Find the file in the same directory as global->savestate_name
+   /* Find the file in the same directory as runloop_st->savestate_name
     * with the largest numeral suffix.
     *
     * E.g. /foo/path/content.state, will try to find
     * /foo/path/content.state%d, where %d is the largest number available.
     */
-   fill_pathname_basedir(state_dir, global->name.savestate,
+   fill_pathname_basedir(state_dir, runloop_st->name.savestate,
          sizeof(state_dir));
 
    dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL,
@@ -1163,7 +1164,7 @@ void command_event_set_savestate_auto_index(
    if (!dir_list)
       return;
 
-   fill_pathname_base(state_base, global->name.savestate,
+   fill_pathname_base(state_base, runloop_st->name.savestate,
          sizeof(state_base));
 
    for (i = 0; i < dir_list->size; i++)
@@ -1197,7 +1198,6 @@ void command_event_set_savestate_auto_index(
 }
 
 void command_event_set_savestate_garbage_collect(
-      const global_t *global,
       unsigned max_to_keep,
       bool show_hidden_files
       )
@@ -1205,6 +1205,7 @@ void command_event_set_savestate_garbage_collect(
    size_t i, cnt = 0;
    char state_dir[PATH_MAX_LENGTH];
    char state_base[PATH_MAX_LENGTH];
+   runloop_state_t *runloop_st       = runloop_state_get_ptr();
 
    struct string_list *dir_list      = NULL;
    unsigned min_idx                  = UINT_MAX;
@@ -1215,7 +1216,7 @@ void command_event_set_savestate_garbage_collect(
 
    /* Similar to command_event_set_savestate_auto_index(),
     * this will find the lowest numbered save-state */
-   fill_pathname_basedir(state_dir, global->name.savestate,
+   fill_pathname_basedir(state_dir, runloop_st->name.savestate,
          sizeof(state_dir));
 
    dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL,
@@ -1224,7 +1225,7 @@ void command_event_set_savestate_garbage_collect(
    if (!dir_list)
       return;
 
-   fill_pathname_base(state_base, global->name.savestate,
+   fill_pathname_base(state_base, runloop_st->name.savestate,
          sizeof(state_base));
 
    for (i = 0; i < dir_list->size; i++)
@@ -1466,7 +1467,6 @@ bool command_event_main_state(unsigned cmd)
    retro_ctx_size_info_t info;
    char msg[128];
    char state_path[16384];
-   const global_t *global      = global_get_ptr();
    settings_t *settings        = config_get_ptr();
    bool ret                    = false;
    bool push_msg               = true;
@@ -1500,7 +1500,7 @@ bool command_event_main_state(unsigned cmd)
 
                /* Clean up excess savestates if necessary */
                if (savestate_auto_index && (savestate_max_keep > 0))
-                  command_event_set_savestate_garbage_collect(global,
+                  command_event_set_savestate_garbage_collect(
                         settings->uints.savestate_max_keep,
                         settings->bools.show_hidden_files
                         );

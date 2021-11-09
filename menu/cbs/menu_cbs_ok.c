@@ -5179,8 +5179,8 @@ static int action_ok_add_to_favorites(const char *path,
     * > If content path is empty, cannot do anything... */
    if (!string_is_empty(content_path))
    {
-      global_t *global                 = global_get_ptr();
-      struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
+      runloop_state_t *runloop_st      = runloop_state_get_ptr();
+      struct retro_system_info *system = &runloop_st->system.info;
       struct string_list *str_list     = NULL;
       const char *crc32                = NULL;
       const char *db_name              = NULL;
@@ -5203,9 +5203,9 @@ static int action_ok_add_to_favorites(const char *path,
       /* Determine playlist parameters */
 
       /* > content_label */
-      if (global)
-         if (!string_is_empty(global->name.label))
-            strlcpy(content_label, global->name.label, sizeof(content_label));
+      if (!string_is_empty(runloop_st->name.label))
+         strlcpy(content_label, runloop_st->name.label,
+               sizeof(content_label));
 
       /* Label is empty - use file name instead */
       if (string_is_empty(content_label))

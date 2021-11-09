@@ -339,7 +339,6 @@ bool command_event_resize_windowed_scale(settings_t *settings,
 
 bool command_event_save_auto_state(
       bool savestate_auto_save,
-      global_t *global,
       const enum rarch_core_type current_core_type);
 
 /**
@@ -363,14 +362,12 @@ void command_event_set_volume(
 void command_event_init_controllers(rarch_system_info_t *info,
       settings_t *settings, unsigned num_active_users);
 
-void command_event_load_auto_state(global_t *global);
+void command_event_load_auto_state(void);
 
 void command_event_set_savestate_auto_index(
-      settings_t *settings,
-      const global_t *global);
+      settings_t *settings);
 
 void command_event_set_savestate_garbage_collect(
-      const global_t *global,
       unsigned max_to_keep,
       bool show_hidden_files
       );
