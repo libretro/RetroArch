@@ -9690,7 +9690,7 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
    {
       for (i = 0; i < net_st->room_count; i++)
       {
-         char country[PATH_MAX_LENGTH];
+         char country[8];
 
          if (*net_st->room_list[i].country)
             snprintf(country, sizeof(country),
@@ -9725,7 +9725,8 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
                ? msg_hash_to_str(MSG_INTERNET_RELAY) 
                : msg_hash_to_str(MSG_INTERNET)),
             net_st->room_list[i].nickname,
-            country);
+            net_st->room_list[i].lan ? "" : country
+            );
 
          if (menu_entries_append_enum(list,
                s,
