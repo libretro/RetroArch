@@ -175,7 +175,15 @@ enum netplay_cmd
    /* CMD_CFG streamlines sending multiple
       configurations. This acknowledges
       each one individually */
-   NETPLAY_CMD_CFG_ACK        = 0x0062
+   NETPLAY_CMD_CFG_ACK        = 0x0062,
+
+   /* Chat commands */
+
+   /* Sends a player chat message.
+    * The server is responsible for formatting/truncating 
+    * the message and relaying it to all playing clients,
+    * including the one that sent the message. */
+   NETPLAY_CMD_PLAYER_CHAT    = 0x1000
 };
 
 #define NETPLAY_CMD_SYNC_BIT_PAUSED    (1U<<31)
