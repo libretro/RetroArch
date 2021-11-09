@@ -1750,6 +1750,10 @@ MSG_HASH(
    "Zmniejsza opóźnienie kosztem zwiększonego ryzyka stłuczenia wideo. Dodaje opóźnienie po VSync (w ms)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
+   "Automatyczne opóźnienie ramki"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
    "Trudna synchronizacja GPU"
    )
@@ -3882,6 +3886,10 @@ MSG_HASH(
    "Wyświetlaj komunikat ekranowy podczas ustawiania częstotliwości odświeżania."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "Dodatkowe powiadomienia Netplay"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "Czcionka powiadomienia"
    )
@@ -5061,6 +5069,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
    "Port adresu IP hosta. Może to być port TCP lub UDP."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
+   "Maksymalna liczba połączeń równoległych"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
@@ -11248,6 +11260,22 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
    "Nie udało się ustawić ostatnio używanego dysku..."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   "Nie udało się połączyć z klientem"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "Nie udało się połączyć z serwerem"
+   )
+MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "Serwer Netplay pełen"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "Nie udało się odebrać nagłówka z serwera"
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,

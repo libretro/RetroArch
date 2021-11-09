@@ -1794,6 +1794,14 @@ MSG_HASH(
    "Réduit la latence au détriment d'un risque accru de saccades visuelles. Ajoute un délai après la synchronisation verticale V-Sync (en ms)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
+   "Retard d'images automatique"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   "Diminuer temporairement le 'Retard d'images' pour éviter les futures sautes d'images. Le point de départ est la demi-cadence d'images quand le 'Retard d'images' est 0."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
    "Synchronisation matérielle du processeur graphique"
    )
@@ -3938,6 +3946,14 @@ MSG_HASH(
    "Afficher un message à l'écran lors du réglage de la fréquence de rafraîchissement."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "Notifications supplémentaires du jeu en réseau"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "Afficher les messages non essentiels du jeu en réseau à l'écran."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "Police des notifications "
    )
@@ -4357,11 +4373,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
-   "Afficher 'Netplay'"
+   "Afficher 'Jeu en réseau'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Afficher le menu 'Netplay'. (Redémarrage requis sur Ozone/XMB)"
+   "Afficher le menu 'Jeu en réseau'. (Redémarrage requis sur Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -5129,6 +5145,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
    "Port de l'adresse IP de l'hôte. Peut être un port TCP ou UDP."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
+   "Connexions simultanées maximales"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
@@ -11320,6 +11340,22 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
    "Impossible de sélectionner le dernier disque utilisé..."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   "Échec de la connexion au client"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "Échec de la connexion à l'hôte"
+   )
+MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "Hôte de jeu en réseau plein"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "Échec de l'obtention de l'entête depuis l'hôte"
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,

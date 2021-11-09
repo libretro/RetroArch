@@ -319,7 +319,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
-   "Estensiones sofitaes"
+   "Estensiones compatibles"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
@@ -391,6 +391,186 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
    "DPI de la pantalla"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
+   "Compatibilidá con LibretroDB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT,
+   "Compatibilidá con Cocoa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT,
+   "Compatibilidá con PNG (RPNG)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RJPEG_SUPPORT,
+   "Compatibilidá con JPEG (RJPEG)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT,
+   "Compatibilidá con BMP (RBMP)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT,
+   "Compatibilidá con TGA (RTGA)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT,
+   "Compatibilidá con SDL 1.2"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT,
+   "Compatibilidá con SDL 2"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
+   "Compatibilidá con Vulkan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_METAL_SUPPORT,
+   "Compatibilidá con Metal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT,
+   "Compatibilidá con OpenGL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT,
+   "Compatibilidá con OpenGL ES"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT,
+   "Compatibilidá con KMS/EGL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT,
+   "Compatibilidá con udev"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT,
+   "Compatibilidá con OpenVG"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT,
+   "Compatibilidá con EGL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT,
+   "Compatibilidá con X11"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT,
+   "Compatibilidá con Wayland"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XVIDEO_SUPPORT,
+   "Compatibilidá con XVideo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ALSA_SUPPORT,
+   "Compatibilidá con ALSA"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OSS_SUPPORT,
+   "Compatibilidá con OSS"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT,
+   "Compatibilidá con OpenAL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENSL_SUPPORT,
+   "Compatibilidá con OpenSL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RSOUND_SUPPORT,
+   "Compatibilidá con RSound"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT,
+   "Compatibilidá con RoarAudio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_JACK_SUPPORT,
+   "Compatibilidá con JACK"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT,
+   "Compatibilidá con PulseAudio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
+   "Compatibilidá con CoreAudio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
+   "Compatibilidá con CoreAudio V3"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
+   "Compatibilidá con DirectSound"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT,
+   "Compatibilidá con WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT,
+   "Compatibilidá con XAudio2"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT,
+   "Compatibilidá con zlib"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT,
+   "Compatibilidá con 7zip"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
+   "Compatibilidá con biblioteques dinámiques"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
+   "Compatibilidá con Cg"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT,
+   "Compatibilidá con GLSL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT,
+   "Compatibilidá con HLSL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT,
+   "Compatibilidá con FFmpeg"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
+   "Compatibilidá con mpv"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT,
+   "Compatibilidá con CoreText"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT,
+   "Compatibilidá con FreeType"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
+   "Compatibilidá con STB TrueType"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
+   "Compatibilidá con Video4Linux2"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
+   "Compatibilidá con libusb"
    )
 
 /* Main Menu > Information > Database Manager */
@@ -1737,15 +1917,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
-   "Nun s'alcontraron axustes"
+   "Nun s'atoparon los axustes"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_BT_DEVICES_FOUND,
-   "Nun s'alcontraron preseos Bluetooth"
+   "Nun s'atopó nengún preséu Bluetooth"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
-   "Nun s'alcontraron redes"
+   "Nun s'atopó nenguna rede"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_CORE,
@@ -1765,7 +1945,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
-   "Nun s'alcontró'l direutoriu"
+   "Nun s'atopó'l direutoriu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ITEMS,
@@ -2380,7 +2560,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_VIEW,
-   "Ver"
+   "Vista"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS,
@@ -2456,7 +2636,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
-   "(úsase p'alcontrar miniatures)"
+   "(úsase p'atopar miniatures)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
@@ -2670,6 +2850,14 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "El xuegu en llinia va aniciar cuando se cague conteníu."
    )
 MSG_HASH(
+   MSG_FAILED_TO_SAVE_DEBUG_INFO,
+   "Hebo un fallu al guardar la información de depuración."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_DEBUG_INFO,
+   "Hebo un fallu al unviar la información de depuración al sirvidor."
+   )
+MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Esperando pol veceru…"
    )
@@ -2718,8 +2906,16 @@ MSG_HASH(
    "Diendo en cata de la llista de nucleos…"
    )
 MSG_HASH(
+   MSG_CORE_LIST_FAILED,
+   "¡Hebo un fallu al recuperar la llista de nucleos!"
+   )
+MSG_HASH(
    MSG_EXTRACTING_CORE,
    "Estrayendo'l nucleu "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALL_FAILED,
+   "Hebo un fallu al instalar el nucleu: "
    )
 MSG_HASH(
    MSG_ALL_CORES_SWITCHED_PFD,
@@ -2732,6 +2928,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "El nucleu nun sofita puntos de guardáu."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSH_FAILED,
+   "Hebo un fallu al guardar les opciones del nucleu en:"
    )
 MSG_HASH(
    MSG_COULD_NOT_FIND_COMPATIBLE_SYSTEM,
@@ -2762,8 +2962,28 @@ MSG_HASH(
    "Estrayendo'l ficheru"
    )
 MSG_HASH(
+   MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
+   "Hebo un fallu al aceptar l'espectador entrante."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CREATE_THE_DIRECTORY,
+   "Hebo un fallu al crear el direutoriu."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
+   "Hebo un fallu al estrayer el conteníu del ficheru comprimíu"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD,
+   "Hebo un fallu al cargar"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_UNMUTE_AUDIO,
+   "Hebo un fallu al activar l'audiu."
+   )
+MSG_HASH(
    MSG_FILE_NOT_FOUND,
-   "Nun s'alcontró'l ficheru"
+   "Nun s'atopó'l ficheru"
    )
 MSG_HASH(
    MSG_INTERFACE,
@@ -2846,6 +3066,18 @@ MSG_HASH(
    "Configuróse nel puertu:"
    )
 MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   "Hebo un fallu al conectase al veceru"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "Hebo un fallu al conectase al agospiador"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "Hebo un fallu al recibir la testera del agospiador"
+   )
+MSG_HASH(
    MSG_MISSING_ASSETS,
    "Alvertencia: Falten gráficos, usa l'anovador si ta disponible"
    )
@@ -2856,6 +3088,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOAD_CORE_FIRST,
    "Carga un nucleu primero, por favor."
+   )
+MSG_HASH(
+   MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
+   "Hebo un fallu al escribir nel discu. Albortóse'l volquiáu."
+   )
+MSG_HASH(
+   MSG_CORE_LOCK_FAILED,
+   "Hebo un fallu al bloquiar el nucleu: "
+   )
+MSG_HASH(
+   MSG_CORE_UNLOCK_FAILED,
+   "Hebo un fallu al desbloquiar el nucleu: "
    )
 
 /* Lakka */

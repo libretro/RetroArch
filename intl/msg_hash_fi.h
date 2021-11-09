@@ -1575,6 +1575,10 @@ MSG_HASH(
    "Ikkunoitu skaalaus"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+   "Aseta ikkunan kooksi ytimen kuvasuhteen kerroin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    "Ikkunan näkyvyys"
    )
@@ -1587,8 +1591,16 @@ MSG_HASH(
    "Muista ikkunan sijainti ja koko"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+   "Näytä kaikki sisältö kiinteässä ikkunan koossa, jonka mitat on määritelty 'Ikkunan leveys' ja 'Ikkunan korkeus' ja tallenna nykyinen ikkunan koko ja sijainti RetroArchin sulkemisen jälkeen. Kun tämä ei ole käytössä, ikkunan koko asetetaan dynaamisesti 'Ikkunoitu skaalaus'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    "Käytä mukautettua ikkunan kokoa"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Näytä kaikki sisältö kiinteässä ikkunan koossa, jonka mitat on määritelty 'Ikkunan leveys' ja 'Ikkunan korkeus'. Kun tämä ei ole käytössä, ikkunan koko asetetaan dynaamisesti 'Ikkunoitu skaalaus'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1611,8 +1623,16 @@ MSG_HASH(
    "Ikkunan enimmäisleveys"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Aseta suurin mahdollinen näytön leveys, kun kokoa muutetaan automaattisesti 'Ikkunoitu skaalaus' mukaan."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    "Ikkunan enimmäiskorkeus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Aseta suurin mahdollinen näytön korkeus, kun kokoa muutetaan automaattisesti 'Ikkunoitu skaalaus' mukaan."
    )
 
 /* Settings > Video > Scaling */
@@ -1640,6 +1660,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    "Mukautettu kuvasuhde"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
+   "Videon kuvasuhteen liukulukuarvo (leveys / korkeus), jota käytetään, jos 'Kuvasuhde' on asetettu 'Kokoonpano'."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1723,8 +1747,16 @@ MSG_HASH(
    "Kontrasti"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
+   "Gamma/kontrasti ohjaus HDR:lle. Lisää värien yleistä vaihteluväliä kirkkaimpien osien ja kuvan tummien osien välillä. Mitä korkeampi HDR-kontrasti on, sitä suurempi tämä ero on, kun taas mitä pienempi kontrasti on, sitä pelkistyneempi kuva on. Auttaa virittämään kuvan käyttäjille ja näiden näytöilleen sopivaksi."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "Laajenna gamutia"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "Kun väriavaruus on muunnettu lineaariseksi, päätä, pitäisikö käyttää laajennettua värivalikoimaa jotta päästäisiin HDR10:een."
    )
 
 /* Settings > Video > Synchronization */
@@ -1760,6 +1792,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    "Vähentää viivettä korkeamman videon jumiutumisen mahdollisuudella. Lisää viiveen VSyncin jälkeen (ms)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
+   "Automaattinen kuvan viive"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   "Vähennä tehokasta 'Kuvan viive' toimintoa väliaikaisesti, estääksesi kuvien pudotukset. Aloituspiste on puolikas kuva-aika, kun 'Kuvan viive' on 0."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
@@ -3914,6 +3954,14 @@ MSG_HASH(
    "Näytä ruudulla viesti kun virkistystaajuutta asetetaan."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "Verkkopelin lisäilmoitukset"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "Näytä vähäpätöisemmät verkkopeli viestit näyttöpäällyksessä."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "Ilmoituksen fontti"
    )
@@ -5111,6 +5159,10 @@ MSG_HASH(
    "Isännän IP-osoitteen portti. Voi olla joko TCP- tai UDP-portti."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
+   "Samanaikaisten yhteyksien enimmäismäärä"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
    "Palvelimen salasana"
    )
@@ -5490,6 +5542,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
    "Päivitä soittolista"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "Lisää uutta sisältöä tai poistaa virheellisiä kohteita toistamalla 'Manuaalinen skannauksen', jota viimeksi käytettiin luomaan tai muokkaamaan soittolistoja."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
@@ -6076,6 +6132,10 @@ MSG_HASH(
    "Vahvista olemassa olevat kohteet"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   "Kun käytössä, minkä tahansa olemassa olevan soittolistan kohteet tarkistetaan ennen uuden sisällön skannaamista. Kohdat, joissa viitataan puuttuvaan sisältöön ja/tai tiedostoihin, joilla on virheellisiä laajennuksia, poistetaan."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
    "Käynnistä skannaus"
    )
@@ -6482,6 +6542,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
    "Vie asetukset levylle"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
+   "Pakota nykyiset asetukset kirjoitettavaksi aktiiviseen asetustiedostoon. Varmistaa että vaihtoehdot säilyvät siinä tapauksessa, että ytimen virhe aiheuttaa käyttöliittymän yllättävän sulkeutumisen."
    )
 
 /* - Legacy (unused) */
@@ -11360,6 +11424,22 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
    "Viimeksi käytetyn levyn asettaminen epäonnistui..."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   "Yhteys asiakkaaseen epäonnistui"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "Yhteys isäntään epäonnistui"
+   )
+MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "Verkkopelin isäntä on täynnä"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "Otsakkeen vastaanottaminen isännältä epäonnistui"
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,

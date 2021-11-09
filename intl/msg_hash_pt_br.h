@@ -1790,6 +1790,14 @@ MSG_HASH(
    "Reduz a latência ao custo de um maior risco de engasgadas no vídeo. Adiciona um atraso depois do VSync (em ms)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
+   "Atraso automático de quadros"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   "Diminui o 'Atraso de Quadro' efetivo evitando futuras quedas dos quadros. O ponto inicial é o meio tempo do quadros quando 'Delay de Quadro' for 0."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
    "Sincronia rígida de GPU"
    )
@@ -3922,6 +3930,14 @@ MSG_HASH(
    "Exibe uma mensagem na tela ao definir a taxa de atualização."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "Notificações extras do Netplay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "Exiba mensagens não essenciais do Netplay na tela."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "Fonte das notificações na tela"
    )
@@ -5113,6 +5129,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
    "Porta do endereço de IP do anfitrião. Pode ser uma porta TCP ou uma porta UDP."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
+   "Quantidade máxima de conexões simultâneas"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
@@ -11284,6 +11304,22 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
    "Falha ao definir o disco usado pela última vez..."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   "Houve uma falha ao conectar com o cliente"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "Houve uma falha ao conectar ao host"
+   )
+MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "O host do Netplay está cheio"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "Houve uma falha ao receber o cabeçado do host"
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,

@@ -1746,6 +1746,14 @@ MSG_HASH(
    "Reduziert Latenz, kann aber zu Ruckeln führen. Fügt eine Verzögerung nach VSync hinzu (in ms)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
+   "Automatische Bildverzögerung"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   "Die effektive \"Bildverzögerung\" vorübergehend verringern, um Frame Drops zu verhindern. Ausgangspunkt ist die halbe Frame-Zeit, wenn \"Bildverzögerung\" 0 ist."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
    "GPU und CPU synchronisieren"
    )

@@ -1822,6 +1822,14 @@ MSG_HASH(
    "화면 끊김을 감수하면서 지연을 줄입니다. 수직동기 이후 지연(밀리초)을 추가합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
+   "자동 프레임 지연"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   "필요한 경우 '프레임 지연'을 일시적으로 감소시키며 프레임 누락을 방지합니다. '프레임 지연'이 0일 경우 시작 값은 프레임 간격의 절반입니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
    "강제 GPU 동기화"
    )
@@ -3982,6 +3990,14 @@ MSG_HASH(
    "화면의 주사율을 설정할 때 화면에 메시지를 표시합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "추가 넷플레이 알림"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "필수적이지 않은 넷플레이 OSD 메시지를 표시합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "OSD 알림 폰트"
    )
@@ -5177,6 +5193,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
    "호스트 IP 주소의 TCP 또는 UDP 포트입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
+   "최대 동시 연결"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
@@ -11440,6 +11460,22 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
    "최근 실행 디스크 설정 실패..."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   "클라이언트에 연결할 수 없음"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "호스트에 연결할 수 없음"
+   )
+MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "넷플레이 호스트가 가득 참"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "호스트에서 헤더 수신 실패"
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,

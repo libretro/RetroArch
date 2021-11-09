@@ -1767,11 +1767,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Затримка оновлення кадрів"
+   "Затримка кадру"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    "Зменшує затримку ціною вищого ризику заїкання відео. Додає затримку після VSync (у мс)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
+   "Автозатримка кадру"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   "Зменшує ефективність 'Автозатримки кадру' за потреби запобігти падінню частоти. Початкове значення становить половину часу кадра, якщо 'Затримка кадру' дорівнює 0."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
@@ -2846,6 +2854,14 @@ MSG_HASH(
    "ВКЛ (Нормально)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "Додаткові сповіщення мережі"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "Показувати на екрані додаткові сповіщення під час мережевої гри."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "Шрифт сповіщень"
    )
@@ -3076,8 +3092,16 @@ MSG_HASH(
    "Мова оригіналу"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_SOURCE_LANG,
+   "Мова, з якої буде здійснювати переклад. Якщо встановлено 'Стандартно', сервіс спробує визначити мову автоматично. Встановлення примусово певної мови зробить переклад більш точним."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    "Цільова мова"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
+   "Мова, на яку буде здійснюватися переклад. Стандартно використовується англійська."
    )
 
 /* Settings > Accessibility */
@@ -3157,6 +3181,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
    "TCP-порт мережевої гри"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
+   "Максимум одночасних з'єднань"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
@@ -3329,6 +3357,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
    "Мова"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_LANGUAGE,
+   "Налаштувати мову інтерфейсу користувача."
    )
 
 /* Settings > User > Privacy */
@@ -4628,6 +4660,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
    "Розширена підтримка ASCII"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII,
+   "Увімкнути показ нестандартних ASCII-символів. Необхідно для сумісності з деякими західнороманськими мовами. Має посередній вплив на швидкодію."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
@@ -6814,6 +6850,22 @@ MSG_HASH(
    "Не вдалося встановити диск"
    )
 MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   "Не вдалося з'єднатися з клієнтом"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "Не вдалося з'єднатися з гостом"
+   )
+MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "Гост мережевої гри заповнений"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "Не вдалось отримати заголовок госта"
+   )
+MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
    "Найнижча"
    )
@@ -6832,6 +6884,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_HIGHEST,
    "Найвищий"
+   )
+MSG_HASH(
+   MSG_RGUI_MISSING_FONTS,
+   "Увага: відсутні шрифти до обраної мови, спробуйте оновити з мережі"
+   )
+MSG_HASH(
+   MSG_RGUI_INVALID_LANGUAGE,
+   "Увага: мова не підтримується — використовується англійська"
    )
 MSG_HASH(
    MSG_DUMPING_DISC,
