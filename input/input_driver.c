@@ -5113,57 +5113,57 @@ const hid_driver_t *input_hid_init_first(void)
 void input_remapping_cache_global_config(void)
 {
    unsigned i;
-   settings_t *settings        = config_get_ptr();
-   global_t *global            = global_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   input_driver_state_t *input_st = &input_driver_st;
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      global->old_analog_dpad_mode[i] = settings->uints.input_analog_dpad_mode[i];
-      global->old_libretro_device[i]  = settings->uints.input_libretro_device[i];
+      input_st->old_analog_dpad_mode[i] = settings->uints.input_analog_dpad_mode[i];
+      input_st->old_libretro_device[i]  = settings->uints.input_libretro_device[i];
    }
 
-   global->old_analog_dpad_mode_set = true;
-   global->old_libretro_device_set  = true;
+   input_st->old_analog_dpad_mode_set = true;
+   input_st->old_libretro_device_set  = true;
 }
 
 void input_remapping_enable_global_config_restore(void)
 {
-   global_t *global               = global_get_ptr();
-   global->remapping_cache_active = true;
+   input_driver_state_t *input_st   = &input_driver_st;
+   input_st->remapping_cache_active = true;
 }
 
 void input_remapping_restore_global_config(bool clear_cache)
 {
    unsigned i;
-   settings_t *settings        = config_get_ptr();
-   global_t *global            = global_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   input_driver_state_t *input_st = &input_driver_st;
 
-   if (!global->remapping_cache_active)
+   if (!input_st->remapping_cache_active)
       goto end;
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      if (global->old_analog_dpad_mode_set &&
+      if (input_st->old_analog_dpad_mode_set &&
           (settings->uints.input_analog_dpad_mode[i] !=
-               global->old_analog_dpad_mode[i]))
+               input_st->old_analog_dpad_mode[i]))
          configuration_set_uint(settings,
                settings->uints.input_analog_dpad_mode[i],
-               global->old_analog_dpad_mode[i]);
+               input_st->old_analog_dpad_mode[i]);
 
-      if (global->old_libretro_device_set &&
+      if (input_st->old_libretro_device_set &&
           (settings->uints.input_libretro_device[i] !=
-               global->old_libretro_device[i]))
+               input_st->old_libretro_device[i]))
          configuration_set_uint(settings,
                settings->uints.input_libretro_device[i],
-               global->old_libretro_device[i]);
+               input_st->old_libretro_device[i]);
    }
 
 end:
    if (clear_cache)
    {
-      global->old_analog_dpad_mode_set = false;
-      global->old_libretro_device_set  = false;
-      global->remapping_cache_active   = false;
+      input_st->old_analog_dpad_mode_set = false;
+      input_st->old_libretro_device_set  = false;
+      input_st->remapping_cache_active     = false;
    }
 }
 

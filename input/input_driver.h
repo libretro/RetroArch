@@ -415,6 +415,8 @@ typedef struct
    input_mapper_t mapper;          /* uint32_t alignment */
    input_device_info_t input_device_info[MAX_INPUT_DEVICES]; /* unsigned alignment */
    input_mouse_info_t input_mouse_info[MAX_INPUT_DEVICES];
+   unsigned old_analog_dpad_mode[MAX_USERS];
+   unsigned old_libretro_device[MAX_USERS];
    unsigned osk_last_codepoint;
    unsigned osk_last_codepoint_len;
    unsigned input_hotkey_block_counter;
@@ -437,6 +439,9 @@ typedef struct
    bool grab_mouse_state;
    bool analog_requested[MAX_USERS];
    bool keyboard_mapping_blocked;
+   bool old_analog_dpad_mode_set;
+   bool old_libretro_device_set;
+   bool remapping_cache_active;
    retro_bits_512_t keyboard_mapping_bits;    /* bool alignment */
    input_game_focus_state_t game_focus_state; /* bool alignment */
 } input_driver_state_t;

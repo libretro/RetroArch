@@ -371,11 +371,6 @@ typedef struct global
       bool softfilter_enable;
 
    } console;
-   unsigned old_analog_dpad_mode[MAX_USERS];
-   unsigned old_libretro_device[MAX_USERS];
-   bool old_analog_dpad_mode_set;
-   bool old_libretro_device_set;
-   bool remapping_cache_active;
    /* Settings and/or global states specific to menus */
    bool launched_from_cli;
    bool cli_load_menu_on_error;
