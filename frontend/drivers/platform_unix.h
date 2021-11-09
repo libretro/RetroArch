@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include <boolean.h>
+#include <retro_miscellaneous.h>
 
 #include "../../config.def.h"
 
@@ -144,7 +145,7 @@ struct android_app
    const ASensor* accelerometerSensor;
    const ASensor* gyroscopeSensor;
    uint64_t sensor_state_mask;
-   char current_ime[PATH_MAX_LENGTH];
+   char current_ime[NAME_MAX_LENGTH];
    bool input_alive;
    int16_t analog_state[DEFAULT_MAX_PADS][MAX_AXIS];
    int8_t hat_state[DEFAULT_MAX_PADS][2];

@@ -86,7 +86,7 @@ struct udev_joypad
    uint16_t configured_strength[2];
    unsigned rumble_gain;
 
-   char ident[255];
+   char ident[NAME_MAX_LENGTH];
    bool has_set_ff[2];
    /* Deal with analog triggers that report -32767 to 32767 */
    bool neg_trigger[NUM_AXES];

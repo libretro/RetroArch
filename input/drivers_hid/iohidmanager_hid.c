@@ -52,7 +52,7 @@ struct iohidmanager_hid_adapter
    uint32_t slot;
    IOHIDDeviceRef handle;
    uint32_t locationId;
-   char name[PATH_MAX_LENGTH];
+   char name[NAME_MAX_LENGTH];
    apple_input_rec_t *axes;
    apple_input_rec_t *hats;
    apple_input_rec_t *buttons;

@@ -337,7 +337,7 @@ bool disk_control_set_index(
    bool error            = false;
    unsigned num_images   = 0;
    unsigned msg_duration = 0;
-   char msg[PATH_MAX_LENGTH];
+   char msg[NAME_MAX_LENGTH];
 
    msg[0] = '\0';
 
@@ -377,7 +377,8 @@ bool disk_control_set_index(
          runloop_msg_queue_push(
                msg, 1, msg_duration,
                true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               MESSAGE_QUEUE_ICON_DEFAULT,
+               MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    /* If operation was successful, update disk

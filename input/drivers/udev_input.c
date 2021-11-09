@@ -124,7 +124,7 @@ struct udev_input_device
    dev_t dev;
    udev_input_mouse_t mouse;
    enum udev_input_dev_type type;
-   char devnode[PATH_MAX_LENGTH];
+   char devnode[NAME_MAX_LENGTH];
    char ident[255]; /* could be mouse or keyboards store here */
 };
 

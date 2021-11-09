@@ -322,7 +322,7 @@ global_t *global_get_ptr(void)
 int driver_find_index(const char *label, const char *drv)
 {
    unsigned i;
-   char str[256];
+   char str[NAME_MAX_LENGTH];
 
    str[0] = '\0';
 

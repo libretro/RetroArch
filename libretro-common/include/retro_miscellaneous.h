@@ -82,6 +82,10 @@ static INLINE bool bits_any_set(uint32_t* ptr, uint32_t count)
 #endif
 #endif
 
+#ifndef NAME_MAX_LENGTH
+#define NAME_MAX_LENGTH 256
+#endif
+
 #ifndef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #endif

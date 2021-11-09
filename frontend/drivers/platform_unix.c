@@ -159,7 +159,7 @@ int system_property_get(const char *command,
    FILE *pipe;
    int length                   = 0;
    char buffer[PATH_MAX_LENGTH] = {0};
-   char cmd[PATH_MAX_LENGTH]    = {0};
+   char cmd[NAME_MAX_LENGTH]    = {0};
    char *curpos                 = NULL;
    size_t buf_pos               = strlcpy(cmd, command, sizeof(cmd));
 
