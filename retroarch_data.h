@@ -37,71 +37,6 @@
 #define DEFAULT_EXT ""
 #endif
 
-#define SHADER_FILE_WATCH_DELAY_MSEC 500
-
-#define QUIT_DELAY_USEC 3 * 1000000 /* 3 seconds */
-
-#define DEBUG_INFO_FILENAME "debug_info.txt"
-
-#define DEFAULT_NETWORK_GAMEPAD_PORT 55400
-#define UDP_FRAME_PACKETS 16
-
-#ifdef HAVE_BSV_MOVIE
-#define BSV_MOVIE_IS_EOF() || (input_st->bsv_movie_state.movie_end && \
-input_st->bsv_movie_state.eof_exit)
-#else
-#define BSV_MOVIE_IS_EOF()
-#endif
-
-#if HAVE_DYNAMIC
-#define RUNAHEAD_RUN_SECONDARY(runloop_st) \
-   if (!secondary_core_run_use_last_input()) \
-      runloop_st->runahead_secondary_core_available = false
-#endif
-
-#define RUNAHEAD_RESUME_VIDEO(video_st) \
-   if (video_st->runahead_is_active) \
-      video_st->active = true; \
-   else \
-      video_st->active = false
-
-#define _PSUPP_BUF(buf, var, name, desc) \
-   strlcat(buf, "  ", sizeof(buf)); \
-   strlcat(buf, name, sizeof(buf)); \
-   strlcat(buf, ":\n\t\t", sizeof(buf)); \
-   strlcat(buf, desc, sizeof(buf)); \
-   strlcat(buf, ": ", sizeof(buf)); \
-   strlcat(buf, var ? "yes\n" : "no\n", sizeof(buf))
-
-#define HOTKEY_CHECK(cmd1, cmd2, cond, cond2) \
-   { \
-      static bool old_pressed                   = false; \
-      bool pressed                              = BIT256_GET(current_bits, cmd1); \
-      if (pressed && !old_pressed) \
-         if (cond) \
-            command_event(cmd2, cond2); \
-      old_pressed                               = pressed; \
-   }
-
-#define HOTKEY_CHECK3(cmd1, cmd2, cmd3, cmd4, cmd5, cmd6) \
-   { \
-      static bool old_pressed                   = false; \
-      static bool old_pressed2                  = false; \
-      static bool old_pressed3                  = false; \
-      bool pressed                              = BIT256_GET(current_bits, cmd1); \
-      bool pressed2                             = BIT256_GET(current_bits, cmd3); \
-      bool pressed3                             = BIT256_GET(current_bits, cmd5); \
-      if (pressed && !old_pressed) \
-         command_event(cmd2, (void*)(intptr_t)0); \
-      else if (pressed2 && !old_pressed2) \
-         command_event(cmd4, (void*)(intptr_t)0); \
-      else if (pressed3 && !old_pressed3) \
-         command_event(cmd6, (void*)(intptr_t)0); \
-      old_pressed                               = pressed; \
-      old_pressed2                              = pressed2; \
-      old_pressed3                              = pressed3; \
-   }
-
 #ifdef HAVE_DYNAMIC
 #define SYMBOL(x) do { \
    function_t func = dylib_proc(lib_handle_local, #x); \
@@ -196,12 +131,6 @@ input_st->bsv_movie_state.eof_exit)
 #ifndef HAVE_MAIN
 #define HAVE_MAIN
 #endif
-#endif
-
-#ifdef _WIN32
-#define PERF_LOG_FMT "[PERF]: Avg (%s): %I64u ticks, %I64u runs.\n"
-#else
-#define PERF_LOG_FMT "[PERF]: Avg (%s): %llu ticks, %llu runs.\n"
 #endif
 
 /* DRIVERS */
@@ -335,39 +264,6 @@ static const camera_driver_t *camera_drivers[] = {
 };
 
 /* MAIN GLOBAL VARIABLES */
-
-/* Descriptive names for options without short variant.
- *
- * Please keep the name in sync with the option name.
- * Order does not matter. */
-enum
-{
-   RA_OPT_MENU = 256, /* must be outside the range of a char */
-   RA_OPT_STATELESS,
-   RA_OPT_CHECK_FRAMES,
-   RA_OPT_PORT,
-   RA_OPT_SPECTATE,
-   RA_OPT_NICK,
-   RA_OPT_COMMAND,
-   RA_OPT_APPENDCONFIG,
-   RA_OPT_BPS,
-   RA_OPT_IPS,
-   RA_OPT_NO_PATCH,
-   RA_OPT_RECORDCONFIG,
-   RA_OPT_SUBSYSTEM,
-   RA_OPT_SIZE,
-   RA_OPT_FEATURES,
-   RA_OPT_VERSION,
-   RA_OPT_EOF_EXIT,
-   RA_OPT_LOG_FILE,
-   RA_OPT_MAX_FRAMES,
-   RA_OPT_MAX_FRAMES_SCREENSHOT,
-   RA_OPT_MAX_FRAMES_SCREENSHOT_PATH,
-   RA_OPT_SET_SHADER,
-   RA_OPT_ACCESSIBILITY,
-   RA_OPT_LOAD_MENU_ON_ERROR
-};
-
 struct rarch_state
 {
    struct global              g_extern;         /* retro_time_t alignment */

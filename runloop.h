@@ -288,6 +288,13 @@ struct runloop
 
 typedef struct runloop runloop_state_t;
 
+#ifdef HAVE_BSV_MOVIE
+#define BSV_MOVIE_IS_EOF() || (input_st->bsv_movie_state.movie_end && \
+input_st->bsv_movie_state.eof_exit)
+#else
+#define BSV_MOVIE_IS_EOF()
+#endif
+
 /* Time to exit out of the main loop?
  * Reasons for exiting:
  * a) Shutdown environment callback was invoked.
