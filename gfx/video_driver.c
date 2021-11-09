@@ -426,10 +426,6 @@ void *video_driver_get_ptr(void)
    return VIDEO_DRIVER_GET_PTR_INTERNAL(video_st);
 }
 
-void *video_driver_get_data(void)
-{
-   return video_driver_st.data;
-}
 
 video_driver_t *hw_render_context_driver(
       enum retro_hw_context_type type, int major, int minor)
@@ -1212,11 +1208,6 @@ bool video_display_server_get_flags(gfx_ctx_flags_t *flags)
    return true;
 }
 
-bool video_driver_started_fullscreen(void)
-{
-   video_driver_state_t *video_st                 = &video_driver_st;
-   return video_st->started_fullscreen;
-}
 
 bool video_driver_is_threaded(void)
 {
