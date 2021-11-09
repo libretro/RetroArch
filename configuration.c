@@ -5722,14 +5722,14 @@ void input_config_parse_joy_button(
    }
 }
 
-void config_deinit(void)
+void rarch_config_deinit(void)
 {
    if (config_st)
       free(config_st);
    config_st = NULL;
 }
 
-void config_init(void)
+void rarch_config_init(void)
 {
    if (config_st)
       return;

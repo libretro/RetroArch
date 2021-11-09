@@ -1083,9 +1083,9 @@ void config_load_file_salamander(void);
 void config_save_file_salamander(void);
 #endif
 
-void config_init(void);
+void rarch_config_init(void);
 
-void config_deinit(void);
+void rarch_config_deinit(void);
 
 settings_t *config_get_ptr(void);
 

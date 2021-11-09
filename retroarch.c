@@ -5940,7 +5940,7 @@ void main_exit(void *args)
    global_free(p_rarch);
    task_queue_deinit();
 
-   config_deinit();
+   rarch_config_deinit();
 
    ui_companion_driver_deinit(p_rarch);
 
@@ -6008,7 +6008,7 @@ int rarch_main(int argc, char *argv[], void *data)
    command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
    rarch_favorites_deinit();
 
-   config_init();
+   rarch_config_init();
 
    retroarch_deinit_drivers(&runloop_st->retro_ctx);
    retroarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
