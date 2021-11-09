@@ -1283,7 +1283,7 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_DATABASE_MANAGER_LIST:
          {
-            char lpl_basename[PATH_MAX_LENGTH];
+            char lpl_basename[NAME_MAX_LENGTH];
             lpl_basename[0] = '\0';
             filebrowser_clear_type();
             fill_pathname_join(tmp,

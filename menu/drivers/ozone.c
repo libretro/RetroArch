@@ -3907,7 +3907,7 @@ static void ozone_init_horizontal_list(ozone_handle_t *ozone,
 
    for (i = 0; i < list_size; i++)
    {
-      char playlist_file_noext[255];
+      char playlist_file_noext[NAME_MAX_LENGTH];
       char *console_name        = NULL;
       const char *playlist_file = ozone->horizontal_list.list[i].path;
 
@@ -4030,7 +4030,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
                strlen(path), STRLEN_CONST(".lpl")))
       {
          struct texture_image ti;
-         char sysname[PATH_MAX_LENGTH];
+         char sysname[NAME_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
          char content_texturepath[PATH_MAX_LENGTH];
          char icons_path[PATH_MAX_LENGTH];

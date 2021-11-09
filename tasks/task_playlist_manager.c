@@ -193,7 +193,7 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
             if (entry)
             {
                struct playlist_entry update_entry = {0};
-               char task_title[PATH_MAX_LENGTH];
+               char task_title[NAME_MAX_LENGTH];
                
                task_title[0] = '\0';
                
@@ -208,7 +208,7 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
                   strlcat(task_title, entry->label, sizeof(task_title));
                else if (!string_is_empty(entry->path))
                {
-                  char entry_name[PATH_MAX_LENGTH];
+                  char entry_name[NAME_MAX_LENGTH];
                   entry_name[0] = '\0';
                   
                   fill_pathname_base_noext(entry_name, entry->path, sizeof(entry_name));
@@ -236,7 +236,7 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
          break;
       case PL_MANAGER_END:
          {
-            char task_title[PATH_MAX_LENGTH];
+            char task_title[NAME_MAX_LENGTH];
             
             task_title[0] = '\0';
             
@@ -289,8 +289,8 @@ static bool task_pl_manager_reset_cores_finder(
 bool task_push_pl_manager_reset_cores(const playlist_config_t *playlist_config)
 {
    task_finder_data_t find_data;
-   char playlist_name[PATH_MAX_LENGTH];
-   char task_title[PATH_MAX_LENGTH];
+   char playlist_name[NAME_MAX_LENGTH];
+   char task_title[NAME_MAX_LENGTH];
    retro_task_t *task              = task_init();
    pl_manager_handle_t *pl_manager = (pl_manager_handle_t*)
       calloc(1, sizeof(pl_manager_handle_t));
@@ -665,7 +665,7 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
          break;
       case PL_MANAGER_END:
          {
-            char task_title[PATH_MAX_LENGTH];
+            char task_title[NAME_MAX_LENGTH];
             
             task_title[0] = '\0';
             
@@ -719,8 +719,8 @@ bool task_push_pl_manager_clean_playlist(
       const playlist_config_t *playlist_config)
 {
    task_finder_data_t find_data;
-   char playlist_name[PATH_MAX_LENGTH];
-   char task_title[PATH_MAX_LENGTH];
+   char playlist_name[NAME_MAX_LENGTH];
+   char task_title[NAME_MAX_LENGTH];
    retro_task_t *task              = task_init();
    pl_manager_handle_t *pl_manager = (pl_manager_handle_t*)
       calloc(1, sizeof(pl_manager_handle_t));

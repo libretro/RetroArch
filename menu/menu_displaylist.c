@@ -1868,7 +1868,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    }
    else if (!string_is_empty(info->path))
    {
-      char lpl_basename[PATH_MAX_LENGTH];
+      char lpl_basename[NAME_MAX_LENGTH];
       lpl_basename[0] = '\0';
 
       fill_pathname_base_noext(lpl_basename, info->path, sizeof(lpl_basename));
@@ -2828,7 +2828,7 @@ static int menu_displaylist_parse_horizontal_list(
    if (!string_is_empty(item->path))
    {
       char path_playlist[PATH_MAX_LENGTH];
-      char lpl_basename[PATH_MAX_LENGTH];
+      char lpl_basename[NAME_MAX_LENGTH];
       const char *dir_playlist  = settings->paths.directory_playlist;
 
       lpl_basename[0]           = '\0';
