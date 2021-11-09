@@ -1262,11 +1262,10 @@ static void gfx_widgets_draw_task_msg(
       gfx_widgets_flush_text(video_width, video_height,
             &p_dispwidget->gfx_widget_fonts.msg_queue);
 
-      if (p_disp->dispctx && p_disp->dispctx->scissor_begin)
-         gfx_display_scissor_begin(p_disp,
-               userdata,
-               video_width, video_height,
-               rect_x, rect_y, rect_width, rect_height);
+      gfx_display_scissor_begin(p_disp,
+            userdata,
+            video_width, video_height,
+            rect_x, rect_y, rect_width, rect_height);
 
       gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.msg_queue,
             msg->msg_new,
@@ -1348,14 +1347,14 @@ static void gfx_widgets_draw_regular_msg(
       gfx_widgets_flush_text(video_width, video_height,
             &p_dispwidget->gfx_widget_fonts.msg_queue);
 
-      if (p_disp->dispctx && p_disp->dispctx->scissor_begin)
-         gfx_display_scissor_begin(p_disp,
-               userdata,
-               video_width, video_height,
-               p_dispwidget->msg_queue_scissor_start_x, 0,
-               (p_dispwidget->msg_queue_scissor_start_x + msg->width - 
-                p_dispwidget->simple_widget_padding * 2) 
-               * msg->unfold, video_height);
+
+     gfx_display_scissor_begin(p_disp,
+           userdata,
+           video_width, video_height,
+           p_dispwidget->msg_queue_scissor_start_x, 0,
+           (p_dispwidget->msg_queue_scissor_start_x + msg->width - 
+            p_dispwidget->simple_widget_padding * 2) 
+           * msg->unfold, video_height);
    }
 
    /* Background */

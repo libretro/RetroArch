@@ -464,40 +464,43 @@ void gfx_display_scissor_begin(
       int x, int y, unsigned width, unsigned height)
 {
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-   if (y < 0)
+   if (dispctx && dispctx->scissor_begin)
    {
-      if (height < (unsigned)(-y))
-         height  = 0;
-      else
-         height += y;
-      y          = 0;
-   }
-   if (x < 0)
-   {
-      if (width < (unsigned)(-x))
-         width   = 0;
-      else
-         width  += x;
-      x          = 0;
-   }
-   if (y >= (int)video_height)
-   {
-      height     = 0;
-      y          = 0;
-   }
-   if (x >= (int)video_width)
-   {
-      width      = 0;
-      x          = 0;
-   }
-   if ((y + height) > video_height)
-      height     = video_height - y;
-   if ((x + width) > video_width)
-      width      = video_width - x;
+      if (y < 0)
+      {
+         if (height < (unsigned)(-y))
+            height  = 0;
+         else
+            height += y;
+         y          = 0;
+      }
+      if (x < 0)
+      {
+         if (width < (unsigned)(-x))
+            width   = 0;
+         else
+            width  += x;
+         x          = 0;
+      }
+      if (y >= (int)video_height)
+      {
+         height     = 0;
+         y          = 0;
+      }
+      if (x >= (int)video_width)
+      {
+         width      = 0;
+         x          = 0;
+      }
+      if ((y + height) > video_height)
+         height     = video_height - y;
+      if ((x + width) > video_width)
+         width      = video_width - x;
 
-   dispctx->scissor_begin(userdata,
-         video_width, video_height,
-         x, y, width, height);
+      dispctx->scissor_begin(userdata,
+            video_width, video_height,
+            x, y, width, height);
+   }
 }
 
 font_data_t *gfx_display_font_file(
