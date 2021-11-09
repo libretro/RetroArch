@@ -60,8 +60,8 @@ static void find_first_libretro_core(char *first_file,
 
    for (i = 0; i < list->size && !ret; i++)
    {
-      char fname[PATH_MAX_LENGTH]           = {0};
-      char salamander_name[PATH_MAX_LENGTH] = {0};
+      char fname[NAME_MAX_LENGTH]           = {0};
+      char salamander_name[NAME_MAX_LENGTH] = {0};
       const char *libretro_elem             = (const char*)list->elems[i].data;
 
       RARCH_LOG("Checking library: \"%s\".\n", libretro_elem);

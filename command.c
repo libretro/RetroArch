@@ -1136,7 +1136,7 @@ void command_event_set_savestate_auto_index(settings_t *settings)
 {
    size_t i;
    char state_dir[PATH_MAX_LENGTH];
-   char state_base[PATH_MAX_LENGTH];
+   char state_base[NAME_MAX_LENGTH];
 
    struct string_list *dir_list      = NULL;
    unsigned max_idx                  = 0;
@@ -1204,7 +1204,7 @@ void command_event_set_savestate_garbage_collect(
 {
    size_t i, cnt = 0;
    char state_dir[PATH_MAX_LENGTH];
-   char state_base[PATH_MAX_LENGTH];
+   char state_base[NAME_MAX_LENGTH];
    runloop_state_t *runloop_st       = runloop_state_get_ptr();
 
    struct string_list *dir_list      = NULL;
