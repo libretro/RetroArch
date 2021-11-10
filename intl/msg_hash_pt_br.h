@@ -1791,11 +1791,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
-   "Atraso automático de quadros"
+   "Atraso automático de quadro"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Diminui o 'Atraso de Quadro' efetivo evitando futuras quedas dos quadros. O ponto inicial é o meio tempo do quadros quando 'Delay de Quadro' for 0."
+   "Diminuir temporariamente o 'Atraso de quadro' efetivo para evitar futuras quedas de quadros. Se o valor do 'Atraso de quadro' é 0, o cálculo começará a partir da duração de meio quadro."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
@@ -3931,11 +3931,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
-   "Notificações extras do Netplay"
+   "Notificações adicionais de jogo em rede"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
-   "Exiba mensagens não essenciais do Netplay na tela."
+   "Exibe mensagens não essenciais do jogo em rede na tela."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
@@ -11307,19 +11307,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "Houve uma falha ao conectar com o cliente"
+   "Falha ao conectar com o cliente"
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_HOST,
-   "Houve uma falha ao conectar ao host"
+   "Falha ao conectar com o anfitrião"
    )
 MSG_HASH(
    MSG_NETPLAY_HOST_FULL,
-   "O host do Netplay está cheio"
+   "O anfitrião do jogo em rede está cheio"
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "Houve uma falha ao receber o cabeçado do host"
+   "Erro ao receber o cabeçalho do anfitrião"
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,

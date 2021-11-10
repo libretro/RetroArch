@@ -1731,6 +1731,10 @@ MSG_HASH(
    "如果显示器支持，则启用 HDR。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
+   "最高亮度"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
    "Contrast - 对比度"
    )
@@ -7122,6 +7126,10 @@ MSG_HASH(
    "网络错误"
 )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
+   "未知游戏"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    "无法使用此核心激活成就"
 )
@@ -9378,6 +9386,10 @@ MSG_HASH(
    "端口"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
+   "端口 %d 设备名： %s (#%d)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
    "金手指设置"
    )
@@ -9938,6 +9950,14 @@ MSG_HASH(
    "收到来自「%s (%s)」的连接"
    )
 MSG_HASH(
+   MSG_PUBLIC_ADDRESS,
+   "Netplay 端口映射成功"
+   )
+MSG_HASH(
+   MSG_UPNP_FAILED,
+   "Netplay UPNP 端口映射失败"
+   )
+MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
    "未提供参数也没有内建菜单，正在显示帮助..."
    )
@@ -10494,6 +10514,10 @@ MSG_HASH(
    "保存游戏存档失败"
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD_SRAM,
+   "加载 SRAM 失败"
+   )
+MSG_HASH(
    MSG_FAILED_TO_SAVE_STATE_TO,
    "保存状态于此失败"
    )
@@ -10966,6 +10990,10 @@ MSG_HASH(
    "取消暂停。"
    )
 MSG_HASH(
+   MSG_UNRECOGNIZED_COMMAND,
+   "收到无法识别的命令 \"%s\"。\n"
+   )
+MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
    "使用核心名称作为新配置。"
    )
@@ -10996,6 +11024,22 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "可视区域尺寸计算失败！将继续使用原始数据，这很可能不会正常工作。"
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "弹出虚拟光驱失败。"
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "收回虚拟光驱托盘失败。"
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FAILED,
+   "从 \"%s\" 自动加载状态存档失败。"
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
+   "从 “%s” 自动加载状态存档成功。"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,

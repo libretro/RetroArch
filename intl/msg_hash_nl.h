@@ -108,6 +108,14 @@ MSG_HASH(
    "Bureaubladmenu weergeven"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   "Open het traditionele bureaublad menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Zet Kiosk Modus uit (Opnieuw Opstarten Benodigd)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
    "Online bijwerken"
    )

@@ -44,12 +44,20 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
    "کاوش"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TAB,
+   "وارد کردن محتوا"
+   )
 
 /* Main Menu */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
    "فهرست سریع"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
+   "به سرعت به تمام تنظیمات مربوط به بازی دسترسی پیدا کنید."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
@@ -76,16 +84,60 @@ MSG_HASH(
    "محتوا را از دیسک فیزیکی بارگذاری کنید. ابتدا هستهٔ مورد نظر را از بخش «انتخاب هسته» برای استفاده از محتوای دیسک انتخاب کنید."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+   "تخلیه دیسک"
+   )
+MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
+   MENU_ENUM_SUBLABEL_DUMP_DISC,
+   "دیسک فیزیکی رسانه را در حافظه داخلی تخلیه کنید. به عنوان یک فایل image ذخیره خواهد شد."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "فهرست‌های پخش"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
+   "محتوای اسکن شده مطابق با پایگاه داده در اینجا نمایش داده می شود."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
+   "وارد کردن محتوا"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
+   "با اسکن محتوا، لیست های پخش را ایجاد و به‌روز کنید."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+   "نمایش منوی دسکتاپ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   "منوی دسکتاپ مرسوم را باز کن."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "غیر فعال کردن حالت کیوسک (احتیاج به ریستارت دارد)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+   "تمام تنظیمات مربوط به پیکربندی را نمایش بده."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
    "به‌روز کننده آنلاین"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
+   "برای RetroArch، افزونه‌، اجزا و محتوا بارگیری کنید."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY,
    "بازی تحت شبکه"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY,
+   "به یک نشست netplay بپیوندید یا آن‌را میزبانی کنید."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
@@ -100,8 +152,28 @@ MSG_HASH(
    "داده"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
+   "اطلاعات سیستم را نمایش بده."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+   "فایل‌های پیکربندی"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
+   "فایل های پیکربندی را مدیریت و ایجاد کنید."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LIST,
    "راهنما"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_HELP_LIST,
+   "درباره طرز کار برنامه بیشتر بیاموزید."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+   "ریستارت رتروآرچ"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
@@ -126,16 +198,40 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
    "با برنامهٔ بروزرسان، یک هسته را دریافت و نصب می‌کند."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+   "نصب یا بازسازی یک هسته"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+   "یک هسته را نصب یا از دایرکتوری دانلودها بازسازی کن."
+   )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
    "آغاز پردازشگر ویدئویی"
+   )
+MSG_HASH( /* FIXME Maybe add a description? */
+   MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
+   "شروع رتروپد ریموت"
    )
 
 /* Main Menu > Load Content */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FAVORITES,
+   "دایرکتوری شروع"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    "بارگیری‌ها"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
+   "مرور آرشیو"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
+   "بارگزاری آرشیو"
    )
 
 /* Main Menu > Load Content > Playlists */
@@ -145,8 +241,16 @@ MSG_HASH(
    "برگزیده‌ها"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
+   "محتوای اضافه شده به \"موارد دلخواه\" در اینجا نمایش داده می شود."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
    "موسیقی"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_MUSIC,
+   "موسیقی هایی که قبلا تماشا کرده‌اید اینجا نشان داده خواهند شد."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
@@ -168,6 +272,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
    "کاوش"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
+   "تمام محتوای مطابق با پایگاه داده را از طریق یک رابط جستجوی طبقه بندی شده مرور کنید."
+   )
 
 /* Main Menu > Online Updater */
 
@@ -179,9 +287,113 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
    "بروزرسانی هسته‌های نصب‌شده"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
+   "تمام هسته های نصب شده را به آخرین نسخه موجود به روز کنید."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+   "تغییر هسته ها به نسخه های Play store"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+   "در صورت وجود، تمام هسته‌های قدیمی و نصب‌شده دستی را با آخرین نسخه‌های Play Store، جایگزین کنید."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
+   "به روزرسانی ریزعکس ها"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
+   "بسته کامل ریزعکس برای سیستم انتخاب شده را دانلود کن."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
+   "به روزرسانی ریز عکسهای لیست پخش"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
+   "تصاویر کوچک را برای ورودی‌های لیست پخش انتخابی دانلود کنید."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
+   "دانلودر محتوا"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
+   "به‌روزرسانی فایل های اطلاعات هسته"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
+   "به روز رسانی دارایی ها"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
+   "به روز‌رسانی پروفایل های کنترلر"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
+   "به روز رسانی کدهای تقلب"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
+   "به روز رسانی پایگاه داده ها"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
+   "به روزرسانی هم‌پوشان ها"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
+   "به روزرسانی سایه‌زن GLSL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
+   "به روزرسانی سایه‌زن های Cg"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
+   "به روزرسانی سایه‌زن های Slang"
+   )
 
 /* Main Menu > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
+   "اطلاعات هسته"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFORMATION,
+   "اطلاعات مربوط به برنامه/هسته را مشاهده کنید."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   "اطلاعات دیسک"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+   "اطلاعات مربوط به دیسک های رسانه ای واردشده را مشاهده کنید."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
+   "اطلاعات شبکه"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
+   "رابط(های) شبکه و آدرس های IP مرتبط را مشاهده کنید."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
+   "اطلاعات سیستم"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
+   "اطلاعات مخصوص به دستگاه را مشاهده کنید."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
+   "مدیریت پایگاه داده"
+   )
 
 /* Main Menu > Information > Core Information */
 
