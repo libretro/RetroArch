@@ -83,9 +83,6 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void
 
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, void *data);
 
-void runloop_set_current_core_type(
-      enum rarch_core_type type, bool explicitly_set);
-
 const char* retroarch_get_shader_preset(void);
 
 /**
@@ -108,25 +105,6 @@ content_state_t *content_state_get_ptr(void);
 unsigned content_get_subsystem_rom_id(void);
 
 int content_get_subsystem(void);
-
-/**
- * runloop_iterate:
- *
- * Run Libretro core in RetroArch for one frame.
- *
- * Returns: 0 on successful run,
- * Returns 1 if we have to wait until button input in order
- * to wake up the loop.
- * Returns -1 if we forcibly quit out of the
- * RetroArch iteration loop.
- **/
-int runloop_iterate(void);
-
-void runloop_msg_queue_push(const char *msg,
-      unsigned prio, unsigned duration,
-      bool flush,
-      char *title,
-      enum message_queue_icon icon, enum message_queue_category category);
 
 void retroarch_menu_running(void);
 

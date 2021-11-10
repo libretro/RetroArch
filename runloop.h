@@ -333,6 +333,31 @@ void runloop_path_fill_names(void);
  **/
 bool runloop_environment_cb(unsigned cmd, void *data);
 
+void runloop_msg_queue_push(const char *msg,
+      unsigned prio, unsigned duration,
+      bool flush,
+      char *title,
+      enum message_queue_icon icon,
+      enum message_queue_category category);
+
+void runloop_set_current_core_type(
+      enum rarch_core_type type, bool explicitly_set);
+
+/**
+ * runloop_iterate:
+ *
+ * Run Libretro core in RetroArch for one frame.
+ *
+ * Returns: 0 on successful run,
+ * Returns 1 if we have to wait until button input in order
+ * to wake up the loop.
+ * Returns -1 if we forcibly quit out of the
+ * RetroArch iteration loop.
+ **/
+int runloop_iterate(void);
+
+
+
 runloop_state_t *runloop_state_get_ptr(void);
 
 RETRO_END_DECLS
