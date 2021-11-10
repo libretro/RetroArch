@@ -182,10 +182,6 @@ void recording_driver_update_streaming_url(void);
 
 /* Video */
 
-#ifdef HAVE_OVERLAY
-#include "input/input_overlay.h"
-#endif
-
 /* BSV Movie */
 
 void bsv_movie_frame_rewind(void);

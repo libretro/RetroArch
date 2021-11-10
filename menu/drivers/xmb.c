@@ -3041,7 +3041,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
             if (type < (input_id + RARCH_ANALOG_BIND_LIST_END))
             {
                unsigned index = 0;
-               int input_num = type - input_id;
+               int input_num  = type - input_id;
                for (index = 0; index < ARRAY_SIZE(input_config_bind_order); index++)
                {
                   if (input_config_bind_order[index] == input_num)

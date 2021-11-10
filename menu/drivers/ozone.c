@@ -2088,8 +2088,8 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
             if (type < (input_id + RARCH_ANALOG_BIND_LIST_END))
             {
                unsigned index = 0;
-               int input_num = type - input_id;
-               for (index = 0; index < sizeof(input_config_bind_order); index++)
+               int input_num  = type - input_id;
+               for (index = 0; index < ARRAY_SIZE(input_config_bind_order); index++)
                {
                   if (input_config_bind_order[index] == input_num)
                   {
