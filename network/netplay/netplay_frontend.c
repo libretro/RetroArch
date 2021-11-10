@@ -893,9 +893,14 @@ static void handshake_password(void *ignore, const char *line)
    struct password_buf_s password_buf;
    char password[8+NETPLAY_PASS_LEN]; /* 8 for salt, 128 for password */
    char hash[NETPLAY_PASS_HASH_LEN+1]; /* + NULL terminator */
+   struct netplay_connection *connection;
    net_driver_state_t *net_st            = &networking_driver_st;
-   netplay_t *netplay                    = net_st->ref;
-   struct netplay_connection *connection = &netplay->connections[0];
+   netplay_t *netplay                    = net_st->data;
+
+   if (!netplay)
+      return;
+
+   connection = &netplay->connections[0];
 
    snprintf(password, sizeof(password), "%08lX", (unsigned long)connection->salt);
    if (!string_is_empty(line))
@@ -1071,11 +1076,6 @@ bool netplay_handshake_init(netplay_t *netplay,
 #ifdef HAVE_MENU
       menu_input_ctx_line_t line;
       retroarch_menu_running();
-#endif
-
-      net_st->ref = netplay;
-
-#ifdef HAVE_MENU
       memset(&line, 0, sizeof(line));
       line.label         = msg_hash_to_str(MSG_NETPLAY_ENTER_PASSWORD);
       line.label_setting = "no_setting";
@@ -4470,7 +4470,7 @@ static void send_chat(void *userdata, const char *line)
    char   chat_msg[MAX_CHAT_SIZE];
    size_t chat_len;
    net_driver_state_t *net_st  = &networking_driver_st;
-   netplay_t          *netplay = net_st->ref;
+   netplay_t          *netplay = net_st->data;
 
    /* We perform the same checks,
       just in case something has changed. */
@@ -4511,8 +4511,6 @@ void netplay_input_chat(netplay_t *netplay)
       net_driver_state_t    *net_st    = &networking_driver_st;
 
       retroarch_menu_running();
-
-      net_st->ref = netplay;
 
       chat_input.label         = msg_hash_to_str(MSG_NETPLAY_ENTER_CHAT);
       chat_input.label_setting = "no_setting";
@@ -7730,6 +7728,9 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          goto done;
       case RARCH_NETPLAY_CTL_GAME_WATCH:
          netplay_toggle_play_spectate(netplay);
+         break;
+      case RARCH_NETPLAY_CTL_PLAYER_CHAT:
+         netplay_input_chat(netplay);
          break;
       case RARCH_NETPLAY_CTL_PAUSE:
          if (netplay->local_paused != true)
