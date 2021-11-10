@@ -52,6 +52,7 @@
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
+#include "../../record/record_driver.h"
 
 #include "../video_coord_array.h"
 
@@ -1131,12 +1132,14 @@ static void vulkan_init_hw_render(vk_t *vk)
 static void vulkan_init_readback(vk_t *vk)
 {
    /* Only bother with this if we're doing GPU recording.
-    * Check recording_is_enabled() and not
+    * Check recording_st->enable and not
     * driver.recording_data, because recording is
     * not initialized yet.
     */
    settings_t *settings    = config_get_ptr();
-   bool recording_enabled  = recording_is_enabled();
+   recording_state_t 
+      *recording_st        = recording_state_get_ptr();
+   bool recording_enabled  = recording_st->enable;
    bool video_gpu_record   = settings->bools.video_gpu_record;
    vk->readback.streamed   = video_gpu_record && recording_enabled;
 

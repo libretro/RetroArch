@@ -234,6 +234,7 @@ endif
 
 OBJ += frontend/frontend_driver.o \
        retroarch.o \
+       record/record_driver.o \
        command.o \
        msg_hash.o \
        midi_driver.o \
@@ -1093,13 +1094,13 @@ endif
 ifeq ($(HAVE_VIDEO_LAYOUT), 1)
    DEFINES += -DHAVE_VIDEO_LAYOUT
    OBJ += \
-			 gfx/video_layout.o \
-			 gfx/video_layout/view.o \
-			 gfx/video_layout/element.o \
-			 gfx/video_layout/component.o \
-			 gfx/video_layout/internal.o \
-			 gfx/video_layout/scope.o \
-			 gfx/video_layout/load.o
+	  gfx/video_layout.o \
+	  gfx/video_layout/view.o \
+	  gfx/video_layout/element.o \
+	  gfx/video_layout/component.o \
+	  gfx/video_layout/internal.o \
+	  gfx/video_layout/scope.o \
+	  gfx/video_layout/load.o
 endif
 
 ifeq ($(HAVE_STB_FONT), 1)

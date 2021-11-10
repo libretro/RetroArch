@@ -56,6 +56,7 @@
 #include "../../configuration.h"
 #include "../../core_info.h"
 #include "../../audio/audio_driver.h"
+#include "../../record/record_driver.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../defaults.h"
 #include "../../core_option_manager.h"
@@ -552,6 +553,7 @@ int generic_action_ok_displaylist_push(const char *path,
 #endif
    const char *dir_menu_content            = settings->paths.directory_menu_content;
    const char *dir_libretro                = settings->paths.directory_libretro;
+   recording_state_t *recording_st         = recording_state_get_ptr();
 
    if (!menu || string_is_equal(menu_ident, "null"))
    {
@@ -1070,7 +1072,7 @@ int generic_action_ok_displaylist_push(const char *path,
             global_t  *global  = global_get_ptr();
             info.type          = type;
             info.directory_ptr = idx;
-            info_path          = global->record.config_dir;
+            info_path          = recording_st->config_dir;
             info_label         = label;
             dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          }
@@ -1081,7 +1083,7 @@ int generic_action_ok_displaylist_push(const char *path,
             global_t  *global  = global_get_ptr();
             info.type          = type;
             info.directory_ptr = idx;
-            info_path          = global->record.config_dir;
+            info_path          = recording_st->config_dir;
             info_label         = label;
             dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          }

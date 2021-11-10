@@ -51,6 +51,7 @@
 #include "../retroarch.h"
 #include "../list_special.h"
 #include "../file_path_special.h"
+#include "../record/record_driver.h"
 #include "../tasks/task_content.h"
 #include "../verbosity.h"
 

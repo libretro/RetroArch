@@ -50,6 +50,7 @@
 
 #include "../audio/audio_driver.h"
 #include "../frontend/frontend_driver.h"
+#include "../record/record_driver.h"
 #include "../ui/ui_companion_driver.h"
 #include "../driver.h"
 #include "../file_path_special.h"

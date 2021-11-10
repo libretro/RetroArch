@@ -26,6 +26,7 @@
 #include <retro_common_api.h>
 #include <libretro.h>
 #include <dynamic/dylib.h>
+#include <queues/message_queue.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

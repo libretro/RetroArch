@@ -84,6 +84,7 @@
 #include "../wifi/wifi_driver.h"
 #include "../midi_driver.h"
 #include "../location_driver.h"
+#include "../record/record_driver.h"
 #include "../tasks/tasks_internal.h"
 #include "../config.def.h"
 #include "../ui/ui_companion_driver.h"
@@ -8885,6 +8886,7 @@ static bool setting_append_list(
    unsigned user;
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
+   recording_state_t *recording_st           = recording_state_get_ptr();
 
    group_info.name                           = NULL;
    subgroup_info.name                        = NULL;
@@ -13731,8 +13733,8 @@ static bool setting_append_list(
 
             CONFIG_DIR(
                list, list_info,
-               global->record.output_dir,
-               sizeof(global->record.output_dir),
+               recording_st->output_dir,
+               sizeof(recording_st->output_dir),
                MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
                g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT],
@@ -20038,8 +20040,8 @@ static bool setting_append_list(
          {
             CONFIG_DIR(
                   list, list_info,
-                  global->record.output_dir,
-                  sizeof(global->record.output_dir),
+                  recording_st->output_dir,
+                  sizeof(recording_st->output_dir),
                   MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY,
                   MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
                   g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT],
@@ -20053,8 +20055,8 @@ static bool setting_append_list(
 
             CONFIG_DIR(
                   list, list_info,
-                  global->record.config_dir,
-                  sizeof(global->record.config_dir),
+                  recording_st->config_dir,
+                  sizeof(recording_st->config_dir),
                   MENU_ENUM_LABEL_RECORDING_CONFIG_DIRECTORY,
                   MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
                   g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG],
