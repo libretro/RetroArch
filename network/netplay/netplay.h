@@ -34,6 +34,8 @@
 
 #include "../../core.h"
 
+#include "netplay_protocol.h"
+
 #define NETPLAY_HOST_STR_LEN 32
 #define NETPLAY_HOST_LONGSTR_LEN 256
 

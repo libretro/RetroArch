@@ -18,6 +18,8 @@
 #ifndef __CONFIG_DEF_KEYBINDS_H
 #define __CONFIG_DEF_KEYBINDS_H
 
+#include "network/netplay/netplay_protocol.h"
+
 #ifndef IS_SALAMANDER
 
 /* User 1 */
@@ -472,6 +474,15 @@ static const struct retro_keybind retro_keybinds_1[] = {
       RARCH_NETPLAY_GAME_WATCH, NO_BTN, NO_BTN, 0,
       true
    },
+#if NETPLAY_PROTOCOL_VERSION >= 6
+   {
+      NULL, NULL,
+      AXIS_NONE, AXIS_NONE, AXIS_NONE,
+      MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT, RETROK_UNKNOWN,
+      RARCH_NETPLAY_PLAYER_CHAT, NO_BTN, NO_BTN, 0,
+      true
+   },
+#endif
    {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE, AXIS_NONE,
@@ -1026,6 +1037,15 @@ static const struct retro_keybind retro_keybinds_1[] = {
       RARCH_NETPLAY_GAME_WATCH, NO_BTN, NO_BTN, 0,
       true
    },
+#if NETPLAY_PROTOCOL_VERSION >= 6
+   {
+      NULL, NULL,
+      AXIS_NONE, AXIS_NONE, AXIS_NONE,
+      MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT, RETROK_UNKNOWN,
+      RARCH_NETPLAY_PLAYER_CHAT, NO_BTN, NO_BTN, 0,
+      true
+   },
+#endif
    {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE, AXIS_NONE,
@@ -1590,6 +1610,15 @@ static const struct retro_keybind retro_keybinds_1[] = {
       RARCH_NETPLAY_GAME_WATCH, NO_BTN, NO_BTN, 0,
       true
    },
+#if NETPLAY_PROTOCOL_VERSION >= 6
+   {
+      NULL, NULL,
+      AXIS_NONE, AXIS_NONE, AXIS_NONE,
+      MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT, RETROK_BACKQUOTE,
+      RARCH_NETPLAY_PLAYER_CHAT, NO_BTN, NO_BTN, 0,
+      true
+   },
+#endif
    {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE, AXIS_NONE,

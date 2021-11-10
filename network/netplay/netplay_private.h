@@ -28,8 +28,6 @@
 #include "../../msg_hash.h"
 #include "../../verbosity.h"
 
-#define NETPLAY_PROTOCOL_VERSION 5
-
 #define RARCH_DEFAULT_PORT 55435
 #define RARCH_DEFAULT_NICK "Anonymous"
 

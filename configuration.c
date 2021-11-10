@@ -64,6 +64,8 @@
 #include "switch_performance_profiles.h"
 #endif
 
+#include "network/netplay/netplay_protocol.h"
+
 enum video_driver_enum
 {
    VIDEO_GL                 = 0,
@@ -335,6 +337,9 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
    DECLARE_META_BIND(2, send_debug_info,       RARCH_SEND_DEBUG_INFO,        MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO),
    DECLARE_META_BIND(2, netplay_host_toggle,   RARCH_NETPLAY_HOST_TOGGLE,    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE),
    DECLARE_META_BIND(2, netplay_game_watch,    RARCH_NETPLAY_GAME_WATCH,     MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH),
+#if NETPLAY_PROTOCOL_VERSION >= 6
+   DECLARE_META_BIND(2, netplay_player_chat,   RARCH_NETPLAY_PLAYER_CHAT,    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT),
+#endif
    DECLARE_META_BIND(2, enable_hotkey,         RARCH_ENABLE_HOTKEY,          MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY),
    DECLARE_META_BIND(2, volume_up,             RARCH_VOLUME_UP,              MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP),
    DECLARE_META_BIND(2, volume_down,           RARCH_VOLUME_DOWN,            MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN),
