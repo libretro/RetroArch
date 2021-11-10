@@ -270,7 +270,7 @@ static void task_core_backup_handler(retro_task_t *task)
          break;
       case CORE_BACKUP_PRE_ITERATE:
          {
-            char task_title[NAME_MAX_LENGTH];
+            char task_title[PATH_MAX_LENGTH];
             char backup_path[PATH_MAX_LENGTH];
 
             task_title[0]  = '\0';
@@ -409,7 +409,7 @@ static void task_core_backup_handler(retro_task_t *task)
              * history size limit */
             if (num_backups > backup_handle->auto_backup_history_size)
             {
-               char task_title[NAME_MAX_LENGTH];
+               char task_title[PATH_MAX_LENGTH];
 
                task_title[0]  = '\0';
 
@@ -478,7 +478,7 @@ static void task_core_backup_handler(retro_task_t *task)
          break;
       case CORE_BACKUP_END:
          {
-            char task_title[NAME_MAX_LENGTH];
+            char task_title[PATH_MAX_LENGTH];
 
             task_title[0] = '\0';
 
@@ -534,7 +534,7 @@ void *task_push_core_backup(
    const char *core_name               = NULL;
    retro_task_t *task                  = NULL;
    core_backup_handle_t *backup_handle = NULL;
-   char task_title[NAME_MAX_LENGTH];
+   char task_title[PATH_MAX_LENGTH];
 
    task_title[0] = '\0';
 
@@ -739,7 +739,7 @@ static void task_core_restore_handler(retro_task_t *task)
          break;
       case CORE_RESTORE_PRE_ITERATE:
          {
-            char task_title[NAME_MAX_LENGTH];
+            char task_title[PATH_MAX_LENGTH];
 
             task_title[0] = '\0';
 
@@ -874,7 +874,7 @@ static void task_core_restore_handler(retro_task_t *task)
          break;
       case CORE_RESTORE_END:
          {
-            char task_title[NAME_MAX_LENGTH];
+            char task_title[PATH_MAX_LENGTH];
 
             task_title[0] = '\0';
 
@@ -929,7 +929,7 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
    retro_task_t *task                  = NULL;
    core_backup_handle_t *backup_handle = NULL;
    char core_path[PATH_MAX_LENGTH];
-   char task_title[NAME_MAX_LENGTH];
+   char task_title[PATH_MAX_LENGTH];
 
    core_path[0]  = '\0';
    task_title[0] = '\0';

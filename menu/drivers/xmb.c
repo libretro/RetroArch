@@ -375,7 +375,7 @@ typedef struct xmb_handle
    uint8_t system_tab_end;
    uint8_t tabs[XMB_SYSTEM_TAB_MAX_LENGTH];
 
-   char title_name[NAME_MAX_LENGTH];
+   char title_name[255];
 
    /* Cached texts showing current entry index / current list size */
    char entry_index_str[32];
@@ -2245,7 +2245,7 @@ static void xmb_context_reset_horizontal_list(
                strlen(path), STRLEN_CONST(".lpl")))
       {
          struct texture_image ti;
-         char sysname[NAME_MAX_LENGTH];
+         char sysname[PATH_MAX_LENGTH];
          char iconpath[PATH_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
          char content_texturepath[PATH_MAX_LENGTH];

@@ -1318,7 +1318,7 @@ bool command_event_save_core_config(
       const char *rarch_path_config)
 {
    char msg[128];
-   char config_name[NAME_MAX_LENGTH];
+   char config_name[PATH_MAX_LENGTH];
    char config_path[PATH_MAX_LENGTH];
    char config_dir[PATH_MAX_LENGTH];
    bool found_path                 = false;

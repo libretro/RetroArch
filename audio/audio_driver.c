@@ -884,7 +884,7 @@ bool audio_driver_dsp_filter_init(const char *device)
    struct string_list *plugs            = NULL;
 #if defined(HAVE_DYLIB) && !defined(HAVE_FILTERS_BUILTIN)
    char basedir[PATH_MAX_LENGTH];
-   char ext_name[NAME_MAX_LENGTH];
+   char ext_name[PATH_MAX_LENGTH];
 
    basedir[0] = ext_name[0]             = '\0';
 
@@ -1318,7 +1318,7 @@ void audio_driver_load_system_sounds(void)
 {
    char sounds_path[PATH_MAX_LENGTH];
    char sounds_fallback_path[PATH_MAX_LENGTH];
-   char basename_noext[NAME_MAX_LENGTH];
+   char basename_noext[PATH_MAX_LENGTH];
    settings_t *settings                  = config_get_ptr();
    const char *dir_assets                = settings->paths.directory_assets;
    const bool audio_enable_menu          = settings->bools.audio_enable_menu;

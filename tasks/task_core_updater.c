@@ -741,7 +741,7 @@ static void task_core_updater_download_handler(retro_task_t *task)
 
             if (download_handle->backup_task)
             {
-               char task_title[NAME_MAX_LENGTH];
+               char task_title[PATH_MAX_LENGTH];
 
                task_title[0] = '\0';
 
@@ -807,7 +807,7 @@ static void task_core_updater_download_handler(retro_task_t *task)
       case CORE_UPDATER_DOWNLOAD_START_TRANSFER:
          {
             file_transfer_t *transf = NULL;
-            char task_title[NAME_MAX_LENGTH];
+            char task_title[PATH_MAX_LENGTH];
 
             task_title[0] = '\0';
 
@@ -878,7 +878,7 @@ static void task_core_updater_download_handler(retro_task_t *task)
              * callback to trigger */
             if (download_handle->http_task_complete)
             {
-               char task_title[NAME_MAX_LENGTH];
+               char task_title[PATH_MAX_LENGTH];
 
                task_title[0] = '\0';
 
@@ -938,7 +938,7 @@ static void task_core_updater_download_handler(retro_task_t *task)
          break;
       case CORE_UPDATER_DOWNLOAD_END:
          {
-            char task_title[NAME_MAX_LENGTH];
+            char task_title[PATH_MAX_LENGTH];
 
             task_title[0] = '\0';
 
@@ -995,7 +995,7 @@ void *task_push_core_updater_download(
       const char *path_dir_core_assets)
 {
    task_finder_data_t find_data;
-   char task_title[NAME_MAX_LENGTH];
+   char task_title[PATH_MAX_LENGTH];
    char local_download_path[PATH_MAX_LENGTH];
    const core_updater_list_entry_t *list_entry     = NULL;
    retro_task_t *task                              = NULL;
@@ -1251,7 +1251,7 @@ static void task_update_installed_cores_handler(retro_task_t *task)
 
             if (core_installed)
             {
-               char task_title[NAME_MAX_LENGTH];
+               char task_title[PATH_MAX_LENGTH];
 
                task_title[0] = '\0';
 
@@ -1341,7 +1341,7 @@ static void task_update_installed_cores_handler(retro_task_t *task)
                update_installed_handle->status = UPDATE_INSTALLED_CORES_ITERATE;
             else
             {
-               char task_title[NAME_MAX_LENGTH];
+               char task_title[PATH_MAX_LENGTH];
 
                task_title[0] = '\0';
 
@@ -1394,7 +1394,7 @@ static void task_update_installed_cores_handler(retro_task_t *task)
              *   successfully */
             if (update_installed_handle->list_size > 0)
             {
-               char task_title[NAME_MAX_LENGTH];
+               char task_title[PATH_MAX_LENGTH];
 
                task_title[0] = '\0';
 
@@ -1660,7 +1660,7 @@ static void task_play_feature_delivery_core_install_handler(retro_task_t *task)
             bool install_active;
             enum play_feature_delivery_install_status install_status;
             unsigned install_progress;
-            char task_title[NAME_MAX_LENGTH];
+            char task_title[PATH_MAX_LENGTH];
 
             task_title[0] = '\0';
 
@@ -1710,7 +1710,7 @@ static void task_play_feature_delivery_core_install_handler(retro_task_t *task)
       case PLAY_FEATURE_DELIVERY_INSTALL_END:
          {
             const char *msg_str = msg_hash_to_str(MSG_CORE_INSTALL_FAILED);
-            char task_title[NAME_MAX_LENGTH];
+            char task_title[PATH_MAX_LENGTH];
 
             task_title[0] = '\0';
 
@@ -1790,7 +1790,7 @@ void *task_push_play_feature_delivery_core_install(
       bool mute)
 {
    task_finder_data_t find_data;
-   char task_title[NAME_MAX_LENGTH];
+   char task_title[PATH_MAX_LENGTH];
    const core_updater_list_entry_t *list_entry                = NULL;
    retro_task_t *task                                         = NULL;
    play_feature_delivery_install_handle_t *pfd_install_handle = (play_feature_delivery_install_handle_t*)
@@ -1996,7 +1996,7 @@ static void task_play_feature_delivery_switch_cores_handler(retro_task_t *task)
 
             if (core_installed)
             {
-               char task_title[NAME_MAX_LENGTH];
+               char task_title[PATH_MAX_LENGTH];
 
                task_title[0] = '\0';
 
@@ -2063,7 +2063,7 @@ static void task_play_feature_delivery_switch_cores_handler(retro_task_t *task)
                      PLAY_FEATURE_DELIVERY_SWITCH_CORES_ITERATE;
             else
             {
-               char task_title[NAME_MAX_LENGTH];
+               char task_title[PATH_MAX_LENGTH];
 
                task_title[0] = '\0';
 
