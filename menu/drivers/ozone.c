@@ -7289,7 +7289,7 @@ static bool ozone_init_font(
    if (wideglyph_str)
    {
       int wideglyph_width =
-         font_driver_get_message_width(font_data->font, wideglyph_str, strlen(wideglyph_str), 1.0f);
+         font_driver_get_message_width(font_data->font, wideglyph_str, (unsigned)strlen(wideglyph_str), 1.0f);
       
       if (wideglyph_width > 0 && glyph_width > 0) 
          font_data->wideglyph_width = wideglyph_width * 100 / glyph_width;

@@ -417,7 +417,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
       playlist_t *playlist                      = NULL;
       const char *fext                          = NULL;
       const char *fname                         = NULL;
-      uint32_t fhash;
+      uint32_t fhash                            = 0;
 
       playlist_config.path[0]                   = '\0';
       playlist_config.base_content_directory[0] = '\0';
@@ -433,7 +433,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
          break;
       }
 
-      fname                             = retro_vfs_dirent_get_name_impl(dir);
+      fname                                     = retro_vfs_dirent_get_name_impl(dir);
       if (fname)
          fext                           = strrchr(fname, '.');
 
@@ -851,7 +851,7 @@ unsigned menu_displaylist_explore(file_list_t *list,
          cbs->action_get_title     = explore_action_get_title_default;
       }
 
-      return list->size;
+      return (unsigned)list->size;
    }
 
    if (!explore_state->menu_initialised)
@@ -1194,7 +1194,7 @@ SKIP_ENTRY:;
       }
    }
 
-   return list->size;
+   return (unsigned)list->size;
 }
 
 uintptr_t menu_explore_get_entry_icon(unsigned type)

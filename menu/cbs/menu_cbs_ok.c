@@ -6214,7 +6214,7 @@ int action_cb_push_dropdown_item_resolution(const char *path,
       float num            = refreshrate / 60.0f;
       unsigned refresh_mod = num > 0 ? (unsigned)(floorf(num + 0.5f)) : (unsigned)(ceilf(num - 0.5f));
 #else
-      unsigned refresh_mod = lroundf(refreshrate / 60.0f);
+      unsigned refresh_mod = lroundf((float)(refreshrate / 60.0f));
 #endif
       float refresh_exact  = refreshrate;
 

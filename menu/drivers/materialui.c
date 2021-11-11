@@ -7748,7 +7748,7 @@ static void materialui_init_font(
       if (wideglyph_str)
       {
          int wideglyph_width =
-            font_driver_get_message_width(font_data->font, wideglyph_str, strlen(wideglyph_str), 1);
+            font_driver_get_message_width(font_data->font, wideglyph_str, (unsigned)strlen(wideglyph_str), 1);
 
          if (wideglyph_width > 0 && char_width > 0) 
             font_data->wideglyph_width = wideglyph_width * 100 / char_width;

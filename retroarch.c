@@ -3263,7 +3263,7 @@ bool run_translation_service(settings_t *settings, bool paused)
    }
 
    bmp64_buffer    = base64((void *)bmp_buffer,
-         sizeof(uint8_t) * buffer_bytes,
+         (int)(sizeof(uint8_t) * buffer_bytes),
          &bmp64_length);
 
    if (!bmp64_buffer)
@@ -15704,9 +15704,9 @@ int runloop_iterate(void)
             /* Calculate average frame time to balance spikes */
             for (i = 1; i < frame_time_frames + 1; i++)
             {
-               unsigned frame_time_i = 0;
+               retro_time_t frame_time_i = 0;
 
-               if (i > frame_time_index)
+               if (i > (unsigned)frame_time_index)
                   continue;
 
                frame_time_i = video_st->frame_time_samples[frame_time_index - i];
