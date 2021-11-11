@@ -2367,6 +2367,10 @@ MSG_HASH(
    "Normálne"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCROLL_FAST,
+   "Rýchlo"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ON,
    "ZAP"
    )

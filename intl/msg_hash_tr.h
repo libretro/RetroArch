@@ -2621,6 +2621,14 @@ MSG_HASH(
    "Mevcut netplay oturumunu 'oyuncu' ve 'izleyici' kipleri arasında değiştirir."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Netplay Oyuncu Sohbeti"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Mevcut netplay oturumuna bir sohbet mesajı gönderir."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
    "Kısayol Tuşu Etkinleştir"
    )
@@ -10200,6 +10208,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
    "Netplay sunucu parolasını gir:"
+   )
+MSG_HASH(
+   MSG_NETPLAY_ENTER_CHAT,
+   "Netplay sohbet mesajını girin:"
    )
 MSG_HASH(
    MSG_DISCORD_CONNECTION_REQUEST,

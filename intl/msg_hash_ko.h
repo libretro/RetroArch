@@ -2653,6 +2653,14 @@ MSG_HASH(
    "현재 넷플레이 세션 모드를 '플레이' 또는 '관전'으로 전환합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "넷플레이 플레이어 채팅"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "현재 넷플레이 세션에 대화 메시지를 보냅니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
    "핫키 사용"
    )
@@ -10208,6 +10216,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
    "넷플레이 서버 비밀번호 입력:"
+   )
+MSG_HASH(
+   MSG_NETPLAY_ENTER_CHAT,
+   "넷플레이 채팅 메시지 입력:"
    )
 MSG_HASH(
    MSG_DISCORD_CONNECTION_REQUEST,

@@ -11242,6 +11242,10 @@ MSG_HASH(
    "无法放置上次使用的光盘..."
    )
 MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "接收主机端报文失败"
+   )
+MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    "已加载状态存储。成就硬核模式在当前游戏中已经禁用。"
    )
@@ -11433,6 +11437,10 @@ MSG_HASH(
    MSG_UNSUPPORTED_VIDEO_MODE,
    "不支持的视频模式"
    )
+MSG_HASH(
+   MSG_CORE_INFO_CACHE_UNSUPPORTED,
+   "无法写入核心信息所在目录 - 核心信息缓存将被禁用"
+   )
 
 /* Lakka */
 
@@ -11470,6 +11478,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
    "屏幕分辨率"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DEFAULT,
+   "屏幕分辨率：默认"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
+   "应用：默认"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
+   "重置为：默认"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
+   "选择显示模式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
@@ -11720,6 +11744,14 @@ MSG_HASH(
    "本地"
    )
 MSG_HASH(
+   MSG_READ_WRITE,
+   "内部存储状态: 读/写"
+   )
+MSG_HASH(
+   MSG_READ_ONLY,
+   "内部存储状态：只读"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
    "屏幕亮度"
    )
@@ -11887,6 +11919,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
    "2D (高分辨率)"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_DEFAULT,
+   "点击触摸屏幕去\n到主菜单"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
+   "在 assets/ctr 文件夹中未找到\nbottom_menu.png"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
+   "没有\n数据"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
+   "没有\n截图"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_RESUME,
+   "继续游戏"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_SAVE_STATE,
+   "创建\n还原点"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_LOAD_STATE,
+   "加载\n还原点"
    )
 #endif
 #ifdef HAVE_QT
