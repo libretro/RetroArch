@@ -733,22 +733,20 @@ static float recalc_step_based_on_length_of_action(rarch_setting_t *setting)
    struct menu_state *menu_st     = menu_state_get_ptr();
    retro_time_t action_press_time = menu_st->action_press_time;
    if      (action_press_time  > _21_SECONDS)
-      step = setting->step * 1000000.0f;
+      return step * 1000000.0f;
    else if (action_press_time  > _18_SECONDS)
-      step = setting->step * 100000.0f;
+      return step * 100000.0f;
    else if (action_press_time  > _15_SECONDS)
-      step = setting->step * 10000.0f;
+      return step * 10000.0f;
    else if (action_press_time  > _12_SECONDS)
-      step = setting->step * 1000.0f;
+      return step * 1000.0f;
    else if (action_press_time  > _9_SECONDS)
-      step = setting->step * 100.0f;
+      return step * 100.0f;
    else if (action_press_time  > _6_SECONDS)
-      step = setting->step * 10.0f;
+      return step * 10.0f;
    else if (action_press_time  > _3_SECONDS)
-      step = setting->step * 5.0f;
-   else
-      step = setting->step;
-   return step < setting->step ? setting->step : step;
+      return step * 5.0f;
+   return step;
 }
 
 int setting_uint_action_left_default(
