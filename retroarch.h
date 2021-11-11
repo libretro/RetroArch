@@ -133,44 +133,6 @@ void bsv_movie_frame_rewind(void);
 
 /* Camera */
 
-typedef struct camera_driver
-{
-   /* FIXME: params for initialization - queries for resolution,
-    * framerate, color format which might or might not be honored. */
-   void *(*init)(const char *device, uint64_t buffer_types,
-         unsigned width, unsigned height);
-
-   void (*free)(void *data);
-
-   bool (*start)(void *data);
-   void (*stop)(void *data);
-
-   /* Polls the camera driver.
-    * Will call the appropriate callback if a new frame is ready.
-    * Returns true if a new frame was handled. */
-   bool (*poll)(void *data,
-         retro_camera_frame_raw_framebuffer_t frame_raw_cb,
-         retro_camera_frame_opengl_texture_t frame_gl_cb);
-
-   const char *ident;
-} camera_driver_t;
-
-extern camera_driver_t camera_v4l2;
-extern camera_driver_t camera_android;
-extern camera_driver_t camera_rwebcam;
-extern camera_driver_t camera_avfoundation;
-
-/**
- * config_get_camera_driver_options:
- *
- * Get an enumerated list of all camera driver names,
- * separated by '|'.
- *
- * Returns: string listing of all camera driver names,
- * separated by '|'.
- **/
-const char* config_get_camera_driver_options(void);
-
 unsigned int retroarch_get_rotation(void);
 
 void retroarch_init_task_queue(void);

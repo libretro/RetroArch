@@ -123,6 +123,8 @@
 
 #include "runtime_file.h"
 #include "runloop.h"
+#include "camera/camera_driver.h"
+#include "location_driver.h"
 #include "record/record_driver.h"
 
 #ifdef HAVE_CONFIG_H
@@ -468,48 +470,10 @@ static const ui_companion_driver_t *ui_companion_drivers[] = {
    NULL
 };
 
-
-static void *nullcamera_init(const char *device, uint64_t caps,
-      unsigned width, unsigned height) { return (void*)-1; }
-static void nullcamera_free(void *data) { }
-static void nullcamera_stop(void *data) { }
-static bool nullcamera_start(void *data) { return true; }
-static bool nullcamera_poll(void *a,
-      retro_camera_frame_raw_framebuffer_t b,
-      retro_camera_frame_opengl_texture_t c) { return true; }
-
-static camera_driver_t camera_null = {
-   nullcamera_init,
-   nullcamera_free,
-   nullcamera_start,
-   nullcamera_stop,
-   nullcamera_poll,
-   "null",
-};
-
-static const camera_driver_t *camera_drivers[] = {
-#ifdef HAVE_V4L2
-   &camera_v4l2,
-#endif
-#ifdef EMSCRIPTEN
-   &camera_rwebcam,
-#endif
-#ifdef ANDROID
-   &camera_android,
-#endif
-   &camera_null,
-   NULL,
-};
-
 /* MAIN GLOBAL VARIABLES */
 struct rarch_state
 {
    struct global              g_extern;         /* retro_time_t alignment */
-   struct retro_camera_callback camera_cb;    /* uint64_t alignment */
-
-   const camera_driver_t *camera_driver;
-   void *camera_data;
-
    const ui_companion_driver_t *ui_companion;
    void *ui_companion_data;
 
@@ -567,11 +531,8 @@ struct rarch_state
 #ifdef HAVE_CONFIGFILE
    bool rarch_block_config_read;
 #endif
-   bool location_driver_active;
    bool bluetooth_driver_active;
    bool wifi_driver_active;
-   bool camera_driver_active;
-
    bool main_ui_companion_is_on_foreground;
 };
 
@@ -618,9 +579,6 @@ static void ui_companion_driver_init_first(struct rarch_state *p_rarch);
 
 static bool core_load(unsigned poll_type_behavior);
 static bool core_unload_game(void);
-
-static void driver_camera_stop(void);
-static bool driver_camera_start(void);
 
 static const void *find_driver_nonempty(
       const char *label, int i,
@@ -8491,17 +8449,14 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       {
          struct retro_camera_callback *cb =
             (struct retro_camera_callback*)data;
+         camera_driver_state_t *camera_st = camera_state_get_ptr();
 
          RARCH_LOG("[Environ]: GET_CAMERA_INTERFACE.\n");
          cb->start                        = driver_camera_start;
          cb->stop                         = driver_camera_stop;
 
-         p_rarch->camera_cb               = *cb;
-
-         if (cb->caps != 0)
-            p_rarch->camera_driver_active = true;
-         else
-            p_rarch->camera_driver_active = false;
+         camera_st->cb                    = *cb;
+         camera_st->active                = (cb->caps != 0);
          break;
       }
 
@@ -8509,6 +8464,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       {
          struct retro_location_callback *cb =
             (struct retro_location_callback*)data;
+         location_driver_state_t 
+            *location_st                    = location_state_get_ptr();
 
          RARCH_LOG("[Environ]: GET_LOCATION_INTERFACE.\n");
          cb->start                       = driver_location_start;
@@ -8519,7 +8476,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          if (system)
             system->location_cb          = *cb;
 
-         p_rarch->location_driver_active = false;
+         location_st->active             = false;
          break;
       }
 
@@ -9661,6 +9618,10 @@ static void uninit_libretro_symbols(
       *input_st        = input_state_get_ptr();
    audio_driver_state_t 
       *audio_st        = audio_state_get_ptr();
+   camera_driver_state_t 
+      *camera_st       = camera_state_get_ptr();
+   location_driver_state_t 
+      *location_st     = location_state_get_ptr();
 #ifdef HAVE_DYNAMIC
    if (runloop_st->lib_handle)
       dylib_close(runloop_st->lib_handle);
@@ -9689,8 +9650,8 @@ static void uninit_libretro_symbols(
    input_game_focus_free();
    runloop_fastmotion_override_free(&runloop_state);
    runloop_core_options_cb_free(&runloop_state);
-   p_rarch->camera_driver_active      = false;
-   p_rarch->location_driver_active    = false;
+   camera_st->active                             = false;
+   location_st->active                           = false;
 
    /* Core has finished utilising the input driver;
     * reset 'analog input requested' flags */
@@ -10838,88 +10799,6 @@ char* crt_switch_core_name(void)
    return (char*)runloop_state.system.info.library_name;
 }
 
-/* CAMERA */
-
-/**
- * config_get_camera_driver_options:
- *
- * Get an enumerated list of all camera driver names,
- * separated by '|'.
- *
- * Returns: string listing of all camera driver names,
- * separated by '|'.
- **/
-const char *config_get_camera_driver_options(void)
-{
-   return char_list_new_special(STRING_LIST_CAMERA_DRIVERS, NULL);
-}
-
-static bool driver_camera_start(void)
-{
-   struct rarch_state  *p_rarch = &rarch_st;
-   if (  p_rarch->camera_driver &&
-         p_rarch->camera_data   &&
-         p_rarch->camera_driver->start)
-   {
-      settings_t *settings = config_get_ptr();
-      bool camera_allow    = settings->bools.camera_allow;
-      if (camera_allow)
-         return p_rarch->camera_driver->start(p_rarch->camera_data);
-
-      runloop_msg_queue_push(
-            "Camera is explicitly disabled.\n", 1, 180, false,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   }
-   return true;
-}
-
-static void driver_camera_stop(void)
-{
-   struct rarch_state  *p_rarch = &rarch_st;
-   if (     p_rarch->camera_driver
-         && p_rarch->camera_driver->stop
-         && p_rarch->camera_data)
-      p_rarch->camera_driver->stop(p_rarch->camera_data);
-}
-
-static void camera_driver_find_driver(
-      struct rarch_state *p_rarch,
-      settings_t *settings,
-      const char *prefix,
-      bool verbosity_enabled)
-{
-   int i                        = (int)driver_find_index(
-         "camera_driver",
-         settings->arrays.camera_driver);
-
-   if (i >= 0)
-      p_rarch->camera_driver = (const camera_driver_t*)camera_drivers[i];
-   else
-   {
-      if (verbosity_enabled)
-      {
-         unsigned d;
-         RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
-               settings->arrays.camera_driver);
-         RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
-         for (d = 0; camera_drivers[d]; d++)
-         {
-            if (camera_drivers[d])
-            {
-               RARCH_LOG_OUTPUT("\t%s\n", camera_drivers[d]->ident);
-            }
-         }
-
-         RARCH_WARN("Going to default to first %s...\n", prefix);
-      }
-
-      p_rarch->camera_driver = (const camera_driver_t*)camera_drivers[0];
-
-      if (!p_rarch->camera_driver)
-         retroarch_fail(1, "find_camera_driver()");
-   }
-}
-
 static void driver_adjust_system_rates(
       bool vrr_runloop_enable,
       float video_refresh_rate,
@@ -11051,8 +10930,7 @@ void drivers_init(
       int flags,
       bool verbosity_enabled)
 {
-	struct rarch_state *p_rarch = &rarch_st;
-   runloop_state_t *runloop_st = &runloop_state;
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
    audio_driver_state_t 
       *audio_st                = audio_state_get_ptr();
    input_driver_state_t 
@@ -11062,6 +10940,10 @@ void drivers_init(
 #ifdef HAVE_MENU
    struct menu_state *menu_st  = menu_state_get_ptr();
 #endif
+   camera_driver_state_t 
+      *camera_st               = camera_state_get_ptr();
+   location_driver_state_t 
+      *location_st             = location_state_get_ptr();
    bool video_is_threaded      = VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
    gfx_display_t *p_disp       = disp_get_ptr();
 #if defined(HAVE_GFX_WIDGETS)
@@ -11128,33 +11010,34 @@ void drivers_init(
    if (flags & DRIVER_CAMERA_MASK)
    {
       /* Only initialize camera driver if we're ever going to use it. */
-      if (p_rarch->camera_driver_active)
+      if (camera_st->active)
       {
          /* Resource leaks will follow if camera is initialized twice. */
-         if (!p_rarch->camera_data)
+         if (!camera_st->data)
          {
-            camera_driver_find_driver(p_rarch, settings, "camera driver",
-                  verbosity_enabled);
+            if (!camera_driver_find_driver("camera driver",
+                     verbosity_enabled))
+               retroarch_fail(1, "find_camera_driver()");
 
-            if (p_rarch->camera_driver)
+            if (camera_st->driver)
             {
-               p_rarch->camera_data = p_rarch->camera_driver->init(
+               camera_st->data = camera_st->driver->init(
                      *settings->arrays.camera_device ?
                      settings->arrays.camera_device : NULL,
-                     p_rarch->camera_cb.caps,
+                     camera_st->cb.caps,
                      settings->uints.camera_width ?
-                     settings->uints.camera_width : p_rarch->camera_cb.width,
+                     settings->uints.camera_width  : camera_st->cb.width,
                      settings->uints.camera_height ?
-                     settings->uints.camera_height : p_rarch->camera_cb.height);
+                     settings->uints.camera_height : camera_st->cb.height);
 
-               if (!p_rarch->camera_data)
+               if (!camera_st->data)
                {
                   RARCH_ERR("Failed to initialize camera driver. Will continue without camera.\n");
-                  p_rarch->camera_driver_active = false;
+                  camera_st->active = false;
                }
 
-               if (p_rarch->camera_cb.initialized)
-                  p_rarch->camera_cb.initialized();
+               if (camera_st->cb.initialized)
+                  camera_st->cb.initialized();
             }
          }
       }
@@ -11169,10 +11052,10 @@ void drivers_init(
    if (flags & DRIVER_LOCATION_MASK)
    {
       /* Only initialize location driver if we're ever going to use it. */
-      if (p_rarch->location_driver_active)
+      if (location_st->active)
          if (!init_location(&runloop_state.system,
                   settings, verbosity_is_enabled()))
-            p_rarch->location_driver_active = false;
+            location_st->active = false;
    }
 
    core_info_init_current_core();
@@ -11259,10 +11142,11 @@ void drivers_init(
 
 void driver_uninit(int flags)
 {
-   struct rarch_state  *p_rarch = &rarch_st;
    runloop_state_t *runloop_st  = &runloop_state;
    video_driver_state_t 
       *video_st                 = video_state_get_ptr();
+   camera_driver_state_t 
+      *camera_st                = camera_state_get_ptr();
 
    core_info_deinit_list();
    core_info_free_current_core();
@@ -11294,16 +11178,16 @@ void driver_uninit(int flags)
 
    if ((flags & DRIVER_CAMERA_MASK))
    {
-      if (p_rarch->camera_data && p_rarch->camera_driver)
+      if (camera_st->data && camera_st->driver)
       {
-         if (p_rarch->camera_cb.deinitialized)
-            p_rarch->camera_cb.deinitialized();
+         if (camera_st->cb.deinitialized)
+            camera_st->cb.deinitialized();
 
-         if (p_rarch->camera_driver->free)
-            p_rarch->camera_driver->free(p_rarch->camera_data);
+         if (camera_st->driver->free)
+            camera_st->driver->free(camera_st->data);
       }
 
-      p_rarch->camera_data = NULL;
+      camera_st->data = NULL;
    }
 
    if ((flags & DRIVER_BLUETOOTH_MASK))
@@ -11345,9 +11229,11 @@ void driver_uninit(int flags)
 
 static void retroarch_deinit_drivers(struct retro_callbacks *cbs)
 {
-   struct rarch_state  *p_rarch    = &rarch_st;
    input_driver_state_t *input_st  = input_state_get_ptr();
    video_driver_state_t *video_st  = video_state_get_ptr();
+   camera_driver_state_t *camera_st= camera_state_get_ptr();
+   location_driver_state_t 
+      *location_st                 = location_state_get_ptr();
    runloop_state_t     *runloop_st = &runloop_state;
 
 #if defined(HAVE_GFX_WIDGETS)
@@ -11408,13 +11294,13 @@ static void retroarch_deinit_drivers(struct retro_callbacks *cbs)
    menu_driver_destroy(
          menu_state_get_ptr());
 #endif
-   p_rarch->location_driver_active                  = false;
+   location_st->active                              = false;
    destroy_location();
 
    /* Camera */
-   p_rarch->camera_driver_active                    = false;
-   p_rarch->camera_driver                           = NULL;
-   p_rarch->camera_data                             = NULL;
+   camera_st->active                                = false;
+   camera_st->driver                                = NULL;
+   camera_st->data                                  = NULL;
 
    bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_DESTROY, NULL);
    wifi_driver_ctl(RARCH_WIFI_CTL_DESTROY, NULL);
@@ -13464,8 +13350,9 @@ bool retroarch_main_init(int argc, char *argv[])
             "input driver", verbosity_enabled))
       retroarch_fail(1, "input_driver_find_driver()");
 
-   camera_driver_find_driver(p_rarch, settings,
-         "camera driver", verbosity_enabled);
+   if (!camera_driver_find_driver("camera driver", verbosity_enabled))
+      retroarch_fail(1, "find_camera_driver()");
+
    bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_FIND_DRIVER, NULL);
    wifi_driver_ctl(RARCH_WIFI_CTL_FIND_DRIVER, NULL);
    location_driver_find_driver(settings,
@@ -15553,6 +15440,7 @@ int runloop_iterate(void)
    audio_driver_state_t               *audio_st = audio_state_get_ptr();
    video_driver_state_t               *video_st = video_state_get_ptr();
    recording_state_t              *recording_st = recording_state_get_ptr();
+   camera_driver_state_t             *camera_st = camera_state_get_ptr();
    settings_t *settings                         = config_get_ptr();
    runloop_state_t *runloop_st                  = &runloop_state;
    unsigned video_frame_delay                   = settings->uints.video_frame_delay;
@@ -15702,13 +15590,13 @@ int runloop_iterate(void)
          = intfstream_tell(input_st->bsv_movie_state_handle->file);
 #endif
 
-   if (  p_rarch->camera_cb.caps &&
-         p_rarch->camera_driver  &&
-         p_rarch->camera_driver->poll &&
-         p_rarch->camera_data)
-      p_rarch->camera_driver->poll(p_rarch->camera_data,
-            p_rarch->camera_cb.frame_raw_framebuffer,
-            p_rarch->camera_cb.frame_opengl_texture);
+   if (     camera_st->cb.caps
+         && camera_st->driver
+         && camera_st->driver->poll
+         && camera_st->data)
+      camera_st->driver->poll(camera_st->data,
+            camera_st->cb.frame_raw_framebuffer,
+            camera_st->cb.frame_opengl_texture);
 
    /* Update binds for analog dpad modes. */
    for (i = 0; i < max_users; i++)

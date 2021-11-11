@@ -234,6 +234,7 @@ endif
 
 OBJ += frontend/frontend_driver.o \
        retroarch.o \
+       camera/camera_driver.o \
        record/record_driver.o \
        command.o \
        msg_hash.o \

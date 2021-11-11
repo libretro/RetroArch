@@ -38,6 +38,14 @@ typedef struct location_driver
    const char *ident;
 } location_driver_t;
 
+
+typedef struct
+{
+   const location_driver_t *driver;
+   void *data;
+   bool active;
+} location_driver_state_t;
+
 /**
  * config_get_location_driver_options:
  *
@@ -109,6 +117,8 @@ bool init_location(
       void *data,
       settings_t *settings,
       bool verbosity_enabled);
+
+location_driver_state_t *location_state_get_ptr(void);
 
 extern location_driver_t location_corelocation;
 extern location_driver_t location_android;
