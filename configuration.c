@@ -47,6 +47,7 @@
 #include "verbosity.h"
 
 #include "audio/audio_driver.h"
+#include "record/record_driver.h"
 #include "gfx/gfx_animation.h"
 
 #include "tasks/task_content.h"
@@ -1433,6 +1434,7 @@ static struct config_path_setting *populate_settings_path(
       settings_t *settings, int *size)
 {
    unsigned count = 0;
+   recording_state_t *recording_st     = recording_state_get_ptr();
    struct config_path_setting  *tmp    = (struct config_path_setting*)calloc(1, (*size + 1) * sizeof(struct config_path_setting));
 
    if (!tmp)
@@ -1562,16 +1564,10 @@ static struct config_path_setting *populate_settings_path(
          "screenshot_directory",
          settings->paths.directory_screenshot, true, NULL, false);
 
-   {
-      global_t   *global                  = global_get_ptr();
-      if (global)
-      {
-         SETTING_PATH("recording_output_directory",
-               global->record.output_dir, false, NULL, true);
-         SETTING_PATH("recording_config_directory",
-               global->record.config_dir, false, NULL, true);
-      }
-   }
+   SETTING_PATH("recording_output_directory",
+         recording_st->output_dir, false, NULL, true);
+   SETTING_PATH("recording_config_directory",
+         recording_st->config_dir, false, NULL, true);
 
    SETTING_ARRAY("log_dir", settings->paths.log_dir, true, NULL, true);
 
@@ -2383,6 +2379,7 @@ void config_set_defaults(void *data)
 #endif
    global_t *global                = (global_t*)data;
    settings_t *settings            = config_st;
+   recording_state_t *recording_st = recording_state_get_ptr();
    int bool_settings_size          = sizeof(settings->bools)   / sizeof(settings->bools.placeholder);
    int float_settings_size         = sizeof(settings->floats)  / sizeof(settings->floats.placeholder);
    int int_settings_size           = sizeof(settings->ints)    / sizeof(settings->ints.placeholder);
@@ -2668,23 +2665,20 @@ void config_set_defaults(void *data)
    retroarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
    retroarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
 
-   if (global)
-   {
-      *global->record.output_dir = '\0';
-      *global->record.config_dir = '\0';
-   }
+   *recording_st->output_dir                     = '\0';
+   *recording_st->config_dir                     = '\0';
 
-   *settings->paths.path_core_options      = '\0';
-   *settings->paths.path_content_favorites = '\0';
-   *settings->paths.path_content_history   = '\0';
+   *settings->paths.path_core_options            = '\0';
+   *settings->paths.path_content_favorites       = '\0';
+   *settings->paths.path_content_history         = '\0';
    *settings->paths.path_content_image_history   = '\0';
    *settings->paths.path_content_music_history   = '\0';
    *settings->paths.path_content_video_history   = '\0';
-   *settings->paths.path_cheat_settings    = '\0';
+   *settings->paths.path_cheat_settings          = '\0';
 #if !defined(__APPLE__)
-   *settings->arrays.bundle_assets_src = '\0';
-   *settings->arrays.bundle_assets_dst = '\0';
-   *settings->arrays.bundle_assets_dst_subdir = '\0';
+   *settings->arrays.bundle_assets_src           = '\0';
+   *settings->arrays.bundle_assets_dst           = '\0';
+   *settings->arrays.bundle_assets_dst_subdir    = '\0';
 #endif
    *settings->paths.path_cheat_database    = '\0';
    *settings->paths.path_menu_wallpaper    = '\0';
@@ -2872,13 +2866,13 @@ void config_set_defaults(void *data)
             g_defaults.dirs[DEFAULT_DIR_LOGS]);
 
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]))
-      fill_pathname_expand_special(global->record.output_dir,
+      fill_pathname_expand_special(recording_st->output_dir,
             g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT],
-            sizeof(global->record.output_dir));
+            sizeof(recording_st->output_dir));
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]))
-      fill_pathname_expand_special(global->record.config_dir,
+      fill_pathname_expand_special(recording_st->config_dir,
             g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG],
-            sizeof(global->record.config_dir));
+            sizeof(recording_st->config_dir));
 
    if (!string_is_empty(g_defaults.path_config))
    {

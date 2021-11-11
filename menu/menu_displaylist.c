@@ -76,6 +76,7 @@
 #endif
 
 #include "../audio/audio_driver.h"
+#include "../record/record_driver.h"
 #include "menu_cbs.h"
 #include "menu_driver.h"
 #include "menu_entries.h"
@@ -3000,7 +3001,8 @@ static int menu_displaylist_parse_load_content_settings(
 
       if (string_is_not_equal(settings->arrays.record_driver, "null"))
       {
-         if (!recording_is_enabled())
+         recording_state_t *recording_st = recording_state_get_ptr();
+         if (!recording_st->enable)
          {
             if (settings->bools.quick_menu_show_start_recording && !settings->bools.kiosk_mode_enable)
             {
@@ -3022,7 +3024,8 @@ static int menu_displaylist_parse_load_content_settings(
          }
          else
          {
-            if (streaming_is_enabled())
+            recording_state_t *recording_st = recording_state_get_ptr();
+            if (recording_st->streaming_enable)
             {
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_STREAMING),

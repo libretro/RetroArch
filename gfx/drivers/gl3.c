@@ -45,6 +45,7 @@
 #endif
 
 #include "../font_driver.h"
+#include "../../record/record_driver.h"
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
@@ -1331,7 +1332,8 @@ static void *gl_core_init(const video_info_t *video,
             FONT_DRIVER_RENDER_OPENGL_CORE_API);
    }
 
-   gl->pbo_readback_enable = video_gpu_record && recording_is_enabled();
+   gl->pbo_readback_enable = video_gpu_record 
+      && recording_state_get_ptr()->enable;
 
    if (gl->pbo_readback_enable && gl_core_init_pbo_readback(gl))
    {

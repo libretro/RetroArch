@@ -127,39 +127,6 @@ void rarch_favorites_deinit(void);
  **/
 const char* config_get_audio_driver_options(void);
 
-/* Recording */
-
-typedef struct record_driver
-{
-   void *(*init)(const struct record_params *params);
-   void  (*free)(void *data);
-   bool  (*push_video)(void *data, const struct record_video_data *video_data);
-   bool  (*push_audio)(void *data, const struct record_audio_data *audio_data);
-   bool  (*finalize)(void *data);
-   const char *ident;
-} record_driver_t;
-
-extern const record_driver_t record_ffmpeg;
-
-/**
- * config_get_record_driver_options:
- *
- * Get an enumerated list of all record driver names, separated by '|'.
- *
- * Returns: string listing of all record driver names, separated by '|'.
- **/
-const char* config_get_record_driver_options(void);
-
-bool recording_is_enabled(void);
-
-void streaming_set_state(bool state);
-
-bool streaming_is_enabled(void);
-
-void recording_driver_update_streaming_url(void);
-
-/* Video */
-
 /* BSV Movie */
 
 void bsv_movie_frame_rewind(void);
@@ -252,24 +219,6 @@ typedef enum apple_view_type
 } apple_view_type_t;
 
 bool retroarch_get_current_savestate_path(char *path, size_t len);
-
-struct recording
-{
-   const record_driver_t *driver;
-   void *data;
-
-   size_t gpu_width;
-   size_t gpu_height;
-
-   unsigned width;
-   unsigned height;
-
-   bool enable;
-};
-
-typedef struct recording recording_state_t;
-
-recording_state_t *recording_state_get_ptr(void);
 
 RETRO_END_DECLS
 

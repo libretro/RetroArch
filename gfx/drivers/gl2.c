@@ -55,6 +55,7 @@
 #include "../../dynamic.h"
 
 #include "../../retroarch.h"
+#include "../../record/record_driver.h"
 #include "../../verbosity.h"
 #include "../common/gl2_common.h"
 
@@ -3617,7 +3618,8 @@ static void *gl2_init(const video_info_t *video,
    const char *version                  = NULL;
    struct retro_hw_render_callback *hwr = NULL;
    char *error_string                   = NULL;
-   gl2_t *gl                             = (gl2_t*)calloc(1, sizeof(gl2_t));
+   recording_state_t *recording_st      = recording_state_get_ptr();
+   gl2_t *gl                            = (gl2_t*)calloc(1, sizeof(gl2_t));
    const gfx_ctx_driver_t *ctx_driver   = gl2_get_context(gl);
 
    if (!gl || !ctx_driver)
@@ -3953,12 +3955,12 @@ static void *gl2_init(const video_info_t *video,
             FONT_DRIVER_RENDER_OPENGL_API);
 
    /* Only bother with PBO readback if we're doing GPU recording.
-    * Check recording_is_enabled() and not
+    * Check recording_st->enable and not
     * driver.recording_data, because recording is
     * not initialized yet.
     */
    gl->pbo_readback_enable = video_gpu_record
-      && recording_is_enabled();
+      && recording_st->enable;
 
    if (gl->pbo_readback_enable && gl2_init_pbo_readback(gl))
    {
