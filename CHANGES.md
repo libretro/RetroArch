@@ -6,6 +6,7 @@
 - CHEEVOS: Ignore unofficial achievements unless setting is enabled
 - NETPLAY: Networking - should not print country for a local lobby
 - NETPLAY: Add Text Chat functionality
+- OVERLAYS: Revert changes
 - VIDEO/ROTATION: Always return false if rotation can't occur. RETRO_ENVIRONMENT_SET_ROTATION should return false when rotation has been forcefully disabled in frontend, that way the core can decide if aspect ratio should be rotated or not for vertical games. Useful for FBNeo for instance.
 - WIIU: Make wiiu_gfx_load_texture code safer
 
