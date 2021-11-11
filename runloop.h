@@ -38,6 +38,7 @@
 
 #include "dynamic.h"
 #include "core_option_manager.h"
+#include "performance_counters.h"
 #include "state_manager.h"
 
 /* Arbitrary twenty subsystems limit */

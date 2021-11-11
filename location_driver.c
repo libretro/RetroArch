@@ -19,10 +19,8 @@
 #include "list_special.h"
 #include "location_driver.h"
 #include "retroarch.h"
+#include "runloop.h"
 #include "verbosity.h"
-
-static const location_driver_t *rarch_location_driver;
-static void *rarch_location_data;
 
 static location_driver_t location_null = {
    NULL,
@@ -42,6 +40,13 @@ const location_driver_t *location_drivers[] = {
    NULL,
 };
 
+static location_driver_state_t location_driver_st     = {0};
+
+location_driver_state_t *location_state_get_ptr(void)
+{
+   return &location_driver_st;
+}
+
 const char *config_get_location_driver_options(void)
 {
    return char_list_new_special(STRING_LIST_LOCATION_DRIVERS, NULL);
@@ -52,12 +57,15 @@ void location_driver_find_driver(
       const char *prefix,
       bool verbosity_enabled)
 {
+   location_driver_state_t 
+      *location_st              = &location_driver_st;
    int i                        = (int)driver_find_index(
          "location_driver",
          settings->arrays.location_driver);
 
    if (i >= 0)
-      rarch_location_driver  = (const location_driver_t*)location_drivers[i];
+      location_st->driver       = (const location_driver_t*)
+         location_drivers[i];
    else
    {
       if (verbosity_enabled)
@@ -72,20 +80,23 @@ void location_driver_find_driver(
          RARCH_WARN("Going to default to first %s...\n", prefix);
       }
 
-      rarch_location_driver = (const location_driver_t*)location_drivers[0];
+      location_st->driver = (const location_driver_t*)location_drivers[0];
    }
 }
 
 bool driver_location_start(void)
 {
-   if (     rarch_location_driver
-         && rarch_location_data
-         && rarch_location_driver->start)
+   location_driver_state_t 
+      *location_st              = &location_driver_st;
+   if (     location_st
+         && location_st->data
+         && location_st->driver
+         && location_st->driver->start)
    {
       settings_t *settings = config_get_ptr();
       bool location_allow  = settings->bools.location_allow;
       if (location_allow)
-         return rarch_location_driver->start(rarch_location_data);
+         return location_st->driver->start(location_st->data);
 
       runloop_msg_queue_push("Location is explicitly disabled.\n",
             1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
@@ -96,29 +107,38 @@ bool driver_location_start(void)
 
 void driver_location_stop(void)
 {
-   if (     rarch_location_driver
-         && rarch_location_driver->stop
-         && rarch_location_data)
-      rarch_location_driver->stop(rarch_location_data);
+   location_driver_state_t 
+      *location_st              = &location_driver_st;
+   if (     location_st
+         && location_st->driver
+         && location_st->driver->stop
+         && location_st->data)
+      location_st->driver->stop(location_st->data);
 }
 
 void driver_location_set_interval(unsigned interval_msecs,
       unsigned interval_distance)
 {
-   if (     rarch_location_driver
-         && rarch_location_driver->set_interval
-         && rarch_location_data)
-      rarch_location_driver->set_interval(rarch_location_data,
+   location_driver_state_t 
+      *location_st              = &location_driver_st;
+   if (     location_st
+         && location_st->driver
+         && location_st->driver->set_interval
+         && location_st->data)
+      location_st->driver->set_interval(location_st->data,
             interval_msecs, interval_distance);
 }
 
 bool driver_location_get_position(double *lat, double *lon,
       double *horiz_accuracy, double *vert_accuracy)
 {
-   if (     rarch_location_driver
-         && rarch_location_driver->get_position
-         && rarch_location_data)
-      return rarch_location_driver->get_position(rarch_location_data,
+   location_driver_state_t 
+      *location_st              = &location_driver_st;
+   if (     location_st
+         && location_st->driver
+         && location_st->driver->get_position
+         && location_st->data)
+      return location_st->driver->get_position(location_st->data,
             lat, lon, horiz_accuracy, vert_accuracy);
 
    *lat            = 0.0;
@@ -133,18 +153,20 @@ bool init_location(
       settings_t *settings,
       bool verbosity_enabled)
 {
+   location_driver_state_t 
+      *location_st             = &location_driver_st;
    rarch_system_info_t *system = (rarch_system_info_t*)data;
    /* Resource leaks will follow if location 
       interface is initialized twice. */
-   if (rarch_location_data)
+   if (location_st->data)
       return true;
 
    location_driver_find_driver(settings,
          "location driver", verbosity_enabled);
 
-   rarch_location_data = rarch_location_driver->init();
+   location_st->data = location_st->driver->init();
 
-   if (!rarch_location_data)
+   if (!location_st->data)
    {
       RARCH_ERR("Failed to initialize location driver. Will continue without location.\n");
       return false;
@@ -158,21 +180,28 @@ bool init_location(
 
 void uninit_location(void *data)
 {
+   location_driver_state_t 
+      *location_st             = &location_driver_st;
 	rarch_system_info_t *system = (rarch_system_info_t*)data;
 
-   if (rarch_location_data && rarch_location_driver)
+   if (location_st->data && location_st->driver)
    {
       if (system->location_cb.deinitialized)
          system->location_cb.deinitialized();
 
-      if (rarch_location_driver->free)
-         rarch_location_driver->free(rarch_location_data);
+      if (location_st->driver->free)
+         location_st->driver->free(location_st->data);
    }
 
-   rarch_location_data = NULL;
+   location_st->active = false;
+   location_st->data   = NULL;
 }
 
 void destroy_location(void)
 {
-   rarch_location_driver                         = NULL;
+   location_driver_state_t 
+      *location_st     = &location_driver_st;
+
+   location_st->active = false;
+   location_st->driver = NULL;
 }
