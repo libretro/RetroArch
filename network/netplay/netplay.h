@@ -191,7 +191,7 @@ struct netplay_host_list
 struct netplay_mitm_pending
 {
    int          *fds;
-   uint8_t      *ids[NETPLAY_MITM_ID_SIZE];
+   uint8_t      *ids[NETPLAY_MITM_MAX_PENDING];
    retro_time_t *timeouts;
 
    int current;
