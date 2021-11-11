@@ -18,6 +18,7 @@
 
 #include <boolean.h>
 
+#include "../camera_driver.h"
 #include "../../retroarch.h"
 
 /* forward declarations */
