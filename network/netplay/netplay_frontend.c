@@ -5759,8 +5759,7 @@ void netplay_init_nat_traversal(netplay_t *netplay)
 }
 
 static int init_tcp_connection(const struct addrinfo *res,
-      bool server,
-      struct sockaddr *other_addr, socklen_t addr_size)
+      bool is_server, bool use_mitm)
 {
 #ifndef HAVE_SOCKET_LEGACY
    char msg[512];
@@ -5788,7 +5787,7 @@ static int init_tcp_connection(const struct addrinfo *res,
       RARCH_WARN("Cannot set Netplay port to close-on-exec. It may fail to reopen if the client disconnects.\n");
 #endif
 
-   if (server)
+   if (!is_server)
    {
       if (!socket_connect(fd, (void*)res, false))
          return fd;
@@ -5809,34 +5808,101 @@ static int init_tcp_connection(const struct addrinfo *res,
    }
    else
    {
-#if defined(HAVE_INET6) && defined(IPPROTO_IPV6) && defined(IPV6_V6ONLY)
-      /* Make sure we accept connections on both IPv6 and IPv4 */
-      if (res->ai_family == AF_INET6)
+#ifdef __NETPLAY_MITM_NEW
+      if (use_mitm)
       {
-         int on = 0;
-         if (setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY,
-                  (const char*)&on, sizeof(on)) < 0)
-            RARCH_WARN("Failed to listen on both IPv6 and IPv4\n");
-      }
+         if (!socket_connect(fd, (void*)res, false))
+         {
+            net_driver_state_t *net_st = &networking_driver_st;
+
+            /* Relay server should provide us with our session ID. */
+            if (socket_receive_all_blocking(fd, net_st->mitm_id, sizeof(net_st->mitm_id)))
+            {
+               /* Initialize data for handling tunneled client connections. */
+               int          *fds;
+               uint8_t      *ids;
+               retro_time_t *timeouts;
+
+               fds      = malloc(
+                  NETPLAY_MITM_MAX_PENDING * sizeof(*fds));
+               ids      = malloc(
+                  NETPLAY_MITM_MAX_PENDING * NETPLAY_MITM_ID_SIZE * sizeof(*ids));
+               timeouts = malloc(
+                  NETPLAY_MITM_MAX_PENDING * sizeof(*timeouts));
+
+               if (fds && ids && timeouts)
+               {
+                  memset(fds, -1,
+                     NETPLAY_MITM_MAX_PENDING * sizeof(*fds));
+
+                  net_st->mitm_pending.fds      = fds;
+                  net_st->mitm_pending.ids      = ids;
+                  net_st->mitm_pending.timeouts = timeouts;
+
+                  net_st->mitm_pending.current = 0;
+                  net_st->mitm_pending.next    = -1;
+
+                  return fd;
+               }
+
+               free(fds);
+               free(ids);
+               free(timeouts);
+            }
+               
+            dmsg = "Failed to create a tunnel session.";
+         }
+         else
+         {
+#ifndef HAVE_SOCKET_LEGACY
+            if (!getnameinfo(res->ai_addr, res->ai_addrlen,
+                  host, sizeof(host), port, sizeof(port),
+                  NI_NUMERICHOST | NI_NUMERICSERV))
+            {
+               snprintf(msg, sizeof(msg),
+                  "Failed to connect to relay server %s on port %s.",
+                  host, port);
+               dmsg = msg;
+            }
+#else
+               dmsg = "Failed to connect to relay server.";
 #endif
-      if (socket_bind(fd, (void*)res))
-      {
-         if (!listen(fd, 1024))
-            return fd;
+         }
       }
       else
       {
-#ifndef HAVE_SOCKET_LEGACY
-         if (!getnameinfo(res->ai_addr, res->ai_addrlen,
-                  NULL, 0, port, sizeof(port), NI_NUMERICSERV))
-         {
-            snprintf(msg, sizeof(msg), "Failed to bind port %s.", port);
-            dmsg = msg;
-         }
-#else
-         dmsg = "Failed to bind port.";
 #endif
+#if defined(HAVE_INET6) && defined(IPPROTO_IPV6) && defined(IPV6_V6ONLY)
+         /* Make sure we accept connections on both IPv6 and IPv4 */
+         if (res->ai_family == AF_INET6)
+         {
+            int on = 0;
+            if (setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY,
+                  (const char*)&on, sizeof(on)) < 0)
+               RARCH_WARN("Failed to listen on both IPv6 and IPv4\n");
+         }
+#endif
+         if (socket_bind(fd, (void*)res))
+         {
+            if (!listen(fd, 1024))
+               return fd;
+         }
+         else
+         {
+#ifndef HAVE_SOCKET_LEGACY
+            if (!getnameinfo(res->ai_addr, res->ai_addrlen,
+                  NULL, 0, port, sizeof(port), NI_NUMERICSERV))
+            {
+               snprintf(msg, sizeof(msg), "Failed to bind port %s.", port);
+               dmsg = msg;
+            }
+#else
+            dmsg = "Failed to bind port.";
+#endif
+         }
+#ifdef __NETPLAY_MITM_NEW
       }
+#endif
    }
 
    socket_close(fd);
@@ -5847,20 +5913,19 @@ static int init_tcp_connection(const struct addrinfo *res,
    return -1;
 }
 
-static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
-      const char *server, uint16_t port)
+static bool init_tcp_socket(netplay_t *netplay,
+      const char *server, const char *mitm, uint16_t port)
 {
    struct addrinfo *res;
    const struct addrinfo *tmp_info;
-   struct sockaddr_storage sad;
+   char port_buf[6];
    struct addrinfo hints = {0};
+   bool use_mitm         = !server && mitm;
    int fd                = -1;
 
-   if (!direct_host)
+   if (!server)
    {
-      char port_buf[6];
-      snprintf(port_buf, sizeof(port_buf), "%hu", port);
-      if (!server)
+      if (!use_mitm)
       {
          hints.ai_flags  = AI_PASSIVE;
 #ifdef HAVE_INET6
@@ -5870,62 +5935,58 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
          hints.ai_family = AF_INET;
 #endif
       }
-      hints.ai_socktype = SOCK_STREAM;
-
-      if (getaddrinfo_retro(server, port_buf, &hints, &res))
+      else
       {
-         if (!server)
-         {
+         /* IPv4 only for relay servers. */
+         hints.ai_family = AF_INET;
+      }
+   }
+   hints.ai_socktype = SOCK_STREAM;
+
+   snprintf(port_buf, sizeof(port_buf), "%hu", port);
+
+   if (getaddrinfo_retro(use_mitm ? mitm : server, port_buf,
+      &hints, &res))
+   {
+      if (!server && !use_mitm)
+      {
 #ifdef HAVE_INET6
 try_ipv4:
-            /* Didn't work with IPv6, try IPv4 */
-            hints.ai_family = AF_INET;
-            if (getaddrinfo_retro(server, port_buf, &hints, &res))
+         /* Didn't work with IPv6, try IPv4 */
+         hints.ai_family = AF_INET;
+         if (getaddrinfo_retro(server, port_buf, &hints, &res))
 #endif
-            {
-               RARCH_ERR("Failed to set a hosting address.\n");
-
-               return false;
-            }
-         }
-         else
          {
-            char msg[512];
-            snprintf(msg, sizeof(msg),
-                  "Failed to resolve host: %s\n", server);
-            RARCH_ERR(msg);
+            RARCH_ERR("Failed to set a hosting address.\n");
             return false;
          }
       }
-
-      if (!res)
-         return false;
-
-      /* If we're serving on IPv6, make sure we accept all connections, including
-       * IPv4 */
-#ifdef HAVE_INET6
-      if (!server && res->ai_family == AF_INET6)
+      else
       {
-         struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) res->ai_addr;
-#if defined(_MSC_VER) && _MSC_VER <= 1200
-         IN6ADDR_SETANY(sin6);
-#else
-         sin6->sin6_addr           = in6addr_any;
-#endif
+         char msg[512];
+         snprintf(msg, sizeof(msg),
+            "Failed to resolve host: %s\n", use_mitm ? mitm : server);
+         RARCH_ERR(msg);
+         return false;
       }
+   }
+
+   if (!res)
+      return false;
+
+   /* If we're serving on IPv6, make sure we accept all connections, including
+    * IPv4 */
+#ifdef HAVE_INET6
+   if (!server && !use_mitm && res->ai_family == AF_INET6)
+   {
+      struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) res->ai_addr;
+#if defined(_MSC_VER) && _MSC_VER <= 1200
+      IN6ADDR_SETANY(sin6);
+#else
+      sin6->sin6_addr           = in6addr_any;
 #endif
    }
-   else
-   {
-      /* I'll build my own addrinfo! */
-      struct netplay_host *host = (struct netplay_host *)direct_host;
-      hints.ai_family           = host->addr.sa_family;
-      hints.ai_socktype         = SOCK_STREAM;
-      hints.ai_protocol         = 0;
-      hints.ai_addrlen          = host->addrlen;
-      hints.ai_addr             = &host->addr;
-      res                       = &hints;
-   }
+#endif
 
    /* If "localhost" is used, it is important to check every possible
     * address for IPv4/IPv6. */
@@ -5933,34 +5994,31 @@ try_ipv4:
 
    do
    {
-      fd = init_tcp_connection(
-            tmp_info, direct_host || server,
-         (struct sockaddr *)
-         memset(&sad, 0, sizeof(sad)), sizeof(sad));
+      fd = init_tcp_connection(tmp_info, !server, use_mitm);
 
       if (fd >= 0)
          break;
    } while ((tmp_info = tmp_info->ai_next));
 
-   if (!direct_host)
-      freeaddrinfo_retro(res);
+   freeaddrinfo_retro(res);
    res = NULL;
 
    if (fd < 0)
    {
 #ifdef HAVE_INET6
-      if (!direct_host && !server && hints.ai_family == AF_INET6)
+      if (!server && !use_mitm && hints.ai_family == AF_INET6)
          goto try_ipv4;
 #endif
       RARCH_ERR("Failed to set up netplay sockets.\n");
       return false;
    }
 
-   if (direct_host || server)
+   if (server)
    {
       netplay->connections[0].active = true;
       netplay->connections[0].fd     = fd;
-      netplay->connections[0].addr   = sad;
+      memset(&netplay->connections[0].addr, 0,
+         sizeof(netplay->connections[0].addr));
    }
    else
       netplay->listen_fd             = fd;
@@ -5974,7 +6032,7 @@ static bool init_socket(netplay_t *netplay, void *direct_host,
    if (!network_init())
       return false;
 
-   if (!init_tcp_socket(netplay, direct_host, server, port))
+   if (!init_tcp_socket(netplay, server, NULL, port))
       return false;
 
    if (netplay->is_server && netplay->nat_traversal)
@@ -7531,11 +7589,26 @@ void deinit_netplay(void)
    if (net_st->data)
    {
       netplay_free(net_st->data);
+      net_st->data              = NULL;
       net_st->netplay_enabled   = false;
       net_st->netplay_is_client = false;
       net_st->is_mitm           = false;
    }
-   net_st->data                 = NULL;
+   if (net_st->mitm_pending.fds)
+   {
+      free(net_st->mitm_pending.fds);
+      net_st->mitm_pending.fds = NULL;
+   }
+   if (net_st->mitm_pending.ids)
+   {
+      free(net_st->mitm_pending.ids);
+      net_st->mitm_pending.ids = NULL;
+   }
+   if (net_st->mitm_pending.timeouts)
+   {
+      free(net_st->mitm_pending.timeouts);
+      net_st->mitm_pending.timeouts = NULL;
+   }
    core_unset_netplay_callbacks();
 }
 
