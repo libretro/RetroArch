@@ -864,6 +864,7 @@ AUDIO RESAMPLER
 /*============================================================
 CAMERA
 ============================================================ */
+#include "../camera/camera_driver.c"
 #if defined(ANDROID)
 #include "../camera/drivers/android.c"
 #elif defined(EMSCRIPTEN)

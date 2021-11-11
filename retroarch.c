@@ -7340,7 +7340,6 @@ static core_option_manager_t *runloop_init_core_variables(
 bool runloop_environment_cb(unsigned cmd, void *data)
 {
    unsigned p;
-   struct rarch_state *p_rarch            = &rarch_st;
    runloop_state_t *runloop_st            = &runloop_state;
    recording_state_t *recording_st        = recording_state_get_ptr();
 
@@ -9610,8 +9609,6 @@ bool libretro_get_shared_context(void)
 static void uninit_libretro_symbols(
       struct retro_core_t *current_core)
 {
-   struct rarch_state 
-      *p_rarch         = &rarch_st;
    runloop_state_t 
 	   *runloop_st      = &runloop_state;
    input_driver_state_t 
