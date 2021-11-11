@@ -941,7 +941,6 @@ bool netplay_handshake_init(netplay_t *netplay,
    uint32_t compression                  = 0;
    struct compression_transcoder *ctrans = NULL;
    const char *dmsg                      = NULL;
-   net_driver_state_t *net_st            = &networking_driver_st;
    settings_t *settings                  = config_get_ptr();
    bool extra_notifications              = settings->bools.notification_show_netplay_extra;
 
@@ -7603,7 +7602,7 @@ void deinit_netplay(void)
       free(net_st->mitm_pending.fds);
       net_st->mitm_pending.fds = NULL;
    }
-   if (net_st->mitm_pending.ids)
+   if (net_st->mitm_pending.ids[0])
    {
       free(net_st->mitm_pending.ids[0]);
       memset(net_st->mitm_pending.ids, 0,
