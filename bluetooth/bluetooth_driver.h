@@ -73,6 +73,8 @@ bool driver_bluetooth_connect_device(unsigned i);
 
 bool bluetooth_driver_ctl(enum rarch_bluetooth_ctl_state state, void *data);
 
+extern const bluetooth_driver_t *bluetooth_drivers[];
+
 RETRO_END_DECLS
 
 #endif

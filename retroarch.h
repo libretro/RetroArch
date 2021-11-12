@@ -182,6 +182,15 @@ typedef enum apple_view_type
 
 bool retroarch_get_current_savestate_path(char *path, size_t len);
 
+/**
+ * retroarch_fail:
+ * @error_code  : Error code.
+ * @error       : Error message to show.
+ *
+ * Sanely kills the program.
+ **/
+void retroarch_fail(int error_code, const char *error);
+
 RETRO_END_DECLS
 
 #endif

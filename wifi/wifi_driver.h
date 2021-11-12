@@ -114,6 +114,8 @@ void driver_wifi_tether_start_stop(bool start, char* configfile);
 
 bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data);
 
+extern const wifi_driver_t *wifi_drivers[];
+
 RETRO_END_DECLS
 
 #endif
