@@ -39,9 +39,6 @@
 #define NETPLAY_HOST_STR_LEN 32
 #define NETPLAY_HOST_LONGSTR_LEN 256
 
-#define NETPLAY_MITM_MAX_PENDING 8
-#define NETPLAY_MITM_ID_SIZE     16
-
 enum rarch_netplay_ctl_state
 {
    RARCH_NETPLAY_CTL_NONE = 0,
@@ -188,16 +185,6 @@ struct netplay_host_list
    size_t size;
 };
 
-struct netplay_mitm_pending
-{
-   int          *fds;
-   uint8_t      *ids[NETPLAY_MITM_ID_SIZE];
-   retro_time_t *timeouts;
-
-   int current;
-   int next;
-};
-
 typedef struct
 {
    netplay_t *data; /* Used while Netplay is running */
@@ -223,8 +210,6 @@ typedef struct
    bool in_netplay;
    bool netplay_client_deferred;
    bool is_mitm;
-   uint8_t mitm_id[NETPLAY_MITM_ID_SIZE];
-   struct netplay_mitm_pending mitm_pending;
    bool has_set_netplay_mode;
    bool has_set_netplay_ip_address;
    bool has_set_netplay_ip_port;
