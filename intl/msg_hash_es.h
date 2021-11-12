@@ -2625,14 +2625,6 @@ MSG_HASH(
    "Cambia la sesión actual de juego en red entre los modos de jugador y espectador."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
-   "Chat del juego en red"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
-   "Envía un mensaje a la sesión actual de juego en red."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
    "Tecla para activar teclas rápidas"
    )
@@ -10112,10 +10104,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
    "Introduce la contraseña del servidor de juego en red:"
-   )
-MSG_HASH(
-   MSG_NETPLAY_ENTER_CHAT,
-   "Escribe el mensaje para la sesión:"
    )
 MSG_HASH(
    MSG_DISCORD_CONNECTION_REQUEST,

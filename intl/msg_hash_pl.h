@@ -2565,10 +2565,6 @@ MSG_HASH(
    "Przełącza bieżącą sesję gry sieciowej pomiędzy trybami 'gry' i 'obserwacji'."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
-   "Czat Netplay"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
    "Aktywacja klawisza skrótu"
    )
@@ -10036,10 +10032,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
    "Wprowadź hasło do serwera gry online:"
-   )
-MSG_HASH(
-   MSG_NETPLAY_ENTER_CHAT,
-   "Wprowadź wiadomość czatu sieciowego:"
    )
 MSG_HASH(
    MSG_DISCORD_CONNECTION_REQUEST,

@@ -2613,14 +2613,6 @@ MSG_HASH(
    "Bascule la session de jeu en réseau actuelle entre les modes 'jeu' et 'spectateur'."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
-   "Chat joueur pour le jeu en réseau"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
-   "Envoie un message sur le chat de la session jeu en réseau en cours."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
    "Raccourcis activés"
    )
@@ -10104,10 +10096,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
    "Entrez le mot de passe du serveur de jeu en réseau :"
-   )
-MSG_HASH(
-   MSG_NETPLAY_ENTER_CHAT,
-   "Entrez un message sur le chat de jeu en réseau :"
    )
 MSG_HASH(
    MSG_DISCORD_CONNECTION_REQUEST,
