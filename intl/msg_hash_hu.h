@@ -341,7 +341,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
-   "Kijelző keretek frissítése"
+   "Kijelző átfedések frissítése"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
@@ -562,7 +562,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT,
-   "Kijelzőkeret támogatás"
+   "Kijelző átfedés támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT,
@@ -1270,6 +1270,10 @@ MSG_HASH(
    )
 #if defined(DINGUX)
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "Kép Interpoláció"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
    "Kettős köbös (Bicubic)"
    )
@@ -1290,8 +1294,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
    "Adja meg a kép interpolációs módszerét, ha az „Integer Scale” le van tiltva. A „Legközelebbi szomszéd” hatással van a legkisebb teljesítményre."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "Legközelebbi szomszéd"
+   )
 #endif
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
+   "Videószűrők"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
    "Videó Szűrő eltávolítása"
@@ -1300,16 +1312,36 @@ MSG_HASH(
 /* Settings > Video > CRT SwitchRes */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
+   "CRT felbontás"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
    "Használjon nagy felbontású menüt"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
+   "Váltson nagy felbontású modellre a nagy felbontású menük használatához, amikor nincs tartalom betöltve."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    "Egyedi frissítési gyakoriság"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   "Ha szükséges, használjon a konfigurációs fájlban megadott egyéni frissítési gyakoriságot."
+   )
 
 /* Settings > Video > Output */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
+   "Monitor mutatója"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
+   "Válassza ki a használni kívánt képernyőt."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
    "Képernyő elforgatás"
@@ -1318,7 +1350,35 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
    "Képernyő tájolása"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
+   "GPU mutatója"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   "Válassza ki a használni kívánt grafikus kártyát."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
+   "Vízszintes eltolás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
+   "Vízszintes eltolás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
+   "Függőleges frissítési gyakoriság"
+   )
 #if defined(DINGUX) && defined(DINGUX_BETA)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
+   "Függőleges frissítési gyakoriság"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
+   "Állítsa be a képernyő függőleges frissítési gyakoriságát. Az „50 Hz” sima videózást tesz lehetővé PAL tartalom futtatásakor."
+   )
 #endif
 
 /* Settings > Video > Fullscreen Mode */
@@ -1331,9 +1391,33 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    "Teljes ablakos mód"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   "Teljes képernyő szélessége"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   "Teljes képernyő magasság"
+   )
 
 /* Settings > Video > Windowed Mode */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
+   "Ablak skála"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
+   "Ablak áttetszősége"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   "Ablak szélessége"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   "Ablak magassága"
+   )
 
 /* Settings > Video > Scaling */
 
@@ -1404,6 +1488,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
    "Keverő némítása"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
+   "DSP Bővítmény törlése"
+   )
 
 /* Settings > Audio > Output */
 
@@ -1432,9 +1520,21 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
    "Kimenet"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
+   "Válassza ki a kimeneti eszközt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
+   "Hangerő"
+   )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
+   "Hangerő"
+   )
 
 /* Settings > Audio > Menu Sounds */
 
@@ -1443,6 +1543,22 @@ MSG_HASH(
 
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
+   "KI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
+   "Be"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
+   "Észlelés"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
+   "Turbó mód"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
    "Gyorsbillentyűk"
@@ -1459,6 +1575,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
    "Kilépés a RetroArch-ból"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
+   "Visszatekerés"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
+   "Játék újraindítása"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
+   "A gyorsbillentyűk engedélyezése"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
@@ -1494,6 +1622,10 @@ MSG_HASH(
 
 /* Settings > Frame Throttle */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
+   "Visszatekerés"
+   )
 
 /* Settings > Frame Throttle > Rewind */
 
@@ -1509,6 +1641,10 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
+   "Átfedés megjelenítése"
+   )
 #if defined(ANDROID)
 #endif
 
@@ -1517,6 +1653,22 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Notifications */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL,
+   "Normál"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST,
+   "Gyors"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST,
+   "Nagyon gyors"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT,
+   "Azonnali"
+   )
 
 /* Settings > User Interface */
 
@@ -1544,6 +1696,10 @@ MSG_HASH(
 
 /* Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAILS,
+   "Bélyegképek"
+   )
 
 /* Settings > AI Service */
 
@@ -1574,6 +1730,18 @@ MSG_HASH(
 
 /* Settings > User */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
+   "Azonosító"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
+   "Felhasználónév"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
+   "Nyelv"
+   )
 
 /* Settings > User > Privacy */
 
@@ -1604,6 +1772,30 @@ MSG_HASH( /* FIXME Not RGUI specific */
    "Fájlkezelő"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
+   "Adatbázisok"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
+   "Kurzor"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
+   "Videószűrők"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
+   "Hangszűrők"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
+   "Felvételek"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
+   "Átfedések"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
    "Lejátszási listák"
    )
@@ -1615,6 +1807,10 @@ MSG_HASH(
 
 /* Netplay */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS,
+   "Kiszolgáló"
+   )
 
 /* Netplay > Host */
 
@@ -1629,9 +1825,45 @@ MSG_HASH(
 
 
 /* Explore tab */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
+   "Kiadás éve"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_PLAYER_COUNT,
+   "Játékosok száma"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,
+   "Terület"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL,
+   "Összes megjelenítése"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ALL,
+   "Összes"
+   )
 
 /* Playlist > Playlist Item */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN,
+   "Futtatás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
+   "Átnevezés"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
+   "Eltávolítás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
+   "Kedvencekhez ad"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,
    "Információ"
@@ -1642,9 +1874,41 @@ MSG_HASH(
 
 /* Playlist Item > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
+   "Név"
+   )
+MSG_HASH( /* FIXME Unused? */
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_RUNTIME,
+   "Játékkal eltöltött idő"
+   )
+MSG_HASH( /* FIXME Unused? */
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LAST_PLAYED,
+   "Utoljára játszva"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE,
+   "Adatbázis"
+   )
 
 /* Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESUME_CONTENT,
+   "Folytatás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
+   "Újraindítás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
+   "Képernyőkép készítése"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
+   "Beállítások"
+   )
 
 /* Quick Menu > Options */
 
@@ -1721,6 +1985,10 @@ MSG_HASH(
 
 /* Ozone: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA,
+   "Drakula"
+   )
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
@@ -1731,16 +1999,52 @@ MSG_HASH(
 /* Qt (Desktop Menu) */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME,
+   "Sablon:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK,
+   "Sötét"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM,
+   "Egyedi..."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
    "Beálítások"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
+   "&Eszközök"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
    "&Segítség"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION,
+   "Dokumentáció"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE,
+   "Egyedi Core betöltése..."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
    "Core betöltése"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_LOADING_CORE,
+   "Core betöltése..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_NAME,
+   "Név"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION,
+   "Verzió"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
@@ -1751,8 +2055,88 @@ MSG_HASH(
    "Fájlkezelő"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_TOP,
+   "Felül"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
+   "Fel"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER,
+   "Tartalom böngésző"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
+   "Doboz kép"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
+   "Képernyőkép"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+   "Kezdő képernyő"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CORE_INFO,
+   "Core infó"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
    "Információ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_WARNING,
+   "Figyelmeztetés"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_ERROR,
+   "Hiba"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
+   "Hálózati hiba"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
+   "Kérjük, indítsd újra az alkalmazást a módosítások érvénybe léptetéséhez."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_LOG,
+   "Napló"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_HIDE,
+   "Elrejt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME,
+   "Egyéni téma"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_ZOOM,
+   "Nagyítás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_VIEW,
+   "Nézet"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS,
+   "Ikonok"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST,
+   "Lista"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
+   "Töröl"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PROGRESS,
+   "Folyamat:"
    )
 
 /* Unsorted */
@@ -1775,22 +2159,258 @@ MSG_HASH(
 
 /* Unused (Needs Confirmation) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
+   "Adatbázis infó"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG,
+   "Beállítás"
+   )
 MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
    "Letöltések"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
+   "Hálózatos játék beállításai"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_DIR,
+   "Tartalom"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
+   "Kérdez"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS,
+   "Alapvető menüvezérlők"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_CONFIRM,
+   "Jóváhagy"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO,
+   "Infó"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
+   "Kilépés"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
+   "Felfelé görgetés"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_START,
+   "Alapértékek"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD,
+   "Billentyűzet láthatósága"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU,
+   "Menü láthatósága"
+   )
 
 /* Discord Status */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
+   "Menüben"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME,
+   "Játékon belül"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED,
+   "Játékon belül (megállítva)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
+   "Lejátszás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
+   "Megállítva"
+   )
 
 /* Notifications */
 
+MSG_HASH( /* FIXME Should be MSG_ */
+   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
+   "Sikeres core telepítés"
+   )
+MSG_HASH( /* FIXME Should be MSG_ */
+   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR,
+   "A core telepítés sikertelen"
+   )
+MSG_HASH(
+   MSG_WAITING_FOR_CLIENT,
+   "Várakozás a kliensre..."
+   )
+MSG_HASH(
+   MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
+   "Kiléptél a játékból"
+   )
+MSG_HASH(
+   MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
+   "Csatlakoztál mint %u"
+   )
+MSG_HASH(
+   MSG_AUDIO_VOLUME,
+   "Hangerő"
+   )
+MSG_HASH(
+   MSG_AUTODETECT,
+   "Automatikus felismerés"
+   )
+MSG_HASH(
+   MSG_CAPABILITIES,
+   "Képességek"
+   )
+MSG_HASH(
+   MSG_FETCHING_CORE_LIST,
+   "A core lista lekérése..."
+   )
+MSG_HASH(
+   MSG_CONNECTED_TO,
+   "Kapcsolódva"
+   )
+MSG_HASH(
+   MSG_DOWNLOAD_FAILED,
+   "A letöltés sikertelen"
+   )
+MSG_HASH(
+   MSG_ERROR,
+   "Hiba"
+   )
+MSG_HASH(
+   MSG_EXTRACTING,
+   "Kicsomagolás"
+   )
+MSG_HASH(
+   MSG_EXTRACTING_FILE,
+   "Fájlok kibontása"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD,
+   "Nem sikerült betölteni"
+   )
+MSG_HASH(
+   MSG_LOADING,
+   "Betöltés"
+   )
+MSG_HASH(
+   MSG_MEMORY,
+   "Memória"
+   )
+MSG_HASH(
+   MSG_RESET,
+   "Visszaállítás"
+   )
+MSG_HASH(
+   MSG_SAVING_STATE,
+   "Állapot mentése"
+   )
+MSG_HASH(
+   MSG_SCANNING,
+   "Vizsgálat"
+   )
+MSG_HASH(
+   MSG_TAKING_SCREENSHOT,
+   "Képernyőmentés készítése."
+   )
+MSG_HASH(
+   MSG_SCREENSHOT_SAVED,
+   "Képernyőkép mentve"
+   )
+MSG_HASH(
+   MSG_CHANGE_THUMBNAIL_TYPE,
+   "Előnézet megváltoztatása"
+   )
+MSG_HASH(
+   MSG_UNKNOWN,
+   "Ismeretlen"
+   )
+MSG_HASH(
+   MSG_UNPAUSED,
+   "Szüneteltetés befejezve."
+   )
+MSG_HASH(
+   MSG_VALUE_REBOOTING,
+   "Újraindítás..."
+   )
+MSG_HASH(
+   MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
+   "Írja be a jelszót"
+   )
+MSG_HASH(
+   MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
+   "Hibás jelszó."
+   )
+MSG_HASH(
+   MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
+   "Hibás jelszó."
+   )
+MSG_HASH(
+   MSG_INPUT_KIOSK_MODE_PASSWORD,
+   "Írja be a jelszót"
+   )
+MSG_HASH(
+   MSG_GAME_REMAP_FILE_LOADED,
+   "A játék remap fájlja betöltve."
+   )
+MSG_HASH(
+   MSG_CORE_REMAP_FILE_LOADED,
+   "A core remap fájlja betöltve."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
+   "Vizsgálat: "
+   )
 
 /* Lakka */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REBOOT,
+   "Újraindítás"
+   )
 
 /* Environment Specific Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
+   "Képernyő felbontás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHUTDOWN,
+   "Leállítás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
+   "Wi-Fi engedélyezése"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
+   "Csatlakozás a hálózathoz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
+   "Csatlakozás a hálózathoz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
+   "Kapcsolat bontása"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANUAL,
+   "Kézi"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    "RetroArch újraindítása"
@@ -1808,6 +2428,10 @@ MSG_HASH(
 #else
 #endif
 #if defined(_3DS)
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_RESUME,
+   "Vissza a játékba"
+   )
 #endif
 #ifdef HAVE_QT
 #endif

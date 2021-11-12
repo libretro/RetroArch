@@ -1068,7 +1068,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
-   "Экранное отображение"
+   "Индикация на экране"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
@@ -1298,7 +1298,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
-   "Видео в отдельном потоке"
+   "Рендеринг в отдельном потоке"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_THREADED,
@@ -1504,7 +1504,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Вертикальная частота обновления экрана. Используется для вычисления подходящей частоты звука.\nНе учитывается, если включено 'Видео в отдельном потоке'."
+   "Вертикальная частота обновления экрана. Используется для вычисления оптимальной частоты звука.\nНе учитывается, если включен 'Рендеринг в отдельном потоке'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -2221,7 +2221,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
-   "Всегда включать режим 'Игрового фокуса' при запуске и возобновлении контента. При установке 'Определять' опция будет включена, если в текущем ядре поддерживается обратный вызов клавиатуры фронтендом."
+   "Активировать режим 'Игрового фокуса' при запуске и возобновлении контента. При значении 'Определять' опция будет включаться, если ядро поддерживает обратный вызов клавиатуры фронтендом."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
@@ -2375,7 +2375,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-   "Меняет местами кнопки OK/Отмена. Отключение соответствует японской раскладке, включение - западной."
+   "Поменять местами действия кнопок OK/Отмена. Отключение соответствует японской раскладке, включение - западной."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
@@ -2383,7 +2383,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
-   "Разрешать всем пользователям управлять меню. Если отключено, управлять меню может только Игрок 1."
+   "Разрешить всем пользователям управлять меню. Если выключено, управление меню доступно только для Игрока 1."
    )
 
 /* Settings > Input > Hotkeys */
@@ -2418,11 +2418,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
-   "Добавляет кадры задержки перед блокировкой стандартного ввода после нажатия (и удерживания) кнопки, назначенной на 'Горячую клавишу'. Позволяет перехватывать стандартный ввод с 'Горячей клавиши', если она занята другим действием (например, RetroPad 'Select')."
+   "Добавляет кадры задержки перед блокировкой стандартного ввода после нажатия (и удерживания) кнопки, привязанной к 'Горячей клавише'. Позволяет перехватывать стандартный ввод с 'Горячей клавиши', если она занята другим действием (напр. RetroPad 'Select')."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
-   "Ускоренная перемотка (переключение)"
+   "Ускорение (переключение)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_KEY,
@@ -2430,7 +2430,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
-   "Ускоренная перемотка (удерживание)"
+   "Ускорение (с удерживанием)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_HOLD_KEY,
@@ -2446,7 +2446,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY,
-   "Замедление (удерживание)"
+   "Замедление (с удерживанием)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
@@ -2490,7 +2490,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_QUIT_KEY,
-   "Закрывает RetroArch с записью в память файлов сохранений и конфигурации."
+   "Закрывает RetroArch, обеспечивая запись файлов сохранений и конфигурации в память устройства."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
@@ -2506,7 +2506,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
-   "Уменьшает текущий номер слота сохранения."
+   "Понижает текущий номер слота сохранения."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
@@ -3007,7 +3007,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
-   "Разрешить ядрам переключать видеодрайвер"
+   "Разрешать ядрам смену видеодрайвера"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,
@@ -3039,7 +3039,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
-   "Разрешить ядрам отображать опции в виде подменю по категориям. Примечание: ядро необходимо перезагрузить для применения изменений."
+   "Разрешить ядрам отображение опций в виде подменю по категориям. Примечание: для применения изменений требуется перезагрузка ядра."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
@@ -3135,7 +3135,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "Помещать сохранения состояния в папки по имени ядра"
+   "Помещать быстрые сохранения в папки по имени ядра"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
@@ -3215,7 +3215,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
-   "Сжатие SaveRAM"
+   "Сжимать SaveRAM"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
@@ -3223,7 +3223,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   "Сжатие сохранений состояния"
+   "Сжимать быстрые сохранения"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
@@ -3372,19 +3372,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Изменить настройки счётчика времени кадра.\nРаботает только если выключено 'Видео в отдельном потоке'."
+   "Изменить настройки счётчика времени кадра.\nРаботает только если выключен 'Рендеринг в отдельном потоке'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
-   "Скорость перемотки"
+   "Коэффициент ускорения"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
-   "Максимальная частота контента при ускоренной перемотке (напр., 5.0x для контента с 60 FPS = максимум 300 FPS). Значение 0.0x снимает ограничение скорости перемотки (без ограничения FPS)."
+   "Максимальная частота контента при ускорении (напр., 5.0x для контента в 60 FPS = максимум 300 FPS). Значение 0.0x убирает предел ускорения (без ограничения FPS)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
-   "Степень замедления"
+   "Коэффициент замедления"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
@@ -3396,7 +3396,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
-   "Поддерживать максимальную частоту кадров в меню."
+   "Поддерживать максимальную частоту кадров находясь в меню."
    )
 
 /* Settings > Frame Throttle > Rewind */
@@ -3454,7 +3454,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Сброс после сохранения состояния"
+   "Сброс после создания сохранения"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
@@ -4827,11 +4827,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ONSCREEN_DISPLAY,
-   "Показывать 'Экранные отображения'"
+   "Показывать 'Индикация на экране'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
-   "Показывать настройки 'Экранных отображений'."
+   "Показывать настройки 'Индикации на экране'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,
@@ -5651,7 +5651,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_ALLOW,
-   "Разрешить ядрам доступ к вашему местоположению."
+   "Разрешить ядрам доступ к местоположению."
    )
 
 /* Settings > User > Accounts */

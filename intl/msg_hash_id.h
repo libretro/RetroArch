@@ -1672,7 +1672,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Atur maksimal pancaran cahaya layar (dalam satuan cd/m2) yang dapat dihasilkan dari monitor/TV. Kunjungin situs RTings sebagai acuan."
+   "Atur maksimal pancaran cahaya layar (dalam satuan cd/m2) yang dapat dihasilkan dari monitor/TV. Kunjungi situs RTings sebagai acuan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
@@ -1696,7 +1696,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "JIka warna diubah menjadi linier, apakah perlu diperluas lagi agar bisa mencapai HDR10."
+   "Jika warna diubah menjadi linier, makan akan diperluas lagi agar bisa mencapai HDR10."
    )
 
 /* Settings > Video > Synchronization */
@@ -2108,6 +2108,10 @@ MSG_HASH(
    "Seberapa jauh tombol axis harus dimiringkan agar terbaca pada saat menekan tombol."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+   "Kepekaan Kontroler Analog"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    "Atur berapa detik yang dibutuhkan untuk melakukan binding selanjutnya."
    )
@@ -2203,6 +2207,10 @@ MSG_HASH(
    "Aktifkan Getaran Perangkat (Untuk Core yang Didukung)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
+   "Kekuatan Getaran"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    "Tentukan besarnya efek umpan balik haptic."
    )
@@ -2229,16 +2237,76 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
    "Menu Kontrol Semua Pengguna"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+   "Semua pengguna boleh mengendalikan manu. Jika dimatikan, hanya Pengguna 1 yang bisa kendalikan menu."
+   )
 
 /* Settings > Input > Hotkeys */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
+   "Konfirmasi Keluar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
+   "Untuk keluar dari RetroArch, kombinasi tombol Keluar harus ditekan dua kali."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   "Menu Pengganti Kombinasi Kontroler"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   "Kombinasi tombol kontroller untuk mengganti menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   "Keluar Dari Kombinasi Kontroler"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   "Kombinasi tombol kontroler untuk keluar dari RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
+   "Tombol Kombinasi Mengaktifkan 'Delay' (Frame)"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
    "Tutup RetroArch"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
+   "Reset Permainan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
+   "Shader Berikutnya"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
+   "Shader Sebelumnya"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
+   "Daftar Kode Curang"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS,
+   "Daftar Kode Curang Sebelumnya"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
    "Ambil Tangkapan Layar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
+   "Kirim Info Debug"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
+   "Aktifkan Kombinasi Tombol"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
@@ -2247,6 +2315,10 @@ MSG_HASH(
 
 /* Settings > Input > Port # Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START,
+   "Tombol Mulai"
+   )
 
 /* Settings > Latency */
 
@@ -2255,9 +2327,21 @@ MSG_HASH(
 
 #ifndef HAVE_DYNAMIC
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
+   "Atur Core"
+   )
 
 /* Settings > Configuration */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
+   "Simpan Konfigurasi dan Keluar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
+   "Saat keluar, semua perubahan konfigurasi akan disimpan."
+   )
 
 /* Settings > Saving */
 

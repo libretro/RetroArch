@@ -236,6 +236,10 @@ MSG_HASH(
    "Anovador de miniatures"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
+   "Baxa'l paquete de miniatures completu pal sistema esbilláu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
    "Baxador de conteníu"
    )

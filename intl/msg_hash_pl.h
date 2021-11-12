@@ -2325,6 +2325,10 @@ MSG_HASH(
    "Kombinacja przycisków kontrolera do przełączania menu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   "Wyjście Combo kontrolera"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    "Kombinacja przycisków kontrolera aby wyjść z RetroArch."
    )
@@ -2559,6 +2563,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
    "Przełącza bieżącą sesję gry sieciowej pomiędzy trybami 'gry' i 'obserwacji'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Czat Netplay"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
@@ -10030,6 +10038,10 @@ MSG_HASH(
    "Wprowadź hasło do serwera gry online:"
    )
 MSG_HASH(
+   MSG_NETPLAY_ENTER_CHAT,
+   "Wprowadź wiadomość czatu sieciowego:"
+   )
+MSG_HASH(
    MSG_DISCORD_CONNECTION_REQUEST,
    "Czy chcesz zezwolić na połączenie od użytkownika:"
    )
@@ -11788,6 +11800,10 @@ MSG_HASH(
    "Lokalny"
    )
 MSG_HASH(
+   MSG_READ_WRITE,
+   "Status pamięci wewnętrznej: Odczyt/Zapis"
+   )
+MSG_HASH(
    MSG_READ_ONLY,
    "Status pamięci wewnętrznej: Tylko do odczytu"
    )
@@ -11977,8 +11993,24 @@ MSG_HASH(
    "nie znaleziono bottom_menu.png\nw folderze /ctr"
    )
 MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
+   "Brak\nDanych"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
+   "Brak\nZrzutu ekranu"
+   )
+MSG_HASH(
    MSG_3DS_BOTTOM_MENU_RESUME,
    "Wznów grę"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_SAVE_STATE,
+   "Utwórz\nPunkt przywracania"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_LOAD_STATE,
+   "Załaduj\nPunkt przywracania"
    )
 #endif
 #ifdef HAVE_QT

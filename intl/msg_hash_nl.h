@@ -254,7 +254,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
-   "Video 's"
+   "Video's"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_VIDEO,
@@ -365,6 +365,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
    "Netwerk Informatie"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
+   "Toon netwerkinterface(s) en bijbehorende IP-adressen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
@@ -1170,19 +1174,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   "Volledig-Scherm Modus"
+   "Modus volledig scherm"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   "Instellingen voor volledig scherm wijzigen."
+   "Instellingen voor modus volledig scherm wijzigen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
-   "Venster Modus"
+   "Venstermodus"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
-   "Instellingen voor venster modus wijzigen."
+   "Instellingen voor venstermodus wijzigen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
@@ -1233,7 +1237,39 @@ MSG_HASH(
    "Bilineaire Filtering"
    )
 #if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "Beeldinterpolatie"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "Specificeer de methode voor beeldinterpolatie wanneer content door de interne IPU wordt geschaald. 'Bicubisch' of 'Bilineair' worden aangeraden bij gebruik van CPU-aangedreven videofilters. Deze instelling heeft geen impact op prestaties."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
+   "Bicubisch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
+   "Bilineair"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
+   "Naaste buur"
+   )
 #if defined(RS90) || defined(MIYOO)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Beeldinterpolatie"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Specificeer beeldinterpolatiemethode wanneer 'Schalen in gehele getallen' is uitgeschakeld. 'Naaste buur' heeft de minste impact op prestaties."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "Naaste buur"
+   )
 #endif
 #endif
 MSG_HASH(
@@ -1345,7 +1381,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   "Volledig Scherm in Venster"
+   "Schermvullend venstermodus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   "Schermvullend venstermodus gebruiken tijdens modus volledig scherm om veranderingen in weergavemodus te voorkomen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
@@ -1403,7 +1443,19 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
-   "Vierkantige schalering"
+   "Schalen in gehele getallen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+   "Schaal het beeld alleen in stappen van gehele getallen. De basisgrootte is afhankelijk van de geometrie en beeldverhouding gemeld door het systeem. Als 'Forceer beeldverhouding' niet is ingesteld, zal X/Y onafhankelijk worden geschaald op basis van gehele getallen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Overmaats schalen in gehele getallen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Forceer schalen in gehele getallen om het eerstvolgende gehele getal naar boven in plaats van naar beneden af te ronden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -1414,6 +1466,10 @@ MSG_HASH(
    "Aangepaste beeldverhoudingen"
    )
 #if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "Beeldverhouding behouden"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
@@ -1442,9 +1498,29 @@ MSG_HASH(
 
 /* Settings > Video > HDR */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
+   "HDR inschakelen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "HDR inschakelen als het scherm dit ondersteunt."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
+   "Gamma/contrast voor HDR instellen. Vergroot het bereik tussen de lichtste en donkerste delen van het beeld. Hoe hoger de HDR contrastwaarde is, des te groter dit verschil wordt. Laat gebruikers het beeld afstemmen aan de hand van wat er het beste uitziet op hun beeldscherm."
+   )
 
 /* Settings > Video > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   "Verticale synchronisatie (Vsync)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
+   "Adaptieve VSync"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Frame Vertraging"
@@ -2778,7 +2854,7 @@ MSG_HASH( /* FIXME Not RGUI specific */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
-   "Menu schaalfactor"
+   "Schaalfactor menu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
@@ -3432,7 +3508,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NEAREST,
-   "Dichtstbijzijnde"
+   "Naaste"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
@@ -3482,7 +3558,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
-   "Vierkantige schalering"
+   "Schalen in gehele getallen"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,

@@ -277,7 +277,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   "Download de núcleo"
+   "Baixar núcleo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
@@ -313,7 +313,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
-   "Download de conteúdo"
+   "Baixar conteúdo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
@@ -1795,7 +1795,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Diminuir temporariamente o 'Atraso de quadro' efetivo para evitar futuras quedas de quadros. Se o valor do 'Atraso de quadro' é 0, o cálculo começará a partir da duração de meio quadro."
+   "Diminui temporariamente o 'Atraso de quadro' efetivo para evitar futuras quedas de quadros. Se o valor do 'Atraso de quadro' for 0, o cálculo começará a partir da duração de meio quadro."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
@@ -2602,11 +2602,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
-   "Chat dos jogadores do Netplay"
+   "Bate-papo do jogo em rede"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
-   "Envia uma mensagem de bate-papo para a sessão atual do netplay."
+   "Envia uma mensagem de bate-papo para a sessão atual do jogo em rede."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
@@ -4265,7 +4265,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
-   "Mostrar 'Download de núcleo'"
+   "Mostrar 'Baixar núcleo'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
@@ -5307,7 +5307,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
-   "Inclui os núcleos 'experimentais' na lista de Download de núcleo. Normalmente, são apenas para fins de desenvolvimento ou testes e não são recomendados para o uso geral."
+   "Inclui os núcleos 'experimentais' na opção Baixar núcleo. Normalmente, são apenas para fins de desenvolvimento ou testes e não são recomendados para o uso geral."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
@@ -10075,7 +10075,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_ENTER_CHAT,
-   "Digite uma mensagem no bate-papo do netplay:"
+   "Digite uma mensagem no bate-papo do jogo em rede:"
    )
 MSG_HASH(
    MSG_DISCORD_CONNECTION_REQUEST,
