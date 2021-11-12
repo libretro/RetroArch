@@ -5227,9 +5227,6 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETPLAY_GAME_WATCH:
          netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
          break;
-      case CMD_EVENT_NETPLAY_PLAYER_CHAT:
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_PLAYER_CHAT, NULL);
-         break;
       case CMD_EVENT_NETPLAY_DEINIT:
          deinit_netplay();
          break;
@@ -5466,7 +5463,6 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETPLAY_DISCONNECT:
       case CMD_EVENT_NETPLAY_ENABLE_HOST:
       case CMD_EVENT_NETPLAY_GAME_WATCH:
-      case CMD_EVENT_NETPLAY_PLAYER_CHAT:
          return false;
 #endif
       case CMD_EVENT_FULLSCREEN_TOGGLE:
@@ -15001,9 +14997,6 @@ static enum runloop_state_enum runloop_check_state(
 #ifdef HAVE_NETWORKING
    /* Check Netplay */
    HOTKEY_CHECK(RARCH_NETPLAY_GAME_WATCH, CMD_EVENT_NETPLAY_GAME_WATCH, true, NULL);
-#if NETPLAY_PROTOCOL_VERSION >= 6
-   HOTKEY_CHECK(RARCH_NETPLAY_PLAYER_CHAT, CMD_EVENT_NETPLAY_PLAYER_CHAT, true, NULL);
-#endif
 #endif
 
    /* Check if we have pressed the pause button */

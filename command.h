@@ -202,8 +202,6 @@ enum event_command
    CMD_EVENT_NETPLAY_DEINIT,
    /* Switch between netplay gaming and watching. */
    CMD_EVENT_NETPLAY_GAME_WATCH,
-   /* Open a netplay chat input menu. */
-   CMD_EVENT_NETPLAY_PLAYER_CHAT,
    /* Start hosting netplay. */
    CMD_EVENT_NETPLAY_ENABLE_HOST,
    /* Disconnect from the netplay host. */

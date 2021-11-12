@@ -43,7 +43,6 @@ enum rarch_netplay_ctl_state
 {
    RARCH_NETPLAY_CTL_NONE = 0,
    RARCH_NETPLAY_CTL_GAME_WATCH,
-   RARCH_NETPLAY_CTL_PLAYER_CHAT,
    RARCH_NETPLAY_CTL_POST_FRAME,
    RARCH_NETPLAY_CTL_PRE_FRAME,
    RARCH_NETPLAY_CTL_ENABLE_SERVER,
@@ -189,6 +188,7 @@ typedef struct
 {
    netplay_t *data; /* Used while Netplay is running */
    struct netplay_room host_room; /* ptr alignment */
+   netplay_t *ref;
    struct netplay_room *room_list;
    struct netplay_rooms *rooms_data;
    /* List of discovered hosts */
