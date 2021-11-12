@@ -5832,15 +5832,11 @@ static int init_tcp_connection(const struct addrinfo *res,
 
                if (fds && ids && timeouts)
                {
-                  size_t i;
-
                   memset(fds, -1,
                      NETPLAY_MITM_MAX_PENDING * sizeof(*fds));
 
-                  for (i = 0; i < NETPLAY_MITM_MAX_PENDING; i++, ids += NETPLAY_MITM_ID_SIZE)
-                     net_st->mitm_pending.ids[i] = ids;
-
                   net_st->mitm_pending.fds      = fds;
+                  net_st->mitm_pending.ids      = ids;
                   net_st->mitm_pending.timeouts = timeouts;
 
                   net_st->mitm_pending.current = 0;
@@ -7604,11 +7600,7 @@ void deinit_netplay(void)
       net_st->mitm_pending.fds = NULL;
    }
    if (net_st->mitm_pending.ids)
-   {
-      free(net_st->mitm_pending.ids[0]);
-      memset(net_st->mitm_pending.ids, 0,
-         sizeof(net_st->mitm_pending.ids));
-   }
+      free(*net_st->mitm_pending.ids);
    if (net_st->mitm_pending.timeouts)
    {
       free(net_st->mitm_pending.timeouts);
