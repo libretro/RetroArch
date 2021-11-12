@@ -186,7 +186,7 @@ typedef struct
 {
    netplay_t *data; /* Used while Netplay is running */
    struct netplay_room host_room; /* ptr alignment */
-   netplay_t *ref;
+   netplay_t *handshake_password;
    struct netplay_room *room_list;
    struct netplay_rooms *rooms_data;
    /* List of discovered hosts */
@@ -242,13 +242,6 @@ void netplay_frontend_paused(netplay_t *netplay, bool paused);
  * Toggle between play mode and spectate mode
  */
 void netplay_toggle_play_spectate(netplay_t *netplay);
-
-/**
- * netplay_input_chat
- *
- * Opens an input menu for sending netplay chat
- */
-void netplay_input_chat(netplay_t *netplay);
 
 /**
  * netplay_load_savestate
