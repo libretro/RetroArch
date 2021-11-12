@@ -1069,6 +1069,7 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_STREAM_CONFIGFILE:
          {
+            global_t  *global  = global_get_ptr();
             info.type          = type;
             info.directory_ptr = idx;
             info_path          = recording_st->config_dir;
@@ -1079,6 +1080,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_RECORD_CONFIGFILE:
          filebrowser_clear_type();
          {
+            global_t  *global  = global_get_ptr();
             info.type          = type;
             info.directory_ptr = idx;
             info_path          = recording_st->config_dir;
