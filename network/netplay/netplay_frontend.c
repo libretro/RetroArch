@@ -7600,7 +7600,10 @@ void deinit_netplay(void)
       net_st->mitm_pending.fds = NULL;
    }
    if (net_st->mitm_pending.ids)
-      free(*net_st->mitm_pending.ids);
+   {
+      free(net_st->mitm_pending.ids);
+      net_st->mitm_pending.ids = NULL;
+   }
    if (net_st->mitm_pending.timeouts)
    {
       free(net_st->mitm_pending.timeouts);
