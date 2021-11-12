@@ -40,7 +40,6 @@
 #define NETPLAY_HOST_LONGSTR_LEN 256
 
 #define NETPLAY_MITM_MAX_PENDING 8
-#define NETPLAY_MITM_ID_SIZE     16
 
 enum rarch_netplay_ctl_state
 {
@@ -188,14 +187,22 @@ struct netplay_host_list
    size_t size;
 };
 
+#pragma pack(push, 1)
+typedef struct mitm_id
+{
+   uint32_t magic;
+   uint8_t  unique[12];
+} mitm_id_t;
+#pragma pack(pop)
+
 struct netplay_mitm_pending
 {
    int          *fds;
-   uint8_t      *ids[NETPLAY_MITM_MAX_PENDING];
+   mitm_id_t    *ids;
    retro_time_t *timeouts;
 
-   int current;
-   int next;
+   mitm_id_t id_buf;
+   size_t    id_recvd;
 };
 
 typedef struct
@@ -223,7 +230,7 @@ typedef struct
    bool in_netplay;
    bool netplay_client_deferred;
    bool is_mitm;
-   uint8_t mitm_id[NETPLAY_MITM_ID_SIZE];
+   mitm_id_t mitm_session_id;
    struct netplay_mitm_pending mitm_pending;
    bool has_set_netplay_mode;
    bool has_set_netplay_ip_address;
@@ -343,7 +350,6 @@ void deinit_netplay(void);
 
 /**
  * init_netplay
- * @direct_host          : Host to connect to directly, if applicable (client only)
  * @server               : server address to connect to (client only)
  * @port                 : TCP port to host on/connect to
  *
@@ -353,7 +359,7 @@ void deinit_netplay(void);
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool init_netplay(void *direct_host, const char *server, unsigned port);
+bool init_netplay(const char *server, unsigned port);
 
 bool init_netplay_deferred(const char* server, unsigned port);
 
