@@ -760,8 +760,8 @@ bool netplay_wait_and_init_serialization(netplay_t *netplay);
 
 /**
  * netplay_new:
+ * @direct_host          : Netplay host discovered from scanning.
  * @server               : IP address of server.
- * @mitm                 : IP address of the MITM/tunnel server.
  * @port                 : Port of server.
  * @stateless_mode       : Shall we run in stateless mode?
  * @check_frames         : Frequency with which to check CRCs.
@@ -775,7 +775,8 @@ bool netplay_wait_and_init_serialization(netplay_t *netplay);
  *
  * Returns: new netplay data.
  */
-netplay_t *netplay_new(const char *server, const char *mitm, uint16_t port,
+netplay_t *netplay_new(void *direct_host,
+      const char *server, uint16_t port,
       bool stateless_mode, int check_frames,
       const struct retro_callbacks *cb,
       bool nat_traversal, const char *nick,
