@@ -109,6 +109,7 @@ static retro_time_t rcheevos_client_prepare_ping(rcheevos_async_io_request* requ
 static void rcheevos_async_http_task_callback(
       retro_task_t* task, void* task_data, void* user_data, const char* error);
 
+static void rcheevos_async_end_request(rcheevos_async_io_request* request);
 
 /****************************
  * user agent construction  *
@@ -374,7 +375,7 @@ static void rcheevos_async_http_task_callback(
    else if (error)
    {
       /* there was a communication error */
-      /* automatically requeued, don't process any further */
+      /* if automatically requeued, don't process any further */
       if (rcheevos_async_request_failed(request, error))
          return;
 
@@ -484,9 +485,14 @@ static void rcheevos_async_http_task_callback(
       CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", errbuf);
    }
 
+   rcheevos_async_end_request(request);
+}
+
+static void rcheevos_async_end_request(rcheevos_async_io_request* request)
+{
    rc_api_destroy_request(&request->request);
 
-   if (request->callback && !aborted)
+   if (request->callback && !rcheevos_load_aborted())
       request->callback(request->callback_data);
 
    /* rich presence request will be reused on next ping - reset the attempt
@@ -498,10 +504,28 @@ static void rcheevos_async_http_task_callback(
 }
 
 static void rcheevos_async_begin_request(
-      rcheevos_async_io_request* request,
+      rcheevos_async_io_request* request, int init_result,
       rcheevos_async_handler handler, char type, int id,
       const char* success_message, const char* failure_message)
 {
+   if (init_result != RC_OK)
+   {
+      char errbuf[256];
+      if (id)
+         snprintf(errbuf, sizeof(errbuf), "%s %u: %s",
+               failure_message, id, rc_error_str(init_result));
+      else
+         snprintf(errbuf, sizeof(errbuf), "%s: %s",
+               failure_message, rc_error_str(init_result));
+
+      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", errbuf);
+      runloop_msg_queue_push(errbuf, 0, 5 * 60, false, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+
+      rcheevos_async_end_request(request);
+      return;
+   }
+
    request->handler         = handler;
    request->type            = type;
    request->id              = id;
@@ -582,18 +606,19 @@ static void rcheevos_client_login(const char* username,
    else
    {
       rc_api_login_request_t api_params;
+      int result;
 
       memset(&api_params, 0, sizeof(api_params));
       api_params.username = username;
       api_params.password = password;
       api_params.api_token = token;
 
-      rc_api_init_login_request(&request->request, &api_params);
+      result = rc_api_init_login_request(&request->request, &api_params);
 
       request->callback = callback;
       request->callback_data = userdata;
 
-      rcheevos_async_begin_request(request,
+      rcheevos_async_begin_request(request, result,
          rcheevos_async_login_callback,
          CHEEVOS_ASYNC_LOGIN, 0,
          NULL,
@@ -649,19 +674,18 @@ void rcheevos_client_identify_game(const char* hash,
    else
    {
       rc_api_resolve_hash_request_t api_params;
+      int result;
 
       memset(&api_params, 0, sizeof(api_params));
-      api_params.username  = "unused"; /* TODO: don't set this after upgrading to rcheevos 10.2 */
-      api_params.api_token = "unused"; /* TODO: don't set this after upgrading to rcheevos 10.2 */
       api_params.game_hash = hash;
 
-      rc_api_init_resolve_hash_request(&request->request, &api_params);
+      result = rc_api_init_resolve_hash_request(&request->request, &api_params);
 
       request->callback      = callback;
       request->callback_data = userdata;
 
       rcheevos_begin_load_state(RCHEEVOS_LOAD_STATE_IDENTIFYING_GAME);
-      rcheevos_async_begin_request(request,
+      rcheevos_async_begin_request(request, result,
          rcheevos_async_resolve_hash_callback,
          CHEEVOS_ASYNC_RESOLVE_HASH, 0,
          NULL,
@@ -972,19 +996,20 @@ void rcheevos_client_initialize_runtime(unsigned game_id,
       free(contents);
 #else
       rc_api_fetch_game_data_request_t api_params;
+      int result;
 
       memset(&api_params, 0, sizeof(api_params));
       api_params.username = rcheevos_locals->username;
       api_params.api_token = rcheevos_locals->token;
       api_params.game_id = rcheevos_locals->game.id;
 
-      rc_api_init_fetch_game_data_request(&request->request, &api_params);
+      result = rc_api_init_fetch_game_data_request(&request->request, &api_params);
 
       request->callback = rcheevos_client_initialize_runtime_callback;
       request->callback_data = data;
 
       rcheevos_begin_load_state(RCHEEVOS_LOAD_STATE_FETCHING_GAME_DATA);
-      rcheevos_async_begin_request(request,
+      rcheevos_async_begin_request(request, result,
          rcheevos_async_fetch_game_data_callback,
          CHEEVOS_ASYNC_FETCH_GAME_DATA, rcheevos_locals->game.id,
          "Fetched game data",
@@ -1013,6 +1038,7 @@ void rcheevos_client_initialize_runtime(unsigned game_id,
          else
          {
             rc_api_fetch_user_unlocks_request_t api_params;
+            int result;
 
             memset(&api_params, 0, sizeof(api_params));
             api_params.username = rcheevos_locals->username;
@@ -1020,7 +1046,7 @@ void rcheevos_client_initialize_runtime(unsigned game_id,
             api_params.game_id = rcheevos_locals->game.id;
             api_params.hardcore = i;
 
-            rc_api_init_fetch_user_unlocks_request(&request->request, &api_params);
+            result = rc_api_init_fetch_user_unlocks_request(&request->request, &api_params);
 
             request->callback = rcheevos_client_initialize_runtime_callback;
             request->callback_data = data;
@@ -1028,7 +1054,7 @@ void rcheevos_client_initialize_runtime(unsigned game_id,
             rcheevos_begin_load_state(RCHEEVOS_LOAD_STATE_FETCHING_GAME_DATA);
             if (i == 0)
             {
-               rcheevos_async_begin_request(request,
+               rcheevos_async_begin_request(request, result,
                   rcheevos_async_fetch_user_unlocks_callback,
                   CHEEVOS_ASYNC_FETCH_USER_UNLOCKS,
                   rcheevos_locals->game.id,
@@ -1037,7 +1063,7 @@ void rcheevos_client_initialize_runtime(unsigned game_id,
             }
             else
             {
-               rcheevos_async_begin_request(request,
+               rcheevos_async_begin_request(request, result,
                   rcheevos_async_fetch_user_unlocks_callback,
                   CHEEVOS_ASYNC_FETCH_HARDCORE_USER_UNLOCKS,
                   rcheevos_locals->game.id,
@@ -1188,16 +1214,17 @@ void rcheevos_client_start_session(unsigned game_id)
       else
       {
          rc_api_start_session_request_t api_params;
+         int result;
 
          memset(&api_params, 0, sizeof(api_params));
          api_params.username = rcheevos_locals->username;
          api_params.api_token = rcheevos_locals->token;
          api_params.game_id = game_id;
 
-         rc_api_init_start_session_request(
+         result = rc_api_init_start_session_request(
                &request->request, &api_params);
 
-         rcheevos_async_begin_request(request,
+         rcheevos_async_begin_request(request, result,
             rcheevos_async_start_session_callback,
             CHEEVOS_ASYNC_START_SESSION, game_id,
             "Started session for game",
@@ -1363,6 +1390,7 @@ static bool rcheevos_client_fetch_badge(
       else
       {
          rc_api_fetch_image_request_t api_params;
+         int result;
 
          memset(&api_params, 0, sizeof(api_params));
          api_params.image_name = badge_name;
@@ -1370,7 +1398,7 @@ static bool rcheevos_client_fetch_badge(
             ? RC_IMAGE_TYPE_ACHIEVEMENT_LOCKED 
             : RC_IMAGE_TYPE_ACHIEVEMENT;
 
-         rc_api_init_fetch_image_request(&request->request, &api_params);
+         result = rc_api_init_fetch_image_request(&request->request, &api_params);
 
          data->state            = state;
          data->request_index    = request_index;
@@ -1379,7 +1407,7 @@ static bool rcheevos_client_fetch_badge(
          request->callback_data = data;
 
          rcheevos_begin_load_state(RCHEEVOS_LOAD_STATE_FETCHING_BADGES);
-         rcheevos_async_begin_request(request,
+         rcheevos_async_begin_request(request, result,
             rcheevos_async_fetch_badge_callback,
             CHEEVOS_ASYNC_FETCH_BADGE, atoi(badge_name), NULL,
             "Error fetching badge");
@@ -1553,8 +1581,9 @@ void rcheevos_client_award_achievement(unsigned achievement_id)
    }
    else 
    {
-      rc_api_award_achievement_request_t api_params;
       const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+      rc_api_award_achievement_request_t api_params;
+      int result;
 
       memset(&api_params, 0, sizeof(api_params));
       api_params.username       = rcheevos_locals->username;
@@ -1563,10 +1592,10 @@ void rcheevos_client_award_achievement(unsigned achievement_id)
       api_params.hardcore       = rcheevos_locals->hardcore_active ? 1 : 0;
       api_params.game_hash      = rcheevos_locals->game.hash;
 
-      rc_api_init_award_achievement_request(&request->request,
+      result = rc_api_init_award_achievement_request(&request->request,
             &api_params);
 
-      rcheevos_async_begin_request(request,
+      rcheevos_async_begin_request(request, result,
             rcheevos_async_award_achievement_callback, 
             CHEEVOS_ASYNC_AWARD_ACHIEVEMENT, achievement_id,
             "Awarded achievement",
@@ -1609,6 +1638,7 @@ void rcheevos_client_submit_lboard_entry(unsigned leaderboard_id,
    {
       const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
       rc_api_submit_lboard_entry_request_t api_params;
+      int result;
 
       memset(&api_params, 0, sizeof(api_params));
       api_params.username       = rcheevos_locals->username;
@@ -1617,10 +1647,10 @@ void rcheevos_client_submit_lboard_entry(unsigned leaderboard_id,
       api_params.score          = value;
       api_params.game_hash      = rcheevos_locals->game.hash;
 
-      rc_api_init_submit_lboard_entry_request(&request->request,
+      result = rc_api_init_submit_lboard_entry_request(&request->request,
             &api_params);
 
-      rcheevos_async_begin_request(request,
+      rcheevos_async_begin_request(request, result,
             rcheevos_async_submit_lboard_entry_callback, 
             CHEEVOS_ASYNC_SUBMIT_LBOARD, leaderboard_id,
             "Submitted leaderboard",

@@ -1715,7 +1715,16 @@ bool rcheevos_load(const void *data)
    if (!rcheevos_locals.token[0])
    {
       rcheevos_begin_load_state(RCHEEVOS_LOAD_STATE_IDENTIFYING_GAME);
-      if (string_is_empty(settings->arrays.cheevos_token))
+      if (!string_is_empty(settings->arrays.cheevos_token))
+      {
+         CHEEVOS_LOG(RCHEEVOS_TAG "Attempting to login %s (with token)\n",
+               settings->arrays.cheevos_username);
+         rcheevos_client_login_with_token(
+               settings->arrays.cheevos_username,
+               settings->arrays.cheevos_token,
+               rcheevos_login_callback, NULL);
+      }
+      else if (!string_is_empty(settings->arrays.cheevos_password))
       {
          CHEEVOS_LOG(RCHEEVOS_TAG "Attempting to login %s (with password)\n",
                settings->arrays.cheevos_username);
@@ -1726,12 +1735,12 @@ bool rcheevos_load(const void *data)
       }
       else
       {
-         CHEEVOS_LOG(RCHEEVOS_TAG "Attempting to login %s (with token)\n",
+         CHEEVOS_LOG(RCHEEVOS_TAG "Cannot login %s (no password or token)\n",
                settings->arrays.cheevos_username);
-         rcheevos_client_login_with_token(
-               settings->arrays.cheevos_username,
-               settings->arrays.cheevos_token,
-               rcheevos_login_callback, NULL);
+         runloop_msg_queue_push("Error logging in: No password provided", 0, 5 * 60, false, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+         rcheevos_unload();
+         return false;
       }
    }
 
