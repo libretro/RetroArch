@@ -3975,3 +3975,163 @@ void video_driver_reinit(int flags)
    video_driver_reinit_context(settings, flags);
    video_st->cache_context     = false;
 }
+
+#define FRAME_DELAY_AUTO_DEBUG 0
+void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_auto_t *vfda)
+{
+   unsigned i                    = 0;
+   unsigned frame_time           = 0;
+   unsigned frame_time_frames    = vfda->frame_time_interval;
+   unsigned frame_time_target    = 1000000.0f / vfda->refresh_rate;
+   unsigned frame_time_limit_min = frame_time_target * 1.30f;
+   unsigned frame_time_limit_med = frame_time_target * 1.50f;
+   unsigned frame_time_limit_max = frame_time_target * 1.90f;
+   unsigned frame_time_limit_cap = frame_time_target * 2.50f;
+   unsigned frame_time_limit_ign = frame_time_target * 3.75f;
+   unsigned frame_time_min       = frame_time_target;
+   unsigned frame_time_max       = frame_time_target;
+   unsigned frame_time_count_pos = 0;
+   unsigned frame_time_count_min = 0;
+   unsigned frame_time_count_med = 0;
+   unsigned frame_time_count_max = 0;
+   unsigned frame_time_count_ign = 0;
+   unsigned frame_time_index     =
+         (video_st->frame_time_count &
+         (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1));
+
+   /* Calculate average frame time */
+   for (i = 1; i < frame_time_frames + 1; i++)
+   {
+      unsigned frame_time_i = 0;
+
+      if (i > frame_time_index)
+         continue;
+
+      frame_time_i = video_st->frame_time_samples[frame_time_index - i];
+
+      if (frame_time_max < frame_time_i)
+         frame_time_max = frame_time_i;
+      if (frame_time_min > frame_time_i)
+         frame_time_min = frame_time_i;
+
+      /* Count frames over the target */
+      if (frame_time_i > frame_time_target)
+      {
+         frame_time_count_pos++;
+         if (frame_time_i > frame_time_limit_min)
+            frame_time_count_min++;
+         if (frame_time_i > frame_time_limit_med)
+            frame_time_count_med++;
+         if (frame_time_i > frame_time_limit_max)
+            frame_time_count_max++;
+         if (frame_time_i > frame_time_limit_ign)
+            frame_time_count_ign++;
+
+         /* Limit maximum to prevent false positives */
+         if (frame_time_i > frame_time_limit_cap)
+            frame_time_i = frame_time_limit_cap;
+      }
+
+      frame_time += frame_time_i;
+   }
+
+   frame_time /= frame_time_frames;
+
+   /* Ignore values when core is doing internal frame skipping */
+   if (frame_time_count_ign > 0)
+      frame_time = 0;
+
+   /* Special handlings for different video driver frame timings */
+   if (frame_time < frame_time_limit_med && frame_time > frame_time_target)
+   {
+      unsigned frame_time_frames_half = frame_time_frames / 2;
+      unsigned frame_time_delta       = frame_time_max - frame_time_min;
+
+      /* Ensure outcome on certain conditions */
+      int mode = 0;
+
+      /* All frames are above the target */
+      if (frame_time_count_pos == frame_time_frames)
+         mode = 1;
+      /* At least half of interval frames are above minimum level */
+      else if (frame_time_count_min >= frame_time_frames_half)
+         mode = 2;
+      /* D3Dx stripe equalizer */
+      else if (
+               frame_time_count_pos == frame_time_frames_half
+            && frame_time_count_min >= 1
+            && frame_time_delta > (frame_time_target / 3)
+            && frame_time_delta < (frame_time_target / 2)
+            && frame_time > frame_time_target
+         )
+         mode = 3;
+      /* Boost med/max spikes */
+      else if (
+               frame_time_count_pos >= frame_time_frames_half
+            && (  frame_time_count_max > 0
+               || frame_time_count_med > 1)
+            && frame_time_count_max == frame_time_count_med
+            && frame_time_delta < frame_time_target
+         )
+         mode = 4;
+      /* Ignore */
+      else if (frame_time_delta > frame_time_target
+            && frame_time_count_med == 0
+         )
+         mode = -1;
+
+      if (mode > 0)
+      {
+#if FRAME_DELAY_AUTO_DEBUG
+         RARCH_LOG("[Video]: Frame delay nudge %d by mode %d.\n", frame_time, mode);
+#endif
+         frame_time = frame_time_limit_med;
+      }
+      else if (mode < 0)
+      {
+#if FRAME_DELAY_AUTO_DEBUG
+         RARCH_LOG("[Video]: Frame delay ignore %d.\n", frame_time);
+#endif
+         frame_time = 0;
+      }
+   }
+
+   /* Final output decision */
+   if (frame_time > frame_time_limit_min)
+   {
+      unsigned delay_decrease = 1;
+
+      /* Increase decrease the more frame time is off target */
+      if (frame_time > frame_time_limit_med && video_st->frame_delay_effective > delay_decrease)
+      {
+         delay_decrease++;
+         if (frame_time > frame_time_limit_max && video_st->frame_delay_effective > delay_decrease)
+            delay_decrease++;
+      }
+
+      vfda->decrease = delay_decrease;
+   }
+
+   vfda->time   = frame_time;
+   vfda->target = frame_time_target;
+
+#if FRAME_DELAY_AUTO_DEBUG
+   if (frame_time_index > frame_time_frames)
+      RARCH_LOG("[Video]: %5d / pos:%d min:%d med:%d max:%d / delta:%5d = %5d %5d %5d %5d %5d %5d %5d %5d\n",
+            frame_time,
+            frame_time_count_pos,
+            frame_time_count_min,
+            frame_time_count_med,
+            frame_time_count_max,
+            frame_time_max - frame_time_min,
+            video_st->frame_time_samples[frame_time_index - 1],
+            video_st->frame_time_samples[frame_time_index - 2],
+            video_st->frame_time_samples[frame_time_index - 3],
+            video_st->frame_time_samples[frame_time_index - 4],
+            video_st->frame_time_samples[frame_time_index - 5],
+            video_st->frame_time_samples[frame_time_index - 6],
+            video_st->frame_time_samples[frame_time_index - 7],
+            video_st->frame_time_samples[frame_time_index - 8]
+      );
+#endif
+}

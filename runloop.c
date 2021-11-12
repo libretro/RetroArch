@@ -7554,11 +7554,16 @@ int runloop_iterate(void)
       if (settings->bools.video_frame_delay_auto)
       {
          float refresh_rate           = settings->floats.video_refresh_rate;
+         unsigned video_swap_interval = settings->uints.video_swap_interval;
+         unsigned video_bfi           = settings->uints.video_black_frame_insertion;
          unsigned frame_time_interval = 8;
          bool frame_time_update       =
                /* Skip some starting frames for stabilization */
-               video_st->frame_count > 10 &&
+               video_st->frame_count > frame_time_interval &&
                video_st->frame_count % frame_time_interval == 0;
+
+         /* Black frame insertion + swap interval multiplier */
+         refresh_rate = (refresh_rate / (video_bfi + 1.0f) / video_swap_interval);
 
          /* Set target moderately as half frame time with 0 delay */
          if (video_frame_delay == 0)
@@ -7572,55 +7577,16 @@ int runloop_iterate(void)
 
          if (video_frame_delay_effective > 0 && frame_time_update)
          {
-            unsigned i                    = 0;
-            unsigned frame_time           = 0;
-            unsigned frame_time_frames    = frame_time_interval - 1;
-            unsigned frame_time_target    = 1000000.0f / refresh_rate;
-            unsigned frame_time_limit_min = frame_time_target * 1.25;
-            unsigned frame_time_limit_med = frame_time_target * 1.50;
-            unsigned frame_time_limit_max = frame_time_target * 1.90;
-            unsigned frame_time_limit_cap = frame_time_target * 2.25;
-            unsigned frame_time_limit_ign = frame_time_target * 2.50;
-            unsigned frame_time_index     =
-                  (video_st->frame_time_count &
-                  (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1));
+            video_frame_delay_auto_t vfda = {0};
+            vfda.frame_time_interval      = frame_time_interval;
+            vfda.refresh_rate             = refresh_rate;
 
-            /* Calculate average frame time to balance spikes */
-            for (i = 1; i < frame_time_frames + 1; i++)
+            video_frame_delay_auto(video_st, &vfda);
+            if (vfda.decrease > 0)
             {
-               retro_time_t frame_time_i = 0;
-
-               if (i > (unsigned)frame_time_index)
-                  continue;
-
-               frame_time_i = video_st->frame_time_samples[frame_time_index - i];
-
-               /* Ignore values when core is doing internal frame skipping */
-               if (frame_time_i > frame_time_limit_ign)
-                  frame_time_i = 0;
-               /* Limit maximum to prevent false positives */
-               else if (frame_time_i > frame_time_limit_cap)
-                  frame_time_i = frame_time_limit_cap;
-
-               frame_time += frame_time_i;
-            }
-            frame_time /= frame_time_frames;
-
-            if (frame_time > frame_time_limit_min)
-            {
-               unsigned delay_decrease = 1;
-
-               /* Increase decrease the more frame time is off target */
-               if (frame_time > frame_time_limit_med && video_frame_delay_effective > delay_decrease)
-               {
-                  delay_decrease++;
-                  if (frame_time > frame_time_limit_max && video_frame_delay_effective > delay_decrease)
-                     delay_decrease++;
-               }
-
-               video_frame_delay_effective -= delay_decrease;
+               video_frame_delay_effective -= vfda.decrease;
                RARCH_LOG("[Video]: Frame delay decrease by %d to %d due to frame time: %d > %d.\n",
-                     delay_decrease, video_frame_delay_effective, frame_time, frame_time_target);
+                     vfda.decrease, video_frame_delay_effective, vfda.time, vfda.target);
             }
          }
       }
