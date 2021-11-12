@@ -865,8 +865,8 @@ bool netplay_handshake_init_send(netplay_t *netplay,
    header[5] = htonl(netplay_impl_magic());
 
    if (netplay->is_server &&
-       (!string_is_empty(settings->paths.netplay_password) ||
-        !string_is_empty(settings->paths.netplay_spectate_password)))
+       (settings->paths.netplay_password[0] ||
+        settings->paths.netplay_spectate_password[0]))
    {
       /* Demand a password */
       if (simple_rand_next == 1)
@@ -1396,8 +1396,8 @@ static bool netplay_handshake_pre_nick(netplay_t *netplay,
    if (netplay->is_server)
    {
       /* There's a password, so just put them in PRE_PASSWORD mode */
-      if (  !string_is_empty(settings->paths.netplay_password) ||
-            !string_is_empty(settings->paths.netplay_spectate_password))
+      if (  settings->paths.netplay_password[0] ||
+            settings->paths.netplay_spectate_password[0])
          connection->mode = NETPLAY_CONNECTION_PRE_PASSWORD;
       else
       {
@@ -1451,7 +1451,7 @@ static bool netplay_handshake_pre_password(netplay_t *netplay,
    correct = false;
    snprintf(password, sizeof(password), "%08lX", (unsigned long)connection->salt);
 
-   if (!string_is_empty(settings->paths.netplay_password))
+   if (settings->paths.netplay_password[0])
    {
       strlcpy(password + 8,
             settings->paths.netplay_password, sizeof(password)-8);
@@ -1464,7 +1464,7 @@ static bool netplay_handshake_pre_password(netplay_t *netplay,
          connection->can_play = true;
       }
    }
-   if (!correct && !string_is_empty(settings->paths.netplay_spectate_password))
+   if (settings->paths.netplay_spectate_password[0])
    {
       strlcpy(password + 8,
             settings->paths.netplay_spectate_password, sizeof(password)-8);
@@ -3601,7 +3601,7 @@ void netplay_hangup(netplay_t *netplay,
    /* Report this disconnection */
    if (netplay->is_server)
    {
-      if (!string_is_empty(connection->nick))
+      if (connection->nick[0])
       {
          snprintf(msg, sizeof(msg),
                msg_hash_to_str(MSG_NETPLAY_SERVER_NAMED_HANGUP), connection->nick);
@@ -4409,7 +4409,7 @@ static bool chat_check(netplay_t *netplay)
       return false;
 
    /* Do nothing if we don't have a nickname. */
-   if (string_is_empty(netplay->nick))
+   if (!netplay->nick[0])
       return false;
 
    /* Do nothing if we are not playing. */
@@ -4441,16 +4441,16 @@ static bool chat_check(netplay_t *netplay)
    return false;
 }
 
-static INLINE size_t format_chat(char *s, size_t len,
+static size_t format_chat(char *buf, size_t bufsz,
       const char *nick, const char *msg)
 {
    /* Truncate the message if necessary. */
-   snprintf(s, len, "%s: %s", nick, msg);
+   snprintf(buf, bufsz, "%s: %s", nick, msg);
 
-   return strlen(s);
+   return strlen(buf);
 }
 
-static INLINE void relay_chat(netplay_t *netplay, const char *msg, size_t len)
+static void relay_chat(netplay_t *netplay, const char *msg, size_t len)
 {
    size_t i;
    for (i = 0; i < netplay->connections_size; i++)
@@ -4465,13 +4465,6 @@ static INLINE void relay_chat(netplay_t *netplay, const char *msg, size_t len)
    /* We don't flush. Chat is not time essential. */
 }
 
-static INLINE void show_chat(const char *msg)
-{
-   RARCH_LOG("%s\n", msg);
-   runloop_msg_queue_push(msg, 1, CHAT_FRAME_TIME, false, NULL,
-      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-}
-
 static void send_chat(void *userdata, const char *line)
 {
    char   chat_msg[MAX_CHAT_SIZE];
@@ -4481,7 +4474,7 @@ static void send_chat(void *userdata, const char *line)
 
    /* We perform the same checks,
       just in case something has changed. */
-   if (!string_is_empty(line) && chat_check(netplay))
+   if (chat_check(netplay))
    {
       /* For servers, we need to format and relay it ourselves. */
       if (netplay->is_server)
@@ -4489,7 +4482,10 @@ static void send_chat(void *userdata, const char *line)
          chat_len = format_chat(chat_msg, sizeof(chat_msg), netplay->nick, line);
 
          relay_chat(netplay, chat_msg, chat_len);
-         show_chat(chat_msg);
+
+         RARCH_LOG("%s\n", chat_msg);
+         runloop_msg_queue_push(chat_msg, 1, CHAT_FRAME_TIME, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
       /* For clients, we just send it to the server. */
       else
@@ -4512,6 +4508,7 @@ void netplay_input_chat(netplay_t *netplay)
    if (chat_check(netplay))
    {
       menu_input_ctx_line_t chat_input = {0};
+      net_driver_state_t    *net_st    = &networking_driver_st;
 
       retroarch_menu_running();
 
@@ -4536,7 +4533,7 @@ static bool handle_chat(netplay_t *netplay,
    char   chat_msg[MAX_CHAT_SIZE];
    size_t chat_len;
 
-   if (!connection->active || string_is_empty(msg))
+   if (!connection->active || !msg[0])
       return false;
 
    /* Client sent a chat message;
@@ -4545,7 +4542,7 @@ static bool handle_chat(netplay_t *netplay,
    if (netplay->is_server)
    {
       /* No point displaying a chat message without a nickname. */
-      if (string_is_empty(connection->nick))
+      if (!connection->nick[0])
          return false;
 
       /* Only playing clients can send chat. */
@@ -4562,8 +4559,12 @@ static bool handle_chat(netplay_t *netplay,
    /* If we still got a message even though we are not playing,
       ignore it! */
    if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING ||
-         netplay->self_mode == NETPLAY_CONNECTION_SLAVE)
-      show_chat(msg);
+      netplay->self_mode == NETPLAY_CONNECTION_SLAVE)
+   {
+      RARCH_LOG("%s\n", msg);
+      runloop_msg_queue_push(msg, 1, CHAT_FRAME_TIME, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 
    return true;
 }
@@ -6201,7 +6202,7 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
       netplay->connections[0].fd = -1;
    }
 
-   strlcpy(netplay->nick, !string_is_empty(nick)
+   strlcpy(netplay->nick, nick[0]
          ? nick : RARCH_DEFAULT_NICK,
          sizeof(netplay->nick));
 
