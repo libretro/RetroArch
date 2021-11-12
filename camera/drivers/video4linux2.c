@@ -42,6 +42,7 @@
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
 #include <file/file_path.h>
+#include <libretro.h>
 
 #include <compat/strl.h>
 
