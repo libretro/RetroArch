@@ -3874,6 +3874,14 @@ MSG_HASH(
    "Eine Bildschirmmeldung anzeigen, wenn die Wiederholfrequenz eingestellt wird."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "Zusätzliche Netplay-Benachrichtigungen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "Nicht essentielle Netplay-Nachrichten anzeigen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "Benachrichtigungs-Schriftart"
    )
@@ -5061,6 +5069,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
    "Der Port der Host-IP-Adresse. Kann entweder ein TCP- oder ein UDP-Port sein."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
+   "Maximale gleichzeitige Verbindungen"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
@@ -10087,7 +10099,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FLUSH_FAILED,
-   "Core-Optionen konnten nicht gespeichert werden in:"
+   "Fehler beim Speichern der Core-Optionen in:"
    )
 MSG_HASH(
    MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
@@ -10283,7 +10295,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT,
-   "Header konnte nicht vom Client empfangen werden."
+   "Client-Header konnte nicht empfangen werden."
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_NICKNAME,
@@ -11032,6 +11044,22 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
    "Fehler beim Einsetzen der zuletzt benutzten Disc..."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   "Verbindung zum Client fehlgeschlagen"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "Verbindung zum Host fehlgeschlagen"
+   )
+MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "Netplay-Host voll"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "Host-Header konnte nicht empfangen werden"
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,

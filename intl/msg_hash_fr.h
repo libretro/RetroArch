@@ -7094,7 +7094,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
-   "Supprimer the Game Preset, used only for the specific game in question."
+   "Supprimer le préréglage du jeu, utilisé uniquement pour le jeu en question."
    )
 
 /* Quick Menu > Shaders > Shader Parameters */

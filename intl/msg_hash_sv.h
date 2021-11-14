@@ -1319,8 +1319,16 @@ MSG_HASH(
    "Interpolering av bilder"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Ange bildinterpoleringsmetod om heltalsskalning är inaktivt. Närmaste granne har lägst prestandakrav."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
    "Närmaste granne"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   "Semi-linjär"
    )
 #endif
 #endif
@@ -1384,6 +1392,18 @@ MSG_HASH(
    "Cykla genom dessa alternativ för att justera porch-inställningarna för att ändra bildstorleken."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   "Använd högupplöst meny"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
+   "Växla till högupplöst läge för användning med högupplösta menyer när inget innehåll har laddats."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   "Anpassad uppdateringsfrekvens"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    "Använd en anpassad uppdateringshastighet som anges i konfigurationsfilen om det behövs."
    )
@@ -1419,6 +1439,26 @@ MSG_HASH(
    "GPU-index"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   "Välj vilket grafikkort du ska använda."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
+   "Horisontell förskjutning av skärmen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
+   "Tvingar en viss offset horisontellt till videon. Offseten tillämpas globalt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
+   "Vertikal förskjutning av skärmen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
+   "Tvingar en viss offset vertikalt till videon. Offseten tillämpas globalt."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "Vertikal uppdateringsfrekvens"
    )
@@ -1446,6 +1486,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
    "Vertikal uppdateringsfrekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
+   "Ställ in den vertikala uppdateringshastigheten för bildskärmen. '50 Hz' kommer att möjliggöra smidig video när du kör PAL-innehåll."
    )
 #endif
 MSG_HASH(
@@ -1491,12 +1535,24 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    "Bestäm en egen höjd för skärmen i helskärmsläge (påverkar inte helskärmsfönster). Lämnas detta obestämt så används skrivbordets höjd."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
+   "Tvinga upplösning på UWP"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
+   "Tvingar upplösningen till fullskärmsstorlek. Om satt till 0, kommer ett fast värde på 3840 x 2160 att användas."
+   )
 
 /* Settings > Video > Windowed Mode */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
    "Fönsterskalning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+   "Ställ in fönsterstorleken till den angivna multipeln av kärnans vystorlek."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -1509,6 +1565,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
    "Kom ihåg Fönsterposition och Storlek"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+   "Visa allt innehåll i ett fönster i fast storlek av dimensioner som anges av \"Fönsterbredd\" och \"Fönsterhöjd\", och spara aktuell fönsterstorlek och position vid stängning av RetroArch. När inaktiverad kommer fönsterstorleken att ställas in dynamiskt baserat på 'Fönsterskala'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Använd anpassad fönsterstorlek"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Visa allt innehåll i ett fönster med en fast storlek som anges av \"Fönsterbredd\" och \"Fönsterhöjd\". När inaktiverad kommer fönsterstorleken att ställas in dynamiskt baserat på 'Fönsterskala'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1526,6 +1594,22 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
    "Ange den anpassade höjden för visningsfönstret."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Maximal fönsterbredd"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Ange maximal bredd på skärmfönstret när du automatiskt ändrar storlek baserat på 'Fönsterskala'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Maximal fönsterhöjd"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Ange den maximala höjden på displayfönstret när du automatiskt ändrar storlek baserat på 'Fönsterskala'."
+   )
 
 /* Settings > Video > Scaling */
 
@@ -1536,6 +1620,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
    "Skala video enbart i heltalssteg. Basstorleken beror på systemrapporterad geometri och bildförhållande. Om 'Tvinga Bildförhållande' inte är inställt, kommer X/Y att vara heltal skalat oberoende."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Heltalsöverskalning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Tvinga heltalsskalning att runda upp till nästa större heltal istället för avrundning ner."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -1598,9 +1690,45 @@ MSG_HASH(
 
 /* Settings > Video > HDR */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
+   "Aktivera HDR"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "Aktivera HDR om skärmen stöder det."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
+   "Toppljusstyrka"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
+   "Ställ in den toppljusstyrka (i cd/m2) som din bildskärm kan reproducera. Se RTings för bildskärmens toppbelysning."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
+   "Kontrast"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
+   "Gamma/kontrastkontroll för HDR. Tar färgerna och ökar det totala intervallet mellan de ljusaste partierna och de mörkaste partierna av bilden. Desto högre HDR-kontrast desto större blir denna skillnad, medans lägre kontrast bidrar till en mera \"urtvättad\" bild. Hjälper användare att justera bilden till deras smak och vad de anser ser bäst ut på sin bildskärm."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "Expandera Gamma"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "När färgrymden är konverterad till linjär rymd kan du besluta huruvida vi ska expandera färgomfånget för att uppnå HDR10."
+   )
 
 /* Settings > Video > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   "Vertikal synkronisering (Vsync)"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Bildrutefördröjning"
@@ -1665,8 +1793,16 @@ MSG_HASH(
    "Ljudlöst läge"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+   "Stäng av ljudet."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
    "Ljudlöst läge för mixern"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
+   "Aktivera/deaktivera ljudlöst läge för mixern."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
@@ -1701,6 +1837,10 @@ MSG_HASH(
    "Ljud-plugin som bearbetar ljud innan det skickas till drivrutinen."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
+   "Ta bort DSP-pluginen"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    "WASAPI Exklusivt läge"
    )
@@ -1723,9 +1863,21 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    "Ljud"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
+   "Enhet"
+   )
 
 /* Settings > Audio > Resampler */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
+   "Utmatningshastighet (Hz)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
+   "Prov på ljudutgång."
+   )
 
 /* Settings > Audio > Synchronization */
 
@@ -1744,9 +1896,37 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
    "Bild"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
+   "Volym"
+   )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
+   "Spela"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
+   "Kommer att starta uppspelning av ljudströmmen. När den är klar kommer den att ta bort den aktuella ljudströmmen från minnet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
+   "Spela (Repetera)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
+   "Spela (sekventiell)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
+   "Stopp"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
+   "Volym"
+   )
 
 /* Settings > Audio > Menu Sounds */
 

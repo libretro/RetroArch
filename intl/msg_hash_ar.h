@@ -454,6 +454,22 @@ MSG_HASH(
    "البرنامج الثابت فيرموير"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
+   "مفقود، مطلوب:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   "مفقود, إختياري:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
+   "موجود، مطلوب:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   "موجود، إختياري:"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "قفل النواة المثبتة"
    )
@@ -1269,6 +1285,10 @@ MSG_HASH(
    "تغيير إعدادات قياس الفيديو."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
+   "تغيير إعدادات النطاق عالي الديناميكية للفيديو."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    "المزامنة"
    )
@@ -1312,6 +1332,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "تصفية ثنائية الأسلوب"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   "يضيف ضباباً خفيفاً للصورة لتنعيم حواف البكسل الصلبة. هذا الخيار لا يؤثر إلا قليلاً على الأداء."
+   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
@@ -1342,6 +1366,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
    "أقرب جوار"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   "شبه خطي"
+   )
 #endif
 #endif
 MSG_HASH(
@@ -1349,13 +1377,29 @@ MSG_HASH(
    "تأخير التقاط تلقائي"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
+   "تأخير التحميل التلقائي للتظليلات (بالمللي ثانية). يمكنها إصلاح الخلل الناتج في الرسومات عند استخدام برنامج \"تسجيل الشاشة\"."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    "فلتر الفيديو"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER,
+   "يقوم بتطبيق فلتر فيديو يعمل على قوة المعالج. ملاحظة: يمكن أن يأتي بكلفة عالية على عاتق الأداء. قد تعمل بعض فلاتر الفيديو فقط للنواة التي تستخدم ألوان 32 بت أو 16 بت."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
    "إزالة فلتر الفيديو"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   "إلغاء تحميل أي فلتر فيديو نشط يعمل على المعالج."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "تمكين ملء الشاشة فوق النوتش في أجهزة الأندرويد"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -1392,6 +1436,18 @@ MSG_HASH(
    "دورة من خلال هذه الخيارات لضبط إعدادات الجزء لتغيير حجم الصورة."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   "إستخدام قائمةٍ عالية الدقة"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
+   "تقوم بالتبديل إلى نموذج عالي الدقة للإستخدام مع قوائم عالية الدقة عند عدم تحميل أي محتوى."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   "معدل تحديث مخصص"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    "استخدام معدل تحديث مخصص محدد في ملف التكوين إذا لزم الأمر."
    )
@@ -1401,6 +1457,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    "فهرس المراقبة"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
+   "حدد شاشة العرض التي سيتم استخدامها."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
@@ -1421,6 +1481,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
    "مؤشر GPU"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   "تحديد بطاقة الرسومات المراد استخدامها."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
+   "إزاحة الشاشة الأفقية"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,

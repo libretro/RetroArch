@@ -79,9 +79,141 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
    "Carregar Disc"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_DISC,
+   "Carrega un disc físic multimèdia. Primer hauràs de seleccionar el nucli (Carregar Nucli) a utilitzar amb el disc."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+   "Abocar Disc"
+   )
+MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
+   MENU_ENUM_SUBLABEL_DUMP_DISC,
+   "Abocar el disc físic multimèdia a l'emmagatzematge intern. Es guardarà com un arxiu d'imatge."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
+   "Llistes de reproducció"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
+   "El contingut que coincideixi amb la base de dades apareixerà aquí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
+   "Importar Contingut"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
+   "Crea i actualitza les llistes de reproducció escanejant el contingut."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+   "Mostrar Menú d'Escriptori"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   "Obre el menú tradicional d'escriptori."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Desactiva el mode quiosc (requereix reiniciar)."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+   "Mostra totes les opcions de configuració."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
+   "Actualitzador en línia"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
+   "Descarrega complements, components i contingut per RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY,
+   "Joc en línia"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY,
+   "Uneix-te o organitza una sessió de joc en línia."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS,
+   "Opcions"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS,
+   "Configura el programa."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
+   "Informació"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
+   "Mostra la informació del sistema."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+   "Arxiu de Configuració"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
+   "Gestiona i crea fitxers de configuració."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_LIST,
+   "Ajuda"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_HELP_LIST,
+   "Assabenta't del funcionament del programa."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+   "Reiniciar RetroArch"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   "Reinicia el programa."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+   "Tancar RetroArch"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   "Surt del programa."
+   )
 
 /* Main Menu > Load Core */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
+   "Descarrega Nucli"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+   "Descarrega i instal·la un nucli de l'actualitzador en línia."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+   "Instal·la o Restaura un Nucli"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+   "Instal·la o restaura un nucli des de la carpeta 'Downloads'."
+   )
+MSG_HASH( /* FIXME Maybe add a description? */
+   MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
+   "Iniciar Processador de Vídeo"
+   )
+MSG_HASH( /* FIXME Maybe add a description? */
+   MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
+   "Iniciar RetroPad Remot"
+   )
 
 /* Main Menu > Load Content */
 

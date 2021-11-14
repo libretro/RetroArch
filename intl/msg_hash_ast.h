@@ -1152,6 +1152,14 @@ MSG_HASH(
    "Reafitar los controles"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
+   "Botón B (Abaxo)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
+   "Botón Y (Esquierda)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
    "Botón A (Derecha)"
    )
@@ -1931,7 +1939,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
-   "Los llogros nun se puen activar con esti nucleu"
+   "Nun se puen activar los llogros con esti nucleu"
 )
 
 /* Quick Menu > Information */
@@ -2803,7 +2811,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
-   "Nun pue lleese'l ficheru comprimíu."
+   "Nun ye posible lleer el ficheru comprimíu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER,
@@ -2972,6 +2980,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_COULD_NOT_OPEN_DATA_TRACK,
    "nun se pudo abrir la pista de datos"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_READ_MOVIE_HEADER,
+   "Nun se pudo lleer la testera del filme."
+   )
+MSG_HASH(
+   MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
+   "Nun se pudo lleer l'estáu del filme."
    )
 MSG_HASH(
    MSG_DOWNLOADING,
@@ -3188,6 +3204,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOCALAP_ERROR_CONFIG_CREATE,
    "Nun se pudo crear el ficheru de configuración del puntu d'accesu Wi-Fi."
+   )
+MSG_HASH(
+   MSG_LOCALAP_ERROR_CONFIG_PARSE,
+   "El ficheru de configuración ye incorreutu - nun se pudo atopar APNAME o PASSWORD en %s"
    )
 #endif
 #ifdef GEKKO
