@@ -271,7 +271,6 @@ static void rcheevos_menu_update_badge(rcheevos_racheevo_t* cheevo)
 static void rcheevos_menu_append_items(rcheevos_locals_t* rcheevos_locals,
       enum rcheevos_menuitem_bucket bucket)
 {
-   const settings_t *settings = config_get_ptr();
    rcheevos_racheevo_t* cheevo = rcheevos_locals->game.achievements;
    rcheevos_racheevo_t* stop   = cheevo + rcheevos_locals->game.achievement_count;
    const unsigned first_index  = rcheevos_locals->menuitem_count;
@@ -345,9 +344,14 @@ static void rcheevos_menu_append_items(rcheevos_locals_t* rcheevos_locals,
                break;
          }
 
-         if (cheevo->badge && cheevo->badge[0] && settings &&
-               settings->bools.cheevos_badges_enable)
-            rcheevos_menu_update_badge(cheevo);
+         if (cheevo->badge && cheevo->badge[0])
+         {
+#ifndef HAVE_GFX_WIDGETS
+            const settings_t* settings = config_get_ptr();
+            if (settings && settings->bools.cheevos_badges_enable)
+#endif
+               rcheevos_menu_update_badge(cheevo);
+         }
       }
 
       ++cheevo;

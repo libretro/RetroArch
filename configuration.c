@@ -1393,7 +1393,7 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("cheevos_username",         settings->arrays.cheevos_username, false, NULL, true);
    SETTING_ARRAY("cheevos_password",         settings->arrays.cheevos_password, false, NULL, true);
    SETTING_ARRAY("cheevos_token",            settings->arrays.cheevos_token, false, NULL, true);
-   SETTING_ARRAY("cheevos_leaderboards_enable", settings->arrays.cheevos_leaderboards_enable, true, "false", true);
+   SETTING_ARRAY("cheevos_leaderboards_enable", settings->arrays.cheevos_leaderboards_enable, true, "true", true);
 #endif
    SETTING_ARRAY("video_context_driver",     settings->arrays.video_context_driver,   false, NULL, true);
    SETTING_ARRAY("audio_driver",             settings->arrays.audio_driver,           false, NULL, true);
@@ -1876,11 +1876,11 @@ static struct config_bool_setting *populate_settings_bool(
 #ifdef HAVE_CHEEVOS
    SETTING_BOOL("cheevos_enable",               &settings->bools.cheevos_enable, true, DEFAULT_CHEEVOS_ENABLE, false);
    SETTING_BOOL("cheevos_test_unofficial",      &settings->bools.cheevos_test_unofficial, true, false, false);
-   SETTING_BOOL("cheevos_hardcore_mode_enable", &settings->bools.cheevos_hardcore_mode_enable, true, false, false);
+   SETTING_BOOL("cheevos_hardcore_mode_enable", &settings->bools.cheevos_hardcore_mode_enable, true, true, false);
    SETTING_BOOL("cheevos_challenge_indicators", &settings->bools.cheevos_challenge_indicators, true, true, false);
    SETTING_BOOL("cheevos_richpresence_enable",  &settings->bools.cheevos_richpresence_enable, true, true, false);
    SETTING_BOOL("cheevos_unlock_sound_enable",  &settings->bools.cheevos_unlock_sound_enable, true, false, false);
-   SETTING_BOOL("cheevos_verbose_enable",       &settings->bools.cheevos_verbose_enable, true, false, false);
+   SETTING_BOOL("cheevos_verbose_enable",       &settings->bools.cheevos_verbose_enable, true, true, false);
    SETTING_BOOL("cheevos_auto_screenshot",      &settings->bools.cheevos_auto_screenshot, true, false, false);
    SETTING_BOOL("cheevos_badges_enable",        &settings->bools.cheevos_badges_enable, true, false, false);
    SETTING_BOOL("cheevos_start_active",         &settings->bools.cheevos_start_active, true, false, false);
@@ -2526,6 +2526,11 @@ void config_set_defaults(void *data)
          settings->arrays.ai_service_url,
          DEFAULT_AI_SERVICE_URL);
 
+#ifdef HAVE_CHEEVOS
+   configuration_set_string(settings,
+         settings->arrays.cheevos_leaderboards_enable,
+         "true");
+#endif
 
 #ifdef HAVE_MATERIALUI
    if (g_defaults.menu_materialui_menu_color_theme_enable)

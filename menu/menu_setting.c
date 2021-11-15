@@ -18687,7 +18687,7 @@ static bool setting_append_list(
                sizeof(settings->arrays.cheevos_leaderboards_enable),
                MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE,
                MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
-               "false",
+               "true",
                "false|true",
                &group_info,
                &subgroup_info,
@@ -18734,9 +18734,10 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler,
-               SD_FLAG_NONE
+               SD_FLAG_ADVANCED
                );
 
+#ifndef HAVE_GFX_WIDGETS
          if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))
             CONFIG_BOOL(
                   list, list_info,
@@ -18751,8 +18752,9 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler,
-                  SD_FLAG_NONE
+                  SD_FLAG_ADVANCED
                   );
+#endif
 
 #ifdef HAVE_AUDIOMIXER
          CONFIG_BOOL(
@@ -18777,7 +18779,7 @@ static bool setting_append_list(
                &settings->bools.cheevos_verbose_enable,
                MENU_ENUM_LABEL_CHEEVOS_VERBOSE_ENABLE,
                MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
-               false,
+               true,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -18785,7 +18787,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler,
-               SD_FLAG_NONE
+               SD_FLAG_ADVANCED
                );
 
          CONFIG_BOOL(
@@ -18817,7 +18819,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler,
-               SD_FLAG_NONE
+               SD_FLAG_ADVANCED
                );
 
          CONFIG_BOOL(
@@ -18825,7 +18827,7 @@ static bool setting_append_list(
                &settings->bools.cheevos_hardcore_mode_enable,
                MENU_ENUM_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
                MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
-               false,
+               true,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
