@@ -1337,6 +1337,15 @@ static void rcheevos_start_session(void)
          && rcheevos_locals.hardcore_active)
       rcheevos_activate_leaderboards();
 
+   /* We don't have to wait for this to complete
+    * to proceed to the next loading state */
+   rcheevos_client_start_session(rcheevos_locals.game.id);
+
+   rcheevos_validate_memrefs(&rcheevos_locals);
+
+   /* Let the runtime start processing the achievements */
+   rcheevos_locals.loaded = true;
+
 #if HAVE_REWIND
    if (!rcheevos_locals.hardcore_active)
    {
@@ -1359,15 +1368,6 @@ static void rcheevos_start_session(void)
       }
    }
 #endif
-
-   /* We don't have to wait for this to complete 
-    * to proceed to the next loading state */
-   rcheevos_client_start_session(rcheevos_locals.game.id);
-
-   rcheevos_validate_memrefs(&rcheevos_locals);
-
-   /* Let the runtime start processing the achievements */
-   rcheevos_locals.loaded = true;
 
    rcheevos_show_game_placard();
 
