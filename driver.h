@@ -25,6 +25,7 @@
 #include <retro_common_api.h>
 
 #include "configuration.h"
+#include "retroarch_types.h"
 
 RETRO_BEGIN_DECLS
 
@@ -129,6 +130,10 @@ void drivers_init(settings_t *settings, int flags,
  * set this to true at the end of its 'init' function.
  **/
 void driver_uninit(int flags);
+
+void retro_input_poll_null(void);
+
+void retroarch_deinit_drivers(struct retro_callbacks *cbs);
 
 RETRO_END_DECLS
 

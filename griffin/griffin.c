@@ -1219,6 +1219,7 @@ RETROARCH
 ============================================================ */
 #include "../retroarch.c"
 #include "../command.c"
+#include "../driver.c"
 #include "../midi_driver.c"
 #include "../location_driver.c"
 #include "../libretro-common/queues/task_queue.c"
