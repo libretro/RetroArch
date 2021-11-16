@@ -4130,7 +4130,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
-   "디스크 변경 후 현재 컨텐츠를 이어합니다."
+   "디스크 변경 후 컨텐츠 이어하기"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,

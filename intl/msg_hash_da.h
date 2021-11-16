@@ -271,12 +271,208 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
    "Opdater alle installerede kerner til den nyeste tilgængelige version."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+   "Skift kerner til Play Butik-versioner"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+   "Erstat alle ældre og manuelt installerede kerner med de nyeste versioner fra Play Butik, hvor de er tilgængelige."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
+   "Opdatering af miniaturer"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
+   "Download komplet miniaturepakke for det valgte system."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
+   "Opdatering af miniaturebilleder for spillelister"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
+   "Download miniaturer for poster i den valgte spilleliste."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
+   "Indholdsdownloader"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
+   "Opdater kerneinfofiler"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
+   "Opdater aktiver"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
+   "Opdater controllerprofiler"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
+   "Opdater snydekoder"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
+   "Opdater databaser"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
+   "Opdater overlays"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
+   "Opdater GLSL Shaders"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
+   "Opdater Cg Shaders"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
+   "Opdater Slang Shaders"
+   )
 
 /* Main Menu > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
+   "Kerne information"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFORMATION,
+   "Se information vedrørende applikationen/kerne."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   "Disk information"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+   "Se information om indsatte mediediske."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
+   "Netværksinformation"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
+   "Vis netværksgrænseflade(r) og tilknyttede IP-adresser."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
+   "Systeminformation"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
+   "Se information specifikt for enheden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
+   "Database manager"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
+   "Se databaser."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
+   "Markørhåndtering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
+   "Se tidligere søgninger."
+   )
 
 /* Main Menu > Information > Core Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
+   "Kernenavn"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
+   "Kerneetiket"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
+   "Systemnavn"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
+   "Systemproducent"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
+   "Kategorier"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
+   "Forfatter"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
+   "Rettigheder"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
+   "Licens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
+   "Understøttede udvidelser"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
+   "Påkrævet Grafik API"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
+   "Mangler, Påkrævet:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   "Mangler, Valgfri:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
+   "Tilstede, Påkrævet:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   "Tilstede, Valgfri:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LOCK,
+   "Lås installeret kerne"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LOCK,
+   "Forhindre ændring af den aktuelt installerede kerne. Kan bruges til at undgå uønskede opdateringer, når indhold kræver en bestemt kerneversion (f.eks Arcade ROM sæt)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_DELETE,
+   "Slet kerne"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_DELETE,
+   "Fjern denne kerne fra disken."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
+   "Sikkerhedskopiér kerne"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
+   "Opret en arkiveret sikkerhedskopi af den aktuelt installerede kerne."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
+   "Gendan sikkerhedskopi"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
    "Installer en tidligere version af kernen fra en liste over arkiverede sikkerhedskopier."
@@ -610,12 +806,176 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
    "Skift optagelsesindstillinger."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
+   "Ændre skærmoverlejring og tastaturoverlejring og notifikationsindstillinger på skærmen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
+   "Brugergrænseflade"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
+   "Skift indstillinger for brugergrænseflade."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
+   "AI Tjeneste"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
+   "Skift indstillinger for AI-tjenesten (Oversættelse/TTS/Misc)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
+   "Tilgængelighed"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
+   "Skift indstillinger for tilgængelighedsfortælleren."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
+   "Strømstyring"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
+   "Skift indstillinger for strømstyring."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
+   "Præstationer"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
+   "Skift indstillinger for præstationer."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
+   "Netværk"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+   "Skift server og netværksindstillinger."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
+   "Spilleliste"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
+   "Skift indstillinger for spillelister."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
+   "Bruger"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_SETTINGS,
+   "Skift konto, brugernavn og sprogindstillinger."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
+   "Mappe"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
+   "Skift standardmapper hvor filer er placeret."
+   )
 
 /* Settings > Drivers */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
+   "Input driver til brug. Nogle videodrivere tvinger en anden inputdriver."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+   "Controller driver der skal bruges."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
+   "Videodriver der skal bruges."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
+   "Lyd"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
+   "Lyddriver der skal bruges."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
+   "Lyd resampler"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
+   "Lyd resampler driver der skal bruges."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   "Kamera"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
+   "Kameradriver der skal bruges."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
+   "Bluetoothdriver der skal bruges."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
+   "Wi-Fi-driver, der skal bruges."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
+   "Placering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
+   "Placeringsdriver der skal bruges."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DRIVER,
+   "Menudriver der skal bruges."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
+   "Optag"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
+   "Optagedriver der skal bruges."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
+   "MIDI-driver der skal bruges."
+   )
 
 /* Settings > Video */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+   "Output native, lavopløsningssignaler til brug med CRT-skærme."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
+   "Skift indstillinger for videooutput."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   "Fuldskærmstilstand"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   "Skift indstillinger for fuldskærmstilstand."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+   "Vinduestilstand"
+   )
 #if defined(DINGUX)
 #if defined(RS90) || defined(MIYOO)
 #endif
