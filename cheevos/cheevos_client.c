@@ -442,9 +442,7 @@ static void rcheevos_async_http_task_callback(
        * response is properly formatted or will encounter a parse failure
        * before reading past the end of the data */
       if (request->handler)
-      {
          request->handler(request, data, buffer, sizeof(buffer));
-      }
    }
 
    if (!buffer[0])

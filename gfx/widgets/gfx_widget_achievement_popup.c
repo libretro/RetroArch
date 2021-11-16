@@ -297,7 +297,8 @@ static void gfx_widget_achievement_popup_next(void* userdata)
 
    if (state->queue_read_index >= 0)
    {
-      gfx_widget_achievement_popup_free_current(state);
+      if (state->queue[state->queue_read_index].title)
+         gfx_widget_achievement_popup_free_current(state);
 
       /* start the next popup (if present) */
       if (state->queue[state->queue_read_index].title)
