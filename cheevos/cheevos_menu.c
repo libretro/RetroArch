@@ -28,6 +28,7 @@
 #include "../menu/menu_entries.h"
 
 #include <features/features_cpu.h>
+#include <retro_assert.h>
 
 enum rcheevos_menuitem_bucket
 {
