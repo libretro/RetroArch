@@ -11890,6 +11890,10 @@ MSG_HASH(
    "Bluetooth scan complete."
    )
 MSG_HASH(
+   MSG_BLUETOOTH_PAIRING_REMOVED,
+   "Pairing removed. Restart RetroArch to connect/pair again."
+   )
+MSG_HASH(
    MSG_WIFI_SCAN_COMPLETE,
    "Wi-Fi scan complete."
    )

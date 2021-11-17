@@ -53,6 +53,7 @@ static bluetooth_driver_t bluetooth_null = {
    NULL, /* device_is_connected */
    NULL, /* device_get_sublabel */
    NULL, /* connect_device */
+   NULL, /* remove_device */
    "null",
 };
 

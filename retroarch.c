@@ -9977,6 +9977,14 @@ bool driver_bluetooth_connect_device(unsigned i)
    return false;
 }
 
+bool driver_bluetooth_remove_device(unsigned i)
+{
+   struct rarch_state       *p_rarch = &rarch_st;
+   if (p_rarch->bluetooth_driver_active)
+      return p_rarch->bluetooth_driver->remove_device(p_rarch->bluetooth_data, i);
+   return false;
+}
+
 bool bluetooth_driver_ctl(enum rarch_bluetooth_ctl_state state, void *data)
 {
    struct rarch_state     *p_rarch  = &rarch_st;
