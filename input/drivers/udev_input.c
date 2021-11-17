@@ -80,6 +80,13 @@
 #define UDEV_XKB_HANDLING
 #endif
 
+/* Force UDEV_XKB_HANDLING for Lakka */
+#ifdef HAVE_LAKKA
+#ifndef UDEV_XKB_HANDLING
+#define UDEV_XKB_HANDLING
+#endif
+#endif
+
 #define UDEV_MAX_KEYS (KEY_MAX + 7) / 8
 
 typedef struct udev_input udev_input_t;
@@ -1391,7 +1398,12 @@ static void *udev_input_init(const char *joypad_driver)
       goto error;
 
    video_context_driver_get_ident(&ctx_ident);
+#ifdef HAVE_LAKKA
+   /* Force xkb_handling on Lakka */
+   udev->xkb_handling = true;
+#else
    udev->xkb_handling = string_is_equal(ctx_ident.ident, "kms");
+#endif /* HAVE_LAKKA */
 #endif
 
 #if defined(HAVE_EPOLL)
