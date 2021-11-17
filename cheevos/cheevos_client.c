@@ -99,6 +99,32 @@ typedef struct rcheevos_async_io_request
    char type;
 } rcheevos_async_io_request;
 
+#ifdef HAVE_THREADS
+#define RCHEEVOS_CONCURRENT_BADGE_DOWNLOADS 2
+#else
+#define RCHEEVOS_CONCURRENT_BADGE_DOWNLOADS 1
+#endif
+
+typedef struct rcheevos_fetch_badge_state
+{
+   unsigned                 badge_fetch_index;
+   unsigned                 locked_badge_fetch_index;
+   const char* badge_directory;
+   rcheevos_client_callback callback;
+   void* callback_data;
+   char                     requested_badges[
+      RCHEEVOS_CONCURRENT_BADGE_DOWNLOADS][32];
+} rcheevos_fetch_badge_state;
+
+typedef struct rcheevos_fetch_badge_data
+{
+   rcheevos_fetch_badge_state* state;
+   int                         request_index;
+   void*                       data;
+   size_t                      data_len;
+   rcheevos_client_callback    callback;
+} rcheevos_fetch_badge_data;
+
 
 /****************************
  * forward declarations     *
@@ -110,6 +136,10 @@ static void rcheevos_async_http_task_callback(
       retro_task_t* task, void* task_data, void* user_data, const char* error);
 
 static void rcheevos_async_end_request(rcheevos_async_io_request* request);
+
+static void rcheevos_async_fetch_badge_callback(
+   struct rcheevos_async_io_request* request,
+   http_transfer_data_t* data, char buffer[], size_t buffer_size);
 
 /****************************
  * user agent construction  *
@@ -893,6 +923,98 @@ static void rcheevos_client_initialize_runtime_callback(void* userdata)
    free(runtime_data);
 }
 
+static void rcheevos_client_fetch_game_badge_callback(void* userdata)
+{
+   rcheevos_fetch_badge_data* data = (rcheevos_fetch_badge_data*)userdata;
+   rcheevos_async_initialize_runtime_data_t* runtime_data =
+      (rcheevos_async_initialize_runtime_data_t*)data->state->callback_data;
+
+   free((void*)data->state->badge_directory);
+   free(data->state);
+   free(data);
+
+   rcheevos_client_initialize_runtime_callback(runtime_data);
+}
+
+static void rcheevos_client_fetch_game_badge(const char* badge_name, rcheevos_async_initialize_runtime_data_t* runtime_data)
+{
+#if defined(HAVE_GFX_WIDGETS) /* don't need game badge unless widgets are enabled */
+   char badge_fullpath[PATH_MAX_LENGTH] = "";
+   char* badge_fullname = NULL;
+   size_t badge_fullname_size = 0;
+
+   /* make sure the directory exists */
+   fill_pathname_application_special(badge_fullpath,
+      sizeof(badge_fullpath),
+      APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
+
+   if (!path_is_directory(badge_fullpath))
+   {
+      CHEEVOS_LOG(RCHEEVOS_TAG "Creating %s\n", badge_fullpath);
+      path_mkdir(badge_fullpath);
+   }
+
+   fill_pathname_slash(badge_fullpath, sizeof(badge_fullpath));
+   badge_fullname = badge_fullpath + strlen(badge_fullpath);
+   badge_fullname_size = sizeof(badge_fullpath) -
+      (badge_fullname - badge_fullpath);
+
+   snprintf(badge_fullname,
+      badge_fullname_size, "i%s" FILE_PATH_PNG_EXTENSION, badge_name);
+
+   /* check if it's already available */
+   if (path_is_valid(badge_fullpath))
+      return;
+
+#ifdef CHEEVOS_LOG_BADGES
+   CHEEVOS_LOG(RCHEEVOS_TAG "Downloading game badge %s\n", badge_name);
+#endif
+
+   {
+      rcheevos_async_io_request* request = (rcheevos_async_io_request*)
+         calloc(1, sizeof(rcheevos_async_io_request));
+      rcheevos_fetch_badge_data* data = (rcheevos_fetch_badge_data*)
+         calloc(1, sizeof(rcheevos_fetch_badge_data));
+      rcheevos_fetch_badge_state* state = (rcheevos_fetch_badge_state*)
+         calloc(1, sizeof(rcheevos_fetch_badge_state));
+
+      if (!request || !data || !state)
+      {
+         CHEEVOS_LOG(RCHEEVOS_TAG
+            "Failed to allocate fetch badge request\n");
+      }
+      else
+      {
+         rc_api_fetch_image_request_t api_params;
+         int result;
+
+         memset(&api_params, 0, sizeof(api_params));
+         api_params.image_name = badge_name;
+         api_params.image_type = RC_IMAGE_TYPE_GAME;
+
+         result = rc_api_init_fetch_image_request(&request->request, &api_params);
+
+         strlcpy(state->requested_badges[0], badge_fullname, sizeof(state->requested_badges[0]));
+         *badge_fullname = '\0';
+         state->badge_directory = strdup(badge_fullpath);
+         state->callback_data = runtime_data;
+
+         data->state = state;
+         data->request_index = 0;
+         data->callback = rcheevos_client_fetch_game_badge_callback;
+
+         request->callback_data = data;
+
+         rcheevos_begin_load_state(RCHEEVOS_LOAD_STATE_FETCHING_GAME_DATA);
+         rcheevos_async_begin_request(request, result,
+            rcheevos_async_fetch_badge_callback,
+            CHEEVOS_ASYNC_FETCH_BADGE, atoi(badge_name), NULL,
+            "Error fetching game badge");
+      }
+   }
+#endif
+}
+
 static void rcheevos_async_fetch_user_unlocks_callback(
       struct rcheevos_async_io_request* request,
       http_transfer_data_t* data, char buffer[], size_t buffer_size)
@@ -939,6 +1061,10 @@ static void rcheevos_async_fetch_game_data_callback(
             runtime_data->game_data.title);
       rcheevos_locals->game.console_id   = 
          runtime_data->game_data.console_id;
+
+      snprintf(rcheevos_locals->game.badge_name, sizeof(rcheevos_locals->game.badge_name),
+         "i%s", runtime_data->game_data.image_name);
+      rcheevos_client_fetch_game_badge(runtime_data->game_data.image_name, runtime_data);
    }
 }
 
@@ -1238,30 +1364,6 @@ void rcheevos_client_start_session(unsigned game_id)
  * fetch badge              *
  ****************************/
 
-#ifdef HAVE_THREADS
- #define RCHEEVOS_CONCURRENT_BADGE_DOWNLOADS 2
-#else
- #define RCHEEVOS_CONCURRENT_BADGE_DOWNLOADS 1
-#endif
-
-typedef struct rcheevos_fetch_badge_state
-{
-   unsigned                 badge_fetch_index;
-   unsigned                 locked_badge_fetch_index;
-   const char*              badge_directory;
-   rcheevos_client_callback callback;
-   void*                    callback_data;
-   char                     requested_badges[
-      RCHEEVOS_CONCURRENT_BADGE_DOWNLOADS][32];
-} rcheevos_fetch_badge_state;
-
-typedef struct rcheevos_fetch_badge_data
-{
-   rcheevos_fetch_badge_state* state;
-   int                         request_index;
-} rcheevos_fetch_badge_data;
-
-
 static bool rcheevos_fetch_next_badge(rcheevos_fetch_badge_state* state);
 
 static void rcheevos_end_fetch_badges(rcheevos_fetch_badge_state* state)
@@ -1285,26 +1387,56 @@ static void rcheevos_async_download_next_badge(void* userdata)
    free(badge_data);
 }
 
-static void rcheevos_async_fetch_badge_callback(
-      struct rcheevos_async_io_request* request,
-      http_transfer_data_t* data, char buffer[], size_t buffer_size)
+static void rcheevos_async_write_badge(retro_task_t* task)
 {
    char badge_fullpath[PATH_MAX_LENGTH];
-   rcheevos_fetch_badge_data* badge_data    = 
-      (rcheevos_fetch_badge_data*)request->callback_data;
+   rcheevos_fetch_badge_data* badge_data =
+      (rcheevos_fetch_badge_data*)task->user_data;
    const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
 
    fill_pathname_join(badge_fullpath, badge_data->state->badge_directory,
       badge_data->state->requested_badges[badge_data->request_index],
       sizeof(badge_fullpath));
 
-   if (!filestream_write_file(badge_fullpath, data->data, data->len))
+   if (!filestream_write_file(badge_fullpath, badge_data->data, badge_data->data_len))
+   {
       CHEEVOS_ERR(RCHEEVOS_TAG "Error writing badge %s\n",
-            badge_fullpath);
+         badge_fullpath);
+   }
+
+   free(badge_data->data);
+   badge_data->data = NULL;
+   badge_data->data_len = 0;
 
    CHEEVOS_LOCK(rcheevos_locals->load_info.request_lock);
    badge_data->state->requested_badges[badge_data->request_index][0] = '\0';
    CHEEVOS_UNLOCK(rcheevos_locals->load_info.request_lock);
+
+   task_set_finished(task, true);
+
+   if (badge_data->callback)
+      badge_data->callback(badge_data);
+}
+
+static void rcheevos_async_fetch_badge_callback(
+      struct rcheevos_async_io_request* request,
+      http_transfer_data_t* data, char buffer[], size_t buffer_size)
+{
+   rcheevos_fetch_badge_data* badge_data    =
+      (rcheevos_fetch_badge_data*)request->callback_data;
+   retro_task_t* task;
+
+   /* take ownership of the file data */
+   badge_data->data = data->data;
+   badge_data->data_len = data->len;
+   data->data = NULL;
+   data->len = 0;
+
+   /* this is called on the primary thread. use a task to write the file from a background thread */
+   task = task_init();
+   task->handler = rcheevos_async_write_badge;
+   task->user_data = badge_data;
+   task_queue_push(task);
 }
 
 static bool rcheevos_client_fetch_badge(
@@ -1402,8 +1534,8 @@ static bool rcheevos_client_fetch_badge(
 
          data->state            = state;
          data->request_index    = request_index;
+         data->callback         = rcheevos_async_download_next_badge;
 
-         request->callback      = rcheevos_async_download_next_badge;
          request->callback_data = data;
 
          rcheevos_begin_load_state(RCHEEVOS_LOAD_STATE_FETCHING_BADGES);

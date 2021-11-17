@@ -110,12 +110,6 @@ typedef struct
    gfx_widget_font_data_t msg_queue;
 } gfx_widget_fonts_t;
 
-typedef struct cheevo_popup
-{
-   char* title;
-   uintptr_t badge;
-} cheevo_popup;
-
 typedef struct disp_widget_msg
 {
    char *msg;
@@ -353,7 +347,7 @@ void gfx_widgets_ai_service_overlay_unload(void);
 #endif
 
 #ifdef HAVE_CHEEVOS
-void gfx_widgets_push_achievement(const char *title, const char *badge);
+void gfx_widgets_push_achievement(const char *title, const char* subtitle, const char *badge);
 void gfx_widgets_set_leaderboard_display(unsigned id, const char* value);
 void gfx_widgets_set_challenge_display(unsigned id, const char* badge);
 #endif

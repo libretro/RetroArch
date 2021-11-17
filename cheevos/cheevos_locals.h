@@ -125,6 +125,7 @@ typedef struct rcheevos_game_info_t
    int   id;
    int   console_id;
    char* title;
+   char  badge_name[16];
    char  hash[33];
 
    rcheevos_racheevo_t* achievements;

@@ -307,7 +307,7 @@ void rcheevos_award_achievement(rcheevos_locals_t* locals,
    /* Show the on screen message. */
 #if defined(HAVE_GFX_WIDGETS)
    if (widgets_ready)
-      gfx_widgets_push_achievement(cheevo->title, cheevo->badge);
+      gfx_widgets_push_achievement(msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED), cheevo->title, cheevo->badge);
    else
 #endif
    {
@@ -1285,7 +1285,14 @@ static void rcheevos_show_game_placard()
    CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", msg);
 
    if (settings->bools.cheevos_verbose_enable)
-      runloop_msg_queue_push(msg, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   {
+#if defined (HAVE_GFX_WIDGETS)
+      if (gfx_widgets_ready())
+         gfx_widgets_push_achievement(rcheevos_locals.game.title, msg, rcheevos_locals.game.badge_name);
+      else
+#endif
+         runloop_msg_queue_push(msg, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 }
 
 static void rcheevos_end_load(void)
@@ -1306,27 +1313,8 @@ static void rcheevos_fetch_badges(void)
    rcheevos_client_fetch_badges(rcheevos_fetch_badges_callback, NULL);
 }
 
-static void rcheevos_start_session(void)
+static void rcheevos_start_session_async(retro_task_t* task)
 {
-   if (rcheevos_load_aborted())
-   {
-      CHEEVOS_LOG(RCHEEVOS_TAG "Load aborted before starting session\n");
-      return;
-   }
-
-   if (   rcheevos_locals.game.achievement_count == 0
-       && rcheevos_locals.game.leaderboard_count == 0)
-   {
-      if (!rcheevos_locals.runtime.richpresence)
-      {
-         /* nothing for the runtime to process, 
-          * disable hardcore and bail */
-         rcheevos_show_game_placard();
-         rcheevos_pause_hardcore();
-         return;
-      }
-   }
-
    rcheevos_begin_load_state(RCHEEVOS_LOAD_STATE_STARTING_SESSION);
 
    /* activate the achievements and leaderboards 
@@ -1371,8 +1359,39 @@ static void rcheevos_start_session(void)
 
    rcheevos_show_game_placard();
 
+   task_set_finished(task, true);
+
    if (rcheevos_end_load_state() == 0)
       rcheevos_fetch_badges();
+}
+
+static void rcheevos_start_session(void)
+{
+   retro_task_t* task;
+
+   if (rcheevos_load_aborted())
+   {
+      CHEEVOS_LOG(RCHEEVOS_TAG "Load aborted before starting session\n");
+      return;
+   }
+
+   if (rcheevos_locals.game.achievement_count == 0
+      && rcheevos_locals.game.leaderboard_count == 0)
+   {
+      if (!rcheevos_locals.runtime.richpresence)
+      {
+         /* nothing for the runtime to process,
+          * disable hardcore and bail */
+         rcheevos_show_game_placard();
+         rcheevos_pause_hardcore();
+         return;
+      }
+   }
+
+   /* this is called on the primary thread. use a task to do the initialization on a background thread */
+   task = task_init();
+   task->handler = rcheevos_start_session_async;
+   task_queue_push(task);
 }
 
 static void rcheevos_initialize_runtime_callback(void* userdata)

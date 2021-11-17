@@ -32,6 +32,13 @@
 
 #define CHEEVO_QUEUE_SIZE 8
 
+typedef struct cheevo_popup
+{
+   char* title;
+   char* subtitle;
+   uintptr_t badge;
+} cheevo_popup;
+
 struct gfx_widget_achievement_popup_state
 {
 #ifdef HAVE_THREADS
@@ -222,7 +229,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
 
       /* Title */
       gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
-            msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED),
+            state->queue[state->queue_read_index].title,
             state->height + p_dispwidget->simple_widget_padding - unfold_offet,
             state->y + p_dispwidget->gfx_widget_fonts.regular.line_height
             + p_dispwidget->gfx_widget_fonts.regular.line_ascender,
@@ -235,7 +242,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
 
       /* TODO: is a ticker necessary ? */
       gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
-            state->queue[state->queue_read_index].title,
+            state->queue[state->queue_read_index].subtitle,
             state->height + p_dispwidget->simple_widget_padding - unfold_offet,
             state->y + state->height
             - p_dispwidget->gfx_widget_fonts.regular.line_height
@@ -267,6 +274,12 @@ static void gfx_widget_achievement_popup_free_current(
       state->queue[state->queue_read_index].title = NULL;
    }
 
+   if (state->queue[state->queue_read_index].subtitle)
+   {
+      free(state->queue[state->queue_read_index].subtitle);
+      state->queue[state->queue_read_index].subtitle = NULL;
+   }
+
    if (state->queue[state->queue_read_index].badge)
    {
       video_driver_texture_unload(&state->queue[state->queue_read_index].badge);
@@ -284,7 +297,8 @@ static void gfx_widget_achievement_popup_next(void* userdata)
 
    if (state->queue_read_index >= 0)
    {
-      gfx_widget_achievement_popup_free_current(state);
+      if (state->queue[state->queue_read_index].title)
+         gfx_widget_achievement_popup_free_current(state);
 
       /* start the next popup (if present) */
       if (state->queue[state->queue_read_index].title)
@@ -370,10 +384,10 @@ static void gfx_widget_achievement_popup_start(
    state->width  = MAX(
          font_driver_get_message_width(
             p_dispwidget->gfx_widget_fonts.regular.font,
-            msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED), 0, 1),
+            state->queue[state->queue_read_index].title, 0, 1),
          font_driver_get_message_width(
             p_dispwidget->gfx_widget_fonts.regular.font,
-            state->queue[state->queue_read_index].title, 0, 1)
+            state->queue[state->queue_read_index].subtitle, 0, 1)
    );
    state->width += p_dispwidget->simple_widget_padding * 2;
    state->y      = (float)(-(int)state->height);
@@ -391,7 +405,7 @@ static void gfx_widget_achievement_popup_start(
    gfx_animation_push(&entry);
 }
 
-void gfx_widgets_push_achievement(const char *title, const char *badge)
+void gfx_widgets_push_achievement(const char *title, const char* subtitle, const char *badge)
 {
    gfx_widget_achievement_popup_state_t *state = &p_w_achievement_popup_st;
    int start_notification = 1;
@@ -429,6 +443,7 @@ void gfx_widgets_push_achievement(const char *title, const char *badge)
 
    state->queue[state->queue_write_index].badge = badge_id;
    state->queue[state->queue_write_index].title = strdup(title);
+   state->queue[state->queue_write_index].subtitle = strdup(subtitle);
 
    state->queue_write_index = (state->queue_write_index + 1) % ARRAY_SIZE(state->queue);
 
