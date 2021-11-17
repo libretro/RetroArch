@@ -1357,12 +1357,21 @@ static void rcheevos_start_session_async(retro_task_t* task)
    }
 #endif
 
-   rcheevos_show_game_placard();
-
    task_set_finished(task, true);
 
    if (rcheevos_end_load_state() == 0)
       rcheevos_fetch_badges();
+}
+
+static void rcheevos_start_session_finish(retro_task_t* task, void* data, void* userdata, const char* error)
+{
+   (void)task;
+   (void)data;
+   (void)userdata;
+   (void)error;
+
+   /* this must be called on the main thread */
+   rcheevos_show_game_placard();
 }
 
 static void rcheevos_start_session(void)
@@ -1391,6 +1400,7 @@ static void rcheevos_start_session(void)
    /* this is called on the primary thread. use a task to do the initialization on a background thread */
    task = task_init();
    task->handler = rcheevos_start_session_async;
+   task->callback = rcheevos_start_session_finish;
    task_queue_push(task);
 }
 

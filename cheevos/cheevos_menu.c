@@ -657,6 +657,9 @@ uintptr_t rcheevos_get_badge_texture(const char *badge, bool locked)
    if (!badge)
       return 0;
 
+   /* OpenGL driver crashes if gfx_display_reset_textures_list is called on a background thread */
+   retro_assert(task_is_on_main_thread());
+
    snprintf(badge_file, sizeof(badge_file), "%s%s%s", badge,
       locked ? "_lock" : "", FILE_PATH_PNG_EXTENSION);
 
