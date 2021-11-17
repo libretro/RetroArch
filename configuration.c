@@ -1824,6 +1824,9 @@ static struct config_bool_setting *populate_settings_bool(
 #ifdef HAVE_CDROM
    SETTING_BOOL("menu_show_load_disc",           &settings->bools.menu_show_load_disc, true, menu_show_load_disc, false);
    SETTING_BOOL("menu_show_dump_disc",           &settings->bools.menu_show_dump_disc, true, menu_show_dump_disc, false);
+#ifdef HAVE_LAKKA
+   SETTING_BOOL("menu_show_eject_disc",          &settings->bools.menu_show_eject_disc, true, menu_show_eject_disc, false);
+#endif /* HAVE_LAKKA */
 #endif
    SETTING_BOOL("menu_show_information",         &settings->bools.menu_show_information, true, menu_show_information, false);
    SETTING_BOOL("menu_show_configurations",      &settings->bools.menu_show_configurations, true, menu_show_configurations, false);

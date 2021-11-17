@@ -8211,6 +8211,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT,                                PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_LOAD_DISC,                                   PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_DUMP_DISC,                                   PARSE_ONLY_BOOL, true  },
+#ifdef HAVE_LAKKA
+               {MENU_ENUM_LABEL_MENU_SHOW_EJECT_DISC,                                  PARSE_ONLY_BOOL, true  },
+#endif
                {MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER,                              PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_CORE_UPDATER,                                PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,                    PARSE_ONLY_BOOL, true  },
@@ -9537,6 +9540,14 @@ unsigned menu_displaylist_build_list(
                MENU_SET_CDROM_LIST);
 #endif
          break;
+#ifdef HAVE_LAKKA
+      case DISPLAYLIST_EJECT_DISC:
+#ifdef HAVE_CDROM
+         count = menu_displaylist_parse_disc_info(list,
+               MENU_SET_EJECT_DISC);
+#endif /* HAVE_CDROM */
+         break;
+#endif /* HAVE_LAKKA */
       default:
          break;
    }
@@ -11841,6 +11852,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_BROWSE_URL_LIST:
       case DISPLAYLIST_DISC_INFO:
       case DISPLAYLIST_DUMP_DISC:
+#ifdef HAVE_LAKKA
+      case DISPLAYLIST_EJECT_DISC:
+#endif
       case DISPLAYLIST_LOAD_CONTENT_LIST:
       case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
       case DISPLAYLIST_OPTIONS_REMAPPINGS:
@@ -11884,6 +11898,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   break;
                case DISPLAYLIST_DISC_INFO:
                case DISPLAYLIST_DUMP_DISC:
+#ifdef HAVE_LAKKA
+               case DISPLAYLIST_EJECT_DISC:
+#endif
                case DISPLAYLIST_MENU_SETTINGS_LIST:
                case DISPLAYLIST_ADD_CONTENT_LIST:
                case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:
@@ -11942,6 +11959,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          {
             case DISPLAYLIST_DISC_INFO:
             case DISPLAYLIST_DUMP_DISC:
+#ifdef HAVE_LAKKA
+            case DISPLAYLIST_EJECT_DISC:
+#endif
                info->need_clear   = true;
                break;
             default:
@@ -12344,6 +12364,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         PARSE_ACTION, false) == 0)
                   count++;
             }
+
+#ifdef HAVE_LAKKA
+            if (settings->bools.menu_show_eject_disc)
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
+                        MENU_ENUM_LABEL_EJECT_DISC,
+                        PARSE_ACTION, false) == 0)
+                  count++;
+            }
+#endif /* HAVE_LAKKA */
 #endif
 
 #if defined(HAVE_RGUI) || defined(HAVE_MATERIALUI)

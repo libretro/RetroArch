@@ -9044,6 +9044,16 @@ static bool setting_append_list(
                         &group_info,
                         &subgroup_info,
                         parent_group);
+
+#ifdef HAVE_LAKKA
+                  CONFIG_ACTION(
+                        list, list_info,
+                        MENU_ENUM_LABEL_EJECT_DISC,
+                        MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+                        &group_info,
+                        &subgroup_info,
+                        parent_group);
+#endif
                }
 
                string_list_free(drive_list);
@@ -16102,6 +16112,23 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+
+#ifdef HAVE_LAKKA
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_show_eject_disc,
+                  MENU_ENUM_LABEL_MENU_SHOW_EJECT_DISC,
+                  MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
+                  menu_show_eject_disc,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+#endif /* HAVE_LAKKA */
 #endif
 
             CONFIG_BOOL(

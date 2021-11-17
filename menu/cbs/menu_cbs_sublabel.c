@@ -411,6 +411,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sideload_core_list,            MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_manager_list,             MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_load_disc,                  MENU_ENUM_SUBLABEL_LOAD_DISC)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dump_disc,                  MENU_ENUM_SUBLABEL_DUMP_DISC)
+#ifdef HAVE_LAKKA
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_eject_disc,                 MENU_ENUM_SUBLABEL_EJECT_DISC)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_list,                  MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_special,               MENU_ENUM_SUBLABEL_LOAD_CONTENT_SPECIAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_load_content_history,          MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY)
@@ -803,6 +806,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_load_core,                
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_load_content,                MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_load_disc,                   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_dump_disc,                   MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC)
+#ifdef HAVE_LAKKA
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_eject_disc,                  MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_information,                 MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_configurations,              MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_help,                        MENU_ENUM_SUBLABEL_MENU_SHOW_HELP)
@@ -2451,6 +2457,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_DUMP_DISC:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_dump_disc);
             break;
+#ifdef HAVE_LAKKA
+         case MENU_ENUM_LABEL_EJECT_DISC:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_eject_disc);
+            break;
+#endif
          case MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_load_content);
             break;
@@ -2460,6 +2471,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_MENU_SHOW_DUMP_DISC:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_dump_disc);
             break;
+#ifdef HAVE_LAKKA
+         case MENU_ENUM_LABEL_MENU_SHOW_EJECT_DISC:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_eject_disc);
+            break;
+#endif
          case MENU_ENUM_LABEL_MENU_SHOW_INFORMATION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_information);
             break;

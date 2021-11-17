@@ -653,6 +653,9 @@ typedef struct settings
       bool menu_show_load_content;
       bool menu_show_load_disc;
       bool menu_show_dump_disc;
+#ifdef HAVE_LAKKA
+      bool menu_show_eject_disc;
+#endif
       bool menu_show_information;
       bool menu_show_configurations;
       bool menu_show_help;

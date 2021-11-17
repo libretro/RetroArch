@@ -9302,6 +9302,17 @@ static int materialui_list_push(void *data, void *userdata,
                      false);
             }
 
+#ifdef HAVE_LAKKA
+            if (settings->bools.menu_show_eject_disc)
+            {
+               MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
+                     info->list,
+                     MENU_ENUM_LABEL_EJECT_DISC,
+                     PARSE_ACTION,
+                     false);
+            }
+#endif
+
 #if defined(HAVE_NETWORKING)
 #ifdef HAVE_LAKKA
             MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
@@ -10082,6 +10093,9 @@ static void materialui_list_insert(
       {
          case MENU_SET_CDROM_INFO:
          case MENU_SET_CDROM_LIST:
+#ifdef HAVE_LAKKA
+         case MENU_SET_EJECT_DISC:
+#endif
          case MENU_SET_LOAD_CDROM_LIST:
             node->icon_texture_index = MUI_TEXTURE_DISK;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
@@ -10362,6 +10376,9 @@ static void materialui_list_insert(
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_DISC)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DUMP_DISC)) ||
+#ifdef HAVE_LAKKA
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EJECT_DISC)) ||
+#endif
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISC_INFORMATION)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_INDEX))
