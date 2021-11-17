@@ -3626,15 +3626,19 @@ static void runloop_pause_checks(void)
       command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
 #endif
 
+#ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
       set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_MENU);
 #endif
+#endif /* #ifndef HAVE_LAKKA_SWITCH */
    }
    else
    {
+#ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
       set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_CORE);
 #endif
+#endif /* #ifndef HAVE_LAKKA_SWITCH */
    }
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
