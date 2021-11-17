@@ -151,6 +151,7 @@ error:
    return -1;
 }
 
+#ifndef HAVE_LAKKA_SWITCH
 static bool udev_set_rumble_gain(unsigned i, unsigned gain)
 {
    struct input_event ie;
@@ -179,6 +180,7 @@ static bool udev_set_rumble_gain(unsigned i, unsigned gain)
 
    return true;
 }
+#endif
 
 static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char *path)
 {
@@ -299,6 +301,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
                p, path, pad->num_effects);
    }
 
+#ifndef HAVE_LAKKA_SWITCH
    /* Set rumble gain here, if supported */
    if (test_bit(FF_RUMBLE, ffbit))
    {
@@ -307,6 +310,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
                                       : DEFAULT_RUMBLE_GAIN;
       udev_set_rumble_gain(p, rumble_gain);
    }
+#endif
 
    return ret;
 }
@@ -790,7 +794,11 @@ input_device_driver_t udev_joypad = {
    udev_joypad_axis,
    udev_joypad_poll,
    udev_set_rumble,
+#ifndef HAVE_LAKKA_SWITCH
    udev_set_rumble_gain,
+#else
+   NULL,
+#endif
    udev_joypad_name,
    "udev",
 };
