@@ -11023,7 +11023,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESET,
-   "Sıfırla"
+   "Sıfırlandı"
    )
 MSG_HASH(
    MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,

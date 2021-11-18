@@ -57,7 +57,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
-   "Brz pristup svim bitnim opcijama za igru."
+   "Brz pristup svim bitnim podešavanjima za igru."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
@@ -117,7 +117,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Isključi kiosk-mod (neophodan restart)"
+   "Isključi kiosk režim (neophodan restart)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -826,18 +826,198 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
    "Franšiza"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
+   "TGDB ocena"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
+   "Ocena Famicu časopisa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
+   "Recenzija Edž magazina"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
+   "Ocena Edž časopisa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
+   "Broj Edž časopisa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   "Mesec izlaska"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
+   "Godina izlaska"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
+   "BBFC rejting"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
+   "ESRB rejting"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
+   "ELSPA rejting"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
+   "PEGI rejting"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
+   "Hardver za proširenja"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
+   "CERO rejting"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
+   "Serijski broj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
+   "Podržava analogne kontrole"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
+   "Podržava vibraciju"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
+   "Podržava kooperativno igranje"
+   )
 
 /* Main Menu > Configuration File */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+   "Učitaj konfiguraciju"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   "Vrati na podrazumevano"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+   "Vrati trenutnu konfiguraciju na podrazumevane vrednosti."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
+   "Sačuvaj trenutnu konfiguraciju"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
+   "Sačuvaj novu konfiguraciju"
+   )
 
 /* Main Menu > Help */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_CONTROLS,
+   "Osnovne kontrole u meniju"
+   )
 
 /* Main Menu > Help > Basic Menu Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
+   "Skroluj na gore"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
+   "Skroluj na dole"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
+   "Potvrdi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
+   "Informacije"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
+   "Prikaži meni"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
+   "Zatvori"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
+   "Prikaži tastaturu"
+   )
 
 /* Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
+   "Drajveri"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
+   "Promeni drajvere koje koristi sistem."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
+   "Izmeni podešavanja video izlaza."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
+   "Zvuk"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   "Izmeni podešavanja zvuka."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
+   "Ulaz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
+   "Izmeni podešavanja kontrolera, tastature i miša."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
+   "Odziv"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
+   "Izmeni podešavanja odziva videa, zvuka i ulaza."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
+   "Jezgro"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SETTINGS,
+   "Izmeni podešavanja jezgara."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
+   "Konfiguracija"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
+   "Izmeni podešavanja vezana za konfiguracione datoteke."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
+   "Usnimavanje"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
+   "Izmeni podešavanja za usnimavanje."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Beleženje"
@@ -1029,16 +1209,200 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
    "Drajver za snimanje."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
+   "Drajver za MIDI."
+   )
 
 /* Settings > Video */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
+   "Rezolucija prilagođena za CRT"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+   "Koristi prirodni, nisko-rezolucioni video izlaz, za upotrebu sa CRT ekranima."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+   "Izlaz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
+   "Izmeni podešavanja video izlaza."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   "Režim celog ekrana"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   "Izmeni podešavanja režima celog ekrana."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+   "Režim prozora"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+   "Izmeni podešavanja režima prozora."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   "Skaliranje"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+   "Izmeni podešavanja vezana za video skaliranje."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
+   "Izmeni podešavanja vezana za HDR."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
+   "Sinhronizacija"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+   "Izmeni podešavanja video sinhronizacije."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
+   "Suspenduj čuvar ekrana"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
+   "Spreči pokretanje čuvara ekrana sistema."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
+   "Podeli video u niti"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+   "Povećava performanse po cenu odziva i glatkoće videa. Koristi samo ako nije moguće drugačije dostići punu brzinu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+   "Ubacivanje crnog frejma"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "Ubaci crni frejm između frejmova. Korsino za neke ekrana sa velikom brzinom osvežavanja da bi se eliminisalno razmazivanje."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
+   "GPU slika ekrana"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "Koristi šejderovan materijal grafičke karte pri slikanju ekrana, ako je moguće."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
+   "Bilinearni filter"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   "Dodaj blago zamagljenje slici da bi se omekšale oštre ivice piksela. Ova opcija ima veoma malo uticaja na performanse."
+   )
 #if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "Interpolacija slike"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "Specificiraj metodu interpolacije slike pri skaliranju sadržaja pomoću internog IPU-a. 'Bikubno' ili 'bilinearno' se preporučuje ako se koriste filteri bazirani na procesoru."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
+   "Bikubno"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
+   "Bilinearno"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
+   "Najbliži sused"
+   )
 #if defined(RS90) || defined(MIYOO)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Interpolacija slike"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Specificiraj metodu interpolacije slike kada je 'celobrojno skaliranje' isključeno. 'Najbliži sused' ima najmanji uticaj na performanse."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "Najbliži sused"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   "Polulinearno"
+   )
 #endif
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
+   "Kašnjenje auto-šejdera"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
+   "Odloži automatsko učitavanje šejdera (u milisekundama). Može pomoći kod grafičkih grešaka kada se koristi softver za snimanje ekrana."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
+   "Video filter"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER,
+   "Uključi video filter baziran na procesoru. Može jako pogoršati performanse. Neki video filteri rade samo za jezgra koje koriste 32-bitne ili 16-bitne boje."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   "Ukloni video filter"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   "Isključi bilo koji aktivan video filter baziran na procesoru."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "Omogući režim celog ekrana kod Android uređaja sa zasekom"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
+   "Rezolucija prilagođena za CRT"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
+   "Samo za CRT ekrane. Pokušaj da koristiš preciznu rezoluciju i brzinu osvežavanja jezgra/igre."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+   "CRT super rezolucija"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
+   "Biraj između prirodne i ultraširoke super rezolucije."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+   "Centriranje po X osi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+   "Prođi kroz ove opcije ako slika nije pravilno centrirana na displeju."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
    "Koristi visoko-rezolucioni meni"
@@ -1112,7 +1476,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Vertikalna brzina osvežavanja ekrana. Koristi se za računanje pogodne ulazne stope zvuka.\nOvo će biti ignorisano ako je uključen 'nitni video'."
+   "Vertikalna brzina osvežavanja ekrana. Koristi se za računanje pogodne ulazne stope zvuka.\nOvo će biti ignorisano ako je uključena opcija 'Podeli video u niti'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -1122,11 +1486,39 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    "Precizno procenjena brzina osvežavanja ekrana u hercima (Hz)."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
+   "Postavljena brzina osvežavanja izveštena od ekrana"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
+   "Brzina osvežavanja izveštena od strane displej drajvera."
+   )
 #if defined(DINGUX) && defined(DINGUX_BETA)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
+   "Vertikalna brzina osvežavanja"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
+   "Postavi vertikalnu brzinu osvežavanja ekrana. '50 Hz' omogućava glatku sliku ako je pokrenut PAL sadržaj."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
+   "Forsirano isključi sRGB FBO"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   "Forsirano isklljuči podršku za sRGB FBO. Neki Intel OpenGL drajveri na Windows-u imaju video probleme sa sRGB FBO. Ova opcija može biti zaobilazno rešenje."
+   )
 
 /* Settings > Video > Fullscreen Mode */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   "Pokreni u režimu celog ekrana"
+   )
 
 /* Settings > Video > Windowed Mode */
 
