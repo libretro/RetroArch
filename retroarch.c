@@ -4981,17 +4981,25 @@ bool command_event(enum event_command cmd, void *data)
                      }
                   }
                }
+               else
+               {
+                  netplay_server = p_rarch->connect_host;
+               }
 
                string_list_free(addr_port);
             }
 
-            if (!netplay_server || !netplay_port)
-            {
+            if (!netplay_server)
                netplay_server = settings->paths.netplay_server;
+
+            if (!netplay_port)
                netplay_port   = settings->uints.netplay_port;
-            }
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+
+            RARCH_LOG("[Netplay]: Connecting to %s : %d\n", hostname
+                     ? hostname
+                     : netplay_server, netplay_port);
 
             if (!init_netplay(
                      NULL,
