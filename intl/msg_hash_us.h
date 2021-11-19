@@ -2681,6 +2681,14 @@ MSG_HASH(
    "Switches current netplay session between 'play' and 'spectate' modes."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Netplay Player Chat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Sends a chat message to the current netplay session."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
    "Hotkey Enable"
    )
@@ -10820,6 +10828,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
    "Enter netplay server password:"
+   )
+MSG_HASH(
+   MSG_NETPLAY_ENTER_CHAT,
+   "Enter netplay chat message:"
    )
 MSG_HASH(
    MSG_DISCORD_CONNECTION_REQUEST,

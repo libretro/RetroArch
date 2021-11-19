@@ -4942,6 +4942,9 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETPLAY_GAME_WATCH:
          netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
          break;
+      case CMD_EVENT_NETPLAY_PLAYER_CHAT:
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_PLAYER_CHAT, NULL);
+         break;
       case CMD_EVENT_NETPLAY_DEINIT:
          deinit_netplay();
          break;
@@ -4951,11 +4954,11 @@ bool command_event(enum event_command cmd, void *data)
          /* init netplay manually */
       case CMD_EVENT_NETPLAY_INIT:
          {
-            char       *hostname       = (char*)data;
+            bool success;
             char       *netplay_server = NULL;
-            unsigned netplay_port      = 0; 
+            unsigned netplay_port      = 0;
 
-            if (p_rarch->connect_host && !hostname)
+            if (p_rarch->connect_host)
             {
                struct string_list *addr_port = string_split(p_rarch->connect_host, "|");
 
@@ -4993,27 +4996,18 @@ bool command_event(enum event_command cmd, void *data)
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            if (!init_netplay(
-                     NULL,
-                     hostname
-                     ? hostname
-                     : netplay_server, netplay_port))
-            {
-               command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-
-               if (p_rarch->connect_host)
-               {
-                  free(p_rarch->connect_host);
-                  p_rarch->connect_host = NULL;
-               }
-
-               return false;
-            }
+            success = init_netplay(netplay_server, netplay_port);
 
             if (p_rarch->connect_host)
             {
                free(p_rarch->connect_host);
                p_rarch->connect_host = NULL;
+            }
+
+            if (!success)
+            {
+               command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+               return false;
             }
 
             /* Disable rewind & SRAM autosave if it was enabled
@@ -5029,33 +5023,27 @@ bool command_event(enum event_command cmd, void *data)
          /* Initialize netplay via lobby when content is loaded */
       case CMD_EVENT_NETPLAY_INIT_DIRECT:
          {
-            /* buf is expected to be address|port */
-            static struct string_list *hostname = NULL;
-            char *buf                           = (char *)data;
-            unsigned netplay_port               = settings->uints.netplay_port;
-
-            hostname                            = string_split(buf, "|");
+            bool success;
+            /* Expected to be address|port */
+            struct string_list *hostname = string_split((char *)data, "|");
+            unsigned netplay_port        = !string_is_empty(hostname->elems[1].data) ?
+               strtoul(hostname->elems[1].data, NULL, 10) :
+               settings->uints.netplay_port;
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
             RARCH_LOG("[Netplay]: Connecting to %s:%d (direct)\n",
-                  hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
-                  ? atoi(hostname->elems[1].data)
-                  : netplay_port);
+                  hostname->elems[0].data, netplay_port);
 
-            if (!init_netplay(
-                     NULL,
-                     hostname->elems[0].data,
-                     !string_is_empty(hostname->elems[1].data)
-                     ? atoi(hostname->elems[1].data)
-                     : netplay_port))
-            {
-               command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-               string_list_free(hostname);
-               return false;
-            }
+            success = init_netplay(hostname->elems[0].data, netplay_port);
 
             string_list_free(hostname);
+
+            if (!success)
+            {
+               command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+               return false;
+            }
 
             /* Disable rewind if it was enabled
                TODO/FIXME: Add a setting for these tweaks */
@@ -5178,6 +5166,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETPLAY_DISCONNECT:
       case CMD_EVENT_NETPLAY_ENABLE_HOST:
       case CMD_EVENT_NETPLAY_GAME_WATCH:
+      case CMD_EVENT_NETPLAY_PLAYER_CHAT:
          return false;
 #endif
       case CMD_EVENT_FULLSCREEN_TOGGLE:
@@ -14128,6 +14117,7 @@ static enum runloop_state_enum runloop_check_state(
 #ifdef HAVE_NETWORKING
    /* Check Netplay */
    HOTKEY_CHECK(RARCH_NETPLAY_GAME_WATCH, CMD_EVENT_NETPLAY_GAME_WATCH, true, NULL);
+   HOTKEY_CHECK(RARCH_NETPLAY_PLAYER_CHAT, CMD_EVENT_NETPLAY_PLAYER_CHAT, true, NULL);
 #endif
 
    /* Check if we have pressed the pause button */

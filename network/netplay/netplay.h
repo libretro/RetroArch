@@ -34,13 +34,18 @@
 
 #include "../../core.h"
 
+#include "netplay_protocol.h"
+
 #define NETPLAY_HOST_STR_LEN 32
 #define NETPLAY_HOST_LONGSTR_LEN 256
+
+#define NETPLAY_MITM_MAX_PENDING 8
 
 enum rarch_netplay_ctl_state
 {
    RARCH_NETPLAY_CTL_NONE = 0,
    RARCH_NETPLAY_CTL_GAME_WATCH,
+   RARCH_NETPLAY_CTL_PLAYER_CHAT,
    RARCH_NETPLAY_CTL_POST_FRAME,
    RARCH_NETPLAY_CTL_PRE_FRAME,
    RARCH_NETPLAY_CTL_ENABLE_SERVER,
@@ -182,11 +187,28 @@ struct netplay_host_list
    size_t size;
 };
 
+#pragma pack(push, 1)
+typedef struct mitm_id
+{
+   uint32_t magic;
+   uint8_t  unique[12];
+} mitm_id_t;
+#pragma pack(pop)
+
+struct netplay_mitm_pending
+{
+   int          *fds;
+   mitm_id_t    *ids;
+   retro_time_t *timeouts;
+
+   mitm_id_t id_buf;
+   size_t    id_recvd;
+};
+
 typedef struct
 {
    netplay_t *data; /* Used while Netplay is running */
    struct netplay_room host_room; /* ptr alignment */
-   netplay_t *handshake_password;
    struct netplay_room *room_list;
    struct netplay_rooms *rooms_data;
    /* List of discovered hosts */
@@ -207,7 +229,8 @@ typedef struct
    /* Used to avoid recursive netplay calls */
    bool in_netplay;
    bool netplay_client_deferred;
-   bool is_mitm;
+   mitm_id_t mitm_session_id;
+   struct netplay_mitm_pending mitm_pending;
    bool has_set_netplay_mode;
    bool has_set_netplay_ip_address;
    bool has_set_netplay_ip_port;
@@ -242,6 +265,13 @@ void netplay_frontend_paused(netplay_t *netplay, bool paused);
  * Toggle between play mode and spectate mode
  */
 void netplay_toggle_play_spectate(netplay_t *netplay);
+
+/**
+ * netplay_input_chat
+ *
+ * Opens an input menu for sending netplay chat
+ */
+void netplay_input_chat(netplay_t *netplay);
 
 /**
  * netplay_load_savestate
@@ -319,7 +349,6 @@ void deinit_netplay(void);
 
 /**
  * init_netplay
- * @direct_host          : Host to connect to directly, if applicable (client only)
  * @server               : server address to connect to (client only)
  * @port                 : TCP port to host on/connect to
  *
@@ -329,7 +358,7 @@ void deinit_netplay(void);
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool init_netplay(void *direct_host, const char *server, unsigned port);
+bool init_netplay(const char *server, unsigned port);
 
 bool init_netplay_deferred(const char* server, unsigned port);
 

@@ -28,8 +28,6 @@
 #include "../../msg_hash.h"
 #include "../../verbosity.h"
 
-#define NETPLAY_PROTOCOL_VERSION 5
-
 #define RARCH_DEFAULT_PORT 55435
 #define RARCH_DEFAULT_NICK "Anonymous"
 
@@ -175,7 +173,15 @@ enum netplay_cmd
    /* CMD_CFG streamlines sending multiple
       configurations. This acknowledges
       each one individually */
-   NETPLAY_CMD_CFG_ACK        = 0x0062
+   NETPLAY_CMD_CFG_ACK        = 0x0062,
+
+   /* Chat commands */
+
+   /* Sends a player chat message.
+    * The server is responsible for formatting/truncating 
+    * the message and relaying it to all playing clients,
+    * including the one that sent the message. */
+   NETPLAY_CMD_PLAYER_CHAT    = 0x1000
 };
 
 #define NETPLAY_CMD_SYNC_BIT_PAUSED    (1U<<31)
@@ -387,6 +393,9 @@ struct netplay_connection
 
    /* Is this connection buffer in use? */
    bool active;
+
+   /* Which netplay protocol is this connection running? */
+   uint32_t netplay_protocol;
 };
 
 /* Compression transcoder */
@@ -719,7 +728,7 @@ void input_poll_net(void);
  * part of the handshake protocol.
  */
 bool netplay_handshake_init_send(netplay_t *netplay,
-   struct netplay_connection *connection);
+   struct netplay_connection *connection, uint32_t protocol);
 
 /**
  * netplay_handshake
@@ -754,8 +763,8 @@ bool netplay_wait_and_init_serialization(netplay_t *netplay);
 
 /**
  * netplay_new:
- * @direct_host          : Netplay host discovered from scanning.
  * @server               : IP address of server.
+ * @mitm                 : IP address of the MITM/tunnel server.
  * @port                 : Port of server.
  * @stateless_mode       : Shall we run in stateless mode?
  * @check_frames         : Frequency with which to check CRCs.
@@ -769,8 +778,7 @@ bool netplay_wait_and_init_serialization(netplay_t *netplay);
  *
  * Returns: new netplay data.
  */
-netplay_t *netplay_new(void *direct_host,
-      const char *server, uint16_t port,
+netplay_t *netplay_new(const char *server, const char *mitm, uint16_t port,
       bool stateless_mode, int check_frames,
       const struct retro_callbacks *cb,
       bool nat_traversal, const char *nick,
