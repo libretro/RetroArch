@@ -2017,12 +2017,10 @@ static bool gl_core_frame(void *data, const void *frame,
     }   
 #endif 
 
-   if (hard_sync &&
-       !input_driver_nonblock_state &&
-       !gl->menu_texture_enable)
-   {
+   if (    hard_sync
+       && !input_driver_nonblock_state
+       )
       gl_core_fence_iterate(gl, hard_sync_frames);
-   }
 
    glBindVertexArray(0);
    gl_core_context_bind_hw_render(gl, true);
