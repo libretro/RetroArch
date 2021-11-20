@@ -864,20 +864,30 @@ bool netplay_handshake_init_send(netplay_t *netplay,
    header[1] = htonl(netplay_platform_magic());
    header[2] = htonl(NETPLAY_COMPRESSION_SUPPORTED);
 
-   if (netplay->is_server &&
-       (!string_is_empty(settings->paths.netplay_password) ||
-        !string_is_empty(settings->paths.netplay_spectate_password)))
+   if (netplay->is_server)
    {
-      /* Demand a password */
-      if (simple_rand_next == 1)
-         simple_rand_next = (unsigned int)time(NULL);
-      connection->salt = simple_rand_uint32();
-      if (!connection->salt)
-         connection->salt = 1;
-      header[3] = htonl(connection->salt);
+      if (!string_is_empty(settings->paths.netplay_password) ||
+            !string_is_empty(settings->paths.netplay_spectate_password))
+      {
+         /* Demand a password */
+         if (simple_rand_next == 1)
+            simple_rand_next = (unsigned int)time(NULL);
+         connection->salt = simple_rand_uint32();
+         if (!connection->salt)
+            connection->salt = 1;
+         header[3] = htonl(connection->salt);
+      }
+      else
+         header[3] = 0;
    }
    else
-      header[3] = 0;
+   {
+      /* HACK ALERT!!!
+       * We need to do this in order to maintain full backwards compatibility.
+       * Send our highest available protocol in the unused salt field.
+       * Servers can then pick the best protocol choice for the client. */
+      header[3] = htonl(HIGH_NETPLAY_PROTOCOL_VERSION);
+   }
 
    header[4] = htonl(protocol);
    header[5] = htonl(netplay_impl_magic());
@@ -998,7 +1008,13 @@ bool netplay_handshake_init(netplay_t *netplay,
       goto error;
    }
 
-   connection->netplay_protocol = ntohl(header[4]);
+   /* HACK ALERT!!!
+    * We need to do this in order to maintain full backwards compatibility.
+    * If client sent a non zero salt, assume it's the highest supported protocol. */
+   connection->netplay_protocol = netplay->is_server ? ntohl(header[3]) : 0;
+   if (!connection->netplay_protocol)
+      connection->netplay_protocol = ntohl(header[4]);
+
    if (connection->netplay_protocol < LOW_NETPLAY_PROTOCOL_VERSION)
    {
       /* Send it so that a proper notification can be shown there. */
@@ -6314,7 +6330,7 @@ netplay_t *netplay_new(const char *server, const char *mitm, uint16_t port,
    {
       /* Start our handshake */
       netplay_handshake_init_send(netplay, &netplay->connections[0],
-         NETPLAY_PROTOCOL_VERSION);
+         LOW_NETPLAY_PROTOCOL_VERSION);
 
       netplay->connections[0].mode = NETPLAY_CONNECTION_INIT;
       netplay->self_mode           = NETPLAY_CONNECTION_INIT;
