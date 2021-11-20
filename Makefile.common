@@ -1434,7 +1434,9 @@ endif
 
 ifeq ($(HAVE_PLAIN_DRM), 1)
    OBJ += gfx/drivers/drm_gfx.o
-   INCLUDE_DIRS += -I/usr/include/libdrm
+   ifneq ($(HAVE_LAKKA), 1)
+      INCLUDE_DIRS += -I/usr/include/libdrm
+   endif
    LIBS += -ldrm
 endif
 

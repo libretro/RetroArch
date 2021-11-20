@@ -131,7 +131,7 @@ static void set_aspect(videocrt_switch_t *p_switch, unsigned int width,
       RARCH_LOG("[CRT]: Resolution is stretched. Fractal scaling @ X:%f Y:%f \n", srm_xscale, srm_yscale);
    }
    else
-      RARCH_LOG("[CRT]: SR integer scaled  X:%d Y:%d \n",srm.x_scale, srm.y_scale);
+      RARCH_LOG("[CRT]: SR integer scaled  X:%d Y:%d \n",(int)srm_xscale, (int)srm_yscale);
 
    scaled_width = roundf(patched_width*srm_xscale);
    scaled_height = roundf(patched_height*srm_yscale);

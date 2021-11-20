@@ -1730,6 +1730,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_DUMP_DISC,
    "dump_disc"
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_EJECT_DISC,
+   "eject_disc"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL,
    "load_special"
@@ -2386,6 +2392,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_LOAD_DISC_LIST,
    "deferred_load_disc_list"
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_EJECT_DISC,
+   "deferred_eject_disc"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER,
    "deferred_cursor_manager_list_rdb_entry_developer"
@@ -4030,6 +4042,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_MENU_SHOW_DUMP_DISC,
    "menu_show_dump_disc"
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_SHOW_EJECT_DISC,
+   "menu_show_eject_disc"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_SHOW_INFORMATION,
    "menu_show_information"

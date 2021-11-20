@@ -113,6 +113,9 @@ GENERIC_DEFERRED_PUSH(deferred_push_configurations_list,            DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_load_content_special,           DISPLAYLIST_LOAD_CONTENT_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_load_content_list,              DISPLAYLIST_LOAD_CONTENT_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_dump_disk_list,                 DISPLAYLIST_DUMP_DISC)
+#ifdef HAVE_LAKKA
+GENERIC_DEFERRED_PUSH(deferred_push_eject_disc,                     DISPLAYLIST_EJECT_DISC)
+#endif
 GENERIC_DEFERRED_PUSH(deferred_push_cdrom_info_detail_list,         DISPLAYLIST_CDROM_DETAIL_INFO)
 GENERIC_DEFERRED_PUSH(deferred_push_load_disk_list,                 DISPLAYLIST_LOAD_DISC)
 GENERIC_DEFERRED_PUSH(deferred_push_information_list,               DISPLAYLIST_INFORMATION_LIST)
@@ -676,6 +679,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 
    const deferred_info_list_t info_list[] = {
       {MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST, deferred_push_dump_disk_list},
+#ifdef HAVE_LAKKA
+      {MENU_ENUM_LABEL_DEFERRED_EJECT_DISC, deferred_push_eject_disc},
+#endif
       {MENU_ENUM_LABEL_DEFERRED_LOAD_DISC_LIST, deferred_push_load_disk_list},
       {MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST, deferred_push_favorites_list},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST, deferred_push_dropdown_box_list},
@@ -1276,6 +1282,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_dump_disk_list);
             break;
+#ifdef HAVE_LAKKA
+         case MENU_ENUM_LABEL_DEFERRED_EJECT_DISC:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_eject_disc);
+            break;
+#endif
          case MENU_ENUM_LABEL_DEFERRED_CDROM_INFO_DETAIL_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cdrom_info_detail_list);
             break;

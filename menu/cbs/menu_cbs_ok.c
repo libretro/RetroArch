@@ -447,6 +447,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_FACEBOOK_LIST;         
       case ACTION_OK_DL_DUMP_DISC_LIST:
          return MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST;
+#ifdef HAVE_LAKKA
+      case ACTION_OK_DL_EJECT_DISC:
+         return MENU_ENUM_LABEL_DEFERRED_EJECT_DISC;
+#endif
       case ACTION_OK_DL_LOAD_DISC_LIST:
          return MENU_ENUM_LABEL_DEFERRED_LOAD_DISC_LIST;
       case ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST:
@@ -1527,6 +1531,9 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_IMAGES_LIST:
       case ACTION_OK_DL_LOAD_DISC_LIST:
       case ACTION_OK_DL_DUMP_DISC_LIST:
+#ifdef HAVE_LAKKA
+      case ACTION_OK_DL_EJECT_DISC:
+#endif
       case ACTION_OK_DL_SHADER_PRESET_REMOVE:
       case ACTION_OK_DL_SHADER_PRESET_SAVE:
       case ACTION_OK_DL_CDROM_INFO_LIST:
@@ -2732,6 +2739,17 @@ static int action_ok_dump_cdrom(const char *path,
 #endif
    return 0;
 }
+
+#ifdef HAVE_LAKKA
+static int action_ok_eject_disc(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#ifdef HAVE_CDROM
+   system("eject & disown");
+#endif /* HAVE_CDROM */
+   return 0;
+}
+#endif /* HAVE_LAKKA */
 
 static int action_ok_lookup_setting(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -5642,6 +5660,9 @@ DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_youtube_list, ACTION_OK_DL_ACCOUN
 DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_twitch_list, ACTION_OK_DL_ACCOUNTS_TWITCH_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_facebook_list, ACTION_OK_DL_ACCOUNTS_FACEBOOK_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_dump_disc_list, ACTION_OK_DL_DUMP_DISC_LIST)
+#ifdef HAVE_LAKKA
+DEFAULT_ACTION_OK_FUNC(action_ok_push_eject_disc, ACTION_OK_DL_EJECT_DISC)
+#endif
 DEFAULT_ACTION_OK_FUNC(action_ok_push_load_disc_list, ACTION_OK_DL_LOAD_DISC_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_open_archive, ACTION_OK_DL_OPEN_ARCHIVE)
 DEFAULT_ACTION_OK_FUNC(action_ok_rgui_menu_theme_preset, ACTION_OK_DL_RGUI_MENU_THEME_PRESET)
@@ -7863,6 +7884,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_ACCOUNTS_TWITCH,                     action_ok_push_accounts_twitch_list},
          {MENU_ENUM_LABEL_ACCOUNTS_FACEBOOK,                   action_ok_push_accounts_facebook_list},
          {MENU_ENUM_LABEL_DUMP_DISC,                           action_ok_push_dump_disc_list},
+#ifdef HAVE_LAKKA
+         {MENU_ENUM_LABEL_EJECT_DISC,                          action_ok_push_eject_disc},
+#endif
          {MENU_ENUM_LABEL_LOAD_DISC,                           action_ok_push_load_disc_list},
          {MENU_ENUM_LABEL_SHADER_OPTIONS,                      action_ok_push_default},
          {MENU_ENUM_LABEL_CORE_OPTIONS,                        action_ok_push_core_options_list},
@@ -8043,6 +8067,12 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_OK(cbs, action_ok_dump_cdrom);
    }
+#ifdef HAVE_LAKKA
+   else if (type == MENU_SET_EJECT_DISC)
+   {
+      BIND_ACTION_OK(cbs, action_ok_eject_disc);
+   }
+#endif
    else if (type == MENU_SET_CDROM_INFO)
    {
       BIND_ACTION_OK(cbs, action_ok_cdrom_info_list);

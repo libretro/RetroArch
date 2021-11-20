@@ -1602,6 +1602,9 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
    {
       case MENU_ENUM_LABEL_LOAD_DISC:
       case MENU_ENUM_LABEL_DUMP_DISC:
+#ifdef HAVE_LAKKA
+      case MENU_ENUM_LABEL_EJECT_DISC:
+#endif
       case MENU_ENUM_LABEL_DISC_INFORMATION:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_DISC];
       case MENU_ENUM_LABEL_CORE_OPTIONS:
@@ -1931,6 +1934,9 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
    {
       case MENU_SET_CDROM_INFO:
       case MENU_SET_CDROM_LIST:
+#ifdef HAVE_LAKKA
+      case MENU_SET_EJECT_DISC:
+#endif
       case MENU_SET_LOAD_CDROM_LIST:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_DISC];
       case FILE_TYPE_DIRECTORY:
@@ -7856,6 +7862,17 @@ static int ozone_list_push(void *data, void *userdata,
                      PARSE_ACTION,
                      false);
             }
+
+#ifdef HAVE_LAKKA
+            if (settings->bools.menu_show_eject_disc)
+            {
+               MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
+                     info->list,
+                     MENU_ENUM_LABEL_EJECT_DISC,
+                     PARSE_ACTION,
+                     false);
+            }
+#endif
 
             MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
                   info->list,

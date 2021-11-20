@@ -678,6 +678,7 @@ static int manual_content_scan_core_name_left(unsigned type, const char *label,
    return 0;
 }
 
+#ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
 static int cpu_policy_mode_change(unsigned type, const char *label,
       bool wraparound)
@@ -792,6 +793,7 @@ static int cpu_policy_freq_tweak(unsigned type, const char *label,
    return 0;
 }
 #endif
+#endif /* #ifndef HAVE_LAKKA_SWITCH */
 
 static int core_setting_left(unsigned type, const char *label,
       bool wraparound)

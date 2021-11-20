@@ -646,6 +646,9 @@ static const bool menu_show_load_content       = true;
 #ifdef HAVE_CDROM
 static const bool menu_show_load_disc          = true;
 static const bool menu_show_dump_disc          = true;
+#ifdef HAVE_LAKKA
+static const bool menu_show_eject_disc         = true;
+#endif /* HAVE_LAKKA */
 #endif
 static const bool menu_show_information        = true;
 static const bool menu_show_configurations     = true;
