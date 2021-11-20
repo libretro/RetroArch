@@ -3135,7 +3135,7 @@ static bool gl2_frame(void *data, const void *frame,
    if (  gl->have_sync
          && hard_sync
          && !input_driver_nonblock_state
-         && !gl->menu_texture_enable)
+         )
    {
       glClear(GL_COLOR_BUFFER_BIT);
 
