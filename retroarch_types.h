@@ -1,6 +1,7 @@
 #ifndef _RETROARCH_TYPES_H
 #define _RETROARCH_TYPES_H
 
+#include <setjmp.h>
 #include <boolean.h>
 #include <retro_inline.h>
 #include <retro_common_api.h>
@@ -297,6 +298,9 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
+   jmp_buf error_sjlj_context;              /* 4-byte alignment,
+                                               put it right before long */
+
    /* Settings and/or global state that is specific to
     * a console-style implementation. */
    struct
@@ -322,9 +326,11 @@ typedef struct global
       bool softfilter_enable;
 
    } console;
-   /* Settings and/or global states specific to menus */
+
+   char error_string[255];
    bool launched_from_cli;
    bool cli_load_menu_on_error;
+   bool error_on_init;
 } global_t;
 
 typedef struct content_file_override

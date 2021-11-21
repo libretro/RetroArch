@@ -58,7 +58,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
-#include <setjmp.h>
 #include <math.h>
 #include <locale.h>
 
@@ -401,19 +400,15 @@ extern const bluetooth_driver_t *bluetooth_drivers[];
 /* MAIN GLOBAL VARIABLES */
 struct rarch_state
 {
-   struct global              g_extern;         /* retro_time_t alignment */
    char *connect_host; /* Netplay hostname passed from CLI */
 
    struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
 
-   jmp_buf error_sjlj_context;              /* 4-byte alignment,
-                                               put it right before long */
 #ifdef HAVE_THREAD_STORAGE
    sthread_tls_t rarch_tls;               /* unsigned alignment */
 #endif
    unsigned perf_ptr_rarch;
 
-   char error_string[255];
    char launch_arguments[4096];
    char path_default_shader_preset[PATH_MAX_LENGTH];
    char path_content[PATH_MAX_LENGTH];
@@ -425,7 +420,6 @@ struct rarch_state
    char dir_savefile[PATH_MAX_LENGTH];
    char dir_savestate[PATH_MAX_LENGTH];
    bool has_set_username;
-   bool rarch_error_on_init;
    bool has_set_verbosity;
    bool has_set_libretro;
    bool has_set_libretro_directory;
@@ -486,6 +480,7 @@ retro_keybind_set input_autoconf_binds[MAX_USERS];
 
 static runloop_state_t runloop_state      = {0};
 static access_state_t access_state_st     = {0};
+static struct global global_driver_st     = {0}; /* retro_time_t alignment */
 
 access_state_t *access_state_get_ptr(void)
 {
@@ -519,8 +514,7 @@ int content_get_subsystem(void)
 
 global_t *global_get_ptr(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   return &p_rarch->g_extern;
+   return &global_driver_st;
 }
 
 #ifdef _WIN32
@@ -4793,7 +4787,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG:
-         config_set_defaults(&p_rarch->g_extern);
+         config_set_defaults(global_get_ptr());
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
 #if !defined(HAVE_DYNAMIC)
@@ -5832,7 +5826,7 @@ static void global_free(struct rarch_state *p_rarch)
    runloop_st->current_core.has_set_input_descriptors = false;
    runloop_st->current_core.has_set_subsystems        = false;
 
-   global                                             = &p_rarch->g_extern;
+   global                                             = global_get_ptr();
    path_clear_all();
    dir_clear_all();
 
@@ -5919,7 +5913,7 @@ void main_exit(void *args)
 
    p_rarch->has_set_username        = false;
    runloop_st->is_inited            = false;
-   p_rarch->rarch_error_on_init     = false;
+   global_get_ptr()->error_on_init  = false;
 #ifdef HAVE_CONFIGFILE
    p_rarch->rarch_block_config_read = false;
 #endif
@@ -11227,7 +11221,7 @@ static bool retroarch_parse_input_and_config(
 #if !defined(HAVE_DYNAMIC)
       config_load_file_salamander();
 #endif
-      config_load(&p_rarch->g_extern);
+      config_load(global_get_ptr());
    }
 
    verbosity_enabled = verbosity_is_enabled();
@@ -11734,8 +11728,8 @@ bool retroarch_main_init(int argc, char *argv[])
    video_driver_state_t*video_st= video_state_get_ptr();
    settings_t *settings         = config_get_ptr();
    recording_state_t 
-	   *recording_st        = recording_state_get_ptr();
-   global_t            *global  = &p_rarch->g_extern;
+	   *recording_st             = recording_state_get_ptr();
+   global_t            *global  = global_get_ptr();
    access_state_t *access_st    = access_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
    bool accessibility_enable    = false;
@@ -11749,19 +11743,21 @@ bool retroarch_main_init(int argc, char *argv[])
    video_st->active             = true;
    audio_state_get_ptr()->active= true;
 
-   if (setjmp(p_rarch->error_sjlj_context) > 0)
+   if (setjmp(global->error_sjlj_context) > 0)
    {
       RARCH_ERR("%s: \"%s\"\n",
-            msg_hash_to_str(MSG_FATAL_ERROR_RECEIVED_IN), p_rarch->error_string);
+            msg_hash_to_str(MSG_FATAL_ERROR_RECEIVED_IN),
+            global->error_string);
       goto error;
    }
 
-   p_rarch->rarch_error_on_init = true;
+   global->error_on_init = true;
 
    /* Have to initialise non-file logging once at the start... */
    retro_main_log_file_init(NULL, false);
 
-   verbosity_enabled = retroarch_parse_input_and_config(p_rarch, &p_rarch->g_extern, argc, argv);
+   verbosity_enabled = retroarch_parse_input_and_config(p_rarch,
+global_get_ptr(), argc, argv);
 
 #ifdef HAVE_ACCESSIBILITY
    accessibility_enable                = settings->bools.accessibility_enable;
@@ -12019,7 +12015,7 @@ bool retroarch_main_init(int argc, char *argv[])
 
    command_event(CMD_EVENT_SET_PER_GAME_RESOLUTION, NULL);
 
-   p_rarch->rarch_error_on_init     = false;
+   global->error_on_init            = false;
    runloop_st->is_inited            = true;
 
 #ifdef HAVE_DISCORD
@@ -12591,15 +12587,14 @@ void runloop_set_current_core_type(
 
 void retroarch_fail(int error_code, const char *error)
 {
-   struct rarch_state  *p_rarch    = &rarch_st;
+   global_t *global                = global_get_ptr();
    /* We cannot longjmp unless we're in retroarch_main_init().
     * If not, something went very wrong, and we should
     * just exit right away. */
-   retro_assert(p_rarch->rarch_error_on_init);
-
-   strlcpy(p_rarch->error_string,
-         error, sizeof(p_rarch->error_string));
-   longjmp(p_rarch->error_sjlj_context, error_code);
+   retro_assert(global->error_on_init);
+   strlcpy(global->error_string,
+         error, sizeof(global->error_string));
+   longjmp(global->error_sjlj_context, error_code);
 }
 
 bool retroarch_main_quit(void)
@@ -13975,7 +13970,6 @@ int runloop_iterate(void)
 {
    unsigned i;
    enum analog_dpad_mode dpad_mode[MAX_USERS];
-   struct rarch_state                  *p_rarch = &rarch_st;
    input_driver_state_t               *input_st = input_state_get_ptr();
    audio_driver_state_t               *audio_st = audio_state_get_ptr();
    video_driver_state_t               *video_st = video_state_get_ptr();
@@ -14079,7 +14073,7 @@ int runloop_iterate(void)
    }
 
    switch ((enum runloop_state_enum)runloop_check_state(
-            p_rarch->rarch_error_on_init,
+            global_get_ptr()->error_on_init,
             settings, current_time))
    {
       case RUNLOOP_STATE_QUIT:
