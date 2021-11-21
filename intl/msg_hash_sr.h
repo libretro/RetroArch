@@ -91,6 +91,8 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    MENU_ENUM_SUBLABEL_DUMP_DISC,
    "Napravi kopiju fizičkog diska na internoj memoriji. Biće sačuvan kao odrazna datoteka."
    )
+#ifdef HAVE_LAKKA
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "Liste"
@@ -1623,6 +1625,8 @@ MSG_HASH(
 
 /* Settings > User Interface > Menu Item Visibility */
 
+#ifdef HAVE_LAKKA
+#endif
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 

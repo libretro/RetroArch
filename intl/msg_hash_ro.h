@@ -11,6 +11,8 @@
 
 /* Main Menu */
 
+#ifdef HAVE_LAKKA
+#endif
 
 /* Main Menu > Load Core */
 
@@ -175,6 +177,8 @@
 
 /* Settings > User Interface > Menu Item Visibility */
 
+#ifdef HAVE_LAKKA
+#endif
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 

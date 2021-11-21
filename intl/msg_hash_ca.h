@@ -91,6 +91,8 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    MENU_ENUM_SUBLABEL_DUMP_DISC,
    "Abocar el disc físic multimèdia a l'emmagatzematge intern. Es guardarà com un arxiu d'imatge."
    )
+#ifdef HAVE_LAKKA
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "Llistes de reproducció"
@@ -375,6 +377,8 @@ MSG_HASH( /* FIXME Maybe add a description? */
 
 /* Settings > User Interface > Menu Item Visibility */
 
+#ifdef HAVE_LAKKA
+#endif
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
