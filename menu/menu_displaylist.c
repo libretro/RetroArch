@@ -111,7 +111,9 @@
 #include "../performance_counters.h"
 #include "../core_info.h"
 #include "../bluetooth/bluetooth_driver.h"
-#include "../wifi/wifi_driver.h"
+#if defined(HAVE_NETWORKING) && defined(HAVE_WIFI)
+#include "../network/wifi_driver.h"
+#endif
 #include "../tasks/task_content.h"
 #include "../tasks/tasks_internal.h"
 #include "../dynamic.h"
@@ -4947,7 +4949,7 @@ static void bluetooth_scan_callback(retro_task_t *task,
 }
 #endif
 
-#ifdef HAVE_NETWORKING
+#if defined(HAVE_NETWORKING) && defined(HAVE_WIFI)
 static void wifi_scan_callback(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
@@ -5854,6 +5856,7 @@ unsigned menu_displaylist_build_list(
 #endif
          break;
       case DISPLAYLIST_WIFI_SETTINGS_LIST:
+#if defined(HAVE_NETWORKING) && defined(HAVE_WIFI)
          {
             bool wifi_enabled = settings->bools.wifi_enabled;
             bool connected    = driver_wifi_connection_info(NULL);
@@ -5888,9 +5891,10 @@ unsigned menu_displaylist_build_list(
                   count++;
             }
          }
+#endif
          break;
       case DISPLAYLIST_WIFI_NETWORKS_LIST:
-#ifdef HAVE_NETWORKING
+#if defined(HAVE_NETWORKING) && defined(HAVE_WIFI)
          if (!string_is_equal(settings->arrays.wifi_driver, "null"))
          {
             wifi_network_scan_t *scan = driver_wifi_get_ssids();

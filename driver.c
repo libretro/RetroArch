@@ -27,7 +27,7 @@
 #include "verbosity.h"
 
 #include "bluetooth/bluetooth_driver.h"
-#include "wifi/wifi_driver.h"
+#include "network/wifi_driver.h"
 #include "led/led_driver.h"
 #include "midi_driver.h"
 #include "gfx/video_driver.h"
@@ -64,33 +64,6 @@ const bluetooth_driver_t *bluetooth_drivers[] = {
 #endif
 #endif
    &bluetooth_null,
-   NULL,
-};
-
-wifi_driver_t wifi_null = {
-   NULL, /* init */
-   NULL, /* free */
-   NULL, /* start */
-   NULL, /* stop */
-   NULL, /* enable */
-   NULL, /* connection_info */
-   NULL, /* scan */
-   NULL, /* get_ssids */
-   NULL, /* ssid_is_online */
-   NULL, /* connect_ssid */
-   NULL, /* disconnect_ssid */
-   NULL, /* tether_start_stop */
-   "null",
-};
-
-const wifi_driver_t *wifi_drivers[] = {
-#ifdef HAVE_LAKKA
-   &wifi_connmanctl,
-#endif
-#ifdef HAVE_WIFI
-   &wifi_nmcli,
-#endif
-   &wifi_null,
    NULL,
 };
 
@@ -579,8 +552,10 @@ void drivers_init(
    if (flags & DRIVER_BLUETOOTH_MASK)
       bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_INIT, NULL);
 
+#ifdef HAVE_WIFI
    if ((flags & DRIVER_WIFI_MASK))
       wifi_driver_ctl(RARCH_WIFI_CTL_INIT, NULL);
+#endif
 
    if (flags & DRIVER_LOCATION_MASK)
    {
@@ -726,8 +701,10 @@ void driver_uninit(int flags)
    if ((flags & DRIVER_BLUETOOTH_MASK))
       bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_DEINIT, NULL);
 
+#ifdef HAVE_WIFI
    if ((flags & DRIVER_WIFI_MASK))
       wifi_driver_ctl(RARCH_WIFI_CTL_DEINIT, NULL);
+#endif
 
    if (flags & DRIVER_LED)
       led_driver_free();
@@ -836,7 +813,9 @@ void retroarch_deinit_drivers(struct retro_callbacks *cbs)
    camera_st->data                                  = NULL;
 
    bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_DESTROY, NULL);
+#ifdef HAVE_WIFI
    wifi_driver_ctl(RARCH_WIFI_CTL_DESTROY, NULL);
+#endif
 
    cbs->frame_cb                                    = retro_frame_null;
    cbs->poll_cb                                     = retro_input_poll_null;

@@ -181,6 +181,9 @@
 #ifdef HAVE_NETWORKING
 #include "network/netplay/netplay.h"
 #include "network/netplay/netplay_private.h"
+#ifdef HAVE_WIFI
+#include "network/wifi_driver.h"
+#endif
 #endif
 
 #ifdef HAVE_THREADS
@@ -211,7 +214,6 @@
 #include "gfx/video_crt_switch.h"
 #endif
 #include "bluetooth/bluetooth_driver.h"
-#include "wifi/wifi_driver.h"
 #include "misc/cpufreq/cpufreq.h"
 #include "led/led_driver.h"
 #include "midi_driver.h"
@@ -438,8 +440,6 @@ struct rarch_state
    const bluetooth_driver_t *bluetooth_driver;
    void *bluetooth_data;
 
-   const wifi_driver_t *wifi_driver;
-   void *wifi_data;
    char *connect_host; /* Netplay hostname passed from CLI */
 
    struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
@@ -486,7 +486,6 @@ struct rarch_state
    bool rarch_block_config_read;
 #endif
    bool bluetooth_driver_active;
-   bool wifi_driver_active;
    bool main_ui_companion_is_on_foreground;
 };
 
@@ -10046,176 +10045,6 @@ bool bluetooth_driver_ctl(enum rarch_bluetooth_ctl_state state, void *data)
    return false;
 }
 
-/* WIFI DRIVER  */
-
-/**
- * config_get_wifi_driver_options:
- *
- * Get an enumerated list of all wifi driver names,
- * separated by '|'.
- *
- * Returns: string listing of all wifi driver names,
- * separated by '|'.
- **/
-const char* config_get_wifi_driver_options(void)
-{
-   return char_list_new_special(STRING_LIST_WIFI_DRIVERS, NULL);
-}
-
-void driver_wifi_scan(void)
-{
-   struct rarch_state       *p_rarch = &rarch_st;
-   p_rarch->wifi_driver->scan(p_rarch->wifi_data);
-}
-
-bool driver_wifi_enable(bool enabled)
-{
-   struct rarch_state       *p_rarch = &rarch_st;
-   return p_rarch->wifi_driver->enable(p_rarch->wifi_data, enabled);
-}
-
-bool driver_wifi_connection_info(wifi_network_info_t *netinfo)
-{
-   struct rarch_state       *p_rarch = &rarch_st;
-   return p_rarch->wifi_driver->connection_info(p_rarch->wifi_data, netinfo);
-}
-
-wifi_network_scan_t* driver_wifi_get_ssids(void)
-{
-   struct rarch_state       *p_rarch = &rarch_st;
-   return p_rarch->wifi_driver->get_ssids(p_rarch->wifi_data);
-}
-
-bool driver_wifi_ssid_is_online(unsigned i)
-{
-   struct rarch_state       *p_rarch = &rarch_st;
-   return p_rarch->wifi_driver->ssid_is_online(p_rarch->wifi_data, i);
-}
-
-bool driver_wifi_connect_ssid(const wifi_network_info_t* net)
-{
-   struct rarch_state       *p_rarch = &rarch_st;
-   return p_rarch->wifi_driver->connect_ssid(p_rarch->wifi_data, net);
-}
-
-bool driver_wifi_disconnect_ssid(const wifi_network_info_t* net)
-{
-   struct rarch_state       *p_rarch = &rarch_st;
-   return p_rarch->wifi_driver->disconnect_ssid(p_rarch->wifi_data, net);
-}
-
-void driver_wifi_tether_start_stop(bool start, char* configfile)
-{
-   struct rarch_state       *p_rarch = &rarch_st;
-   p_rarch->wifi_driver->tether_start_stop(p_rarch->wifi_data, start, configfile);
-}
-
-bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
-{
-   struct rarch_state     *p_rarch  = &rarch_st;
-   settings_t             *settings = config_get_ptr();
-
-   switch (state)
-   {
-      case RARCH_WIFI_CTL_DESTROY:
-         p_rarch->wifi_driver_active   = false;
-         p_rarch->wifi_driver          = NULL;
-         p_rarch->wifi_data            = NULL;
-         break;
-      case RARCH_WIFI_CTL_SET_ACTIVE:
-         p_rarch->wifi_driver_active   = true;
-         break;
-      case RARCH_WIFI_CTL_FIND_DRIVER:
-         {
-            const char *prefix   = "wifi driver";
-            int i                = (int)driver_find_index(
-                  "wifi_driver",
-                  settings->arrays.wifi_driver);
-
-            if (i >= 0)
-               p_rarch->wifi_driver = (const wifi_driver_t*)wifi_drivers[i];
-            else
-            {
-               if (verbosity_is_enabled())
-               {
-                  unsigned d;
-                  RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
-                        settings->arrays.wifi_driver);
-                  RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
-                  for (d = 0; wifi_drivers[d]; d++)
-                     RARCH_LOG_OUTPUT("\t%s\n", wifi_drivers[d]->ident);
-
-                  RARCH_WARN("Going to default to first %s...\n", prefix);
-               }
-
-               p_rarch->wifi_driver = (const wifi_driver_t*)wifi_drivers[0];
-
-               if (!p_rarch->wifi_driver)
-                  retroarch_fail(1, "find_wifi_driver()");
-            }
-         }
-         break;
-      case RARCH_WIFI_CTL_UNSET_ACTIVE:
-         p_rarch->wifi_driver_active = false;
-         break;
-      case RARCH_WIFI_CTL_IS_ACTIVE:
-        return p_rarch->wifi_driver_active;
-      case RARCH_WIFI_CTL_DEINIT:
-        if (p_rarch->wifi_data && p_rarch->wifi_driver)
-        {
-           if (p_rarch->wifi_driver->free)
-              p_rarch->wifi_driver->free(p_rarch->wifi_data);
-        }
-
-        p_rarch->wifi_data = NULL;
-        break;
-      case RARCH_WIFI_CTL_STOP:
-        if (     p_rarch->wifi_driver
-              && p_rarch->wifi_driver->stop
-              && p_rarch->wifi_data)
-           p_rarch->wifi_driver->stop(p_rarch->wifi_data);
-        break;
-      case RARCH_WIFI_CTL_START:
-        if (     p_rarch->wifi_driver
-              && p_rarch->wifi_data
-              && p_rarch->wifi_driver->start)
-        {
-           bool wifi_allow      = settings->bools.wifi_allow;
-           if (wifi_allow)
-              return p_rarch->wifi_driver->start(p_rarch->wifi_data);
-        }
-        return false;
-      case RARCH_WIFI_CTL_INIT:
-        /* Resource leaks will follow if wifi is initialized twice. */
-        if (p_rarch->wifi_data)
-           return false;
-
-        wifi_driver_ctl(RARCH_WIFI_CTL_FIND_DRIVER, NULL);
-
-        if (p_rarch->wifi_driver && p_rarch->wifi_driver->init)
-        {
-           p_rarch->wifi_data = p_rarch->wifi_driver->init();
-
-           if (p_rarch->wifi_data)
-           {
-              p_rarch->wifi_driver->enable(p_rarch->wifi_data,
-                 settings->bools.wifi_enabled);
-           }
-           else
-           {
-              RARCH_ERR("Failed to initialize wifi driver. Will continue without wifi.\n");
-              wifi_driver_ctl(RARCH_WIFI_CTL_UNSET_ACTIVE, NULL);
-           }
-        }
-
-        break;
-      default:
-         break;
-   }
-
-   return false;
-}
-
 /* UI COMPANION */
 
 void ui_companion_set_foreground(unsigned enable)
@@ -12485,7 +12314,9 @@ bool retroarch_main_init(int argc, char *argv[])
       retroarch_fail(1, "find_camera_driver()");
 
    bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_FIND_DRIVER, NULL);
+#ifdef HAVE_WIFI
    wifi_driver_ctl(RARCH_WIFI_CTL_FIND_DRIVER, NULL);
+#endif
    location_driver_find_driver(settings,
          "location driver", verbosity_enabled);
 #ifdef HAVE_MENU

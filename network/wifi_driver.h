@@ -48,7 +48,7 @@ typedef struct wifi_network_info
    bool connected;
    bool saved_password;
    char netid[160];   /* Do not use, internal */
-   /* TODO Add signal strength & other info */
+   /* TODO/FIXME - Add signal strength & other info */
 } wifi_network_info_t;
 
 typedef struct wifi_network_scan
@@ -77,6 +77,13 @@ typedef struct wifi_driver
 
    const char *ident;
 } wifi_driver_t;
+
+typedef struct
+{
+   const wifi_driver_t *drv;
+   void *data;
+   bool active;
+} wifi_driver_state_t;
 
 extern wifi_driver_t wifi_connmanctl;
 extern wifi_driver_t wifi_nmcli;
