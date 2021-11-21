@@ -42,7 +42,9 @@
 #include "../../performance_counters.h"
 #include "../../paths.h"
 #include "../../verbosity.h"
+#ifdef HAVE_BLUETOOTH
 #include "../../bluetooth/bluetooth_driver.h"
+#endif
 #include "../../playlist.h"
 #include "../../manual_content_scan.h"
 #include "../misc/cpufreq/cpufreq.h"
@@ -967,6 +969,7 @@ static void menu_action_setting_disp_set_label_entry(
    strlcpy(s2, path, len2);
 }
 
+#ifdef HAVE_BLUETOOTH
 static void menu_action_setting_disp_set_label_bluetooth_is_connected(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -981,6 +984,7 @@ static void menu_action_setting_disp_set_label_bluetooth_is_connected(
    if (driver_bluetooth_device_is_connected(i))
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BT_CONNECTED), len);
 }
+#endif
 
 #if defined(HAVE_NETWORKING) && defined(HAVE_WIFI)
 static void menu_action_setting_disp_set_label_wifi_is_online(
@@ -1767,8 +1771,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label);
             break;
          case MENU_ENUM_LABEL_CONNECT_BLUETOOTH:
+#ifdef HAVE_BLUETOOTH
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_bluetooth_is_connected);
+#endif
             break;
          case MENU_ENUM_LABEL_CONNECT_WIFI:
 #if defined(HAVE_NETWORKING) && defined(HAVE_WIFI)

@@ -773,10 +773,8 @@ ifeq ($(HAVE_EMSCRIPTEN), 1)
 endif
 
 ifeq ($(HAVE_BLUETOOTH), 1)
+   OBJ += tasks/task_bluetooth.o
    OBJ += bluetooth/drivers/bluetoothctl.o
-endif
-
-ifeq ($(HAVE_BLUETOOTH), 1)
    ifeq ($(HAVE_DBUS), 1)
       OBJ += bluetooth/drivers/bluez.o
    endif
@@ -2085,7 +2083,6 @@ ifeq ($(HAVE_NETWORKING), 1)
           tasks/task_http.o \
           tasks/task_netplay_lan_scan.o \
           tasks/task_netplay_nat_traversal.o \
-          tasks/task_bluetooth.o \
 	  tasks/task_pl_thumbnail_download.o \
           tasks/task_netplay_find_content.o
 

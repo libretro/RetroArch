@@ -213,7 +213,9 @@
 #ifdef HAVE_CRTSWITCHRES
 #include "gfx/video_crt_switch.h"
 #endif
+#ifdef HAVE_BLUETOOTH
 #include "bluetooth/bluetooth_driver.h"
+#endif
 #include "misc/cpufreq/cpufreq.h"
 #include "led/led_driver.h"
 #include "midi_driver.h"
@@ -392,8 +394,9 @@
 #endif
 
 /* DRIVERS */
-
+#ifdef HAVE_BLUETOOTH
 extern const bluetooth_driver_t *bluetooth_drivers[];
+#endif
 
 static ui_companion_driver_t ui_companion_null = {
    NULL, /* init */
@@ -436,9 +439,10 @@ struct rarch_state
 #ifdef HAVE_QT
    void *ui_companion_qt_data;
 #endif
-
+#ifdef HAVE_BLUETOOTH
    const bluetooth_driver_t *bluetooth_driver;
    void *bluetooth_data;
+#endif
 
    char *connect_host; /* Netplay hostname passed from CLI */
 
@@ -485,7 +489,9 @@ struct rarch_state
 #ifdef HAVE_CONFIGFILE
    bool rarch_block_config_read;
 #endif
+#ifdef HAVE_BLUETOOTH
    bool bluetooth_driver_active;
+#endif
    bool main_ui_companion_is_on_foreground;
 };
 
@@ -9920,7 +9926,7 @@ static void clear_controller_port_map(void)                         { }
 #endif
 
 /* BLUETOOTH DRIVER  */
-
+#ifdef HAVE_BLUETOOTH
 /**
  * config_get_bluetooth_driver_options:
  *
@@ -10064,6 +10070,7 @@ bool bluetooth_driver_ctl(enum rarch_bluetooth_ctl_state state, void *data)
 
    return false;
 }
+#endif
 
 /* UI COMPANION */
 
@@ -12333,7 +12340,9 @@ bool retroarch_main_init(int argc, char *argv[])
    if (!camera_driver_find_driver("camera driver", verbosity_enabled))
       retroarch_fail(1, "find_camera_driver()");
 
+#ifdef HAVE_BLUETOOTH
    bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_FIND_DRIVER, NULL);
+#endif
 #ifdef HAVE_WIFI
    wifi_driver_ctl(RARCH_WIFI_CTL_FIND_DRIVER, NULL);
 #endif

@@ -26,7 +26,9 @@
 #include "runloop.h"
 #include "verbosity.h"
 
+#ifdef HAVE_BLUETOOTH
 #include "bluetooth/bluetooth_driver.h"
+#endif
 #ifdef HAVE_NETWORKING
 #ifdef HAVE_WIFI
 #include "network/wifi_driver.h"
@@ -49,6 +51,7 @@
 #include "menu/menu_driver.h"
 #endif
 
+#ifdef HAVE_BLUETOOTH
 static bluetooth_driver_t bluetooth_null = {
    NULL, /* init */
    NULL, /* free */
@@ -71,6 +74,7 @@ const bluetooth_driver_t *bluetooth_drivers[] = {
    &bluetooth_null,
    NULL,
 };
+#endif
 
 static void retro_frame_null(const void *data, unsigned width,
       unsigned height, size_t pitch) { }
@@ -195,6 +199,7 @@ static const void *find_driver_nonempty(
          return audio_resampler_driver_find_handle(i);
       }
    }
+#ifdef HAVE_BLUETOOTH
    else if (string_is_equal(label, "bluetooth_driver"))
    {
       if (bluetooth_drivers[i])
@@ -205,6 +210,7 @@ static const void *find_driver_nonempty(
          return bluetooth_drivers[i];
       }
    }
+#endif
 #ifdef HAVE_WIFI
    else if (string_is_equal(label, "wifi_driver"))
    {
@@ -556,9 +562,10 @@ void drivers_init(
       }
    }
 
+#ifdef HAVE_BLUETOOTH
    if (flags & DRIVER_BLUETOOTH_MASK)
       bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_INIT, NULL);
-
+#endif
 #ifdef HAVE_WIFI
    if ((flags & DRIVER_WIFI_MASK))
       wifi_driver_ctl(RARCH_WIFI_CTL_INIT, NULL);
@@ -707,9 +714,10 @@ void driver_uninit(int flags)
       camera_st->data = NULL;
    }
 
+#ifdef HAVE_BLUETOOTH
    if ((flags & DRIVER_BLUETOOTH_MASK))
       bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_DEINIT, NULL);
-
+#endif
 #ifdef HAVE_WIFI
    if ((flags & DRIVER_WIFI_MASK))
       wifi_driver_ctl(RARCH_WIFI_CTL_DEINIT, NULL);
@@ -823,7 +831,9 @@ void retroarch_deinit_drivers(struct retro_callbacks *cbs)
    camera_st->driver                                = NULL;
    camera_st->data                                  = NULL;
 
+#ifdef HAVE_BLUETOOTH
    bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_DESTROY, NULL);
+#endif
 #ifdef HAVE_WIFI
    wifi_driver_ctl(RARCH_WIFI_CTL_DESTROY, NULL);
 #endif

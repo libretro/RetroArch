@@ -81,7 +81,9 @@
 #include "../dynamic.h"
 #include "../list_special.h"
 #include "../audio/audio_driver.h"
+#ifdef HAVE_BLUETOOTH
 #include "../bluetooth/bluetooth_driver.h"
+#endif
 #include "../midi_driver.h"
 #include "../location_driver.h"
 #include "../record/record_driver.h"
@@ -8424,11 +8426,15 @@ static void samba_enable_toggle_change_handler(rarch_setting_t *setting)
          *setting->value.target.boolean);
 }
 
-static void bluetooth_enable_toggle_change_handler(rarch_setting_t *setting)
+#ifdef HAVE_BLUETOOTH
+static void bluetooth_enable_toggle_change_handler(
+      rarch_setting_t *setting)
 {
-   systemd_service_toggle(LAKKA_BLUETOOTH_PATH, (char*)"bluetooth.service",
+   systemd_service_toggle(LAKKA_BLUETOOTH_PATH,
+         (char*)"bluetooth.service",
          *setting->value.target.boolean);
 }
+#endif
 
 #ifdef HAVE_WIFI
 static void localap_enable_toggle_change_handler(rarch_setting_t *setting)
@@ -9598,7 +9604,8 @@ static bool setting_append_list(
 #endif
 
 #ifdef HAVE_BLUETOOTH
-         if (string_is_not_equal(settings->arrays.bluetooth_driver, "null"))
+         if (string_is_not_equal(
+                  settings->arrays.bluetooth_driver, "null"))
          {
             CONFIG_ACTION(
                   list, list_info,
@@ -9739,7 +9746,7 @@ static bool setting_append_list(
             string_options_entries[j].default_value  = config_get_default_input();
             string_options_entries[j].values         = config_get_input_driver_options();
 
-	    j++;
+            j++;
 
             string_options_entries[j].target         = settings->arrays.input_joypad_driver;
             string_options_entries[j].len            = sizeof(settings->arrays.input_joypad_driver);
@@ -9748,7 +9755,7 @@ static bool setting_append_list(
             string_options_entries[j].default_value  = config_get_default_joypad();
             string_options_entries[j].values         = config_get_joypad_driver_options();
 
-	    j++;
+            j++;
 
             string_options_entries[j].target         = settings->arrays.video_driver;
             string_options_entries[j].len            = sizeof(settings->arrays.video_driver);
@@ -9757,7 +9764,7 @@ static bool setting_append_list(
             string_options_entries[j].default_value  = config_get_default_video();
             string_options_entries[j].values         = config_get_video_driver_options();
 
-	    j++;
+            j++;
 
             string_options_entries[j].target         = settings->arrays.audio_driver;
             string_options_entries[j].len            = sizeof(settings->arrays.audio_driver);
@@ -9766,7 +9773,7 @@ static bool setting_append_list(
             string_options_entries[j].default_value  = config_get_default_audio();
             string_options_entries[j].values         = config_get_audio_driver_options();
 
-	    j++;
+            j++;
 
             string_options_entries[j].target         = settings->arrays.audio_resampler;
             string_options_entries[j].len            = sizeof(settings->arrays.audio_resampler);
@@ -9775,7 +9782,7 @@ static bool setting_append_list(
             string_options_entries[j].default_value  = config_get_default_audio_resampler();
             string_options_entries[j].values         = config_get_audio_resampler_driver_options();
 
-	    j++;
+            j++;
 
             string_options_entries[j].target         = settings->arrays.camera_driver;
             string_options_entries[j].len            = sizeof(settings->arrays.camera_driver);
@@ -9784,8 +9791,9 @@ static bool setting_append_list(
             string_options_entries[j].default_value  = config_get_default_camera();
             string_options_entries[j].values         = config_get_camera_driver_options();
 
-	    j++;
+            j++;
 
+#ifdef HAVE_BLUETOOTH
             string_options_entries[j].target         = settings->arrays.bluetooth_driver;
             string_options_entries[j].len            = sizeof(settings->arrays.bluetooth_driver);
             string_options_entries[j].name_enum_idx  = MENU_ENUM_LABEL_BLUETOOTH_DRIVER;
@@ -9794,6 +9802,7 @@ static bool setting_append_list(
             string_options_entries[j].values         = config_get_bluetooth_driver_options();
 
             j++;
+#endif
 
 #ifdef HAVE_WIFI
             string_options_entries[j].target         = settings->arrays.wifi_driver;
@@ -9803,7 +9812,7 @@ static bool setting_append_list(
             string_options_entries[j].default_value  = config_get_default_wifi();
             string_options_entries[j].values         = config_get_wifi_driver_options();
 
-	    j++;
+            j++;
 #endif
 
             string_options_entries[j].target         = settings->arrays.location_driver;
@@ -9813,7 +9822,7 @@ static bool setting_append_list(
             string_options_entries[j].default_value  = config_get_default_location();
             string_options_entries[j].values         = config_get_location_driver_options();
 
-	    j++;
+            j++;
 
             string_options_entries[j].target         = settings->arrays.menu_driver;
             string_options_entries[j].len            = sizeof(settings->arrays.menu_driver);
@@ -9822,7 +9831,7 @@ static bool setting_append_list(
             string_options_entries[j].default_value  = config_get_default_menu();
             string_options_entries[j].values         = config_get_menu_driver_options();
 
-	    j++;
+            j++;
 
             string_options_entries[j].target          = settings->arrays.record_driver;
             string_options_entries[j].len             = sizeof(settings->arrays.record_driver);
@@ -9831,7 +9840,7 @@ static bool setting_append_list(
             string_options_entries[j].default_value   = config_get_default_record();
             string_options_entries[j].values          = config_get_record_driver_options();
 
-	    j++;
+            j++;
 
             string_options_entries[j].target          = settings->arrays.midi_driver;
             string_options_entries[j].len             = sizeof(settings->arrays.midi_driver);

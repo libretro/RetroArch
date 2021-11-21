@@ -1318,7 +1318,9 @@ NETPLAY
 #include "../tasks/task_http.c"
 #include "../tasks/task_netplay_lan_scan.c"
 #include "../tasks/task_netplay_nat_traversal.c"
+#ifdef HAVE_BLUETOOTH
 #include "../tasks/task_bluetooth.c"
+#endif
 #include "../tasks/task_netplay_find_content.c"
 #include "../tasks/task_pl_thumbnail_download.c"
 #endif
