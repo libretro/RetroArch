@@ -13976,6 +13976,7 @@ int runloop_iterate(void)
    unsigned i;
    enum analog_dpad_mode dpad_mode[MAX_USERS];
    struct rarch_state                  *p_rarch = &rarch_st;
+   uico_driver_state_t                 *uico_st = uico_state_get_ptr();
    input_driver_state_t               *input_st = input_state_get_ptr();
    audio_driver_state_t               *audio_st = audio_state_get_ptr();
    video_driver_state_t               *video_st = video_state_get_ptr();
