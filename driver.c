@@ -27,7 +27,11 @@
 #include "verbosity.h"
 
 #include "bluetooth/bluetooth_driver.h"
+#ifdef HAVE_NETWORKING
+#ifdef HAVE_WIFI
 #include "network/wifi_driver.h"
+#endif
+#endif
 #include "led/led_driver.h"
 #include "midi_driver.h"
 #include "gfx/video_driver.h"
@@ -200,6 +204,7 @@ static const void *find_driver_nonempty(
          return bluetooth_drivers[i];
       }
    }
+#ifdef HAVE_WIFI
    else if (string_is_equal(label, "wifi_driver"))
    {
       if (wifi_drivers[i])
@@ -210,6 +215,7 @@ static const void *find_driver_nonempty(
          return wifi_drivers[i];
       }
    }
+#endif
 
    return NULL;
 }
