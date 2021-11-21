@@ -773,8 +773,9 @@ ifeq ($(HAVE_EMSCRIPTEN), 1)
 endif
 
 ifeq ($(HAVE_BLUETOOTH), 1)
-   OBJ += tasks/task_bluetooth.o
+   OBJ += bluetooth/bluetooth_driver.o
    OBJ += bluetooth/drivers/bluetoothctl.o
+   OBJ += tasks/task_bluetooth.o
    ifeq ($(HAVE_DBUS), 1)
       OBJ += bluetooth/drivers/bluez.o
    endif

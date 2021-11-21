@@ -51,31 +51,6 @@
 #include "menu/menu_driver.h"
 #endif
 
-#ifdef HAVE_BLUETOOTH
-static bluetooth_driver_t bluetooth_null = {
-   NULL, /* init */
-   NULL, /* free */
-   NULL, /* scan */
-   NULL, /* get_devices */
-   NULL, /* device_is_connected */
-   NULL, /* device_get_sublabel */
-   NULL, /* connect_device */
-   NULL, /* remove_device */
-   "null",
-};
-
-const bluetooth_driver_t *bluetooth_drivers[] = {
-#ifdef HAVE_BLUETOOTH
-   &bluetooth_bluetoothctl,
-#ifdef HAVE_DBUS
-   &bluetooth_bluez,
-#endif
-#endif
-   &bluetooth_null,
-   NULL,
-};
-#endif
-
 static void retro_frame_null(const void *data, unsigned width,
       unsigned height, size_t pitch) { }
 void retro_input_poll_null(void) { }

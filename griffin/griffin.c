@@ -1257,6 +1257,7 @@ RETROARCH
 BLUETOOTH
 ============================================================ */
 #ifdef HAVE_BLUETOOTH
+#include "../bluetooth/bluetooth_driver.c"
 #include "../bluetooth/drivers/bluetoothctl.c"
 #ifdef HAVE_DBUS
 #include "../bluetooth/drivers/bluez.c"
