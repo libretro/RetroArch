@@ -144,6 +144,17 @@ typedef struct ui_companion_driver
    const char        *ident;
 } ui_companion_driver_t;
 
+typedef struct
+{
+   const ui_companion_driver_t *drv;
+   void *data;
+#ifdef HAVE_QT
+   void *qt_data;
+   bool qt_is_inited;
+#endif
+   bool is_on_foreground;
+} uico_driver_state_t;
+
 extern ui_companion_driver_t ui_companion_cocoa;
 extern ui_companion_driver_t ui_companion_cocoatouch;
 extern ui_companion_driver_t ui_companion_qt;
@@ -174,6 +185,21 @@ void ui_companion_driver_log_msg(const char *msg);
 void *ui_companion_driver_get_main_window(void);
 
 const char *ui_companion_driver_get_ident(void);
+
+void ui_companion_driver_init_first(void);
+
+void ui_companion_driver_msg_queue_push(
+      const char *msg, unsigned priority,
+      unsigned duration, bool flush);
+
+void ui_companion_driver_deinit(void);
+
+void ui_companion_driver_toggle(
+      bool desktop_menu_enable,
+      bool ui_companion_toggle,
+      bool force);
+
+uico_driver_state_t *uico_state_get_ptr(void);
 
 RETRO_END_DECLS
 

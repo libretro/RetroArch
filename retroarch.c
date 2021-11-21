@@ -398,48 +398,10 @@
 extern const bluetooth_driver_t *bluetooth_drivers[];
 #endif
 
-static ui_companion_driver_t ui_companion_null = {
-   NULL, /* init */
-   NULL, /* deinit */
-   NULL, /* toggle */
-   NULL, /* event_command */
-   NULL, /* notify_content_loaded */
-   NULL, /* notify_list_loaded */
-   NULL, /* notify_refresh */
-   NULL, /* msg_queue_push */
-   NULL, /* render_messagebox */
-   NULL, /* get_main_window */
-   NULL, /* log_msg */
-   NULL, /* is_active */
-   NULL, /* browser_window */
-   NULL, /* msg_window */
-   NULL, /* window */
-   NULL, /* application */
-   "null", /* ident */
-};
-
-static const ui_companion_driver_t *ui_companion_drivers[] = {
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-   &ui_companion_win32,
-#endif
-#if defined(OSX)
-   &ui_companion_cocoa,
-#endif
-   &ui_companion_null,
-   NULL
-};
-
 /* MAIN GLOBAL VARIABLES */
 struct rarch_state
 {
    struct global              g_extern;         /* retro_time_t alignment */
-   const ui_companion_driver_t *ui_companion;
-   void *ui_companion_data;
-
-#ifdef HAVE_QT
-   void *ui_companion_qt_data;
-#endif
-
    char *connect_host; /* Netplay hostname passed from CLI */
 
    struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
@@ -474,9 +436,6 @@ struct rarch_state
    bool has_set_bps_pref;
    bool has_set_ips_pref;
 #endif
-#ifdef HAVE_QT
-   bool qt_is_inited;
-#endif
    bool has_set_log_to_file;
    bool rarch_ups_pref;
    bool rarch_bps_pref;
@@ -485,7 +444,6 @@ struct rarch_state
 #ifdef HAVE_CONFIGFILE
    bool rarch_block_config_read;
 #endif
-   bool main_ui_companion_is_on_foreground;
 };
 
 /* Forward declarations */
@@ -512,15 +470,6 @@ static bool init_libretro_symbols(
       runloop_state_t *runloop_st,
       enum rarch_core_type type,
       struct retro_core_t *current_core);
-
-static void ui_companion_driver_toggle(
-      struct rarch_state *p_rarch,
-      bool desktop_menu_enable,
-      bool ui_companion_toggle,
-      bool force);
-
-static void ui_companion_driver_deinit(struct rarch_state *p_rarch);
-static void ui_companion_driver_init_first(struct rarch_state *p_rarch);
 
 static bool core_load(unsigned poll_type_behavior);
 static bool core_unload_game(void);
@@ -3760,6 +3709,7 @@ bool command_event(enum event_command cmd, void *data)
    bool boolean                    = false;
    struct rarch_state *p_rarch     = &rarch_st;
    runloop_state_t *runloop_st     = &runloop_state;
+   uico_driver_state_t *uico_st    = uico_state_get_ptr();
    access_state_t *access_st       = access_state_get_ptr();
 #ifdef HAVE_MENU
    struct menu_state *menu_st      = menu_state_get_ptr();
@@ -4756,7 +4706,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_MENU
          retroarch_menu_running_finished(false);
 #endif
-         if (p_rarch->main_ui_companion_is_on_foreground)
+         if (uico_st->is_on_foreground)
          {
 #ifdef HAVE_QT
             bool desktop_menu_enable = settings->bools.desktop_menu_enable;
@@ -4765,7 +4715,8 @@ bool command_event(enum event_command cmd, void *data)
             bool desktop_menu_enable = false;
             bool ui_companion_toggle = false;
 #endif
-            ui_companion_driver_toggle(p_rarch, desktop_menu_enable, ui_companion_toggle, false);
+            ui_companion_driver_toggle(desktop_menu_enable,
+                  ui_companion_toggle, false);
          }
          break;
       case CMD_EVENT_ADD_TO_FAVORITES:
@@ -5434,7 +5385,8 @@ bool command_event(enum event_command cmd, void *data)
             bool desktop_menu_enable = false;
             bool ui_companion_toggle = false;
 #endif
-            ui_companion_driver_toggle(p_rarch, desktop_menu_enable, ui_companion_toggle, true);
+            ui_companion_driver_toggle(desktop_menu_enable,
+                  ui_companion_toggle, true);
          }
          break;
       case CMD_EVENT_GAME_FOCUS_TOGGLE:
@@ -5983,12 +5935,12 @@ void main_exit(void *args)
 
    rarch_config_deinit();
 
-   ui_companion_driver_deinit(p_rarch);
+   ui_companion_driver_deinit();
 
    frontend_driver_shutdown(false);
 
    retroarch_deinit_drivers(&runloop_st->retro_ctx);
-   p_rarch->ui_companion = NULL;
+   uico_state_get_ptr()->drv = NULL;
    frontend_driver_free();
 
    rtime_deinit();
@@ -6094,7 +6046,7 @@ int rarch_main(int argc, char *argv[], void *data)
          return 1;
    }
 
-   ui_companion_driver_init_first(p_rarch);
+   ui_companion_driver_init_first();
 #if !defined(HAVE_MAIN) || defined(HAVE_QT)
    for (;;)
    {
@@ -9918,242 +9870,6 @@ static void clear_controller_port_map(void)                         { }
 
 #endif
 
-/* UI COMPANION */
-
-void ui_companion_set_foreground(unsigned enable)
-{
-   struct rarch_state     *p_rarch = &rarch_st;
-   p_rarch->main_ui_companion_is_on_foreground = enable;
-}
-
-bool ui_companion_is_on_foreground(void)
-{
-   struct rarch_state     *p_rarch = &rarch_st;
-   return p_rarch->main_ui_companion_is_on_foreground;
-}
-
-void ui_companion_event_command(enum event_command action)
-{
-   struct rarch_state     *p_rarch = &rarch_st;
-#ifdef HAVE_QT
-   bool qt_is_inited               = p_rarch->qt_is_inited;
-#endif
-   const ui_companion_driver_t *ui = p_rarch->ui_companion;
-
-   if (ui && ui->event_command)
-      ui->event_command(p_rarch->ui_companion_data, action);
-#ifdef HAVE_QT
-   if (ui_companion_qt.toggle && qt_is_inited)
-      ui_companion_qt.event_command(
-            p_rarch->ui_companion_qt_data, action);
-#endif
-}
-
-static void ui_companion_driver_deinit(struct rarch_state *p_rarch)
-{
-#ifdef HAVE_QT
-   bool qt_is_inited               = p_rarch->qt_is_inited;
-#endif
-   const ui_companion_driver_t *ui = p_rarch->ui_companion;
-
-   if (!ui)
-      return;
-   if (ui->deinit)
-      ui->deinit(p_rarch->ui_companion_data);
-
-#ifdef HAVE_QT
-   if (qt_is_inited)
-   {
-      ui_companion_qt.deinit(p_rarch->ui_companion_qt_data);
-      p_rarch->ui_companion_qt_data = NULL;
-   }
-#endif
-   p_rarch->ui_companion_data = NULL;
-}
-
-static void ui_companion_driver_toggle(
-      struct rarch_state *p_rarch,
-      bool desktop_menu_enable,
-      bool ui_companion_toggle,
-      bool force)
-{
-   if (p_rarch->ui_companion && p_rarch->ui_companion->toggle)
-      p_rarch->ui_companion->toggle(p_rarch->ui_companion_data, false);
-
-#ifdef HAVE_QT
-   if (desktop_menu_enable)
-   {
-      if ((ui_companion_toggle || force) && !p_rarch->qt_is_inited)
-      {
-         p_rarch->ui_companion_qt_data   = ui_companion_qt.init();
-         p_rarch->qt_is_inited           = true;
-      }
-
-      if (ui_companion_qt.toggle && p_rarch->qt_is_inited)
-         ui_companion_qt.toggle(p_rarch->ui_companion_qt_data, force);
-   }
-#endif
-}
-
-static void ui_companion_driver_init_first(struct rarch_state *p_rarch)
-{
-   settings_t *settings                = config_get_ptr();
-#ifdef HAVE_QT
-   bool desktop_menu_enable            = settings->bools.desktop_menu_enable;
-   bool ui_companion_toggle            = settings->bools.ui_companion_toggle;
-
-   if (desktop_menu_enable && ui_companion_toggle)
-   {
-      p_rarch->ui_companion_qt_data    = ui_companion_qt.init();
-      p_rarch->qt_is_inited            = true;
-   }
-#else
-   bool desktop_menu_enable            = false;
-   bool ui_companion_toggle            = false;
-#endif
-   unsigned ui_companion_start_on_boot =
-      settings->bools.ui_companion_start_on_boot;
-   p_rarch->ui_companion               = (ui_companion_driver_t*)ui_companion_drivers[0];
-
-   if (p_rarch->ui_companion)
-      if (ui_companion_start_on_boot)
-      {
-         if (p_rarch->ui_companion->init)
-            p_rarch->ui_companion_data = p_rarch->ui_companion->init();
-
-         ui_companion_driver_toggle(p_rarch,
-                                    desktop_menu_enable,
-                                    ui_companion_toggle,
-                                    false);
-      }
-}
-
-void ui_companion_driver_notify_refresh(void)
-{
-   struct rarch_state *p_rarch     = &rarch_st;
-   const ui_companion_driver_t *ui = p_rarch->ui_companion;
-#ifdef HAVE_QT
-   settings_t      *settings       = config_get_ptr();
-   bool desktop_menu_enable        = settings->bools.desktop_menu_enable;
-   bool qt_is_inited               = p_rarch->qt_is_inited;
-#endif
-
-   if (!ui)
-      return;
-   if (ui->notify_refresh)
-      ui->notify_refresh(p_rarch->ui_companion_data);
-
-#ifdef HAVE_QT
-   if (desktop_menu_enable)
-      if (ui_companion_qt.notify_refresh && qt_is_inited)
-         ui_companion_qt.notify_refresh(p_rarch->ui_companion_qt_data);
-#endif
-}
-
-void ui_companion_driver_notify_list_loaded(
-      file_list_t *list, file_list_t *menu_list)
-{
-   struct rarch_state *p_rarch     = &rarch_st;
-   const ui_companion_driver_t *ui = p_rarch->ui_companion;
-   if (ui && ui->notify_list_loaded)
-      ui->notify_list_loaded(p_rarch->ui_companion_data, list, menu_list);
-}
-
-void ui_companion_driver_notify_content_loaded(void)
-{
-   struct rarch_state *p_rarch     = &rarch_st;
-   const ui_companion_driver_t *ui = p_rarch->ui_companion;
-   if (ui && ui->notify_content_loaded)
-      ui->notify_content_loaded(p_rarch->ui_companion_data);
-}
-
-const ui_msg_window_t *ui_companion_driver_get_msg_window_ptr(void)
-{
-   struct rarch_state *p_rarch     = &rarch_st;
-   const ui_companion_driver_t *ui = p_rarch->ui_companion;
-   if (!ui)
-      return NULL;
-   return ui->msg_window;
-}
-
-const ui_window_t *ui_companion_driver_get_window_ptr(void)
-{
-   struct rarch_state *p_rarch     = &rarch_st;
-   const ui_companion_driver_t *ui = p_rarch->ui_companion;
-   if (!ui)
-      return NULL;
-   return ui->window;
-}
-
-const ui_browser_window_t *ui_companion_driver_get_browser_window_ptr(void)
-{
-   struct rarch_state *p_rarch     = &rarch_st;
-   const ui_companion_driver_t *ui = p_rarch->ui_companion;
-   if (!ui)
-      return NULL;
-   return ui->browser_window;
-}
-
-static void ui_companion_driver_msg_queue_push(
-      struct rarch_state *p_rarch,
-      const char *msg, unsigned priority, unsigned duration, bool flush)
-{
-   const ui_companion_driver_t *ui = p_rarch->ui_companion;
-
-   if (ui && ui->msg_queue_push)
-      ui->msg_queue_push(p_rarch->ui_companion_data, msg, priority, duration, flush);
-
-#ifdef HAVE_QT
-   {
-      settings_t *settings     = config_get_ptr();
-      bool qt_is_inited        = p_rarch->qt_is_inited;
-      bool desktop_menu_enable = settings->bools.desktop_menu_enable;
-
-      if (desktop_menu_enable)
-         if (ui_companion_qt.msg_queue_push && qt_is_inited)
-            ui_companion_qt.msg_queue_push(
-                  p_rarch->ui_companion_qt_data,
-                  msg, priority, duration, flush);
-   }
-#endif
-}
-
-void *ui_companion_driver_get_main_window(void)
-{
-   struct rarch_state
-      *p_rarch                     = &rarch_st;
-   const ui_companion_driver_t *ui = p_rarch->ui_companion;
-   if (!ui || !ui->get_main_window)
-      return NULL;
-   return ui->get_main_window(p_rarch->ui_companion_data);
-}
-
-const char *ui_companion_driver_get_ident(void)
-{
-   struct rarch_state
-      *p_rarch                     = &rarch_st;
-   const ui_companion_driver_t *ui = p_rarch->ui_companion;
-   if (!ui)
-      return "null";
-   return ui->ident;
-}
-
-void ui_companion_driver_log_msg(const char *msg)
-{
-#ifdef HAVE_QT
-   struct rarch_state *p_rarch = &rarch_st;
-   settings_t *settings        = config_get_ptr();
-   bool qt_is_inited           = p_rarch->qt_is_inited;
-   bool desktop_menu_enable    = settings->bools.desktop_menu_enable;
-   bool window_is_active       = p_rarch->ui_companion_qt_data && qt_is_inited
-      && ui_companion_qt.is_active(p_rarch->ui_companion_qt_data);
-
-   if (desktop_menu_enable)
-      if (window_is_active)
-         ui_companion_qt.log_msg(p_rarch->ui_companion_qt_data, msg);
-#endif
-}
-
 /* INPUT */
 
 /**
@@ -12353,7 +12069,6 @@ static void runloop_task_msg_queue_push(
       bool flush)
 {
 #if defined(HAVE_GFX_WIDGETS)
-   struct rarch_state *p_rarch = &rarch_st;
 #ifdef HAVE_MENU
    struct menu_state *menu_st  = menu_state_get_ptr();
 #endif
@@ -12369,7 +12084,7 @@ static void runloop_task_msg_queue_push(
    if (widgets_active && task->title && !task->mute)
    {
       RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
-      ui_companion_driver_msg_queue_push(p_rarch, msg,
+      ui_companion_driver_msg_queue_push(msg,
             prio, task ? duration : duration * 60 / 1000, flush);
 #ifdef HAVE_ACCESSIBILITY
       if (is_accessibility_enabled(
@@ -12967,7 +12682,6 @@ void runloop_msg_queue_push(const char *msg,
       enum message_queue_icon icon,
       enum message_queue_category category)
 {
-   struct rarch_state *p_rarch = &rarch_st;
 #if defined(HAVE_GFX_WIDGETS)
    bool widgets_active         = dispwidget_get_ptr()->active;
 #endif
@@ -13023,9 +12737,8 @@ void runloop_msg_queue_push(const char *msg,
             &runloop_st->msg_queue);
    }
 
-   ui_companion_driver_msg_queue_push(p_rarch,
-         msg,
-         prio, duration, flush);
+   ui_companion_driver_msg_queue_push(
+         msg, prio, duration, flush);
 
    RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
 }
@@ -13171,7 +12884,7 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st, setti
    }
 
 static enum runloop_state_enum runloop_check_state(
-      struct rarch_state *p_rarch,
+      bool error_on_init,
       settings_t *settings,
       retro_time_t current_time)
 {
@@ -13179,6 +12892,7 @@ static enum runloop_state_enum runloop_check_state(
 #ifdef HAVE_MENU
    static input_bits_t last_input      = {{0}};
 #endif
+   uico_driver_state_t  *uico_st       = uico_state_get_ptr();
    input_driver_state_t *input_st      = input_state_get_ptr();
    video_driver_state_t *video_st      = video_state_get_ptr();
    gfx_display_t            *p_disp    = disp_get_ptr();
@@ -13268,8 +12982,8 @@ static enum runloop_state_enum runloop_check_state(
 
    if (!VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st))
    {
-      const ui_application_t *application = p_rarch->ui_companion
-         ? p_rarch->ui_companion->application
+      const ui_application_t *application = uico_st->drv
+         ? uico_st->drv->application
          : NULL;
       if (application)
          application->process_events();
@@ -13566,8 +13280,7 @@ static enum runloop_state_enum runloop_check_state(
             settings,
             &current_bits, &trigger_input, display_kb);
       focused                   = pause_nonactive ? is_focused : true;
-      focused                   = focused &&
-         !p_rarch->main_ui_companion_is_on_foreground;
+      focused                   = focused && !uico_st->is_on_foreground;
 
       if (action == old_action)
       {
@@ -13645,7 +13358,7 @@ static enum runloop_state_enum runloop_check_state(
                settings,
                action, current_time))
       {
-         if (p_rarch->rarch_error_on_init)
+         if (error_on_init)
          {
             content_ctx_info_t content_info = {0};
             task_push_start_dummy_core(&content_info);
@@ -13679,11 +13392,11 @@ static enum runloop_state_enum runloop_check_state(
                         menu->userdata,
                         menu->menu_state_msg);
 
-               if (p_rarch->main_ui_companion_is_on_foreground)
+               if (uico_st->is_on_foreground)
                {
-                  if (  p_rarch->ui_companion &&
-                        p_rarch->ui_companion->render_messagebox)
-                     p_rarch->ui_companion->render_messagebox(menu->menu_state_msg);
+                  if (     uico_st->drv
+                        && uico_st->drv->render_messagebox)
+                     uico_st->drv->render_messagebox(menu->menu_state_msg);
                }
             }
 
@@ -14365,7 +14078,8 @@ int runloop_iterate(void)
                audio_buf_active, audio_buf_occupancy, audio_buf_underrun);
    }
 
-   switch ((enum runloop_state_enum)runloop_check_state(p_rarch,
+   switch ((enum runloop_state_enum)runloop_check_state(
+            p_rarch->rarch_error_on_init,
             settings, current_time))
    {
       case RUNLOOP_STATE_QUIT:
@@ -14379,7 +14093,7 @@ int runloop_iterate(void)
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
 #if defined(HAVE_COCOATOUCH)
-         if (!p_rarch->main_ui_companion_is_on_foreground)
+         if (!uico_st->is_on_foreground)
 #endif
             retro_sleep(10);
          return 1;
@@ -14721,7 +14435,7 @@ end:
          if (sleep_ms > 0)
          {
 #if defined(HAVE_COCOATOUCH)
-            if (!p_rarch->main_ui_companion_is_on_foreground)
+            if (!uico_state_get_ptr()->is_on_foreground)
 #endif
                retro_sleep(sleep_ms);
          }

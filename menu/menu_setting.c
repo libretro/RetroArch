@@ -9729,7 +9729,7 @@ static bool setting_append_list(
       case SETTINGS_LIST_DRIVERS:
          {
             unsigned i, j = 0;
-            struct string_options_entry string_options_entries[12];
+            struct string_options_entry string_options_entries[12] = {0};
 
             START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS), parent_group);
             MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, MENU_ENUM_LABEL_DRIVER_SETTINGS);
@@ -9849,7 +9849,7 @@ static bool setting_append_list(
             string_options_entries[j].default_value   = config_get_default_midi();
             string_options_entries[j].values          = config_get_midi_driver_options();
 
-            for (i = 0; i < ARRAY_SIZE(string_options_entries); i++)
+            for (i = 0; i < j; i++)
             {
                CONFIG_STRING_OPTIONS(
                      list, list_info,
