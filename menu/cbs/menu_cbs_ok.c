@@ -23,6 +23,10 @@
 #include <streams/file_stream.h>
 #include <lists/string_list.h>
 
+#ifdef HAVE_NETWORKING
+#include <net/net_http.h>
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -74,11 +78,11 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../lakka.h"
+#ifdef HAVE_BLUETOOTH
 #include "../../bluetooth/bluetooth_driver.h"
+#endif
 #include "../../gfx/video_display_server.h"
 #include "../../manual_content_scan.h"
-
-#include <net/net_http.h>
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
@@ -2892,6 +2896,7 @@ int  generic_action_ok_help(const char *path,
          entry_idx, ACTION_OK_DL_HELP);
 }
 
+#ifdef HAVE_BLUETOOTH
 static int action_ok_bluetooth(const char *path, const char *label,
          unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2899,6 +2904,7 @@ static int action_ok_bluetooth(const char *path, const char *label,
 
    return 0;
 }
+#endif
 
 #ifdef HAVE_NETWORKING
 #ifdef HAVE_WIFI
@@ -5551,7 +5557,9 @@ DEFAULT_ACTION_OK_FUNC(action_ok_network_list, ACTION_OK_DL_NETWORK_SETTINGS_LIS
 DEFAULT_ACTION_OK_FUNC(action_ok_network_hosting_list, ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_subsystem_list, ACTION_OK_DL_SUBSYSTEM_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_database_manager_list, ACTION_OK_DL_DATABASE_MANAGER_LIST)
+#ifdef HAVE_BLUETOOTH
 DEFAULT_ACTION_OK_FUNC(action_ok_bluetooth_list, ACTION_OK_DL_BLUETOOTH_SETTINGS_LIST)
+#endif
 #ifdef HAVE_NETWORKING
 #ifdef HAVE_WIFI
 DEFAULT_ACTION_OK_FUNC(action_ok_wifi_list, ACTION_OK_DL_WIFI_SETTINGS_LIST)
@@ -7971,7 +7979,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER,            action_ok_open_picker},
          {MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,         action_ok_retro_achievements_list},
          {MENU_ENUM_LABEL_UPDATER_SETTINGS,                    action_ok_updater_list},
+#ifdef HAVE_BLUETOOTH
          {MENU_ENUM_LABEL_BLUETOOTH_SETTINGS,                  action_ok_bluetooth_list},
+#endif
 #ifdef HAVE_NETWORKING
 #ifdef HAVE_WIFI
          {MENU_ENUM_LABEL_WIFI_SETTINGS,                       action_ok_wifi_list},
@@ -8448,7 +8458,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_rdb_entry);
             break;
          case MENU_BLUETOOTH:
+#ifdef HAVE_BLUETOOTH
             BIND_ACTION_OK(cbs, action_ok_bluetooth);
+#endif
             break;
          case MENU_WIFI:
 #ifdef HAVE_NETWORKING
