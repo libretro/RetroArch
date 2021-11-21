@@ -160,8 +160,9 @@ static void handle_discord_join_cb(retro_task_t *task,
    struct netplay_room *room         = NULL;
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
    discord_state_t *discord_st       = &discord_state_st;
+   net_driver_state_t *net_st        = networking_state_get_ptr();
 
-   if (!data || err || !data->data)
+   if (!data || err || !data->data || !data->len)
       goto finish;
 
    data->data                        = (char*)realloc(data->data, data->len + 1);
@@ -172,9 +173,23 @@ static void handle_discord_join_cb(retro_task_t *task,
 
    if (room)
    {
-      bool host_method_is_mitm = room->host_method == NETPLAY_HOST_METHOD_MITM;
-      const char *srv_address  = host_method_is_mitm ? room->mitm_address : room->address;
-      unsigned srv_port        = host_method_is_mitm ? room->mitm_port : room->port;
+      const char *srv_address        = NULL;
+      unsigned    srv_port           = 0;
+
+      memset(&net_st->mitm_session_id, 0, sizeof(net_st->mitm_session_id));
+
+      if (room->host_method == NETPLAY_HOST_METHOD_MITM)
+      {
+         srv_address = room->mitm_address;
+         srv_port    = room->mitm_port;
+
+         netplay_room_convert_session(room, &net_st->mitm_session_id);
+      }
+      else
+      {
+         srv_address = room->address;
+         srv_port    = room->port;
+      }
 
       if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
          deinit_netplay();

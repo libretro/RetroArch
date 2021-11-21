@@ -39,6 +39,11 @@
 #define NETPLAY_HOST_STR_LEN 32
 #define NETPLAY_HOST_LONGSTR_LEN 256
 
+/* MITM magics */
+#define MITM_SESSION_MAGIC 0x52415453 /* RATS */
+#define MITM_LINK_MAGIC    0x5241544C /* RATL */
+#define MITM_PING_MAGIC    0x52415450 /* RATP */
+
 #define NETPLAY_MITM_MAX_PENDING 8
 
 enum rarch_netplay_ctl_state
@@ -153,6 +158,7 @@ struct netplay_room
    char gamename          [256];
    char address           [256];
    char mitm_address      [256];
+   char mitm_session      [32];
    bool has_password;
    bool has_spectate_password;
    bool lan;
@@ -187,13 +193,11 @@ struct netplay_host_list
    size_t size;
 };
 
-#pragma pack(push, 1)
 typedef struct mitm_id
 {
    uint32_t magic;
    uint8_t  unique[12];
 } mitm_id_t;
-#pragma pack(pop)
 
 struct netplay_mitm_pending
 {
@@ -247,6 +251,9 @@ int netplay_rooms_parse(const char *buf);
 struct netplay_room* netplay_room_get(int index);
 
 int netplay_rooms_get_count(void);
+
+void netplay_room_convert_session(const struct netplay_room *room,
+   mitm_id_t *session_id);
 
 void netplay_rooms_free(void);
 

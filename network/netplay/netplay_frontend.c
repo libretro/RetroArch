@@ -32,6 +32,7 @@
 #include <net/net_socket.h>
 #include <net/net_http.h>
 #include <encodings/crc32.h>
+#include <encodings/base64.h>
 #include <lrc_hash.h>
 #include <retro_timers.h>
 
@@ -90,10 +91,6 @@
 #define NETPLAY_MAGIC 0x52414E50 /* RANP */
 #define FULL_MAGIC    0x46554C4C /* FULL */
 #define POKE_MAGIC    0x504F4B45 /* POKE */
-
-/* MITM magics */
-#define MITM_SESSION_MAGIC 0x52415453 /* RATS */
-#define MITM_CONNECT_MAGIC 0x52415443 /* RATC */
 
 #define MAX_CHAT_SIZE   256
 #define CHAT_FRAME_TIME 600
@@ -252,7 +249,7 @@ static bool netplay_lan_ad_client(void)
          {
             struct sockaddr_in *sin = NULL;
 
-            RARCH_WARN ("[Discovery] Using IPv4 for discovery\n");
+            RARCH_LOG("[Discovery] Using IPv4 for discovery\n");
             sin           = (struct sockaddr_in *) &their_addr;
             sin->sin_port = htons(ntohl(net_st->ad_packet_buffer.port));
 
@@ -261,7 +258,7 @@ static bool netplay_lan_ad_client(void)
          else if (their_addr.sa_family == AF_INET6)
          {
             struct sockaddr_in6 *sin6 = NULL;
-            RARCH_WARN ("[Discovery] Using IPv6 for discovery\n");
+            RARCH_LOG("[Discovery] Using IPv6 for discovery\n");
             sin6            = (struct sockaddr_in6 *) &their_addr;
             sin6->sin6_port = htons(net_st->ad_packet_buffer.port);
 
@@ -4646,7 +4643,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
             if (cmd_size < 2*sizeof(uint32_t))
             {
-               RARCH_ERR("NETPLAY_CMD_INPUT too short, no frame/client number.");
+               RARCH_ERR("NETPLAY_CMD_INPUT too short, no frame/client number.\n");
                return netplay_cmd_nak(netplay, connection);
             }
 
@@ -5789,9 +5786,10 @@ static int init_tcp_connection(const struct addrinfo *res,
    char msg[512];
    char host[256], port[6];
 #endif
-   const char *dmsg = NULL;
-   int           fd = socket(res->ai_family,
-         res->ai_socktype, res->ai_protocol);
+   const char *dmsg           = NULL;
+   net_driver_state_t *net_st = &networking_driver_st;
+   int fd                     = socket(res->ai_family,
+      res->ai_socktype, res->ai_protocol);
 
    if (fd < 0)
       return -1;
@@ -5814,7 +5812,13 @@ static int init_tcp_connection(const struct addrinfo *res,
    if (!is_server)
    {
       if (!socket_connect(fd, (void*)res, false))
-         return fd;
+      {
+         /* If we are connecting to a tunnel server,
+            we must also send our session linking request. */
+         if (!net_st->mitm_session_id.magic || socket_send_all_blocking(fd,
+               &net_st->mitm_session_id, sizeof(net_st->mitm_session_id), true))
+            return fd;
+      }
 
 #ifndef HAVE_SOCKET_LEGACY
       if (!getnameinfo(res->ai_addr, res->ai_addrlen,
@@ -5838,7 +5842,6 @@ static int init_tcp_connection(const struct addrinfo *res,
          {
             mitm_id_t new_session      = {0};
             mitm_id_t invalid_session  = {0};
-            net_driver_state_t *net_st = &networking_driver_st;
 
             /* To request a new session,
                we send the magic with the rest of the ID zeroed. */
@@ -7202,178 +7205,146 @@ size_t audio_sample_batch_net(const int16_t *data, size_t frames)
 }
 
 static void netplay_announce_cb(retro_task_t *task,
-      void *task_data, void *user_data, const char *error)
+   void *task_data, void *user_data, const char *error)
 {
-   net_driver_state_t *net_st        = &networking_driver_st;
-   if (task_data)
+   char *buf_start, *buf;
+   size_t remaining;
+   net_driver_state_t *net_st     = &networking_driver_st;
+   struct netplay_room *host_room = &net_st->host_room;
+   http_transfer_data_t *data     = task_data;
+
+   if (error)
+      return;
+   if (!data || !data->data || !data->len)
+      return;
+   if (data->status != 200)
+      return;
+
+   buf_start = malloc(data->len);
+   if (!buf_start)
+      return;
+   memcpy(buf_start, data->data, data->len);
+
+   buf = buf_start;
+   remaining = data->len;
+   do
    {
-      unsigned i, ip_len, port_len;
-      http_transfer_data_t *data     = (http_transfer_data_t*)task_data;
-      struct netplay_room *host_room = &net_st->host_room;
-      struct string_list *lines      = NULL;
-      char *mitm_ip                  = NULL;
-      char *mitm_port                = NULL;
-      char *buf                      = NULL;
-      char *host_string              = NULL;
+      char *lnbreak, *delim;
+      char *key, *value;
 
-      if (data->len == 0)
-         return;
+      lnbreak = (char*) memchr(buf, '\n', remaining);
+      if (!lnbreak)
+         break;
+      *lnbreak++ = '\0';
 
-      buf   = (char*)calloc(1, data->len + 1);
-
-      memcpy(buf, data->data, data->len);
-
-      lines = string_split(buf, "\n");
-
-      if (lines->size == 0)
+      delim   = (char*) strchr(buf, '=');
+      if (delim)
       {
-         string_list_free(lines);
-         free(buf);
-         return;
-      }
+         *delim++ = '\0';
 
-      memset(host_room, 0, sizeof(*host_room));
+         key   = buf;
+         value = delim;
 
-      for (i = 0; i < lines->size; i++)
-      {
-         const char *line = lines->elems[i].data;
-
-         if (!string_is_empty(line))
+         if (!string_is_empty(key) && !string_is_empty(value))
          {
-            struct string_list *kv = string_split(line, "=");
-            const char        *key = NULL;
-            const char        *val = NULL;
-
-            if (!kv)
-               continue;
-
-            if (kv->size != 2)
-            {
-               string_list_free(kv);
-               continue;
-            }
-
-            key = kv->elems[0].data;
-            val = kv->elems[1].data;
-
             if (string_is_equal(key, "id"))
-               sscanf(val, "%i", &host_room->id);
-            if (string_is_equal(key, "username"))
-               strlcpy(host_room->nickname, val, sizeof(host_room->nickname));
-            if (string_is_equal(key, "ip"))
-               strlcpy(host_room->address, val, sizeof(host_room->address));
-            if (string_is_equal(key, "mitm_ip"))
-            {
-               mitm_ip = strdup(val);
-               strlcpy(host_room->mitm_address, val, sizeof(host_room->mitm_address));
-            }
-            if (string_is_equal(key, "port"))
-               sscanf(val, "%i", &host_room->port);
-            if (string_is_equal(key, "mitm_port"))
-            {
-               mitm_port = strdup(val);
-               sscanf(mitm_port, "%i", &host_room->mitm_port);
-            }
-            if (string_is_equal(key, "core_name"))
-               strlcpy(host_room->corename, val, sizeof(host_room->corename));
-            if (string_is_equal(key, "frontend"))
-               strlcpy(host_room->frontend, val, sizeof(host_room->frontend));
-            if (string_is_equal(key, "core_version"))
-               strlcpy(host_room->coreversion, val, sizeof(host_room->coreversion));
-            if (string_is_equal(key, "game_name"))
-               strlcpy(host_room->gamename, val,
-                     sizeof(host_room->gamename));
-            if (string_is_equal(key, "game_crc"))
-               sscanf(val, "%08d", &host_room->gamecrc);
-            if (string_is_equal(key, "host_method"))
-               sscanf(val, "%i", &host_room->host_method);
-            if (string_is_equal(key, "has_password"))
-            {
-               if (     string_is_equal_noncase(val, "true") 
-                     || string_is_equal(val, "1"))
-                  host_room->has_password = true;
-               else
-                  host_room->has_password = false;
-            }
-            if (string_is_equal(key, "has_spectate_password"))
-            {
-               if (     string_is_equal_noncase(val, "true") 
-                     || string_is_equal(val, "1"))
-                  host_room->has_spectate_password = true;
-               else
-                  host_room->has_spectate_password = false;
-            }
-            if (string_is_equal(key, "fixed"))
-            {
-               if (     string_is_equal_noncase(val, "true") 
-                     || string_is_equal(val, "1"))
-                  host_room->fixed = true;
-               else
-                  host_room->fixed = false;
-            }
-            if (string_is_equal(key, "retroarch_version"))
-               strlcpy(host_room->retroarch_version, val,
-                     sizeof(host_room->retroarch_version));
-            if (string_is_equal(key, "country"))
-               strlcpy(host_room->country, val,
-                     sizeof(host_room->country));
-
-            string_list_free(kv);
+               sscanf(value, "%i", &host_room->id);
+            else if (string_is_equal(key, "username"))
+               strlcpy(host_room->nickname, value, sizeof(host_room->nickname));
+            else if (string_is_equal(key, "ip"))
+               strlcpy(host_room->address, value, sizeof(host_room->address));
+            else if (string_is_equal(key, "port"))
+               sscanf(value, "%i", &host_room->port);
+            else if (string_is_equal(key, "core_name"))
+               strlcpy(host_room->corename, value, sizeof(host_room->corename));
+            else if (string_is_equal(key, "frontend"))
+               strlcpy(host_room->frontend, value, sizeof(host_room->frontend));
+            else if (string_is_equal(key, "core_version"))
+               strlcpy(host_room->coreversion, value, sizeof(host_room->coreversion));
+            else if (string_is_equal(key, "game_name"))
+               strlcpy(host_room->gamename, value, sizeof(host_room->gamename));
+            else if (string_is_equal(key, "game_crc"))
+               sscanf(value, "%08d", &host_room->gamecrc);
+            else if (string_is_equal(key, "host_method"))
+               sscanf(value, "%i", &host_room->host_method);
+            else if (string_is_equal(key, "has_password"))
+               host_room->has_password = string_is_equal_noncase(value, "true") ||
+                  string_is_equal(value, "1");
+            else if (string_is_equal(key, "has_spectate_password"))
+               host_room->has_spectate_password = string_is_equal_noncase(value, "true") ||
+                  string_is_equal(value, "1");
+            else if (string_is_equal(key, "fixed"))
+               host_room->fixed = string_is_equal_noncase(value, "true") ||
+                  string_is_equal(value, "1");
+            else if (string_is_equal(key, "retroarch_version"))
+               strlcpy(host_room->retroarch_version, value,
+                  sizeof(host_room->retroarch_version));
+            else if (string_is_equal(key, "country"))
+               strlcpy(host_room->country, value, sizeof(host_room->country));
+            else if (string_is_equal(key, "mitm_session"))
+               strlcpy(host_room->mitm_session, value, sizeof(host_room->mitm_session));
          }
       }
 
+      remaining -= (size_t)lnbreak - (size_t)buf;
+      buf = lnbreak;
+   } while (remaining);
+
+   free(buf_start);
+
 #ifdef HAVE_DISCORD
-      if (discord_state_get_ptr()->inited)
-      {
-         discord_userdata_t userdata;
-         userdata.status = DISCORD_PRESENCE_NETPLAY_HOSTING;
-         command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-      }
-#endif
-
-      string_list_free(lines);
-      free(buf);
-
-      if (mitm_ip)
-         free(mitm_ip);
-      if (mitm_port)
-         free(mitm_port);
+   if (discord_state_get_ptr()->inited)
+   {
+      discord_userdata_t userdata;
+      userdata.status = DISCORD_PRESENCE_NETPLAY_HOSTING;
+      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
    }
+#endif
 }
 
 static void netplay_announce(void)
 {
-   char buf[4600];
+   char buf[8192];
+   const frontend_ctx_driver_t *frontend_drv;
    char frontend_architecture[PATH_MAX_LENGTH];
    char frontend_architecture_tmp[32];
-   const frontend_ctx_driver_t
-      *frontend_drv                 =  NULL;
-   char url[2048]                   = "http://lobby.libretro.com/add/";
+   uint32_t content_crc;
    char *username                   = NULL;
    char *corename                   = NULL;
+   char *coreversion                = NULL;
    char *gamename                   = NULL;
    char *subsystemname              = NULL;
-   char *coreversion                = NULL;
    char *frontend_ident             = NULL;
    settings_t *settings             = config_get_ptr();
-   runloop_state_t *runloop_st      = runloop_state_get_ptr();
-   struct retro_system_info *system = &runloop_st->system.info;
-   uint32_t content_crc             = content_get_crc();
+   net_driver_state_t *net_st       = &networking_driver_st;
+   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
    struct string_list *subsystem    = path_get_subsystem_list();
+   bool is_mitm                     = net_st->mitm_session_id.magic != 0;
+   const char *url                  = "http://lobby.libretro.com/add";
+   const char *url_mitm             = "http://lobby.libretro.com/addmitm";
 
-   frontend_architecture[0]         = '\0';
-   buf[0]                           = '\0';
+#ifdef HAVE_DISCORD
+   if (discord_is_ready())
+      net_http_urlencode(&username, discord_get_own_username());
+   else
+#endif
+      net_http_urlencode(&username, settings->paths.username);
 
-   if (subsystem)
+   net_http_urlencode(&corename, system->library_name);
+   net_http_urlencode(&coreversion, system->library_version);
+
+   if (subsystem && subsystem->size > 0)
    {
       unsigned i;
-
-      for (i = 0; i < subsystem->size; i++)
+      buf[0] = '\0';
+      for (i = 0;;)
       {
-         strlcat(buf, path_basename(subsystem->elems[i].data), sizeof(buf));
-         if (i < subsystem->size - 1)
-            strlcat(buf, "|", sizeof(buf));
+         strlcat(buf, path_basename(subsystem->elems[i++].data), sizeof(buf));
+         if (i >= subsystem->size)
+            break;
+         strlcat(buf, "|", sizeof(buf));
       }
+
       net_http_urlencode(&gamename, buf);
       net_http_urlencode(&subsystemname, path_get(RARCH_PATH_SUBSYSTEM));
       content_crc = 0;
@@ -7386,53 +7357,77 @@ static void netplay_announce(void)
          !string_is_empty(base) ? base : "N/A");
       /* TODO/FIXME - subsystem should be implemented later? */
       net_http_urlencode(&subsystemname, "N/A");
+      content_crc = content_get_crc();
    }
 
    frontend_drv =
       (const frontend_ctx_driver_t*)frontend_driver_get_cpu_architecture_str(
             frontend_architecture_tmp, sizeof(frontend_architecture_tmp));
-   snprintf(frontend_architecture, 
+   if (frontend_drv)
+      snprintf(frontend_architecture,
          sizeof(frontend_architecture),
          "%s %s",
          frontend_drv->ident,
          frontend_architecture_tmp);
-
-#ifdef HAVE_DISCORD
-   if (discord_is_ready())
-      net_http_urlencode(&username, discord_get_own_username());
    else
-#endif
-   net_http_urlencode(&username, settings->paths.username);
-   net_http_urlencode(&corename, system->library_name);
-   net_http_urlencode(&coreversion, system->library_version);
+      strlcpy(frontend_architecture,
+         "N/A",
+         sizeof(frontend_architecture));
    net_http_urlencode(&frontend_ident, frontend_architecture);
 
-   buf[0] = '\0';
-
-   snprintf(buf, sizeof(buf), "username=%s&core_name=%s&core_version=%s&"
-      "game_name=%s&game_crc=%08lX&port=%d&mitm_server=%s"
-      "&has_password=%d&has_spectate_password=%d&force_mitm=%d"
-      "&retroarch_version=%s&frontend=%s&subsystem_name=%s",
-      username, corename, coreversion, gamename, (unsigned long)content_crc,
+   snprintf(buf, sizeof(buf),
+      "username=%s&"
+      "core_name=%s&"
+      "core_version=%s&"
+      "game_name=%s&"
+      "game_crc=%08lX&"
+      "port=%d&"
+      "mitm_server=%s&"
+      "has_password=%d&"
+      "has_spectate_password=%d&"
+      "force_mitm=%d&"
+      "retroarch_version=%s&"
+      "frontend=%s&"
+      "subsystem_name=%s",
+      username,
+      corename,
+      coreversion,
+      gamename,
+      (unsigned long)content_crc,
       settings->uints.netplay_port,
       settings->arrays.netplay_mitm_server,
-      *settings->paths.netplay_password ? 1 : 0,
-      *settings->paths.netplay_spectate_password ? 1 : 0,
-      settings->bools.netplay_use_mitm_server,
-      PACKAGE_VERSION, frontend_architecture, subsystemname);
-   task_push_http_post_transfer(url, buf, true, NULL,
-         netplay_announce_cb, NULL);
+      !string_is_empty(settings->paths.netplay_password) ? 1 : 0,
+      !string_is_empty(settings->paths.netplay_spectate_password) ? 1 : 0,
+      is_mitm,
+      PACKAGE_VERSION,
+      frontend_ident,
+      subsystemname);
 
-   if (username)
-      free(username);
-   if (corename)
-      free(corename);
-   if (gamename)
-      free(gamename);
-   if (coreversion)
-      free(coreversion);
-   if (frontend_ident)
-      free(frontend_ident);
+   free(username);
+   free(corename);
+   free(coreversion);
+   free(gamename);
+   free(subsystemname);
+   free(frontend_ident);
+
+   if (is_mitm)
+   {
+      int flen;
+      char *unique_b64 = base64(net_st->mitm_session_id.unique,
+         sizeof(net_st->mitm_session_id.unique), &flen);
+      if (unique_b64)
+      {
+         char *mitm_session = NULL;
+         net_http_urlencode(&mitm_session, unique_b64);
+         strlcat(buf, "&mitm_session=", sizeof(buf));
+         strlcat(buf, mitm_session, sizeof(buf));
+         free(mitm_session);
+      }
+      free(unique_b64);
+   }
+
+   task_push_http_post_transfer(is_mitm ? url_mitm : url, buf, true, NULL,
+      netplay_announce_cb, NULL);
 }
 
 static bool netplay_mitm_query_wait(void *data)
@@ -7669,6 +7664,7 @@ void deinit_netplay(void)
       net_st->netplay_enabled   = false;
       net_st->netplay_is_client = false;
    }
+   memset(&net_st->mitm_session_id, 0, sizeof(net_st->mitm_session_id));
    if (net_st->mitm_pending.fds)
    {
       free(net_st->mitm_pending.fds);
@@ -7721,10 +7717,11 @@ bool init_netplay(const char *server, unsigned port)
    if (serialization_quirks & NETPLAY_QUIRK_MAP_PLATFORM_DEPENDENT)
       quirks |= NETPLAY_QUIRK_PLATFORM_DEPENDENT;
 
-   memset(&net_st->host_room, 0, sizeof(net_st->host_room));
-
    if (!net_st->netplay_is_client)
    {
+      memset(&net_st->host_room, 0, sizeof(net_st->host_room));
+      memset(&net_st->mitm_session_id, 0, sizeof(net_st->mitm_session_id));
+
       server = NULL;
 
       if (settings->bools.netplay_use_mitm_server)
@@ -7736,17 +7733,12 @@ bool init_netplay(const char *server, unsigned port)
          }
          else
          {
-            RARCH_WARN("Failed to get tunnel information. Switching to direct mode.");
+            RARCH_WARN("Failed to get tunnel information. Switching to direct mode.\n");
          }
       }
 
       if (!port)
          port = RARCH_DEFAULT_PORT;
-
-      runloop_msg_queue_push(
-         msg_hash_to_str(MSG_WAITING_FOR_CLIENT),
-         0, 180, false,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
    else
    {
@@ -7773,7 +7765,7 @@ bool init_netplay(const char *server, unsigned port)
 
    if (!net_st->data)
    {
-      RARCH_WARN("%s\n", msg_hash_to_str(MSG_NETPLAY_FAILED));
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_NETPLAY_FAILED));
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_NETPLAY_FAILED),
             0, 180, false,
@@ -7781,11 +7773,17 @@ bool init_netplay(const char *server, unsigned port)
       return false;
    }
 
-   net_st->reannounce = 0;
+   if (net_st->data->is_server)
+   {
+      net_st->reannounce = 0;
+      runloop_msg_queue_push(
+         msg_hash_to_str(MSG_WAITING_FOR_CLIENT),
+         0, 180, false,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-   if (net_st->data->is_server &&
-         !settings->bools.netplay_start_as_spectator)
-      netplay_toggle_play_spectate(net_st->data);
+      if (!settings->bools.netplay_start_as_spectator)
+         netplay_toggle_play_spectate(net_st->data);
+   }
 
    return true;
 }
@@ -7885,7 +7883,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
       case RARCH_NETPLAY_CTL_PRE_FRAME:
          ret = netplay_pre_frame(
                settings->bools.netplay_public_announce,
-               settings->bools.netplay_use_mitm_server,
+               net_st->mitm_session_id.magic != 0,
                netplay);
          goto done;
       case RARCH_NETPLAY_CTL_GAME_WATCH:

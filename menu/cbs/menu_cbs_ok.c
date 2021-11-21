@@ -5715,11 +5715,15 @@ static int action_ok_netplay_connect_room(const char *path,
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
    if (net_st->room_list[room_index].host_method == NETPLAY_HOST_METHOD_MITM)
+   {
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
             "%s|%d",
          net_st->room_list[room_index].mitm_address,
          net_st->room_list[room_index].mitm_port);
+      netplay_room_convert_session(&net_st->room_list[room_index],
+         &net_st->mitm_session_id);
+   }
    else
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
