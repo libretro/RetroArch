@@ -52,24 +52,22 @@ static void nmcli_free(void *data)
 
 static bool nmcli_start(void *data)
 {
-   (void)data;
    return true;
 }
 
-static void nmcli_stop(void *data)
-{
-   (void)data;
-}
+static void nmcli_stop(void *data) { }
 
 static bool nmcli_enable(void* data, bool enabled)
 {
-   // semantics here are broken: nmcli_enable(..., false) is called
-   // on startup which is probably not what we want.
+   /* semantics here are broken: nmcli_enable(..., false) is called
+    * on startup which is probably not what we want. */
 
-//   if (enabled)
-//      pclose(popen("nmcli radio wifi on", "r"));
-//   else
-//      pclose(popen("nmcli radio wifi off", "r"));
+#if 0
+   if (enabled)
+      pclose(popen("nmcli radio wifi on", "r"));
+   else
+      pclose(popen("nmcli radio wifi off", "r"));
+#endif
 
    return true;
 }
@@ -78,12 +76,12 @@ static bool nmcli_connection_info(void *data, wifi_network_info_t *netinfo)
 {
    FILE *cmd_file = NULL;
    char line[512];
-   (void)data;
 
    if (!netinfo)
       return false;
 
    cmd_file = popen("nmcli -f NAME c show --active | tail -n+2", "r");
+
    if (fgets(line, sizeof(line), cmd_file))
    {
       strlcpy(netinfo->ssid, line, sizeof(netinfo->ssid));
@@ -96,9 +94,9 @@ static bool nmcli_connection_info(void *data, wifi_network_info_t *netinfo)
 
 static void nmcli_scan(void *data)
 {
+   char line[512];
    nmcli_t *nmcli = (nmcli_t*)data;
    FILE *cmd_file = NULL;
-   char line[512];
 
    nmcli->scan.scan_time = time(NULL);
 
@@ -144,7 +142,8 @@ static bool nmcli_ssid_is_online(void *data, unsigned idx)
    return nmcli->scan.net_list[idx].connected;
 }
 
-static bool nmcli_connect_ssid(void *data, const wifi_network_info_t *netinfo)
+static bool nmcli_connect_ssid(void *data,
+      const wifi_network_info_t *netinfo)
 {
    nmcli_t *nmcli = (nmcli_t*)data;
    char cmd[256];
@@ -153,11 +152,10 @@ static bool nmcli_connect_ssid(void *data, const wifi_network_info_t *netinfo)
    if (!nmcli || !netinfo)
       return false;
 
-   snprintf(cmd, sizeof(cmd), "nmcli dev wifi connect \"%s\" password \"%s\" 2>&1",
+   snprintf(cmd, sizeof(cmd),
+         "nmcli dev wifi connect \"%s\" password \"%s\" 2>&1",
          netinfo->ssid, netinfo->passphrase);
-   ret = pclose(popen(cmd, "r"));
-
-   if (ret == 0)
+   if ((ret = pclose(popen(cmd, "r"))) == 0)
    {
       for (i = 0; i < RBUF_LEN(nmcli->scan.net_list); i++)
       {
@@ -169,23 +167,17 @@ static bool nmcli_connect_ssid(void *data, const wifi_network_info_t *netinfo)
    return true;
 }
 
-static bool nmcli_disconnect_ssid(void *data, const wifi_network_info_t *netinfo)
+static bool nmcli_disconnect_ssid(void *data,
+      const wifi_network_info_t *netinfo)
 {
    char cmd[256];
-   (void)data;
-
    snprintf(cmd, sizeof(cmd), "nmcli c down \"%s\"", netinfo->ssid);
    pclose(popen(cmd, "r"));
 
    return true;
 }
 
-static void nmcli_tether_start_stop(void* data, bool start, char* configfile)
-{
-   (void)data;
-   (void)start;
-   (void)configfile;
-}
+static void nmcli_tether_start_stop(void *a, bool b, char *c) { }
 
 wifi_driver_t wifi_nmcli = {
    nmcli_init,

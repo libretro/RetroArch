@@ -65,10 +65,11 @@ static void connmanctl_stop(void *data)
    (void)data;
 }
 
-static void connmanctl_refresh_services(connman_t *connman) {
+static void connmanctl_refresh_services(connman_t *connman)
+{
    char line[512];
    FILE *serv_file = popen("connmanctl services", "r");
-   
+
    if (connman->scan.net_list)
       RBUF_FREE(connman->scan.net_list);
 
@@ -295,11 +296,12 @@ static bool connmanctl_connection_info(void *data, wifi_network_info_t *netinfo)
    return false;
 }
 
-static bool connmanctl_disconnect_ssid(void *data, const wifi_network_info_t* netinfo)
+static bool connmanctl_disconnect_ssid(void *data,
+      const wifi_network_info_t* netinfo)
 {
    connman_t *connman = (connman_t*)data;
 
-   /* TODO:Check whether this network is actually connected */
+   /* TODO/FIXME: Check whether this network is actually connected */
 
    snprintf(connman->command, sizeof(connman->command),
          "connmanctl disconnect %s 2>&1",
@@ -321,12 +323,12 @@ static bool connmanctl_connect_ssid(
    char settings_dir[PATH_MAX_LENGTH]  = {0};
    char settings_path[PATH_MAX_LENGTH] = {0};
    char netid[160]                     = {0};
-   FILE *settings_file                 = NULL;
    connman_t *connman                  = (connman_t*)data;
    settings_t *settings                = config_get_ptr();
    static struct string_list* list     = NULL;
 #ifdef HAVE_GFX_WIDGETS
-   bool widgets_active                 = connman->connmanctl_widgets_supported;
+   bool widgets_active                 = 
+      connman->connmanctl_widgets_supported;
 #endif
    strlcat(netid, netinfo->netid, sizeof(netid));
    strlcat(settings_dir, LAKKA_CONNMAN_DIR, sizeof(settings_dir));
@@ -339,7 +341,7 @@ static bool connmanctl_connect_ssid(
 
    if (!netinfo->saved_password)
    {
-      settings_file = fopen(settings_path, "w");
+      FILE *settings_file = fopen(settings_path, "w");
       if (!settings_file)
          return false;
       fprintf(settings_file, "[%s]\n", netid);
@@ -362,14 +364,12 @@ static bool connmanctl_connect_ssid(
    else
    {
       /* No need for pass, config should be there already, verify it */
-      settings_file = fopen(settings_path, "r");
-      if (!settings_file)
+      if (!path_is_valid(settings_path))
       {
          /* Usually a mismatch between connman state and config, reload */
          system("systemctl restart connman.service");
          return false;
       }
-      fclose(settings_file);
    }
 
    if (connmanctl_tether_status(connman))

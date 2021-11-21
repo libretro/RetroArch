@@ -23,8 +23,8 @@
 #include "tasks_internal.h"
 
 #include "../msg_hash.h"
+#include "../network/wifi_driver.h"
 #include "../verbosity.h"
-#include "../wifi/wifi_driver.h"
 
 #define FUNC_PUSH_TASK(funcname, handlerfunc, message) \
    bool funcname(retro_task_callback_t cb) \
