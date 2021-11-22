@@ -88,6 +88,8 @@
 
 /**************************************/
 /* TODO/FIXME - turn these into static global variable */
+retro_keybind_set input_config_binds[MAX_USERS];
+retro_keybind_set input_autoconf_binds[MAX_USERS];
 uint64_t lifecycle_state                                        = 0;
 
 static void *input_null_init(const char *joypad_driver) { return (void*)-1; }

@@ -299,10 +299,6 @@ static struct rarch_state rarch_st        = {0};
 static const void *MAGIC_POINTER          = (void*)(uintptr_t)0x0DEFACED;
 #endif
 
-/* TODO/FIXME - turn these into static global variable */
-retro_keybind_set input_config_binds[MAX_USERS];
-retro_keybind_set input_autoconf_binds[MAX_USERS];
-
 static access_state_t access_state_st     = {0};
 static struct global global_driver_st     = {0}; /* retro_time_t alignment */
 
