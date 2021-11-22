@@ -437,7 +437,13 @@ void runloop_msg_queue_deinit(void);
 
 void runloop_msg_queue_init(void);
 
-void runloop_path_init_savefile(runloop_state_t *runloop_st);
+void runloop_path_init_savefile(void);
+
+void runloop_path_set_basename(const char *path);
+
+void runloop_path_init_savefile(void);
+
+void runloop_path_set_names(void);
 
 runloop_state_t *runloop_state_get_ptr(void);
 

@@ -5731,8 +5731,9 @@ void runloop_path_fill_names(void)
 }
 
 
-void runloop_path_init_savefile(runloop_state_t *runloop_st)
+void runloop_path_init_savefile(void)
 {
+   runloop_state_t *runloop_st = &runloop_state;
    bool    should_sram_be_used = runloop_st->use_sram
       && !runloop_st->is_sram_save_disabled;
 
@@ -9410,4 +9411,64 @@ bool core_has_set_input_descriptor(void)
 char* crt_switch_core_name(void)
 {
    return (char*)runloop_state.system.info.library_name;
+}
+
+void runloop_path_set_basename(const char *path)
+{
+   runloop_state_t *runloop_st = &runloop_state;
+   char *dst                   = NULL;
+
+   path_set(RARCH_PATH_CONTENT,  path);
+   path_set(RARCH_PATH_BASENAME, path);
+
+#ifdef HAVE_COMPRESSION
+   /* Removing extension is a bit tricky for compressed files.
+    * Basename means:
+    * /file/to/path/game.extension should be:
+    * /file/to/path/game
+    *
+    * Two things to consider here are: /file/to/path/ is expected
+    * to be a directory and "game" is a single file. This is used for
+    * states and srm default paths.
+    *
+    * For compressed files we have:
+    *
+    * /file/to/path/comp.7z#game.extension and
+    * /file/to/path/comp.7z#folder/game.extension
+    *
+    * The choice I take here is:
+    * /file/to/path/game as basename. We might end up in a writable
+    * directory then and the name of srm and states are meaningful.
+    *
+    */
+   path_basedir_wrapper(runloop_st->runtime_content_path_basename);
+   if (!string_is_empty(runloop_st->runtime_content_path_basename))
+      fill_pathname_dir(runloop_st->runtime_content_path_basename, path, "", sizeof(runloop_st->runtime_content_path_basename));
+#endif
+
+   if ((dst = strrchr(runloop_st->runtime_content_path_basename, '.')))
+      *dst = '\0';
+}
+
+void runloop_path_set_names(void)
+{
+   runloop_state_t *runloop_st = &runloop_state;
+   if (!retroarch_override_setting_is_set(
+            RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
+      fill_pathname_noext(runloop_st->name.savefile,
+            runloop_st->runtime_content_path_basename,
+            ".srm", sizeof(runloop_st->name.savefile));
+
+   if (!retroarch_override_setting_is_set(
+            RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
+      fill_pathname_noext(runloop_st->name.savestate,
+            runloop_st->runtime_content_path_basename,
+            ".state", sizeof(runloop_st->name.savestate));
+
+#ifdef HAVE_CHEATS
+   if (!string_is_empty(runloop_st->runtime_content_path_basename))
+      fill_pathname_noext(runloop_st->name.cheatfile,
+            runloop_st->runtime_content_path_basename,
+            ".cht", sizeof(runloop_st->name.cheatfile));
+#endif
 }
