@@ -380,9 +380,10 @@ static int16_t udev_mouse_get_pointer_x(const udev_input_mouse_t *mouse, bool sc
    {
       /* mouse coordinates are relative to the screen; convert them
        * to be relative to the viewport */
+      double scaled_x;
       src_min = mouse->x_min;
       src_width = mouse->x_max - mouse->x_min + 1;
-      double scaled_x = vp.full_width * (mouse->x_abs - src_min) / src_width;
+      scaled_x = vp.full_width * (mouse->x_abs - src_min) / src_width;
       x = -32767.0 + 65535.0 / vp.width * (scaled_x - vp.x);
    }
    else /* mouse coords are viewport relative */
@@ -422,11 +423,12 @@ static int16_t udev_mouse_get_pointer_y(const udev_input_mouse_t *mouse, bool sc
 
    if (mouse->abs) /* mouse coords are absolute */
    {
+      double scaled_y;
       /* mouse coordinates are relative to the screen; convert them
        * to be relative to the viewport */
       src_min = mouse->y_min;
       src_height = mouse->y_max - mouse->y_min + 1;
-      double scaled_y = vp.full_height * (mouse->y_abs - src_min) / src_height;
+      scaled_y = vp.full_height * (mouse->y_abs - src_min) / src_height;
       y = -32767.0 + 65535.0 / vp.height * (scaled_y - vp.y);
    }
    else /* mouse coords are viewport relative */
