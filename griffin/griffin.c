@@ -1218,6 +1218,7 @@ GIT
 RETROARCH
 ============================================================ */
 #include "../retroarch.c"
+#include "../runloop.c"
 #include "../command.c"
 #include "../driver.c"
 #include "../midi_driver.c"
