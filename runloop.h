@@ -37,6 +37,7 @@
 #endif
 
 #include "dynamic.h"
+#include "configuration.h"
 #include "core_option_manager.h"
 #include "performance_counters.h"
 #include "state_manager.h"

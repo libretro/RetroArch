@@ -264,6 +264,7 @@ OBJ += \
 
 ifeq ($(HAVE_TRANSLATE), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/encodings/encoding_base64.o
+   OBJ += tasks/task_translation.o
 endif
 
 OBJ += \
