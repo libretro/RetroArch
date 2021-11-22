@@ -4206,6 +4206,7 @@ static bool secondary_core_run_use_last_input(void)
    return true;
 }
 #else
+void runloop_secondary_core_destroy(void) { }
 static void remember_controller_port_device(long port, long device) { }
 static void runloop_clear_controller_port_map(void)                 { }
 #endif
