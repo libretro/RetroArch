@@ -1345,6 +1345,9 @@ DATA RUNLOOP
 #include "../tasks/task_playlist_manager.c"
 #include "../tasks/task_manual_content_scan.c"
 #include "../tasks/task_core_backup.c"
+#ifdef HAVE_TRANSLATE
+#include "../tasks/task_translation.c"
+#endif
 #ifdef HAVE_ZLIB
 #include "../tasks/task_decompress.c"
 #endif
