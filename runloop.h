@@ -426,8 +426,6 @@ void runloop_audio_buffer_status_free(void);
 
 bool secondary_core_ensure_exists(settings_t *settings);
 
-void runloop_secondary_core_destroy(void);
-
 void runloop_core_options_cb_free(void);
 
 void runloop_log_counters(
