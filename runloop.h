@@ -431,6 +431,8 @@ void runloop_core_options_cb_free(void);
 void runloop_log_counters(
       struct retro_perf_counter **counters, unsigned num);
 
+void runloop_secondary_core_destroy(void);
+
 void runloop_msg_queue_deinit(void);
 
 void runloop_msg_queue_init(void);
