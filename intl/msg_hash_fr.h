@@ -88,6 +88,14 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    "Importer le disque média physique vers le stockage interne. Il sera sauvegardé vers un fichier d'image disque."
    )
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "Éjecter le disque"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_EJECT_DISC,
+   "Éjecte le disque du lecteur de CD/DVD physique."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
@@ -4262,6 +4270,14 @@ MSG_HASH(
    "Afficher l'option 'Importer un disque' dans le menu principal."
    )
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
+   "Afficher 'Éjecter le disque'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
+   "Afficher l'option 'Éjecter le disque' dans le menu principal."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
@@ -11156,6 +11172,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,
    "Recherche Bluetooth terminée."
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_PAIRING_REMOVED,
+   "Appareil oublié. Redémarrer RetroArch pour connecter/jumeler à nouveau."
    )
 MSG_HASH(
    MSG_WIFI_SCAN_COMPLETE,

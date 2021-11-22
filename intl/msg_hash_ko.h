@@ -92,6 +92,14 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    "물리 미디어 디스크를 내부 저장장치에 덤프합니다. 이미지 파일로 저장되게 됩니다."
    )
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "디스크 꺼내기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_EJECT_DISC,
+   "물리 CD/DVD 드라이브에서 디스크를 꺼냅니다."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
@@ -4310,6 +4318,14 @@ MSG_HASH(
    "메인 메뉴에 '디스크 덤프' 옵션을 표시합니다."
    )
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
+   "'디스크 꺼내기' 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
+   "메인 메뉴에 '디스크 꺼내기' 옵션을 표시합니다."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
@@ -11276,6 +11292,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,
    "블루투스 검색 완료."
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_PAIRING_REMOVED,
+   "페어링이 제거되었습니다. 다시 연결하려면 RetroArch를 재시작해주세요."
    )
 MSG_HASH(
    MSG_WIFI_SCAN_COMPLETE,

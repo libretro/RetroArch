@@ -219,12 +219,104 @@ MSG_HASH( /* FIXME Maybe add a description? */
 
 /* Main Menu > Load Content */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FAVORITES,
+   "Directori Inicial"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
+   "Descàrregues"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
+   "Explorar Arxiu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
+   "Carregar Arxiu"
+   )
 
 /* Main Menu > Load Content > Playlists */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
+   "Favorits"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
+   "El contingut afegit a 'Favorits' apareixerà aquí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
+   "Música"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_MUSIC,
+   "La música reproduïda anteriorment apareixerà aquí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
+   "Imatges"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_IMAGES,
+   "Les imatges visualitzades anteriorment apareixeran aquí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
+   "Vídeos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_VIDEO,
+   "Els vídeos reproduïts anteriorment apareixeran aquí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
+   "Explorar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
+   "Explora tots els continguts que coincideixin amb la base de dades mitjançant una interfície de cerca categoritzada."
+   )
 
 /* Main Menu > Online Updater */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
+   "Descarregador de Nuclis"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
+   "Actualitzar Nuclis Instal·lats"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
+   "Actualitza tots els nuclis instal·lats a la darrera versió disponible."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+   "Canviar els Nuclis a la versió de Play Store"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+   "Substitueix tots els nuclis heretats i instal·lats manualment per les darreres versions de Play Store, quan estiguin disponibles."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
+   "Actualitzador de Miniatures"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
+   "Descarrega el paquet complet de miniatures per al sistema seleccionat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
+   "Actualitzador de Miniatures de Llistes de Reproducció"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
+   "Descarrega les miniatures de les entrades de la llista de reproducció seleccionada."
+   )
 
 /* Main Menu > Information */
 
