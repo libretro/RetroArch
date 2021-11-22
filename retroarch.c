@@ -4399,7 +4399,9 @@ static bool retroarch_parse_input_and_config(
    video_driver_state_t *video_st  = video_state_get_ptr();
    runloop_state_t     *runloop_st = runloop_state_get_ptr();
    settings_t          *settings   = config_get_ptr();
+#ifdef HAVE_ACCESSIBILITY
    access_state_t *access_st       = access_state_get_ptr();
+#endif
 
    const struct option opts[]      = {
 #ifdef HAVE_DYNAMIC
@@ -5146,8 +5148,8 @@ bool retroarch_main_init(int argc, char *argv[])
    recording_state_t 
 	   *recording_st             = recording_state_get_ptr();
    global_t            *global  = global_get_ptr();
-   access_state_t *access_st    = access_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
+   access_state_t *access_st    = access_state_get_ptr();
    bool accessibility_enable    = false;
    unsigned accessibility_narrator_speech_speed = 0;
 #endif
@@ -5173,7 +5175,7 @@ bool retroarch_main_init(int argc, char *argv[])
    retro_main_log_file_init(NULL, false);
 
    verbosity_enabled = retroarch_parse_input_and_config(p_rarch,
-global_get_ptr(), argc, argv);
+         global_get_ptr(), argc, argv);
 
 #ifdef HAVE_ACCESSIBILITY
    accessibility_enable                = settings->bools.accessibility_enable;

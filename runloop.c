@@ -6109,8 +6109,8 @@ void runloop_msg_queue_push(const char *msg,
    settings_t *settings        = config_get_ptr();
    bool accessibility_enable   = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
-#endif
    access_state_t *access_st   = access_state_get_ptr();
+#endif
    runloop_state_t *runloop_st = &runloop_state;
 
    RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
@@ -7330,6 +7330,7 @@ int runloop_iterate(void)
 {
    unsigned i;
    enum analog_dpad_mode dpad_mode[MAX_USERS];
+   uico_driver_state_t                *uico_st  = uico_state_get_ptr();
    input_driver_state_t               *input_st = input_state_get_ptr();
    audio_driver_state_t               *audio_st = audio_state_get_ptr();
    video_driver_state_t               *video_st = video_state_get_ptr();
@@ -7840,8 +7841,8 @@ void runloop_task_msg_queue_push(
 #ifdef HAVE_MENU
    struct menu_state *menu_st  = menu_state_get_ptr();
 #endif
-   access_state_t *access_st   = access_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
+   access_state_t *access_st   = access_state_get_ptr();
    settings_t *settings        = config_get_ptr();
    bool accessibility_enable   = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
