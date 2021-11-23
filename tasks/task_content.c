@@ -1520,7 +1520,38 @@ static bool content_load(content_ctx_info_t *info,
 }
 
 void menu_content_environment_get(int *argc, char *argv[],
-      void *args, void *params_data);
+      void *args, void *params_data)
+{
+   struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
+   runloop_state_t       *runloop_st = runloop_state_get_ptr();
+   rarch_system_info_t *sys_info     = &runloop_st->system;
+
+   if (!wrap_args)
+      return;
+
+   wrap_args->no_content             = sys_info->load_no_content;
+
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL))
+      wrap_args->verbose       = verbosity_is_enabled();
+
+   wrap_args->touched          = true;
+   wrap_args->config_path      = NULL;
+   wrap_args->sram_path        = NULL;
+   wrap_args->state_path       = NULL;
+   wrap_args->content_path     = NULL;
+
+   if (!path_is_empty(RARCH_PATH_CONFIG))
+      wrap_args->config_path   = path_get(RARCH_PATH_CONFIG);
+   if (!string_is_empty(dir_get_ptr(RARCH_DIR_SAVEFILE)))
+      wrap_args->sram_path     = dir_get_ptr(RARCH_DIR_SAVEFILE);
+   if (!string_is_empty(dir_get_ptr(RARCH_DIR_SAVESTATE)))
+      wrap_args->state_path    = dir_get_ptr(RARCH_DIR_SAVESTATE);
+   if (!path_is_empty(RARCH_PATH_CONTENT))
+      wrap_args->content_path  = path_get(RARCH_PATH_CONTENT);
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL))
+      wrap_args->libretro_path = string_is_empty(path_get(RARCH_PATH_CORE)) ? NULL :
+         path_get(RARCH_PATH_CORE);
+}
 
 /**
  * task_push_to_history_list:
