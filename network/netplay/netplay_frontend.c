@@ -3058,6 +3058,7 @@ static void netplay_handle_frame_hash(netplay_t *netplay,
 static int handle_connection(netplay_t *netplay, bool *error)
 {
    fd_set fds;
+   int result;
    struct timeval tv = {0};
    int new_fd        = -1;
 
@@ -3065,8 +3066,7 @@ static int handle_connection(netplay_t *netplay, bool *error)
    FD_SET(netplay->listen_fd, &fds);
 
    /* Check for a connection */
-   int result = socket_select(netplay->listen_fd + 1,
-      &fds, NULL, NULL, &tv);
+   result = socket_select(netplay->listen_fd + 1, &fds, NULL, NULL, &tv);
 
    if (result < 0)
       goto critical_failure;
