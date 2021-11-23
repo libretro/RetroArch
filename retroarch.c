@@ -1459,51 +1459,6 @@ bool is_accessibility_enabled(bool accessibility_enable, bool accessibility_enab
 }
 #endif
 
-/* COMMAND */
-
-#ifdef HAVE_COMMAND
-bool command_get_config_param(command_t *cmd, const char* arg)
-{
-   char reply[8192]             = {0};
-   struct rarch_state  *p_rarch = &rarch_st;
-   const char      *value       = "unsupported";
-   settings_t       *settings   = config_get_ptr();
-   bool       video_fullscreen  = settings->bools.video_fullscreen;
-   const char *dir_runtime_log  = settings->paths.directory_runtime_log;
-   const char *log_dir          = settings->paths.log_dir;
-   const char *directory_cache  = settings->paths.directory_cache;
-   const char *directory_system = settings->paths.directory_system;
-   const char *path_username    = settings->paths.username;
-
-   if (string_is_equal(arg, "video_fullscreen"))
-   {
-      if (video_fullscreen)
-         value = "true";
-      else
-         value = "false";
-   }
-   else if (string_is_equal(arg, "savefile_directory"))
-      value = p_rarch->dir_savefile;
-   else if (string_is_equal(arg, "savestate_directory"))
-      value = p_rarch->dir_savestate;
-   else if (string_is_equal(arg, "runtime_log_directory"))
-      value = dir_runtime_log;
-   else if (string_is_equal(arg, "log_dir"))
-      value = log_dir;
-   else if (string_is_equal(arg, "cache_directory"))
-      value = directory_cache;
-   else if (string_is_equal(arg, "system_directory"))
-      value = directory_system;
-   else if (string_is_equal(arg, "netplay_nickname"))
-      value = path_username;
-   /* TODO: query any string */
-
-   snprintf(reply, sizeof(reply), "GET_CONFIG_PARAM %s %s\n", arg, value);
-   cmd->replier(cmd, reply, strlen(reply));
-   return true;
-}
-#endif
-
 /**
  * command_event:
  * @cmd                  : Event command index.
