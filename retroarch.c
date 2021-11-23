@@ -233,12 +233,52 @@
 #define BSV_MOVIE_ARG
 #endif
 
+#define _PSUPP_BUF(buf, var, name, desc) \
+   strlcat(buf, "  ", sizeof(buf)); \
+   strlcat(buf, name, sizeof(buf)); \
+   strlcat(buf, ":\n\t\t", sizeof(buf)); \
+   strlcat(buf, desc, sizeof(buf)); \
+   strlcat(buf, ": ", sizeof(buf)); \
+   strlcat(buf, var ? "yes\n" : "no\n", sizeof(buf))
+
 /* Griffin hack */
 #ifdef HAVE_QT
 #ifndef HAVE_MAIN
 #define HAVE_MAIN
 #endif
 #endif
+
+/* Descriptive names for options without short variant.
+ *
+ * Please keep the name in sync with the option name.
+ * Order does not matter. */
+enum
+{
+   RA_OPT_MENU = 256, /* must be outside the range of a char */
+   RA_OPT_STATELESS,
+   RA_OPT_CHECK_FRAMES,
+   RA_OPT_PORT,
+   RA_OPT_SPECTATE,
+   RA_OPT_NICK,
+   RA_OPT_COMMAND,
+   RA_OPT_APPENDCONFIG,
+   RA_OPT_BPS,
+   RA_OPT_IPS,
+   RA_OPT_NO_PATCH,
+   RA_OPT_RECORDCONFIG,
+   RA_OPT_SUBSYSTEM,
+   RA_OPT_SIZE,
+   RA_OPT_FEATURES,
+   RA_OPT_VERSION,
+   RA_OPT_EOF_EXIT,
+   RA_OPT_LOG_FILE,
+   RA_OPT_MAX_FRAMES,
+   RA_OPT_MAX_FRAMES_SCREENSHOT,
+   RA_OPT_MAX_FRAMES_SCREENSHOT_PATH,
+   RA_OPT_SET_SHADER,
+   RA_OPT_ACCESSIBILITY,
+   RA_OPT_LOAD_MENU_ON_ERROR
+};
 
 /* DRIVERS */
 #ifdef HAVE_BLUETOOTH
@@ -3970,64 +4010,6 @@ void libretro_free_system_info(struct retro_system_info *info)
    memset(info, 0, sizeof(*info));
 }
 
-/* INPUT */
-
-/**
- * config_get_input_driver_options:
- *
- * Get an enumerated list of all input driver names, separated by '|'.
- *
- * Returns: string listing of all input driver names, separated by '|'.
- **/
-const char* config_get_input_driver_options(void)
-{
-   return char_list_new_special(STRING_LIST_INPUT_DRIVERS, NULL);
-}
-
-/* MENU INPUT */
-
-/**
- * config_get_joypad_driver_options:
- *
- * Get an enumerated list of all joypad driver names, separated by '|'.
- *
- * Returns: string listing of all joypad driver names, separated by '|'.
- **/
-const char* config_get_joypad_driver_options(void)
-{
-   return char_list_new_special(STRING_LIST_INPUT_JOYPAD_DRIVERS, NULL);
-}
-
-/* AUDIO */
-
-/**
- * config_get_audio_driver_options:
- *
- * Get an enumerated list of all audio driver names, separated by '|'.
- *
- * Returns: string listing of all audio driver names, separated by '|'.
- **/
-const char *config_get_audio_driver_options(void)
-{
-   return char_list_new_special(STRING_LIST_AUDIO_DRIVERS, NULL);
-}
-
-/* VIDEO */
-
-void crt_switch_driver_refresh(void)
-{
-   /*video_context_driver_reset();*/
-   video_driver_reinit(DRIVERS_CMD_ALL);
-}
-
-#define _PSUPP_BUF(buf, var, name, desc) \
-   strlcat(buf, "  ", sizeof(buf)); \
-   strlcat(buf, name, sizeof(buf)); \
-   strlcat(buf, ":\n\t\t", sizeof(buf)); \
-   strlcat(buf, desc, sizeof(buf)); \
-   strlcat(buf, ": ", sizeof(buf)); \
-   strlcat(buf, var ? "yes\n" : "no\n", sizeof(buf))
-
 static void retroarch_print_features(void)
 {
    char buf[2048];
@@ -4276,39 +4258,6 @@ static void retroarch_print_help(const char *arg0)
       puts(buf);
    }
 }
-
-/* Descriptive names for options without short variant.
- *
- * Please keep the name in sync with the option name.
- * Order does not matter. */
-enum
-{
-   RA_OPT_MENU = 256, /* must be outside the range of a char */
-   RA_OPT_STATELESS,
-   RA_OPT_CHECK_FRAMES,
-   RA_OPT_PORT,
-   RA_OPT_SPECTATE,
-   RA_OPT_NICK,
-   RA_OPT_COMMAND,
-   RA_OPT_APPENDCONFIG,
-   RA_OPT_BPS,
-   RA_OPT_IPS,
-   RA_OPT_NO_PATCH,
-   RA_OPT_RECORDCONFIG,
-   RA_OPT_SUBSYSTEM,
-   RA_OPT_SIZE,
-   RA_OPT_FEATURES,
-   RA_OPT_VERSION,
-   RA_OPT_EOF_EXIT,
-   RA_OPT_LOG_FILE,
-   RA_OPT_MAX_FRAMES,
-   RA_OPT_MAX_FRAMES_SCREENSHOT,
-   RA_OPT_MAX_FRAMES_SCREENSHOT_PATH,
-   RA_OPT_SET_SHADER,
-   RA_OPT_ACCESSIBILITY,
-   RA_OPT_LOAD_MENU_ON_ERROR
-};
-
 
 /**
  * retroarch_parse_input_and_config:

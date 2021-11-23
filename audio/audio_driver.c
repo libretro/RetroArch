@@ -177,6 +177,18 @@ audio_driver_state_t *audio_state_get_ptr(void)
    return &audio_driver_st;
 }
 
+/**
+ * config_get_audio_driver_options:
+ *
+ * Get an enumerated list of all audio driver names, separated by '|'.
+ *
+ * Returns: string listing of all audio driver names, separated by '|'.
+ **/
+const char *config_get_audio_driver_options(void)
+{
+   return char_list_new_special(STRING_LIST_AUDIO_DRIVERS, NULL);
+}
+
 #ifdef HAVE_TRANSLATE
 /* TODO/FIXME - Doesn't currently work.  Fix this. */
 bool audio_driver_is_ai_service_speech_running(void)

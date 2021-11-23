@@ -359,6 +359,30 @@ input_driver_state_t *input_state_get_ptr(void)
 }
 
 /**
+ * config_get_input_driver_options:
+ *
+ * Get an enumerated list of all input driver names, separated by '|'.
+ *
+ * Returns: string listing of all input driver names, separated by '|'.
+ **/
+const char* config_get_input_driver_options(void)
+{
+   return char_list_new_special(STRING_LIST_INPUT_DRIVERS, NULL);
+}
+
+/**
+ * config_get_joypad_driver_options:
+ *
+ * Get an enumerated list of all joypad driver names, separated by '|'.
+ *
+ * Returns: string listing of all joypad driver names, separated by '|'.
+ **/
+const char* config_get_joypad_driver_options(void)
+{
+   return char_list_new_special(STRING_LIST_INPUT_JOYPAD_DRIVERS, NULL);
+}
+
+/**
  * Finds first suitable joypad driver and initializes. Used as a fallback by
  * input_joypad_init_driver when no matching driver is found.
  *

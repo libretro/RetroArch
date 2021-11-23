@@ -403,6 +403,12 @@ video_driver_state_t *video_state_get_ptr(void)
    return &video_driver_st;
 }
 
+void crt_switch_driver_refresh(void)
+{
+   video_driver_reinit(DRIVERS_CMD_ALL);
+}
+
+
 #ifdef HAVE_THREADS
 void *video_thread_get_ptr(video_driver_state_t *video_st)
 {
