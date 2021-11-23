@@ -93,6 +93,7 @@ static core_info_state_t core_info_st = {
    NULL
 };
 
+#ifdef HAVE_CORE_INFO_CACHE
 /* JSON Handlers START */
 
 static bool CCJSONObjectMemberHandler(void *context,
@@ -386,6 +387,7 @@ static bool CCJSONEndArrayHandler(void *context)
 }
 
 /* JSON Handlers END */
+#endif
 
 /* Note: 'dst' must be zero initialised, or memory
  * leaks will occur */
