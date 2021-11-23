@@ -99,7 +99,7 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
    &gfx_display_ctx_gl1,
 #endif
 #ifdef HAVE_OPENGL_CORE
-   &gfx_display_ctx_gl_core,
+   &gfx_display_ctx_gl3,
 #endif
 #ifdef HAVE_VULKAN
    &gfx_display_ctx_vulkan,

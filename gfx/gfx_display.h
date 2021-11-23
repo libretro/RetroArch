@@ -344,7 +344,7 @@ bool gfx_display_init_first_driver(gfx_display_t *p_disp,
       bool video_is_threaded);
 
 extern gfx_display_ctx_driver_t gfx_display_ctx_gl;
-extern gfx_display_ctx_driver_t gfx_display_ctx_gl_core;
+extern gfx_display_ctx_driver_t gfx_display_ctx_gl3;
 extern gfx_display_ctx_driver_t gfx_display_ctx_gl1;
 extern gfx_display_ctx_driver_t gfx_display_ctx_vulkan;
 extern gfx_display_ctx_driver_t gfx_display_ctx_metal;

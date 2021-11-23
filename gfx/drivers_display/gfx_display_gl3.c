@@ -27,46 +27,46 @@
 #include "../font_driver.h"
 #include "../../retroarch.h"
 
-static const float gl_core_vertexes[] = {
+static const float gl3_vertexes[] = {
    0, 0,
    1, 0,
    0, 1,
    1, 1
 };
 
-static const float gl_core_tex_coords[] = {
+static const float gl3_tex_coords[] = {
    0, 1,
    1, 1,
    0, 0,
    1, 0
 };
 
-static const float gl_core_colors[] = {
+static const float gl3_colors[] = {
    1.0f, 1.0f, 1.0f, 1.0f,
    1.0f, 1.0f, 1.0f, 1.0f,
    1.0f, 1.0f, 1.0f, 1.0f,
    1.0f, 1.0f, 1.0f, 1.0f,
 };
 
-static void *gfx_display_gl_core_get_default_mvp(void *data)
+static void *gfx_display_gl3_get_default_mvp(void *data)
 {
-   gl_core_t *gl_core = (gl_core_t*)data;
-   if (!gl_core)
+   gl3_t *gl3 = (gl3_t*)data;
+   if (!gl3)
       return NULL;
-   return &gl_core->mvp_no_rot;
+   return &gl3->mvp_no_rot;
 }
 
-static const float *gfx_display_gl_core_get_default_vertices(void)
+static const float *gfx_display_gl3_get_default_vertices(void)
 {
-   return &gl_core_vertexes[0];
+   return &gl3_vertexes[0];
 }
 
-static const float *gfx_display_gl_core_get_default_tex_coords(void)
+static const float *gfx_display_gl3_get_default_tex_coords(void)
 {
-   return &gl_core_tex_coords[0];
+   return &gl3_tex_coords[0];
 }
 
-static void gfx_display_gl_core_draw_pipeline(
+static void gfx_display_gl3_draw_pipeline(
       gfx_display_ctx_draw_t *draw,
       gfx_display_t *p_disp,
       void *data,
@@ -80,7 +80,7 @@ static void gfx_display_gl_core_draw_pipeline(
    static float t                = 0.0f;
    float yflip                   = 0.0f;
    video_coord_array_t *ca       = NULL;
-   gl_core_t *gl                 = (gl_core_t*)data;
+   gl3_t *gl                 = (gl3_t*)data;
 
    if (!gl || !draw)
       return;
@@ -142,16 +142,16 @@ static void gfx_display_gl_core_draw_pipeline(
 #endif
 }
 
-static void gfx_display_gl_core_draw(gfx_display_ctx_draw_t *draw,
+static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
    const float *vertex       = NULL;
    const float *tex_coord    = NULL;
    const float *color        = NULL;
    GLuint            texture = 0;
-   gl_core_t *gl             = (gl_core_t*)data;
+   gl3_t *gl             = (gl3_t*)data;
    const struct 
-      gl_core_buffer_locations 
+      gl3_buffer_locations 
       *loc                   = NULL;
 
    if (!gl || !draw)
@@ -163,11 +163,11 @@ static void gfx_display_gl_core_draw(gfx_display_ctx_draw_t *draw,
    color              = draw->coords->color;
 
    if (!vertex)
-      vertex          = gfx_display_gl_core_get_default_vertices();
+      vertex          = gfx_display_gl3_get_default_vertices();
    if (!tex_coord)
-      tex_coord       = &gl_core_tex_coords[0];
+      tex_coord       = &gl3_tex_coords[0];
    if (!color)
-      color           = &gl_core_colors[0];
+      color           = &gl3_colors[0];
 
    glViewport(draw->x, draw->y, draw->width, draw->height);
 
@@ -245,15 +245,15 @@ static void gfx_display_gl_core_draw(gfx_display_ctx_draw_t *draw,
    glEnableVertexAttribArray(1);
    glEnableVertexAttribArray(2);
 
-   gl_core_bind_scratch_vbo(gl, vertex,
+   gl3_bind_scratch_vbo(gl, vertex,
          2 * sizeof(float) * draw->coords->vertices);
    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
          2 * sizeof(float), (void *)(uintptr_t)0);
-   gl_core_bind_scratch_vbo(gl, tex_coord,
+   gl3_bind_scratch_vbo(gl, tex_coord,
          2 * sizeof(float) * draw->coords->vertices);
    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE,
          2 * sizeof(float), (void *)(uintptr_t)0);
-   gl_core_bind_scratch_vbo(gl, color,
+   gl3_bind_scratch_vbo(gl, color,
          4 * sizeof(float) * draw->coords->vertices);
    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE,
          4 * sizeof(float), (void *)(uintptr_t)0);
@@ -279,21 +279,21 @@ static void gfx_display_gl_core_draw(gfx_display_ctx_draw_t *draw,
    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-static void gfx_display_gl_core_blend_begin(void *data)
+static void gfx_display_gl3_blend_begin(void *data)
 {
-   gl_core_t *gl = (gl_core_t*)data;
+   gl3_t *gl = (gl3_t*)data;
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glUseProgram(gl->pipelines.alpha_blend);
 }
 
-static void gfx_display_gl_core_blend_end(void *data)
+static void gfx_display_gl3_blend_end(void *data)
 {
    glDisable(GL_BLEND);
 }
 
-static bool gfx_display_gl_core_font_init_first(
+static bool gfx_display_gl3_font_init_first(
       void **font_handle, void *video_data, const char *font_path,
       float menu_font_size, bool is_threaded)
 {
@@ -309,7 +309,7 @@ static bool gfx_display_gl_core_font_init_first(
    return false;
 }
 
-static void gfx_display_gl_core_scissor_begin(void *data,
+static void gfx_display_gl3_scissor_begin(void *data,
       unsigned video_width,
       unsigned video_height,
       int x, int y, unsigned width, unsigned height)
@@ -318,7 +318,7 @@ static void gfx_display_gl_core_scissor_begin(void *data,
    glEnable(GL_SCISSOR_TEST);
 }
 
-static void gfx_display_gl_core_scissor_end(
+static void gfx_display_gl3_scissor_end(
       void *data,
       unsigned video_width,
       unsigned video_height)
@@ -326,18 +326,18 @@ static void gfx_display_gl_core_scissor_end(
    glDisable(GL_SCISSOR_TEST);
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_gl_core = {
-   gfx_display_gl_core_draw,
-   gfx_display_gl_core_draw_pipeline,
-   gfx_display_gl_core_blend_begin,
-   gfx_display_gl_core_blend_end,
-   gfx_display_gl_core_get_default_mvp,
-   gfx_display_gl_core_get_default_vertices,
-   gfx_display_gl_core_get_default_tex_coords,
-   gfx_display_gl_core_font_init_first,
+gfx_display_ctx_driver_t gfx_display_ctx_gl3 = {
+   gfx_display_gl3_draw,
+   gfx_display_gl3_draw_pipeline,
+   gfx_display_gl3_blend_begin,
+   gfx_display_gl3_blend_end,
+   gfx_display_gl3_get_default_mvp,
+   gfx_display_gl3_get_default_vertices,
+   gfx_display_gl3_get_default_tex_coords,
+   gfx_display_gl3_font_init_first,
    GFX_VIDEO_DRIVER_OPENGL_CORE,
    "glcore",
    false,
-   gfx_display_gl_core_scissor_begin,
-   gfx_display_gl_core_scissor_end
+   gfx_display_gl3_scissor_begin,
+   gfx_display_gl3_scissor_end
 };

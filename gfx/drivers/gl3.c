@@ -54,9 +54,9 @@
 #include "../gfx_widgets.h"
 #endif
 
-static const struct video_ortho gl_core_default_ortho = {0, 1, 0, 1, -1, 1};
+static const struct video_ortho gl3_default_ortho = {0, 1, 0, 1, -1, 1};
 
-void gl_core_build_default_matrix(float *data)
+void gl3_build_default_matrix(float *data)
 {
    data[0] = 2.0f;
    data[1] = 0.0f;
@@ -76,7 +76,7 @@ void gl_core_build_default_matrix(float *data)
    data[15] = 1.0f;
 }
 
-void gl_core_framebuffer_copy(
+void gl3_framebuffer_copy(
       GLuint fb_id,
       GLuint quad_program,
       GLuint quad_vbo,
@@ -98,7 +98,7 @@ void gl_core_framebuffer_copy(
    if (flat_ubo_vertex >= 0)
    {
       float mvp[16];
-      gl_core_build_default_matrix(mvp);
+      gl3_build_default_matrix(mvp);
       glUniform4fv(flat_ubo_vertex, 4, mvp);
    }
 
@@ -123,7 +123,7 @@ void gl_core_framebuffer_copy(
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void gl_core_framebuffer_copy_partial(
+void gl3_framebuffer_copy_partial(
       GLuint fb_id,
       GLuint quad_program, 
       GLint flat_ubo_vertex,
@@ -153,7 +153,7 @@ void gl_core_framebuffer_copy_partial(
    if (flat_ubo_vertex >= 0)
    {
       float mvp[16];
-      gl_core_build_default_matrix(mvp);
+      gl3_build_default_matrix(mvp);
       glUniform4fv(flat_ubo_vertex, 4, mvp);
    }
    glDisable(GL_CULL_FACE);
@@ -181,7 +181,7 @@ void gl_core_framebuffer_copy_partial(
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-static void gl_core_deinit_fences(gl_core_t *gl)
+static void gl3_deinit_fences(gl3_t *gl)
 {
    unsigned i;
    for (i = 0; i < gl->fence_count; i++)
@@ -193,7 +193,7 @@ static void gl_core_deinit_fences(gl_core_t *gl)
    memset(gl->fences, 0, sizeof(gl->fences));
 }
 
-static bool gl_core_init_pbo_readback(gl_core_t *gl)
+static bool gl3_init_pbo_readback(gl3_t *gl)
 {
    unsigned i;
    struct scaler_ctx *scaler  = NULL;
@@ -231,7 +231,7 @@ static bool gl_core_init_pbo_readback(gl_core_t *gl)
    return true;
 }
 
-static void gl_core_deinit_pbo_readback(gl_core_t *gl)
+static void gl3_deinit_pbo_readback(gl3_t *gl)
 {
    unsigned i;
    for (i = 0; i < GL_CORE_NUM_PBOS; i++)
@@ -241,7 +241,7 @@ static void gl_core_deinit_pbo_readback(gl_core_t *gl)
    scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
 }
 
-static void gl_core_slow_readback(gl_core_t *gl, void *buffer)
+static void gl3_slow_readback(gl3_t *gl, void *buffer)
 {
    glPixelStorei(GL_PACK_ALIGNMENT, 4);
    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
@@ -255,7 +255,7 @@ static void gl_core_slow_readback(gl_core_t *gl, void *buffer)
                 GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 }
 
-static void gl_core_pbo_async_readback(gl_core_t *gl)
+static void gl3_pbo_async_readback(gl3_t *gl)
 {
    glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[gl->pbo_readback_index++]);
    glPixelStorei(GL_PACK_ALIGNMENT, 4);
@@ -273,7 +273,7 @@ static void gl_core_pbo_async_readback(gl_core_t *gl)
    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 }
 
-static void gl_core_fence_iterate(gl_core_t *gl, unsigned hard_sync_frames)
+static void gl3_fence_iterate(gl3_t *gl, unsigned hard_sync_frames)
 {
    if (gl->fence_count < GL_CORE_NUM_FENCES)
    {
@@ -299,7 +299,7 @@ static void gl_core_fence_iterate(gl_core_t *gl, unsigned hard_sync_frames)
    }
 }
 
-uint32_t gl_core_get_cross_compiler_target_version(void)
+uint32_t gl3_get_cross_compiler_target_version(void)
 {
    const char *version = (const char*)glGetString(GL_VERSION);
    unsigned major = 0;
@@ -342,7 +342,7 @@ uint32_t gl_core_get_cross_compiler_target_version(void)
    return 100 * major + 10 * minor;
 }
 
-GLuint gl_core_compile_shader(GLenum stage, const char *source)
+GLuint gl3_compile_shader(GLenum stage, const char *source)
 {
    GLint status;
    GLuint shader   = glCreateShader(stage);
@@ -376,7 +376,7 @@ GLuint gl_core_compile_shader(GLenum stage, const char *source)
 }
 
 
-void gl_core_framebuffer_clear(GLuint id)
+void gl3_framebuffer_clear(GLuint id)
 {
    glBindFramebuffer(GL_FRAMEBUFFER, id);
    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -385,7 +385,7 @@ void gl_core_framebuffer_clear(GLuint id)
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void gl_core_bind_scratch_vbo(gl_core_t *gl, const void *data, size_t size)
+void gl3_bind_scratch_vbo(gl3_t *gl, const void *data, size_t size)
 {
    if (!gl->scratch_vbos[gl->scratch_vbo_index])
       glGenBuffers(1, &gl->scratch_vbos[gl->scratch_vbo_index]);
@@ -397,7 +397,7 @@ void gl_core_bind_scratch_vbo(gl_core_t *gl, const void *data, size_t size)
 }
 
 #ifdef HAVE_OVERLAY
-static void gl_core_free_overlay(gl_core_t *gl)
+static void gl3_free_overlay(gl3_t *gl)
 {
    if (gl->overlay_tex)
       glDeleteTextures(gl->overlays, gl->overlay_tex);
@@ -413,7 +413,7 @@ static void gl_core_free_overlay(gl_core_t *gl)
    gl->overlays             = 0;
 }
 
-static void gl_core_free_scratch_vbos(gl_core_t *gl)
+static void gl3_free_scratch_vbos(gl3_t *gl)
 {
    unsigned i;
    for (i = 0; i < GL_CORE_NUM_VBOS; i++)
@@ -421,13 +421,13 @@ static void gl_core_free_scratch_vbos(gl_core_t *gl)
          glDeleteBuffers(1, &gl->scratch_vbos[i]);
 }
 
-static void gl_core_overlay_vertex_geom(void *data,
+static void gl3_overlay_vertex_geom(void *data,
       unsigned image,
       float x, float y,
       float w, float h)
 {
    GLfloat *vertex = NULL;
-   gl_core_t   *gl = (gl_core_t*)data;
+   gl3_t   *gl = (gl3_t*)data;
 
    if (!gl)
       return;
@@ -454,13 +454,13 @@ static void gl_core_overlay_vertex_geom(void *data,
    vertex[7]       = y + h;
 }
 
-static void gl_core_overlay_tex_geom(void *data,
+static void gl3_overlay_tex_geom(void *data,
       unsigned image,
       GLfloat x, GLfloat y,
       GLfloat w, GLfloat h)
 {
    GLfloat *tex = NULL;
-   gl_core_t *gl = (gl_core_t*)data;
+   gl3_t *gl = (gl3_t*)data;
 
    if (!gl)
       return;
@@ -477,7 +477,7 @@ static void gl_core_overlay_tex_geom(void *data,
    tex[7]       = y + h;
 }
 
-static void gl_core_render_overlay(gl_core_t *gl,
+static void gl3_render_overlay(gl3_t *gl,
       unsigned width, unsigned height)
 {
    unsigned i;
@@ -500,11 +500,11 @@ static void gl_core_render_overlay(gl_core_t *gl,
    glEnableVertexAttribArray(1);
    glEnableVertexAttribArray(2);
 
-   gl_core_bind_scratch_vbo(gl, gl->overlay_vertex_coord, 8 * sizeof(float) * gl->overlays);
+   gl3_bind_scratch_vbo(gl, gl->overlay_vertex_coord, 8 * sizeof(float) * gl->overlays);
    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)(uintptr_t)0);
-   gl_core_bind_scratch_vbo(gl, gl->overlay_tex_coord, 8 * sizeof(float) * gl->overlays);
+   gl3_bind_scratch_vbo(gl, gl->overlay_tex_coord, 8 * sizeof(float) * gl->overlays);
    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)(uintptr_t)0);
-   gl_core_bind_scratch_vbo(gl, gl->overlay_color_coord, 16 * sizeof(float) * gl->overlays);
+   gl3_bind_scratch_vbo(gl, gl->overlay_color_coord, 16 * sizeof(float) * gl->overlays);
    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(uintptr_t)0);
 
    for (i = 0; i < gl->overlays; i++)
@@ -525,13 +525,13 @@ static void gl_core_render_overlay(gl_core_t *gl,
 }
 #endif
 
-#define gl_core_context_bind_hw_render(gl, enable) \
+#define gl3_context_bind_hw_render(gl, enable) \
    if (gl->use_shared_context) \
       gl->ctx_driver->bind_hw_render(gl->ctx_data, enable)
 
-static void gl_core_deinit_hw_render(gl_core_t *gl)
+static void gl3_deinit_hw_render(gl3_t *gl)
 {
-   gl_core_context_bind_hw_render(gl, true);
+   gl3_context_bind_hw_render(gl, true);
 
    if (gl->hw_render_fbo)
       glDeleteFramebuffers(1, &gl->hw_render_fbo);
@@ -543,20 +543,20 @@ static void gl_core_deinit_hw_render(gl_core_t *gl)
    gl->hw_render_fbo = 0;
    gl->hw_render_rb_ds = 0;
    gl->hw_render_texture = 0;
-   gl_core_context_bind_hw_render(gl, false);
+   gl3_context_bind_hw_render(gl, false);
    gl->hw_render_enable = false;
 }
 
-static void gl_core_destroy_resources(gl_core_t *gl)
+static void gl3_destroy_resources(gl3_t *gl)
 {
    unsigned i;
    if (!gl)
       return;
 
-   gl_core_context_bind_hw_render(gl, false);
+   gl3_context_bind_hw_render(gl, false);
 
    if (gl->filter_chain)
-      gl_core_filter_chain_free(gl->filter_chain);
+      gl3_filter_chain_free(gl->filter_chain);
    gl->filter_chain = NULL;
 
    glBindVertexArray(0);
@@ -589,22 +589,22 @@ static void gl_core_destroy_resources(gl_core_t *gl)
       glDeleteProgram(gl->pipelines.bokeh);
 
 #ifdef HAVE_OVERLAY
-   gl_core_free_overlay(gl);
-   gl_core_free_scratch_vbos(gl);
+   gl3_free_overlay(gl);
+   gl3_free_scratch_vbos(gl);
 #endif
-   gl_core_deinit_fences(gl);
-   gl_core_deinit_pbo_readback(gl);
-   gl_core_deinit_hw_render(gl);
+   gl3_deinit_fences(gl);
+   gl3_deinit_pbo_readback(gl);
+   gl3_deinit_hw_render(gl);
 }
 
-static bool gl_core_init_hw_render(gl_core_t *gl, unsigned width, unsigned height)
+static bool gl3_init_hw_render(gl3_t *gl, unsigned width, unsigned height)
 {
    GLint max_fbo_size;
    GLint max_rb_size;
    GLenum status;
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
 
-   gl_core_context_bind_hw_render(gl, true);
+   gl3_context_bind_hw_render(gl, true);
 
    RARCH_LOG("[GLCore]: Initializing HW render (%u x %u).\n", width, height);
    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_fbo_size);
@@ -648,7 +648,7 @@ static bool gl_core_init_hw_render(gl_core_t *gl, unsigned width, unsigned heigh
    if (status != GL_FRAMEBUFFER_COMPLETE)
    {
       RARCH_ERR("[GLCore]: Framebuffer is not complete.\n");
-      gl_core_context_bind_hw_render(gl, false);
+      gl3_context_bind_hw_render(gl, false);
       return false;
    }
 
@@ -664,12 +664,12 @@ static bool gl_core_init_hw_render(gl_core_t *gl, unsigned width, unsigned heigh
    gl->hw_render_max_height = height;
    glBindTexture(GL_TEXTURE_2D, 0);
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-   gl_core_context_bind_hw_render(gl, false);
+   gl3_context_bind_hw_render(gl, false);
 
    return true;
 }
 
-static const gfx_ctx_driver_t *gl_core_get_context(gl_core_t *gl)
+static const gfx_ctx_driver_t *gl3_get_context(gl3_t *gl)
 {
    unsigned major;
    unsigned minor;
@@ -731,7 +731,7 @@ static const gfx_ctx_driver_t *gl_core_get_context(gl_core_t *gl)
    return gfx_ctx;
 }
 
-static void gl_core_set_projection(gl_core_t *gl,
+static void gl3_set_projection(gl3_t *gl,
       const struct video_ortho *ortho, bool allow_rotate)
 {
    math_matrix_4x4 rot;
@@ -762,7 +762,7 @@ static void gl_core_set_projection(gl_core_t *gl,
    MAT_ELEM_4X4(gl->mvp_yflip, 1, 3) *= -1.0f;
 }
 
-static void gl_core_set_viewport(gl_core_t *gl,
+static void gl3_set_viewport(gl3_t *gl,
       unsigned viewport_width,
       unsigned viewport_height,
       bool force_full, bool allow_rotate)
@@ -846,7 +846,7 @@ static void gl_core_set_viewport(gl_core_t *gl,
 #endif
 
    glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
-   gl_core_set_projection(gl, &gl_core_default_ortho, allow_rotate);
+   gl3_set_projection(gl, &gl3_default_ortho, allow_rotate);
 
    /* Set last backbuffer viewport. */
    if (!force_full)
@@ -865,7 +865,7 @@ static void gl_core_set_viewport(gl_core_t *gl,
 #endif
 }
 
-static bool gl_core_init_pipelines(gl_core_t *gl)
+static bool gl3_init_pipelines(gl3_t *gl)
 {
    static const uint32_t alpha_blend_vert[] =
 #include "vulkan_shaders/alpha_blend.vert.inc"
@@ -907,43 +907,43 @@ static bool gl_core_init_pipelines(gl_core_t *gl)
 #include "vulkan_shaders/pipeline_bokeh.frag.inc"
       ;
 
-   gl->pipelines.alpha_blend = gl_core_cross_compile_program(alpha_blend_vert, sizeof(alpha_blend_vert),
+   gl->pipelines.alpha_blend = gl3_cross_compile_program(alpha_blend_vert, sizeof(alpha_blend_vert),
                                                              alpha_blend_frag, sizeof(alpha_blend_frag),
                                                              &gl->pipelines.alpha_blend_loc, true);
    if (!gl->pipelines.alpha_blend)
       return false;
 
-   gl->pipelines.font = gl_core_cross_compile_program(alpha_blend_vert, sizeof(alpha_blend_vert),
+   gl->pipelines.font = gl3_cross_compile_program(alpha_blend_vert, sizeof(alpha_blend_vert),
                                                       font_frag, sizeof(font_frag),
                                                       &gl->pipelines.font_loc, true);
    if (!gl->pipelines.font)
       return false;
 
-   gl->pipelines.ribbon_simple = gl_core_cross_compile_program(pipeline_ribbon_simple_vert, sizeof(pipeline_ribbon_simple_vert),
+   gl->pipelines.ribbon_simple = gl3_cross_compile_program(pipeline_ribbon_simple_vert, sizeof(pipeline_ribbon_simple_vert),
                                                                pipeline_ribbon_simple_frag, sizeof(pipeline_ribbon_simple_frag),
                                                                &gl->pipelines.ribbon_simple_loc, true);
    if (!gl->pipelines.ribbon_simple)
       return false;
 
-   gl->pipelines.ribbon = gl_core_cross_compile_program(pipeline_ribbon_vert, sizeof(pipeline_ribbon_vert),
+   gl->pipelines.ribbon = gl3_cross_compile_program(pipeline_ribbon_vert, sizeof(pipeline_ribbon_vert),
                                                         pipeline_ribbon_frag, sizeof(pipeline_ribbon_frag),
                                                         &gl->pipelines.ribbon_loc, true);
    if (!gl->pipelines.ribbon)
       return false;
 
-   gl->pipelines.bokeh = gl_core_cross_compile_program(alpha_blend_vert, sizeof(alpha_blend_vert),
+   gl->pipelines.bokeh = gl3_cross_compile_program(alpha_blend_vert, sizeof(alpha_blend_vert),
                                                        pipeline_bokeh_frag, sizeof(pipeline_bokeh_frag),
                                                        &gl->pipelines.bokeh_loc, true);
    if (!gl->pipelines.bokeh)
       return false;
 
-   gl->pipelines.snow_simple = gl_core_cross_compile_program(alpha_blend_vert, sizeof(alpha_blend_vert),
+   gl->pipelines.snow_simple = gl3_cross_compile_program(alpha_blend_vert, sizeof(alpha_blend_vert),
                                                              pipeline_snow_simple_frag, sizeof(pipeline_snow_simple_frag),
                                                              &gl->pipelines.snow_simple_loc, true);
    if (!gl->pipelines.snow_simple)
       return false;
 
-   gl->pipelines.snow = gl_core_cross_compile_program(alpha_blend_vert, sizeof(alpha_blend_vert),
+   gl->pipelines.snow = gl3_cross_compile_program(alpha_blend_vert, sizeof(alpha_blend_vert),
                                                       pipeline_snow_frag, sizeof(pipeline_snow_frag),
                                                       &gl->pipelines.snow_loc, true);
    if (!gl->pipelines.snow)
@@ -952,12 +952,12 @@ static bool gl_core_init_pipelines(gl_core_t *gl)
    return true;
 }
 
-static bool gl_core_init_default_filter_chain(gl_core_t *gl)
+static bool gl3_init_default_filter_chain(gl3_t *gl)
 {
    if (!gl->ctx_driver)
       return false;
 
-   gl->filter_chain = gl_core_filter_chain_create_default(
+   gl->filter_chain = gl3_filter_chain_create_default(
          gl->video_info.smooth 
          ? GLSLANG_FILTER_CHAIN_LINEAR 
          : GLSLANG_FILTER_CHAIN_NEAREST);
@@ -971,9 +971,9 @@ static bool gl_core_init_default_filter_chain(gl_core_t *gl)
    return true;
 }
 
-static bool gl_core_init_filter_chain_preset(gl_core_t *gl, const char *shader_path)
+static bool gl3_init_filter_chain_preset(gl3_t *gl, const char *shader_path)
 {
-   gl->filter_chain = gl_core_filter_chain_create_from_preset(
+   gl->filter_chain = gl3_filter_chain_create_from_preset(
          shader_path,
          gl->video_info.smooth
          ? GLSLANG_FILTER_CHAIN_LINEAR 
@@ -988,7 +988,7 @@ static bool gl_core_init_filter_chain_preset(gl_core_t *gl, const char *shader_p
    return true;
 }
 
-static bool gl_core_init_filter_chain(gl_core_t *gl)
+static bool gl3_init_filter_chain(gl3_t *gl)
 {
    const char *shader_path     = retroarch_get_shader_preset();
    enum rarch_shader_type type = video_shader_parse_type(shader_path);
@@ -996,17 +996,17 @@ static bool gl_core_init_filter_chain(gl_core_t *gl)
    if (string_is_empty(shader_path))
    {
       RARCH_LOG("[GLCore]: Loading stock shader.\n");
-      return gl_core_init_default_filter_chain(gl);
+      return gl3_init_default_filter_chain(gl);
    }
 
    if (type != RARCH_SHADER_SLANG)
    {
       RARCH_WARN("[GLCore]: Only Slang shaders are supported, falling back to stock.\n");
-      return gl_core_init_default_filter_chain(gl);
+      return gl3_init_default_filter_chain(gl);
    }
 
-   if (!gl_core_init_filter_chain_preset(gl, shader_path))
-      gl_core_init_default_filter_chain(gl);
+   if (!gl3_init_filter_chain_preset(gl, shader_path))
+      gl3_init_default_filter_chain(gl);
 
    return true;
 }
@@ -1035,13 +1035,13 @@ static bool gl_core_init_filter_chain(gl_core_t *gl)
 #else
 #define DEBUG_CALLBACK_TYPE APIENTRY
 #endif
-static void DEBUG_CALLBACK_TYPE gl_core_debug_cb(GLenum source, GLenum type,
+static void DEBUG_CALLBACK_TYPE gl3_debug_cb(GLenum source, GLenum type,
       GLuint id, GLenum severity, GLsizei length,
       const GLchar *message, void *userParam)
 {
    const char      *src = NULL;
    const char *typestr  = NULL;
-   gl_core_t *gl = (gl_core_t*)userParam; /* Useful for debugger. */
+   gl3_t *gl = (gl3_t*)userParam; /* Useful for debugger. */
 
    (void)gl;
    (void)id;
@@ -1120,17 +1120,17 @@ static void DEBUG_CALLBACK_TYPE gl_core_debug_cb(GLenum source, GLenum type,
    }
 }
 
-static void gl_core_begin_debug(gl_core_t *gl)
+static void gl3_begin_debug(gl3_t *gl)
 {
    if (gl_check_capability(GL_CAPS_DEBUG))
    {
 #ifdef HAVE_OPENGLES3
-      glDebugMessageCallbackKHR(gl_core_debug_cb, gl);
+      glDebugMessageCallbackKHR(gl3_debug_cb, gl);
       glDebugMessageControlKHR(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
       glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_KHR);
       glEnable(GL_DEBUG_OUTPUT_KHR);
 #else
-      glDebugMessageCallback(gl_core_debug_cb, gl);
+      glDebugMessageCallback(gl3_debug_cb, gl);
       glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
       glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
       glEnable(GL_DEBUG_OUTPUT);
@@ -1141,17 +1141,17 @@ static void gl_core_begin_debug(gl_core_t *gl)
 }
 #endif
 
-static void gl_core_set_viewport_wrapper(void *data,
+static void gl3_set_viewport_wrapper(void *data,
       unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
-   gl_core_t *gl = (gl_core_t*)data;
-   gl_core_set_viewport(gl,
+   gl3_t *gl = (gl3_t*)data;
+   gl3_set_viewport(gl,
          viewport_width, viewport_height, force_full, allow_rotate);
 }
 
 
-static void *gl_core_init(const video_info_t *video,
+static void *gl3_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    unsigned full_x, full_y;
@@ -1168,8 +1168,8 @@ static void *gl_core_init(const video_info_t *video,
    const char *renderer                 = NULL;
    const char *version                  = NULL;
    char *error_string                   = NULL;
-   gl_core_t *gl                        = (gl_core_t*)calloc(1, sizeof(gl_core_t));
-   const gfx_ctx_driver_t *ctx_driver   = gl_core_get_context(gl);
+   gl3_t *gl                        = (gl3_t*)calloc(1, sizeof(gl3_t));
+   const gfx_ctx_driver_t *ctx_driver   = gl3_get_context(gl);
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
 
    if (!gl || !ctx_driver)
@@ -1220,19 +1220,19 @@ static void *gl_core_init(const video_info_t *video,
             win_width, win_height, video->fullscreen))
       goto error;
 
-   gl_core_context_bind_hw_render(gl, false);
+   gl3_context_bind_hw_render(gl, false);
    rglgen_resolve_symbols(ctx_driver->get_proc_address);
 
    if (hwr && hwr->context_type != RETRO_HW_CONTEXT_NONE)
-      gl_core_init_hw_render(gl, RARCH_SCALE_BASE * video->input_scale, RARCH_SCALE_BASE * video->input_scale);
+      gl3_init_hw_render(gl, RARCH_SCALE_BASE * video->input_scale, RARCH_SCALE_BASE * video->input_scale);
 
 #ifdef GL_DEBUG
-   gl_core_begin_debug(gl);
+   gl3_begin_debug(gl);
    if (gl->hw_render_enable)
    {
-      gl_core_context_bind_hw_render(gl, true);
-      gl_core_begin_debug(gl);
-      gl_core_context_bind_hw_render(gl, false);
+      gl3_context_bind_hw_render(gl, true);
+      gl3_begin_debug(gl);
+      gl3_context_bind_hw_render(gl, false);
    }
 #endif
 
@@ -1249,7 +1249,7 @@ static void *gl_core_init(const video_info_t *video,
    if (string_is_equal(ctx_driver->ident, "null"))
       goto error;
 
-   if (!gl_core_init_pipelines(gl))
+   if (!gl3_init_pipelines(gl))
    {
       RARCH_ERR("[GLCore]: Failed to cross-compile menu pipelines.\n");
       goto error;
@@ -1307,7 +1307,7 @@ static void *gl_core_init(const video_info_t *video,
 
    /* Set the viewport to fix recording, since it needs to know
     * the viewport sizes before we start running. */
-   gl_core_set_viewport_wrapper(gl, temp_width, temp_height, false, true);
+   gl3_set_viewport_wrapper(gl, temp_width, temp_height, false, true);
 
    if (gl->ctx_driver->input_driver)
    {
@@ -1317,7 +1317,7 @@ static void *gl_core_init(const video_info_t *video,
             input, input_data);
    }
 
-   if (!gl_core_init_filter_chain(gl))
+   if (!gl3_init_filter_chain(gl))
    {
       RARCH_ERR("[GLCore]: Failed to init filter chain.\n");
       goto error;
@@ -1335,7 +1335,7 @@ static void *gl_core_init(const video_info_t *video,
    gl->pbo_readback_enable = video_gpu_record 
       && recording_state_get_ptr()->enable;
 
-   if (gl->pbo_readback_enable && gl_core_init_pbo_readback(gl))
+   if (gl->pbo_readback_enable && gl3_init_pbo_readback(gl))
    {
       RARCH_LOG("[GLCore]: Async PBO readback enabled.\n");
    }
@@ -1351,18 +1351,18 @@ static void *gl_core_init(const video_info_t *video,
    glBindVertexArray(gl->vao);
    glBindVertexArray(0);
 
-   gl_core_context_bind_hw_render(gl, true);
+   gl3_context_bind_hw_render(gl, true);
    return gl;
 
 error:
    video_context_driver_free();
-   gl_core_destroy_resources(gl);
+   gl3_destroy_resources(gl);
    if (gl)
       free(gl);
    return NULL;
 }
 
-static unsigned gl_core_num_miplevels(unsigned width, unsigned height)
+static unsigned gl3_num_miplevels(unsigned width, unsigned height)
 {
    unsigned levels = 1;
    if (width < height)
@@ -1375,7 +1375,7 @@ static unsigned gl_core_num_miplevels(unsigned width, unsigned height)
    return levels;
 }
 
-static void video_texture_load_gl_core(
+static void video_texture_load_gl3(
       const struct texture_image *ti,
       enum texture_filter_type filter_type,
       uintptr_t *idptr)
@@ -1391,7 +1391,7 @@ static void video_texture_load_gl_core(
 
    levels = 1;
    if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR || filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
-      levels = gl_core_num_miplevels(ti->width, ti->height);
+      levels = gl3_num_miplevels(ti->width, ti->height);
 
    glTexStorage2D(GL_TEXTURE_2D, levels, GL_RGBA8, ti->width, ti->height);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -1436,19 +1436,19 @@ static void video_texture_load_gl_core(
 }
 
 #ifdef HAVE_OVERLAY
-static bool gl_core_overlay_load(void *data,
+static bool gl3_overlay_load(void *data,
       const void *image_data, unsigned num_images)
 {
    unsigned i, j;
    uintptr_t id;
-   gl_core_t *gl = (gl_core_t*)data;
+   gl3_t *gl = (gl3_t*)data;
    const struct texture_image *images =
       (const struct texture_image*)image_data;
 
    if (!gl)
       return false;
 
-   gl_core_free_overlay(gl);
+   gl3_free_overlay(gl);
    gl->overlay_tex = (GLuint*)
       calloc(num_images, sizeof(*gl->overlay_tex));
 
@@ -1472,12 +1472,12 @@ static bool gl_core_overlay_load(void *data,
 
    for (i = 0; i < num_images; i++)
    {
-      video_texture_load_gl_core(&images[i], TEXTURE_FILTER_LINEAR, &id);
+      video_texture_load_gl3(&images[i], TEXTURE_FILTER_LINEAR, &id);
       gl->overlay_tex[i] = id;
 
       /* Default. Stretch to whole screen. */
-      gl_core_overlay_tex_geom(gl, i, 0, 0, 1, 1);
-      gl_core_overlay_vertex_geom(gl, i, 0, 0, 1, 1);
+      gl3_overlay_tex_geom(gl, i, 0, 0, 1, 1);
+      gl3_overlay_vertex_geom(gl, i, 0, 0, 1, 1);
 
       for (j = 0; j < 16; j++)
          gl->overlay_color_coord[16 * i + j] = 1.0f;
@@ -1486,9 +1486,9 @@ static bool gl_core_overlay_load(void *data,
    return true;
 }
 
-static void gl_core_overlay_enable(void *data, bool state)
+static void gl3_overlay_enable(void *data, bool state)
 {
-   gl_core_t *gl = (gl_core_t*)data;
+   gl3_t *gl = (gl3_t*)data;
 
    if (!gl)
       return;
@@ -1499,17 +1499,17 @@ static void gl_core_overlay_enable(void *data, bool state)
       gl->ctx_driver->show_mouse(gl->ctx_data, state);
 }
 
-static void gl_core_overlay_full_screen(void *data, bool enable)
+static void gl3_overlay_full_screen(void *data, bool enable)
 {
-   gl_core_t *gl = (gl_core_t*)data;
+   gl3_t *gl = (gl3_t*)data;
    if (gl)
       gl->overlay_full_screen = enable;
 }
 
-static void gl_core_overlay_set_alpha(void *data, unsigned image, float mod)
+static void gl3_overlay_set_alpha(void *data, unsigned image, float mod)
 {
    GLfloat *color = NULL;
-   gl_core_t *gl = (gl_core_t*)data;
+   gl3_t *gl = (gl3_t*)data;
    if (!gl)
       return;
 
@@ -1521,44 +1521,44 @@ static void gl_core_overlay_set_alpha(void *data, unsigned image, float mod)
    color[12 + 3]  = mod;
 }
 
-static const video_overlay_interface_t gl_core_overlay_interface = {
-   gl_core_overlay_enable,
-   gl_core_overlay_load,
-   gl_core_overlay_tex_geom,
-   gl_core_overlay_vertex_geom,
-   gl_core_overlay_full_screen,
-   gl_core_overlay_set_alpha,
+static const video_overlay_interface_t gl3_overlay_interface = {
+   gl3_overlay_enable,
+   gl3_overlay_load,
+   gl3_overlay_tex_geom,
+   gl3_overlay_vertex_geom,
+   gl3_overlay_full_screen,
+   gl3_overlay_set_alpha,
 };
 
-static void gl_core_get_overlay_interface(void *data,
+static void gl3_get_overlay_interface(void *data,
       const video_overlay_interface_t **iface)
 {
    (void)data;
-   *iface = &gl_core_overlay_interface;
+   *iface = &gl3_overlay_interface;
 }
 #endif
 
-static void gl_core_free(void *data)
+static void gl3_free(void *data)
 {
-   gl_core_t *gl = (gl_core_t*)data;
+   gl3_t *gl = (gl3_t*)data;
    if (!gl)
       return;
 
-   gl_core_context_bind_hw_render(gl, false);
+   gl3_context_bind_hw_render(gl, false);
    font_driver_free_osd();
-   gl_core_destroy_resources(gl);
+   gl3_destroy_resources(gl);
    if (gl->ctx_driver && gl->ctx_driver->destroy)
       gl->ctx_driver->destroy(gl->ctx_data);
    video_context_driver_free();
    free(gl);
 }
 
-static bool gl_core_alive(void *data)
+static bool gl3_alive(void *data)
 {
    bool ret             = false;
    bool quit            = false;
    bool resize          = false;
-   gl_core_t *gl        = (gl_core_t*)data;
+   gl3_t *gl        = (gl3_t*)data;
    unsigned temp_width  = gl->video_width;
    unsigned temp_height = gl->video_height;
 
@@ -1582,17 +1582,17 @@ static bool gl_core_alive(void *data)
    return ret;
 }
 
-static void gl_core_set_nonblock_state(void *data, bool state,
+static void gl3_set_nonblock_state(void *data, bool state,
       bool adaptive_vsync_enabled,
       unsigned swap_interval)
 {
    int interval                = 0;
-   gl_core_t         *gl       = (gl_core_t*)data;
+   gl3_t         *gl       = (gl3_t*)data;
 
    if (!gl)
       return;
 
-   gl_core_context_bind_hw_render(gl, false);
+   gl3_context_bind_hw_render(gl, false);
    if (!state)
       interval = swap_interval;
 
@@ -1603,29 +1603,29 @@ static void gl_core_set_nonblock_state(void *data, bool state,
       gl->ctx_driver->swap_interval(gl->ctx_data, interval);
    }
 
-   gl_core_context_bind_hw_render(gl, true);
+   gl3_context_bind_hw_render(gl, true);
 }
 
-static bool gl_core_suppress_screensaver(void *data, bool enable)
+static bool gl3_suppress_screensaver(void *data, bool enable)
 {
    bool enabled                = enable;
-   gl_core_t         *gl       = (gl_core_t*)data;
+   gl3_t         *gl       = (gl3_t*)data;
    if (gl->ctx_data && gl->ctx_driver->suppress_screensaver)
       return gl->ctx_driver->suppress_screensaver(gl->ctx_data, enabled);
    return false;
 }
 
-static bool gl_core_set_shader(void *data,
+static bool gl3_set_shader(void *data,
                                enum rarch_shader_type type, const char *path)
 {
-   gl_core_t *gl = (gl_core_t *)data;
+   gl3_t *gl = (gl3_t *)data;
    if (!gl)
       return false;
 
-   gl_core_context_bind_hw_render(gl, false);
+   gl3_context_bind_hw_render(gl, false);
 
    if (gl->filter_chain)
-      gl_core_filter_chain_free(gl->filter_chain);
+      gl3_filter_chain_free(gl->filter_chain);
    gl->filter_chain = NULL;
 
    if (!string_is_empty(path) && type != RARCH_SHADER_SLANG)
@@ -1636,38 +1636,38 @@ static bool gl_core_set_shader(void *data,
 
    if (string_is_empty(path))
    {
-      gl_core_init_default_filter_chain(gl);
-      gl_core_context_bind_hw_render(gl, true);
+      gl3_init_default_filter_chain(gl);
+      gl3_context_bind_hw_render(gl, true);
       return true;
    }
 
-   if (!gl_core_init_filter_chain_preset(gl, path))
+   if (!gl3_init_filter_chain_preset(gl, path))
    {
       RARCH_ERR("[GLCore]: Failed to create filter chain: \"%s\". Falling back to stock.\n", path);
-      gl_core_init_default_filter_chain(gl);
-      gl_core_context_bind_hw_render(gl, true);
+      gl3_init_default_filter_chain(gl);
+      gl3_context_bind_hw_render(gl, true);
       return false;
    }
 
-   gl_core_context_bind_hw_render(gl, true);
+   gl3_context_bind_hw_render(gl, true);
    return true;
 }
 
-static void gl_core_set_rotation(void *data, unsigned rotation)
+static void gl3_set_rotation(void *data, unsigned rotation)
 {
-   gl_core_t *gl = (gl_core_t*)data;
+   gl3_t *gl = (gl3_t*)data;
 
    if (!gl)
       return;
 
    gl->rotation = video_driver_is_hw_context() && gl->hw_render_bottom_left ? 90 * rotation : 270 * rotation;
-   gl_core_set_projection(gl, &gl_core_default_ortho, true);
+   gl3_set_projection(gl, &gl3_default_ortho, true);
 }
 
-static void gl_core_viewport_info(void *data, struct video_viewport *vp)
+static void gl3_viewport_info(void *data, struct video_viewport *vp)
 {
    unsigned top_y, top_dist;
-   gl_core_t *gl   = (gl_core_t*)data;
+   gl3_t *gl   = (gl3_t*)data;
    unsigned width  = gl->video_width;
    unsigned height = gl->video_height;
 
@@ -1682,15 +1682,15 @@ static void gl_core_viewport_info(void *data, struct video_viewport *vp)
    vp->y           = top_dist;
 }
 
-static bool gl_core_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+static bool gl3_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
-   gl_core_t *gl = (gl_core_t*)data;
+   gl3_t *gl = (gl3_t*)data;
    unsigned num_pixels = 0;
 
    if (!gl)
       return false;
 
-   gl_core_context_bind_hw_render(gl, false);
+   gl3_context_bind_hw_render(gl, false);
    num_pixels = gl->vp.width * gl->vp.height;
 
    if (gl->pbo_readback_enable)
@@ -1742,16 +1742,16 @@ static bool gl_core_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       gl->readback_buffer_screenshot = NULL;
    }
 
-   gl_core_context_bind_hw_render(gl, true);
+   gl3_context_bind_hw_render(gl, true);
    return true;
 
 error:
-   gl_core_context_bind_hw_render(gl, true);
+   gl3_context_bind_hw_render(gl, true);
    return false;
 }
 
-static void gl_core_update_cpu_texture(gl_core_t *gl,
-                                       struct gl_core_streamed_texture *streamed,
+static void gl3_update_cpu_texture(gl3_t *gl,
+                                       struct gl3_streamed_texture *streamed,
                                        const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
    if (width != streamed->width || height != streamed->height)
@@ -1792,7 +1792,7 @@ static void gl_core_update_cpu_texture(gl_core_t *gl,
 }
 
 #if defined(HAVE_MENU)
-static void gl_core_draw_menu_texture(gl_core_t *gl,
+static void gl3_draw_menu_texture(gl3_t *gl,
       unsigned width, unsigned height)
 {
    const float vbo_data[] = {
@@ -1823,7 +1823,7 @@ static void gl_core_draw_menu_texture(gl_core_t *gl,
    glEnableVertexAttribArray(0);
    glEnableVertexAttribArray(1);
    glEnableVertexAttribArray(2);
-   gl_core_bind_scratch_vbo(gl, vbo_data, sizeof(vbo_data));
+   gl3_bind_scratch_vbo(gl, vbo_data, sizeof(vbo_data));
    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(uintptr_t)0);
    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(uintptr_t)(2 * sizeof(float)));
    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(uintptr_t)(4 * sizeof(float)));
@@ -1837,15 +1837,15 @@ static void gl_core_draw_menu_texture(gl_core_t *gl,
 }
 #endif
 
-static bool gl_core_frame(void *data, const void *frame,
+static bool gl3_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count,
       unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
-   struct gl_core_filter_chain_texture texture;
-   struct gl_core_streamed_texture *streamed   = NULL;
-   gl_core_t *gl                               = (gl_core_t*)data;
+   struct gl3_filter_chain_texture texture;
+   struct gl3_streamed_texture *streamed   = NULL;
+   gl3_t *gl                               = (gl3_t*)data;
    unsigned width                              = video_info->width;
    unsigned height                             = video_info->height;
    struct font_params *osd_params              = (struct font_params*)
@@ -1870,7 +1870,7 @@ static bool gl_core_frame(void *data, const void *frame,
    if (!gl)
       return false;
 
-   gl_core_context_bind_hw_render(gl, false);
+   gl3_context_bind_hw_render(gl, false);
    glBindVertexArray(gl->vao);
 
    if (frame)
@@ -1880,7 +1880,7 @@ static bool gl_core_frame(void *data, const void *frame,
    if (frame)
    {
       if (!gl->hw_render_enable)
-         gl_core_update_cpu_texture(gl, streamed, frame, frame_width, frame_height, pitch);
+         gl3_update_cpu_texture(gl, streamed, frame, frame_width, frame_height, pitch);
       else
       {
          streamed->width = frame_width;
@@ -1896,7 +1896,7 @@ static bool gl_core_frame(void *data, const void *frame,
       gl->should_resize = false;
    }
 
-   gl_core_set_viewport(gl, width, height, false, true);
+   gl3_set_viewport(gl, width, height, false, true);
 
    texture.image            = 0;
    texture.width            = streamed->width;
@@ -1923,28 +1923,28 @@ static bool gl_core_frame(void *data, const void *frame,
       texture.padded_width  = streamed->width;
       texture.padded_height = streamed->height;
    }
-   gl_core_filter_chain_set_frame_count(gl->filter_chain, frame_count);
+   gl3_filter_chain_set_frame_count(gl->filter_chain, frame_count);
 #ifdef HAVE_REWIND
-   gl_core_filter_chain_set_frame_direction(gl->filter_chain, state_manager_frame_is_reversed() ? -1 : 1);
+   gl3_filter_chain_set_frame_direction(gl->filter_chain, state_manager_frame_is_reversed() ? -1 : 1);
 #else
-   gl_core_filter_chain_set_frame_direction(gl->filter_chain, 1);
+   gl3_filter_chain_set_frame_direction(gl->filter_chain, 1);
 #endif
-   gl_core_filter_chain_set_input_texture(gl->filter_chain, &texture);
-   gl_core_filter_chain_build_offscreen_passes(gl->filter_chain, &gl->filter_chain_vp);
+   gl3_filter_chain_set_input_texture(gl->filter_chain, &texture);
+   gl3_filter_chain_build_offscreen_passes(gl->filter_chain, &gl->filter_chain_vp);
 
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
    glClear(GL_COLOR_BUFFER_BIT);
-   gl_core_filter_chain_build_viewport_pass(gl->filter_chain, &gl->filter_chain_vp,
+   gl3_filter_chain_build_viewport_pass(gl->filter_chain, &gl->filter_chain_vp,
                                             gl->hw_render_bottom_left ? gl->mvp.data : gl->mvp_yflip.data);
-   gl_core_filter_chain_end_frame(gl->filter_chain);
+   gl3_filter_chain_end_frame(gl->filter_chain);
 
 #if defined(HAVE_MENU)
    if (gl->menu_texture_enable)
    {
       menu_driver_frame(menu_is_alive, video_info);
       if (gl->menu_texture_enable && gl->menu_texture)
-         gl_core_draw_menu_texture(gl, width, height);
+         gl3_draw_menu_texture(gl, width, height);
    }
    else if (statistics_show)
    {
@@ -1956,7 +1956,7 @@ static bool gl_core_frame(void *data, const void *frame,
 
 #ifdef HAVE_OVERLAY
    if (gl->overlay_enable)
-      gl_core_render_overlay(gl, width, height);
+      gl3_render_overlay(gl, width, height);
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
@@ -1968,7 +1968,7 @@ static bool gl_core_frame(void *data, const void *frame,
    {
 #if 0
       if (msg_bgcolor_enable)
-         gl_core_render_osd_background(gl, video_info, msg);
+         gl3_render_osd_background(gl, video_info, msg);
 #endif
       font_driver_render_msg(gl, msg, NULL, NULL);
    }
@@ -1979,7 +1979,7 @@ static bool gl_core_frame(void *data, const void *frame,
    if (gl->readback_buffer_screenshot)
    {
       /* For screenshots, just do the regular slow readback. */
-      gl_core_slow_readback(gl, gl->readback_buffer_screenshot);
+      gl3_slow_readback(gl, gl->readback_buffer_screenshot);
    }
    else if (gl->pbo_readback_enable)
    {
@@ -1987,7 +1987,7 @@ static bool gl_core_frame(void *data, const void *frame,
       /* Don't readback if we're in menu mode. */
       if (!gl->menu_texture_enable)
 #endif
-         gl_core_pbo_async_readback(gl);
+         gl3_pbo_async_readback(gl);
    }
 
 
@@ -2020,14 +2020,14 @@ static bool gl_core_frame(void *data, const void *frame,
    if (    hard_sync
        && !input_driver_nonblock_state
        )
-      gl_core_fence_iterate(gl, hard_sync_frames);
+      gl3_fence_iterate(gl, hard_sync_frames);
 
    glBindVertexArray(0);
-   gl_core_context_bind_hw_render(gl, true);
+   gl3_context_bind_hw_render(gl, true);
    return true;
 }
 
-static uint32_t gl_core_get_flags(void *data)
+static uint32_t gl3_get_flags(void *data)
 {
    uint32_t flags = 0;
 
@@ -2039,7 +2039,7 @@ static uint32_t gl_core_get_flags(void *data)
    return flags;
 }
 
-static float gl_core_get_refresh_rate(void *data)
+static float gl3_get_refresh_rate(void *data)
 {
    float refresh_rate;
    if (video_context_driver_get_refresh_rate(&refresh_rate))
@@ -2047,9 +2047,9 @@ static float gl_core_get_refresh_rate(void *data)
    return 0.0f;
 }
 
-static void gl_core_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
+static void gl3_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
-   gl_core_t *gl = (gl_core_t*)data;
+   gl3_t *gl = (gl3_t*)data;
 
    if (!gl)
       return;
@@ -2058,47 +2058,47 @@ static void gl_core_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    gl->should_resize = true;
 }
 
-static void gl_core_apply_state_changes(void *data)
+static void gl3_apply_state_changes(void *data)
 {
-   gl_core_t *gl = (gl_core_t*)data;
+   gl3_t *gl = (gl3_t*)data;
    if (gl)
       gl->should_resize = true;
 }
 
-static struct video_shader *gl_core_get_current_shader(void *data)
+static struct video_shader *gl3_get_current_shader(void *data)
 {
-   gl_core_t *gl = (gl_core_t*)data;
+   gl3_t *gl = (gl3_t*)data;
    if (!gl || !gl->filter_chain)
       return NULL;
 
-   return gl_core_filter_chain_get_preset(gl->filter_chain);
+   return gl3_filter_chain_get_preset(gl->filter_chain);
 }
 
 #ifdef HAVE_THREADS
-static int video_texture_load_wrap_gl_core_mipmap(void *data)
+static int video_texture_load_wrap_gl3_mipmap(void *data)
 {
    uintptr_t id = 0;
 
    if (!data)
       return 0;
-   video_texture_load_gl_core((struct texture_image*)data,
+   video_texture_load_gl3((struct texture_image*)data,
          TEXTURE_FILTER_MIPMAP_LINEAR, &id);
    return (int)id;
 }
 
-static int video_texture_load_wrap_gl_core(void *data)
+static int video_texture_load_wrap_gl3(void *data)
 {
    uintptr_t id = 0;
 
    if (!data)
       return 0;
-   video_texture_load_gl_core((struct texture_image*)data,
+   video_texture_load_gl3((struct texture_image*)data,
          TEXTURE_FILTER_LINEAR, &id);
    return (int)id;
 }
 #endif
 
-static uintptr_t gl_core_load_texture(void *video_data, void *data,
+static uintptr_t gl3_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
    uintptr_t id = 0;
@@ -2106,8 +2106,8 @@ static uintptr_t gl_core_load_texture(void *video_data, void *data,
 #ifdef HAVE_THREADS
    if (threaded)
    {
-      gl_core_t                *gl = (gl_core_t*)video_data;
-      custom_command_method_t func = video_texture_load_wrap_gl_core;
+      gl3_t                *gl = (gl3_t*)video_data;
+      custom_command_method_t func = video_texture_load_wrap_gl3;
 
       if (gl->ctx_driver->make_current)
          gl->ctx_driver->make_current(false);
@@ -2116,7 +2116,7 @@ static uintptr_t gl_core_load_texture(void *video_data, void *data,
       {
          case TEXTURE_FILTER_MIPMAP_LINEAR:
          case TEXTURE_FILTER_MIPMAP_NEAREST:
-            func = video_texture_load_wrap_gl_core_mipmap;
+            func = video_texture_load_wrap_gl3_mipmap;
             break;
          default:
             break;
@@ -2125,15 +2125,15 @@ static uintptr_t gl_core_load_texture(void *video_data, void *data,
    }
 #endif
 
-   video_texture_load_gl_core((struct texture_image*)data, filter_type, &id);
+   video_texture_load_gl3((struct texture_image*)data, filter_type, &id);
    return id;
 }
 
-static void gl_core_unload_texture(void *data, bool threaded,
+static void gl3_unload_texture(void *data, bool threaded,
       uintptr_t id)
 {
    GLuint glid;
-   gl_core_t                *gl = (gl_core_t*)data;
+   gl3_t                *gl = (gl3_t*)data;
    if (!id)
       return;
 
@@ -2149,24 +2149,24 @@ static void gl_core_unload_texture(void *data, bool threaded,
    glDeleteTextures(1, &glid);
 }
 
-static void gl_core_set_video_mode(void *data, unsigned width, unsigned height,
+static void gl3_set_video_mode(void *data, unsigned width, unsigned height,
       bool fullscreen)
 {
-   gl_core_t                *gl = (gl_core_t*)data;
+   gl3_t                *gl = (gl3_t*)data;
    if (gl->ctx_driver->set_video_mode)
       gl->ctx_driver->set_video_mode(gl->ctx_data,
             width, height, fullscreen);
 }
 
-static void gl_core_show_mouse(void *data, bool state)
+static void gl3_show_mouse(void *data, bool state)
 {
-   gl_core_t                            *gl = (gl_core_t*)data;
+   gl3_t                            *gl = (gl3_t*)data;
 
    if (gl && gl->ctx_driver->show_mouse)
       gl->ctx_driver->show_mouse(gl->ctx_data, state);
 }
 
-static void gl_core_set_texture_frame(void *data,
+static void gl3_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
@@ -2174,11 +2174,11 @@ static void gl_core_set_texture_frame(void *data,
    GLenum menu_filter   = settings->bools.menu_linear_filter 
       ? GL_LINEAR : GL_NEAREST;
    unsigned base_size   = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-   gl_core_t *gl        = (gl_core_t*)data;
+   gl3_t *gl        = (gl3_t*)data;
    if (!gl)
       return;
 
-   gl_core_context_bind_hw_render(gl, false);
+   gl3_context_bind_hw_render(gl, false);
 
    if (gl->menu_texture)
       glDeleteTextures(1, &gl->menu_texture);
@@ -2206,12 +2206,12 @@ static void gl_core_set_texture_frame(void *data,
 
    glBindTexture(GL_TEXTURE_2D, 0);
    gl->menu_texture_alpha = alpha;
-   gl_core_context_bind_hw_render(gl, true);
+   gl3_context_bind_hw_render(gl, true);
 }
 
-static void gl_core_set_texture_enable(void *data, bool state, bool full_screen)
+static void gl3_set_texture_enable(void *data, bool state, bool full_screen)
 {
-   gl_core_t *gl = (gl_core_t*)data;
+   gl3_t *gl = (gl3_t*)data;
 
    if (!gl)
       return;
@@ -2220,10 +2220,10 @@ static void gl_core_set_texture_enable(void *data, bool state, bool full_screen)
    gl->menu_texture_full_screen = full_screen;
 }
 
-static void gl_core_get_video_output_size(void *data,
+static void gl3_get_video_output_size(void *data,
       unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
-   gl_core_t   *gl = (gl_core_t*)data;
+   gl3_t   *gl = (gl3_t*)data;
    if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_size)
       return;
    gl->ctx_driver->get_video_output_size(
@@ -2231,60 +2231,60 @@ static void gl_core_get_video_output_size(void *data,
          width, height, desc, desc_len);
 }
 
-static void gl_core_get_video_output_prev(void *data)
+static void gl3_get_video_output_prev(void *data)
 {
-   gl_core_t   *gl = (gl_core_t*)data;
+   gl3_t   *gl = (gl3_t*)data;
    if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_prev)
       return;
    gl->ctx_driver->get_video_output_prev(gl->ctx_data);
 }
 
-static void gl_core_get_video_output_next(void *data)
+static void gl3_get_video_output_next(void *data)
 {
-   gl_core_t   *gl = (gl_core_t*)data;
+   gl3_t   *gl = (gl3_t*)data;
    if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_next)
       return;
    gl->ctx_driver->get_video_output_next(gl->ctx_data);
 }
 
-static uintptr_t gl_core_get_current_framebuffer(void *data)
+static uintptr_t gl3_get_current_framebuffer(void *data)
 {
-   gl_core_t *gl = (gl_core_t*)data;
+   gl3_t *gl = (gl3_t*)data;
    if (!gl || !gl->hw_render_enable)
       return 0;
    return gl->hw_render_fbo;
 }
 
-static retro_proc_address_t gl_core_get_proc_address(
+static retro_proc_address_t gl3_get_proc_address(
       void *data, const char *sym)
 {
-   gl_core_t *gl = (gl_core_t*)data;
+   gl3_t *gl = (gl3_t*)data;
    if (gl && gl->ctx_driver->get_proc_address)
       return gl->ctx_driver->get_proc_address(sym);
 
    return NULL;
 }
 
-static const video_poke_interface_t gl_core_poke_interface = {
-   gl_core_get_flags,
-   gl_core_load_texture,
-   gl_core_unload_texture,
-   gl_core_set_video_mode,
-   gl_core_get_refresh_rate, /* get_refresh_rate */
+static const video_poke_interface_t gl3_poke_interface = {
+   gl3_get_flags,
+   gl3_load_texture,
+   gl3_unload_texture,
+   gl3_set_video_mode,
+   gl3_get_refresh_rate, /* get_refresh_rate */
    NULL,
-   gl_core_get_video_output_size,
-   gl_core_get_video_output_prev,
-   gl_core_get_video_output_next,
-   gl_core_get_current_framebuffer,
-   gl_core_get_proc_address,
-   gl_core_set_aspect_ratio,
-   gl_core_apply_state_changes,
-   gl_core_set_texture_frame,
-   gl_core_set_texture_enable,
+   gl3_get_video_output_size,
+   gl3_get_video_output_prev,
+   gl3_get_video_output_next,
+   gl3_get_current_framebuffer,
+   gl3_get_proc_address,
+   gl3_set_aspect_ratio,
+   gl3_apply_state_changes,
+   gl3_set_texture_frame,
+   gl3_set_texture_enable,
    font_driver_render_msg,
-   gl_core_show_mouse,
+   gl3_show_mouse,
    NULL,                               /* grab_mouse_toggle */
-   gl_core_get_current_shader,
+   gl3_get_current_shader,
    NULL,
    NULL,
    NULL, /* set_hdr_max_nits */
@@ -2293,22 +2293,22 @@ static const video_poke_interface_t gl_core_poke_interface = {
    NULL  /* set_hdr_expand_gamut */
 };
 
-static void gl_core_get_poke_interface(void *data,
+static void gl3_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
    (void)data;
-   *iface = &gl_core_poke_interface;
+   *iface = &gl3_poke_interface;
 }
 
 #ifdef HAVE_GFX_WIDGETS
-static bool gl_core_gfx_widgets_enabled(void *data)
+static bool gl3_gfx_widgets_enabled(void *data)
 {
    (void)data;
    return true;
 }
 #endif
 
-static unsigned gl_core_wrap_type_to_enum(enum gfx_wrap_type type)
+static unsigned gl3_wrap_type_to_enum(enum gfx_wrap_type type)
 {
    switch (type)
    {
@@ -2333,57 +2333,57 @@ static unsigned gl_core_wrap_type_to_enum(enum gfx_wrap_type type)
    return 0;
 }
 
-static bool gl_core_has_windowed(void *data)
+static bool gl3_has_windowed(void *data)
 {
-   gl_core_t *gl        = (gl_core_t*)data;
+   gl3_t *gl        = (gl3_t*)data;
    if (gl && gl->ctx_driver)
       return gl->ctx_driver->has_windowed;
    return false;
 }
 
-static bool gl_core_focus(void *data)
+static bool gl3_focus(void *data)
 {
-   gl_core_t *gl        = (gl_core_t*)data;
+   gl3_t *gl        = (gl3_t*)data;
    if (gl && gl->ctx_driver && gl->ctx_driver->has_focus)
       return gl->ctx_driver->has_focus(gl->ctx_data);
    return true;
 }
 
-video_driver_t video_gl_core = {
-   gl_core_init,
-   gl_core_frame,
-   gl_core_set_nonblock_state,
-   gl_core_alive,
-   gl_core_focus,
-   gl_core_suppress_screensaver,
-   gl_core_has_windowed,
+video_driver_t video_gl3 = {
+   gl3_init,
+   gl3_frame,
+   gl3_set_nonblock_state,
+   gl3_alive,
+   gl3_focus,
+   gl3_suppress_screensaver,
+   gl3_has_windowed,
 
-   gl_core_set_shader,
+   gl3_set_shader,
 
-   gl_core_free,
+   gl3_free,
    "glcore",
 
-   gl_core_set_viewport_wrapper,
-   gl_core_set_rotation,
+   gl3_set_viewport_wrapper,
+   gl3_set_rotation,
 
-   gl_core_viewport_info,
+   gl3_viewport_info,
 
-   gl_core_read_viewport,
+   gl3_read_viewport,
 #if defined(READ_RAW_GL_FRAME_TEST)
-   gl_core_read_frame_raw,
+   gl3_read_frame_raw,
 #else
    NULL,
 #endif
 
 #ifdef HAVE_OVERLAY
-   gl_core_get_overlay_interface,
+   gl3_get_overlay_interface,
 #endif
 #ifdef HAVE_VIDEO_LAYOUT
    NULL,
 #endif
-   gl_core_get_poke_interface,
-   gl_core_wrap_type_to_enum,
+   gl3_get_poke_interface,
+   gl3_wrap_type_to_enum,
 #ifdef HAVE_GFX_WIDGETS
-   gl_core_gfx_widgets_enabled
+   gl3_gfx_widgets_enabled
 #endif
 };
