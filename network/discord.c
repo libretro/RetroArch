@@ -173,30 +173,16 @@ static void handle_discord_join_cb(retro_task_t *task,
 
    if (room)
    {
-      const char *srv_address        = NULL;
-      unsigned    srv_port           = 0;
-
-      memset(&net_st->mitm_session_id, 0, sizeof(net_st->mitm_session_id));
-
       if (room->host_method == NETPLAY_HOST_METHOD_MITM)
-      {
-         srv_address = room->mitm_address;
-         srv_port    = room->mitm_port;
-
-         netplay_room_convert_session(room, &net_st->mitm_session_id);
-      }
+         snprintf(join_hostname, sizeof(join_hostname), "%s|%d|%s",
+            room->mitm_address, room->mitm_port, room->mitm_session);
       else
-      {
-         srv_address = room->address;
-         srv_port    = room->port;
-      }
+         snprintf(join_hostname, sizeof(join_hostname), "%s|%d",
+            room->address, room->port);
 
       if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
          deinit_netplay();
       netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
-
-      snprintf(join_hostname, sizeof(join_hostname), "%s|%d",
-            srv_address, srv_port);
 
       task_push_netplay_crc_scan(room->gamecrc,
          room->gamename, join_hostname, room->corename, room->subsystem_name);

@@ -407,6 +407,26 @@ struct compression_transcoder
    void *decompression_stream;
 };
 
+typedef struct mitm_id
+{
+   uint32_t magic;
+   uint8_t  unique[12];
+} mitm_id_t;
+
+#define NETPLAY_MITM_MAX_PENDING 8
+struct netplay_mitm_pending
+{
+   int          fds[NETPLAY_MITM_MAX_PENDING];
+   mitm_id_t    ids[NETPLAY_MITM_MAX_PENDING];
+   retro_time_t timeouts[NETPLAY_MITM_MAX_PENDING];
+
+   mitm_id_t id_buf;
+   size_t    id_recvd;
+
+   struct       addrinfo *base_addr;
+   const struct addrinfo *addr;
+};
+
 struct netplay
 {
    /* When did we start falling behind? */
@@ -606,6 +626,11 @@ struct netplay
    /* Are we the connected? */
    bool is_connected;
 
+   /* MITM connection handler */
+   struct netplay_mitm_pending *mitm_pending;
+
+   /* MITM session id */
+   mitm_id_t mitm_session_id;
 };
 
 /***************************************************************
@@ -766,6 +791,7 @@ bool netplay_wait_and_init_serialization(netplay_t *netplay);
  * @server               : IP address of server.
  * @mitm                 : IP address of the MITM/tunnel server.
  * @port                 : Port of server.
+ * @mitm_session         : Session id for MITM/tunnel.
  * @stateless_mode       : Shall we run in stateless mode?
  * @check_frames         : Frequency with which to check CRCs.
  * @cb                   : Libretro callbacks.
@@ -779,6 +805,7 @@ bool netplay_wait_and_init_serialization(netplay_t *netplay);
  * Returns: new netplay data.
  */
 netplay_t *netplay_new(const char *server, const char *mitm, uint16_t port,
+      const char *mitm_session,
       bool stateless_mode, int check_frames,
       const struct retro_callbacks *cb,
       bool nat_traversal, const char *nick,
@@ -923,10 +950,11 @@ bool netplay_resolve_input(netplay_t *netplay,
 /**
  * netplay_sync_pre_frame
  * @netplay              : pointer to netplay object
+ * @disconnect           : disconnect netplay
  *
  * Pre-frame for Netplay synchronization.
  */
-bool netplay_sync_pre_frame(netplay_t *netplay);
+bool netplay_sync_pre_frame(netplay_t *netplay, bool *disconnect);
 
 /**
  * netplay_sync_post_frame

@@ -22,7 +22,6 @@
 #include <string/stdstring.h>
 #include <compat/strl.h>
 #include <formats/rjson.h>
-#include <encodings/base64.h>
 #include "netplay.h"
 #include "../../verbosity.h"
 
@@ -349,19 +348,4 @@ int netplay_rooms_get_count(void)
    }
 
    return count;
-}
-
-void netplay_room_convert_session(const struct netplay_room *room, mitm_id_t *session_id)
-{
-   unsigned char *buf;
-   int flen;
-
-   buf = unbase64(room->mitm_session, strlen(room->mitm_session), &flen);
-   if (!buf || flen != sizeof(session_id->unique))
-      return;
-
-   session_id->magic = htonl(MITM_SESSION_MAGIC);
-   memcpy(session_id->unique, buf, flen);
-
-   free(buf);
 }

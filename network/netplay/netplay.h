@@ -39,13 +39,6 @@
 #define NETPLAY_HOST_STR_LEN 32
 #define NETPLAY_HOST_LONGSTR_LEN 256
 
-/* MITM magics */
-#define MITM_SESSION_MAGIC 0x52415453 /* RATS */
-#define MITM_LINK_MAGIC    0x5241544C /* RATL */
-#define MITM_PING_MAGIC    0x52415450 /* RATP */
-
-#define NETPLAY_MITM_MAX_PENDING 8
-
 enum rarch_netplay_ctl_state
 {
    RARCH_NETPLAY_CTL_NONE = 0,
@@ -193,22 +186,6 @@ struct netplay_host_list
    size_t size;
 };
 
-typedef struct mitm_id
-{
-   uint32_t magic;
-   uint8_t  unique[12];
-} mitm_id_t;
-
-struct netplay_mitm_pending
-{
-   int          *fds;
-   mitm_id_t    *ids;
-   retro_time_t *timeouts;
-
-   mitm_id_t id_buf;
-   size_t    id_recvd;
-};
-
 typedef struct
 {
    netplay_t *data; /* Used while Netplay is running */
@@ -226,15 +203,14 @@ typedef struct
    /* Packet buffer for advertisement and responses */
    struct ad_packet ad_packet_buffer; /* uint32_t alignment */
    uint16_t mapping[RETROK_LAST];
-   char server_address_deferred[512];
+   char server_address_deferred[256];
+   char server_session_deferred[32];
    /* Only used before init_netplay */
    bool netplay_enabled;
    bool netplay_is_client;
    /* Used to avoid recursive netplay calls */
    bool in_netplay;
    bool netplay_client_deferred;
-   mitm_id_t mitm_session_id;
-   struct netplay_mitm_pending mitm_pending;
    bool has_set_netplay_mode;
    bool has_set_netplay_ip_address;
    bool has_set_netplay_ip_port;
@@ -251,9 +227,6 @@ int netplay_rooms_parse(const char *buf);
 struct netplay_room* netplay_room_get(int index);
 
 int netplay_rooms_get_count(void);
-
-void netplay_room_convert_session(const struct netplay_room *room,
-   mitm_id_t *session_id);
 
 void netplay_rooms_free(void);
 
@@ -358,6 +331,7 @@ void deinit_netplay(void);
  * init_netplay
  * @server               : server address to connect to (client only)
  * @port                 : TCP port to host on/connect to
+ * @mitm_session         : Session id for MITM/tunnel (client only).
  *
  * Initializes netplay.
  *
@@ -365,9 +339,9 @@ void deinit_netplay(void);
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool init_netplay(const char *server, unsigned port);
+bool init_netplay(const char *server, unsigned port, const char *mitm_session);
 
-bool init_netplay_deferred(const char* server, unsigned port);
+bool init_netplay_deferred(const char *server, unsigned port, const char *mitm_session);
 
 void video_frame_net(const void *data, unsigned width,
       unsigned height, size_t pitch);
@@ -389,3 +363,6 @@ bool netplay_discovery_driver_ctl(
 #endif
 
 #endif
+
+bool netplay_decode_hostname(const char *hostname,
+      char *address, unsigned *port, char *session, size_t len);
