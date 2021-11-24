@@ -41,6 +41,10 @@ MSG_HASH(
    "Kích hoạt Netplay"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
+   "Mở rộng"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Tạo nội dung"
    )
@@ -88,6 +92,14 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    "Dump đĩa vật lý ra bộ nhớ trong. Điều này sẽ tiến hành lưu là dạng tệp ảnh."
    )
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "Đẩy đĩa ra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_EJECT_DISC,
+   "Đẩy đĩa ra từ ổ CD/DVD vật lý."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
@@ -100,6 +112,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
    "Tạo nội dung"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
+   "Tạo và cập nhật danh sách bằng cách quét nội dung."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+   "Hiện thị Menu Desktop"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   "Mở Desktop Menu cổ điển."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Vô hiệu hóa chế độ Kiosk (Yêu cầu khởi động lại)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
@@ -138,8 +166,20 @@ MSG_HASH(
    "Tệp cấu hình"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
+   "Quản lý và tạo tệp cấu hình."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LIST,
    "Trợ giúp"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_HELP_LIST,
+   "Tìm hiểu thêm về cách chương trình hoạt động."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+   "Khởi động lại RetroArch"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
@@ -164,6 +204,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
    "Tải về và cài đặt nhân từ internet."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+   "Cài đặt hoặc khôi phục 1 Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+   "Cài đặt hoặc khôi phục 1 core từ thư mục 'Tải về'."
+   )
 
 /* Main Menu > Load Content */
 
@@ -187,20 +235,44 @@ MSG_HASH(
    "Ưa thích"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
+   "Nội dung được thêm vào mục 'Ưa thích' sẽ xuất hiện ở đây."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
    "Âm nhạc"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_MUSIC,
+   "Nhạc đã được phát trước đó sẽ xuất hiện ở đây."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
    "Hình ảnh"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_IMAGES,
+   "Ảnh đã được xem trước đó sẽ xuất hiện ở đây."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
    "Video"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_VIDEO,
+   "Phim đã được phát trước đó sẽ xuất hiện ở đây."
    )
 
 /* Main Menu > Online Updater */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
+   "Cập nhật các Core đã được cài đặt"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
+   "Cập nhất tất cả các Core lên phiên bản khả dụng mới nhất."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
    "Tải về nội dung"
@@ -288,8 +360,16 @@ MSG_HASH(
    "Tiện ích mở rộng được hỗ trợ"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
+   "API đồ họa được yêu cầu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
    "Phần vững"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_DELETE,
+   "Xóa Core"
    )
 
 /* Main Menu > Information > System Information */
@@ -301,6 +381,54 @@ MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CPU_CORES,
    "Số lượng lõi của CPU."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_REMOTE_SUPPORT,
+   "Hỗ trợ trình điểu khiển mạng"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT,
+   "Hỗ trợ Cocoa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT,
+   "Hỗ trợ PNG (RPNG)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RJPEG_SUPPORT,
+   "Hỗ trợ JPEG (RJPEG)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT,
+   "Hỗ trợ BMP (RBMP)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT,
+   "Hỗ trợ TGA (RTGA)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT,
+   "Hỗ trợ SDL 1.2"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT,
+   "Hỗ trợ SDL 2"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
+   "Hỗ trợ Vulkan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT,
+   "Hỗ trợ OpenGL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT,
+   "Hỗ trợ OpenGL ES"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT,
+   "Hỗ trợ phân luồng"
    )
 
 /* Main Menu > Information > Database Manager */

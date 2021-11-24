@@ -88,6 +88,14 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    "Dumpa den fysiska media skivan till intern lagring. Den kommer att sparas som en avbildningsfil."
    )
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "Mata ut skiva"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_EJECT_DISC,
+   "Mata ut skivan från fysisk CD/DVD-enhet."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
@@ -1639,6 +1647,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    "Anpassat Bildförhållande"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
+   "Flytande punktvärde för video bildförhållande (bredd / höjd), används om 'Aspect Ratio' är satt till 'Config'."
+   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
@@ -1707,6 +1719,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    "Ställ in den toppljusstyrka (i cd/m2) som din bildskärm kan reproducera. Se RTings för bildskärmens toppbelysning."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Pappersvitt ljus"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
@@ -1869,6 +1885,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    "Enhet"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
+   "Ljudfördröjning (ms)"
+   )
 
 /* Settings > Audio > Resampler */
 
@@ -1936,6 +1956,10 @@ MSG_HASH(
 /* Settings > Input */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
+   "Max antal användare"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    "Maximalt antal användare som stöds av RetroArch."
    )
@@ -1973,6 +1997,10 @@ MSG_HASH(
    "Håll Win-key kombinationer inuti programmet."
    )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
+   "Turboläge"
+   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

@@ -4198,6 +4198,10 @@ MSG_HASH(
    "Die Option 'Disc dumpen' im Hauptmenü anzeigen."
    )
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
+   "\"Disc auswerfen\" anzeigen"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
