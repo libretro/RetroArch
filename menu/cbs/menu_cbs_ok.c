@@ -1106,6 +1106,9 @@ int generic_action_ok_displaylist_push(const char *path,
             info_path          = !string_is_empty(tmp) ? tmp : dir_menu_content;
             info_label         = label;
             dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+
+            /* Focus on current content entry */
+            menu_driver_set_pending_selection(path_basename(path_get(RARCH_PATH_CONTENT)));
          }
          break;
       case ACTION_OK_DL_SUBSYSTEM_ADD_LIST:
