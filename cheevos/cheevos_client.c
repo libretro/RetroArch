@@ -591,8 +591,25 @@ static bool rcheevos_async_succeeded(int result,
 
 void rcheevos_client_initialize(void)
 {
-   /* force non-HTTPS until everything uses RAPI */
-   rc_api_set_host("http://retroachievements.org");
+   const settings_t* settings = config_get_ptr();
+   const char* host = settings->arrays.cheevos_custom_host;
+   if (!host[0])
+   {
+#ifdef HAVE_SSL
+      host = "https://retroachievements.org";
+#else
+      host = "http://retroachievements.org";
+#endif
+   }
+
+   CHEEVOS_LOG(RCHEEVOS_TAG "Using host: %s\n", host);
+   if (!string_is_equal(host, "https://retroachievements.org"))
+   {
+      rc_api_set_host(host);
+
+      if (!string_is_equal(host, "http://retroachievements.org"))
+         rc_api_set_image_host(host);
+   }
 }
 
 /****************************
