@@ -235,7 +235,7 @@ static void frontend_psp_shutdown(bool unused)
    //sceKernelExitProcess(0);
    return;
 #else
-   sceKernelExitGame();
+   exit(0);
 #endif
 }
 
