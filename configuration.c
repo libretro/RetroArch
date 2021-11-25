@@ -1394,6 +1394,7 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("audio_device",             settings->arrays.audio_device,   false, NULL, true);
    SETTING_ARRAY("camera_device",            settings->arrays.camera_device,  false, NULL, true);
 #ifdef HAVE_CHEEVOS
+   SETTING_ARRAY("cheevos_custom_host",      settings->arrays.cheevos_custom_host, false, NULL, true);
    SETTING_ARRAY("cheevos_username",         settings->arrays.cheevos_username, false, NULL, true);
    SETTING_ARRAY("cheevos_password",         settings->arrays.cheevos_password, false, NULL, true);
    SETTING_ARRAY("cheevos_token",            settings->arrays.cheevos_token, false, NULL, true);
