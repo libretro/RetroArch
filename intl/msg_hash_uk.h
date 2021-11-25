@@ -92,6 +92,14 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    "Скопіювати дані з фізичного носія у файл образу на локальний диск."
    )
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "Вийняти диск"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_EJECT_DISC,
+   "Вийнятии диск з фізичного CD/DVD-пристрою."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
@@ -3070,6 +3078,14 @@ MSG_HASH(
    "Налаштування"
    )
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
+   "Показувати 'Вийняти диск'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
+   "Показувати опцію 'Вийняти диск' в головному меню."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
@@ -6872,6 +6888,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
    "не налаштовано"
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_PAIRING_REMOVED,
+   "З'єднання вилучено. Перезапустіть RetroArch, щоб з'єднати знову."
    )
 MSG_HASH(
    MSG_NETPLAY_LAN_SCANNING,

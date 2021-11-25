@@ -371,12 +371,44 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
    "Xóa Core"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_DELETE,
+   "Xóa Core này khỏi bộ nhớ."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
+   "Sao lưu Core"
+   )
 
 /* Main Menu > Information > System Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
+   "Ngày tạo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
+   "Phiên bản Git"
+   )
+MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
+   MSG_COMPILER,
+   "Trình biên dịch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
+   "Loại CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
+   "Tính năng CPU"
+   )
 MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "Kiến trúc CPU:"
+   )
+MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
+   MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   "Số lõi CPU:"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CPU_CORES,
@@ -451,9 +483,29 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
    "Tải cấu hình"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   "Khôi phục mặc định"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+   "Khôi phục cài đặt hiện tại về giá trị mặc định."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
+   "Lưu cấu hình hiện tại"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
+   "Lưu cấu hình mới"
+   )
 
 /* Main Menu > Help */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_CONTROLS,
+   "Hướng dẫn điều khiển Menu cơ bản"
+   )
 
 /* Main Menu > Help > Basic Menu Controls */
 
@@ -513,16 +565,56 @@ MSG_HASH(
    "Input Driver"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
+   "Thay đổi cài đặt tay cầm, bàn phím và chuột."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
+   "Độ trễ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
+   "Thay đổi độ trễ của hình ảnh, âm thanh và dữ liệu đầu vào."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
    "Core Danh mục"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SETTINGS,
+   "Thay đổi cài đặt Core."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
    "Cấu hình"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
+   "Thay đổi cài đặt mặc định cho các tệp cấu hình."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
+   "Lưu trữ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
+   "Thay đổi cài đặt lưu trữ."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
+   "Quản lý tập tin"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
+   "Thay đổi cài đặt quản lý tệp tin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
    "Kích hoạt"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
+   "Thay đổi cài đặt thành tựu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
@@ -583,6 +675,22 @@ MSG_HASH(
    "Điều chỉnh thiết lập cho video ra."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   "Chế độ toàn màn hình"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   "Thay đổi cài đặt chế độ toàn màn hình."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+   "Chế độ cửa sổ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+   "Thay đổi cài đặt chế độ cửa sổ."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    "Âm thanh Sync"
    )
@@ -614,6 +722,10 @@ MSG_HASH(
    )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
+   "Buộc vô hiệu hóa sRBG FBO"
+   )
 
 /* Settings > Video > Fullscreen Mode */
 

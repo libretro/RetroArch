@@ -1583,7 +1583,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   "Fuerza la resolución al tamaño de la pantalla. Si el valor es 0, se utilizará uno fijo de 3840x2160."
+   "Fuerza la resolución al tamaño de la pantalla. Si el valor es 0, se utilizará uno fijo de 3840 × 2160."
    )
 
 /* Settings > Video > Windowed Mode */
@@ -3358,7 +3358,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
-   "Ajusta la velocidad máxima con la que se ejecutará un contenido al usar el avance rápido (p. ej.: 5.0x para un juego de 60 fps = 300 fps). Si el valor es 0, el avance rápido irá a la máxima velocidad posible (no usará un limitador de FPS)."
+   "Ajusta la velocidad máxima con la que se ejecutará un contenido al usar el avance rápido (p. ej.: 5.0 × para un juego de 60 fps = 300 fps). Si el valor es 0, el avance rápido irá a la máxima velocidad posible (no usará un limitador de FPS)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
@@ -11620,16 +11620,24 @@ MSG_HASH(
    "Resolución de pantalla"
    )
 MSG_HASH(
+   MSG_SCREEN_RESOLUTION_FORMAT_NO_DESC,
+   "%u × %u"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_FORMAT_DESC,
+   "%u × %u - %s"
+   )
+MSG_HASH(
    MSG_SCREEN_RESOLUTION_DEFAULT,
    "Resolución de pantalla: predeterminada"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_NO_DESC,
-   "Resolución de pantalla: %dx%d"
+   "Resolución de pantalla: %d × %d"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_DESC,
-   "Resolución de pantalla: %dx%d - %s"
+   "Resolución de pantalla: %d × %d - %s"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
@@ -11637,11 +11645,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
-   "Aplicando: %dx%d\nSTART para restablecer"
+   "Aplicando: %d × %d\nSTART para restablecer"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_APPLYING_DESC,
-   "Aplicando: %dx%d - %s\nSTART para restablecer"
+   "Aplicando: %d × %d - %s\nSTART para restablecer"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
@@ -11649,11 +11657,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC,
-   "Restableciendo a: %dx%d"
+   "Restableciendo a: %d × %d"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_RESETTING_DESC,
-   "Restableciendo a: %dx%d - %s"
+   "Restableciendo a: %d × %d - %s"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
