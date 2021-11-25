@@ -251,7 +251,7 @@ bool frontend_driver_get_salamander_basename(char *s, size_t len)
    strcpy_literal(s, "eboot.bin");
    return true;
 #elif defined(PS2)
-   strcpy_literal(s, "eboot.elf");
+   strcpy_literal(s, "raboot.elf");
    return true;
 #elif defined(__PSL1GHT__) || defined(__PS3__)
    strcpy_literal(s, "EBOOT.BIN");
