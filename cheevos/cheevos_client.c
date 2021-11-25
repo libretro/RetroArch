@@ -627,6 +627,12 @@ static void rcheevos_async_login_callback(
    if (rcheevos_async_succeeded(result, &api_response.response,
             buffer, buffer_size))
    {
+      /* save the token to the config and clear the password on success */
+      settings_t* settings = config_get_ptr();
+      strlcpy(settings->arrays.cheevos_token, api_response.api_token,
+         sizeof(settings->arrays.cheevos_token));
+      settings->arrays.cheevos_password[0] = '\0';
+
       CHEEVOS_LOG(RCHEEVOS_TAG "%s logged in successfully\n",
             api_response.username);
       strlcpy(rcheevos_locals->username, api_response.username,

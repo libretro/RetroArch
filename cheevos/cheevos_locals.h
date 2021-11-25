@@ -120,13 +120,23 @@ typedef struct rcheevos_load_info_t
 #endif
 } rcheevos_load_info_t;
 
+typedef struct rcheevos_hash_entry_t
+{
+   uint32_t                      path_djb2;
+   int                           game_id;
+   struct rcheevos_hash_entry_t* next;
+   char                          hash[33];
+} rcheevos_hash_entry_t;
+
 typedef struct rcheevos_game_info_t
 {
    int   id;
    int   console_id;
    char* title;
    char  badge_name[16];
-   char  hash[33];
+   char* hash;
+
+   rcheevos_hash_entry_t* hashes;
 
    rcheevos_racheevo_t* achievements;
    rcheevos_ralboard_t* leaderboards;

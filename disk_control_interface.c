@@ -30,6 +30,10 @@
 
 #include "disk_control_interface.h"
 
+#ifdef HAVE_CHEEVOS
+#include "cheevos/cheevos.h"
+#endif
+
 /*****************/
 /* Configuration */
 /*****************/
@@ -324,6 +328,11 @@ bool disk_control_set_eject_state(
                true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
+
+#ifdef HAVE_CHEEVOS
+   if (!error && !eject)
+      rcheevos_change_disc(disk_control->index_record.image_path, false);
+#endif
 
    return !error;
 }
@@ -773,6 +782,11 @@ bool disk_control_verify_initial_index(
                0, msg_duration,
                false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+#ifdef HAVE_CHEEVOS
+      if (image_index > 0)
+         rcheevos_change_disc(disk_control->index_record.image_path, true);
+#endif
    }
 
    return success;
