@@ -9849,6 +9849,8 @@ static bool setting_append_list(
             string_options_entries[j].default_value   = config_get_default_midi();
             string_options_entries[j].values          = config_get_midi_driver_options();
 
+            j++;
+
             for (i = 0; i < j; i++)
             {
                CONFIG_STRING_OPTIONS(
