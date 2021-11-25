@@ -26,6 +26,8 @@
 RETRO_BEGIN_DECLS
 
 bool rcheevos_load(const void *data);
+void rcheevos_change_disc(const char* new_disc_path, bool initial_disc);
+
 size_t rcheevos_get_serialize_size(void);
 bool rcheevos_get_serialized_data(void* buffer);
 bool rcheevos_set_serialized_data(void* buffer);

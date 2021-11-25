@@ -29,6 +29,7 @@
 #include <retro_timers.h>
 #include <net/net_http.h>
 #include <libretro.h>
+#include <lrc_hash.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -570,6 +571,8 @@ bool rcheevos_unload(void)
 
    /* immediately mark the game as unloaded so the ping thread will terminate normally */
    rcheevos_locals.game.id = -1;
+   rcheevos_locals.game.console_id = 0;
+   rcheevos_locals.game.hash = NULL;
 
 #ifdef HAVE_THREADS
    if (rcheevos_locals.load_info.state < RCHEEVOS_LOAD_STATE_DONE &&
@@ -615,6 +618,13 @@ bool rcheevos_unload(void)
 
       rcheevos_locals.loaded                    = false;
       rcheevos_locals.hardcore_active           = false;
+   }
+
+   while (rcheevos_locals.game.hashes != NULL)
+   {
+      rcheevos_hash_entry_t* hash_entry = rcheevos_locals.game.hashes;
+      rcheevos_locals.game.hashes = hash_entry->next;
+      free(hash_entry);
    }
 
 #ifdef HAVE_THREADS
@@ -1117,7 +1127,9 @@ bool rcheevos_get_support_cheevos(void)
 
 const char* rcheevos_get_hash(void)
 {
-   return rcheevos_locals.game.hash;
+   return (rcheevos_locals.game.hash != NULL) ?
+      rcheevos_locals.game.hash :
+      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
 }
 
 /* hooks for rc_hash library */
@@ -1315,6 +1327,11 @@ static void rcheevos_fetch_badges(void)
 
 static void rcheevos_start_session_async(retro_task_t* task)
 {
+   const bool needs_runtime =
+      (  rcheevos_locals.game.achievement_count > 0
+      || rcheevos_locals.game.leaderboard_count > 0
+      || rcheevos_locals.runtime.richpresence);
+
    if (rcheevos_load_aborted())
       return;
 
@@ -1322,34 +1339,24 @@ static void rcheevos_start_session_async(retro_task_t* task)
     * to proceed to the next loading state */
    rcheevos_client_start_session(rcheevos_locals.game.id);
 
-   /* if there's nothing for the runtime to process,
-    * disable hardcore and bail. */
-   if (rcheevos_locals.game.achievement_count == 0
-      && rcheevos_locals.game.leaderboard_count == 0)
-   {
-      if (!rcheevos_locals.runtime.richpresence)
-      {
-         rcheevos_pause_hardcore();
-         task_set_finished(task, true);
-         rcheevos_end_load();
-         return;
-      }
-   }
-
    rcheevos_begin_load_state(RCHEEVOS_LOAD_STATE_STARTING_SESSION);
 
-   /* activate the achievements and leaderboards 
-    * (rich presence has already been activated) */
-   rcheevos_activate_achievements();
+   if (needs_runtime)
+   {
+      /* activate the achievements and leaderboards
+       * (rich presence has already been activated) */
+      rcheevos_activate_achievements();
 
-   if (     rcheevos_locals.leaderboards_enabled 
+      if (rcheevos_locals.leaderboards_enabled
          && rcheevos_locals.hardcore_active)
-      rcheevos_activate_leaderboards();
+         rcheevos_activate_leaderboards();
 
-   rcheevos_validate_memrefs(&rcheevos_locals);
+      /* disable any unsupported achievements */
+      rcheevos_validate_memrefs(&rcheevos_locals);
 
-   /* Let the runtime start processing the achievements */
-   rcheevos_locals.loaded = true;
+      /* Let the runtime start processing the achievements */
+      rcheevos_locals.loaded = true;
+   }
 
 #if HAVE_REWIND
    if (!rcheevos_locals.hardcore_active)
@@ -1373,6 +1380,11 @@ static void rcheevos_start_session_async(retro_task_t* task)
       }
    }
 #endif
+
+   /* if there's nothing for the runtime to process,
+    * disable hardcore. */
+   if (!needs_runtime)
+      rcheevos_pause_hardcore();
 
    task_set_finished(task, true);
 
@@ -1417,9 +1429,7 @@ static void rcheevos_fetch_game_data(void)
    if (     rcheevos_locals.load_info.state 
          == RCHEEVOS_LOAD_STATE_NETWORK_ERROR)
    {
-      strlcpy(rcheevos_locals.game.hash,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-         sizeof(rcheevos_locals.game.hash));
+      rcheevos_locals.game.hash = NULL;
       rcheevos_pause_hardcore();
       return;
    }
@@ -1434,9 +1444,7 @@ static void rcheevos_fetch_game_data(void)
 
       CHEEVOS_LOG(RCHEEVOS_TAG "Game could not be identified\n");
       if (rcheevos_locals.load_info.hashes_tried > 1)
-         strlcpy(rcheevos_locals.game.hash,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-            sizeof(rcheevos_locals.game.hash));
+         rcheevos_locals.game.hash = NULL;
 
       rcheevos_locals.load_info.state = RCHEEVOS_LOAD_STATE_UNKNOWN_GAME;
       rcheevos_pause_hardcore();
@@ -1496,14 +1504,19 @@ static void rcheevos_identify_game_callback(void* userdata)
 
    if (data)
    {
-      /* previous hash didn't match, try the next one */
-      char hash[33];
-      if (     rcheevos_locals.game.id == 0 
-            && rc_hash_iterate(hash, &data->iterator))
+      if (rcheevos_locals.game.id == 0)
       {
-         rcheevos_client_identify_game(hash,
-               rcheevos_identify_game_callback, data);
-         return;
+         /* previous hash didn't match, try the next one */
+         char hash[33];
+         if (rc_hash_iterate(hash, &data->iterator))
+         {
+            memcpy(rcheevos_locals.game.hashes->hash, hash, sizeof(hash));
+            rcheevos_locals.load_info.hashes_tried++;
+
+            rcheevos_client_identify_game(hash,
+                  rcheevos_identify_game_callback, data);
+            return;
+         }
       }
 
       /* no more hashes generated, free the iterator data */
@@ -1511,6 +1524,8 @@ static void rcheevos_identify_game_callback(void* userdata)
          free(data->datacopy);
       free(data);
    }
+
+   rcheevos_locals.game.hashes->game_id = rcheevos_locals.game.id;
 
    /* hash resolution complete, proceed to fetching game data */
    if (rcheevos_end_load_state() == 0)
@@ -1532,8 +1547,10 @@ static bool rcheevos_identify_game(const struct retro_game_info* info)
       return false;
    }
 
-   strlcpy(rcheevos_locals.game.hash, hash,
-         sizeof(rcheevos_locals.game.hash));
+   rcheevos_locals.game.hashes = (rcheevos_hash_entry_t*)calloc(1, sizeof(rcheevos_hash_entry_t));
+   rcheevos_locals.game.hashes->path_djb2 = djb2_calculate(info->path);
+   rcheevos_locals.game.hash = rcheevos_locals.game.hashes->hash;
+   memcpy(rcheevos_locals.game.hashes->hash, hash, sizeof(hash));
    rcheevos_locals.load_info.hashes_tried++;
 
    if (iterator.consoles[iterator.index] == 0)
@@ -1652,6 +1669,7 @@ bool rcheevos_load(const void *data)
 
    rcheevos_locals.loaded             = false;
    rcheevos_locals.game.id            = -1;
+   rcheevos_locals.game.console_id    = 0;
 #ifdef HAVE_THREADS
    rcheevos_locals.queued_command     = CMD_EVENT_NONE;
 #endif
@@ -1661,6 +1679,7 @@ bool rcheevos_load(const void *data)
     * support achievements, disable hardcore and bail */
    if (!cheevos_enable || !rcheevos_locals.core_supports || !data)
    {
+      rcheevos_locals.game.id = 0;
       rcheevos_pause_hardcore();
       return false;
    }
@@ -1782,4 +1801,173 @@ bool rcheevos_load(const void *data)
       rcheevos_fetch_game_data();
 
    return true;
+}
+
+static void rcheevos_add_hash(rcheevos_hash_entry_t* hash_entry)
+{
+   hash_entry->next = rcheevos_locals.game.hashes;
+   rcheevos_locals.game.hashes = hash_entry;
+   rcheevos_locals.game.hash = hash_entry->hash;
+}
+
+static void rcheevos_identify_game_disc_callback(void* userdata)
+{
+   rcheevos_hash_entry_t* hash_entry = (rcheevos_hash_entry_t*)userdata;
+
+   /* rcheevos_client_identify_game will update rcheevos_locals.game.id */
+   if (rcheevos_locals.game.id == hash_entry->game_id)
+   {
+      CHEEVOS_LOG(RCHEEVOS_TAG "Hash valid for current game\n");
+   }
+   else
+   {
+      /* rcheevos_locals.game.id has the game id for the new hash, swap it with the old game id */
+      const int hash_game_id = rcheevos_locals.game.id;
+      rcheevos_locals.game.id = hash_entry->game_id;
+      hash_entry->game_id = hash_game_id;
+
+      if (hash_game_id != 0)
+      {
+         /* when changing discs, if the disc is recognized but belongs to another game, allow it.
+          * this allows loading known game discs for games that leverage user-provided discs. */
+         CHEEVOS_LOG(RCHEEVOS_TAG "Hash identified for game %d\n", hash_game_id);
+      }
+      else
+      {
+         CHEEVOS_LOG(RCHEEVOS_TAG "Disc not recognized\n");
+         if (rcheevos_hardcore_active())
+         {
+            /* don't allow unknown game discs in hardcore.
+             * assume it's a modified version of the base game. */
+            runloop_msg_queue_push("Hardcore paused. Game disc unrecognized.", 0, 5 * 60, false, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+            rcheevos_pause_hardcore();
+         }
+      }
+   }
+
+   /* disc is valid, add it to the known disk list */
+   rcheevos_add_hash(hash_entry);
+}
+
+static void rcheevos_identify_initial_disc_callback(void* userdata)
+{
+   rcheevos_hash_entry_t* hash_entry = (rcheevos_hash_entry_t*)userdata;
+
+   /* rcheevos_client_identify_game will update rcheevos_locals.game.id */
+   if (rcheevos_locals.game.id != hash_entry->game_id)
+   {
+      if (rcheevos_locals.game.id == 0)
+      {
+         CHEEVOS_LOG(RCHEEVOS_TAG "Disc not recognized\n");
+         runloop_msg_queue_push("Disabling achievements. Game disc unrecognized.", 0, 5 * 60, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+      }
+      else
+      {
+         CHEEVOS_LOG(RCHEEVOS_TAG "Initial disc for game %d\n", rcheevos_locals.game.id);
+         runloop_msg_queue_push("Disabling achievements. Not for loaded game.", 0, 5 * 60, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+      }
+
+      rcheevos_unload();
+
+      free(hash_entry);
+      return;
+   }
+
+   /* disc is valid, add it to the known disk list */
+   CHEEVOS_LOG(RCHEEVOS_TAG "Hash valid for current game\n");
+   rcheevos_add_hash(hash_entry);
+}
+
+static void rcheevos_validate_initial_disc_handler(retro_task_t* task)
+{
+   char* new_disc_path = (char*)task->user_data;
+
+   if (rcheevos_locals.game.id == 0)
+   {
+      /* could not identify game. don't bother identifying initial disc */
+   }
+   else
+   {
+      if (rcheevos_locals.game.console_id == 0)
+      {
+         /* not ready yet. try again in another 500ms */
+         task->when = cpu_features_get_time_usec() + 500 * 1000;
+         return;
+      }
+
+      /* game ready. attempt to validate the initial disc */
+      rcheevos_change_disc(new_disc_path, true);
+   }
+
+   free(new_disc_path);
+   task_set_finished(task, true);
+}
+
+void rcheevos_change_disc(const char* new_disc_path, bool initial_disc)
+{
+   rcheevos_hash_entry_t* hash_entry = rcheevos_locals.game.hashes;
+   rcheevos_hash_entry_t* hash_entry2;
+   const uint32_t path_djb2 = djb2_calculate(new_disc_path);
+
+   /* no game loaded */
+   if (rcheevos_locals.game.id == 0)
+      return;
+
+   /* see if we've already identified this file */
+   for (; hash_entry; hash_entry = hash_entry->next)
+   {
+      if (hash_entry->path_djb2 == path_djb2)
+      {
+         rcheevos_locals.game.hash = hash_entry->hash;
+         return;
+      }
+   }
+
+   /* don't check the disc until the game is done loading */
+   if (rcheevos_locals.game.console_id == 0)
+   {
+      retro_task_t* task = task_init();
+      task->handler = rcheevos_validate_initial_disc_handler;
+      task->user_data = strdup(new_disc_path);
+      task->progress = -1;
+      task->when = cpu_features_get_time_usec() + 500 * 1000; /* 500ms */
+      task_queue_push(task);
+      return;
+   }
+
+   /* attempt to identify the file */
+   hash_entry = (rcheevos_hash_entry_t*)calloc(1, sizeof(rcheevos_hash_entry_t));
+   hash_entry->path_djb2 = path_djb2;
+
+   if (!rc_hash_generate_from_file(hash_entry->hash, rcheevos_locals.game.console_id, new_disc_path))
+   {
+      /* when changing discs, if the disc is not supported by the system, allow it. this is
+       * primarily for games that support user-provided audio CDs, but does allow using discs
+       * from other systems for games that leverage user-provided discs. */
+      CHEEVOS_LOG(RCHEEVOS_TAG "No hash generated\n");
+      rcheevos_add_hash(hash_entry);
+      return;
+   }
+
+   /* assume it's for the same game. we'll validate in the callback */
+   hash_entry->game_id = rcheevos_locals.game.id;
+
+   /* check to see if the hash is already known - may have generated it for the m3u */
+   for (hash_entry2 = rcheevos_locals.game.hashes; hash_entry2; hash_entry2 = hash_entry2->next)
+   {
+      if (string_is_equal(hash_entry->hash, hash_entry2->hash))
+      {
+         CHEEVOS_LOG(RCHEEVOS_TAG "Hash valid for current game\n");
+         rcheevos_add_hash(hash_entry);
+         return;
+      }
+   }
+
+   /* call the server to make sure the hash is valid for the loaded game */
+   rcheevos_client_identify_game(hash_entry->hash,
+      initial_disc ? rcheevos_identify_initial_disc_callback :
+         rcheevos_identify_game_disc_callback, hash_entry);
 }
