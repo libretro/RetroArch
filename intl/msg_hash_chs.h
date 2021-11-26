@@ -92,6 +92,10 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    "将物理光盘转储到内置存储。它将被保存为光盘镜像文件。"
    )
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "弹出光盘"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,

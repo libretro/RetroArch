@@ -1611,6 +1611,10 @@ MSG_HASH(
 
 /* Settings > Audio > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
+   "Szinkronizálás"
+   )
 
 /* Settings > Audio > MIDI */
 
@@ -1634,12 +1638,20 @@ MSG_HASH(
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
+   "Eltávolítás"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
    "Hangerő"
    )
 
 /* Settings > Audio > Menu Sounds */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
+   "Keverő"
+   )
 
 /* Settings > Input */
 
@@ -1687,6 +1699,10 @@ MSG_HASH(
    "Játék újraindítása"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
+   "Képernyőkép készítése"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
    "A gyorsbillentyűk engedélyezése"
    )
@@ -1697,6 +1713,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
    "Hangerő le"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
+   "AI Szolgáltatás"
    )
 
 /* Settings > Input > Port # Controls */
@@ -1815,6 +1835,10 @@ MSG_HASH(
 
 /* Settings > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
+   "Eredmények"
+   )
 
 /* Settings > Network */
 
@@ -1827,6 +1851,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
    "Elözmény"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
+   "Utoljára játszva:"
    )
 
 /* Settings > Playlists > Playlist Management */
@@ -1855,6 +1883,10 @@ MSG_HASH(
 
 /* Settings > User > Accounts > RetroAchievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
+   "Felhasználónév"
+   )
 
 /* Settings > User > Accounts > YouTube */
 
@@ -1871,9 +1903,17 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
    "Letöltések"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
+   "Bélyegképek"
+   )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
    "Fájlkezelő"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
+   "Core infó"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
@@ -1927,6 +1967,10 @@ MSG_HASH(
 
 /* Import Content > Manual Scan */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+   "Rendszer neve"
+   )
 
 /* Explore tab */
 MSG_HASH(
@@ -2010,8 +2054,16 @@ MSG_HASH(
    "Képernyőkép készítése"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
+   "Kedvencekhez ad"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
    "Beállítások"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
+   "Eredmények"
    )
 
 /* Quick Menu > Options */
@@ -2042,12 +2094,20 @@ MSG_HASH(
 
 /* Quick Menu > Cheats > Cheat Details */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
+   "Leírás"
+   )
 
 /* Quick Menu > Disc Control */
 
 
 /* Quick Menu > Shaders */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
+   "Eltávolítás"
+   )
 
 /* Quick Menu > Shaders > Save */
 
@@ -2065,6 +2125,10 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
+   "Hálózati hiba"
+)
 
 /* Quick Menu > Information */
 
@@ -2074,18 +2138,82 @@ MSG_HASH(
 
 /* Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
+   "KI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNKNOWN,
+   "Ismeretlen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_PORT_16,
+   "Összes"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
+   "Doboz kép"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
+   "Képernyőkép"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
+   "Kezdő képernyő"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
+   "Normál"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCROLL_FAST,
+   "Gyors"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ON,
+   "Be"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OFF,
+   "KI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL,
+   "Normál"
+   )
 
 /* RGUI: Settings > User Interface > Appearance */
 
 
 /* RGUI: Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
+   "Bilineáris"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
+   "KI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DRACULA,
+   "Drakula"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
+   "KI"
+   )
 
 /* XMB: Settings > User Interface > Appearance */
 
 
 /* XMB: Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK,
+   "Sötét"
+   )
 
 /* Ozone: Settings > User Interface > Appearance */
 
@@ -2099,9 +2227,37 @@ MSG_HASH(
 
 /* MaterialUI: Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE,
+   "KI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED,
+   "KI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED,
+   "KI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED,
+   "KI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS,
+   "Be"
+   )
 
 /* Qt (Desktop Menu) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_INFO,
+   "Infó"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW,
+   "&Nézet"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME,
    "Sablon:"
@@ -2242,6 +2398,22 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PROGRESS,
    "Folyamat:"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
+   "Név:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE,
+   "Adatbázis:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_REMOVE,
+   "Eltávolítás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_RESET,
+   "Visszaállítás"
+   )
 
 /* Unsorted */
 
@@ -2250,15 +2422,35 @@ MSG_HASH(
    "Elözmény"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
+   "Futtatás"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER,
    "Felhasználó"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BROWSE_START,
+   "Indít"
    )
 
 /* Unused (Only Exist in Translation Files) */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESUME,
+   "Folytatás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
+   "Hálózatos játék"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "Segítség"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
+   "Leírás"
    )
 
 /* Unused (Needs Confirmation) */
@@ -2414,6 +2606,10 @@ MSG_HASH(
    "Memória"
    )
 MSG_HASH(
+   MSG_PAUSED,
+   "Megállítva."
+   )
+MSG_HASH(
    MSG_RESET,
    "Visszaállítás"
    )
@@ -2466,6 +2662,14 @@ MSG_HASH(
    "Írja be a jelszót"
    )
 MSG_HASH(
+   MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
+   "Hibás jelszó."
+   )
+MSG_HASH(
+   MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
+   "Hibás jelszó."
+   )
+MSG_HASH(
    MSG_GAME_REMAP_FILE_LOADED,
    "A játék remap fájlja betöltve."
    )
@@ -2474,8 +2678,16 @@ MSG_HASH(
    "A core remap fájlja betöltve."
    )
 MSG_HASH(
+   MSG_RESAMPLER_QUALITY_NORMAL,
+   "Normál"
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
    "Vizsgálat: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_FAILED,
+   "A core telepítés sikertelen: "
    )
 
 /* Lakka */

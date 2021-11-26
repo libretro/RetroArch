@@ -1300,7 +1300,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-   "Parantaa suorituskykyä viiveen kustannuksella ja lisää videon hidastelua. Käytä vain, jos täyttä nopeutta ei saada muuten."
+   "Parantaa suorituskykyä viiveen kustannuksella ja lisää videon nykimistä. Käytä vain, jos täyttä nopeutta ei saada muuten."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
@@ -1801,7 +1801,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "Vähentää viivettä korkeamman videon jumiutumisen mahdollisuudella. Lisää viiveen VSyncin jälkeen (ms)."
+   "Vähentää viivettä korkeamman videon nykimisen mahdollisuudella. Lisää viiveen VSyncin jälkeen (ms)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
