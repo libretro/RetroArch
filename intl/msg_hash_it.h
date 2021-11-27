@@ -87,6 +87,16 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    MENU_ENUM_SUBLABEL_DUMP_DISC,
    "Effettua il dump del disco fisico multimediale nella memoria interna. Verrà salvato come file immagine."
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "Espelli Disco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_EJECT_DISC,
+   "Eietta il disco dall'unità CD/DVD fisica."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "Playlist"
@@ -4251,6 +4261,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
    "Mostra l'opzione 'Dump Disco' nel menu principale."
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
+   "Mostra 'Espelli Disco'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
+   "Mostra l'opzione 'Espelli disco' nel menu principale."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
    "Show 'Aggiornamenti Online'"
@@ -11056,6 +11076,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,
    "Scansione Bluetooth completata."
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_PAIRING_REMOVED,
+   "Accoppiamento rimosso. Riavvia RetroArch per connettere/accoppiare di nuovo."
    )
 MSG_HASH(
    MSG_WIFI_SCAN_COMPLETE,

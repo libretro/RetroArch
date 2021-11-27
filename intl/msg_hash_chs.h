@@ -91,6 +91,8 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    MENU_ENUM_SUBLABEL_DUMP_DISC,
    "将物理光盘转储到内置存储。它将被保存为光盘镜像文件。"
    )
+#ifdef HAVE_LAKKA
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "列表"
@@ -4223,6 +4225,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
    "在主菜单中显示「转储光盘」选项。"
    )
+#ifdef HAVE_LAKKA
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
    "显示「在线更新」"

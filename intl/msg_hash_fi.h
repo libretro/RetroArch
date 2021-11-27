@@ -91,6 +91,16 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    MENU_ENUM_SUBLABEL_DUMP_DISC,
    "Kopioi fyysinen medialevy sisäiseen tallennustilaan. Se tallennetaan levykuvatiedostona."
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "Poista levy asemasta"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_EJECT_DISC,
+   "Poistaa levyn fyysisestä CD/DVD-asemasta."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "Soittolistat"
@@ -4271,6 +4281,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
    "Näytä \"Kopioi levy\"-valinta päävalikossa."
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
+   "Näytä \"Poista levy asemasta\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
+   "Näytä \"Poista levy asemasta\"-valinta päävalikossa."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
    "Näytä \"Verkkopäivittäjä\""
@@ -4433,7 +4453,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
-   "Näytä \"etsi\""
+   "Näytä \"Etsi\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
@@ -4500,7 +4520,7 @@ MSG_HASH( /* FIXME Not RGUI specific */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
-   "Näytä \"jatka\""
+   "Näytä \"Jatka\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
@@ -4516,7 +4536,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Näytä \"sulje sisältö\""
+   "Näytä \"Sulje sisältö\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
@@ -4524,7 +4544,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-   "Näytä \"ota kuvakaappaus\""
+   "Näytä \"Ota kuvakaappaus\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
@@ -4532,7 +4552,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-   "Näytä \"tallenna/lataa pelitila\""
+   "Näytä \"Tallenna/lataa pelitila\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
@@ -4540,7 +4560,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Näytä \"peru pelitilan lataus/tallennus\""
+   "Näytä \"Peru pelitilan lataus/tallennus\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
@@ -4548,7 +4568,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-   "Näytä \"lisää suosikkeihin\""
+   "Näytä \"Lisää suosikkeihin\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
@@ -4556,7 +4576,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
-   "Näytä \"aloita nauhoitus\""
+   "Näytä \"Aloita nauhoitus\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
@@ -4564,7 +4584,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
-   "Näytä \"käynnistä suoratoisto\""
+   "Näytä \"Käynnistä suoratoisto\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
@@ -4572,7 +4592,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
-   "Näytä \"liitä ydin\""
+   "Näytä \"Liitä ydin\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
@@ -4580,7 +4600,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-   "Näytä ''nollaa ytimen liitos\""
+   "Näytä ''Nollaa ytimen liitos\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
@@ -4588,7 +4608,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
-   "Näytä \"asetukset\""
+   "Näytä \"Asetukset\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
@@ -4604,7 +4624,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
-   "Näytä \"ohjaimet\""
+   "Näytä \"Ohjaimet\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS,
@@ -4612,7 +4632,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
-   "Näytä \"huijaukset\""
+   "Näytä \"Huijaukset\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
@@ -4620,7 +4640,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
-   "Näytä \"varjostimet\""
+   "Näytä \"Varjostimet\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
@@ -4660,7 +4680,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-   "Näytä \"tallenna ytimen ohitukset\""
+   "Näytä \"Tallenna ytimen ohitukset\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
@@ -4668,7 +4688,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-   "Näytä \"tallenna pelin ohitukset\""
+   "Näytä \"Tallenna pelin ohitukset\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
@@ -4676,7 +4696,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
-   "Näytä \"tiedot\""
+   "Näytä \"Tiedot\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
@@ -4684,7 +4704,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
-   "Näytä \"lataa esikatselukuvat\""
+   "Näytä \"Lataa esikatselukuvat\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
@@ -11238,6 +11258,10 @@ MSG_HASH(
    "Bluetooth-skannaus valmistui."
    )
 MSG_HASH(
+   MSG_BLUETOOTH_PAIRING_REMOVED,
+   "Paritus poistettu. Käynnistä RetroArch uudelleen yhdistääksesi/parittaaksesi uudelleen."
+   )
+MSG_HASH(
    MSG_WIFI_SCAN_COMPLETE,
    "Wi-Fi-skannaus valmistui."
    )
@@ -11941,11 +11965,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
-   "Näytä 'Käynnistä uudelleen'"
+   "Näytä \"Käynnistä uudelleen\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
-   "Näytä 'Käynnistä uudelleen'-valinta."
+   "Näytä \"Käynnistä uudelleen\"-valinta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
@@ -11953,7 +11977,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
-   "Näytä 'Sammuta'-valinta."
+   "Näytä \"Sammuta\"-valinta."
    )
 MSG_HASH(
    MSG_INTERNET_RELAY,

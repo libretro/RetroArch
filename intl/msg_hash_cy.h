@@ -87,6 +87,8 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    MENU_ENUM_SUBLABEL_DUMP_DISC,
    "Dympio’r disg corfforol cyfryngau i’r storfa fewnol. Bydd yn cadw fel ffeil delwedd."
    )
+#ifdef HAVE_LAKKA
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "Rhestri Chwarae"
@@ -1167,6 +1169,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    "Gosodiadau"
    )
+#ifdef HAVE_LAKKA
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    "Prif Ddewislen"

@@ -26,8 +26,14 @@
 #include "runloop.h"
 #include "verbosity.h"
 
+#ifdef HAVE_BLUETOOTH
 #include "bluetooth/bluetooth_driver.h"
-#include "wifi/wifi_driver.h"
+#endif
+#ifdef HAVE_NETWORKING
+#ifdef HAVE_WIFI
+#include "network/wifi_driver.h"
+#endif
+#endif
 #include "led/led_driver.h"
 #include "midi_driver.h"
 #include "gfx/video_driver.h"
@@ -44,55 +50,6 @@
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 #endif
-
-static bluetooth_driver_t bluetooth_null = {
-   NULL, /* init */
-   NULL, /* free */
-   NULL, /* scan */
-   NULL, /* get_devices */
-   NULL, /* device_is_connected */
-   NULL, /* device_get_sublabel */
-   NULL, /* connect_device */
-   "null",
-};
-
-const bluetooth_driver_t *bluetooth_drivers[] = {
-#ifdef HAVE_BLUETOOTH
-   &bluetooth_bluetoothctl,
-#ifdef HAVE_DBUS
-   &bluetooth_bluez,
-#endif
-#endif
-   &bluetooth_null,
-   NULL,
-};
-
-wifi_driver_t wifi_null = {
-   NULL, /* init */
-   NULL, /* free */
-   NULL, /* start */
-   NULL, /* stop */
-   NULL, /* enable */
-   NULL, /* connection_info */
-   NULL, /* scan */
-   NULL, /* get_ssids */
-   NULL, /* ssid_is_online */
-   NULL, /* connect_ssid */
-   NULL, /* disconnect_ssid */
-   NULL, /* tether_start_stop */
-   "null",
-};
-
-const wifi_driver_t *wifi_drivers[] = {
-#ifdef HAVE_LAKKA
-   &wifi_connmanctl,
-#endif
-#ifdef HAVE_WIFI
-   &wifi_nmcli,
-#endif
-   &wifi_null,
-   NULL,
-};
 
 static void retro_frame_null(const void *data, unsigned width,
       unsigned height, size_t pitch) { }
@@ -217,6 +174,7 @@ static const void *find_driver_nonempty(
          return audio_resampler_driver_find_handle(i);
       }
    }
+#ifdef HAVE_BLUETOOTH
    else if (string_is_equal(label, "bluetooth_driver"))
    {
       if (bluetooth_drivers[i])
@@ -227,6 +185,8 @@ static const void *find_driver_nonempty(
          return bluetooth_drivers[i];
       }
    }
+#endif
+#ifdef HAVE_WIFI
    else if (string_is_equal(label, "wifi_driver"))
    {
       if (wifi_drivers[i])
@@ -237,6 +197,7 @@ static const void *find_driver_nonempty(
          return wifi_drivers[i];
       }
    }
+#endif
 
    return NULL;
 }
@@ -576,11 +537,14 @@ void drivers_init(
       }
    }
 
+#ifdef HAVE_BLUETOOTH
    if (flags & DRIVER_BLUETOOTH_MASK)
       bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_INIT, NULL);
-
+#endif
+#ifdef HAVE_WIFI
    if ((flags & DRIVER_WIFI_MASK))
       wifi_driver_ctl(RARCH_WIFI_CTL_INIT, NULL);
+#endif
 
    if (flags & DRIVER_LOCATION_MASK)
    {
@@ -668,9 +632,11 @@ void drivers_init(
    if (flags & DRIVER_MIDI_MASK)
       midi_driver_init(settings);
 
+#ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
    cpu_scaling_driver_init();
 #endif
+#endif /* #ifndef HAVE_LAKKA_SWITCH */
 }
 
 void driver_uninit(int flags)
@@ -723,11 +689,14 @@ void driver_uninit(int flags)
       camera_st->data = NULL;
    }
 
+#ifdef HAVE_BLUETOOTH
    if ((flags & DRIVER_BLUETOOTH_MASK))
       bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_DEINIT, NULL);
-
+#endif
+#ifdef HAVE_WIFI
    if ((flags & DRIVER_WIFI_MASK))
       wifi_driver_ctl(RARCH_WIFI_CTL_DEINIT, NULL);
+#endif
 
    if (flags & DRIVER_LED)
       led_driver_free();
@@ -755,9 +724,11 @@ void driver_uninit(int flags)
    if (flags & DRIVER_MIDI_MASK)
       midi_driver_free();
 
+#ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
    cpu_scaling_driver_free();
 #endif
+#endif /* #ifndef HAVE_LAKKA_SWITCH */
 }
 
 void retroarch_deinit_drivers(struct retro_callbacks *cbs)
@@ -835,8 +806,12 @@ void retroarch_deinit_drivers(struct retro_callbacks *cbs)
    camera_st->driver                                = NULL;
    camera_st->data                                  = NULL;
 
+#ifdef HAVE_BLUETOOTH
    bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_DESTROY, NULL);
+#endif
+#ifdef HAVE_WIFI
    wifi_driver_ctl(RARCH_WIFI_CTL_DESTROY, NULL);
+#endif
 
    cbs->frame_cb                                    = retro_frame_null;
    cbs->poll_cb                                     = retro_input_poll_null;

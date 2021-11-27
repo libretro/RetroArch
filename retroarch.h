@@ -72,6 +72,19 @@ RETRO_BEGIN_DECLS
                                             * 3 - Late
                                             */
 
+#define DRIVERS_CMD_ALL \
+      ( DRIVER_AUDIO_MASK \
+      | DRIVER_VIDEO_MASK \
+      | DRIVER_INPUT_MASK \
+      | DRIVER_CAMERA_MASK \
+      | DRIVER_LOCATION_MASK \
+      | DRIVER_MENU_MASK \
+      | DRIVERS_VIDEO_INPUT_MASK \
+      | DRIVER_BLUETOOTH_MASK \
+      | DRIVER_WIFI_MASK \
+      | DRIVER_LED_MASK \
+      | DRIVER_MIDI_MASK )
+
 bool retroarch_ctl(enum rarch_ctl_state state, void *data);
 
 int retroarch_get_capabilities(enum rarch_capabilities type,
@@ -107,6 +120,8 @@ unsigned content_get_subsystem_rom_id(void);
 int content_get_subsystem(void);
 
 void retroarch_menu_running(void);
+
+void retroarch_path_set_redirect(settings_t *settings);
 
 void retroarch_menu_running_finished(bool quit);
 

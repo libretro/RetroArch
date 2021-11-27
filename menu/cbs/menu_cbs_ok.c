@@ -23,6 +23,10 @@
 #include <streams/file_stream.h>
 #include <lists/string_list.h>
 
+#ifdef HAVE_NETWORKING
+#include <net/net_http.h>
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -38,7 +42,6 @@
 
 #include "../../config.def.h"
 #include "../../config.def.keybinds.h"
-#include "../../wifi/wifi_driver.h"
 #include "../../driver.h"
 
 #include "../menu_driver.h"
@@ -75,15 +78,17 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../lakka.h"
+#ifdef HAVE_BLUETOOTH
 #include "../../bluetooth/bluetooth_driver.h"
+#endif
 #include "../../gfx/video_display_server.h"
 #include "../../manual_content_scan.h"
 
-#include <net/net_http.h>
-
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
-#include "../../wifi/wifi_driver.h"
+#ifdef HAVE_WIFI
+#include "../../network/wifi_driver.h"
+#endif
 #endif
 
 #ifdef __WINRT__
@@ -447,6 +452,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_FACEBOOK_LIST;         
       case ACTION_OK_DL_DUMP_DISC_LIST:
          return MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST;
+#ifdef HAVE_LAKKA
+      case ACTION_OK_DL_EJECT_DISC:
+         return MENU_ENUM_LABEL_DEFERRED_EJECT_DISC;
+#endif
       case ACTION_OK_DL_LOAD_DISC_LIST:
          return MENU_ENUM_LABEL_DEFERRED_LOAD_DISC_LIST;
       case ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST:
@@ -1069,7 +1078,6 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_STREAM_CONFIGFILE:
          {
-            global_t  *global  = global_get_ptr();
             info.type          = type;
             info.directory_ptr = idx;
             info_path          = recording_st->config_dir;
@@ -1080,7 +1088,6 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_RECORD_CONFIGFILE:
          filebrowser_clear_type();
          {
-            global_t  *global  = global_get_ptr();
             info.type          = type;
             info.directory_ptr = idx;
             info_path          = recording_st->config_dir;
@@ -1529,6 +1536,9 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_IMAGES_LIST:
       case ACTION_OK_DL_LOAD_DISC_LIST:
       case ACTION_OK_DL_DUMP_DISC_LIST:
+#ifdef HAVE_LAKKA
+      case ACTION_OK_DL_EJECT_DISC:
+#endif
       case ACTION_OK_DL_SHADER_PRESET_REMOVE:
       case ACTION_OK_DL_SHADER_PRESET_SAVE:
       case ACTION_OK_DL_CDROM_INFO_LIST:
@@ -2735,6 +2745,17 @@ static int action_ok_dump_cdrom(const char *path,
    return 0;
 }
 
+#ifdef HAVE_LAKKA
+static int action_ok_eject_disc(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#ifdef HAVE_CDROM
+   system("eject & disown");
+#endif /* HAVE_CDROM */
+   return 0;
+}
+#endif /* HAVE_LAKKA */
+
 static int action_ok_lookup_setting(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2875,6 +2896,7 @@ int  generic_action_ok_help(const char *path,
          entry_idx, ACTION_OK_DL_HELP);
 }
 
+#ifdef HAVE_BLUETOOTH
 static int action_ok_bluetooth(const char *path, const char *label,
          unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2882,8 +2904,10 @@ static int action_ok_bluetooth(const char *path, const char *label,
 
    return 0;
 }
+#endif
 
 #ifdef HAVE_NETWORKING
+#ifdef HAVE_WIFI
 static void menu_input_wifi_cb(void *userdata, const char *passphrase)
 {
    unsigned idx = menu_input_dialog_get_kb_idx();
@@ -2899,6 +2923,35 @@ static void menu_input_wifi_cb(void *userdata, const char *passphrase)
 
    menu_input_dialog_end();
 }
+
+static int action_ok_wifi(const char *path, const char *label_setting,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   wifi_network_scan_t* scan = driver_wifi_get_ssids();
+   if (idx >= RBUF_LEN(scan->net_list))
+      return -1;
+
+   if (scan->net_list[idx].saved_password)
+   {
+      /* No need to ask for a password, should be stored */
+      task_push_wifi_connect(NULL, &scan->net_list[idx]);
+      return 0;
+   }
+   else
+   {
+      /* Show password input dialog */
+      menu_input_ctx_line_t line;
+      line.label         = "Passphrase";
+      line.label_setting = label_setting;
+      line.type          = type;
+      line.idx           = (unsigned)idx;
+      line.cb            = menu_input_wifi_cb;
+      if (!menu_input_dialog_start(&line))
+         return -1;
+      return 0;
+   }
+}
+#endif
 #endif
 
 static void menu_input_st_string_cb_rename_entry(void *userdata,
@@ -3218,35 +3271,6 @@ static int action_ok_shader_preset_remove_game(const char *path,
 }
 #endif
 
-#ifdef HAVE_NETWORKING
-static int action_ok_wifi(const char *path, const char *label_setting,
-      unsigned type, size_t idx, size_t entry_idx)
-{
-   wifi_network_scan_t* scan = driver_wifi_get_ssids();
-   if (idx >= RBUF_LEN(scan->net_list))
-      return -1;
-
-   if (scan->net_list[idx].saved_password)
-   {
-      /* No need to ask for a password, should be stored */
-      task_push_wifi_connect(NULL, &scan->net_list[idx]);
-      return 0;
-   }
-   else
-   {
-      /* Show password input dialog */
-      menu_input_ctx_line_t line;
-      line.label         = "Passphrase";
-      line.label_setting = label_setting;
-      line.type          = type;
-      line.idx           = (unsigned)idx;
-      line.cb            = menu_input_wifi_cb;
-      if (!menu_input_dialog_start(&line))
-         return -1;
-      return 0;
-   }
-}
-#endif
 
 static int action_ok_video_filter_remove(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -5533,10 +5557,14 @@ DEFAULT_ACTION_OK_FUNC(action_ok_network_list, ACTION_OK_DL_NETWORK_SETTINGS_LIS
 DEFAULT_ACTION_OK_FUNC(action_ok_network_hosting_list, ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_subsystem_list, ACTION_OK_DL_SUBSYSTEM_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_database_manager_list, ACTION_OK_DL_DATABASE_MANAGER_LIST)
+#ifdef HAVE_BLUETOOTH
 DEFAULT_ACTION_OK_FUNC(action_ok_bluetooth_list, ACTION_OK_DL_BLUETOOTH_SETTINGS_LIST)
+#endif
 #ifdef HAVE_NETWORKING
+#ifdef HAVE_WIFI
 DEFAULT_ACTION_OK_FUNC(action_ok_wifi_list, ACTION_OK_DL_WIFI_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_wifi_networks_list, ACTION_OK_DL_WIFI_NETWORKS_LIST)
+#endif
 #endif
 DEFAULT_ACTION_OK_FUNC(action_ok_cursor_manager_list, ACTION_OK_DL_CURSOR_MANAGER_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_compressed_archive_push, ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH)
@@ -5644,6 +5672,9 @@ DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_youtube_list, ACTION_OK_DL_ACCOUN
 DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_twitch_list, ACTION_OK_DL_ACCOUNTS_TWITCH_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_facebook_list, ACTION_OK_DL_ACCOUNTS_FACEBOOK_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_dump_disc_list, ACTION_OK_DL_DUMP_DISC_LIST)
+#ifdef HAVE_LAKKA
+DEFAULT_ACTION_OK_FUNC(action_ok_push_eject_disc, ACTION_OK_DL_EJECT_DISC)
+#endif
 DEFAULT_ACTION_OK_FUNC(action_ok_push_load_disc_list, ACTION_OK_DL_LOAD_DISC_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_open_archive, ACTION_OK_DL_OPEN_ARCHIVE)
 DEFAULT_ACTION_OK_FUNC(action_ok_rgui_menu_theme_preset, ACTION_OK_DL_RGUI_MENU_THEME_PRESET)
@@ -5682,6 +5713,7 @@ static int action_ok_open_picker(const char *path,
 }
 
 #ifdef HAVE_NETWORKING
+#ifdef HAVE_WIFI
 static void wifi_menu_refresh_callback(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
@@ -5697,6 +5729,7 @@ static int action_ok_wifi_disconnect(const char *path,
    task_push_wifi_disconnect(wifi_menu_refresh_callback);
    return true;
 }
+#endif
 
 static int action_ok_netplay_connect_room(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -7866,6 +7899,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_ACCOUNTS_TWITCH,                     action_ok_push_accounts_twitch_list},
          {MENU_ENUM_LABEL_ACCOUNTS_FACEBOOK,                   action_ok_push_accounts_facebook_list},
          {MENU_ENUM_LABEL_DUMP_DISC,                           action_ok_push_dump_disc_list},
+#ifdef HAVE_LAKKA
+         {MENU_ENUM_LABEL_EJECT_DISC,                          action_ok_push_eject_disc},
+#endif
          {MENU_ENUM_LABEL_LOAD_DISC,                           action_ok_push_load_disc_list},
          {MENU_ENUM_LABEL_SHADER_OPTIONS,                      action_ok_push_default},
          {MENU_ENUM_LABEL_CORE_OPTIONS,                        action_ok_push_core_options_list},
@@ -7944,11 +7980,15 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER,            action_ok_open_picker},
          {MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,         action_ok_retro_achievements_list},
          {MENU_ENUM_LABEL_UPDATER_SETTINGS,                    action_ok_updater_list},
+#ifdef HAVE_BLUETOOTH
          {MENU_ENUM_LABEL_BLUETOOTH_SETTINGS,                  action_ok_bluetooth_list},
+#endif
 #ifdef HAVE_NETWORKING
+#ifdef HAVE_WIFI
          {MENU_ENUM_LABEL_WIFI_SETTINGS,                       action_ok_wifi_list},
          {MENU_ENUM_LABEL_WIFI_NETWORK_SCAN,                   action_ok_wifi_networks_list},
          {MENU_ENUM_LABEL_WIFI_DISCONNECT,                     action_ok_wifi_disconnect},
+#endif
          {MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,                action_ok_netplay_connect_room},
 #endif
          {MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS,            action_ok_network_hosting_list},
@@ -8046,6 +8086,12 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_OK(cbs, action_ok_dump_cdrom);
    }
+#ifdef HAVE_LAKKA
+   else if (type == MENU_SET_EJECT_DISC)
+   {
+      BIND_ACTION_OK(cbs, action_ok_eject_disc);
+   }
+#endif
    else if (type == MENU_SET_CDROM_INFO)
    {
       BIND_ACTION_OK(cbs, action_ok_cdrom_info_list);
@@ -8413,11 +8459,15 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_rdb_entry);
             break;
          case MENU_BLUETOOTH:
+#ifdef HAVE_BLUETOOTH
             BIND_ACTION_OK(cbs, action_ok_bluetooth);
+#endif
             break;
          case MENU_WIFI:
 #ifdef HAVE_NETWORKING
+#ifdef HAVE_WIFI
             BIND_ACTION_OK(cbs, action_ok_wifi);
+#endif
 #endif
             break;
          case MENU_NETPLAY_LAN_SCAN:

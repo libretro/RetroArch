@@ -91,6 +91,8 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    MENU_ENUM_SUBLABEL_DUMP_DISC,
    "Αντιγραφή του φυσικού δίσκου στην εσωτερική μνήμη. Θα αποθηκευτεί σαν αρχείο \"εικόνας\"."
    )
+#ifdef HAVE_LAKKA
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "Λίστες Αναπαραγωγής"
@@ -2603,6 +2605,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    "Ρυθμίσεις"
    )
+#ifdef HAVE_LAKKA
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
    "Προβολή 'Διαδικτυακού Ενημερωτή'"

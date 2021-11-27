@@ -91,6 +91,8 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    MENU_ENUM_SUBLABEL_DUMP_DISC,
    "將碟片轉存為映像檔並儲存於內部空間"
    )
+#ifdef HAVE_LAKKA
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "遊戲列表"
@@ -742,7 +744,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT,
-   "運行時動態戴入 libretro 函數庫"
+   "執行時動態載入 libretro 函數庫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
@@ -1119,6 +1121,10 @@ MSG_HASH(
    "網路"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+   "變更伺服器與網路設定。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
    "遊戲列表"
    )
@@ -1281,6 +1287,10 @@ MSG_HASH(
    "變更縮放設定"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
+   "變更視訊 HDR 設定。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    "啟用影像同步"
    )
@@ -1337,6 +1347,10 @@ MSG_HASH(
    "自動延遲渲染"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
+   "延遲自動載入渲染(於毫秒)。可以在使用 \"螢幕擷取\" 軟體時降低破圖的產生。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    "影像濾鏡"
    )
@@ -1370,6 +1384,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    "如果影像無法於顯示器適當置中，在這些選項中循環套用"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   "使用高解析度選單"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
@@ -1491,6 +1509,10 @@ MSG_HASH(
    "記住視窗位置與大小"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "使用自訂視窗大小"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    "視窗寬度"
    )
@@ -1505,6 +1527,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
    "自訂視窗高度"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "最大視窗寬度"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "最大視窗高度"
    )
 
 /* Settings > Video > Scaling */
@@ -1522,6 +1552,10 @@ MSG_HASH(
    "自定義畫面比例"
    )
 #if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "保持長寬比例"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
@@ -1542,9 +1576,25 @@ MSG_HASH(
 
 /* Settings > Video > HDR */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
+   "啟用 HDR"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "如果顯示器支援，則啟用 HDR。"
+   )
 
 /* Settings > Video > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   "垂直同步 (Vsync)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
+   "自適應同步"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "幀延時"
@@ -1613,6 +1663,10 @@ MSG_HASH(
    "選單音效"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   "變更選單音效設定。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
    "靜音"
    )
@@ -1651,6 +1705,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
    "音效DSP插件，用於在音頻發送到驅動器之前先對其進行處理。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
+   "移除 DPS 插件"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
@@ -1864,6 +1922,10 @@ MSG_HASH(
    "開"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
+   "偵測"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "按鈕輸入軸心臨界值"
    )
@@ -1970,7 +2032,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
-   "戴入狀態"
+   "載入狀態"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
@@ -2235,7 +2297,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
-   "核心關閉時戴入虛擬程序"
+   "核心關閉時載入仿造核心"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
@@ -2268,7 +2330,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
-   "自動戴入遊戲內容特定的核心選項"
+   "自動載入特定內容的核心選項"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
@@ -2284,7 +2346,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
-   "自動戴入重映射文件"
+   "自動載入重新映射檔案"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
@@ -2292,7 +2354,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
-   "自動載入Shader預設"
+   "自動載入 Shader 預設"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
@@ -2473,7 +2535,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
-   "自動戴入最佳的覆層"
+   "自動載入最佳覆蓋圖層"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
@@ -2647,6 +2709,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    "設定"
    )
+#ifdef HAVE_LAKKA
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    "主選單"
@@ -3190,7 +3254,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
-   "載入重映射文件"
+   "載入重新映射檔案"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
@@ -3948,7 +4012,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_LOAD_CORE,
-   "&載入核心..."
+   "載入核心(&L)..."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE,
@@ -4434,7 +4498,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT,
-   "載入遊戲內容"
+   "載入內容中"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
@@ -4643,7 +4707,7 @@ MSG_HASH( /* FIXME Should be MSG_ */
    )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
-   "無法找到合適的核心或內容文件，手動載入。"
+   "無法找到適合的核心或內容檔案，手動載入。"
    )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR,
@@ -4871,7 +4935,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
-   "跳過內容戴入。實現將自行戴入。"
+   "跳過內容載入。 實現將自行載入。"
    )
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
@@ -5015,7 +5079,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD,
-   "無法戴入"
+   "載入失敗"
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_CONTENT,
@@ -5027,11 +5091,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
-   "無法戴入覆蓋圖層"
+   "載入覆蓋圖層失敗。"
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_STATE,
-   "無法戴入 state"
+   "載入狀態失敗於"
    )
 MSG_HASH(
    MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
@@ -5223,15 +5287,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT,
-   "載入狀態從槽 #%d."
+   "載入狀態從 #%d 槽。"
    )
 MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "載入狀態從槽 #-1 (auto)."
+   "載入狀態從 #-1 槽(自動)."
    )
 MSG_HASH(
    MSG_LOADING,
-   "讀取中"
+   "載入中"
    )
 MSG_HASH(
    MSG_FIRMWARE,
@@ -5251,7 +5315,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MEMORY,
-   "內存"
+   "記憶體"
    )
 MSG_HASH(
    MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
@@ -5283,7 +5347,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NO_STATE_HAS_BEEN_LOADED_YET,
-   "沒有戴入任何存檔。"
+   "尚未載入狀態。"
    )
 MSG_HASH(
    MSG_OVERRIDES_ERROR_SAVING,
@@ -5403,7 +5467,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SKIPPING_SRAM_LOAD,
-   "跳過 SRAM 戴入。"
+   "跳過 SRAM 載入。"
    )
 MSG_HASH(
    MSG_SLOW_MOTION,
@@ -5443,7 +5507,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
-   "已撤銷戴入狀態。"
+   "已撤銷載入狀態。"
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
@@ -5571,7 +5635,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
-   "載入Arcade DAT檔案失敗 (無效的格式？)"
+   "載入 Arcade DAT 檔案失敗 (無效的格式？)"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
@@ -5665,11 +5729,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
-   "視訊Gamma"
+   "視訊 Gamma"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
-   "啟用軟件過濾器"
+   "啟用軟體過濾器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_SETTINGS,
@@ -5685,7 +5749,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   "使用PAL60模式"
+   "使用 PAL60 模式"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
@@ -5737,13 +5801,13 @@ MSG_HASH(
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
-   "CPU超頻"
+   "CPU 超頻"
    )
 #endif
 #ifdef HAVE_LAKKA
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
-   "啟用藍牙服務"
+   "藍牙"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
@@ -5759,27 +5823,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
-   "啟用或者禁止網路文件夾共享(SAMBA)。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SSH_ENABLE,
-   "啟用SSH遠程終端服務"
+   "透過 SMB 協議分享網路資料夾。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SSH_ENABLE,
-   "啟用或者禁止遠程終端訪問(SSH)。"
+   "使用 SSH 存取遠端連線命令列。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
-   "Wi-Fi存取點"
+   "Wi-Fi 存取點"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCALAP_ENABLE,
-   "開啟或關閉Wi-Fi存取點"
+   "啟用或停用 Wi-Fi 存取點。"
    )
 MSG_HASH(
    MSG_LOCALAP_NOT_RUNNING,
-   "Wi-Fi存取點沒有運作"
+   "Wi-Fi 存取點沒有運作"
    )
 #endif
 #ifdef GEKKO
@@ -5794,7 +5854,7 @@ MSG_HASH(
 #if defined(_3DS)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
-   "3DS底部螢幕"
+   "3DS 底部螢幕"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,

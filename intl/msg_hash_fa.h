@@ -91,6 +91,8 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    MENU_ENUM_SUBLABEL_DUMP_DISC,
    "دیسک فیزیکی رسانه را در حافظه داخلی تخلیه کنید. به عنوان یک فایل image ذخیره خواهد شد."
    )
+#ifdef HAVE_LAKKA
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "فهرست‌های پخش"
@@ -731,6 +733,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    "ساماندهی"
    )
+#ifdef HAVE_LAKKA
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    "گزین فهرست"

@@ -277,7 +277,7 @@ const video_driver_t *video_drivers[] = {
    &video_gl2,
 #endif
 #if defined(HAVE_OPENGL_CORE)
-   &video_gl_core,
+   &video_gl3,
 #endif
 #ifdef HAVE_OPENGL1
    &video_gl1,
@@ -403,6 +403,12 @@ video_driver_state_t *video_state_get_ptr(void)
    return &video_driver_st;
 }
 
+void crt_switch_driver_refresh(void)
+{
+   video_driver_reinit(DRIVERS_CMD_ALL);
+}
+
+
 #ifdef HAVE_THREADS
 void *video_thread_get_ptr(video_driver_state_t *video_st)
 {
@@ -435,7 +441,7 @@ video_driver_t *hw_render_context_driver(
    {
       case RETRO_HW_CONTEXT_OPENGL_CORE:
 #ifdef HAVE_OPENGL_CORE
-         return &video_gl_core;
+         return &video_gl3;
 #else
          break;
 #endif
@@ -2278,7 +2284,7 @@ bool video_driver_find_driver(
                         "glcore");
                   RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n",
                         settings->arrays.video_driver);
-                  video_st->current_video = &video_gl_core;
+                  video_st->current_video = &video_gl3;
                   return true;
                }
 #else

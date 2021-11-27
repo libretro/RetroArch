@@ -2638,6 +2638,9 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 
       case MENU_ENUM_LABEL_LOAD_DISC:
       case MENU_ENUM_LABEL_DUMP_DISC:
+#ifdef HAVE_LAKKA
+      case MENU_ENUM_LABEL_EJECT_DISC:
+#endif
       case MENU_ENUM_LABEL_DISC_INFORMATION:
          return xmb->textures.list[XMB_TEXTURE_DISC];
 
@@ -6882,6 +6885,9 @@ static int xmb_list_push(void *data, void *userdata,
    bool menu_show_configurations   = settings->bools.menu_show_configurations;
    bool menu_show_load_disc        = settings->bools.menu_show_load_disc;
    bool menu_show_dump_disc        = settings->bools.menu_show_dump_disc;
+#ifdef HAVE_LAKKA
+   bool menu_show_eject_disc        = settings->bools.menu_show_eject_disc;
+#endif
    bool menu_show_shutdown         = settings->bools.menu_show_shutdown;
    bool menu_show_reboot           = settings->bools.menu_show_reboot;
 #if !defined(IOS)
@@ -7022,6 +7028,17 @@ static int xmb_list_push(void *data, void *userdata,
                      PARSE_ACTION,
                      false);
             }
+
+#ifdef HAVE_LAKKA
+            if (menu_show_eject_disc)
+            {
+               MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
+                     info->list,
+                     MENU_ENUM_LABEL_EJECT_DISC,
+                     PARSE_ACTION,
+                     false);
+            }
+#endif
 
             MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
                   info->list,

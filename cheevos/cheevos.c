@@ -1315,6 +1315,27 @@ static void rcheevos_fetch_badges(void)
 
 static void rcheevos_start_session_async(retro_task_t* task)
 {
+   if (rcheevos_load_aborted())
+      return;
+
+   /* We don't have to wait for this to complete
+    * to proceed to the next loading state */
+   rcheevos_client_start_session(rcheevos_locals.game.id);
+
+   /* if there's nothing for the runtime to process,
+    * disable hardcore and bail. */
+   if (rcheevos_locals.game.achievement_count == 0
+      && rcheevos_locals.game.leaderboard_count == 0)
+   {
+      if (!rcheevos_locals.runtime.richpresence)
+      {
+         rcheevos_pause_hardcore();
+         task_set_finished(task, true);
+         rcheevos_end_load();
+         return;
+      }
+   }
+
    rcheevos_begin_load_state(RCHEEVOS_LOAD_STATE_STARTING_SESSION);
 
    /* activate the achievements and leaderboards 
@@ -1324,10 +1345,6 @@ static void rcheevos_start_session_async(retro_task_t* task)
    if (     rcheevos_locals.leaderboards_enabled 
          && rcheevos_locals.hardcore_active)
       rcheevos_activate_leaderboards();
-
-   /* We don't have to wait for this to complete
-    * to proceed to the next loading state */
-   rcheevos_client_start_session(rcheevos_locals.game.id);
 
    rcheevos_validate_memrefs(&rcheevos_locals);
 
@@ -1384,20 +1401,6 @@ static void rcheevos_start_session(void)
       return;
    }
 
-   if (rcheevos_locals.game.achievement_count == 0
-      && rcheevos_locals.game.leaderboard_count == 0)
-   {
-      if (!rcheevos_locals.runtime.richpresence)
-      {
-         /* nothing for the runtime to process,
-          * disable hardcore and bail */
-         rcheevos_show_game_placard();
-         rcheevos_pause_hardcore();
-         return;
-      }
-   }
-
-   /* this is called on the primary thread. use a task to do the initialization on a background thread */
    task = task_init();
    task->handler = rcheevos_start_session_async;
    task->callback = rcheevos_start_session_finish;

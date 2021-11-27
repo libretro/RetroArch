@@ -160,7 +160,6 @@ static void handle_discord_join_cb(retro_task_t *task,
    struct netplay_room *room         = NULL;
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
    discord_state_t *discord_st       = &discord_state_st;
-   net_driver_state_t *net_st        = networking_state_get_ptr();
 
    if (!data || err || !data->data || !data->len)
       goto finish;

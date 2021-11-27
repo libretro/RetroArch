@@ -2,6 +2,7 @@
  *  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2019 - Andr�s Su�rez (input mapper code)
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
@@ -87,6 +88,8 @@
 
 /**************************************/
 /* TODO/FIXME - turn these into static global variable */
+retro_keybind_set input_config_binds[MAX_USERS];
+retro_keybind_set input_autoconf_binds[MAX_USERS];
 uint64_t lifecycle_state                                        = 0;
 
 static void *input_null_init(const char *joypad_driver) { return (void*)-1; }
@@ -353,6 +356,30 @@ static input_driver_state_t input_driver_st = {0}; /* double alignment */
 input_driver_state_t *input_state_get_ptr(void)
 {
    return &input_driver_st;
+}
+
+/**
+ * config_get_input_driver_options:
+ *
+ * Get an enumerated list of all input driver names, separated by '|'.
+ *
+ * Returns: string listing of all input driver names, separated by '|'.
+ **/
+const char* config_get_input_driver_options(void)
+{
+   return char_list_new_special(STRING_LIST_INPUT_DRIVERS, NULL);
+}
+
+/**
+ * config_get_joypad_driver_options:
+ *
+ * Get an enumerated list of all joypad driver names, separated by '|'.
+ *
+ * Returns: string listing of all joypad driver names, separated by '|'.
+ **/
+const char* config_get_joypad_driver_options(void)
+{
+   return char_list_new_special(STRING_LIST_INPUT_JOYPAD_DRIVERS, NULL);
 }
 
 /**

@@ -602,6 +602,9 @@ DEFAULT_TITLE_MACRO(action_get_crt_switchres_settings_list,     MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_configuration_settings_list,     MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_load_disc_list,                  MENU_ENUM_LABEL_VALUE_LOAD_DISC)
 DEFAULT_TITLE_MACRO(action_get_dump_disc_list,                  MENU_ENUM_LABEL_VALUE_DUMP_DISC)
+#ifdef HAVE_LAKKA
+DEFAULT_TITLE_MACRO(action_get_eject_disc,                      MENU_ENUM_LABEL_VALUE_EJECT_DISC)
+#endif
 DEFAULT_TITLE_MACRO(action_get_saving_settings_list,            MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_logging_settings_list,           MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_frame_throttle_settings_list,    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS)
@@ -930,6 +933,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_CORE_RESTORE_BACKUP_LIST,             action_get_title_deferred_core_restore_backup_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_DELETE_BACKUP_LIST,              action_get_title_deferred_core_delete_backup_list},
       {MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST,                       action_get_dump_disc_list},
+#ifdef HAVE_LAKKA
+      {MENU_ENUM_LABEL_DEFERRED_EJECT_DISC,                           action_get_eject_disc},
+#endif
       {MENU_ENUM_LABEL_DEFERRED_LOAD_DISC_LIST,                       action_get_load_disc_list},
       {MENU_ENUM_LABEL_DEFERRED_CONFIGURATION_SETTINGS_LIST,          action_get_configuration_settings_list },
       {MENU_ENUM_LABEL_DEFERRED_SAVING_SETTINGS_LIST,                 action_get_saving_settings_list},

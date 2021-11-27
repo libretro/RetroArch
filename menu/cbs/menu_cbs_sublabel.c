@@ -32,7 +32,9 @@
 #include "../../audio/audio_driver.h"
 #include "../../core_info.h"
 #include "../../verbosity.h"
+#ifdef HAVE_BLUETOOTH
 #include "../../bluetooth/bluetooth_driver.h"
+#endif
 #include "../../misc/cpufreq/cpufreq.h"
 
 #ifdef HAVE_NETWORKING
@@ -226,7 +228,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_menu_settings_list,           
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_fire_settings_list,     MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_haptic_feedback_settings_list,MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_latency_settings_list,         MENU_ENUM_SUBLABEL_LATENCY_SETTINGS)
+#ifdef HAVE_BLUETOOTH
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bluetooth_settings_list,       MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_wifi_settings_list,            MENU_ENUM_SUBLABEL_WIFI_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_lan_scan_settings_list,MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_help_list,                     MENU_ENUM_SUBLABEL_HELP_LIST)
@@ -234,7 +238,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_help_list,                     MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_services_settings_list,        MENU_ENUM_SUBLABEL_SERVICES_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ssh_enable,                    MENU_ENUM_SUBLABEL_SSH_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_samba_enable,                  MENU_ENUM_SUBLABEL_SAMBA_ENABLE )
+#ifdef HAVE_BLUETOOTH
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bluetooth_enable,              MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE )
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_localap_enable,                MENU_ENUM_SUBLABEL_LOCALAP_ENABLE )
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_timezone,                      MENU_ENUM_SUBLABEL_TIMEZONE)
 #endif
@@ -412,6 +418,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sideload_core_list,            MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_manager_list,             MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_load_disc,                  MENU_ENUM_SUBLABEL_LOAD_DISC)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dump_disc,                  MENU_ENUM_SUBLABEL_DUMP_DISC)
+#ifdef HAVE_LAKKA
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_eject_disc,                 MENU_ENUM_SUBLABEL_EJECT_DISC)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_list,                  MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_special,               MENU_ENUM_SUBLABEL_LOAD_CONTENT_SPECIAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_load_content_history,          MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY)
@@ -566,7 +575,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_location_driver,               MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_driver,                   MENU_ENUM_SUBLABEL_MENU_DRIVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_record_driver,                 MENU_ENUM_SUBLABEL_RECORD_DRIVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_midi_driver,                   MENU_ENUM_SUBLABEL_MIDI_DRIVER)
+#ifdef HAVE_BLUETOOTH
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bluetooth_driver,              MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_wifi_driver,                   MENU_ENUM_SUBLABEL_WIFI_DRIVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_filter_supported_extensions,   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_wallpaper,                     MENU_ENUM_SUBLABEL_MENU_WALLPAPER)
@@ -804,6 +815,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_load_core,                
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_load_content,                MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_load_disc,                   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_dump_disc,                   MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC)
+#ifdef HAVE_LAKKA
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_eject_disc,                  MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_information,                 MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_configurations,              MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_help,                        MENU_ENUM_SUBLABEL_MENU_SHOW_HELP)
@@ -1035,6 +1049,7 @@ static int action_bind_sublabel_systeminfo_controller_entry(
    return 0;
 }
 
+#ifdef HAVE_BLUETOOTH
 static int action_bind_sublabel_bluetooth_list(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -1044,6 +1059,7 @@ static int action_bind_sublabel_bluetooth_list(
    driver_bluetooth_device_get_sublabel(s, i, len);
    return 0;
 }
+#endif
 
 #ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
@@ -2455,6 +2471,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_DUMP_DISC:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_dump_disc);
             break;
+#ifdef HAVE_LAKKA
+         case MENU_ENUM_LABEL_EJECT_DISC:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_eject_disc);
+            break;
+#endif
          case MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_load_content);
             break;
@@ -2464,6 +2485,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_MENU_SHOW_DUMP_DISC:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_dump_disc);
             break;
+#ifdef HAVE_LAKKA
+         case MENU_ENUM_LABEL_MENU_SHOW_EJECT_DISC:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_eject_disc);
+            break;
+#endif
          case MENU_ENUM_LABEL_MENU_SHOW_INFORMATION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_information);
             break;
@@ -3068,7 +3094,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_filter_supported_extensions);
             break;
          case MENU_ENUM_LABEL_BLUETOOTH_DRIVER:
+#ifdef HAVE_BLUETOOTH
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bluetooth_driver);
+#endif
             break;
          case MENU_ENUM_LABEL_WIFI_DRIVER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_wifi_driver);
@@ -3690,7 +3718,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_shared_context);
             break;
          case MENU_ENUM_LABEL_CONNECT_BLUETOOTH:
+#ifdef HAVE_BLUETOOTH
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bluetooth_list);
+#endif
             break;
 #ifdef HAVE_NETWORKING
          case MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM:
@@ -4135,7 +4165,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_haptic_feedback_settings_list);
             break;
          case MENU_ENUM_LABEL_BLUETOOTH_SETTINGS:
+#ifdef HAVE_BLUETOOTH
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bluetooth_settings_list);
+#endif
             break;
          case MENU_ENUM_LABEL_WIFI_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_wifi_settings_list);
@@ -4157,7 +4189,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_samba_enable);
             break;
          case MENU_ENUM_LABEL_BLUETOOTH_ENABLE:
+#ifdef HAVE_BLUETOOTH
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bluetooth_enable);
+#endif
             break;
          case MENU_ENUM_LABEL_LOCALAP_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_localap_enable);

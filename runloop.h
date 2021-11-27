@@ -37,9 +37,11 @@
 #endif
 
 #include "dynamic.h"
+#include "configuration.h"
 #include "core_option_manager.h"
 #include "performance_counters.h"
 #include "state_manager.h"
+#include "tasks/tasks_internal.h"
 
 /* Arbitrary twenty subsystems limit */
 #define SUBSYSTEM_MAX_SUBSYSTEMS 20
@@ -358,7 +360,91 @@ void runloop_set_current_core_type(
  **/
 int runloop_iterate(void);
 
+void runloop_perf_log(void);
 
+void runloop_system_info_free(void);
+
+bool runloop_path_init_subsystem(void);
+
+/**
+ * libretro_get_system_info:
+ * @path                         : Path to libretro library.
+ * @info                         : Pointer to system info information.
+ * @load_no_content              : If true, core should be able to auto-start
+ *                                 without any content loaded.
+ *
+ * Gets system info from an arbitrary lib.
+ * The struct returned must be freed as strings are allocated dynamically.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool libretro_get_system_info(
+      const char *path,
+      struct retro_system_info *info,
+      bool *load_no_content);
+
+void runloop_performance_counter_register(
+		struct retro_perf_counter *perf);
+
+void runloop_runtime_log_deinit(
+      runloop_state_t *runloop_st,
+      bool content_runtime_log,
+      bool content_runtime_log_aggregate,
+      const char *dir_runtime_log,
+      const char *dir_playlist);
+
+void runloop_event_deinit_core(void);
+
+#ifdef HAVE_RUNAHEAD
+void runloop_runahead_clear_variables(runloop_state_t *runloop_st);
+#endif
+
+bool runloop_event_init_core(
+      settings_t *settings,
+      void *input_data,
+      enum rarch_core_type type);
+
+void runloop_pause_checks(void);
+
+float runloop_set_frame_limit(
+      const struct retro_system_av_info *av_info,
+      float fastforward_ratio);
+
+float runloop_get_fastforward_ratio(
+      settings_t *settings,
+      struct retro_fastforwarding_override *fastmotion_override);
+
+void runloop_task_msg_queue_push(
+      retro_task_t *task, const char *msg,
+      unsigned prio, unsigned duration,
+      bool flush);
+
+void runloop_frame_time_free(void);
+
+void runloop_fastmotion_override_free(void);
+
+void runloop_audio_buffer_status_free(void);
+
+bool secondary_core_ensure_exists(settings_t *settings);
+
+void runloop_core_options_cb_free(void);
+
+void runloop_log_counters(
+      struct retro_perf_counter **counters, unsigned num);
+
+void runloop_secondary_core_destroy(void);
+
+void runloop_msg_queue_deinit(void);
+
+void runloop_msg_queue_init(void);
+
+void runloop_path_init_savefile(void);
+
+void runloop_path_set_basename(const char *path);
+
+void runloop_path_init_savefile(void);
+
+void runloop_path_set_names(void);
 
 runloop_state_t *runloop_state_get_ptr(void);
 

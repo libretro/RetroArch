@@ -7544,9 +7544,6 @@ static void netplay_announce_cb(retro_task_t *task,
             else if (string_is_equal(key, "has_spectate_password"))
                host_room->has_spectate_password = string_is_equal_noncase(value, "true") ||
                   string_is_equal(value, "1");
-            else if (string_is_equal(key, "fixed"))
-               host_room->fixed = string_is_equal_noncase(value, "true") ||
-                  string_is_equal(value, "1");
             else if (string_is_equal(key, "retroarch_version"))
                strlcpy(host_room->retroarch_version, value,
                   sizeof(host_room->retroarch_version));
@@ -7593,7 +7590,6 @@ static void netplay_announce(void)
    struct string_list *subsystem    = path_get_subsystem_list();
    bool is_mitm                     = netplay->mitm_pending != NULL;
    const char *url                  = "http://lobby.libretro.com/add";
-   const char *url_mitm             = "http://lobby.libretro.com/addmitm";
 
 #ifdef HAVE_DISCORD
    if (discord_is_ready())
@@ -7666,8 +7662,8 @@ static void netplay_announce(void)
       coreversion,
       gamename,
       (unsigned long)content_crc,
-      settings->uints.netplay_port,
-      settings->arrays.netplay_mitm_server,
+      net_st->current_server_port,
+      net_st->current_server_mitm,
       !string_is_empty(settings->paths.netplay_password) ? 1 : 0,
       !string_is_empty(settings->paths.netplay_spectate_password) ? 1 : 0,
       is_mitm,
@@ -7694,19 +7690,12 @@ static void netplay_announce(void)
          strlcat(buf, "&mitm_session=", sizeof(buf));
          strlcat(buf, mitm_session, sizeof(buf));
          free(mitm_session);
+         free(unique_b64);
       }
-      free(unique_b64);
    }
 
-   task_push_http_post_transfer(is_mitm ? url_mitm : url, buf, true, NULL,
+   task_push_http_post_transfer(url, buf, true, NULL,
       netplay_announce_cb, NULL);
-}
-
-static bool netplay_mitm_query_wait(void *data)
-{
-   bool *finished = data;
-
-   return !(*finished);
 }
 
 static void netplay_mitm_query_cb(retro_task_t *task, void *task_data,
@@ -7717,18 +7706,17 @@ static void netplay_mitm_query_cb(retro_task_t *task, void *task_data,
    net_driver_state_t *net_st     = &networking_driver_st;
    struct netplay_room *host_room = &net_st->host_room;
    http_transfer_data_t *data     = task_data;
-   bool                 *finished = user_data;
 
    if (error)
-      goto done;
+      return;
    if (!data || !data->data || !data->len)
-      goto done;
+      return;
    if (data->status != 200)
-      goto done;
+      return;
 
    buf_start = malloc(data->len);
    if (!buf_start)
-      goto done;
+      return;
    memcpy(buf_start, data->data, data->len);
 
    buf = buf_start;
@@ -7766,9 +7754,6 @@ static void netplay_mitm_query_cb(retro_task_t *task, void *task_data,
    } while (remaining);
 
    free(buf_start);
-
-done:
-   *finished = true;
 }
 
 static bool netplay_mitm_query(const char *mitm_name)
@@ -7777,7 +7762,6 @@ static bool netplay_mitm_query(const char *mitm_name)
    net_driver_state_t  *net_st    = &networking_driver_st;
    struct netplay_room *host_room = &net_st->host_room;
    const char          *url       = "http://lobby.libretro.com/tunnel";
-   bool                finished   = false;
 
    if (string_is_empty(mitm_name))
       return false;
@@ -7785,11 +7769,11 @@ static bool netplay_mitm_query(const char *mitm_name)
    snprintf(query, sizeof(query), "%s?name=%s", url, mitm_name);
 
    if (!task_push_http_transfer(query,
-         true, NULL, netplay_mitm_query_cb, &finished))
+         true, NULL, netplay_mitm_query_cb, NULL))
       return false;
 
    /* Make sure we've the tunnel address before continuing. */
-   task_queue_wait(netplay_mitm_query_wait, &finished);
+   task_queue_wait(NULL, NULL);
 
    return !string_is_empty(host_room->mitm_address) &&
       host_room->mitm_port;
@@ -7996,10 +7980,30 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
 
       server = NULL;
 
+      net_st->current_server_mitm = "";
       if (settings->bools.netplay_use_mitm_server)
       {
-         if (netplay_mitm_query(settings->arrays.netplay_mitm_server))
+         const char *mitm_server_name = settings->arrays.netplay_mitm_server;
+         if (netplay_mitm_query(mitm_server_name))
          {
+            /* We want to cache the MITM server name in order to
+               prevent sending the wrong one to the lobby server if
+               we change its config mid-session. */
+            size_t i;
+            for (i = 0; i < ARRAY_SIZE(netplay_mitm_server_list); i++)
+            {
+               const char *tmp_name = netplay_mitm_server_list[i].name;
+               if (string_is_equal(tmp_name, mitm_server_name))
+               {
+                  net_st->current_server_mitm = tmp_name;
+                  break;
+               }
+            }
+            /* If we couldn't find a valid MITM server,
+               use the name from config. */
+            if (string_is_empty(net_st->current_server_mitm))
+               net_st->current_server_mitm = mitm_server_name;
+
             mitm = net_st->host_room.mitm_address;
             port = net_st->host_room.mitm_port;
          }
@@ -8011,6 +8015,11 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
 
       if (!port)
          port = RARCH_DEFAULT_PORT;
+
+      /* We want to cache the server's port in order to
+         prevent sending the wrong one to the lobby server if
+         we change its config mid-session. */
+      net_st->current_server_port = port;
    }
    else
    {

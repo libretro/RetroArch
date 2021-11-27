@@ -91,6 +91,16 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    MENU_ENUM_SUBLABEL_DUMP_DISC,
    "Wykonaj zrzut fizycznej płyty multimedialnej do pamięci wewnętrznej. Zostanie ona zapisana jako plik obrazu."
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "Wyrzuć płytę"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_EJECT_DISC,
+   "Wyrzuca płytę z fizycznego napędu CD/DVD."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "Playlisty"
@@ -4203,6 +4213,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
    "Pokaż opcję \"Zrzut Dysku\" w menu głównym."
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
+   "Pokaż 'Wyrzuć dysk'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
+   "Pokaż opcję 'Wyrzuć dysk' w menu głównym."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
    "Pokaż 'Aktualizator Online'"
@@ -11076,6 +11096,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,
    "Skanowanie Bluetooth zakończone."
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_PAIRING_REMOVED,
+   "Parowanie usunięte. Zrestartuj RetroArch, aby ponownie się połączyć/sparować."
    )
 MSG_HASH(
    MSG_WIFI_SCAN_COMPLETE,

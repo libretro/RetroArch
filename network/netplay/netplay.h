@@ -151,11 +151,10 @@ struct netplay_room
    char gamename          [256];
    char address           [256];
    char mitm_address      [256];
-   char mitm_session      [32];
+   char mitm_session      [33];
    bool has_password;
    bool has_spectate_password;
    bool lan;
-   bool fixed;
 };
 
 struct netplay_rooms
@@ -216,6 +215,8 @@ typedef struct
    bool has_set_netplay_ip_port;
    bool has_set_netplay_stateless_mode;
    bool has_set_netplay_check_frames;
+   unsigned current_server_port;
+   const char *current_server_mitm;
 } net_driver_state_t;
 
 net_driver_state_t *networking_state_get_ptr(void);

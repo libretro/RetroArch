@@ -91,6 +91,16 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    MENU_ENUM_SUBLABEL_DUMP_DISC,
    "Cria uma cópia da mídia física em um arquivo de imagem no armazenamento interno."
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "Ejeta o disco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_EJECT_DISC,
+   "Ejeta o disco da unidade física de CD/DVD."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "Listas de reprodução"
@@ -4247,6 +4257,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
    "Mostre a opção 'Criar cópia do disco' no menu principal."
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
+   "Mostrar 'Ejetar disco'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
+   "Mostre a opção 'Ejetar disco' no menu principal."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
    "Mostrar 'Atualizações e downloads'"
@@ -11116,6 +11136,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,
    "A busca Bluetooth foi concluída."
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_PAIRING_REMOVED,
+   "Pareamento removido. Reinicie o RetroArch para conectar/parear novamente."
    )
 MSG_HASH(
    MSG_WIFI_SCAN_COMPLETE,

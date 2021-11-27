@@ -91,6 +91,16 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    MENU_ENUM_SUBLABEL_DUMP_DISC,
    "Скопировать физический диск во внутреннее хранилище. Копия будет сохранена в виде образа."
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "Извлечь диск"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_EJECT_DISC,
+   "Извлечь диск из физического CD/DVD-привода."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "Плейлисты"
@@ -4299,6 +4309,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
    "Показывать опцию 'Скопировать диск' в главном меню."
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
+   "Показывать 'Извлечь диск'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
+   "Показывать опцию 'Извлечь диск' в главном меню."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
    "Показывать 'Онлайн-обновления'"
@@ -11272,6 +11292,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,
    "Поиск bluetooth завершён."
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_PAIRING_REMOVED,
+   "Сопряжение удалено. Перезапустите RetroArch для повторного соединения/сопряжения."
    )
 MSG_HASH(
    MSG_WIFI_SCAN_COMPLETE,

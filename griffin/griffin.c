@@ -1218,10 +1218,12 @@ GIT
 RETROARCH
 ============================================================ */
 #include "../retroarch.c"
+#include "../runloop.c"
 #include "../command.c"
 #include "../driver.c"
 #include "../midi_driver.c"
 #include "../location_driver.c"
+#include "../ui/ui_companion_driver.c"
 #include "../libretro-common/queues/task_queue.c"
 
 #include "../msg_hash.c"
@@ -1257,6 +1259,7 @@ RETROARCH
 BLUETOOTH
 ============================================================ */
 #ifdef HAVE_BLUETOOTH
+#include "../bluetooth/bluetooth_driver.c"
 #include "../bluetooth/drivers/bluetoothctl.c"
 #ifdef HAVE_DBUS
 #include "../bluetooth/drivers/bluez.c"
@@ -1266,8 +1269,15 @@ BLUETOOTH
 /*============================================================
 WIFI
 ============================================================ */
+#ifdef HAVE_WIFI
+#include "../network/wifi_driver.c"
+
 #ifdef HAVE_LAKKA
-#include "../wifi/drivers/connmanctl.c"
+#include "../network/drivers_wifi/connmanctl.c"
+#endif
+
+#include "../tasks/task_wifi.c"
+
 #endif
 
 /*============================================================
@@ -1311,8 +1321,9 @@ NETPLAY
 #include "../tasks/task_http.c"
 #include "../tasks/task_netplay_lan_scan.c"
 #include "../tasks/task_netplay_nat_traversal.c"
+#ifdef HAVE_BLUETOOTH
 #include "../tasks/task_bluetooth.c"
-#include "../tasks/task_wifi.c"
+#endif
 #include "../tasks/task_netplay_find_content.c"
 #include "../tasks/task_pl_thumbnail_download.c"
 #endif
@@ -1334,6 +1345,9 @@ DATA RUNLOOP
 #include "../tasks/task_playlist_manager.c"
 #include "../tasks/task_manual_content_scan.c"
 #include "../tasks/task_core_backup.c"
+#ifdef HAVE_TRANSLATE
+#include "../tasks/task_translation.c"
+#endif
 #ifdef HAVE_ZLIB
 #include "../tasks/task_decompress.c"
 #endif

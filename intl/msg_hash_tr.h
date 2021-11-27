@@ -87,6 +87,16 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    MENU_ENUM_SUBLABEL_DUMP_DISC,
    "Fiziksel ortam diskini dahili depolamaya aktar. Bir kalıp dosyası olarak kaydedilecektir."
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "Diski Çıkar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_EJECT_DISC,
+   "Fiziksel diski CD/DVD sürücüsünden çıkar."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "Oynatma Listeleri"
@@ -4267,6 +4277,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
    "Ana Menüde 'Diskten Aktar' seçeneğini gösterin."
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
+   "'Disk Çıkar'ı Göster"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
+   "Ana Menüde 'Diski Çıkar' seçeneğini gösterin."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
    "'Çevrimiçi Güncelleyici'yi Göster"
@@ -11264,6 +11284,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,
    "Bluetooth taraması tamamlandı."
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_PAIRING_REMOVED,
+   "Eşleştirme kaldırıldı. Tekrar bağlanmak/eşleştirmek için RetroArch'ı yeniden başlatın."
    )
 MSG_HASH(
    MSG_WIFI_SCAN_COMPLETE,

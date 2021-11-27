@@ -949,16 +949,18 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    }   
 #endif 
 
-   /* check if we are fast forwarding or in menu, if we are ignore hard sync */
-   if (hard_sync
+   /* check if we are fast forwarding or in menu, 
+      if we are ignore hard sync */
+   if (      hard_sync
          && !video_info->input_driver_nonblock_state
-         && !gl1->menu_texture_enable)
+      )
    {
       glClear(GL_COLOR_BUFFER_BIT);
       glFinish();
    }
 
-   if(draw){
+   if (draw)
+   {
       glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT);
    }

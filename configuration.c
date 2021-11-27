@@ -519,7 +519,9 @@ static const enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_ALSA;
 static const enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_NULL;
 #endif
 
-#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#if defined(HAVE_STEAM) && defined(__linux__) && defined(HAVE_SDL2)
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
+#elif defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_UWP;
 #elif defined(XENON)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_XENON360;
@@ -577,7 +579,9 @@ static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_DOS;
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_NULL;
 #endif
 
-#if defined(HAVE_XINPUT)
+#if defined(HAVE_STEAM) && defined(__linux__) && defined(HAVE_SDL2)
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_SDL;
+#elif defined(HAVE_XINPUT)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XINPUT;
 #elif defined(GEKKO)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_GX;
@@ -1825,6 +1829,9 @@ static struct config_bool_setting *populate_settings_bool(
 #ifdef HAVE_CDROM
    SETTING_BOOL("menu_show_load_disc",           &settings->bools.menu_show_load_disc, true, menu_show_load_disc, false);
    SETTING_BOOL("menu_show_dump_disc",           &settings->bools.menu_show_dump_disc, true, menu_show_dump_disc, false);
+#ifdef HAVE_LAKKA
+   SETTING_BOOL("menu_show_eject_disc",          &settings->bools.menu_show_eject_disc, true, menu_show_eject_disc, false);
+#endif /* HAVE_LAKKA */
 #endif
    SETTING_BOOL("menu_show_information",         &settings->bools.menu_show_information, true, menu_show_information, false);
    SETTING_BOOL("menu_show_configurations",      &settings->bools.menu_show_configurations, true, menu_show_configurations, false);

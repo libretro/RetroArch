@@ -83,6 +83,16 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    MENU_ENUM_SUBLABEL_DUMP_DISC,
    "Physische Medien-Disc auf den internen Speicher dumpen. Sie wird als Abbild gespeichert."
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "Disc auswerfen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_EJECT_DISC,
+   "Wirft die Disc aus dem physischen CD/DVD-Laufwerk aus."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "Wiedergabelisten"
@@ -4187,6 +4197,12 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
    "Die Option 'Disc dumpen' im Hauptmenü anzeigen."
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
+   "\"Disc auswerfen\" anzeigen"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
    "'Online-Updater' anzeigen"
@@ -10856,6 +10872,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,
    "Bluetooth-Scan abgeschlossen."
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_PAIRING_REMOVED,
+   "Kopplung entfernt. RetroArch neu starten, um erneut zu verbinden/koppeln."
    )
 MSG_HASH(
    MSG_WIFI_SCAN_COMPLETE,

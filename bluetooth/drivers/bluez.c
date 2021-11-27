@@ -604,6 +604,27 @@ static bool bluez_connect_device(void *data, unsigned i)
    return true;
 }
 
+static bool bluez_remove_device(void *data, unsigned i)
+{
+   bluez_t *bluez = (bluez_t*)data;
+   bluez_dbus_connect(bluez);
+
+   /* Disconnect the device */
+   device_method(bluez, bluez->devices->data[i].path, "Disconnect");
+
+   /* Remove the device */
+   if (device_method(bluez, bluez->devices->data[i].path, "RemoveDevice"))
+      return false;
+
+   runloop_msg_queue_push(msg_hash_to_str(MSG_BLUETOOTH_PAIRING_REMOVED),
+         1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
+         MESSAGE_QUEUE_CATEGORY_INFO);
+
+   bluez_dbus_disconnect(bluez);
+   bluez->bluez_cache_counter[i] = 0;
+   return true;
+}
+
 bluetooth_driver_t bluetooth_bluez = {
    bluez_init,
    bluez_free,
@@ -612,5 +633,6 @@ bluetooth_driver_t bluetooth_bluez = {
    bluez_device_is_connected,
    bluez_device_get_sublabel,
    bluez_connect_device,
+   bluez_remove_device,
    "bluez",
 };
