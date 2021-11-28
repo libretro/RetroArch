@@ -150,6 +150,7 @@ struct netplay_room
    char coreversion       [256];
    char gamename          [256];
    char address           [256];
+   char mitm_handle       [33];
    char mitm_address      [256];
    char mitm_session      [33];
    bool has_password;
@@ -215,8 +216,6 @@ typedef struct
    bool has_set_netplay_ip_port;
    bool has_set_netplay_stateless_mode;
    bool has_set_netplay_check_frames;
-   unsigned current_server_port;
-   const char *current_server_mitm;
 } net_driver_state_t;
 
 net_driver_state_t *networking_state_get_ptr(void);
@@ -363,7 +362,7 @@ bool netplay_discovery_driver_ctl(
       enum rarch_netplay_discovery_ctl_state state, void *data);
 #endif
 
-#endif
-
 bool netplay_decode_hostname(const char *hostname,
       char *address, unsigned *port, char *session, size_t len);
+
+#endif

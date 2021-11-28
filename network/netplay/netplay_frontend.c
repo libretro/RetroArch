@@ -6508,8 +6508,7 @@ netplay_t *netplay_new(const char *server, const char *mitm, uint16_t port,
    const struct retro_callbacks *cb, bool nat_traversal, const char *nick,
    uint64_t quirks)
 {
-   net_driver_state_t *net_st = &networking_driver_st;
-   netplay_t *netplay         = calloc(1, sizeof(*netplay));
+   netplay_t *netplay = calloc(1, sizeof(*netplay));
 
    if (!netplay)
       return NULL;
@@ -6542,15 +6541,20 @@ netplay_t *netplay_new(const char *server, const char *mitm, uint16_t port,
 
       if (!string_is_empty(mitm_session))
       {
-         unsigned char *buf;
          int flen;
+         unsigned char *buf;
 
          buf = unbase64(mitm_session, strlen(mitm_session), &flen);
-         if (buf && flen == sizeof(netplay->mitm_session_id.unique))
+         if (!buf)
+            goto failure;
+         if (flen != sizeof(netplay->mitm_session_id.unique))
          {
-            netplay->mitm_session_id.magic = htonl(MITM_SESSION_MAGIC);
-            memcpy(netplay->mitm_session_id.unique, buf, flen);
+            free(buf);
+            goto failure;
          }
+
+         netplay->mitm_session_id.magic = htonl(MITM_SESSION_MAGIC);
+         memcpy(netplay->mitm_session_id.unique, buf, flen);
          free(buf);
       }
    }
@@ -6560,14 +6564,28 @@ netplay_t *netplay_new(const char *server, const char *mitm, uint16_t port,
          sizeof(netplay->nick));
 
    if (!init_socket(netplay, server, mitm, port) ||
-      !netplay_init_buffers(netplay))
-   {
-      netplay_free(netplay);
-      return NULL;
-   }
+         !netplay_init_buffers(netplay))
+      goto failure;
 
    if (netplay->is_server)
    {
+      if (netplay->mitm_session_id.magic)
+      {
+         int flen;
+         char *buf;
+         net_driver_state_t *net_st     = &networking_driver_st;
+         struct netplay_room *host_room = &net_st->host_room;
+
+         buf = base64(netplay->mitm_session_id.unique,
+            sizeof(netplay->mitm_session_id.unique), &flen);
+         if (!buf)
+            goto failure;
+
+         strlcpy(host_room->mitm_session, buf,
+            sizeof(host_room->mitm_session));
+         free(buf);
+      }
+
       /* Clients get device info from the server */
       unsigned i;
       for (i = 0; i < MAX_INPUT_DEVICES; i++)
@@ -6594,6 +6612,10 @@ netplay_t *netplay_new(const char *server, const char *mitm, uint16_t port,
    }
 
    return netplay;
+
+failure:
+   netplay_free(netplay);
+   return NULL;
 }
 
 /**
@@ -7549,8 +7571,6 @@ static void netplay_announce_cb(retro_task_t *task,
                   sizeof(host_room->retroarch_version));
             else if (string_is_equal(key, "country"))
                strlcpy(host_room->country, value, sizeof(host_room->country));
-            else if (string_is_equal(key, "mitm_session"))
-               strlcpy(host_room->mitm_session, value, sizeof(host_room->mitm_session));
          }
       }
 
@@ -7583,12 +7603,13 @@ static void netplay_announce(void)
    char *gamename                   = NULL;
    char *subsystemname              = NULL;
    char *frontend_ident             = NULL;
+   char *mitm_session               = NULL;
    settings_t *settings             = config_get_ptr();
    net_driver_state_t *net_st       = &networking_driver_st;
    netplay_t *netplay               = net_st->data;
+   struct netplay_room *host_room   = &net_st->host_room;
    struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
    struct string_list *subsystem    = path_get_subsystem_list();
-   bool is_mitm                     = netplay->mitm_pending != NULL;
    const char *url                  = "http://lobby.libretro.com/add";
 
 #ifdef HAVE_DISCORD
@@ -7643,6 +7664,8 @@ static void netplay_announce(void)
          sizeof(frontend_architecture));
    net_http_urlencode(&frontend_ident, frontend_architecture);
 
+   net_http_urlencode(&mitm_session, host_room->mitm_session);
+
    snprintf(buf, sizeof(buf),
       "username=%s&"
       "core_name=%s&"
@@ -7656,20 +7679,22 @@ static void netplay_announce(void)
       "force_mitm=%d&"
       "retroarch_version=%s&"
       "frontend=%s&"
-      "subsystem_name=%s",
+      "subsystem_name=%s&"
+      "mitm_session=%s"
       username,
       corename,
       coreversion,
       gamename,
       (unsigned long)content_crc,
-      net_st->current_server_port,
-      net_st->current_server_mitm,
+      (unsigned long)netplay->tcp_port,
+      host_room->mitm_handle,
       !string_is_empty(settings->paths.netplay_password) ? 1 : 0,
       !string_is_empty(settings->paths.netplay_spectate_password) ? 1 : 0,
-      is_mitm,
+      !string_is_empty(host_room->mitm_session) ? 1 : 0,
       PACKAGE_VERSION,
       frontend_ident,
-      subsystemname);
+      subsystemname,
+      mitm_session);
 
    free(username);
    free(corename);
@@ -7677,22 +7702,7 @@ static void netplay_announce(void)
    free(gamename);
    free(subsystemname);
    free(frontend_ident);
-
-   if (is_mitm)
-   {
-      int flen;
-      char *unique_b64 = base64(netplay->mitm_session_id.unique,
-         sizeof(netplay->mitm_session_id.unique), &flen);
-      if (unique_b64)
-      {
-         char *mitm_session = NULL;
-         net_http_urlencode(&mitm_session, unique_b64);
-         strlcat(buf, "&mitm_session=", sizeof(buf));
-         strlcat(buf, mitm_session, sizeof(buf));
-         free(mitm_session);
-         free(unique_b64);
-      }
-   }
+   free(mitm_session);
 
    task_push_http_post_transfer(url, buf, true, NULL,
       netplay_announce_cb, NULL);
@@ -7845,8 +7855,7 @@ static bool netplay_pre_frame(
 
    if (netplay->is_server && netplay_public_announce)
    {
-      net_st->reannounce++;
-      if (net_st->reannounce % 300 == 0)
+      if (++net_st->reannounce % 1200 == 0)
          netplay_announce();
    }
    /* Make sure that if announcement is turned on mid-game, it gets announced */
@@ -7943,12 +7952,6 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
       return false;
    }
 
-   if (string_is_empty(server) || !port)
-   {
-      net_st->netplay_client_deferred = false;
-      return false;
-   }
-
    core_set_default_callbacks(&cbs);
    if (!core_set_netplay_callbacks())
    {
@@ -7976,36 +7979,25 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
 
    if (!net_st->netplay_is_client)
    {
-      memset(&net_st->host_room, 0, sizeof(net_st->host_room));
+      struct netplay_room *host_room = &net_st->host_room;
+
+      memset(host_room, 0, sizeof(*host_room));
 
       server = NULL;
 
-      net_st->current_server_mitm = "";
       if (settings->bools.netplay_use_mitm_server)
       {
-         const char *mitm_server_name = settings->arrays.netplay_mitm_server;
-         if (netplay_mitm_query(mitm_server_name))
+         const char *mitm_handle = settings->arrays.netplay_mitm_server;
+         if (netplay_mitm_query(mitm_handle))
          {
-            /* We want to cache the MITM server name in order to
+            /* We want to cache the MITM server handle in order to
                prevent sending the wrong one to the lobby server if
                we change its config mid-session. */
-            size_t i;
-            for (i = 0; i < ARRAY_SIZE(netplay_mitm_server_list); i++)
-            {
-               const char *tmp_name = netplay_mitm_server_list[i].name;
-               if (string_is_equal(tmp_name, mitm_server_name))
-               {
-                  net_st->current_server_mitm = tmp_name;
-                  break;
-               }
-            }
-            /* If we couldn't find a valid MITM server,
-               use the name from config. */
-            if (string_is_empty(net_st->current_server_mitm))
-               net_st->current_server_mitm = mitm_server_name;
+            strlcpy(host_room->mitm_handle, mitm_handle,
+               sizeof(host_room->mitm_handle));
 
-            mitm = net_st->host_room.mitm_address;
-            port = net_st->host_room.mitm_port;
+            mitm = host_room->mitm_address;
+            port = host_room->mitm_port;
          }
          else
          {
@@ -8015,11 +8007,6 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
 
       if (!port)
          port = RARCH_DEFAULT_PORT;
-
-      /* We want to cache the server's port in order to
-         prevent sending the wrong one to the lobby server if
-         we change its config mid-session. */
-      net_st->current_server_port = port;
    }
    else
    {

@@ -626,11 +626,11 @@ struct netplay
    /* Are we the connected? */
    bool is_connected;
 
-   /* MITM connection handler */
-   struct netplay_mitm_pending *mitm_pending;
-
    /* MITM session id */
    mitm_id_t mitm_session_id;
+
+   /* MITM connection handler */
+   struct netplay_mitm_pending *mitm_pending;
 };
 
 /***************************************************************
