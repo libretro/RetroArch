@@ -28,8 +28,6 @@
 #include "../../msg_hash.h"
 #include "../../verbosity.h"
 
-#define NETPLAY_PROTOCOL_VERSION 5
-
 #define RARCH_DEFAULT_PORT 55435
 #define RARCH_DEFAULT_NICK "Anonymous"
 
@@ -175,7 +173,15 @@ enum netplay_cmd
    /* CMD_CFG streamlines sending multiple
       configurations. This acknowledges
       each one individually */
-   NETPLAY_CMD_CFG_ACK        = 0x0062
+   NETPLAY_CMD_CFG_ACK        = 0x0062,
+
+   /* Chat commands */
+
+   /* Sends a player chat message.
+    * The server is responsible for formatting/truncating 
+    * the message and relaying it to all playing clients,
+    * including the one that sent the message. */
+   NETPLAY_CMD_PLAYER_CHAT    = 0x1000
 };
 
 #define NETPLAY_CMD_SYNC_BIT_PAUSED    (1U<<31)
@@ -387,6 +393,9 @@ struct netplay_connection
 
    /* Is this connection buffer in use? */
    bool active;
+
+   /* Which netplay protocol is this connection running? */
+   uint32_t netplay_protocol;
 };
 
 /* Compression transcoder */
@@ -396,6 +405,26 @@ struct compression_transcoder
    void *compression_stream;
    const struct trans_stream_backend *decompression_backend;
    void *decompression_stream;
+};
+
+typedef struct mitm_id
+{
+   uint32_t magic;
+   uint8_t  unique[12];
+} mitm_id_t;
+
+#define NETPLAY_MITM_MAX_PENDING 8
+struct netplay_mitm_pending
+{
+   int          fds[NETPLAY_MITM_MAX_PENDING];
+   mitm_id_t    ids[NETPLAY_MITM_MAX_PENDING];
+   retro_time_t timeouts[NETPLAY_MITM_MAX_PENDING];
+
+   mitm_id_t id_buf;
+   size_t    id_recvd;
+
+   struct       addrinfo *base_addr;
+   const struct addrinfo *addr;
 };
 
 struct netplay
@@ -597,6 +626,11 @@ struct netplay
    /* Are we the connected? */
    bool is_connected;
 
+   /* MITM session id */
+   mitm_id_t mitm_session_id;
+
+   /* MITM connection handler */
+   struct netplay_mitm_pending *mitm_pending;
 };
 
 /***************************************************************
@@ -719,7 +753,7 @@ void input_poll_net(void);
  * part of the handshake protocol.
  */
 bool netplay_handshake_init_send(netplay_t *netplay,
-   struct netplay_connection *connection);
+   struct netplay_connection *connection, uint32_t protocol);
 
 /**
  * netplay_handshake
@@ -754,9 +788,10 @@ bool netplay_wait_and_init_serialization(netplay_t *netplay);
 
 /**
  * netplay_new:
- * @direct_host          : Netplay host discovered from scanning.
  * @server               : IP address of server.
+ * @mitm                 : IP address of the MITM/tunnel server.
  * @port                 : Port of server.
+ * @mitm_session         : Session id for MITM/tunnel.
  * @stateless_mode       : Shall we run in stateless mode?
  * @check_frames         : Frequency with which to check CRCs.
  * @cb                   : Libretro callbacks.
@@ -769,8 +804,8 @@ bool netplay_wait_and_init_serialization(netplay_t *netplay);
  *
  * Returns: new netplay data.
  */
-netplay_t *netplay_new(void *direct_host,
-      const char *server, uint16_t port,
+netplay_t *netplay_new(const char *server, const char *mitm, uint16_t port,
+      const char *mitm_session,
       bool stateless_mode, int check_frames,
       const struct retro_callbacks *cb,
       bool nat_traversal, const char *nick,
@@ -915,10 +950,11 @@ bool netplay_resolve_input(netplay_t *netplay,
 /**
  * netplay_sync_pre_frame
  * @netplay              : pointer to netplay object
+ * @disconnect           : disconnect netplay
  *
  * Pre-frame for Netplay synchronization.
  */
-bool netplay_sync_pre_frame(netplay_t *netplay);
+bool netplay_sync_pre_frame(netplay_t *netplay, bool *disconnect);
 
 /**
  * netplay_sync_post_frame
