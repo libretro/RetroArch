@@ -161,7 +161,7 @@ static void handle_discord_join_cb(retro_task_t *task,
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
    discord_state_t *discord_st       = &discord_state_st;
 
-   if (!data || err || !data->data)
+   if (!data || err || !data->data || !data->len)
       goto finish;
 
    data->data                        = (char*)realloc(data->data, data->len + 1);
@@ -172,16 +172,16 @@ static void handle_discord_join_cb(retro_task_t *task,
 
    if (room)
    {
-      bool host_method_is_mitm = room->host_method == NETPLAY_HOST_METHOD_MITM;
-      const char *srv_address  = host_method_is_mitm ? room->mitm_address : room->address;
-      unsigned srv_port        = host_method_is_mitm ? room->mitm_port : room->port;
+      if (room->host_method == NETPLAY_HOST_METHOD_MITM)
+         snprintf(join_hostname, sizeof(join_hostname), "%s|%d|%s",
+            room->mitm_address, room->mitm_port, room->mitm_session);
+      else
+         snprintf(join_hostname, sizeof(join_hostname), "%s|%d",
+            room->address, room->port);
 
       if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
          deinit_netplay();
       netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
-
-      snprintf(join_hostname, sizeof(join_hostname), "%s|%d",
-            srv_address, srv_port);
 
       task_push_netplay_crc_scan(room->gamecrc,
          room->gamename, join_hostname, room->corename, room->subsystem_name);

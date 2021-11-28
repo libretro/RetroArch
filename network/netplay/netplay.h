@@ -34,6 +34,8 @@
 
 #include "../../core.h"
 
+#include "netplay_protocol.h"
+
 #define NETPLAY_HOST_STR_LEN 32
 #define NETPLAY_HOST_LONGSTR_LEN 256
 
@@ -41,6 +43,7 @@ enum rarch_netplay_ctl_state
 {
    RARCH_NETPLAY_CTL_NONE = 0,
    RARCH_NETPLAY_CTL_GAME_WATCH,
+   RARCH_NETPLAY_CTL_PLAYER_CHAT,
    RARCH_NETPLAY_CTL_POST_FRAME,
    RARCH_NETPLAY_CTL_PRE_FRAME,
    RARCH_NETPLAY_CTL_ENABLE_SERVER,
@@ -147,11 +150,12 @@ struct netplay_room
    char coreversion       [256];
    char gamename          [256];
    char address           [256];
+   char mitm_handle       [33];
    char mitm_address      [256];
+   char mitm_session      [33];
    bool has_password;
    bool has_spectate_password;
    bool lan;
-   bool fixed;
 };
 
 struct netplay_rooms
@@ -186,7 +190,6 @@ typedef struct
 {
    netplay_t *data; /* Used while Netplay is running */
    struct netplay_room host_room; /* ptr alignment */
-   netplay_t *handshake_password;
    struct netplay_room *room_list;
    struct netplay_rooms *rooms_data;
    /* List of discovered hosts */
@@ -200,14 +203,14 @@ typedef struct
    /* Packet buffer for advertisement and responses */
    struct ad_packet ad_packet_buffer; /* uint32_t alignment */
    uint16_t mapping[RETROK_LAST];
-   char server_address_deferred[512];
+   char server_address_deferred[256];
+   char server_session_deferred[32];
    /* Only used before init_netplay */
    bool netplay_enabled;
    bool netplay_is_client;
    /* Used to avoid recursive netplay calls */
    bool in_netplay;
    bool netplay_client_deferred;
-   bool is_mitm;
    bool has_set_netplay_mode;
    bool has_set_netplay_ip_address;
    bool has_set_netplay_ip_port;
@@ -242,6 +245,13 @@ void netplay_frontend_paused(netplay_t *netplay, bool paused);
  * Toggle between play mode and spectate mode
  */
 void netplay_toggle_play_spectate(netplay_t *netplay);
+
+/**
+ * netplay_input_chat
+ *
+ * Opens an input menu for sending netplay chat
+ */
+void netplay_input_chat(netplay_t *netplay);
 
 /**
  * netplay_load_savestate
@@ -319,9 +329,9 @@ void deinit_netplay(void);
 
 /**
  * init_netplay
- * @direct_host          : Host to connect to directly, if applicable (client only)
  * @server               : server address to connect to (client only)
  * @port                 : TCP port to host on/connect to
+ * @mitm_session         : Session id for MITM/tunnel (client only).
  *
  * Initializes netplay.
  *
@@ -329,9 +339,9 @@ void deinit_netplay(void);
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool init_netplay(void *direct_host, const char *server, unsigned port);
+bool init_netplay(const char *server, unsigned port, const char *mitm_session);
 
-bool init_netplay_deferred(const char* server, unsigned port);
+bool init_netplay_deferred(const char *server, unsigned port, const char *mitm_session);
 
 void video_frame_net(const void *data, unsigned width,
       unsigned height, size_t pitch);
@@ -351,5 +361,8 @@ void deinit_netplay_discovery(void);
 bool netplay_discovery_driver_ctl(
       enum rarch_netplay_discovery_ctl_state state, void *data);
 #endif
+
+bool netplay_decode_hostname(const char *hostname,
+      char *address, unsigned *port, char *session, size_t len);
 
 #endif

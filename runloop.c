@@ -6885,6 +6885,7 @@ static enum runloop_state_enum runloop_check_state(
 #ifdef HAVE_NETWORKING
    /* Check Netplay */
    HOTKEY_CHECK(RARCH_NETPLAY_GAME_WATCH, CMD_EVENT_NETPLAY_GAME_WATCH, true, NULL);
+   HOTKEY_CHECK(RARCH_NETPLAY_PLAYER_CHAT, CMD_EVENT_NETPLAY_PLAYER_CHAT, true, NULL);
 #endif
 
    /* Check if we have pressed the pause button */

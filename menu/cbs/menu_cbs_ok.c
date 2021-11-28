@@ -5753,9 +5753,10 @@ static int action_ok_netplay_connect_room(const char *path,
    if (net_st->room_list[room_index].host_method == NETPLAY_HOST_METHOD_MITM)
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
-            "%s|%d",
+            "%s|%d|%s",
          net_st->room_list[room_index].mitm_address,
-         net_st->room_list[room_index].mitm_port);
+         net_st->room_list[room_index].mitm_port,
+         net_st->room_list[room_index].mitm_session);
    else
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
