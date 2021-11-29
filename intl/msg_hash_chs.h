@@ -96,6 +96,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EJECT_DISC,
    "弹出光盘"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_EJECT_DISC,
+   "从实体CD/DVD驱动器弹出光盘."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
@@ -1621,8 +1625,16 @@ MSG_HASH(
    "记住窗口位置和大小"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+   "在“窗口宽度”和“窗口高度”指定的固定尺寸窗口中显示所有内容， 并在关闭RetroArch时保存当前窗口大小和位置。 禁用后窗口大小将根据“窗口缩放”动态设置。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    "使用自定义窗口大小"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "在“窗口宽度”和“窗口高度”指定的大小窗口中显示所有内容。 禁用后，窗口大小将根据“窗口缩放”动态设置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1645,8 +1657,16 @@ MSG_HASH(
    "最大窗口宽度"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "根据窗口缩放自动调整窗口大小时设置显示窗口的最大宽度。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    "最大窗口高度"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "设置基于窗口缩放自动调整窗口大小时显示窗口的最大高度"
    )
 
 /* Settings > Video > Scaling */
@@ -1674,6 +1694,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    "自定义宽高比"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
+   "视频宽高比分数值 (宽度/高度)，如果“设置→视频”中有「宽高比」设置，则使用此数值。"
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1741,8 +1765,32 @@ MSG_HASH(
    "最高亮度"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
+   "设置您显示的峰亮度(Cd/m2)。请查看显示的峰亮度。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
+   "白点亮度"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "设置白点亮度，即可读文字或亮度在SDR(Standard Dynamic Range)范围的顶部。 有助于根据您环境中的不同照明条件进行调整。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Contrast - 对比度"
+   "对比度"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
+   "HDR 的伽玛/对比度控制 HDR 使用颜色并增加图像最亮部分和最黑暗部分之间的总体范围。 人类发展报告对比率越高，差距就越大，而对比率越低，图像就越被冲破越多。 帮助用户根据自己的喜好和他们在显示上感觉最好的方式调整图像。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "扩展色阶"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "一旦色域转换为渐变区，决定我们是否应该使用扩展色阶来达到HDR10。"
    )
 
 /* Settings > Video > Synchronization */
@@ -1778,6 +1826,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    "以增加画面卡顿的风险换取低延时，在垂直同步后增加时延 (毫秒)。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
+   "自动帧中继"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   "暂时降低有效的“帧中继”以防止将来的帧丢失。起始点是当“帧延迟”为0时的半帧时间。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
@@ -1845,6 +1901,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    "菜单声音"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   "更改 界面音设置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
@@ -2156,6 +2216,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
    "如果硬件支持，则启用加速度计，陀螺仪和光线传感器。可能会影响性能或增加功耗。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   "自动捕捉鼠标。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
+   "在应用程序焦点上启用鼠标捕捉"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
@@ -2969,7 +3037,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
-   "模擬核心選項類別"
+   "核心选项类别"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
+   "允许核心在基于类别的子菜单中显示选项。注意：必须重新加载核心才能使更改生效。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
@@ -3920,6 +3992,14 @@ MSG_HASH(
    "设置刷新率时显示屏幕消息。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "联网详情"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "在屏幕上显示非必要的联网消息。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "通知字体"
    )
@@ -4230,6 +4310,14 @@ MSG_HASH(
    "在主菜单中显示「转储光盘」选项。"
    )
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
+   "显示“弹出光盘”"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
+   "在主菜单中显示“弹出光盘”选项。"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
@@ -4553,6 +4641,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
    "显示「选项」选项。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "显示“更新项到磁盘”"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "在“选项 > 管理核心选项”菜单中显示“向磁盘刷新选项”条目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
@@ -5111,6 +5207,10 @@ MSG_HASH(
    "服务器 IP 地址端口。可以是 TCP 或 UDP 端口。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
+   "最大同时连接数"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
    "服务器密码"
    )
@@ -5486,6 +5586,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
    "验证核心关联并删除无效和重复的条目。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "刷新播放列表"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "通过重复最后用于创建或编辑播放列表的“手动扫描”操作来添加新内容并删除无效条目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
@@ -6068,6 +6176,14 @@ MSG_HASH(
    "如果启用，在扫描前所有现有的游戏列表都会被删除。如果禁用，扫描时现有播放列表将会被保留，只添加缺失的新游戏。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   "验证现有条目"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   "启用后，在扫描新内容之前，将验证任何现有播放列表中的条目。 提及缺少的内容和/或无效扩展名文件的条目将被删除。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
    "开始扫描"
    )
@@ -6077,6 +6193,10 @@ MSG_HASH(
    )
 
 /* Explore tab */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST,
+   "正在初始化列表..."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
    "发行年份"
@@ -6466,6 +6586,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
    "将所有核心设置重置为默认值。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
+   "更新选项到磁盘"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
+   "强制将当前设置写入活动选项文件。 如果核心错误导致前端不适当地关闭，则保留附属选项。"
    )
 
 /* - Legacy (unused) */
@@ -10198,6 +10326,30 @@ MSG_HASH(
    "已清理列表："
    )
 MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_MISSING_CONFIG,
+   "刷新失败 - 播放列表中没有有效的扫描记录： "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
+   "刷新失败 - 无效/缺少内容目录： "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_SYSTEM_NAME,
+   "刷新失败 - 无效/缺失的系统名称： "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CORE,
+   "刷新失败 - 无效核心： "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_DAT_FILE,
+   "刷新失败 - 无效/缺少 游玩的DAT文件： "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE,
+   "刷新失败 - 游玩DAT文件过大 (内存不足)： "
+   )
+MSG_HASH(
    MSG_ADDED_TO_FAVORITES,
    "收藏"
    )
@@ -10322,6 +10474,14 @@ MSG_HASH(
    "所有核心选项已重置为默认值。"
    )
 MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSHED,
+   "核心选项保存到："
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSH_FAILED,
+   "核心选项保存失败："
+   )
+MSG_HASH(
    MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
    "找不到更多驱动程序。"
    )
@@ -10376,6 +10536,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
    "从有效端口断开设备。"
+   )
+MSG_HASH(
+   MSG_DISK_CLOSED,
+   "关闭虚拟盘片。"
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "弹出虚拟光盘托盘。"
    )
 MSG_HASH(
    MSG_DOWNLOADING,
@@ -11078,6 +11246,10 @@ MSG_HASH(
    "蓝牙扫描完成。"
    )
 MSG_HASH(
+   MSG_BLUETOOTH_PAIRING_REMOVED,
+   "配对已删除。重新启动重启以重新连接/配对。"
+   )
+MSG_HASH(
    MSG_WIFI_SCAN_COMPLETE,
    "Wi-Fi 扫描完成。"
    )
@@ -11266,6 +11438,18 @@ MSG_HASH(
    "无法放置上次使用的光盘..."
    )
 MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   "无法连接到客户端"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "无法连接到主机"
+   )
+MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "联网主机已满"
+   )
+MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
    "接收主机端报文失败"
    )
@@ -11364,6 +11548,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,
    "正在扫描游戏："
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP,
+   "正在检查当前条目： "
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
@@ -11508,12 +11696,32 @@ MSG_HASH(
    "屏幕分辨率：默认"
    )
 MSG_HASH(
+   MSG_SCREEN_RESOLUTION_NO_DESC,
+   "屏幕分辨率： %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DESC,
+   "屏幕分辨率： %dx%d - %s"
+   )
+MSG_HASH(
    MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
    "应用：默认"
    )
 MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
+   "应用： %dx%d\n开始重置"
+   )
+MSG_HASH(
    MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
    "重置为：默认"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC,
+   "重置到： %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DESC,
+   "重置到： %dx%d - %s"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
