@@ -7673,7 +7673,7 @@ static void netplay_announce(void)
       "core_version=%s&"
       "game_name=%s&"
       "game_crc=%08lX&"
-      "port=%d&"
+      "port=%hu&"
       "mitm_server=%s&"
       "has_password=%d&"
       "has_spectate_password=%d&"
@@ -7687,7 +7687,7 @@ static void netplay_announce(void)
       coreversion,
       gamename,
       (unsigned long)content_crc,
-      (unsigned long)netplay->tcp_port,
+      netplay->tcp_port,
       host_room->mitm_handle,
       !string_is_empty(settings->paths.netplay_password) ? 1 : 0,
       !string_is_empty(settings->paths.netplay_spectate_password) ? 1 : 0,
