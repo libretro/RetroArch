@@ -5992,7 +5992,12 @@ finish:
 static int action_ok_push_netplay_refresh_rooms(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char url [2048] = "http://lobby.libretro.com/list/";
+#ifndef NETPLAY_TEST_BUILD
+   const char *url = "http://lobby.libretro.com/list";
+#else
+   const char *url = "http://lobbytest.libretro.com/list";
+#endif
+
 #ifdef HAVE_NETPLAYDISCOVERY
    task_push_netplay_lan_scan(netplay_lan_scan_callback);
 #endif

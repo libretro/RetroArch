@@ -39,6 +39,8 @@
 #define NETPLAY_HOST_STR_LEN 32
 #define NETPLAY_HOST_LONGSTR_LEN 256
 
+#define NETPLAY_TEST_BUILD REMOVE THIS BEFORE RELEASE!!!
+
 enum rarch_netplay_ctl_state
 {
    RARCH_NETPLAY_CTL_NONE = 0,

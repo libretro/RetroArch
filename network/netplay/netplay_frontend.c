@@ -7611,7 +7611,11 @@ static void netplay_announce(void)
    struct netplay_room *host_room   = &net_st->host_room;
    struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
    struct string_list *subsystem    = path_get_subsystem_list();
+#ifndef NETPLAY_TEST_BUILD
    const char *url                  = "http://lobby.libretro.com/add";
+#else
+   const char *url                  = "http://lobbytest.libretro.com/add";
+#endif
 
 #ifdef HAVE_DISCORD
    if (discord_is_ready())
@@ -7772,7 +7776,11 @@ static bool netplay_mitm_query(const char *mitm_name)
    char query[512];
    net_driver_state_t  *net_st    = &networking_driver_st;
    struct netplay_room *host_room = &net_st->host_room;
+#ifndef NETPLAY_TEST_BUILD
    const char          *url       = "http://lobby.libretro.com/tunnel";
+#else
+   const char          *url       = "http://lobbytest.libretro.com/tunnel";
+#endif
 
    if (string_is_empty(mitm_name))
       return false;
