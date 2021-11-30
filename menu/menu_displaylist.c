@@ -9713,10 +9713,21 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
       for (i = 0; i < net_st->room_count; i++)
       {
          char country[8];
+         char passworded[64];
 
-         if (*net_st->room_list[i].country)
+         if (!net_st->room_list[i].lan &&
+               !string_is_empty(net_st->room_list[i].country))
             snprintf(country, sizeof(country),
                   "(%s)", net_st->room_list[i].country);
+         else
+            *country = '\0';
+
+         if (net_st->room_list[i].has_password ||
+               net_st->room_list[i].has_spectate_password)
+            snprintf(passworded, sizeof(passworded),
+                  "[%s]", msg_hash_to_str(MSG_ROOM_PASSWORDED));
+         else
+            *passworded = '\0';
 
          /* Uncomment this to debug mismatched room parameters*/
 #if 0
@@ -9739,15 +9750,16 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
                net_st->room_list[i].timestamp);
 #endif
 
-         snprintf(s, sizeof(s), "%s: %s%s",
-            net_st->room_list[i].lan 
-            ? msg_hash_to_str(MSG_LOCAL) 
-            : (net_st->room_list[i].host_method 
-               == NETPLAY_HOST_METHOD_MITM 
-               ? msg_hash_to_str(MSG_INTERNET_RELAY) 
+         snprintf(s, sizeof(s), "%s%s: %s%s",
+            passworded,
+            net_st->room_list[i].lan
+            ? msg_hash_to_str(MSG_LOCAL)
+            : (net_st->room_list[i].host_method
+               == NETPLAY_HOST_METHOD_MITM
+               ? msg_hash_to_str(MSG_INTERNET_RELAY)
                : msg_hash_to_str(MSG_INTERNET)),
             net_st->room_list[i].nickname,
-            net_st->room_list[i].lan ? "" : country
+            country
             );
 
          if (menu_entries_append_enum(list,
