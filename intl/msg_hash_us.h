@@ -12644,6 +12644,10 @@ MSG_HASH(
    "Show the 'Shutdown' option."
    )
 MSG_HASH(
+   MSG_ROOM_PASSWORDED,
+   "Passworded"
+   )
+MSG_HASH(
    MSG_INTERNET,
    "Internet"
    )
