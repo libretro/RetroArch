@@ -126,8 +126,10 @@ static bool oss_stop(void *data)
 {
    oss_audio_t *ossaudio  = (oss_audio_t*)data;
 
+#if !defined(RETROFW)
    if (ioctl(ossaudio->fd, SNDCTL_DSP_RESET, 0) < 0)
       return false;
+#endif
 
    ossaudio->is_paused = true;
    return true;
@@ -167,8 +169,11 @@ static void oss_free(void *data)
 {
    oss_audio_t *ossaudio  = (oss_audio_t*)data;
 
+/*RETROFW IOCTL always returns EINVAL*/ 
+#if !defined(RETROFW)
    if (ioctl(ossaudio->fd, SNDCTL_DSP_RESET, 0) < 0)
       return;
+#endif
 
    close(ossaudio->fd);
    free(data);
