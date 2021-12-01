@@ -396,6 +396,14 @@ struct netplay_connection
 
    /* Which netplay protocol is this connection running? */
    uint32_t netplay_protocol;
+
+   /* Timer used to estimate a connection's latency */
+   retro_time_t ping_timer;
+
+   /* What latency is this connection running on? 
+    * Network latency has limited precision as we estimate it
+    * once every pre-frame. */
+   int32_t ping;
 };
 
 /* Compression transcoder */

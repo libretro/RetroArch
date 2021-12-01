@@ -1154,6 +1154,9 @@ static const bool audio_enable_menu_bgm    = false;
 /* Start netplay in spectator mode */
 static const bool netplay_start_as_spectator = false;
 
+/* Allow players (other than the host) to pause */
+static const bool netplay_allow_pausing = false;
+
 /* Allow connections in slave mode */
 static const bool netplay_allow_slaves = true;
 
@@ -1179,9 +1182,10 @@ static const bool netplay_use_mitm_server = false;
 
 #ifdef HAVE_NETWORKING
 static const unsigned netplay_max_connections = 3;
-static const unsigned netplay_share_digital = RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE;
+static const unsigned netplay_max_ping        = 0;
 
-static const unsigned netplay_share_analog = RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE;
+static const unsigned netplay_share_digital = RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE;
+static const unsigned netplay_share_analog  = RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE;
 #endif
 
 /* On save state load, block SRAM from being overwritten.

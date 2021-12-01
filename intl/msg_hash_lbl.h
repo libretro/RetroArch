@@ -1973,6 +1973,10 @@ MSG_HASH(
    "netplay_start_as_spectator"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING,
+   "netplay_allow_pausing"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE,
    "netplay_stateless_mode"
    )
@@ -1983,6 +1987,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_MAX_CONNECTIONS,
    "netplay_max_connections"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_MAX_PING,
+   "netplay_max_ping"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS,
