@@ -11788,6 +11788,10 @@ MSG_HASH(
    "Mostra l'opzione 'Spegnimento'."
    )
 MSG_HASH(
+   MSG_ROOM_PASSWORDED,
+   "Con password"
+   )
+MSG_HASH(
    MSG_INTERNET_RELAY,
    "Internet (Relè)"
    )

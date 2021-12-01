@@ -11900,6 +11900,10 @@ MSG_HASH(
    "Muestra la opción «Apagar»."
    )
 MSG_HASH(
+   MSG_ROOM_PASSWORDED,
+   "Con contraseña"
+   )
+MSG_HASH(
    MSG_INTERNET_RELAY,
    "Internet (relé)"
    )
