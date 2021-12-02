@@ -889,6 +889,11 @@ static void get_device_name(HIDDevice *device, wiiu_attach_event *event)
 
 static wiiu_attach_event *new_attach_event(HIDDevice *device)
 {
+   if(device->protocol > 0)
+   {
+      /* ignore mice and keyboards as HID devices */
+      return NULL;
+   }
    wiiu_attach_event *event = alloc_zeroed(4, sizeof(wiiu_attach_event));
    
    if (!event)
