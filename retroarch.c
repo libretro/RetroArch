@@ -1813,6 +1813,10 @@ bool command_event(enum event_command cmd, void *data)
 #if HAVE_NETWORKING
          netplay_driver_ctl(RARCH_NETPLAY_CTL_RESET, NULL);
 #endif
+         /* Recalibrate frame delay target */
+         if (settings->bools.video_frame_delay_auto)
+            video_st->frame_delay_target = 0;
+
          return false;
       case CMD_EVENT_SAVE_STATE:
       case CMD_EVENT_SAVE_STATE_TO_RAM:
