@@ -1154,6 +1154,9 @@ static const bool audio_enable_menu_bgm    = false;
 /* Start netplay in spectator mode */
 static const bool netplay_start_as_spectator = false;
 
+/* Allow players (other than the host) to pause */
+static const bool netplay_allow_pausing = false;
+
 /* Allow connections in slave mode */
 static const bool netplay_allow_slaves = true;
 
