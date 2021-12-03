@@ -151,6 +151,7 @@ function startRetroArch()
    document.getElementById("btnFullscreen").disabled = false;
 
    Module['callMain'](Module['arguments']);
+   Module['resumeMainLoop']();
    document.getElementById('canvas').focus();
 }
 
