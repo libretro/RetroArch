@@ -2743,6 +2743,12 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       slock_unlock(vk->context->queue_lock);
 #endif
 
+      if (!staging->memory)
+      {
+         RARCH_ERR("[Vulkan]: Attempted to readback synchronously, but no image is present.\nThis can happen if vsync is disabled on Windows systems due to mailbox emulation.\n");
+         return false;
+      }
+
       if (!staging->mapped)
       {
          VK_MAP_PERSISTENT_TEXTURE(vk->context->device, staging);
