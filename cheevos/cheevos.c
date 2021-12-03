@@ -1971,3 +1971,42 @@ void rcheevos_change_disc(const char* new_disc_path, bool initial_disc)
       initial_disc ? rcheevos_identify_initial_disc_callback :
          rcheevos_identify_game_disc_callback, hash_entry);
 }
+
+void rcheevos_validate_netplay(int player_num)
+{
+   const char* msg = NULL;
+
+   if (rcheevos_locals.load_info.state == RCHEEVOS_LOAD_STATE_NONE)
+   {
+       /* already disabled or game doesn't have achievements, nothing to do */
+       return;
+   }
+
+   if (player_num == 1)
+   {
+       /* always allow player 1 */
+       return;
+   }
+   else if (player_num == 0)
+   {
+       /* spectating, never allow achievements */
+       msg = "Disabling achievements for netplay spectator mode.";
+   }
+   else
+   {
+       /* non-primary player, only allow for multi sets (TODO) */
+       return;
+   }
+
+   /* if there are active achievements, inform the user about the deactivation */
+   if (rcheevos_locals.loaded && rcheevos_locals.game.achievement_count > 0)
+   {
+       runloop_msg_queue_push(msg, 0, 3 * 60, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
+
+   /* disable the achievement runtime */
+   CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", msg);
+   rcheevos_unload();
+}
+
