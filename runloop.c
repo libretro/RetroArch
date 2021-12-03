@@ -2593,48 +2593,12 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             float refresh_rate                    = (*info)->timing.fps;
             unsigned crt_switch_resolution        = settings->uints.crt_switch_resolution;
             bool video_fullscreen                 = settings->bools.video_fullscreen;
-            bool video_has_resolution_list        = video_display_server_has_resolution_list();
             bool video_switch_refresh_rate        = false;
             bool no_video_reinit                  = true;
 
             /* Refresh rate switch for regular displays */
-            if (video_has_resolution_list)
-            {
-               float refresh_mod                  = 0.0f;
-               float video_refresh_rate           = settings->floats.video_refresh_rate;
-               unsigned video_swap_interval       = settings->uints.video_swap_interval;
-               unsigned video_bfi                 = settings->uints.video_black_frame_insertion;
-               bool video_windowed_full           = settings->bools.video_windowed_fullscreen;
-               bool vrr_runloop_enable            = settings->bools.vrr_runloop_enable;
-
-               /* Roundings to PAL & NTSC standards */
-               refresh_rate = (refresh_rate > 54 && refresh_rate < 60) ? 59.94f : refresh_rate;
-               refresh_rate = (refresh_rate > 49 && refresh_rate < 55) ? 50.00f : refresh_rate;
-
-               /* Black frame insertion + swap interval multiplier */
-               refresh_mod  = video_bfi + 1.0f;
-               refresh_rate = (refresh_rate * refresh_mod * video_swap_interval);
-
-               /* Fallback when target refresh rate is not exposed */
-               if (!video_display_server_has_refresh_rate(refresh_rate))
-                  refresh_rate = (60.0f * refresh_mod * video_swap_interval);
-
-               /* Store original refresh rate on automatic change, and
-                * restore it in deinit_core and main_quit, because not all
-                * cores announce refresh rate via SET_SYSTEM_AV_INFO */
-               if (!video_st->video_refresh_rate_original)
-                  video_st->video_refresh_rate_original = video_refresh_rate;
-
-               /* Try to switch display rate when:
-                * - Not already at correct rate
-                * - In exclusive fullscreen
-                * - 'CRT SwitchRes' OFF & 'Sync to Exact Content Framerate' OFF
-                */
-               video_switch_refresh_rate = (
-                     refresh_rate != video_refresh_rate &&
-                     !crt_switch_resolution && !vrr_runloop_enable &&
-                     video_fullscreen && !video_windowed_full);
-            }
+            if (video_display_server_has_resolution_list())
+               video_switch_refresh_rate_maybe(&refresh_rate, &video_switch_refresh_rate);
 
             no_video_reinit                       = (
                      crt_switch_resolution == 0
@@ -2645,11 +2609,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
             /* First set new refresh rate and display rate, then after REINIT do
              * another display rate change to make sure the change stays */
-            if (video_switch_refresh_rate)
-            {
+            if (video_switch_refresh_rate && video_display_server_set_refresh_rate(refresh_rate))
                video_monitor_set_refresh_rate(refresh_rate);
-               video_display_server_set_refresh_rate(refresh_rate);
-            }
 
             /* When not doing video reinit, we also must not do input and menu
              * reinit, otherwise the input driver crashes and the menu gets

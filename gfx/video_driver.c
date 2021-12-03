@@ -1147,6 +1147,52 @@ bool video_display_server_has_refresh_rate(float hz)
    return rate_exists;
 }
 
+void video_switch_refresh_rate_maybe(
+      float *refresh_rate_suggest,
+      bool *video_switch_refresh_rate)
+{
+   settings_t *settings               = config_get_ptr();
+   video_driver_state_t *video_st     = video_state_get_ptr();
+
+   float refresh_rate                 = *refresh_rate_suggest;
+   float video_refresh_rate           = settings->floats.video_refresh_rate;
+   unsigned crt_switch_resolution     = settings->uints.crt_switch_resolution;
+   unsigned video_swap_interval       = settings->uints.video_swap_interval;
+   unsigned video_bfi                 = settings->uints.video_black_frame_insertion;
+   bool video_fullscreen              = settings->bools.video_fullscreen;
+   bool video_windowed_full           = settings->bools.video_windowed_fullscreen;
+   bool vrr_runloop_enable            = settings->bools.vrr_runloop_enable;
+
+   /* Roundings to PAL & NTSC standards */
+   refresh_rate = (refresh_rate > 54 && refresh_rate < 60) ? 59.94f : refresh_rate;
+   refresh_rate = (refresh_rate > 49 && refresh_rate < 55) ? 50.00f : refresh_rate;
+
+   /* Black frame insertion + swap interval multiplier */
+   refresh_rate = (refresh_rate * (video_bfi + 1.0f) * video_swap_interval);
+
+   /* Fallback when target refresh rate is not exposed */
+   if (!video_display_server_has_refresh_rate(refresh_rate))
+      refresh_rate = video_refresh_rate;
+
+   *refresh_rate_suggest = refresh_rate;
+
+   /* Store original refresh rate on automatic change, and
+    * restore it in deinit_core and main_quit, because not all
+    * cores announce refresh rate via SET_SYSTEM_AV_INFO */
+   if (!video_st->video_refresh_rate_original)
+      video_st->video_refresh_rate_original = video_refresh_rate;
+
+   /* Try to switch display rate when:
+    * - Not already at correct rate
+    * - In exclusive fullscreen
+    * - 'CRT SwitchRes' OFF & 'Sync to Exact Content Framerate' OFF
+    */
+   *video_switch_refresh_rate = (
+         refresh_rate != video_refresh_rate &&
+         !crt_switch_resolution && !vrr_runloop_enable &&
+         video_fullscreen && !video_windowed_full);
+}
+
 bool video_display_server_set_refresh_rate(float hz)
 {
    video_driver_state_t *video_st                 = &video_driver_st;

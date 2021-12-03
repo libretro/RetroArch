@@ -501,6 +501,33 @@ void drivers_init(
                   audio_st->context_audio_data);
    }
 
+   /* Regular display refresh rate startup autoswitch based on content av_info */
+   if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
+   {
+      struct retro_system_av_info *av_info = &video_st->av_info;
+      float refresh_rate                   = av_info->timing.fps;
+
+      if (  refresh_rate > 0.0 &&
+            !settings->uints.crt_switch_resolution &&
+            !settings->bools.vrr_runloop_enable &&
+            !settings->bools.video_windowed_fullscreen &&
+            settings->bools.video_fullscreen &&
+            fabs(settings->floats.video_refresh_rate - refresh_rate) > 1)
+      {
+         bool video_switch_refresh_rate = false;
+
+         video_switch_refresh_rate_maybe(&refresh_rate, &video_switch_refresh_rate);
+
+         if (video_switch_refresh_rate && video_display_server_set_refresh_rate(refresh_rate))
+         {
+            int reinit_flags = DRIVER_AUDIO_MASK;
+            video_monitor_set_refresh_rate(refresh_rate);
+            /* Audio must reinit after successful rate switch */
+            command_event(CMD_EVENT_REINIT, &reinit_flags);
+         }
+      }
+   }
+
    if (flags & DRIVER_CAMERA_MASK)
    {
       /* Only initialize camera driver if we're ever going to use it. */
