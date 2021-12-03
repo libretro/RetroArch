@@ -12016,6 +12016,10 @@ MSG_HASH(
    "Показывать опцию 'Выключение'."
    )
 MSG_HASH(
+   MSG_ROOM_PASSWORDED,
+   "Закрыто паролем"
+   )
+MSG_HASH(
    MSG_INTERNET,
    "Интернет"
    )
