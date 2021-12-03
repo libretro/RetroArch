@@ -1037,7 +1037,7 @@ static void runloop_deinit_core_options(
          core_option_manager_flush(
                core_options,
                conf_tmp);
-         RARCH_LOG("[Core Options]: Saved %s-specific core options to \"%s\"\n",
+         RARCH_LOG("[Core]: Saved %s-specific core options to \"%s\".\n",
                game_options_active ? "game" : "folder", path_core_options);
          config_file_write(conf_tmp, path_core_options, true);
          config_file_free(conf_tmp);
@@ -1051,7 +1051,7 @@ static void runloop_deinit_core_options(
       core_option_manager_flush(
             core_options,
             core_options->conf);
-      RARCH_LOG("[Core Options]: Saved core options file to \"%s\"\n", path);
+      RARCH_LOG("[Core]: Saved core options file to \"%s\".\n", path);
       config_file_write(core_options->conf, path, true);
    }
 
@@ -2621,7 +2621,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   ~(DRIVER_VIDEO_MASK | DRIVER_INPUT_MASK |
                                         DRIVER_MENU_MASK);
 
-            RARCH_LOG("[Environ]: SET_SYSTEM_AV_INFO: %ux%u, aspect: %.3f, fps: %.3f, sample rate: %.2f Hz.\n",
+            RARCH_LOG("[Environ]: SET_SYSTEM_AV_INFO: %ux%u, Aspect: %.3f, FPS: %.2f, Sample rate: %.2f Hz.\n",
                   (*info)->geometry.base_width, (*info)->geometry.base_height,
                   (*info)->geometry.aspect_ratio,
                   (*info)->timing.fps,
@@ -2853,7 +2853,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             geom->base_height  = in_geom->base_height;
             geom->aspect_ratio = in_geom->aspect_ratio;
 
-            RARCH_LOG("[Environ]: SET_GEOMETRY: %ux%u, aspect: %.3f.\n",
+            RARCH_LOG("[Environ]: SET_GEOMETRY: %ux%u, Aspect: %.3f.\n",
                   geom->base_width, geom->base_height, geom->aspect_ratio);
 
             /* Forces recomputation of aspect ratios if
@@ -2971,17 +2971,18 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          struct retro_vfs_interface_info *vfs_iface_info = (struct retro_vfs_interface_info *) data;
          if (vfs_iface_info->required_interface_version <= supported_vfs_version)
          {
-            RARCH_LOG("Core requested VFS version >= v%d, providing v%d\n", vfs_iface_info->required_interface_version, supported_vfs_version);
+            RARCH_LOG("[Environ]: GET_VFS_INTERFACE. Core requested version >= V%d, providing V%d.\n",
+                  vfs_iface_info->required_interface_version, supported_vfs_version);
             vfs_iface_info->required_interface_version = supported_vfs_version;
             vfs_iface_info->iface                      = &vfs_iface;
             system->supports_vfs = true;
          }
          else
          {
-            RARCH_WARN("Core requested VFS version v%d which is higher than what we support (v%d)\n", vfs_iface_info->required_interface_version, supported_vfs_version);
+            RARCH_WARN("[Environ]: GET_VFS_INTERFACE. Core requested version V%d which is higher than what we support (V%d).\n",
+                  vfs_iface_info->required_interface_version, supported_vfs_version);
             return false;
          }
-
          break;
       }
 
@@ -2991,6 +2992,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             (struct retro_led_interface *)data;
          if (ledintf)
             ledintf->set_led_state = led_driver_set_led;
+         RARCH_LOG("[Environ]: GET_LED_INTERFACE.\n");
       }
       break;
 
@@ -3247,7 +3249,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                *game_info_ext = p_content->content_list->game_info_ext;
             else
             {
-               RARCH_ERR("[Environ]: Failed to retrieve extended game info\n");
+               RARCH_ERR("[Environ]: Failed to retrieve extended game info.\n");
                *game_info_ext = NULL;
                return false;
             }
@@ -4718,6 +4720,7 @@ static void do_runahead(
       {
          if (!runahead_hide_warnings)
             runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES), 0, 2 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_WARN("[Run-Ahead]: %s\n", msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES));
          goto force_input_dirty;
       }
    }
@@ -4762,6 +4765,7 @@ static void do_runahead(
             if (!runahead_save_state(runloop_st))
             {
                runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               RARCH_WARN("[Run-Ahead]: %s\n", msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE));
                return;
             }
          }
@@ -4771,6 +4775,7 @@ static void do_runahead(
             if (!runahead_load_state(runloop_st))
             {
                runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               RARCH_WARN("[Run-Ahead]: %s\n", msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE));
                return;
             }
          }
@@ -4784,6 +4789,7 @@ static void do_runahead(
          runloop_secondary_core_destroy();
          runloop_st->runahead_secondary_core_available = false;
          runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_WARN("[Run-Ahead]: %s\n", msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE));
          goto force_input_dirty;
       }
 
@@ -4800,12 +4806,14 @@ static void do_runahead(
          if (!runahead_save_state(runloop_st))
          {
             runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            RARCH_WARN("[Run-Ahead]: %s\n", msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE));
             return;
          }
 
          if (!runahead_load_state_secondary())
          {
             runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            RARCH_WARN("[Run-Ahead]: %s\n", msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE));
             return;
          }
 
@@ -5183,17 +5191,16 @@ static bool core_verify_api_version(void)
    runloop_state_t *runloop_st = &runloop_state;
    unsigned api_version        = runloop_st->current_core.retro_api_version();
 
-   RARCH_LOG("%s: %u\n%s %s: %u\n",
+   RARCH_LOG("[Core]: %s: %u, %s: %u\n",
          msg_hash_to_str(MSG_VERSION_OF_LIBRETRO_API),
          api_version,
-         FILE_PATH_LOG_INFO,
          msg_hash_to_str(MSG_COMPILED_AGAINST_API),
          RETRO_API_VERSION
          );
 
    if (api_version != RETRO_API_VERSION)
    {
-      RARCH_WARN("%s\n", msg_hash_to_str(MSG_LIBRETRO_ABI_BREAK));
+      RARCH_WARN("[Core]: %s\n", msg_hash_to_str(MSG_LIBRETRO_ABI_BREAK));
       return false;
    }
    return true;
@@ -6026,8 +6033,8 @@ void core_options_flush(void)
 
    /* Log result */
    RARCH_LOG(success ?
-         "[Core Options]: Saved core options to \"%s\"\n" :
-               "[Core Options]: Failed to save core options to \"%s\"\n",
+         "[Core]: Saved core options to \"%s\".\n" :
+               "[Core]: Failed to save core options to \"%s\".\n",
             path_core_options ? path_core_options : "UNKNOWN");
 
    snprintf(msg, sizeof(msg), "%s \"%s\"",
