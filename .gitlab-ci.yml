@@ -688,6 +688,8 @@ build-static-retroarch-dummy-vita:
 build-static-retroarch-ps2:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-ps2:latest
   stage: prepare-for-static-cores
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
   artifacts:
     paths:
     -  retroarch-precompiled/
@@ -698,8 +700,7 @@ build-static-retroarch-ps2:
     - build-static-retroarch-dummy-ps2
   script:
     # Allow failure since we don't have a core
-    # PS2 makefile for now doesn't allow -jX so this is why is hardcoded to -j1
-    - "make -f Makefile.ps2 -j1 ||:"
+    - "make -f Makefile.ps2 -j$NUMPROC ||:"
     - "mkdir .retroarch-precompiled"
     - "cp -r ./* .retroarch-precompiled/"
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
@@ -708,8 +709,7 @@ build-static-retroarch-dummy-ps2:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-ps2:latest
   stage: build
   before_script:
-    # PS2 doesn't allow to use -jX for now
-    - export NUMPROC=1
+    - export NUMPROC=$(($(nproc)/3))
   artifacts:
     paths:
     -  raboot.elf
