@@ -32,31 +32,17 @@ RETRO_BEGIN_DECLS
 
 struct natt_status
 {
-   /** nfds for select when checking for input */
-   int nfds;
-
-   /** The fdset to be selected upon to check for responses */
-   fd_set fds;
-
-   /** True if there might be a request outstanding */
-   bool request_outstanding;
-
-   /** True if we've resolved an external IPv4 address */
+   /* True if we've resolved an external IPv4 address */
    bool have_inet4;
+   /* True if we've resolved an external IPv6 address */
+   bool have_inet6;
 
    /** External IPv4 address */
    struct sockaddr_in ext_inet4_addr;
-
-   /** True if we've resolved an external IPv6 address */
-   bool have_inet6;
-
 #if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY) && !defined(_3DS)
    /** External IPv6 address */
    struct sockaddr_in6 ext_inet6_addr;
 #endif
-
-   /** Internal status (currently unused) */
-   void *internal;
 };
 
 /**
