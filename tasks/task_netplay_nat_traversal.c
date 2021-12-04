@@ -84,6 +84,31 @@ bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port)
 
    return true;
 }
+
+static void task_netplay_nat_close_handler(retro_task_t *task)
+{
+   natt_deinit((struct natt_status *) task->task_data,
+      SOCKET_PROTOCOL_TCP);
+
+   task_set_progress(task, 100);
+   task_set_finished(task, true);
+}
+
+bool task_push_netplay_nat_close(void *nat_traversal_state)
+{
+   retro_task_t *task = task_init();
+
+   if (!task)
+      return false;
+
+   task->handler   = task_netplay_nat_close_handler;
+   task->task_data = nat_traversal_state;
+
+   task_queue_push(task);
+
+   return true;
+}
 #else
 bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port) { return false; }
+bool task_push_netplay_nat_close(void *nat_traversal_state) { return false; }
 #endif

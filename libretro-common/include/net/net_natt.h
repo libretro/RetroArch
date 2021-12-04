@@ -65,6 +65,11 @@ struct natt_status
 void natt_init(struct natt_status *status,
       uint16_t port, enum socket_protocol proto);
 
+/**
+ * Uninitialize global NAT traversal structures */
+void natt_deinit(struct natt_status *status,
+      enum socket_protocol proto);
+
 /** Initialize a NAT traversal status object */
 bool natt_new(struct natt_status *status);
 
@@ -75,6 +80,11 @@ void natt_free(struct natt_status *status);
  * Make a port forwarding request when only the port is known. Forwards any
  * address it can find. */
 bool natt_open_port_any(struct natt_status *status, uint16_t port,
+   enum socket_protocol proto);
+
+/**
+ * Request for a port forwarding to be removed/closed. */
+bool natt_close_port(struct natt_status *status,
    enum socket_protocol proto);
 
 /** Check for port forwarding responses */

@@ -87,6 +87,7 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       const char *hostname, const char *corename, const char* subsystem);
 
 bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port);
+bool task_push_netplay_nat_close(void *nat_traversal_state);
 
 /* Core updater tasks */
 
