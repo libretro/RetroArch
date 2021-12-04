@@ -16,6 +16,7 @@
 #include <string/stdstring.h>
 
 #include "led_driver.h"
+#include "verbosity.h"
 
 static const led_driver_t *current_led_driver = NULL;
 
@@ -56,6 +57,9 @@ void led_driver_init(const char *led_driver)
 
    if (current_led_driver)
       (*current_led_driver->init)();
+
+   if (!string_is_equal("null", drivername))
+      RARCH_LOG("[LED]: Using driver: \"%s\".\n", led_driver);
 }
 
 void led_driver_free(void)

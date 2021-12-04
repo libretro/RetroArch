@@ -2229,7 +2229,7 @@ bool command_event(enum event_command cmd, void *data)
 
             /* Note: Sorting is disabled by default for
              * all content history playlists */
-            RARCH_LOG("[Playlist]: %s: [%s].\n",
+            RARCH_LOG("[Playlist]: %s: \"%s\".\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                   path_content_history);
             playlist_config_set_path(&playlist_config, path_content_history);
@@ -2237,7 +2237,7 @@ bool command_event(enum event_command cmd, void *data)
             playlist_set_sort_mode(
                   g_defaults.content_history, PLAYLIST_SORT_MODE_OFF);
 
-            RARCH_LOG("[Playlist]: %s: [%s].\n",
+            RARCH_LOG("[Playlist]: %s: \"%s\".\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                   path_content_music_history);
             playlist_config_set_path(&playlist_config, path_content_music_history);
@@ -2246,7 +2246,7 @@ bool command_event(enum event_command cmd, void *data)
                   g_defaults.music_history, PLAYLIST_SORT_MODE_OFF);
 
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-            RARCH_LOG("[Playlist]: %s: [%s].\n",
+            RARCH_LOG("[Playlist]: %s: \"%s\".\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                   path_content_video_history);
             playlist_config_set_path(&playlist_config, path_content_video_history);
@@ -2256,7 +2256,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 
 #ifdef HAVE_IMAGEVIEWER
-            RARCH_LOG("[Playlist]: %s: [%s].\n",
+            RARCH_LOG("[Playlist]: %s: \"%s\".\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                   path_content_image_history);
             playlist_config_set_path(&playlist_config, path_content_image_history);
@@ -5944,7 +5944,7 @@ void rarch_favorites_init(void)
 
    rarch_favorites_deinit();
 
-   RARCH_LOG("[Playlist]: %s: [%s].\n",
+   RARCH_LOG("[Playlist]: %s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_FAVORITES_FILE),
          path_content_favorites);
    playlist_config_set_path(&playlist_config, path_content_favorites);

@@ -2051,7 +2051,7 @@ static bool dir_init_shader_internal(
          if (!string_is_empty(file_name) &&
                string_is_equal(file_name, shader_file_name))
          {
-            RARCH_LOG("[Shaders]: %s \"%s\"\n",
+            RARCH_LOG("[Shaders]: %s \"%s\".\n",
                   msg_hash_to_str(MSG_FOUND_SHADER),
                   file_path);
 
@@ -2546,7 +2546,7 @@ const char *retroarch_get_shader_preset(void)
                      runloop_st->runtime_shader_preset_path,
                      sizeof(runloop_st->runtime_shader_preset_path)))
             {
-               RARCH_LOG("[Shaders]: Specific shader preset found at %s.\n",
+               RARCH_LOG("[Shaders]: Specific shader preset found at \"%s\".\n",
                      runloop_st->runtime_shader_preset_path);
             }
          }

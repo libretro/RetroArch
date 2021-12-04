@@ -1039,7 +1039,7 @@ void* video_display_server_init(enum rarch_display_type type)
 
       if (!string_is_empty(current_display_server->ident))
       {
-         RARCH_LOG("[Video]: Found display server: %s\n",
+         RARCH_LOG("[Video]: Found display server: \"%s\".\n",
                current_display_server->ident);
       }
    }
@@ -3394,9 +3394,9 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    }
 
    if (width && height)
-      RARCH_LOG("[Video]: Video @ %ux%u\n", width, height);
+      RARCH_LOG("[Video]: Set video size to: %ux%u.\n", width, height);
    else
-      RARCH_LOG("[Video]: Video @ fullscreen\n");
+      RARCH_LOG("[Video]: Set video size to: fullscreen.\n");
 
    video_st->display_type     = RARCH_DISPLAY_NONE;
    video_st->display          = 0;
