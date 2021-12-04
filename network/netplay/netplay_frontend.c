@@ -6099,7 +6099,7 @@ void netplay_handle_slaves(netplay_t *netplay)
  */
 void netplay_announce_nat_traversal(netplay_t *netplay)
 {
-#ifndef HAVE_SOCKET_LEGACY
+#if !defined(HAVE_SOCKET_LEGACY) && HAVE_MINIUPNPC
    char msg[512], host[256], port[6];
    const char *dmsg = NULL;
   
@@ -6155,8 +6155,6 @@ void netplay_announce_nat_traversal(netplay_t *netplay)
  */
 void netplay_init_nat_traversal(netplay_t *netplay)
 {
-   memset(&netplay->nat_traversal_state, 0, sizeof(netplay->nat_traversal_state));
-   netplay->nat_traversal_task_oustanding = true;
    task_push_netplay_nat_traversal(&netplay->nat_traversal_state, netplay->tcp_port);
 }
 
@@ -6783,7 +6781,7 @@ void netplay_free(netplay_t *netplay)
       free(netplay->connections);
 
    if (netplay->nat_traversal)
-      natt_free(&netplay->nat_traversal_state);
+      task_push_netplay_nat_close(&netplay->nat_traversal_state);
 
    if (netplay->buffer)
    {
@@ -8008,24 +8006,6 @@ static bool netplay_pre_frame(
       /* Advertise our server */
       netplay_lan_ad_server(netplay);
 #endif
-
-      /* NAT traversal if applicable */
-      if (netplay->nat_traversal &&
-          !netplay->nat_traversal_task_oustanding &&
-          netplay->nat_traversal_state.request_outstanding &&
-          !netplay->nat_traversal_state.have_inet4)
-      {
-         struct timeval tmptv = {0};
-         fd_set fds = netplay->nat_traversal_state.fds;
-         if (socket_select(netplay->nat_traversal_state.nfds, &fds, NULL, NULL, &tmptv) > 0)
-            natt_read(&netplay->nat_traversal_state);
-
-#ifndef HAVE_SOCKET_LEGACY
-         if (!netplay->nat_traversal_state.request_outstanding ||
-             netplay->nat_traversal_state.have_inet4)
-            netplay_announce_nat_traversal(netplay);
-#endif
-      }
    }
 
    sync_stalled = !netplay_sync_pre_frame(netplay, &netplay_force_disconnect);
@@ -8315,10 +8295,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
             netplay_disconnect(netplay);
          goto done;
       case RARCH_NETPLAY_CTL_FINISHED_NAT_TRAVERSAL:
-         netplay->nat_traversal_task_oustanding = false;
-#ifndef HAVE_SOCKET_LEGACY
          netplay_announce_nat_traversal(netplay);
-#endif
          goto done;
       case RARCH_NETPLAY_CTL_DESYNC_PUSH:
          netplay->desync++;

@@ -10,6 +10,7 @@ BUILD_3DS               = 0
 BUILD_CIA               = 1
 LIBCTRU_NO_DEPRECATION  = 1
 USE_CTRULIB_2          ?= 0
+LOAD_WITHOUT_CORE_INFO ?= 0
 
 APP_TITLE            = RetroArch 3DS
 APP_DESCRIPTION      = RetroArch 3DS
@@ -106,6 +107,9 @@ endif
 ifeq ($(strip $(DEVKITPRO)),)
 	$(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitpro")
 endif
+ifeq ($(strip $(DEVKITARM)),)
+	$(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitarm")
+endif
 
 ifeq ($(strip $(CTRULIB)),)
 	CTRULIB = $(DEVKITPRO)/libctru
@@ -113,6 +117,10 @@ endif
 
 ifeq ($(strip $(USE_CTRULIB_2)),1)
 	CFLAGS += -DUSE_CTRULIB_2
+endif
+
+ifeq ($(LOAD_WITHOUT_CORE_INFO),1)
+	CFLAGS += -DLOAD_WITHOUT_CORE_INFO
 endif
 
 ifeq ($(strip $(DEVKITTOOLS)),)

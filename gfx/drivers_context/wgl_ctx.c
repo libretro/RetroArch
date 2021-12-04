@@ -349,7 +349,7 @@ static void create_gl_context(HWND hwnd, bool *quit)
       if (wglGetExtensionsStringARB)
       {
          extensions = wglGetExtensionsStringARB(win32_hdc);
-         RARCH_LOG("[WGL] extensions: %s\n", extensions);
+         RARCH_LOG("[WGL]: Extensions: %s\n", extensions);
          if (wgl_has_extension("WGL_EXT_swap_control_tear", extensions))
          {
             RARCH_LOG("[WGL]: Adaptive VSync supported.\n");

@@ -469,7 +469,10 @@ static void synchronized_process_adapters(wiiu_hid_t *hid)
                else
                   prev->next = adapter->next;
 
-               pad_connection_pad_deregister(joypad_state.pads, adapter->pad_driver, adapter->pad_driver_data);
+               if(adapter->pad_driver && adapter->pad_driver_data)
+               {
+                  pad_connection_pad_deregister(joypad_state.pads, adapter->pad_driver, adapter->pad_driver_data);
+               }
                /* adapter is no longer valid after this point */
                delete_adapter(adapter);
                /* signal not to update prev ptr since adapter is now invalid */
@@ -889,6 +892,11 @@ static void get_device_name(HIDDevice *device, wiiu_attach_event *event)
 
 static wiiu_attach_event *new_attach_event(HIDDevice *device)
 {
+   if(device->protocol > 0)
+   {
+      /* ignore mice and keyboards as HID devices */
+      return NULL;
+   }
    wiiu_attach_event *event = alloc_zeroed(4, sizeof(wiiu_attach_event));
    
    if (!event)

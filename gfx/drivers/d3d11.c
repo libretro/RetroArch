@@ -1498,7 +1498,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
          utf16_to_char_string((const uint16_t*)
                desc.Description, str, sizeof(str));
 
-         RARCH_LOG("[D3D11]: Found GPU at index %d: %s\n", i, str);
+         RARCH_LOG("[D3D11]: Found GPU at index %d: \"%s\".\n", i, str);
 
          string_list_append(d3d11->gpu_list, str, attr);
 
@@ -1625,7 +1625,7 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
          height = d3d11->vp.height;
       }
 
-      RARCH_LOG("[D3D11]: Updating framebuffer size %u x %u.\n", width, height);
+      RARCH_LOG("[D3D11]: Updating framebuffer size %ux%u.\n", width, height);
 
       if ((i != (d3d11->shader_preset->passes - 1)) || (width != d3d11->vp.width) ||
             (height != d3d11->vp.height))

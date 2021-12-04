@@ -23,8 +23,6 @@
 
 #include "../input_defines.h"
 
-static int port_count = 0;
-
 /* store device for each port */
 static struct hidpad_retrode_data* port_device[4];
 
@@ -33,13 +31,14 @@ struct hidpad_retrode_data
    struct pad_connection* connection;
    uint32_t slot;
    uint32_t buttons;
+   int port_count;
    uint8_t data[64];
 };
 
 static void* hidpad_retrode_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
-   struct pad_connection* connection = (struct pad_connection*)data;
-   struct hidpad_retrode_data* device    = (struct hidpad_retrode_data*)
+   struct pad_connection* connection  = (struct pad_connection*)data;
+   struct hidpad_retrode_data* device = (struct hidpad_retrode_data*)
       calloc(1, sizeof(struct hidpad_retrode_data));
 
    if (!device)
@@ -54,8 +53,8 @@ static void* hidpad_retrode_init(void *data, uint32_t slot, hid_driver_t *driver
    device->connection   = connection;
    device->slot         = slot;
 
-   port_device[port_count] = device;
-   port_count++;
+   port_device[device->port_count] = device;
+   device->port_count++;
 
    return device;
 }
@@ -67,7 +66,6 @@ static void hidpad_retrode_deinit(void *data)
    if (device)
       free(device);
 
-   port_count = 0;
    port_device[0] = NULL;
    port_device[1] = NULL;
    port_device[2] = NULL;

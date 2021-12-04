@@ -2377,7 +2377,7 @@ Framebuffer::Framebuffer(
    memory_properties(mem_props),
    device(device)
 {
-   RARCH_LOG("[Vulkan filter chain]: Creating framebuffer %u x %u (max %u level(s)).\n",
+   RARCH_LOG("[Vulkan filter chain]: Creating framebuffer %ux%u (max %u level(s)).\n",
          max_size.width, max_size.height, max_levels);
    vulkan_initialize_render_pass(device, format, &render_pass);
    init(nullptr);
@@ -2478,7 +2478,7 @@ void Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size, VkFor
    if (format != VK_FORMAT_UNDEFINED)
 	  this->format = format;
 
-   RARCH_LOG("[Vulkan filter chain]: Updating framebuffer size %u x %u (format: %u).\n",
+   RARCH_LOG("[Vulkan filter chain]: Updating framebuffer size %ux%u (format: %u).\n",
          size.width, size.height, (unsigned)this->format);
 
    {

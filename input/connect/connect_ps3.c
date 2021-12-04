@@ -21,7 +21,7 @@
 #include <boolean.h>
 #include "joypad_connection.h"
 #include "../input_defines.h"
-#include "verbosity.h"
+#include "../../verbosity.h"
 
 #define DS3_ACTIVATION_REPORT_ID 0xf4
 

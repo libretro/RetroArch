@@ -374,11 +374,9 @@ static void android_input_poll_main_cmd(void)
          {
             bool boolean              = false;
             bool enable_accelerometer = (android_app->sensor_state_mask &
-                  (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE)) &&
-                        !android_app->accelerometerSensor;
+                  (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_DISABLE));
             bool enable_gyroscope     = (android_app->sensor_state_mask &
-                  (UINT64_C(1) << RETRO_SENSOR_GYROSCOPE_ENABLE)) &&
-                        !android_app->gyroscopeSensor;
+                  (UINT64_C(1) << RETRO_SENSOR_GYROSCOPE_DISABLE));
 
             retroarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
             retroarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);

@@ -1046,7 +1046,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
          utf16_to_char_string((const uint16_t*)
                desc.Description, str, sizeof(str));
 
-         RARCH_LOG("[D3D10]: Found GPU at index %d: %s\n", i, str);
+         RARCH_LOG("[D3D10]: Found GPU at index %d: \"%s\".\n", i, str);
 
          string_list_append(d3d10->gpu_list, str, attr);
 
@@ -1163,7 +1163,7 @@ static void d3d10_init_render_targets(d3d10_video_t* d3d10,
          height = d3d10->vp.height;
       }
 
-      RARCH_LOG("[D3D10]: Updating framebuffer size %u x %u.\n", width, height);
+      RARCH_LOG("[D3D10]: Updating framebuffer size %ux%u.\n", width, height);
 
       if ((i != (d3d10->shader_preset->passes - 1)) || (width != d3d10->vp.width) ||
             (height != d3d10->vp.height))

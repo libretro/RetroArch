@@ -272,7 +272,7 @@ static void *gl1_gfx_init(const video_info_t *video,
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
-   RARCH_LOG("[GL1]: Found GL1 context: %s\n", ctx_driver->ident);
+   RARCH_LOG("[GL1]: Found GL1 context: \"%s\".\n", ctx_driver->ident);
 
    if (gl1->ctx_driver->get_video_size)
       gl1->ctx_driver->get_video_size(gl1->ctx_data,
@@ -296,7 +296,7 @@ static void *gl1_gfx_init(const video_info_t *video,
    if (string_is_equal(ctx_driver->ident, "null"))
       goto error;
 
-   RARCH_LOG("[GL1]: Detecting screen resolution %ux%u.\n", full_x, full_y);
+   RARCH_LOG("[GL1]: Detecting screen resolution: %ux%u.\n", full_x, full_y);
 
    win_width   = video->width;
    win_height  = video->height;
@@ -345,7 +345,7 @@ static void *gl1_gfx_init(const video_info_t *video,
 
    video_driver_get_size(&temp_width, &temp_height);
 
-   RARCH_LOG("[GL1]: Using resolution %ux%u\n", temp_width, temp_height);
+   RARCH_LOG("[GL1]: Using resolution %ux%u.\n", temp_width, temp_height);
 
    vendor   = (const char*)glGetString(GL_VENDOR);
    renderer = (const char*)glGetString(GL_RENDERER);

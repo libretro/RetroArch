@@ -253,7 +253,7 @@ static void *gdi_gfx_init(const video_info_t *video,
    mode_width  = 0;
    mode_height = 0;
 
-   RARCH_LOG("[GDI]: Detecting screen resolution %ux%u.\n", full_x, full_y);
+   RARCH_LOG("[GDI]: Detecting screen resolution: %ux%u.\n", full_x, full_y);
 
    win_width   = video->width;
    win_height  = video->height;

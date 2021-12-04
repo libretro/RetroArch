@@ -455,6 +455,14 @@ MSG_HASH(
    "Số lượng lõi của CPU."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
+   "Loại hệ điều hành"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
+   "Phiên bản OS"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
    "Độ rộng hiển thị (mm)"
    )
@@ -519,6 +527,42 @@ MSG_HASH(
    "Hỗ trợ phân luồng"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
+   "Hỗ trợ CoreAudio V3"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
+   "Hỗ trợ DirectSound"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT,
+   "Hỗ trợ WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT,
+   "Hỗ trợ XAudio2"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT,
+   "Hỗ trợ zlib"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT,
+   "Hỗ trợ 7zip"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
+   "Hỗ trợ thư viện động"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
+   "Hỗ trợ Cg"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT,
+   "Hỗ trợ GLSL"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT,
    "Hỗ trợ FFmpeg"
    )
@@ -543,6 +587,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
    "Miêu tả"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
+   "Hỗ trợ Co-op"
    )
 
 /* Main Menu > Configuration File */
@@ -611,6 +659,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
    "Trình điều khiển"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
+   "Thay đổi ổ đĩa được dùng bởi hệ thống."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
@@ -697,8 +749,20 @@ MSG_HASH(
    "Playlists Danh mục"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
+   "Người dùng"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_SETTINGS,
+   "Thay đổi cài đặt tài khoản, tên đăng nhập và ngôn ngữ."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Thư mục"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
+   "Thay đổi thư mục mặc định đặt file."
    )
 
 /* Settings > Drivers */
@@ -851,8 +915,20 @@ MSG_HASH(
    "Enable menu audio"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
+   "Menu âm thanh"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   "Thay đổi cài đặt menu âm thanh."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
    "Âm thanh Mute"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+   "Tắt tiếng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
@@ -956,6 +1032,18 @@ MSG_HASH(
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
+   "Rung khi nhấn phím"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
+   "Bật rung (cho core hỗ trợ)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
+   "Độ rung"
+   )
 
 /* Settings > Input > Menu Controls */
 
@@ -979,8 +1067,20 @@ MSG_HASH(
    "Thoát RetroArch"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
+   "Khởi động lại game"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RESET,
+   "Khởi động lại nội dung hiện tại."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
    "Chụp ảnh màn hình"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
+   "Tăng âm"
    )
 
 /* Settings > Input > Port # Controls */
@@ -1085,6 +1185,10 @@ MSG_HASH(
 
 #if defined(ANDROID)
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED,
+   "Cảm ứng"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
    "Tự động tải Preferred Overlay"

@@ -578,7 +578,7 @@ struct netplay
    /* Our nickname */
    char nick[NETPLAY_NICK_LEN];
 
-   bool nat_traversal, nat_traversal_task_oustanding;
+   bool nat_traversal;
 
    /* Set to true if we have a device that most cores 
     * translate to "up/down" actions, typically a keyboard.

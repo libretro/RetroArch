@@ -11596,6 +11596,10 @@ MSG_HASH(
    "Zeige die Option 'Beenden'."
    )
 MSG_HASH(
+   MSG_ROOM_PASSWORDED,
+   "Passwortgeschützt"
+   )
+MSG_HASH(
    MSG_LOCAL,
    "Lokal"
    )

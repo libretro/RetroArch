@@ -87,6 +87,8 @@ bool video_display_server_can_set_screen_orientation(void);
 
 bool video_display_server_has_resolution_list(void);
 
+void video_switch_refresh_rate_maybe(float *refresh_rate, bool *video_switch_refresh_rate);
+
 bool video_display_server_set_refresh_rate(float hz);
 
 bool video_display_server_has_refresh_rate(float hz);
