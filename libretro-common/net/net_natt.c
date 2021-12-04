@@ -94,13 +94,29 @@ end:
 #endif
 }
 
+void natt_deinit(struct natt_status *status,
+      enum socket_protocol proto)
+{
+#if !defined(HAVE_SOCKET_LEGACY) && HAVE_MINIUPNPC
+   natt_close_port(status, proto);
+   natt_free(status);
+
+   memset(&urls, 0, sizeof(urls));
+   memset(&data, 0, sizeof(data));
+#endif
+}
+
 bool natt_new(struct natt_status *status)
 {
    memset(status, 0, sizeof(struct natt_status));
    return true;
 }
 
-void natt_free(struct natt_status *status) { }
+void natt_free(struct natt_status *status)
+{
+   /* Invalidate the state */
+   memset(status, 0, sizeof(*status));
+}
 
 static bool natt_open_port(struct natt_status *status,
       struct sockaddr *addr, socklen_t addrlen, enum socket_protocol proto)
@@ -129,7 +145,7 @@ static bool natt_open_port(struct natt_status *status,
    r = UPNP_AddAnyPortMapping(urls.controlURL,
          data.first.servicetype, port_str,
          port_str, host, "retroarch",
-         proto_str, NULL, "3600", ext_port_str);
+         proto_str, NULL, "0", ext_port_str);
 
    if (r != 0)
    {
@@ -138,7 +154,7 @@ static bool natt_open_port(struct natt_status *status,
       r = UPNP_AddPortMapping(urls.controlURL,
             data.first.servicetype, port_str,
             port_str, host, "retroarch",
-            proto_str, NULL, "3600");
+            proto_str, NULL, "0");
    }
    if (r != 0)
       return false;
@@ -231,32 +247,48 @@ bool natt_open_port_any(struct natt_status *status,
 #endif
 }
 
+bool natt_close_port(struct natt_status *status,
+      enum socket_protocol proto)
+{
+#if !defined(HAVE_SOCKET_LEGACY) && HAVE_MINIUPNPC
+   const struct sockaddr *addr;
+   socklen_t addrlen;
+   char port_str[6];
+   const char *proto_str = (proto == SOCKET_PROTOCOL_UDP) ? 
+      "UDP" : "TCP";
+
+   if (!status)
+      return false;
+
+   if (string_is_empty(urls.controlURL))
+      return false;
+
+   /* Grab our external port */
+   if (status->have_inet4)
+   {
+      addr    = (struct sockaddr *) &status->ext_inet4_addr;
+      addrlen = sizeof(status->ext_inet4_addr);
+   }
+   else if (status->have_inet6)
+   {
+      addr    = (struct sockaddr *) &status->ext_inet6_addr;
+      addrlen = sizeof(status->ext_inet6_addr);
+   }
+   else
+      return false;
+   if (getnameinfo(addr, addrlen, NULL, 0,
+         port_str, sizeof(port_str), NI_NUMERICSERV))
+      return false;
+
+   /* Request the device to remove our port forwarding. */
+   return !UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype,
+      port_str, proto_str, NULL);
+#endif
+}
+
 bool natt_read(struct natt_status *status)
 {
    /* MiniUPNPC is always synchronous, so there's nothing to read here.
     * Reserved for future backends. */
    return false;
 }
-
-#if 0
-/* If we want to remove redirects in the future, this is a
- * sample of how to do that. */
-
-void upnp_rem_redir (int port)
-{
-   int t;
-   char port_str[16];
-
-   printf("TB : upnp_rem_redir (%d)\n", port);
-
-   if(urls.controlURL[0] == '\0')
-   {
-      printf("TB : the init was not done !\n");
-      return;
-   }
-
-   snprintf(port_str, sizeof(port_str), "%d", port);
-   UPNP_DeletePortMapping(urls.controlURL,
-         data.first.servicetype, port_str, "TCP", NULL);
-}
-#endif

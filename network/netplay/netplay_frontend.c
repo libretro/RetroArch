@@ -6116,7 +6116,7 @@ void netplay_free(netplay_t *netplay)
       free(netplay->connections);
 
    if (netplay->nat_traversal)
-      natt_free(&netplay->nat_traversal_state);
+      task_push_netplay_nat_close(&netplay->nat_traversal_state);
 
    if (netplay->buffer)
    {
