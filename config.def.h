@@ -1027,6 +1027,10 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_NOTIFICATION_SHOW_NETPLAY_EXTRA false
 #endif
 
+#ifdef HAVE_MENU
+#define DEFAULT_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE false
+#endif
+
 /* Output samplerate. */
 #ifdef GEKKO
 #define DEFAULT_OUTPUT_RATE 32000
