@@ -757,6 +757,7 @@ typedef struct settings
       /* Netplay */
       bool netplay_public_announce;
       bool netplay_start_as_spectator;
+      bool netplay_allow_pausing;
       bool netplay_allow_slaves;
       bool netplay_require_slaves;
       bool netplay_stateless_mode;

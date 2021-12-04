@@ -1973,6 +1973,10 @@ MSG_HASH(
    "netplay_start_as_spectator"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING,
+   "netplay_allow_pausing"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE,
    "netplay_stateless_mode"
    )

@@ -5281,17 +5281,18 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
             RECV(nick, sizeof(nick))
                return false;
-
             nick[sizeof(nick)-1] = '\0';
 
-            /* We outright ignore pausing from spectators and slaves */
-            if (connection->mode != NETPLAY_CONNECTION_PLAYING)
-               break;
-
-            connection->paused = true;
-            netplay->remote_paused = true;
             if (netplay->is_server)
             {
+               settings_t *settings = config_get_ptr();
+               if (!settings->bools.netplay_allow_pausing)
+                  break;
+
+               /* We outright ignore pausing from spectators and slaves */
+               if (connection->mode != NETPLAY_CONNECTION_PLAYING)
+                  break;
+
                /* Inform peers */
                snprintf(msg, sizeof(msg),
                      msg_hash_to_str(MSG_NETPLAY_PEER_PAUSED),
@@ -5306,6 +5307,10 @@ static bool netplay_get_cmd(netplay_t *netplay,
             else
                snprintf(msg, sizeof(msg),
                      msg_hash_to_str(MSG_NETPLAY_PEER_PAUSED), nick);
+
+            connection->paused = true;
+            netplay->remote_paused = true;
+
             RARCH_LOG("%s\n", msg);
             runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             break;
@@ -6033,17 +6038,9 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
          ? nick : RARCH_DEFAULT_NICK,
          sizeof(netplay->nick));
 
-   if (!init_socket(netplay, direct_host, server, port))
-   {
-      free(netplay);
-      return NULL;
-   }
-
-   if (!netplay_init_buffers(netplay))
-   {
-      free(netplay);
-      return NULL;
-   }
+   if (!init_socket(netplay, direct_host, server, port) ||
+         !netplay_init_buffers(netplay))
+      goto failure;
 
    if (netplay->is_server)
    {
@@ -6076,24 +6073,18 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    if (netplay->is_server)
    {
       if (!socket_nonblock(netplay->listen_fd))
-         goto error;
+         goto failure;
    }
    else
    {
       if (!socket_nonblock(netplay->connections[0].fd))
-         goto error;
+         goto failure;
    }
 
    return netplay;
 
-error:
-   if (netplay->listen_fd >= 0)
-      socket_close(netplay->listen_fd);
-
-   if (netplay->connections && netplay->connections[0].fd >= 0)
-      socket_close(netplay->connections[0].fd);
-
-   free(netplay);
+failure:
+   netplay_free(netplay);
    return NULL;
 }
 
@@ -7209,16 +7200,12 @@ static void netplay_announce(void)
    task_push_http_post_transfer(url, buf, true, NULL,
          netplay_announce_cb, NULL);
 
-   if (username)
-      free(username);
-   if (corename)
-      free(corename);
-   if (gamename)
-      free(gamename);
-   if (coreversion)
-      free(coreversion);
-   if (frontend_ident)
-      free(frontend_ident);
+   free(username);
+   free(corename);
+   free(gamename);
+   free(subsystemname);
+   free(coreversion);
+   free(frontend_ident);
 }
 
 int16_t input_state_net(unsigned port, unsigned device,
