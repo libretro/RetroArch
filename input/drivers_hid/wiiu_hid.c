@@ -469,7 +469,10 @@ static void synchronized_process_adapters(wiiu_hid_t *hid)
                else
                   prev->next = adapter->next;
 
-               pad_connection_pad_deregister(joypad_state.pads, adapter->pad_driver, adapter->pad_driver_data);
+               if(adapter->pad_driver && adapter->pad_driver_data)
+               {
+                  pad_connection_pad_deregister(joypad_state.pads, adapter->pad_driver, adapter->pad_driver_data);
+               }
                /* adapter is no longer valid after this point */
                delete_adapter(adapter);
                /* signal not to update prev ptr since adapter is now invalid */
