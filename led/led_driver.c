@@ -12,11 +12,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
 #include <string/stdstring.h>
 
 #include "led_driver.h"
-#include "verbosity.h"
+#include "../verbosity.h"
 
 static const led_driver_t *current_led_driver = NULL;
 
