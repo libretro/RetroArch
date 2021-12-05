@@ -1,13 +1,45 @@
 # Future
+
+# 1.9.14
 - ANDROID/PLAYSTORE: Implement MANAGE_EXTERNAL_STORAGE permission
 - ANDROID/PLAYSTORE: Bump up SDK level to 30 to comply with Play Store policies
+- AUDIO/MIXER: Increase sample buffer padding 
+- CHEEVOS: Disallow achievements when spectating netplay
 - CHEEVOS: Fix need-to-activate achievement logic for non-hardcore
 - CHEEVOS: Don't queue rewind re-init if already on main thread
 - CHEEVOS: Ignore unofficial achievements unless setting is enabled
+- CHEEVOS: Use SSL host when available
+- CHEEVOS: Validate hashes for secondary discs in multi-disc games
+- CHEEVOS: Ensure placard is initialized on main thread when game has no achievements
+- CHEEVOS: Audit achievement settings defaults and visibility
+- CHEEVOS: Show error message when no password provided 
+- CHEEVOS: Use widget for game loaded achievement progress
+- CONFIG: Honor config_save_on_exit when Reboot/Shutdown is called
+- DISK CONTROL: Focus on current content entry in Disk Control append/insert
+- FRAMEDELAY: Auto Frame Delay Improvements - swap interval handling, D3DX handling, and delay target resets also on core restart. It should now work with high refresh rates and also with Direct3D 10/11/12 drivers
+- INPUT/GYRO/ACCELEROMETER/ANDROID: Re-enable Gyroscope & Accelerometer when RetroArch resumes or regains focus
+- INPUT/HID: Fix gamepad disconnect on unrecognized HID device 
+- LAKKA: Patch to fix keyboard typing
+- LAKKA: CD-ROM eject menu item
+- LAKKA/BLUETOOTH: Add option to remove pairing 
+- LAKKA/SWITCH: Disable rumble gain 
+- LAKKA/SWITCH: Disable cpu scaling, uses its own CPU governor
+- LOGGING: Logging cleanups. A bunch of unifications and reformattings (capitalizations, dots, quotes, prefixes etc). Also added a few missing things, such as Run-Ahead error logging and LED interface init logging when it is enabled.
 - NETPLAY: Networking - should not print country for a local lobby
+- NETPLAY: Added setting to allow/disallow players other than the host from pausing the game.
+- NETPLAY: Added a sublabel for netplay max connections.
+- NETPLAY: Fixed port override macro from not being set immediately after the port setting.
+- NETPLAY: Show passworded rooms on lobby
+- NETWORK: Make HTTP header parsing case insensitive
+- NETWORK/UPNP: Fixed memory leaks
+- NETWORK/UPNP: Added a task_queue_wait to prevent executing two nat tasks at once, so it's also thread safe now
+- NETWORK/UPNP: Switch to a permanent lease time, but request it to be removed when we do netplay_free. Switch to a permanent lease time, but request it to be removed when we do netplay_free. 
 - OVERLAYS: Revert changes
+- RETROFW: Add OSS audio
 - VIDEO/ROTATION: Always return false if rotation can't occur. RETRO_ENVIRONMENT_SET_ROTATION should return false when rotation has been forcefully disabled in frontend, that way the core can decide if aspect ratio should be rotated or not for vertical games. Useful for FBNeo for instance.
+- VULKAN: Avoid hard crash when capturing screenshot in emulating mailbox.
 - WIIU: Make wiiu_gfx_load_texture code safer
+- WIIU: Fix keyboard support.
 
 # 1.9.13
 - CHEEVOS/MSVC2010: Add Cheevos support
