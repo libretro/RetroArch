@@ -173,7 +173,7 @@ static bool natt_open_port(struct natt_status *status,
       memcpy(&status->ext_inet4_addr, ext_addrinfo->ai_addr,
          sizeof(status->ext_inet4_addr));
    }
-#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
+#if defined(AF_INET6) && !defined(_3DS)
    else if (ext_addrinfo->ai_family == AF_INET6 &&
       ext_addrinfo->ai_addrlen >= sizeof(status->ext_inet6_addr))
    {
@@ -212,7 +212,6 @@ bool natt_open_port_any(struct natt_status *status,
    struct addrinfo *addr;
    char port_str[6];
    struct addrinfo hints = {0};
-   bool ret              = false;
 
    /* get our interfaces */
    if (!net_ifinfo_new(&list))
@@ -225,8 +224,11 @@ bool natt_open_port_any(struct natt_status *status,
       struct net_ifinfo_entry *entry = &list.entries[i];
 
       /* ignore localhost */
-      if (string_is_equal(entry->host, "127.0.0.1") ||
-            string_is_equal(entry->host, "::1"))
+      if (string_is_equal(entry->host, "127.0.0.1"))
+         continue;
+
+      /* ignore IPv6 for now */
+      if (strchr(entry->host, ':'))
          continue;
 
       addr = NULL;
@@ -237,17 +239,20 @@ bool natt_open_port_any(struct natt_status *status,
       /* make a request for this host */
       if (natt_open_port(status, addr->ai_addr, addr->ai_addrlen,
             proto))
-         ret = true;
+      {
+         freeaddrinfo_retro(addr);
+         net_ifinfo_free(&list);
+
+         return true;
+      }
 
       freeaddrinfo_retro(addr);
    }
 
    net_ifinfo_free(&list);
-
-   return ret;
-#else
-   return false;
 #endif
+
+   return false;
 }
 
 bool natt_close_port(struct natt_status *status,
@@ -272,11 +277,13 @@ bool natt_close_port(struct natt_status *status,
       addr    = (struct sockaddr *) &status->ext_inet4_addr;
       addrlen = sizeof(status->ext_inet4_addr);
    }
+#if defined(AF_INET6) && !defined(_3DS)
    else if (status->have_inet6)
    {
       addr    = (struct sockaddr *) &status->ext_inet6_addr;
       addrlen = sizeof(status->ext_inet6_addr);
    }
+#endif
    else
       return false;
 

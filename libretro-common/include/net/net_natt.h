@@ -34,13 +34,13 @@ struct natt_status
 {
    /* True if we've resolved an external IPv4 address */
    bool have_inet4;
+   /* External IPv4 address */
+   struct sockaddr_in ext_inet4_addr;
+
+#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY) && !defined(_3DS)
    /* True if we've resolved an external IPv6 address */
    bool have_inet6;
-
-   /** External IPv4 address */
-   struct sockaddr_in ext_inet4_addr;
-#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY) && !defined(_3DS)
-   /** External IPv6 address */
+   /* External IPv6 address */
    struct sockaddr_in6 ext_inet6_addr;
 #endif
 };
