@@ -28,32 +28,16 @@ struct NameValueParserData {
 	int cdatalen;
 };
 
-/* ParseNameValue() */
 void
 ParseNameValue(const char * buffer, int bufsize,
                struct NameValueParserData * data);
 
-/* ClearNameValueList() */
 void
 ClearNameValueList(struct NameValueParserData * pdata);
 
-/* GetValueFromNameValueList() */
 char *
 GetValueFromNameValueList(struct NameValueParserData * pdata,
                           const char * Name);
-
-#if 0
-/* GetValueFromNameValueListIgnoreNS() */
-char *
-GetValueFromNameValueListIgnoreNS(struct NameValueParserData * pdata,
-                                  const char * Name);
-#endif
-
-/* DisplayNameValueList() */
-#ifdef DEBUG
-void
-DisplayNameValueList(char * buffer, int bufsize);
-#endif
 
 #ifdef __cplusplus
 }

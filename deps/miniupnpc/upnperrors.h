@@ -8,8 +8,6 @@
 #ifndef UPNPERRORS_H_INCLUDED
 #define UPNPERRORS_H_INCLUDED
 
-#include "miniupnpc_declspec.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -17,7 +15,7 @@ extern "C" {
 /* strupnperror()
  * Return a string description of the UPnP error code
  * or NULL for undefinded errors */
-MINIUPNP_LIBSPEC const char * strupnperror(int err);
+const char * strupnperror(int err);
 
 #ifdef __cplusplus
 }

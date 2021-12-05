@@ -13,95 +13,66 @@
 
 const char * strupnperror(int err)
 {
-	const char * s = NULL;
-	switch(err) {
-	case UPNPCOMMAND_SUCCESS:
-		s = "Success";
-		break;
-	case UPNPCOMMAND_UNKNOWN_ERROR:
-		s = "Miniupnpc Unknown Error";
-		break;
-	case UPNPCOMMAND_INVALID_ARGS:
-		s = "Miniupnpc Invalid Arguments";
-		break;
-	case UPNPCOMMAND_INVALID_RESPONSE:
-		s = "Miniupnpc Invalid response";
-		break;
-	case UPNPDISCOVER_SOCKET_ERROR:
-		s = "Miniupnpc Socket error";
-		break;
-	case UPNPDISCOVER_MEMORY_ERROR:
-		s = "Miniupnpc Memory allocation error";
-		break;
-	case 401:
-		s = "Invalid Action";
-		break;
-	case 402:
-		s = "Invalid Args";
-		break;
-	case 501:
-		s = "Action Failed";
-		break;
-	case 606:
-		s = "Action not authorized";
-		break;
-	case 701:
-		s = "PinholeSpaceExhausted";
-		break;
-	case 702:
-		s = "FirewallDisabled";
-		break;
-	case 703:
-		s = "InboundPinholeNotAllowed";
-		break;
-	case 704:
-		s = "NoSuchEntry";
-		break;
-	case 705:
-		s = "ProtocolNotSupported";
-		break;
-	case 706:
-		s = "InternalPortWildcardingNotAllowed";
-		break;
-	case 707:
-		s = "ProtocolWildcardingNotAllowed";
-		break;
-	case 708:
-		s = "WildcardNotPermittedInSrcIP";
-		break;
-	case 709:
-		s = "NoPacketSent";
-		break;
-	case 713:
-		s = "SpecifiedArrayIndexInvalid";
-		break;
-	case 714:
-		s = "NoSuchEntryInArray";
-		break;
-	case 715:
-		s = "WildCardNotPermittedInSrcIP";
-		break;
-	case 716:
-		s = "WildCardNotPermittedInExtPort";
-		break;
-	case 718:
-		s = "ConflictInMappingEntry";
-		break;
-	case 724:
-		s = "SamePortValuesRequired";
-		break;
-	case 725:
-		s = "OnlyPermanentLeasesSupported";
-		break;
-	case 726:
-		s = "RemoteHostOnlySupportsWildcard";
-		break;
-	case 727:
-		s = "ExternalPortOnlySupportsWildcard";
-		break;
-	default:
-		s = "UnknownError";
-		break;
-	}
-	return s;
+	switch(err)
+   {
+      case UPNPCOMMAND_SUCCESS:
+         return "Success";
+      case UPNPCOMMAND_UNKNOWN_ERROR:
+         return "Miniupnpc Unknown Error";
+      case UPNPCOMMAND_INVALID_ARGS:
+         return "Miniupnpc Invalid Arguments";
+      case UPNPCOMMAND_INVALID_RESPONSE:
+         return "Miniupnpc Invalid response";
+      case UPNPDISCOVER_SOCKET_ERROR:
+         return "Miniupnpc Socket error";
+      case UPNPDISCOVER_MEMORY_ERROR:
+         return "Miniupnpc Memory allocation error";
+      case 401:
+         return "Invalid Action";
+      case 402:
+         return "Invalid Args";
+      case 501:
+         return "Action Failed";
+      case 606:
+         return "Action not authorized";
+      case 701:
+         return "PinholeSpaceExhausted";
+      case 702:
+         return "FirewallDisabled";
+      case 703:
+         return "InboundPinholeNotAllowed";
+      case 704:
+         return "NoSuchEntry";
+      case 705:
+         return "ProtocolNotSupported";
+      case 706:
+         return "InternalPortWildcardingNotAllowed";
+      case 707:
+         return "ProtocolWildcardingNotAllowed";
+      case 708:
+         return "WildcardNotPermittedInSrcIP";
+      case 709:
+         return "NoPacketSent";
+      case 713:
+         return "SpecifiedArrayIndexInvalid";
+      case 714:
+         return "NoSuchEntryInArray";
+      case 715:
+         return "WildCardNotPermittedInSrcIP";
+      case 716:
+         return "WildCardNotPermittedInExtPort";
+      case 718:
+         return "ConflictInMappingEntry";
+      case 724:
+         return "SamePortValuesRequired";
+      case 725:
+         return "OnlyPermanentLeasesSupported";
+      case 726:
+         return "RemoteHostOnlySupportsWildcard";
+      case 727:
+         return "ExternalPortOnlySupportsWildcard";
+      default:
+         break;
+   }
+   return "UnknownError";
 }

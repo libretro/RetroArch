@@ -8,7 +8,6 @@
 #ifndef MINIUPNPC_H_INCLUDED
 #define MINIUPNPC_H_INCLUDED
 
-#include "miniupnpc_declspec.h"
 #include "igd_desc_parse.h"
 #include "upnpdev.h"
 
@@ -58,25 +57,25 @@ simpleUPnPcommand(int, const char *, const char *,
  * "searchalltypes" parameter is useful when searching several types,
  * if 0, the discovery will stop with the first type returning results.
  * TTL should default to 2. */
-MINIUPNP_LIBSPEC struct UPNPDev *
+ struct UPNPDev *
 upnpDiscover(int delay, const char * multicastif,
              const char * minissdpdsock, int localport,
              int ipv6, unsigned char ttl,
              int * error);
 
-MINIUPNP_LIBSPEC struct UPNPDev *
+ struct UPNPDev *
 upnpDiscoverAll(int delay, const char * multicastif,
                 const char * minissdpdsock, int localport,
                 int ipv6, unsigned char ttl,
                 int * error);
 
-MINIUPNP_LIBSPEC struct UPNPDev *
+ struct UPNPDev *
 upnpDiscoverDevice(const char * device, int delay, const char * multicastif,
                 const char * minissdpdsock, int localport,
                 int ipv6, unsigned char ttl,
                 int * error);
 
-MINIUPNP_LIBSPEC struct UPNPDev *
+ struct UPNPDev *
 upnpDiscoverDevices(const char * const deviceTypes[],
                     int delay, const char * multicastif,
                     const char * minissdpdsock, int localport,
@@ -87,7 +86,7 @@ upnpDiscoverDevices(const char * const deviceTypes[],
 /* parserootdesc() :
  * parse root XML description of a UPnP device and fill the IGDdatas
  * structure. */
-MINIUPNP_LIBSPEC void parserootdesc(const char *, int, struct IGDdatas *);
+ void parserootdesc(const char *, int, struct IGDdatas *);
 
 /* structure used to get fast access to urls
  * controlURL: controlURL of the WANIPConnection
@@ -115,7 +114,7 @@ struct UPNPUrls {
  * passed as parameters are set. Donc forget to call FreeUPNPUrls(urls) to
  * free allocated memory.
  */
-MINIUPNP_LIBSPEC int
+ int
 UPNP_GetValidIGD(struct UPNPDev * devlist,
                  struct UPNPUrls * urls,
 				 struct IGDdatas * data,
@@ -127,21 +126,21 @@ UPNP_GetValidIGD(struct UPNPDev * devlist,
  * return value :
  *   0 - Not ok
  *   1 - OK */
-MINIUPNP_LIBSPEC int
+ int
 UPNP_GetIGDFromUrl(const char * rootdescurl,
                    struct UPNPUrls * urls,
                    struct IGDdatas * data,
                    char * lanaddr, int lanaddrlen);
 
-MINIUPNP_LIBSPEC void
+ void
 GetUPNPUrls(struct UPNPUrls *, struct IGDdatas *,
             const char *, unsigned int);
 
-MINIUPNP_LIBSPEC void
+ void
 FreeUPNPUrls(struct UPNPUrls *);
 
 /* return 0 or 1 */
-MINIUPNP_LIBSPEC int UPNPIGD_IsConnected(struct UPNPUrls *, struct IGDdatas *);
+ int UPNPIGD_IsConnected(struct UPNPUrls *, struct IGDdatas *);
 
 
 #ifdef __cplusplus

@@ -7,7 +7,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 #include "upnpreplyparse.h"
 #include "minixml.h"
@@ -15,23 +14,21 @@
 static void
 NameValueParserStartElt(void * d, const char * name, int l)
 {
-	struct NameValueParserData * data = (struct NameValueParserData *)d;
-	data->topelt = 1;
-    if(l>63)
-        l = 63;
-    memcpy(data->curelt, name, l);
-    data->curelt[l] = '\0';
-	data->cdata = NULL;
-	data->cdatalen = 0;
+   struct NameValueParserData * data = (struct NameValueParserData *)d;
+   data->topelt = 1;
+   if(l>63)
+      l = 63;
+   memcpy(data->curelt, name, l);
+   data->curelt[l] = '\0';
+   data->cdata      = NULL;
+   data->cdatalen   = 0;
 }
 
 static void
 NameValueParserEndElt(void * d, const char * name, int l)
 {
-    struct NameValueParserData * data = (struct NameValueParserData *)d;
-    struct NameValue * nv;
-	(void)name;
-	(void)l;
+   struct NameValueParserData * data = (struct NameValueParserData *)d;
+   struct NameValue * nv;
 	if(!data->topelt)
 		return;
 	if(strcmp(data->curelt, "NewPortListing") != 0)
@@ -40,15 +37,8 @@ NameValueParserEndElt(void * d, const char * name, int l)
 		/* standard case. Limited to n chars strings */
 		l = data->cdatalen;
 	    nv = (struct NameValue*)malloc(sizeof(struct NameValue));
-		if(nv == NULL)
-		{
-			/* malloc error */
-#ifdef DEBUG
-			fprintf(stderr, "%s: error allocating memory",
-			        "NameValueParserEndElt");
-#endif /* DEBUG */
+		if(!nv)
 			return;
-		}
 	    if(l>=(int)sizeof(nv->value))
 	        l = sizeof(nv->value) - 1;
 	    strncpy(nv->name, data->curelt, 64);
@@ -59,9 +49,7 @@ NameValueParserEndElt(void * d, const char * name, int l)
 			nv->value[l] = '\0';
 		}
 		else
-		{
 			nv->value[0] = '\0';
-		}
 		nv->l_next = data->l_head;	/* insert in list */
 		data->l_head = nv;
 	}
@@ -79,14 +67,7 @@ NameValueParserGetData(void * d, const char * datas, int l)
 		/* specific case for NewPortListing which is a XML Document */
 		data->portListing = (char*)malloc(l + 1);
 		if(!data->portListing)
-		{
-			/* malloc error */
-#ifdef DEBUG
-			fprintf(stderr, "%s: error allocating memory",
-			        "NameValueParserGetData");
-#endif /* DEBUG */
 			return;
-		}
 		memcpy(data->portListing, datas, l);
 		data->portListing[l] = '\0';
 		data->portListingLength = l;
@@ -150,48 +131,3 @@ GetValueFromNameValueList(struct NameValueParserData * pdata,
     }
     return p;
 }
-
-#if 0
-/* useless now that minixml ignores namespaces by itself */
-char *
-GetValueFromNameValueListIgnoreNS(struct NameValueParserData * pdata,
-                                  const char * Name)
-{
-	struct NameValue * nv;
-	char * p = NULL;
-	char * pname;
-	for(nv = pdata->head.lh_first;
-	    (nv != NULL) && (p == NULL);
-		nv = nv->entries.le_next)
-	{
-		pname = strrchr(nv->name, ':');
-		if(pname)
-			pname++;
-		else
-			pname = nv->name;
-		if(strcmp(pname, Name)==0)
-			p = nv->value;
-	}
-	return p;
-}
-#endif
-
-/* debug all-in-one function
- * do parsing then display to stdout */
-#ifdef DEBUG
-void
-DisplayNameValueList(char * buffer, int bufsize)
-{
-    struct NameValueParserData pdata;
-    struct NameValue * nv;
-    ParseNameValue(buffer, bufsize, &pdata);
-    for(nv = pdata.l_head;
-        nv != NULL;
-        nv = nv->l_next)
-    {
-        printf("%s = %s\n", nv->name, nv->value);
-    }
-    ClearNameValueList(&pdata);
-}
-#endif /* DEBUG */
-

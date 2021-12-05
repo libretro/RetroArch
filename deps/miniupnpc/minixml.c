@@ -38,10 +38,11 @@ POSSIBILITY OF SUCH DAMAGE.
  * of the xmlbuffer is reached. */
 static int parseatt(struct xmlparser * p)
 {
-	const char * attname;
 	int attnamelen;
-	const char * attvalue;
 	int attvaluelen;
+	const char *attname  = NULL;
+	const char *attvalue = NULL;
+
 	while(p->xml < p->xmlend)
 	{
 		if(*p->xml=='/' || *p->xml=='>')
@@ -85,7 +86,7 @@ static int parseatt(struct xmlparser * p)
 			}
 			else
 			{
-				attvalue = p->xml;
+				attvalue    = p->xml;
 				attvaluelen = 0;
 				while(   !IS_WHITE_SPACE(*p->xml)
 					  && *p->xml != '>' && *p->xml != '/')
@@ -95,8 +96,6 @@ static int parseatt(struct xmlparser * p)
 						return -1;
 				}
 			}
-			/*printf("%.*s='%.*s'\n",
-			       attnamelen, attname, attvaluelen, attvalue);*/
 			if(p->attfunc)
 				p->attfunc(p->data, attname, attnamelen, attvalue, attvaluelen);
 		}
@@ -212,18 +211,14 @@ static void parseelt(struct xmlparser * p)
 			}
 		}
 		else
-		{
 			p->xml++;
-		}
 	}
 }
 
 /* the parser must be initialized before calling this function */
 void parsexml(struct xmlparser * parser)
 {
-	parser->xml = parser->xmlstart;
+	parser->xml    = parser->xmlstart;
 	parser->xmlend = parser->xmlstart + parser->xmlsize;
 	parseelt(parser);
 }
-
-

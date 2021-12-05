@@ -28,8 +28,6 @@ HAVE_IPV6 ?= yes
 export HAVE_IPV6
 
 CC ?= gcc
-#AR = gar
-#CFLAGS = -O -g -DDEBUG
 CFLAGS ?= -O
 CFLAGS += -Wall
 CFLAGS += -W -Wstrict-prototypes

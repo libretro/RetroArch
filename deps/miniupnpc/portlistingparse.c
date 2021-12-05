@@ -6,9 +6,6 @@
  * in the LICENCE file provided within the distribution */
 #include <string.h>
 #include <stdlib.h>
-#ifdef DEBUG
-#include <stdio.h>
-#endif /* DEBUG */
 #include "portlistingparse.h"
 #include "minixml.h"
 
@@ -63,17 +60,9 @@ startelt(void * d, const char * name, int l)
 	}
 	if(pdata->curelt == PortMappingEntry)
 	{
-		struct PortMapping * pm;
-		pm = (struct PortMapping*)calloc(1, sizeof(struct PortMapping));
-		if(pm == NULL)
-		{
-			/* malloc error */
-#ifdef DEBUG
-			fprintf(stderr, "%s: error allocating memory",
-			        "startelt");
-#endif /* DEBUG */
+		struct PortMapping *pm = (struct PortMapping*)calloc(1, sizeof(struct PortMapping));
+		if(!pm)
 			return;
-		}
 		pm->l_next = pdata->l_head;	/* insert in list */
 		pdata->l_head = pm;
 	}
@@ -84,8 +73,6 @@ static void
 endelt(void * d, const char * name, int l)
 {
 	struct PortMappingParserData * pdata = (struct PortMappingParserData *)d;
-	(void)name;
-	(void)l;
 	pdata->curelt = PortMappingEltNone;
 }
 
@@ -168,4 +155,3 @@ FreePortListing(struct PortMappingParserData * pdata)
 		free(pm);
 	}
 }
-

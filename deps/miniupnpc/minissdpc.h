@@ -8,7 +8,6 @@
 #ifndef MINISSDPC_H_INCLUDED
 #define MINISSDPC_H_INCLUDED
 
-#include "miniupnpc_declspec.h"
 #include "upnpdev.h"
 
 /* error codes : */
@@ -25,24 +24,24 @@ extern "C" {
 
 #if !(defined(_WIN32) || defined(__amigaos__) || defined(__amigaos4__))
 
-MINIUPNP_LIBSPEC struct UPNPDev *
+ struct UPNPDev *
 getDevicesFromMiniSSDPD(const char * devtype, const char * socketpath, int * error);
 
-MINIUPNP_LIBSPEC int
+ int
 connectToMiniSSDPD(const char * socketpath);
 
-MINIUPNP_LIBSPEC int
+ int
 disconnectFromMiniSSDPD(int fd);
 
-MINIUPNP_LIBSPEC int
+ int
 requestDevicesFromMiniSSDPD(int fd, const char * devtype);
 
-MINIUPNP_LIBSPEC struct UPNPDev *
+ struct UPNPDev *
 receiveDevicesFromMiniSSDPD(int fd, int * error);
 
 #endif /* !(defined(_WIN32) || defined(__amigaos__) || defined(__amigaos4__)) */
 
-MINIUPNP_LIBSPEC struct UPNPDev *
+ struct UPNPDev *
 ssdpDiscoverDevices(const char * const deviceTypes[],
                     int delay, const char * multicastif,
                     int localport,

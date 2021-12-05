@@ -6,7 +6,6 @@
  * This software is subject to the conditions detailed in the
  * LICENCE file provided in this distribution. */
 
-#include <stdio.h>
 #include <string.h>
 #ifdef _WIN32
 #include <winsock2.h>
@@ -80,9 +79,6 @@ receivedata(int socket,
 #ifdef MINIUPNPC_GET_SRC_ADDR
 	if (src_addr.ss_family == AF_INET6) {
 		const struct sockaddr_in6 * src_addr6 = (struct sockaddr_in6 *)&src_addr;
-#ifdef DEBUG
-		printf("scope_id=%u\n", src_addr6->sin6_scope_id);
-#endif	/* DEBUG */
 		if(scope_id)
 			*scope_id = src_addr6->sin6_scope_id;
 	}

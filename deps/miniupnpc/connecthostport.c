@@ -44,10 +44,6 @@
 #endif /* #ifndef USE_GETHOSTBYNAME */
 #endif /* #else _WIN32 */
 
-#if defined(__amigaos__) || defined(__amigaos4__)
-#define herror(A) printf("%s\n", A)
-#endif
-
 #include <net/net_compat.h>
 
 #include "connecthostport.h"
@@ -78,11 +74,8 @@ int connecthostport(const char * host, unsigned short port,
 
 #ifdef USE_GETHOSTBYNAME
 	hp = gethostbyname(host);
-	if(hp == NULL)
-	{
-		herror(host);
+	if(!hp)
 		return -1;
-	}
 	memcpy(&dest.sin_addr, hp->h_addr, sizeof(dest.sin_addr));
 	memset(dest.sin_zero, 0, sizeof(dest.sin_zero));
 	s = socket(PF_INET, SOCK_STREAM, 0);
@@ -242,4 +235,3 @@ int connecthostport(const char * host, unsigned short port,
 #endif /* #ifdef USE_GETHOSTBYNAME */
 	return s;
 }
-

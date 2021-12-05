@@ -7,7 +7,6 @@
 #ifndef PORTLISTINGPARSE_H_INCLUDED
 #define PORTLISTINGPARSE_H_INCLUDED
 
-#include "miniupnpc_declspec.h"
 /* for the definition of UNSIGNED_INTEGER */
 #include "miniupnpctypes.h"
 
@@ -51,11 +50,11 @@ struct PortMappingParserData {
 	portMappingElt curelt;
 };
 
-MINIUPNP_LIBSPEC void
+void
 ParsePortListing(const char * buffer, int bufsize,
                  struct PortMappingParserData * pdata);
 
-MINIUPNP_LIBSPEC void
+void
 FreePortListing(struct PortMappingParserData * pdata);
 
 #ifdef __cplusplus

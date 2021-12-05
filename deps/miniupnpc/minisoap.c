@@ -31,19 +31,12 @@ httpWrite(int fd, const char * body, int bodysize,
           const char * headers, int headerssize)
 {
 	int n = 0;
-	/*n = write(fd, headers, headerssize);*/
-	/*if(bodysize>0)
-		n += write(fd, body, bodysize);*/
-	/* Note : my old linksys router only took into account
-	 * soap request that are sent into only one packet */
-	char * p;
 	/* TODO: AVOID MALLOC, we could use writev() for that */
-	p = (char*)malloc(headerssize+bodysize);
+	char *p = (char*)malloc(headerssize+bodysize);
 	if(!p)
 	  return -1;
 	memcpy(p, headers, headerssize);
 	memcpy(p+headerssize, body, bodysize);
-	/*n = write(fd, p, headerssize+bodysize);*/
 	n = (int)send(fd, p, headerssize+bodysize, 0);
 	/* disable send on the socket */
 	/* draytek routers dont seems to like that... */
@@ -53,12 +46,12 @@ httpWrite(int fd, const char * body, int bodysize,
 
 /* self explanatory  */
 int soapPostSubmit(int fd,
-                   const char * url,
-				   const char * host,
-				   unsigned short port,
-				   const char * action,
-				   const char * body,
-				   const char * httpversion)
+      const char * url,
+      const char * host,
+      unsigned short port,
+      const char * action,
+      const char * body,
+      const char * httpversion)
 {
 	int bodysize;
 	char headerbuf[512];
@@ -89,17 +82,5 @@ int soapPostSubmit(int fd,
 					   url, httpversion, host, portstr, bodysize, action);
 	if ((unsigned int)headerssize >= sizeof(headerbuf))
 		return -1;
-#ifdef DEBUG
-	/*printf("SOAP request : headersize=%d bodysize=%d\n",
-	       headerssize, bodysize);
-	*/
-	printf("SOAP request : POST %s HTTP/%s - Host: %s%s\n",
-	        url, httpversion, host, portstr);
-	printf("SOAPAction: \"%s\" - Content-Length: %d\n", action, bodysize);
-	printf("Headers :\n%s", headerbuf);
-	printf("Body :\n%s\n", body);
-#endif
 	return httpWrite(fd, body, bodysize, headerbuf, headerssize);
 }
-
-
