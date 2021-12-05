@@ -34,6 +34,7 @@
 - NETWORK/UPNP: Fixed memory leaks
 - NETWORK/UPNP: Added a task_queue_wait to prevent executing two nat tasks at once, so it's also thread safe now
 - NETWORK/UPNP: Switch to a permanent lease time, but request it to be removed when we do netplay_free. Switch to a permanent lease time, but request it to be removed when we do netplay_free. 
+- NETWORK/UPNP: Only use a single interface for UPnP, return on the first one found instead of iterating over all of them and opening them one by one
 - OVERLAYS: Revert changes
 - RETROFW: Add OSS audio
 - VIDEO/ROTATION: Always return false if rotation can't occur. RETRO_ENVIRONMENT_SET_ROTATION should return false when rotation has been forcefully disabled in frontend, that way the core can decide if aspect ratio should be rotated or not for vertical games. Useful for FBNeo for instance.
