@@ -224,23 +224,27 @@ getHTTPResponse(int s, int * size, int * status_code)
 						}
 						while(i<n && buf[i] != '\r' && buf[i] != '\n')
 							i++; /* discarding chunk-extension */
-						if(i<n && buf[i] == '\r') i++;
-						if(i<n && buf[i] == '\n') {
-							unsigned int j;
-							for(j = 0; j < chunksize_buf_index; j++) {
-							if(chunksize_buf[j] >= '0'
-							   && chunksize_buf[j] <= '9')
-								chunksize = (chunksize << 4) + (chunksize_buf[j] - '0');
-							else
-								chunksize = (chunksize << 4) + ((chunksize_buf[j] | 32) - 'a' + 10);
-							}
-							chunksize_buf[0] = '\0';
-							chunksize_buf_index = 0;
-							i++;
-						} else {
+						if(i<n && buf[i] == '\r')
+                     i++;
+
+						if(i<n && buf[i] == '\n')
+                  {
+                     unsigned int j;
+                     for(j = 0; j < chunksize_buf_index; j++)
+                     {
+                        if(chunksize_buf[j] >= '0'
+                              && chunksize_buf[j] <= '9')
+                           chunksize = (chunksize << 4) + (chunksize_buf[j] - '0');
+                        else
+                           chunksize = (chunksize << 4) + ((chunksize_buf[j] | 32) - 'a' + 10);
+                     }
+                     chunksize_buf[0] = '\0';
+                     chunksize_buf_index = 0;
+                     i++;
+                  }
+                  else
 							/* not finished to get chunksize */
 							continue;
-						}
 						if(chunksize == 0)
 							goto end_of_stream;
 					}
@@ -326,73 +330,72 @@ miniwget3(const char * host,
           const char * httpversion, unsigned int scope_id,
           int * status_code)
 {
-	char buf[2048];
-    int s;
-	int n;
-	int len;
-	int sent;
-	void * content;
+   char buf[2048];
+   int s;
+   int n;
+   int len;
+   int sent;
+   void * content;
 
-	*size = 0;
-	s = connecthostport(host, port, scope_id);
-	if(s < 0)
-		return NULL;
+   *size = 0;
+   s = connecthostport(host, port, scope_id);
+   if(s < 0)
+      return NULL;
 
-	/* get address for caller ! */
-	if(addr_str)
-	{
-		struct sockaddr_storage saddr;
-		socklen_t saddrlen = sizeof(saddr);
-		if(getsockname(s, (struct sockaddr *)&saddr, &saddrlen) < 0)
-			perror("getsockname");
-		else
-		{
+   /* get address for caller ! */
+   if(addr_str)
+   {
+      struct sockaddr_storage saddr;
+      socklen_t saddrlen = sizeof(saddr);
+      if(getsockname(s, (struct sockaddr *)&saddr, &saddrlen) < 0)
+         perror("getsockname");
+      else
+      {
 #if defined(__amigaos__) && !defined(__amigaos4__)
-	/* using INT WINAPI WSAAddressToStringA(LPSOCKADDR, DWORD, LPWSAPROTOCOL_INFOA, LPSTR, LPDWORD);
-     * But his function make a string with the port :  nn.nn.nn.nn:port */
-			/* the following code is only compatible with ip v4 addresses */
-			strncpy(addr_str, inet_ntoa(((struct sockaddr_in *)&saddr)->sin_addr), addr_str_len);
+         /* using INT WINAPI WSAAddressToStringA(LPSOCKADDR, DWORD, LPWSAPROTOCOL_INFOA, LPSTR, LPDWORD);
+          * But his function make a string with the port :  nn.nn.nn.nn:port */
+         /* the following code is only compatible with ip v4 addresses */
+         strncpy(addr_str, inet_ntoa(((struct sockaddr_in *)&saddr)->sin_addr), addr_str_len);
 #else
-			/* getnameinfo return ip v6 address with the scope identifier
-			 * such as : 2a01:e35:8b2b:7330::%4281128194 */
-			n = getnameinfo((const struct sockaddr *)&saddr, saddrlen,
-			                addr_str, addr_str_len,
-			                NULL, 0,
-			                NI_NUMERICHOST | NI_NUMERICSERV);
+         /* getnameinfo return ip v6 address with the scope identifier
+          * such as : 2a01:e35:8b2b:7330::%4281128194 */
+         n = getnameinfo((const struct sockaddr *)&saddr, saddrlen,
+               addr_str, addr_str_len,
+               NULL, 0,
+               NI_NUMERICHOST | NI_NUMERICSERV);
 #endif
-		}
-	}
+      }
+   }
 
-	len = snprintf(buf, sizeof(buf),
-                 "GET %s HTTP/%s\r\n"
-			     "Host: %s:%d\r\n"
-				 "Connection: Close\r\n"
-				 "User-Agent: " OS_STRING ", " UPNP_VERSION_STRING ", MiniUPnPc/" MINIUPNPC_VERSION_STRING "\r\n"
+   len = snprintf(buf, sizeof(buf),
+         "GET %s HTTP/%s\r\n"
+         "Host: %s:%d\r\n"
+         "Connection: Close\r\n"
+         "User-Agent: " OS_STRING ", " UPNP_VERSION_STRING ", MiniUPnPc/" MINIUPNPC_VERSION_STRING "\r\n"
 
-				 "\r\n",
-			   path, httpversion, host, port);
-	if ((unsigned int)len >= sizeof(buf))
-	{
-		closesocket(s);
-		return NULL;
-	}
-	sent = 0;
-	/* sending the HTTP request */
-	while(sent < len)
-	{
-		n = (int)send(s, buf+sent, len-sent, 0);
-		if(n < 0)
-		{
-			perror("send");
-			closesocket(s);
-			return NULL;
-		}
+         "\r\n",
+         path, httpversion, host, port);
+   if ((unsigned int)len >= sizeof(buf))
+      goto error;
+   sent = 0;
+   /* sending the HTTP request */
+   while(sent < len)
+   {
+      n = (int)send(s, buf+sent, len-sent, 0);
+      if(n < 0)
+      {
+         perror("send");
+         goto error;
+      }
 
       sent += n;
-	}
-	content = getHTTPResponse(s, size, status_code);
-	closesocket(s);
-	return content;
+   }
+   content = getHTTPResponse(s, size, status_code);
+   closesocket(s);
+   return content;
+error:
+   closesocket(s);
+   return NULL;
 }
 
 /* miniwget2() :
@@ -457,9 +460,8 @@ parseURL(const char * url,
 			memcpy(tmp, scope, l);
 			tmp[l] = '\0';
 			*scope_id = if_nametoindex(tmp);
-			if(*scope_id == 0) {
+			if(*scope_id == 0)
 				*scope_id = (unsigned int)strtoul(tmp, NULL, 10);
-			}
 #else
 			/* under windows, scope is numerical */
 			char tmp[8];

@@ -129,7 +129,7 @@ char * simpleUPnPcommand2(int s, const char * url, const char * service,
 
 	*bufsize = 0;
 	snprintf(soapact, sizeof(soapact), "%s#%s", service, action);
-	if(args==NULL)
+	if(!args)
 	{
 		soapbodylen = snprintf(soapbody, sizeof(soapbody),
 						  "<?xml version=\"1.0\"?>\r\n"
@@ -212,12 +212,11 @@ char * simpleUPnPcommand2(int s, const char * url, const char * service,
 			return NULL;
 	}
 	if(!parseURL(url, hostname, &port, &path, NULL)) return NULL;
-	if(s < 0) {
+	if(s < 0)
+	{
 		s = connecthostport(hostname, port, 0);
-		if(s < 0) {
-			/* failed to connect */
+		if(s < 0) /* failed to connect */
 			return NULL;
-		}
 	}
 
 	n = soapPostSubmit(s, path, hostname, port, soapact, soapbody, httpversion);
@@ -393,19 +392,19 @@ build_absolute_url(const char * baseurl, const char * descURL,
 		return strdup(url);
 	base = (baseurl[0] == '\0') ? descURL : baseurl;
 	n    = (int)strlen(base);
-	if(n > 7) {
-		p = (char*)strchr(base + 7, '/');
-		if(p)
-			n = (int)(p - base);
-	}
+	if(n > 7)
+   {
+      p = (char*)strchr(base + 7, '/');
+      if(p)
+         n = (int)(p - base);
+   }
 	l = (int)(n + strlen(url) + 1);
 	if(url[0] != '/')
 		l++;
 	if(scope_id != 0) {
 #if defined(IF_NAMESIZE) && !defined(_WIN32)
-		if(if_indextoname(scope_id, ifname)) {
+		if(if_indextoname(scope_id, ifname))
 			l += 3 + strlen(ifname);	/* 3 == strlen(%25) */
-		}
 #else /* defined(IF_NAMESIZE) && !defined(_WIN32) */
 		/* under windows, scope is numerical */
 		l += 3 + snprintf(scope_str, sizeof(scope_str), "%u", scope_id);
@@ -414,27 +413,30 @@ build_absolute_url(const char * baseurl, const char * descURL,
 	s = (char*)malloc(l);
 	if(s == NULL) return NULL;
 	memcpy(s, base, n);
-	if(scope_id != 0) {
-		s[n] = '\0';
-		if(0 == memcmp(s, "http://[fe80:", 13)) {
-			/* this is a linklocal IPv6 address */
-			p = strchr(s, ']');
-			if(p) {
-				/* insert %25<scope> into URL */
+	if(scope_id != 0)
+   {
+      s[n] = '\0';
+      if(0 == memcmp(s, "http://[fe80:", 13))
+      {
+         /* this is a linklocal IPv6 address */
+         p = strchr(s, ']');
+         if(p)
+         {
+            /* insert %25<scope> into URL */
 #if defined(IF_NAMESIZE) && !defined(_WIN32)
-				memmove(p + 3 + strlen(ifname), p, strlen(p) + 1);
-				memcpy(p, "%25", 3);
-				memcpy(p + 3, ifname, strlen(ifname));
-				n += 3 + strlen(ifname);
+            memmove(p + 3 + strlen(ifname), p, strlen(p) + 1);
+            memcpy(p, "%25", 3);
+            memcpy(p + 3, ifname, strlen(ifname));
+            n += 3 + strlen(ifname);
 #else /* defined(IF_NAMESIZE) && !defined(_WIN32) */
-				memmove(p + 3 + strlen(scope_str), p, strlen(p) + 1);
-				memcpy(p, "%25", 3);
-				memcpy(p + 3, scope_str, strlen(scope_str));
-				n += 3 + strlen(scope_str);
+            memmove(p + 3 + strlen(scope_str), p, strlen(p) + 1);
+            memcpy(p, "%25", 3);
+            memcpy(p + 3, scope_str, strlen(scope_str));
+            n += 3 + strlen(scope_str);
 #endif /* defined(IF_NAMESIZE) && !defined(_WIN32) */
-			}
-		}
-	}
+         }
+      }
+   }
 	if(url[0] != '/')
 		s[n++] = '/';
 	memcpy(s + n, url, l - n);
@@ -448,17 +450,16 @@ GetUPNPUrls(struct UPNPUrls * urls, struct IGDdatas * data,
             const char * descURL, unsigned int scope_id)
 {
 	/* strdup descURL */
-	urls->rootdescURL = strdup(descURL);
-
+	urls->rootdescURL    = strdup(descURL);
 	/* get description of WANIPConnection */
-	urls->ipcondescURL = build_absolute_url(data->urlbase, descURL,
-	                                        data->first.scpdurl, scope_id);
-	urls->controlURL = build_absolute_url(data->urlbase, descURL,
-	                                      data->first.controlurl, scope_id);
+	urls->ipcondescURL   = build_absolute_url(data->urlbase, descURL,
+         data->first.scpdurl, scope_id);
+	urls->controlURL     = build_absolute_url(data->urlbase, descURL,
+         data->first.controlurl, scope_id);
 	urls->controlURL_CIF = build_absolute_url(data->urlbase, descURL,
-	                                          data->CIF.controlurl, scope_id);
+         data->CIF.controlurl, scope_id);
 	urls->controlURL_6FC = build_absolute_url(data->urlbase, descURL,
-	                                          data->IPv6FC.controlurl, scope_id);
+         data->IPv6FC.controlurl, scope_id);
 }
 
 void

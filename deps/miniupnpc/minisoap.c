@@ -53,11 +53,10 @@ int soapPostSubmit(int fd,
       const char * body,
       const char * httpversion)
 {
-	int bodysize;
 	char headerbuf[512];
 	int headerssize;
 	char portstr[8];
-	bodysize = (int)strlen(body);
+	int bodysize = (int)strlen(body);
 	/* We are not using keep-alive HTTP connections.
 	 * HTTP/1.1 needs the header Connection: close to do that.
 	 * This is the default with HTTP/1.0

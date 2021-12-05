@@ -63,7 +63,7 @@ startelt(void * d, const char * name, int l)
 		struct PortMapping *pm = (struct PortMapping*)calloc(1, sizeof(struct PortMapping));
 		if(!pm)
 			return;
-		pm->l_next = pdata->l_head;	/* insert in list */
+		pm->l_next    = pdata->l_head;	/* insert in list */
 		pdata->l_head = pm;
 	}
 }
@@ -79,50 +79,48 @@ endelt(void * d, const char * name, int l)
 /* Data handler */
 static void portlisting_data(void * d, const char * data, int l)
 {
-	struct PortMapping * pm;
-	struct PortMappingParserData * pdata = (struct PortMappingParserData *)d;
-	pm = pdata->l_head;
-	if(!pm)
-		return;
-	if(l > 63)
-		l = 63;
-	switch(pdata->curelt)
-	{
-	case NewRemoteHost:
-		memcpy(pm->remoteHost, data, l);
-		pm->remoteHost[l] = '\0';
-		break;
-	case NewExternalPort:
-		pm->externalPort = (unsigned short)my_atoui(data, l);
-		break;
-	case NewProtocol:
-		if(l > 3)
-			l = 3;
-		memcpy(pm->protocol, data, l);
-		pm->protocol[l] = '\0';
-		break;
-	case NewInternalPort:
-		pm->internalPort = (unsigned short)my_atoui(data, l);
-		break;
-	case NewInternalClient:
-		memcpy(pm->internalClient, data, l);
-		pm->internalClient[l] = '\0';
-		break;
-	case NewEnabled:
-		pm->enabled = (unsigned char)my_atoui(data, l);
-		break;
-	case NewDescription:
-		memcpy(pm->description, data, l);
-		pm->description[l] = '\0';
-		break;
-	case NewLeaseTime:
-		pm->leaseTime = my_atoui(data, l);
-		break;
-	default:
-		break;
-	}
+   struct PortMappingParserData * pdata = (struct PortMappingParserData *)d;
+   struct PortMapping *pm = pdata->l_head;
+   if(!pm)
+      return;
+   if(l > 63)
+      l = 63;
+   switch(pdata->curelt)
+   {
+      case NewRemoteHost:
+         memcpy(pm->remoteHost, data, l);
+         pm->remoteHost[l] = '\0';
+         break;
+      case NewExternalPort:
+         pm->externalPort = (unsigned short)my_atoui(data, l);
+         break;
+      case NewProtocol:
+         if(l > 3)
+            l = 3;
+         memcpy(pm->protocol, data, l);
+         pm->protocol[l] = '\0';
+         break;
+      case NewInternalPort:
+         pm->internalPort = (unsigned short)my_atoui(data, l);
+         break;
+      case NewInternalClient:
+         memcpy(pm->internalClient, data, l);
+         pm->internalClient[l] = '\0';
+         break;
+      case NewEnabled:
+         pm->enabled = (unsigned char)my_atoui(data, l);
+         break;
+      case NewDescription:
+         memcpy(pm->description, data, l);
+         pm->description[l] = '\0';
+         break;
+      case NewLeaseTime:
+         pm->leaseTime = my_atoui(data, l);
+         break;
+      default:
+         break;
+   }
 }
-
 
 /* Parse the PortMappingList XML document for IGD version 2
  */
@@ -148,7 +146,7 @@ void
 FreePortListing(struct PortMappingParserData * pdata)
 {
 	struct PortMapping * pm;
-	while((pm = pdata->l_head) != NULL)
+	while((pm = pdata->l_head))
 	{
 		/* remove from list */
 		pdata->l_head = pm->l_next;

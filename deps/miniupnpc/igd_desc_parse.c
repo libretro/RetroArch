@@ -19,10 +19,11 @@ void IGDstartelt(void * d, const char * name, int l)
    memcpy(datas->cureltname, name, l);
    datas->cureltname[l] = '\0';
    datas->level++;
-   if( (l==7) && !memcmp(name, "service", l) ) {
-      datas->tmp.controlurl[0] = '\0';
+   if( (l==7) && !memcmp(name, "service", l) )
+   {
+      datas->tmp.controlurl[0]  = '\0';
       datas->tmp.eventsuburl[0] = '\0';
-      datas->tmp.scpdurl[0] = '\0';
+      datas->tmp.scpdurl[0]     = '\0';
       datas->tmp.servicetype[0] = '\0';
    }
 }
@@ -39,20 +40,24 @@ void IGDendelt(void * d, const char * name, int l)
    if( (l==7) && !memcmp(name, "service", l) )
    {
       if(COMPARE(datas->tmp.servicetype,
-               "urn:schemas-upnp-org:service:WANCommonInterfaceConfig:")) {
-         memcpy(&datas->CIF, &datas->tmp, sizeof(struct IGDdatas_service));
-      } else if(COMPARE(datas->tmp.servicetype,
-               "urn:schemas-upnp-org:service:WANIPv6FirewallControl:")) {
-         memcpy(&datas->IPv6FC, &datas->tmp, sizeof(struct IGDdatas_service));
-      } else if(COMPARE(datas->tmp.servicetype,
+               "urn:schemas-upnp-org:service:WANCommonInterfaceConfig:"))
+         memcpy(&datas->CIF, &datas->tmp,
+               sizeof(struct IGDdatas_service));
+      else if(COMPARE(datas->tmp.servicetype,
+               "urn:schemas-upnp-org:service:WANIPv6FirewallControl:"))
+         memcpy(&datas->IPv6FC, &datas->tmp,
+               sizeof(struct IGDdatas_service));
+      else if(COMPARE(datas->tmp.servicetype,
                "urn:schemas-upnp-org:service:WANIPConnection:")
             || COMPARE(datas->tmp.servicetype,
-               "urn:schemas-upnp-org:service:WANPPPConnection:") ) {
-         if(datas->first.servicetype[0] == '\0') {
-            memcpy(&datas->first, &datas->tmp, sizeof(struct IGDdatas_service));
-         } else {
-            memcpy(&datas->second, &datas->tmp, sizeof(struct IGDdatas_service));
-         }
+               "urn:schemas-upnp-org:service:WANPPPConnection:") )
+      {
+         if(datas->first.servicetype[0] == '\0')
+            memcpy(&datas->first, &datas->tmp,
+                  sizeof(struct IGDdatas_service));
+         else
+            memcpy(&datas->second, &datas->tmp,
+                  sizeof(struct IGDdatas_service));
       }
    }
 }
@@ -61,8 +66,8 @@ void IGDendelt(void * d, const char * name, int l)
  * copy data depending on the current element name and state */
 void IGDdata(void * d, const char * data, int l)
 {
-	struct IGDdatas * datas = (struct IGDdatas *)d;
-	char * dstmember = 0;
+	struct IGDdatas *datas = (struct IGDdatas *)d;
+	char        *dstmember = 0;
 	if( !strcmp(datas->cureltname, "URLBase") )
 		dstmember = datas->urlbase;
 	else if( !strcmp(datas->cureltname, "presentationURL") )
