@@ -5151,6 +5151,10 @@ MSG_HASH(
    "Connessioni Simultanee Massime"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
+   "Il numero massimo di connessioni attive che l'host accetterà prima di rifiutarne di nuove."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
    "Password del Server"
    )
@@ -5173,6 +5177,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
    "Avvia netplay in modalità spettatore."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
+   "Consenti Pausa"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
+   "Permetti ai giocatori di mettere in pausa durante il netplay. L'host può sempre mettere in pausa indipendentemente da questa impostazione."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -11171,15 +11183,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
-   "Impossibile salvare l'Istantanea. La funzione di Run-Ahead è stata disabilitata."
+   "Impossibile salvare lo stato. Run-Ahead è stato disabilitato."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
-   "Impossibile caricare l'Istantanea. La funzione di Run-Ahead è stata disabilitata."
+   "Impossibile caricare lo stato. Run-Ahead è stato disabilitato."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
-   "Impossibile creare una Seconda Istanza. La funzione di Run-Ahead ora utilizzerà una sola Istanza."
+   "Creazione della seconda istanza non riuscita. Run-Ahead ora userà solo un'istanza."
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,

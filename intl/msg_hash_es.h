@@ -5183,6 +5183,10 @@ MSG_HASH(
    "Conexiones simultáneas"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
+   "Indica el número máximo de conexiones activas que admitirá el servidor antes de rechazar cualquier otra nueva."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
    "Contraseña del servidor"
    )
@@ -5205,6 +5209,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
    "Inicia una sesión de juego en red en modo espectador."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
+   "Permitir pausar la partida"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
+   "Permite que los jugadores puedan pausar la partida de un juego en red. El servidor siempre podrá pausarla, independientemente de este ajuste."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,

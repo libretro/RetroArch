@@ -951,6 +951,10 @@ MSG_HASH(
 
 /* Import Content > Manual Scan */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+   "Nom del sistema"
+   )
 
 /* Explore tab */
 
@@ -966,6 +970,10 @@ MSG_HASH(
 
 /* Playlist Item > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
+   "Nom"
+   )
 
 /* Quick Menu */
 
@@ -998,9 +1006,17 @@ MSG_HASH(
 
 /* Quick Menu > Cheats > Cheat Details */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
+   "Descripció"
+   )
 
 /* Quick Menu > Disc Control */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "Expulsar disc"
+   )
 
 /* Quick Menu > Shaders */
 
@@ -1067,12 +1083,20 @@ MSG_HASH(
    "Carregar Nucli"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_NAME,
+   "Nom"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    "Llistes de reproducció"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
    "Informació"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
+   "Nom:"
    )
 
 /* Unsorted */
@@ -1091,6 +1115,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "Ajuda"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
+   "Descripció"
    )
 
 /* Unused (Needs Confirmation) */

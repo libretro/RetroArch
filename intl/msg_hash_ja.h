@@ -10510,18 +10510,6 @@ MSG_HASH(
    "このコアはステートセーブに対応していないために先行実行が無効になりました."
    )
 MSG_HASH(
-   MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
-   "ステートセーブに失敗しました. 先行実行が無効になりました."
-   )
-MSG_HASH(
-   MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
-   "ステートロードに失敗しました. 先行実行が無効になりました."
-   )
-MSG_HASH(
-   MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
-   "2番目のコア生成に失敗しました. 先行実行はひとつのコアのみで行われます."
-   )
-MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
    "ファイルのスキャンは完了しました。"
    )

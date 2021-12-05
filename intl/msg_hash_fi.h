@@ -5183,6 +5183,10 @@ MSG_HASH(
    "Samanaikaisten yhteyksien enimmäismäärä"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
+   "Suurin aktiivisten yhteyksin määrä, jotka isäntä hyväksyy, ennen uusien yhteyksien hylkäämistä."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
    "Palvelimen salasana"
    )
@@ -5205,6 +5209,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
    "Käynnistä verkkopeli seuraajatilassa."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
+   "Salli tauotus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
+   "Salli pelaajien tauottaa verkkopelin aikana. Isäntä voi aina tauottaa tästä asetuksesta riippumatta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -11351,11 +11363,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
-   "Pelitilan tallennus epäonnistui: Edelläpyöritys on poistettu käytöstä."
+   "Pelitilatallennuksen tallentaminen epäonnistui. Edellä pyöritys poistettiin käytöstä."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
-   "Pelitilan lataaminen epäonnistui: Edelläpyöritys on poistettu käytöstä."
+   "Pelitilatallennuksen lataaminen epäonnistui. Edellä pyöritys poistettiin käytöstä."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,

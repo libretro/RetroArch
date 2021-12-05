@@ -11190,18 +11190,6 @@ MSG_HASH(
    "Wykonywanie z wyprzedzeniem zostało wyłączone, ponieważ ten rdzeń nie obsługuje zapisywania stanów."
    )
 MSG_HASH(
-   MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
-   "Nie udało się zapisać stanu. Wykonywanie z wyprzedzeniem zostało wyłączone."
-   )
-MSG_HASH(
-   MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
-   "Nie udało się załadować stanu. Wykonywanie z wyprzedzeniem zostało wyłączone."
-   )
-MSG_HASH(
-   MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
-   "Nie udało się utworzyć drugiej instancji. Wykonywanie z wyprzedzeniem wykorzystuje teraz tylko jedną instancję."
-   )
-MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
    "Skanowanie pliku zakończone"
    )

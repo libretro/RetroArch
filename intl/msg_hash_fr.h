@@ -552,11 +552,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
-   "Identifiant du frontend "
+   "Identifiant de l'interface "
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
-   "Système d'exploitation du frontend"
+   "Système d'exploitation de l'interface"
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL,
@@ -2199,7 +2199,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
-   "Toujours activer le mode de jeu au premier plan lors du lancement et de la reprise du contenu. Lorsque réglé sur 'Détecter', l'option sera activée si le cœur actuel implémente le rappel du clavier en interface."
+   "Toujours activer le mode 'Jeu au premier plan' lors du lancement et de la reprise du contenu. Lorsque réglé sur 'Détecter', l'option sera activée si le cœur actuel implémente le rappel du clavier de l'interface."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
@@ -2767,7 +2767,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
-   "Spécifie quel port du 'cœur' (généralement le numéro du joueur) recevra les entrées du port global %u."
+   "Spécifie quel port du 'cœur' (généralement le numéro du joueur) recevra les entrées du port global %u de l'interface."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -3005,7 +3005,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
-   "Permettre aux cœurs de présenter leurs options dans des sous-menus par catégories. NOTE : Le cœur doit être rechargé pour que les changements prennent effet."
+   "Permettre aux cœurs de présenter leurs options dans des sous-menus par catégories. REMARQUE : Le cœur doit être rechargé pour que les changements prennent effet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
@@ -3248,11 +3248,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
-   "Niveau de journalisation du frontend"
+   "Niveau de journalisation de l'interface"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   "Ajuster le niveau de journalisation pour le frontend. Si un niveau de journalisation émis par le frontend est inférieur à cette valeur, il est alors ignoré."
+   "Ajuster le niveau de journalisation pour l'interface. Si un niveau de journalisation émis par le frontend est inférieur à cette valeur, il est alors ignoré."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
@@ -5171,6 +5171,10 @@ MSG_HASH(
    "Connexions simultanées maximales"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
+   "Le nombre maximum de connexions actives que l'hôte acceptera avant de refuser les nouvelles."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
    "Mot de passe du serveur "
    )
@@ -5193,6 +5197,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
    "Démarre le jeu en réseau en mode spectateur."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
+   "Autoriser la mise en pause"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
+   "Permettre aux joueurs de mettre en pause pendant le jeu en réseau. L'hôte peut toujours mettre en pause sans prendre en compte ce réglage."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -6537,7 +6549,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
-   "Force l'écriture des réglages actuels dans le fichier d'options actif. Permet de s'assurer que les options sont conservées dans le cas où un bug de cœur provoque une fermeture incorrecte du frontend."
+   "Force l'écriture des réglages actuels dans le fichier d'options actif. Permet de s'assurer que les options sont conservées dans le cas où un bug de cœur provoque une fermeture incorrecte de l'interface."
    )
 
 /* - Legacy (unused) */
@@ -9431,7 +9443,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
-   "Compteurs de l'interface utilisateur"
+   "Compteurs de l'interface"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU,
@@ -10811,7 +10823,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LIBRETRO_FRONTEND,
-   "Frontend pour libretro"
+   "Interface pour libretro"
    )
 MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT,
@@ -11590,7 +11602,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
-   "Nom du frontend "
+   "Nom de l'interface "
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,

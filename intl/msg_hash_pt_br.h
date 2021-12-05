@@ -11230,18 +11230,6 @@ MSG_HASH(
    "A 'Execução antecipada' foi desativada porque esse núcleo não suporta jogos salvos."
    )
 MSG_HASH(
-   MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
-   "Falha ao salvar o estado do jogo. A 'Execução antecipada' foi desativada."
-   )
-MSG_HASH(
-   MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
-   "Falha ao carregar o estado do jogo. A 'Execução antecipada' foi desativada."
-   )
-MSG_HASH(
-   MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
-   "Falha ao criar uma segunda instância. A 'Execução antecipada' agora usará apenas uma instância."
-   )
-MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
    "Verificação do arquivo terminado"
    )

@@ -2073,6 +2073,10 @@ MSG_HASH(
 
 /* Quick Menu > Disc Control */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "Izvadi disk"
+   )
 
 /* Quick Menu > Shaders */
 
@@ -2111,6 +2115,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
    "Bilinearno"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
+   "Celobrojno skaliranje"
    )
 
 /* XMB: Settings > User Interface > Appearance */

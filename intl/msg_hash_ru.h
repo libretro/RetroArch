@@ -5211,6 +5211,10 @@ MSG_HASH(
    "Макс. одновременных подключений"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
+   "Максимальное количество активных соединений, которое будет принимать хост до отказа новых."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
    "Пароль сервера"
    )
@@ -5233,6 +5237,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
    "Запускать Netplay в режиме наблюдателя."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
+   "Разрешить паузу"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
+   "Разрешать другим игрокам паузу во время игры. Хост может включать паузу всегда, независимо от настройки."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -11384,18 +11396,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "Забегание выключено, т.к. ядро не поддерживает сохранение состояния."
-   )
-MSG_HASH(
-   MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
-   "Не удалось создать сохранение. Забегание отключено."
-   )
-MSG_HASH(
-   MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
-   "Не удалось загрузить сохранение. Забегание отключено."
-   )
-MSG_HASH(
-   MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
-   "Не удалось создать второй инстанс. Забегание будет использовать только один инстанс."
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,

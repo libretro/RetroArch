@@ -5179,6 +5179,10 @@ MSG_HASH(
    "Azami Eş Zamanlı Bağlantılar"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
+   "Yenilerini reddetmeden önce ana bilgisayarın kabul edeceği en fazla etkin bağlantı sayısı."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
    "Sunucu Parolası"
    )
@@ -5201,6 +5205,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
    "Netplay'i izleyici kipinde başlat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
+   "Duraklatmaya İzin Ver"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
+   "Oyuncuların netplay oturumunda duraklamasına izin verin. Ana bilgisayar, bu ayardan bağımsız olarak her zaman duraklayabilir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,

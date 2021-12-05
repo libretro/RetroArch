@@ -8926,18 +8926,6 @@ MSG_HASH(
    "تم تعطيل التشغيل إلى الأمام لأن هذا الأساس لا يدعم حفظ الحالة."
    )
 MSG_HASH(
-   MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
-   "فشل في حفظ الحالة. تم تعطيل تشغيل الأمام."
-   )
-MSG_HASH(
-   MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
-   "فشل في تحميل الولاية. تم تعطيل التشغيل إلى الأمام."
-   )
-MSG_HASH(
-   MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
-   "فشل في إنشاء نسخة ثانية. سيستخدم Run-Aforward الآن مثيل واحد فقط."
-   )
-MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
    "انتهى فحص الملف"
    )
@@ -9226,6 +9214,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
    "وضع الأداء المستدام"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANUAL,
+   "يدوي"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,

@@ -5219,6 +5219,10 @@ MSG_HASH(
    "최대 동시 연결"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
+   "호스트가 수락할 최대 활성 연결 개수입니다. 이 수를 초과한 연결은 모두 거부됩니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
    "서버 비밀번호"
    )
@@ -5241,6 +5245,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
    "넷플레이를 관전 모드로 실행합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
+   "일시정지 허용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
+   "플레이어들이 넷플레이 중 일시정지를 할 수 있도록 허용합니다. 호스트는 이 설정과 관계없이 항상 일시정지를 할 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -11395,7 +11407,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
-   "두 번째 인스턴스를 생성하는데 실패했습니다. 미리 실행에 하나의 인스턴스만 사용됩니다."
+   "두 번째 인스턴스를 생성하지 못했습니다. 미리 실행에 하나의 인스턴스만 사용됩니다."
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,

@@ -11338,18 +11338,6 @@ MSG_HASH(
    "超前运行已禁用，因为这个核心不支持状态存储。"
    )
 MSG_HASH(
-   MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
-   "保存状态失败。已禁用超前运行。"
-   )
-MSG_HASH(
-   MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
-   "加载状态失败。已禁用超前运行。"
-   )
-MSG_HASH(
-   MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
-   "创建第二个实例失败。超前运行将只能使用一个实例。"
-   )
-MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
    "文件扫描完成"
    )
