@@ -16,7 +16,6 @@
 #include <io.h>
 #include <iphlpapi.h>
 #define snprintf _snprintf
-#define strdup _strdup
 #ifndef strncasecmp
 #if defined(_MSC_VER) && (_MSC_VER >= 1400)
 #define strncasecmp _memicmp
