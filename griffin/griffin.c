@@ -1576,7 +1576,6 @@ XML
 #include "../deps/miniupnpc/igd_desc_parse.c"
 #include "../deps/miniupnpc/upnpreplyparse.c"
 #include "../deps/miniupnpc/upnpcommands.c"
-#include "../deps/miniupnpc/upnperrors.c"
 #include "../deps/miniupnpc/connecthostport.c"
 #include "../deps/miniupnpc/portlistingparse.c"
 #include "../deps/miniupnpc/receivedata.c"

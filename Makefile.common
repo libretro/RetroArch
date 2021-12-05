@@ -2236,7 +2236,6 @@ ifeq ($(HAVE_NETWORKING), 1)
       OBJ     += $(DEPS_DIR)/miniupnpc/igd_desc_parse.o \
                  $(DEPS_DIR)/miniupnpc/upnpreplyparse.o \
                  $(DEPS_DIR)/miniupnpc/upnpcommands.o \
-                 $(DEPS_DIR)/miniupnpc/upnperrors.o \
                  $(DEPS_DIR)/miniupnpc/connecthostport.o \
                  $(DEPS_DIR)/miniupnpc/portlistingparse.o \
                  $(DEPS_DIR)/miniupnpc/receivedata.o \

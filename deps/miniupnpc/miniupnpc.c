@@ -73,37 +73,18 @@
 #define SERVICEPREFIX "u"
 #define SERVICEPREFIX2 'u'
 
-/* check if an ip address is a private (LAN) address
- * see https://tools.ietf.org/html/rfc1918 */
-static int is_rfc1918addr(const char * addr)
-{
-	/* 192.168.0.0     -   192.168.255.255 (192.168/16 prefix) */
-	if(COMPARE(addr, "192.168."))
-		return 1;
-	/* 10.0.0.0        -   10.255.255.255  (10/8 prefix) */
-	if(COMPARE(addr, "10."))
-		return 1;
-	/* 172.16.0.0      -   172.31.255.255  (172.16/12 prefix) */
-	if(COMPARE(addr, "172.")) {
-		int i = atoi(addr + 4);
-		if((16 <= i) && (i <= 31))
-			return 1;
-	}
-	return 0;
-}
-
 /* root description parsing */
 void parserootdesc(const char * buffer, int bufsize, struct IGDdatas * data)
 {
 	struct xmlparser parser;
 	/* xmlparser object */
-	parser.xmlstart = buffer;
-	parser.xmlsize = bufsize;
-	parser.data = data;
+	parser.xmlstart     = buffer;
+	parser.xmlsize      = bufsize;
+	parser.data         = data;
 	parser.starteltfunc = IGDstartelt;
-	parser.endeltfunc = IGDendelt;
-	parser.datafunc = IGDdata;
-	parser.attfunc = 0;
+	parser.endeltfunc   = IGDendelt;
+	parser.datafunc     = IGDdata;
+	parser.attfunc      = 0;
 	parsexml(&parser);
 }
 
@@ -334,23 +315,6 @@ upnpDiscover(int delay, const char * multicastif,
 	                           ipv6, ttl, error, 0);
 }
 
-/* upnpDiscoverAll() Discover all UPnP devices */
-struct UPNPDev *
-upnpDiscoverAll(int delay, const char * multicastif,
-                const char * minissdpdsock, int localport,
-                int ipv6, unsigned char ttl,
-                int * error)
-{
-	static const char * const deviceList[] = {
-		/*"upnp:rootdevice",*/
-		"ssdp:all",
-		0
-	};
-	return upnpDiscoverDevices(deviceList,
-	                           delay, multicastif, minissdpdsock, localport,
-	                           ipv6, ttl, error, 0);
-}
-
 /* upnpDiscoverDevice() Discover a specific device */
 struct UPNPDev *
 upnpDiscoverDevice(const char * device, int delay, const char * multicastif,
@@ -476,176 +440,4 @@ FreeUPNPUrls(struct UPNPUrls * urls)
 	urls->controlURL_6FC = 0;
 	free(urls->rootdescURL);
 	urls->rootdescURL = 0;
-}
-
-int
-UPNPIGD_IsConnected(struct UPNPUrls * urls, struct IGDdatas * data)
-{
-	char status[64];
-	unsigned int uptime;
-	status[0] = '\0';
-	UPNP_GetStatusInfo(urls->controlURL, data->first.servicetype,
-	                   status, &uptime, NULL);
-	if(0 == strcmp("Connected", status))
-		return 1;
-	else if(0 == strcmp("Up", status))	/* Also accept "Up" */
-		return 1;
-   return 0;
-}
-
-
-/* UPNP_GetValidIGD() :
- * return values :
- *    -1 = Internal error
- *     0 = NO IGD found
- *     1 = A valid connected IGD has been found
- *     2 = A valid IGD has been found but it reported as
- *         not connected
- *     3 = an UPnP device has been found but was not recognized as an IGD
- *
- * In any positive non zero return case, the urls and data structures
- * passed as parameters are set. Dont forget to call FreeUPNPUrls(urls) to
- * free allocated memory.
- */
-int
-UPNP_GetValidIGD(struct UPNPDev * devlist,
-                 struct UPNPUrls * urls,
-				 struct IGDdatas * data,
-				 char * lanaddr, int lanaddrlen)
-{
-	struct xml_desc {
-		char * xml;
-		int size;
-		int is_igd;
-	} * desc = NULL;
-	struct UPNPDev * dev;
-	int ndev = 0;
-	int i;
-	int state = -1; /* state 1 : IGD connected. State 2 : IGD. State 3 : anything */
-	int n_igd = 0;
-	char extIpAddr[16];
-	char myLanAddr[40];
-	int status_code = -1;
-
-	if(!devlist)
-		return 0;
-	/* counting total number of devices in the list */
-	for(dev = devlist; dev; dev = dev->pNext)
-		ndev++;
-	if(ndev > 0)
-	{
-		desc = (struct xml_desc*)calloc(ndev, sizeof(struct xml_desc));
-		if(!desc)
-			return -1; /* memory allocation error */
-	}
-	/* Step 1 : downloading descriptions and testing type */
-	for(dev = devlist, i = 0; dev; dev = dev->pNext, i++)
-	{
-		/* we should choose an internet gateway device.
-		 * with st == urn:schemas-upnp-org:device:InternetGatewayDevice:1 */
-		desc[i].xml = (char*)miniwget_getaddr(dev->descURL, &(desc[i].size),
-		                               myLanAddr, sizeof(myLanAddr),
-		                               dev->scope_id, &status_code);
-		if(desc[i].xml)
-		{
-			memset(data, 0, sizeof(struct IGDdatas));
-			memset(urls, 0, sizeof(struct UPNPUrls));
-			parserootdesc(desc[i].xml, desc[i].size, data);
-			if(COMPARE(data->CIF.servicetype,
-			           "urn:schemas-upnp-org:service:WANCommonInterfaceConfig:"))
-			{
-				desc[i].is_igd = 1;
-				n_igd++;
-				if(lanaddr)
-					strncpy(lanaddr, myLanAddr, lanaddrlen);
-			}
-		}
-	}
-	/* iterate the list to find a device depending on state */
-	for(state = 1; state <= 3; state++)
-	{
-		for(dev = devlist, i = 0; dev; dev = dev->pNext, i++)
-		{
-			if(desc[i].xml)
-			{
-				memset(data, 0, sizeof(struct IGDdatas));
-				memset(urls, 0, sizeof(struct UPNPUrls));
-				parserootdesc(desc[i].xml, desc[i].size, data);
-				if(desc[i].is_igd || state >= 3 )
-				{
-				  int is_connected;
-
-				  GetUPNPUrls(urls, data, dev->descURL, dev->scope_id);
-
-				  /* in state 2 and 3 we dont test if device is connected ! */
-				  if(state >= 2)
-				    goto free_and_return;
-				  is_connected = UPNPIGD_IsConnected(urls, data);
-				  /* checks that status is connected AND there is a external IP address assigned */
-				  if(is_connected &&
-				     (UPNP_GetExternalIPAddress(urls->controlURL,  data->first.servicetype, extIpAddr) == 0)) {
-					if(!is_rfc1918addr(extIpAddr) && (extIpAddr[0] != '\0')
-					   && (0 != strcmp(extIpAddr, "0.0.0.0")))
-					  goto free_and_return;
-				  }
-				  FreeUPNPUrls(urls);
-				  if(data->second.servicetype[0] != '\0') {
-				    /* swaping WANPPPConnection and WANIPConnection ! */
-				    memcpy(&data->tmp, &data->first, sizeof(struct IGDdatas_service));
-				    memcpy(&data->first, &data->second, sizeof(struct IGDdatas_service));
-				    memcpy(&data->second, &data->tmp, sizeof(struct IGDdatas_service));
-				    GetUPNPUrls(urls, data, dev->descURL, dev->scope_id);
-				    is_connected = UPNPIGD_IsConnected(urls, data);
-				    if(is_connected &&
-				       (UPNP_GetExternalIPAddress(urls->controlURL,  data->first.servicetype, extIpAddr) == 0)) {
-					  if(!is_rfc1918addr(extIpAddr) && (extIpAddr[0] != '\0')
-					     && (0 != strcmp(extIpAddr, "0.0.0.0")))
-					    goto free_and_return;
-				    }
-				    FreeUPNPUrls(urls);
-				  }
-				}
-				memset(data, 0, sizeof(struct IGDdatas));
-			}
-		}
-	}
-	state = 0;
-free_and_return:
-	if(desc)
-   {
-      for(i = 0; i < ndev; i++)
-      {
-         if(desc[i].xml)
-            free(desc[i].xml);
-      }
-      free(desc);
-   }
-	return state;
-}
-
-/* UPNP_GetIGDFromUrl()
- * Used when skipping the discovery process.
- * return value :
- *   0 - Not ok
- *   1 - OK */
-int
-UPNP_GetIGDFromUrl(const char * rootdescurl,
-                   struct UPNPUrls * urls,
-                   struct IGDdatas * data,
-                   char * lanaddr, int lanaddrlen)
-{
-	int descXMLsize = 0;
-	char *descXML = (char*)miniwget_getaddr(rootdescurl, &descXMLsize,
-         lanaddr, lanaddrlen, 0, NULL);
-	if(descXML)
-   {
-      memset(data, 0, sizeof(struct IGDdatas));
-      memset(urls, 0, sizeof(struct UPNPUrls));
-      parserootdesc(descXML, descXMLsize, data);
-      free(descXML);
-      descXML = NULL;
-      GetUPNPUrls(urls, data, rootdescurl, 0);
-      return 1;
-   }
-   return 0;
 }

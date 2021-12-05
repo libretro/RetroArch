@@ -64,12 +64,6 @@ upnpDiscover(int delay, const char * multicastif,
              int * error);
 
  struct UPNPDev *
-upnpDiscoverAll(int delay, const char * multicastif,
-                const char * minissdpdsock, int localport,
-                int ipv6, unsigned char ttl,
-                int * error);
-
- struct UPNPDev *
 upnpDiscoverDevice(const char * device, int delay, const char * multicastif,
                 const char * minissdpdsock, int localport,
                 int ipv6, unsigned char ttl,
@@ -102,46 +96,12 @@ struct UPNPUrls {
 	char * rootdescURL;
 };
 
-/* UPNP_GetValidIGD() :
- * return values :
- *     0 = NO IGD found
- *     1 = A valid connected IGD has been found
- *     2 = A valid IGD has been found but it reported as
- *         not connected
- *     3 = an UPnP device has been found but was not recognized as an IGD
- *
- * In any non zero return case, the urls and data structures
- * passed as parameters are set. Donc forget to call FreeUPNPUrls(urls) to
- * free allocated memory.
- */
- int
-UPNP_GetValidIGD(struct UPNPDev * devlist,
-                 struct UPNPUrls * urls,
-				 struct IGDdatas * data,
-				 char * lanaddr, int lanaddrlen);
-
-/* UPNP_GetIGDFromUrl()
- * Used when skipping the discovery process.
- * When succeding, urls, data, and lanaddr arguments are set.
- * return value :
- *   0 - Not ok
- *   1 - OK */
- int
-UPNP_GetIGDFromUrl(const char * rootdescurl,
-                   struct UPNPUrls * urls,
-                   struct IGDdatas * data,
-                   char * lanaddr, int lanaddrlen);
-
  void
 GetUPNPUrls(struct UPNPUrls *, struct IGDdatas *,
             const char *, unsigned int);
 
  void
 FreeUPNPUrls(struct UPNPUrls *);
-
-/* return 0 or 1 */
- int UPNPIGD_IsConnected(struct UPNPUrls *, struct IGDdatas *);
-
 
 #ifdef __cplusplus
 }
