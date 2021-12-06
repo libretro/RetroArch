@@ -188,6 +188,10 @@ endif
 
 ifeq ($(HAVE_UNIX), 1)
    OBJ += frontend/drivers/platform_unix.o
+
+	ifeq ($(UNIX_CWD_ENV), 1)
+		DEF_FLAGS += -DRARCH_UNIX_CWD_ENV
+	endif
 endif
 
 ifeq ($(TARGET), retroarch_3ds)
@@ -230,8 +234,15 @@ endif
 
 OBJ += frontend/frontend_driver.o \
        retroarch.o \
+       runloop.o \
+       driver.o \
+       ui/ui_companion_driver.o \
+       camera/camera_driver.o \
+       record/record_driver.o \
        command.o \
        msg_hash.o \
+       midi_driver.o \
+       location_driver.o \
        intl/msg_hash_us.o \
        $(LIBRETRO_COMM_DIR)/queues/task_queue.o \
        tasks/task_content.o
@@ -253,6 +264,7 @@ OBJ += \
 
 ifeq ($(HAVE_TRANSLATE), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/encodings/encoding_base64.o
+   OBJ += tasks/task_translation.o
 endif
 
 OBJ += \
@@ -300,14 +312,16 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/file/file_path_io.o \
        file_path_special.o \
        $(LIBRETRO_COMM_DIR)/hash/lrc_hash.o \
+       audio/audio_driver.o \
        input/input_driver.o \
        input/common/input_hid_common.o \
        led/led_driver.o \
-       gfx/video_coord_array.o \
-		 gfx/gfx_display.o \
+       gfx/video_driver.o \
+       gfx/gfx_display.o \
        gfx/gfx_animation.o \
-		 gfx/gfx_thumbnail_path.o \
-		 gfx/gfx_thumbnail.o \
+       gfx/gfx_thumbnail_path.o \
+       gfx/gfx_thumbnail.o \
+       gfx/video_coord_array.o \
        configuration.o \
        $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
        cores/dynamic_dummy.o \
@@ -331,6 +345,10 @@ OBJ += \
 ifeq ($(HAVE_CHEATS), 1)
    DEFINES += -DHAVE_CHEATS
    OBJ     += cheat_manager.o
+endif
+
+ifeq ($(HAVE_CORE_INFO_CACHE), 1)
+   DEFINES += -DHAVE_CORE_INFO_CACHE
 endif
 
 OBJ += \
@@ -551,7 +569,8 @@ ifeq ($(HAVE_LIBRETRODB), 1)
           tasks/task_database_cue.o
 
    ifeq ($(HAVE_MENU), 1)
-      OBJ += menu/menu_explore.o
+      OBJ += menu/menu_explore.o \
+             tasks/task_menu_explore.o
    endif
 endif
 
@@ -757,22 +776,23 @@ ifeq ($(HAVE_EMSCRIPTEN), 1)
 endif
 
 ifeq ($(HAVE_BLUETOOTH), 1)
+   OBJ += bluetooth/bluetooth_driver.o
    OBJ += bluetooth/drivers/bluetoothctl.o
-endif
-
-ifeq ($(HAVE_BLUETOOTH), 1)
+   OBJ += tasks/task_bluetooth.o
    ifeq ($(HAVE_DBUS), 1)
       OBJ += bluetooth/drivers/bluez.o
    endif
 endif
 
 ifeq ($(HAVE_LAKKA), 1)
-   OBJ += wifi/drivers/connmanctl.o
+   OBJ += network/drivers_wifi/connmanctl.o
    OBJ += misc/cpufreq/cpufreq.o
 endif
 
 ifeq ($(HAVE_WIFI), 1)
-   OBJ += wifi/drivers/nmcli.o
+   OBJ += network/wifi_driver.o
+   OBJ += tasks/task_wifi.o
+   OBJ += network/drivers_wifi/nmcli.o
    DEFINES += -DHAVE_WIFI
 endif
 
@@ -1029,6 +1049,10 @@ ifeq ($(HAVE_LAKKA_SWITCH), 1)
    DEFINES += -DHAVE_LAKKA_SWITCH
 endif
 
+ifeq ($(HAVE_LAKKA_NIGHTLY), 1)
+   DEFINES += -DHAVE_LAKKA_NIGHTLY
+endif
+
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_setting.o \
           menu/menu_driver.o \
@@ -1076,13 +1100,13 @@ endif
 ifeq ($(HAVE_VIDEO_LAYOUT), 1)
    DEFINES += -DHAVE_VIDEO_LAYOUT
    OBJ += \
-			 gfx/video_layout.o \
-			 gfx/video_layout/view.o \
-			 gfx/video_layout/element.o \
-			 gfx/video_layout/component.o \
-			 gfx/video_layout/internal.o \
-			 gfx/video_layout/scope.o \
-			 gfx/video_layout/load.o
+	  gfx/video_layout.o \
+	  gfx/video_layout/view.o \
+	  gfx/video_layout/element.o \
+	  gfx/video_layout/component.o \
+	  gfx/video_layout/internal.o \
+	  gfx/video_layout/scope.o \
+	  gfx/video_layout/load.o
 endif
 
 ifeq ($(HAVE_STB_FONT), 1)
@@ -1175,12 +1199,6 @@ ifeq ($(TARGET), retroarch_wiiu)
 			INCLUDE_DIRS += -Iinput/include
          OBJ += input/drivers_joypad/wiiu/hidpad_driver.o
          OBJ += input/drivers_hid/wiiu_hid.o
-         OBJ += input/connect/joypad_connection.o \
-                input/common/hid/hid_device_driver.o \
-                input/common/hid/device_wiiu_gca.o \
-                input/common/hid/device_ds3.o \
-                input/common/hid/device_ds4.o \
-                input/common/hid/device_null.o
       endif
 endif
 
@@ -1217,7 +1235,6 @@ ifeq ($(HAVE_WAYLAND), 1)
         input/common/wayland_common.o \
         input/drivers/wayland_input.o \
         gfx/common/wayland/xdg-shell.o \
-        gfx/common/wayland/xdg-shell-unstable-v6.o \
         gfx/common/wayland/idle-inhibit-unstable-v1.o \
         gfx/common/wayland/xdg-decoration-unstable-v1.o
 
@@ -1421,7 +1438,9 @@ endif
 
 ifeq ($(HAVE_PLAIN_DRM), 1)
    OBJ += gfx/drivers/drm_gfx.o
-   INCLUDE_DIRS += -I/usr/include/libdrm
+   ifneq ($(HAVE_LAKKA), 1)
+      INCLUDE_DIRS += -I/usr/include/libdrm
+   endif
    LIBS += -ldrm
 endif
 
@@ -1438,12 +1457,13 @@ ifeq ($(HAVE_VITAGLES), 1)
 endif
 
 ifeq ($(HAVE_GL_CONTEXT), 1)
+   OBJ += gfx/common/gl_common.o
    ifeq ($(HAVE_GL_MODERN), 1)
       DEFINES += -DHAVE_OPENGL
-      OBJ += gfx/drivers/gl.o \
+      OBJ += gfx/drivers/gl2.o \
              $(LIBRETRO_COMM_DIR)/gfx/gl_capabilities.o \
-             gfx/drivers_font/gl_raster_font.o \
-				 gfx/drivers_display/gfx_display_gl.o
+             gfx/drivers_font/gl2_raster_font.o \
+	     gfx/drivers_display/gfx_display_gl2.o
    endif
 
    OBJ += $(LIBRETRO_COMM_DIR)/glsym/rglgen.o
@@ -1452,7 +1472,7 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
       DEFINES += -DHAVE_OPENGL1
       OBJ += gfx/drivers/gl1.o \
              gfx/drivers_font/gl1_raster_font.o \
-				 gfx/drivers_display/gfx_display_gl1.o
+	     gfx/drivers_display/gfx_display_gl1.o
    endif
 
    ifeq ($(HAVE_VIDEOCORE), 1)
@@ -1566,6 +1586,8 @@ else ifeq ($(HAVE_SDL_DINGUX), 1)
 
    ifeq ($(RS90), 1)
       OBJ += gfx/drivers/sdl_rs90_gfx.o
+   else ifeq ($(MIYOO), 1)
+      OBJ += gfx/drivers/sdl_rs90_gfx.o
    else
       OBJ += gfx/drivers/sdl_dingux_gfx.o
    endif
@@ -1620,10 +1642,10 @@ ifeq ($(HAVE_VULKAN), 1)
 endif
 
 ifeq ($(HAVE_OPENGL_CORE), 1)
-   OBJ += gfx/drivers/gl_core.o \
-          gfx/drivers_font/gl_core_raster_font.o \
-			 gfx/drivers_shader/shader_gl_core.o \
-			 gfx/drivers_display/gfx_display_gl_core.o
+   OBJ += gfx/drivers/gl3.o \
+          gfx/drivers_font/gl3_raster_font.o \
+	  gfx/drivers_shader/shader_gl3.o \
+	  gfx/drivers_display/gfx_display_gl3.o
 
    DEFINES += -DHAVE_OPENGL_CORE
    NEED_CXX_LINKER  = 1
@@ -2065,9 +2087,7 @@ ifeq ($(HAVE_NETWORKING), 1)
           tasks/task_http.o \
           tasks/task_netplay_lan_scan.o \
           tasks/task_netplay_nat_traversal.o \
-          tasks/task_bluetooth.o \
-          tasks/task_wifi.o \
-			 tasks/task_pl_thumbnail_download.o \
+	  tasks/task_pl_thumbnail_download.o \
           tasks/task_netplay_find_content.o
 
    ifeq ($(HAVE_MENU_COMMON), 1)
@@ -2095,10 +2115,9 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    # Netplay
    DEFINES += -DHAVE_NETWORK_CMD
-   OBJ += network/netplay/netplay_handshake.o \
-			 network/netplay/netplay_io.o \
-			 network/netplay/netplay_discovery.o \
-			 network/netplay/netplay_room_parse.o
+   OBJ += \
+	  network/netplay/netplay_frontend.o \
+	  network/netplay/netplay_room_parse.o
 
    # RetroAchievements
    ifeq ($(HAVE_CHEEVOS), 1)
@@ -2108,7 +2127,6 @@ ifeq ($(HAVE_NETWORKING), 1)
       OBJ += cheevos/cheevos.o \
              cheevos/cheevos_client.o \
              cheevos/cheevos_menu.o \
-             cheevos/cheevos_parser.o \
              $(LIBRETRO_COMM_DIR)/formats/cdfs/cdfs.o \
              deps/rcheevos/src/rcheevos/alloc.o \
              deps/rcheevos/src/rcheevos/compat.o \
@@ -2129,7 +2147,6 @@ ifeq ($(HAVE_NETWORKING), 1)
              deps/rcheevos/src/rapi/rc_api_common.o \
              deps/rcheevos/src/rapi/rc_api_runtime.o \
              deps/rcheevos/src/rapi/rc_api_user.o \
-             deps/rcheevos/src/rurl/url.o
 
       ifeq ($(HAVE_LUA), 1)
          DEFINES += -DHAVE_LUA \
@@ -2186,6 +2203,8 @@ ifeq ($(HAVE_NETWORKING), 1)
       OBJ     += deps/discord-rpc/src/discord_rpc.o \
                  deps/discord-rpc/src/rpc_connection.o \
                  deps/discord-rpc/src/serialization.o
+
+      OBJ     += network/discord.o
 
       ifneq ($(findstring Win32,$(OS)),)
          OBJ  += deps/discord-rpc/src/discord_register_win.o \
@@ -2363,7 +2382,8 @@ ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
           gfx/video_filters/dot_matrix_3x.o \
           gfx/video_filters/dot_matrix_4x.o \
           gfx/video_filters/upscale_1_5x.o \
-          gfx/video_filters/upscale_256x_320x240.o
+          gfx/video_filters/upscale_256x_320x240.o \
+          gfx/video_filters/picoscale_256x_320x240.o
 endif
 
 ifeq ($(WANT_IOSUHAX), 1)

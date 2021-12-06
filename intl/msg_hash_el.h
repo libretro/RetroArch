@@ -91,6 +91,12 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    MENU_ENUM_SUBLABEL_DUMP_DISC,
    "Αντιγραφή του φυσικού δίσκου στην εσωτερική μνήμη. Θα αποθηκευτεί σαν αρχείο \"εικόνας\"."
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "Εξαγωγή Δίσκου"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "Λίστες Αναπαραγωγής"
@@ -454,24 +460,8 @@ MSG_HASH(
    "Λογισμικό"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Λείπει"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Παρόν"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Προεραιτικό"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Απαραίτητο"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
-   "Κλείδωμα Εγκατεστημένο Πυρήνα"
+   "Κλείδωμα Εγκατεστημένου Πυρήνα"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
@@ -1305,7 +1295,7 @@ MSG_HASH(
    "Διγραμμικό Φιλτράρισμα"
    )
 #if defined(DINGUX)
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 #endif
 #endif
 MSG_HASH(
@@ -2404,6 +2394,10 @@ MSG_HASH(
 #if defined(ANDROID)
 #endif
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS,
+   "Εμφάνιση Εισαγωγών Στο Επικάλλυμα"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "Επικάλλυμα"
    )
@@ -2615,6 +2609,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    "Ρυθμίσεις"
    )
+#ifdef HAVE_LAKKA
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
    "Προβολή 'Διαδικτυακού Ενημερωτή'"
@@ -3623,6 +3619,10 @@ MSG_HASH(
    "Μέσος Όρος"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
+   "Κανείς"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE,
    "Καμία προτίμηση"
    )
@@ -3679,6 +3679,10 @@ MSG_HASH(
    "<Κανένα>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NONE,
+   "Τίποτα"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNKNOWN,
    "Άγνωστο"
    )
@@ -3709,6 +3713,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_ALPHABETICAL,
    "Αλφαβητικά"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
+   "Κανείς"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
@@ -3959,6 +3967,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_SINC,
    "Sinc/Lanczos3 (Αργό)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
+   "Κανείς"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE,
@@ -4689,6 +4701,10 @@ MSG_HASH(
    "Αποστολή Πληροφοριων Εκσφαλματωσης (Debuging)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
+   "Στέλνει διαγνωστικές πληροφορίες σχετικά με τη συσκευή σας και τις ρυθμίσεις του RetroArch στους διακομιστές μας για ανάλυση."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGEMENT,
    "Ρυθμίσεις Βάσης Δεδομένων"
    )
@@ -5166,10 +5182,6 @@ MSG_HASH(
    "Παύση."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "ελήφθη"
-   )
-MSG_HASH(
    MSG_RECORDING_TO,
    "Εγγραφή σε"
    )
@@ -5198,6 +5210,10 @@ MSG_HASH(
    "Γρήγορη κίνηση."
    )
 MSG_HASH(
+   MSG_UNKNOWN,
+   "Άγνωστο"
+   )
+MSG_HASH(
    MSG_VALUE_REBOOTING,
    "Επανεκκίνηση..."
    )
@@ -5212,22 +5228,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "εξάγει"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "κλείσει"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "απέτυχε"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "επιτεύχθηκε"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -5444,6 +5444,10 @@ MSG_HASH(
    "Ανάλυση Οθόνης"
    )
 MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DEFAULT,
+   "Ανάλυση Οθόνης: Προεπιλογή"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
    "Τερματισμός"
    )
@@ -5510,14 +5514,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOCAL,
    "Τοπικό"
-   )
-MSG_HASH(
-   MSG_READ_WRITE,
-   "Ανάγνωση/Εγγραφή"
-   )
-MSG_HASH(
-   MSG_READ_ONLY,
-   "Μόνο για Ανάγνωση"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,

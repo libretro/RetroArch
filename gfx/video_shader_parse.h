@@ -275,6 +275,35 @@ void dir_check_shader(
       bool pressed_next,
       bool pressed_prev);
 
+/**
+ * load_shader_preset:
+ *
+ * Tries to load a supported core-, game-, folder-specific or global
+ * shader preset from its respective location:
+ *
+ * global:          $CONFIG_DIR/global.$PRESET_EXT
+ * core-specific:   $CONFIG_DIR/$CORE_NAME/$CORE_NAME.$PRESET_EXT
+ * folder-specific: $CONFIG_DIR/$CORE_NAME/$FOLDER_NAME.$PRESET_EXT
+ * game-specific:   $CONFIG_DIR/$CORE_NAME/$GAME_NAME.$PRESET_EXT
+ *
+ * $CONFIG_DIR is expected to be Menu Config directory, or failing that, the
+ * directory where retroarch.cfg is stored.
+ *
+ * For compatibility purposes with versions 1.8.7 and older, the presets
+ * subdirectory on the Video Shader path is used as a fallback directory.
+ *
+ * Note: Uses video_shader_is_supported() which only works after
+ *       context driver initialization.
+ *
+ * Returns: false if there was an error or no action was performed.
+ */
+bool load_shader_preset(settings_t *settings, const char *core_name, char *s, size_t len);
+
+bool apply_shader(
+      settings_t *settings,
+      enum rarch_shader_type type,
+      const char *preset_path, bool message);
+
 const char *video_shader_get_preset_extension(enum rarch_shader_type type);
 
 RETRO_END_DECLS

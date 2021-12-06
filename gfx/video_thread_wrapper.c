@@ -23,6 +23,7 @@
 #include <features/features_cpu.h>
 #include <string/stdstring.h>
 
+#include "video_driver.h"
 #include "video_thread_wrapper.h"
 #include "font_driver.h"
 
@@ -490,7 +491,7 @@ static bool video_thread_alive(void *data)
    bool ret;
    thread_video_t *thr = (thread_video_t*)data;
 
-   if (rarch_ctl(RARCH_CTL_IS_PAUSED, NULL))
+   if (retroarch_ctl(RARCH_CTL_IS_PAUSED, NULL))
    {
       thread_packet_t pkt;
 
@@ -1012,7 +1013,7 @@ static void thread_set_hdr_expand_gamut(void *data, bool expand_gamut)
 }
 
 static void thread_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
@@ -1022,7 +1023,7 @@ static void thread_get_video_output_size(void *data,
    if (thr->poke && thr->poke->get_video_output_size)
       thr->poke->get_video_output_size(thr->driver_data,
             width,
-            height);
+            height, desc, desc_len);
 }
 
 static void thread_get_video_output_prev(void *data)
@@ -1343,8 +1344,8 @@ bool video_thread_font_init(const void **font_driver, void **font_handle,
       bool is_threaded)
 {
    thread_packet_t pkt;
-   thread_video_t *thr            = (thread_video_t*)
-      video_driver_get_data();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr            = video_st ? (thread_video_t*)video_st->data : NULL;
 
    if (!thr)
       return false;
@@ -1368,7 +1369,8 @@ unsigned video_thread_texture_load(void *data,
       custom_command_method_t func)
 {
    thread_packet_t pkt;
-   thread_video_t *thr  = (thread_video_t*)video_driver_get_data();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr            = video_st ? (thread_video_t*)video_st->data : NULL;
 
    if (!thr)
       return 0;

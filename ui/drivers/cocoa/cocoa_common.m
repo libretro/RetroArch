@@ -126,17 +126,15 @@ void *glkitview_init(void);
 
 - (BOOL)performDragOperation:(id<NSDraggingInfo>)sender
 {
+#if 0
     NSPasteboard *pboard = [sender draggingPasteboard];
 
     if ( [[pboard types] containsObject:NSURLPboardType])
     {
         NSURL *fileURL = [NSURL URLFromPasteboard:pboard];
         NSString    *s = [fileURL path];
-        if (s != nil)
-        {
-           RARCH_LOG("Drop name is: %s\n", [s UTF8String]);
-        }
     }
+#endif
     return YES;
 }
 
@@ -393,11 +391,7 @@ void *cocoa_screen_get_chosen(void)
     monitor_index        = settings->uints.video_monitor_index;
     
     if (monitor_index >= screens.count)
-    {
-        RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.");
         return (BRIDGE void*)screens;
-    }
-    
     return ((BRIDGE void*)[screens objectAtIndex:monitor_index]);
 }
 

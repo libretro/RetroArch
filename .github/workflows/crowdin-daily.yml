@@ -1,0 +1,33 @@
+# Download translations from Crowdin and push to GitHub
+
+name: Crowdin Daily Workflow
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # every day at midnight
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Java JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Setup Python
+        uses: actions/setup-python@v2
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Crowdin Sync
+        shell: bash
+        env:
+          CROWDIN_API_KEY: ${{ secrets.CROWDIN_API_KEY }}
+        run: |
+          cd intl
+          python3 -m pip install requests PyYAML
+          python3 crowdin_sync.py "$CROWDIN_API_KEY"
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit -m "Fetch translations from Crowdin"
+          git push

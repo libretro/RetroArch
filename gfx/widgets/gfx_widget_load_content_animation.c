@@ -326,7 +326,7 @@ bool gfx_widget_start_load_content_animation(void)
    {
       const struct playlist_entry *entry = NULL;
 #ifdef HAVE_MENU
-      menu_handle_t *menu                = menu_driver_get_ptr();
+      menu_handle_t *menu                = menu_state_get_ptr()->driver_data;
 
       /* If we have an active menu, playlist entry
        * index can be obtained directly */
@@ -662,7 +662,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
 
 #ifdef HAVE_MENU
       /* Draw nothing if menu is currently active */
-      if (menu_driver_is_alive())
+      if (menu_state_get_ptr()->alive)
          return;
 #endif
 

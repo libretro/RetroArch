@@ -27,7 +27,6 @@ extern char uwp_dir_data[PATH_MAX_LENGTH];
 extern char uwp_device_family[128];
 
 void uwp_open_broadfilesystemaccess_settings(void);
-char* uwp_trigger_picker(void);
 
 void* uwp_get_corewindow(void);
 

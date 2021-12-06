@@ -67,13 +67,13 @@ int font_renderer_create_default(
       *handle = font_backends[i]->init(path, font_size);
       if (*handle)
       {
-         RARCH_LOG("[Font]: Using font rendering backend: %s.\n",
+         RARCH_LOG("[Font]: Using font rendering backend: \"%s\".\n",
                font_backends[i]->ident);
          *drv = font_backends[i];
          return 1;
       }
 
-      RARCH_ERR("[Font]: Failed to create rendering backend: %s.\n",
+      RARCH_ERR("[Font]: Failed to create rendering backend: \"%s\".\n",
             font_backends[i]->ident);
    }
 
@@ -214,28 +214,28 @@ static bool gl_font_init_first(
 #endif
 
 #ifdef HAVE_OPENGL_CORE
-static const font_renderer_t *gl_core_font_backends[] = {
-   &gl_core_raster_font,
+static const font_renderer_t *gl3_font_backends[] = {
+   &gl3_raster_font,
    NULL,
 };
 
-static bool gl_core_font_init_first(
+static bool gl3_font_init_first(
       const void **font_driver, void **font_handle,
       void *video_data, const char *font_path,
       float font_size, bool is_threaded)
 {
    unsigned i;
 
-   for (i = 0; gl_core_font_backends[i]; i++)
+   for (i = 0; gl3_font_backends[i]; i++)
    {
-      void *data = gl_core_font_backends[i]->init(
+      void *data = gl3_font_backends[i]->init(
             video_data, font_path, font_size,
             is_threaded);
 
       if (!data)
          continue;
 
-      *font_driver = gl_core_font_backends[i];
+      *font_driver = gl3_font_backends[i];
       *font_handle = data;
       return true;
    }
@@ -699,7 +699,7 @@ static bool font_init_first(
 #endif
 #ifdef HAVE_OPENGL_CORE
       case FONT_DRIVER_RENDER_OPENGL_CORE_API:
-         return gl_core_font_init_first(font_driver, font_handle,
+         return gl3_font_init_first(font_driver, font_handle,
                                         video_data, font_path, font_size, is_threaded);
 #endif
 #ifdef HAVE_VULKAN

@@ -29,6 +29,8 @@ extern "C" {
 }
 #endif
 
+#include <compat/strl.h>
+
 #ifndef _XBOX
 #include "../../gfx/common/win32_common.h"
 #endif
@@ -66,10 +68,11 @@ typedef struct
    double view_abs_ratio_x;
    double view_abs_ratio_y;
    HWND window;
-   struct winraw_pointer_status pointer_head;  /* dummy head for easier iteration */
+   /* Dummy head for easier iteration */
+   struct winraw_pointer_status pointer_head; 
    RECT active_rect; /* Needed for checking for a windows size change */
-   RECT prev_rect; /* Needed for checking for a windows size change */
-   int rect_delay; /* Needed to delay resize of window */
+   RECT prev_rect;   /* Needed for checking for a windows size change */
+   int rect_delay;   /* Needed to delay resize of window */
    winraw_mouse_t *mice;
    unsigned mouse_cnt;
    winraw_keyboard_t keyboard;
@@ -128,10 +131,10 @@ static BOOL winraw_set_keyboard_input(HWND window)
 
    rid.dwFlags     = window ? 0 : RIDEV_REMOVE;
    rid.hwndTarget  = window;
-   rid.usUsagePage = 0x01; /* generic desktop */
-   rid.usUsage     = 0x06; /* keyboard */
+   rid.usUsagePage = 0x01; /* Generic desktop */
+   rid.usUsage     = 0x06; /* Keyboard */
    if (settings->bools.input_nowinkey_enable)
-      rid.dwFlags |= RIDEV_NOHOTKEYS; /* disable win keys while focused */
+      rid.dwFlags |= RIDEV_NOHOTKEYS; /* Disable win keys while focused */
 
    return RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
 }
@@ -157,10 +160,10 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
       prod_buf[0]  = '\0';
       if (name[0])
       {
-         HANDLE hhid = NULL;
-         hhid = CreateFile(name,
-                           0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
-                           OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+         HANDLE hhid = CreateFile(name,
+               0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+               OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
          if (hhid != INVALID_HANDLE_VALUE)
          {
             if (HidD_GetProductString (hhid, prod_buf, sizeof(prod_buf)))
@@ -169,10 +172,10 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
          CloseHandle(hhid);
       }
       if (prod_name[0])
-         snprintf(name, sizeof(name), "%s", prod_name);
+         strlcpy(name, prod_name, sizeof(name));
 
       if (!name[0])
-         snprintf(name, sizeof(name), "%s", "<name not found>");
+         strlcpy(name, "<name not found>", sizeof(name));
 
       input_config_set_mouse_display_name(i, name);
 
@@ -194,11 +197,13 @@ static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
    if (r == (UINT)-1)
       goto error;
 
-   devs = (RAWINPUTDEVICELIST*)malloc(dev_cnt * sizeof(RAWINPUTDEVICELIST));
+   devs = (RAWINPUTDEVICELIST*)malloc(
+         dev_cnt * sizeof(RAWINPUTDEVICELIST));
    if (!devs)
       goto error;
 
-   dev_cnt = GetRawInputDeviceList(devs, &dev_cnt, sizeof(RAWINPUTDEVICELIST));
+   dev_cnt = GetRawInputDeviceList(devs,
+         &dev_cnt, sizeof(RAWINPUTDEVICELIST));
    if (dev_cnt == (UINT)-1)
       goto error;
 
@@ -207,7 +212,8 @@ static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
 
    if (mouse_cnt_r)
    {
-      mice_r = (winraw_mouse_t*)calloc(1, mouse_cnt_r * sizeof(winraw_mouse_t));
+      mice_r = (winraw_mouse_t*)calloc(
+            1, mouse_cnt_r * sizeof(winraw_mouse_t));
       if (!mice_r)
          goto error;
 
@@ -416,14 +422,14 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
       mouse->btn_l = false;
 
    if (state->usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN)
-      mouse->btn_m = true;
+      mouse->btn_m  = true;
    else if (state->usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_UP)
-      mouse->btn_m = false;
+      mouse->btn_m  = false;
 
    if (state->usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN)
-      mouse->btn_r = true;
+      mouse->btn_r  = true;
    else if (state->usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP)
-      mouse->btn_r = false;
+      mouse->btn_r  = false;
 
    if (state->usButtonFlags & RI_MOUSE_BUTTON_4_DOWN)
       mouse->btn_b4 = true;
@@ -578,68 +584,33 @@ error:
 static void winraw_poll(void *data)
 {
    unsigned i;
-   winraw_input_t *wr = (winraw_input_t*)data;
+   winraw_input_t *wr     = (winraw_input_t*)data;
 
    for (i = 0; i < wr->mouse_cnt; ++i)
    {
-      wr->mice[i].x               = g_mice[i].x;
-      wr->mice[i].y               = g_mice[i].y;
-      wr->mice[i].dlt_x           = InterlockedExchange(&g_mice[i].dlt_x, 0);
-      wr->mice[i].dlt_y           = InterlockedExchange(&g_mice[i].dlt_y, 0);
-      wr->mice[i].whl_u           = InterlockedExchange(&g_mice[i].whl_u, 0);
-      wr->mice[i].whl_d           = InterlockedExchange(&g_mice[i].whl_d, 0);
-      wr->mice[i].btn_l           = g_mice[i].btn_l;
-      wr->mice[i].btn_m           = g_mice[i].btn_m;
-      wr->mice[i].btn_r           = g_mice[i].btn_r;
-      wr->mice[i].btn_b4          = g_mice[i].btn_b4;
-      wr->mice[i].btn_b5          = g_mice[i].btn_b5;
+      wr->mice[i].x       = g_mice[i].x;
+      wr->mice[i].y       = g_mice[i].y;
+      wr->mice[i].dlt_x   = InterlockedExchange(&g_mice[i].dlt_x, 0);
+      wr->mice[i].dlt_y   = InterlockedExchange(&g_mice[i].dlt_y, 0);
+      wr->mice[i].whl_u   = InterlockedExchange(&g_mice[i].whl_u, 0);
+      wr->mice[i].whl_d   = InterlockedExchange(&g_mice[i].whl_d, 0);
+      wr->mice[i].btn_l   = g_mice[i].btn_l;
+      wr->mice[i].btn_m   = g_mice[i].btn_m;
+      wr->mice[i].btn_r   = g_mice[i].btn_r;
+      wr->mice[i].btn_b4  = g_mice[i].btn_b4;
+      wr->mice[i].btn_b5  = g_mice[i].btn_b5;
    }
 
    /* Prevent LAlt sticky after unfocusing with Alt-Tab */
-   if (!winraw_focus &&
-         wr->keyboard.keys[SC_LALT] && !(GetKeyState(VK_MENU) & 0x8000))
+   if (    !winraw_focus
+         && wr->keyboard.keys[SC_LALT] 
+         && !(GetKeyState(VK_MENU) & 0x8000))
    {
       wr->keyboard.keys[SC_LALT] = 0;
       input_keyboard_event(0,
             input_keymaps_translate_keysym_to_rk(SC_LALT),
             0, 0, RETRO_DEVICE_KEYBOARD);
    }
-}
-
-static int16_t winraw_input_lightgun_state(
-      winraw_input_t *wr,
-      winraw_mouse_t *mouse,
-      const input_device_driver_t *joypad,
-      rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds,
-      bool keyboard_mapping_blocked,
-      unsigned port,
-      unsigned id,
-      float axis_threshold,
-      const uint64_t joykey,
-      const uint32_t joyaxis
-      )
-{
-   if (!keyboard_mapping_blocked)
-      if ((binds[port][id].key < RETROK_LAST) 
-            && WINRAW_KEYBOARD_PRESSED(wr, binds[port]
-               [id].key))
-         return 1;
-   if (binds[port][id].valid)
-   {
-      if ((uint16_t)joykey != NO_BTN && joypad->button(
-               port, (uint16_t)joykey))
-         return 1;
-      if (joyaxis != AXIS_NONE &&
-            ((float)abs(joypad->axis(port, joyaxis)) 
-             / 0x8000) > axis_threshold)
-         return 1;
-      if (mouse && winraw_mouse_button_pressed(wr,
-               mouse, port, binds[port]
-               [id].mbutton))
-         return 1;
-   }
-   return 0;
 }
 
 static unsigned winraw_retro_id_to_rarch(unsigned id)
@@ -682,7 +653,7 @@ static int16_t winraw_input_state(
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds,
+      const retro_keybind_set *binds,
       bool keyboard_mapping_blocked,
       unsigned port,
       unsigned device,
@@ -939,40 +910,56 @@ static int16_t winraw_input_state(
 				case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
 				case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
 				case RETRO_DEVICE_ID_LIGHTGUN_PAUSE: /* deprecated */
-					{
-						unsigned new_id                = winraw_retro_id_to_rarch(id);
-						const uint64_t bind_joykey     = input_config_binds[port][new_id].joykey;
-						const uint64_t bind_joyaxis    = input_config_binds[port][new_id].joyaxis;
-						const uint64_t autobind_joykey = input_autoconf_binds[port][new_id].joykey;
-						const uint64_t autobind_joyaxis= input_autoconf_binds[port][new_id].joyaxis;
-						uint16_t port                  = joypad_info->joy_idx;
-						float axis_threshold           = joypad_info->axis_threshold;
-						const uint64_t joykey          = (bind_joykey != NO_BTN)
-							? bind_joykey  : autobind_joykey;
-						const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
-							? bind_joyaxis : autobind_joyaxis;
-						return winraw_input_lightgun_state(
-								wr, mouse, joypad,
-								joypad_info,
-								binds,
-								keyboard_mapping_blocked,
-								port, 
-								new_id,
-								axis_threshold,
-								joykey,
-								joyaxis);
-					}
-				/*deprecated*/
-				case RETRO_DEVICE_ID_LIGHTGUN_X:
-					if (mouse)
-						return mouse->dlt_x;
-					break;
-				case RETRO_DEVICE_ID_LIGHTGUN_Y:
-					if (mouse)
-						return mouse->dlt_y;
-					break;
-			}
-			break;
+               {
+                  unsigned new_id                = winraw_retro_id_to_rarch(id);
+                  const uint64_t bind_joykey     = input_config_binds[port][new_id].joykey;
+                  const uint64_t bind_joyaxis    = input_config_binds[port][new_id].joyaxis;
+                  const uint64_t autobind_joykey = input_autoconf_binds[port][new_id].joykey;
+                  const uint64_t autobind_joyaxis= input_autoconf_binds[port][new_id].joyaxis;
+                  uint16_t port                  = joypad_info->joy_idx;
+                  float axis_threshold           = joypad_info->axis_threshold;
+                  const uint64_t joykey          = (bind_joykey != NO_BTN)
+                     ? bind_joykey  : autobind_joykey;
+                  const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
+                     ? bind_joyaxis : autobind_joyaxis;
+                  if (binds[port][new_id].valid)
+                  {
+                     if ((uint16_t)joykey != NO_BTN && joypad->button(
+                              port, (uint16_t)joykey))
+                        return 1;
+                     if (joyaxis != AXIS_NONE &&
+                           ((float)abs(joypad->axis(port, joyaxis)) 
+                            / 0x8000) > axis_threshold)
+                        return 1;
+                     else if (
+                           binds[port][new_id].key < RETROK_LAST
+                           && !keyboard_mapping_blocked
+                           && WINRAW_KEYBOARD_PRESSED(wr, binds[port]
+                              [new_id].key)
+                           )
+                        return 1;
+                     else
+                     {
+                        if (
+                              mouse && winraw_mouse_button_pressed(wr,
+                                 mouse, port, binds[port][new_id].mbutton)
+                           )
+                           return 1;
+                     }
+                  }
+               }
+               break;
+               /*deprecated*/
+            case RETRO_DEVICE_ID_LIGHTGUN_X:
+               if (mouse)
+                  return mouse->dlt_x;
+               break;
+            case RETRO_DEVICE_ID_LIGHTGUN_Y:
+               if (mouse)
+                  return mouse->dlt_y;
+               break;
+         }
+         break;
    }
 
    return 0;

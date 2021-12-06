@@ -52,6 +52,7 @@
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
+#include "../../record/record_driver.h"
 
 #include "../video_coord_array.h"
 
@@ -1131,12 +1132,14 @@ static void vulkan_init_hw_render(vk_t *vk)
 static void vulkan_init_readback(vk_t *vk)
 {
    /* Only bother with this if we're doing GPU recording.
-    * Check recording_is_enabled() and not
+    * Check recording_st->enable and not
     * driver.recording_data, because recording is
     * not initialized yet.
     */
    settings_t *settings    = config_get_ptr();
-   bool recording_enabled  = recording_is_enabled();
+   recording_state_t 
+      *recording_st        = recording_state_get_ptr();
+   bool recording_enabled  = recording_st->enable;
    bool video_gpu_record   = settings->bools.video_gpu_record;
    vk->readback.streamed   = video_gpu_record && recording_enabled;
 
@@ -1201,7 +1204,7 @@ static void *vulkan_init(const video_info_t *video,
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
    
-   RARCH_LOG("[Vulkan]: Found vulkan context: %s\n", ctx_driver->ident);
+   RARCH_LOG("[Vulkan]: Found vulkan context: \"%s\".\n", ctx_driver->ident);
 
    if (vk->ctx_driver->get_video_size)
       vk->ctx_driver->get_video_size(vk->ctx_data,
@@ -1212,7 +1215,7 @@ static void *vulkan_init(const video_info_t *video,
    mode_width                         = 0;
    mode_height                        = 0;
 
-   RARCH_LOG("[Vulkan]: Detecting screen resolution %ux%u.\n", full_x, full_y);
+   RARCH_LOG("[Vulkan]: Detecting screen resolution: %ux%u.\n", full_x, full_y);
    interval = video->vsync ? video->swap_interval : 0;
 
    if (ctx_driver->swap_interval)
@@ -1254,7 +1257,7 @@ static void *vulkan_init(const video_info_t *video,
    vk->video_width       = temp_width;
    vk->video_height      = temp_height;
 
-   RARCH_LOG("[Vulkan]: Using resolution %ux%u\n", temp_width, temp_height);
+   RARCH_LOG("[Vulkan]: Using resolution %ux%u.\n", temp_width, temp_height);
 
    if (!vk->ctx_driver || !vk->ctx_driver->get_context_data)
    {
@@ -2590,14 +2593,14 @@ static uint32_t vulkan_get_flags(void *data)
 }
 
 static void vulkan_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
    vk_t *vk = (vk_t*)data;
    if (!vk || !vk->ctx_driver || !vk->ctx_driver->get_video_output_size)
       return;
    vk->ctx_driver->get_video_output_size(
          vk->ctx_data,
-         width, height);
+         width, height, desc, desc_len);
 }
 
 static void vulkan_get_video_output_prev(void *data)
@@ -2739,6 +2742,12 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 #ifdef HAVE_THREADS
       slock_unlock(vk->context->queue_lock);
 #endif
+
+      if (!staging->memory)
+      {
+         RARCH_ERR("[Vulkan]: Attempted to readback synchronously, but no image is present.\nThis can happen if vsync is disabled on Windows systems due to mailbox emulation.\n");
+         return false;
+      }
 
       if (!staging->mapped)
       {

@@ -141,6 +141,10 @@ typedef struct settings
 #ifdef HAVE_D3D12
       int d3d12_gpu_index;
 #endif
+#ifdef HAVE_WINDOW_OFFSET
+      int video_window_offset_x;
+      int video_window_offset_y;
+#endif
       int content_favorites_size;
    } ints;
 
@@ -187,6 +191,7 @@ typedef struct settings
 #endif
       unsigned input_touch_scale;
       unsigned input_hotkey_block_delay;
+      unsigned input_quit_gamepad_combo;
       unsigned input_menu_toggle_gamepad_combo;
       unsigned input_keyboard_gamepad_mapping_type;
       unsigned input_poll_type_behavior;
@@ -195,6 +200,7 @@ typedef struct settings
       unsigned input_max_users;
 
       unsigned netplay_port;
+      unsigned netplay_max_connections;
       unsigned netplay_input_latency_frames_min;
       unsigned netplay_input_latency_frames_range;
       unsigned netplay_share_digital;
@@ -347,7 +353,7 @@ typedef struct settings
       float video_msg_bgcolor_opacity;
       float video_hdr_max_nits;
       float video_hdr_paper_white_nits;
-      float video_hdr_contrast;
+      float video_hdr_display_contrast;
 
       float menu_scale_factor;
       float menu_widget_scale_factor;
@@ -403,6 +409,7 @@ typedef struct settings
       char cheevos_password[256];
       char cheevos_token[32];
       char cheevos_leaderboards_enable[32];
+      char cheevos_custom_host[64];
       char video_context_driver[32];
       char audio_driver[32];
       char audio_resampler[32];
@@ -528,6 +535,7 @@ typedef struct settings
       bool video_smooth;
       bool video_ctx_scaling;
       bool video_force_aspect;
+      bool video_frame_delay_auto;
       bool video_crop_overscan;
       bool video_aspect_ratio_auto;
       bool video_dingux_ipu_keep_aspect;
@@ -588,6 +596,7 @@ typedef struct settings
       bool input_overlay_auto_scale;
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
+      bool input_all_users_control_menu;
       bool input_menu_swap_ok_cancel_buttons;
       bool input_backtouch_enable;
       bool input_backtouch_toggle;
@@ -618,6 +627,7 @@ typedef struct settings
       bool notification_show_screenshot;
 #endif
       bool notification_show_refresh_rate;
+      bool notification_show_netplay_extra;
       bool menu_widget_scale_auto;
       bool menu_show_start_screen;
       bool menu_pause_libretro;
@@ -644,6 +654,9 @@ typedef struct settings
       bool menu_show_load_content;
       bool menu_show_load_disc;
       bool menu_show_dump_disc;
+#ifdef HAVE_LAKKA
+      bool menu_show_eject_disc;
+#endif
       bool menu_show_information;
       bool menu_show_configurations;
       bool menu_show_help;
@@ -744,6 +757,7 @@ typedef struct settings
       /* Netplay */
       bool netplay_public_announce;
       bool netplay_start_as_spectator;
+      bool netplay_allow_pausing;
       bool netplay_allow_slaves;
       bool netplay_require_slaves;
       bool netplay_stateless_mode;
@@ -1073,6 +1087,10 @@ void config_load(void *data);
 void config_load_file_salamander(void);
 void config_save_file_salamander(void);
 #endif
+
+void rarch_config_init(void);
+
+void rarch_config_deinit(void);
 
 settings_t *config_get_ptr(void);
 

@@ -31,7 +31,6 @@
 #include "../../verbosity.h"
 
 #include "../common/egl_common.h"
-#include "../common/gl_common.h"
 #include "../common/x11_common.h"
 
 #ifdef HAVE_XINERAMA

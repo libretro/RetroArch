@@ -988,10 +988,8 @@ static void task_load_handler(retro_task_t *task)
 
          snprintf(msg,
                8192 * sizeof(char),
-               "%s \"%s\" %s.",
-               msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
-               state->path,
-               msg_hash_to_str(MSG_FAILED));
+               msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FAILED),
+               state->path);
          task_set_error(task, strdup(msg));
          free(msg);
       }
@@ -1017,10 +1015,8 @@ static void task_load_handler(retro_task_t *task)
 
          if (state->autoload)
             snprintf(msg, msg_size - 1,
-                  "%s \"%s\" %s.",
-                  msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
-                  state->path,
-                  msg_hash_to_str(MSG_SUCCEEDED));
+                  msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_SUCCEEDED),
+                  state->path);
          else
          {
             if (state->state_slot < 0)
@@ -2076,14 +2072,18 @@ bool event_save_files(bool is_sram_used)
 bool event_load_save_files(bool is_sram_load_disabled)
 {
    unsigned i;
+   bool success = false;
 
    if (!task_save_files || is_sram_load_disabled)
       return false;
 
+   /* Report a successful load operation if
+    * any type of ram file is found and
+    * processed correctly */
    for (i = 0; i < task_save_files->size; i++)
-      content_load_ram_file(i);
+      success |= content_load_ram_file(i);
 
-   return true;
+   return success;
 }
 
 void path_init_savefile_rtc(const char *savefile_path)

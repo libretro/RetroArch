@@ -1722,6 +1722,37 @@ enum retro_mod
                                             * Must be called in retro_set_environment().
                                             */
 
+#define RETRO_ENVIRONMENT_SET_VARIABLE 70
+                                           /* const struct retro_variable * --
+                                            * Allows an implementation to notify the frontend
+                                            * that a core option value has changed.
+                                            *
+                                            * retro_variable::key and retro_variable::value
+                                            * must match strings that have been set previously
+                                            * via one of the following:
+                                            *
+                                            * - RETRO_ENVIRONMENT_SET_VARIABLES
+                                            * - RETRO_ENVIRONMENT_SET_CORE_OPTIONS
+                                            * - RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL
+                                            * - RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
+                                            * - RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL
+                                            *
+                                            * After changing a core option value via this
+                                            * callback, RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE
+                                            * will return true.
+                                            *
+                                            * If data is NULL, no changes will be registered
+                                            * and the callback will return true; an
+                                            * implementation may therefore pass NULL in order
+                                            * to test whether the callback is supported.
+                                            */
+
+#define RETRO_ENVIRONMENT_GET_THROTTLE_STATE (71 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* struct retro_throttle_state * --
+                                            * Allows an implementation to get details on the actual rate
+                                            * the frontend is attempting to call retro_run().
+                                            */
+
 /* VFS functionality */
 
 /* File paths:
@@ -3665,6 +3696,43 @@ struct retro_fastforwarding_override
     * 'inhibit_toggle' is set to false, or the core
     * is unloaded */
    bool inhibit_toggle;
+};
+
+/* During normal operation. Rate will be equal to the core's internal FPS. */
+#define RETRO_THROTTLE_NONE              0
+
+/* While paused or stepping single frames. Rate will be 0. */
+#define RETRO_THROTTLE_FRAME_STEPPING    1
+
+/* During fast forwarding.
+ * Rate will be 0 if not specifically limited to a maximum speed. */
+#define RETRO_THROTTLE_FAST_FORWARD      2
+
+/* During slow motion. Rate will be less than the core's internal FPS. */
+#define RETRO_THROTTLE_SLOW_MOTION       3
+
+/* While rewinding recorded save states. Rate can vary depending on the rewind
+ * speed or be 0 if the frontend is not aiming for a specific rate. */
+#define RETRO_THROTTLE_REWINDING         4
+
+/* While vsync is active in the video driver and the target refresh rate is
+ * lower than the core's internal FPS. Rate is the target refresh rate. */
+#define RETRO_THROTTLE_VSYNC             5
+
+/* When the frontend does not throttle in any way. Rate will be 0.
+ * An example could be if no vsync or audio output is active. */
+#define RETRO_THROTTLE_UNBLOCKED         6
+
+struct retro_throttle_state
+{
+   /* The current throttling mode. Should be one of the values above. */
+   unsigned mode;
+
+   /* How many times per second the frontend aims to call retro_run.
+    * Depending on the mode, it can be 0 if there is no known fixed rate.
+    * This won't be accurate if the total processing time of the core and
+    * the frontend is longer than what is available for one frame. */
+   float rate;
 };
 
 /* Callbacks */

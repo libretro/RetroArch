@@ -1,5 +1,6 @@
 .gradle
 .externalNativeBuild
+.cxx
 build
 phoenix.iml
 output.json

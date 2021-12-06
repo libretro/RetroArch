@@ -365,6 +365,8 @@ enum ozone_color_theme
    OZONE_COLOR_THEME_HACKING_THE_KERNEL,
    OZONE_COLOR_THEME_TWILIGHT_ZONE,
    OZONE_COLOR_THEME_DRACULA,
+   OZONE_COLOR_THEME_SOLARIZED_DARK,
+   OZONE_COLOR_THEME_SOLARIZED_LIGHT,
    OZONE_COLOR_THEME_LAST
 };
 
@@ -416,7 +418,7 @@ enum quit_on_close_content_type
    QUIT_ON_CLOSE_CONTENT_LAST
 };
 
-#if defined(DINGUX) && defined(RS90)
+#if defined(DINGUX) && (defined(RS90) || defined(MIYOO))
 enum dingux_rs90_softfilter_type
 {
    DINGUX_RS90_SOFTFILTER_POINT = 0,

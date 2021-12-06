@@ -23,7 +23,7 @@
 #include <retro_miscellaneous.h>
 #include <retro_endianness.h>
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 #include "../../verbosity.h"
 
 typedef struct

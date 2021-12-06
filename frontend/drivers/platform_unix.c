@@ -159,7 +159,7 @@ int system_property_get(const char *command,
    FILE *pipe;
    int length                   = 0;
    char buffer[PATH_MAX_LENGTH] = {0};
-   char cmd[PATH_MAX_LENGTH]    = {0};
+   char cmd[NAME_MAX_LENGTH]    = {0};
    char *curpos                 = NULL;
    size_t buf_pos               = strlcpy(cmd, command, sizeof(cmd));
 
@@ -1792,7 +1792,10 @@ static void frontend_unix_get_env(int *argc,
    }
 #else
    char base_path[PATH_MAX] = {0};
-#if defined(DINGUX)
+#if defined(RARCH_UNIX_CWD_ENV)
+   /* The entire path is zero initialized. */
+   base_path[0] = '.';
+#elif defined(DINGUX)
    dingux_get_base_path(base_path, sizeof(base_path));
 #else
    const char *xdg          = getenv("XDG_CONFIG_HOME");

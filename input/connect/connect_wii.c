@@ -26,7 +26,6 @@
 
 #include "joypad_connection.h"
 #include "../input_defines.h"
-#include "../common/hid/hid_device_driver.h"
 
 /* wiimote state flags*/
 #define WIIMOTE_STATE_DEV_FOUND              0x0001
@@ -188,14 +187,6 @@ static int wiimote_send(struct connect_wii_wiimote_t* wm,
 
    memcpy(buf+2, msg, len);
 
-#ifdef WIIMOTE_DBG
-   int x;
-   printf("[DEBUG] (id %i) SEND: (%x) %.2x ", wm->unid, buf[0], buf[1]);
-   for (x = 2; x < len+2; ++x)
-      printf("%.2x ", buf[x]);
-   printf("\n");
-#endif
-
    wm->driver->send_control(wm->connection, buf, len + 2);
    return 1;
 }
@@ -211,10 +202,6 @@ static void wiimote_status(struct connect_wii_wiimote_t* wm)
 
    if (!wm || !wiimote_is_connected(wm))
       return;
-
-#ifdef WIIMOTE_DBG
-   printf("Requested wiimote status.\n");
-#endif
 
    wiimote_send(wm, WM_CMD_CTRL_STATUS, &buf, 1);
 }
@@ -350,15 +337,6 @@ static int wiimote_write_data(struct connect_wii_wiimote_t* wm,
    if (!data || !len)
       return 0;
 
-#ifdef WIIMOTE_DBG
-   int i           = 0;
-   printf("Writing %i bytes to memory location 0x%x...\n", len, addr);
-   printf("Write data is: ");
-   for (; i < len; ++i)
-      printf("%x ", data[i]);
-   printf("\n");
-#endif
-
    /* the offset is in big endian */
    *buf32 = swap_if_little32(addr);
 
@@ -399,9 +377,6 @@ static int wiimote_read_data(struct connect_wii_wiimote_t* wm, uint32_t addr,
    *buf32         = swap_if_little32(addr);
    *buf16         = swap_if_little16(len);
 
-#ifdef WIIMOTE_DBG
-   printf("Request read at address: 0x%x  length: %i", addr, len);
-#endif
    wiimote_send(wm, WM_CMD_READ_DATA, buf, 6);
 
    return 1;
@@ -454,11 +429,6 @@ static int wiimote_handshake(struct connect_wii_wiimote_t* wm,
                if ((data[2] & WM_CTRL_STATUS_BYTE1_ATTACHMENT) ==
                      WM_CTRL_STATUS_BYTE1_ATTACHMENT)
                   attachment = 1;
-
-#ifdef WIIMOTE_DBG
-               printf("attachment %d %d\n",attachment,
-                     WIIMOTE_IS_SET(wm, WIIMOTE_STATE_EXP));
-#endif
 
                if (attachment && !WIIMOTE_IS_SET(wm, WIIMOTE_STATE_EXP))
                {
@@ -513,9 +483,6 @@ static int wiimote_handshake(struct connect_wii_wiimote_t* wm,
 
                   if(WIIMOTE_IS_SET(wm,WIIMOTE_STATE_HANDSHAKE_COMPLETE))
                   {
-#ifdef WIIMOTE_DBG
-                     printf("rehandshake\n");
-#endif
                      WIIMOTE_DISABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE_COMPLETE);
                      /* forzamos un handshake por si venimos
                       * de un hanshake completo. */
@@ -533,17 +500,11 @@ static int wiimote_handshake(struct connect_wii_wiimote_t* wm,
             }
          case 2:
             /* Find handshake no expansion. */
-#ifdef WIIMOTE_DBG
-            printf("Finalizado HANDSHAKE SIN EXPANSION\n");
-#endif
             wiimote_data_report(wm,WM_RPT_BTN);
             wm->handshake_state = 6;
             continue;
          case 3:
             /* Find handshake expansion. */
-#ifdef WIIMOTE_DBG
-            printf("Finalizado HANDSHAKE CON EXPANSION\n");
-#endif
             wiimote_data_report(wm,WM_RPT_BTN_EXP);
             wm->handshake_state = 6;
             continue;
@@ -675,13 +636,13 @@ static int16_t hidpad_wii_get_axis(void *data, unsigned axis)
 
 static void hidpad_wii_get_buttons(void *data, input_bits_t *state)
 {
-	struct connect_wii_wiimote_t* device = (struct connect_wii_wiimote_t*)data;
-	if ( device )
-	{
-		/* TODO/FIXME - Broken? this doesn't match retropad! */
-		uint32_t b = device->btns | (device->exp.cc.classic.btns << 16);
-		BITS_COPY32_PTR(state, b);
-	}
+   struct connect_wii_wiimote_t* device = (struct connect_wii_wiimote_t*)data;
+   if ( device )
+   {
+      /* TODO/FIXME - Broken? this doesn't match retropad! */
+      uint32_t b = device->btns | (device->exp.cc.classic.btns << 16);
+      BITS_COPY32_PTR(state, b);
+   }
 }
 
 static void hidpad_wii_packet_handler(void *data,
@@ -723,6 +684,8 @@ static void hidpad_wii_set_rumble(void *data,
    (void)strength;
 }
 
+/* TODO: implement hidpad_wii_button(). */
+
 pad_connection_interface_t pad_connection_wii = {
    hidpad_wii_init,
    hidpad_wii_deinit,
@@ -730,5 +693,7 @@ pad_connection_interface_t pad_connection_wii = {
    hidpad_wii_set_rumble,
    hidpad_wii_get_buttons,
    hidpad_wii_get_axis,
-   NULL,
+   NULL, /* get_name */
+   NULL, /* button */
+   false,
 };

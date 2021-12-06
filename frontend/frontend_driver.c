@@ -134,6 +134,13 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
    NULL
 };
 
+static frontend_state_t frontend_driver_st = { 0 };
+
+frontend_state_t *frontend_state_get_ptr(void)
+{
+   return &frontend_driver_st;
+}
+
 /**
  * frontend_ctx_find_driver:
  * @ident               : Identifier name of driver to find.
@@ -274,4 +281,310 @@ bool frontend_driver_get_salamander_basename(char *s, size_t len)
 #endif
 
 #endif
+}
+
+frontend_ctx_driver_t *frontend_get_ptr(void)
+{
+   frontend_state_t *frontend_st = &frontend_driver_st;
+   return frontend_st->current_frontend_ctx;
+}
+
+int frontend_driver_parse_drive_list(void *data, bool load_content)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (frontend && frontend->parse_drive_list)
+      return frontend->parse_drive_list(data, load_content);
+   return -1;
+}
+
+void frontend_driver_content_loaded(void)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (frontend && frontend->content_loaded)
+      frontend->content_loaded();
+}
+
+bool frontend_driver_has_fork(void)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   return frontend && frontend->set_fork;
+}
+
+bool frontend_driver_set_fork(enum frontend_fork fork_mode)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (!frontend || !frontend_driver_has_fork())
+      return false;
+   return frontend->set_fork(fork_mode);
+}
+
+void frontend_driver_process_args(int *argc, char *argv[])
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (frontend && frontend->process_args)
+      frontend->process_args(argc, argv);
+}
+
+bool frontend_driver_is_inited(void)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   return frontend != NULL;
+}
+
+void frontend_driver_init_first(void *args)
+{
+   frontend_state_t *frontend_st     = &frontend_driver_st;
+   frontend_st->current_frontend_ctx = (frontend_ctx_driver_t*)
+      frontend_ctx_init_first();
+
+   if (     frontend_st->current_frontend_ctx 
+         && frontend_st->current_frontend_ctx->init)
+      frontend_st->current_frontend_ctx->init(args);
+}
+
+void frontend_driver_free(void)
+{
+   frontend_state_t *frontend_st     = &frontend_driver_st;
+
+   frontend_st->current_frontend_ctx = NULL;
+}
+
+bool frontend_driver_has_get_video_driver_func(void)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   return frontend && frontend->get_video_driver;
+}
+
+const struct video_driver *frontend_driver_get_video_driver(void)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (!frontend || !frontend->get_video_driver)
+      return NULL;
+   return frontend->get_video_driver();
+}
+
+void frontend_driver_exitspawn(char *s, size_t len, char *args)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (frontend && frontend->exitspawn)
+      frontend->exitspawn(s, len, args);
+}
+
+void frontend_driver_deinit(void *args)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (frontend && frontend->deinit)
+      frontend->deinit(args);
+}
+
+void frontend_driver_shutdown(bool a)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (frontend && frontend->shutdown)
+      frontend->shutdown(a);
+}
+
+enum frontend_architecture frontend_driver_get_cpu_architecture(void)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (frontend && frontend->get_architecture)
+      return frontend->get_architecture();
+   return FRONTEND_ARCH_NONE;
+}
+
+const void *frontend_driver_get_cpu_architecture_str(
+      char *architecture, size_t size)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   enum frontend_architecture arch = frontend_driver_get_cpu_architecture();
+
+   switch (arch)
+   {
+      case FRONTEND_ARCH_X86:
+         strcpy_literal(architecture, "x86");
+         break;
+      case FRONTEND_ARCH_X86_64:
+         strcpy_literal(architecture, "x64");
+         break;
+      case FRONTEND_ARCH_PPC:
+         strcpy_literal(architecture, "PPC");
+         break;
+      case FRONTEND_ARCH_ARM:
+         strcpy_literal(architecture, "ARM");
+         break;
+      case FRONTEND_ARCH_ARMV7:
+         strcpy_literal(architecture, "ARMv7");
+         break;
+      case FRONTEND_ARCH_ARMV8:
+         strcpy_literal(architecture, "ARMv8");
+         break;
+      case FRONTEND_ARCH_MIPS:
+         strcpy_literal(architecture, "MIPS");
+         break;
+      case FRONTEND_ARCH_TILE:
+         strcpy_literal(architecture, "Tilera");
+         break;
+      case FRONTEND_ARCH_NONE:
+      default:
+         strcpy_literal(architecture, "N/A");
+         break;
+   }
+
+   return frontend;
+}
+
+uint64_t frontend_driver_get_total_memory(void)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (frontend && frontend->get_total_mem)
+      return frontend->get_total_mem();
+   return 0;
+}
+
+uint64_t frontend_driver_get_free_memory(void)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (frontend && frontend->get_free_mem)
+      return frontend->get_free_mem();
+   return 0;
+}
+
+void frontend_driver_install_signal_handler(void)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (frontend && frontend->install_signal_handler)
+      frontend->install_signal_handler();
+}
+
+int frontend_driver_get_signal_handler_state(void)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (frontend && frontend->get_signal_handler_state)
+      return frontend->get_signal_handler_state();
+   return -1;
+}
+
+void frontend_driver_set_signal_handler_state(int value)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (frontend && frontend->set_signal_handler_state)
+      frontend->set_signal_handler_state(value);
+}
+
+void frontend_driver_attach_console(void)
+{
+   /* TODO/FIXME - the frontend driver code is garbage and needs to be
+      redesigned. Apparently frontend_driver_attach_console can be called
+      BEFORE frontend_driver_init_first is called, hence why we need 
+      to resort to the check for non-NULL below. This is just awful, 
+      BEFORE we make any frontend function call, we should be 100% 
+      sure frontend_driver_init_first has already been called first.
+
+      For now, we do this hack, but this absolutely should be redesigned
+      as soon as possible.
+    */
+   if(      frontend_driver_st.current_frontend_ctx 
+         && frontend_driver_st.current_frontend_ctx->attach_console)
+      frontend_driver_st.current_frontend_ctx->attach_console();
+}
+
+void frontend_driver_set_screen_brightness(int value)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (frontend && frontend->set_screen_brightness)
+      frontend->set_screen_brightness(value);
+}
+
+bool frontend_driver_can_set_screen_brightness(void)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   return (frontend && frontend->set_screen_brightness);
+}
+
+void frontend_driver_detach_console(void)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (frontend && frontend->detach_console)
+      frontend->detach_console();
+}
+
+void frontend_driver_destroy_signal_handler_state(void)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (frontend && frontend->destroy_signal_handler_state)
+      frontend->destroy_signal_handler_state();
+}
+
+bool frontend_driver_can_watch_for_changes(void)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   return frontend && frontend->watch_path_for_changes;
+}
+
+void frontend_driver_watch_path_for_changes(
+      struct string_list *list, int flags,
+      path_change_data_t **change_data)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (frontend && frontend->watch_path_for_changes)
+      frontend->watch_path_for_changes(list, flags, change_data);
+}
+
+bool frontend_driver_check_for_path_changes(path_change_data_t *change_data)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (frontend && frontend->check_for_path_changes)
+      return frontend->check_for_path_changes(change_data);
+   return false;
+}
+
+void frontend_driver_set_sustained_performance_mode(bool on)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (frontend && frontend->set_sustained_performance_mode)
+      frontend->set_sustained_performance_mode(on);
+}
+
+const char* frontend_driver_get_cpu_model_name(void)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (frontend && frontend->get_cpu_model_name)
+      return frontend->get_cpu_model_name();
+   return NULL;
+}
+
+enum retro_language frontend_driver_get_user_language(void)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (frontend && frontend->get_user_language)
+      return frontend->get_user_language();
+   return RETRO_LANGUAGE_ENGLISH;
 }

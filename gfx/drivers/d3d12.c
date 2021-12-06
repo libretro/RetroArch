@@ -14,6 +14,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Direct3D 12 driver.
+ *
+ * Minimum version : Direct3D 12.0 (2015)
+ * Minimum OS      : Windows 7, Windows 8
+ * Recommended OS  : Windows 10
+ */
+
 #define CINTERFACE
 
 #include <assert.h>
@@ -238,14 +245,6 @@ static void d3d12_get_overlay_interface(void* data, const video_overlay_interfac
 }
 #endif
 
-#if 0
-   d3d12->hdr.max_output_nits             = settings->floats.video_hdr_max_nits;
-   d3d12->hdr.ubo_values.maxNits          = settings->floats.video_hdr_max_nits;
-   d3d12->hdr.ubo_values.paperWhiteNits   = settings->floats.video_hdr_paper_white_nits;
-   d3d12->hdr.ubo_values.contrast         = settings->floats.video_hdr_contrast;
-   d3d12->hdr.ubo_values.expandGamut      = settings->bools.video_hdr_expand_gamut;
-#endif
-
 #ifdef HAVE_DXGI_HDR
 static void d3d12_set_hdr_max_nits(void* data, float max_nits)
 {
@@ -254,7 +253,7 @@ static void d3d12_set_hdr_max_nits(void* data, float max_nits)
    d3d12_video_t *d3d12                   = (d3d12_video_t*)data;
 
    d3d12->hdr.max_output_nits             = max_nits;
-   d3d12->hdr.ubo_values.maxNits          = max_nits;
+   d3d12->hdr.ubo_values.max_nits         = max_nits;
 
    D3D12Map(d3d12->hdr.ubo, 0, &read_range, (void**)&mapped_ubo);
    *mapped_ubo = d3d12->hdr.ubo_values;
@@ -277,7 +276,7 @@ static void d3d12_set_hdr_paper_white_nits(void* data, float paper_white_nits)
    dxgi_hdr_uniform_t *mapped_ubo         = NULL;
    d3d12_video_t *d3d12                   = (d3d12_video_t*)data;
 
-   d3d12->hdr.ubo_values.paperWhiteNits   = paper_white_nits;
+   d3d12->hdr.ubo_values.paper_white_nits = paper_white_nits;
 
    D3D12Map(d3d12->hdr.ubo, 0, &read_range, (void**)&mapped_ubo);
    *mapped_ubo = d3d12->hdr.ubo_values;
@@ -303,7 +302,7 @@ static void d3d12_set_hdr_expand_gamut(void* data, bool expand_gamut)
    dxgi_hdr_uniform_t *mapped_ubo         = NULL;
    d3d12_video_t *d3d12                   = (d3d12_video_t*)data;
 
-   d3d12->hdr.ubo_values.expandGamut      = expand_gamut;
+   d3d12->hdr.ubo_values.expand_gamut     = expand_gamut;
    D3D12Map(d3d12->hdr.ubo, 0, &read_range, (void**)&mapped_ubo);
    *mapped_ubo = d3d12->hdr.ubo_values;
    D3D12Unmap(d3d12->hdr.ubo, 0, NULL);
@@ -914,7 +913,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
 
    {
       static const char shader[] =
-#include "d3d_shaders/mimpapgen_sm5.h"
+#include "d3d_shaders/mipmapgen_sm5.h"
             ;
       D3D12_COMPUTE_PIPELINE_STATE_DESC desc = { d3d12->desc.cs_rootSignature };
       if (!d3d_compile(shader, sizeof(shader), NULL, "CSMain", "cs_5_0", &cs_code))
@@ -1153,10 +1152,11 @@ static void *d3d12_gfx_init(const video_info_t* video,
          d3d12_create_buffer(d3d12->device, d3d12->hdr.ubo_view.SizeInBytes, &d3d12->hdr.ubo);
 
    d3d12->hdr.ubo_values.mvp              = d3d12->mvp_no_rot; 
-   d3d12->hdr.ubo_values.maxNits          = settings->floats.video_hdr_max_nits;
-   d3d12->hdr.ubo_values.paperWhiteNits   = settings->floats.video_hdr_paper_white_nits;
-   d3d12->hdr.ubo_values.contrast         = settings->floats.video_hdr_contrast;
-   d3d12->hdr.ubo_values.expandGamut      = settings->bools.video_hdr_expand_gamut;
+   d3d12->hdr.ubo_values.max_nits         = settings->floats.video_hdr_max_nits;
+   d3d12->hdr.ubo_values.paper_white_nits = settings->floats.video_hdr_paper_white_nits;
+   d3d12->hdr.ubo_values.contrast         = VIDEO_HDR_MAX_CONTRAST - settings->floats.video_hdr_display_contrast;
+   d3d12->hdr.ubo_values.expand_gamut     = settings->bools.video_hdr_expand_gamut;
+   d3d12->hdr.ubo_values.inverse_tonemap  = 1.0f;     /* Use this to turn on/off the inverse tonemap */
 
    {
       dxgi_hdr_uniform_t* mapped_ubo;
@@ -1286,7 +1286,7 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
          height = d3d12->vp.height;
       }
 
-      RARCH_LOG("[D3D12]: Updating framebuffer size %u x %u.\n", width, height);
+      RARCH_LOG("[D3D12]: Updating framebuffer size %ux%u.\n", width, height);
 
       if ((i != (d3d12->shader_preset->passes - 1)) || (width != d3d12->vp.width) ||
           (height != d3d12->vp.height))
@@ -1443,11 +1443,17 @@ static bool d3d12_gfx_frame(
          dxgi_swapchain_color_space(d3d12->chain.handle,
                &d3d12->chain.color_space,
                DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
+
+         d3d12->chain.bit_depth  = DXGI_SWAPCHAIN_BIT_DEPTH_10;
       }
       else
+      {
          dxgi_swapchain_color_space(d3d12->chain.handle,
                &d3d12->chain.color_space,
                DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709);
+               
+         d3d12->chain.bit_depth  = DXGI_SWAPCHAIN_BIT_DEPTH_8;
+      }
 
       dxgi_set_hdr_metadata(
             d3d12->chain.handle,
@@ -2202,9 +2208,9 @@ static uint32_t d3d12_get_flags(void *data)
 
 #ifndef __WINRT__
 static void d3d12_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
-   win32_get_video_output_size(width, height);
+   win32_get_video_output_size(width, height, desc, desc_len);
 }
 
 static void d3d12_get_video_output_prev(void *data)

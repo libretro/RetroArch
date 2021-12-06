@@ -23,6 +23,7 @@
 #include <retro_miscellaneous.h>
 
 #include <queues/task_queue.h>
+#include <gfx/scaler/scaler.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -86,6 +87,7 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       const char *hostname, const char *corename, const char* subsystem);
 
 bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port);
+bool task_push_netplay_nat_close(void *nat_traversal_state);
 
 /* Core updater tasks */
 
@@ -206,6 +208,31 @@ void *task_push_decompress(
 
 void task_file_load_handler(retro_task_t *task);
 
+typedef struct screenshot_task_state screenshot_task_state_t;
+
+struct screenshot_task_state
+{
+   struct scaler_ctx scaler;
+   uint8_t *out_buffer;
+   const void *frame;
+   void *userbuf;
+
+   int pitch;
+   unsigned width;
+   unsigned height;
+   unsigned pixel_format_type;
+
+   char filename[PATH_MAX_LENGTH];
+   char shotname[256];
+
+   bool bgr24;
+   bool silence;
+   bool is_idle;
+   bool is_paused;
+   bool history_list_enable;
+   bool widgets_ready;
+};
+
 bool take_screenshot(
       const char *screenshot_dir,
       const char *path, bool silence,
@@ -239,6 +266,14 @@ void set_save_state_in_background(bool state);
 
 #ifdef HAVE_CDROM
 void task_push_cdrom_dump(const char *drive);
+#endif
+
+/* Menu explore tasks */
+#if defined(HAVE_MENU) && defined(HAVE_LIBRETRODB)
+bool task_push_menu_explore_init(const char *directory_playlist,
+      const char *directory_database);
+bool menu_explore_init_in_progress(void *data);
+void menu_explore_wait_for_init_task(void);
 #endif
 
 RETRO_END_DECLS

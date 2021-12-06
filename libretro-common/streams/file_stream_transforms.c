@@ -69,17 +69,27 @@ RFILE* rfopen(const char *path, const char *mode)
 
 int rfclose(RFILE* stream)
 {
+   if (!stream)
+      return EOF;
+
    return filestream_close(stream);
 }
 
 int64_t rftell(RFILE* stream)
 {
+   if (!stream)
+      return -1;
+
    return filestream_tell(stream);
 }
 
 int64_t rfseek(RFILE* stream, int64_t offset, int origin)
 {
    int seek_position = -1;
+
+   if (!stream)
+      return -1;
+
    switch (origin)
    {
       case SEEK_SET:
@@ -99,39 +109,61 @@ int64_t rfseek(RFILE* stream, int64_t offset, int origin)
 int64_t rfread(void* buffer,
    size_t elem_size, size_t elem_count, RFILE* stream)
 {
+   if (!stream || (elem_size == 0) || (elem_count == 0))
+      return 0;
+
    return (filestream_read(stream, buffer, elem_size * elem_count) / elem_size);
 }
 
 char *rfgets(char *buffer, int maxCount, RFILE* stream)
 {
+   if (!stream)
+      return NULL;
+
    return filestream_gets(stream, buffer, maxCount);
 }
 
 int rfgetc(RFILE* stream)
 {
+   if (!stream)
+      return EOF;
+
    return filestream_getc(stream);
 }
 
 int64_t rfwrite(void const* buffer,
    size_t elem_size, size_t elem_count, RFILE* stream)
 {
-   return filestream_write(stream, buffer, elem_size * elem_count);
+   if (!stream || (elem_size == 0) || (elem_count == 0))
+      return 0;
+
+   return (filestream_write(stream, buffer, elem_size * elem_count) / elem_size);
 }
 
 int rfputc(int character, RFILE * stream)
 {
-    return filestream_putc(stream, character);
+   if (!stream)
+      return EOF;
+
+   return filestream_putc(stream, character);
 }
 
 int64_t rfflush(RFILE * stream)
 {
-    return filestream_flush(stream);
+   if (!stream)
+      return EOF;
+
+   return filestream_flush(stream);
 }
 
 int rfprintf(RFILE * stream, const char * format, ...)
 {
    int result;
    va_list vl;
+
+   if (!stream)
+      return -1;
+
    va_start(vl, format);
    result = filestream_vprintf(stream, format, vl);
    va_end(vl);
@@ -152,8 +184,12 @@ int rfscanf(RFILE * stream, const char * format, ...)
 {
    int result;
    va_list vl;
+
+   if (!stream)
+      return 0;
+
    va_start(vl, format);
-   result = filestream_scanf(stream, format, vl);
+   result = filestream_vscanf(stream, format, &vl);
    va_end(vl);
    return result;
 }

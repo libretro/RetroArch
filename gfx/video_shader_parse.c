@@ -41,9 +41,15 @@
 #include "../verbosity.h"
 #include "../frontend/frontend_driver.h"
 #include "../command.h"
+#include "../list_special.h"
 #include "../file_path_special.h"
 #include "../paths.h"
 #include "../retroarch.h"
+
+#if defined(HAVE_GFX_WIDGETS)
+#include "gfx_widgets.h"
+#endif
+
 #include "video_shader_parse.h"
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
@@ -1997,6 +2003,67 @@ void dir_free_shader(
    dir_list->remember_last_preset_dir = shader_remember_last_dir;
 }
 
+static bool dir_init_shader_internal(
+      bool shader_remember_last_dir,
+      struct rarch_dir_shader_list *dir_list,
+      const char *shader_dir,
+      const char *shader_file_name,
+      bool show_hidden_files)
+{
+   size_t i;
+   struct string_list *new_list           = dir_list_new_special(
+         shader_dir, DIR_LIST_SHADERS, NULL, show_hidden_files);
+   bool search_file_name                  = shader_remember_last_dir &&
+         !string_is_empty(shader_file_name);
+
+   if (!new_list)
+      return false;
+
+   if (new_list->size < 1)
+   {
+      dir_list_free(new_list);
+      return false;
+   }
+
+   dir_list_sort(new_list, false);
+
+   dir_list->shader_list              = new_list;
+   dir_list->directory                = strdup(shader_dir);
+   dir_list->selection                = 0;
+   dir_list->shader_loaded            = false;
+   dir_list->remember_last_preset_dir = shader_remember_last_dir;
+
+   if (search_file_name)
+   {
+      for (i = 0; i < new_list->size; i++)
+      {
+         const char *file_name = NULL;
+         const char *file_path = new_list->elems[i].data;
+
+         if (string_is_empty(file_path))
+            continue;
+
+         /* If a shader file name has been provided,
+          * search the list for a match and set 'selection'
+          * index if found */
+         file_name = path_basename(file_path);
+
+         if (!string_is_empty(file_name) &&
+               string_is_equal(file_name, shader_file_name))
+         {
+            RARCH_LOG("[Shaders]: %s \"%s\".\n",
+                  msg_hash_to_str(MSG_FOUND_SHADER),
+                  file_path);
+
+            dir_list->selection = i;
+            break;
+         }
+      }
+   }
+
+   return true;
+}
+
 void dir_init_shader(
       void *menu_driver_data_,
       settings_t *settings,
@@ -2157,6 +2224,7 @@ void dir_check_shader(
          }
       }
 
+#ifdef HAVE_MENU
       /* Check whether the shader referenced by the
        * current selection index is already loaded */
       if (!dir_list->shader_loaded)
@@ -2176,6 +2244,7 @@ void dir_check_shader(
                dir_list->shader_loaded = true;
          }
       }
+#endif
    }
 
    /* Select next shader in list */
@@ -2210,4 +2279,280 @@ void dir_check_shader(
 #endif
    command_set_shader(NULL, set_shader_path);
    dir_list->shader_loaded = true;
+}
+
+static bool retroarch_load_shader_preset_internal(
+      char *s,
+      size_t len,
+      const char *shader_directory,
+      const char *core_name,
+      const char *special_name)
+{
+   unsigned i;
+
+   static enum rarch_shader_type types[] =
+   {
+      /* Shader preset priority, highest to lowest
+       * only important for video drivers with multiple shader backends */
+      RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG, RARCH_SHADER_HLSL
+   };
+
+   for (i = 0; i < ARRAY_SIZE(types); i++)
+   {
+      if (!video_shader_is_supported(types[i]))
+         continue;
+
+      /* Concatenate strings into full paths */
+      if (!string_is_empty(core_name))
+         fill_pathname_join_special_ext(s,
+               shader_directory, core_name,
+               special_name,
+               video_shader_get_preset_extension(types[i]),
+               len);
+      else
+      {
+         if (string_is_empty(special_name))
+            break;
+
+         fill_pathname_join(s, shader_directory, special_name, len);
+         strlcat(s, video_shader_get_preset_extension(types[i]), len);
+      }
+
+      if (path_is_valid(s))
+         return true;
+   }
+
+   return false;
+}
+
+bool load_shader_preset(settings_t *settings, const char *core_name,
+      char *s, size_t len)
+{
+   const char *video_shader_directory = settings->paths.directory_video_shader;
+   const char *menu_config_directory  = settings->paths.directory_menu_config;
+   const char *rarch_path_basename    = path_get(RARCH_PATH_BASENAME);
+
+   const char *game_name              = path_basename(rarch_path_basename);
+   const char *dirs[3]                = {0};
+   size_t i                           = 0;
+
+   char shader_path[PATH_MAX_LENGTH];
+   char content_dir_name[PATH_MAX_LENGTH];
+   char config_file_directory[PATH_MAX_LENGTH];
+   char old_presets_directory[PATH_MAX_LENGTH];
+
+   shader_path[0]                     = '\0';
+   content_dir_name[0]                = '\0';
+   config_file_directory[0]           = '\0';
+   old_presets_directory[0]           = '\0';
+
+   if (!string_is_empty(rarch_path_basename))
+      fill_pathname_parent_dir_name(content_dir_name,
+            rarch_path_basename, sizeof(content_dir_name));
+
+   config_file_directory[0]           = '\0';
+
+   if (!path_is_empty(RARCH_PATH_CONFIG))
+      fill_pathname_basedir(config_file_directory,
+            path_get(RARCH_PATH_CONFIG), sizeof(config_file_directory));
+
+   old_presets_directory[0]           = '\0';
+
+   if (!string_is_empty(video_shader_directory))
+      fill_pathname_join(old_presets_directory,
+         video_shader_directory, "presets", sizeof(old_presets_directory));
+
+   dirs[0]                            = menu_config_directory;
+   dirs[1]                            = config_file_directory;
+   dirs[2]                            = old_presets_directory;
+
+   for (i = 0; i < ARRAY_SIZE(dirs); i++)
+   {
+      if (string_is_empty(dirs[i]))
+         continue;
+      /* Game-specific shader preset found? */
+      if (retroarch_load_shader_preset_internal(
+               shader_path,
+               sizeof(shader_path),
+               dirs[i], core_name,
+               game_name))
+         goto success;
+      /* Folder-specific shader preset found? */
+      if (retroarch_load_shader_preset_internal(
+               shader_path,
+               sizeof(shader_path),
+               dirs[i], core_name,
+               content_dir_name))
+         goto success;
+      /* Core-specific shader preset found? */
+      if (retroarch_load_shader_preset_internal(
+               shader_path,
+               sizeof(shader_path),
+               dirs[i], core_name,
+               core_name))
+         goto success;
+      /* Global shader preset found? */
+      if (retroarch_load_shader_preset_internal(
+               shader_path,
+               sizeof(shader_path),
+               dirs[i], NULL,
+               "global"))
+         goto success;
+   }
+   return false;
+
+success:
+   /* Shader preset exists, load it. */
+   strlcpy(s, shader_path, len);
+   return true;
+}
+
+bool apply_shader(
+      settings_t *settings,
+      enum rarch_shader_type type,
+      const char *preset_path, bool message)
+{
+   char msg[256];
+   video_driver_state_t 
+      *video_st                 = video_state_get_ptr();
+   runloop_state_t *runloop_st  = runloop_state_get_ptr();
+   const char      *core_name   = runloop_st->system.info.library_name;
+   const char      *preset_file = NULL;
+#ifdef HAVE_MENU
+   struct video_shader *shader  = menu_shader_get();
+#endif
+
+   /* Disallow loading shaders when no core is loaded */
+   if (string_is_empty(core_name))
+      return false;
+
+   if (!string_is_empty(preset_path))
+      preset_file = path_basename_nocompression(preset_path);
+
+   /* TODO/FIXME - This loads the shader into the video driver
+    * But then we load the shader from disk twice more to put it in the menu
+    * We need to reconfigure this at some point to only load it once */
+   if (video_st->current_video->set_shader)
+   {
+      if ((video_st->current_video->set_shader(
+                  video_st->data, type, preset_path)))
+      {
+         configuration_set_bool(settings, settings->bools.video_shader_enable, true);
+         if (!string_is_empty(preset_path))
+         {
+            strlcpy(runloop_st->runtime_shader_preset_path, preset_path,
+                  sizeof(runloop_st->runtime_shader_preset_path));
+#ifdef HAVE_MENU
+            /* reflect in shader manager */
+            if (menu_shader_manager_set_preset(
+                     shader, type, preset_path, false))
+               shader->modified = false;
+#endif
+         }
+         else
+            runloop_st->runtime_shader_preset_path[0] = '\0';
+
+         if (message)
+         {
+            /* Display message */
+            if (preset_file)
+               snprintf(msg, sizeof(msg),
+                     "%s: \"%s\"",
+                     msg_hash_to_str(MSG_SHADER),
+                     preset_file);
+            else
+               snprintf(msg, sizeof(msg),
+                     "%s: %s", 
+                     msg_hash_to_str(MSG_SHADER),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE)
+                     );
+#ifdef HAVE_GFX_WIDGETS
+            if (dispwidget_get_ptr()->active)
+               gfx_widget_set_generic_message(msg, 2000);
+            else
+#endif
+               runloop_msg_queue_push(msg, 1, 120, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+
+         RARCH_LOG("%s \"%s\".\n",
+               msg_hash_to_str(MSG_APPLYING_SHADER),
+               preset_path ? preset_path : "null");
+
+         return true;
+      }
+   }
+
+#ifdef HAVE_MENU
+   /* reflect in shader manager */
+   menu_shader_manager_set_preset(shader, type, NULL, false);
+#endif
+
+   /* Display error message */
+   fill_pathname_join_delim(msg,
+         msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER_PRESET),
+         preset_file ? preset_file : "null",
+         ' ',
+         sizeof(msg));
+
+   runloop_msg_queue_push(
+         msg, 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+   return false;
+}
+
+/* get the name of the current shader preset */
+const char *retroarch_get_shader_preset(void)
+{
+   settings_t *settings           = config_get_ptr();
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   const char *core_name          = runloop_st->system.info.library_name;
+   bool video_shader_enable       = settings->bools.video_shader_enable;
+   unsigned video_shader_delay    = settings->uints.video_shader_delay;
+   bool auto_shaders_enable       = settings->bools.auto_shaders_enable;
+   bool cli_shader_disable        = video_st->cli_shader_disable;
+
+   if (!video_shader_enable)
+      return NULL;
+
+   if (video_shader_delay && !runloop_st->shader_delay_timer.timer_end)
+      return NULL;
+
+   /* Disallow loading auto-shaders when no core is loaded */
+   if (string_is_empty(core_name))
+      return NULL;
+
+   if (!string_is_empty(runloop_st->runtime_shader_preset_path))
+      return runloop_st->runtime_shader_preset_path;
+
+   /* load auto-shader once, --set-shader works like a global auto-shader */
+   if (video_st->shader_presets_need_reload && !cli_shader_disable)
+   {
+      video_st->shader_presets_need_reload = false;
+
+      if (video_shader_is_supported(
+               video_shader_parse_type(video_st->cli_shader_path)))
+         strlcpy(runloop_st->runtime_shader_preset_path,
+               video_st->cli_shader_path,
+               sizeof(runloop_st->runtime_shader_preset_path));
+      else
+      {
+         if (auto_shaders_enable) /* sets runtime_shader_preset_path */
+         {
+            if (load_shader_preset(
+                     settings,
+                     runloop_st->system.info.library_name,
+                     runloop_st->runtime_shader_preset_path,
+                     sizeof(runloop_st->runtime_shader_preset_path)))
+            {
+               RARCH_LOG("[Shaders]: Specific shader preset found at \"%s\".\n",
+                     runloop_st->runtime_shader_preset_path);
+            }
+         }
+      }
+      return runloop_st->runtime_shader_preset_path;
+   }
+
+   return NULL;
 }

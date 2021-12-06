@@ -31,6 +31,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.1348091274" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.107606349" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_RPNG"/>
+									<listOptionValue builtIn="false" value="HAVE_CORE_INFO_CACHE"/>
 									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
 									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
@@ -103,6 +104,7 @@
 								</option>
 								<option id="com.qnx.qcc.option.assembler.defines.103275832" name="Defines (-D)" superClass="com.qnx.qcc.option.assembler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_RPNG"/>
+									<listOptionValue builtIn="false" value="HAVE_CORE_INFO_CACHE"/>
 									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
 									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
@@ -211,6 +213,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.1255305436" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.1244683608" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_RPNG"/>
+									<listOptionValue builtIn="false" value="HAVE_CORE_INFO_CACHE"/>
 									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
 									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
@@ -278,6 +281,7 @@
 								</option>
 								<option id="com.qnx.qcc.option.assembler.defines.334766340" name="Defines (-D)" superClass="com.qnx.qcc.option.assembler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_RPNG"/>
+									<listOptionValue builtIn="false" value="HAVE_CORE_INFO_CACHE"/>
 									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
 									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
@@ -389,6 +393,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.1322487460" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.979624391" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_RPNG"/>
+									<listOptionValue builtIn="false" value="HAVE_CORE_INFO_CACHE"/>
 									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
 									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
@@ -456,6 +461,7 @@
 								</option>
 								<option id="com.qnx.qcc.option.assembler.defines.268036269" name="Defines (-D)" superClass="com.qnx.qcc.option.assembler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_RPNG"/>
+									<listOptionValue builtIn="false" value="HAVE_CORE_INFO_CACHE"/>
 									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
 									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
@@ -564,6 +570,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.1003162703" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.2012868141" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_RPNG"/>
+									<listOptionValue builtIn="false" value="HAVE_CORE_INFO_CACHE"/>
 									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
 									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
@@ -631,6 +638,7 @@
 								</option>
 								<option id="com.qnx.qcc.option.assembler.defines.1684433040" name="Defines (-D)" superClass="com.qnx.qcc.option.assembler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_RPNG"/>
+									<listOptionValue builtIn="false" value="HAVE_CORE_INFO_CACHE"/>
 									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
 									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>

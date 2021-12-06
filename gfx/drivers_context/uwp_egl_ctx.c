@@ -49,8 +49,6 @@
 #include "../common/egl_common.h"
 #endif
 
-#include "../common/gl_common.h"
-
 #ifdef HAVE_ANGLE
 #include "../common/angle_common.h"
 #endif

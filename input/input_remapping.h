@@ -23,6 +23,9 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include "input_defines.h"
+#include "input_types.h"
+
 RETRO_BEGIN_DECLS
 
 /**
@@ -81,7 +84,7 @@ void input_remapping_restore_global_config(bool clear_cache);
 void input_remapping_update_port_map(void);
 
 /**
- * Frees global->name.remapfile and sets these runloop_state flags to false: 
+ * Frees runloop_st->name.remapfile and sets these runloop_state flags to false: 
  * remaps_core_active, remaps_content_dir_active, and remaps_game_active.
  */
 void input_remapping_deinit(void);
@@ -144,7 +147,8 @@ uint8_t input_config_bind_map_get_retro_key(unsigned index);
  * @param auto_bind  A default binding which will be used after `bind`. Can be NULL.
  * @param size       The maximum length that will be written to `buf`
  */
-void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
+void input_config_get_bind_string(void *settings_data,
+      char *buf, const struct retro_keybind *bind,
       const struct retro_keybind *auto_bind, size_t size);
 
 /**
@@ -181,6 +185,8 @@ void config_read_keybinds_conf(void *data);
  *              void pointer like this to avoid including config_file.h.
  */
 void input_config_set_autoconfig_binds(unsigned port, void *data);
+
+void input_mapper_reset(void *data);
 
 RETRO_END_DECLS
 

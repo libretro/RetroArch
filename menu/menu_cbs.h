@@ -33,15 +33,6 @@
 
 RETRO_BEGIN_DECLS
 
-typedef struct key_desc
-{
-   /* libretro key id */
-   unsigned key;
-
-   /* description */
-   char desc[32];
-} key_desc_t;
-
 enum
 {
    ACTION_OK_DL_DEFAULT = 0,
@@ -207,6 +198,9 @@ enum
    ACTION_OK_DL_MIDI_SETTINGS_LIST,
    ACTION_OK_DL_LOAD_DISC_LIST,
    ACTION_OK_DL_DUMP_DISC_LIST,
+#ifdef HAVE_LAKKA
+   ACTION_OK_DL_EJECT_DISC,
+#endif
    ACTION_OK_DL_BROWSE_URL_START,
    ACTION_OK_DL_CONTENT_SETTINGS,
    ACTION_OK_DL_CDROM_INFO_DETAIL_LIST,

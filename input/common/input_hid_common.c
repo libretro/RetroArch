@@ -44,6 +44,11 @@ void gamepad_read_axis_data(uint32_t axis, axis_data *data)
 
 int16_t gamepad_get_axis_value(int16_t state[3][2], axis_data *data)
 {
+   return gamepad_get_axis_value_raw(state, data, true);
+}
+
+int16_t gamepad_get_axis_value_raw(int16_t state[3][2], axis_data *data, bool do_clamp)
+{
    int16_t value = 0;
 
    if (!data)
@@ -52,19 +57,24 @@ int16_t gamepad_get_axis_value(int16_t state[3][2], axis_data *data)
    switch (data->axis)
    {
       case AXIS_LEFT_ANALOG_X:
+         value = state[RETRO_DEVICE_INDEX_ANALOG_LEFT][1];
+         break;
       case AXIS_LEFT_ANALOG_Y:
-         value = state[RETRO_DEVICE_INDEX_ANALOG_LEFT][data->axis];
+         value = state[RETRO_DEVICE_INDEX_ANALOG_LEFT][0];
          break;
       case AXIS_RIGHT_ANALOG_X:
+         value = state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][1];
+         break;
       case AXIS_RIGHT_ANALOG_Y:
-         value = state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][data->axis];
+         value = state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][0];
          break;
    }
-
-   if (data->is_negative && value > 0)
-      return 0;
-   if (!data->is_negative && value < 0)
-      return 0;
+   if(do_clamp) {
+      if (data->is_negative && value > 0)
+         return 0;
+      if (!data->is_negative && value < 0)
+         return 0;
+   }
 
    return value;
 }

@@ -30,6 +30,10 @@
 
 #include "disk_control_interface.h"
 
+#ifdef HAVE_CHEEVOS
+#include "cheevos/cheevos.h"
+#endif
+
 /*****************/
 /* Configuration */
 /*****************/
@@ -298,19 +302,16 @@ bool disk_control_set_eject_state(
    /* Set eject state */
    if (disk_control->cb.set_eject_state(eject))
       snprintf(
-            msg, sizeof(msg), "%s %s",
+            msg, sizeof(msg), "%s",
             eject ? msg_hash_to_str(MSG_DISK_EJECTED) :
-                  msg_hash_to_str(MSG_DISK_CLOSED),
-            msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY));
+                  msg_hash_to_str(MSG_DISK_CLOSED));
    else
    {
       error = true;
       snprintf(
-            msg, sizeof(msg), "%s %s %s",
-            msg_hash_to_str(MSG_FAILED_TO),
+            msg, sizeof(msg), "%s",
             eject ? msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY_EJECT) :
-                  msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY_CLOSE),
-            msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY));
+                  msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY_CLOSE));
    }
 
    if (!string_is_empty(msg))
@@ -328,6 +329,11 @@ bool disk_control_set_eject_state(
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
+#ifdef HAVE_CHEEVOS
+   if (!error && !eject)
+      rcheevos_change_disc(disk_control->index_record.image_path, false);
+#endif
+
    return !error;
 }
 
@@ -340,7 +346,7 @@ bool disk_control_set_index(
    bool error            = false;
    unsigned num_images   = 0;
    unsigned msg_duration = 0;
-   char msg[PATH_MAX_LENGTH];
+   char msg[NAME_MAX_LENGTH];
 
    msg[0] = '\0';
 
@@ -380,7 +386,8 @@ bool disk_control_set_index(
          runloop_msg_queue_push(
                msg, 1, msg_duration,
                true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               MESSAGE_QUEUE_ICON_DEFAULT,
+               MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    /* If operation was successful, update disk
@@ -775,6 +782,11 @@ bool disk_control_verify_initial_index(
                0, msg_duration,
                false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+#ifdef HAVE_CHEEVOS
+      if (image_index > 0)
+         rcheevos_change_disc(disk_control->index_record.image_path, true);
+#endif
    }
 
    return success;

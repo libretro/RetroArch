@@ -14,6 +14,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Direct3D 11 driver.
+ *
+ * Minimum version : Direct3D 11.0 (Feature Level 11.0) (2009)
+ * Minimum OS      : Windows Vista, Windows 7
+ * Recommended OS  : Windows 7 and/or later
+ */
+
 #define CINTERFACE
 #define COBJMACROS
 
@@ -262,7 +269,7 @@ static void d3d11_set_hdr_max_nits(void *data, float max_nits)
    d3d11_video_t* d3d11                   = (d3d11_video_t*)data;
 
    d3d11->hdr.max_output_nits             = max_nits;
-   d3d11->hdr.ubo_values.maxNits          = max_nits;
+   d3d11->hdr.ubo_values.max_nits         = max_nits;
 
    D3D11MapBuffer(d3d11->context, d3d11->hdr.ubo,
          0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_ubo);
@@ -289,7 +296,7 @@ static void d3d11_set_hdr_paper_white_nits(void* data, float paper_white_nits)
    dxgi_hdr_uniform_t *ubo                = NULL;
    d3d11_video_t      *d3d11              = (d3d11_video_t*)data;
 
-   d3d11->hdr.ubo_values.paperWhiteNits   = paper_white_nits;
+   d3d11->hdr.ubo_values.paper_white_nits = paper_white_nits;
 
    D3D11MapBuffer(d3d11->context, d3d11->hdr.ubo,
          0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
@@ -319,7 +326,7 @@ static void d3d11_set_hdr_expand_gamut(void* data, bool expand_gamut)
    dxgi_hdr_uniform_t *ubo                = NULL;
    d3d11_video_t* d3d11                   = (d3d11_video_t*)data;
 
-   d3d11->hdr.ubo_values.expandGamut      = expand_gamut;
+   d3d11->hdr.ubo_values.expand_gamut     = expand_gamut;
 
    D3D11MapBuffer(d3d11->context, d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
    ubo  = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
@@ -1144,16 +1151,17 @@ static void *d3d11_gfx_init(const video_info_t* video,
       D3D11_SUBRESOURCE_DATA ubo_data;
       matrix_4x4_ortho(d3d11->mvp_no_rot, 0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
 
-      d3d11->hdr.ubo_values.mvp            = 
+      d3d11->hdr.ubo_values.mvp              = 
          d3d11->mvp_no_rot; 
-      d3d11->hdr.ubo_values.maxNits        = 
+      d3d11->hdr.ubo_values.max_nits         = 
          settings->floats.video_hdr_max_nits;
-      d3d11->hdr.ubo_values.paperWhiteNits = 
+      d3d11->hdr.ubo_values.paper_white_nits =
          settings->floats.video_hdr_paper_white_nits;
-      d3d11->hdr.ubo_values.contrast       = 
-         settings->floats.video_hdr_contrast;
-      d3d11->hdr.ubo_values.expandGamut    = 
+      d3d11->hdr.ubo_values.contrast         = 
+         VIDEO_HDR_MAX_CONTRAST - settings->floats.video_hdr_display_contrast;
+      d3d11->hdr.ubo_values.expand_gamut    =
          settings->bools.video_hdr_expand_gamut;
+      d3d11->hdr.ubo_values.inverse_tonemap = 1.0f;  /* Use this to turn on/off the inverse tonemap */
 
       desc.ByteWidth                       = sizeof(dxgi_hdr_uniform_t);
       desc.Usage                           = D3D11_USAGE_DYNAMIC;
@@ -1490,7 +1498,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
          utf16_to_char_string((const uint16_t*)
                desc.Description, str, sizeof(str));
 
-         RARCH_LOG("[D3D11]: Found GPU at index %d: %s\n", i, str);
+         RARCH_LOG("[D3D11]: Found GPU at index %d: \"%s\".\n", i, str);
 
          string_list_append(d3d11->gpu_list, str, attr);
 
@@ -1523,12 +1531,12 @@ error:
    d3d11_gfx_free(d3d11);
 
 #ifdef HAVE_OPENGL
-   retroarch_force_video_driver_fallback("gl");
+   video_driver_force_fallback("gl");
 #elif !defined(__WINRT__)
 #ifdef HAVE_OPENGL1
-   retroarch_force_video_driver_fallback("gl1");
+   video_driver_force_fallback("gl1");
 #else
-   retroarch_force_video_driver_fallback("gdi");
+   video_driver_force_fallback("gdi");
 #endif
 #endif
 
@@ -1617,7 +1625,7 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
          height = d3d11->vp.height;
       }
 
-      RARCH_LOG("[D3D11]: Updating framebuffer size %u x %u.\n", width, height);
+      RARCH_LOG("[D3D11]: Updating framebuffer size %ux%u.\n", width, height);
 
       if ((i != (d3d11->shader_preset->passes - 1)) || (width != d3d11->vp.width) ||
             (height != d3d11->vp.height))
@@ -1743,12 +1751,18 @@ static bool d3d11_gfx_frame(
                d3d11->swapChain,
                &d3d11->chain_color_space,
                DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
+
+         d3d11->chain_bit_depth  = DXGI_SWAPCHAIN_BIT_DEPTH_10;
       }
       else
+      {
          dxgi_swapchain_color_space(
                d3d11->swapChain,
                &d3d11->chain_color_space,
                DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709);
+
+         d3d11->chain_bit_depth  = DXGI_SWAPCHAIN_BIT_DEPTH_8;
+      }
 
       dxgi_set_hdr_metadata(
             d3d11->swapChain,
@@ -2103,6 +2117,9 @@ static bool d3d11_gfx_frame(
       D3D11Draw(context, 4, 0);
 
       D3D11SetPShaderResources(context, 0, 1, nullSRV);
+      D3D11SetRasterizerState(context, d3d11->scissor_enabled);
+      D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+      D3D11SetPrimitiveTopology(context, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
    }
 #endif
 
@@ -2308,9 +2325,9 @@ static bool d3d11_get_hw_render_interface(
 
 #ifndef __WINRT__
 static void d3d11_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
-   win32_get_video_output_size(width, height);
+   win32_get_video_output_size(width, height, desc, desc_len);
 }
 
 static void d3d11_get_video_output_prev(void *data)

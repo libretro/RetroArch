@@ -81,7 +81,7 @@ static void netplay_crc_scan_callback(retro_task_t *task,
 
       for (i = 0; i < game_list->size; i++)
          content_add_subsystem(game_list->elems[i].data);
-      task_push_load_subsystem_with_core_from_menu(
+      task_push_load_subsystem_with_core(
          NULL, &content_info,
          CORE_TYPE_PLAIN, NULL, NULL);
       string_list_free(game_list);
@@ -92,7 +92,7 @@ static void netplay_crc_scan_callback(retro_task_t *task,
    if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path)
       && !state->contentless && !state->current)
    {
-      struct retro_system_info *system = runloop_get_libretro_system_info();
+      struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
 
       RARCH_LOG("[Lobby]: Loading core %s with content file %s\n",
          state->core_path, state->content_path);
@@ -100,14 +100,14 @@ static void netplay_crc_scan_callback(retro_task_t *task,
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
 
       if (system && string_is_equal(system->library_name, state->core_name))
-         task_push_load_content_with_core_from_menu(
+         task_push_load_content_with_core(
                state->content_path, &content_info,
                CORE_TYPE_PLAIN, NULL, NULL);
       else
       {
          task_push_load_new_core(state->core_path, NULL,
                &content_info, CORE_TYPE_PLAIN, NULL, NULL);
-         task_push_load_content_with_core_from_menu(
+         task_push_load_content_with_core(
                state->content_path, &content_info,
                CORE_TYPE_PLAIN, NULL, NULL);
       }
@@ -120,7 +120,7 @@ static void netplay_crc_scan_callback(retro_task_t *task,
       && state->contentless)
    {
       content_ctx_info_t content_info  = {0};
-      struct retro_system_info *system = runloop_get_libretro_system_info();
+      struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
 
       RARCH_LOG("[Lobby]: Loading contentless core %s\n", state->core_path);
 
@@ -241,7 +241,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 
       RARCH_LOG("[Lobby]: Testing CRC matching for: %s\n", state->content_crc);
 
-      snprintf(current, sizeof(current), "%X|crc", content_get_crc());
+      snprintf(current, sizeof(current), "%lX|crc", (unsigned long)content_get_crc());
       RARCH_LOG("[Lobby]: Current content CRC: %s\n", current);
 
       if (string_is_equal(current, state->content_crc))
@@ -448,7 +448,7 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
 
    snprintf(state->content_crc,
          sizeof(state->content_crc),
-         "%08X|crc", crc);
+         "%08lX|crc", (unsigned long)crc);
 
    strlcpy(state->content_path,
          name, sizeof(state->content_path));

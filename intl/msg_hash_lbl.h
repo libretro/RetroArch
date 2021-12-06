@@ -63,6 +63,10 @@ MSG_HASH(
    "explore_item"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_INITIALISING_LIST,
+   "explore_initialising_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_ADD_TAB,
    "add_tab"
    )
@@ -1535,6 +1539,10 @@ MSG_HASH(
    "input_menu_toggle_gamepad_combo"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   "input_quit_gamepad_combo"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY,
    "input_overlay"
    )
@@ -1722,6 +1730,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_DUMP_DISC,
    "dump_disc"
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_EJECT_DISC,
+   "eject_disc"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL,
    "load_special"
@@ -1959,12 +1973,20 @@ MSG_HASH(
    "netplay_start_as_spectator"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING,
+   "netplay_allow_pausing"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE,
    "netplay_stateless_mode"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,
    "netplay_tcp_udp_port"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_MAX_CONNECTIONS,
+   "netplay_max_connections"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS,
@@ -2374,6 +2396,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_LOAD_DISC_LIST,
    "deferred_load_disc_list"
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_EJECT_DISC,
+   "deferred_eject_disc"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER,
    "deferred_cursor_manager_list_rdb_entry_developer"
@@ -3205,7 +3233,7 @@ MSG_HASH(
    "video_dingux_refresh_rate"
    )
 #endif
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
    "video_dingux_rs90_softfilter_type"
@@ -3269,6 +3297,10 @@ MSG_HASH(
    "video_frame_delay"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO,
+   "video_frame_delay_auto"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_DELAY,
    "video_shader_delay"
    )
@@ -3311,6 +3343,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX,
    "video_monitor_index"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_X,
+   "video_window_offset_x"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_Y,
+   "video_window_offset_y"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_POST_FILTER_RECORD,
@@ -4006,6 +4046,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_MENU_SHOW_DUMP_DISC,
    "menu_show_dump_disc"
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_SHOW_EJECT_DISC,
+   "menu_show_eject_disc"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_SHOW_INFORMATION,
    "menu_show_information"
@@ -4751,6 +4797,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_NOTIFICATION_SHOW_REFRESH_RATE,
    "notification_show_refresh_rate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "notification_show_netplay_extra"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE,

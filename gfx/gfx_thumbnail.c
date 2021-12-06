@@ -46,6 +46,13 @@ typedef struct
    gfx_thumbnail_t *thumbnail;
 } gfx_thumbnail_tag_t;
 
+static gfx_thumbnail_state_t gfx_thumb_st = {0}; /* uint64_t alignment */
+
+gfx_thumbnail_state_t *gfx_thumb_get_ptr(void)
+{
+   return &gfx_thumb_st;
+}
+
 /* Setters */
 
 /* When streaming thumbnails, sets time in ms that an
@@ -54,7 +61,7 @@ typedef struct
  * > if 'delay' is negative, default value is set */
 void gfx_thumbnail_set_stream_delay(float delay)
 {
-   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
+   gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
 
    p_gfx_thumb->stream_delay = (delay >= 0.0f) ?
          delay : DEFAULT_GFX_THUMBNAIL_STREAM_DELAY;
@@ -65,7 +72,7 @@ void gfx_thumbnail_set_stream_delay(float delay)
  * > If 'duration' is negative, default value is set */
 void gfx_thumbnail_set_fade_duration(float duration)
 {
-   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
+   gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
 
    p_gfx_thumb->fade_duration = (duration >= 0.0f) ?
          duration : DEFAULT_GFX_THUMBNAIL_FADE_DURATION;
@@ -77,7 +84,7 @@ void gfx_thumbnail_set_fade_duration(float duration)
  *   any 'thumbnail unavailable' notifications */
 void gfx_thumbnail_set_fade_missing(bool fade_missing)
 {
-   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
+   gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
 
    p_gfx_thumb->fade_missing = fade_missing;
 }
@@ -139,7 +146,7 @@ static void gfx_thumbnail_init_fade(
 static void gfx_thumbnail_handle_upload(
       retro_task_t *task, void *task_data, void *user_data, const char *err)
 {
-   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
+   gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
    struct texture_image *img          = (struct texture_image*)task_data;
    gfx_thumbnail_tag_t *thumbnail_tag = (gfx_thumbnail_tag_t*)user_data;
    bool fade_enabled                  = false;
@@ -219,7 +226,7 @@ end:
  *    heap-use-after-free errors *will* occur */
 void gfx_thumbnail_cancel_pending_requests(void)
 {
-   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
+   gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
 
    p_gfx_thumb->list_id++;
 }
@@ -251,7 +258,7 @@ void gfx_thumbnail_request(
    if (!path_data || !thumbnail)
       return;
 
-   p_gfx_thumb                        = gfx_thumb_get_ptr();
+   p_gfx_thumb                        = &gfx_thumb_st;
 
    /* Reset thumbnail, then set 'missing' status by default
     * (saves a number of checks later) */
@@ -350,7 +357,7 @@ void gfx_thumbnail_request_file(
       unsigned gfx_thumbnail_upscale_threshold
       )
 {
-   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
+   gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
    gfx_thumbnail_tag_t *thumbnail_tag = NULL;
 
    if (!thumbnail)
@@ -451,7 +458,7 @@ void gfx_thumbnail_process_stream(
        *   GFX_THUMBNAIL_STATUS_UNKNOWN */
       if (thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN)
       {
-         gfx_thumbnail_state_t *p_gfx_thumb  = gfx_thumb_get_ptr();
+	 gfx_thumbnail_state_t *p_gfx_thumb  = &gfx_thumb_st;
 
          /* Check if stream delay timer has elapsed */
          thumbnail->delay_timer             += p_anim->delta_time;
@@ -531,7 +538,7 @@ void gfx_thumbnail_process_streams(
       if (process_right || process_left)
       {
          /* Check if stream delay timer has elapsed */
-         gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
+	 gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
          float delta_time                   = p_anim->delta_time;
          bool request_right                 = false;
          bool request_left                  = false;

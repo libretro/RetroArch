@@ -52,12 +52,28 @@ struct iohidmanager_hid_adapter
    uint32_t slot;
    IOHIDDeviceRef handle;
    uint32_t locationId;
-   char name[PATH_MAX_LENGTH];
+   char name[NAME_MAX_LENGTH];
    apple_input_rec_t *axes;
    apple_input_rec_t *hats;
    apple_input_rec_t *buttons;
    uint8_t data[2048];
 };
+
+enum IOHIDReportType translate_hid_report_type(
+   int report_type)
+{
+   switch (report_type)
+   {
+      case HID_REPORT_FEATURE:
+         return kIOHIDReportTypeFeature;
+      case HID_REPORT_INPUT:
+         return kIOHIDReportTypeInput;
+      case HID_REPORT_OUTPUT:
+         return kIOHIDReportTypeOutput;
+      case HID_REPORT_COUNT:
+         return kIOHIDReportTypeCount;
+   }
+}
 
 CFComparisonResult iohidmanager_sort_elements(const void *val1, const void *val2, void *context)
 {
@@ -683,13 +699,15 @@ static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_
    if (string_is_empty(adapter->name))
       strcpy(adapter->name, "Unknown Controller With No Name");
    
-   if (pad_connection_has_interface(hid->slots, adapter->slot))
+   if (pad_connection_has_interface(hid->slots, adapter->slot)) {
       IOHIDDeviceRegisterInputReportCallback(device,
             adapter->data + 1, sizeof(adapter->data) - 1,
             iohidmanager_hid_device_report, adapter);
-   else
+   }
+   else {
       IOHIDDeviceRegisterInputValueCallback(device,
             iohidmanager_hid_device_input_callback, adapter);
+   }
 
    /* scan for buttons, axis, hats */
    elements_raw = IOHIDDeviceCopyMatchingElements(device, NULL, kIOHIDOptionsTypeNone);
@@ -1021,6 +1039,8 @@ static int iohidmanager_hid_manager_set_device_matching(
    iohidmanager_hid_append_matching_dictionary(matcher,
       kHIDPage_GenericDesktop,
       kHIDUsage_GD_GamePad);
+   /* The GameCube Adapter reports usage id 0x00 */
+   iohidmanager_hid_append_matching_dictionary(matcher, kHIDPage_Game, 0x00);
    
    IOHIDManagerSetDeviceMatchingMultiple(hid->ptr, matcher);
    IOHIDManagerRegisterDeviceMatchingCallback(hid->ptr,iohidmanager_hid_device_matched, 0);
@@ -1079,6 +1099,31 @@ static void iohidmanager_hid_poll(void *data)
    (void)data;
 }
 
+static int32_t iohidmanager_set_report(void *handle, uint8_t report_type, uint8_t report_id, uint8_t *data_buf, size_t size)
+{
+   struct iohidmanager_hid_adapter *adapter =
+      (struct iohidmanager_hid_adapter*)handle;
+
+   if (adapter)
+      return IOHIDDeviceSetReport(adapter->handle, translate_hid_report_type(report_type), report_type, data_buf, size);
+
+   return -1;
+}
+
+static int32_t iohidmanager_get_report(void *handle, uint8_t report_type, uint8_t report_id, uint8_t *data_buf, size_t size)
+{
+   struct iohidmanager_hid_adapter *adapter =
+      (struct iohidmanager_hid_adapter*)handle;
+
+   if (adapter)
+   {
+      CFIndex length = size;
+      return IOHIDDeviceGetReport(adapter->handle, translate_hid_report_type(report_type), report_id, data_buf, &length);
+   }
+
+   return -1;
+}
+
 hid_driver_t iohidmanager_hid = {
    iohidmanager_hid_init,
    iohidmanager_hid_joypad_query,
@@ -1092,4 +1137,9 @@ hid_driver_t iohidmanager_hid = {
    iohidmanager_hid_joypad_name,
    "iohidmanager",
    iohidmanager_hid_device_send_control,
+   iohidmanager_set_report,
+   iohidmanager_get_report,
+   NULL, /* set_idle */
+   NULL, /* set protocol */
+   NULL  /* read */
 };

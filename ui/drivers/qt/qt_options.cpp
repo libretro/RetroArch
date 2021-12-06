@@ -287,7 +287,7 @@ QWidget *UserBindsPage::widget()
             (const struct retro_keybind*)
             input_config_get_bind_auto(p, retro_id);
 
-         input_config_get_bind_string(descriptor,
+         input_config_get_bind_string(settings, descriptor,
             keybind, auto_bind, sizeof(descriptor));
 
          const struct retro_keybind *keyptr =
@@ -412,10 +412,12 @@ QWidget *NetplayPage::widget()
 
    checksLayout->add(MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE);
    checksLayout->add(MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR);
+   checksLayout->add(MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING);
    checksLayout->add(MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS);
 
    serverForm->add(MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS);
    serverForm->add(MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT);
+   serverForm->add(MENU_ENUM_LABEL_NETPLAY_MAX_CONNECTIONS);
    serverForm->add(MENU_ENUM_LABEL_NETPLAY_PASSWORD);
    serverForm->add(MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD);
    serverForm->add(MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL);
@@ -593,6 +595,7 @@ QWidget *NotificationsPage::widget()
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION);
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH);
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_REFRESH_RATE);
+   notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA);
 
    layout->addWidget(notificationsGroup);
 

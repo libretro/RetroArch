@@ -26,6 +26,7 @@
 
 #ifdef RARCH_INTERNAL
 #include "../configuration.h"
+#include "../config.def.h"
 
 int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
@@ -1543,7 +1544,17 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Can reduce latency at the cost of\n"
                              "higher risk of stuttering.\n"
                              " \n"
-                             "Maximum is 15.");
+                             "Maximum is %d.", MAXIMUM_FRAME_DELAY);
+            break;
+        case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO:
+            snprintf(s, len,
+                     "Temporarily decreases effective 'Frame Delay'\n"
+                             "until target refresh rate is stable.\n"
+                             " \n"
+                             "Measuring starts from half frame time when\n"
+                             "'Frame Delay' is 0.\n"
+                             " \n"
+                             "E.g. 8 for NTSC and 10 for PAL.");
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_DELAY:
             snprintf(s, len,
@@ -2004,6 +2015,16 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
             snprintf(s, len,
                      "Gamepad button combination to toggle menu. \n"
+                             " \n"
+                             "0 - None \n"
+                             "1 - Press L + R + Y + D-Pad Down \n"
+                             "simultaneously. \n"
+                             "2 - Press L3 + R3 simultaneously. \n"
+                             "3 - Press Start + Select simultaneously.");
+            break;
+        case MENU_ENUM_LABEL_INPUT_QUIT_GAMEPAD_COMBO:
+            snprintf(s, len,
+                     "Gamepad button combination to quit. \n"
                              " \n"
                              "0 - None \n"
                              "1 - Press L + R + Y + D-Pad Down \n"

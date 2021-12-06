@@ -24,7 +24,7 @@
 #include <queues/fifo_queue.h>
 #include <string/stdstring.h>
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 #include "../../verbosity.h"
 
 #define TRY_ALSA(x) if (x < 0) \

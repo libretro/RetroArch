@@ -18,6 +18,7 @@
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
+#include "../../audio/audio_driver.h"
 #include "../../configuration.h"
 #include "../../msg_hash.h"
 #ifdef HAVE_CHEATS

@@ -31,7 +31,7 @@
 #include <retro_endianness.h>
 #include <string/stdstring.h>
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 #include "../../verbosity.h"
 
 typedef struct coreaudio

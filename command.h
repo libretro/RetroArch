@@ -29,9 +29,10 @@
 
 #include <streams/interface_stream.h>
 
-#include "retroarch.h"
+#include "retroarch_types.h"
 #include "input/input_defines.h"
 
+#include "configuration.h"
 
 RETRO_BEGIN_DECLS
 
@@ -338,7 +339,6 @@ bool command_event_resize_windowed_scale(settings_t *settings,
 
 bool command_event_save_auto_state(
       bool savestate_auto_save,
-      global_t *global,
       const enum rarch_core_type current_core_type);
 
 /**
@@ -362,14 +362,12 @@ void command_event_set_volume(
 void command_event_init_controllers(rarch_system_info_t *info,
       settings_t *settings, unsigned num_active_users);
 
-void command_event_load_auto_state(global_t *global);
+void command_event_load_auto_state(void);
 
 void command_event_set_savestate_auto_index(
-      settings_t *settings,
-      const global_t *global);
+      settings_t *settings);
 
 void command_event_set_savestate_garbage_collect(
-      const global_t *global,
       unsigned max_to_keep,
       bool show_hidden_files
       );
@@ -481,6 +479,39 @@ static const struct cmd_map map[] = {
 };
 #endif
 
+#ifdef HAVE_CONFIGFILE
+/**
+ * command_event_save_core_config:
+ *
+ * Saves a new (core) configuration to a file. Filename is based
+ * on heuristics to avoid typing.
+ *
+ * Returns: true (1) on success, otherwise false (0).
+ **/
+bool command_event_save_core_config(
+      const char *dir_menu_config,
+      const char *rarch_path_config);
+
+/**
+ * command_event_save_current_config:
+ *
+ * Saves current configuration file to disk, and (optionally)
+ * autosave state.
+ **/
+void command_event_save_current_config(enum override_type type);
+#endif
+
+/**
+ * command_event_disk_control_append_image:
+ * @path                 : Path to disk image.
+ *
+ * Appends disk image to disk image list.
+ **/
+bool command_event_disk_control_append_image(const char *path);
+
+void command_event_reinit(const int flags);
+
+bool command_event_main_state(unsigned cmd);
 
 RETRO_END_DECLS
 

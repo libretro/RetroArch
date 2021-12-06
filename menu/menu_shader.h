@@ -41,7 +41,7 @@ enum auto_shader_operation
 
 struct video_shader *menu_shader_get(void);
 
-void menu_shader_manager_free(void *data);
+void menu_shader_manager_free(void);
 
 /**
  * menu_shader_manager_init:
@@ -160,7 +160,7 @@ bool menu_shader_manager_save_preset_internal(
 
 bool menu_shader_manager_operate_auto_preset(
       struct retro_system_info *system,
-      settings_t *settings,
+      bool video_shader_preset_save_reference_enable,
       enum auto_shader_operation op,
       const struct video_shader *shader,
       const char *dir_video_shader,
@@ -172,13 +172,6 @@ void menu_driver_set_last_shader_path_int(
       enum rarch_shader_type *type,
       char *shader_dir, size_t dir_len,
       char *shader_file, size_t file_len);
-
-bool dir_init_shader_internal(
-      bool shader_remember_last_dir,
-      struct rarch_dir_shader_list *dir_list,
-      const char *shader_dir,
-      const char *shader_file_name,
-      bool show_hidden_files);
 
 RETRO_END_DECLS
 

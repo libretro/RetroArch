@@ -19,7 +19,6 @@
 
 #include "hid_types.h"
 #include "input.h"
-#include "../../common/hid/hid_device_driver.h"
 
 #define DEVICE_UNUSED 0
 #define DEVICE_USED   1
@@ -52,9 +51,11 @@ struct wiiu_hid {
  */
 struct wiiu_adapter {
    wiiu_adapter_t *next;
-   hid_device_t *driver;
-   void *driver_handle;
+   pad_connection_interface_t *pad_driver;
+   void *pad_driver_data;
    wiiu_hid_t *hid;
+   uint16_t vendor_id;
+   uint16_t product_id;
    uint8_t state;
    uint8_t *rx_buffer;
    int32_t rx_size;
@@ -62,6 +63,7 @@ struct wiiu_adapter {
    int32_t tx_size;
    uint32_t handle;
    uint8_t interface_index;
+   char device_name[32];
    bool connected;
 };
 
@@ -72,7 +74,6 @@ struct wiiu_adapter {
  */
 struct wiiu_attach {
    wiiu_attach_event *next;
-   hid_device_t *driver;
    uint32_t type;
    uint32_t handle;
    uint16_t vendor_id;
@@ -82,6 +83,7 @@ struct wiiu_attach {
    uint8_t is_mouse;
    uint16_t max_packet_size_rx;
    uint16_t max_packet_size_tx;
+   uint8_t device_name[32];
 };
 
 struct _wiiu_event_list {

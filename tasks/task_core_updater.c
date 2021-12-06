@@ -1854,7 +1854,7 @@ void *task_push_play_feature_delivery_core_install(
     * of an existing core file. If core is
     * already running, must therefore unload it
     * to prevent undefined behaviour */
-   if (rarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)list_entry->local_core_path))
+   if (retroarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)list_entry->local_core_path))
       command_event(CMD_EVENT_UNLOAD_CORE, NULL);
 
    /* Push task */

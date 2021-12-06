@@ -22,6 +22,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <rthreads/rthreads.h>
+#include <retro_miscellaneous.h>
 
 #include "font_driver.h"
 
@@ -229,7 +230,7 @@ typedef struct thread_video
       unsigned width;
       unsigned height;
       unsigned pitch;
-      char msg[255];
+      char msg[NAME_MAX_LENGTH];
       bool updated;
       bool within_thread;
    } frame;

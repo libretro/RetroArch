@@ -18,6 +18,10 @@
 #include <retro_miscellaneous.h>
 #include <retro_inline.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include <queues/fifo_queue.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
@@ -32,6 +36,7 @@
 #include "../msg_hash.h"
 
 #include "../tasks/task_content.h"
+#include "../tasks/tasks_internal.h"
 
 #ifdef HAVE_THREADS
 #define SLOCK_LOCK(x) slock_lock(x)
@@ -61,6 +66,8 @@ static const char
    "menu_achievements.png"
 };
 
+static dispgfx_widget_t dispwidget_st = {0}; /* uint64_t alignment */
+
 static void INLINE gfx_widgets_font_free(gfx_widget_font_data_t *font_data)
 {
    if (font_data->font)
@@ -85,79 +92,6 @@ const static gfx_widget_t* const widgets[] = {
    &gfx_widget_progress_message,
    &gfx_widget_load_content_animation
 };
-
-static float gfx_display_get_widget_dpi_scale(
-      gfx_display_t *p_disp,
-      settings_t *settings,
-      unsigned width, unsigned height, bool fullscreen)
-{
-   static unsigned last_width                          = 0;
-   static unsigned last_height                         = 0;
-   static float scale                                  = 0.0f;
-   static bool scale_cached                            = false;
-   bool scale_updated                                  = false;
-   static float last_menu_scale_factor                 = 0.0f;
-   static enum menu_driver_id_type last_menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
-   static float adjusted_scale                         = 1.0f;
-   bool gfx_widget_scale_auto                          = settings->bools.menu_widget_scale_auto;
-#if (defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
-   float menu_widget_scale_factor                      = settings->floats.menu_widget_scale_factor;
-#else
-   float menu_widget_scale_factor_fullscreen           = settings->floats.menu_widget_scale_factor;
-   float menu_widget_scale_factor_windowed             = settings->floats.menu_widget_scale_factor_windowed;
-   float menu_widget_scale_factor                      = fullscreen ?
-         menu_widget_scale_factor_fullscreen : menu_widget_scale_factor_windowed;
-#endif
-   float menu_scale_factor                             = menu_widget_scale_factor;
-
-   if (gfx_widget_scale_auto)
-   {
-#ifdef HAVE_RGUI
-      /* When using RGUI, _menu_scale_factor
-       * is ignored
-       * > If we are not using a widget scale factor override,
-       *   just set menu_scale_factor to 1.0 */
-      if (p_disp->menu_driver_id == MENU_DRIVER_ID_RGUI)
-         menu_scale_factor                             = 1.0f;
-      else
-#endif
-      {
-         float _menu_scale_factor                      = 
-            settings->floats.menu_scale_factor;
-         menu_scale_factor                             = _menu_scale_factor;
-      }
-   }
-
-   /* Scale is based on display metrics - these are a fixed
-    * hardware property. To minimise performance overheads
-    * we therefore only call video_context_driver_get_metrics()
-    * on first run, or when the current video resolution changes */
-   if (!scale_cached ||
-       (width  != last_width) ||
-       (height != last_height))
-   {
-      scale         = gfx_display_get_dpi_scale_internal(width, height);
-      scale_cached  = true;
-      scale_updated = true;
-      last_width    = width;
-      last_height   = height;
-   }
-
-   /* Adjusted scale calculation may also be slow, so
-    * only update if something changes */
-   if (scale_updated ||
-       (menu_scale_factor != last_menu_scale_factor) ||
-       (p_disp->menu_driver_id != last_menu_driver_id))
-   {
-      adjusted_scale         = gfx_display_get_adjusted_scale(
-            p_disp,
-            scale, menu_scale_factor, width);
-      last_menu_scale_factor = menu_scale_factor;
-      last_menu_driver_id    = p_disp->menu_driver_id;
-   }
-
-   return adjusted_scale;
-}
 
 #if defined(HAVE_MENU) && defined(HAVE_XMB)
 static float gfx_display_get_widget_pixel_scale(
@@ -255,7 +189,6 @@ static void msg_widget_msg_transition_animation_done(void *userdata)
 }
 
 void gfx_widgets_msg_queue_push(
-      void *data,
       retro_task_t *task,
       const char *msg,
       unsigned duration,
@@ -266,7 +199,7 @@ void gfx_widgets_msg_queue_push(
       bool menu_is_alive)
 {
    disp_widget_msg_t    *msg_widget = NULL;
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
+   dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
 
    if (FIFO_WRITE_AVAIL_NONPTR(p_dispwidget->msg_queue) > 0)
    {
@@ -472,15 +405,15 @@ void gfx_widgets_msg_queue_push(
 static void gfx_widgets_unfold_end(void *userdata)
 {
    disp_widget_msg_t *unfold        = (disp_widget_msg_t*)userdata;
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
 
    unfold->unfolding                = false;
-   p_dispwidget->widgets_moving     = false;
+   p_dispwidget->moving             = false;
 }
 
 static void gfx_widgets_move_end(void *userdata)
 {
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
 
    if (userdata)
    {
@@ -501,7 +434,7 @@ static void gfx_widgets_move_end(void *userdata)
       unfold->unfolding            = true;
    }
    else
-      p_dispwidget->widgets_moving = false;
+      p_dispwidget->moving         = false;
 }
 
 static void gfx_widgets_msg_queue_expired(void *userdata)
@@ -548,7 +481,7 @@ static void gfx_widgets_msg_queue_move(dispgfx_widget_t *p_dispwidget)
 
          gfx_animation_push(&entry);
 
-         p_dispwidget->widgets_moving = true;
+         p_dispwidget->moving = true;
       }
    }
 
@@ -592,14 +525,14 @@ static void gfx_widgets_msg_queue_free(
    if (msg->msg_new)
       free(msg->msg_new);
 
-   p_dispwidget->widgets_moving = false;
+   p_dispwidget->moving = false;
 }
 
 static void gfx_widgets_msg_queue_kill_end(void *userdata)
 {
    unsigned i;
    disp_widget_msg_t* msg;
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
 
    SLOCK_LOCK(p_dispwidget->current_msgs_lock);
 
@@ -633,7 +566,7 @@ static void gfx_widgets_msg_queue_kill(
    if (!msg)
       return;
 
-   p_dispwidget->widgets_moving = true;
+   p_dispwidget->moving         = true;
    msg->dying                   = true;
 
    p_dispwidget->msg_queue_kill = idx;
@@ -969,7 +902,6 @@ static void gfx_widgets_layout(
 
 
 void gfx_widgets_iterate(
-      void *data,
       void *data_disp,
       void *settings_data,
       unsigned width, unsigned height, bool fullscreen,
@@ -977,7 +909,7 @@ void gfx_widgets_iterate(
       bool is_threaded)
 {
    size_t i;
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
+   dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
    /* c.f. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323
     * On some platforms (e.g. 32-bit x86 without SSE),
     * gcc can produce inconsistent floating point results
@@ -995,8 +927,9 @@ void gfx_widgets_iterate(
       scale_factor                  = gfx_display_get_widget_pixel_scale(p_disp, settings, width, height, fullscreen);
    else
 #endif
-      scale_factor                  = gfx_display_get_widget_dpi_scale(p_disp,
-            settings, width, height, fullscreen);
+      scale_factor                  = gfx_display_get_dpi_scale(
+            p_disp,
+            settings, width, height, fullscreen, true);
 
    /* Check whether screen dimensions or menu scale
     * factor have changed */
@@ -1029,7 +962,7 @@ void gfx_widgets_iterate(
 
    /* Consume one message if available */
    if ((FIFO_READ_AVAIL_NONPTR(p_dispwidget->msg_queue) > 0)
-         && !p_dispwidget->widgets_moving 
+         && !p_dispwidget->moving 
          && (p_dispwidget->current_msgs_size < ARRAY_SIZE(p_dispwidget->current_msgs)))
    {
       disp_widget_msg_t *msg_widget = NULL;
@@ -1099,7 +1032,7 @@ void gfx_widgets_iterate(
          if (!msg_widget->expiration_timer_started)
             gfx_widgets_start_msg_expiration_timer(msg_widget, TASK_FINISHED_DURATION);
 
-      if (msg_widget->expired && !p_dispwidget->widgets_moving)
+      if (msg_widget->expired && !p_dispwidget->moving)
       {
          gfx_widgets_msg_queue_kill(p_dispwidget,
                (unsigned)i);
@@ -1391,12 +1324,10 @@ static void gfx_widgets_draw_regular_msg(
    unsigned bar_width;
    unsigned bar_margin;
    unsigned text_color;
-   uintptr_t icon = p_dispwidget->gfx_widgets_icons_textures[
-      MENU_WIDGETS_ICON_INFO]; /* TODO: Real icon logic here */
    static float last_alpha = 0.0f;
 
-   msg->unfolding = false;
-   msg->unfolded  = true;
+   msg->unfolding          = false;
+   msg->unfolded           = true;
 
    if (last_alpha != msg->alpha)
    {
@@ -1416,38 +1347,15 @@ static void gfx_widgets_draw_regular_msg(
       gfx_widgets_flush_text(video_width, video_height,
             &p_dispwidget->gfx_widget_fonts.msg_queue);
 
-      gfx_display_scissor_begin(p_disp,
-            userdata,
-            video_width, video_height,
-            p_dispwidget->msg_queue_scissor_start_x, 0,
-            (p_dispwidget->msg_queue_scissor_start_x + msg->width - 
-             p_dispwidget->simple_widget_padding * 2) 
-            * msg->unfold, video_height);
-   }
 
-#if 0
-   if (p_dispwidget->msg_queue_has_icons)
-   {
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
-      /* (int) cast is to be consistent with the rect drawing 
-       * and prevent alignment issues, don't remove it */
-      gfx_widgets_draw_icon(
-            userdata,
-            p_disp,
-            video_width,
-            video_height,
-            p_dispwidget->msg_queue_icon_size_x,
-            p_dispwidget->msg_queue_icon_size_y,
-            p_dispwidget->msg_queue_icon_rect,
-            p_dispwidget->msg_queue_spacing,
-            (int)(video_height - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y),
-            0, 1, p_dispwidget->msg_queue_bg);
-
-      if (dispctx && dispctx->blend_end)
-         dispctx->blend_end(userdata);
+     gfx_display_scissor_begin(p_disp,
+           userdata,
+           video_width, video_height,
+           p_dispwidget->msg_queue_scissor_start_x, 0,
+           (p_dispwidget->msg_queue_scissor_start_x + msg->width - 
+            p_dispwidget->simple_widget_padding * 2) 
+           * msg->unfold, video_height);
    }
-#endif
 
    /* Background */
    bar_width  = p_dispwidget->simple_widget_padding + msg->width + p_dispwidget->msg_queue_icon_size_x;
@@ -1488,11 +1396,7 @@ static void gfx_widgets_draw_regular_msg(
 
    gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.msg_queue,
       msg->msg,
-#if 1
       p_dispwidget->msg_queue_regular_text_start,
-#else
-      p_dispwidget->msg_queue_regular_text_start- ((1.0f-msg->unfold) * msg->width/2),
-#endif
       video_height - msg->offset_y + (p_dispwidget->msg_queue_height - msg->text_height)/2.0f + p_dispwidget->gfx_widget_fonts.msg_queue.line_ascender,
       video_width, video_height,
       text_color,
@@ -1515,7 +1419,6 @@ static void gfx_widgets_draw_regular_msg(
       if (dispctx && dispctx->blend_begin)
          dispctx->blend_begin(userdata);
 
-#if 1
       gfx_widgets_draw_icon(
             userdata,
             p_disp,
@@ -1529,45 +1432,6 @@ static void gfx_widgets_draw_regular_msg(
             0,
             1,
             msg_queue_info);
-#else
-      gfx_widgets_draw_icon(
-            userdata,
-            p_disp,
-            video_width,
-            video_height,
-            p_dispwidget->msg_queue_icon_size_x,
-            p_dispwidget->msg_queue_icon_size_y,
-            p_dispwidget->msg_queue_icon,
-            p_dispwidget->msg_queue_spacing, video_height 
-            - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y, 
-            0, 1, msg_queue_info);
-
-      gfx_widgets_draw_icon(
-            userdata,
-            p_disp,
-            video_width,
-            video_height,
-            p_dispwidget->msg_queue_icon_size_x,
-            p_dispwidget->msg_queue_icon_size_y,
-            p_dispwidget->msg_queue_icon_outline,
-            p_dispwidget->msg_queue_spacing,
-            video_height 
-            - msg->offset_y 
-            - p_dispwidget->msg_queue_icon_offset_y, 
-            0, 1,
-            p_dispwidget->pure_white);
-
-      gfx_widgets_draw_icon(
-            userdata,
-            p_disp,
-            video_width,
-            video_height,
-            p_dispwidget->msg_queue_internal_icon_size, p_dispwidget->msg_queue_internal_icon_size,
-            icon, p_dispwidget->msg_queue_spacing + p_dispwidget->msg_queue_internal_icon_offset,
-            video_height - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y + p_dispwidget->msg_queue_internal_icon_offset, 
-            0, 1,
-            p_dispwidget->pure_white);
-#endif
 
       if (dispctx && dispctx->blend_end)
          dispctx->blend_end(userdata);
@@ -1888,7 +1752,7 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
 {
    size_t i;
 
-   p_dispwidget->widgets_inited     = false;
+   p_dispwidget->inited     = false;
 
    for (i = 0; i < ARRAY_SIZE(widgets); i++)
    {
@@ -2079,11 +1943,11 @@ static void gfx_widgets_context_reset(
             p_dispwidget->last_video_height, fullscreen);
    else
 #endif
-      p_dispwidget->last_scale_factor = gfx_display_get_widget_dpi_scale(
+      p_dispwidget->last_scale_factor = gfx_display_get_dpi_scale(
                      p_disp, settings,
                      p_dispwidget->last_video_width,
                      p_dispwidget->last_video_height,
-                     fullscreen);
+                     fullscreen, true);
 
    gfx_widgets_layout(p_disp, p_dispwidget,
          is_threaded, dir_assets, font_path);
@@ -2091,7 +1955,6 @@ static void gfx_widgets_context_reset(
 }
 
 bool gfx_widgets_init(
-      void *data,
       void *data_disp,
       void *data_anim,
       void *settings_data,
@@ -2102,7 +1965,7 @@ bool gfx_widgets_init(
 {
    unsigned i;
    unsigned color                              = 0x222222;
-   dispgfx_widget_t *p_dispwidget              = (dispgfx_widget_t*)data;
+   dispgfx_widget_t *p_dispwidget              = &dispwidget_st;
    gfx_display_t *p_disp                       = (gfx_display_t*)data_disp;
    gfx_animation_t *p_anim                     = (gfx_animation_t*)data_anim;
    settings_t *settings                        = (settings_t*)settings_data;
@@ -2132,7 +1995,7 @@ bool gfx_widgets_init(
    p_dispwidget->msg_queue_bg[14] = HEX_B(color);
    p_dispwidget->msg_queue_bg[15] = 1.0f;
 
-   if (!p_dispwidget->widgets_inited)
+   if (!p_dispwidget->inited)
    {
       size_t i;
 
@@ -2157,7 +2020,7 @@ bool gfx_widgets_init(
       p_dispwidget->current_msgs_lock = slock_new();
 #endif
 
-      p_dispwidget->widgets_inited = true;
+      p_dispwidget->inited = true;
    }
 
    gfx_widgets_context_reset(
@@ -2208,9 +2071,9 @@ static void gfx_widgets_context_destroy(dispgfx_widget_t *p_dispwidget)
 }
 
 
-void gfx_widgets_deinit(void *data, bool widgets_persisting)
+void gfx_widgets_deinit(bool widgets_persisting)
 {
-   dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)data;
+   dispgfx_widget_t *p_dispwidget = &dispwidget_st;
 
    gfx_widgets_context_destroy(p_dispwidget);
 
@@ -2249,10 +2112,10 @@ static bool gfx_widgets_reset_textures_list_buffer(
 }
 
 bool gfx_widgets_ai_service_overlay_load(
-      dispgfx_widget_t *p_dispwidget,
       char* buffer, unsigned buffer_len,
       enum image_type_enum image_type)
 {
+   dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
    if (p_dispwidget->ai_service_overlay_state == 0)
    {
       if (!gfx_widgets_reset_textures_list_buffer(
@@ -2267,8 +2130,9 @@ bool gfx_widgets_ai_service_overlay_load(
    return true;
 }
 
-void gfx_widgets_ai_service_overlay_unload(dispgfx_widget_t *p_dispwidget)
+void gfx_widgets_ai_service_overlay_unload(void)
 {
+   dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
    if (p_dispwidget->ai_service_overlay_state == 1)
    {
       video_driver_texture_unload(&p_dispwidget->ai_service_overlay_texture);
@@ -2277,3 +2141,44 @@ void gfx_widgets_ai_service_overlay_unload(dispgfx_widget_t *p_dispwidget)
    }
 }
 #endif
+
+#ifdef HAVE_SCREENSHOTS
+void task_screenshot_callback(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *error)
+{
+   screenshot_task_state_t *state = NULL;
+
+   if (!task)
+      return;
+
+   state = (screenshot_task_state_t*)task->state;
+
+   if (!state)
+      return;
+
+   if (!state->silence && state->widgets_ready)
+      gfx_widget_screenshot_taken(&dispwidget_st,
+            state->shotname, state->filename);
+
+   free(state);
+   /* Must explicitly set task->state to NULL here,
+    * to avoid potential heap-use-after-free errors */
+   state       = NULL;
+   task->state = NULL;
+}
+#endif
+
+dispgfx_widget_t *dispwidget_get_ptr(void)
+{
+   return &dispwidget_st;
+}
+
+bool gfx_widgets_ready(void)
+{
+#ifdef HAVE_GFX_WIDGETS
+   return dispwidget_st.active;
+#else
+   return false;
+#endif
+}

@@ -32,31 +32,17 @@ RETRO_BEGIN_DECLS
 
 struct natt_status
 {
-   /** nfds for select when checking for input */
-   int nfds;
-
-   /** The fdset to be selected upon to check for responses */
-   fd_set fds;
-
-   /** True if there might be a request outstanding */
-   bool request_outstanding;
-
-   /** True if we've resolved an external IPv4 address */
+   /* True if we've resolved an external IPv4 address */
    bool have_inet4;
-
-   /** External IPv4 address */
+   /* External IPv4 address */
    struct sockaddr_in ext_inet4_addr;
 
-   /** True if we've resolved an external IPv6 address */
-   bool have_inet6;
-
 #if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY) && !defined(_3DS)
-   /** External IPv6 address */
+   /* True if we've resolved an external IPv6 address */
+   bool have_inet6;
+   /* External IPv6 address */
    struct sockaddr_in6 ext_inet6_addr;
 #endif
-
-   /** Internal status (currently unused) */
-   void *internal;
 };
 
 /**
@@ -64,6 +50,11 @@ struct natt_status
  * functions) */
 void natt_init(struct natt_status *status,
       uint16_t port, enum socket_protocol proto);
+
+/**
+ * Uninitialize global NAT traversal structures */
+void natt_deinit(struct natt_status *status,
+      enum socket_protocol proto);
 
 /** Initialize a NAT traversal status object */
 bool natt_new(struct natt_status *status);
@@ -75,6 +66,11 @@ void natt_free(struct natt_status *status);
  * Make a port forwarding request when only the port is known. Forwards any
  * address it can find. */
 bool natt_open_port_any(struct natt_status *status, uint16_t port,
+   enum socket_protocol proto);
+
+/**
+ * Request for a port forwarding to be removed/closed. */
+bool natt_close_port(struct natt_status *status,
    enum socket_protocol proto);
 
 /** Check for port forwarding responses */
