@@ -41,6 +41,7 @@
 #import <AVFoundation/AVFoundation.h>
 
 #if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
+#import "JITSupport.h"
 id<ApplePlatform> apple_platform;
 #else
 static id apple_platform;
@@ -538,6 +539,11 @@ enum
 
 int main(int argc, char *argv[])
 {
+    if (jb_enable_ptrace_hack()) {
+        NSLog(@"Ptrace hack complete, JIT support is enabled");
+    } else {
+        NSLog(@"Ptrace hack NOT available; Please use an app like Jitterbug.");
+    }
    @autoreleasepool {
       return UIApplicationMain(argc, argv, NSStringFromClass([RApplication class]), NSStringFromClass([RetroArch_iOS class]));
    }
