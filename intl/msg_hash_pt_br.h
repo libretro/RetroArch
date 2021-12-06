@@ -1346,7 +1346,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   "Indica o método de interpolação de imagem a ser usado quando a configuração \"Dimensionar usando números inteiros\" estiver desativada. \"Vizinho mais próximo\" afeta menos o desempenho."
+   "Indica o método de interpolação de imagem a ser usado quando a configuração \"Dimensionamento com valores inteiros\" estiver desativada. \"Vizinho mais próximo\" afeta menos o desempenho."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
@@ -1645,7 +1645,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
-   "Escala com valores inteiros"
+   "Dimensionamento com valores inteiros"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
@@ -1657,7 +1657,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Faz com que o dimensionamento inteiro seja sempre arredondado para um valor mais alto em vez de um valor mais baixo."
+   "Faz com que o dimensionamento com valores inteiros seja sempre arredondado para um valor mais alto em vez de um valor mais baixo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -1687,7 +1687,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Deslocamento personalizado no eixo-X da janela de exibição. \nSerá ignorado caso a 'Escala com valores inteiros' estiver ativada."
+   "Deslocamento personalizado no eixo-X da janela de exibição. \nSerá ignorado caso o 'Dimensionamento com valores inteiros' estiver ativado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1695,7 +1695,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Deslocamento personalizado no eixo-Y da janela de exibição. \nSerá ignorado caso a 'Escala com valores inteiros' estiver ativada."
+   "Deslocamento personalizado no eixo-Y da janela de exibição. \nSerá ignorado caso o 'dimensionamento com valores inteiros' estiver ativado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -8062,7 +8062,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
-   "Escala com valores inteiros"
+   "Dimensionamento com valores inteiros"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN,
@@ -11228,6 +11228,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "A 'Execução antecipada' foi desativada porque esse núcleo não suporta jogos salvos."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
+   "Houve uma falha ao carregar o estado do jogo. A 'Execução antecipada' foi desativada."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
+   "Houve uma falha ao salvar o estado do jogo. A 'Execução antecipada' foi desativada."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
+   "Houve uma falha ao criar uma segunda instância. A 'Execução antecipada' agora usará apenas uma instância."
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,

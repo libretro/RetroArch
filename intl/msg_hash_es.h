@@ -12041,7 +12041,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
-   "Ajusta la escala X/Y para la velocidad de las «lightguns» o pistolas usando el mando de Wii."
+   "Ajusta la escala X/Y para la velocidad de las pistolas usando el mando de Wii."
    )
 #endif
 MSG_HASH(
