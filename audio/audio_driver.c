@@ -818,38 +818,53 @@ void audio_driver_sample(int16_t left, int16_t right)
 
 size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
 {
-   recording_state_t *record_st    = recording_state_get_ptr();
-   runloop_state_t *runloop_st     = runloop_state_get_ptr();
-   audio_driver_state_t *audio_st  = &audio_driver_st;
+   size_t frames_remaining        = frames;
+   recording_state_t *record_st   = recording_state_get_ptr();
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
+   audio_driver_state_t *audio_st = &audio_driver_st;
 
-   if (frames > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
-      frames = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
-   if (audio_st->suspended)
+   if (audio_st->suspended || (frames < 1))
       return frames;
 
-   if (    record_st->data   
-        && record_st->driver
-        && record_st->driver->push_audio)
+   /* We want to run this loop at least once, so use a
+    * do...while (do...while has only a single conditional
+    * jump, as opposed to for and while which have a
+    * conditional jump and an unconditional jump). Note,
+    * however, that this is only relevant for compilers
+    * that are poor at optimisation... */
+   do
    {
-      struct record_audio_data ffemu_data;
+      size_t frames_to_write =
+            (frames_remaining > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1)) ?
+                  (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1) : frames_remaining;
 
-      ffemu_data.data                    = data;
-      ffemu_data.frames                  = (frames << 1) / 2;
+      if (    record_st->data
+           && record_st->driver
+           && record_st->driver->push_audio)
+      {
+         struct record_audio_data ffemu_data;
 
-      record_st->driver->push_audio(record_st->data, &ffemu_data);
+         ffemu_data.data   = data;
+         ffemu_data.frames = frames_to_write;
+
+         record_st->driver->push_audio(record_st->data, &ffemu_data);
+      }
+
+      if (!(    runloop_st->paused
+            || !audio_st->active
+            || !audio_st->output_samples_buf))
+         audio_driver_flush(audio_st,
+               config_get_ptr()->floats.slowmotion_ratio,
+               config_get_ptr()->bools.audio_fastforward_mute,
+               data,
+               frames_to_write << 1,
+               runloop_st->slowmotion,
+               runloop_st->fastmotion);
+
+      frames_remaining -= frames_to_write;
+      data             += frames_to_write << 1;
    }
-
-   if (!(
-             runloop_st->paused          
-         || !audio_st->active
-         || !audio_st->output_samples_buf))
-      audio_driver_flush(audio_st,
-            config_get_ptr()->floats.slowmotion_ratio,
-            config_get_ptr()->bools.audio_fastforward_mute,
-            data,
-            frames << 1,
-            runloop_st->slowmotion,
-            runloop_st->fastmotion);
+   while (frames_remaining > 0);
 
    return frames;
 }
@@ -874,8 +889,10 @@ size_t audio_driver_sample_batch_rewind(
 
    for (i = 0; i < samples; i++)
    {
-      if (audio_st->rewind_ptr > 0)
-         audio_st->rewind_buf[--audio_st->rewind_ptr] = data[i];
+      if (audio_st->rewind_ptr < 1)
+         break;
+
+      audio_st->rewind_buf[--audio_st->rewind_ptr] = data[i];
    }
 
    return frames;
