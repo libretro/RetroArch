@@ -552,6 +552,7 @@ frontend_ctx_driver_t frontend_ctx_ps2 = {
    NULL,                         /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
+   NULL,                         /* set_gamemode */
    "ps2",                        /* ident */
    NULL                          /* get_video_driver */
 };

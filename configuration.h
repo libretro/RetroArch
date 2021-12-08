@@ -905,6 +905,8 @@ typedef struct settings
 
       bool ai_service_enable;
       bool ai_service_pause;
+
+      bool gamemode_enable;
    } bools;
 
 } settings_t;

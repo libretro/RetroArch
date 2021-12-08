@@ -173,6 +173,8 @@
 
 #define DEFAULT_USER_LANGUAGE 0
 
+#define DEFAULT_GAMEMODE_ENABLE true
+
 #if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID) && !defined(HAVE_LAKKA)) || (defined(__MACH__) && !defined(IOS)) || defined(EMSCRIPTEN)
 #define DEFAULT_MOUSE_ENABLE true
 #else

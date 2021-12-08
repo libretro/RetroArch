@@ -7594,6 +7594,9 @@ static void general_write_handler(rarch_setting_t *setting)
                task_queue_unset_threaded();
          }
          break;
+      case MENU_ENUM_LABEL_GAMEMODE_ENABLE:
+         frontend_driver_set_gamemode(config_get_ptr()->bools.gamemode_enable);
+         break;
       case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
          core_set_poll_type(*setting->value.target.integer);
          break;
@@ -17272,6 +17275,22 @@ static bool setting_append_list(
                parent_group);
 #endif
 #endif
+
+         if (frontend_get_ptr()->set_gamemode)
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.gamemode_enable,
+                  MENU_ENUM_LABEL_GAMEMODE_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
+                  DEFAULT_GAMEMODE_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

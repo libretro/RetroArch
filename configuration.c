@@ -1993,6 +1993,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("ai_service_enable",     &settings->bools.ai_service_enable, true, DEFAULT_AI_SERVICE_ENABLE, false);
    SETTING_BOOL("ai_service_pause",      &settings->bools.ai_service_pause, true, DEFAULT_AI_SERVICE_PAUSE, false);
    SETTING_BOOL("wifi_enabled",          &settings->bools.wifi_enabled, true, DEFAULT_WIFI_ENABLE, false);
+   SETTING_BOOL("gamemode_enable",       &settings->bools.gamemode_enable, true, DEFAULT_GAMEMODE_ENABLE, false);
 
    *size = count;
 
@@ -3724,6 +3725,8 @@ static bool config_load_file(global_t *global,
 
    if (!config_entry_exists(conf, "user_language"))
       msg_hash_set_uint(MSG_HASH_USER_LANGUAGE, frontend_driver_get_user_language());
+
+   frontend_driver_set_gamemode(settings->bools.gamemode_enable);
 
    /* If this is the first run of an existing installation
     * after the independent favourites playlist size limit was
