@@ -428,7 +428,16 @@ static void rcheevos_async_http_task_callback(
       }
 
       if (data->status != 200) /* Server returned error via status code. */
+      {
          snprintf(buffer, sizeof(buffer), "HTTP error code %d", data->status);
+
+         if (request->type == CHEEVOS_ASYNC_FETCH_BADGE)
+         {
+            /* This isn't a JSON request. An empty response with a status code is a valid response. */
+            if (request->handler)
+               request->handler(request, data, buffer, sizeof(buffer));
+         }
+      }
       else /* Server sent empty response without error status code */
          strlcpy(buffer, "No response from server", sizeof(buffer));
    }
@@ -1410,12 +1419,23 @@ static void rcheevos_async_download_next_badge(void* userdata)
    free(badge_data);
 }
 
+static void rcheevos_async_fetch_badge_complete(rcheevos_fetch_badge_data* badge_data)
+{
+   const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+
+   CHEEVOS_LOCK(rcheevos_locals->load_info.request_lock);
+   badge_data->state->requested_badges[badge_data->request_index][0] = '\0';
+   CHEEVOS_UNLOCK(rcheevos_locals->load_info.request_lock);
+
+   if (badge_data->callback)
+      badge_data->callback(badge_data);
+}
+
 static void rcheevos_async_write_badge(retro_task_t* task)
 {
    char badge_fullpath[PATH_MAX_LENGTH];
    rcheevos_fetch_badge_data* badge_data =
       (rcheevos_fetch_badge_data*)task->user_data;
-   const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
 
    fill_pathname_join(badge_fullpath, badge_data->state->badge_directory,
       badge_data->state->requested_badges[badge_data->request_index],
@@ -1431,14 +1451,9 @@ static void rcheevos_async_write_badge(retro_task_t* task)
    badge_data->data = NULL;
    badge_data->data_len = 0;
 
-   CHEEVOS_LOCK(rcheevos_locals->load_info.request_lock);
-   badge_data->state->requested_badges[badge_data->request_index][0] = '\0';
-   CHEEVOS_UNLOCK(rcheevos_locals->load_info.request_lock);
-
    task_set_finished(task, true);
 
-   if (badge_data->callback)
-      badge_data->callback(badge_data);
+   rcheevos_async_fetch_badge_complete(badge_data);
 }
 
 static void rcheevos_async_fetch_badge_callback(
@@ -1448,6 +1463,13 @@ static void rcheevos_async_fetch_badge_callback(
    rcheevos_fetch_badge_data* badge_data    =
       (rcheevos_fetch_badge_data*)request->callback_data;
    retro_task_t* task;
+
+   if (!data->data)
+   {
+      /* error retrieving badge, nothing to write. just call the callback */
+      rcheevos_async_fetch_badge_complete(badge_data);
+      return;
+   }
 
    /* take ownership of the file data */
    badge_data->data = data->data;
