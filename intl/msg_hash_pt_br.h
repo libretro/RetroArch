@@ -1346,7 +1346,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   "Indica o método de interpolação de imagem a ser usado quando a configuração \"Dimensionamento com valores inteiros\" estiver desativada. \"Vizinho mais próximo\" afeta menos o desempenho."
+   "Indica o método de interpolação de imagem a ser usado quando a configuração 'Dimensionar com valores inteiros' estiver desativada. 'Vizinho mais próximo' afeta menos o desempenho."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
@@ -1645,7 +1645,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
-   "Dimensionamento com valores inteiros"
+   "Dimensionar com valores inteiros"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
@@ -1653,7 +1653,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Dimensionar usando números inteiros"
+   "Redimensionar usando valores inteiros"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
@@ -1669,7 +1669,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Valor do ponto flutuante (largura/altura) da proporção do vídeo, usado se a 'Proporção de tela' for definhada como 'Configuração'."
+   "Valor do ponto flutuante (largura/altura) da proporção da tela, usado se a 'Proporção de tela' for definhada como 'Configuração'."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -8062,7 +8062,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
-   "Dimensionamento com valores inteiros"
+   "Dimensionar com valores inteiros"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN,
