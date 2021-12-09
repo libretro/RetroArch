@@ -63,13 +63,19 @@ void *task_push_http_transfer(const char *url, bool mute, const char *type,
       retro_task_callback_t cb, void *userdata);
 
 void *task_push_http_transfer_with_user_agent(const char *url, bool mute, const char *type,
-      const char* user_agent, retro_task_callback_t cb, void *userdata);
+      const char *user_agent, retro_task_callback_t cb, void *userdata);
+
+void *task_push_http_transfer_with_headers(const char *url, bool mute, const char *type,
+   const char *headers, retro_task_callback_t cb, void *user_data);
 
 void *task_push_http_post_transfer(const char *url, const char *post_data, bool mute, const char *type,
       retro_task_callback_t cb, void *userdata);
 
-void *task_push_http_post_transfer_with_user_agent(const char* url, const char* post_data, bool mute,
-   const char* type, const char* user_agent, retro_task_callback_t cb, void* user_data);
+void *task_push_http_post_transfer_with_user_agent(const char *url, const char *post_data, bool mute,
+   const char *type, const char *user_agent, retro_task_callback_t cb, void *user_data);
+
+void *task_push_http_post_transfer_with_headers(const char *url, const char *post_data, bool mute,
+   const char *type, const char *headers, retro_task_callback_t cb, void *user_data);
 
 task_retriever_info_t *http_task_get_transfer_list(void);
 
@@ -86,8 +92,8 @@ bool task_push_netplay_lan_scan(retro_task_callback_t cb);
 bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       const char *hostname, const char *corename, const char* subsystem);
 
-bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port);
-bool task_push_netplay_nat_close(void *nat_traversal_state);
+bool task_push_netplay_nat_traversal(void *data, uint16_t port);
+bool task_push_netplay_nat_close(void *data);
 
 /* Core updater tasks */
 
