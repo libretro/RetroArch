@@ -37,6 +37,10 @@
 
 #include <net/net_natt.h>
 
+#ifndef IP_MULTICAST_TTL
+#define IP_MULTICAST_TTL 33
+#endif
+
 static natt_state_t natt_st = {{0}, {{0}}, 0, -1};
 
 natt_state_t *natt_state_get_ptr(void)
