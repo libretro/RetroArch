@@ -25,8 +25,6 @@
 #include <string.h>
 #include <sys/types.h>
 
-#include <net/net_compat.h>
-#include <net/net_ifinfo.h>
 #include <formats/rxml.h>
 #include <features/features_cpu.h>
 #include <retro_miscellaneous.h>
@@ -36,10 +34,6 @@
 #include "../../tasks/tasks_internal.h"
 
 #include <net/net_natt.h>
-
-#ifndef IP_MULTICAST_TTL
-#define IP_MULTICAST_TTL 33
-#endif
 
 static natt_state_t natt_st = {{0}, {{0}}, 0, -1};
 
@@ -87,16 +81,19 @@ bool natt_init(void)
    if (!bind_addr)
       goto failure;
 
+#ifdef IP_MULTICAST_TTL
    {
 #ifdef _WIN32
-      unsigned long ttl;
+      unsigned long ttl = 2;
+      if (setsockopt(st->fd, IPPROTO_IP, IP_MULTICAST_TTL,
+         (const char *)&ttl, sizeof(ttl)) < 0) { }
 #else
-      unsigned char ttl;
+      unsigned char ttl = 2;
+      if (setsockopt(st->fd, IPPROTO_IP, IP_MULTICAST_TTL,
+         &ttl, sizeof(ttl)) < 0) { }
 #endif
-      ttl = 2;
-      setsockopt(st->fd, IPPROTO_IP, IP_MULTICAST_TTL,
-         (const char *) &ttl, sizeof(ttl));
    }
+#endif
 
    if (!socket_bind(st->fd, bind_addr))
       goto failure;
