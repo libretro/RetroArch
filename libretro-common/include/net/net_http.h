@@ -42,7 +42,9 @@ bool net_http_connection_done(struct http_connection_t *conn);
 
 void net_http_connection_free(struct http_connection_t *conn);
 
-void net_http_connection_set_user_agent(struct http_connection_t* conn, const char* user_agent);
+void net_http_connection_set_user_agent(struct http_connection_t *conn, const char *user_agent);
+
+void net_http_connection_set_headers(struct http_connection_t *conn, const char *headers);
 
 const char *net_http_connection_url(struct http_connection_t *conn);
 

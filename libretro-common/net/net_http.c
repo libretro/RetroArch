@@ -82,7 +82,8 @@ struct http_connection_t
    char *methodcopy;
    char *contenttypecopy;
    char *postdatacopy;
-   char* useragentcopy;
+   char *useragentcopy;
+   char *headerscopy;
    struct http_socket_state_t sock_state; /* ptr alignment */
    int port;
 };
@@ -509,6 +510,7 @@ struct http_connection_t *net_http_connection_new(const char *url,
    conn->contenttypecopy   = NULL;
    conn->postdatacopy      = NULL;
    conn->useragentcopy     = NULL;
+   conn->headerscopy       = NULL;
    conn->port              = 0;
    conn->sock_state.fd     = 0;
    conn->sock_state.ssl    = false;
@@ -659,22 +661,35 @@ void net_http_connection_free(struct http_connection_t *conn)
    if (conn->useragentcopy)
       free(conn->useragentcopy);
 
+   if (conn->headerscopy)
+      free(conn->headerscopy);
+
    conn->urlcopy         = NULL;
    conn->methodcopy      = NULL;
    conn->contenttypecopy = NULL;
    conn->postdatacopy    = NULL;
    conn->useragentcopy   = NULL;
+   conn->headerscopy     = NULL;
 
    free(conn);
 }
 
 void net_http_connection_set_user_agent(
-      struct http_connection_t* conn, const char* user_agent)
+      struct http_connection_t *conn, const char *user_agent)
 {
    if (conn->useragentcopy)
       free(conn->useragentcopy);
 
    conn->useragentcopy = user_agent ? strdup(user_agent) : NULL;
+}
+
+void net_http_connection_set_headers(
+      struct http_connection_t *conn, const char *headers)
+{
+   if (conn->headerscopy)
+      free(conn->headerscopy);
+
+   conn->headerscopy = headers ? strdup(headers) : NULL;
 }
 
 const char *net_http_connection_url(struct http_connection_t *conn)
@@ -732,8 +747,11 @@ struct http_t *net_http_new(struct http_connection_t *conn)
 
    net_http_send_str(&conn->sock_state, &error, "\r\n");
 
+   /* Pre-formatted headers */
+   if (conn->headerscopy)
+      net_http_send_str(&conn->sock_state, &error, conn->headerscopy);
    /* This is not being set anywhere yet */
-   if (conn->contenttypecopy)
+   else if (conn->contenttypecopy)
    {
       net_http_send_str(&conn->sock_state, &error, "Content-Type: ");
       net_http_send_str(&conn->sock_state, &error, conn->contenttypecopy);
@@ -748,9 +766,12 @@ struct http_t *net_http_new(struct http_connection_t *conn)
       if (!conn->postdatacopy)
          goto error;
 
-      if (!conn->contenttypecopy)
-         net_http_send_str(&conn->sock_state, &error,
-               "Content-Type: application/x-www-form-urlencoded\r\n");
+      if (!conn->headerscopy)
+      {
+         if (!conn->contenttypecopy)
+            net_http_send_str(&conn->sock_state, &error,
+                  "Content-Type: application/x-www-form-urlencoded\r\n");
+      }
 
       net_http_send_str(&conn->sock_state, &error, "Content-Length: ");
 
