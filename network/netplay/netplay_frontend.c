@@ -1164,9 +1164,11 @@ bool netplay_handshake_init(netplay_t *netplay,
 
    /* Finally send our header, if server. */
    if (netplay->is_server)
+   {
       if (!netplay_handshake_init_send(netplay, connection,
             connection->netplay_protocol))
          return false;
+   }
    /* If a password is demanded, ask for it */
    else
    {
@@ -4831,18 +4833,18 @@ static bool chat_check(netplay_t *netplay)
    return false;
 }
 
-static INLINE size_t format_chat(char *s, size_t len,
+static void relay_chat(netplay_t *netplay,
       const char *nick, const char *msg)
 {
-   /* Truncate the message if necessary. */
-   snprintf(s, len, "%s: %s", nick, msg);
-
-   return strlen(s);
-}
-
-static INLINE void relay_chat(netplay_t *netplay, const char *msg, size_t len)
-{
    size_t i;
+   size_t msg_len;
+   char data[NETPLAY_NICK_LEN + MAX_CHAT_SIZE - 1];
+
+   msg_len = strlen(msg);
+
+   memcpy(data, nick, NETPLAY_NICK_LEN);
+   memcpy(data + NETPLAY_NICK_LEN, msg, msg_len);
+
    for (i = 0; i < netplay->connections_size; i++)
    {
       struct netplay_connection *conn = &netplay->connections[i];
@@ -4851,22 +4853,28 @@ static INLINE void relay_chat(netplay_t *netplay, const char *msg, size_t len)
       if (conn->active && conn->netplay_protocol >= 6 &&
             (conn->mode == NETPLAY_CONNECTION_PLAYING ||
                conn->mode == NETPLAY_CONNECTION_SLAVE))
-         netplay_send_raw_cmd(netplay, conn, NETPLAY_CMD_PLAYER_CHAT, msg, len);
+         netplay_send_raw_cmd(netplay, conn,
+            NETPLAY_CMD_PLAYER_CHAT, data, NETPLAY_NICK_LEN + msg_len);
    }
    /* We don't flush. Chat is not time essential. */
 }
 
-static INLINE void show_chat(const char *msg)
+static void show_chat(const char *nick, const char *msg)
 {
-   RARCH_LOG("%s\n", msg);
-   runloop_msg_queue_push(msg, 1, CHAT_FRAME_TIME, false, NULL,
+   char formatted_chat[MAX_CHAT_SIZE];
+
+   /* Truncate the message if necessary. */
+   snprintf(formatted_chat, sizeof(formatted_chat),
+      "%s: %s", nick, msg);
+
+   RARCH_LOG("%s\n", formatted_chat);
+   runloop_msg_queue_push(formatted_chat, 1, CHAT_FRAME_TIME, false, NULL,
       MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
 
 static void send_chat(void *userdata, const char *line)
 {
-   char   chat_msg[MAX_CHAT_SIZE];
-   size_t chat_len;
+   char msg[MAX_CHAT_SIZE];
    net_driver_state_t *net_st  = &networking_driver_st;
    netplay_t          *netplay = net_st->data;
 
@@ -4874,21 +4882,20 @@ static void send_chat(void *userdata, const char *line)
       just in case something has changed. */
    if (!string_is_empty(line) && chat_check(netplay))
    {
-      /* For servers, we need to format and relay it ourselves. */
+      /* Truncate line to MAX_CHAT_SIZE. */
+      strlcpy(msg, line, sizeof(msg));
+
+      /* For servers, we need to relay it ourselves. */
       if (netplay->is_server)
       {
-         chat_len = format_chat(chat_msg, sizeof(chat_msg), netplay->nick, line);
-
-         relay_chat(netplay, chat_msg, chat_len);
-         show_chat(chat_msg);
+         relay_chat(netplay, netplay->nick, msg);
+         show_chat(netplay->nick, msg);
       }
       /* For clients, we just send it to the server. */
       else
       {
-         strlcpy(chat_msg, line, sizeof(chat_msg));
-
          netplay_send_raw_cmd(netplay, &netplay->connections[0],
-            NETPLAY_CMD_PLAYER_CHAT, chat_msg, strlen(chat_msg));
+            NETPLAY_CMD_PLAYER_CHAT, msg, strlen(msg));
          /* We don't flush. Chat is not time essential. */
       }
    }
@@ -4922,42 +4929,54 @@ void netplay_input_chat(netplay_t *netplay)
  */
 static bool handle_chat(netplay_t *netplay,
       struct netplay_connection *connection,
-      const char *msg)
+      const char *nick, const char *msg)
 {
-   char   chat_msg[MAX_CHAT_SIZE];
-   size_t chat_len;
-
    if (!connection->active || connection->netplay_protocol < 6 ||
-         string_is_empty(msg))
+         string_is_empty(nick) || string_is_empty(msg))
       return false;
 
    /* Client sent a chat message;
-      format it and then relay it to the other clients,
+      Relay it to the other clients,
       including the one who sent it. */
    if (netplay->is_server)
    {
-      /* No point displaying a chat message without a nickname. */
-      if (string_is_empty(connection->nick))
-         return false;
-
       /* Only playing clients can send chat. */
       if (connection->mode != NETPLAY_CONNECTION_PLAYING &&
          connection->mode != NETPLAY_CONNECTION_SLAVE)
          return false;
 
-      chat_len = format_chat(chat_msg, sizeof(chat_msg), connection->nick, msg);
-      msg      = chat_msg;
-
-      relay_chat(netplay, chat_msg, chat_len);
+      relay_chat(netplay, nick, msg);
    }
 
    /* If we still got a message even though we are not playing,
       ignore it! */
    if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING ||
          netplay->self_mode == NETPLAY_CONNECTION_SLAVE)
-      show_chat(msg);
+      show_chat(nick, msg);
 
    return true;
+}
+
+static void request_ping(netplay_t *netplay,
+      struct netplay_connection *connection)
+{
+   connection->ping_timer = cpu_features_get_time_usec();
+   netplay_send_raw_cmd(netplay, connection,
+      NETPLAY_CMD_PING_REQUEST, NULL, 0);
+   /* We need to get this sent asap. */
+   netplay_send_flush(&connection->send_packet_buffer,
+      connection->fd, false);
+   connection->ping_requested = true;
+}
+
+static void answer_ping(netplay_t *netplay,
+      struct netplay_connection *connection)
+{
+   netplay_send_raw_cmd(netplay, connection,
+      NETPLAY_CMD_PING_RESPONSE, NULL, 0);
+   /* We need to get this sent asap. */
+   netplay_send_flush(&connection->send_packet_buffer,
+      connection->fd, false);
 }
 
 #undef RECV
@@ -5894,23 +5913,65 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
       case NETPLAY_CMD_PLAYER_CHAT:
          {
-            char payload[MAX_CHAT_SIZE];
+            char nickname[NETPLAY_NICK_LEN];
+            char message[MAX_CHAT_SIZE];
+
             /* We do not send the sentinel/null character on chat messages
                and we do not allow empty messages. */
-            if (!cmd_size || cmd_size >= sizeof(payload))
+            if (netplay->is_server)
             {
-               RARCH_ERR("NETPLAY_CMD_PLAYER_CHAT with incorrect payload size.\n");
-               return netplay_cmd_nak(netplay, connection);
+               /* If server, we only receive the message,
+                  without the nickname portion. */
+               if (!cmd_size || cmd_size >= sizeof(message))
+               {
+                  RARCH_ERR("NETPLAY_CMD_PLAYER_CHAT with incorrect payload size.\n");
+                  return netplay_cmd_nak(netplay, connection);
+               }
+
+               strlcpy(nickname, connection->nick, sizeof(nickname));
+            }
+            else
+            {
+               /* If client, we receive both the nickname and
+                  the message from the server. */
+               if (cmd_size <= sizeof(nickname) ||
+                  cmd_size >= sizeof(nickname) + sizeof(message))
+               {
+                  RARCH_ERR("NETPLAY_CMD_PLAYER_CHAT with incorrect payload size.\n");
+                  return netplay_cmd_nak(netplay, connection);
+               }
+
+               RECV(nickname, sizeof(nickname))
+                  return false;
+               cmd_size -= sizeof(nickname);
             }
 
-            RECV(payload, cmd_size)
+            RECV(message, cmd_size)
                return false;
-            payload[recvd] = '\0';
+            message[recvd] = '\0';
 
-            if (!handle_chat(netplay, connection, payload))
+            if (!handle_chat(netplay, connection,
+               nickname, message))
             {
                RARCH_ERR("NETPLAY_CMD_PLAYER_CHAT with invalid message or from an invalid peer.\n");
                return netplay_cmd_nak(netplay, connection);
+            }
+         }
+         break;
+
+      case NETPLAY_CMD_PING_REQUEST:
+         answer_ping(netplay, connection);
+         break;
+
+      case NETPLAY_CMD_PING_RESPONSE:
+         {
+            /* Only process ping responses if we requested them. */
+            if (connection->ping_requested)
+            {
+               connection->ping           = (int32_t)
+                  ((cpu_features_get_time_usec() - connection->ping_timer)
+                     / 1000);
+               connection->ping_requested = false;
             }
          }
          break;

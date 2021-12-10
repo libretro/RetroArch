@@ -181,7 +181,14 @@ enum netplay_cmd
     * The server is responsible for formatting/truncating 
     * the message and relaying it to all playing clients,
     * including the one that sent the message. */
-   NETPLAY_CMD_PLAYER_CHAT    = 0x1000
+   NETPLAY_CMD_PLAYER_CHAT    = 0x1000,
+
+   /* Ping commands */
+
+   /* Sends a ping command to the server/client.
+    * Intended for estimating the latency between these two peers. */
+   NETPLAY_CMD_PING_REQUEST   = 0x1100,
+   NETPLAY_CMD_PING_RESPONSE  = 0x1101
 };
 
 #define NETPLAY_CMD_SYNC_BIT_PAUSED    (1U<<31)
@@ -404,6 +411,9 @@ struct netplay_connection
     * Network latency has limited precision as we estimate it
     * once every pre-frame. */
    int32_t ping;
+
+   /* Did we request a ping response? */
+   bool ping_requested;
 };
 
 /* Compression transcoder */
