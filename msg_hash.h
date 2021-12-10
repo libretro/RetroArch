@@ -167,6 +167,7 @@ enum msg_file_type
 enum msg_hash_enums
 {
    MSG_UNKNOWN = 0,
+   MSG_ROOM_PASSWORDED,
    MSG_INTERNET,
    MSG_INTERNET_RELAY,
    MSG_READ_WRITE,

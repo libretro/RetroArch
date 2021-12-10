@@ -18,11 +18,8 @@
 #define __RARCH_CHEEVOS_LOCALS_H
 
 #include "../deps/rcheevos/include/rc_runtime.h"
-
 #include "../deps/rcheevos/src/rcheevos/rc_libretro.h"
 
-#include <../command.h>
-#include <../verbosity.h>
 #include <boolean.h>
 #include <queues/task_queue.h>
 
@@ -31,6 +28,9 @@
 #endif
 
 #include <retro_common_api.h>
+
+#include "../command.h"
+#include "../verbosity.h"
 
 RETRO_BEGIN_DECLS
 

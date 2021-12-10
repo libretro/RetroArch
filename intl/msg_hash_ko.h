@@ -12020,6 +12020,10 @@ MSG_HASH(
    "전원 끄기 항목을 표시/해제합니다."
    )
 MSG_HASH(
+   MSG_ROOM_PASSWORDED,
+   "비밀번호 필요"
+   )
+MSG_HASH(
    MSG_INTERNET,
    "인터넷"
    )

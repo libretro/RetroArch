@@ -67,13 +67,13 @@ int font_renderer_create_default(
       *handle = font_backends[i]->init(path, font_size);
       if (*handle)
       {
-         RARCH_LOG("[Font]: Using font rendering backend: %s.\n",
+         RARCH_LOG("[Font]: Using font rendering backend: \"%s\".\n",
                font_backends[i]->ident);
          *drv = font_backends[i];
          return 1;
       }
 
-      RARCH_ERR("[Font]: Failed to create rendering backend: %s.\n",
+      RARCH_ERR("[Font]: Failed to create rendering backend: \"%s\".\n",
             font_backends[i]->ident);
    }
 

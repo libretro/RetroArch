@@ -31,18 +31,6 @@ struct nat_traversal_state_data
    uint16_t port;
 };
 
-static void netplay_nat_traversal_callback(retro_task_t *task,
-      void *task_data,
-      void *user_data, const char *error)
-{
-   struct nat_traversal_state_data *ntsd =
-      (struct nat_traversal_state_data *) task_data;
-
-   free(ntsd);
-
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_FINISHED_NAT_TRAVERSAL, NULL);
-}
-
 static void task_netplay_nat_traversal_handler(retro_task_t *task)
 {
    struct nat_traversal_state_data *ntsd =
@@ -55,27 +43,62 @@ static void task_netplay_nat_traversal_handler(retro_task_t *task)
    task_set_finished(task, true);
 }
 
-bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port)
+static void task_netplay_nat_close_handler(retro_task_t *task)
 {
-   struct nat_traversal_state_data *ntsd;
-   retro_task_t *task        = task_init();
+   natt_deinit((struct natt_status *) task->task_data,
+      SOCKET_PROTOCOL_TCP);
 
+   task_set_progress(task, 100);
+   task_set_finished(task, true);
+}
+
+static void netplay_nat_traversal_callback(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *error)
+{
+   free(task_data);
+
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_FINISHED_NAT_TRAVERSAL, NULL);
+}
+
+static bool nat_task_finder(retro_task_t *task, void *userdata)
+{
    if (!task)
       return false;
 
-   ntsd                      = (struct nat_traversal_state_data *)
-      calloc(1, sizeof(*ntsd));
+   return task->handler == task_netplay_nat_traversal_handler ||
+      task->handler == task_netplay_nat_close_handler;
+}
 
+static bool nat_task_queued(void *data)
+{
+   task_finder_data_t find_data = {nat_task_finder, NULL};
+
+   return task_queue_find(&find_data);
+}
+
+bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port)
+{
+   retro_task_t *task;
+   struct nat_traversal_state_data *ntsd;
+
+   /* Do not run more than one NAT task at a time. */
+   task_queue_wait(nat_task_queued, NULL);
+
+   task = task_init();
+   if (!task)
+      return false;
+
+   ntsd = (struct nat_traversal_state_data *) malloc(sizeof(*ntsd));
    if (!ntsd)
    {
       free(task);
       return false;
    }
 
-   ntsd->nat_traversal_state = (struct natt_status *)nat_traversal_state;
+   ntsd->nat_traversal_state = (struct natt_status *) nat_traversal_state;
    ntsd->port                = port;
 
-   task->type                = TASK_TYPE_BLOCKING;
    task->handler             = task_netplay_nat_traversal_handler;
    task->callback            = netplay_nat_traversal_callback;
    task->task_data           = ntsd;
@@ -84,6 +107,26 @@ bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port)
 
    return true;
 }
+
+bool task_push_netplay_nat_close(void *nat_traversal_state)
+{
+   retro_task_t *task;
+
+   /* Do not run more than one NAT task at a time. */
+   task_queue_wait(nat_task_queued, NULL);
+
+   task = task_init();
+   if (!task)
+      return false;
+
+   task->handler   = task_netplay_nat_close_handler;
+   task->task_data = nat_traversal_state;
+
+   task_queue_push(task);
+
+   return true;
+}
 #else
 bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port) { return false; }
+bool task_push_netplay_nat_close(void *nat_traversal_state) { return false; }
 #endif

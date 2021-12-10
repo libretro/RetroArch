@@ -1037,7 +1037,7 @@ static void runloop_deinit_core_options(
          core_option_manager_flush(
                core_options,
                conf_tmp);
-         RARCH_LOG("[Core Options]: Saved %s-specific core options to \"%s\"\n",
+         RARCH_LOG("[Core]: Saved %s-specific core options to \"%s\".\n",
                game_options_active ? "game" : "folder", path_core_options);
          config_file_write(conf_tmp, path_core_options, true);
          config_file_free(conf_tmp);
@@ -1051,7 +1051,7 @@ static void runloop_deinit_core_options(
       core_option_manager_flush(
             core_options,
             core_options->conf);
-      RARCH_LOG("[Core Options]: Saved core options file to \"%s\"\n", path);
+      RARCH_LOG("[Core]: Saved core options file to \"%s\".\n", path);
       config_file_write(core_options->conf, path, true);
    }
 
@@ -2593,48 +2593,12 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             float refresh_rate                    = (*info)->timing.fps;
             unsigned crt_switch_resolution        = settings->uints.crt_switch_resolution;
             bool video_fullscreen                 = settings->bools.video_fullscreen;
-            bool video_has_resolution_list        = video_display_server_has_resolution_list();
             bool video_switch_refresh_rate        = false;
             bool no_video_reinit                  = true;
 
             /* Refresh rate switch for regular displays */
-            if (video_has_resolution_list)
-            {
-               float refresh_mod                  = 0.0f;
-               float video_refresh_rate           = settings->floats.video_refresh_rate;
-               unsigned video_swap_interval       = settings->uints.video_swap_interval;
-               unsigned video_bfi                 = settings->uints.video_black_frame_insertion;
-               bool video_windowed_full           = settings->bools.video_windowed_fullscreen;
-               bool vrr_runloop_enable            = settings->bools.vrr_runloop_enable;
-
-               /* Roundings to PAL & NTSC standards */
-               refresh_rate = (refresh_rate > 54 && refresh_rate < 60) ? 59.94f : refresh_rate;
-               refresh_rate = (refresh_rate > 49 && refresh_rate < 55) ? 50.00f : refresh_rate;
-
-               /* Black frame insertion + swap interval multiplier */
-               refresh_mod  = video_bfi + 1.0f;
-               refresh_rate = (refresh_rate * refresh_mod * video_swap_interval);
-
-               /* Fallback when target refresh rate is not exposed */
-               if (!video_display_server_has_refresh_rate(refresh_rate))
-                  refresh_rate = (60.0f * refresh_mod * video_swap_interval);
-
-               /* Store original refresh rate on automatic change, and
-                * restore it in deinit_core and main_quit, because not all
-                * cores announce refresh rate via SET_SYSTEM_AV_INFO */
-               if (!video_st->video_refresh_rate_original)
-                  video_st->video_refresh_rate_original = video_refresh_rate;
-
-               /* Try to switch display rate when:
-                * - Not already at correct rate
-                * - In exclusive fullscreen
-                * - 'CRT SwitchRes' OFF & 'Sync to Exact Content Framerate' OFF
-                */
-               video_switch_refresh_rate = (
-                     refresh_rate != video_refresh_rate &&
-                     !crt_switch_resolution && !vrr_runloop_enable &&
-                     video_fullscreen && !video_windowed_full);
-            }
+            if (video_display_server_has_resolution_list())
+               video_switch_refresh_rate_maybe(&refresh_rate, &video_switch_refresh_rate);
 
             no_video_reinit                       = (
                      crt_switch_resolution == 0
@@ -2645,11 +2609,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
             /* First set new refresh rate and display rate, then after REINIT do
              * another display rate change to make sure the change stays */
-            if (video_switch_refresh_rate)
-            {
+            if (video_switch_refresh_rate && video_display_server_set_refresh_rate(refresh_rate))
                video_monitor_set_refresh_rate(refresh_rate);
-               video_display_server_set_refresh_rate(refresh_rate);
-            }
 
             /* When not doing video reinit, we also must not do input and menu
              * reinit, otherwise the input driver crashes and the menu gets
@@ -2660,7 +2621,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   ~(DRIVER_VIDEO_MASK | DRIVER_INPUT_MASK |
                                         DRIVER_MENU_MASK);
 
-            RARCH_LOG("[Environ]: SET_SYSTEM_AV_INFO: %ux%u, aspect: %.3f, fps: %.3f, sample rate: %.2f Hz.\n",
+            RARCH_LOG("[Environ]: SET_SYSTEM_AV_INFO: %ux%u, Aspect: %.3f, FPS: %.2f, Sample rate: %.2f Hz.\n",
                   (*info)->geometry.base_width, (*info)->geometry.base_height,
                   (*info)->geometry.aspect_ratio,
                   (*info)->timing.fps,
@@ -2892,7 +2853,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             geom->base_height  = in_geom->base_height;
             geom->aspect_ratio = in_geom->aspect_ratio;
 
-            RARCH_LOG("[Environ]: SET_GEOMETRY: %ux%u, aspect: %.3f.\n",
+            RARCH_LOG("[Environ]: SET_GEOMETRY: %ux%u, Aspect: %.3f.\n",
                   geom->base_width, geom->base_height, geom->aspect_ratio);
 
             /* Forces recomputation of aspect ratios if
@@ -3010,17 +2971,18 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          struct retro_vfs_interface_info *vfs_iface_info = (struct retro_vfs_interface_info *) data;
          if (vfs_iface_info->required_interface_version <= supported_vfs_version)
          {
-            RARCH_LOG("Core requested VFS version >= v%d, providing v%d\n", vfs_iface_info->required_interface_version, supported_vfs_version);
+            RARCH_LOG("[Environ]: GET_VFS_INTERFACE. Core requested version >= V%d, providing V%d.\n",
+                  vfs_iface_info->required_interface_version, supported_vfs_version);
             vfs_iface_info->required_interface_version = supported_vfs_version;
             vfs_iface_info->iface                      = &vfs_iface;
             system->supports_vfs = true;
          }
          else
          {
-            RARCH_WARN("Core requested VFS version v%d which is higher than what we support (v%d)\n", vfs_iface_info->required_interface_version, supported_vfs_version);
+            RARCH_WARN("[Environ]: GET_VFS_INTERFACE. Core requested version V%d which is higher than what we support (V%d).\n",
+                  vfs_iface_info->required_interface_version, supported_vfs_version);
             return false;
          }
-
          break;
       }
 
@@ -3030,6 +2992,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             (struct retro_led_interface *)data;
          if (ledintf)
             ledintf->set_led_state = led_driver_set_led;
+         RARCH_LOG("[Environ]: GET_LED_INTERFACE.\n");
       }
       break;
 
@@ -3286,7 +3249,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                *game_info_ext = p_content->content_list->game_info_ext;
             else
             {
-               RARCH_ERR("[Environ]: Failed to retrieve extended game info\n");
+               RARCH_ERR("[Environ]: Failed to retrieve extended game info.\n");
                *game_info_ext = NULL;
                return false;
             }
@@ -4757,6 +4720,7 @@ static void do_runahead(
       {
          if (!runahead_hide_warnings)
             runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES), 0, 2 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_WARN("[Run-Ahead]: %s\n", msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES));
          goto force_input_dirty;
       }
    }
@@ -4801,6 +4765,7 @@ static void do_runahead(
             if (!runahead_save_state(runloop_st))
             {
                runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               RARCH_WARN("[Run-Ahead]: %s\n", msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE));
                return;
             }
          }
@@ -4810,6 +4775,7 @@ static void do_runahead(
             if (!runahead_load_state(runloop_st))
             {
                runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               RARCH_WARN("[Run-Ahead]: %s\n", msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE));
                return;
             }
          }
@@ -4823,6 +4789,7 @@ static void do_runahead(
          runloop_secondary_core_destroy();
          runloop_st->runahead_secondary_core_available = false;
          runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_WARN("[Run-Ahead]: %s\n", msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE));
          goto force_input_dirty;
       }
 
@@ -4839,12 +4806,14 @@ static void do_runahead(
          if (!runahead_save_state(runloop_st))
          {
             runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            RARCH_WARN("[Run-Ahead]: %s\n", msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE));
             return;
          }
 
          if (!runahead_load_state_secondary())
          {
             runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            RARCH_WARN("[Run-Ahead]: %s\n", msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE));
             return;
          }
 
@@ -5222,17 +5191,16 @@ static bool core_verify_api_version(void)
    runloop_state_t *runloop_st = &runloop_state;
    unsigned api_version        = runloop_st->current_core.retro_api_version();
 
-   RARCH_LOG("%s: %u\n%s %s: %u\n",
+   RARCH_LOG("[Core]: %s: %u, %s: %u\n",
          msg_hash_to_str(MSG_VERSION_OF_LIBRETRO_API),
          api_version,
-         FILE_PATH_LOG_INFO,
          msg_hash_to_str(MSG_COMPILED_AGAINST_API),
          RETRO_API_VERSION
          );
 
    if (api_version != RETRO_API_VERSION)
    {
-      RARCH_WARN("%s\n", msg_hash_to_str(MSG_LIBRETRO_ABI_BREAK));
+      RARCH_WARN("[Core]: %s\n", msg_hash_to_str(MSG_LIBRETRO_ABI_BREAK));
       return false;
    }
    return true;
@@ -6065,8 +6033,8 @@ void core_options_flush(void)
 
    /* Log result */
    RARCH_LOG(success ?
-         "[Core Options]: Saved core options to \"%s\"\n" :
-               "[Core Options]: Failed to save core options to \"%s\"\n",
+         "[Core]: Saved core options to \"%s\".\n" :
+               "[Core]: Failed to save core options to \"%s\".\n",
             path_core_options ? path_core_options : "UNKNOWN");
 
    snprintf(msg, sizeof(msg), "%s \"%s\"",
@@ -7555,11 +7523,16 @@ int runloop_iterate(void)
       if (settings->bools.video_frame_delay_auto)
       {
          float refresh_rate           = settings->floats.video_refresh_rate;
+         unsigned video_swap_interval = settings->uints.video_swap_interval;
+         unsigned video_bfi           = settings->uints.video_black_frame_insertion;
          unsigned frame_time_interval = 8;
          bool frame_time_update       =
                /* Skip some starting frames for stabilization */
-               video_st->frame_count > 10 &&
+               video_st->frame_count > frame_time_interval &&
                video_st->frame_count % frame_time_interval == 0;
+
+         /* Black frame insertion + swap interval multiplier */
+         refresh_rate = (refresh_rate / (video_bfi + 1.0f) / video_swap_interval);
 
          /* Set target moderately as half frame time with 0 delay */
          if (video_frame_delay == 0)
@@ -7573,55 +7546,16 @@ int runloop_iterate(void)
 
          if (video_frame_delay_effective > 0 && frame_time_update)
          {
-            unsigned i                    = 0;
-            unsigned frame_time           = 0;
-            unsigned frame_time_frames    = frame_time_interval - 1;
-            unsigned frame_time_target    = 1000000.0f / refresh_rate;
-            unsigned frame_time_limit_min = frame_time_target * 1.25;
-            unsigned frame_time_limit_med = frame_time_target * 1.50;
-            unsigned frame_time_limit_max = frame_time_target * 1.90;
-            unsigned frame_time_limit_cap = frame_time_target * 2.25;
-            unsigned frame_time_limit_ign = frame_time_target * 2.50;
-            unsigned frame_time_index     =
-                  (video_st->frame_time_count &
-                  (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1));
+            video_frame_delay_auto_t vfda = {0};
+            vfda.frame_time_interval      = frame_time_interval;
+            vfda.refresh_rate             = refresh_rate;
 
-            /* Calculate average frame time to balance spikes */
-            for (i = 1; i < frame_time_frames + 1; i++)
+            video_frame_delay_auto(video_st, &vfda);
+            if (vfda.decrease > 0)
             {
-               retro_time_t frame_time_i = 0;
-
-               if (i > (unsigned)frame_time_index)
-                  continue;
-
-               frame_time_i = video_st->frame_time_samples[frame_time_index - i];
-
-               /* Ignore values when core is doing internal frame skipping */
-               if (frame_time_i > frame_time_limit_ign)
-                  frame_time_i = 0;
-               /* Limit maximum to prevent false positives */
-               else if (frame_time_i > frame_time_limit_cap)
-                  frame_time_i = frame_time_limit_cap;
-
-               frame_time += frame_time_i;
-            }
-            frame_time /= frame_time_frames;
-
-            if (frame_time > frame_time_limit_min)
-            {
-               unsigned delay_decrease = 1;
-
-               /* Increase decrease the more frame time is off target */
-               if (frame_time > frame_time_limit_med && video_frame_delay_effective > delay_decrease)
-               {
-                  delay_decrease++;
-                  if (frame_time > frame_time_limit_max && video_frame_delay_effective > delay_decrease)
-                     delay_decrease++;
-               }
-
-               video_frame_delay_effective -= delay_decrease;
+               video_frame_delay_effective -= vfda.decrease;
                RARCH_LOG("[Video]: Frame delay decrease by %d to %d due to frame time: %d > %d.\n",
-                     delay_decrease, video_frame_delay_effective, frame_time, frame_time_target);
+                     vfda.decrease, video_frame_delay_effective, vfda.time, vfda.target);
             }
          }
       }

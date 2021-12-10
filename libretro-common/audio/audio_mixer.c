@@ -280,14 +280,14 @@ static bool one_shot_resample(const float* in, size_t samples_in,
       return false;
 
    /* Allocate on a 16-byte boundary, and pad to a multiple of 16 bytes. We
-    * add four more samples in the formula below just as safeguard, because
+    * add 16 more samples in the formula below just as safeguard, because
     * resampler->process sometimes reports more output samples than the
     * formula below calculates. Ideally, audio resamplers should have a
     * function to return the number of samples they will output given a
     * count of input samples. */
    *samples_out                       = (size_t)(samples_in * ratio);
    *out                               = (float*)memalign_alloc(16,
-         (((*samples_out + 4) + 15) & ~15) * sizeof(float));
+         (((*samples_out + 16) + 15) & ~15) * sizeof(float));
 
    if (*out == NULL)
       return false;
@@ -546,14 +546,14 @@ static bool audio_mixer_play_ogg(
    }
 
    /* Allocate on a 16-byte boundary, and pad to a multiple of 16 bytes. We
-    * add four more samples in the formula below just as safeguard, because
+    * add 16 more samples in the formula below just as safeguard, because
     * resampler->process sometimes reports more output samples than the
     * formula below calculates. Ideally, audio resamplers should have a
     * function to return the number of samples they will output given a
     * count of input samples. */
    samples                         = (unsigned)(AUDIO_MIXER_TEMP_BUFFER * ratio);
    ogg_buffer                      = (float*)memalign_alloc(16,
-         (((samples + 4) + 15) & ~15) * sizeof(float));
+         (((samples + 16) + 15) & ~15) * sizeof(float));
 
    if (!ogg_buffer)
    {
@@ -695,14 +695,14 @@ static bool audio_mixer_play_flac(
    }
 
    /* Allocate on a 16-byte boundary, and pad to a multiple of 16 bytes. We
-    * add four more samples in the formula below just as safeguard, because
+    * add 16 more samples in the formula below just as safeguard, because
     * resampler->process sometimes reports more output samples than the
     * formula below calculates. Ideally, audio resamplers should have a
     * function to return the number of samples they will output given a
     * count of input samples. */
    samples                         = (unsigned)(AUDIO_MIXER_TEMP_BUFFER * ratio);
    flac_buffer                     = (float*)memalign_alloc(16,
-         (((samples + 4) + 15) & ~15) * sizeof(float));
+         (((samples + 16) + 15) & ~15) * sizeof(float));
 
    if (!flac_buffer)
    {
@@ -773,14 +773,14 @@ static bool audio_mixer_play_mp3(
    }
 
    /* Allocate on a 16-byte boundary, and pad to a multiple of 16 bytes. We
-    * add four more samples in the formula below just as safeguard, because
+    * add 16 more samples in the formula below just as safeguard, because
     * resampler->process sometimes reports more output samples than the
     * formula below calculates. Ideally, audio resamplers should have a
     * function to return the number of samples they will output given a
     * count of input samples. */
    samples                         = (unsigned)(AUDIO_MIXER_TEMP_BUFFER * ratio);
    mp3_buffer                      = (float*)memalign_alloc(16,
-         (((samples + 4) + 15) & ~15) * sizeof(float));
+         (((samples + 16) + 15) & ~15) * sizeof(float));
 
    if (!mp3_buffer)
    {

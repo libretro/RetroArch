@@ -1204,7 +1204,7 @@ static void *vulkan_init(const video_info_t *video,
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
    
-   RARCH_LOG("[Vulkan]: Found vulkan context: %s\n", ctx_driver->ident);
+   RARCH_LOG("[Vulkan]: Found vulkan context: \"%s\".\n", ctx_driver->ident);
 
    if (vk->ctx_driver->get_video_size)
       vk->ctx_driver->get_video_size(vk->ctx_data,
@@ -1215,7 +1215,7 @@ static void *vulkan_init(const video_info_t *video,
    mode_width                         = 0;
    mode_height                        = 0;
 
-   RARCH_LOG("[Vulkan]: Detecting screen resolution %ux%u.\n", full_x, full_y);
+   RARCH_LOG("[Vulkan]: Detecting screen resolution: %ux%u.\n", full_x, full_y);
    interval = video->vsync ? video->swap_interval : 0;
 
    if (ctx_driver->swap_interval)
@@ -1257,7 +1257,7 @@ static void *vulkan_init(const video_info_t *video,
    vk->video_width       = temp_width;
    vk->video_height      = temp_height;
 
-   RARCH_LOG("[Vulkan]: Using resolution %ux%u\n", temp_width, temp_height);
+   RARCH_LOG("[Vulkan]: Using resolution %ux%u.\n", temp_width, temp_height);
 
    if (!vk->ctx_driver || !vk->ctx_driver->get_context_data)
    {
@@ -2742,6 +2742,12 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 #ifdef HAVE_THREADS
       slock_unlock(vk->context->queue_lock);
 #endif
+
+      if (!staging->memory)
+      {
+         RARCH_ERR("[Vulkan]: Attempted to readback synchronously, but no image is present.\nThis can happen if vsync is disabled on Windows systems due to mailbox emulation.\n");
+         return false;
+      }
 
       if (!staging->mapped)
       {

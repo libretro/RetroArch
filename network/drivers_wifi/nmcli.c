@@ -19,13 +19,14 @@
 #include <array/rbuf.h>
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
-#include <configuration.h>
-#include <verbosity.h>
 #include <string.h>
 
 #include <libretro.h>
+
 #include "../wifi_driver.h"
 #include "../../retroarch.h"
+#include "../../configuration.h"
+#include "../../verbosity.h"
 
 typedef struct
 {

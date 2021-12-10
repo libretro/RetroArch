@@ -958,6 +958,14 @@ typedef struct
 #endif
 } video_driver_state_t;
 
+typedef struct video_frame_delay_auto {
+   float refresh_rate;
+   unsigned frame_time_interval;
+   unsigned decrease;
+   unsigned target;
+   unsigned time;
+} video_frame_delay_auto_t;
+
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
 bool video_driver_has_windowed(void);
@@ -1226,6 +1234,8 @@ void video_driver_get_window_title(char *buf, unsigned len);
 bool *video_driver_get_threaded(void);
 
 void video_driver_set_threaded(bool val);
+
+void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_auto_t *vfda);
 
 /**
  * video_context_driver_init:

@@ -1039,7 +1039,7 @@ void* video_display_server_init(enum rarch_display_type type)
 
       if (!string_is_empty(current_display_server->ident))
       {
-         RARCH_LOG("[Video]: Found display server: %s\n",
+         RARCH_LOG("[Video]: Found display server: \"%s\".\n",
                current_display_server->ident);
       }
    }
@@ -1145,6 +1145,52 @@ bool video_display_server_has_refresh_rate(float hz)
    }
 
    return rate_exists;
+}
+
+void video_switch_refresh_rate_maybe(
+      float *refresh_rate_suggest,
+      bool *video_switch_refresh_rate)
+{
+   settings_t *settings               = config_get_ptr();
+   video_driver_state_t *video_st     = video_state_get_ptr();
+
+   float refresh_rate                 = *refresh_rate_suggest;
+   float video_refresh_rate           = settings->floats.video_refresh_rate;
+   unsigned crt_switch_resolution     = settings->uints.crt_switch_resolution;
+   unsigned video_swap_interval       = settings->uints.video_swap_interval;
+   unsigned video_bfi                 = settings->uints.video_black_frame_insertion;
+   bool video_fullscreen              = settings->bools.video_fullscreen;
+   bool video_windowed_full           = settings->bools.video_windowed_fullscreen;
+   bool vrr_runloop_enable            = settings->bools.vrr_runloop_enable;
+
+   /* Roundings to PAL & NTSC standards */
+   refresh_rate = (refresh_rate > 54 && refresh_rate < 60) ? 59.94f : refresh_rate;
+   refresh_rate = (refresh_rate > 49 && refresh_rate < 55) ? 50.00f : refresh_rate;
+
+   /* Black frame insertion + swap interval multiplier */
+   refresh_rate = (refresh_rate * (video_bfi + 1.0f) * video_swap_interval);
+
+   /* Fallback when target refresh rate is not exposed */
+   if (!video_display_server_has_refresh_rate(refresh_rate))
+      refresh_rate = video_refresh_rate;
+
+   *refresh_rate_suggest = refresh_rate;
+
+   /* Store original refresh rate on automatic change, and
+    * restore it in deinit_core and main_quit, because not all
+    * cores announce refresh rate via SET_SYSTEM_AV_INFO */
+   if (!video_st->video_refresh_rate_original)
+      video_st->video_refresh_rate_original = video_refresh_rate;
+
+   /* Try to switch display rate when:
+    * - Not already at correct rate
+    * - In exclusive fullscreen
+    * - 'CRT SwitchRes' OFF & 'Sync to Exact Content Framerate' OFF
+    */
+   *video_switch_refresh_rate = (
+         refresh_rate != video_refresh_rate &&
+         !crt_switch_resolution && !vrr_runloop_enable &&
+         video_fullscreen && !video_windowed_full);
 }
 
 bool video_display_server_set_refresh_rate(float hz)
@@ -3348,9 +3394,9 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    }
 
    if (width && height)
-      RARCH_LOG("[Video]: Video @ %ux%u\n", width, height);
+      RARCH_LOG("[Video]: Set video size to: %ux%u.\n", width, height);
    else
-      RARCH_LOG("[Video]: Video @ fullscreen\n");
+      RARCH_LOG("[Video]: Set video size to: fullscreen.\n");
 
    video_st->display_type     = RARCH_DISPLAY_NONE;
    video_st->display          = 0;
@@ -3974,4 +4020,164 @@ void video_driver_reinit(int flags)
    video_st->cache_context_ack = false;
    video_driver_reinit_context(settings, flags);
    video_st->cache_context     = false;
+}
+
+#define FRAME_DELAY_AUTO_DEBUG 0
+void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_auto_t *vfda)
+{
+   unsigned i                    = 0;
+   unsigned frame_time           = 0;
+   unsigned frame_time_frames    = vfda->frame_time_interval;
+   unsigned frame_time_target    = 1000000.0f / vfda->refresh_rate;
+   unsigned frame_time_limit_min = frame_time_target * 1.30f;
+   unsigned frame_time_limit_med = frame_time_target * 1.50f;
+   unsigned frame_time_limit_max = frame_time_target * 1.90f;
+   unsigned frame_time_limit_cap = frame_time_target * 2.50f;
+   unsigned frame_time_limit_ign = frame_time_target * 3.75f;
+   unsigned frame_time_min       = frame_time_target;
+   unsigned frame_time_max       = frame_time_target;
+   unsigned frame_time_count_pos = 0;
+   unsigned frame_time_count_min = 0;
+   unsigned frame_time_count_med = 0;
+   unsigned frame_time_count_max = 0;
+   unsigned frame_time_count_ign = 0;
+   unsigned frame_time_index     =
+         (video_st->frame_time_count &
+         (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1));
+
+   /* Calculate average frame time */
+   for (i = 1; i < frame_time_frames + 1; i++)
+   {
+      unsigned frame_time_i = 0;
+
+      if (i > frame_time_index)
+         continue;
+
+      frame_time_i = video_st->frame_time_samples[frame_time_index - i];
+
+      if (frame_time_max < frame_time_i)
+         frame_time_max = frame_time_i;
+      if (frame_time_min > frame_time_i)
+         frame_time_min = frame_time_i;
+
+      /* Count frames over the target */
+      if (frame_time_i > frame_time_target)
+      {
+         frame_time_count_pos++;
+         if (frame_time_i > frame_time_limit_min)
+            frame_time_count_min++;
+         if (frame_time_i > frame_time_limit_med)
+            frame_time_count_med++;
+         if (frame_time_i > frame_time_limit_max)
+            frame_time_count_max++;
+         if (frame_time_i > frame_time_limit_ign)
+            frame_time_count_ign++;
+
+         /* Limit maximum to prevent false positives */
+         if (frame_time_i > frame_time_limit_cap)
+            frame_time_i = frame_time_limit_cap;
+      }
+
+      frame_time += frame_time_i;
+   }
+
+   frame_time /= frame_time_frames;
+
+   /* Ignore values when core is doing internal frame skipping */
+   if (frame_time_count_ign > 0)
+      frame_time = 0;
+
+   /* Special handlings for different video driver frame timings */
+   if (frame_time < frame_time_limit_med && frame_time > frame_time_target)
+   {
+      unsigned frame_time_frames_half = frame_time_frames / 2;
+      unsigned frame_time_delta       = frame_time_max - frame_time_min;
+
+      /* Ensure outcome on certain conditions */
+      int mode = 0;
+
+      /* All frames are above the target */
+      if (frame_time_count_pos == frame_time_frames)
+         mode = 1;
+      /* At least half of interval frames are above minimum level */
+      else if (frame_time_count_min >= frame_time_frames_half)
+         mode = 2;
+      /* D3Dx stripe equalizer */
+      else if (
+               frame_time_count_pos == frame_time_frames_half
+            && frame_time_count_min >= 1
+            && frame_time_delta > (frame_time_target / 3)
+            && frame_time_delta < (frame_time_target / 2)
+            && frame_time > frame_time_target
+         )
+         mode = 3;
+      /* Boost med/max spikes */
+      else if (
+               frame_time_count_pos >= frame_time_frames_half
+            && (  frame_time_count_max > 0
+               || frame_time_count_med > 1)
+            && frame_time_count_max == frame_time_count_med
+            && frame_time_delta < frame_time_target
+         )
+         mode = 4;
+      /* Ignore */
+      else if (frame_time_delta > frame_time_target
+            && frame_time_count_med == 0
+         )
+         mode = -1;
+
+      if (mode > 0)
+      {
+#if FRAME_DELAY_AUTO_DEBUG
+         RARCH_LOG("[Video]: Frame delay nudge %d by mode %d.\n", frame_time, mode);
+#endif
+         frame_time = frame_time_limit_med;
+      }
+      else if (mode < 0)
+      {
+#if FRAME_DELAY_AUTO_DEBUG
+         RARCH_LOG("[Video]: Frame delay ignore %d.\n", frame_time);
+#endif
+         frame_time = 0;
+      }
+   }
+
+   /* Final output decision */
+   if (frame_time > frame_time_limit_min)
+   {
+      unsigned delay_decrease = 1;
+
+      /* Increase decrease the more frame time is off target */
+      if (frame_time > frame_time_limit_med && video_st->frame_delay_effective > delay_decrease)
+      {
+         delay_decrease++;
+         if (frame_time > frame_time_limit_max && video_st->frame_delay_effective > delay_decrease)
+            delay_decrease++;
+      }
+
+      vfda->decrease = delay_decrease;
+   }
+
+   vfda->time   = frame_time;
+   vfda->target = frame_time_target;
+
+#if FRAME_DELAY_AUTO_DEBUG
+   if (frame_time_index > frame_time_frames)
+      RARCH_LOG("[Video]: %5d / pos:%d min:%d med:%d max:%d / delta:%5d = %5d %5d %5d %5d %5d %5d %5d %5d\n",
+            frame_time,
+            frame_time_count_pos,
+            frame_time_count_min,
+            frame_time_count_med,
+            frame_time_count_max,
+            frame_time_max - frame_time_min,
+            video_st->frame_time_samples[frame_time_index - 1],
+            video_st->frame_time_samples[frame_time_index - 2],
+            video_st->frame_time_samples[frame_time_index - 3],
+            video_st->frame_time_samples[frame_time_index - 4],
+            video_st->frame_time_samples[frame_time_index - 5],
+            video_st->frame_time_samples[frame_time_index - 6],
+            video_st->frame_time_samples[frame_time_index - 7],
+            video_st->frame_time_samples[frame_time_index - 8]
+      );
+#endif
 }

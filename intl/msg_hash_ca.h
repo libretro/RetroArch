@@ -92,6 +92,14 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    "Abocar el disc físic multimèdia a l'emmagatzematge intern. Es guardarà com un arxiu d'imatge."
    )
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "Expulsar disc"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_EJECT_DISC,
+   "Expulsa el disc de la unitat física de CD/DVD."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
@@ -317,24 +325,388 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
    "Descarrega les miniatures de les entrades de la llista de reproducció seleccionada."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
+   "Descarregador de contingut"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
+   "Actualitza els fitxers d'informació del nucli"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
+   "Actualitza els recursos"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
+   "Actualitza els perfils dels controladors"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
+   "Actualitza els trucs"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
+   "Actualitza les bases de dades"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
+   "Actualitza les superposicions"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
+   "Actualitza els shaders GLSL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
+   "Actualitza els shaders Cg"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
+   "Actualitza els shaders Slang"
+   )
 
 /* Main Menu > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
+   "Informació del nucli"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFORMATION,
+   "Mostra la informació relativa a l'aplicació/nucli."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   "Informació del disc"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+   "Veure informació sobre els discs multimèdia inserits."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
+   "Informació de la xarxa"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
+   "Mostra l'interfície(s) de xarxa i les IP associades."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
+   "Informació del sistema"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
+   "Mostra la informació específica del dispositiu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
+   "Gestor de base de dades"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
+   "Veure bases de dades."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
+   "Gestor del cursor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
+   "Mostra les cerques anteriors."
+   )
 
 /* Main Menu > Information > Core Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
+   "Nom del nucli"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
+   "Etiqueta del nucli"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
+   "Nom del sistema"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
+   "Fabricant del sistema"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
+   "Autor"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
+   "Permisos"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
+   "Llicència"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
+   "Extensions compatibles"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
+   "APIs de gràfics requerides"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
+   "Falta, requerida:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   "Falta, opcional:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
+   "Present, requerit:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   "Present, opcional:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LOCK,
+   "Bloqueja el nucli instal·lat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LOCK,
+   "Evita la modificació del nucli instal·lat actualment. Es pot utilitzar per evitar actualitzacions no desitjades quan el contingut requereix una versió del nucli específica (per exemple, conjunts de ROM d'arcade)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_DELETE,
+   "Eliminar nucli"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_DELETE,
+   "Eliminar aquest nucli del disc."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
+   "Còpia de seguretat del nucli"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
+   "Crea una còpia de seguretat arxivada del nucli instal·lat actualment."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
+   "Restaura la còpia de seguretat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
+   "Instal·la una versió anterior del nucli des d'una llista de còpies de seguretat arxivades."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
+   "Suprimeix la còpia de seguretat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
+   "Eliminar un fitxer de la llista de còpies de seguretat arxivades."
+   )
 
 /* Main Menu > Information > System Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
+   "CoreAudio V3 implementat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
+   "DirectSound implementat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT,
+   "WASAPI implementat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT,
+   "XAudio2 implementat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT,
+   "zlib implementat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT,
+   "7zip implementat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
+   "Biblioteques dinàmiques implementades"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT,
+   "Càrrega dinàmica en temps d'execució de biblioteques de libretro"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
+   "Cg implementat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT,
+   "GLSL implementat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT,
+   "GLSL implementat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT,
+   "Imatge SDL implementat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT,
+   "FFmpeg implementat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
+   "mpv implementat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT,
+   "CoreText implementat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT,
+   "FreeType implementat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
+   "STB TrueType implementat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
+   "Joc en xarxa (Peer-to-Peer) implementat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
+   "Python (script de suport per a shaders) implementat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
+   "Video4Linux2 implementat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
+   "libusb implementat"
+   )
 
 /* Main Menu > Information > Database Manager */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION,
+   "Selecció de base de dades"
+   )
 
 /* Main Menu > Information > Database Manager > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
+   "Nom"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
+   "Descripció"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
+   "Gènere"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
+   "Editora"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
+   "Desenvolupadora"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
+   "Origen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
+   "Valoració TGDB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
+   "Valoració de la revista Famitsu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
+   "Valoració de la revista Edge"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
+   "Puntuació de la revista Edge"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
+   "Número de la revista Edge"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   "Mes de la data de publicació"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
+   "Any de la publicació"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
+   "Clasificació BBFC"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
+   "Clasificació ESRB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
+   "Clasificació ELSPA"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
+   "Clasificació PEGI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
+   "Hardware de millora"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
+   "Clasificació CERO"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
+   "Sèrie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
+   "Control analògic compatible"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
+   "Vibració suportada"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
+   "Joc cooperatiu implementat"
+   )
 
 /* Main Menu > Configuration File */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+   "Carregar configuració"
+   )
 
 /* Main Menu > Help */
 

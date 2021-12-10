@@ -606,7 +606,7 @@ static bool gl3_init_hw_render(gl3_t *gl, unsigned width, unsigned height)
 
    gl3_context_bind_hw_render(gl, true);
 
-   RARCH_LOG("[GLCore]: Initializing HW render (%u x %u).\n", width, height);
+   RARCH_LOG("[GLCore]: Initializing HW render (%ux%u).\n", width, height);
    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_fbo_size);
    glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &max_rb_size);
    RARCH_LOG("[GLCore]: Max texture size: %d px, renderbuffer size: %d px.\n",
@@ -1180,7 +1180,7 @@ static void *gl3_init(const video_info_t *video,
    gl->ctx_driver = ctx_driver;
    gl->video_info = *video;
 
-   RARCH_LOG("[GLCore]: Found GL context: %s\n", ctx_driver->ident);
+   RARCH_LOG("[GLCore]: Found GL context: \"%s\".\n", ctx_driver->ident);
 
    if (gl->ctx_driver->get_video_size)
       gl->ctx_driver->get_video_size(gl->ctx_data,
@@ -1192,7 +1192,7 @@ static void *gl3_init(const video_info_t *video,
    mode_height = 0;
    interval    = 0;
 
-   RARCH_LOG("[GLCore]: Detecting screen resolution %ux%u.\n", full_x, full_y);
+   RARCH_LOG("[GLCore]: Detecting screen resolution: %ux%u.\n", full_x, full_y);
 
    if (video->vsync)
       interval = video->swap_interval;
@@ -1303,7 +1303,7 @@ static void *gl3_init(const video_info_t *video,
    gl->video_width  = temp_width;
    gl->video_height = temp_height;
 
-   RARCH_LOG("[GLCore]: Using resolution %ux%u\n", temp_width, temp_height);
+   RARCH_LOG("[GLCore]: Using resolution %ux%u.\n", temp_width, temp_height);
 
    /* Set the viewport to fix recording, since it needs to know
     * the viewport sizes before we start running. */

@@ -11892,6 +11892,10 @@ MSG_HASH(
    "Afficher l'option 'Éteindre'."
    )
 MSG_HASH(
+   MSG_ROOM_PASSWORDED,
+   "Protégé par mot de passe"
+   )
+MSG_HASH(
    MSG_INTERNET_RELAY,
    "Internet (relais)"
    )

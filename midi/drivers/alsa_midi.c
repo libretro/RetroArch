@@ -16,11 +16,11 @@
 #include <alsa/asoundlib.h>
 
 #include <libretro.h>
-#include <verbosity.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
 #include "../midi_driver.h"
+#include "../../verbosity.h"
 
 typedef struct
 {

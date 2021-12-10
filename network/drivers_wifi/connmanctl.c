@@ -19,11 +19,13 @@
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
-#include <configuration.h>
-#include <verbosity.h>
 #include <time.h>
+
 #include "../wifi_driver.h"
+
+#include "../../configuration.h"
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 #include "../../lakka.h"
 #ifdef HAVE_GFX_WIDGETS
 #include "../../gfx/gfx_widgets.h"

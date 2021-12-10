@@ -11992,6 +11992,10 @@ MSG_HASH(
    "'Kapat' seçeneğini göster."
    )
 MSG_HASH(
+   MSG_ROOM_PASSWORDED,
+   "Şifreli"
+   )
+MSG_HASH(
    MSG_INTERNET,
    "İnternet"
    )

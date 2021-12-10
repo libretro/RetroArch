@@ -1286,7 +1286,7 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
          height = d3d12->vp.height;
       }
 
-      RARCH_LOG("[D3D12]: Updating framebuffer size %u x %u.\n", width, height);
+      RARCH_LOG("[D3D12]: Updating framebuffer size %ux%u.\n", width, height);
 
       if ((i != (d3d12->shader_preset->passes - 1)) || (width != d3d12->vp.width) ||
           (height != d3d12->vp.height))
