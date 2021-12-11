@@ -30,6 +30,7 @@
 
 #include <net/net_compat.h>
 #include <net/net_ifinfo.h>
+#include <net/net_natt.h>
 #include <retro_miscellaneous.h>
 
 #include "../../core.h"
@@ -218,6 +219,8 @@ typedef struct
    bool has_set_netplay_ip_port;
    bool has_set_netplay_stateless_mode;
    bool has_set_netplay_check_frames;
+   /* NAT traversal info (if NAT traversal is used and serving) */
+   struct nat_traversal_data nat_traversal_request;
 } net_driver_state_t;
 
 net_driver_state_t *networking_state_get_ptr(void);

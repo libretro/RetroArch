@@ -5211,6 +5211,10 @@ MSG_HASH(
    "Макс. одновременных подключений"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
+   "Максимальное количество активных соединений, которое будет принимать хост до отказа новых."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
    "Пароль сервера"
    )
@@ -5233,6 +5237,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
    "Запускать Netplay в режиме наблюдателя."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
+   "Разрешить паузу"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
+   "Разрешать другим игрокам паузу во время игры. Хост может включать паузу всегда, независимо от настройки."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,

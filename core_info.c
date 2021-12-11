@@ -80,7 +80,9 @@ typedef struct
 /* Forward declarations */
 static void core_info_free(core_info_t* info);
 static uint32_t core_info_hash_string(const char *str);
+#ifdef HAVE_CORE_INFO_CACHE
 static core_info_cache_list_t *core_info_cache_list_new(void);
+#endif
 static void core_info_cache_add(core_info_cache_list_t *list,
       core_info_t *info, bool transfer);
 
@@ -566,30 +568,6 @@ static void core_info_cache_list_free(
    free(core_info_cache_list);
 }
 
-static core_info_cache_list_t *core_info_cache_list_new(void)
-{
-   core_info_cache_list_t *core_info_cache_list = 
-      (core_info_cache_list_t *)malloc(sizeof(*core_info_cache_list));
-   if (!core_info_cache_list)
-      return NULL;
-
-   core_info_cache_list->length = 0;
-   core_info_cache_list->items  = (core_info_t *)
-      calloc(CORE_INFO_CACHE_DEFAULT_CAPACITY,
-            sizeof(core_info_t));
-
-   if (!core_info_cache_list->items)
-   {
-      core_info_cache_list_free(core_info_cache_list);
-      return NULL;
-   }
-
-   core_info_cache_list->capacity = CORE_INFO_CACHE_DEFAULT_CAPACITY;
-   core_info_cache_list->refresh  = false;
-
-   return core_info_cache_list;
-}
-
 static core_info_t *core_info_cache_find(
       core_info_cache_list_t *list, char *core_file_id)
 {
@@ -659,6 +637,30 @@ static void core_info_cache_add(
 }
 
 #ifdef HAVE_CORE_INFO_CACHE
+static core_info_cache_list_t *core_info_cache_list_new(void)
+{
+   core_info_cache_list_t *core_info_cache_list = 
+      (core_info_cache_list_t *)malloc(sizeof(*core_info_cache_list));
+   if (!core_info_cache_list)
+      return NULL;
+
+   core_info_cache_list->length = 0;
+   core_info_cache_list->items  = (core_info_t *)
+      calloc(CORE_INFO_CACHE_DEFAULT_CAPACITY,
+            sizeof(core_info_t));
+
+   if (!core_info_cache_list->items)
+   {
+      core_info_cache_list_free(core_info_cache_list);
+      return NULL;
+   }
+
+   core_info_cache_list->capacity = CORE_INFO_CACHE_DEFAULT_CAPACITY;
+   core_info_cache_list->refresh  = false;
+
+   return core_info_cache_list;
+}
+
 static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
 {
    intfstream_t *file                           = NULL;

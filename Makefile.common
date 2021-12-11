@@ -2228,27 +2228,6 @@ ifeq ($(HAVE_NETWORKING), 1)
    ifeq ($(HAVE_NETWORKGAMEPAD), 1)
       OBJ += cores/libretro-net-retropad/net_retropad_core.o
    endif
-
-   ifeq ($(HAVE_BUILTINMINIUPNPC), 1)
-      HAVE_MINIUPNPC = 1
-      DEFINES += -DHAVE_MINIUPNPC -DHAVE_BUILTINMINIUPNPC -DMINIUPNPC_SET_SOCKET_TIMEOUT -DMINIUPNPC_GET_SRC_ADDR
-      INCLUDE_DIRS += -I$(DEPS_DIR)
-      OBJ     += $(DEPS_DIR)/miniupnpc/igd_desc_parse.o \
-                 $(DEPS_DIR)/miniupnpc/upnpreplyparse.o \
-                 $(DEPS_DIR)/miniupnpc/upnpcommands.o \
-                 $(DEPS_DIR)/miniupnpc/upnperrors.o \
-                 $(DEPS_DIR)/miniupnpc/connecthostport.o \
-                 $(DEPS_DIR)/miniupnpc/portlistingparse.o \
-                 $(DEPS_DIR)/miniupnpc/receivedata.o \
-                 $(DEPS_DIR)/miniupnpc/upnpdev.o \
-                 $(DEPS_DIR)/miniupnpc/minissdpc.o \
-                 $(DEPS_DIR)/miniupnpc/miniwget.o \
-                 $(DEPS_DIR)/miniupnpc/miniupnpc.o \
-                 $(DEPS_DIR)/miniupnpc/minixml.o \
-                 $(DEPS_DIR)/miniupnpc/minisoap.o
-   else ifeq ($(HAVE_MINIUPNPC), 1)
-      LIBS    += $(MINIUPNPC_LIBS)
-   endif
 endif
 
 ifneq ($(findstring FPGA,$(OS)),)

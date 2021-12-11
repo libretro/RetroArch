@@ -5095,6 +5095,10 @@ MSG_HASH(
    "Maximale gleichzeitige Verbindungen"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
+   "Die maximale Anzahl aktiver Verbindungen, die der Host akzeptiert, bevor er neue Verbindungen ablehnt."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
    "Server-Passwort"
    )
@@ -5117,6 +5121,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
    "Startet das Netplay im Zuschauermodus."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
+   "Pausieren zulassen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
+   "Spielern erlauben, während des Netplay zu pausieren. Der Host kann unabhängig von dieser Einstellung immer pausieren."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -10971,11 +10983,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
-   "Fehler beim Erstellen des Abbilds. Run-Ahead wurde deaktiviert."
+   "Erstellen des Savestates fehlgeschlagen. Run-Ahead wurde deaktiviert."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
-   "Fehler beim Laden des Abbilds. Run-Ahead wurde deaktiviert."
+   "Laden des Savestates fehlgeschlagen. Run-Ahead wurde deaktiviert."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,

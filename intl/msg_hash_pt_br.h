@@ -1346,7 +1346,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   "Indica o método de interpolação de imagem a ser usado quando a configuração \"Dimensionar usando números inteiros\" estiver desativada. \"Vizinho mais próximo\" afeta menos o desempenho."
+   "Indica o método de interpolação de imagem a ser usado quando a configuração 'Dimensionar com valores inteiros' estiver desativada. 'Vizinho mais próximo' afeta menos o desempenho."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
@@ -1645,7 +1645,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
-   "Escala com valores inteiros"
+   "Dimensionar com valores inteiros"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
@@ -1653,11 +1653,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Dimensionar usando números inteiros"
+   "Redimensionar usando valores inteiros"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Faz com que o dimensionamento inteiro seja sempre arredondado para um valor mais alto em vez de um valor mais baixo."
+   "Faz com que o dimensionamento com valores inteiros seja sempre arredondado para um valor mais alto em vez de um valor mais baixo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -1669,7 +1669,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Valor do ponto flutuante (largura/altura) da proporção do vídeo, usado se a 'Proporção de tela' for definhada como 'Configuração'."
+   "Valor do ponto flutuante (largura/altura) da proporção da tela, usado se a 'Proporção de tela' for definhada como 'Configuração'."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1687,7 +1687,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Deslocamento personalizado no eixo-X da janela de exibição. \nSerá ignorado caso a 'Escala com valores inteiros' estiver ativada."
+   "Deslocamento personalizado no eixo-X da janela de exibição. \nSerá ignorado caso o 'Dimensionamento com valores inteiros' estiver ativado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1695,7 +1695,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Deslocamento personalizado no eixo-Y da janela de exibição. \nSerá ignorado caso a 'Escala com valores inteiros' estiver ativada."
+   "Deslocamento personalizado no eixo-Y da janela de exibição. \nSerá ignorado caso o 'dimensionamento com valores inteiros' estiver ativado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -1805,7 +1805,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Diminui temporariamente o 'Atraso de quadro' real para evitar futuras pulos de quadros. Se o valor do 'Atraso de quadro' for 0, o cálculo começará a partir da duração de meio quadro."
+   "Diminui temporariamente o 'Atraso de quadros' real para evitar futuros pulos de quadros. Se o valor do 'Atraso de quadro' for 0, o cálculo começará a partir da duração de meio quadro."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
@@ -2322,7 +2322,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
-   "Determine a intensidade dos efeitos do retorno háptico."
+   "Determine a intensidade dos efeitos da resposta háptica."
    )
 
 /* Settings > Input > Menu Controls */
@@ -3611,51 +3611,51 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
-   "(Modo paisagem) Escala da sobreposição"
+   "(Modo retrato) Escala da sobreposição"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_SCALE_LANDSCAPE,
-   "Dimensiona todos os elementos da interface na sobreposição ao usar uma orientação de tela no modo paisagem."
+   "Dimensiona todos os elementos da interface na sobreposição ao usar uma orientação de tela no modo retrato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
-   "(Modo paisagem) Proporção de sobreposição"
+   "(Modo retrato) Proporção de sobreposição"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
-   "Aplica um fator de correção de proporção de aspecto à sobreposição ao usar uma orientação de tela no modo paisagem. Os valores positivos aumentam (enquanto os valores negativos diminuem) a largura da sobreposição."
+   "Aplica um fator de correção de proporção da tela à sobreposição ao usar uma orientação de tela no modo retrato. Os valores positivos aumentam (enquanto os valores negativos diminuem) a largura da sobreposição."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_LANDSCAPE,
-   "(Modo paisagem) Separação horizontal da sobreposição"
+   "(Modo retrato) Separação horizontal da sobreposição"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
-   "Caso seja compatível pela configuração atual, ajusta o espaçamento entre os elementos da interface das metades da esquerda e da direita quando usar as orientações do modo paisagem em uma sobreposição. Os valores positivos aumentam (enquanto os valores negativos diminuem) a separação de ambas as metades."
+   "Caso seja compatível pela configuração atual, ajusta o espaçamento entre os elementos da interface das metades da esquerda e da direita quando usar as orientações do modo retrato em uma sobreposição. Os valores positivos aumentam (enquanto os valores negativos diminuem) a separação de ambas as metades."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_LANDSCAPE,
-   "(Modo paisagem) Separação vertical da sobreposição"
+   "(Modo retrato) Separação vertical da sobreposição"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
-   "Caso seja compatível pela configuração atual, ajusta o espaçamento entre os elementos da interface das metades de cima e das de baixo quando usar as orientações do modo paisagem em uma sobreposição. Os valores positivos aumentam (enquanto os valores negativos diminuem) a separação de ambas as metades."
+   "Caso seja compatível pela configuração atual, ajusta o espaçamento entre os elementos da interface das metades de cima e das de baixo quando usar as orientações do modo retrato em uma sobreposição. Os valores positivos aumentam (enquanto os valores negativos diminuem) a separação de ambas as metades."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
-   "(Modo paisagem) Compensação X de sobreposição"
+   "(Modo retrato) Compensação X de sobreposição"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_LANDSCAPE,
-   "Compensa a sobreposição no eixo horizontal ao usar uma orientação de tela no modo paisagem. Os valores positivos deslocarão a sobreposição para a direita e os valores negativos para a esquerda."
+   "Compensa a sobreposição no eixo horizontal ao usar uma orientação de tela no modo retrato. Os valores positivos deslocarão a sobreposição para a direita e os valores negativos para a esquerda."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_LANDSCAPE,
-   "(Modo paisagem) Compensação Y de sobreposição"
+   "(Modo retrato) Compensação Y de sobreposição"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_LANDSCAPE,
-   "Compensa a sobreposição no eixo vertical ao usar uma orientação de tela no modo paisagem. Os valores positivos deslocarão a sobreposição para cima e os valores negativos para baixo."
+   "Compensa a sobreposição no eixo vertical ao usar uma orientação de tela no modo retrato. Os valores positivos deslocarão a sobreposição para cima e os valores negativos para baixo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
@@ -3671,7 +3671,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
-   "Aplica um fator de correção da proporção de aspecto à sobreposição ao usar uma orientação de tela no modo retrato. Os valores positivos aumentam (enquanto os valores negativos diminuem) a altura da sobreposição."
+   "Aplica um fator de correção da proporção da tela à sobreposição ao usar uma orientação de tela no modo retrato. Os valores positivos aumentam (enquanto os valores negativos diminuem) a altura da sobreposição."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_PORTRAIT,
@@ -4894,11 +4894,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Opacidade do framebuffer"
+   "Opacidade do quadro de buffer"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "Modificar a opacidade do framebuffer."
+   "Modificar a opacidade do quadro de buffer."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
@@ -5155,6 +5155,10 @@ MSG_HASH(
    "Quantidade máxima de conexões simultâneas"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
+   "O número máximo de conexões ativas que o anfitrião aceitará antes de recusar novas."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
    "Senha do servidor"
    )
@@ -5177,6 +5181,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
    "Iniciar jogo em rede no modo espectador."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
+   "Permitir pausar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
+   "Permite aos jogadores pausarem durante o jogo em rede. O anfitrião pode sempre pausar independentemente da configuração."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -8062,7 +8074,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
-   "Escala com valores inteiros"
+   "Dimensionar com valores inteiros"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN,
@@ -8594,11 +8606,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
-   "Otimizar a disposição no modo paisagem"
+   "Otimizar a disposição no modo retrato"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
-   "Ajusta automaticamente a disposição do menu para se adequar a tela com orientação de paisagem."
+   "Ajusta automaticamente a disposição do menu para se adequar a tela com orientação em modo retrato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
@@ -8614,7 +8626,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
-   "Move automaticamente a barra de navegação no lado direito da tela na orientação de paisagem."
+   "Move automaticamente a barra de navegação no lado direito da tela na orientação em modo retrato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
@@ -8642,11 +8654,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
-   "Miniaturas no modo paisagem"
+   "Miniaturas no modo retrato"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
-   "Especifica como exibir miniaturas das listas de reprodução na orientação de paisagem."
+   "Especifica como exibir miniaturas das listas de reprodução na orientação em modo retrato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
@@ -11231,15 +11243,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
-   "Falha ao salvar o estado do jogo. A 'Execução antecipada' foi desativada."
+   "Houve uma falha ao carregar o estado do jogo. A 'Execução antecipada' foi desativada."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
-   "Falha ao carregar o estado do jogo. A 'Execução antecipada' foi desativada."
+   "Houve uma falha ao salvar o estado do jogo. A 'Execução antecipada' foi desativada."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
-   "Falha ao criar uma segunda instância. A 'Execução antecipada' agora usará apenas uma instância."
+   "Houve uma falha ao criar uma segunda instância. A 'Execução antecipada' agora usará apenas uma instância."
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
@@ -11848,6 +11860,10 @@ MSG_HASH(
    "Mostra a opção 'Desligar'."
    )
 MSG_HASH(
+   MSG_ROOM_PASSWORDED,
+   "Com senha"
+   )
+MSG_HASH(
    MSG_INTERNET_RELAY,
    "Internet (retransmitir)"
    )
@@ -12042,7 +12058,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
-   "o bottom_menu.png\nnão foi encontrado\nna pasta assets/ctr"
+   "Não foi encontrado\no arquivo bottom_menu.png\nna pasta assets/ctr"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,

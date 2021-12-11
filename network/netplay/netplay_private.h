@@ -21,7 +21,6 @@
 #include "netplay.h"
 
 #include <net/net_compat.h>
-#include <net/net_natt.h>
 #include <features/features_cpu.h>
 #include <streams/trans_stream.h>
 
@@ -499,9 +498,6 @@ struct netplay
 
    struct retro_callbacks cbs;
 
-   /* NAT traversal info (if NAT traversal is used and serving) */
-   struct natt_status nat_traversal_state;
-
    struct delta_frame *buffer;
    size_t buffer_size;
 
@@ -925,6 +921,8 @@ void netplay_announce_nat_traversal(netplay_t *netplay);
  * Initialize the NAT traversal library and try to open a port
  */
 void netplay_init_nat_traversal(netplay_t *netplay);
+
+void netplay_deinit_nat_traversal(void);
 
 /***************************************************************
  * NETPLAY-KEYBOARD.C

@@ -6160,44 +6160,25 @@ void netplay_handle_slaves(netplay_t *netplay)
  */
 void netplay_announce_nat_traversal(netplay_t *netplay)
 {
-#if !defined(HAVE_SOCKET_LEGACY) && HAVE_MINIUPNPC
+#ifndef HAVE_SOCKET_LEGACY
    char msg[512], host[256], port[6];
-   const char *dmsg = NULL;
+   const char *dmsg           = NULL;
+   net_driver_state_t *net_st = &networking_driver_st;
   
-   if (netplay->nat_traversal_state.have_inet4)
+   if (net_st->nat_traversal_request.status == NAT_TRAVERSAL_STATUS_OPENED)
    {
       if (!getnameinfo(
-               (const struct sockaddr *)
-               &netplay->nat_traversal_state.ext_inet4_addr,
-               sizeof(netplay->nat_traversal_state.ext_inet4_addr),
-               host, sizeof(host), port, sizeof(port),
-               NI_NUMERICHOST | NI_NUMERICSERV))
+         (struct sockaddr *) &net_st->nat_traversal_request.request.addr,
+         sizeof(net_st->nat_traversal_request.request.addr),
+         host, sizeof(host), port, sizeof(port),
+         NI_NUMERICHOST | NI_NUMERICSERV))
       {
          snprintf(msg, sizeof(msg), "%s: %s:%s",
                msg_hash_to_str(MSG_PUBLIC_ADDRESS),
                host, port);
          dmsg = msg;
       }
-
-
    }
-#ifdef HAVE_INET6
-   else if (netplay->nat_traversal_state.have_inet6)
-   {
-      if (!getnameinfo(
-               (const struct sockaddr *)
-               &netplay->nat_traversal_state.ext_inet6_addr,
-               sizeof(netplay->nat_traversal_state.ext_inet6_addr),
-               host, sizeof(host), port, sizeof(port),
-               NI_NUMERICHOST | NI_NUMERICSERV))
-      {
-         snprintf(msg, sizeof(msg), "%s: %s|%s",
-               msg_hash_to_str(MSG_PUBLIC_ADDRESS),
-               host, port);
-         dmsg = msg;
-      }
-   }
-#endif
    else
       dmsg = msg_hash_to_str(MSG_UPNP_FAILED);
 
@@ -6216,7 +6197,16 @@ void netplay_announce_nat_traversal(netplay_t *netplay)
  */
 void netplay_init_nat_traversal(netplay_t *netplay)
 {
-   task_push_netplay_nat_traversal(&netplay->nat_traversal_state, netplay->tcp_port);
+   net_driver_state_t *net_st = &networking_driver_st;
+
+   task_push_netplay_nat_traversal(&net_st->nat_traversal_request, netplay->tcp_port);
+}
+
+void netplay_deinit_nat_traversal(void)
+{
+   net_driver_state_t *net_st = &networking_driver_st;
+
+   task_push_netplay_nat_close(&net_st->nat_traversal_request);
 }
 
 static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *res,
@@ -6840,9 +6830,6 @@ void netplay_free(netplay_t *netplay)
 
    if (netplay->connections && netplay->connections != &netplay->one_connection)
       free(netplay->connections);
-
-   if (netplay->nat_traversal)
-      task_push_netplay_nat_close(&netplay->nat_traversal_state);
 
    if (netplay->buffer)
    {
@@ -8102,10 +8089,14 @@ void deinit_netplay(void)
 
    if (net_st->data)
    {
+      if (net_st->data->nat_traversal)
+         netplay_deinit_nat_traversal();
+
       netplay_free(net_st->data);
       net_st->data              = NULL;
       net_st->netplay_enabled   = false;
       net_st->netplay_is_client = false;
+      net_st->is_mitm           = false;
    }
    core_unset_netplay_callbacks();
 }

@@ -3338,6 +3338,10 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "Schijf Uitwerpen"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Disk Image Toevoegen"
    )
