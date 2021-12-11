@@ -158,19 +158,12 @@ int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file* stream, i
 
 int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file* stream)
 {
-    if (!stream || (!stream->fp && stream->fh == INVALID_HANDLE_VALUE))
+    if (!stream)
         return -1;
 
-    if (stream->fh != INVALID_HANDLE_VALUE)
-    {
-        LARGE_INTEGER sz;
-        if (GetFileSizeEx(stream->fh, &sz))
-            return sz.QuadPart;
-        return 0;
-    }
     if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
     {
-        return ftell(stream->fp);
+        return _ftelli64(stream->fp);
     }
     if (lseek(stream->fd, 0, SEEK_CUR) < 0)
         return -1;
