@@ -38,6 +38,7 @@
 #endif
 
 #ifdef __WINRT__
+#include <Fileapifromapp.h>
 #include <uwp/uwp_func.h>
 #endif
 
@@ -1047,8 +1048,6 @@ static bool content_file_load(
                 !is_path_accessible_using_standard_io(content_path))
             {
                /* Fallback to a file copy into an accessible directory */
-               char *buf;
-               int64_t len;
                char new_basedir[PATH_MAX_LENGTH];
                char new_path[PATH_MAX_LENGTH];
 
@@ -1075,28 +1074,22 @@ static bool content_file_load(
                fill_pathname_join(new_path, new_basedir,
                      path_basename(content_path), sizeof(new_path));
 
+               wchar_t wcontent_path[MAX_PATH];
+               mbstowcs(wcontent_path, content_path, MAX_PATH);
+               wchar_t wnew_path[MAX_PATH];
+               mbstowcs(wnew_path, new_path, MAX_PATH);
                /* TODO: This may fail on very large files...
-                * but copying large files is not a good idea anyway */
-               if (!filestream_read_file(content_path, &buf, &len))
+                * but copying large files is not a good idea anyway 
+                * (This disclaimer is out dated but I don't want to remove it)*/
+               if (!CopyFileFromAppW(wcontent_path,wnew_path,false))
                {
-                  snprintf(msg, sizeof(msg), "%s \"%s\". (during copy read)\n",
+                  int err = GetLastError();
+                  snprintf(msg, sizeof(msg), "%s \"%s\". (during copy read or write)\n",
                         msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                         content_path);
                   *error_string = strdup(msg);
                   return false;
                }
-
-               if (!filestream_write_file(new_path, buf, len))
-               {
-                  free(buf);
-                  snprintf(msg, sizeof(msg), "%s \"%s\". (during copy write)\n",
-                        msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
-                        content_path);
-                  *error_string = strdup(msg);
-                  return false;
-               }
-
-               free(buf);
 
                content_path = content_file_list_append_temporary(
                      p_content->content_list, new_path);
