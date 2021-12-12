@@ -30,7 +30,6 @@
 #define RARCH_DEFAULT_PORT 55435
 #define RARCH_DEFAULT_NICK "Anonymous"
 
-#define NETPLAY_NICK_LEN      32
 #define NETPLAY_PASS_LEN      128
 #define NETPLAY_PASS_HASH_LEN 64 /* length of a SHA-256 hash */
 
@@ -577,6 +576,7 @@ struct netplay
 
    /* TCP port (only set if serving) */
    uint16_t tcp_port;
+   uint16_t ext_tcp_port;
 
    /* The sharing mode for each device */
    uint8_t device_share_modes[MAX_INPUT_DEVICES];

@@ -37,8 +37,13 @@
 
 #include "netplay_protocol.h"
 
+#define NETPLAY_NICK_LEN     32
 #define NETPLAY_HOST_STR_LEN 32
 #define NETPLAY_HOST_LONGSTR_LEN 256
+
+#define NETPLAY_CHAT_MAX_MESSAGES 4
+#define NETPLAY_CHAT_MAX_SIZE     96
+#define NETPLAY_CHAT_FRAME_TIME   600
 
 #define NETPLAY_TEST_BUILD REMOVE THIS BEFORE RELEASE!!!
 
@@ -189,6 +194,30 @@ struct netplay_host_list
    size_t size;
 };
 
+struct netplay_chat_data
+{
+   char nick[NETPLAY_NICK_LEN];
+   char msg[NETPLAY_CHAT_MAX_SIZE];
+   uint32_t frames;
+};
+
+struct netplay_chat_buffer
+{
+   char nick[NETPLAY_NICK_LEN];
+   char msg[NETPLAY_CHAT_MAX_SIZE];
+   uint8_t alpha;
+};
+
+struct netplay_chat
+{
+   struct
+   {
+      struct netplay_chat_data data;
+      struct netplay_chat_buffer buffer;
+   } messages[NETPLAY_CHAT_MAX_MESSAGES];
+   uint32_t pos;
+};
+
 typedef struct
 {
    netplay_t *data; /* Used while Netplay is running */
@@ -221,6 +250,8 @@ typedef struct
    bool has_set_netplay_check_frames;
    /* NAT traversal info (if NAT traversal is used and serving) */
    struct nat_traversal_data nat_traversal_request;
+   /* Chat messages */
+   struct netplay_chat chat;
 } net_driver_state_t;
 
 net_driver_state_t *networking_state_get_ptr(void);

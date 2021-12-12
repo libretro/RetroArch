@@ -36,6 +36,7 @@
 #include <lrc_hash.h>
 #include <retro_timers.h>
 
+#include <math/float_minmax.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
 
@@ -66,6 +67,11 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_input.h"
+#include "../../menu/menu_driver.h"
+#endif
+
+#ifdef HAVE_GFX_WIDGETS
+#include "../../gfx/gfx_widgets.h"
 #endif
 
 #ifdef HAVE_DISCORD
@@ -105,9 +111,6 @@
 #define MITM_SESSION_MAGIC 0x52415453 /* RATS */
 #define MITM_LINK_MAGIC    0x5241544C /* RATL */
 #define MITM_PING_MAGIC    0x52415450 /* RATP */
-
-#define MAX_CHAT_SIZE   256
-#define CHAT_FRAME_TIME 600
 
 /*
  * AD PACKET FORMAT:
@@ -4838,7 +4841,7 @@ static void relay_chat(netplay_t *netplay,
 {
    size_t i;
    size_t msg_len;
-   char data[NETPLAY_NICK_LEN + MAX_CHAT_SIZE - 1];
+   char data[NETPLAY_NICK_LEN + NETPLAY_CHAT_MAX_SIZE - 1];
 
    msg_len = strlen(msg);
 
@@ -4861,20 +4864,53 @@ static void relay_chat(netplay_t *netplay,
 
 static void show_chat(const char *nick, const char *msg)
 {
-   char formatted_chat[MAX_CHAT_SIZE];
+   char formatted_chat[NETPLAY_CHAT_MAX_SIZE];
+   net_driver_state_t *net_st = &networking_driver_st;
 
    /* Truncate the message if necessary. */
    snprintf(formatted_chat, sizeof(formatted_chat),
       "%s: %s", nick, msg);
 
-   RARCH_LOG("%s\n", formatted_chat);
-   runloop_msg_queue_push(formatted_chat, 1, CHAT_FRAME_TIME, false, NULL,
-      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   RARCH_LOG("[Netplay] %s\n", formatted_chat);
+
+#if defined(HAVE_GFX_WIDGETS)
+   if (gfx_widgets_ready())
+   {
+      struct netplay_chat_data *data;
+
+      /* Do we have a free slot for this message?
+         If not, get rid of the oldest message to make room for it. */
+      if (!net_st->chat.pos)
+      {
+         int i;
+
+         for (i = ARRAY_SIZE(net_st->chat.messages) - 2; i >= 0; i--)
+         {
+            memcpy(&net_st->chat.messages[i+1].data,
+               &net_st->chat.messages[i].data,
+               sizeof(*data));
+         }
+         data = &net_st->chat.messages[0].data;
+      }
+      else
+      {
+         data = &net_st->chat.messages[--net_st->chat.pos].data;
+      }
+
+      strlcpy(data->nick, nick, sizeof(data->nick));
+      strlcpy(data->msg, msg, sizeof(data->msg));
+      data->frames = NETPLAY_CHAT_FRAME_TIME;
+   }
+   else
+#endif
+      runloop_msg_queue_push(formatted_chat,
+         1, NETPLAY_CHAT_FRAME_TIME, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
 
 static void send_chat(void *userdata, const char *line)
 {
-   char msg[MAX_CHAT_SIZE];
+   char msg[NETPLAY_CHAT_MAX_SIZE];
    net_driver_state_t *net_st  = &networking_driver_st;
    netplay_t          *netplay = net_st->data;
 
@@ -4882,7 +4918,7 @@ static void send_chat(void *userdata, const char *line)
       just in case something has changed. */
    if (!string_is_empty(line) && chat_check(netplay))
    {
-      /* Truncate line to MAX_CHAT_SIZE. */
+      /* Truncate line to NETPLAY_CHAT_MAX_SIZE. */
       strlcpy(msg, line, sizeof(msg));
 
       /* For servers, we need to relay it ourselves. */
@@ -5914,7 +5950,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
       case NETPLAY_CMD_PLAYER_CHAT:
          {
             char nickname[NETPLAY_NICK_LEN];
-            char message[MAX_CHAT_SIZE];
+            char message[NETPLAY_CHAT_MAX_SIZE];
 
             /* We do not send the sentinel/null character on chat messages
                and we do not allow empty messages. */
@@ -6167,6 +6203,9 @@ void netplay_announce_nat_traversal(netplay_t *netplay)
   
    if (net_st->nat_traversal_request.status == NAT_TRAVERSAL_STATUS_OPENED)
    {
+      netplay->ext_tcp_port =
+         ntohs(net_st->nat_traversal_request.request.addr.sin_port);
+
       if (!getnameinfo(
          (struct sockaddr *) &net_st->nat_traversal_request.request.addr,
          sizeof(net_st->nat_traversal_request.request.addr),
@@ -6687,6 +6726,7 @@ netplay_t *netplay_new(const char *server, const char *mitm, uint16_t port,
 
    netplay->listen_fd            = -1;
    netplay->tcp_port             = port;
+   netplay->ext_tcp_port         = port;
    netplay->cbs                  = *cb;
    netplay->is_server            = !server;
    netplay->is_connected         = false;
@@ -7860,7 +7900,7 @@ static void netplay_announce(void)
       coreversion,
       gamename,
       (unsigned long)content_crc,
-      netplay->tcp_port,
+      netplay->ext_tcp_port,
       host_room->mitm_handle,
       !string_is_empty(settings->paths.netplay_password) ? 1 : 0,
       !string_is_empty(settings->paths.netplay_spectate_password) ? 1 : 0,
@@ -8085,6 +8125,7 @@ static bool netplay_pre_frame(
 
 void deinit_netplay(void)
 {
+   size_t i;
    net_driver_state_t *net_st = &networking_driver_st;
 
    if (net_st->data)
@@ -8096,13 +8137,17 @@ void deinit_netplay(void)
       net_st->data              = NULL;
       net_st->netplay_enabled   = false;
       net_st->netplay_is_client = false;
-      net_st->is_mitm           = false;
    }
+
+   for (i = 0; i < ARRAY_SIZE(net_st->chat.messages); i++)
+      net_st->chat.messages[i].data.frames = 0;
+
    core_unset_netplay_callbacks();
 }
 
 bool init_netplay(const char *server, unsigned port, const char *mitm_session)
 {
+   size_t i;
    struct retro_callbacks cbs    = {0};
    uint64_t serialization_quirks = 0;
    uint64_t quirks               = 0;
@@ -8207,6 +8252,10 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return false;
    }
+
+   for (i = 0; i < ARRAY_SIZE(net_st->chat.messages); i++)
+      net_st->chat.messages[i].data.frames = 0;
+   net_st->chat.pos = ARRAY_SIZE(net_st->chat.messages);
 
    if (net_st->data->is_server)
    {
@@ -8405,5 +8454,134 @@ bool netplay_decode_hostname(const char *hostname,
    return true;
 }
 
-#undef MAX_CHAT_SIZE
-#undef CHAT_FRAME_TIME
+/* Netplay Chat Overlay */
+
+#ifdef HAVE_GFX_WIDGETS
+static void gfx_widget_netplay_chat_iterate(void *user_data,
+   unsigned width, unsigned height, bool fullscreen,
+   const char *dir_assets, char *font_path,
+   bool is_threaded)
+{
+   size_t i;
+   net_driver_state_t *net_st = &networking_driver_st;
+#ifdef HAVE_MENU
+   bool menu_open             = menu_state_get_ptr()->alive;
+#endif
+
+   /* Move the messages to a thread-safe buffer
+      before drawing them. */
+   for (i = 0; i < ARRAY_SIZE(net_st->chat.messages); i++)
+   {
+      struct netplay_chat_data   *data   =
+         &net_st->chat.messages[i].data;
+      struct netplay_chat_buffer *buffer =
+         &net_st->chat.messages[i].buffer;
+
+      /* Don't show chat while in the menu */
+#ifdef HAVE_MENU
+      if (menu_open)
+      {
+         buffer->alpha = 0;
+         continue;
+      }
+#endif
+
+      if (data->frames)
+      {
+         float alpha_percent = (float) data->frames /
+            (float) NETPLAY_CHAT_FRAME_TIME;
+
+         memcpy(buffer->nick, data->nick,
+            sizeof(buffer->nick));
+         memcpy(buffer->msg, data->msg,
+            sizeof(buffer->msg));
+         buffer->alpha = (uint8_t) float_max(
+            alpha_percent * 255.0f, 1.0f);
+
+         if (!(--data->frames))
+            net_st->chat.pos++;
+      }
+      else
+      {
+         buffer->alpha = 0;
+      }
+   }
+}
+
+static void gfx_widget_netplay_chat_frame(void *data, void *userdata)
+{
+   size_t i;
+   video_frame_info_t *video_info  =
+      (video_frame_info_t *) data;
+   dispgfx_widget_t *p_dispwidget  =
+      (dispgfx_widget_t *) userdata;
+   net_driver_state_t *net_st      = &networking_driver_st;
+   int height                      = video_info->height -
+      p_dispwidget->gfx_widget_fonts.regular.line_height -
+      p_dispwidget->simple_widget_padding / 3.0f;
+
+   for (i = 0; i < ARRAY_SIZE(net_st->chat.messages); i++)
+   {
+      char formatted_nick[NETPLAY_NICK_LEN];
+      char formatted_msg[NETPLAY_CHAT_MAX_SIZE];
+      int  formatted_nick_width;
+      const char *nick    = 
+         net_st->chat.messages[i].buffer.nick;
+      const char *msg     = 
+         net_st->chat.messages[i].buffer.msg;
+      uint8_t alpha       =
+         net_st->chat.messages[i].buffer.alpha;
+      int available_space = NETPLAY_CHAT_MAX_SIZE;
+
+      if (!alpha || string_is_empty(nick) || string_is_empty(msg))
+         continue;
+
+      /* Truncate the message, if necessary. */
+      available_space -= snprintf(formatted_nick,
+         sizeof(formatted_nick), "%s: ", nick);
+      strlcpy(formatted_msg, msg, available_space);
+
+      formatted_nick_width = font_driver_get_message_width(
+         p_dispwidget->gfx_widget_fonts.regular.font,
+         formatted_nick, strlen(formatted_nick),
+         1.0f);
+
+      /* Draw the nickname first. */
+      gfx_widgets_draw_text(
+         &p_dispwidget->gfx_widget_fonts.regular,
+         formatted_nick,
+         p_dispwidget->simple_widget_padding,
+         height,
+         video_info->width,
+         video_info->height,
+         0x00800000 | (unsigned) alpha,
+         TEXT_ALIGN_LEFT,
+         true);
+      /* Now draw the message. */
+      gfx_widgets_draw_text(
+         &p_dispwidget->gfx_widget_fonts.regular,
+         formatted_msg,
+         p_dispwidget->simple_widget_padding + formatted_nick_width,
+         height,
+         video_info->width,
+         video_info->height,
+         0xFFFFFF00 | (unsigned) alpha,
+         TEXT_ALIGN_LEFT,
+         true);
+
+      /* Move up */
+      height -= p_dispwidget->gfx_widget_fonts.regular.line_height;
+      height -= p_dispwidget->simple_widget_padding / 3.0f;
+   }
+}
+
+const gfx_widget_t gfx_widget_netplay_chat = {
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   &gfx_widget_netplay_chat_iterate,
+   &gfx_widget_netplay_chat_frame
+};
+#endif

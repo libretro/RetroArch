@@ -378,6 +378,10 @@ extern const gfx_widget_t gfx_widget_libretro_message;
 extern const gfx_widget_t gfx_widget_progress_message;
 extern const gfx_widget_t gfx_widget_load_content_animation;
 
+#ifdef HAVE_NETWORKING
+extern const gfx_widget_t gfx_widget_netplay_chat;
+#endif
+
 #ifdef HAVE_CHEEVOS
 extern const gfx_widget_t gfx_widget_achievement_popup;
 extern const gfx_widget_t gfx_widget_leaderboard_display;
