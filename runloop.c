@@ -5105,8 +5105,12 @@ static bool event_init_content(
 #ifdef HAVE_CHEEVOS
    if (!cheevos_enable || !cheevos_hardcore_mode_enable)
 #endif
-      if (settings->bools.savestate_auto_load)
+   {
+      if (runloop_st->entry_state_slot && !command_event_load_entry_state())
+         runloop_st->entry_state_slot = 0;
+      if (!runloop_st->entry_state_slot && settings->bools.savestate_auto_load)
          command_event_load_auto_state();
+   }
 
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_deinit(input_st);
@@ -7825,6 +7829,23 @@ bool retroarch_get_current_savestate_path(char *path, size_t len)
       fill_pathname_join_delim(path, name_savestate, "auto", '.', len);
    else
       strlcpy(path, name_savestate, len);
+
+   return true;
+}
+
+bool retroarch_get_entry_state_path(char *path, size_t len, unsigned slot)
+{
+   runloop_state_t *runloop_st = &runloop_state;
+   const char *name_savestate  = NULL;
+
+   if (!path || !slot)
+      return false;
+
+   name_savestate              = runloop_st->name.savestate;
+   if (string_is_empty(name_savestate))
+      return false;
+
+   snprintf(path, len, "%s%d%s", name_savestate, slot, ".entry");
 
    return true;
 }
