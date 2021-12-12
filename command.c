@@ -1082,6 +1082,10 @@ bool command_event_save_auto_state(
    bool ret                    = false;
    char savestate_name_auto[PATH_MAX_LENGTH];
 
+#ifdef HAVE_ENTRYSTATES
+   if (!path_is_empty(RARCH_PATH_STATE))
+      return false;
+#endif
    if (!savestate_auto_save)
       return false;
    if (current_core_type == CORE_TYPE_DUMMY)
@@ -1136,6 +1140,34 @@ void command_event_init_cheats(
 
    if (apply_cheats_after_load)
       cheat_manager_apply_cheats();
+}
+#endif
+
+#ifdef HAVE_ENTRYSTATES
+void command_event_load_entry_state(void)
+{
+   const char *state_path          = path_get(RARCH_PATH_STATE);
+   bool ret                        = false;
+#ifdef HAVE_CHEEVOS
+   if (rcheevos_hardcore_active())
+      return;
+#endif
+#ifdef HAVE_NETWORKING
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+      return;
+#endif
+
+   if (!path_is_valid(state_path))
+      return;
+
+   ret = content_load_state(state_path, false, true);
+
+   RARCH_LOG("%s: %s\n%s \"%s\" %s.\n",
+         msg_hash_to_str(MSG_FOUND_ENTRYSTATE_IN),
+         state_path,
+         msg_hash_to_str(MSG_LOADING_ENTRYSTATE_FROM),
+         state_path, ret ? "succeeded" : "failed"
+         );
 }
 #endif
 

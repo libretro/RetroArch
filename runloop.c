@@ -5105,8 +5105,15 @@ static bool event_init_content(
 #ifdef HAVE_CHEEVOS
    if (!cheevos_enable || !cheevos_hardcore_mode_enable)
 #endif
+   {
+#ifdef HAVE_ENTRYSTATES
+      if (!path_is_empty(RARCH_PATH_STATE))
+         command_event_load_entry_state();
+      else
+#endif
       if (settings->bools.savestate_auto_load)
          command_event_load_auto_state();
+   }
 
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_deinit(input_st);

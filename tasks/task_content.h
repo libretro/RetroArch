@@ -95,6 +95,9 @@ bool task_push_load_content_with_new_core_from_menu(
 bool task_push_load_content_from_playlist_from_menu(
       const char *core_path,
       const char *fullpath,
+#ifdef HAVE_ENTRYSTATES
+      const char *state,
+#endif
       const char *label,
       content_ctx_info_t *content_info,
       retro_task_callback_t cb,

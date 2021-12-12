@@ -1395,6 +1395,9 @@ void manual_content_scan_add_content_to_playlist(
        * > The push function reads our entry as const,
        *   so these casts are safe */
       entry.path      = (char*)playlist_content_path;
+#ifdef HAVE_ENTRYSTATES
+      entry.state     = '\0';
+#endif
       entry.label     = label;
       entry.core_path = (char*)FILE_PATH_DETECT;
       entry.core_name = (char*)FILE_PATH_DETECT;

@@ -43,7 +43,11 @@
 #endif
 
 #ifndef PLAYLIST_ENTRIES
+#ifdef HAVE_ENTRYSTATES
+#define PLAYLIST_ENTRIES 7
+#else
 #define PLAYLIST_ENTRIES 6
+#endif
 #endif
 
 #define WINDOWS_PATH_DELIMITER '\\'
@@ -1356,6 +1360,14 @@ bool playlist_push(playlist_t *playlist,
             continue;
       }
 
+#ifdef HAVE_ENTRYSTATES
+      if (playlist->entries[i].state != entry->state)
+      {
+         playlist->entries[i].state   = strdup(entry->state);
+         entry_updated                = true;
+      }
+#endif
+
       /* If content was previously loaded via file browser
        * or command line, certain entry values will be missing.
        * If we are now loading the same content from a playlist,
@@ -1445,6 +1457,12 @@ bool playlist_push(playlist_t *playlist,
       playlist->entries[0].path_id            = path_id;
       path_id                                 = NULL;
 
+#ifdef HAVE_ENTRYSTATES
+      playlist->entries[0].state              = NULL;
+
+      if (!string_is_empty(entry->state))
+         playlist->entries[0].state           = strdup(entry->state);
+#endif
       if (!string_is_empty(entry->label))
          playlist->entries[0].label           = strdup(entry->label);
       if (!string_is_empty(real_core_path))
@@ -1689,6 +1707,9 @@ void playlist_write_file(playlist_t *playlist)
       for (i = 0, len = RBUF_LEN(playlist->entries); i < len; i++)
          intfstream_printf(file, "%s\n%s\n%s\n%s\n%s\n%s\n",
                playlist->entries[i].path      ? playlist->entries[i].path      : "",
+#ifdef HAVE_ENTRYSTATES
+               playlist->entries[i].state     ? playlist->entries[i].state     : "",
+#endif
                playlist->entries[i].label     ? playlist->entries[i].label     : "",
                playlist->entries[i].core_path ? playlist->entries[i].core_path : "",
                playlist->entries[i].core_name ? playlist->entries[i].core_name : "",
@@ -1872,6 +1893,16 @@ void playlist_write_file(playlist_t *playlist)
          rjsonwriter_add_space(writer);
          rjsonwriter_add_string(writer, playlist->entries[i].path);
          rjsonwriter_add_comma(writer);
+
+#ifdef HAVE_ENTRYSTATES
+         rjsonwriter_add_newline(writer);
+         rjsonwriter_add_spaces(writer, 6);
+         rjsonwriter_add_string(writer, "state");
+         rjsonwriter_add_colon(writer);
+         rjsonwriter_add_space(writer);
+         rjsonwriter_add_string(writer, playlist->entries[i].state);
+         rjsonwriter_add_comma(writer);
+#endif
 
          rjsonwriter_add_newline(writer);
          rjsonwriter_add_spaces(writer, 6);
@@ -2363,6 +2394,10 @@ static bool JSONObjectMemberHandler(void *context, const char *pValue, size_t le
                         pCtx->current_string_val = &pCtx->current_entry->subsystem_name;
                      else if (string_is_equal(pValue, "subsystem_roms"))
                         pCtx->in_subsystem_roms = true;
+#ifdef HAVE_ENTRYSTATES
+                     else if (string_is_equal(pValue, "state"))
+                        pCtx->current_string_val = &pCtx->current_entry->state;
+#endif
                      break;
             }
          }
@@ -2601,6 +2636,35 @@ static bool playlist_read_file(playlist_t *playlist)
 
             memset(entry, 0, sizeof(*entry));
 
+#ifdef HAVE_ENTRYSTATES
+            /* path */
+            if (!string_is_empty(line_buf[0]))
+               entry->path      = strdup(line_buf[0]);
+
+            /* state */
+            if (!string_is_empty(line_buf[1]))
+               entry->state     = strdup(line_buf[1]);
+
+            /* label */
+            if (!string_is_empty(line_buf[2]))
+               entry->label     = strdup(line_buf[2]);
+
+            /* core_path */
+            if (!string_is_empty(line_buf[3]))
+               entry->core_path = strdup(line_buf[3]);
+
+            /* core_name */
+            if (!string_is_empty(line_buf[4]))
+               entry->core_name = strdup(line_buf[4]);
+
+            /* crc32 */
+            if (!string_is_empty(line_buf[5]))
+               entry->crc32     = strdup(line_buf[5]);
+
+            /* db_name */
+            if (!string_is_empty(line_buf[6]))
+               entry->db_name   = strdup(line_buf[6]);
+#else
             /* path */
             if (!string_is_empty(line_buf[0]))
                entry->path      = strdup(line_buf[0]);
@@ -2624,6 +2688,7 @@ static bool playlist_read_file(playlist_t *playlist)
             /* db_name */
             if (!string_is_empty(line_buf[5]))
                entry->db_name   = strdup(line_buf[5]);
+#endif
          }
          /* If fewer than 'PLAYLIST_ENTRIES' lines were
           * read, then this is metadata */

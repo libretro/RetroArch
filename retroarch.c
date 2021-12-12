@@ -300,6 +300,9 @@ struct rarch_state
    char launch_arguments[4096];
    char path_default_shader_preset[PATH_MAX_LENGTH];
    char path_content[PATH_MAX_LENGTH];
+#ifdef HAVE_ENTRYSTATES
+   char path_state[PATH_MAX_LENGTH];
+#endif
    char path_libretro[PATH_MAX_LENGTH];
    char path_config_file[PATH_MAX_LENGTH];
    char path_config_append_file[256];
@@ -963,6 +966,10 @@ char *path_get_ptr(enum rarch_path_type type)
    {
       case RARCH_PATH_CONTENT:
          return p_rarch->path_content;
+#ifdef HAVE_ENTRYSTATES
+      case RARCH_PATH_STATE:
+         return p_rarch->path_state;
+#endif
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
          return p_rarch->path_default_shader_preset;
       case RARCH_PATH_BASENAME:
@@ -1000,6 +1007,10 @@ const char *path_get(enum rarch_path_type type)
    {
       case RARCH_PATH_CONTENT:
          return p_rarch->path_content;
+#ifdef HAVE_ENTRYSTATES
+      case RARCH_PATH_STATE:
+         return p_rarch->path_state;
+#endif
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
          return p_rarch->path_default_shader_preset;
       case RARCH_PATH_BASENAME:
@@ -1037,6 +1048,10 @@ size_t path_get_realsize(enum rarch_path_type type)
    {
       case RARCH_PATH_CONTENT:
          return sizeof(p_rarch->path_content);
+#ifdef HAVE_ENTRYSTATES
+      case RARCH_PATH_STATE:
+         return sizeof(p_rarch->path_state);
+#endif
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
          return sizeof(p_rarch->path_default_shader_preset);
       case RARCH_PATH_BASENAME:
@@ -1106,6 +1121,12 @@ bool path_set(enum rarch_path_type type, const char *path)
          strlcpy(p_rarch->path_content, path,
                sizeof(p_rarch->path_content));
          break;
+#ifdef HAVE_ENTRYSTATES
+      case RARCH_PATH_STATE:
+         strlcpy(p_rarch->path_state, path,
+               sizeof(p_rarch->path_state));
+         break;
+#endif
       case RARCH_PATH_NONE:
          break;
    }
@@ -1144,6 +1165,12 @@ bool path_is_empty(enum rarch_path_type type)
          if (string_is_empty(p_rarch->path_content))
             return true;
          break;
+#ifdef HAVE_ENTRYSTATES
+      case RARCH_PATH_STATE:
+         if (string_is_empty(p_rarch->path_state))
+            return true;
+         break;
+#endif
       case RARCH_PATH_CORE:
          if (string_is_empty(p_rarch->path_libretro))
             return true;
@@ -1179,6 +1206,11 @@ void path_clear(enum rarch_path_type type)
       case RARCH_PATH_CONTENT:
          *p_rarch->path_content = '\0';
          break;
+#ifdef HAVE_ENTRYSTATES
+      case RARCH_PATH_STATE:
+         *p_rarch->path_state = '\0';
+         break;
+#endif
       case RARCH_PATH_BASENAME:
          *runloop_st->runtime_content_path_basename = '\0';
          break;
@@ -1200,6 +1232,9 @@ void path_clear(enum rarch_path_type type)
 static void path_clear_all(void)
 {
    path_clear(RARCH_PATH_CONTENT);
+#ifdef HAVE_ENTRYSTATES
+   path_clear(RARCH_PATH_STATE);
+#endif
    path_clear(RARCH_PATH_CONFIG);
    path_clear(RARCH_PATH_CONFIG_APPEND);
    path_clear(RARCH_PATH_CORE_OPTIONS);
@@ -4214,6 +4249,10 @@ static void retroarch_print_help(const char *arg0)
 #endif
       strlcat(buf, "      --load-menu-on-error\n"
             "                        Open menu instead of quitting if specified core or content fails to load.\n", sizeof(buf));
+#ifdef HAVE_ENTRYSTATES
+      strlcat(buf, "  -e, --entrystate=FILE\n"
+            "                        Automatically load save state\n", sizeof(buf));
+#endif
       puts(buf);
    }
 }
@@ -4302,6 +4341,9 @@ static bool retroarch_parse_input_and_config(
       { "log-file",           1, NULL, RA_OPT_LOG_FILE },
       { "accessibility",      0, NULL, RA_OPT_ACCESSIBILITY},
       { "load-menu-on-error", 0, NULL, RA_OPT_LOAD_MENU_ON_ERROR },
+#ifdef HAVE_ENTRYSTATES
+      { "entrystate",         1, NULL, 'e' },
+#endif
       { NULL, 0, NULL, 0 }
    };
 
@@ -4372,7 +4414,11 @@ static bool retroarch_parse_input_and_config(
 
    /* Make sure we can call retroarch_parse_input several times ... */
    optind    = 0;
+#ifdef HAVE_ENTRYSTATES
+   optstring = "hs:fvS:A:U:DN:d:e:"
+#else
    optstring = "hs:fvS:A:U:DN:d:"
+#endif
       BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
 
 #if defined(ORBIS)
@@ -4872,6 +4918,18 @@ static bool retroarch_parse_input_and_config(
             case RA_OPT_LOAD_MENU_ON_ERROR:
                global->cli_load_menu_on_error = true;
                break;
+#ifdef HAVE_ENTRYSTATES
+            case 'e':
+               {
+                  int path_stats = path_stat(optarg);
+
+                  if ((path_stats & RETRO_VFS_STAT_IS_VALID) != 0 && (path_stats & RETRO_VFS_STAT_IS_DIRECTORY) == 0)
+                     path_set(RARCH_PATH_STATE, optarg);
+                  else
+                     RARCH_WARN("--entrystate argument \"%s\" is not a file. Ignoring.\n", optarg);
+               }
+               break;
+#endif
             default:
                RARCH_ERR("%s\n", msg_hash_to_str(MSG_ERROR_PARSING_ARGUMENTS));
                retroarch_fail(1, "retroarch_parse_input()");
@@ -4920,6 +4978,13 @@ static bool retroarch_parse_input_and_config(
        * command line interface */
       cli_content_set = true;
    }
+#ifdef HAVE_ENTRYSTATES
+   else if (!path_is_empty(RARCH_PATH_STATE))
+   {
+      path_clear(RARCH_PATH_STATE);
+      RARCH_WARN("Trying to load entry state without content. Ignoring.\n");
+   }
+#endif
 
    /* Check whether a core has been set via the
     * command line interface */

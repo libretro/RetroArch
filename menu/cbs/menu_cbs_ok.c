@@ -2160,7 +2160,11 @@ static int default_action_ok_load_content_with_core_from_menu(const char *_path,
 }
 
 static int default_action_ok_load_content_from_playlist_from_menu(const char *_path,
+#ifdef HAVE_ENTRYSTATES
+      const char *path, const char *entry_state, const char *entry_label)
+#else
       const char *path, const char *entry_label)
+#endif
 {
    content_ctx_info_t content_info;
    content_info.argc                   = 0;
@@ -2168,7 +2172,11 @@ static int default_action_ok_load_content_from_playlist_from_menu(const char *_p
    content_info.args                   = NULL;
    content_info.environ_get            = NULL;
    if (!task_push_load_content_from_playlist_from_menu(
+#ifdef HAVE_ENTRYSTATES
+            _path, path, entry_state, entry_label,
+#else
             _path, path, entry_label,
+#endif
             &content_info,
             NULL, NULL))
       return -1;
@@ -2333,11 +2341,44 @@ error:
    return false;
 }
 
+#ifdef HAVE_ENTRYSTATES
+static bool playlist_entry_state_is_valid(const char *entry_state)
+{
+   char *file_path     = NULL;
+
+   if (string_is_empty(entry_state))
+      return true;
+
+   file_path = strdup(entry_state);
+
+   if (!path_is_valid(file_path))
+      goto error;
+
+   /* File is valid */
+   free(file_path);
+   file_path = NULL;
+
+   return true;
+
+error:
+   if (file_path)
+   {
+      free(file_path);
+      file_path = NULL;
+   }
+
+   return false;
+}
+#endif
+
 static int action_ok_playlist_entry_collection(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    playlist_config_t playlist_config;
    char content_path[PATH_MAX_LENGTH];
+#ifdef HAVE_ENTRYSTATES
+   char content_state[PATH_MAX_LENGTH];
+#endif
    char content_label[PATH_MAX_LENGTH];
    char core_path[PATH_MAX_LENGTH];
    size_t selection_ptr                   = entry_idx;
@@ -2362,6 +2403,9 @@ static int action_ok_playlist_entry_collection(const char *path,
    playlist_config_set_base_content_directory(&playlist_config, settings->bools.playlist_portable_paths ? settings->paths.directory_menu_content : NULL);
 
    content_path[0]  = '\0';
+#ifdef HAVE_ENTRYSTATES
+   content_state[0] = '\0';
+#endif
    content_label[0] = '\0';
    core_path[0]     = '\0';
 
@@ -2415,6 +2459,15 @@ static int action_ok_playlist_entry_collection(const char *path,
       strlcpy(content_path, entry->path, sizeof(content_path));
       playlist_resolve_path(PLAYLIST_LOAD, false, content_path, sizeof(content_path));
    }
+
+#ifdef HAVE_ENTRYSTATES
+   /* Cache entry state */
+   if (!string_is_empty(entry->state))
+   {
+      strlcpy(content_state, entry->state, sizeof(content_state));
+      playlist_resolve_path(PLAYLIST_LOAD, false, content_state, sizeof(content_state));
+   }
+#endif
 
    /* Cache entry label */
    if (!string_is_empty(entry->label))
@@ -2532,6 +2585,11 @@ static int action_ok_playlist_entry_collection(const char *path,
    if (!playlist_entry_path_is_valid(content_path))
       goto error;
 
+#ifdef HAVE_ENTRYSTATES
+   if (!playlist_entry_state_is_valid(content_state))
+      goto error;
+#endif
+
    /* Free temporary playlist, if required */
    if (playlist_initialized && tmp_playlist)
    {
@@ -2544,7 +2602,11 @@ static int action_ok_playlist_entry_collection(const char *path,
     * may be free()'d by above playlist_free() - but need
     * to pass NULL explicitly if label is empty */
    return default_action_ok_load_content_from_playlist_from_menu(
+#ifdef HAVE_ENTRYSTATES
+         core_path, content_path, content_state, string_is_empty(content_label) ? NULL : content_label);
+#else
          core_path, content_path, string_is_empty(content_label) ? NULL : content_label);
+#endif
 
 error:
    runloop_msg_queue_push(

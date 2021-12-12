@@ -101,6 +101,9 @@ typedef struct
 struct playlist_entry
 {
    char *path;
+#ifdef HAVE_ENTRYSTATES
+   char *state;
+#endif
    char *label;
    char *core_path;
    char *core_name;

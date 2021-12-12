@@ -1686,6 +1686,22 @@ static void task_push_to_history_list(
 
             content_get_subsystem_friendly_name(path_get(RARCH_PATH_SUBSYSTEM), subsystem_name, sizeof(subsystem_name));
 
+#ifdef HAVE_ENTRYSTATES
+            char state[PATH_MAX_LENGTH];
+            const char *path_state = path_get(RARCH_PATH_STATE);
+
+            state[0] = '\0';
+
+            if (!string_is_empty(path_state))
+               strlcpy(state, path_state, sizeof(state));
+
+            /* Path can be relative here.
+            * Ensure we're pushing absolute path. */
+            if (!launched_from_menu && !string_is_empty(state))
+               path_resolve_realpath(state, sizeof(state), true);
+
+            entry.state           = (char*)state;
+#endif
             /* The push function reads our entry as const, 
              * so these casts are safe */
             entry.path            = (char*)tmp;
@@ -1708,6 +1724,9 @@ static void task_push_to_history_list(
 static bool command_event_cmd_exec(
       content_state_t *p_content,
       const char *data,
+#ifdef HAVE_ENTRYSTATES
+      const char *state,
+#endif
       content_information_ctx_t *content_ctx,
       bool launched_from_cli,
       char **error_string)
@@ -1718,6 +1737,15 @@ static bool command_event_cmd_exec(
       if (!string_is_empty(data))
          path_set(RARCH_PATH_CONTENT, data);
    }
+
+#ifdef HAVE_ENTRYSTATES
+   if (path_get(RARCH_PATH_STATE) != state)
+   {
+      path_clear(RARCH_PATH_STATE);
+      if (!string_is_empty(state))
+         path_set(RARCH_PATH_STATE, state);
+   }
+#endif
 
 #if defined(HAVE_DYNAMIC)
    {
@@ -1885,6 +1913,9 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
 bool task_push_load_content_from_playlist_from_menu(
       const char *core_path,
       const char *fullpath,
+#ifdef HAVE_ENTRYSTATES
+      const char *state,
+#endif
       const char *label,
       content_ctx_info_t *content_info,
       retro_task_callback_t cb,
@@ -1959,6 +1990,12 @@ bool task_push_load_content_from_playlist_from_menu(
       if (!string_is_empty(fullpath))
          path_set(RARCH_PATH_CONTENT, fullpath);
 
+#ifdef HAVE_ENTRYSTATES
+      path_clear(RARCH_PATH_STATE);
+      if (!string_is_empty(state))
+         path_set(RARCH_PATH_STATE, state);
+#endif
+
       /* Load content */
       ret = content_load(content_info, p_content);
 
@@ -1983,7 +2020,11 @@ bool task_push_load_content_from_playlist_from_menu(
     * > On targets that do not support dynamic core loading,
     *   command_event_cmd_exec() will fork a new instance */
    if (!(ret = command_event_cmd_exec(p_content,
+#ifdef HAVE_ENTRYSTATES
+         fullpath, state, &content_ctx, false, &error_string)))
+#else
          fullpath, &content_ctx, false, &error_string)))
+#endif
       goto end;
 
 #ifdef HAVE_COCOATOUCH
