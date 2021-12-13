@@ -1167,9 +1167,7 @@ bool command_event_load_entry_state(void)
 
    if ((entry_path_stats & RETRO_VFS_STAT_IS_VALID) == 0
          || (entry_path_stats & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
-   {
       return false;
-   }
 
    ret = content_load_state(entry_state_path, false, true);
 
