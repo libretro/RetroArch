@@ -3094,7 +3094,13 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 #ifdef HAVE_MENU
          menu_opened = menu_state_get_ptr()->alive;
          if (menu_opened)
+#ifdef HAVE_NETWORKING
+            core_paused = settings->bools.menu_pause_libretro &&
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+#else
             core_paused = settings->bools.menu_pause_libretro;
+#endif
+
 #endif
 
          if (core_paused)
@@ -6585,8 +6591,15 @@ static enum runloop_state_enum runloop_check_state(
       action                    = (enum menu_action)menu_event(
             settings,
             &current_bits, &trigger_input, display_kb);
-      focused                   = pause_nonactive ? is_focused : true;
-      focused                   = focused && !uico_st->is_on_foreground;
+#ifdef HAVE_NETWORKING
+      if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL))
+         focused = true;
+      else
+#endif
+      {
+         focused = pause_nonactive ? is_focused : true;
+         focused = focused && !uico_st->is_on_foreground;
+      }
 
       if (action == old_action)
       {
@@ -6676,7 +6689,12 @@ static enum runloop_state_enum runloop_check_state(
       if (focused || !runloop_st->idle)
       {
          bool runloop_is_inited      = runloop_st->is_inited;
+#ifdef HAVE_NETWORKING
+         bool menu_pause_libretro    = settings->bools.menu_pause_libretro &&
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+#else
          bool menu_pause_libretro    = settings->bools.menu_pause_libretro;
+#endif
          bool libretro_running       = !menu_pause_libretro
             && runloop_is_inited
             && (runloop_st->current_core_type != CORE_TYPE_DUMMY);
@@ -6819,6 +6837,9 @@ static enum runloop_state_enum runloop_check_state(
    }
 #endif
 
+#ifdef HAVE_NETWORKING
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL))
+#endif
    if (pause_nonactive)
       focused                = is_focused;
 
@@ -7298,7 +7319,12 @@ int runloop_iterate(void)
    unsigned max_users                           = settings->uints.input_max_users;
    retro_time_t current_time                    = cpu_features_get_time_usec();
 #ifdef HAVE_MENU
+#ifdef HAVE_NETWORKING
+   bool menu_pause_libretro                     = settings->bools.menu_pause_libretro &&
+      netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+#else
    bool menu_pause_libretro                     = settings->bools.menu_pause_libretro;
+#endif
    bool core_paused                             = runloop_st->paused || (menu_pause_libretro && menu_state_get_ptr()->alive);
 #else
    bool core_paused                             = runloop_st->paused;

@@ -2613,6 +2613,12 @@ bool command_event(enum event_command cmd, void *data)
             bool accessibility_enable                    = settings->bools.accessibility_enable;
             unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
 #endif
+
+#ifdef HAVE_NETWORKING
+         if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL))
+            break;
+#endif
+
             boolean                                      = runloop_st->paused;
             boolean                                      = !boolean;
 
@@ -2639,11 +2645,21 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_UNPAUSE:
+#ifdef HAVE_NETWORKING
+         if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL))
+            break;
+#endif
+
          boolean                 = false;
          runloop_st->paused      = boolean;
          runloop_pause_checks();
          break;
       case CMD_EVENT_PAUSE:
+#ifdef HAVE_NETWORKING
+         if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL))
+            break;
+#endif
+
          boolean                 = true;
          runloop_st->paused      = boolean;
          runloop_pause_checks();
@@ -2652,7 +2668,12 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_MENU
          if (menu_st->alive)
          {
+#ifdef HAVE_NETWORKING
+            bool menu_pause_libretro  = settings->bools.menu_pause_libretro &&
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+#else
             bool menu_pause_libretro  = settings->bools.menu_pause_libretro;
+#endif
             if (menu_pause_libretro)
                command_event(CMD_EVENT_AUDIO_STOP, NULL);
             else
@@ -2660,7 +2681,12 @@ bool command_event(enum event_command cmd, void *data)
          }
          else
          {
+#ifdef HAVE_NETWORKING
+            bool menu_pause_libretro  = settings->bools.menu_pause_libretro &&
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+#else
             bool menu_pause_libretro  = settings->bools.menu_pause_libretro;
+#endif
             if (menu_pause_libretro)
                command_event(CMD_EVENT_AUDIO_START, NULL);
          }
@@ -2709,9 +2735,6 @@ bool command_event(enum event_command cmd, void *data)
                netplay_server = settings->paths.netplay_server;
             if (!netplay_port)
                netplay_port   = settings->uints.netplay_port;
-
-            RARCH_LOG("[Netplay]: Connecting to %s|%d\n",
-               netplay_server, netplay_port);
 
             if (!init_netplay(netplay_server, netplay_port, netplay_session))
             {

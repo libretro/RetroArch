@@ -186,7 +186,14 @@ enum netplay_cmd
    /* Sends a ping command to the server/client.
     * Intended for estimating the latency between these two peers. */
    NETPLAY_CMD_PING_REQUEST   = 0x1100,
-   NETPLAY_CMD_PING_RESPONSE  = 0x1101
+   NETPLAY_CMD_PING_RESPONSE  = 0x1101,
+
+   /* Setting commands */
+
+   /* These host settings should be honored by the client,
+    * but they are not enforced. */
+   NETPLAY_CMD_SETTING_ALLOW_PAUSING        = 0x2000,
+   NETPLAY_CMD_SETTING_INPUT_LATENCY_FRAMES = 0x2001
 };
 
 #define NETPLAY_CMD_SYNC_BIT_PAUSED    (1U<<31)
@@ -645,6 +652,11 @@ struct netplay
 
    /* MITM connection handler */
    struct netplay_mitm_pending *mitm_pending;
+
+   /* Host settings */
+   int32_t input_latency_frames_min;
+   int32_t input_latency_frames_max;
+   bool allow_pausing;
 };
 
 /***************************************************************
