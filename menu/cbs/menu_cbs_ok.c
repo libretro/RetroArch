@@ -2349,6 +2349,7 @@ static int action_ok_playlist_entry_collection(const char *path,
    bool core_is_builtin                   = false;
    menu_handle_t *menu                    = menu_state_get_ptr()->driver_data;
    settings_t *settings                   = config_get_ptr();
+   runloop_state_t *runloop_st            = runloop_state_get_ptr();
    bool playlist_sort_alphabetical        = settings->bools.playlist_sort_alphabetical;
    const char *path_content_history       = settings->paths.path_content_history;
    const char *path_content_image_history = settings->paths.path_content_image_history;
@@ -2415,6 +2416,8 @@ static int action_ok_playlist_entry_collection(const char *path,
       strlcpy(content_path, entry->path, sizeof(content_path));
       playlist_resolve_path(PLAYLIST_LOAD, false, content_path, sizeof(content_path));
    }
+
+   runloop_st->entry_state_slot = entry->entry_slot;
 
    /* Cache entry label */
    if (!string_is_empty(entry->label))

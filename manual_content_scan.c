@@ -1394,12 +1394,13 @@ void manual_content_scan_add_content_to_playlist(
       /* Configure playlist entry
        * > The push function reads our entry as const,
        *   so these casts are safe */
-      entry.path      = (char*)playlist_content_path;
-      entry.label     = label;
-      entry.core_path = (char*)FILE_PATH_DETECT;
-      entry.core_name = (char*)FILE_PATH_DETECT;
-      entry.crc32     = (char*)"00000000|crc";
-      entry.db_name   = task_config->database_name;
+      entry.path       = (char*)playlist_content_path;
+      entry.entry_slot = 0;
+      entry.label      = label;
+      entry.core_path  = (char*)FILE_PATH_DETECT;
+      entry.core_name  = (char*)FILE_PATH_DETECT;
+      entry.crc32      = (char*)"00000000|crc";
+      entry.db_name    = task_config->database_name;
 
       /* Add entry to playlist */
       playlist_push(playlist, &entry);

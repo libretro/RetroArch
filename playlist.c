@@ -1356,24 +1356,30 @@ bool playlist_push(playlist_t *playlist,
             continue;
       }
 
+      if (playlist->entries[i].entry_slot != entry->entry_slot)
+      {
+         playlist->entries[i].entry_slot  = entry->entry_slot;
+         entry_updated                    = true;
+      }
+
       /* If content was previously loaded via file browser
        * or command line, certain entry values will be missing.
        * If we are now loading the same content from a playlist,
        * fill in any blanks */
       if (!playlist->entries[i].label && !string_is_empty(entry->label))
       {
-         playlist->entries[i].label   = strdup(entry->label);
-         entry_updated                = true;
+         playlist->entries[i].label       = strdup(entry->label);
+         entry_updated                    = true;
       }
       if (!playlist->entries[i].crc32 && !string_is_empty(entry->crc32))
       {
-         playlist->entries[i].crc32   = strdup(entry->crc32);
-         entry_updated                = true;
+         playlist->entries[i].crc32       = strdup(entry->crc32);
+         entry_updated                    = true;
       }
       if (!playlist->entries[i].db_name && !string_is_empty(entry->db_name))
       {
-         playlist->entries[i].db_name = strdup(entry->db_name);
-         entry_updated                = true;
+         playlist->entries[i].db_name     = strdup(entry->db_name);
+         entry_updated                    = true;
       }
 
       /* If top entry, we don't want to push a new entry since
@@ -1444,6 +1450,8 @@ bool playlist_push(playlist_t *playlist,
          playlist->entries[0].path            = strdup(path_id->real_path);
       playlist->entries[0].path_id            = path_id;
       path_id                                 = NULL;
+
+      playlist->entries[0].entry_slot         = entry->entry_slot;
 
       if (!string_is_empty(entry->label))
          playlist->entries[0].label           = strdup(entry->label);
@@ -1872,6 +1880,17 @@ void playlist_write_file(playlist_t *playlist)
          rjsonwriter_add_space(writer);
          rjsonwriter_add_string(writer, playlist->entries[i].path);
          rjsonwriter_add_comma(writer);
+
+         if (playlist->entries[i].entry_slot)
+         {
+            rjsonwriter_add_newline(writer);
+            rjsonwriter_add_spaces(writer, 6);
+            rjsonwriter_add_string(writer, "entry_slot");
+            rjsonwriter_add_colon(writer);
+            rjsonwriter_add_space(writer);
+            rjsonwriter_add_int(writer, (int)playlist->entries[i].entry_slot);
+            rjsonwriter_add_comma(writer);
+         }
 
          rjsonwriter_add_newline(writer);
          rjsonwriter_add_spaces(writer, 6);
@@ -2327,6 +2346,10 @@ static bool JSONObjectMemberHandler(void *context, const char *pValue, size_t le
                case 'd':
                      if (string_is_equal(pValue, "db_name"))
                         pCtx->current_string_val = &pCtx->current_entry->db_name;
+                     break;
+               case 'e':
+                     if (string_is_equal(pValue, "entry_slot"))
+                        pCtx->current_entry_uint_val = &pCtx->current_entry->entry_slot;
                      break;
                case 'l':
                      if (string_is_equal(pValue, "label"))
