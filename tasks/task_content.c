@@ -1070,7 +1070,6 @@ static bool content_file_load(
                         "Setting cache directory to root of writable app directory...\n");
                   strlcpy(new_basedir, uwp_dir_data, sizeof(new_basedir));
                }
-
                fill_pathname_join(new_path, new_basedir,
                      path_basename(content_path), sizeof(new_path));
 
