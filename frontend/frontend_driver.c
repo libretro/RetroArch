@@ -71,6 +71,7 @@ static frontend_ctx_driver_t frontend_ctx_null = {
    NULL,                         /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
+   NULL,                         /* set_gamemode */
    "null",
    NULL,                         /* get_video_driver */
 };
@@ -587,4 +588,13 @@ enum retro_language frontend_driver_get_user_language(void)
    if (frontend && frontend->get_user_language)
       return frontend->get_user_language();
    return RETRO_LANGUAGE_ENGLISH;
+}
+
+bool frontend_driver_set_gamemode(bool on)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (frontend && frontend->set_gamemode)
+      return frontend->set_gamemode(on);
+   return false;
 }

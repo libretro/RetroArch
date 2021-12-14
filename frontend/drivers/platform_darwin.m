@@ -1008,6 +1008,7 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    NULL,                            /* is_narrator_running */
    NULL,                            /* accessibility_speak */
 #endif
+   NULL,                            /* set_gamemode        */
    "darwin",                        /* ident               */
    NULL                             /* get_video_driver    */
 };

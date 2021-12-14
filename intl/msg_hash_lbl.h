@@ -5144,3 +5144,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_MIXER_ACTION_VOLUME,
    "mixer_action_volume"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_GAMEMODE_ENABLE,
+   "game_mode_enable"
+   )
