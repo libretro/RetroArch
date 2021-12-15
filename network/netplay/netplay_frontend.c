@@ -89,6 +89,26 @@
 #define HAVE_INET6 1
 #endif
 
+#if defined(IPPROTO_TCP) && defined(TCP_NODELAY)
+#define SET_TCP_NODELAY(fd) \
+   { \
+      int on = 1; \
+      if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, \
+            (const char *) &on, sizeof(on)) < 0) \
+         RARCH_WARN("[Netplay] Could not set netplay TCP socket to nodelay. Expect jitter.\n"); \
+   }
+#else
+#define SET_TCP_NODELAY(fd)
+#endif
+
+#if defined(F_SETFD) && defined(FD_CLOEXEC)
+#define SET_FD_CLOEXEC(fd) \
+   if (fcntl(fd, F_SETFD, FD_CLOEXEC) < 0) \
+      RARCH_WARN("[Netplay] Cannot set netplay port to close-on-exec. It may fail to reopen.\n");
+#else
+#define SET_FD_CLOEXEC(fd)
+#endif
+
 #define RECV(buf, sz) \
    recvd = netplay_recv(&connection->recv_packet_buffer, connection->fd, (buf), (sz), false); \
    if (recvd >= 0 && recvd < (ssize_t) (sz)) \
@@ -3141,20 +3161,8 @@ static int handle_connection(netplay_t *netplay, bool *error)
          if (!socket_nonblock(new_fd))
             goto critical_failure;
 
-#if defined(IPPROTO_TCP) && defined(TCP_NODELAY)
-         {
-            int on = 1;
-            if (setsockopt(new_fd, IPPROTO_TCP, TCP_NODELAY,
-                  (const char*) &on, sizeof(on)) < 0)
-               RARCH_WARN("[Netplay] Could not set netplay TCP socket to nodelay. Expect jitter.\n");
-         }
-#endif
-
-#if defined(F_SETFD) && defined(FD_CLOEXEC)
-         /* Don't let any inherited processes keep open our port */
-         if (fcntl(new_fd, F_SETFD, FD_CLOEXEC) < 0)
-            RARCH_WARN("[Netplay] Cannot set Netplay port to close-on-exec. It may fail to reopen if the client disconnects.\n");
-#endif
+         SET_TCP_NODELAY(new_fd)
+         SET_FD_CLOEXEC(new_fd)
       }
       else
          goto critical_failure;
@@ -3175,19 +3183,8 @@ static bool netplay_tunnel_connect(int fd, const struct addrinfo *addr)
 {
    int result;
 
-#if defined(IPPROTO_TCP) && defined(TCP_NODELAY)
-   {
-      int on = 1;
-      if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY,
-            (const char*) &on, sizeof(on)) < 0)
-         RARCH_WARN("[Netplay] Could not set netplay TCP socket to nodelay. Expect jitter.\n");
-   }
-#endif
-
-#if defined(F_SETFD) && defined(FD_CLOEXEC)
-   if (fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
-      RARCH_WARN("[Netplay] Cannot set Netplay port to close-on-exec. It may fail to reopen if the client disconnects.\n");
-#endif
+   SET_TCP_NODELAY(fd)
+   SET_FD_CLOEXEC(fd)
 
    if (!socket_nonblock(fd))
       return false;
@@ -6060,9 +6057,9 @@ shrt:
    /* No more data, reset and try again */
    netplay_recv_reset(&connection->recv_packet_buffer);
    return true;
+}
 
 #undef RECV
-}
 
 /**
  * netplay_poll_net_input
@@ -6285,20 +6282,8 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *res,
    if (fd < 0)
       return -1;
 
-#if defined(IPPROTO_TCP) && defined(TCP_NODELAY)
-   {
-      int on = 1;
-      if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY,
-            (const char*) &on, sizeof(on)) < 0)
-         RARCH_WARN("[Netplay] Could not set netplay TCP socket to nodelay. Expect jitter.\n");
-   }
-#endif
-
-#if defined(F_SETFD) && defined(FD_CLOEXEC)
-   /* Don't let any inherited processes keep open our port */
-   if (fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
-      RARCH_WARN("[Netplay] Cannot set Netplay port to close-on-exec. It may fail to reopen if the client disconnects.\n");
-#endif
+   SET_TCP_NODELAY(fd)
+   SET_FD_CLOEXEC(fd)
 
    if (!is_server)
    {
@@ -8770,4 +8755,26 @@ const gfx_widget_t gfx_widget_netplay_ping = {
    &gfx_widget_netplay_ping_iterate,
    &gfx_widget_netplay_ping_frame
 };
+#endif
+
+#undef NETPLAY_KEY_NTOH
+
+#undef MITM_SESSION_MAGIC
+#undef MITM_LINK_MAGIC
+#undef MITM_PING_MAGIC
+
+#undef DISCOVERY_QUERY_MAGIC
+#undef DISCOVERY_RESPONSE_MAGIC
+
+#undef NETPLAY_MAGIC
+#undef FULL_MAGIC
+#undef POKE_MAGIC
+
+#undef SET_PING
+
+#undef SET_FD_CLOEXEC
+#undef SET_TCP_NODELAY
+
+#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY) && !defined(_3DS)
+#undef HAVE_INET6 1
 #endif
