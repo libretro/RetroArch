@@ -8177,11 +8177,11 @@ void deinit_netplay(void)
       net_st->data              = NULL;
       net_st->netplay_enabled   = false;
       net_st->netplay_is_client = false;
-   }
 
 #ifdef HAVE_NETPLAYDISCOVERY
-   deinit_lan_ad_server_socket();
+      deinit_lan_ad_server_socket();
 #endif
+   }
 
    for (i = 0; i < ARRAY_SIZE(net_st->chat.messages); i++)
    {
@@ -8240,10 +8240,6 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
 
       memset(host_room, 0, sizeof(*host_room));
 
-#ifdef HAVE_NETPLAYDISCOVERY
-      net_st->lan_ad_server_fd = -1;
-#endif
-
       server = NULL;
 
       if (settings->bools.netplay_use_mitm_server)
@@ -8278,6 +8274,10 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
          mitm_session = net_st->server_session_deferred;
       }
    }
+
+#ifdef HAVE_NETPLAYDISCOVERY
+   net_st->lan_ad_server_fd = -1;
+#endif
 
    net_st->netplay_client_deferred = false;
 
