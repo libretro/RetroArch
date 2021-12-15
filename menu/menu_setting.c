@@ -7595,7 +7595,28 @@ static void general_write_handler(rarch_setting_t *setting)
          }
          break;
       case MENU_ENUM_LABEL_GAMEMODE_ENABLE:
-         frontend_driver_set_gamemode(config_get_ptr()->bools.gamemode_enable);
+         if (frontend_driver_has_gamemode())
+         {
+            bool on = *setting->value.target.boolean;
+
+            if (!frontend_driver_set_gamemode(on) && on)
+            {
+               settings_t *settings = config_get_ptr();
+
+               /* If we failed to enable game mode, display
+                * a notification and force disable the feature */
+               runloop_msg_queue_push(
+#ifdef __linux__
+                     msg_hash_to_str(MSG_FAILED_TO_ENTER_GAMEMODE_LINUX),
+#else
+                     msg_hash_to_str(MSG_FAILED_TO_ENTER_GAMEMODE),
+#endif
+                     1, 180, true,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               configuration_set_bool(settings,
+                     settings->bools.gamemode_enable, false);
+            }
+         }
          break;
       case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
          core_set_poll_type(*setting->value.target.integer);
@@ -17276,7 +17297,7 @@ static bool setting_append_list(
 #endif
 #endif
 
-         if (frontend_get_ptr()->set_gamemode)
+         if (frontend_driver_has_gamemode())
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.gamemode_enable,

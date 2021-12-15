@@ -3726,7 +3726,14 @@ static bool config_load_file(global_t *global,
    if (!config_entry_exists(conf, "user_language"))
       msg_hash_set_uint(MSG_HASH_USER_LANGUAGE, frontend_driver_get_user_language());
 
-   frontend_driver_set_gamemode(settings->bools.gamemode_enable);
+   if (frontend_driver_has_gamemode() &&
+       !frontend_driver_set_gamemode(settings->bools.gamemode_enable) &&
+       settings->bools.gamemode_enable)
+   {
+      RARCH_WARN("[Config]: GameMode unsupported - disabling...\n");
+      configuration_set_bool(settings,
+            settings->bools.gamemode_enable, false);
+   }
 
    /* If this is the first run of an existing installation
     * after the independent favourites playlist size limit was
