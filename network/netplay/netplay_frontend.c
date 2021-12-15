@@ -8776,5 +8776,5 @@ const gfx_widget_t gfx_widget_netplay_ping = {
 #undef SET_TCP_NODELAY
 
 #if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY) && !defined(_3DS)
-#undef HAVE_INET6 1
+#undef HAVE_INET6
 #endif
