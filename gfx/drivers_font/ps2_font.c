@@ -15,12 +15,19 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <malloc.h>
 #include <gsKit.h>
 #include <dmaKit.h>
 #include <gsToolkit.h>
+#include <encodings/utf.h>
+
+#include "../common/ps2_common.h"
 
 #include "../font_driver.h"
+
+#include "../../configuration.h"
+#include "../../verbosity.h"
 
 typedef struct
 {
@@ -35,7 +42,6 @@ static void* ps2_font_init_font(void* data, const char* font_path,
    const struct font_atlas* atlas = NULL;
    uint32_t j;
    ps2_font_t* font = (ps2_font_t*)calloc(1, sizeof(*font));
-   ps2_video_t* ps2 = (ps2_video_t*)data;
 
    if (!font)
       return NULL;
@@ -146,7 +152,7 @@ static void ps2_font_render_line(
 
    if (!ps2)
       return;
-   
+
    /* Enable Alpha for font */
    gsKit_set_primalpha(ps2->gsGlobal, GS_SETREG_ALPHA(0, 1, 0, 1, 0), 0);
    ps2->gsGlobal->PrimAlphaEnable = GS_SETTING_ON;

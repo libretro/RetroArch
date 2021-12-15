@@ -1,0 +1,38 @@
+name: CI PS2
+
+on:
+  push:
+  pull_request:
+  repository_dispatch:
+    types: [run_build]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: 
+      image: git.libretro.com:5050/libretro-infrastructure/libretro-build-ps2:latest
+      options: --user root
+
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Compile Salamander
+      run: |
+        make -f Makefile.ps2.salamander -j$(getconf _NPROCESSORS_ONLN) clean
+        make -f Makefile.ps2.salamander -j$(getconf _NPROCESSORS_ONLN) release
+    
+    - name: Compile RA
+      run: |
+        make -f Makefile.ps2 -j$(getconf _NPROCESSORS_ONLN) clean
+        make -f Makefile.ps2 -j$(getconf _NPROCESSORS_ONLN) HAVE_STATIC_DUMMY=1 release
+
+    - name: Get short SHA
+      id: slug
+      run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
+    
+    - uses: actions/upload-artifact@v2
+      with:
+        name: RA-PS2-dummy-${{ steps.slug.outputs.sha8 }}
+        path: |
+          raboot.elf
+          retroarchps2.elf

@@ -22,6 +22,8 @@
 #include "../../verbosity.h"
 
 #include "../../libretro-common/include/libretro_gskit_ps2.h"
+#include "../gfx_display.h"
+#include "../common/ps2_common.h"
 
 /* Generic tint color */
 #define GS_TEXT GS_SETREG_RGBA(0x80, 0x80, 0x80, 0x80)
@@ -58,45 +60,6 @@ static struct rm_mode rm_mode_table[NUM_RM_VMODES] = {
     {GS_MODE_DTV_480P, 704, 480, 2, GS_NONINTERLACED, GS_FRAME, 10, 11, "DTV480P@60Hz"},
     {GS_MODE_DTV_576P, 704, 576, 2, GS_NONINTERLACED, GS_FRAME, 12, 11, "DTV576P@50Hz"},
 };
-
-typedef struct ps2_video
-{
-   /* I need to create this additional field
-    * to be used in the font driver*/
-   bool clearVRAM_font;
-   bool menuVisible;
-   bool vsync;
-   int vsync_callback_id;
-   bool force_aspect;
-
-   int8_t vmode;
-   int video_window_offset_x;
-   int video_window_offset_y;
-
-   int PSM;
-   int tex_filter;
-   int menu_filter;
-
-   video_viewport_t vp;
-
-   /* Palette in the cores */
-   struct retro_hw_render_interface_gskit_ps2 iface;
-
-   GSGLOBAL *gsGlobal;
-   GSTEXTURE *menuTexture;
-   GSTEXTURE *coreTexture;
-
-   /* Last scaling state, for detecting changes */
-   int iTextureWidth;
-   int iTextureHeight;
-   float fDAR;
-   bool bScaleInteger;
-   struct retro_hw_ps2_insets padding;
-
-   /* Current scaling calculation result */
-   int iDisplayWidth;
-   int iDisplayHeight;
-} ps2_video_t;
 
 static int vsync_sema_id;
 
