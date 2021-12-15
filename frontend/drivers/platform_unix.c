@@ -1996,22 +1996,25 @@ static void android_app_destroy(struct android_app *android_app)
 static bool frontend_unix_set_gamemode(bool on)
 {
 #ifdef FERAL_GAMEMODE
-   const int gamemode_status = gamemode_query_status();
+   int gamemode_status  = gamemode_query_status();
+   bool gamemode_active = (gamemode_status == 2);
 
    if (gamemode_status < 0)
    {
       if (on)
-      {
          RARCH_WARN("[GameMode]: GameMode cannot be enabled on this system (\"%s.\") "
                "https://github.com/FeralInteractive/gamemode needs to be installed.\n",
                gamemode_error_string());
-      }
+
       return false;
    }
 
+   if (gamemode_active == on)
+      return true;
+
    if (on)
    {
-      if (gamemode_status != 2 && gamemode_request_start() != 0)
+      if (gamemode_request_start() != 0)
       {
          RARCH_WARN("[GameMode]: Failed to enter GameMode: %s.\n", gamemode_error_string());
          return false;
@@ -2019,15 +2022,17 @@ static bool frontend_unix_set_gamemode(bool on)
    }
    else
    {
-      if (gamemode_status == 2 && gamemode_request_end() != 0)
+      if (gamemode_request_end() != 0)
       {
          RARCH_WARN("[GameMode]: Failed to exit GameMode: %s.\n", gamemode_error_string());
          return false;
       }
    }
+
    return true;
 #else
    (void)on;
+   return false;
 #endif
 }
 
