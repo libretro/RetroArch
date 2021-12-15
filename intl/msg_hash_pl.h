@@ -11740,6 +11740,10 @@ MSG_HASH(
    "Menu zarządcy"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
+   "Tryb Gry"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "Użyj trybu PAL60"
    )
