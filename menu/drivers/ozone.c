@@ -1876,6 +1876,10 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ROOM];
       case MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RELOAD];
+#ifdef HAVE_NETPLAYDISCOVERY
+      case MENU_ENUM_LABEL_NETPLAY_REFRESH_LAN:
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RELOAD];
+#endif
 #endif
       case MENU_ENUM_LABEL_REBOOT:
       case MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG:

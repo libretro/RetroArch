@@ -758,6 +758,7 @@ typedef struct settings
       /* Netplay */
       bool netplay_public_announce;
       bool netplay_start_as_spectator;
+      bool netplay_fade_chat;
       bool netplay_allow_pausing;
       bool netplay_allow_slaves;
       bool netplay_require_slaves;
@@ -765,6 +766,7 @@ typedef struct settings
       bool netplay_nat_traversal;
       bool netplay_use_mitm_server;
       bool netplay_request_devices[MAX_USERS];
+      bool netplay_ping_show;
 
       /* Network */
       bool network_buildbot_auto_extract_archive;

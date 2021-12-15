@@ -1104,6 +1104,9 @@ static const bool audio_enable_menu_bgm    = false;
 /* Enables displaying various timing statistics. */
 #define DEFAULT_STATISTICS_SHOW false
 
+/* Enables displaying the current netplay room ping. */
+#define DEFAULT_NETPLAY_PING_SHOW false
+
 /* Enables use of rewind. This will incur some memory footprint
  * depending on the save state buffer. */
 #define DEFAULT_REWIND_ENABLE false
@@ -1153,6 +1156,9 @@ static const bool audio_enable_menu_bgm    = false;
 
 /* Start netplay in spectator mode */
 static const bool netplay_start_as_spectator = false;
+
+/* Netplay chat fading toggle */
+static const bool netplay_fade_chat = true;
 
 /* Allow players to pause */
 static const bool netplay_allow_pausing = false;

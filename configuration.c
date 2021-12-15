@@ -333,10 +333,12 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
    DECLARE_META_BIND(2, audio_mute,            RARCH_MUTE,                   MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE),
    DECLARE_META_BIND(2, osk_toggle,            RARCH_OSK,                    MENU_ENUM_LABEL_VALUE_INPUT_META_OSK),
    DECLARE_META_BIND(2, fps_toggle,            RARCH_FPS_TOGGLE,             MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE),
+   DECLARE_META_BIND(2, netplay_ping_toggle,   RARCH_NETPLAY_PING_TOGGLE,    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE),
    DECLARE_META_BIND(2, send_debug_info,       RARCH_SEND_DEBUG_INFO,        MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO),
    DECLARE_META_BIND(2, netplay_host_toggle,   RARCH_NETPLAY_HOST_TOGGLE,    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE),
    DECLARE_META_BIND(2, netplay_game_watch,    RARCH_NETPLAY_GAME_WATCH,     MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH),
    DECLARE_META_BIND(2, netplay_player_chat,   RARCH_NETPLAY_PLAYER_CHAT,    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT),
+   DECLARE_META_BIND(2, netplay_fade_chat_toggle, RARCH_NETPLAY_FADE_CHAT_TOGGLE, MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE),
    DECLARE_META_BIND(2, enable_hotkey,         RARCH_ENABLE_HOTKEY,          MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY),
    DECLARE_META_BIND(2, volume_up,             RARCH_VOLUME_UP,              MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP),
    DECLARE_META_BIND(2, volume_down,           RARCH_VOLUME_DOWN,            MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN),
@@ -1601,6 +1603,7 @@ static struct config_bool_setting *populate_settings_bool(
 #ifdef HAVE_NETWORKING
    SETTING_BOOL("netplay_public_announce",       &settings->bools.netplay_public_announce, true, DEFAULT_NETPLAY_PUBLIC_ANNOUNCE, false);
    SETTING_BOOL("netplay_start_as_spectator",    &settings->bools.netplay_start_as_spectator, false, netplay_start_as_spectator, false);
+   SETTING_BOOL("netplay_fade_chat",             &settings->bools.netplay_fade_chat, true, netplay_fade_chat, false);
    SETTING_BOOL("netplay_allow_pausing",         &settings->bools.netplay_allow_pausing, true, netplay_allow_pausing, false);
    SETTING_BOOL("netplay_allow_slaves",          &settings->bools.netplay_allow_slaves, true, netplay_allow_slaves, false);
    SETTING_BOOL("netplay_require_slaves",        &settings->bools.netplay_require_slaves, true, netplay_require_slaves, false);
@@ -1623,6 +1626,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("netplay_request_device_p14",    &settings->bools.netplay_request_devices[13], true, false, false);
    SETTING_BOOL("netplay_request_device_p15",    &settings->bools.netplay_request_devices[14], true, false, false);
    SETTING_BOOL("netplay_request_device_p16",    &settings->bools.netplay_request_devices[15], true, false, false);
+   SETTING_BOOL("netplay_ping_show",             &settings->bools.netplay_ping_show, true, DEFAULT_NETPLAY_PING_SHOW, false);
    SETTING_BOOL("network_on_demand_thumbnails",  &settings->bools.network_on_demand_thumbnails, true, DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS, false);
 #endif
    SETTING_BOOL("input_descriptor_label_show",   &settings->bools.input_descriptor_label_show, true, input_descriptor_label_show, false);

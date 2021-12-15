@@ -380,6 +380,7 @@ extern const gfx_widget_t gfx_widget_load_content_animation;
 
 #ifdef HAVE_NETWORKING
 extern const gfx_widget_t gfx_widget_netplay_chat;
+extern const gfx_widget_t gfx_widget_netplay_ping;
 #endif
 
 #ifdef HAVE_CHEEVOS

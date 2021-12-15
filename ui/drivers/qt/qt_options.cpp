@@ -412,6 +412,7 @@ QWidget *NetplayPage::widget()
 
    checksLayout->add(MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE);
    checksLayout->add(MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR);
+   checksLayout->add(MENU_ENUM_LABEL_NETPLAY_FADE_CHAT);
    checksLayout->add(MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING);
    checksLayout->add(MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS);
 
@@ -562,6 +563,7 @@ QWidget *NotificationsPage::widget()
    notificationsGroup->add(MENU_ENUM_LABEL_MEMORY_SHOW);
    notificationsGroup->add(MENU_ENUM_LABEL_MEMORY_UPDATE_INTERVAL);
    notificationsGroup->add(MENU_ENUM_LABEL_STATISTICS_SHOW);
+   notificationsGroup->add(MENU_ENUM_LABEL_NETPLAY_PING_SHOW);
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_FONT_PATH);
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_FONT_SIZE);
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X);

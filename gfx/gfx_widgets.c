@@ -81,6 +81,7 @@ static void INLINE gfx_widgets_font_free(gfx_widget_font_data_t *font_data)
 const static gfx_widget_t* const widgets[] = {
 #ifdef HAVE_NETWORKING
    &gfx_widget_netplay_chat,
+   &gfx_widget_netplay_ping,
 #endif
 #ifdef HAVE_SCREENSHOTS
    &gfx_widget_screenshot,

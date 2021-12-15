@@ -37,8 +37,8 @@
 
 #include "netplay_protocol.h"
 
-#define NETPLAY_NICK_LEN     32
-#define NETPLAY_HOST_STR_LEN 32
+#define NETPLAY_NICK_LEN         32
+#define NETPLAY_HOST_STR_LEN     32
 #define NETPLAY_HOST_LONGSTR_LEN 256
 
 #define NETPLAY_CHAT_MAX_MESSAGES   5
@@ -117,17 +117,16 @@ typedef struct netplay netplay_t;
 struct ad_packet
 {
    uint32_t header;
-   uint32_t protocol_version;
-   uint32_t port;
-   char address[NETPLAY_HOST_STR_LEN];
-   char retroarch_version[NETPLAY_HOST_STR_LEN];
-   char nick[NETPLAY_HOST_STR_LEN];
-   char frontend[NETPLAY_HOST_STR_LEN];
-   char core[NETPLAY_HOST_STR_LEN];
-   char core_version[NETPLAY_HOST_STR_LEN];
-   char content[NETPLAY_HOST_LONGSTR_LEN];
-   char content_crc[NETPLAY_HOST_STR_LEN];
-   char subsystem_name[NETPLAY_HOST_STR_LEN];
+   int      content_crc;
+   int      port;
+   uint32_t has_password;
+   char     nick[NETPLAY_NICK_LEN];
+   char     frontend[NETPLAY_HOST_STR_LEN];
+   char     core[NETPLAY_HOST_STR_LEN];
+   char     core_version[NETPLAY_HOST_STR_LEN];
+   char     retroarch_version[NETPLAY_HOST_STR_LEN];
+   char     content[NETPLAY_HOST_LONGSTR_LEN];
+   char     subsystem_name[NETPLAY_HOST_LONGSTR_LEN];
 };
 
 typedef struct mitm_server
@@ -146,7 +145,7 @@ static const mitm_server_t netplay_mitm_server_list[] = {
 struct netplay_room
 {
    struct netplay_room *next;
-   int id;
+   int  id;
    int  port;
    int  mitm_port;
    int  gamecrc;
@@ -177,18 +176,18 @@ struct netplay_rooms
 
 struct netplay_host
 {
-   struct sockaddr addr;
-   socklen_t addrlen;
    int  content_crc;
    int  port;
    char address[NETPLAY_HOST_STR_LEN];
-   char nick[NETPLAY_HOST_STR_LEN];
+   char nick[NETPLAY_NICK_LEN];
    char frontend[NETPLAY_HOST_STR_LEN];
    char core[NETPLAY_HOST_STR_LEN];
    char core_version[NETPLAY_HOST_STR_LEN];
    char retroarch_version[NETPLAY_HOST_STR_LEN];
    char content[NETPLAY_HOST_LONGSTR_LEN];
    char subsystem_name[NETPLAY_HOST_LONGSTR_LEN];
+   bool has_password;
+   bool has_spectate_password;
 };
 
 struct netplay_host_list
@@ -218,7 +217,7 @@ struct netplay_chat
       struct netplay_chat_data data;
       struct netplay_chat_buffer buffer;
    } messages[NETPLAY_CHAT_MAX_MESSAGES];
-   uint32_t pos;
+   uint32_t message_slots;
 };
 
 typedef struct
@@ -227,25 +226,30 @@ typedef struct
    struct netplay_room host_room; /* ptr alignment */
    struct netplay_room *room_list;
    struct netplay_rooms *rooms_data;
+#ifdef HAVE_NETPLAYDISCOVERY
+   /* LAN discovery sockets */
+   int lan_ad_server_fd;
+   int lan_ad_client_fd;
+   /* Packet buffer for advertisement and responses */
+   struct ad_packet ad_packet_buffer; /* uint32_t alignment */
    /* List of discovered hosts */
    struct netplay_host_list discovered_hosts;
-#ifdef HAVE_NETPLAYDISCOVERY
    size_t discovered_hosts_allocated;
 #endif
    int room_count;
    int reannounce;
-   unsigned server_port_deferred;
-   /* Packet buffer for advertisement and responses */
-   struct ad_packet ad_packet_buffer; /* uint32_t alignment */
+   int reping;
+   int latest_ping;
    uint16_t mapping[RETROK_LAST];
+   unsigned server_port_deferred;
    char server_address_deferred[256];
    char server_session_deferred[32];
+   bool netplay_client_deferred;
    /* Only used before init_netplay */
    bool netplay_enabled;
    bool netplay_is_client;
    /* Used to avoid recursive netplay calls */
    bool in_netplay;
-   bool netplay_client_deferred;
    bool has_set_netplay_mode;
    bool has_set_netplay_ip_address;
    bool has_set_netplay_ip_port;
@@ -403,5 +407,6 @@ bool netplay_discovery_driver_ctl(
 
 bool netplay_decode_hostname(const char *hostname,
       char *address, unsigned *port, char *session, size_t len);
+bool netplay_is_lan_address(struct sockaddr_in *addr);
 
 #endif

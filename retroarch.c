@@ -2693,11 +2693,19 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
 #ifdef HAVE_NETWORKING
+      case CMD_EVENT_NETPLAY_PING_TOGGLE:
+         settings->bools.netplay_ping_show =
+            !settings->bools.netplay_ping_show;
+         break;
       case CMD_EVENT_NETPLAY_GAME_WATCH:
          netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
          break;
       case CMD_EVENT_NETPLAY_PLAYER_CHAT:
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PLAYER_CHAT, NULL);
+         break;
+      case CMD_EVENT_NETPLAY_FADE_CHAT_TOGGLE:
+         settings->bools.netplay_fade_chat =
+            !settings->bools.netplay_fade_chat;
          break;
       case CMD_EVENT_NETPLAY_DEINIT:
          deinit_netplay();
@@ -2894,8 +2902,10 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETPLAY_HOST_TOGGLE:
       case CMD_EVENT_NETPLAY_DISCONNECT:
       case CMD_EVENT_NETPLAY_ENABLE_HOST:
+      case CMD_EVENT_NETPLAY_PING_TOGGLE:
       case CMD_EVENT_NETPLAY_GAME_WATCH:
       case CMD_EVENT_NETPLAY_PLAYER_CHAT:
+      case CMD_EVENT_NETPLAY_FADE_CHAT_TOGGLE:
          return false;
 #endif
       case CMD_EVENT_FULLSCREEN_TOGGLE:
