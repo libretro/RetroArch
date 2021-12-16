@@ -862,7 +862,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
-   "Vibration unterstützt"
+   "Rumble unterstützt"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
@@ -2933,7 +2933,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
-   "Vor dem Laden auf fehlende Firmware untersuchen"
+   "Vor dem Laden auf fehlende Firmware prüfen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
@@ -8724,7 +8724,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOADING_CORE,
-   "Lade Core..."
+   "Core wird geladen..."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
@@ -9695,11 +9695,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SAVE_DEBUG_INFO,
-   "Fehler beim Speichern der Debug-Informationen."
+   "Speichern der Debug-Informationen fehlgeschlagen."
    )
 MSG_HASH(
    MSG_FAILED_TO_SEND_DEBUG_INFO,
-   "Fehler beim Senden der Debug-Informationen an den Server."
+   "Senden der Debug-Informationen an den Server fehlgeschlagen."
    )
 MSG_HASH(
    MSG_SENDING_DEBUG_INFO,
@@ -9907,7 +9907,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_LIST_FAILED,
-   "Fehler beim Abrufen der Core-Liste!"
+   "Abrufen der Core-Liste fehlgeschlagen!"
    )
 MSG_HASH(
    MSG_LATEST_CORE_INSTALLED,
@@ -9919,7 +9919,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DOWNLOADING_CORE,
-   "Lade Core herunter: "
+   "Core wird heruntergeladen: "
    )
 MSG_HASH(
    MSG_EXTRACTING_CORE,
@@ -9931,7 +9931,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_INSTALL_FAILED,
-   "Fehler beim Installieren des Cores: "
+   "Installieren des Cores fehlgeschlagen: "
    )
 MSG_HASH(
    MSG_SCANNING_CORES,
@@ -10023,7 +10023,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_APPEND_DISK,
-   "Fehler beim Anhängen der Disc"
+   "Anhängen der Disc fehlgeschlagen"
    )
 MSG_HASH(
    MSG_APPLICATION_DIR,
@@ -10199,7 +10199,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DOWNLOADING,
-   "Herunterladen von"
+   "Wird heruntergeladen"
    )
 MSG_HASH(
    MSG_INDEX_FILE,
@@ -10395,7 +10395,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_START_RECORDING,
-   "Konnte Aufzeichnung nicht starten."
+   "Aufzeichnung konnte nicht starten."
    )
 MSG_HASH(
    MSG_FAILED_TO_TAKE_SCREENSHOT,
@@ -10539,7 +10539,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADING,
-   "Laden..."
+   "Wird geladen"
    )
 MSG_HASH(
    MSG_FIRMWARE,
@@ -10547,11 +10547,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADING_CONTENT_FILE,
-   "Lade Inhalts-Datei"
+   "Inhalts-Datei wird geladen"
    )
 MSG_HASH(
    MSG_LOADING_HISTORY_FILE,
-   "Lade Verlaufs-Datei"
+   "Verlaufs-Datei wird geladen"
    )
 MSG_HASH(
    MSG_LOADING_FAVORITES_FILE,
@@ -10559,7 +10559,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADING_STATE,
-   "Lade Spielstand"
+   "Savestate wird geladen"
    )
 MSG_HASH(
    MSG_MEMORY,
@@ -10871,11 +10871,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
-   "Automatisches Laden des Savestates von \"%s\" fehlgeschlagen."
+   "Automatisches Laden des Savestates aus \"%s\" fehlgeschlagen."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
-   "Automatisches Laden des Savestates von \"%s\" erfolgreich."
+   "Automatisches Laden des Savestates aus \"%s\" erfolgreich."
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -11293,6 +11293,22 @@ MSG_HASH(
    MSG_CORE_INFO_CACHE_UNSUPPORTED,
    "Kann nicht in das Core-Informationen-Verzeichnis schreiben - Core-Informationen-Cache wird deaktiviert"
    )
+MSG_HASH(
+   MSG_FOUND_ENTRY_STATE_IN,
+   "Eintragsstatus gefunden in"
+   )
+MSG_HASH(
+   MSG_LOADING_ENTRY_STATE_FROM,
+   "Eintragsstatus wird geladen aus"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE,
+   "GameMode kann nicht aufgerufen werden"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
+   "GameMode kann nicht aufgerufen werden - stelle sicher, dass der GameMode-Daemon installiert ist/läuft"
+   )
 
 /* Lakka */
 
@@ -11546,6 +11562,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_POLICY_MENU_GOVERNOR,
    "Menü-Regler"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
+   "Spielmodus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
+   "Kann die Leistung verbessern, die Latenzzeit verringern und Audio-Crackling beheben. Die Komponente https://github.com/FeralInteractive/gamemode wird hierzu benötigt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
