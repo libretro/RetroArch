@@ -5458,20 +5458,10 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   return netplay_cmd_nak(netplay, connection);
                }
 
-               /* Unmark ourself, in case we were in slave mode */
-               netplay->connected_players &= ~(1<<client_num);
-               netplay->client_devices[client_num] = 0;
-               for (device = 0; device < MAX_INPUT_DEVICES; device++)
-                  netplay->device_clients[device] &= ~(1<<client_num);
-
-               /* Announce it */
-               announce_play_spectate(netplay, NULL, NETPLAY_CONNECTION_SPECTATING, 0, -1);
-
 #ifdef DEBUG_NETPLAY_STEPS
                RARCH_LOG("[Netplay] Received mode change self->spectating\n");
                print_state(netplay);
 #endif
-
             }
 
          }
@@ -7141,9 +7131,23 @@ void netplay_toggle_play_spectate(netplay_t *netplay)
    {
       case NETPLAY_CONNECTION_PLAYING:
       case NETPLAY_CONNECTION_SLAVE:
-         /* Switch to spectator mode immediately */
-         netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
-         netplay_cmd_mode(netplay, NETPLAY_CONNECTION_SPECTATING);
+         {
+            uint32_t device;
+
+            /* Switch to spectator mode immediately */
+            netplay->self_mode    = NETPLAY_CONNECTION_SPECTATING;
+            netplay->self_devices = 0;
+
+            netplay->connected_players &= ~(1<<netplay->self_client_num);
+            netplay->client_devices[netplay->self_client_num] = 0;
+            for (device = 0; device < MAX_INPUT_DEVICES; device++)
+               netplay->device_clients[device] &= ~(1<<netplay->self_client_num);
+
+            /* Announce it */
+            announce_play_spectate(netplay, NULL, NETPLAY_CONNECTION_SPECTATING, 0, -1);
+
+            netplay_cmd_mode(netplay, NETPLAY_CONNECTION_SPECTATING);
+         }
          break;
       case NETPLAY_CONNECTION_SPECTATING:
          /* Switch only after getting permission */
