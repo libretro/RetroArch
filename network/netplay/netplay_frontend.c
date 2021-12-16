@@ -4678,30 +4678,29 @@ static void handle_play_spectate(netplay_t *netplay,
                if (!netplay->device_clients[device])
                   break;
             }
-            if (device >= MAX_INPUT_DEVICES &&
-                netplay->config_devices[1] == RETRO_DEVICE_NONE && share_mode)
+            if (device >= MAX_INPUT_DEVICES)
             {
-               /* No device free and no device specifically asked for, but only
-                * one device, so share it */
-               if (netplay->device_share_modes[0])
+               if (netplay->config_devices[1] == RETRO_DEVICE_NONE &&
+                  netplay->device_share_modes[0] && share_mode)
                {
+                  /* No device free and no device specifically asked for, but only
+                   * one device, so share it */
                   device     = 0;
-                  share_mode = netplay->device_share_modes[0];
+                  share_mode = netplay->device_share_modes[0];    
+               }
+               else
+               {
+                  /* No slots free! */
+                  payload[0] = htonl(NETPLAY_CMD_MODE_REFUSED_REASON_NO_SLOTS);
+                  /* FIXME: Message for the server */
+                  if (connection)
+                     netplay_send_raw_cmd(netplay, connection,
+                        NETPLAY_CMD_MODE_REFUSED, payload, sizeof(uint32_t));
                   break;
                }
             }
-            if (device >= MAX_INPUT_DEVICES)
-            {
-               /* No slots free! */
-               payload[0] = htonl(NETPLAY_CMD_MODE_REFUSED_REASON_NO_SLOTS);
-               /* FIXME: Message for the server */
-               if (connection)
-                  netplay_send_raw_cmd(netplay, connection, NETPLAY_CMD_MODE_REFUSED, payload, sizeof(uint32_t));
-               break;
-            }
             devices = 1<<device;
             netplay->device_share_modes[device] = share_mode;
-
          }
 
          payload[2] = htonl(devices);
