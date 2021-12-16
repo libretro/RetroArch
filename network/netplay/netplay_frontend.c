@@ -89,7 +89,7 @@
 #define HAVE_INET6 1
 #endif
 
-#if defined(IPPROTO_TCP) && defined(TCP_NODELAY)
+#ifdef TCP_NODELAY
 #define SET_TCP_NODELAY(fd) \
    { \
       int on = 1; \
@@ -6351,7 +6351,7 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *res,
    }
    else
    {
-#if defined(HAVE_INET6) && defined(IPPROTO_IPV6) && defined(IPV6_V6ONLY)
+#if defined(HAVE_INET6) && defined(IPV6_V6ONLY)
       /* Make sure we accept connections on both IPv6 and IPv4 */
       if (res->ai_family == AF_INET6)
       {
