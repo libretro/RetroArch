@@ -179,7 +179,7 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
 
       input_config_set_mouse_display_name(i, name);
 
-      RARCH_LOG("[WINRAW]: Mouse #%u: \"%s\".\n", i, name);
+      RARCH_LOG("[WinRaw]: Mouse #%u: \"%s\".\n", i, name);
    }
 }
 
@@ -371,7 +371,7 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
    {
       if (wr->rect_delay < 10)
       {
-          RARCH_DBG("[CRT][WINRAW]: Resize RECT delay for absolute co-ords - %d \n", wr->rect_delay);
+          RARCH_DBG("[CRT][WinRaw]: Resize RECT delay for absolute co-ords - %d \n", wr->rect_delay);
           winraw_init_mouse_xy_mapping(wr); /* Triggering fewer times seems to fix the issue. Forcing resize while resolution is changing */
           wr->rect_delay ++;
       }
@@ -379,7 +379,7 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
       {
 	      int bottom = wr->prev_rect.bottom;
 	      int right = wr->prev_rect.right;
-	      RARCH_DBG("[CRT][WINRAW]: Resizing RECT for absolute coordinates to match new resolution - %dx%d\n", right ,bottom);
+	      RARCH_DBG("[CRT][WinRaw]: Resizing RECT for absolute coordinates to match new resolution - %dx%d\n", right ,bottom);
 	      wr->active_rect = wr->prev_rect;
 	      winraw_init_mouse_xy_mapping(wr);
 	      wr->rect_delay = 0;
@@ -406,9 +406,9 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
       InterlockedExchangeAdd(&mouse->dlt_y, state->lLastY);
 
       if (!GetCursorPos(&crs_pos))
-         RARCH_DBG("[WINRAW]: GetCursorPos failed with error %lu.\n", GetLastError());
+         RARCH_DBG("[WinRaw]: GetCursorPos failed with error %lu.\n", GetLastError());
       else if (!ScreenToClient((HWND)video_driver_window_get(), &crs_pos))
-         RARCH_DBG("[WINRAW]: ScreenToClient failed with error %lu.\n", GetLastError());
+         RARCH_DBG("[WinRaw]: ScreenToClient failed with error %lu.\n", GetLastError());
       else
       {
          mouse->x = crs_pos.x;
