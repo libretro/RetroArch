@@ -957,7 +957,7 @@ void recording_dump_frame(
 
       if (!vp.width || !vp.height)
       {
-         RARCH_WARN("[recording] %s \n",
+         RARCH_WARN("[Recording]: %s\n",
                msg_hash_to_str(MSG_VIEWPORT_SIZE_CALCULATION_FAILED));
          video_driver_gpu_record_deinit();
          recording_dump_frame(
@@ -969,7 +969,7 @@ void recording_dump_frame(
       if (  vp.width  != record_st->gpu_width ||
             vp.height != record_st->gpu_height)
       {
-         RARCH_WARN("[recording] %s\n",
+         RARCH_WARN("[Recording]: %s\n",
                msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE));
 
          runloop_msg_queue_push(

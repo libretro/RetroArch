@@ -1125,7 +1125,7 @@ static bool validate_game_specific_options(char **output)
        !path_is_valid(game_options_path))
       return false;
 
-   RARCH_LOG("%s %s\n",
+   RARCH_LOG("[Core]: %s \"%s\".\n",
          msg_hash_to_str(MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT),
          game_options_path);
    *output = strdup(game_options_path);
@@ -1172,7 +1172,7 @@ static bool validate_folder_specific_options(
        !path_is_valid(folder_options_path))
       return false;
 
-   RARCH_LOG("%s %s\n",
+   RARCH_LOG("[Core]: %s \"%s\".\n",
          msg_hash_to_str(MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT),
          folder_options_path);
    *output = strdup(folder_options_path);
@@ -1473,7 +1473,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                char s[128];
                s[0] = '\0';
 
-               snprintf(s, sizeof(s), "[Environ]: GET_VARIABLE %s:\n\t%s\n",
+               snprintf(s, sizeof(s), "[Environ]: GET_VARIABLE: %s = \"%s\"\n",
                      var->key, var->value ? var->value :
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
                RARCH_LOG(s);
@@ -2134,7 +2134,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                         if (!description)
                            continue;
 
-                        RARCH_LOG("\tRetroPad, Port %u, Button \"%s\" => \"%s\"\n",
+                        RARCH_LOG("   RetroPad, Port %u, Button \"%s\" => \"%s\"\n",
                               p + 1, libretro_btn_desc[retro_id], description);
                      }
                   }
@@ -2728,9 +2728,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (log_level != RETRO_LOG_DEBUG)
                continue;
 
-            RARCH_LOG("Controller port: %u\n", i + 1);
+            RARCH_LOG("   Controller port: %u\n", i + 1);
             for (j = 0; j < info[i].num_types; j++)
-               RARCH_LOG("   %s (ID: %u)\n", info[i].types[j].desc,
+               RARCH_LOG("      %s (ID: %u)\n", info[i].types[j].desc,
                      info[i].types[j].id);
          }
 
@@ -2759,9 +2759,10 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          if (system)
          {
             unsigned i;
-            const struct retro_memory_map *mmaps        =
+            const struct retro_memory_map *mmaps   =
                (const struct retro_memory_map*)data;
             rarch_memory_descriptor_t *descriptors = NULL;
+            unsigned int log_level                 = settings->uints.libretro_log_level;
 
             RARCH_LOG("[Environ]: SET_MEMORY_MAPS.\n");
             free((void*)system->mmaps.descriptors);
@@ -2774,6 +2775,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (!descriptors)
                return false;
 
+            if (log_level != RETRO_LOG_DEBUG)
+               break;
+
             system->mmaps.descriptors     = descriptors;
             system->mmaps.num_descriptors = mmaps->num_descriptors;
 
@@ -2782,12 +2786,10 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
             mmap_preprocess_descriptors(descriptors, mmaps->num_descriptors);
 
-#ifndef NDEBUG
             if (sizeof(void *) == 8)
-               RARCH_LOG("   ndx flags  ptr              offset   start    select   disconn  len      addrspace\n");
+               RARCH_LOG("           ndx flags  ptr              offset   start    select   disconn  len      addrspace\n");
             else
-               RARCH_LOG("   ndx flags  ptr          offset   start    select   disconn  len      addrspace\n");
-#endif
+               RARCH_LOG("           ndx flags  ptr          offset   start    select   disconn  len      addrspace\n");
 
             for (i = 0; i < system->mmaps.num_descriptors; i++)
             {
@@ -2819,7 +2821,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                flags[5] = (desc->core.flags & RETRO_MEMDESC_CONST) ? 'C' : 'c';
                flags[6] = 0;
 
-               RARCH_LOG("   %03u %s %p %08X %08X %08X %08X %08X %s\n",
+               RARCH_LOG("           %03u %s %p %08X %08X %08X %08X %08X %s\n",
                      i + 1, flags, desc->core.ptr, desc->core.offset, desc->core.start,
                      desc->core.select, desc->core.disconnect, desc->core.len,
                      desc->core.addrspace ? desc->core.addrspace : "");
@@ -2829,7 +2831,6 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          {
             RARCH_WARN("[Environ]: SET_MEMORY_MAPS, but system pointer not initialized..\n");
          }
-
          break;
       }
 
@@ -7080,7 +7081,7 @@ static enum runloop_state_enum runloop_check_state(
                settings->ints.state_slot);
          runloop_msg_queue_push(msg, 2, 180, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_LOG("%s\n", msg);
+         RARCH_LOG("[State]: %s\n", msg);
       }
 
       old_should_slot_increase = should_slot_increase;
