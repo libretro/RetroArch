@@ -4008,6 +4008,14 @@ MSG_HASH(
    "필수적이지 않은 넷플레이 OSD 메시지를 표시합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "메뉴에서만 알림 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "메뉴가 열려있을 때만 알림을 표시합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "OSD 알림 폰트"
    )
@@ -11720,6 +11728,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOADING_ENTRY_STATE_FROM,
    "시작 상태저장 불러오는 중:"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE,
+   "GameMode 활성화 실패"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
+   "GameMode 활성화 실패 - GameMode 데몬이 설치되어 있고 실행중인지 확인하십시오"
    )
 
 /* Lakka */

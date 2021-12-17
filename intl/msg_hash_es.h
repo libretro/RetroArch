@@ -3972,6 +3972,14 @@ MSG_HASH(
    "Muestra mensajes en pantalla de baja importancia sobre el juego en red."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "Limitar las notificaciones al menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "Muestra las notificaciones únicamente cuando se haya abierto el menú."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "Fuente de notificaciones"
    )
@@ -11600,6 +11608,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOADING_ENTRY_STATE_FROM,
    "Cargando elemento de guardado rápido de"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE,
+   "Error al acceder a GameMode"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
+   "Error al acceder a GameMode: comprueba que el servicio de GameMode esté instalado y ejecutándose"
    )
 
 /* Lakka */
