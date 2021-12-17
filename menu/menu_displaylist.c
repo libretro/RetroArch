@@ -7306,6 +7306,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_NETPLAY_PASSWORD,                                      PARSE_ONLY_STRING, true},
                {MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD,                             PARSE_ONLY_STRING, true},
                {MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR,                            PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_NETPLAY_FADE_CHAT,                                     PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING,                                 PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES,                                  PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES,                                PARSE_ONLY_BOOL,   false},
@@ -8630,6 +8631,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_STATISTICS_SHOW,                         PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_MEMORY_SHOW,                             PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_MEMORY_UPDATE_INTERVAL,                  PARSE_ONLY_UINT,  false },
+#if defined(HAVE_NETWORKING) && defined(HAVE_GFX_WIDGETS)
+               {MENU_ENUM_LABEL_NETPLAY_PING_SHOW,                       PARSE_ONLY_BOOL,  false },
+#endif
                {MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,        PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_NOTIFICATION_SHOW_AUTOCONFIG,            PARSE_ONLY_BOOL,  false },
 #ifdef HAVE_CHEATS
@@ -8672,6 +8676,12 @@ unsigned menu_displaylist_build_list(
                         build_list[i].checked = true;
                      break;
 #ifdef HAVE_GFX_WIDGETS
+#ifdef HAVE_NETWORKING
+                  case MENU_ENUM_LABEL_NETPLAY_PING_SHOW:
+                     if (widgets_active)
+                        build_list[i].checked = true;
+                     break;
+#endif
                   case MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION:
                      if (widgets_active)
                         build_list[i].checked = true;
@@ -9661,12 +9671,9 @@ static unsigned menu_displaylist_build_shader_parameter(
 #ifdef HAVE_NETWORKING
 unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 {
-   char s[8300];
-   int i                                = 0;
-   unsigned count                       = 0;
-   net_driver_state_t *net_st           = networking_state_get_ptr();
-
-   s[0]                                 = '\0';
+   int i;
+   unsigned count             = 0;
+   net_driver_state_t *net_st = networking_state_get_ptr();
 
    menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, list);
 
@@ -9710,70 +9717,76 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
          MENU_SETTING_ACTION, 0, 0))
       count++;
 
-   if (net_st->room_count != 0)
-   {
-      for (i = 0; i < net_st->room_count; i++)
-      {
-         char country[8];
-         char passworded[64];
-
-         if (!net_st->room_list[i].lan &&
-               !string_is_empty(net_st->room_list[i].country))
-            snprintf(country, sizeof(country),
-                  "(%s)", net_st->room_list[i].country);
-         else
-            *country = '\0';
-
-         if (net_st->room_list[i].has_password ||
-               net_st->room_list[i].has_spectate_password)
-            snprintf(passworded, sizeof(passworded),
-                  "[%s]", msg_hash_to_str(MSG_ROOM_PASSWORDED));
-         else
-            *passworded = '\0';
-
-         /* Uncomment this to debug mismatched room parameters*/
-#if 0
-         RARCH_LOG("[Lobby]: Room Data: %d\n"
-               "Nickname:         %s\n"
-               "Address:          %s\n"
-               "Port:             %d\n"
-               "Core:             %s\n"
-               "Core Version:     %s\n"
-               "Game:             %s\n"
-               "Game CRC:         %08x\n"
-               "Timestamp:        %d\n", room_data->elems[j + 6].data,
-               net_st->room_list[i].nickname,
-               net_st->room_list[i].address,
-               net_st->room_list[i].port,
-               net_st->room_list[i].corename,
-               net_st->room_list[i].coreversion,
-               net_st->room_list[i].gamename,
-               net_st->room_list[i].gamecrc,
-               net_st->room_list[i].timestamp);
+#ifdef HAVE_NETPLAYDISCOVERY
+   if (menu_entries_append_enum(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_LAN),
+         MENU_ENUM_LABEL_NETPLAY_REFRESH_LAN,
+         MENU_SETTING_ACTION, 0, 0))
+      count++;
 #endif
 
-         snprintf(s, sizeof(s), "%s%s: %s%s",
-            passworded,
-            net_st->room_list[i].lan
-            ? msg_hash_to_str(MSG_LOCAL)
-            : (net_st->room_list[i].host_method
-               == NETPLAY_HOST_METHOD_MITM
-               ? msg_hash_to_str(MSG_INTERNET_RELAY)
-               : msg_hash_to_str(MSG_INTERNET)),
-            net_st->room_list[i].nickname,
-            country
-            );
+   for (i = 0; i < net_st->room_count; i++)
+   {
+      char buf[8192];
+      char passworded[64];
+      char country[8];
+      const char *room_type;
+      struct netplay_room *room = &net_st->room_list[i];
 
-         if (menu_entries_append_enum(list,
-               s,
-               msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
-               MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
-               (unsigned)(MENU_SETTINGS_NETPLAY_ROOMS_START + i), 0, 0))
-            count++;
-      }
+      if (room->has_password || room->has_spectate_password)
+         snprintf(passworded, sizeof(passworded), "[%s] ",
+            msg_hash_to_str(MSG_ROOM_PASSWORDED));
+      else
+         *passworded = '\0';
 
-      netplay_rooms_free();
+      if (!room->lan && !string_is_empty(room->country))
+         snprintf(country, sizeof(country), " (%s)",
+            room->country);
+      else
+         *country = '\0';
+
+      if (room->lan)
+         room_type = msg_hash_to_str(MSG_LOCAL);
+      else if (room->host_method == NETPLAY_HOST_METHOD_MITM)
+         room_type = msg_hash_to_str(MSG_INTERNET_RELAY);
+      else
+         room_type = msg_hash_to_str(MSG_INTERNET);
+
+      snprintf(buf, sizeof(buf), "%s%s: %s%s",
+         passworded, room_type,
+         room->nickname, country);
+
+      if (menu_entries_append_enum(list,
+            buf,
+            msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
+            MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
+            (unsigned)(MENU_SETTINGS_NETPLAY_ROOMS_START + i), 0, 0))
+         count++;
+
+      /* Uncomment this to debug mismatched room parameters*/
+#if 0
+      RARCH_LOG("[Lobby]: Room Data: %d\n"
+         "Nickname:         %s\n"
+         "Address:          %s\n"
+         "Port:             %d\n"
+         "Core:             %s\n"
+         "Core Version:     %s\n"
+         "Game:             %s\n"
+         "Game CRC:         %08x\n"
+         "Timestamp:        %d\n", room_data->elems[j + 6].data,
+         room->nickname,
+         room->address,
+         room->port,
+         room->corename,
+         room->coreversion,
+         room->gamename,
+         room->gamecrc,
+         room->timestamp);
+#endif
    }
+
+   netplay_rooms_free();
 
    return count;
 }

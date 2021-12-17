@@ -657,6 +657,9 @@ struct netplay
    int32_t input_latency_frames_min;
    int32_t input_latency_frames_max;
    bool allow_pausing;
+
+   /* Pseudo random seed */
+   unsigned long simple_rand_next;
 };
 
 /***************************************************************
@@ -745,17 +748,6 @@ netplay_input_state_t netplay_input_state_for(
  */
 uint32_t netplay_expected_input_size(netplay_t *netplay,
       uint32_t devices);
-
-/***************************************************************
- * NETPLAY-DISCOVERY.C
- **************************************************************/
-
-/**
- * netplay_lan_ad_server
- *
- * Respond to any LAN ad queries that the netplay server has received.
- */
-bool netplay_lan_ad_server(netplay_t *netplay);
 
 /***************************************************************
  * NETPLAY-FRONTEND.C

@@ -1283,6 +1283,10 @@ MSG_HASH(
    "statistics_show"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_PING_SHOW,
+   "netplay_ping_show"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_FRAME_THROTTLE_ENABLE,
    "fastforward_ratio_throttle_enable"
    )
@@ -1971,6 +1975,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR,
    "netplay_start_as_spectator"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_FADE_CHAT,
+   "netplay_fade_chat"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING,
@@ -2839,6 +2847,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
    "refresh_rooms"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_REFRESH_LAN,
+   "refresh_lan"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY,
