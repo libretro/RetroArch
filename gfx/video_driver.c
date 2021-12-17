@@ -1528,7 +1528,8 @@ VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
       return;
 #endif
 
-   video_monitor_compute_fps_statistics(video_st->frame_time_count);
+   if (video_st->data)
+      video_monitor_compute_fps_statistics(video_st->frame_time_count);
 }
 
 void video_driver_set_viewport_config(
