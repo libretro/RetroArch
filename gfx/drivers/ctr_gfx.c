@@ -1258,6 +1258,7 @@ static bool ctr_frame(void* data, const void* frame,
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active            = video_info->widgets_active;
 #endif
+   bool overlay_behind_menu       = video_info->overlay_behind_menu;
    bool lcd_bottom                = false;
 
    if (!width || !height || !settings)
@@ -1563,6 +1564,11 @@ static bool ctr_frame(void* data, const void* frame,
       GPU_SetTexEnv(2, GPU_PREVIOUS, GPU_PREVIOUS, 0, 0, 0, 0, 0);
    }
 
+#ifdef HAVE_OVERLAY
+   if (ctr->overlay_enabled && overlay_behind_menu)
+      ctr_render_overlay(ctr);
+#endif
+
 #ifdef HAVE_MENU
    if (ctr->menu_texture_enable)
    {
@@ -1610,7 +1616,7 @@ static bool ctr_frame(void* data, const void* frame,
 #endif
 
 #ifdef HAVE_OVERLAY
-   if (ctr->overlay_enabled)
+   if (ctr->overlay_enabled && !overlay_behind_menu)
       ctr_render_overlay(ctr);
 #endif
 
@@ -2289,6 +2295,8 @@ static void ctr_set_osd_msg(void *data,
 static uint32_t ctr_get_flags(void *data)
 {
    uint32_t             flags   = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
 
    return flags;
 }
