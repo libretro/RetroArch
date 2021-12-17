@@ -1047,54 +1047,63 @@ static bool content_file_load(
             if (!system->supports_vfs &&
                 !is_path_accessible_using_standard_io(content_path))
             {
-               /* Fallback to a file copy into an accessible directory */
-               char new_basedir[PATH_MAX_LENGTH];
-               char new_path[PATH_MAX_LENGTH];
-
-               new_path[0]    = '\0';
-               new_basedir[0] = '\0';
-
-               RARCH_LOG("[Content]: Core does not support VFS"
-                     " - copying to cache directory.\n");
-
-               if (!string_is_empty(content_ctx->directory_cache))
-                  strlcpy(new_basedir, content_ctx->directory_cache,
-                        sizeof(new_basedir));
-
-               if (string_is_empty(new_basedir) ||
-                   !path_is_directory(new_basedir) ||
-                  !is_path_accessible_using_standard_io(new_basedir))
-               {
-                  RARCH_WARN("[Content]: Tried copying to cache directory, "
-                        "but cache directory was not set or found. "
-                        "Setting cache directory to root of writable app directory...\n");
-                  strlcpy(new_basedir, uwp_dir_data, sizeof(new_basedir));
-               }
-
-               fill_pathname_join(new_path, new_basedir,
-                     path_basename(content_path), sizeof(new_path));
-
+               /* Try copy acl to file first, if successfull this should mean that cores using standard io can still access them
+               *  it would be better to set the acl to allow full access for all application packages however this is substantially easier than writing out new functions to do this
+               *  Copy acl from localstate*/
+               // I am genuinely really proud of these work arounds
                wchar_t wcontent_path[MAX_PATH];
                mbstowcs(wcontent_path, content_path, MAX_PATH);
-               wchar_t wnew_path[MAX_PATH];
-               mbstowcs(wnew_path, new_path, MAX_PATH);
-               /* TODO: This may fail on very large files...
-                * but copying large files is not a good idea anyway 
-                * (This disclaimer is out dated but I don't want to remove it)*/
-               if (!CopyFileFromAppW(wcontent_path,wnew_path,false))
+               wchar_t wuwp_dir_data[MAX_PATH];
+               mbstowcs(wuwp_dir_data, uwp_dir_data, MAX_PATH);
+               uwp_set_acl(wcontent_path, L"S-1-15-2-1");
+               if (!is_path_accessible_using_standard_io(content_path))
                {
-                  int err = GetLastError();
-                  snprintf(msg, sizeof(msg), "%s \"%s\". (during copy read or write)\n",
+                  /* Fallback to a file copy into an accessible directory */
+                  char new_basedir[PATH_MAX_LENGTH];
+                  char new_path[PATH_MAX_LENGTH];
+
+                  new_path[0] = '\0';
+                  new_basedir[0] = '\0';
+
+                  RARCH_LOG("[Content]: Core does not support VFS"
+                     " - copying to cache directory.\n");
+
+                  if (!string_is_empty(content_ctx->directory_cache))
+                     strlcpy(new_basedir, content_ctx->directory_cache,
+                        sizeof(new_basedir));
+
+                  if (string_is_empty(new_basedir) ||
+                     !path_is_directory(new_basedir) ||
+                     !is_path_accessible_using_standard_io(new_basedir))
+                  {
+                     RARCH_WARN("[Content]: Tried copying to cache directory, "
+                        "but cache directory was not set or found. "
+                        "Setting cache directory to root of writable app directory...\n");
+                     strlcpy(new_basedir, uwp_dir_data, sizeof(new_basedir));
+                  }
+                  fill_pathname_join(new_path, new_basedir,
+                     path_basename(content_path), sizeof(new_path));
+
+                  wchar_t wnew_path[MAX_PATH];
+                  mbstowcs(wnew_path, new_path, MAX_PATH);
+                  /* TODO: This may fail on very large files...
+                   * but copying large files is not a good idea anyway
+                   * (This disclaimer is out dated but I don't want to remove it)*/
+                  if (!CopyFileFromAppW(wcontent_path, wnew_path, false))
+                  {
+                     int err = GetLastError();
+                     snprintf(msg, sizeof(msg), "%s \"%s\". (during copy read or write)\n",
                         msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                         content_path);
-                  *error_string = strdup(msg);
-                  return false;
-               }
+                     *error_string = strdup(msg);
+                     return false;
+                  }
 
-               content_path = content_file_list_append_temporary(
+                  content_path = content_file_list_append_temporary(
                      p_content->content_list, new_path);
 
-               used_vfs_fallback_copy = true;
+                  used_vfs_fallback_copy = true;
+               }
             }
 #endif
             RARCH_LOG("[Content]: %s\n", msg_hash_to_str(

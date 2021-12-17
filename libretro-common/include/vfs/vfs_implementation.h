@@ -71,6 +71,12 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *dirstream);
 
 int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *dirstream);
 
+#ifdef __WINRT__
+
+void uwp_set_acl(const wchar_t* path, const wchar_t* AccessString);
+
+#endif
+
 RETRO_END_DECLS
 
 #endif
