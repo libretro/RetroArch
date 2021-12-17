@@ -3968,6 +3968,14 @@ MSG_HASH(
    "Gerekli olmayan netplay mesajlarını ekranda görüntüleyin."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "Yalnızca Menü Bildirimleri"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "Bildirimleri yalnızca menü açıkken görüntüleyin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "Bildirim Yazı Tipi"
    )
@@ -11701,6 +11709,22 @@ MSG_HASH(
    MSG_CORE_INFO_CACHE_UNSUPPORTED,
    "Çekirdek bilgi dizinine yazılamıyor - çekirdek bilgi önbelleği devre dışı bırakılacak"
    )
+MSG_HASH(
+   MSG_FOUND_ENTRY_STATE_IN,
+   "Bulunan durum girişi"
+   )
+MSG_HASH(
+   MSG_LOADING_ENTRY_STATE_FROM,
+   "Durum girişi şuradan yükleniyor"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE,
+   "OyunKipine girilemedi"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
+   "OyunKipine girilemedi - OyunKipi arka plan programının kurulu olduğundan/çalıştığından emin olun"
+   )
 
 /* Lakka */
 
@@ -11942,6 +11966,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_POLICY_MENU_GOVERNOR,
    "Menü Yönetici"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
+   "Oyun Kipi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
+   "Performansı iyileştirebilir, gecikmeyi azaltabilir ve ses bozulma sorunlarını çözebilir. Çalışması için https://github.com/FeralInteractive/gamemode gerekir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,

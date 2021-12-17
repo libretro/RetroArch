@@ -173,6 +173,8 @@
 
 #define DEFAULT_USER_LANGUAGE 0
 
+#define DEFAULT_GAMEMODE_ENABLE true
+
 #if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID) && !defined(HAVE_LAKKA)) || (defined(__MACH__) && !defined(IOS)) || defined(EMSCRIPTEN)
 #define DEFAULT_MOUSE_ENABLE true
 #else
@@ -1025,6 +1027,10 @@ static const bool audio_enable_menu_bgm    = false;
 
 #ifdef HAVE_NETWORKING
 #define DEFAULT_NOTIFICATION_SHOW_NETPLAY_EXTRA false
+#endif
+
+#ifdef HAVE_MENU
+#define DEFAULT_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE false
 #endif
 
 /* Output samplerate. */

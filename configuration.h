@@ -628,6 +628,9 @@ typedef struct settings
 #endif
       bool notification_show_refresh_rate;
       bool notification_show_netplay_extra;
+#ifdef HAVE_MENU
+      bool notification_show_when_menu_is_alive;
+#endif
       bool menu_widget_scale_auto;
       bool menu_show_start_screen;
       bool menu_pause_libretro;
@@ -905,6 +908,8 @@ typedef struct settings
 
       bool ai_service_enable;
       bool ai_service_pause;
+
+      bool gamemode_enable;
    } bools;
 
 } settings_t;

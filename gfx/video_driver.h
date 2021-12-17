@@ -471,6 +471,7 @@ typedef struct video_frame_info
    char stat_text[512];
 
    bool widgets_active;
+   bool notifications_hidden;
    bool menu_mouse_enable;
    bool widgets_is_paused;
    bool widgets_is_fast_forwarding;

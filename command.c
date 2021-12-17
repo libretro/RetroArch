@@ -1082,6 +1082,8 @@ bool command_event_save_auto_state(
    bool ret                    = false;
    char savestate_name_auto[PATH_MAX_LENGTH];
 
+   if (runloop_st->entry_state_slot)
+      return false;
    if (!savestate_auto_save)
       return false;
    if (current_core_type == CORE_TYPE_DUMMY)
@@ -1138,6 +1140,46 @@ void command_event_init_cheats(
       cheat_manager_apply_cheats();
 }
 #endif
+
+bool command_event_load_entry_state(void)
+{
+   char entry_state_path[PATH_MAX_LENGTH];
+   int entry_path_stats;
+   runloop_state_t *runloop_st     = runloop_state_get_ptr();
+   bool ret                        = false;
+
+#ifdef HAVE_CHEEVOS
+   if (rcheevos_hardcore_active())
+      return false;
+#endif
+#ifdef HAVE_NETWORKING
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+      return false;
+#endif
+
+   entry_state_path[0] = '\0';
+
+   if (!retroarch_get_entry_state_path(entry_state_path, sizeof(entry_state_path),
+         runloop_st->entry_state_slot))
+      return false;
+
+   entry_path_stats = path_stat(entry_state_path);
+
+   if ((entry_path_stats & RETRO_VFS_STAT_IS_VALID) == 0
+         || (entry_path_stats & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
+      return false;
+
+   ret = content_load_state(entry_state_path, false, true);
+
+   RARCH_LOG("%s: %s\n%s \"%s\" %s.\n",
+         msg_hash_to_str(MSG_FOUND_ENTRY_STATE_IN),
+         entry_state_path,
+         msg_hash_to_str(MSG_LOADING_ENTRY_STATE_FROM),
+         entry_state_path, ret ? "succeeded" : "failed"
+         );
+
+   return ret;
+}
 
 void command_event_load_auto_state(void)
 {

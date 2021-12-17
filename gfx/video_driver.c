@@ -2694,6 +2694,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
 #else
    video_info->widgets_active              = false;
 #endif
+#ifdef HAVE_MENU
+   video_info->notifications_hidden        = settings->bools.notification_show_when_menu_is_alive && !menu_st->alive;
+#endif
    video_info->refresh_rate                = settings->floats.video_refresh_rate;
    video_info->crt_switch_resolution       = settings->uints.crt_switch_resolution;
    video_info->crt_switch_resolution_super = settings->uints.crt_switch_resolution_super;
@@ -3918,7 +3921,7 @@ void video_driver_frame(const void *data, unsigned width,
       video_st->active = video_st->current_video->frame(
             video_st->data, data, width, height,
             video_st->frame_count, (unsigned)pitch,
-            video_info.menu_screensaver_active ? "" : video_driver_msg,
+            video_info.menu_screensaver_active || video_info.notifications_hidden ? "" : video_driver_msg,
             &video_info);
 
    video_st->frame_count++;
@@ -3930,6 +3933,7 @@ void video_driver_frame(const void *data, unsigned width,
           || video_info.core_status_msg_show
          )
        && !video_info.menu_screensaver_active
+       && !video_info.notifications_hidden
       )
    {
 #if defined(HAVE_GFX_WIDGETS)

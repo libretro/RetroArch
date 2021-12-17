@@ -4803,6 +4803,10 @@ MSG_HASH(
    "notification_show_netplay_extra"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "notification_show_when_menu_is_alive"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE,
    "video_shader_enable"
    )
@@ -5143,4 +5147,8 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MIXER_ACTION_VOLUME,
    "mixer_action_volume"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_GAMEMODE_ENABLE,
+   "game_mode_enable"
    )

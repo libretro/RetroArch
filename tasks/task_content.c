@@ -1687,10 +1687,10 @@ static void task_push_to_history_list(
             subsystem_name[0] = '\0';
 
             content_get_subsystem_friendly_name(path_get(RARCH_PATH_SUBSYSTEM), subsystem_name, sizeof(subsystem_name));
-
             /* The push function reads our entry as const, 
              * so these casts are safe */
             entry.path            = (char*)tmp;
+            entry.entry_slot      = runloop_st->entry_state_slot;
             entry.label           = (char*)label;
             entry.core_path       = (char*)core_path;
             entry.core_name       = (char*)core_name;

@@ -596,6 +596,7 @@ QWidget *NotificationsPage::widget()
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH);
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_REFRESH_RATE);
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA);
+   notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE);
 
    layout->addWidget(notificationsGroup);
 

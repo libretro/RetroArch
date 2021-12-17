@@ -1469,12 +1469,13 @@ void gfx_widgets_frame(void *data)
    bool widgets_is_rewinding        = video_info->widgets_is_rewinding;
    bool runloop_is_slowmotion       = video_info->runloop_is_slowmotion;
    bool menu_screensaver_active     = video_info->menu_screensaver_active;
+   bool notifications_hidden        = video_info->notifications_hidden;
    int top_right_x_advance          = video_width;
 
    p_dispwidget->gfx_widgets_frame_count++;
 
-   /* If menu screensaver is active, draw nothing */
-   if (menu_screensaver_active)
+   /* If menu screensaver is active or notifications are hidden, draw nothing */
+   if (menu_screensaver_active || notifications_hidden)
       return;
 
    video_driver_set_viewport(video_width, video_height, true, false);
