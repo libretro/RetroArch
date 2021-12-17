@@ -1713,6 +1713,9 @@ static struct config_bool_setting *populate_settings_bool(
 #ifdef HAVE_NETWORKING
    SETTING_BOOL("notification_show_netplay_extra", &settings->bools.notification_show_netplay_extra, true, DEFAULT_NOTIFICATION_SHOW_NETPLAY_EXTRA, false);
 #endif
+#ifdef HAVE_MENU
+   SETTING_BOOL("notification_show_when_menu_is_alive", &settings->bools.notification_show_when_menu_is_alive, true, DEFAULT_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE, false);
+#endif
    SETTING_BOOL("menu_widget_scale_auto",        &settings->bools.menu_widget_scale_auto, true, DEFAULT_MENU_WIDGET_SCALE_AUTO, false);
    SETTING_BOOL("audio_enable_menu",             &settings->bools.audio_enable_menu, true, audio_enable_menu, false);
    SETTING_BOOL("audio_enable_menu_ok",          &settings->bools.audio_enable_menu_ok, true, audio_enable_menu_ok, false);
@@ -1998,6 +2001,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("ai_service_enable",     &settings->bools.ai_service_enable, true, DEFAULT_AI_SERVICE_ENABLE, false);
    SETTING_BOOL("ai_service_pause",      &settings->bools.ai_service_pause, true, DEFAULT_AI_SERVICE_PAUSE, false);
    SETTING_BOOL("wifi_enabled",          &settings->bools.wifi_enabled, true, DEFAULT_WIFI_ENABLE, false);
+   SETTING_BOOL("gamemode_enable",       &settings->bools.gamemode_enable, true, DEFAULT_GAMEMODE_ENABLE, false);
 
    *size = count;
 
@@ -3730,6 +3734,15 @@ static bool config_load_file(global_t *global,
 
    if (!config_entry_exists(conf, "user_language"))
       msg_hash_set_uint(MSG_HASH_USER_LANGUAGE, frontend_driver_get_user_language());
+
+   if (frontend_driver_has_gamemode() &&
+       !frontend_driver_set_gamemode(settings->bools.gamemode_enable) &&
+       settings->bools.gamemode_enable)
+   {
+      RARCH_WARN("[Config]: GameMode unsupported - disabling...\n");
+      configuration_set_bool(settings,
+            settings->bools.gamemode_enable, false);
+   }
 
    /* If this is the first run of an existing installation
     * after the independent favourites playlist size limit was

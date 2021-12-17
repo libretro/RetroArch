@@ -218,6 +218,7 @@ struct runloop
    unsigned fastforward_after_frames;
    unsigned perf_ptr_libretro;
    unsigned subsystem_current_count;
+   unsigned entry_state_slot;
 
    fastmotion_overrides_t fastmotion_override; /* float alignment */
 

@@ -197,6 +197,8 @@ typedef enum apple_view_type
 
 bool retroarch_get_current_savestate_path(char *path, size_t len);
 
+bool retroarch_get_entry_state_path(char *path, size_t len, unsigned slot);
+
 /**
  * retroarch_fail:
  * @error_code  : Error code.

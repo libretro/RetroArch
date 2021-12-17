@@ -92,6 +92,10 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    "A fizikai adathordozó tartalmának mentése képfájlként a belső tárhelyre."
    )
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "Lemez kiadása"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,

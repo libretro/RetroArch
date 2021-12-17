@@ -2374,6 +2374,19 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Sets the master volume of the output device.");
             break;
+#ifdef __linux__
+        case MENU_ENUM_LABEL_GAMEMODE_ENABLE:
+            snprintf(s, len,
+                     "Enabling Linux GameMode can improve latency, fix audio\n"
+                     "crackling issues and maximize overall performance by\n"
+                     "automatically configuring your CPU and GPU for best\n"
+                     "performance.\n"
+                     " \n"
+                     "The GameMode software needs to be installed for this to\n"
+                     "work. See https://github.com/FeralInteractive/gamemode for\n"
+                     "information on how to install GameMode.");
+           break;
+#endif
         default:
             if (string_is_empty(s))
                 strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);

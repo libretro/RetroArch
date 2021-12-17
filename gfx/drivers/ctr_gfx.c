@@ -138,10 +138,10 @@ static INLINE void ctr_set_screen_coords(ctr_video_t * ctr)
    }
    else if (ctr->rotation == 1) /* 90° */
    {
-      ctr->frame_coords->x0 = ctr->vp.x;
-      ctr->frame_coords->y0 = ctr->vp.y;
-      ctr->frame_coords->x1 = ctr->vp.x + ctr->vp.width;
-      ctr->frame_coords->y1 = ctr->vp.y + ctr->vp.height;
+      ctr->frame_coords->x1 = ctr->vp.x;
+      ctr->frame_coords->y1 = ctr->vp.y;
+      ctr->frame_coords->x0 = ctr->vp.x + ctr->vp.width;
+      ctr->frame_coords->y0 = ctr->vp.y + ctr->vp.height;
    }
    else if (ctr->rotation == 2) /* 180° */
    {
@@ -152,10 +152,10 @@ static INLINE void ctr_set_screen_coords(ctr_video_t * ctr)
    }
    else /* 270° */
    {
-      ctr->frame_coords->x1 = ctr->vp.x;
-      ctr->frame_coords->y1 = ctr->vp.y;
-      ctr->frame_coords->x0 = ctr->vp.x + ctr->vp.width;
-      ctr->frame_coords->y0 = ctr->vp.y + ctr->vp.height;
+      ctr->frame_coords->x0 = ctr->vp.x;
+      ctr->frame_coords->y0 = ctr->vp.y;
+      ctr->frame_coords->x1 = ctr->vp.x + ctr->vp.width;
+      ctr->frame_coords->y1 = ctr->vp.y + ctr->vp.height;
    }
 }
 
@@ -193,9 +193,6 @@ static void ctr_update_viewport(
    float desired_aspect      = video_driver_get_aspect_ratio();
    bool video_scale_integer  = settings->bools.video_scale_integer;
    unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
-
-   if (ctr->rotation & 0x1)
-      desired_aspect = 1.0 / desired_aspect;
 
    if (video_scale_integer)
    {

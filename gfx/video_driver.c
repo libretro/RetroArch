@@ -957,7 +957,7 @@ void recording_dump_frame(
 
       if (!vp.width || !vp.height)
       {
-         RARCH_WARN("[recording] %s \n",
+         RARCH_WARN("[Recording]: %s\n",
                msg_hash_to_str(MSG_VIEWPORT_SIZE_CALCULATION_FAILED));
          video_driver_gpu_record_deinit();
          recording_dump_frame(
@@ -969,7 +969,7 @@ void recording_dump_frame(
       if (  vp.width  != record_st->gpu_width ||
             vp.height != record_st->gpu_height)
       {
-         RARCH_WARN("[recording] %s\n",
+         RARCH_WARN("[Recording]: %s\n",
                msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE));
 
          runloop_msg_queue_push(
@@ -1528,7 +1528,8 @@ VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
       return;
 #endif
 
-   video_monitor_compute_fps_statistics(video_st->frame_time_count);
+   if (video_st->data)
+      video_monitor_compute_fps_statistics(video_st->frame_time_count);
 }
 
 void video_driver_set_viewport_config(
@@ -2693,6 +2694,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->widgets_active              = p_dispwidget->active;
 #else
    video_info->widgets_active              = false;
+#endif
+#ifdef HAVE_MENU
+   video_info->notifications_hidden        = settings->bools.notification_show_when_menu_is_alive && !menu_st->alive;
 #endif
    video_info->refresh_rate                = settings->floats.video_refresh_rate;
    video_info->crt_switch_resolution       = settings->uints.crt_switch_resolution;
@@ -3918,7 +3922,7 @@ void video_driver_frame(const void *data, unsigned width,
       video_st->active = video_st->current_video->frame(
             video_st->data, data, width, height,
             video_st->frame_count, (unsigned)pitch,
-            video_info.menu_screensaver_active ? "" : video_driver_msg,
+            video_info.menu_screensaver_active || video_info.notifications_hidden ? "" : video_driver_msg,
             &video_info);
 
    video_st->frame_count++;
@@ -3930,6 +3934,7 @@ void video_driver_frame(const void *data, unsigned width,
           || video_info.core_status_msg_show
          )
        && !video_info.menu_screensaver_active
+       && !video_info.notifications_hidden
       )
    {
 #if defined(HAVE_GFX_WIDGETS)

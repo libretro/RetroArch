@@ -198,6 +198,10 @@ ifeq ($(TARGET), retroarch_3ds)
    OBJ += frontend/drivers/platform_ctr.o
 endif
 
+ifeq ($(TARGET), retroarch_ps2)
+   OBJ += frontend/drivers/platform_ps2.o
+endif
+
 # Git Version
 GIT_VERSION_CACHEDIR = $(if $(OBJDIR),$(OBJDIR),$(CURDIR))
 GIT_VERSION_CACHEFILE = $(GIT_VERSION_CACHEDIR)/git-version.cache
@@ -376,6 +380,10 @@ OBJ += \
 ifeq ($(HAVE_VIDEO_FILTER), 1)
 DEFINES += -DHAVE_VIDEO_FILTER
 OBJ     += gfx/video_filter.o
+endif
+
+ifeq ($(HAVE_WINDOW_OFFSET), 1)
+DEFINES += -DHAVE_WINDOW_OFFSET
 endif
 
 OBJ     += $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.o
@@ -823,6 +831,10 @@ ifeq ($(TARGET), retroarch_3ds)
    OBJ += gfx/drivers_font/ctr_font.o
 endif
 
+ifeq ($(TARGET), retroarch_ps2)
+   OBJ += gfx/drivers_font/ps2_font.o
+endif
+
 ifeq ($(HAVE_LIBNX), 1)
    OBJ += gfx/drivers_font/switch_font.o
 endif
@@ -1167,6 +1179,13 @@ ifeq ($(TARGET), retroarch_3ds)
           gfx/drivers_display/gfx_display_ctr.o \
           input/drivers/ctr_input.o \
           input/drivers_joypad/ctr_joypad.o
+endif
+
+ifeq ($(TARGET), retroarch_ps2)
+   OBJ += gfx/drivers/ps2_gfx.o \
+          input/drivers/ps2_input.o \
+          input/drivers_joypad/ps2_joypad.o \
+          audio/drivers/ps2_audio.o
 endif
 
 ifeq ($(TARGET), retroarch_orbis)

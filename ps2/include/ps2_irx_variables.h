@@ -15,73 +15,73 @@
 #ifndef PS2_IRX_VARIABLES_H
 #define PS2_IRX_VARIABLES_H
 
-extern unsigned char sio2man_irx;
+extern unsigned char sio2man_irx[] __attribute__((aligned(16)));
 extern unsigned int size_sio2man_irx;
 
-extern unsigned char mcman_irx;
+extern unsigned char mcman_irx[] __attribute__((aligned(16)));
 extern unsigned int size_mcman_irx;
 
-extern unsigned char mcserv_irx;
+extern unsigned char mcserv_irx[] __attribute__((aligned(16)));
 extern unsigned int size_mcserv_irx;
 
-extern unsigned char mtapman_irx;
+extern unsigned char mtapman_irx[] __attribute__((aligned(16)));
 extern unsigned int size_mtapman_irx;
 
-extern unsigned char padman_irx;
+extern unsigned char padman_irx[] __attribute__((aligned(16)));
 extern unsigned int size_padman_irx;
 
-extern unsigned char iomanX_irx;
+extern unsigned char iomanX_irx[] __attribute__((aligned(16)));
 extern unsigned int size_iomanX_irx;
 
-extern unsigned char fileXio_irx;
+extern unsigned char fileXio_irx[] __attribute__((aligned(16)));
 extern unsigned int size_fileXio_irx;
 
-extern unsigned char ps2dev9_irx;
+extern unsigned char ps2dev9_irx[] __attribute__((aligned(16)));
 extern unsigned int size_ps2dev9_irx;
 
-extern unsigned char ps2atad_irx;
+extern unsigned char ps2atad_irx[] __attribute__((aligned(16)));
 extern unsigned int size_ps2atad_irx;
 
-extern unsigned char ps2hdd_irx;
+extern unsigned char ps2hdd_irx[] __attribute__((aligned(16)));
 extern unsigned int size_ps2hdd_irx;
 
-extern unsigned char ps2fs_irx;
+extern unsigned char ps2fs_irx[] __attribute__((aligned(16)));
 extern unsigned int size_ps2fs_irx;
 
-extern unsigned char usbd_irx;
+extern unsigned char usbd_irx[] __attribute__((aligned(16)));
 extern unsigned int size_usbd_irx;
 
-extern unsigned char bdm_irx;
+extern unsigned char bdm_irx[] __attribute__((aligned(16)));
 extern unsigned int size_bdm_irx;
 
-extern unsigned char bdmfs_vfat_irx;
+extern unsigned char bdmfs_vfat_irx[] __attribute__((aligned(16)));
 extern unsigned int size_bdmfs_vfat_irx;
 
-extern unsigned char usbmass_bd_irx;
+extern unsigned char usbmass_bd_irx[] __attribute__((aligned(16)));
 extern unsigned int size_usbmass_bd_irx;
 
-extern unsigned char cdfs_irx;
+extern unsigned char cdfs_irx[] __attribute__((aligned(16)));
 extern unsigned int size_cdfs_irx;
 
-extern unsigned char libsd_irx;
+extern unsigned char libsd_irx[] __attribute__((aligned(16)));
 extern unsigned int size_libsd_irx;
 
-extern unsigned char audsrv_irx;
+extern unsigned char audsrv_irx[] __attribute__((aligned(16)));
 extern unsigned int size_audsrv_irx;
 
-extern unsigned char ps2dev9_irx;
+extern unsigned char ps2dev9_irx[] __attribute__((aligned(16)));
 extern unsigned int size_ps2dev9_irx;
 
-extern unsigned char ps2atad_irx;
+extern unsigned char ps2atad_irx[] __attribute__((aligned(16)));
 extern unsigned int size_ps2atad_irx;
 
-extern unsigned char ps2hdd_irx;
+extern unsigned char ps2hdd_irx[] __attribute__((aligned(16)));
 extern unsigned int size_ps2hdd_irx;
 
-extern unsigned char ps2fs_irx;
+extern unsigned char ps2fs_irx[] __attribute__((aligned(16)));
 extern unsigned int size_ps2fs_irx;
 
-extern unsigned char poweroff_irx;
+extern unsigned char poweroff_irx[] __attribute__((aligned(16)));
 extern unsigned int size_poweroff_irx;
 
 #endif /* PS2_IRX_VARIABLES_H */

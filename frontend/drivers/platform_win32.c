@@ -1170,6 +1170,7 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,                            /* is_narrator_running */
    NULL,                            /* accessibility_speak */
 #endif
+   NULL,                            /* set_gamemode        */
    "win32",                         /* ident               */
    NULL                             /* get_video_driver    */
 };

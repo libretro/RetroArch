@@ -30,6 +30,10 @@
 
 #ifdef __linux__
 #include <linux/version.h>
+#if __STDC_VERSION__ >= 199901L
+#include "feralgamemode/gamemode_client.h"
+#define FERAL_GAMEMODE
+#endif
 /* inotify API was added in 2.6.13 */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,13)
 #define HAS_INOTIFY
@@ -1989,6 +1993,49 @@ static void android_app_destroy(struct android_app *android_app)
 }
 #endif
 
+static bool frontend_unix_set_gamemode(bool on)
+{
+#ifdef FERAL_GAMEMODE
+   int gamemode_status  = gamemode_query_status();
+   bool gamemode_active = (gamemode_status == 2);
+
+   if (gamemode_status < 0)
+   {
+      if (on)
+         RARCH_WARN("[GameMode]: GameMode cannot be enabled on this system (\"%s.\") "
+               "https://github.com/FeralInteractive/gamemode needs to be installed.\n",
+               gamemode_error_string());
+
+      return false;
+   }
+
+   if (gamemode_active == on)
+      return true;
+
+   if (on)
+   {
+      if (gamemode_request_start() != 0)
+      {
+         RARCH_WARN("[GameMode]: Failed to enter GameMode: %s.\n", gamemode_error_string());
+         return false;
+      }
+   }
+   else
+   {
+      if (gamemode_request_end() != 0)
+      {
+         RARCH_WARN("[GameMode]: Failed to exit GameMode: %s.\n", gamemode_error_string());
+         return false;
+      }
+   }
+
+   return true;
+#else
+   (void)on;
+   return false;
+#endif
+}
+
 static void frontend_unix_deinit(void *data)
 {
    settings_t *settings = config_get_ptr();
@@ -2006,6 +2053,8 @@ static void frontend_unix_deinit(void *data)
    if (settings->uints.screen_brightness != DEFAULT_SCREEN_BRIGHTNESS)
       frontend_unix_set_screen_brightness(DEFAULT_SCREEN_BRIGHTNESS);
 #endif
+
+   frontend_unix_set_gamemode(false);
 }
 
 static void frontend_unix_init(void *data)
@@ -2852,6 +2901,11 @@ frontend_ctx_driver_t frontend_ctx_unix = {
 #else
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
+#endif
+#ifdef FERAL_GAMEMODE
+   frontend_unix_set_gamemode,
+#else
+   NULL,
 #endif
 #ifdef ANDROID
    "android",                    /* ident               */

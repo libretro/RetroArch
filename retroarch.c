@@ -4214,6 +4214,8 @@ static void retroarch_print_help(const char *arg0)
 #endif
       strlcat(buf, "      --load-menu-on-error\n"
             "                        Open menu instead of quitting if specified core or content fails to load.\n", sizeof(buf));
+      strlcat(buf, "  -e, --entryslot=NUMBER\n"
+            "                        Slot from which to load an entry state\n", sizeof(buf));
       puts(buf);
    }
 }
@@ -4302,6 +4304,7 @@ static bool retroarch_parse_input_and_config(
       { "log-file",           1, NULL, RA_OPT_LOG_FILE },
       { "accessibility",      0, NULL, RA_OPT_ACCESSIBILITY},
       { "load-menu-on-error", 0, NULL, RA_OPT_LOAD_MENU_ON_ERROR },
+      { "entryslot",          1, NULL, 'e' },
       { NULL, 0, NULL, 0 }
    };
 
@@ -4372,7 +4375,7 @@ static bool retroarch_parse_input_and_config(
 
    /* Make sure we can call retroarch_parse_input several times ... */
    optind    = 0;
-   optstring = "hs:fvS:A:U:DN:d:"
+   optstring = "hs:fvS:A:U:DN:d:e:"
       BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
 
 #if defined(ORBIS)
@@ -4872,6 +4875,17 @@ static bool retroarch_parse_input_and_config(
             case RA_OPT_LOAD_MENU_ON_ERROR:
                global->cli_load_menu_on_error = true;
                break;
+            case 'e':
+               {
+                  unsigned entry_state_slot = (unsigned)strtoul(optarg, NULL, 0);
+
+                  if (entry_state_slot)
+                     runloop_st->entry_state_slot = entry_state_slot;
+                  else
+                     RARCH_WARN("--entryslot argument \"%s\" is not a valid "
+                        "entry state slot index. Ignoring.\n", optarg);
+               }
+               break;
             default:
                RARCH_ERR("%s\n", msg_hash_to_str(MSG_ERROR_PARSING_ARGUMENTS));
                retroarch_fail(1, "retroarch_parse_input()");
@@ -4919,6 +4933,11 @@ static bool retroarch_parse_input_and_config(
       /* Register that content has been set via the
        * command line interface */
       cli_content_set = true;
+   }
+   else if (runloop_st->entry_state_slot)
+   {
+      runloop_st->entry_state_slot = 0;
+      RARCH_WARN("Trying to load entry state without content. Ignoring.\n");
    }
 
    /* Check whether a core has been set via the

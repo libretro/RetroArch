@@ -7348,7 +7348,7 @@ bool menu_shader_manager_set_preset(struct video_shader *shader,
          !(video_shader_load_preset_into_shader(preset_path, shader)))
       goto end;
 
-   RARCH_LOG("Menu shader set to: %s.\n", preset_path);
+   RARCH_LOG("[Shaders]: Menu shader set to: %s.\n", preset_path);
 
    ret = true;
 

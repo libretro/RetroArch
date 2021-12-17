@@ -744,7 +744,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT,
-   "Carregamento dinâmico em tempo de execução da biblioteca Libretro"
+   "Carregamento dinâmico em tempo de execução da biblioteca libretro"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
@@ -784,7 +784,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
-   "Suporte de jogo em rede (ponto-a-ponto)"
+   "Suporte a jogo em rede (ponto-a-ponto)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
@@ -796,7 +796,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
-   "Suporte a Libusb"
+   "Suporte a libusb"
    )
 
 /* Main Menu > Information > Database Manager */
@@ -894,7 +894,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
-   "Analógico suportado"
+   "Suporte para controle analógico"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
@@ -902,7 +902,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
-   "Cooperativo suportado"
+   "Suportado para jogo cooperativo"
    )
 
 /* Main Menu > Configuration File */
@@ -3948,6 +3948,14 @@ MSG_HASH(
    "Exibe mensagens não essenciais do jogo em rede na tela."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "Limitar as notificações ao menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "Exibe as notificações somente quando o menu tiver sido aberto."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "Fonte das notificações na tela"
    )
@@ -6566,15 +6574,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
-   "Excluir arquivo de remapeamento de jogo do diretório de conteúdo"
+   "Exclui o arquivo de remapeamento do jogo do diretório de conteúdo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
-   "Salvar arquivo de remapeamento de jogo"
+   "Salva o arquivo de remapeamento do jogo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
-   "Excluir arquivo de remapeamento de jogo"
+   "Exclui o arquivo de remapeamento do jogo"
    )
 
 /* Quick Menu > Controls > Load Remap File */
@@ -11553,6 +11561,22 @@ MSG_HASH(
    MSG_CORE_INFO_CACHE_UNSUPPORTED,
    "Não é possível escrever no diretório de informações do núcleo: o cache de informação do núcleo será desativado"
    )
+MSG_HASH(
+   MSG_FOUND_ENTRY_STATE_IN,
+   "Um jogo salvo foi encontrado em"
+   )
+MSG_HASH(
+   MSG_LOADING_ENTRY_STATE_FROM,
+   "Carregando jogo salvo de"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE,
+   "Falha ao entrar no GameMode"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
+   "Falha ao entrar no GameMode: certifique-se de que o GameMode daemon está instalado e em execução"
+   )
 
 /* Lakka */
 
@@ -11798,6 +11822,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_POLICY_MENU_GOVERNOR,
    "Regulador de menus"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
+   "Modo de jogo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
+   "Pode melhorar o desempenho, reduzir a latência e corrigir problemas de ruído no áudio. É necessário ter instalado https://github.com/FeralInteractive/gamemode."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
