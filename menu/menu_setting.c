@@ -11204,6 +11204,23 @@ static bool setting_append_list(
             }
 #endif
 
+#ifdef WIIU
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_wiiu_prefer_drc,
+                  MENU_ENUM_LABEL_VIDEO_WIIU_PREFER_DRC,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
+                  DEFAULT_WIIU_PREFER_DRC,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+#endif
+
             if (video_driver_has_windowed())
             {
                CONFIG_ACTION(

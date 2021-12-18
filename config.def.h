@@ -947,6 +947,12 @@ static const bool video_3ds_lcd_bottom = true;
 static const unsigned video_3ds_display_mode = CTR_VIDEO_MODE_3D;
 #endif
 
+#ifdef WIIU
+/* On Wii U, whether to optimize for the native TV resolution
+ * or exactly 2x the Wii U GamePad resolution. */
+#define DEFAULT_WIIU_PREFER_DRC false
+#endif
+
 /* AUDIO */
 
 /* Will enable audio or not. */
