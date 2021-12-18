@@ -10679,11 +10679,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Opcje Jądra]: Główne opcje specyficzne dla gier znalezione na stronie"
+   "Podstawowe opcje dla gry znalezione na"
    )
 MSG_HASH(
    MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Opcje Jądra]: Główne opcje specyficzne dla danego folderu dostępne na stronie"
+   "Główne opcje specyficzne dla folderu znalezione w"
    )
 MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,

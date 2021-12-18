@@ -10014,14 +10014,6 @@ MSG_HASH(
    "フレーム"
    )
 MSG_HASH(
-   MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[コアオプション]: ゲーム固有のコアオプション"
-   )
-MSG_HASH(
-   MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[コアオプション]: フォルダ固有のコアオプション"
-   )
-MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,
    "無効なディスクインデックスです"
    )

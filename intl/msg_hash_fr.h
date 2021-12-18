@@ -10754,14 +10754,6 @@ MSG_HASH(
    "Images"
    )
 MSG_HASH(
-   MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Options du cœur] : Options de cœur spécifiques au jeu trouvées dans"
-   )
-MSG_HASH(
-   MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Options du cœur] : Options de cœur spécifiques au dossier trouvées dans"
-   )
-MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,
    "Numéro de disque non valide."
    )

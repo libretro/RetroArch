@@ -10859,11 +10859,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Çekirdek Seçenekleri]: Oyuna özel temel seçenekler şurada bulunur"
+   "Oyuna özel çekirdek seçenekleri şurada bulunur"
    )
 MSG_HASH(
    MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Çekirdek Seçenekleri]: Klasöre özgü temel seçenekler şurada bulunur"
+   "Klasöre özel çekirdek seçenekleri şurada bulunur"
    )
 MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,

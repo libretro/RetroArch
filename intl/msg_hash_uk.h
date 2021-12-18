@@ -6714,14 +6714,6 @@ MSG_HASH(
    "Кадри"
    )
 MSG_HASH(
-   MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Параметри Ядра]: Специфічні параметри ядра для гри"
-   )
-MSG_HASH(
-   MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Параметри Ядра]: Специфічні параметри ядра для папок"
-   )
-MSG_HASH(
    MSG_INPUT_CHEAT,
    "Ввести чит"
    )

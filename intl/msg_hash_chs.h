@@ -10794,14 +10794,6 @@ MSG_HASH(
    "帧"
    )
 MSG_HASH(
-   MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[核心选项]：可在以下地方找到指定游戏的核心选项"
-   )
-MSG_HASH(
-   MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[核心选项]：可在以下地方找到指定文件夹的核心选项"
-   )
-MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,
    "得到无效的盘号。"
    )

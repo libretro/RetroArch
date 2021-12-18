@@ -10822,14 +10822,6 @@ MSG_HASH(
    "Kuvat"
    )
 MSG_HASH(
-   MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Ydinasetukset]: Pelikohtaiset ydinasetukset löytyvät"
-   )
-MSG_HASH(
-   MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Ydinasetukset]: Kansiokohtaiset ydinasetukset löytyvät"
-   )
-MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,
    "Vastaanotettiin virheellinen levyindeksi."
    )

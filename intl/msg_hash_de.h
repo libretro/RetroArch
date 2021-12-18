@@ -10446,14 +10446,6 @@ MSG_HASH(
    "Bilder"
    )
 MSG_HASH(
-   MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Core-Optionen: Spielspezifische Core-Optionen gefunden in"
-   )
-MSG_HASH(
-   MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Core-Optionen: Ordnerspezifische Core-Optionen gefunden in"
-   )
-MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,
    "Ungültiger Disc-Index."
    )

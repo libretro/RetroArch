@@ -10655,11 +10655,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Opzioni Core]: Opzioni core specifiche della cartella trovate in"
+   "Opzioni core specifiche del gioco trovate a"
    )
 MSG_HASH(
    MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Opzioni Core]: Opzioni core specifiche della cartella trovate in"
+   "Opzioni core specifiche della cartella trovate a"
    )
 MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,

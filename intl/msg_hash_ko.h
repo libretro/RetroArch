@@ -10866,14 +10866,6 @@ MSG_HASH(
    "프레임"
    )
 MSG_HASH(
-   MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[코어 옵션]: 게임 특정 코어 옵션 발견:"
-   )
-MSG_HASH(
-   MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[코어 옵션]: 폴더 특정 코어 옵션 발견:"
-   )
-MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,
    "잘못된 디스크 인덱스 수신."
    )
