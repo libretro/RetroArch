@@ -252,10 +252,13 @@ static void *wiiu_gfx_init(const video_info_t *video,
    memset(&wiiu->color_buffer, 0, sizeof(GX2ColorBuffer));
 
    wiiu->color_buffer.surface.dim       = GX2_SURFACE_DIM_TEXTURE_2D;
-   if (wiiu->render_mode.height != 480 && prefer_drc) {
+   if (wiiu->render_mode.height != 480 && prefer_drc)
+   {
       wiiu->color_buffer.surface.width  = 1708;
       wiiu->color_buffer.surface.height = 960;
-   } else {
+   }
+   else
+   {
       wiiu->color_buffer.surface.width  = wiiu->render_mode.width;
       wiiu->color_buffer.surface.height = wiiu->render_mode.height;
    }
@@ -450,12 +453,15 @@ static void *wiiu_gfx_init(const video_info_t *video,
 
    wiiu->vp.x              = 0;
    wiiu->vp.y              = 0;
-   if (wiiu->render_mode.height != 480 && prefer_drc) {
+   if (wiiu->render_mode.height != 480 && prefer_drc)
+   {
       wiiu->vp.width       = 1708;
       wiiu->vp.height      = 960;
       wiiu->vp.full_width  = 1708;
       wiiu->vp.full_height = 960;
-   } else {
+   }
+   else
+   {
       wiiu->vp.width       = wiiu->render_mode.width;
       wiiu->vp.height      = wiiu->render_mode.height;
       wiiu->vp.full_width  = wiiu->render_mode.width;
