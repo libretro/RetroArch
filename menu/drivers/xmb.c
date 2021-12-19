@@ -2824,6 +2824,10 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_ROOM];
       case MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS:
          return xmb->textures.list[XMB_TEXTURE_RELOAD];
+#ifdef HAVE_NETPLAYDISCOVERY
+      case MENU_ENUM_LABEL_NETPLAY_REFRESH_LAN:
+         return xmb->textures.list[XMB_TEXTURE_RELOAD];
+#endif
       case MENU_ENUM_LABEL_NETWORK_INFORMATION:
       case MENU_ENUM_LABEL_NETWORK_SETTINGS:
       case MENU_ENUM_LABEL_WIFI_SETTINGS:

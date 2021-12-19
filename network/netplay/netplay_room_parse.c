@@ -189,10 +189,6 @@ static bool netplay_json_object_member(void *ctx, const char *p_value,
          {
             p_ctx->cur_member_bool   = &net_st->rooms_data->cur->has_spectate_password;
          }
-         else if (string_is_equal(p_value, "fixed"))
-         {
-            p_ctx->cur_member_bool   = &net_st->rooms_data->cur->fixed;
-         }
          else if (string_is_equal(p_value, "mitm_ip"))
          {
             p_ctx->cur_member_string = net_st->rooms_data->cur->mitm_address;
@@ -201,6 +197,11 @@ static bool netplay_json_object_member(void *ctx, const char *p_value,
          else if (string_is_equal(p_value, "mitm_port"))
          {
             p_ctx->cur_member_int    = &net_st->rooms_data->cur->mitm_port;
+         }
+         else if (string_is_equal(p_value, "mitm_session"))
+         {
+            p_ctx->cur_member_string = net_st->rooms_data->cur->mitm_session;
+            p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->mitm_session);
          }
          else if (string_is_equal(p_value, "host_method"))
          {
