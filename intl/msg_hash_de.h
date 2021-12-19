@@ -3892,6 +3892,14 @@ MSG_HASH(
    "Nicht essentielle Netplay-Nachrichten anzeigen."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "Benachrichtigungen nur im Menü"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "Benachrichtigungen nur anzeigen, wenn das Menü geöffnet ist."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "Benachrichtigungs-Schriftart"
    )

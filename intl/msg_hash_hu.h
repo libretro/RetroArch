@@ -2105,6 +2105,10 @@ MSG_HASH(
 
 /* Quick Menu > Disc Control */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "Lemez kiadása"
+   )
 
 /* Quick Menu > Shaders */
 

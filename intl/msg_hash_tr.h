@@ -1066,7 +1066,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
-   "Ekrandaki Görünüm"
+   "Ekran Görünümü"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
@@ -1181,7 +1181,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
-   "Kullanılacak yeniden ses örneklemesi."
+   "Kullanılacak yeniden ses örnekleyici."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
@@ -1232,7 +1232,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
-   "CRT Çözünürlüğü Değiştir"
+   "CRT Çözünürlüğünü Değiştir"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
@@ -1395,11 +1395,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
-   "CRT Çözünürlüğü Değiştir"
+   "CRT Çözünürlüğünü Değiştir"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
-   "Sadece CRT görüntüler için. Çekirdek/Oyun çözünürlüğü ve yenileme hızı kullanmaya çalışır."
+   "Sadece CRT ekranlar için. Tam çekirdek/oyun çözünürlüğünü ve yenileme hızını kullanmaya çalışır."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
@@ -1427,7 +1427,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "Yüksek çözünürlüklü menüyü kullan"
+   "Yüksek Çözünürlüklü Menü Kullan"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
@@ -1848,7 +1848,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
-   "Yeniden örnekleyici"
+   "Yeniden Örnekleyici"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
@@ -1856,7 +1856,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
-   "Senkronizasyon"
+   "Eşitleyici"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
@@ -1900,7 +1900,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "Hızlı İletirken Sessiz"
+   "Hızlı İleri Sararken Sesi Kapat"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
@@ -2178,7 +2178,7 @@ MSG_HASH(
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
-   "Windows Kısa Yol Tuşu Devre Dışı (Yeniden Başlatılmalı)"
+   "Windows Kısayol Tuşu Devre Dışı (Yeniden Başlatılmalı)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
@@ -3506,15 +3506,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
-   "Video Düzenini Ayarlayın."
+   "Video düzenini ayarlayın."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
-   "Ekrandaki Bildirimler"
+   "Ekran Bildirimleri"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
-   "Ekran Bildirimlerini Ayarlayın."
+   "Ekran bildirimlerini ayarlayın."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
@@ -3757,7 +3757,7 @@ MSG_HASH( /* FIXME Unused */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
-   "Ekrandaki Bildirimler"
+   "Ekran Bildirimleri"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
@@ -3981,7 +3981,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
-   "Ekrandaki bildirimler için yazı tipini seçin."
+   "Ekran bildirimleri için yazı tipini seçin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
@@ -4815,11 +4815,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ONSCREEN_DISPLAY,
-   "'Ekrandaki Görünümü' Göster"
+   "'Ekran Görünümü' Göster"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
-   "'Ekrandaki Görünüm' ayarlarını gösterin."
+   "'Ekran Görünümü' ayarlarını gösterin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,
@@ -5101,7 +5101,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCK_SOUND_ENABLE,
-   "Sesin Kilidini Aç"
+   "Ses Kilidini Aç"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
@@ -11219,7 +11219,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
-   "Çıkmak için tekrar bas..."
+   "Çıkmak için tekrar basın..."
    )
 MSG_HASH(
    MSG_TO,

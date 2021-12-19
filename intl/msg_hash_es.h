@@ -10754,6 +10754,14 @@ MSG_HASH(
    "Fotogramas"
    )
 MSG_HASH(
+   MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
+   "Se han encontrado opciones personalizadas según juego en"
+   )
+MSG_HASH(
+   MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
+   "Se han encontrado opciones personalizadas según directorio en"
+   )
+MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,
    "Índice de disco incorrecto."
    )

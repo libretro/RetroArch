@@ -143,7 +143,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY,
-   "Jogo em Rede"
+   "Jogo em rede"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY,
@@ -343,7 +343,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
-   "Atualizar bases de dados"
+   "Atualiza a bases de dados"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
@@ -3181,7 +3181,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
-   "Salva arquivos de jogos salvos em um formato arquivado. Reduz drasticamente o tamanho do arquivo às custas do aumento de tempo de salvamento/carregamento."
+   "Salva os jogos salvos em arquivos. Reduz drasticamente o tamanho do arquivo às custas do aumento do tempo de salvamento/carregamento."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
@@ -3949,7 +3949,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
-   "Limitar as notificações ao menu"
+   "Limita as notificações exclusivas do menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
@@ -5414,7 +5414,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_OLD_FORMAT,
-   "Salva as listas de reprodução usando o obsoleto formato de texto sem formatação. Quando desativada esta opção, as listas de reprodução são formatadas usando JSON."
+   "Salva as listas de reprodução usando o formato obsoleto de texto sem formatação. Quando esta opção estiver desativada, as listas de reprodução são criadas usando o formato JSON."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_COMPRESSION,
@@ -11571,7 +11571,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_ENTER_GAMEMODE,
-   "Falha ao entrar no GameMode"
+   "Houve uma falha ao entrar no GameMode"
    )
 MSG_HASH(
    MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,

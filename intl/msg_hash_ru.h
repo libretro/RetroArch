@@ -11722,6 +11722,14 @@ MSG_HASH(
    "Ошибка записи в каталог с инфо-файлами ядер - кэш инфо-файлов будет отключен"
    )
 MSG_HASH(
+   MSG_FOUND_ENTRY_STATE_IN,
+   "Найдено входное сохранение в"
+   )
+MSG_HASH(
+   MSG_LOADING_ENTRY_STATE_FROM,
+   "Загрузка входного сохранения из"
+   )
+MSG_HASH(
    MSG_FAILED_TO_ENTER_GAMEMODE,
    "Не удалось войти в GameMode"
    )

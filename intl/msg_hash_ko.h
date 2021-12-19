@@ -10866,6 +10866,14 @@ MSG_HASH(
    "프레임"
    )
 MSG_HASH(
+   MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
+   "게임 우선 설정 발견:"
+   )
+MSG_HASH(
+   MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
+   "컨텐츠 폴더 우선 설정 발견:"
+   )
+MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,
    "잘못된 디스크 인덱스 수신."
    )
