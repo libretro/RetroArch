@@ -1110,6 +1110,9 @@ static const bool audio_enable_menu_bgm    = false;
 /* Enables displaying various timing statistics. */
 #define DEFAULT_STATISTICS_SHOW false
 
+/* Enables displaying the current netplay room ping. */
+#define DEFAULT_NETPLAY_PING_SHOW false
+
 /* Enables use of rewind. This will incur some memory footprint
  * depending on the save state buffer. */
 #define DEFAULT_REWIND_ENABLE false
@@ -1160,7 +1163,10 @@ static const bool audio_enable_menu_bgm    = false;
 /* Start netplay in spectator mode */
 static const bool netplay_start_as_spectator = false;
 
-/* Allow players (other than the host) to pause */
+/* Netplay chat fading toggle */
+static const bool netplay_fade_chat = true;
+
+/* Allow players to pause */
 static const bool netplay_allow_pausing = false;
 
 /* Allow connections in slave mode */
@@ -1188,9 +1194,10 @@ static const bool netplay_use_mitm_server = false;
 
 #ifdef HAVE_NETWORKING
 static const unsigned netplay_max_connections = 3;
-static const unsigned netplay_share_digital = RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE;
+static const unsigned netplay_max_ping        = 0;
 
-static const unsigned netplay_share_analog = RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE;
+static const unsigned netplay_share_digital = RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE;
+static const unsigned netplay_share_analog  = RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE;
 #endif
 
 /* On save state load, block SRAM from being overwritten.

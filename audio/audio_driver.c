@@ -45,6 +45,10 @@
 #include "../menu/menu_driver.h"
 #endif
 
+#ifdef HAVE_NETWORKING
+#include "../network/netplay/netplay.h"
+#endif
+
 #include "../configuration.h"
 #include "../driver.h"
 #include "../frontend/frontend_driver.h"
@@ -1604,7 +1608,14 @@ bool audio_driver_callback(void)
    settings_t *settings        = config_get_ptr();
    bool runloop_paused         = runloop_state_get_ptr()->paused;
 #ifdef HAVE_MENU
-   bool core_paused            = runloop_paused || (settings->bools.menu_pause_libretro && menu_state_get_ptr()->alive);
+#ifdef HAVE_NETWORKING
+   bool core_paused            = runloop_paused ||
+      (settings->bools.menu_pause_libretro && menu_state_get_ptr()->alive &&
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL));
+#else
+   bool core_paused            = runloop_paused ||
+     (settings->bools.menu_pause_libretro && menu_state_get_ptr()->alive);
+#endif
 #else
    bool core_paused            = runloop_paused;
 #endif
