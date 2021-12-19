@@ -293,7 +293,7 @@ static bool rcheevos_is_player_active()
       if (networking_state_get_ptr()->data->self_mode == NETPLAY_CONNECTION_SPECTATING)
          return false;
 
-      // TODO: disallow player slots other than player one unless it's a [Multi] set
+      /* TODO: disallow player slots other than player one unless it's a [Multi] set */
    }
 
    return true;
