@@ -5842,6 +5842,11 @@ static bool netplay_get_cmd(netplay_t *netplay,
                if (connection->mode != NETPLAY_CONNECTION_PLAYING)
                   break;
 
+               /* If the client does not honor our setting,
+                  refuse to globally pause. */
+               if (!netplay->allow_pausing)
+                  break;
+
                /* Inform peers */
                snprintf(msg, sizeof(msg),
                      msg_hash_to_str(MSG_NETPLAY_PEER_PAUSED),
