@@ -79,10 +79,6 @@
 #include "../discord.h"
 #endif
 
-#ifdef HAVE_CHEEVOS
-#include "../cheevos/cheevos.h"
-#endif
-
 #include "netplay.h"
 #include "netplay_private.h"
 
@@ -1919,10 +1915,6 @@ static bool netplay_handshake_pre_sync(netplay_t *netplay,
       settings_t *settings = config_get_ptr();
       if (!settings->bools.netplay_start_as_spectator)
          return netplay_cmd_mode(netplay, NETPLAY_CONNECTION_PLAYING);
-#ifdef HAVE_CHEEVOS
-      else /* staying in SPECTATING mode, disable achievements */
-         rcheevos_validate_netplay(0);
-#endif
    }
 
    return true;
@@ -4401,10 +4393,6 @@ static void announce_play_spectate(netplay_t *netplay,
          else
          {
             dmsg = msg_hash_to_str(MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME);
-
-#ifdef HAVE_CHEEVOS
-            rcheevos_validate_netplay(0);
-#endif
          }
          break;
 
@@ -4443,10 +4431,6 @@ static void announce_play_spectate(netplay_t *netplay,
                      msg_hash_to_str(
                         MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N),
                      one_device + 1);
-
-#ifdef HAVE_CHEEVOS
-            rcheevos_validate_netplay(one_device + 1);
-#endif
          }
          else
          {
@@ -4463,10 +4447,6 @@ static void announce_play_spectate(netplay_t *netplay,
                         (pdevice_str - device_str),
                         "%u, ",
                         (unsigned) (device+1));
-
-#ifdef HAVE_CHEEVOS
-                  rcheevos_validate_netplay(device + 1);
-#endif
               }
             }
 
@@ -5563,12 +5543,6 @@ static bool netplay_get_cmd(netplay_t *netplay,
             RARCH_LOG("[Netplay] %s\n", dmsg);
             runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-#ifdef HAVE_CHEEVOS
-            /* unable to switch to PLAY mode, disable achievements while spectating */
-            if (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING)
-                rcheevos_validate_netplay(0);
-#endif
          }
          break;
 
