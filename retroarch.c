@@ -2106,6 +2106,9 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_FPS_TOGGLE:
          settings->bools.video_fps_show = !(settings->bools.video_fps_show);
          break;
+      case CMD_EVENT_STATISTICS_TOGGLE:
+         settings->bools.video_statistics_show = !(settings->bools.video_statistics_show);
+         break;
       case CMD_EVENT_OVERLAY_NEXT:
          /* Switch to the next available overlay screen. */
 #ifdef HAVE_OVERLAY

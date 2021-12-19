@@ -119,6 +119,8 @@ enum event_command
    CMD_EVENT_AUDIO_MUTE_TOGGLE,
    /* Toggles FPS counter. */
    CMD_EVENT_FPS_TOGGLE,
+   /* Toggles statistics display. */
+   CMD_EVENT_STATISTICS_TOGGLE,
    /* Toggle ping counter. */
    CMD_EVENT_NETPLAY_PING_TOGGLE,
    /* Gathers diagnostic info about the system and RetroArch configuration, then sends it to our servers. */
@@ -461,6 +463,7 @@ static const struct cmd_map map[] = {
    { "MUTE",                   RARCH_MUTE },
    { "OSK",                    RARCH_OSK },
    { "FPS_TOGGLE",             RARCH_FPS_TOGGLE },
+   { "STATISTICS_TOGGLE",      RARCH_STATISTICS_TOGGLE },
    { "SEND_DEBUG_INFO",        RARCH_SEND_DEBUG_INFO },
    { "NETPLAY_HOST_TOGGLE",    RARCH_NETPLAY_HOST_TOGGLE },
    { "NETPLAY_GAME_WATCH",     RARCH_NETPLAY_GAME_WATCH },
