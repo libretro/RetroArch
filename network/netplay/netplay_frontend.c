@@ -8353,6 +8353,11 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
             ret = false;
             goto done;
 
+         case RARCH_NETPLAY_CTL_IS_SPECTATING:
+         case RARCH_NETPLAY_CTL_IS_PLAYING:
+            ret = false;
+            goto done;
+
          default:
             goto done;
       }
@@ -8379,6 +8384,13 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
       case RARCH_NETPLAY_CTL_IS_CONNECTED:
          ret = netplay->is_connected;
          goto done;
+      case RARCH_NETPLAY_CTL_IS_SPECTATING:
+         ret = netplay->self_mode == NETPLAY_CONNECTION_SPECTATING;
+         break;
+      case RARCH_NETPLAY_CTL_IS_PLAYING:
+         ret = netplay->self_mode == NETPLAY_CONNECTION_PLAYING ||
+            netplay->self_mode == NETPLAY_CONNECTION_SLAVE;
+         break;
       case RARCH_NETPLAY_CTL_POST_FRAME:
          netplay_post_frame(netplay);
 	 /* If we're disconnected, deinitialize */

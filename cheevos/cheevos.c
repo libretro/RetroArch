@@ -28,7 +28,7 @@
 #include <retro_math.h>
 #include <retro_timers.h>
 #include <net/net_http.h>
-#include <network/netplay/netplay_private.h>
+#include <network/netplay/netplay.h>
 #include <libretro.h>
 #include <lrc_hash.h>
 
@@ -288,13 +288,10 @@ static rcheevos_racheevo_t* rcheevos_find_cheevo(unsigned id)
 
 static bool rcheevos_is_player_active()
 {
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-   {
-      if (networking_state_get_ptr()->data->self_mode == NETPLAY_CONNECTION_SPECTATING)
-         return false;
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SPECTATING, NULL))
+      return false;
 
-      /* TODO: disallow player slots other than player one unless it's a [Multi] set */
-   }
+   /* TODO: disallow player slots other than player one unless it's a [Multi] set */
 
    return true;
 }
