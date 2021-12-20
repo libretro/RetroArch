@@ -454,6 +454,13 @@ static const struct retro_keybind retro_keybinds_1[] = {
    {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE, AXIS_NONE,
+      MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE, RETROK_UNKNOWN,
+      RARCH_STATISTICS_TOGGLE, NO_BTN, NO_BTN, 0,
+      true
+   },
+   {
+      NULL, NULL,
+      AXIS_NONE, AXIS_NONE, AXIS_NONE,
       MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE, RETROK_UNKNOWN,
       RARCH_NETPLAY_PING_TOGGLE, NO_BTN, NO_BTN, 0,
       true
@@ -1024,6 +1031,13 @@ static const struct retro_keybind retro_keybinds_1[] = {
       AXIS_NONE, AXIS_NONE, AXIS_NONE,
       MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE, RETROK_UNKNOWN,
       RARCH_FPS_TOGGLE, NO_BTN, NO_BTN, 0,
+      true
+   },
+   {
+      NULL, NULL,
+      AXIS_NONE, AXIS_NONE, AXIS_NONE,
+      MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE, RETROK_UNKNOWN,
+      RARCH_STATISTICS_TOGGLE, NO_BTN, NO_BTN, 0,
       true
    },
    {
@@ -1609,6 +1623,13 @@ static const struct retro_keybind retro_keybinds_1[] = {
       AXIS_NONE, AXIS_NONE, AXIS_NONE,
       MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE, RETROK_F3,
       RARCH_FPS_TOGGLE, NO_BTN, NO_BTN, 0,
+      true
+   },
+   {
+      NULL, NULL,
+      AXIS_NONE, AXIS_NONE, AXIS_NONE,
+      MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE, RETROK_UNKNOWN,
+      RARCH_STATISTICS_TOGGLE, NO_BTN, NO_BTN, 0,
       true
    },
    {

@@ -1,5 +1,6 @@
 # Future
 - LINUX: Added support for Linux GameMode (https://github.com/FeralInteractive/gamemode), which can be toggled on/off in the Power Management or Latency settings menus.
+- Added a hotkey toggle for the on-screen technical statistics.
 
 # 1.9.14
 - ANDROID/PLAYSTORE: Implement MANAGE_EXTERNAL_STORAGE permission
