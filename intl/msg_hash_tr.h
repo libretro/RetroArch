@@ -932,7 +932,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_CONTROLS,
-   "Temel Menü Kontrolcüleri"
+   "Temel Menü Kontrolleri"
    )
 
 /* Main Menu > Help > Basic Menu Controls */
@@ -1821,7 +1821,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   "Katı GPU Dikey Eşitleme Kareleri"
+   "Katı GPU Dikey Kare Eşitlemesi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
@@ -1960,7 +1960,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-   "WASAPI sürücüsünü paylaşılan kipte kullanırken ara arabellek uzunluğu (karelerde)."
+   "WASAPI sürücüsünü paylaşılan kipte kullanırken ara arabellek uzunluğu (kare cinsinden)."
    )
 
 /* Settings > Audio > Output */
@@ -2400,7 +2400,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
-   "Kısayol Tuşu Etkinleştirme Gecikmesi (Çerçeveler)"
+   "Kısayol Tuşu Etkinleştirme Gecikmesi (Kareler)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
@@ -2520,7 +2520,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
-   "Kare ilerlemesi"
+   "Kare İlerlemesi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FRAMEADVANCE,
@@ -2607,6 +2607,14 @@ MSG_HASH(
    "'Saniyedeki kare' durum göstergesini açar/kapatır."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
+   "Netplay Pingi Göster (Değiştir)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
+   "Mevcut netplay odası için ping sayacını açar/kapatır."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
    "Hata Ayıklama Bilgisi Gönder"
    )
@@ -2629,6 +2637,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
    "Mevcut netplay oturumunu 'oyuncu' ve 'izleyici' kipleri arasında değiştirir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Netplay Oyuncu Sohbeti"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Geçerli netplay oturumuna bir sohbet mesajı gönderir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "Netplay Soluk Sohbet Geçişi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "Solan ve statik netplay sohbet mesajları arasında geçiş yapın."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
@@ -3342,7 +3366,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
-   "Çerçeve Zaman Sayacı"
+   "Kare Zaman Sayacı"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
@@ -3797,7 +3821,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_SHOW,
-   "Ekran Kare Hızı"
+   "Kare Hızını Görüntüle"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FPS_SHOW,
@@ -3805,7 +3829,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
-   "Kare Hızı Güncelleme Aralığı (Karelerde)"
+   "Kare Hızı Güncelleme Aralığı (Kare Cinsinden)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
@@ -3842,6 +3866,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
    "Bellek kullanım ekranı ayarlanan aralıkta kare olarak güncellenecektir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
+   "Netplay Pingi Görüntüle"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
+   "Geçerli netplay odası için pingi görüntüleyin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -5191,6 +5223,14 @@ MSG_HASH(
    "Yenilerini reddetmeden önce ana bilgisayarın kabul edeceği en fazla etkin bağlantı sayısı."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_PING,
+   "Ping Sınırlayıcı"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
+   "Ana bilgisayarın kabul edeceği en fazla bağlantı gecikmesi (ping). Limitsiz olarak 0'a ayarlayın."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
    "Sunucu Parolası"
    )
@@ -5215,12 +5255,20 @@ MSG_HASH(
    "Netplay'i izleyici kipinde başlat."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
+   "Soluk Sohbet"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT,
+   "Sohbet mesajlarını zamanla soldurun."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
    "Duraklatmaya İzin Ver"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "Oyuncuların netplay oturumunda duraklamasına izin verin. Ana bilgisayar, bu ayardan bağımsız olarak her zaman duraklayabilir."
+   "Oyuncuların netplay sırasında duraklamasına izin verin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -5256,7 +5304,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Giriş Kare Gecikmeleri"
+   "Giriş Gecikme Kareleri"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
@@ -6018,6 +6066,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
    "Netplay sunucularını tarayın."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
+   "Netplay LAN Listesini Yenile"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
+   "LAN bağlantısında netplay ana bilgisayarlarını tarayın."
    )
 
 /* Netplay > Host */
@@ -10242,6 +10298,10 @@ MSG_HASH(
    "Netplay sunucu parolasını gir:"
    )
 MSG_HASH(
+   MSG_NETPLAY_ENTER_CHAT,
+   "Netplay sohbet mesajını girin:"
+   )
+MSG_HASH(
    MSG_DISCORD_CONNECTION_REQUEST,
    "Bu kullanıcıdan bağlantıya izin vermek istiyor musunuz:"
    )
@@ -10516,6 +10576,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CONTENT_CRC32S_DIFFER,
    "İçerik CRC32'leri farklıdır. Farklı oyunlar kullanılamaz."
+   )
+MSG_HASH(
+   MSG_PING_TOO_HIGH,
+   "Ping bu ana bilgisayar için çok yüksek."
    )
 MSG_HASH(
    MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,

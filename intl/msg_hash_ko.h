@@ -5259,10 +5259,6 @@ MSG_HASH(
    "일시정지 허용"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "플레이어들이 넷플레이 중 일시정지를 할 수 있도록 허용합니다. 호스트는 이 설정과 관계없이 항상 일시정지를 할 수 있습니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
    "슬레이브 모드 클라이언트 허용"
    )

@@ -2599,6 +2599,14 @@ MSG_HASH(
    "Active/désactive l'indicateur d'état des images par seconde."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
+   "Afficher le Ping du jeu en réseau (activer/désactiver)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
+   "Active/désactive le compteur de ping pour la salle de jeu en réseau actuelle."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
    "Envoyer les informations de diagnostic"
    )
@@ -2621,6 +2629,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
    "Bascule la session de jeu en réseau actuelle entre les modes 'jeu' et 'spectateur'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Chat joueur pour le jeu en réseau"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Envoie un message sur le chat de la session jeu en réseau en cours."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "Activer/désactiver le fondu du chat de jeu en réseau"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "Basculer entre les messages en fondu et statiques pour le jeu en réseau."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
@@ -3834,6 +3858,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
    "L'affichage de l'utilisation de la mémoire sera actualisé à l'intervalle défini en images."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
+   "Afficher le ping du jeu en réseau"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
+   "Afficher le ping de la salle de jeu en réseau actuelle."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -5183,6 +5215,14 @@ MSG_HASH(
    "Le nombre maximum de connexions actives que l'hôte acceptera avant de refuser les nouvelles."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_PING,
+   "Limitation du ping"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
+   "La latence maximale de connexion (ping) que l'hôte acceptera. Définissez-la à 0 pour aucune limite."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
    "Mot de passe du serveur "
    )
@@ -5207,12 +5247,20 @@ MSG_HASH(
    "Démarre le jeu en réseau en mode spectateur."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
+   "Chat en fondu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT,
+   "Estomper les messages du chat au fil du temps."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
    "Autoriser la mise en pause"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "Permettre aux joueurs de mettre en pause pendant le jeu en réseau. L'hôte peut toujours mettre en pause sans prendre en compte ce réglage."
+   "Permettre aux joueurs de mettre en pause pendant le jeu en réseau."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -6014,6 +6062,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
    "Recherche d'hôtes de jeu en réseau."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
+   "Rafraîchir la liste des LAN de jeu en réseau"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
+   "Rechercher des hôtes de jeu en réseau sur le LAN."
    )
 
 /* Netplay > Host */
@@ -10138,6 +10194,10 @@ MSG_HASH(
    "Entrez le mot de passe du serveur de jeu en réseau :"
    )
 MSG_HASH(
+   MSG_NETPLAY_ENTER_CHAT,
+   "Entrez un message sur le chat de jeu en réseau :"
+   )
+MSG_HASH(
    MSG_DISCORD_CONNECTION_REQUEST,
    "Voulez-vous autoriser la connexion de l'utilisateur :"
    )
@@ -10412,6 +10472,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CONTENT_CRC32S_DIFFER,
    "Le CRC32 du contenu est différent. Impossible d'utiliser des jeux non-identiques."
+   )
+MSG_HASH(
+   MSG_PING_TOO_HIGH,
+   "Votre ping est trop élevé pour cet hôte."
    )
 MSG_HASH(
    MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,

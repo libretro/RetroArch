@@ -5251,10 +5251,6 @@ MSG_HASH(
    "Разрешить паузу"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "Разрешать другим игрокам паузу во время игры. Хост может включать паузу всегда, независимо от настройки."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
    "Разрешать клиентов в режиме Slave"
    )

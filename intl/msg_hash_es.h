@@ -5223,10 +5223,6 @@ MSG_HASH(
    "Permitir pausar la partida"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "Permite que los jugadores puedan pausar la partida de un juego en red. El servidor siempre podrá pausarla, independientemente de este ajuste."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
    "Permitir clientes en modo esclavo"
    )

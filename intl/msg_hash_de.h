@@ -873,7 +873,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-   "Konfgurationsdatei laden"
+   "Konfigurationsdatei laden"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
@@ -5135,10 +5135,6 @@ MSG_HASH(
    "Pausieren zulassen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "Spielern erlauben, während des Netplay zu pausieren. Der Host kann unabhängig von dieser Einstellung immer pausieren."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
    "Erlaube Slave-Modus für Clients"
    )
@@ -5362,7 +5358,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Zugeoednete Cores in Wiedergabelisten anzeigen"
+   "Zugeordnete Cores in Wiedergabelisten anzeigen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
@@ -10452,6 +10448,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_FRAMES,
    "Bilder"
+   )
+MSG_HASH(
+   MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
+   "Spielspezifische Core-Optionen gefunden in"
+   )
+MSG_HASH(
+   MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
+   "Ordnerspezifische Core-Optionen gefunden in"
    )
 MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,

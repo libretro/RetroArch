@@ -5211,12 +5211,16 @@ MSG_HASH(
    "Käynnistä verkkopeli seuraajatilassa."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
-   "Salli tauotus"
+   MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
+   "Häivytä keskustelu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "Salli pelaajien tauottaa verkkopelin aikana. Isäntä voi aina tauottaa tästä asetuksesta riippumatta."
+   MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT,
+   "Häivytä keskusteluviestit ajan myötä."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
+   "Salli tauotus"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -10204,6 +10208,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
    "Anna verkkopelipalvelimen salasana:"
+   )
+MSG_HASH(
+   MSG_NETPLAY_ENTER_CHAT,
+   "Kirjoita verkkopelin keskusteluviesti:"
    )
 MSG_HASH(
    MSG_DISCORD_CONNECTION_REQUEST,

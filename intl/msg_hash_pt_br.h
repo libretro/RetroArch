@@ -343,7 +343,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
-   "Atualiza a bases de dados"
+   "Atualizar bases de dados"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
@@ -3181,7 +3181,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
-   "Salva os jogos salvos em arquivos. Reduz drasticamente o tamanho do arquivo às custas do aumento do tempo de salvamento/carregamento."
+   "Salva arquivos de jogos salvos em um formato arquivado. Reduz drasticamente o tamanho do arquivo às custas do aumento de tempo de salvamento e carregamento."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
@@ -3949,7 +3949,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
-   "Limita as notificações exclusivas do menu"
+   "Limitar as notificações ao menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
@@ -5193,10 +5193,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
    "Permitir pausar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "Permite aos jogadores pausarem durante o jogo em rede. O anfitrião pode sempre pausar independentemente da configuração."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -11571,7 +11567,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_ENTER_GAMEMODE,
-   "Houve uma falha ao entrar no GameMode"
+   "Falha ao entrar no GameMode"
    )
 MSG_HASH(
    MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,

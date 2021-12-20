@@ -1499,10 +1499,6 @@ MSG_HASH(
    "Permitir la posa"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "Permite que los xugadores usen la posa demientres xueguen en llinia. L'agospiador pue usala independientemente d'esti axuste."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
    "Descarga de miniatures so demanda"
    )
