@@ -2538,11 +2538,11 @@ static void xmb_populate_entries(void *data,
 
 static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       xmb_node_t *core_node, xmb_node_t *node,
-      enum msg_hash_enums enum_idx, unsigned type, bool active, bool checked)
+      enum msg_hash_enums enum_idx, const char *enum_path,
+      unsigned type, bool active, bool checked)
 {
    switch (enum_idx)
    {
-      case MENU_ENUM_LABEL_CORE_OPTIONS:
       case MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS];
       case MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_LIST:
@@ -2938,7 +2938,21 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case FILE_TYPE_RDB_ENTRY:
          return xmb->textures.list[XMB_TEXTURE_CORE_INFO];
       case MENU_SETTING_ACTION_CORE_OPTIONS:
-         return xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS];
+         if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS)))
+            return xmb->textures.list[XMB_TEXTURE_VIDEO];
+         else if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS)))
+            return xmb->textures.list[XMB_TEXTURE_AUDIO];
+         else if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS)))
+            return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
+         else if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS)))
+            return xmb->textures.list[XMB_TEXTURE_OSD];
+         else if (string_is_equal(enum_path, "Media"))
+            return xmb->textures.list[XMB_TEXTURE_RDB];
+         else if (string_is_equal(enum_path, "System"))
+            return xmb->textures.list[XMB_TEXTURE_DRIVERS];
+         else
+            return xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS];
+         break;
       case MENU_SETTING_ACTION_CORE_INPUT_REMAPPING_OPTIONS:
          return xmb->textures.list[XMB_TEXTURE_INPUT_REMAPPING_OPTIONS];
       case MENU_SETTING_ACTION_CORE_CHEAT_OPTIONS:
@@ -3537,7 +3551,7 @@ static int xmb_draw_item(
       math_matrix_4x4 mymat_tmp;
       gfx_display_ctx_rotate_draw_t rotate_draw;
       uintptr_t texture        = xmb_icon_get_id(xmb, core_node, node,
-            entry.enum_idx, entry_type, (i == current), entry.checked);
+            entry.enum_idx, entry.path, entry_type, (i == current), entry.checked);
       float x                  = icon_x;
       float y                  = icon_y;
       float scale_factor       = node->zoom;

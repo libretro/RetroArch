@@ -1596,7 +1596,8 @@ static void ozone_set_background_running_opacity(
 }
 
 static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
-      enum msg_hash_enums enum_idx, unsigned type, bool active)
+      enum msg_hash_enums enum_idx, const char *enum_path,
+      unsigned type, bool active)
 {
    switch (enum_idx)
    {
@@ -1607,7 +1608,6 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
 #endif
       case MENU_ENUM_LABEL_DISC_INFORMATION:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_DISC];
-      case MENU_ENUM_LABEL_CORE_OPTIONS:
       case MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_OPTIONS];
       case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
@@ -1984,7 +1984,20 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case FILE_TYPE_RDB_ENTRY:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO];
       case MENU_SETTING_ACTION_CORE_OPTIONS:
-         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_OPTIONS];
+         if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS)))
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_VIDEO];
+         else if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS)))
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_AUDIO];
+         else if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS)))
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS];
+         else if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS)))
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_OSD];
+         else if (string_is_equal(enum_path, "Media"))
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RDB];
+         else if (string_is_equal(enum_path, "System"))
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_DRIVERS];
+         else
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_OPTIONS];
       case MENU_SETTING_ACTION_CORE_OPTION_OVERRIDE_LIST:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SETTING];
       case MENU_SETTING_ACTION_CORE_INPUT_REMAPPING_OPTIONS:
@@ -4476,7 +4489,8 @@ static void ozone_compute_entries_position(
          OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO */
       if (ozone->is_playlist && entries_end == 1)
       {
-         uintptr_t         tex = ozone_entries_icon_get_texture(ozone, entry.enum_idx, entry.type, false);
+         uintptr_t         tex = ozone_entries_icon_get_texture(ozone,
+               entry.enum_idx, entry.path, entry.type, false);
          ozone->empty_playlist = tex == ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO];
       }
       else
@@ -4840,7 +4854,8 @@ border_iterate:
       }
 
       /* Icon */
-      tex = ozone_entries_icon_get_texture(ozone, entry.enum_idx, entry.type, entry_selected);
+      tex = ozone_entries_icon_get_texture(ozone,
+            entry.enum_idx, entry.path, entry.type, entry_selected);
       if (tex != ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SUBSETTING])
       {
          uintptr_t texture = tex;
