@@ -264,10 +264,10 @@ OBJ += \
        tasks/task_manual_content_scan.o \
        tasks/task_core_backup.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.o \
-       $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.o
+       $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.o \
+       $(LIBRETRO_COMM_DIR)/encodings/encoding_base64.o
 
 ifeq ($(HAVE_TRANSLATE), 1)
-   OBJ += $(LIBRETRO_COMM_DIR)/encodings/encoding_base64.o
    OBJ += tasks/task_translation.o
 endif
 
