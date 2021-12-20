@@ -344,8 +344,11 @@ static bool netplay_lan_ad_client_response(void)
             continue;
 
          /* And that we know how to handle it */
+         #ifdef HAVE_INET6
          if (their_addr.ss_family != AF_INET)
             continue;
+         #endif
+
          if (!netplay_is_lan_address(
                (struct sockaddr_in *) &their_addr))
             continue;
@@ -560,8 +563,11 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
          return true;
       }
 
+      #ifdef HAVE_INET6
       if (their_addr.ss_family != AF_INET)
          return true;
+      #endif
+
       if (!netplay_is_lan_address(
             (struct sockaddr_in *) &their_addr))
          return true;
@@ -4491,7 +4497,8 @@ static void announce_play_spectate(netplay_t *netplay,
 
          if (ping >= 0)
          {
-            snprintf(ping_str, sizeof(ping_str), " (ping: %i ms)", ping);
+            snprintf(ping_str, sizeof(ping_str), " (ping: %li ms)",
+               (long int)ping);
             strlcat(msg, ping_str, sizeof(msg));
          }
 
@@ -7405,7 +7412,6 @@ bool netplay_poll(
    size_t i;
    int res;
    uint32_t client;
-   settings_t *settings = (settings_t*)settings_data;
 
    if (!get_self_input_state(block_libretro_input, netplay))
       goto catastrophe;
@@ -8514,12 +8520,13 @@ bool netplay_is_lan_address(struct sockaddr_in *addr)
    static const uint32_t subnets[] = {0x0A000000, 0xAC100000, 0xC0A80000};
    static const uint32_t masks[]   = {0xFF000000, 0xFFF00000, 0xFFFF0000};
    size_t i;
+   uint32_t uaddr;
+
+   memcpy(&uaddr, &addr->sin_addr, sizeof(uaddr));
 
    for (i = 0; i < ARRAY_SIZE(subnets); i++)
-   {
-      if ((*(uint32_t *)&addr->sin_addr & masks[i]) == subnets[i])
+      if ((uaddr & masks[i]) == subnets[i])
          return true;
-   }
 
    return false;
 }
