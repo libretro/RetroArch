@@ -2775,9 +2775,6 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (!descriptors)
                return false;
 
-            if (log_level != RETRO_LOG_DEBUG)
-               break;
-
             system->mmaps.descriptors     = descriptors;
             system->mmaps.num_descriptors = mmaps->num_descriptors;
 
@@ -2785,6 +2782,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                system->mmaps.descriptors[i].core = mmaps->descriptors[i];
 
             mmap_preprocess_descriptors(descriptors, mmaps->num_descriptors);
+
+            if (log_level != RETRO_LOG_DEBUG)
+               break;
 
             if (sizeof(void *) == 8)
                RARCH_LOG("           ndx flags  ptr              offset   start    select   disconn  len      addrspace\n");
