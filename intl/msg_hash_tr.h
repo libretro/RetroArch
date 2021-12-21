@@ -2607,6 +2607,14 @@ MSG_HASH(
    "'Saniyedeki kare' durum göstergesini açar/kapatır."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE,
+   "Teknik İstatistikleri Göster (Değiştir)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
+   "Ekrandaki teknik istatistiklerin görüntülenmesini açar/kapatır."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
    "Netplay Pingi Göster (Değiştir)"
    )
