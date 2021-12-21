@@ -3183,6 +3183,8 @@ static int xmb_draw_item(
    bool menu_xmb_vertical_thumbnails   = settings->bools.menu_xmb_vertical_thumbnails;
    bool menu_show_sublabels            = settings->bools.menu_show_sublabels;
    unsigned show_history_icons         = settings->uints.playlist_show_history_icons;
+   unsigned menu_xmb_vertical_fade_factor
+                                       = settings->uints.menu_xmb_vertical_fade_factor;
 
    /* Initial ticker configuration */
    if (use_smooth_ticker)
@@ -3361,6 +3363,34 @@ static int xmb_draw_item(
    }
 
    label_offset = xmb->margins_label_top;
+
+   if (menu_xmb_vertical_fade_factor)
+   {
+      float factor     = menu_xmb_vertical_fade_factor / 100.0f / 0.004f;
+      float min_alpha  = 0.1f;
+      float max_alpha  = (i == current) ? xmb->items_active_alpha : xmb->items_passive_alpha;
+      float new_alpha  = node->alpha;
+      float top_margin = xmb->margins_screen_top;
+      float icon_space = xmb->icon_spacing_vertical;
+
+      /* Top */
+      if (node->y < 0)
+         new_alpha = (node->y + top_margin + (icon_space / 4)) / factor;
+      /* Bottom */
+      else if (node->y > (height - (top_margin * 2)) && node->y < (height - top_margin + icon_space))
+         new_alpha = (height - node->y - top_margin + (icon_space / 4)) / factor;
+      /* Rest need to reset after vertical wrap-around */
+      else if (node->x == 0 && node->alpha > 0 && node->alpha != max_alpha)
+         new_alpha = max_alpha;
+
+      /* Limits */
+      new_alpha = (new_alpha < min_alpha) ? min_alpha : new_alpha;
+      new_alpha = (new_alpha > max_alpha) ? max_alpha : new_alpha;
+
+      /* Horizontal animation requires breathing room on x-axis */
+      if (new_alpha != node->alpha && node->x > (-icon_space * 2) && node->x < (icon_space * 2))
+         node->alpha = node->label_alpha = new_alpha;
+   }
 
    if (menu_show_sublabels)
    {
@@ -4878,6 +4908,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    bool menu_core_enable                   = settings->bools.menu_core_enable;
    float thumbnail_scale_factor            = (float)settings->uints.menu_xmb_thumbnail_scale_factor / 100.0f;
    bool menu_xmb_vertical_thumbnails       = settings->bools.menu_xmb_vertical_thumbnails;
+   unsigned menu_xmb_vertical_fade_factor  = settings->uints.menu_xmb_vertical_fade_factor;
    void *userdata                          = video_info->userdata;
    unsigned video_width                    = video_info->width;
    unsigned video_height                   = video_info->height;
@@ -4975,7 +5006,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    strlcpy(title_truncated,
          xmb->title_name, sizeof(title_truncated));
 
-   if (selection > 1)
+   if (!menu_xmb_vertical_fade_factor && selection > 1)
    {
       /* skip 25 UTF8 multi-byte chars */
       char *end = title_truncated;
