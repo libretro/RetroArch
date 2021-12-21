@@ -28,6 +28,7 @@
 #include <retro_math.h>
 #include <retro_timers.h>
 #include <net/net_http.h>
+#include <network/netplay/netplay.h>
 #include <libretro.h>
 #include <lrc_hash.h>
 
@@ -285,6 +286,16 @@ static rcheevos_racheevo_t* rcheevos_find_cheevo(unsigned id)
    return NULL;
 }
 
+static bool rcheevos_is_player_active()
+{
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SPECTATING, NULL))
+      return false;
+
+   /* TODO: disallow player slots other than player one unless it's a [Multi] set */
+
+   return true;
+}
+
 void rcheevos_award_achievement(rcheevos_locals_t* locals,
       rcheevos_racheevo_t* cheevo, bool widgets_ready)
 {
@@ -292,9 +303,6 @@ void rcheevos_award_achievement(rcheevos_locals_t* locals,
 
    if (!cheevo)
       return;
-
-   CHEEVOS_LOG(RCHEEVOS_TAG "Awarding achievement %u: %s (%s)\n",
-         cheevo->id, cheevo->title, cheevo->description);
 
    /* Deactivates the acheivement. */
    rc_runtime_deactivate_achievement(&locals->runtime, cheevo->id);
@@ -304,6 +312,16 @@ void rcheevos_award_achievement(rcheevos_locals_t* locals,
       cheevo->active &= ~RCHEEVOS_ACTIVE_HARDCORE;
 
    cheevo->unlock_time = cpu_features_get_time_usec();
+
+   if (!rcheevos_is_player_active())
+   {
+      CHEEVOS_LOG(RCHEEVOS_TAG "Not awarding achievement %u, player not active\n",
+            cheevo->id);
+      return;
+   }
+
+   CHEEVOS_LOG(RCHEEVOS_TAG "Awarding achievement %u: %s (%s)\n",
+         cheevo->id, cheevo->title, cheevo->description);
 
    /* Show the on screen message. */
 #if defined(HAVE_GFX_WIDGETS)
@@ -387,9 +405,23 @@ static void rcheevos_lboard_submit(rcheevos_locals_t* locals,
    char buffer[256];
    char formatted_value[16];
 
+#if defined(HAVE_GFX_WIDGETS)
+   /* Hide the tracker */
+   if (gfx_widgets_ready())
+      gfx_widgets_set_leaderboard_display(lboard->id, NULL);
+#endif
+
    rc_runtime_format_lboard_value(formatted_value,
          sizeof(formatted_value),
          value, lboard->format);
+
+   if (!rcheevos_is_player_active())
+   {
+      CHEEVOS_LOG(RCHEEVOS_TAG "Not submitting %s for leaderboard %u, player not active\n",
+            formatted_value, lboard->id);
+      return;
+   }
+
    CHEEVOS_LOG(RCHEEVOS_TAG "Submitting %s for leaderboard %u\n",
          formatted_value, lboard->id);
 
@@ -398,12 +430,6 @@ static void rcheevos_lboard_submit(rcheevos_locals_t* locals,
          formatted_value, lboard->title);
    runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-#if defined(HAVE_GFX_WIDGETS)
-   /* Hide the tracker */
-   if (gfx_widgets_ready())
-      gfx_widgets_set_leaderboard_display(lboard->id, NULL);
-#endif
 
    /* Start the submit task */
    rcheevos_client_submit_lboard_entry(lboard->id, value);
@@ -444,6 +470,9 @@ static void rcheevos_lboard_started(
    CHEEVOS_LOG(RCHEEVOS_TAG "Leaderboard %u started: %s\n",
          lboard->id, lboard->title);
 
+   if (!rcheevos_is_player_active())
+      return;
+
 #if defined(HAVE_GFX_WIDGETS)
    if (widgets_ready && rcheevos_locals.leaderboard_trackers)
    {
@@ -482,7 +511,8 @@ static void rcheevos_lboard_updated(
       char buffer[32];
       rc_runtime_format_lboard_value(buffer,
             sizeof(buffer), value, lboard->format);
-      gfx_widgets_set_leaderboard_display(lboard->id, buffer);
+      gfx_widgets_set_leaderboard_display(lboard->id,
+         rcheevos_is_player_active() ? buffer : NULL);
    }
 }
 
@@ -493,7 +523,8 @@ static void rcheevos_challenge_started(
    settings_t* settings = config_get_ptr();
    if (     cheevo 
          && widgets_ready 
-         && settings->bools.cheevos_challenge_indicators)
+         && settings->bools.cheevos_challenge_indicators
+         && rcheevos_is_player_active())
       gfx_widgets_set_challenge_display(cheevo->id, cheevo->badge);
 }
 
@@ -509,13 +540,23 @@ static void rcheevos_challenge_ended(
 
 int rcheevos_get_richpresence(char buffer[], int buffer_size)
 {
-   int ret = rc_runtime_get_richpresence(
-         &rcheevos_locals.runtime, buffer, buffer_size,
-         &rcheevos_peek, NULL, NULL);
+   if (rcheevos_is_player_active())
+   {
+      int ret = rc_runtime_get_richpresence(
+            &rcheevos_locals.runtime, buffer, buffer_size,
+            &rcheevos_peek, NULL, NULL);
 
-   if (ret <= 0 && rcheevos_locals.game.title)
-      return snprintf(buffer, buffer_size, "Playing %s", rcheevos_locals.game.title);
-   return ret;
+      if (ret <= 0 && rcheevos_locals.game.title)
+         return snprintf(buffer, buffer_size, "Playing %s", rcheevos_locals.game.title);
+      return ret;
+   }
+   else
+   {
+      if (rcheevos_locals.game.title)
+         return snprintf(buffer, buffer_size, "Spectating %s", rcheevos_locals.game.title);
+
+      return 0;
+   }
 }
 
 void rcheevos_reset_game(bool widgets_ready)
@@ -1971,42 +2012,3 @@ void rcheevos_change_disc(const char* new_disc_path, bool initial_disc)
       initial_disc ? rcheevos_identify_initial_disc_callback :
          rcheevos_identify_game_disc_callback, hash_entry);
 }
-
-void rcheevos_validate_netplay(int player_num)
-{
-   const char* msg = NULL;
-
-   if (rcheevos_locals.load_info.state == RCHEEVOS_LOAD_STATE_NONE)
-   {
-       /* already disabled or game doesn't have achievements, nothing to do */
-       return;
-   }
-
-   if (player_num == 1)
-   {
-       /* always allow player 1 */
-       return;
-   }
-   else if (player_num == 0)
-   {
-       /* spectating, never allow achievements */
-       msg = "Disabling achievements for netplay spectator mode.";
-   }
-   else
-   {
-       /* non-primary player, only allow for multi sets (TODO) */
-       return;
-   }
-
-   /* if there are active achievements, inform the user about the deactivation */
-   if (rcheevos_locals.loaded && rcheevos_locals.game.achievement_count > 0)
-   {
-       runloop_msg_queue_push(msg, 0, 3 * 60, false, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   }
-
-   /* disable the achievement runtime */
-   CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", msg);
-   rcheevos_unload();
-}
-
