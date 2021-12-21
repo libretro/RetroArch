@@ -10870,6 +10870,10 @@ MSG_HASH(
    "Waiting for client ..."
    )
 MSG_HASH(
+   MSG_ROOM_NOT_CONNECTABLE,
+   "Your room is not connectable from the internet."
+   )
+MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    "You have left the game"
    )
@@ -12770,6 +12774,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_INTERNET_RELAY,
    "Internet (Relay)"
+   )
+MSG_HASH(
+   MSG_INTERNET_NOT_CONNECTABLE,
+   "Internet (Not Connectable)"
    )
 MSG_HASH(
    MSG_LOCAL,

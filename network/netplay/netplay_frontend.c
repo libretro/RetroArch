@@ -7747,6 +7747,7 @@ static void netplay_announce_cb(retro_task_t *task,
    net_driver_state_t *net_st     = &networking_driver_st;
    struct netplay_room *host_room = &net_st->host_room;
    http_transfer_data_t *data     = task_data;
+   bool first                     = !host_room->id;
 
    if (error)
       return;
@@ -7813,6 +7814,9 @@ static void netplay_announce_cb(retro_task_t *task,
                   sizeof(host_room->retroarch_version));
             else if (string_is_equal(key, "country"))
                strlcpy(host_room->country, value, sizeof(host_room->country));
+            else if (string_is_equal(key, "connectable"))
+               host_room->connectable = string_is_equal_noncase(value, "true") ||
+                  string_is_equal(value, "1");
          }
       }
 
@@ -7821,6 +7825,16 @@ static void netplay_announce_cb(retro_task_t *task,
    } while (remaining);
 
    free(buf_start);
+
+   /* Warn only on the first announce. */
+   if (!host_room->connectable && first)
+   {
+      const char *dmsg = msg_hash_to_str(MSG_ROOM_NOT_CONNECTABLE);
+
+      RARCH_WARN("[Netplay] %s\n", dmsg);
+      runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 
 #ifdef HAVE_DISCORD
    if (discord_state_get_ptr()->inited)
@@ -8239,6 +8253,7 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
       struct netplay_room *host_room = &net_st->host_room;
 
       memset(host_room, 0, sizeof(*host_room));
+      host_room->connectable = true;
 
       server = NULL;
 

@@ -9740,6 +9740,10 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
       const char *room_type;
       struct netplay_room *room = &net_st->room_list[i];
 
+      /* Get rid of any room that is not running RetroArch. */
+      if (!room->is_retroarch)
+         continue;
+
       if (room->has_password || room->has_spectate_password)
          snprintf(passworded, sizeof(passworded), "[%s] ",
             msg_hash_to_str(MSG_ROOM_PASSWORDED));
@@ -9756,8 +9760,10 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
          room_type = msg_hash_to_str(MSG_LOCAL);
       else if (room->host_method == NETPLAY_HOST_METHOD_MITM)
          room_type = msg_hash_to_str(MSG_INTERNET_RELAY);
-      else
+      else if (room->connectable)
          room_type = msg_hash_to_str(MSG_INTERNET);
+      else
+         room_type = msg_hash_to_str(MSG_INTERNET_NOT_CONNECTABLE);
 
       snprintf(buf, sizeof(buf), "%s%s: %s%s",
          passworded, room_type,

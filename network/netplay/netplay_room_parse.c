@@ -109,6 +109,9 @@ static bool netplay_json_start_object(void* ctx)
          net_st->rooms_data->cur->next = (struct netplay_room*)calloc(1, sizeof(*net_st->rooms_data->cur->next));
          net_st->rooms_data->cur       = net_st->rooms_data->cur->next;
       }
+
+      net_st->rooms_data->cur->connectable  = true;
+      net_st->rooms_data->cur->is_retroarch = true;
    }
    else if (p_ctx->state == STATE_ARRAY_START)
       p_ctx->state = STATE_OBJECT_START;
@@ -226,6 +229,14 @@ static bool netplay_json_object_member(void *ctx, const char *p_value,
          {
             p_ctx->cur_member_string = net_st->rooms_data->cur->subsystem_name;
             p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->subsystem_name);
+         }
+         else if (string_is_equal(p_value, "connectable"))
+         {
+            p_ctx->cur_member_bool   = &net_st->rooms_data->cur->connectable;
+         }
+         else if (string_is_equal(p_value, "is_retroarch"))
+         {
+            p_ctx->cur_member_bool   = &net_st->rooms_data->cur->is_retroarch;
          }
       }
    }

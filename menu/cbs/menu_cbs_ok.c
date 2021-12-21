@@ -5927,6 +5927,8 @@ static void netplay_refresh_lan_cb(retro_task_t *task,
             sizeof(room->address));
          room->has_password = host->has_password;
          room->has_spectate_password = host->has_spectate_password;
+         room->connectable = true;
+         room->is_retroarch = true;
          room->lan = true;
       }
    }

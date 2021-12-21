@@ -164,6 +164,8 @@ struct netplay_room
    char mitm_session      [33];
    bool has_password;
    bool has_spectate_password;
+   bool connectable;
+   bool is_retroarch;
    bool lan;
 };
 
