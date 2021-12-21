@@ -28,7 +28,6 @@
 #include <retro_math.h>
 #include <retro_timers.h>
 #include <net/net_http.h>
-#include <network/netplay/netplay.h>
 #include <libretro.h>
 #include <lrc_hash.h>
 
@@ -55,6 +54,8 @@
 #include "cheevos.h"
 #include "cheevos_client.h"
 #include "cheevos_locals.h"
+
+#include "../network/netplay/netplay.h"
 
 #include "../audio/audio_driver.h"
 #include "../file_path_special.h"
