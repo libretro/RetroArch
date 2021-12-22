@@ -1053,8 +1053,6 @@ static bool content_file_load(
                // I am genuinely really proud of these work arounds
                wchar_t wcontent_path[MAX_PATH];
                mbstowcs(wcontent_path, content_path, MAX_PATH);
-               wchar_t wuwp_dir_data[MAX_PATH];
-               mbstowcs(wuwp_dir_data, uwp_dir_data, MAX_PATH);
                uwp_set_acl(wcontent_path, L"S-1-15-2-1");
                if (!is_path_accessible_using_standard_io(content_path))
                {
@@ -1080,6 +1078,15 @@ static bool content_file_load(
                         "but cache directory was not set or found. "
                         "Setting cache directory to root of writable app directory...\n");
                      strlcpy(new_basedir, uwp_dir_data, sizeof(new_basedir));
+                     strcat(new_basedir, "VFSCACHE\\");
+                     DWORD dwAttrib = GetFileAttributes(new_basedir);
+                     if ((dwAttrib == INVALID_FILE_ATTRIBUTES) || (!(dwAttrib & FILE_ATTRIBUTE_DIRECTORY)))
+                     {
+                        if (!CreateDirectoryA(new_basedir, NULL))
+                        {
+                           strlcpy(new_basedir, uwp_dir_data, sizeof(new_basedir));
+                        }
+                     }
                   }
                   fill_pathname_join(new_path, new_basedir,
                      path_basename(content_path), sizeof(new_path));

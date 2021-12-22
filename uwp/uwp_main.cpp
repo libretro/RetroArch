@@ -50,6 +50,7 @@ using namespace Windows::Foundation;
 using namespace Windows::Foundation::Collections;
 using namespace Windows::Graphics::Display;
 using namespace Windows::Devices::Enumeration;
+using namespace Windows::Storage;
 
 char uwp_dir_install[PATH_MAX_LENGTH] = { 0 };
 char uwp_dir_data[PATH_MAX_LENGTH]    = { 0 };
@@ -216,6 +217,21 @@ int main(Platform::Array<Platform::String^>^)
 	wcstombs(uwp_dir_install, install_dir->Data(), sizeof(uwp_dir_install));
 	Platform::String^ data_dir = Windows::Storage::ApplicationData::Current->LocalFolder->Path + L"\\";
 	wcstombs(uwp_dir_data, data_dir->Data(), sizeof(uwp_dir_data));
+
+
+	// delete vfs cache dir, we do this because this allows a far far more consise implementation than manually implementing a function to do this
+	// this may be a little slower but shouldn't really matter as the cache dir should never have more than a few items
+	Platform::String^ vfs_dir = Windows::Storage::ApplicationData::Current->LocalFolder->Path + L"\\VFSCACHE";
+	char vfs_cache_dir[MAX_PATH];
+	wcstombs(vfs_cache_dir, vfs_dir->Data(), sizeof(vfs_cache_dir));
+	DWORD dwAttrib = GetFileAttributesA(vfs_cache_dir);
+	if ((dwAttrib != INVALID_FILE_ATTRIBUTES) && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY))
+	{
+		concurrency::task<StorageFolder^> vfsdirtask = concurrency::create_task(StorageFolder::GetFolderFromPathAsync(vfs_dir));
+		vfsdirtask.wait();
+		StorageFolder^ vfsdir = vfsdirtask.get();
+		vfsdir->DeleteAsync();
+	}
 
 	wcstombs(uwp_device_family,
          AnalyticsInfo::VersionInfo->DeviceFamily->Data(),
