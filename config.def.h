@@ -425,10 +425,10 @@
 #define DEFAULT_VIDEO_HDR_ENABLE false
 
 /* The maximum nunmber of nits the actual display can show - needs to be calibrated */
-#define DEFAULT_VIDEO_HDR_MAX_NITS 1000.0f
+#define DEFAULT_VIDEO_HDR_MAX_NITS 700.0f
 
 /* The number of nits that paper white is at */
-#define DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS 200.0f
+#define DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS 400.0f
 
 /* The contrast setting for hdr used to calculate the display gamma by dividing this value by gamma 2.2  */
 #define DEFAULT_VIDEO_HDR_CONTRAST 5.0f

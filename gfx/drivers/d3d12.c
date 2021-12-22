@@ -302,7 +302,32 @@ static void d3d12_set_hdr_expand_gamut(void* data, bool expand_gamut)
    dxgi_hdr_uniform_t *mapped_ubo         = NULL;
    d3d12_video_t *d3d12                   = (d3d12_video_t*)data;
 
-   d3d12->hdr.ubo_values.expand_gamut     = expand_gamut;
+   d3d12->hdr.ubo_values.expand_gamut     = expand_gamut ? 1.0f : 0.0f;
+
+   D3D12Map(d3d12->hdr.ubo, 0, &read_range, (void**)&mapped_ubo);
+   *mapped_ubo = d3d12->hdr.ubo_values;
+   D3D12Unmap(d3d12->hdr.ubo, 0, NULL);
+}
+
+static void d3d12_set_hdr_inverse_tonemap(d3d12_video_t* d3d12, bool inverse_tonemap)
+{
+   D3D12_RANGE read_range                 = { 0, 0 };
+   dxgi_hdr_uniform_t *mapped_ubo         = NULL;
+
+   d3d12->hdr.ubo_values.inverse_tonemap  = inverse_tonemap ? 1.0f : 0.0f;
+
+   D3D12Map(d3d12->hdr.ubo, 0, &read_range, (void**)&mapped_ubo);
+   *mapped_ubo = d3d12->hdr.ubo_values;
+   D3D12Unmap(d3d12->hdr.ubo, 0, NULL);
+}
+
+static void d3d12_set_hdr10(d3d12_video_t* d3d12, bool hdr10)
+{
+   D3D12_RANGE read_range                 = { 0, 0 };
+   dxgi_hdr_uniform_t *mapped_ubo         = NULL;
+
+   d3d12->hdr.ubo_values.hdr10            = hdr10 ? 1.0f : 0.0f;
+
    D3D12Map(d3d12->hdr.ubo, 0, &read_range, (void**)&mapped_ubo);
    *mapped_ubo = d3d12->hdr.ubo_values;
    D3D12Unmap(d3d12->hdr.ubo, 0, NULL);
@@ -596,6 +621,29 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
                &d3d12->pass[i].buffers[j]);
       }
    }
+
+   if (d3d12->hdr.enable)
+   {
+      if(d3d12->shader_preset && d3d12->shader_preset->passes && (d3d12->pass[d3d12->shader_preset->passes - 1].semantics.format == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32))
+      {
+         /* If the last shader pass uses a RGB10A2 back buffer and hdr has been enabled assume we want to skip the inverse tonemapper and hdr10 conversion */
+         d3d12_set_hdr_inverse_tonemap(d3d12, false);
+         d3d12_set_hdr10(d3d12, false);
+         d3d12->resize_chain = true;
+      }
+      else if(d3d12->shader_preset && d3d12->shader_preset->passes && (d3d12->pass[d3d12->shader_preset->passes - 1].semantics.format == SLANG_FORMAT_R16G16B16A16_SFLOAT))
+      {
+         /* If the last shader pass uses a RGBA16 back buffer and hdr has been enabled assume we want to skip the inverse tonemapper */
+         d3d12_set_hdr_inverse_tonemap(d3d12, false);
+         d3d12_set_hdr10(d3d12, true);
+         d3d12->resize_chain = true;
+      }
+      else
+      {
+         d3d12_set_hdr_inverse_tonemap(d3d12, true);
+         d3d12_set_hdr10(d3d12, true);
+      }
+   } 
 
    for (i = 0; i < d3d12->shader_preset->luts; i++)
    {
@@ -1157,6 +1205,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
    d3d12->hdr.ubo_values.contrast         = VIDEO_HDR_MAX_CONTRAST - settings->floats.video_hdr_display_contrast;
    d3d12->hdr.ubo_values.expand_gamut     = settings->bools.video_hdr_expand_gamut;
    d3d12->hdr.ubo_values.inverse_tonemap  = 1.0f;     /* Use this to turn on/off the inverse tonemap */
+   d3d12->hdr.ubo_values.hdr10            = 1.0f;     /* Use this to turn on/off the hdr10 */
 
    {
       dxgi_hdr_uniform_t* mapped_ubo;
@@ -1430,7 +1479,7 @@ static bool d3d12_gfx_frame(
                0, sizeof(d3d12->chain.back_buffer));
          d3d12->chain.back_buffer.desc.Width  = video_width;
          d3d12->chain.back_buffer.desc.Height = video_height;
-         d3d12->chain.back_buffer.desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+         d3d12->chain.back_buffer.desc.Format = d3d12->shader_preset && d3d12->shader_preset->passes ? glslang_format_to_dxgi(d3d12->pass[d3d12->shader_preset->passes - 1].semantics.format) : DXGI_FORMAT_R8G8B8A8_UNORM;
          d3d12->chain.back_buffer.desc.Flags  = 
             D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
          d3d12->chain.back_buffer.srv_heap    = &d3d12->desc.srv_heap;

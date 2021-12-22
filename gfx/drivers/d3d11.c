@@ -326,7 +326,33 @@ static void d3d11_set_hdr_expand_gamut(void* data, bool expand_gamut)
    dxgi_hdr_uniform_t *ubo                = NULL;
    d3d11_video_t* d3d11                   = (d3d11_video_t*)data;
 
-   d3d11->hdr.ubo_values.expand_gamut     = expand_gamut;
+   d3d11->hdr.ubo_values.expand_gamut     = expand_gamut ? 1.0f : 0.0f;
+
+   D3D11MapBuffer(d3d11->context, d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
+   ubo  = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
+   *ubo = d3d11->hdr.ubo_values;
+   D3D11UnmapBuffer(d3d11->context, d3d11->hdr.ubo, 0);
+}
+
+static void d3d11_set_hdr_inverse_tonemap(d3d11_video_t* d3d11, bool inverse_tonemap)
+{
+   D3D11_MAPPED_SUBRESOURCE mapped_ubo;
+   dxgi_hdr_uniform_t *ubo                = NULL;
+
+   d3d11->hdr.ubo_values.inverse_tonemap  = inverse_tonemap ? 1.0f : 0.0f;
+
+   D3D11MapBuffer(d3d11->context, d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
+   ubo  = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
+   *ubo = d3d11->hdr.ubo_values;
+   D3D11UnmapBuffer(d3d11->context, d3d11->hdr.ubo, 0);
+}
+
+static void d3d11_set_hdr10(d3d11_video_t* d3d11, bool hdr10)
+{
+   D3D11_MAPPED_SUBRESOURCE mapped_ubo;
+   dxgi_hdr_uniform_t *ubo                = NULL;
+
+   d3d11->hdr.ubo_values.hdr10  = hdr10 ? 1.0f : 0.0f;
 
    D3D11MapBuffer(d3d11->context, d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
    ubo  = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
@@ -611,6 +637,29 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             continue;
 
          D3D11CreateBuffer(d3d11->device, &desc, NULL, &d3d11->pass[i].buffers[j]);
+      }
+   }
+
+   if (d3d11->hdr.enable)
+   {
+      if(d3d11->shader_preset && d3d11->shader_preset->passes && (d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32))
+      {
+         /* If the last shader pass uses a RGB10A2 back buffer and hdr has been enabled assume we want to skip the inverse tonemapper and hdr10 conversion */
+         d3d11_set_hdr_inverse_tonemap(d3d11, false);
+         d3d11_set_hdr10(d3d11, false);
+         d3d11->resize_chain = true;
+      }
+      else if(d3d11->shader_preset && d3d11->shader_preset->passes && (d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format == SLANG_FORMAT_R16G16B16A16_SFLOAT))
+      {
+         /* If the last shader pass uses a RGBA16 back buffer and hdr has been enabled assume we want to skip the inverse tonemapper */
+         d3d11_set_hdr_inverse_tonemap(d3d11, false);
+         d3d11_set_hdr10(d3d11, true);
+         d3d11->resize_chain = true;
+      }
+      else
+      {
+         d3d11_set_hdr_inverse_tonemap(d3d11, true);
+         d3d11_set_hdr10(d3d11, true);
       }
    }
 
@@ -1000,7 +1049,7 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    memset(&d3d11->back_buffer, 0, sizeof(d3d11->back_buffer));
    d3d11->back_buffer.desc.Width              = width;
    d3d11->back_buffer.desc.Height             = height;
-   d3d11->back_buffer.desc.Format             = DXGI_FORMAT_R8G8B8A8_UNORM;
+   d3d11->back_buffer.desc.Format             = d3d11->shader_preset && d3d11->shader_preset->passes ? glslang_format_to_dxgi(d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format) : DXGI_FORMAT_R8G8B8A8_UNORM;
    d3d11->back_buffer.desc.BindFlags          = D3D11_BIND_RENDER_TARGET;
    d3d11_init_texture(d3d11->device, &d3d11->back_buffer);            
 #endif
@@ -1162,6 +1211,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
       d3d11->hdr.ubo_values.expand_gamut    =
          settings->bools.video_hdr_expand_gamut;
       d3d11->hdr.ubo_values.inverse_tonemap = 1.0f;  /* Use this to turn on/off the inverse tonemap */
+      d3d11->hdr.ubo_values.hdr10           = 1.0f;  /* Use this to turn on/off the hdr10 */
 
       desc.ByteWidth                       = sizeof(dxgi_hdr_uniform_t);
       desc.Usage                           = D3D11_USAGE_DYNAMIC;
@@ -1743,7 +1793,7 @@ static bool d3d11_gfx_frame(
          memset(&d3d11->back_buffer, 0, sizeof(d3d11->back_buffer));
          d3d11->back_buffer.desc.Width              = video_width;
          d3d11->back_buffer.desc.Height             = video_height;
-         d3d11->back_buffer.desc.Format             = DXGI_FORMAT_R8G8B8A8_UNORM;
+         d3d11->back_buffer.desc.Format             = d3d11->shader_preset && d3d11->shader_preset->passes ? glslang_format_to_dxgi(d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format) : DXGI_FORMAT_R8G8B8A8_UNORM;
          d3d11->back_buffer.desc.BindFlags          = D3D11_BIND_RENDER_TARGET;
          d3d11_init_texture(d3d11->device, &d3d11->back_buffer);
 
