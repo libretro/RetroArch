@@ -93,7 +93,7 @@ static void handle_toplevel_config_common(void *data,
 
 #ifdef HAVE_EGL
    if (wl->win)
-      wl_egl_window_resize(wl->win, width, height, 0, 0);
+      wl_egl_window_resize(wl->win, wl->width, wl->height, 0, 0);
    else
       wl->win = wl_egl_window_create(wl->surface,
             wl->width * wl->buffer_scale,
