@@ -90,7 +90,7 @@
 #define SET_TCP_NODELAY(fd) \
    { \
       int on = 1; \
-      if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, \
+      if (setsockopt((fd), IPPROTO_TCP, TCP_NODELAY, \
             (const char *) &on, sizeof(on)) < 0) \
          RARCH_WARN("[Netplay] Could not set netplay TCP socket to nodelay. Expect jitter.\n"); \
    }
@@ -100,7 +100,7 @@
 
 #if defined(F_SETFD) && defined(FD_CLOEXEC)
 #define SET_FD_CLOEXEC(fd) \
-   if (fcntl(fd, F_SETFD, FD_CLOEXEC) < 0) \
+   if (fcntl((fd), F_SETFD, FD_CLOEXEC) < 0) \
       RARCH_WARN("[Netplay] Cannot set netplay port to close-on-exec. It may fail to reopen.\n");
 #else
 #define SET_FD_CLOEXEC(fd)
@@ -115,10 +115,17 @@
    } \
    else if (recvd < 0)
 
-#define SET_PING() \
-   ping = (int32_t)((cpu_features_get_time_usec() - connection->ping_timer) / 1000); \
-   if (connection->ping < 0 || ping < connection->ping) \
-      connection->ping = ping;
+#define SET_PING(connection) \
+   ping = (int32_t)((cpu_features_get_time_usec() - (connection)->ping_timer) / 1000); \
+   if ((connection)->ping < 0 || ping < (connection)->ping) \
+      (connection)->ping = ping;
+
+#define REQUIRE_PROTOCOL_VERSION(connection, version) \
+   if ((connection)->netplay_protocol >= (version))
+
+#define REQUIRE_PROTOCOL_RANGE(connection, vmin, vmax) \
+   if ((connection)->netplay_protocol >= (vmin) && \
+         (connection)->netplay_protocol <= (vmax))
 
 #define NETPLAY_MAGIC 0x52414E50 /* RANP */
 #define FULL_MAGIC    0x46554C4C /* FULL */
@@ -340,10 +347,10 @@ static bool netplay_lan_ad_client_response(void)
             continue;
 
          /* And that we know how to handle it */
-         #ifdef HAVE_INET6
+#ifdef HAVE_INET6
          if (their_addr.ss_family != AF_INET)
             continue;
-         #endif
+#endif
 
          if (!netplay_is_lan_address(
                (struct sockaddr_in *) &their_addr))
@@ -559,10 +566,10 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
          return true;
       }
 
-      #ifdef HAVE_INET6
+#ifdef HAVE_INET6
       if (their_addr.ss_family != AF_INET)
          return true;
-      #endif
+#endif
 
       if (!netplay_is_lan_address(
             (struct sockaddr_in *) &their_addr))
@@ -998,7 +1005,7 @@ bool netplay_handshake_init(netplay_t *netplay,
    else
    {
       /* Only the client is able to estimate latency at this point. */
-      SET_PING()
+      SET_PING(connection)
 
       if (netplay_magic == FULL_MAGIC)
       {
@@ -1404,7 +1411,7 @@ static bool netplay_handshake_sync(netplay_t *netplay,
 #endif
 
    /* Send our settings. */
-   if (connection->netplay_protocol >= 6)
+   REQUIRE_PROTOCOL_VERSION(connection, 6)
    {
       uint32_t allow_pausing;
       int32_t frames[2];
@@ -1472,7 +1479,7 @@ static bool netplay_handshake_pre_nick(netplay_t *netplay,
       return false;
    }
 
-   SET_PING()
+   SET_PING(connection)
 
    strlcpy(connection->nick, nick_buf.nick,
       sizeof(connection->nick));
@@ -1620,7 +1627,7 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
    if (netplay->is_server)
    {
       /* Only the server is able to estimate latency at this point. */
-      SET_PING()
+      SET_PING(connection)
    }
 
    cmd_size = ntohl(info_buf.cmd[1]);
@@ -4767,19 +4774,24 @@ static bool chat_check(netplay_t *netplay)
       for (i = 0; i < netplay->connections_size; i++)
       {
          struct netplay_connection *conn = &netplay->connections[i];
-         if (conn->active && conn->netplay_protocol >= 6 &&
+         if (conn->active &&
                (conn->mode == NETPLAY_CONNECTION_PLAYING ||
                   conn->mode == NETPLAY_CONNECTION_SLAVE))
-            return true;
+         {
+            REQUIRE_PROTOCOL_VERSION(conn, 6)
+               return true;
+         }
       }
    }
    /* Otherwise, just check whether our connection is active
       and the server is running protocol 6+. */
    else
    {
-      if (netplay->connections[0].active &&
-            netplay->connections[0].netplay_protocol >= 6)
-         return true;
+      if (netplay->connections[0].active)
+      {
+         REQUIRE_PROTOCOL_VERSION(&netplay->connections[0], 6)
+            return true;
+      }
    }
 
    return false;
@@ -4802,11 +4814,14 @@ static void relay_chat(netplay_t *netplay,
       struct netplay_connection *conn = &netplay->connections[i];
       /* Only playing clients can receive chat.
          Protocol 6+ is required. */
-      if (conn->active && conn->netplay_protocol >= 6 &&
+      if (conn->active &&
             (conn->mode == NETPLAY_CONNECTION_PLAYING ||
                conn->mode == NETPLAY_CONNECTION_SLAVE))
-         netplay_send_raw_cmd(netplay, conn,
-            NETPLAY_CMD_PLAYER_CHAT, data, NETPLAY_NICK_LEN + msg_len);
+      {
+         REQUIRE_PROTOCOL_VERSION(conn, 6)
+            netplay_send_raw_cmd(netplay, conn,
+               NETPLAY_CMD_PLAYER_CHAT, data, NETPLAY_NICK_LEN + msg_len);
+      }
    }
    /* We don't flush. Chat is not time essential. */
 }
@@ -4916,40 +4931,46 @@ static bool handle_chat(netplay_t *netplay,
       struct netplay_connection *connection,
       const char *nick, const char *msg)
 {
-   if (!connection->active || connection->netplay_protocol < 6 ||
+   if (!connection->active ||
          string_is_empty(nick) || string_is_empty(msg))
       return false;
 
-   /* Client sent a chat message;
-      Relay it to the other clients,
-      including the one who sent it. */
-   if (netplay->is_server)
+   REQUIRE_PROTOCOL_VERSION(connection, 6)
    {
-      /* Only playing clients can send chat. */
-      if (connection->mode != NETPLAY_CONNECTION_PLAYING &&
-         connection->mode != NETPLAY_CONNECTION_SLAVE)
-         return false;
+      /* Client sent a chat message;
+         Relay it to the other clients,
+         including the one who sent it. */
+      if (netplay->is_server)
+      {
+         /* Only playing clients can send chat. */
+         if (connection->mode != NETPLAY_CONNECTION_PLAYING &&
+               connection->mode != NETPLAY_CONNECTION_SLAVE)
+            return false;
 
-      relay_chat(netplay, nick, msg);
+         relay_chat(netplay, nick, msg);
+      }
+
+      /* If we still got a message even though we are not playing,
+         ignore it! */
+      if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING ||
+            netplay->self_mode == NETPLAY_CONNECTION_SLAVE)
+         show_chat(nick, msg);
+
+      return true;
    }
 
-   /* If we still got a message even though we are not playing,
-      ignore it! */
-   if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING ||
-         netplay->self_mode == NETPLAY_CONNECTION_SLAVE)
-      show_chat(nick, msg);
-
-   return true;
+   return false;
 }
 
 static void request_ping(netplay_t *netplay,
       struct netplay_connection *connection)
 {
-   /* Only protocol 6+ supports the ping command. */
-   if (!connection->active || connection->netplay_protocol < 6)
+   if (!connection->active ||
+         connection->mode < NETPLAY_CONNECTION_CONNECTED)
       return;
 
-   if (connection->mode >= NETPLAY_CONNECTION_CONNECTED)
+   /* Only protocol 6+ supports the ping command. */
+   REQUIRE_PROTOCOL_VERSION(connection, 6)
    {
       connection->ping_timer = cpu_features_get_time_usec();
 
@@ -8787,11 +8808,14 @@ const gfx_widget_t gfx_widget_netplay_ping = {
 #undef FULL_MAGIC
 #undef POKE_MAGIC
 
+#undef REQUIRE_PROTOCOL_VERSION
+#undef REQUIRE_PROTOCOL_RANGE
+
 #undef SET_PING
 
 #undef SET_FD_CLOEXEC
 #undef SET_TCP_NODELAY
 
-#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY) && !defined(_3DS)
+#ifdef HAVE_INET6
 #undef HAVE_INET6
 #endif
