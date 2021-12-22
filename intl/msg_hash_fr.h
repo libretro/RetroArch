@@ -2599,6 +2599,14 @@ MSG_HASH(
    "Active/désactive l'indicateur d'état des images par seconde."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE,
+   "Afficher les statistiques techniques (activer/désactiver)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
+   "Active/désactive l'affichage des statistiques techniques à l'écran."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
    "Afficher le Ping du jeu en réseau (activer/désactiver)"
    )

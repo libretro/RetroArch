@@ -2551,6 +2551,14 @@ MSG_HASH(
    "Włącza/wyłącza wskaźnik statusu \"klatki na sekundę\"."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE,
+   "Pokaż statystyki techniczne (przełącznik)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
+   "Włącza/wyłącza wyświetlanie statystyk technicznych na ekranie."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
    "Pokaż Ping Netplay (Przełącz)"
    )
@@ -10058,6 +10066,10 @@ MSG_HASH(
    "Oczekiwanie na klienta..."
    )
 MSG_HASH(
+   MSG_ROOM_NOT_CONNECTABLE,
+   "Twój pokój nie jest podłączony z Internetu."
+   )
+MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    "Opuściłeś grę"
    )
@@ -11870,6 +11882,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    "Pokaż opcję \"Zamknięcie\"."
+   )
+MSG_HASH(
+   MSG_INTERNET_NOT_CONNECTABLE,
+   "Internet (Nie podłączony)"
    )
 MSG_HASH(
    MSG_LOCAL,

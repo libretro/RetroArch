@@ -10250,6 +10250,10 @@ MSG_HASH(
    "İstemci bekleniyor..."
    )
 MSG_HASH(
+   MSG_ROOM_NOT_CONNECTABLE,
+   "Kurduğunuz oda internete bağlanamıyor."
+   )
+MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    "Oyundan ayrıldın"
    )
@@ -12118,6 +12122,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_INTERNET_RELAY,
    "İnternet (Röle)"
+   )
+MSG_HASH(
+   MSG_INTERNET_NOT_CONNECTABLE,
+   "İnternet (Bağlanmadı)"
    )
 MSG_HASH(
    MSG_LOCAL,

@@ -2611,6 +2611,14 @@ MSG_HASH(
    "Activa o desactiva el indicador de fotogramas por segundo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE,
+   "Mostrar estadísticas técnicas"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
+   "Muestra estadísticas técnicas en pantalla."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
    "Mostrar latencia de juego en red"
    )
@@ -10146,6 +10154,10 @@ MSG_HASH(
    "Esperando al cliente..."
    )
 MSG_HASH(
+   MSG_ROOM_NOT_CONNECTABLE,
+   "Tu sala no está conectada a internet."
+   )
+MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    "Has abandonado la partida"
    )
@@ -12014,6 +12026,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_INTERNET_RELAY,
    "Internet (relé)"
+   )
+MSG_HASH(
+   MSG_INTERNET_NOT_CONNECTABLE,
+   "Internet (no hay conexión)"
    )
 MSG_HASH(
    MSG_READ_WRITE,

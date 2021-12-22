@@ -10114,6 +10114,10 @@ MSG_HASH(
    "Aguardando pelo cliente..."
    )
 MSG_HASH(
+   MSG_ROOM_NOT_CONNECTABLE,
+   "Sua sala não está conectada na internet."
+   )
+MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    "Você deixou o jogo"
    )
@@ -11970,6 +11974,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_INTERNET_RELAY,
    "Internet (retransmitir)"
+   )
+MSG_HASH(
+   MSG_INTERNET_NOT_CONNECTABLE,
+   "Internet (não há conexão)"
    )
 MSG_HASH(
    MSG_READ_WRITE,
