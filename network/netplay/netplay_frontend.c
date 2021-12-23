@@ -7854,8 +7854,8 @@ static void netplay_announce(netplay_t *netplay)
    char *gamename                   = NULL;
    char *subsystemname              = NULL;
    char *frontend_ident             = NULL;
-   char *mitm_session               = NULL;
-   const char *mitm_custom_addr     = NULL;
+   char *mitm_session               = "";
+   const char *mitm_custom_addr     = "";
    int mitm_custom_port             = 0;
    int is_mitm                      = 0;
    settings_t *settings             = config_get_ptr();
