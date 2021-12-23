@@ -241,8 +241,7 @@ bool init_netplay_discovery(void)
    int fd                     = socket_init(
       (void **) &addr, 0, NULL,
       SOCKET_TYPE_DATAGRAM);
-   bool ret                   = fd >= 0 &&
-      socket_bind(fd, addr);
+   bool ret                   = fd >= 0;
 
    if (ret)
    {
@@ -250,7 +249,8 @@ bool init_netplay_discovery(void)
 #if defined(_WIN32) && defined(IP_MULTICAST_IF)
       MIB_IPFORWARDROW ip_forward;
 
-      if (GetBestRoute(0xDFFFFFFF, 0, &ip_forward) == NO_ERROR)
+      if (GetBestRoute(inet_addr("223.255.255.255"),
+         0, &ip_forward) == NO_ERROR)
       {
          IF_INDEX         index = ip_forward.dwForwardIfIndex;
          PMIB_IPADDRTABLE table = malloc(sizeof(MIB_IPADDRTABLE));
@@ -306,16 +306,11 @@ bool init_netplay_discovery(void)
       }
 #endif
 
-      if (!socket_bind(fd, addr))
-      {
-         socket_close(fd);
-         net_st->lan_ad_client_fd = -1;
-         return false;
-      }
-
       net_st->lan_ad_client_fd = fd;
+
+      ret = socket_bind(fd, addr);
    }
-   else
+   if (!ret)
    {
       if (fd >= 0)
          socket_close(fd);
