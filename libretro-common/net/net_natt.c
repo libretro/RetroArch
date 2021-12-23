@@ -35,8 +35,10 @@
 
 #include <net/net_natt.h>
 
+#if !defined(_MSC_VER) || _MSC_VER > 1400
 #if !defined(HAVE_SOCKET_LEGACY) && defined(_WIN32) && defined(IP_MULTICAST_IF)
 #include <iphlpapi.h>
+#endif
 #endif
 
 static natt_state_t natt_st = {{0}, {{0}}, 0, -1};
@@ -56,8 +58,10 @@ bool natt_init(void)
       "MX: 2\r\n"
       "ST: urn:schemas-upnp-org:device:InternetGatewayDevice:1\r\n";
    static struct sockaddr_in msearch_addr = {0};
+#if !defined(_MSC_VER) || _MSC_VER > 1400
 #if defined(_WIN32) && defined(IP_MULTICAST_IF)
    MIB_IPFORWARDROW ip_forward;
+#endif
 #endif
    natt_state_t *st                       = &natt_st;
    struct addrinfo *bind_addr             = NULL;
@@ -88,6 +92,7 @@ bool natt_init(void)
    if (!bind_addr)
       goto failure;
 
+#if !defined(_MSC_VER) || _MSC_VER > 1400
 #if defined(_WIN32) && defined(IP_MULTICAST_IF)
    if (GetBestRoute(0xDFFFFFFF, 0, &ip_forward) == NO_ERROR)
    {
@@ -132,6 +137,7 @@ bool natt_init(void)
          free(table);
       }
    }
+#endif
 #endif
 
 #ifdef IP_MULTICAST_TTL
