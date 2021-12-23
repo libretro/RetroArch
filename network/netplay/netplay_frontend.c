@@ -41,6 +41,10 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 
+#if defined(_WIN32) && defined(IP_MULTICAST_IF)
+#include <iphlpapi.h>
+#endif
+
 #ifdef HAVE_DISCORD
 #include "../discord.h"
 #endif
@@ -240,13 +244,70 @@ bool init_netplay_discovery(void)
 
    if (ret)
    {
+#if defined(_WIN32) && defined(IP_MULTICAST_IF)
+      MIB_IPFORWARDROW ip_forward;
+
+      if (GetBestRoute(0xDFFFFFFF, 0, &ip_forward) == NO_ERROR)
+      {
+         IF_INDEX         index = ip_forward.dwForwardIfIndex;
+         PMIB_IPADDRTABLE table = malloc(sizeof(MIB_IPADDRTABLE));
+
+         if (table)
+         {
+            DWORD len    = sizeof(*table);
+            DWORD result = GetIpAddrTable(table, &len, FALSE);
+
+            if (result == ERROR_INSUFFICIENT_BUFFER)
+            {
+               PMIB_IPADDRTABLE new_table = realloc(table, len);
+
+               if (new_table) 
+               {
+                  table  = new_table;
+                  result = GetIpAddrTable(table, &len, FALSE);
+               }
+            }
+
+            if (result == NO_ERROR)
+            {
+               DWORD i;
+
+               for (i = 0; i < table->dwNumEntries; i++)
+               {
+                  PMIB_IPADDRROW ip_addr = &table->table[i];
+
+                  if (ip_addr->dwIndex == index)
+                  {
+                     setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IF,
+                        (const char *) &ip_addr->dwAddr, sizeof(ip_addr->dwAddr));
+                     ((struct sockaddr_in *) addr->ai_addr)->sin_addr.s_addr =
+                        ip_addr->dwAddr;
+                     break;
+                  }
+               }
+            }
+
+            free(table);
+         }
+      }
+#endif
+
 #if defined(SOL_SOCKET) && defined(SO_BROADCAST)
       /* Make it broadcastable */
-      int broadcast = 1;
-      if (setsockopt(fd, SOL_SOCKET, SO_BROADCAST,
-            (const char *) &broadcast, sizeof(broadcast)) < 0)
-         RARCH_WARN("[Discovery] Failed to set netplay discovery port to broadcast.\n");
+      {
+         int broadcast = 1;
+         if (setsockopt(fd, SOL_SOCKET, SO_BROADCAST,
+               (const char *) &broadcast, sizeof(broadcast)) < 0)
+            RARCH_WARN("[Discovery] Failed to set netplay discovery port to broadcast.\n");
+      }
 #endif
+
+      if (!socket_bind(fd, addr))
+      {
+         socket_close(fd);
+         net_st->lan_ad_client_fd = -1;
+         return false;
+      }
 
       net_st->lan_ad_client_fd = fd;
    }
@@ -7854,7 +7915,7 @@ static void netplay_announce(netplay_t *netplay)
    char *gamename                   = NULL;
    char *subsystemname              = NULL;
    char *frontend_ident             = NULL;
-   char *mitm_session               = "";
+   char *mitm_session               = NULL;
    const char *mitm_custom_addr     = "";
    int mitm_custom_port             = 0;
    int is_mitm                      = 0;
@@ -7928,6 +7989,10 @@ static void netplay_announce(netplay_t *netplay)
          mitm_custom_addr = host_room->mitm_address;
          mitm_custom_port = host_room->mitm_port;
       }
+   }
+   else
+   {
+      net_http_urlencode(&mitm_session, "");
    }
 
    snprintf(buf, sizeof(buf),

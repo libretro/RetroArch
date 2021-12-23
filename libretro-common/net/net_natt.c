@@ -35,6 +35,10 @@
 
 #include <net/net_natt.h>
 
+#if !defined(HAVE_SOCKET_LEGACY) && defined(_WIN32) && defined(IP_MULTICAST_IF)
+#include <iphlpapi.h>
+#endif
+
 static natt_state_t natt_st = {{0}, {{0}}, 0, -1};
 
 natt_state_t *natt_state_get_ptr(void)
@@ -52,6 +56,9 @@ bool natt_init(void)
       "MX: 2\r\n"
       "ST: urn:schemas-upnp-org:device:InternetGatewayDevice:1\r\n";
    static struct sockaddr_in msearch_addr = {0};
+#if defined(_WIN32) && defined(IP_MULTICAST_IF)
+   MIB_IPFORWARDROW ip_forward;
+#endif
    natt_state_t *st                       = &natt_st;
    struct addrinfo *bind_addr             = NULL;
 
@@ -80,6 +87,52 @@ bool natt_init(void)
       goto failure;
    if (!bind_addr)
       goto failure;
+
+#if defined(_WIN32) && defined(IP_MULTICAST_IF)
+   if (GetBestRoute(0xDFFFFFFF, 0, &ip_forward) == NO_ERROR)
+   {
+      IF_INDEX         index = ip_forward.dwForwardIfIndex;
+      PMIB_IPADDRTABLE table = malloc(sizeof(MIB_IPADDRTABLE));
+
+      if (table)
+      {
+         DWORD len    = sizeof(*table);
+         DWORD result = GetIpAddrTable(table, &len, FALSE);
+
+         if (result == ERROR_INSUFFICIENT_BUFFER)
+         {
+            PMIB_IPADDRTABLE new_table = realloc(table, len);
+
+            if (new_table) 
+            {
+               table  = new_table;
+               result = GetIpAddrTable(table, &len, FALSE);
+            }
+         }
+
+         if (result == NO_ERROR)
+         {
+            DWORD i;
+
+            for (i = 0; i < table->dwNumEntries; i++)
+            {
+               PMIB_IPADDRROW ip_addr = &table->table[i];
+
+               if (ip_addr->dwIndex == index)
+               {
+                  setsockopt(st->fd, IPPROTO_IP, IP_MULTICAST_IF,
+                     (const char *) &ip_addr->dwAddr, sizeof(ip_addr->dwAddr));
+                  ((struct sockaddr_in *) bind_addr->ai_addr)->sin_addr.s_addr =
+                     ip_addr->dwAddr;
+                  break;
+               }
+            }
+         }
+
+         free(table);
+      }
+   }
+#endif
 
 #ifdef IP_MULTICAST_TTL
    {
