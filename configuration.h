@@ -455,6 +455,7 @@ typedef struct settings
       char netplay_spectate_password[128];
 
       char netplay_server[255];
+      char netplay_custom_mitm_server[255];
       char network_buildbot_url[255];
       char network_buildbot_assets_url[255];
 

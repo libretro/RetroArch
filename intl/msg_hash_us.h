@@ -5275,6 +5275,14 @@ MSG_HASH(
    "Choose a specific relay server to use. Geographically closer locations tend to have lower latency."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
+   "Custom Relay Server Address"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
+   "Input the address of your custom relay server here. Format: address or address|port"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
    "Server Address"
    )

@@ -1456,7 +1456,8 @@ static struct config_path_setting *populate_settings_path(
    SETTING_PATH("core_updater_buildbot_cores_url", settings->paths.network_buildbot_url, false, NULL, true);
    SETTING_PATH("core_updater_buildbot_assets_url", settings->paths.network_buildbot_assets_url, false, NULL, true);
 #ifdef HAVE_NETWORKING
-   SETTING_PATH("netplay_ip_address",       settings->paths.netplay_server, false, NULL, true);
+   SETTING_PATH("netplay_ip_address",         settings->paths.netplay_server, false, NULL, true);
+   SETTING_PATH("netplay_custom_mitm_server", settings->paths.netplay_custom_mitm_server, false, NULL, true);
    SETTING_PATH("netplay_password",           settings->paths.netplay_password, false, NULL, true);
    SETTING_PATH("netplay_spectate_password",  settings->paths.netplay_spectate_password, false, NULL, true);
 #endif
