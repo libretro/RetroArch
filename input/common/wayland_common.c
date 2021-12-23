@@ -21,6 +21,10 @@
 
 #include <string/stdstring.h>
 
+#ifdef HAVE_LIBDECOR
+#include <libdecor.h>
+#endif
+
 #include "wayland_common.h"
 
 #include "../input_keymaps.h"
@@ -208,7 +212,11 @@ static void pointer_handle_button(void *data,
 
             if (BIT_GET(wl->input.key_state, KEY_LEFTALT))
             {
+#ifdef HAVE_LIBDECOR
+               libdecor_frame_move(wl->libdecor_frame, wl->seat, serial);
+#else
                xdg_toplevel_move(wl->xdg_toplevel, wl->seat, serial);
+#endif
             }
             break;
          case BTN_RIGHT:
