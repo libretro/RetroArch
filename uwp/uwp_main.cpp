@@ -667,10 +667,10 @@ extern "C" {
 		switch (type)
 		{
 		   case DISPLAY_METRIC_PIXEL_WIDTH:
-		      *value                 = DisplayInformation::GetForCurrentView()->ScreenWidthInRawPixels;
+		      *value                 = uwp_get_width();
 		      return true;
 		case DISPLAY_METRIC_PIXEL_HEIGHT:
-		      *value                 = DisplayInformation::GetForCurrentView()->ScreenHeightInRawPixels;
+			  *value				 = uwp_get_height();
 		      return true;
 		case DISPLAY_METRIC_MM_WIDTH:
 		      /* 25.4 mm in an inch. */
@@ -709,8 +709,8 @@ extern "C" {
 		if (is_xbox)
 		{
 			settings_t* settings = config_get_ptr();
-			*width  = settings->uints.video_fullscreen_x  != 0 ? settings->uints.video_fullscreen_x : 3840;
-			*height = settings->uints.video_fullscreen_y  != 0 ? settings->uints.video_fullscreen_y : 2160;
+			*width  = settings->uints.video_fullscreen_x  != 0 ? settings->uints.video_fullscreen_x : uwp_get_width();
+			*height = settings->uints.video_fullscreen_y  != 0 ? settings->uints.video_fullscreen_y : uwp_get_height();
 			return;
 		}
 
@@ -726,6 +726,32 @@ extern "C" {
 	void* uwp_get_corewindow(void)
 	{
 		return (void*)CoreWindow::GetForCurrentThread();
+	}
+
+	int uwp_get_height(void)
+	{
+		if (is_running_on_xbox())
+		{
+			const Windows::Graphics::Display::Core::HdmiDisplayInformation^ hdi = Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView();
+			if (hdi)
+				return Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView()->GetCurrentDisplayMode()->ResolutionHeightInRawPixels;
+		}
+		const LONG32 resolution_scale = static_cast<LONG32>(Windows::Graphics::Display::DisplayInformation::GetForCurrentView()->ResolutionScale);
+		auto surface_scale = static_cast<float>(resolution_scale) / 100.0f;
+		return static_cast<LONG32>(CoreWindow::GetForCurrentThread()->Bounds.Height * surface_scale);
+	}
+
+	int uwp_get_width(void)
+	{
+		if (is_running_on_xbox())
+		{
+			const Windows::Graphics::Display::Core::HdmiDisplayInformation^ hdi = Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView();
+			if (hdi)
+				return Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView()->GetCurrentDisplayMode()->ResolutionWidthInRawPixels;
+		}
+		const LONG32 resolution_scale = static_cast<LONG32>(Windows::Graphics::Display::DisplayInformation::GetForCurrentView()->ResolutionScale);
+		auto surface_scale = static_cast<float>(resolution_scale) / 100.0f;
+		return static_cast<LONG32>(CoreWindow::GetForCurrentThread()->Bounds.Width * surface_scale);
 	}
 
 	void uwp_fill_installed_core_packages(struct string_list *list)
