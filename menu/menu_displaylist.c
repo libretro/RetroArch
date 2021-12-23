@@ -7291,14 +7291,15 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_NETWORK_SETTINGS_LIST:
          {
-            bool netplay_allow_slaves      = settings->bools.netplay_allow_slaves;
-            bool netplay_use_mitm_server   = settings->bools.netplay_use_mitm_server;
-            bool network_cmd_enable        = settings->bools.network_cmd_enable;
+            bool netplay_allow_slaves    = settings->bools.netplay_allow_slaves;
+            bool netplay_use_mitm_server = settings->bools.netplay_use_mitm_server;
+            bool network_cmd_enable      = settings->bools.network_cmd_enable;
 
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,                               PARSE_ONLY_BOOL,   true  },
                {MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER,                               PARSE_ONLY_BOOL,   true  },
                {MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,                                   PARSE_ONLY_STRING, false},
+               {MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER,                            PARSE_ONLY_STRING, false},
                {MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS,                                    PARSE_ONLY_STRING, true},
                {MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,                                  PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_NETPLAY_MAX_CONNECTIONS,                               PARSE_ONLY_UINT,   true},
@@ -7328,6 +7329,10 @@ unsigned menu_displaylist_build_list(
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
+                     if (netplay_use_mitm_server)
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER:
                      if (netplay_use_mitm_server)
                         build_list[i].checked = true;
                      break;
@@ -9948,6 +9953,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                {MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,                               PARSE_ONLY_BOOL,   true  },
                {MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER,                               PARSE_ONLY_BOOL,   true  },
                {MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,                                   PARSE_ONLY_STRING, false},
+               {MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER,                            PARSE_ONLY_STRING, false},
                {MENU_ENUM_LABEL_NETPLAY_PASSWORD,                                      PARSE_ONLY_STRING, true},
                {MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD,                             PARSE_ONLY_STRING, true},
             };
@@ -9982,6 +9988,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                switch (build_list[i].enum_idx)
                {
                   case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
+                     if (settings->bools.netplay_use_mitm_server)
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER:
                      if (settings->bools.netplay_use_mitm_server)
                         build_list[i].checked = true;
                      break;

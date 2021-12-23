@@ -19178,6 +19178,22 @@ static bool setting_append_list(
 
             CONFIG_STRING(
                   list, list_info,
+                  settings->paths.netplay_custom_mitm_server,
+                  sizeof(settings->paths.netplay_custom_mitm_server),
+                  MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
+                  "",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+
+            CONFIG_STRING(
+                  list, list_info,
                   settings->paths.netplay_server,
                   sizeof(settings->paths.netplay_server),
                   MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS,

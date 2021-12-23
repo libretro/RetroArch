@@ -3931,6 +3931,10 @@ MSG_HASH(
    "netplay_mitm_server"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER,
+   "netplay_custom_mitm_server"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_ADD_TO_MIXER,
    "audio_add_to_mixer"
    )

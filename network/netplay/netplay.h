@@ -141,6 +141,7 @@ static const mitm_server_t netplay_mitm_server_list[] = {
    { "madrid", "Madrid, Spain" },
    { "saopaulo", "Sao Paulo, Brazil" },
    { "singapore", "Singapore" },
+   { "custom", "Custom" },
 };
 
 struct netplay_room

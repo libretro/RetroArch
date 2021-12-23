@@ -7855,6 +7855,9 @@ static void netplay_announce(netplay_t *netplay)
    char *subsystemname              = NULL;
    char *frontend_ident             = NULL;
    char *mitm_session               = NULL;
+   const char *mitm_custom_addr     = NULL;
+   int mitm_custom_port             = 0;
+   int is_mitm                      = 0;
    settings_t *settings             = config_get_ptr();
    net_driver_state_t *net_st       = &networking_driver_st;
    struct netplay_room *host_room   = &net_st->host_room;
@@ -7915,7 +7918,17 @@ static void netplay_announce(netplay_t *netplay)
          sizeof(frontend_architecture));
    net_http_urlencode(&frontend_ident, frontend_architecture);
 
-   net_http_urlencode(&mitm_session, host_room->mitm_session);
+   if (!string_is_empty(host_room->mitm_session))
+   {
+      is_mitm = 1;
+      net_http_urlencode(&mitm_session, host_room->mitm_session);
+
+      if (string_is_equal(host_room->mitm_handle, "custom"))
+      {
+         mitm_custom_addr = host_room->mitm_address;
+         mitm_custom_port = host_room->mitm_port;
+      }
+   }
 
    snprintf(buf, sizeof(buf),
       "username=%s&"
@@ -7931,7 +7944,9 @@ static void netplay_announce(netplay_t *netplay)
       "retroarch_version=%s&"
       "frontend=%s&"
       "subsystem_name=%s&"
-      "mitm_session=%s",
+      "mitm_session=%s&"
+      "mitm_custom_addr=%s&"
+      "mitm_custom_port=%d",
       username,
       corename,
       coreversion,
@@ -7941,11 +7956,13 @@ static void netplay_announce(netplay_t *netplay)
       host_room->mitm_handle,
       !string_is_empty(settings->paths.netplay_password) ? 1 : 0,
       !string_is_empty(settings->paths.netplay_spectate_password) ? 1 : 0,
-      !string_is_empty(host_room->mitm_session) ? 1 : 0,
+      is_mitm,
       PACKAGE_VERSION,
       frontend_ident,
       subsystemname,
-      mitm_session);
+      mitm_session,
+      mitm_custom_addr,
+      mitm_custom_port);
 
    free(username);
    free(corename);
@@ -8019,26 +8036,52 @@ static void netplay_mitm_query_cb(retro_task_t *task, void *task_data,
 
 static bool netplay_mitm_query(const char *mitm_name)
 {
-   char query[512];
    net_driver_state_t  *net_st    = &networking_driver_st;
    struct netplay_room *host_room = &net_st->host_room;
-#ifndef NETPLAY_TEST_BUILD
-   const char          *url       = "http://lobby.libretro.com/tunnel";
-#else
-   const char          *url       = "http://lobbytest.libretro.com/tunnel";
-#endif
 
    if (string_is_empty(mitm_name))
       return false;
 
-   snprintf(query, sizeof(query), "%s?name=%s", url, mitm_name);
+   /* We don't need to query,
+      if we are using a custom relay server. */
+   if (string_is_equal(mitm_name, "custom"))
+   {
+      char     addr[256];
+      char     sess[sizeof(addr)];
+      unsigned port;
+      settings_t *settings      = config_get_ptr();
+      const char *custom_server =
+         settings->paths.netplay_custom_mitm_server;
 
-   if (!task_push_http_transfer(query,
-         true, NULL, netplay_mitm_query_cb, NULL))
-      return false;
+      addr[0] = '\0';
+      sess[0] = '\0';
+      port    = 0;
 
-   /* Make sure we've the tunnel address before continuing. */
-   task_queue_wait(NULL, NULL);
+      netplay_decode_hostname(custom_server,
+         addr, &port, sess, sizeof(addr));
+
+      strlcpy(host_room->mitm_address, addr,
+         sizeof(host_room->mitm_address));
+      host_room->mitm_port = port;
+   }
+   else
+   {
+      char query[512];
+#ifndef NETPLAY_TEST_BUILD
+      const char *url = "http://lobby.libretro.com/tunnel";
+#else
+      const char *url = "http://lobbytest.libretro.com/tunnel";
+#endif
+
+      snprintf(query, sizeof(query), "%s?name=%s", url, mitm_name);
+
+      if (!task_push_http_transfer(query,
+            true, NULL, netplay_mitm_query_cb, NULL))
+         return false;
+
+      /* Make sure we've the tunnel address before continuing. */
+      task_queue_wait(NULL, NULL);
+   }
 
    return !string_is_empty(host_room->mitm_address) &&
       host_room->mitm_port;

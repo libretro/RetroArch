@@ -498,6 +498,8 @@ QGroupBox *NetplayPage::createMitmServerGroup()
       groupBox->addRow(radioButton);
    }
 
+   groupBox->add(MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER);
+
    connect(buttonGroup, SIGNAL(buttonClicked(int)),
          this, SLOT(onRadioButtonClicked(int)));
 
