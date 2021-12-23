@@ -2291,6 +2291,7 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef HAVE_MENU
    SETTING_UINT("playlist_entry_remove_enable",    &settings->uints.playlist_entry_remove_enable, true, DEFAULT_PLAYLIST_ENTRY_REMOVE_ENABLE, false);
    SETTING_UINT("playlist_show_inline_core_name",  &settings->uints.playlist_show_inline_core_name, true, DEFAULT_PLAYLIST_SHOW_INLINE_CORE_NAME, false);
+   SETTING_UINT("playlist_show_history_icons",     &settings->uints.playlist_show_history_icons, true, DEFAULT_PLAYLIST_SHOW_HISTORY_ICONS, false);
    SETTING_UINT("playlist_sublabel_runtime_type",  &settings->uints.playlist_sublabel_runtime_type, true, DEFAULT_PLAYLIST_SUBLABEL_RUNTIME_TYPE, false);
    SETTING_UINT("playlist_sublabel_last_played_style", &settings->uints.playlist_sublabel_last_played_style, true, DEFAULT_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE, false);
 

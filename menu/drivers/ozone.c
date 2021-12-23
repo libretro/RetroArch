@@ -4574,6 +4574,7 @@ static void ozone_draw_entries(
    unsigned video_info_height, video_info_width;
    bool menu_show_sublabels          = settings->bools.menu_show_sublabels;
    bool use_smooth_ticker            = settings->bools.menu_ticker_smooth;
+   unsigned show_history_icons       = settings->uints.playlist_show_history_icons;
    enum gfx_animation_ticker_type 
       menu_ticker_type               = (enum gfx_animation_ticker_type)
       settings->uints.menu_ticker_type;
@@ -4870,6 +4871,70 @@ border_iterate:
                texture = tex;
             else
                texture = sidebar_node->content_icon;
+         }
+         /* History/Favorite console specific content icons */
+         else if (   entry.type == FILE_TYPE_RPL_ENTRY
+                  && show_history_icons)
+         {
+            switch (ozone->tabs[ozone->categories_selection_ptr])
+            {
+               case OZONE_SYSTEM_TAB_HISTORY:
+               case OZONE_SYSTEM_TAB_FAVORITES:
+                  {
+                     unsigned j                  = 0;
+                     unsigned p                  = 0;
+                     size_t icon_list_size       = ozone_list_get_size(ozone, MENU_LIST_HORIZONTAL);
+                     size_t playlist_size        = 0;
+                     playlist_t *playlist        = NULL;
+                     const struct playlist_entry
+                                 *playlist_entry = NULL;
+
+                     /* Get current playlist */
+                     playlist = playlist_get_cached();
+                     if (!playlist)
+                        break;
+
+                     playlist_size = playlist_get_size(playlist);
+                     if (i >= playlist_size)
+                        break;
+
+                     /* Read playlist entry */
+                     for (p = i; p < playlist_size && playlist_entry == NULL; p++)
+                     {
+                        playlist_get_index(playlist, p, &playlist_entry);
+                        if (playlist_entry && !string_is_equal(playlist_entry->label, entry.path))
+                           playlist_entry = NULL;
+                     }
+
+                     if (!playlist_entry)
+                        break;
+
+                     for (j = 0; j < icon_list_size; j++)
+                     {
+                        ozone_node_t *node = ozone->horizontal_list.list[j].userdata;
+                        if (!node)
+                           continue;
+
+                        if (!string_is_empty(playlist_entry->db_name)
+                              && string_is_equal(ozone->horizontal_list.list[j].path, playlist_entry->db_name))
+                        {
+                           switch (show_history_icons)
+                           {
+                              case PLAYLIST_SHOW_HISTORY_ICONS_MAIN:
+                                 texture = node->icon;
+                                 break;
+                              case PLAYLIST_SHOW_HISTORY_ICONS_CONTENT:
+                                 texture = node->content_icon;
+                                 break;
+                           }
+                           break;
+                        }
+                     }
+                  }
+                  break;
+               default:
+                  break;
+            }
          }
 
          /* Cheevos badges should not be recolored */

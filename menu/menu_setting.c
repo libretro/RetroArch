@@ -6704,6 +6704,27 @@ static void setting_get_string_representation_uint_quit_on_close_content(
    }
 }
 
+static void setting_get_string_representation_uint_playlist_show_history_icons(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case PLAYLIST_SHOW_HISTORY_ICONS_DEFAULT:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
+         break;
+      case PLAYLIST_SHOW_HISTORY_ICONS_MAIN:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MAIN), len);
+         break;
+      case PLAYLIST_SHOW_HISTORY_ICONS_CONTENT:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT), len);
+         break;
+   }
+}
+
 static void setting_get_string_representation_uint_menu_screensaver_timeout(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -18641,11 +18662,27 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
          (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
 
-         /* Playlist entry index display is currently
-          * supported only by Ozone & XMB */
+         /* Playlist entry index display and content specific history icon
+          * are currently supported only by Ozone & XMB */
          if (string_is_equal(settings->arrays.menu_driver, "xmb") ||
              string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.playlist_show_history_icons,
+                  MENU_ENUM_LABEL_PLAYLIST_SHOW_HISTORY_ICONS,
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
+                  DEFAULT_PLAYLIST_SHOW_HISTORY_ICONS,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_uint_playlist_show_history_icons;
+            menu_settings_list_current_add_range(list, list_info, 0, PLAYLIST_SHOW_HISTORY_ICONS_LAST-1, 1, true, true);
+
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.playlist_show_entry_idx,
