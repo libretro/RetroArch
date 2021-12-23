@@ -497,6 +497,8 @@
 /* Initialise file browser with the last used start directory */
 #define DEFAULT_USE_LAST_START_DIRECTORY false
 
+#define DEFAULT_OVERLAY_BEHIND_MENU false
+
 #define DEFAULT_OVERLAY_HIDE_IN_MENU true
 
 /* Automatically disable overlays when a

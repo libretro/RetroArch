@@ -590,6 +590,7 @@ typedef struct settings
       bool input_sensors_enable;
       bool input_overlay_enable;
       bool input_overlay_enable_autopreferred;
+      bool input_overlay_behind_menu;
       bool input_overlay_hide_in_menu;
       bool input_overlay_hide_when_gamepad_connected;
       bool input_overlay_show_mouse_cursor;

@@ -3631,6 +3631,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
    "Overlays are used for borders and on-screen controls."
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
+   "Show Overlay Behind Menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
+   "Show the overlay behind instead of in front of the menu."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
    "Hide Overlay in Menu"
