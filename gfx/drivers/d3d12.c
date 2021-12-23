@@ -243,6 +243,51 @@ static void d3d12_get_overlay_interface(void* data, const video_overlay_interfac
 
    *iface = &overlay_interface;
 }
+
+static void d3d12_render_overlay(void* data)
+{
+   unsigned       i;
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
+
+   if (!d3d12)
+      return;
+
+   if (d3d12->overlays.fullscreen)
+   {
+      D3D12RSSetViewports(d3d12->queue.cmd, 1,
+            &d3d12->chain.viewport);
+      D3D12RSSetScissorRects(d3d12->queue.cmd, 1,
+            &d3d12->chain.scissorRect);
+   }
+   else
+   {
+      D3D12RSSetViewports(d3d12->queue.cmd, 1,
+            &d3d12->frame.viewport);
+      D3D12RSSetScissorRects(d3d12->queue.cmd, 1,
+            &d3d12->frame.scissorRect);
+   }
+
+   D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1,
+         &d3d12->overlays.vbo_view);
+   D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe_blend);
+
+   D3D12SetGraphicsRootDescriptorTable(
+         d3d12->queue.cmd, ROOT_ID_SAMPLER_T,
+         d3d12->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
+
+   for (i = 0; i < (unsigned)d3d12->overlays.count; i++)
+   {
+      if (d3d12->overlays.textures[i].dirty)
+         d3d12_upload_texture(d3d12->queue.cmd,
+               &d3d12->overlays.textures[i],
+               d3d12);
+
+      D3D12SetGraphicsRootDescriptorTable(
+            d3d12->queue.cmd, ROOT_ID_TEXTURE_T,
+            d3d12->overlays.textures[i].gpu_descriptor[0]);
+      D3D12DrawInstanced(d3d12->queue.cmd, 1, 1, i, 0);
+   }
+}
 #endif
 
 #ifdef HAVE_DXGI_HDR
@@ -1403,6 +1448,7 @@ static bool d3d12_gfx_frame(
    struct font_params *osd_params = (struct font_params*)
       &video_info->osd_stat_params;
    bool menu_is_alive             = video_info->menu_is_alive;
+   bool overlay_behind_menu       = video_info->overlay_behind_menu;
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active            = video_info->widgets_active;
 #endif
@@ -1880,6 +1926,11 @@ static bool d3d12_gfx_frame(
 
    d3d12->sprites.enabled = true;
 
+#ifdef HAVE_OVERLAY
+   if (d3d12->overlays.enabled && overlay_behind_menu)
+      d3d12_render_overlay(d3d12);
+#endif
+
 #ifdef HAVE_MENU
 #ifndef HAVE_GFX_WIDGETS
    if (d3d12->menu.enabled)
@@ -1916,44 +1967,8 @@ static bool d3d12_gfx_frame(
          }
       }
 #ifdef HAVE_OVERLAY
-   if (d3d12->overlays.enabled)
-   {
-      if (d3d12->overlays.fullscreen)
-      {
-         D3D12RSSetViewports(d3d12->queue.cmd, 1,
-               &d3d12->chain.viewport);
-         D3D12RSSetScissorRects(d3d12->queue.cmd, 1,
-               &d3d12->chain.scissorRect);
-      }
-      else
-      {
-         D3D12RSSetViewports(d3d12->queue.cmd, 1,
-               &d3d12->frame.viewport);
-         D3D12RSSetScissorRects(d3d12->queue.cmd, 1,
-               &d3d12->frame.scissorRect);
-      }
-
-      D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1,
-            &d3d12->overlays.vbo_view);
-      D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe_blend);
-
-      D3D12SetGraphicsRootDescriptorTable(
-            d3d12->queue.cmd, ROOT_ID_SAMPLER_T,
-            d3d12->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
-
-      for (i = 0; i < (unsigned)d3d12->overlays.count; i++)
-      {
-         if (d3d12->overlays.textures[i].dirty)
-            d3d12_upload_texture(d3d12->queue.cmd,
-                  &d3d12->overlays.textures[i],
-                  d3d12);
-
-         D3D12SetGraphicsRootDescriptorTable(
-               d3d12->queue.cmd, ROOT_ID_TEXTURE_T,
-               d3d12->overlays.textures[i].gpu_descriptor[0]);
-         D3D12DrawInstanced(d3d12->queue.cmd, 1, 1, i, 0);
-      }
-   }
+   if (d3d12->overlays.enabled && !overlay_behind_menu)
+      d3d12_render_overlay(d3d12);
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
@@ -2248,6 +2263,7 @@ static uint32_t d3d12_get_flags(void *data)
    uint32_t flags = 0;
 
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
+   BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
