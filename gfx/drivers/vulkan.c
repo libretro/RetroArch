@@ -1758,6 +1758,7 @@ static bool vulkan_frame(void *data, const void *frame,
       vk->context->current_frame_index;
    unsigned swapchain_index                      =
       vk->context->current_swapchain_index;
+   bool overlay_behind_menu                      = video_info->overlay_behind_menu;
 
    /* Bookkeeping on start of frame. */
    struct vk_per_frame *chain                    = &vk->swapchain[frame_index];
@@ -2027,6 +2028,11 @@ static bool vulkan_frame(void *data, const void *frame,
             (vulkan_filter_chain_t*)vk->filter_chain, vk->cmd,
             &vk->vk_vp, vk->mvp.data);
 
+#ifdef HAVE_OVERLAY
+      if (vk->overlay.enable && overlay_behind_menu)
+         vulkan_render_overlay(vk, video_width, video_height);
+#endif
+
 #if defined(HAVE_MENU)
       if (vk->menu.enable)
       {
@@ -2077,7 +2083,7 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_OVERLAY
-      if (vk->overlay.enable)
+      if (vk->overlay.enable && !overlay_behind_menu)
          vulkan_render_overlay(vk, video_width, video_height);
 #endif
 
@@ -2588,6 +2594,7 @@ static uint32_t vulkan_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
+   BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
 
    return flags;
 }
