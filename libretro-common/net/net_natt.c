@@ -94,7 +94,8 @@ bool natt_init(void)
 
 #if !defined(_MSC_VER) || _MSC_VER > 1400
 #if defined(_WIN32) && defined(IP_MULTICAST_IF)
-   if (GetBestRoute(0xDFFFFFFF, 0, &ip_forward) == NO_ERROR)
+   if (GetBestRoute(inet_addr("223.255.255.255"),
+      0, &ip_forward) == NO_ERROR)
    {
       IF_INDEX         index = ip_forward.dwForwardIfIndex;
       PMIB_IPADDRTABLE table = malloc(sizeof(MIB_IPADDRTABLE));
