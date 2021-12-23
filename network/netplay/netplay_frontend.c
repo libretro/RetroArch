@@ -254,7 +254,7 @@ bool init_netplay_discovery(void)
 
          if (table)
          {
-            DWORD len    = 0;
+            DWORD len    = sizeof(*table);
             DWORD result = GetIpAddrTable(table, &len, FALSE);
 
             if (result == ERROR_INSUFFICIENT_BUFFER)
@@ -301,6 +301,13 @@ bool init_netplay_discovery(void)
             RARCH_WARN("[Discovery] Failed to set netplay discovery port to broadcast.\n");
       }
 #endif
+
+      if (!socket_bind(fd, addr))
+      {
+         socket_close(fd);
+         net_st->lan_ad_client_fd = -1;
+         return false;
+      }
 
       net_st->lan_ad_client_fd = fd;
    }

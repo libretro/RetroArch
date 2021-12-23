@@ -96,7 +96,7 @@ bool natt_init(void)
 
       if (table)
       {
-         DWORD len    = 0;
+         DWORD len    = sizeof(*table);
          DWORD result = GetIpAddrTable(table, &len, FALSE);
 
          if (result == ERROR_INSUFFICIENT_BUFFER)
