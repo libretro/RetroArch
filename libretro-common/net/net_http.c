@@ -919,11 +919,14 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
          }
          else
          {
-            if (string_starts_with_case_insensitive(state->data, "Content-Length: "))
+            if (string_starts_with_case_insensitive(state->data, "Content-Length:"))
             {
+               char* ptr = state->data + STRLEN_CONST("Content-Length:");
+               while (ISSPACE(*ptr))
+                  ++ptr;
+
                state->bodytype = T_LEN;
-               state->len = strtol(state->data +
-                     STRLEN_CONST("Content-Length: "), NULL, 10);
+               state->len = strtol(ptr, NULL, 10);
             }
             if (string_is_equal_case_insensitive(state->data, "Transfer-Encoding: chunked"))
                state->bodytype = T_CHUNK;
