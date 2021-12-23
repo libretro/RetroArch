@@ -240,7 +240,26 @@ static void pointer_handle_axis(void *data,
       struct wl_pointer *wl_pointer,
       uint32_t time,
       uint32_t axis,
-      wl_fixed_t value) { }
+      wl_fixed_t value) {
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   double dvalue = wl_fixed_to_double(value);
+   switch (axis) {
+      case WL_POINTER_AXIS_VERTICAL_SCROLL:
+         if (dvalue < 0) {
+            wl->input.mouse.wu = true;
+         } else if (dvalue > 0) {
+            wl->input.mouse.wd = true;
+         }
+         break;
+      case WL_POINTER_AXIS_HORIZONTAL_SCROLL:
+         if (dvalue < 0) {
+            wl->input.mouse.wl = true;
+         } else if (dvalue > 0) {
+            wl->input.mouse.wr = true;
+         }
+         break;
+   }
+}
 
 static void touch_handle_down(void *data,
       struct wl_touch *wl_touch,

@@ -102,6 +102,7 @@ typedef struct input_ctx_wayland_data
       bool last_valid;
       bool focus;
       bool left, right, middle;
+      bool wu, wd, wl, wr;
    } mouse;
 
    bool keyboard_focus;
