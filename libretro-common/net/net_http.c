@@ -922,7 +922,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
             if (string_starts_with_case_insensitive(state->data, "Content-Length:"))
             {
                char* ptr = state->data + STRLEN_CONST("Content-Length:");
-               while (isspace(*ptr))
+               while (ISSPACE(*ptr))
                   ++ptr;
 
                state->bodytype = T_LEN;
