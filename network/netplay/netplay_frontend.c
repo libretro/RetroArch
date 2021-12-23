@@ -41,8 +41,10 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 
+#if !defined(_MSC_VER) || _MSC_VER > 1400
 #if defined(_WIN32) && defined(IP_MULTICAST_IF)
 #include <iphlpapi.h>
+#endif
 #endif
 
 #ifdef HAVE_DISCORD
@@ -244,6 +246,7 @@ bool init_netplay_discovery(void)
 
    if (ret)
    {
+#if !defined(_MSC_VER) || _MSC_VER > 1400
 #if defined(_WIN32) && defined(IP_MULTICAST_IF)
       MIB_IPFORWARDROW ip_forward;
 
@@ -290,6 +293,7 @@ bool init_netplay_discovery(void)
             free(table);
          }
       }
+#endif
 #endif
 
 #if defined(SOL_SOCKET) && defined(SO_BROADCAST)
