@@ -7214,7 +7214,9 @@ void netplay_toggle_play_spectate(netplay_t *netplay)
                netplay->device_clients[device] &= ~(1<<netplay->self_client_num);
 
             /* Announce it */
-            announce_play_spectate(netplay, NULL, NETPLAY_CONNECTION_SPECTATING, 0, -1);
+            if (!netplay->is_server)
+               announce_play_spectate(netplay,
+                  NULL, NETPLAY_CONNECTION_SPECTATING, 0, -1);
 
             netplay_cmd_mode(netplay, NETPLAY_CONNECTION_SPECTATING);
          }
