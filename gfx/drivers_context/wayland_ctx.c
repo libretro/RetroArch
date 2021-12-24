@@ -249,13 +249,12 @@ static void gfx_ctx_wl_update_title(void *data)
    if (wl && title[0])
    {
       if (wl->deco)
-         {
-            zxdg_toplevel_decoration_v1_set_mode(wl->deco,
-                  ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
-         }
+      {
+         zxdg_toplevel_decoration_v1_set_mode(wl->deco,
+            ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
       }
-
       xdg_toplevel_set_title(wl->xdg_toplevel, title);
+   }
 }
 
 static bool gfx_ctx_wl_get_metrics(void *data,
