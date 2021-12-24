@@ -338,6 +338,9 @@ void App::Load(Platform::String^ entryPoint)
 
 	if (is_running_on_xbox())
 	{
+		bool reset = false;
+		int width = uwp_get_width();
+		int height = uwp_get_height();
 		//reset driver to d3d11 if set to opengl on boot as cores can just set to gl when needed and there is no good reason to use gl for the menus
 		settings_t* settings = config_get_ptr();
 		char* currentdriver = settings->arrays.video_driver;
@@ -347,9 +350,27 @@ void App::Load(Platform::String^ entryPoint)
 			configuration_set_string(settings,
 				settings->arrays.video_driver,
 				config_get_default_video());
+			//reset needed
+			reset = true;
+		}
+		if ((settings->uints.video_fullscreen_x != width) || (settings->uints.video_fullscreen_y != height))
+		{
+			//get width and height from display again
+			configuration_set_int(settings,
+				settings->uints.video_fullscreen_x,
+				width);
+			configuration_set_int(settings,
+				settings->uints.video_fullscreen_y,
+				height);
+			//reset needed
+			reset = true;
+		}
+		if (reset)
+		{
 			//restart driver
 			command_event(CMD_EVENT_REINIT, NULL);
 		}
+		
 	}
 
 	auto catalog = Windows::ApplicationModel::PackageCatalog::OpenForCurrentPackage();
