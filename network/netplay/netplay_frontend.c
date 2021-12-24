@@ -41,10 +41,8 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 
-#if !defined(_MSC_VER) || _MSC_VER > 1400
-#if defined(_WIN32) && defined(IP_MULTICAST_IF)
+#ifdef _WIN32
 #include <iphlpapi.h>
-#endif
 #endif
 
 #ifdef HAVE_DISCORD
@@ -245,15 +243,14 @@ bool init_netplay_discovery(void)
 
    if (ret)
    {
-#if !defined(_MSC_VER) || _MSC_VER > 1400
-#if defined(_WIN32) && defined(IP_MULTICAST_IF)
+#ifdef _WIN32
       MIB_IPFORWARDROW ip_forward;
 
       if (GetBestRoute(inet_addr("223.255.255.255"),
          0, &ip_forward) == NO_ERROR)
       {
-         IF_INDEX         index = ip_forward.dwForwardIfIndex;
-         PMIB_IPADDRTABLE table = malloc(sizeof(MIB_IPADDRTABLE));
+         DWORD            index = ip_forward.dwForwardIfIndex;
+         PMIB_IPADDRTABLE table = malloc(sizeof(*table));
 
          if (table)
          {
@@ -281,8 +278,10 @@ bool init_netplay_discovery(void)
 
                   if (ip_addr->dwIndex == index)
                   {
+#ifdef IP_MULTICAST_IF
                      setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IF,
                         (const char *) &ip_addr->dwAddr, sizeof(ip_addr->dwAddr));
+#endif
                      ((struct sockaddr_in *) addr->ai_addr)->sin_addr.s_addr =
                         ip_addr->dwAddr;
                      break;
@@ -294,9 +293,8 @@ bool init_netplay_discovery(void)
          }
       }
 #endif
-#endif
 
-#if defined(SOL_SOCKET) && defined(SO_BROADCAST)
+#ifdef SO_BROADCAST
       /* Make it broadcastable */
       {
          int broadcast = 1;
