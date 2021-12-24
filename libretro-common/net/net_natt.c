@@ -162,7 +162,7 @@ bool natt_init(void)
    /* Broadcast a discovery request. */
    if (sendto(st->fd, msearch, STRLEN_CONST(msearch), 0,
          (struct sockaddr *) &msearch_addr,
-         sizeof(msearch_addr)) != sizeof(msearch) - 1)
+         sizeof(msearch_addr)) != STRLEN_CONST(msearch))
       goto failure;
 
    if (!socket_nonblock(st->fd))
