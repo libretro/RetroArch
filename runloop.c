@@ -7319,6 +7319,9 @@ int runloop_iterate(void)
    video_driver_state_t               *video_st = video_state_get_ptr();
    recording_state_t              *recording_st = recording_state_get_ptr();
    camera_driver_state_t             *camera_st = camera_state_get_ptr();
+#if defined(HAVE_COCOATOUCH)
+   uico_driver_state_t  *uico_st                = uico_state_get_ptr();
+#endif
    settings_t *settings                         = config_get_ptr();
    runloop_state_t *runloop_st                  = &runloop_state;
    unsigned video_frame_delay                   = settings->uints.video_frame_delay;
