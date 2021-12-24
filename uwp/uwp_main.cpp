@@ -218,7 +218,6 @@ int main(Platform::Array<Platform::String^>^)
 	Platform::String^ data_dir = Windows::Storage::ApplicationData::Current->LocalFolder->Path + L"\\";
 	wcstombs(uwp_dir_data, data_dir->Data(), sizeof(uwp_dir_data));
 
-
 	// delete vfs cache dir, we do this because this allows a far far more consise implementation than manually implementing a function to do this
 	// this may be a little slower but shouldn't really matter as the cache dir should never have more than a few items
 	Platform::String^ vfs_dir = Windows::Storage::ApplicationData::Current->LocalFolder->Path + L"\\VFSCACHE";
@@ -336,6 +335,22 @@ void App::Load(Platform::String^ entryPoint)
 		return;
 	}
 	m_initialized = true;
+
+	if (is_running_on_xbox())
+	{
+		//reset driver to d3d11 if set to opengl on boot as cores can just set to gl when needed and there is no good reason to use gl for the menus
+		settings_t* settings = config_get_ptr();
+		char* currentdriver = settings->arrays.video_driver;
+		if (strcmpi(currentdriver, "gl")==0)
+		{
+			//set driver to default
+			configuration_set_string(settings,
+				settings->arrays.video_driver,
+				config_get_default_video());
+			//restart driver
+			command_event(CMD_EVENT_REINIT, NULL);
+		}
+	}
 
 	auto catalog = Windows::ApplicationModel::PackageCatalog::OpenForCurrentPackage();
 

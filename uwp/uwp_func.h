@@ -30,6 +30,8 @@ void uwp_open_broadfilesystemaccess_settings(void);
 
 void* uwp_get_corewindow(void);
 
+bool is_running_on_xbox(void);
+
 int uwp_get_height(void);
 int uwp_get_width(void);
 
