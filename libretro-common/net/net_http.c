@@ -735,7 +735,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    net_http_send_str(&conn->sock_state, &error, "Host: ");
    net_http_send_str(&conn->sock_state, &error, conn->domain);
 
-   if (!conn->port)
+   if (conn->port)
    {
       char portstr[16];
 
