@@ -20,6 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#if !defined(HAVE_SOCKET_LEGACY) && defined(_WIN32)
+#pragma comment(lib, "Iphlpapi")
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
