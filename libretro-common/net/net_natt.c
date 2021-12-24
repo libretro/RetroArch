@@ -55,8 +55,9 @@ bool natt_init(void)
       "M-SEARCH * HTTP/1.1\r\n"
       "HOST: 239.255.255.250:1900\r\n"
       "MAN: \"ssdp:discover\"\r\n"
-      "MX: 2\r\n"
-      "ST: urn:schemas-upnp-org:device:InternetGatewayDevice:1\r\n";
+      "ST: urn:schemas-upnp-org:device:InternetGatewayDevice:1\r\n"
+      "MX: 5\r\n"
+      "\r\n";
    static struct sockaddr_in msearch_addr = {0};
 #if !defined(_MSC_VER) || _MSC_VER > 1400
 #if defined(_WIN32) && defined(IP_MULTICAST_IF)
@@ -159,16 +160,16 @@ bool natt_init(void)
       goto failure;
 
    /* Broadcast a discovery request. */
-   if (sendto(st->fd, msearch, sizeof(msearch) - 1, 0,
+   if (sendto(st->fd, msearch, STRLEN_CONST(msearch), 0,
          (struct sockaddr *) &msearch_addr,
-         sizeof(msearch_addr)) != sizeof(msearch) - 1)
+         sizeof(msearch_addr)) != STRLEN_CONST(msearch))
       goto failure;
 
    if (!socket_nonblock(st->fd))
       goto failure;
 
-   /* 2 seconds */
-   st->timeout = cpu_features_get_time_usec() + 2000000;
+   /* 5 seconds */
+   st->timeout = cpu_features_get_time_usec() + 5000000;
 
    freeaddrinfo_retro(bind_addr);
 
@@ -261,7 +262,8 @@ bool natt_device_next(struct natt_device *device)
       *lnbreak++ = '\0';
 
       /* This also gets rid of any trailing carriage return. */
-      if (strcasecmp(string_trim_whitespace(data), "Location:"))
+      if (!strncasecmp(string_trim_whitespace(data), "Location:",
+         STRLEN_CONST("Location:")))
       {
          char *location = string_trim_whitespace(
             data + STRLEN_CONST("Location:"));
