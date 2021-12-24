@@ -97,6 +97,7 @@ HAVE_EXYNOS=no             # Exynos video support
 HAVE_DISPMANX=no           # Dispmanx video support
 HAVE_SUNXI=no              # Sunxi video support
 HAVE_WAYLAND=auto          # Wayland support
+HAVE_LIBDECOR=auto         # libdecor support
 C89_WAYLAND=no
 CXX_WAYLAND=no
 HAVE_DYNAMIC_EGL=no        # Dynamic library EGL support

@@ -534,6 +534,8 @@ if [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
          -p "$HAVE_WAYLAND_PROTOS" \
          -s "$SHARE_DIR" ||
          die 1 'Error: Failed generating wayland protocols.'
+
+      check_pkgconf LIBDECOR libdecor-0
 else
     die : 'Notice: wayland libraries not found, disabling wayland support.'
     HAVE_WAYLAND='no'

@@ -126,6 +126,10 @@ typedef struct gfx_ctx_wayland_data
    struct wl_touch *wl_touch;
    struct wl_seat *seat;
    struct wl_shm *shm;
+#ifdef HAVE_LIBDECOR
+   struct libdecor *libdecor_context;
+   struct libdecor_frame *libdecor_frame;
+#endif
    struct zxdg_decoration_manager_v1 *deco_manager;
    struct zxdg_toplevel_decoration_v1 *deco;
    struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
