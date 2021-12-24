@@ -20,6 +20,10 @@
 #pragma comment(lib, "ws2_32")
 #endif
 
+#ifdef _WIN32
+#pragma comment(lib, "Iphlpapi")
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
