@@ -218,7 +218,6 @@ int main(Platform::Array<Platform::String^>^)
 	Platform::String^ data_dir = Windows::Storage::ApplicationData::Current->LocalFolder->Path + L"\\";
 	wcstombs(uwp_dir_data, data_dir->Data(), sizeof(uwp_dir_data));
 
-
 	// delete vfs cache dir, we do this because this allows a far far more consise implementation than manually implementing a function to do this
 	// this may be a little slower but shouldn't really matter as the cache dir should never have more than a few items
 	Platform::String^ vfs_dir = Windows::Storage::ApplicationData::Current->LocalFolder->Path + L"\\VFSCACHE";
@@ -336,6 +335,43 @@ void App::Load(Platform::String^ entryPoint)
 		return;
 	}
 	m_initialized = true;
+
+	if (is_running_on_xbox())
+	{
+		bool reset = false;
+		int width = uwp_get_width();
+		int height = uwp_get_height();
+		//reset driver to d3d11 if set to opengl on boot as cores can just set to gl when needed and there is no good reason to use gl for the menus
+		settings_t* settings = config_get_ptr();
+		char* currentdriver = settings->arrays.video_driver;
+		if (strcmpi(currentdriver, "gl")==0)
+		{
+			//set driver to default
+			configuration_set_string(settings,
+				settings->arrays.video_driver,
+				config_get_default_video());
+			//reset needed
+			reset = true;
+		}
+		if ((settings->uints.video_fullscreen_x != width) || (settings->uints.video_fullscreen_y != height))
+		{
+			//get width and height from display again
+			configuration_set_int(settings,
+				settings->uints.video_fullscreen_x,
+				width);
+			configuration_set_int(settings,
+				settings->uints.video_fullscreen_y,
+				height);
+			//reset needed
+			reset = true;
+		}
+		if (reset)
+		{
+			//restart driver
+			command_event(CMD_EVENT_REINIT, NULL);
+		}
+		
+	}
 
 	auto catalog = Windows::ApplicationModel::PackageCatalog::OpenForCurrentPackage();
 
@@ -667,10 +703,10 @@ extern "C" {
 		switch (type)
 		{
 		   case DISPLAY_METRIC_PIXEL_WIDTH:
-		      *value                 = DisplayInformation::GetForCurrentView()->ScreenWidthInRawPixels;
+		      *value                 = uwp_get_width();
 		      return true;
 		case DISPLAY_METRIC_PIXEL_HEIGHT:
-		      *value                 = DisplayInformation::GetForCurrentView()->ScreenHeightInRawPixels;
+			  *value				 = uwp_get_height();
 		      return true;
 		case DISPLAY_METRIC_MM_WIDTH:
 		      /* 25.4 mm in an inch. */
@@ -709,8 +745,8 @@ extern "C" {
 		if (is_xbox)
 		{
 			settings_t* settings = config_get_ptr();
-			*width  = settings->uints.video_fullscreen_x  != 0 ? settings->uints.video_fullscreen_x : 3840;
-			*height = settings->uints.video_fullscreen_y  != 0 ? settings->uints.video_fullscreen_y : 2160;
+			*width  = settings->uints.video_fullscreen_x  != 0 ? settings->uints.video_fullscreen_x : uwp_get_width();
+			*height = settings->uints.video_fullscreen_y  != 0 ? settings->uints.video_fullscreen_y : uwp_get_height();
 			return;
 		}
 
@@ -726,6 +762,32 @@ extern "C" {
 	void* uwp_get_corewindow(void)
 	{
 		return (void*)CoreWindow::GetForCurrentThread();
+	}
+
+	int uwp_get_height(void)
+	{
+		if (is_running_on_xbox())
+		{
+			const Windows::Graphics::Display::Core::HdmiDisplayInformation^ hdi = Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView();
+			if (hdi)
+				return Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView()->GetCurrentDisplayMode()->ResolutionHeightInRawPixels;
+		}
+		const LONG32 resolution_scale = static_cast<LONG32>(Windows::Graphics::Display::DisplayInformation::GetForCurrentView()->ResolutionScale);
+		auto surface_scale = static_cast<float>(resolution_scale) / 100.0f;
+		return static_cast<LONG32>(CoreWindow::GetForCurrentThread()->Bounds.Height * surface_scale);
+	}
+
+	int uwp_get_width(void)
+	{
+		if (is_running_on_xbox())
+		{
+			const Windows::Graphics::Display::Core::HdmiDisplayInformation^ hdi = Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView();
+			if (hdi)
+				return Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView()->GetCurrentDisplayMode()->ResolutionWidthInRawPixels;
+		}
+		const LONG32 resolution_scale = static_cast<LONG32>(Windows::Graphics::Display::DisplayInformation::GetForCurrentView()->ResolutionScale);
+		auto surface_scale = static_cast<float>(resolution_scale) / 100.0f;
+		return static_cast<LONG32>(CoreWindow::GetForCurrentThread()->Bounds.Width * surface_scale);
 	}
 
 	void uwp_fill_installed_core_packages(struct string_list *list)

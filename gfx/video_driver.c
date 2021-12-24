@@ -3305,8 +3305,8 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 #ifdef __WINRT__
       if (is_running_on_xbox())
       {
-         width  = settings->uints.video_fullscreen_x != 0 ? settings->uints.video_fullscreen_x : 3840;
-         height = settings->uints.video_fullscreen_y != 0 ? settings->uints.video_fullscreen_y : 2160;
+         width = uwp_get_width();
+         height = uwp_get_height();
       }
       else
 #endif

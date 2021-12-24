@@ -4000,6 +4000,14 @@ static bool gl2_alive(void *data)
    gl->ctx_driver->check_window(gl->ctx_data,
          &quit, &resize, &temp_width, &temp_height);
 
+#ifdef __WINRT__
+   if (is_running_on_xbox())
+   {
+      //we can set it to 1920x1080 as xbox uwp windowsize is guaranteed to be 1920x1080 and currently there is now way to set angle to use a variable resolution swapchain so regardless of the size the window is always 1080p
+      temp_width = 1920;
+      temp_height = 1080;
+   }
+#endif
    if (quit)
       gl->quitting = true;
    else if (resize)
