@@ -324,6 +324,10 @@ struct delta_frame
    /* The real input */
    netplay_input_state_t real_input[MAX_INPUT_DEVICES]; /* ptr alignment */
 
+   /* The simulated input. is_real here means the simulation is done, i.e.,
+    * it's a real simulation, not real input. */
+   netplay_input_state_t simlated_input[MAX_INPUT_DEVICES];
+
    /* The serialized state of the core at this frame, before input */
    void *state;
 
@@ -331,10 +335,6 @@ struct delta_frame
 
    /* The CRC-32 of the serialized state if we've calculated it, else 0 */
    uint32_t crc;
-
-   /* The simulated input. is_real here means the simulation is done, i.e.,
-    * it's a real simulation, not real input. */
-   netplay_input_state_t simlated_input[MAX_INPUT_DEVICES];
 
    /* Have we read local input? */
    bool have_local;
@@ -361,6 +361,9 @@ struct netplay_connection
 {
    /* Is this connection stalling? */
    retro_time_t stall_time;
+
+   /* Timer used to estimate a connection's latency */
+   retro_time_t ping_timer;
 
    /* Address of peer */
    struct sockaddr_storage addr;
@@ -389,6 +392,14 @@ struct netplay_connection
    /* Salt associated with password transaction */
    uint32_t salt;
 
+   /* Which netplay protocol is this connection running? */
+   uint32_t netplay_protocol;
+
+   /* What latency is this connection running on? 
+    * Network latency has limited precision as we estimate it
+    * once every pre-frame. */
+   int32_t ping;
+
    /* Is this connection stalling? */
    enum rarch_netplay_stall_reason stall;
 
@@ -406,17 +417,6 @@ struct netplay_connection
 
    /* Is this connection buffer in use? */
    bool active;
-
-   /* Which netplay protocol is this connection running? */
-   uint32_t netplay_protocol;
-
-   /* Timer used to estimate a connection's latency */
-   retro_time_t ping_timer;
-
-   /* What latency is this connection running on? 
-    * Network latency has limited precision as we estimate it
-    * once every pre-frame. */
-   int32_t ping;
 
    /* Did we request a ping response? */
    bool ping_requested;
@@ -440,19 +440,20 @@ typedef struct mitm_id
 #define NETPLAY_MITM_MAX_PENDING 8
 struct netplay_mitm_pending
 {
-   int          fds[NETPLAY_MITM_MAX_PENDING];
-   mitm_id_t    ids[NETPLAY_MITM_MAX_PENDING];
    retro_time_t timeouts[NETPLAY_MITM_MAX_PENDING];
-
+   mitm_id_t ids[NETPLAY_MITM_MAX_PENDING];
    mitm_id_t id_buf;
-   size_t    id_recvd;
-
-   struct       addrinfo *base_addr;
+   struct addrinfo *base_addr;
    const struct addrinfo *addr;
+   size_t id_recvd;
+   int fds[NETPLAY_MITM_MAX_PENDING];
 };
 
 struct netplay
 {
+   /* Quirks in the savestate implementation */
+   uint64_t quirks;
+
    /* When did we start falling behind? */
    retro_time_t catch_up_time;
    /* How long have we been stalled? */
@@ -466,17 +467,69 @@ struct netplay
    retro_time_t frame_run_time[NETPLAY_FRAME_RUN_TIME_WINDOW];
    retro_time_t frame_run_time_sum, frame_run_time_avg;
 
-   struct netplay_connection one_connection; /* Client only */ /* retro_time_t alignment */
+   struct retro_callbacks cbs;
+
+   /* Compression transcoder */
+   struct compression_transcoder compress_nil,
+                                 compress_zlib;
+
+   /* MITM session id */
+   mitm_id_t mitm_session_id;
+
+   struct netplay_connection one_connection; /* Client only */
+   /* All of our connections */
+   struct netplay_connection *connections;
+
+   /* MITM connection handler */
+   struct netplay_mitm_pending *mitm_pending;
+
+   /* Our local socket info */
+   struct addrinfo *addr;
+
+   struct delta_frame *buffer;
+
+   /* A buffer into which to compress frames for transfer */
+   uint8_t *zbuffer;
+
+   size_t connections_size;
+   size_t buffer_size;
+   size_t zbuffer_size;
+   /* The size of our packet buffers */
+   size_t packet_buffer_size;
+   /* Size of savestates */
+   size_t state_size;
+
+   /* The frame we're currently inputting */
+   size_t self_ptr;
+   /* The frame we're currently running, which may be 
+    * behind the frame we're currently inputting if
+    * we're using input latency */
+   size_t run_ptr;
+   /* The first frame at which some data might be unreliable */
+   size_t other_ptr;
+   /* Pointer to the first frame for which we're missing 
+    * the data of at least one connected player excluding ourself.
+    * Generally, other_ptr <= unread_ptr <= self_ptr, 
+    * but unread_ptr can get ahead of self_ptr if the peer 
+    * is running fast. */
+   size_t unread_ptr;
+   /* Pointer to the next frame to read from each client */
+   size_t read_ptr[MAX_CLIENTS];
+   /* Pointer to the next frame to read from the server 
+    * (as it might not be a player but still synchronizes)
+    */
+   size_t server_ptr;
+   /* A pointer used temporarily for replay. */
+   size_t replay_ptr;
+
+   /* Pseudo random seed */
+   unsigned long simple_rand_next;
 
    /* TCP connection for listening (server only) */
    int listen_fd;
 
    /* Our client number */
    uint32_t self_client_num;
-
-   /* All of our connections */
-   struct netplay_connection *connections;
-   size_t connections_size;
 
    /* Bitmap of clients with input devices */
    uint32_t connected_players;
@@ -503,68 +556,18 @@ struct netplay
     * as netplay needs fixed devices. */
    uint32_t config_devices[MAX_INPUT_DEVICES];
 
-   struct retro_callbacks cbs;
-
-   struct delta_frame *buffer;
-   size_t buffer_size;
-
-   /* Compression transcoder */
-   struct compression_transcoder compress_nil,
-                                 compress_zlib;
-
-   /* Size of savestates */
-   size_t state_size;
-
-   /* A buffer into which to compress frames for transfer */
-   uint8_t *zbuffer;
-   size_t zbuffer_size;
-
-   /* The size of our packet buffers */
-   size_t packet_buffer_size;
-
-   /* The frame we're currently inputting */
-   size_t self_ptr;
    uint32_t self_frame_count;
-
-   /* The frame we're currently running, which may be 
-    * behind the frame we're currently inputting if
-    * we're using input latency */
-   size_t run_ptr;
    uint32_t run_frame_count;
-
-   /* The first frame at which some data might be unreliable */
-   size_t other_ptr;
    uint32_t other_frame_count;
-
-   /* Pointer to the first frame for which we're missing 
-    * the data of at least one connected player excluding ourself.
-    * Generally, other_ptr <= unread_ptr <= self_ptr, 
-    * but unread_ptr can get ahead of self_ptr if the peer 
-    * is running fast. */
-   size_t unread_ptr;
    uint32_t unread_frame_count;
-
-   /* Pointer to the next frame to read from each client */
-   size_t read_ptr[MAX_CLIENTS];
    uint32_t read_frame_count[MAX_CLIENTS];
-
-   /* Pointer to the next frame to read from the server 
-    * (as it might not be a player but still synchronizes)
-    */
-   size_t server_ptr;
    uint32_t server_frame_count;
-
-   /* A pointer used temporarily for replay. */
-   size_t replay_ptr;
    uint32_t replay_frame_count;
 
-   /* Our local socket info */
-   struct addrinfo *addr;
+   int frame_run_time_ptr;
 
    /* Counter for timeouts */
    unsigned timeout_cnt;
-
-   int frame_run_time_ptr;
 
    /* Latency frames; positive to hide network latency, 
     * negative to hide input latency */
@@ -575,6 +578,10 @@ struct netplay
 
    /* How far behind did we fall? */
    uint32_t catch_up_behind;
+
+   /* Host settings */
+   int32_t input_latency_frames_min;
+   int32_t input_latency_frames_max;
 
    /* Are we stalled? */
    enum rarch_netplay_stall_reason stall;
@@ -616,9 +623,6 @@ struct netplay
    /* Force a reset */
    bool force_reset;
 
-   /* Quirks in the savestate implementation */
-   uint64_t quirks;
-
    /* Force our state to be sent to all connections */
    bool force_send_savestate;
 
@@ -648,19 +652,8 @@ struct netplay
    /* Are we the connected? */
    bool is_connected;
 
-   /* MITM session id */
-   mitm_id_t mitm_session_id;
-
-   /* MITM connection handler */
-   struct netplay_mitm_pending *mitm_pending;
-
    /* Host settings */
-   int32_t input_latency_frames_min;
-   int32_t input_latency_frames_max;
    bool allow_pausing;
-
-   /* Pseudo random seed */
-   unsigned long simple_rand_next;
 };
 
 /***************************************************************

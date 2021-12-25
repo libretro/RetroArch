@@ -20,7 +20,7 @@
 #pragma comment(lib, "ws2_32")
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) && defined(_MSC_VER)
 #pragma comment(lib, "Iphlpapi")
 #endif
 
@@ -4891,7 +4891,6 @@ static void relay_chat(netplay_t *netplay,
 static void show_chat(const char *nick, const char *msg)
 {
    char formatted_chat[NETPLAY_CHAT_MAX_SIZE];
-   net_driver_state_t *net_st = &networking_driver_st;
 
    /* Truncate the message if necessary. */
    snprintf(formatted_chat, sizeof(formatted_chat),
@@ -4902,30 +4901,35 @@ static void show_chat(const char *nick, const char *msg)
 #ifdef HAVE_GFX_WIDGETS
    if (gfx_widgets_ready())
    {
-      struct netplay_chat_data *data;
+      uint32_t msg_slot;
+      net_driver_state_t *net_st = &networking_driver_st;
+      struct netplay_chat *chat  = net_st->chat;
 
       /* Do we have a free slot for this message?
          If not, get rid of the oldest message to make room for it. */
-      if (!net_st->chat.message_slots)
+      if (!chat->message_slots)
       {
          int i;
 
-         for (i = ARRAY_SIZE(net_st->chat.messages) - 2; i >= 0; i--)
+         for (i = ARRAY_SIZE(chat->messages) - 2; i >= 0; i--)
          {
-            memcpy(&net_st->chat.messages[i+1].data,
-               &net_st->chat.messages[i].data,
-               sizeof(*data));
+            memcpy(&chat->messages[i+1], &chat->messages[i],
+               sizeof(*chat->messages));
          }
-         data = &net_st->chat.messages[0].data;
+
+         msg_slot = 0;
       }
       else
       {
-         data = &net_st->chat.messages[--net_st->chat.message_slots].data;
+         msg_slot = --chat->message_slots;
       }
 
-      strlcpy(data->nick, nick, sizeof(data->nick));
-      strlcpy(data->msg, msg, sizeof(data->msg));
-      data->frames = NETPLAY_CHAT_FRAME_TIME;
+      chat->messages[msg_slot].frames =
+         NETPLAY_CHAT_FRAME_TIME;
+      strlcpy(chat->messages[msg_slot].nick, nick,
+         sizeof(chat->messages[msg_slot].nick));
+      strlcpy(chat->messages[msg_slot].msg, msg,
+         sizeof(chat->messages[msg_slot].msg));
    }
    else
 #endif
@@ -8309,12 +8313,8 @@ void deinit_netplay(void)
 #endif
    }
 
-   for (i = 0; i < ARRAY_SIZE(net_st->chat.messages); i++)
-   {
-      *net_st->chat.messages[i].data.nick  = '\0';
-      *net_st->chat.messages[i].data.msg   = '\0';
-      net_st->chat.messages[i].data.frames = 0;
-   }
+   free(net_st->chat);
+   net_st->chat = NULL;
 
    core_unset_netplay_callbacks();
 }
@@ -8432,13 +8432,10 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
       return false;
    }
 
-   for (i = 0; i < ARRAY_SIZE(net_st->chat.messages); i++)
-   {
-      *net_st->chat.messages[i].data.nick  = '\0';
-      *net_st->chat.messages[i].data.msg   = '\0';
-      net_st->chat.messages[i].data.frames = 0;
-   }
-   net_st->chat.message_slots = ARRAY_SIZE(net_st->chat.messages);
+   net_st->chat = calloc(1, sizeof(*net_st->chat));
+   if (!net_st->chat)
+      return false;
+   net_st->chat->message_slots = ARRAY_SIZE(net_st->chat->messages);
 
    net_st->reannounce  = -1;
    net_st->reping      = -1;
@@ -8680,56 +8677,66 @@ static void gfx_widget_netplay_chat_iterate(void *user_data,
    bool is_threaded)
 {
    size_t i;
-   settings_t *settings       = config_get_ptr();
    net_driver_state_t *net_st = &networking_driver_st;
-#ifdef HAVE_MENU
-   bool menu_open             = menu_state_get_ptr()->alive;
-#endif
-   bool fade_chat             = settings->bools.netplay_fade_chat;
+   struct netplay_chat *chat  = net_st->chat;
+   struct netplay_chat_buffer *chat_buffer = &net_st->chat_buffer;
 
-   /* Move the messages to a thread-safe buffer
-      before drawing them. */
-   for (i = 0; i < ARRAY_SIZE(net_st->chat.messages); i++)
+   if (chat)
    {
-      struct netplay_chat_data   *data   =
-         &net_st->chat.messages[i].data;
-      struct netplay_chat_buffer *buffer =
-         &net_st->chat.messages[i].buffer;
-
-      /* Don't show chat while in the menu */
+      settings_t *settings = config_get_ptr();
 #ifdef HAVE_MENU
-      if (menu_open)
+      bool menu_open       = menu_state_get_ptr()->alive;
+#endif
+      bool fade_chat       = settings->bools.netplay_fade_chat;
+
+      /* Move the messages to a thread-safe buffer
+         before drawing them. */
+      for (i = 0; i < ARRAY_SIZE(chat->messages); i++)
       {
-         buffer->alpha = 0;
-         continue;
-      }
+         uint32_t *frames = &chat->messages[i].frames;
+         uint8_t  *alpha  = &chat_buffer->messages[i].alpha;
+
+#ifdef HAVE_MENU
+         /* Don't show chat while in the menu */
+         if (menu_open)
+         {
+            *alpha = 0;
+            continue;
+         }
 #endif
 
-      /* If we are not fading, set alpha to max. */
-      if (!fade_chat)
-      {
-         buffer->alpha = 0xFF;
-      }
-      else if (data->frames)
-      {
-         float alpha_percent = (float) data->frames /
-            (float) NETPLAY_CHAT_FRAME_TIME;
+         /* If we are not fading, set alpha to max. */
+         if (!fade_chat)
+         {
+            *alpha = 0xFF;
+         }
+         else if (*frames)
+         {
+            float alpha_percent = (float) *frames /
+               (float) NETPLAY_CHAT_FRAME_TIME;
 
-         buffer->alpha = (uint8_t) float_max(
-            alpha_percent * 255.0f, 1.0f);
+            *alpha = (uint8_t) float_max(
+               alpha_percent * 255.0f, 1.0f);
 
-         data->frames--;
-      }
-      else
-      {
-         buffer->alpha = 0;
-         continue;
-      }
+            (*frames)--;
+         }
+         else
+         {
+            *alpha = 0;
+            continue;
+         }
 
-      memcpy(buffer->nick, data->nick,
-         sizeof(buffer->nick));
-      memcpy(buffer->msg, data->msg,
-         sizeof(buffer->msg));
+         memcpy(chat_buffer->messages[i].nick, chat->messages[i].nick,
+            sizeof(chat_buffer->messages[i].nick));
+         memcpy(chat_buffer->messages[i].msg, chat->messages[i].msg,
+            sizeof(chat_buffer->messages[i].msg));
+      }
+   }
+   /* If we are not in netplay, do nothing. */
+   else
+   {
+      for (i = 0; i < ARRAY_SIZE(chat->messages); i++)
+         chat_buffer->messages[i].alpha = 0;
    }
 }
 
@@ -8739,24 +8746,22 @@ static void gfx_widget_netplay_chat_frame(void *data, void *userdata)
    video_frame_info_t *video_info = data;
    dispgfx_widget_t *p_dispwidget = userdata;
    net_driver_state_t *net_st     = &networking_driver_st;
+   struct netplay_chat_buffer *chat_buffer = &net_st->chat_buffer;
    int line_height                =
       p_dispwidget->gfx_widget_fonts.regular.line_height +
       p_dispwidget->simple_widget_padding / 3.0f;
    int height                     = 
       video_info->height - line_height;
 
-   for (i = 0; i < ARRAY_SIZE(net_st->chat.messages); i++)
+   for (i = 0; i < ARRAY_SIZE(chat_buffer->messages); i++)
    {
       char formatted_nick[NETPLAY_CHAT_MAX_SIZE];
       char formatted_msg[NETPLAY_CHAT_MAX_SIZE];
       int  formatted_nick_len;
       int  formatted_nick_width;
-      const char *nick = 
-         net_st->chat.messages[i].buffer.nick;
-      const char *msg  = 
-         net_st->chat.messages[i].buffer.msg;
-      uint8_t alpha    =
-         net_st->chat.messages[i].buffer.alpha;
+      uint8_t    alpha = chat_buffer->messages[i].alpha;
+      const char *nick = chat_buffer->messages[i].nick;
+      const char *msg  = chat_buffer->messages[i].msg;
 
       if (!alpha || string_is_empty(nick) || string_is_empty(msg))
          continue;
