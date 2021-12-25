@@ -492,7 +492,7 @@ void handle_toplevel_close(void *data,
       struct xdg_toplevel *xdg_toplevel)
 {
 	gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-	BIT_SET(wl->input.key_state, KEY_ESC);
+	command_event(CMD_EVENT_QUIT, NULL);
 }
 
 static void display_handle_geometry(void *data,
