@@ -96,6 +96,7 @@ typedef struct input_ctx_wayland_data
 
    struct
    {
+      struct wl_pointer *surface;
       int last_x, last_y;
       int x, y;
       int delta_x, delta_y;

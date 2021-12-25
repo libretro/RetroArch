@@ -162,12 +162,13 @@ static void pointer_handle_enter(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   wl->input.mouse.last_x = wl_fixed_to_int(sx * (wl_fixed_t)wl->buffer_scale);
-   wl->input.mouse.last_y = wl_fixed_to_int(sy * (wl_fixed_t)wl->buffer_scale);
-   wl->input.mouse.x      = wl->input.mouse.last_x;
-   wl->input.mouse.y      = wl->input.mouse.last_y;
-   wl->input.mouse.focus  = true;
-   wl->cursor.serial      = serial;
+   wl->input.mouse.surface = surface;
+   wl->input.mouse.last_x  = wl_fixed_to_int(sx * (wl_fixed_t)wl->buffer_scale);
+   wl->input.mouse.last_y  = wl_fixed_to_int(sy * (wl_fixed_t)wl->buffer_scale);
+   wl->input.mouse.x       = wl->input.mouse.last_x;
+   wl->input.mouse.y       = wl->input.mouse.last_y;
+   wl->input.mouse.focus   = true;
+   wl->cursor.serial       = serial;
 
    gfx_ctx_wl_show_mouse(data, wl->cursor.visible);
 }
@@ -179,6 +180,9 @@ static void pointer_handle_leave(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    wl->input.mouse.focus      = false;
+
+   if (wl->input.mouse.surface == surface)
+      wl->input.mouse.surface = NULL;
 }
 
 static void pointer_handle_motion(void *data,
@@ -202,6 +206,9 @@ static void pointer_handle_button(void *data,
       uint32_t state)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   if (wl->input.mouse.surface != wl->surface)
+      return;
 
    if (state == WL_POINTER_BUTTON_STATE_PRESSED)
    {
@@ -450,6 +457,8 @@ static void wl_surface_enter(void *data, struct wl_surface *wl_surface,
 {
     output_info_t *oi;
     gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+    wl->input.mouse.surface = wl_surface;
 
     /* TODO: track all outputs the surface is on, pick highest scale */
 
