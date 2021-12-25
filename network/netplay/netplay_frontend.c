@@ -8662,6 +8662,7 @@ bool netplay_is_lan_address(struct sockaddr_in *addr)
    uint32_t uaddr;
 
    memcpy(&uaddr, &addr->sin_addr, sizeof(uaddr));
+   uaddr = ntohl(uaddr);
 
    for (i = 0; i < ARRAY_SIZE(subnets); i++)
       if ((uaddr & masks[i]) == subnets[i])
