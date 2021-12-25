@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#if !defined(HAVE_SOCKET_LEGACY) && defined(_WIN32)
+#if !defined(HAVE_SOCKET_LEGACY) && defined(_WIN32) && defined(_MSC_VER)
 #pragma comment(lib, "Iphlpapi")
 #endif
 
@@ -43,7 +43,7 @@
 #include <iphlpapi.h>
 #endif
 
-static natt_state_t natt_st = {{0}, {{0}}, 0, -1};
+static natt_state_t natt_st = {0, {0}, {{0}}, -1};
 
 natt_state_t *natt_state_get_ptr(void)
 {

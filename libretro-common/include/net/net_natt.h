@@ -54,39 +54,39 @@ enum nat_traversal_status
 
 struct natt_device
 {
+   struct sockaddr_in ext_addr;
    char desc        [512];
    char control     [512];
    char service_type[512];
-   struct sockaddr_in ext_addr;
    bool busy;
 };
 
 struct natt_request
 {
-   struct natt_device *device;
    struct sockaddr_in addr;
+   struct natt_device *device;
    enum socket_protocol proto;
    bool success;
 };
 
 struct nat_traversal_data
 {
-   size_t iface;
    struct natt_request request;
+   size_t iface;
    enum natt_forward_type forward_type;
    enum nat_traversal_status status;
 };
 
 typedef struct
 {
+   /* Timeout for our discovery request. */
+   retro_time_t timeout;
+
    /* List of available network interfaces. */
    struct net_ifinfo interfaces;
 
    /* Device we are operating on. */
    struct natt_device device;
-
-   /* Timeout for our discovery request. */
-   retro_time_t timeout;
 
    /* File descriptor of the socket we are receiving discovery data. */
    int fd;
