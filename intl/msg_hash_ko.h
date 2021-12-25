@@ -2639,6 +2639,14 @@ MSG_HASH(
    "'초당 프레임 수' 표시기를 사용/해제합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE,
+   "기술적 통계 표시 (켜기/끄기)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
+   "화면에 기술적인 통계를 표시할지 여부를 전환합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
    "넷플레이 핑 표시 (켜기/끄기)"
    )
@@ -5237,6 +5245,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
    "사용할 특정 중계 서버를 선택합니다. 지리적으로 가깝게 위치한 곳이 지연율이 낮게 나옵니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
+   "사용자 정의 릴레이 서버 주소"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
+   "사용자 정의 릴레이 서버의 주소를 입력합니다. 포맷: 주소 또는 주소|포트"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
@@ -10250,6 +10266,10 @@ MSG_HASH(
    "클라이언트 대기..."
    )
 MSG_HASH(
+   MSG_ROOM_NOT_CONNECTABLE,
+   "인터넷에서 이 방에 연결할 수 없습니다."
+   )
+MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    "게임을 나왔습니다"
    )
@@ -12138,6 +12158,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_INTERNET_RELAY,
    "인터넷 (중계)"
+   )
+MSG_HASH(
+   MSG_INTERNET_NOT_CONNECTABLE,
+   "인터넷 (연결 불가능)"
    )
 MSG_HASH(
    MSG_LOCAL,
