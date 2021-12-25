@@ -7202,21 +7202,24 @@ void netplay_toggle_play_spectate(netplay_t *netplay)
       case NETPLAY_CONNECTION_PLAYING:
       case NETPLAY_CONNECTION_SLAVE:
          {
-            uint32_t device;
-
-            /* Switch to spectator mode immediately */
-            netplay->self_mode    = NETPLAY_CONNECTION_SPECTATING;
-            netplay->self_devices = 0;
-
-            netplay->connected_players &= ~(1<<netplay->self_client_num);
-            netplay->client_devices[netplay->self_client_num] = 0;
-            for (device = 0; device < MAX_INPUT_DEVICES; device++)
-               netplay->device_clients[device] &= ~(1<<netplay->self_client_num);
-
-            /* Announce it */
+            /* Switch to spectator mode immediately.
+               Host switches to spectator on netplay_cmd_mode. */
             if (!netplay->is_server)
+            {
+               uint32_t device;
+
+               netplay->self_mode    = NETPLAY_CONNECTION_SPECTATING;
+               netplay->self_devices = 0;
+
+               netplay->connected_players &= ~(1<<netplay->self_client_num);
+               netplay->client_devices[netplay->self_client_num] = 0;
+               for (device = 0; device < MAX_INPUT_DEVICES; device++)
+                  netplay->device_clients[device] &= ~(1<<netplay->self_client_num);
+
+               /* Announce it */
                announce_play_spectate(netplay,
                   NULL, NETPLAY_CONNECTION_SPECTATING, 0, -1);
+            }
 
             netplay_cmd_mode(netplay, NETPLAY_CONNECTION_SPECTATING);
          }
@@ -8127,6 +8130,9 @@ static bool netplay_mitm_query(const char *mitm_name)
 
       netplay_decode_hostname(custom_server,
          addr, &port, sess, sizeof(addr));
+
+      if (!port)
+         port = RARCH_DEFAULT_PORT;
 
       strlcpy(host_room->mitm_address, addr,
          sizeof(host_room->mitm_address));
