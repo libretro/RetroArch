@@ -8297,7 +8297,6 @@ static bool netplay_pre_frame(
 
 void deinit_netplay(void)
 {
-   size_t i;
    net_driver_state_t *net_st = &networking_driver_st;
 
    if (net_st->data)
@@ -8306,9 +8305,7 @@ void deinit_netplay(void)
          netplay_deinit_nat_traversal();
 
       netplay_free(net_st->data);
-      net_st->data              = NULL;
-      net_st->netplay_enabled   = false;
-      net_st->netplay_is_client = false;
+      net_st->data = NULL;
 
 #ifdef HAVE_NETPLAYDISCOVERY
       deinit_lan_ad_server_socket();
@@ -8318,12 +8315,14 @@ void deinit_netplay(void)
    free(net_st->chat);
    net_st->chat = NULL;
 
+   net_st->netplay_enabled   = false;
+   net_st->netplay_is_client = false;
+
    core_unset_netplay_callbacks();
 }
 
 bool init_netplay(const char *server, unsigned port, const char *mitm_session)
 {
-   size_t i;
    struct retro_callbacks cbs    = {0};
    uint64_t serialization_quirks = 0;
    uint64_t quirks               = 0;
