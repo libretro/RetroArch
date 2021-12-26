@@ -126,8 +126,21 @@ static void gfx_ctx_wl_get_video_size(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   *width  = wl->width  * wl->buffer_scale;
-   *height = wl->height * wl->buffer_scale;
+   if (wl->surface == NULL) {
+      output_info_t *oi, *tmp;
+      oi = wl->current_output;
+
+      // If window is not ready get any monitor
+      if (!oi)
+          wl_list_for_each_safe(oi, tmp, &wl->all_outputs, link)
+              break;
+
+      *width  = oi->width;
+      *height = oi->height;
+   } else {
+      *width  = wl->width  * wl->buffer_scale;
+      *height = wl->height * wl->buffer_scale;
+   }
 }
 
 static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
@@ -270,25 +283,26 @@ static bool gfx_ctx_wl_get_metrics(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   if (     !wl 
-         || !wl->current_output
-         || wl->current_output->physical_width  == 0 
-         || wl->current_output->physical_height == 0)
-      return false;
+   output_info_t *oi, *tmp;
+   oi = wl->current_output;
+
+   if (!oi)
+      wl_list_for_each_safe(oi, tmp, &wl->all_outputs, link)
+         break;
 
    switch (type)
    {
       case DISPLAY_METRIC_MM_WIDTH:
-         *value = (float)wl->current_output->physical_width;
+         *value = (float)oi->physical_width;
          break;
 
       case DISPLAY_METRIC_MM_HEIGHT:
-         *value = (float)wl->current_output->physical_height;
+         *value = (float)oi->physical_height;
          break;
 
       case DISPLAY_METRIC_DPI:
-         *value = (float)wl->current_output->width * 25.4f / 
-                  (float)wl->current_output->physical_width;
+         *value = (float)oi->width * 25.4f /
+                  (float)oi->physical_width;
          break;
 
       default:
