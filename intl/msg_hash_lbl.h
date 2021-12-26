@@ -2519,6 +2519,78 @@ MSG_HASH(
    "rdb_entry_genre"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_ACHIEVEMENTS,
+   "rdb_entry_achievements"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_CATEGORY,
+   "rdb_entry_category"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_LANGUAGE,
+   "rdb_entry_language"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_REGION,
+   "rdb_entry_region"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_CONSOLE_EXCLUSIVE,
+   "rdb_entry_console_exclusive"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_PLATFORM_EXCLUSIVE,
+   "rdb_entry_platform_exclusive"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_RUMBLE,
+   "rdb_entry_rumble"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_SCORE,
+   "rdb_entry_score"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_MEDIA,
+   "rdb_entry_media"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_CONTROLS,
+   "rdb_entry_controls"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_ARTSTYLE,
+   "rdb_entry_artstyle"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_GAMEPLAY,
+   "rdb_entry_gameplay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_NARRATIVE,
+   "rdb_entry_narrative"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_PACING,
+   "rdb_entry_pacing"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_PERSPECTIVE,
+   "rdb_entry_perspective"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_SETTING,
+   "rdb_entry_setting"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_VISUAL,
+   "rdb_entry_visual"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_VEHICULAR,
+   "rdb_entry_vehicular"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_RDB_ENTRY_MAX_USERS,
    "rdb_entry_max_users"
    )
