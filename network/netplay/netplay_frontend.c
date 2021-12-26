@@ -4938,6 +4938,7 @@ static void show_chat(const char *nick, const char *msg)
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
 
+#ifdef HAVE_MENU
 static void send_chat(void *userdata, const char *line)
 {
    char msg[NETPLAY_CHAT_MAX_SIZE];
@@ -4969,6 +4970,7 @@ static void send_chat(void *userdata, const char *line)
    menu_input_dialog_end();
    retroarch_menu_running_finished(false);
 }
+#endif
 
 void netplay_input_chat(netplay_t *netplay)
 {
