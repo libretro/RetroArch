@@ -1,6 +1,7 @@
 # Future
 - LINUX: Added support for Linux GameMode (https://github.com/FeralInteractive/gamemode), which can be toggled on/off in the Power Management or Latency settings menus.
 - Added a hotkey toggle for the on-screen technical statistics.
+- Added support for showing the overlay behind the menu instead of in front. This is currently only supported on the GL, Vulkan, D3D 9/10/11/12 and 3DS drivers.
 
 # 1.9.14
 - ANDROID/PLAYSTORE: Implement MANAGE_EXTERNAL_STORAGE permission

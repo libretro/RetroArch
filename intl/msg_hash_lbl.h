@@ -1555,6 +1555,10 @@ MSG_HASH(
    "input_overlay_enable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_BEHIND_MENU,
+   "overlay_behind_menu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,
    "overlay_hide_in_menu"
    )

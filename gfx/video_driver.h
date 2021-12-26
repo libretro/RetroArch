@@ -502,6 +502,7 @@ typedef struct video_frame_info
    bool msg_bgcolor_enable;
    bool crt_switch_hires_menu;
    bool hdr_enable;
+   bool overlay_behind_menu;
 } video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*);
