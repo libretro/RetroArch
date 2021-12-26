@@ -2446,6 +2446,146 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
             goto error;
       }
 
+      if (db_info_entry->category)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_CATEGORY,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_CATEGORY),
+                  db_info_entry->category, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->language)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_LANGUAGE,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_LANGUAGE),
+                  db_info_entry->language, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->region)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_REGION,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_REGION),
+                  db_info_entry->region, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->score)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_SCORE,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_SCORE),
+                  db_info_entry->score, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->media)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_MEDIA,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_MEDIA),
+                  db_info_entry->media, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->controls)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_CONTROLS,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_CONTROLS),
+                  db_info_entry->controls, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->artstyle)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_ARTSTYLE,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_ARTSTYLE),
+                  db_info_entry->artstyle, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->gameplay)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_GAMEPLAY,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_GAMEPLAY),
+                  db_info_entry->gameplay, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->narrative)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_NARRATIVE,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_NARRATIVE),
+                  db_info_entry->narrative, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->pacing)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_PACING,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_PACING),
+                  db_info_entry->pacing, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->perspective)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_PERSPECTIVE,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_PERSPECTIVE),
+                  db_info_entry->perspective, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->setting)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_SETTING,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_SETTING),
+                  db_info_entry->setting, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->visual)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_VISUAL,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_VISUAL),
+                  db_info_entry->visual, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->vehicular)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_VEHICULAR,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_VEHICULAR),
+                  db_info_entry->vehicular, info->path, info->list) == -1)
+            goto error;
+      }
+
       if (db_info_entry->developer)
       {
          for (k = 0; k < db_info_entry->developer->size; k++)
@@ -2666,6 +2806,36 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_COOP,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_COOP),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->achievements == 1)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_ACHIEVEMENTS,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_ACHIEVEMENTS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->console_exclusive == 1)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_CONSOLE_EXCLUSIVE,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_CONSOLE_EXCLUSIVE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->platform_exclusive == 1)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_PLATFORM_EXCLUSIVE,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_PLATFORM_EXCLUSIVE),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path, info->list) == -1)
             goto error;
       }
