@@ -8297,7 +8297,6 @@ static bool netplay_pre_frame(
 
 void deinit_netplay(void)
 {
-   size_t i;
    net_driver_state_t *net_st = &networking_driver_st;
 
    if (net_st->data)
@@ -8323,7 +8322,6 @@ void deinit_netplay(void)
 
 bool init_netplay(const char *server, unsigned port, const char *mitm_session)
 {
-   size_t i;
    struct retro_callbacks cbs    = {0};
    uint64_t serialization_quirks = 0;
    uint64_t quirks               = 0;
