@@ -3459,6 +3459,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
    "Overlays für Rahmen und Steuerelemente auf dem Bildschirm verwenden."
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
    "Overlay im Menü nicht anzeigen"

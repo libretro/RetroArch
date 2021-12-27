@@ -3539,6 +3539,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
    "Päällyksiä käytetään rajoina ja näytöllä näkyviin ohjaimiin."
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
    "Piilota päällys valikossa"

@@ -1771,6 +1771,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
    "Átfedés megjelenítése"
    )
+
 #if defined(ANDROID)
 #endif
 

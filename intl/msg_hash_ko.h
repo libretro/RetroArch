@@ -3603,6 +3603,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
    "테두리 및 온스크린 컨트롤을 위해 오버레이를 사용합니다."
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
+   "오버레이 메뉴 뒤에 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
+   "오버레이를 메뉴 앞이 아닌 뒤에 표시합니다."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
    "메뉴에서 오버레이 숨김"
