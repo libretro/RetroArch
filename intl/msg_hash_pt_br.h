@@ -3550,11 +3550,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
-   "Mostrar sobreposição por trás do menu"
+   "Mostra a sobreposição por trás do menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
-   "Mostra a sobreposição atrás ao invés de na frente do menu."
+   "Mostra a sobreposição do menu atrás em vez de mostrar na frente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
@@ -5197,7 +5197,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
-   "Digite o endereço do seu servidor de retransmissão personalizado. Formato suportado: endereço ou endereço|porta"
+   "Insira o endereço personalizado do seu servidor de retransmissão. Formato compatível: endereço ou endereço|porta"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
@@ -10132,7 +10132,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ROOM_NOT_CONNECTABLE,
-   "Sua sala não está conectada na internet."
+   "A sua sala não está conectada na internet."
    )
 MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
