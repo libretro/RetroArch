@@ -761,6 +761,7 @@ typedef struct settings
       bool crt_switch_hires_menu;
 
       /* Netplay */
+      bool netplay_show_only_connectable;
       bool netplay_public_announce;
       bool netplay_start_as_spectator;
       bool netplay_fade_chat;

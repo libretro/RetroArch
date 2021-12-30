@@ -2849,6 +2849,10 @@ MSG_HASH(
    "scan_file"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_SHOW_ONLY_CONNECTABLE,
+   "netplay_show_only_connectable"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
    "refresh_rooms"
    )

@@ -9688,6 +9688,7 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 {
    int i;
    unsigned count             = 0;
+   settings_t *settings       = config_get_ptr();
    net_driver_state_t *net_st = networking_state_get_ptr();
 
    menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, list);
@@ -9725,6 +9726,11 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
          MENU_SETTING_ACTION, 0, 0))
       count++;
 
+   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+         MENU_ENUM_LABEL_NETPLAY_SHOW_ONLY_CONNECTABLE,
+         PARSE_ONLY_BOOL, false) == 0)
+      count++;
+
    if (menu_entries_append_enum(list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS),
          msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS),
@@ -9751,6 +9757,11 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 
       /* Get rid of any room that is not running RetroArch. */
       if (!room->is_retroarch)
+         continue;
+
+      /* Get rid of any room that is not connectable,
+         if the user opt-in. */
+      if (!room->connectable && settings->bools.netplay_show_only_connectable)
          continue;
 
       if (room->has_password || room->has_spectate_password)
