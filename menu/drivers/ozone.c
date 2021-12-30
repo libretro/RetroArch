@@ -1596,7 +1596,8 @@ static void ozone_set_background_running_opacity(
 }
 
 static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
-      enum msg_hash_enums enum_idx, unsigned type, bool active)
+      enum msg_hash_enums enum_idx, const char *enum_path,
+      unsigned type, bool active)
 {
    switch (enum_idx)
    {
@@ -1607,7 +1608,6 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
 #endif
       case MENU_ENUM_LABEL_DISC_INFORMATION:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_DISC];
-      case MENU_ENUM_LABEL_CORE_OPTIONS:
       case MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_OPTIONS];
       case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
@@ -1984,7 +1984,20 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case FILE_TYPE_RDB_ENTRY:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO];
       case MENU_SETTING_ACTION_CORE_OPTIONS:
-         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_OPTIONS];
+         if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS)))
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_VIDEO];
+         else if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS)))
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_AUDIO];
+         else if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS)))
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS];
+         else if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS)))
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_OSD];
+         else if (string_is_equal(enum_path, "Media"))
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RDB];
+         else if (string_is_equal(enum_path, "System"))
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_DRIVERS];
+         else
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_OPTIONS];
       case MENU_SETTING_ACTION_CORE_OPTION_OVERRIDE_LIST:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SETTING];
       case MENU_SETTING_ACTION_CORE_INPUT_REMAPPING_OPTIONS:
@@ -4476,7 +4489,8 @@ static void ozone_compute_entries_position(
          OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO */
       if (ozone->is_playlist && entries_end == 1)
       {
-         uintptr_t         tex = ozone_entries_icon_get_texture(ozone, entry.enum_idx, entry.type, false);
+         uintptr_t         tex = ozone_entries_icon_get_texture(ozone,
+               entry.enum_idx, entry.path, entry.type, false);
          ozone->empty_playlist = tex == ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO];
       }
       else
@@ -4560,6 +4574,7 @@ static void ozone_draw_entries(
    unsigned video_info_height, video_info_width;
    bool menu_show_sublabels          = settings->bools.menu_show_sublabels;
    bool use_smooth_ticker            = settings->bools.menu_ticker_smooth;
+   unsigned show_history_icons       = settings->uints.playlist_show_history_icons;
    enum gfx_animation_ticker_type 
       menu_ticker_type               = (enum gfx_animation_ticker_type)
       settings->uints.menu_ticker_type;
@@ -4840,7 +4855,8 @@ border_iterate:
       }
 
       /* Icon */
-      tex = ozone_entries_icon_get_texture(ozone, entry.enum_idx, entry.type, entry_selected);
+      tex = ozone_entries_icon_get_texture(ozone,
+            entry.enum_idx, entry.path, entry.type, entry_selected);
       if (tex != ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SUBSETTING])
       {
          uintptr_t texture = tex;
@@ -4855,6 +4871,70 @@ border_iterate:
                texture = tex;
             else
                texture = sidebar_node->content_icon;
+         }
+         /* History/Favorite console specific content icons */
+         else if (   entry.type == FILE_TYPE_RPL_ENTRY
+                  && show_history_icons)
+         {
+            switch (ozone->tabs[ozone->categories_selection_ptr])
+            {
+               case OZONE_SYSTEM_TAB_HISTORY:
+               case OZONE_SYSTEM_TAB_FAVORITES:
+                  {
+                     unsigned j                  = 0;
+                     unsigned p                  = 0;
+                     size_t icon_list_size       = ozone_list_get_size(ozone, MENU_LIST_HORIZONTAL);
+                     size_t playlist_size        = 0;
+                     playlist_t *playlist        = NULL;
+                     const struct playlist_entry
+                                 *playlist_entry = NULL;
+
+                     /* Get current playlist */
+                     playlist = playlist_get_cached();
+                     if (!playlist)
+                        break;
+
+                     playlist_size = playlist_get_size(playlist);
+                     if (i >= playlist_size)
+                        break;
+
+                     /* Read playlist entry */
+                     for (p = i; p < playlist_size && playlist_entry == NULL; p++)
+                     {
+                        playlist_get_index(playlist, p, &playlist_entry);
+                        if (playlist_entry && !string_is_equal(playlist_entry->label, entry.path))
+                           playlist_entry = NULL;
+                     }
+
+                     if (!playlist_entry)
+                        break;
+
+                     for (j = 0; j < icon_list_size; j++)
+                     {
+                        ozone_node_t *node = ozone->horizontal_list.list[j].userdata;
+                        if (!node)
+                           continue;
+
+                        if (!string_is_empty(playlist_entry->db_name)
+                              && string_is_equal(ozone->horizontal_list.list[j].path, playlist_entry->db_name))
+                        {
+                           switch (show_history_icons)
+                           {
+                              case PLAYLIST_SHOW_HISTORY_ICONS_MAIN:
+                                 texture = node->icon;
+                                 break;
+                              case PLAYLIST_SHOW_HISTORY_ICONS_CONTENT:
+                                 texture = node->content_icon;
+                                 break;
+                           }
+                           break;
+                        }
+                     }
+                  }
+                  break;
+               default:
+                  break;
+            }
          }
 
          /* Cheevos badges should not be recolored */

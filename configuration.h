@@ -299,6 +299,7 @@ typedef struct settings
 
       unsigned playlist_entry_remove_enable;
       unsigned playlist_show_inline_core_name;
+      unsigned playlist_show_history_icons;
       unsigned playlist_sublabel_runtime_type;
       unsigned playlist_sublabel_last_played_style;
 

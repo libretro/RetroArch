@@ -1333,6 +1333,8 @@ static const int default_content_favorites_size = 200;
 #define DEFAULT_PLAYLIST_SHOW_SUBLABELS true
 #endif
 
+#define DEFAULT_PLAYLIST_SHOW_HISTORY_ICONS PLAYLIST_SHOW_HISTORY_ICONS_DEFAULT
+
 /* Show the indices of playlist entries in
  * a menu-driver-specific fashion */
 #define DEFAULT_PLAYLIST_SHOW_ENTRY_IDX true

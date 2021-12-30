@@ -2538,11 +2538,11 @@ static void xmb_populate_entries(void *data,
 
 static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       xmb_node_t *core_node, xmb_node_t *node,
-      enum msg_hash_enums enum_idx, unsigned type, bool active, bool checked)
+      enum msg_hash_enums enum_idx, const char *enum_path,
+      unsigned type, bool active, bool checked)
 {
    switch (enum_idx)
    {
-      case MENU_ENUM_LABEL_CORE_OPTIONS:
       case MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS];
       case MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_LIST:
@@ -2938,7 +2938,21 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case FILE_TYPE_RDB_ENTRY:
          return xmb->textures.list[XMB_TEXTURE_CORE_INFO];
       case MENU_SETTING_ACTION_CORE_OPTIONS:
-         return xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS];
+         if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS)))
+            return xmb->textures.list[XMB_TEXTURE_VIDEO];
+         else if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS)))
+            return xmb->textures.list[XMB_TEXTURE_AUDIO];
+         else if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS)))
+            return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
+         else if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS)))
+            return xmb->textures.list[XMB_TEXTURE_OSD];
+         else if (string_is_equal(enum_path, "Media"))
+            return xmb->textures.list[XMB_TEXTURE_RDB];
+         else if (string_is_equal(enum_path, "System"))
+            return xmb->textures.list[XMB_TEXTURE_DRIVERS];
+         else
+            return xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS];
+         break;
       case MENU_SETTING_ACTION_CORE_INPUT_REMAPPING_OPTIONS:
          return xmb->textures.list[XMB_TEXTURE_INPUT_REMAPPING_OPTIONS];
       case MENU_SETTING_ACTION_CORE_CHEAT_OPTIONS:
@@ -3168,6 +3182,7 @@ static int xmb_draw_item(
       settings->uints.menu_xmb_thumbnail_scale_factor;
    bool menu_xmb_vertical_thumbnails   = settings->bools.menu_xmb_vertical_thumbnails;
    bool menu_show_sublabels            = settings->bools.menu_show_sublabels;
+   unsigned show_history_icons         = settings->uints.playlist_show_history_icons;
 
    /* Initial ticker configuration */
    if (use_smooth_ticker)
@@ -3537,10 +3552,75 @@ static int xmb_draw_item(
       math_matrix_4x4 mymat_tmp;
       gfx_display_ctx_rotate_draw_t rotate_draw;
       uintptr_t texture        = xmb_icon_get_id(xmb, core_node, node,
-            entry.enum_idx, entry_type, (i == current), entry.checked);
+            entry.enum_idx, entry.path, entry_type, (i == current), entry.checked);
       float x                  = icon_x;
       float y                  = icon_y;
       float scale_factor       = node->zoom;
+
+      /* History/Favorite console specific content icons */
+      if (  entry_type == FILE_TYPE_RPL_ENTRY
+            && show_history_icons)
+      {
+         switch (xmb_get_system_tab(xmb, xmb->categories_selection_ptr))
+         {
+            case XMB_SYSTEM_TAB_HISTORY:
+            case XMB_SYSTEM_TAB_FAVORITES:
+               {
+                  unsigned j                  = 0;
+                  unsigned p                  = 0;
+                  size_t icon_list_size       = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL);
+                  size_t playlist_size        = 0;
+                  playlist_t *playlist        = NULL;
+                  const struct playlist_entry
+                              *playlist_entry = NULL;
+
+                  /* Get current playlist */
+                  playlist = playlist_get_cached();
+                  if (!playlist)
+                     break;
+
+                  playlist_size = playlist_get_size(playlist);
+                  if (i >= playlist_size)
+                     break;
+
+                  /* Read playlist entry */
+                  for (p = i; p < playlist_size && playlist_entry == NULL; p++)
+                  {
+                     playlist_get_index(playlist, p, &playlist_entry);
+                     if (playlist_entry && !string_is_equal(playlist_entry->label, entry.path))
+                        playlist_entry = NULL;
+                  }
+
+                  if (!playlist_entry)
+                     break;
+
+                  for (j = 0; j < icon_list_size; j++)
+                  {
+                     xmb_node_t *node = xmb_get_userdata_from_horizontal_list(xmb, j);
+                     if (!node)
+                        continue;
+
+                     if (!string_is_empty(playlist_entry->db_name)
+                           && string_is_equal(xmb->horizontal_list.list[j].path, playlist_entry->db_name))
+                     {
+                        switch (show_history_icons)
+                        {
+                           case PLAYLIST_SHOW_HISTORY_ICONS_MAIN:
+                              texture = node->icon;
+                              break;
+                           case PLAYLIST_SHOW_HISTORY_ICONS_CONTENT:
+                              texture = node->content_icon;
+                              break;
+                        }
+                        break;
+                     }
+                  }
+               }
+               break;
+            default:
+               break;
+         }
+      }
 
       rotate_draw.matrix       = &mymat_tmp;
       rotate_draw.rotation     = 0;

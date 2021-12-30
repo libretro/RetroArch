@@ -410,6 +410,14 @@ enum playlist_entry_remove_enable_type
    PLAYLIST_ENTRY_REMOVE_ENABLE_LAST
 };
 
+enum playlist_show_history_icons_type
+{
+   PLAYLIST_SHOW_HISTORY_ICONS_DEFAULT = 0,
+   PLAYLIST_SHOW_HISTORY_ICONS_MAIN,
+   PLAYLIST_SHOW_HISTORY_ICONS_CONTENT,
+   PLAYLIST_SHOW_HISTORY_ICONS_LAST
+};
+
 enum quit_on_close_content_type
 {
    QUIT_ON_CLOSE_CONTENT_DISABLED = 0,
