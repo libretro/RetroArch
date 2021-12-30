@@ -534,3 +534,99 @@ unsigned string_hex_to_unsigned(const char *str)
 
    return (unsigned)strtoul(hex_str, NULL, 16);
 }
+
+/**
+ * Get the total number of occurrences of a character in the given string.
+ */
+int string_count_occurrences_single_character(char *str, char t)
+{
+   int ctr = 0;
+   int i;
+
+   for (i = 0; str[i] != '\0'; ++i) {
+      if (t == str[i])
+         ++ctr;
+   }
+
+   return ctr;
+}
+
+/**
+ * Replaces all spaces with the given character.
+ */
+void string_replace_whitespace_with_single_character(char *str, char t)
+{
+
+   while (*str) {
+      if (isspace(*str))
+         *str = t;
+      str++;
+   }
+}
+
+/**
+ * Replaces multiple spaces with a single space in a string.
+ */
+void string_replace_multi_space_with_single_space(char *str)
+{
+   char *dest = str;
+
+   while (*str != '\0')
+   {
+      while (*str == ' ' && *(str + 1) == ' ')
+         str++;
+
+      *dest++ = *str++;
+   }
+
+   *dest = '\0';
+}
+
+/**
+ * Remove all spaces from the given string.
+ */
+void string_remove_all_whitespace(char* str_trimmed, const char* str_untrimmed)
+{
+   while (*str_untrimmed != '\0')
+   {
+      if(!isspace(*str_untrimmed))
+      {
+         *str_trimmed = *str_untrimmed;
+         str_trimmed++;
+      }
+      str_untrimmed++;
+   }
+   *str_trimmed = '\0';
+}
+
+/**
+ * Retrieve the last occurance of the given character in a string.
+ */
+int string_index_last_occurance(char *str, char t)
+{
+   const char * ret = strrchr(str, t);
+   if (ret)
+      return ret-str;
+
+   return -1;
+}
+
+/**
+ * Find the position of a substring in a string.
+ */
+int string_find_index_substring_string(const char* str1, const char* str2)
+{
+   int index;
+
+   if (str1[0] != '\0')
+   {
+      const char *pfound = strstr(str1, str2);
+      if (pfound != NULL)
+      {
+         index = (pfound - str1);
+         return index;
+      }
+   }
+
+   return -1;
+}
