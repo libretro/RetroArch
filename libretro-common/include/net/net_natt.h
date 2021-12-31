@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2020 The RetroArch team
+/* Copyright  (C) 2010-2021 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (net_natt.h).
@@ -25,56 +25,192 @@
 
 #include <net/net_compat.h>
 #include <net/net_socket.h>
+#include <net/net_ifinfo.h>
 
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
 
-struct natt_status
+enum natt_forward_type
 {
-   /* True if we've resolved an external IPv4 address */
-   bool have_inet4;
-   /* External IPv4 address */
-   struct sockaddr_in ext_inet4_addr;
-
-#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY) && !defined(_3DS)
-   /* True if we've resolved an external IPv6 address */
-   bool have_inet6;
-   /* External IPv6 address */
-   struct sockaddr_in6 ext_inet6_addr;
-#endif
+   NATT_FORWARD_TYPE_NONE,
+   NATT_FORWARD_TYPE_ANY
 };
 
-/**
- * Initialize global NAT traversal structures (must be called once to use other
- * functions) */
-void natt_init(struct natt_status *status,
-      uint16_t port, enum socket_protocol proto);
+/* Use this enum to implement a higher-level interface. */
+enum nat_traversal_status
+{
+   NAT_TRAVERSAL_STATUS_DISCOVERY,
+   NAT_TRAVERSAL_STATUS_SELECT_DEVICE,
+   NAT_TRAVERSAL_STATUS_QUERY_DEVICE,
+   NAT_TRAVERSAL_STATUS_EXTERNAL_ADDRESS,
+   NAT_TRAVERSAL_STATUS_OPEN,
+   NAT_TRAVERSAL_STATUS_OPENING,
+   NAT_TRAVERSAL_STATUS_OPENED,
+   NAT_TRAVERSAL_STATUS_CLOSE,
+   NAT_TRAVERSAL_STATUS_CLOSING,
+   NAT_TRAVERSAL_STATUS_CLOSED
+};
+
+struct natt_device
+{
+   struct sockaddr_in ext_addr;
+   char desc        [512];
+   char control     [512];
+   char service_type[512];
+   bool busy;
+};
+
+struct natt_request
+{
+   struct sockaddr_in addr;
+   struct natt_device *device;
+   enum socket_protocol proto;
+   bool success;
+};
+
+struct nat_traversal_data
+{
+   struct natt_request request;
+   size_t iface;
+   enum natt_forward_type forward_type;
+   enum nat_traversal_status status;
+};
+
+typedef struct
+{
+   /* Timeout for our discovery request. */
+   retro_time_t timeout;
+
+   /* List of available network interfaces. */
+   struct net_ifinfo interfaces;
+
+   /* Device we are operating on. */
+   struct natt_device device;
+
+   /* File descriptor of the socket we are receiving discovery data. */
+   int fd;
+} natt_state_t;
+
+natt_state_t *natt_state_get_ptr(void);
 
 /**
- * Uninitialize global NAT traversal structures */
-void natt_deinit(struct natt_status *status,
-      enum socket_protocol proto);
-
-/** Initialize a NAT traversal status object */
-bool natt_new(struct natt_status *status);
-
-/** Free a NAT traversal status object */
-void natt_free(struct natt_status *status);
-
-/**
- * Make a port forwarding request when only the port is known. Forwards any
- * address it can find. */
-bool natt_open_port_any(struct natt_status *status, uint16_t port,
-   enum socket_protocol proto);
+ * natt_init:
+ *
+ * Starts a multicast discovery for UPnP devices.
+ * Must be followed by natt_device_next.
+ *
+ * Returns: true if the discovery was started.
+ */
+bool natt_init(void);
 
 /**
- * Request for a port forwarding to be removed/closed. */
-bool natt_close_port(struct natt_status *status,
-   enum socket_protocol proto);
+ * natt_deinit:
+ *
+ * Uninitializes NAT traversal.
+ * Call this when UPnP is no longer required and before
+ * natt_init.
+ *
+ */
+void natt_deinit(void);
 
-/** Check for port forwarding responses */
-bool natt_read(struct natt_status *status);
+/**
+ * natt_interfaces_destroy:
+ *
+ * Free network interfaces data.
+ * Call this when you've choosen an appropriate interface,
+ * generally after a successful port forwarding.
+ *
+ */
+void natt_interfaces_destroy(void);
+
+/**
+ * natt_device_next:
+ *
+ * @device : Pointer to a device object that will be written to.
+ *
+ * Grabs the next device that has reported in to our discovery.
+ * natt_init must be called before this function.
+ *
+ * Returns: true if we've retrieved a new device or
+ * if timeout has not yet been reached. If device->desc is not an empty string,
+ * a new device was retrieved.
+ */
+bool natt_device_next(struct natt_device *device);
+
+/**
+ * natt_device_end:
+ *
+ * Stop checking for new devices and close the discovery socket.
+ * Call this when you've choosen an appropriate device,
+ * generally after a successful port forwarding.
+ *
+ */
+void natt_device_end(void);
+
+/**
+ * natt_query_device:
+ *
+ * @device : Pointer to a device to query into.
+ * @block  : Blocks until the HTTP task is finished.
+ *
+ * Query an IGD for its service type and control URL.
+ * Call this after retrieving a device from natt_device_next.
+ *
+ * Returns: true if the task was successfully started.
+ * If both device->service_type and device->control are not empty strings,
+ * the task completed successfully.
+ */
+bool natt_query_device(struct natt_device *device, bool block);
+
+/**
+ * natt_external_address:
+ *
+ * @device : Pointer to a device to retrieve its external address.
+ * @block  : Blocks until the HTTP task is finished.
+ *
+ * Retrieve the external IP address of an IGD.
+ * natt_query_device must have been called first.
+ *
+ * Returns: true if the task was successfully started.
+ * If device->ext_addr.sin_family is AF_INET,
+ * the task completed successfully.
+ */
+bool natt_external_address(struct natt_device *device, bool block);
+
+/**
+ * natt_open_port:
+ *
+ * @device       : Pointer to a device to forward a port.
+ * @request      : Port forwarding request information.
+ * @forward_type : UPnP port forwarding command type.
+ * @block        : Blocks until the HTTP task is finished.
+ *
+ * Forward a port.
+ * natt_external_address must have been called first.
+ *
+ * Returns: true if the task was successfully started.
+ * If request->success is true, the task completed successfully.
+ */
+bool natt_open_port(struct natt_device *device,
+   struct natt_request *request, enum natt_forward_type forward_type,
+   bool block);
+
+/**
+ * natt_close_port:
+ *
+ * @device       : Pointer to a device to unforward a port.
+ * @request      : Port unforwarding request information.
+ * @block        : Blocks until the HTTP task is finished.
+ *
+ * Unforward a port.
+ * natt_open_port must have been called first.
+ *
+ * Returns: true if the task was successfully started.
+ * If request->success is true, the task completed successfully.
+ */
+bool natt_close_port(struct natt_device *device,
+   struct natt_request *request, bool block);
 
 RETRO_END_DECLS
 

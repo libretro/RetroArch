@@ -198,6 +198,10 @@ ifeq ($(TARGET), retroarch_3ds)
    OBJ += frontend/drivers/platform_ctr.o
 endif
 
+ifeq ($(TARGET), retroarch_ps2)
+   OBJ += frontend/drivers/platform_ps2.o
+endif
+
 # Git Version
 GIT_VERSION_CACHEDIR = $(if $(OBJDIR),$(OBJDIR),$(CURDIR))
 GIT_VERSION_CACHEFILE = $(GIT_VERSION_CACHEDIR)/git-version.cache
@@ -260,10 +264,10 @@ OBJ += \
        tasks/task_manual_content_scan.o \
        tasks/task_core_backup.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.o \
-       $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.o
+       $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.o \
+       $(LIBRETRO_COMM_DIR)/encodings/encoding_base64.o
 
 ifeq ($(HAVE_TRANSLATE), 1)
-   OBJ += $(LIBRETRO_COMM_DIR)/encodings/encoding_base64.o
    OBJ += tasks/task_translation.o
 endif
 
@@ -376,6 +380,10 @@ OBJ += \
 ifeq ($(HAVE_VIDEO_FILTER), 1)
 DEFINES += -DHAVE_VIDEO_FILTER
 OBJ     += gfx/video_filter.o
+endif
+
+ifeq ($(HAVE_WINDOW_OFFSET), 1)
+DEFINES += -DHAVE_WINDOW_OFFSET
 endif
 
 OBJ     += $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.o
@@ -823,6 +831,10 @@ ifeq ($(TARGET), retroarch_3ds)
    OBJ += gfx/drivers_font/ctr_font.o
 endif
 
+ifeq ($(TARGET), retroarch_ps2)
+   OBJ += gfx/drivers_font/ps2_font.o
+endif
+
 ifeq ($(HAVE_LIBNX), 1)
    OBJ += gfx/drivers_font/switch_font.o
 endif
@@ -1169,6 +1181,13 @@ ifeq ($(TARGET), retroarch_3ds)
           input/drivers_joypad/ctr_joypad.o
 endif
 
+ifeq ($(TARGET), retroarch_ps2)
+   OBJ += gfx/drivers/ps2_gfx.o \
+          input/drivers/ps2_input.o \
+          input/drivers_joypad/ps2_joypad.o \
+          audio/drivers/ps2_audio.o
+endif
+
 ifeq ($(TARGET), retroarch_orbis)
    OBJ +=  input/drivers/ps4_input.o \
 			  input/drivers_joypad/ps4_joypad.o \
@@ -1244,6 +1263,12 @@ ifeq ($(HAVE_WAYLAND), 1)
 
  DEF_FLAGS += $(WAYLAND_CFLAGS) $(WAYLAND_CURSOR_CFLAGS)
  LIBS += $(WAYLAND_LIBS) $(WAYLAND_CURSOR_LIBS)
+
+ ifeq ($(HAVE_LIBDECOR), 1)
+    DEFINES += -DHAVE_LIBDECOR
+    LIBS += $(LIBDECOR_LIBS)
+    DEF_FLAGS += $(LIBDECOR_CFLAGS)
+ endif
 
 endif
 
@@ -2227,27 +2252,6 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    ifeq ($(HAVE_NETWORKGAMEPAD), 1)
       OBJ += cores/libretro-net-retropad/net_retropad_core.o
-   endif
-
-   ifeq ($(HAVE_BUILTINMINIUPNPC), 1)
-      HAVE_MINIUPNPC = 1
-      DEFINES += -DHAVE_MINIUPNPC -DHAVE_BUILTINMINIUPNPC -DMINIUPNPC_SET_SOCKET_TIMEOUT -DMINIUPNPC_GET_SRC_ADDR
-      INCLUDE_DIRS += -I$(DEPS_DIR)
-      OBJ     += $(DEPS_DIR)/miniupnpc/igd_desc_parse.o \
-                 $(DEPS_DIR)/miniupnpc/upnpreplyparse.o \
-                 $(DEPS_DIR)/miniupnpc/upnpcommands.o \
-                 $(DEPS_DIR)/miniupnpc/upnperrors.o \
-                 $(DEPS_DIR)/miniupnpc/connecthostport.o \
-                 $(DEPS_DIR)/miniupnpc/portlistingparse.o \
-                 $(DEPS_DIR)/miniupnpc/receivedata.o \
-                 $(DEPS_DIR)/miniupnpc/upnpdev.o \
-                 $(DEPS_DIR)/miniupnpc/minissdpc.o \
-                 $(DEPS_DIR)/miniupnpc/miniwget.o \
-                 $(DEPS_DIR)/miniupnpc/miniupnpc.o \
-                 $(DEPS_DIR)/miniupnpc/minixml.o \
-                 $(DEPS_DIR)/miniupnpc/minisoap.o
-   else ifeq ($(HAVE_MINIUPNPC), 1)
-      LIBS    += $(MINIUPNPC_LIBS)
    endif
 endif
 

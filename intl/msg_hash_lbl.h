@@ -1283,6 +1283,10 @@ MSG_HASH(
    "statistics_show"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_PING_SHOW,
+   "netplay_ping_show"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_FRAME_THROTTLE_ENABLE,
    "fastforward_ratio_throttle_enable"
    )
@@ -1549,6 +1553,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE,
    "input_overlay_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_BEHIND_MENU,
+   "overlay_behind_menu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,
@@ -1973,6 +1981,10 @@ MSG_HASH(
    "netplay_start_as_spectator"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_FADE_CHAT,
+   "netplay_fade_chat"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING,
    "netplay_allow_pausing"
    )
@@ -1987,6 +1999,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_MAX_CONNECTIONS,
    "netplay_max_connections"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_MAX_PING,
+   "netplay_max_ping"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS,
@@ -2833,8 +2849,16 @@ MSG_HASH(
    "scan_file"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_SHOW_ONLY_CONNECTABLE,
+   "netplay_show_only_connectable"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
    "refresh_rooms"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_REFRESH_LAN,
+   "refresh_lan"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY,
@@ -3915,6 +3939,10 @@ MSG_HASH(
    "netplay_mitm_server"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER,
+   "netplay_custom_mitm_server"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_ADD_TO_MIXER,
    "audio_add_to_mixer"
    )
@@ -4711,6 +4739,10 @@ MSG_HASH(
    "playlist_show_sublabels"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_PLAYLIST_SHOW_HISTORY_ICONS,
+   "playlist_show_history_icons"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_PLAYLIST_SHOW_ENTRY_IDX,
    "playlist_show_entry_idx"
    )
@@ -4801,6 +4833,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
    "notification_show_netplay_extra"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "notification_show_when_menu_is_alive"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE,
@@ -5143,4 +5179,8 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MIXER_ACTION_VOLUME,
    "mixer_action_volume"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_GAMEMODE_ENABLE,
+   "game_mode_enable"
    )

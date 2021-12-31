@@ -2607,6 +2607,10 @@ MSG_HASH(
    "Vaihtaa \"kuvaa sekunnissa\"-ilmaisimen päälle tai pois."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE,
+   "Näytä tekniset tilastot (päälle/pois)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
    "Lähetä vianjäljitystietoa"
    )
@@ -2977,7 +2981,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
-   "Anna laitteistorenderöiville ytimille oman yksityisen kontekstinsa. Näin vältetään laitteiston tilamuutosten arvailu kuvien välissä."
+   "Antaa laitteistorenderöiville ytimille oman yksityisen kontekstinsa. Näin vältetään laitteiston tilamuutosten arvailu kuvien välissä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
@@ -3047,7 +3051,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST,
-   "Suorita ylläpitotehtäviä asennetuihin ytimiin (varmuuskopiointi, palautus, poistaminen jne.) yhteydettömässä tilassa ja tarkastele ytimen tietoja."
+   "Suorita ylläpitotehtäviä asennettuihin ytimiin (varmuuskopiointi, palautus, poistaminen jne.) yhteydettömässä tilassa ja tarkastele ytimen tietoja."
    )
 
 /* Settings > Configuration */
@@ -3535,6 +3539,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
    "Päällyksiä käytetään rajoina ja näytöllä näkyviin ohjaimiin."
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
    "Piilota päällys valikossa"
@@ -5211,12 +5216,16 @@ MSG_HASH(
    "Käynnistä verkkopeli seuraajatilassa."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
-   "Salli tauotus"
+   MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
+   "Häivytä keskustelu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "Salli pelaajien tauottaa verkkopelin aikana. Isäntä voi aina tauottaa tästä asetuksesta riippumatta."
+   MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT,
+   "Häivytä keskusteluviestit ajan myötä."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
+   "Salli tauotus"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -6010,6 +6019,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
    "Katkaise aktiivinen verkkopeliyhteys."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
+   "Vain yhdistettävissä olevat huoneet"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
@@ -10206,6 +10219,10 @@ MSG_HASH(
    "Anna verkkopelipalvelimen salasana:"
    )
 MSG_HASH(
+   MSG_NETPLAY_ENTER_CHAT,
+   "Kirjoita verkkopelin keskusteluviesti:"
+   )
+MSG_HASH(
    MSG_DISCORD_CONNECTION_REQUEST,
    "Sallitko yhteyden käyttäjältä:"
    )
@@ -10820,14 +10837,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FRAMES,
    "Kuvat"
-   )
-MSG_HASH(
-   MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Ydinasetukset]: Pelikohtaiset ydinasetukset löytyvät"
-   )
-MSG_HASH(
-   MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Ydinasetukset]: Kansiokohtaiset ydinasetukset löytyvät"
    )
 MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,

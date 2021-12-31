@@ -2639,6 +2639,22 @@ MSG_HASH(
    "'초당 프레임 수' 표시기를 사용/해제합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE,
+   "기술적 통계 표시 (켜기/끄기)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
+   "화면에 기술적인 통계를 표시할지 여부를 전환합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
+   "넷플레이 핑 표시 (켜기/끄기)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
+   "현재 넷플레이 방의 핑 카운터 표시 여부를 켜거나 끕니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
    "디버그 정보 보내기"
    )
@@ -2661,6 +2677,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
    "현재 넷플레이 세션 모드를 '플레이' 또는 '관전'으로 전환합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "넷플레이 플레이어 채팅"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "현재 넷플레이 세션에 대화 메시지를 보냅니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "넷플레이 채팅 페이드 켜기/끄기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "채팅 메시지를 서서히 사라지게 할 것인지 정적으로 표시할 것인지 선택합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
@@ -3571,6 +3603,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
    "테두리 및 온스크린 컨트롤을 위해 오버레이를 사용합니다."
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
+   "오버레이 메뉴 뒤에 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
+   "오버레이를 메뉴 앞이 아닌 뒤에 표시합니다."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
    "메뉴에서 오버레이 숨김"
@@ -3880,6 +3921,14 @@ MSG_HASH(
    "메모리 사용량을 갱신할 프레임 간격입니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
+   "넷플레이 핑 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
+   "현재 넷플레이 방의 핑을 표시합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
    "\"컨텐츠 불러오기\" 시작 알림"
    )
@@ -4006,6 +4055,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
    "필수적이지 않은 넷플레이 OSD 메시지를 표시합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "메뉴에서만 알림 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "메뉴가 열려있을 때만 알림을 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
@@ -5199,6 +5256,14 @@ MSG_HASH(
    "사용할 특정 중계 서버를 선택합니다. 지리적으로 가깝게 위치한 곳이 지연율이 낮게 나옵니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
+   "사용자 정의 릴레이 서버 주소"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
+   "사용자 정의 릴레이 서버의 주소를 입력합니다. 포맷: 주소 또는 주소|포트"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
    "서버 주소"
    )
@@ -5221,6 +5286,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
    "호스트가 수락할 최대 활성 연결 개수입니다. 이 수를 초과한 연결은 모두 거부됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_PING,
+   "핑 제한"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
+   "호스트가 받아들일 최대 연결 지연(핑)입니다. 0으로 설정하면 제한하지 않습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
@@ -5247,12 +5320,20 @@ MSG_HASH(
    "넷플레이를 관전 모드로 실행합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
+   "페이드 채팅"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT,
+   "채팅 메시지를 서서히 사라지게 합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
    "일시정지 허용"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "플레이어들이 넷플레이 중 일시정지를 할 수 있도록 허용합니다. 호스트는 이 설정과 관계없이 항상 일시정지를 할 수 있습니다."
+   "플레이어들이 넷플레이 도중 일시정지를 할 수 있게 허용합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -6044,12 +6125,24 @@ MSG_HASH(
    "활성 중인 모든 넷플레이 연결을 해제합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
+   "연결 가능한 방만 표시"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
    "넷플레이 호스트 목록 새로 고침"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
    "넷플레이 호스트를 검색합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
+   "넷플레이 LAN 목록 새로 고침"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
+   "LAN에서 넷플레이 호스트를 검색합니다."
    )
 
 /* Netplay > Host */
@@ -10186,6 +10279,10 @@ MSG_HASH(
    "클라이언트 대기..."
    )
 MSG_HASH(
+   MSG_ROOM_NOT_CONNECTABLE,
+   "인터넷에서 이 방에 연결할 수 없습니다."
+   )
+MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    "게임을 나왔습니다"
    )
@@ -10240,6 +10337,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
    "넷플레이 서버 비밀번호 입력:"
+   )
+MSG_HASH(
+   MSG_NETPLAY_ENTER_CHAT,
+   "넷플레이 채팅 메시지 입력:"
    )
 MSG_HASH(
    MSG_DISCORD_CONNECTION_REQUEST,
@@ -10516,6 +10617,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CONTENT_CRC32S_DIFFER,
    "컨텐츠의 CRC32가 다릅니다. 다른 게임은 사용할 수 없습니다."
+   )
+MSG_HASH(
+   MSG_PING_TOO_HIGH,
+   "핑이 너무 높아 이 호스트에 연결할 수 없습니다."
    )
 MSG_HASH(
    MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
@@ -10859,11 +10964,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[코어 옵션]: 게임 특정 코어 옵션 발견:"
+   "게임 우선 설정 발견:"
    )
 MSG_HASH(
    MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[코어 옵션]: 폴더 특정 코어 옵션 발견:"
+   "컨텐츠 폴더 우선 설정 발견:"
    )
 MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,
@@ -11713,6 +11818,22 @@ MSG_HASH(
    MSG_CORE_INFO_CACHE_UNSUPPORTED,
    "코어 정보 디렉토리에 쓸 수 없음 - 코어 정보 캐시가 비활성화됩니다"
    )
+MSG_HASH(
+   MSG_FOUND_ENTRY_STATE_IN,
+   "시작 상태저장 발견:"
+   )
+MSG_HASH(
+   MSG_LOADING_ENTRY_STATE_FROM,
+   "시작 상태저장 불러오는 중:"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE,
+   "GameMode 활성화 실패"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
+   "GameMode 활성화 실패 - GameMode 데몬이 설치되어 있고 실행중인지 확인하십시오"
+   )
 
 /* Lakka */
 
@@ -11972,6 +12093,14 @@ MSG_HASH(
    "메뉴 가버너"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
+   "게임 모드"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
+   "성능 향상, 지연시간 감소, 소리 찢어짐 문제 해결 등의 효과를 볼 수 있습니다. 사용하려면 https://github.com/FeralInteractive/gamemode 가 필요합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "PAL60 모드 사용"
    )
@@ -12042,6 +12171,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_INTERNET_RELAY,
    "인터넷 (중계)"
+   )
+MSG_HASH(
+   MSG_INTERNET_NOT_CONNECTABLE,
+   "인터넷 (연결 불가능)"
    )
 MSG_HASH(
    MSG_LOCAL,

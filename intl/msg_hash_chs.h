@@ -3563,6 +3563,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
    "遮罩用于显示边框和屏幕按键。"
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
    "在菜单中隐藏遮罩"
@@ -10792,14 +10793,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FRAMES,
    "帧"
-   )
-MSG_HASH(
-   MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[核心选项]：可在以下地方找到指定游戏的核心选项"
-   )
-MSG_HASH(
-   MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[核心选项]：可在以下地方找到指定文件夹的核心选项"
    )
 MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,

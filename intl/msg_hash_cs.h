@@ -92,6 +92,10 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    "Výpis fyzického média do vnitřního úložiště. Bude uložen jako soubor obrázku."
    )
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "Vysunout disk"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
@@ -853,6 +857,10 @@ MSG_HASH(
    "Konfigurace"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
+   "Ukládání"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Logování"
    )
@@ -1107,11 +1115,31 @@ MSG_HASH(
 
 /* Settings > Video > Scaling */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
+   "Poměr stran"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
+   "Vlastní poměr stran"
+   )
 #if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "Zachovat poměr stran"
+   )
 #endif
 
 /* Settings > Video > HDR */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
+   "Povolit HDR"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
+   "Kontrast"
+   )
 
 /* Settings > Video > Synchronization */
 
@@ -1158,6 +1186,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
    "Výstup"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
+   "Hlasitost"
+   )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
@@ -1169,6 +1201,10 @@ MSG_HASH(
 
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
+   "Detekovat"
+   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -1189,6 +1225,10 @@ MSG_HASH(
 
 /* Settings > Input > Port # Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE,
+   "Typ zařízení"
+   )
 
 /* Settings > Latency */
 
@@ -1227,14 +1267,27 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay */
 
+
 #if defined(ANDROID)
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY,
+   "Překrytí"
+   )
 
 /* Settings > On-Screen Display > Video Layout */
 
 
 /* Settings > On-Screen Display > On-Screen Notifications */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FPS_SHOW,
+   "Zobrazit snímkovou frekvenci"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
+   "Zobrazit využití paměti"
+   )
 
 /* Settings > User Interface */
 
@@ -1245,6 +1298,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_TIMEOUT,
    "Pokud je menu aktivní, tak se po stanovené době nečinnosti aktivuje spořič obrazovky."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
+   "Sníh"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_VORTEX,
+   "Vír"
    )
 
 /* Settings > User Interface > Menu Item Visibility */
@@ -1287,6 +1348,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    "Úspěchy"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
+   "Žebříčky"
+   )
 
 /* Settings > Network */
 
@@ -1304,12 +1369,36 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    "Jádro:"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME,
+   "Doba běhu:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
+   "Naposledy hráno:"
+   )
 
 /* Settings > Playlists > Playlist Management */
 
 
 /* Settings > User */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS,
+   "Soukromí"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
+   "Účty"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
+   "Uživatelské jméno"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
+   "Jazyk"
+   )
 
 /* Settings > User > Privacy */
 
@@ -1319,6 +1408,14 @@ MSG_HASH(
 
 /* Settings > User > Accounts > RetroAchievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
+   "Uživatelské jméno"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
+   "Heslo"
+   )
 
 /* Settings > User > Accounts > YouTube */
 
@@ -1335,9 +1432,25 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
    "Stažené položky"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
+   "Dynamická pozadí"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
+   "Náhledové obrázky"
+   )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
    "Správce souborů"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   "Konfigurace"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
+   "Jádra"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
@@ -1369,9 +1482,49 @@ MSG_HASH(
    )
 
 /* Explore tab */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME,
+   "Vyhledat název ..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,
+   "Podle vývojáře"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,
+   "Podle vydavatele"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,
+   "Podle roku vydání"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
+   "Podle počtu hráčů"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
+   "Podle žánru"
+   )
 
 /* Playlist > Playlist Item */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN,
+   "Spustit"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
+   "Přejmenovat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
+   "Odstranit"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
+   "Přidat k oblíbeným"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,
    "Informace"
@@ -1390,9 +1543,41 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
    "Jádro"
    )
+MSG_HASH( /* FIXME Unused? */
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_RUNTIME,
+   "Doba hraní"
+   )
+MSG_HASH( /* FIXME Unused? */
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LAST_PLAYED,
+   "Naposledy hráno"
+   )
 
 /* Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESUME_CONTENT,
+   "Pokračovat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
+   "Restartovat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
+   "Pořídit snímek obrazovky"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
+   "Přidat k oblíbeným"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
+   "Začít nahrávat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
+   "Zastavit nahrávání"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
    "Úspěchy"
@@ -1459,6 +1644,30 @@ MSG_HASH(
 
 /* Miscellaneous UI Items */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE,
+   "Nejsou k dispozici žádná jádra"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
+   "Není k dispozici žádná historie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
+   "Nejsou k dispozici žádné obrázky"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
+   "Není k dispozici žádná hudba"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
+   "Nejsou k dispozici žádná videa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SEARCH,
+   "Hledat"
+   )
 
 /* Settings Options */
 
@@ -1597,6 +1806,10 @@ MSG_HASH(
 
 /* Notifications */
 
+MSG_HASH(
+   MSG_NO_THUMBNAIL_AVAILABLE,
+   "Není k dispozici žádný náhled"
+   )
 
 /* Lakka */
 

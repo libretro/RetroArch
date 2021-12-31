@@ -138,10 +138,10 @@ static INLINE void ctr_set_screen_coords(ctr_video_t * ctr)
    }
    else if (ctr->rotation == 1) /* 90° */
    {
-      ctr->frame_coords->x0 = ctr->vp.x;
-      ctr->frame_coords->y0 = ctr->vp.y;
-      ctr->frame_coords->x1 = ctr->vp.x + ctr->vp.width;
-      ctr->frame_coords->y1 = ctr->vp.y + ctr->vp.height;
+      ctr->frame_coords->x1 = ctr->vp.x;
+      ctr->frame_coords->y1 = ctr->vp.y;
+      ctr->frame_coords->x0 = ctr->vp.x + ctr->vp.width;
+      ctr->frame_coords->y0 = ctr->vp.y + ctr->vp.height;
    }
    else if (ctr->rotation == 2) /* 180° */
    {
@@ -152,10 +152,10 @@ static INLINE void ctr_set_screen_coords(ctr_video_t * ctr)
    }
    else /* 270° */
    {
-      ctr->frame_coords->x1 = ctr->vp.x;
-      ctr->frame_coords->y1 = ctr->vp.y;
-      ctr->frame_coords->x0 = ctr->vp.x + ctr->vp.width;
-      ctr->frame_coords->y0 = ctr->vp.y + ctr->vp.height;
+      ctr->frame_coords->x0 = ctr->vp.x;
+      ctr->frame_coords->y0 = ctr->vp.y;
+      ctr->frame_coords->x1 = ctr->vp.x + ctr->vp.width;
+      ctr->frame_coords->y1 = ctr->vp.y + ctr->vp.height;
    }
 }
 
@@ -193,9 +193,6 @@ static void ctr_update_viewport(
    float desired_aspect      = video_driver_get_aspect_ratio();
    bool video_scale_integer  = settings->bools.video_scale_integer;
    unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
-
-   if (ctr->rotation & 0x1)
-      desired_aspect = 1.0 / desired_aspect;
 
    if (video_scale_integer)
    {
@@ -1261,6 +1258,7 @@ static bool ctr_frame(void* data, const void* frame,
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active            = video_info->widgets_active;
 #endif
+   bool overlay_behind_menu       = video_info->overlay_behind_menu;
    bool lcd_bottom                = false;
 
    if (!width || !height || !settings)
@@ -1566,6 +1564,11 @@ static bool ctr_frame(void* data, const void* frame,
       GPU_SetTexEnv(2, GPU_PREVIOUS, GPU_PREVIOUS, 0, 0, 0, 0, 0);
    }
 
+#ifdef HAVE_OVERLAY
+   if (ctr->overlay_enabled && overlay_behind_menu)
+      ctr_render_overlay(ctr);
+#endif
+
 #ifdef HAVE_MENU
    if (ctr->menu_texture_enable)
    {
@@ -1613,7 +1616,7 @@ static bool ctr_frame(void* data, const void* frame,
 #endif
 
 #ifdef HAVE_OVERLAY
-   if (ctr->overlay_enabled)
+   if (ctr->overlay_enabled && !overlay_behind_menu)
       ctr_render_overlay(ctr);
 #endif
 
@@ -2292,6 +2295,8 @@ static void ctr_set_osd_msg(void *data,
 static uint32_t ctr_get_flags(void *data)
 {
    uint32_t             flags   = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
 
    return flags;
 }

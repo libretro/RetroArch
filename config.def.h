@@ -173,6 +173,8 @@
 
 #define DEFAULT_USER_LANGUAGE 0
 
+#define DEFAULT_GAMEMODE_ENABLE true
+
 #if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID) && !defined(HAVE_LAKKA)) || (defined(__MACH__) && !defined(IOS)) || defined(EMSCRIPTEN)
 #define DEFAULT_MOUSE_ENABLE true
 #else
@@ -423,10 +425,10 @@
 #define DEFAULT_VIDEO_HDR_ENABLE false
 
 /* The maximum nunmber of nits the actual display can show - needs to be calibrated */
-#define DEFAULT_VIDEO_HDR_MAX_NITS 1000.0f
+#define DEFAULT_VIDEO_HDR_MAX_NITS 700.0f
 
 /* The number of nits that paper white is at */
-#define DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS 200.0f
+#define DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS 400.0f
 
 /* The contrast setting for hdr used to calculate the display gamma by dividing this value by gamma 2.2  */
 #define DEFAULT_VIDEO_HDR_CONTRAST 5.0f
@@ -494,6 +496,8 @@
 
 /* Initialise file browser with the last used start directory */
 #define DEFAULT_USE_LAST_START_DIRECTORY false
+
+#define DEFAULT_OVERLAY_BEHIND_MENU false
 
 #define DEFAULT_OVERLAY_HIDE_IN_MENU true
 
@@ -1027,6 +1031,10 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_NOTIFICATION_SHOW_NETPLAY_EXTRA false
 #endif
 
+#ifdef HAVE_MENU
+#define DEFAULT_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE false
+#endif
+
 /* Output samplerate. */
 #ifdef GEKKO
 #define DEFAULT_OUTPUT_RATE 32000
@@ -1104,6 +1112,9 @@ static const bool audio_enable_menu_bgm    = false;
 /* Enables displaying various timing statistics. */
 #define DEFAULT_STATISTICS_SHOW false
 
+/* Enables displaying the current netplay room ping. */
+#define DEFAULT_NETPLAY_PING_SHOW false
+
 /* Enables use of rewind. This will incur some memory footprint
  * depending on the save state buffer. */
 #define DEFAULT_REWIND_ENABLE false
@@ -1148,13 +1159,19 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_AUTOSAVE_INTERVAL 0
 #endif
 
+/* Show only connectable rooms */
+#define DEFAULT_NETPLAY_SHOW_ONLY_CONNECTABLE true
+
 /* Publicly announce netplay */
 #define DEFAULT_NETPLAY_PUBLIC_ANNOUNCE true
 
 /* Start netplay in spectator mode */
 static const bool netplay_start_as_spectator = false;
 
-/* Allow players (other than the host) to pause */
+/* Netplay chat fading toggle */
+static const bool netplay_fade_chat = true;
+
+/* Allow players to pause */
 static const bool netplay_allow_pausing = false;
 
 /* Allow connections in slave mode */
@@ -1182,9 +1199,10 @@ static const bool netplay_use_mitm_server = false;
 
 #ifdef HAVE_NETWORKING
 static const unsigned netplay_max_connections = 3;
-static const unsigned netplay_share_digital = RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE;
+static const unsigned netplay_max_ping        = 0;
 
-static const unsigned netplay_share_analog = RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE;
+static const unsigned netplay_share_digital = RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE;
+static const unsigned netplay_share_analog  = RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE;
 #endif
 
 /* On save state load, block SRAM from being overwritten.
@@ -1314,6 +1332,8 @@ static const int default_content_favorites_size = 200;
 #else
 #define DEFAULT_PLAYLIST_SHOW_SUBLABELS true
 #endif
+
+#define DEFAULT_PLAYLIST_SHOW_HISTORY_ICONS PLAYLIST_SHOW_HISTORY_ICONS_DEFAULT
 
 /* Show the indices of playlist entries in
  * a menu-driver-specific fashion */

@@ -2854,7 +2854,7 @@ static int setting_action_ok_uint(
          enum_idx, /* we will pass the enumeration index of the string as a path */
          NULL, NULL, 0, idx, 0,
          ACTION_OK_DL_DROPDOWN_BOX_LIST);
-   return 0;
+   return 1;
 }
 
 static int setting_action_ok_libretro_device_type(
@@ -6704,6 +6704,27 @@ static void setting_get_string_representation_uint_quit_on_close_content(
    }
 }
 
+static void setting_get_string_representation_uint_playlist_show_history_icons(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case PLAYLIST_SHOW_HISTORY_ICONS_DEFAULT:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
+         break;
+      case PLAYLIST_SHOW_HISTORY_ICONS_MAIN:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MAIN), len);
+         break;
+      case PLAYLIST_SHOW_HISTORY_ICONS_CONTENT:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT), len);
+         break;
+   }
+}
+
 static void setting_get_string_representation_uint_menu_screensaver_timeout(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -7592,6 +7613,30 @@ static void general_write_handler(rarch_setting_t *setting)
                task_queue_set_threaded();
             else
                task_queue_unset_threaded();
+         }
+         break;
+      case MENU_ENUM_LABEL_GAMEMODE_ENABLE:
+         if (frontend_driver_has_gamemode())
+         {
+            bool on = *setting->value.target.boolean;
+
+            if (!frontend_driver_set_gamemode(on) && on)
+            {
+               settings_t *settings = config_get_ptr();
+
+               /* If we failed to enable game mode, display
+                * a notification and force disable the feature */
+               runloop_msg_queue_push(
+#ifdef __linux__
+                     msg_hash_to_str(MSG_FAILED_TO_ENTER_GAMEMODE_LINUX),
+#else
+                     msg_hash_to_str(MSG_FAILED_TO_ENTER_GAMEMODE),
+#endif
+                     1, 180, true,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               configuration_set_bool(settings,
+                     settings->bools.gamemode_enable, false);
+            }
          }
          break;
       case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
@@ -12156,9 +12201,10 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].offset_by = 1;
-            menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
+            (*list)[list_info->index - 1].offset_by = 2;
+            menu_settings_list_current_add_range(list, list_info, (*list)[list_info->index - 1].offset_by, 4, 1, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -14437,6 +14483,26 @@ static bool setting_append_list(
                SD_FLAG_NONE);
 
 #ifdef HAVE_GFX_WIDGETS
+#ifdef HAVE_NETWORKING
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.netplay_ping_show,
+               MENU_ENUM_LABEL_NETPLAY_PING_SHOW,
+               MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
+               DEFAULT_NETPLAY_PING_SHOW,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+         (*list)[list_info->index - 1].action_ok    = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left  = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right = &setting_bool_action_right_with_refresh;
+#endif
+
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.menu_show_load_content_animation,
@@ -14647,6 +14713,21 @@ static bool setting_append_list(
                SD_FLAG_NONE);
 #endif
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.notification_show_when_menu_is_alive,
+               MENU_ENUM_LABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+               DEFAULT_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
@@ -14697,6 +14778,24 @@ static bool setting_append_list(
                );
          (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
 
+         if (video_driver_test_all_flags(GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED))
+         {
+            CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_overlay_behind_menu,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_BEHIND_MENU,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
+               DEFAULT_OVERLAY_BEHIND_MENU,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+         }
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.input_overlay_hide_in_menu,
@@ -17273,6 +17372,22 @@ static bool setting_append_list(
 #endif
 #endif
 
+         if (frontend_driver_has_gamemode())
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.gamemode_enable,
+                  MENU_ENUM_LABEL_GAMEMODE_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
+                  DEFAULT_GAMEMODE_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
@@ -18565,11 +18680,27 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
          (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
 
-         /* Playlist entry index display is currently
-          * supported only by Ozone & XMB */
+         /* Playlist entry index display and content specific history icon
+          * are currently supported only by Ozone & XMB */
          if (string_is_equal(settings->arrays.menu_driver, "xmb") ||
              string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.playlist_show_history_icons,
+                  MENU_ENUM_LABEL_PLAYLIST_SHOW_HISTORY_ICONS,
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
+                  DEFAULT_PLAYLIST_SHOW_HISTORY_ICONS,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_uint_playlist_show_history_icons;
+            menu_settings_list_current_add_range(list, list_info, 0, PLAYLIST_SHOW_HISTORY_ICONS_LAST-1, 1, true, true);
+
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.playlist_show_entry_idx,
@@ -19051,6 +19182,21 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
+                  &settings->bools.netplay_show_only_connectable,
+                  MENU_ENUM_LABEL_NETPLAY_SHOW_ONLY_CONNECTABLE,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
+                  DEFAULT_NETPLAY_SHOW_ONLY_CONNECTABLE,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
                   &settings->bools.netplay_public_announce,
                   MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
@@ -19102,6 +19248,22 @@ static bool setting_append_list(
 
             CONFIG_STRING(
                   list, list_info,
+                  settings->paths.netplay_custom_mitm_server,
+                  sizeof(settings->paths.netplay_custom_mitm_server),
+                  MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
+                  "",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+
+            CONFIG_STRING(
+                  list, list_info,
                   settings->paths.netplay_server,
                   sizeof(settings->paths.netplay_server),
                   MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS,
@@ -19148,6 +19310,21 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 1, 31, 1, true, true);
 
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.netplay_max_ping,
+                  MENU_ENUM_LABEL_NETPLAY_MAX_PING,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_PING,
+                  netplay_max_ping,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_SPINBOX;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 0, 500, 25, true, true);
+
             CONFIG_STRING(
                   list, list_info,
                   settings->paths.netplay_password,
@@ -19186,6 +19363,21 @@ static bool setting_append_list(
                   MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
                   false,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.netplay_fade_chat,
+                  MENU_ENUM_LABEL_NETPLAY_FADE_CHAT,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
+                  netplay_fade_chat,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,

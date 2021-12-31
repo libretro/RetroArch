@@ -2611,6 +2611,22 @@ MSG_HASH(
    "Activa o desactiva el indicador de fotogramas por segundo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE,
+   "Mostrar estadísticas técnicas"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
+   "Muestra estadísticas técnicas en pantalla."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
+   "Mostrar latencia de juego en red"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
+   "Muestra el contador de latencia de la sala actual de juego en red."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
    "Enviar datos de depuración"
    )
@@ -2633,6 +2649,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
    "Cambia la sesión actual de juego en red entre los modos de jugador y espectador."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Chat del juego en red"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Envía un mensaje a la sesión actual de juego en red."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "Desvanecer chat del juego en red"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "Deja de mostrar los mensajes de chat del juego en red con o sin una animación de desvanecimiento."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
@@ -3539,6 +3571,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
    "Las superposiciones sirven para aplicar marcos y mostrar controles en pantalla."
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
+   "Mostrar superposición detrás del menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
+   "Muestra la superposición detrás del menú, en vez de delante."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
    "Ocultar superposición en el menú"
@@ -3848,6 +3889,14 @@ MSG_HASH(
    "El contador de consumo de memoria en pantalla se actualizará a la velocidad asignada en fotogramas."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
+   "Mostrar latencia de red en pantalla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
+   "Muestra la latencia de la sala actual de juego en red."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
    "Notificación al cargar un contenido"
    )
@@ -3970,6 +4019,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
    "Muestra mensajes en pantalla de baja importancia sobre el juego en red."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "Limitar las notificaciones al menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "Muestra las notificaciones únicamente cuando se haya abierto el menú."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
@@ -5163,6 +5220,14 @@ MSG_HASH(
    "Elige un servidor intermediario concreto. Las ubicaciones más cercanas geográficamente hablando suelen tener una latencia más baja."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
+   "Dirección del servidor personalizado de retransmisión"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
+   "Aquí puedes introducir la dirección de tu servidor personalizado de retransmisión. Formato admitido: dirección o dirección|puerto."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
    "Dirección del servidor"
    )
@@ -5185,6 +5250,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
    "Indica el número máximo de conexiones activas que admitirá el servidor antes de rechazar cualquier otra nueva."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_PING,
+   "Limitador de latencia"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
+   "Indica la latencia (ping) máxima que aceptará el servidor de otras conexiones. Selecciona 0 para desactivar el límite."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
@@ -5211,12 +5284,20 @@ MSG_HASH(
    "Inicia una sesión de juego en red en modo espectador."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
+   "Desvanecer chat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT,
+   "Hace desaparecer los mensajes de chat con un efecto de desvanecimiento al cabo de un tiempo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
    "Permitir pausar la partida"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "Permite que los jugadores puedan pausar la partida de un juego en red. El servidor siempre podrá pausarla, independientemente de este ajuste."
+   "Permite que los jugadores pausen la partida durante una sesión de juego en red."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -5459,6 +5540,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS,
    "Muestra información adicional sobre cada elemento de las listas de reproducción, como el núcleo asociado y el tiempo transcurrido (si está disponible). Afecta al rendimiento de forma variable."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
+   "Mostrar iconos específicos de los contenidos en el historial y los favoritos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_HISTORY_ICONS,
+   "Muestra iconos específicos para cada elemento de las listas de reproducción del historial y los favoritos. Afecta al rendimiento de forma variable."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
@@ -6004,12 +6093,24 @@ MSG_HASH(
    "Desconecta una sesión activa de juego en red."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
+   "Mostrar solo salas accesibles"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
    "Actualizar lista de servidores de juego en red"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
    "Busca servidores de juego en red."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
+   "Actualizar lista de servidores de juego en red en LAN"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
+   "Busca servidores de juego en red en la red local."
    )
 
 /* Netplay > Host */
@@ -7755,6 +7856,14 @@ MSG_HASH(
    "Más cercano"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAIN,
+   "Principal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT,
+   "Contenido"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR,
    "<Directorio de contenidos>"
    )
@@ -8785,7 +8894,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_CYAN,
-   "Cutie turquesa"
+   "Cutie cian"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_GREEN,
@@ -10082,6 +10191,10 @@ MSG_HASH(
    "Esperando al cliente..."
    )
 MSG_HASH(
+   MSG_ROOM_NOT_CONNECTABLE,
+   "Tu sala no está conectada a internet."
+   )
+MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    "Has abandonado la partida"
    )
@@ -10136,6 +10249,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
    "Introduce la contraseña del servidor de juego en red:"
+   )
+MSG_HASH(
+   MSG_NETPLAY_ENTER_CHAT,
+   "Escribe el mensaje para la sesión:"
    )
 MSG_HASH(
    MSG_DISCORD_CONNECTION_REQUEST,
@@ -10408,6 +10525,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CONTENT_CRC32S_DIFFER,
    "El CRC32 de los contenidos no es idéntico. No se pueden usar juegos distintos."
+   )
+MSG_HASH(
+   MSG_PING_TOO_HIGH,
+   "Tu nivel de latencia (ping) es demasiado elevado para este servidor."
    )
 MSG_HASH(
    MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
@@ -10747,11 +10868,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Opciones de núcleo]: se han encontrado opciones personalizadas según juego en"
+   "Se han encontrado opciones personalizadas según juego en"
    )
 MSG_HASH(
    MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Opciones de núcleo]: se han encontrado opciones personalizadas según directorio en"
+   "Se han encontrado opciones personalizadas según directorio en"
    )
 MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,
@@ -11593,6 +11714,22 @@ MSG_HASH(
    MSG_CORE_INFO_CACHE_UNSUPPORTED,
    "No se puede escribir en el directorio de información del núcleo: se desactivará la caché de información del núcleo"
    )
+MSG_HASH(
+   MSG_FOUND_ENTRY_STATE_IN,
+   "Se ha encontrado un elemento de guardado rápido en"
+   )
+MSG_HASH(
+   MSG_LOADING_ENTRY_STATE_FROM,
+   "Cargando elemento de guardado rápido de"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE,
+   "Error al acceder a GameMode"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
+   "Error al acceder a GameMode: comprueba que el servicio de GameMode esté instalado y ejecutándose"
+   )
 
 /* Lakka */
 
@@ -11753,7 +11890,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
-   "Ajusta el recorte del «overscan» reduciendo un número concreto de líneas (a partir de la parte superior de la pantalla). Puede provocar defectos de escalado."
+   "Ajusta el recorte del «overscan» reduciendo un número concreto de líneas de barrido (a partir de la parte superior de la pantalla). Puede provocar defectos de escalado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
@@ -11761,7 +11898,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
-   "Ajusta el recorte del «overscan» reduciendo un número concreto de líneas (a partir de la parte inferior de la pantalla). Puede provocar defectos de escalado."
+   "Ajusta el recorte del «overscan» reduciendo un número concreto de líneas de barrido (a partir de la parte inferior de la pantalla). Puede provocar defectos de escalado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
@@ -11852,6 +11989,14 @@ MSG_HASH(
    "Regulador de menús"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
+   "Modo de juego"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
+   "Puede mejorar el rendimiento, reducir la latencia y corregir chasquidos en el audio. Es necesario tener instalado https://github.com/FeralInteractive/gamemode ."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "Usar modo PAL60"
    )
@@ -11920,6 +12065,10 @@ MSG_HASH(
    "Internet (relé)"
    )
 MSG_HASH(
+   MSG_INTERNET_NOT_CONNECTABLE,
+   "Internet (no hay conexión)"
+   )
+MSG_HASH(
    MSG_READ_WRITE,
    "Estado del almacenamiento interno: lectura/escritura"
    )
@@ -11939,7 +12088,7 @@ MSG_HASH(
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
-   "Overclockear GPU"
+   "Acelerar GPU"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
@@ -11949,11 +12098,11 @@ MSG_HASH(
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
-   "Overclockear CPU"
+   "Acelerar CPU"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
-   "Acelera la CPU de Switch."
+   "Aumenta la velocidad de la CPU de Switch."
    )
 #endif
 #ifdef HAVE_LAKKA

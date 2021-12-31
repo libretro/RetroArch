@@ -198,8 +198,7 @@ retroarch_switch.nro
 retroarch_switch.nso
 
 # PS2
-ps2/irx/*.c
-*.irx
+*_irx.c
 
 # Wayland
 gfx/common/wayland/idle-inhibit-unstable-v1.c

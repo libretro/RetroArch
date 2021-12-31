@@ -2349,6 +2349,7 @@ static int action_ok_playlist_entry_collection(const char *path,
    bool core_is_builtin                   = false;
    menu_handle_t *menu                    = menu_state_get_ptr()->driver_data;
    settings_t *settings                   = config_get_ptr();
+   runloop_state_t *runloop_st            = runloop_state_get_ptr();
    bool playlist_sort_alphabetical        = settings->bools.playlist_sort_alphabetical;
    const char *path_content_history       = settings->paths.path_content_history;
    const char *path_content_image_history = settings->paths.path_content_image_history;
@@ -2415,6 +2416,8 @@ static int action_ok_playlist_entry_collection(const char *path,
       strlcpy(content_path, entry->path, sizeof(content_path));
       playlist_resolve_path(PLAYLIST_LOAD, false, content_path, sizeof(content_path));
    }
+
+   runloop_st->entry_state_slot = entry->entry_slot;
 
    /* Cache entry label */
    if (!string_is_empty(entry->label))
@@ -5758,9 +5761,10 @@ static int action_ok_netplay_connect_room(const char *path,
    if (net_st->room_list[room_index].host_method == NETPLAY_HOST_METHOD_MITM)
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
-            "%s|%d",
+            "%s|%d|%s",
          net_st->room_list[room_index].mitm_address,
-         net_st->room_list[room_index].mitm_port);
+         net_st->room_list[room_index].mitm_port,
+         net_st->room_list[room_index].mitm_session);
    else
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
@@ -5785,224 +5789,170 @@ static int action_ok_netplay_connect_room(const char *path,
    return 0;
 }
 
-#ifdef HAVE_NETPLAYDISCOVERY
-static int action_ok_netplay_lan_scan(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   struct netplay_host_list *hosts = NULL;
-   struct netplay_host *host       = NULL;
-
-   /* Figure out what host we're connecting to */
-   if (!netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &hosts))
-      return -1;
-   if (entry_idx >= hosts->size)
-      return -1;
-   host = &hosts->hosts[entry_idx];
-
-   /* Enable Netplay client mode */
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-      generic_action_ok_command(CMD_EVENT_NETPLAY_DEINIT);
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
-
-   /* Enable Netplay */
-   if (command_event(CMD_EVENT_NETPLAY_INIT_DIRECT, (void *) host))
-      return generic_action_ok_command(CMD_EVENT_RESUME);
-   return -1;
-}
-
-static void netplay_lan_scan_callback(retro_task_t *task,
-      void *task_data,
-      void *user_data, const char *error)
-{
-   struct netplay_host_list *netplay_hosts = NULL;
-   enum msg_hash_enums enum_idx            = MSG_UNKNOWN;
-   unsigned menu_type                      = 0;
-   const char *label                       = NULL;
-   const char *path                        = NULL;
-
-   /* TODO/FIXME: I have no idea what this is supposed to be
-    * doing...
-    * As it stands, this function will never get past the
-    * following sanity check (i.e. netplay_lan_scan_callback()
-    * will never be called when we are viewing the 'lan scan
-    * settings' list, since this list doesn't even exist...).
-    * Moreover, any menu entries that get added here
-    * (menu_entries_append_enum()) will be erased by the
-    * subsequent netplay_refresh_rooms_cb() callback - and
-    * menu entries should never be added outside of
-    * menu_displaylist.c anyway.
-    * This is some legacy garbage, and someone who understands
-    * netplay needs to rip it all out. */
-
-   menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
-
-   /* Don't push the results if we left the LAN scan menu */
-   if (!string_is_equal(label,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST)))
-      return;
-
-   if (!netplay_discovery_driver_ctl(
-            RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES,
-            (void *) &netplay_hosts))
-      return;
-
-   if (netplay_hosts->size > 0)
-   {
-      unsigned i;
-      file_list_t *file_list = menu_entries_get_selection_buf_ptr(0);
-
-      menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
-
-      for (i = 0; i < netplay_hosts->size; i++)
-      {
-         struct netplay_host *host = &netplay_hosts->hosts[i];
-         menu_entries_append_enum(file_list,
-               host->nick,
-               msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_CONNECT_TO),
-               MENU_ENUM_LABEL_NETPLAY_CONNECT_TO,
-               MENU_NETPLAY_LAN_SCAN, 0, 0);
-      }
-   }
-}
-#endif
-
 static void netplay_refresh_rooms_cb(retro_task_t *task,
-      void *task_data, void *user_data, const char *err)
+      void *task_data, void *user_data, const char *error)
 {
-   char *new_data                = NULL;
-   const char *path              = NULL;
-   const char *label             = NULL;
-   unsigned menu_type            = 0;
-   enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
-   net_driver_state_t *net_st    = networking_state_get_ptr();
-   http_transfer_data_t *data    = (http_transfer_data_t*)task_data;
+   char *new_data               = NULL;
+   const char *path             = NULL;
+   const char *label            = NULL;
+   unsigned menu_type           = 0;
+   enum msg_hash_enums enum_idx = MSG_UNKNOWN;
+   net_driver_state_t *net_st   = networking_state_get_ptr();
+   http_transfer_data_t *data   = task_data;
+   bool refresh                 = false;
 
    menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
 
    /* Don't push the results if we left the netplay menu */
-   if (!string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB))
-    && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)))
+   if (!string_is_equal(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)) &&
+         !string_is_equal(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)))
       return;
 
-   if (!data || err)
-      goto finish;
+   if (error)
+   {
+      RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED),
+         error);
+      return;
+   }
+   if (!data || !data->data || !data->len || data->status != 200)
+   {
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED));
+      return;
+   }
 
-   new_data = (char*)realloc(data->data, data->len + 1);
-
+   new_data = realloc(data->data, data->len + 1);
    if (!new_data)
-      goto finish;
-
+      return;
    data->data            = new_data;
    data->data[data->len] = '\0';
 
-   if (!string_ends_with_size(data->data, "registry.lpl",
-            strlen(data->data),
-            STRLEN_CONST("registry.lpl")))
+   if (net_st->room_list)
+      free(net_st->room_list);
+
+   net_st->room_list  = NULL;
+   net_st->room_count = 0;
+
+   if (!string_is_empty(data->data))
    {
-      if (string_is_empty(data->data))
-         net_st->room_count = 0;
-      else
-      {
-         char s[PATH_MAX_LENGTH];
-         unsigned i                           = 0;
-         unsigned j                           = 0;
-         struct netplay_host_list *lan_hosts  = NULL;
-         int lan_room_count                   = 0;
-         bool refresh                         = false;
+      int i;
 
-#ifdef HAVE_NETPLAYDISCOVERY
-         netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &lan_hosts);
-         if (lan_hosts)
-            lan_room_count                    = (int)lan_hosts->size;
-#endif
+      netplay_rooms_parse(data->data);
 
-         netplay_rooms_parse(data->data);
+      net_st->room_count = netplay_rooms_get_count();
+      net_st->room_list  = calloc(net_st->room_count,
+         sizeof(*net_st->room_list));
 
-         if (net_st->room_list)
-            free(net_st->room_list);
-
-         /* TODO/FIXME - right now, a LAN and non-LAN netplay session might appear
-          * in the same list. If both entries are available, we want to show only
-          * the LAN one. */
-
-         net_st->room_count                   = netplay_rooms_get_count();
-         net_st->room_list                    = (struct netplay_room*)
-            calloc(net_st->room_count + lan_room_count,
-                  sizeof(struct netplay_room));
-
-         for (i = 0; i < (unsigned)net_st->room_count; i++)
-            memcpy(&net_st->room_list[i], netplay_room_get(i), sizeof(net_st->room_list[i]));
-
-         if (lan_room_count != 0)
-         {
-            for (i = net_st->room_count; i < (unsigned)(net_st->room_count + lan_room_count); i++)
-            {
-               struct netplay_host *host = &lan_hosts->hosts[j++];
-
-               strlcpy(net_st->room_list[i].nickname,
-                     host->nick,
-                     sizeof(net_st->room_list[i].nickname));
-
-               strlcpy(net_st->room_list[i].address,
-                     host->address,
-                     INET6_ADDRSTRLEN);
-               strlcpy(net_st->room_list[i].corename,
-                     host->core,
-                     sizeof(net_st->room_list[i].corename));
-               strlcpy(net_st->room_list[i].retroarch_version,
-                     host->retroarch_version,
-                     sizeof(net_st->room_list[i].retroarch_version));
-               strlcpy(net_st->room_list[i].coreversion,
-                     host->core_version,
-                     sizeof(net_st->room_list[i].coreversion));
-               strlcpy(net_st->room_list[i].gamename,
-                     host->content,
-                     sizeof(net_st->room_list[i].gamename));
-               strlcpy(net_st->room_list[i].frontend,
-                     host->frontend,
-                     sizeof(net_st->room_list[i].frontend));
-               strlcpy(net_st->room_list[i].subsystem_name,
-                     host->subsystem_name,
-                     sizeof(net_st->room_list[i].subsystem_name));
-
-               net_st->room_list[i].port      = host->port;
-               net_st->room_list[i].gamecrc   = host->content_crc;
-               net_st->room_list[i].timestamp = 0;
-               net_st->room_list[i].lan       = true;
-
-               snprintf(s, sizeof(s),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME),
-                     net_st->room_list[i].nickname);
-            }
-            net_st->room_count += lan_room_count;
-         }
-
-         menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-         menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-      }
+      for (i = 0; i < net_st->room_count; i++)
+         memcpy(&net_st->room_list[i], netplay_room_get(i),
+            sizeof(*net_st->room_list));
    }
 
-finish:
-
-   if (err)
-      RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), err);
-
-   if (user_data)
-      free(user_data);
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 }
-
 
 static int action_ok_push_netplay_refresh_rooms(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char url [2048] = "http://lobby.libretro.com/list/";
-#ifdef HAVE_NETPLAYDISCOVERY
-   task_push_netplay_lan_scan(netplay_lan_scan_callback);
+#ifndef NETPLAY_TEST_BUILD
+   const char *url = "http://lobby.libretro.com/list";
+#else
+   const char *url = "http://lobbytest.libretro.com/list";
 #endif
+
    task_push_http_transfer(url, true, NULL, netplay_refresh_rooms_cb, NULL);
+
    return 0;
 }
+
+#ifdef HAVE_NETPLAYDISCOVERY
+static void netplay_refresh_lan_cb(retro_task_t *task,
+      void *task_data, void *user_data, const char *error)
+{
+   const char *path                = NULL;
+   const char *label               = NULL;
+   unsigned menu_type              = 0;
+   enum msg_hash_enums enum_idx    = MSG_UNKNOWN;
+   net_driver_state_t *net_st      = networking_state_get_ptr();
+   struct netplay_host_list *hosts = NULL;
+   bool refresh                    = false;
+
+   menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
+
+   /* Don't push the results if we left the netplay menu */
+   if (!string_is_equal(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)) &&
+         !string_is_equal(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)))
+      goto finished;
+
+   if (!netplay_discovery_driver_ctl(
+            RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &hosts) ||
+         !hosts)
+      goto finished;
+
+   if (net_st->room_list)
+      free(net_st->room_list);
+
+   net_st->room_list  = NULL;
+   net_st->room_count = 0;
+
+   if (hosts->size)
+   {
+      int i;
+
+      net_st->room_count = hosts->size;
+      net_st->room_list  = calloc(net_st->room_count,
+         sizeof(*net_st->room_list));
+
+      for (i = 0; i < net_st->room_count; i++)
+      {
+         struct netplay_host *host = &hosts->hosts[i];
+         struct netplay_room *room = &net_st->room_list[i];
+
+         room->port = host->port;
+         room->gamecrc = host->content_crc;
+         strlcpy(room->retroarch_version, host->retroarch_version,
+            sizeof(room->retroarch_version));
+         strlcpy(room->nickname, host->nick,
+            sizeof(room->nickname));
+         strlcpy(room->subsystem_name, host->subsystem_name,
+            sizeof(room->subsystem_name));
+         strlcpy(room->corename, host->core,
+            sizeof(room->corename));
+         strlcpy(room->frontend, host->frontend,
+            sizeof(room->frontend));
+         strlcpy(room->coreversion, host->core_version,
+            sizeof(room->coreversion));
+         strlcpy(room->gamename, host->content,
+            sizeof(room->gamename));
+         strlcpy(room->address, host->address,
+            sizeof(room->address));
+         room->has_password = host->has_password;
+         room->has_spectate_password = host->has_spectate_password;
+         room->connectable = true;
+         room->is_retroarch = true;
+         room->lan = true;
+      }
+   }
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+
+finished:
+   deinit_netplay_discovery();
+}
+
+static int action_ok_push_netplay_refresh_lan(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   task_push_netplay_lan_scan(netplay_refresh_lan_cb);
+
+   return 0;
+}
+#endif
 #endif
 
 DEFAULT_ACTION_OK_DL_PUSH(action_ok_content_collection_list, FILEBROWSER_SELECT_COLLECTION, ACTION_OK_DL_CONTENT_COLLECTION_LIST, NULL)
@@ -7760,6 +7710,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,        action_ok_pl_entry_content_thumbnails},
          {MENU_ENUM_LABEL_UPDATE_LAKKA,                        action_ok_lakka_list},
          {MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,               action_ok_push_netplay_refresh_rooms},
+#ifdef HAVE_NETPLAYDISCOVERY
+         {MENU_ENUM_LABEL_NETPLAY_REFRESH_LAN,                 action_ok_push_netplay_refresh_lan},
+#endif
 #endif
 #ifdef HAVE_VIDEO_LAYOUT
          {MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,      action_ok_onscreen_video_layout_list},
@@ -8475,11 +8428,6 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_WIFI
             BIND_ACTION_OK(cbs, action_ok_wifi);
 #endif
-#endif
-            break;
-         case MENU_NETPLAY_LAN_SCAN:
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETPLAYDISCOVERY)
-            BIND_ACTION_OK(cbs, action_ok_netplay_lan_scan);
 #endif
             break;
          case FILE_TYPE_CURSOR:

@@ -2599,6 +2599,22 @@ MSG_HASH(
    "Active/désactive l'indicateur d'état des images par seconde."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE,
+   "Afficher les statistiques techniques (activer/désactiver)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
+   "Active/désactive l'affichage des statistiques techniques à l'écran."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
+   "Afficher le Ping du jeu en réseau (activer/désactiver)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
+   "Active/désactive le compteur de ping pour la salle de jeu en réseau actuelle."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
    "Envoyer les informations de diagnostic"
    )
@@ -2621,6 +2637,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
    "Bascule la session de jeu en réseau actuelle entre les modes 'jeu' et 'spectateur'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Chat joueur pour le jeu en réseau"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Envoie un message sur le chat de la session jeu en réseau en cours."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "Activer/désactiver le fondu du chat de jeu en réseau"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "Basculer entre les messages en fondu et statiques pour le jeu en réseau."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
@@ -3527,6 +3559,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
    "Les surimpressions sont utilisées pour les bordures et les contrôles à l'écran."
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
+   "Afficher la surimpression derrière le menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
+   "Afficher la surimpression en arrière-plan plutôt qu'en premier plan du menu."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
    "Masquer la surimpression dans le menu"
@@ -3836,6 +3877,14 @@ MSG_HASH(
    "L'affichage de l'utilisation de la mémoire sera actualisé à l'intervalle défini en images."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
+   "Afficher le ping du jeu en réseau"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
+   "Afficher le ping de la salle de jeu en réseau actuelle."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
    "Notification au démarrage de contenu"
    )
@@ -3962,6 +4011,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
    "Afficher les messages non essentiels du jeu en réseau à l'écran."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "Notifications dans le menu uniquement"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "Afficher les notifications uniquement lorsque le menu est ouvert."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
@@ -5151,6 +5208,14 @@ MSG_HASH(
    "Choisissez un serveur de relais spécifique à utiliser. Les zones géographiques plus proches ont tendance à avoir une latence plus faible."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
+   "Adresse du serveur de relais personnalisé"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
+   "Entrer l'adresse de votre serveur de relais personnalisé. Format : adresse ou adresse|port"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
    "Adresse du serveur "
    )
@@ -5173,6 +5238,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
    "Le nombre maximum de connexions actives que l'hôte acceptera avant de refuser les nouvelles."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_PING,
+   "Limitation du ping"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
+   "La latence maximale de connexion (ping) que l'hôte acceptera. Définissez-la à 0 pour aucune limite."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
@@ -5199,12 +5272,20 @@ MSG_HASH(
    "Démarre le jeu en réseau en mode spectateur."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
+   "Chat en fondu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT,
+   "Estomper les messages du chat au fil du temps."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
    "Autoriser la mise en pause"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "Permettre aux joueurs de mettre en pause pendant le jeu en réseau. L'hôte peut toujours mettre en pause sans prendre en compte ce réglage."
+   "Permettre aux joueurs de mettre en pause pendant le jeu en réseau."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -6000,12 +6081,24 @@ MSG_HASH(
    "Déconnecter une connexion de jeu en réseau active."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
+   "Salons connectables uniquement"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
    "Rafraîchir la liste des salons"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
    "Recherche d'hôtes de jeu en réseau."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
+   "Rafraîchir la liste des LAN de jeu en réseau"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
+   "Rechercher des hôtes de jeu en réseau sur le LAN."
    )
 
 /* Netplay > Host */
@@ -10074,6 +10167,10 @@ MSG_HASH(
    "En attente d'un client ..."
    )
 MSG_HASH(
+   MSG_ROOM_NOT_CONNECTABLE,
+   "Votre salon n'est pas connectable depuis internet."
+   )
+MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    "Vous avez quitté le jeu"
    )
@@ -10128,6 +10225,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
    "Entrez le mot de passe du serveur de jeu en réseau :"
+   )
+MSG_HASH(
+   MSG_NETPLAY_ENTER_CHAT,
+   "Entrez un message sur le chat de jeu en réseau :"
    )
 MSG_HASH(
    MSG_DISCORD_CONNECTION_REQUEST,
@@ -10404,6 +10505,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CONTENT_CRC32S_DIFFER,
    "Le CRC32 du contenu est différent. Impossible d'utiliser des jeux non-identiques."
+   )
+MSG_HASH(
+   MSG_PING_TOO_HIGH,
+   "Votre ping est trop élevé pour cet hôte."
    )
 MSG_HASH(
    MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
@@ -10747,11 +10852,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Options du cœur] : Options de cœur spécifiques au jeu trouvées dans"
+   "Options de cœur spécifiques au jeu trouvées dans"
    )
 MSG_HASH(
    MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Options du cœur] : Options de cœur spécifiques au dossier trouvées dans"
+   "Options de cœur spécifiques au dossier trouvées dans"
    )
 MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,
@@ -11593,6 +11698,22 @@ MSG_HASH(
    MSG_CORE_INFO_CACHE_UNSUPPORTED,
    "Impossible d'écrire dans le dossier des informations de cœurs - la mise en cache des informations de cœurs sera désactivée"
    )
+MSG_HASH(
+   MSG_FOUND_ENTRY_STATE_IN,
+   "Démarrage instantané trouvé dans"
+   )
+MSG_HASH(
+   MSG_LOADING_ENTRY_STATE_FROM,
+   "Chargement du démarrage instantané à partir de"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE,
+   "Impossible de passer en mode jeu (GameMode)"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
+   "Impossible de passer en mode jeu (GameMode) - assurez-vous que le daemon GameMode est installé/en cours d'exécution"
+   )
 
 /* Lakka */
 
@@ -11844,6 +11965,14 @@ MSG_HASH(
    "Gouverneur du menu"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
+   "Mode jeu (GameMode)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
+   "Peut améliorer les performances, réduire la latence et corriger les problèmes de crépitements audio. Vous avez besoin de https://github.com/FeralInteractive/gamemode pour que cela fonctionne."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "Utiliser le mode PAL60"
    )
@@ -11910,6 +12039,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_INTERNET_RELAY,
    "Internet (relais)"
+   )
+MSG_HASH(
+   MSG_INTERNET_NOT_CONNECTABLE,
+   "Internet (non connectable)"
    )
 MSG_HASH(
    MSG_READ_WRITE,

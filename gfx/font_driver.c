@@ -67,8 +67,9 @@ int font_renderer_create_default(
       *handle = font_backends[i]->init(path, font_size);
       if (*handle)
       {
-         RARCH_LOG("[Font]: Using font rendering backend: \"%s\".\n",
-               font_backends[i]->ident);
+         if (!video_font_driver)
+            RARCH_LOG("[Font]: Using font rendering backend: \"%s\".\n",
+                  font_backends[i]->ident);
          *drv = font_backends[i];
          return 1;
       }

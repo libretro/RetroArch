@@ -146,6 +146,12 @@ static void gfx_ctx_uwp_get_video_size(void *data,
    bool quit;
    bool resize;
    win32_check_window(NULL, &quit, &resize, width, height);
+   if (is_running_on_xbox())
+   {
+      //we can set it to 1920x1080 as xbox uwp windowsize is guaranteed to be 1920x1080 and currently there is now way to set angle to use a variable resolution swapchain so regardless of the size the window is always 1080p
+      width = 1920;
+      height = 1080;
+   }
 }
 
 static void *gfx_ctx_uwp_init(void *video_driver)

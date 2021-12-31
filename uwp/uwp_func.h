@@ -30,6 +30,11 @@ void uwp_open_broadfilesystemaccess_settings(void);
 
 void* uwp_get_corewindow(void);
 
+bool is_running_on_xbox(void);
+
+int uwp_get_height(void);
+int uwp_get_width(void);
+
 void uwp_input_next_frame(void *data);
 bool uwp_keyboard_pressed(unsigned key);
 int16_t uwp_mouse_state(unsigned port, unsigned id, bool screen);

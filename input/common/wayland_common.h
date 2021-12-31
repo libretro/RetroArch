@@ -96,12 +96,14 @@ typedef struct input_ctx_wayland_data
 
    struct
    {
+      struct wl_pointer *surface;
       int last_x, last_y;
       int x, y;
       int delta_x, delta_y;
       bool last_valid;
       bool focus;
       bool left, right, middle;
+      bool wu, wd, wl, wr;
    } mouse;
 
    bool keyboard_focus;
@@ -125,6 +127,10 @@ typedef struct gfx_ctx_wayland_data
    struct wl_touch *wl_touch;
    struct wl_seat *seat;
    struct wl_shm *shm;
+#ifdef HAVE_LIBDECOR
+   struct libdecor *libdecor_context;
+   struct libdecor_frame *libdecor_frame;
+#endif
    struct zxdg_decoration_manager_v1 *deco_manager;
    struct zxdg_toplevel_decoration_v1 *deco;
    struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;

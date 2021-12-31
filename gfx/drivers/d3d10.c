@@ -236,6 +236,31 @@ static void d3d10_get_overlay_interface(void* data, const video_overlay_interfac
 
    *iface = &overlay_interface;
 }
+
+static void d3d10_render_overlay(void *data)
+{
+   unsigned       i;
+   d3d10_video_t* d3d10 = (d3d10_video_t*)data;
+
+   if (!d3d10)
+      return;
+
+   if (d3d10->overlays.fullscreen)
+      D3D10SetViewports(d3d10->device, 1, &d3d10->viewport);
+   else
+      D3D10SetViewports(d3d10->device, 1, &d3d10->frame.viewport);
+
+   D3D10SetBlendState(d3d10->device, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
+   D3D10SetVertexBuffer(d3d10->device, 0, d3d10->overlays.vbo, sizeof(d3d10_sprite_t), 0);
+   D3D10SetPShaderSamplers(
+         d3d10->device, 0, 1, &d3d10->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
+
+   for (i = 0; i < (unsigned)d3d10->overlays.count; i++)
+   {
+      D3D10SetPShaderResources(d3d10->device, 0, 1, &d3d10->overlays.textures[i].view);
+      D3D10Draw(d3d10->device, 1, i);
+   }
+}
 #endif
 
 static void d3d10_set_filtering(void* data, unsigned index, bool smooth, bool ctx_scaling)
@@ -1224,6 +1249,7 @@ static bool d3d10_gfx_frame(
       &video_info->osd_stat_params;
    const char *stat_text      = video_info->stat_text;
    bool menu_is_alive         = video_info->menu_is_alive;
+   bool overlay_behind_menu   = video_info->overlay_behind_menu;
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active        = video_info->widgets_active;
 #endif
@@ -1479,6 +1505,11 @@ static bool d3d10_gfx_frame(
 
    d3d10->sprites.enabled = true;
 
+#ifdef HAVE_OVERLAY
+   if (d3d10->overlays.enabled && overlay_behind_menu)
+      d3d10_render_overlay(d3d10);
+#endif
+
 #ifdef HAVE_MENU
 #ifndef HAVE_GFX_WIDGETS
    if (d3d10->menu.enabled)
@@ -1508,24 +1539,8 @@ static bool d3d10_gfx_frame(
       }
 
 #ifdef HAVE_OVERLAY
-   if (d3d10->overlays.enabled)
-   {
-      if (d3d10->overlays.fullscreen)
-         D3D10SetViewports(context, 1, &d3d10->viewport);
-      else
-         D3D10SetViewports(context, 1, &d3d10->frame.viewport);
-
-      D3D10SetBlendState(d3d10->device, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
-      D3D10SetVertexBuffer(context, 0, d3d10->overlays.vbo, sizeof(d3d10_sprite_t), 0);
-      D3D10SetPShaderSamplers(
-            context, 0, 1, &d3d10->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
-
-      for (i = 0; i < (unsigned)d3d10->overlays.count; i++)
-      {
-         D3D10SetPShaderResources(context, 0, 1, &d3d10->overlays.textures[i].view);
-         D3D10Draw(d3d10->device, 1, i);
-      }
-   }
+   if (d3d10->overlays.enabled && !overlay_behind_menu)
+      d3d10_render_overlay(d3d10);
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
@@ -1741,6 +1756,7 @@ static uint32_t d3d10_get_flags(void *data)
    uint32_t flags = 0;
 
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
+   BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif

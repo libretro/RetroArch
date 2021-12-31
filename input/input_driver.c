@@ -5372,7 +5372,11 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 #endif /* HAVE_MENU */
 
       input_keys_pressed(port,
+#ifdef HAVE_MENU
             menu_input_active,
+#else
+            false,
+#endif
             block_delay,
             loop_bits,
             (const retro_keybind_set *)input_config_binds,

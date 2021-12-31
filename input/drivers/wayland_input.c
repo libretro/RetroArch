@@ -259,10 +259,21 @@ static int16_t input_wl_state(
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
          {
+            bool state  = false;
             bool screen = device == RARCH_DEVICE_MOUSE_SCREEN;
-            if (port > 0) return 0; /* TODO: support mouse on additional ports */
+            if (port > 0)
+               return 0; /* TODO: support mouse on additional ports */
+
             switch (id)
             {
+               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+                  state        = wl->mouse.wu;
+                  wl->mouse.wu = false;
+                  return state;
+               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+                  state        = wl->mouse.wd;
+                  wl->mouse.wd = false;
+                  return state;
                case RETRO_DEVICE_ID_MOUSE_X:
                   return screen ? wl->mouse.x : wl->mouse.delta_x;
                case RETRO_DEVICE_ID_MOUSE_Y:

@@ -1,5 +1,5 @@
 This is RetroArch's Netplay code. RetroArch Netplay allows a second player to
-be connected via the Internet, rather than local at the same computer. Netplay
+be connected via the Internet/LAN, rather than local at the same computer. Netplay
 in RetroArch is guaranteed* to work with perfect synchronization given a few
 minor constraints:
 
@@ -55,8 +55,8 @@ than the server's current frame, it forwards it immediately. Otherwise, it
 forwards it when the frame is reached. i.e., during frame n, the server may
 send its own and any number of other players' data for frame n, but will never
 send frame n+1. This is because the server's clock is the arbiter of all
-synchronization-related events, such as flipping players, players joining and
-parting, and saving/loading states.
+synchronization-related events, players joining and parting,
+and saving/loading states.
 
 Pre-frame, Netplay serializes the core's state, polls for local input, and
 polls for input from the network. If the input from the network is too far
@@ -134,7 +134,7 @@ Netplay's command format
 
 Netplay commands consist of a 32-bit command identifier, followed by a 32-bit
 payload size, both in network byte order, followed by a payload. The command
-identifiers are listed in netplay.h. The commands are described below. Unless
+identifiers are listed in netplay_private.h. The commands are described below. Unless
 specified otherwise, all payload values are in network byte order.
 
 Command: ACK
@@ -197,9 +197,9 @@ Description:
 Command: INFO
 Payload
     {
+       content CRC: uint32
        core name: char[32]
        core version: char[32]
-       content CRC: uint32
     }
 Description:
     Send core/content info. Mandatory handshake command. Sent by server first,
@@ -222,9 +222,8 @@ Payload:
     }
 Description:
     Initial state synchronization. Mandatory handshake command from server to
-    client only. Connected players is a bitmap with the lowest bit being player
-    0. Flip frame is 0 if players aren't flipped. Controller devices are the
-    devices plugged into each controller port, and 16 is really MAX_USERS.
+    client only. Controller devices are the devices plugged into each controller port,
+    and 16 is really MAX_USERS.
     Client is forced to have a different nick if multiple clients have the same
     nick.
 
@@ -347,25 +346,59 @@ Description:
 Command: CHEATS
 Unused
 
-Command: FLIP_PLAYERS
-Payload:
-    {
-       frame number: uint32
-    }
-Description:
-    Flip players at the requested frame.
-
 Command: CFG
 Unused
 
 Command: CFG_ACK
 Unused
 
+Command: PLAYER_CHAT
+Payload:
+    {
+       nickname: char[32] (server-only)
+       message: char[] (variable)
+    }
+Description:
+    Sends a player chat message to the host and other connected clients.
+    The server is responsible for relaying this chat message to all clients,
+    including the one who sent it.
+
+Command: PING_REQUEST
+Payload: None
+Description:
+    Request the peer to answer back to this command.
+    Used to calculate an estimated latency between peers.
+
+Command: PING_RESPONSE
+Payload: None
+Description:
+    Answer back PING_REQUEST commands.
+    Used to calculate an estimated latency between peers.
+
+Command: SETTING_ALLOW_PAUSING
+Payload:
+    {
+       allow: uint32
+    }
+Description:
+    Setting sharing command.
+    Tell the client whether it is allowed to pause or not.
+
+Command: SETTING_INPUT_LATENCY_FRAMES
+Payload:
+    {
+       min: int32
+       max: int32
+    }
+Description:
+    Setting sharing command.
+    Tell the client the input latency frames range it should be using.
+
 Input types
 
 Each input device uses a number of words fixed by the type of device. When
 buttons are listed, they are listed from lowest bit to highest bit, i.e.,
-reverse order. When insufficient buttons are present to represent to represent
+reverse order. When insufficient buttons are present to represent
 a full 32-bit word, the remainder are reserved and unused.
 
 JOYPAD

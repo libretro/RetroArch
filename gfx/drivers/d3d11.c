@@ -83,6 +83,7 @@ static uint32_t d3d11_get_flags(void *data)
    uint32_t flags = 0;
 
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
+   BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
@@ -260,6 +261,31 @@ static void d3d11_get_overlay_interface(
 
    *iface = &overlay_interface;
 }
+
+static void d3d11_render_overlay(void *data)
+{
+   unsigned       i;
+   d3d11_video_t* d3d11 = (d3d11_video_t*)data;
+
+   if (!d3d11)
+      return;
+
+   if (d3d11->overlays.fullscreen)
+      D3D11SetViewports(d3d11->context, 1, &d3d11->viewport);
+   else
+      D3D11SetViewports(d3d11->context, 1, &d3d11->frame.viewport);
+
+   D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+   D3D11SetVertexBuffer(d3d11->context, 0, d3d11->overlays.vbo, sizeof(d3d11_sprite_t), 0);
+   D3D11SetPShaderSamplers(
+         d3d11->context, 0, 1, &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
+
+   for (i = 0; i < (unsigned)d3d11->overlays.count; i++)
+   {
+      D3D11SetPShaderResources(d3d11->context, 0, 1, &d3d11->overlays.textures[i].view);
+      D3D11Draw(d3d11->context, 1, i);
+   }
+}
 #endif
 
 #ifdef HAVE_DXGI_HDR
@@ -326,7 +352,33 @@ static void d3d11_set_hdr_expand_gamut(void* data, bool expand_gamut)
    dxgi_hdr_uniform_t *ubo                = NULL;
    d3d11_video_t* d3d11                   = (d3d11_video_t*)data;
 
-   d3d11->hdr.ubo_values.expand_gamut     = expand_gamut;
+   d3d11->hdr.ubo_values.expand_gamut     = expand_gamut ? 1.0f : 0.0f;
+
+   D3D11MapBuffer(d3d11->context, d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
+   ubo  = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
+   *ubo = d3d11->hdr.ubo_values;
+   D3D11UnmapBuffer(d3d11->context, d3d11->hdr.ubo, 0);
+}
+
+static void d3d11_set_hdr_inverse_tonemap(d3d11_video_t* d3d11, bool inverse_tonemap)
+{
+   D3D11_MAPPED_SUBRESOURCE mapped_ubo;
+   dxgi_hdr_uniform_t *ubo                = NULL;
+
+   d3d11->hdr.ubo_values.inverse_tonemap  = inverse_tonemap ? 1.0f : 0.0f;
+
+   D3D11MapBuffer(d3d11->context, d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
+   ubo  = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
+   *ubo = d3d11->hdr.ubo_values;
+   D3D11UnmapBuffer(d3d11->context, d3d11->hdr.ubo, 0);
+}
+
+static void d3d11_set_hdr10(d3d11_video_t* d3d11, bool hdr10)
+{
+   D3D11_MAPPED_SUBRESOURCE mapped_ubo;
+   dxgi_hdr_uniform_t *ubo                = NULL;
+
+   d3d11->hdr.ubo_values.hdr10  = hdr10 ? 1.0f : 0.0f;
 
    D3D11MapBuffer(d3d11->context, d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
    ubo  = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
@@ -611,6 +663,29 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             continue;
 
          D3D11CreateBuffer(d3d11->device, &desc, NULL, &d3d11->pass[i].buffers[j]);
+      }
+   }
+
+   if (d3d11->hdr.enable)
+   {
+      if(d3d11->shader_preset && d3d11->shader_preset->passes && (d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32))
+      {
+         /* If the last shader pass uses a RGB10A2 back buffer and hdr has been enabled assume we want to skip the inverse tonemapper and hdr10 conversion */
+         d3d11_set_hdr_inverse_tonemap(d3d11, false);
+         d3d11_set_hdr10(d3d11, false);
+         d3d11->resize_chain = true;
+      }
+      else if(d3d11->shader_preset && d3d11->shader_preset->passes && (d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format == SLANG_FORMAT_R16G16B16A16_SFLOAT))
+      {
+         /* If the last shader pass uses a RGBA16 back buffer and hdr has been enabled assume we want to skip the inverse tonemapper */
+         d3d11_set_hdr_inverse_tonemap(d3d11, false);
+         d3d11_set_hdr10(d3d11, true);
+         d3d11->resize_chain = true;
+      }
+      else
+      {
+         d3d11_set_hdr_inverse_tonemap(d3d11, true);
+         d3d11_set_hdr10(d3d11, true);
       }
    }
 
@@ -1000,7 +1075,7 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    memset(&d3d11->back_buffer, 0, sizeof(d3d11->back_buffer));
    d3d11->back_buffer.desc.Width              = width;
    d3d11->back_buffer.desc.Height             = height;
-   d3d11->back_buffer.desc.Format             = DXGI_FORMAT_R8G8B8A8_UNORM;
+   d3d11->back_buffer.desc.Format             = d3d11->shader_preset && d3d11->shader_preset->passes ? glslang_format_to_dxgi(d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format) : DXGI_FORMAT_R8G8B8A8_UNORM;
    d3d11->back_buffer.desc.BindFlags          = D3D11_BIND_RENDER_TARGET;
    d3d11_init_texture(d3d11->device, &d3d11->back_buffer);            
 #endif
@@ -1162,6 +1237,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
       d3d11->hdr.ubo_values.expand_gamut    =
          settings->bools.video_hdr_expand_gamut;
       d3d11->hdr.ubo_values.inverse_tonemap = 1.0f;  /* Use this to turn on/off the inverse tonemap */
+      d3d11->hdr.ubo_values.hdr10           = 1.0f;  /* Use this to turn on/off the hdr10 */
 
       desc.ByteWidth                       = sizeof(dxgi_hdr_uniform_t);
       desc.Usage                           = D3D11_USAGE_DYNAMIC;
@@ -1687,6 +1763,7 @@ static bool d3d11_gfx_frame(
    bool statistics_show           = video_info->statistics_show;
    struct font_params* osd_params = (struct font_params*)&video_info->osd_stat_params;
    bool menu_is_alive             = video_info->menu_is_alive;
+   bool overlay_behind_menu       = video_info->overlay_behind_menu;
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active            = video_info->widgets_active;
 #endif
@@ -1743,7 +1820,7 @@ static bool d3d11_gfx_frame(
          memset(&d3d11->back_buffer, 0, sizeof(d3d11->back_buffer));
          d3d11->back_buffer.desc.Width              = video_width;
          d3d11->back_buffer.desc.Height             = video_height;
-         d3d11->back_buffer.desc.Format             = DXGI_FORMAT_R8G8B8A8_UNORM;
+         d3d11->back_buffer.desc.Format             = d3d11->shader_preset && d3d11->shader_preset->passes ? glslang_format_to_dxgi(d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format) : DXGI_FORMAT_R8G8B8A8_UNORM;
          d3d11->back_buffer.desc.BindFlags          = D3D11_BIND_RENDER_TARGET;
          d3d11_init_texture(d3d11->device, &d3d11->back_buffer);
 
@@ -2023,6 +2100,21 @@ static bool d3d11_gfx_frame(
    D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
    d3d11->sprites.enabled = true;
 
+#ifdef HAVE_OVERLAY
+   if (d3d11->overlays.enabled && overlay_behind_menu)
+      d3d11_render_overlay(d3d11);
+#endif
+
+#ifdef HAVE_MENU
+#ifndef HAVE_GFX_WIDGETS
+   if (d3d11->menu.enabled)
+#endif
+   {
+      D3D11SetViewports(context, 1, &d3d11->viewport);
+      D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
+   }
+#endif
+
 #ifdef HAVE_MENU
    if (d3d11->menu.enabled)
       menu_driver_frame(menu_is_alive, video_info);
@@ -2042,24 +2134,8 @@ static bool d3d11_gfx_frame(
    }
 
 #ifdef HAVE_OVERLAY
-   if (d3d11->overlays.enabled)
-   {
-      if (d3d11->overlays.fullscreen)
-         D3D11SetViewports(context, 1, &d3d11->viewport);
-      else
-         D3D11SetViewports(context, 1, &d3d11->frame.viewport);
-
-      D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
-      D3D11SetVertexBuffer(context, 0, d3d11->overlays.vbo, sizeof(d3d11_sprite_t), 0);
-      D3D11SetPShaderSamplers(
-            context, 0, 1, &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
-
-      for (i = 0; i < (unsigned)d3d11->overlays.count; i++)
-      {
-         D3D11SetPShaderResources(context, 0, 1, &d3d11->overlays.textures[i].view);
-         D3D11Draw(d3d11->context, 1, i);
-      }
-   }
+   if (d3d11->overlays.enabled && !overlay_behind_menu)
+      d3d11_render_overlay(d3d11);
 #endif
 
 #ifdef HAVE_GFX_WIDGETS

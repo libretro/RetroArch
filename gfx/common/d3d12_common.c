@@ -405,7 +405,7 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    d3d12->chain.back_buffer.desc.Width             = width;
    d3d12->chain.back_buffer.desc.Height            = height;
    d3d12->chain.back_buffer.desc.Format            = 
-      DXGI_FORMAT_R8G8B8A8_UNORM;
+      d3d12->shader_preset && d3d12->shader_preset->passes ? glslang_format_to_dxgi(d3d12->pass[d3d12->shader_preset->passes - 1].semantics.format) : DXGI_FORMAT_R8G8B8A8_UNORM;
    d3d12->chain.back_buffer.desc.Flags             = 
       D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
    d3d12->chain.back_buffer.srv_heap               = 

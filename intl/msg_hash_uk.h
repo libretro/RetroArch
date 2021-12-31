@@ -2815,6 +2815,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
    "Накладки використовуються для меж і екранного управління."
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
    "Приховувати накладку в меню"
@@ -6712,14 +6713,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FRAMES,
    "Кадри"
-   )
-MSG_HASH(
-   MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Параметри Ядра]: Специфічні параметри ядра для гри"
-   )
-MSG_HASH(
-   MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Параметри Ядра]: Специфічні параметри ядра для папок"
    )
 MSG_HASH(
    MSG_INPUT_CHEAT,

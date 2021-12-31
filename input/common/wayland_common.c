@@ -21,6 +21,10 @@
 
 #include <string/stdstring.h>
 
+#ifdef HAVE_LIBDECOR
+#include <libdecor.h>
+#endif
+
 #include "wayland_common.h"
 
 #include "../input_keymaps.h"
@@ -158,12 +162,13 @@ static void pointer_handle_enter(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   wl->input.mouse.last_x = wl_fixed_to_int(sx * (wl_fixed_t)wl->buffer_scale);
-   wl->input.mouse.last_y = wl_fixed_to_int(sy * (wl_fixed_t)wl->buffer_scale);
-   wl->input.mouse.x      = wl->input.mouse.last_x;
-   wl->input.mouse.y      = wl->input.mouse.last_y;
-   wl->input.mouse.focus  = true;
-   wl->cursor.serial      = serial;
+   wl->input.mouse.surface = surface;
+   wl->input.mouse.last_x  = wl_fixed_to_int(sx * (wl_fixed_t)wl->buffer_scale);
+   wl->input.mouse.last_y  = wl_fixed_to_int(sy * (wl_fixed_t)wl->buffer_scale);
+   wl->input.mouse.x       = wl->input.mouse.last_x;
+   wl->input.mouse.y       = wl->input.mouse.last_y;
+   wl->input.mouse.focus   = true;
+   wl->cursor.serial       = serial;
 
    gfx_ctx_wl_show_mouse(data, wl->cursor.visible);
 }
@@ -175,6 +180,9 @@ static void pointer_handle_leave(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    wl->input.mouse.focus      = false;
+
+   if (wl->input.mouse.surface == surface)
+      wl->input.mouse.surface = NULL;
 }
 
 static void pointer_handle_motion(void *data,
@@ -199,6 +207,9 @@ static void pointer_handle_button(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
+   if (wl->input.mouse.surface != wl->surface)
+      return;
+
    if (state == WL_POINTER_BUTTON_STATE_PRESSED)
    {
       switch (button)
@@ -208,7 +219,11 @@ static void pointer_handle_button(void *data,
 
             if (BIT_GET(wl->input.key_state, KEY_LEFTALT))
             {
+#ifdef HAVE_LIBDECOR
+               libdecor_frame_move(wl->libdecor_frame, wl->seat, serial);
+#else
                xdg_toplevel_move(wl->xdg_toplevel, wl->seat, serial);
+#endif
             }
             break;
          case BTN_RIGHT:
@@ -240,7 +255,26 @@ static void pointer_handle_axis(void *data,
       struct wl_pointer *wl_pointer,
       uint32_t time,
       uint32_t axis,
-      wl_fixed_t value) { }
+      wl_fixed_t value) {
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   double dvalue = wl_fixed_to_double(value);
+   switch (axis) {
+      case WL_POINTER_AXIS_VERTICAL_SCROLL:
+         if (dvalue < 0) {
+            wl->input.mouse.wu = true;
+         } else if (dvalue > 0) {
+            wl->input.mouse.wd = true;
+         }
+         break;
+      case WL_POINTER_AXIS_HORIZONTAL_SCROLL:
+         if (dvalue < 0) {
+            wl->input.mouse.wl = true;
+         } else if (dvalue > 0) {
+            wl->input.mouse.wr = true;
+         }
+         break;
+   }
+}
 
 static void touch_handle_down(void *data,
       struct wl_touch *wl_touch,
@@ -424,6 +458,8 @@ static void wl_surface_enter(void *data, struct wl_surface *wl_surface,
     output_info_t *oi;
     gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
+    wl->input.mouse.surface = wl_surface;
+
     /* TODO: track all outputs the surface is on, pick highest scale */
 
     wl_list_for_each(oi, &wl->all_outputs, link)
@@ -456,7 +492,7 @@ void handle_toplevel_close(void *data,
       struct xdg_toplevel *xdg_toplevel)
 {
 	gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-	BIT_SET(wl->input.key_state, KEY_ESC);
+	command_event(CMD_EVENT_QUIT, NULL);
 }
 
 static void display_handle_geometry(void *data,

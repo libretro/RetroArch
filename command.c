@@ -223,7 +223,7 @@ command_t* command_network_new(uint16_t port)
    int fd                    = socket_init(
          (void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM);
 
-   RARCH_LOG("%s %hu.\n",
+   RARCH_LOG("[NetCMD]: %s %hu.\n",
          msg_hash_to_str(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT),
          (unsigned short)port);
 
@@ -241,7 +241,7 @@ command_t* command_network_new(uint16_t port)
 
    if (!socket_bind(netcmd->net_fd, (void*)res))
    {
-      RARCH_ERR("%s.\n",
+      RARCH_ERR("[NetCMD]: %s.\n",
             msg_hash_to_str(MSG_FAILED_TO_BIND_SOCKET));
       goto error;
    }
@@ -546,8 +546,8 @@ static bool command_verify(const char *cmd)
    if (command_get_arg(cmd, NULL, NULL))
       return true;
 
-   RARCH_ERR("Command \"%s\" is not recognized by the program.\n", cmd);
-   RARCH_ERR("\tValid commands:\n");
+   RARCH_ERR("[NetCMD]: Command \"%s\" is not recognized by the program.\n", cmd);
+   RARCH_ERR("[NetCMD]: \tValid commands:\n");
    for (i = 0; i < ARRAY_SIZE(map); i++)
       RARCH_ERR("\t\t%s\n", map[i].str);
 
@@ -589,7 +589,7 @@ bool command_network_send(const char *cmd_)
       if (port_)
          port = strtoul(port_, NULL, 0);
 
-      RARCH_LOG("%s: \"%s\" to %s:%hu\n",
+      RARCH_LOG("[NetCMD]: %s: \"%s\" to %s:%hu\n",
             msg_hash_to_str(MSG_SENDING_COMMAND),
             cmd, host, (unsigned short)port);
 
@@ -660,7 +660,7 @@ bool command_write_ram(command_t *cmd, const char *arg)
 
    if (rcheevos_hardcore_active())
    {
-      RARCH_LOG("Achievements hardcore mode disabled by WRITE_CORE_RAM\n");
+      RARCH_LOG("[Command]: Achievements hardcore mode disabled by WRITE_CORE_RAM.\n");
       rcheevos_pause_hardcore();
    }
 
@@ -849,7 +849,7 @@ bool command_write_memory(command_t *cmd, const char *arg)
 #ifdef HAVE_CHEEVOS
       if (rcheevos_hardcore_active())
       {
-         RARCH_LOG("Achievements hardcore mode disabled by WRITE_CORE_MEMORY\n");
+         RARCH_LOG("[Command]: Achievements hardcore mode disabled by WRITE_CORE_MEMORY.\n");
          rcheevos_pause_hardcore();
       }
 #endif
@@ -1082,6 +1082,8 @@ bool command_event_save_auto_state(
    bool ret                    = false;
    char savestate_name_auto[PATH_MAX_LENGTH];
 
+   if (runloop_st->entry_state_slot)
+      return false;
    if (!savestate_auto_save)
       return false;
    if (current_core_type == CORE_TYPE_DUMMY)
@@ -1139,6 +1141,47 @@ void command_event_init_cheats(
 }
 #endif
 
+bool command_event_load_entry_state(void)
+{
+   char entry_state_path[PATH_MAX_LENGTH];
+   int entry_path_stats;
+   runloop_state_t *runloop_st     = runloop_state_get_ptr();
+   bool ret                        = false;
+
+#ifdef HAVE_CHEEVOS
+   if (rcheevos_hardcore_active())
+      return false;
+#endif
+#ifdef HAVE_NETWORKING
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+      return false;
+#endif
+
+   entry_state_path[0] = '\0';
+
+   if (!retroarch_get_entry_state_path(entry_state_path, sizeof(entry_state_path),
+         runloop_st->entry_state_slot))
+      return false;
+
+   entry_path_stats = path_stat(entry_state_path);
+
+   if ((entry_path_stats & RETRO_VFS_STAT_IS_VALID) == 0
+         || (entry_path_stats & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
+      return false;
+
+   ret = content_load_state(entry_state_path, false, true);
+
+   RARCH_LOG("[State]: %s \"%s\".\n",
+         msg_hash_to_str(MSG_FOUND_ENTRY_STATE_IN),
+         entry_state_path);
+   RARCH_LOG("[State]: %s \"%s\" %s.\n",
+         msg_hash_to_str(MSG_LOADING_ENTRY_STATE_FROM),
+         entry_state_path, ret ? "succeeded" : "failed"
+         );
+
+   return ret;
+}
+
 void command_event_load_auto_state(void)
 {
    char savestate_name_auto[PATH_MAX_LENGTH];
@@ -1163,9 +1206,10 @@ void command_event_load_auto_state(void)
 
    ret = content_load_state(savestate_name_auto, false, true);
 
-   RARCH_LOG("%s: %s\n%s \"%s\" %s.\n",
+   RARCH_LOG("[State]: %s \"%s\".\n",
          msg_hash_to_str(MSG_FOUND_AUTO_SAVESTATE_IN),
-         savestate_name_auto,
+         savestate_name_auto);
+   RARCH_LOG("[State]: %s \"%s\" %s.\n",
          msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
          savestate_name_auto, ret ? "succeeded" : "failed"
          );
@@ -1231,7 +1275,7 @@ void command_event_set_savestate_auto_index(settings_t *settings)
 
    configuration_set_int(settings, settings->ints.state_slot, max_idx);
 
-   RARCH_LOG("%s: #%d\n",
+   RARCH_LOG("[State]: %s: #%d\n",
          msg_hash_to_str(MSG_FOUND_LAST_STATE_SLOT),
          max_idx);
 }
@@ -1389,7 +1433,7 @@ bool command_event_save_core_config(
    if (path_is_valid(core_path))
    {
       unsigned i;
-      RARCH_LOG("%s\n", msg_hash_to_str(MSG_USING_CORE_NAME_FOR_NEW_CONFIG));
+      RARCH_LOG("[Config]: %s\n", msg_hash_to_str(MSG_USING_CORE_NAME_FOR_NEW_CONFIG));
 
       /* In case of collision, find an alternative name. */
       for (i = 0; i < 16; i++)
@@ -1493,7 +1537,7 @@ void command_event_save_current_config(enum override_type type)
             }
             else
                strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_SAVING), sizeof(msg));
-            RARCH_LOG("[Config - Overrides]: %s\n", msg);
+            RARCH_LOG("[Overrides]: %s\n", msg);
             runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
          break;
@@ -1604,7 +1648,7 @@ bool command_event_main_state(unsigned cmd)
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    if (!string_is_empty(msg))
-      RARCH_LOG("%s\n", msg);
+      RARCH_LOG("[State]: %s\n", msg);
 
    return ret;
 }

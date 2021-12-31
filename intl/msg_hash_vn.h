@@ -290,8 +290,20 @@ MSG_HASH(
    "Cập nhất tất cả các Core lên phiên bản khả dụng mới nhất."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
+   "Trình cập nhật ảnh thu nhỏ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
+   "Tải xuống gói ảnh thu nhỏ đã hoàn thành cho hệ thống đã chọn."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
    "Trình cập nhật danh sách phát thu nhỏ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
+   "Tải ảnh thu nhỏ cho những mục trong danh sách đã chọn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -304,6 +316,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
    "Cập nhật Assets"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
+   "Cập nhật cấu hình trình điều khiển"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
@@ -337,12 +353,24 @@ MSG_HASH(
    "Core Thông tin"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFORMATION,
+   "Xem thông tin liên quan đến ứng dụng/core."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
    "Thông tin ổ đĩa"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISC_INFORMATION,
    "Xem thông tin về ổ đĩa đang cắm."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
+   "Thông tin về mạng"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
+   "Xem (các) giao diện mạng và các địa chỉ IP liên quan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
@@ -359,6 +387,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
    "Xem dữ liệu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
+   "Quản lý con trỏ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
+   "Xem những tìm kiếm trước đó."
    )
 
 /* Main Menu > Information > Core Information */
@@ -527,6 +563,70 @@ MSG_HASH(
    "Hỗ trợ phân luồng"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT,
+   "Hỗ trợ KMS/EGL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT,
+   "Hỗ trợ udev"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT,
+   "Hỗ trợ OpenVG"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT,
+   "Hỗ trợ EGL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT,
+   "Hỗ trợ X11"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT,
+   "Hỗ trợ Wayland"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XVIDEO_SUPPORT,
+   "Hỗ trợ XVideo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ALSA_SUPPORT,
+   "Hỗ trợ ALSA"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OSS_SUPPORT,
+   "Hỗ trợ OSS"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT,
+   "Hỗ trợ OpenAL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENSL_SUPPORT,
+   "Hỗ trợ OpenSL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RSOUND_SUPPORT,
+   "Hỗ trợ RSound"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT,
+   "Hỗ trợ RoarAudio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_JACK_SUPPORT,
+   "Hỗ trợ JACK"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT,
+   "Hỗ trợ PulseAudio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
+   "Hỗ trợ CoreAudio"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
    "Hỗ trợ CoreAudio V3"
    )
@@ -587,6 +687,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
    "Miêu tả"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
+   "Phần cứng nâng cao"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
+   "Analog được hỗ trợ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
@@ -719,6 +827,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
    "Thay đổi cài đặt lưu trữ."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
+   "Đăng nhập"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
+   "Thay đổi cài đặt đăng nhập."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -1182,6 +1298,7 @@ MSG_HASH(
 
 
 /* Settings > On-Screen Display > On-Screen Overlay */
+
 
 #if defined(ANDROID)
 #endif

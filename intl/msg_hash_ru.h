@@ -2631,6 +2631,22 @@ MSG_HASH(
    "Включает/отключает индикатор частоты кадров в секунду."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE,
+   "Показывать техн. данные (переключение)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
+   "Включает/выключает отображение на экране технических данных."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
+   "Показывать пинг netplay (переключение)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
+   "Включает/выключает счётчик пинга для текущей комнаты netplay."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
    "Отправка сведений для отладки"
    )
@@ -2653,6 +2669,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
    "Переключает текущий сеанс Netplay между режимами 'игра' и 'наблюдатель'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Сетевой чат"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Отправка сообщений в чат текущего сеанса сетевой игры."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "Затухание чата (переключение)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "Переключение между затухающими и статичными сообщениями чата."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
@@ -3563,6 +3595,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
    "Оверлеи используются для отображения рамок и экранного управления."
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
    "Скрывать оверлей в меню"
@@ -3872,6 +3905,14 @@ MSG_HASH(
    "Счётчик памяти будет обновляться с заданным интервалом (в кадрах)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
+   "Показывать пинг netplay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
+   "Отображать пинг для текущей комнаты netplay."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
    "Уведомление о запуске контента"
    )
@@ -3998,6 +4039,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
    "Отображать второстепенные сетевые сообщения."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "Уведомления только в меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "Отображать уведомления только когда открыто меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
@@ -5215,6 +5264,14 @@ MSG_HASH(
    "Максимальное количество активных соединений, которое будет принимать хост до отказа новых."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_PING,
+   "Ограничение пинга"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
+   "Макс. запаздывание соединения (пинг), приемлемое для хоста. Значение 0 снимает ограничение."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
    "Пароль сервера"
    )
@@ -5239,12 +5296,20 @@ MSG_HASH(
    "Запускать Netplay в режиме наблюдателя."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
+   "Затухание чата"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT,
+   "Сообщения в чате затухают со временем."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
    "Разрешить паузу"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "Разрешать другим игрокам паузу во время игры. Хост может включать паузу всегда, независимо от настройки."
+   "Разрешать игрокам паузу во время сетевой игры."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -6042,6 +6107,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
    "Поиск Netplay-хостов."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
+   "Обновить список локальных хостов"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
+   "Поиск хостов netplay в локальной сети."
    )
 
 /* Netplay > Host */
@@ -10186,6 +10259,10 @@ MSG_HASH(
    "Ожидание клиента ..."
    )
 MSG_HASH(
+   MSG_ROOM_NOT_CONNECTABLE,
+   "К вашей комнате нельзя подключится из интернет."
+   )
+MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    "Вы покинули игру"
    )
@@ -10240,6 +10317,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
    "Введите пароль сервера netplay:"
+   )
+MSG_HASH(
+   MSG_NETPLAY_ENTER_CHAT,
+   "Сообщение в сетевой чат:"
    )
 MSG_HASH(
    MSG_DISCORD_CONNECTION_REQUEST,
@@ -10516,6 +10597,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CONTENT_CRC32S_DIFFER,
    "CRC32 контента отличаются. Нельзя использовать разные игры."
+   )
+MSG_HASH(
+   MSG_PING_TOO_HIGH,
+   "Ваш уровень пинга слишком высок для данного хоста."
    )
 MSG_HASH(
    MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
@@ -10859,11 +10944,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Опции ядра]: параметры ядра для игры, найденные в"
+   "Опции ядра для игры обнаружены в"
    )
 MSG_HASH(
    MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Опции ядра]: параметры ядра для каталога, найденные в"
+   "Опции ядра для каталога обнаружены в"
    )
 MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,
@@ -11398,6 +11483,18 @@ MSG_HASH(
    "Забегание выключено, т.к. ядро не поддерживает сохранение состояния."
    )
 MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
+   "Не удалось создать сохранение. Забегание отключено."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
+   "Не удалось загрузить сохранение. Забегание отключено."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
+   "Не удалось создать второй инстанс. Забегание будет использовать только один инстанс."
+   )
+MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
    "Сканирование файла завершено"
    )
@@ -11701,6 +11798,22 @@ MSG_HASH(
    MSG_CORE_INFO_CACHE_UNSUPPORTED,
    "Ошибка записи в каталог с инфо-файлами ядер - кэш инфо-файлов будет отключен"
    )
+MSG_HASH(
+   MSG_FOUND_ENTRY_STATE_IN,
+   "Найдено входное сохранение в"
+   )
+MSG_HASH(
+   MSG_LOADING_ENTRY_STATE_FROM,
+   "Загрузка входного сохранения из"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE,
+   "Не удалось войти в GameMode"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
+   "Не удалось войти в GameMode - убедитесь, что демон GameMode установлен/запущен"
+   )
 
 /* Lakka */
 
@@ -11956,6 +12069,14 @@ MSG_HASH(
    "Регулятор меню"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
+   "Игровой режим"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
+   "Может улучшать производительность, снижать задержку ввода и устранять искажения звука. Для работы потребуется установить https://github.com/FeralInteractive/gamemode."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "Использовать режим PAL60"
    )
@@ -12026,6 +12147,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_INTERNET_RELAY,
    "Интернет (переадресация)"
+   )
+MSG_HASH(
+   MSG_INTERNET_NOT_CONNECTABLE,
+   "Интернет (без подключения)"
    )
 MSG_HASH(
    MSG_LOCAL,
