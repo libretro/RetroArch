@@ -6021,6 +6021,10 @@ MSG_HASH(
    "Katkaise aktiivinen verkkopeliyhteys."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
+   "Vain yhdistettävissä olevat huoneet"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
    "Päivitä verkkopelin isännöitsijöiden lista"
    )

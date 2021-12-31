@@ -5538,6 +5538,14 @@ MSG_HASH(
    "Her bir oynatma listesi girdisi için mevcut çekirdek ilişkilendirme ve çalışma zamanı (varsa) gibi ek bilgileri gösterir. Değişken performans etkisi vardır."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
+   "İçeriğe Özgü Simgeleri Geçmiş ve Sık Kullanılanlarda Göster"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_HISTORY_ICONS,
+   "Her geçmiş ve sık kullanılan oynatma listesi girişi için belirli simgeleri gösterin. Değişken bir performans etkisine sahiptir."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    "Çekirdek:"
    )
@@ -6083,6 +6091,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
    "Etkin bir Netplay bağlantısını kesin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
+   "Sadece Bağlanılabilir Odalar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
@@ -7858,6 +7870,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NEAREST,
    "En yakın"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAIN,
+   "Ana"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT,
+   "İçerik"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR,

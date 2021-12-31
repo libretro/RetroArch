@@ -6125,6 +6125,10 @@ MSG_HASH(
    "활성 중인 모든 넷플레이 연결을 해제합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
+   "연결 가능한 방만 표시"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
    "넷플레이 호스트 목록 새로 고침"
    )

@@ -6081,6 +6081,10 @@ MSG_HASH(
    "Déconnecter une connexion de jeu en réseau active."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
+   "Salons connectables uniquement"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
    "Rafraîchir la liste des salons"
    )
