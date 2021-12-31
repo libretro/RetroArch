@@ -416,6 +416,17 @@ struct KeyPosition {
 }
 
 @objc class EmulatorKeyboardController: UIViewController {
+
+   class EmulatorKeyboardPassthroughView: UIView {
+      override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+         let hitView = super.hitTest(point, with: event)
+         if hitView == self {
+            return nil
+         }
+         return hitView
+      }
+   }
+   
    @objc let leftKeyboardModel: EmulatorKeyboardViewModel
    @objc let rightKeyboardModel: EmulatorKeyboardViewModel
 
@@ -439,6 +450,10 @@ struct KeyPosition {
     
    required init?(coder: NSCoder) {
       fatalError("init(coder:) has not been implemented")
+   }
+   
+   override func loadView() {
+      view = EmulatorKeyboardPassthroughView()
    }
 
     override func viewDidLoad() {

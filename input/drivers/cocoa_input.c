@@ -447,8 +447,12 @@ static int16_t cocoa_input_state(
                      return apple->window_pos_x * cocoa_screen_get_backing_scale_factor();
 #endif
                   }
+#ifdef IOS
+                    val = apple->mouse_rel_x;
+#else
                   val = apple->window_pos_x - apple->mouse_x_last;
                   apple->mouse_x_last = apple->window_pos_x;
+#endif
                   return val;
                case RETRO_DEVICE_ID_MOUSE_Y:
                   if (device == RARCH_DEVICE_MOUSE_SCREEN)
@@ -459,8 +463,12 @@ static int16_t cocoa_input_state(
                      return apple->window_pos_y * cocoa_screen_get_backing_scale_factor();
 #endif
                   }
+#ifdef IOS
+                    val = apple->mouse_rel_y;
+#else
                   val = apple->window_pos_y - apple->mouse_y_last;
                   apple->mouse_y_last = apple->window_pos_y;
+#endif
                   return val;
                case RETRO_DEVICE_ID_MOUSE_LEFT:
                   return apple->mouse_buttons & 1;

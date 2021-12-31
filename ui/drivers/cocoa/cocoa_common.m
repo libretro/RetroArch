@@ -44,7 +44,8 @@ static CocoaView* g_instance;
 #ifdef HAVE_COCOATOUCH
 void *glkitview_init(void);
 
-@interface CocoaView()<GCDWebUploaderDelegate, UIGestureRecognizerDelegate> {
+@interface CocoaView()<GCDWebUploaderDelegate, UIGestureRecognizerDelegate, EmulatorTouchMouseHandlerDelegate> {
+    EmulatorTouchMouseHandler *mouseHandler;
 }
 
 @end
@@ -310,6 +311,8 @@ void *glkitview_init(void);
     swipe.delegate = self;
     swipe.direction = UISwipeGestureRecognizerDirectionDown;
     [self.view addGestureRecognizer:swipe];
+    mouseHandler = [[EmulatorTouchMouseHandler alloc] initWithView:self.view];
+    mouseHandler.delegate = self;
 #ifdef HAVE_IOS_CUSTOMKEYBOARD
     [self setupEmulatorKeyboard];
     UISwipeGestureRecognizer *showKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(showCustomKeyboard)];
@@ -347,6 +350,47 @@ void *glkitview_init(void);
     [WebServer sharedInstance].webUploader.delegate = self;
 #endif
 }
+
+#if TARGET_OS_IOS
+-(void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    [mouseHandler touchesBeganWithTouches:touches];
+}
+
+-(void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    [mouseHandler touchesMovedWithTouches:touches];
+}
+
+-(void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    [mouseHandler touchesCancelledWithTouches:touches];
+}
+
+-(void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    [mouseHandler touchesEndedWithTouches:touches];
+}
+
+#pragma mark EmulatorTouchMouseHandlerDelegate
+-(void)handleMouseClickWithIsLeftClick:(BOOL)isLeftClick isPressed:(BOOL)isPressed {
+    cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
+    if (apple == NULL) {
+        return;
+    }
+    NSUInteger buttonIndex = isLeftClick ? 0 : 1;
+    if (isPressed) {
+        apple->mouse_buttons |= (1 << buttonIndex);
+    } else {
+        apple->mouse_buttons &= ~(1 << buttonIndex);
+    }
+}
+
+-(void)handleMouseMoveWithX:(CGFloat)x y:(CGFloat)y {
+    cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
+    if (apple == NULL) {
+        return;
+    }
+    apple->mouse_rel_x = (int16_t)x;
+    apple->mouse_rel_y = (int16_t)y;
+}
+#endif
 
 #pragma mark GCDWebServerDelegate
 - (void)webServerDidCompleteBonjourRegistration:(GCDWebServer*)server
