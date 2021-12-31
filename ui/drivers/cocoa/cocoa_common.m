@@ -44,9 +44,14 @@ static CocoaView* g_instance;
 #ifdef HAVE_COCOATOUCH
 void *glkitview_init(void);
 
-@interface CocoaView()<GCDWebUploaderDelegate, UIGestureRecognizerDelegate, EmulatorTouchMouseHandlerDelegate> {
+@interface CocoaView()<GCDWebUploaderDelegate, UIGestureRecognizerDelegate
+#ifdef HAVE_IOS_TOUCHMOUSE
+,EmulatorTouchMouseHandlerDelegate> {
     EmulatorTouchMouseHandler *mouseHandler;
 }
+#else
+>
+#endif
 
 @end
 #endif
@@ -167,6 +172,7 @@ void *glkitview_init(void);
 
 -(void) updateOverlayAndFocus
 {
+#ifdef HAVE_IOS_CUSTOMKEYBOARD
     int cmdData = self.keyboardController.view.isHidden ? 0 : 1;
     command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &cmdData);
     if ( self.keyboardController.view.isHidden ) {
@@ -174,6 +180,7 @@ void *glkitview_init(void);
     } else {
         command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
     }
+#endif
 }
 
 -(BOOL)prefersHomeIndicatorAutoHidden { return YES; }
@@ -311,8 +318,10 @@ void *glkitview_init(void);
     swipe.delegate = self;
     swipe.direction = UISwipeGestureRecognizerDirectionDown;
     [self.view addGestureRecognizer:swipe];
+#ifdef HAVE_IOS_TOUCHMOUSE
     mouseHandler = [[EmulatorTouchMouseHandler alloc] initWithView:self.view];
     mouseHandler.delegate = self;
+#endif
 #ifdef HAVE_IOS_CUSTOMKEYBOARD
     [self setupEmulatorKeyboard];
     UISwipeGestureRecognizer *showKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(showCustomKeyboard)];
@@ -351,7 +360,7 @@ void *glkitview_init(void);
 #endif
 }
 
-#if TARGET_OS_IOS
+#if TARGET_OS_IOS && HAVE_IOS_TOUCHMOUSE
 -(void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     [mouseHandler touchesBeganWithTouches:touches];
 }

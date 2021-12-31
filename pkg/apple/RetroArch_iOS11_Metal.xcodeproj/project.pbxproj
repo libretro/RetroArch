@@ -80,6 +80,7 @@
 		92CC05C321FE3C6D00FF79F0 /* WebServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC05C121FE3C6D00FF79F0 /* WebServer.m */; };
 		92CC05C521FEDC9F00FF79F0 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */; };
 		92CC05C721FEDD0B00FF79F0 /* MobileCoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */; };
+		92DAF342277EC52900FE2A9E /* JITSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 92DAF341277EC52900FE2A9E /* JITSupport.m */; };
 		92E5DCD4231A5786006491BF /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 92E5DCD3231A5786006491BF /* modules */; };
 /* End PBXBuildFile section */
 
@@ -332,6 +333,8 @@
 		92CC05C121FE3C6D00FF79F0 /* WebServer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebServer.m; sourceTree = "<group>"; };
 		92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
 		92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = System/Library/Frameworks/MobileCoreServices.framework; sourceTree = SDKROOT; };
+		92DAF340277EC52900FE2A9E /* JITSupport.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JITSupport.h; sourceTree = "<group>"; };
+		92DAF341277EC52900FE2A9E /* JITSupport.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JITSupport.m; sourceTree = "<group>"; };
 		92E5DCD3231A5786006491BF /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = modules; sourceTree = "<group>"; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
@@ -410,6 +413,8 @@
 			children = (
 				92B9EC9324E0536200E6CFB2 /* core */,
 				92B9EAE524E0518600E6CFB2 /* libretro-common */,
+				92DAF340277EC52900FE2A9E /* JITSupport.h */,
+				92DAF341277EC52900FE2A9E /* JITSupport.m */,
 			);
 			name = Sources;
 			sourceTree = "<group>";
@@ -1217,6 +1222,7 @@
 				92CC05BA21FE3C1700FF79F0 /* GCDWebServerFileRequest.m in Sources */,
 				92CC05AE21FE3C1700FF79F0 /* GCDWebServerFileResponse.m in Sources */,
 				9210C2F624B3A32D00E6FE7C /* griffin_cpp.cpp in Sources */,
+				92DAF342277EC52900FE2A9E /* JITSupport.m in Sources */,
 				92CC05B221FE3C1700FF79F0 /* GCDWebServerStreamedResponse.m in Sources */,
 				92CC05A221FE3C1700FF79F0 /* GCDWebServerResponse.m in Sources */,
 			);

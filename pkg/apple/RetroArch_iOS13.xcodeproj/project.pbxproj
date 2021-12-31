@@ -1397,6 +1397,8 @@
 					"-DHAVE_SCREENSHOTS",
 					"-DHAVE_REWIND",
 					"-DHAVE_PATCH",
+					"-DHAVE_IOS_CUSTOMKEYBOARD",
+					"-DHAVE_IOS_TOUCHMOUSE",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
 				PRODUCT_NAME = RetroArch;
@@ -1507,6 +1509,7 @@
 					"-DHAVE_REWIND",
 					"-DHAVE_PATCH",
 					"-DHAVE_IOS_CUSTOMKEYBOARD",
+					"-DHAVE_IOS_TOUCHMOUSE",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
@@ -1583,6 +1586,7 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_IOS_CUSTOMKEYBOARD",
+					"-DHAVE_IOS_TOUCHMOUSE",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
 				PRODUCT_NAME = RetroArch;
