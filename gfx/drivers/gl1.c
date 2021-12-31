@@ -1304,6 +1304,7 @@ static void gl1_load_texture_data(
 
 #ifndef VITA
    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 #endif
 
    glTexImage2D(GL_TEXTURE_2D,
