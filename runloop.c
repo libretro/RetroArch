@@ -6873,10 +6873,41 @@ static enum runloop_state_enum runloop_check_state(
    /* Check if we have pressed the AI Service toggle button */
    HOTKEY_CHECK(RARCH_AI_SERVICE, CMD_EVENT_AI_SERVICE_TOGGLE, true, NULL);
 
-   if (BIT256_GET(current_bits, RARCH_VOLUME_UP))
-      command_event(CMD_EVENT_VOLUME_UP, NULL);
-   else if (BIT256_GET(current_bits, RARCH_VOLUME_DOWN))
-      command_event(CMD_EVENT_VOLUME_DOWN, NULL);
+   /* Volume stepping + acceleration */
+   {
+      static unsigned volume_hotkey_delay        = 0;
+      static unsigned volume_hotkey_delay_active = 0;
+      unsigned volume_hotkey_delay_default       = 15;
+      if (BIT256_GET(current_bits, RARCH_VOLUME_UP))
+      {
+         if (volume_hotkey_delay > 0)
+            volume_hotkey_delay--;
+         else
+         {
+            command_event(CMD_EVENT_VOLUME_UP, NULL);
+            if (volume_hotkey_delay_active > 0)
+               volume_hotkey_delay_active--;
+            volume_hotkey_delay = volume_hotkey_delay_active;
+         }
+      }
+      else if (BIT256_GET(current_bits, RARCH_VOLUME_DOWN))
+      {
+         if (volume_hotkey_delay > 0)
+            volume_hotkey_delay--;
+         else
+         {
+            command_event(CMD_EVENT_VOLUME_DOWN, NULL);
+            if (volume_hotkey_delay_active > 0)
+               volume_hotkey_delay_active--;
+            volume_hotkey_delay = volume_hotkey_delay_active;
+         }
+      }
+      else
+      {
+         volume_hotkey_delay        = 0;
+         volume_hotkey_delay_active = volume_hotkey_delay_default;
+      }
+   }
 
 #ifdef HAVE_NETWORKING
    /* Check Netplay */
