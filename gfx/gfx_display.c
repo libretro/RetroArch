@@ -31,6 +31,14 @@
 /* Small 1x1 white texture used for blending purposes */
 static uintptr_t gfx_white_texture;
 
+/* ptr alignment */
+static gfx_display_t dispgfx_st = {0};
+
+gfx_display_t *disp_get_ptr(void)
+{
+   return &dispgfx_st;
+}
+
 static bool gfx_display_null_font_init_first(
       void **font_handle, void *video_data,
       const char *font_path, float font_size,
@@ -91,7 +99,7 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
    &gfx_display_ctx_gl1,
 #endif
 #ifdef HAVE_OPENGL_CORE
-   &gfx_display_ctx_gl_core,
+   &gfx_display_ctx_gl3,
 #endif
 #ifdef HAVE_VULKAN
    &gfx_display_ctx_vulkan,
@@ -456,40 +464,43 @@ void gfx_display_scissor_begin(
       int x, int y, unsigned width, unsigned height)
 {
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-   if (y < 0)
+   if (dispctx && dispctx->scissor_begin)
    {
-      if (height < (unsigned)(-y))
-         height  = 0;
-      else
-         height += y;
-      y          = 0;
-   }
-   if (x < 0)
-   {
-      if (width < (unsigned)(-x))
-         width   = 0;
-      else
-         width  += x;
-      x          = 0;
-   }
-   if (y >= (int)video_height)
-   {
-      height     = 0;
-      y          = 0;
-   }
-   if (x >= (int)video_width)
-   {
-      width      = 0;
-      x          = 0;
-   }
-   if ((y + height) > video_height)
-      height     = video_height - y;
-   if ((x + width) > video_width)
-      width      = video_width - x;
+      if (y < 0)
+      {
+         if (height < (unsigned)(-y))
+            height  = 0;
+         else
+            height += y;
+         y          = 0;
+      }
+      if (x < 0)
+      {
+         if (width < (unsigned)(-x))
+            width   = 0;
+         else
+            width  += x;
+         x          = 0;
+      }
+      if (y >= (int)video_height)
+      {
+         height     = 0;
+         y          = 0;
+      }
+      if (x >= (int)video_width)
+      {
+         width      = 0;
+         x          = 0;
+      }
+      if ((y + height) > video_height)
+         height     = video_height - y;
+      if ((x + width) > video_width)
+         width      = video_width - x;
 
-   dispctx->scissor_begin(userdata,
-         video_width, video_height,
-         x, y, width, height);
+      dispctx->scissor_begin(userdata,
+            video_width, video_height,
+            x, y, width, height);
+   }
 }
 
 font_data_t *gfx_display_font_file(
@@ -515,6 +526,49 @@ font_data_t *gfx_display_font_file(
       return NULL;
 
    return font_data;
+}
+
+/* Draw text on top of the screen */
+void gfx_display_draw_text(
+      const font_data_t *font, const char *text,
+      float x, float y, int width, int height,
+      uint32_t color, enum text_alignment text_align,
+      float scale, bool shadows_enable, float shadow_offset,
+      bool draw_outside)
+{
+   struct font_params params;
+   video_driver_state_t *video_st = video_state_get_ptr();
+
+   if ((color & 0x000000FF) == 0)
+      return;
+
+   /* Don't draw outside of the screen */
+   if (!draw_outside &&
+           ((x < -64 || x > width  + 64)
+         || (y < -64 || y > height + 64))
+      )
+      return;
+
+   params.x           = x / width;
+   params.y           = 1.0f - y / height;
+   params.scale       = scale;
+   params.drop_mod    = 0.0f;
+   params.drop_x      = 0.0f;
+   params.drop_y      = 0.0f;
+   params.color       = color;
+   params.full_screen = true;
+   params.text_align  = text_align;
+
+   if (shadows_enable)
+   {
+      params.drop_x      = shadow_offset;
+      params.drop_y      = -shadow_offset;
+      params.drop_alpha  = 0.35f;
+   }
+
+   if (video_st->poke && video_st->poke->set_osd_msg)
+      video_st->poke->set_osd_msg(video_st->data,
+            text, &params, (void*)font);
 }
 
 void gfx_display_draw_bg(
@@ -1060,7 +1114,7 @@ int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
 void gfx_display_get_fb_size(unsigned *fb_width,
       unsigned *fb_height, size_t *fb_pitch)
 {
-   gfx_display_t *p_disp = disp_get_ptr();
+   gfx_display_t *p_disp = &dispgfx_st;
    *fb_width             = p_disp->framebuf_width;
    *fb_height            = p_disp->framebuf_height;
    *fb_pitch             = p_disp->framebuf_pitch;
@@ -1069,20 +1123,20 @@ void gfx_display_get_fb_size(unsigned *fb_width,
 /* Set the display framebuffer's width. */
 void gfx_display_set_width(unsigned width)
 {
-   gfx_display_t *p_disp  = disp_get_ptr();
+   gfx_display_t *p_disp  = &dispgfx_st;
    p_disp->framebuf_width = width;
 }
 
 /* Set the display framebuffer's height. */
 void gfx_display_set_height(unsigned height)
 {
-   gfx_display_t *p_disp   = disp_get_ptr();
+   gfx_display_t *p_disp   = &dispgfx_st;
    p_disp->framebuf_height = height;
 }
 
 void gfx_display_set_framebuffer_pitch(size_t pitch)
 {
-   gfx_display_t *p_disp   = disp_get_ptr();
+   gfx_display_t *p_disp  = &dispgfx_st;
    p_disp->framebuf_pitch = pitch;
 }
 
@@ -1251,7 +1305,7 @@ void gfx_display_init_white_texture(void)
 
 void gfx_display_free(void)
 {
-   gfx_display_t           *p_disp   = disp_get_ptr();
+   gfx_display_t *p_disp       = &dispgfx_st;
    video_coord_array_free(&p_disp->dispca);
 
    p_disp->msg_force           = false;
@@ -1265,7 +1319,7 @@ void gfx_display_free(void)
 
 void gfx_display_init(void)
 {
-   gfx_display_t       *p_disp   = disp_get_ptr();
+   gfx_display_t *p_disp         = &dispgfx_st;
    video_coord_array_t *p_dispca = &p_disp->dispca;
 
    p_disp->has_windowed          = video_driver_has_windowed();

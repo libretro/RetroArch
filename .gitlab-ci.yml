@@ -118,7 +118,6 @@ build-retroarch-windows-msvc10-x64:
     - |
       $ErrorActionPreference = 'Stop'
       # Build RetroArch
-      env.exe
       bash.exe -l -c "make -f Makefile.griffin platform=$Env:MSVC_PLATFORM"
       if ($LastExitCode -ne 0){throw "Failed to build RetroArch"}
       mt.exe -nologo -manifest "retroarch.exe.manifest" -outputresource:"retroarch.exe;#1"
@@ -168,7 +167,6 @@ build-retroarch-windows-msvc10-i686:
     - |
       $ErrorActionPreference = 'Stop'
       # Build RetroArch
-      env.exe
       bash.exe -l -c "make -f Makefile.griffin platform=$Env:MSVC_PLATFORM"
       if ($LastExitCode -ne 0){throw "Failed to build RetroArch"}
       mt.exe -nologo -manifest "retroarch.exe.manifest" -outputresource:"retroarch.exe;#1"
@@ -219,7 +217,6 @@ build-retroarch-windows-msvc05-i686:
     - |
       $ErrorActionPreference = 'Stop'
       # Build RetroArch
-      env.exe
       bash.exe -l -c "make -f Makefile.griffin platform=$Env:MSVC_PLATFORM"
       if ($LastExitCode -ne 0){throw "Failed to build RetroArch"}
       mt.exe -nologo -manifest "retroarch.exe.manifest" -outputresource:"retroarch.exe;#1"
@@ -491,6 +488,29 @@ build-retroarch-retrofw-mips32:
     - "cp -f libretro-common/audio/dsp_filters/*.dsp ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
     - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
 
+build-retroarch-miyoo-arm32:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-dingux:latest
+  stage: build
+  variables:
+    MEDIA_PATH: .media
+    STRIP_BIN:  1
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    - retroarch
+    - ${MEDIA_PATH}
+    expire_in: 10 min
+  dependencies: []
+  script:
+    - "make -j$NUMPROC -f Makefile.miyoo"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+    - "cp -f libretro-common/audio/dsp_filters/*.dsp ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
+    - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "cp -f pkg/miyoo/20a-retroarch ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+
 build-retroarch-android-normal:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
   stage: build
@@ -499,10 +519,15 @@ build-retroarch-android-normal:
     - retroarch-precompiled/
     expire_in: 10 min
   script:
-    - "cd pkg/android/phoenix && ./gradlew assembleNormalRelease && cd -"
-    - "mkdir .retroarch-precompiled"
-    - "cp -r ./* .retroarch-precompiled/"
-    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+  script:
+    - |
+      set -e
+      cd pkg/android/phoenix
+      ./gradlew assembleNormalRelease
+      cd -
+      mkdir .retroarch-precompiled
+      cp -r ./* .retroarch-precompiled/
+      mv .retroarch-precompiled/ retroarch-precompiled/
 
 build-retroarch-android-aarch64:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
@@ -512,10 +537,14 @@ build-retroarch-android-aarch64:
     - retroarch-precompiled/
     expire_in: 10 min
   script:
-    - "cd pkg/android/phoenix && ./gradlew assembleAarch64Release && cd -"
-    - "mkdir .retroarch-precompiled"
-    - "cp -r ./* .retroarch-precompiled/"
-    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+    - |
+      set -e
+      cd pkg/android/phoenix
+      ./gradlew assembleAarch64Release
+      cd -
+      mkdir .retroarch-precompiled
+      cp -r ./* .retroarch-precompiled/
+      mv .retroarch-precompiled/ retroarch-precompiled/
 
 build-retroarch-android-ra32:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
@@ -525,10 +554,14 @@ build-retroarch-android-ra32:
     - retroarch-precompiled/
     expire_in: 10 min
   script:
-    - "cd pkg/android/phoenix && ./gradlew assembleRa32Release && cd -"
-    - "mkdir .retroarch-precompiled"
-    - "cp -r ./* .retroarch-precompiled/"
-    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+    - |
+      set -e
+      cd pkg/android/phoenix
+      ./gradlew assembleRa32Release
+      cd -
+      mkdir .retroarch-precompiled
+      cp -r ./* .retroarch-precompiled/
+      mv .retroarch-precompiled/ retroarch-precompiled/
 
 build-retroarch-android-playstore-normal:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
@@ -538,10 +571,14 @@ build-retroarch-android-playstore-normal:
     - retroarch-precompiled/
     expire_in: 10 min
   script:
-    - "cd pkg/android/phoenix && ./gradlew bundlePlayStoreNormalRelease && cd -"
-    - "mkdir .retroarch-precompiled"
-    - "cp -r ./* .retroarch-precompiled/"
-    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+    - |
+      set -e
+      cd pkg/android/phoenix
+      ./gradlew bundlePlayStoreNormalRelease
+      cd -
+      mkdir .retroarch-precompiled
+      cp -r ./* .retroarch-precompiled/
+      mv .retroarch-precompiled/ retroarch-precompiled/
 
 build-retroarch-android-playstore-plus:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
@@ -551,10 +588,14 @@ build-retroarch-android-playstore-plus:
     - retroarch-precompiled/
     expire_in: 10 min
   script:
-    - "cd pkg/android/phoenix && ./gradlew bundlePlayStorePlusRelease && cd -"
-    - "mkdir .retroarch-precompiled"
-    - "cp -r ./* .retroarch-precompiled/"
-    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+    - |
+      set -e
+      cd pkg/android/phoenix
+      ./gradlew bundlePlayStorePlusRelease
+      cd -
+      mkdir .retroarch-precompiled
+      cp -r ./* .retroarch-precompiled/
+      mv .retroarch-precompiled/ retroarch-precompiled/
 
 build-static-retroarch-libnx-aarch64:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-libnx-devkitpro:latest
@@ -647,6 +688,8 @@ build-static-retroarch-dummy-vita:
 build-static-retroarch-ps2:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-ps2:latest
   stage: prepare-for-static-cores
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
   artifacts:
     paths:
     -  retroarch-precompiled/
@@ -657,8 +700,7 @@ build-static-retroarch-ps2:
     - build-static-retroarch-dummy-ps2
   script:
     # Allow failure since we don't have a core
-    # PS2 makefile for now doesn't allow -jX so this is why is hardcoded to -j1
-    - "make -f Makefile.ps2 -j1 ||:"
+    - "make -f Makefile.ps2 -j$NUMPROC ||:"
     - "mkdir .retroarch-precompiled"
     - "cp -r ./* .retroarch-precompiled/"
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
@@ -667,8 +709,7 @@ build-static-retroarch-dummy-ps2:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-ps2:latest
   stage: build
   before_script:
-    # PS2 doesn't allow to use -jX for now
-    - export NUMPROC=1
+    - export NUMPROC=$(($(nproc)/3))
   artifacts:
     paths:
     -  raboot.elf

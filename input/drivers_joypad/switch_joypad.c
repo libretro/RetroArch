@@ -331,7 +331,11 @@ static void switch_joypad_poll(void)
                button_state[i] |= (uint16_t)HidNpadButton_L;
             if (pad_button & HidNpadButton_LeftSR)
                button_state[i] |= (uint16_t)HidNpadButton_R;
-            
+            if (pad_button & HidNpadButton_StickL)
+               button_state[i] |= (uint16_t)HidNpadButton_StickL;
+            if (pad_button & HidNpadButton_Minus)
+               button_state[i] |= (uint16_t)HidNpadButton_Plus;
+
             analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = -stick_left_state.y;
             analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = -stick_left_state.x;
          } else if (hidGetNpadDeviceType((HidNpadIdType)i) & HidDeviceTypeBits_JoyRight) {
@@ -349,7 +353,9 @@ static void switch_joypad_poll(void)
                button_state[i] |= (uint16_t)HidNpadButton_R;
             if (pad_button & HidNpadButton_StickR)
                button_state[i] |= (uint16_t)HidNpadButton_StickL;
-            
+            if (pad_button & HidNpadButton_Plus)
+               button_state[i] |= (uint16_t)HidNpadButton_Plus;
+
             /* Throw JoyRight state into retro left analog */
             analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = stick_right_state.y;
             analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = stick_right_state.x;

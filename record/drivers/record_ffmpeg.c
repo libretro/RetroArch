@@ -42,6 +42,8 @@
 #include <time.h>
 #endif
 
+#include "../record_driver.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -226,7 +226,7 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
    if (!string_list_initialize(&lines))
       return false;
 
-   RARCH_LOG("[slang]: Compiling shader \"%s\".\n", shader_path);
+   RARCH_LOG("[slang]: Compiling shader: \"%s\".\n", shader_path);
 
    if (!glslang_read_shader_file(shader_path, &lines, true))
       goto error;
@@ -237,14 +237,14 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
    if (!glslang::compile_spirv(build_stage_source(&lines, "vertex"),
             glslang::StageVertex, &output->vertex))
    {
-      RARCH_ERR("Failed to compile vertex shader stage.\n");
+      RARCH_ERR("[slang]: Failed to compile vertex shader stage.\n");
       goto error;
    }
 
    if (!glslang::compile_spirv(build_stage_source(&lines, "fragment"),
             glslang::StageFragment, &output->fragment))
    {
-      RARCH_ERR("Failed to compile fragment shader stage.\n");
+      RARCH_ERR("[slang]: Failed to compile fragment shader stage.\n");
       goto error;
    }
 

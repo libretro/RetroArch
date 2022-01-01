@@ -203,7 +203,7 @@ bool d3d12_init_base(d3d12_video_t* d3d12)
 
          utf16_to_char_string((const uint16_t*)desc.Description, str, sizeof(str));
 
-         RARCH_LOG("[D3D12]: Found GPU at index %d: %s\n", i, str);
+         RARCH_LOG("[D3D12]: Found GPU at index %d: \"%s\".\n", i, str);
 
          string_list_append(d3d12->gpu_list, str, attr);
 

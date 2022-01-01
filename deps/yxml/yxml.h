@@ -27,14 +27,6 @@
 #include <stddef.h>
 #include <retro_environment.h>
 
-#if defined(_MSC_VER) && !defined(__cplusplus) && !defined(inline)
-#define inline __inline
-#endif
-
-#if defined(__STDC_C89__) && !defined(inline)
-#define inline
-#endif
-
 /* Full API documentation for this library can be found in the "yxml.pod" file
  * in the yxml git repository, or online at http://dev.yorhel.nl/yxml/man */
 
@@ -135,32 +127,11 @@ extern "C" {
 
 void yxml_init(yxml_t *, void *, size_t);
 
-
 yxml_ret_t yxml_parse(yxml_t *, int);
-
-
-/* May be called after the last character has been given to yxml_parse().
- * Returns YXML_OK if the XML document is valid, YXML_EEOF otherwise.  Using
- * this function isn't really necessary, but can be used to detect documents
- * that don't end correctly. In particular, an error is returned when the XML
- * document did not contain a (complete) root element, or when the document
- * ended while in a comment or processing instruction. */
-yxml_ret_t yxml_eof(yxml_t *);
 
 #ifdef __cplusplus
 }
 #endif
-
-
-/* Returns the length of the element name (x->elem), attribute name (x->attr),
- * or PI name (x->pi). This function should ONLY be used directly after the
- * YXML_ELEMSTART, YXML_ATTRSTART or YXML_PISTART (respectively) tokens have
- * been returned by yxml_parse(), calling this at any other time may not give
- * the correct results. This function should also NOT be used on strings other
- * than x->elem, x->attr or x->pi. */
-static inline size_t yxml_symlen(yxml_t *x, const char *s) {
-	return (x->stack + x->stacklen) - (const unsigned char*)s;
-}
 
 #endif
 

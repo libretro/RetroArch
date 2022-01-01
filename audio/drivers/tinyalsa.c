@@ -64,7 +64,7 @@
 #include <retro_inline.h>
 #include <retro_endianness.h>
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 #include "../../verbosity.h"
 
 /* Implementation tinyalsa pcm */

@@ -7059,16 +7059,19 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
             video_height / 4, msg);
 
       /* Draw onscreen keyboard */
-      gfx_display_draw_keyboard(
-            p_disp,
-            userdata,
-            video_width,
-            video_height,
-            mui->textures.list[MUI_TEXTURE_KEY_HOVER],
-            mui->font_data.list.font,
-            input_event_get_osk_grid(),
-            input_event_get_osk_ptr(),
-            0xFFFFFFFF);
+      {
+         input_driver_state_t *input_st = input_state_get_ptr();
+         gfx_display_draw_keyboard(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               mui->textures.list[MUI_TEXTURE_KEY_HOVER],
+               mui->font_data.list.font,
+               input_st->osk_grid,
+               input_st->osk_ptr,
+               0xFFFFFFFF);
+      }
 
       /* Flush message box & osk text
        * > Message box & osk only use list font */
@@ -7745,7 +7748,7 @@ static void materialui_init_font(
       if (wideglyph_str)
       {
          int wideglyph_width =
-            font_driver_get_message_width(font_data->font, wideglyph_str, strlen(wideglyph_str), 1);
+            font_driver_get_message_width(font_data->font, wideglyph_str, (unsigned)strlen(wideglyph_str), 1);
 
          if (wideglyph_width > 0 && char_width > 0) 
             font_data->wideglyph_width = wideglyph_width * 100 / char_width;
@@ -8263,7 +8266,7 @@ static void materialui_populate_nav_bar(
     * > Menu driver must be alive at this point, and retroarch
     *   must be initialised, so all we have to do (or can do)
     *   is check whether a non-dummy core is loaded) */
-   mui->nav_bar.resume_tab.enabled = !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL);
+   mui->nav_bar.resume_tab.enabled = !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL);
 
    /* Menu tabs */
 
@@ -9217,9 +9220,9 @@ static int materialui_list_push(void *data, void *userdata,
 
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-            if (rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+            if (retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
             {
-               if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+               if (!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                {
                   MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
                         info->list,
@@ -9298,6 +9301,17 @@ static int materialui_list_push(void *data, void *userdata,
                      PARSE_ACTION,
                      false);
             }
+
+#ifdef HAVE_LAKKA
+            if (settings->bools.menu_show_eject_disc)
+            {
+               MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
+                     info->list,
+                     MENU_ENUM_LABEL_EJECT_DISC,
+                     PARSE_ACTION,
+                     false);
+            }
+#endif
 
 #if defined(HAVE_NETWORKING)
 #ifdef HAVE_LAKKA
@@ -10079,6 +10093,9 @@ static void materialui_list_insert(
       {
          case MENU_SET_CDROM_INFO:
          case MENU_SET_CDROM_LIST:
+#ifdef HAVE_LAKKA
+         case MENU_SET_EJECT_DISC:
+#endif
          case MENU_SET_LOAD_CDROM_LIST:
             node->icon_texture_index = MUI_TEXTURE_DISK;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
@@ -10359,6 +10376,9 @@ static void materialui_list_insert(
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_DISC)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DUMP_DISC)) ||
+#ifdef HAVE_LAKKA
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EJECT_DISC)) ||
+#endif
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISC_INFORMATION)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_INDEX))
@@ -10551,6 +10571,7 @@ static void materialui_list_insert(
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_LAN)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_LOAD)) ||

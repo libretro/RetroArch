@@ -24,6 +24,9 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include "configuration.h"
+#include "retroarch_types.h"
+
 RETRO_BEGIN_DECLS
 
 enum
@@ -100,6 +103,37 @@ int driver_find_index(const char *label, const char *drv);
  * If nonblock state is false, sets blocking state for both
  * audio and video drivers instead. */
 void driver_set_nonblock_state(void);
+
+/**
+ * drivers_init:
+ * @flags              : Bitmask of drivers to initialize.
+ *
+ * Initializes drivers.
+ * @flags determines which drivers get initialized.
+ **/
+void drivers_init(settings_t *settings, int flags,
+      bool verbosity_enabled);
+
+/**
+ * Driver ownership - set this to true if the platform in
+ * question needs to 'own'
+ * the respective handle and therefore skip regular RetroArch
+ * driver teardown/reiniting procedure.
+ *
+ * If  to true, the 'free' function will get skipped. It is
+ * then up to the driver implementation to properly handle
+ * 'reiniting' inside the 'init' function and make sure it
+ * returns the existing handle instead of allocating and
+ * returning a pointer to a new handle.
+ *
+ * Typically, if a driver intends to make use of this, it should
+ * set this to true at the end of its 'init' function.
+ **/
+void driver_uninit(int flags);
+
+void retro_input_poll_null(void);
+
+void retroarch_deinit_drivers(struct retro_callbacks *cbs);
 
 RETRO_END_DECLS
 

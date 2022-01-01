@@ -27,9 +27,9 @@
 
 RETRO_BEGIN_DECLS
 
-typedef struct gl_core_filter_chain gl_core_filter_chain_t;
+typedef struct gl3_filter_chain gl3_filter_chain_t;
 
-struct gl_core_filter_chain_texture
+struct gl3_filter_chain_texture
 {
    GLuint image;
    unsigned width;
@@ -39,7 +39,7 @@ struct gl_core_filter_chain_texture
    GLenum format;
 };
 
-struct gl_core_viewport
+struct gl3_viewport
 {
    GLint x;
    GLint y;
@@ -47,7 +47,7 @@ struct gl_core_viewport
    GLsizei height;
 };
 
-struct gl_core_filter_chain_pass_info
+struct gl3_filter_chain_pass_info
 {
    /* Maximum number of mip-levels to use. */
    unsigned max_levels;
@@ -67,7 +67,7 @@ struct gl_core_filter_chain_pass_info
    enum glslang_filter_chain_address address;
 };
 
-struct gl_core_buffer_locations
+struct gl3_buffer_locations
 {
    GLint flat_ubo_vertex;
    GLint flat_ubo_fragment;
@@ -77,74 +77,74 @@ struct gl_core_buffer_locations
    GLuint buffer_index_ubo_fragment;
 };
 
-gl_core_filter_chain_t *gl_core_filter_chain_new(void);
+gl3_filter_chain_t *gl3_filter_chain_new(void);
 
-void gl_core_filter_chain_free(
-      gl_core_filter_chain_t *chain);
+void gl3_filter_chain_free(
+      gl3_filter_chain_t *chain);
 
-void gl_core_filter_chain_set_shader(
-      gl_core_filter_chain_t *chain,
+void gl3_filter_chain_set_shader(
+      gl3_filter_chain_t *chain,
       unsigned pass,
       GLenum shader_type,
       const uint32_t *spirv,
       size_t spirv_words);
 
-void gl_core_filter_chain_set_pass_info(
-      gl_core_filter_chain_t *chain,
+void gl3_filter_chain_set_pass_info(
+      gl3_filter_chain_t *chain,
       unsigned pass,
-      const struct gl_core_filter_chain_pass_info *info);
+      const struct gl3_filter_chain_pass_info *info);
 
-bool gl_core_filter_chain_init(gl_core_filter_chain_t *chain);
+bool gl3_filter_chain_init(gl3_filter_chain_t *chain);
 
-void gl_core_filter_chain_set_input_texture(
-      gl_core_filter_chain_t *chain,
-      const struct gl_core_filter_chain_texture *texture);
+void gl3_filter_chain_set_input_texture(
+      gl3_filter_chain_t *chain,
+      const struct gl3_filter_chain_texture *texture);
 
-void gl_core_filter_chain_set_frame_count(
-      gl_core_filter_chain_t *chain,
+void gl3_filter_chain_set_frame_count(
+      gl3_filter_chain_t *chain,
       uint64_t count);
 
-void gl_core_filter_chain_set_frame_count_period(
-      gl_core_filter_chain_t *chain,
+void gl3_filter_chain_set_frame_count_period(
+      gl3_filter_chain_t *chain,
       unsigned pass,
       unsigned period);
 
-void gl_core_filter_chain_set_frame_direction(
-      gl_core_filter_chain_t *chain,
+void gl3_filter_chain_set_frame_direction(
+      gl3_filter_chain_t *chain,
       int32_t direction);
 
-void gl_core_filter_chain_set_pass_name(
-      gl_core_filter_chain_t *chain,
+void gl3_filter_chain_set_pass_name(
+      gl3_filter_chain_t *chain,
       unsigned pass,
       const char *name);
 
-void gl_core_filter_chain_build_offscreen_passes(
-      gl_core_filter_chain_t *chain,
-      const struct gl_core_viewport *vp);
+void gl3_filter_chain_build_offscreen_passes(
+      gl3_filter_chain_t *chain,
+      const struct gl3_viewport *vp);
 
-void gl_core_filter_chain_build_viewport_pass(
-      gl_core_filter_chain_t *chain,
-      const struct gl_core_viewport *vp,
+void gl3_filter_chain_build_viewport_pass(
+      gl3_filter_chain_t *chain,
+      const struct gl3_viewport *vp,
       const float *mvp);
 
-gl_core_filter_chain_t *gl_core_filter_chain_create_default(
+gl3_filter_chain_t *gl3_filter_chain_create_default(
       enum glslang_filter_chain_filter filter);
 
-gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
+gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       const char *path,
       enum glslang_filter_chain_filter filter);
 
-struct video_shader *gl_core_filter_chain_get_preset(
-      gl_core_filter_chain_t *chain);
+struct video_shader *gl3_filter_chain_get_preset(
+      gl3_filter_chain_t *chain);
 
-void gl_core_filter_chain_end_frame(gl_core_filter_chain_t *chain);
+void gl3_filter_chain_end_frame(gl3_filter_chain_t *chain);
 
-GLuint gl_core_cross_compile_program(
+GLuint gl3_cross_compile_program(
       const uint32_t *vertex,
       size_t vertex_size,
       const uint32_t *fragment,
       size_t fragment_size,
-      struct gl_core_buffer_locations *loc,
+      struct gl3_buffer_locations *loc,
       bool flatten);
 
 RETRO_END_DECLS

@@ -299,6 +299,11 @@ void dir_check_shader(
  */
 bool load_shader_preset(settings_t *settings, const char *core_name, char *s, size_t len);
 
+bool apply_shader(
+      settings_t *settings,
+      enum rarch_shader_type type,
+      const char *preset_path, bool message);
+
 const char *video_shader_get_preset_extension(enum rarch_shader_type type);
 
 RETRO_END_DECLS

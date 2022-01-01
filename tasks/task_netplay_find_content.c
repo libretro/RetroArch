@@ -81,7 +81,7 @@ static void netplay_crc_scan_callback(retro_task_t *task,
 
       for (i = 0; i < game_list->size; i++)
          content_add_subsystem(game_list->elems[i].data);
-      task_push_load_subsystem_with_core_from_menu(
+      task_push_load_subsystem_with_core(
          NULL, &content_info,
          CORE_TYPE_PLAIN, NULL, NULL);
       string_list_free(game_list);
@@ -100,14 +100,14 @@ static void netplay_crc_scan_callback(retro_task_t *task,
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
 
       if (system && string_is_equal(system->library_name, state->core_name))
-         task_push_load_content_with_core_from_menu(
+         task_push_load_content_with_core(
                state->content_path, &content_info,
                CORE_TYPE_PLAIN, NULL, NULL);
       else
       {
          task_push_load_new_core(state->core_path, NULL,
                &content_info, CORE_TYPE_PLAIN, NULL, NULL);
-         task_push_load_content_with_core_from_menu(
+         task_push_load_content_with_core(
                state->content_path, &content_info,
                CORE_TYPE_PLAIN, NULL, NULL);
       }

@@ -30,10 +30,11 @@ struct hidpad_nesusb_data
    uint32_t buttons;
 };
 
-static void* hidpad_nesusb_init(void *data, uint32_t slot, hid_driver_t *driver)
+static void* hidpad_nesusb_init(void *data,
+      uint32_t slot, hid_driver_t *driver)
 {
    struct pad_connection* connection = (struct pad_connection*)data;
-   struct hidpad_nesusb_data* device    = (struct hidpad_nesusb_data*)
+   struct hidpad_nesusb_data* device = (struct hidpad_nesusb_data*)
       calloc(1, sizeof(struct hidpad_nesusb_data));
 
    if (!device)
@@ -86,7 +87,8 @@ static int16_t hidpad_nesusb_get_axis(void *data, unsigned axis)
    return 0;
 }
 
-static void hidpad_nesusb_packet_handler(void *data, uint8_t *packet, uint16_t size)
+static void hidpad_nesusb_packet_handler(void *data,
+      uint8_t *packet, uint16_t size)
 {
    uint32_t i, pressed_keys;
    static const uint32_t button_mapping[17] =
@@ -116,8 +118,7 @@ static void hidpad_nesusb_packet_handler(void *data, uint8_t *packet, uint16_t s
    memcpy(device->data, packet, size);
 
    device->buttons = 0;
-
-   pressed_keys  = device->data[7] | (device->data[6] << 8);
+   pressed_keys    = device->data[7] | (device->data[6] << 8);
 
    for (i = 0; i < 16; i ++)
       if (button_mapping[i] != NO_BTN)
@@ -134,9 +135,17 @@ static void hidpad_nesusb_set_rumble(void *data,
 
 const char * hidpad_nesusb_get_name(void *data)
 {
-	(void)data;
-	/* For now we return a single static name */
-	return "Generic NES USB Controller";
+   (void)data;
+   /* For now we return a single static name */
+   return "Generic NES USB Controller";
+}
+
+static int32_t hidpad_nesusb_button(void *data, uint16_t joykey)
+{
+   struct hidpad_nesusb_data *pad = (struct hidpad_nesusb_data*)data;
+   if (!pad || joykey > 31)
+      return 0;
+   return pad->buttons & (1 << joykey);
 }
 
 pad_connection_interface_t pad_connection_nesusb = {
@@ -147,4 +156,6 @@ pad_connection_interface_t pad_connection_nesusb = {
    hidpad_nesusb_get_buttons,
    hidpad_nesusb_get_axis,
    hidpad_nesusb_get_name,
+   hidpad_nesusb_button,
+   false,
 };

@@ -198,6 +198,10 @@ ifeq ($(TARGET), retroarch_3ds)
    OBJ += frontend/drivers/platform_ctr.o
 endif
 
+ifeq ($(TARGET), retroarch_ps2)
+   OBJ += frontend/drivers/platform_ps2.o
+endif
+
 # Git Version
 GIT_VERSION_CACHEDIR = $(if $(OBJDIR),$(OBJDIR),$(CURDIR))
 GIT_VERSION_CACHEFILE = $(GIT_VERSION_CACHEDIR)/git-version.cache
@@ -234,6 +238,11 @@ endif
 
 OBJ += frontend/frontend_driver.o \
        retroarch.o \
+       runloop.o \
+       driver.o \
+       ui/ui_companion_driver.o \
+       camera/camera_driver.o \
+       record/record_driver.o \
        command.o \
        msg_hash.o \
        midi_driver.o \
@@ -255,10 +264,11 @@ OBJ += \
        tasks/task_manual_content_scan.o \
        tasks/task_core_backup.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.o \
-       $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.o
+       $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.o \
+       $(LIBRETRO_COMM_DIR)/encodings/encoding_base64.o
 
 ifeq ($(HAVE_TRANSLATE), 1)
-   OBJ += $(LIBRETRO_COMM_DIR)/encodings/encoding_base64.o
+   OBJ += tasks/task_translation.o
 endif
 
 OBJ += \
@@ -306,6 +316,7 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/file/file_path_io.o \
        file_path_special.o \
        $(LIBRETRO_COMM_DIR)/hash/lrc_hash.o \
+       audio/audio_driver.o \
        input/input_driver.o \
        input/common/input_hid_common.o \
        led/led_driver.o \
@@ -340,6 +351,10 @@ ifeq ($(HAVE_CHEATS), 1)
    OBJ     += cheat_manager.o
 endif
 
+ifeq ($(HAVE_CORE_INFO_CACHE), 1)
+   DEFINES += -DHAVE_CORE_INFO_CACHE
+endif
+
 OBJ += \
        core_info.o \
        core_backup.o \
@@ -365,6 +380,10 @@ OBJ += \
 ifeq ($(HAVE_VIDEO_FILTER), 1)
 DEFINES += -DHAVE_VIDEO_FILTER
 OBJ     += gfx/video_filter.o
+endif
+
+ifeq ($(HAVE_WINDOW_OFFSET), 1)
+DEFINES += -DHAVE_WINDOW_OFFSET
 endif
 
 OBJ     += $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.o
@@ -558,7 +577,8 @@ ifeq ($(HAVE_LIBRETRODB), 1)
           tasks/task_database_cue.o
 
    ifeq ($(HAVE_MENU), 1)
-      OBJ += menu/menu_explore.o
+      OBJ += menu/menu_explore.o \
+             tasks/task_menu_explore.o
    endif
 endif
 
@@ -764,22 +784,23 @@ ifeq ($(HAVE_EMSCRIPTEN), 1)
 endif
 
 ifeq ($(HAVE_BLUETOOTH), 1)
+   OBJ += bluetooth/bluetooth_driver.o
    OBJ += bluetooth/drivers/bluetoothctl.o
-endif
-
-ifeq ($(HAVE_BLUETOOTH), 1)
+   OBJ += tasks/task_bluetooth.o
    ifeq ($(HAVE_DBUS), 1)
       OBJ += bluetooth/drivers/bluez.o
    endif
 endif
 
 ifeq ($(HAVE_LAKKA), 1)
-   OBJ += wifi/drivers/connmanctl.o
+   OBJ += network/drivers_wifi/connmanctl.o
    OBJ += misc/cpufreq/cpufreq.o
 endif
 
 ifeq ($(HAVE_WIFI), 1)
-   OBJ += wifi/drivers/nmcli.o
+   OBJ += network/wifi_driver.o
+   OBJ += tasks/task_wifi.o
+   OBJ += network/drivers_wifi/nmcli.o
    DEFINES += -DHAVE_WIFI
 endif
 
@@ -808,6 +829,10 @@ endif
 
 ifeq ($(TARGET), retroarch_3ds)
    OBJ += gfx/drivers_font/ctr_font.o
+endif
+
+ifeq ($(TARGET), retroarch_ps2)
+   OBJ += gfx/drivers_font/ps2_font.o
 endif
 
 ifeq ($(HAVE_LIBNX), 1)
@@ -1036,6 +1061,10 @@ ifeq ($(HAVE_LAKKA_SWITCH), 1)
    DEFINES += -DHAVE_LAKKA_SWITCH
 endif
 
+ifeq ($(HAVE_LAKKA_NIGHTLY), 1)
+   DEFINES += -DHAVE_LAKKA_NIGHTLY
+endif
+
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_setting.o \
           menu/menu_driver.o \
@@ -1083,13 +1112,13 @@ endif
 ifeq ($(HAVE_VIDEO_LAYOUT), 1)
    DEFINES += -DHAVE_VIDEO_LAYOUT
    OBJ += \
-			 gfx/video_layout.o \
-			 gfx/video_layout/view.o \
-			 gfx/video_layout/element.o \
-			 gfx/video_layout/component.o \
-			 gfx/video_layout/internal.o \
-			 gfx/video_layout/scope.o \
-			 gfx/video_layout/load.o
+	  gfx/video_layout.o \
+	  gfx/video_layout/view.o \
+	  gfx/video_layout/element.o \
+	  gfx/video_layout/component.o \
+	  gfx/video_layout/internal.o \
+	  gfx/video_layout/scope.o \
+	  gfx/video_layout/load.o
 endif
 
 ifeq ($(HAVE_STB_FONT), 1)
@@ -1152,6 +1181,13 @@ ifeq ($(TARGET), retroarch_3ds)
           input/drivers_joypad/ctr_joypad.o
 endif
 
+ifeq ($(TARGET), retroarch_ps2)
+   OBJ += gfx/drivers/ps2_gfx.o \
+          input/drivers/ps2_input.o \
+          input/drivers_joypad/ps2_joypad.o \
+          audio/drivers/ps2_audio.o
+endif
+
 ifeq ($(TARGET), retroarch_orbis)
    OBJ +=  input/drivers/ps4_input.o \
 			  input/drivers_joypad/ps4_joypad.o \
@@ -1182,12 +1218,6 @@ ifeq ($(TARGET), retroarch_wiiu)
 			INCLUDE_DIRS += -Iinput/include
          OBJ += input/drivers_joypad/wiiu/hidpad_driver.o
          OBJ += input/drivers_hid/wiiu_hid.o
-         OBJ += input/connect/joypad_connection.o \
-                input/common/hid/hid_device_driver.o \
-                input/common/hid/device_wiiu_gca.o \
-                input/common/hid/device_ds3.o \
-                input/common/hid/device_ds4.o \
-                input/common/hid/device_null.o
       endif
 endif
 
@@ -1224,7 +1254,6 @@ ifeq ($(HAVE_WAYLAND), 1)
         input/common/wayland_common.o \
         input/drivers/wayland_input.o \
         gfx/common/wayland/xdg-shell.o \
-        gfx/common/wayland/xdg-shell-unstable-v6.o \
         gfx/common/wayland/idle-inhibit-unstable-v1.o \
         gfx/common/wayland/xdg-decoration-unstable-v1.o
 
@@ -1234,6 +1263,12 @@ ifeq ($(HAVE_WAYLAND), 1)
 
  DEF_FLAGS += $(WAYLAND_CFLAGS) $(WAYLAND_CURSOR_CFLAGS)
  LIBS += $(WAYLAND_LIBS) $(WAYLAND_CURSOR_LIBS)
+
+ ifeq ($(HAVE_LIBDECOR), 1)
+    DEFINES += -DHAVE_LIBDECOR
+    LIBS += $(LIBDECOR_LIBS)
+    DEF_FLAGS += $(LIBDECOR_CFLAGS)
+ endif
 
 endif
 
@@ -1428,7 +1463,9 @@ endif
 
 ifeq ($(HAVE_PLAIN_DRM), 1)
    OBJ += gfx/drivers/drm_gfx.o
-   INCLUDE_DIRS += -I/usr/include/libdrm
+   ifneq ($(HAVE_LAKKA), 1)
+      INCLUDE_DIRS += -I/usr/include/libdrm
+   endif
    LIBS += -ldrm
 endif
 
@@ -1573,6 +1610,8 @@ else ifeq ($(HAVE_SDL_DINGUX), 1)
    DEF_FLAGS += -DHAVE_SDL -DHAVE_SDL_DINGUX
 
    ifeq ($(RS90), 1)
+      OBJ += gfx/drivers/sdl_rs90_gfx.o
+   else ifeq ($(MIYOO), 1)
       OBJ += gfx/drivers/sdl_rs90_gfx.o
    else
       OBJ += gfx/drivers/sdl_dingux_gfx.o
@@ -2073,9 +2112,7 @@ ifeq ($(HAVE_NETWORKING), 1)
           tasks/task_http.o \
           tasks/task_netplay_lan_scan.o \
           tasks/task_netplay_nat_traversal.o \
-          tasks/task_bluetooth.o \
-          tasks/task_wifi.o \
-			 tasks/task_pl_thumbnail_download.o \
+	  tasks/task_pl_thumbnail_download.o \
           tasks/task_netplay_find_content.o
 
    ifeq ($(HAVE_MENU_COMMON), 1)
@@ -2115,7 +2152,6 @@ ifeq ($(HAVE_NETWORKING), 1)
       OBJ += cheevos/cheevos.o \
              cheevos/cheevos_client.o \
              cheevos/cheevos_menu.o \
-             cheevos/cheevos_parser.o \
              $(LIBRETRO_COMM_DIR)/formats/cdfs/cdfs.o \
              deps/rcheevos/src/rcheevos/alloc.o \
              deps/rcheevos/src/rcheevos/compat.o \
@@ -2136,7 +2172,6 @@ ifeq ($(HAVE_NETWORKING), 1)
              deps/rcheevos/src/rapi/rc_api_common.o \
              deps/rcheevos/src/rapi/rc_api_runtime.o \
              deps/rcheevos/src/rapi/rc_api_user.o \
-             deps/rcheevos/src/rurl/url.o
 
       ifeq ($(HAVE_LUA), 1)
          DEFINES += -DHAVE_LUA \
@@ -2194,6 +2229,8 @@ ifeq ($(HAVE_NETWORKING), 1)
                  deps/discord-rpc/src/rpc_connection.o \
                  deps/discord-rpc/src/serialization.o
 
+      OBJ     += network/discord.o
+
       ifneq ($(findstring Win32,$(OS)),)
          OBJ  += deps/discord-rpc/src/discord_register_win.o \
                  deps/discord-rpc/src/connection_win.o
@@ -2215,27 +2252,6 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    ifeq ($(HAVE_NETWORKGAMEPAD), 1)
       OBJ += cores/libretro-net-retropad/net_retropad_core.o
-   endif
-
-   ifeq ($(HAVE_BUILTINMINIUPNPC), 1)
-      HAVE_MINIUPNPC = 1
-      DEFINES += -DHAVE_MINIUPNPC -DHAVE_BUILTINMINIUPNPC -DMINIUPNPC_SET_SOCKET_TIMEOUT -DMINIUPNPC_GET_SRC_ADDR
-      INCLUDE_DIRS += -I$(DEPS_DIR)
-      OBJ     += $(DEPS_DIR)/miniupnpc/igd_desc_parse.o \
-                 $(DEPS_DIR)/miniupnpc/upnpreplyparse.o \
-                 $(DEPS_DIR)/miniupnpc/upnpcommands.o \
-                 $(DEPS_DIR)/miniupnpc/upnperrors.o \
-                 $(DEPS_DIR)/miniupnpc/connecthostport.o \
-                 $(DEPS_DIR)/miniupnpc/portlistingparse.o \
-                 $(DEPS_DIR)/miniupnpc/receivedata.o \
-                 $(DEPS_DIR)/miniupnpc/upnpdev.o \
-                 $(DEPS_DIR)/miniupnpc/minissdpc.o \
-                 $(DEPS_DIR)/miniupnpc/miniwget.o \
-                 $(DEPS_DIR)/miniupnpc/miniupnpc.o \
-                 $(DEPS_DIR)/miniupnpc/minixml.o \
-                 $(DEPS_DIR)/miniupnpc/minisoap.o
-   else ifeq ($(HAVE_MINIUPNPC), 1)
-      LIBS    += $(MINIUPNPC_LIBS)
    endif
 endif
 

@@ -80,7 +80,9 @@ typedef struct
 /* Forward declarations */
 static void core_info_free(core_info_t* info);
 static uint32_t core_info_hash_string(const char *str);
+#ifdef HAVE_CORE_INFO_CACHE
 static core_info_cache_list_t *core_info_cache_list_new(void);
+#endif
 static void core_info_cache_add(core_info_cache_list_t *list,
       core_info_t *info, bool transfer);
 
@@ -93,6 +95,7 @@ static core_info_state_t core_info_st = {
    NULL
 };
 
+#ifdef HAVE_CORE_INFO_CACHE
 /* JSON Handlers START */
 
 static bool CCJSONObjectMemberHandler(void *context,
@@ -199,20 +202,23 @@ static bool CCJSONObjectMemberHandler(void *context,
             break;
       }
    }
-   else if ((pCtx->object_depth == 3) && (pCtx->array_depth == 1) && length)
+   else if ((pCtx->object_depth == 3) 
+         && (pCtx->array_depth  == 1) && length)
    {
       pCtx->current_string_val      = NULL;
       pCtx->current_entry_uint_val  = NULL;
 
       if (pCtx->to_core_file_id)
       {
-         if (string_is_equal(pValue,         "str"))
+         if (string_is_equal(pValue, "str"))
             pCtx->current_string_val         = &pCtx->core_info->core_file_id.str;
-         else if (string_is_equal(pValue,    "hash"))
+         else if (string_is_equal(pValue, "hash"))
             pCtx->current_entry_uint_val     = &pCtx->core_info->core_file_id.hash;
       }
    }
-   else if ((pCtx->object_depth == 3) && (pCtx->array_depth == 2) && length)
+   else if ((pCtx->object_depth == 3) 
+         && (pCtx->array_depth  == 2) 
+         && length)
    {
       pCtx->current_string_val      = NULL;
       pCtx->current_entry_bool_val  = NULL;
@@ -221,11 +227,11 @@ static bool CCJSONObjectMemberHandler(void *context,
       {
          size_t firmware_idx = pCtx->core_info->firmware_count - 1;
 
-         if (string_is_equal(pValue,         "path"))
+         if (string_is_equal(pValue, "path"))
             pCtx->current_string_val         = &pCtx->core_info->firmware[firmware_idx].path;
-         else if (string_is_equal(pValue,    "desc"))
+         else if (string_is_equal(pValue, "desc"))
             pCtx->current_string_val         = &pCtx->core_info->firmware[firmware_idx].desc;
-         else if (string_is_equal(pValue,    "optional"))
+         else if (string_is_equal(pValue, "optional"))
             pCtx->current_entry_bool_val     = &pCtx->core_info->firmware[firmware_idx].optional;
       }
    }
@@ -238,7 +244,9 @@ static bool CCJSONStringHandler(void *context,
 {
    CCJSONContext *pCtx = (CCJSONContext*)context;
 
-   if (pCtx->current_string_val && length && !string_is_empty(pValue))
+   if (     pCtx->current_string_val 
+         && length 
+         && !string_is_empty(pValue))
    {
       if (*pCtx->current_string_val)
          free(*pCtx->current_string_val);
@@ -248,7 +256,8 @@ static bool CCJSONStringHandler(void *context,
       {
          if (*pCtx->current_string_list_val)
             string_list_free(*pCtx->current_string_list_val);
-         *pCtx->current_string_list_val = string_split(*pCtx->current_string_val, "|");
+         *pCtx->current_string_list_val = 
+            string_split(*pCtx->current_string_val, "|");
       }
    }
 
@@ -278,7 +287,7 @@ static bool CCJSONBoolHandler(void *context, bool value)
    if (pCtx->current_entry_bool_val)
       *pCtx->current_entry_bool_val = value;
 
-   pCtx->current_entry_bool_val = NULL;
+   pCtx->current_entry_bool_val     = NULL;
 
    return true;
 }
@@ -315,20 +324,21 @@ static bool CCJSONStartObjectHandler(void *context)
    {
       if (pCtx->to_firmware)
       {
-         size_t new_idx                     = pCtx->core_info->firmware_count;
-         core_info_firmware_t *firmware_tmp = (core_info_firmware_t*)
+         size_t new_idx            = pCtx->core_info->firmware_count;
+         core_info_firmware_t *tmp = (core_info_firmware_t*)
                realloc(pCtx->core_info->firmware,
-                     (pCtx->core_info->firmware_count + 1) * sizeof(core_info_firmware_t));
+                      (pCtx->core_info->firmware_count + 1) 
+                     * sizeof(core_info_firmware_t));
 
-         if (!firmware_tmp)
+         if (!tmp)
             return false;
 
-         firmware_tmp[new_idx].path     = NULL;
-         firmware_tmp[new_idx].desc     = NULL;
-         firmware_tmp[new_idx].missing  = false;
-         firmware_tmp[new_idx].optional = false;
+         tmp[new_idx].path              = NULL;
+         tmp[new_idx].desc              = NULL;
+         tmp[new_idx].missing           = false;
+         tmp[new_idx].optional          = false;
 
-         pCtx->core_info->firmware      = firmware_tmp;
+         pCtx->core_info->firmware      = tmp;
          pCtx->core_info->firmware_count++;
       }
    }
@@ -340,9 +350,12 @@ static bool CCJSONEndObjectHandler(void *context)
 {
    CCJSONContext *pCtx = (CCJSONContext*)context;
 
-   if ((pCtx->object_depth == 2) && (pCtx->array_depth == 1) && pCtx->core_info)
+   if (     (pCtx->object_depth == 2) 
+         && (pCtx->array_depth  == 1)
+         && (pCtx->core_info))
    {
-      core_info_cache_add(pCtx->core_info_cache_list, pCtx->core_info, true);
+      core_info_cache_add(
+            pCtx->core_info_cache_list, pCtx->core_info, true);
       free(pCtx->core_info);
       pCtx->core_info = NULL;
    }
@@ -376,6 +389,7 @@ static bool CCJSONEndArrayHandler(void *context)
 }
 
 /* JSON Handlers END */
+#endif
 
 /* Note: 'dst' must be zero initialised, or memory
  * leaks will occur */
@@ -430,8 +444,9 @@ static void core_info_copy(core_info_t *src, core_info_t *dst)
          dst->firmware_count = 0;
    }
 
-   dst->core_file_id.str  = src->core_file_id.str ? strdup(src->core_file_id.str) : NULL;
-   dst->core_file_id.hash = src->core_file_id.hash;
+   dst->core_file_id.str              = src->core_file_id.str 
+      ? strdup(src->core_file_id.str) : NULL;
+   dst->core_file_id.hash             = src->core_file_id.hash;
 
    dst->has_info                      = src->has_info;
    dst->supports_no_game              = src->supports_no_game;
@@ -523,9 +538,9 @@ static void core_info_transfer(core_info_t *src, core_info_t *dst)
    src->firmware                  = NULL;
    src->firmware_count            = 0;
 
-   dst->core_file_id.str          = src->core_file_id.str;
-   src->core_file_id.str          = NULL;
-   dst->core_file_id.hash         = src->core_file_id.hash;
+   dst->core_file_id.str              = src->core_file_id.str;
+   src->core_file_id.str              = NULL;
+   dst->core_file_id.hash             = src->core_file_id.hash;
 
    dst->has_info                      = src->has_info;
    dst->supports_no_game              = src->supports_no_game;
@@ -535,7 +550,8 @@ static void core_info_transfer(core_info_t *src, core_info_t *dst)
    dst->is_installed                  = src->is_installed;
 }
 
-static void core_info_cache_list_free(core_info_cache_list_t *core_info_cache_list)
+static void core_info_cache_list_free(
+      core_info_cache_list_t *core_info_cache_list)
 {
    size_t i;
 
@@ -552,31 +568,8 @@ static void core_info_cache_list_free(core_info_cache_list_t *core_info_cache_li
    free(core_info_cache_list);
 }
 
-static core_info_cache_list_t *core_info_cache_list_new(void)
-{
-   core_info_cache_list_t *core_info_cache_list = NULL;
-
-   core_info_cache_list = (core_info_cache_list_t *)malloc(sizeof(*core_info_cache_list));
-   if (!core_info_cache_list)
-      return NULL;
-
-   core_info_cache_list->length = 0;
-   core_info_cache_list->items  = (core_info_t *)calloc(CORE_INFO_CACHE_DEFAULT_CAPACITY,
-         sizeof(core_info_t));
-
-   if (!core_info_cache_list->items)
-   {
-      core_info_cache_list_free(core_info_cache_list);
-      return NULL;
-   }
-
-   core_info_cache_list->capacity = CORE_INFO_CACHE_DEFAULT_CAPACITY;
-   core_info_cache_list->refresh  = false;
-
-   return core_info_cache_list;
-}
-
-static core_info_t *core_info_cache_find(core_info_cache_list_t *list, char *core_file_id)
+static core_info_t *core_info_cache_find(
+      core_info_cache_list_t *list, char *core_file_id)
 {
    uint32_t hash;
    size_t i;
@@ -605,15 +598,16 @@ static core_info_t *core_info_cache_find(core_info_cache_list_t *list, char *cor
    return NULL;
 }
 
-static void core_info_cache_add(core_info_cache_list_t *list, core_info_t *info,
+static void core_info_cache_add(
+      core_info_cache_list_t *list, core_info_t *info,
       bool transfer)
 {
    core_info_t *info_cache = NULL;
 
-   if (!list ||
-       !info ||
-       (info->core_file_id.hash == 0) ||
-       string_is_empty(info->core_file_id.str))
+   if (   !list
+       || !info
+       || (info->core_file_id.hash == 0)
+       || string_is_empty(info->core_file_id.str))
       return;
 
    if (list->length >= list->capacity)
@@ -642,6 +636,31 @@ static void core_info_cache_add(core_info_cache_list_t *list, core_info_t *info,
    list->length++;
 }
 
+#ifdef HAVE_CORE_INFO_CACHE
+static core_info_cache_list_t *core_info_cache_list_new(void)
+{
+   core_info_cache_list_t *core_info_cache_list = 
+      (core_info_cache_list_t *)malloc(sizeof(*core_info_cache_list));
+   if (!core_info_cache_list)
+      return NULL;
+
+   core_info_cache_list->length = 0;
+   core_info_cache_list->items  = (core_info_t *)
+      calloc(CORE_INFO_CACHE_DEFAULT_CAPACITY,
+            sizeof(core_info_t));
+
+   if (!core_info_cache_list->items)
+   {
+      core_info_cache_list_free(core_info_cache_list);
+      return NULL;
+   }
+
+   core_info_cache_list->capacity = CORE_INFO_CACHE_DEFAULT_CAPACITY;
+   core_info_cache_list->refresh  = false;
+
+   return core_info_cache_list;
+}
+
 static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
 {
    intfstream_t *file                           = NULL;
@@ -655,9 +674,11 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
    file_path[0] = '\0';
 
    if (string_is_empty(info_dir))
-      strlcpy(file_path, FILE_PATH_CORE_INFO_CACHE_REFRESH, sizeof(file_path));
+      strlcpy(file_path,
+            FILE_PATH_CORE_INFO_CACHE_REFRESH, sizeof(file_path));
    else
-      fill_pathname_join(file_path, info_dir, FILE_PATH_CORE_INFO_CACHE_REFRESH,
+      fill_pathname_join(file_path,
+            info_dir, FILE_PATH_CORE_INFO_CACHE_REFRESH,
             sizeof(file_path));
 
    if (path_is_valid(file_path))
@@ -716,7 +737,9 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
       RARCH_WARN("[Core Info] Error: Invalid JSON at line %d, column %d - %s.\n",
             (int)rjson_get_source_line(parser),
             (int)rjson_get_source_column(parser),
-            (*rjson_get_error(parser) ? rjson_get_error(parser) : "format error"));
+            (*rjson_get_error(parser) 
+             ? rjson_get_error(parser) 
+             : "format error"));
 
       /* Info cache is corrupt - discard it */
       core_info_cache_list_free(context.core_info_cache_list);
@@ -741,6 +764,7 @@ end:
 
    return core_info_cache_list;
 }
+#endif
 
 static bool core_info_cache_write(core_info_cache_list_t *list, const char *info_dir)
 {
@@ -1077,9 +1101,11 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
    file_path[0] = '\0';
 
    if (string_is_empty(info_dir))
-      strlcpy(file_path, FILE_PATH_CORE_INFO_CACHE_REFRESH, sizeof(file_path));
+      strlcpy(file_path,
+            FILE_PATH_CORE_INFO_CACHE_REFRESH, sizeof(file_path));
    else
-      fill_pathname_join(file_path, info_dir, FILE_PATH_CORE_INFO_CACHE_REFRESH,
+      fill_pathname_join(file_path,
+            info_dir, FILE_PATH_CORE_INFO_CACHE_REFRESH,
             sizeof(file_path));
 
    if (path_is_valid(file_path))
@@ -1127,9 +1153,11 @@ bool core_info_cache_force_refresh(const char *path_info)
 
    /* Get 'force refresh' file path */
    if (string_is_empty(path_info))
-      strlcpy(file_path, FILE_PATH_CORE_INFO_CACHE_REFRESH, sizeof(file_path));
+      strlcpy(file_path,
+            FILE_PATH_CORE_INFO_CACHE_REFRESH, sizeof(file_path));
    else
-      fill_pathname_join(file_path, path_info, FILE_PATH_CORE_INFO_CACHE_REFRESH,
+      fill_pathname_join(file_path,
+            path_info, FILE_PATH_CORE_INFO_CACHE_REFRESH,
             sizeof(file_path));
 
    /* Generate a new, empty 'force refresh' file,
@@ -1264,14 +1292,15 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
    path_list->lock_list = (core_lock_file_path_list_t*)calloc(1,
          sizeof(*path_list->lock_list));
 
-   if (!path_list->dir_list ||
-       !path_list->core_list ||
-       !path_list->lock_list)
+   if (   !path_list->dir_list
+       || !path_list->core_list 
+       || !path_list->lock_list)
       goto error;
 
    /* Get list of file extensions to include
     * (core + lock file) */
-   fill_pathname_join_delim(exts, core_exts, FILE_PATH_LOCK_EXTENSION_NO_DOT,
+   fill_pathname_join_delim(exts,
+         core_exts, FILE_PATH_LOCK_EXTENSION_NO_DOT,
          '|', sizeof(exts));
 
    /* Fetch core directory listing */
@@ -1319,9 +1348,9 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
       const char *filename  = NULL;
       const char *file_ext  = NULL;
 
-      if (string_is_empty(file_path) ||
-          !(filename = path_basename_nocompression(file_path)) ||
-          !(file_ext = path_get_extension(filename)))
+      if (     string_is_empty(file_path)
+          || !(filename = path_basename_nocompression(file_path))
+          || !(file_ext = path_get_extension(filename)))
          continue;
 
       /* Check whether this is a core or lock file */
@@ -1352,7 +1381,8 @@ error:
    return NULL;
 }
 
-static bool core_info_path_is_locked(core_lock_file_path_list_t *lock_list,
+static bool core_info_path_is_locked(
+      core_lock_file_path_list_t *lock_list,
       const char *core_file_name)
 {
    size_t i;
@@ -1444,7 +1474,8 @@ static void core_info_resolve_firmware(
    if (!config_get_uint(conf, "firmware_count", &firmware_count))
       return;
 
-   firmware = (core_info_firmware_t*)calloc(firmware_count, sizeof(*firmware));
+   firmware = (core_info_firmware_t*)calloc(
+         firmware_count, sizeof(*firmware));
 
    if (!firmware)
       return;
@@ -1783,14 +1814,12 @@ static core_info_list_t *core_info_list_new(const char *path,
       bool *cache_supported)
 {
    size_t i;
-   core_path_list_t *path_list                  = NULL;
    core_info_t *core_info                       = NULL;
    core_info_list_t *core_info_list             = NULL;
    core_info_cache_list_t *core_info_cache_list = NULL;
    const char *info_dir                         = libretro_info_dir;
-
-   path_list = core_info_path_list_new(path, exts,
-         dir_show_hidden_files);
+   core_path_list_t *path_list                  = core_info_path_list_new(
+         path, exts, dir_show_hidden_files);
    if (!path_list)
       goto error;
 
@@ -1815,6 +1844,7 @@ static core_info_list_t *core_info_list_new(const char *path,
    core_info_list->list  = core_info;
    core_info_list->count = path_list->core_list->size;
 
+#ifdef HAVE_CORE_INFO_CACHE
    /* Read core info cache, if enabled */
    if (enable_cache)
    {
@@ -1822,6 +1852,7 @@ static core_info_list_t *core_info_list_new(const char *path,
       if (!core_info_cache_list)
          goto error;
    }
+#endif
 
    for (i = 0; i < path_list->core_list->size; i++)
    {
@@ -1842,8 +1873,8 @@ static core_info_list_t *core_info_list_new(const char *path,
        * current core */
       if (core_info_cache_list)
       {
-         core_info_t *info_cache = core_info_cache_find(core_info_cache_list,
-               core_file_id);
+         core_info_t *info_cache = core_info_cache_find(
+               core_info_cache_list, core_file_id);
 
          if (info_cache)
          {
@@ -1853,11 +1884,12 @@ static core_info_list_t *core_info_list_new(const char *path,
              * change between runs) */
             if (info->path)
                free(info->path);
-            info->path = strdup(base_path);
+            info->path      = strdup(base_path);
             /* Core lock status is 'dynamic', and
              * cannot be cached */
-            info->is_locked = core_info_path_is_locked(path_list->lock_list,
-                  core_filename);
+            info->is_locked = core_info_path_is_locked(
+                  path_list->lock_list, core_filename);
+                  
             /* 'info_count' is normally incremented inside
              * core_info_parse_config_file(). If core entry
              * is cached, must instead increment the value
@@ -1872,8 +1904,8 @@ static core_info_list_t *core_info_list_new(const char *path,
       info->path = strdup(base_path);
 
       /* Get core lock status */
-      info->is_locked = core_info_path_is_locked(path_list->lock_list,
-            core_filename);
+      info->is_locked         = core_info_path_is_locked(
+            path_list->lock_list, core_filename);
 
       /* Cache core file 'id' */
       info->core_file_id.str  = strdup(core_file_id);
@@ -1892,7 +1924,7 @@ static core_info_list_t *core_info_list_new(const char *path,
       if (!info->display_name)
          info->display_name = strdup(core_filename);
 
-      info->is_installed = true;
+      info->is_installed    = true;
 
       /* If info cache is enabled and we reach this
        * point, current core is uncached
@@ -2021,7 +2053,8 @@ static bool core_info_list_update_missing_firmware_internal(
    if (!core_info_list)
       return false;
 
-   info                   = core_info_find_internal(core_info_list, core_path);
+   info                   = core_info_find_internal(
+         core_info_list, core_path);
 
    if (!info)
       return false;
@@ -2113,8 +2146,9 @@ void core_info_deinit_list(void)
    p_coreinfo->curr_list = NULL;
 }
 
-bool core_info_init_list(const char *path_info, const char *dir_cores,
-      const char *exts, bool dir_show_hidden_files,
+bool core_info_init_list(
+      const char *path_info, const char *dir_cores,
+      const char *exts,  bool dir_show_hidden_files,
       bool enable_cache, bool *cache_supported)
 {
    core_info_state_t *p_coreinfo          = &core_info_st;
@@ -2149,8 +2183,8 @@ size_t core_info_count(void)
    return p_coreinfo->curr_list->count;
 }
 
-bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info,
-      bool *set_missing_bios)
+bool core_info_list_update_missing_firmware(
+      core_info_ctx_firmware_t *info, bool *set_missing_bios)
 {
    core_info_state_t *p_coreinfo          = &core_info_st;
    if (!info)
@@ -2279,11 +2313,13 @@ bool core_info_core_file_id_is_equal(const char *core_path_a,
    core_file_id_a[0] = '\0';
    core_file_id_b[0] = '\0';
 
-   if (string_is_empty(core_path_a) ||
-       string_is_empty(core_path_b) ||
-       !core_info_get_file_id(path_basename_nocompression(core_path_a),
-            core_file_id_a, sizeof(core_file_id_a)) ||
-       !core_info_get_file_id(path_basename_nocompression(core_path_b),
+   if (   string_is_empty(core_path_a)
+       || string_is_empty(core_path_b)
+       || !core_info_get_file_id(
+          path_basename_nocompression(core_path_a),
+            core_file_id_a, sizeof(core_file_id_a))
+       || !core_info_get_file_id(
+          path_basename_nocompression(core_path_b),
             core_file_id_b, sizeof(core_file_id_b)))
       return false;
 
@@ -2293,7 +2329,8 @@ bool core_info_core_file_id_is_equal(const char *core_path_a,
 bool core_info_database_match_archive_member(const char *database_path)
 {
    char      *database           = NULL;
-   const char      *new_path     = path_basename_nocompression(database_path);
+   const char      *new_path     = path_basename_nocompression(
+         database_path);
    core_info_state_t *p_coreinfo = NULL;
 
    if (string_is_empty(new_path))
@@ -2368,7 +2405,8 @@ bool core_info_database_supports_content_path(
    return false;
 }
 
-bool core_info_list_get_display_name(core_info_list_t *core_info_list,
+bool core_info_list_get_display_name(
+      core_info_list_t *core_info_list,
       const char *core_path, char *s, size_t len)
 {
    core_info_t *info = core_info_find_internal(
@@ -2390,7 +2428,8 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list,
  * Returned core_updater_info_t object must be
  * freed using core_info_free_core_updater_info().
  * Returns NULL if 'path' is invalid. */
-core_updater_info_t *core_info_get_core_updater_info(const char *info_path)
+core_updater_info_t *core_info_get_core_updater_info(
+      const char *info_path)
 {
    struct config_entry_list 
       *entry                 = NULL;
@@ -2408,7 +2447,7 @@ core_updater_info_t *core_info_get_core_updater_info(const char *info_path)
       return NULL;
 
    /* Create info struct */
-   info                      = (core_updater_info_t*)malloc(sizeof(*info));
+   info = (core_updater_info_t*)malloc(sizeof(*info));
 
    if (!info)
       return NULL;
@@ -2493,7 +2532,8 @@ static int core_info_qsort_func_display_name(const core_info_t *a,
    if (!a || !b)
       return 0;
 
-   if (string_is_empty(a->display_name) || string_is_empty(b->display_name))
+   if (     string_is_empty(a->display_name) 
+         || string_is_empty(b->display_name))
       return 0;
 
    return strcasecmp(a->display_name, b->display_name);
@@ -2567,7 +2607,9 @@ void core_info_qsort(core_info_list_t *core_info_list,
    }
 }
 
-static bool core_info_compare_api_version(int sys_major, int sys_minor, int major, int minor, enum compare_op op)
+static bool core_info_compare_api_version(
+      int sys_major, int sys_minor,
+      int major, int minor, enum compare_op op)
 {
    switch (op)
    {
@@ -2580,19 +2622,23 @@ static bool core_info_compare_api_version(int sys_major, int sys_minor, int majo
             return true;
          break;
       case COMPARE_OP_LESS:
-         if (sys_major < major || (sys_major == major && sys_minor < minor))
+         if (      sys_major < major 
+               || (sys_major == major && sys_minor < minor))
             return true;
          break;
       case COMPARE_OP_LESS_EQUAL:
-         if (sys_major < major || (sys_major == major && sys_minor <= minor))
+         if (      sys_major < major 
+               || (sys_major == major && sys_minor <= minor))
             return true;
          break;
       case COMPARE_OP_GREATER:
-         if (sys_major > major || (sys_major == major && sys_minor > minor))
+         if (      sys_major > major 
+               || (sys_major == major && sys_minor > minor))
             return true;
          break;
       case COMPARE_OP_GREATER_EQUAL:
-         if (sys_major > major || (sys_major == major && sys_minor >= minor))
+         if (      sys_major > major 
+               || (sys_major == major && sys_minor >= minor))
             return true;
          break;
       default:
@@ -2619,7 +2665,9 @@ bool core_info_hw_api_supported(core_info_t *info)
       STATE_API_VERSION
    };
 
-   if (!info || !info->required_hw_api_list || info->required_hw_api_list->size == 0)
+   if (     !info 
+         || !info->required_hw_api_list 
+         || info->required_hw_api_list->size == 0)
       return true;
 
    sys_api = video_context_driver_get_api();
@@ -2671,26 +2719,32 @@ bool core_info_hw_api_supported(core_info_t *info)
             }
             case STATE_API_COMPARE_OP:
             {
-               if (j < cur_api_len - 1 && !(cur_api[j] >= '0' && cur_api[j] <= '9'))
+               if (        j < cur_api_len - 1 
+                        && !( cur_api[j] >= '0' 
+                        && cur_api[j] <= '9'))
                {
-                  if (cur_api[j] == '=' && cur_api[j + 1] == '=')
+                  if (     cur_api[j]     == '=' 
+                        && cur_api[j + 1] == '=')
                   {
                      op = COMPARE_OP_EQUAL;
                      j++;
                   }
                   else if (cur_api[j] == '=')
                      op = COMPARE_OP_EQUAL;
-                  else if (cur_api[j] == '!' && cur_api[j + 1] == '=')
+                  else if (cur_api[j]     == '!' 
+                        && cur_api[j + 1] == '=')
                   {
                      op = COMPARE_OP_NOT_EQUAL;
                      j++;
                   }
-                  else if (cur_api[j] == '<' && cur_api[j + 1] == '=')
+                  else if (cur_api[j]     == '<' 
+                        && cur_api[j + 1] == '=')
                   {
                      op = COMPARE_OP_LESS_EQUAL;
                      j++;
                   }
-                  else if (cur_api[j] == '>' && cur_api[j + 1] == '=')
+                  else if (cur_api[j]     == '>' 
+                        && cur_api[j + 1] == '=')
                   {
                      op = COMPARE_OP_GREATER_EQUAL;
                      j++;
@@ -2746,58 +2800,77 @@ bool core_info_hw_api_supported(core_info_t *info)
       fflush(stdout);
 #endif
 
-      if ((string_is_equal_noncase(api_str, "opengl") && sys_api == GFX_CTX_OPENGL_API) ||
-            (string_is_equal_noncase(api_str, "openglcompat") && sys_api == GFX_CTX_OPENGL_API) ||
-            (string_is_equal_noncase(api_str, "openglcompatibility") && sys_api == GFX_CTX_OPENGL_API))
+      if (  (string_is_equal_noncase(api_str, "opengl") 
+             && sys_api == GFX_CTX_OPENGL_API) ||
+            (string_is_equal_noncase(api_str, "openglcompat") 
+             && sys_api == GFX_CTX_OPENGL_API) ||
+            (string_is_equal_noncase(api_str, "openglcompatibility") 
+             && sys_api == GFX_CTX_OPENGL_API)
+         )
       {
          /* system is running a core context while compat is requested */
          if (sys_flags.flags & (1 << GFX_CTX_FLAGS_GL_CORE_CONTEXT))   
             return false;
 
-         sscanf(sys_api_version_str, "%d.%d", &sys_api_version_major, &sys_api_version_minor);
+         sscanf(sys_api_version_str, "%d.%d",
+               &sys_api_version_major, &sys_api_version_minor);
 
-         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+         if (core_info_compare_api_version(sys_api_version_major,
+                  sys_api_version_minor, major, minor, op))
             return true;
       }
-      else if (string_is_equal_noncase(api_str, "openglcore") && sys_api == GFX_CTX_OPENGL_API)
+      else if (string_is_equal_noncase(api_str, "openglcore") 
+            && sys_api == GFX_CTX_OPENGL_API)
       {
-         sscanf(sys_api_version_str, "%d.%d", &sys_api_version_major, &sys_api_version_minor);
+         sscanf(sys_api_version_str, "%d.%d",
+               &sys_api_version_major, &sys_api_version_minor);
 
-         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+         if (core_info_compare_api_version(sys_api_version_major,
+                  sys_api_version_minor, major, minor, op))
             return true;
       }
-      else if (string_is_equal_noncase(api_str, "opengles") && sys_api == GFX_CTX_OPENGL_ES_API)
+      else if (string_is_equal_noncase(api_str, "opengles") 
+            && sys_api == GFX_CTX_OPENGL_ES_API)
       {
-         sscanf(sys_api_version_str, "OpenGL ES %d.%d", &sys_api_version_major, &sys_api_version_minor);
+         sscanf(sys_api_version_str, "OpenGL ES %d.%d",
+               &sys_api_version_major, &sys_api_version_minor);
 
-         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+         if (core_info_compare_api_version(sys_api_version_major,
+                  sys_api_version_minor, major, minor, op))
             return true;
       }
-      else if (string_is_equal_noncase(api_str, "direct3d8") && sys_api == GFX_CTX_DIRECT3D8_API)
+      else if (string_is_equal_noncase(api_str, "direct3d8") 
+            && sys_api == GFX_CTX_DIRECT3D8_API)
       {
          sys_api_version_major = 8;
          sys_api_version_minor = 0;
 
-         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+         if (core_info_compare_api_version(sys_api_version_major,
+                  sys_api_version_minor, major, minor, op))
             return true;
       }
-      else if (string_is_equal_noncase(api_str, "direct3d9") && sys_api == GFX_CTX_DIRECT3D9_API)
+      else if (string_is_equal_noncase(api_str, "direct3d9") 
+            && sys_api == GFX_CTX_DIRECT3D9_API)
       {
          sys_api_version_major = 9;
          sys_api_version_minor = 0;
 
-         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+         if (core_info_compare_api_version(sys_api_version_major,
+                  sys_api_version_minor, major, minor, op))
             return true;
       }
-      else if (string_is_equal_noncase(api_str, "direct3d10") && sys_api == GFX_CTX_DIRECT3D10_API)
+      else if (string_is_equal_noncase(api_str, "direct3d10") 
+            && sys_api == GFX_CTX_DIRECT3D10_API)
       {
          sys_api_version_major = 10;
          sys_api_version_minor = 0;
 
-         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+         if (core_info_compare_api_version(sys_api_version_major,
+                  sys_api_version_minor, major, minor, op))
             return true;
       }
-      else if (string_is_equal_noncase(api_str, "direct3d11") && sys_api == GFX_CTX_DIRECT3D11_API)
+      else if (string_is_equal_noncase(api_str, "direct3d11") 
+            && sys_api == GFX_CTX_DIRECT3D11_API)
       {
          sys_api_version_major = 11;
          sys_api_version_minor = 0;
@@ -2805,26 +2878,34 @@ bool core_info_hw_api_supported(core_info_t *info)
          if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
             return true;
       }
-      else if (string_is_equal_noncase(api_str, "direct3d12") && sys_api == GFX_CTX_DIRECT3D12_API)
+      else if (string_is_equal_noncase(api_str, "direct3d12") 
+            && sys_api == GFX_CTX_DIRECT3D12_API)
       {
          sys_api_version_major = 12;
          sys_api_version_minor = 0;
 
-         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+         if (core_info_compare_api_version(sys_api_version_major,
+                  sys_api_version_minor, major, minor, op))
             return true;
       }
-      else if (string_is_equal_noncase(api_str, "vulkan") && sys_api == GFX_CTX_VULKAN_API)
+      else if (string_is_equal_noncase(api_str, "vulkan") 
+            && sys_api == GFX_CTX_VULKAN_API)
       {
-         sscanf(sys_api_version_str, "%d.%d", &sys_api_version_major, &sys_api_version_minor);
+         sscanf(sys_api_version_str, "%d.%d",
+               &sys_api_version_major, &sys_api_version_minor);
 
-         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+         if (core_info_compare_api_version(sys_api_version_major,
+                  sys_api_version_minor, major, minor, op))
             return true;
       }
-      else if (string_is_equal_noncase(api_str, "metal") && sys_api == GFX_CTX_METAL_API)
+      else if (string_is_equal_noncase(api_str, "metal") 
+            && sys_api == GFX_CTX_METAL_API)
       {
-         sscanf(sys_api_version_str, "%d.%d", &sys_api_version_major, &sys_api_version_minor);
+         sscanf(sys_api_version_str, "%d.%d",
+               &sys_api_version_major, &sys_api_version_minor);
 
-         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+         if (core_info_compare_api_version(sys_api_version_major,
+                  sys_api_version_minor, major, minor, op))
             return true;
       }
    }

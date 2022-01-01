@@ -191,6 +191,45 @@ static bool bluetoothctl_connect_device(void *data, unsigned idx)
    return true;
 }
 
+static bool bluetoothctl_remove_device(void *data, unsigned idx)
+{
+   unsigned i;
+   bluetoothctl_t *btctl               = (bluetoothctl_t*) data;
+   char device[18]                     = {0};
+   const char *line                    = btctl->lines->elems[idx].data;
+   static struct string_list* list     = NULL;
+
+   /* bluetoothctl devices outputs lines of the format:
+    * $ bluetoothctl devices
+    *     'Device (mac address) (device name)'
+    */
+   list                                = string_split(line, " ");
+   if (!list)
+      return false;
+
+   if (list->size == 0)
+   {
+      string_list_free(list);
+      return false;
+   }
+
+   strlcpy(device, list->elems[1].data, sizeof(device));
+   string_list_free(list);
+
+   snprintf(btctl->command, sizeof(btctl->command), "\
+         echo -e \"disconnect %s\\nremove %s\\n\" | bluetoothctl",
+         device, device);
+
+   pclose(popen(btctl->command, "r"));
+
+   runloop_msg_queue_push(msg_hash_to_str(MSG_BLUETOOTH_PAIRING_REMOVED),
+         1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
+         MESSAGE_QUEUE_CATEGORY_INFO);
+
+   btctl->bluetoothctl_counter[idx] = 0;
+   return true;
+}
+
 static void bluetoothctl_device_get_sublabel(
       void *data, char *s, unsigned i, size_t len)
 {
@@ -211,5 +250,6 @@ bluetooth_driver_t bluetooth_bluetoothctl = {
    bluetoothctl_device_is_connected,
    bluetoothctl_device_get_sublabel,
    bluetoothctl_connect_device,
+   bluetoothctl_remove_device,
    "bluetoothctl",
 };

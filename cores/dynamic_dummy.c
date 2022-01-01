@@ -34,7 +34,7 @@ static uint16_t *dummy_frame_buf;
 static uint16_t frame_buf_width;
 static uint16_t frame_buf_height;
 
-#if defined(HAVE_LIBNX) && defined(HAVE_STATIC_DUMMY)
+#if defined(HAVE_STATIC_DUMMY)
 void retro_init(void) { libretro_dummy_retro_init(); }
 void retro_deinit(void) { libretro_dummy_retro_deinit(); }
 unsigned retro_api_version(void) { return libretro_dummy_retro_api_version(); }

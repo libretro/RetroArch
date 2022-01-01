@@ -26,6 +26,7 @@
 
 #ifdef RARCH_INTERNAL
 #include "../configuration.h"
+#include "../config.def.h"
 
 int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
@@ -107,6 +108,10 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
           case RARCH_FPS_TOGGLE:
              snprintf(s, len,
                    "Toggles frames per second counter.");
+             break;
+          case RARCH_STATISTICS_TOGGLE:
+             snprintf(s, len,
+                   "Toggles display of technical statistics.");
              break;
           case RARCH_SEND_DEBUG_INFO:
              snprintf(s, len,
@@ -1543,7 +1548,17 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Can reduce latency at the cost of\n"
                              "higher risk of stuttering.\n"
                              " \n"
-                             "Maximum is 15.");
+                             "Maximum is %d.", MAXIMUM_FRAME_DELAY);
+            break;
+        case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO:
+            snprintf(s, len,
+                     "Temporarily decreases effective 'Frame Delay'\n"
+                             "until target refresh rate is stable.\n"
+                             " \n"
+                             "Measuring starts from half frame time when\n"
+                             "'Frame Delay' is 0.\n"
+                             " \n"
+                             "E.g. 8 for NTSC and 10 for PAL.");
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_DELAY:
             snprintf(s, len,
@@ -2363,6 +2378,19 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Sets the master volume of the output device.");
             break;
+#ifdef __linux__
+        case MENU_ENUM_LABEL_GAMEMODE_ENABLE:
+            snprintf(s, len,
+                     "Enabling Linux GameMode can improve latency, fix audio\n"
+                     "crackling issues and maximize overall performance by\n"
+                     "automatically configuring your CPU and GPU for best\n"
+                     "performance.\n"
+                     " \n"
+                     "The GameMode software needs to be installed for this to\n"
+                     "work. See https://github.com/FeralInteractive/gamemode for\n"
+                     "information on how to install GameMode.");
+           break;
+#endif
         default:
             if (string_is_empty(s))
                 strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);

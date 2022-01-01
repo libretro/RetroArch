@@ -23,6 +23,7 @@
 #include <retro_miscellaneous.h>
 
 #include <queues/task_queue.h>
+#include <gfx/scaler/scaler.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -62,13 +63,19 @@ void *task_push_http_transfer(const char *url, bool mute, const char *type,
       retro_task_callback_t cb, void *userdata);
 
 void *task_push_http_transfer_with_user_agent(const char *url, bool mute, const char *type,
-      const char* user_agent, retro_task_callback_t cb, void *userdata);
+      const char *user_agent, retro_task_callback_t cb, void *userdata);
+
+void *task_push_http_transfer_with_headers(const char *url, bool mute, const char *type,
+   const char *headers, retro_task_callback_t cb, void *user_data);
 
 void *task_push_http_post_transfer(const char *url, const char *post_data, bool mute, const char *type,
       retro_task_callback_t cb, void *userdata);
 
-void *task_push_http_post_transfer_with_user_agent(const char* url, const char* post_data, bool mute,
-   const char* type, const char* user_agent, retro_task_callback_t cb, void* user_data);
+void *task_push_http_post_transfer_with_user_agent(const char *url, const char *post_data, bool mute,
+   const char *type, const char *user_agent, retro_task_callback_t cb, void *user_data);
+
+void *task_push_http_post_transfer_with_headers(const char *url, const char *post_data, bool mute,
+   const char *type, const char *headers, retro_task_callback_t cb, void *user_data);
 
 task_retriever_info_t *http_task_get_transfer_list(void);
 
@@ -85,7 +92,8 @@ bool task_push_netplay_lan_scan(retro_task_callback_t cb);
 bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       const char *hostname, const char *corename, const char* subsystem);
 
-bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port);
+bool task_push_netplay_nat_traversal(void *data, uint16_t port);
+bool task_push_netplay_nat_close(void *data);
 
 /* Core updater tasks */
 
@@ -206,6 +214,31 @@ void *task_push_decompress(
 
 void task_file_load_handler(retro_task_t *task);
 
+typedef struct screenshot_task_state screenshot_task_state_t;
+
+struct screenshot_task_state
+{
+   struct scaler_ctx scaler;
+   uint8_t *out_buffer;
+   const void *frame;
+   void *userbuf;
+
+   int pitch;
+   unsigned width;
+   unsigned height;
+   unsigned pixel_format_type;
+
+   char filename[PATH_MAX_LENGTH];
+   char shotname[256];
+
+   bool bgr24;
+   bool silence;
+   bool is_idle;
+   bool is_paused;
+   bool history_list_enable;
+   bool widgets_ready;
+};
+
 bool take_screenshot(
       const char *screenshot_dir,
       const char *path, bool silence,
@@ -239,6 +272,14 @@ void set_save_state_in_background(bool state);
 
 #ifdef HAVE_CDROM
 void task_push_cdrom_dump(const char *drive);
+#endif
+
+/* Menu explore tasks */
+#if defined(HAVE_MENU) && defined(HAVE_LIBRETRODB)
+bool task_push_menu_explore_init(const char *directory_playlist,
+      const char *directory_database);
+bool menu_explore_init_in_progress(void *data);
+void menu_explore_wait_for_init_task(void);
 #endif
 
 RETRO_END_DECLS

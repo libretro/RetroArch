@@ -152,7 +152,7 @@ static int16_t input_wl_state(
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds,
+      const retro_keybind_set *binds,
       bool keyboard_mapping_blocked,
       unsigned port,
       unsigned device,
@@ -176,7 +176,8 @@ static int16_t input_wl_state(
                   /*if (wl_mouse_button_pressed(udev, port, binds[port][i].mbutton))
                      ret |= (1 << i);
                   */
-                  return 0; /* TODO: support custom mouse-to-retropad binds */
+
+                  /* TODO: support custom mouse-to-retropad binds */
                }
             }
 
@@ -258,10 +259,21 @@ static int16_t input_wl_state(
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
          {
+            bool state  = false;
             bool screen = device == RARCH_DEVICE_MOUSE_SCREEN;
-            if (port > 0) return 0; /* TODO: support mouse on additional ports */
+            if (port > 0)
+               return 0; /* TODO: support mouse on additional ports */
+
             switch (id)
             {
+               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+                  state        = wl->mouse.wu;
+                  wl->mouse.wu = false;
+                  return state;
+               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+                  state        = wl->mouse.wd;
+                  wl->mouse.wd = false;
+                  return state;
                case RETRO_DEVICE_ID_MOUSE_X:
                   return screen ? wl->mouse.x : wl->mouse.delta_x;
                case RETRO_DEVICE_ID_MOUSE_Y:

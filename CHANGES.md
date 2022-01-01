@@ -1,4 +1,101 @@
 # Future
+- LINUX: Added support for Linux GameMode (https://github.com/FeralInteractive/gamemode), which can be toggled on/off in the Power Management or Latency settings menus.
+- Added a hotkey toggle for the on-screen technical statistics.
+- Added support for showing the overlay behind the menu instead of in front. This is currently only supported on the GL, Vulkan, D3D 9/10/11/12 and 3DS drivers.
+
+# 1.9.14
+- ANDROID/PLAYSTORE: Implement MANAGE_EXTERNAL_STORAGE permission
+- ANDROID/PLAYSTORE: Bump up SDK level to 30 to comply with Play Store policies
+- AUDIO/MIXER: Increase sample buffer padding 
+- CHEEVOS: Disallow achievements when spectating netplay
+- CHEEVOS: Fix need-to-activate achievement logic for non-hardcore
+- CHEEVOS: Don't queue rewind re-init if already on main thread
+- CHEEVOS: Ignore unofficial achievements unless setting is enabled
+- CHEEVOS: Use SSL host when available
+- CHEEVOS: Validate hashes for secondary discs in multi-disc games
+- CHEEVOS: Ensure placard is initialized on main thread when game has no achievements
+- CHEEVOS: Audit achievement settings defaults and visibility
+- CHEEVOS: Show error message when no password provided 
+- CHEEVOS: Use widget for game loaded achievement progress
+- CONFIG: Honor config_save_on_exit when Reboot/Shutdown is called
+- DISK CONTROL: Focus on current content entry in Disk Control append/insert
+- FRAMEDELAY: Auto Frame Delay Improvements - swap interval handling, D3DX handling, and delay target resets also on core restart. It should now work with high refresh rates and also with Direct3D 10/11/12 drivers
+- INPUT/GYRO/ACCELEROMETER/ANDROID: Re-enable Gyroscope & Accelerometer when RetroArch resumes or regains focus
+- INPUT/HID: Fix gamepad disconnect on unrecognized HID device 
+- LAKKA: Patch to fix keyboard typing
+- LAKKA: CD-ROM eject menu item
+- LAKKA/BLUETOOTH: Add option to remove pairing 
+- LAKKA/SWITCH: Disable rumble gain 
+- LAKKA/SWITCH: Disable cpu scaling, uses its own CPU governor
+- LOGGING: Logging cleanups. A bunch of unifications and reformattings (capitalizations, dots, quotes, prefixes etc). Also added a few missing things, such as Run-Ahead error logging and LED interface init logging when it is enabled.
+- NETPLAY: Networking - should not print country for a local lobby
+- NETPLAY: Added setting to allow/disallow players other than the host from pausing the game.
+- NETPLAY: Added a sublabel for netplay max connections.
+- NETPLAY: Fixed port override macro from not being set immediately after the port setting.
+- NETPLAY: Show passworded rooms on lobby
+- NETWORK: Make HTTP header parsing case insensitive
+- NETWORK/UPNP: Fixed memory leaks
+- NETWORK/UPNP: Added a task_queue_wait to prevent executing two nat tasks at once, so it's also thread safe now
+- NETWORK/UPNP: Switch to a permanent lease time, but request it to be removed when we do netplay_free. Switch to a permanent lease time, but request it to be removed when we do netplay_free. 
+- NETWORK/UPNP: Only use a single interface for UPnP, return on the first one found instead of iterating over all of them and opening them one by one
+- OVERLAYS: Revert changes
+- RETROFW: Add OSS audio
+- VIDEO/ROTATION: Always return false if rotation can't occur. RETRO_ENVIRONMENT_SET_ROTATION should return false when rotation has been forcefully disabled in frontend, that way the core can decide if aspect ratio should be rotated or not for vertical games. Useful for FBNeo for instance.
+- VULKAN: Avoid hard crash when capturing screenshot in emulating mailbox.
+- WIIU: Make wiiu_gfx_load_texture code safer
+- WIIU: Fix keyboard support.
+
+# 1.9.13
+- CHEEVOS/MSVC2010: Add Cheevos support
+- CRT/SWITCHRES: Fixes some issue where scaling is incorrect in some video modes for CRT output.
+- FRAMEDELAY: Add 'Automatic Frame Delay' option
+- INPUT: Add 'All users control the menu' setting - any gamepad can control the menu when this is enabled. Only limitation right now is that only player 1 can toggle the menu, but any set Menu Toggle Controller Combo will work fine for all users, so this should be acceptable for now
+- INPUT/UDEV: Fix Dolphin bar and safeguard against not adding devices with no mouse or touch buttons detected
+- NETPLAY/CLI: -C/--connect commandline fix
+- NETPLAY: Other improvements
+- NETPLAY: Remove forced disconnection on unknown netplay command -
+will be backwards compatible with any version that removed this
+disconnect. instead of disconnecting, we just read the data and
+ignore, like most network implementations do
+- TASKS/CHEEVOS: Replace coroutines with tasks/thread
+- TASKS/DATABASE/EXPLORE: Initialise 'Explore' menu on a background thread - no more stall when hovering over the Explore tab
+
+# 1.9.12
+- 3DS: Ensure parallax barrier is disabled when '3DS Display Mode' is '2D'
+- COMMAND: Command interface should work again
+- INPUT/HID: Rewrote the HID deregistration algorithm; it should no longer cause issues when dealing with multiple pads of the same HID/VID combo
+- INPUT/HID: Fix initialization bug that caused wiimotes to fail to register without an accessory attached
+- INPUT/HID: Fix Wiimote regression
+- INPUT/HID/MAC: Get Sony Sixaxis (DualShock 3) working on MacOS
+- INPUT/UDEV: Add extra abs check for dolphinbar
+- INPUT/UDEV: Add relative left mouse button when pointer device is not abs
+- INPUT/WAYLAND: Fix keyboard input on Wayland - fixes 'Certain cores ignore user input'
+- NETPLAY: Improvements from Cthulhu
+- OPENDINGUX: Fix HAS_ANALOG/HAS_MENU_TOGGLE defines in sdl_dingux joypad driver
+- LIBRETRO: Enable SRAM for contentless cores
+- LIBRETRO: Add environment callback to get the rate retro_run is called - GET_THROTTLE_STATE and RETRO_THROTTLE_UNBLOCKED environment callback
+- LINUX: Update metadata manifest
+- MENU/OZONE: New themes - Solarized Light, Solarized Dark
+- WINDOWS/WIN9X: Fix non-ASCII text display in window title
+
+# 1.9.11
+- ANDROID: New launcher logo - will fill the corners on the homescreen
+- D3D9: Driver works again (RGUI only and software rendered cores work, no shader support yet)
+- HID/MAC: WiiU GameCube Adapter now works
+- HID/WIIU: WiiU and general HID subsystem unified/merged
+- INPUT: Refactor menu toggle combo button logic to allow quit combo button
+- INPUT/UDEV: Add mouse relative check and set appropriately to fix issue
+- LIBNX/SWITCH: Splitted Joycon button mapping
+- LIBRETRO: Add environment callback to enable cores to notify the frontend that a core otion value has changed
+- MIYOO: Add initial port
+- OPENDINGUX/RG350: Enable tinyalsa for the RG350
+- PS2: Add 'Change Resolution' option
+- PS2: Add option to change video windows offsets
+- STEAM/LINUX: Move to new 'soldier' runtime
+- WAYLAND: Remove xdg-shell-v6 protocol
+- WINDOWS: Fix non-ASCII text display in window title
+- WINDOWS 11: Shows Windows 11 version name now (Information -> System Information)
+- UWP: Further improvements to WinRT VFS layer
 
 # 1.9.10
 - 3DS: Add bottom screen idle state

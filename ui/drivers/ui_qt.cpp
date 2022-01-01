@@ -2483,12 +2483,12 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
       firmware_info.path             = core_info->path;
       firmware_info.directory.system = settings->paths.directory_system;
 
-      rarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
+      retroarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
 
       update_missing_firmware        = core_info_list_update_missing_firmware(&firmware_info, &set_missing_firmware);
 
       if (set_missing_firmware)
-         rarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
+         retroarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
 
       if (update_missing_firmware)
       {
@@ -4943,10 +4943,12 @@ static void ui_companion_qt_toggle(void *data, bool force)
    settings_t *settings        = config_get_ptr();
    bool ui_companion_toggle    = settings->bools.ui_companion_toggle;
    bool video_fullscreen       = settings->bools.video_fullscreen;
-   bool mouse_grabbed          = input_mouse_grabbed();
+   bool mouse_grabbed          = input_state_get_ptr()->grab_mouse_state;
 
    if (ui_companion_toggle || force)
    {
+      video_driver_state_t *video_st = video_state_get_ptr();
+
       if (mouse_grabbed)
          command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
       video_driver_show_mouse();
@@ -4958,7 +4960,8 @@ static void ui_companion_qt_toggle(void *data, bool force)
       win_handle->qtWindow->raise();
       win_handle->qtWindow->show();
 
-      if (video_driver_started_fullscreen())
+      if (   video_st
+          && video_st->started_fullscreen)
          win_handle->qtWindow->lower();
 
       if (!already_started)

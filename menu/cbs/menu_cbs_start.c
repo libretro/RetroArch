@@ -43,9 +43,14 @@
 #include "../../playlist.h"
 #include "../../manual_content_scan.h"
 
+#include "../../audio/audio_driver.h"
 #include "../../input/input_remapping.h"
 
 #include "../../config.def.h"
+
+#ifdef HAVE_BLUETOOTH
+#include "../../bluetooth/bluetooth_driver.h"
+#endif
 
 #ifdef HAVE_NETWORKING
 #include "../../core_updater_list.h"
@@ -366,7 +371,7 @@ static int action_start_core_setting(
    unsigned core_idx               = type - MENU_SETTINGS_CORE_OPTION_START;
    core_option_manager_t *coreopts = NULL;
 
-   if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+   if (retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
       core_option_manager_set_default(coreopts, core_idx, true);
 
    return 0;
@@ -486,14 +491,15 @@ static int action_start_video_resolution(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-#if defined(GEKKO) || !defined(__PSL1GHT__) && !defined(__PS3__)
+#if defined(GEKKO) || defined(PS2) || !defined(__PSL1GHT__) && !defined(__PS3__)
    unsigned width = 0, height = 0;
+   char desc[64] = {0};
    global_t *global = global_get_ptr();
 
    /*  Reset the resolution id to zero */
    global->console.screen.resolutions.current.id = 0;
 
-   if (video_driver_get_video_output_size(&width, &height))
+   if (video_driver_get_video_output_size(&width, &height, desc, sizeof(desc)))
    {
       char msg[PATH_MAX_LENGTH];
 
@@ -508,8 +514,15 @@ static int action_start_video_resolution(
          strlcpy(msg, "Resetting to: DEFAULT", sizeof(msg));
       else
 #endif
-         snprintf(msg, sizeof(msg),
-               "Resetting to: %dx%d", width, height);
+      {
+         if (!string_is_empty(desc))
+            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_RESETTING_DESC), 
+               width, height, desc);
+         else
+            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC), 
+               width, height);
+      }
+
       runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 #endif
@@ -529,6 +542,16 @@ static int action_start_load_core(
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    return ret;
 }
+
+#ifdef HAVE_BLUETOOTH
+static int action_start_bluetooth(const char *path, const char *label,
+         unsigned menu_type, size_t idx, size_t entry_idx)
+{
+   driver_bluetooth_remove_device((unsigned)idx);
+
+   return 0;
+}
+#endif
 
 #ifdef HAVE_NETWORKING
 static int action_start_core_updater_entry(
@@ -702,6 +725,11 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
          case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME:
             BIND_ACTION_START(cbs, action_start_manual_content_scan_core_name);
             break;
+#ifdef HAVE_BLUETOOTH
+         case MENU_ENUM_LABEL_CONNECT_BLUETOOTH:
+            BIND_ACTION_START(cbs, action_start_bluetooth);
+            break;
+#endif
          default:
             return -1;
       }

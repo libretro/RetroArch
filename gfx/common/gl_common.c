@@ -15,7 +15,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <glsym/rglgen.h>
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#include <glsym/glsym.h>
 
 void gl_flush(void)
 {

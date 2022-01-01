@@ -74,78 +74,85 @@ static void blargg_ntsc_snes_initialize(void *data,
       const struct softfilter_config *config,
       void *userdata)
 {
-   char *tvtype = NULL;
-   snes_ntsc_setup_t setup;
+   char *tvtype             = NULL;
+   snes_ntsc_setup_t setup  = retroarch_snes_ntsc_composite;
    struct filter_data *filt = (struct filter_data*)data;
 
-   float custom_hue, custom_saturation, custom_contrast, custom_brightness, custom_sharpness,
-      custom_gamma, custom_resolution, custom_artifacts, custom_fringing, custom_bleed, custom_merge_fields;
-
-   config->get_float(userdata, "hue", &custom_hue, 0.0f);
-   config->get_float(userdata, "saturation", &custom_saturation, 0.0f);
-   config->get_float(userdata, "contrast", &custom_contrast, 0.0f);
-   config->get_float(userdata, "brightness", &custom_brightness, 0.0f);
-   config->get_float(userdata, "sharpness", &custom_sharpness, 0.0f);
-   config->get_float(userdata, "gamma", &custom_gamma, 0.0f);
-   config->get_float(userdata, "resolution", &custom_resolution, 0.0f);
-   config->get_float(userdata, "artifacts", &custom_artifacts, 0.0f);
-   config->get_float(userdata, "fringing", &custom_fringing, 0.0f);
-   config->get_float(userdata, "bleed", &custom_bleed, 0.0f);
-   config->get_float(userdata, "merge_fields", &custom_merge_fields, 1.0f);
-   
-   filt->ntsc = (snes_ntsc_t*)calloc(1, sizeof(*filt->ntsc));
+   filt->ntsc               = (snes_ntsc_t*)
+      calloc(1, sizeof(*filt->ntsc));
+   setup.merge_fields       = 1;
 
    if (config->get_string(userdata, "tvtype", &tvtype, "composite"))
    {
-      if (memcmp(tvtype, "composite", 9) == 0)
-      {
-         setup = retroarch_snes_ntsc_composite;
-         setup.merge_fields = 1;
-      }
-      else if (memcmp(tvtype, "rf", 2) == 0)
-      {
-         setup = retroarch_snes_ntsc_composite;
+      /* NOTE: SNES composite is being set by default,
+         merge_fields should only be set to 0 for RF output */
+
+      if (memcmp(tvtype, "rf", 2) == 0)
          setup.merge_fields = 0;
-      }
       else if (memcmp(tvtype, "rgb", 3) == 0)
-      {
-         setup = retroarch_snes_ntsc_rgb;
-         setup.merge_fields = 1;
-      }
+         setup              = retroarch_snes_ntsc_rgb;
       else if (memcmp(tvtype, "svideo", 6) == 0)
-      {
-         setup = retroarch_snes_ntsc_svideo;
-         setup.merge_fields = 1;
-      }
+         setup              = retroarch_snes_ntsc_svideo;
       else if (memcmp(tvtype, "custom", 6) == 0)
       {
-         setup = retroarch_snes_ntsc_composite;
-         setup.hue = custom_hue;
-         setup.saturation = custom_saturation;
-         setup.contrast = custom_contrast;
-         setup.brightness = custom_brightness;
-         setup.sharpness = custom_sharpness;
-         setup.gamma = custom_gamma;
-         setup.resolution = custom_resolution;
-         setup.artifacts = custom_artifacts;
-         setup.fringing = custom_fringing;
-         setup.bleed = custom_bleed;
-         setup.merge_fields = custom_merge_fields;
+         float custom_merge_fields = 1.0f;
+         float custom_bleed        = 0.0f;
+         float custom_fringing     = 0.0f;
+         float custom_artifacts    = 0.0f;
+         float custom_resolution   = 0.0f;
+         float custom_gamma        = 0.0f;
+         float custom_sharpness    = 0.0f;
+         float custom_brightness   = 0.0f;
+         float custom_hue          = 0.0f;
+         float custom_saturation   = 0.0f;
+         float custom_contrast     = 0.0f;
+
+         config->get_float(userdata, "merge_fields",
+               &custom_merge_fields, 1.0f);
+         config->get_float(userdata, "bleed",
+               &custom_bleed, 0.0f);
+         config->get_float(userdata, "fringing",
+               &custom_fringing, 0.0f);
+         config->get_float(userdata, "artifacts",
+               &custom_artifacts, 0.0f);
+         config->get_float(userdata, "resolution",
+               &custom_resolution, 0.0f);
+         config->get_float(userdata, "gamma",
+               &custom_gamma, 0.0f);
+         config->get_float(userdata, "brightness",
+               &custom_brightness, 0.0f);
+         config->get_float(userdata, "sharpness",
+               &custom_sharpness, 0.0f);
+         config->get_float(userdata, "hue",
+               &custom_hue, 0.0f);
+         config->get_float(userdata, "saturation",
+               &custom_saturation, 0.0f);
+         config->get_float(userdata, "contrast",
+               &custom_contrast, 0.0f);
+
+         setup                     = retroarch_snes_ntsc_composite;
+
+         setup.hue                 = custom_hue;
+         setup.saturation          = custom_saturation;
+         setup.contrast            = custom_contrast;
+         setup.brightness          = custom_brightness;
+         setup.sharpness           = custom_sharpness;
+         setup.gamma               = custom_gamma;
+         setup.resolution          = custom_resolution;
+         setup.artifacts           = custom_artifacts;
+         setup.fringing            = custom_fringing;
+         setup.bleed               = custom_bleed;
+         setup.merge_fields        = custom_merge_fields;
          config->get_int(userdata, "hires_blit", &hires_blit, 1);
       }
    }
-   else
-   {
-      setup = retroarch_snes_ntsc_composite;
-      setup.merge_fields = 1;
-   }
 
    config->free(tvtype);
-   tvtype = NULL;
+   tvtype             = NULL;
 
    retroarch_snes_ntsc_init(filt->ntsc, &setup);
 
-   filt->burst = 0;
+   filt->burst        = 0;
    filt->burst_toggle = (setup.merge_fields ? 0 : 1);
 }
 

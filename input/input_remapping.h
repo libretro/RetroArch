@@ -23,17 +23,8 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-typedef struct input_mapper
-{
-   /* Left X, Left Y, Right X, Right Y */
-   int16_t analog_value[MAX_USERS][8];
-   /* The whole keyboard state */
-   uint32_t keys[RETROK_LAST / 32 + 1];
-   /* RetroPad button state of remapped keyboard keys */
-   unsigned key_button[RETROK_LAST];
-   /* This is a bitmask of (1 << key_bind_id). */
-   input_bits_t buttons[MAX_USERS];
-} input_mapper_t;
+#include "input_defines.h"
+#include "input_types.h"
 
 RETRO_BEGIN_DECLS
 
@@ -93,7 +84,7 @@ void input_remapping_restore_global_config(bool clear_cache);
 void input_remapping_update_port_map(void);
 
 /**
- * Frees global->name.remapfile and sets these runloop_state flags to false: 
+ * Frees runloop_st->name.remapfile and sets these runloop_state flags to false: 
  * remaps_core_active, remaps_content_dir_active, and remaps_game_active.
  */
 void input_remapping_deinit(void);

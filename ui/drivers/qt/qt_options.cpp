@@ -412,10 +412,14 @@ QWidget *NetplayPage::widget()
 
    checksLayout->add(MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE);
    checksLayout->add(MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR);
+   checksLayout->add(MENU_ENUM_LABEL_NETPLAY_FADE_CHAT);
+   checksLayout->add(MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING);
    checksLayout->add(MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS);
 
    serverForm->add(MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS);
    serverForm->add(MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT);
+   serverForm->add(MENU_ENUM_LABEL_NETPLAY_MAX_CONNECTIONS);
+   serverForm->add(MENU_ENUM_LABEL_NETPLAY_MAX_PING);
    serverForm->add(MENU_ENUM_LABEL_NETPLAY_PASSWORD);
    serverForm->add(MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD);
    serverForm->add(MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL);
@@ -494,6 +498,8 @@ QGroupBox *NetplayPage::createMitmServerGroup()
       groupBox->addRow(radioButton);
    }
 
+   groupBox->add(MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER);
+
    connect(buttonGroup, SIGNAL(buttonClicked(int)),
          this, SLOT(onRadioButtonClicked(int)));
 
@@ -559,6 +565,7 @@ QWidget *NotificationsPage::widget()
    notificationsGroup->add(MENU_ENUM_LABEL_MEMORY_SHOW);
    notificationsGroup->add(MENU_ENUM_LABEL_MEMORY_UPDATE_INTERVAL);
    notificationsGroup->add(MENU_ENUM_LABEL_STATISTICS_SHOW);
+   notificationsGroup->add(MENU_ENUM_LABEL_NETPLAY_PING_SHOW);
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_FONT_PATH);
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_FONT_SIZE);
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X);
@@ -593,6 +600,8 @@ QWidget *NotificationsPage::widget()
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION);
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH);
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_REFRESH_RATE);
+   notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA);
+   notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE);
 
    layout->addWidget(notificationsGroup);
 

@@ -349,7 +349,7 @@ static void create_gl_context(HWND hwnd, bool *quit)
       if (wglGetExtensionsStringARB)
       {
          extensions = wglGetExtensionsStringARB(win32_hdc);
-         RARCH_LOG("[WGL] extensions: %s\n", extensions);
+         RARCH_LOG("[WGL]: Extensions: %s\n", extensions);
          if (wgl_has_extension("WGL_EXT_swap_control_tear", extensions))
          {
             RARCH_LOG("[WGL]: Adaptive VSync supported.\n");
@@ -836,9 +836,9 @@ static void gfx_ctx_wgl_set_flags(void *data, uint32_t flags)
 }
 
 static void gfx_ctx_wgl_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
-   win32_get_video_output_size(width, height);
+   win32_get_video_output_size(width, height, desc, desc_len);
 }
 
 static void gfx_ctx_wgl_get_video_output_prev(void *data) { }

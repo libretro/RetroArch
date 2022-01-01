@@ -83,6 +83,7 @@ static uint32_t d3d11_get_flags(void *data)
    uint32_t flags = 0;
 
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
+   BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
@@ -259,6 +260,31 @@ static void d3d11_get_overlay_interface(
    };
 
    *iface = &overlay_interface;
+}
+
+static void d3d11_render_overlay(void *data)
+{
+   unsigned       i;
+   d3d11_video_t* d3d11 = (d3d11_video_t*)data;
+
+   if (!d3d11)
+      return;
+
+   if (d3d11->overlays.fullscreen)
+      D3D11SetViewports(d3d11->context, 1, &d3d11->viewport);
+   else
+      D3D11SetViewports(d3d11->context, 1, &d3d11->frame.viewport);
+
+   D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+   D3D11SetVertexBuffer(d3d11->context, 0, d3d11->overlays.vbo, sizeof(d3d11_sprite_t), 0);
+   D3D11SetPShaderSamplers(
+         d3d11->context, 0, 1, &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
+
+   for (i = 0; i < (unsigned)d3d11->overlays.count; i++)
+   {
+      D3D11SetPShaderResources(d3d11->context, 0, 1, &d3d11->overlays.textures[i].view);
+      D3D11Draw(d3d11->context, 1, i);
+   }
 }
 #endif
 
@@ -1548,7 +1574,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
          utf16_to_char_string((const uint16_t*)
                desc.Description, str, sizeof(str));
 
-         RARCH_LOG("[D3D11]: Found GPU at index %d: %s\n", i, str);
+         RARCH_LOG("[D3D11]: Found GPU at index %d: \"%s\".\n", i, str);
 
          string_list_append(d3d11->gpu_list, str, attr);
 
@@ -1581,12 +1607,12 @@ error:
    d3d11_gfx_free(d3d11);
 
 #ifdef HAVE_OPENGL
-   retroarch_force_video_driver_fallback("gl");
+   video_driver_force_fallback("gl");
 #elif !defined(__WINRT__)
 #ifdef HAVE_OPENGL1
-   retroarch_force_video_driver_fallback("gl1");
+   video_driver_force_fallback("gl1");
 #else
-   retroarch_force_video_driver_fallback("gdi");
+   video_driver_force_fallback("gdi");
 #endif
 #endif
 
@@ -1675,7 +1701,7 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
          height = d3d11->vp.height;
       }
 
-      RARCH_LOG("[D3D11]: Updating framebuffer size %u x %u.\n", width, height);
+      RARCH_LOG("[D3D11]: Updating framebuffer size %ux%u.\n", width, height);
 
       if ((i != (d3d11->shader_preset->passes - 1)) || (width != d3d11->vp.width) ||
             (height != d3d11->vp.height))
@@ -1737,6 +1763,7 @@ static bool d3d11_gfx_frame(
    bool statistics_show           = video_info->statistics_show;
    struct font_params* osd_params = (struct font_params*)&video_info->osd_stat_params;
    bool menu_is_alive             = video_info->menu_is_alive;
+   bool overlay_behind_menu       = video_info->overlay_behind_menu;
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active            = video_info->widgets_active;
 #endif
@@ -2073,6 +2100,21 @@ static bool d3d11_gfx_frame(
    D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
    d3d11->sprites.enabled = true;
 
+#ifdef HAVE_OVERLAY
+   if (d3d11->overlays.enabled && overlay_behind_menu)
+      d3d11_render_overlay(d3d11);
+#endif
+
+#ifdef HAVE_MENU
+#ifndef HAVE_GFX_WIDGETS
+   if (d3d11->menu.enabled)
+#endif
+   {
+      D3D11SetViewports(context, 1, &d3d11->viewport);
+      D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
+   }
+#endif
+
 #ifdef HAVE_MENU
    if (d3d11->menu.enabled)
       menu_driver_frame(menu_is_alive, video_info);
@@ -2092,24 +2134,8 @@ static bool d3d11_gfx_frame(
    }
 
 #ifdef HAVE_OVERLAY
-   if (d3d11->overlays.enabled)
-   {
-      if (d3d11->overlays.fullscreen)
-         D3D11SetViewports(context, 1, &d3d11->viewport);
-      else
-         D3D11SetViewports(context, 1, &d3d11->frame.viewport);
-
-      D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
-      D3D11SetVertexBuffer(context, 0, d3d11->overlays.vbo, sizeof(d3d11_sprite_t), 0);
-      D3D11SetPShaderSamplers(
-            context, 0, 1, &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
-
-      for (i = 0; i < (unsigned)d3d11->overlays.count; i++)
-      {
-         D3D11SetPShaderResources(context, 0, 1, &d3d11->overlays.textures[i].view);
-         D3D11Draw(d3d11->context, 1, i);
-      }
-   }
+   if (d3d11->overlays.enabled && !overlay_behind_menu)
+      d3d11_render_overlay(d3d11);
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
@@ -2375,9 +2401,9 @@ static bool d3d11_get_hw_render_interface(
 
 #ifndef __WINRT__
 static void d3d11_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
-   win32_get_video_output_size(width, height);
+   win32_get_video_output_size(width, height, desc, desc_len);
 }
 
 static void d3d11_get_video_output_prev(void *data)

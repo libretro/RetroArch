@@ -22,7 +22,7 @@
 #include <string/stdstring.h>
 #include <compat/strl.h>
 #include <formats/rjson.h>
-#include "netplay_discovery.h"
+#include "netplay.h"
 #include "../../verbosity.h"
 
 enum netplay_parse_state
@@ -35,12 +35,6 @@ enum netplay_parse_state
    STATE_END
 };
 
-struct netplay_rooms
-{
-   struct netplay_room *head;
-   struct netplay_room *cur;
-};
-
 struct netplay_json_context
 {
    bool *cur_member_bool;
@@ -50,9 +44,6 @@ struct netplay_json_context
    size_t cur_member_size;
    enum netplay_parse_state state;
 };
-
-/* TODO/FIXME - static global variable */
-static struct netplay_rooms *netplay_rooms_data;
 
 static bool netplay_json_boolean(void* ctx, bool value)
 {
@@ -102,21 +93,25 @@ static bool netplay_json_number(void* ctx, const char *p_value, size_t len)
 static bool netplay_json_start_object(void* ctx)
 {
    struct netplay_json_context *p_ctx = (struct netplay_json_context*)ctx;
+   net_driver_state_t         *net_st = networking_state_get_ptr(); 
 
    if (p_ctx->state == STATE_FIELDS_START)
    {
       p_ctx->state = STATE_FIELDS_OBJECT_START;
 
-      if (!netplay_rooms_data->head)
+      if (!net_st->rooms_data->head)
       {
-         netplay_rooms_data->head      = (struct netplay_room*)calloc(1, sizeof(*netplay_rooms_data->head));
-         netplay_rooms_data->cur       = netplay_rooms_data->head;
+         net_st->rooms_data->head      = (struct netplay_room*)calloc(1, sizeof(*net_st->rooms_data->head));
+         net_st->rooms_data->cur       = net_st->rooms_data->head;
       }
-      else if (!netplay_rooms_data->cur->next)
+      else if (!net_st->rooms_data->cur->next)
       {
-         netplay_rooms_data->cur->next = (struct netplay_room*)calloc(1, sizeof(*netplay_rooms_data->cur->next));
-         netplay_rooms_data->cur       = netplay_rooms_data->cur->next;
+         net_st->rooms_data->cur->next = (struct netplay_room*)calloc(1, sizeof(*net_st->rooms_data->cur->next));
+         net_st->rooms_data->cur       = net_st->rooms_data->cur->next;
       }
+
+      net_st->rooms_data->cur->connectable  = true;
+      net_st->rooms_data->cur->is_retroarch = true;
    }
    else if (p_ctx->state == STATE_ARRAY_START)
       p_ctx->state = STATE_OBJECT_START;
@@ -138,6 +133,7 @@ static bool netplay_json_object_member(void *ctx, const char *p_value,
       size_t len)
 {
    struct netplay_json_context* p_ctx = (struct netplay_json_context*)ctx;
+   net_driver_state_t         *net_st = networking_state_get_ptr(); 
 
    if (!p_value || !len)
       return true;
@@ -157,81 +153,90 @@ static bool netplay_json_object_member(void *ctx, const char *p_value,
       {
          if (string_is_equal(p_value, "username"))
          {
-            p_ctx->cur_member_string = netplay_rooms_data->cur->nickname;
-            p_ctx->cur_member_size   = sizeof(netplay_rooms_data->cur->nickname);
+            p_ctx->cur_member_string = net_st->rooms_data->cur->nickname;
+            p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->nickname);
          }
          else if (string_is_equal(p_value, "game_name"))
          {
-            p_ctx->cur_member_string = netplay_rooms_data->cur->gamename;
-            p_ctx->cur_member_size   = sizeof(netplay_rooms_data->cur->gamename);
+            p_ctx->cur_member_string = net_st->rooms_data->cur->gamename;
+            p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->gamename);
          }
          else if (string_is_equal(p_value, "core_name"))
          {
-            p_ctx->cur_member_string = netplay_rooms_data->cur->corename;
-            p_ctx->cur_member_size   = sizeof(netplay_rooms_data->cur->corename);
+            p_ctx->cur_member_string = net_st->rooms_data->cur->corename;
+            p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->corename);
          }
          else if (string_is_equal(p_value, "ip"))
          {
-            p_ctx->cur_member_string = netplay_rooms_data->cur->address;
-            p_ctx->cur_member_size   = sizeof(netplay_rooms_data->cur->address);
+            p_ctx->cur_member_string = net_st->rooms_data->cur->address;
+            p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->address);
          }
          else if (string_is_equal(p_value, "port"))
          {
-            p_ctx->cur_member_int    = &netplay_rooms_data->cur->port;
+            p_ctx->cur_member_int    = &net_st->rooms_data->cur->port;
          }
          else if (string_is_equal(p_value, "game_crc"))
          {
-            p_ctx->cur_member_inthex = &netplay_rooms_data->cur->gamecrc;
+            p_ctx->cur_member_inthex = &net_st->rooms_data->cur->gamecrc;
          }
          else if (string_is_equal(p_value, "core_version"))
          {
-            p_ctx->cur_member_string = netplay_rooms_data->cur->coreversion;
-            p_ctx->cur_member_size   = sizeof(netplay_rooms_data->cur->coreversion);
+            p_ctx->cur_member_string = net_st->rooms_data->cur->coreversion;
+            p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->coreversion);
          }
          else if (string_is_equal(p_value, "has_password"))
          {
-            p_ctx->cur_member_bool   = &netplay_rooms_data->cur->has_password;
+            p_ctx->cur_member_bool   = &net_st->rooms_data->cur->has_password;
          }
          else if (string_is_equal(p_value, "has_spectate_password"))
          {
-            p_ctx->cur_member_bool   = &netplay_rooms_data->cur->has_spectate_password;
-         }
-         else if (string_is_equal(p_value, "fixed"))
-         {
-            p_ctx->cur_member_bool   = &netplay_rooms_data->cur->fixed;
+            p_ctx->cur_member_bool   = &net_st->rooms_data->cur->has_spectate_password;
          }
          else if (string_is_equal(p_value, "mitm_ip"))
          {
-            p_ctx->cur_member_string = netplay_rooms_data->cur->mitm_address;
-            p_ctx->cur_member_size   = sizeof(netplay_rooms_data->cur->mitm_address);
+            p_ctx->cur_member_string = net_st->rooms_data->cur->mitm_address;
+            p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->mitm_address);
          }
          else if (string_is_equal(p_value, "mitm_port"))
          {
-            p_ctx->cur_member_int    = &netplay_rooms_data->cur->mitm_port;
+            p_ctx->cur_member_int    = &net_st->rooms_data->cur->mitm_port;
+         }
+         else if (string_is_equal(p_value, "mitm_session"))
+         {
+            p_ctx->cur_member_string = net_st->rooms_data->cur->mitm_session;
+            p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->mitm_session);
          }
          else if (string_is_equal(p_value, "host_method"))
          {
-            p_ctx->cur_member_int    = &netplay_rooms_data->cur->host_method;
+            p_ctx->cur_member_int    = &net_st->rooms_data->cur->host_method;
          }
          else if (string_is_equal(p_value, "retroarch_version"))
          {
-            p_ctx->cur_member_string = netplay_rooms_data->cur->retroarch_version;
-            p_ctx->cur_member_size   = sizeof(netplay_rooms_data->cur->retroarch_version);
+            p_ctx->cur_member_string = net_st->rooms_data->cur->retroarch_version;
+            p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->retroarch_version);
          }
          else if (string_is_equal(p_value, "country"))
          {
-            p_ctx->cur_member_string = netplay_rooms_data->cur->country;
-            p_ctx->cur_member_size   = sizeof(netplay_rooms_data->cur->country);
+            p_ctx->cur_member_string = net_st->rooms_data->cur->country;
+            p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->country);
          }
          else if (string_is_equal(p_value, "frontend"))
          {
-            p_ctx->cur_member_string = netplay_rooms_data->cur->frontend;
-            p_ctx->cur_member_size   = sizeof(netplay_rooms_data->cur->frontend);
+            p_ctx->cur_member_string = net_st->rooms_data->cur->frontend;
+            p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->frontend);
          }
          else if (string_is_equal(p_value, "subsystem_name"))
          {
-            p_ctx->cur_member_string = netplay_rooms_data->cur->subsystem_name;
-            p_ctx->cur_member_size   = sizeof(netplay_rooms_data->cur->subsystem_name);
+            p_ctx->cur_member_string = net_st->rooms_data->cur->subsystem_name;
+            p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->subsystem_name);
+         }
+         else if (string_is_equal(p_value, "connectable"))
+         {
+            p_ctx->cur_member_bool   = &net_st->rooms_data->cur->connectable;
+         }
+         else if (string_is_equal(p_value, "is_retroarch"))
+         {
+            p_ctx->cur_member_bool   = &net_st->rooms_data->cur->is_retroarch;
          }
       }
    }
@@ -258,9 +263,10 @@ static void netplay_rooms_error(void *context,
 
 void netplay_rooms_free(void)
 {
-   if (netplay_rooms_data)
+   net_driver_state_t         *net_st = networking_state_get_ptr(); 
+   if (net_st->rooms_data)
    {
-      struct netplay_room *room = netplay_rooms_data->head;
+      struct netplay_room *room = net_st->rooms_data->head;
 
       if (room)
       {
@@ -273,14 +279,15 @@ void netplay_rooms_free(void)
          }
       }
 
-      free(netplay_rooms_data);
+      free(net_st->rooms_data);
    }
-   netplay_rooms_data = NULL;
+   net_st->rooms_data = NULL;
 }
 
 int netplay_rooms_parse(const char *buf)
 {
    struct netplay_json_context ctx;
+   net_driver_state_t         *net_st = networking_state_get_ptr(); 
 
    memset(&ctx, 0, sizeof(ctx));
 
@@ -289,8 +296,8 @@ int netplay_rooms_parse(const char *buf)
    /* delete any previous rooms */
    netplay_rooms_free();
 
-   netplay_rooms_data = (struct netplay_rooms*)
-      calloc(1, sizeof(*netplay_rooms_data));
+   net_st->rooms_data = (struct netplay_rooms*)
+      calloc(1, sizeof(*net_st->rooms_data));
 
    rjson_parse_quick(buf, &ctx, 0,
          netplay_json_object_member,
@@ -309,8 +316,9 @@ int netplay_rooms_parse(const char *buf)
 
 struct netplay_room* netplay_room_get(int index)
 {
-   int                   cur = 0;
-   struct netplay_room *room = netplay_rooms_data->head;
+   int                    cur = 0;
+   net_driver_state_t *net_st = networking_state_get_ptr(); 
+   struct netplay_room  *room = net_st->rooms_data->head;
 
    if (index < 0)
       return NULL;
@@ -330,14 +338,13 @@ struct netplay_room* netplay_room_get(int index)
 int netplay_rooms_get_count(void)
 {
    int count = 0;
-   struct netplay_room *room;
+   struct netplay_room *room  = NULL;
+   net_driver_state_t *net_st = networking_state_get_ptr(); 
 
-   if (!netplay_rooms_data)
+   if (!net_st || !net_st->rooms_data)
       return count;
 
-   room = netplay_rooms_data->head;
-
-   if (!room)
+   if (!(room = net_st->rooms_data->head))
       return count;
 
    while (room)

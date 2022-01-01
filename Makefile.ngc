@@ -126,6 +126,7 @@ HAVE_AUDIOMIXER          := 1
 HAVE_RWAV                := 1
 RARCH_CONSOLE             = 1
 HAVE_CHEATS              := 1
+HAVE_CORE_INFO_CACHE     := 1
 
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(PLATCFLAGS) $(INCLUDE)
 INCLUDE += -I./libretro-common/include \
@@ -320,6 +321,10 @@ endif
 
 ifeq ($(HAVE_DYNAMIC), 1)
    CFLAGS += -DHAVE_DYNAMIC
+endif
+
+ifeq ($(HAVE_CORE_INFO_CACHE), 1)
+   CFLAGS += -DHAVE_CORE_INFO_CACHE
 endif
 
 ifeq ($(DEBUG), 1)

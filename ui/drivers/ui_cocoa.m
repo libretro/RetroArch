@@ -427,7 +427,7 @@ static ui_application_t ui_application_cocoa = {
             NSPoint pos                 = CONVERT_POINT();
             cocoa_input_data_t 
                *apple                   = (cocoa_input_data_t*)
-               input_driver_get_data();
+               input_state_get_ptr()->current_data;
             if (!apple)
                return;
             /* Relative */
@@ -456,7 +456,7 @@ static ui_application_t ui_application_cocoa = {
            NSPoint pos           = CONVERT_POINT();
            cocoa_input_data_t 
               *apple             = (cocoa_input_data_t*)
-              input_driver_get_data();
+              input_state_get_ptr()->current_data;
            if (!apple || pos.y < 0)
                return;
            apple->mouse_buttons |= (1 << number);
@@ -471,7 +471,7 @@ static ui_application_t ui_application_cocoa = {
             NSPoint pos           = CONVERT_POINT();
             cocoa_input_data_t 
               *apple              = (cocoa_input_data_t*)
-              input_driver_get_data();
+              input_state_get_ptr()->current_data;
             if (!apple || pos.y < 0)
                return;
             apple->mouse_buttons &= ~(1 << number);
@@ -674,7 +674,7 @@ static ui_application_t ui_application_cocoa = {
 {
    NSApplicationTerminateReply reply = NSTerminateNow;
 
-   if (rarch_ctl(RARCH_CTL_IS_INITED, NULL))
+   if (retroarch_ctl(RARCH_CTL_IS_INITED, NULL))
       reply = NSTerminateCancel;
 
    command_event(CMD_EVENT_QUIT, NULL);
@@ -884,7 +884,7 @@ static void open_document_handler(
    if (sender_tag >= 10 && sender_tag <= 19)
    {
       unsigned idx = (sender_tag - (10-1));
-      rarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
+      retroarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
       cmd = CMD_EVENT_RESIZE_WINDOWED_SCALE;
    }
 

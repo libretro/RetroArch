@@ -40,7 +40,10 @@
 #include "../../file_path_special.h"
 #include "../../driver.h"
 #include "../../retroarch.h"
+#include "../../audio/audio_driver.h"
+#ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
+#endif
 #include "../../playlist.h"
 #include "../../manual_content_scan.h"
 #include "../misc/cpufreq/cpufreq.h"
@@ -675,6 +678,7 @@ static int manual_content_scan_core_name_left(unsigned type, const char *label,
    return 0;
 }
 
+#ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
 static int cpu_policy_mode_change(unsigned type, const char *label,
       bool wraparound)
@@ -789,13 +793,14 @@ static int cpu_policy_freq_tweak(unsigned type, const char *label,
    return 0;
 }
 #endif
+#endif /* #ifndef HAVE_LAKKA_SWITCH */
 
 static int core_setting_left(unsigned type, const char *label,
       bool wraparound)
 {
    unsigned idx     = type - MENU_SETTINGS_CORE_OPTION_START;
 
-   rarch_ctl(RARCH_CTL_CORE_OPTION_PREV, &idx);
+   retroarch_ctl(RARCH_CTL_CORE_OPTION_PREV, &idx);
 
    return 0;
 }
@@ -1038,6 +1043,7 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
                break;
             case MENU_ENUM_LABEL_NO_ITEMS:
             case MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
+            case MENU_ENUM_LABEL_EXPLORE_INITIALISING_LIST:
                if (
                         string_ends_with_size(menu_label, "_tab",
                            strlen(menu_label),

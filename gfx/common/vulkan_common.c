@@ -1561,7 +1561,7 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
       vkGetPhysicalDeviceProperties(gpus[i],
             &gpu_properties);
 
-      RARCH_LOG("[Vulkan]: Found GPU at index %d: %s\n", i, gpu_properties.deviceName);
+      RARCH_LOG("[Vulkan]: Found GPU at index %d: \"%s\".\n", i, gpu_properties.deviceName);
 
       string_list_append(vk->gpu_list, gpu_properties.deviceName, attr);
    }
@@ -1693,7 +1693,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       }
    }
 
-   RARCH_LOG("[Vulkan]: Using GPU: %s\n", vk->context.gpu_properties.deviceName);
+   RARCH_LOG("[Vulkan]: Using GPU: \"%s\".\n", vk->context.gpu_properties.deviceName);
 
    {
       char device_str[128];
@@ -3113,7 +3113,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    }
 
 #ifdef VULKAN_DEBUG
-   RARCH_LOG("[Vulkan]: Using swapchain size %u x %u.\n",
+   RARCH_LOG("[Vulkan]: Using swapchain size %ux%u.\n",
          swapchain_size.width, swapchain_size.height);
 #endif
 

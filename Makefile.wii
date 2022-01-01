@@ -131,6 +131,7 @@ RARCH_CONSOLE             = 1
 #HAVE_LANGEXTRA          := 1
 HAVE_WIIUSB_HID          := 1
 HAVE_RARCH_EXEC          := 1
+HAVE_CORE_INFO_CACHE     := 1
 HAVE_RSOUND              := 0
 
 APP_BOOTER_DIR = wii/app_booter

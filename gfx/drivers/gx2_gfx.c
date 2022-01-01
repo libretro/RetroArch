@@ -88,7 +88,7 @@ static void wiiu_set_projection(wiiu_video_t *wiiu)
 {
    math_matrix_4x4 proj, rot;
    matrix_4x4_ortho(proj, 0, 1, 1, 0, -1, 1);
-   matrix_4x4_rotate_z(rot, wiiu->rotation * -M_PI_2);
+   matrix_4x4_rotate_z(rot, wiiu->rotation * M_PI_2);
    matrix_4x4_multiply((*wiiu->ubo_mvp), rot, proj);
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, wiiu->ubo_mvp, sizeof(*wiiu->ubo_mvp));
 }
@@ -1570,16 +1570,20 @@ static void wiiu_gfx_viewport_info(void *data,
 }
 
 static uintptr_t wiiu_gfx_load_texture(void *video_data, void *data,
-                                       bool threaded, enum texture_filter_type filter_type)
+      bool threaded, enum texture_filter_type filter_type)
 {
    uint32_t i;
-   wiiu_video_t *wiiu = (wiiu_video_t *) video_data;
-   struct texture_image *image = (struct texture_image *)data;
+   GX2Texture *texture          = NULL;
+   struct texture_image *image  = (struct texture_image *)data;
 
-   if (!wiiu)
+   if (!image)
       return 0;
 
-   GX2Texture *texture = calloc(1, sizeof(GX2Texture));
+   texture                      = (GX2Texture*)
+      calloc(1, sizeof(GX2Texture));
+
+   if (!texture)
+      return 0;
 
    texture->surface.width       = image->width;
    texture->surface.height      = image->height;
@@ -1593,13 +1597,18 @@ static uintptr_t wiiu_gfx_load_texture(void *video_data, void *data,
 
    GX2CalcSurfaceSizeAndAlignment(&texture->surface);
    GX2InitTextureRegs(texture);
-   texture->surface.image = MEM2_alloc(texture->surface.imageSize, texture->surface.alignment);
+   texture->surface.image       = MEM2_alloc(
+         texture->surface.imageSize, texture->surface.alignment);
 
    for (i = 0; (i < image->height) && (i < texture->surface.height); i++)
-      memcpy((uint32_t *)texture->surface.image + (i * texture->surface.pitch),
-             image->pixels + (i * image->width), image->width * sizeof(image->pixels));
+      memcpy((uint32_t *)texture->surface.image 
+            + (i * texture->surface.pitch),
+            image->pixels + (i * image->width),
+            image->width * sizeof(image->pixels));
 
-   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, texture->surface.image, texture->surface.imageSize);
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE,
+         texture->surface.image,
+         texture->surface.imageSize);
 
    return (uintptr_t)texture;
 }
@@ -1614,7 +1623,9 @@ static void wiiu_gfx_unload_texture(void *data,
    MEM2_free(texture->surface.image);
    free(texture);
 }
-static void wiiu_gfx_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
+
+static void wiiu_gfx_set_filtering(void *data,
+      unsigned index, bool smooth, bool ctx_scaling)
 {
    wiiu_video_t *wiiu = (wiiu_video_t *) data;
 
@@ -1630,8 +1641,9 @@ static void wiiu_gfx_apply_state_changes(void *data)
       wiiu->should_resize = true;
 }
 
-static void wiiu_gfx_set_texture_frame(void *data, const void *frame, bool rgb32,
-                                       unsigned width, unsigned height, float alpha)
+static void wiiu_gfx_set_texture_frame(void *data,
+      const void *frame, bool rgb32,
+      unsigned width, unsigned height, float alpha)
 {
    uint32_t i;
    const uint16_t *src = NULL;

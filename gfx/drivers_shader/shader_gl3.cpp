@@ -37,10 +37,10 @@
 #include "../../verbosity.h"
 #include "../../msg_hash.h"
 
-GLuint gl_core_cross_compile_program(
+GLuint gl3_cross_compile_program(
       const uint32_t *vertex, size_t vertex_size,
       const uint32_t *fragment, size_t fragment_size,
-      gl_core_buffer_locations *loc, bool flatten)
+      gl3_buffer_locations *loc, bool flatten)
 {
    GLuint program = 0;
    try
@@ -55,7 +55,7 @@ GLuint gl_core_cross_compile_program(
 #else
       opts.es                               = false;
 #endif
-      opts.version                          = gl_core_get_cross_compiler_target_version();
+      opts.version                          = gl3_get_cross_compiler_target_version();
       opts.fragment.default_float_precision = spirv_cross::CompilerGLSL::Options::Precision::Highp;
       opts.fragment.default_int_precision   = spirv_cross::CompilerGLSL::Options::Precision::Highp;
       opts.enable_420pack_extension         = false;
@@ -163,8 +163,8 @@ GLuint gl_core_cross_compile_program(
 
       auto vertex_source = vertex_compiler.compile();
       auto fragment_source = fragment_compiler.compile();
-      GLuint vertex_shader = gl_core_compile_shader(GL_VERTEX_SHADER, vertex_source.c_str());
-      GLuint fragment_shader = gl_core_compile_shader(GL_FRAGMENT_SHADER, fragment_source.c_str());
+      GLuint vertex_shader = gl3_compile_shader(GL_VERTEX_SHADER, vertex_source.c_str());
+      GLuint fragment_shader = gl3_compile_shader(GL_FRAGMENT_SHADER, fragment_source.c_str());
 
 #if 0
       RARCH_LOG("[GLCore]: Vertex shader:\n========\n%s\n=======\n", vertex_source.c_str());
@@ -264,7 +264,7 @@ GLuint gl_core_cross_compile_program(
    return program;
 }
 
-namespace gl_core_shader
+namespace gl3_shader
 {
 static const uint32_t opaque_vert[] =
 #include "../drivers/vulkan_shaders/opaque.vert.inc"
@@ -276,7 +276,7 @@ static const uint32_t opaque_frag[] =
 
 struct Texture
 {
-   gl_core_filter_chain_texture texture;
+   gl3_filter_chain_texture texture;
    glslang_filter_chain_filter filter;
    glslang_filter_chain_filter mip_filter;
    glslang_filter_chain_address address;
@@ -473,7 +473,7 @@ struct CommonResources
 
    GLuint quad_program = 0;
    GLuint quad_vbo = 0;
-   gl_core_buffer_locations quad_loc = {};
+   gl3_buffer_locations quad_loc = {};
 };
 
 CommonResources::CommonResources()
@@ -490,7 +490,7 @@ CommonResources::CommonResources()
    glBufferData(GL_ARRAY_BUFFER, sizeof(quad_data), quad_data, GL_STATIC_DRAW);
    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-   quad_program = gl_core_cross_compile_program(
+   quad_program = gl3_cross_compile_program(
          opaque_vert, sizeof(opaque_vert),
          opaque_frag, sizeof(opaque_frag), &quad_loc, true);
 }
@@ -679,7 +679,7 @@ public:
       return framebuffer_feedback.get();
    }
 
-   void set_pass_info(const gl_core_filter_chain_pass_info &info);
+   void set_pass_info(const gl3_filter_chain_pass_info &info);
 
    void set_shader(GLenum stage,
                    const uint32_t *spirv,
@@ -691,7 +691,7 @@ public:
    void build_commands(
          const Texture &original,
          const Texture &source,
-         const gl_core_viewport &vp,
+         const gl3_viewport &vp,
          const float *mvp);
 
    void set_frame_count(uint64_t count)
@@ -764,8 +764,8 @@ private:
    CommonResources *common         = nullptr;
 
    Size2D current_framebuffer_size = {};
-   gl_core_viewport current_viewport;
-   gl_core_filter_chain_pass_info pass_info;
+   gl3_viewport current_viewport;
+   gl3_filter_chain_pass_info pass_info;
 
    std::vector<uint32_t> vertex_shader;
    std::vector<uint32_t> fragment_shader;
@@ -821,7 +821,7 @@ private:
    std::vector<Parameter> parameters;
    std::vector<Parameter> filtered_parameters;
    std::vector<uint8_t> push_constant_buffer;
-   gl_core_buffer_locations locations = {};
+   gl3_buffer_locations locations = {};
    UBORing ubo_ring;
 
    void reflect_parameter(const std::string &name, slang_semantic_meta &meta);
@@ -970,7 +970,7 @@ void Pass::reflect_parameter_array(const char *name, std::vector<slang_texture_s
 
 bool Pass::init_pipeline()
 {
-   pipeline = gl_core_cross_compile_program(
+   pipeline = gl3_cross_compile_program(
          vertex_shader.data(),   vertex_shader.size()   * sizeof(uint32_t),
          fragment_shader.data(), fragment_shader.size() * sizeof(uint32_t),
          &locations, false);
@@ -1024,7 +1024,7 @@ bool Pass::init_pipeline()
    return true;
 }
 
-void Pass::set_pass_info(const gl_core_filter_chain_pass_info &info)
+void Pass::set_pass_info(const gl3_filter_chain_pass_info &info)
 {
    pass_info = info;
 }
@@ -1400,7 +1400,7 @@ void Pass::build_semantics(uint8_t *buffer,
          memcpy(buffer + offset,
                mvp, sizeof(float) * 16);
       else
-         gl_core_build_default_matrix(reinterpret_cast<float *>(
+         gl3_build_default_matrix(reinterpret_cast<float *>(
                   buffer + offset));
    }
 
@@ -1413,7 +1413,7 @@ void Pass::build_semantics(uint8_t *buffer,
          memcpy(push_constant_buffer.data() + offset,
                mvp, sizeof(float) * 16);
       else
-         gl_core_build_default_matrix(reinterpret_cast<float *>(
+         gl3_build_default_matrix(reinterpret_cast<float *>(
                   push_constant_buffer.data() + offset));
    }
 
@@ -1476,7 +1476,7 @@ void Pass::build_semantics(uint8_t *buffer,
 void Pass::build_commands(
       const Texture &original,
       const Texture &source,
-      const gl_core_viewport &vp,
+      const gl3_viewport &vp,
       const float *mvp)
 {
    current_viewport = vp;
@@ -1597,10 +1597,10 @@ void Pass::build_commands(
 
 }
 
-struct gl_core_filter_chain
+struct gl3_filter_chain
 {
 public:
-   gl_core_filter_chain(unsigned num_passes) { set_num_passes(num_passes); }
+   gl3_filter_chain(unsigned num_passes) { set_num_passes(num_passes); }
 
    inline void set_shader_preset(std::unique_ptr<video_shader> shader)
    {
@@ -1613,15 +1613,15 @@ public:
    }
 
    void set_pass_info(unsigned pass,
-                      const gl_core_filter_chain_pass_info &info);
+                      const gl3_filter_chain_pass_info &info);
    void set_shader(unsigned pass, GLenum stage,
                    const uint32_t *spirv, size_t spirv_words);
 
    bool init();
 
-   void set_input_texture(const gl_core_filter_chain_texture &texture);
-   void build_offscreen_passes(const gl_core_viewport &vp);
-   void build_viewport_pass(const gl_core_viewport &vp, const float *mvp);
+   void set_input_texture(const gl3_filter_chain_texture &texture);
+   void build_offscreen_passes(const gl3_viewport &vp);
+   void build_viewport_pass(const gl3_viewport &vp, const float *mvp);
    void end_frame();
 
    void set_frame_count(uint64_t count);
@@ -1629,23 +1629,23 @@ public:
    void set_frame_direction(int32_t direction);
    void set_pass_name(unsigned pass, const char *name);
 
-   void add_static_texture(std::unique_ptr<gl_core_shader::StaticTexture> texture);
+   void add_static_texture(std::unique_ptr<gl3_shader::StaticTexture> texture);
    void add_parameter(unsigned pass, unsigned parameter_index, const std::string &id);
    void set_num_passes(unsigned passes);
 
 private:
-   std::vector<std::unique_ptr<gl_core_shader::Pass>> passes;
-   std::vector<gl_core_filter_chain_pass_info> pass_info;
+   std::vector<std::unique_ptr<gl3_shader::Pass>> passes;
+   std::vector<gl3_filter_chain_pass_info> pass_info;
    std::vector<std::vector<std::function<void ()>>> deferred_calls;
-   std::unique_ptr<gl_core_shader::Framebuffer> copy_framebuffer;
-   gl_core_shader::CommonResources common;
+   std::unique_ptr<gl3_shader::Framebuffer> copy_framebuffer;
+   gl3_shader::CommonResources common;
 
-   gl_core_filter_chain_texture input_texture = {};
+   gl3_filter_chain_texture input_texture = {};
 
    bool init_history();
    bool init_feedback();
    bool init_alias();
-   std::vector<std::unique_ptr<gl_core_shader::Framebuffer>> original_history;
+   std::vector<std::unique_ptr<gl3_shader::Framebuffer>> original_history;
    bool require_clear = false;
    void clear_history_and_feedback();
    void update_feedback_info();
@@ -1653,13 +1653,13 @@ private:
 };
 
 
-void gl_core_filter_chain::update_history_info()
+void gl3_filter_chain::update_history_info()
 {
    unsigned i;
 
    for (i = 0; i < original_history.size(); i++)
    {
-      gl_core_shader::Texture *source = (gl_core_shader::Texture*)
+      gl3_shader::Texture *source = (gl3_shader::Texture*)
          &common.original_history[i];
 
       if (!source)
@@ -1674,17 +1674,17 @@ void gl_core_filter_chain::update_history_info()
    }
 }
 
-void gl_core_filter_chain::update_feedback_info()
+void gl3_filter_chain::update_feedback_info()
 {
    unsigned i;
 
    for (i = 0; i < passes.size() - 1; i++)
    {
-      gl_core_shader::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
+      gl3_shader::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
       if (!fb)
          continue;
 
-      gl_core_shader::Texture *source = (gl_core_shader::Texture*)
+      gl3_shader::Texture *source = (gl3_shader::Texture*)
          &common.framebuffer_feedback[i];
 
       if (!source)
@@ -1699,7 +1699,7 @@ void gl_core_filter_chain::update_feedback_info()
    }
 }
 
-void gl_core_filter_chain::build_offscreen_passes(const gl_core_viewport &vp)
+void gl3_filter_chain::build_offscreen_passes(const gl3_viewport &vp)
 {
    unsigned i;
 
@@ -1715,19 +1715,19 @@ void gl_core_filter_chain::build_offscreen_passes(const gl_core_viewport &vp)
    if (!common.framebuffer_feedback.empty())
       update_feedback_info();
 
-   const gl_core_shader::Texture original = {
+   const gl3_shader::Texture original = {
          input_texture,
          passes.front()->get_source_filter(),
          passes.front()->get_mip_filter(),
          passes.front()->get_address_mode(),
    };
-   gl_core_shader::Texture source = original;
+   gl3_shader::Texture source = original;
 
    for (i = 0; i < passes.size() - 1; i++)
    {
       passes[i]->build_commands(original, source, vp, nullptr);
 
-      const gl_core_shader::Framebuffer &fb   = passes[i]->get_framebuffer();
+      const gl3_shader::Framebuffer &fb   = passes[i]->get_framebuffer();
 
       source.texture.image             = fb.get_image();
       source.texture.width             = fb.get_size().width;
@@ -1740,7 +1740,7 @@ void gl_core_filter_chain::build_offscreen_passes(const gl_core_viewport &vp)
    }
 }
 
-void gl_core_filter_chain::end_frame()
+void gl3_filter_chain::end_frame()
 {
    /* If we need to keep old frames, copy it after fragment is complete.
     * TODO: We can improve pipelining by figuring out which
@@ -1749,8 +1749,8 @@ void gl_core_filter_chain::end_frame()
    if (!original_history.empty())
    {
       /* Update history */
-      std::unique_ptr<gl_core_shader::Framebuffer> tmp;
-      std::unique_ptr<gl_core_shader::Framebuffer> &back = original_history.back();
+      std::unique_ptr<gl3_shader::Framebuffer> tmp;
+      std::unique_ptr<gl3_shader::Framebuffer> &back = original_history.back();
       swap(back, tmp);
 
       if (input_texture.width      != tmp->get_size().width  ||
@@ -1760,7 +1760,7 @@ void gl_core_filter_chain::end_frame()
          tmp->set_size({ input_texture.width, input_texture.height }, input_texture.format);
 
       if (tmp->is_complete())
-         gl_core_framebuffer_copy(
+         gl3_framebuffer_copy(
                tmp->get_framebuffer(),
                common.quad_program,
                common.quad_vbo,
@@ -1774,8 +1774,8 @@ void gl_core_filter_chain::end_frame()
    }
 }
 
-void gl_core_filter_chain::build_viewport_pass(
-      const gl_core_viewport &vp, const float *mvp)
+void gl3_filter_chain::build_viewport_pass(
+      const gl3_viewport &vp, const float *mvp)
 {
    unsigned i;
    /* First frame, make sure our history and 
@@ -1786,8 +1786,8 @@ void gl_core_filter_chain::build_viewport_pass(
       require_clear = false;
    }
 
-   gl_core_shader::Texture source;
-   const gl_core_shader::Texture original = {
+   gl3_shader::Texture source;
+   const gl3_shader::Texture original = {
          input_texture,
          passes.front()->get_source_filter(),
          passes.front()->get_mip_filter(),
@@ -1805,7 +1805,7 @@ void gl_core_filter_chain::build_viewport_pass(
    }
    else
    {
-      const gl_core_shader::Framebuffer &fb = passes[passes.size() - 2]
+      const gl3_shader::Framebuffer &fb = passes[passes.size() - 2]
          ->get_framebuffer();
       source.texture.image           = fb.get_image();
       source.texture.width           = fb.get_size().width;
@@ -1820,13 +1820,13 @@ void gl_core_filter_chain::build_viewport_pass(
    /* For feedback FBOs, swap current and previous. */
    for (i = 0; i < passes.size(); i++)
    {
-      gl_core_shader::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
+      gl3_shader::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
       if (fb)
          passes[i]->end_frame();
    }
 }
 
-bool gl_core_filter_chain::init_history()
+bool gl3_filter_chain::init_history()
 {
    unsigned i;
    size_t required_images = 0;
@@ -1853,7 +1853,7 @@ bool gl_core_filter_chain::init_history()
    common.original_history.resize(required_images);
 
    for (i = 0; i < required_images; i++)
-      original_history.emplace_back(new gl_core_shader::Framebuffer(0, 1));
+      original_history.emplace_back(new gl3_shader::Framebuffer(0, 1));
 
    RARCH_LOG("[GLCore]: Using history of %u frames.\n", unsigned(required_images));
 
@@ -1865,7 +1865,7 @@ bool gl_core_filter_chain::init_history()
    return true;
 }
 
-bool gl_core_filter_chain::init_feedback()
+bool gl3_filter_chain::init_feedback()
 {
    unsigned i;
    bool use_feedbacks = false;
@@ -1907,7 +1907,7 @@ bool gl_core_filter_chain::init_feedback()
    return true;
 }
 
-bool gl_core_filter_chain::init_alias()
+bool gl3_filter_chain::init_alias()
 {
    unsigned i, j;
    common.texture_semantic_map.clear();
@@ -1958,14 +1958,14 @@ bool gl_core_filter_chain::init_alias()
    return true;
 }
 
-void gl_core_filter_chain::set_pass_info(unsigned pass, const gl_core_filter_chain_pass_info &info)
+void gl3_filter_chain::set_pass_info(unsigned pass, const gl3_filter_chain_pass_info &info)
 {
    if (pass >= pass_info.size())
       pass_info.resize(pass + 1);
    pass_info[pass] = info;
 }
 
-void gl_core_filter_chain::set_num_passes(unsigned num_passes)
+void gl3_filter_chain::set_num_passes(unsigned num_passes)
 {
    unsigned i;
 
@@ -1974,24 +1974,24 @@ void gl_core_filter_chain::set_num_passes(unsigned num_passes)
 
    for (i = 0; i < num_passes; i++)
    {
-      passes.emplace_back(new gl_core_shader::Pass(i + 1 == num_passes));
+      passes.emplace_back(new gl3_shader::Pass(i + 1 == num_passes));
       passes.back()->set_common_resources(&common);
       passes.back()->set_pass_number(i);
    }
 }
 
-void gl_core_filter_chain::set_shader(unsigned pass, GLenum stage, const uint32_t *spirv, size_t spirv_words)
+void gl3_filter_chain::set_shader(unsigned pass, GLenum stage, const uint32_t *spirv, size_t spirv_words)
 {
    passes[pass]->set_shader(stage, spirv, spirv_words);
 }
 
-void gl_core_filter_chain::add_parameter(unsigned pass,
+void gl3_filter_chain::add_parameter(unsigned pass,
       unsigned index, const std::string &id)
 {
    passes[pass]->add_parameter(index, id);
 }
 
-bool gl_core_filter_chain::init()
+bool gl3_filter_chain::init()
 {
    unsigned i;
 
@@ -2019,24 +2019,24 @@ bool gl_core_filter_chain::init()
    return true;
 }
 
-void gl_core_filter_chain::clear_history_and_feedback()
+void gl3_filter_chain::clear_history_and_feedback()
 {
    unsigned i;
    for (i = 0; i < original_history.size(); i++)
    {
       if (original_history[i]->is_complete())
-         gl_core_framebuffer_clear(original_history[i]->get_framebuffer());
+         gl3_framebuffer_clear(original_history[i]->get_framebuffer());
    }
    for (i = 0; i < passes.size(); i++)
    {
-      gl_core_shader::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
+      gl3_shader::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
       if (fb && fb->is_complete())
-         gl_core_framebuffer_clear(fb->get_framebuffer());
+         gl3_framebuffer_clear(fb->get_framebuffer());
    }
 }
 
-void gl_core_filter_chain::set_input_texture(
-      const gl_core_filter_chain_texture &texture)
+void gl3_filter_chain::set_input_texture(
+      const gl3_filter_chain_texture &texture)
 {
    input_texture = texture;
 
@@ -2046,7 +2046,7 @@ void gl_core_filter_chain::set_input_texture(
        input_texture.padded_height != input_texture.height)
    {
       if (!copy_framebuffer)
-         copy_framebuffer.reset(new gl_core_shader::Framebuffer(texture.format, 1));
+         copy_framebuffer.reset(new gl3_shader::Framebuffer(texture.format, 1));
 
       if (input_texture.width   != copy_framebuffer->get_size().width  ||
           input_texture.height  != copy_framebuffer->get_size().height ||
@@ -2055,7 +2055,7 @@ void gl_core_filter_chain::set_input_texture(
          copy_framebuffer->set_size({ input_texture.width, input_texture.height }, input_texture.format);
 
       if (copy_framebuffer->is_complete())
-         gl_core_framebuffer_copy_partial(
+         gl3_framebuffer_copy_partial(
                copy_framebuffer->get_framebuffer(),
                common.quad_program,
                common.quad_loc.flat_ubo_vertex,
@@ -2069,37 +2069,37 @@ void gl_core_filter_chain::set_input_texture(
    }
 }
 
-void gl_core_filter_chain::add_static_texture(std::unique_ptr<gl_core_shader::StaticTexture> texture)
+void gl3_filter_chain::add_static_texture(std::unique_ptr<gl3_shader::StaticTexture> texture)
 {
    common.luts.push_back(std::move(texture));
 }
 
-void gl_core_filter_chain::set_frame_count(uint64_t count)
+void gl3_filter_chain::set_frame_count(uint64_t count)
 {
    unsigned i;
    for (i = 0; i < passes.size(); i++)
       passes[i]->set_frame_count(count);
 }
 
-void gl_core_filter_chain::set_frame_count_period(unsigned pass, unsigned period)
+void gl3_filter_chain::set_frame_count_period(unsigned pass, unsigned period)
 {
    passes[pass]->set_frame_count_period(period);
 }
 
-void gl_core_filter_chain::set_frame_direction(int32_t direction)
+void gl3_filter_chain::set_frame_direction(int32_t direction)
 {
    unsigned i;
    for (i = 0; i < passes.size(); i++)
       passes[i]->set_frame_direction(direction);
 }
 
-void gl_core_filter_chain::set_pass_name(unsigned pass, const char *name)
+void gl3_filter_chain::set_pass_name(unsigned pass, const char *name)
 {
    passes[pass]->set_name(name);
 }
 
-static std::unique_ptr<gl_core_shader::StaticTexture> gl_core_filter_chain_load_lut(
-      gl_core_filter_chain *chain,
+static std::unique_ptr<gl3_shader::StaticTexture> gl3_filter_chain_load_lut(
+      gl3_filter_chain *chain,
       const video_shader_lut *shader)
 {
    texture_image image;
@@ -2134,21 +2134,21 @@ static std::unique_ptr<gl_core_shader::StaticTexture> gl_core_filter_chain_load_
    if (image.pixels)
       image_texture_free(&image);
 
-   return std::unique_ptr<gl_core_shader::StaticTexture>(new gl_core_shader::StaticTexture(shader->id,
+   return std::unique_ptr<gl3_shader::StaticTexture>(new gl3_shader::StaticTexture(shader->id,
             tex, image.width, image.height,
             shader->filter != RARCH_FILTER_NEAREST,
             levels > 1,
             rarch_wrap_to_address(shader->wrap)));
 }
 
-static bool gl_core_filter_chain_load_luts(
-      gl_core_filter_chain *chain,
+static bool gl3_filter_chain_load_luts(
+      gl3_filter_chain *chain,
       video_shader *shader)
 {
    unsigned i;
    for (i = 0; i < shader->luts; i++)
    {
-      std::unique_ptr<gl_core_shader::StaticTexture> image = gl_core_filter_chain_load_lut(chain, &shader->lut[i]);
+      std::unique_ptr<gl3_shader::StaticTexture> image = gl3_filter_chain_load_lut(chain, &shader->lut[i]);
       if (!image)
       {
          RARCH_ERR("[GLCore]: Failed to load LUT \"%s\".\n", shader->lut[i].path);
@@ -2161,12 +2161,12 @@ static bool gl_core_filter_chain_load_luts(
    return true;
 }
 
-gl_core_filter_chain_t *gl_core_filter_chain_create_default(
+gl3_filter_chain_t *gl3_filter_chain_create_default(
       glslang_filter_chain_filter filter)
 {
-   struct gl_core_filter_chain_pass_info pass_info;
+   struct gl3_filter_chain_pass_info pass_info;
 
-   std::unique_ptr<gl_core_filter_chain> chain{ new gl_core_filter_chain(1) };
+   std::unique_ptr<gl3_filter_chain> chain{ new gl3_filter_chain(1) };
    if (!chain)
       return nullptr;
 
@@ -2183,11 +2183,11 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_default(
    chain->set_pass_info(0, pass_info);
 
    chain->set_shader(0, GL_VERTEX_SHADER,
-         gl_core_shader::opaque_vert,
-         sizeof(gl_core_shader::opaque_vert) / sizeof(uint32_t));
+         gl3_shader::opaque_vert,
+         sizeof(gl3_shader::opaque_vert) / sizeof(uint32_t));
    chain->set_shader(0, GL_FRAGMENT_SHADER,
-         gl_core_shader::opaque_frag,
-         sizeof(gl_core_shader::opaque_frag) / sizeof(uint32_t));
+         gl3_shader::opaque_frag,
+         sizeof(gl3_shader::opaque_frag) / sizeof(uint32_t));
 
    if (!chain->init())
       return nullptr;
@@ -2195,7 +2195,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_default(
    return chain.release();
 }
 
-gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
+gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       const char *path, glslang_filter_chain_filter filter)
 {
    unsigned i;
@@ -2208,12 +2208,12 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
 
    bool last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.valid;
 
-   std::unique_ptr<gl_core_filter_chain> chain{ new gl_core_filter_chain(shader->passes + (last_pass_is_fbo ? 1 : 0)) };
+   std::unique_ptr<gl3_filter_chain> chain{ new gl3_filter_chain(shader->passes + (last_pass_is_fbo ? 1 : 0)) };
    if (!chain)
       return nullptr;
 
    if (      shader->luts 
-         && !gl_core_filter_chain_load_luts(chain.get(), shader.get()))
+         && !gl3_filter_chain_load_luts(chain.get(), shader.get()))
       return nullptr;
 
    shader->num_parameters = 0;
@@ -2221,7 +2221,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
    for (i = 0; i < shader->passes; i++)
    {
       glslang_output output;
-      struct gl_core_filter_chain_pass_info pass_info;
+      struct gl3_filter_chain_pass_info pass_info;
       const video_shader_pass *pass      = &shader->pass[i];
       const video_shader_pass *next_pass =
          i + 1 < shader->passes ? &shader->pass[i + 1] : nullptr;
@@ -2361,7 +2361,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
          }
          else
          {
-            pass_info.rt_format = gl_core_shader::convert_glslang_format(output.meta.rt_format);
+            pass_info.rt_format = gl3_shader::convert_glslang_format(output.meta.rt_format);
             RARCH_LOG("[slang]: Using render target format %s for pass output #%u.\n",
                   glslang_format_to_string(output.meta.rt_format), i);
          }
@@ -2375,7 +2375,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
          else if (pass->fbo.fp_fbo)
             output.meta.rt_format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
 
-         pass_info.rt_format = gl_core_shader::convert_glslang_format(output.meta.rt_format);
+         pass_info.rt_format = gl3_shader::convert_glslang_format(output.meta.rt_format);
          RARCH_LOG("[slang]: Using render target format %s for pass output #%u.\n",
                glslang_format_to_string(output.meta.rt_format), i);
 
@@ -2421,7 +2421,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
 
    if (last_pass_is_fbo)
    {
-      struct gl_core_filter_chain_pass_info pass_info;
+      struct gl3_filter_chain_pass_info pass_info;
 
       pass_info.scale_type_x  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
       pass_info.scale_type_y  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
@@ -2440,13 +2440,13 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
 
       chain->set_shader(shader->passes,
             GL_VERTEX_SHADER,
-            gl_core_shader::opaque_vert,
-            sizeof(gl_core_shader::opaque_vert) / sizeof(uint32_t));
+            gl3_shader::opaque_vert,
+            sizeof(gl3_shader::opaque_vert) / sizeof(uint32_t));
 
       chain->set_shader(shader->passes,
             GL_FRAGMENT_SHADER,
-            gl_core_shader::opaque_frag,
-            sizeof(gl_core_shader::opaque_frag) / sizeof(uint32_t));
+            gl3_shader::opaque_frag,
+            sizeof(gl3_shader::opaque_frag) / sizeof(uint32_t));
    }
 
    chain->set_shader_preset(std::move(shader));
@@ -2457,12 +2457,12 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
    return chain.release();
 }
 
-struct video_shader *gl_core_filter_chain_get_preset(
-      gl_core_filter_chain_t *chain) { return chain->get_shader_preset(); }
-void gl_core_filter_chain_free(gl_core_filter_chain_t *chain) { delete chain; }
+struct video_shader *gl3_filter_chain_get_preset(
+      gl3_filter_chain_t *chain) { return chain->get_shader_preset(); }
+void gl3_filter_chain_free(gl3_filter_chain_t *chain) { delete chain; }
 
-void gl_core_filter_chain_set_shader(
-      gl_core_filter_chain_t *chain,
+void gl3_filter_chain_set_shader(
+      gl3_filter_chain_t *chain,
       unsigned pass,
       GLenum shader_stage,
       const uint32_t *spirv,
@@ -2471,71 +2471,71 @@ void gl_core_filter_chain_set_shader(
    chain->set_shader(pass, shader_stage, spirv, spirv_words);
 }
 
-void gl_core_filter_chain_set_pass_info(
-      gl_core_filter_chain_t *chain,
+void gl3_filter_chain_set_pass_info(
+      gl3_filter_chain_t *chain,
       unsigned pass,
-      const struct gl_core_filter_chain_pass_info *info)
+      const struct gl3_filter_chain_pass_info *info)
 {
    chain->set_pass_info(pass, *info);
 }
 
-bool gl_core_filter_chain_init(gl_core_filter_chain_t *chain)
+bool gl3_filter_chain_init(gl3_filter_chain_t *chain)
 {
    return chain->init();
 }
 
-void gl_core_filter_chain_set_input_texture(
-      gl_core_filter_chain_t *chain,
-      const struct gl_core_filter_chain_texture *texture)
+void gl3_filter_chain_set_input_texture(
+      gl3_filter_chain_t *chain,
+      const struct gl3_filter_chain_texture *texture)
 {
    chain->set_input_texture(*texture);
 }
 
-void gl_core_filter_chain_set_frame_count(
-      gl_core_filter_chain_t *chain,
+void gl3_filter_chain_set_frame_count(
+      gl3_filter_chain_t *chain,
       uint64_t count)
 {
    chain->set_frame_count(count);
 }
 
-void gl_core_filter_chain_set_frame_direction(
-      gl_core_filter_chain_t *chain,
+void gl3_filter_chain_set_frame_direction(
+      gl3_filter_chain_t *chain,
       int32_t direction)
 {
    chain->set_frame_direction(direction);
 }
 
-void gl_core_filter_chain_set_frame_count_period(
-      gl_core_filter_chain_t *chain,
+void gl3_filter_chain_set_frame_count_period(
+      gl3_filter_chain_t *chain,
       unsigned pass,
       unsigned period)
 {
    chain->set_frame_count_period(pass, period);
 }
 
-void gl_core_filter_chain_set_pass_name(
-      gl_core_filter_chain_t *chain,
+void gl3_filter_chain_set_pass_name(
+      gl3_filter_chain_t *chain,
       unsigned pass,
       const char *name)
 {
    chain->set_pass_name(pass, name);
 }
 
-void gl_core_filter_chain_build_offscreen_passes(
-      gl_core_filter_chain_t *chain,
-      const gl_core_viewport *vp)
+void gl3_filter_chain_build_offscreen_passes(
+      gl3_filter_chain_t *chain,
+      const gl3_viewport *vp)
 {
    chain->build_offscreen_passes(*vp);
 }
 
-void gl_core_filter_chain_build_viewport_pass(
-      gl_core_filter_chain_t *chain,
-      const gl_core_viewport *vp, const float *mvp)
+void gl3_filter_chain_build_viewport_pass(
+      gl3_filter_chain_t *chain,
+      const gl3_viewport *vp, const float *mvp)
 {
    chain->build_viewport_pass(*vp, mvp);
 }
 
-void gl_core_filter_chain_end_frame(gl_core_filter_chain_t *chain)
+void gl3_filter_chain_end_frame(gl3_filter_chain_t *chain)
 {
    chain->end_frame();
 }

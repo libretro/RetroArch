@@ -10,6 +10,7 @@
    "editor.renderWhitespace": "all",
    "editor.insertSpaces": true,
    "editor.formatOnSave": false,
+   "editor.ruler": [80],
    "files.associations": {
       "*.h": "c",
       "*.in": "c",

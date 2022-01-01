@@ -28,6 +28,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
    "දෘශ්‍යක"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TAB,
+   "අන්තර්ගතය ආයාතකරන්න"
+   )
 
 /* Main Menu */
 
@@ -35,6 +39,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "අන්තර්ගතය පූරණය"
    )
+#ifdef HAVE_LAKKA
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
    "අන්තර්ගතය ආයාතකරන්න"
@@ -68,6 +74,18 @@ MSG_HASH(
 
 /* Main Menu > Load Content > Playlists */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
+   "ප්‍රියතමයන්"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
+   "සංගීතය"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
+   "දෘශ්‍යක"
+   )
 
 /* Main Menu > Online Updater */
 
@@ -105,7 +123,7 @@ MSG_HASH(
 /* Settings > Video */
 
 #if defined(DINGUX)
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 #endif
 #endif
 
@@ -209,6 +227,7 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay */
 
+
 #if defined(ANDROID)
 #endif
 
@@ -223,6 +242,12 @@ MSG_HASH(
 
 /* Settings > User Interface > Menu Item Visibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
+   "සැකසුම්"
+   )
+#ifdef HAVE_LAKKA
+#endif
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
@@ -252,6 +277,10 @@ MSG_HASH(
 
 /* Settings > Playlists */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
+   "ඉතිහාසය"
+   )
 
 /* Settings > Playlists > Playlist Management */
 
@@ -304,6 +333,10 @@ MSG_HASH(
 
 /* Playlist > Playlist Item */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INFORMATION,
+   "තොරතුර"
+   )
 
 /* Playlist Item > Set Core Association */
 
@@ -398,12 +431,28 @@ MSG_HASH(
 
 /* Qt (Desktop Menu) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
+   "සැකසුම්"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
+   "තොරතුර"
+   )
 
 /* Unsorted */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
+   "ඉතිහාසය"
+   )
 
 /* Unused (Only Exist in Translation Files) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP,
+   "උදව්"
+   )
 
 /* Unused (Needs Confirmation) */
 

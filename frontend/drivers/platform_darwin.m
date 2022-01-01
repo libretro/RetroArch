@@ -468,9 +468,6 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
     if (path_is_valid(assets_zip_path))
     {
        settings_t *settings = config_get_ptr();
-
-       RARCH_LOG("Assets ZIP found at [%s], setting up bundle assets extraction...\n", assets_zip_path);
-       RARCH_LOG("Extraction dir will be: %s\n", home_dir_buf);
        configuration_set_string(settings,
              settings->arrays.bundle_assets_src,
              assets_zip_path);
@@ -493,14 +490,12 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
 
    path_mkdir(bundle_path_buf);
 
-   if (access(bundle_path_buf, 0755) != 0)
-      RARCH_ERR("Failed to create or access base directory: %s\n", bundle_path_buf);
+   if (access(bundle_path_buf, 0755) != 0) { }
    else
    {
       path_mkdir(g_defaults.dirs[DEFAULT_DIR_SYSTEM]);
 
-      if (access(g_defaults.dirs[DEFAULT_DIR_SYSTEM], 0755) != 0)
-         RARCH_ERR("Failed to create or access system directory: %s.\n", g_defaults.dirs[DEFAULT_DIR_SYSTEM]);
+      if (access(g_defaults.dirs[DEFAULT_DIR_SYSTEM], 0755) != 0) { }
    }
 
    CFRelease(bundle_path);
@@ -936,11 +931,8 @@ static bool accessibility_speak_macos(int speed,
    }
 
    pid = fork();
-   if (pid < 0)
-   {
-      /* error */
-      RARCH_LOG("ERROR: could not fork for say command.\n");
-   }
+   /* Could not fork for say command */
+   if (pid < 0) { }
    else if (pid > 0)
    {
       /* parent process */
@@ -1016,6 +1008,7 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    NULL,                            /* is_narrator_running */
    NULL,                            /* accessibility_speak */
 #endif
+   NULL,                            /* set_gamemode        */
    "darwin",                        /* ident               */
    NULL                             /* get_video_driver    */
 };

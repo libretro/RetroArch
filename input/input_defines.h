@@ -99,9 +99,13 @@ enum
    RARCH_MUTE,
    RARCH_OSK,
    RARCH_FPS_TOGGLE,
+   RARCH_STATISTICS_TOGGLE,
+   RARCH_NETPLAY_PING_TOGGLE,
    RARCH_SEND_DEBUG_INFO,
    RARCH_NETPLAY_HOST_TOGGLE,
    RARCH_NETPLAY_GAME_WATCH,
+   RARCH_NETPLAY_PLAYER_CHAT,
+   RARCH_NETPLAY_FADE_CHAT_TOGGLE,
    RARCH_ENABLE_HOTKEY,
    RARCH_VOLUME_UP,
    RARCH_VOLUME_DOWN,
@@ -215,6 +219,12 @@ enum input_turbo_default_button
 #define HAT_MASK           (HAT_UP_MASK | HAT_DOWN_MASK | HAT_LEFT_MASK | HAT_RIGHT_MASK)
 #define GET_HAT_DIR(x)     (x & HAT_MASK)
 #define GET_HAT(x)         (x & (~HAT_MASK))
+
+#ifdef HAVE_BSV_MOVIE
+#define BSV_MOVIE_IS_PLAYBACK_ON() (input_st->bsv_movie_state_handle && input_st->bsv_movie_state.movie_playback)
+#define BSV_MOVIE_IS_PLAYBACK_OFF() (input_st->bsv_movie_state_handle && \
+!input_st->bsv_movie_state.movie_playback)
+#endif
 
 RETRO_END_DECLS
 

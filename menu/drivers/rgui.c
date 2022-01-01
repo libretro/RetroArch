@@ -81,7 +81,7 @@
 #define RGUI_MAX_FB_WIDTH 426
 
 #if defined(DINGUX)
-#if defined(RS90)
+#if defined(RS90) && !defined(MIYOO)
 /* The RS-90 uses a fixed framebuffer size
  * of 240x160 */
 #define RGUI_DINGUX_ASPECT_RATIO RGUI_ASPECT_RATIO_3_2
@@ -1611,6 +1611,7 @@ static bool rgui_fonts_init(rgui_t *rgui)
       case RETRO_LANGUAGE_TURKISH:
       case RETRO_LANGUAGE_SLOVAK:
       case RETRO_LANGUAGE_ASTURIAN:
+      case RETRO_LANGUAGE_FINNISH:
          /* We have at least partial support for
           * these languages, but extended ASCII
           * is required */
@@ -4131,8 +4132,10 @@ static void rgui_render_osk(
    unsigned osk_width, osk_height;
    unsigned osk_x, osk_y;
    
-   int osk_ptr              = input_event_get_osk_ptr();
-   char **osk_grid          = input_event_get_osk_grid();
+   input_driver_state_t 
+      *input_st             = input_state_get_ptr();
+   int osk_ptr              = input_st->osk_ptr;
+   char **osk_grid          = input_st->osk_grid;
    const char *input_str    = menu_input_dialog_get_buffer();
    const char *input_label  = menu_input_dialog_get_label_buffer();
    

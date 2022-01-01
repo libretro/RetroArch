@@ -32,12 +32,21 @@
 #include "../../config.def.h"
 #endif
 
-#if defined(RS90) || defined (RETROFW)
-   #define SDL_DINGUX_HAS_ANALOG      0
-   #define SDL_DINGUX_HAS_MENU_TOGGLE 0
-#else
-   #define SDL_DINGUX_HAS_ANALOG      1
-   #define SDL_DINGUX_HAS_MENU_TOGGLE 1  
+/* RS-90 and RetroFW devices:
+ * - Analog input: No
+ * - Menu button:  No
+ * Miyoo devices:
+ * - Analog input: No
+ * - Menu button:  Yes
+ * All other OpenDingux devices:
+ * - Analog input: Yes
+ * - Menu button:  Yes
+ */
+#if !(defined(RS90) || defined(RETROFW))
+#if !defined(MIYOO)
+#define SDL_DINGUX_HAS_ANALOG      1
+#endif
+#define SDL_DINGUX_HAS_MENU_TOGGLE 1
 #endif
 
 /* Simple joypad driver designed to rationalise
@@ -45,6 +54,62 @@
  * of OpenDingux devices */
 
 #define SDL_DINGUX_JOYPAD_NAME "Dingux Gamepad"
+
+/* All digital inputs map to keyboard keys:
+ * - X:      SDLK_SPACE
+ * - A:      SDLK_LCTRL
+ * - B:      SDLK_LALT
+ * - Y:      SDLK_LSHIFT
+ * - L:      SDLK_TAB
+ * - R:      SDLK_BACKSPACE
+ * - L2:     SDLK_PAGEUP
+ * - R2:     SDLK_PAGEDOWN
+ * - Select: SDLK_ESCAPE
+ * - Start:  SDLK_RETURN
+ * - L3:     SDLK_KP_DIVIDE
+ * - R3:     SDLK_KP_PERIOD
+ * - Up:     SDLK_UP
+ * - Right:  SDLK_RIGHT
+ * - Down:   SDLK_DOWN
+ * - Left:   SDLK_LEFT
+ * - Menu:   SDLK_HOME
+ *
+ * Miyoo devices (Pocketgo, Powkiddy V90 & Q90)
+ * have the following alternate mappings:
+ * - X:      SDLK_LSHIFT
+ * - A:      SDLK_LALT
+ * - B:      SDLK_LCTRL
+ * - Y:      SDLK_SPACE
+ * - Menu:   SDLK_RCTRL
+ */
+#if defined(MIYOO)
+#define SDL_DINGUX_SDLK_X      SDLK_LSHIFT
+#define SDL_DINGUX_SDLK_A      SDLK_LALT
+#define SDL_DINGUX_SDLK_B      SDLK_LCTRL
+#define SDL_DINGUX_SDLK_Y      SDLK_SPACE
+#else
+#define SDL_DINGUX_SDLK_X      SDLK_SPACE
+#define SDL_DINGUX_SDLK_A      SDLK_LCTRL
+#define SDL_DINGUX_SDLK_B      SDLK_LALT
+#define SDL_DINGUX_SDLK_Y      SDLK_LSHIFT
+#endif
+#define SDL_DINGUX_SDLK_L      SDLK_TAB
+#define SDL_DINGUX_SDLK_R      SDLK_BACKSPACE
+#define SDL_DINGUX_SDLK_L2     SDLK_PAGEUP
+#define SDL_DINGUX_SDLK_R2     SDLK_PAGEDOWN
+#define SDL_DINGUX_SDLK_SELECT SDLK_ESCAPE
+#define SDL_DINGUX_SDLK_START  SDLK_RETURN
+#define SDL_DINGUX_SDLK_L3     SDLK_KP_DIVIDE
+#define SDL_DINGUX_SDLK_R3     SDLK_KP_PERIOD
+#define SDL_DINGUX_SDLK_UP     SDLK_UP
+#define SDL_DINGUX_SDLK_RIGHT  SDLK_RIGHT
+#define SDL_DINGUX_SDLK_DOWN   SDLK_DOWN
+#define SDL_DINGUX_SDLK_LEFT   SDLK_LEFT
+#if defined(MIYOO)
+#define SDL_DINGUX_SDLK_MENU   SDLK_RCTRL
+#else
+#define SDL_DINGUX_SDLK_MENU   SDLK_HOME
+#endif
 
 #if defined(HAVE_LIBSHAKE)
 /* 5 ms period == 200 Hz
@@ -549,25 +614,7 @@ static void sdl_dingux_joypad_poll(void)
    }
 #endif
 
-   /* All digital inputs map to keyboard keys
-    * - X:      SDLK_SPACE
-    * - A:      SDLK_LCTRL
-    * - B:      SDLK_LALT
-    * - Y:      SDLK_LSHIFT
-    * - L:      SDLK_TAB
-    * - R:      SDLK_BACKSPACE
-    * - L2:     SDLK_PAGEUP
-    * - R2:     SDLK_PAGEDOWN
-    * - Select: SDLK_ESCAPE
-    * - Start:  SDLK_RETURN
-    * - L3:     SDLK_KP_DIVIDE
-    * - R3:     SDLK_KP_PERIOD
-    * - Up:     SDLK_UP
-    * - Right:  SDLK_RIGHT
-    * - Down:   SDLK_DOWN
-    * - Left:   SDLK_LEFT
-    * - Menu:   SDLK_HOME
-    */
+   /* All digital inputs map to keyboard keys */
 	while (SDL_PollEvent(&event))
 	{
 		switch (event.type)
@@ -575,56 +622,56 @@ static void sdl_dingux_joypad_poll(void)
 			case SDL_KEYDOWN:
             switch (event.key.keysym.sym)
             {
-               case SDLK_SPACE:
+               case SDL_DINGUX_SDLK_X:
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_X);
                   break;
-               case SDLK_LCTRL:
+               case SDL_DINGUX_SDLK_A:
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_A);
                   break;
-               case SDLK_LALT:
+               case SDL_DINGUX_SDLK_B:
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_B);
                   break;
-               case SDLK_LSHIFT:
+               case SDL_DINGUX_SDLK_Y:
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_Y);
                   break;
-               case SDLK_TAB:
+               case SDL_DINGUX_SDLK_L:
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_L);
                   break;
-               case SDLK_BACKSPACE:
+               case SDL_DINGUX_SDLK_R:
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_R);
                   break;
-               case SDLK_PAGEUP:
+               case SDL_DINGUX_SDLK_L2:
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_L2);
                   break;
-               case SDLK_PAGEDOWN:
+               case SDL_DINGUX_SDLK_R2:
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_R2);
                   break;
-               case SDLK_ESCAPE:
+               case SDL_DINGUX_SDLK_SELECT:
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_SELECT);
                   break;
-               case SDLK_RETURN:
+               case SDL_DINGUX_SDLK_START:
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_START);
                   break;
-               case SDLK_KP_DIVIDE:
+               case SDL_DINGUX_SDLK_L3:
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_L3);
                   break;
-               case SDLK_KP_PERIOD:
+               case SDL_DINGUX_SDLK_R3:
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_R3);
                   break;
-               case SDLK_UP:
+               case SDL_DINGUX_SDLK_UP:
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_UP);
                   break;
-               case SDLK_RIGHT:
+               case SDL_DINGUX_SDLK_RIGHT:
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_RIGHT);
                   break;
-               case SDLK_DOWN:
+               case SDL_DINGUX_SDLK_DOWN:
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_DOWN);
                   break;
-               case SDLK_LEFT:
+               case SDL_DINGUX_SDLK_LEFT:
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_LEFT);
                   break;
 #if defined(SDL_DINGUX_HAS_MENU_TOGGLE)
-               case SDLK_HOME:
+               case SDL_DINGUX_SDLK_MENU:
                   BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
                   joypad->menu_toggle = true;
                   break;
@@ -636,52 +683,52 @@ static void sdl_dingux_joypad_poll(void)
 			case SDL_KEYUP:
             switch (event.key.keysym.sym)
             {
-               case SDLK_SPACE:
+               case SDL_DINGUX_SDLK_X:
                   BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_X);
                   break;
-               case SDLK_LCTRL:
+               case SDL_DINGUX_SDLK_A:
                   BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_A);
                   break;
-               case SDLK_LALT:
+               case SDL_DINGUX_SDLK_B:
                   BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_B);
                   break;
-               case SDLK_LSHIFT:
+               case SDL_DINGUX_SDLK_Y:
                   BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_Y);
                   break;
-               case SDLK_TAB:
+               case SDL_DINGUX_SDLK_L:
                   BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_L);
                   break;
-               case SDLK_BACKSPACE:
+               case SDL_DINGUX_SDLK_R:
                   BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_R);
                   break;
-               case SDLK_PAGEUP:
+               case SDL_DINGUX_SDLK_L2:
                   BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_L2);
                   break;
-               case SDLK_PAGEDOWN:
+               case SDL_DINGUX_SDLK_R2:
                   BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_R2);
                   break;
-               case SDLK_ESCAPE:
+               case SDL_DINGUX_SDLK_SELECT:
                   BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_SELECT);
                   break;
-               case SDLK_RETURN:
+               case SDL_DINGUX_SDLK_START:
                   BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_START);
                   break;
-               case SDLK_KP_DIVIDE:
+               case SDL_DINGUX_SDLK_L3:
                   BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_L3);
                   break;
-               case SDLK_KP_PERIOD:
+               case SDL_DINGUX_SDLK_R3:
                   BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_R3);
                   break;
-               case SDLK_UP:
+               case SDL_DINGUX_SDLK_UP:
                   BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_UP);
                   break;
-               case SDLK_RIGHT:
+               case SDL_DINGUX_SDLK_RIGHT:
                   BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_RIGHT);
                   break;
-               case SDLK_DOWN:
+               case SDL_DINGUX_SDLK_DOWN:
                   BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_DOWN);
                   break;
-               case SDLK_LEFT:
+               case SDL_DINGUX_SDLK_LEFT:
                   BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_LEFT);
                   break;
                default:

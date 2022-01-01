@@ -173,6 +173,8 @@
 
 #define DEFAULT_USER_LANGUAGE 0
 
+#define DEFAULT_GAMEMODE_ENABLE true
+
 #if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID) && !defined(HAVE_LAKKA)) || (defined(__MACH__) && !defined(IOS)) || defined(EMSCRIPTEN)
 #define DEFAULT_MOUSE_ENABLE true
 #else
@@ -280,6 +282,12 @@
 #define DEFAULT_FULLSCREEN_Y 0
 #endif
 
+#if defined(HAVE_WINDOW_OFFSET)
+/* Screen offsets to center content in CTRs */
+#define DEFAULT_WINDOW_OFFSET_X 0
+#define DEFAULT_WINDOW_OFFSET_Y 0
+#endif
+
 /* Number of threads to use for video recording */
 #define DEFAULT_VIDEO_RECORD_THREADS 2
 
@@ -338,6 +346,7 @@
  */
 #define DEFAULT_FRAME_DELAY 0
 #define MAXIMUM_FRAME_DELAY 19
+#define DEFAULT_FRAME_DELAY_AUTO false
 
 /* Inserts black frame(s) inbetween frames.
  * Useful for Higher Hz monitors (set to multiples of 60 Hz) who want to play 60 Hz 
@@ -473,7 +482,7 @@
  * in Dingux devices */
 #define DEFAULT_DINGUX_REFRESH_RATE DINGUX_REFRESH_RATE_60HZ
 #endif
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 /* Sets image filtering method on the RS90
  * when integer scaling is disabled */
 #define DEFAULT_DINGUX_RS90_SOFTFILTER_TYPE DINGUX_RS90_SOFTFILTER_POINT
@@ -487,6 +496,8 @@
 
 /* Initialise file browser with the last used start directory */
 #define DEFAULT_USE_LAST_START_DIRECTORY false
+
+#define DEFAULT_OVERLAY_BEHIND_MENU false
 
 #define DEFAULT_OVERLAY_HIDE_IN_MENU true
 
@@ -639,6 +650,9 @@ static const bool menu_show_load_content       = true;
 #ifdef HAVE_CDROM
 static const bool menu_show_load_disc          = true;
 static const bool menu_show_dump_disc          = true;
+#ifdef HAVE_LAKKA
+static const bool menu_show_eject_disc         = true;
+#endif /* HAVE_LAKKA */
 #endif
 static const bool menu_show_information        = true;
 static const bool menu_show_configurations     = true;
@@ -800,7 +814,7 @@ static const bool default_savefiles_in_content_dir = false;
 static const bool default_systemfiles_in_content_dir = false;
 static const bool default_screenshots_in_content_dir = false;
 
-#if defined(RS90) || defined(RETROFW)
+#if defined(RS90) || defined(RETROFW) || defined(MIYOO)
 #define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_COMBO_START_SELECT
 #elif defined(_XBOX1) || defined(__PS3__) || defined(_XBOX360) || defined(DINGUX)
 #define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_COMBO_L3_R3
@@ -835,12 +849,16 @@ static const unsigned input_backtouch_toggle       = false;
 
 #define DEFAULT_OVERLAY_SHOW_INPUTS_PORT 0
 
-#define DEFAULT_ALL_USERS_CONTROL_MENU false
-
 #if defined(ANDROID) || defined(_WIN32)
 #define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS true
 #else
 #define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS false
+#endif
+
+#if defined(WIIU)
+#define DEFAULT_ALL_USERS_CONTROL_MENU true
+#else
+#define DEFAULT_ALL_USERS_CONTROL_MENU false
 #endif
 
 #define DEFAULT_QUIT_PRESS_TWICE true
@@ -1009,10 +1027,18 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_NOTIFICATION_SHOW_REFRESH_RATE true
 #endif
 
+#ifdef HAVE_NETWORKING
+#define DEFAULT_NOTIFICATION_SHOW_NETPLAY_EXTRA false
+#endif
+
+#ifdef HAVE_MENU
+#define DEFAULT_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE false
+#endif
+
 /* Output samplerate. */
 #ifdef GEKKO
 #define DEFAULT_OUTPUT_RATE 32000
-#elif defined(_3DS) || defined(RETROFW)
+#elif defined(_3DS) || defined(RETROFW) || defined(MIYOO)
 #define DEFAULT_OUTPUT_RATE 32730
 #else
 #define DEFAULT_OUTPUT_RATE 48000
@@ -1023,7 +1049,7 @@ static const bool audio_enable_menu_bgm    = false;
 
 /* Desired audio latency in milliseconds. Might not be honored
  * if driver can't provide given latency. */
-#if defined(ANDROID) || defined(EMSCRIPTEN) || defined(RETROFW)
+#if defined(ANDROID) || defined(EMSCRIPTEN) || defined(RETROFW) || defined(MIYOO)
 /* For most Android devices, 64ms is way too low. */
 #define DEFAULT_OUT_LATENCY 128
 #else
@@ -1086,6 +1112,9 @@ static const bool audio_enable_menu_bgm    = false;
 /* Enables displaying various timing statistics. */
 #define DEFAULT_STATISTICS_SHOW false
 
+/* Enables displaying the current netplay room ping. */
+#define DEFAULT_NETPLAY_PING_SHOW false
+
 /* Enables use of rewind. This will incur some memory footprint
  * depending on the save state buffer. */
 #define DEFAULT_REWIND_ENABLE false
@@ -1097,7 +1126,7 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_APPLY_CHEATS_AFTER_LOAD false
 
 
-#if defined(RETROFW)
+#if defined(RETROFW) || defined(MIYOO)
 /*RETROFW jz4760 has signficant slowdown with default settings */
 #define DEFAULT_REWIND_BUFFER_SIZE (1 << 20)
 #define DEFAULT_REWIND_BUFFER_SIZE_STEP 1 
@@ -1130,11 +1159,20 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_AUTOSAVE_INTERVAL 0
 #endif
 
+/* Show only connectable rooms */
+#define DEFAULT_NETPLAY_SHOW_ONLY_CONNECTABLE true
+
 /* Publicly announce netplay */
 #define DEFAULT_NETPLAY_PUBLIC_ANNOUNCE true
 
 /* Start netplay in spectator mode */
 static const bool netplay_start_as_spectator = false;
+
+/* Netplay chat fading toggle */
+static const bool netplay_fade_chat = true;
+
+/* Allow players to pause */
+static const bool netplay_allow_pausing = false;
 
 /* Allow connections in slave mode */
 static const bool netplay_allow_slaves = true;
@@ -1160,9 +1198,11 @@ static const bool netplay_use_mitm_server = false;
 #define DEFAULT_NETPLAY_MITM_SERVER "nyc"
 
 #ifdef HAVE_NETWORKING
-static const unsigned netplay_share_digital = RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE;
+static const unsigned netplay_max_connections = 3;
+static const unsigned netplay_max_ping        = 0;
 
-static const unsigned netplay_share_analog = RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE;
+static const unsigned netplay_share_digital = RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE;
+static const unsigned netplay_share_analog  = RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE;
 #endif
 
 /* On save state load, block SRAM from being overwritten.
@@ -1293,6 +1333,8 @@ static const int default_content_favorites_size = 200;
 #define DEFAULT_PLAYLIST_SHOW_SUBLABELS true
 #endif
 
+#define DEFAULT_PLAYLIST_SHOW_HISTORY_ICONS PLAYLIST_SHOW_HISTORY_ICONS_DEFAULT
+
 /* Show the indices of playlist entries in
  * a menu-driver-specific fashion */
 #define DEFAULT_PLAYLIST_SHOW_ENTRY_IDX true
@@ -1396,7 +1438,7 @@ static const unsigned menu_left_thumbnails_default = 0;
 static const unsigned gfx_thumbnail_upscale_threshold = 0;
 
 #ifdef HAVE_MENU
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 /* The RS-90 has a hardware clock that is neither
  * configurable nor persistent, rendering it useless.
  * We therefore hide it in the menu by default. */

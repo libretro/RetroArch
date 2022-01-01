@@ -101,7 +101,7 @@ static void callback_sysutil_exit(uint64_t status,
             if (frontend)
                frontend->shutdown = frontend_ps3_shutdown;
 
-            rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+            retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
          }
          break;
    }
@@ -711,6 +711,7 @@ frontend_ctx_driver_t frontend_ctx_ps3 = {
    NULL,                         /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
+   NULL,                         /* set_gamemode */
    "ps3",                        /* ident */
    NULL                          /* get_video_driver */
 };

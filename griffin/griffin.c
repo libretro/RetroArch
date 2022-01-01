@@ -193,7 +193,6 @@ ACHIEVEMENTS
 #include "../cheevos/cheevos.c"
 #include "../cheevos/cheevos_client.c"
 #include "../cheevos/cheevos_menu.c"
-#include "../cheevos/cheevos_parser.c"
 
 #include "../deps/rcheevos/src/rapi/rc_api_common.c"
 #include "../deps/rcheevos/src/rapi/rc_api_runtime.c"
@@ -214,7 +213,6 @@ ACHIEVEMENTS
 #include "../deps/rcheevos/src/rcheevos/trigger.c"
 #include "../deps/rcheevos/src/rcheevos/value.c"
 #include "../deps/rcheevos/src/rhash/hash.c"
-#include "../deps/rcheevos/src/rurl/url.c"
 
 #endif
 
@@ -477,7 +475,7 @@ VIDEO DRIVER
 #endif
 
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 #include "../gfx/drivers/sdl_rs90_gfx.c"
 #else
 #include "../gfx/drivers/sdl_dingux_gfx.c"
@@ -866,6 +864,7 @@ AUDIO RESAMPLER
 /*============================================================
 CAMERA
 ============================================================ */
+#include "../camera/camera_driver.c"
 #if defined(ANDROID)
 #include "../camera/drivers/android.c"
 #elif defined(EMSCRIPTEN)
@@ -912,6 +911,7 @@ RSOUND
 /*============================================================
 AUDIO
 ============================================================ */
+#include "../audio/audio_driver.c"
 #if defined(__PS3__) || defined (__PSL1GHT__)
 #include "../audio/drivers/ps3_audio.c"
 #elif defined(XENON)
@@ -1218,9 +1218,12 @@ GIT
 RETROARCH
 ============================================================ */
 #include "../retroarch.c"
+#include "../runloop.c"
 #include "../command.c"
+#include "../driver.c"
 #include "../midi_driver.c"
 #include "../location_driver.c"
+#include "../ui/ui_companion_driver.c"
 #include "../libretro-common/queues/task_queue.c"
 
 #include "../msg_hash.c"
@@ -1256,6 +1259,7 @@ RETROARCH
 BLUETOOTH
 ============================================================ */
 #ifdef HAVE_BLUETOOTH
+#include "../bluetooth/bluetooth_driver.c"
 #include "../bluetooth/drivers/bluetoothctl.c"
 #ifdef HAVE_DBUS
 #include "../bluetooth/drivers/bluez.c"
@@ -1265,13 +1269,21 @@ BLUETOOTH
 /*============================================================
 WIFI
 ============================================================ */
+#ifdef HAVE_WIFI
+#include "../network/wifi_driver.c"
+
 #ifdef HAVE_LAKKA
-#include "../wifi/drivers/connmanctl.c"
+#include "../network/drivers_wifi/connmanctl.c"
+#endif
+
+#include "../tasks/task_wifi.c"
+
 #endif
 
 /*============================================================
 RECORDING
 ============================================================ */
+#include "../record/record_driver.c"
 #ifdef HAVE_FFMPEG
 #include "../record/drivers/record_ffmpeg.c"
 #endif
@@ -1309,8 +1321,9 @@ NETPLAY
 #include "../tasks/task_http.c"
 #include "../tasks/task_netplay_lan_scan.c"
 #include "../tasks/task_netplay_nat_traversal.c"
+#ifdef HAVE_BLUETOOTH
 #include "../tasks/task_bluetooth.c"
-#include "../tasks/task_wifi.c"
+#endif
 #include "../tasks/task_netplay_find_content.c"
 #include "../tasks/task_pl_thumbnail_download.c"
 #endif
@@ -1332,6 +1345,9 @@ DATA RUNLOOP
 #include "../tasks/task_playlist_manager.c"
 #include "../tasks/task_manual_content_scan.c"
 #include "../tasks/task_core_backup.c"
+#ifdef HAVE_TRANSLATE
+#include "../tasks/task_translation.c"
+#endif
 #ifdef HAVE_ZLIB
 #include "../tasks/task_decompress.c"
 #endif
@@ -1397,6 +1413,7 @@ MENU
 #include "../menu/menu_displaylist.c"
 #ifdef HAVE_LIBRETRODB
 #include "../menu/menu_explore.c"
+#include "../tasks/task_menu_explore.c"
 #endif
 #endif
 
@@ -1555,26 +1572,11 @@ XML
 #include "../database_info.c"
 #endif
 
-#if defined(HAVE_BUILTINMINIUPNPC)
-#include "../deps/miniupnpc/igd_desc_parse.c"
-#include "../deps/miniupnpc/upnpreplyparse.c"
-#include "../deps/miniupnpc/upnpcommands.c"
-#include "../deps/miniupnpc/upnperrors.c"
-#include "../deps/miniupnpc/connecthostport.c"
-#include "../deps/miniupnpc/portlistingparse.c"
-#include "../deps/miniupnpc/receivedata.c"
-#include "../deps/miniupnpc/upnpdev.c"
-#include "../deps/miniupnpc/minissdpc.c"
-#include "../deps/miniupnpc/miniwget.c"
-#include "../deps/miniupnpc/miniupnpc.c"
-#include "../deps/miniupnpc/minixml.c"
-#include "../deps/miniupnpc/minisoap.c"
-#endif
-
 /*============================================================
 HTTP SERVER
 ============================================================ */
 #if defined(HAVE_DISCORD)
+#include "../network/discord.c"
 #if defined(_WIN32)
 #include "../deps/discord-rpc/src/discord_register_win.c"
 #endif

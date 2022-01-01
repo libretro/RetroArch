@@ -7,6 +7,7 @@ GRIFFIN_BUILD              = 0
 SALAMANDER_BUILD           = 0
 WHOLE_ARCHIVE_LINK         = 0
 WIIU_HID                   = 1
+HAVE_HID                   = 1
 HAVE_RUNAHEAD              = 1
 WIIU_LOG_RPX               = 0
 BUILD_DIR                  = objs/wiiu
@@ -123,6 +124,7 @@ endif
       DEFINES += -DHAVE_XMB -DHAVE_MATERIALUI
       DEFINES += -DHAVE_HID
       DEFINES += -DWANT_LIBFAT -DHAVE_LIBFAT -DWANT_IOSUHAX -DHAVE_IOSUHAX
+      DEFINES += -DHAVE_CORE_INFO_CACHE
       DEFINES += -DSPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS
 
    # $(GRIFFIN_BUILD),0
@@ -166,6 +168,7 @@ endif
       HAVE_STATIC_AUDIO_FILTERS = 1
       WANT_LIBFAT = 1
       WANT_IOSUHAX = 1
+      HAVE_CORE_INFO_CACHE = 1
 
       include Makefile.common
       DEFINES += $(DEF_FLAGS)

@@ -51,6 +51,7 @@ struct gfx_widget_leaderboard_display_state
 #ifdef HAVE_THREADS
    slock_t* array_lock;
 #endif
+   const dispgfx_widget_t *dispwidget_ptr;
    struct leaderboard_display_info tracker_info[CHEEVO_LBOARD_ARRAY_SIZE];
    unsigned tracker_count;
    struct challenge_display_info challenge_info[CHEEVO_CHALLENGE_ARRAY_SIZE];
@@ -69,6 +70,8 @@ static bool gfx_widget_leaderboard_display_init(
    gfx_widget_leaderboard_display_state_t *state = 
       &p_w_leaderboard_display_st;
    memset(state, 0, sizeof(*state));
+   state->dispwidget_ptr   = (const dispgfx_widget_t*)
+      dispwidget_get_ptr();
 
    return true;
 }
@@ -81,8 +84,9 @@ static void gfx_widget_leaderboard_display_free(void)
    state->challenge_count = 0;
 #ifdef HAVE_THREADS
    slock_free(state->array_lock);
-   state->array_lock = NULL;
+   state->array_lock      = NULL;
 #endif
+   state->dispwidget_ptr  = NULL;
 }
 
 static void gfx_widget_leaderboard_display_context_destroy(void)
@@ -228,14 +232,12 @@ void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
       else
       {
          /* show or update display */
-         const dispgfx_widget_t* p_dispwidget = (const dispgfx_widget_t*)dispwidget_get_ptr();
-
          if (i == state->tracker_count)
             state->tracker_info[state->tracker_count++].id = id;
 
          strncpy(state->tracker_info[i].display, value, sizeof(state->tracker_info[i].display));
          state->tracker_info[i].width = font_driver_get_message_width(
-               p_dispwidget->gfx_widget_fonts.regular.font,
+               state->dispwidget_ptr->gfx_widget_fonts.regular.font,
                state->tracker_info[i].display, 0, 1);
          state->tracker_info[i].width += CHEEVO_LBOARD_DISPLAY_PADDING * 2;
       }

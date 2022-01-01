@@ -1,4 +1,4 @@
-/* Copyright  (C) 2016-2020 The RetroArch team
+/* Copyright  (C) 2016-2021 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (net_natt.c).
@@ -20,243 +20,829 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#if !defined(HAVE_SOCKET_LEGACY) && defined(_WIN32) && defined(_MSC_VER)
+#pragma comment(lib, "Iphlpapi")
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 
-#include <net/net_compat.h>
-#include <net/net_ifinfo.h>
+#include <formats/rxml.h>
+#include <features/features_cpu.h>
 #include <retro_miscellaneous.h>
 
 #include <string/stdstring.h>
+
+#include "../../tasks/tasks_internal.h"
+
 #include <net/net_natt.h>
 
-#if HAVE_MINIUPNPC
-#include <miniupnpc/miniwget.h>
-#include <miniupnpc/miniupnpc.h>
-#include <miniupnpc/upnpcommands.h>
-
-#if MINIUPNPC_API_VERSION < 16
-#undef HAVE_MINIUPNPC
-#endif
+#if !defined(HAVE_SOCKET_LEGACY) && defined(_WIN32)
+#include <iphlpapi.h>
 #endif
 
-#if HAVE_MINIUPNPC
-static struct UPNPUrls urls;
-static struct IGDdatas data;
-#endif
+static natt_state_t natt_st = {0, {0}, {{0}}, -1};
 
-/*
-      natt_open_port_any(ntsd->nat_traversal_state,
-            ntsd->port, SOCKET_PROTOCOL_TCP);
-*/
+natt_state_t *natt_state_get_ptr(void)
+{
+   return &natt_st;
+}
 
-void natt_init(struct natt_status *status,
-      uint16_t port, enum socket_protocol proto)
+bool natt_init(void)
 {
 #ifndef HAVE_SOCKET_LEGACY
-#if HAVE_MINIUPNPC
-   struct UPNPDev * devlist;
-   struct UPNPDev * dev;
-   char * descXML;
-   int descXMLsize = 0;
-   int upnperror = 0;
-   devlist = upnpDiscover(2000, NULL, NULL, 0, 0, 2, &upnperror);
-   if (devlist)
+   static const char msearch[] =
+      "M-SEARCH * HTTP/1.1\r\n"
+      "HOST: 239.255.255.250:1900\r\n"
+      "MAN: \"ssdp:discover\"\r\n"
+      "ST: urn:schemas-upnp-org:device:InternetGatewayDevice:1\r\n"
+      "MX: 5\r\n"
+      "\r\n";
+   static struct sockaddr_in msearch_addr = {0};
+#ifdef _WIN32
+   MIB_IPFORWARDROW ip_forward;
+#endif
+   natt_state_t *st                       = &natt_st;
+   struct addrinfo *bind_addr             = NULL;
+
+   if (msearch_addr.sin_family != AF_INET)
    {
-      dev = devlist;
-      while (dev)
+      struct addrinfo *addr = NULL;
+      struct addrinfo hints = {0};
+
+      hints.ai_family   = AF_INET;
+      hints.ai_socktype = SOCK_DGRAM;
+      if (getaddrinfo_retro("239.255.255.250", "1900", &hints, &addr))
+         return false;
+      if (!addr)
+         return false;
+      memcpy(&msearch_addr, addr->ai_addr, sizeof(msearch_addr));
+      freeaddrinfo_retro(addr);
+   }
+
+   if (!net_ifinfo_new(&st->interfaces))
+      goto failure;
+   if (!st->interfaces.size)
+      goto failure;
+
+   st->fd = socket_init((void**) &bind_addr, 0, NULL, SOCKET_TYPE_DATAGRAM);
+   if (st->fd < 0)
+      goto failure;
+   if (!bind_addr)
+      goto failure;
+
+#ifdef _WIN32
+   if (GetBestRoute(inet_addr("223.255.255.255"),
+      0, &ip_forward) == NO_ERROR)
+   {
+      DWORD            index = ip_forward.dwForwardIfIndex;
+      PMIB_IPADDRTABLE table = malloc(sizeof(*table));
+
+      if (table)
       {
-         if (strstr (dev->st, "InternetGatewayDevice"))
+         DWORD len    = sizeof(*table);
+         DWORD result = GetIpAddrTable(table, &len, FALSE);
+
+         if (result == ERROR_INSUFFICIENT_BUFFER)
          {
-            memset(&urls, 0, sizeof(struct UPNPUrls));
-            memset(&data, 0, sizeof(struct IGDdatas));
-            descXML = (char *) miniwget(dev->descURL, &descXMLsize, 0, NULL);
-            if (descXML)
+            PMIB_IPADDRTABLE new_table = realloc(table, len);
+
+            if (new_table) 
             {
-               parserootdesc(descXML, descXMLsize, &data);
-               free (descXML);
-               descXML = 0;
-
-               GetUPNPUrls (&urls, &data, dev->descURL, 0);
+               table  = new_table;
+               result = GetIpAddrTable(table, &len, FALSE);
             }
-            if(natt_open_port_any(status, port, proto))
-               goto end;
-
          }
-         dev = dev->pNext;
+
+         if (result == NO_ERROR)
+         {
+            DWORD i;
+
+            for (i = 0; i < table->dwNumEntries; i++)
+            {
+               PMIB_IPADDRROW ip_addr = &table->table[i];
+
+               if (ip_addr->dwIndex == index)
+               {
+#ifdef IP_MULTICAST_IF
+                  setsockopt(st->fd, IPPROTO_IP, IP_MULTICAST_IF,
+                     (const char *) &ip_addr->dwAddr, sizeof(ip_addr->dwAddr));
+#endif
+                  ((struct sockaddr_in *) bind_addr->ai_addr)->sin_addr.s_addr =
+                     ip_addr->dwAddr;
+                  break;
+               }
+            }
+         }
+
+         free(table);
       }
    }
-end:
-   freeUPNPDevlist(devlist);
 #endif
-#endif
-}
 
-bool natt_new(struct natt_status *status)
-{
-   memset(status, 0, sizeof(struct natt_status));
+#ifdef IP_MULTICAST_TTL
+   {
+#ifdef _WIN32
+      unsigned long ttl = 2;
+      if (setsockopt(st->fd, IPPROTO_IP, IP_MULTICAST_TTL,
+         (const char *)&ttl, sizeof(ttl)) < 0) { }
+#else
+      unsigned char ttl = 2;
+      if (setsockopt(st->fd, IPPROTO_IP, IP_MULTICAST_TTL,
+         &ttl, sizeof(ttl)) < 0) { }
+#endif
+   }
+#endif
+
+   if (!socket_bind(st->fd, bind_addr))
+      goto failure;
+
+   /* Broadcast a discovery request. */
+   if (sendto(st->fd, msearch, STRLEN_CONST(msearch), 0,
+         (struct sockaddr *) &msearch_addr,
+         sizeof(msearch_addr)) != STRLEN_CONST(msearch))
+      goto failure;
+
+   if (!socket_nonblock(st->fd))
+      goto failure;
+
+   /* 5 seconds */
+   st->timeout = cpu_features_get_time_usec() + 5000000;
+
+   freeaddrinfo_retro(bind_addr);
+
    return true;
+
+failure:
+   /* Failed to broadcast. */
+   freeaddrinfo_retro(bind_addr);
+   natt_deinit();
+#endif
+
+   return false;
 }
 
-void natt_free(struct natt_status *status) { }
-
-static bool natt_open_port(struct natt_status *status,
-      struct sockaddr *addr, socklen_t addrlen, enum socket_protocol proto)
+void natt_deinit(void)
 {
 #ifndef HAVE_SOCKET_LEGACY
-#if HAVE_MINIUPNPC
-   int r;
-   char host[PATH_MAX_LENGTH], ext_host[PATH_MAX_LENGTH],
-        port_str[6], ext_port_str[6];
-   struct addrinfo hints         = {0};
-   const char *proto_str         = NULL;
-   struct addrinfo *ext_addrinfo = NULL;
+   natt_state_t *st = &natt_st;
 
-   /* if NAT traversal is uninitialized or unavailable, oh well */
-   if (!urls.controlURL || !urls.controlURL[0])
+   natt_device_end();
+   natt_interfaces_destroy();
+
+   /* This is faster than memsetting the whole thing. */
+   *st->device.desc         = '\0';
+   *st->device.control      = '\0';
+   *st->device.service_type = '\0';
+   memset(&st->device.ext_addr, 0, sizeof(st->device.ext_addr));
+   st->device.busy          = false;
+#endif
+}
+
+void natt_interfaces_destroy(void)
+{
+#ifndef HAVE_SOCKET_LEGACY
+   natt_state_t *st = &natt_st;
+
+   net_ifinfo_free(&st->interfaces);
+   memset(&st->interfaces, 0, sizeof(st->interfaces));
+#endif
+}
+
+bool natt_device_next(struct natt_device *device)
+{
+#ifndef HAVE_SOCKET_LEGACY
+   fd_set  fds;
+   bool    error;
+   char    buf[2048];
+   ssize_t recvd;
+   char    *data;
+   size_t  remaining;
+   struct timeval tv = {0};
+   natt_state_t *st  = &natt_st;
+
+   if (!device)
       return false;
 
-   /* figure out the internal info */
-   if (getnameinfo(addr, addrlen, host, PATH_MAX_LENGTH,
-            port_str, 6, NI_NUMERICHOST|NI_NUMERICSERV) != 0)
+   if (st->fd < 0)
       return false;
 
-   proto_str = (proto == SOCKET_PROTOCOL_UDP) ? "UDP" : "TCP";
+   /* This is faster than memsetting the whole thing. */
+   *device->desc         = '\0';
+   *device->control      = '\0';
+   *device->service_type = '\0';
+   memset(&device->ext_addr, 0, sizeof(device->ext_addr));
+   device->busy          = false;
 
-   /* add the port mapping */
-   r = UPNP_AddAnyPortMapping(urls.controlURL,
-         data.first.servicetype, port_str,
-         port_str, host, "retroarch",
-         proto_str, NULL, "3600", ext_port_str);
+   /* Check our file descriptor to see if a device sent data to it. */
+   FD_ZERO(&fds);
+   FD_SET(st->fd, &fds);
+   if (socket_select(st->fd + 1, &fds, NULL, NULL, &tv) < 0)
+      return false;
+   /* If there was no data, check for timeout. */
+   if (!FD_ISSET(st->fd, &fds))
+      return cpu_features_get_time_usec() < st->timeout;
 
-   if (r != 0)
+   recvd = socket_receive_all_nonblocking(st->fd, &error,
+      buf, sizeof(buf));
+   if (recvd <= 0)
+      return false;
+
+   /* Parse the data we received.
+      We are only looking for the 'Location' HTTP header. */
+   data      = buf;
+   remaining = (size_t) recvd;
+   do
    {
-      /* try the older AddPortMapping */
-      memcpy(ext_port_str, port_str, 6);
-      r = UPNP_AddPortMapping(urls.controlURL,
-            data.first.servicetype, port_str,
-            port_str, host, "retroarch",
-            proto_str, NULL, "3600");
-   }
-   if (r != 0)
-      return false;
+      char *lnbreak = (char *) memchr(data, '\n', remaining);
+      if (!lnbreak)
+         break;
+      *lnbreak++ = '\0';
 
-   /* get the external IP */
-   r = UPNP_GetExternalIPAddress(urls.controlURL,
-         data.first.servicetype, ext_host);
-   if (r != 0)
-      return false;
+      /* This also gets rid of any trailing carriage return. */
+      if (!strncasecmp(string_trim_whitespace(data), "Location:",
+         STRLEN_CONST("Location:")))
+      {
+         char *location = string_trim_whitespace(
+            data + STRLEN_CONST("Location:"));
 
-   /* update the status */
-   if (getaddrinfo_retro(ext_host,
-            ext_port_str, &hints, &ext_addrinfo) != 0)
-      return false;
+         if (!string_is_empty(location) &&
+            string_starts_with_case_insensitive(location, "http://"))
+         {
+            strlcpy(device->desc, location,
+               sizeof(device->desc));
 
-   if (ext_addrinfo->ai_family == AF_INET &&
-       ext_addrinfo->ai_addrlen >= sizeof(struct sockaddr_in))
+            return true;
+         }
+      }
+
+      remaining -= (size_t)lnbreak - (size_t)data;
+      data = lnbreak;
+   } while (remaining);
+
+   /* This is not a failure.
+      We just don't yet have a valid device to report. */
+   return true;
+#else
+   return false;
+#endif
+}
+
+void natt_device_end(void)
+{
+#ifndef HAVE_SOCKET_LEGACY
+   natt_state_t *st = &natt_st;
+
+   if (st->fd >= 0)
    {
-      status->have_inet4     = true;
-      status->ext_inet4_addr = *((struct sockaddr_in *)
-            ext_addrinfo->ai_addr);
-   }
-#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
-   else if (ext_addrinfo->ai_family == AF_INET6 &&
-            ext_addrinfo->ai_addrlen >= sizeof(struct sockaddr_in6))
-   {
-      status->have_inet6     = true;
-      status->ext_inet6_addr = *((struct sockaddr_in6 *)
-            ext_addrinfo->ai_addr);
+      socket_close(st->fd);
+      st->fd = -1;
    }
 #endif
+}
+
+static bool build_control_url(rxml_node_t *control_url,
+   struct natt_device *device)
+{
+   if (string_is_empty(control_url->data))
+      return false;
+
+   /* Do we already have the full url? */
+   if (string_starts_with_case_insensitive(control_url->data, "http://"))
+   {
+      strlcpy(device->control, control_url->data,
+         sizeof(device->control));
+   }
    else
    {
-      freeaddrinfo_retro(ext_addrinfo);
-      return false;
+      /* We don't have a full url.
+         Build one using the desc url. */
+      char *control_path;
+
+      strlcpy(device->control, device->desc,
+         sizeof(device->control));
+
+      control_path = (char*) strchr(device->control + STRLEN_CONST("http://"),
+         '/');
+
+      if (control_path)
+         *control_path = '\0';
+      if (control_url->data[0] != '/')
+         strlcat(device->control, "/", sizeof(device->control));
+      strlcat(device->control, control_url->data,
+         sizeof(device->control));
    }
 
-   freeaddrinfo_retro(ext_addrinfo);
    return true;
-
-#else
-   return false;
-#endif
-#else
-   return false;
-#endif
 }
 
-bool natt_open_port_any(struct natt_status *status,
-      uint16_t port, enum socket_protocol proto)
+static bool parse_desc_node(rxml_node_t *node,
+   struct natt_device *device)
 {
-#if !defined(HAVE_SOCKET_LEGACY) && (!defined(SWITCH) || defined(SWITCH) && defined(HAVE_LIBNX))
-   size_t i;
-   char port_str[6];
-   struct net_ifinfo list;
-   struct addrinfo hints = {0}, *addr;
-   bool ret              = false;
+   rxml_node_t *child = node->children;
 
-   snprintf(port_str, sizeof(port_str), "%hu", port);
-
-   /* get our interfaces */
-   if (!net_ifinfo_new(&list))
+   if (!child)
       return false;
 
-   /* loop through them */
-   for (i = 0; i < list.size; i++)
+   /* We only care for services. */
+   if (string_is_equal_case_insensitive(node->name, "service"))
    {
-      struct net_ifinfo_entry *entry = list.entries + i;
+      rxml_node_t *service_type = NULL;
+      rxml_node_t *control_url  = NULL;
 
-      /* ignore localhost */
-      if (  string_is_equal(entry->host, "127.0.0.1") ||
-            string_is_equal(entry->host, "::1"))
-         continue;
-
-      /* make a request for this host */
-      if (getaddrinfo_retro(entry->host, port_str, &hints, &addr) == 0)
+      do
       {
-         ret = natt_open_port(status, addr->ai_addr,
-               addr->ai_addrlen, proto) || ret;
-         freeaddrinfo_retro(addr);
-      }
+        if (string_is_equal_case_insensitive(child->name, "serviceType"))
+           service_type = child;
+        else if (string_is_equal_case_insensitive(child->name, "controlURL"))
+           control_url  = child;
+        if (service_type && control_url)
+           break;
+      } while ((child = child->next));
+
+      if (!service_type || !control_url)
+         return false;
+
+      /* These two are the only IGD service types we can work with. */
+      if (!strstr(service_type->data, "WANIPConnection:1") &&
+            !strstr(service_type->data, "WANPPPConnection:1"))
+         return false;
+      if (!build_control_url(control_url, device))
+         return false;
+
+      strlcpy(device->service_type, service_type->data,
+         sizeof(device->service_type));
+
+      return true;
    }
 
-   net_ifinfo_free(&list);
+   /* XML recursion */
+   do
+   {
+      if (parse_desc_node(child, device))
+         return true;
+   } while ((child = child->next));
 
-   return ret;
+   return false;
+}
 
+static void natt_query_device_cb(retro_task_t *task, void *task_data,
+   void *user_data, const char *error)
+{
+   char *xml;
+   rxml_document_t *document;
+   http_transfer_data_t *data = task_data;
+   struct natt_device *device = user_data;
+
+   if (error)
+      goto done;
+   if (!data || !data->data || !data->len)
+      goto done;
+   if (data->status != 200)
+      goto done;
+
+   xml = malloc(data->len + 1);
+   if (!xml)
+      goto done;
+   memcpy(xml, data->data, data->len);
+   xml[data->len] = '\0';
+
+   /* Parse the device's description XML. */
+   document = rxml_load_document_string(xml);
+   if (document)
+   {
+      rxml_node_t *root = rxml_root_node(document);
+      if (root)
+         parse_desc_node(root, device);
+
+      rxml_free_document(document);
+   }
+
+   free(xml);
+
+done:
+   device->busy = false;
+}
+
+bool natt_query_device(struct natt_device *device, bool block)
+{
+#ifndef HAVE_SOCKET_LEGACY
+   if (!device)
+      return false;
+
+   if (string_is_empty(device->desc))
+      return false;
+
+   if (device->busy)
+      return false;
+   device->busy = true;
+
+   if (!task_push_http_transfer(device->desc,
+         true, NULL, natt_query_device_cb, device))
+   {
+      device->busy = false;
+      return false;
+   }
+
+   if (block)
+      task_queue_wait(NULL, NULL);
+
+   return true;
 #else
    return false;
 #endif
 }
 
-bool natt_read(struct natt_status *status)
+static bool parse_external_address_node(rxml_node_t *node,
+   struct natt_device *device)
 {
-   /* MiniUPNPC is always synchronous, so there's nothing to read here.
-    * Reserved for future backends. */
+   if (string_is_equal_case_insensitive(node->name, "NewExternalIPAddress"))
+   {
+      struct addrinfo *addr = NULL;
+      struct addrinfo hints = {0};
+
+      if (string_is_empty(node->data))
+         return false;
+
+      hints.ai_family = AF_INET;
+      if (getaddrinfo_retro(node->data, "0", &hints, &addr))
+         return false;
+      if (!addr)
+         return false;
+      memcpy(&device->ext_addr, addr->ai_addr,
+         sizeof(device->ext_addr));
+      freeaddrinfo_retro(addr);
+
+      return true;
+   }
+   else
+   {
+      /* XML recursion */
+      rxml_node_t *child = node->children;
+
+      do
+      {
+         if (parse_external_address_node(child, device))
+            return true;
+      } while ((child = child->next));
+   }
+
    return false;
 }
 
-#if 0
-/* If we want to remove redirects in the future, this is a
- * sample of how to do that. */
-
-void upnp_rem_redir (int port)
+static void natt_external_address_cb(retro_task_t *task, void *task_data,
+   void *user_data, const char *error)
 {
-   int t;
-   char port_str[16];
+   char *xml;
+   rxml_document_t *document;
+   http_transfer_data_t *data = task_data;
+   struct natt_device *device = user_data;
 
-   printf("TB : upnp_rem_redir (%d)\n", port);
+   if (error)
+      goto done;
+   if (!data || !data->data || !data->len)
+      goto done;
+   if (data->status != 200)
+      goto done;
 
-   if(urls.controlURL[0] == '\0')
+   xml = malloc(data->len + 1);
+   if (!xml)
+      goto done;
+   memcpy(xml, data->data, data->len);
+   xml[data->len] = '\0';
+
+   /* Parse the returned external ip address. */
+   document = rxml_load_document_string(xml);
+   if (document)
    {
-      printf("TB : the init was not done !\n");
-      return;
+      rxml_node_t *root = rxml_root_node(document);
+      if (root)
+         parse_external_address_node(root, device);
+
+      rxml_free_document(document);
    }
 
-   snprintf(port_str, sizeof(port_str), "%d", port);
-   UPNP_DeletePortMapping(urls.controlURL,
-         data.first.servicetype, port_str, "TCP", NULL);
+   free(xml);
+
+done:
+   device->busy = false;
 }
+
+static bool parse_open_port_node(rxml_node_t *node,
+   struct natt_request *request)
+{
+   if (string_is_equal_case_insensitive(node->name, "u:AddPortMappingResponse"))
+   {
+      request->success = true;
+      memcpy(&request->addr.sin_addr, &request->device->ext_addr.sin_addr,
+         sizeof(request->addr.sin_addr));
+
+      return true;
+   }
+   else if (string_is_equal_case_insensitive(node->name, "NewReservedPort"))
+   {
+      uint16_t ext_port = 0;
+
+      if (string_is_empty(node->data))
+         return false;
+
+      sscanf(node->data, "%hu", &ext_port);
+      if (!ext_port)
+         return false;
+
+      request->success = true;
+      request->addr.sin_port = htons(ext_port);
+      memcpy(&request->addr.sin_addr, &request->device->ext_addr.sin_addr,
+         sizeof(request->addr.sin_addr));
+
+      return true;
+   }
+   else
+   {
+      /* XML recursion */
+      rxml_node_t *child = node->children;
+
+      do
+      {
+         if (parse_open_port_node(child, request))
+            return true;
+      } while ((child = child->next));
+   }
+
+   return false;
+}
+
+static void natt_open_port_cb(retro_task_t *task, void *task_data,
+   void *user_data, const char *error)
+{
+   char *xml;
+   rxml_document_t *document;
+   http_transfer_data_t *data   = task_data;
+   struct natt_request *request = user_data;
+   struct natt_device *device   = request->device;
+
+   request->success = false;
+
+   if (error)
+      goto done;
+   if (!data || !data->data || !data->len)
+      goto done;
+   if (data->status != 200)
+      goto done;
+
+   xml = malloc(data->len + 1);
+   if (!xml)
+      goto done;
+   memcpy(xml, data->data, data->len);
+   xml[data->len] = '\0';
+
+   /* Parse the device's port forwarding response. */
+   document = rxml_load_document_string(xml);
+   if (document)
+   {
+      rxml_node_t *root = rxml_root_node(document);
+      if (root)
+         parse_open_port_node(root, request);
+
+      rxml_free_document(document);
+   }
+
+   free(xml);
+
+done:
+   device->busy = false;
+}
+
+static void natt_close_port_cb(retro_task_t *task, void *task_data,
+   void *user_data, const char *error)
+{
+   http_transfer_data_t *data   = task_data;
+   struct natt_request *request = user_data;
+   struct natt_device *device   = request->device;
+
+   request->success = false;
+
+   if (error)
+      goto done;
+   if (!data || !data->data || !data->len)
+      goto done;
+   if (data->status != 200)
+      goto done;
+
+   /* We don't need to do anything special here.
+    * Just clear up the request. */
+   memset(request, 0, sizeof(*request));
+   request->success = true;
+
+done:
+   device->busy = false;
+}
+
+static bool natt_action(struct natt_device *device,
+   const char *action, const char *data, retro_task_callback_t cb,
+   struct natt_request *request)
+{
+   static const char headers_template[] =
+      "Content-Type: text/xml\r\n"
+      "SOAPAction: \"%s#%s\"\r\n";
+   char headers[512];
+   void *obj;
+
+   snprintf(headers, sizeof(headers), headers_template,
+      device->service_type, action);
+
+   if (request)
+   {
+      request->device = device;
+      obj = request;
+   }
+   else
+      obj = device;
+
+   return task_push_http_post_transfer_with_headers(device->control,
+      data, true, NULL, headers, cb, obj) != NULL;
+}
+
+bool natt_external_address(struct natt_device *device, bool block)
+{
+#ifndef HAVE_SOCKET_LEGACY
+   static const char template[] =
+      "<?xml version=\"1.0\"?>"
+      "<s:Envelope "
+         "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\" "
+         "xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\""
+      ">"
+         "<s:Body>"
+            "<u:GetExternalIPAddress xmlns:u=\"%s\"/>"
+         "</s:Body>"
+      "</s:Envelope>";
+   char buf[1024];
+
+   if (!device)
+      return false;
+
+   if (string_is_empty(device->control))
+      return false;
+
+   if (device->busy)
+      return false;
+   device->busy = true;
+
+   snprintf(buf, sizeof(buf), template,
+      device->service_type);
+
+   if (!natt_action(device, "GetExternalIPAddress", buf,
+         natt_external_address_cb, NULL))
+   {
+      device->busy = false;
+      return false;
+   }
+
+   if (block)
+      task_queue_wait(NULL, NULL);
+
+   return true;
+#else
+   return false; 
 #endif
+}
+
+bool natt_open_port(struct natt_device *device,
+   struct natt_request *request, enum natt_forward_type forward_type,
+   bool block)
+{
+#ifndef HAVE_SOCKET_LEGACY
+   static const char template[] =
+      "<?xml version=\"1.0\"?>"
+      "<s:Envelope "
+         "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\" "
+         "xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\""
+      ">"
+         "<s:Body>"
+            "<u:%s xmlns:u=\"%s\">"
+               "<NewRemoteHost></NewRemoteHost>"
+               "<NewExternalPort>%s</NewExternalPort>"
+               "<NewProtocol>%s</NewProtocol>"
+               "<NewInternalPort>%s</NewInternalPort>"
+               "<NewInternalClient>%s</NewInternalClient>"
+               "<NewEnabled>1</NewEnabled>"
+               "<NewPortMappingDescription>retroarch</NewPortMappingDescription>"
+               "<NewLeaseDuration>0</NewLeaseDuration>"
+            "</u:%s>"
+         "</s:Body>"
+      "</s:Envelope>";
+   char buf[1024];
+   const char *action;
+   char host[256], port[6];
+
+   if (!device || !request)
+      return false;
+
+   if (string_is_empty(device->control))
+      return false;
+
+   if (device->ext_addr.sin_family != AF_INET)
+      return false;
+
+   if (!request->addr.sin_port)
+      return false;
+
+   if (getnameinfo((struct sockaddr *) &request->addr,
+         sizeof(request->addr), host, sizeof(host),
+         port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV))
+      return false;
+
+   if (device->busy)
+      return false;
+   device->busy = true;
+
+   action = (forward_type == NATT_FORWARD_TYPE_ANY) ?
+      "AddAnyPortMapping" : "AddPortMapping";
+
+   snprintf(buf, sizeof(buf), template,
+      action, device->service_type, port,
+      (request->proto == SOCKET_PROTOCOL_UDP) ?
+         "UDP" : "TCP",
+      port, host,
+      action);
+
+   if (!natt_action(device, action, buf,
+         natt_open_port_cb, request))
+   {
+      device->busy = false;
+      return false;
+   }
+
+   if (block)
+      task_queue_wait(NULL, NULL);
+
+   return true;
+#else
+   return false; 
+#endif
+}
+
+bool natt_close_port(struct natt_device *device,
+   struct natt_request *request, bool block)
+{
+#ifndef HAVE_SOCKET_LEGACY
+   static const char template[] =
+      "<?xml version=\"1.0\"?>"
+      "<s:Envelope "
+         "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\" "
+         "xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\""
+      ">"
+         "<s:Body>"
+            "<u:DeletePortMapping xmlns:u=\"%s\">"
+               "<NewRemoteHost></NewRemoteHost>"
+               "<NewExternalPort>%s</NewExternalPort>"
+               "<NewProtocol>%s</NewProtocol>"
+            "</u:DeletePortMapping>"
+         "</s:Body>"
+      "</s:Envelope>";
+   char buf[1024];
+   char port[6];
+
+   if (!device || !request)
+      return false;
+
+   if (string_is_empty(device->control))
+      return false;
+
+   if (device->ext_addr.sin_family != AF_INET)
+      return false;
+
+   if (!request->addr.sin_port)
+      return false;
+
+   if (getnameinfo((struct sockaddr *) &request->addr,
+         sizeof(request->addr), NULL, 0,
+         port, sizeof(port), NI_NUMERICSERV))
+      return false;
+
+   if (device->busy)
+      return false;
+   device->busy = true;
+
+   snprintf(buf, sizeof(buf), template,
+      device->service_type, port,
+      (request->proto == SOCKET_PROTOCOL_UDP) ?
+         "UDP" : "TCP");
+
+   if (!natt_action(device, "DeletePortMapping", buf,
+         natt_close_port_cb, request))
+   {
+      device->busy = false;
+      return false;
+   }
+
+   if (block)
+      task_queue_wait(NULL, NULL);
+
+   return true;
+#else
+   return false; 
+#endif
+}

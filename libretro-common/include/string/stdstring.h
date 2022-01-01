@@ -130,6 +130,25 @@ static INLINE bool string_is_equal_case_insensitive(const char *a,
    return (result == 0);
 }
 
+static INLINE bool string_starts_with_case_insensitive(const char *str,
+      const char *prefix)
+{
+   int result              = 0;
+   const unsigned char *p1 = (const unsigned char*)str;
+   const unsigned char *p2 = (const unsigned char*)prefix;
+
+   if (!str || !prefix)
+      return false;
+   if (p1 == p2)
+      return true;
+
+   while ((result = tolower (*p1++) - tolower (*p2)) == 0)
+      if (*p2++ == '\0')
+         break;
+
+   return (result == 0 || *p2 == '\0');
+}
+
 char *string_to_upper(char *s);
 
 char *string_to_lower(char *s);

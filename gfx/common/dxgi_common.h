@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _DXGI_COMMON_H
+#define _DXGI_COMMON_H
 
 #include <retro_inline.h>
 
@@ -897,3 +898,5 @@ void dxgi_set_hdr_metadata(
 DXGI_FORMAT glslang_format_to_dxgi(glslang_format fmt);
 
 RETRO_END_DECLS
+
+#endif

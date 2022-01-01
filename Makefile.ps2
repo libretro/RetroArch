@@ -1,41 +1,33 @@
+TARGET := retroarch_ps2
+TARGET_RELEASE = retroarchps2.elf
+
 BUILD_FOR_PCSX2    = 0
 DEBUG              = 0
 SCREEN_DEBUG       = 0
+GRIFFIN_BUILD      = 0
 HAVE_THREADS       = 0
 MUTE_WARNINGS      = 1
+WHOLE_ARCHIVE_LINK = 0
+HAVE_STATIC_DUMMY ?= 0
 PS2_IP = 192.168.1.10
-
-TARGET = retroarchps2-debug.elf
-TARGET_RELEASE = retroarchps2.elf
-
-# Compile the IRXs first
-IRX_DIR = ps2/irx
 
 ifeq ($(DEBUG), 1)
    OPTIMIZE_LV	:= -O0 -g
-	RARCH_DEFINES += -DDEBUG
+	DEFINES += -DDEBUG
 else
    OPTIMIZE_LV	:= -O3
-	LDFLAGS :=  -s
+	# LDFLAGS :=  -s
 endif
 
 ifeq ($(MUTE_WARNINGS), 1)
    DISABLE_WARNINGS := -Wno-unused -Wno-format -Wno-format-truncation
 endif
 
-INCDIR = -I$(PS2DEV)/gsKit/include -I$(PS2SDK)/ports/include
-INCDIR += -Ips2/include -Ilibretro-common/include -Ideps -Ideps/stb -Ideps/7zip
-CFLAGS = $(OPTIMIZE_LV) $(DISABLE_WARNINGS) -ffast-math -fsingle-precision-constant
-ASFLAGS = $(CFLAGS)
-
-RARCH_DEFINES += -DPS2 -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DHAVE_SCREENSHOTS -DHAVE_REWIND -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_CHEATS
-RARCH_DEFINES += -DHAVE_ZLIB -DHAVE_NO_BUILTINZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_FILTERS_BUILTIN -DHAVE_7ZIP -D_7ZIP_ST -DHAVE_CC_RESAMPLER -DHAVE_AUDIOMIXER
-RARCH_DEFINES += -DHAVE_VIDEO_FILTER -DHAVE_RGUI
-RARCH_DEFINES += -DHAVE_DSP_FILTER
-
-LDFLAGS += -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ports/lib -L.
-# Lib cdvd is needed to get proper time
-LIBS += -lretro_ps2 -lpatches -lgskit -ldmakit -laudsrv -lmtap -lpadx -lz -lcdvd -lelf-loader -lfileXio -lpoweroff
+ifeq ($(HAVE_STATIC_DUMMY),1)
+  DEFINES += -DHAVE_STATIC_DUMMY
+else
+  LIBS += -lretro_ps2
+endif
 
 ifeq ($(SCREEN_DEBUG), 1)
 LIBS += -ldebug
@@ -46,25 +38,73 @@ ifeq ($(BUILD_FOR_PCSX2), 1)
 RARCH_DEFINES += -DBUILD_FOR_PCSX2
 endif
 
-ifeq ($(HAVE_THREADS), 1)
-RARCH_DEFINES += -DHAVE_THREADS
+DEFINES += -DRARCH_INTERNAL -DRARCH_CONSOLE
+
+ifeq ($(GRIFFIN_BUILD), 1)
+	OBJ += griffin/griffin.o
+	DEFINES += -DHAVE_GRIFFIN=1 -DHAVE_SCREENSHOTS -DHAVE_REWIND -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_CHEATS
+	DEFINES += -DHAVE_ZLIB -DHAVE_NO_BUILTINZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_FILTERS_BUILTIN -DHAVE_7ZIP -D_7ZIP_ST -DHAVE_CC_RESAMPLER -DHAVE_AUDIOMIXER
+	DEFINES += -DHAVE_VIDEO_FILTER -DHAVE_RGUI -DHAVE_WINDOW_OFFSET
+	DEFINES += -DHAVE_DSP_FILTER
+else
+	HAVE_CC_RESAMPLER = 1
+	HAVE_MENU_COMMON = 1
+	HAVE_RPNG = 1
+	HAVE_RJPEG = 1
+	HAVE_RBMP = 1
+	HAVE_MENU = 1
+	HAVE_CONFIGFILE = 1
+	HAVE_PATCH = 1
+	HAVE_CHEATS = 1
+	HAVE_RGUI = 1
+	HAVE_ZLIB = 1
+	HAVE_NO_BUILTINZLIB = 1
+	HAVE_7ZIP = 1
+	HAVE_SCREENSHOTS = 1
+	HAVE_REWIND = 1
+	HAVE_AUDIOMIXER = 1
+	HAVE_RWAV = 1
+	HAVE_DSP_FILTER = 1
+	HAVE_VIDEO_FILTER = 1
+	HAVE_FILTERS_BUILTIN = 1
+	HAVE_WINDOW_OFFSET = 1
+
+	include Makefile.common
+	CFLAGS += $(DEF_FLAGS)
+	BLACKLIST :=
+	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
+	INCDIRS += $(INCLUDE_DIRS)
 endif
 
-CFLAGS += $(RARCH_DEFINES)
+ifeq ($(strip $(PS2SDK)),)
+$(error "Please set PS2SDK in your environment. export PS2SDK=<path to>ps2sdk")
+endif
 
-# All the IRX objects
-EE_OBJS += $(IRX_DIR)/sio2man_irx.o $ $(IRX_DIR)/iomanX_irx.o $(IRX_DIR)/fileXio_irx.o
-EE_OBJS += $(IRX_DIR)/mcman_irx.o $(IRX_DIR)/mcserv_irx.o
-EE_OBJS += $(IRX_DIR)/usbd_irx.o $(IRX_DIR)/bdm_irx.o $(IRX_DIR)/bdmfs_vfat_irx.o $(IRX_DIR)/usbmass_bd_irx.o
-EE_OBJS += $(IRX_DIR)/libsd_irx.o $(IRX_DIR)/audsrv_irx.o
-EE_OBJS += $(IRX_DIR)/cdfs_irx.o
-EE_OBJS += $(IRX_DIR)/ps2dev9_irx.o $(IRX_DIR)/ps2atad_irx.o $(IRX_DIR)/ps2hdd_irx.o $(IRX_DIR)/ps2fs_irx.o $(IRX_DIR)/poweroff_irx.o 
-EE_OBJS += $(IRX_DIR)/mtapman_irx.o $(IRX_DIR)/padman_irx.o
+INCDIR = -I$(PS2DEV)/gsKit/include -I$(PS2SDK)/ports/include
+INCDIR += -Ips2/include -Ilibretro-common/include -Ideps -Ideps/stb -Ideps/7zip
+
+LDFLAGS += -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ports/lib -L.
+# Lib cdvd is needed to get proper time
+LIBS += -lpatches -lgskit -ldmakit -laudsrv -lmtap -lpadx -lz -lcdvd -lelf-loader -lfileXio -lpoweroff
+
+
+CFLAGS = $(OPTIMIZE_LV) $(DISABLE_WARNINGS) $(DEFINES) -DPS2 -ffast-math -fsingle-precision-constant
+ASFLAGS = $(CFLAGS)
+
+# IRX libs
+IRX_FILES += sio2man.irx iomanX.irx fileXio.irx
+IRX_FILES += mcman.irx mcserv.irx
+IRX_FILES += usbd.irx bdm.irx bdmfs_vfat.irx usbmass_bd.irx
+IRX_FILES += libsd.irx audsrv.irx
+IRX_FILES += cdfs.irx
+IRX_FILES += ps2dev9.irx ps2atad.irx ps2hdd.irx ps2fs.irx poweroff.irx
+IRX_FILES += mtapman.irx padman.irx
+EE_OBJS += $(IRX_FILES:.irx=_irx.o)
 
 # Missing objecst on the PS2SDK
 EE_OBJS += ps2/compat_files/ps2_devices.o
 
-EE_OBJS += griffin/griffin.o
+EE_OBJS += $(OBJ)
 
 EE_CFLAGS = $(CFLAGS)
 EE_CXXFLAGS = $(CFLAGS)
@@ -72,18 +112,14 @@ EE_LDFLAGS = $(LDFLAGS)
 EE_LIBS = $(LIBS)
 EE_ASFLAGS = $(ASFLAGS)
 EE_INCS = $(INCDIR)
-EE_BIN = $(TARGET)
+EE_BIN = $(TARGET).elf
 EE_GPVAL = $(GPVAL)
 
 
-all: irxdir $(EE_BIN)
-
-irxdir:
-	$(MAKE) -C $(IRX_DIR)
+all: $(EE_BIN)
 
 clean:
 	rm -f $(EE_BIN) $(EE_OBJS)
-	$(MAKE) -C $(IRX_DIR) clean
 
 prepare:
 	ps2client -h $(PS2_IP) reset
@@ -97,10 +133,12 @@ sim:
 
 debug: clean all run
 
-package:
+release: all
 	ps2-packer $(EE_BIN) $(TARGET_RELEASE)
 
-release: clean all package
+# IRX files
+%_irx.c:
+	$(PS2SDK)/bin/bin2c $(PS2SDK)/iop/irx/$*.irx $@ $*_irx
 
 #Include preferences
 include $(PS2SDK)/samples/Makefile.pref

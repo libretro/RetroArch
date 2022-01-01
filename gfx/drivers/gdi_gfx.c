@@ -253,7 +253,7 @@ static void *gdi_gfx_init(const video_info_t *video,
    mode_width  = 0;
    mode_height = 0;
 
-   RARCH_LOG("[GDI]: Detecting screen resolution %ux%u.\n", full_x, full_y);
+   RARCH_LOG("[GDI]: Detecting screen resolution: %ux%u.\n", full_x, full_y);
 
    win_width   = video->width;
    win_height  = video->height;
@@ -684,9 +684,9 @@ static void gdi_unload_texture(void *data,
 static uint32_t gdi_get_flags(void *data) { return 0; }
 
 static void gdi_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
-   win32_get_video_output_size(width, height);
+   win32_get_video_output_size(width, height, desc, desc_len);
 }
 
 static void gdi_get_video_output_prev(void *data)

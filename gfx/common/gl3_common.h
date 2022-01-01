@@ -42,18 +42,18 @@ RETRO_BEGIN_DECLS
 #define GL_CORE_NUM_PBOS 4
 #define GL_CORE_NUM_VBOS 256
 #define GL_CORE_NUM_FENCES 8
-struct gl_core_streamed_texture
+struct gl3_streamed_texture
 {
    GLuint tex;
    unsigned width;
    unsigned height;
 };
 
-typedef struct gl_core
+typedef struct gl3
 {
    const gfx_ctx_driver_t *ctx_driver;
    void *ctx_data;
-   gl_core_filter_chain_t *filter_chain;
+   gl3_filter_chain_t *filter_chain;
    GLuint *overlay_tex;
    float *overlay_vertex_coord;
    float *overlay_tex_coord;
@@ -64,8 +64,8 @@ typedef struct gl_core
 
    video_info_t video_info;
    video_viewport_t vp;
-   struct gl_core_viewport filter_chain_vp;
-   struct gl_core_streamed_texture textures[GL_CORE_NUM_TEXTURES];
+   struct gl3_viewport filter_chain_vp;
+   struct gl3_streamed_texture textures[GL_CORE_NUM_TEXTURES];
 
    GLuint vao;
    GLuint menu_texture;
@@ -80,13 +80,13 @@ typedef struct gl_core
       GLuint snow_simple;
       GLuint snow;
       GLuint bokeh;
-      struct gl_core_buffer_locations alpha_blend_loc;
-      struct gl_core_buffer_locations font_loc;
-      struct gl_core_buffer_locations ribbon_loc;
-      struct gl_core_buffer_locations ribbon_simple_loc;
-      struct gl_core_buffer_locations snow_simple_loc;
-      struct gl_core_buffer_locations snow_loc;
-      struct gl_core_buffer_locations bokeh_loc;
+      struct gl3_buffer_locations alpha_blend_loc;
+      struct gl3_buffer_locations font_loc;
+      struct gl3_buffer_locations ribbon_loc;
+      struct gl3_buffer_locations ribbon_simple_loc;
+      struct gl3_buffer_locations snow_simple_loc;
+      struct gl3_buffer_locations snow_loc;
+      struct gl3_buffer_locations bokeh_loc;
    } pipelines;
 
 
@@ -129,15 +129,15 @@ typedef struct gl_core
    bool quitting;
    bool should_resize;
    bool keep_aspect;
-} gl_core_t;
+} gl3_t;
 
-void gl_core_bind_scratch_vbo(gl_core_t *gl, const void *data, size_t size);
+void gl3_bind_scratch_vbo(gl3_t *gl, const void *data, size_t size);
 
-GLuint gl_core_compile_shader(GLenum stage, const char *source);
+GLuint gl3_compile_shader(GLenum stage, const char *source);
 
-void gl_core_framebuffer_clear(GLuint id);
+void gl3_framebuffer_clear(GLuint id);
 
-void gl_core_framebuffer_copy(
+void gl3_framebuffer_copy(
       GLuint fb_id,
       GLuint quad_program,
       GLuint quad_vbo,
@@ -145,7 +145,7 @@ void gl_core_framebuffer_copy(
       struct Size2D size,
       GLuint image);
 
-void gl_core_framebuffer_copy_partial(
+void gl3_framebuffer_copy_partial(
       GLuint fb_id,
       GLuint quad_program, 
       GLint flat_ubo_vertex,
@@ -153,9 +153,9 @@ void gl_core_framebuffer_copy_partial(
       GLuint image,
       float rx, float ry);
 
-void gl_core_build_default_matrix(float *data);
+void gl3_build_default_matrix(float *data);
 
-uint32_t gl_core_get_cross_compiler_target_version(void);
+uint32_t gl3_get_cross_compiler_target_version(void);
 
 RETRO_END_DECLS
 

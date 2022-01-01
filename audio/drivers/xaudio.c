@@ -42,7 +42,7 @@
 #include "../common/mmdevice_common.h"
 #endif
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 #include "../../verbosity.h"
 
 typedef struct xaudio2 xaudio2_t;

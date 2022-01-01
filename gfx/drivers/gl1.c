@@ -272,7 +272,7 @@ static void *gl1_gfx_init(const video_info_t *video,
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
-   RARCH_LOG("[GL1]: Found GL1 context: %s\n", ctx_driver->ident);
+   RARCH_LOG("[GL1]: Found GL1 context: \"%s\".\n", ctx_driver->ident);
 
    if (gl1->ctx_driver->get_video_size)
       gl1->ctx_driver->get_video_size(gl1->ctx_data,
@@ -296,7 +296,7 @@ static void *gl1_gfx_init(const video_info_t *video,
    if (string_is_equal(ctx_driver->ident, "null"))
       goto error;
 
-   RARCH_LOG("[GL1]: Detecting screen resolution %ux%u.\n", full_x, full_y);
+   RARCH_LOG("[GL1]: Detecting screen resolution: %ux%u.\n", full_x, full_y);
 
    win_width   = video->width;
    win_height  = video->height;
@@ -345,7 +345,7 @@ static void *gl1_gfx_init(const video_info_t *video,
 
    video_driver_get_size(&temp_width, &temp_height);
 
-   RARCH_LOG("[GL1]: Using resolution %ux%u\n", temp_width, temp_height);
+   RARCH_LOG("[GL1]: Using resolution %ux%u.\n", temp_width, temp_height);
 
    vendor   = (const char*)glGetString(GL_VENDOR);
    renderer = (const char*)glGetString(GL_RENDERER);
@@ -429,7 +429,7 @@ static void *gl1_gfx_init(const video_info_t *video,
    return gl1;
 
 error:
-   video_context_driver_destroy();
+   video_context_driver_free();
    if (gl1)
    {
       if (gl1->extensions)
@@ -718,6 +718,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    bool hard_sync                   = video_info->hard_sync;
    struct font_params *osd_params   = (struct font_params*)
       &video_info->osd_stat_params;
+   bool overlay_behind_menu         = video_info->overlay_behind_menu;
 
    /* FIXME: Force these settings off as they interfere with the rendering */
    video_info->xmb_shadows_enable   = false;
@@ -867,6 +868,11 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       }
    }
 
+#ifdef HAVE_OVERLAY
+   if (gl1->overlay_enable && overlay_behind_menu)
+      gl1_render_overlay(gl1, video_width, video_height);
+#endif
+
    if (gl1->menu_texture_enable){
       do_swap = true;
 #ifdef VITA
@@ -904,7 +910,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_OVERLAY
-   if (gl1->overlay_enable)
+   if (gl1->overlay_enable && !overlay_behind_menu)
       gl1_render_overlay(gl1, video_width, video_height);
 #endif
 
@@ -949,16 +955,18 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    }   
 #endif 
 
-   /* check if we are fast forwarding or in menu, if we are ignore hard sync */
-   if (hard_sync
+   /* check if we are fast forwarding or in menu, 
+      if we are ignore hard sync */
+   if (      hard_sync
          && !video_info->input_driver_nonblock_state
-         && !gl1->menu_texture_enable)
+      )
    {
       glClear(GL_COLOR_BUFFER_BIT);
       glFinish();
    }
 
-   if(draw){
+   if (draw)
+   {
       glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT);
    }
@@ -1214,14 +1222,14 @@ static void gl1_set_texture_frame(void *data,
 }
 
 static void gl1_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
    gl1_t *gl         = (gl1_t*)data;
    if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_size)
       return;
    gl->ctx_driver->get_video_output_size(
          gl->ctx_data,
-         width, height);
+         width, height, desc, desc_len);
 }
 
 static void gl1_get_video_output_prev(void *data)
@@ -1296,6 +1304,7 @@ static void gl1_load_texture_data(
 
 #ifndef VITA
    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 #endif
 
    glTexImage2D(GL_TEXTURE_2D,
@@ -1427,6 +1436,7 @@ static uint32_t gl1_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_HARD_SYNC);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
+   BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
 
    return flags;
 }
