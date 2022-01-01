@@ -5530,6 +5530,14 @@ MSG_HASH(
    "Afficher des informations additionnelles pour chaque entrée dans les listes de lecture, telles que l'association au cœur actuelle et le temps de jeu (si disponible). A un impact variable sur les performances."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
+   "Afficher les icônes spécifiques au contenu dans l'historique et les favoris"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_HISTORY_ICONS,
+   "Afficher des icônes spécifiques pour chaque élément de la liste de lecture d'historique et de favoris. A un impact variable sur les performances."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    "Cœur :"
    )
@@ -7834,6 +7842,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NEAREST,
    "Au plus proche"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAIN,
+   "Principal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT,
+   "Contenu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR,
