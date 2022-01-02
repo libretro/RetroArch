@@ -9,11 +9,17 @@ import urllib.request
 import zipfile
 
 # Check Crowdin API Key
-if len(sys.argv) < 2:
-    print('Please provide Crowdin API Key!')
-    exit()
 
-api_key = sys.argv[1]
+try:
+   api_key = sys.argv[1]  # IndexError, if no key is given
+   if not api_key:   # if key is empty
+      raise ValueError
+except IndexError:
+    print('Please provide Crowdin API Key!')
+    raise
+except ValueError:
+    print("Crowdin API Key can't be empty!")
+    raise
 
 # Apply Crowdin API Key
 crowdin_config_file = open('crowdin.yaml', 'r')
@@ -38,7 +44,7 @@ if not os.path.isfile(jar_name):
       jar_dir = zip_ref.namelist()[0]
       for file in zip_ref.namelist():
          if file.endswith(jar_name):
-               jar_file = file
+            jar_file = file
       zip_ref.extract(jar_file)
       os.rename(jar_file, jar_name)
       os.remove(crowdin_cli_file)
