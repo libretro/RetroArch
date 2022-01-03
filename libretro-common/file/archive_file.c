@@ -62,7 +62,7 @@ static int file_archive_get_file_list_cb(
 
       /* Skip if directory. */
       if (last_char == '/' || last_char == '\\' )
-         return 0;
+         return 1;
       
       string_list_initialize(&ext_list);
       if (string_split_noalloc(&ext_list, valid_exts, "|"))
@@ -72,7 +72,7 @@ static int file_archive_get_file_list_cb(
          if (!file_ext)
          {
             string_list_deinitialize(&ext_list);
-            return 0;
+            return 1;
          }
 
          if (!string_list_find_elem_prefix(&ext_list, ".", file_ext))
