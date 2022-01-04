@@ -118,6 +118,7 @@ struct SceNetInAddr inet_aton(const char *ip_addr);
 
 #if !defined(__PSL1GHT__) && defined(__PS3__)
 #include <netex/libnetctl.h>
+#include <netex/errno.h>
 #else
 #include <signal.h>
 #endif
