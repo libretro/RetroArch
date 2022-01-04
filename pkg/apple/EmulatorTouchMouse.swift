@@ -6,6 +6,16 @@
 //  Copyright © 2021 RetroArch. All rights reserved.
 //
 
+/**
+ Touch mouse behavior:
+ - Mouse movement: Pan finger around screen
+ - Left click: Tap with one finger
+ - Right click: Tap with two fingers (or hold with one finger and tap with another)
+ - Click-and-drag: Double tap and hold for 1 second, then pan finger around screen to drag mouse
+ 
+ Code adapted from iDOS/dospad: https://github.com/litchie/dospad
+ */
+
 import Combine
 import UIKit
 
@@ -34,7 +44,7 @@ import UIKit
    weak var delegate: EmulatorTouchMouseHandlerDelegate?
    
    private let positionChangeThreshold: CGFloat = 20.0
-   private let mouseHoldInterval: TimeInterval = 1.5
+   private let mouseHoldInterval: TimeInterval = 1.0
    
    private var pendingMouseEvents = [MouseClick]()
    private var mouseEventPublisher: AnyPublisher<MouseClick, Never> {
@@ -47,7 +57,6 @@ import UIKit
    private var secondaryTouch: TouchInfo?
    
    private let mediumHaptic = UIImpactFeedbackGenerator(style: .medium)
-   private let lightHaptic = UIImpactFeedbackGenerator(style: .light)
    
    public init(view: UIView) {
       self.view = view
@@ -58,24 +67,19 @@ import UIKit
    private func setup() {
       subscription = mouseEventPublisher
          .sink(receiveValue: {[weak self] value in
-//            print("mouseEventPublisher processing event: \(value)")
             self?.pendingMouseEvents.append(value)
             self?.processMouseEvents()
          })
    }
    
    private func processMouseEvents() {
-//      print("processMouseEvents: mouse events = \(pendingMouseEvents)")
       guard let event = pendingMouseEvents.first else {
          return
       }
-//      print("processing mouse event: \(event)")
       delegate?.handleMouseClick(isLeftClick: !event.isRightClick, isPressed: event.isPressed)
       if event.isPressed {
          DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-//            print("scheduling mouse event after 0.1 sec")
             self?.mouseEventSubject.send(MouseClick(isRightClick: event.isRightClick, isPressed: false))
-//            self?.pendingMouseEvents.append(MouseClick(isRightClick: event.isRightClick, isPressed: false))
          }
       }
       pendingMouseEvents.removeFirst()
@@ -86,7 +90,6 @@ import UIKit
       guard let primaryTouch = primaryTouch, primaryTouch.holdState == .wait else {
          return
       }
-      print("beginHold: hold down")
       self.primaryTouch = TouchInfo(touch: primaryTouch.touch, origin: primaryTouch.origin, holdState: .held)
       mediumHaptic.impactOccurred()
       delegate?.handleMouseClick(isLeftClick: true, isPressed: true)
@@ -94,19 +97,15 @@ import UIKit
    
    private func endHold() {
       guard let primaryTouch = primaryTouch else { return }
-      print("endhold: holdState = \(primaryTouch.holdState)")
       if primaryTouch.holdState == .notHeld {
          return
       }
       if primaryTouch.holdState == .wait {
-         print("endHold: cancel hold")
          Thread.cancelPreviousPerformRequests(withTarget: self, selector: #selector(beginHold), object: self)
       } else {
-         print("endHold: hold up")
          delegate?.handleMouseClick(isLeftClick: true, isPressed: false)
       }
       self.primaryTouch = TouchInfo(touch: primaryTouch.touch, origin: primaryTouch.origin, holdState: .notHeld)
-//      lightHaptic.impactOccurred()
    }
    
    public func touchesBegan(touches: Set<UITouch>) {
@@ -114,11 +113,11 @@ import UIKit
          return
       }
       if primaryTouch == nil {
-         print("primary touch began")
          primaryTouch = TouchInfo(touch: touch, origin: touch.location(in: view), holdState: .wait)
-         self.perform(#selector(beginHold), with: nil, afterDelay: mouseHoldInterval)
+         if touch.tapCount == 2 {
+            self.perform(#selector(beginHold), with: nil, afterDelay: mouseHoldInterval)
+         }
       } else if secondaryTouch == nil {
-         print("secondary touch began")
          secondaryTouch = TouchInfo(touch: touch, origin: touch.location(in: view), holdState: .notHeld)
       }
    }
@@ -126,20 +125,16 @@ import UIKit
    public func touchesEnded(touches: Set<UITouch>) {
       for touch in touches {
          if touch == primaryTouch?.touch {
-            print("primary ended, tap count = \(touch.tapCount)")
             if touch.tapCount > 0 {
                for _ in 1...touch.tapCount {
                   mouseEventSubject.send(MouseClick(isRightClick: false, isPressed: true))
                }
-//               pendingMouseEvents.append(MouseClick(isRightClick: false, isPressed: true))
             }
             endHold()
             primaryTouch = nil
             secondaryTouch = nil
          } else if touch == secondaryTouch?.touch {
-            print("secondary ended, tap count = \(touch.tapCount)")
             if touch.tapCount > 0 {
-//               pendingMouseEvents.append(MouseClick(isRightClick: true, isPressed: true))
                mouseEventSubject.send(MouseClick(isRightClick: true, isPressed: true))
                endHold()
             }
@@ -154,12 +149,8 @@ import UIKit
          if touch == primaryTouch?.touch {
             let a = touch.previousLocation(in: view)
             let b = touch.location(in: view)
-//            print("touchesMoved: primary move: \(b.x-a.x) \(b.y-a.y)")
             if primaryTouch?.holdState == .wait && (distanceBetween(pointA: a, pointB: b) > positionChangeThreshold) {
                endHold()
-            }
-            if primaryTouch?.holdState == .held {
-//               print("mouse is held down...")
             }
             delegate?.handleMouseMove(x: b.x-a.x, y: b.y-a.y)
          }
@@ -167,7 +158,6 @@ import UIKit
    }
    
    public func touchesCancelled(touches: Set<UITouch>) {
-      print("touchesCancelled...")
       for touch in touches {
          if touch == primaryTouch?.touch {
             endHold()
