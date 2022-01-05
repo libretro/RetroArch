@@ -10079,10 +10079,6 @@ MSG_HASH(
    "In attesa di un client ..."
    )
 MSG_HASH(
-   MSG_ROOM_NOT_CONNECTABLE,
-   "La tua stanza non è collegabile da internet."
-   )
-MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    "Sei uscito dal gioco"
    )
@@ -11947,10 +11943,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_INTERNET_RELAY,
    "Internet (Relè)"
-   )
-MSG_HASH(
-   MSG_INTERNET_NOT_CONNECTABLE,
-   "Internet (Non Connettibile)"
    )
 MSG_HASH(
    MSG_LOCAL,

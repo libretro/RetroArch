@@ -5535,7 +5535,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_HISTORY_ICONS,
-   "Afficher des icônes spécifiques pour chaque élément des listes de lecture d'historique et des favoris. A un impact variable sur les performances."
+   "Afficher des icônes spécifiques pour chaque élément de la liste de lecture d'historique et de favoris. A un impact variable sur les performances."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,

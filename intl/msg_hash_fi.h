@@ -3849,10 +3849,6 @@ MSG_HASH(
    "Muistinkäyttöä päivitetään valitulla aikavälillä kuvissa."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
-   "Näytä verkkopelin ping"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
    "\"Lataa sisältöä\"-aloitusilmoitus"
    )
@@ -5196,10 +5192,6 @@ MSG_HASH(
    "Suurin aktiivisten yhteyksin määrä, jotka isäntä hyväksyy, ennen uusien yhteyksien hylkäämistä."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_PING,
-   "Ping-rajoitin"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
    "Palvelimen salasana"
    )
@@ -5234,10 +5226,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
    "Salli tauotus"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "Salli pelaajien keskeyttää verkkopelin aikana."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -5480,10 +5468,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS,
    "Näytä lisätiedot jokaisesta soittolistan kohteesta, kuten nykyinen ydinliitos ja suoritusaika (jos saatavilla). Vaihteleva vaikutus suorituskykyyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
-   "Näytä sisältökohtaiset kuvakkeet historiassa ja suosikeissa"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
@@ -7802,10 +7786,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NEAREST,
    "Lähin"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT,
-   "Sisältö"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR,
@@ -10183,10 +10163,6 @@ MSG_HASH(
    "Odotetaan asiakasta..."
    )
 MSG_HASH(
-   MSG_ROOM_NOT_CONNECTABLE,
-   "Huoneesi ei ole yhdistettävissä internetistä."
-   )
-MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    "Poistuit pelistä"
    )
@@ -12027,10 +12003,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_INTERNET_RELAY,
    "Verkko (välityspalvelin)"
-   )
-MSG_HASH(
-   MSG_INTERNET_NOT_CONNECTABLE,
-   "Internet (ei yhdistettävissä)"
    )
 MSG_HASH(
    MSG_LOCAL,
