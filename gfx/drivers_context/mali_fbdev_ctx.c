@@ -55,7 +55,6 @@ typedef struct
 
 static void gfx_ctx_mali_fbdev_destroy(void *data)
 {
-   int fd;
    mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
 
    if (mali)
@@ -69,12 +68,14 @@ static void gfx_ctx_mali_fbdev_destroy(void *data)
    }
 
    /* Clear framebuffer and set cursor on again */
-   fd = open("/dev/tty", O_RDWR);
-   ioctl(fd, VT_ACTIVATE, 5);
-   ioctl(fd, VT_ACTIVATE, 1);
-   close(fd);
-
-   system("setterm -cursor on");
+   if (!system(NULL) && !system("which setterm > /dev/null 2>&1"))
+   {
+      int fd = open("/dev/tty", O_RDWR);
+      ioctl(fd, VT_ACTIVATE, 5);
+      ioctl(fd, VT_ACTIVATE, 1);
+      close(fd);
+      system("setterm -cursor on");
+   }
 }
 
 static void gfx_ctx_mali_fbdev_get_video_size(void *data,
@@ -160,6 +161,15 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
       RARCH_ERR("Error obtaining framebuffer info.\n");
       goto error;
    }
+   /*Workaround to reset yoffset when returned >0 from driver */
+   if (vinfo.yoffset != 0)
+   {
+      vinfo.yoffset = 0;
+      if (ioctl(fd, FBIOPUT_VSCREENINFO, &vinfo))
+         {
+            RARCH_ERR("Error resetting yoffset to 0.\n");
+      }
+   }
 
    close(fd);
    fd = -1;
@@ -173,9 +183,14 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
    mali->native_window.width  = vinfo.xres;
    mali->native_window.height = vinfo.yres;
 
-   mali->refresh_rate = 1000000.0f / vinfo.pixclock * 1000000.0f /
-         (vinfo.yres + vinfo.upper_margin + vinfo.lower_margin + vinfo.vsync_len) /
-         (vinfo.xres + vinfo.left_margin  + vinfo.right_margin + vinfo.hsync_len);
+   if (vinfo.pixclock)
+   {
+      mali->refresh_rate = 1000000.0f / vinfo.pixclock * 1000000.0f /
+           (vinfo.yres + vinfo.upper_margin + vinfo.lower_margin + vinfo.vsync_len) /
+           (vinfo.xres + vinfo.left_margin  + vinfo.right_margin + vinfo.hsync_len);
+   }else{
+      mali->refresh_rate = 60;
+   }
 
 #ifdef HAVE_EGL
    if (!egl_create_context(&mali->egl, attribs))
