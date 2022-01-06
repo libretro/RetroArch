@@ -46,7 +46,7 @@ int rc_json_get_bool(int* out, const rc_json_field_t* field, const char* field_n
 int rc_json_get_datetime(time_t* out, const rc_json_field_t* field, const char* field_name);
 void rc_json_get_optional_string(const char** out, rc_api_response_t* response, const rc_json_field_t* field, const char* field_name, const char* default_value);
 void rc_json_get_optional_num(int* out, const rc_json_field_t* field, const char* field_name, int default_value);
-void rc_json_get_optional_unum(unsigned* out, const rc_json_field_t* field, const char* field_name, int default_value);
+void rc_json_get_optional_unum(unsigned* out, const rc_json_field_t* field, const char* field_name, unsigned default_value);
 void rc_json_get_optional_bool(int* out, const rc_json_field_t* field, const char* field_name, int default_value);
 int rc_json_get_required_string(const char** out, rc_api_response_t* response, const rc_json_field_t* field, const char* field_name);
 int rc_json_get_required_num(int* out, rc_api_response_t* response, const rc_json_field_t* field, const char* field_name);
@@ -72,7 +72,7 @@ void rc_url_builder_append_str_param(rc_api_url_builder_t* builder, const char* 
 
 void rc_api_url_build_dorequest_url(rc_api_request_t* request);
 int rc_api_url_build_dorequest(rc_api_url_builder_t* builder, const char* api, const char* username, const char* api_token);
-void rc_api_generate_checksum(char checksum[33], const char* data);
+void rc_api_format_md5(char checksum[33], const unsigned char digest[16]);
 
 #ifdef __cplusplus
 }

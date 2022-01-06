@@ -179,8 +179,10 @@ int rc_evaluate_trigger(rc_trigger_t* self, rc_peek_t peek, void* ud, lua_State*
   }
 
   /* if paused, the measured value may not be captured, keep the old value */
-  if (!is_paused)
-    self->measured_value = eval_state.measured_value;
+  if (!is_paused) {
+    rc_typed_value_convert(&eval_state.measured_value, RC_VALUE_TYPE_UNSIGNED);
+    self->measured_value = eval_state.measured_value.value.u32;
+  }
 
   /* if the state is WAITING and the trigger is ready to fire, ignore it and reset the hit counts */
   /* otherwise, if the state is WAITING, proceed to activating the trigger */

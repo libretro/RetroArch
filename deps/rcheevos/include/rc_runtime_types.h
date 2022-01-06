@@ -54,6 +54,8 @@ enum {
   RC_MEMSIZE_16_BITS_BE,
   RC_MEMSIZE_24_BITS_BE,
   RC_MEMSIZE_32_BITS_BE,
+  RC_MEMSIZE_FLOAT,
+  RC_MEMSIZE_MBF32,
   RC_MEMSIZE_VARIABLE
 };
 
@@ -67,6 +69,8 @@ typedef struct rc_memref_value_t {
   char size;
   /* True if the value changed this frame. */
   char changed;
+  /* The value type of the value (for variables) */
+  char type;
   /* True if the reference will be used in indirection.
    * NOTE: This is actually a property of the rc_memref_t, but we put it here to save space */
   char is_indirect;
@@ -123,7 +127,7 @@ typedef struct rc_operand_t {
 }
 rc_operand_t;
 
-int rc_operand_is_memref(rc_operand_t* operand);
+int rc_operand_is_memref(const rc_operand_t* operand);
 
 /*****************************************************************************\
 | Conditions                                                                  |
@@ -280,7 +284,7 @@ struct rc_value_t {
   /* The list of conditions to evaluate. */
   rc_condset_t* conditions;
 
-  /* The memory references required by the value. */
+  /* The memory references required by the variable. */
   rc_memref_t* memrefs;
 
   /* The name of the variable. */
@@ -337,7 +341,13 @@ enum {
   RC_FORMAT_SCORE,
   RC_FORMAT_VALUE,
   RC_FORMAT_MINUTES,
-  RC_FORMAT_SECONDS_AS_MINUTES
+  RC_FORMAT_SECONDS_AS_MINUTES,
+  RC_FORMAT_FLOAT1,
+  RC_FORMAT_FLOAT2,
+  RC_FORMAT_FLOAT3,
+  RC_FORMAT_FLOAT4,
+  RC_FORMAT_FLOAT5,
+  RC_FORMAT_FLOAT6
 };
 
 int rc_parse_format(const char* format_str);
@@ -398,6 +408,7 @@ rc_richpresence_t* rc_parse_richpresence(void* buffer, const char* script, lua_S
 int rc_evaluate_richpresence(rc_richpresence_t* richpresence, char* buffer, unsigned buffersize, rc_peek_t peek, void* peek_ud, lua_State* L);
 void rc_update_richpresence(rc_richpresence_t* richpresence, rc_peek_t peek, void* peek_ud, lua_State* L);
 int rc_get_richpresence_display_string(rc_richpresence_t* richpresence, char* buffer, unsigned buffersize, rc_peek_t peek, void* peek_ud, lua_State* L);
+void rc_reset_richpresence(rc_richpresence_t* self);
 
 #ifdef __cplusplus
 }
