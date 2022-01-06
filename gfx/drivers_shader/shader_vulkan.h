@@ -102,6 +102,10 @@ void vulkan_filter_chain_set_pass_info(vulkan_filter_chain_t *chain,
       unsigned pass,
       const struct vulkan_filter_chain_pass_info *info);
 
+VkFormat vulkan_filter_chain_get_pass_rt_format(
+      vulkan_filter_chain_t *chain,
+      unsigned pass);      
+
 bool vulkan_filter_chain_update_swapchain_info(vulkan_filter_chain_t *chain,
       const struct vulkan_filter_chain_swapchain_info *info);
 
