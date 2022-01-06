@@ -3461,6 +3461,10 @@ struct retro_core_option_definition
    const char *default_value;
 };
 
+#ifdef __PS3__
+#undef local
+#endif
+
 struct retro_core_options_intl
 {
    /* Pointer to an array of retro_core_option_definition structs
