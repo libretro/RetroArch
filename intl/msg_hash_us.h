@@ -9157,6 +9157,10 @@ MSG_HASH(
    "Reduce thumbnail display size by scaling maximum allowed width."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
+   "Vertical Fade Factor"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
    "Enable Settings Tab (Restart Required)"
    )

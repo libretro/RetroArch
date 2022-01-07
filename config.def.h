@@ -733,6 +733,7 @@ static const bool content_show_playlists    = true;
 
 #ifdef HAVE_XMB
 #define DEFAULT_XMB_ANIMATION 0
+#define DEFAULT_XMB_VERTICAL_FADE_FACTOR 100
 
 static const unsigned xmb_alpha_factor      = 75;
 static const unsigned menu_font_color_red   = 255;
