@@ -101,17 +101,24 @@ static void task_netplay_nat_traversal_handler(retro_task_t *task)
             }
 
             /* Grab a suitable interface. */
+            hints.ai_family = AF_INET;
             for (i = data->iface; i < natt_st->interfaces.size; i++)
             {
                struct net_ifinfo_entry *tmp_entry =
                   &natt_st->interfaces.entries[i];
 
-               /* Ignore localhost */
-               if (string_is_equal(tmp_entry->host, "127.0.0.1"))
+               if (getaddrinfo_retro(tmp_entry->host, NULL, &hints, &addr) ||
+                     !addr)
                   continue;
-               /* Ignore IPv6 */
-               if (strchr(tmp_entry->host, ':'))
+
+               /* Ignore non-LAN interfaces */
+               if (!netplay_is_lan_address(
+                  (struct sockaddr_in *) addr->ai_addr))
+               {
+                  freeaddrinfo_retro(addr);
+                  addr = NULL;
                   continue;
+               }
 
                entry = tmp_entry;
                data->iface = i;
@@ -122,16 +129,6 @@ static void task_netplay_nat_traversal_handler(retro_task_t *task)
             if (!entry)
             {
                data->status = NAT_TRAVERSAL_STATUS_SELECT_DEVICE;
-               break;
-            }
-
-            if (getaddrinfo_retro(entry->host, NULL, &hints, &addr) ||
-               !addr)
-            {
-               if (++data->iface < natt_st->interfaces.size)
-                  data->forward_type = NATT_FORWARD_TYPE_ANY;
-               else
-                  data->status = NAT_TRAVERSAL_STATUS_SELECT_DEVICE;
                break;
             }
 
