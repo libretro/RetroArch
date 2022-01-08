@@ -8561,6 +8561,10 @@ MSG_HASH(
    "최대 폭을 제한하여 표시되는 미리보기의 크기를 줄입니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
+   "수직 페이드 양"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
    "설정 탭 사용 (재시작 필요)"
    )

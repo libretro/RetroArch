@@ -8513,6 +8513,10 @@ MSG_HASH(
    "Réduit la taille d'affichage des miniatures en ajustant la largeur maximum autorisée."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
+   "Facteur de fondu vertical"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
    "Activer l'onglet 'Réglages' (Redémarrage requis)"
    )

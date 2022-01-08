@@ -8445,6 +8445,10 @@ MSG_HASH(
    "Riduce la dimensione del display delle copertine ridimensionando la larghezza massima consentita."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
+   "Fattore Di Dissolvenza Verticale"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
    "Abilita Scheda Impostazioni (Riavvio Richiesto)"
    )

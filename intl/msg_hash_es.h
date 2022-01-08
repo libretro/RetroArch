@@ -8517,6 +8517,10 @@ MSG_HASH(
    "Reduce el tamaño de las miniaturas indicando un ancho máximo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
+   "Factor de fundido vertical"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
    "Mostrar la sección de Ajustes (es necesario reiniciar)"
    )

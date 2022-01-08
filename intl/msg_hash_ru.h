@@ -8605,6 +8605,10 @@ MSG_HASH(
    "Уменьшение размера миниатюр путём изменения максимального значения ширины."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
+   "Затухание по вертикали"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
    "Включить вкладку 'Настройки' (требуется перезапуск)"
    )
