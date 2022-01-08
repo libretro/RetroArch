@@ -4072,7 +4072,7 @@ static void retroarch_print_help(const char *arg0)
    printf("Usage: %s [OPTIONS]... [FILE]\n", arg0);
 
    {
-      char buf[2148];
+      char buf[2720];
       buf[0] = '\0';
 
       strlcpy(buf, "  -h, --help            Show this help message.\n", sizeof(buf));
@@ -4122,8 +4122,18 @@ static void retroarch_print_help(const char *arg0)
             "Multiple configs are\n"
             "                        delimited by '|'.\n", sizeof(buf));
 #ifdef HAVE_DYNAMIC
+      /* Note: Must strlcat the the string literal in two passes
+       * due to C89 limitations (509 character limit) */
       strlcat(buf, "  -L, --libretro=FILE   Path to libretro implementation. "
-            "Overrides any config setting.\n", sizeof(buf));
+            "Overrides any config setting. FILE may be one of the following:"
+            , sizeof(buf));
+      strlcat(buf,
+            "\n\t\t1. The full path to a core shared object library: path/to/<core_name>_libretro.<lib_ext>"
+            "\n\t\t2. A core shared object library 'file name' (*): <core_name>_libretro.<lib_ext>"
+            "\n\t\t3. A core 'short name' (*): <core_name>_libretro OR <core_name>"
+            "\n\t\t(*) If 'file name' or 'short name' do not correspond to an existing full file path,"
+            "\n\t\t    the configured frontend 'cores' directory will be searched for a match\n"
+            , sizeof(buf));
 #endif
       strlcat(buf, "      --subsystem=NAME  Use a subsystem of the libretro core. "
             "Multiple content\n"
@@ -4222,6 +4232,134 @@ static void retroarch_print_help(const char *arg0)
       puts(buf);
    }
 }
+
+#ifdef HAVE_DYNAMIC
+static void retroarch_parse_input_libretro_path(const char *path)
+{
+   settings_t *settings   = config_get_ptr();
+   int path_stats         = 0;
+   const char *path_ext   = NULL;
+   core_info_t *core_info = NULL;
+   const char *core_path  = NULL;
+   bool core_path_matched = false;
+   char tmp_path[PATH_MAX_LENGTH];
+
+   tmp_path[0] = '\0';
+
+   if (string_is_empty(path))
+      goto end;
+
+   /* Check if path refers to a built-in core */
+   if (string_ends_with_size(path, "builtin",
+            strlen(path), STRLEN_CONST("builtin")))
+   {
+      RARCH_LOG("--libretro argument \"%s\" is a built-in core. Ignoring.\n",
+            path);
+      return;
+   }
+
+   path_stats = path_stat(path);
+
+   /* Check if path is a directory */
+   if ((path_stats & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
+   {
+      path_clear(RARCH_PATH_CORE);
+
+      configuration_set_string(settings,
+            settings->paths.directory_libretro, path);
+
+      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
+      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY, NULL);
+
+      RARCH_WARN("Using old --libretro behavior. "
+            "Setting libretro_directory to \"%s\" instead.\n",
+            path);
+      return;
+   }
+
+   /* Check if path is a valid file */
+   if ((path_stats & RETRO_VFS_STAT_IS_VALID) != 0)
+   {
+      core_path = path;
+      goto end;
+   }
+
+   /* If path refers to a core file that does not exist,
+    * check for its presence in the user-defined cores
+    * directory */
+   path_ext = path_get_extension(path);
+
+   if (!string_is_empty(path_ext))
+   {
+      char core_ext[255];
+
+      core_ext[0] = '\0';
+
+      if (string_is_empty(settings->paths.directory_libretro) ||
+          !frontend_driver_get_core_extension(core_ext,
+               sizeof(core_ext)) ||
+          !string_is_equal(path_ext, core_ext))
+         goto end;
+
+      fill_pathname_join(tmp_path, settings->paths.directory_libretro,
+            path, sizeof(tmp_path));
+
+      if (string_is_empty(tmp_path))
+         goto end;
+
+      path_stats = path_stat(tmp_path);
+
+      if ((path_stats & RETRO_VFS_STAT_IS_VALID) != 0 &&
+          (path_stats & RETRO_VFS_STAT_IS_DIRECTORY) == 0)
+      {
+         core_path         = tmp_path;
+         core_path_matched = true;
+         goto end;
+      }
+   }
+   else
+   {
+      /* If path has no extension and contains no path
+       * delimiters, check if it is a core 'name', matching
+       * an existing file in the cores directory */
+      if (find_last_slash(path))
+         goto end;
+
+      command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+
+      strlcpy(tmp_path, path, sizeof(tmp_path));
+
+      if (!string_ends_with_size(tmp_path, "_libretro",
+            strlen(tmp_path), STRLEN_CONST("_libretro")))
+         strlcat(tmp_path, "_libretro", sizeof(tmp_path));
+
+      if (!core_info_find(tmp_path, &core_info) ||
+          string_is_empty(core_info->path))
+         goto end;
+
+      core_path         = core_info->path;
+      core_path_matched = true;
+   }
+
+end:
+   if (!string_is_empty(core_path))
+   {
+      path_set(RARCH_PATH_CORE, core_path);
+      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
+
+      /* We requested an explicit core, so use PLAIN core type. */
+      runloop_set_current_core_type(CORE_TYPE_PLAIN, false);
+
+      if (core_path_matched)
+         RARCH_LOG("--libretro argument \"%s\" matches core file \"%s\".\n",
+               path, core_path);
+   }
+   else
+      RARCH_WARN("--libretro argument \"%s\" is not a file, core name"
+            " or directory. Ignoring.\n",
+            path ? path : "");
+}
+#endif
 
 /**
  * retroarch_parse_input_and_config:
@@ -4614,50 +4752,11 @@ static bool retroarch_parse_input_and_config(
 #endif
                break;
 
-   #ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYNAMIC
             case 'L':
-               {
-                  int path_stats;
-
-                  if (string_ends_with_size(optarg, "builtin",
-                           strlen(optarg), STRLEN_CONST("builtin")))
-                  {
-                     RARCH_LOG("--libretro argument \"%s\" is a built-in core. Ignoring.\n",
-                           optarg);
-                     break;
-                  }
-
-                  path_stats = path_stat(optarg);
-
-                  if ((path_stats & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
-                  {
-                     path_clear(RARCH_PATH_CORE);
-
-                     configuration_set_string(settings,
-                     settings->paths.directory_libretro, optarg);
-
-                     retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-                     retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY, NULL);
-                     RARCH_WARN("Using old --libretro behavior. "
-                           "Setting libretro_directory to \"%s\" instead.\n",
-                           optarg);
-                  }
-                  else if ((path_stats & RETRO_VFS_STAT_IS_VALID) != 0)
-                  {
-                     path_set(RARCH_PATH_CORE, optarg);
-                     retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-
-                     /* We requested explicit core, so use PLAIN core type. */
-                     runloop_set_current_core_type(CORE_TYPE_PLAIN, false);
-                  }
-                  else
-                  {
-                     RARCH_WARN("--libretro argument \"%s\" is neither a file nor directory. Ignoring.\n",
-                           optarg);
-                  }
-               }
+               retroarch_parse_input_libretro_path(optarg);
                break;
-   #endif
+#endif
             case 'P':
 #ifdef HAVE_BSV_MOVIE
                {
