@@ -1896,7 +1896,7 @@ static struct config_bool_setting *populate_settings_bool(
 #ifdef HAVE_CHEEVOS
    SETTING_BOOL("cheevos_enable",               &settings->bools.cheevos_enable, true, DEFAULT_CHEEVOS_ENABLE, false);
    SETTING_BOOL("cheevos_test_unofficial",      &settings->bools.cheevos_test_unofficial, true, false, false);
-   SETTING_BOOL("cheevos_hardcore_mode_enable", &settings->bools.cheevos_hardcore_mode_enable, true, true, false);
+   SETTING_BOOL("cheevos_hardcore_mode_enable", &settings->bools.cheevos_hardcore_mode_enable, true, false, false);
    SETTING_BOOL("cheevos_challenge_indicators", &settings->bools.cheevos_challenge_indicators, true, true, false);
    SETTING_BOOL("cheevos_richpresence_enable",  &settings->bools.cheevos_richpresence_enable, true, true, false);
    SETTING_BOOL("cheevos_unlock_sound_enable",  &settings->bools.cheevos_unlock_sound_enable, true, false, false);
@@ -3191,7 +3191,7 @@ error:
 }
 
 #ifdef RARCH_CONSOLE
-static void video_driver_load_settings(global_t *global, 
+static void video_driver_load_settings(global_t *global,
       config_file_t *conf)
 {
    bool               tmp_bool = false;
@@ -3348,7 +3348,7 @@ static bool config_load_file(global_t *global,
       else
          verbosity_disable();
    }
-   /* On first config load, make sure log_to_file is true if 'log-file' command line 
+   /* On first config load, make sure log_to_file is true if 'log-file' command line
     * argument was used. */
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LOG_TO_FILE, NULL) &&
       first_load)
@@ -3381,10 +3381,10 @@ static bool config_load_file(global_t *global,
       size_t tmp = 0;
       if (config_get_size_t(conf, size_settings[i].ident, &tmp))
          *size_settings[i].ptr = tmp ;
-      /* Special case for rewind_buffer_size - need to convert 
+      /* Special case for rewind_buffer_size - need to convert
        * low values to what they were
        * intended to be based on the default value in config.def.h
-       * If the value is less than 10000 then multiple by 1MB because if 
+       * If the value is less than 10000 then multiple by 1MB because if
        * the retroarch.cfg
        * file contains rewind_buffer_size = "100",
        * then that ultimately gets interpreted as
@@ -3588,7 +3588,7 @@ static bool config_load_file(global_t *global,
          *settings->paths.directory_screenshot = '\0';
       }
    }
-   
+
 #if defined(__APPLE__) && defined(OSX)
 #if defined(__aarch64__)
    /* Wrong architecture, set it back to arm64 */
@@ -3836,7 +3836,7 @@ bool config_load_override(void *data)
    fill_pathname_application_special(config_directory, sizeof(config_directory),
          APPLICATION_SPECIAL_DIRECTORY_CONFIG);
 
-   /* Concatenate strings into full paths for core_path, game_path, 
+   /* Concatenate strings into full paths for core_path, game_path,
     * content_path */
    fill_pathname_join_special_ext(game_path,
          config_directory, core_name,
@@ -3884,7 +3884,7 @@ bool config_load_override(void *data)
       {
          RARCH_LOG("[Overrides]: Content dir-specific overrides stacking on top of previous overrides.\n");
          snprintf(temp_path, sizeof(temp_path),
-               "%s|%s", 
+               "%s|%s",
                path_get(RARCH_PATH_CONFIG_APPEND),
                content_path
                );
@@ -3916,7 +3916,7 @@ bool config_load_override(void *data)
       {
          RARCH_LOG("[Overrides]: Game-specific overrides stacking on top of previous overrides.\n");
          snprintf(temp_path, sizeof(temp_path),
-               "%s|%s", 
+               "%s|%s",
                path_get(RARCH_PATH_CONFIG_APPEND),
                game_path
                );
@@ -4412,7 +4412,7 @@ static void input_config_save_keybinds_user(config_file_t *conf, unsigned user)
  * @user              : Controller number to save
  * Writes a controller autoconf file to disk.
  **/
-bool config_save_autoconf_profile(const 
+bool config_save_autoconf_profile(const
       char *device_name, unsigned user)
 {
    static const char* invalid_filename_chars[] = {
@@ -4809,7 +4809,7 @@ bool config_save_overrides(enum override_type type, void *data)
 
    settings            = (settings_t*)calloc(1, sizeof(settings_t));
 
-   config_directory[0] = override_directory[0] = core_path[0] = 
+   config_directory[0] = override_directory[0] = core_path[0] =
           game_path[0] = '\0';
 
    fill_pathname_application_special(config_directory, sizeof(config_directory),
@@ -5090,14 +5090,14 @@ bool input_remapping_load_file(void *data, const char *path)
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 8; j++)
       {
          const char *key_string = key_strings[j];
-         
+
          if (j < RARCH_FIRST_CUSTOM_BIND)
          {
             int btn_remap = -1;
             int key_remap = -1;
             char btn_ident[128];
             char key_ident[128];
-                           
+
             btn_ident[0] = key_ident[0] = '\0';
 
             fill_pathname_join_delim(btn_ident, s1,
@@ -5126,7 +5126,7 @@ bool input_remapping_load_file(void *data, const char *path)
             char key_ident[128];
             int stk_remap = -1;
             int key_remap = -1;
-            
+
             stk_ident[0]  = '\0';
             key_ident[0]  = '\0';
 
@@ -5204,7 +5204,7 @@ bool input_remapping_save_file(const char *path)
 
    remap_file[0]                     = '\0';
 
-   fill_pathname_join_concat(remap_file, dir_input_remapping, path, 
+   fill_pathname_join_concat(remap_file, dir_input_remapping, path,
          FILE_PATH_REMAP_EXTENSION,
          sizeof(remap_file));
 
