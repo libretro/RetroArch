@@ -1581,6 +1581,14 @@ static bool rcheevos_identify_game(const struct retro_game_info* info)
    size_t len;
    char hash[33];
 
+#ifndef HAVE_CHD
+   if (string_is_equal_noncase(path_get_extension(info->path), "chd"))
+   {
+      CHEEVOS_LOG(RCHEEVOS_TAG "CHD not supported without HAVE_CHD compile flag\n");
+      return false;
+   }
+#endif
+
    rc_hash_initialize_iterator(&iterator,
          info->path, (uint8_t*)info->data, info->size);
    if (!rc_hash_iterate(hash, &iterator))
@@ -1802,6 +1810,7 @@ bool rcheevos_load(const void *data)
    {
       /* No hashes could be generated for the game, 
        * disable hardcore and bail */
+      rcheevos_locals.game.id = 0;
       rcheevos_end_load_state();
       rcheevos_pause_hardcore();
       return false;
