@@ -2129,7 +2129,7 @@ static bool vulkan_frame(void *data, const void *frame,
       {
          struct vk_texture *tex = NULL;
 
-#ifdef VULKAN_HDR_SWAPCHAIN
+#if 0 /* VULKAN_HDR_SWAPCHAIN */
          if(vk->context->hdr_enable)
          {
             tex = &vk->main_buffer.texture;
