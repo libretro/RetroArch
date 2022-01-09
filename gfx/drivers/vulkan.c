@@ -226,7 +226,7 @@ static void vulkan_init_pipelines(vk_t *vk)
    static const uint32_t hdr_frag[] =
 #include "vulkan_shaders/hdr.frag.inc"
       ;
-#endif // VULKAN_HDR_SWAPCHAIN
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
    static const uint32_t alpha_blend_vert[] =
 #include "vulkan_shaders/alpha_blend.vert.inc"
@@ -449,13 +449,14 @@ static void vulkan_init_pipelines(vk_t *vk)
    for (i = 4; i < 6; i++)
    {
       input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-      blend_attachment.blendEnable = false;
       vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
             1, &pipe, NULL, &vk->display.pipelines[i]);
    }
    
    vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
-#endif // VULKAN_HDR_SWAPCHAIN
+
+   blend_attachment.blendEnable = true; 
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
    vkDestroyShaderModule(vk->context->device, shader_stages[0].module, NULL);
 
@@ -781,7 +782,7 @@ static void vulkan_deinit_pipelines(vk_t *vk)
 #ifdef VULKAN_HDR_SWAPCHAIN
    vkDestroyPipeline(vk->context->device,
          vk->pipelines.hdr, NULL);
-#endif // VULKAN_HDR_SWAPCHAIN
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
    for (i = 0; i < ARRAY_SIZE(vk->display.pipelines); i++)
       vkDestroyPipeline(vk->context->device,
@@ -818,15 +819,17 @@ static void vulkan_set_hdr_max_nits(void* data, float max_nits)
    vk->hdr.max_output_nits      = max_nits;
    mapped_ubo->max_nits         = max_nits;
 
-   //vulkan_set_hdr_metadata(
-   //      vk->chain.handle,
-   //      vk->hdr.support,
-   //      vk->chain.bit_depth,
-   //      vk->chain.color_space,
-   //      vk->hdr.max_output_nits,
-   //      vk->hdr.min_output_nits,
-   //      vk->hdr.max_cll,
-   //      vk->hdr.max_fall);
+   /* 
+   vulkan_set_hdr_metadata(
+         vk->chain.handle,
+         vk->hdr.support,
+         vk->chain.bit_depth,
+         vk->chain.color_space,
+         vk->hdr.max_output_nits,
+         vk->hdr.min_output_nits,
+         vk->hdr.max_cll,
+         vk->hdr.max_fall); 
+   */
 }
 
 static void vulkan_set_hdr_paper_white_nits(void* data, float paper_white_nits)
@@ -866,7 +869,7 @@ static void vulkan_set_hdr10(vk_t* vk, bool hdr10)
 
    mapped_ubo->hdr10            = hdr10 ? 1.0f : 0.0f;
 }
-#endif // VULKAN_HDR_SWAPCHAIN
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
 static bool vulkan_init_default_filter_chain(vk_t *vk)
 {
@@ -927,7 +930,7 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
          vulkan_set_hdr10(vk, true);
       }
    } 
-#endif // VULKAN_HDR_SWAPCHAIN
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
    return true;
 }
@@ -988,7 +991,7 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
          vulkan_set_hdr10(vk, true);
       }
    } 
-#endif // VULKAN_HDR_SWAPCHAIN
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
    return true;
 }
@@ -1141,7 +1144,7 @@ static void vulkan_free(void *data)
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    video_driver_unset_hdr_support();
-#endif // VULKAN_HDR_SWAPCHAIN
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
       if (vk->ctx_driver && vk->ctx_driver->destroy)
          vk->ctx_driver->destroy(vk->ctx_data);
@@ -1364,7 +1367,7 @@ static void *vulkan_init(const video_info_t *video,
    vk->hdr.min_output_nits             = 0.001f;
    vk->hdr.max_cll                     = 0.0f;
    vk->hdr.max_fall                    = 0.0f;
-#endif // VULKAN_HDR_SWAPCHAIN
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
    vk->video                          = *video;
    vk->ctx_driver                     = ctx_driver;
@@ -1459,7 +1462,7 @@ static void *vulkan_init(const video_info_t *video,
    mapped_ubo->expand_gamut     = settings->bools.video_hdr_expand_gamut;
    mapped_ubo->inverse_tonemap  = 1.0f;     /* Use this to turn on/off the inverse tonemap */
    mapped_ubo->hdr10            = 1.0f;     /* Use this to turn on/off the hdr10 */
-#endif // VULKAN_HDR_SWAPCHAIN
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
    vulkan_init_hw_render(vk);
    vulkan_init_static_resources(vk);
@@ -2126,14 +2129,14 @@ static bool vulkan_frame(void *data, const void *frame,
       {
          struct vk_texture *tex = NULL;
 
-#ifdef VULKAN_HDR_SWAPCHIN
+#ifdef VULKAN_HDR_SWAPCHAIN
          if(vk->context->hdr_enable)
          {
             tex = &vk->main_buffer.texture;
             vulkan_transition_texture(vk, vk->cmd, tex);
          }
          else
-#endif // VULKAN_HDR_SWAPCHIN
+#endif /* VULKAN_HDR_SWAPCHAIN */
          {
             tex = &vk->swapchain[vk->last_valid_index].texture;
             if (vk->swapchain[vk->last_valid_index].texture_optimal.memory 
@@ -2192,7 +2195,7 @@ static bool vulkan_frame(void *data, const void *frame,
    {
       backbuffer = &vk->main_buffer;
    }
-#endif // VULKAN_HDR_SWAPCHAIN
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
    /* Render to backbuffer. */
    if (     (backbuffer->image != VK_NULL_HANDLE)
@@ -2441,7 +2444,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
          vkCmdEndRenderPass(vk->cmd);
       }
-#endif // VULKAN_HDR_SWAPCHAIN
+#endif /* VULKAN_HDR_SWAPCHAIN */
    }
 
    /* End the filter chain frame.
@@ -2621,7 +2624,7 @@ static bool vulkan_frame(void *data, const void *frame,
    if (vk->should_resize || (vk->context->hdr_enable != video_hdr_enable))
 #else
    if (vk->should_resize)
-#endif // VULKAN_HDR_SWAPCHAIN
+#endif /* VULKAN_HDR_SWAPCHAIN */
    {
 #ifdef VULKAN_HDR_SWAPCHAIN
       vk->context->hdr_enable           = video_hdr_enable;
@@ -2647,7 +2650,7 @@ static bool vulkan_frame(void *data, const void *frame,
          if (img->memory)
             vkFreeMemory(vk->context->device, img->memory, NULL);
       }
-#endif // VULKAN_HDR_SWAPCHAIN
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
       gfx_ctx_mode_t mode;
       mode.width  = width;
@@ -2736,15 +2739,17 @@ static bool vulkan_frame(void *data, const void *frame,
          }
       }
 
-      //vulkan_set_hdr_metadata(
-      //      vk->hdr.support,
-      //      vk->context->swapchain_format,
-      //      vk->context->swapchain_color_space,
-      //      vk->hdr.max_output_nits,
-      //      vk->hdr.min_output_nits,
-      //      vk->hdr.max_cll,
-      //      vk->hdr.max_fall);
-#endif // VULKAN_HDR_SWAPCHAIN
+      /*
+      vulkan_set_hdr_metadata(
+            vk->hdr.support,
+            vk->context->swapchain_format,
+            vk->context->swapchain_color_space,
+            vk->hdr.max_output_nits,
+            vk->hdr.min_output_nits,
+            vk->hdr.max_cll,
+            vk->hdr.max_fall);
+         */
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
       vk->should_resize = false;
    }
@@ -3124,7 +3129,7 @@ static const video_poke_interface_t vulkan_poke_interface = {
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_contrast */
    NULL  /* set_hdr_expand_gamut */
-#endif // VULKAN_HDR_SWAPCHAIN
+#endif /* VULKAN_HDR_SWAPCHAIN */
 };
 
 static void vulkan_get_poke_interface(void *data,

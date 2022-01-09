@@ -2742,7 +2742,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
                      glslang_format_to_string(output.meta.rt_format), i);
             }
             else
-#endif // VULKAN_HDR_SWAPCHAIN
+#endif /* VULKAN_HDR_SWAPCHAIN */
             {
                pass_info.rt_format    = tmpinfo.swapchain.format;
 

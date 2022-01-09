@@ -3077,7 +3077,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       }
 
       if (!vk->context.hdr_enable)
-#endif // VULKAN_HDR_SWAPCHAIN
+#endif /* VULKAN_HDR_SWAPCHAIN */
       {
          for (i = 0; i < format_count; i++)
          {
@@ -3212,7 +3212,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    vk->context.swapchain_height = swapchain_size.height;
 #ifdef VULKAN_HDR_SWAPCHAIN
    vk->context.swapchain_colour_space = format.colorSpace;
-#endif // VULKAN_HDR_SWAPCHAIN
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
    /* Make sure we create a backbuffer format that is as we expect. */
    switch (format.format)
