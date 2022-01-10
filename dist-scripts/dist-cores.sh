@@ -200,7 +200,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
    echo Buildbot: building ${name} for ${platform}
    name=`echo "$f" | sed "s/\(_libretro_${platform}\|\).${EXT}$//"`
    async=0
-   pthread=0
+   pthread=${pthread:-0}
    lto=0
    whole_archive=
    big_stack=
@@ -313,7 +313,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
       mv -f ../${name}_libretro.js ../pkg/emscripten/${name}_libretro.js
       mv -f ../${name}_libretro.wasm ../pkg/emscripten/${name}_libretro.wasm
       if [ $pthread != 0 ] ; then
-         mv -f ../pthread-main.js ../pkg/emscripten/pthread-main.js
+         mv -f ../${name}_libretro.worker.js ../pkg/emscripten/${name}_libretro.worker.js
       fi
    fi
 

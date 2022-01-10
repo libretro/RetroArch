@@ -6348,7 +6348,9 @@ static void xmb_context_reset_textures(
                   && !(settings->uints.menu_xmb_theme == XMB_ICON_THEME_CUSTOM)
                )
             {
+#ifndef NO_MISSING_ASSET_WARNING
                runloop_msg_queue_push(msg_hash_to_str(MSG_MISSING_ASSETS), 1, 256, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#endif
                /* Do not draw icons if subsetting is missing */
                goto error;
             }
