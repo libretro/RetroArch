@@ -112,7 +112,7 @@ typedef struct ALIGN(16)
    float             inverse_tonemap;  /* 1.0f    */
    float             hdr10;            /* 1.0f    */
 } vulkan_hdr_uniform_t;
-#endif // VULKAN_HDR_SWAPCHAIN
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
 typedef struct vulkan_context
 {
@@ -132,7 +132,7 @@ typedef struct vulkan_context
    VkFormat swapchain_format;
 #ifdef VULKAN_HDR_SWAPCHAIN
    VkColorSpaceKHR swapchain_colour_space;
-#endif // VULKAN_HDR_SWAPCHAIN  
+#endif /* VULKAN_HDR_SWAPCHAIN */  
 
    VkSemaphore swapchain_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkSemaphore swapchain_acquire_semaphore;
@@ -161,7 +161,7 @@ typedef struct vulkan_context
    
 #ifdef VULKAN_HDR_SWAPCHAIN
    bool hdr_enable;
-#endif // VULKAN_HDR_SWAPCHAIN
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
 } vulkan_context_t;
 
@@ -346,7 +346,7 @@ typedef struct vk
    struct vk_image *backbuffer;
 #ifdef VULKAN_HDR_SWAPCHAIN
    struct vk_image main_buffer;
-#endif // VULKAN_HDR_SWAPCHAIN
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
    unsigned video_width;
    unsigned video_height;
@@ -397,7 +397,7 @@ typedef struct vk
       VkPipeline font;
 #ifdef VULKAN_HDR_SWAPCHAIN
       VkPipeline hdr;
-#endif // VULKAN_HDR_SWAPCHAIN
+#endif /* VULKAN_HDR_SWAPCHAIN */
       VkDescriptorSetLayout set_layout;
       VkPipelineLayout layout;
       VkPipelineCache cache;
@@ -420,7 +420,7 @@ typedef struct vk
       float             max_fall;
       bool              support;
    } hdr;
-#endif // VULKAN_HDR_SWAPCHAIN
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
    struct
    {
