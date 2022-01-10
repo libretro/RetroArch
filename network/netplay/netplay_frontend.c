@@ -615,7 +615,7 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
       &addr_size) == sizeof(header))
    {
       const frontend_ctx_driver_t *frontend_drv;
-      char frontend_architecture_tmp[32];
+      char frontend_architecture_tmp[24];
       uint32_t content_crc             = 0;
       struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
       struct string_list *subsystem    = path_get_subsystem_list();
@@ -8437,8 +8437,8 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
       return false;
    net_st->chat->message_slots = ARRAY_SIZE(net_st->chat->messages);
 
-   net_st->reannounce  = -1;
-   net_st->reping      = -1;
+   net_st->reannounce = 900;
+   net_st->reping     = -1;
 
    if (net_st->data->is_server)
    {
