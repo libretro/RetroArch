@@ -10523,6 +10523,10 @@ MSG_HASH(
    "CRC32 sisältö eroaa. Eri pelejä ei voi käyttää."
    )
 MSG_HASH(
+   MSG_PING_TOO_HIGH,
+   "Sinun ping on liian suuri tälle isännälle."
+   )
+MSG_HASH(
    MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
    "Sisällön lataus ohitettu. Toteutus lataa sen itse."
    )
@@ -10861,6 +10865,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_FRAMES,
    "Kuvat"
+   )
+MSG_HASH(
+   MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
+   "Pelikohtaiset ytimen asetukset löytyvät"
+   )
+MSG_HASH(
+   MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
+   "Kansiokohtaiset ytimen asetukset löytyvät"
    )
 MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,
@@ -11710,6 +11722,22 @@ MSG_HASH(
    MSG_CORE_INFO_CACHE_UNSUPPORTED,
    "Ei voida kirjoittaa ytimen tietoja kansioon - ytimen tietovälimuisti poistetaan käytöstä"
    )
+MSG_HASH(
+   MSG_FOUND_ENTRY_STATE_IN,
+   "Aloitustila löytyi"
+   )
+MSG_HASH(
+   MSG_LOADING_ENTRY_STATE_FROM,
+   "Ladataan aloitustilaa"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE,
+   "GameModeen siirtyminen epäonnistui"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
+   "Siirtyminen GameModeen epäonnistui - varmista, että GameMode taustaprosessi on asennettu/käynnissä"
+   )
 
 /* Lakka */
 
@@ -11965,6 +11993,14 @@ MSG_HASH(
    "Valikon hallinta"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
+   "Pelitila"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
+   "Saattaa parantaa suorituskykyä, vähentää viivettä ja korjata äänen säröilyä. Tarvitset https://github.com/FeralInteractive/gamemode jotta tämä toimii."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "Käytä PAL60-tilaa"
    )
@@ -12023,6 +12059,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    "Näytä \"Sammuta\"-valinta."
+   )
+MSG_HASH(
+   MSG_ROOM_PASSWORDED,
+   "Salasanattu"
    )
 MSG_HASH(
    MSG_INTERNET_RELAY,
