@@ -12255,6 +12255,10 @@ MSG_HASH(
    "Failed to receive header from host"
    )
 MSG_HASH(
+   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
+   "You must pause or disable Achievements Hardcore Mode to load states."
+   )
+MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    "A save state was loaded. Achievements Hardcore Mode disabled for the current session."
    )
