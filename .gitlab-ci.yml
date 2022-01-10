@@ -718,6 +718,39 @@ build-static-retroarch-dummy-ps2:
   script:
     - "make -f Makefile.ps2.salamander -j$NUMPROC release"
 
+build-static-retroarch-psl1ght:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-psl1ght:latest
+  stage: prepare-for-static-cores
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    -  retroarch-precompiled/
+    expire_in: 10 min
+  dependencies: []
+  needs:
+    # Dummy build requires no core
+    - build-static-retroarch-dummy-psl1ght
+  script:
+    # Allow failure since we don't have a core
+    - "make -f Makefile.psl1ght -j$NUMPROC ||:"
+    - "mkdir .retroarch-precompiled"
+    - "cp -r ./* .retroarch-precompiled/"
+    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+
+build-static-retroarch-dummy-psl1ght:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-psl1ght:latest
+  stage: build
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    -  retroarch_psl1ght_salamander.elf
+    expire_in: 10 min
+  dependencies: []
+  script:
+    - "make -f Makefile.psl1ght.salamander -j$NUMPROC create-salamander"
+
 build-static-retroarch-psp:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-psp:latest
   stage: prepare-for-static-cores
@@ -1004,6 +1037,7 @@ trigger_static-cores:
   - build-static-retroarch-libnx-aarch64
   - build-static-retroarch-vita
   - build-static-retroarch-ps2
+  - build-static-retroarch-psl1ght
   - build-static-retroarch-psp
   - build-static-retroarch-ctr
   - build-static-retroarch-ctr-legacy
