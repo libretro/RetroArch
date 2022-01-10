@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2017 - Gregor Richards
- *  Copyright (C) 2021 - Roberto V. Rampim
+ *  Copyright (C) 2017-2017 - Gregor Richards
+ *  Copyright (C) 2021-2022 - Roberto V. Rampim
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -27,6 +27,82 @@
 #ifdef HAVE_NETWORKING
 #include <net/net_natt.h>
 #include "../network/netplay/netplay.h"
+
+/* Find the most suitable address within the device's network. */
+static bool find_local_address(struct net_ifinfo *interfaces,
+   struct natt_device *device, struct natt_request *request)
+{
+   size_t i, j;
+   struct addrinfo **addrs = NULL;
+   uint32_t *scores        = NULL;
+   uint32_t highest_score  = 0;
+   struct addrinfo hints   = {0};
+   uint8_t *dev_addr8      = (uint8_t *) &device->addr.sin_addr;
+   bool ret                = false;
+
+   addrs = calloc(interfaces->size, sizeof(*addrs));
+   if (!addrs)
+      goto done;
+   scores = calloc(interfaces->size, sizeof(*scores));
+   if (!scores)
+      goto done;
+   hints.ai_family = AF_INET;
+
+   /* Score interfaces based on how close their address
+      is from the device's address. */
+   for (i = 0; i < interfaces->size; i++)
+   {
+      struct net_ifinfo_entry *entry = &interfaces->entries[i];
+      struct addrinfo         **addr = &addrs[i];
+      uint32_t                *score = &scores[i];       
+
+      if (getaddrinfo_retro(entry->host, NULL, &hints, addr))
+         continue;
+
+      if (*addr)
+      {
+         uint8_t *addr8 = (uint8_t *)
+            &((struct sockaddr_in *) (*addr)->ai_addr)->sin_addr;
+
+         for (j = 0; j < sizeof(device->addr.sin_addr); j++)
+         {
+            if (addr8[j] != dev_addr8[j])
+               break;
+            (*score)++;
+         }
+      }
+   }
+
+   /* Get the highest scored interface. */
+   for (j = 0; j < interfaces->size; j++)
+   {
+      uint32_t score = scores[j];
+
+      if (score > highest_score)
+      {
+         highest_score = score;
+         i = j;
+      }
+   }
+   /* Skip a highest score of zero. */
+   if (highest_score)
+   {
+      /* Copy the interface's address to our request. */
+      memcpy(&request->addr.sin_addr,
+         &((struct sockaddr_in *) addrs[i]->ai_addr)->sin_addr,
+         sizeof(request->addr.sin_addr));
+      ret = true;
+   }
+
+   for (i = 0; i < interfaces->size; i++)
+      freeaddrinfo_retro(addrs[i]);
+
+done:
+   free(addrs);
+   free(scores);
+
+   return ret;
+}
 
 static void task_netplay_nat_traversal_handler(retro_task_t *task)
 {
@@ -78,7 +154,6 @@ static void task_netplay_nat_traversal_handler(retro_task_t *task)
             }
             if (natt_external_address(&natt_st->device, false))
             {
-               data->iface        = 0;
                data->forward_type = NATT_FORWARD_TYPE_ANY;
                data->status       = NAT_TRAVERSAL_STATUS_OPEN;
             }
@@ -89,54 +164,17 @@ static void task_netplay_nat_traversal_handler(retro_task_t *task)
 
       case NAT_TRAVERSAL_STATUS_OPEN:
          {
-            size_t i;
-            struct addrinfo *addr          = NULL;
-            struct net_ifinfo_entry *entry = NULL;
-            struct addrinfo hints          = {0};
-
             if (natt_st->device.ext_addr.sin_family != AF_INET)
             {
                data->status = NAT_TRAVERSAL_STATUS_SELECT_DEVICE;
                break;
             }
-
-            /* Grab a suitable interface. */
-            hints.ai_family = AF_INET;
-            for (i = data->iface; i < natt_st->interfaces.size; i++)
-            {
-               struct net_ifinfo_entry *tmp_entry =
-                  &natt_st->interfaces.entries[i];
-
-               if (getaddrinfo_retro(tmp_entry->host, NULL, &hints, &addr) ||
-                     !addr)
-                  continue;
-
-               /* Ignore non-LAN interfaces */
-               if (!netplay_is_lan_address(
-                  (struct sockaddr_in *) addr->ai_addr))
-               {
-                  freeaddrinfo_retro(addr);
-                  addr = NULL;
-                  continue;
-               }
-
-               entry = tmp_entry;
-               data->iface = i;
-               break;
-            }
-
-            /* No more interfaces? */
-            if (!entry)
+            if (!find_local_address(&natt_st->interfaces,
+               &natt_st->device, &data->request))
             {
                data->status = NAT_TRAVERSAL_STATUS_SELECT_DEVICE;
                break;
             }
-
-            memcpy(&data->request.addr.sin_addr,
-               &((struct sockaddr_in *) addr->ai_addr)->sin_addr,
-               sizeof(data->request.addr.sin_addr));
-
-            freeaddrinfo_retro(addr);
 
             if (natt_open_port(&natt_st->device,
                &data->request, data->forward_type, false))
@@ -145,12 +183,7 @@ static void task_netplay_nat_traversal_handler(retro_task_t *task)
                break;
             }
             if (data->forward_type == NATT_FORWARD_TYPE_ANY)
-            {
                data->forward_type = NATT_FORWARD_TYPE_NONE;
-               break;
-            }
-            if (++data->iface < natt_st->interfaces.size)
-               data->forward_type = NATT_FORWARD_TYPE_ANY;
             else
                data->status = NAT_TRAVERSAL_STATUS_SELECT_DEVICE;
          }
@@ -165,23 +198,19 @@ static void task_netplay_nat_traversal_handler(retro_task_t *task)
                natt_interfaces_destroy();
 
                data->status = NAT_TRAVERSAL_STATUS_OPENED;
+
                goto finished;
             }
             if (data->forward_type == NATT_FORWARD_TYPE_ANY)
             {
                data->forward_type = NATT_FORWARD_TYPE_NONE;
                data->status       = NAT_TRAVERSAL_STATUS_OPEN;
-               break;
-            }
-            if (++data->iface < natt_st->interfaces.size)
-            {
-               data->forward_type = NATT_FORWARD_TYPE_ANY;
-               data->status       = NAT_TRAVERSAL_STATUS_OPEN;
             }
             else
                data->status       = NAT_TRAVERSAL_STATUS_SELECT_DEVICE;
          }
          break;
+
       default:
          break;
    }
@@ -218,9 +247,11 @@ static void task_netplay_nat_close_handler(retro_task_t *task)
             natt_deinit();
 
             data->status = NAT_TRAVERSAL_STATUS_CLOSED;
+
             goto finished;
          }
          break;
+
       default:
          break;
    }

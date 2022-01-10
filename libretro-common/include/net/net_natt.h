@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2021 The RetroArch team
+/* Copyright  (C) 2010-2022 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (net_natt.h).
@@ -54,10 +54,11 @@ enum nat_traversal_status
 
 struct natt_device
 {
+   struct sockaddr_in addr;
    struct sockaddr_in ext_addr;
-   char desc        [512];
-   char control     [512];
-   char service_type[512];
+   char desc        [256];
+   char control     [256];
+   char service_type[256];
    bool busy;
 };
 
@@ -69,10 +70,10 @@ struct natt_request
    bool success;
 };
 
+/* Use this struct to implement a higher-level interface. */
 struct nat_traversal_data
 {
    struct natt_request request;
-   size_t iface;
    enum natt_forward_type forward_type;
    enum nat_traversal_status status;
 };

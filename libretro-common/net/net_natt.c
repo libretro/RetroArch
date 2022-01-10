@@ -1,4 +1,4 @@
-/* Copyright  (C) 2016-2021 The RetroArch team
+/* Copyright  (C) 2016-2022 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (net_natt.c).
@@ -87,7 +87,7 @@ bool natt_init(void)
    if (!st->interfaces.size)
       goto failure;
 
-   st->fd = socket_init((void**) &bind_addr, 0, NULL, SOCKET_TYPE_DATAGRAM);
+   st->fd = socket_init((void **) &bind_addr, 0, NULL, SOCKET_TYPE_DATAGRAM);
    if (st->fd < 0)
       goto failure;
    if (!bind_addr)
@@ -196,6 +196,7 @@ void natt_deinit(void)
    *st->device.desc         = '\0';
    *st->device.control      = '\0';
    *st->device.service_type = '\0';
+   memset(&st->device.addr, 0, sizeof(st->device.addr));
    memset(&st->device.ext_addr, 0, sizeof(st->device.ext_addr));
    st->device.busy          = false;
 #endif
@@ -215,13 +216,13 @@ bool natt_device_next(struct natt_device *device)
 {
 #ifndef HAVE_SOCKET_LEGACY
    fd_set  fds;
-   bool    error;
    char    buf[2048];
    ssize_t recvd;
    char    *data;
    size_t  remaining;
-   struct timeval tv = {0};
-   natt_state_t *st  = &natt_st;
+   struct timeval tv   = {0};
+   socklen_t addr_size = sizeof(device->addr);
+   natt_state_t *st    = &natt_st;
 
    if (!device)
       return false;
@@ -233,6 +234,7 @@ bool natt_device_next(struct natt_device *device)
    *device->desc         = '\0';
    *device->control      = '\0';
    *device->service_type = '\0';
+   memset(&device->addr, 0, sizeof(device->addr));
    memset(&device->ext_addr, 0, sizeof(device->ext_addr));
    device->busy          = false;
 
@@ -245,8 +247,8 @@ bool natt_device_next(struct natt_device *device)
    if (!FD_ISSET(st->fd, &fds))
       return cpu_features_get_time_usec() < st->timeout;
 
-   recvd = socket_receive_all_nonblocking(st->fd, &error,
-      buf, sizeof(buf));
+   recvd = recvfrom(st->fd, buf, sizeof(buf), 0,
+      (struct sockaddr *) &device->addr, &addr_size);
    if (recvd <= 0)
       return false;
 
@@ -262,19 +264,20 @@ bool natt_device_next(struct natt_device *device)
       *lnbreak++ = '\0';
 
       /* This also gets rid of any trailing carriage return. */
-      if (!strncasecmp(string_trim_whitespace(data), "Location:",
-         STRLEN_CONST("Location:")))
+      string_trim_whitespace(data);
+
+      if (string_starts_with_case_insensitive(data, "Location:"))
       {
-         char *location = string_trim_whitespace(
+         char *location = string_trim_whitespace_left(
             data + STRLEN_CONST("Location:"));
 
-         if (!string_is_empty(location) &&
-            string_starts_with_case_insensitive(location, "http://"))
+         if (string_starts_with_case_insensitive(location, "http://"))
          {
-            strlcpy(device->desc, location,
-               sizeof(device->desc));
-
-            return true;
+            /* Make sure the description URL isn't too long. */
+            if (strlcpy(device->desc, location, sizeof(device->desc)) <
+                  sizeof(device->desc))
+               return true;
+            *device->desc = '\0';
          }
       }
 
@@ -312,8 +315,13 @@ static bool build_control_url(rxml_node_t *control_url,
    /* Do we already have the full url? */
    if (string_starts_with_case_insensitive(control_url->data, "http://"))
    {
-      strlcpy(device->control, control_url->data,
-         sizeof(device->control));
+      /* Make sure the control URL isn't too long. */
+      if (strlcpy(device->control, control_url->data,
+         sizeof(device->control)) >= sizeof(device->control))
+      {
+         *device->control = '\0';
+         return false;
+      }
    }
    else
    {
@@ -324,15 +332,20 @@ static bool build_control_url(rxml_node_t *control_url,
       strlcpy(device->control, device->desc,
          sizeof(device->control));
 
-      control_path = (char*) strchr(device->control + STRLEN_CONST("http://"),
-         '/');
+      control_path = (char *) strchr(device->control +
+         STRLEN_CONST("http://"), '/');
 
       if (control_path)
          *control_path = '\0';
       if (control_url->data[0] != '/')
          strlcat(device->control, "/", sizeof(device->control));
-      strlcat(device->control, control_url->data,
-         sizeof(device->control));
+      /* Make sure the control URL isn't too long. */
+      if (strlcat(device->control, control_url->data,
+         sizeof(device->control)) >= sizeof(device->control))
+      {
+         *device->control = '\0';
+         return false;
+      }
    }
 
    return true;
