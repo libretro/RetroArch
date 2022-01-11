@@ -746,7 +746,7 @@ bool natt_open_port(struct natt_device *device,
             "</u:%s>"
          "</s:Body>"
       "</s:Envelope>";
-   char buf[1024];
+   char buf[1280];
    const char *action;
    char host[256], port[6];
 
