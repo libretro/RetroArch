@@ -1767,7 +1767,10 @@ bool command_event(enum event_command cmd, void *data)
 
 #ifdef HAVE_CHEEVOS
             if (rcheevos_hardcore_active())
+            {
+               runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
                return false;
+            }
 #endif
             if (!command_event_main_state(cmd))
                return false;

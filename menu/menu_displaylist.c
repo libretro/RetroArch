@@ -2934,17 +2934,12 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION_SAVESTATE, 0, 0))
             count++;
 
-#ifdef HAVE_CHEEVOS
-         if (!rcheevos_hardcore_active())
-#endif
-         {
-            if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_STATE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE),
-                  MENU_ENUM_LABEL_LOAD_STATE,
-                  MENU_SETTING_ACTION_LOADSTATE, 0, 0))
-               count++;
-         }
+         if (menu_entries_append_enum(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_STATE),
+               msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE),
+               MENU_ENUM_LABEL_LOAD_STATE,
+               MENU_SETTING_ACTION_LOADSTATE, 0, 0))
+            count++;
       }
 
       if (settings->bools.quick_menu_show_save_load_state &&
