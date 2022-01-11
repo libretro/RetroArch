@@ -8448,7 +8448,7 @@ failure:
 
    RARCH_ERR("[Netplay] %s\n", msg_hash_to_str(MSG_NETPLAY_FAILED));
    runloop_msg_queue_push(
-      msg_hash_to_str(MSG_NETPLAY_FAILED), 0, 180, false, NULL
+      msg_hash_to_str(MSG_NETPLAY_FAILED), 0, 180, false, NULL,
       MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return false;
