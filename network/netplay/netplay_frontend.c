@@ -8330,17 +8330,11 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
    const char *mitm              = NULL;
 
    if (!net_st->netplay_enabled)
-   {
-      net_st->netplay_client_deferred = false;
-      return false;
-   }
+      goto failure;
 
    core_set_default_callbacks(&cbs);
    if (!core_set_netplay_callbacks())
-   {
-      net_st->netplay_client_deferred = false;
-      return false;
-   }
+      goto failure;
 
    /* Map the core's quirks to our quirks */
    serialization_quirks = core_serialization_quirks();
@@ -8348,7 +8342,6 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
    /* Quirks we don't support! Just disable everything. */
    if (serialization_quirks & ~((uint64_t) NETPLAY_QUIRK_MAP_UNDERSTOOD))
       quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
-
    if (serialization_quirks & NETPLAY_QUIRK_MAP_NO_SAVESTATES)
       quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
    if (serialization_quirks & NETPLAY_QUIRK_MAP_NO_TRANSMISSION)
@@ -8372,6 +8365,7 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
       if (settings->bools.netplay_use_mitm_server)
       {
          const char *mitm_handle = settings->arrays.netplay_mitm_server;
+
          if (netplay_mitm_query(mitm_handle))
          {
             /* We want to cache the MITM server handle in order to
@@ -8402,11 +8396,16 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
       }
    }
 
+   net_st->netplay_client_deferred = false;
+
 #ifdef HAVE_NETPLAYDISCOVERY
    net_st->lan_ad_server_fd = -1;
 #endif
 
-   net_st->netplay_client_deferred = false;
+   net_st->chat = calloc(1, sizeof(*net_st->chat));
+   if (!net_st->chat)
+      goto failure;
+   net_st->chat->message_slots = ARRAY_SIZE(net_st->chat->messages);
 
    net_st->data = netplay_new(
          server, mitm, port, mitm_session,
@@ -8421,21 +8420,8 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
 #endif
          settings->paths.username,
          quirks);
-
    if (!net_st->data)
-   {
-      RARCH_ERR("[Netplay] %s\n", msg_hash_to_str(MSG_NETPLAY_FAILED));
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_NETPLAY_FAILED),
-            0, 180, false,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      return false;
-   }
-
-   net_st->chat = calloc(1, sizeof(*net_st->chat));
-   if (!net_st->chat)
-      return false;
-   net_st->chat->message_slots = ARRAY_SIZE(net_st->chat->messages);
+      goto failure;
 
    net_st->reannounce = 900;
    net_st->reping     = -1;
@@ -8452,6 +8438,20 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
    }
 
    return true;
+
+failure:
+   net_st->netplay_enabled         = false;
+   net_st->netplay_is_client       = false;
+   net_st->netplay_client_deferred = false;
+
+   deinit_netplay();
+
+   RARCH_ERR("[Netplay] %s\n", msg_hash_to_str(MSG_NETPLAY_FAILED));
+   runloop_msg_queue_push(
+      msg_hash_to_str(MSG_NETPLAY_FAILED), 0, 180, false, NULL
+      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+   return false;
 }
 
 /**
