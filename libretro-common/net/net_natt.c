@@ -379,8 +379,8 @@ static bool parse_desc_node(rxml_node_t *node,
          return false;
 
       /* These two are the only IGD service types we can work with. */
-      if (!strstr(service_type->data, "WANIPConnection:1") &&
-            !strstr(service_type->data, "WANPPPConnection:1"))
+      if (!strstr(service_type->data, ":WANIPConnection:") &&
+            !strstr(service_type->data, ":WANPPPConnection:"))
          return false;
       if (!build_control_url(control_url, device))
          return false;
