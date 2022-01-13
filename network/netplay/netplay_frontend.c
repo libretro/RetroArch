@@ -8330,7 +8330,7 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
    const char *mitm              = NULL;
 
    if (!net_st->netplay_enabled)
-      goto failure;
+      return false;
 
    core_set_default_callbacks(&cbs);
    if (!core_set_netplay_callbacks())
