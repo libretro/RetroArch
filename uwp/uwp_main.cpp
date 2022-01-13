@@ -312,15 +312,6 @@ void App::SetWindow(CoreWindow^ window)
 /* Initializes scene resources, or loads a previously saved app state. */
 void App::Load(Platform::String^ entryPoint)
 {
-	int ret = rarch_main(NULL, NULL, NULL);
-	if (ret != 0)
-	{
-		RARCH_ERR("Init failed\n");
-		CoreApplication::Exit();
-		return;
-	}
-	m_initialized = true;
-
 	auto catalog = Windows::ApplicationModel::PackageCatalog::OpenForCurrentPackage();
 
 	catalog->PackageInstalling +=
@@ -369,12 +360,48 @@ void App::Run()
 void App::Uninitialize()
 {
 	main_exit(NULL);
+
+	if (m_args->Kind == ActivationKind::Protocol)
+	{
+		ProtocolActivatedEventArgs^ protocolArgs = dynamic_cast<Windows::ApplicationModel::Activation::ProtocolActivatedEventArgs^>(m_args);
+		Windows::Foundation::WwwFormUrlDecoder^ query = protocolArgs->Uri->QueryParsed;
+		try
+		{
+			//if UWP app is started using protocol, this gives an option to launch another app on RA exit,
+			//making it easy to integrate RA with other UWP frontends
+			Platform::String^ launchOnExit = query->GetFirstValueByName("launchOnExit");
+			Windows::System::Launcher::LaunchUriAsync(ref new Uri(launchOnExit));
+		}
+		catch(Platform::InvalidArgumentException^ e)
+		{
+		}
+	}	
 }
 
 /* Application lifecycle event handlers. */
 
 void App::OnActivated(CoreApplicationView^ applicationView, IActivatedEventArgs^ args)
 {
+	//start only if not already initialized. If there is a game in progress, just return
+	if (m_initialized == true)
+	{
+		return;
+	}
+
+	m_args = args; //remember arguments so it can be inspected later on, for example in Uninitialize()
+	int argc = NULL;
+	std::vector<char*> argv;
+	std::vector<std::string> argvTmp; //using std::string as temp buf instead of char* array to avoid manual char allocations	
+	ParseProtocolArgs(args, &argc, &argv, &argvTmp);
+	
+	int ret = rarch_main(argc, argv.data(), NULL);
+	if (ret != 0)
+	{
+		RARCH_ERR("Init failed\n");
+		CoreApplication::Exit();
+		return;
+	}
+	m_initialized = true;
 	/* Run() won't start until the CoreWindow is activated. */
 	CoreWindow::GetForCurrentThread()->Activate();
 }
@@ -584,6 +611,45 @@ void App::OnPackageInstalling(PackageCatalog^ sender, PackageInstallingEventArgs
 		snprintf(msg, sizeof(msg), "Package \"%ls\" installed, a restart may be necessary", args->Package->DisplayName->Data());
 		runloop_msg_queue_push(msg, 1, 5 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 	}
+}
+
+void App::ParseProtocolArgs(Windows::ApplicationModel::Activation::IActivatedEventArgs^ args, int *argc, std::vector<char*> *argv, std::vector<std::string> *argvTmp)
+{
+	argvTmp->clear();
+	argv->clear();
+
+	if (args->Kind == ActivationKind::Protocol)
+	{
+		ProtocolActivatedEventArgs^ protocolArgs = dynamic_cast<Windows::ApplicationModel::Activation::ProtocolActivatedEventArgs^>(args);
+		Windows::Foundation::WwwFormUrlDecoder^ query = protocolArgs->Uri->QueryParsed;
+
+		try
+		{
+			//protocol activation is in format 0=argValue0&1=argValue1...
+			//where argument name is a number from 0 to 9
+			for (int i = 0; i < 10; i++)
+			{
+				wchar_t buffer[5];
+				swprintf(buffer, L"%d", i);
+				Platform::String^ argName = ref new Platform::String(buffer);
+				Platform::String^ arg = query->GetFirstValueByName(argName);
+				std::wstring ws(arg->ToString()->Data());
+				std::string stdstr(ws.begin(), ws.end());
+				argvTmp->push_back(stdstr);				
+			}
+		}
+		catch (Platform::InvalidArgumentException^ e)
+		{
+		}
+	}
+
+	(*argc) = argvTmp->size();
+	//convert to char* array compatible with argv
+	for (int i = 0; i < argvTmp->size(); i++)
+	{
+		argv->push_back((char*)(argvTmp->at(i)).c_str());
+	}
+	argv->push_back(nullptr);
 }
 
 /* Implement UWP equivalents of various win32_* functions */

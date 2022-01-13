@@ -70,6 +70,8 @@ namespace RetroArchUWP
       bool m_windowVisible;
       bool m_windowFocused;
       bool m_windowResized;
+      Windows::ApplicationModel::Activation::IActivatedEventArgs^ m_args;
+      void ParseProtocolArgs(Windows::ApplicationModel::Activation::IActivatedEventArgs^ args, int *argc, std::vector<char*> *argv, std::vector<std::string> *argvTmp);
       static App^ m_instance;
    };
 }
