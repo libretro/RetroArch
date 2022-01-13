@@ -469,7 +469,10 @@ ifeq ($(HAVE_LANGEXTRA), 1)
           intl/msg_hash_fa.o \
           intl/msg_hash_he.o \
           intl/msg_hash_ast.o \
-          intl/msg_hash_fi.o
+          intl/msg_hash_fi.o \
+          intl/msg_hash_id.o \
+          intl/msg_hash_sv.o \
+          intl/msg_hash_uk.o
 endif
 
 ifneq ($(HAVE_GETOPT_LONG), 1)
