@@ -63,6 +63,7 @@ ifeq ($(GRIFFIN_BUILD), 1)
 	DEFINES += -DHAVE_GFX_WIDGETS
 	DEFINES += -DHAVE_OVERLAY
 	DEFINES += -DHAVE_CORE_INFO_CACHE
+	DEFINES += -DHAVE_CHD
 	#DEFINES += -DHAVE_SOCKET_LEGACY
 	#-DHAVE_SSL -DHAVE_BUILTINMBEDTLS -DMBEDTLS_SSL_DEBUG_ALL
 	#ssl is currently incompatible with griffin due to use of the "static" flag on repeating functions that will conflict when included in one file
