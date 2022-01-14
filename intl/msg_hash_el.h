@@ -3796,6 +3796,10 @@ MSG_HASH(
    "Κοντινότερο"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT,
+   "Περιεχόμενο"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR,
    "<Ευρετήριο περιεχομένων>"
    )

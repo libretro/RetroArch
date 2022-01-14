@@ -3596,6 +3596,10 @@ MSG_HASH(
    "Naaste"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT,
+   "Inhoud"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
    "Linkse Analoge Stick"
    )

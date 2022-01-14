@@ -3363,6 +3363,10 @@ MSG_HASH(
 /* Unsorted */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
+   "Uppdaterare"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_DISK,
    "Ingen skiva vald"
    )

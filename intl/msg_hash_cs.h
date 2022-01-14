@@ -1193,6 +1193,10 @@ MSG_HASH(
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
+   "Hlasitost"
+   )
 
 /* Settings > Audio > Menu Sounds */
 
@@ -1217,6 +1221,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
    "Ukončit program"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
+   "Pořídit snímek obrazovky"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
@@ -1755,12 +1763,20 @@ MSG_HASH(
    "Historie"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
+   "Spustit"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER,
    "Uživatel"
    )
 
 /* Unused (Only Exist in Translation Files) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESUME,
+   "Pokračovat"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
    "Online hraní"

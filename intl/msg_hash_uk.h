@@ -4504,6 +4504,10 @@ MSG_HASH(
    "Найближчі"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT,
+   "Вміст"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR,
    "<Каталог вмісту>"
    )

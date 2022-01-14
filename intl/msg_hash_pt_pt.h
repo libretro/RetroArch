@@ -3384,6 +3384,10 @@ MSG_HASH(
    "O mais próximo"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT,
+   "Conteúdo"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR,
    "<Conteúdo da pasta>"
    )
