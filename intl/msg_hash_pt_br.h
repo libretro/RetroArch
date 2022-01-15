@@ -7661,27 +7661,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
-   "1-bit, valor máx. = 0x01"
+   "1 bit, valor máx. = 0x01"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_2,
-   "2-bit, valor máx. = 0x03"
+   "2 bits, valor máx. = 0x03"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_4,
-   "4-bit, valor máx. = 0x0F"
+   "4 bits, valor máx. = 0x0F"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_8,
-   "8-bit, valor máx. = 0xFF"
+   "8 bits, valor máx. = 0xFF"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
-   "16-bit, valor máx. = 0xFFFF"
+   "16 bits, valor máx. = 0xFFFF"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_32,
-   "32-bit, valor máx. = 0xFFFFFFFF"
+   "32 bits, valor máx. = 0xFFFFFFFF"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_DEFAULT,

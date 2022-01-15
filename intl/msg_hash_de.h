@@ -2587,6 +2587,14 @@ MSG_HASH(
    "Sendet eine Chat-Nachricht an die aktuelle Netplay-Sitzung."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "Verblassender Netplay-Chat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "Zwischen verblassenden und statischen Netplay-Chat-Nachrichten umschalten."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
    "Hotkeys aktivieren"
    )
@@ -5186,6 +5194,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
    "Startet das Netplay im Zuschauermodus."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
+   "Verblassender Chat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT,
+   "Chat-Nachrichten langsam ausblenden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
@@ -8297,6 +8313,10 @@ MSG_HASH(
    "Größe der Vorschaubilder reduzieren, indem die maximal zulässige Breite skaliert wird."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
+   "Vertikaler Verblassungsfaktor"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
    "Einstellungen-Tab aktivieren (Neustart erforderlich)"
    )
@@ -10180,7 +10200,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Errungenschaften-Hardcore-Modus aktiviert. Savestates & Rückspul-Funktion ausgeschaltet."
+   "Errungenschaften-Hardcore-Modus aktiviert. Savestates & Rückspul-Funktion sind nicht nutzbar."
    )
 MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
@@ -11199,8 +11219,12 @@ MSG_HASH(
    "Host-Header konnte nicht empfangen werden"
    )
 MSG_HASH(
+   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
+   "Du musst den Errungenschaften-Hardcore-Modus pausieren oder deaktivieren um Savestates laden zu können."
+   )
+MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
-   "Ein Savestate wurde geladen. Errungenschaften-Hardcore-Modus für die aktuelle Sitzung deaktiviert."
+   "Ein Savestate wurde geladen. Errungenschaften-Hardcore-Modus wurde für die aktuelle Sitzung deaktiviert."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
