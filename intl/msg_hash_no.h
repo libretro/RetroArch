@@ -8,11 +8,139 @@
 
 /* Top-Level Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAIN_MENU,
+   "Hovedmeny"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
+   "Innstillinger"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
+   "Favoritter"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
+   "Historikk"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
+   "Bilder"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
+   "Musikk"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   "Videoer"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
+   "Nettspill"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
+   "Utforsk"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TAB,
+   "Importerer innhold"
+   )
 
 /* Main Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
+   "Hurtigmeny"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
+   "Få rask adgang til alle relevante innstillinger i spillet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LIST,
+   "Last inn kjerne"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST,
+   "Velg hvilken kjerne du skal bruke."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
+   "Last inn innhold"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
+   "Velg hvilket innhold som skal startes."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+   "Last inn plate"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_DISC,
+   "Last inn en fysisk medieplate. Først velg kjernen (Laste-Kjerne) som skal brukes med platen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+   "Dump plate"
+   )
+MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
+   MENU_ENUM_SUBLABEL_DUMP_DISC,
+   "Dump innholdet på medieplaten til internlagring. Den vil lagres som en avbildningsfil."
+   )
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "Løs ut platen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_EJECT_DISC,
+   "Løser ut disken fra den fysiske CD/DVD-leseren."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
+   "Spillelister"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
+   "Skannet innhold som matcher databasen vises her."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
+   "Importert innhold"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
+   "Lag og oppdater spillelister ved å skanne innhold."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+   "Vis skrivebordsmeny"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   "Åpne den tradisjonelle skrivebordsmenyen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Deaktiver Kiosk-modus (Omstart kreves)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+   "Vis alle konfigurasjonsrelaterte innstillinger."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY,
+   "Nettspill"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS,
+   "Innstillinger"
+   )
 
 /* Main Menu > Load Core */
 
@@ -22,6 +150,26 @@
 
 /* Main Menu > Load Content > Playlists */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
+   "Favoritter"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
+   "Musikk"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
+   "Bilder"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
+   "Videoer"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
+   "Utforsk"
+   )
 
 /* Main Menu > Online Updater */
 
@@ -52,6 +200,10 @@
 
 /* Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
+   "Spillelister"
+   )
 
 /* Settings > Drivers */
 
@@ -178,8 +330,20 @@
 
 /* Settings > User Interface > Menu Item Visibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+   "Hurtigmeny"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
+   "Innstillinger"
+   )
 #ifdef HAVE_LAKKA
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
+   "Hovedmeny"
+   )
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
@@ -209,6 +373,10 @@
 
 /* Settings > Playlists */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
+   "Historikk"
+   )
 
 /* Settings > Playlists > Playlist Management */
 
@@ -236,6 +404,10 @@
 
 /* Settings > Directory */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
+   "Spillelister"
+   )
 
 /* Music */
 
@@ -355,12 +527,32 @@
 
 /* Qt (Desktop Menu) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
+   "Innstillinger"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
+   "Last inn kjerne"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
+   "Spillelister"
+   )
 
 /* Unsorted */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
+   "Historikk"
+   )
 
 /* Unused (Only Exist in Translation Files) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
+   "Nettspill"
+   )
 
 /* Unused (Needs Confirmation) */
 
