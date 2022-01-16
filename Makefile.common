@@ -771,8 +771,12 @@ endif
 
 # Miscellaneous
 
+ifeq ($(HAVE_COMMAND), 1)
+   DEFINES += -DHAVE_COMMAND
+endif
+
 ifeq ($(HAVE_STDIN_CMD), 1)
-   DEFINES += -DHAVE_COMMAND -DHAVE_STDIN_CMD
+   DEFINES += -DHAVE_STDIN_CMD
 endif
 
 ifeq ($(HAVE_EMSCRIPTEN), 1)
