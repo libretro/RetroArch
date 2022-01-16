@@ -2719,7 +2719,9 @@ static int setting_action_ok_bind_all_save_autoconfig(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    unsigned index_offset     = 0;
+   unsigned map              = 0;
    const char *name          = NULL;
+   settings_t      *settings = config_get_ptr();
 
    (void)wraparound;
 
@@ -2727,7 +2729,8 @@ static int setting_action_ok_bind_all_save_autoconfig(
       return -1;
 
    index_offset = setting->index_offset;
-   name         = input_config_get_device_name(index_offset);
+   map          = settings->uints.input_joypad_index[index_offset];
+   name         = input_config_get_device_name(map);
 
    if (!string_is_empty(name) &&
          config_save_autoconf_profile(name, index_offset))
