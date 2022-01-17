@@ -657,6 +657,7 @@ frontend_ctx_driver_t frontend_ctx_psp = {
    frontend_psp_get_user_language, /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
+   NULL,                         /* set_gamemode */
    "vita",                       /* ident */
 #else
    NULL,                         /* get_user_language */
