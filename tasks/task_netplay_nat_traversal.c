@@ -254,6 +254,8 @@ static void task_netplay_nat_traversal_handler(retro_task_t *task)
 
       case NAT_TRAVERSAL_STATUS_CLOSING:
          {
+            memset(&data->request, 0, sizeof(data->request));
+
             data->status = NAT_TRAVERSAL_STATUS_CLOSED;
 
             goto finished;
