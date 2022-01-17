@@ -25,7 +25,6 @@
 
 #include <net/net_compat.h>
 #include <net/net_socket.h>
-#include <net/net_ifinfo.h>
 
 #include <retro_common_api.h>
 
@@ -50,6 +49,12 @@ enum nat_traversal_status
    NAT_TRAVERSAL_STATUS_CLOSE,
    NAT_TRAVERSAL_STATUS_CLOSING,
    NAT_TRAVERSAL_STATUS_CLOSED
+};
+
+struct natt_discovery
+{
+   retro_time_t timeout;
+   int fd;
 };
 
 struct natt_device
@@ -78,76 +83,41 @@ struct nat_traversal_data
    enum nat_traversal_status status;
 };
 
-typedef struct
-{
-   /* Timeout for our discovery request. */
-   retro_time_t timeout;
-
-   /* List of available network interfaces. */
-   struct net_ifinfo interfaces;
-
-   /* Device we are operating on. */
-   struct natt_device device;
-
-   /* File descriptor of the socket we are receiving discovery data. */
-   int fd;
-} natt_state_t;
-
-natt_state_t *natt_state_get_ptr(void);
-
 /**
  * natt_init:
  *
+ * @discovery : Pointer to a discovery object that will be written to.
+ *
  * Starts a multicast discovery for UPnP devices.
- * Must be followed by natt_device_next.
  *
  * Returns: true if the discovery was started.
  */
-bool natt_init(void);
-
-/**
- * natt_deinit:
- *
- * Uninitializes NAT traversal.
- * Call this when UPnP is no longer required and before
- * natt_init.
- *
- */
-void natt_deinit(void);
-
-/**
- * natt_interfaces_destroy:
- *
- * Free network interfaces data.
- * Call this when you've choosen an appropriate interface,
- * generally after a successful port forwarding.
- *
- */
-void natt_interfaces_destroy(void);
+bool natt_init(struct natt_discovery *discovery);
 
 /**
  * natt_device_next:
  *
- * @device : Pointer to a device object that will be written to.
+ * @discovery : Pointer to a discovery object.
+ * @device    : Pointer to a device object that will be written to.
  *
  * Grabs the next device that has reported in to our discovery.
- * natt_init must be called before this function.
  *
  * Returns: true if we've retrieved a new device or
  * if timeout has not yet been reached. If device->desc is not an empty string,
- * a new device was retrieved.
+ * a new valid device was retrieved.
  */
-bool natt_device_next(struct natt_device *device);
+bool natt_device_next(struct natt_discovery *discovery,
+   struct natt_device *device);
 
 /**
  * natt_device_end:
  *
+ * @discovery : Pointer to a discovery object.
+ *
  * Stop checking for new devices and close the discovery socket.
- * Call this when you've choosen an appropriate device,
- * generally after a successful port forwarding.
  *
  */
-void natt_device_end(void);
+void natt_device_end(struct natt_discovery *discovery);
 
 /**
  * natt_query_device:
@@ -156,7 +126,6 @@ void natt_device_end(void);
  * @block  : Blocks until the HTTP task is finished.
  *
  * Query an IGD for its service type and control URL.
- * Call this after retrieving a device from natt_device_next.
  *
  * Returns: true if the task was successfully started.
  * If both device->service_type and device->control are not empty strings,
@@ -171,7 +140,7 @@ bool natt_query_device(struct natt_device *device, bool block);
  * @block  : Blocks until the HTTP task is finished.
  *
  * Retrieve the external IP address of an IGD.
- * natt_query_device must have been called first.
+ * natt_query_device must have been successfully called.
  *
  * Returns: true if the task was successfully started.
  * If device->ext_addr.sin_family is AF_INET,
@@ -188,7 +157,7 @@ bool natt_external_address(struct natt_device *device, bool block);
  * @block        : Blocks until the HTTP task is finished.
  *
  * Forward a port.
- * natt_external_address must have been called first.
+ * natt_query_device must have been successfully called.
  *
  * Returns: true if the task was successfully started.
  * If request->success is true, the task completed successfully.
@@ -205,7 +174,7 @@ bool natt_open_port(struct natt_device *device,
  * @block        : Blocks until the HTTP task is finished.
  *
  * Unforward a port.
- * natt_open_port must have been called first.
+ * natt_query_device must have been successfully called.
  *
  * Returns: true if the task was successfully started.
  * If request->success is true, the task completed successfully.
