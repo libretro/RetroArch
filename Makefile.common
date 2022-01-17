@@ -2475,12 +2475,13 @@ ifeq ($(HAVE_C_A7A7), 1)
                 -fmerge-all-constants -fno-math-errno \
                 -marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
    DEF_FLAGS += $(C_A7A7_OPT)
-   ifeq ($(shell echo `$(CC) -dumpversion` "< 4.9" | bc -l), 1)
+   CC_VERSION := $(shell $(CC) -dumpversion)
+   ifneq (4.9,$(firstword $(sort $(CC_VERSION) 4.9))) # if version < 4.9
       DEF_FLAGS += -march=armv7-a
    else
       DEF_FLAGS += -march=armv7ve
       # If gcc is 5.0 or later
-      ifeq ($(shell echo `$(CC) -dumpversion` ">= 5" | bc -l), 1)
+      ifeq (5,$(firstword $(sort $(CC_VERSION) 5)))
          LDFLAGS += -static-libgcc -static-libstdc++
       endif
    endif
