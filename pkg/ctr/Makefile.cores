@@ -262,6 +262,13 @@ else ifeq ($(LIBRETRO), handy)
 	APP_ICON             = pkg/ctr/assets/handy.png
 	APP_BANNER           = pkg/ctr/assets/handy_banner.png
 
+else ifeq ($(LIBRETRO), jaxe)
+	APP_TITLE            = jaxe
+	APP_PRODUCT_CODE     = RARCH-JAXE
+	APP_UNIQUE_ID        = 0xBACE2
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
 else ifeq ($(LIBRETRO), lowresnx)
 	APP_TITLE            = LowRes NX
 	APP_PRODUCT_CODE     = RARCH-LOWRESNX
@@ -678,6 +685,14 @@ else ifeq ($(LIBRETRO), vitaquake2)
 	APP_TITLE            = vitaquake2
 	APP_PRODUCT_CODE     = RARCH-VITAQUAKE2
 	APP_UNIQUE_ID        = 0xBAC98
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
+
+else ifeq ($(LIBRETRO), wasm4)
+	APP_TITLE            = wasm4
+	APP_PRODUCT_CODE     = RARCH-WASM4
+	APP_UNIQUE_ID        = 0xBACE1
 	APP_ICON             = pkg/ctr/assets/default.png
 	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 
