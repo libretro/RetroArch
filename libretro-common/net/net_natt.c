@@ -37,7 +37,7 @@
 
 #include <net/net_natt.h>
 
-#if defined(_WIN32)
+#ifdef _WIN32
 #include <iphlpapi.h>
 #endif
 
@@ -631,9 +631,7 @@ static void natt_close_port_cb(retro_task_t *task, void *task_data,
    if (data->status != 200)
       goto done;
 
-   /* We don't need to do anything special here.
-    * Just clear up the request. */
-   memset(request, 0, sizeof(*request));
+   /* We don't need to do anything special here. */
    request->success = true;
 
 done:
