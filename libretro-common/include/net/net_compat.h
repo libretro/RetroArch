@@ -88,6 +88,7 @@
 #define htonl sceNetHtonl
 #define ntohl sceNetNtohl
 #define htons sceNetHtons
+#define ntohs sceNetNtohs
 #define socklen_t unsigned int
 
 struct hostent
