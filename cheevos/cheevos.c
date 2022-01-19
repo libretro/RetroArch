@@ -71,6 +71,7 @@
 #include "../tasks/tasks_internal.h"
 
 #include "../deps/rcheevos/include/rc_runtime.h"
+#include "../deps/rcheevos/include/rc_runtime_types.h"
 #include "../deps/rcheevos/include/rc_hash.h"
 #include "../deps/rcheevos/src/rcheevos/rc_libretro.h"
 
@@ -1144,14 +1145,67 @@ bool rcheevos_get_serialized_data(void* buffer)
 
 bool rcheevos_set_serialized_data(void* buffer)
 {
-   if (rcheevos_locals.loaded)
+   if (rcheevos_locals.loaded && buffer)
    {
-      if (buffer && rc_runtime_deserialize_progress(
-               &rcheevos_locals.runtime,
-               (const unsigned char*)buffer, NULL) == RC_OK)
-         return true;
+      const int result = rc_runtime_deserialize_progress(
+         &rcheevos_locals.runtime, (const unsigned char*)buffer, NULL);
 
-      rc_runtime_reset(&rcheevos_locals.runtime);
+#if defined(HAVE_GFX_WIDGETS)
+      if (gfx_widgets_ready() && rcheevos_is_player_active())
+      {
+         settings_t* settings = config_get_ptr();
+
+         if (rcheevos_locals.leaderboard_trackers)
+         {
+            unsigned i;
+            rc_runtime_lboard_t* lboard = rcheevos_locals.runtime.lboards;
+            for (i = 0; i < rcheevos_locals.runtime.lboard_count; ++i, ++lboard)
+            {
+               if (!lboard->lboard)
+                  continue;
+
+               if (lboard->lboard->state == RC_LBOARD_STATE_STARTED)
+               {
+                  rcheevos_ralboard_t* ralboard = rcheevos_find_lboard(lboard->id);
+                  if (ralboard != NULL)
+                  {
+                     char value[32];
+                     rc_runtime_format_lboard_value(value, sizeof(value), lboard->value, ralboard->format);
+                     gfx_widgets_set_leaderboard_display(lboard->id, value);
+                  }
+               }
+               else
+               {
+                  gfx_widgets_set_leaderboard_display(lboard->id, NULL);
+               }
+            }
+         }
+
+         if (settings->bools.cheevos_challenge_indicators)
+         {
+            unsigned i;
+            rc_runtime_trigger_t* cheevo = rcheevos_locals.runtime.triggers;
+            for (i = 0; i < rcheevos_locals.runtime.trigger_count; ++i, ++cheevo)
+            {
+               if (!cheevo->trigger)
+                  continue;
+
+               if (cheevo->trigger->state == RC_TRIGGER_STATE_PRIMED)
+               {
+                  rcheevos_racheevo_t* racheevo = rcheevos_find_cheevo(cheevo->id);
+                  if (racheevo != NULL)
+                     gfx_widgets_set_challenge_display(racheevo->id, racheevo->badge);
+               }
+               else
+               {
+                  gfx_widgets_set_challenge_display(cheevo->id, NULL);
+               }
+            }
+         }
+      }
+#endif
+
+      return (result == RC_OK);
    }
 
    return false;
