@@ -92,7 +92,7 @@ Build and move output to the frontend:
 
 ```
 emmake make -f Makefile platform=emscripten
-cp fceumm_libretro_emscripten.bc ~/retroarch/RetroArch/dist-scripts/fceumm_libretro_emscripten.bc
+cp melonds_libretro_emscripten.bc ~/retroarch/RetroArch/dist-scripts/melonds_libretro_emscripten.bc
 ```
 
 Now build the frontend with the pthreads env variable: (2 is the number of workers this can be any integer)
