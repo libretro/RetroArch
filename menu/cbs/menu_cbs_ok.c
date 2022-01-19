@@ -7532,7 +7532,7 @@ static int action_ok_playlist_refresh(const char *path,
       if (string_is_empty(msg_subject))
          msg_subject = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
 
-      snprintf(msg, sizeof(msg), "%s%s", msg_prefix, msg_subject);
+      fill_pathname_join(msg, msg_prefix, msg_subject, sizeof(msg));
 
       RARCH_ERR(log_text, msg_subject);
       runloop_msg_queue_push(msg, 1, 150, true,

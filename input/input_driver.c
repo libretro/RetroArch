@@ -5586,8 +5586,8 @@ void input_keyboard_event(bool down, unsigned code,
 	   *key_event            = &runloop_st->key_event;
    input_driver_state_t 
       *input_st                  = &input_driver_st;
-   access_state_t *access_st     = access_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
+   access_state_t *access_st     = access_state_get_ptr();
    settings_t *settings          = config_get_ptr();
    bool accessibility_enable     = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
