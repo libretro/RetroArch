@@ -283,6 +283,9 @@ enum retro_language
    RETRO_LANGUAGE_HEBREW              = 21,
    RETRO_LANGUAGE_ASTURIAN            = 22,
    RETRO_LANGUAGE_FINNISH             = 23,
+   RETRO_LANGUAGE_INDONESIAN          = 24,
+   RETRO_LANGUAGE_SWEDISH             = 25,
+   RETRO_LANGUAGE_UKRAINIAN           = 26,
    RETRO_LANGUAGE_LAST,
 
    /* Ensure sizeof(enum) == sizeof(int) */

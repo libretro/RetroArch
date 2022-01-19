@@ -3387,6 +3387,15 @@ int msg_hash_get_help_ast_enum(enum msg_hash_enums msg, char *s, size_t len);
 const char *msg_hash_to_str_fi(enum msg_hash_enums msg);
 int msg_hash_get_help_fi_enum(enum msg_hash_enums msg, char *s, size_t len);
 
+const char *msg_hash_to_str_id(enum msg_hash_enums msg);
+int msg_hash_get_help_id_enum(enum msg_hash_enums msg, char *s, size_t len);
+
+const char *msg_hash_to_str_sv(enum msg_hash_enums msg);
+int msg_hash_get_help_sv_enum(enum msg_hash_enums msg, char *s, size_t len);
+
+const char *msg_hash_to_str_uk(enum msg_hash_enums msg);
+int msg_hash_get_help_uk_enum(enum msg_hash_enums msg, char *s, size_t len);
+
 int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 enum msg_file_type msg_hash_to_file_type(uint32_t hash);
