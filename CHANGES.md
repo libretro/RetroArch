@@ -21,6 +21,9 @@
 - INPUT/WAYLAND: Ignore mouse clicks on window decoration
 - INPUT/WAYLAND: Add scroll wheel support
 - LINUX: Added support for Linux GameMode (https://github.com/FeralInteractive/gamemode), which can be toggled on/off in the Power Management or Latency settings menus.
+- LOCALIZATION: Fetch translations from Crowdin
+- LOCALIZATION: Add Indonesian, Swedish and Ukrainian language options
+- LOCALIZATION/MENU/RGUI: Enable Indonesian and Swedish localisations for RGUI
 - LOGGING: Logging cleanups
 - LOGGING: Stop logging FPS statistics twice on quit
 - LOGGING: Log font rendering backend only once
