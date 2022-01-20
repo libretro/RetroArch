@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#if defined(_WIN32) && defined(_MSC_VER)
+#if defined(_WIN32) && !defined(__WINRT__) && defined(_MSC_VER)
 #pragma comment(lib, "Iphlpapi")
 #endif
 
@@ -37,7 +37,7 @@
 
 #include <net/net_natt.h>
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__WINRT__)
 #include <iphlpapi.h>
 #endif
 
@@ -85,7 +85,7 @@ bool natt_init(struct natt_discovery *discovery)
       "ST: urn:schemas-upnp-org:device:InternetGatewayDevice:1\r\n"
       "MX: 5\r\n"
       "\r\n";
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__WINRT__)
    MIB_IPFORWARDROW ip_forward;
 #endif
    bool ret;
@@ -110,7 +110,7 @@ bool natt_init(struct natt_discovery *discovery)
    if (!bind_addr)
       goto failure;
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__WINRT__)
    if (GetBestRoute(inet_addr("223.255.255.255"),
       0, &ip_forward) == NO_ERROR)
    {
