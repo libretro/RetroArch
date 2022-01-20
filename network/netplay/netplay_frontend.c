@@ -20,7 +20,7 @@
 #pragma comment(lib, "ws2_32")
 #endif
 
-#if defined(_WIN32) && defined(_MSC_VER)
+#if defined(_WIN32) && !defined(__WINRT__) && defined(_MSC_VER)
 #pragma comment(lib, "Iphlpapi")
 #endif
 
@@ -45,7 +45,7 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__WINRT__)
 #include <iphlpapi.h>
 #endif
 
@@ -247,7 +247,7 @@ bool init_netplay_discovery(void)
 
    if (ret)
    {
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__WINRT__)
       MIB_IPFORWARDROW ip_forward;
 
       if (GetBestRoute(inet_addr("223.255.255.255"),
