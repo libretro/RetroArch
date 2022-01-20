@@ -225,10 +225,7 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file* stream,
    }
 
     if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-    {
-        return fread(s, 1, (size_t)len, stream->fp);
-    }
-    DWORD BytesRead;
+       return fread(s, 1, (size_t)len, stream->fp);
     return read(stream->fd, s, (size_t)len);
 }
 

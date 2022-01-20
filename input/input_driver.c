@@ -3521,9 +3521,8 @@ void input_keys_pressed(
    unsigned i;
    input_driver_state_t *input_st = &input_driver_st;
 
-   if(!binds || !binds[port]) {
+   if(!binds || !binds[port])
       return;
-   }
 
    if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
    {
@@ -3785,18 +3784,17 @@ int16_t input_state_device(
                            input_st->turbo_btns.enable[port] = enable_new;
                      }
                   }
-                  else if (turbo_mode == INPUT_TURBO_MODE_SINGLEBUTTON_HOLD &&
-                        input_st->turbo_btns.enable[port] &&
-                        input_st->turbo_btns.mode1_enable[port])
-                  {
-                     /* Hold mode stops turbo on release */
+                  /* Hold mode stops turbo on release */
+                  else if (
+                           turbo_mode == INPUT_TURBO_MODE_SINGLEBUTTON_HOLD
+                        && input_st->turbo_btns.enable[port]
+                        && input_st->turbo_btns.mode1_enable[port])
                      input_st->turbo_btns.mode1_enable[port] = 0;
-                  }
 
                   if (!res && input_st->turbo_btns.mode1_enable[port] &&
                         input_st->turbo_btns.enable[port] & (1 << id))
                   {
-                     /* if turbo button is enabled for this key ID */
+                     /* If turbo button is enabled for this key ID */
                      res = ((   input_st->turbo_btns.count
                               % settings->uints.input_turbo_period)
                            < settings->uints.input_turbo_duty_cycle);
