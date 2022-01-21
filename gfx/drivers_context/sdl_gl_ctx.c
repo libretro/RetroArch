@@ -377,7 +377,12 @@ static bool sdl_ctx_has_focus(void *data)
 
 #ifdef HAVE_SDL2
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
+#ifdef WEBOS
+   // We do not receive mouse focus when non-magic remote is used.
+   flags = (SDL_WINDOW_INPUT_FOCUS);
+#else
    flags = (SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS);
+#endif
    return (SDL_GetWindowFlags(sdl->win) & flags) == flags;
 #else
    flags = (SDL_APPINPUTFOCUS | SDL_APPACTIVE);

@@ -1144,7 +1144,7 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_REWIND_GRANULARITY 1
 #endif
 /* Pause gameplay when gameplay loses focus. */
-#if defined(EMSCRIPTEN) || defined(WEBOS)
+#if defined(EMSCRIPTEN)
 #define DEFAULT_PAUSE_NONACTIVE false
 #else
 #define DEFAULT_PAUSE_NONACTIVE true
