@@ -245,6 +245,14 @@ MSG_HASH(
    "cb_core_content_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD,
+   "cb_core_system_files_download"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_LIST,
+   "cb_core_system_files_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD,
    "cb_core_thumbnails_download"
    )
@@ -829,6 +837,10 @@ MSG_HASH(
    "deferred_core_content_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CORE_SYSTEM_FILES_LIST,
+   "deferred_core_system_files_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CORE_LIST,
    "deferred_core_list"
    )
@@ -1151,6 +1163,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
    "download_core_content_dirs"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+   "download_core_system_files"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES,
