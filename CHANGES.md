@@ -14,6 +14,7 @@
 - CLI: Load save states from command-line or playlist
 - CORE INFO CACHE/SETTINGS: Restore missing 'Cache Core Info Files' menu entry
 - DATABASE: Serial scanning for Gamecube/MegaCD/SegaCD/Saturn/PSX/PSP/Dreamcast/Wii
+- D3D10/D3D11: Add Vsync swap interval
 - EMSCRIPTEN: Add Jaxe, WASM4 cores
 - FILE IO: Fix incorrect file names for remap files when the content path doesn't have a preceding slash
 - INPUT/OVERLAY: Added support for showing the overlay behind the menu instead of in front. This is currently only supported on the GL, Vulkan, D3D 9/10/11/12 and 3DS drivers.
