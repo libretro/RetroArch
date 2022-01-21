@@ -1560,7 +1560,7 @@ static bool d3d10_gfx_frame(
 #ifndef __WINRT__
    win32_update_title();
 #endif
-   DXGIPresent(d3d10->swapChain, !!d3d10->vsync, 0);
+   DXGIPresent(d3d10->swapChain, d3d10->swap_interval, 0);
 
    return true;
 }
@@ -1575,6 +1575,7 @@ static void d3d10_gfx_set_nonblock_state(void* data, bool toggle,
       return;
 
    d3d10->vsync         = !toggle;
+   d3d10->swap_interval = (!toggle) ? swap_interval : 0;
 }
 
 static bool d3d10_gfx_alive(void* data)

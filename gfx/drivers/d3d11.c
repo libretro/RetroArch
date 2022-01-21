@@ -2199,7 +2199,7 @@ static bool d3d11_gfx_frame(
    }
 #endif
 
-   DXGIPresent(d3d11->swapChain, !!vsync, present_flags);
+   DXGIPresent(d3d11->swapChain, d3d11->swap_interval, present_flags);
    Release(rtv);
 
    return true;
@@ -2215,7 +2215,8 @@ static void d3d11_gfx_set_nonblock_state(void* data,
    if (!d3d11)
       return;
 
-   d3d11->vsync = !toggle;
+   d3d11->vsync         = !toggle;
+   d3d11->swap_interval = (!toggle) ? swap_interval : 0;
 }
 
 static bool d3d11_gfx_alive(void* data)
