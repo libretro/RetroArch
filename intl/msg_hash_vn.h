@@ -2003,6 +2003,10 @@ MSG_HASH(
    "Lịch sử"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT,
+   "Cổng"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER,
    "Người dùng"
    )

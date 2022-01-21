@@ -2313,6 +2313,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    "Kärna:"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
+   "Senast spelad:"
+   )
 
 /* Settings > Playlists > Playlist Management */
 
@@ -2391,6 +2395,10 @@ MSG_HASH(
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
    "Filhanterare"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
+   "Kärninformation"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
@@ -3256,6 +3264,10 @@ MSG_HASH(
    "Filen existerar inte."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_VIEW,
+   "Visa"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS,
    "Ikoner"
    )
@@ -3573,6 +3585,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_MEMORY,
    "Minne"
+   )
+MSG_HASH(
+   MSG_PAUSED,
+   "Pausad."
    )
 MSG_HASH(
    MSG_SCANNING,

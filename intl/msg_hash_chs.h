@@ -7828,6 +7828,10 @@ MSG_HASH(
    "最邻"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAIN,
+   "主窗口"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT,
    "游戏"
    )
