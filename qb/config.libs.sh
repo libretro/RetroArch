@@ -634,6 +634,14 @@ if [ "$HAVE_GLSLANG" != no ]; then
    fi
 fi
 
+if [ "$HAVE_CRTSWITCHRES" != no ]; then
+   if [ "$HAVE_CXX11" = 'no' ]; then
+      HAVE_CRTSWITCHRES=no
+   else
+      HAVE_CRTSWITCHRES=yes
+   fi
+fi
+
 check_enabled SLANG GLSLANG glslang 'slang is' false
 check_enabled SLANG SPIRV_CROSS SPIRV-Cross 'slang is' false
 check_enabled SLANG OPENGL_CORE 'OpenGL core' 'slang is' false
