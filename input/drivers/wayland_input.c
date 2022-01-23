@@ -411,7 +411,8 @@ static uint64_t input_wl_get_capabilities(void *data)
 
 static void input_wl_grab_mouse(void *data, bool state)
 {
-   /* Dummy for now. Might be useful in the future. */
+   /* This function does nothing but registering it is necessary for allowing
+    * mouse-grab toggling. */
    (void)data;
    (void)state;
 }
