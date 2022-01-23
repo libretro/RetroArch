@@ -128,14 +128,19 @@ static void CFSearchPathForDirectoriesInDomains(
 #else
    NSSearchPathDirectory dir = NSDocumentDirectory;
 #endif
+   CFStringRef array_val;
 #if __has_feature(objc_arc)
-   CFStringRef       array_val = (__bridge CFStringRef)[
+   array_val = (__bridge CFStringRef)[
          NSSearchPathForDirectoriesInDomains(dir,
             NSUserDomainMask, YES) firstObject];
 #else
-   CFStringRef       array_val = (CFStringRef)[
-         NSSearchPathForDirectoriesInDomains(dir,
-            NSUserDomainMask, YES) firstObject];
+   NSArray *arr = NSSearchPathForDirectoriesInDomains(dir,
+						     NSUserDomainMask, YES);
+   if ([arr count] == 0) {
+     array_val = nil;
+   } else{
+     array_val = (CFStringRef)[arr objectAtIndex:0];
+   }
 #endif
    if (array_val)
       CFStringGetCString(array_val, s, len, kCFStringEncodingUTF8);
