@@ -1147,20 +1147,220 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
    "Kameradriveren som brukes."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
+   "Bluetoothdriveren som brukes."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
+   "Wi-Fi driveren som brukes."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
+   "Posisjon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
+   "Posisjonsdriveren som brukes."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
+   "Meny"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DRIVER,
+   "Menydriveren som brukes."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
+   "MIDIdriveren som brukes."
+   )
 
 /* Settings > Video */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+   "Send ut innebygde, lavoppløselige signaler for CRT-skjermer."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+   "Utdata"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
    "Endre videoutdata innstillinger."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   "Fullskjermmodus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   "Endre innstillinger for fullskjermmodus."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+   "Vindusmodus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+   "Endre innstillinger for vindusmodus."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   "Skalering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+   "Endre innstillinger for videoskalering."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
+   "Endre instillinger for HD video."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
+   "Synkronisering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+   "Endre innstillinger for videosynkronisering."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
+   "Slå av skjermsparer"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
+   "Forhindre at systemets skjermsparer aktiveres."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
+   "Trådet video"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+   "Forbedrer ytelsen på bekostning av latens og mer hakk i videoen. Bruk bare hvis full hastighet ikke kan oppnås på noe annet vis."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+   "Svart rammeinnsetting"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "Sett inn en svart ramme mellom bilder. Nyttig på noen høy oppdateringsfrekvensskjermer for å eliminere \"ghosting\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
+   "GPU skjermbilde"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "Tar skjermbilde av GPU-skyggelagt materiale hvis det er tilgjengelig."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
+   "Bilineær filtrering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   "Legger til en liten uskarphet til bildet for å myke opp harde pikselkanter. Dette alternativet har en svært liten innvirkning på ytelse."
+   )
 #if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "Bilde Interpolering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "Angi bilde interpoleringsmetode når du skalerer innhold via intern IPU. \"Bikubisk\" eller \"Bilineær\" anbefales når en bruker CPU-drevne videofiltre. Dette valget har ingen påvirkelse på ytelse."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
+   "Bikubisk"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
+   "Bilineær"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
+   "Nærmeste nabo"
+   )
 #if defined(RS90) || defined(MIYOO)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Bilde Interpolering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Spesifiser bildeinterpoleringsmetode når \"Integer Skala\" er deaktivert. \"Nærmeste nabo\" har minst påvirkelse på ytelse."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "Nærmeste nabo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   "Semi-lineær"
+   )
 #endif
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
+   "Auto-Shader Forsinkelse"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
+   "Forsink auto-lasting av shader (i ms). Kan jobbe rundt grafiske glitcher når du bruker programvare for \"skjermkopier\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
+   "Video filter"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER,
+   "Bruk et CPU-drevet videofilter. Kan ha høy ytelseskostnad. Noen videofiltre kan bare fungere for kjerner som bruker 32-biters eller 16-biters farge."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   "Fjern videofilter"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   "Last ut alle aktive CPU-drevne videofilter."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "Aktiver fullskjerm over skjermrammer i Android-enheter"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
+   "Kun for CRT skjermer. Denne innstillingen prøver å bruke eksakt kjernen/spilloppløsning og oppfriskingsrate."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+   "CRT Superoppløsning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
+   "Bytt mellom innebygde og ultrabrede superoppløsninger."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+   "X-Akse sentrering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+   "Bla gjennom disse alternativene hvis bildet ikke er sentrert riktig på skjermen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   "Bruk høyoppløsings meny"
+   )
 
 /* Settings > Video > Output */
 
@@ -1187,8 +1387,16 @@ MSG_HASH(
 /* Settings > Audio */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+   "Utdata"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    "Endre innstillinger for lydutgang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   "Synkronisering"
    )
 
 /* Settings > Audio > Output */
@@ -1203,12 +1411,20 @@ MSG_HASH(
 
 /* Settings > Audio > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
+   "Synkronisering"
+   )
 
 /* Settings > Audio > MIDI */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
    "Inndata"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
+   "Utdata"
    )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
