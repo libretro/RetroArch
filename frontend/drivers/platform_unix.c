@@ -2135,6 +2135,12 @@ static void frontend_unix_init(void *data)
          "deleteCore", "(Ljava/lang/String;)V");
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
          android_app->getIntent);
+   GET_METHOD_ID(env, android_app->grantPermissionsToFolder, class,
+         "grantPermissionsToFolder", "()V");
+   GET_METHOD_ID(env, android_app->selectFileWithBrowser, class,
+         "selectFileWithBrowser", "()V");
+   GET_METHOD_ID(env, android_app->getFileDescriptor, class,
+         "getFileDescriptor", "()Ljava/lang/String;");
 
    GET_OBJECT_CLASS(env, class, obj);
    GET_METHOD_ID(env, android_app->getStringExtra, class,
@@ -2151,9 +2157,22 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
       MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
       MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
 
+   static launched = false;
 #ifdef ANDROID
+   JNIEnv *env = jni_thread_getenv();
+
+   if (!env || !g_android)
+      return 0;
+
+
    if (!string_is_empty(internal_storage_path))
    {
+      if (launched == false && env && g_android->selectFileWithBrowser)
+      {
+         CALL_VOID_METHOD(env, g_android->activity->clazz,
+            g_android->selectFileWithBrowser);
+         launched = true;
+      }
       if (storage_permissions == INTERNAL_STORAGE_WRITABLE)
       {
          char user_data_path[PATH_MAX_LENGTH];

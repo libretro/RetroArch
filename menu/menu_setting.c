@@ -9065,6 +9065,22 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               MENU_ENUM_LABEL_SELECT_CONTENT_ANDROID_LIST,
+               MENU_ENUM_LABEL_VALUE_SELECT_CONTENT_ANDROID_LIST,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_LOAD_CONTENT_ANDROID_LIST,
+               MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_ANDROID_LIST,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
                MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS,
                MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
                &group_info,

@@ -18,8 +18,16 @@ import android.content.SharedPreferences;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
+import android.database.Cursor;
 import android.media.AudioAttributes;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.ParcelFileDescriptor;
+import android.os.storage.StorageManager;
+import android.os.storage.StorageVolume;
+import android.provider.DocumentsContract;
+import android.provider.MediaStore;
 import android.system.Os;
 import android.view.InputDevice;
 import android.view.Surface;
@@ -32,7 +40,10 @@ import android.os.Vibrator;
 import android.os.VibrationEffect;
 import android.util.Log;
 
+
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -163,6 +174,78 @@ public class RetroActivityCommon extends NativeActivity
   public void onRetroArchExit()
   {
       finish();
+  }
+
+  private static final int RQS_OPEN_DOCUMENT_TREE = 9000;
+  private static final int RQS_OPEN_DOCUMENT = 9001;
+
+  public void grantPermissionsToFolder()
+  {
+    Log.i("RetroActivity", "Opening directory selector");
+    Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+    startActivityForResult(intent, RQS_OPEN_DOCUMENT_TREE);
+  }
+
+  public void selectFileWithBrowser()
+  {
+    Log.i("RetroActivity", "Opening file selector");
+    Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+    intent.addCategory(Intent.CATEGORY_OPENABLE);
+    intent.setType("application/*");
+    if (intent.resolveActivity(getPackageManager()) != null) {
+      startActivityForResult(intent, RQS_OPEN_DOCUMENT);
+    } else {
+      Log.i("RetroActivity","Unable to resolve Intent.ACTION_OPEN_DOCUMENT {}");
+    }
+
+  }
+
+  ParcelFileDescriptor mParcelFileDescriptor = null;
+
+  String getFileNameThatICanUseInNativeCode(Uri uri) throws FileNotFoundException {
+      mParcelFileDescriptor =
+              getApplicationContext().getContentResolver().openFileDescriptor(uri, "r");
+      if (mParcelFileDescriptor != null) {
+        int fd = mParcelFileDescriptor.getFd();
+        return "/proc/self/fd/" + fd;
+      }
+      else{
+        return null;
+      }
+  }
+
+  String game_path;
+  public String getFileDescriptor()
+  {
+    return game_path;
+  }
+
+
+  @TargetApi(Build.VERSION_CODES.O)
+  @Override
+  public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    String location = "";
+    Uri uri = null;
+    Log.i("RetroActivity", "Result: " + resultCode + " Request: " + requestCode);
+    if (resultCode == RESULT_OK && requestCode == RQS_OPEN_DOCUMENT_TREE) {
+      uri = data.getData();
+      Log.i("RetroActivity", uri.toString());
+      Log.i("RetroActivity", uri.getPath());
+      selectFileWithBrowser();
+    }
+    if (resultCode == RESULT_OK && requestCode == RQS_OPEN_DOCUMENT) {
+      uri = data.getData();
+      Log.i("RetroActivity", uri.toString());
+      Log.i("RetroActivity", uri.getPath());
+      try {
+        String path = null;
+        path = getFileNameThatICanUseInNativeCode(uri);
+        Log.i("RetroActivity", path);
+        game_path = path;
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+      }
+    }
   }
 
 // https://stackoverflow.com/questions/4553650/how-to-check-device-natural-default-orientation-on-android-i-e-get-landscape/4555528#4555528

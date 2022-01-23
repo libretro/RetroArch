@@ -27,7 +27,7 @@ apply plugin: 'com.android.application'
 android {
   compileSdkVersion 30
   buildToolsVersion "30.0.3"
-  ndkVersion "22.0.7026061"
+  ndkVersion '23.1.7779620'
 
   flavorDimensions "variant"
 

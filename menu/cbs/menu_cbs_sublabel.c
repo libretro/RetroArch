@@ -95,6 +95,71 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
    return 1;
 }
 
+
+
+static int action_bind_sublabel_content_android_list(file_list_t* list,
+      unsigned type, unsigned i, const char* label, const char* path, char* s, size_t len)
+{
+   static char aux_path[PATH_MAX_LENGTH];
+
+   JNIEnv *env = jni_thread_getenv();
+   jobject                       obj  = NULL;
+   jstring                      jstr  = NULL;
+
+   if (!env || !g_android)
+      return 0;
+
+   if (g_android->getFileDescriptor)
+   {
+      CALL_OBJ_METHOD(env, jstr,
+            g_android->activity->clazz, g_android->getFileDescriptor);
+
+      if (jstr)
+      {
+         const char *str = (*env)->GetStringUTFChars(env, jstr, 0);
+
+         aux_path[0] = '\0';
+
+         if (str && *str)
+            strlcpy(aux_path, str,
+                  sizeof(aux_path));
+
+         (*env)->ReleaseStringUTFChars(env, jstr, str);
+
+         if (!string_is_empty(aux_path))
+         {
+            strlcpy(s, aux_path, len);
+            return 0;
+         }
+         else
+         {
+            strlcpy(s, "empty...", len);
+            return 0;
+         }
+      }
+
+
+   }
+ /*
+   if (g_android->getStringExtra && jstr)
+   {
+      const char *str = (*env)->GetStringUTFChars(env, jstr, 0);
+
+      aux_path[0] = '\0';
+
+      if (str && *str)
+         strlcpy(aux_path, str,
+               sizeof(aux_path));
+
+      (*env)->ReleaseStringUTFChars(env, jstr, str);
+
+
+   }
+*/
+   strlcpy(s, "empty...", len);
+   return 0;
+}
+
 #ifdef HAVE_CHEEVOS
 static int menu_action_sublabel_achievement_pause_menu(file_list_t* list,
       unsigned type, unsigned i, const char* label, const char* path, char* s, size_t len)
@@ -3579,6 +3644,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_list);
+            break;
+         case MENU_ENUM_LABEL_SELECT_CONTENT_ANDROID_LIST:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_android_list);
             break;
          case MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_special);

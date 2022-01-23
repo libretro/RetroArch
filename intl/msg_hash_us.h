@@ -72,6 +72,14 @@ MSG_HASH(
    "Load Content"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SELECT_CONTENT_ANDROID_LIST,
+   "Select Content With Android File Browser"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_ANDROID_LIST,
+   "Load Selected Content"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
    "Select which content to start."
    )

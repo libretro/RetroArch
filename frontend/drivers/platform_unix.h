@@ -151,6 +151,8 @@ struct android_app
    int8_t hat_state[DEFAULT_MAX_PADS][2];
    jmethodID getIntent;
    jmethodID onRetroArchExit;
+   jmethodID grantPermissionsToFolder;
+   jmethodID selectFileWithBrowser;
    jmethodID getStringExtra;
    jmethodID clearPendingIntent;
    jmethodID hasPendingIntent;
@@ -167,6 +169,7 @@ struct android_app
    jmethodID setSustainedPerformanceMode;
    jmethodID setScreenOrientation;
    jmethodID getUserLanguageString;
+   jmethodID getFileDescriptor;
    jmethodID doVibrate;
 
    jmethodID isPlayStoreBuild;
