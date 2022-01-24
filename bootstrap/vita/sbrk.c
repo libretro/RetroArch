@@ -43,7 +43,6 @@ void _init_vita_heap(void) {
 
 	  if (_newlib_vm_memblock < 0){
 	    //sceClibPrintf("sceKernelAllocMemBlockForVM failed\n");
-			goto failure;
 		}
 	}else{
 		_newlib_vm_memblock = 0;
@@ -99,8 +98,8 @@ void _free_vita_heap(void) {
 	// Free the heap memblock to avoid memory leakage.
 	sceKernelFreeMemBlock(_newlib_heap_memblock);
 
-	if(_newlib_vm_memblock)
-  	sceKernelFreeMemBlock(_newlib_vm_memblock);
+	if (_newlib_vm_memblock > 0)
+		sceKernelFreeMemBlock(_newlib_vm_memblock);
 
 	_newlib_vm_memblock = 0;
 	_newlib_heap_memblock = 0;
