@@ -67,24 +67,24 @@ public final class MainMenuActivity extends PreferenceActivity
 			// Android 6.0+ needs runtime permission checks
 			List<String> permissionsNeeded = new ArrayList<String>();
 			final List<String> permissionsList = new ArrayList<String>();
-/*
-			final boolean requiresManageExternalStoragePermission =
-					getApplicationInfo().targetSdkVersion > Build.VERSION_CODES.Q
-							&& Build.VERSION.SDK_INT > Build.VERSION_CODES.Q;
-*/
+
+			final boolean requiresManageExternalStoragePermission = false;
+/*					getApplicationInfo().targetSdkVersion > Build.VERSION_CODES.Q
+							&& Build.VERSION.SDK_INT > Build.VERSION_CODES.Q;*/
+
 			boolean shouldRequestManageExternalStoragePermission = false;
 
-/*			if (requiresManageExternalStoragePermission) {
+			if (requiresManageExternalStoragePermission) {
 				if (!Environment.isExternalStorageManager()) {
 					shouldRequestManageExternalStoragePermission = true;
 					permissionsNeeded.add("Manage External Storage");
 				}
-			} else {*/
+			} else {
 				if (!addPermission(permissionsList, Manifest.permission.READ_EXTERNAL_STORAGE))
 					permissionsNeeded.add("Read External Storage");
 				if (!addPermission(permissionsList, Manifest.permission.WRITE_EXTERNAL_STORAGE))
 					permissionsNeeded.add("Write External Storage");
-			//}
+			}
 
 			if (permissionsList.size() > 0 || shouldRequestManageExternalStoragePermission)
 			{
@@ -108,7 +108,7 @@ public final class MainMenuActivity extends PreferenceActivity
 							{
 								if (which == AlertDialog.BUTTON_POSITIVE)
 								{
-/*									if (requiresManageExternalStoragePermission) {
+									if (requiresManageExternalStoragePermission) {
 										checkManageExternalStoragePermission = true;
 
 										Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
@@ -125,12 +125,12 @@ public final class MainMenuActivity extends PreferenceActivity
 											intent.setData(Uri.fromParts("package", getPackageName(), null));
 											startActivity(intent);
 										}
-									} else {*/
+									} else {
 										requestPermissions(permissionsList.toArray(new String[permissionsList.size()]),
 												REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
 
 										Log.i("MainMenuActivity", "User accepted request for external storage permissions.");
-									//}
+									}
 								}
 							}
 						});

@@ -28,14 +28,78 @@ public final class UserPreferences
 
 	/**
 	 * Retrieves the path to the default location of the libretro config.
-	 *
+	 * 
 	 * @param ctx the current {@link Context}
-	 *
+	 * 
 	 * @return the path to the default location of the libretro config.
 	 */
 	public static String getDefaultConfigPath(Context ctx)
 	{
-		String new_path = "/sdcard/RetroArch/retroarch.cfg";
+		// Internal/External storage dirs.
+		final String internal = ctx.getFilesDir().getAbsolutePath();
+		String external = null;
+
+		// Get the App's external storage folder
+		final String state = android.os.Environment.getExternalStorageState();
+		if (android.os.Environment.MEDIA_MOUNTED.equals(state)) {
+			File extsd = ctx.getExternalFilesDir(null);
+			external = extsd.getAbsolutePath();
+		}
+
+		// Native library directory and data directory for this front-end.
+		final String dataDir = ctx.getApplicationInfo().dataDir;
+		final String coreDir = dataDir + "/cores/";
+
+		// Get libretro name and path
+		final SharedPreferences prefs = getPreferences(ctx);
+		final String libretro_path = prefs.getString("libretro_path", coreDir);
+
+		// Check if global config is being used. Return true upon failure.
+		final boolean globalConfigEnabled = prefs.getBoolean("global_config_enable", true);
+
+		String append_path;
+		// If we aren't using the global config.
+		if (!globalConfigEnabled && !libretro_path.equals(coreDir))
+		{
+			String sanitized_name = sanitizeLibretroPath(libretro_path);
+			append_path = File.separator + sanitized_name + ".cfg";
+		}
+		else // Using global config.
+		{
+			append_path = File.separator + "retroarch.cfg";
+		}
+
+		if (external != null)
+		{
+			String confPath = external + append_path;
+			if (new File(confPath).exists())
+				return confPath;
+		}
+		else if (internal != null)
+		{
+			String confPath = internal + append_path;
+			if (new File(confPath).exists())
+				return confPath;
+		}
+		else
+		{
+			String confPath = "/mnt/extsd" + append_path;
+			if (new File(confPath).exists())
+				return confPath;
+		}
+
+		// Config file does not exist. Create empty one.
+
+		// emergency fallback
+		String new_path = "/mnt/sd" + append_path;
+
+		if (external != null)
+			new_path = external + append_path;
+		else if (internal != null)
+			new_path = internal + append_path;
+		else if (dataDir != null)
+			new_path = dataDir + append_path;
+
 		try {
 			new File(new_path).createNewFile();
 		}
@@ -49,7 +113,7 @@ public final class UserPreferences
 	/**
 	 * Updates the libretro configuration file
 	 * with new values if settings have changed.
-	 *
+	 * 
 	 * @param ctx the current {@link Context}.
 	 */
 	public static void updateConfigFile(Context ctx)
@@ -154,9 +218,9 @@ public final class UserPreferences
 
 	/**
 	 * Sanitizes a libretro core path.
-	 *
+	 * 
 	 * @param path The path to the libretro core.
-	 *
+	 * 
 	 * @return the sanitized libretro path.
 	 */
 	private static String sanitizeLibretroPath(String path)
@@ -172,9 +236,9 @@ public final class UserPreferences
 
 	/**
 	 * Gets a {@link SharedPreferences} instance containing current settings.
-	 *
+	 * 
 	 * @param ctx the current {@link Context}.
-	 *
+	 * 
 	 * @return A SharedPreference instance containing current settings.
 	 */
 	public static SharedPreferences getPreferences(Context ctx)
@@ -184,9 +248,9 @@ public final class UserPreferences
 
 	/**
 	 * Gets the optimal sampling rate for low-latency audio playback.
-	 *
+	 * 
 	 * @param ctx the current {@link Context}.
-	 *
+	 * 
 	 * @return the optimal sampling rate for low-latency audio playback in Hz.
 	 */
 	@TargetApi(17)
@@ -204,9 +268,9 @@ public final class UserPreferences
 
 	/**
 	 * Gets the optimal buffer size for low-latency audio playback.
-	 *
+	 * 
 	 * @param ctx the current {@link Context}.
-	 *
+	 * 
 	 * @return the optimal output buffer size in decimal PCM frames.
 	 */
 	@TargetApi(17)
@@ -232,9 +296,9 @@ public final class UserPreferences
 	 * <p>
 	 * On other devices, it simply returns the regular optimal sampling rate
 	 * as returned by the hardware.
-	 *
+	 * 
 	 * @param ctx The current {@link Context}.
-	 *
+	 * 
 	 * @return the optimal audio sampling rate in Hz.
 	 */
 	private static int getOptimalSamplingRate(Context ctx)

@@ -204,7 +204,7 @@ public class RetroActivityCommon extends NativeActivity
 
   ParcelFileDescriptor mParcelFileDescriptor = null;
 
-  String getFileNameThatICanUseInNativeCode(Uri uri) throws FileNotFoundException {
+  String getRealFileName(Uri uri) throws FileNotFoundException {
       mParcelFileDescriptor =
               getApplicationContext().getContentResolver().openFileDescriptor(uri, "r");
       if (mParcelFileDescriptor != null) {
@@ -243,15 +243,14 @@ public class RetroActivityCommon extends NativeActivity
       uri = data.getData();
       Log.i("RetroActivity", uri.toString());
       Log.i("RetroActivity", uri.getPath());
-      selectFileWithBrowser();
-    }
+log    }
     if (resultCode == RESULT_OK && requestCode == RQS_OPEN_DOCUMENT) {
       uri = data.getData();
       Log.i("RetroActivity", uri.toString());
       Log.i("RetroActivity", uri.getPath());
       try {
         String path = null;
-        path = getFileNameThatICanUseInNativeCode(uri);
+        path = getRealFileName(uri);
         Log.i("RetroActivity", path);
         game_path = path;
       } catch (FileNotFoundException e) {
