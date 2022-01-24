@@ -550,13 +550,14 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
 
    video->frame_drop_ratio = params->frame_drop_ratio;
 
-   size = avpicture_get_size(video->pix_fmt, param->out_width,
-         param->out_height);
+   size = av_image_get_buffer_size(video->pix_fmt, param->out_width,
+         param->out_height, 1);
    video->conv_frame_buf   = (uint8_t*)av_malloc(size);
    video->conv_frame       = av_frame_alloc();
 
-   avpicture_fill((AVPicture*)video->conv_frame, video->conv_frame_buf,
-         video->pix_fmt, param->out_width, param->out_height);
+   AVFrame* frame = video->conv_frame;
+   av_image_fill_arrays(frame->data, frame->linesize, video->conv_frame_buf,
+         video->pix_fmt, param->out_width, param->out_height, 1);
 
    video->conv_frame->width  = param->out_width;
    video->conv_frame->height = param->out_height;
@@ -878,17 +879,17 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
 static bool ffmpeg_init_muxer_pre(ffmpeg_t *handle)
 {
    ctx = avformat_alloc_context();
-   av_strlcpy(ctx->filename, handle->params.filename, sizeof(ctx->filename));
+   av_strlcpy(ctx->url, handle->params.filename, sizeof(ctx->url));
 
    if (*handle->config.format)
       ctx->oformat = av_guess_format(handle->config.format, NULL, NULL);
    else
-      ctx->oformat = av_guess_format(NULL, ctx->filename, NULL);
+      ctx->oformat = av_guess_format(NULL, ctx->url, NULL);
 
    if (!ctx->oformat)
       return false;
 
-   if (avio_open(&ctx->pb, ctx->filename, AVIO_FLAG_WRITE) < 0)
+   if (avio_open(&ctx->pb, ctx->url, AVIO_FLAG_WRITE) < 0)
    {
       av_free(ctx);
       return false;
@@ -903,8 +904,8 @@ static bool ffmpeg_init_muxer_post(ffmpeg_t *handle)
    AVStream *stream = avformat_new_stream(handle->muxer.ctx,
          handle->video.encoder);
 
-   stream->codec = handle->video.codec;
-   stream->time_base = stream->codec->time_base;
+   avcodec_parameters_from_context(stream->codecpar, handle->video.codec);
+   stream->time_base = handle->video.codec->time_base;
    handle->muxer.vstream = stream;
    handle->muxer.vstream->sample_aspect_ratio =
       handle->video.codec->sample_aspect_ratio;
@@ -913,8 +914,8 @@ static bool ffmpeg_init_muxer_post(ffmpeg_t *handle)
    {
       stream = avformat_new_stream(handle->muxer.ctx,
             handle->audio.encoder);
-      stream->codec = handle->audio.codec;
-      stream->time_base = stream->codec->time_base;
+      avcodec_parameters_from_context(stream->codecpar, handle->audio.codec);
+      stream->time_base = handle->audio.codec->time_base;
       handle->muxer.astream = stream;
    }
 
@@ -1048,7 +1049,6 @@ static void *ffmpeg_new(const struct record_params *params)
    if (!handle)
       return NULL;
 
-   av_register_all();
    avformat_network_init();
 
    handle->params       = *params;

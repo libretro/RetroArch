@@ -240,8 +240,6 @@ void CORE_PREFIX(retro_init)(void)
 {
    reset_triggered = false;
 
-   av_register_all();
-
    if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
       libretro_supports_bitmasks = true;
 }
@@ -988,7 +986,7 @@ static enum AVPixelFormat init_hw_decoder(struct AVCodecContext *ctx,
 {
    int ret = 0;
    enum AVPixelFormat decoder_pix_fmt = AV_PIX_FMT_NONE;
-   struct AVCodec *codec = avcodec_find_decoder(fctx->streams[video_stream_index]->codec->codec_id);
+   struct AVCodec *codec = avcodec_find_decoder(fctx->streams[video_stream_index]->codecpar->codec_id);
 
    for (int i = 0;; i++)
    {
@@ -1098,7 +1096,7 @@ static enum AVPixelFormat select_decoder(AVCodecContext *ctx,
       ctx->thread_count = sw_decoder_threads;
       log_cb(RETRO_LOG_INFO, "[FFMPEG] Configured software decoding threads: %d\n", sw_decoder_threads);
 
-      format = fctx->streams[video_stream_index]->codec->pix_fmt;
+      format = fctx->streams[video_stream_index]->codecpar->format;
 
 #if ENABLE_HW_ACCEL
       hw_decoding_enabled = false;
@@ -1132,14 +1130,12 @@ static bool open_codec(AVCodecContext **ctx, enum AVMediaType type, unsigned ind
 {
    int ret = 0;
 
-   AVCodec *codec = avcodec_find_decoder(fctx->streams[index]->codec->codec_id);
+   AVCodec *codec = avcodec_find_decoder(fctx->streams[index]->codecpar->codec_id);
    if (!codec)
    {
       log_cb(RETRO_LOG_ERROR, "[FFMPEG] Couldn't find suitable decoder\n");
       return false;
    }
-
-   *ctx = fctx->streams[index]->codec;
 
    if (type == AVMEDIA_TYPE_VIDEO)
    {
@@ -1162,6 +1158,8 @@ static bool open_codec(AVCodecContext **ctx, enum AVMediaType type, unsigned ind
 #endif
       return false;
    }
+
+   avcodec_parameters_from_context(fctx->streams[index]->codecpar, *ctx);
 
    return true;
 }
@@ -1230,7 +1228,7 @@ static bool open_codecs(void)
 
    for (i = 0; i < fctx->nb_streams; i++)
    {
-      enum AVMediaType type = fctx->streams[i]->codec->codec_type;
+      enum AVMediaType type = fctx->streams[i]->codecpar->codec_type;
       switch (type)
       {
          case AVMEDIA_TYPE_AUDIO:
@@ -1245,7 +1243,7 @@ static bool open_codecs(void)
 
          case AVMEDIA_TYPE_VIDEO:
             if (!vctx
-                  && !codec_is_image(fctx->streams[i]->codec->codec_id))
+                  && !codec_is_image(fctx->streams[i]->codecpar->codec_id))
             {
                if (!open_codec(&vctx, type, i))
                   return false;
@@ -1255,7 +1253,7 @@ static bool open_codecs(void)
          case AVMEDIA_TYPE_SUBTITLE:
 #ifdef HAVE_SSA
             if (subtitle_streams_num < MAX_STREAMS
-                  && codec_id_is_ass(fctx->streams[i]->codec->codec_id))
+                  && codec_id_is_ass(fctx->streams[i]->codecpar->codec_id))
             {
                int size;
                AVCodecContext **s = &sctx[subtitle_streams_num];
@@ -1280,9 +1278,9 @@ static bool open_codecs(void)
 
          case AVMEDIA_TYPE_ATTACHMENT:
             {
-               AVCodecContext *ctx = fctx->streams[i]->codec;
-               if (codec_id_is_ttf(ctx->codec_id))
-                  append_attachment(ctx->extradata, ctx->extradata_size);
+               AVCodecParameters *params = fctx->streams[i]->codecpar;
+               if (codec_id_is_ttf(params->codec_id))
+                  append_attachment(params->extradata, params->extradata_size);
             }
             break;
 
@@ -1468,8 +1466,8 @@ static void sws_worker_thread(void *arg)
          SWS_POINT, NULL, NULL, NULL);
 
    set_colorspace(ctx->sws, media.width, media.height,
-         av_frame_get_colorspace(tmp_frame),
-         av_frame_get_color_range(tmp_frame));
+         tmp_frame->colorspace,
+         tmp_frame->color_range);
 
    if ((ret = sws_scale(ctx->sws, (const uint8_t *const*)tmp_frame->data,
          tmp_frame->linesize, 0, media.height,
@@ -1740,7 +1738,7 @@ static void decode_thread(void *data)
 
    if (video_stream_index >= 0)
    {
-      frame_size = avpicture_get_size(PIX_FMT_RGB32, media.width, media.height);
+      frame_size = av_image_get_buffer_size(PIX_FMT_RGB32, media.width, media.height, 1);
       video_buffer = video_buffer_create(4, frame_size, media.width, media.height);
       tpool = tpool_create(sw_sws_threads);
       log_cb(RETRO_LOG_INFO, "[FFMPEG] Configured worker threads: %d\n", sw_sws_threads);

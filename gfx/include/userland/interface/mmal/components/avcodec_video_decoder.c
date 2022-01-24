@@ -76,7 +76,7 @@ typedef struct MMAL_COMPONENT_MODULE_T
    int width;
    int height;
    enum PixelFormat pix_fmt;
-   AVPicture layout;
+   AVFrame layout;
    unsigned int planes;
 
    int frame_size;
@@ -180,7 +180,7 @@ static MMAL_STATUS_T avcodec_output_port_set_format(MMAL_PORT_T *port)
    module->height = port->format->es->video.height;
 
    module->frame_size =
-      avpicture_fill(&module->layout, 0, module->pix_fmt, module->width, module->height);
+      av_image_fill_arrays(&module->layout->data, &module->layout->linesize, 0, module->pix_fmt, module->width, module->height, 1);
    if (module->frame_size < 0)
       return MMAL_EINVAL;
 
@@ -309,12 +309,13 @@ static MMAL_STATUS_T avcodec_send_picture(MMAL_COMPONENT_T *component, MMAL_PORT
    if (!out)
       return MMAL_EAGAIN;
 
-   size = avpicture_layout((AVPicture *)module->picture, module->pix_fmt,
-                           module->width, module->height, out->data, out->alloc_size);
+   AVFrame* frame = module->picture;
+   size = av_image_copy_to_buffer(out->data, out->alloc_size, frame->data, frame->linesize, module->pix_fmt,
+                           module->width, module->height, 1);
    if (size < 0)
    {
       mmal_queue_put_back(module->queue_out, out);
-      LOG_ERROR("avpicture_layout failed: %i, %i, %i, %i",module->pix_fmt,
+      LOG_ERROR("av_image_copy_to_buffer failed: %i, %i, %i, %i",module->pix_fmt,
                 module->width, module->height, out->alloc_size );
       mmal_event_error_send(component, MMAL_EINVAL);
       return MMAL_EINVAL;

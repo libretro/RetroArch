@@ -2,6 +2,7 @@
 extern "C" {
 #endif
 #include <libavformat/avformat.h>
+#include <libavutil/imgutils.h>
 #ifdef __cplusplus
 }
 #endif
@@ -74,8 +75,9 @@ video_buffer_t *video_buffer_create(
 #endif
       b->buffer[i].target    = av_frame_alloc();
 
-      avpicture_alloc((AVPicture*)b->buffer[i].target,
-            PIX_FMT_RGB32, width, height);
+      AVFrame* frame = b->buffer[i].target;
+      av_image_alloc(frame->data, frame->linesize,
+            width, height, PIX_FMT_RGB32, 1);
 
       if (!b->buffer[i].sws       ||
           !b->buffer[i].source    ||
@@ -110,7 +112,7 @@ void video_buffer_destroy(video_buffer_t *video_buffer)
          av_frame_free(&video_buffer->buffer[i].hw_source);
 #endif
          av_frame_free(&video_buffer->buffer[i].source);
-         avpicture_free((AVPicture*)video_buffer->buffer[i].target);
+         av_freep((AVFrame*)video_buffer->buffer[i].target);
          av_frame_free(&video_buffer->buffer[i].target);
          sws_freeContext(video_buffer->buffer[i].sws);
       }
