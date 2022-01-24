@@ -1768,6 +1768,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_LOAD_CONTENT_LIST,
    "load_content"
    )
+#if defined ANDROID
 MSG_HASH(
    MENU_ENUM_LABEL_SELECT_CONTENT_ANDROID_LIST,
    "select_content_android"
@@ -1776,6 +1777,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_LOAD_CONTENT_ANDROID_LIST,
    "load_content_android"
    )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_LOAD_STATE,
    "loadstate"

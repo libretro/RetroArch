@@ -12438,11 +12438,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      PARSE_ACTION, false) == 0)
                   count++;
 
+#if defined ANDROID
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
                      MENU_ENUM_LABEL_SELECT_CONTENT_ANDROID_LIST,
                      PARSE_ACTION, false) == 0)
                   count++;
 
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
+                     MENU_ENUM_LABEL_LOAD_CONTENT_ANDROID_LIST,
+                     PARSE_ACTION, false) == 0)
+                  count++;
+#endif
                if (menu_displaylist_has_subsystems())
                {
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,

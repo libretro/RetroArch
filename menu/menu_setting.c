@@ -9062,7 +9062,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-
+#if defined ANDROID
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_SELECT_CONTENT_ANDROID_LIST,
@@ -9078,7 +9078,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-
+#endif
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS,
