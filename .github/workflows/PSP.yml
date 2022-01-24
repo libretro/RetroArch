@@ -25,7 +25,7 @@ jobs:
     - name: Compile Salamander
       run: |
         make -f Makefile.psp1.salamander -j$(getconf _NPROCESSORS_ONLN) clean
-        make -f Makefile.pso1.salamander -j$(getconf _NPROCESSORS_ONLN)
+        make -f Makefile.psp1.salamander -j$(getconf _NPROCESSORS_ONLN)
     
     - name: Compile RA
       run: |
