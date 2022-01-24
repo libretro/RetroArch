@@ -12440,12 +12440,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
 #if defined ANDROID
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
-                     MENU_ENUM_LABEL_SELECT_CONTENT_ANDROID_LIST,
+                     MENU_ENUM_LABEL_ANDROID_SELECT_CONTENT,
                      PARSE_ACTION, false) == 0)
                   count++;
 
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
-                     MENU_ENUM_LABEL_LOAD_CONTENT_ANDROID_LIST,
+                     MENU_ENUM_LABEL_ANDROID_LOAD_CONTENT,
                      PARSE_ACTION, false) == 0)
                   count++;
 #endif

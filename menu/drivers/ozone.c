@@ -7921,12 +7921,12 @@ static int ozone_list_push(void *data, void *userdata,
 #if defined ANDROID
                MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
                      info->list,
-                     MENU_ENUM_LABEL_SELECT_CONTENT_ANDROID_LIST,
+                     MENU_ENUM_LABEL_ANDROID_SELECT_CONTENT,
                      PARSE_ACTION,
                      false);
                MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
                      info->list,
-                     MENU_ENUM_LABEL_LOAD_CONTENT_ANDROID_LIST,
+                     MENU_ENUM_LABEL_ANDROID_LOAD_CONTENT,
                      PARSE_ACTION,
                      false);
 #endif

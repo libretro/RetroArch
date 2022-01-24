@@ -7978,8 +7978,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_NETPLAY,                             action_ok_push_default},
          {MENU_ENUM_LABEL_LOAD_CONTENT_LIST,                   action_ok_push_default},
 #if defined(ANDROID)         
-         {MENU_ENUM_LABEL_SELECT_CONTENT_ANDROID_LIST,         action_ok_push_android_select_from_filebrowser},
-         {MENU_ENUM_LABEL_LOAD_CONTENT_ANDROID_LIST,           action_ok_push_android_load_from_filebrowser},
+         {MENU_ENUM_LABEL_ANDROID_SELECT_CONTENT,         action_ok_push_android_select_from_filebrowser},
+         {MENU_ENUM_LABEL_ANDROID_LOAD_CONTENT,           action_ok_push_android_load_from_filebrowser},
 #endif
          {MENU_ENUM_LABEL_ADD_CONTENT_LIST,                    action_ok_push_default},
          {MENU_ENUM_LABEL_CONFIGURATIONS_LIST,                 action_ok_push_default},

@@ -3631,7 +3631,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_list);
             break;
 #if defined(ANDROID)
-         case MENU_ENUM_LABEL_SELECT_CONTENT_ANDROID_LIST:
+         case MENU_ENUM_LABEL_ANDROID_SELECT_CONTENT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_android_list);
             break;
 #endif

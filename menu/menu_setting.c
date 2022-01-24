@@ -9065,16 +9065,16 @@ static bool setting_append_list(
 #if defined ANDROID
          CONFIG_ACTION(
                list, list_info,
-               MENU_ENUM_LABEL_SELECT_CONTENT_ANDROID_LIST,
-               MENU_ENUM_LABEL_VALUE_SELECT_CONTENT_ANDROID_LIST,
+               MENU_ENUM_LABEL_ANDROID_SELECT_CONTENT,
+               MENU_ENUM_LABEL_VALUE_ANDROID_SELECT_CONTENT,
                &group_info,
                &subgroup_info,
                parent_group);
 
          CONFIG_ACTION(
                list, list_info,
-               MENU_ENUM_LABEL_LOAD_CONTENT_ANDROID_LIST,
-               MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_ANDROID_LIST,
+               MENU_ENUM_LABEL_ANDROID_LOAD_CONTENT,
+               MENU_ENUM_LABEL_VALUE_ANDROID_LOAD_CONTENT,
                &group_info,
                &subgroup_info,
                parent_group);
