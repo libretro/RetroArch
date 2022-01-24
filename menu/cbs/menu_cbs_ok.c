@@ -1391,6 +1391,15 @@ int generic_action_ok_displaylist_push(const char *path,
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
+      case ACTION_OK_DL_CORE_SYSTEM_FILES_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_CORE_SYSTEM_FILES_LIST);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_SYSTEM_FILES_LIST;
+         dl_type            = DISPLAYLIST_PENDING_CLEAR;
+         break;
       case ACTION_OK_DL_DEFERRED_CORE_LIST:
          info.directory_ptr = idx;
          info_path          = dir_libretro;
@@ -4572,6 +4581,18 @@ static int generic_action_ok_network(const char *path,
          callback     = cb_net_generic;
          suppress_msg = true;
          break;
+      case MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_LIST:
+         if (string_is_empty(network_buildbot_assets_url))
+            return menu_cbs_exit();
+         fill_pathname_join(url_path,
+               network_buildbot_assets_url,
+               "system/" FILE_PATH_INDEX_URL,
+               sizeof(url_path));
+         url_label    = msg_hash_to_str(enum_idx);
+         type_id2     = ACTION_OK_DL_CORE_SYSTEM_FILES_LIST;
+         callback     = cb_net_generic;
+         suppress_msg = true;
+         break;
       case MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST:
          fill_pathname_join(url_path,
                FILE_PATH_CORE_THUMBNAILPACKS_URL,
@@ -4614,6 +4635,7 @@ static int generic_action_ok_network(const char *path,
 
 DEFAULT_ACTION_OK_LIST(action_ok_core_content_list, MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST)
 DEFAULT_ACTION_OK_LIST(action_ok_core_content_dirs_list, MENU_ENUM_LABEL_CB_CORE_CONTENT_DIRS_LIST)
+DEFAULT_ACTION_OK_LIST(action_ok_core_system_files_list, MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_LIST)
 DEFAULT_ACTION_OK_LIST(action_ok_thumbnails_updater_list, MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST)
 DEFAULT_ACTION_OK_LIST(action_ok_lakka_list, MENU_ENUM_LABEL_CB_LAKKA_LIST)
 
@@ -4664,6 +4686,9 @@ void cb_generic_download(retro_task_t *task,
 #if defined(HAVE_COMPRESSION) && defined(HAVE_ZLIB)
          extract  = settings->bools.network_buildbot_auto_extract_archive;
 #endif
+         break;
+      case MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD:
+         dir_path = settings->paths.directory_system;
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
          dir_path = settings->paths.path_libretro_info;
@@ -4850,6 +4875,11 @@ static int action_ok_download_generic(const char *path,
             string_list_deinitialize(&str_list);
          }
          break;
+      case MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD:
+         fill_pathname_join(s,
+               network_buildbot_assets_url,
+               "system", sizeof(s));
+         break;
       case MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD:
 #ifdef HAVE_LAKKA
          /* TODO unhardcode this path*/
@@ -5031,6 +5061,7 @@ static int action_ok_sideload_core(const char *path,
 }
 
 #ifdef HAVE_NETWORKING
+DEFAULT_ACTION_OK_DOWNLOAD(action_ok_core_system_files_download, MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD)
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_core_content_thumbnails, MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD)
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_thumbnails_updater_download, MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_DOWNLOAD)
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_download_url, MENU_ENUM_LABEL_CB_DOWNLOAD_URL)
@@ -7695,6 +7726,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_NETWORKING
          {MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT,               action_ok_core_content_list},
          {MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,          action_ok_core_content_dirs_list},
+         {MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES,          action_ok_core_system_files_list},
          {MENU_ENUM_LABEL_CORE_UPDATER_LIST,                   action_ok_core_updater_list},
          {MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES,              action_ok_update_installed_cores},
 #if defined(ANDROID)
@@ -8356,6 +8388,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_DOWNLOAD_CORE_CONTENT:
 #ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_core_content_download);
+#endif
+            break;
+         case FILE_TYPE_DOWNLOAD_CORE_SYSTEM_FILES:
+#ifdef HAVE_NETWORKING
+            BIND_ACTION_OK(cbs, action_ok_core_system_files_download);
 #endif
             break;
          case FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT:
