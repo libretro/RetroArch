@@ -377,7 +377,7 @@ build-retroarch-osx-ppc:
   tags:
    - macosx-legacy
   script:
-    - xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch_PPC.xcodeproj
+    - xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch_PPC.xcodeproj ONLY_ACTIVE_ARCH=NO
     - pushd pkg/apple/build/Release/
     - ditto -c -k --sequesterRsrc --keepParent RetroArch.app ${XCPROJECT_NAME}.zip
     - popd
