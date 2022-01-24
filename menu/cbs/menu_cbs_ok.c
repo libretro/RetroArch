@@ -6052,6 +6052,7 @@ int action_ok_push_filebrowser_list_file_select(const char *path,
 int action_ok_push_android_select_from_filebrowser(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   RARCH_LOG("TEST action_ok_push_android_select_from_filebrowser\n");
    menu_handle_t *menu       = menu_state_get_ptr()->driver_data;
 
    if (!menu)
@@ -6062,11 +6063,13 @@ int action_ok_push_android_select_from_filebrowser(const char *path,
       return 0;
 
    CALL_VOID_METHOD(env, g_android->activity->clazz, g_android->selectFileWithBrowser);
+   return 0;
 }
 
 int action_ok_push_android_load_from_filebrowser(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   RARCH_LOG("TEST action_ok_push_android_load_from_filebrowser\n");
    menu_handle_t *menu       = menu_state_get_ptr()->driver_data;
 
    JNIEnv *env = jni_thread_getenv();
@@ -6714,7 +6717,7 @@ static int action_ok_start_core(const char *path,
    if (!task_push_start_current_core(&content_info))
       return -1;
 
-   RARCH_LOG("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
+   RARCH_LOG("action_ok_start_core\n");
 
    return 0;
 }

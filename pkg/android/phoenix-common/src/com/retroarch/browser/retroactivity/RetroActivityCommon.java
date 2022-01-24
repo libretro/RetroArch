@@ -28,6 +28,7 @@ import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.system.ErrnoException;
 import android.system.Os;
 import android.view.InputDevice;
 import android.view.Surface;
@@ -54,6 +55,7 @@ import java.util.Locale;
 /**
  * Class which provides common methods for RetroActivity related classes.
  */
+@TargetApi(Build.VERSION_CODES.LOLLIPOP)
 public class RetroActivityCommon extends NativeActivity
 {
   static {
@@ -207,6 +209,18 @@ public class RetroActivityCommon extends NativeActivity
               getApplicationContext().getContentResolver().openFileDescriptor(uri, "r");
       if (mParcelFileDescriptor != null) {
         int fd = mParcelFileDescriptor.getFd();
+        File file = new File("/proc/self/fd/" + fd);
+        String path = null;
+        try {
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            path = Os.readlink(file.getAbsolutePath()).toString();
+          }
+        } catch (ErrnoException e) {
+          e.printStackTrace();
+        }
+
+        Log.i("RetroActivity", "path: " + path);
+
         return "/proc/self/fd/" + fd;
       }
       else{
