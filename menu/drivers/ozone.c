@@ -7929,6 +7929,12 @@ static int ozone_list_push(void *data, void *userdata,
                      MENU_ENUM_LABEL_ANDROID_LOAD_CONTENT,
                      PARSE_ACTION,
                      false);
+
+               MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
+                     info->list,
+                     MENU_ENUM_LABEL_ANDROID_GRANT_PERMISSION,
+                     PARSE_ACTION,
+                     false);
 #endif
                if (menu_displaylist_has_subsystems())
                {

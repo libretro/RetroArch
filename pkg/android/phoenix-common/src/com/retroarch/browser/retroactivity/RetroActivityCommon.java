@@ -219,9 +219,7 @@ public class RetroActivityCommon extends NativeActivity
           e.printStackTrace();
         }
 
-        Log.i("RetroActivity", "path: " + path);
-
-        return "/proc/self/fd/" + fd;
+        return path;
       }
       else{
         return null;

@@ -6049,7 +6049,24 @@ int action_ok_push_filebrowser_list_file_select(const char *path,
 }
 
 #if defined(ANDROID)
-int action_ok_push_android_select_from_filebrowser(const char *path,
+
+int action_ok_push_android_grant_permission(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_handle_t *menu       = menu_state_get_ptr()->driver_data;
+
+   if (!menu)
+      return menu_cbs_exit();
+   JNIEnv *env = jni_thread_getenv();
+
+   if (!env || !g_android)
+      return 0;
+
+   CALL_VOID_METHOD(env, g_android->activity->clazz, g_android->grantPermissionsToFolder);
+   return 0;
+}
+
+int action_ok_push_android_select_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    RARCH_LOG("TEST action_ok_push_android_select_from_filebrowser\n");
@@ -6066,7 +6083,7 @@ int action_ok_push_android_select_from_filebrowser(const char *path,
    return 0;
 }
 
-int action_ok_push_android_load_from_filebrowser(const char *path,
+int action_ok_push_android_load_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    RARCH_LOG("TEST action_ok_push_android_load_from_filebrowser\n");
@@ -7978,8 +7995,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_NETPLAY,                             action_ok_push_default},
          {MENU_ENUM_LABEL_LOAD_CONTENT_LIST,                   action_ok_push_default},
 #if defined(ANDROID)         
-         {MENU_ENUM_LABEL_ANDROID_SELECT_CONTENT,         action_ok_push_android_select_from_filebrowser},
-         {MENU_ENUM_LABEL_ANDROID_LOAD_CONTENT,           action_ok_push_android_load_from_filebrowser},
+         {MENU_ENUM_LABEL_ANDROID_SELECT_CONTENT,         action_ok_push_android_select_content},
+         {MENU_ENUM_LABEL_ANDROID_LOAD_CONTENT,           action_ok_push_android_load_content},
+         {MENU_ENUM_LABEL_ANDROID_GRANT_PERMISSION,       action_ok_push_android_grant_permission},
 #endif
          {MENU_ENUM_LABEL_ADD_CONTENT_LIST,                    action_ok_push_default},
          {MENU_ENUM_LABEL_CONFIGURATIONS_LIST,                 action_ok_push_default},

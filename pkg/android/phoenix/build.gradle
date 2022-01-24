@@ -32,13 +32,13 @@ android {
   flavorDimensions "variant"
 
   defaultConfig {
-    minSdkVersion 16
+    minSdkVersion 30
     externalNativeBuild {
       ndkBuild {
         arguments "-j${Runtime.runtime.availableProcessors()}"
       }
     }
-    targetSdkVersion 28
+    targetSdkVersion 30
     versionCode System.currentTimeSeconds().toInteger()
     versionName "${getManifestAttribute("versionName")}_GIT"
   }
@@ -71,7 +71,7 @@ android {
       }
     }
     playStoreNormal {
-      minSdkVersion 21
+      minSdkVersion 30
       targetSdkVersion 30
       versionCode getPlayStoreVersionCode()
       versionName getPlayStoreVersionName()
@@ -82,7 +82,7 @@ android {
       dimension "variant"
     }
     playStorePlus {
-      minSdkVersion 26
+      minSdkVersion 30
       targetSdkVersion 30
       versionCode getPlayStoreVersionCode()
       versionName getPlayStoreVersionName()

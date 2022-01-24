@@ -9078,6 +9078,14 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_ANDROID_GRANT_PERMISSION,
+               MENU_ENUM_LABEL_VALUE_ANDROID_GRANT_PERMISSION,
+               &group_info,
+               &subgroup_info,
+               parent_group);
 #endif
          CONFIG_ACTION(
                list, list_info,

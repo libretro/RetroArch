@@ -1777,6 +1777,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_ANDROID_LOAD_CONTENT,
    "load_content_android"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_ANDROID_GRANT_PERMISSION,
+   "grant_permission_android"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_LOAD_STATE,
