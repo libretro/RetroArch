@@ -211,7 +211,6 @@ public final class MainMenuActivity extends PreferenceActivity
 		retro.putExtra("SDCARD", Environment.getExternalStorageDirectory().getAbsolutePath());
 		String external = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/" + PACKAGE_NAME + "/files";
 		retro.putExtra("EXTERNAL", external);
-		Log.i("RetroActivity", configFilePath);
 	}
 
 	@Override

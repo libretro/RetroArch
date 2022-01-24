@@ -96,7 +96,7 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
 }
 
 
-
+#if defined(ANDROID)
 static int action_bind_sublabel_content_android_list(file_list_t* list,
       unsigned type, unsigned i, const char* label, const char* path, char* s, size_t len)
 {
@@ -140,25 +140,10 @@ static int action_bind_sublabel_content_android_list(file_list_t* list,
 
 
    }
- /*
-   if (g_android->getStringExtra && jstr)
-   {
-      const char *str = (*env)->GetStringUTFChars(env, jstr, 0);
-
-      aux_path[0] = '\0';
-
-      if (str && *str)
-         strlcpy(aux_path, str,
-               sizeof(aux_path));
-
-      (*env)->ReleaseStringUTFChars(env, jstr, str);
-
-
-   }
-*/
    strlcpy(s, "empty...", len);
    return 0;
 }
+#endif
 
 #ifdef HAVE_CHEEVOS
 static int menu_action_sublabel_achievement_pause_menu(file_list_t* list,
@@ -3645,9 +3630,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_list);
             break;
+#if defined(ANDROID)
          case MENU_ENUM_LABEL_SELECT_CONTENT_ANDROID_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_android_list);
             break;
+#endif
          case MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_special);
             break;

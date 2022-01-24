@@ -867,24 +867,6 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "in 'Load Core', and use that core \n"
                              "when content is loaded.");
             break;
-        case MENU_ENUM_LABEL_SELECT_CONTENT_ANDROID_LIST:
-            snprintf(s, len,
-                     "Load Content. \n"
-                             "Browse for content. \n"
-                             " \n"
-                             "To load content, you need a \n"
-                             "'Core' to use, and a content file. \n"
-                             " \n"
-                             "To control where the menu starts \n"
-                             "to browse for content, set  \n"
-                             "'File Browser Directory'. \n"
-                             "If not set, it will start in root. \n"
-                             " \n"
-                             "The browser will filter out \n"
-                             "extensions for the last core set \n"
-                             "in 'Load Core', and use that core \n"
-                             "when content is loaded.");
-            break;
         case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
             snprintf(s, len,
                      "Loading content from history. \n"

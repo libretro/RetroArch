@@ -2159,20 +2159,8 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
 
    static launched = false;
 #ifdef ANDROID
-   JNIEnv *env = jni_thread_getenv();
-
-   if (!env || !g_android)
-      return 0;
-
-
    if (!string_is_empty(internal_storage_path))
    {
-      if (launched == false && env && g_android->selectFileWithBrowser)
-      {
-         CALL_VOID_METHOD(env, g_android->activity->clazz,
-            g_android->selectFileWithBrowser);
-         launched = true;
-      }
       if (storage_permissions == INTERNAL_STORAGE_WRITABLE)
       {
          char user_data_path[PATH_MAX_LENGTH];

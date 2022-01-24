@@ -6049,6 +6049,7 @@ int action_ok_push_filebrowser_list_file_select(const char *path,
          entry_idx, ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
 }
 
+#if defined(ANDROID)
 int action_ok_push_android_filebrowser(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -6062,7 +6063,6 @@ int action_ok_push_android_filebrowser(const char *path,
       return 0;
 
    CALL_VOID_METHOD(env, g_android->activity->clazz, g_android->selectFileWithBrowser);
-
 }
 
 int action_ok_push_android_load_from_filebrowser(const char *path,
@@ -6112,7 +6112,7 @@ int action_ok_push_android_load_from_filebrowser(const char *path,
    }
    return 0;
 }
-
+#endif
 
 int action_ok_push_manual_content_scan_dir_select(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -7973,8 +7973,10 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_ONLINE_UPDATER,                      action_ok_push_default},
          {MENU_ENUM_LABEL_NETPLAY,                             action_ok_push_default},
          {MENU_ENUM_LABEL_LOAD_CONTENT_LIST,                   action_ok_push_default},
-         {MENU_ENUM_LABEL_SELECT_CONTENT_ANDROID_LIST,                   action_ok_push_android_filebrowser},
-         {MENU_ENUM_LABEL_LOAD_CONTENT_ANDROID_LIST,                   action_ok_push_android_load_from_filebrowser},
+#if defined(ANDROID)         
+         {MENU_ENUM_LABEL_SELECT_CONTENT_ANDROID_LIST,         action_ok_push_android_filebrowser},
+         {MENU_ENUM_LABEL_LOAD_CONTENT_ANDROID_LIST,           action_ok_push_android_load_from_filebrowser},
+#endif
          {MENU_ENUM_LABEL_ADD_CONTENT_LIST,                    action_ok_push_default},
          {MENU_ENUM_LABEL_CONFIGURATIONS_LIST,                 action_ok_push_default},
          {MENU_ENUM_LABEL_HELP_LIST,                           action_ok_push_default},
