@@ -6043,14 +6043,13 @@ int action_ok_push_filebrowser_list_file_select(const char *path,
    if (!menu)
       return menu_cbs_exit();
 
-   filebrowser_set_type(FILEBROWSER_SELECT_FILE);
    strlcpy(menu->filebrowser_label, label, sizeof(menu->filebrowser_label));
    return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
          entry_idx, ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
 }
 
 #if defined(ANDROID)
-int action_ok_push_android_filebrowser(const char *path,
+int action_ok_push_android_select_from_filebrowser(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_handle_t *menu       = menu_state_get_ptr()->driver_data;
@@ -6714,6 +6713,8 @@ static int action_ok_start_core(const char *path,
    path_clear(RARCH_PATH_BASENAME);
    if (!task_push_start_current_core(&content_info))
       return -1;
+
+   RARCH_LOG("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
 
    return 0;
 }
@@ -7974,7 +7975,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_NETPLAY,                             action_ok_push_default},
          {MENU_ENUM_LABEL_LOAD_CONTENT_LIST,                   action_ok_push_default},
 #if defined(ANDROID)         
-         {MENU_ENUM_LABEL_SELECT_CONTENT_ANDROID_LIST,         action_ok_push_android_filebrowser},
+         {MENU_ENUM_LABEL_SELECT_CONTENT_ANDROID_LIST,         action_ok_push_android_select_from_filebrowser},
          {MENU_ENUM_LABEL_LOAD_CONTENT_ANDROID_LIST,           action_ok_push_android_load_from_filebrowser},
 #endif
          {MENU_ENUM_LABEL_ADD_CONTENT_LIST,                    action_ok_push_default},
