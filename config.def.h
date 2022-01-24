@@ -762,7 +762,7 @@ static const float menu_footer_opacity = 1.000;
 
 static const float menu_header_opacity = 1.000;
 
-#if defined(HAVE_OPENGLES2) || (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+#if defined(HAVE_OPENGLES2) || (defined(__MACH__)  && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
 #define DEFAULT_MENU_SHADER_PIPELINE 1
 #else
 #define DEFAULT_MENU_SHADER_PIPELINE 2
