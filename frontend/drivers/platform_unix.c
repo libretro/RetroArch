@@ -2146,11 +2146,11 @@ static void frontend_unix_init(void *data)
          "getVolumeCount", "()I");
    GET_METHOD_ID(env, android_app->getVolumePath, class,
          "getVolumePath", "(Ljava/lang/String;)Ljava/lang/String;");
-#endif
 
    GET_OBJECT_CLASS(env, class, obj);
    GET_METHOD_ID(env, android_app->getStringExtra, class,
          "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
+#endif
 
 }
 
