@@ -43,10 +43,6 @@
 #include <libretro.h>
 #include <retro_miscellaneous.h>
 
-#ifdef HAVE_KERNEL_PRX
-#include "../../bootstrap/psp1/kernel_functions.h"
-#endif
-
 #include <defines/psp_defines.h>
 
 #include "../input_driver.h"
