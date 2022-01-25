@@ -2135,19 +2135,60 @@ static void frontend_unix_init(void *data)
          "deleteCore", "(Ljava/lang/String;)V");
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
          android_app->getIntent);
+
    GET_METHOD_ID(env, android_app->grantPermissionsToFolder, class,
          "grantPermissionsToFolder", "()V");
    GET_METHOD_ID(env, android_app->selectFileWithBrowser, class,
          "selectFileWithBrowser", "()V");
    GET_METHOD_ID(env, android_app->getFileDescriptor, class,
          "getFileDescriptor", "()Ljava/lang/String;");
+   GET_METHOD_ID(env, android_app->getVolumeCount, class,
+         "getVolumeCount", "()I");
+   GET_METHOD_ID(env, android_app->getVolumePath, class,
+         "getVolumePath", "(Ljava/lang/String;)Ljava/lang/String;");
+#endif
 
    GET_OBJECT_CLASS(env, class, obj);
    GET_METHOD_ID(env, android_app->getStringExtra, class,
          "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
-#endif
 
 }
+
+/*
+int action_ok_push_android_select_content(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   RARCH_LOG("TEST action_ok_push_android_select_from_filebrowser\n");
+   menu_handle_t *menu       = menu_state_get_ptr()->driver_data;
+
+   if (!menu)
+      return menu_cbs_exit();
+   JNIEnv *env = jni_thread_getenv();
+
+   if (!env || !g_android)
+      return 0;
+
+   CALL_VOID_METHOD(env, g_android->activity->clazz, g_android->selectFileWithBrowser);
+   return 0;
+}
+*/
+/*
+
+   jint battery_level           = 0;
+   JNIEnv *env                  = jni_thread_getenv();
+
+   if (!env || !g_android)
+      return FRONTEND_POWERSTATE_NONE;
+
+   if (g_android->getPowerstate)
+      CALL_INT_METHOD(env, powerstate,
+            g_android->activity->clazz, g_android->getPowerstate);
+
+   if (g_android->getBatteryLevel)
+      CALL_INT_METHOD(env, battery_level,
+            g_android->activity->clazz, g_android->getBatteryLevel);
+
+   *percent = battery_level;*/
 
 static int frontend_unix_parse_drive_list(void *data, bool load_content)
 {
@@ -2156,9 +2197,30 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    enum msg_hash_enums enum_idx = load_content ?
       MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
       MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
-
-   static launched = false;
 #ifdef ANDROID
+
+   JNIEnv *env = jni_thread_getenv();
+   jint output           = 0;
+   jobject obj           = NULL;
+   jstring jstr          = NULL;
+
+   int volume_count = 0;
+
+   if (!env || !g_android)
+      return 0;
+
+   CALL_OBJ_METHOD(env, obj, g_android->activity->clazz,
+         g_android->getIntent);
+
+   if (g_android->getVolumeCount)
+   {
+      CALL_INT_METHOD(env, output,
+         g_android->activity->clazz, g_android->getVolumeCount);
+      volume_count = output;
+   }
+
+   RARCH_LOG("external volumes: %d\n", volume_count);
+
    if (!string_is_empty(internal_storage_path))
    {
       if (storage_permissions == INTERNAL_STORAGE_WRITABLE)
@@ -2205,6 +2267,37 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
             msg_hash_to_str(MSG_APPLICATION_DIR),
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0);
+   for (unsigned i=0; i < volume_count; i++)
+   {
+      static char aux_path[PATH_MAX_LENGTH];
+      char index[2];
+      index[0] = '\0';
+
+      snprintf(index, sizeof(index), "%d", i);
+
+      CALL_OBJ_METHOD_PARAM(env, jstr, g_android->activity->clazz, g_android->getVolumePath,
+         (*env)->NewStringUTF(env, index));
+
+      if (jstr)
+      {
+         const char *str = (*env)->GetStringUTFChars(env, jstr, 0);
+
+         aux_path[0] = '\0';
+
+         if (str && *str)
+            strlcpy(aux_path, str,
+                  sizeof(aux_path));
+
+         (*env)->ReleaseStringUTFChars(env, jstr, str);
+         if (!string_is_empty(aux_path))
+            menu_entries_append_enum(list,
+                  aux_path,
+                  msg_hash_to_str(MSG_APPLICATION_DIR),
+                  enum_idx,
+                  FILE_TYPE_DIRECTORY, 0, 0);
+      }
+
+   }
 #elif defined(WEBOS)
    if (path_is_directory("/media/internal"))
       menu_entries_append_enum(list, "/media/internal",

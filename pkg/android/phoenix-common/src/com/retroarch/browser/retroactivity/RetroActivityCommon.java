@@ -188,7 +188,7 @@ public class RetroActivityCommon extends NativeActivity
     /*Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
     startActivityForResult(intent, RQS_OPEN_DOCUMENT_TREE);*/
     getVolumeCount();
-    getVolumePath(1);
+    getVolumePath("1");
   }
 
   public void selectFileWithBrowser()
@@ -264,7 +264,7 @@ public class RetroActivityCommon extends NativeActivity
 
   public int getVolumeCount()
   {
-    int ret =0;
+    int ret = 0;
 
     StorageManager storageManager = (StorageManager) getApplicationContext().getSystemService(Context.STORAGE_SERVICE);
     List<StorageVolume> storageVolumeList = storageManager.getStorageVolumes();
@@ -275,16 +275,26 @@ public class RetroActivityCommon extends NativeActivity
       }
     }
     Log.i("RetroActivity", "volume count: " + ret);
-    return ret;
+    return (int)ret;
   }
 
-  public String getVolumePath(int index)
+  public String getVolumePath(String input)
   {
     String ret = "";
+    int index = Integer.valueOf(input);
+    int j = 0;
+
     StorageManager storageManager = (StorageManager) getApplicationContext().getSystemService(Context.STORAGE_SERVICE);
     List<StorageVolume> storageVolumeList = storageManager.getStorageVolumes();
 
-    ret = String.valueOf(storageVolumeList.get(index).getDirectory());
+    for (int i = 0; i < storageVolumeList.size(); i++) {
+      if (storageVolumeList.get(i).isRemovable()) {
+        if (i == j)
+        {
+          ret = String.valueOf(storageVolumeList.get(index).getDirectory());
+        }
+      }
+    }
     Log.i("RetroActivity", "volume path: " + ret);
     return ret;
   }

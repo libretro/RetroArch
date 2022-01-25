@@ -151,8 +151,6 @@ struct android_app
    int8_t hat_state[DEFAULT_MAX_PADS][2];
    jmethodID getIntent;
    jmethodID onRetroArchExit;
-   jmethodID grantPermissionsToFolder;
-   jmethodID selectFileWithBrowser;
    jmethodID getStringExtra;
    jmethodID clearPendingIntent;
    jmethodID hasPendingIntent;
@@ -177,6 +175,11 @@ struct android_app
    jmethodID getInstalledCores;
    jmethodID downloadCore;
    jmethodID deleteCore;
+
+   jmethodID grantPermissionsToFolder;
+   jmethodID selectFileWithBrowser;
+   jmethodID getVolumeCount;
+   jmethodID getVolumePath;
 
    struct
    {
