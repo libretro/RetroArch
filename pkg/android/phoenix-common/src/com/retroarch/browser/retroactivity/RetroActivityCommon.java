@@ -243,7 +243,7 @@ public class RetroActivityCommon extends NativeActivity
       uri = data.getData();
       Log.i("RetroActivity", uri.toString());
       Log.i("RetroActivity", uri.getPath());
-log    }
+    }
     if (resultCode == RESULT_OK && requestCode == RQS_OPEN_DOCUMENT) {
       uri = data.getData();
       Log.i("RetroActivity", uri.toString());
