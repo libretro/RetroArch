@@ -180,12 +180,15 @@ public class RetroActivityCommon extends NativeActivity
 
   private static final int RQS_OPEN_DOCUMENT_TREE = 9000;
   private static final int RQS_OPEN_DOCUMENT = 9001;
+  private static final int RQS_ACCESS_TO_VOLUME = 9002;
 
   public void grantPermissionsToFolder()
   {
     Log.i("RetroActivity", "Opening directory selector");
-    Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
-    startActivityForResult(intent, RQS_OPEN_DOCUMENT_TREE);
+    /*Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+    startActivityForResult(intent, RQS_OPEN_DOCUMENT_TREE);*/
+    getVolumeCount();
+    getVolumePath(1);
   }
 
   public void selectFileWithBrowser()
@@ -259,7 +262,34 @@ public class RetroActivityCommon extends NativeActivity
     }
   }
 
-// https://stackoverflow.com/questions/4553650/how-to-check-device-natural-default-orientation-on-android-i-e-get-landscape/4555528#4555528
+  public int getVolumeCount()
+  {
+    int ret =0;
+
+    StorageManager storageManager = (StorageManager) getApplicationContext().getSystemService(Context.STORAGE_SERVICE);
+    List<StorageVolume> storageVolumeList = storageManager.getStorageVolumes();
+
+    for (int i = 0; i < storageVolumeList.size(); i++) {
+      if (storageVolumeList.get(i).isRemovable()) {
+        ret++;
+      }
+    }
+    Log.i("RetroActivity", "volume count: " + ret);
+    return ret;
+  }
+
+  public String getVolumePath(int index)
+  {
+    String ret = "";
+    StorageManager storageManager = (StorageManager) getApplicationContext().getSystemService(Context.STORAGE_SERVICE);
+    List<StorageVolume> storageVolumeList = storageManager.getStorageVolumes();
+
+    ret = String.valueOf(storageVolumeList.get(index).getDirectory());
+    Log.i("RetroActivity", "volume path: " + ret);
+    return ret;
+  }
+
+  // https://stackoverflow.com/questions/4553650/how-to-check-device-natural-default-orientation-on-android-i-e-get-landscape/4555528#4555528
   public int getDeviceDefaultOrientation() {
     WindowManager windowManager = (WindowManager)getSystemService(Context.WINDOW_SERVICE);
     Configuration config = getResources().getConfiguration();
