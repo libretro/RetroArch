@@ -2360,9 +2360,10 @@ bool command_event(enum event_command cmd, void *data)
          }
       case CMD_EVENT_CORE_INIT:
          {
-            enum rarch_core_type *type    = (enum rarch_core_type*)data;
-            rarch_system_info_t *sys_info = &runloop_st->system;
-            input_driver_state_t *input_st= input_state_get_ptr();
+            enum rarch_core_type *type     = (enum rarch_core_type*)data;
+            rarch_system_info_t *sys_info  = &runloop_st->system;
+            input_driver_state_t *input_st = input_state_get_ptr();
+            audio_driver_state_t *audio_st = audio_state_get_ptr();
 
             content_reset_savestate_backups();
 
@@ -2370,8 +2371,19 @@ bool command_event(enum event_command cmd, void *data)
             if (sys_info)
                disk_control_set_ext_callback(&sys_info->disk_control, NULL);
 
+            /* Ensure that audio callback interface is reset */
+            audio_st->callback.callback  = NULL;
+            audio_st->callback.set_state = NULL;
+
             if (!type || !runloop_event_init_core(settings, input_st, *type))
+            {
+               /* If core failed to initialise, audio callback
+                * interface may be assigned invalid function
+                * pointers -> ensure it is reset */
+               audio_st->callback.callback  = NULL;
+               audio_st->callback.set_state = NULL;
                return false;
+            }
          }
          break;
       case CMD_EVENT_VIDEO_APPLY_STATE_CHANGES:
