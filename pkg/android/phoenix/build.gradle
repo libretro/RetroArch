@@ -27,18 +27,18 @@ apply plugin: 'com.android.application'
 android {
   compileSdkVersion 30
   buildToolsVersion "30.0.3"
-  ndkVersion '23.1.7779620'
+  ndkVersion "22.0.7026061"
 
   flavorDimensions "variant"
 
   defaultConfig {
-    minSdkVersion 30
+    minSdkVersion 16
     externalNativeBuild {
       ndkBuild {
         arguments "-j${Runtime.runtime.availableProcessors()}"
       }
     }
-    targetSdkVersion 30
+    targetSdkVersion 28
     versionCode System.currentTimeSeconds().toInteger()
     versionName "${getManifestAttribute("versionName")}_GIT"
   }
@@ -71,7 +71,7 @@ android {
       }
     }
     playStoreNormal {
-      minSdkVersion 30
+      minSdkVersion 21
       targetSdkVersion 30
       versionCode getPlayStoreVersionCode()
       versionName getPlayStoreVersionName()
@@ -82,7 +82,7 @@ android {
       dimension "variant"
     }
     playStorePlus {
-      minSdkVersion 30
+      minSdkVersion 26
       targetSdkVersion 30
       versionCode getPlayStoreVersionCode()
       versionName getPlayStoreVersionName()
