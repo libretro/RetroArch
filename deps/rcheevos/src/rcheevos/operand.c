@@ -103,6 +103,16 @@ static int rc_parse_operand_memory(rc_operand_t* self, const char** memaddr, rc_
     return ret;
 
   size = rc_memref_shared_size(self->size);
+  if (size != self->size && self->type == RC_OPERAND_PRIOR) {
+    /* if the shared size differs from the requested size and it's a prior operation, we
+     * have to check to make sure both sizes use the same mask, or the prior value may be
+     * updated when bits outside the mask are modified, which would make it look like the
+     * current value once the mask is applied. if the mask differs, create a new 
+     * non-shared record for tracking the prior data. */
+    if (rc_memref_mask(size) != rc_memref_mask(self->size))
+      size = self->size;
+  }
+
   self->value.memref = rc_alloc_memref(parse, address, size, (char)is_indirect);
   if (parse->offset < 0)
     return parse->offset;
@@ -142,6 +152,14 @@ int rc_parse_operand(rc_operand_t* self, const char** memaddr, int is_indirect, 
       break;
 
     case 'f': case 'F': /* floating point constant */
+      if (isalpha((unsigned char)aux[1])) {
+        ret = rc_parse_operand_memory(self, &aux, parse, is_indirect);
+
+        if (ret < 0)
+          return ret;
+
+        break;
+      }
       allow_decimal = 1;
       /* fall through */
     case 'v': case 'V': /* signed integer constant */
@@ -183,28 +201,33 @@ int rc_parse_operand(rc_operand_t* self, const char** memaddr, int is_indirect, 
             self->value.dbl = ((double)(-((long)value))) - dbl_fraction;
           else
             self->value.dbl = (double)value + dbl_fraction;
-
-          self->type = RC_OPERAND_FP;
-          break;
         }
-      } else {
+        else {
+          if (negative)
+            self->value.dbl = (double)(-((long)value));
+          else
+            self->value.dbl = (double)value;
+        }
+
+        self->type = RC_OPERAND_FP;
+      }
+      else {
         /* not a floating point value, make sure something was read and advance the read pointer */
         if (end == aux)
           return allow_decimal ? RC_INVALID_FP_OPERAND : RC_INVALID_CONST_OPERAND;
 
         aux = end;
+
+        if (value > 0x7fffffffU)
+          value = 0x7fffffffU;
+
+        self->type = RC_OPERAND_CONST;
+
+        if (negative)
+          self->value.num = (unsigned)(-((long)value));
+        else
+          self->value.num = (unsigned)value;
       }
-
-      if (value > 0x7fffffffU)
-        value = 0x7fffffffU;
-
-      self->type = RC_OPERAND_CONST;
-
-      if (negative)
-        self->value.num = (unsigned)(-((long)value));
-      else
-        self->value.num = (unsigned)value;
-
       break;
 
     case '0':
@@ -269,7 +292,18 @@ static int rc_luapeek(lua_State* L) {
 
 #endif /* RC_DISABLE_LUA */
 
-int rc_operand_is_memref(rc_operand_t* self) {
+int rc_operand_is_float_memref(const rc_operand_t* self) {
+  switch (self->size) {
+    case RC_MEMSIZE_FLOAT:
+    case RC_MEMSIZE_MBF32:
+      return 1;
+
+    default:
+      return 0;
+  }
+}
+
+int rc_operand_is_memref(const rc_operand_t* self) {
   switch (self->type) {
     case RC_OPERAND_CONST:
     case RC_OPERAND_FP:
@@ -281,60 +315,7 @@ int rc_operand_is_memref(rc_operand_t* self) {
   }
 }
 
-unsigned rc_evaluate_operand(rc_operand_t* self, rc_eval_state_t* eval_state) {
-#ifndef RC_DISABLE_LUA
-  rc_luapeek_t luapeek;
-#endif /* RC_DISABLE_LUA */
-
-  unsigned value;
-
-  /* step 1: read memory */
-  switch (self->type) {
-    case RC_OPERAND_CONST:
-      return self->value.num;
-
-    case RC_OPERAND_FP:
-      /* This is handled by rc_evaluate_condition_value. */
-      return 0;
-
-    case RC_OPERAND_LUA:
-      value = 0;
-
-#ifndef RC_DISABLE_LUA
-      if (eval_state->L != 0) {
-        lua_rawgeti(eval_state->L, LUA_REGISTRYINDEX, self->value.luafunc);
-        lua_pushcfunction(eval_state->L, rc_luapeek);
-
-        luapeek.peek = eval_state->peek;
-        luapeek.ud = eval_state->peek_userdata;
-
-        lua_pushlightuserdata(eval_state->L, &luapeek);
-
-        if (lua_pcall(eval_state->L, 2, 1, 0) == LUA_OK) {
-          if (lua_isboolean(eval_state->L, -1)) {
-            value = lua_toboolean(eval_state->L, -1);
-          }
-          else {
-            value = (unsigned)lua_tonumber(eval_state->L, -1);
-          }
-        }
-
-        lua_pop(eval_state->L, 1);
-      }
-
-#endif /* RC_DISABLE_LUA */
-
-      break;
-
-    default:
-      value = rc_get_memref_value(self->value.memref, self->type, eval_state);
-      break;
-  }
-
-  /* step 2: mask off appropriate bits */
-  value = rc_transform_memref_value(value, self->size);
-
-  /* step 3: apply logic */
+unsigned rc_transform_operand_value(unsigned value, const rc_operand_t* self) {
   switch (self->type)
   {
     case RC_OPERAND_BCD:
@@ -420,4 +401,65 @@ unsigned rc_evaluate_operand(rc_operand_t* self, rc_eval_state_t* eval_state) {
   }
 
   return value;
+}
+
+void rc_evaluate_operand(rc_typed_value_t* result, rc_operand_t* self, rc_eval_state_t* eval_state) {
+#ifndef RC_DISABLE_LUA
+  rc_luapeek_t luapeek;
+#endif /* RC_DISABLE_LUA */
+
+  /* step 1: read memory */
+  switch (self->type) {
+    case RC_OPERAND_CONST:
+      result->type = RC_VALUE_TYPE_UNSIGNED;
+      result->value.u32 = self->value.num;
+      return;
+
+    case RC_OPERAND_FP:
+      result->type = RC_VALUE_TYPE_FLOAT;
+      result->value.f32 = (float)self->value.dbl;
+      return;
+
+    case RC_OPERAND_LUA:
+      result->type = RC_VALUE_TYPE_UNSIGNED;
+      result->value.u32 = 0;
+
+#ifndef RC_DISABLE_LUA
+      if (eval_state->L != 0) {
+        lua_rawgeti(eval_state->L, LUA_REGISTRYINDEX, self->value.luafunc);
+        lua_pushcfunction(eval_state->L, rc_luapeek);
+
+        luapeek.peek = eval_state->peek;
+        luapeek.ud = eval_state->peek_userdata;
+
+        lua_pushlightuserdata(eval_state->L, &luapeek);
+
+        if (lua_pcall(eval_state->L, 2, 1, 0) == LUA_OK) {
+          if (lua_isboolean(eval_state->L, -1)) {
+            result->value.u32 = (unsigned)lua_toboolean(eval_state->L, -1);
+          }
+          else {
+            result->value.u32 = (unsigned)lua_tonumber(eval_state->L, -1);
+          }
+        }
+
+        lua_pop(eval_state->L, 1);
+      }
+
+#endif /* RC_DISABLE_LUA */
+
+      break;
+
+    default:
+      result->type = RC_VALUE_TYPE_UNSIGNED;
+      result->value.u32 = rc_get_memref_value(self->value.memref, self->type, eval_state);
+      break;
+  }
+
+  /* step 2: convert read memory to desired format */
+  rc_transform_memref_value(result, self->size);
+
+  /* step 3: apply logic (BCD/invert) */
+  if (result->type == RC_VALUE_TYPE_UNSIGNED)
+    result->value.u32 = rc_transform_operand_value(result->value.u32, self);
 }

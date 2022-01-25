@@ -11,6 +11,9 @@ int rc_parse_format(const char* format_str) {
       if (!strcmp(format_str, "RAMES")) {
         return RC_FORMAT_FRAMES;
       }
+      if (!strncmp(format_str, "LOAT", 4) && format_str[4] >= '1' && format_str[4] <= '6' && format_str[5] == '\0') {
+        return RC_FORMAT_FLOAT1 + (format_str[4] - '1');
+      }
 
       break;
 
@@ -18,7 +21,7 @@ int rc_parse_format(const char* format_str) {
       if (!strcmp(format_str, "IME")) {
         return RC_FORMAT_FRAMES;
       }
-      else if (!strcmp(format_str, "IMESECS")) {
+      if (!strcmp(format_str, "IMESECS")) {
         return RC_FORMAT_SECONDS;
       }
 
@@ -116,40 +119,88 @@ static int rc_format_value_centiseconds(char* buffer, int size, unsigned centise
   return chars;
 }
 
-int rc_format_value(char* buffer, int size, int value, int format) {
+int rc_format_typed_value(char* buffer, int size, const rc_typed_value_t* value, int format) {
   int chars;
+  rc_typed_value_t converted_value;
+
+  memcpy(&converted_value, value, sizeof(converted_value));
 
   switch (format) {
-    case RC_FORMAT_FRAMES:
-      /* 60 frames per second = 100 centiseconds / 60 frames; multiply frames by 100 / 60 */
-      chars = rc_format_value_centiseconds(buffer, size, value * 10 / 6);
+    default:
+    case RC_FORMAT_VALUE:
+      rc_typed_value_convert(&converted_value, RC_VALUE_TYPE_SIGNED);
+      chars = snprintf(buffer, size, "%d", converted_value.value.i32);
       break;
 
-    case RC_FORMAT_SECONDS:
-      chars = rc_format_value_seconds(buffer, size, value);
+    case RC_FORMAT_FRAMES:
+      /* 60 frames per second = 100 centiseconds / 60 frames; multiply frames by 100 / 60 */
+      rc_typed_value_convert(&converted_value, RC_VALUE_TYPE_UNSIGNED);
+      chars = rc_format_value_centiseconds(buffer, size, converted_value.value.u32 * 10 / 6);
       break;
 
     case RC_FORMAT_CENTISECS:
-      chars = rc_format_value_centiseconds(buffer, size, value);
+      rc_typed_value_convert(&converted_value, RC_VALUE_TYPE_UNSIGNED);
+      chars = rc_format_value_centiseconds(buffer, size, converted_value.value.u32);
+      break;
+
+    case RC_FORMAT_SECONDS:
+      rc_typed_value_convert(&converted_value, RC_VALUE_TYPE_UNSIGNED);
+      chars = rc_format_value_seconds(buffer, size, converted_value.value.u32);
       break;
 
     case RC_FORMAT_SECONDS_AS_MINUTES:
-      chars = rc_format_value_minutes(buffer, size, value / 60);
+      rc_typed_value_convert(&converted_value, RC_VALUE_TYPE_UNSIGNED);
+      chars = rc_format_value_minutes(buffer, size, converted_value.value.u32 / 60);
       break;
 
     case RC_FORMAT_MINUTES:
-      chars = rc_format_value_minutes(buffer, size, value);
+      rc_typed_value_convert(&converted_value, RC_VALUE_TYPE_UNSIGNED);
+      chars = rc_format_value_minutes(buffer, size, converted_value.value.u32);
       break;
 
     case RC_FORMAT_SCORE:
-      chars = snprintf(buffer, size, "%06d", value);
+      rc_typed_value_convert(&converted_value, RC_VALUE_TYPE_SIGNED);
+      chars = snprintf(buffer, size, "%06d", converted_value.value.i32);
       break;
 
-    default:
-    case RC_FORMAT_VALUE:
-      chars = snprintf(buffer, size, "%d", value);
+    case RC_FORMAT_FLOAT1:
+      rc_typed_value_convert(&converted_value, RC_VALUE_TYPE_FLOAT);
+      chars = snprintf(buffer, size, "%.1f", converted_value.value.f32);
+      break;
+
+    case RC_FORMAT_FLOAT2:
+      rc_typed_value_convert(&converted_value, RC_VALUE_TYPE_FLOAT);
+      chars = snprintf(buffer, size, "%.2f", converted_value.value.f32);
+      break;
+
+    case RC_FORMAT_FLOAT3:
+      rc_typed_value_convert(&converted_value, RC_VALUE_TYPE_FLOAT);
+      chars = snprintf(buffer, size, "%.3f", converted_value.value.f32);
+      break;
+
+    case RC_FORMAT_FLOAT4:
+      rc_typed_value_convert(&converted_value, RC_VALUE_TYPE_FLOAT);
+      chars = snprintf(buffer, size, "%.4f", converted_value.value.f32);
+      break;
+
+    case RC_FORMAT_FLOAT5:
+      rc_typed_value_convert(&converted_value, RC_VALUE_TYPE_FLOAT);
+      chars = snprintf(buffer, size, "%.5f", converted_value.value.f32);
+      break;
+
+    case RC_FORMAT_FLOAT6:
+      rc_typed_value_convert(&converted_value, RC_VALUE_TYPE_FLOAT);
+      chars = snprintf(buffer, size, "%.6f", converted_value.value.f32);
       break;
   }
 
   return chars;
+}
+
+int rc_format_value(char* buffer, int size, int value, int format) {
+  rc_typed_value_t typed_value;
+
+  typed_value.value.i32 = value;
+  typed_value.type = RC_VALUE_TYPE_SIGNED;
+  return rc_format_typed_value(buffer, size, &typed_value, format);
 }

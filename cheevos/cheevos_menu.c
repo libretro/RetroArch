@@ -116,9 +116,12 @@ bool rcheevos_menu_get_state(unsigned menu_offset, char *buffer, size_t len)
       if (cheevo)
       {
          if (cheevo->menu_progress)
-            snprintf(buffer, len, "%s - %d%%",
-                  msg_hash_to_str(menuitem->state_label_idx),
-                  cheevo->menu_progress);
+         {
+            const int written = snprintf(buffer, len, "%s - ",
+               msg_hash_to_str(menuitem->state_label_idx));
+            if (len - written > 0)
+               rc_runtime_format_achievement_measured(&rcheevos_locals->runtime, cheevo->id, buffer + written, len - written);
+         }
          else
             strlcpy(buffer, msg_hash_to_str(menuitem->state_label_idx), len);
 

@@ -96,6 +96,9 @@ const char* rc_console_name(int console_id)
     case RC_CONSOLE_MEGA_DRIVE:
       return "Sega Genesis";
 
+    case RC_CONSOLE_MEGADUCK:
+      return "Mega Duck";
+
     case RC_CONSOLE_MS_DOS:
       return "MS-DOS";
 
@@ -126,6 +129,9 @@ const char* rc_console_name(int console_id)
     case RC_CONSOLE_ORIC:
       return "Oric";
 
+    case RC_CONSOLE_PC6000:
+      return "PC-6000";
+
     case RC_CONSOLE_PC8800:
       return "PC-8000/8800";
 
@@ -155,6 +161,9 @@ const char* rc_console_name(int console_id)
 
     case RC_CONSOLE_SEGA_CD:
       return "Sega CD";
+	  
+    case RC_CONSOLE_PICO:
+      return "Sega Pico";
 
     case RC_CONSOLE_SATURN:
       return "Sega Saturn";
@@ -203,6 +212,9 @@ const char* rc_console_name(int console_id)
 
     case RC_CONSOLE_XBOX:
       return "XBOX";
+
+    case RC_CONSOLE_ZEEBO:
+      return "Zeebo";
 
     case RC_CONSOLE_ZX81:
       return "ZX-81";
@@ -279,6 +291,13 @@ static const rc_memory_region_t _rc_memory_regions_colecovision[] = {
     { 0x000000U, 0x0003FFU, 0x006000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }
 };
 static const rc_memory_regions_t rc_memory_regions_colecovision = { _rc_memory_regions_colecovision, 1 };
+
+/* ===== Dreamcast ===== */
+/* http://archiv.sega-dc.de/munkeechuff/hardware/Memory.html */
+static const rc_memory_region_t _rc_memory_regions_dreamcast[] = {
+    { 0x00000000U, 0x00FFFFFFU, 0x0C000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }
+};
+static const rc_memory_regions_t rc_memory_regions_dreamcast = { _rc_memory_regions_dreamcast, 1 };
 
 /* ===== GameBoy / GameBoy Color ===== */
 static const rc_memory_region_t _rc_memory_regions_gameboy[] = {
@@ -506,6 +525,14 @@ static const rc_memory_region_t _rc_memory_regions_playstation2[] = {
 };
 static const rc_memory_regions_t rc_memory_regions_playstation2 = { _rc_memory_regions_playstation2, 2 };
 
+/* ===== PlayStation Portable ===== */
+/* https://github.com/uofw/upspd/wiki/Memory-map */
+static const rc_memory_region_t _rc_memory_regions_psp[] = {
+    { 0x00000000U, 0x007FFFFFU, 0x08000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Kernel RAM" },
+    { 0x00800000U, 0x01FFFFFFU, 0x08800000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
+};
+static const rc_memory_regions_t rc_memory_regions_psp = { _rc_memory_regions_psp, 2 };
+
 /* ===== Pokemon Mini ===== */
 /* https://www.pokemon-mini.net/documentation/memory-map/ */
 static const rc_memory_region_t _rc_memory_regions_pokemini[] = {
@@ -656,6 +683,9 @@ const rc_memory_regions_t* rc_console_memory_regions(int console_id)
     case RC_CONSOLE_COLECOVISION:
       return &rc_memory_regions_colecovision;
 
+    case RC_CONSOLE_DREAMCAST:
+      return &rc_memory_regions_dreamcast;
+
     case RC_CONSOLE_GAMEBOY:
       return &rc_memory_regions_gameboy;
 
@@ -715,6 +745,9 @@ const rc_memory_regions_t* rc_console_memory_regions(int console_id)
 
     case RC_CONSOLE_PLAYSTATION_2:
       return &rc_memory_regions_playstation2;
+
+    case RC_CONSOLE_PSP:
+      return &rc_memory_regions_psp;
 
     case RC_CONSOLE_POKEMON_MINI:
       return &rc_memory_regions_pokemini;
