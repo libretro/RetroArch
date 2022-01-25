@@ -494,6 +494,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_gpu_record,              MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_savestate_auto_index,          MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_block_sram_overwrite,          MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_fastforward_ratio,             MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_fastforward_frameskip,         MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_vrr_runloop_enable,            MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_slowmotion_ratio,              MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_run_ahead_enabled,             MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED)
@@ -3408,6 +3409,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_FASTFORWARD_RATIO:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_fastforward_ratio);
+            break;
+         case MENU_ENUM_LABEL_FASTFORWARD_FRAMESKIP:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_fastforward_frameskip);
             break;
          case MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_vrr_runloop_enable);
