@@ -330,6 +330,14 @@ MSG_HASH(
    "컨텐츠 다운로더"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
+   "코어 시스템 파일 다운로더"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+   "코어의 올바른/이상적인 작동에 필요한 추가 시스템 파일을 다운로드합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
    "코어 정보 파일 업데이트"
    )

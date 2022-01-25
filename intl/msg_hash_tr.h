@@ -322,6 +322,10 @@ MSG_HASH(
    "İçerik İndirici"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Çekirdek Sistem Dosyaları İndirici"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
    "Çekirdek Bilgileri Güncelle"
    )
