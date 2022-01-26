@@ -1252,6 +1252,7 @@ static const bool savestate_thumbnail_enable = false;
 
 /* Maximum fast forward ratio. */
 #define DEFAULT_FASTFORWARD_RATIO 0.0
+#define MAXIMUM_FASTFORWARD_RATIO 50.0
 
 /* Skip frames when fast forwarding. */
 #define DEFAULT_FASTFORWARD_FRAMESKIP true

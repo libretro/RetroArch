@@ -13948,7 +13948,7 @@ static bool setting_append_list(
                general_read_handler);
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_SET_FRAME_LIMIT);
-         menu_settings_list_current_add_range(list, list_info, 0, 10, 1.0, true, true);
+         menu_settings_list_current_add_range(list, list_info, 0, MAXIMUM_FASTFORWARD_RATIO, 1.0, true, true);
 
          CONFIG_BOOL(
                list, list_info,
