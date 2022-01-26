@@ -322,6 +322,14 @@ MSG_HASH(
    "Téléchargement de contenu"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Téléchargement des fichiers système de cœurs"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Télécharger les fichiers système auxiliaires nécessaires pour un fonctionnement correct et optimal des cœurs."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
    "Mettre à jour les fichiers d'information de cœurs"
    )

@@ -326,6 +326,14 @@ MSG_HASH(
    "Baixar conteúdo"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Baixar arquivos de sistema do núcleo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Baixa os arquivos de sistema auxiliares necessários para operação do núcleo correto e otimizado."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
    "Atualizar arquivos de informação de núcleo"
    )

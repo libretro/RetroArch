@@ -330,6 +330,10 @@ MSG_HASH(
    "Скачать контент"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Скачать системные файлы ядер"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
    "Обновить информационные файлы ядер"
    )
