@@ -623,12 +623,22 @@ static void *udev_joypad_init(void *data)
    udev_enumerate_add_match_subsystem(enumerate, "input");
    udev_enumerate_scan_devices(enumerate);
    devs = udev_enumerate_get_list_entry(enumerate);
+   if (!devs)
+      RARCH_DBG("[udev]: Couldn't open any joypads. Are permissions set correctly for /dev/input/event* and /run/udev/?\n");
 
    udev_list_entry_foreach(item, devs)
    {
       const char         *name = udev_list_entry_get_name(item);
       struct udev_device  *dev = udev_device_new_from_syspath(udev_joypad_fd, name);
       const char      *devnode = udev_device_get_devnode(dev);
+#if defined(DEBUG)
+      RARCH_DBG("udev_joypad_init entry name=%s devnode=%s\n", name, devnode);
+      struct udev_list_entry *list_entry;
+      udev_list_entry_foreach(list_entry, udev_device_get_properties_list_entry(dev))
+         RARCH_DBG("udev_joypad_init property %s=%s\n",
+                       udev_list_entry_get_name(list_entry),
+                       udev_list_entry_get_value(list_entry));
+#endif
 
       if (devnode)
          udev_check_device(dev, devnode);
