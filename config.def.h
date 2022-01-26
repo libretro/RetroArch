@@ -1253,6 +1253,9 @@ static const bool savestate_thumbnail_enable = false;
 /* Maximum fast forward ratio. */
 #define DEFAULT_FASTFORWARD_RATIO 0.0
 
+/* Skip frames when fast forwarding. */
+#define DEFAULT_FASTFORWARD_FRAMESKIP true
+
 /* Enable runloop for variable refresh rate screens. Force x1 speed while handling fast forward too. */
 #define DEFAULT_VRR_RUNLOOP_ENABLE false
 

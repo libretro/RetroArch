@@ -1235,6 +1235,10 @@ MSG_HASH(
    "fastforward_ratio"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_FASTFORWARD_FRAMESKIP,
+   "fastforward_frameskip"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_FILE_BROWSER_CORE,
    "file_browser_core"
    )

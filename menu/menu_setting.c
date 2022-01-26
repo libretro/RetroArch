@@ -13952,6 +13952,22 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
+               &settings->bools.fastforward_frameskip,
+               MENU_ENUM_LABEL_FASTFORWARD_FRAMESKIP,
+               MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
+               DEFAULT_FASTFORWARD_FRAMESKIP,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_BOOL(
+               list, list_info,
                &settings->bools.vrr_runloop_enable,
                MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,
                MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,

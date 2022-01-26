@@ -3579,6 +3579,7 @@ void video_driver_frame(const void *data, unsigned width,
    const enum retro_pixel_format
       video_driver_pix_fmt       = video_st->pix_fmt;
    bool runloop_idle             = runloop_st->idle;
+   bool render_frame             = !runloop_st->fastforward_frameskip_frames_current;
    bool video_driver_active      = video_st->active;
 #if defined(HAVE_GFX_WIDGETS)
    bool widgets_active           = dispwidget_get_ptr()->active;
@@ -3616,6 +3617,11 @@ void video_driver_frame(const void *data, unsigned width,
    }
 
    video_driver_build_info(&video_info);
+
+   render_frame |= video_info.menu_is_alive;
+
+   if (!render_frame)
+      runloop_st->fastforward_frameskip_frames_current--;
 
    /* Get the amount of frames per seconds. */
    if (video_st->frame_count)
@@ -3772,7 +3778,7 @@ void video_driver_frame(const void *data, unsigned width,
             pitch, runloop_idle);
 
 #ifdef HAVE_VIDEO_FILTER
-   if (data && video_st->state_filter)
+   if (render_frame && data && video_st->state_filter)
    {
       unsigned output_width                             = 0;
       unsigned output_height                            = 0;
@@ -3834,11 +3840,7 @@ void video_driver_frame(const void *data, unsigned width,
                   msg_entry.category,
                   msg_entry.prio,
                   false,
-#ifdef HAVE_MENU
-                  menu_state_get_ptr()->alive
-#else
-                  false
-#endif
+                  video_info.menu_is_alive
             );
       }
       /* ...otherwise, just output message via
@@ -3858,7 +3860,7 @@ void video_driver_frame(const void *data, unsigned width,
       }
    }
 
-   if (video_info.statistics_show)
+   if (render_frame && video_info.statistics_show)
    {
       audio_statistics_t audio_stats;
       double stddev                          = 0.0;
@@ -3920,12 +3922,16 @@ void video_driver_frame(const void *data, unsigned width,
       /* TODO/FIXME - add OSD chat text here */
    }
 
-   if (video_st->current_video && video_st->current_video->frame)
+   if (render_frame && video_st->current_video && video_st->current_video->frame)
+   {
       video_st->active = video_st->current_video->frame(
             video_st->data, data, width, height,
             video_st->frame_count, (unsigned)pitch,
             video_info.menu_screensaver_active || video_info.notifications_hidden ? "" : video_driver_msg,
             &video_info);
+
+      runloop_st->fastforward_frameskip_frames_current = runloop_st->fastforward_frameskip_frames;
+   }
 
    video_st->frame_count++;
 

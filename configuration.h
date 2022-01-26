@@ -834,6 +834,7 @@ typedef struct settings
       bool history_list_enable;
       bool playlist_entry_rename;
       bool rewind_enable;
+      bool fastforward_frameskip;
       bool vrr_runloop_enable;
       bool apply_cheats_after_toggle;
       bool apply_cheats_after_load;
