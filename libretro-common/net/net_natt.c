@@ -20,10 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#if defined(_WIN32) && !defined(__WINRT__) && defined(_MSC_VER)
-#pragma comment(lib, "Iphlpapi")
-#endif
-
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -33,13 +29,13 @@
 
 #include <string/stdstring.h>
 
+#ifndef HAVE_SOCKET_LEGACY
+#include <net/net_ifinfo.h>
+#endif
+
 #include "../../tasks/tasks_internal.h"
 
 #include <net/net_natt.h>
-
-#if defined(_WIN32) && !defined(__WINRT__)
-#include <iphlpapi.h>
-#endif
 
 static bool translate_addr(struct sockaddr_in *addr,
    char *host, size_t hostlen, char *port, size_t portlen)
@@ -85,9 +81,6 @@ bool natt_init(struct natt_discovery *discovery)
       "ST: urn:schemas-upnp-org:device:InternetGatewayDevice:1\r\n"
       "MX: 5\r\n"
       "\r\n";
-#if defined(_WIN32) && !defined(__WINRT__)
-   MIB_IPFORWARDROW ip_forward;
-#endif
    bool ret;
    int fd                        = -1;
    struct addrinfo *msearch_addr = NULL;
@@ -110,51 +103,16 @@ bool natt_init(struct natt_discovery *discovery)
    if (!bind_addr)
       goto failure;
 
-#if defined(_WIN32) && !defined(__WINRT__)
-   if (GetBestRoute(inet_addr("223.255.255.255"),
-      0, &ip_forward) == NO_ERROR)
+#ifndef HAVE_SOCKET_LEGACY
    {
-      DWORD            index = ip_forward.dwForwardIfIndex;
-      PMIB_IPADDRTABLE table = malloc(sizeof(*table));
+      struct sockaddr_in *addr = (struct sockaddr_in *) bind_addr->ai_addr;
 
-      if (table)
+      if (net_ifinfo_best("223.255.255.255", &addr->sin_addr, false))
       {
-         DWORD len    = sizeof(*table);
-         DWORD result = GetIpAddrTable(table, &len, FALSE);
-
-         if (result == ERROR_INSUFFICIENT_BUFFER)
-         {
-            PMIB_IPADDRTABLE new_table = realloc(table, len);
-
-            if (new_table) 
-            {
-               table  = new_table;
-               result = GetIpAddrTable(table, &len, FALSE);
-            }
-         }
-
-         if (result == NO_ERROR)
-         {
-            DWORD i;
-
-            for (i = 0; i < table->dwNumEntries; i++)
-            {
-               PMIB_IPADDRROW ip_addr = &table->table[i];
-
-               if (ip_addr->dwIndex == index)
-               {
 #ifdef IP_MULTICAST_IF
-                  setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IF,
-                     (const char *) &ip_addr->dwAddr, sizeof(ip_addr->dwAddr));
+         setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IF,
+            (const char *) &addr->sin_addr, sizeof(addr->sin_addr));
 #endif
-                  ((struct sockaddr_in *) bind_addr->ai_addr)->sin_addr.s_addr =
-                     ip_addr->dwAddr;
-                  break;
-               }
-            }
-         }
-
-         free(table);
       }
    }
 #endif

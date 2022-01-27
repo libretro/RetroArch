@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2021 - Daniel De Matteis
  *  Copyright (C) 2016-2017 - Gregor Richards
- *  Copyright (C) 2021-2021 - Roberto V. Rampim
+ *  Copyright (C) 2021-2022 - Roberto V. Rampim
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -18,10 +18,6 @@
 
 #if defined(_MSC_VER) && !defined(_XBOX)
 #pragma comment(lib, "ws2_32")
-#endif
-
-#if defined(_WIN32) && !defined(__WINRT__) && defined(_MSC_VER)
-#pragma comment(lib, "Iphlpapi")
 #endif
 
 #include <stdio.h>
@@ -41,13 +37,13 @@
 #include <lrc_hash.h>
 #include <retro_timers.h>
 
+#ifndef HAVE_SOCKET_LEGACY
+#include <net/net_ifinfo.h>
+#endif
+
 #include <math/float_minmax.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
-
-#if defined(_WIN32) && !defined(__WINRT__)
-#include <iphlpapi.h>
-#endif
 
 #ifdef HAVE_DISCORD
 #include "../discord.h"
@@ -247,55 +243,9 @@ bool init_netplay_discovery(void)
 
    if (ret)
    {
-#if defined(_WIN32) && !defined(__WINRT__)
-      MIB_IPFORWARDROW ip_forward;
-
-      if (GetBestRoute(inet_addr("223.255.255.255"),
-         0, &ip_forward) == NO_ERROR)
-      {
-         DWORD            index = ip_forward.dwForwardIfIndex;
-         PMIB_IPADDRTABLE table = malloc(sizeof(*table));
-
-         if (table)
-         {
-            DWORD len    = sizeof(*table);
-            DWORD result = GetIpAddrTable(table, &len, FALSE);
-
-            if (result == ERROR_INSUFFICIENT_BUFFER)
-            {
-               PMIB_IPADDRTABLE new_table = realloc(table, len);
-
-               if (new_table) 
-               {
-                  table  = new_table;
-                  result = GetIpAddrTable(table, &len, FALSE);
-               }
-            }
-
-            if (result == NO_ERROR)
-            {
-               DWORD i;
-
-               for (i = 0; i < table->dwNumEntries; i++)
-               {
-                  PMIB_IPADDRROW ip_addr = &table->table[i];
-
-                  if (ip_addr->dwIndex == index)
-                  {
-#ifdef IP_MULTICAST_IF
-                     setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IF,
-                        (const char *) &ip_addr->dwAddr, sizeof(ip_addr->dwAddr));
-#endif
-                     ((struct sockaddr_in *) addr->ai_addr)->sin_addr.s_addr =
-                        ip_addr->dwAddr;
-                     break;
-                  }
-               }
-            }
-
-            free(table);
-         }
-      }
+#ifndef HAVE_SOCKET_LEGACY
+      net_ifinfo_best("223.255.255.255",
+         &((struct sockaddr_in *) addr->ai_addr)->sin_addr, false);
 #endif
 
 #ifdef SO_BROADCAST
