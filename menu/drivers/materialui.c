@@ -2355,10 +2355,12 @@ static void materialui_context_reset_textures(materialui_handle_t *mui)
    }
 
    /* Warn user if assets are missing */
+#ifndef NO_MISSING_ASSET_WARNING
    if (!has_all_assets)
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_MISSING_ASSETS), 1, 256, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#endif
 }
 
 static void materialui_draw_icon(

@@ -9,10 +9,9 @@ endif
 EOPT = USE_ZLIB=1 # Emscripten specific options
 EOPTS = $(addprefix -s $(EMPTY), $(EOPT)) # Add '-s ' to each option
 
-PTHREAD = 0
 OS = Emscripten
 OBJ :=
-DEFINES := -DRARCH_INTERNAL -DHAVE_MAIN -s USE_PTHREADS=$(PTHREAD)
+DEFINES := -DRARCH_INTERNAL -DHAVE_MAIN
 DEFINES += -DHAVE_FILTERS_BUILTIN
 
 HAVE_DSP_FILTER = 1
@@ -43,6 +42,7 @@ HAVE_CONFIGFILE = 1
 HAVE_CHEATS = 1
 HAVE_IBXM = 1
 HAVE_CORE_INFO_CACHE = 1
+HAVE_ASSET_WARNING = 1
 
 ASYNC ?= 0
 ifeq ($(LIBRETRO), mupen64plus)
@@ -68,8 +68,9 @@ LDFLAGS := -L. --no-heap-copy -s $(LIBS) -s TOTAL_MEMORY=$(MEMORY) -s NO_EXIT_RU
            --js-library emscripten/library_rwebaudio.js \
            --js-library emscripten/library_rwebcam.js \
            --js-library emscripten/library_errno_codes.js
+
 ifneq ($(PTHREAD), 0)
-   LDFLAGS += -s USE_PTHREADS=$(PTHREAD) -s PTHREAD_POOL_SIZE=2
+   LDFLAGS += -s WASM_MEM_MAX=1073741824 -pthread -s PTHREAD_POOL_SIZE=$(PTHREAD) 
 endif
 
 ifeq ($(ASYNC), 1)
@@ -80,6 +81,10 @@ ifeq ($(HAVE_SDL2), 1)
    LIBS += -s USE_SDL=2
    DEFINES += -DHAVE_SDL2
 endif
+
+ifneq ($(HAVE_ASSET_WARNING), 1)
+   DEFINES += -DNO_MISSING_ASSET_WARNING
+endif 
 
 include Makefile.common
 
