@@ -37,6 +37,7 @@ namespace RetroArchUWP
       void OnActivated(Windows::ApplicationModel::Core::CoreApplicationView^ applicationView, Windows::ApplicationModel::Activation::IActivatedEventArgs^ args);
       void OnSuspending(Platform::Object^ sender, Windows::ApplicationModel::SuspendingEventArgs^ args);
       void OnResuming(Platform::Object^ sender, Platform::Object^ args);
+      void OnEnteredBackground(Platform::Object^ sender, Windows::ApplicationModel::EnteredBackgroundEventArgs^ args);
 
       void OnBackRequested(Platform::Object^ sender, Windows::UI::Core::BackRequestedEventArgs^ args);
 
@@ -70,7 +71,8 @@ namespace RetroArchUWP
       bool m_windowVisible;
       bool m_windowFocused;
       bool m_windowResized;
-      Windows::ApplicationModel::Activation::IActivatedEventArgs^ m_args;
+      Platform::String^ m_launchOnExit;
+      bool m_launchOnExitShutdown;
       void ParseProtocolArgs(Windows::ApplicationModel::Activation::IActivatedEventArgs^ args, int *argc, std::vector<char*> *argv, std::vector<std::string> *argvTmp);
       static App^ m_instance;
    };

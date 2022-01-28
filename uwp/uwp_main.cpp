@@ -259,6 +259,9 @@ void App::Initialize(CoreApplicationView^ applicationView)
 
 	CoreApplication::Resuming +=
 		ref new EventHandler<Platform::Object^>(this, &App::OnResuming);
+
+	CoreApplication::EnteredBackground +=
+		ref new EventHandler<EnteredBackgroundEventArgs^>(this, &App::OnEnteredBackground);
 }
 
 /* Called when the CoreWindow object is created (or re-created). */
@@ -360,22 +363,25 @@ void App::Run()
 void App::Uninitialize()
 {
 	main_exit(NULL);
-
-	if (m_args->Kind == ActivationKind::Protocol)
-	{
-		ProtocolActivatedEventArgs^ protocolArgs = dynamic_cast<Windows::ApplicationModel::Activation::ProtocolActivatedEventArgs^>(m_args);
-		Windows::Foundation::WwwFormUrlDecoder^ query = protocolArgs->Uri->QueryParsed;
+	
+	//if this instance of RetroArch was started from another app/frontend and the frontend passed "launchOnExit" parameter:
+	//1. launch the app specified in "launchOnExit", most likely the same app that started RetroArch
+	//2. RetroArch goes to background and RunAsyncAndCatchErrors doesn't return, because the target app is immediately started.
+	//3. explicitly exit in App::OnEnteredBackground if m_launchOnExitShutdown is set. Otherwise, RetroArch doesn't properly shutdown.
+	if (m_launchOnExit != nullptr && m_launchOnExit->IsEmpty() == false)
+	{		
 		try
-		{
-			//if UWP app is started using protocol, this gives an option to launch another app on RA exit,
-			//making it easy to integrate RA with other UWP frontends
-			Platform::String^ launchOnExit = query->GetFirstValueByName("launchOnExit");
-			Windows::System::Launcher::LaunchUriAsync(ref new Uri(launchOnExit));
+		{			
+			//launch the target app
+			m_launchOnExitShutdown = true;
+			auto ret = RunAsyncAndCatchErrors<bool>([&]() {
+				return create_task(Launcher::LaunchUriAsync(ref new Uri(m_launchOnExit)));
+			}, false);
 		}
-		catch(Platform::InvalidArgumentException^ e)
+		catch (Platform::InvalidArgumentException^ e)
 		{
 		}
-	}	
+	}
 }
 
 /* Application lifecycle event handlers. */
@@ -388,12 +394,11 @@ void App::OnActivated(CoreApplicationView^ applicationView, IActivatedEventArgs^
 		return;
 	}
 
-	m_args = args; //remember arguments so it can be inspected later on, for example in Uninitialize()
 	int argc = NULL;
 	std::vector<char*> argv;
-	std::vector<std::string> argvTmp; //using std::string as temp buf instead of char* array to avoid manual char allocations	
+	std::vector<std::string> argvTmp; //using std::string as temp buf instead of char* array to avoid manual char allocations
 	ParseProtocolArgs(args, &argc, &argv, &argvTmp);
-	
+
 	int ret = rarch_main(argc, argv.data(), NULL);
 	if (ret != 0)
 	{
@@ -458,6 +463,15 @@ void App::OnResuming(Platform::Object^ sender, Platform::Object^ args)
 	 * and state are persisted when resuming from suspend. Note that this event
 	 * does not occur if the app was previously terminated.
     */
+}
+
+void App::OnEnteredBackground(Platform::Object^ sender, EnteredBackgroundEventArgs^ args)
+{
+	//RetroArch entered background because another app/frontend was launched on exit, so properly quit
+	if (m_launchOnExitShutdown == true)
+	{
+		CoreApplication::Exit();
+	}
 }
 
 void App::OnBackRequested(Platform::Object^ sender, Windows::UI::Core::BackRequestedEventArgs^ args)
@@ -623,6 +637,17 @@ void App::ParseProtocolArgs(Windows::ApplicationModel::Activation::IActivatedEve
 		ProtocolActivatedEventArgs^ protocolArgs = dynamic_cast<Windows::ApplicationModel::Activation::ProtocolActivatedEventArgs^>(args);
 		Windows::Foundation::WwwFormUrlDecoder^ query = protocolArgs->Uri->QueryParsed;
 
+		//if RetroArch UWP app is started using protocol with argument "launchOnExit", this gives an option to launch another app on RA exit,
+		//making it easy to integrate RA with other UWP frontends
+		try
+		{
+			m_launchOnExit = query->GetFirstValueByName("launchOnExit");
+		}
+		catch (Platform::InvalidArgumentException^ e)
+		{
+			//nothing to do if named parameter doesn't exist
+		}
+
 		try
 		{
 			//protocol activation is in format 0=argValue0&1=argValue1...
@@ -640,6 +665,7 @@ void App::ParseProtocolArgs(Windows::ApplicationModel::Activation::IActivatedEve
 		}
 		catch (Platform::InvalidArgumentException^ e)
 		{
+			//nothing to do if named parameter doesn't exist
 		}
 	}
 
