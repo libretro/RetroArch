@@ -746,7 +746,6 @@ void rcheevos_client_identify_game(const char* hash,
       request->callback      = callback;
       request->callback_data = userdata;
 
-      rcheevos_begin_load_state(RCHEEVOS_LOAD_STATE_IDENTIFYING_GAME);
       rcheevos_async_begin_request(request, result,
          rcheevos_async_resolve_hash_callback,
          CHEEVOS_ASYNC_RESOLVE_HASH, 0,
