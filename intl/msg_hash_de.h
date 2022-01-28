@@ -1014,7 +1014,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-   "Einstellungen für Zurückspulen, Zeitraffer und Zeitlupe ändern."
+   "Einstellungen für Zurückspulen, Vorspulen und Zeitlupe ändern."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
@@ -1769,7 +1769,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Die effektive \"Bildverzögerung\" vorübergehend verringern, um Frame Drops zu verhindern. Ausgangspunkt ist die halbe Frame-Zeit, wenn \"Bildverzögerung\" 0 ist."
+   "Die effektive \"Bildverzögerung\" vorübergehend verringern, um Frame-Drops zu verhindern. Ausgangspunkt ist die halbe Frame-Zeit, wenn \"Bildverzögerung\" 0 ist."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
@@ -1840,7 +1840,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MUTE,
-   "Ton stummschalten."
+   "Audio stummschalten."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
@@ -1852,11 +1852,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "Stummschalten bei Zeitraffer"
+   "Beim Vorspulen stummschalten"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
-   "Audio automatisch stummschalten, wenn Zeitraffer verwendet wird."
+   "Audio automatisch stummschalten, wenn vorgespult wird."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -2348,19 +2348,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
-   "Zeitraffer (Umschalten)"
+   "Vorspulen (Umschalten)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_KEY,
-   "Wechselt zwischen Zeitraffer und Normalgeschwindigkeit."
+   "Wechselt zwischen Vorspul- und Normalgeschwindigkeit."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
-   "Zeitraffer (Halten)"
+   "Vorspulen (Halten)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_HOLD_KEY,
-   "Aktiviert den Zeitraffer, solange gedrückt. Inhalte laufen mit normaler Geschwindigkeit, wenn Taste losgelassen wird."
+   "Spult vor, solange gedrückt. Inhalte laufen mit normaler Geschwindigkeit, wenn Taste losgelassen wird."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY,
@@ -2524,7 +2524,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
-   "Audio (Stumm-/Lautschalten)"
+   "Audio (Umschalten)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_MUTE,
@@ -2532,7 +2532,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
-   "Bildschirmtastatur (Ein-/Ausschalten)"
+   "Bildschirmtastatur (Umschalten)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_OSK,
@@ -3322,11 +3322,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
-   "Zeitraffer-Rate"
+   "Vorspulrate"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
-   "Die maximale Geschwindigkeit, mit der Inhalt im Zeitraffer-Modus dargestellt wird (z.B. 5x für 60 fps Inhalt => Begrenzung auf 300 Bilder/sek). Wenn 0x gewählt wird, ist die Geschwindigkeit unbegrenzt."
+   "Die maximale Geschwindigkeit, mit der Inhalt beim Vorspulen dargestellt wird (z.B. 5x für 60 fps Inhalt => Begrenzung auf 300 Bilder/sek). Wenn 0x gewählt wird, ist die Geschwindigkeit unbegrenzt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
+   "Frameskip beim Vorspulen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
+   "Einzelbilder je nach Vorspulgeschwindigkeit überspringen. Dies spart Strom und ermöglicht die Verwendung von externen Frame-Limits."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
@@ -3384,11 +3392,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Nach Zeitraffer zurücksetzen"
+   "Nach Vorspulen zurücksetzen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Den Frame-Zeit-Zähler nach dem Zeitraffer zurücksetzen."
+   "Den Frame-Zeit-Zähler nach dem Vorspulen zurücksetzen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
@@ -3882,7 +3890,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Zeitrafferbenachrichtigungen"
+   "Benachrichtigungen beim Vorspulen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
@@ -10168,11 +10176,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUDIO_MUTED,
-   "Audio stummgeschaltet."
+   "Audio aus."
    )
 MSG_HASH(
    MSG_AUDIO_UNMUTED,
-   "Audio laut."
+   "Audio an."
    )
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_ERROR_SAVING,
@@ -10540,7 +10548,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_UNMUTE_AUDIO,
-   "Audio konnte nicht lautgeschaltet werden."
+   "Audio konnte nicht eingeschaltet werden."
    )
 MSG_HASH(
    MSG_FATAL_ERROR_RECEIVED_IN,
@@ -10876,7 +10884,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAST_FORWARD,
-   "Snel vooruit."
+   "Vorspulen."
    )
 MSG_HASH(
    MSG_SLOW_MOTION_REWIND,
