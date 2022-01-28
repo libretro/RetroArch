@@ -795,10 +795,6 @@ MSG_HASH(
    "Netplay (Eşli Oynama) Desteği"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
-   "Python (Gölgelendirici Komut Dosyası Desteği) Desteği"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
    "Video4Linux2 Desteği"
    )

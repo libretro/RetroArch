@@ -795,10 +795,6 @@ MSG_HASH(
    "Suporte a jogo em rede (ponto-a-ponto)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
-   "Suporte a Python (suporte de script em shaders)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
    "Suporte a Video4Linux2"
    )

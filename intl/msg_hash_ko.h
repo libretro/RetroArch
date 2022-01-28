@@ -803,10 +803,6 @@ MSG_HASH(
    "넷플레이 (P2P) 지원"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
-   "Python (셰이더에서 지원) 지원"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
    "Video4Linux2 지원"
    )

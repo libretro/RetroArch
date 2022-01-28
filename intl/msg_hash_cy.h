@@ -763,10 +763,6 @@ MSG_HASH(
    "Cymorth Netplay (Cymar wrth gymar)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
-   "Cefnogaeth Python (Cymorth Sgript Shaders)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
    "Cymorth Video4Linux2"
    )

@@ -32,7 +32,7 @@ cores also in their own programs or devices.
 %ifarch armv7hl
 ./configure --prefix=%{_prefix} --enable-opengles --enable-neon --enable-egl --enable-wayland
 %else
-./configure --prefix=%{_prefix} --enable-gles
+./configure --prefix=%{_prefix} --enable-opengles
 %endif
 make %{?_smp_mflags}
 

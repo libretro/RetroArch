@@ -795,10 +795,6 @@ MSG_HASH(
    "دعم الشبكة (بين النظراء)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
-   "دعم Python (دعم سكريبت shaders)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
    "دعم Video4Linux2"
    )

@@ -783,10 +783,6 @@ MSG_HASH(
    "Joc en xarxa (Peer-to-Peer) implementat"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
-   "Python (script de suport per a shaders) implementat"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
    "Video4Linux2 implementat"
    )

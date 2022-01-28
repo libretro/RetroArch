@@ -791,10 +791,6 @@ MSG_HASH(
    "Obsługa gry sieciowej (peer-to-peer)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
-   "Obsługa Pythona (obsługa skryptów w shaderach)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
    "Obsługa Video4Linux2"
    )
