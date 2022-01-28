@@ -44,7 +44,6 @@ void rcheevos_toggle_hardcore_paused(void);
 bool rcheevos_hardcore_active(void);
 
 void rcheevos_validate_config_settings(void);
-void rcheevos_validate_netplay(int player_number);
 
 void rcheevos_leaderboards_enabled_changed(void);
 

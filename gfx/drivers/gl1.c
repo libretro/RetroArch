@@ -718,6 +718,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    bool hard_sync                   = video_info->hard_sync;
    struct font_params *osd_params   = (struct font_params*)
       &video_info->osd_stat_params;
+   bool overlay_behind_menu         = video_info->overlay_behind_menu;
 
    /* FIXME: Force these settings off as they interfere with the rendering */
    video_info->xmb_shadows_enable   = false;
@@ -867,6 +868,11 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       }
    }
 
+#ifdef HAVE_OVERLAY
+   if (gl1->overlay_enable && overlay_behind_menu)
+      gl1_render_overlay(gl1, video_width, video_height);
+#endif
+
    if (gl1->menu_texture_enable){
       do_swap = true;
 #ifdef VITA
@@ -904,7 +910,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_OVERLAY
-   if (gl1->overlay_enable)
+   if (gl1->overlay_enable && !overlay_behind_menu)
       gl1_render_overlay(gl1, video_width, video_height);
 #endif
 
@@ -1298,6 +1304,7 @@ static void gl1_load_texture_data(
 
 #ifndef VITA
    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 #endif
 
    glTexImage2D(GL_TEXTURE_2D,
@@ -1429,6 +1436,7 @@ static uint32_t gl1_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_HARD_SYNC);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
+   BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
 
    return flags;
 }

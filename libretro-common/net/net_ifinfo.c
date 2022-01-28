@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2020 The RetroArch team
+/* Copyright  (C) 2010-2022 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (net_ifinfo.c).
@@ -27,6 +27,10 @@
 #include <retro_miscellaneous.h>
 
 #if defined(_WIN32) && !defined(_XBOX)
+#ifdef _MSC_VER
+#pragma comment(lib, "Iphlpapi")
+#endif
+
 #include <winsock2.h>
 #include <iphlpapi.h>
 #include <ws2tcpip.h>
@@ -255,4 +259,95 @@ error:
    net_ifinfo_free(list);
 
    return false;
+}
+
+bool net_ifinfo_best(const char *dst, void *src, bool ipv6)
+{
+   bool ret = false;
+
+/* TODO/FIXME: Implement for other platforms, if necessary. */
+#if defined(_WIN32) && !defined(_XBOX)
+   if (!ipv6)
+   {
+      /* Courtesy of MiniUPnP: https://github.com/miniupnp/miniupnp */
+      DWORD index;
+      unsigned long udst          = inet_addr(dst);
+#ifdef __WINRT__
+      struct sockaddr_in addr_dst = {0};
+#endif
+
+      if (udst == INADDR_NONE || udst == INADDR_ANY)
+         return ret;
+
+      if (!src)
+         return ret;
+
+#ifdef __WINRT__
+      addr_dst.sin_family      = AF_INET;
+      addr_dst.sin_addr.s_addr = udst;
+      if (GetBestInterfaceEx((struct sockaddr *) &addr_dst, &index)
+         == NO_ERROR)
+#else
+      if (GetBestInterface(udst, &index) == NO_ERROR)
+#endif
+      {
+         /* Microsoft docs recommend doing it this way. */
+         ULONG len                       = 15 * 1024;
+         PIP_ADAPTER_ADDRESSES addresses = calloc(1, len);
+
+         if (addresses)
+         {
+            ULONG flags  = GAA_FLAG_SKIP_ANYCAST |
+               GAA_FLAG_SKIP_MULTICAST |
+               GAA_FLAG_SKIP_DNS_SERVER |
+               GAA_FLAG_SKIP_FRIENDLY_NAME;
+            ULONG result = GetAdaptersAddresses(AF_INET, flags, NULL,
+               addresses, &len);
+
+            if (result == ERROR_BUFFER_OVERFLOW)
+            {
+               PIP_ADAPTER_ADDRESSES new_addresses = realloc(addresses, len);
+
+               if (new_addresses)
+               {
+                  memset(new_addresses, 0, len);
+
+                  addresses = new_addresses;
+                  result    = GetAdaptersAddresses(AF_INET, flags, NULL,
+                     addresses, &len);
+               }
+            }
+
+            if (result == NO_ERROR)
+            {
+               PIP_ADAPTER_ADDRESSES addr = addresses;
+
+               do
+               {
+                  if (addr->IfIndex == index)
+                  {
+                     if (addr->FirstUnicastAddress)
+                     {
+                        struct sockaddr_in *addr_unicast =
+                           (struct sockaddr_in *)
+                           addr->FirstUnicastAddress->Address.lpSockaddr;
+
+                        memcpy(src, &addr_unicast->sin_addr,
+                           sizeof(addr_unicast->sin_addr));
+
+                        ret = true;
+                     }
+
+                     break;
+                  }
+               } while ((addr = addr->Next));
+            }
+
+            free(addresses);
+         }
+      }
+   }
+#endif
+
+   return ret;
 }

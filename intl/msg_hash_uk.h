@@ -2815,6 +2815,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
    "Накладки використовуються для меж і екранного управління."
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
    "Приховувати накладку в меню"
@@ -2986,6 +2987,10 @@ MSG_HASH(
 
 /* Settings > User Interface */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
+   "Видимі Елементи Меню"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    "Зовнішній вигляд"
@@ -3692,6 +3697,38 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT,
    "%u Елементів"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,
+   "За Розробником"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,
+   "За Видавцем"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,
+   "За Роком Випуску"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
+   "За Кількістю Гравців"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
+   "За Жанром"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,
+   "За Походженням"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,
+   "За Франшизою"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,
+   "За Ім'ям Системи"
    )
 
 /* Playlist > Playlist Item */
@@ -4501,6 +4538,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NEAREST,
    "Найближчі"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT,
+   "Вміст"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR,
@@ -6712,14 +6753,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FRAMES,
    "Кадри"
-   )
-MSG_HASH(
-   MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Параметри Ядра]: Специфічні параметри ядра для гри"
-   )
-MSG_HASH(
-   MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Параметри Ядра]: Специфічні параметри ядра для папок"
    )
 MSG_HASH(
    MSG_INPUT_CHEAT,

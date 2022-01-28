@@ -200,7 +200,7 @@ typedef struct gl2_renderchain_data
 #define gl2_rb_storage       glRenderbufferStorageOES
 #define gl2_delete_rb        glDeleteRenderbuffersOES
 
-#elif (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+#elif (defined(__MACH__) && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
 #define gl2_fb_texture_2d(a, b, c, d, e) glFramebufferTexture2DEXT(a, b, c, d, e)
 #define gl2_check_fb_status(target) glCheckFramebufferStatusEXT(target)
 #define gl2_gen_fb(n, ids)   glGenFramebuffersEXT(n, ids)
@@ -1221,7 +1221,7 @@ static bool gl2_renderchain_init_hw_render(
 
          if (stencil)
          {
-#if defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES1) || ((defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__))))
+#if defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES1) || (defined(__MACH__) && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
             /* GLES2 is a bit weird, as always.
              * There's no GL_DEPTH_STENCIL_ATTACHMENT like in desktop GL. */
             gl2_fb_rb(RARCH_GL_FRAMEBUFFER,
@@ -2841,6 +2841,7 @@ static bool gl2_frame(void *data, const void *frame,
    bool runloop_is_slowmotion          = video_info->runloop_is_slowmotion;
    bool runloop_is_paused              = video_info->runloop_is_paused;
 #endif
+   bool overlay_behind_menu            = video_info->overlay_behind_menu;
 
    if (!gl)
       return false;
@@ -3046,6 +3047,12 @@ static bool gl2_frame(void *data, const void *frame,
 #ifdef HAVE_VIDEO_LAYOUT
    gl2_video_layout_render(gl);
 #endif
+
+#ifdef HAVE_OVERLAY
+   if (gl->overlay_enable && overlay_behind_menu)
+      gl2_render_overlay(gl);
+#endif
+
 #if defined(HAVE_MENU)
    if (gl->menu_texture_enable)
    {
@@ -3063,7 +3070,7 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_OVERLAY
-   if (gl->overlay_enable)
+   if (gl->overlay_enable && !overlay_behind_menu)
       gl2_render_overlay(gl);
 #endif
 
@@ -4000,6 +4007,14 @@ static bool gl2_alive(void *data)
    gl->ctx_driver->check_window(gl->ctx_data,
          &quit, &resize, &temp_width, &temp_height);
 
+#ifdef __WINRT__
+   if (is_running_on_xbox())
+   {
+      //we can set it to 1920x1080 as xbox uwp windowsize is guaranteed to be 1920x1080 and currently there is now way to set angle to use a variable resolution swapchain so regardless of the size the window is always 1080p
+      temp_width = 1920;
+      temp_height = 1080;
+   }
+#endif
    if (quit)
       gl->quitting = true;
    else if (resize)
@@ -4565,6 +4580,7 @@ static uint32_t gl2_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
+   BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
 
    return flags;
 }

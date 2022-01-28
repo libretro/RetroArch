@@ -406,10 +406,10 @@ void* task_push_http_transfer_file(const char* url, bool mute,
 }
 
 void* task_push_http_transfer_with_user_agent(const char *url, bool mute,
-   const char *type, const char* user_agent,
+   const char *type, const char *user_agent,
    retro_task_callback_t cb, void *user_data)
 {
-   struct http_connection_t* conn;
+   struct http_connection_t *conn;
 
    if (string_is_empty(url))
       return NULL;
@@ -420,6 +420,26 @@ void* task_push_http_transfer_with_user_agent(const char *url, bool mute,
 
    if (user_agent != NULL)
       net_http_connection_set_user_agent(conn, user_agent);
+
+   /* assert: task_push_http_transfer_generic will free conn on failure */
+   return task_push_http_transfer_generic(conn, url, mute, type, cb, user_data);
+}
+
+void* task_push_http_transfer_with_headers(const char *url, bool mute,
+   const char *type, const char *headers,
+   retro_task_callback_t cb, void *user_data)
+{
+   struct http_connection_t *conn;
+
+   if (string_is_empty(url))
+      return NULL;
+
+   conn = net_http_connection_new(url, "GET", NULL);
+   if (!conn)
+      return NULL;
+
+   if (headers != NULL)
+      net_http_connection_set_headers(conn, headers);
 
    /* assert: task_push_http_transfer_generic will free conn on failure */
    return task_push_http_transfer_generic(conn, url, mute, type, cb, user_data);
@@ -438,7 +458,7 @@ void* task_push_http_post_transfer(const char *url,
 
 void* task_push_http_post_transfer_with_user_agent(const char *url,
    const char *post_data, bool mute,
-   const char *type, const char* user_agent,
+   const char *type, const char *user_agent,
    retro_task_callback_t cb, void *user_data)
 {
    struct http_connection_t* conn;
@@ -452,6 +472,27 @@ void* task_push_http_post_transfer_with_user_agent(const char *url,
 
    if (user_agent != NULL)
       net_http_connection_set_user_agent(conn, user_agent);
+
+   /* assert: task_push_http_transfer_generic will free conn on failure */
+   return task_push_http_transfer_generic(conn, url, mute, type, cb, user_data);
+}
+
+void* task_push_http_post_transfer_with_headers(const char *url,
+   const char *post_data, bool mute,
+   const char *type, const char *headers,
+   retro_task_callback_t cb, void *user_data)
+{
+   struct http_connection_t* conn;
+
+   if (string_is_empty(url))
+      return NULL;
+
+   conn = net_http_connection_new(url, "POST", post_data);
+   if (!conn)
+      return NULL;
+
+   if (headers != NULL)
+      net_http_connection_set_headers(conn, headers);
 
    /* assert: task_push_http_transfer_generic will free conn on failure */
    return task_push_http_transfer_generic(conn, url, mute, type, cb, user_data);

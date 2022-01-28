@@ -2,6 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2017 - Gregor Richards
+ *  Copyright (C) 2021-2021 - Roberto V. Rampim
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -30,17 +31,28 @@
 
 #include <net/net_compat.h>
 #include <net/net_ifinfo.h>
+#include <net/net_natt.h>
 #include <retro_miscellaneous.h>
 
 #include "../../core.h"
 
-#define NETPLAY_HOST_STR_LEN 32
+#include "netplay_protocol.h"
+
+#define NETPLAY_NICK_LEN         32
+#define NETPLAY_HOST_STR_LEN     32
 #define NETPLAY_HOST_LONGSTR_LEN 256
+
+#define NETPLAY_CHAT_MAX_MESSAGES   5
+#define NETPLAY_CHAT_MAX_SIZE       96
+#define NETPLAY_CHAT_FRAME_TIME     900
+#define NETPLAY_CHAT_NICKNAME_COLOR 0x00800000
+#define NETPLAY_CHAT_MESSAGE_COLOR  0xFFFFFF00
 
 enum rarch_netplay_ctl_state
 {
    RARCH_NETPLAY_CTL_NONE = 0,
    RARCH_NETPLAY_CTL_GAME_WATCH,
+   RARCH_NETPLAY_CTL_PLAYER_CHAT,
    RARCH_NETPLAY_CTL_POST_FRAME,
    RARCH_NETPLAY_CTL_PRE_FRAME,
    RARCH_NETPLAY_CTL_ENABLE_SERVER,
@@ -50,7 +62,10 @@ enum rarch_netplay_ctl_state
    RARCH_NETPLAY_CTL_IS_REPLAYING,
    RARCH_NETPLAY_CTL_IS_SERVER,
    RARCH_NETPLAY_CTL_IS_CONNECTED,
+   RARCH_NETPLAY_CTL_IS_PLAYING,
+   RARCH_NETPLAY_CTL_IS_SPECTATING,
    RARCH_NETPLAY_CTL_IS_DATA_INITED,
+   RARCH_NETPLAY_CTL_ALLOW_PAUSE,
    RARCH_NETPLAY_CTL_PAUSE,
    RARCH_NETPLAY_CTL_UNPAUSE,
    RARCH_NETPLAY_CTL_LOAD_SAVESTATE,
@@ -103,17 +118,16 @@ typedef struct netplay netplay_t;
 struct ad_packet
 {
    uint32_t header;
-   uint32_t protocol_version;
-   uint32_t port;
-   char address[NETPLAY_HOST_STR_LEN];
-   char retroarch_version[NETPLAY_HOST_STR_LEN];
-   char nick[NETPLAY_HOST_STR_LEN];
-   char frontend[NETPLAY_HOST_STR_LEN];
-   char core[NETPLAY_HOST_STR_LEN];
-   char core_version[NETPLAY_HOST_STR_LEN];
-   char content[NETPLAY_HOST_LONGSTR_LEN];
-   char content_crc[NETPLAY_HOST_STR_LEN];
-   char subsystem_name[NETPLAY_HOST_STR_LEN];
+   int      content_crc;
+   int      port;
+   uint32_t has_password;
+   char     nick[NETPLAY_NICK_LEN];
+   char     frontend[NETPLAY_HOST_STR_LEN];
+   char     core[NETPLAY_HOST_STR_LEN];
+   char     core_version[NETPLAY_HOST_STR_LEN];
+   char     retroarch_version[NETPLAY_HOST_STR_LEN];
+   char     content[NETPLAY_HOST_LONGSTR_LEN];
+   char     subsystem_name[NETPLAY_HOST_LONGSTR_LEN];
 };
 
 typedef struct mitm_server
@@ -125,14 +139,15 @@ typedef struct mitm_server
 static const mitm_server_t netplay_mitm_server_list[] = {
    { "nyc", "New York City, USA" },
    { "madrid", "Madrid, Spain" },
-   { "montreal", "Montreal, Canada" },
    { "saopaulo", "Sao Paulo, Brazil" },
+   { "singapore", "Singapore" },
+   { "custom", "Custom" },
 };
 
 struct netplay_room
 {
    struct netplay_room *next;
-   int id;
+   int  id;
    int  port;
    int  mitm_port;
    int  gamecrc;
@@ -147,11 +162,14 @@ struct netplay_room
    char coreversion       [256];
    char gamename          [256];
    char address           [256];
+   char mitm_handle       [33];
    char mitm_address      [256];
+   char mitm_session      [33];
    bool has_password;
    bool has_spectate_password;
+   bool connectable;
+   bool is_retroarch;
    bool lan;
-   bool fixed;
 };
 
 struct netplay_rooms
@@ -162,18 +180,18 @@ struct netplay_rooms
 
 struct netplay_host
 {
-   struct sockaddr addr;
-   socklen_t addrlen;
    int  content_crc;
    int  port;
    char address[NETPLAY_HOST_STR_LEN];
-   char nick[NETPLAY_HOST_STR_LEN];
+   char nick[NETPLAY_NICK_LEN];
    char frontend[NETPLAY_HOST_STR_LEN];
    char core[NETPLAY_HOST_STR_LEN];
    char core_version[NETPLAY_HOST_STR_LEN];
    char retroarch_version[NETPLAY_HOST_STR_LEN];
    char content[NETPLAY_HOST_LONGSTR_LEN];
    char subsystem_name[NETPLAY_HOST_LONGSTR_LEN];
+   bool has_password;
+   bool has_spectate_password;
 };
 
 struct netplay_host_list
@@ -182,32 +200,65 @@ struct netplay_host_list
    size_t size;
 };
 
+struct netplay_chat
+{
+   struct
+   {
+      uint32_t frames;
+      char nick[NETPLAY_NICK_LEN];
+      char msg[NETPLAY_CHAT_MAX_SIZE];
+   } messages[NETPLAY_CHAT_MAX_MESSAGES];
+   uint32_t message_slots;
+};
+
+struct netplay_chat_buffer
+{
+   struct
+   {
+      uint8_t alpha;
+      char nick[NETPLAY_NICK_LEN];
+      char msg[NETPLAY_CHAT_MAX_SIZE];
+   } messages[NETPLAY_CHAT_MAX_MESSAGES];
+};
+
 typedef struct
 {
-   netplay_t *data; /* Used while Netplay is running */
-   struct netplay_room host_room; /* ptr alignment */
-   netplay_t *handshake_password;
-   struct netplay_room *room_list;
-   struct netplay_rooms *rooms_data;
+   /* NAT traversal info (if NAT traversal is used and serving) */
+   struct nat_traversal_data nat_traversal_request;
+#ifdef HAVE_NETPLAYDISCOVERY
+   /* Packet buffer for advertisement and responses */
+   struct ad_packet ad_packet_buffer;
    /* List of discovered hosts */
    struct netplay_host_list discovered_hosts;
+#endif
+   struct netplay_chat_buffer chat_buffer;
+   struct netplay_room host_room;
+   struct netplay_room *room_list;
+   struct netplay_rooms *rooms_data;
+   /* Used while Netplay is running */
+   netplay_t *data;
+   /* Chat messages */
+   struct netplay_chat *chat;
 #ifdef HAVE_NETPLAYDISCOVERY
    size_t discovered_hosts_allocated;
+   /* LAN discovery sockets */
+   int lan_ad_server_fd;
+   int lan_ad_client_fd;
 #endif
    int room_count;
    int reannounce;
+   int reping;
+   int latest_ping;
    unsigned server_port_deferred;
-   /* Packet buffer for advertisement and responses */
-   struct ad_packet ad_packet_buffer; /* uint32_t alignment */
    uint16_t mapping[RETROK_LAST];
-   char server_address_deferred[512];
+   char server_address_deferred[256];
+   char server_session_deferred[32];
+   bool netplay_client_deferred;
    /* Only used before init_netplay */
    bool netplay_enabled;
    bool netplay_is_client;
    /* Used to avoid recursive netplay calls */
    bool in_netplay;
-   bool netplay_client_deferred;
-   bool is_mitm;
    bool has_set_netplay_mode;
    bool has_set_netplay_ip_address;
    bool has_set_netplay_ip_port;
@@ -242,6 +293,13 @@ void netplay_frontend_paused(netplay_t *netplay, bool paused);
  * Toggle between play mode and spectate mode
  */
 void netplay_toggle_play_spectate(netplay_t *netplay);
+
+/**
+ * netplay_input_chat
+ *
+ * Opens an input menu for sending netplay chat
+ */
+void netplay_input_chat(netplay_t *netplay);
 
 /**
  * netplay_load_savestate
@@ -319,9 +377,9 @@ void deinit_netplay(void);
 
 /**
  * init_netplay
- * @direct_host          : Host to connect to directly, if applicable (client only)
  * @server               : server address to connect to (client only)
  * @port                 : TCP port to host on/connect to
+ * @mitm_session         : Session id for MITM/tunnel (client only).
  *
  * Initializes netplay.
  *
@@ -329,9 +387,9 @@ void deinit_netplay(void);
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool init_netplay(void *direct_host, const char *server, unsigned port);
+bool init_netplay(const char *server, unsigned port, const char *mitm_session);
 
-bool init_netplay_deferred(const char* server, unsigned port);
+bool init_netplay_deferred(const char *server, unsigned port, const char *mitm_session);
 
 void video_frame_net(const void *data, unsigned width,
       unsigned height, size_t pitch);
@@ -351,5 +409,9 @@ void deinit_netplay_discovery(void);
 bool netplay_discovery_driver_ctl(
       enum rarch_netplay_discovery_ctl_state state, void *data);
 #endif
+
+bool netplay_decode_hostname(const char *hostname,
+      char *address, unsigned *port, char *session, size_t len);
+bool netplay_is_lan_address(struct sockaddr_in *addr);
 
 #endif

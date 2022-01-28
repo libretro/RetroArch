@@ -211,7 +211,7 @@ static int16_t input_wl_state(
                   if(BIT_GET(wl->key_state, rarch_keysym_lut[binds[port][id].key]))
                      return 1;
                }
-            
+
                /* TODO: support default mouse-to-retropad bindings */
                /* else if (wl_mouse_button_pressed(udev, port, binds[port][i].mbutton))
                   return 1;
@@ -254,15 +254,26 @@ static int16_t input_wl_state(
          }
          break;
       case RETRO_DEVICE_KEYBOARD:
-         return id < RETROK_LAST && 
+         return id < RETROK_LAST &&
             BIT_GET(wl->key_state, rarch_keysym_lut[(enum retro_key)id]);
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
          {
+            bool state  = false;
             bool screen = device == RARCH_DEVICE_MOUSE_SCREEN;
-            if (port > 0) return 0; /* TODO: support mouse on additional ports */
+            if (port > 0)
+               return 0; /* TODO: support mouse on additional ports */
+
             switch (id)
             {
+               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+                  state        = wl->mouse.wu;
+                  wl->mouse.wu = false;
+                  return state;
+               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+                  state        = wl->mouse.wd;
+                  wl->mouse.wd = false;
+                  return state;
                case RETRO_DEVICE_ID_MOUSE_X:
                   return screen ? wl->mouse.x : wl->mouse.delta_x;
                case RETRO_DEVICE_ID_MOUSE_Y:
@@ -282,7 +293,7 @@ static int16_t input_wl_state(
          if (idx == 0)
          {
             struct video_viewport vp;
-            bool screen                 = 
+            bool screen                 =
                (device == RARCH_DEVICE_POINTER_SCREEN);
             bool inside                 = false;
             int16_t res_x               = 0;
@@ -338,7 +349,7 @@ static int16_t input_wl_state(
       case RETRO_DEVICE_LIGHTGUN:
          if (port > 0 ) return 0; /* TODO: support lightguns on additional ports */
          switch (id)
-         { 
+         {
             case RETRO_DEVICE_ID_LIGHTGUN_X: /* TODO: migrate to RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X */
                return wl->mouse.delta_x; /* deprecated relative coordinates */
             case RETRO_DEVICE_ID_LIGHTGUN_Y: /* TODO: migrate to RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y */
@@ -398,6 +409,14 @@ static uint64_t input_wl_get_capabilities(void *data)
       (1 << RETRO_DEVICE_LIGHTGUN);
 }
 
+static void input_wl_grab_mouse(void *data, bool state)
+{
+   /* This function does nothing but registering it is necessary for allowing
+    * mouse-grab toggling. */
+   (void)data;
+   (void)state;
+}
+
 input_driver_t input_wayland = {
    NULL,
    input_wl_poll,
@@ -407,6 +426,6 @@ input_driver_t input_wayland = {
    NULL,
    input_wl_get_capabilities,
    "wayland",
-   NULL,                         /* grab_mouse */
+   input_wl_grab_mouse,          /* grab_mouse */
    NULL
 };

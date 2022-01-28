@@ -79,6 +79,10 @@ static void INLINE gfx_widgets_font_free(gfx_widget_font_data_t *font_data)
 
 /* Widgets list */
 const static gfx_widget_t* const widgets[] = {
+#ifdef HAVE_NETWORKING
+   &gfx_widget_netplay_chat,
+   &gfx_widget_netplay_ping,
+#endif
 #ifdef HAVE_SCREENSHOTS
    &gfx_widget_screenshot,
 #endif
@@ -1469,12 +1473,13 @@ void gfx_widgets_frame(void *data)
    bool widgets_is_rewinding        = video_info->widgets_is_rewinding;
    bool runloop_is_slowmotion       = video_info->runloop_is_slowmotion;
    bool menu_screensaver_active     = video_info->menu_screensaver_active;
+   bool notifications_hidden        = video_info->notifications_hidden;
    int top_right_x_advance          = video_width;
 
    p_dispwidget->gfx_widgets_frame_count++;
 
-   /* If menu screensaver is active, draw nothing */
-   if (menu_screensaver_active)
+   /* If menu screensaver is active or notifications are hidden, draw nothing */
+   if (menu_screensaver_active || notifications_hidden)
       return;
 
    video_driver_set_viewport(video_width, video_height, true, false);

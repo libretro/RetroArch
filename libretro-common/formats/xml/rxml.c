@@ -197,6 +197,7 @@ rxml_document_t *rxml_load_document_string(const char *str)
             node->name                     = strdup(x.elem);
 
             attr                           = NULL;
+            valptr                         = buf->val;
 
             ++level;
             break;

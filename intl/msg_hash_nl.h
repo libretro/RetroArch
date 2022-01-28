@@ -1247,8 +1247,16 @@ MSG_HASH(
    "GPU Screenshots Activeren"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "Indien beschikbaar nemen screenshots GPU-geschaduwd materiaal op."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Bilineaire Filtering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   "Voeg een lichte vervaging toe aan de afbeelding om harde pixelranden te verzachten. Deze optie heeft weinig invloed op de prestaties."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1284,6 +1292,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
    "Naaste buur"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   "Semi-Lineaire"
+   )
 #endif
 #endif
 MSG_HASH(
@@ -1291,12 +1303,24 @@ MSG_HASH(
    "Auto-Shader Vertraging"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
+   "Vertraag automatisch ladende shaders (in ms). Kan grafische storingen omzeilen bij gebruik van 'schermgrijping'-software."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    "Videofilters"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER,
+   "Pas een CPU-aangedreven videofilter toe. Dit kan hoge prestatiekosten met zich meebrengen. Sommige videofilters werken mogelijk alleen voor cores die 32-bits of 16-bits kleuren gebruiken."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
    "Video Filter Verwijderen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   "Laad elk actief CPU-aangedreven videofilter af."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
@@ -1332,6 +1356,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
    "Doorloop deze opties om de veranda-instellingen aan te passen om de afbeeldingsgrootte te wijzigen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   "Hoge-resolutie menu gebruiken"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
@@ -2739,6 +2767,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
    "Overlays worden gebruikt voor randen en scherm-besturingsemlementen."
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
    "Verberg Overlay In Menu"
@@ -3565,6 +3594,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NEAREST,
    "Naaste"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT,
+   "Inhoud"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,

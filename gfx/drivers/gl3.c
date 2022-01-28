@@ -54,6 +54,7 @@
 #include "../gfx_widgets.h"
 #endif
 
+
 static const struct video_ortho gl3_default_ortho = {0, 1, 0, 1, -1, 1};
 
 void gl3_build_default_matrix(float *data)
@@ -1565,6 +1566,15 @@ static bool gl3_alive(void *data)
    gl->ctx_driver->check_window(gl->ctx_data,
          &quit, &resize, &temp_width, &temp_height);
 
+#ifdef __WINRT__
+   if (is_running_on_xbox())
+   {
+      //we can set it to 1920x1080 as xbox uwp windowsize is guaranteed to be 1920x1080 and currently there is now way to set angle to use a variable resolution swapchain so regardless of the size the window is always 1080p
+      temp_width = 1920;
+      temp_height = 1080;
+   }
+#endif
+
    if (quit)
       gl->quitting = true;
    else if (resize)
@@ -1866,6 +1876,7 @@ static bool gl3_frame(void *data, const void *frame,
    bool widgets_active                         = video_info->widgets_active;
 #endif
    bool hard_sync                              = video_info->hard_sync;
+   bool overlay_behind_menu                    = video_info->overlay_behind_menu;
 
    if (!gl)
       return false;
@@ -1939,6 +1950,11 @@ static bool gl3_frame(void *data, const void *frame,
                                             gl->hw_render_bottom_left ? gl->mvp.data : gl->mvp_yflip.data);
    gl3_filter_chain_end_frame(gl->filter_chain);
 
+#ifdef HAVE_OVERLAY
+   if (gl->overlay_enable && overlay_behind_menu)
+      gl3_render_overlay(gl, width, height);
+#endif
+
 #if defined(HAVE_MENU)
    if (gl->menu_texture_enable)
    {
@@ -1955,7 +1971,7 @@ static bool gl3_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_OVERLAY
-   if (gl->overlay_enable)
+   if (gl->overlay_enable && !overlay_behind_menu)
       gl3_render_overlay(gl, width, height);
 #endif
 
@@ -2035,6 +2051,7 @@ static uint32_t gl3_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
+   BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
 
    return flags;
 }

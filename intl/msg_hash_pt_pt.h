@@ -1661,12 +1661,20 @@ MSG_HASH(
    "Ativar HDR"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "Ativar o HDR se o display suportar."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
    "Contraste"
    )
 
 /* Settings > Video > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   "Sincronização vertical (Vsync)"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Atraso do fotograma de vídeo"
@@ -1701,6 +1709,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
    "Enable menu audio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
+   "Sons do Menu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
@@ -1941,6 +1953,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
    "Captura de ecrã"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Chat do Netplay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Envia uma mensagem de chat para a sessão atual de netplay."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE,
@@ -2279,6 +2299,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
    "Ativar apresentação de overlay"
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
    "Esconder overlay quando o menu estiver ativo"
@@ -3371,6 +3392,10 @@ MSG_HASH(
    "O mais próximo"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT,
+   "Conteúdo"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR,
    "<Conteúdo da pasta>"
    )
@@ -4280,6 +4305,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
    "Introduza a palavra-passe do servidor:"
+   )
+MSG_HASH(
+   MSG_NETPLAY_ENTER_CHAT,
+   "Insira a mensagem:"
    )
 MSG_HASH(
    MSG_NETPLAY_INCORRECT_PASSWORD,

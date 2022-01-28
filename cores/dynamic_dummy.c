@@ -34,13 +34,13 @@ static uint16_t *dummy_frame_buf;
 static uint16_t frame_buf_width;
 static uint16_t frame_buf_height;
 
-#if defined(HAVE_LIBNX) && defined(HAVE_STATIC_DUMMY)
+#if defined(HAVE_STATIC_DUMMY)
 void retro_init(void) { libretro_dummy_retro_init(); }
 void retro_deinit(void) { libretro_dummy_retro_deinit(); }
 unsigned retro_api_version(void) { return libretro_dummy_retro_api_version(); }
 void retro_set_controller_port_device(unsigned port, unsigned device) { libretro_dummy_retro_set_controller_port_device(port, device); }
 void retro_get_system_info(struct retro_system_info *info) { libretro_dummy_retro_get_system_info(info); }
-void retro_get_system_av_info(struct retro_system_av_info *info) { retro_get_system_av_info(info); }
+void retro_get_system_av_info(struct retro_system_av_info *info) { libretro_dummy_retro_get_system_av_info(info); }
 void retro_set_environment(retro_environment_t cb) { libretro_dummy_retro_set_environment(cb); }
 void retro_set_audio_sample(retro_audio_sample_t cb) { libretro_dummy_retro_set_audio_sample(cb); }
 void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { libretro_dummy_retro_set_audio_sample_batch(cb); }

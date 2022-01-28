@@ -322,10 +322,6 @@ static void psp_joypad_poll(void)
          }
       }
 #endif
-#ifdef HAVE_KERNEL_PRX
-      state_tmp.Buttons = (state_tmp.Buttons & 0x0000FFFF)
-         | (read_system_buttons() & 0xFFFF0000);
-#endif
 
       pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_LEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
       pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_DOWN) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
@@ -352,12 +348,6 @@ static void psp_joypad_poll(void)
       analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = (int16_t)(STATE_ANALOGRX(state_tmp)-128) * 256;
       analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = (int16_t)(STATE_ANALOGRY(state_tmp)-128) * 256;
 #endif
-
-#ifdef HAVE_KERNEL_PRX
-      if (STATE_BUTTON(state_tmp) & PSP_CTRL_NOTE)
-         BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
-#endif
-
       for (j = 0; j < 2; j++)
          for (k = 0; k < 2; k++)
             if (analog_state[i][j][k] == -0x8000)

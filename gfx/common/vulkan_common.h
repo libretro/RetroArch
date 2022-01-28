@@ -31,6 +31,8 @@
 
 #define VULKAN_DIRTY_DYNAMIC_BIT                0x0001
 
+#define VULKAN_HDR_SWAPCHAIN
+
 #include "vksym.h"
 
 #include <boolean.h>
@@ -90,6 +92,28 @@ enum vulkan_wsi_type
    VULKAN_WSI_MVK_IOS,
 };
 
+#ifdef VULKAN_HDR_SWAPCHAIN
+
+#ifndef ALIGN
+#ifdef _MSC_VER
+#define ALIGN(x) __declspec(align(x))
+#else
+#define ALIGN(x) __attribute__((aligned(x)))
+#endif
+#endif
+
+typedef struct ALIGN(16)
+{
+   math_matrix_4x4   mvp;
+   float             contrast;         /* 2.0f    */
+   float             paper_white_nits; /* 200.0f  */
+   float             max_nits;         /* 1000.0f */
+   float             expand_gamut;     /* 1.0f    */
+   float             inverse_tonemap;  /* 1.0f    */
+   float             hdr10;            /* 1.0f    */
+} vulkan_hdr_uniform_t;
+#endif /* VULKAN_HDR_SWAPCHAIN */
+
 typedef struct vulkan_context
 {
    slock_t *queue_lock;
@@ -106,6 +130,9 @@ typedef struct vulkan_context
    VkImage swapchain_images[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkFence swapchain_fences[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkFormat swapchain_format;
+#ifdef VULKAN_HDR_SWAPCHAIN
+   VkColorSpaceKHR swapchain_colour_space;
+#endif /* VULKAN_HDR_SWAPCHAIN */  
 
    VkSemaphore swapchain_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkSemaphore swapchain_acquire_semaphore;
@@ -131,6 +158,11 @@ typedef struct vulkan_context
    bool swapchain_is_srgb;
    bool swap_interval_emulation_lock;
    bool has_acquired_swapchain;
+   
+#ifdef VULKAN_HDR_SWAPCHAIN
+   bool hdr_enable;
+#endif /* VULKAN_HDR_SWAPCHAIN */
+
 } vulkan_context_t;
 
 struct vulkan_emulated_mailbox
@@ -197,6 +229,7 @@ struct vk_image
    VkImage image;                /* ptr alignment */
    VkImageView view;             /* ptr alignment */
    VkFramebuffer framebuffer;    /* ptr alignment */
+   VkDeviceMemory memory;        /* ptr alignment */
 };
 
 struct vk_texture
@@ -311,6 +344,9 @@ typedef struct vk
    const gfx_ctx_driver_t *ctx_driver;
    struct vk_per_frame *chain;
    struct vk_image *backbuffer;
+#ifdef VULKAN_HDR_SWAPCHAIN
+   struct vk_image main_buffer;
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
    unsigned video_width;
    unsigned video_height;
@@ -359,6 +395,9 @@ typedef struct vk
    {
       VkPipeline alpha_blend;
       VkPipeline font;
+#ifdef VULKAN_HDR_SWAPCHAIN
+      VkPipeline hdr;
+#endif /* VULKAN_HDR_SWAPCHAIN */
       VkDescriptorSetLayout set_layout;
       VkPipelineLayout layout;
       VkPipelineCache cache;
@@ -366,10 +405,22 @@ typedef struct vk
 
    struct
    {
-      VkPipeline pipelines[7 * 2];
+      VkPipeline pipelines[8 * 2];
       struct vk_texture blank_texture;
       bool blend;
    } display;
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+   struct
+   {
+      struct vk_buffer  ubo;
+      float             max_output_nits;
+      float             min_output_nits;
+      float             max_cll;
+      float             max_fall;
+      bool              support;
+   } hdr;
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
    struct
    {

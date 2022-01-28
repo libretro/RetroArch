@@ -92,6 +92,10 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    "A fizikai adathordozó tartalmának mentése képfájlként a belső tárhelyre."
    )
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "Lemez kiadása"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
@@ -1767,6 +1771,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
    "Átfedés megjelenítése"
    )
+
 #if defined(ANDROID)
 #endif
 
@@ -2101,6 +2106,10 @@ MSG_HASH(
 
 /* Quick Menu > Disc Control */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "Lemez kiadása"
+   )
 
 /* Quick Menu > Shaders */
 
@@ -2177,6 +2186,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OFF,
    "KI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT,
+   "Tartalom"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL,

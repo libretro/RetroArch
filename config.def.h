@@ -173,6 +173,8 @@
 
 #define DEFAULT_USER_LANGUAGE 0
 
+#define DEFAULT_GAMEMODE_ENABLE true
+
 #if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID) && !defined(HAVE_LAKKA)) || (defined(__MACH__) && !defined(IOS)) || defined(EMSCRIPTEN)
 #define DEFAULT_MOUSE_ENABLE true
 #else
@@ -495,6 +497,8 @@
 /* Initialise file browser with the last used start directory */
 #define DEFAULT_USE_LAST_START_DIRECTORY false
 
+#define DEFAULT_OVERLAY_BEHIND_MENU false
+
 #define DEFAULT_OVERLAY_HIDE_IN_MENU true
 
 /* Automatically disable overlays when a
@@ -729,6 +733,7 @@ static const bool content_show_playlists    = true;
 
 #ifdef HAVE_XMB
 #define DEFAULT_XMB_ANIMATION 0
+#define DEFAULT_XMB_VERTICAL_FADE_FACTOR 100
 
 static const unsigned xmb_alpha_factor      = 75;
 static const unsigned menu_font_color_red   = 255;
@@ -757,7 +762,7 @@ static const float menu_footer_opacity = 1.000;
 
 static const float menu_header_opacity = 1.000;
 
-#if defined(HAVE_OPENGLES2) || (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+#if defined(HAVE_OPENGLES2) || (defined(__MACH__)  && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
 #define DEFAULT_MENU_SHADER_PIPELINE 1
 #else
 #define DEFAULT_MENU_SHADER_PIPELINE 2
@@ -1027,6 +1032,10 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_NOTIFICATION_SHOW_NETPLAY_EXTRA false
 #endif
 
+#ifdef HAVE_MENU
+#define DEFAULT_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE false
+#endif
+
 /* Output samplerate. */
 #ifdef GEKKO
 #define DEFAULT_OUTPUT_RATE 32000
@@ -1104,6 +1113,9 @@ static const bool audio_enable_menu_bgm    = false;
 /* Enables displaying various timing statistics. */
 #define DEFAULT_STATISTICS_SHOW false
 
+/* Enables displaying the current netplay room ping. */
+#define DEFAULT_NETPLAY_PING_SHOW false
+
 /* Enables use of rewind. This will incur some memory footprint
  * depending on the save state buffer. */
 #define DEFAULT_REWIND_ENABLE false
@@ -1132,7 +1144,7 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_REWIND_GRANULARITY 1
 #endif
 /* Pause gameplay when gameplay loses focus. */
-#if defined(EMSCRIPTEN) || defined(WEBOS)
+#if defined(EMSCRIPTEN)
 #define DEFAULT_PAUSE_NONACTIVE false
 #else
 #define DEFAULT_PAUSE_NONACTIVE true
@@ -1148,13 +1160,19 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_AUTOSAVE_INTERVAL 0
 #endif
 
+/* Show only connectable rooms */
+#define DEFAULT_NETPLAY_SHOW_ONLY_CONNECTABLE true
+
 /* Publicly announce netplay */
 #define DEFAULT_NETPLAY_PUBLIC_ANNOUNCE true
 
 /* Start netplay in spectator mode */
 static const bool netplay_start_as_spectator = false;
 
-/* Allow players (other than the host) to pause */
+/* Netplay chat fading toggle */
+static const bool netplay_fade_chat = true;
+
+/* Allow players to pause */
 static const bool netplay_allow_pausing = false;
 
 /* Allow connections in slave mode */
@@ -1182,9 +1200,10 @@ static const bool netplay_use_mitm_server = false;
 
 #ifdef HAVE_NETWORKING
 static const unsigned netplay_max_connections = 3;
-static const unsigned netplay_share_digital = RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE;
+static const unsigned netplay_max_ping        = 0;
 
-static const unsigned netplay_share_analog = RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE;
+static const unsigned netplay_share_digital = RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE;
+static const unsigned netplay_share_analog  = RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE;
 #endif
 
 /* On save state load, block SRAM from being overwritten.
@@ -1233,6 +1252,10 @@ static const bool savestate_thumbnail_enable = false;
 
 /* Maximum fast forward ratio. */
 #define DEFAULT_FASTFORWARD_RATIO 0.0
+#define MAXIMUM_FASTFORWARD_RATIO 50.0
+
+/* Skip frames when fast forwarding. */
+#define DEFAULT_FASTFORWARD_FRAMESKIP true
 
 /* Enable runloop for variable refresh rate screens. Force x1 speed while handling fast forward too. */
 #define DEFAULT_VRR_RUNLOOP_ENABLE false
@@ -1314,6 +1337,8 @@ static const int default_content_favorites_size = 200;
 #else
 #define DEFAULT_PLAYLIST_SHOW_SUBLABELS true
 #endif
+
+#define DEFAULT_PLAYLIST_SHOW_HISTORY_ICONS PLAYLIST_SHOW_HISTORY_ICONS_DEFAULT
 
 /* Show the indices of playlist entries in
  * a menu-driver-specific fashion */

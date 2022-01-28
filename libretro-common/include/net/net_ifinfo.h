@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2020 The RetroArch team
+/* Copyright  (C) 2010-2022 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (net_ifinfo.h).
@@ -49,6 +49,8 @@ typedef struct net_ifinfo net_ifinfo_t;
 void net_ifinfo_free(net_ifinfo_t *list);
 
 bool net_ifinfo_new(net_ifinfo_t *list);
+
+bool net_ifinfo_best(const char *dst, void *src, bool ipv6);
 
 RETRO_END_DECLS
 

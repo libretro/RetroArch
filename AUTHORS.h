@@ -350,6 +350,7 @@ reztek
 Richard Howell (rmaz)
 rlnilsen
 Rob Loach (RobLoach)
+Roberto V. Rampim (Cthulhu)
 Robin de Rooij (rrooij)
 Romain Gay (vikbez)
 Romain Graillot (notnotme)

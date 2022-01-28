@@ -2907,6 +2907,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VkPresentModeKHR swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
    settings_t                    *settings = config_get_ptr();
    VkCompositeAlphaFlagBitsKHR composite   = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+   bool vsync                              = settings->bools.video_vsync;
 
    vkDeviceWaitIdle(vk->context.device);
    vulkan_acquire_clear_fences(vk);
@@ -2919,7 +2920,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
        !surface_properties.currentExtent.height)
       return false;
 
-   if (swap_interval == 0 && vk->emulate_mailbox)
+   if (swap_interval == 0 && vk->emulate_mailbox && vsync)
    {
       swap_interval          = 1;
       vk->emulating_mailbox  = true;
@@ -3054,15 +3055,38 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       {
          RARCH_ERR("[Vulkan]: Surface has no formats.\n");
          return false;
-      }
+      }  
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+      vk->context.hdr_enable          = settings->bools.video_hdr_enable;
+
+      video_driver_unset_hdr_support();
 
       for (i = 0; i < format_count; i++)
       {
-         if (
-               formats[i].format == VK_FORMAT_R8G8B8A8_UNORM ||
-               formats[i].format == VK_FORMAT_B8G8R8A8_UNORM ||
-               formats[i].format == VK_FORMAT_A8B8G8R8_UNORM_PACK32)
+         if (formats[i].format == VK_FORMAT_A2B10G10R10_UNORM_PACK32 && formats[i].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT)
+         {
             format = formats[i];
+            video_driver_set_hdr_support();
+         }
+      }
+
+      if (!vk->context.hdr_enable || format.format == VK_FORMAT_UNDEFINED)
+      {
+         vk->context.hdr_enable = false;
+      }
+
+      if (!vk->context.hdr_enable)
+#endif /* VULKAN_HDR_SWAPCHAIN */
+      {
+         for (i = 0; i < format_count; i++)
+         {
+            if (
+                  formats[i].format == VK_FORMAT_R8G8B8A8_UNORM ||
+                  formats[i].format == VK_FORMAT_B8G8R8A8_UNORM ||
+                  formats[i].format == VK_FORMAT_A8B8G8R8_UNORM_PACK32)
+               format = formats[i];
+         }
       }
 
       if (format.format == VK_FORMAT_UNDEFINED)
@@ -3186,6 +3210,9 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    vk->context.swapchain_width  = swapchain_size.width;
    vk->context.swapchain_height = swapchain_size.height;
+#ifdef VULKAN_HDR_SWAPCHAIN
+   vk->context.swapchain_colour_space = format.colorSpace;
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
    /* Make sure we create a backbuffer format that is as we expect. */
    switch (format.format)

@@ -471,6 +471,7 @@ typedef struct video_frame_info
    char stat_text[512];
 
    bool widgets_active;
+   bool notifications_hidden;
    bool menu_mouse_enable;
    bool widgets_is_paused;
    bool widgets_is_fast_forwarding;
@@ -501,6 +502,7 @@ typedef struct video_frame_info
    bool msg_bgcolor_enable;
    bool crt_switch_hires_menu;
    bool hdr_enable;
+   bool overlay_behind_menu;
 } video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*);

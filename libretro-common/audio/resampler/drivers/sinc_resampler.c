@@ -92,6 +92,80 @@ void process_sinc_neon_asm(float *out, const float *left,
       const float *right, const float *coeff, unsigned taps);
 #else
 #include <arm_neon.h>
+
+/* Assumes that taps >= 8, and that taps is a multiple of 8.
+ * Not bothering to reimplement this one for the external .S
+ */
+static void resampler_sinc_process_neon_kaiser(void *re_, struct resampler_data *data)
+{
+   rarch_sinc_resampler_t *resamp = (rarch_sinc_resampler_t*)re_;
+   unsigned phases                = 1 << (resamp->phase_bits + resamp->subphase_bits);
+   uint32_t ratio                 = phases / data->ratio;
+   const float *input             = data->data_in;
+   float *output                  = data->data_out;
+   size_t frames                  = data->input_frames;
+   size_t out_frames              = 0;
+   while (frames)
+   {
+      while (frames && resamp->time >= phases)
+      {
+         /* Push in reverse to make filter more obvious. */
+         if (!resamp->ptr)
+            resamp->ptr = resamp->taps;
+         resamp->ptr--;
+
+         resamp->buffer_l[resamp->ptr + resamp->taps] =
+            resamp->buffer_l[resamp->ptr]                = *input++;
+
+         resamp->buffer_r[resamp->ptr + resamp->taps] =
+            resamp->buffer_r[resamp->ptr]                = *input++;
+
+         resamp->time                                -= phases;
+         frames--;
+      }
+
+      {
+         const float *buffer_l    = resamp->buffer_l + resamp->ptr;
+         const float *buffer_r    = resamp->buffer_r + resamp->ptr;
+         unsigned taps            = resamp->taps;
+         while (resamp->time < phases)
+         {
+            unsigned phase           = resamp->time >> resamp->subphase_bits;
+            const float *phase_table = resamp->phase_table + phase * taps * 2;
+            const float *delta_table = phase_table + taps;
+            float32x4_t delta        = vdupq_n_f32((resamp->time & resamp->subphase_mask) * resamp->subphase_mod);
+            unsigned i;
+            float32x4_t p1 = {0, 0, 0, 0}, p2 = {0, 0, 0, 0};
+            float32x2_t p3, p4;
+
+            for (i = 0; i < taps; i += 8)
+            {
+               float32x4x2_t coeff8  = vld2q_f32(&phase_table[i]);
+               float32x4x2_t delta8  = vld2q_f32(&delta_table[i]);
+               float32x4x2_t left8   = vld2q_f32(&buffer_l[i]);
+               float32x4x2_t right8  = vld2q_f32(&buffer_r[i]);
+
+               coeff8.val[0] = vmlaq_f32(coeff8.val[0], delta8.val[0], delta);
+               coeff8.val[1] = vmlaq_f32(coeff8.val[1], delta8.val[1], delta);
+
+               p1 = vmlaq_f32(p1,  left8.val[0], coeff8.val[0]);
+               p2 = vmlaq_f32(p2, right8.val[0], coeff8.val[0]);
+               p1 = vmlaq_f32(p1,  left8.val[1], coeff8.val[1]);
+               p2 = vmlaq_f32(p2, right8.val[1], coeff8.val[1]);
+            }
+
+            p3 = vadd_f32(vget_low_f32(p1), vget_high_f32(p1));
+            p4 = vadd_f32(vget_low_f32(p2), vget_high_f32(p2));
+            vst1_f32(output, vpadd_f32(p3, p4));
+            output                 += 2;
+            out_frames++;
+            resamp->time           += ratio;
+         }
+      }
+   }
+
+   data->output_frames = out_frames;
+}
 #endif
 
 /* Assumes that taps >= 8, and that taps is a multiple of 8. */
@@ -914,10 +988,17 @@ static void *resampler_sinc_new(const struct resampler_config *config,
          sinc_resampler.process = resampler_sinc_process_sse_kaiser;
 #endif
    }
-   else if (mask & RESAMPLER_SIMD_NEON && window_type != SINC_WINDOW_KAISER)
+   else if (mask & RESAMPLER_SIMD_NEON)
    {
 #if (defined(__ARM_NEON__) || defined(HAVE_NEON))
+#ifdef HAVE_ARM_NEON_ASM_OPTIMIZATIONS
+      if (window_type != SINC_WINDOW_KAISER)
+         sinc_resampler.process = resampler_sinc_process_neon;
+#else
       sinc_resampler.process = resampler_sinc_process_neon;
+      if (window_type == SINC_WINDOW_KAISER)
+         sinc_resampler.process = resampler_sinc_process_neon_kaiser;
+#endif
 #endif
    }
 

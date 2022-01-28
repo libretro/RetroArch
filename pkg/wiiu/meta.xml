@@ -3,7 +3,7 @@
   <name>Retroarch</name>
   <coder>Libretro</coder>
   <version>&version;</version>
-  <release_date>2021</release_date>
+  <release_date>2022</release_date>
   <short_description>Front-end for emulators, game engines and media players.</short_description>
   <long_description>Open-source and free cross-platform front-end of the libretro API for videogame emulators, game engines, media players and other applications, handled as cores by the Front-end.
 

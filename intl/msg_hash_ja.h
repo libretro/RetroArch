@@ -3407,6 +3407,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
    "オーバーレイを表示"
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
    "メニュー表示中にオーバーレイを隠す"
@@ -7399,6 +7400,10 @@ MSG_HASH(
    "ニアレスト"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT,
+   "コンテンツ"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR,
    "<コンテンツディレクトリ>"
    )
@@ -10012,14 +10017,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FRAMES,
    "フレーム"
-   )
-MSG_HASH(
-   MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[コアオプション]: ゲーム固有のコアオプション"
-   )
-MSG_HASH(
-   MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[コアオプション]: フォルダ固有のコアオプション"
    )
 MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,

@@ -1767,7 +1767,10 @@ bool command_event(enum event_command cmd, void *data)
 
 #ifdef HAVE_CHEEVOS
             if (rcheevos_hardcore_active())
+            {
+               runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
                return false;
+            }
 #endif
             if (!command_event_main_state(cmd))
                return false;
@@ -2106,6 +2109,9 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_FPS_TOGGLE:
          settings->bools.video_fps_show = !(settings->bools.video_fps_show);
          break;
+      case CMD_EVENT_STATISTICS_TOGGLE:
+         settings->bools.video_statistics_show = !(settings->bools.video_statistics_show);
+         break;
       case CMD_EVENT_OVERLAY_NEXT:
          /* Switch to the next available overlay screen. */
 #ifdef HAVE_OVERLAY
@@ -2354,9 +2360,10 @@ bool command_event(enum event_command cmd, void *data)
          }
       case CMD_EVENT_CORE_INIT:
          {
-            enum rarch_core_type *type    = (enum rarch_core_type*)data;
-            rarch_system_info_t *sys_info = &runloop_st->system;
-            input_driver_state_t *input_st= input_state_get_ptr();
+            enum rarch_core_type *type     = (enum rarch_core_type*)data;
+            rarch_system_info_t *sys_info  = &runloop_st->system;
+            input_driver_state_t *input_st = input_state_get_ptr();
+            audio_driver_state_t *audio_st = audio_state_get_ptr();
 
             content_reset_savestate_backups();
 
@@ -2364,8 +2371,19 @@ bool command_event(enum event_command cmd, void *data)
             if (sys_info)
                disk_control_set_ext_callback(&sys_info->disk_control, NULL);
 
+            /* Ensure that audio callback interface is reset */
+            audio_st->callback.callback  = NULL;
+            audio_st->callback.set_state = NULL;
+
             if (!type || !runloop_event_init_core(settings, input_st, *type))
+            {
+               /* If core failed to initialise, audio callback
+                * interface may be assigned invalid function
+                * pointers -> ensure it is reset */
+               audio_st->callback.callback  = NULL;
+               audio_st->callback.set_state = NULL;
                return false;
+            }
          }
          break;
       case CMD_EVENT_VIDEO_APPLY_STATE_CHANGES:
@@ -2613,6 +2631,12 @@ bool command_event(enum event_command cmd, void *data)
             bool accessibility_enable                    = settings->bools.accessibility_enable;
             unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
 #endif
+
+#ifdef HAVE_NETWORKING
+         if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL))
+            break;
+#endif
+
             boolean                                      = runloop_st->paused;
             boolean                                      = !boolean;
 
@@ -2639,11 +2663,21 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_UNPAUSE:
+#ifdef HAVE_NETWORKING
+         if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL))
+            break;
+#endif
+
          boolean                 = false;
          runloop_st->paused      = boolean;
          runloop_pause_checks();
          break;
       case CMD_EVENT_PAUSE:
+#ifdef HAVE_NETWORKING
+         if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL))
+            break;
+#endif
+
          boolean                 = true;
          runloop_st->paused      = boolean;
          runloop_pause_checks();
@@ -2652,7 +2686,12 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_MENU
          if (menu_st->alive)
          {
+#ifdef HAVE_NETWORKING
+            bool menu_pause_libretro  = settings->bools.menu_pause_libretro &&
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+#else
             bool menu_pause_libretro  = settings->bools.menu_pause_libretro;
+#endif
             if (menu_pause_libretro)
                command_event(CMD_EVENT_AUDIO_STOP, NULL);
             else
@@ -2660,15 +2699,31 @@ bool command_event(enum event_command cmd, void *data)
          }
          else
          {
+#ifdef HAVE_NETWORKING
+            bool menu_pause_libretro  = settings->bools.menu_pause_libretro &&
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+#else
             bool menu_pause_libretro  = settings->bools.menu_pause_libretro;
+#endif
             if (menu_pause_libretro)
                command_event(CMD_EVENT_AUDIO_START, NULL);
          }
 #endif
          break;
 #ifdef HAVE_NETWORKING
+      case CMD_EVENT_NETPLAY_PING_TOGGLE:
+         settings->bools.netplay_ping_show =
+            !settings->bools.netplay_ping_show;
+         break;
       case CMD_EVENT_NETPLAY_GAME_WATCH:
          netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
+         break;
+      case CMD_EVENT_NETPLAY_PLAYER_CHAT:
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_PLAYER_CHAT, NULL);
+         break;
+      case CMD_EVENT_NETPLAY_FADE_CHAT_TOGGLE:
+         settings->bools.netplay_fade_chat =
+            !settings->bools.netplay_fade_chat;
          break;
       case CMD_EVENT_NETPLAY_DEINIT:
          deinit_netplay();
@@ -2679,69 +2734,38 @@ bool command_event(enum event_command cmd, void *data)
          /* init netplay manually */
       case CMD_EVENT_NETPLAY_INIT:
          {
-            char       *hostname       = (char*)data;
-            char       *netplay_server = NULL;
-            unsigned netplay_port      = 0; 
-
-            if (p_rarch->connect_host && !hostname)
-            {
-               struct string_list *addr_port = string_split(p_rarch->connect_host, "|");
-
-               if (addr_port && addr_port->size == 2)
-               {
-                  char *tmp_netplay_server = addr_port->elems[0].data;
-                  char *tmp_netplay_port   = addr_port->elems[1].data;
-
-                  if (   !string_is_empty(tmp_netplay_server)
-                      && !string_is_empty(tmp_netplay_port))
-                  {
-                     netplay_port = strtoul(tmp_netplay_port, NULL, 10);
-
-                     if (netplay_port && netplay_port <= 0xFFFF)
-                     {
-                        netplay_server = strdup(tmp_netplay_server);
-
-                        /* This way we free netplay_server 
-                           as well when done. */
-                        free(p_rarch->connect_host);
-
-                        p_rarch->connect_host = netplay_server;
-                     }
-                  }
-               }
-
-               string_list_free(addr_port);
-            }
-
-            if (!netplay_server || !netplay_port)
-            {
-               netplay_server = settings->paths.netplay_server;
-               netplay_port   = settings->uints.netplay_port;
-            }
+            char tmp_netplay_server[256];
+            char tmp_netplay_session[sizeof(tmp_netplay_server)];
+            char *netplay_server  = NULL;
+            char *netplay_session = NULL;
+            unsigned netplay_port = 0;
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            if (!init_netplay(
-                     NULL,
-                     hostname
-                     ? hostname
-                     : netplay_server, netplay_port))
+            tmp_netplay_server[0]  = '\0';
+            tmp_netplay_session[0] = '\0';
+            if (netplay_decode_hostname(p_rarch->connect_host,
+               tmp_netplay_server, &netplay_port, tmp_netplay_session,
+               sizeof(tmp_netplay_server)))
             {
-               command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-
-               if (p_rarch->connect_host)
-               {
-                  free(p_rarch->connect_host);
-                  p_rarch->connect_host = NULL;
-               }
-
-               return false;
+               netplay_server  = tmp_netplay_server;
+               netplay_session = tmp_netplay_session;
             }
-
             if (p_rarch->connect_host)
             {
                free(p_rarch->connect_host);
                p_rarch->connect_host = NULL;
+            }
+
+            if (string_is_empty(netplay_server))
+               netplay_server = settings->paths.netplay_server;
+            if (!netplay_port)
+               netplay_port   = settings->uints.netplay_port;
+
+            if (!init_netplay(netplay_server, netplay_port, netplay_session))
+            {
+               command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+               return false;
             }
 
             /* Disable rewind & SRAM autosave if it was enabled
@@ -2757,33 +2781,28 @@ bool command_event(enum event_command cmd, void *data)
          /* Initialize netplay via lobby when content is loaded */
       case CMD_EVENT_NETPLAY_INIT_DIRECT:
          {
-            /* buf is expected to be address|port */
-            static struct string_list *hostname = NULL;
-            char *buf                           = (char *)data;
-            unsigned netplay_port               = settings->uints.netplay_port;
-
-            hostname                            = string_split(buf, "|");
+            char netplay_server[256];
+            char netplay_session[sizeof(netplay_server)];
+            unsigned netplay_port = 0;
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            RARCH_LOG("[Netplay]: Connecting to %s:%d (direct)\n",
-                  hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
-                  ? atoi(hostname->elems[1].data)
-                  : netplay_port);
+            netplay_server[0]  = '\0';
+            netplay_session[0] = '\0';
+            netplay_decode_hostname((char*) data, netplay_server,
+               &netplay_port, netplay_session, sizeof(netplay_server));
 
-            if (!init_netplay(
-                     NULL,
-                     hostname->elems[0].data,
-                     !string_is_empty(hostname->elems[1].data)
-                     ? atoi(hostname->elems[1].data)
-                     : netplay_port))
+            if (!netplay_port)
+               netplay_port = settings->uints.netplay_port;
+
+            RARCH_LOG("[Netplay]: Connecting to %s|%d (direct)\n",
+               netplay_server, netplay_port);
+
+            if (!init_netplay(netplay_server, netplay_port, netplay_session))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-               string_list_free(hostname);
                return false;
             }
-
-            string_list_free(hostname);
 
             /* Disable rewind if it was enabled
                TODO/FIXME: Add a setting for these tweaks */
@@ -2798,32 +2817,28 @@ bool command_event(enum event_command cmd, void *data)
          /* init netplay via lobby when content is not loaded */
       case CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED:
          {
-            static struct string_list *hostname = NULL;
-            /* buf is expected to be address|port */
-            char *buf                           = (char *)data;
-            unsigned netplay_port               = settings->uints.netplay_port;
-
-            hostname = string_split(buf, "|");
+            char netplay_server[256];
+            char netplay_session[sizeof(netplay_server)];
+            unsigned netplay_port = 0;
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            RARCH_LOG("[Netplay]: Connecting to %s:%d (deferred)\n",
-                  hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
-                  ? atoi(hostname->elems[1].data)
-                  : netplay_port);
+            netplay_server[0]  = '\0';
+            netplay_session[0] = '\0';
+            netplay_decode_hostname((char*) data, netplay_server,
+               &netplay_port, netplay_session, sizeof(netplay_server));
 
-            if (!init_netplay_deferred(
-                     hostname->elems[0].data,
-                     !string_is_empty(hostname->elems[1].data)
-                     ? atoi(hostname->elems[1].data)
-                     : netplay_port))
+            if (!netplay_port)
+               netplay_port = settings->uints.netplay_port;
+
+            RARCH_LOG("[Netplay]: Connecting to %s|%d (deferred)\n",
+               netplay_server, netplay_port);
+
+            if (!init_netplay_deferred(netplay_server, netplay_port, netplay_session))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-               string_list_free(hostname);
                return false;
             }
-
-            string_list_free(hostname);
 
             /* Disable rewind if it was enabled
              * TODO/FIXME: Add a setting for these tweaks */
@@ -2838,8 +2853,8 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETPLAY_ENABLE_HOST:
          {
 #ifdef HAVE_MENU
-            bool contentless  = false;
-            bool is_inited    = false;
+            bool contentless = false;
+            bool is_inited   = false;
 
             content_get_status(&contentless, &is_inited);
 
@@ -2905,7 +2920,10 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETPLAY_HOST_TOGGLE:
       case CMD_EVENT_NETPLAY_DISCONNECT:
       case CMD_EVENT_NETPLAY_ENABLE_HOST:
+      case CMD_EVENT_NETPLAY_PING_TOGGLE:
       case CMD_EVENT_NETPLAY_GAME_WATCH:
+      case CMD_EVENT_NETPLAY_PLAYER_CHAT:
+      case CMD_EVENT_NETPLAY_FADE_CHAT_TOGGLE:
          return false;
 #endif
       case CMD_EVENT_FULLSCREEN_TOGGLE:
@@ -4069,7 +4087,7 @@ static void retroarch_print_help(const char *arg0)
    printf("Usage: %s [OPTIONS]... [FILE]\n", arg0);
 
    {
-      char buf[2148];
+      char buf[2720];
       buf[0] = '\0';
 
       strlcpy(buf, "  -h, --help            Show this help message.\n", sizeof(buf));
@@ -4119,8 +4137,18 @@ static void retroarch_print_help(const char *arg0)
             "Multiple configs are\n"
             "                        delimited by '|'.\n", sizeof(buf));
 #ifdef HAVE_DYNAMIC
+      /* Note: Must strlcat the the string literal in two passes
+       * due to C89 limitations (509 character limit) */
       strlcat(buf, "  -L, --libretro=FILE   Path to libretro implementation. "
-            "Overrides any config setting.\n", sizeof(buf));
+            "Overrides any config setting. FILE may be one of the following:"
+            , sizeof(buf));
+      strlcat(buf,
+            "\n\t\t1. The full path to a core shared object library: path/to/<core_name>_libretro.<lib_ext>"
+            "\n\t\t2. A core shared object library 'file name' (*): <core_name>_libretro.<lib_ext>"
+            "\n\t\t3. A core 'short name' (*): <core_name>_libretro OR <core_name>"
+            "\n\t\t(*) If 'file name' or 'short name' do not correspond to an existing full file path,"
+            "\n\t\t    the configured frontend 'cores' directory will be searched for a match\n"
+            , sizeof(buf));
 #endif
       strlcat(buf, "      --subsystem=NAME  Use a subsystem of the libretro core. "
             "Multiple content\n"
@@ -4214,9 +4242,139 @@ static void retroarch_print_help(const char *arg0)
 #endif
       strlcat(buf, "      --load-menu-on-error\n"
             "                        Open menu instead of quitting if specified core or content fails to load.\n", sizeof(buf));
+      strlcat(buf, "  -e, --entryslot=NUMBER\n"
+            "                        Slot from which to load an entry state\n", sizeof(buf));
       puts(buf);
    }
 }
+
+#ifdef HAVE_DYNAMIC
+static void retroarch_parse_input_libretro_path(const char *path)
+{
+   settings_t *settings   = config_get_ptr();
+   int path_stats         = 0;
+   const char *path_ext   = NULL;
+   core_info_t *core_info = NULL;
+   const char *core_path  = NULL;
+   bool core_path_matched = false;
+   char tmp_path[PATH_MAX_LENGTH];
+
+   tmp_path[0] = '\0';
+
+   if (string_is_empty(path))
+      goto end;
+
+   /* Check if path refers to a built-in core */
+   if (string_ends_with_size(path, "builtin",
+            strlen(path), STRLEN_CONST("builtin")))
+   {
+      RARCH_LOG("--libretro argument \"%s\" is a built-in core. Ignoring.\n",
+            path);
+      return;
+   }
+
+   path_stats = path_stat(path);
+
+   /* Check if path is a directory */
+   if ((path_stats & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
+   {
+      path_clear(RARCH_PATH_CORE);
+
+      configuration_set_string(settings,
+            settings->paths.directory_libretro, path);
+
+      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
+      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY, NULL);
+
+      RARCH_WARN("Using old --libretro behavior. "
+            "Setting libretro_directory to \"%s\" instead.\n",
+            path);
+      return;
+   }
+
+   /* Check if path is a valid file */
+   if ((path_stats & RETRO_VFS_STAT_IS_VALID) != 0)
+   {
+      core_path = path;
+      goto end;
+   }
+
+   /* If path refers to a core file that does not exist,
+    * check for its presence in the user-defined cores
+    * directory */
+   path_ext = path_get_extension(path);
+
+   if (!string_is_empty(path_ext))
+   {
+      char core_ext[255];
+
+      core_ext[0] = '\0';
+
+      if (string_is_empty(settings->paths.directory_libretro) ||
+          !frontend_driver_get_core_extension(core_ext,
+               sizeof(core_ext)) ||
+          !string_is_equal(path_ext, core_ext))
+         goto end;
+
+      fill_pathname_join(tmp_path, settings->paths.directory_libretro,
+            path, sizeof(tmp_path));
+
+      if (string_is_empty(tmp_path))
+         goto end;
+
+      path_stats = path_stat(tmp_path);
+
+      if ((path_stats & RETRO_VFS_STAT_IS_VALID) != 0 &&
+          (path_stats & RETRO_VFS_STAT_IS_DIRECTORY) == 0)
+      {
+         core_path         = tmp_path;
+         core_path_matched = true;
+         goto end;
+      }
+   }
+   else
+   {
+      /* If path has no extension and contains no path
+       * delimiters, check if it is a core 'name', matching
+       * an existing file in the cores directory */
+      if (find_last_slash(path))
+         goto end;
+
+      command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+
+      strlcpy(tmp_path, path, sizeof(tmp_path));
+
+      if (!string_ends_with_size(tmp_path, "_libretro",
+            strlen(tmp_path), STRLEN_CONST("_libretro")))
+         strlcat(tmp_path, "_libretro", sizeof(tmp_path));
+
+      if (!core_info_find(tmp_path, &core_info) ||
+          string_is_empty(core_info->path))
+         goto end;
+
+      core_path         = core_info->path;
+      core_path_matched = true;
+   }
+
+end:
+   if (!string_is_empty(core_path))
+   {
+      path_set(RARCH_PATH_CORE, core_path);
+      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
+
+      /* We requested an explicit core, so use PLAIN core type. */
+      runloop_set_current_core_type(CORE_TYPE_PLAIN, false);
+
+      if (core_path_matched)
+         RARCH_LOG("--libretro argument \"%s\" matches core file \"%s\".\n",
+               path, core_path);
+   }
+   else
+      RARCH_WARN("--libretro argument \"%s\" is not a file, core name"
+            " or directory. Ignoring.\n",
+            path ? path : "");
+}
+#endif
 
 /**
  * retroarch_parse_input_and_config:
@@ -4302,6 +4460,7 @@ static bool retroarch_parse_input_and_config(
       { "log-file",           1, NULL, RA_OPT_LOG_FILE },
       { "accessibility",      0, NULL, RA_OPT_ACCESSIBILITY},
       { "load-menu-on-error", 0, NULL, RA_OPT_LOAD_MENU_ON_ERROR },
+      { "entryslot",          1, NULL, 'e' },
       { NULL, 0, NULL, 0 }
    };
 
@@ -4372,7 +4531,7 @@ static bool retroarch_parse_input_and_config(
 
    /* Make sure we can call retroarch_parse_input several times ... */
    optind    = 0;
-   optstring = "hs:fvS:A:U:DN:d:"
+   optstring = "hs:fvS:A:U:DN:d:e:"
       BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
 
 #if defined(ORBIS)
@@ -4608,50 +4767,11 @@ static bool retroarch_parse_input_and_config(
 #endif
                break;
 
-   #ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYNAMIC
             case 'L':
-               {
-                  int path_stats;
-
-                  if (string_ends_with_size(optarg, "builtin",
-                           strlen(optarg), STRLEN_CONST("builtin")))
-                  {
-                     RARCH_LOG("--libretro argument \"%s\" is a built-in core. Ignoring.\n",
-                           optarg);
-                     break;
-                  }
-
-                  path_stats = path_stat(optarg);
-
-                  if ((path_stats & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
-                  {
-                     path_clear(RARCH_PATH_CORE);
-
-                     configuration_set_string(settings,
-                     settings->paths.directory_libretro, optarg);
-
-                     retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-                     retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY, NULL);
-                     RARCH_WARN("Using old --libretro behavior. "
-                           "Setting libretro_directory to \"%s\" instead.\n",
-                           optarg);
-                  }
-                  else if ((path_stats & RETRO_VFS_STAT_IS_VALID) != 0)
-                  {
-                     path_set(RARCH_PATH_CORE, optarg);
-                     retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-
-                     /* We requested explicit core, so use PLAIN core type. */
-                     runloop_set_current_core_type(CORE_TYPE_PLAIN, false);
-                  }
-                  else
-                  {
-                     RARCH_WARN("--libretro argument \"%s\" is neither a file nor directory. Ignoring.\n",
-                           optarg);
-                  }
-               }
+               retroarch_parse_input_libretro_path(optarg);
                break;
-   #endif
+#endif
             case 'P':
 #ifdef HAVE_BSV_MOVIE
                {
@@ -4872,6 +4992,17 @@ static bool retroarch_parse_input_and_config(
             case RA_OPT_LOAD_MENU_ON_ERROR:
                global->cli_load_menu_on_error = true;
                break;
+            case 'e':
+               {
+                  unsigned entry_state_slot = (unsigned)strtoul(optarg, NULL, 0);
+
+                  if (entry_state_slot)
+                     runloop_st->entry_state_slot = entry_state_slot;
+                  else
+                     RARCH_WARN("--entryslot argument \"%s\" is not a valid "
+                        "entry state slot index. Ignoring.\n", optarg);
+               }
+               break;
             default:
                RARCH_ERR("%s\n", msg_hash_to_str(MSG_ERROR_PARSING_ARGUMENTS));
                retroarch_fail(1, "retroarch_parse_input()");
@@ -4919,6 +5050,11 @@ static bool retroarch_parse_input_and_config(
       /* Register that content has been set via the
        * command line interface */
       cli_content_set = true;
+   }
+   else if (runloop_st->entry_state_slot)
+   {
+      runloop_st->entry_state_slot = 0;
+      RARCH_WARN("Trying to load entry state without content. Ignoring.\n");
    }
 
    /* Check whether a core has been set via the
@@ -5904,6 +6040,9 @@ enum retro_language rarch_get_language_from_iso(const char *iso639)
       {"he", RETRO_LANGUAGE_HEBREW},
       {"ast", RETRO_LANGUAGE_ASTURIAN},
       {"fi", RETRO_LANGUAGE_FINNISH},
+      {"id", RETRO_LANGUAGE_INDONESIAN},
+      {"sv", RETRO_LANGUAGE_SWEDISH},
+      {"uk", RETRO_LANGUAGE_UKRAINIAN},
    };
 
    if (string_is_empty(iso639))

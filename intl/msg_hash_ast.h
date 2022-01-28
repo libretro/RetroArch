@@ -1267,6 +1267,7 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay */
 
+
 #if defined(ANDROID)
 #endif
 
@@ -1286,6 +1287,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
    "SÍ (normal)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "Avisos namás nel menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "Amuesa los avisos namás cuando'l menú ta abiertu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
@@ -1489,10 +1498,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
    "Permitir la posa"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "Permite que los xugadores usen la posa demientres xueguen en llinia. L'agospiador pue usala independientemente d'esti axuste."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,

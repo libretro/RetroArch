@@ -212,6 +212,7 @@ ACHIEVEMENTS
 #include "../deps/rcheevos/src/rcheevos/runtime_progress.c"
 #include "../deps/rcheevos/src/rcheevos/trigger.c"
 #include "../deps/rcheevos/src/rcheevos/value.c"
+#include "../deps/rcheevos/src/rhash/cdreader.c"
 #include "../deps/rcheevos/src/rhash/hash.c"
 
 #endif
@@ -1251,6 +1252,9 @@ RETROARCH
 #include "../intl/msg_hash_he.c"
 #include "../intl/msg_hash_ast.c"
 #include "../intl/msg_hash_fi.c"
+#include "../intl/msg_hash_id.c"
+#include "../intl/msg_hash_sv.c"
+#include "../intl/msg_hash_uk.c"
 #endif
 
 #include "../intl/msg_hash_us.c"
@@ -1570,22 +1574,6 @@ XML
 #include "../libretro-db/rmsgpack_dom.c"
 #include "../libretro-db/query.c"
 #include "../database_info.c"
-#endif
-
-#if defined(HAVE_BUILTINMINIUPNPC)
-#include "../deps/miniupnpc/igd_desc_parse.c"
-#include "../deps/miniupnpc/upnpreplyparse.c"
-#include "../deps/miniupnpc/upnpcommands.c"
-#include "../deps/miniupnpc/upnperrors.c"
-#include "../deps/miniupnpc/connecthostport.c"
-#include "../deps/miniupnpc/portlistingparse.c"
-#include "../deps/miniupnpc/receivedata.c"
-#include "../deps/miniupnpc/upnpdev.c"
-#include "../deps/miniupnpc/minissdpc.c"
-#include "../deps/miniupnpc/miniwget.c"
-#include "../deps/miniupnpc/miniupnpc.c"
-#include "../deps/miniupnpc/minixml.c"
-#include "../deps/miniupnpc/minisoap.c"
 #endif
 
 /*============================================================

@@ -88,7 +88,7 @@ static void wiiu_set_projection(wiiu_video_t *wiiu)
 {
    math_matrix_4x4 proj, rot;
    matrix_4x4_ortho(proj, 0, 1, 1, 0, -1, 1);
-   matrix_4x4_rotate_z(rot, wiiu->rotation * -M_PI_2);
+   matrix_4x4_rotate_z(rot, wiiu->rotation * M_PI_2);
    matrix_4x4_multiply((*wiiu->ubo_mvp), rot, proj);
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, wiiu->ubo_mvp, sizeof(*wiiu->ubo_mvp));
 }

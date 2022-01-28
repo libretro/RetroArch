@@ -82,33 +82,23 @@
  */
 const char *path_get_archive_delim(const char *path)
 {
-   const char *last_slash = find_last_slash(path);
    const char *delim      = NULL;
    char buf[5];
 
    buf[0] = '\0';
 
-   /* We search for delimiters after the last slash
-    * in the file path to avoid capturing delimiter
-    * characters in any parent directory names.
-    * If there are no slashes in the file name, then
-    * the path is just the file basename - in this
-    * case we search the path in its entirety */
-   if (!last_slash)
-      last_slash = path;
-
    /* Find delimiter position
     * > Since filenames may contain '#' characters,
     *   must loop until we find the first '#' that
     *   is directly *after* a compression extension */
-   delim = strchr(last_slash, '#');
+   delim = strchr(path, '#');
 
    while (delim)
    {
       /* Check whether this is a known archive type
        * > Note: The code duplication here is
        *   deliberate, to maximise performance */
-      if (delim - last_slash > 4)
+      if (delim - path > 4)
       {
          strlcpy(buf, delim - 4, sizeof(buf));
          buf[4] = '\0';
@@ -121,7 +111,7 @@ const char *path_get_archive_delim(const char *path)
              string_is_equal(buf + 1, ".7z"))
             return delim;
       }
-      else if (delim - last_slash > 3)
+      else if (delim - path > 3)
       {
          strlcpy(buf, delim - 3, sizeof(buf));
          buf[3] = '\0';
@@ -407,15 +397,29 @@ bool fill_pathname_parent_dir_name(char *out_dir,
       last      = find_last_slash(temp);
    }
 
+   /* Cut the last part of the string (the filename) after the slash,
+      leaving the directory name (or nested directory names) only. */
    if (last)
       *last     = '\0';
 
+   /* Point in_dir to the address of the last slash. */
    in_dir       = find_last_slash(temp);
+
+   /* If find_last_slash returns NULL, it means there was no slash in temp,
+      so use temp as-is. */
+   if (!in_dir)
+       in_dir   = temp;
 
    success      = in_dir && in_dir[1];
 
    if (success)
-      strlcpy(out_dir, in_dir + 1, size);
+   {
+       /* If path starts with an slash, eliminate it. */
+       if (path_is_absolute(in_dir))
+           strlcpy(out_dir, in_dir + 1, size);
+       else
+           strlcpy(out_dir, in_dir, size);
+   }
 
    free(temp);
    return success;
@@ -1369,13 +1373,8 @@ void fill_pathname_home_dir(char *s, size_t len)
 bool is_path_accessible_using_standard_io(const char *path)
 {
 #ifdef __WINRT__
-   char relative_path_abbrev[PATH_MAX_LENGTH];
-   fill_pathname_abbreviate_special(relative_path_abbrev,
-         path, sizeof(relative_path_abbrev));
-   return (strlen(relative_path_abbrev) >= 2 )
-      &&  (    relative_path_abbrev[0] == ':'
-            || relative_path_abbrev[0] == '~')
-      && PATH_CHAR_IS_SLASH(relative_path_abbrev[1]);
+   DWORD trygetattrbs = GetFileAttributesA(path);
+   return trygetattrbs != INVALID_FILE_ATTRIBUTES;
 #else
    return true;
 #endif

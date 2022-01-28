@@ -50,6 +50,7 @@ using namespace Windows::Foundation;
 using namespace Windows::Foundation::Collections;
 using namespace Windows::Graphics::Display;
 using namespace Windows::Devices::Enumeration;
+using namespace Windows::Storage;
 
 char uwp_dir_install[PATH_MAX_LENGTH] = { 0 };
 char uwp_dir_data[PATH_MAX_LENGTH]    = { 0 };
@@ -217,6 +218,20 @@ int main(Platform::Array<Platform::String^>^)
 	Platform::String^ data_dir = Windows::Storage::ApplicationData::Current->LocalFolder->Path + L"\\";
 	wcstombs(uwp_dir_data, data_dir->Data(), sizeof(uwp_dir_data));
 
+	// delete vfs cache dir, we do this because this allows a far far more consise implementation than manually implementing a function to do this
+	// this may be a little slower but shouldn't really matter as the cache dir should never have more than a few items
+	Platform::String^ vfs_dir = Windows::Storage::ApplicationData::Current->LocalFolder->Path + L"\\VFSCACHE";
+	char vfs_cache_dir[MAX_PATH];
+	wcstombs(vfs_cache_dir, vfs_dir->Data(), sizeof(vfs_cache_dir));
+	DWORD dwAttrib = GetFileAttributesA(vfs_cache_dir);
+	if ((dwAttrib != INVALID_FILE_ATTRIBUTES) && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY))
+	{
+		concurrency::task<StorageFolder^> vfsdirtask = concurrency::create_task(StorageFolder::GetFolderFromPathAsync(vfs_dir));
+		vfsdirtask.wait();
+		StorageFolder^ vfsdir = vfsdirtask.get();
+		vfsdir->DeleteAsync();
+	}
+
 	wcstombs(uwp_device_family,
          AnalyticsInfo::VersionInfo->DeviceFamily->Data(),
          sizeof(uwp_device_family));
@@ -259,9 +274,6 @@ void App::Initialize(CoreApplicationView^ applicationView)
 
 	CoreApplication::Resuming +=
 		ref new EventHandler<Platform::Object^>(this, &App::OnResuming);
-
-	CoreApplication::EnteredBackground +=
-		ref new EventHandler<EnteredBackgroundEventArgs^>(this, &App::OnEnteredBackground);
 }
 
 /* Called when the CoreWindow object is created (or re-created). */
@@ -315,6 +327,52 @@ void App::SetWindow(CoreWindow^ window)
 /* Initializes scene resources, or loads a previously saved app state. */
 void App::Load(Platform::String^ entryPoint)
 {
+	int ret = rarch_main(NULL, NULL, NULL);
+	if (ret != 0)
+	{
+		RARCH_ERR("Init failed\n");
+		CoreApplication::Exit();
+		return;
+	}
+	m_initialized = true;
+
+	if (is_running_on_xbox())
+	{
+		bool reset = false;
+		int width = uwp_get_width();
+		int height = uwp_get_height();
+		//reset driver to d3d11 if set to opengl on boot as cores can just set to gl when needed and there is no good reason to use gl for the menus
+		settings_t* settings = config_get_ptr();
+		char* currentdriver = settings->arrays.video_driver;
+		if (strcmpi(currentdriver, "gl")==0)
+		{
+			//set driver to default
+			configuration_set_string(settings,
+				settings->arrays.video_driver,
+				config_get_default_video());
+			//reset needed
+			reset = true;
+		}
+		if ((settings->uints.video_fullscreen_x != width) || (settings->uints.video_fullscreen_y != height))
+		{
+			//get width and height from display again
+			configuration_set_int(settings,
+				settings->uints.video_fullscreen_x,
+				width);
+			configuration_set_int(settings,
+				settings->uints.video_fullscreen_y,
+				height);
+			//reset needed
+			reset = true;
+		}
+		if (reset)
+		{
+			//restart driver
+			command_event(CMD_EVENT_REINIT, NULL);
+		}
+		
+	}
+
 	auto catalog = Windows::ApplicationModel::PackageCatalog::OpenForCurrentPackage();
 
 	catalog->PackageInstalling +=
@@ -363,50 +421,12 @@ void App::Run()
 void App::Uninitialize()
 {
 	main_exit(NULL);
-	
-	//if this instance of RetroArch was started from another app/frontend and the frontend passed "launchOnExit" parameter:
-	//1. launch the app specified in "launchOnExit", most likely the same app that started RetroArch
-	//2. RetroArch goes to background and RunAsyncAndCatchErrors doesn't return, because the target app is immediately started.
-	//3. explicitly exit in App::OnEnteredBackground if m_launchOnExitShutdown is set. Otherwise, RetroArch doesn't properly shutdown.
-	if (m_launchOnExit != nullptr && m_launchOnExit->IsEmpty() == false)
-	{		
-		try
-		{			
-			//launch the target app
-			m_launchOnExitShutdown = true;
-			auto ret = RunAsyncAndCatchErrors<bool>([&]() {
-				return create_task(Launcher::LaunchUriAsync(ref new Uri(m_launchOnExit)));
-			}, false);
-		}
-		catch (Platform::InvalidArgumentException^ e)
-		{
-		}
-	}
 }
 
 /* Application lifecycle event handlers. */
 
 void App::OnActivated(CoreApplicationView^ applicationView, IActivatedEventArgs^ args)
 {
-	//start only if not already initialized. If there is a game in progress, just return
-	if (m_initialized == true)
-	{
-		return;
-	}
-
-	int argc = NULL;
-	std::vector<char*> argv;
-	std::vector<std::string> argvTmp; //using std::string as temp buf instead of char* array to avoid manual char allocations
-	ParseProtocolArgs(args, &argc, &argv, &argvTmp);
-
-	int ret = rarch_main(argc, argv.data(), NULL);
-	if (ret != 0)
-	{
-		RARCH_ERR("Init failed\n");
-		CoreApplication::Exit();
-		return;
-	}
-	m_initialized = true;
 	/* Run() won't start until the CoreWindow is activated. */
 	CoreWindow::GetForCurrentThread()->Activate();
 }
@@ -463,15 +483,6 @@ void App::OnResuming(Platform::Object^ sender, Platform::Object^ args)
 	 * and state are persisted when resuming from suspend. Note that this event
 	 * does not occur if the app was previously terminated.
     */
-}
-
-void App::OnEnteredBackground(Platform::Object^ sender, EnteredBackgroundEventArgs^ args)
-{
-	//RetroArch entered background because another app/frontend was launched on exit, so properly quit
-	if (m_launchOnExitShutdown == true)
-	{
-		CoreApplication::Exit();
-	}
 }
 
 void App::OnBackRequested(Platform::Object^ sender, Windows::UI::Core::BackRequestedEventArgs^ args)
@@ -627,57 +638,6 @@ void App::OnPackageInstalling(PackageCatalog^ sender, PackageInstallingEventArgs
 	}
 }
 
-void App::ParseProtocolArgs(Windows::ApplicationModel::Activation::IActivatedEventArgs^ args, int *argc, std::vector<char*> *argv, std::vector<std::string> *argvTmp)
-{
-	argvTmp->clear();
-	argv->clear();
-
-	if (args->Kind == ActivationKind::Protocol)
-	{
-		ProtocolActivatedEventArgs^ protocolArgs = dynamic_cast<Windows::ApplicationModel::Activation::ProtocolActivatedEventArgs^>(args);
-		Windows::Foundation::WwwFormUrlDecoder^ query = protocolArgs->Uri->QueryParsed;
-
-		//if RetroArch UWP app is started using protocol with argument "launchOnExit", this gives an option to launch another app on RA exit,
-		//making it easy to integrate RA with other UWP frontends
-		try
-		{
-			m_launchOnExit = query->GetFirstValueByName("launchOnExit");
-		}
-		catch (Platform::InvalidArgumentException^ e)
-		{
-			//nothing to do if named parameter doesn't exist
-		}
-
-		try
-		{
-			//protocol activation is in format 0=argValue0&1=argValue1...
-			//where argument name is a number from 0 to 9
-			for (int i = 0; i < 10; i++)
-			{
-				wchar_t buffer[5];
-				swprintf(buffer, L"%d", i);
-				Platform::String^ argName = ref new Platform::String(buffer);
-				Platform::String^ arg = query->GetFirstValueByName(argName);
-				std::wstring ws(arg->ToString()->Data());
-				std::string stdstr(ws.begin(), ws.end());
-				argvTmp->push_back(stdstr);				
-			}
-		}
-		catch (Platform::InvalidArgumentException^ e)
-		{
-			//nothing to do if named parameter doesn't exist
-		}
-	}
-
-	(*argc) = argvTmp->size();
-	//convert to char* array compatible with argv
-	for (int i = 0; i < argvTmp->size(); i++)
-	{
-		argv->push_back((char*)(argvTmp->at(i)).c_str());
-	}
-	argv->push_back(nullptr);
-}
-
 /* Implement UWP equivalents of various win32_* functions */
 extern "C" {
 
@@ -743,10 +703,10 @@ extern "C" {
 		switch (type)
 		{
 		   case DISPLAY_METRIC_PIXEL_WIDTH:
-		      *value                 = DisplayInformation::GetForCurrentView()->ScreenWidthInRawPixels;
+		      *value                 = uwp_get_width();
 		      return true;
 		case DISPLAY_METRIC_PIXEL_HEIGHT:
-		      *value                 = DisplayInformation::GetForCurrentView()->ScreenHeightInRawPixels;
+			  *value				 = uwp_get_height();
 		      return true;
 		case DISPLAY_METRIC_MM_WIDTH:
 		      /* 25.4 mm in an inch. */
@@ -785,8 +745,8 @@ extern "C" {
 		if (is_xbox)
 		{
 			settings_t* settings = config_get_ptr();
-			*width  = settings->uints.video_fullscreen_x  != 0 ? settings->uints.video_fullscreen_x : 3840;
-			*height = settings->uints.video_fullscreen_y  != 0 ? settings->uints.video_fullscreen_y : 2160;
+			*width  = settings->uints.video_fullscreen_x  != 0 ? settings->uints.video_fullscreen_x : uwp_get_width();
+			*height = settings->uints.video_fullscreen_y  != 0 ? settings->uints.video_fullscreen_y : uwp_get_height();
 			return;
 		}
 
@@ -802,6 +762,32 @@ extern "C" {
 	void* uwp_get_corewindow(void)
 	{
 		return (void*)CoreWindow::GetForCurrentThread();
+	}
+
+	int uwp_get_height(void)
+	{
+		if (is_running_on_xbox())
+		{
+			const Windows::Graphics::Display::Core::HdmiDisplayInformation^ hdi = Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView();
+			if (hdi)
+				return Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView()->GetCurrentDisplayMode()->ResolutionHeightInRawPixels;
+		}
+		const LONG32 resolution_scale = static_cast<LONG32>(Windows::Graphics::Display::DisplayInformation::GetForCurrentView()->ResolutionScale);
+		auto surface_scale = static_cast<float>(resolution_scale) / 100.0f;
+		return static_cast<LONG32>(CoreWindow::GetForCurrentThread()->Bounds.Height * surface_scale);
+	}
+
+	int uwp_get_width(void)
+	{
+		if (is_running_on_xbox())
+		{
+			const Windows::Graphics::Display::Core::HdmiDisplayInformation^ hdi = Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView();
+			if (hdi)
+				return Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView()->GetCurrentDisplayMode()->ResolutionWidthInRawPixels;
+		}
+		const LONG32 resolution_scale = static_cast<LONG32>(Windows::Graphics::Display::DisplayInformation::GetForCurrentView()->ResolutionScale);
+		auto surface_scale = static_cast<float>(resolution_scale) / 100.0f;
+		return static_cast<LONG32>(CoreWindow::GetForCurrentThread()->Bounds.Width * surface_scale);
 	}
 
 	void uwp_fill_installed_core_packages(struct string_list *list)

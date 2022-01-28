@@ -119,6 +119,10 @@ enum event_command
    CMD_EVENT_AUDIO_MUTE_TOGGLE,
    /* Toggles FPS counter. */
    CMD_EVENT_FPS_TOGGLE,
+   /* Toggles statistics display. */
+   CMD_EVENT_STATISTICS_TOGGLE,
+   /* Toggle ping counter. */
+   CMD_EVENT_NETPLAY_PING_TOGGLE,
    /* Gathers diagnostic info about the system and RetroArch configuration, then sends it to our servers. */
    CMD_EVENT_SEND_DEBUG_INFO,
    /* Toggles netplay hosting. */
@@ -202,6 +206,10 @@ enum event_command
    CMD_EVENT_NETPLAY_DEINIT,
    /* Switch between netplay gaming and watching. */
    CMD_EVENT_NETPLAY_GAME_WATCH,
+   /* Open a netplay chat input menu. */
+   CMD_EVENT_NETPLAY_PLAYER_CHAT,
+   /* Toggle chat fading. */
+   CMD_EVENT_NETPLAY_FADE_CHAT_TOGGLE,
    /* Start hosting netplay. */
    CMD_EVENT_NETPLAY_ENABLE_HOST,
    /* Disconnect from the netplay host. */
@@ -362,6 +370,8 @@ void command_event_set_volume(
 void command_event_init_controllers(rarch_system_info_t *info,
       settings_t *settings, unsigned num_active_users);
 
+bool command_event_load_entry_state(void);
+
 void command_event_load_auto_state(void);
 
 void command_event_set_savestate_auto_index(
@@ -453,6 +463,7 @@ static const struct cmd_map map[] = {
    { "MUTE",                   RARCH_MUTE },
    { "OSK",                    RARCH_OSK },
    { "FPS_TOGGLE",             RARCH_FPS_TOGGLE },
+   { "STATISTICS_TOGGLE",      RARCH_STATISTICS_TOGGLE },
    { "SEND_DEBUG_INFO",        RARCH_SEND_DEBUG_INFO },
    { "NETPLAY_HOST_TOGGLE",    RARCH_NETPLAY_HOST_TOGGLE },
    { "NETPLAY_GAME_WATCH",     RARCH_NETPLAY_GAME_WATCH },

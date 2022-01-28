@@ -1152,6 +1152,7 @@ typedef struct
    D3D10_VIEWPORT        viewport;
    DXGI_FORMAT           format;
    float                 clearcolor[4];
+   unsigned              swap_interval;
    bool                  vsync;
    bool                  resize_chain;
    bool                  keep_aspect;

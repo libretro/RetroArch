@@ -32,6 +32,7 @@
 #include <functional>
 #include <fileapifromapp.h>
 #include <AclAPI.h>
+#include <sddl.h>
 #include <io.h>
 #include <fcntl.h>
 
@@ -158,19 +159,12 @@ int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file* stream, i
 
 int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file* stream)
 {
-    if (!stream || (!stream->fp && stream->fh == INVALID_HANDLE_VALUE))
+    if (!stream)
         return -1;
 
-    if (stream->fh != INVALID_HANDLE_VALUE)
-    {
-        LARGE_INTEGER sz;
-        if (GetFileSizeEx(stream->fh, &sz))
-            return sz.QuadPart;
-        return 0;
-    }
     if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
     {
-        return ftell(stream->fp);
+        return _ftelli64(stream->fp);
     }
     if (lseek(stream->fd, 0, SEEK_CUR) < 0)
         return -1;
@@ -231,10 +225,7 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file* stream,
    }
 
     if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-    {
-        return fread(s, 1, (size_t)len, stream->fp);
-    }
-    DWORD BytesRead;
+       return fread(s, 1, (size_t)len, stream->fp);
     return read(stream->fd, s, (size_t)len);
 }
 
@@ -496,10 +487,8 @@ int uwp_copy_acl(const wchar_t* source, const wchar_t* target)
             LocalFree(sidOwnerDescriptor);
             LocalFree(sidGroupDescriptor);
             LocalFree(daclDescriptor);
-            CloseHandle(original_file);
             return result;
         }
-        CloseHandle(original_file);
     }
     else
     {
@@ -908,4 +897,74 @@ int retro_vfs_closedir_impl(libretro_vfs_implementation_dir* rdir)
         free(rdir->orig_path);
     free(rdir);
     return 0;
+}
+
+void uwp_set_acl(const wchar_t* path, const wchar_t* AccessString)
+{
+    PSECURITY_DESCRIPTOR SecurityDescriptor = nullptr;
+    EXPLICIT_ACCESSW ExplicitAccess = { 0 };
+
+    ACL* AccessControlCurrent = nullptr;
+    ACL* AccessControlNew = nullptr;
+
+    SECURITY_INFORMATION SecurityInfo = DACL_SECURITY_INFORMATION;
+    PSID SecurityIdentifier = nullptr;
+
+    HANDLE original_file = CreateFileFromAppW(path, GENERIC_READ | GENERIC_WRITE | WRITE_DAC, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
+
+    if (original_file != INVALID_HANDLE_VALUE) {
+        if (
+            GetSecurityInfo(
+                original_file,
+                SE_FILE_OBJECT,
+                DACL_SECURITY_INFORMATION,
+                nullptr,
+                nullptr,
+                &AccessControlCurrent,
+                nullptr,
+                &SecurityDescriptor
+            ) == ERROR_SUCCESS
+            )
+        {
+            ConvertStringSidToSidW(AccessString, &SecurityIdentifier);
+            if (SecurityIdentifier != nullptr)
+            {
+                ExplicitAccess.grfAccessPermissions = GENERIC_READ | GENERIC_EXECUTE | GENERIC_WRITE;
+                ExplicitAccess.grfAccessMode = SET_ACCESS;
+                ExplicitAccess.grfInheritance = SUB_CONTAINERS_AND_OBJECTS_INHERIT;
+                ExplicitAccess.Trustee.TrusteeForm = TRUSTEE_IS_SID;
+                ExplicitAccess.Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+                ExplicitAccess.Trustee.ptstrName = reinterpret_cast<wchar_t*>(SecurityIdentifier);
+
+                if (
+                    SetEntriesInAclW(
+                        1,
+                        &ExplicitAccess,
+                        AccessControlCurrent,
+                        &AccessControlNew
+                    ) == ERROR_SUCCESS
+                    )
+                {
+                    SetSecurityInfo(
+                        original_file,
+                        SE_FILE_OBJECT,
+                        SecurityInfo,
+                        nullptr,
+                        nullptr,
+                        AccessControlNew,
+                        nullptr
+                    );
+                }
+            }
+        }
+        if (SecurityDescriptor)
+        {
+            LocalFree(reinterpret_cast<HLOCAL>(SecurityDescriptor));
+        }
+        if (AccessControlNew)
+        {
+            LocalFree(reinterpret_cast<HLOCAL>(AccessControlNew));
+        }
+        CloseHandle(original_file);
+    }
 }

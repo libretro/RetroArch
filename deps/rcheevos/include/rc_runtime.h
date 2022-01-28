@@ -58,6 +58,7 @@ typedef struct rc_runtime_lboard_t {
   void* buffer;
   rc_memref_t* invalid_memref;
   unsigned char md5[16];
+  int serialized_size;
   char owns_memrefs;
 }
 rc_runtime_lboard_t;
@@ -66,6 +67,7 @@ typedef struct rc_runtime_richpresence_t {
   rc_richpresence_t* richpresence;
   void* buffer;
   struct rc_runtime_richpresence_t* previous;
+  unsigned char md5[16];
   char owns_memrefs;
 }
 rc_runtime_richpresence_t;
