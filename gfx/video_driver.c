@@ -3572,6 +3572,9 @@ void video_driver_frame(const void *data, unsigned width,
    static retro_time_t fps_time;
    static float last_fps, frame_time;
    static uint64_t last_used_memory, last_total_memory;
+   /* Initialise 'last_frame_duped' to 'true'
+    * to ensure that the first frame is rendered */
+   static bool last_frame_duped  = true;
    retro_time_t new_time;
    video_frame_info_t video_info;
    video_driver_state_t *video_st= &video_driver_st;
@@ -3618,7 +3621,14 @@ void video_driver_frame(const void *data, unsigned width,
 
    video_driver_build_info(&video_info);
 
-   render_frame |= video_info.menu_is_alive;
+   /* Always render a frame if:
+    * - Menu is open
+    * - The last frame was NULL and the
+    *   current frame is not (i.e. if core was
+    *   previously sending duped frames, ensure
+    *   that the next frame update is captured) */
+   render_frame    |= video_info.menu_is_alive || (last_frame_duped && !!data);
+   last_frame_duped = !data;
 
    if (!render_frame)
       runloop_st->fastforward_frameskip_frames_current--;
