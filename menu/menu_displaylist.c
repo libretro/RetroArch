@@ -460,13 +460,14 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
       settings_t *settings)
 {
    char tmp[PATH_MAX_LENGTH];
-   unsigned i, count           = 0;
-   core_info_t *core_info      = NULL;
-   const char *core_path       = NULL;
+   unsigned i, count             = 0;
+   core_info_t *core_info        = NULL;
+   const char *core_path         = NULL;
+   const char *savestate_support = NULL;
 #if !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
-   bool kiosk_mode_enable      = settings->bools.kiosk_mode_enable;
+   bool kiosk_mode_enable        = settings->bools.kiosk_mode_enable;
 #if defined(HAVE_NETWORKING) && defined(HAVE_ONLINE_UPDATER)
-   bool menu_show_core_updater = settings->bools.menu_show_core_updater;
+   bool menu_show_core_updater   = settings->bools.menu_show_core_updater;
 #endif
 #endif
 
@@ -614,6 +615,39 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
             MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
          count++;
    }
+
+   switch (core_info->savestate_support_level)
+   {
+      case CORE_INFO_SAVESTATE_BASIC:
+         savestate_support = msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC);
+         break;
+      case CORE_INFO_SAVESTATE_SERIALIZED:
+         savestate_support = msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED);
+         break;
+      case CORE_INFO_SAVESTATE_DETERMINISTIC:
+         savestate_support = msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC);
+         break;
+      default:
+         if (core_info->savestate_support_level >
+               CORE_INFO_SAVESTATE_DETERMINISTIC)
+            savestate_support = msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC);
+         else
+            savestate_support = msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED);
+         break;
+   }
+   fill_pathname_join_concat_noext(tmp,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL),
+         ": ",
+         savestate_support,
+         sizeof(tmp));
+   if (menu_entries_append_enum(info->list, tmp, "",
+         MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
+      count++;
 
    if (core_info->firmware_count > 0)
    {
@@ -2873,6 +2907,7 @@ static int menu_displaylist_parse_load_content_settings(
 #endif
       bool quickmenu_show_resume_content  = settings->bools.quick_menu_show_resume_content;
       bool quickmenu_show_restart_content = settings->bools.quick_menu_show_restart_content;
+      bool savestates_enabled             = core_info_current_supports_savestate();
       rarch_system_info_t *system         = &runloop_state_get_ptr()->system;
 
       if (quickmenu_show_resume_content)
@@ -2921,7 +2956,8 @@ static int menu_displaylist_parse_load_content_settings(
       }
 #endif
 
-      if (settings->bools.quick_menu_show_save_load_state)
+      if (savestates_enabled &&
+          settings->bools.quick_menu_show_save_load_state)
       {
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                MENU_ENUM_LABEL_STATE_SLOT, PARSE_ONLY_INT, true) == 0)
@@ -2942,7 +2978,8 @@ static int menu_displaylist_parse_load_content_settings(
             count++;
       }
 
-      if (settings->bools.quick_menu_show_save_load_state &&
+      if (savestates_enabled &&
+          settings->bools.quick_menu_show_save_load_state &&
           settings->bools.quick_menu_show_undo_save_load_state)
       {
 #ifdef HAVE_CHEEVOS
