@@ -274,6 +274,9 @@ void App::Initialize(CoreApplicationView^ applicationView)
 
 	CoreApplication::Resuming +=
 		ref new EventHandler<Platform::Object^>(this, &App::OnResuming);
+
+	CoreApplication::EnteredBackground +=
+		ref new EventHandler<EnteredBackgroundEventArgs^>(this, &App::OnEnteredBackground);
 }
 
 /* Called when the CoreWindow object is created (or re-created). */
@@ -327,52 +330,6 @@ void App::SetWindow(CoreWindow^ window)
 /* Initializes scene resources, or loads a previously saved app state. */
 void App::Load(Platform::String^ entryPoint)
 {
-	int ret = rarch_main(NULL, NULL, NULL);
-	if (ret != 0)
-	{
-		RARCH_ERR("Init failed\n");
-		CoreApplication::Exit();
-		return;
-	}
-	m_initialized = true;
-
-	if (is_running_on_xbox())
-	{
-		bool reset = false;
-		int width = uwp_get_width();
-		int height = uwp_get_height();
-		//reset driver to d3d11 if set to opengl on boot as cores can just set to gl when needed and there is no good reason to use gl for the menus
-		settings_t* settings = config_get_ptr();
-		char* currentdriver = settings->arrays.video_driver;
-		if (strcmpi(currentdriver, "gl")==0)
-		{
-			//set driver to default
-			configuration_set_string(settings,
-				settings->arrays.video_driver,
-				config_get_default_video());
-			//reset needed
-			reset = true;
-		}
-		if ((settings->uints.video_fullscreen_x != width) || (settings->uints.video_fullscreen_y != height))
-		{
-			//get width and height from display again
-			configuration_set_int(settings,
-				settings->uints.video_fullscreen_x,
-				width);
-			configuration_set_int(settings,
-				settings->uints.video_fullscreen_y,
-				height);
-			//reset needed
-			reset = true;
-		}
-		if (reset)
-		{
-			//restart driver
-			command_event(CMD_EVENT_REINIT, NULL);
-		}
-		
-	}
-
 	auto catalog = Windows::ApplicationModel::PackageCatalog::OpenForCurrentPackage();
 
 	catalog->PackageInstalling +=
@@ -421,12 +378,89 @@ void App::Run()
 void App::Uninitialize()
 {
 	main_exit(NULL);
+	
+	//if this instance of RetroArch was started from another app/frontend and the frontend passed "launchOnExit" parameter:
+	//1. launch the app specified in "launchOnExit", most likely the same app that started RetroArch
+	//2. RetroArch goes to background and RunAsyncAndCatchErrors doesn't return, because the target app is immediately started.
+	//3. explicitly exit in App::OnEnteredBackground if m_launchOnExitShutdown is set. Otherwise, RetroArch doesn't properly shutdown.
+	if (m_launchOnExit != nullptr && m_launchOnExit->IsEmpty() == false)
+	{		
+		try
+		{			
+			//launch the target app
+			m_launchOnExitShutdown = true;
+			auto ret = RunAsyncAndCatchErrors<bool>([&]() {
+				return create_task(Launcher::LaunchUriAsync(ref new Uri(m_launchOnExit)));
+			}, false);
+		}
+		catch (Platform::InvalidArgumentException^ e)
+		{
+		}
+	}
 }
 
 /* Application lifecycle event handlers. */
 
 void App::OnActivated(CoreApplicationView^ applicationView, IActivatedEventArgs^ args)
 {
+	//start only if not already initialized. If there is a game in progress, just return
+	if (m_initialized == true)
+	{
+		return;
+	}
+
+	int argc = NULL;
+	std::vector<char*> argv;
+	std::vector<std::string> argvTmp; //using std::string as temp buf instead of char* array to avoid manual char allocations
+	ParseProtocolArgs(args, &argc, &argv, &argvTmp);
+
+	int ret = rarch_main(argc, argv.data(), NULL);
+	if (ret != 0)
+	{
+		RARCH_ERR("Init failed\n");
+		CoreApplication::Exit();
+		return;
+	}
+	m_initialized = true;
+
+	//Should it reset drivers only if the menu is loaded, but not if the content is started directly through arguments?
+	if (is_running_on_xbox())
+	{
+		bool reset = false;
+		int width = uwp_get_width();
+		int height = uwp_get_height();
+		//reset driver to d3d11 if set to opengl on boot as cores can just set to gl when needed and there is no good reason to use gl for the menus
+		settings_t* settings = config_get_ptr();
+		char* currentdriver = settings->arrays.video_driver;
+		if (strcmpi(currentdriver, "gl") == 0)
+		{
+			//set driver to default
+			configuration_set_string(settings,
+				settings->arrays.video_driver,
+				config_get_default_video());
+			//reset needed
+			reset = true;
+		}
+		if ((settings->uints.video_fullscreen_x != width) || (settings->uints.video_fullscreen_y != height))
+		{
+			//get width and height from display again
+			configuration_set_int(settings,
+				settings->uints.video_fullscreen_x,
+				width);
+			configuration_set_int(settings,
+				settings->uints.video_fullscreen_y,
+				height);
+			//reset needed
+			reset = true;
+		}
+		if (reset)
+		{
+			//restart driver
+			command_event(CMD_EVENT_REINIT, NULL);
+		}
+
+	}
+
 	/* Run() won't start until the CoreWindow is activated. */
 	CoreWindow::GetForCurrentThread()->Activate();
 }
@@ -483,6 +517,15 @@ void App::OnResuming(Platform::Object^ sender, Platform::Object^ args)
 	 * and state are persisted when resuming from suspend. Note that this event
 	 * does not occur if the app was previously terminated.
     */
+}
+
+void App::OnEnteredBackground(Platform::Object^ sender, EnteredBackgroundEventArgs^ args)
+{
+	//RetroArch entered background because another app/frontend was launched on exit, so properly quit
+	if (m_launchOnExitShutdown == true)
+	{
+		CoreApplication::Exit();
+	}
 }
 
 void App::OnBackRequested(Platform::Object^ sender, Windows::UI::Core::BackRequestedEventArgs^ args)
@@ -636,6 +679,57 @@ void App::OnPackageInstalling(PackageCatalog^ sender, PackageInstallingEventArgs
 		snprintf(msg, sizeof(msg), "Package \"%ls\" installed, a restart may be necessary", args->Package->DisplayName->Data());
 		runloop_msg_queue_push(msg, 1, 5 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 	}
+}
+
+void App::ParseProtocolArgs(Windows::ApplicationModel::Activation::IActivatedEventArgs^ args, int *argc, std::vector<char*> *argv, std::vector<std::string> *argvTmp)
+{
+	argvTmp->clear();
+	argv->clear();
+
+	if (args->Kind == ActivationKind::Protocol)
+	{
+		ProtocolActivatedEventArgs^ protocolArgs = dynamic_cast<Windows::ApplicationModel::Activation::ProtocolActivatedEventArgs^>(args);
+		Windows::Foundation::WwwFormUrlDecoder^ query = protocolArgs->Uri->QueryParsed;
+
+		//if RetroArch UWP app is started using protocol with argument "launchOnExit", this gives an option to launch another app on RA exit,
+		//making it easy to integrate RA with other UWP frontends
+		try
+		{
+			m_launchOnExit = query->GetFirstValueByName("launchOnExit");
+		}
+		catch (Platform::InvalidArgumentException^ e)
+		{
+			//nothing to do if named parameter doesn't exist
+		}
+
+		try
+		{
+			//protocol activation is in format 0=argValue0&1=argValue1...
+			//where argument name is a number from 0 to 9
+			for (int i = 0; i < 10; i++)
+			{
+				wchar_t buffer[5];
+				swprintf(buffer, L"%d", i);
+				Platform::String^ argName = ref new Platform::String(buffer);
+				Platform::String^ arg = query->GetFirstValueByName(argName);
+				std::wstring ws(arg->ToString()->Data());
+				std::string stdstr(ws.begin(), ws.end());
+				argvTmp->push_back(stdstr);				
+			}
+		}
+		catch (Platform::InvalidArgumentException^ e)
+		{
+			//nothing to do if named parameter doesn't exist
+		}
+	}
+
+	(*argc) = argvTmp->size();
+	//convert to char* array compatible with argv
+	for (int i = 0; i < argvTmp->size(); i++)
+	{
+		argv->push_back((char*)(argvTmp->at(i)).c_str());
+	}
+	argv->push_back(nullptr);
 }
 
 /* Implement UWP equivalents of various win32_* functions */
