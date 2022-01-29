@@ -632,8 +632,8 @@ static void *udev_joypad_init(void *data)
       struct udev_device  *dev = udev_device_new_from_syspath(udev_joypad_fd, name);
       const char      *devnode = udev_device_get_devnode(dev);
 #if defined(DEBUG)
+      struct udev_list_entry *list_entry = NULL;
       RARCH_DBG("udev_joypad_init entry name=%s devnode=%s\n", name, devnode);
-      struct udev_list_entry *list_entry;
       udev_list_entry_foreach(list_entry, udev_device_get_properties_list_entry(dev))
          RARCH_DBG("udev_joypad_init property %s=%s\n",
                        udev_list_entry_get_name(list_entry),
