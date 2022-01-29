@@ -69,15 +69,15 @@ void upscale_240x160_to_320x240(uint16_t *dst, const uint16_t *src,
       uint16_t dst_stride, uint16_t src_stride)
 {
    /* There are 80 blocks of 3 pixels horizontally,
-    * and 10 blocks of 16 pixels vertically
-    * Each block of 3x16 becomes 4x17 */
+    * and 80 blocks of 2 pixels vertically
+    * Each block of 3x2 becomes 4x3 */
    uint32_t block_x;
    uint32_t block_y;
 
-   for (block_y = 0; block_y < 10; block_y++) 
+   for (block_y = 0; block_y < 80; block_y++) 
    { 
-      const uint16_t *block_src = src + block_y * src_stride * 16;
-      uint16_t *block_dst       = dst + block_y * dst_stride * 17;
+      const uint16_t *block_src = src + block_y * src_stride * 2;
+      uint16_t *block_dst       = dst + block_y * dst_stride * 3;
 
       for (block_x = 0; block_x < 80; block_x++)
       {
@@ -86,46 +86,12 @@ void upscale_240x160_to_320x240(uint16_t *dst, const uint16_t *src,
          uint16_t *block_dst_ptr       = block_dst;
 
          uint16_t _1,   _2,  _3,
-                  _4,   _5,  _6,
-                  _7,   _8,  _9,
-                  _10, _11, _12,
-                  _13, _14, _15,
-                  _16, _17, _18,
-                  _19, _20, _21,
-                  _22, _23, _24,
-                  _25, _26, _27,
-                  _28, _29, _30,
-                  _31, _32, _33,
-                  _34, _35, _36,
-                  _37, _38, _39,
-                  _40, _41, _42,
-                  _43, _44, _45,
-                  _46, _47, _48;
+                  _4,   _5,  _6;
 
-         uint16_t   _7_8_weight_1_3;
-         uint16_t   _8_9_weight_1_1;
-         uint16_t _10_11_weight_1_3;
-         uint16_t _11_12_weight_1_1;
-         uint16_t _13_14_weight_1_3;
-         uint16_t _14_15_weight_1_1;
-         uint16_t _16_17_weight_1_3;
-         uint16_t _17_18_weight_1_1;
-         uint16_t _19_20_weight_1_3;
-         uint16_t _20_21_weight_1_1;
-         uint16_t _22_23_weight_1_3;
-         uint16_t _23_24_weight_1_1;
-         uint16_t _25_26_weight_1_3;
-         uint16_t _26_27_weight_1_1;
-         uint16_t _28_29_weight_1_3;
-         uint16_t _29_30_weight_1_1;
-         uint16_t _31_32_weight_1_3;
-         uint16_t _32_33_weight_1_1;
-         uint16_t _34_35_weight_1_3;
-         uint16_t _35_36_weight_1_1;
-         uint16_t _37_38_weight_1_3;
-         uint16_t _38_39_weight_1_1;
-         uint16_t _40_41_weight_1_3;
-         uint16_t _41_42_weight_1_1;
+         uint16_t _1_2_weight_1_3;
+         uint16_t _2_3_weight_1_1;
+         uint16_t _4_5_weight_1_3;
+         uint16_t _5_6_weight_1_1;
 
          uint16_t tmp;
 
@@ -133,27 +99,14 @@ void upscale_240x160_to_320x240(uint16_t *dst, const uint16_t *src,
           * Before(3):
           * (a)(b)(c)
           * After(4):
-          * (a)(abbb)(bc)(c)
+          * (a)(ab)(bc)(c)
           *
           * Vertically:
-          * Before(16): After(17):
+          * Before(2): After(3):
           * (a)       (a)
-          * (b)       (b)
-          * (c)       (c)
-          * (d)       (cddd)
-          * (e)       (deee)
-          * (f)       (efff)
-          * (g)       (fggg)
-          * (h)       (ghhh)
-          * (i)       (hi)
-          * (j)       (iiij)
-          * (k)       (jjjk)
-          * (l)       (kkkl)
-          * (m)       (lllm)
-          * (n)       (mmmn)
-          * (o)       (n)
-          * (p)       (o)
-          *           (p)
+          * (b)       (ab)
+          * (c)       (bc)
+          *           (c)
           */
 
          /* -- Row 1 -- */
@@ -174,257 +127,26 @@ void upscale_240x160_to_320x240(uint16_t *dst, const uint16_t *src,
          _5 = *(block_src_ptr + 1);
          _6 = *(block_src_ptr + 2);
 
+         UPSCALE_240__WEIGHT_3_1( _1, _4, block_dst_ptr, tmp);
+         UPSCALE_240__WEIGHT_1_3(_4, _5, &_4_5_weight_1_3, tmp);
+         UPSCALE_240__WEIGHT_3_1(_1_2_weight_1_3, _4_5_weight_1_3, block_dst_ptr + 1, tmp);
+         UPSCALE_240__WEIGHT_1_1(_2, _3, &_2_3_weight_1_1, tmp);
+         UPSCALE_240__WEIGHT_3_1(_5, _6, &_5_6_weight_1_1, tmp);
+         UPSCALE_240__WEIGHT_3_1(_2_3_weight_1_1, _5_6_weight_1_1, block_dst_ptr + 2, tmp);
+
+         block_src_ptr += src_stride;
+         block_dst_ptr += dst_stride;
+
+         /* -- Row 3 -- */
          *(block_dst_ptr    ) = _4;
-         UPSCALE_240__WEIGHT_1_3( _4,  _5, block_dst_ptr + 1, tmp);
-         UPSCALE_240__WEIGHT_1_1( _5,  _6, block_dst_ptr + 2, tmp);
+         UPSCALE_240__WEIGHT_1_3( _4, _5, block_dst_ptr + 1, tmp);
+         UPSCALE_240__WEIGHT_1_1( _5, _6, block_dst_ptr + 2, tmp);
          *(block_dst_ptr + 3) = _6;
-
-         block_src_ptr += src_stride;
-         block_dst_ptr += dst_stride;
-
-         /* -- Row 3 -- */    
-         _7 = *(block_src_ptr    );
-         _8 = *(block_src_ptr + 1);
-         _9 = *(block_src_ptr + 2);
-
-         *(block_dst_ptr    ) = _7;  /* TODO check */
-         UPSCALE_240__WEIGHT_1_3( _7, _8, &_7_8_weight_1_3, tmp);
-         *(block_dst_ptr + 1) = _7_8_weight_1_3;
-         UPSCALE_240__WEIGHT_1_1(_8, _9, block_dst_ptr + 2, tmp);
-         *(block_dst_ptr + 3) = _9;
-
-         block_src_ptr += src_stride;
-         block_dst_ptr += dst_stride;
-
-         /* -- Row 4 -- */
-         _10 = *(block_src_ptr    );
-         _11 = *(block_src_ptr + 1);
-         _12 = *(block_src_ptr + 2);
-
-         /* TODO check */
-
-         UPSCALE_240__WEIGHT_1_3( _7, _10, block_dst_ptr, tmp);
-         UPSCALE_240__WEIGHT_1_3(_10, _11, &_10_11_weight_1_3, tmp);
-         UPSCALE_240__WEIGHT_1_3(_7_8_weight_1_3, _10_11_weight_1_3, block_dst_ptr + 1, tmp);         
-         UPSCALE_240__WEIGHT_1_1(_8, _9, &_8_9_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_11, _12, &_11_12_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_8_9_weight_1_1, _11_12_weight_1_1, block_dst_ptr + 2, tmp);
-         UPSCALE_240__WEIGHT_3_1(_8, _9, &_8_9_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_9, _12, block_dst_ptr + 3, tmp);
-
-         block_src_ptr += src_stride;
-         block_dst_ptr += dst_stride;
-
-         /* -- Row 5 -- */
-         _13 = *(block_src_ptr    );
-         _14 = *(block_src_ptr + 1);
-         _15 = *(block_src_ptr + 2);
-
-         UPSCALE_240__WEIGHT_1_3(_10, _13, block_dst_ptr, tmp);
-         UPSCALE_240__WEIGHT_1_3(_13, _14, &_13_14_weight_1_3, tmp);
-         UPSCALE_240__WEIGHT_1_3(_10_11_weight_1_3, _13_14_weight_1_3, block_dst_ptr + 1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_11, _12, &_11_12_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_14, _15, &_14_15_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_11_12_weight_1_1, _14_15_weight_1_1, block_dst_ptr + 2, tmp);
-         UPSCALE_240__WEIGHT_3_1(_11, _12, &_8_9_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_12, _15, block_dst_ptr + 3, tmp);
-
-         block_src_ptr += src_stride;
-         block_dst_ptr += dst_stride;
-
-         /* -- Row 6 -- */
-         _16 = *(block_src_ptr    );
-         _17 = *(block_src_ptr + 1);
-         _18 = *(block_src_ptr + 2);
-
-         UPSCALE_240__WEIGHT_1_3(_13, _16, block_dst_ptr, tmp);
-         UPSCALE_240__WEIGHT_1_3(_16, _17, &_16_17_weight_1_3, tmp);
-         UPSCALE_240__WEIGHT_1_3(_13_14_weight_1_3, _16_17_weight_1_3, block_dst_ptr + 1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_14, _15, &_14_15_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_17, _18, &_17_18_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_14_15_weight_1_1, _17_18_weight_1_1, block_dst_ptr + 2, tmp);
-         UPSCALE_240__WEIGHT_3_1(_14, _15, &_11_12_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_15, _18, block_dst_ptr + 3, tmp);
-
-         block_src_ptr += src_stride;
-         block_dst_ptr += dst_stride;
-
-         /* -- Row 7 -- */
-         _19 = *(block_src_ptr    );
-         _20 = *(block_src_ptr + 1);
-         _21 = *(block_src_ptr + 2);
-
-         UPSCALE_240__WEIGHT_1_3(_16, _19, block_dst_ptr, tmp);
-         UPSCALE_240__WEIGHT_1_3(_19, _20, &_19_20_weight_1_3, tmp);
-         UPSCALE_240__WEIGHT_1_3(_16_17_weight_1_3, _19_20_weight_1_3, block_dst_ptr + 1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_17, _18, &_17_18_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_20, _21, &_20_21_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_17_18_weight_1_1, _20_21_weight_1_1, block_dst_ptr + 2, tmp);
-         UPSCALE_240__WEIGHT_3_1(_17, _18, &_14_15_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_18, _21, block_dst_ptr + 3, tmp);
-
-         block_src_ptr += src_stride;
-         block_dst_ptr += dst_stride;
-
-         /* -- Row 8 -- */
-         _22 = *(block_src_ptr    );
-         _23 = *(block_src_ptr + 1);
-         _24 = *(block_src_ptr + 2);
-
-         UPSCALE_240__WEIGHT_1_3(_19, _22, block_dst_ptr, tmp);
-         UPSCALE_240__WEIGHT_1_3(_22, _23, &_22_23_weight_1_3, tmp);
-         UPSCALE_240__WEIGHT_1_3(_19_20_weight_1_3, _22_23_weight_1_3, block_dst_ptr + 1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_20, _21, &_20_21_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_23, _24, &_23_24_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_20_21_weight_1_1, _23_24_weight_1_1, block_dst_ptr + 2, tmp);
-         UPSCALE_240__WEIGHT_3_1(_20, _21, &_17_18_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_21, _24, block_dst_ptr + 3, tmp);
-
-         block_src_ptr += src_stride;
-         block_dst_ptr += dst_stride;
-
-         /* -- Row 9 -- */
-         _25 = *(block_src_ptr    );
-         _26 = *(block_src_ptr + 1);
-         _27 = *(block_src_ptr + 2);
-
-         UPSCALE_240__WEIGHT_1_3(_22, _25, block_dst_ptr, tmp);
-         UPSCALE_240__WEIGHT_1_3(_25, _26, &_25_26_weight_1_3, tmp);
-         UPSCALE_240__WEIGHT_1_3(_22_23_weight_1_3, _25_26_weight_1_3, block_dst_ptr + 1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_23, _24, &_23_24_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_26, _27, &_26_27_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_23_24_weight_1_1, _26_27_weight_1_1, block_dst_ptr + 2, tmp);
-         UPSCALE_240__WEIGHT_3_1(_23, _24, &_20_21_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_24, _27, block_dst_ptr + 3, tmp);
-
-         block_src_ptr += src_stride;
-         block_dst_ptr += dst_stride;
-
-         /* -- Row 10 -- */
-         _28 = *(block_src_ptr    );
-         _29 = *(block_src_ptr + 1);
-         _30 = *(block_src_ptr + 2);
-
-         UPSCALE_240__WEIGHT_1_3(_25, _28, block_dst_ptr, tmp);
-         UPSCALE_240__WEIGHT_1_3(_28, _29, &_28_29_weight_1_3, tmp);
-         UPSCALE_240__WEIGHT_1_3(_25_26_weight_1_3, _28_29_weight_1_3, block_dst_ptr + 1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_26, _27, &_26_27_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_29, _30, &_29_30_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_26_27_weight_1_1, _29_30_weight_1_1, block_dst_ptr + 2, tmp);
-         UPSCALE_240__WEIGHT_3_1(_26, _27, &_23_24_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_27, _30, block_dst_ptr + 3, tmp);
-
-         block_src_ptr += src_stride;
-         block_dst_ptr += dst_stride;
-
-         /* -- Row 11 -- */
-         _31 = *(block_src_ptr    );
-         _32 = *(block_src_ptr + 1);
-         _33 = *(block_src_ptr + 2);
-
-         UPSCALE_240__WEIGHT_1_3(_28, _31, block_dst_ptr, tmp);
-         UPSCALE_240__WEIGHT_1_3(_31, _32, &_31_32_weight_1_3, tmp);
-         UPSCALE_240__WEIGHT_1_3(_28_29_weight_1_3, _31_32_weight_1_3, block_dst_ptr + 1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_29, _30, &_29_30_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_32, _33, &_32_33_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_29_30_weight_1_1, _32_33_weight_1_1, block_dst_ptr + 2, tmp);
-         UPSCALE_240__WEIGHT_3_1(_29, _30, &_26_27_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_30, _33, block_dst_ptr + 3, tmp);
-
-         block_src_ptr += src_stride;
-         block_dst_ptr += dst_stride;
-
-         /* -- Row 12 -- */
-         _34 = *(block_src_ptr    );
-         _35 = *(block_src_ptr + 1);
-         _36 = *(block_src_ptr + 2);
-
-         UPSCALE_240__WEIGHT_1_3(_31, _34, block_dst_ptr, tmp);
-         UPSCALE_240__WEIGHT_1_3(_34, _35, &_34_35_weight_1_3, tmp);
-         UPSCALE_240__WEIGHT_1_3(_31_32_weight_1_3, _34_35_weight_1_3, block_dst_ptr + 1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_32, _33, &_32_33_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_35, _36, &_35_36_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_32_33_weight_1_1, _35_36_weight_1_1, block_dst_ptr + 2, tmp);
-         UPSCALE_240__WEIGHT_3_1(_32, _33, &_29_30_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_33, _36, block_dst_ptr + 3, tmp);
-
-         block_src_ptr += src_stride;
-         block_dst_ptr += dst_stride;
-
-         /* -- Row 13 -- */
-         _37 = *(block_src_ptr    );
-         _38 = *(block_src_ptr + 1);
-         _39 = *(block_src_ptr + 2);
-
-         UPSCALE_240__WEIGHT_1_3(_34, _37, block_dst_ptr, tmp);
-         UPSCALE_240__WEIGHT_1_3(_37, _38, &_37_38_weight_1_3, tmp);
-         UPSCALE_240__WEIGHT_1_3(_34_35_weight_1_3, _37_38_weight_1_3, block_dst_ptr + 1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_35, _37, &_35_36_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_38, _39, &_38_39_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_35_36_weight_1_1, _38_39_weight_1_1, block_dst_ptr + 2, tmp);
-         UPSCALE_240__WEIGHT_3_1(_35, _36, &_32_33_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_36, _39, block_dst_ptr + 3, tmp);
-
-         block_src_ptr += src_stride;
-         block_dst_ptr += dst_stride;
-
-         /* -- Row 14 -- */
-         _40 = *(block_src_ptr    );
-         _41 = *(block_src_ptr + 1);
-         _42 = *(block_src_ptr + 2);
-
-         UPSCALE_240__WEIGHT_1_3(_37, _40, block_dst_ptr, tmp);
-         UPSCALE_240__WEIGHT_1_3(_40, _41, &_40_41_weight_1_3, tmp);
-         UPSCALE_240__WEIGHT_1_3(_37_38_weight_1_3, _40_41_weight_1_3, block_dst_ptr + 1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_38, _40, &_38_39_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_41, _42, &_41_42_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_38_39_weight_1_1, _41_42_weight_1_1, block_dst_ptr + 2, tmp);
-         UPSCALE_240__WEIGHT_3_1(_38, _39, &_35_36_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_39, _42, block_dst_ptr + 3, tmp);
-
-         block_src_ptr += src_stride;
-         block_dst_ptr += dst_stride;
-
-         /* -- Row 15 -- */
-         *(block_dst_ptr    ) = _40;
-         *(block_dst_ptr + 1) = _40_41_weight_1_3;
-         *(block_dst_ptr + 2) = _41_42_weight_1_1;
-         *(block_dst_ptr + 3) = _42;
-
-         block_dst_ptr += dst_stride;
-
-         /* -- Row 16 -- */
-         _43 = *(block_src_ptr    );
-         _44 = *(block_src_ptr + 1);
-         _45 = *(block_src_ptr + 2);
-
-         *(block_dst_ptr    ) = _43;
-         UPSCALE_240__WEIGHT_1_3(_43, _44, block_dst_ptr + 1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_44, _45, block_dst_ptr + 2, tmp);
-         *(block_dst_ptr + 3) = _45;
-
-         block_src_ptr += src_stride;
-         block_dst_ptr += dst_stride;
-
-         /* -- Row 17 -- */
-         _46 = *(block_src_ptr    );
-         _47 = *(block_src_ptr + 1);
-         _48 = *(block_src_ptr + 2);
-
-         *(block_dst_ptr    ) = _46;
-         UPSCALE_240__WEIGHT_1_3(_46, _47, block_dst_ptr + 1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_47, _48, block_dst_ptr + 2, tmp);
-         *(block_dst_ptr + 3) = _48;
 
          block_src += 3;
          block_dst += 4;
       }
    }
-
-   /* The above scaling produces an output image 238 pixels high
-    * > Last two rows must be zeroed out */
-   memset(dst + (238 * dst_stride), 0, sizeof(uint16_t) * dst_stride);
-   memset(dst + (239 * dst_stride), 0, sizeof(uint16_t) * dst_stride);
 }
 
 /*******************************************************************
