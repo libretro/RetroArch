@@ -105,8 +105,7 @@ void upscale_240x160_to_320x240(uint16_t *dst, const uint16_t *src,
           * Before(2): After(3):
           * (a)       (a)
           * (b)       (ab)
-          * (c)       (bc)
-          *           (c)
+          *           (b)
           */
 
          /* -- Row 1 -- */
