@@ -560,8 +560,17 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    uint8_t *frame_rgba  = NULL;
    /* FIXME: For now, everything is uploaded as BGRA8888, I could not get 444 or 555 to work, and there is no 565 support in GL 1.1 either. */
    GLint internalFormat = GL_RGB8;
-   GLenum format        = gl1->supports_bgra ? GL_BGRA_EXT : GL_RGBA;
+#ifdef MSB_FIRST
+   bool   supports_native = gl1->supports_bgra;
+   GLenum format        = supports_native ? GL_BGRA_EXT : GL_RGBA;
+   GLenum type          = supports_native ? GL_UNSIGNED_INT_8_8_8_8_REV : GL_UNSIGNED_BYTE;
+#elif defined(LSB_FIRST)
+   bool   supports_native = gl1->supports_bgra;
+   GLenum format        = supports_native ? GL_BGRA_EXT : GL_RGBA;
    GLenum type          = GL_UNSIGNED_BYTE;
+#else
+#error Broken endianness definition
+#endif
 
    float vertices[] = {
 	   -1.0f, -1.0f, 0.0f,
@@ -606,7 +615,8 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    glBindTexture(GL_TEXTURE_2D, tex);
 
    frame = (uint8_t*)frame_to_copy;
-   if (!gl1->supports_bgra)
+
+   if (!supports_native)
    {
       frame_rgba = (uint8_t*)malloc(pot_width * pot_height * 4);
       if (frame_rgba)
@@ -617,10 +627,17 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
             for (x = 0; x < pot_width; x++)
             {
                int index             = (y * pot_width + x) * 4;
+#ifdef MSB_FIRST
+               frame_rgba[index + 2] = frame[index + 3];
+               frame_rgba[index + 1] = frame[index + 2];
+               frame_rgba[index + 0] = frame[index + 1];
+               frame_rgba[index + 3] = frame[index + 0];
+#else
                frame_rgba[index + 2] = frame[index + 0];
                frame_rgba[index + 1] = frame[index + 1];
                frame_rgba[index + 0] = frame[index + 2];
                frame_rgba[index + 3] = frame[index + 3];
+#endif
             }
          }
          frame = frame_rgba;
