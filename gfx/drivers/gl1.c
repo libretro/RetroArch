@@ -278,6 +278,15 @@ static void *gl1_gfx_init(const video_info_t *video,
       gl1->ctx_driver->get_video_size(gl1->ctx_data,
                &mode_width, &mode_height);
 
+#if defined(__APPLE__) && !defined(IOS)
+   /* This is a hack for now to work around a very annoying
+    * issue that currently eludes us. */
+   if (     !gl1->ctx_driver->set_video_mode
+         || !gl1->ctx_driver->set_video_mode(gl1->ctx_data,
+            win_width, win_height, video->fullscreen))
+      goto error;
+#endif
+
    full_x      = mode_width;
    full_y      = mode_height;
    mode_width  = 0;
