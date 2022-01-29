@@ -126,12 +126,14 @@ void upscale_240x160_to_320x240(uint16_t *dst, const uint16_t *src,
          _5 = *(block_src_ptr + 1);
          _6 = *(block_src_ptr + 2);
 
-         UPSCALE_240__WEIGHT_3_1( _1, _4, block_dst_ptr, tmp);
+         UPSCALE_240__WEIGHT_1_3( _1, _4, block_dst_ptr, tmp);
+         UPSCALE_240__WEIGHT_1_3(_1, _2, &_1_2_weight_1_3, tmp);
          UPSCALE_240__WEIGHT_1_3(_4, _5, &_4_5_weight_1_3, tmp);
-         UPSCALE_240__WEIGHT_3_1(_1_2_weight_1_3, _4_5_weight_1_3, block_dst_ptr + 1, tmp);
+         UPSCALE_240__WEIGHT_1_3(_1_2_weight_1_3, _4_5_weight_1_3, block_dst_ptr + 1, tmp);
          UPSCALE_240__WEIGHT_1_1(_2, _3, &_2_3_weight_1_1, tmp);
          UPSCALE_240__WEIGHT_3_1(_5, _6, &_5_6_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_3_1(_2_3_weight_1_1, _5_6_weight_1_1, block_dst_ptr + 2, tmp);
+         UPSCALE_240__WEIGHT_1_3(_2_3_weight_1_1, _5_6_weight_1_1, block_dst_ptr + 2, tmp);
+         UPSCALE_240__WEIGHT_1_3(_3, _6, block_dst_ptr + 3, tmp);
 
          block_src_ptr += src_stride;
          block_dst_ptr += dst_stride;
