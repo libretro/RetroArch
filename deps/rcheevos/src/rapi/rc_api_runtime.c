@@ -129,7 +129,7 @@ int rc_api_process_fetch_game_data_response(rc_api_fetch_game_data_response_t* r
   rc_buf_init(&response->response.buffer);
 
   result = rc_json_parse_response(&response->response, server_response, fields, sizeof(fields) / sizeof(fields[0]));
-  if (result != RC_OK)
+  if (result != RC_OK || !response->response.succeeded)
     return result;
 
   if (!rc_json_get_required_object(patchdata_fields, sizeof(patchdata_fields) / sizeof(patchdata_fields[0]), &response->response, &fields[2], "PatchData"))

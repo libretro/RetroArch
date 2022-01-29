@@ -1098,6 +1098,10 @@ static void rcheevos_async_fetch_game_data_callback(
          "i%s", runtime_data->game_data.image_name);
       rcheevos_client_fetch_game_badge(runtime_data->game_data.image_name, runtime_data);
    }
+   else
+   {
+      rcheevos_unload();
+   }
 }
 
 void rcheevos_client_initialize_runtime(unsigned game_id,
