@@ -134,12 +134,28 @@ MSG_HASH(
    "Vis alle konfigurasjonsrelaterte innstillinger."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
+   "Oppdateringer fra nettet"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
+   "Last ned tillegg, komponenter og innhold for RetroArch fra nettet."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY,
    "Nettspill"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY,
+   "Bli med i eller start en nettspillsøkt."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
    "Innstillinger"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS,
+   "Konfigurer programmet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
@@ -148,6 +164,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
    "Vis systeminformasjon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+   "Konfigurasjonsfil"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
+   "Administrer og opprett konfigurasjonsfiler."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LIST,
@@ -181,8 +205,16 @@ MSG_HASH(
    "Last ned en Kjerne"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+   "Last ned og installer en kjerne fra nettet."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
    "Installer eller gjenopprett en Kjerne"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+   "Installer eller gjenopprett en kjerne fra nedlastingsmappen."
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
@@ -296,6 +328,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
    "Innholdnedlaster"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Kjerne systemfiler Nedlaster"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Last ned tilleggssystemfiler som kreves for korrekt/optimal kjerne operasjon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
@@ -946,7 +986,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
-   "Endre videoutdata innstillinger."
+   "Endre innstillinger for video utdata."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
@@ -962,7 +1002,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
-   "Endre kontroller-, tastatur- og museinstillinger."
+   "Endre instillinger for tastatur og mus, og kontroller."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
@@ -978,7 +1018,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-   "Endre kjerneinnstillinger."
+   "Endre instillinger for kjerner."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
@@ -994,11 +1034,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
-   "Endre lagringsinnstillinger."
+   "Endre instillinger for lagring."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-   "Endre loggingsinnstillinger."
+   "Endre instillinger for logging."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -1006,7 +1046,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "Endre filutforskersinnstillinger."
+   "Endre instillinger for filutforsker."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -1014,7 +1054,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-   "Endre innstillinger for spol tilbake, spol fremover og saktefilm instillinger."
+   "Endre innstillinger for spol tilbake, spol fremover og saktefilm."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
@@ -1022,7 +1062,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-   "Endre opptaksinnstillinger."
+   "Endre instillinger for opptak."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
@@ -1066,7 +1106,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-   "Endre prestasjonsinnstillinger."
+   "Endre innstillinger for prestasjoner."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
@@ -1074,7 +1114,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
-   "Endre server og nettverksinnstillinger."
+   "Endre innstillinger for servere og nettverk."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
@@ -1082,7 +1122,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
-   "Endre spillelisteinnstillinger."
+   "Endre innstillinger for spillelister."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
@@ -1090,7 +1130,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Endre konto, brukernavn og språkinnstillinger."
+   "Endre innstillinger for brukerkonto, brukernavn og språk."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
@@ -1172,6 +1212,14 @@ MSG_HASH(
    "Menydriveren som brukes."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
+   "Opptak"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
+   "Opptaksdriveren som brukes."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
    "MIDIdriveren som brukes."
    )
@@ -1188,7 +1236,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
-   "Endre videoutdata innstillinger."
+   "Endre innstillinger for video utdata."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
@@ -1362,6 +1410,10 @@ MSG_HASH(
    "Bruk høyoppløsings meny"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
+   "Bytt til modeline med høy oppløsning for bruk med høyoppløselige menyer når ikke noe innhold er lastet inn."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    "Egendefinert oppdateringsrate"
    )
@@ -1436,18 +1488,126 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    "Nøyaktig estimert oppdateringsrate av skjermen i Hz."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
+   "Velg visningsrapportert oppdateringsfrekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
+   "Oppdateringsraten som er rapportert av visningsdriveren."
+   )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
    "Vertikal oppdateringsrate"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
+   "Sett vertikal oppdateringsrate for visningen. \"50 Hz\" vil aktivere glatt video når du kjører PAL innhold."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
+   "Tvangsdeaktiver sRGB FBO"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   "Tvangsdeaktiverer sRGB FBO støtte. Noen Intel OpenGL drivere på windows har videoproblemer med sRGB FBO. Slå på denne innstillingen for å mulligens jobbe rundt det."
+   )
 
 /* Settings > Video > Fullscreen Mode */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   "Start i Fullskjermmodus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   "Start i fullskjerm. Kan endres mens programmet kjøres. Kan overstyres med en kommandolinjebryter."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   "Fullskjermsmodus i vindu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   "Hvis fullskjerm er på, foretrekk fullskjerm i vindumodus for å forhindre visningsmodus bytte."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   "Fullskjerm bredde"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   "Angi en egendefinert bredde for fullskjermmodus. Hvis denne er blank vil skrivebordsoppløsningen brukes."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   "Fullskjerm høyde"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   "Angi en egendefinert høyde for fullskjermmodus. Hvis denne er blank vil skrivebordsoppløsningen brukes."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
+   "Tving oppløsning på UWP"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
+   "Tving oppløsningen til fullskjerm størrelsen. Hvis satt til 0, brukes en fast verdi på 3840 x 2160."
+   )
 
 /* Settings > Video > Windowed Mode */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
+   "Vindu skala"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
+   "Gjennomsiktighet for vindumodus"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
+   "Vis vindudekorasjoner"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+   "Husk vinduets posisjon og størrelse"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+   "Vis alt innhold i et fast vindu med dimensjoner angitt av \"Vinduets bredde\" og \"Vinduets høyde\", og lagre gjeldende vindusstørrelse og posisjon når RetroArch lukkes. Når deaktivert blir vindusstørrelsen satt dynamisk basert på \"Vindu skala\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Bruk egendefinert vindusstørrelse"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Vis alt innhold i et fast vindu av dimensjoner angitt med 'Vinduets bredde' og 'Vinduets høyde'. Når deaktivert, blir vindusstørrelsen satt dynamisk basert på 'Windowed Scale'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   "Vindu bredde"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   "Angi en egendefinert bredde for visningsvinduet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   "Vindu høyde"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+   "Angi en egendefinert høyde for visningsvinduet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Maksimal vindubredde"
+   )
 
 /* Settings > Video > Scaling */
 
