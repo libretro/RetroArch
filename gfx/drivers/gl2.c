@@ -3736,6 +3736,10 @@ static void *gl2_init(const video_info_t *video,
          video_driver_force_fallback("gdi");
 #endif
 #endif
+#if defined(__APPLE__) && defined(__ppc__)
+   if (gl->version_major == 1)
+         video_driver_force_fallback("gl1");
+#endif
 
    hwr = video_driver_get_hw_context();
 
