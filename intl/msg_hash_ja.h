@@ -791,10 +791,6 @@ MSG_HASH(
    "ネットプレイ(ピアツーピア)対応"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
-   "Python(シェーダでのスクリプト)対応"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
    "Video4Linux2対応"
    )

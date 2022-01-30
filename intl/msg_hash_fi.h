@@ -791,10 +791,6 @@ MSG_HASH(
    "Verkkopelituki (Vertaisverkko)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
-   "Python-tuki (Skriptituki varjostimissa)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
    "Video4Linux2-tuki"
    )

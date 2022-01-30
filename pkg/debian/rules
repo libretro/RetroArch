@@ -28,7 +28,7 @@ ARCH=$(shell dpkg-architecture -qDEB_HOST_ARCH)
 ifeq ($(ARCH), $(filter $(ARCH), amd64 i386))
 CONFIG_EXTRA_FLAGS=--enable-sse
 else ifeq ($(ARCH),armhf)
-CONFIG_EXTRA_FLAGS=--disable-vg --disable-cg --enable-gles --enable-neon --enable-floathard
+CONFIG_EXTRA_FLAGS=--disable-vg --disable-cg --enable-opengles --enable-neon --enable-floathard
 endif
 
 override_dh_auto_configure:
@@ -50,7 +50,7 @@ override_dh_auto_install:
 ifeq ($(ARCH),armhf)
 	rm -f $(CURDIR)/debian/retroarch/usr/bin/retroarch-cg2glsl
 endif
-	
+
 	# SoftFilters
 	cd $(CURDIR)/gfx/video_filters/ && \
 		cp *.so $(CURDIR)/debian/retroarch/usr/lib/retroarch/filters/video/ && \

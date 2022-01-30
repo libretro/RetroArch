@@ -1686,8 +1686,8 @@ bool command_event(enum event_command cmd, void *data)
                else
                {
                   if (!string_is_empty(desc))
-                     snprintf(msg, sizeof(msg), 
-                        msg_hash_to_str(MSG_SCREEN_RESOLUTION_DESC), 
+                     snprintf(msg, sizeof(msg),
+                        msg_hash_to_str(MSG_SCREEN_RESOLUTION_DESC),
                         width, height, desc);
                   else
                      snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_NO_DESC),
@@ -1953,7 +1953,7 @@ bool command_event(enum event_command cmd, void *data)
             runloop_system_info_free();
 #endif
             {
-               audio_driver_state_t 
+               audio_driver_state_t
                   *audio_st                  = audio_state_get_ptr();
                audio_st->callback.callback   = NULL;
                audio_st->callback.set_state  = NULL;
@@ -2082,7 +2082,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_AUDIO_MUTE_TOGGLE:
          {
-            audio_driver_state_t 
+            audio_driver_state_t
                *audio_st                       = audio_state_get_ptr();
             bool audio_mute_enable             =
                *(audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE));
@@ -2117,7 +2117,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_OVERLAY
          {
             bool *check_rotation           = (bool*)data;
-            video_driver_state_t 
+            video_driver_state_t
                *video_st                   = video_state_get_ptr();
             input_driver_state_t *input_st = input_state_get_ptr();
             bool inp_overlay_auto_rotate   = settings->bools.input_overlay_auto_rotate;
@@ -2316,7 +2316,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_CORE_DEINIT:
          {
             struct retro_hw_render_callback *hwr = NULL;
-            video_driver_state_t 
+            video_driver_state_t
                *video_st                         = video_state_get_ptr();
             rarch_system_info_t *sys_info        = &runloop_st->system;
 
@@ -2393,7 +2393,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             bool adaptive_vsync       = settings->bools.video_adaptive_vsync;
             unsigned swap_interval    = settings->uints.video_swap_interval;
-            video_driver_state_t 
+            video_driver_state_t
                *video_st              = video_state_get_ptr();
 
             if (video_st->current_video->set_nonblock_state)
@@ -2411,7 +2411,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_OVERLAY
          {
             overlay_layout_desc_t layout_desc;
-            video_driver_state_t 
+            video_driver_state_t
                *video_st                        = video_state_get_ptr();
             input_driver_state_t *input_st      = input_state_get_ptr();
 
@@ -2928,9 +2928,9 @@ bool command_event(enum event_command cmd, void *data)
 #endif
       case CMD_EVENT_FULLSCREEN_TOGGLE:
          {
-            audio_driver_state_t 
+            audio_driver_state_t
                *audio_st              = audio_state_get_ptr();
-            input_driver_state_t 
+            input_driver_state_t
                *input_st              = input_state_get_ptr();
             bool *userdata            = (bool*)data;
             bool video_fullscreen     = settings->bools.video_fullscreen;
@@ -3133,7 +3133,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_GRAB_MOUSE_TOGGLE:
          {
             bool ret              = false;
-            input_driver_state_t 
+            input_driver_state_t
                *input_st          = input_state_get_ptr();
             bool grab_mouse_state = !input_st->grab_mouse_state;
 
@@ -3179,7 +3179,7 @@ bool command_event(enum event_command cmd, void *data)
             bool video_fullscreen                         =
                settings->bools.video_fullscreen || video_st->force_fullscreen;
             enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_TOGGLE;
-            input_driver_state_t 
+            input_driver_state_t
                *input_st                                  = input_state_get_ptr();
             bool current_enable_state                     = input_st->game_focus_state.enabled;
             bool apply_update                             = false;
@@ -3234,7 +3234,7 @@ bool command_event(enum event_command cmd, void *data)
 
             if (apply_update)
             {
-               input_driver_state_t 
+               input_driver_state_t
                   *input_st          = input_state_get_ptr();
 
                if (input_st->game_focus_state.enabled)
@@ -3274,7 +3274,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_VOLUME_UP:
          {
-            audio_driver_state_t 
+            audio_driver_state_t
                *audio_st              = audio_state_get_ptr();
             command_event_set_volume(settings, 0.5f,
 #if defined(HAVE_GFX_WIDGETS)
@@ -3303,9 +3303,9 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_SET_FRAME_LIMIT:
          {
-            video_driver_state_t 
+            video_driver_state_t
                *video_st                        = video_state_get_ptr();
-            runloop_st->frame_limit_minimum_time= 
+            runloop_st->frame_limit_minimum_time=
                runloop_set_frame_limit(&video_st->av_info,
                      runloop_get_fastforward_ratio(
                         settings,
@@ -4042,7 +4042,6 @@ static void retroarch_print_features(void)
    _PSUPP_BUF(buf, SUPPORTS_FREETYPE,        "FreeType",        "TTF font rendering driver");
    _PSUPP_BUF(buf, SUPPORTS_CORETEXT,        "CoreText",        "TTF font rendering driver ");
    _PSUPP_BUF(buf, SUPPORTS_NETPLAY,         "Netplay",         "Peer-to-peer netplay");
-   _PSUPP_BUF(buf, SUPPORTS_PYTHON,          "Python",          "Script support in shaders");
    _PSUPP_BUF(buf, SUPPORTS_LIBUSB,          "Libusb",          "Libusb support");
    _PSUPP_BUF(buf, SUPPORTS_COCOA,           "Cocoa",           "Cocoa UI companion support "
                                               "(for OSX and/or iOS)");
@@ -4647,14 +4646,14 @@ static bool retroarch_parse_input_and_config(
    }
 
    verbosity_enabled = verbosity_is_enabled();
-   /* Init logging after config load only if not overridden by command line argument. 
+   /* Init logging after config load only if not overridden by command line argument.
     * This handles when logging is set in the config but not via the --log-file option. */
    if (verbosity_enabled && !retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LOG_TO_FILE, NULL))
       rarch_log_file_init(
             settings->bools.log_to_file,
             settings->bools.log_to_file_timestamp,
             settings->paths.log_dir);
-            
+
    /* Second pass: All other arguments override the config file */
    optind = 1;
 
@@ -5122,11 +5121,11 @@ bool retroarch_main_init(int argc, char *argv[])
    bool           init_failed   = false;
    struct rarch_state *p_rarch  = &rarch_st;
    runloop_state_t *runloop_st  = runloop_state_get_ptr();
-   input_driver_state_t 
+   input_driver_state_t
       *input_st                 = input_state_get_ptr();
    video_driver_state_t*video_st= video_state_get_ptr();
    settings_t *settings         = config_get_ptr();
-   recording_state_t 
+   recording_state_t
 	   *recording_st             = recording_state_get_ptr();
    global_t            *global  = global_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
@@ -5524,11 +5523,11 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
          return false;
 #if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
       case RARCH_CTL_IS_SECOND_CORE_AVAILABLE:
-         return 
+         return
                   runloop_st->core_running
                && runloop_st->runahead_secondary_core_available;
       case RARCH_CTL_IS_SECOND_CORE_LOADED:
-         return 
+         return
                    runloop_st->core_running
                && (runloop_st->secondary_lib_handle != NULL);
 #endif
@@ -6120,7 +6119,7 @@ bool accessibility_speak_priority(
             accessibility_enable,
             access_st->enabled))
    {
-      frontend_ctx_driver_t *frontend = 
+      frontend_ctx_driver_t *frontend =
          frontend_state_get_ptr()->current_frontend_ctx;
 
       RARCH_LOG("Spoke: %s\n", speak_text);

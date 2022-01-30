@@ -787,10 +787,6 @@ MSG_HASH(
    "Compatibilidade con xogo en rede (entre pares)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
-   "Compatibilidade con Python (compatibilidade con scripts para sombreadores)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
    "Compatibilidade con Video4Linux2"
    )
