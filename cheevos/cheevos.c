@@ -65,6 +65,7 @@
 #include "../performance_counters.h"
 #include "../msg_hash.h"
 #include "../retroarch.h"
+#include "../runtime_file.h"
 #include "../core.h"
 #include "../core_option_manager.h"
 
@@ -1322,6 +1323,64 @@ static void rc_hash_handle_cd_close_track(void* track_handle)
 
 /* end hooks */
 
+void rcheevos_show_mastery_placard()
+{
+   const settings_t* settings = config_get_ptr();
+   char title[256];
+
+   if (rcheevos_locals.game.mastery_placard_shown)
+      return;
+
+   rcheevos_locals.game.mastery_placard_shown = true;
+
+   snprintf(title, sizeof(title),
+      msg_hash_to_str(rcheevos_locals.hardcore_active ? MSG_CHEEVOS_MASTERED_GAME : MSG_CHEEVOS_COMPLETED_GAME),
+      rcheevos_locals.game.title);
+   title[sizeof(title) - 1] = '\0';
+   CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", title);
+
+#if defined (HAVE_GFX_WIDGETS)
+   if (gfx_widgets_ready())
+   {
+      const bool content_runtime_log = settings->bools.content_runtime_log;
+      const bool content_runtime_log_aggr = settings->bools.content_runtime_log_aggregate;
+      char msg[128];
+      size_t len;
+
+      len = snprintf(msg, sizeof(msg), "%s", rcheevos_locals.username);
+
+      if (len < sizeof(msg) - 12 &&
+         (content_runtime_log || content_runtime_log_aggr))
+      {
+         const char* content_path = path_get(RARCH_PATH_CONTENT);
+         const char* core_path = path_get(RARCH_PATH_CORE);
+         runtime_log_t* runtime_log = runtime_log_init(
+               content_path, core_path,
+               settings->paths.directory_runtime_log,
+               settings->paths.directory_playlist,
+               !content_runtime_log_aggr);
+
+         if (runtime_log)
+         {
+            const runloop_state_t* runloop_state = runloop_state_get_ptr();
+            runtime_log_add_runtime_usec(runtime_log,
+               runloop_state->core_runtime_usec);
+
+            len += snprintf(msg + len, sizeof(msg) - len, " | ");
+            runtime_log_get_runtime_str(runtime_log, msg + len, sizeof(msg) - len);
+            msg[sizeof(msg) - 1] = '\0';
+
+            free(runtime_log);
+         }
+      }
+
+      gfx_widgets_push_achievement(title, msg, rcheevos_locals.game.badge_name);
+   }
+   else
+#endif
+      runloop_msg_queue_push(title, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+}
+
 static void rcheevos_show_game_placard()
 {
    char msg[256];
@@ -1794,6 +1853,7 @@ bool rcheevos_load(const void *data)
    rcheevos_locals.loaded             = false;
    rcheevos_locals.game.id            = -1;
    rcheevos_locals.game.console_id    = 0;
+   rcheevos_locals.game.mastery_placard_shown = false;
 #ifdef HAVE_THREADS
    rcheevos_locals.queued_command     = CMD_EVENT_NONE;
 #endif
