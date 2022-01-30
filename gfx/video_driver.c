@@ -3571,6 +3571,7 @@ void video_driver_frame(const void *data, unsigned width,
    static retro_time_t curr_time;
    static retro_time_t fps_time;
    static float last_fps, frame_time;
+   static float last_skip_frame_time_total;
    static uint64_t last_used_memory, last_total_memory;
    /* Initialise 'last_frame_duped' to 'true'
     * to ensure that the first frame is rendered */
@@ -3626,8 +3627,15 @@ void video_driver_frame(const void *data, unsigned width,
     * - The last frame was NULL and the
     *   current frame is not (i.e. if core was
     *   previously sending duped frames, ensure
-    *   that the next frame update is captured) */
-   render_frame    |= video_info.menu_is_alive || (last_frame_duped && !!data);
+    *   that the next frame update is captured)
+    * - Non-duped frame is going to be skipped while
+    *   skipped frame time total exceeds target
+    *   av_info frame time */
+   render_frame    |=
+         video_info.menu_is_alive ||
+         (last_frame_duped && !!data) ||
+         (!!data && !render_frame &&
+               last_skip_frame_time_total >= (1 / video_st->av_info.timing.fps * 1000000));
    last_frame_duped = !data;
 
    if (!render_frame)
@@ -3722,6 +3730,14 @@ void video_driver_frame(const void *data, unsigned width,
 
       video_st->window_title_update = true;
    }
+
+   /* Sum the total frame time of skipped frames
+    * for smoother frame skipping and maximum
+    * unthrottled speed */
+   if (render_frame)
+      last_skip_frame_time_total = 0;
+   else
+      last_skip_frame_time_total += frame_time;
 
    /* Add core status message to status text */
    if (video_info.core_status_msg_show)
