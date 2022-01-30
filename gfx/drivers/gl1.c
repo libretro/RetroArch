@@ -950,7 +950,12 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    /* Screenshots. */
    if (gl1->readback_buffer_screenshot)
       gl1_readback(gl1,
-            4, GL_RGBA, GL_UNSIGNED_BYTE,
+            4, GL_RGBA,
+#ifdef MSB_FIRST
+		   GL_UNSIGNED_INT_8_8_8_8_REV,
+#else
+		   GL_UNSIGNED_BYTE,
+#endif
             gl1->readback_buffer_screenshot);
 
 
@@ -1338,7 +1343,12 @@ static void gl1_load_texture_data(
          (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL1_INTERNAL_FORMAT32,
          width, height, 0,
          (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL1_TEXTURE_TYPE32,
-         (rgb32) ? RARCH_GL1_FORMAT32 : GL_UNSIGNED_BYTE, frame);
+#ifdef MSB_FIRST
+	 GL_UNSIGNED_INT_8_8_8_8_REV,
+#else
+	 (rgb32) ? RARCH_GL1_FORMAT32 : GL_UNSIGNED_BYTE,
+#endif
+	 frame);
 }
 
 static void video_texture_load_gl1(
