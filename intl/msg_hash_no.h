@@ -147,7 +147,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY,
-   "Bli med i eller start en nettspillsøkt."
+   "Bli med i eller start en Nettspillsøkt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
@@ -418,7 +418,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
-   "Musepeker behandler"
+   "Musepekerstyring"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
@@ -433,7 +433,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
-   "Kjerne etikett"
+   "Kjerneetikett"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
@@ -1406,6 +1406,14 @@ MSG_HASH(
    "Bla gjennom disse alternativene hvis bildet ikke er sentrert riktig på skjermen."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
+   "Juster \"porch\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
+   "Bla gjennom disse valgene for å justere \"porch\" innstillingene for å endre bildestørrelsen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
    "Bruk høyoppløsings meny"
    )
@@ -1565,6 +1573,10 @@ MSG_HASH(
    "Vindu skala"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+   "Sett vindustørrelsen til den spesifiserte multiplikatet av størrelsen til kjernens visningsregion."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    "Gjennomsiktighet for vindumodus"
    )
@@ -1608,14 +1620,138 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    "Maksimal vindubredde"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Sett maksimalbredden av visningsvinduet når automatisk størrelse endring basert på \"vindu skalering\" er på."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Maksimal vinduhøyde"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Sett maksimalhøyden av visningsvinduet når automatisk størrelse endring basert på \"vindu skalering\" er på."
+   )
 
 /* Settings > Video > Scaling */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
+   "Heltall skalering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+   "Skalerer video i bare heltallsteg. Basestørrelsen er avhengig av systemrapportert geometri og størrelsesforhold. Hvis \"tving størrelsesforhold\" er ikke på vil X/Y helltallsskalert uavhengig."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Opprunding av heltallskalering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Tving heltallskalering til å runde opp til det neste heltallet i stedet for å runde ned."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
+   "Størrelsesforhold"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
+   "Egendefinert størrelsesforhold"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
+   "Flytpunktverdi for bildestørrelsesforhold (bredde / høyde), brukt hvis \"størrelsesforhold\" er satt til \"konfigurasjon\"."
+   )
 #if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "Behold størrelsesforhold"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "Ha en 1:1 piksel størrelsesforhold når du skalerer innhold gjennom den interne IPU-en. Blider vil bli strekket for å fylle hele skjermen hvis deaktivert."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
+   "Egendefinert størrelsesforhold (X posisjon)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
+   "Tilpasset visningsregion forskyvning bruk for å definere X-aksen av visningsregionen.\nDisse er ignorert hvis \"heltall skalering\" er aktivert."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
+   "Egendefinert størrelsesforhold (Y posisjon)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+   "Tilpasset visningsregion forskyvning bruk for å definere Y-aksen av visningsregionen.\nDisse er ignorert hvis \"heltall skalering\" er aktivert."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   "Egendefinert størrelsesforhold (bredde)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   "Tilpasset visningsregionsbredde som er brukt hvis størrelsesforhold er satt til \"egendefinert størrelsesforhold\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   "Egendefinert størrelsesforhold (høyde)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   "Tilpasset visningsregionshøyde som er brukt hvis størrelsesforhold er satt til \"egendefinert størrelsesforhold\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
+   "Beskjær overskanning (omstart påkrevd)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
+   "Skjær av noen piksler rundt kanten av bildet som pleier å være svart og inneholder av og til søppelpiksler."
+   )
 
 /* Settings > Video > HDR */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
+   "Aktiver HDR"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "Aktiver HDR dersom skjermen støtter det."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
+   "Maks luminans"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
+   "Angi toppluminansen (i cd/m2) som skjermen din kan reprodusere. Se RTings for den maksimale luminansen til din skjerm."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Papirhvit luminans"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Sett luminansen hvor papirhvit bør være, f.eks lesbar tekst eller luminans på toppen av SDR (Standard dynamic range). Nyttig for justering til ulike lystilstander i dine omgivelser."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
+   "Kontrast"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
+   "Gamma/kontrastkontroll for HDR. Tar farger og øker totalintervallet mellom de lyseste delene og de mørkeste delene av bildet. Jo høyere HDR kontrast er, jo større blir denne forskjellen, mens jo lavere kontrasten er, jo mer utvaskes bildet blir. Hjelper brukere å justere bildet til deres preferanse og hva de føler ser best ut på sin skjerm."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "Utvidet gamut"
+   )
 
 /* Settings > Video > Synchronization */
 
@@ -1973,6 +2109,10 @@ MSG_HASH(
 
 /* RGUI: Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
+   "Heltall skalering"
+   )
 
 /* XMB: Settings > User Interface > Appearance */
 
