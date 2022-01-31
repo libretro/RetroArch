@@ -1741,6 +1741,7 @@ static bool rcheevos_identify_game(const struct retro_game_info* info)
    if (iterator.consoles[iterator.index] == 0)
    {
       /* no more potential matches, just try the one hash */
+      rcheevos_begin_load_state(RCHEEVOS_LOAD_STATE_IDENTIFYING_GAME);
       rcheevos_client_identify_game(hash,
             rcheevos_identify_game_callback, NULL);
       return true;
@@ -1773,6 +1774,8 @@ static bool rcheevos_identify_game(const struct retro_game_info* info)
    }
 
    memcpy(&data->iterator, &iterator, sizeof(iterator));
+
+   rcheevos_begin_load_state(RCHEEVOS_LOAD_STATE_IDENTIFYING_GAME);
    rcheevos_client_identify_game(hash,
          rcheevos_identify_game_callback, data);
    return true;
