@@ -1746,6 +1746,9 @@ static void rcheevos_async_award_achievement_callback(
          CHEEVOS_LOG(RCHEEVOS_TAG "Achievement %u: %s\n",
                request->id, api_response.response.error_message);
       }
+
+      if (api_response.achievements_remaining == 0)
+         rcheevos_show_mastery_placard();
    }
 
    rc_api_destroy_award_achievement_response(&api_response);
