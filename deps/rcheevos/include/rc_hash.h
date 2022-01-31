@@ -120,6 +120,7 @@ extern "C" {
     rc_hash_cdreader_first_track_sector_handler      first_track_sector;
   };
 
+  void rc_hash_get_default_cdreader(struct rc_hash_cdreader* cdreader);
   void rc_hash_init_default_cdreader(void);
   void rc_hash_init_custom_cdreader(struct rc_hash_cdreader* reader);
 

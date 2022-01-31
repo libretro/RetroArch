@@ -836,14 +836,17 @@ static uint32_t cdreader_first_track_sector(void* track_handle)
   return 0;
 }
 
+void rc_hash_get_default_cdreader(struct rc_hash_cdreader* cdreader)
+{
+  cdreader->open_track = cdreader_open_track;
+  cdreader->read_sector = cdreader_read_sector;
+  cdreader->close_track = cdreader_close_track;
+  cdreader->first_track_sector = cdreader_first_track_sector;
+}
+
 void rc_hash_init_default_cdreader()
 {
   struct rc_hash_cdreader cdreader;
-
-  cdreader.open_track = cdreader_open_track;
-  cdreader.read_sector = cdreader_read_sector;
-  cdreader.close_track = cdreader_close_track;
-  cdreader.first_track_sector = cdreader_first_track_sector;
-
+  rc_hash_get_default_cdreader(&cdreader);
   rc_hash_init_custom_cdreader(&cdreader);
 }
