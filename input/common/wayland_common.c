@@ -13,9 +13,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+// Needed for memfd_create
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE /* See feature_test_macros(7) */
+#endif
+
 #include <stdint.h>
 #include <string.h>
 
+#include <fcntl.h>
+#include <errno.h>
+#include <sys/mman.h>
 #include <poll.h>
 #include <unistd.h>
 
@@ -513,6 +521,8 @@ static void display_handle_geometry(void *data,
    output_info_t *oi          = (output_info_t*)data;
    oi->physical_width         = physical_width;
    oi->physical_height        = physical_height;
+   oi->make                   = strdup(make);
+   oi->model                  = strdup(model);
 }
 
 static void display_handle_mode(void *data,
@@ -548,9 +558,11 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
+   RARCH_DBG("[Wayland]: Add global %u, interface %s, version %u\n", id, interface, version);
+
    if (string_is_equal(interface, "wl_compositor"))
       wl->compositor = (struct wl_compositor*)wl_registry_bind(reg,
-            id, &wl_compositor_interface, 3);
+            id, &wl_compositor_interface, MIN(version, 4));
    else if (string_is_equal(interface, "wl_output"))
    {
       output_info_t *oi = (output_info_t*)
@@ -558,27 +570,27 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
 
       oi->global_id     = id;
       oi->output        = (struct wl_output*)wl_registry_bind(reg,
-            id, &wl_output_interface, 2);
+            id, &wl_output_interface, MIN(version, 2));
       wl_output_add_listener(oi->output, &output_listener, oi);
       wl_list_insert(&wl->all_outputs, &oi->link);
       wl_display_roundtrip(wl->input.dpy);
    }
    else if (string_is_equal(interface, "xdg_wm_base"))
       wl->xdg_shell = (struct xdg_wm_base*)
-         wl_registry_bind(reg, id, &xdg_wm_base_interface, 1);
+         wl_registry_bind(reg, id, &xdg_wm_base_interface, MIN(version, 3));
    else if (string_is_equal(interface, "wl_shm"))
-      wl->shm = (struct wl_shm*)wl_registry_bind(reg, id, &wl_shm_interface, 1);
+      wl->shm = (struct wl_shm*)wl_registry_bind(reg, id, &wl_shm_interface, MIN(version, 1));
    else if (string_is_equal(interface, "wl_seat"))
    {
-      wl->seat = (struct wl_seat*)wl_registry_bind(reg, id, &wl_seat_interface, 2);
+      wl->seat = (struct wl_seat*)wl_registry_bind(reg, id, &wl_seat_interface, MIN(version, 2));
       wl_seat_add_listener(wl->seat, &seat_listener, wl);
    }
    else if (string_is_equal(interface, "zwp_idle_inhibit_manager_v1"))
       wl->idle_inhibit_manager = (struct zwp_idle_inhibit_manager_v1*)wl_registry_bind(
-                                  reg, id, &zwp_idle_inhibit_manager_v1_interface, 1);
+                                  reg, id, &zwp_idle_inhibit_manager_v1_interface, MIN(version, 1));
    else if (string_is_equal(interface, "zxdg_decoration_manager_v1"))
       wl->deco_manager = (struct zxdg_decoration_manager_v1*)wl_registry_bind(
-                                  reg, id, &zxdg_decoration_manager_v1_interface, 1);
+                                  reg, id, &zxdg_decoration_manager_v1_interface, MIN(version, 1));
 }
 
 static void registry_handle_global_remove(void *data,
@@ -596,6 +608,16 @@ static void registry_handle_global_remove(void *data,
          break;
       }
    }
+}
+
+static void shm_buffer_handle_release(void *data,
+   struct wl_buffer *wl_buffer)
+{
+   shm_buffer_t *buffer = data;
+
+   wl_buffer_destroy(buffer->wl_buffer);
+   munmap(buffer->data, buffer->data_size);
+   free(buffer);
 }
 
 const struct wl_registry_listener registry_listener = {
@@ -654,6 +676,10 @@ const struct wl_pointer_listener pointer_listener = {
    pointer_handle_axis,
 };
 
+const struct wl_buffer_listener shm_buffer_listener = {
+   shm_buffer_handle_release,
+};
+
 void flush_wayland_fd(void *data)
 {
    struct pollfd fd = {0};
@@ -679,3 +705,118 @@ void flush_wayland_fd(void *data)
          wl_display_flush(wl->dpy);
    }
 }
+
+int create_anonymous_file(off_t size)
+{
+   int fd;
+
+   int ret;
+
+   fd = memfd_create("retroarch-wayland-vk-splash", MFD_CLOEXEC | MFD_ALLOW_SEALING);
+
+   if (fd < 0)
+      return -1;
+
+   fcntl(fd, F_ADD_SEALS, F_SEAL_SHRINK);
+
+   do {
+      ret = posix_fallocate(fd, 0, size);
+   } while (ret == EINTR);
+   if (ret != 0) {
+      close(fd);
+      errno = ret;
+      return -1;
+   }
+
+   return fd;
+}
+
+shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
+   int height,
+   uint32_t format)
+{
+   struct wl_shm_pool *pool;
+   int fd, size, stride;
+   void *data;
+   shm_buffer_t *buffer;
+
+   stride = width * 4;
+   size = stride * height;
+
+   fd = create_anonymous_file(size);
+   if (fd < 0) {
+      RARCH_ERR("[Wayland] [SHM]: Creating a buffer file for %d B failed: %s\n",
+         size, strerror(errno));
+      return NULL;
+   }
+
+   data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+   if (data == MAP_FAILED) {
+      RARCH_ERR("[Wayland] [SHM]: mmap failed: %s\n", strerror(errno));
+      close(fd);
+      return NULL;
+   }
+
+   buffer = calloc(1, sizeof *buffer);
+
+   pool = wl_shm_create_pool(wl->shm, fd, size);
+   buffer->wl_buffer = wl_shm_pool_create_buffer(pool, 0,
+      width, height,
+      stride, format);
+   wl_buffer_add_listener(buffer->wl_buffer, &shm_buffer_listener, buffer);
+   wl_shm_pool_destroy(pool);
+   close(fd);
+
+   buffer->data = data;
+   buffer->data_size = size;
+
+   return buffer;
+}
+
+
+void shm_buffer_paint_checkerboard(shm_buffer_t *buffer,
+      int width, int height, int scale,
+      size_t chk, uint32_t bg, uint32_t fg)
+{
+   uint32_t *pixels = buffer->data;
+   uint32_t color;
+   int y, x, sx, sy;
+   size_t off;
+   int stride = width * scale;
+
+   for (y = 0; y < height; y++) {
+      for (x = 0; x < width; x++) {
+         color = (x & chk) ^ (y & chk) ? fg : bg;
+         for (sx = 0; sx < scale; sx++) {
+            for (sy = 0; sy < scale; sy++) {
+               off = x * scale + sx
+                     + (y * scale + sy) * stride;
+               pixels[off] = color;
+            }
+         }
+      }
+   }
+}
+
+
+void draw_splash_screen(gfx_ctx_wayland_data_t *wl)
+{
+   shm_buffer_t *buffer;
+
+   buffer = create_shm_buffer(wl,
+      wl->width * wl->buffer_scale,
+      wl->height * wl->buffer_scale,
+      WL_SHM_FORMAT_XRGB8888);
+   shm_buffer_paint_checkerboard(buffer, wl->width,
+      wl->height, wl->buffer_scale,
+      16, 0xffbcbcbc, 0xff8e8e8e);
+
+   wl_surface_attach(wl->surface, buffer->wl_buffer, 0, 0);
+   wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
+   if (wl_surface_get_version(wl->surface) >= WL_SURFACE_DAMAGE_BUFFER_SINCE_VERSION)
+      wl_surface_damage_buffer(wl->surface, 0, 0,
+         wl->width * wl->buffer_scale,
+         wl->height * wl->buffer_scale);
+   wl_surface_commit(wl->surface);
+}
+
