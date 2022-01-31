@@ -26,6 +26,13 @@
 #define filter_data upscale_240x160_320x240_filter_data
 #endif
 
+typedef struct
+{
+   void (*upscale_240x160_320x240)(
+         uint16_t *dst, const uint16_t *src,
+         uint16_t dst_stride, uint16_t src_stride);
+} upscale_function_t;
+
 struct softfilter_thread_data
 {
    void *out_data;
@@ -44,6 +51,7 @@ struct filter_data
    unsigned threads;
    struct softfilter_thread_data *workers;
    unsigned in_fmt;
+   upscale_function_t function;
 };
 
 /*******************************************************************
@@ -65,7 +73,7 @@ struct filter_data
 
 /* Upscales a 240x160 image to 320x240 using an approximate bilinear
  * resampling algorithm that only uses integer math */
-void upscale_240x160_to_320x240(uint16_t *dst, const uint16_t *src,
+void upscale_unkeep_ratio_240x160_to_320x240(uint16_t *dst, const uint16_t *src,
       uint16_t dst_stride, uint16_t src_stride)
 {
    /* There are 80 blocks of 3 pixels horizontally,
@@ -150,6 +158,129 @@ void upscale_240x160_to_320x240(uint16_t *dst, const uint16_t *src,
    }
 }
 
+/* Upscales a 240x160 image to 320x240 using an approximate bilinear
+ * resampling algorithm that only uses integer math */
+void upscale_keep_ratio_240x160_to_320x214(uint16_t *dst, const uint16_t *src,
+      uint16_t dst_stride, uint16_t src_stride)
+{  
+
+   /* There are 80 blocks of 3 pixels horizontally,
+    * and 53 blocks of 3 pixels vertically
+    * Each block of 3x3 becomes 4x4 */
+   unsigned y;
+   for (y = 0; y < 13; y++)
+   {
+      memset(dst + ( (0 + y) * dst_stride), 0, sizeof(uint16_t) * dst_stride);
+   }
+
+   uint32_t block_x;
+   uint32_t block_y;
+
+   for (block_y = 0; block_y < 53; block_y++) 
+   { 
+      const uint16_t *block_src = src + block_y * src_stride * 3;
+      uint16_t *block_dst       = dst + block_y * dst_stride * 4;
+
+      for (block_x = 0; block_x < 80; block_x++)
+      {
+
+         const uint16_t *block_src_ptr = block_src;
+         uint16_t *block_dst_ptr       = block_dst;
+
+         uint16_t _1,   _2,  _3,
+                  _4,   _5,  _6,
+                  _7,   _8,  _9;
+
+         uint16_t _1_2_weight_1_3;
+         uint16_t _2_3_weight_1_1;
+         uint16_t _4_5_weight_1_3;
+         uint16_t _5_6_weight_1_1;
+         uint16_t _7_8_weight_1_3;
+         uint16_t _8_9_weight_1_1;
+
+         uint16_t tmp;
+
+         /* Horizontally:
+          * Before(3):
+          * (a)(b)(c)
+          * After(4):
+          * (a)(ab)(bc)(c)
+          *
+          * Vertically:
+          * Before(2): After(3):
+          * (a)       (a)
+          * (b)       (ab)
+          * (c)       (bc)
+          *           (c)
+          */
+
+         /* -- Row 1 -- */
+         _1 = *(block_src_ptr    );
+         _2 = *(block_src_ptr + 1);
+         _3 = *(block_src_ptr + 2);
+
+         *(block_dst_ptr    ) = _1;
+         UPSCALE_240__WEIGHT_1_3( _1,  _2, block_dst_ptr + 1, tmp);
+         UPSCALE_240__WEIGHT_1_1( _2,  _3, block_dst_ptr + 2, tmp);
+         *(block_dst_ptr + 3) = _3;
+
+         block_src_ptr += src_stride;
+         block_dst_ptr += dst_stride;
+
+         /* -- Row 2 -- */
+         _4 = *(block_src_ptr    );
+         _5 = *(block_src_ptr + 1);
+         _6 = *(block_src_ptr + 2);
+
+         UPSCALE_240__WEIGHT_1_3( _1, _4, block_dst_ptr, tmp);
+         UPSCALE_240__WEIGHT_1_3(_1, _2, &_1_2_weight_1_3, tmp);
+         UPSCALE_240__WEIGHT_1_3(_4, _5, &_4_5_weight_1_3, tmp);
+         UPSCALE_240__WEIGHT_1_3(_1_2_weight_1_3, _4_5_weight_1_3, block_dst_ptr + 1, tmp);
+         UPSCALE_240__WEIGHT_1_1(_2, _3, &_2_3_weight_1_1, tmp);
+         UPSCALE_240__WEIGHT_3_1(_5, _6, &_5_6_weight_1_1, tmp);
+         UPSCALE_240__WEIGHT_1_3(_2_3_weight_1_1, _5_6_weight_1_1, block_dst_ptr + 2, tmp);
+         UPSCALE_240__WEIGHT_1_3(_3, _6, block_dst_ptr + 3, tmp);
+
+         block_src_ptr += src_stride;
+         block_dst_ptr += dst_stride;
+
+         /* -- Row 3 -- */
+         _7 = *(block_src_ptr    );
+         _8 = *(block_src_ptr + 1);
+         _9 = *(block_src_ptr + 2);
+
+         UPSCALE_240__WEIGHT_1_3( _4, _7, block_dst_ptr, tmp);
+         UPSCALE_240__WEIGHT_1_3(_4, _5, &_4_5_weight_1_3, tmp);
+         UPSCALE_240__WEIGHT_1_3(_7, _8, &_7_8_weight_1_3, tmp);
+         UPSCALE_240__WEIGHT_1_3(_4_5_weight_1_3, _7_8_weight_1_3, block_dst_ptr + 1, tmp);
+         UPSCALE_240__WEIGHT_1_1(_5, _6, &_5_6_weight_1_1, tmp);
+         UPSCALE_240__WEIGHT_3_1(_8, _9, &_8_9_weight_1_1, tmp);
+         UPSCALE_240__WEIGHT_1_3(_5_6_weight_1_1, _8_9_weight_1_1, block_dst_ptr + 2, tmp);
+         UPSCALE_240__WEIGHT_1_3(_6, _9, block_dst_ptr + 3, tmp);
+
+         block_src_ptr += src_stride;
+         block_dst_ptr += dst_stride;
+
+         /* -- Row 3 -- */
+         *(block_dst_ptr    ) = _7;
+         UPSCALE_240__WEIGHT_1_3( _7, _8, block_dst_ptr + 1, tmp);
+         UPSCALE_240__WEIGHT_1_1( _8, _9, block_dst_ptr + 2, tmp);
+         *(block_dst_ptr + 3) = _9;
+
+         block_src += 3;
+         block_dst += 4;
+      }
+   }
+
+   for (y = 0; y < 13; y++)
+   {
+      memset(dst + ( (226 + y) * dst_stride), 0, sizeof(uint16_t) * dst_stride);
+   }
+   /* The above scaling produces an output image 239 pixels high
+    * > Last row must be zeroed out */
+   memset(dst + (239 * dst_stride), 0, sizeof(uint16_t) * dst_stride);
+}
+
 /*******************************************************************
  *******************************************************************/
 
@@ -167,6 +298,26 @@ static unsigned upscale_240x160_320x240_generic_threads(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
    return filt->threads;
+}
+
+static void upscale_240x160_320x240_initialize(struct filter_data *filt,
+      const struct softfilter_config *config,
+      void *userdata)
+{
+   char *video_aspect_ratio_auto = NULL;
+
+   /* Assign default scaling functions */
+   //filt->function.upscale_240x160_320x240 = upscale_unkeep_ratio_240x160_to_320x240;
+   filt->function.upscale_240x160_320x240 = upscale_keep_ratio_240x160_to_320x214;
+
+   /* Read set filter type */
+   if (config->get_string(userdata, "video_aspect_ratio_auto", &video_aspect_ratio_auto, "true"))
+   {
+      filt->function.upscale_240x160_320x240 = upscale_keep_ratio_240x160_to_320x214;
+   }
+
+   if (video_aspect_ratio_auto)
+      free(video_aspect_ratio_auto);
 }
 
 static void *upscale_240x160_320x240_generic_create(const struct softfilter_config *config,
@@ -191,6 +342,10 @@ static void *upscale_240x160_320x240_generic_create(const struct softfilter_conf
       free(filt);
       return NULL;
    }
+
+   /* Assign scaling functions */
+   upscale_240x160_320x240_initialize(filt, config, userdata);
+
    return filt;
 }
 
@@ -223,6 +378,7 @@ static void upscale_240x160_320x240_generic_destroy(void *data)
 
 static void upscale_240x160_320x240_work_cb_rgb565(void *data, void *thread_data)
 {
+   struct filter_data *filt           = (struct filter_data*)data;   
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
    const uint16_t *input              = (const uint16_t*)thr->in_data;
    uint16_t *output                   = (uint16_t*)thr->out_data;
@@ -235,7 +391,7 @@ static void upscale_240x160_320x240_work_cb_rgb565(void *data, void *thread_data
    {
       if (height == 160)
       {
-         upscale_240x160_to_320x240(output, input, out_stride, in_stride);
+         filt->function.upscale_240x160_320x240(output, input, out_stride, in_stride);
          return;
       }
    }
