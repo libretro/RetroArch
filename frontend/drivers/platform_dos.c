@@ -23,6 +23,7 @@
 #include "../frontend_driver.h"
 #include "../../defaults.h"
 #include "../../paths.h"
+#include "../command.h"
 
 static enum frontend_fork dos_fork_mode = FRONTEND_FORK_NONE;
 
