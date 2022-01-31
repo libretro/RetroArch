@@ -2628,6 +2628,10 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   (*info)->timing.sample_rate);
 
             memcpy(av_info, *info, sizeof(*av_info));
+            video_st->core_frame_time = 1000000 /
+                  ((video_st->av_info.timing.fps > 0.0) ?
+                        video_st->av_info.timing.fps : 60.0);
+
             command_event(CMD_EVENT_REINIT, &reinit_flags);
             if (no_video_reinit)
                video_driver_set_aspect_ratio();
@@ -4910,22 +4914,6 @@ static bool core_unload_game(void)
    return true;
 }
 
-static void runloop_apply_fastmotion_frameskip(runloop_state_t *runloop_st, settings_t *settings)
-{
-   unsigned frames = 0;
-
-   if (runloop_st->fastmotion && settings->bools.fastforward_frameskip)
-   {
-      frames = (unsigned)settings->floats.fastforward_ratio;
-      /* Pick refresh rate as unlimited throttle rate */
-      frames = (!frames) ? (unsigned)roundf(settings->floats.video_refresh_rate) : frames;
-      /* Decrease one to represent skipped frames */
-      frames--;
-   }
-
-   runloop_st->fastforward_frameskip_frames_current = runloop_st->fastforward_frameskip_frames = frames;
-}
-
 static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st, settings_t *settings)
 {
    video_driver_state_t *video_st                     = video_state_get_ptr();
@@ -4963,7 +4951,6 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st, setti
       if (!runloop_st->fastmotion)
          runloop_st->fastforward_after_frames = 1;
 
-      runloop_apply_fastmotion_frameskip(runloop_st, settings);
       driver_set_nonblock_state();
 
       /* Reset frame time counter when toggling
@@ -5315,6 +5302,9 @@ static bool core_load(unsigned poll_type_behavior)
       return false;
 
    runloop_st->current_core.retro_get_system_av_info(&video_st->av_info);
+   video_st->core_frame_time = 1000000 /
+         ((video_st->av_info.timing.fps > 0.0) ?
+               video_st->av_info.timing.fps : 60.0);
 
    return true;
 }
@@ -7080,7 +7070,6 @@ static enum runloop_state_enum runloop_check_state(
             runloop_st->fastmotion            = true;
          }
 
-         runloop_apply_fastmotion_frameskip(runloop_st, settings);
          driver_set_nonblock_state();
 
          /* Reset frame time counter when toggling

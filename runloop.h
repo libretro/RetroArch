@@ -216,8 +216,6 @@ struct runloop
    unsigned max_frames;
    unsigned audio_latency;
    unsigned fastforward_after_frames;
-   unsigned fastforward_frameskip_frames;
-   unsigned fastforward_frameskip_frames_current;
    unsigned perf_ptr_libretro;
    unsigned subsystem_current_count;
    unsigned entry_state_slot;
