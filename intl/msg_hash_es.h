@@ -335,7 +335,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
-   "Descarga los archivos auxiliares de sistemas que son necesarios para el buen funcionamiento de los núcleos."
+   "Descargue archivos auxiliares de sistema necesarios para una correcta y óptima operación del núcleo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
