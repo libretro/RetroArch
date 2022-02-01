@@ -1262,7 +1262,7 @@ static void rc_hash_handle_file_close(void* file_handle)
 }
 
 #ifdef HAVE_CHD
-static void* rc_hash_handle_cd_open_track(
+static void* rc_hash_handle_chd_open_track(
       const char* path, uint32_t track)
 {
    cdfs_track_t* cdfs_track;
@@ -1299,7 +1299,7 @@ static void* rc_hash_handle_cd_open_track(
    return NULL;
 }
 
-static size_t rc_hash_handle_cd_read_sector(
+static size_t rc_hash_handle_chd_read_sector(
       void* track_handle, uint32_t sector,
       void* buffer, size_t requested_bytes)
 {
@@ -1309,7 +1309,7 @@ static size_t rc_hash_handle_cd_read_sector(
    return cdfs_read_file(file, buffer, requested_bytes);
 }
 
-static void rc_hash_handle_cd_close_track(void* track_handle)
+static void rc_hash_handle_chd_close_track(void* track_handle)
 {
    cdfs_file_t* file = (cdfs_file_t*)track_handle;
    if (file)
@@ -1319,7 +1319,48 @@ static void rc_hash_handle_cd_close_track(void* track_handle)
       CHEEVOS_FREE(file);
    }
 }
+
 #endif
+
+static void rc_hash_reset_cdreader_hooks(void);
+
+static void* rc_hash_handle_cd_open_track(
+      const char* path, uint32_t track)
+{
+   struct rc_hash_cdreader cdreader;
+
+   if (string_is_equal_noncase(path_get_extension(path), "chd"))
+   {
+#ifdef HAVE_CHD
+      /* special handlers for CHD file */
+      memset(&cdreader, 0, sizeof(cdreader));
+      cdreader.open_track = rc_hash_handle_cd_open_track;
+      cdreader.read_sector = rc_hash_handle_chd_read_sector;
+      cdreader.close_track = rc_hash_handle_chd_close_track;
+      rc_hash_init_custom_cdreader(&cdreader);
+
+      return rc_hash_handle_chd_open_track(path, track);
+#else
+      CHEEVOS_LOG(RCHEEVOS_TAG "Cannot generate hash from CHD without HAVE_CHD compile flag\n");
+      return NULL;
+#endif
+   }
+   else
+   {
+      /* not a CHD file, use the default handlers */
+      rc_hash_get_default_cdreader(&cdreader);
+      rc_hash_reset_cdreader_hooks();
+      return cdreader.open_track(path, track);
+   }
+}
+
+static void rc_hash_reset_cdreader_hooks()
+{
+   struct rc_hash_cdreader cdreader;
+   rc_hash_get_default_cdreader(&cdreader);
+   cdreader.open_track = rc_hash_handle_cd_open_track;
+   rc_hash_init_custom_cdreader(&cdreader);
+}
 
 /* end hooks */
 
@@ -1703,25 +1744,7 @@ static bool rcheevos_identify_game(const struct retro_game_info* info)
       rc_hash_init_verbose_message_callback(rcheevos_handle_log_message);
    }
 
-   if (string_is_equal_noncase(path_get_extension(info->path), "chd"))
-   {
-#ifdef HAVE_CHD
-      struct rc_hash_cdreader cdreader;
-      memset(&cdreader, 0, sizeof(cdreader));
-      cdreader.open_track = rc_hash_handle_cd_open_track;
-      cdreader.read_sector = rc_hash_handle_cd_read_sector;
-      cdreader.close_track = rc_hash_handle_cd_close_track;
-      rc_hash_init_custom_cdreader(&cdreader);
-#else
-      CHEEVOS_LOG(RCHEEVOS_TAG "Cannot generate hash from CHD without HAVE_CHD compile flag\n");
-      return false;
-#endif
-   }
-   else
-   {
-      /* cdfs_ functions don't support gdi files or first track sector calculations */
-      rc_hash_init_default_cdreader();
-   }
+   rc_hash_reset_cdreader_hooks();
 
    /* fetch the first hash */
    rc_hash_initialize_iterator(&iterator,
