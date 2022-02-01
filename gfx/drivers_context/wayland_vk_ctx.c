@@ -52,9 +52,6 @@
 #define EGL_PLATFORM_WAYLAND_KHR 0x31D8
 #endif
 
-#define DEFAULT_WINDOWED_WIDTH 640
-#define DEFAULT_WINDOWED_HEIGHT 480
-
 static void handle_toplevel_config_common(void *data,
       void *toplevel,
       int32_t width, int32_t height, struct wl_array *states)
@@ -112,8 +109,7 @@ static void gfx_ctx_wl_get_video_size(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   if (!wl->reported_display_size) {
-      wl->reported_display_size = true;
+   if (wl->surface == NULL) {
       output_info_t *oi, *tmp;
       oi = wl->current_output;
 
@@ -393,6 +389,9 @@ static struct libdecor_frame_interface libdecor_frame_interface = {
 };
 #endif
 
+#define DEFAULT_WINDOWED_WIDTH 640
+#define DEFAULT_WINDOWED_HEIGHT 480
+
 static void *gfx_ctx_wl_init(void *video_driver)
 {
    int i;
@@ -409,8 +408,6 @@ static void *gfx_ctx_wl_init(void *video_driver)
    wl->input.dpy         = wl_display_connect(NULL);
    wl->last_buffer_scale = 1;
    wl->buffer_scale      = 1;
-   wl->width             = DEFAULT_WINDOWED_WIDTH;
-   wl->height            = DEFAULT_WINDOWED_HEIGHT;
 
    if (!wl->input.dpy)
    {
@@ -444,76 +441,13 @@ static void *gfx_ctx_wl_init(void *video_driver)
 
    if (!wl->idle_inhibit_manager)
    {
-      RARCH_LOG("[Wayland]: Compositor doesn't support zwp_idle_inhibit_manager_v1 protocol\n");
+	   RARCH_WARN("[Wayland]: Compositor doesn't support zwp_idle_inhibit_manager_v1 protocol!\n");
    }
 
    if (!wl->deco_manager)
    {
-      RARCH_LOG("[Wayland]: Compositor doesn't support zxdg_decoration_manager_v1 protocol\n");
+	   RARCH_WARN("[Wayland]: Compositor doesn't support zxdg_decoration_manager_v1 protocol!\n");
    }
-
-   wl->surface                = wl_compositor_create_surface(wl->compositor);
-
-   wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
-   wl_surface_add_listener(wl->surface, &wl_surface_listener, wl);
-
-#ifdef HAVE_LIBDECOR
-   wl->libdecor_context = libdecor_new(wl->input.dpy, &libdecor_interface);
-   if (wl->libdecor_context)
-   {
-      wl->libdecor_frame = libdecor_decorate(wl->libdecor_context, wl->surface, &libdecor_frame_interface, wl);
-      if (!wl->libdecor_frame)
-      {
-         RARCH_ERR("[Wayland/Vulkan]: Failed to crate libdecor frame\n");
-         goto error;
-      }
-
-      libdecor_frame_set_app_id(wl->libdecor_frame, "retroarch");
-      libdecor_frame_set_title(wl->libdecor_frame, "RetroArch");
-      libdecor_frame_map(wl->libdecor_frame);
-   }
-
-   /* Waiting for libdecor to be configured before starting to draw */
-   wl_surface_commit(wl->surface);
-   wl->configured = true;
-
-   while (wl->configured)
-   {
-      if (libdecor_dispatch(wl->libdecor_context, 0) < 0)
-      {
-         RARCH_ERR("[Wayland/Vulkan]: libdecor failed to dispatch\n");
-         goto error;
-      }
-   }
-#else
-   wl->xdg_surface  = xdg_wm_base_get_xdg_surface(wl->xdg_shell, wl->surface);
-   xdg_surface_add_listener(wl->xdg_surface, &xdg_surface_listener, wl);
-
-   wl->xdg_toplevel = xdg_surface_get_toplevel(wl->xdg_surface);
-   xdg_toplevel_add_listener(wl->xdg_toplevel, &xdg_toplevel_listener, wl);
-
-   xdg_toplevel_set_app_id(wl->xdg_toplevel, "retroarch");
-   xdg_toplevel_set_title(wl->xdg_toplevel, "RetroArch");
-
-   if (wl->deco_manager)
-      wl->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
-            wl->deco_manager, wl->xdg_toplevel);
-
-   /* Waiting for xdg_toplevel to be configured before starting to draw */
-   wl_surface_commit(wl->surface);
-   wl->configured = true;
-
-   while (wl->configured)
-      wl_display_dispatch(wl->input.dpy);
-#endif
-
-   wl_display_roundtrip(wl->input.dpy);
-   xdg_wm_base_add_listener(wl->xdg_shell, &xdg_shell_listener, NULL);
-
-   /* Bind SHM based wl_buffer to wl_surface until the vulkan surface is ready.
-    * This shows the window which assigns us a display (wl_output)
-    *  which is usefull for HiDPI and auto selecting a display for fullscreen. */
-   draw_splash_screen(wl);
 
    wl->input.fd = wl_display_get_fd(wl->input.dpy);
 
@@ -584,49 +518,74 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       bool fullscreen)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   settings_t *settings      = config_get_ptr();
-   unsigned video_monitor_index = settings->uints.video_monitor_index;
 
    wl->width                  = width  ? width  : DEFAULT_WINDOWED_WIDTH;
    wl->height                 = height ? height : DEFAULT_WINDOWED_HEIGHT;
 
+   wl->surface                = wl_compositor_create_surface(wl->compositor);
+
    wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
+   wl_surface_add_listener(wl->surface, &wl_surface_listener, wl);
 
 #ifdef HAVE_LIBDECOR
-   struct libdecor_state *state = libdecor_state_new( width, height);
-   libdecor_frame_commit(wl->libdecor_frame, state, NULL);
-   libdecor_state_free(state);
+   wl->libdecor_context = libdecor_new(wl->input.dpy, &libdecor_interface);
+   if (wl->libdecor_context)
+   {
+      wl->libdecor_frame = libdecor_decorate(wl->libdecor_context, wl->surface, &libdecor_frame_interface, wl);
+      if (!wl->libdecor_frame)
+      {
+         RARCH_ERR("[Wayland/Vulkan]: Failed to crate libdecor frame\n");
+         goto error;
+      }
+
+      libdecor_frame_set_app_id(wl->libdecor_frame, "retroarch");
+      libdecor_frame_set_title(wl->libdecor_frame, "RetroArch");
+      libdecor_frame_map(wl->libdecor_frame);
+   }
+
+   /* Waiting for libdecor to be configured before starting to draw */
+   wl_surface_commit(wl->surface);
+   wl->configured = true;
+
+   while (wl->configured)
+   {
+      if (libdecor_dispatch(wl->libdecor_context, 0) < 0)
+      {
+         RARCH_ERR("[Wayland/Vulkan]: libdecor failed to dispatch\n");
+         goto error;
+      }
+   }
+#else
+   wl->xdg_surface  = xdg_wm_base_get_xdg_surface(wl->xdg_shell, wl->surface);
+   xdg_surface_add_listener(wl->xdg_surface, &xdg_surface_listener, wl);
+
+   wl->xdg_toplevel = xdg_surface_get_toplevel(wl->xdg_surface);
+   xdg_toplevel_add_listener(wl->xdg_toplevel, &xdg_toplevel_listener, wl);
+
+   xdg_toplevel_set_app_id(wl->xdg_toplevel, "retroarch");
+   xdg_toplevel_set_title(wl->xdg_toplevel, "RetroArch");
+
+   if (wl->deco_manager)
+      wl->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
+            wl->deco_manager, wl->xdg_toplevel);
+
+   /* Waiting for xdg_toplevel to be configured before starting to draw */
+   wl_surface_commit(wl->surface);
+   wl->configured = true;
+
+   while (wl->configured)
+      wl_display_dispatch(wl->input.dpy);
 #endif
+
+   wl_display_roundtrip(wl->input.dpy);
+   xdg_wm_base_add_listener(wl->xdg_shell, &xdg_shell_listener, NULL);
 
    if (fullscreen)
    {
-      struct wl_output *output = NULL;
-      int output_i = 0;
-      output_info_t *oi, *tmp;
-
-      if (video_monitor_index <= 0 && wl->current_output != NULL)
-      {
-         oi = wl->current_output;
-         output = oi->output;
-         RARCH_LOG("[Wayland/Vulkan]: Auto fullscreen on display \"%s\" \"%s\"\n", oi->make, oi->model);
-      }
-      else wl_list_for_each_safe(oi, tmp, &wl->all_outputs, link)
-      {
-         if (++output_i == video_monitor_index)
-         {
-            output = oi->output;
-            RARCH_LOG("[Wayland/Vulkan]: Fullscreen on display %i \"%s\" \"%s\"\n", output_i, oi->make, oi->model);
-            break;
-         }
-      }
-
-      if (output == NULL)
-         RARCH_LOG("[Wayland/Vulkan] Failed to specify monitor for fullscreen, letting compositor decide\n");
-
 #ifdef HAVE_LIBDECOR
-      libdecor_frame_set_fullscreen(wl->libdecor_frame, output);
+      libdecor_frame_set_fullscreen(wl->libdecor_frame, NULL);
 #else
-      xdg_toplevel_set_fullscreen(wl->xdg_toplevel, output);
+      xdg_toplevel_set_fullscreen(wl->xdg_toplevel, NULL);
 #endif
    }
 
