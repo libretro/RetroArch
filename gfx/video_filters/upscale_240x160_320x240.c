@@ -73,7 +73,7 @@ struct filter_data
 
 /* Upscales a 240x160 image to 320x240 using an approximate bilinear
  * resampling algorithm that only uses integer math */
-void upscale_unkeep_ratio_240x160_to_320x240(uint16_t *dst, const uint16_t *src,
+void upscale_ratio_240x160_to_320x240(uint16_t *dst, const uint16_t *src,
       uint16_t dst_stride, uint16_t src_stride)
 {
    /* There are 80 blocks of 3 pixels horizontally,
@@ -160,7 +160,7 @@ void upscale_unkeep_ratio_240x160_to_320x240(uint16_t *dst, const uint16_t *src,
 
 /* Upscales a 240x160 image to 320x240 using an approximate bilinear
  * resampling algorithm that only uses integer math */
-void upscale_keep_ratio_240x160_to_320x214(uint16_t *dst, const uint16_t *src,
+void upscale_240x160_to_320x214(uint16_t *dst, const uint16_t *src,
       uint16_t dst_stride, uint16_t src_stride)
 {  
 
@@ -179,7 +179,7 @@ void upscale_keep_ratio_240x160_to_320x214(uint16_t *dst, const uint16_t *src,
    for (block_y = 0; block_y < 53; block_y++) 
    { 
       const uint16_t *block_src = src + block_y * src_stride * 3;
-      uint16_t *block_dst       = dst + block_y * dst_stride * 4;
+      uint16_t *block_dst       = (dst + (13 * dst_stride)) + block_y * dst_stride * 4;
 
       for (block_x = 0; block_x < 80; block_x++)
       {
@@ -307,13 +307,13 @@ static void upscale_240x160_320x240_initialize(struct filter_data *filt,
    char *video_aspect_ratio_auto = NULL;
 
    /* Assign default scaling functions */
-   //filt->function.upscale_240x160_320x240 = upscale_unkeep_ratio_240x160_to_320x240;
-   filt->function.upscale_240x160_320x240 = upscale_keep_ratio_240x160_to_320x214;
+   //filt->function.upscale_240x160_320x240 = upscale_240x160_to_320x240;
+   filt->function.upscale_240x160_320x240 = upscale_240x160_to_320x214;
 
    /* Read set filter type */
    if (config->get_string(userdata, "video_aspect_ratio_auto", &video_aspect_ratio_auto, "true"))
    {
-      filt->function.upscale_240x160_320x240 = upscale_keep_ratio_240x160_to_320x214;
+      filt->function.upscale_240x160_320x240 = upscale_240x160_to_320x214;
    }
 
    if (video_aspect_ratio_auto)
