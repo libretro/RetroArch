@@ -5506,7 +5506,10 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui,
    unsigned aspect_ratio        = settings->uints.menu_rgui_aspect_ratio;
    unsigned aspect_ratio_lock   = settings->uints.menu_rgui_aspect_ratio_lock;
 #endif
-   
+#ifdef DJGPP
+   const char *driver_ident    = video_driver_get_ident();
+#endif
+
    rgui_framebuffer_free(&rgui->frame_buf);
    rgui_framebuffer_free(&rgui->background_buf);
    rgui_thumbnail_free(&rgui->fs_thumbnail);
@@ -5639,6 +5642,13 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui,
          base_term_width = rgui->frame_buf.width;
          break;
    }
+
+#ifdef DJGPP
+   if (string_is_equal(driver_ident, "vga")) {
+      rgui->frame_buf.width = 320;
+      rgui->frame_buf.height = 200;
+   }
+#endif
    
    /* Ensure frame buffer/terminal width is sane
     * - Must be less than max_frame_buf_width
