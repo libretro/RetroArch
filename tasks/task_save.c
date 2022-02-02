@@ -39,7 +39,7 @@
 #include <time/rtime.h>
 
 #ifdef HAVE_CONFIG_H
-#include "../core.h"
+#include "../config.h"
 #endif
 
 #ifdef HAVE_NETWORKING
@@ -52,6 +52,7 @@
 
 #include "../content.h"
 #include "../core.h"
+#include "../core_info.h"
 #include "../file_path_special.h"
 #include "../configuration.h"
 #include "../msg_hash.h"
@@ -439,6 +440,13 @@ bool content_undo_load_state(void)
    struct sram_block *blocks = NULL;
    settings_t *settings      = config_get_ptr();
    bool block_sram_overwrite = settings->bools.block_sram_overwrite;
+
+   if (!core_info_current_supports_savestate())
+   {
+      RARCH_LOG("[State]: %s\n",
+            msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES));
+      return false;
+   }
 
    RARCH_LOG("[State]: %s \"%s\", %u %s.\n",
          msg_hash_to_str(MSG_LOADING_STATE),
@@ -886,6 +894,13 @@ error:
  **/
 bool content_undo_save_state(void)
 {
+   if (!core_info_current_supports_savestate())
+   {
+      RARCH_LOG("[State]: %s\n",
+            msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES));
+      return false;
+   }
+
    return task_push_undo_save_state(undo_save_buf.path,
                              undo_save_buf.data,
                              undo_save_buf.size);
@@ -1474,6 +1489,13 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
    void *data  = NULL;
    size_t serial_size;
 
+   if (!core_info_current_supports_savestate())
+   {
+      RARCH_LOG("[State]: %s\n",
+            msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES));
+      return false;
+   }
+
    core_serialize_size(&info);
 
    if (info.size == 0)
@@ -1606,8 +1628,8 @@ void content_wait_for_save_state_task(void)
 bool content_load_state(const char *path,
       bool load_to_backup_buffer, bool autoload)
 {
-   retro_task_t       *task     = task_init();
-   save_task_state_t *state     = (save_task_state_t*)calloc(1, sizeof(*state));
+   retro_task_t       *task     = NULL;
+   save_task_state_t *state     = NULL;
    settings_t *settings         = config_get_ptr();
    int state_slot               = settings->ints.state_slot;
 #if defined(HAVE_ZLIB)
@@ -1615,6 +1637,16 @@ bool content_load_state(const char *path,
 #else
    bool compress_files          = false;
 #endif
+
+   if (!core_info_current_supports_savestate())
+   {
+      RARCH_LOG("[State]: %s\n",
+            msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES));
+      goto error;
+   }
+
+   task  = task_init();
+   state = (save_task_state_t*)calloc(1, sizeof(*state));
 
    if (!task || !state)
       goto error;
@@ -1847,6 +1879,13 @@ bool content_load_state_from_ram(void)
    bool ret                  = false;
    void* temp_data           = NULL;
 
+   if (!core_info_current_supports_savestate())
+   {
+      RARCH_LOG("[State]: %s\n",
+            msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES));
+      return false;
+   }
+
    if (!ram_buf.state_buf.data)
       return false;
 
@@ -1890,6 +1929,13 @@ bool content_save_state_to_ram(void)
    retro_ctx_size_info_t info;
    void *data  = NULL;
    size_t serial_size;
+
+   if (!core_info_current_supports_savestate())
+   {
+      RARCH_LOG("[State]: %s\n",
+            msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES));
+      return false;
+   }
 
    core_serialize_size(&info);
 
