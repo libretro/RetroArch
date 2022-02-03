@@ -6,4 +6,4 @@ filter = upscale_240x160_320x240
 #      image (letterboxing) to maintain the native
 #      content aspect ratio
 # - 0: 240x160 content is stretched to 320x240
-upscale_240x160_320x240_keep_aspect = "1"
+upscale_240x160_320x240_keep_aspect = "0"
