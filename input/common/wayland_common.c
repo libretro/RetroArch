@@ -38,6 +38,8 @@
 #include "../input_keymaps.h"
 #include "../../frontend/frontend_driver.h"
 
+#define SPLASH_SHM_NAME "retroarch-wayland-vk-splash"
+
 static void keyboard_handle_keymap(void* data,
       struct wl_keyboard* keyboard,
       uint32_t format,
@@ -706,13 +708,14 @@ void flush_wayland_fd(void *data)
    }
 }
 
+#ifdef HAVE_MEMFD_CREATE
 int create_anonymous_file(off_t size)
 {
    int fd;
 
    int ret;
 
-   fd = memfd_create("retroarch-wayland-vk-splash", MFD_CLOEXEC | MFD_ALLOW_SEALING);
+   fd = memfd_create(SPLASH_SHM_NAME, MFD_CLOEXEC | MFD_ALLOW_SEALING);
 
    if (fd < 0)
       return -1;
@@ -730,20 +733,26 @@ int create_anonymous_file(off_t size)
 
    return fd;
 }
+#endif
 
 shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
    int height,
    uint32_t format)
 {
    struct wl_shm_pool *pool;
-   int fd, size, stride;
+   int fd, size, stride, ofd;
    void *data;
    shm_buffer_t *buffer;
 
    stride = width * 4;
    size = stride * height;
 
+#ifdef HAVE_MEMFD_CREATE
    fd = create_anonymous_file(size);
+#else
+   fd = shm_open(SPLASH_SHM_NAME, O_RDWR | O_CREAT, 0660);
+   ftruncate(fd, size);
+#endif
    if (fd < 0) {
       RARCH_ERR("[Wayland] [SHM]: Creating a buffer file for %d B failed: %s\n",
          size, strerror(errno));
@@ -765,6 +774,9 @@ shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
       stride, format);
    wl_buffer_add_listener(buffer->wl_buffer, &shm_buffer_listener, buffer);
    wl_shm_pool_destroy(pool);
+#ifndef HAVE_MEMFD_CREATE
+   shm_unlink(SPLASH_SHM_NAME);
+#endif
    close(fd);
 
    buffer->data = data;

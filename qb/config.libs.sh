@@ -550,6 +550,7 @@ fi
 
 check_lib '' STRCASESTR "$CLIB" strcasestr
 check_lib '' MMAP "$CLIB" mmap
+check_lib '' MEMFD_CREATE "$CLIB" memfd_create
 
 check_enabled CXX VULKAN vulkan 'The C++ compiler is' false
 check_enabled CXX OPENGL_CORE 'OpenGL core' 'The C++ compiler is' false
