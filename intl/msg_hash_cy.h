@@ -448,6 +448,10 @@ MSG_HASH(
    "API Graffeg Angenrheidiol"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
+   "Dim"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
    "Cadarnwedd"
    )

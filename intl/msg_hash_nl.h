@@ -448,6 +448,10 @@ MSG_HASH(
    "Vereiste Graphics API"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
+   "Geen"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Ontbrekend, Noodzakelijk:"
    )

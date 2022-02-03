@@ -448,6 +448,10 @@ MSG_HASH(
    "Grafik-API som krävs"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
+   "Ingen"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Saknas, krävs:"
    )
