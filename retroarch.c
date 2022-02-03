@@ -1623,6 +1623,14 @@ bool command_event(enum event_command cmd, void *data)
             char msg[256];
             msg[0] = '\0';
 
+            if (!core_info_current_supports_runahead())
+            {
+               runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD),
+                     1, 100, false,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               break;
+            }
+
             settings->bools.run_ahead_enabled =
                !(settings->bools.run_ahead_enabled);
 

@@ -8485,6 +8485,10 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_LATENCY_SETTINGS_LIST:
          {
             bool video_hard_sync          = settings->bools.video_hard_sync;
+#ifdef HAVE_RUNAHEAD
+            bool runahead_supported       = true;
+            bool runahead_enabled         = settings->bools.run_ahead_enabled;
+#endif
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,                     PARSE_ONLY_UINT, true },
                {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO,                PARSE_ONLY_BOOL, true },
@@ -8492,7 +8496,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,              PARSE_ONLY_UINT, true },
                {MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT,                   PARSE_ONLY_UINT, true },
 #ifdef HAVE_RUNAHEAD
-               {MENU_ENUM_LABEL_RUN_AHEAD_ENABLED,                     PARSE_ONLY_BOOL, true },
+               {MENU_ENUM_LABEL_RUN_AHEAD_ENABLED,                     PARSE_ONLY_BOOL, false },
                {MENU_ENUM_LABEL_RUN_AHEAD_FRAMES,                      PARSE_ONLY_UINT, false },
                {MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE,          PARSE_ONLY_BOOL, false },
                {MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS,               PARSE_ONLY_BOOL, false },
@@ -8506,6 +8510,7 @@ unsigned menu_displaylist_build_list(
                      PARSE_ONLY_UINT, false);
                count++;
             }
+
             if (video_driver_test_all_flags(GFX_CTX_FLAGS_HARD_SYNC))
             {
                MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
@@ -8521,26 +8526,32 @@ unsigned menu_displaylist_build_list(
                }
             }
 
+#ifdef HAVE_RUNAHEAD
+            if (retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL) &&
+                !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+               runahead_supported = core_info_current_supports_runahead();
+
+            if (runahead_supported)
             {
-               bool runahead_enabled         = settings->bools.run_ahead_enabled;
-               if (runahead_enabled)
+               for (i = 0; i < ARRAY_SIZE(build_list); i++)
                {
-                  for (i = 0; i < ARRAY_SIZE(build_list); i++)
+                  switch (build_list[i].enum_idx)
                   {
-                     switch (build_list[i].enum_idx)
-                     {
-                        case MENU_ENUM_LABEL_RUN_AHEAD_FRAMES:
-                        case MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE:
-                        case MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS:
+                     case MENU_ENUM_LABEL_RUN_AHEAD_ENABLED:
+                        build_list[i].checked = true;
+                        break;
+                     case MENU_ENUM_LABEL_RUN_AHEAD_FRAMES:
+                     case MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE:
+                     case MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS:
+                        if (runahead_enabled)
                            build_list[i].checked = true;
-                           break;
-                        default:
-                           break;
-                     }
+                        break;
+                     default:
+                        break;
                   }
                }
             }
-
+#endif
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
                if (!build_list[i].checked && !include_everything)
@@ -8552,6 +8563,15 @@ unsigned menu_displaylist_build_list(
                   count++;
             }
 
+#ifdef HAVE_RUNAHEAD
+            if (!runahead_supported &&
+                menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_UNSUPPORTED),
+                     msg_hash_to_str(MENU_ENUM_LABEL_RUN_AHEAD_UNSUPPORTED),
+                     MENU_ENUM_LABEL_RUN_AHEAD_UNSUPPORTED,
+                     FILE_TYPE_NONE, 0, 0))
+               count++;
+#endif
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_GAMEMODE_ENABLE, PARSE_ONLY_BOOL, false) == 0)
                count++;

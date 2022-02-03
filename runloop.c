@@ -4727,6 +4727,26 @@ static void do_runahead(
 
    if (!runloop_st->runahead_save_state_size_known)
    {
+      /* Disable runahead if current core reports
+       * that it has an insufficient savestate
+       * support level */
+      if (!core_info_current_supports_runahead())
+      {
+         runahead_error(runloop_st);
+         /* If core is incompatible with runahead,
+          * log a warning but do not spam OSD messages.
+          * Runahead menu entries are hidden when using
+          * incompatible cores, so there is no mechanism
+          * for users to respond to notifications. In
+          * addition, auto-disabling runahead is a feature,
+          * not a cause for 'concern'; OSD warnings should
+          * be reserved for when a core reports that it is
+          * runahead-compatible but subsequently fails in
+          * execution */
+         RARCH_WARN("[Run-Ahead]: %s\n", msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD));
+         goto force_input_dirty;
+      }
+
       if (!runahead_create(runloop_st))
       {
          if (!runahead_hide_warnings)
@@ -7650,7 +7670,8 @@ int runloop_iterate(void)
       bool run_ahead_hide_warnings      = settings->bools.run_ahead_hide_warnings;
       bool run_ahead_secondary_instance = settings->bools.run_ahead_secondary_instance;
       /* Run Ahead Feature replaces the call to core_run in this loop */
-      bool want_runahead                = run_ahead_enabled && run_ahead_num_frames > 0;
+      bool want_runahead                = run_ahead_enabled &&
+            (run_ahead_num_frames > 0) && runloop_st->runahead_available;
 #ifdef HAVE_NETWORKING
       want_runahead                     = want_runahead && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
 #endif
@@ -8040,7 +8061,8 @@ bool core_set_cheat(retro_ctx_cheat_info_t *info)
       run_ahead_enabled              = settings->bools.run_ahead_enabled;
       run_ahead_frames               = settings->uints.run_ahead_frames;
       run_ahead_secondary_instance   = settings->bools.run_ahead_secondary_instance;
-      want_runahead                  = run_ahead_enabled && (run_ahead_frames > 0);
+      want_runahead                  = run_ahead_enabled &&
+            (run_ahead_frames > 0) && runloop_st->runahead_available;
 #ifdef HAVE_NETWORKING
       if (want_runahead)
          want_runahead               = !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
@@ -8078,7 +8100,8 @@ bool core_reset_cheat(void)
       run_ahead_enabled              = settings->bools.run_ahead_enabled;
       run_ahead_frames               = settings->uints.run_ahead_frames;
       run_ahead_secondary_instance   = settings->bools.run_ahead_secondary_instance;
-      want_runahead                  = run_ahead_enabled && (run_ahead_frames > 0);
+      want_runahead                  = run_ahead_enabled &&
+            (run_ahead_frames > 0) && runloop_st->runahead_available;
 #ifdef HAVE_NETWORKING
       if (want_runahead)
          want_runahead               = !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
