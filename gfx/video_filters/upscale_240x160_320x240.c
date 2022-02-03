@@ -305,7 +305,7 @@ void upscale_240x160_to_320x240_aspect(uint16_t *dst, const uint16_t *src,
    }
 
    /* Letterboxing - zero out last 13 rows */
-   memset(dst + (226 * dst_stride), 0, sizeof(uint16_t) * dst_stride * 13);
+   memset(dst + (226 * dst_stride), 0, sizeof(uint16_t) * dst_stride * 14);
 }
 
 /*******************************************************************
