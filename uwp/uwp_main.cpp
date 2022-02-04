@@ -22,6 +22,8 @@
 #include <lists/string_list.h>
 #include <queues/task_queue.h>
 #include <retro_timers.h>
+#include <sstream>
+#include <iomanip>
 
 #include "configuration.h"
 #include "paths.h"
@@ -423,16 +425,17 @@ void App::OnActivated(CoreApplicationView^ applicationView, IActivatedEventArgs^
 	}
 	m_initialized = true;
 
-	//Should it reset drivers only if the menu is loaded, but not if the content is started directly through arguments?
 	if (is_running_on_xbox())
 	{
 		bool reset = false;
 		int width = uwp_get_width();
 		int height = uwp_get_height();
 		//reset driver to d3d11 if set to opengl on boot as cores can just set to gl when needed and there is no good reason to use gl for the menus
+		//do not change the default driver if the content is already initialized through arguments as this would crash RA for cores that use only ANGLE
 		settings_t* settings = config_get_ptr();
+		content_state_t* p_content = content_state_get_ptr();
 		char* currentdriver = settings->arrays.video_driver;
-		if (strcmpi(currentdriver, "gl") == 0)
+		if (strcmpi(currentdriver, "gl") == 0 && p_content->is_inited == false)
 		{
 			//set driver to default
 			configuration_set_string(settings,
@@ -686,40 +689,39 @@ void App::ParseProtocolArgs(Windows::ApplicationModel::Activation::IActivatedEve
 	argvTmp->clear();
 	argv->clear();
 
+	// If the app is activated using protocol, it is expected to be in this format:
+	// "retroarch:?cmd=<RetroArch CLI arguments>&launchOnExit=<app to launch on exit>"
+	// For example:
+	// retroarch:?cmd=retroarch -L cores\core_libretro.dll "c:\mypath\path with spaces\game.rom"&launchOnExit=LaunchApp:
+	// "cmd" and "launchOnExit" are optional. If none specified, it will normally launch into menu
 	if (args->Kind == ActivationKind::Protocol)
 	{
 		ProtocolActivatedEventArgs^ protocolArgs = dynamic_cast<Windows::ApplicationModel::Activation::ProtocolActivatedEventArgs^>(args);
 		Windows::Foundation::WwwFormUrlDecoder^ query = protocolArgs->Uri->QueryParsed;
 
-		//if RetroArch UWP app is started using protocol with argument "launchOnExit", this gives an option to launch another app on RA exit,
-		//making it easy to integrate RA with other UWP frontends
-		try
+		for (int i = 0; i < query->Size; i++)
 		{
-			m_launchOnExit = query->GetFirstValueByName("launchOnExit");
-		}
-		catch (Platform::InvalidArgumentException^ e)
-		{
-			//nothing to do if named parameter doesn't exist
-		}
+			IWwwFormUrlDecoderEntry^ arg = query->GetAt(i);
 
-		try
-		{
-			//protocol activation is in format 0=argValue0&1=argValue1...
-			//where argument name is a number from 0 to 9
-			for (int i = 0; i < 10; i++)
+			//parse RetroArch command line string
+			if (arg->Name == "cmd")
 			{
-				wchar_t buffer[5];
-				swprintf(buffer, L"%d", i);
-				Platform::String^ argName = ref new Platform::String(buffer);
-				Platform::String^ arg = query->GetFirstValueByName(argName);
-				std::wstring ws(arg->ToString()->Data());
-				std::string stdstr(ws.begin(), ws.end());
-				argvTmp->push_back(stdstr);				
+				std::wstring wsValue(arg->Value->ToString()->Data());
+				std::string strValue(wsValue.begin(), wsValue.end());
+				std::istringstream iss(strValue);				
+				std::string s;
+				
+				//set escape character to null char to preserve backslashes in paths which are inside quotes, they get stripped by default
+				while (iss >> std::quoted(s, '"', (char)0)) {
+					argvTmp->push_back(s);
+				}
 			}
-		}
-		catch (Platform::InvalidArgumentException^ e)
-		{
-			//nothing to do if named parameter doesn't exist
+			else if (arg->Name == "launchOnExit")
+			{
+				//if RetroArch UWP app is started using protocol with argument "launchOnExit", this gives an option to launch another app on RA exit,
+				//making it easy to integrate RA with other UWP frontends
+				m_launchOnExit = arg->Value;
+			}
 		}
 	}
 
