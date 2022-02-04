@@ -1377,6 +1377,7 @@ static void frontend_unix_get_env(int *argc,
       char *argv[], void *data, void *params_data)
 {
    unsigned i;
+   const char* libretro_directory = getenv("LIBRETRO_DIRECTORY");
 #ifdef ANDROID
    int32_t major, minor, rel;
    char device_model[PROP_VALUE_MAX]  = {0};
@@ -1819,8 +1820,12 @@ static void frontend_unix_get_env(int *argc,
       strcpy_literal(base_path, "retroarch");
 #endif
 
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], base_path,
-         "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+   if (!string_is_empty(libretro_directory))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE], libretro_directory,
+            sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+   else
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], base_path,
+            "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 #if defined(DINGUX)
    /* On platforms that require manual core installation/
     * removal, placing core info files in the same directory
