@@ -2015,9 +2015,11 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_REWIND_DEINIT:
 #ifdef HAVE_REWIND
          {
-	    bool core_type_is_dummy   = runloop_st->current_core_type == CORE_TYPE_DUMMY;
-	    if (core_type_is_dummy)
+            bool core_type_is_dummy   = runloop_st->current_core_type == CORE_TYPE_DUMMY;
+
+            if (core_type_is_dummy)
                return false;
+
             state_manager_event_deinit(&runloop_st->rewind_st);
          }
 #endif
@@ -2027,8 +2029,9 @@ bool command_event(enum event_command cmd, void *data)
          {
             bool rewind_enable        = settings->bools.rewind_enable;
             size_t rewind_buf_size    = settings->sizes.rewind_buffer_size;
-	    bool core_type_is_dummy   = runloop_st->current_core_type == CORE_TYPE_DUMMY;
-	    if (core_type_is_dummy)
+            bool core_type_is_dummy   = runloop_st->current_core_type == CORE_TYPE_DUMMY;
+
+            if (core_type_is_dummy)
                return false;
 #ifdef HAVE_CHEEVOS
             if (rcheevos_hardcore_active())

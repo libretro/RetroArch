@@ -3112,7 +3112,9 @@ static int menu_displaylist_parse_load_content_settings(
 #endif
 
 #ifdef HAVE_REWIND
-      if (settings->bools.menu_show_rewind && !settings->bools.kiosk_mode_enable)
+      if (settings->bools.menu_show_rewind &&
+          !settings->bools.kiosk_mode_enable &&
+          core_info_current_supports_rewind())
       {
          if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS),
@@ -9443,20 +9445,44 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
 #ifdef HAVE_REWIND
-               {MENU_ENUM_LABEL_REWIND_SETTINGS,         PARSE_ACTION    },
+            bool rewind_supported = true;
 #endif
-               {MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS, PARSE_ACTION},
-               {MENU_ENUM_LABEL_FASTFORWARD_RATIO,       PARSE_ONLY_FLOAT},
-               {MENU_ENUM_LABEL_FASTFORWARD_FRAMESKIP,   PARSE_ONLY_BOOL },
-               {MENU_ENUM_LABEL_SLOWMOTION_RATIO,        PARSE_ONLY_FLOAT},
-               {MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,      PARSE_ONLY_BOOL },
-               {MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE, PARSE_ONLY_BOOL },
+            menu_displaylist_build_info_selective_t build_list[] = {
+#ifdef HAVE_REWIND
+               {MENU_ENUM_LABEL_REWIND_SETTINGS,             PARSE_ACTION,     false},
+#endif
+               {MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS, PARSE_ACTION,     true},
+               {MENU_ENUM_LABEL_FASTFORWARD_RATIO,           PARSE_ONLY_FLOAT, true},
+               {MENU_ENUM_LABEL_FASTFORWARD_FRAMESKIP,       PARSE_ONLY_BOOL,  true},
+               {MENU_ENUM_LABEL_SLOWMOTION_RATIO,            PARSE_ONLY_FLOAT, true},
+               {MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,          PARSE_ONLY_BOOL,  true},
+               {MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE,     PARSE_ONLY_BOOL , true},
             };
 
+#ifdef HAVE_REWIND
+            if (retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL) &&
+                !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+               rewind_supported = core_info_current_supports_rewind();
+
+            if (rewind_supported)
+               for (i = 0; i < ARRAY_SIZE(build_list); i++)
+               {
+                  switch (build_list[i].enum_idx)
+                  {
+                     case MENU_ENUM_LABEL_REWIND_SETTINGS:
+                        build_list[i].checked = true;
+                        break;
+                     default:
+                        break;
+                  }
+               }
+#endif
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
+               if (!build_list[i].checked && !include_everything)
+                  continue;
+
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         build_list[i].enum_idx,  build_list[i].parse_type,
                         false) == 0)
