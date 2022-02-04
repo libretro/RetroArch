@@ -30,6 +30,7 @@
 #include "state_manager.h"
 #include "msg_hash.h"
 #include "core.h"
+#include "core_info.h"
 #include "retroarch.h"
 #include "verbosity.h"
 #include "content.h"
@@ -582,6 +583,12 @@ void state_manager_event_init(
    if (!rewind_st || rewind_st->state)
       return;
 
+   if (!core_info_current_supports_rewind())
+   {
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_REWIND_UNSUPPORTED));
+      return;
+   }
+
    if (audio_driver_has_callback())
    {
       RARCH_ERR("%s.\n", msg_hash_to_str(MSG_REWIND_INIT_FAILED));
@@ -641,10 +648,11 @@ bool state_manager_check_rewind(
       unsigned rewind_granularity, bool is_paused,
       char *s, size_t len, unsigned *time)
 {
-   bool ret             = false;
-   static bool first    = true;
+   bool ret                = false;
+   static bool first       = true;
+   static bool was_pressed = false;
 #ifdef HAVE_NETWORKING
-   bool was_reversed    = false;
+   bool was_reversed       = false;
 #endif
 
    if (!rewind_st)
@@ -666,7 +674,16 @@ bool state_manager_check_rewind(
    }
 
    if (!rewind_st->state)
+   {
+      if ((pressed && !was_pressed) &&
+          !core_info_current_supports_rewind())
+         runloop_msg_queue_push(msg_hash_to_str(MSG_REWIND_UNSUPPORTED),
+               1, 100, false, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+      was_pressed = pressed;
       return false;
+   }
 
    if (pressed)
    {
@@ -740,5 +757,6 @@ bool state_manager_check_rewind(
 
    core_set_rewind_callbacks();
 
+   was_pressed = pressed;
    return ret;
 }

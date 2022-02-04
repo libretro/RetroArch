@@ -2941,6 +2941,10 @@ MSG_HASH(
    "slowmotion_ratio"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_RUN_AHEAD_UNSUPPORTED,
+   "run_ahead_unsupported"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_RUN_AHEAD_ENABLED,
    "run_ahead_enabled"
    )

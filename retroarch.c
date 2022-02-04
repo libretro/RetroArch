@@ -1623,6 +1623,14 @@ bool command_event(enum event_command cmd, void *data)
             char msg[256];
             msg[0] = '\0';
 
+            if (!core_info_current_supports_runahead())
+            {
+               runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD),
+                     1, 100, false,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               break;
+            }
+
             settings->bools.run_ahead_enabled =
                !(settings->bools.run_ahead_enabled);
 
@@ -2007,9 +2015,11 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_REWIND_DEINIT:
 #ifdef HAVE_REWIND
          {
-	    bool core_type_is_dummy   = runloop_st->current_core_type == CORE_TYPE_DUMMY;
-	    if (core_type_is_dummy)
+            bool core_type_is_dummy   = runloop_st->current_core_type == CORE_TYPE_DUMMY;
+
+            if (core_type_is_dummy)
                return false;
+
             state_manager_event_deinit(&runloop_st->rewind_st);
          }
 #endif
@@ -2019,8 +2029,9 @@ bool command_event(enum event_command cmd, void *data)
          {
             bool rewind_enable        = settings->bools.rewind_enable;
             size_t rewind_buf_size    = settings->sizes.rewind_buffer_size;
-	    bool core_type_is_dummy   = runloop_st->current_core_type == CORE_TYPE_DUMMY;
-	    if (core_type_is_dummy)
+            bool core_type_is_dummy   = runloop_st->current_core_type == CORE_TYPE_DUMMY;
+
+            if (core_type_is_dummy)
                return false;
 #ifdef HAVE_CHEEVOS
             if (rcheevos_hardcore_active())
