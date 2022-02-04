@@ -803,11 +803,9 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 
    return true;
 
-#if defined(HAVE_EGL)
 error:
    gfx_ctx_wl_destroy(data);
    return false;
-#endif
 }
 
 bool input_wl_init(void *data, const char *joypad_name);

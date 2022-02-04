@@ -48,6 +48,7 @@
 /* Core Info Cache START */
 /*************************/
 
+#define CORE_INFO_CACHE_VERSION "1.1"
 #define CORE_INFO_CACHE_DEFAULT_CAPACITY 8
 
 /* TODO/FIXME: Apparently rzip compression is an issue on UWP */
@@ -60,6 +61,7 @@ typedef struct
    core_info_t *items;
    size_t length;
    size_t capacity;
+   char *version;
    bool refresh;
 } core_info_cache_list_t;
 
@@ -103,7 +105,9 @@ static bool CCJSONObjectMemberHandler(void *context,
 {
    CCJSONContext *pCtx = (CCJSONContext *)context;
 
-   if ((pCtx->object_depth == 2) && (pCtx->array_depth == 1) && length)
+   if ((pCtx->object_depth == 2) &&
+       (pCtx->array_depth  == 1) &&
+       length)
    {
       pCtx->current_string_val      = NULL;
       pCtx->current_string_list_val = NULL;
@@ -199,26 +203,29 @@ static bool CCJSONObjectMemberHandler(void *context,
             }
             else if (string_is_equal(pValue, "supports_no_game"))
                pCtx->current_entry_bool_val  = &pCtx->core_info->supports_no_game;
+            else if (string_is_equal(pValue, "savestate_support_level"))
+               pCtx->current_entry_uint_val  = &pCtx->core_info->savestate_support_level;
             break;
       }
    }
-   else if ((pCtx->object_depth == 3) 
-         && (pCtx->array_depth  == 1) && length)
+   else if ((pCtx->object_depth == 3) &&
+            (pCtx->array_depth  == 1) &&
+            length)
    {
       pCtx->current_string_val      = NULL;
       pCtx->current_entry_uint_val  = NULL;
 
       if (pCtx->to_core_file_id)
       {
-         if (string_is_equal(pValue, "str"))
+         if (string_is_equal(pValue,      "str"))
             pCtx->current_string_val         = &pCtx->core_info->core_file_id.str;
          else if (string_is_equal(pValue, "hash"))
             pCtx->current_entry_uint_val     = &pCtx->core_info->core_file_id.hash;
       }
    }
-   else if ((pCtx->object_depth == 3) 
-         && (pCtx->array_depth  == 2) 
-         && length)
+   else if ((pCtx->object_depth == 3) &&
+            (pCtx->array_depth  == 2) &&
+            length)
    {
       pCtx->current_string_val      = NULL;
       pCtx->current_entry_bool_val  = NULL;
@@ -227,13 +234,22 @@ static bool CCJSONObjectMemberHandler(void *context,
       {
          size_t firmware_idx = pCtx->core_info->firmware_count - 1;
 
-         if (string_is_equal(pValue, "path"))
+         if (string_is_equal(pValue,      "path"))
             pCtx->current_string_val         = &pCtx->core_info->firmware[firmware_idx].path;
          else if (string_is_equal(pValue, "desc"))
             pCtx->current_string_val         = &pCtx->core_info->firmware[firmware_idx].desc;
          else if (string_is_equal(pValue, "optional"))
             pCtx->current_entry_bool_val     = &pCtx->core_info->firmware[firmware_idx].optional;
       }
+   }
+   else if ((pCtx->object_depth == 1) &&
+            (pCtx->array_depth  == 0) &&
+            length)
+   {
+      pCtx->current_string_val      = NULL;
+
+      if (string_is_equal(pValue,         "version"))
+         pCtx->current_string_val            = &pCtx->core_info_cache_list->version;
    }
 
    return true;
@@ -319,6 +335,11 @@ static bool CCJSONStartObjectHandler(void *context)
       pCtx->core_info = (core_info_t*)calloc(1, sizeof(core_info_t));
       if (!pCtx->core_info)
          return false;
+
+      /* Assume all cores have 'full' savestate support
+       * by default */
+      pCtx->core_info->savestate_support_level =
+            CORE_INFO_SAVESTATE_DETERMINISTIC;
    }
    else if ((pCtx->object_depth == 3) && (pCtx->array_depth == 2))
    {
@@ -448,6 +469,7 @@ static void core_info_copy(core_info_t *src, core_info_t *dst)
       ? strdup(src->core_file_id.str) : NULL;
    dst->core_file_id.hash             = src->core_file_id.hash;
 
+   dst->savestate_support_level       = src->savestate_support_level;
    dst->has_info                      = src->has_info;
    dst->supports_no_game              = src->supports_no_game;
    dst->database_match_archive_member = src->database_match_archive_member;
@@ -542,6 +564,7 @@ static void core_info_transfer(core_info_t *src, core_info_t *dst)
    src->core_file_id.str              = NULL;
    dst->core_file_id.hash             = src->core_file_id.hash;
 
+   dst->savestate_support_level       = src->savestate_support_level;
    dst->has_info                      = src->has_info;
    dst->supports_no_game              = src->supports_no_game;
    dst->database_match_archive_member = src->database_match_archive_member;
@@ -565,6 +588,10 @@ static void core_info_cache_list_free(
    }
 
    free(core_info_cache_list->items);
+
+   if (core_info_cache_list->version)
+      free(core_info_cache_list->version);
+
    free(core_info_cache_list);
 }
 
@@ -657,6 +684,7 @@ static core_info_cache_list_t *core_info_cache_list_new(void)
 
    core_info_cache_list->capacity = CORE_INFO_CACHE_DEFAULT_CAPACITY;
    core_info_cache_list->refresh  = false;
+   core_info_cache_list->version  = NULL;
 
    return core_info_cache_list;
 }
@@ -758,6 +786,21 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
       free(context.core_info);
    }
 
+   /* If info cache file has the wrong version
+    * number, discard it */
+   if (string_is_empty(core_info_cache_list->version) ||
+       !string_is_equal(core_info_cache_list->version,
+            CORE_INFO_CACHE_VERSION))
+   {
+      RARCH_WARN("[Core Info] Core info cache has invalid version"
+            " - forcing refresh (required v%s, found v%s)\n",
+            CORE_INFO_CACHE_VERSION,
+            core_info_cache_list->version);
+
+      core_info_cache_list_free(context.core_info_cache_list);
+      core_info_cache_list = core_info_cache_list_new();
+   }
+
 end:
    intfstream_close(file);
    free(file);
@@ -822,7 +865,7 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
    rjsonwriter_add_string(writer, "version");
    rjsonwriter_add_colon(writer);
    rjsonwriter_add_space(writer);
-   rjsonwriter_add_string(writer, "1.0");
+   rjsonwriter_add_string(writer, CORE_INFO_CACHE_VERSION);
    rjsonwriter_add_comma(writer);
    rjsonwriter_add_newline(writer);
    rjsonwriter_add_spaces(writer, 2);
@@ -1048,6 +1091,14 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
       rjsonwriter_add_colon(writer);
       rjsonwriter_add_space(writer);
       rjsonwriter_add_unsigned(writer, info->firmware_count);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "savestate_support_level");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_unsigned(writer, info->savestate_support_level);
       rjsonwriter_add_comma(writer);
       rjsonwriter_add_newline(writer);
 
@@ -1703,6 +1754,40 @@ static void core_info_parse_config_file(
             &tmp_bool))
       info->is_experimental = tmp_bool;
 
+
+   /* Savestate support level is slightly more complex,
+    * since it is a value derived from two configuration
+    * parameters */
+
+   /* > Assume all cores have 'full' savestate support
+    *   by default */
+   info->savestate_support_level =
+         CORE_INFO_SAVESTATE_DETERMINISTIC;
+
+   /* > Check whether savestate functionality is defined
+    *   in the info file */
+   if (config_get_bool(conf, "savestate", &tmp_bool))
+   {
+      if (tmp_bool)
+      {
+         /* Check if savestate features are defined */
+         entry = config_get_entry(conf, "savestate_features");
+
+         if (entry && !string_is_empty(entry->value))
+         {
+            if (string_is_equal(entry->value, "basic"))
+               info->savestate_support_level =
+                     CORE_INFO_SAVESTATE_BASIC;
+            else if (string_is_equal(entry->value, "serialized"))
+               info->savestate_support_level =
+                     CORE_INFO_SAVESTATE_SERIALIZED;
+         }
+      }
+      else
+         info->savestate_support_level =
+               CORE_INFO_SAVESTATE_DISABLED;
+   }
+
    core_info_resolve_firmware(info, conf);
 
    info->has_info = true;
@@ -2097,6 +2182,7 @@ bool core_info_init_current_core(void)
    current->is_experimental               = false;
    current->is_locked                     = false;
    current->firmware_count                = 0;
+   current->savestate_support_level       = CORE_INFO_SAVESTATE_DETERMINISTIC;
    current->path                          = NULL;
    current->display_name                  = NULL;
    current->display_version               = NULL;
@@ -2914,6 +3000,62 @@ bool core_info_hw_api_supported(core_info_t *info)
 #else
    return true;
 #endif
+}
+
+bool core_info_current_supports_savestate(void)
+{
+   core_info_state_t *p_coreinfo = &core_info_st;
+
+   /* If no core is currently loaded, assume
+    * by default that all savestate functionality
+    * is supported */
+   if (!p_coreinfo->current)
+      return true;
+
+   return p_coreinfo->current->savestate_support_level >=
+         CORE_INFO_SAVESTATE_BASIC;
+}
+
+bool core_info_current_supports_rewind(void)
+{
+   core_info_state_t *p_coreinfo = &core_info_st;
+
+   /* If no core is currently loaded, assume
+    * by default that all savestate functionality
+    * is supported */
+   if (!p_coreinfo->current)
+      return true;
+
+   return p_coreinfo->current->savestate_support_level >=
+         CORE_INFO_SAVESTATE_SERIALIZED;
+}
+
+bool core_info_current_supports_netplay(void)
+{
+   core_info_state_t *p_coreinfo = &core_info_st;
+
+   /* If no core is currently loaded, assume
+    * by default that all savestate functionality
+    * is supported */
+   if (!p_coreinfo->current)
+      return true;
+
+   return p_coreinfo->current->savestate_support_level >=
+         CORE_INFO_SAVESTATE_DETERMINISTIC;
+}
+
+bool core_info_current_supports_runahead(void)
+{
+   core_info_state_t *p_coreinfo = &core_info_st;
+
+   /* If no core is currently loaded, assume
+    * by default that all savestate functionality
+    * is supported */
+   if (!p_coreinfo->current)
+      return true;
+
+   return p_coreinfo->current->savestate_support_level >=
+         CORE_INFO_SAVESTATE_DETERMINISTIC;
 }
 
 /* Sets 'locked' status of specified core

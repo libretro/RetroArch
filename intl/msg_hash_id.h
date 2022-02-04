@@ -767,10 +767,6 @@ MSG_HASH(
    "Dukungan Netplay (Peer-to-Peer)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
-   "Dukungan Python (Dukungan Skrip dalam Shader)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
    "Dukungan Video4Linux2"
    )

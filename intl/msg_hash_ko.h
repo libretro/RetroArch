@@ -468,6 +468,10 @@ MSG_HASH(
    "그래픽 API 필요"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
+   "없음"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
    "펌웨어"
    )
@@ -801,10 +805,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
    "넷플레이 (P2P) 지원"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
-   "Python (셰이더에서 지원) 지원"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
@@ -3431,6 +3431,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
    "빨리 감기를 사용할 때 콘텐츠가 실행되는 최대 속도입니다. (예: 60fps 콘텐츠의 경우 5.0x = 300fps) 0.0x로 설정하면 빨리 감기 속도는 무제한이 됩니다. (FPS 제한 없음)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
+   "프레임 스킵으로 빨리 감기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
+   "빨리 감기 시 빨리 감기 비율에 따라 프레임을 건너뜁니다. 전력 소모를 줄이고 서드파티 프레임 리미터를 사용할 수 있게 합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
@@ -10054,59 +10062,59 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
-   "데이터베이스 – 필터 : 개발사"
+   "데이터베이스 – 필터: 개발사"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
-   "데이터베이스 – 필터 : 발매사"
+   "데이터베이스 – 필터: 배급사"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ORIGIN,
-   "데이터베이스 - 필터 : 단독"
+   "데이터베이스 - 필터: 국가"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_FRANCHISE,
-   "데이터베이스 - 필터 : 프랜차이즈"
+   "데이터베이스 - 필터: 프랜차이즈"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ESRB_RATING,
-   "데이터베이스 - 필터 : ESRB 등급"
+   "데이터베이스 - 필터: ESRB 등급"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ELSPA_RATING,
-   "데이터베이스 - 필터 : ELSPA 등급"
+   "데이터베이스 - 필터: ELSPA 등급"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PEGI_RATING,
-   "데이터베이스 - 필터 : PEGI 등급"
+   "데이터베이스 - 필터: PEGI 등급"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_CERO_RATING,
-   "데이터베이스 - 필터 : CERO 등급"
+   "데이터베이스 - 필터: CERO 등급"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_BBFC_RATING,
-   "데이터베이스 - 필터 : BBFC 등급"
+   "데이터베이스 - 필터: BBFC 등급"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_MAX_USERS,
-   "데이터베이스 - 필터 : 최대 사용자"
+   "데이터베이스 - 필터: 최대 플레이어 수"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_MONTH,
-   "데이터베이스 - 필터 : 월별 출시"
+   "데이터베이스 - 필터: 출시 월별"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_YEAR,
-   "데이터베이스 - 필터 : 연간 출시"
+   "데이터베이스 - 필터: 출시 연도별"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_ISSUE,
-   "데이터베이스 - 필터 : 에지 매거진 기사"
+   "데이터베이스 - 필터: Edge 매거진 기사"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_RATING,
-   "데이터베이스 - 필터 : 에지 매거진 등급"
+   "데이터베이스 - 필터: Edge 매거진 등급"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
@@ -11657,6 +11665,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
    "치트가 활성화 되었습니다. 현재 세션의 하드코어 모드 도전과제는 해제됩니다."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_MASTERED_GAME,
+   "%s 완전 정복"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_COMPLETED_GAME,
+   "%s 달성"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,

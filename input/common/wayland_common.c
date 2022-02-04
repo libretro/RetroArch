@@ -65,6 +65,9 @@ static void keyboard_handle_leave(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    wl->input.keyboard_focus   = false;
+
+   // Release all keys
+   memset(wl->input.key_state, 0, sizeof(wl->input.key_state));
 }
 
 static void keyboard_handle_key(void *data,
@@ -180,6 +183,9 @@ static void pointer_handle_leave(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    wl->input.mouse.focus      = false;
+   wl->input.mouse.left       = false;
+   wl->input.mouse.right      = false;
+   wl->input.mouse.middle     = false;
 
    if (wl->input.mouse.surface == surface)
       wl->input.mouse.surface = NULL;

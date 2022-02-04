@@ -2268,7 +2268,7 @@ static int action_ok_file_load(const char *path,
                msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN))
          )
       {
-	 menu_handle_t *menu                 = menu_state_get_ptr()->driver_data;
+         menu_handle_t *menu = menu_state_get_ptr()->driver_data;
          if (!menu)
             return menu_cbs_exit();
 
@@ -5301,13 +5301,13 @@ static int action_ok_add_to_favorites(const char *path,
 
       if (string_is_empty(core_path) || string_is_empty(core_name))
       {
-         strcpy_literal(core_path, "DETECT");
-         strcpy_literal(core_name, "DETECT");
+         strcpy_literal(core_path, FILE_PATH_DETECT);
+         strcpy_literal(core_name, FILE_PATH_DETECT);
       }
 
       /* > crc32 + db_name */
       {
-	 menu_handle_t *menu                 = menu_state_get_ptr()->driver_data;
+         menu_handle_t *menu = menu_state_get_ptr()->driver_data;
          if (menu)
          {
             playlist_t *playlist_curr = playlist_get_cached();
@@ -5376,10 +5376,14 @@ static int action_ok_add_to_favorites_playlist(const char *path,
    {
       union string_list_elem_attr attr;
       char core_display_name[PATH_MAX_LENGTH];
+      char core_path[PATH_MAX_LENGTH];
+      char core_name[PATH_MAX_LENGTH];
       struct string_list 
          *str_list         = NULL;
 
       core_display_name[0] = '\0';
+      core_path[0]         = '\0';
+      core_name[0]         = '\0';
 
       /* Create string list container for playlist parameters */
       attr.i               = 0;
@@ -5410,29 +5414,51 @@ static int action_ok_add_to_favorites_playlist(const char *path,
          string_list_append(str_list, fallback_content_label, attr);
       }
 
-      /* > core_path + core_name */
+      /* Replace "DETECT" with default_core_path + name if available */
       if (!string_is_empty(entry->core_path) && !string_is_empty(entry->core_name))
+      {
+         if (  string_is_equal(entry->core_path, FILE_PATH_DETECT) &&
+               string_is_equal(entry->core_name, FILE_PATH_DETECT))
+         {
+            const char *default_core_path = playlist_get_default_core_path(playlist_curr);
+            const char *default_core_name = playlist_get_default_core_name(playlist_curr);
+
+            if (!string_is_empty(default_core_path) && !string_is_empty(default_core_name))
+            {
+               strlcpy(core_path, default_core_path, sizeof(core_path));
+               strlcpy(core_name, default_core_name, sizeof(core_name));
+            }
+         }
+         else
+         {
+            strlcpy(core_path, entry->core_path, sizeof(core_path));
+            strlcpy(core_name, entry->core_name, sizeof(core_name));
+         }
+      }
+
+      /* > core_path + core_name */
+      if (!string_is_empty(core_path) && !string_is_empty(core_name))
       {
          core_info_t *core_info = NULL;
 
          /* >> core_path */
-         string_list_append(str_list, entry->core_path, attr);
+         string_list_append(str_list, core_path, attr);
 
          /* >> core_name
           * (always use display name, if available) */
-         if (core_info_find(entry->core_path, &core_info))
+         if (core_info_find(core_path, &core_info))
             if (!string_is_empty(core_info->display_name))
                strlcpy(core_display_name, core_info->display_name, sizeof(core_display_name));
 
          if (!string_is_empty(core_display_name))
             string_list_append(str_list, core_display_name, attr);
          else
-            string_list_append(str_list, entry->core_name, attr);
+            string_list_append(str_list, core_name, attr);
       }
       else
       {
-         string_list_append(str_list, "DETECT", attr);
-         string_list_append(str_list, "DETECT", attr);
+         string_list_append(str_list, FILE_PATH_DETECT, attr);
+         string_list_append(str_list, FILE_PATH_DETECT, attr);
       }
 
       /* crc32 */
@@ -6355,8 +6381,8 @@ static int action_ok_push_dropdown_item_playlist_default_core(
    if (string_is_empty(core_name) ||
        string_is_equal(core_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)))
    {
-      playlist_set_default_core_path(playlist, "DETECT");
-      playlist_set_default_core_name(playlist, "DETECT");
+      playlist_set_default_core_path(playlist, FILE_PATH_DETECT);
+      playlist_set_default_core_name(playlist, FILE_PATH_DETECT);
    }
    else
    {
@@ -6387,8 +6413,8 @@ static int action_ok_push_dropdown_item_playlist_default_core(
       /* Fallback... */
       if (!found)
       {
-         playlist_set_default_core_path(playlist, "DETECT");
-         playlist_set_default_core_name(playlist, "DETECT");
+         playlist_set_default_core_path(playlist, FILE_PATH_DETECT);
+         playlist_set_default_core_name(playlist, FILE_PATH_DETECT);
       }
    }
 

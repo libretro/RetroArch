@@ -2803,6 +2803,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
    video_info->runloop_is_paused             = runloop_st->paused;
    video_info->runloop_is_slowmotion         = runloop_st->slowmotion;
+   video_info->fastforward_frameskip         = settings->bools.fastforward_frameskip;
 
    video_info->input_driver_nonblock_state   = input_st ?
       input_st->nonblocking_flag : false;
@@ -3568,10 +3569,16 @@ void video_driver_frame(const void *data, unsigned width,
 {
    char status_text[128];
    static char video_driver_msg[256];
+   static retro_time_t last_time;
    static retro_time_t curr_time;
    static retro_time_t fps_time;
+   static retro_time_t frame_time_accumulator;
    static float last_fps, frame_time;
    static uint64_t last_used_memory, last_total_memory;
+   /* Initialise 'last_frame_duped' to 'true'
+    * to ensure that the first frame is rendered */
+   static bool last_frame_duped  = true;
+   bool render_frame             = true;
    retro_time_t new_time;
    video_frame_info_t video_info;
    video_driver_state_t *video_st= &video_driver_st;
@@ -3579,7 +3586,6 @@ void video_driver_frame(const void *data, unsigned width,
    const enum retro_pixel_format
       video_driver_pix_fmt       = video_st->pix_fmt;
    bool runloop_idle             = runloop_st->idle;
-   bool render_frame             = !runloop_st->fastforward_frameskip_frames_current;
    bool video_driver_active      = video_st->active;
 #if defined(HAVE_GFX_WIDGETS)
    bool widgets_active           = dispwidget_get_ptr()->active;
@@ -3618,10 +3624,55 @@ void video_driver_frame(const void *data, unsigned width,
 
    video_driver_build_info(&video_info);
 
-   render_frame |= video_info.menu_is_alive;
+   /* If fast forward is active and fast forward
+    * frame skipping is enabled, drop any frames
+    * that occur at a rate higher than the core-set
+    * refresh rate. However: We must always render
+    * the current frame when:
+    * - The menu is open
+    * - The last frame was NULL and the
+    *   current frame is not (i.e. if core was
+    *   previously sending duped frames, ensure
+    *   that the next frame update is captured) */
+   if (video_info.input_driver_nonblock_state &&
+       video_info.fastforward_frameskip &&
+       !(video_info.menu_is_alive ||
+            (last_frame_duped && !!data)))
+   {
+      /* Accumulate the elapsed time since the
+       * last frame */
+      frame_time_accumulator += new_time - last_time;
 
-   if (!render_frame)
-      runloop_st->fastforward_frameskip_frames_current--;
+      /* Render frame if the accumulated time is
+       * greater than or equal to the expected
+       * core frame time */
+      render_frame = frame_time_accumulator >=
+            video_st->core_frame_time;
+
+      /* If frame is to be rendered, subtract
+       * expected frame time from accumulator */
+      if (render_frame)
+      {
+         frame_time_accumulator -= video_st->core_frame_time;
+
+         /* If fast forward is working correctly,
+          * the actual frame time will always be
+          * less than the expected frame time.
+          * But if the host cannot run the core
+          * fast enough to achieve at least 1x
+          * speed then the frame time accumulator
+          * will never empty and may potentially
+          * overflow. If a 'runaway' accumulator
+          * is detected, we simply reset it */
+         if (frame_time_accumulator > video_st->core_frame_time)
+            frame_time_accumulator = 0;
+      }
+   }
+   else
+      frame_time_accumulator = 0;
+
+   last_time        = new_time;
+   last_frame_duped = !data;
 
    /* Get the amount of frames per seconds. */
    if (video_st->frame_count)
@@ -3923,15 +3974,11 @@ void video_driver_frame(const void *data, unsigned width,
    }
 
    if (render_frame && video_st->current_video && video_st->current_video->frame)
-   {
       video_st->active = video_st->current_video->frame(
             video_st->data, data, width, height,
             video_st->frame_count, (unsigned)pitch,
             video_info.menu_screensaver_active || video_info.notifications_hidden ? "" : video_driver_msg,
             &video_info);
-
-      runloop_st->fastforward_frameskip_frames_current = runloop_st->fastforward_frameskip_frames;
-   }
 
    video_st->frame_count++;
 

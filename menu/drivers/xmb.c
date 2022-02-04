@@ -6328,7 +6328,7 @@ static void xmb_context_reset_textures(
    {
       if (!gfx_display_reset_textures_list(xmb_texture_path(i), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
       {
-         RARCH_WARN("[XMB] Asset missing: %s%s\n", iconpath, xmb_texture_path(i));
+         RARCH_WARN("[XMB]: Asset missing: \"%s%s\".\n", iconpath, xmb_texture_path(i));
          /* New extra battery icons could be missing */
          if (i == XMB_TEXTURE_BATTERY_80 || i == XMB_TEXTURE_BATTERY_60 || i == XMB_TEXTURE_BATTERY_40 || i == XMB_TEXTURE_BATTERY_20)
          {
@@ -6447,7 +6447,7 @@ static void xmb_context_reset_textures(
 
 error:
    xmb->assets_missing = true;
-   RARCH_WARN("[XMB] Critical asset missing, no icons will be drawn\n");
+   RARCH_WARN("[XMB]: Critical asset missing, no icons will be drawn.\n");
 }
 
 static void xmb_context_reset_background(xmb_handle_t *xmb, const char *iconpath)

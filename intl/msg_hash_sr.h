@@ -791,10 +791,6 @@ MSG_HASH(
    "Podrška za igru preko mreže (peer-to-peer)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
-   "Podrška za Python (podrška za skripte u šejderima)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
    "Podrška za Video4Linux2"
    )

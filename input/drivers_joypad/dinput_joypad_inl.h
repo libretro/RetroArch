@@ -69,19 +69,19 @@ static void dinput_create_rumble_effects(struct dinput_joypad_data *pad)
 #ifdef __cplusplus
    if (IDirectInputDevice8_CreateEffect(pad->joypad, GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[0], NULL) != DI_OK)
-      RARCH_WARN("[DINPUT]: Strong rumble unavailable.\n");
+      RARCH_WARN("[DInput]: Strong rumble unavailable.\n");
 
    if (IDirectInputDevice8_CreateEffect(pad->joypad, GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[1], NULL) != DI_OK)
-      RARCH_WARN("[DINPUT]: Weak rumble unavailable.\n");
+      RARCH_WARN("[DInput]: Weak rumble unavailable.\n");
 #else
    if (IDirectInputDevice8_CreateEffect(pad->joypad, &GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[0], NULL) != DI_OK)
-      RARCH_WARN("[DINPUT]: Strong rumble unavailable.\n");
+      RARCH_WARN("[DInput]: Strong rumble unavailable.\n");
 
    if (IDirectInputDevice8_CreateEffect(pad->joypad, &GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[1], NULL) != DI_OK)
-      RARCH_WARN("[DINPUT]: Weak rumble unavailable.\n");
+      RARCH_WARN("[DInput]: Weak rumble unavailable.\n");
 #endif
 }
 

@@ -121,7 +121,7 @@
 #include "../manual_content_scan.h"
 #include "../core_backup.h"
 #include "../misc/cpufreq/cpufreq.h"
-#include "../input/input_remapping.h" 
+#include "../input/input_remapping.h"
 
 /* Spacers used for '<content> - <core name>' labels
  * in playlists */
@@ -460,13 +460,14 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
       settings_t *settings)
 {
    char tmp[PATH_MAX_LENGTH];
-   unsigned i, count           = 0;
-   core_info_t *core_info      = NULL;
-   const char *core_path       = NULL;
+   unsigned i, count             = 0;
+   core_info_t *core_info        = NULL;
+   const char *core_path         = NULL;
+   const char *savestate_support = NULL;
 #if !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
-   bool kiosk_mode_enable      = settings->bools.kiosk_mode_enable;
+   bool kiosk_mode_enable        = settings->bools.kiosk_mode_enable;
 #if defined(HAVE_NETWORKING) && defined(HAVE_ONLINE_UPDATER)
-   bool menu_show_core_updater = settings->bools.menu_show_core_updater;
+   bool menu_show_core_updater   = settings->bools.menu_show_core_updater;
 #endif
 #endif
 
@@ -614,6 +615,39 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
             MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
          count++;
    }
+
+   switch (core_info->savestate_support_level)
+   {
+      case CORE_INFO_SAVESTATE_BASIC:
+         savestate_support = msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC);
+         break;
+      case CORE_INFO_SAVESTATE_SERIALIZED:
+         savestate_support = msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED);
+         break;
+      case CORE_INFO_SAVESTATE_DETERMINISTIC:
+         savestate_support = msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC);
+         break;
+      default:
+         if (core_info->savestate_support_level >
+               CORE_INFO_SAVESTATE_DETERMINISTIC)
+            savestate_support = msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC);
+         else
+            savestate_support = msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED);
+         break;
+   }
+   fill_pathname_join_concat_noext(tmp,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL),
+         ": ",
+         savestate_support,
+         sizeof(tmp));
+   if (menu_entries_append_enum(info->list, tmp, "",
+         MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
+      count++;
 
    if (core_info->firmware_count > 0)
    {
@@ -1363,8 +1397,8 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    perms = test_permissions(internal_storage_path);
 
    snprintf(tmp, sizeof(tmp), "%s",
-         perms 
-         ? msg_hash_to_str(MSG_READ_WRITE) 
+         perms
+         ? msg_hash_to_str(MSG_READ_WRITE)
          : msg_hash_to_str(MSG_READ_ONLY));
    if (menu_entries_append_enum(list, tmp, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
@@ -1465,7 +1499,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          {
             snprintf(tmp, sizeof(tmp), " Device display name: %s",
                input_config_get_device_display_name(controller) ?
-               input_config_get_device_display_name(controller) : 
+               input_config_get_device_display_name(controller) :
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
             if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
@@ -1473,7 +1507,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
                count++;
             snprintf(tmp, sizeof(tmp), " Device config name: %s",
                input_config_get_device_config_name(controller) ?
-               input_config_get_device_config_name(controller)  : 
+               input_config_get_device_config_name(controller)  :
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
             if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
@@ -1781,7 +1815,6 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          {SUPPORTS_FREETYPE    ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT},
          {SUPPORTS_STBFONT     ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT},
          {SUPPORTS_NETPLAY     ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT},
-         {SUPPORTS_PYTHON      ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT},
          {SUPPORTS_V4L2        ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT},
          {SUPPORTS_LIBUSB      ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT},
       };
@@ -2873,6 +2906,7 @@ static int menu_displaylist_parse_load_content_settings(
 #endif
       bool quickmenu_show_resume_content  = settings->bools.quick_menu_show_resume_content;
       bool quickmenu_show_restart_content = settings->bools.quick_menu_show_restart_content;
+      bool savestates_enabled             = core_info_current_supports_savestate();
       rarch_system_info_t *system         = &runloop_state_get_ptr()->system;
 
       if (quickmenu_show_resume_content)
@@ -2921,7 +2955,8 @@ static int menu_displaylist_parse_load_content_settings(
       }
 #endif
 
-      if (settings->bools.quick_menu_show_save_load_state)
+      if (savestates_enabled &&
+          settings->bools.quick_menu_show_save_load_state)
       {
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                MENU_ENUM_LABEL_STATE_SLOT, PARSE_ONLY_INT, true) == 0)
@@ -2942,7 +2977,8 @@ static int menu_displaylist_parse_load_content_settings(
             count++;
       }
 
-      if (settings->bools.quick_menu_show_save_load_state &&
+      if (savestates_enabled &&
+          settings->bools.quick_menu_show_save_load_state &&
           settings->bools.quick_menu_show_undo_save_load_state)
       {
 #ifdef HAVE_CHEEVOS
@@ -3277,7 +3313,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
                   menu_driver_get_thumbnail_system(system, sizeof(system));
 
                   if (!string_is_empty(system))
-                     remove_entry_enabled = 
+                     remove_entry_enabled =
                         string_is_equal(system,  "history")   ||
                         string_is_equal(system,  "favorites") ||
                         string_ends_with_size(system, "_history",
@@ -7714,7 +7750,7 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_FACEBOOK_STREAM_KEY,
                   PARSE_ONLY_STRING, false) == 0)
             count++;
-         break;         
+         break;
       case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
          {
             bool kiosk_mode_enable                                  = settings->bools.kiosk_mode_enable;
@@ -10080,13 +10116,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      const struct retro_keybind *keybind;
                      const struct retro_keybind *auto_bind;
 
-                     retro_id                              = 
-                        (j < RARCH_ANALOG_BIND_LIST_END) 
-                        ? input_config_bind_order[j] 
+                     retro_id                              =
+                        (j < RARCH_ANALOG_BIND_LIST_END)
+                        ? input_config_bind_order[j]
                         : j;
-                     keybind                               = 
+                     keybind                               =
                         &input_config_binds[port][retro_id];
-                     auto_bind                             = 
+                     auto_bind                             =
                         (const struct retro_keybind*)
                         input_config_get_bind_auto(port, retro_id);
 
@@ -10132,9 +10168,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      const struct retro_keybind *keybind;
                      const struct retro_keybind *auto_bind;
 
-                     retro_id                              = 
-                        (j < RARCH_ANALOG_BIND_LIST_END) 
-                        ? input_config_bind_order[j] 
+                     retro_id                              =
+                        (j < RARCH_ANALOG_BIND_LIST_END)
+                        ? input_config_bind_order[j]
                         : j;
                      keybind                               =
                         &input_config_binds[port][retro_id];
@@ -11056,7 +11092,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef HAVE_NETWORKING
             char new_label[PATH_MAX_LENGTH];
             struct string_list str_list = {0};
-            
+
             new_label[0] = '\0';
 
             string_list_initialize(&str_list);
@@ -11312,7 +11348,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   info->path,
                   sizeof(path_playlist));
 
-            menu_displaylist_set_new_playlist(menu, 
+            menu_displaylist_set_new_playlist(menu,
                   settings, path_playlist, true);
 
             strlcpy(path_playlist,
@@ -13377,7 +13413,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   case ST_STRING_OPTIONS:
                      {
                         struct string_list tmp_str_list = {0};
-                        
+
                         string_list_initialize(&tmp_str_list);
                         string_split_noalloc(&tmp_str_list,
                               setting->values, "|");
@@ -13400,7 +13436,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                     MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL, i, 0))
                                  count++;
 
-                              if (!checked_found && 
+                              if (!checked_found &&
                                     string_is_equal(tmp_str_list.elems[i].data,
                                        setting->value.target.string))
                               {
