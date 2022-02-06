@@ -480,6 +480,14 @@ MSG_HASH(
    "Базовая (сохранение/загрузка)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
+   "Сериализованная (сохранение/загрузка, перемотка)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
+   "Детерминированная (сохранение/загрузка, перемотка, забегание, сетевая игра)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
    "Системные файлы"
    )
@@ -3018,7 +3026,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_UNSUPPORTED,
-   "Текущее ядро несовместимо с забеганием из-за отсутствия поддержки быстрых сохранений."
+   "Текущее ядро несовместимо с забеганием из-за отсутствия детерминированной поддержки быстрых сохранений."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
@@ -11248,7 +11256,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REWIND_UNSUPPORTED,
-   "Обратная перемотка недоступна из-за отсутствия в ядре поддержки быстрых сохранений."
+   "Обратная перемотка недоступна из-за отсутствия в ядре сериализованной поддержки быстрых сохранений."
    )
 MSG_HASH(
    MSG_REWIND_INIT,
@@ -11560,7 +11568,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD,
-   "Забегание недоступно из-за отсутствия в ядре поддержки быстрых сохранений."
+   "Забегание недоступно из-за отсутствия в ядре детерминированной поддержки быстрых сохранений."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,

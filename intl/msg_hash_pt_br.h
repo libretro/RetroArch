@@ -477,7 +477,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
-   "Série (salva/carrega, rebonina)"
+   "Serialização (salva/carrega e rebobina)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
@@ -2972,6 +2972,14 @@ MSG_HASH(
 
 /* Settings > Latency */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_UNSUPPORTED,
+   "[Execução antecipada indisponível]"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_UNSUPPORTED,
+   "Núcleo atual é incompatível com a execução antecipada, porque não tem suporte determinístico ao jogo salvo."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
    "Execução antecipada para reduzir a latência"
@@ -11095,6 +11103,10 @@ MSG_HASH(
    "Rebobinando."
    )
 MSG_HASH(
+   MSG_REWIND_UNSUPPORTED,
+   "Rebobinamento indisponível, porque o núcleo não tem suporte de serialização ao jogo salvo."
+   )
+MSG_HASH(
    MSG_REWIND_INIT,
    "Inicializando o buffer de rebobinamento com tamanho"
    )
@@ -11397,6 +11409,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "A \"Execução antecipada\" foi desativada porque esse núcleo não suporta jogos salvos."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD,
+   "Execução antecipada indisponível, porque o núcleo não tem suporte determinístico ao jogo salvo."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,

@@ -468,8 +468,24 @@ MSG_HASH(
    "그래픽 API 필요"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
+   "상태저장 지원"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
    "없음"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
+   "기본 (저장/불러오기)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
+   "직렬 (저장/불러오기, 뒤로 감기)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
+   "결정식 (저장/불러오기, 뒤로 감기, 미리 실행, 넷플레이)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
@@ -3012,6 +3028,14 @@ MSG_HASH(
 
 /* Settings > Latency */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_UNSUPPORTED,
+   "[미리 실행 사용 불가]"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_UNSUPPORTED,
+   "이 코어는 결정식 상태저장을 지원하지 않아 미리 실행과 호환되지 않습니다."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
    "미리 실행으로 지연 줄이기"
@@ -11231,6 +11255,10 @@ MSG_HASH(
    "뒤로 감기"
    )
 MSG_HASH(
+   MSG_REWIND_UNSUPPORTED,
+   "뒤로 감을 수 없습니다. 코어가 직렬 상태저장을 지원하지 않습니다."
+   )
+MSG_HASH(
    MSG_REWIND_INIT,
    "뒤로 감기 버퍼크기 초기화:"
    )
@@ -11537,6 +11565,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "코어가 상태 저장을 지원하지 않아 미리 실행 기능이 비활성화되었습니다."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD,
+   "미리 실행을 사용할 수 없습니다. 코어가 결정식 상태저장을 지원하지 않습니다."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
