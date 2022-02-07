@@ -852,7 +852,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #ifdef HAVE_VIDEO_LAYOUT
       {MENU_ENUM_LABEL_VIDEO_LAYOUT_PATH, deferred_push_video_layout_path}, 
 #endif
-      {MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU, deferred_push_achievement_pause_menu},
+      {MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU, deferred_push_achievement_pause_menu},
       {MENU_ENUM_LABEL_ACHIEVEMENT_LIST, deferred_push_achievement_list},
       {MENU_ENUM_LABEL_CORE_COUNTERS, deferred_push_core_counters},
       {MENU_ENUM_LABEL_FRONTEND_COUNTERS, deferred_push_frontend_counters},
