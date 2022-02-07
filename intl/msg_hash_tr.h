@@ -2993,6 +2993,14 @@ MSG_HASH(
 /* Settings > Latency */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_UNSUPPORTED,
+   "[Önden-Git Kullanılamıyor]"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_UNSUPPORTED,
+   "Mevcut çekirdek, deterministik tasarruf durumu desteğinin olmaması nedeniyle önden git ile uyumlu değil."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
    "Gecikmeyi Azaltmak için Önden-Git"
    )
@@ -11239,6 +11247,10 @@ MSG_HASH(
    "Geri sarılıyor."
    )
 MSG_HASH(
+   MSG_REWIND_UNSUPPORTED,
+   "Bu çekirdekte serileştirilmiş durum kaydı desteği bulunmadığından geri sarma kullanılamıyor."
+   )
+MSG_HASH(
    MSG_REWIND_INIT,
    "Geri sarma arabellek boyutuyla başlatılıyor"
    )
@@ -11545,6 +11557,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "Önden-Git devre dışı bırakıldı, bu çekirdek durum kayıtlarını desteklemiyor."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD,
+   "Bu çekirdek deterministik kaydetme durumu desteğine sahip olmadığı için önden git kullanılamıyor."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
