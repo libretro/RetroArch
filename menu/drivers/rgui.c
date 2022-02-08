@@ -1065,6 +1065,7 @@ typedef struct
    char theme_preset_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
    char menu_title[255]; /* Must be a fixed length array... */
    char menu_sublabel[MENU_SUBLABEL_MAX_LENGTH]; /* Must be a fixed length array... */
+   char dynamic_wallpaper[255];
 
    bool bg_modified;
    bool force_redraw;
@@ -3200,7 +3201,7 @@ static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
    rgui->transparency_enable     = rgui_transparency;
    rgui->show_wallpaper          = false;
 
-   if (rgui->color_theme == RGUI_THEME_CUSTOM)
+   if (rgui->color_theme == RGUI_THEME_CUSTOM || rgui->color_theme == RGUI_THEME_DYNAMIC)
    {
       memcpy(rgui->theme_preset_path,
             rgui_theme_preset, sizeof(rgui->theme_preset_path));
@@ -6681,6 +6682,37 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
       prepare_rgui_colors(rgui, settings);
    else if (settings->uints.menu_rgui_color_theme == RGUI_THEME_CUSTOM)
    {
+      if (string_is_not_equal_fast(settings->paths.path_rgui_theme_preset, rgui->theme_preset_path, sizeof(rgui->theme_preset_path)))
+         prepare_rgui_colors(rgui, settings);
+   }
+   else if (settings->uints.menu_rgui_color_theme == RGUI_THEME_DYNAMIC)
+   {
+      /* Load custom theme based on menu title */
+	  char playlist_theme_preset[255];
+      if (rgui->is_playlist)
+      {
+         if(rgui->dynamic_wallpaper != rgui->menu_title)
+         {
+            strcpy(rgui->dynamic_wallpaper, rgui->menu_title);
+
+            snprintf(playlist_theme_preset, sizeof(playlist_theme_preset),
+                  "%s/%s.cfg", settings->paths.directory_dynamic_wallpapers, rgui->menu_title);
+
+            strcpy(settings->paths.path_rgui_theme_preset, playlist_theme_preset);
+         }
+      }
+	  else
+	  {
+         if(rgui->dynamic_wallpaper != "default")
+         {
+            strcpy(rgui->dynamic_wallpaper, "default");
+
+            snprintf(playlist_theme_preset, sizeof(playlist_theme_preset),
+                  "%s/default.cfg", settings->paths.directory_dynamic_wallpapers);
+
+            strcpy(settings->paths.path_rgui_theme_preset, playlist_theme_preset);
+         }
+      }
       if (string_is_not_equal_fast(settings->paths.path_rgui_theme_preset, rgui->theme_preset_path, sizeof(rgui->theme_preset_path)))
          prepare_rgui_colors(rgui, settings);
    }

@@ -133,6 +133,7 @@ enum menu_add_content_entry_display_type
 enum rgui_color_theme
 {
    RGUI_THEME_CUSTOM = 0,
+   RGUI_THEME_DYNAMIC,
    RGUI_THEME_CLASSIC_RED,
    RGUI_THEME_CLASSIC_ORANGE,
    RGUI_THEME_CLASSIC_YELLOW,
