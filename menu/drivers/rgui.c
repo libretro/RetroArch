@@ -6688,7 +6688,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    else if (settings->uints.menu_rgui_color_theme == RGUI_THEME_DYNAMIC)
    {
       /* Load custom theme based on menu title */
-	  char playlist_theme_preset[255];
+      char playlist_theme_preset[PATH_MAX_LENGTH];
       if (rgui->is_playlist)
       {
          if(rgui->dynamic_wallpaper != rgui->menu_title)
@@ -6701,8 +6701,8 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
             strcpy(settings->paths.path_rgui_theme_preset, playlist_theme_preset);
          }
       }
-	  else
-	  {
+      else
+      {
          if(rgui->dynamic_wallpaper != "default")
          {
             strcpy(rgui->dynamic_wallpaper, "default");
