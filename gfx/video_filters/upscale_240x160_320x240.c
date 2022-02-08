@@ -60,16 +60,8 @@ struct filter_data
  * (Optimisations by jdgleaver)
  *******************************************************************/
 
-#define UPSCALE_240__WEIGHT_1_1(A, B, out, tmp)      \
+#define UPSCALE_240__WEIGHT(A, B, out, tmp) \
    *(out) = ((A + B + ((A ^ B) & 0x821)) >> 1)
-
-#define UPSCALE_240__WEIGHT_1_3(A, B, out, tmp)      \
-   tmp = ((A + B + ((A ^ B) & 0x821)) >> 1);         \
-   *(out) = ((tmp + B - ((tmp ^ B) & 0x821)) >> 1)
-
-#define UPSCALE_240__WEIGHT_3_1(A, B, out, tmp)      \
-   tmp = ((A + B + ((A ^ B) & 0x821)) >> 1);         \
-   *(out) = ((A + tmp - ((A ^ tmp) & 0x821)) >> 1)
 
 /* Upscales a 240x160 image to 320x240 using an approximate bilinear
  * resampling algorithm that only uses integer math */
@@ -95,10 +87,10 @@ void upscale_240x160_to_320x240(uint16_t *dst, const uint16_t *src,
          uint16_t _1, _2, _3,
                   _4, _5, _6;
 
-         uint16_t _1_2_weight_1_3;
-         uint16_t _2_3_weight_1_1;
-         uint16_t _4_5_weight_1_3;
-         uint16_t _5_6_weight_1_1;
+         uint16_t _1_2;
+         uint16_t _2_3;
+         uint16_t _4_5;
+         uint16_t _5_6;
 
          uint16_t tmp;
 
@@ -121,8 +113,10 @@ void upscale_240x160_to_320x240(uint16_t *dst, const uint16_t *src,
          _3 = *(block_src_ptr + 2);
 
          *(block_dst_ptr    ) = _1;
-         UPSCALE_240__WEIGHT_1_3(_1, _2, block_dst_ptr + 1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_2, _3, block_dst_ptr + 2, tmp);
+         UPSCALE_240__WEIGHT(_1, _2, &_1_2, tmp);
+         *(block_dst_ptr + 1) = _1_2;
+         UPSCALE_240__WEIGHT(_2, _3, &_2_3, tmp);
+         *(block_dst_ptr + 2) = _2_3;
          *(block_dst_ptr + 3) = _3;
 
          block_src_ptr += src_stride;
@@ -133,22 +127,20 @@ void upscale_240x160_to_320x240(uint16_t *dst, const uint16_t *src,
          _5 = *(block_src_ptr + 1);
          _6 = *(block_src_ptr + 2);
 
-         UPSCALE_240__WEIGHT_1_3(_1, _4, block_dst_ptr, tmp);
-         UPSCALE_240__WEIGHT_1_3(_1, _2, &_1_2_weight_1_3, tmp);
-         UPSCALE_240__WEIGHT_1_3(_4, _5, &_4_5_weight_1_3, tmp);
-         UPSCALE_240__WEIGHT_1_3(_1_2_weight_1_3, _4_5_weight_1_3, block_dst_ptr + 1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_2, _3, &_2_3_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_3_1(_5, _6, &_5_6_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_2_3_weight_1_1, _5_6_weight_1_1, block_dst_ptr + 2, tmp);
-         UPSCALE_240__WEIGHT_1_3(_3, _6, block_dst_ptr + 3, tmp);
+         UPSCALE_240__WEIGHT(_1, _4, block_dst_ptr, tmp);
+         UPSCALE_240__WEIGHT(_4, _5, &_4_5, tmp);
+         UPSCALE_240__WEIGHT(_1_2, _4_5, block_dst_ptr + 1, tmp);
+         UPSCALE_240__WEIGHT(_5, _6, &_5_6, tmp);
+         UPSCALE_240__WEIGHT(_2_3, _5_6, block_dst_ptr + 2, tmp);
+         UPSCALE_240__WEIGHT(_3, _6, block_dst_ptr + 3, tmp);
 
          block_src_ptr += src_stride;
          block_dst_ptr += dst_stride;
 
          /* -- Row 3 -- */
          *(block_dst_ptr    ) = _4;
-         UPSCALE_240__WEIGHT_1_3(_4, _5, block_dst_ptr + 1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_5, _6, block_dst_ptr + 2, tmp);
+         UPSCALE_240__WEIGHT(_4, _5, block_dst_ptr + 1, tmp);
+         UPSCALE_240__WEIGHT(_5, _6, block_dst_ptr + 2, tmp);
          *(block_dst_ptr + 3) = _6;
 
          block_src += 3;
@@ -189,12 +181,12 @@ void upscale_240x160_to_320x240_aspect(uint16_t *dst, const uint16_t *src,
                   _4, _5, _6,
                   _7, _8, _9;
 
-         uint16_t _1_2_weight_1_3;
-         uint16_t _2_3_weight_1_1;
-         uint16_t _4_5_weight_1_3;
-         uint16_t _5_6_weight_1_1;
-         uint16_t _7_8_weight_1_3;
-         uint16_t _8_9_weight_1_1;
+         uint16_t _1_2;
+         uint16_t _2_3;
+         uint16_t _4_5;
+         uint16_t _5_6;
+         uint16_t _7_8;
+         uint16_t _8_9;
 
          uint16_t tmp;
 
@@ -218,8 +210,10 @@ void upscale_240x160_to_320x240_aspect(uint16_t *dst, const uint16_t *src,
          _3 = *(block_src_ptr + 2);
 
          *(block_dst_ptr    ) = _1;
-         UPSCALE_240__WEIGHT_1_3(_1, _2, block_dst_ptr + 1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_2, _3, block_dst_ptr + 2, tmp);
+         UPSCALE_240__WEIGHT(_1, _2, &_1_2, tmp);
+         *(block_dst_ptr + 1) = _1_2;
+         UPSCALE_240__WEIGHT(_2, _3, &_2_3, tmp);
+         *(block_dst_ptr + 2) = _2_3;
          *(block_dst_ptr + 3) = _3;
 
          block_src_ptr += src_stride;
@@ -230,14 +224,12 @@ void upscale_240x160_to_320x240_aspect(uint16_t *dst, const uint16_t *src,
          _5 = *(block_src_ptr + 1);
          _6 = *(block_src_ptr + 2);
 
-         UPSCALE_240__WEIGHT_1_3(_1, _4, block_dst_ptr, tmp);
-         UPSCALE_240__WEIGHT_1_3(_1, _2, &_1_2_weight_1_3, tmp);
-         UPSCALE_240__WEIGHT_1_3(_4, _5, &_4_5_weight_1_3, tmp);
-         UPSCALE_240__WEIGHT_1_3(_1_2_weight_1_3, _4_5_weight_1_3, block_dst_ptr + 1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_2, _3, &_2_3_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_3_1(_5, _6, &_5_6_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_2_3_weight_1_1, _5_6_weight_1_1, block_dst_ptr + 2, tmp);
-         UPSCALE_240__WEIGHT_1_3(_3, _6, block_dst_ptr + 3, tmp);
+         UPSCALE_240__WEIGHT(_1, _4, block_dst_ptr, tmp);
+         UPSCALE_240__WEIGHT(_4, _5, &_4_5, tmp);
+         UPSCALE_240__WEIGHT(_1_2, _4_5, block_dst_ptr + 1, tmp);
+         UPSCALE_240__WEIGHT(_5, _6, &_5_6, tmp);
+         UPSCALE_240__WEIGHT(_2_3, _5_6, block_dst_ptr + 2, tmp);
+         UPSCALE_240__WEIGHT(_3, _6, block_dst_ptr + 3, tmp);
 
          block_src_ptr += src_stride;
          block_dst_ptr += dst_stride;
@@ -247,22 +239,20 @@ void upscale_240x160_to_320x240_aspect(uint16_t *dst, const uint16_t *src,
          _8 = *(block_src_ptr + 1);
          _9 = *(block_src_ptr + 2);
 
-         UPSCALE_240__WEIGHT_1_3(_4, _7, block_dst_ptr, tmp);
-         UPSCALE_240__WEIGHT_1_3(_4, _5, &_4_5_weight_1_3, tmp);
-         UPSCALE_240__WEIGHT_1_3(_7, _8, &_7_8_weight_1_3, tmp);
-         UPSCALE_240__WEIGHT_1_3(_4_5_weight_1_3, _7_8_weight_1_3, block_dst_ptr + 1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_5, _6, &_5_6_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_3_1(_8, _9, &_8_9_weight_1_1, tmp);
-         UPSCALE_240__WEIGHT_1_3(_5_6_weight_1_1, _8_9_weight_1_1, block_dst_ptr + 2, tmp);
-         UPSCALE_240__WEIGHT_1_3(_6, _9, block_dst_ptr + 3, tmp);
+         UPSCALE_240__WEIGHT(_4, _7, block_dst_ptr, tmp);
+         UPSCALE_240__WEIGHT(_7, _8, &_7_8, tmp);
+         UPSCALE_240__WEIGHT(_4_5, _7_8, block_dst_ptr + 1, tmp);
+         UPSCALE_240__WEIGHT(_8, _9, &_8_9, tmp);
+         UPSCALE_240__WEIGHT(_5_6, _8_9, block_dst_ptr + 2, tmp);
+         UPSCALE_240__WEIGHT(_6, _9, block_dst_ptr + 3, tmp);
 
          block_src_ptr += src_stride;
          block_dst_ptr += dst_stride;
 
          /* -- Row 4 -- */
          *(block_dst_ptr    ) = _7;
-         UPSCALE_240__WEIGHT_1_3(_7, _8, block_dst_ptr + 1, tmp);
-         UPSCALE_240__WEIGHT_1_1(_8, _9, block_dst_ptr + 2, tmp);
+         *(block_dst_ptr + 1) = _7_8;
+         *(block_dst_ptr + 2) = _8_9;
          *(block_dst_ptr + 3) = _9;
 
          block_src += 3;
@@ -296,8 +286,8 @@ void upscale_240x160_to_320x240_aspect(uint16_t *dst, const uint16_t *src,
       _3 = *(block_src_ptr + 2);
 
       *(block_dst_ptr    ) = _1;
-      UPSCALE_240__WEIGHT_1_3(_1, _2, block_dst_ptr + 1, tmp);
-      UPSCALE_240__WEIGHT_1_1(_2, _3, block_dst_ptr + 2, tmp);
+      UPSCALE_240__WEIGHT(_1, _2, block_dst_ptr + 1, tmp);
+      UPSCALE_240__WEIGHT(_2, _3, block_dst_ptr + 2, tmp);
       *(block_dst_ptr + 3) = _3;
 
       block_src += 3;
