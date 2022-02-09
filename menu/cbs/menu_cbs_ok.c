@@ -6043,95 +6043,11 @@ int action_ok_push_filebrowser_list_file_select(const char *path,
    if (!menu)
       return menu_cbs_exit();
 
+   filebrowser_set_type(FILEBROWSER_SELECT_FILE);
    strlcpy(menu->filebrowser_label, label, sizeof(menu->filebrowser_label));
    return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
          entry_idx, ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
 }
-
-#if defined(ANDROID)
-
-int action_ok_push_android_grant_permission(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_handle_t *menu       = menu_state_get_ptr()->driver_data;
-
-   if (!menu)
-      return menu_cbs_exit();
-   JNIEnv *env = jni_thread_getenv();
-
-   if (!env || !g_android)
-      return 0;
-
-   CALL_VOID_METHOD(env, g_android->activity->clazz, g_android->grantPermissionsToFolder);
-   return 0;
-}
-
-int action_ok_push_android_select_content(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   RARCH_LOG("TEST action_ok_push_android_select_from_filebrowser\n");
-   menu_handle_t *menu       = menu_state_get_ptr()->driver_data;
-
-   if (!menu)
-      return menu_cbs_exit();
-   JNIEnv *env = jni_thread_getenv();
-
-   if (!env || !g_android)
-      return 0;
-
-   CALL_VOID_METHOD(env, g_android->activity->clazz, g_android->selectFileWithBrowser);
-   return 0;
-}
-
-int action_ok_push_android_load_content(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   RARCH_LOG("TEST action_ok_push_android_load_from_filebrowser\n");
-   menu_handle_t *menu       = menu_state_get_ptr()->driver_data;
-
-   JNIEnv *env = jni_thread_getenv();
-   jobject                       obj  = NULL;
-   jstring                      jstr  = NULL;
-   static char aux_path[PATH_MAX_LENGTH];
-
-   if (!env || !g_android)
-      return 0;
-
-   if (g_android->getFileDescriptor)
-   {
-      CALL_OBJ_METHOD(env, jstr,
-            g_android->activity->clazz, g_android->getFileDescriptor);
-
-      if (jstr)
-      {
-         const char *str = (*env)->GetStringUTFChars(env, jstr, 0);
-
-         aux_path[0] = '\0';
-
-         if (str && *str)
-            strlcpy(aux_path, str,
-                  sizeof(aux_path));
-
-         (*env)->ReleaseStringUTFChars(env, jstr, str);
-
-         if (!string_is_empty(aux_path))
-         {
-            RARCH_LOG("Test Loading content from...%s\n", aux_path);
-            
-            path_set(RARCH_PATH_CONTENT, aux_path);
-            content_ctx_info_t content_info  = { 0 };
-            task_push_load_content_with_current_core_from_companion_ui(
-               NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
-         }
-         else
-         {
-            RARCH_LOG("Test Nothing to do...");
-         }
-      }
-   }
-   return 0;
-}
-#endif
 
 int action_ok_push_manual_content_scan_dir_select(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -6733,8 +6649,6 @@ static int action_ok_start_core(const char *path,
    path_clear(RARCH_PATH_BASENAME);
    if (!task_push_start_current_core(&content_info))
       return -1;
-
-   RARCH_LOG("action_ok_start_core\n");
 
    return 0;
 }
@@ -7994,11 +7908,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_ONLINE_UPDATER,                      action_ok_push_default},
          {MENU_ENUM_LABEL_NETPLAY,                             action_ok_push_default},
          {MENU_ENUM_LABEL_LOAD_CONTENT_LIST,                   action_ok_push_default},
-#if defined(ANDROID)         
-         {MENU_ENUM_LABEL_ANDROID_SELECT_CONTENT,         action_ok_push_android_select_content},
-         {MENU_ENUM_LABEL_ANDROID_LOAD_CONTENT,           action_ok_push_android_load_content},
-         {MENU_ENUM_LABEL_ANDROID_GRANT_PERMISSION,       action_ok_push_android_grant_permission},
-#endif
          {MENU_ENUM_LABEL_ADD_CONTENT_LIST,                    action_ok_push_default},
          {MENU_ENUM_LABEL_CONFIGURATIONS_LIST,                 action_ok_push_default},
          {MENU_ENUM_LABEL_HELP_LIST,                           action_ok_push_default},

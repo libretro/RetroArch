@@ -9062,31 +9062,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-#if defined ANDROID
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_ANDROID_SELECT_CONTENT,
-               MENU_ENUM_LABEL_VALUE_ANDROID_SELECT_CONTENT,
-               &group_info,
-               &subgroup_info,
-               parent_group);
 
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_ANDROID_LOAD_CONTENT,
-               MENU_ENUM_LABEL_VALUE_ANDROID_LOAD_CONTENT,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_ANDROID_GRANT_PERMISSION,
-               MENU_ENUM_LABEL_VALUE_ANDROID_GRANT_PERMISSION,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-#endif
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS,

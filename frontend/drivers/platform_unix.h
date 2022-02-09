@@ -167,7 +167,6 @@ struct android_app
    jmethodID setSustainedPerformanceMode;
    jmethodID setScreenOrientation;
    jmethodID getUserLanguageString;
-   jmethodID getFileDescriptor;
    jmethodID doVibrate;
 
    jmethodID isPlayStoreBuild;
@@ -176,8 +175,6 @@ struct android_app
    jmethodID downloadCore;
    jmethodID deleteCore;
 
-   jmethodID grantPermissionsToFolder;
-   jmethodID selectFileWithBrowser;
    jmethodID getVolumeCount;
    jmethodID getVolumePath;
 

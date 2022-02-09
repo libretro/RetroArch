@@ -71,20 +71,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "Load Content"
    )
-#if defined ANDROID
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ANDROID_SELECT_CONTENT,
-   "Select Content With Android File Browser"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ANDROID_LOAD_CONTENT,
-   "Load Selected Content"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ANDROID_GRANT_PERMISSION,
-   "Grant Permissions to a Folder"
-   )
-#endif
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
    "Select which content to start."
@@ -7643,7 +7629,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
-   "Arabic - اَلْعَرَبِيَّةُ (Restart Required)"
+   "Arabic -  اَلْعَرَبِيَّةُ  (Restart Required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ASTURIAN,
@@ -7811,7 +7797,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_PERSIAN,
-   "Persian - فارسی (Restart Required)"
+   "Persian -  فارسی  (Restart Required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_POLISH,
@@ -7879,7 +7865,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_URDU,
-   "Urdu - اُردُو (Restart Required)"
+   "Urdu -  اُردُو  (Restart Required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,

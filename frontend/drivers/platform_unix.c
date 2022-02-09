@@ -2135,13 +2135,6 @@ static void frontend_unix_init(void *data)
          "deleteCore", "(Ljava/lang/String;)V");
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
          android_app->getIntent);
-
-   GET_METHOD_ID(env, android_app->grantPermissionsToFolder, class,
-         "grantPermissionsToFolder", "()V");
-   GET_METHOD_ID(env, android_app->selectFileWithBrowser, class,
-         "selectFileWithBrowser", "()V");
-   GET_METHOD_ID(env, android_app->getFileDescriptor, class,
-         "getFileDescriptor", "()Ljava/lang/String;");
    GET_METHOD_ID(env, android_app->getVolumeCount, class,
          "getVolumeCount", "()I");
    GET_METHOD_ID(env, android_app->getVolumePath, class,
@@ -2154,42 +2147,6 @@ static void frontend_unix_init(void *data)
 
 }
 
-/*
-int action_ok_push_android_select_content(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   RARCH_LOG("TEST action_ok_push_android_select_from_filebrowser\n");
-   menu_handle_t *menu       = menu_state_get_ptr()->driver_data;
-
-   if (!menu)
-      return menu_cbs_exit();
-   JNIEnv *env = jni_thread_getenv();
-
-   if (!env || !g_android)
-      return 0;
-
-   CALL_VOID_METHOD(env, g_android->activity->clazz, g_android->selectFileWithBrowser);
-   return 0;
-}
-*/
-/*
-
-   jint battery_level           = 0;
-   JNIEnv *env                  = jni_thread_getenv();
-
-   if (!env || !g_android)
-      return FRONTEND_POWERSTATE_NONE;
-
-   if (g_android->getPowerstate)
-      CALL_INT_METHOD(env, powerstate,
-            g_android->activity->clazz, g_android->getPowerstate);
-
-   if (g_android->getBatteryLevel)
-      CALL_INT_METHOD(env, battery_level,
-            g_android->activity->clazz, g_android->getBatteryLevel);
-
-   *percent = battery_level;*/
-
 static int frontend_unix_parse_drive_list(void *data, bool load_content)
 {
 #ifdef HAVE_MENU
@@ -2197,6 +2154,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    enum msg_hash_enums enum_idx = load_content ?
       MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
       MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
+
 #ifdef ANDROID
 
    JNIEnv *env = jni_thread_getenv();
