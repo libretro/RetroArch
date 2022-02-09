@@ -1616,7 +1616,7 @@ static void rcheevos_fetch_game_data(void)
       return;
    }
 
-   if (rcheevos_locals.game.id == 0)
+   if (rcheevos_locals.game.id <= 0)
    {
       const settings_t* settings = config_get_ptr();
       if (settings->bools.cheevos_verbose_enable)
@@ -1894,6 +1894,16 @@ bool rcheevos_load(const void *data)
       return false;
    }
 
+   if (string_is_empty(settings->arrays.cheevos_username))
+   {
+      CHEEVOS_LOG(RCHEEVOS_TAG "Cannot login (no username)\n");
+      runloop_msg_queue_push("Missing RetroAchievements account information.", 0, 5 * 60, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+      rcheevos_locals.game.id = 0;
+      rcheevos_pause_hardcore();
+      return false;
+   }
+
 #ifdef HAVE_THREADS
    if (!rcheevos_locals.load_info.request_lock)
       rcheevos_locals.load_info.request_lock = slock_new();
@@ -1976,7 +1986,7 @@ bool rcheevos_load(const void *data)
       {
          CHEEVOS_LOG(RCHEEVOS_TAG "Cannot login %s (no password or token)\n",
                settings->arrays.cheevos_username);
-         runloop_msg_queue_push("Error logging in: No password provided", 0, 5 * 60, false, NULL,
+         runloop_msg_queue_push("No password provided for RetroAchievements account", 0, 5 * 60, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
          rcheevos_unload();
          return false;
