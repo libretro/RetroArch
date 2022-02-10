@@ -17077,6 +17077,21 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.ozone_thumbnail_scale_factor,
+                  MENU_ENUM_LABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
+                  MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
+                  DEFAULT_OZONE_THUMBNAIL_SCALE_FACTOR,
+                  "%.2fx",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 1.0, 2.0, 0.05, true, true);
          }
 #endif
 
