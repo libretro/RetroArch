@@ -31,6 +31,11 @@ static const rc_disallowed_setting_t _rc_disallowed_bsnes_settings[] = {
   { NULL, NULL }
 };
 
+static const rc_disallowed_setting_t _rc_disallowed_cap32_settings[] = {
+  { "cap32_autorun", "disabled" },
+  { NULL, NULL }
+};
+
 static const rc_disallowed_setting_t _rc_disallowed_dolphin_settings[] = {
   { "dolphin_cheats_enabled", "enabled" },
   { NULL, NULL }
@@ -116,6 +121,7 @@ static const rc_disallowed_setting_t _rc_disallowed_virtual_jaguar_settings[] = 
 
 static const rc_disallowed_core_settings_t rc_disallowed_core_settings[] = {
   { "bsnes-mercury", _rc_disallowed_bsnes_settings },
+  { "cap32", _rc_disallowed_cap32_settings },
   { "dolphin-emu", _rc_disallowed_dolphin_settings },
   { "DuckStation", _rc_disallowed_duckstation_settings },
   { "ecwolf", _rc_disallowed_ecwolf_settings },
