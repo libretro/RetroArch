@@ -9580,11 +9580,12 @@ unsigned menu_displaylist_build_list(
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET:
-                     if (menu_rgui_color_theme == RGUI_THEME_CUSTOM || menu_rgui_color_theme == RGUI_THEME_DYNAMIC)
+                     if (menu_rgui_color_theme == RGUI_THEME_CUSTOM)
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_MENU_RGUI_TRANSPARENCY:
-                     if (menu_rgui_color_theme != RGUI_THEME_CUSTOM && menu_rgui_color_theme != RGUI_THEME_DYNAMIC)
+                     if ((menu_rgui_color_theme != RGUI_THEME_CUSTOM) &&
+                         (menu_rgui_color_theme != RGUI_THEME_DYNAMIC))
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED:

@@ -3689,12 +3689,6 @@ static void setting_get_string_representation_uint_rgui_menu_color_theme(
                   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM),
                len);
          break;
-      case RGUI_THEME_DYNAMIC:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DYNAMIC),
-               len);
-         break;
       case RGUI_THEME_CLASSIC_RED:
          strlcpy(s,
                msg_hash_to_str(
@@ -3891,6 +3885,12 @@ static void setting_get_string_representation_uint_rgui_menu_color_theme(
          strlcpy(s,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_FLUX),
+               len);
+         break;
+      case RGUI_THEME_DYNAMIC:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DYNAMIC),
                len);
          break;
    }
