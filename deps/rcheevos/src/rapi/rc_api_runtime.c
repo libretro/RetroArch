@@ -477,7 +477,7 @@ int rc_api_process_submit_lboard_entry_response(rc_api_submit_lboard_entry_respo
   rc_buf_init(&response->response.buffer);
 
   result = rc_json_parse_response(&response->response, server_response, fields, sizeof(fields) / sizeof(fields[0]));
-  if (result != RC_OK)
+  if (result != RC_OK || !response->response.succeeded)
     return result;
 
   if (!rc_json_get_required_object(response_fields, sizeof(response_fields) / sizeof(response_fields[0]), &response->response, &fields[2], "Response"))

@@ -239,6 +239,20 @@ static const rc_memory_region_t _rc_memory_regions_3do[] = {
 };
 static const rc_memory_regions_t rc_memory_regions_3do = { _rc_memory_regions_3do, 1 };
 
+/* ===== Amstrad CPC ===== */
+/* http://www.cpcalive.com/docs/amstrad_cpc_6128_memory_map.html */
+/* https://www.cpcwiki.eu/index.php/File:AWMG_page151.jpg */
+/* The original CPC only had 64KB of memory, but the newer model has 128KB (expandable to 576KB) */
+/* https://www.grimware.org/doku.php/documentations/devices/gatearraydo=export_xhtml#mmr */
+static const rc_memory_region_t _rc_memory_regions_amstrad_pc[] = {
+    { 0x000000U, 0x00003FU, 0x000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Firmware" },
+    { 0x000040U, 0x00B0FFU, 0x000040U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
+    { 0x00B100U, 0x00BFFFU, 0x00B100U, RC_MEMORY_TYPE_SYSTEM_RAM, "Stack and Firmware Data" },
+    { 0x00C000U, 0x00FFFFU, 0x00C000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Screen Memory" },
+    { 0x010000U, 0x08FFFFU, 0x010000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Extended RAM" },
+};
+static const rc_memory_regions_t rc_memory_regions_amstrad_pc = { _rc_memory_regions_amstrad_pc, 5 };
+
 /* ===== Apple II ===== */
 static const rc_memory_region_t _rc_memory_regions_appleii[] = {
     { 0x000000U, 0x00FFFFU, 0x000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Main RAM" },
@@ -665,6 +679,9 @@ const rc_memory_regions_t* rc_console_memory_regions(int console_id)
     case RC_CONSOLE_3DO:
       return &rc_memory_regions_3do;
 
+    case RC_CONSOLE_AMSTRAD_PC:
+      return &rc_memory_regions_amstrad_pc;
+
     case RC_CONSOLE_APPLE_II:
       return &rc_memory_regions_appleii;
 
@@ -686,6 +703,7 @@ const rc_memory_regions_t* rc_console_memory_regions(int console_id)
     case RC_CONSOLE_DREAMCAST:
       return &rc_memory_regions_dreamcast;
 
+    case RC_CONSOLE_MEGADUCK:
     case RC_CONSOLE_GAMEBOY:
       return &rc_memory_regions_gameboy;
 
