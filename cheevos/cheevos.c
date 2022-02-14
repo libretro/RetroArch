@@ -1278,7 +1278,7 @@ static void* rc_hash_handle_chd_open_track(
          break;
 
       case RC_HASH_CDTRACK_LARGEST:
-         cdfs_track = cdfs_open_track(path, CHDSTREAM_TRACK_LAST);
+         cdfs_track = cdfs_open_track(path, CHDSTREAM_TRACK_PRIMARY);
          break;
 
       default:
