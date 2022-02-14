@@ -1304,9 +1304,21 @@ static size_t rc_hash_handle_chd_read_sector(
       void* buffer, size_t requested_bytes)
 {
    cdfs_file_t* file = (cdfs_file_t*)track_handle;
+   uint32_t track_sectors = cdfs_get_num_sectors(file);
+
+   sector -= cdfs_get_first_sector(file);
+   if (sector >= track_sectors)
+      return 0;
 
    cdfs_seek_sector(file, sector);
    return cdfs_read_file(file, buffer, requested_bytes);
+}
+
+static uint32_t rc_hash_handle_chd_first_track_sector(
+   void* track_handle)
+{
+   cdfs_file_t* file = (cdfs_file_t*)track_handle;
+   return cdfs_get_first_sector(file);
 }
 
 static void rc_hash_handle_chd_close_track(void* track_handle)
@@ -1337,6 +1349,7 @@ static void* rc_hash_handle_cd_open_track(
       cdreader.open_track = rc_hash_handle_cd_open_track;
       cdreader.read_sector = rc_hash_handle_chd_read_sector;
       cdreader.close_track = rc_hash_handle_chd_close_track;
+      cdreader.first_track_sector = rc_hash_handle_chd_first_track_sector;
       rc_hash_init_custom_cdreader(&cdreader);
 
       return rc_hash_handle_chd_open_track(path, track);
