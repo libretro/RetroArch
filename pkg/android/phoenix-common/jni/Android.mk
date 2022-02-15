@@ -73,7 +73,6 @@ endif
 DEFINES += -DRARCH_MOBILE \
 	   -DHAVE_GRIFFIN \
 	   -DHAVE_STB_VORBIS \
-	   -DHAVE_LANGEXTRA \
 	   -DANDROID \
 	   -DHAVE_DYNAMIC \
 	   -DHAVE_OPENGL \
@@ -189,7 +188,7 @@ LOCAL_CXXFLAGS   += $(INCLUDE_DIRS)
 
 ifeq ($(HAVE_VULKAN),1)
 INCFLAGS         += $(LOCAL_PATH)/$(RARCH_DIR)/gfx/include
-						  
+
 LOCAL_C_INCLUDES += $(INCFLAGS)
 LOCAL_CPPFLAGS   += -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang/glslang/glslang/Public \

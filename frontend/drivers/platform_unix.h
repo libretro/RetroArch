@@ -175,6 +175,9 @@ struct android_app
    jmethodID downloadCore;
    jmethodID deleteCore;
 
+   jmethodID getVolumeCount;
+   jmethodID getVolumePath;
+
    struct
    {
       unsigned width, height;
