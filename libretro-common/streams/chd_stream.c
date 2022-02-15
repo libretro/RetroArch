@@ -163,10 +163,7 @@ chdstream_find_special_track(chd_file *fd, int32_t track, metadata_t *meta)
       if (!chdstream_find_track_number(fd, i, &iter))
       {
          if (track == CHDSTREAM_TRACK_LAST && i > 1)
-         {
-            *meta = iter;
-            return true;
-         }
+            return chdstream_find_track_number(fd, i - 1, meta);
 
          if (track == CHDSTREAM_TRACK_PRIMARY && largest_track != 0)
             return chdstream_find_track_number(fd, largest_track, meta);
@@ -449,4 +446,23 @@ uint32_t chdstream_get_track_start(chdstream_t *stream)
 uint32_t chdstream_get_frame_size(chdstream_t *stream)
 {
    return stream->frame_size;
+}
+
+uint32_t chdstream_get_first_track_sector(chdstream_t* stream)
+{
+   uint32_t i;
+   metadata_t meta;
+   uint32_t frame_offset = 0;
+   uint32_t sector_offset = 0;
+
+   for (i = 0; chdstream_get_meta(stream->chd, i, &meta); ++i)
+   {
+      if (stream->track_frame == frame_offset)
+         return sector_offset;
+
+      sector_offset += meta.frames;
+      frame_offset += meta.frames + meta.extra;
+   }
+
+   return 0;
 }

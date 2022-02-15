@@ -37,6 +37,7 @@ typedef struct cdfs_track_t
    unsigned int stream_sector_size;
    unsigned int stream_sector_header_size;
    unsigned int first_sector_offset;
+   unsigned int first_sector_index;
 } cdfs_track_t;
 
 typedef struct cdfs_file_t
@@ -69,6 +70,10 @@ int64_t cdfs_tell(cdfs_file_t* file);
 int64_t cdfs_seek(cdfs_file_t* file, int64_t offset, int whence);
 
 void cdfs_seek_sector(cdfs_file_t* file, unsigned int sector);
+
+uint32_t cdfs_get_num_sectors(cdfs_file_t* file);
+
+uint32_t cdfs_get_first_sector(cdfs_file_t* file);
 
 /* opens the specified track in a CD or virtual CD file - the resulting stream should be passed to
  * cdfs_open_file to get access to a file within the CD.

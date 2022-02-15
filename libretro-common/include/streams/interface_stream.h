@@ -106,6 +106,8 @@ uint32_t intfstream_get_offset_to_start(intfstream_internal_t *intf);
 
 uint32_t intfstream_get_frame_size(intfstream_internal_t *intf);
 
+uint32_t intfstream_get_first_sector(intfstream_internal_t* intf);
+
 bool intfstream_is_compressed(intfstream_internal_t *intf);
 
 bool intfstream_get_crc(intfstream_internal_t *intf, uint32_t *crc);
