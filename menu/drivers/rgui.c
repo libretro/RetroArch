@@ -1063,6 +1063,8 @@ typedef struct
 
    char msgbox[1024];
    char theme_preset_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
+   char theme_dynamic_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
+   char last_theme_dynamic_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
    char menu_title[255]; /* Must be a fixed length array... */
    char menu_sublabel[MENU_SUBLABEL_MAX_LENGTH]; /* Must be a fixed length array... */
 
@@ -3010,6 +3012,31 @@ static const rgui_theme_t *get_theme(rgui_t *rgui)
          &rgui_theme_opaque_classic_green;
 }
 
+static void update_dynamic_theme_path(rgui_t *rgui, const char *theme_dir)
+{
+   bool use_playlist_theme = false;
+
+   if (string_is_empty(theme_dir))
+   {
+      rgui->theme_dynamic_path[0] = '\0';
+      return;
+   }
+
+   if (rgui->is_playlist && !string_is_empty(rgui->menu_title))
+   {
+      fill_pathname_join(rgui->theme_dynamic_path, theme_dir,
+            rgui->menu_title, sizeof(rgui->theme_dynamic_path));
+      strlcat(rgui->theme_dynamic_path, FILE_PATH_CONFIG_EXTENSION,
+            sizeof(rgui->theme_dynamic_path));
+
+      use_playlist_theme = path_is_valid(rgui->theme_dynamic_path);
+   }
+
+   if (!use_playlist_theme)
+      fill_pathname_join(rgui->theme_dynamic_path, theme_dir,
+            "default.cfg", sizeof(rgui->theme_dynamic_path));
+}
+
 static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const char *theme_path)
 {
    char wallpaper_file[PATH_MAX_LENGTH];
@@ -3202,9 +3229,15 @@ static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
 
    if (rgui->color_theme == RGUI_THEME_CUSTOM)
    {
-      memcpy(rgui->theme_preset_path,
-            rgui_theme_preset, sizeof(rgui->theme_preset_path));
+      strlcpy(rgui->theme_preset_path, rgui_theme_preset,
+            sizeof(rgui->theme_preset_path));
       load_custom_theme(rgui, &theme_colors, rgui_theme_preset);
+   }
+   else if (rgui->color_theme == RGUI_THEME_DYNAMIC)
+   {
+      strlcpy(rgui->last_theme_dynamic_path, rgui->theme_dynamic_path,
+            sizeof(rgui->last_theme_dynamic_path));
+      load_custom_theme(rgui, &theme_colors, rgui->theme_dynamic_path);
    }
    else
    {
@@ -5755,9 +5788,10 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui,
       return false;
    
    /* Trigger background/display update */
-   rgui->theme_preset_path[0] = '\0';
-   rgui->bg_modified          = true;
-   rgui->force_redraw         = true;
+   rgui->theme_preset_path[0]       = '\0';
+   rgui->last_theme_dynamic_path[0] = '\0';
+   rgui->bg_modified                = true;
+   rgui->force_redraw               = true;
    
    /* If aspect ratio lock is enabled, notify
     * video driver of change */
@@ -5792,27 +5826,29 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
 {
    unsigned new_font_height;
    struct video_viewport vp;
-   size_t               start = 0;
-   rgui_t               *rgui = NULL;
-   settings_t *settings       = config_get_ptr();
-   gfx_display_t    *p_disp   = disp_get_ptr();
-   gfx_animation_t *p_anim    = anim_get_ptr();
+   size_t start                  = 0;
+   rgui_t *rgui                  = NULL;
+   settings_t *settings          = config_get_ptr();
+   gfx_display_t *p_disp         = disp_get_ptr();
+   gfx_animation_t *p_anim       = anim_get_ptr();
 #if defined(DINGUX)
-   unsigned aspect_ratio_lock = RGUI_ASPECT_RATIO_LOCK_NONE;
+   unsigned aspect_ratio_lock    = RGUI_ASPECT_RATIO_LOCK_NONE;
 #else
-   unsigned aspect_ratio_lock = settings->uints.menu_rgui_aspect_ratio_lock;
+   unsigned aspect_ratio_lock    = settings->uints.menu_rgui_aspect_ratio_lock;
 #endif
-   menu_handle_t        *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
+   unsigned rgui_color_theme     = settings->uints.menu_rgui_color_theme;
+   const char *dynamic_theme_dir = settings->paths.directory_dynamic_wallpapers;
+   menu_handle_t *menu           = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
       return NULL;
 
-   rgui                       = (rgui_t*)calloc(1, sizeof(rgui_t));
+   rgui = (rgui_t*)calloc(1, sizeof(rgui_t));
 
    if (!rgui)
       goto error;
 
-   *userdata                  = rgui;
+   *userdata = rgui;
 
 #ifdef HAVE_GFX_WIDGETS
    /* We have to be somewhat careful here, since some
@@ -5830,6 +5866,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
 
    rgui->menu_title[0]    = '\0';
    rgui->menu_sublabel[0] = '\0';
+   rgui->is_playlist      = false;
 
    /* Set pixel format conversion function */
    rgui->transparency_supported = rgui_set_pixel_format_function();
@@ -5860,7 +5897,11 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    p_disp->header_height = new_font_height;
 
    /* Prepare RGUI colors, to improve performance */
-   rgui->theme_preset_path[0] = '\0';
+   rgui->theme_preset_path[0]       = '\0';
+   rgui->theme_dynamic_path[0]      = '\0';
+   rgui->last_theme_dynamic_path[0] = '\0';
+   if (rgui_color_theme == RGUI_THEME_DYNAMIC)
+      update_dynamic_theme_path(rgui, dynamic_theme_dir);
    prepare_rgui_colors(rgui, settings);
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
@@ -6402,15 +6443,16 @@ static void rgui_populate_entries(void *data,
       const char *path,
       const char *label, unsigned k)
 {
-   rgui_t       *rgui         = (rgui_t*)data;
+   rgui_t *rgui                  = (rgui_t*)data;
+   settings_t *settings          = config_get_ptr();
 #if defined(DINGUX)
-   unsigned aspect_ratio_lock = RGUI_ASPECT_RATIO_LOCK_NONE;
+   unsigned aspect_ratio_lock    = RGUI_ASPECT_RATIO_LOCK_NONE;
 #else
-   settings_t       *settings = config_get_ptr();
-   unsigned aspect_ratio_lock = settings->uints.menu_rgui_aspect_ratio_lock;
+   unsigned aspect_ratio_lock    = settings->uints.menu_rgui_aspect_ratio_lock;
 #endif
+   const char *dynamic_theme_dir = settings->paths.directory_dynamic_wallpapers;
 #ifdef HAVE_LANGEXTRA
-   gfx_display_t *p_disp  = disp_get_ptr();
+   gfx_display_t *p_disp         = disp_get_ptr();
 #endif
    
    if (!rgui)
@@ -6444,6 +6486,10 @@ static void rgui_populate_entries(void *data,
    
    /* Set menu title */
    menu_entries_get_title(rgui->menu_title, sizeof(rgui->menu_title));
+   
+   /* If dynamic themes are enabled, update the theme path */
+   if (rgui->color_theme == RGUI_THEME_DYNAMIC)
+      update_dynamic_theme_path(rgui, dynamic_theme_dir);
    
    /* Cancel any pending thumbnail load operations */
    rgui->thumbnail_load_pending = false;
@@ -6678,10 +6724,23 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    if ((settings->uints.menu_rgui_color_theme != rgui->color_theme) ||
        (rgui->transparency_supported &&
             (settings->bools.menu_rgui_transparency != rgui->transparency_enable)))
+   {
+      if (settings->uints.menu_rgui_color_theme == RGUI_THEME_DYNAMIC)
+         update_dynamic_theme_path(rgui,
+               settings->paths.directory_dynamic_wallpapers);
+
       prepare_rgui_colors(rgui, settings);
+   }
    else if (settings->uints.menu_rgui_color_theme == RGUI_THEME_CUSTOM)
    {
-      if (string_is_not_equal_fast(settings->paths.path_rgui_theme_preset, rgui->theme_preset_path, sizeof(rgui->theme_preset_path)))
+      if (!string_is_equal(settings->paths.path_rgui_theme_preset,
+            rgui->theme_preset_path))
+         prepare_rgui_colors(rgui, settings);
+   }
+   else if (settings->uints.menu_rgui_color_theme == RGUI_THEME_DYNAMIC)
+   {
+      if (!string_is_equal(rgui->last_theme_dynamic_path,
+            rgui->theme_dynamic_path))
          prepare_rgui_colors(rgui, settings);
    }
 
