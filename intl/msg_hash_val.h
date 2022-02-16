@@ -1546,16 +1546,24 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
-   "Vore l'estimació exacta del grau de refresc d'imatge de la pantalla en hercis (Hz)."
+   "Vore l'estimació exacta del grau d'actualització de refresc d'imatge de la pantalla en hercis (Hz)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
    "Freqüència de refresc d'imatge recollida per la pantalla"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
+   "Vore la freqüència del grau d'actualització de refresc d'imatge recollit pel controlador de vídeo."
+   )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
    "Freqüència de refresc vertical de la imatge"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
+   "Establix la freqüència de l'actualització vertical de la imatge. Escollir '50 Hz' donarà una imatge més suau al estar usant continguts en format PAL."
    )
 #endif
 
