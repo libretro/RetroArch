@@ -47,6 +47,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "טעינת תוכן"
    )
+#ifdef HAVE_LAKKA
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
    "ייבוא תוכן"
@@ -168,22 +170,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
    "קושחה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "חסר"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "קיים"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "אופציונלי"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "נדרש"
    )
 
 /* Main Menu > Information > System Information */
@@ -353,7 +339,7 @@ MSG_HASH(
    "סינכרון"
    )
 #if defined(DINGUX)
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 #endif
 #endif
 
@@ -387,6 +373,9 @@ MSG_HASH(
    )
 #if defined(DINGUX)
 #endif
+
+/* Settings > Video > HDR */
+
 
 /* Settings > Video > Synchronization */
 
@@ -487,8 +476,6 @@ MSG_HASH(
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -560,6 +547,7 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay */
 
+
 #if defined(ANDROID)
 #endif
 
@@ -582,6 +570,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    "הגדרות"
    )
+#ifdef HAVE_LAKKA
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    "תפריט ראשי"

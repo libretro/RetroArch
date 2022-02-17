@@ -70,6 +70,7 @@ rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse
   self = RC_ALLOC(rc_condition_t, parse);
   self->current_hits = 0;
   self->is_true = 0;
+  self->pause = 0;
 
   if (*aux != 0 && aux[1] == ':') {
     switch (*aux) {
@@ -86,6 +87,11 @@ rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse
       case 'i': case 'I': self->type = RC_CONDITION_ADD_ADDRESS; can_modify = 1; break;
       case 't': case 'T': self->type = RC_CONDITION_TRIGGER; break;
       case 'z': case 'Z': self->type = RC_CONDITION_RESET_NEXT_IF; break;
+      case 'g': case 'G':
+          parse->measured_as_percent = 1;
+          self->type = RC_CONDITION_MEASURED;
+          break;
+      /* e f h j k l s u v w x y */
       default: parse->offset = RC_INVALID_CONDITION_TYPE; return 0;
     }
 
@@ -95,14 +101,9 @@ rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse
     self->type = RC_CONDITION_STANDARD;
   }
 
-  result = rc_parse_operand(&self->operand1, &aux, 1, is_indirect, parse);
+  result = rc_parse_operand(&self->operand1, &aux, is_indirect, parse);
   if (result < 0) {
     parse->offset = result;
-    return 0;
-  }
-
-  if (self->operand1.type == RC_OPERAND_FP) {
-    parse->offset = can_modify ? RC_INVALID_FP_OPERAND : RC_INVALID_COMPARISON;
     return 0;
   }
 
@@ -158,7 +159,7 @@ rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse
       break;
   }
 
-  result = rc_parse_operand(&self->operand2, &aux, 1, is_indirect, parse);
+  result = rc_parse_operand(&self->operand2, &aux, is_indirect, parse);
   if (result < 0) {
     parse->offset = result;
     return 0;
@@ -168,11 +169,6 @@ rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse
     /* if operator is none, explicitly clear out the right side */
     self->operand2.type = RC_OPERAND_CONST;
     self->operand2.value.num = 0;
-  }
-
-  if (!can_modify && self->operand2.type == RC_OPERAND_FP) {
-    parse->offset = RC_INVALID_COMPARISON;
-    return 0;
   }
 
   if (*aux == '(') {
@@ -217,63 +213,52 @@ rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse
   return self;
 }
 
-int rc_test_condition(rc_condition_t* self, rc_eval_state_t* eval_state) {
-  unsigned value1 = rc_evaluate_operand(&self->operand1, eval_state) + eval_state->add_value;
-  unsigned value2 = rc_evaluate_operand(&self->operand2, eval_state);
+int rc_condition_is_combining(const rc_condition_t* self) {
+  switch (self->type) {
+    case RC_CONDITION_STANDARD:
+    case RC_CONDITION_PAUSE_IF:
+    case RC_CONDITION_RESET_IF:
+    case RC_CONDITION_MEASURED_IF:
+    case RC_CONDITION_TRIGGER:
+    case RC_CONDITION_MEASURED:
+      return 0;
 
-  switch (self->oper) {
-    case RC_OPERATOR_EQ: return value1 == value2;
-    case RC_OPERATOR_NE: return value1 != value2;
-    case RC_OPERATOR_LT: return value1 < value2;
-    case RC_OPERATOR_LE: return value1 <= value2;
-    case RC_OPERATOR_GT: return value1 > value2;
-    case RC_OPERATOR_GE: return value1 >= value2;
-    case RC_OPERATOR_NONE: return 1;
-    default: return 1;
+    default:
+      return 1;
   }
 }
 
-int rc_evaluate_condition_value(rc_condition_t* self, rc_eval_state_t* eval_state) {
-  unsigned value = rc_evaluate_operand(&self->operand1, eval_state);
+int rc_test_condition(rc_condition_t* self, rc_eval_state_t* eval_state) {
+  rc_typed_value_t value1, value2;
+
+  rc_evaluate_operand(&value1, &self->operand1, eval_state);
+  if (eval_state->add_value.type != RC_VALUE_TYPE_NONE)
+    rc_typed_value_add(&value1, &eval_state->add_value);
+
+  rc_evaluate_operand(&value2, &self->operand2, eval_state);
+
+  return rc_typed_value_compare(&value1, &value2, self->oper);
+}
+
+void rc_evaluate_condition_value(rc_typed_value_t* value, rc_condition_t* self, rc_eval_state_t* eval_state) {
+  rc_typed_value_t amount;
+
+  rc_evaluate_operand(value, &self->operand1, eval_state);
+  rc_evaluate_operand(&amount, &self->operand2, eval_state);
 
   switch (self->oper) {
     case RC_OPERATOR_MULT:
-      if (self->operand2.type == RC_OPERAND_FP) {
-        value = (int)((double)value * self->operand2.value.dbl);
-      }
-      else {
-        /* the c standard for unsigned multiplication is well defined as non-overflowing truncation
-         * to the type's size. this allows negative multiplication through twos-complements. i.e.
-         *   1 * -1 (0xFFFFFFFF) = 0xFFFFFFFF = -1
-         *   3 * -2 (0xFFFFFFFE) = 0x2FFFFFFFA & 0xFFFFFFFF = 0xFFFFFFFA = -6
-         *  10 * -5 (0xFFFFFFFB) = 0x9FFFFFFCE & 0xFFFFFFFF = 0xFFFFFFCE = -50
-         */
-        value *= rc_evaluate_operand(&self->operand2, eval_state);
-      }
+      rc_typed_value_multiply(value, &amount);
       break;
 
     case RC_OPERATOR_DIV:
-      if (self->operand2.type == RC_OPERAND_FP)
-      {
-        if (self->operand2.value.dbl == 0.0)
-          value = 0;
-        else
-          value = (int)((double)value / self->operand2.value.dbl);
-      }
-      else
-      {
-        unsigned value2 = rc_evaluate_operand(&self->operand2, eval_state);
-        if (value2 == 0)
-          value = 0;
-        else
-          value /= value2;
-      }
+      rc_typed_value_divide(value, &amount);
       break;
 
     case RC_OPERATOR_AND:
-      value &= rc_evaluate_operand(&self->operand2, eval_state);
+      rc_typed_value_convert(value, RC_VALUE_TYPE_UNSIGNED);
+      rc_typed_value_convert(&amount, RC_VALUE_TYPE_UNSIGNED);
+      value->value.u32 &= amount.value.u32;
       break;
   }
-
-  return value;
 }

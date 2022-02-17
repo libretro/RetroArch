@@ -134,7 +134,6 @@ ifneq ($(findstring Darwin,$(OS)),)
    MINVERFLAGS=
    ifeq ($(shell uname -p),arm)
       MINVERFLAGS = -mmacosx-version-min=10.15 -stdlib=libc++ # macOS  (Metal, ARM 64bit)
-      MINVERFLAGS += -DDONT_WANT_ARM_ASM_OPTIMIZATIONS
    else ifeq ($(HAVE_METAL),1)
       MINVERFLAGS = -mmacosx-version-min=10.13 -stdlib=libc++  # macOS  (Metal, x86 64bit)
    else ifeq ($(shell uname -p),powerpc)
@@ -148,7 +147,6 @@ ifneq ($(findstring Darwin,$(OS)),)
 	# Build for a specific architecture when ARCH is defined as a switch
    ifeq ($(ARCH),arm64)
       MINVERFLAGS  = -mmacosx-version-min=10.15 -stdlib=libc++ # macOS  (Metal, ARM 64bit)
-      MINVERFLAGS += -DDONT_WANT_ARM_ASM_OPTIMIZATIONS
       ARCHFLAGS    = -arch arm64
    else ifeq ($(ARCH),x86_64)
       ifeq ($(HAVE_METAL),1)
@@ -190,10 +188,18 @@ endif
 
 ifeq ($(HAVE_UNIX), 1)
    OBJ += frontend/drivers/platform_unix.o
+
+	ifeq ($(UNIX_CWD_ENV), 1)
+		DEF_FLAGS += -DRARCH_UNIX_CWD_ENV
+	endif
 endif
 
 ifeq ($(TARGET), retroarch_3ds)
    OBJ += frontend/drivers/platform_ctr.o
+endif
+
+ifeq ($(TARGET), retroarch_ps2)
+   OBJ += frontend/drivers/platform_ps2.o
 endif
 
 # Git Version
@@ -232,8 +238,15 @@ endif
 
 OBJ += frontend/frontend_driver.o \
        retroarch.o \
+       runloop.o \
+       driver.o \
+       ui/ui_companion_driver.o \
+       camera/camera_driver.o \
+       record/record_driver.o \
        command.o \
        msg_hash.o \
+       midi_driver.o \
+       location_driver.o \
        intl/msg_hash_us.o \
        $(LIBRETRO_COMM_DIR)/queues/task_queue.o \
        tasks/task_content.o
@@ -251,10 +264,11 @@ OBJ += \
        tasks/task_manual_content_scan.o \
        tasks/task_core_backup.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.o \
-       $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.o
+       $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.o \
+       $(LIBRETRO_COMM_DIR)/encodings/encoding_base64.o
 
 ifeq ($(HAVE_TRANSLATE), 1)
-   OBJ += $(LIBRETRO_COMM_DIR)/encodings/encoding_base64.o
+   OBJ += tasks/task_translation.o
 endif
 
 OBJ += \
@@ -302,13 +316,16 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/file/file_path_io.o \
        file_path_special.o \
        $(LIBRETRO_COMM_DIR)/hash/lrc_hash.o \
+       audio/audio_driver.o \
+       input/input_driver.o \
        input/common/input_hid_common.o \
        led/led_driver.o \
-       gfx/video_coord_array.o \
-		 gfx/gfx_display.o \
+       gfx/video_driver.o \
+       gfx/gfx_display.o \
        gfx/gfx_animation.o \
-		 gfx/gfx_thumbnail_path.o \
-		 gfx/gfx_thumbnail.o \
+       gfx/gfx_thumbnail_path.o \
+       gfx/gfx_thumbnail.o \
+       gfx/video_coord_array.o \
        configuration.o \
        $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
        cores/dynamic_dummy.o \
@@ -332,6 +349,10 @@ OBJ += \
 ifeq ($(HAVE_CHEATS), 1)
    DEFINES += -DHAVE_CHEATS
    OBJ     += cheat_manager.o
+endif
+
+ifeq ($(HAVE_CORE_INFO_CACHE), 1)
+   DEFINES += -DHAVE_CORE_INFO_CACHE
 endif
 
 OBJ += \
@@ -359,6 +380,10 @@ OBJ += \
 ifeq ($(HAVE_VIDEO_FILTER), 1)
 DEFINES += -DHAVE_VIDEO_FILTER
 OBJ     += gfx/video_filter.o
+endif
+
+ifeq ($(HAVE_WINDOW_OFFSET), 1)
+DEFINES += -DHAVE_WINDOW_OFFSET
 endif
 
 OBJ     += $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.o
@@ -444,7 +469,10 @@ ifeq ($(HAVE_LANGEXTRA), 1)
           intl/msg_hash_fa.o \
           intl/msg_hash_he.o \
           intl/msg_hash_ast.o \
-          intl/msg_hash_fi.o
+          intl/msg_hash_fi.o \
+          intl/msg_hash_id.o \
+          intl/msg_hash_sv.o \
+          intl/msg_hash_uk.o
 endif
 
 ifneq ($(HAVE_GETOPT_LONG), 1)
@@ -552,7 +580,8 @@ ifeq ($(HAVE_LIBRETRODB), 1)
           tasks/task_database_cue.o
 
    ifeq ($(HAVE_MENU), 1)
-      OBJ += menu/menu_explore.o
+      OBJ += menu/menu_explore.o \
+             tasks/task_menu_explore.o
    endif
 endif
 
@@ -745,8 +774,12 @@ endif
 
 # Miscellaneous
 
+ifeq ($(HAVE_COMMAND), 1)
+   DEFINES += -DHAVE_COMMAND
+endif
+
 ifeq ($(HAVE_STDIN_CMD), 1)
-   DEFINES += -DHAVE_COMMAND -DHAVE_STDIN_CMD
+   DEFINES += -DHAVE_STDIN_CMD
 endif
 
 ifeq ($(HAVE_EMSCRIPTEN), 1)
@@ -758,22 +791,23 @@ ifeq ($(HAVE_EMSCRIPTEN), 1)
 endif
 
 ifeq ($(HAVE_BLUETOOTH), 1)
+   OBJ += bluetooth/bluetooth_driver.o
    OBJ += bluetooth/drivers/bluetoothctl.o
-endif
-
-ifeq ($(HAVE_BLUETOOTH), 1)
+   OBJ += tasks/task_bluetooth.o
    ifeq ($(HAVE_DBUS), 1)
       OBJ += bluetooth/drivers/bluez.o
    endif
 endif
 
 ifeq ($(HAVE_LAKKA), 1)
-   OBJ += wifi/drivers/connmanctl.o
+   OBJ += network/drivers_wifi/connmanctl.o
    OBJ += misc/cpufreq/cpufreq.o
 endif
 
 ifeq ($(HAVE_WIFI), 1)
-   OBJ += wifi/drivers/nmcli.o
+   OBJ += network/wifi_driver.o
+   OBJ += tasks/task_wifi.o
+   OBJ += network/drivers_wifi/nmcli.o
    DEFINES += -DHAVE_WIFI
 endif
 
@@ -802,6 +836,10 @@ endif
 
 ifeq ($(TARGET), retroarch_3ds)
    OBJ += gfx/drivers_font/ctr_font.o
+endif
+
+ifeq ($(TARGET), retroarch_ps2)
+   OBJ += gfx/drivers_font/ps2_font.o
 endif
 
 ifeq ($(HAVE_LIBNX), 1)
@@ -969,10 +1007,6 @@ ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
       HAVE_XMB = 1
    endif
 
-   ifeq ($(HAVE_STRIPES),)
-      HAVE_STRIPES = 0
-   endif
-
    ifeq ($(HAVE_OZONE),)
       HAVE_OZONE = 1
    endif
@@ -980,7 +1014,6 @@ else
    HAVE_RGUI        ?= 0
    HAVE_MATERIALUI  ?= 0
    HAVE_XMB         ?= 0
-   HAVE_STRIPES     ?= 0
    HAVE_OZONE       ?= 0
 endif
 
@@ -1012,20 +1045,10 @@ ifeq ($(HAVE_MENU), 1)
    endif
 
    ifeq ($(HAVE_OZONE), 1)
-      OBJ += menu/drivers/ozone/ozone.o \
-             menu/drivers/ozone/ozone_entries.o \
-             menu/drivers/ozone/ozone_display.o \
-             menu/drivers/ozone/ozone_texture.o \
-             menu/drivers/ozone/ozone_theme.o \
-             menu/drivers/ozone/ozone_sidebar.o
+      OBJ += menu/drivers/ozone.o
       DEFINES += -DHAVE_OZONE
       HAVE_ASSETS = 1
       HAVE_MENU_SCREENSAVER = 1
-   endif
-
-   ifeq ($(HAVE_STRIPES), 1)
-      OBJ += menu/drivers/stripes.o
-      DEFINES += -DHAVE_STRIPES
    endif
 
    ifeq ($(HAVE_MENU_SCREENSAVER), 1)
@@ -1045,8 +1068,13 @@ ifeq ($(HAVE_LAKKA_SWITCH), 1)
    DEFINES += -DHAVE_LAKKA_SWITCH
 endif
 
+ifeq ($(HAVE_LAKKA_NIGHTLY), 1)
+   DEFINES += -DHAVE_LAKKA_NIGHTLY
+endif
+
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_setting.o \
+          menu/menu_driver.o \
           menu/cbs/menu_cbs_ok.o \
           menu/cbs/menu_cbs_cancel.o \
           menu/cbs/menu_cbs_select.o \
@@ -1091,13 +1119,13 @@ endif
 ifeq ($(HAVE_VIDEO_LAYOUT), 1)
    DEFINES += -DHAVE_VIDEO_LAYOUT
    OBJ += \
-			 gfx/video_layout.o \
-			 gfx/video_layout/view.o \
-			 gfx/video_layout/element.o \
-			 gfx/video_layout/component.o \
-			 gfx/video_layout/internal.o \
-			 gfx/video_layout/scope.o \
-			 gfx/video_layout/load.o
+	  gfx/video_layout.o \
+	  gfx/video_layout/view.o \
+	  gfx/video_layout/element.o \
+	  gfx/video_layout/component.o \
+	  gfx/video_layout/internal.o \
+	  gfx/video_layout/scope.o \
+	  gfx/video_layout/load.o
 endif
 
 ifeq ($(HAVE_STB_FONT), 1)
@@ -1160,6 +1188,13 @@ ifeq ($(TARGET), retroarch_3ds)
           input/drivers_joypad/ctr_joypad.o
 endif
 
+ifeq ($(TARGET), retroarch_ps2)
+   OBJ += gfx/drivers/ps2_gfx.o \
+          input/drivers/ps2_input.o \
+          input/drivers_joypad/ps2_joypad.o \
+          audio/drivers/ps2_audio.o
+endif
+
 ifeq ($(TARGET), retroarch_orbis)
    OBJ +=  input/drivers/ps4_input.o \
 			  input/drivers_joypad/ps4_joypad.o \
@@ -1190,12 +1225,6 @@ ifeq ($(TARGET), retroarch_wiiu)
 			INCLUDE_DIRS += -Iinput/include
          OBJ += input/drivers_joypad/wiiu/hidpad_driver.o
          OBJ += input/drivers_hid/wiiu_hid.o
-         OBJ += input/connect/joypad_connection.o \
-                input/common/hid/hid_device_driver.o \
-                input/common/hid/device_wiiu_gca.o \
-                input/common/hid/device_ds3.o \
-                input/common/hid/device_ds4.o \
-                input/common/hid/device_null.o
       endif
 endif
 
@@ -1232,7 +1261,6 @@ ifeq ($(HAVE_WAYLAND), 1)
         input/common/wayland_common.o \
         input/drivers/wayland_input.o \
         gfx/common/wayland/xdg-shell.o \
-        gfx/common/wayland/xdg-shell-unstable-v6.o \
         gfx/common/wayland/idle-inhibit-unstable-v1.o \
         gfx/common/wayland/xdg-decoration-unstable-v1.o
 
@@ -1242,6 +1270,12 @@ ifeq ($(HAVE_WAYLAND), 1)
 
  DEF_FLAGS += $(WAYLAND_CFLAGS) $(WAYLAND_CURSOR_CFLAGS)
  LIBS += $(WAYLAND_LIBS) $(WAYLAND_CURSOR_LIBS)
+
+ ifeq ($(HAVE_LIBDECOR), 1)
+    DEFINES += -DHAVE_LIBDECOR
+    LIBS += $(LIBDECOR_LIBS)
+    DEF_FLAGS += $(LIBDECOR_CFLAGS)
+ endif
 
 endif
 
@@ -1436,7 +1470,9 @@ endif
 
 ifeq ($(HAVE_PLAIN_DRM), 1)
    OBJ += gfx/drivers/drm_gfx.o
-   INCLUDE_DIRS += -I/usr/include/libdrm
+   ifneq ($(HAVE_LAKKA), 1)
+      INCLUDE_DIRS += -I/usr/include/libdrm
+   endif
    LIBS += -ldrm
 endif
 
@@ -1453,12 +1489,13 @@ ifeq ($(HAVE_VITAGLES), 1)
 endif
 
 ifeq ($(HAVE_GL_CONTEXT), 1)
+   OBJ += gfx/common/gl_common.o
    ifeq ($(HAVE_GL_MODERN), 1)
       DEFINES += -DHAVE_OPENGL
-      OBJ += gfx/drivers/gl.o \
+      OBJ += gfx/drivers/gl2.o \
              $(LIBRETRO_COMM_DIR)/gfx/gl_capabilities.o \
-             gfx/drivers_font/gl_raster_font.o \
-				 gfx/drivers_display/gfx_display_gl.o
+             gfx/drivers_font/gl2_raster_font.o \
+	     gfx/drivers_display/gfx_display_gl2.o
    endif
 
    OBJ += $(LIBRETRO_COMM_DIR)/glsym/rglgen.o
@@ -1467,7 +1504,7 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
       DEFINES += -DHAVE_OPENGL1
       OBJ += gfx/drivers/gl1.o \
              gfx/drivers_font/gl1_raster_font.o \
-				 gfx/drivers_display/gfx_display_gl1.o
+	     gfx/drivers_display/gfx_display_gl1.o
    endif
 
    ifeq ($(HAVE_VIDEOCORE), 1)
@@ -1581,6 +1618,8 @@ else ifeq ($(HAVE_SDL_DINGUX), 1)
 
    ifeq ($(RS90), 1)
       OBJ += gfx/drivers/sdl_rs90_gfx.o
+   else ifeq ($(MIYOO), 1)
+      OBJ += gfx/drivers/sdl_rs90_gfx.o
    else
       OBJ += gfx/drivers/sdl_dingux_gfx.o
    endif
@@ -1635,10 +1674,10 @@ ifeq ($(HAVE_VULKAN), 1)
 endif
 
 ifeq ($(HAVE_OPENGL_CORE), 1)
-   OBJ += gfx/drivers/gl_core.o \
-          gfx/drivers_font/gl_core_raster_font.o \
-			 gfx/drivers_shader/shader_gl_core.o \
-			 gfx/drivers_display/gfx_display_gl_core.o
+   OBJ += gfx/drivers/gl3.o \
+          gfx/drivers_font/gl3_raster_font.o \
+	  gfx/drivers_shader/shader_gl3.o \
+	  gfx/drivers_display/gfx_display_gl3.o
 
    DEFINES += -DHAVE_OPENGL_CORE
    NEED_CXX_LINKER  = 1
@@ -2080,9 +2119,7 @@ ifeq ($(HAVE_NETWORKING), 1)
           tasks/task_http.o \
           tasks/task_netplay_lan_scan.o \
           tasks/task_netplay_nat_traversal.o \
-          tasks/task_bluetooth.o \
-          tasks/task_wifi.o \
-			 tasks/task_pl_thumbnail_download.o \
+	  tasks/task_pl_thumbnail_download.o \
           tasks/task_netplay_find_content.o
 
    ifeq ($(HAVE_MENU_COMMON), 1)
@@ -2110,10 +2147,9 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    # Netplay
    DEFINES += -DHAVE_NETWORK_CMD
-   OBJ += network/netplay/netplay_handshake.o \
-			 network/netplay/netplay_io.o \
-			 network/netplay/netplay_discovery.o \
-			 network/netplay/netplay_room_parse.o
+   OBJ += \
+	  network/netplay/netplay_frontend.o \
+	  network/netplay/netplay_room_parse.o
 
    # RetroAchievements
    ifeq ($(HAVE_CHEEVOS), 1)
@@ -2123,7 +2159,6 @@ ifeq ($(HAVE_NETWORKING), 1)
       OBJ += cheevos/cheevos.o \
              cheevos/cheevos_client.o \
              cheevos/cheevos_menu.o \
-             cheevos/cheevos_parser.o \
              $(LIBRETRO_COMM_DIR)/formats/cdfs/cdfs.o \
              deps/rcheevos/src/rcheevos/alloc.o \
              deps/rcheevos/src/rcheevos/compat.o \
@@ -2140,11 +2175,11 @@ ifeq ($(HAVE_NETWORKING), 1)
              deps/rcheevos/src/rcheevos/runtime_progress.o \
              deps/rcheevos/src/rcheevos/trigger.o \
              deps/rcheevos/src/rcheevos/value.o \
+             deps/rcheevos/src/rhash/cdreader.o \
              deps/rcheevos/src/rhash/hash.o \
              deps/rcheevos/src/rapi/rc_api_common.o \
              deps/rcheevos/src/rapi/rc_api_runtime.o \
              deps/rcheevos/src/rapi/rc_api_user.o \
-             deps/rcheevos/src/rurl/url.o
 
       ifeq ($(HAVE_LUA), 1)
          DEFINES += -DHAVE_LUA \
@@ -2202,6 +2237,8 @@ ifeq ($(HAVE_NETWORKING), 1)
                  deps/discord-rpc/src/rpc_connection.o \
                  deps/discord-rpc/src/serialization.o
 
+      OBJ     += network/discord.o
+
       ifneq ($(findstring Win32,$(OS)),)
          OBJ  += deps/discord-rpc/src/discord_register_win.o \
                  deps/discord-rpc/src/connection_win.o
@@ -2223,27 +2260,6 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    ifeq ($(HAVE_NETWORKGAMEPAD), 1)
       OBJ += cores/libretro-net-retropad/net_retropad_core.o
-   endif
-
-   ifeq ($(HAVE_BUILTINMINIUPNPC), 1)
-      HAVE_MINIUPNPC = 1
-      DEFINES += -DHAVE_MINIUPNPC -DHAVE_BUILTINMINIUPNPC -DMINIUPNPC_SET_SOCKET_TIMEOUT -DMINIUPNPC_GET_SRC_ADDR
-      INCLUDE_DIRS += -I$(DEPS_DIR)
-      OBJ     += $(DEPS_DIR)/miniupnpc/igd_desc_parse.o \
-                 $(DEPS_DIR)/miniupnpc/upnpreplyparse.o \
-                 $(DEPS_DIR)/miniupnpc/upnpcommands.o \
-                 $(DEPS_DIR)/miniupnpc/upnperrors.o \
-                 $(DEPS_DIR)/miniupnpc/connecthostport.o \
-                 $(DEPS_DIR)/miniupnpc/portlistingparse.o \
-                 $(DEPS_DIR)/miniupnpc/receivedata.o \
-                 $(DEPS_DIR)/miniupnpc/upnpdev.o \
-                 $(DEPS_DIR)/miniupnpc/minissdpc.o \
-                 $(DEPS_DIR)/miniupnpc/miniwget.o \
-                 $(DEPS_DIR)/miniupnpc/miniupnpc.o \
-                 $(DEPS_DIR)/miniupnpc/minixml.o \
-                 $(DEPS_DIR)/miniupnpc/minisoap.o
-   else ifeq ($(HAVE_MINIUPNPC), 1)
-      LIBS    += $(MINIUPNPC_LIBS)
    endif
 endif
 
@@ -2378,7 +2394,9 @@ ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
           gfx/video_filters/dot_matrix_3x.o \
           gfx/video_filters/dot_matrix_4x.o \
           gfx/video_filters/upscale_1_5x.o \
-          gfx/video_filters/upscale_256x_320x240.o
+          gfx/video_filters/upscale_256x_320x240.o \
+          gfx/video_filters/picoscale_256x_320x240.o \
+          gfx/video_filters/upscale_240x160_320x240.o
 endif
 
 ifeq ($(WANT_IOSUHAX), 1)
@@ -2462,12 +2480,13 @@ ifeq ($(HAVE_C_A7A7), 1)
                 -fmerge-all-constants -fno-math-errno \
                 -marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
    DEF_FLAGS += $(C_A7A7_OPT)
-   ifeq ($(shell echo `$(CC) -dumpversion` "< 4.9" | bc -l), 1)
+   CC_VERSION := $(shell $(CC) -dumpversion)
+   ifneq (4.9,$(firstword $(sort $(CC_VERSION) 4.9))) # if version < 4.9
       DEF_FLAGS += -march=armv7-a
    else
       DEF_FLAGS += -march=armv7ve
       # If gcc is 5.0 or later
-      ifeq ($(shell echo `$(CC) -dumpversion` ">= 5" | bc -l), 1)
+      ifeq (5,$(firstword $(sort $(CC_VERSION) 5)))
          LDFLAGS += -static-libgcc -static-libstdc++
       endif
    endif

@@ -36,9 +36,9 @@ int rc_api_init_fetch_image_request(rc_api_request_t* request, const rc_api_fetc
  * API parameters for a resolve hash request.
  */
 typedef struct rc_api_resolve_hash_request_t {
-  /* The username of the player */
+  /* Unused - hash lookup does not require credentials */
   const char* username;
-  /* The API token from the login request */
+  /* Unused - hash lookup does not require credentials */
   const char* api_token;
   /* The generated hash of the game to be identified */
   const char* game_hash;
@@ -88,6 +88,10 @@ typedef struct rc_api_leaderboard_definition_t {
   const char* description;
   /* The definition of the leaderboard to be passed to rc_runtime_activate_lboard */
   const char* definition;
+  /* Non-zero if lower values are better for this leaderboard */
+  int lower_is_better;
+  /* Non-zero if the leaderboard should not be displayed in a list of leaderboards */
+  int hidden;
 }
 rc_api_leaderboard_definition_t;
 
@@ -210,6 +214,9 @@ typedef struct rc_api_award_achievement_response_t {
   unsigned awarded_achievement_id;
   /* The updated player score */
   unsigned new_player_score;
+  /* The number of achievements the user has not yet unlocked for this game
+   * (in hardcore/non-hardcore per hardcore flag in request) */
+  unsigned achievements_remaining;
 
   /* Common server-provided response information */
   rc_api_response_t response;

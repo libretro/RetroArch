@@ -15,6 +15,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Direct3D 8 driver.
+ *
+ * Minimum version : Direct3D 8.0 (2000)
+ * Minimum OS      : Windows 95 (8.0a), Windows 98 and XP after 8.0a
+ * Recommended OS  : Windows 98/ME and/or Windows XP
+ */
+
 #define CINTERFACE
 
 #ifdef _XBOX
@@ -1831,7 +1838,11 @@ static const video_poke_interface_t d3d_poke_interface = {
    NULL,                         /* grab_mouse_toggle */
    NULL,                         /* get_current_shader */
    NULL,                         /* get_current_software_framebuffer */
-   NULL                          /* get_hw_render_interface */
+   NULL,                         /* get_hw_render_interface */
+   NULL,                         /* set_hdr_max_nits */
+   NULL,                         /* set_hdr_paper_white_nits */
+   NULL,                         /* set_hdr_contrast */
+   NULL                          /* set_hdr_expand_gamut */
 };
 
 static void d3d8_get_poke_interface(void *data,

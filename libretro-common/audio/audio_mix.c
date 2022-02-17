@@ -20,7 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <memalign.h>
@@ -114,7 +113,8 @@ void audio_mix_free_chunk(audio_chunk_t *chunk)
    free(chunk);
 }
 
-audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
+audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate,
+      const char *resampler_ident, enum resampler_quality quality)
 {
 #ifdef HAVE_RWAV
    int sample_size;
@@ -233,8 +233,8 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
 
       retro_resampler_realloc(&chunk->resampler_data,
             &chunk->resampler,
-            NULL,
-            RESAMPLER_QUALITY_DONTCARE,
+            resampler_ident,
+            quality,
             chunk->ratio);
 
       if (chunk->resampler && chunk->resampler_data)

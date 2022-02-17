@@ -113,11 +113,17 @@ typedef struct frontend_ctx_driver
    bool (*is_narrator_running)(void);
    bool (*accessibility_speak)(int speed,
          const char* speak_text, int priority);
+   bool (*set_gamemode)(bool on);
 
    const char *ident;
 
    const struct video_driver *(*get_video_driver)(void);
 } frontend_ctx_driver_t;
+
+typedef struct
+{
+   frontend_ctx_driver_t *current_frontend_ctx; /* ptr alignment */
+} frontend_state_t;
 
 extern frontend_ctx_driver_t frontend_ctx_gx;
 extern frontend_ctx_driver_t frontend_ctx_wiiu;
@@ -178,8 +184,6 @@ enum frontend_architecture frontend_driver_get_cpu_architecture(void);
 const void *frontend_driver_get_cpu_architecture_str(
       char *frontend_architecture, size_t size);
 
-environment_get_t frontend_driver_environment_get_ptr(void);
-
 bool frontend_driver_has_get_video_driver_func(void);
 
 const struct video_driver *frontend_driver_get_video_driver(void);
@@ -227,6 +231,12 @@ void frontend_driver_set_sustained_performance_mode(bool on);
 const char* frontend_driver_get_cpu_model_name(void);
 
 enum retro_language frontend_driver_get_user_language(void);
+
+bool frontend_driver_has_gamemode(void);
+
+bool frontend_driver_set_gamemode(bool on);
+
+frontend_state_t *frontend_state_get_ptr(void);
 
 RETRO_END_DECLS
 

@@ -445,7 +445,7 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
    autoconfig_handle_t *autoconfig_handle = NULL;
    bool match_found                       = false;
    const char *device_display_name        = NULL;
-   char task_title[PATH_MAX_LENGTH];
+   char task_title[NAME_MAX_LENGTH];
 
    task_title[0] = '\0';
 
@@ -782,7 +782,7 @@ static void cb_input_autoconfigure_disconnect(
 static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 {
    autoconfig_handle_t *autoconfig_handle = NULL;
-   char task_title[PATH_MAX_LENGTH];
+   char task_title[NAME_MAX_LENGTH];
 
    task_title[0] = '\0';
 

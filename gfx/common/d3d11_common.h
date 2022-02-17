@@ -2529,6 +2529,9 @@ typedef struct
    D3D11RasterizerState  scissor_disabled;
    D3D11Buffer           ubo;
    d3d11_uniform_t       ubo_values;
+#ifdef HAVE_DXGI_HDR
+   d3d11_texture_t       back_buffer;
+#endif
    D3D11SamplerState     samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX];
    D3D11BlendState       blend_enable;
    D3D11BlendState       blend_disable;
@@ -2540,6 +2543,7 @@ typedef struct
    D3D11_RECT            scissor;
    DXGI_FORMAT           format;
    float                 clearcolor[4];
+   unsigned              swap_interval;
    bool                  vsync;
    bool                  resize_chain;
    bool                  keep_aspect;
@@ -2549,6 +2553,12 @@ typedef struct
    bool                  has_flip_model;
    bool                  has_allow_tearing;
    d3d11_shader_t        shaders[GFX_MAX_SHADERS];
+#ifdef HAVE_DXGI_HDR
+   enum dxgi_swapchain_bit_depth 
+                         chain_bit_depth;
+   DXGI_COLOR_SPACE_TYPE chain_color_space;
+   DXGI_FORMAT           chain_formats[DXGI_SWAPCHAIN_BIT_DEPTH_COUNT];
+#endif
 #ifdef __WINRT__
    DXGIFactory2 factory;
 #else
@@ -2561,6 +2571,20 @@ typedef struct
       bool enable;
       struct retro_hw_render_interface_d3d11 iface;
    } hw;
+
+#ifdef HAVE_DXGI_HDR
+   struct
+   {
+      dxgi_hdr_uniform_t               ubo_values;
+      D3D11Buffer                      ubo;
+      float                            max_output_nits;
+      float                            min_output_nits;
+      float                            max_cll;
+      float                            max_fall;
+      bool                             support;
+      bool                             enable;
+   } hdr;
+#endif
 
 	struct
    {
@@ -2641,6 +2665,22 @@ void d3d11_update_texture(
 DXGI_FORMAT d3d11_get_closest_match(
       D3D11Device device, DXGI_FORMAT desired_format, UINT desired_format_support);
 
+enum d3d11_feature_level_hint
+{
+   D3D11_FEATURE_LEVEL_HINT_DONTCARE,
+   D3D11_FEATURE_LEVEL_HINT_1_0_CORE,
+   D3D11_FEATURE_LEVEL_HINT_9_1,
+   D3D11_FEATURE_LEVEL_HINT_9_2,
+   D3D11_FEATURE_LEVEL_HINT_9_3,
+   D3D11_FEATURE_LEVEL_HINT_10_0,
+   D3D11_FEATURE_LEVEL_HINT_10_1,
+   D3D11_FEATURE_LEVEL_HINT_11_0,
+   D3D11_FEATURE_LEVEL_HINT_11_1,
+   D3D11_FEATURE_LEVEL_HINT_12_0,
+   D3D11_FEATURE_LEVEL_HINT_12_1,
+   D3D11_FEATURE_LEVEL_HINT_12_2
+};
+
 bool d3d11_init_shader(
       D3D11Device                     device,
       const char*                     src,
@@ -2651,7 +2691,8 @@ bool d3d11_init_shader(
       LPCSTR                          gs_entry,
       const D3D11_INPUT_ELEMENT_DESC* input_element_descs,
       UINT                            num_elements,
-      d3d11_shader_t*                 out);
+      d3d11_shader_t*                 out,
+      enum d3d11_feature_level_hint   hint);
 
 static INLINE void d3d11_release_shader(d3d11_shader_t* shader)
 {

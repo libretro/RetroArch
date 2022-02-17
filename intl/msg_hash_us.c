@@ -26,6 +26,7 @@
 
 #ifdef RARCH_INTERNAL
 #include "../configuration.h"
+#include "../config.def.h"
 
 int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
@@ -107,6 +108,10 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
           case RARCH_FPS_TOGGLE:
              snprintf(s, len,
                    "Toggles frames per second counter.");
+             break;
+          case RARCH_STATISTICS_TOGGLE:
+             snprintf(s, len,
+                   "Toggles display of technical statistics.");
              break;
           case RARCH_SEND_DEBUG_INFO:
              snprintf(s, len,
@@ -1316,6 +1321,36 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Resolution of 0 uses the \n"
                              "resolution of the environment.\n");
             break;
+        case MENU_ENUM_LABEL_VIDEO_HDR_ENABLE:
+            snprintf(s, len,
+                     "Enable HDR.\n"
+                             " \n"
+                             "If supported this enables hdr \n");
+            break;
+        case MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS:
+            snprintf(s, len,
+                     "Peak Luminance\n"
+                             " \n"
+                             "Set the peak luminance (in cd/m2) your display can reproduce - see RTings for your models peak luminance\n");
+            break;
+        case MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS:
+            snprintf(s, len,
+                     "Paper White Luminance\n"
+                             " \n"
+                             "Set the luminance at which paper white should be ie readable text or luminance at the top of the SDR range\n");
+            break;
+        case MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST:
+            snprintf(s, len,
+                     "Contrast\n"
+                             " \n"
+                             "The constrast setting for HDR\n");
+            break;
+        case MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT:
+            snprintf(s, len,
+                     "Expand Gamut\n"
+                             " \n"
+                             "Once converted to linear space should we use an expanded colour gamut to get to HDR10\n");
+            break;
         case MENU_ENUM_LABEL_FASTFORWARD_RATIO:
             snprintf(s, len,
                      "Fastforward ratio.\n"
@@ -1513,7 +1548,17 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Can reduce latency at the cost of\n"
                              "higher risk of stuttering.\n"
                              " \n"
-                             "Maximum is 15.");
+                             "Maximum is %d.", MAXIMUM_FRAME_DELAY);
+            break;
+        case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO:
+            snprintf(s, len,
+                     "Temporarily decreases effective 'Frame Delay'\n"
+                             "until target refresh rate is stable.\n"
+                             " \n"
+                             "Measuring starts from half frame time when\n"
+                             "'Frame Delay' is 0.\n"
+                             " \n"
+                             "E.g. 8 for NTSC and 10 for PAL.");
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_DELAY:
             snprintf(s, len,
@@ -1981,6 +2026,16 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "2 - Press L3 + R3 simultaneously. \n"
                              "3 - Press Start + Select simultaneously.");
             break;
+        case MENU_ENUM_LABEL_INPUT_QUIT_GAMEPAD_COMBO:
+            snprintf(s, len,
+                     "Gamepad button combination to quit. \n"
+                             " \n"
+                             "0 - None \n"
+                             "1 - Press L + R + Y + D-Pad Down \n"
+                             "simultaneously. \n"
+                             "2 - Press L3 + R3 simultaneously. \n"
+                             "3 - Press Start + Select simultaneously.");
+            break;
         case MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU:
             snprintf(s, len, "Allows any user to control the menu. \n"
                     " \n"
@@ -2323,6 +2378,19 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Sets the master volume of the output device.");
             break;
+#ifdef __linux__
+        case MENU_ENUM_LABEL_GAMEMODE_ENABLE:
+            snprintf(s, len,
+                     "Enabling Linux GameMode can improve latency, fix audio\n"
+                     "crackling issues and maximize overall performance by\n"
+                     "automatically configuring your CPU and GPU for best\n"
+                     "performance.\n"
+                     " \n"
+                     "The GameMode software needs to be installed for this to\n"
+                     "work. See https://github.com/FeralInteractive/gamemode for\n"
+                     "information on how to install GameMode.");
+           break;
+#endif
         default:
             if (string_is_empty(s))
                 strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);

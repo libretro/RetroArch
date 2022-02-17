@@ -34,6 +34,10 @@
 #include <libdrm/drm.h>
 #include <gbm.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include <string/stdstring.h>
 
 #include "../../configuration.h"
@@ -48,12 +52,8 @@
 #include "../common/egl_common.h"
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
-#include "../common/gl_common.h"
-#endif
-
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
 #endif
 
 #ifdef HAVE_OPENGLES
@@ -218,10 +218,8 @@ static bool gfx_ctx_go2_drm_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   settings_t *settings                 = config_get_ptr();
    struct retro_system_av_info *av_info = NULL;
    gfx_ctx_go2_drm_data_t *drm          = (gfx_ctx_go2_drm_data_t*)data;
-   bool use_ctx_scaling                 = settings->bools.video_ctx_scaling;
 
    if (!drm)
       return false;
@@ -230,12 +228,14 @@ static bool gfx_ctx_go2_drm_set_video_mode(void *data,
 
    frontend_driver_install_signal_handler();
 
-   if (use_ctx_scaling && !menu_driver_is_alive())
+#ifdef HAVE_MENU
+   if (config_get_ptr()->bools.video_ctx_scaling && !menu_state_get_ptr()->alive)
    {
        drm->fb_width  = av_info->geometry.base_width;
        drm->fb_height = av_info->geometry.base_height;
    }
    else
+#endif
    {
        drm->fb_width  = drm->native_width;
        drm->fb_height = drm->native_height;
@@ -262,7 +262,7 @@ static bool gfx_ctx_go2_drm_set_video_mode(void *data,
 
    go2_context_make_current(drm->context);
 
-   glClear(GL_COLOR_BUFFER_BIT);
+   gl_clear();
 
    return true;
 }
@@ -274,10 +274,11 @@ static void gfx_ctx_go2_drm_check_window(void *data, bool *quit,
    unsigned h;
    gfx_ctx_go2_drm_data_t 
       *drm              = (gfx_ctx_go2_drm_data_t*)data;
+#ifdef HAVE_MENU
    settings_t *settings = config_get_ptr();
    bool use_ctx_scaling = settings->bools.video_ctx_scaling;
 
-   if (use_ctx_scaling && !menu_driver_is_alive())
+   if (use_ctx_scaling && !menu_state_get_ptr()->alive)
    {
       struct retro_system_av_info* 
          av_info  = video_viewport_get_system_av_info();
@@ -285,6 +286,7 @@ static void gfx_ctx_go2_drm_check_window(void *data, bool *quit,
        h          = av_info->geometry.base_height;
    }
    else
+#endif
    {
        w          = drm->native_width;
        h          = drm->native_height;

@@ -101,6 +101,14 @@ static bool sdl_key_pressed(int key)
    }
    if (key == RETROK_F1 && keymap[SDL_WEBOS_SCANCODE_EXIT])
       return true;
+   if (key == RETROK_x && keymap[SDL_WEBOS_SCANCODE_RED])
+      return true;
+   if (key == RETROK_z && keymap[SDL_WEBOS_SCANCODE_GREEN])
+      return true;
+   if (key == RETROK_s && keymap[SDL_WEBOS_SCANCODE_YELLOW])
+      return true;
+   if (key == RETROK_a && keymap[SDL_WEBOS_SCANCODE_BLUE])
+      return true;
 #endif
 
    if (sym >= (unsigned)num_keys)
@@ -114,7 +122,7 @@ static int16_t sdl_input_state(
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds,
+      const retro_keybind_set *binds,
       bool keyboard_mapping_blocked,
       unsigned port,
       unsigned device,

@@ -1,6 +1,42 @@
-#pragma once
+#ifndef _DXGI_COMMON_H
+#define _DXGI_COMMON_H
 
 #include <retro_inline.h>
+
+#ifndef HAVE_DXGI_HDR
+#define HAVE_DXGI_HDR
+#endif
+
+#ifdef HAVE_DXGI_HDR
+#ifndef ALIGN
+#ifdef _MSC_VER
+#define ALIGN(x) __declspec(align(x))
+#else
+#define ALIGN(x) __attribute__((aligned(x)))
+#endif
+#endif
+
+#include <gfx/math/matrix_4x4.h>
+
+typedef struct ALIGN(16)
+{
+   math_matrix_4x4   mvp;
+   float             contrast;         /* 2.0f    */
+   float             paper_white_nits; /* 200.0f  */
+   float             max_nits;         /* 1000.0f */
+   float             expand_gamut;     /* 1.0f    */
+   float             inverse_tonemap;  /* 1.0f    */
+   float             hdr10;            /* 1.0f    */
+} dxgi_hdr_uniform_t;
+
+enum dxgi_swapchain_bit_depth
+{
+   DXGI_SWAPCHAIN_BIT_DEPTH_8 = 0,
+   DXGI_SWAPCHAIN_BIT_DEPTH_10,
+   DXGI_SWAPCHAIN_BIT_DEPTH_16,
+   DXGI_SWAPCHAIN_BIT_DEPTH_COUNT
+};
+#endif
 
 #ifdef __MINGW32__
 #define __REQUIRED_RPCNDR_H_VERSION__ 475
@@ -233,7 +269,7 @@
 #endif
 
 #include <assert.h>
-#include <dxgi1_5.h>
+#include <dxgi1_6.h>
 
 #ifndef countof
 #define countof(a) (sizeof(a) / sizeof(*a))
@@ -281,6 +317,7 @@ typedef IDXGIResource*          DXGIResource;
 typedef IDXGIKeyedMutex*        DXGIKeyedMutex;
 typedef IDXGISurface1*          DXGISurface;
 typedef IDXGIOutput*            DXGIOutput;
+typedef IDXGIOutput6*           DXGIOutput6;
 typedef IDXGIDevice*            DXGIDevice;
 typedef IDXGIFactory1*          DXGIFactory;
 #ifdef __WINRT__
@@ -292,7 +329,7 @@ typedef IDXGIOutputDuplication* DXGIOutputDuplication;
 typedef IDXGIDecodeSwapChain*   DXGIDecodeSwapChain;
 typedef IDXGIFactoryMedia*      DXGIFactoryMedia;
 typedef IDXGISwapChainMedia*    DXGISwapChainMedia;
-typedef IDXGISwapChain3*        DXGISwapChain;
+typedef IDXGISwapChain4*        DXGISwapChain;
 
 #if !defined(__cplusplus) || defined(CINTERFACE)
 static INLINE ULONG DXGIReleaseDeviceSubObject(DXGIDeviceSubObject device_sub_object)
@@ -392,6 +429,14 @@ static INLINE HRESULT DXGIGetDisplaySurfaceData(DXGIOutput output, DXGISurface d
 {
    return output->lpVtbl->GetDisplaySurfaceData(output, (IDXGISurface*)destination);
 }
+static INLINE HRESULT DXGIGetOutputDesc(DXGIOutput output, DXGI_OUTPUT_DESC* desc)
+{
+   return output->lpVtbl->GetDesc(output, desc);
+}
+static INLINE HRESULT DXGIGetOutputDesc1(DXGIOutput6 output, DXGI_OUTPUT_DESC1* desc)
+{
+   return output->lpVtbl->GetDesc1(output, desc);
+}
 static INLINE ULONG DXGIReleaseDevice(DXGIDevice device) { return device->lpVtbl->Release(device); }
 static INLINE HRESULT DXGICreateSurface(
       DXGIDevice            device,
@@ -457,6 +502,12 @@ static INLINE BOOL DXGIIsCurrent(DXGIFactory factory)
 {
    return factory->lpVtbl->IsCurrent(factory);
 }
+#ifdef __WINRT__
+static INLINE BOOL DXGIIsCurrent2(DXGIFactory2 factory)
+{
+   return factory->lpVtbl->IsCurrent(factory);
+}
+#endif
 static INLINE ULONG DXGIReleaseAdapter(DXGIAdapter adapter)
 {
    return adapter->lpVtbl->Release(adapter);
@@ -769,10 +820,13 @@ static INLINE HRESULT DXGICheckColorSpaceSupport(
 {
    return swap_chain->lpVtbl->CheckColorSpaceSupport(swap_chain, color_space, color_space_support);
 }
-static INLINE HRESULT
-DXGISetColorSpace1(DXGISwapChain swap_chain, DXGI_COLOR_SPACE_TYPE color_space)
+static INLINE HRESULT DXGISetColorSpace1(DXGISwapChain swap_chain, DXGI_COLOR_SPACE_TYPE color_space)
 {
    return swap_chain->lpVtbl->SetColorSpace1(swap_chain, color_space);
+}
+static INLINE HRESULT DXGISetHDRMetaData(DXGISwapChain swap_chain, DXGI_HDR_METADATA_TYPE type, UINT size, void *metaData)
+{
+   return swap_chain->lpVtbl->SetHDRMetaData(swap_chain, type, size, metaData);
 }
 #endif
 /* end of auto-generated */
@@ -821,6 +875,28 @@ void dxgi_copy(
       int         dst_pitch,
       void*       dst_data);
 
+#ifdef HAVE_DXGI_HDR
+#ifdef __WINRT__
+bool dxgi_check_display_hdr_support(DXGIFactory2 factory, HWND hwnd);
+#else
+bool dxgi_check_display_hdr_support(DXGIFactory factory, HWND hwnd);
+#endif
+void dxgi_swapchain_color_space(DXGISwapChain handle, DXGI_COLOR_SPACE_TYPE
+*chain_color_space, DXGI_COLOR_SPACE_TYPE color_space);
+void dxgi_set_hdr_metadata(
+      DXGISwapChain                 handle,
+      bool                          hdr_supported,
+      enum dxgi_swapchain_bit_depth chain_bit_depth,
+      DXGI_COLOR_SPACE_TYPE         chain_color_space,
+      float                         max_output_nits,
+      float                         min_output_nits,
+      float                         max_cll,
+      float                         max_fall
+);
+#endif
+
 DXGI_FORMAT glslang_format_to_dxgi(glslang_format fmt);
 
 RETRO_END_DECLS
+
+#endif

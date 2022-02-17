@@ -2483,12 +2483,12 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
       firmware_info.path             = core_info->path;
       firmware_info.directory.system = settings->paths.directory_system;
 
-      rarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
+      retroarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
 
       update_missing_firmware        = core_info_list_update_missing_firmware(&firmware_info, &set_missing_firmware);
 
       if (set_missing_firmware)
-         rarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
+         retroarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
 
       if (update_missing_firmware)
       {
@@ -2514,23 +2514,20 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
                if (core_info->firmware[i].missing)
                {
                   missing        = true;
-                  labelText     += msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_MISSING);
+                  if (core_info->firmware[i].optional)
+                     labelText  += msg_hash_to_str(
+                           MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL);
+                  else
+                     labelText  += msg_hash_to_str(
+                           MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED);
                }
                else
-                  labelText     += msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_PRESENT);
-
-               labelText        += ", ";
-
-               if (core_info->firmware[i].optional)
-                  labelText     += msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_OPTIONAL);
-               else
-                  labelText     += msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_REQUIRED);
-
-               labelText        += ":";
+                  if (core_info->firmware[i].optional)
+                     labelText  += msg_hash_to_str(
+                           MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL);
+                  else
+                     labelText  += msg_hash_to_str(
+                           MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED);
 
                if (core_info->firmware[i].desc)
                   valueText      = core_info->firmware[i].desc;
@@ -2775,6 +2772,7 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
    QByteArray contentDbNameArray;
    QByteArray contentCrc32Array;
    char contentDbNameFull[PATH_MAX_LENGTH];
+   char corePathCached[PATH_MAX_LENGTH];
    const char *corePath        = NULL;
    const char *contentPath     = NULL;
    const char *contentLabel    = NULL;
@@ -2785,6 +2783,7 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
    core_info_t *coreInfo       = NULL;
 
    contentDbNameFull[0] = '\0';
+   corePathCached[0]    = '\0';
 
    if (m_pendingRun)
       coreSelection = CORE_SELECTION_CURRENT;
@@ -2885,6 +2884,15 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
        !string_is_empty(coreInfo->path))
       corePath = coreInfo->path;
 
+   /* If a core is currently running, the following
+    * call of 'command_event(CMD_EVENT_UNLOAD_CORE, NULL)'
+    * will free the global core_info struct, which will
+    * in turn free the pointer referenced by coreInfo->path.
+    * This will invalidate corePath, so we have to cache
+    * its current value here. */
+   if (!string_is_empty(corePath))
+      strlcpy(corePathCached, corePath, sizeof(corePathCached));
+
    /* Add lpl extension to db_name, if required */
    if (!string_is_empty(contentDbName))
    {
@@ -2913,7 +2921,7 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
    command_event(CMD_EVENT_UNLOAD_CORE, NULL);
 
    if (!task_push_load_content_with_new_core_from_companion_ui(
-         corePath, contentPath, contentLabel, contentDbNameFull, contentCrc32,
+         corePathCached, contentPath, contentLabel, contentDbNameFull, contentCrc32,
          &content_info, NULL, NULL))
    {
       QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR),
@@ -2949,7 +2957,7 @@ void MainWindow::onRunClicked()
 
 bool MainWindow::isContentLessCore()
 {
-   rarch_system_info_t *system = runloop_get_system_info();
+   rarch_system_info_t *system = &runloop_state_get_ptr()->system;
 
    return system->load_no_content;
 }
@@ -3674,7 +3682,7 @@ void MainWindow::onStopClicked()
 void MainWindow::setCurrentCoreLabel()
 {
    bool update                      = false;
-   struct retro_system_info *system = runloop_get_libretro_system_info();
+   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
    QString libraryName              = system->library_name;
    const char *no_core_str          = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
 
@@ -4946,10 +4954,12 @@ static void ui_companion_qt_toggle(void *data, bool force)
    settings_t *settings        = config_get_ptr();
    bool ui_companion_toggle    = settings->bools.ui_companion_toggle;
    bool video_fullscreen       = settings->bools.video_fullscreen;
-   bool mouse_grabbed          = input_mouse_grabbed();
+   bool mouse_grabbed          = input_state_get_ptr()->grab_mouse_state;
 
    if (ui_companion_toggle || force)
    {
+      video_driver_state_t *video_st = video_state_get_ptr();
+
       if (mouse_grabbed)
          command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
       video_driver_show_mouse();
@@ -4961,7 +4971,8 @@ static void ui_companion_qt_toggle(void *data, bool force)
       win_handle->qtWindow->raise();
       win_handle->qtWindow->show();
 
-      if (video_driver_started_fullscreen())
+      if (   video_st
+          && video_st->started_fullscreen)
          win_handle->qtWindow->lower();
 
       if (!already_started)

@@ -149,31 +149,29 @@ int _FAT_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
 		return -1;
 	}
 
-	/* Determine which mode the file is openned for */
-	if ((flags & 0x03) == O_RDONLY)
-   {
-		/* Open the file for read-only access */
-		file->read = true;
-		file->write = false;
-		file->append = false;
-	}
-   else if ((flags & 0x03) == O_WRONLY)
-   {
-		/* Open file for write only access */
-		file->read = false;
-		file->write = true;
-		file->append = false;
-	}
-   else if ((flags & 0x03) == O_RDWR)
-   {
-		/* Open file for read/write access */
-		file->read = true;
-		file->write = true;
-		file->append = false;
-	} else {
-		r->_errno = EACCES;
-		return -1;
-	}
+   switch((flags & 0x03)) {
+      case O_RDONLY:
+         /* Open the file for read-only access */
+         file->read = true;
+         file->write = false;
+         file->append = false;
+         break;
+      case O_WRONLY:
+         /* Open file for write only access */
+         file->read = false;
+         file->write = true;
+         file->append = false;
+         break;
+      case O_RDWR:
+   		/* Open file for read/write access */
+         file->read = true;
+         file->write = true;
+         file->append = false;
+         break;
+      default:
+		   r->_errno = EACCES;
+		   return -1;
+   }
 
 	/* Make sure we aren't trying to write to a read-only disc */
 	if (file->write && partition->readOnly)

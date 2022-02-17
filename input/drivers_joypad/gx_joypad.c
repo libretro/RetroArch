@@ -459,7 +459,7 @@ static void gx_joypad_poll(void)
 #ifdef HW_RVL
    if (g_quit)
    {
-      rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+      retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
       g_quit = false;
       return;
    }
@@ -667,6 +667,7 @@ input_device_driver_t gx_joypad = {
    gx_joypad_get_buttons,
    gx_joypad_axis,
    gx_joypad_poll,
+   NULL,
    NULL,
    gx_joypad_name,
    "gx",

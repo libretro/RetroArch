@@ -57,7 +57,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
-   "Швидкий доступ до усіх налаштувань, пов'язаних з грою."
+   "Швидкий доступ до усіх налаштувань гри."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
@@ -65,7 +65,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST,
-   "Виберіть ядро для використання."
+   "Вибрати ядро для використання."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
@@ -73,7 +73,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
-   "Виберіть вміст для запуску."
+   "Вибрати вміст для запуску."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -81,7 +81,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_DISC,
-   "Завантажити фізичний диск. Спочатку вам потрібно вибрати ядро (Активувати ядро), яке ви збираєтесь використовувати для диска."
+   "Завантажити фізичний диск. Спочатку потрібно вибрати ядро (Активувати ядро), яке буде використовуватися для диска."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
@@ -89,15 +89,25 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
    MENU_ENUM_SUBLABEL_DUMP_DISC,
-   "Зберегти фізичний диск у внутрішньому сховищі. Він буде збережений, як файл образу."
+   "Скопіювати дані з фізичного носія у файл образу на локальний диск."
+   )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "Вийняти диск"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_EJECT_DISC,
+   "Вийнятии диск з фізичного CD/DVD-пристрою."
+   )
+#endif
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
-   "Списки відтворення"
+   "Списки"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
-   "Тут буде показано просканований вміст, що збігається із записами у базі даних."
+   "Тут зберігається просканований вміст, що збігається зі записами в базі даних."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
@@ -105,23 +115,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "Створити та оновити списки відтворення через сканування вмісту."
+   "Створити або оновити списки, просканувавши вміст."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   "Показати меню стільниці"
+   "Показати класичну оболонку"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_WIMP,
-   "Відкрити традиційне меню стільниці."
+   "Відкрити традиційну оболонку для програми."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Вимкнути режим Kiosk (потрібен перезапуск)"
+   "Вимкнути режим кіоску (потрібен перезапуск)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   "Показати всі налаштування, пов'язані з конфігурацією."
+   "Показати всі налаштування програми."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
@@ -161,7 +171,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
-   "Керування та створення файлів налаштувань."
+   "Створення та керування файлами налаштувань."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LIST,
@@ -169,7 +179,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HELP_LIST,
-   "Дізнатися більше про те, як працює програма."
+   "Дізнатися більше про роботу програми."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
@@ -204,11 +214,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-   "Встановити або відновити ядро з каталогу завантажень."
+   "Встановити або відновити ядро з каталогу «Завантаження»."
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
-   "Запустити відео процесор"
+   "Запустити відеопроцесор"
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
@@ -242,7 +252,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
-   "Тут з'являтиметься додане до «Обраного»."
+   "Тут зберігається вміст доданий до «Обраного»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
@@ -250,7 +260,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_MUSIC,
-   "Тут з'являтиметься прослухана музика."
+   "Тут зберігається прослухана музика."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
@@ -258,7 +268,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_IMAGES,
-   "Тут з'являтимуться переглянуті зображення."
+   "Тут зберігаються переглянуті зображення."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
@@ -266,15 +276,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_VIDEO,
-   "Тут з'являтимуться переглянуті відео."
+   "Тут зберігаються переглянуті відео."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
-   "Оглянути"
+   "Огляд"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
-   "Переглянути увесь вміст, що відповідає бази даних через пошуковий інтерфейс з фільтрацією."
+   "Переглянути весь вміст, відомості про який є у базі даних, через пошук за категоріями."
    )
 
 /* Main Menu > Online Updater */
@@ -289,35 +299,43 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
-   "Оновити усі встановлені ядра до найновіших версій."
+   "Оновити всі встановлені ядра до найновіших версій."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
-   "Переключити ядра на версії з Play Store"
+   "Поміняти ядра на версії з Play Store"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
-   "Замінити усі класичні та встановлені вручну ядра останніми версіями з Play Store, за наявності."
+   "Замінити усі класичні та встановлені вручну ядра останніми версіями з Play Store, якщо можливо."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
-   "Оновлення мініатюр"
+   "Оновлення ескізів"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
-   "Завантажити повний пакунок мініатюр для обраної системи."
+   "Завантажити повний пакунок ескізів для обраної системи."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
-   "Оновити мініатюри списків"
+   "Оновити ескізи списків"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
-   "Завантажити мініатюри для записів у вибраному списку відтворення."
+   "Завантажити ескізи для записів у вибраному списку."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
    "Завантажити вміст"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Завантажувач базових системних файлів"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Завантаження допоміжних системних файлів, необхідних для правильної/оптимальної основи системи."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
@@ -345,15 +363,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
-   "Оновити GLSL шейдери"
+   "Оновити GLSL-шейдери"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
-   "Оновити Cg шейдери"
+   "Оновити Cg-шейдери"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
-   "Оновити Slang шейдери"
+   "Оновити Slang-шейдери"
    )
 
 /* Main Menu > Information */
@@ -364,7 +382,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFORMATION,
-   "Переглянути інформацію про програму / ядро."
+   "Переглянути інформацію про застосунок / ядро."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
@@ -372,7 +390,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISC_INFORMATION,
-   "Переглянути інформацію про вставлений диск."
+   "Переглянути інформацію про наявний диск."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
@@ -380,7 +398,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
-   "Переглянути мережевий інтерфейс(и) та пов'язані IP-адреси."
+   "Переглянути мережеві інтерфейси та пов'язані IP-адреси."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
@@ -388,7 +406,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
-   "Перегляд інформації, специфічної для пристрою."
+   "Переглянути інформацію про пристрій."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
@@ -404,7 +422,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
-   "Перегляд попередніх запитів."
+   "Перегляд пошукових запитів."
    )
 
 /* Main Menu > Information > Core Information */
@@ -447,27 +465,47 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
-   "Необхідно графічний API"
+   "Необхідний графічний API"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
+   "Підтримка збереження стану"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
+   "Немає"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
+   "Звичайний (зберегти/прочитати)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
+   "Послідовний (зберегти/прочитати, перемотка)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
+   "Деталізовано (зберегти/прочитати, перемотка, прискорений пропуск, стан мережевої гри)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
-   "Прошивка(и)"
+   "Прошивки"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Відсутнє"
+   MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
+   "Відсутній, обов'язково:"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Присутнє"
+   MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   "Відсутній, не обов'язково:"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Вибіркове"
+   MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
+   "Присутній, обов'язково:"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Необхідне"
+   MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   "Присутній, не обов'язково:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
@@ -475,7 +513,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "Запобігає внесенню змін до встановленого ядра. Може використовуватися для блокування оновлень, якщо вміст вимагає специфічної версії ядра для роботи (наприклад набори аркадних ROM)."
+   "Заборонити внесення змін до встановленого ядра. Корисне для блокування оновлень, якщо вміст вимагає специфічної версії ядра для роботи (наприклад набори аркадних ROM)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -483,11 +521,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_DELETE,
-   "Видалити це ядро з диску."
+   "Видалити це ядро з диска."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
-   "Резервне копіювання ядра"
+   "Резервна копія ядра"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
@@ -495,7 +533,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
-   "Відновлення з резервної копії"
+   "Відновити з резервної копії"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
@@ -558,7 +596,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL,
-   "Рівень на RetroRating"
+   "Рівень ретрорейтингу"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
@@ -785,10 +823,6 @@ MSG_HASH(
    "Підтримка однорангової мережевої гри"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
-   "Підтримка Python (підтримка скриптів у шейдерах)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
    "Підтримка Video4Linux2"
    )
@@ -856,11 +890,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
-   "Місяць випуску"
+   "Місяць виходу"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
-   "Рік випуску"
+   "Рік виходу"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
@@ -907,23 +941,23 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-   "Завантажити конфігурацію"
+   "Завантажити налаштування"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   "Відновити стандартну конфігурацію"
+   "Відновити стандартні налаштування"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   "Скидання поточної конфігурації до стандартних значень."
+   "Скинути поточні налаштування до стандартних значень."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
-   "Зберегти поточну конфігурацію"
+   "Зберегти поточні налаштування"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
-   "Зберегти нову конфігурацію"
+   "Зберегти нові налаштування"
    )
 
 /* Main Menu > Help */
@@ -976,7 +1010,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
-   "Зміна драйвера, що використовується системою."
+   "Вибрати драйвера, що використовується системою."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
@@ -984,7 +1018,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
-   "Зміна налаштувань виводу відео."
+   "Змінити налаштування виводу відео."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
@@ -992,15 +1026,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "Зміна налаштувань аудіовиходу."
+   "Змінити налаштування виводу звуку."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
-   "Ввід"
+   "Керування"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
-   "Зміна налаштувань контролера, клавіатури та миші."
+   "Змінити налаштування контролера, клавіатури та миші."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
@@ -1008,7 +1042,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
-   "Зміна налаштувань, пов'язаних з затримкою відео, аудіо та введенням."
+   "Змінити налаштування, що впливають на затримку відео, звуку та керування."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
@@ -1016,15 +1050,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-   "Зміна налаштувань ядра."
+   "Змінити налаштування ядра."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
-   "Конфігурація"
+   "Налаштування"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
-   "Зміна стандартних налаштувань для файлів конфігурації."
+   "Змінити стандартні параметри для файлів налаштувань."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
@@ -1032,7 +1066,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
-   "Зміна налаштувань збереження."
+   "Змінити параметри збереження."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -1040,7 +1074,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-   "Зміна налаштувань журналювання."
+   "Змінити параметри журналювання."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -1056,7 +1090,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-   "Зміна налаштувань перемотки вперед/назад, сповільнення."
+   "Змінити налаштування перемотки вперед/назад, сповільнення."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
@@ -1064,7 +1098,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-   "Зміна налаштувань запису."
+   "Змінити налаштування запису."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
@@ -1072,7 +1106,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-   "Зміна налаштувань накладок екрану, клавіатури та екранних повідомлень."
+   "Змінити налаштування накладок екрану, клавіатури та екранних повідомлень."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
@@ -1080,7 +1114,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
-   "Зміна налаштувань інтерфейсу користувача."
+   "Змінити налаштування інтерфейсу користувача."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
@@ -1088,7 +1122,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
-   "Зміна налаштувань служби AI (Переклад/Читання)."
+   "Змінити налаштування служби AI (Переклад/Читання)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
@@ -1096,7 +1130,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
-   "Зміна налаштувань диктора програми."
+   "Змінити налаштування програмного диктора."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
@@ -1104,7 +1138,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
-   "Зміна налаштувань керування живленням."
+   "Змінити параметри керування живленням."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
@@ -1112,7 +1146,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-   "Зміна налаштувань досягнень."
+   "Змінити налаштування досягнень."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
@@ -1120,7 +1154,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
-   "Зміна параметрів сервера і мережі."
+   "Змінити параметри сервера та мережі."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
@@ -1128,7 +1162,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
-   "Зміна налаштувань списків відтворення."
+   "Змінити налаштування списків відтворення."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
@@ -1136,22 +1170,22 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Зміна налаштувань облікового запису, користувача або мови."
+   "Зміна налаштувань облікового запису, користувача та мови."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
-   "Директорії"
+   "Каталоги"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
-   "Зміна стандартних директорій, в яких розташовані файли."
+   "Змінити стандартні каталоги для файлів."
    )
 
 /* Settings > Drivers */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
-   "Драйвер вводу"
+   "Ввід"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DRIVER,
@@ -1171,7 +1205,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Відео драйвер для використання."
+   "Драйвер відео для використання."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
@@ -1219,7 +1253,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Використовуваний драйвер меню."
+   "Драйвер меню для використання."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -1227,22 +1261,22 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Використовуваний драйвер запису."
+   "Драйвер запису для використання."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "Використовуваний драйвер MIDI."
+   "Драйвер MIDI для використання."
    )
 
 /* Settings > Video */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
-   "ЕПТ роздільність"
+   "ЕПТ-роздільність"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-   "Вивід оригінального сигналу низької роздільної здатності для використання з ЕПТ дисплеями."
+   "Вивід оригінального сигналу низької роздільної здатності для ЕПТ-дисплеїв."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
@@ -1250,7 +1284,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
-   "Зміна налаштувань відеовиводу."
+   "Змінити налаштування відеовиводу."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
@@ -1258,7 +1292,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   "Зміна налаштувань повноекранного режиму."
+   "Змінити налаштування повноекранного режиму."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
@@ -1266,7 +1300,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
-   "Зміна налаштувань віконного режиму."
+   "Змінити налаштування віконного режиму."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
@@ -1274,7 +1308,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   "Зміна налаштувань масштабування відео."
+   "Змінити налаштування масштабування відео."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
+   "Змінити налаштування HDR."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
@@ -1282,7 +1320,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   "Зміна налаштувань синхронізації відео."
+   "Змінити налаштування синхронізації відео."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
@@ -1290,15 +1328,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
-   "Блокує системну заставку збереження екрану."
+   "Блокувати системну заставку збереження екрану."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
-   "Відео в окремому потоці"
+   "Виокремлене відео"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-   "Покращує продуктивність за рахунок збільшення затримки та пропуску кадрів. Використовуйте лише якщо не вдалося досягти повної швидкості у інший спосіб."
+   "Покращити продуктивність шляхом збільшення затримки та пропуску кадрів. Використовуйте лише якщо не вдалося досягти повної швидкості в інший спосіб."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
@@ -1306,7 +1344,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Вставляти чорний кадр між кадрами. Корисно на деяких екранах з високою швидкістю оновлення для виключення залишкового зображення."
+   "Вставляти чорний кадр між кадрами. Корисно на деяких екранах з високою швидкістю оновлення для усунення залишкового зображення."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -1314,7 +1352,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "Зберігати знятки після обробки відеокартою, якщо доступно."
+   "Зберігати знятки після обробки відеокартою, якщо можливо."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -1322,7 +1360,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   "Додати легке розмиття до зображення, щоб згладити чіткі краї пікселів. Цей параметр має дуже мало впливу на продуктивність."
+   "Додати легке розмиття до зображення, щоб згладити чіткі краї пікселів. Цей параметр дуже слабко впливає на продуктивність."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1331,7 +1369,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   "Визначає метод інтерполяції зображення при масштабуванні вмісту внутрішнім обробником. Рекомендується \"Бікубічна\" або \"Білінійна\" при застосуванні відеофільтрів, що використовують ЦП. Цей параметр не впливає на продуктивність."
+   "Вказати метод інтерполяції зображення при масштабуванні вмісту внутрішнім обробником. Рекомендується «Бікубічна» або «Білінійна» при застосуванні відеофільтрів, що використовують ЦП. Цей параметр не впливає на продуктивність."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
@@ -1343,16 +1381,16 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
-   "Метод сусідніх пікселів"
+   "Найближчий сусід"
    )
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
    "Інтерполяція зображення"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   "Вкажіть метод інтерполяції зображення, коли вимкнено «Цілочисельне масштабування». Метод «Найближчий сусід» має найменший вплив на продуктивність."
+   "Вказати метод інтерполяції зображення, коли вимкнено «Цілочисельне масштабування». Метод «Найближчий сусід» має найменший вплив на продуктивність."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
@@ -1370,7 +1408,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
-   "Затримка автозастосування шейдерів (у мс). Може допомогти з графічними збоями при використанні програм \"захоплення екрану\"."
+   "Затримка автозастосування шейдерів (у мс). Може допомогти з графічними збоями при використанні програм захоплення екрану."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -1378,7 +1416,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-   "Застосувати відеофільтр на базі ЦП. Може спричинити велике навантаження. Деякі відеофільтри працюють лише з ядрами, що використовують 32 або 16 бітний колір."
+   "Застосувати ЦП-відеофільтр. Може спричинити велике навантаження. Деякі відеофільтри працюють лише з ядрами, що використовують 32 або 16-бітний колір."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
@@ -1386,34 +1424,34 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
-   "Вивантажити усі активні відеофільтри на базі ЦП."
+   "Вивантажити усі активні ЦП-відеофільтри."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Увімкнути повноекранний режим поверх шторки на пристроях Android"
+   "Увімкнути повноекранний режим для пристроїв з чубчиком на базі Android"
 )
 
 /* Settings > Video > CRT SwitchRes */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
-   "ЕПТ роздільність"
+   "ЕПТ-роздільність"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
-   "Лише для ЕПТ дисплеїв. Використовувати оригінальну роздільну здатність та частоту зображення гри/ядра."
+   "Лише для ЕПТ-дисплеїв. Використовувати оригінальну роздільну здатність та частоту зображення гри/ядра."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
-   "Супер розширення ЕПТ"
+   "Суперроздільність ЕПТ"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
-   "Перемикання між нативною та ультраширокою роздільною здатностями."
+   "Перемикати між власною та ультраширокою роздільною здатностями."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-   "Центрування за віссю X"
+   "Центрування по осі X"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
@@ -1429,19 +1467,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "Використовувати меню з високою роздільною здатністю"
+   "Меню високої роздільності"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   "Перемкнутися на конфігурацію високої роздільної здатності для меню коли не завантажено жодної гри."
+   "Перемкнутися в режим високої роздільної здатності для меню коли не завантажено жодної гри."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   "Користувацька Швидкість Оновлення"
+   "Довільна швидкість оновлення"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   "Використовувати користувацьку частоту кадрів, зазначену в файлі конфігурації."
+   "Використовувати користувацьку частоту оновлення, зазначену в файлі налаштувань."
    )
 
 /* Settings > Video > Output */
@@ -1452,7 +1490,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
-   "Виберіть, який екран використовувати."
+   "Вибрати дисплей для використання."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
@@ -1460,7 +1498,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
-   "Примусове застосування обертання до відео. Значення буде додано до переліку тих, що використовує ядро."
+   "Примусово застосувати обертання до відео. Значення буде додано до переліку тих, що використовує ядро."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
@@ -1475,20 +1513,40 @@ MSG_HASH(
    "Індекс графічного процесора"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   "Вибрати відеокарту для використання."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
+   "Горизонтальне зміщення екрану"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
+   "Примусове зміщення зображення по горизонталі. Присвоюється глобально."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
+   "Вертикальне зміщення екрану"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
+   "Примусове зміщення зображення по вертикалі. Присвоюється глобально."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
-   "Швидкість вертикального оновлення"
+   "Частота вертикального оновлення"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Частота вертикального оновлення екрана. Використовується для обчислення відповідної швидкості вхідного звуку. \nЦе буде проігноровано, якщо ввімкнено \"Потокове відео\"."
+   "Частота вертикального оновлення екрана. Використовується для вираховування потрібної частоти вхідного сигналу звуку. \nІгнорується, якщо ввімкнено «Виокремлене відео»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
-   "Приблизна частота оновлення екрана"
+   "Прорахована частота оновлення екрана"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
-   "Точна розрахункова частота оновлення екрана в Гц."
+   "Точно вирахувана частота оновлення екрана в Гц."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
@@ -1501,11 +1559,11 @@ MSG_HASH(
 #if defined(DINGUX) && defined(DINGUX_BETA)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
-   "Частота Вертикального Оновлення"
+   "Частота вертикального оновлення"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
-   "Встановити вертикальну частоту оновлення дисплея. '50 Гц' забезпечать плавне відео під час запуску PAL-вмісту."
+   "Встановити вертикальну частоту оновлення дисплея. «50 Гц» забезпечать плавне відтворення для PAL-вмісту."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_60HZ,
@@ -1522,7 +1580,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   "Примусово вимкнути підтримку sRGB FBO. Деякі драйвери Intel OpenGL у Windows мають проблеми з відео з sRGB FBO. Увімкнення цього може обійти це."
+   "Примусово вимкнути підтримку sRGB FBO. Деякі драйвери Intel OpenGL для Windows мають проблеми з відео з sRGB FBO. Це налаштування виправляє проблему."
    )
 
 /* Settings > Video > Fullscreen Mode */
@@ -1533,15 +1591,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   "Запускати в повноекранному режимі. Можна змінити під час виконання. Можна перевизначити перемикачем у командному рядку."
+   "Запускати в повноекранному режимі. Можна змінити під час запуску. Можна перевизначити ключем у командному рядку."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   "Віконний повноекранний режим"
+   "Повноекранний режим у вікні"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   "При повноекранному режимі, перевага у повноекранного вікна, щоб запобігти переключенню режиму відображення."
+   "У режимі вікна на повний екран зміна режиму відображення дисплея не відбувається."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
@@ -1549,7 +1607,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   "Встановити користувацький розмір ширини для не віконного повноекранного режиму. Залиште пустим, щоб використовувати роздільну здатність комп'ютера."
+   "Встановити користувацький розмір ширини для повноекранного режиму. Залиште пустим, щоб використовувати поточну роздільність стільниці."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
@@ -1557,22 +1615,22 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   "Встановити користувацький розмір ширини для не віконного повноекранного режиму. Залиште пустим, щоб використовувати роздільну здатність комп'ютера."
+   "Встановити користувацький розмір висоти для повноекранного режиму. Залиште пустим, щоб використовувати поточну роздільність стільниці."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
-   "Примусове розширення екрану у UWP"
+   "Примусова роздільність для UWP"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   "Примусуйте розширення екрану до повноекранного розміру, якщо встановлено значення 0, буде використано фіксоване значення 3840 x 2160."
+   "Примусово задати роздільність для повноекранного режиму. Якщо задано 0, то буде використано фіксоване значення 3840 x 2160."
    )
 
 /* Settings > Video > Windowed Mode */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   "Масштабування вікна"
+   "Масштаб вікна"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
@@ -1580,15 +1638,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
-   "Непрозорість вікна"
+   "Прозорість вікна"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
-   "Показати елементи керування вікном"
+   "Показати оформлення вікна"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
-   "Запам'ятовувати позицію і розмір вікна"
+   "Запам'ятовувати позицію та розмір вікна"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
@@ -1608,7 +1666,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   "Встановити користувацьку ширину для вікна дисплея."
+   "Встановити користувацьку ширину вікна відображення."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
@@ -1616,7 +1674,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   "Встановити користувацьку висоту для вікна дисплея."
+   "Встановити користувацьку висоту для вікна відображення."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
@@ -1639,19 +1697,19 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
-   "Цілочисленне масштабування"
+   "Цілочисельне масштабування"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-   "Масштабуйте відео лише цілими кроками. Базовий розмір залежить від геометрії та співвідношення сторін, про які повідомляє система. Якщо не встановлено \"Примусове співвідношення сторін\", X / Y буде цілочисельним масштабом незалежно."
+   "Масштабувати відео лише за цілочисельними значеннями. Базовий розмір залежить від системних геометрії та співвідношення сторін. Якщо не встановлено «Примусове співвідношення сторін», X/Y будуть мати незалежні значення."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Масштаб Цілочисельной Шкали"
+   "Збільшувати цілочисельне масштабування"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Примусово масштабувати ціле число для округлення до наступного більшого цілого числа замість округлення вниз."
+   "Примусово округлювати вверх, а не вниз, при цілочисельному масштабуванні."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -1659,61 +1717,104 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "Користувацьке співвідношення сторін"
+   "Довільне співвідношення сторін"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Значення плаваючої точки для відеосторін (ширина / висота), використовується, якщо співвідношення сторін встановлено в \"Користувацькому співвідношенні пропорцій\"."
+   "Значення з рухомою комою для співвідношення сторін відео (ширина / висота). Використовується, якщо для «Співвідношення сторін» вибрано «Налаштування»."
    )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-   "Зберігати співвідношення сторін"
+   "Зберігати пропорції"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-   "Зберігайте співвідношення сторін 1:1 при масштабуванні вмісту через внутрішній IPU. Якщо вимкнено, зображення будуть розтягнуті до заповнення всього екрану."
+   "Зберігати піксельні пропорції 1:1 при масштабуванні вмісту внутрішнім обробником (IPU). Якщо вимкнено, зображення буде розтягнуто, щоб заповнити весь екран."
    )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
-   "Користувацьке співвідношення сторін (X позиція)"
+   "Довільне співвідношення сторін (значення X)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Зсув користувацького перегляду, який використовується для визначення позиції осі X для перегляду.\nЦе ігнорується, якщо включено параметр Integer Scale'."
+   "Задати значення зсуву області перегляду по осі Х.\nІгнорується, якщо включено параметр «Цілочисельне масштабування»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Користувацьке співвідношення сторін (Y позиція)"
+   "Довільне співвідношення сторін (значення Y)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Зсув користувацького перегляду, який використовується для визначення позиції осі Y для перегляду.\nЦе ігнорується, якщо включено параметр Integer Scale'."
+   "Задати значення зсуву області перегляду по осі Y.\nІгнорується, якщо включено параметр «Цілочисельне масштабування»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   "Користувацьке співвідношення сторін (ширина)"
+   "Довільне співвідношення сторін (ширина)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   "Користувацька ширина інтерфейсу, яка використовується якщо замість пропорцій вказано «Користувацьке співвідношення сторін»."
+   "Задати ширину області перегляду, якщо для пропорцій вказано «Довільне співвідношення сторін»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   "Індивідуальне співвідношення сторін (Висота)"
+   "Довільне співвідношення сторін (висота)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   "Користувацька довжина інтерфейсу, яка використовується якщо замість пропорцій вказано «Користувацьке співвідношення сторін»."
+   "Задати висоту області перегляду, якщо для пропорцій вказано «Довільне співвідношення сторін»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   "Обрізати за скануванням (потрібно перезапустити)"
+   "Обрізати вильоти розгортки (потрібен перезапуск)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
-   "Відріжте кілька пікселів по краях зображення, яке розробники зазвичай залишають порожнім, яке іноді також містить сміттєві пікселі."
+   "Обрізати кілька пікселів по краях зображення, які розробники зазвичай залишають порожніми, і де іноді можуть міститись сміттєві пікселі."
+   )
+
+/* Settings > Video > HDR */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
+   "Увімкнути HDR"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "Увімкнути HDR, якщо підтримується дисплеєм."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
+   "Пікова яскравість"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
+   "Встановити максимальну яскравість (в кд/м2), яка підтримується дисплеєм. Значення пікової яскравості можна дізнатися на сайті RTings."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Яскравість білого паперу"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Встановити яскравість білого паперу, за якої текст на ньому буде добре читатися або яскравість в кінці шкали SDR (стандартного динамічного діапазону). Корисне для підлаштування під різні умови освітлення."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
+   "Контраст"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
+   "Налаштування гами/контрастності HDR. Розширює діапазон між найсвітлішими і найтемнішими частинами зображення. Чим вищий контраст HDR, тим сильніша різниця і чим нижчий контраст, тим більш розмитим буде зображення. Дозволяє досягти найкращої якості зображення на екрані."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "Розширена колірна гама"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "Після перетворення колірного простору на лінійний визначає, чи потрібно застосовувати розширену колірну гаму для HDR10."
    )
 
 /* Settings > Video > Synchronization */
@@ -1744,11 +1845,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Затримка оновлення кадрів"
+   "Затримка кадру"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    "Зменшує затримку ціною вищого ризику заїкання відео. Додає затримку після VSync (у мс)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
+   "Автозатримка кадру"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   "Зменшує ефективність 'Автозатримки кадру' за потреби запобігти падінню частоти. Початкове значення становить половину часу кадра, якщо 'Затримка кадру' дорівнює 0."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
@@ -1816,6 +1925,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    "Звуки меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   "Змінити налаштування звуку в меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
@@ -2099,11 +2212,35 @@ MSG_HASH(
    "Перепризначити елементи керування для цього ядра"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+   "Завантажити перевизначення прив'язок вводу для поточного ядра."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Автоналаштування"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
+   "Автоматично налаштовує контролери, що мають профіль типу Plug-и і Play."
+   )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
+   "Вимкнути гарячі клавіші Windows (потрібен перезапуск)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
+   "Опрацьовуювати комбанції з клавішею Win."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
+   "Введення з допоміжних датчиків"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
+   "Увімкнути введення з акселерометра, гіроскопа та датчика освітлення, якщо підтримуються пристроєм. Може впливати на продуктивність та/або збільшити споживання енергії на деяких пристроях."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
    "Автоматичне захоплення миші"
@@ -2111,6 +2248,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
    "Увімкнути захоплення миші коли програма активна."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
+   "Автоматично активувати режим \"Ігровий фокус\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
+   "Завжди вмикати режим \"Фокус на грі\" при запуску та відновленні вмісту. Якщо ввімкнути \"Виявляти автоматично\", ця опція буде увімкнена, якщо поточне ядро підтримує функцію автоматичного переведення вводу з клавіатури на себе."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
@@ -2121,8 +2266,16 @@ MSG_HASH(
    "УВІМК"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
+   "Виявити"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "Зрушення по осі Кнопки Ввода"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
+   "Як далеко відхиленим стік, щоб спрацьовувати як натиснута кнопка."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
@@ -2137,6 +2290,10 @@ MSG_HASH(
    "Затримка привʼязки"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
+   "Кількість секунд затримки до переходу в наступну комбінацію."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
    "Затримка привʼязки"
    )
@@ -2147,6 +2304,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Турбо-період"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
+   "Тривалість (у кадрах) дії turbo-кнопок."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -2179,11 +2340,21 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
    "Вібрувати при натисканні клавіші"
    )
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-#endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
+   "Сила вібрації"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
+   "Налаштування сили ефекту тактильної віддачі."
+   )
 
 /* Settings > Input > Menu Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
+   "Об'єднане керування меню"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
    "Поміняти місцями кнопки ОК та Скасувати"
@@ -2202,6 +2373,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
    "Підтвердити вихід"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   "Комбінація кнопок для виходу"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   "Комбінація кнопок контролера для виходу з RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
@@ -2449,6 +2628,10 @@ MSG_HASH(
 /* Settings > Core */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
+   "Апаратний спільний контекст"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
    "Автоматичний запуск ядра"
    )
@@ -2504,6 +2687,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    "Автозбереження стану"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
+   "Автоматично завантажувати стан"
+   )
 
 /* Settings > Logging */
 
@@ -2526,6 +2713,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
    "Записувати файл журналу"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
+   "Лічильники продуктивності"
    )
 
 /* Settings > File Browser */
@@ -2603,12 +2794,24 @@ MSG_HASH(
    "Якість запису"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
+   "Потоки запису"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
    "Використовувати запис через ГП"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
    "Режим трансляції"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+   "Якість потоку"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
+   "Заголовок потоку"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAMING_URL,
@@ -2630,8 +2833,20 @@ MSG_HASH(
    "Відрегулювати рамки та екранні елементи керування."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
+   "Сповіщення на екрані"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
+   "Налаштувати сповіщення на екрані."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
    "Видимість сповіщень"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+   "Перемкнути видимість конкретних типів сповіщень."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
@@ -2644,6 +2859,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
    "Накладки використовуються для меж і екранного управління."
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
    "Приховувати накладку в меню"
@@ -2654,6 +2870,10 @@ MSG_HASH(
    )
 #if defined(ANDROID)
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS,
+   "Показати елементи керування на накладці"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
    "Показувати вказівник миші при використанні накладки"
@@ -2705,6 +2925,10 @@ MSG_HASH(
 /* Settings > On-Screen Display > On-Screen Notifications */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
+   "Сповіщення на екрані"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_SHOW,
    "Відображати частоту кадрів"
    )
@@ -2753,6 +2977,14 @@ MSG_HASH(
    "ВКЛ (Нормально)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "Додаткові сповіщення мережі"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "Показувати на екрані додаткові сповіщення під час мережевої гри."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "Шрифт сповіщень"
    )
@@ -2799,6 +3031,10 @@ MSG_HASH(
 
 /* Settings > User Interface */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
+   "Видимі Елементи Меню"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    "Зовнішній вигляд"
@@ -2890,6 +3126,16 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    "Налаштування"
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
+   "Показувати 'Вийняти диск'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
+   "Показувати опцію 'Вийняти диск' в головному меню."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    "Головне меню"
@@ -2909,12 +3155,24 @@ MSG_HASH(
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "Показати «Зберегти параметри на диск»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "Показати пункт меню «Зберегти параметри на диск» у меню «Параметри > Керування параметрами ядра»."
+   )
 
 /* Settings > User Interface > Views > Settings */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
    "Показати 'Каталог'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY,
+   "Показати налаштування 'Каталогу'."
    )
 
 /* Settings > User Interface > Appearance */
@@ -2963,12 +3221,24 @@ MSG_HASH(
    "URL-адреса послуг штучного інтелекту"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
+   "Сервіс ШІ ввімкнено"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SOURCE_LANG,
    "Мова оригіналу"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_SOURCE_LANG,
+   "Мова, з якої буде здійснювати переклад. Якщо встановлено 'Стандартно', сервіс спробує визначити мову автоматично. Встановлення примусово певної мови зробить переклад більш точним."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    "Цільова мова"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
+   "Мова, на яку буде здійснюватися переклад. Стандартно використовується англійська."
    )
 
 /* Settings > Accessibility */
@@ -3048,6 +3318,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
    "TCP-порт мережевої гри"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
+   "Максимум одночасних з'єднань"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
@@ -3221,6 +3495,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
    "Мова"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_LANGUAGE,
+   "Налаштувати мову інтерфейсу користувача."
+   )
 
 /* Settings > User > Privacy */
 
@@ -3377,6 +3655,10 @@ MSG_HASH(
    "Сканувати каталог"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY,
+   "<Просканувати цей каталог>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_FILE,
    "Сканувати файл"
    )
@@ -3399,6 +3681,10 @@ MSG_HASH(
    "Назва системи"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+   "Власне ім'я системи"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    "Типове ядро"
    )
@@ -3411,11 +3697,23 @@ MSG_HASH(
    "Сканувати повторно"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
+   "Сканування всередині архівів"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
    "Розпочати сканування"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_START,
+   "Сканувати вибраний контент."
+   )
 
 /* Explore tab */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST,
+   "Підготовка списку..."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
    "Рік виходу"
@@ -3443,6 +3741,38 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT,
    "%u Елементів"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,
+   "За Розробником"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,
+   "За Видавцем"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,
+   "За Роком Випуску"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
+   "За Кількістю Гравців"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
+   "За Жанром"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,
+   "За Походженням"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,
+   "За Франшизою"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,
+   "За Ім'ям Системи"
    )
 
 /* Playlist > Playlist Item */
@@ -3474,6 +3804,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,
    "Інформація"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
+   "Завантажити ескізи"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
+   "Завантажити мініатюри скріншотів/заголовків екрану для поточного вмісту. Оновлює всі наявні мініатюри."
    )
 
 /* Playlist Item > Set Core Association */
@@ -3519,6 +3857,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESUME_CONTENT,
    "Продовжити"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESUME_CONTENT,
+   "Відновити актуальний вміст та залишити панель швидкого меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
@@ -3574,7 +3916,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
-   "Опції"
+   "Параметри"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
@@ -3614,6 +3956,14 @@ MSG_HASH(
 
 /* Quick Menu > Options > Manage Core Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
+   "Зберегти параметри на диск"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
+   "Примусово записати поточні параметри в активний файл налаштувань. Це збереже параметри в разі раптового закриття зовнішнього інтерфейсу через помилку ядра."
+   )
 
 /* - Legacy (unused) */
 
@@ -3718,6 +4068,10 @@ MSG_HASH(
    "Адреса памʼяті"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_COUNT,
+   "Кількість ітерацій"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
    "Код"
    )
@@ -3796,12 +4150,28 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
    "Зберегти поточні налаштування шейдера як типові для цього ядра."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT,
+   "Зберегти пресет каталогу контенту"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
+   "Зберегти пресет гри"
+   )
 
 /* Quick Menu > Shaders > Remove */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+   "Вилучити глобальний пресет"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE,
    "Вилучити пресет ядра"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME,
+   "Видалити пресет гри"
    )
 
 /* Quick Menu > Shaders > Shader Parameters */
@@ -3827,6 +4197,10 @@ MSG_HASH(
 
 /* Quick Menu > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH,
+   "Хеш RetroAchievements"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DETAIL,
    "Запис у базі даних"
@@ -3873,6 +4247,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK,
    "Гаразд"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
+   "Батьківський каталог"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
+   "Каталог не знайдено"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ITEMS,
@@ -3982,6 +4364,14 @@ MSG_HASH(
    "Немає джерела"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
+   "<Використовувати цей каталог>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
+   "<Каталог вмісту>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
    "<Типово>"
    )
@@ -4004,6 +4394,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNKNOWN,
    "Невідомо"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HOLD_START,
+   "Утримувати Start (2 секунди)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWN_SELECT,
@@ -4076,6 +4470,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT,
    "Показати повні мітки"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS,
+   "Видалити () та []"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_THUMBNAIL_MODE_DEFAULT,
@@ -4184,6 +4582,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NEAREST,
    "Найближчі"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT,
+   "Вміст"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR,
+   "<Каталог вмісту>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CUSTOM,
@@ -4349,6 +4755,10 @@ MSG_HASH(
 /* RGUI: Settings > User Interface > Appearance */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
+   "Показувати межі меню."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
    "Співвідношення сторін меню"
    )
@@ -4409,8 +4819,24 @@ MSG_HASH(
    "Верхня мініатюра"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
+   "Нижня мініатюра"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
    "Поміняти мініатюри місцями"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
+   "Затримка мініатюри (мс)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
+   "Розширена підтримка ASCII"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII,
+   "Увімкнути показ нестандартних ASCII-символів. Необхідно для сумісності з деякими західнороманськими мовами. Має посередній вплив на швидкодію."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
@@ -4426,6 +4852,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
    "Білінійна"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_SINC,
+   "Sinc/Lanczos3 (Повільно)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
@@ -4663,6 +5093,10 @@ MSG_HASH(
    "Динамічне тло"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
+   "Динамічно завантажити нові шпалери в залежності від контексту."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
    "Горизонтальна анімація"
    )
@@ -4673,6 +5107,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
    "Анімація, що запускається при переміщенні вгору або вниз."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
+   "Коефіцієнт прозорості меню"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
@@ -4709,6 +5147,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
    "Виберіть іншу кольорову тему для фону."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+   "Фактор масштабування мініатюр"
    )
 
 /* XMB: Settings Options */
@@ -4907,6 +5349,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA,
    "Дракула"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
+   "Solarized темна"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT,
+   "Solarized світла"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
@@ -5158,6 +5608,10 @@ MSG_HASH(
    "Тема:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_SYSTEM_DEFAULT,
+   "<Типовий системний>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK,
    "Темна"
    )
@@ -5184,6 +5638,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION,
    "Документація"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE,
+   "Завантажити користувацьке ядро..."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
@@ -5278,6 +5736,10 @@ MSG_HASH(
    "Перетягніть ваше зображення сюди"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
+   "Не показувати це знову"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_STOP,
    "Зупинити"
    )
@@ -5314,6 +5776,10 @@ MSG_HASH(
    "Користувацька тема"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
+   "Шлях до файлу є порожнім."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
    "Файл порожній."
    )
@@ -5324,6 +5790,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
    "Неможливо відкрити файл для запису."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST,
+   "Файл не існує."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ZOOM,
@@ -5680,16 +6150,36 @@ MSG_HASH(
    "Підтримка запису"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_PATH,
+   "Зберегти запис як..."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_MATCH_IDX,
    "Переглянути збіг #"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_MATCH_IDX,
+   "Виберіть матч для перегляду."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT,
    "Примусове співвідношення сторін"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
+   "Вибір зі списку відтворення"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESUME,
    "Продовжити"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESUME,
+   "Відновити актуальний вміст та залишити панель швидкого меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_CREATE_OPTION,
+   "Створити код з цього матчу"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_OPTION,
@@ -5799,6 +6289,14 @@ MSG_HASH(
    "Лівий аналог Y"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X,
+   "Правий аналог X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y,
+   "Правий аналог Y"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
    "Інформація про базу даних"
    )
@@ -5825,6 +6323,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
    "Запитувати"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS,
+   "Основні елементи меню"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_CONFIRM,
@@ -5895,6 +6397,18 @@ MSG_HASH( /* FIXME Should be MSG_ */
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
    "Натисніть праворуч п'ять разів, щоб видалити всі чіти."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SAVE_DEBUG_INFO,
+   "Не вдалося зберегти інформацію для налагодження."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_DEBUG_INFO,
+   "Не вдалося надіслати дані для налагодження на сервер."
+   )
+MSG_HASH(
+   MSG_SENDING_DEBUG_INFO,
+   "Надсилання зневаджувальної інформації..."
    )
 MSG_HASH(
    MSG_AUDIO_MIXER_VOLUME,
@@ -5999,6 +6513,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_CONNECTION_SLOT,
    "Слот підключення"
+   )
+MSG_HASH(
+   MSG_FETCHING_CORE_LIST,
+   "Отримання списку ядер..."
+   )
+MSG_HASH(
+   MSG_CORE_LIST_FAILED,
+   "Не вдалося отримати список ядер!"
+   )
+MSG_HASH(
+   MSG_LATEST_CORE_INSTALLED,
+   "Остання версія вже встановлена: "
    )
 MSG_HASH(
    MSG_UPDATING_CORE,
@@ -6106,15 +6632,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_RESET,
-   "Усі основні параметри скинути до стандартних."
+   "Скинути усі параметри ядра до стандартних."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Закрито"
+   MSG_CORE_OPTIONS_FLUSHED,
+   "Зберегти параметри ядра в:"
    )
 MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Відключено"
+   MSG_CORE_OPTIONS_FLUSH_FAILED,
+   "Не вдалося зберегти параметри ядра в:"
    )
 MSG_HASH(
    MSG_DOWNLOADING,
@@ -6141,8 +6667,24 @@ MSG_HASH(
    "Видобування файла"
    )
 MSG_HASH(
-   MSG_FAILED_TO,
-   "Не вдалося"
+   MSG_FAILED_TO_APPLY_SHADER,
+   "Не вдалося застосувати шейдер."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPLY_SHADER_PRESET,
+   "Не вдалося застосувати пресет шейдера:"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_BIND_SOCKET,
+   "Не вдалося прив'язати сокет."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CREATE_THE_DIRECTORY,
+   "Не вдалося створити каталог."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
+   "Не вдалося вилучити вміст зі стиснутого файлу"
    )
 MSG_HASH(
    MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
@@ -6153,8 +6695,20 @@ MSG_HASH(
    "Не вдалося завантажити"
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD_CONTENT,
+   "Не вдалося завантажити вміст"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_MOVIE_FILE,
+   "Не вдалося завантажити відеофайл"
+   )
+MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "Не вдалося завантажити накладку."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_STATE,
+   "Не вдалося завантажити стан з"
    )
 MSG_HASH(
    MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
@@ -6163,6 +6717,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_PATCH,
    "Не вдалося виправити"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT,
+   "Не вдалося отримати заголовок від клієнта."
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_NICKNAME,
@@ -6175,6 +6733,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_NICKNAME_SIZE_FROM_HOST,
    "Не вдалося отримати розмір псевдоніму від хоста."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_SRAM,
+   "Помилка завантаження SRAM"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SAVE_STATE_TO,
+   "Не вдалося зберегти стан до"
    )
 MSG_HASH(
    MSG_FAILED_TO_SEND_NICKNAME,
@@ -6197,8 +6763,24 @@ MSG_HASH(
    "Не вдалося запустити звуковий драйвер. Буде продовжено без звуку."
    )
 MSG_HASH(
+   MSG_FAILED_TO_START_MOVIE_RECORD,
+   "Не вдалося розпочати запис відео."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_START_RECORDING,
+   "Не вдалося почати запис."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_TAKE_SCREENSHOT,
+   "Не вдалося зробити зняток."
+   )
+MSG_HASH(
    MSG_FAILED_TO_UNMUTE_AUDIO,
    "Не вдалося увімкнути звук."
+   )
+MSG_HASH(
+   MSG_FATAL_ERROR_RECEIVED_IN,
+   "Критична помилка, отримана в"
    )
 MSG_HASH(
    MSG_FILE_NOT_FOUND,
@@ -6215,14 +6797,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FRAMES,
    "Кадри"
-   )
-MSG_HASH(
-   MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Параметри Ядра]: Специфічні параметри ядра для гри"
-   )
-MSG_HASH(
-   MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Параметри Ядра]: Специфічні параметри ядра для папок"
    )
 MSG_HASH(
    MSG_INPUT_CHEAT,
@@ -6265,6 +6839,10 @@ MSG_HASH(
    "Завантаження"
    )
 MSG_HASH(
+   MSG_LOADING_CONTENT_FILE,
+   "Завантаження файлу вмісту"
+   )
+MSG_HASH(
    MSG_LOADING_HISTORY_FILE,
    "Завантаження файлу історії"
    )
@@ -6281,16 +6859,16 @@ MSG_HASH(
    "Пам'ять"
    )
 MSG_HASH(
+   MSG_MOVIE_RECORD_STOPPED,
+   "Припинення запису відео."
+   )
+MSG_HASH(
    MSG_NETPLAY_FAILED,
    "Не вдалося ініціалізувати мережеву гру."
    )
 MSG_HASH(
    MSG_PAUSED,
    "Призупинено."
-   )
-MSG_HASH(
-   MSG_RECEIVED,
-   "отримано"
    )
 MSG_HASH(
    MSG_RECORDING_TO,
@@ -6349,6 +6927,10 @@ MSG_HASH(
    "Перемотати вперед."
    )
 MSG_HASH(
+   MSG_STARTING_MOVIE_PLAYBACK,
+   "Початок відтворення відео."
+   )
+MSG_HASH(
    MSG_STATE_SLOT,
    "Слот стану"
    )
@@ -6381,24 +6963,12 @@ MSG_HASH(
    "Завершення роботи..."
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "вийняти"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "закрити"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "помилка"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "успішно"
-   )
-MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
    "не налаштовано"
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_PAIRING_REMOVED,
+   "З'єднання вилучено. Перезапустіть RetroArch, щоб з'єднати знову."
    )
 MSG_HASH(
    MSG_NETPLAY_LAN_SCANNING,
@@ -6449,6 +7019,22 @@ MSG_HASH(
    "Не вдалося встановити диск"
    )
 MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   "Не вдалося з'єднатися з клієнтом"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "Не вдалося з'єднатися з гостом"
+   )
+MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "Гост мережевої гри заповнений"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "Не вдалось отримати заголовок госта"
+   )
+MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
    "Найнижча"
    )
@@ -6467,6 +7053,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_HIGHEST,
    "Найвищий"
+   )
+MSG_HASH(
+   MSG_RGUI_MISSING_FONTS,
+   "Увага: відсутні шрифти до обраної мови, спробуйте оновити з мережі"
+   )
+MSG_HASH(
+   MSG_RGUI_INVALID_LANGUAGE,
+   "Увага: мова не підтримується — використовується англійська"
    )
 MSG_HASH(
    MSG_DUMPING_DISC,
@@ -6529,6 +7123,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
    "Роздільна здатність екрану"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
+   "Виберіть режим відображення."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
@@ -6666,14 +7264,6 @@ MSG_HASH(
    MSG_LOCAL,
    "Місцеві"
    )
-MSG_HASH(
-   MSG_READ_WRITE,
-   "Читання/Запис"
-   )
-MSG_HASH(
-   MSG_READ_ONLY,
-   "Лише читання"
-   )
 
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
@@ -6770,6 +7360,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
    "2D (Висока роздільна здатність)"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_DEFAULT,
+   "Торкніться сенсорного екрана,\nщоб перейти в меню Retroarch"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
+   "bottom_menu.png не знайдено\nв теці assets/ctr"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
+   "Немає\nданих"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
+   "Немає\nзнімка екрана"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_RESUME,
+   "Продовжити гру"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_SAVE_STATE,
+   "Створити\nзбереження"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_LOAD_STATE,
+   "Завантажити\nзбереження"
    )
 #endif
 #ifdef HAVE_QT

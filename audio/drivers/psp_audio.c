@@ -40,7 +40,7 @@
 #define SceUID uint32_t
 #endif
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 
 typedef struct psp_audio
 {
@@ -54,7 +54,7 @@ typedef struct psp_audio
 
    SceUID thread;
 
-   int rate;
+   int port;
 
    volatile uint16_t read_pos;
    volatile uint16_t write_pos;
@@ -67,21 +67,26 @@ typedef struct psp_audio
 #define AUDIO_BUFFER_SIZE (1u<<13u)
 #define AUDIO_BUFFER_SIZE_MASK (AUDIO_BUFFER_SIZE-1)
 
+/* Return port used */
+static int configureAudio(unsigned rate) {
+   int port;
+#if defined(VITA)
+   port         = sceAudioOutOpenPort(
+         SCE_AUDIO_OUT_PORT_TYPE_MAIN, AUDIO_OUT_COUNT,
+         rate, SCE_AUDIO_OUT_MODE_STEREO);
+#elif defined(ORBIS)
+   port         = sceAudioOutOpen(0xff,
+         SCE_AUDIO_OUT_PORT_TYPE_MAIN, 0, AUDIO_OUT_COUNT,
+         rate, SCE_AUDIO_OUT_MODE_STEREO);
+#else
+   port = sceAudioSRCChReserve(AUDIO_OUT_COUNT, rate, 2);
+#endif
+   return port;
+}
+
 static void audioMainLoop(void *data)
 {
    psp_audio_t* psp = (psp_audio_t*)data;
-
-#if defined(VITA)
-   int port         = sceAudioOutOpenPort(
-         SCE_AUDIO_OUT_PORT_TYPE_MAIN, AUDIO_OUT_COUNT,
-         psp->rate, SCE_AUDIO_OUT_MODE_STEREO);
-#elif defined(ORBIS)
-   int port         = sceAudioOutOpen(0xff,
-         SCE_AUDIO_OUT_PORT_TYPE_MAIN, 0, AUDIO_OUT_COUNT,
-         psp->rate, SCE_AUDIO_OUT_MODE_STEREO);
-#else
-   sceAudioSRCChReserve(AUDIO_OUT_COUNT, psp->rate, 2);
-#endif
 
    while (psp->running)
    {
@@ -107,7 +112,7 @@ static void audioMainLoop(void *data)
       slock_unlock(psp->cond_lock);
 
 #if defined(VITA) || defined(ORBIS)
-      sceAudioOutOutput(port,
+      sceAudioOutOutput(psp->port,
         cond ? (psp->zeroBuffer)
               : (psp->buffer + read_pos_2));
 #else
@@ -115,14 +120,6 @@ static void audioMainLoop(void *data)
             : (psp->buffer + read_pos));
 #endif
    }
-
-#if defined(VITA)
-   sceAudioOutReleasePort(port);
-#elif defined(ORBIS)
-   sceAudioOutClose(port);
-#else
-   sceAudioSRCChRelease();
-#endif
 
    return;
 }
@@ -137,8 +134,9 @@ static void *psp_audio_init(const char *device,
    if (!psp)
       return NULL;
 
-   (void)device;
-   (void)latency;
+   int port = configureAudio(rate);
+   if (port < 0)
+      return NULL;
 
 #ifdef ORBIS
    psp->buffer      = (uint32_t*)
@@ -161,7 +159,7 @@ static void *psp_audio_init(const char *device,
 
    psp->read_pos    = 0;
    psp->write_pos   = 0;
-   psp->rate        = rate;
+   psp->port        = port;
 
    psp->fifo_lock = slock_new();
    psp->cond_lock = slock_new();
@@ -197,7 +195,17 @@ static void psp_audio_free(void *data)
    free(psp->buffer);
    psp->worker_thread = NULL;
    free(psp->zeroBuffer);
+
+#if defined(VITA)
+      sceAudioOutReleasePort(psp->port);
+#elif defined(ORBIS)
+      sceAudioOutClose(psp->port);
+#else
+      sceAudioSRCChRelease();
+#endif
+
    free(psp);
+
 }
 
 static ssize_t psp_audio_write(void *data, const void *buf, size_t size)

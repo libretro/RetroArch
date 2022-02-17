@@ -600,7 +600,7 @@ static void gx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 }
 
 static void gx_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
    global_t *global = global_get_ptr();
    if (!global)
@@ -621,6 +621,7 @@ static void gx_get_video_output_size(void *data,
 static void setup_video_mode(gx_video_t *gx)
 {
    unsigned width, height;
+   char desc[64] = {0};
 
    if (!gx->framebuf[0])
    {
@@ -633,7 +634,7 @@ static void setup_video_mode(gx_video_t *gx)
    gx->orientation = ORIENTATION_NORMAL;
    OSInitThreadQueue(&g_video_cond);
 
-   gx_get_video_output_size(gx, &width, &height);
+   gx_get_video_output_size(gx, &width, &height, desc, sizeof(desc));
    gx_set_video_mode(gx, width, height, true);
 }
 
@@ -1372,7 +1373,11 @@ static const video_poke_interface_t gx_poke_interface = {
    NULL,                         /* grab_mouse_toggle */
    NULL,                         /* get_current_shader */
    NULL,                         /* get_current_software_framebuffer */
-   NULL                          /* get_hw_render_interface */
+   NULL,                         /* get_hw_render_interface */
+   NULL,                         /* set_hdr_max_nits */
+   NULL,                         /* set_hdr_paper_white_nits */
+   NULL,                         /* set_hdr_contrast */
+   NULL                          /* set_hdr_expand_gamut */
 };
 
 static void gx_get_poke_interface(void *data,

@@ -633,9 +633,11 @@ static void win32_save_position(void)
    }
    if (window_save_positions)
    {
+      video_driver_state_t *video_st = video_state_get_ptr();
+
       if (  !video_fullscreen && 
-            !retroarch_is_forced_fullscreen() &&
-            !retroarch_is_switching_display_mode())
+            !video_st->force_fullscreen &&
+            !video_st->is_switching_display_mode)
       {
          settings->uints.window_position_x      = g_win32->pos_x;
          settings->uints.window_position_y      = g_win32->pos_y;
@@ -852,7 +854,7 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          if (mode >= ID_M_WINDOW_SCALE_1X && mode <= ID_M_WINDOW_SCALE_10X)
          {
             unsigned idx = (mode - (ID_M_WINDOW_SCALE_1X-1));
-            rarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
+            retroarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
             command_event(CMD_EVENT_RESIZE_WINDOWED_SCALE, NULL);
          }
          else if (mode == ID_M_STATE_INDEX_AUTO)
@@ -932,6 +934,12 @@ static LRESULT CALLBACK wnd_proc_common(
          /* fall-through */
       case WM_MOVE:
          win32_save_position();
+#if 0
+#if !defined(_XBOX)
+         if(d3d12)
+            d3d12_check_display_hdr_support(d3d12, hwnd);
+#endif
+#endif
          break;
       case WM_SIZE:
          /* Do not send resize message if we minimize. */
@@ -1047,11 +1055,11 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
          break;
 #ifdef HAVE_CLIP_WINDOW
       case WM_SETFOCUS:
-         if (input_mouse_grabbed())
+         if (input_state_get_ptr()->grab_mouse_state)
             win32_clip_window(true);
          break;
       case WM_KILLFOCUS:
-         if (input_mouse_grabbed())
+         if (input_state_get_ptr()->grab_mouse_state)
             win32_clip_window(false);
          break;
 #endif
@@ -1122,7 +1130,7 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
          break;
       case WM_SETFOCUS:
 #ifdef HAVE_CLIP_WINDOW
-         if (input_mouse_grabbed())
+         if (input_state_get_ptr()->grab_mouse_state)
             win32_clip_window(true);
 #endif
 #if !defined(_XBOX)
@@ -1132,7 +1140,7 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
          break;
       case WM_KILLFOCUS:
 #ifdef HAVE_CLIP_WINDOW
-         if (input_mouse_grabbed())
+         if (input_state_get_ptr()->grab_mouse_state)
             win32_clip_window(false);
 #endif
 #if !defined(_XBOX)
@@ -1258,11 +1266,11 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
          break;
 #ifdef HAVE_CLIP_WINDOW
       case WM_SETFOCUS:
-         if (input_mouse_grabbed())
+         if (input_state_get_ptr()->grab_mouse_state)
             win32_clip_window(true);
          break;
       case WM_KILLFOCUS:
-         if (input_mouse_grabbed())
+         if (input_state_get_ptr()->grab_mouse_state)
             win32_clip_window(false);
          break;
 #endif
@@ -1275,8 +1283,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
 }
 #endif
 
-#if defined(HAVE_D3D) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
-
+#if defined(HAVE_D3D) || defined(HAVE_D3D8) || defined(HAVE_D3D9) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
 LRESULT CALLBACK wnd_proc_d3d_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
@@ -1610,20 +1617,32 @@ bool win32_window_create(void *data, unsigned style,
    bool    window_save_positions = settings->bools.video_window_save_positions;
    unsigned    user_width        = width;
    unsigned    user_height       = height;
+   const char *new_label         = msg_hash_to_str(MSG_PROGRAM);
+#ifdef LEGACY_WIN32
+   char *title_local             = utf8_to_local_string_alloc(new_label);
+#else
+   wchar_t *title_local          = utf8_to_utf16_string_alloc(new_label);
+#endif
 
    if (window_save_positions && !fullscreen)
    {
       user_width                 = g_win32->pos_width;
       user_height                = g_win32->pos_height;
    }
+#ifdef LEGACY_WIN32
    main_window.hwnd              = CreateWindowEx(0,
-         "RetroArch", msg_hash_to_str(MSG_PROGRAM),
+         "RetroArch", title_local,
+#else
+   main_window.hwnd              = CreateWindowExW(0,
+         L"RetroArch", title_local,
+#endif
          style,
          fullscreen ? mon_rect->left : g_win32->pos_x,
          fullscreen ? mon_rect->top  : g_win32->pos_y,
          user_width,
          user_height,
          NULL, NULL, NULL, data);
+   free(title_local);
    if (!main_window.hwnd)
       return false;
 
@@ -1925,8 +1944,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
        * for black frame insertion using video_refresh_rate set to a portion
        * of the display refresh rate, as well as higher vsync swap intervals. */
       float refresh_mod      = bfi + 1.0f;
-      unsigned refresh       = roundf(video_refresh * refresh_mod 
-            * swap_interval);
+      float refresh_rate     = (video_refresh * refresh_mod * swap_interval);
 
       if (windowed_full)
       {
@@ -1939,7 +1957,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
          *style          = WS_POPUP | WS_VISIBLE;
 
          if (!win32_monitor_set_fullscreen(*width, *height,
-                  refresh, current_mon->szDevice)) { }
+               (int)refresh_rate, current_mon->szDevice)) { }
 
          /* Display settings might have changed, get new coordinates. */
          GetMonitorInfo(*hm_to_use, (LPMONITORINFO)current_mon);
@@ -2345,6 +2363,11 @@ HWND win32_get_window(void)
 #endif
 }
 
+bool win32_get_client_rect(RECT* rect)
+{
+   return GetWindowRect(main_window.hwnd, rect);
+}
+
 void win32_window_reset(void)
 {
    win32_common_state_t 
@@ -2518,7 +2541,7 @@ bool win32_get_video_output(DEVMODE *dm, int mode, size_t len)
    return true;
 }
 
-void win32_get_video_output_size(unsigned *width, unsigned *height)
+void win32_get_video_output_size(unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
    DEVMODE dm;
 

@@ -57,7 +57,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
-   "Accede rápidamente a todos los ajustes pertinentes para la partida."
+   "Accede rápidamente a todos los ajustes relacionados con la partida."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
@@ -91,6 +91,16 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    MENU_ENUM_SUBLABEL_DUMP_DISC,
    "Vuelca los contenidos del disco físico al almacenamiento interno. Se guardarán como un archivo de imagen."
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "Expulsar disco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_EJECT_DISC,
+   "Expulsa el disco de la unidad de CD/DVD física."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "Listas de reproducción"
@@ -320,6 +330,14 @@ MSG_HASH(
    "Descargador de contenido"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Descargador de archivos del sistema de los núcleos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Descarga los archivos auxiliares de sistema que son necesarios para el buen funcionamiento de los núcleos."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
    "Actualizar archivos de información de núcleos"
    )
@@ -450,20 +468,40 @@ MSG_HASH(
    "API gráficas necesarias"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Faltante"
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
+   "Soporte de guardados rápidos"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Presente"
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
+   "No compartir"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Opcional"
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
+   "Básico (guardado/carga)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Necesario"
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
+   "Serializado (guardado/carga, rebobinado)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
+   "Determinístico (guardado/carga, rebobinado, anticipación predictiva de latencia, juego en red)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
+   "No encontrado, necesario:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   "No encontrado, necesario:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
+   "Presente, necesario:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   "Presente, opcional:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
@@ -781,10 +819,6 @@ MSG_HASH(
    "Soporte de juego en red (peer-to-peer)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
-   "Soporte de Python (scripts para shaders)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
    "Soporte de Video4Linux2"
    )
@@ -848,7 +882,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
-   "Edición de la revista Edge"
+   "Número de la revista Edge"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
@@ -1269,6 +1303,10 @@ MSG_HASH(
    "Cambia los ajustes del escalado de vídeo."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
+   "Cambia los ajustes de vídeo relacionados con el HDR."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    "Sincronización"
    )
@@ -1298,7 +1336,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Introduce fotogramas negros en la imagen. Es útil para eliminar el efecto «ghosting» (fantasma) en pantallas con una frecuencia de actualización elevada."
+   "Introduce fotogramas negros en la imagen. Es útil para eliminar el efecto de imagen fantasma («ghosting») en pantallas con una frecuencia de actualización elevada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -1337,7 +1375,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "Vecino más próximo"
    )
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
    "Interpolación de imagen"
@@ -1467,6 +1505,26 @@ MSG_HASH(
    "Índice de la GPU"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   "Selecciona la tarjeta gráfica que quieras utilizar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
+   "Desplazamiento horizontal de la pantalla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
+   "Fuerza un reajuste horizontal en la señal de vídeo. Este desplazamiento se aplicará de forma global."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
+   "Desplazamiento vertical de la pantalla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
+   "Fuerza un reajuste vertical en la señal de vídeo. Este desplazamiento se aplicará de forma global."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "Frecuencia de actualización vertical"
    )
@@ -1549,7 +1607,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   "Fuerza la resolución al tamaño de la pantalla. Si el valor es 0, se utilizará uno fijo de 3840x2160."
+   "Fuerza la resolución al tamaño de la pantalla. Si el valor es 0, se utilizará uno fijo de 3840 × 2160."
    )
 
 /* Settings > Video > Windowed Mode */
@@ -1647,7 +1705,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Indica el valor en coma flotante (ancho/alto) de la relación de aspecto si se ha elegido la opción «Personalizado»."
+   "Valor en coma flotante (ancho/alto) de la relación de aspecto del vídeo si su valor es «Personalizado»."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1693,11 +1751,54 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   "Recortar «overscan» (es necesario reiniciar)"
+   "Recortar sobrebarrido (es necesario reiniciar)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    "Quita unos píxeles a los bordes de la imagen que los desarrolladores suelen dejar en blanco o con basura."
+   )
+
+/* Settings > Video > HDR */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
+   "Activar HDR"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "Activa el HDR si la pantalla es compatible con este sistema."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
+   "Luminancia máxima"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
+   "Establece la luminancia máxima (en cd/m²) que puede reproducir tu monitor. Para averiguar cuál es la luminancia máxima de tu monitor, visita la web RTings."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Luminosidad de blanco «papel»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Establece la luminancia con la que el blanco de una hoja de papel tendría un texto legible, o la luminancia máxima del rango SDR (rango dinámico estándar). Sirve para ajustarse a la variación en la iluminación de tu entorno."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
+   "Contraste"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
+   "Controla el gamma/contraste del HDR. Aumenta el rango general de colores de la imagen entre las áreas más brillantes y las más oscuras. A mayor contraste de HDR, mayor diferencia, mientras que con un contraste menor la imagen se hará más pálida. Este ajuste ayuda a calibrar la imagen a gusto del usuario."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "Ampliar gama"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "Cuando el espacio de color es convertido a espacio lineal, esta opción indica si se debería utilizar una gama de colores expandida y compatible con el formato HDR10."
    )
 
 /* Settings > Video > Synchronization */
@@ -1733,6 +1834,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    "Reduce la latencia a costa de tener un mayor riesgo de tirones. Agrega un retraso posterior a la sincronía vertical en milisegundos."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
+   "Retraso automático de fotogramas"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   "Disminuye temporalmente el retraso de fotogramas real para evitar saltos de fotogramas en el futuro. Si el valor «Retraso de fotogramas» es 0, se empezará a calcular a partir de la duración de medio fotograma."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
@@ -1800,6 +1909,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    "Sonidos del menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   "Cambia los ajustes de sonido del menú."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
@@ -2251,16 +2364,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "Activar vibración de dispositivo (en núcleos compatibles)"
    )
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
-   "Intensidad de vibración (es necesario reiniciar)"
+   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
+   "Intensidad de vibración"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN,
+   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    "Especifica la fuerza de los efectos de respuesta háptica."
    )
-#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -2306,6 +2417,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    "Asigna una combinación de botones en el mando para mostrar el menú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   "Combinación de mando para cerrar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   "Asigna una combinación de botones en el mando para cerrar RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
@@ -2516,6 +2635,22 @@ MSG_HASH(
    "Activa o desactiva el indicador de fotogramas por segundo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE,
+   "Mostrar estadísticas técnicas"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
+   "Muestra estadísticas técnicas en pantalla."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
+   "Mostrar latencia de juego en red"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
+   "Muestra el contador de latencia de la sala actual de juego en red."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
    "Enviar datos de depuración"
    )
@@ -2538,6 +2673,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
    "Cambia la sesión actual de juego en red entre los modos de jugador y espectador."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Chat del juego en red"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Envía un mensaje a la sesión actual de juego en red."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "Desvanecer chat del juego en red"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "Deja de mostrar los mensajes de chat del juego en red con o sin una animación de desvanecimiento."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
@@ -2845,6 +2996,14 @@ MSG_HASH(
 
 /* Settings > Latency */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_UNSUPPORTED,
+   "[Anticipación predictiva no disponible]"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_UNSUPPORTED,
+   "El núcleo actual no es compatible con la anticipación predictiva de latencia por no tener soporte para guardados rápidos determinísticos."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
    "Reducción anticipativa de latencia"
@@ -3263,7 +3422,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
-   "Ajusta la velocidad máxima con la que se ejecutará un contenido al usar el avance rápido (p. ej.: 5.0x para un juego de 60 fps = 300 fps). Si el valor es 0, el avance rápido irá a la máxima velocidad posible (no usará un limitador de FPS)."
+   "Ajusta la velocidad máxima con la que se ejecutará un contenido al usar el avance rápido (p. ej.: 5.0 × para un juego de 60 fps = 300 fps). Si el valor es 0, el avance rápido irá a la máxima velocidad posible (no usará un limitador de FPS)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
+   "Omitir fotogramas según el avance rápido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
+   "Omite los fotogramas según la velocidad del avance rápido. Ahorra energía y permite el uso de limitadores de fotogramas de terceros."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
@@ -3443,6 +3610,15 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
    "Las superposiciones sirven para aplicar marcos y mostrar controles en pantalla."
+   )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
+   "Mostrar superposición detrás del menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
+   "Muestra la superposición detrás del menú, en vez de delante."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
@@ -3753,6 +3929,14 @@ MSG_HASH(
    "El contador de consumo de memoria en pantalla se actualizará a la velocidad asignada en fotogramas."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
+   "Mostrar latencia de red en pantalla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
+   "Muestra la latencia de la sala actual de juego en red."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
    "Notificación al cargar un contenido"
    )
@@ -3867,6 +4051,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REFRESH_RATE,
    "Muestra un mensaje en pantalla al cambiar la frecuencia de actualización."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "Notificaciones adicionales de juego en red"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "Muestra mensajes en pantalla de baja importancia sobre el juego en red."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "Limitar las notificaciones al menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "Muestra las notificaciones únicamente cuando se haya abierto el menú."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
@@ -4178,6 +4378,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
    "Muestra la opción «Volcar disco» en el menú principal."
    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
+   "Mostrar Expulsar disco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
+   "Muestra la opción «Expulsar disco» en el menú principal."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
    "Mostrar Actualizador en línea"
@@ -4500,6 +4710,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
    "Muestra la opción «Opciones»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "Mostrar Escribir opciones en disco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "Muestra la opción «Escribir opciones en disco» dentro del menú Opciones -> Administrar opciones del núcleo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
@@ -5042,6 +5260,14 @@ MSG_HASH(
    "Elige un servidor intermediario concreto. Las ubicaciones más cercanas geográficamente hablando suelen tener una latencia más baja."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
+   "Dirección del servidor intermediario personalizado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
+   "Aquí puedes introducir la dirección de tu servidor intermediario personalizado. Formato: dirección o dirección|puerto."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
    "Dirección del servidor"
    )
@@ -5056,6 +5282,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
    "Indica el puerto del servidor a conectar. Puede ser TCP o UDP."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
+   "Conexiones simultáneas"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
+   "Indica el número máximo de conexiones activas que admitirá el servidor antes de rechazar cualquier otra nueva."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_PING,
+   "Límite de latencia"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
+   "Indica la latencia (ping) máxima que aceptará el servidor de otras conexiones. Selecciona 0 para desactivar el límite."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
@@ -5080,6 +5322,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
    "Inicia una sesión de juego en red en modo espectador."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
+   "Desvanecer chat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT,
+   "Hace desaparecer los mensajes de chat al cabo de un tiempo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
+   "Permitir pausar la partida"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
+   "Permite que los jugadores pausen la partida durante una sesión de juego en red."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -5324,6 +5582,14 @@ MSG_HASH(
    "Muestra información adicional sobre cada elemento de las listas de reproducción, como el núcleo asociado y el tiempo transcurrido (si está disponible). Afecta al rendimiento de forma variable."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
+   "Mostrar iconos específicos de los contenidos en el historial y los favoritos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_HISTORY_ICONS,
+   "Muestra iconos específicos para cada elemento de las listas de reproducción del historial y los favoritos. Afecta al rendimiento de forma variable."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    "Núcleo:"
    )
@@ -5433,6 +5699,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
    "Confirma las asociaciones a núcleos y elimina los elementos no válidos y duplicados."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "Actualizar lista de reproducción"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "Añade contenidos nuevos y elimina los elementos no válidos repitiendo la última operación de búsqueda manual con la que se creó o modificó la lista de reproducción."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
@@ -5859,12 +6133,24 @@ MSG_HASH(
    "Desconecta una sesión activa de juego en red."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
+   "Mostrar solo salas accesibles"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
    "Actualizar lista de servidores de juego en red"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
    "Busca servidores de juego en red."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
+   "Actualizar lista de servidores LAN de juego en red"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
+   "Busca servidores de juego en red en la red local."
    )
 
 /* Netplay > Host */
@@ -6007,6 +6293,14 @@ MSG_HASH(
    "Si se activa esta opción, se eliminará cualquier lista de reproducción existente antes de buscar contenidos. Al desactivarla, se preservarán los elementos ya existentes en las listas de reproducción y solo se añadirán aquellos contenidos que no se encuentren."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   "Validar elementos ya existentes"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   "Al activar esta opción, se comprobarán los elementos de todas las listas de reproducción existentes antes de buscar contenidos nuevos. Todo elemento que apunte a un contenido desaparecido o a archivos con extensiones no válidas será eliminado."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
    "Comenzar búsqueda"
    )
@@ -6016,6 +6310,10 @@ MSG_HASH(
    )
 
 /* Explore tab */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST,
+   "Inicializando lista..."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
    "Año de lanzamiento"
@@ -6401,6 +6699,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
    "Cambia todas las opciones del núcleo a su configuración predeterminada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
+   "Escribir opciones en disco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
+   "Obliga a que se guarden los ajustes actuales al archivo activo de opciones, garantizando que se conserve la configuración en caso de que un fallo en el núcleo provoque un cierre inesperado del front-end."
    )
 
 /* - Legacy (unused) */
@@ -7590,6 +7896,14 @@ MSG_HASH(
    "Más cercano"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAIN,
+   "Principal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT,
+   "Contenido"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR,
    "<Directorio de contenidos>"
    )
@@ -8243,6 +8557,10 @@ MSG_HASH(
    "Reduce el tamaño de las miniaturas indicando un ancho máximo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
+   "Fundido vertical"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
    "Mostrar la sección de Ajustes (es necesario reiniciar)"
    )
@@ -8437,6 +8755,14 @@ MSG_HASH(
    "Drácula"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
+   "Solarized (oscuro)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT,
+   "Solarizado (claro)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
    "Segunda miniatura"
    )
@@ -8612,7 +8938,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_CYAN,
-   "Cutie turquesa"
+   "Cutie cian"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_GREEN,
@@ -9325,6 +9651,10 @@ MSG_HASH(
    "Puerto"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
+   "Nombre del dispositivo del puerto %d: %s (n.º %d)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
    "Ajustes de trucos"
    )
@@ -9878,11 +10208,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM,
-   "Conexión recibida desde: \"%s\""
+   "Conexión recibida desde: «%s»"
    )
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM_NAME,
-   "Conexión recibida desde: \"%s (%s)\""
+   "Conexión recibida desde: «%s (%s)»"
    )
 MSG_HASH(
    MSG_PUBLIC_ADDRESS,
@@ -9903,6 +10233,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Esperando al cliente..."
+   )
+MSG_HASH(
+   MSG_ROOM_NOT_CONNECTABLE,
+   "Tu sala no está conectada a internet."
    )
 MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
@@ -9959,6 +10293,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
    "Introduce la contraseña del servidor de juego en red:"
+   )
+MSG_HASH(
+   MSG_NETPLAY_ENTER_CHAT,
+   "Escribe el mensaje para la sesión:"
    )
 MSG_HASH(
    MSG_DISCORD_CONNECTION_REQUEST,
@@ -10109,6 +10447,30 @@ MSG_HASH(
    "Se ha limpiado la lista de reproducción: "
    )
 MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_MISSING_CONFIG,
+   "Error al actualizar, la lista de reproducción no contiene un historial de búsqueda válido: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
+   "Error al actualizar, el directorio de contenidos no es válido o no existe: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_SYSTEM_NAME,
+   "Error al actualizar, el nombre del sistema no es válido o no existe: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CORE,
+   "Error al actualizar, el núcleo no es válido: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_DAT_FILE,
+   "Error al actualizar, el archivo DAT de arcade no es válido o no existe: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE,
+   "Error al actualizar, el archivo DAT de arcade es demasiado grande (no hay suficiente memoria): "
+   )
+MSG_HASH(
    MSG_ADDED_TO_FAVORITES,
    "Favorito agregado"
    )
@@ -10209,6 +10571,10 @@ MSG_HASH(
    "El CRC32 de los contenidos no es idéntico. No se pueden usar juegos distintos."
    )
 MSG_HASH(
+   MSG_PING_TOO_HIGH,
+   "Tu nivel de latencia (ping) es demasiado elevado para este servidor."
+   )
+MSG_HASH(
    MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
    "Carga de contenido omitida. La implementación lo cargará por su cuenta."
    )
@@ -10227,6 +10593,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_OPTIONS_RESET,
    "Todas las opciones del núcleo han sido restablecidas."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSHED,
+   "Se han guardado las opciones del núcleo en:"
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSH_FAILED,
+   "Error al guardar las opciones del núcleo en:"
    )
 MSG_HASH(
    MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
@@ -10286,11 +10660,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DISK_CLOSED,
-   "Cerrando"
+   "Se ha cerrado la bandeja de disco virtual."
    )
 MSG_HASH(
    MSG_DISK_EJECTED,
-   "Expulsando"
+   "Se ha abierto la bandeja de disco virtual."
    )
 MSG_HASH(
    MSG_DOWNLOADING,
@@ -10355,10 +10729,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_SAVING_CONFIG_TO,
    "Error al guardar configuración en"
-   )
-MSG_HASH(
-   MSG_FAILED_TO,
-   "Error:"
    )
 MSG_HASH(
    MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
@@ -10453,6 +10823,10 @@ MSG_HASH(
    "Error al guardar la SRAM"
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD_SRAM,
+   "Error al cargar la SRAM"
+   )
+MSG_HASH(
    MSG_FAILED_TO_SAVE_STATE_TO,
    "Error a crear un guardado rápido en"
    )
@@ -10538,11 +10912,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Opciones de núcleo]: se han encontrado opciones personalizadas según juego en"
+   "Se han encontrado opciones personalizadas según juego en"
    )
 MSG_HASH(
    MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "[Opciones de núcleo]: se han encontrado opciones personalizadas según directorio en"
+   "Se han encontrado opciones personalizadas según directorio en"
    )
 MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,
@@ -10705,10 +11079,6 @@ MSG_HASH(
    "Leyendo la primera pista de datos..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "recibido"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "Grabación terminada debido al cambio de tamaño."
    )
@@ -10771,6 +11141,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWINDING,
    "Rebobinando."
+   )
+MSG_HASH(
+   MSG_REWIND_UNSUPPORTED,
+   "El rebobinado no está disponible porque este núcleo no tiene soporte para guardados rápidos serializados."
    )
 MSG_HASH(
    MSG_REWIND_INIT,
@@ -10922,7 +11296,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNRECOGNIZED_COMMAND,
-   "Comando no reconocido"
+   "Se ha recibido un comando no reconocido: «%s».\n"
    )
 MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
@@ -10957,24 +11331,20 @@ MSG_HASH(
    "¡Error al calcular el tamaño del área de visualización! Se continuará utilizando datos en bruto. Probablemente no funcionará bien..."
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "la bandeja de discos virtual."
-   )
-MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "expulsar"
+   "Error al abrir la bandeja de discos virtual."
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "cerrar"
+   "Error al cerrar la bandeja de discos virtual."
    )
 MSG_HASH(
-   MSG_FAILED,
-   "fallida"
+   MSG_AUTOLOADING_SAVESTATE_FAILED,
+   "Error al cargar automáticamente el guardado rápido «%s»."
    )
 MSG_HASH(
-   MSG_SUCCEEDED,
-   "completada"
+   MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
+   "Se ha cargado automáticamente el guardado rápido «%s»."
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -10987,6 +11357,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,
    "Búsqueda de Bluetooth finalizada."
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_PAIRING_REMOVED,
+   "Emparejamiento desconectado. Reinicia RetroArch para volver a conectar o emparejar."
    )
 MSG_HASH(
    MSG_WIFI_SCAN_COMPLETE,
@@ -11075,6 +11449,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "La anticipación predictiva ha sido desactivada porque este núcleo no es compatible con guardados rápidos."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD,
+   "La anticipación predictiva no está disponible porque este núcleo no tiene soporte para guardados rápidos determinísticos."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
@@ -11177,12 +11555,40 @@ MSG_HASH(
    "Error al asignar el último disco usado..."
    )
 MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   "Error al conectarse al cliente."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "Error al conectarse al servidor."
+   )
+MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "El servidor de juego en red está lleno."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "Error al recibir el encabezado del servidor."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
+   "Debes pausar o desactivar el modo de logros Hardcore para poder cargar un guardado rápido."
+   )
+MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    "Se ha cargado un guardado rápido. Los logros Hardcore han sido desactivados para esta sesión."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
    "Se ha activado un truco. Los logros Hardcore han sido desactivados para esta sesión."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_MASTERED_GAME,
+   "Has dominado %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_COMPLETED_GAME,
+   "Has completado %s"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
@@ -11267,6 +11673,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,
    "Buscando contenido: "
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP,
+   "Comprobando los elementos actuales: "
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
@@ -11368,6 +11778,22 @@ MSG_HASH(
    MSG_CORE_INFO_CACHE_UNSUPPORTED,
    "No se puede escribir en el directorio de información del núcleo: se desactivará la caché de información del núcleo"
    )
+MSG_HASH(
+   MSG_FOUND_ENTRY_STATE_IN,
+   "Se ha encontrado un elemento de guardado rápido en"
+   )
+MSG_HASH(
+   MSG_LOADING_ENTRY_STATE_FROM,
+   "Cargando elemento de guardado rápido de"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE,
+   "Error al acceder a GameMode"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
+   "Error al acceder a GameMode: comprueba que el servicio de GameMode esté instalado y ejecutándose"
+   )
 
 /* Lakka */
 
@@ -11395,10 +11821,6 @@ MSG_HASH(
    "Joy-Con separados"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-   "Estado del almacenamiento interno"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
    "Personalizar escala de widgets gráficos"
    )
@@ -11409,6 +11831,54 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
    "Resolución de pantalla"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_FORMAT_NO_DESC,
+   "%u × %u"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_FORMAT_DESC,
+   "%u × %u - %s"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DEFAULT,
+   "Resolución de pantalla: predeterminada"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_NO_DESC,
+   "Resolución de pantalla: %d × %d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DESC,
+   "Resolución de pantalla: %d × %d - %s"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
+   "Aplicando: predeterminada"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
+   "Aplicando: %d × %d\nSTART para restablecer"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DESC,
+   "Aplicando: %d × %d - %s\nSTART para restablecer"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
+   "Restableciendo a: predeterminada"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC,
+   "Restableciendo a: %d × %d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DESC,
+   "Restableciendo a: %d × %d - %s"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
+   "Selecciona el modo de vídeo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
@@ -11480,19 +11950,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
-   "Corrección de «overscan» (superior)"
+   "Corrección de sobrebarrido (superior)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
-   "Ajusta el recorte del «overscan» reduciendo un número concreto de líneas (a partir de la parte superior de la pantalla). Puede provocar defectos de escalado."
+   "Ajusta el recorte del sobrebarrido de la imagen quitando un número concreto de líneas de barrido (a partir de la parte superior de la pantalla). Puede provocar defectos de escalado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
-   "Corrección de «overscan» (inferior)"
+   "Corrección de sobrebarrido (inferior)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
-   "Ajusta el recorte del «overscan» reduciendo un número concreto de líneas (a partir de la parte inferior de la pantalla). Puede provocar defectos de escalado."
+   "Ajusta el recorte del sobrebarrido de la imagen quitando un número concreto de líneas de barrido (a partir de la parte inferior de la pantalla). Puede provocar defectos de escalado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
@@ -11583,6 +12053,14 @@ MSG_HASH(
    "Regulador de menús"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
+   "Modo de juego"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
+   "Puede mejorar el rendimiento, reducir la latencia y corregir chasquidos en el audio. Es necesario tener instalado https://github.com/FeralInteractive/gamemode ."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "Usar modo PAL60"
    )
@@ -11643,16 +12121,24 @@ MSG_HASH(
    "Muestra la opción «Apagar»."
    )
 MSG_HASH(
+   MSG_ROOM_PASSWORDED,
+   "Con contraseña"
+   )
+MSG_HASH(
    MSG_INTERNET_RELAY,
-   "Internet (relé)"
+   "Internet (servidor intermediario)"
+   )
+MSG_HASH(
+   MSG_INTERNET_NOT_CONNECTABLE,
+   "Internet (no hay conexión)"
    )
 MSG_HASH(
    MSG_READ_WRITE,
-   "Lectura/escritura"
+   "Estado del almacenamiento interno: lectura/escritura"
    )
 MSG_HASH(
    MSG_READ_ONLY,
-   "Solo lectura"
+   "Estado del almacenamiento interno: solo lectura"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
@@ -11666,7 +12152,7 @@ MSG_HASH(
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
-   "Overclockear GPU"
+   "Acelerar GPU"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
@@ -11676,11 +12162,11 @@ MSG_HASH(
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
-   "Overclockear CPU"
+   "Acelerar CPU"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
-   "Acelera la CPU de Switch."
+   "Aumenta la velocidad de la CPU de Switch."
    )
 #endif
 #ifdef HAVE_LAKKA
@@ -11768,7 +12254,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
-   "Ajusta la escala X/Y para la velocidad de las «lightguns» o pistolas usando el mando de Wii."
+   "Ajusta la escala X/Y para la velocidad de las pistolas usando el mando de Wii."
    )
 #endif
 MSG_HASH(
@@ -11822,6 +12308,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
    "2D (alta resolución)"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_DEFAULT,
+   "Toca aquí para acceder\nal menú de RetroArch"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
+   "No se ha encontrado\nel archivo bottom_menu.png\nen la carpeta assets/ctr."
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
+   "No hay datos"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
+   "No hay\ncapturas\nde pantalla"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_RESUME,
+   "Continuar"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_SAVE_STATE,
+   "Crear\npunto de\nrestauración"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_LOAD_STATE,
+   "Cargar\npunto de\nrestauración"
    )
 #endif
 #ifdef HAVE_QT

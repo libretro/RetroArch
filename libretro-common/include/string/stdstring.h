@@ -130,6 +130,25 @@ static INLINE bool string_is_equal_case_insensitive(const char *a,
    return (result == 0);
 }
 
+static INLINE bool string_starts_with_case_insensitive(const char *str,
+      const char *prefix)
+{
+   int result              = 0;
+   const unsigned char *p1 = (const unsigned char*)str;
+   const unsigned char *p2 = (const unsigned char*)prefix;
+
+   if (!str || !prefix)
+      return false;
+   if (p1 == p2)
+      return true;
+
+   while ((result = tolower (*p1++) - tolower (*p2)) == 0)
+      if (*p2++ == '\0')
+         break;
+
+   return (result == 0 || *p2 == '\0');
+}
+
 char *string_to_upper(char *s);
 
 char *string_to_lower(char *s);
@@ -244,6 +263,24 @@ char *string_init(const char *src);
 void string_set(char **string, const char *src);
 
 extern const unsigned char lr_char_props[256];
+
+/* Get the total number of occurrences of a character in the given string. */
+int string_count_occurrences_single_character(char *str, char t);
+
+/* Replaces all spaces with the given character. */
+void string_replace_whitespace_with_single_character(char *str, char t);
+
+/* Replaces multiple spaces with a single space in a string. */
+void string_replace_multi_space_with_single_space(char *str);
+
+/* Remove all spaces from the given string. */
+void string_remove_all_whitespace(char* str_trimmed, const char* str_untrimmed);
+
+/* Retrieve the last occurance of the given character in a string. */
+int string_index_last_occurance(char str[], char t);
+
+/* Find the position of a substring in a string. */
+int string_find_index_substring_string(const char* str1, const char* str2);
 
 RETRO_END_DECLS
 

@@ -23,8 +23,9 @@
 #endif
 
 #include "../../configuration.h"
+#include "../../gfx/video_defines.h"
+#include "../../gfx/video_driver.h"
 #include "../../verbosity.h"
-#include "../common/gl_common.h"
 
 #include "SDL.h"
 
@@ -86,7 +87,9 @@ static void sdl_ctx_destroy(void *data)
       return;
 
    sdl_ctx_destroy_resources(sdl);
+#ifndef WEBOS
    if (sdl->subsystem_inited)
+#endif
       SDL_QuitSubSystem(SDL_INIT_VIDEO);
    free(sdl);
 }
@@ -374,7 +377,12 @@ static bool sdl_ctx_has_focus(void *data)
 
 #ifdef HAVE_SDL2
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
+#ifdef WEBOS
+   // We do not receive mouse focus when non-magic remote is used.
+   flags = (SDL_WINDOW_INPUT_FOCUS);
+#else
    flags = (SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS);
+#endif
    return (SDL_GetWindowFlags(sdl->win) & flags) == flags;
 #else
    flags = (SDL_APPINPUTFOCUS | SDL_APPACTIVE);

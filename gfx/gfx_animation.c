@@ -55,8 +55,29 @@
  *   from one line to the next */
 #define TICKER_LINE_SMOOTH_SCROLL_TICKS(line_len) ((size_t)(TICKER_LINE_DURATION_MS(line_len) / TICKER_PIXEL_PERIOD))
 
-/* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
+static gfx_animation_t anim_st = {
+   0,      /* ticker_idx            */
+   0,      /* ticker_slow_idx       */
+   0,      /* ticker_pixel_idx      */
+   0,      /* ticker_pixel_line_idx */
+   0,      /* cur_time              */
+   0,      /* old_time              */
+   NULL,   /* updatetime_cb         */
+   NULL,   /* list                  */
+   NULL,   /* pending               */
+   0.0f,   /* delta_time            */
+   false,  /* pending_deletes       */
+   false,  /* in_update             */
+   false,  /* animation_is_active   */
+   false   /* ticker_is_active      */
+};
 
+gfx_animation_t *anim_get_ptr(void)
+{
+   return &anim_st;
+}
+
+/* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
 static float easing_linear(float t, float b, float c, float d)
 {
    return c * t / d + b;
@@ -993,7 +1014,7 @@ void gfx_animation_push_delayed(
 bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
 {
    struct tween t;
-   gfx_animation_t *p_anim = anim_get_ptr();
+   gfx_animation_t *p_anim = &anim_st;
 
    t.duration           = entry->duration;
    t.running_since      = 0;
@@ -1132,7 +1153,6 @@ bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
 }
 
 bool gfx_animation_update(
-      gfx_animation_t *p_anim,
       retro_time_t current_time,
       bool timedate_enable,
       float _ticker_speed,
@@ -1140,6 +1160,7 @@ bool gfx_animation_update(
       unsigned video_height)
 {
    unsigned i;
+   gfx_animation_t *p_anim                     = &anim_st;
    const bool ticker_is_active                 = p_anim->ticker_is_active;
 
    static retro_time_t last_clock_update       = 0;
@@ -1369,7 +1390,7 @@ static void build_line_ticker_string(
 
 bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
 {
-   gfx_animation_t *p_anim = anim_get_ptr();
+   gfx_animation_t *p_anim = &anim_st;
    size_t str_len          = utf8len(ticker->str);
 
    if (!ticker->spacer)
@@ -1606,7 +1627,7 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
    const char *str_ptr          = NULL;
    bool success                 = false;
    bool is_active               = false;
-   gfx_animation_t *p_anim      = anim_get_ptr();
+   gfx_animation_t *p_anim      = &anim_st;
 
    /* Sanity check */
    if (string_is_empty(ticker->src_str) ||
@@ -1837,7 +1858,7 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
    size_t line_offset           = 0;
    bool success                 = false;
    bool is_active               = false;
-   gfx_animation_t *p_anim      = anim_get_ptr();
+   gfx_animation_t *p_anim      = &anim_st;
 
    /* Sanity check */
    if (!line_ticker)
@@ -1940,7 +1961,7 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
    bool fade_active               = false;
    bool success                   = false;
    bool is_active                 = false;
-   gfx_animation_t *p_anim        = anim_get_ptr();
+   gfx_animation_t *p_anim        = &anim_st;
    const char *wideglyph_str      = msg_hash_get_wideglyph_str();
    int wideglyph_width            = 100;
    void (*word_wrap_func)(char *dst, size_t dst_size, const char *src,
@@ -2136,7 +2157,7 @@ end:
 bool gfx_animation_kill_by_tag(uintptr_t *tag)
 {
    unsigned i;
-   gfx_animation_t *p_anim = anim_get_ptr();
+   gfx_animation_t *p_anim = &anim_st;
 
    if (!tag || *tag == (uintptr_t)-1)
       return false;
@@ -2188,8 +2209,9 @@ bool gfx_animation_kill_by_tag(uintptr_t *tag)
    return true;
 }
 
-void gfx_animation_deinit(gfx_animation_t *p_anim)
+void gfx_animation_deinit(void)
 {
+   gfx_animation_t *p_anim = &anim_st;
    if (!p_anim)
       return;
    RBUF_FREE(p_anim->list);

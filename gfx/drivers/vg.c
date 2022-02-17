@@ -145,7 +145,7 @@ static void *vg_init(const video_info_t *video,
    temp_width  = mode_width;
    temp_height = mode_height;
 
-   RARCH_LOG("[VG]: Detecting screen resolution %ux%u.\n", temp_width, temp_height);
+   RARCH_LOG("[VG]: Detecting screen resolution: %ux%u.\n", temp_width, temp_height);
 
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(temp_width, temp_height);
@@ -288,9 +288,9 @@ static void *vg_init(const video_info_t *video,
    return vg;
 
 error:
+   video_context_driver_free();
    if (vg)
       free(vg);
-   video_context_driver_destroy();
    return NULL;
 }
 

@@ -17,7 +17,7 @@
 #include <stdint.h>
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include "../../config.h"
 #endif
 
 #include <sys/spu_initialize.h>
@@ -30,6 +30,7 @@
 #include <defines/ps3_defines.h>
 #include "../../frontend/frontend_driver.h"
 #include "../common/gl_common.h"
+#include "../common/gl2_common.h"
 
 typedef struct gfx_ctx_ps3_data
 {
@@ -141,16 +142,16 @@ static void gfx_ctx_ps3_set_swap_interval(void *data, int interval)
 {
 #if defined(HAVE_PSGL)
    if (interval == 1)
-      glEnable(GL_VSYNC_SCE);
+      gl_enable(GL_VSYNC_SCE);
    else
-      glDisable(GL_VSYNC_SCE);
+      gl_disable(GL_VSYNC_SCE);
 #endif
 }
 
 static void gfx_ctx_ps3_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
-   gl_t *gl = data;
+   gl2_t *gl = data;
 
    *quit    = false;
    *resize  = false;
@@ -311,7 +312,7 @@ static bool gfx_ctx_ps3_bind_api(void *data,
 }
 
 static void gfx_ctx_ps3_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
    global_t *global = global_get_ptr();
 

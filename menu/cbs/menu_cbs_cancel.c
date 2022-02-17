@@ -18,6 +18,7 @@
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
+#include "../../audio/audio_driver.h"
 #include "../../configuration.h"
 #include "../../msg_hash.h"
 #ifdef HAVE_CHEATS
@@ -35,7 +36,7 @@ int action_cancel_pop_default(const char *path,
    size_t new_selection_ptr;
    const char *menu_label                = NULL;
    unsigned menu_type                    = MENU_SETTINGS_NONE;
-   menu_serch_terms_t *menu_search_terms = menu_entries_search_get_terms();
+   menu_search_terms_t *menu_search_terms= menu_entries_search_get_terms();
 #ifdef HAVE_AUDIOMIXER
    settings_t *settings                  = config_get_ptr();
    bool audio_enable_menu                = settings->bools.audio_enable_menu;
@@ -109,7 +110,8 @@ static int action_cancel_core_content(const char *path,
 
    if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST)))
    {
-      menu_serch_terms_t *menu_search_terms = menu_entries_search_get_terms();
+      menu_search_terms_t *menu_search_terms = 
+         menu_entries_search_get_terms();
 
       /* Check whether search terms have been set
        * > If so, remove the last search term */
@@ -137,6 +139,8 @@ static int action_cancel_core_content(const char *path,
       menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER), 0);
    else if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST)))
       menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER), 0);
+   else if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_SYSTEM_FILES_LIST)))
+      menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER), 0);
    else
       menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ADD_CONTENT_LIST), 0);
 
@@ -155,6 +159,7 @@ static int menu_cbs_init_bind_cancel_compare_type(
    switch (type)
    {
       case FILE_TYPE_DOWNLOAD_CORE_CONTENT:
+      case FILE_TYPE_DOWNLOAD_CORE_SYSTEM_FILES:
       case FILE_TYPE_DOWNLOAD_URL:
       case FILE_TYPE_DOWNLOAD_CORE:
          BIND_ACTION_CANCEL(cbs, action_cancel_core_content);

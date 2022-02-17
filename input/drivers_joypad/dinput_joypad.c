@@ -56,6 +56,7 @@ input_device_driver_t dinput_joypad = {
    dinput_joypad_axis,
    dinput_joypad_poll,
    dinput_joypad_set_rumble,
+   NULL,
    dinput_joypad_name,
    "dinput",
 };

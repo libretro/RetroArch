@@ -21,6 +21,10 @@
 
 #include <string/stdstring.h>
 
+#ifdef HAVE_LIBDECOR
+#include <libdecor.h>
+#endif
+
 #include "wayland_common.h"
 
 #include "../input_keymaps.h"
@@ -61,6 +65,9 @@ static void keyboard_handle_leave(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    wl->input.keyboard_focus   = false;
+
+   // Release all keys
+   memset(wl->input.key_state, 0, sizeof(wl->input.key_state));
 }
 
 static void keyboard_handle_key(void *data,
@@ -158,12 +165,13 @@ static void pointer_handle_enter(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   wl->input.mouse.last_x = wl_fixed_to_int(sx * (wl_fixed_t)wl->buffer_scale);
-   wl->input.mouse.last_y = wl_fixed_to_int(sy * (wl_fixed_t)wl->buffer_scale);
-   wl->input.mouse.x      = wl->input.mouse.last_x;
-   wl->input.mouse.y      = wl->input.mouse.last_y;
-   wl->input.mouse.focus  = true;
-   wl->cursor.serial      = serial;
+   wl->input.mouse.surface = surface;
+   wl->input.mouse.last_x  = wl_fixed_to_int(sx * (wl_fixed_t)wl->buffer_scale);
+   wl->input.mouse.last_y  = wl_fixed_to_int(sy * (wl_fixed_t)wl->buffer_scale);
+   wl->input.mouse.x       = wl->input.mouse.last_x;
+   wl->input.mouse.y       = wl->input.mouse.last_y;
+   wl->input.mouse.focus   = true;
+   wl->cursor.serial       = serial;
 
    gfx_ctx_wl_show_mouse(data, wl->cursor.visible);
 }
@@ -175,6 +183,12 @@ static void pointer_handle_leave(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    wl->input.mouse.focus      = false;
+   wl->input.mouse.left       = false;
+   wl->input.mouse.right      = false;
+   wl->input.mouse.middle     = false;
+
+   if (wl->input.mouse.surface == surface)
+      wl->input.mouse.surface = NULL;
 }
 
 static void pointer_handle_motion(void *data,
@@ -199,6 +213,9 @@ static void pointer_handle_button(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
+   if (wl->input.mouse.surface != wl->surface)
+      return;
+
    if (state == WL_POINTER_BUTTON_STATE_PRESSED)
    {
       switch (button)
@@ -208,10 +225,11 @@ static void pointer_handle_button(void *data,
 
             if (BIT_GET(wl->input.key_state, KEY_LEFTALT))
             {
-               if (wl->xdg_toplevel)
-                  xdg_toplevel_move(wl->xdg_toplevel, wl->seat, serial);
-               else if (wl->zxdg_toplevel)
-                  zxdg_toplevel_v6_move(wl->zxdg_toplevel, wl->seat, serial);
+#ifdef HAVE_LIBDECOR
+               libdecor_frame_move(wl->libdecor_frame, wl->seat, serial);
+#else
+               xdg_toplevel_move(wl->xdg_toplevel, wl->seat, serial);
+#endif
             }
             break;
          case BTN_RIGHT:
@@ -243,9 +261,26 @@ static void pointer_handle_axis(void *data,
       struct wl_pointer *wl_pointer,
       uint32_t time,
       uint32_t axis,
-      wl_fixed_t value) { }
-
-/* TODO: implement check for resize */
+      wl_fixed_t value) {
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   double dvalue = wl_fixed_to_double(value);
+   switch (axis) {
+      case WL_POINTER_AXIS_VERTICAL_SCROLL:
+         if (dvalue < 0) {
+            wl->input.mouse.wu = true;
+         } else if (dvalue > 0) {
+            wl->input.mouse.wd = true;
+         }
+         break;
+      case WL_POINTER_AXIS_HORIZONTAL_SCROLL:
+         if (dvalue < 0) {
+            wl->input.mouse.wl = true;
+         } else if (dvalue > 0) {
+            wl->input.mouse.wr = true;
+         }
+         break;
+   }
+}
 
 static void touch_handle_down(void *data,
       struct wl_touch *wl_touch,
@@ -429,6 +464,8 @@ static void wl_surface_enter(void *data, struct wl_surface *wl_surface,
     output_info_t *oi;
     gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
+    wl->input.mouse.surface = wl_surface;
+
     /* TODO: track all outputs the surface is on, pick highest scale */
 
     wl_list_for_each(oi, &wl->all_outputs, link)
@@ -457,31 +494,11 @@ static void handle_surface_config(void *data, struct xdg_surface *surface,
     xdg_surface_ack_configure(surface, serial);
 }
 
-static void zxdg_shell_ping(void *data,
-      struct zxdg_shell_v6 *shell, uint32_t serial)
-{
-    zxdg_shell_v6_pong(shell, serial);
-}
-
-static void handle_zxdg_surface_config(void *data,
-      struct zxdg_surface_v6 *surface,
-      uint32_t serial)
-{
-    zxdg_surface_v6_ack_configure(surface, serial);
-}
-
 void handle_toplevel_close(void *data,
       struct xdg_toplevel *xdg_toplevel)
 {
 	gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-	BIT_SET(wl->input.key_state, KEY_ESC);
-}
-
-void handle_zxdg_toplevel_close(void *data,
-      struct zxdg_toplevel_v6 *zxdg_toplevel)
-{
-	gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-	BIT_SET(wl->input.key_state, KEY_ESC);
+	command_event(CMD_EVENT_QUIT, NULL);
 }
 
 static void display_handle_geometry(void *data,
@@ -549,9 +566,6 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
    else if (string_is_equal(interface, "xdg_wm_base"))
       wl->xdg_shell = (struct xdg_wm_base*)
          wl_registry_bind(reg, id, &xdg_wm_base_interface, 1);
-   else if (string_is_equal(interface, "zxdg_shell_v6"))
-      wl->zxdg_shell = (struct zxdg_shell_v6*)
-         wl_registry_bind(reg, id, &zxdg_shell_v6_interface, 1);
    else if (string_is_equal(interface, "wl_shm"))
       wl->shm = (struct wl_shm*)wl_registry_bind(reg, id, &wl_shm_interface, 1);
    else if (string_is_equal(interface, "wl_seat"))
@@ -595,14 +609,6 @@ const struct wl_output_listener output_listener = {
    display_handle_mode,
    display_handle_done,
    display_handle_scale,
-};
-
-const struct zxdg_shell_v6_listener zxdg_shell_v6_listener = {
-    zxdg_shell_ping,
-};
-
-const struct zxdg_surface_v6_listener zxdg_surface_v6_listener = {
-    handle_zxdg_surface_config,
 };
 
 const struct xdg_wm_base_listener xdg_shell_listener = {

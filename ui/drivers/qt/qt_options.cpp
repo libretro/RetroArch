@@ -264,7 +264,8 @@ UserBindsPage::UserBindsPage(QObject *parent) :
 QWidget *UserBindsPage::widget()
 {
    unsigned p, retro_id;
-   unsigned max_users    = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+   settings_t *settings      = config_get_ptr();
+   unsigned max_users    = settings->uints.input_max_users;
    QWidget *widget       = new QWidget;
    QGridLayout *layout   = new QGridLayout;
    QComboBox *userCombo  = new QComboBox;
@@ -286,7 +287,7 @@ QWidget *UserBindsPage::widget()
             (const struct retro_keybind*)
             input_config_get_bind_auto(p, retro_id);
 
-         input_config_get_bind_string(descriptor,
+         input_config_get_bind_string(settings, descriptor,
             keybind, auto_bind, sizeof(descriptor));
 
          const struct retro_keybind *keyptr =
@@ -411,10 +412,14 @@ QWidget *NetplayPage::widget()
 
    checksLayout->add(MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE);
    checksLayout->add(MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR);
+   checksLayout->add(MENU_ENUM_LABEL_NETPLAY_FADE_CHAT);
+   checksLayout->add(MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING);
    checksLayout->add(MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS);
 
    serverForm->add(MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS);
    serverForm->add(MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT);
+   serverForm->add(MENU_ENUM_LABEL_NETPLAY_MAX_CONNECTIONS);
+   serverForm->add(MENU_ENUM_LABEL_NETPLAY_MAX_PING);
    serverForm->add(MENU_ENUM_LABEL_NETPLAY_PASSWORD);
    serverForm->add(MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD);
    serverForm->add(MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL);
@@ -493,6 +498,8 @@ QGroupBox *NetplayPage::createMitmServerGroup()
       groupBox->addRow(radioButton);
    }
 
+   groupBox->add(MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER);
+
    connect(buttonGroup, SIGNAL(buttonClicked(int)),
          this, SLOT(onRadioButtonClicked(int)));
 
@@ -558,6 +565,7 @@ QWidget *NotificationsPage::widget()
    notificationsGroup->add(MENU_ENUM_LABEL_MEMORY_SHOW);
    notificationsGroup->add(MENU_ENUM_LABEL_MEMORY_UPDATE_INTERVAL);
    notificationsGroup->add(MENU_ENUM_LABEL_STATISTICS_SHOW);
+   notificationsGroup->add(MENU_ENUM_LABEL_NETPLAY_PING_SHOW);
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_FONT_PATH);
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_FONT_SIZE);
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X);
@@ -592,6 +600,8 @@ QWidget *NotificationsPage::widget()
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION);
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH);
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_REFRESH_RATE);
+   notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA);
+   notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE);
 
    layout->addWidget(notificationsGroup);
 
@@ -1228,7 +1238,14 @@ QWidget *VideoPage::widget()
    QHBoxLayout *windowedCustomSizeLayout   = new QHBoxLayout;
    FormLayout *leftWindowedCustomSizeForm  = new FormLayout;
    FormLayout *rightWindowedCustomSizeForm = new FormLayout;
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    CheckableSettingsGroup *savePosGroup    = new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION);
+#else
+   CheckableSettingsGroup *savePosGroup    = new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE);
+#endif
+
+   SettingsGroup *hdrGroup             = new SettingsGroup("HDR");
+   QHBoxLayout *hdrLayout              = new QHBoxLayout;
 
    SettingsGroup *syncGroup            = new SettingsGroup("Synchronization");
    CheckableSettingsGroup *vSyncGroup  = new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_VSYNC);
@@ -1302,7 +1319,14 @@ QWidget *VideoPage::widget()
 
    windowedGroup->add(MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS);
 
+   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_ENABLE);
+   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS);
+   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS);
+   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST);
+   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT);
+
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL);
+   vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION);
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC);
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY);
    syncGroup->addRow(vSyncGroup);
@@ -1322,11 +1346,12 @@ QWidget *VideoPage::widget()
 
    miscGroup->add(MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_THREADED);
-   miscGroup->add(MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_SMOOTH);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_CTX_SCALING);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_DELAY);
+
+   hdrLayout->addWidget(hdrGroup);
 
    syncMiscLayout->addWidget(syncGroup);
    syncMiscLayout->addWidget(miscGroup);
@@ -1343,6 +1368,7 @@ QWidget *VideoPage::widget()
 
    layout->addLayout(outputScalingLayout);
    layout->addLayout(modeLayout);
+   layout->addLayout(hdrLayout);
    layout->addLayout(syncMiscLayout);
    layout->addWidget(filterGroup);
 

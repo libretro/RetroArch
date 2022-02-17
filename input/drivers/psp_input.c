@@ -43,10 +43,6 @@
 #include <libretro.h>
 #include <retro_miscellaneous.h>
 
-#ifdef HAVE_KERNEL_PRX
-#include "../../bootstrap/psp1/kernel_functions.h"
-#endif
-
 #include <defines/psp_defines.h>
 
 #include "../input_driver.h"
@@ -237,7 +233,7 @@ static int16_t vita_input_state(
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds,
+      const retro_keybind_set *binds,
       bool keyboard_mapping_blocked,
       unsigned port,
       unsigned device,

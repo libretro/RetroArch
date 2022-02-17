@@ -174,7 +174,6 @@ bool d3d12_init_base(d3d12_video_t* d3d12)
 #else
    DXGICreateFactory(&d3d12->factory);
 #endif
-
    {
       int i = 0;
       settings_t *settings = config_get_ptr();
@@ -200,12 +199,11 @@ bool d3d12_init_base(d3d12_video_t* d3d12)
          if (FAILED(DXGIEnumAdapters(d3d12->factory, i, &adapter)))
             break;
 #endif
-
          IDXGIAdapter_GetDesc(adapter, &desc);
 
          utf16_to_char_string((const uint16_t*)desc.Description, str, sizeof(str));
 
-         RARCH_LOG("[D3D12]: Found GPU at index %d: %s\n", i, str);
+         RARCH_LOG("[D3D12]: Found GPU at index %d: \"%s\".\n", i, str);
 
          string_list_append(d3d12->gpu_list, str, attr);
 
@@ -284,13 +282,30 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 {
    unsigned i;
    HRESULT hr;
+   HWND hwnd;
 #ifdef __WINRT__
-   DXGI_SWAP_CHAIN_DESC1 desc;
-   memset(&desc, 0, sizeof(DXGI_SWAP_CHAIN_DESC1));
+   DXGI_SWAP_CHAIN_DESC1 desc              = {{0}};
 #else
-   DXGI_SWAP_CHAIN_DESC desc;
-   HWND hwnd                 = (HWND)corewindow;
-   memset(&desc, 0, sizeof(DXGI_SWAP_CHAIN_DESC));
+   DXGI_SWAP_CHAIN_DESC desc               = {{0}};
+#endif
+#ifdef HAVE_DXGI_HDR
+   DXGI_COLOR_SPACE_TYPE color_space;
+
+   d3d12->chain.formats[DXGI_SWAPCHAIN_BIT_DEPTH_8]    = DXGI_FORMAT_R8G8B8A8_UNORM;
+   d3d12->chain.formats[DXGI_SWAPCHAIN_BIT_DEPTH_10]   = DXGI_FORMAT_R10G10B10A2_UNORM;
+   d3d12->chain.formats[DXGI_SWAPCHAIN_BIT_DEPTH_16]   = DXGI_FORMAT_R16G16B16A16_UNORM;
+#endif
+
+   hwnd = (HWND)corewindow;
+
+#ifdef HAVE_DXGI_HDR
+   if (!(d3d12->hdr.support                              = 
+      dxgi_check_display_hdr_support(d3d12->factory, hwnd)))
+      d3d12->hdr.enable                            = false;
+
+   d3d12->chain.bit_depth                          = d3d12->hdr.enable 
+      ? DXGI_SWAPCHAIN_BIT_DEPTH_10 
+      : DXGI_SWAPCHAIN_BIT_DEPTH_8;
 #endif
 
    desc.BufferCount          = countof(d3d12->chain.renderTargets);
@@ -298,24 +313,37 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 #ifdef __WINRT__
    desc.Width                = width;
    desc.Height               = height;
-   desc.Format               = DXGI_FORMAT_R8G8B8A8_UNORM;
 #else
    desc.BufferDesc.Width     = width;
    desc.BufferDesc.Height    = height;
-   desc.BufferDesc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
    desc.BufferDesc.RefreshRate.Numerator   = 0;
    desc.BufferDesc.RefreshRate.Denominator = 1;
 #endif
+
+#ifdef HAVE_DXGI_HDR
+#ifdef __WINRT__
+   desc.Format               = d3d12->chain.formats[d3d12->chain.bit_depth];
+#else
+   desc.BufferDesc.Format    = d3d12->chain.formats[d3d12->chain.bit_depth];
+#endif
+#else
+#ifdef __WINRT__
+   desc.Format               = DXGI_FORMAT_R8G8B8A8_UNORM;
+#else
+   desc.BufferDesc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
+#endif
+#endif
+
    desc.SampleDesc.Count     = 1;
    desc.SampleDesc.Quality   = 0;
 #ifdef HAVE_WINDOW
-   desc.OutputWindow = hwnd;
-   desc.Windowed     = TRUE;
+   desc.OutputWindow         = hwnd;
+   desc.Windowed             = TRUE;
 #endif
 #if 0
-   desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+   desc.SwapEffect           = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
 #else
-   desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+   desc.SwapEffect           = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 #endif
    desc.Flags      = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
@@ -334,6 +362,34 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    DXGIMakeWindowAssociation(d3d12->factory, hwnd, DXGI_MWA_NO_ALT_ENTER);
 #endif
 
+#ifdef HAVE_DXGI_HDR
+   /* Check display HDR support and 
+      initialize ST.2084 support to match 
+      the display's support. */
+#if 0
+   d3d12->hdr.max_output_nits  = 300.0f;
+   d3d12->hdr.min_output_nits  = 0.001f;
+   d3d12->hdr.max_cll          = 0.0f;
+   d3d12->hdr.max_fall         = 0.0f;
+#endif
+   color_space                 = 
+        d3d12->hdr.enable 
+      ? DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020 
+      : DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
+
+   dxgi_swapchain_color_space(d3d12->chain.handle,
+         &d3d12->chain.color_space, color_space);
+   dxgi_set_hdr_metadata(
+         d3d12->chain.handle,
+         d3d12->hdr.support,
+         d3d12->chain.bit_depth,
+         d3d12->chain.color_space,
+         d3d12->hdr.max_output_nits,
+         d3d12->hdr.min_output_nits,
+         d3d12->hdr.max_cll,
+         d3d12->hdr.max_fall);
+#endif
+
    d3d12->chain.frame_index = DXGIGetCurrentBackBufferIndex(d3d12->chain.handle);
 
    for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
@@ -343,10 +399,28 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
             d3d12->device, d3d12->chain.renderTargets[i], NULL, d3d12->chain.desc_handles[i]);
    }
 
-   d3d12->chain.viewport.Width     = width;
-   d3d12->chain.viewport.Height    = height;
-   d3d12->chain.scissorRect.right  = width;
-   d3d12->chain.scissorRect.bottom = height;
+#ifdef HAVE_DXGI_HDR
+   memset(&d3d12->chain.back_buffer,
+         0, sizeof(d3d12->chain.back_buffer));
+   d3d12->chain.back_buffer.desc.Width             = width;
+   d3d12->chain.back_buffer.desc.Height            = height;
+   d3d12->chain.back_buffer.desc.Format            = 
+      d3d12->shader_preset && d3d12->shader_preset->passes ? glslang_format_to_dxgi(d3d12->pass[d3d12->shader_preset->passes - 1].semantics.format) : DXGI_FORMAT_R8G8B8A8_UNORM;
+   d3d12->chain.back_buffer.desc.Flags             = 
+      D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+   d3d12->chain.back_buffer.srv_heap               = 
+      &d3d12->desc.srv_heap;
+   d3d12->chain.back_buffer.rt_view.ptr            = 
+        d3d12->desc.rtv_heap.cpu.ptr 
+      + (countof(d3d12->chain.renderTargets)) 
+      * d3d12->desc.rtv_heap.stride;
+   d3d12_init_texture(d3d12->device, &d3d12->chain.back_buffer);
+#endif
+
+   d3d12->chain.viewport.Width                     = width;
+   d3d12->chain.viewport.Height                    = height;
+   d3d12->chain.scissorRect.right                  = width;
+   d3d12->chain.scissorRect.bottom                 = height;
 
    return true;
 }
@@ -608,6 +682,19 @@ void d3d12_init_samplers(d3d12_video_t* d3d12)
 
 D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_enable_desc = {
    TRUE,
+   FALSE,
+   D3D12_BLEND_SRC_ALPHA,
+   D3D12_BLEND_INV_SRC_ALPHA,
+   D3D12_BLEND_OP_ADD,
+   D3D12_BLEND_SRC_ALPHA,
+   D3D12_BLEND_INV_SRC_ALPHA,
+   D3D12_BLEND_OP_ADD,
+   D3D12_LOGIC_OP_NOOP,
+   D3D12_COLOR_WRITE_ENABLE_ALL,
+};
+
+D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_disable_desc = {
+   FALSE,
    FALSE,
    D3D12_BLEND_SRC_ALPHA,
    D3D12_BLEND_INV_SRC_ALPHA,

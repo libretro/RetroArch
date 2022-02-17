@@ -18,22 +18,40 @@ INCDIRS :=
 
 ifeq ($(GRIFFIN_BUILD), 1)
 	OBJ += griffin/griffin.o
-	DEFINES += -DHAVE_GRIFFIN=1
-	DEFINES += -DHAVE_REWIND
-	DEFINES += -DHAVE_NEON -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_CHEATS -DHAVE_XMB -DHAVE_MATERIALUI -DHAVE_LIBRETRODB DEFINES -DHAVE_KEYMAPPER
-	DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DHAVE_CC_RESAMPLER
+	DEFINES += -DHAVE_GRIFFIN=1 \
+		   -DHAVE_REWIND \
+		   -DHAVE_NEON \
+		   -DHAVE_MENU \
+		   -DHAVE_CONFIGFILE \
+		   -DHAVE_PATCH \
+		   -DHAVE_CHEATS \
+		   -DHAVE_XMB \
+		   -DHAVE_MATERIALUI \
+		   -DHAVE_LIBRETRODB \
+		   -DHAVE_KEYMAPPER \
+		   -DHAVE_ZLIB \
+		   -DHAVE_RPNG \
+		   -DHAVE_RJPEG \
+		   -DHAVE_RBMP \
+		   -DHAVE_RTGA \
+		   -DHAVE_CC_RESAMPLER \
+		   -DHAVE_CORE_INFO_CACHE
 	ifeq ($(DEBUG), 1)
 		DEFINES += -DHAVE_NETLOGGER
 	endif
-	INCDIRS += -I. -Ideps/7zip -Ilibretro-common/include -Ilibretro-common/include/compat/zlib -Ideps/stb
+	INCDIRS += -I. \
+		   -Ideps/7zip \
+		   -Ilibretro-common/include \
+		   -Ilibretro-common/include/compat/zlib \
+		   -Ideps/stb
 else
-   HAVE_REWIND := 1
-   HAVE_UPDATE_ASSETS      := 1
-   HAVE_ONLINE_UPDATER     := 1
+	HAVE_REWIND		:= 1
+	HAVE_UPDATE_ASSETS      := 1
+	HAVE_ONLINE_UPDATER     := 1
 	HAVE_NEON		:= 1
-   HAVE_DSP_FILTER := 1
-   HAVE_VIDEO_FILTER := 1
-   HAVE_SCREENSHOTS := 1
+	HAVE_DSP_FILTER		:= 1
+	HAVE_VIDEO_FILTER	:= 1
+	HAVE_SCREENSHOTS	:= 1
 	HAVE_FILTERS_BUILTIN	:= 1
 	HAVE_LANGEXTRA		:= 1
 	HAVE_RPNG		:= 1
@@ -43,29 +61,29 @@ else
 	HAVE_ZLIB		:= 1
 	HAVE_7ZIP		:= 1
    ifeq ($(HAVE_VITAGLES), 1)
-      HAVE_VITA2D		:= 0
-      HAVE_VITAGL		:= 0
-      HAVE_VITAGLES := 1
-      HAVE_OPENGL := 1
-      HAVE_OPENGLES := 1
-      HAVE_OPENGLES2 := 1
-      HAVE_EGL := 1
-      HAVE_GLSL := 1
-      HAVE_SHADERPIPELINE := 1
+	HAVE_VITA2D		:= 0
+	HAVE_VITAGL		:= 0
+	HAVE_VITAGLES 		:= 1
+	HAVE_OPENGL 		:= 1
+	HAVE_OPENGLES 		:= 1
+	HAVE_OPENGLES2 		:= 1
+	HAVE_EGL 		:= 1
+	HAVE_GLSL 		:= 1
+	HAVE_SHADERPIPELINE 	:= 1
    else
-      HAVE_VITA2D		:= 1
-      HAVE_VITAGL		:= 0
+	HAVE_VITA2D		:= 1
+	HAVE_VITAGL		:= 0
    endif
 	HAVE_NETWORKING		:= 1
 	HAVE_SOCKET_LEGACY	:= 1
 	HAVE_MENU		:= 1
 	HAVE_MENU_COMMON	:= 1
-	HAVE_GFX_WIDGETS := 1
-	HAVE_CONFIGFILE := 1
-	HAVE_PATCH      := 1
-	HAVE_CHEATS     := 1
+	HAVE_GFX_WIDGETS 	:= 1
+	HAVE_CONFIGFILE 	:= 1
+	HAVE_PATCH      	:= 1
+	HAVE_CHEATS     	:= 1
 	HAVE_OVERLAY		:= 1
-	HAVE_VIDEO_LAYOUT := 0
+	HAVE_VIDEO_LAYOUT 	:= 0
 	HAVE_MATERIALUI		:= 1
 	HAVE_XMB		:= 1
 	HAVE_RGUI		:= 1
@@ -80,16 +98,17 @@ else
 	HAVE_STATIC_AUDIO_FILTERS = 1
 	HAVE_AUDIOMIXER 	:= 1
 	HAVE_RWAV       	:= 1
+	HAVE_CORE_INFO_CACHE    := 1
 
 	ifeq ($(DEBUG), 1)
-		HAVE_NETLOGGER = 1
+		HAVE_NETLOGGER	= 1
 	endif
 
 	include Makefile.common
-	CFLAGS += $(DEF_FLAGS)
-	BLACKLIST :=
-	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
-	INCDIRS += $(INCLUDE_DIRS)
+	CFLAGS			+= $(DEF_FLAGS)
+	BLACKLIST 		:=
+	OBJ			:= $(filter-out $(BLACKLIST),$(OBJ))
+	INCDIRS			+= $(INCLUDE_DIRS)
 endif
 
 ifeq ($(strip $(VITASDK)),)

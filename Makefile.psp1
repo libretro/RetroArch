@@ -1,10 +1,11 @@
-BUILD_PRX          = 0
-PSP_LARGE_MEMORY   = 1
-DEBUG              = 0
-HAVE_KERNEL_PRX    = 1
-HAVE_THREADS       = 1
-BIG_STACK          = 0
-WHOLE_ARCHIVE_LINK = 0
+BUILD_PRX              ?= 0
+PSP_LARGE_MEMORY       ?= 1
+DEBUG                  ?= 0
+HAVE_KERNEL_PRX        ?= 1
+HAVE_THREADS           ?= 1
+BIG_STACK              ?= 0
+LOAD_WITHOUT_CORE_INFO ?= 0
+HAVE_STATIC_DUMMY      ?= 0
 
 TARGET = retroarchpsp
 
@@ -14,26 +15,52 @@ else
    OPTIMIZE_LV	:= -O3
 endif
 
-ifeq ($(WHOLE_ARCHIVE_LINK), 1)
-   WHOLE_START := -Wl,--whole-archive
-   WHOLE_END := -Wl,--no-whole-archive
-endif
-
 INCDIR = deps deps/stb deps/7zip libretro-common/include libretro-common/include/compat/zlib
-CFLAGS = $(OPTIMIZE_LV) -G0 -std=gnu99 -ffast-math -fsingle-precision-constant
+CFLAGS = $(OPTIMIZE_LV) -ffast-math -fsingle-precision-constant
 ASFLAGS = $(CFLAGS)
 
-RARCH_DEFINES = -DPSP -D_MIPS_ARCH_ALLEGREX -DHAVE_LANGEXTRA -DHAVE_ZLIB -DHAVE_AUDIOMIXER -DHAVE_RWAV -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DHAVE_SCREENSHOTS -DHAVE_REWIND -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_CHEATS -DHAVE_RGUI -DHAVE_FILTERS_BUILTIN -DHAVE_DSP_FILTER -DHAVE_VIDEO_FILTER -DHAVE_7ZIP -D_7ZIP_ST -DHAVE_CC_RESAMPLER
+RARCH_DEFINES = -DPSP \
+		-D_MIPS_ARCH_ALLEGREX \
+		-DHAVE_LANGEXTRA \
+		-DHAVE_ZLIB \
+		-DHAVE_AUDIOMIXER \
+		-DHAVE_RWAV \
+		-DHAVE_RPNG \
+		-DHAVE_RJPEG \
+		-DHAVE_GRIFFIN=1 \
+		-DRARCH_INTERNAL \
+		-DHAVE_SCREENSHOTS \
+		-DHAVE_REWIND \
+		-DRARCH_CONSOLE \
+		-DHAVE_MENU \
+		-DHAVE_CONFIGFILE \
+		-DHAVE_PATCH \
+		-DHAVE_CHEATS \
+		-DHAVE_RGUI \
+		-DHAVE_FILTERS_BUILTIN \
+		-DHAVE_DSP_FILTER \
+		-DHAVE_VIDEO_FILTER \
+		-DHAVE_7ZIP \
+		-D_7ZIP_ST \
+		-DHAVE_CC_RESAMPLER \
+		-DHAVE_CORE_INFO_CACHE
 
 LIBDIR =
-LDFLAGS =
-LIBS = $(WHOLE_START) -lretro_psp1 $(WHOLE_END) -lstdc++ -lpspgu -lpspgum -lm -lpspaudio -lpspfpu -lpsppower -lpsprtc -lpthread-psp
+LDFLAGS = -L$(shell psp-config --psp-prefix)
+
+ifeq ($(HAVE_STATIC_DUMMY),1)
+  RARCH_DEFINES += -DHAVE_STATIC_DUMMY
+else
+  LIBS += -lretro_psp1
+endif
+LIBS += -lstdc++ -lpspgu -lpspgum -lpspaudio -lpspfpu -lpsppower -lpsprtc -lpthread
 
 ifeq ($(HAVE_THREADS), 1)
 RARCH_DEFINES += -DHAVE_THREADS
 endif
 
 ifeq ($(HAVE_KERNEL_PRX), 1)
+OBJS += bootstrap/psp1/kernel_functions.o
 CFLAGS += -DHAVE_KERNEL_PRX
 endif
 
@@ -41,14 +68,16 @@ ifeq ($(BIG_STACK), 1)
 CFLAGS += -DBIG_STACK
 endif
 
+ifeq ($(LOAD_WITHOUT_CORE_INFO),1)
+RARCH_DEFINES += -DLOAD_WITHOUT_CORE_INFO
+endif
+
 CFLAGS += $(RARCH_DEFINES)
 
 EXTRA_TARGETS = EBOOT.PBP
 PSP_EBOOT_TITLE = RetroArch PSP1
 
-PSP_OBJECTS = griffin/griffin.o bootstrap/psp1/kernel_functions.o
-
-OBJS = $(PSP_OBJECTS)
+OBJS += griffin/griffin.o
 
 PSPSDK=$(shell psp-config --pspsdk-path)
 include $(PSPSDK)/lib/build.mak
@@ -67,3 +96,6 @@ pspsh-run:
 debug: clean all pspsh-debug
 
 run: clean all pspsh-run
+
+sim:
+	/Applications/PPSSPPSDL.app/Contents/MacOS/PPSSPPSDL $(shell pwd)/EBOOT.PBP

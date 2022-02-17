@@ -349,7 +349,7 @@ static void fpga_set_osd_msg(void *data,
 }
 
 static void fpga_get_video_output_size(void *data,
-      unsigned *width, unsigned *height) { }
+      unsigned *width, unsigned *height, char *desc, size_t desc_len) { }
 static void fpga_get_video_output_prev(void *data) { }
 static void fpga_get_video_output_next(void *data) { }
 
@@ -386,6 +386,10 @@ static const video_poke_interface_t fpga_poke_interface = {
 #ifdef HAVE_MENU
    NULL,
 #endif
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void fpga_gfx_get_poke_interface(void *data,

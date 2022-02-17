@@ -239,7 +239,7 @@ static bool win32_display_server_set_resolution(void *data,
    if (serv->orig_height == 0)
       serv->orig_height = GetSystemMetrics(SM_CYSCREEN);
    if (serv->orig_refresh == 0)
-      serv->orig_refresh = dm.dmDisplayFrequency;
+      serv->orig_refresh = video_driver_get_refresh_rate();
 
    /* Used to stop super resolution bug */
    if (width == dm.dmPelsWidth)
@@ -304,6 +304,29 @@ static bool win32_display_server_set_resolution(void *data,
    }
 
    return true;
+}
+
+/* Display resolution list qsort helper function */
+static int resolution_list_qsort_func(
+      const video_display_config_t *a, const video_display_config_t *b)
+{
+   char str_a[64];
+   char str_b[64];
+
+   if (!a || !b)
+      return 0;
+
+   snprintf(str_a, sizeof(str_a), "%04dx%04d (%d Hz)",
+         a->width,
+         a->height,
+         a->refreshrate);
+
+   snprintf(str_b, sizeof(str_b), "%04dx%04d (%d Hz)",
+         b->width,
+         b->height,
+         b->refreshrate);
+
+   return strcasecmp(str_a, str_b);
 }
 
 static void *win32_display_server_get_resolution_list(
@@ -379,6 +402,12 @@ static void *win32_display_server_get_resolution_list(
 
       j++;
    }
+
+   qsort(
+         conf, count,
+         sizeof(video_display_config_t),
+         (int (*)(const void *, const void *))
+               resolution_list_qsort_func);
 
    return conf;
 }

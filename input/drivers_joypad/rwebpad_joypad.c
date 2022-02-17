@@ -30,16 +30,8 @@
 static EM_BOOL rwebpad_gamepad_cb(int event_type,
    const EmscriptenGamepadEvent *gamepad_event, void *user_data)
 {
-   unsigned vid = 0;
-   unsigned pid = 0;
-
-   if (strncmp(gamepad_event->mapping, "standard",
-       sizeof(gamepad_event->mapping)) == 0)
-   {
-      /* give a dummy vid/pid for automapping */
-      vid = 1;
-      pid = 1;
-   }
+   unsigned vid = 1;
+   unsigned pid = 1;
 
    switch (event_type)
    {
@@ -218,6 +210,7 @@ input_device_driver_t rwebpad_joypad = {
    rwebpad_joypad_get_buttons,
    rwebpad_joypad_axis,
    rwebpad_joypad_poll,
+   NULL,
    NULL,
    rwebpad_joypad_name,
    "rwebpad",

@@ -15,6 +15,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Direct3D 9 driver.
+ *
+ * Minimum version : Direct3D 9.0 (2002)
+ * Minimum OS      : Windows 98, Windows 2000, Windows ME
+ * Recommended OS  : Windows XP
+ */
+
 #define CINTERFACE
 
 #ifdef _XBOX
@@ -233,7 +240,7 @@ static bool d3d9_init_chain(d3d9_video_t *d3d,
       return false;
    }
 
-   RARCH_LOG("[D3D9]: Renderchain driver: %s\n", d3d->renderchain_driver->ident);
+   RARCH_LOG("[D3D9]: Renderchain driver: \"%s\".\n", d3d->renderchain_driver->ident);
    d3d9_log_info(&link_info);
 
 #ifndef _XBOX
@@ -1233,7 +1240,7 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
 
       snprintf(version_str, sizeof(version_str), "%u.%u.%u.%u", HIWORD(ident.DriverVersion.HighPart), LOWORD(ident.DriverVersion.HighPart), HIWORD(ident.DriverVersion.LowPart), LOWORD(ident.DriverVersion.LowPart));
 
-      RARCH_LOG("[D3D9]: Using GPU: %s\n", ident.Description);
+      RARCH_LOG("[D3D9]: Using GPU: \"%s\".\n", ident.Description);
       RARCH_LOG("[D3D9]: GPU API Version: %s\n", version_str);
 
       video_driver_set_gpu_device_string(ident.Description);
@@ -1512,6 +1519,7 @@ static bool d3d9_frame(void *data, const void *frame,
       &video_info->osd_stat_params;
    const char *stat_text               = video_info->stat_text;
    bool menu_is_alive                  = video_info->menu_is_alive;
+   bool overlay_behind_menu            = video_info->overlay_behind_menu;
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active                 = video_info->widgets_active;
 #endif
@@ -1556,6 +1564,7 @@ static bool d3d9_frame(void *data, const void *frame,
    d3d9_set_viewports(d3d->dev, &screen_vp);
    d3d9_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
+   d3d9_set_mvp(d3d->dev, &d3d->mvp_transposed);
    if (!d3d->renderchain_driver->render(
             d3d, frame, frame_width, frame_height,
             pitch, d3d->dev_rotation))
@@ -1575,10 +1584,19 @@ static bool d3d9_frame(void *data, const void *frame,
       }
    }   
 
+#ifdef HAVE_OVERLAY
+   if (d3d->overlays_enabled && overlay_behind_menu)
+   {
+      d3d9_set_mvp(d3d->dev, &d3d->mvp_transposed);
+      for (i = 0; i < d3d->overlays_size; i++)
+         d3d9_overlay_render(d3d, width, height, &d3d->overlays[i], true);
+   }
+#endif
+
 #ifdef HAVE_MENU
    if (d3d->menu && d3d->menu->enabled)
    {
-      d3d9_set_mvp(d3d->dev, &d3d->mvp);
+      d3d9_set_mvp(d3d->dev, &d3d->mvp_transposed);
       d3d9_overlay_render(d3d, width, height, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
@@ -1602,9 +1620,9 @@ static bool d3d9_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_OVERLAY
-   if (d3d->overlays_enabled)
+   if (d3d->overlays_enabled && !overlay_behind_menu)
    {
-      d3d9_set_mvp(d3d->dev, &d3d->mvp);
+      d3d9_set_mvp(d3d->dev, &d3d->mvp_transposed);
       for (i = 0; i < d3d->overlays_size; i++)
          d3d9_overlay_render(d3d, width, height, &d3d->overlays[i], true);
    }
@@ -1976,7 +1994,11 @@ static const video_poke_interface_t d3d9_poke_interface = {
    NULL,                         /* grab_mouse_toggle */
    NULL,                         /* get_current_shader */
    NULL,                         /* get_current_software_framebuffer */
-   NULL                          /* get_hw_render_interface */
+   NULL,                         /* get_hw_render_interface */
+   NULL,                         /* set_hdr_max_nits */
+   NULL,                         /* set_hdr_paper_white_nits */
+   NULL,                         /* set_hdr_contrast */
+   NULL                          /* set_hdr_expand_gamut */
 };
 
 static void d3d9_get_poke_interface(void *data,

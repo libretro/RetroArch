@@ -837,7 +837,7 @@ bool patch_content(
    }
 
    if(!patch_found)
-      RARCH_LOG("%s\n",
+      RARCH_LOG("[Content]: %s\n",
             msg_hash_to_str(MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH));
 
    return patch_found;

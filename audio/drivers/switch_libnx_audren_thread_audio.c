@@ -21,7 +21,8 @@
 #include <switch.h>
 
 #include <queues/fifo_queue.h>
-#include "../../retroarch.h"
+
+#include "../audio_driver.h"
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 

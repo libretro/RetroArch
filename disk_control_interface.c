@@ -30,6 +30,10 @@
 
 #include "disk_control_interface.h"
 
+#ifdef HAVE_CHEEVOS
+#include "cheevos/cheevos.h"
+#endif
+
 /*****************/
 /* Configuration */
 /*****************/
@@ -298,27 +302,24 @@ bool disk_control_set_eject_state(
    /* Set eject state */
    if (disk_control->cb.set_eject_state(eject))
       snprintf(
-            msg, sizeof(msg), "%s %s",
+            msg, sizeof(msg), "%s",
             eject ? msg_hash_to_str(MSG_DISK_EJECTED) :
-                  msg_hash_to_str(MSG_DISK_CLOSED),
-            msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY));
+                  msg_hash_to_str(MSG_DISK_CLOSED));
    else
    {
       error = true;
       snprintf(
-            msg, sizeof(msg), "%s %s %s",
-            msg_hash_to_str(MSG_FAILED_TO),
+            msg, sizeof(msg), "%s",
             eject ? msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY_EJECT) :
-                  msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY_CLOSE),
-            msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY));
+                  msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY_CLOSE));
    }
 
    if (!string_is_empty(msg))
    {
       if (error)
-         RARCH_ERR("%s\n", msg);
+         RARCH_ERR("[Disc]: %s\n", msg);
       else
-         RARCH_LOG("%s\n", msg);
+         RARCH_LOG("[Disc]: %s\n", msg);
 
       /* Errors should always be displayed */
       if (verbosity || error)
@@ -327,6 +328,11 @@ bool disk_control_set_eject_state(
                true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
+
+#ifdef HAVE_CHEEVOS
+   if (!error && !eject)
+      rcheevos_change_disc(disk_control->index_record.image_path, false);
+#endif
 
    return !error;
 }
@@ -340,7 +346,7 @@ bool disk_control_set_index(
    bool error            = false;
    unsigned num_images   = 0;
    unsigned msg_duration = 0;
-   char msg[PATH_MAX_LENGTH];
+   char msg[NAME_MAX_LENGTH];
 
    msg[0] = '\0';
 
@@ -371,16 +377,17 @@ bool disk_control_set_index(
    if (!string_is_empty(msg))
    {
       if (error)
-         RARCH_ERR("%s\n", msg);
+         RARCH_ERR("[Disc]: %s\n", msg);
       else
-         RARCH_LOG("%s\n", msg);
+         RARCH_LOG("[Disc]: %s\n", msg);
 
       /* Errors should always be displayed */
       if (verbosity || error)
          runloop_msg_queue_push(
                msg, 1, msg_duration,
                true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               MESSAGE_QUEUE_ICON_DEFAULT,
+               MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    /* If operation was successful, update disk
@@ -439,7 +446,7 @@ bool disk_control_set_index_next(
 
    if (!disk_next_enable)
    {
-      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_GOT_INVALID_DISK_INDEX));
+      RARCH_ERR("[Disc]: %s\n", msg_hash_to_str(MSG_GOT_INVALID_DISK_INDEX));
       return false;
    }
 
@@ -474,7 +481,7 @@ bool disk_control_set_index_prev(
 
    if (!disk_prev_enable)
    {
-      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_GOT_INVALID_DISK_INDEX));
+      RARCH_ERR("[Disc]: %s\n", msg_hash_to_str(MSG_GOT_INVALID_DISK_INDEX));
       return false;
    }
 
@@ -558,7 +565,7 @@ bool disk_control_append_image(
          msg, sizeof(msg), "%s: %s",
          msg_hash_to_str(MSG_APPENDED_DISK), image_filename);
 
-   RARCH_LOG("%s\n", msg);
+   RARCH_LOG("[Disc]: %s\n", msg);
    /* This message should always be displayed, since
     * the menu itself does not provide sufficient
     * visual feedback */
@@ -645,7 +652,7 @@ bool disk_control_set_initial_index(
           * here may not matter (have to wait until
           * disk index is verified) */
          RARCH_ERR(
-               "Failed to set initial disk index: [%u] %s\n",
+               "[Disc]: Failed to set initial disk index: [%u] %s\n",
                disk_control->index_record.image_index,
                disk_control->index_record.image_path);
          return false;
@@ -719,7 +726,7 @@ bool disk_control_verify_initial_index(
    if (!success)
    {
       RARCH_ERR(
-               "Failed to set initial disk index:\n> Expected [%u] %s\n> Detected [%u] %s\n",
+               "[Disc]: Failed to set initial disk index:\n> Expected [%u] %s\n> Detected [%u] %s\n",
                disk_control->index_record.image_index + 1,
                disk_control->index_record.image_path,
                image_index + 1,
@@ -763,7 +770,7 @@ bool disk_control_verify_initial_index(
             disk_control, disk_control->initial_num_images, image_index, true,
             &msg_duration, msg, sizeof(msg));
 
-      RARCH_LOG("%s\n", msg);
+      RARCH_LOG("[Disc]: %s\n", msg);
 
       /* Note: Do not flush message queue here, since
        * it is likely other notifications will be
@@ -775,6 +782,11 @@ bool disk_control_verify_initial_index(
                0, msg_duration,
                false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+#ifdef HAVE_CHEEVOS
+      if (image_index > 0)
+         rcheevos_change_disc(disk_control->index_record.image_path, true);
+#endif
    }
 
    return success;

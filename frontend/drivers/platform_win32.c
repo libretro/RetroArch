@@ -329,7 +329,9 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
    switch (vi.dwMajorVersion)
    {
       case 10:
-         if (server)
+         if (atoi(buildStr) >= 21996)
+            strcpy_literal(s, "Windows 11");
+         else if (server)
             strcpy_literal(s, "Windows Server 2016");
          else
             strcpy_literal(s, "Windows 10");
@@ -569,6 +571,7 @@ static void frontend_win32_env_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
    const char *tmp_dir = getenv("TMP");
+   const char *libretro_directory = getenv("LIBRETRO_DIRECTORY");
    if (!string_is_empty(tmp_dir))
       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CACHE],
          tmp_dir, sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
@@ -607,8 +610,12 @@ static void frontend_win32_env_get(int *argc, char *argv[],
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
       ":\\layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
 #endif
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE],
-      ":\\cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+   if (!string_is_empty(libretro_directory))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE], libretro_directory,
+            sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+   else
+      fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE],
+            ":\\cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
       ":\\info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
@@ -1168,6 +1175,7 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,                            /* is_narrator_running */
    NULL,                            /* accessibility_speak */
 #endif
+   NULL,                            /* set_gamemode        */
    "win32",                         /* ident               */
    NULL                             /* get_video_driver    */
 };

@@ -104,9 +104,10 @@ build-retroarch-windows-msvc10-x64:
     SDK_BIN_DIR:    C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin
     RCEDIT_BIN_DIR: C:\Program Files\rcedit
     PEDEPS_BIN_DIR: C:\Program Files\pedeps-0.1.9-win64\bin
+    MSVC_PLATFORM:  windows_msvc2010_x64
   before_script:
     - $Env:HOME = "."
-    - $Env:Path += -join(";", "$Env:SDK_BIN_DIR", ";", "$Env:RCEDIT_BIN_DIR", ";", "$Env:PEDEPS_BIN_DIR")
+    - $Env:Path += -join(";", "$Env:MSYS_BIN_DIR", ";", "$Env:SDK_BIN_DIR", ";", "$Env:RCEDIT_BIN_DIR", ";", "$Env:PEDEPS_BIN_DIR")
   artifacts:
     paths:
     - retroarch.exe
@@ -114,26 +115,31 @@ build-retroarch-windows-msvc10-x64:
     expire_in: 10 min
   dependencies: []
   script:
-    # Build RetroArch
-    - $Script:MakeCmd = "$Env:MSYS_BIN_DIR\env.exe $Env:MSYS_BIN_DIR\bash.exe -l -c 'make -f Makefile.griffin platform=windows_msvc2010_x64'"
-    - Invoke-Expression $Script:MakeCmd
-    - mt.exe -nologo -manifest "retroarch.exe.manifest" -outputresource:"retroarch.exe;#1"
-    - rcedit-x64.exe "retroarch.exe" --set-icon "media\retroarch.ico"
-    # Create .media subdirectories
-    - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/audio" -ItemType Directory
-    - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/video" -ItemType Directory
-    - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/pkg" -ItemType Directory
-    - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist" -ItemType Directory
-    # Copy audio/video filters
-    - Get-ChildItem -Path "libretro-common/audio/dsp_filters/*" -Include *.dsp | Copy-Item -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/audio"
-    - Get-ChildItem -Path "gfx/video_filters/*" -Include *.filt | Copy-Item -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/video"
-    # Copy default config file
-    - Copy-Item -Path "retroarch.cfg" -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/pkg/retroarch.default.cfg"
-    # Copy dll dependencies
-    # (note that msvc10 build should not have any, but this
-    # may change in the future)
-    - copypedeps.exe -r retroarch.exe "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist"
-    - Remove-Item "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist/retroarch.exe" -ErrorAction Ignore
+    - |
+      $ErrorActionPreference = 'Stop'
+      # Build RetroArch
+      bash.exe -l -c "make -f Makefile.griffin platform=$Env:MSVC_PLATFORM"
+      if ($LastExitCode -ne 0){throw "Failed to build RetroArch"}
+      mt.exe -nologo -manifest "retroarch.exe.manifest" -outputresource:"retroarch.exe;#1"
+      if ($LastExitCode -ne 0){throw "Failed to add manifest to RetroArch binary"}
+      rcedit-x64.exe "retroarch.exe" --set-icon "media\retroarch.ico"
+      if ($LastExitCode -ne 0){throw "Failed to set icon of RetroArch binary"}
+      # Create .media subdirectories
+      New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/audio" -ItemType Directory
+      New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/video" -ItemType Directory
+      New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/pkg" -ItemType Directory
+      New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist" -ItemType Directory
+      # Copy audio/video filters
+      Get-ChildItem -Path "libretro-common/audio/dsp_filters/*" -Include *.dsp | Copy-Item -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/audio"
+      Get-ChildItem -Path "gfx/video_filters/*" -Include *.filt | Copy-Item -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/video"
+      # Copy default config file
+      Copy-Item -Path "retroarch.cfg" -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/pkg/retroarch.default.cfg"
+      # Copy dll dependencies
+      # (note that msvc builds should not have any, but this
+      # may change in the future)
+      copypedeps.exe -r retroarch.exe "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist"
+      if ($LastExitCode -ne 0){throw "Failed to copy RetroArch dependencies"}
+      Remove-Item "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist/retroarch.exe" -ErrorAction Ignore
 
 build-retroarch-windows-msvc10-i686:
   tags:
@@ -147,9 +153,10 @@ build-retroarch-windows-msvc10-i686:
     SDK_BIN_DIR:    C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin
     RCEDIT_BIN_DIR: C:\Program Files\rcedit
     PEDEPS_BIN_DIR: C:\Program Files\pedeps-0.1.9-win64\bin
+    MSVC_PLATFORM:  windows_msvc2010_x86
   before_script:
     - $Env:HOME = "."
-    - $Env:Path += -join(";", "$Env:SDK_BIN_DIR", ";", "$Env:RCEDIT_BIN_DIR", ";", "$Env:PEDEPS_BIN_DIR")
+    - $Env:Path += -join(";", "$Env:MSYS_BIN_DIR", ";", "$Env:SDK_BIN_DIR", ";", "$Env:RCEDIT_BIN_DIR", ";", "$Env:PEDEPS_BIN_DIR")
   artifacts:
     paths:
     - retroarch.exe
@@ -157,26 +164,31 @@ build-retroarch-windows-msvc10-i686:
     expire_in: 10 min
   dependencies: []
   script:
-    # Build RetroArch
-    - $Script:MakeCmd = "$Env:MSYS_BIN_DIR\env.exe $Env:MSYS_BIN_DIR\bash.exe -l -c 'make -f Makefile.griffin platform=windows_msvc2010_x86'"
-    - Invoke-Expression $Script:MakeCmd
-    - mt.exe -nologo -manifest "retroarch.exe.manifest" -outputresource:"retroarch.exe;#1"
-    - rcedit-x64.exe "retroarch.exe" --set-icon "media\retroarch.ico"
-    # Create .media subdirectories
-    - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/audio" -ItemType Directory
-    - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/video" -ItemType Directory
-    - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/pkg" -ItemType Directory
-    - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist" -ItemType Directory
-    # Copy audio/video filters
-    - Get-ChildItem -Path "libretro-common/audio/dsp_filters/*" -Include *.dsp | Copy-Item -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/audio"
-    - Get-ChildItem -Path "gfx/video_filters/*" -Include *.filt | Copy-Item -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/video"
-    # Copy default config file
-    - Copy-Item -Path "retroarch.cfg" -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/pkg/retroarch.default.cfg"
-    # Copy dll dependencies
-    # (note that msvc10 build should not have any, but this
-    # may change in the future)
-    - copypedeps.exe -r retroarch.exe "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist"
-    - Remove-Item "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist/retroarch.exe" -ErrorAction Ignore
+    - |
+      $ErrorActionPreference = 'Stop'
+      # Build RetroArch
+      bash.exe -l -c "make -f Makefile.griffin platform=$Env:MSVC_PLATFORM"
+      if ($LastExitCode -ne 0){throw "Failed to build RetroArch"}
+      mt.exe -nologo -manifest "retroarch.exe.manifest" -outputresource:"retroarch.exe;#1"
+      if ($LastExitCode -ne 0){throw "Failed to add manifest to RetroArch binary"}
+      rcedit-x64.exe "retroarch.exe" --set-icon "media\retroarch.ico"
+      if ($LastExitCode -ne 0){throw "Failed to set icon of RetroArch binary"}
+      # Create .media subdirectories
+      New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/audio" -ItemType Directory
+      New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/video" -ItemType Directory
+      New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/pkg" -ItemType Directory
+      New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist" -ItemType Directory
+      # Copy audio/video filters
+      Get-ChildItem -Path "libretro-common/audio/dsp_filters/*" -Include *.dsp | Copy-Item -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/audio"
+      Get-ChildItem -Path "gfx/video_filters/*" -Include *.filt | Copy-Item -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/video"
+      # Copy default config file
+      Copy-Item -Path "retroarch.cfg" -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/pkg/retroarch.default.cfg"
+      # Copy dll dependencies
+      # (note that msvc builds should not have any, but this
+      # may change in the future)
+      copypedeps.exe -r retroarch.exe "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist"
+      if ($LastExitCode -ne 0){throw "Failed to copy RetroArch dependencies"}
+      Remove-Item "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist/retroarch.exe" -ErrorAction Ignore
 
 build-retroarch-windows-msvc05-i686:
   tags:
@@ -191,9 +203,10 @@ build-retroarch-windows-msvc05-i686:
     RCEDIT_BIN_DIR: C:\Program Files\rcedit
     PEDEPS_BIN_DIR: C:\Program Files\pedeps-0.1.9-win64\bin
     VS80COMNTOOLS:  C:\Program Files (x86)\Microsoft Visual Studio 8\Common7\Tools\
+    MSVC_PLATFORM:  windows_msvc2005_x86
   before_script:
     - $Env:HOME = "."
-    - $Env:Path += -join(";", "$Env:SDK_BIN_DIR", ";", "$Env:RCEDIT_BIN_DIR", ";", "$Env:PEDEPS_BIN_DIR")
+    - $Env:Path += -join(";", "$Env:MSYS_BIN_DIR", ";", "$Env:SDK_BIN_DIR", ";", "$Env:RCEDIT_BIN_DIR", ";", "$Env:PEDEPS_BIN_DIR")
   artifacts:
     paths:
     - retroarch.exe
@@ -201,26 +214,31 @@ build-retroarch-windows-msvc05-i686:
     expire_in: 10 min
   dependencies: []
   script:
-    # Build RetroArch
-    - $Script:MakeCmd = "$Env:MSYS_BIN_DIR\env.exe $Env:MSYS_BIN_DIR\bash.exe -l -c 'make -f Makefile.griffin platform=windows_msvc2005_x86'"
-    - Invoke-Expression $Script:MakeCmd
-    - mt.exe -nologo -manifest "retroarch.exe.manifest" -outputresource:"retroarch.exe;#1"
-    - rcedit-x64.exe "retroarch.exe" --set-icon "media\retroarch.ico"
-    # Create .media subdirectories
-    - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/audio" -ItemType Directory
-    - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/video" -ItemType Directory
-    - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/pkg" -ItemType Directory
-    - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist" -ItemType Directory
-    # Copy audio/video filters
-    - Get-ChildItem -Path "libretro-common/audio/dsp_filters/*" -Include *.dsp | Copy-Item -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/audio"
-    - Get-ChildItem -Path "gfx/video_filters/*" -Include *.filt | Copy-Item -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/video"
-    # Copy default config file
-    - Copy-Item -Path "retroarch.cfg" -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/pkg/retroarch.default.cfg"
-    # Copy dll dependencies
-    # (note that msvc05 build should not have any, but this
-    # may change in the future)
-    - copypedeps.exe -r retroarch.exe "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist"
-    - Remove-Item "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist/retroarch.exe" -ErrorAction Ignore
+    - |
+      $ErrorActionPreference = 'Stop'
+      # Build RetroArch
+      bash.exe -l -c "make -f Makefile.griffin platform=$Env:MSVC_PLATFORM"
+      if ($LastExitCode -ne 0){throw "Failed to build RetroArch"}
+      mt.exe -nologo -manifest "retroarch.exe.manifest" -outputresource:"retroarch.exe;#1"
+      if ($LastExitCode -ne 0){throw "Failed to add manifest to RetroArch binary"}
+      rcedit-x64.exe "retroarch.exe" --set-icon "media\retroarch.ico"
+      if ($LastExitCode -ne 0){throw "Failed to set icon of RetroArch binary"}
+      # Create .media subdirectories
+      New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/audio" -ItemType Directory
+      New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/video" -ItemType Directory
+      New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/pkg" -ItemType Directory
+      New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist" -ItemType Directory
+      # Copy audio/video filters
+      Get-ChildItem -Path "libretro-common/audio/dsp_filters/*" -Include *.dsp | Copy-Item -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/audio"
+      Get-ChildItem -Path "gfx/video_filters/*" -Include *.filt | Copy-Item -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/video"
+      # Copy default config file
+      Copy-Item -Path "retroarch.cfg" -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/pkg/retroarch.default.cfg"
+      # Copy dll dependencies
+      # (note that msvc builds should not have any, but this
+      # may change in the future)
+      copypedeps.exe -r retroarch.exe "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist"
+      if ($LastExitCode -ne 0){throw "Failed to copy RetroArch dependencies"}
+      Remove-Item "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist/retroarch.exe" -ErrorAction Ignore
 
 build-retroarch-linux-x64:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-amd64-ubuntu:xenial-gcc9
@@ -344,6 +362,29 @@ build-retroarch-osx-opengl-x64:
     XCARCHIVE_PATH: pkg/apple/build/RetroArchOpenGL
     XCPROJECT_NAME: RetroArch
     XCCONFIG: OpenGL_GitLabCI.xcconfig
+
+build-retroarch-osx-ppc:
+  stage: build
+  artifacts:
+    paths:
+    - ${XCPROJECT_NAME}.zip
+    - retroarch-repo/
+    expire_in: 10 min
+  dependencies: []
+  variables:
+    XCPROJECT_NAME: RetroArch
+    XCCONFIG: OpenGL_GitLabCI.xcconfig
+  tags:
+   - macosx-legacy
+  script:
+    - xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch_PPC.xcodeproj ONLY_ACTIVE_ARCH=NO
+    - pushd pkg/apple/build/Release/
+    - ditto -c -k --sequesterRsrc --keepParent RetroArch.app ${XCPROJECT_NAME}.zip
+    - popd
+    - mv pkg/apple/build/Release/RetroArch.zip ${XCPROJECT_NAME}.zip
+    - mkdir .retroarch-repo
+    - "cp -r ./* .retroarch-repo"
+    - "mv .retroarch-repo/ retroarch-repo/"
 
 build-retroarch-ios-arm64:
   extends: .build-retroarch-macos-xcode
@@ -470,6 +511,29 @@ build-retroarch-retrofw-mips32:
     - "cp -f libretro-common/audio/dsp_filters/*.dsp ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
     - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
 
+build-retroarch-miyoo-arm32:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-dingux:latest
+  stage: build
+  variables:
+    MEDIA_PATH: .media
+    STRIP_BIN:  1
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    - retroarch
+    - ${MEDIA_PATH}
+    expire_in: 10 min
+  dependencies: []
+  script:
+    - "make -j$NUMPROC -f Makefile.miyoo"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+    - "cp -f libretro-common/audio/dsp_filters/*.dsp ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
+    - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "cp -f pkg/miyoo/20a-retroarch ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+
 build-retroarch-android-normal:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
   stage: build
@@ -478,10 +542,15 @@ build-retroarch-android-normal:
     - retroarch-precompiled/
     expire_in: 10 min
   script:
-    - "cd pkg/android/phoenix && ./gradlew assembleNormalRelease && cd -"
-    - "mkdir .retroarch-precompiled"
-    - "cp -r ./* .retroarch-precompiled/"
-    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+  script:
+    - |
+      set -e
+      cd pkg/android/phoenix
+      ./gradlew assembleNormalRelease
+      cd -
+      mkdir .retroarch-precompiled
+      cp -r ./* .retroarch-precompiled/
+      mv .retroarch-precompiled/ retroarch-precompiled/
 
 build-retroarch-android-aarch64:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
@@ -491,10 +560,14 @@ build-retroarch-android-aarch64:
     - retroarch-precompiled/
     expire_in: 10 min
   script:
-    - "cd pkg/android/phoenix && ./gradlew assembleAarch64Release && cd -"
-    - "mkdir .retroarch-precompiled"
-    - "cp -r ./* .retroarch-precompiled/"
-    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+    - |
+      set -e
+      cd pkg/android/phoenix
+      ./gradlew assembleAarch64Release
+      cd -
+      mkdir .retroarch-precompiled
+      cp -r ./* .retroarch-precompiled/
+      mv .retroarch-precompiled/ retroarch-precompiled/
 
 build-retroarch-android-ra32:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
@@ -504,10 +577,14 @@ build-retroarch-android-ra32:
     - retroarch-precompiled/
     expire_in: 10 min
   script:
-    - "cd pkg/android/phoenix && ./gradlew assembleRa32Release && cd -"
-    - "mkdir .retroarch-precompiled"
-    - "cp -r ./* .retroarch-precompiled/"
-    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+    - |
+      set -e
+      cd pkg/android/phoenix
+      ./gradlew assembleRa32Release
+      cd -
+      mkdir .retroarch-precompiled
+      cp -r ./* .retroarch-precompiled/
+      mv .retroarch-precompiled/ retroarch-precompiled/
 
 build-retroarch-android-playstore-normal:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
@@ -517,10 +594,14 @@ build-retroarch-android-playstore-normal:
     - retroarch-precompiled/
     expire_in: 10 min
   script:
-    - "cd pkg/android/phoenix && ./gradlew bundlePlayStoreNormalRelease && cd -"
-    - "mkdir .retroarch-precompiled"
-    - "cp -r ./* .retroarch-precompiled/"
-    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+    - |
+      set -e
+      cd pkg/android/phoenix
+      ./gradlew bundlePlayStoreNormalRelease
+      cd -
+      mkdir .retroarch-precompiled
+      cp -r ./* .retroarch-precompiled/
+      mv .retroarch-precompiled/ retroarch-precompiled/
 
 build-retroarch-android-playstore-plus:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
@@ -530,10 +611,14 @@ build-retroarch-android-playstore-plus:
     - retroarch-precompiled/
     expire_in: 10 min
   script:
-    - "cd pkg/android/phoenix && ./gradlew bundlePlayStorePlusRelease && cd -"
-    - "mkdir .retroarch-precompiled"
-    - "cp -r ./* .retroarch-precompiled/"
-    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+    - |
+      set -e
+      cd pkg/android/phoenix
+      ./gradlew bundlePlayStorePlusRelease
+      cd -
+      mkdir .retroarch-precompiled
+      cp -r ./* .retroarch-precompiled/
+      mv .retroarch-precompiled/ retroarch-precompiled/
 
 build-static-retroarch-libnx-aarch64:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-libnx-devkitpro:latest
@@ -626,6 +711,8 @@ build-static-retroarch-dummy-vita:
 build-static-retroarch-ps2:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-ps2:latest
   stage: prepare-for-static-cores
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
   artifacts:
     paths:
     -  retroarch-precompiled/
@@ -636,8 +723,7 @@ build-static-retroarch-ps2:
     - build-static-retroarch-dummy-ps2
   script:
     # Allow failure since we don't have a core
-    # PS2 makefile for now doesn't allow -jX so this is why is hardcoded to -j1
-    - "make -f Makefile.ps2 -j1 ||:"
+    - "make -f Makefile.ps2 -j$NUMPROC ||:"
     - "mkdir .retroarch-precompiled"
     - "cp -r ./* .retroarch-precompiled/"
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
@@ -646,8 +732,7 @@ build-static-retroarch-dummy-ps2:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-ps2:latest
   stage: build
   before_script:
-    # PS2 doesn't allow to use -jX for now
-    - export NUMPROC=1
+    - export NUMPROC=$(($(nproc)/3))
   artifacts:
     paths:
     -  raboot.elf
@@ -655,6 +740,39 @@ build-static-retroarch-dummy-ps2:
   dependencies: []
   script:
     - "make -f Makefile.ps2.salamander -j$NUMPROC release"
+
+build-static-retroarch-psl1ght:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-psl1ght:latest
+  stage: prepare-for-static-cores
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    -  retroarch-precompiled/
+    expire_in: 10 min
+  dependencies: []
+  needs:
+    # Dummy build requires no core
+    - build-static-retroarch-dummy-psl1ght
+  script:
+    # Allow failure since we don't have a core
+    - "make -f Makefile.psl1ght -j$NUMPROC ||:"
+    - "mkdir .retroarch-precompiled"
+    - "cp -r ./* .retroarch-precompiled/"
+    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+
+build-static-retroarch-dummy-psl1ght:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-psl1ght:latest
+  stage: build
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    -  retroarch_psl1ght_salamander.elf
+    expire_in: 10 min
+  dependencies: []
+  script:
+    - "make -f Makefile.psl1ght.salamander -j$NUMPROC create-salamander"
 
 build-static-retroarch-psp:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-psp:latest
@@ -942,6 +1060,7 @@ trigger_static-cores:
   - build-static-retroarch-libnx-aarch64
   - build-static-retroarch-vita
   - build-static-retroarch-ps2
+  - build-static-retroarch-psl1ght
   - build-static-retroarch-psp
   - build-static-retroarch-ctr
   - build-static-retroarch-ctr-legacy

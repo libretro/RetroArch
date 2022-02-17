@@ -202,15 +202,12 @@ fi
 
 check_enabled NETWORKING CHEEVOS cheevos 'Networking is' false
 check_enabled NETWORKING DISCORD discord 'Networking is' false
-check_enabled NETWORKING MINIUPNPC miniupnpc 'Networking is' false
 check_enabled NETWORKING SSL ssl 'Networking is' false
 check_enabled NETWORKING TRANSLATE OCR 'Networking is' false
 check_enabled NETWORKING HAVE_NETPLAYDISCOVERY 'Netplay discovery' 'Networking is' false
 
 check_enabled NETWORKING NETWORKGAMEPAD 'the networked game pad' 'Networking is' true
-check_enabled MINIUPNPC BUILTINMINIUPNPC 'builtin miniupnpc' 'miniupnpc is' true
 
-check_lib '' MINIUPNPC '-lminiupnpc'
 check_lib '' STDIN_CMD "$CLIB" fcntl
 
 if [ "$HAVE_NETWORK_CMD" = "yes" ] || [ "$HAVE_STDIN_CMD" = "yes" ]; then
@@ -537,6 +534,8 @@ if [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
          -p "$HAVE_WAYLAND_PROTOS" \
          -s "$SHARE_DIR" ||
          die 1 'Error: Failed generating wayland protocols.'
+
+      check_pkgconf LIBDECOR libdecor-0
 else
     die : 'Notice: wayland libraries not found, disabling wayland support.'
     HAVE_WAYLAND='no'
@@ -590,9 +589,12 @@ if [ "$HAVE_MENU" != 'no' ]; then
 fi
 
 if [ "$HAVE_STEAM" = 'yes' ]; then
+   add_opt CORE_INFO_CACHE no
    add_opt ONLINE_UPDATER no
    add_opt UPDATE_CORES no
-   die : 'Notice: Steam build enabled, disabling online updater as well.'
+   die : 'Notice: Steam build enabled, disabling:'
+   die : '* Core info cache.'
+   die : '* Online updater.'
 fi
 
 check_enabled CXX SLANG slang 'The C++ compiler is' false
@@ -629,6 +631,14 @@ if [ "$HAVE_GLSLANG" != no ]; then
       fi
    else
       HAVE_GLSLANG=yes
+   fi
+fi
+
+if [ "$HAVE_CRTSWITCHRES" != no ]; then
+   if [ "$HAVE_CXX11" = 'no' ]; then
+      HAVE_CRTSWITCHRES=no
+   else
+      HAVE_CRTSWITCHRES=yes
    fi
 fi
 

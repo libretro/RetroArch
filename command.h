@@ -23,12 +23,16 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-#include "retroarch.h"
-#include "input/input_defines.h"
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include <streams/interface_stream.h>
+
+#include "retroarch_types.h"
+#include "input/input_defines.h"
+
+#include "configuration.h"
 
 RETRO_BEGIN_DECLS
 
@@ -73,16 +77,22 @@ enum event_command
    /* Loads core. */
    CMD_EVENT_LOAD_CORE,
    CMD_EVENT_LOAD_CORE_PERSIST,
+#if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+   CMD_EVENT_LOAD_SECOND_CORE,
+#endif
    CMD_EVENT_UNLOAD_CORE,
    CMD_EVENT_CLOSE_CONTENT,
    CMD_EVENT_LOAD_STATE,
+   CMD_EVENT_LOAD_STATE_FROM_RAM,
    /* Swaps the current state with what's on the undo load buffer */
    CMD_EVENT_UNDO_LOAD_STATE,
    /* Rewrites a savestate on disk */
    CMD_EVENT_UNDO_SAVE_STATE,
    CMD_EVENT_SAVE_STATE,
+   CMD_EVENT_SAVE_STATE_TO_RAM,
    CMD_EVENT_SAVE_STATE_DECREMENT,
    CMD_EVENT_SAVE_STATE_INCREMENT,
+   CMD_EVENT_RAM_STATE_TO_FILE,
    /* Takes screenshot. */
    CMD_EVENT_TAKE_SCREENSHOT,
    /* Quits RetroArch. */
@@ -109,6 +119,10 @@ enum event_command
    CMD_EVENT_AUDIO_MUTE_TOGGLE,
    /* Toggles FPS counter. */
    CMD_EVENT_FPS_TOGGLE,
+   /* Toggles statistics display. */
+   CMD_EVENT_STATISTICS_TOGGLE,
+   /* Toggle ping counter. */
+   CMD_EVENT_NETPLAY_PING_TOGGLE,
    /* Gathers diagnostic info about the system and RetroArch configuration, then sends it to our servers. */
    CMD_EVENT_SEND_DEBUG_INFO,
    /* Toggles netplay hosting. */
@@ -192,6 +206,10 @@ enum event_command
    CMD_EVENT_NETPLAY_DEINIT,
    /* Switch between netplay gaming and watching. */
    CMD_EVENT_NETPLAY_GAME_WATCH,
+   /* Open a netplay chat input menu. */
+   CMD_EVENT_NETPLAY_PLAYER_CHAT,
+   /* Toggle chat fading. */
+   CMD_EVENT_NETPLAY_FADE_CHAT_TOGGLE,
    /* Start hosting netplay. */
    CMD_EVENT_NETPLAY_ENABLE_HOST,
    /* Disconnect from the netplay host. */
@@ -274,12 +292,115 @@ command_t* command_uds_new(void);
 
 bool command_network_send(const char *cmd_);
 
-/* These forward declarations need to be declared before
- * the global state is declared */
+#ifdef HAVE_BSV_MOVIE
+struct bsv_state
+{
+   /* Movie playback/recording support. */
+   char movie_path[PATH_MAX_LENGTH];
+   /* Immediate playback/recording. */
+   char movie_start_path[PATH_MAX_LENGTH];
+
+   bool movie_start_recording;
+   bool movie_start_playback;
+   bool movie_playback;
+   bool eof_exit;
+   bool movie_end;
+
+};
+
+struct bsv_movie
+{
+   intfstream_t *file;
+   uint8_t *state;
+   /* A ring buffer keeping track of positions
+    * in the file for each frame. */
+   size_t *frame_pos;
+   size_t frame_mask;
+   size_t frame_ptr;
+   size_t min_file_pos;
+   size_t state_size;
+
+   bool playback;
+   bool first_rewind;
+   bool did_rewind;
+};
+
+typedef struct bsv_movie bsv_movie_t;
+#endif
+
+#ifdef HAVE_CONFIGFILE
+bool command_event_save_config(
+      const char *config_path,
+      char *s, size_t len);
+#endif
+
+void command_event_undo_save_state(char *s, size_t len);
+
+void command_event_undo_load_state(char *s, size_t len);
+
+void command_event_set_mixer_volume(
+      settings_t *settings,
+      float gain);
+
+bool command_event_resize_windowed_scale(settings_t *settings,
+      unsigned window_scale);
+
+bool command_event_save_auto_state(
+      bool savestate_auto_save,
+      const enum rarch_core_type current_core_type);
+
+/**
+ * event_set_volume:
+ * @gain      : amount of gain to be applied to current volume level.
+ *
+ * Adjusts the current audio volume level.
+ *
+ **/
+void command_event_set_volume(
+      settings_t *settings,
+      float gain,
+      bool widgets_active,
+      bool audio_driver_mute_enable);
+
+/**
+ * command_event_init_controllers:
+ *
+ * Initialize libretro controllers.
+ **/
+void command_event_init_controllers(rarch_system_info_t *info,
+      settings_t *settings, unsigned num_active_users);
+
+bool command_event_load_entry_state(void);
+
+void command_event_load_auto_state(void);
+
+void command_event_set_savestate_auto_index(
+      settings_t *settings);
+
+void command_event_set_savestate_garbage_collect(
+      unsigned max_to_keep,
+      bool show_hidden_files
+      );
+
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 bool command_set_shader(command_t *cmd, const char *arg);
 #endif
+
+#ifdef HAVE_CHEATS
+void command_event_init_cheats(
+      bool apply_cheats_after_load,
+      const char *path_cheat_db,
+      void *bsv_movie_data);
+#endif
+
 #if defined(HAVE_COMMAND)
+struct cmd_action_map
+{
+   const char *str;
+   bool (*action)(command_t* cmd, const char *arg);
+   const char *arg_desc;
+};
+
 bool command_version(command_t *cmd, const char* arg);
 bool command_get_status(command_t *cmd, const char* arg);
 bool command_get_config_param(command_t *cmd, const char* arg);
@@ -290,13 +411,13 @@ bool command_write_ram(command_t *cmd, const char *arg);
 #endif
 bool command_read_memory(command_t *cmd, const char *arg);
 bool command_write_memory(command_t *cmd, const char *arg);
-
-struct cmd_action_map
-{
-   const char *str;
-   bool (*action)(command_t* cmd, const char *arg);
-   const char *arg_desc;
-};
+uint8_t *command_memory_get_pointer(
+      const rarch_system_info_t* system,
+      unsigned address,
+      unsigned int* max_bytes,
+      int for_write,
+      char *reply_at,
+      size_t len);
 
 static const struct cmd_action_map action_map[] = {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -342,6 +463,7 @@ static const struct cmd_map map[] = {
    { "MUTE",                   RARCH_MUTE },
    { "OSK",                    RARCH_OSK },
    { "FPS_TOGGLE",             RARCH_FPS_TOGGLE },
+   { "STATISTICS_TOGGLE",      RARCH_STATISTICS_TOGGLE },
    { "SEND_DEBUG_INFO",        RARCH_SEND_DEBUG_INFO },
    { "NETPLAY_HOST_TOGGLE",    RARCH_NETPLAY_HOST_TOGGLE },
    { "NETPLAY_GAME_WATCH",     RARCH_NETPLAY_GAME_WATCH },
@@ -367,6 +489,40 @@ static const struct cmd_map map[] = {
    { "AI_SERVICE",             RARCH_AI_SERVICE },
 };
 #endif
+
+#ifdef HAVE_CONFIGFILE
+/**
+ * command_event_save_core_config:
+ *
+ * Saves a new (core) configuration to a file. Filename is based
+ * on heuristics to avoid typing.
+ *
+ * Returns: true (1) on success, otherwise false (0).
+ **/
+bool command_event_save_core_config(
+      const char *dir_menu_config,
+      const char *rarch_path_config);
+
+/**
+ * command_event_save_current_config:
+ *
+ * Saves current configuration file to disk, and (optionally)
+ * autosave state.
+ **/
+void command_event_save_current_config(enum override_type type);
+#endif
+
+/**
+ * command_event_disk_control_append_image:
+ * @path                 : Path to disk image.
+ *
+ * Appends disk image to disk image list.
+ **/
+bool command_event_disk_control_append_image(const char *path);
+
+void command_event_reinit(const int flags);
+
+bool command_event_main_state(unsigned cmd);
 
 RETRO_END_DECLS
 

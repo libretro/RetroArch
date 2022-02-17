@@ -516,7 +516,7 @@ static void sixel_set_texture_frame(void *data,
 }
 
 static void sixel_get_video_output_size(void *data,
-      unsigned *width, unsigned *height) { }
+      unsigned *width, unsigned *height, char *desc, size_t desc_len) { }
 static void sixel_get_video_output_prev(void *data) { }
 static void sixel_get_video_output_next(void *data) { }
 static void sixel_set_video_mode(void *data, unsigned width, unsigned height,
@@ -551,6 +551,10 @@ static const video_poke_interface_t sixel_poke_interface = {
    NULL,
    NULL,
    NULL,
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void sixel_gfx_get_poke_interface(void *data,

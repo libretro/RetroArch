@@ -216,7 +216,7 @@ static int16_t ps3_input_state(
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds,
+      const retro_keybind_set *binds,
       bool keyboard_mapping_blocked,
       unsigned port,
       unsigned device,
@@ -550,6 +550,7 @@ input_device_driver_t ps3_joypad = {
    ps3_joypad_axis,
    ps3_joypad_poll,
    ps3_joypad_rumble,
+   NULL,
    ps3_joypad_name,
    "ps3",
 };

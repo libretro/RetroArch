@@ -47,6 +47,8 @@ MSG_HASH(
 
 /* Main Menu */
 
+#ifdef HAVE_LAKKA
+#endif
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
    "Download add-ons, components and contents for RetroArch."
@@ -277,7 +279,7 @@ MSG_HASH(
    "GPU Screenshot Enable"
    )
 #if defined(DINGUX)
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 #endif
 #endif
 
@@ -319,6 +321,9 @@ MSG_HASH(
 
 #if defined(DINGUX)
 #endif
+
+/* Settings > Video > HDR */
+
 
 /* Settings > Video > Synchronization */
 
@@ -435,8 +440,6 @@ MSG_HASH(
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -516,6 +519,7 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay */
 
+
 #if defined(ANDROID)
 #endif
 
@@ -554,6 +558,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    "Agordoj"
    )
+#ifdef HAVE_LAKKA
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    "Ĉefa Menuo"

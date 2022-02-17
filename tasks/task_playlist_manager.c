@@ -23,7 +23,6 @@
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <file/file_path.h>
-#include <file/archive_file.h>
 #include <formats/m3u_file.h>
 
 #include "tasks_internal.h"
@@ -368,78 +367,6 @@ error:
 /* Clean Playlist */
 /******************/
 
-static bool pl_manager_content_exists(const char *path)
-{
-   /* Sanity check */
-   if (string_is_empty(path))
-      return false;
-   
-   /* If content is inside an archive, special
-    * handling is required... */
-   if (path_contains_compressed_file(path))
-   {
-      const char *delim                  = path_get_archive_delim(path);
-      char archive_path[PATH_MAX_LENGTH] = {0};
-      size_t len                         = 0;
-      struct string_list *archive_list   = NULL;
-      const char *content_file           = NULL;
-      bool content_found                 = false;
-      
-      if (!delim)
-         return false;
-      
-      /* Get path of 'parent' archive file */
-      len = (size_t)(1 + delim - path);
-      strlcpy(
-            archive_path, path,
-            (len < PATH_MAX_LENGTH ? len : PATH_MAX_LENGTH) * sizeof(char));
-      
-      /* Check if archive itself exists */
-      if (!path_is_valid(archive_path))
-         return false;
-      
-      /* Check if file exists inside archive */
-      archive_list = file_archive_get_file_list(archive_path, NULL);
-      
-      if (!archive_list)
-         return false;
-      
-      /* > Get playlist entry content file name
-       *   (sans archive file path) */
-      content_file = delim;
-      content_file++;
-      
-      if (!string_is_empty(content_file))
-      {
-         size_t i;
-         
-         /* > Loop over archive file contents */
-         for (i = 0; i < archive_list->size; i++)
-         {
-            const char *archive_file = archive_list->elems[i].data;
-            
-            if (string_is_empty(archive_file))
-               continue;
-            
-            if (string_is_equal(content_file, archive_file))
-            {
-               content_found = true;
-               break;
-            }
-         }
-      }
-      
-      /* Clean up */
-      string_list_free(archive_list);
-      
-      return content_found;
-   }
-   /* This is a 'normal' path - just check if
-    * it's valid */
-   else
-      return path_is_valid(path);
-}
-
 static void pl_manager_validate_core_association(
       playlist_t *playlist, size_t entry_index,
       const char *core_path, const char *core_name)
@@ -562,7 +489,7 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
             {
                /* Check whether playlist content exists on
                 * the filesystem */
-               if (!pl_manager_content_exists(entry->path))
+               if (!playlist_content_path_is_valid(entry->path))
                {
                   /* Invalid content - delete entry */
                   playlist_delete_index(pl_manager->playlist, pl_manager->list_index);

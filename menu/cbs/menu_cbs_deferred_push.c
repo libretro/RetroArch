@@ -113,6 +113,9 @@ GENERIC_DEFERRED_PUSH(deferred_push_configurations_list,            DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_load_content_special,           DISPLAYLIST_LOAD_CONTENT_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_load_content_list,              DISPLAYLIST_LOAD_CONTENT_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_dump_disk_list,                 DISPLAYLIST_DUMP_DISC)
+#ifdef HAVE_LAKKA
+GENERIC_DEFERRED_PUSH(deferred_push_eject_disc,                     DISPLAYLIST_EJECT_DISC)
+#endif
 GENERIC_DEFERRED_PUSH(deferred_push_cdrom_info_detail_list,         DISPLAYLIST_CDROM_DETAIL_INFO)
 GENERIC_DEFERRED_PUSH(deferred_push_load_disk_list,                 DISPLAYLIST_LOAD_DISC)
 GENERIC_DEFERRED_PUSH(deferred_push_information_list,               DISPLAYLIST_INFORMATION_LIST)
@@ -167,6 +170,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_video_windowed_mode_settings_list,    DISPLA
 GENERIC_DEFERRED_PUSH(deferred_push_video_synchronization_settings_list,    DISPLAYLIST_VIDEO_SYNCHRONIZATION_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_video_output_settings_list,    DISPLAYLIST_VIDEO_OUTPUT_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_video_scaling_settings_list,    DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_video_hdr_settings_list,        DISPLAYLIST_VIDEO_HDR_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_crt_switchres_settings_list,    DISPLAYLIST_CRT_SWITCHRES_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_configuration_settings_list,    DISPLAYLIST_CONFIGURATION_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_saving_settings_list,           DISPLAYLIST_SAVING_SETTINGS_LIST)
@@ -242,6 +246,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_core_updater_list,              DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_core_content_list,              DISPLAYLIST_CORE_CONTENT)
 GENERIC_DEFERRED_PUSH(deferred_push_core_content_dirs_list,         DISPLAYLIST_CORE_CONTENT_DIRS)
 GENERIC_DEFERRED_PUSH(deferred_push_core_content_dirs_subdir_list,  DISPLAYLIST_CORE_CONTENT_DIRS_SUBDIR)
+GENERIC_DEFERRED_PUSH(deferred_push_core_system_files_list,         DISPLAYLIST_CORE_SYSTEM_FILES)
 GENERIC_DEFERRED_PUSH(deferred_push_lakka_list,                     DISPLAYLIST_LAKKA)
 #endif
 
@@ -390,7 +395,7 @@ static int general_push(menu_displaylist_info_t *info,
    char newstring2[PATH_MAX_LENGTH];
    core_info_list_t           *list           = NULL;
    settings_t                  *settings      = config_get_ptr();
-   menu_handle_t                  *menu       = menu_driver_get_ptr();
+   menu_handle_t                  *menu       = menu_state_get_ptr()->driver_data;
    bool 
       multimedia_builtin_mediaplayer_enable   = settings->bools.multimedia_builtin_mediaplayer_enable;
    bool multimedia_builtin_imageviewer_enable = settings->bools.multimedia_builtin_imageviewer_enable;
@@ -450,7 +455,7 @@ static int general_push(menu_displaylist_info_t *info,
       case PUSH_ARCHIVE_OPEN:
          {
             struct retro_system_info *system = 
-               runloop_get_libretro_system_info();
+               &runloop_state_get_ptr()->system.info;
             if (system)
                if (!string_is_empty(system->valid_extensions))
                   strlcpy(newstring2, system->valid_extensions,
@@ -467,7 +472,7 @@ static int general_push(menu_displaylist_info_t *info,
             else
             {
                struct retro_system_info *system = 
-                  runloop_get_libretro_system_info();
+                  &runloop_state_get_ptr()->system.info;
                if (system && !string_is_empty(system->valid_extensions))
                {
                   new_exts           = strdup(system->valid_extensions);
@@ -513,7 +518,8 @@ static int general_push(menu_displaylist_info_t *info,
             union string_list_elem_attr attr;
             char newstring[PATH_MAX_LENGTH];
             struct string_list str_list2     = {0};
-            struct retro_system_info *system = runloop_get_libretro_system_info();
+            struct retro_system_info *system = 
+               &runloop_state_get_ptr()->system.info;
 
             newstring[0]                     = '\0';
             attr.i                           = 0;
@@ -674,6 +680,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 
    const deferred_info_list_t info_list[] = {
       {MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST, deferred_push_dump_disk_list},
+#ifdef HAVE_LAKKA
+      {MENU_ENUM_LABEL_DEFERRED_EJECT_DISC, deferred_push_eject_disc},
+#endif
       {MENU_ENUM_LABEL_DEFERRED_LOAD_DISC_LIST, deferred_push_load_disk_list},
       {MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST, deferred_push_favorites_list},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST, deferred_push_dropdown_box_list},
@@ -742,6 +751,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST, deferred_push_thumbnails_updater_list},
       {MENU_ENUM_LABEL_DEFERRED_PL_THUMBNAILS_UPDATER_LIST, deferred_push_pl_thumbnails_updater_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST, deferred_push_core_content_list},
+      {MENU_ENUM_LABEL_DEFERRED_CORE_SYSTEM_FILES_LIST, deferred_push_core_system_files_list},
 #endif
       {MENU_ENUM_LABEL_DEFERRED_MUSIC, deferred_music_list},
       {MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST, deferred_music_history_list},
@@ -766,6 +776,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_SYNCHRONIZATION_SETTINGS_LIST, deferred_push_video_synchronization_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_OUTPUT_SETTINGS_LIST, deferred_push_video_output_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_SCALING_SETTINGS_LIST, deferred_push_video_scaling_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_HDR_SETTINGS_LIST, deferred_push_video_hdr_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_CRT_SWITCHRES_SETTINGS_LIST, deferred_push_crt_switchres_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST, deferred_push_audio_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_SYNCHRONIZATION_SETTINGS_LIST, deferred_push_audio_synchronization_settings_list},
@@ -841,7 +852,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #ifdef HAVE_VIDEO_LAYOUT
       {MENU_ENUM_LABEL_VIDEO_LAYOUT_PATH, deferred_push_video_layout_path}, 
 #endif
-      {MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU, deferred_push_achievement_pause_menu},
+      {MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU, deferred_push_achievement_pause_menu},
       {MENU_ENUM_LABEL_ACHIEVEMENT_LIST, deferred_push_achievement_list},
       {MENU_ENUM_LABEL_CORE_COUNTERS, deferred_push_core_counters},
       {MENU_ENUM_LABEL_FRONTEND_COUNTERS, deferred_push_frontend_counters},
@@ -975,6 +986,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST:
 #ifdef HAVE_NETWORKING
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_content_dirs_subdir_list);
+#endif
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_CORE_SYSTEM_FILES_LIST:
+#ifdef HAVE_NETWORKING
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_system_files_list);
 #endif
             break;
          case MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST:
@@ -1209,6 +1225,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_ENUM_LABEL_DEFERRED_VIDEO_OUTPUT_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_output_settings_list);
             break;
+         case MENU_ENUM_LABEL_DEFERRED_VIDEO_HDR_SETTINGS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_hdr_settings_list);
+            break;
          case MENU_ENUM_LABEL_DEFERRED_VIDEO_SCALING_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_scaling_settings_list);
             break;
@@ -1270,6 +1289,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_dump_disk_list);
             break;
+#ifdef HAVE_LAKKA
+         case MENU_ENUM_LABEL_DEFERRED_EJECT_DISC:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_eject_disc);
+            break;
+#endif
          case MENU_ENUM_LABEL_DEFERRED_CDROM_INFO_DETAIL_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cdrom_info_detail_list);
             break;

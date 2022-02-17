@@ -65,8 +65,26 @@ typedef struct {
 }
 rc_scratch_t;
 
+enum {
+  RC_VALUE_TYPE_NONE,
+  RC_VALUE_TYPE_UNSIGNED,
+  RC_VALUE_TYPE_SIGNED,
+  RC_VALUE_TYPE_FLOAT
+};
+
 typedef struct {
-  unsigned add_value;       /* AddSource/SubSource */
+  union {
+    unsigned u32;
+    int i32;
+    float f32;
+  } value;
+
+  char type;
+}
+rc_typed_value_t;
+
+typedef struct {
+  rc_typed_value_t add_value;/* AddSource/SubSource */
   int add_hits;             /* AddHits */
   unsigned add_address;     /* AddAddress */
 
@@ -74,7 +92,7 @@ typedef struct {
   void* peek_userdata;
   lua_State* L;
 
-  unsigned measured_value;  /* Measured */
+  rc_typed_value_t measured_value;  /* Measured */
   char was_reset;           /* ResetIf triggered */
   char has_hits;            /* one of more hit counts is non-zero */
   char primed;              /* true if all non-Trigger conditions are true */
@@ -99,6 +117,7 @@ typedef struct {
   int lines_read;
 
   char has_required_hits;
+  char measured_as_percent;
 }
 rc_parse_state_t;
 
@@ -116,9 +135,9 @@ int rc_parse_memref(const char** memaddr, char* size, unsigned* address);
 void rc_update_memref_values(rc_memref_t* memref, rc_peek_t peek, void* ud);
 void rc_update_memref_value(rc_memref_value_t* memref, unsigned value);
 unsigned rc_get_memref_value(rc_memref_t* memref, int operand_type, rc_eval_state_t* eval_state);
-unsigned rc_get_memref_value_value(rc_memref_value_t* memref, int operand_type);
 char rc_memref_shared_size(char size);
-unsigned rc_transform_memref_value(unsigned value, char size);
+unsigned rc_memref_mask(char size);
+void rc_transform_memref_value(rc_typed_value_t* value, char size);
 
 void rc_parse_trigger_internal(rc_trigger_t* self, const char** memaddr, rc_parse_state_t* parse);
 int rc_trigger_state_active(int state);
@@ -129,17 +148,30 @@ void rc_reset_condset(rc_condset_t* self);
 
 rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse, int is_indirect);
 int rc_test_condition(rc_condition_t* self, rc_eval_state_t* eval_state);
-int rc_evaluate_condition_value(rc_condition_t* self, rc_eval_state_t* eval_state);
+void rc_evaluate_condition_value(rc_typed_value_t* value, rc_condition_t* self, rc_eval_state_t* eval_state);
+int rc_condition_is_combining(const rc_condition_t* self);
 
-int rc_parse_operand(rc_operand_t* self, const char** memaddr, int is_trigger, int is_indirect, rc_parse_state_t* parse);
-unsigned rc_evaluate_operand(rc_operand_t* self, rc_eval_state_t* eval_state);
+int rc_parse_operand(rc_operand_t* self, const char** memaddr, int is_indirect, rc_parse_state_t* parse);
+void rc_evaluate_operand(rc_typed_value_t* value, rc_operand_t* self, rc_eval_state_t* eval_state);
+int rc_operand_is_float_memref(const rc_operand_t* self);
 
 void rc_parse_value_internal(rc_value_t* self, const char** memaddr, rc_parse_state_t* parse);
+int rc_evaluate_value_typed(rc_value_t* self, rc_typed_value_t* value, rc_peek_t peek, void* ud, lua_State* L);
 void rc_reset_value(rc_value_t* self);
 rc_value_t* rc_alloc_helper_variable(const char* memaddr, int memaddr_len, rc_parse_state_t* parse);
 void rc_update_variables(rc_value_t* variable, rc_peek_t peek, void* ud, lua_State* L);
 
+void rc_typed_value_convert(rc_typed_value_t* value, char new_type);
+void rc_typed_value_add(rc_typed_value_t* value, const rc_typed_value_t* amount);
+void rc_typed_value_multiply(rc_typed_value_t* value, const rc_typed_value_t* amount);
+void rc_typed_value_divide(rc_typed_value_t* value, const rc_typed_value_t* amount);
+int rc_typed_value_compare(const rc_typed_value_t* value1, const rc_typed_value_t* value2, char oper);
+void rc_typed_value_from_memref_value(rc_typed_value_t* value, const rc_memref_value_t* memref);
+
+int rc_format_typed_value(char* buffer, int size, const rc_typed_value_t* value, int format);
+
 void rc_parse_lboard_internal(rc_lboard_t* self, const char* memaddr, rc_parse_state_t* parse);
+int rc_lboard_state_active(int state);
 
 void rc_parse_richpresence_internal(rc_richpresence_t* self, const char* script, rc_parse_state_t* parse);
 

@@ -37,6 +37,10 @@
 #include <lists/dir_list.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
@@ -46,13 +50,7 @@
 #include "../common/egl_common.h"
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #include "../common/gl_common.h"
-#endif
-
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
-#endif
 
 #ifdef HAVE_OPENGLES
 
@@ -671,7 +669,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(gfx_ctx_drm_data_t *drm)
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
-         glClear(GL_COLOR_BUFFER_BIT);
+         gl_clear();
 #endif
          break;
       case GFX_CTX_NONE:

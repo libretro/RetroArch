@@ -392,6 +392,7 @@
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../libretro-common/include/compat/zlib",
+					"$(SRCROOT)/../../deps/discord-rpc/include",
 					"$(SRCROOT)/../../deps/libFLAC/include",
 					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/7zip",
@@ -434,6 +435,7 @@
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../libretro-common/include/compat/zlib",
+					"$(SRCROOT)/../../deps/discord-rpc/include",
 					"$(SRCROOT)/../../deps/libFLAC/include",
 					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/7zip",
@@ -479,6 +481,7 @@
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../libretro-common/include/compat/zlib",
+					"$(SRCROOT)/../../deps/discord-rpc/include",
 					"$(SRCROOT)/../../deps/libFLAC/include",
 					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/7zip",
@@ -518,6 +521,7 @@
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../libretro-common/include/compat/zlib",
+					"$(SRCROOT)/../../deps/discord-rpc/include",
 					"$(SRCROOT)/../../deps/libFLAC/include",
 					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/7zip",
@@ -560,8 +564,6 @@
 					"-DFLAC__HAS_OGG=0",
 					"-DHAVE_CHD",
 					"-DHAVE_STB_VORBIS",
-					"-DHAVE_MINIUPNPC",
-					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_UPDATE_CORES",
 					"-DHAVE_ONLINE_UPDATER",
@@ -579,6 +581,7 @@
 					"-DHAVE_REWIND",
 					"-DHAVE_SCREENSHOTS",
 					"-DHAVE_CHEATS",
+					"-DHAVE_CORE_INFO_CACHE",
 					"-DHAVE_MENU",
 					"-DHAVE_GFX_WIDGETS",
 					"-DOSX",
@@ -616,7 +619,6 @@
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_RWAV",
 					"-DHAVE_GETOPT_LONG",
-					"-DDONT_WANT_ARM_ASM_OPTIMIZATIONS",
 				);
 				PREBINDING = NO;
 				SDKROOT = macosx;
@@ -647,8 +649,6 @@
 					"-DFLAC__HAS_OGG=0",
 					"-DHAVE_CHD",
 					"-DHAVE_STB_VORBIS",
-					"-DHAVE_MINIUPNPC",
-					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_UPDATE_CORES",
 					"-DHAVE_ONLINE_UPDATER",
@@ -666,6 +666,7 @@
 					"-DHAVE_REWIND",
 					"-DHAVE_SCREENSHOTS",
 					"-DHAVE_CHEATS",
+					"-DHAVE_CORE_INFO_CACHE",
 					"-DHAVE_MENU",
 					"-DHAVE_GFX_WIDGETS",
 					"-DOSX",
@@ -703,7 +704,6 @@
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_RWAV",
 					"-DHAVE_GETOPT_LONG",
-					"-DDONT_WANT_ARM_ASM_OPTIMIZATIONS",
 				);
 				PREBINDING = NO;
 				SDKROOT = macosx;

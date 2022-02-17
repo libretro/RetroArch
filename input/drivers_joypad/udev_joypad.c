@@ -36,6 +36,9 @@
 
 #include "../input_driver.h"
 
+#include "../../configuration.h"
+#include "../../config.def.h"
+
 #include "../../tasks/tasks_internal.h"
 
 #include "../../verbosity.h"
@@ -81,8 +84,9 @@ struct udev_joypad
    uint8_t axes_bind[ABS_MAX];
    uint16_t strength[2];
    uint16_t configured_strength[2];
+   unsigned rumble_gain;
 
-   char ident[255];
+   char ident[NAME_MAX_LENGTH];
    bool has_set_ff[2];
    /* Deal with analog triggers that report -32767 to 32767 */
    bool neg_trigger[NUM_AXES];
@@ -146,6 +150,37 @@ error:
    close(fd);
    return -1;
 }
+
+#ifndef HAVE_LAKKA_SWITCH
+static bool udev_set_rumble_gain(unsigned i, unsigned gain)
+{
+   struct input_event ie;
+   struct udev_joypad *pad = (struct udev_joypad*)&udev_pads[i];
+
+   /* Does not support > 100 gains */
+   if ((pad->fd < 0) ||
+       (gain > 100))
+      return false;
+
+   if (pad->rumble_gain == gain)
+      return true;
+
+   memset(&ie, 0, sizeof(ie));
+   ie.type = EV_FF;
+   ie.code = FF_GAIN;
+   ie.value = 0xFFFF * (gain/100.0);
+
+   if (write(pad->fd, &ie, sizeof(ie)) < (ssize_t)sizeof(ie))
+   {
+      RARCH_ERR("[udev]: Failed to set rumble gain on pad #%u.\n", i);
+      return false;
+   }
+
+   pad->rumble_gain = gain;
+
+   return true;
+}
+#endif
 
 static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char *path)
 {
@@ -265,6 +300,17 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
                "[udev]: Pad #%u (%s) supports %d force feedback effects.\n",
                p, path, pad->num_effects);
    }
+
+#ifndef HAVE_LAKKA_SWITCH
+   /* Set rumble gain here, if supported */
+   if (test_bit(FF_RUMBLE, ffbit))
+   {
+      settings_t *settings = config_get_ptr();
+      unsigned rumble_gain = settings ? settings->uints.input_rumble_gain
+                                      : DEFAULT_RUMBLE_GAIN;
+      udev_set_rumble_gain(p, rumble_gain);
+   }
+#endif
 
    return ret;
 }
@@ -577,12 +623,22 @@ static void *udev_joypad_init(void *data)
    udev_enumerate_add_match_subsystem(enumerate, "input");
    udev_enumerate_scan_devices(enumerate);
    devs = udev_enumerate_get_list_entry(enumerate);
+   if (!devs)
+      RARCH_DBG("[udev]: Couldn't open any joypads. Are permissions set correctly for /dev/input/event* and /run/udev/?\n");
 
    udev_list_entry_foreach(item, devs)
    {
       const char         *name = udev_list_entry_get_name(item);
       struct udev_device  *dev = udev_device_new_from_syspath(udev_joypad_fd, name);
       const char      *devnode = udev_device_get_devnode(dev);
+#if defined(DEBUG)
+      struct udev_list_entry *list_entry = NULL;
+      RARCH_DBG("udev_joypad_init entry name=%s devnode=%s\n", name, devnode);
+      udev_list_entry_foreach(list_entry, udev_device_get_properties_list_entry(dev))
+         RARCH_DBG("udev_joypad_init property %s=%s\n",
+                       udev_list_entry_get_name(list_entry),
+                       udev_list_entry_get_value(list_entry));
+#endif
 
       if (devnode)
          udev_check_device(dev, devnode);
@@ -748,6 +804,11 @@ input_device_driver_t udev_joypad = {
    udev_joypad_axis,
    udev_joypad_poll,
    udev_set_rumble,
+#ifndef HAVE_LAKKA_SWITCH
+   udev_set_rumble_gain,
+#else
+   NULL,
+#endif
    udev_joypad_name,
    "udev",
 };

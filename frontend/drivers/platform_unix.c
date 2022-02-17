@@ -30,6 +30,10 @@
 
 #ifdef __linux__
 #include <linux/version.h>
+#if __STDC_VERSION__ >= 199901L
+#include "feralgamemode/gamemode_client.h"
+#define FERAL_GAMEMODE
+#endif
 /* inotify API was added in 2.6.13 */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,13)
 #define HAS_INOTIFY
@@ -159,7 +163,7 @@ int system_property_get(const char *command,
    FILE *pipe;
    int length                   = 0;
    char buffer[PATH_MAX_LENGTH] = {0};
-   char cmd[PATH_MAX_LENGTH]    = {0};
+   char cmd[NAME_MAX_LENGTH]    = {0};
    char *curpos                 = NULL;
    size_t buf_pos               = strlcpy(cmd, command, sizeof(cmd));
 
@@ -1373,6 +1377,7 @@ static void frontend_unix_get_env(int *argc,
       char *argv[], void *data, void *params_data)
 {
    unsigned i;
+   const char* libretro_directory = getenv("LIBRETRO_DIRECTORY");
 #ifdef ANDROID
    int32_t major, minor, rel;
    char device_model[PROP_VALUE_MAX]  = {0};
@@ -1792,7 +1797,10 @@ static void frontend_unix_get_env(int *argc,
    }
 #else
    char base_path[PATH_MAX] = {0};
-#if defined(DINGUX)
+#if defined(RARCH_UNIX_CWD_ENV)
+   /* The entire path is zero initialized. */
+   base_path[0] = '.';
+#elif defined(DINGUX)
    dingux_get_base_path(base_path, sizeof(base_path));
 #else
    const char *xdg          = getenv("XDG_CONFIG_HOME");
@@ -1812,8 +1820,12 @@ static void frontend_unix_get_env(int *argc,
       strcpy_literal(base_path, "retroarch");
 #endif
 
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], base_path,
-         "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+   if (!string_is_empty(libretro_directory))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE], libretro_directory,
+            sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+   else
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], base_path,
+            "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 #if defined(DINGUX)
    /* On platforms that require manual core installation/
     * removal, placing core info files in the same directory
@@ -1986,6 +1998,49 @@ static void android_app_destroy(struct android_app *android_app)
 }
 #endif
 
+static bool frontend_unix_set_gamemode(bool on)
+{
+#ifdef FERAL_GAMEMODE
+   int gamemode_status  = gamemode_query_status();
+   bool gamemode_active = (gamemode_status == 2);
+
+   if (gamemode_status < 0)
+   {
+      if (on)
+         RARCH_WARN("[GameMode]: GameMode cannot be enabled on this system (\"%s.\") "
+               "https://github.com/FeralInteractive/gamemode needs to be installed.\n",
+               gamemode_error_string());
+
+      return false;
+   }
+
+   if (gamemode_active == on)
+      return true;
+
+   if (on)
+   {
+      if (gamemode_request_start() != 0)
+      {
+         RARCH_WARN("[GameMode]: Failed to enter GameMode: %s.\n", gamemode_error_string());
+         return false;
+      }
+   }
+   else
+   {
+      if (gamemode_request_end() != 0)
+      {
+         RARCH_WARN("[GameMode]: Failed to exit GameMode: %s.\n", gamemode_error_string());
+         return false;
+      }
+   }
+
+   return true;
+#else
+   (void)on;
+   return false;
+#endif
+}
+
 static void frontend_unix_deinit(void *data)
 {
    settings_t *settings = config_get_ptr();
@@ -2003,6 +2058,8 @@ static void frontend_unix_deinit(void *data)
    if (settings->uints.screen_brightness != DEFAULT_SCREEN_BRIGHTNESS)
       frontend_unix_set_screen_brightness(DEFAULT_SCREEN_BRIGHTNESS);
 #endif
+
+   frontend_unix_set_gamemode(false);
 }
 
 static void frontend_unix_init(void *data)
@@ -2083,6 +2140,10 @@ static void frontend_unix_init(void *data)
          "deleteCore", "(Ljava/lang/String;)V");
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
          android_app->getIntent);
+   GET_METHOD_ID(env, android_app->getVolumeCount, class,
+         "getVolumeCount", "()I");
+   GET_METHOD_ID(env, android_app->getVolumePath, class,
+         "getVolumePath", "(Ljava/lang/String;)Ljava/lang/String;");
 
    GET_OBJECT_CLASS(env, class, obj);
    GET_METHOD_ID(env, android_app->getStringExtra, class,
@@ -2100,6 +2161,29 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
       MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
 
 #ifdef ANDROID
+
+   JNIEnv *env = jni_thread_getenv();
+   jint output           = 0;
+   jobject obj           = NULL;
+   jstring jstr          = NULL;
+
+   int volume_count = 0;
+
+   if (!env || !g_android)
+      return 0;
+
+   CALL_OBJ_METHOD(env, obj, g_android->activity->clazz,
+         g_android->getIntent);
+
+   if (g_android->getVolumeCount)
+   {
+      CALL_INT_METHOD(env, output,
+         g_android->activity->clazz, g_android->getVolumeCount);
+      volume_count = output;
+   }
+
+   RARCH_LOG("external volumes: %d\n", volume_count);
+
    if (!string_is_empty(internal_storage_path))
    {
       if (storage_permissions == INTERNAL_STORAGE_WRITABLE)
@@ -2146,6 +2230,37 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
             msg_hash_to_str(MSG_APPLICATION_DIR),
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0);
+   for (unsigned i=0; i < volume_count; i++)
+   {
+      static char aux_path[PATH_MAX_LENGTH];
+      char index[2];
+      index[0] = '\0';
+
+      snprintf(index, sizeof(index), "%d", i);
+
+      CALL_OBJ_METHOD_PARAM(env, jstr, g_android->activity->clazz, g_android->getVolumePath,
+         (*env)->NewStringUTF(env, index));
+
+      if (jstr)
+      {
+         const char *str = (*env)->GetStringUTFChars(env, jstr, 0);
+
+         aux_path[0] = '\0';
+
+         if (str && *str)
+            strlcpy(aux_path, str,
+                  sizeof(aux_path));
+
+         (*env)->ReleaseStringUTFChars(env, jstr, str);
+         if (!string_is_empty(aux_path))
+            menu_entries_append_enum(list,
+                  aux_path,
+                  msg_hash_to_str(MSG_APPLICATION_DIR),
+                  enum_idx,
+                  FILE_TYPE_DIRECTORY, 0, 0);
+      }
+
+   }
 #elif defined(WEBOS)
    if (path_is_directory("/media/internal"))
       menu_entries_append_enum(list, "/media/internal",
@@ -2849,6 +2964,11 @@ frontend_ctx_driver_t frontend_ctx_unix = {
 #else
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
+#endif
+#ifdef FERAL_GAMEMODE
+   frontend_unix_set_gamemode,
+#else
+   NULL,
 #endif
 #ifdef ANDROID
    "android",                    /* ident               */

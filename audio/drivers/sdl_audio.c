@@ -25,11 +25,11 @@
 #include <retro_inline.h>
 #include <retro_math.h>
 
-#include "../../retroarch.h"
-#include "../../verbosity.h"
-
 #include "SDL.h"
 #include "SDL_audio.h"
+
+#include "../audio_driver.h"
+#include "../../verbosity.h"
 
 typedef struct sdl_audio
 {

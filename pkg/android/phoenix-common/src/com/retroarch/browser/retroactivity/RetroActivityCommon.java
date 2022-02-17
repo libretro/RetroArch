@@ -20,6 +20,8 @@ import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.media.AudioAttributes;
 import android.os.Bundle;
+import android.os.storage.StorageManager;
+import android.os.storage.StorageVolume;
 import android.system.Os;
 import android.view.InputDevice;
 import android.view.Surface;
@@ -31,6 +33,7 @@ import android.os.PowerManager;
 import android.os.Vibrator;
 import android.os.VibrationEffect;
 import android.util.Log;
+
 
 import java.io.File;
 import java.util.ArrayList;
@@ -163,6 +166,45 @@ public class RetroActivityCommon extends NativeActivity
   public void onRetroArchExit()
   {
       finish();
+  }
+
+  public int getVolumeCount()
+  {
+    int ret = 0;
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      StorageManager storageManager = (StorageManager) getApplicationContext().getSystemService(Context.STORAGE_SERVICE);
+      List<StorageVolume> storageVolumeList = storageManager.getStorageVolumes();
+
+      for (int i = 0; i < storageVolumeList.size(); i++) {
+        ret++;
+      }
+      Log.i("RetroActivity", "volume count: " + ret);
+    }
+
+    return (int)ret;
+  }
+
+  public String getVolumePath(String input)
+  {
+    String ret = "";
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      int index = Integer.valueOf(input);
+      int j = 0;
+
+      StorageManager storageManager = (StorageManager) getApplicationContext().getSystemService(Context.STORAGE_SERVICE);
+      List<StorageVolume> storageVolumeList = storageManager.getStorageVolumes();
+
+      for (int i = 0; i < storageVolumeList.size(); i++) {
+        if (i == j) {
+          ret = String.valueOf(storageVolumeList.get(index).getDirectory());
+        }
+      }
+      Log.i("RetroActivity", "volume path: " + ret);
+    }
+
+    return ret;
   }
 
 // https://stackoverflow.com/questions/4553650/how-to-check-device-natural-default-orientation-on-android-i-e-get-landscape/4555528#4555528

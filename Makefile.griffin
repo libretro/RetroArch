@@ -66,7 +66,6 @@ SHADER_CG_DIR      := media/shaders_cg
 OVERLAY_DIR        := media/overlays
 SHADER_GLSL_DIR    := media/shaders_glsl
 
-PYTHON2            := python2$(EXE_EXT)
 PYTHON3            := python3$(EXE_EXT)
 GIT                := git$(EXE_EXT)
 
@@ -219,6 +218,7 @@ else ifeq ($(libogc_platform), 1)
    HAVE_AUDIOMIXER          := 1
    HAVE_RWAV                := 1
    RARCH_CONSOLE             = 1
+   HAVE_CORE_INFO_CACHE     := 1
 
    ifeq ($(platform), wii)
       #HAVE_LANGEXTRA          := 1
@@ -286,6 +286,7 @@ else ifeq ($(platform), psp1)
    HAVE_CONFIGFILE          := 1
    HAVE_PATCH               := 1
    HAVE_CHEATS              := 1
+   HAVE_CORE_INFO_CACHE     := 1
 
    ifeq ($(BUILD_PRX), 1)
       LDFLAGS += $(addprefix -L,$(PSPSDK)/lib) -specs=$(PSPSDK)/lib/prxspecs -Wl,-q,-T$(PSPSDK)/lib/linkfile.prx $(LDFLAGS)
@@ -348,6 +349,7 @@ else ifeq ($(platform), vita)
    HAVE_CONFIGFILE          := 1
    HAVE_PATCH               := 1
    HAVE_CHEATS              := 1
+   HAVE_CORE_INFO_CACHE     := 1
 else ifeq ($(platform), windows_msvc6_x86)
    HAVE_RPNG                := 1
    HAVE_RJPEG               := 1
@@ -374,6 +376,7 @@ else ifeq ($(platform), windows_msvc6_x86)
    HAVE_CONFIGFILE          := 1
    HAVE_PATCH               := 1
    HAVE_CHEATS              := 1
+   HAVE_CORE_INFO_CACHE     := 1
 
    EXT_TARGET := $(TARGET_NAME).exe
    EXT_INTER_TARGET := $(TARGET_NAME).exe
@@ -421,6 +424,7 @@ else ifeq ($(platform), windows_msvc2003_x86)
    HAVE_PATCH               := 1
    HAVE_CHEATS              := 1
    HAVE_GFX_WIDGETS         := 1
+   HAVE_CORE_INFO_CACHE     := 1
 
    EXT_TARGET := $(TARGET_NAME).exe
    EXT_INTER_TARGET := $(TARGET_NAME).exe
@@ -483,6 +487,7 @@ else ifeq ($(platform), windows_msvc2005_x86)
    HAVE_VIDEO_FILTER        := 1
    HAVE_FILTERS_BUILTIN     := 1
    HAVE_GFX_WIDGETS         := 1
+   HAVE_CORE_INFO_CACHE     := 1
 
    EXT_TARGET := $(TARGET_NAME).exe
    EXT_INTER_TARGET := $(TARGET_NAME).exe
@@ -525,6 +530,7 @@ else ifeq ($(platform), windows_msvc2005_x86)
    endif
 else ifneq (,$(findstring windows_msvc2010,$(platform)))
    HAVE_GDI                 := 1
+   HAVE_CHEEVOS             := 1
    HAVE_SCREENSHOTS         := 1
    HAVE_REWIND              := 1
    HAVE_AUDIOMIXER          := 1
@@ -563,6 +569,7 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
    HAVE_VIDEO_FILTER        := 1
    HAVE_FILTERS_BUILTIN     := 1
    HAVE_GFX_WIDGETS         := 1
+   HAVE_CORE_INFO_CACHE     := 1
 
    EXT_TARGET := $(TARGET_NAME).exe
    EXT_INTER_TARGET := $(TARGET_NAME).exe
@@ -649,6 +656,7 @@ else ifneq (,$(findstring windows_msvc2012,$(platform)))
    HAVE_CONFIGFILE          := 1
    HAVE_PATCH               := 1
    HAVE_CHEATS              := 1
+   HAVE_CORE_INFO_CACHE     := 1
 
    EXT_TARGET := $(TARGET_NAME).exe
    EXT_INTER_TARGET := $(TARGET_NAME).exe
@@ -733,6 +741,7 @@ else ifneq (,$(findstring windows_msvc2013,$(platform)))
    HAVE_CONFIGFILE          := 1
    HAVE_PATCH               := 1
    HAVE_CHEATS              := 1
+   HAVE_CORE_INFO_CACHE     := 1
 
    EXT_TARGET := $(TARGET_NAME).exe
    EXT_INTER_TARGET := $(TARGET_NAME).exe
@@ -817,6 +826,7 @@ else ifneq (,$(findstring windows_msvc2015,$(platform)))
    HAVE_CONFIGFILE          := 1
    HAVE_PATCH               := 1
    HAVE_CHEATS              := 1
+   HAVE_CORE_INFO_CACHE     := 1
 
    EXT_TARGET := $(TARGET_NAME).exe
    EXT_INTER_TARGET := $(TARGET_NAME).exe
@@ -915,6 +925,7 @@ else ifeq (qnx,$(platform))
    HAVE_CONFIGFILE          := 1
    HAVE_PATCH               := 1
    HAVE_CHEATS              := 1
+   HAVE_CORE_INFO_CACHE     := 1
 
    CC=qcc -Vgcc_ntoarmv7le
    CXX=QCC -Vgcc_ntoarmv7le
@@ -923,7 +934,7 @@ else ifeq (qnx,$(platform))
       LDFLAGS += -g
    endif
 
-   PLATCFLAGS += -DHAVE_SHADERPIPELINE -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_OZONE -DHAVE_CC_RESAMPLER -DHAVE_CHEEVOS -DRC_DISABLE_LUA -DHAVE_FBO -DHAVE_GL_SYNC -DHAVE_GLSLANG -DHAVE_BUILTINGLSLANG -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_RUNAHEAD -DHAVE_GFX_WIDGETS -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_SPIRV_CROSS -DHAVE_STB_FONT -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES -DHAVE_XMB -DRARCH_INTERNAL -DWANT_GLSLANG -DHAVE_XCB -DHAVE_EGL -DHAVE_BB10 -DHAVE_GLSL -DHAVE_AL -DHAVE_BSV_MOVIE -DRARCH_MOBILE
+   PLATCFLAGS += -DHAVE_SHADERPIPELINE -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_OZONE -DHAVE_CC_RESAMPLER -DHAVE_CHEEVOS -DRC_DISABLE_LUA -DHAVE_GL_SYNC -DHAVE_GLSLANG -DHAVE_BUILTINGLSLANG -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_RUNAHEAD -DHAVE_GFX_WIDGETS -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_SPIRV_CROSS -DHAVE_STB_FONT -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES -DHAVE_XMB -DRARCH_INTERNAL -DWANT_GLSLANG -DHAVE_XCB -DHAVE_EGL -DHAVE_BB10 -DHAVE_GLSL -DHAVE_AL -DHAVE_BSV_MOVIE -DRARCH_MOBILE
    EXT_TARGET := $(TARGET_NAME)
    EXT_INTER_TARGET := $(TARGET_NAME)
    INCLUDE += -Ilibretro-common/include -Igfx/include -Ideps -Ideps/stb -Ideps/rcheevos/include -Ideps/SPIRV-Cross -Ideps/glslang -I.
@@ -959,8 +970,9 @@ else ifneq (,$(findstring unix,$(platform)))
    HAVE_CONFIGFILE          := 1
    HAVE_PATCH               := 1
    HAVE_CHEATS              := 1
+   HAVE_CORE_INFO_CACHE     := 1
 
-   PLATCFLAGS += -D__MMX__ -D__SSE__ -DHAVE_OPENGL -DHAVE_OPENGL1 -DHAVE_GLSL -DHAVE_SHADERPIPELINE -DHAVE_OZONE -DHAVE_CC_RESAMPLER -DHAVE_CHEEVOS -DRC_DISABLE_LUA -DHAVE_FBO -DHAVE_GL_SYNC -DHAVE_SLANG -DHAVE_GLSLANG -DHAVE_BUILTINGLSLANG -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_RUNAHEAD -DHAVE_GFX_WIDGETS -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_SPIRV_CROSS -DHAVE_STB_FONT -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES -DHAVE_VULKAN -DHAVE_XMB -DRARCH_INTERNAL -DWANT_GLSLANG -DHAVE_X11 -DHAVE_XCB -DHAVE_UDEV -DHAVE_BSV_MOVIE -DHAVE_PULSE
+   PLATCFLAGS += -D__MMX__ -D__SSE__ -DHAVE_OPENGL -DHAVE_OPENGL1 -DHAVE_GLSL -DHAVE_SHADERPIPELINE -DHAVE_OZONE -DHAVE_CC_RESAMPLER -DHAVE_CHEEVOS -DRC_DISABLE_LUA -DHAVE_GL_SYNC -DHAVE_SLANG -DHAVE_GLSLANG -DHAVE_BUILTINGLSLANG -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_RUNAHEAD -DHAVE_GFX_WIDGETS -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_SPIRV_CROSS -DHAVE_STB_FONT -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES -DHAVE_VULKAN -DHAVE_XMB -DRARCH_INTERNAL -DWANT_GLSLANG -DHAVE_X11 -DHAVE_XCB -DHAVE_UDEV -DHAVE_BSV_MOVIE -DHAVE_PULSE
    EXT_TARGET := $(TARGET_NAME)
    EXT_INTER_TARGET := $(TARGET_NAME)
    INCLUDE += -Ilibretro-common/include -Igfx/include -Ideps -Ideps/stb -Ideps/rcheevos/include -Ideps/SPIRV-Cross -Ideps/glslang -I.
@@ -992,6 +1004,7 @@ else ifeq (dos,$(platform))
 	HAVE_CONFIGFILE          := 1
    HAVE_PATCH               := 0
    HAVE_CHEATS              := 0
+   HAVE_CORE_INFO_CACHE     := 1
    CC=i586-pc-msdosdjgpp-gcc
    CXX=i586-pc-msdosdjgpp-g++
 
@@ -999,7 +1012,7 @@ else ifeq (dos,$(platform))
       LDFLAGS += -g
    endif
 
-   PLATCFLAGS += -DHAVE_SHADERPIPELINE -DHAVE_CC_RESAMPLER -DRC_DISABLE_LUA -DHAVE_FBO -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_GFX_WIDGETS -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_SPIRV_CROSS -DHAVE_STB_FONT -DRARCH_INTERNAL  -DHAVE_XCB
+   PLATCFLAGS += -DHAVE_SHADERPIPELINE -DHAVE_CC_RESAMPLER -DRC_DISABLE_LUA -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_GFX_WIDGETS -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_SPIRV_CROSS -DHAVE_STB_FONT -DRARCH_INTERNAL  -DHAVE_XCB
    TARGET_NAME := retrodos
    EXT_TARGET := $(TARGET_NAME).exe
    EXT_INTER_TARGET := $(TARGET_NAME).exe
@@ -1141,6 +1154,10 @@ ifeq ($(RARCH_CONSOLE), 1)
    CFLAGS += -DRARCH_CONSOLE
 endif
 
+ifeq ($(HAVE_CORE_INFO_CACHE), 1)
+   CFLAGS += -DHAVE_CORE_INFO_CACHE
+endif
+
 ifeq ($(RARCH_MOBILE), 1)
    CFLAGS += -DRARCH_MOBILE
 endif
@@ -1177,6 +1194,10 @@ endif
 
 ifeq ($(HAVE_FILTERS_BUILTIN), 1)
    CFLAGS += -DHAVE_FILTERS_BUILTIN
+endif
+
+ifeq ($(HAVE_WINDOW_OFFSET), 1)
+   CFLAGS += -DHAVE_WINDOW_OFFSET
 endif
 
 ifeq ($(HAVE_THREADS), 1)

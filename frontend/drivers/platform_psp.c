@@ -60,10 +60,8 @@
 #include "../../paths.h"
 #include "../../verbosity.h"
 
-#if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
-#ifndef VITA
+#if defined(PSP) && defined(HAVE_KERNEL_PRX)
 #include "../../bootstrap/psp1/kernel_functions.h"
-#endif
 #endif
 
 #if defined(HAVE_VITAGLES)
@@ -73,10 +71,6 @@
 #ifndef VITA
 PSP_MODULE_INFO("RetroArch", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|THREAD_ATTR_VFPU);
-#ifdef BIG_STACK
-PSP_MAIN_THREAD_STACK_SIZE_KB(4*1024);
-#endif
-PSP_HEAP_SIZE_MAX();
 #endif
 
 #ifdef SCE_LIBC_SIZE
@@ -241,7 +235,7 @@ static void frontend_psp_shutdown(bool unused)
    //sceKernelExitProcess(0);
    return;
 #else
-   sceKernelExitGame();
+   exit(0);
 #endif
 }
 
@@ -309,16 +303,13 @@ static void frontend_psp_init(void *data)
 
 #endif
 
-#if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
-#ifndef VITA
+#if defined(PSP) && defined(HAVE_KERNEL_PRX) 
    pspSdkLoadStartModule("kernel_functions.prx", PSP_MEMORY_PARTITION_KERNEL);
-#endif
 #endif
 }
 
 static void frontend_psp_exec(const char *path, bool should_load_game)
 {
-#if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER) || defined(VITA)
 #ifdef IS_SALAMANDER
    char boot_params[1024];
    char core_name[256];
@@ -326,7 +317,7 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
    char argp[512] = {0};
    SceSize   args = 0;
 
-#if !defined(VITA)
+#if defined(PSP)
    strlcpy(argp, eboot_path, sizeof(argp));
    args = strlen(argp) + 1;
 #endif
@@ -392,9 +383,8 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
       int ret =  sceAppMgrLoadExec(path, args == 0 ? NULL : (char * const*)((const char*[]){argp, 0}), NULL);
       RARCH_LOG("Attempt to load executable: [%d].\n", ret);
    }
-#else
+#elif defined(PSP) && defined(HAVE_KERNEL_PRX)
    exitspawn_kernel(path, args, argp);
-#endif
 #endif
 }
 
@@ -657,11 +647,13 @@ frontend_ctx_driver_t frontend_ctx_psp = {
    frontend_psp_get_user_language, /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
+   NULL,                         /* set_gamemode */
    "vita",                       /* ident */
 #else
    NULL,                         /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
+   NULL,                         /* set_gamemode */
    "psp",                        /* ident */
 #endif
    NULL                          /* get_video_driver */

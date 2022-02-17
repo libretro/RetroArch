@@ -253,7 +253,7 @@ static void *gdi_gfx_init(const video_info_t *video,
    mode_width  = 0;
    mode_height = 0;
 
-   RARCH_LOG("[GDI]: Detecting screen resolution %ux%u.\n", full_x, full_y);
+   RARCH_LOG("[GDI]: Detecting screen resolution: %ux%u.\n", full_x, full_y);
 
    win_width   = video->width;
    win_height  = video->height;
@@ -684,9 +684,9 @@ static void gdi_unload_texture(void *data,
 static uint32_t gdi_get_flags(void *data) { return 0; }
 
 static void gdi_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
-   win32_get_video_output_size(width, height);
+   win32_get_video_output_size(width, height, desc, desc_len);
 }
 
 static void gdi_get_video_output_prev(void *data)
@@ -724,7 +724,11 @@ static const video_poke_interface_t gdi_poke_interface = {
    NULL,                         /* grab_mouse_toggle */
    NULL,                         /* get_current_shader */
    NULL,                         /* get_current_software_framebuffer */
-   NULL                          /* get_hw_render_interface */
+   NULL,                         /* get_hw_render_interface */
+   NULL,                         /* set_hdr_max_nits */
+   NULL,                         /* set_hdr_paper_white_nits */
+   NULL,                         /* set_hdr_contrast */
+   NULL                          /* set_hdr_expand_gamut */
 };
 
 static void gdi_gfx_get_poke_interface(void *data,

@@ -1146,7 +1146,7 @@ void runtime_log_save(runtime_log_t *runtime_log)
    if (!runtime_log)
       return;
 
-   RARCH_LOG("Saving runtime log file: %s\n", runtime_log->path);
+   RARCH_LOG("[Runtime]: Saving runtime log file: \"%s\".\n", runtime_log->path);
 
    /* Attempt to open log file */
    file = filestream_open(runtime_log->path,
@@ -1154,7 +1154,7 @@ void runtime_log_save(runtime_log_t *runtime_log)
 
    if (!file)
    {
-      RARCH_ERR("Failed to open runtime log file: %s\n", runtime_log->path);
+      RARCH_ERR("[Runtime]: Failed to open runtime log file: \"%s\".\n", runtime_log->path);
       return;
    }
 
@@ -1162,7 +1162,7 @@ void runtime_log_save(runtime_log_t *runtime_log)
    writer = rjsonwriter_open_rfile(file);
    if (!writer)
    {
-      RARCH_ERR("Failed to create JSON writer.\n");
+      RARCH_ERR("[Runtime]: Failed to create JSON writer.\n");
       goto end;
    }
 

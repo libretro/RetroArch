@@ -479,6 +479,7 @@ frontend_ctx_driver_t frontend_ctx_uwp = {
    frontend_uwp_get_user_language,  /* get_user_language   */
    NULL,                            /* is_narrator_running */
    NULL,                            /* accessibility_speak */
+   NULL,                            /* set_gamemode        */
    "uwp",                           /* ident               */
    NULL                             /* get_video_driver    */
 };

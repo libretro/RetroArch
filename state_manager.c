@@ -30,9 +30,11 @@
 #include "state_manager.h"
 #include "msg_hash.h"
 #include "core.h"
+#include "core_info.h"
 #include "retroarch.h"
 #include "verbosity.h"
 #include "content.h"
+#include "audio/audio_driver.h"
 
 #ifdef HAVE_NETWORKING
 #include "network/netplay/netplay.h"
@@ -576,10 +578,25 @@ void state_manager_event_init(
       struct state_manager_rewind_state *rewind_st,
       unsigned rewind_buffer_size)
 {
-   void *state          = NULL;
+   core_info_t *core_info = NULL;
+   void *state            = NULL;
 
    if (!rewind_st || rewind_st->state)
       return;
+
+   /* We cannot initialise the rewind buffer
+    * unless the core info struct for the current
+    * core has been initialised (i.e. without this,
+    * the savestate support level for the current
+    * core is unknown) */
+   if (!core_info_get_current_core(&core_info) || !core_info)
+      return;
+
+   if (!core_info_current_supports_rewind())
+   {
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_REWIND_UNSUPPORTED));
+      return;
+   }
 
    if (audio_driver_has_callback())
    {
@@ -640,10 +657,11 @@ bool state_manager_check_rewind(
       unsigned rewind_granularity, bool is_paused,
       char *s, size_t len, unsigned *time)
 {
-   bool ret             = false;
-   static bool first    = true;
+   bool ret                = false;
+   static bool first       = true;
+   static bool was_pressed = false;
 #ifdef HAVE_NETWORKING
-   bool was_reversed    = false;
+   bool was_reversed       = false;
 #endif
 
    if (!rewind_st)
@@ -665,7 +683,16 @@ bool state_manager_check_rewind(
    }
 
    if (!rewind_st->state)
+   {
+      if ((pressed && !was_pressed) &&
+          !core_info_current_supports_rewind())
+         runloop_msg_queue_push(msg_hash_to_str(MSG_REWIND_UNSUPPORTED),
+               1, 100, false, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+      was_pressed = pressed;
       return false;
+   }
 
    if (pressed)
    {
@@ -725,7 +752,7 @@ bool state_manager_check_rewind(
       cnt = (cnt + 1) % (rewind_granularity ?
             rewind_granularity : 1); /* Avoid possible SIGFPE. */
 
-      if ((cnt == 0) || rarch_ctl(RARCH_CTL_BSV_MOVIE_IS_INITED, NULL))
+      if ((cnt == 0) || retroarch_ctl(RARCH_CTL_BSV_MOVIE_IS_INITED, NULL))
       {
          void *state = NULL;
 
@@ -739,5 +766,6 @@ bool state_manager_check_rewind(
 
    core_set_rewind_callbacks();
 
+   was_pressed = pressed;
    return ret;
 }

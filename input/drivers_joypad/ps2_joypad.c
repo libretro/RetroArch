@@ -16,8 +16,10 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <boolean.h>
+#include <kernel.h>
 
 #include "../../config.def.h"
+#include "../../tasks/tasks_internal.h"
 
 #include "../input_driver.h"
 
@@ -261,6 +263,7 @@ input_device_driver_t ps2_joypad = {
    ps2_joypad_axis,
    ps2_joypad_poll,
    ps2_joypad_rumble,
+   NULL,
    ps2_joypad_name,
    "ps2",
 };

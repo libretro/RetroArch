@@ -55,6 +55,7 @@ int rc_snprintf(char* buffer, size_t size, const char* format, ...)
 
    va_start(args, format);
    /* assume buffer is large enough and ignore size */
+   (void)size;
    result = vsprintf(buffer, format, args);
    va_end(args);
 

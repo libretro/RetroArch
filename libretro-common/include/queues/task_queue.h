@@ -191,6 +191,8 @@ char* task_get_title(retro_task_t *task);
 
 void* task_get_data(retro_task_t *task);
 
+bool task_is_on_main_thread(void);
+
 void task_queue_set_threaded(void);
 
 void task_queue_unset_threaded(void);

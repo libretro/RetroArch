@@ -15,6 +15,10 @@
 
 #define CINTERFACE
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 /* For Xbox we will just link statically
  * to Direct3D libraries instead. */
 

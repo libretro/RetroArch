@@ -668,9 +668,8 @@ static void qnx_handle_navigator_event(
 
    return;
 
-   shutdown:
-       rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
-       return;
+shutdown:
+   retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
 }
 
 static void *qnx_input_init(const char *joypad_driver)
@@ -774,7 +773,7 @@ static int16_t qnx_input_state(
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds,
+      const retro_keybind_set *binds,
       bool keyboard_mapping_blocked,
       unsigned port,
       unsigned device,

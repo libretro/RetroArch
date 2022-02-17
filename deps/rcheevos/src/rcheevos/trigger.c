@@ -13,6 +13,7 @@ void rc_parse_trigger_internal(rc_trigger_t* self, const char** memaddr, rc_pars
   /* reset in case multiple triggers are parsed by the same parse_state */
   parse->measured_target = 0;
   parse->has_required_hits = 0;
+  parse->measured_as_percent = 0;
 
   if (*aux == 's' || *aux == 'S') {
     self->requirement = 0;
@@ -43,6 +44,7 @@ void rc_parse_trigger_internal(rc_trigger_t* self, const char** memaddr, rc_pars
 
   self->measured_value = 0;
   self->measured_target = parse->measured_target;
+  self->measured_as_percent = parse->measured_as_percent;
   self->state = RC_TRIGGER_STATE_WAITING;
   self->has_hits = 0;
   self->has_required_hits = parse->has_required_hits;
@@ -177,8 +179,10 @@ int rc_evaluate_trigger(rc_trigger_t* self, rc_peek_t peek, void* ud, lua_State*
   }
 
   /* if paused, the measured value may not be captured, keep the old value */
-  if (!is_paused)
-    self->measured_value = eval_state.measured_value;
+  if (!is_paused) {
+    rc_typed_value_convert(&eval_state.measured_value, RC_VALUE_TYPE_UNSIGNED);
+    self->measured_value = eval_state.measured_value.value.u32;
+  }
 
   /* if the state is WAITING and the trigger is ready to fire, ignore it and reset the hit counts */
   /* otherwise, if the state is WAITING, proceed to activating the trigger */

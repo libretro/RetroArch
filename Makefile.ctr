@@ -2,6 +2,7 @@ TARGET := retroarch_3ds
 LIBRETRO =
 
 DEBUG                   = 0
+CONSOLE_LOG             = 0
 GRIFFIN_BUILD           = 1
 WHOLE_ARCHIVE_LINK      = 0
 BUILD_3DSX              = 1
@@ -9,6 +10,7 @@ BUILD_3DS               = 0
 BUILD_CIA               = 1
 LIBCTRU_NO_DEPRECATION  = 1
 USE_CTRULIB_2          ?= 0
+LOAD_WITHOUT_CORE_INFO ?= 0
 
 APP_TITLE            = RetroArch 3DS
 APP_DESCRIPTION      = RetroArch 3DS
@@ -60,6 +62,7 @@ ifeq ($(GRIFFIN_BUILD), 1)
 	DEFINES += -DHAVE_THREADS
 	DEFINES += -DHAVE_GFX_WIDGETS
 	DEFINES += -DHAVE_OVERLAY
+	DEFINES += -DHAVE_CORE_INFO_CACHE
 	#DEFINES += -DHAVE_SOCKET_LEGACY
 	#-DHAVE_SSL -DHAVE_BUILTINMBEDTLS -DMBEDTLS_SSL_DEBUG_ALL
 	#ssl is currently incompatible with griffin due to use of the "static" flag on repeating functions that will conflict when included in one file
@@ -91,6 +94,7 @@ else
 	HAVE_THREADS = 1
 	#HAVE_SSL = 1
 	#HAVE_BUILTINMBEDTLS = 1
+	HAVE_CORE_INFO_CACHE = 1
 
 	include Makefile.common
 	CFLAGS += $(DEF_FLAGS)
@@ -103,6 +107,9 @@ endif
 ifeq ($(strip $(DEVKITPRO)),)
 	$(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitpro")
 endif
+ifeq ($(strip $(DEVKITARM)),)
+	$(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitarm")
+endif
 
 ifeq ($(strip $(CTRULIB)),)
 	CTRULIB = $(DEVKITPRO)/libctru
@@ -110,6 +117,10 @@ endif
 
 ifeq ($(strip $(USE_CTRULIB_2)),1)
 	CFLAGS += -DUSE_CTRULIB_2
+endif
+
+ifeq ($(LOAD_WITHOUT_CORE_INFO),1)
+	CFLAGS += -DLOAD_WITHOUT_CORE_INFO
 endif
 
 ifeq ($(strip $(DEVKITTOOLS)),)
@@ -152,6 +163,10 @@ ifeq ($(DEBUG), 1)
    CFLAGS	+= -O0 -g
 else
    CFLAGS	+= -O3
+endif
+
+ifeq ($(CONSOLE_LOG), 1)
+   CFLAGS	+= -DCONSOLE_LOG
 endif
 
 ifeq ($(LIBCTRU_NO_DEPRECATION), 1)

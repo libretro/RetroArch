@@ -9,7 +9,6 @@ PSP_EXPORT_VAR_HASH(module_info)
 PSP_EXPORT_END
 
 PSP_EXPORT_START(kernel_functions, 0, 0x4001)
-PSP_EXPORT_FUNC(read_system_buttons)
 PSP_EXPORT_FUNC(exitspawn_kernel)
 PSP_EXPORT_END
 

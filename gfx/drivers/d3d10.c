@@ -14,6 +14,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Direct3D 10 driver.
+ *
+ * Minimum version : Direct3D 10.0 (2006)
+ * Minimum OS      : Windows Vista
+ * Recommended OS  : Windows Vista and/or later
+ */
+
 #define CINTERFACE
 #define COBJMACROS
 
@@ -228,6 +235,31 @@ static void d3d10_get_overlay_interface(void* data, const video_overlay_interfac
    };
 
    *iface = &overlay_interface;
+}
+
+static void d3d10_render_overlay(void *data)
+{
+   unsigned       i;
+   d3d10_video_t* d3d10 = (d3d10_video_t*)data;
+
+   if (!d3d10)
+      return;
+
+   if (d3d10->overlays.fullscreen)
+      D3D10SetViewports(d3d10->device, 1, &d3d10->viewport);
+   else
+      D3D10SetViewports(d3d10->device, 1, &d3d10->frame.viewport);
+
+   D3D10SetBlendState(d3d10->device, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
+   D3D10SetVertexBuffer(d3d10->device, 0, d3d10->overlays.vbo, sizeof(d3d10_sprite_t), 0);
+   D3D10SetPShaderSamplers(
+         d3d10->device, 0, 1, &d3d10->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
+
+   for (i = 0; i < (unsigned)d3d10->overlays.count; i++)
+   {
+      D3D10SetPShaderResources(d3d10->device, 0, 1, &d3d10->overlays.textures[i].view);
+      D3D10Draw(d3d10->device, 1, i);
+   }
 }
 #endif
 
@@ -1008,7 +1040,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
 #else
    DXGICreateFactory(&d3d10->factory);
 #endif
-
+   
    {
       int         i = 0;
       int gpu_index = settings->ints.d3d10_gpu_index;
@@ -1039,7 +1071,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
          utf16_to_char_string((const uint16_t*)
                desc.Description, str, sizeof(str));
 
-         RARCH_LOG("[D3D10]: Found GPU at index %d: %s\n", i, str);
+         RARCH_LOG("[D3D10]: Found GPU at index %d: \"%s\".\n", i, str);
 
          string_list_append(d3d10->gpu_list, str, attr);
 
@@ -1156,7 +1188,7 @@ static void d3d10_init_render_targets(d3d10_video_t* d3d10,
          height = d3d10->vp.height;
       }
 
-      RARCH_LOG("[D3D10]: Updating framebuffer size %u x %u.\n", width, height);
+      RARCH_LOG("[D3D10]: Updating framebuffer size %ux%u.\n", width, height);
 
       if ((i != (d3d10->shader_preset->passes - 1)) || (width != d3d10->vp.width) ||
             (height != d3d10->vp.height))
@@ -1217,6 +1249,7 @@ static bool d3d10_gfx_frame(
       &video_info->osd_stat_params;
    const char *stat_text      = video_info->stat_text;
    bool menu_is_alive         = video_info->menu_is_alive;
+   bool overlay_behind_menu   = video_info->overlay_behind_menu;
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active        = video_info->widgets_active;
 #endif
@@ -1472,6 +1505,11 @@ static bool d3d10_gfx_frame(
 
    d3d10->sprites.enabled = true;
 
+#ifdef HAVE_OVERLAY
+   if (d3d10->overlays.enabled && overlay_behind_menu)
+      d3d10_render_overlay(d3d10);
+#endif
+
 #ifdef HAVE_MENU
 #ifndef HAVE_GFX_WIDGETS
    if (d3d10->menu.enabled)
@@ -1501,24 +1539,8 @@ static bool d3d10_gfx_frame(
       }
 
 #ifdef HAVE_OVERLAY
-   if (d3d10->overlays.enabled)
-   {
-      if (d3d10->overlays.fullscreen)
-         D3D10SetViewports(context, 1, &d3d10->viewport);
-      else
-         D3D10SetViewports(context, 1, &d3d10->frame.viewport);
-
-      D3D10SetBlendState(d3d10->device, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
-      D3D10SetVertexBuffer(context, 0, d3d10->overlays.vbo, sizeof(d3d10_sprite_t), 0);
-      D3D10SetPShaderSamplers(
-            context, 0, 1, &d3d10->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
-
-      for (i = 0; i < (unsigned)d3d10->overlays.count; i++)
-      {
-         D3D10SetPShaderResources(context, 0, 1, &d3d10->overlays.textures[i].view);
-         D3D10Draw(d3d10->device, 1, i);
-      }
-   }
+   if (d3d10->overlays.enabled && !overlay_behind_menu)
+      d3d10_render_overlay(d3d10);
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
@@ -1538,7 +1560,7 @@ static bool d3d10_gfx_frame(
 #ifndef __WINRT__
    win32_update_title();
 #endif
-   DXGIPresent(d3d10->swapChain, !!d3d10->vsync, 0);
+   DXGIPresent(d3d10->swapChain, d3d10->swap_interval, 0);
 
    return true;
 }
@@ -1553,6 +1575,7 @@ static void d3d10_gfx_set_nonblock_state(void* data, bool toggle,
       return;
 
    d3d10->vsync         = !toggle;
+   d3d10->swap_interval = (!toggle) ? swap_interval : 0;
 }
 
 static bool d3d10_gfx_alive(void* data)
@@ -1734,6 +1757,7 @@ static uint32_t d3d10_get_flags(void *data)
    uint32_t flags = 0;
 
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
+   BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
@@ -1743,9 +1767,9 @@ static uint32_t d3d10_get_flags(void *data)
 
 #ifndef __WINRT__
 static void d3d10_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
-   win32_get_video_output_size(width, height);
+   win32_get_video_output_size(width, height, desc, desc_len);
 }
 
 static void d3d10_get_video_output_prev(void *data)
@@ -1800,6 +1824,10 @@ static const video_poke_interface_t d3d10_poke_interface = {
 #else
    NULL, /* get_hw_render_interface */
 #endif
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void d3d10_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)

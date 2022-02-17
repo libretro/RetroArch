@@ -15,10 +15,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* OpenGL driver.
+/* OpenGL 1.x driver. 
  *
- * We are targeting a minimum of OpenGL 1.1 and the Microsoft "GDI Generic" software GL implementation.
- * Any additional features added for later 1.x versions should only be enabled if they are detected at runtime. */
+ * Minimum version : OpenGL 1.1 (1997)
+ *
+ * We are targeting a minimum of OpenGL 1.1 and the Microsoft 
+ * "GDI Generic" * software GL implementation.
+ * Any additional features added for later 1.x versions should only be 
+ * enabled if they are detected at runtime. */
 
 #include <stddef.h>
 #include <retro_miscellaneous.h>
@@ -268,11 +272,20 @@ static void *gl1_gfx_init(const video_info_t *video,
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
-   RARCH_LOG("[GL1]: Found GL1 context: %s\n", ctx_driver->ident);
+   RARCH_LOG("[GL1]: Found GL1 context: \"%s\".\n", ctx_driver->ident);
 
    if (gl1->ctx_driver->get_video_size)
       gl1->ctx_driver->get_video_size(gl1->ctx_data,
                &mode_width, &mode_height);
+
+#if defined(__APPLE__) && !defined(IOS)
+   /* This is a hack for now to work around a very annoying
+    * issue that currently eludes us. */
+   if (     !gl1->ctx_driver->set_video_mode
+         || !gl1->ctx_driver->set_video_mode(gl1->ctx_data,
+            win_width, win_height, video->fullscreen))
+      goto error;
+#endif
 
    full_x      = mode_width;
    full_y      = mode_height;
@@ -292,7 +305,7 @@ static void *gl1_gfx_init(const video_info_t *video,
    if (string_is_equal(ctx_driver->ident, "null"))
       goto error;
 
-   RARCH_LOG("[GL1]: Detecting screen resolution %ux%u.\n", full_x, full_y);
+   RARCH_LOG("[GL1]: Detecting screen resolution: %ux%u.\n", full_x, full_y);
 
    win_width   = video->width;
    win_height  = video->height;
@@ -341,7 +354,7 @@ static void *gl1_gfx_init(const video_info_t *video,
 
    video_driver_get_size(&temp_width, &temp_height);
 
-   RARCH_LOG("[GL1]: Using resolution %ux%u\n", temp_width, temp_height);
+   RARCH_LOG("[GL1]: Using resolution %ux%u.\n", temp_width, temp_height);
 
    vendor   = (const char*)glGetString(GL_VENDOR);
    renderer = (const char*)glGetString(GL_RENDERER);
@@ -425,7 +438,7 @@ static void *gl1_gfx_init(const video_info_t *video,
    return gl1;
 
 error:
-   video_context_driver_destroy();
+   video_context_driver_free();
    if (gl1)
    {
       if (gl1->extensions)
@@ -556,8 +569,17 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    uint8_t *frame_rgba  = NULL;
    /* FIXME: For now, everything is uploaded as BGRA8888, I could not get 444 or 555 to work, and there is no 565 support in GL 1.1 either. */
    GLint internalFormat = GL_RGB8;
-   GLenum format        = gl1->supports_bgra ? GL_BGRA_EXT : GL_RGBA;
+#ifdef MSB_FIRST
+   bool   supports_native = gl1->supports_bgra;
+   GLenum format        = supports_native ? GL_BGRA_EXT : GL_RGBA;
+   GLenum type          = supports_native ? GL_UNSIGNED_INT_8_8_8_8_REV : GL_UNSIGNED_BYTE;
+#elif defined(LSB_FIRST)
+   bool   supports_native = gl1->supports_bgra;
+   GLenum format        = supports_native ? GL_BGRA_EXT : GL_RGBA;
    GLenum type          = GL_UNSIGNED_BYTE;
+#else
+#error Broken endianness definition
+#endif
 
    float vertices[] = {
 	   -1.0f, -1.0f, 0.0f,
@@ -602,7 +624,8 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    glBindTexture(GL_TEXTURE_2D, tex);
 
    frame = (uint8_t*)frame_to_copy;
-   if (!gl1->supports_bgra)
+
+   if (!supports_native)
    {
       frame_rgba = (uint8_t*)malloc(pot_width * pot_height * 4);
       if (frame_rgba)
@@ -613,10 +636,17 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
             for (x = 0; x < pot_width; x++)
             {
                int index             = (y * pot_width + x) * 4;
+#ifdef MSB_FIRST
+               frame_rgba[index + 2] = frame[index + 3];
+               frame_rgba[index + 1] = frame[index + 2];
+               frame_rgba[index + 0] = frame[index + 1];
+               frame_rgba[index + 3] = frame[index + 0];
+#else
                frame_rgba[index + 2] = frame[index + 0];
                frame_rgba[index + 1] = frame[index + 1];
                frame_rgba[index + 0] = frame[index + 2];
                frame_rgba[index + 3] = frame[index + 3];
+#endif
             }
          }
          frame = frame_rgba;
@@ -714,6 +744,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    bool hard_sync                   = video_info->hard_sync;
    struct font_params *osd_params   = (struct font_params*)
       &video_info->osd_stat_params;
+   bool overlay_behind_menu         = video_info->overlay_behind_menu;
 
    /* FIXME: Force these settings off as they interfere with the rendering */
    video_info->xmb_shadows_enable   = false;
@@ -863,6 +894,11 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       }
    }
 
+#ifdef HAVE_OVERLAY
+   if (gl1->overlay_enable && overlay_behind_menu)
+      gl1_render_overlay(gl1, video_width, video_height);
+#endif
+
    if (gl1->menu_texture_enable){
       do_swap = true;
 #ifdef VITA
@@ -900,7 +936,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_OVERLAY
-   if (gl1->overlay_enable)
+   if (gl1->overlay_enable && !overlay_behind_menu)
       gl1_render_overlay(gl1, video_width, video_height);
 #endif
 
@@ -914,7 +950,12 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    /* Screenshots. */
    if (gl1->readback_buffer_screenshot)
       gl1_readback(gl1,
-            4, GL_RGBA, GL_UNSIGNED_BYTE,
+            4, GL_RGBA,
+#ifdef MSB_FIRST
+		   GL_UNSIGNED_INT_8_8_8_8_REV,
+#else
+		   GL_UNSIGNED_BYTE,
+#endif
             gl1->readback_buffer_screenshot);
 
 
@@ -945,16 +986,18 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    }   
 #endif 
 
-   /* check if we are fast forwarding or in menu, if we are ignore hard sync */
-   if (hard_sync
+   /* check if we are fast forwarding or in menu, 
+      if we are ignore hard sync */
+   if (      hard_sync
          && !video_info->input_driver_nonblock_state
-         && !gl1->menu_texture_enable)
+      )
    {
       glClear(GL_COLOR_BUFFER_BIT);
       glFinish();
    }
 
-   if(draw){
+   if (draw)
+   {
       glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT);
    }
@@ -1210,14 +1253,14 @@ static void gl1_set_texture_frame(void *data,
 }
 
 static void gl1_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
    gl1_t *gl         = (gl1_t*)data;
    if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_size)
       return;
    gl->ctx_driver->get_video_output_size(
          gl->ctx_data,
-         width, height);
+         width, height, desc, desc_len);
 }
 
 static void gl1_get_video_output_prev(void *data)
@@ -1292,6 +1335,7 @@ static void gl1_load_texture_data(
 
 #ifndef VITA
    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 #endif
 
    glTexImage2D(GL_TEXTURE_2D,
@@ -1299,7 +1343,12 @@ static void gl1_load_texture_data(
          (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL1_INTERNAL_FORMAT32,
          width, height, 0,
          (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL1_TEXTURE_TYPE32,
-         (rgb32) ? RARCH_GL1_FORMAT32 : GL_UNSIGNED_BYTE, frame);
+#ifdef MSB_FIRST
+	 GL_UNSIGNED_INT_8_8_8_8_REV,
+#else
+	 (rgb32) ? RARCH_GL1_FORMAT32 : GL_UNSIGNED_BYTE,
+#endif
+	 frame);
 }
 
 static void video_texture_load_gl1(
@@ -1423,6 +1472,7 @@ static uint32_t gl1_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_HARD_SYNC);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
+   BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
 
    return flags;
 }
@@ -1448,7 +1498,11 @@ static const video_poke_interface_t gl1_poke_interface = {
    NULL,                         /* grab_mouse_toggle */
    NULL,                         /* get_current_shader */
    NULL,                         /* get_current_software_framebuffer */
-   NULL                          /* get_hw_render_interface */
+   NULL,                         /* get_hw_render_interface */
+   NULL,                         /* set_hdr_max_nits */
+   NULL,                         /* set_hdr_paper_white_nits */
+   NULL,                         /* set_hdr_contrast */
+   NULL                          /* set_hdr_expand_gamut */
 };
 
 static void gl1_gfx_get_poke_interface(void *data,
