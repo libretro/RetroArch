@@ -33,6 +33,10 @@ MSG_HASH(
    "Musik"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
+   "Netzwerkspiel"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
    "Erkunden"
    )
@@ -134,8 +138,12 @@ MSG_HASH(
    "Erweiterungen, Komponenten und Inhalte für RetroArch herunterladen."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY,
+   "Netzwerkspiel"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY,
-   "Eine Netplay-Sitzung hosten oder einer beitreten."
+   "Ein Netzwerkspiel hosten oder einem beitreten."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
@@ -788,7 +796,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
-   "Netplay-Unterstützung (Peer-to-Peer)"
+   "Netzwerkspiel-Unterstützung (Peer-to-Peer)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
@@ -2572,11 +2580,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
-   "Netplay-Ping anzeigen (Umschalten)"
+   "Netzwerkspiel-Ping anzeigen (Umschalten)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
-   "Blendet den Ping-Zähler für den aktuellen Netplay-Raum ein/aus."
+   "Blendet den Ping-Zähler für den aktuellen Netzwerkspielraum ein/aus."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
@@ -2588,35 +2596,35 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
-   "Netplay-Hosting (Umschalten)"
+   "Netzwerkspiel-Hosting (Umschalten)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_HOST_TOGGLE,
-   "Schaltet Netplay-Hosting ein/aus."
+   "Schaltet Netzwerkspiel-Hosting ein/aus."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
-   "Netplay Spiel-/Zuschauermodus (Umschalten)"
+   "Netzwerkspiel Spieler-/Zuschauermodus (Umschalten)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
-   "Schaltet die aktuelle Netplay-Sitzung zwischen 'Spielen' und 'Zuschauen' um."
+   "Schaltet das aktuelle Netzwerkspiel zwischen 'Spieler'- und 'Zuschauer'-Modus um."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
-   "Netplay-Spieler-Chat"
+   "Netzwerkspielerchat"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
-   "Sendet eine Chat-Nachricht an die aktuelle Netplay-Sitzung."
+   "Sendet eine Chat-Nachricht an das aktuelle Netzwerkspiel."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Verblassender Netplay-Chat"
+   "Verblassender Netzwerkspiel-Chat"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Zwischen verblassenden und statischen Netplay-Chat-Nachrichten umschalten."
+   "Zwischen verblassenden und statischen Netzwerkspiel-Chatnachrichten umschalten."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
@@ -3850,11 +3858,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
-   "Netplay-Ping anzeigen"
+   "Netzwerkspiel-Ping anzeigen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
-   "Ping für den aktuellen Netplay-Raum anzeigen."
+   "Ping für den aktuellen Netzwerkspielraum anzeigen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -3974,11 +3982,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
-   "Zusätzliche Netplay-Benachrichtigungen"
+   "Zusätzliche Netzwerkspiel-Benachrichtigungen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
-   "Nicht essentielle Netplay-Nachrichten anzeigen."
+   "Nicht essentielle Netzwerkspiel-Nachrichten anzeigen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
@@ -4418,11 +4426,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
-   "\"Netplay\" anzeigen"
+   "\"Netzwerkspiel\" anzeigen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Das \"Netplay\"-Menü anzeigen. (Neustart erforderlich bei Ozone/XMB)"
+   "Das \"Netzwerkspiel\"-Menü anzeigen. (Neustart erforderlich bei Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -5149,11 +5157,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
-   "Netplay öffentlich ankündigen"
+   "Netzwerkspiel öffentlich ankündigen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
-   "Legt fest, ob Netplay-Spiele öffentlich angekündigt werden sollen. Wenn deaktiviert, müssen sich Clients manuell verbinden anstelle die öffentliche Lobby zu verwenden."
+   "Legt fest, ob Netzwerkspiele öffentlich angekündigt werden sollen. Wenn deaktiviert, müssen sich Clients manuell verbinden anstelle die öffentliche Lobby zu verwenden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
@@ -5161,7 +5169,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "Leite alle Netplay-Verbindungen durch einen Man-in-the-middle-Server. Hilfreich, wenn sich der Host hinter einer Firewall befindet oder Probleme mit NAT/UPnP hat."
+   "Leite alle Netzwerkspiel-Verbindungen durch einen Man-in-the-middle-Server. Hilfreich, wenn sich der Host hinter einer Firewall befindet oder Probleme mit NAT/UPnP hat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
@@ -5189,7 +5197,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
-   "Netplay TCP/UDP-Port"
+   "Netzwerkspiel-TCP/UDP-Port"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
@@ -5233,7 +5241,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
-   "Startet das Netplay im Zuschauermodus."
+   "Das Netzwerkspiel im Zuschauermodus starten."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
@@ -5249,7 +5257,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "Spielern erlauben, während des Netplays zu pausieren."
+   "Spielern erlauben, während des Netzwerkspiels zu pausieren."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -5269,19 +5277,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
-   "Netplay ohne Savestates"
+   "Netzwerkspiel ohne Savestates"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,
-   "Netplay startet in einem Modus, der keine Savestates erfordert. Ein sehr schnelles Netzwerk wird benötigt, aber es wird kein Zurückspulen durchgeführt, sodass keine Netplay-Ruckler auftreten."
+   "Netzwerkspiel startet in einem Modus, der keine Savestates erfordert. Ein sehr schnelles Netzwerk wird benötigt, aber es wird kein Zurückspulen durchgeführt, sodass keine Netzwerk-Ruckler auftreten."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
-   "Netplay-Synchronisations-Periode"
+   "Netzwerkspiel-Synchronisationsperiode"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
-   "Die Periode (in Frames), in der Netplay überprüft, ob Host und Client synchron sind."
+   "Die Periode (in Frames), in der geprüft wird, ob Host und Client synchron sind."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
@@ -5289,7 +5297,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Eingabeverzögerung in Frames, die im Netplay verwendet wird, um die Netzwerklatenz zu verbergen. Reduziert Bildruckeln und CPU-Last, auf Kosten spürbarer Eingabeverzögerung."
+   "Eingabeverzögerung in Frames, die im Netzwerkspiel verwendet wird, um die Netzwerklatenz zu verbergen. Reduziert Bildruckeln und CPU-Last, auf Kosten spürbarer Eingabeverzögerung."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
@@ -5297,7 +5305,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Der Bereich der Eingabeverzögerung in Einzelbildern, die im Netplay verwendet werden kann, um die Netzwerklatenz zu verbergen. Reduziert Bildruckeln und CPU-Last, verursacht jedoch unvorhersehbare Eingabeverzögerungen."
+   "Der Bereich der Eingabeverzögerung in Frames, die im Netzwerkspiel verwendet werden kann, um die Netzwerklatenz zu verbergen. Reduziert Bildruckeln und CPU-Last, verursacht jedoch unvorhersehbare Eingabeverzögerungen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
@@ -9524,6 +9532,10 @@ MSG_HASH( /* FIXME Still exists in a comment about being removed */
 MSG_HASH( /* FIXME Still exists in a comment about being removed */
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
    "Ändere die Transparenz der Header-Grafik."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
+   "Netzwerkspiel"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT,
