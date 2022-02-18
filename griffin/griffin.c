@@ -1664,10 +1664,6 @@ SSL
 #endif
 #endif
 
-#ifdef HAVE_GONG
-#include "../cores/libretro-gong/gong.c"
-#endif
-
 /*============================================================
 PLAYLIST NAME SANITIZATION
 ============================================================ */
