@@ -279,10 +279,6 @@
 #define SYMBOL_VIDEOPROCESSOR(x) current_core->x = libretro_videoprocessor_##x
 #endif
 
-#ifdef HAVE_GONG
-#define SYMBOL_GONG(x) current_core->x = libretro_gong_##x
-#endif
-
 #define CORE_SYMBOLS(x) \
             x(retro_init); \
             x(retro_deinit); \
@@ -3463,11 +3459,6 @@ static bool init_libretro_symbols_custom(
       case CORE_TYPE_VIDEO_PROCESSOR:
 #if defined(HAVE_VIDEOPROCESSOR)
          CORE_SYMBOLS(SYMBOL_VIDEOPROCESSOR);
-#endif
-         break;
-      case CORE_TYPE_GONG:
-#ifdef HAVE_GONG
-         CORE_SYMBOLS(SYMBOL_GONG);
 #endif
          break;
    }
