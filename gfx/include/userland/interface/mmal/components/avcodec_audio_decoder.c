@@ -32,25 +32,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "libavcodec/avcodec.h"
 #include "libavutil/mathematics.h"
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT( 52, 23, 0 )
-# include "libavformat/avformat.h"
- static AVPacket null_packet = {AV_NOPTS_VALUE, AV_NOPTS_VALUE};
-# define av_init_packet(a) *(a) = null_packet
-#endif
-
-#if LIBAVCODEC_VERSION_MAJOR < 53
-# define avcodec_decode_audio3(a,b,c,d) avcodec_decode_audio2(a,b,c,(d)->data,(d)->size)
-#endif
-
-#if LIBAVCODEC_VERSION_MAJOR < 54
-#define AVSampleFormat      SampleFormat
-#define AV_SAMPLE_FMT_NONE  SAMPLE_FMT_NONE
-#define AV_SAMPLE_FMT_U8    SAMPLE_FMT_U8
-#define AV_SAMPLE_FMT_S16   SAMPLE_FMT_S16
-#define AV_SAMPLE_FMT_S32   SAMPLE_FMT_S32
-#define AV_SAMPLE_FMT_FLT   SAMPLE_FMT_FLT
-#define AV_SAMPLE_FMT_DBL   SAMPLE_FMT_DBL
-#endif
 
 /* Buffering requirements */
 #define INPUT_MIN_BUFFER_SIZE (4*1024)
