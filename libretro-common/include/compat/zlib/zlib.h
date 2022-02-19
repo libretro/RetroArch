@@ -1190,8 +1190,8 @@ typedef int (*out_func) (void FAR *, unsigned char FAR *, unsigned);
    compress() or compress2() call to allocate the destination buffer.
 */
 
- int  uncompress (Bytef *dest,   uLongf *destLen,
-       const Bytef *source, uLongf sourceLen);
+ int  uncompress (unsigned char *dest,   uint32_t *destLen,
+       const unsigned char *source, uint32_t sourceLen);
 /*
      Decompresses the source buffer into the destination buffer.  sourceLen is
    the byte length of the source buffer.  Upon entry, destLen is the total size
