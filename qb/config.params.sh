@@ -175,7 +175,6 @@ HAVE_OSMESA=no             # Off-screen Mesa rendering
 HAVE_VIDEOPROCESSOR=auto   # Enable video processor core
 HAVE_VIDEOCORE=auto        # Broadcom Videocore 4 support
 HAVE_DRMINGW=no            # DrMingw exception handler
-HAVE_GONG=no               # Gong core embedded
 HAVE_CDROM=auto            # CD-ROM support
 HAVE_GLSL=yes              # GLSL shaders support
 HAVE_SLANG=auto            # slang support
