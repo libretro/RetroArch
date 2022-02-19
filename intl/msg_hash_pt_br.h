@@ -9702,6 +9702,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
    "Conteúdo compatível encontrado"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_START_GONG,
+   "Iniciar gong"
+   )
 
 /* Unused (Only Exist in Translation Files) */
 
