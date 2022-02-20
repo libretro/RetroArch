@@ -867,6 +867,9 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "in 'Load Core', and use that core \n"
                              "when content is loaded.");
             break;
+         case MENU_ENUM_LABEL_LOAD_DROPBOX_LIST:
+            snprintf(s, len, "to use this you need dropbox");
+            break;
         case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
             snprintf(s, len,
                      "Loading content from history. \n"

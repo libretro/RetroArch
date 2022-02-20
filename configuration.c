@@ -1838,6 +1838,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("content_show_explore",          &settings->bools.menu_content_show_explore, true, DEFAULT_MENU_CONTENT_SHOW_EXPLORE, false);
 #endif
    SETTING_BOOL("menu_show_load_core",           &settings->bools.menu_show_load_core, true, menu_show_load_core, false);
+   SETTING_BOOL("menu_show_dropbox",             &settings->bools.menu_show_dropbox, true, menu_show_dropbox, false)
    SETTING_BOOL("menu_show_load_content",        &settings->bools.menu_show_load_content, true, menu_show_load_content, false);
 #ifdef HAVE_CDROM
    SETTING_BOOL("menu_show_load_disc",           &settings->bools.menu_show_load_disc, true, menu_show_load_disc, false);

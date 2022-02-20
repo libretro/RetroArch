@@ -71,10 +71,17 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "Load Content"
    )
+   
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_DROPBOX_LIST,
+   "Manage Cloudsaving"
+)
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
    "Select which content to start."
    )
+MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_DROPBOX_LIST,
+         "powered by dropbox")
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
    "Load Disc"
@@ -4422,10 +4429,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
    "Show 'Load Content'"
    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_DROPBOX,
+   "Show 'Dropbox'")
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
    "Show the 'Load Content' option in the Main Menu."
    )
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_DROPBOX,
+   "Show the 'load' optoin in the main menu")
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
    "Show 'Load Disc'"

@@ -8257,6 +8257,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_SETTINGS_VIEWS_SETTINGS,                             PARSE_ACTION, true     },
                {MENU_ENUM_LABEL_MENU_SHOW_LOAD_CORE,                                   PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT,                                PARSE_ONLY_BOOL, true  },
+               {MENU_ENUM_LABEL_MENU_SHOW_DROPBOX,                                     PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_LOAD_DISC,                                   PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_DUMP_DISC,                                   PARSE_ONLY_BOOL, true  },
 #ifdef HAVE_LAKKA
@@ -12529,6 +12530,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      count++;
                }
             }
+
+            if (settings->bools.menu_show_dropbox)
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list, MENU_ENUM_LABEL_LOAD_DROPBOX_LIST, PARSE_ACTION, false) == 0)
+               {
+                  count++;
+               }
+               
+            }
+            
 
             if (settings->bools.menu_content_show_history)
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,

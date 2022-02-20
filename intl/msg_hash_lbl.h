@@ -1788,6 +1788,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_LOAD_CONTENT_LIST,
    "load_content"
    )
+MSG_HASH(MENU_ENUM_LABEL_LOAD_DROPBOX_LIST,
+   "load_dropbox")
 MSG_HASH(
    MENU_ENUM_LABEL_LOAD_STATE,
    "loadstate"
@@ -4105,7 +4107,9 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_SHOW_LOAD_CORE,
    "menu_show_load_core"
-   )
+   )  
+MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_DROPBOX,
+"menu_show_dropbox")                                           
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT,
    "menu_show_load_content"
