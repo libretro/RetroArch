@@ -7220,7 +7220,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Guardar preajuste de shaders como"
+   "Guardar preajuste de shaders como..."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -10628,11 +10628,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_COULD_NOT_READ_MOVIE_HEADER,
-   "No se puede leer la cabecera de la película."
+   "No se puede leer la cabecera de la repetición."
    )
 MSG_HASH(
    MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
-   "No se puede leer el estado de la película."
+   "No se puede leer el estado de la repetición."
    )
 MSG_HASH(
    MSG_CRC32_CHECKSUM_MISMATCH,
@@ -10776,7 +10776,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "Error al cargar película"
+   "Error al cargar repetición."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
@@ -10860,7 +10860,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_START_MOVIE_RECORD,
-   "Error al iniciar la grabación."
+   "Error al iniciar la grabación de la repetición."
    )
 MSG_HASH(
    MSG_FAILED_TO_START_RECORDING,
@@ -11044,7 +11044,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MOVIE_PLAYBACK_ENDED,
-   "La repetición de entrada ha finalizado."
+   "La reproducción ha finalizado."
    )
 MSG_HASH(
    MSG_MOVIE_RECORD_STOPPED,
@@ -11232,11 +11232,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_PLAYBACK,
-   "Reproduciendo película."
+   "Reproduciendo repetición."
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_RECORD_TO,
-   "Iniciando grabación de película en"
+   "Iniciando grabación de repetición en"
    )
 MSG_HASH(
    MSG_STATE_SIZE,
@@ -11612,15 +11612,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MISSING_ASSETS,
-   "Advertencia: Faltan recursos, utiliza el actualizador en línea si está disponible"
+   "Advertencia: faltan recursos, utiliza el actualizador en línea si está disponible"
    )
 MSG_HASH(
    MSG_RGUI_MISSING_FONTS,
-   "Advertencia: Faltan las fuentes del idioma seleccionado, utiliza el actualizador en línea si está disponible."
+   "Advertencia: faltan las fuentes del idioma seleccionado, utiliza el actualizador en línea si está disponible."
    )
 MSG_HASH(
    MSG_RGUI_INVALID_LANGUAGE,
-   "Advertencia: Idioma no compatible, cambiando a inglés"
+   "Advertencia: idioma no compatible, cambiando a inglés"
    )
 MSG_HASH(
    MSG_DUMPING_DISC,
