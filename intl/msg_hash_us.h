@@ -5329,7 +5329,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
-   "Input the address of your custom relay server here. Format: address or address|port"
+   "Input the address of your custom relay server here. Format: address or address|port."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
@@ -10940,7 +10940,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
-   "Netplay UPNP Port Mapping Failed"
+   "Netplay UPnP Port Mapping Failed"
    )
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
