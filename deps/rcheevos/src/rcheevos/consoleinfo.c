@@ -96,6 +96,9 @@ const char* rc_console_name(int console_id)
     case RC_CONSOLE_MEGA_DRIVE:
       return "Sega Genesis";
 
+    case RC_CONSOLE_MEGADUCK:
+      return "Mega Duck";
+
     case RC_CONSOLE_MS_DOS:
       return "MS-DOS";
 
@@ -126,6 +129,9 @@ const char* rc_console_name(int console_id)
     case RC_CONSOLE_ORIC:
       return "Oric";
 
+    case RC_CONSOLE_PC6000:
+      return "PC-6000";
+
     case RC_CONSOLE_PC8800:
       return "PC-8000/8800";
 
@@ -155,6 +161,9 @@ const char* rc_console_name(int console_id)
 
     case RC_CONSOLE_SEGA_CD:
       return "Sega CD";
+	  
+    case RC_CONSOLE_PICO:
+      return "Sega Pico";
 
     case RC_CONSOLE_SATURN:
       return "Sega Saturn";
@@ -204,6 +213,9 @@ const char* rc_console_name(int console_id)
     case RC_CONSOLE_XBOX:
       return "XBOX";
 
+    case RC_CONSOLE_ZEEBO:
+      return "Zeebo";
+
     case RC_CONSOLE_ZX81:
       return "ZX-81";
 
@@ -226,6 +238,20 @@ static const rc_memory_region_t _rc_memory_regions_3do[] = {
     { 0x000000U, 0x1FFFFFU, 0x000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Main RAM" },
 };
 static const rc_memory_regions_t rc_memory_regions_3do = { _rc_memory_regions_3do, 1 };
+
+/* ===== Amstrad CPC ===== */
+/* http://www.cpcalive.com/docs/amstrad_cpc_6128_memory_map.html */
+/* https://www.cpcwiki.eu/index.php/File:AWMG_page151.jpg */
+/* The original CPC only had 64KB of memory, but the newer model has 128KB (expandable to 576KB) */
+/* https://www.grimware.org/doku.php/documentations/devices/gatearraydo=export_xhtml#mmr */
+static const rc_memory_region_t _rc_memory_regions_amstrad_pc[] = {
+    { 0x000000U, 0x00003FU, 0x000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Firmware" },
+    { 0x000040U, 0x00B0FFU, 0x000040U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
+    { 0x00B100U, 0x00BFFFU, 0x00B100U, RC_MEMORY_TYPE_SYSTEM_RAM, "Stack and Firmware Data" },
+    { 0x00C000U, 0x00FFFFU, 0x00C000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Screen Memory" },
+    { 0x010000U, 0x08FFFFU, 0x010000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Extended RAM" },
+};
+static const rc_memory_regions_t rc_memory_regions_amstrad_pc = { _rc_memory_regions_amstrad_pc, 5 };
 
 /* ===== Apple II ===== */
 static const rc_memory_region_t _rc_memory_regions_appleii[] = {
@@ -279,6 +305,13 @@ static const rc_memory_region_t _rc_memory_regions_colecovision[] = {
     { 0x000000U, 0x0003FFU, 0x006000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }
 };
 static const rc_memory_regions_t rc_memory_regions_colecovision = { _rc_memory_regions_colecovision, 1 };
+
+/* ===== Dreamcast ===== */
+/* http://archiv.sega-dc.de/munkeechuff/hardware/Memory.html */
+static const rc_memory_region_t _rc_memory_regions_dreamcast[] = {
+    { 0x00000000U, 0x00FFFFFFU, 0x0C000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }
+};
+static const rc_memory_regions_t rc_memory_regions_dreamcast = { _rc_memory_regions_dreamcast, 1 };
 
 /* ===== GameBoy / GameBoy Color ===== */
 static const rc_memory_region_t _rc_memory_regions_gameboy[] = {
@@ -506,6 +539,14 @@ static const rc_memory_region_t _rc_memory_regions_playstation2[] = {
 };
 static const rc_memory_regions_t rc_memory_regions_playstation2 = { _rc_memory_regions_playstation2, 2 };
 
+/* ===== PlayStation Portable ===== */
+/* https://github.com/uofw/upspd/wiki/Memory-map */
+static const rc_memory_region_t _rc_memory_regions_psp[] = {
+    { 0x00000000U, 0x007FFFFFU, 0x08000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Kernel RAM" },
+    { 0x00800000U, 0x01FFFFFFU, 0x08800000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
+};
+static const rc_memory_regions_t rc_memory_regions_psp = { _rc_memory_regions_psp, 2 };
+
 /* ===== Pokemon Mini ===== */
 /* https://www.pokemon-mini.net/documentation/memory-map/ */
 static const rc_memory_region_t _rc_memory_regions_pokemini[] = {
@@ -638,6 +679,9 @@ const rc_memory_regions_t* rc_console_memory_regions(int console_id)
     case RC_CONSOLE_3DO:
       return &rc_memory_regions_3do;
 
+    case RC_CONSOLE_AMSTRAD_PC:
+      return &rc_memory_regions_amstrad_pc;
+
     case RC_CONSOLE_APPLE_II:
       return &rc_memory_regions_appleii;
 
@@ -656,6 +700,10 @@ const rc_memory_regions_t* rc_console_memory_regions(int console_id)
     case RC_CONSOLE_COLECOVISION:
       return &rc_memory_regions_colecovision;
 
+    case RC_CONSOLE_DREAMCAST:
+      return &rc_memory_regions_dreamcast;
+
+    case RC_CONSOLE_MEGADUCK:
     case RC_CONSOLE_GAMEBOY:
       return &rc_memory_regions_gameboy;
 
@@ -715,6 +763,9 @@ const rc_memory_regions_t* rc_console_memory_regions(int console_id)
 
     case RC_CONSOLE_PLAYSTATION_2:
       return &rc_memory_regions_playstation2;
+
+    case RC_CONSOLE_PSP:
+      return &rc_memory_regions_psp;
 
     case RC_CONSOLE_POKEMON_MINI:
       return &rc_memory_regions_pokemini;

@@ -425,10 +425,10 @@
 #define DEFAULT_VIDEO_HDR_ENABLE false
 
 /* The maximum nunmber of nits the actual display can show - needs to be calibrated */
-#define DEFAULT_VIDEO_HDR_MAX_NITS 700.0f
+#define DEFAULT_VIDEO_HDR_MAX_NITS 1000.0f
 
 /* The number of nits that paper white is at */
-#define DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS 400.0f
+#define DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS 200.0f
 
 /* The contrast setting for hdr used to calculate the display gamma by dividing this value by gamma 2.2  */
 #define DEFAULT_VIDEO_HDR_CONTRAST 5.0f
@@ -733,6 +733,7 @@ static const bool content_show_playlists    = true;
 
 #ifdef HAVE_XMB
 #define DEFAULT_XMB_ANIMATION 0
+#define DEFAULT_XMB_VERTICAL_FADE_FACTOR 100
 
 static const unsigned xmb_alpha_factor      = 75;
 static const unsigned menu_font_color_red   = 255;
@@ -761,7 +762,7 @@ static const float menu_footer_opacity = 1.000;
 
 static const float menu_header_opacity = 1.000;
 
-#if defined(HAVE_OPENGLES2) || (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+#if defined(HAVE_OPENGLES2) || (defined(__MACH__)  && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
 #define DEFAULT_MENU_SHADER_PIPELINE 1
 #else
 #define DEFAULT_MENU_SHADER_PIPELINE 2
@@ -1143,7 +1144,7 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_REWIND_GRANULARITY 1
 #endif
 /* Pause gameplay when gameplay loses focus. */
-#if defined(EMSCRIPTEN) || defined(WEBOS)
+#if defined(EMSCRIPTEN)
 #define DEFAULT_PAUSE_NONACTIVE false
 #else
 #define DEFAULT_PAUSE_NONACTIVE true
@@ -1251,6 +1252,10 @@ static const bool savestate_thumbnail_enable = false;
 
 /* Maximum fast forward ratio. */
 #define DEFAULT_FASTFORWARD_RATIO 0.0
+#define MAXIMUM_FASTFORWARD_RATIO 50.0
+
+/* Skip frames when fast forwarding. */
+#define DEFAULT_FASTFORWARD_FRAMESKIP true
 
 /* Enable runloop for variable refresh rate screens. Force x1 speed while handling fast forward too. */
 #define DEFAULT_VRR_RUNLOOP_ENABLE false

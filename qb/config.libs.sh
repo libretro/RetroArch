@@ -550,6 +550,7 @@ fi
 
 check_lib '' STRCASESTR "$CLIB" strcasestr
 check_lib '' MMAP "$CLIB" mmap
+check_lib '' MEMFD_CREATE "$CLIB" memfd_create
 
 check_enabled CXX VULKAN vulkan 'The C++ compiler is' false
 check_enabled CXX OPENGL_CORE 'OpenGL core' 'The C++ compiler is' false
@@ -631,6 +632,14 @@ if [ "$HAVE_GLSLANG" != no ]; then
       fi
    else
       HAVE_GLSLANG=yes
+   fi
+fi
+
+if [ "$HAVE_CRTSWITCHRES" != no ]; then
+   if [ "$HAVE_CXX11" = 'no' ]; then
+      HAVE_CRTSWITCHRES=no
+   else
+      HAVE_CRTSWITCHRES=yes
    fi
 fi
 

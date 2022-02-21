@@ -114,7 +114,7 @@ typedef enum
    CFAllDomainsMask     = 0x0ffff  /* All domains: all of the above and future items */
 } CFDomainMask;
 
-#if (defined(OSX) && !(defined(__ppc__) || defined(__ppc64__)))
+#if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
 static int speak_pid                            = 0;
 #endif
 
@@ -128,14 +128,19 @@ static void CFSearchPathForDirectoriesInDomains(
 #else
    NSSearchPathDirectory dir = NSDocumentDirectory;
 #endif
+   CFStringRef array_val;
 #if __has_feature(objc_arc)
-   CFStringRef       array_val = (__bridge CFStringRef)[
+   array_val = (__bridge CFStringRef)[
          NSSearchPathForDirectoriesInDomains(dir,
             NSUserDomainMask, YES) firstObject];
 #else
-   CFStringRef       array_val = (CFStringRef)[
-         NSSearchPathForDirectoriesInDomains(dir,
-            NSUserDomainMask, YES) firstObject];
+   NSArray *arr = NSSearchPathForDirectoriesInDomains(dir,
+						     NSUserDomainMask, YES);
+   if ([arr count] == 0) {
+     array_val = nil;
+   } else{
+     array_val = (CFStringRef)[arr objectAtIndex:0];
+   }
 #endif
    if (array_val)
       CFStringGetCString(array_val, s, len, kCFStringEncodingUTF8);
@@ -805,7 +810,7 @@ static uint64_t frontend_darwin_get_total_mem(void)
 
 static uint64_t frontend_darwin_get_free_mem(void)
 {
-#if (defined(OSX) && !(defined(__ppc__) || defined(__ppc64__)))
+#if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
     vm_size_t page_size;
     vm_statistics64_data_t vm_stats;
     mach_port_t mach_port        = mach_host_self();
@@ -831,7 +836,7 @@ static const char* frontend_darwin_get_cpu_model_name(void)
    return darwin_cpu_model_name;
 }
 
-#if (defined(OSX) && !(defined(__ppc__) || defined(__ppc64__)))
+#if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
 static char* accessibility_mac_language_code(const char* language)
 {
    if (string_is_equal(language,"en"))
@@ -995,13 +1000,9 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    NULL,                            /* watch_path_for_changes */
    NULL,                            /* check_for_path_changes */
    NULL,                            /* set_sustained_performance_mode */
-#if (defined(OSX) && !(defined(__ppc__) || defined(__ppc64__)))
-    frontend_darwin_get_cpu_model_name, /* get_cpu_model_name */
-#else
-   NULL,                            /* get_cpu_model_name */
-#endif
+   frontend_darwin_get_cpu_model_name, /* get_cpu_model_name */
    NULL,                            /* get_user_language   */
-#if (defined(OSX) && !(defined(__ppc__) || defined(__ppc64__)))
+#if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
    is_narrator_running_macos,       /* is_narrator_running */
    accessibility_speak_macos,       /* accessibility_speak */
 #else

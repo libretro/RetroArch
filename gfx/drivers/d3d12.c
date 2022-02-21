@@ -667,6 +667,7 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       }
    }
 
+#ifdef HAVE_DXGI_HDR
    if (d3d12->hdr.enable)
    {
       if(d3d12->shader_preset && d3d12->shader_preset->passes && (d3d12->pass[d3d12->shader_preset->passes - 1].semantics.format == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32))
@@ -689,6 +690,7 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          d3d12_set_hdr10(d3d12, true);
       }
    } 
+#endif // HAVE_DXGI_HDR
 
    for (i = 0; i < d3d12->shader_preset->luts; i++)
    {

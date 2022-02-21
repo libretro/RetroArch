@@ -469,7 +469,10 @@ ifeq ($(HAVE_LANGEXTRA), 1)
           intl/msg_hash_fa.o \
           intl/msg_hash_he.o \
           intl/msg_hash_ast.o \
-          intl/msg_hash_fi.o
+          intl/msg_hash_fi.o \
+          intl/msg_hash_id.o \
+          intl/msg_hash_sv.o \
+          intl/msg_hash_uk.o
 endif
 
 ifneq ($(HAVE_GETOPT_LONG), 1)
@@ -771,8 +774,12 @@ endif
 
 # Miscellaneous
 
+ifeq ($(HAVE_COMMAND), 1)
+   DEFINES += -DHAVE_COMMAND
+endif
+
 ifeq ($(HAVE_STDIN_CMD), 1)
-   DEFINES += -DHAVE_COMMAND -DHAVE_STDIN_CMD
+   DEFINES += -DHAVE_STDIN_CMD
 endif
 
 ifeq ($(HAVE_EMSCRIPTEN), 1)
@@ -2066,12 +2073,6 @@ OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
        $(LIBRETRO_COMM_DIR)/formats/image_transfer.o \
        $(LIBRETRO_COMM_DIR)/formats/m3u/m3u_file.o
 
-# Gong embedded core
-ifeq ($(HAVE_GONG),1)
-  DEFINES += -DHAVE_GONG
-  OBJ += cores/libretro-gong/gong.o
-endif
-
 # Video4Linux 2
 
 ifeq ($(HAVE_V4L2),1)
@@ -2168,6 +2169,7 @@ ifeq ($(HAVE_NETWORKING), 1)
              deps/rcheevos/src/rcheevos/runtime_progress.o \
              deps/rcheevos/src/rcheevos/trigger.o \
              deps/rcheevos/src/rcheevos/value.o \
+             deps/rcheevos/src/rhash/cdreader.o \
              deps/rcheevos/src/rhash/hash.o \
              deps/rcheevos/src/rapi/rc_api_common.o \
              deps/rcheevos/src/rapi/rc_api_runtime.o \
@@ -2387,7 +2389,8 @@ ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
           gfx/video_filters/dot_matrix_4x.o \
           gfx/video_filters/upscale_1_5x.o \
           gfx/video_filters/upscale_256x_320x240.o \
-          gfx/video_filters/picoscale_256x_320x240.o
+          gfx/video_filters/picoscale_256x_320x240.o \
+          gfx/video_filters/upscale_240x160_320x240.o
 endif
 
 ifeq ($(WANT_IOSUHAX), 1)
@@ -2471,12 +2474,13 @@ ifeq ($(HAVE_C_A7A7), 1)
                 -fmerge-all-constants -fno-math-errno \
                 -marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
    DEF_FLAGS += $(C_A7A7_OPT)
-   ifeq ($(shell echo `$(CC) -dumpversion` "< 4.9" | bc -l), 1)
+   CC_VERSION := $(shell $(CC) -dumpversion)
+   ifneq (4.9,$(firstword $(sort $(CC_VERSION) 4.9))) # if version < 4.9
       DEF_FLAGS += -march=armv7-a
    else
       DEF_FLAGS += -march=armv7ve
       # If gcc is 5.0 or later
-      ifeq ($(shell echo `$(CC) -dumpversion` ">= 5" | bc -l), 1)
+      ifeq (5,$(firstword $(sort $(CC_VERSION) 5)))
          LDFLAGS += -static-libgcc -static-libstdc++
       endif
    endif

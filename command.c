@@ -1088,6 +1088,8 @@ bool command_event_save_auto_state(
       return false;
    if (current_core_type == CORE_TYPE_DUMMY)
       return false;
+   if (!core_info_current_supports_savestate())
+      return false;
 
    if (string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))))
       return false;
@@ -1148,6 +1150,9 @@ bool command_event_load_entry_state(void)
    runloop_state_t *runloop_st     = runloop_state_get_ptr();
    bool ret                        = false;
 
+   if (!core_info_current_supports_savestate())
+      return false;
+
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
       return false;
@@ -1187,6 +1192,10 @@ void command_event_load_auto_state(void)
    char savestate_name_auto[PATH_MAX_LENGTH];
    runloop_state_t *runloop_st     = runloop_state_get_ptr();
    bool ret                        = false;
+
+   if (!core_info_current_supports_savestate())
+      return;
+
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
       return;
@@ -1551,16 +1560,22 @@ bool command_event_main_state(unsigned cmd)
    char msg[128];
    char state_path[16384];
    settings_t *settings        = config_get_ptr();
+   bool savestates_enabled     = core_info_current_supports_savestate();
    bool ret                    = false;
    bool push_msg               = true;
 
    state_path[0] = msg[0]      = '\0';
 
-   retroarch_get_current_savestate_path(state_path, sizeof(state_path));
+   if (savestates_enabled)
+   {
+      retroarch_get_current_savestate_path(state_path,
+            sizeof(state_path));
 
-   core_serialize_size(&info);
+      core_serialize_size(&info);
+      savestates_enabled = (info.size > 0);
+   }
 
-   if (info.size)
+   if (savestates_enabled)
    {
       switch (cmd)
       {

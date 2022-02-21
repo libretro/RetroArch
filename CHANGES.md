@@ -1,7 +1,80 @@
 # Future
+
+# 1.10.0
+- 3DS: Add Jaxe, A5200 and WASM4 cores
+- 3DS: Fix rotation
+- ARCHIVE: Allow loading files from archive subdirectory
+- AUDIO: Remove frame limit from audio batch callback. Before, if a core used the audio batch callback, there would be a hidden cap of 1024 on the number of audio frames that could be sent. If a core exceeded this value, any excess samples were silently discarded. While this is sufficient for 'normal' samplerates/framerates, it means that e.g. a core using the batch callback to send 44100 Hz audio at 30 fps with would have entirely broken sound. This has been fixed by removing the audio batch frame limit.
+- AUDIO/RESAMPLER/NEON: Implement sinc kaiser NEON function
+- CHEEVOS: Reset hardcore default to enabled; show message when trying to load state in hardcore 
+- CHEEVOS: Fix memory map conversion
+- CHEEVOS: Check netplay status when unlocking achievements
+- CHEEVOS: Support for hashing buffered NDS ROMs
+- CHEEVOS: Fix hung task whe badge doesn't exist
+- CLI: Load save states from command-line or playlist
+- CORE INFO CACHE/SETTINGS: Restore missing 'Cache Core Info Files' menu entry
+- DATABASE: Serial scanning for Gamecube/MegaCD/SegaCD/Saturn/PSX/PSP/Dreamcast/Wii
+- D3D10/D3D11: Add Vsync swap interval
+- EMSCRIPTEN: Add Jaxe, WASM4 cores
+- FILE IO: Fix incorrect file names for remap files when the content path doesn't have a preceding slash
+- INPUT/OVERLAY: Added support for showing the overlay behind the menu instead of in front. This is currently only supported on the GL, Vulkan, D3D 9/10/11/12 and 3DS drivers.
+- INPUT/UDEV: Convert abs mouse from screen to viewport coordinates; fix relative mouse coords
+- INPUT/WAYLAND: Ignore mouse clicks on window decoration
+- INPUT/WAYLAND: Add scroll wheel support
 - LINUX: Added support for Linux GameMode (https://github.com/FeralInteractive/gamemode), which can be toggled on/off in the Power Management or Latency settings menus.
-- Added a hotkey toggle for the on-screen technical statistics.
-- Added support for showing the overlay behind the menu instead of in front. This is currently only supported on the GL, Vulkan, D3D 9/10/11/12 and 3DS drivers.
+- LOCALIZATION: Fetch translations from Crowdin
+- LOCALIZATION: Add Indonesian, Swedish and Ukrainian language options
+- LOCALIZATION/MENU/RGUI: Enable Indonesian and Swedish localisations for RGUI
+- LOGGING: Logging cleanups
+- LOGGING: Stop logging FPS statistics twice on quit
+- LOGGING: Log font rendering backend only once
+- HOTKEYS: Added a hotkey toggle for the on-screen technical statistics.
+- HOTKEYS: Add delay + acceleration to volume hotkeys
+- MENU: Add option for showing notifications only in menu 
+- MENU/RGUI: Add Finnish to supported languages
+- MENU/XMB: Optional vertical list item fade
+- MENU/XMB/OZONE: Category + History/Favorites icons
+- NETWORK: Fix dummy notification - no longer shows a netplay initialization failed notification when netplay is not enabled
+- NETWORK: LAN addresses only for UPnP - Some router devices might accept non-LAN addresses without raising an error.
+- NETWORK: Filter out non-connectable rooms. Add an option for filtering out non-connectable netplay rooms.
+- NETWORK: Netplay spectator notification fix. Fix double notification when the host switches to spectator.
+- NETWORK: Prevents long-term pausing from clients dishonoring allow pausing
+- NETWORK/LOBBY: Lobby Viewer: Filter out rooms that are not running RetroArch
+- NETWORK/LOBBY: Lobby Viewer: Display a non-connectable tag to non-connectable rooms
+- NETWORK/LOBBY: Host: Display warning if we are announcing to the internet but our room isn't connectable from there
+- NETWORK/RELAY: Custom relay server support - Add support for custom user-ran relay servers
+- NETWORK/RELAY: Replace Canadian relay server with Singapore relay server. Current relays: New York/USA, Madrid/Spain, Sao Paulo/Brazil, Singapore
+- NETWORK/UPNP: Various refactors/improvements, no more dependent on miniupnpc
+- NETWORK/UPNP: Various UPnP binding fixes for specific routers
+- NETWORK/UPNP: Accept IGD v2 service types
+- NETWORK/UPNP: Delay lobby server announcing - delay the announcing in order to give UPnP's port forwarding more time. Fix the remaining truncation warnings.
+- NETWORK/UPNP: Smart interface selection - Find the most suitable address for UPnP by scoring interfaces on how close their address is to the device's address
+- OPENGL1: Fix buffer overflow - RetroArch would sometimes crashes at startup when loading asset textures with GL1 driver
+- PS3: PSL1GHT port added to Gitlab CI
+- VULKAN: Double combined image sampler descriptor pool size - fix segfaults with AMD GPUs using RADV
+- VULKAN: Emulate mailbox only with Vsync enabled - otherwise have it disabled - useful for VRR/G-Sync/FreeSync
+- VULKAN/SWAPCHAIN: Vulkan max swapchain images option adjustments: removed value 1, since it won't be used - Video reinit on change, so that there is no need to restart or toggle fullscreen
+- VULKAN/HDR: HDR support - tested on Windows
+- WAYLAND: Add libdecor for client side decoration
+- WAYLAND: Use any display for initial metrics
+- WAYLAND: Fix the window closing, if RetroArch is build without libdecor
+- WAYLAND: Use checked sizes in EGL resize
+- WAYLAND: Fix window title update
+- WEBOS: Fix webOS build and run
+- WIIU: Fix rotation
+- UWP/XBOX: Fix content over 4GB (approx) failing to load, improve/speed up copy/load times
+- UWP/XBOX: Fix scanning for playlists
+- UWP/XBOX: Move content copied to LocalState to a dedicated dir and clear on startup
+- UWP/XBOX: Make content copy to a specific cache directory in the LocalState folder when it's copied
+- UWP/XBOX: Auto delete VFS cache dir on startup
+- UWP/XBOX: Make resolution switching automatic and fix angle output issues
+- UWP/XBOX: Force ANGLE to render at 1080p regardless of screensize as the output is 1080p regardless of screensize. This fixes an issue where at 4k any angle output would be zoomed into a corner.
+- UWP/XBOX: Set resolution based on display resolution (auto 4k)
+- UWP/XBOX: Set driver to D3D11 if booting with opengl
+- UWP/XBOX: Reset width and height of output on boot to match display
+- UWP/XBOX: Mitigate need for VFS cores on NTFS drives
+- UWP/XBOX: Make check for standard I/O by access rather than the just assuming based on path string
+- UWP/XBOX: Add code to auto permissions so files can be accessed by non VFS cores (no exFAT or FAT32 support yet)
 
 # 1.9.14
 - ANDROID/PLAYSTORE: Implement MANAGE_EXTERNAL_STORAGE permission

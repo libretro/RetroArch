@@ -497,6 +497,7 @@ typedef struct video_frame_info
    bool timedate_enable;
    bool runloop_is_slowmotion;
    bool runloop_is_paused;
+   bool fastforward_frameskip;
    bool menu_is_alive;
    bool menu_screensaver_active;
    bool msg_bgcolor_enable;
@@ -819,6 +820,7 @@ typedef struct
 #endif
    struct retro_system_av_info av_info; /* double alignment */
    retro_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
+   retro_time_t core_frame_time;
    uint64_t frame_time_count;
    uint64_t frame_count;
    uint8_t *record_gpu_buffer;

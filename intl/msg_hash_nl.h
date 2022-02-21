@@ -448,6 +448,10 @@ MSG_HASH(
    "Vereiste Graphics API"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
+   "Geen"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Ontbrekend, Noodzakelijk:"
    )
@@ -765,10 +769,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
    "Netplay (peer-to-peer) ondersteuning"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
-   "Python (script ondersteuning in shaders) ondersteuning"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
@@ -3596,6 +3596,10 @@ MSG_HASH(
    "Naaste"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT,
+   "Inhoud"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
    "Linkse Analoge Stick"
    )
@@ -4144,14 +4148,6 @@ MSG_HASH(
 
 /* Unused (Needs Confirmation) */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
-   "Database - Filter : Ontwikkelaar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
-   "Database - Filter : Uitgever"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG,
    "Configuratie"

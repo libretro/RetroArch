@@ -76,11 +76,11 @@ In the end you should have this on your system:
       gl3.h
       gl3platform.h
 
-To enable mali_fbdev you must configure RetroArch with --enable-gles and --enable-mali_fbdev.
+To enable mali_fbdev you must configure RetroArch with --enable-opengles and --enable-mali_fbdev.
 
 This is an example of what you would use on a CubieBoard2 for a lightweight RetroArch:
 
-./configure --enable-gles --enable-mali_fbdev --disable-x11 --disable-sdl2 --enable-floathard --disable-ffmpeg --disable-netplay --enable-udev --disable-sdl --disable-pulse --disable-oss --disable-freetype --disable-7zip
+./configure --enable-opengles --enable-mali_fbdev --disable-x11 --disable-sdl2 --enable-floathard --disable-ffmpeg --disable-netplay --enable-udev --disable-sdl --disable-pulse --disable-oss --disable-freetype --disable-7zip
 
 NOTE: A TTY hack is used to auto-clean the console on exit, and the fbdev ioctls are used to retrieve
 current video mode. Both things work good, but they are not exactly ideal solutions.

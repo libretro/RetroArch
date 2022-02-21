@@ -3802,9 +3802,9 @@ bool menu_shader_manager_save_preset_internal(
             shader, save_reference);
 
       if (ret)
-         RARCH_LOG("[Shaders - Save Preset]: Saved shader preset to %s.\n", preset_path);
+         RARCH_LOG("[Shaders]: Saved shader preset to \"%s\".\n", preset_path);
       else
-         RARCH_ERR("[Shaders - Save Preset]: Failed writing shader preset to %s.\n", preset_path);
+         RARCH_ERR("[Shaders]: Failed writing shader preset to \"%s\".\n", preset_path);
    }
    else
    {
@@ -3827,7 +3827,7 @@ bool menu_shader_manager_save_preset_internal(
 
             if (!ret)
             {
-               RARCH_WARN("[Shaders - Save Preset]: Failed to create preset directory %s.\n", basedir);
+               RARCH_WARN("[Shaders]: Failed to create preset directory \"%s\".\n", basedir);
                continue;
             }
          }
@@ -3840,16 +3840,16 @@ bool menu_shader_manager_save_preset_internal(
 
          if (ret)
          {
-            RARCH_LOG("[Shaders - Save Preset]: Saved shader preset to %s.\n", preset_path);
+            RARCH_LOG("[Shaders]: Saved shader preset to \"%s\".\n", preset_path);
             break;
          }
          else
-            RARCH_WARN("[Shaders - Save Preset]: Failed writing shader preset to %s.\n", preset_path);
+            RARCH_WARN("[Shaders]: Failed writing shader preset to \"%s\".\n", preset_path);
       }
 
       if (!ret)
-         RARCH_ERR("[Shaders - Save Preset]: Failed to write shader preset. Make sure shader directory"
-               " and/or config directory are writable.\n");
+         RARCH_ERR("[Shaders]: Failed to write shader preset. Make sure shader directory "
+               "and/or config directory are writable.\n");
    }
 
    if (ret && apply)
@@ -5282,7 +5282,7 @@ const menu_ctx_driver_t *menu_driver_find_driver(
    if (verbosity_enabled)
    {
       unsigned d;
-      RARCH_WARN("Couldn't find any %s named \"%s\"\n", prefix,
+      RARCH_WARN("Couldn't find any %s named \"%s\".\n", prefix,
             settings->arrays.menu_driver);
       RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
       for (d = 0; menu_ctx_drivers[d]; d++)
@@ -5292,7 +5292,7 @@ const menu_ctx_driver_t *menu_driver_find_driver(
             RARCH_LOG_OUTPUT("\t%s\n", menu_ctx_drivers[d]->ident);
          }
       }
-      RARCH_WARN("Going to default to first %s...\n", prefix);
+      RARCH_WARN("Going to default to first %s..\n", prefix);
    }
 
    return (const menu_ctx_driver_t*)menu_ctx_drivers[0];
@@ -7348,7 +7348,7 @@ bool menu_shader_manager_set_preset(struct video_shader *shader,
          !(video_shader_load_preset_into_shader(preset_path, shader)))
       goto end;
 
-   RARCH_LOG("[Shaders]: Menu shader set to: %s.\n", preset_path);
+   RARCH_LOG("[Shaders]: Menu shader set to: \"%s\".\n", preset_path);
 
    ret = true;
 

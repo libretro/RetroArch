@@ -83,7 +83,7 @@ static int nanosleepDOS(const struct timespec *rqtp, struct timespec *rmtp)
  *
  * Sleeps for a specified amount of milliseconds (@msec).
  **/
-#if defined(PSP) || defined(VITA)
+#if defined(VITA)
 #define retro_sleep(msec) (sceKernelDelayThread(1000 * (msec)))
 #elif defined(_3DS)
 #define retro_sleep(msec) (svcSleepThread(1000000 * (s64)(msec)))

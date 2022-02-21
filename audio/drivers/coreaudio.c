@@ -33,12 +33,13 @@
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
+#include "defines/cocoa_defines.h"
 
 typedef struct coreaudio
 {
    slock_t *lock;
    scond_t *cond;
-#if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+#if !HAS_MACOSX_10_12
    ComponentInstance dev;
 #else
    AudioComponentInstance dev;
@@ -64,7 +65,7 @@ static void coreaudio_free(void *data)
    if (dev->dev_alive)
    {
       AudioOutputUnitStop(dev->dev);
-#if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+#if !HAS_MACOSX_10_12
       CloseComponent(dev->dev);
 #else
       AudioComponentInstanceDispose(dev->dev);
@@ -139,7 +140,7 @@ static void choose_output_device(coreaudio_t *dev, const char* device)
    UInt32 size                         = 0;
 
    propaddr.mSelector = kAudioHardwarePropertyDevices;
-#if MAC_OS_X_VERSION_10_12
+#if HAS_MACOSX_10_12
    propaddr.mScope    = kAudioObjectPropertyScopeOutput;
 #else
    propaddr.mScope    = kAudioObjectPropertyScopeGlobal;
@@ -157,7 +158,7 @@ static void choose_output_device(coreaudio_t *dev, const char* device)
             &propaddr, 0, 0, &size, devices) != noErr)
       goto done;
 
-#if MAC_OS_X_VERSION_10_12
+#if HAS_MACOSX_10_12
 #else
    propaddr.mScope    = kAudioDevicePropertyScopeOutput;
 #endif
@@ -192,7 +193,7 @@ static void *coreaudio_init(const char *device,
    size_t fifo_size;
    UInt32 i_size;
    AudioStreamBasicDescription real_desc;
-#if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+#if !HAS_MACOSX_10_12
    Component comp;
 #else
    AudioComponent comp;
@@ -204,7 +205,7 @@ static void *coreaudio_init(const char *device,
    AudioStreamBasicDescription stream_desc = {0};
    bool component_unavailable              = false;
    static bool session_initialized         = false;
-#if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+#if !HAS_MACOSX_10_12
    ComponentDescription desc               = {0};
 #else
    AudioComponentDescription desc          = {0};
@@ -238,7 +239,7 @@ static void *coreaudio_init(const char *device,
 #endif
    desc.componentManufacturer = kAudioUnitManufacturer_Apple;
 
-#if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+#if !HAS_MACOSX_10_12
    comp = FindNextComponent(NULL, &desc);
 #else
    comp = AudioComponentFindNext(NULL, &desc);
@@ -246,7 +247,7 @@ static void *coreaudio_init(const char *device,
    if (!comp)
       goto error;
 
-#if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+#if !HAS_MACOSX_10_12
    component_unavailable = (OpenAComponent(comp, &dev->dev) != noErr);
 #else
    component_unavailable = (AudioComponentInstanceNew(comp, &dev->dev) != noErr);

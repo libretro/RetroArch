@@ -2047,7 +2047,7 @@ static const char *menu_hash_to_str_de_label_enum(enum msg_hash_enums msg)
    {
       static char hotkey_lbl[128] = {0};
       unsigned idx = msg - MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN;
-      snprintf(hotkey_lbl, sizeof(hotkey_lbl), "input_hotkey_binds_%d", idx);
+      snprintf(hotkey_lbl, sizeof(hotkey_lbl), "input_hotkey_binds_%u", idx);
       return hotkey_lbl;
    }
 

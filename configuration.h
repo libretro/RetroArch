@@ -278,6 +278,7 @@ typedef struct settings
       unsigned menu_xmb_theme;
       unsigned menu_xmb_color_theme;
       unsigned menu_xmb_thumbnail_scale_factor;
+      unsigned menu_xmb_vertical_fade_factor;
       unsigned menu_materialui_color_theme;
       unsigned menu_materialui_transition_animation;
       unsigned menu_materialui_thumbnail_view_portrait;
@@ -833,6 +834,7 @@ typedef struct settings
       bool history_list_enable;
       bool playlist_entry_rename;
       bool rewind_enable;
+      bool fastforward_frameskip;
       bool vrr_runloop_enable;
       bool apply_cheats_after_toggle;
       bool apply_cheats_after_load;

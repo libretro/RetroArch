@@ -23,8 +23,24 @@ MSG_HASH(
    "retro_achievements"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
-   "toggle_cheevos_hardcore"
+   MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU,
+   "achievement_pause_menu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_CANCEL,
+   "achievement_pause_cancel"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ACHIEVEMENT_RESUME_CANCEL,
+   "achievement_resume_cancel"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE,
+   "achievement_pause"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ACHIEVEMENT_RESUME,
+   "achievement_resume"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_ACCOUNTS_TWITCH,
@@ -243,6 +259,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST,
    "cb_core_content_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD,
+   "cb_core_system_files_download"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_LIST,
+   "cb_core_system_files_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD,
@@ -829,6 +853,10 @@ MSG_HASH(
    "deferred_core_content_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CORE_SYSTEM_FILES_LIST,
+   "deferred_core_system_files_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CORE_LIST,
    "deferred_core_list"
    )
@@ -1153,6 +1181,10 @@ MSG_HASH(
    "download_core_content_dirs"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+   "download_core_system_files"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES,
    "update_installed_cores"
    )
@@ -1217,6 +1249,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_FASTFORWARD_RATIO,
    "fastforward_ratio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_FASTFORWARD_FRAMESKIP,
+   "fastforward_frameskip"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_FILE_BROWSER_CORE,
@@ -2921,6 +2957,10 @@ MSG_HASH(
    "slowmotion_ratio"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_RUN_AHEAD_UNSUPPORTED,
+   "run_ahead_unsupported"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_RUN_AHEAD_ENABLED,
    "run_ahead_enabled"
    )
@@ -3045,6 +3085,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
    "menu_xmb_thumbnail_scale_factor"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_XMB_VERTICAL_FADE_FACTOR,
+   "menu_xmb_vertical_fade_factor"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,

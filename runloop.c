@@ -279,10 +279,6 @@
 #define SYMBOL_VIDEOPROCESSOR(x) current_core->x = libretro_videoprocessor_##x
 #endif
 
-#ifdef HAVE_GONG
-#define SYMBOL_GONG(x) current_core->x = libretro_gong_##x
-#endif
-
 #define CORE_SYMBOLS(x) \
             x(retro_init); \
             x(retro_deinit); \
@@ -2628,6 +2624,10 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   (*info)->timing.sample_rate);
 
             memcpy(av_info, *info, sizeof(*av_info));
+            video_st->core_frame_time = 1000000 /
+                  ((video_st->av_info.timing.fps > 0.0) ?
+                        video_st->av_info.timing.fps : 60.0);
+
             command_event(CMD_EVENT_REINIT, &reinit_flags);
             if (no_video_reinit)
                video_driver_set_aspect_ratio();
@@ -3459,11 +3459,6 @@ static bool init_libretro_symbols_custom(
       case CORE_TYPE_VIDEO_PROCESSOR:
 #if defined(HAVE_VIDEOPROCESSOR)
          CORE_SYMBOLS(SYMBOL_VIDEOPROCESSOR);
-#endif
-         break;
-      case CORE_TYPE_GONG:
-#ifdef HAVE_GONG
-         CORE_SYMBOLS(SYMBOL_GONG);
 #endif
          break;
    }
@@ -4723,6 +4718,26 @@ static void do_runahead(
 
    if (!runloop_st->runahead_save_state_size_known)
    {
+      /* Disable runahead if current core reports
+       * that it has an insufficient savestate
+       * support level */
+      if (!core_info_current_supports_runahead())
+      {
+         runahead_error(runloop_st);
+         /* If core is incompatible with runahead,
+          * log a warning but do not spam OSD messages.
+          * Runahead menu entries are hidden when using
+          * incompatible cores, so there is no mechanism
+          * for users to respond to notifications. In
+          * addition, auto-disabling runahead is a feature,
+          * not a cause for 'concern'; OSD warnings should
+          * be reserved for when a core reports that it is
+          * runahead-compatible but subsequently fails in
+          * execution */
+         RARCH_WARN("[Run-Ahead]: %s\n", msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD));
+         goto force_input_dirty;
+      }
+
       if (!runahead_create(runloop_st))
       {
          if (!runahead_hide_warnings)
@@ -5298,6 +5313,9 @@ static bool core_load(unsigned poll_type_behavior)
       return false;
 
    runloop_st->current_core.retro_get_system_av_info(&video_st->av_info);
+   video_st->core_frame_time = 1000000 /
+         ((video_st->av_info.timing.fps > 0.0) ?
+               video_st->av_info.timing.fps : 60.0);
 
    return true;
 }
@@ -6873,10 +6891,41 @@ static enum runloop_state_enum runloop_check_state(
    /* Check if we have pressed the AI Service toggle button */
    HOTKEY_CHECK(RARCH_AI_SERVICE, CMD_EVENT_AI_SERVICE_TOGGLE, true, NULL);
 
-   if (BIT256_GET(current_bits, RARCH_VOLUME_UP))
-      command_event(CMD_EVENT_VOLUME_UP, NULL);
-   else if (BIT256_GET(current_bits, RARCH_VOLUME_DOWN))
-      command_event(CMD_EVENT_VOLUME_DOWN, NULL);
+   /* Volume stepping + acceleration */
+   {
+      static unsigned volume_hotkey_delay        = 0;
+      static unsigned volume_hotkey_delay_active = 0;
+      unsigned volume_hotkey_delay_default       = 15;
+      if (BIT256_GET(current_bits, RARCH_VOLUME_UP))
+      {
+         if (volume_hotkey_delay > 0)
+            volume_hotkey_delay--;
+         else
+         {
+            command_event(CMD_EVENT_VOLUME_UP, NULL);
+            if (volume_hotkey_delay_active > 0)
+               volume_hotkey_delay_active--;
+            volume_hotkey_delay = volume_hotkey_delay_active;
+         }
+      }
+      else if (BIT256_GET(current_bits, RARCH_VOLUME_DOWN))
+      {
+         if (volume_hotkey_delay > 0)
+            volume_hotkey_delay--;
+         else
+         {
+            command_event(CMD_EVENT_VOLUME_DOWN, NULL);
+            if (volume_hotkey_delay_active > 0)
+               volume_hotkey_delay_active--;
+            volume_hotkey_delay = volume_hotkey_delay_active;
+         }
+      }
+      else
+      {
+         volume_hotkey_delay        = 0;
+         volume_hotkey_delay_active = volume_hotkey_delay_default;
+      }
+   }
 
 #ifdef HAVE_NETWORKING
    /* Check Netplay */
@@ -7612,7 +7661,8 @@ int runloop_iterate(void)
       bool run_ahead_hide_warnings      = settings->bools.run_ahead_hide_warnings;
       bool run_ahead_secondary_instance = settings->bools.run_ahead_secondary_instance;
       /* Run Ahead Feature replaces the call to core_run in this loop */
-      bool want_runahead                = run_ahead_enabled && run_ahead_num_frames > 0;
+      bool want_runahead                = run_ahead_enabled &&
+            (run_ahead_num_frames > 0) && runloop_st->runahead_available;
 #ifdef HAVE_NETWORKING
       want_runahead                     = want_runahead && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
 #endif
@@ -8002,7 +8052,8 @@ bool core_set_cheat(retro_ctx_cheat_info_t *info)
       run_ahead_enabled              = settings->bools.run_ahead_enabled;
       run_ahead_frames               = settings->uints.run_ahead_frames;
       run_ahead_secondary_instance   = settings->bools.run_ahead_secondary_instance;
-      want_runahead                  = run_ahead_enabled && (run_ahead_frames > 0);
+      want_runahead                  = run_ahead_enabled &&
+            (run_ahead_frames > 0) && runloop_st->runahead_available;
 #ifdef HAVE_NETWORKING
       if (want_runahead)
          want_runahead               = !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
@@ -8040,7 +8091,8 @@ bool core_reset_cheat(void)
       run_ahead_enabled              = settings->bools.run_ahead_enabled;
       run_ahead_frames               = settings->uints.run_ahead_frames;
       run_ahead_secondary_instance   = settings->bools.run_ahead_secondary_instance;
-      want_runahead                  = run_ahead_enabled && (run_ahead_frames > 0);
+      want_runahead                  = run_ahead_enabled &&
+            (run_ahead_frames > 0) && runloop_st->runahead_available;
 #ifdef HAVE_NETWORKING
       if (want_runahead)
          want_runahead               = !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);

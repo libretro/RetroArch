@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2021 - Daniel De Matteis
  *  Copyright (C) 2016-2017 - Gregor Richards
- *  Copyright (C) 2021-2021 - Roberto V. Rampim
+ *  Copyright (C) 2021-2022 - Roberto V. Rampim
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -18,10 +18,6 @@
 
 #if defined(_MSC_VER) && !defined(_XBOX)
 #pragma comment(lib, "ws2_32")
-#endif
-
-#if defined(_WIN32) && defined(_MSC_VER)
-#pragma comment(lib, "Iphlpapi")
 #endif
 
 #include <stdio.h>
@@ -41,13 +37,13 @@
 #include <lrc_hash.h>
 #include <retro_timers.h>
 
+#ifndef HAVE_SOCKET_LEGACY
+#include <net/net_ifinfo.h>
+#endif
+
 #include <math/float_minmax.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
-
-#ifdef _WIN32
-#include <iphlpapi.h>
-#endif
 
 #ifdef HAVE_DISCORD
 #include "../discord.h"
@@ -247,55 +243,9 @@ bool init_netplay_discovery(void)
 
    if (ret)
    {
-#ifdef _WIN32
-      MIB_IPFORWARDROW ip_forward;
-
-      if (GetBestRoute(inet_addr("223.255.255.255"),
-         0, &ip_forward) == NO_ERROR)
-      {
-         DWORD            index = ip_forward.dwForwardIfIndex;
-         PMIB_IPADDRTABLE table = malloc(sizeof(*table));
-
-         if (table)
-         {
-            DWORD len    = sizeof(*table);
-            DWORD result = GetIpAddrTable(table, &len, FALSE);
-
-            if (result == ERROR_INSUFFICIENT_BUFFER)
-            {
-               PMIB_IPADDRTABLE new_table = realloc(table, len);
-
-               if (new_table) 
-               {
-                  table  = new_table;
-                  result = GetIpAddrTable(table, &len, FALSE);
-               }
-            }
-
-            if (result == NO_ERROR)
-            {
-               DWORD i;
-
-               for (i = 0; i < table->dwNumEntries; i++)
-               {
-                  PMIB_IPADDRROW ip_addr = &table->table[i];
-
-                  if (ip_addr->dwIndex == index)
-                  {
-#ifdef IP_MULTICAST_IF
-                     setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IF,
-                        (const char *) &ip_addr->dwAddr, sizeof(ip_addr->dwAddr));
-#endif
-                     ((struct sockaddr_in *) addr->ai_addr)->sin_addr.s_addr =
-                        ip_addr->dwAddr;
-                     break;
-                  }
-               }
-            }
-
-            free(table);
-         }
-      }
+#ifndef HAVE_SOCKET_LEGACY
+      net_ifinfo_best("223.255.255.255",
+         &((struct sockaddr_in *) addr->ai_addr)->sin_addr, false);
 #endif
 
 #ifdef SO_BROADCAST
@@ -615,7 +565,7 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
       &addr_size) == sizeof(header))
    {
       const frontend_ctx_driver_t *frontend_drv;
-      char frontend_architecture_tmp[32];
+      char frontend_architecture_tmp[24];
       uint32_t content_crc             = 0;
       struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
       struct string_list *subsystem    = path_get_subsystem_list();
@@ -6812,6 +6762,9 @@ netplay_t *netplay_new(const char *server, const char *mitm, uint16_t port,
                                 NETPLAY_CONNECTION_SPECTATING :
                                 NETPLAY_CONNECTION_NONE;
 
+   if (netplay->stateless_mode)
+      netplay->quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
+
    if (netplay->is_server)
    {
       netplay->connections       = NULL;
@@ -8330,17 +8283,11 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
    const char *mitm              = NULL;
 
    if (!net_st->netplay_enabled)
-   {
-      net_st->netplay_client_deferred = false;
       return false;
-   }
 
    core_set_default_callbacks(&cbs);
    if (!core_set_netplay_callbacks())
-   {
-      net_st->netplay_client_deferred = false;
-      return false;
-   }
+      goto failure;
 
    /* Map the core's quirks to our quirks */
    serialization_quirks = core_serialization_quirks();
@@ -8348,7 +8295,6 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
    /* Quirks we don't support! Just disable everything. */
    if (serialization_quirks & ~((uint64_t) NETPLAY_QUIRK_MAP_UNDERSTOOD))
       quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
-
    if (serialization_quirks & NETPLAY_QUIRK_MAP_NO_SAVESTATES)
       quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
    if (serialization_quirks & NETPLAY_QUIRK_MAP_NO_TRANSMISSION)
@@ -8372,6 +8318,7 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
       if (settings->bools.netplay_use_mitm_server)
       {
          const char *mitm_handle = settings->arrays.netplay_mitm_server;
+
          if (netplay_mitm_query(mitm_handle))
          {
             /* We want to cache the MITM server handle in order to
@@ -8402,11 +8349,16 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
       }
    }
 
+   net_st->netplay_client_deferred = false;
+
 #ifdef HAVE_NETPLAYDISCOVERY
    net_st->lan_ad_server_fd = -1;
 #endif
 
-   net_st->netplay_client_deferred = false;
+   net_st->chat = calloc(1, sizeof(*net_st->chat));
+   if (!net_st->chat)
+      goto failure;
+   net_st->chat->message_slots = ARRAY_SIZE(net_st->chat->messages);
 
    net_st->data = netplay_new(
          server, mitm, port, mitm_session,
@@ -8421,24 +8373,11 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
 #endif
          settings->paths.username,
          quirks);
-
    if (!net_st->data)
-   {
-      RARCH_ERR("[Netplay] %s\n", msg_hash_to_str(MSG_NETPLAY_FAILED));
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_NETPLAY_FAILED),
-            0, 180, false,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      return false;
-   }
+      goto failure;
 
-   net_st->chat = calloc(1, sizeof(*net_st->chat));
-   if (!net_st->chat)
-      return false;
-   net_st->chat->message_slots = ARRAY_SIZE(net_st->chat->messages);
-
-   net_st->reannounce  = -1;
-   net_st->reping      = -1;
+   net_st->reannounce = 900;
+   net_st->reping     = -1;
 
    if (net_st->data->is_server)
    {
@@ -8452,6 +8391,20 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
    }
 
    return true;
+
+failure:
+   net_st->netplay_enabled         = false;
+   net_st->netplay_is_client       = false;
+   net_st->netplay_client_deferred = false;
+
+   deinit_netplay();
+
+   RARCH_ERR("[Netplay] %s\n", msg_hash_to_str(MSG_NETPLAY_FAILED));
+   runloop_msg_queue_push(
+      msg_hash_to_str(MSG_NETPLAY_FAILED), 0, 180, false, NULL,
+      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+   return false;
 }
 
 /**

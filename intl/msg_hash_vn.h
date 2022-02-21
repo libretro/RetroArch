@@ -693,6 +693,10 @@ MSG_HASH(
    "Phần cứng nâng cao"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
+   "Đánh giá của CERO"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
    "Analog được hỗ trợ"
    )
@@ -845,12 +849,52 @@ MSG_HASH(
    "Thay đổi cài đặt quản lý tệp tin."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
+   "Thay đổi cài đặt tua lại, chuyển tiếp và chuyển động chậm."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
+   "Ghi âm"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
+   "Thay đổi cài đặt ghi âm."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
+   "Hiển thị trên màn hình"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
    "Giao diện người dùng"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
    "Thay đổi cài đặt giao diện người dùng."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
+   "Dịch vụ AI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
+   "Thay đổi cài đặt cho dịch vụ AI (Dịch/TTS/Khác)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
+   "Khả năng truy cập"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
+   "Thay đổi cài đặt khả năng truy cập."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
+   "Quản lý năng lượng"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
+   "Thay đổi cài đặt quản lý năng lượng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
@@ -1197,6 +1241,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
    "Tăng âm"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
+   "Dịch vụ AI"
    )
 
 /* Settings > Input > Port # Controls */
@@ -1800,6 +1848,10 @@ MSG_HASH(
    "Đã mở"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT,
+   "Mục nội dung"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR,
    "<Mục nội dung>"
    )
@@ -1949,6 +2001,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
    "Lịch sử"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT,
+   "Cổng"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER,

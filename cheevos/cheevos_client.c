@@ -746,7 +746,6 @@ void rcheevos_client_identify_game(const char* hash,
       request->callback      = callback;
       request->callback_data = userdata;
 
-      rcheevos_begin_load_state(RCHEEVOS_LOAD_STATE_IDENTIFYING_GAME);
       rcheevos_async_begin_request(request, result,
          rcheevos_async_resolve_hash_callback,
          CHEEVOS_ASYNC_RESOLVE_HASH, 0,
@@ -1097,6 +1096,10 @@ static void rcheevos_async_fetch_game_data_callback(
       snprintf(rcheevos_locals->game.badge_name, sizeof(rcheevos_locals->game.badge_name),
          "i%s", runtime_data->game_data.image_name);
       rcheevos_client_fetch_game_badge(runtime_data->game_data.image_name, runtime_data);
+   }
+   else
+   {
+      rcheevos_unload();
    }
 }
 
@@ -1742,6 +1745,9 @@ static void rcheevos_async_award_achievement_callback(
          CHEEVOS_LOG(RCHEEVOS_TAG "Achievement %u: %s\n",
                request->id, api_response.response.error_message);
       }
+
+      if (api_response.achievements_remaining == 0)
+         rcheevos_show_mastery_placard();
    }
 
    rc_api_destroy_award_achievement_response(&api_response);

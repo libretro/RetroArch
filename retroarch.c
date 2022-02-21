@@ -1285,10 +1285,6 @@ enum rarch_content_type path_is_media_type(const char *path)
       case FILE_TYPE_XM:
          return RARCH_CONTENT_MUSIC;
 #endif
-#ifdef HAVE_GONG
-      case FILE_TYPE_GONG:
-         return RARCH_CONTENT_GONG;
-#endif
 
       case FILE_TYPE_NONE:
       default:
@@ -1623,6 +1619,14 @@ bool command_event(enum event_command cmd, void *data)
             char msg[256];
             msg[0] = '\0';
 
+            if (!core_info_current_supports_runahead())
+            {
+               runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD),
+                     1, 100, false,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               break;
+            }
+
             settings->bools.run_ahead_enabled =
                !(settings->bools.run_ahead_enabled);
 
@@ -1686,8 +1690,8 @@ bool command_event(enum event_command cmd, void *data)
                else
                {
                   if (!string_is_empty(desc))
-                     snprintf(msg, sizeof(msg), 
-                        msg_hash_to_str(MSG_SCREEN_RESOLUTION_DESC), 
+                     snprintf(msg, sizeof(msg),
+                        msg_hash_to_str(MSG_SCREEN_RESOLUTION_DESC),
                         width, height, desc);
                   else
                      snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_NO_DESC),
@@ -1767,7 +1771,10 @@ bool command_event(enum event_command cmd, void *data)
 
 #ifdef HAVE_CHEEVOS
             if (rcheevos_hardcore_active())
+            {
+               runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
                return false;
+            }
 #endif
             if (!command_event_main_state(cmd))
                return false;
@@ -1950,7 +1957,7 @@ bool command_event(enum event_command cmd, void *data)
             runloop_system_info_free();
 #endif
             {
-               audio_driver_state_t 
+               audio_driver_state_t
                   *audio_st                  = audio_state_get_ptr();
                audio_st->callback.callback   = NULL;
                audio_st->callback.set_state  = NULL;
@@ -2004,9 +2011,11 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_REWIND_DEINIT:
 #ifdef HAVE_REWIND
          {
-	    bool core_type_is_dummy   = runloop_st->current_core_type == CORE_TYPE_DUMMY;
-	    if (core_type_is_dummy)
+            bool core_type_is_dummy   = runloop_st->current_core_type == CORE_TYPE_DUMMY;
+
+            if (core_type_is_dummy)
                return false;
+
             state_manager_event_deinit(&runloop_st->rewind_st);
          }
 #endif
@@ -2016,8 +2025,9 @@ bool command_event(enum event_command cmd, void *data)
          {
             bool rewind_enable        = settings->bools.rewind_enable;
             size_t rewind_buf_size    = settings->sizes.rewind_buffer_size;
-	    bool core_type_is_dummy   = runloop_st->current_core_type == CORE_TYPE_DUMMY;
-	    if (core_type_is_dummy)
+            bool core_type_is_dummy   = runloop_st->current_core_type == CORE_TYPE_DUMMY;
+
+            if (core_type_is_dummy)
                return false;
 #ifdef HAVE_CHEEVOS
             if (rcheevos_hardcore_active())
@@ -2079,7 +2089,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_AUDIO_MUTE_TOGGLE:
          {
-            audio_driver_state_t 
+            audio_driver_state_t
                *audio_st                       = audio_state_get_ptr();
             bool audio_mute_enable             =
                *(audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE));
@@ -2114,7 +2124,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_OVERLAY
          {
             bool *check_rotation           = (bool*)data;
-            video_driver_state_t 
+            video_driver_state_t
                *video_st                   = video_state_get_ptr();
             input_driver_state_t *input_st = input_state_get_ptr();
             bool inp_overlay_auto_rotate   = settings->bools.input_overlay_auto_rotate;
@@ -2313,7 +2323,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_CORE_DEINIT:
          {
             struct retro_hw_render_callback *hwr = NULL;
-            video_driver_state_t 
+            video_driver_state_t
                *video_st                         = video_state_get_ptr();
             rarch_system_info_t *sys_info        = &runloop_st->system;
 
@@ -2357,9 +2367,10 @@ bool command_event(enum event_command cmd, void *data)
          }
       case CMD_EVENT_CORE_INIT:
          {
-            enum rarch_core_type *type    = (enum rarch_core_type*)data;
-            rarch_system_info_t *sys_info = &runloop_st->system;
-            input_driver_state_t *input_st= input_state_get_ptr();
+            enum rarch_core_type *type     = (enum rarch_core_type*)data;
+            rarch_system_info_t *sys_info  = &runloop_st->system;
+            input_driver_state_t *input_st = input_state_get_ptr();
+            audio_driver_state_t *audio_st = audio_state_get_ptr();
 
             content_reset_savestate_backups();
 
@@ -2367,8 +2378,19 @@ bool command_event(enum event_command cmd, void *data)
             if (sys_info)
                disk_control_set_ext_callback(&sys_info->disk_control, NULL);
 
+            /* Ensure that audio callback interface is reset */
+            audio_st->callback.callback  = NULL;
+            audio_st->callback.set_state = NULL;
+
             if (!type || !runloop_event_init_core(settings, input_st, *type))
+            {
+               /* If core failed to initialise, audio callback
+                * interface may be assigned invalid function
+                * pointers -> ensure it is reset */
+               audio_st->callback.callback  = NULL;
+               audio_st->callback.set_state = NULL;
                return false;
+            }
          }
          break;
       case CMD_EVENT_VIDEO_APPLY_STATE_CHANGES:
@@ -2378,7 +2400,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             bool adaptive_vsync       = settings->bools.video_adaptive_vsync;
             unsigned swap_interval    = settings->uints.video_swap_interval;
-            video_driver_state_t 
+            video_driver_state_t
                *video_st              = video_state_get_ptr();
 
             if (video_st->current_video->set_nonblock_state)
@@ -2396,7 +2418,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_OVERLAY
          {
             overlay_layout_desc_t layout_desc;
-            video_driver_state_t 
+            video_driver_state_t
                *video_st                        = video_state_get_ptr();
             input_driver_state_t *input_st      = input_state_get_ptr();
 
@@ -2913,9 +2935,9 @@ bool command_event(enum event_command cmd, void *data)
 #endif
       case CMD_EVENT_FULLSCREEN_TOGGLE:
          {
-            audio_driver_state_t 
+            audio_driver_state_t
                *audio_st              = audio_state_get_ptr();
-            input_driver_state_t 
+            input_driver_state_t
                *input_st              = input_state_get_ptr();
             bool *userdata            = (bool*)data;
             bool video_fullscreen     = settings->bools.video_fullscreen;
@@ -3118,7 +3140,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_GRAB_MOUSE_TOGGLE:
          {
             bool ret              = false;
-            input_driver_state_t 
+            input_driver_state_t
                *input_st          = input_state_get_ptr();
             bool grab_mouse_state = !input_st->grab_mouse_state;
 
@@ -3164,7 +3186,7 @@ bool command_event(enum event_command cmd, void *data)
             bool video_fullscreen                         =
                settings->bools.video_fullscreen || video_st->force_fullscreen;
             enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_TOGGLE;
-            input_driver_state_t 
+            input_driver_state_t
                *input_st                                  = input_state_get_ptr();
             bool current_enable_state                     = input_st->game_focus_state.enabled;
             bool apply_update                             = false;
@@ -3219,7 +3241,7 @@ bool command_event(enum event_command cmd, void *data)
 
             if (apply_update)
             {
-               input_driver_state_t 
+               input_driver_state_t
                   *input_st          = input_state_get_ptr();
 
                if (input_st->game_focus_state.enabled)
@@ -3259,7 +3281,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_VOLUME_UP:
          {
-            audio_driver_state_t 
+            audio_driver_state_t
                *audio_st              = audio_state_get_ptr();
             command_event_set_volume(settings, 0.5f,
 #if defined(HAVE_GFX_WIDGETS)
@@ -3288,9 +3310,9 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_SET_FRAME_LIMIT:
          {
-            video_driver_state_t 
+            video_driver_state_t
                *video_st                        = video_state_get_ptr();
-            runloop_st->frame_limit_minimum_time= 
+            runloop_st->frame_limit_minimum_time=
                runloop_set_frame_limit(&video_st->av_info,
                      runloop_get_fastforward_ratio(
                         settings,
@@ -4027,7 +4049,6 @@ static void retroarch_print_features(void)
    _PSUPP_BUF(buf, SUPPORTS_FREETYPE,        "FreeType",        "TTF font rendering driver");
    _PSUPP_BUF(buf, SUPPORTS_CORETEXT,        "CoreText",        "TTF font rendering driver ");
    _PSUPP_BUF(buf, SUPPORTS_NETPLAY,         "Netplay",         "Peer-to-peer netplay");
-   _PSUPP_BUF(buf, SUPPORTS_PYTHON,          "Python",          "Script support in shaders");
    _PSUPP_BUF(buf, SUPPORTS_LIBUSB,          "Libusb",          "Libusb support");
    _PSUPP_BUF(buf, SUPPORTS_COCOA,           "Cocoa",           "Cocoa UI companion support "
                                               "(for OSX and/or iOS)");
@@ -4072,7 +4093,7 @@ static void retroarch_print_help(const char *arg0)
    printf("Usage: %s [OPTIONS]... [FILE]\n", arg0);
 
    {
-      char buf[2148];
+      char buf[2720];
       buf[0] = '\0';
 
       strlcpy(buf, "  -h, --help            Show this help message.\n", sizeof(buf));
@@ -4122,8 +4143,18 @@ static void retroarch_print_help(const char *arg0)
             "Multiple configs are\n"
             "                        delimited by '|'.\n", sizeof(buf));
 #ifdef HAVE_DYNAMIC
+      /* Note: Must strlcat the the string literal in two passes
+       * due to C89 limitations (509 character limit) */
       strlcat(buf, "  -L, --libretro=FILE   Path to libretro implementation. "
-            "Overrides any config setting.\n", sizeof(buf));
+            "Overrides any config setting. FILE may be one of the following:"
+            , sizeof(buf));
+      strlcat(buf,
+            "\n\t\t1. The full path to a core shared object library: path/to/<core_name>_libretro.<lib_ext>"
+            "\n\t\t2. A core shared object library 'file name' (*): <core_name>_libretro.<lib_ext>"
+            "\n\t\t3. A core 'short name' (*): <core_name>_libretro OR <core_name>"
+            "\n\t\t(*) If 'file name' or 'short name' do not correspond to an existing full file path,"
+            "\n\t\t    the configured frontend 'cores' directory will be searched for a match\n"
+            , sizeof(buf));
 #endif
       strlcat(buf, "      --subsystem=NAME  Use a subsystem of the libretro core. "
             "Multiple content\n"
@@ -4222,6 +4253,134 @@ static void retroarch_print_help(const char *arg0)
       puts(buf);
    }
 }
+
+#ifdef HAVE_DYNAMIC
+static void retroarch_parse_input_libretro_path(const char *path)
+{
+   settings_t *settings   = config_get_ptr();
+   int path_stats         = 0;
+   const char *path_ext   = NULL;
+   core_info_t *core_info = NULL;
+   const char *core_path  = NULL;
+   bool core_path_matched = false;
+   char tmp_path[PATH_MAX_LENGTH];
+
+   tmp_path[0] = '\0';
+
+   if (string_is_empty(path))
+      goto end;
+
+   /* Check if path refers to a built-in core */
+   if (string_ends_with_size(path, "builtin",
+            strlen(path), STRLEN_CONST("builtin")))
+   {
+      RARCH_LOG("--libretro argument \"%s\" is a built-in core. Ignoring.\n",
+            path);
+      return;
+   }
+
+   path_stats = path_stat(path);
+
+   /* Check if path is a directory */
+   if ((path_stats & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
+   {
+      path_clear(RARCH_PATH_CORE);
+
+      configuration_set_string(settings,
+            settings->paths.directory_libretro, path);
+
+      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
+      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY, NULL);
+
+      RARCH_WARN("Using old --libretro behavior. "
+            "Setting libretro_directory to \"%s\" instead.\n",
+            path);
+      return;
+   }
+
+   /* Check if path is a valid file */
+   if ((path_stats & RETRO_VFS_STAT_IS_VALID) != 0)
+   {
+      core_path = path;
+      goto end;
+   }
+
+   /* If path refers to a core file that does not exist,
+    * check for its presence in the user-defined cores
+    * directory */
+   path_ext = path_get_extension(path);
+
+   if (!string_is_empty(path_ext))
+   {
+      char core_ext[255];
+
+      core_ext[0] = '\0';
+
+      if (string_is_empty(settings->paths.directory_libretro) ||
+          !frontend_driver_get_core_extension(core_ext,
+               sizeof(core_ext)) ||
+          !string_is_equal(path_ext, core_ext))
+         goto end;
+
+      fill_pathname_join(tmp_path, settings->paths.directory_libretro,
+            path, sizeof(tmp_path));
+
+      if (string_is_empty(tmp_path))
+         goto end;
+
+      path_stats = path_stat(tmp_path);
+
+      if ((path_stats & RETRO_VFS_STAT_IS_VALID) != 0 &&
+          (path_stats & RETRO_VFS_STAT_IS_DIRECTORY) == 0)
+      {
+         core_path         = tmp_path;
+         core_path_matched = true;
+         goto end;
+      }
+   }
+   else
+   {
+      /* If path has no extension and contains no path
+       * delimiters, check if it is a core 'name', matching
+       * an existing file in the cores directory */
+      if (find_last_slash(path))
+         goto end;
+
+      command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+
+      strlcpy(tmp_path, path, sizeof(tmp_path));
+
+      if (!string_ends_with_size(tmp_path, "_libretro",
+            strlen(tmp_path), STRLEN_CONST("_libretro")))
+         strlcat(tmp_path, "_libretro", sizeof(tmp_path));
+
+      if (!core_info_find(tmp_path, &core_info) ||
+          string_is_empty(core_info->path))
+         goto end;
+
+      core_path         = core_info->path;
+      core_path_matched = true;
+   }
+
+end:
+   if (!string_is_empty(core_path))
+   {
+      path_set(RARCH_PATH_CORE, core_path);
+      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
+
+      /* We requested an explicit core, so use PLAIN core type. */
+      runloop_set_current_core_type(CORE_TYPE_PLAIN, false);
+
+      if (core_path_matched)
+         RARCH_LOG("--libretro argument \"%s\" matches core file \"%s\".\n",
+               path, core_path);
+   }
+   else
+      RARCH_WARN("--libretro argument \"%s\" is not a file, core name"
+            " or directory. Ignoring.\n",
+            path ? path : "");
+}
+#endif
 
 /**
  * retroarch_parse_input_and_config:
@@ -4494,14 +4653,14 @@ static bool retroarch_parse_input_and_config(
    }
 
    verbosity_enabled = verbosity_is_enabled();
-   /* Init logging after config load only if not overridden by command line argument. 
+   /* Init logging after config load only if not overridden by command line argument.
     * This handles when logging is set in the config but not via the --log-file option. */
    if (verbosity_enabled && !retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LOG_TO_FILE, NULL))
       rarch_log_file_init(
             settings->bools.log_to_file,
             settings->bools.log_to_file_timestamp,
             settings->paths.log_dir);
-            
+
    /* Second pass: All other arguments override the config file */
    optind = 1;
 
@@ -4614,50 +4773,11 @@ static bool retroarch_parse_input_and_config(
 #endif
                break;
 
-   #ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYNAMIC
             case 'L':
-               {
-                  int path_stats;
-
-                  if (string_ends_with_size(optarg, "builtin",
-                           strlen(optarg), STRLEN_CONST("builtin")))
-                  {
-                     RARCH_LOG("--libretro argument \"%s\" is a built-in core. Ignoring.\n",
-                           optarg);
-                     break;
-                  }
-
-                  path_stats = path_stat(optarg);
-
-                  if ((path_stats & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
-                  {
-                     path_clear(RARCH_PATH_CORE);
-
-                     configuration_set_string(settings,
-                     settings->paths.directory_libretro, optarg);
-
-                     retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-                     retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY, NULL);
-                     RARCH_WARN("Using old --libretro behavior. "
-                           "Setting libretro_directory to \"%s\" instead.\n",
-                           optarg);
-                  }
-                  else if ((path_stats & RETRO_VFS_STAT_IS_VALID) != 0)
-                  {
-                     path_set(RARCH_PATH_CORE, optarg);
-                     retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-
-                     /* We requested explicit core, so use PLAIN core type. */
-                     runloop_set_current_core_type(CORE_TYPE_PLAIN, false);
-                  }
-                  else
-                  {
-                     RARCH_WARN("--libretro argument \"%s\" is neither a file nor directory. Ignoring.\n",
-                           optarg);
-                  }
-               }
+               retroarch_parse_input_libretro_path(optarg);
                break;
-   #endif
+#endif
             case 'P':
 #ifdef HAVE_BSV_MOVIE
                {
@@ -5008,11 +5128,11 @@ bool retroarch_main_init(int argc, char *argv[])
    bool           init_failed   = false;
    struct rarch_state *p_rarch  = &rarch_st;
    runloop_state_t *runloop_st  = runloop_state_get_ptr();
-   input_driver_state_t 
+   input_driver_state_t
       *input_st                 = input_state_get_ptr();
    video_driver_state_t*video_st= video_state_get_ptr();
    settings_t *settings         = config_get_ptr();
-   recording_state_t 
+   recording_state_t
 	   *recording_st             = recording_state_get_ptr();
    global_t            *global  = global_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
@@ -5151,12 +5271,6 @@ bool retroarch_main_init(int argc, char *argv[])
                   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
                   runloop_set_current_core_type(CORE_TYPE_IMAGEVIEWER, false);
                }
-               break;
-#endif
-#ifdef HAVE_GONG
-            case RARCH_CONTENT_GONG:
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-               runloop_set_current_core_type(CORE_TYPE_GONG, false);
                break;
 #endif
             default:
@@ -5410,11 +5524,11 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
          return false;
 #if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
       case RARCH_CTL_IS_SECOND_CORE_AVAILABLE:
-         return 
+         return
                   runloop_st->core_running
                && runloop_st->runahead_secondary_core_available;
       case RARCH_CTL_IS_SECOND_CORE_LOADED:
-         return 
+         return
                    runloop_st->core_running
                && (runloop_st->secondary_lib_handle != NULL);
 #endif
@@ -5926,6 +6040,9 @@ enum retro_language rarch_get_language_from_iso(const char *iso639)
       {"he", RETRO_LANGUAGE_HEBREW},
       {"ast", RETRO_LANGUAGE_ASTURIAN},
       {"fi", RETRO_LANGUAGE_FINNISH},
+      {"id", RETRO_LANGUAGE_INDONESIAN},
+      {"sv", RETRO_LANGUAGE_SWEDISH},
+      {"uk", RETRO_LANGUAGE_UKRAINIAN},
    };
 
    if (string_is_empty(iso639))
@@ -6003,7 +6120,7 @@ bool accessibility_speak_priority(
             accessibility_enable,
             access_st->enabled))
    {
-      frontend_ctx_driver_t *frontend = 
+      frontend_ctx_driver_t *frontend =
          frontend_state_get_ptr()->current_frontend_ctx;
 
       RARCH_LOG("Spoke: %s\n", speak_text);

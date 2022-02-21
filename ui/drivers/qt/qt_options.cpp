@@ -1326,6 +1326,7 @@ QWidget *VideoPage::widget()
    hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT);
 
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL);
+   vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION);
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC);
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY);
    syncGroup->addRow(vSyncGroup);
@@ -1345,7 +1346,6 @@ QWidget *VideoPage::widget()
 
    miscGroup->add(MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_THREADED);
-   miscGroup->add(MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_SMOOTH);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_CTX_SCALING);

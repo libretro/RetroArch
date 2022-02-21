@@ -61,7 +61,7 @@ UINavigationControllerDelegate> {
 #else
 #if defined(HAVE_COCOA_METAL)
 @interface RetroArch_OSX : NSObject<ApplePlatform, NSApplicationDelegate> {
-#elif (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+#elif (defined(__MACH__)  && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
 @interface RetroArch_OSX : NSObject {
 #else
 @interface RetroArch_OSX : NSObject<NSApplicationDelegate> {

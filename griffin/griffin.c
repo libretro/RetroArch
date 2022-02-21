@@ -212,6 +212,7 @@ ACHIEVEMENTS
 #include "../deps/rcheevos/src/rcheevos/runtime_progress.c"
 #include "../deps/rcheevos/src/rcheevos/trigger.c"
 #include "../deps/rcheevos/src/rcheevos/value.c"
+#include "../deps/rcheevos/src/rhash/cdreader.c"
 #include "../deps/rcheevos/src/rhash/hash.c"
 
 #endif
@@ -1042,6 +1043,7 @@ FILTERS
 #include "../gfx/video_filters/upscale_1_5x.c"
 #include "../gfx/video_filters/upscale_256x_320x240.c"
 #include "../gfx/video_filters/picoscale_256x_320x240.c"
+#include "../gfx/video_filters/upscale_240x160_320x240.c"
 #endif
 
 #ifdef HAVE_DSP_FILTER
@@ -1251,6 +1253,9 @@ RETROARCH
 #include "../intl/msg_hash_he.c"
 #include "../intl/msg_hash_ast.c"
 #include "../intl/msg_hash_fi.c"
+#include "../intl/msg_hash_id.c"
+#include "../intl/msg_hash_sv.c"
+#include "../intl/msg_hash_uk.c"
 #endif
 
 #include "../intl/msg_hash_us.c"
@@ -1657,10 +1662,6 @@ SSL
 #include "../libretro-common/net/net_socket_ssl_mbed.c"
 #endif
 #endif
-#endif
-
-#ifdef HAVE_GONG
-#include "../cores/libretro-gong/gong.c"
 #endif
 
 /*============================================================

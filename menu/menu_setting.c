@@ -2719,7 +2719,9 @@ static int setting_action_ok_bind_all_save_autoconfig(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    unsigned index_offset     = 0;
+   unsigned map              = 0;
    const char *name          = NULL;
+   settings_t      *settings = config_get_ptr();
 
    (void)wraparound;
 
@@ -2727,7 +2729,8 @@ static int setting_action_ok_bind_all_save_autoconfig(
       return -1;
 
    index_offset = setting->index_offset;
-   name         = input_config_get_device_name(index_offset);
+   map          = settings->uints.input_joypad_index[index_offset];
+   name         = input_config_get_device_name(map);
 
    if (!string_is_empty(name) &&
          config_save_autoconf_profile(name, index_offset))
@@ -3882,6 +3885,12 @@ static void setting_get_string_representation_uint_rgui_menu_color_theme(
          strlcpy(s,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_FLUX),
+               len);
+         break;
+      case RGUI_THEME_DYNAMIC:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DYNAMIC),
                len);
          break;
    }
@@ -6662,6 +6671,9 @@ static void setting_get_string_representation_uint_user_language(
    modes[RETRO_LANGUAGE_HEBREW]                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_HEBREW);
    modes[RETRO_LANGUAGE_ASTURIAN]               = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_ASTURIAN);
    modes[RETRO_LANGUAGE_FINNISH]                = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_FINNISH);
+   modes[RETRO_LANGUAGE_INDONESIAN]             = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_INDONESIAN);
+   modes[RETRO_LANGUAGE_SWEDISH]                = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_SWEDISH);
+   modes[RETRO_LANGUAGE_UKRAINIAN]              = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_UKRAINIAN);
    strlcpy(s, modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)], len);
 }
 #endif
@@ -10006,7 +10018,7 @@ static bool setting_append_list(
 #endif
             for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
             {
-#if defined(HAVE_CORE_INFO_CACHE)
+#if !defined(HAVE_CORE_INFO_CACHE)
                if (bool_entries[i].name_enum_idx ==
                      MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE)
                   continue;
@@ -13942,7 +13954,23 @@ static bool setting_append_list(
                general_read_handler);
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_SET_FRAME_LIMIT);
-         menu_settings_list_current_add_range(list, list_info, 0, 10, 1.0, true, true);
+         menu_settings_list_current_add_range(list, list_info, 0, MAXIMUM_FASTFORWARD_RATIO, 1.0, true, true);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.fastforward_frameskip,
+               MENU_ENUM_LABEL_FASTFORWARD_FRAMESKIP,
+               MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
+               DEFAULT_FASTFORWARD_FRAMESKIP,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
 
          CONFIG_BOOL(
                list, list_info,
@@ -16016,6 +16044,23 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0, 100, 1, true, true);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_xmb_vertical_fade_factor,
+                  MENU_ENUM_LABEL_MENU_XMB_VERTICAL_FADE_FACTOR,
+                  MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
+                  DEFAULT_XMB_VERTICAL_FADE_FACTOR,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok    = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
+            menu_settings_list_current_add_range(list, list_info, 0, 300, 1, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             CONFIG_PATH(
@@ -19308,6 +19353,7 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_SPINBOX;
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].offset_by = 1;
             menu_settings_list_current_add_range(list, list_info, 1, 31, 1, true, true);
 
             CONFIG_UINT(
@@ -19321,9 +19367,8 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_SPINBOX;
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            menu_settings_list_current_add_range(list, list_info, 0, 500, 25, true, true);
+            (*list)[list_info->index - 1].ui_type = ST_UI_TYPE_UINT_SPINBOX;
+            menu_settings_list_current_add_range(list, list_info, 0, 500, 10, true, true);
 
             CONFIG_STRING(
                   list, list_info,

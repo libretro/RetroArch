@@ -73,15 +73,15 @@ static unsigned to_menu_pipeline(
    switch (pipeline)
    {
       case VIDEO_SHADER_MENU:
-         return 4 + (type == GFX_DISPLAY_PRIM_TRIANGLESTRIP);
-      case VIDEO_SHADER_MENU_2:
          return 6 + (type == GFX_DISPLAY_PRIM_TRIANGLESTRIP);
-      case VIDEO_SHADER_MENU_3:
+      case VIDEO_SHADER_MENU_2:
          return 8 + (type == GFX_DISPLAY_PRIM_TRIANGLESTRIP);
-      case VIDEO_SHADER_MENU_4:
+      case VIDEO_SHADER_MENU_3:
          return 10 + (type == GFX_DISPLAY_PRIM_TRIANGLESTRIP);
-      case VIDEO_SHADER_MENU_5:
+      case VIDEO_SHADER_MENU_4:
          return 12 + (type == GFX_DISPLAY_PRIM_TRIANGLESTRIP);
+      case VIDEO_SHADER_MENU_5:
+         return 14 + (type == GFX_DISPLAY_PRIM_TRIANGLESTRIP);
       default:
          break;
    }

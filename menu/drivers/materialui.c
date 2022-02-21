@@ -2348,7 +2348,7 @@ static void materialui_context_reset_textures(materialui_handle_t *mui)
             materialui_texture_path(i), icon_path, &mui->textures.list[i],
             TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
       {
-         RARCH_WARN("[GLUI] Asset missing: %s%s%s\n", icon_path, 
+         RARCH_WARN("[GLUI]: Asset missing: \"%s%s%s\".\n", icon_path,
                PATH_DEFAULT_SLASH(), materialui_texture_path(i));
          has_all_assets = false;
       }
@@ -10139,6 +10139,7 @@ static void materialui_list_insert(
          case FILE_TYPE_IN_CARCHIVE:
          case FILE_TYPE_PLAIN:
          case FILE_TYPE_DOWNLOAD_CORE_CONTENT:
+         case FILE_TYPE_DOWNLOAD_CORE_SYSTEM_FILES:
             node->icon_texture_index = MUI_TEXTURE_FILE;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
@@ -10563,6 +10564,7 @@ static void materialui_list_insert(
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATER_SETTINGS))        ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SET_CORE_ASSOCIATION)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS)) ||

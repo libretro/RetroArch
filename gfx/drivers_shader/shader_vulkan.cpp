@@ -395,6 +395,8 @@ struct vulkan_filter_chain
       void add_parameter(unsigned pass, unsigned parameter_index, const std::string &id);
       void release_staging_buffers();
 
+      VkFormat get_pass_rt_format(unsigned pass);
+
    private:
       VkDevice device;
       VkPhysicalDevice gpu;
@@ -1195,6 +1197,11 @@ void vulkan_filter_chain::set_pass_info(unsigned pass,
 {
    pass_info[pass] = info;
 }
+
+ VkFormat vulkan_filter_chain::get_pass_rt_format(unsigned pass)
+ {
+    return pass_info[pass].rt_format;
+ }
 
 void vulkan_filter_chain::set_num_passes(unsigned num_passes)
 {
@@ -2726,11 +2733,23 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          {
             pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
             pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
-            pass_info.rt_format    = tmpinfo.swapchain.format;
+#ifdef VULKAN_HDR_SWAPCHAIN
+            if (tmpinfo.swapchain.format == VK_FORMAT_A2B10G10R10_UNORM_PACK32)
+            {
+               pass_info.rt_format    = glslang_format_to_vk( output.meta.rt_format);
 
-            if (explicit_format)
-               RARCH_WARN("[slang]: Using explicit format for last pass in chain,"
-                     " but it is not rendered to framebuffer, using swapchain format instead.\n");
+               RARCH_LOG("[slang]: Using render target format %s for pass output #%u.\n",
+                     glslang_format_to_string(output.meta.rt_format), i);
+            }
+            else
+#endif /* VULKAN_HDR_SWAPCHAIN */
+            {
+               pass_info.rt_format    = tmpinfo.swapchain.format;
+
+               if (explicit_format)
+                  RARCH_WARN("[slang]: Using explicit format for last pass in chain,"
+                        " but it is not rendered to framebuffer, using swapchain format instead.\n");
+            }
          }
          else
          {
@@ -2863,6 +2882,13 @@ void vulkan_filter_chain_set_pass_info(
       const struct vulkan_filter_chain_pass_info *info)
 {
    chain->set_pass_info(pass, *info);
+}
+
+VkFormat vulkan_filter_chain_get_pass_rt_format(
+      vulkan_filter_chain_t *chain,
+      unsigned pass)
+{
+   return chain->get_pass_rt_format(pass);
 }
 
 bool vulkan_filter_chain_update_swapchain_info(
