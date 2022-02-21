@@ -13618,6 +13618,24 @@ static bool setting_append_list(
                   SD_FLAG_NONE
                   );
 
+#ifdef ANDROID
+	    CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.android_input_disconnect_workaround,
+                  MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+                  MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+                  false,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+#endif
+
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.input_auto_game_focus,

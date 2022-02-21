@@ -6940,6 +6940,12 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB,
                   PARSE_ONLY_BOOL, false) == 0)
             count++;
+#ifdef ANDROID
+	 if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+#endif
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_INPUT_AUTO_GAME_FOCUS,
                   PARSE_ONLY_UINT, false) == 0)
