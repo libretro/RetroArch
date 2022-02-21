@@ -5057,14 +5057,6 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
             MENU_ENUM_LABEL_START_NET_RETROPAD,
             MENU_SETTING_ACTION, 0, 0);
 #endif
-
-#ifdef HAVE_GONG
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_GONG),
-            msg_hash_to_str(MENU_ENUM_LABEL_START_GONG),
-            MENU_ENUM_LABEL_START_GONG,
-            MENU_SETTING_ACTION, 0, 0);
-#endif
    }
 
    if (info->need_refresh)
@@ -9584,7 +9576,8 @@ unsigned menu_displaylist_build_list(
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_MENU_RGUI_TRANSPARENCY:
-                     if (menu_rgui_color_theme != RGUI_THEME_CUSTOM)
+                     if ((menu_rgui_color_theme != RGUI_THEME_CUSTOM) &&
+                         (menu_rgui_color_theme != RGUI_THEME_DYNAMIC))
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED:

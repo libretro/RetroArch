@@ -3788,6 +3788,10 @@ MSG_HASH(
    "Μη Υποστηριζόμενο"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DONT_CARE,
+   "Προκαθορισμένο"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LINEAR,
    "Γραμμικός"
    )

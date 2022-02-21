@@ -1799,7 +1799,7 @@ static void frontend_unix_get_env(int *argc,
    char base_path[PATH_MAX] = {0};
 #if defined(RARCH_UNIX_CWD_ENV)
    /* The entire path is zero initialized. */
-   base_path[0] = '.';
+   getcwd(base_path, sizeof(base_path));
 #elif defined(DINGUX)
    dingux_get_base_path(base_path, sizeof(base_path));
 #else
@@ -2140,6 +2140,10 @@ static void frontend_unix_init(void *data)
          "deleteCore", "(Ljava/lang/String;)V");
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
          android_app->getIntent);
+   GET_METHOD_ID(env, android_app->getVolumeCount, class,
+         "getVolumeCount", "()I");
+   GET_METHOD_ID(env, android_app->getVolumePath, class,
+         "getVolumePath", "(Ljava/lang/String;)Ljava/lang/String;");
 
    GET_OBJECT_CLASS(env, class, obj);
    GET_METHOD_ID(env, android_app->getStringExtra, class,
@@ -2157,6 +2161,29 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
       MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
 
 #ifdef ANDROID
+
+   JNIEnv *env = jni_thread_getenv();
+   jint output           = 0;
+   jobject obj           = NULL;
+   jstring jstr          = NULL;
+
+   int volume_count = 0;
+
+   if (!env || !g_android)
+      return 0;
+
+   CALL_OBJ_METHOD(env, obj, g_android->activity->clazz,
+         g_android->getIntent);
+
+   if (g_android->getVolumeCount)
+   {
+      CALL_INT_METHOD(env, output,
+         g_android->activity->clazz, g_android->getVolumeCount);
+      volume_count = output;
+   }
+
+   RARCH_LOG("external volumes: %d\n", volume_count);
+
    if (!string_is_empty(internal_storage_path))
    {
       if (storage_permissions == INTERNAL_STORAGE_WRITABLE)
@@ -2203,6 +2230,37 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
             msg_hash_to_str(MSG_APPLICATION_DIR),
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0);
+   for (unsigned i=0; i < volume_count; i++)
+   {
+      static char aux_path[PATH_MAX_LENGTH];
+      char index[2];
+      index[0] = '\0';
+
+      snprintf(index, sizeof(index), "%d", i);
+
+      CALL_OBJ_METHOD_PARAM(env, jstr, g_android->activity->clazz, g_android->getVolumePath,
+         (*env)->NewStringUTF(env, index));
+
+      if (jstr)
+      {
+         const char *str = (*env)->GetStringUTFChars(env, jstr, 0);
+
+         aux_path[0] = '\0';
+
+         if (str && *str)
+            strlcpy(aux_path, str,
+                  sizeof(aux_path));
+
+         (*env)->ReleaseStringUTFChars(env, jstr, str);
+         if (!string_is_empty(aux_path))
+            menu_entries_append_enum(list,
+                  aux_path,
+                  msg_hash_to_str(MSG_APPLICATION_DIR),
+                  enum_idx,
+                  FILE_TYPE_DIRECTORY, 0, 0);
+      }
+
+   }
 #elif defined(WEBOS)
    if (path_is_directory("/media/internal"))
       menu_entries_append_enum(list, "/media/internal",

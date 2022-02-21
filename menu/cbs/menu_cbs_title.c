@@ -1177,7 +1177,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_LIST,
          action_get_playlist_manager_list},
 #ifdef HAVE_CHEEVOS
-      {MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+      {MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU,
          action_get_title_achievement_pause_menu},
       {MENU_ENUM_LABEL_ACHIEVEMENT_LIST,
          action_get_title_cheevos_list},

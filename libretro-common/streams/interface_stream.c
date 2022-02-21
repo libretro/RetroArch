@@ -604,6 +604,19 @@ uint32_t intfstream_get_frame_size(intfstream_internal_t *intf)
    return 0;
 }
 
+uint32_t intfstream_get_first_sector(intfstream_internal_t* intf)
+{
+   if (intf)
+   {
+#ifdef HAVE_CHD
+      if (intf->type == INTFSTREAM_CHD)
+         return chdstream_get_first_track_sector(intf->chd.fp);
+#endif
+   }
+
+   return 0;
+}
+
 bool intfstream_is_compressed(intfstream_internal_t *intf)
 {
    if (!intf)

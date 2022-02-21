@@ -1278,7 +1278,7 @@ static void* rc_hash_handle_chd_open_track(
          break;
 
       case RC_HASH_CDTRACK_LARGEST:
-         cdfs_track = cdfs_open_track(path, CHDSTREAM_TRACK_LAST);
+         cdfs_track = cdfs_open_track(path, CHDSTREAM_TRACK_PRIMARY);
          break;
 
       default:
@@ -1304,9 +1304,21 @@ static size_t rc_hash_handle_chd_read_sector(
       void* buffer, size_t requested_bytes)
 {
    cdfs_file_t* file = (cdfs_file_t*)track_handle;
+   uint32_t track_sectors = cdfs_get_num_sectors(file);
+
+   sector -= cdfs_get_first_sector(file);
+   if (sector >= track_sectors)
+      return 0;
 
    cdfs_seek_sector(file, sector);
    return cdfs_read_file(file, buffer, requested_bytes);
+}
+
+static uint32_t rc_hash_handle_chd_first_track_sector(
+   void* track_handle)
+{
+   cdfs_file_t* file = (cdfs_file_t*)track_handle;
+   return cdfs_get_first_sector(file);
 }
 
 static void rc_hash_handle_chd_close_track(void* track_handle)
@@ -1337,6 +1349,7 @@ static void* rc_hash_handle_cd_open_track(
       cdreader.open_track = rc_hash_handle_cd_open_track;
       cdreader.read_sector = rc_hash_handle_chd_read_sector;
       cdreader.close_track = rc_hash_handle_chd_close_track;
+      cdreader.first_track_sector = rc_hash_handle_chd_first_track_sector;
       rc_hash_init_custom_cdreader(&cdreader);
 
       return rc_hash_handle_chd_open_track(path, track);
@@ -1616,7 +1629,7 @@ static void rcheevos_fetch_game_data(void)
       return;
    }
 
-   if (rcheevos_locals.game.id == 0)
+   if (rcheevos_locals.game.id <= 0)
    {
       const settings_t* settings = config_get_ptr();
       if (settings->bools.cheevos_verbose_enable)
@@ -1894,6 +1907,16 @@ bool rcheevos_load(const void *data)
       return false;
    }
 
+   if (string_is_empty(settings->arrays.cheevos_username))
+   {
+      CHEEVOS_LOG(RCHEEVOS_TAG "Cannot login (no username)\n");
+      runloop_msg_queue_push("Missing RetroAchievements account information.", 0, 5 * 60, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+      rcheevos_locals.game.id = 0;
+      rcheevos_pause_hardcore();
+      return false;
+   }
+
 #ifdef HAVE_THREADS
    if (!rcheevos_locals.load_info.request_lock)
       rcheevos_locals.load_info.request_lock = slock_new();
@@ -1976,7 +1999,7 @@ bool rcheevos_load(const void *data)
       {
          CHEEVOS_LOG(RCHEEVOS_TAG "Cannot login %s (no password or token)\n",
                settings->arrays.cheevos_username);
-         runloop_msg_queue_push("Error logging in: No password provided", 0, 5 * 60, false, NULL,
+         runloop_msg_queue_push("No password provided for RetroAchievements account", 0, 5 * 60, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
          rcheevos_unload();
          return false;

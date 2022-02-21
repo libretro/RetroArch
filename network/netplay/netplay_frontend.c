@@ -6762,6 +6762,9 @@ netplay_t *netplay_new(const char *server, const char *mitm, uint16_t port,
                                 NETPLAY_CONNECTION_SPECTATING :
                                 NETPLAY_CONNECTION_NONE;
 
+   if (netplay->stateless_mode)
+      netplay->quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
+
    if (netplay->is_server)
    {
       netplay->connections       = NULL;

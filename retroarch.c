@@ -1285,10 +1285,6 @@ enum rarch_content_type path_is_media_type(const char *path)
       case FILE_TYPE_XM:
          return RARCH_CONTENT_MUSIC;
 #endif
-#ifdef HAVE_GONG
-      case FILE_TYPE_GONG:
-         return RARCH_CONTENT_GONG;
-#endif
 
       case FILE_TYPE_NONE:
       default:
@@ -5275,12 +5271,6 @@ bool retroarch_main_init(int argc, char *argv[])
                   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
                   runloop_set_current_core_type(CORE_TYPE_IMAGEVIEWER, false);
                }
-               break;
-#endif
-#ifdef HAVE_GONG
-            case RARCH_CONTENT_GONG:
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-               runloop_set_current_core_type(CORE_TYPE_GONG, false);
                break;
 #endif
             default:

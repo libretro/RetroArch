@@ -23,8 +23,24 @@ MSG_HASH(
    "retro_achievements"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
-   "toggle_cheevos_hardcore"
+   MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU,
+   "achievement_pause_menu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_CANCEL,
+   "achievement_pause_cancel"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ACHIEVEMENT_RESUME_CANCEL,
+   "achievement_resume_cancel"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE,
+   "achievement_pause"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ACHIEVEMENT_RESUME,
+   "achievement_resume"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_ACCOUNTS_TWITCH,

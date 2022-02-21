@@ -361,37 +361,34 @@ char rc_memref_shared_size(char size) {
 }
 
 static unsigned rc_peek_value(unsigned address, char size, rc_peek_t peek, void* ud) {
-  rc_typed_value_t value;
-  char shared_size;
-
   if (!peek)
     return 0;
 
-  shared_size = rc_memref_shared_size(size);
-  switch (shared_size)
+  switch (size)
   {
     case RC_MEMSIZE_8_BITS:
-      value.value.u32 = peek(address, 1, ud);
-      break;
+      return peek(address, 1, ud);
 
     case RC_MEMSIZE_16_BITS:
-      value.value.u32 = peek(address, 2, ud);
-      break;
+      return peek(address, 2, ud);
 
     case RC_MEMSIZE_32_BITS:
-      value.value.u32 = peek(address, 4, ud);
-      break;
+      return peek(address, 4, ud);
 
     default:
-      return 0;
-  }
+    {
+      unsigned value;
+      const size_t index = (size_t)size;
+      if (index >= sizeof(rc_memref_shared_sizes) / sizeof(rc_memref_shared_sizes[0]))
+        return 0;
 
-  if (shared_size != size) {
-    value.type = RC_VALUE_TYPE_UNSIGNED;
-    rc_transform_memref_value(&value, size);
+      /* fetch the larger value and mask off the bits associated to the specified size
+       * for correct deduction of prior value. non-prior memrefs should already be using
+       * shared size memrefs to minimize the total number of memory reads required. */
+      value = rc_peek_value(address, rc_memref_shared_sizes[index], peek, ud);
+      return value & rc_memref_masks[index];
+    }
   }
-
-  return value.value.u32;
 }
 
 void rc_update_memref_value(rc_memref_value_t* memref, unsigned new_value) {

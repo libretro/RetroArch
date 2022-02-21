@@ -578,9 +578,18 @@ void state_manager_event_init(
       struct state_manager_rewind_state *rewind_st,
       unsigned rewind_buffer_size)
 {
-   void *state          = NULL;
+   core_info_t *core_info = NULL;
+   void *state            = NULL;
 
    if (!rewind_st || rewind_st->state)
+      return;
+
+   /* We cannot initialise the rewind buffer
+    * unless the core info struct for the current
+    * core has been initialised (i.e. without this,
+    * the savestate support level for the current
+    * core is unknown) */
+   if (!core_info_get_current_core(&core_info) || !core_info)
       return;
 
    if (!core_info_current_supports_rewind())
