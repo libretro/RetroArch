@@ -29,8 +29,6 @@
 #include <libdecor.h>
 #endif
 
-#include "../common/vulkan_common.h"
-
 #include "../../frontend/frontend_driver.h"
 #include "../../input/common/wayland_common.h"
 #include "../../input/input_driver.h"
@@ -45,6 +43,8 @@
 
 /* Generated from xdg-decoration-unstable-v1.h */
 #include "../common/wayland/xdg-decoration-unstable-v1.h"
+
+#include "../common/vulkan_common.h"
 
 #include <retro_timers.h>
 
@@ -83,12 +83,11 @@ static void handle_toplevel_config_common(void *data,
             break;
       }
    }
-   if (width > 0 && height > 0)
+   if (     width  > 0
+         && height > 0)
    {
-      wl->prev_width  = width;
-      wl->prev_height = height;
-      wl->width       = width;
-      wl->height      = height;
+      wl->width  = width;
+      wl->height = height;
    }
 
    wl->configured = false;
@@ -185,16 +184,16 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
       wl_display_disconnect(wl->input.dpy);
    }
 
-   wl->xdg_shell        = NULL;
-   wl->compositor       = NULL;
-   wl->registry         = NULL;
-   wl->input.dpy        = NULL;
-   wl->xdg_surface      = NULL;
-   wl->surface          = NULL;
-   wl->xdg_toplevel     = NULL;
+   wl->xdg_shell    = NULL;
+   wl->compositor   = NULL;
+   wl->registry     = NULL;
+   wl->input.dpy    = NULL;
+   wl->xdg_surface  = NULL;
+   wl->surface      = NULL;
+   wl->xdg_toplevel = NULL;
 
-   wl->width            = 0;
-   wl->height           = 0;
+   wl->width        = 0;
+   wl->height       = 0;
 
 }
 
@@ -216,7 +215,8 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
     * central place, so use that to trigger swapchain reinit. */
    *resize = wl->vk.need_new_swapchain;
 
-   if (new_width != *width * wl->last_buffer_scale || new_height != *height * wl->last_buffer_scale)
+   if (     new_width  != *width  * wl->last_buffer_scale
+         || new_height != *height * wl->last_buffer_scale)
    {
       *width  = new_width;
       *height = new_height;
@@ -247,6 +247,7 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
    wl->vk.need_new_swapchain = false;
 
    wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
+
    return true;
 }
 
@@ -266,11 +267,8 @@ static void gfx_ctx_wl_update_title(void *data)
    if (wl && title[0])
    {
       if (wl->deco)
-         {
-            zxdg_toplevel_decoration_v1_set_mode(wl->deco,
-                  ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
-         }
-
+         zxdg_toplevel_decoration_v1_set_mode(wl->deco,
+            ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
       xdg_toplevel_set_title(wl->xdg_toplevel, title);
    }
 #endif
@@ -327,46 +325,54 @@ static void
 handle_libdecor_frame_configure(struct libdecor_frame *frame,
       struct libdecor_configuration *configuration, void *data)
 {
-   struct libdecor_state *state;
    int width, height;
+   gfx_ctx_wayland_data_t *wl   = (gfx_ctx_wayland_data_t*)data;
+   struct libdecor_state *state = NULL;
+   static const enum
+      libdecor_window_state tiled_states = (
+         LIBDECOR_WINDOW_STATE_TILED_LEFT
+       | LIBDECOR_WINDOW_STATE_TILED_RIGHT
+       | LIBDECOR_WINDOW_STATE_TILED_TOP
+       | LIBDECOR_WINDOW_STATE_TILED_BOTTOM
+   );
    enum libdecor_window_state window_state;
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   bool focused               = false;
-   bool tiled                 = false;
-   static const enum libdecor_window_state tiled_states = (
-      LIBDECOR_WINDOW_STATE_TILED_LEFT | LIBDECOR_WINDOW_STATE_TILED_RIGHT |
-      LIBDECOR_WINDOW_STATE_TILED_TOP | LIBDECOR_WINDOW_STATE_TILED_BOTTOM
-    );
+   bool focused   = false;
+   bool tiled     = false;
 
-   wl->fullscreen             = false;
-   wl->maximized              = false;
+   wl->fullscreen = false;
+   wl->maximized  = false;
 
-   if (libdecor_configuration_get_window_state(configuration, &window_state))
+   if (libdecor_configuration_get_window_state(
+         configuration, &window_state))
    {
-      wl->fullscreen  = (window_state & LIBDECOR_WINDOW_STATE_FULLSCREEN) != 0;
-      wl->maximized   = (window_state & LIBDECOR_WINDOW_STATE_MAXIMIZED) != 0;
-      focused         = (window_state & LIBDECOR_WINDOW_STATE_ACTIVE) != 0;
-      tiled           = (window_state & tiled_states) != 0;
+      wl->fullscreen = (window_state & LIBDECOR_WINDOW_STATE_FULLSCREEN) != 0;
+      wl->maximized  = (window_state & LIBDECOR_WINDOW_STATE_MAXIMIZED) != 0;
+      focused        = (window_state & LIBDECOR_WINDOW_STATE_ACTIVE) != 0;
+      tiled          = (window_state & tiled_states) != 0;
    }
 
    if (!libdecor_configuration_get_content_size(configuration, frame,
-      &width, &height))
+         &width, &height))
    {
-      width           = wl->prev_width;
-      height          = wl->prev_height;
+      width  = wl->floating_width;
+      height = wl->floating_height;
    }
 
-   if (width > 0 && height > 0)
+   if (     width  > 0
+         && height > 0)
    {
-      wl->prev_width  = width;
-      wl->prev_height = height;
-      wl->width       = width;
-      wl->height      = height;
+      wl->width  = width;
+      wl->height = height;
    }
 
    state = libdecor_state_new(wl->width, wl->height);
    libdecor_frame_commit(frame, state, configuration);
    libdecor_state_free(state);
+
+   if (libdecor_frame_is_floating(frame)) {
+      wl->floating_width  = width;
+      wl->floating_height = height;
+   }
 
    wl->configured = false;
 }
@@ -409,12 +415,12 @@ static void *gfx_ctx_wl_init(void *video_driver)
    wl->input.dpy         = wl_display_connect(NULL);
    wl->last_buffer_scale = 1;
    wl->buffer_scale      = 1;
-   wl->width             = DEFAULT_WINDOWED_WIDTH;
-   wl->height            = DEFAULT_WINDOWED_HEIGHT;
+   wl->floating_width    = DEFAULT_WINDOWED_WIDTH;
+   wl->floating_height   = DEFAULT_WINDOWED_HEIGHT;
 
    if (!wl->input.dpy)
    {
-      RARCH_ERR("[Wayland]: Failed to connect to Wayland server.\n");
+      RARCH_ERR("[Wayland/Vulkan]: Failed to connect to Wayland server.\n");
       goto error;
    }
 
@@ -426,33 +432,33 @@ static void *gfx_ctx_wl_init(void *video_driver)
 
    if (!wl->compositor)
    {
-      RARCH_ERR("[Wayland]: Failed to create compositor.\n");
+      RARCH_ERR("[Wayland/Vulkan]: Failed to create compositor.\n");
       goto error;
    }
 
    if (!wl->shm)
    {
-      RARCH_ERR("[Wayland]: Failed to create shm.\n");
+      RARCH_ERR("[Wayland/Vulkan]: Failed to create shm.\n");
       goto error;
    }
 
    if (!wl->xdg_shell)
    {
-	   RARCH_ERR("[Wayland]: Failed to create shell.\n");
-	   goto error;
+      RARCH_ERR("[Wayland/Vulkan]: Failed to create shell.\n");
+      goto error;
    }
 
    if (!wl->idle_inhibit_manager)
    {
-      RARCH_LOG("[Wayland]: Compositor doesn't support zwp_idle_inhibit_manager_v1 protocol\n");
+      RARCH_LOG("[Wayland/Vulkan]: Compositor doesn't support zwp_idle_inhibit_manager_v1 protocol\n");
    }
 
    if (!wl->deco_manager)
    {
-      RARCH_LOG("[Wayland]: Compositor doesn't support zxdg_decoration_manager_v1 protocol\n");
+      RARCH_LOG("[Wayland/Vulkan]: Compositor doesn't support zxdg_decoration_manager_v1 protocol\n");
    }
 
-   wl->surface                = wl_compositor_create_surface(wl->compositor);
+   wl->surface = wl_compositor_create_surface(wl->compositor);
 
    wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
    wl_surface_add_listener(wl->surface, &wl_surface_listener, wl);
@@ -514,6 +520,8 @@ static void *gfx_ctx_wl_init(void *video_driver)
     * This shows the window which assigns us a display (wl_output)
     *  which is usefull for HiDPI and auto selecting a display for fullscreen. */
    draw_splash_screen(wl);
+
+   wl_display_roundtrip(wl->input.dpy);
 
    wl->input.fd = wl_display_get_fd(wl->input.dpy);
 
@@ -583,25 +591,32 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   settings_t *settings      = config_get_ptr();
+   gfx_ctx_wayland_data_t *wl   = (gfx_ctx_wayland_data_t*)data;
+   settings_t *settings         = config_get_ptr();
    unsigned video_monitor_index = settings->uints.video_monitor_index;
 
-   wl->width                  = width  ? width  : DEFAULT_WINDOWED_WIDTH;
-   wl->height                 = height ? height : DEFAULT_WINDOWED_HEIGHT;
+   wl->width                    = width  ? width  : DEFAULT_WINDOWED_WIDTH;
+   wl->height                   = height ? height : DEFAULT_WINDOWED_HEIGHT;
 
    wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
 
 #ifdef HAVE_LIBDECOR
-   struct libdecor_state *state = libdecor_state_new( width, height);
+   struct libdecor_state *state = libdecor_state_new(width, height);
    libdecor_frame_commit(wl->libdecor_frame, state, NULL);
    libdecor_state_free(state);
 #endif
 
+   if (!vulkan_surface_create(&wl->vk, VULKAN_WSI_WAYLAND,
+         wl->input.dpy, wl->surface,
+         wl->width  * wl->buffer_scale,
+         wl->height * wl->buffer_scale,
+         wl->swap_interval))
+      goto error;
+
    if (fullscreen)
    {
       struct wl_output *output = NULL;
-      int output_i = 0;
+      int output_i             = 0;
       output_info_t *oi, *tmp;
 
       if (video_monitor_index <= 0 && wl->current_output != NULL)
@@ -631,13 +646,6 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    }
 
    flush_wayland_fd(&wl->input);
-
-   wl_display_roundtrip(wl->input.dpy);
-
-   if (!vulkan_surface_create(&wl->vk, VULKAN_WSI_WAYLAND,
-            wl->input.dpy, wl->surface,
-            wl->width * wl->buffer_scale, wl->height * wl->buffer_scale, wl->swap_interval))
-      goto error;
 
    if (fullscreen)
    {
@@ -687,30 +695,32 @@ static bool gfx_ctx_wl_has_focus(void *data)
 
 static bool gfx_ctx_wl_suppress_screensaver(void *data, bool state)
 {
-	(void)data;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-	gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   if (!wl->idle_inhibit_manager)
+      return false;
+   if (state == (!!wl->idle_inhibitor))
+      return true;
 
-    if (!wl->idle_inhibit_manager)
-        return false;
-    if (state == (!!wl->idle_inhibitor))
-        return true;
-    if (state)
-    {
-        RARCH_LOG("[Wayland]: Enabling idle inhibitor\n");
-        struct zwp_idle_inhibit_manager_v1 *mgr = wl->idle_inhibit_manager;
-        wl->idle_inhibitor = zwp_idle_inhibit_manager_v1_create_inhibitor(mgr, wl->surface);
-    }
-    else
-    {
-        RARCH_LOG("[Wayland]: Disabling the idle inhibitor\n");
-        zwp_idle_inhibitor_v1_destroy(wl->idle_inhibitor);
-        wl->idle_inhibitor = NULL;
-    }
-    return true;
+   if (state)
+   {
+      RARCH_LOG("[Wayland/Vulkan]: Enabling idle inhibitor\n");
+      struct zwp_idle_inhibit_manager_v1 *mgr = wl->idle_inhibit_manager;
+      wl->idle_inhibitor = zwp_idle_inhibit_manager_v1_create_inhibitor(mgr, wl->surface);
+   }
+   else
+   {
+      RARCH_LOG("[Wayland/Vulkan]: Disabling the idle inhibitor\n");
+      zwp_idle_inhibitor_v1_destroy(wl->idle_inhibitor);
+      wl->idle_inhibitor = NULL;
+   }
+   return true;
 }
 
-static enum gfx_ctx_api gfx_ctx_wl_get_api(void *data) { return GFX_CTX_VULKAN_API; }
+static enum gfx_ctx_api gfx_ctx_wl_get_api(void *data)
+{
+   return GFX_CTX_VULKAN_API;
+}
 
 static bool gfx_ctx_wl_bind_api(void *video_driver,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
