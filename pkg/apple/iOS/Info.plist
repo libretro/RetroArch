@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>$(PRODUCT_NAME)</string>
+	<string>RetroArch</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>

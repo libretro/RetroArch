@@ -42,10 +42,18 @@
 #endif
 
 #if TARGET_OS_IOS
+@class EmulatorKeyboardController;
+
 @interface CocoaView : UIViewController
 #elif TARGET_OS_TV
 @interface CocoaView : GCEventViewController
 #endif
+
+#if TARGET_OS_IOS && defined(HAVE_IOS_CUSTOMKEYBOARD)
+@property(nonatomic,strong) EmulatorKeyboardController *keyboardController;
+@property(nonatomic,assign) unsigned int keyboardModifierState;
+#endif
+
 + (CocoaView*)get;
 @end
 
