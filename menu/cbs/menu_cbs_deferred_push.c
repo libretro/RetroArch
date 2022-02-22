@@ -648,6 +648,7 @@ GENERIC_DEFERRED_PUSH_GENERAL(deferred_music_history_list, PUSH_DEFAULT, DISPLAY
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_image_history_list, PUSH_DEFAULT, DISPLAYLIST_IMAGES_HISTORY)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_video_history_list, PUSH_DEFAULT, DISPLAYLIST_VIDEO_HISTORY)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_explore_list, PUSH_DEFAULT, DISPLAYLIST_EXPLORE)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_contentless_cores_list, PUSH_DEFAULT, DISPLAYLIST_CONTENTLESS_CORES)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_special, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_SPECIAL)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_resolution, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_RESOLUTION)
@@ -759,6 +760,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST, deferred_image_history_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST, deferred_video_history_list},
       {MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST, deferred_explore_list},
+      {MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST, deferred_contentless_cores_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST, deferred_push_input_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_MENU_SETTINGS_LIST, deferred_push_input_menu_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_TURBO_FIRE_SETTINGS_LIST, deferred_push_input_turbo_fire_settings_list},

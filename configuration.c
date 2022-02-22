@@ -2162,6 +2162,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("menu_ticker_type",             &settings->uints.menu_ticker_type, true, DEFAULT_MENU_TICKER_TYPE, false);
    SETTING_UINT("menu_scroll_delay",            &settings->uints.menu_scroll_delay, true, DEFAULT_MENU_SCROLL_DELAY, false);
    SETTING_UINT("content_show_add_entry",       &settings->uints.menu_content_show_add_entry, true, DEFAULT_MENU_CONTENT_SHOW_ADD_ENTRY, false);
+   SETTING_UINT("content_show_contentless_cores", &settings->uints.menu_content_show_contentless_cores, true, DEFAULT_MENU_CONTENT_SHOW_CONTENTLESS_CORES, false);
    SETTING_UINT("menu_screensaver_timeout",     &settings->uints.menu_screensaver_timeout, true, DEFAULT_MENU_SCREENSAVER_TIMEOUT, false);
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
    SETTING_UINT("menu_screensaver_animation",   &settings->uints.menu_screensaver_animation, true, DEFAULT_MENU_SCREENSAVER_ANIMATION, false);

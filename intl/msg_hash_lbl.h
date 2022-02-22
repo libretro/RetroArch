@@ -83,6 +83,14 @@ MSG_HASH(
    "explore_initialising_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB,
+   "contentless_cores_tab"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CONTENTLESS_CORE,
+   "contentless_core"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_ADD_TAB,
    "add_tab"
    )
@@ -767,6 +775,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST,
    "deferred_explore_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST,
+   "deferred_contentless_cores_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_NETPLAY,
@@ -3753,6 +3765,10 @@ MSG_HASH(
    "content_show_explore"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CONTENT_SHOW_CONTENTLESS_CORES,
+   "content_show_contentless_cores"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES,
    "content_show_favorites"
    )
@@ -4069,6 +4085,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_GOTO_EXPLORE,
    "goto_explore"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES,
+   "goto_contentless_cores"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE,

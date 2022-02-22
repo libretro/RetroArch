@@ -144,6 +144,7 @@ enum
 #if defined(HAVE_LIBRETRODB)
    OZONE_SYSTEM_TAB_EXPLORE,
 #endif
+   OZONE_SYSTEM_TAB_CONTENTLESS_CORES,
 
    /* End of this enum - use the last one to determine num of possible tabs */
    OZONE_SYSTEM_TAB_LAST
@@ -181,6 +182,8 @@ enum OZONE_TAB_TEXTURES
    OZONE_TAB_TEXTURE_IMAGE,
    OZONE_TAB_TEXTURE_NETWORK,
    OZONE_TAB_TEXTURE_SCAN_CONTENT,
+   OZONE_TAB_TEXTURE_EXPLORE,
+   OZONE_TAB_TEXTURE_CONTENTLESS_CORES,
 
    OZONE_TAB_TEXTURE_LAST
 };
@@ -570,6 +573,7 @@ struct ozone_handle
    bool is_db_manager_list;
    bool is_file_list;
    bool is_quick_menu;
+   bool is_contentless_cores;
    bool first_frame;
 
    struct
@@ -604,15 +608,17 @@ static const char *OZONE_TEXTURES_FILES[OZONE_TEXTURE_LAST] = {
 };
 
 static const char *OZONE_TAB_TEXTURES_FILES[OZONE_TAB_TEXTURE_LAST] = {
-   "retroarch",
-   "settings",
-   "history",
-   "favorites",
-   "music",
-   "video",
-   "image",
-   "netplay",
-   "add"
+   "retroarch", /* MAIN_MENU */
+   "settings",  /* SETTINGS_TAB */
+   "history",   /* HISTORY_TAB */
+   "favorites", /* FAVORITES_TAB */
+   "music",     /* MUSIC_TAB */
+   "video",     /* VIDEO_TAB */
+   "image",     /* IMAGES_TAB */
+   "netplay",   /* NETPLAY_TAB */
+   "add",       /* ADD_TAB */
+   "retroarch", /* EXPLORE_TAB */
+   "retroarch"  /* CONTENTLESS_CORES_TAB */
 };
 
 static const enum msg_hash_enums ozone_system_tabs_value[OZONE_SYSTEM_TAB_LAST] = {
@@ -630,12 +636,11 @@ static const enum msg_hash_enums ozone_system_tabs_value[OZONE_SYSTEM_TAB_LAST] 
 #ifdef HAVE_NETWORKING
    MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
 #endif
-#ifdef HAVE_LIBRETRODB
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
-   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB
-#else
-   MENU_ENUM_LABEL_VALUE_ADD_TAB
+#ifdef HAVE_LIBRETRODB
+   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
 #endif
+   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB
 };
 
 static const enum menu_settings_type ozone_system_tabs_type[OZONE_SYSTEM_TAB_LAST] = {
@@ -653,12 +658,11 @@ static const enum menu_settings_type ozone_system_tabs_type[OZONE_SYSTEM_TAB_LAS
 #ifdef HAVE_NETWORKING
    MENU_NETPLAY_TAB,
 #endif
-#ifdef HAVE_LIBRETRODB
    MENU_ADD_TAB,
-   MENU_EXPLORE_TAB
-#else
-   MENU_ADD_TAB
+#ifdef HAVE_LIBRETRODB
+   MENU_EXPLORE_TAB,
 #endif
+   MENU_CONTENTLESS_CORES_TAB
 };
 
 static const enum msg_hash_enums ozone_system_tabs_idx[OZONE_SYSTEM_TAB_LAST] = {
@@ -676,12 +680,11 @@ static const enum msg_hash_enums ozone_system_tabs_idx[OZONE_SYSTEM_TAB_LAST] = 
 #ifdef HAVE_NETWORKING
    MENU_ENUM_LABEL_NETPLAY_TAB,
 #endif
-#ifdef HAVE_LIBRETRODB
    MENU_ENUM_LABEL_ADD_TAB,
-   MENU_ENUM_LABEL_EXPLORE_TAB
-#else
-   MENU_ENUM_LABEL_ADD_TAB
+#ifdef HAVE_LIBRETRODB
+   MENU_ENUM_LABEL_EXPLORE_TAB,
 #endif
+   MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB
 };
 
 static const unsigned ozone_system_tabs_icons[OZONE_SYSTEM_TAB_LAST] = {
@@ -699,7 +702,11 @@ static const unsigned ozone_system_tabs_icons[OZONE_SYSTEM_TAB_LAST] = {
 #ifdef HAVE_NETWORKING
    OZONE_TAB_TEXTURE_NETWORK,
 #endif
-   OZONE_TAB_TEXTURE_SCAN_CONTENT
+   OZONE_TAB_TEXTURE_SCAN_CONTENT,
+#ifdef HAVE_LIBRETRODB
+   OZONE_TAB_TEXTURE_EXPLORE,
+#endif
+   OZONE_TAB_TEXTURE_CONTENTLESS_CORES
 };
 
 static const char *OZONE_THEME_TEXTURES_FILES[OZONE_THEME_TEXTURE_LAST] = {
@@ -1597,7 +1604,7 @@ static void ozone_set_background_running_opacity(
 
 static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       enum msg_hash_enums enum_idx, const char *enum_path,
-      unsigned type, bool active)
+      const char *enum_label, unsigned type, bool active)
 {
    switch (enum_idx)
    {
@@ -1675,6 +1682,8 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MUSIC];
       case MENU_ENUM_LABEL_GOTO_EXPLORE:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RDB];
+      case MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE];
 
       /* Menu icons */
       case MENU_ENUM_LABEL_CONTENT_SETTINGS:
@@ -1735,6 +1744,8 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_UPDATE_DATABASES:
       case MENU_ENUM_LABEL_DATABASE_MANAGER_LIST:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RDB];
+      case MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB:
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE];
       case MENU_ENUM_LABEL_CURSOR_MANAGER_LIST:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CURSOR];
       case MENU_ENUM_LABEL_HELP_LIST:
@@ -1930,6 +1941,12 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
          break;
       }
 #endif
+      case MENU_ENUM_LABEL_CONTENTLESS_CORE:
+      {
+         uintptr_t icon = menu_contentless_cores_get_entry_icon(enum_label);
+         if (icon) return icon;
+         break;
+      }
       default:
             break;
    }
@@ -3288,6 +3305,7 @@ static bool ozone_is_playlist(ozone_handle_t *ozone, bool depth)
 #ifdef HAVE_LIBRETRODB
          case OZONE_SYSTEM_TAB_EXPLORE:
 #endif
+         case OZONE_SYSTEM_TAB_CONTENTLESS_CORES:
             is_playlist = false;
             break;
          case OZONE_SYSTEM_TAB_HISTORY:
@@ -4490,7 +4508,7 @@ static void ozone_compute_entries_position(
       if (ozone->is_playlist && entries_end == 1)
       {
          uintptr_t         tex = ozone_entries_icon_get_texture(ozone,
-               entry.enum_idx, entry.path, entry.type, false);
+               entry.enum_idx, entry.path, entry.label, entry.type, false);
          ozone->empty_playlist = tex == ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO];
       }
       else
@@ -4783,7 +4801,7 @@ border_iterate:
 
       MENU_ENTRY_INIT(entry);
       entry.path_enabled             = false;
-      entry.label_enabled            = false;
+      entry.label_enabled            = ozone->is_contentless_cores;
       menu_entry_get(&entry, 0, (unsigned)i, selection_buf, true);
 
       if (entry.enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
@@ -4856,7 +4874,7 @@ border_iterate:
 
       /* Icon */
       tex = ozone_entries_icon_get_texture(ozone,
-            entry.enum_idx, entry.path, entry.type, entry_selected);
+            entry.enum_idx, entry.path, entry.label, entry.type, entry_selected);
       if (tex != ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SUBSETTING])
       {
          uintptr_t texture = tex;
@@ -7148,6 +7166,12 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
 #if defined(HAVE_LIBRETRODB)
    if (settings->bools.menu_content_show_explore)
       ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_EXPLORE;
+#endif
+
+#if defined(HAVE_DYNAMIC)
+   if (settings->uints.menu_content_show_contentless_cores !=
+         MENU_CONTENTLESS_CORES_DISPLAY_NONE)
+      ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_CONTENTLESS_CORES;
 #endif
 
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
@@ -9844,14 +9868,16 @@ static void ozone_populate_entries(void *data,
 
    new_depth = (int)ozone_list_get_size(ozone, MENU_LIST_PLAIN);
 
-   animate                    = new_depth != ozone->depth;
-   ozone->fade_direction      = new_depth <= ozone->depth;
-   ozone->depth               = new_depth;
-   ozone->is_playlist         = ozone_is_playlist(ozone, true);
-   ozone->is_db_manager_list  = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST));
-   ozone->is_file_list        = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES));
-   ozone->is_quick_menu       = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)) ||
-                                string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS));
+   animate                     = new_depth != ozone->depth;
+   ozone->fade_direction       = new_depth <= ozone->depth;
+   ozone->depth                = new_depth;
+   ozone->is_playlist          = ozone_is_playlist(ozone, true);
+   ozone->is_db_manager_list   = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST));
+   ozone->is_file_list         = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES));
+   ozone->is_quick_menu        = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)) ||
+                                 string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS));
+   ozone->is_contentless_cores = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB)) ||
+                                 string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST));
 
    if (animate)
       if (ozone->categories_selection_ptr == ozone->categories_active_idx_old)
