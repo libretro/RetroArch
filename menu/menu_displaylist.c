@@ -6407,6 +6407,8 @@ unsigned menu_displaylist_build_list(
             count++;
 #endif
          break;
+      case DISPLAYLIST_LOAD_DROPBOX_LIST:
+         
       case DISPLAYLIST_INPUT_MENU_SETTINGS_LIST:
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_INPUT_UNIFIED_MENU_CONTROLS,
