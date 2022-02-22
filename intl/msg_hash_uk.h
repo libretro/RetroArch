@@ -6427,10 +6427,6 @@ MSG_HASH(
    "Порт для мережевої гри призначено"
    )
 MSG_HASH(
-   MSG_UPNP_FAILED,
-   "Не вдалося призначити порт UPNP"
-   )
-MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    "Ви покинули гру"
    )

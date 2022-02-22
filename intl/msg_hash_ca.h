@@ -1765,6 +1765,10 @@ MSG_HASH(
 
 /* RGUI: Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
+   "Bilineal"
+   )
 
 /* XMB: Settings > User Interface > Appearance */
 

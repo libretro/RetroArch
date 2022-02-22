@@ -1566,12 +1566,64 @@ MSG_HASH(
    "Establix la freqüència de l'actualització vertical de la imatge. Escollir '50 Hz' donarà una imatge més suau al estar usant continguts en format PAL."
    )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
+   "Forçar desactivació de l'FBO sRGB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   "Força la desactivació del suport de l'FBO (Frame Buffer Object) sRGB. Esta opció pot minvar problemes de vídeo amb el suport d'FBO sRGB en alguns controladors OpenGL d'Intel en Windows."
+   )
 
 /* Settings > Video > Fullscreen Mode */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   "Començar en mode pantalla completa"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   "Iniciar en pantalla completa. Pot ser canviat durant el funcionament de RetroArch i també anulat mijtançant la terminal d'ordres."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   "Mode pantalla completa en finestra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   "Si s'està usant el mode de pantalla completa, força l'ús d'una finestra a mida completa de la pantalla per no tenir que canviar entre modes de vídeo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   "Ample de pantalla completa"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   "Ajusta la mida d'amplaria personalitzada de la imatge per al mode pantalla completa. No modificant el valor, es farà servir la resolució de l'escriptori."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   "Alçada de la pantalla completa"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   "Ajusta la mida d'alçada personalitzada de la imatge per al mode pantalla completa. No modificant el valor, es farà servir la resolució de l'escriptori."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
+   "Forçar resolució a UWP"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
+   "Força la resolució a la mida de la pantalla. Si es fica valor 0, s'usarà un de fixe de 3840 × 2160."
+   )
 
 /* Settings > Video > Windowed Mode */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
+   "Escalat en finestra"
+   )
 
 /* Settings > Video > Scaling */
 
@@ -1969,6 +2021,10 @@ MSG_HASH(
 
 /* RGUI: Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
+   "Bilineal"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
    "Cap"

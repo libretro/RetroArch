@@ -7672,6 +7672,10 @@ MSG_HASH(
    "Deaktiviert"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE,
+   "K.A."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
    "Gesperrt"
    )
@@ -9924,7 +9928,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
-   "Netplay UPNP-Port-Zuordnung fehlgeschlagen"
+   "Netplay UPnP-Port-Zuordnung fehlgeschlagen"
    )
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
