@@ -2096,8 +2096,14 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    if (firmware_update_status(&content_ctx))
       goto end;
 
-   /* Loads content into currently selected core. */
-   if (!(ret = content_load(content_info, p_content)))
+   /* Loads content into currently selected core.
+    * Note that 'content_load()' can fail and yet still
+    * return 'true'... In this case, the dummy core
+    * will be loaded; the 'start core' operation can
+    * therefore only be considered successful if the
+    * dummy core is not running following 'content_load()' */
+   if (!(ret = content_load(content_info, p_content)) ||
+       !(ret = (runloop_st->current_core_type != CORE_TYPE_DUMMY)))
    {
       if (error_string)
       {
@@ -2159,6 +2165,101 @@ bool task_push_load_new_core(
 }
 
 #ifdef HAVE_MENU
+bool task_push_load_contentless_core_from_menu(
+      const char *core_path)
+{
+   content_ctx_info_t content_info       = {0};
+   content_information_ctx_t content_ctx = {0};
+   content_state_t *p_content            = content_state_get_ptr();
+   bool ret                              = true;
+   char *error_string                    = NULL;
+   runloop_state_t *runloop_st           = runloop_state_get_ptr();
+   settings_t *settings                  = config_get_ptr();
+   const char *path_dir_system           = settings->paths.directory_system;
+   bool check_firmware_before_loading    = settings->bools.check_firmware_before_loading;
+   bool flush_menu                       = true;
+   const char *menu_label                = NULL;
+
+   if (string_is_empty(core_path))
+      return false;
+
+   content_info.environ_get                  = menu_content_environment_get;
+
+   content_ctx.check_firmware_before_loading = check_firmware_before_loading;
+   content_ctx.bios_is_missing               = retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
+   if (!string_is_empty(path_dir_system))
+      content_ctx.directory_system           = strdup(path_dir_system);
+
+   /* Set core path */
+   path_set(RARCH_PATH_CORE, core_path);
+
+   /* Clear content path */
+   path_clear(RARCH_PATH_CONTENT);
+
+#if defined(HAVE_DYNAMIC)
+   /* Load core */
+   command_event(CMD_EVENT_LOAD_CORE, NULL);
+
+   runloop_set_current_core_type(CORE_TYPE_PLAIN, true);
+
+   if (firmware_update_status(&content_ctx))
+      goto end;
+
+   /* Loads content into currently selected core.
+    * Note that 'content_load()' can fail and yet still
+    * return 'true'... In this case, the dummy core
+    * will be loaded; the 'start core' operation can
+    * therefore only be considered successful if the
+    * dummy core is not running following 'content_load()' */
+   if (!(ret = content_load(&content_info, p_content)) ||
+       !(ret = (runloop_st->current_core_type != CORE_TYPE_DUMMY)))
+   {
+      if (error_string)
+      {
+         runloop_msg_queue_push(error_string, 2, 90,
+               true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
+               MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_ERR("[Content]: %s\n", error_string);
+         free(error_string);
+      }
+
+      retroarch_menu_running();
+      goto end;
+   }
+#else
+   /* TODO/FIXME: Static builds do not support running
+    * a core directly from the 'command line' without
+    * supplying a content path, so this *will not work*.
+    * In order to support this functionality, the '-L'
+    * command line argument must be enabled for static
+    * builds to inform the frontend that the core should
+    * run automatically on launch. We will leave this
+    * non-functional code here as a place-marker for
+    * future devs who may wish to implement this... */
+   command_event_cmd_exec(p_content,
+         path_get(RARCH_PATH_CONTENT), &content_ctx,
+         false, &error_string);
+   command_event(CMD_EVENT_QUIT, NULL);
+#endif
+
+   /* Push quick menu onto menu stack */
+   menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
+
+   if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB)) ||
+       string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST)))
+      flush_menu = false;
+
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, &flush_menu);
+
+#ifdef HAVE_DYNAMIC
+end:
+#endif
+   if (content_ctx.directory_system)
+      free(content_ctx.directory_system);
+
+   return ret;
+}
+
 bool task_push_load_content_with_new_core_from_menu(
       const char *core_path,
       const char *fullpath,

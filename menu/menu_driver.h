@@ -90,6 +90,7 @@ enum menu_settings_type
    MENU_IMAGES_TAB,
    MENU_NETPLAY_TAB,
    MENU_EXPLORE_TAB,
+   MENU_CONTENTLESS_CORES_TAB,
    MENU_ADD_TAB,
    MENU_PLAYLISTS_TAB,
    MENU_SETTING_DROPDOWN_ITEM,
@@ -267,6 +268,8 @@ enum menu_settings_type
    MENU_SETTING_ACTION_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
    MENU_SETTING_ACTION_CORE_OPTIONS_RESET,
    MENU_SETTING_ACTION_CORE_OPTIONS_FLUSH,
+
+   MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN,
 
    MENU_SETTINGS_LAST
 };
@@ -454,6 +457,7 @@ struct menu_state
       size_t begin;
    } entries;
    size_t   selection_ptr;
+   size_t   contentless_core_ptr;
 
    /* Quick jumping indices with L/R.
     * Rebuilt when parsing directory. */
@@ -634,6 +638,11 @@ void menu_explore_free_state(explore_state_t *state);
 void menu_explore_free(void);
 void menu_explore_set_state(explore_state_t *state);
 #endif
+
+uintptr_t menu_contentless_cores_get_entry_icon(const char *core_id);
+void menu_contentless_cores_context_init(void);
+void menu_contentless_cores_context_deinit(void);
+void menu_contentless_cores_free(void);
 
 /* Returns true if search filter is enabled
  * for the specified menu list */

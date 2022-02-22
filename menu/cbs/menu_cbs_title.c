@@ -754,6 +754,8 @@ DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_favorites_list, MENU
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_images_list,    MENU_ENUM_LABEL_VALUE_GOTO_IMAGES)
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_music_list,     MENU_ENUM_LABEL_VALUE_GOTO_MUSIC)
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_video_list,     MENU_ENUM_LABEL_VALUE_GOTO_VIDEO)
+DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_contentless_cores_list, MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES)
+
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_updater_list,             MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST)
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_manager_list,             MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST)
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_cheat_options_list,       MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS)
@@ -853,18 +855,19 @@ static int action_get_title_group_settings(const char *path, const char *label,
     * tab, but its actual title is set elsewhere - so treat
     * it as a generic top-level item */
    title_info_list_t info_list[] = {
-      {MENU_ENUM_LABEL_MAIN_MENU,         MENU_ENUM_LABEL_VALUE_MAIN_MENU,       false },
-      {MENU_ENUM_LABEL_HISTORY_TAB,       MENU_ENUM_LABEL_VALUE_HISTORY_TAB,     true  },
-      {MENU_ENUM_LABEL_FAVORITES_TAB,     MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,   true  },
-      {MENU_ENUM_LABEL_IMAGES_TAB,        MENU_ENUM_LABEL_VALUE_IMAGES_TAB,      true  },
-      {MENU_ENUM_LABEL_MUSIC_TAB,         MENU_ENUM_LABEL_VALUE_MUSIC_TAB,       true  },
-      {MENU_ENUM_LABEL_VIDEO_TAB,         MENU_ENUM_LABEL_VALUE_VIDEO_TAB,       true  },
-      {MENU_ENUM_LABEL_SETTINGS_TAB,      MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,    false },
-      {MENU_ENUM_LABEL_PLAYLISTS_TAB,     MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,   false },
-      {MENU_ENUM_LABEL_ADD_TAB,           MENU_ENUM_LABEL_VALUE_ADD_TAB,         false },
-      {MENU_ENUM_LABEL_EXPLORE_TAB,       MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,     false },
-      {MENU_ENUM_LABEL_NETPLAY_TAB,       MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,     false },
-      {MENU_ENUM_LABEL_HORIZONTAL_MENU,   MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU, false },
+      {MENU_ENUM_LABEL_MAIN_MENU,             MENU_ENUM_LABEL_VALUE_MAIN_MENU,             false },
+      {MENU_ENUM_LABEL_HISTORY_TAB,           MENU_ENUM_LABEL_VALUE_HISTORY_TAB,           true  },
+      {MENU_ENUM_LABEL_FAVORITES_TAB,         MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,         true  },
+      {MENU_ENUM_LABEL_IMAGES_TAB,            MENU_ENUM_LABEL_VALUE_IMAGES_TAB,            true  },
+      {MENU_ENUM_LABEL_MUSIC_TAB,             MENU_ENUM_LABEL_VALUE_MUSIC_TAB,             true  },
+      {MENU_ENUM_LABEL_VIDEO_TAB,             MENU_ENUM_LABEL_VALUE_VIDEO_TAB,             true  },
+      {MENU_ENUM_LABEL_SETTINGS_TAB,          MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,          false },
+      {MENU_ENUM_LABEL_PLAYLISTS_TAB,         MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,         false },
+      {MENU_ENUM_LABEL_ADD_TAB,               MENU_ENUM_LABEL_VALUE_ADD_TAB,               false },
+      {MENU_ENUM_LABEL_EXPLORE_TAB,           MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,           false },
+      {MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB, MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB, false },
+      {MENU_ENUM_LABEL_NETPLAY_TAB,           MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,           false },
+      {MENU_ENUM_LABEL_HORIZONTAL_MENU,       MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU,       false },
    };
 
    for (i = 0; i < ARRAY_SIZE(info_list); i++)
@@ -989,6 +992,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST,                          action_get_title_deferred_images_list},
       {MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST,                           action_get_title_deferred_music_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST,                           action_get_title_deferred_video_list},
+      {MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST,               action_get_title_deferred_contentless_cores_list},
       {MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST,                 action_get_driver_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST,                  action_get_audio_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_RESAMPLER_SETTINGS_LIST,        action_get_audio_resampler_settings_list},
