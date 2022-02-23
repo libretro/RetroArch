@@ -6407,7 +6407,22 @@ unsigned menu_displaylist_build_list(
             count++;
 #endif
          break;
-      case DISPLAYLIST_LOAD_DROPBOX_LIST:
+      case DISPLAYLIST_LOAD_DROPBOX_LIST:{
+         if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
+                        msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
+                        MENU_ENUM_LABEL_GOTO_FAVORITES,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+      }
+      case DISPLAYLIST_LOAD_DROPBOX_SPECIAL:{
+         if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
+                        msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
+                        MENU_ENUM_LABEL_GOTO_FAVORITES,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+      }
          
       case DISPLAYLIST_INPUT_MENU_SETTINGS_LIST:
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,

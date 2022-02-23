@@ -8476,6 +8476,7 @@ static void materialui_populate_entries(
                           string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST)) ||
                           string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST)) ||
                           string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST)) ||
+                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_DROPBOX_LIST)) ||
                           string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)) ||
                           string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET)) ||
                           string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PASS)) ||
@@ -9208,6 +9209,7 @@ static int materialui_list_push(void *data, void *userdata,
             ret = 0;
          }
          break;
+      case DISPLAYLIST_LOAD_DROPBOX_LIST:
       case DISPLAYLIST_MAIN_MENU:
          {
             settings_t   *settings      = config_get_ptr();
@@ -9274,6 +9276,12 @@ static int materialui_list_push(void *data, void *userdata,
                         false);
                }
             }
+
+            if (settings->bools.menu_show_dropbox)
+            {
+               MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list, MENU_ENUM_LABEL_LOAD_DROPBOX_LIST, PARSE_ACTION, false);
+            }
+            
 
             if (settings->bools.menu_content_show_history)
             {

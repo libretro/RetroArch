@@ -1700,6 +1700,7 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_CORE_INFORMATION:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE];
       case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
+      case MENU_ENUM_LABEL_LOAD_DROPBOX_LIST:
       case MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS:
       case MENU_ENUM_LABEL_SCAN_FILE:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FILE];
@@ -7868,6 +7869,9 @@ static int ozone_list_push(void *data, void *userdata,
             ret = 0;
          }
          break;
+      case DISPLAYLIST_LOAD_DROPBOX_LIST:{
+         
+      }
       case DISPLAYLIST_MAIN_MENU:
          {
             settings_t   *settings      = config_get_ptr();
@@ -7928,6 +7932,14 @@ static int ozone_list_push(void *data, void *userdata,
                         false);
                }
             }
+
+            if (settings->bools.menu_show_dropbox)
+            {
+               MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list, MENU_ENUM_LABEL_LOAD_DROPBOX_LIST,
+               PARSE_ACTION,
+               false);
+            }
+            
 
             if (settings->bools.menu_show_load_disc)
             {
