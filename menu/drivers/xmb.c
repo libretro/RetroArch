@@ -32,6 +32,7 @@
 #include <streams/file_stream.h>
 #include <encodings/utf.h>
 #include <features/features_cpu.h>
+#include <array/rhmap.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -279,6 +280,8 @@ typedef struct xmb_handle
 
    file_list_t selection_buf_old; /* ptr alignment */
    file_list_t horizontal_list;   /* ptr alignment */
+   /* Maps console tabs to playlist database names */
+   xmb_node_t **playlist_db_node_map;
 
    xmb_node_t main_menu_node;
 #ifdef HAVE_IMAGEVIEWER
@@ -2233,6 +2236,8 @@ static void xmb_context_reset_horizontal_list(
    depth                           = (xmb->depth > 1) ? 2 : 1;
    xmb->x                          = xmb->icon_size * -(depth*2-2);
 
+   RHMAP_FREE(xmb->playlist_db_node_map);
+
    for (i = 0; i < list_size; i++)
    {
       const char *path = NULL;
@@ -2254,6 +2259,9 @@ static void xmb_context_reset_horizontal_list(
          char iconpath[PATH_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
          char content_texturepath[PATH_MAX_LENGTH];
+
+         /* Add current node to playlist database name map */
+         RHMAP_SET_STR(xmb->playlist_db_node_map, path, node);
 
          iconpath[0]       = sysname[0]             =
             texturepath[0] = content_texturepath[0] = '\0';
@@ -2326,6 +2334,7 @@ static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
 
    xmb_free_list_nodes(&xmb->horizontal_list, false);
    file_list_deinitialize(&xmb->horizontal_list);
+   RHMAP_FREE(xmb->playlist_db_node_map);
 
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
@@ -3608,60 +3617,33 @@ static int xmb_draw_item(
 
       /* History/Favorite console specific content icons */
       if (  entry_type == FILE_TYPE_RPL_ENTRY
-            && show_history_icons)
+            && show_history_icons != PLAYLIST_SHOW_HISTORY_ICONS_DEFAULT)
       {
          switch (xmb_get_system_tab(xmb, xmb->categories_selection_ptr))
          {
             case XMB_SYSTEM_TAB_HISTORY:
             case XMB_SYSTEM_TAB_FAVORITES:
                {
-                  unsigned j                  = 0;
-                  unsigned p                  = 0;
-                  size_t icon_list_size       = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL);
-                  size_t playlist_size        = 0;
-                  playlist_t *playlist        = NULL;
-                  const struct playlist_entry
-                              *playlist_entry = NULL;
+                  const struct playlist_entry *pl_entry = NULL;
+                  xmb_node_t *db_node                   = NULL;
 
-                  /* Get current playlist */
-                  playlist = playlist_get_cached();
-                  if (!playlist)
-                     break;
+                  playlist_get_index(playlist_get_cached(),
+                        entry.entry_idx, &pl_entry);
 
-                  playlist_size = playlist_get_size(playlist);
-                  if (i >= playlist_size)
-                     break;
-
-                  /* Read playlist entry */
-                  for (p = i; p < playlist_size && playlist_entry == NULL; p++)
+                  if (pl_entry &&
+                      !string_is_empty(pl_entry->db_name) &&
+                      (db_node = RHMAP_GET_STR(xmb->playlist_db_node_map, pl_entry->db_name)))
                   {
-                     playlist_get_index(playlist, p, &playlist_entry);
-                     if (playlist_entry && !string_is_equal(playlist_entry->label, entry.path))
-                        playlist_entry = NULL;
-                  }
-
-                  if (!playlist_entry)
-                     break;
-
-                  for (j = 0; j < icon_list_size; j++)
-                  {
-                     xmb_node_t *node = xmb_get_userdata_from_horizontal_list(xmb, j);
-                     if (!node)
-                        continue;
-
-                     if (!string_is_empty(playlist_entry->db_name)
-                           && string_is_equal(xmb->horizontal_list.list[j].path, playlist_entry->db_name))
+                     switch (show_history_icons)
                      {
-                        switch (show_history_icons)
-                        {
-                           case PLAYLIST_SHOW_HISTORY_ICONS_MAIN:
-                              texture = node->icon;
-                              break;
-                           case PLAYLIST_SHOW_HISTORY_ICONS_CONTENT:
-                              texture = node->content_icon;
-                              break;
-                        }
-                        break;
+                        case PLAYLIST_SHOW_HISTORY_ICONS_MAIN:
+                           texture = db_node->icon;
+                           break;
+                        case PLAYLIST_SHOW_HISTORY_ICONS_CONTENT:
+                           texture = db_node->content_icon;
+                           break;
+                        default:
+                           break;
                      }
                   }
                }
@@ -6015,6 +5997,7 @@ error:
    xmb_free_list_nodes(&xmb->horizontal_list, false);
    file_list_deinitialize(&xmb->selection_buf_old);
    file_list_deinitialize(&xmb->horizontal_list);
+   RHMAP_FREE(xmb->playlist_db_node_map);
    return NULL;
 }
 
@@ -6028,6 +6011,7 @@ static void xmb_free(void *data)
       xmb_free_list_nodes(&xmb->horizontal_list, false);
       file_list_deinitialize(&xmb->selection_buf_old);
       file_list_deinitialize(&xmb->horizontal_list);
+      RHMAP_FREE(xmb->playlist_db_node_map);
 
       video_coord_array_free(&xmb->raster_block.carr);
       video_coord_array_free(&xmb->raster_block2.carr);

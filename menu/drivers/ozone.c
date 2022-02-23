@@ -31,6 +31,7 @@
 #include <features/features_cpu.h>
 #include <formats/image.h>
 #include <math/float_minmax.h>
+#include <array/rhmap.h>
 
 #include "../../config.def.h"
 
@@ -376,6 +377,20 @@ typedef struct ozone_theme
    const char *name;
 } ozone_theme_t;
 
+/* If you change this struct, also
+   change ozone_alloc_node and
+   ozone_copy_node */
+typedef struct ozone_node
+{
+   char *fullpath;            /* Entry fullpath */
+   char *console_name;        /* Console tab name */
+   uintptr_t icon;            /* Console tab icon */
+   uintptr_t content_icon;    /* console content icon */
+   unsigned height;           /* Entry height */
+   unsigned position_y;       /* Entry position Y */
+   unsigned sublabel_lines;   /* Entry sublabel lines */
+   bool wrap;                 /* Wrap entry? */
+} ozone_node_t;
 
 struct ozone_handle
 {
@@ -386,6 +401,8 @@ struct ozone_handle
    char *pending_message;
    file_list_t selection_buf_old;                  /* ptr alignment */
    file_list_t horizontal_list; /* console tabs */ /* ptr alignment */
+   /* Maps console tabs to playlist database names */
+   ozone_node_t **playlist_db_node_map;
    menu_screensaver_t *screensaver;
 
    struct
@@ -584,21 +601,6 @@ struct ozone_handle
       bool wiggling;
    } cursor_wiggle_state;
 };
-
-/* If you change this struct, also
-   change ozone_alloc_node and
-   ozone_copy_node */
-typedef struct ozone_node
-{
-   char *fullpath;            /* Entry fullpath */
-   char *console_name;        /* Console tab name */
-   uintptr_t icon;            /* Console tab icon */
-   uintptr_t content_icon;    /* console content icon */
-   unsigned height;           /* Entry height */
-   unsigned position_y;       /* Entry position Y */
-   unsigned sublabel_lines;   /* Entry sublabel lines */
-   bool wrap;                 /* Wrap entry? */
-} ozone_node_t;
 
 typedef struct ozone_handle ozone_handle_t;
 
@@ -4052,6 +4054,8 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
    unsigned i;
    size_t list_size = ozone_list_get_size(ozone, MENU_LIST_HORIZONTAL);
 
+   RHMAP_FREE(ozone->playlist_db_node_map);
+
    for (i = 0; i < list_size; i++)
    {
       const char *path         = NULL;
@@ -4076,6 +4080,9 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          char content_texturepath[PATH_MAX_LENGTH];
          char icons_path[PATH_MAX_LENGTH];
 
+         /* Add current node to playlist database name map */
+         RHMAP_SET_STR(ozone->playlist_db_node_map, path, node);
+
          strlcpy(icons_path, ozone->icons_path, sizeof(icons_path));
 
          sysname[0] = texturepath[0] = content_texturepath[0] = '\0';
@@ -4086,7 +4093,6 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
                ".png", sizeof(texturepath));
 
          /* If the playlist icon doesn't exist return default */
-
          if (!path_is_valid(texturepath))
             fill_pathname_join_concat(texturepath, icons_path, "default",
                   ".png", sizeof(texturepath));
@@ -4160,6 +4166,7 @@ static void ozone_refresh_horizontal_list(ozone_handle_t *ozone,
    ozone_context_destroy_horizontal_list(ozone);
    ozone_free_list_nodes(&ozone->horizontal_list, false);
    file_list_deinitialize(&ozone->horizontal_list);
+   RHMAP_FREE(ozone->playlist_db_node_map);
 
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
@@ -4892,60 +4899,33 @@ border_iterate:
          }
          /* History/Favorite console specific content icons */
          else if (   entry.type == FILE_TYPE_RPL_ENTRY
-                  && show_history_icons)
+                  && show_history_icons != PLAYLIST_SHOW_HISTORY_ICONS_DEFAULT)
          {
             switch (ozone->tabs[ozone->categories_selection_ptr])
             {
                case OZONE_SYSTEM_TAB_HISTORY:
                case OZONE_SYSTEM_TAB_FAVORITES:
                   {
-                     unsigned j                  = 0;
-                     unsigned p                  = 0;
-                     size_t icon_list_size       = ozone_list_get_size(ozone, MENU_LIST_HORIZONTAL);
-                     size_t playlist_size        = 0;
-                     playlist_t *playlist        = NULL;
-                     const struct playlist_entry
-                                 *playlist_entry = NULL;
+                     const struct playlist_entry *pl_entry = NULL;
+                     ozone_node_t *db_node                 = NULL;
 
-                     /* Get current playlist */
-                     playlist = playlist_get_cached();
-                     if (!playlist)
-                        break;
+                     playlist_get_index(playlist_get_cached(),
+                           entry.entry_idx, &pl_entry);
 
-                     playlist_size = playlist_get_size(playlist);
-                     if (i >= playlist_size)
-                        break;
-
-                     /* Read playlist entry */
-                     for (p = i; p < playlist_size && playlist_entry == NULL; p++)
+                     if (pl_entry &&
+                         !string_is_empty(pl_entry->db_name) &&
+                         (db_node = RHMAP_GET_STR(ozone->playlist_db_node_map, pl_entry->db_name)))
                      {
-                        playlist_get_index(playlist, p, &playlist_entry);
-                        if (playlist_entry && !string_is_equal(playlist_entry->label, entry.path))
-                           playlist_entry = NULL;
-                     }
-
-                     if (!playlist_entry)
-                        break;
-
-                     for (j = 0; j < icon_list_size; j++)
-                     {
-                        ozone_node_t *node = ozone->horizontal_list.list[j].userdata;
-                        if (!node)
-                           continue;
-
-                        if (!string_is_empty(playlist_entry->db_name)
-                              && string_is_equal(ozone->horizontal_list.list[j].path, playlist_entry->db_name))
+                        switch (show_history_icons)
                         {
-                           switch (show_history_icons)
-                           {
-                              case PLAYLIST_SHOW_HISTORY_ICONS_MAIN:
-                                 texture = node->icon;
-                                 break;
-                              case PLAYLIST_SHOW_HISTORY_ICONS_CONTENT:
-                                 texture = node->content_icon;
-                                 break;
-                           }
-                           break;
+                           case PLAYLIST_SHOW_HISTORY_ICONS_MAIN:
+                              texture = db_node->icon;
+                              break;
+                           case PLAYLIST_SHOW_HISTORY_ICONS_CONTENT:
+                              texture = db_node->content_icon;
+                              break;
+                           default:
+                              break;
                         }
                      }
                   }
@@ -7267,6 +7247,7 @@ error:
       ozone_free_list_nodes(&ozone->selection_buf_old, false);
       file_list_deinitialize(&ozone->horizontal_list);
       file_list_deinitialize(&ozone->selection_buf_old);
+      RHMAP_FREE(ozone->playlist_db_node_map);
    }
 
    if (menu)
@@ -7292,6 +7273,7 @@ static void ozone_free(void *data)
       ozone_free_list_nodes(&ozone->horizontal_list, false);
       file_list_deinitialize(&ozone->selection_buf_old);
       file_list_deinitialize(&ozone->horizontal_list);
+      RHMAP_FREE(ozone->playlist_db_node_map);
 
       if (!string_is_empty(ozone->pending_message))
          free(ozone->pending_message);
