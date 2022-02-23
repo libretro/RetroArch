@@ -4593,6 +4593,10 @@ MSG_HASH(
    "컨텐츠 탐색기 옵션을 표시합니다. (Ozone/XMB 사용시 재시작 필요)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
+   "전체"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
    "시간/날짜 표시"
    )
@@ -10325,6 +10329,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_PUBLIC_ADDRESS,
    "넷플레이 포트 매핑 성공"
+   )
+MSG_HASH(
+   MSG_UPNP_FAILED,
+   "넷플레이 UPnP 포트 매핑 실패"
    )
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,

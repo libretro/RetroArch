@@ -10,7 +10,7 @@
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MAIN_MENU,
-   "Hlavní Nabídka"
+   "Hlavní Menu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
@@ -18,7 +18,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
-   "Oblíbené Položky"
+   "Oblíbené"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
@@ -38,15 +38,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
-   "Online Hraní"
+   "Netplay - Online Hraní"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
    "Procházet"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
+   "Samostatná Jádra"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
-   "Importovat obsah"
+   "Importovat Obsah"
    )
 
 /* Main Menu */
@@ -61,7 +65,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
-   "Načíst Jádro"
+   "Nahrát Jádro"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST,
@@ -77,15 +81,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-   "Načíst disk"
+   "Nahrát Disk"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_DISC,
-   "Načte fyzický disk. Nejprve vyberte jádro (Načíst Jádro) které chcete použít."
+   "Nahraje fyzický disk. Nejprve vyberte jádro (Nahrát Jádro) které chcete použít."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-   "Vypsat disk"
+   "Vypsat Disk"
    )
 MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
    MENU_ENUM_SUBLABEL_DUMP_DISC,
@@ -94,7 +98,7 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
 #ifdef HAVE_LAKKA
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EJECT_DISC,
-   "Vysunout disk"
+   "Vysunout Disk"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_EJECT_DISC,
@@ -103,7 +107,7 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
-   "Seznamy"
+   "Playlisty"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
@@ -111,15 +115,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "Importovat obsah"
+   "Importovat Obsah"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "Vytvořte a aktualizujte seznamy skenováním obsahu."
+   "Vytvářejte a aktualizujte playlisty skenováním obsahu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   "Zobrazit menu plochy"
+   "Zobrazit Menu Plochy"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_WIMP,
@@ -127,7 +131,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Zakázat dětský režim (potřeba restart)"
+   "Zakázat Režim Prodejna (Potřeba Restart)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -135,19 +139,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
-   "Online aktualizace"
+   "Online Aktualizace"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   "Místo pro stažení doplňků, komponentů a obsahu pro RetroArch."
+   "Stáhněte si doplňky, komponenty a obsah pro RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY,
-   "Online hraní"
+   "Netplay - Onlin Hraní"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY,
-   "Připojit se nebo hostovat online hraní."
+   "Připojit se nebo hostovat netplay."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
@@ -167,7 +171,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-   "Konfigurační soubor"
+   "Konfigurační Soubor"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
@@ -191,7 +195,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Ukončit program"
+   "Ukončit RetroArch"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
@@ -202,7 +206,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
-   "Stáhnout jádro"
+   "Stáhnout Jádro"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
@@ -210,26 +214,26 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
-   "Nainstalovat nebo obnovit jádro"
+   "Nainstalovat nebo Obnovit Jádro"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-   "Nainstalujte nebo obnovte jádro z adresáře 'Downloads'."
+   "Nainstalujte nebo obnovte jádro z adresáře 'Stažené položky'."
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
-   "Spustit video procesor"
+   "Spustit Video Procesor"
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
-   "Spustit vzdálené ovládání"
+   "Spustit Vzdálený Ovladač RetroPad"
    )
 
 /* Main Menu > Load Content */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FAVORITES,
-   "Hlavní adresář"
+   "Spouštěcí Adresář"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
@@ -237,18 +241,18 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
-   "Procházet archiv"
+   "Procházet Archiv"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
-   "Načíst archiv"
+   "Nahrát Archiv"
    )
 
 /* Main Menu > Load Content > Playlists */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
-   "Oblíbené položky"
+   "Oblíbené"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
@@ -286,16 +290,24 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
    "Procházet veškerý obsah odpovídající databázi pomocí kategorizovaného vyhledávacího rozhraní."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
+   "Samostatná Jádra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
+   "Zde se zobrazí nainstalovaná jádra, která mohou pracovat bez nahrání obsahu."
+   )
 
 /* Main Menu > Online Updater */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   "Správce jádra"
+   "Stahovač Jádra"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
-   "Aktualizovat nainstalované jádra"
+   "Aktualizovat Nainstalované Jádra"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
@@ -303,7 +315,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
-   "Přepnout na Play Store jádra"
+   "Přepnout Jádra do Verzí Obchodu Play"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
@@ -311,7 +323,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
-   "Aktualizace náhledů"
+   "Aktualizátor Miniatur"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
@@ -319,19 +331,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
-   "Aktualizace náhledů playlistu"
+   "Aktualizátor Miniatur Playlistů"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
-   "Stáhne náhledy pro položky ve vybraném seznamu skladeb."
+   "Stažení miniatur záznamů ve vybraném playlistu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
-   "Stahování obsahu"
+   "Stahování Obsahu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
-   "Stažení jádra systémových dat"
+   "Stažení Jádra Systémových Dat"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
@@ -339,27 +351,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
-   "Aktualizovat Informační soubory jader"
+   "Aktualizovat Informační Soubory Jader"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
-   "Aktualizovat Assety"
+   "Aktualizovat Položky"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
-   "Aktualizovat profily ovladače"
+   "Aktualizovat Profily Ovladače"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
-   "Aktualizovat cheaty"
+   "Aktualizovat Cheaty"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
-   "Aktualizovat databázi"
+   "Aktualizovat Databáze"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
-   "Aktualizovat overlay"
+   "Aktualizace Překryvů"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
@@ -378,7 +390,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
-   "informace o jádře"
+   "Informace o Jádře"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFORMATION,
@@ -386,15 +398,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
-   "Informace o disku"
+   "Informace o Disku"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISC_INFORMATION,
-   "Zobrazí informace o vložených médiích."
+   "Zobrazení informací o vložených discích médií."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
-   "Informace o síti"
+   "Informace o Síti"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
@@ -1299,6 +1311,10 @@ MSG_HASH(
    "Zvyšuje výkon za cenu zpoždění a většího zadrhávání videa. Použijte pouze v případě, že nelze dosáhnout plné rychlosti jinak."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+   "Vložení Černého Rámečku"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
    "Mezi snímky se vloží černý rámeček. Užitečné na některých obrazovkách s vysokou obnovovací frekvencí k odstranění duchů."
    )
@@ -1335,6 +1351,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
    "Bilineární"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
+   "Nejbližší Soused"
+   )
 #if defined(RS90) || defined(MIYOO)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
@@ -1342,13 +1362,21 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   "Zadejte metodu interpolace obrazu, pokud je funkce \"Celočíselné měřítko\" vypnutá. Nejmenší dopad na výkon má možnost \"Nearest Neighbor\"."
+   "Zadejte metodu interpolace obrazu, pokud je funkce 'Celočíselné Škálování' vypnutá. Nejmenší dopad na výkon má možnost 'Nejbližší Soused'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "Nejbližší Soused"
    )
 #endif
 #endif
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
+   "Prodleva Automatického Shaderu"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
-   "Zpoždění automatického načítání shaderů (v ms). Může obejít grafické závady při použití softwaru pro grabování obrazovky."
+   "Zpoždění automatického načítání shaderu (v ms). Může obejít grafické závady při použití softwaru pro grabování obrazovky."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -1382,8 +1410,16 @@ MSG_HASH(
    "Přepínejte mezi nativním a ultraširokým super rozlišením."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+   "Centrování Osy-X"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    "Pokud není obraz na displeji správně vycentrován, projděte tyto možnosti."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
+   "Úprava Skenování Obrazu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
@@ -1398,6 +1434,10 @@ MSG_HASH(
    "Přepnutí na modelinu s vysokým rozlišením pro použití s nabídkami s vysokým rozlišením, když není načten žádný obsah."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   "Vlastní Obnovovací Frekvence"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    "V případě potřeby použijte vlastní obnovovací frekvenci zadanou v konfiguračním souboru."
    )
@@ -1409,8 +1449,16 @@ MSG_HASH(
    "Vyberte, která obrazovka se má použít."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
+   "Rotace Videa"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
    "Vynutí určité natočení videa. Toto natočení se přidá k natočení, které nastaví jádro."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
+   "Orientace Obrazovky"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
@@ -1421,16 +1469,32 @@ MSG_HASH(
    "Vyberte grafickou kartu, kterou chcete použít."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
+   "Horizontální Posun Obrazovky"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
    "Vynutí určitý horizontální posun videa. Odsazení se použije globálně."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
+   "Vertikální Posun Obrazovky"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
    "Vynutí určitý vertikální posun videa. Odsazení se použije globálně."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
+   "Vertikální Obnovovací Frekvence"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
    "Vertikální obnovovací frekvence obrazovky. Používá se k výpočtu vhodné vstupní frekvence zvuku.\nTento údaj bude ignorován, pokud je povolena funkce \"Threaded Video\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
+   "Odhadovaná Obnovovací Frekvence Obrazovky"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
@@ -1462,6 +1526,10 @@ MSG_HASH(
 /* Settings > Video > Fullscreen Mode */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   "Spustit v Režimu Celé Obrazovky"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
    "Spuštění na celou obrazovku. Lze změnit za běhu. Lze přepsat přepínačem příkazového řádku."
    )
@@ -1470,12 +1538,24 @@ MSG_HASH(
    "Pokud se jedná o celoobrazovkové okno, raději použijte celoobrazovkové okno, abyste zabránili přepínání režimu zobrazení."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   "Šířka Celé Obrazovky"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
    "Nastavení vlastní velikosti šířky pro celoobrazovkový režim bez oken. Pokud ji nenastavíte, použije se rozlišení plochy."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   "Výška Celé Obrazovky"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    "Nastavení vlastní velikosti výšky pro celoobrazovkový režim bez oken. Pokud ji nenastavíte, použije se rozlišení plochy."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
+   "Vynutit Rozlišení UWP"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
@@ -1484,6 +1564,10 @@ MSG_HASH(
 
 /* Settings > Video > Windowed Mode */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
+   "Měřítko Oken"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
    "Nastaví velikost okna na zadaný násobek velikosti hlavního panelu zobrazení."
@@ -1549,11 +1633,15 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
-   "Celočíselná stupnice"
+   "Celočíselné Škálování"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
    "Škálování videa pouze v celočíselných krocích. Základní velikost závisí na geometrii hlášené systémem a poměru stran. Pokud není nastavena možnost \"Force Aspect Ratio\", budou X/Y škálovány nezávisle na celočíselném měřítku."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Nadměrné Celočíselné Škálování"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
@@ -1583,15 +1671,27 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Vlastní posun zobrazení, který se používá k určení polohy zobrazení v ose X.\nTyto údaje jsou ignorovány, pokud je povoleno 'Integer Scale'."
+   "Vlastní posun zobrazení, který se používá k určení polohy zobrazení v ose X.\nTyto údaje jsou ignorovány, pokud je povoleno 'Celočíselné Škálování'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
+   "Vlastní Poměr Stran (Y Pozice)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Vlastní posun zobrazení, který se používá k určení polohy osy Y zobrazení.\nTyto údaje jsou ignorovány, pokud je povoleno 'Celočíselné měřítko'."
+   "Vlastní posun zobrazení, který se používá k určení polohy osy Y zobrazení.\nTyto údaje jsou ignorovány, pokud je povoleno 'Celočíselné Škálování'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   "Vlastní Poměr Stran (Na Šířku)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Vlastní šířka zobrazení, která se použije, pokud je poměr stran nastaven na hodnotu \"Vlastní poměr stran\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   "Vlastní Poměr Stran (Na Výšku)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -1621,6 +1721,10 @@ MSG_HASH(
    "Nastavte špičkovou svítivost (v cd/m2), kterou je displej schopen reprodukovat. Informace o špičkové svítivosti vašeho displeje naleznete v části RTings."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Papírová Bílá Jasnost"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
    "Nastavte jas, při kterém má být papír bílý, tj. čitelný text nebo jas v horní části rozsahu SDR (standardní dynamický rozsah). Užitečné pro přizpůsobení různým světelným podmínkám v prostředí."
    )
@@ -1631,6 +1735,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
    "Ovládání gama/kontrastu pro HDR. Vezme barvy a zvýší celkový rozsah mezi nejsvětlejšími a nejtmavšími částmi obrazu. Čím vyšší je kontrast HDR, tím je tento rozdíl větší, zatímco čím nižší je kontrast, tím je obraz vymazlenější. Pomáhá uživatelům vyladit obraz podle jejich představ a podle toho, jak podle nich vypadá na jejich displeji nejlépe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "Rozšířit Gamut"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
@@ -1644,6 +1752,10 @@ MSG_HASH(
    "Synchronizujte výstupní video grafické karty s obnovovací frekvencí obrazovky. Doporučuje se."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   "Interval Výměny VSync"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    "Použijte vlastní interval výměny pro VSync. Nastavte jej tak, aby se obnovovací frekvence monitoru snížila na polovinu."
    )
@@ -1652,16 +1764,32 @@ MSG_HASH(
    "Funkce VSync je povolena, dokud výkon neklesne pod cílovou obnovovací frekvenci. Může minimalizovat zadrhávání při poklesu výkonu pod reálný čas a být energeticky úspornější."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
+   "Zpoždění Snímku"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    "Snižuje latenci za cenu vyššího rizika zadrhávání videa. Přidává zpoždění za VSync (v ms)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
+   "Automatické Zpoždění Snímků"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
    "Dočasně snižte efektivní \"Zpoždění snímků\", abyste zabránili budoucím výpadkům snímků. Výchozím bodem je polovina času snímku, když je hodnota \"Frame Delay\" 0."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   "Těžká Synchronizace s GPU"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
    "Tvrdá synchronizace CPU a GPU. Snižuje latenci na úkor výkonu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   "Těžká Synchronizace Snímků GPU"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
@@ -1775,6 +1903,10 @@ MSG_HASH(
    "Umožňuje ovladači WASAPI převzít výhradní kontrolu nad zvukovým zařízením. Pokud je zakázán, použije místo toho sdílený režim."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
+   "Formát Float WASAPI"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
    "Použijte formát float pro ovladač WASAPI, pokud ho vaše zvukové zařízení podporuje."
    )
@@ -1840,8 +1972,16 @@ MSG_HASH(
    "Synchronizace zvuku. Doporučeno."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
+   "Maximální Časová Odchylka"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
    "Maximální změna vstupní rychlosti zvuku. Zvýšení této hodnoty umožňuje velmi velké změny časování za cenu nepřesné výšky zvuku (např. provozování jader PAL na displejích NTSC)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
+   "Dynamické Ovládání Rychlosti Zvuku"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
@@ -1960,6 +2100,10 @@ MSG_HASH(
    "Maximální počet uživatelů podporovaných aplikací RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
+   "Chování Při Hlasování"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
    "Ovlivnit způsob dotazování vstupu v aplikaci RetroArch. Nastavení na \"Early\" nebo \"Late\" může v závislosti na konfiguraci vést ke snížení latence."
    )
@@ -1990,8 +2134,16 @@ MSG_HASH(
    )
 #endif
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
+   "Vstup Pomocného Senzoru"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
    "Povolení vstupu ze snímačů akcelerometru, gyroskopu a osvětlení, pokud je aktuální hardware podporuje. Na některých platformách může mít vliv na výkon a/nebo zvýšit spotřebu energie."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   "Automatické Zachycení Myši"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
@@ -2018,6 +2170,10 @@ MSG_HASH(
    "Detekovat"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
+   "Limit Osy Vstupního Tlačítka"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
    "Jak daleko musí být osa nakloněna, aby došlo ke stisknutí tlačítka."
    )
@@ -2036,6 +2192,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
    "Počet sekund, po které je třeba vstup podržet, aby byl svázán."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
+   "Turbo Období"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
@@ -2080,6 +2240,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
    "Změna nastavení hotkey."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+   "Port %u Ovládání"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
@@ -2167,16 +2331,32 @@ MSG_HASH(
    "Přidání prodlevy v počtu snímků, než se po stisknutí (a podržení) přiřazené klávesy \"Hotkey Enable\" zablokuje normální vstup. Umožňuje zachytit normální vstup z klávesy 'Hotkey Enable', když je namapována na jinou akci (např. RetroPad 'Select')."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
+   "Rychlý Posun Vpřed (Přepnout)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_KEY,
    "Přepíná mezi rychlým převíjením vpřed a normální rychlostí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
+   "Rychlý Posun Vpřed (Podržet)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_HOLD_KEY,
    "Povolí rychlé převíjení vpřed při podržení. Po uvolnění tlačítka běží obsah normální rychlostí."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY,
+   "Zpomalený Pohyb (Přepnout)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
    "Přepíná mezi zpomaleným pohybem a normální rychlostí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY,
+   "Zpomalený Pohyb (Podržet)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
@@ -2275,16 +2455,32 @@ MSG_HASH(
    "Resetuje aktuální obsah od začátku."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
+   "Další Shader"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   "Načte a použije další soubor předvolby shaderu v kořenovém adresáři \"Video Shaders\"."
+   "Načte a použije další soubor předvolby shaderu v kořenovém adresáři 'Video Shadery'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
+   "Předchozí Shader"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
-   "Načte a použije předchozí soubor předvolby shaderu v kořenovém adresáři \"Video Shaders\"."
+   "Načte a použije předchozí soubor předvolby shaderu v kořenovém adresáři 'Video Shadery'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
+   "Další Index Cheatu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_INDEX_PLUS,
    "Zvýší aktuálně vybraný index podvodu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS,
+   "Předchozí Index Cheatu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_INDEX_MINUS,
@@ -2522,6 +2718,10 @@ MSG_HASH(
    "Použijte zadanou analogovou páčku pro vstup D-Pad. Pokud má jádro nativní analogovou podporu, mapování D-Pad bude zakázáno, pokud není vybrána možnost \"(Vynuceně)\". Pokud je mapování D-Pad vynuceno, jádro nebude přijímat žádný analogový vstup ze zadané páčky."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
+   "Index Zařízení"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    "Mapovaný Port"
    )
@@ -2732,6 +2932,10 @@ MSG_HASH(
 /* Settings > Core */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
+   "Sdílený Kontext Hardwaru"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    "Poskytněte hardwarově renderovaným jádrům vlastní soukromý kontext. Vyhnete se tak nutnosti předpokládat změny stavu hardwaru mezi jednotlivými snímky."
    )
@@ -2842,7 +3046,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
-   "Automatické Načítání Předvoleb Shaderů"
+   "Automatické Načítání Předvoleb Shaderu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
@@ -3219,7 +3423,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
-   "Zachytí obrázek po aplikaci filtrů (ale ne shaderů). Video bude vypadat stejně efektně jako to, co vidíte na obrazovce."
+   "Zachytí obrázek po aplikaci filtrů (ale ne shaderu). Video bude vypadat stejně efektně jako to, co vidíte na obrazovce."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
@@ -4245,6 +4449,22 @@ MSG_HASH(
    "Zobrazit možnost průzkumníka obsahu. (Ozone/XMB Vyžaduje Restart)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
+   "Zobrazit 'Samostatná Jádra'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
+   "Zadejte typ jádra (pokud existuje), která se mají zobrazit v menu \"Samostatná Jádra\". (V případě Ozone/XMB je vyžadován restart)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
+   "Vše"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_SINGLE_PURPOSE,
+   "Jednorázové-Použití"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
    "Zobrazit Datum a Čas"
    )
@@ -5042,6 +5262,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,
    "Spusťte hru po síti v režimu, který nevyžaduje stavy ukládání. Je vyžadována velmi rychlá síť, ale neprovádí se žádné převíjení, takže nedochází k žádnému trhání při přehrávání v síti."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
+   "Kontrolní Snímky Netplay"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
@@ -6307,8 +6531,12 @@ MSG_HASH(
    "Správa obrazu disku."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS,
+   "Shadery"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
-   "Nastavte stínovače, které vizuálně rozšíří obraz."
+   "Nastavte shadery, které vizuálně rozšíří obraz."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
@@ -6855,7 +7083,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
-   "Zvýšení nebo snížení počtu průchodů shader pipeline. Ke každému průchodu pipeline lze přiřadit samostatné shadery a nakonfigurovat jejich měřítko a filtrování."
+   "Zvýšení nebo snížení počtu průchodů shaderu pipeline. Ke každému průchodu pipeline lze přiřadit samostatné shadery a nakonfigurovat jejich měřítko a filtrování."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER,
@@ -7939,7 +8167,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
-   "Celočíselná stupnice"
+   "Celočíselné Škálování"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN,
@@ -9819,43 +10047,1731 @@ MSG_HASH(
    "Váš místnost není připojitelná z internetu."
    )
 MSG_HASH(
+   MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
+   "Opustili jste hru"
+   )
+MSG_HASH(
+   MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
+   "Připojili jste se jako hráč %u"
+   )
+MSG_HASH(
+   MSG_NETPLAY_YOU_HAVE_JOINED_WITH_INPUT_DEVICES_S,
+   "Připojili jste se ke vstupním zařízením %.*s"
+   )
+MSG_HASH(
+   MSG_NETPLAY_PLAYER_S_LEFT,
+   "Hráč %.*s opustil hru"
+   )
+MSG_HASH(
+   MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N,
+   "%.*s se připojil jako hráč %u"
+   )
+MSG_HASH(
+   MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S,
+   "%.*s se spojil se vstupními zařízeními %.*s"
+   )
+MSG_HASH(
+   MSG_NETPLAY_NOT_RETROARCH,
+   "Pokus o připojení k síti se nezdařil, protože klient nepoužívá RetroArch, nebo používá starou verzi RetroArch."
+   )
+MSG_HASH(
+   MSG_NETPLAY_OUT_OF_DATE,
+   "Partner netplay používá starou verzi RetroArch. Nelze se připojit."
+   )
+MSG_HASH(
+   MSG_NETPLAY_DIFFERENT_VERSIONS,
+   "VAROVÁNÍ: Partner netplay používá jinou verzi RetroArch. Pokud se vyskytnou problémy, použijte stejnou verzi."
+   )
+MSG_HASH(
+   MSG_NETPLAY_DIFFERENT_CORES,
+   "Partner netplay běží na jiném jádru. Nelze se připojit."
+   )
+MSG_HASH(
+   MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
+   "VAROVÁNÍ: Partner netplay používá jinou verzi jádra. Pokud se vyskytnou problémy, použijte stejnou verzi."
+   )
+MSG_HASH(
+   MSG_NETPLAY_ENDIAN_DEPENDENT,
+   "Toto jádro nepodporuje meziarchitekturní netplay mezi těmito systémy"
+   )
+MSG_HASH(
+   MSG_NETPLAY_PLATFORM_DEPENDENT,
+   "Toto jádro nepodporuje netplay mezi architekturou"
+   )
+MSG_HASH(
+   MSG_NETPLAY_ENTER_PASSWORD,
+   "Zadejte heslo k netplay serveru:"
+   )
+MSG_HASH(
+   MSG_NETPLAY_ENTER_CHAT,
+   "Zadejte zprávu netplay chatu:"
+   )
+MSG_HASH(
+   MSG_DISCORD_CONNECTION_REQUEST,
+   "Chcete povolit připojení od uživatele:"
+   )
+MSG_HASH(
+   MSG_NETPLAY_INCORRECT_PASSWORD,
+   "Nesprávné heslo"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SERVER_NAMED_HANGUP,
+   "\"%s\" se odpojil"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SERVER_HANGUP,
+   "Klient netplay se odpojil"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CLIENT_HANGUP,
+   "Netplay odpojen"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
+   "Nemáte oprávnění k přehrávání"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
+   "Neexistují žádné volné sloty hráče"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CANNOT_PLAY_NOT_AVAILABLE,
+   "Požadovaná vstupní zařízení nejsou k dispozici"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CANNOT_PLAY,
+   "Nelze přepnout do režimu přehrávání"
+   )
+MSG_HASH(
+   MSG_NETPLAY_PEER_PAUSED,
+   "Netplay peer \"%s\" pozastaven"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CHANGED_NICK,
+   "Vaše přezdívka změněna na \"%s\""
+   )
+MSG_HASH(
+   MSG_AUDIO_VOLUME,
+   "Hlasitost zvuku"
+   )
+MSG_HASH(
+   MSG_AUTODETECT,
+   "Autodetekovat"
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Automaticky nahrát stav uložení z"
+   )
+MSG_HASH(
+   MSG_CAPABILITIES,
+   "Schopnosti"
+   )
+MSG_HASH(
+   MSG_CONNECTING_TO_NETPLAY_HOST,
+   "Připojování k hostiteli netplay"
+   )
+MSG_HASH(
+   MSG_CONNECTING_TO_PORT,
+   "Připojování k portu"
+   )
+MSG_HASH(
+   MSG_CONNECTION_SLOT,
+   "Propojovací slot"
+   )
+MSG_HASH(
+   MSG_FETCHING_CORE_LIST,
+   "Načítání seznamu jádra..."
+   )
+MSG_HASH(
+   MSG_CORE_LIST_FAILED,
+   "Nepodařilo se načíst seznam jádra!"
+   )
+MSG_HASH(
+   MSG_LATEST_CORE_INSTALLED,
+   "Poslední verze je již nainstalována: "
+   )
+MSG_HASH(
+   MSG_UPDATING_CORE,
+   "Aktualizace jádra: "
+   )
+MSG_HASH(
+   MSG_DOWNLOADING_CORE,
+   "Stahování jádra: "
+   )
+MSG_HASH(
+   MSG_EXTRACTING_CORE,
+   "Extrahující jádro: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLED,
+   "Jádro nainstalováno: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALL_FAILED,
+   "Nepodařilo se nainstalovat jádro: "
+   )
+MSG_HASH(
+   MSG_SCANNING_CORES,
+   "Skenování jader..."
+   )
+MSG_HASH(
+   MSG_CHECKING_CORE,
+   "Kontrola jádra: "
+   )
+MSG_HASH(
+   MSG_ALL_CORES_UPDATED,
+   "Všechna nainstalovaná jádra nejnovější verze"
+   )
+MSG_HASH(
+   MSG_ALL_CORES_SWITCHED_PFD,
+   "Všechna podporovaná jádra přešla na verze pro Obchod Play"
+   )
+MSG_HASH(
+   MSG_NUM_CORES_UPDATED,
+   "jádra aktualizována: "
+   )
+MSG_HASH(
+   MSG_NUM_CORES_LOCKED,
+   "přeskočena jádra: "
+   )
+MSG_HASH(
+   MSG_CORE_UPDATE_DISABLED,
+   "Aktualizace jádra zakázána - jádro je uzamčeno: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_RESETTING_CORES,
+   "Resetování jader: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_CORES_RESET,
+   "Resetovat jádra: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_CLEANING_PLAYLIST,
+   "Čištění playlistu: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_PLAYLIST_CLEANED,
+   "Playlist očištěn: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_MISSING_CONFIG,
+   "Obnovení se nezdařilo - playlist neobsahuje žádný platný záznam o skenování: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
+   "Obnovení se nezdařilo - neplatná/chybějící složka obsahu: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_SYSTEM_NAME,
+   "Obnovení se nezdařilo - neplatný/chybějící název systému: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CORE,
+   "Obnovení selhalo - neplatné jádro: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_DAT_FILE,
+   "Obnovení selhalo - neplatný/chybějící arcade DAT soubor: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE,
+   "Obnovení selhalo - arcade DAT soubor je příliš velký (nedostatečná paměť): "
+   )
+MSG_HASH(
+   MSG_ADDED_TO_FAVORITES,
+   "Přidáno do oblíbených"
+   )
+MSG_HASH(
+   MSG_ADD_TO_FAVORITES_FAILED,
+   "Přidání oblíbených se nezdařilo: playlist je plný"
+   )
+MSG_HASH(
+   MSG_SET_CORE_ASSOCIATION,
+   "Nastavení jádra: "
+   )
+MSG_HASH(
+   MSG_RESET_CORE_ASSOCIATION,
+   "Sdružení pro vstup jádra do playlistu bylo resetováno."
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Připojený disk"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Připojení disku se nezdařilo"
+   )
+MSG_HASH(
+   MSG_APPLICATION_DIR,
+   "Adresář Aplikací"
+   )
+MSG_HASH(
+   MSG_APPLYING_CHEAT,
+   "Aplikování změn cheatu."
+   )
+MSG_HASH(
+   MSG_APPLYING_PATCH,
+   "Aplikování záplaty: %s"
+   )
+MSG_HASH(
+   MSG_APPLYING_SHADER,
+   "Použití shaderu"
+   )
+MSG_HASH(
+   MSG_AUDIO_MUTED,
+   "Zvuk ztlumen."
+   )
+MSG_HASH(
+   MSG_AUDIO_UNMUTED,
+   "Zvuk odtlumen."
+   )
+MSG_HASH(
+   MSG_AUTOCONFIG_FILE_ERROR_SAVING,
+   "Chyba při ukládání profilu ovladače."
+   )
+MSG_HASH(
+   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
+   "Profil ovladače byl úspěšně uložen."
+   )
+MSG_HASH(
+   MSG_AUTOSAVE_FAILED,
+   "Automatické ukládání nelze inicializovat."
+   )
+MSG_HASH(
+   MSG_AUTO_SAVE_STATE_TO,
+   "Automaticky uložit stav do"
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "Blokování Přepsání SRAM"
+   )
+MSG_HASH(
+   MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
+   "Zavedení příkazového rozhraní na port"
+   )
+MSG_HASH(
+   MSG_BYTES,
+   "bajty"
+   )
+MSG_HASH(
+   MSG_CANNOT_INFER_NEW_CONFIG_PATH,
+   "Nelze odvodit cestu k nové konfiguraci. Použijte aktuální čas."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Úspěchy Hardcore Módu Povoleny, ukládání a přetáčení bylo zakázáno."
+   )
+MSG_HASH(
+   MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
+   "Porovnávám se známými magickými čísly..."
+   )
+MSG_HASH(
+   MSG_COMPILED_AGAINST_API,
+   "Kompilováno proti API"
+   )
+MSG_HASH(
+   MSG_CONFIG_DIRECTORY_NOT_SET,
+   "Konfigurační adresář není nastaven. Nelze uložit novou konfiguraci."
+   )
+MSG_HASH(
+   MSG_CONNECTED_TO,
+   "Připojeno k"
+   )
+MSG_HASH(
+   MSG_CONTENT_CRC32S_DIFFER,
+   "Obsah CRC32 se liší. Nelze použít různé hry."
+   )
+MSG_HASH(
+   MSG_PING_TOO_HIGH,
+   "Váš ping je pro tohoto hostitele příliš vysoký."
+   )
+MSG_HASH(
+   MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
+   "Načítání obsahu přeskočeno. Implementace jej načte sama."
+   )
+MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "Jádro nepodporuje stavy uložení."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
+   "Soubor možností jádra byl úspěšně vytvořen."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FILE_REMOVED_SUCCESSFULLY,
+   "Soubor možností jádra byl úspěšně odstraněn."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_RESET,
+   "Všechny základní možnosti byly obnoveny do výchozího stavu."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSHED,
+   "Možnosti jádra byly uloženy do:"
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSH_FAILED,
+   "Nepodařilo se uložit možnosti jádra do:"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
+   "Nelze najít žádný další ovladač"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_FIND_COMPATIBLE_SYSTEM,
+   "Nelze najít kompatibilní systém."
+   )
+MSG_HASH(
+   MSG_COULD_NOT_FIND_VALID_DATA_TRACK,
+   "Nelze najít platnou datovou stopu"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_OPEN_DATA_TRACK,
+   "nelze otevřít datovou stopu"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_READ_CONTENT_FILE,
+   "Nelze načíst obsah souboru"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_READ_MOVIE_HEADER,
+   "Nelze číst hlavičku filmu."
+   )
+MSG_HASH(
+   MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
+   "Nelze přečíst stav z filmu."
+   )
+MSG_HASH(
+   MSG_CRC32_CHECKSUM_MISMATCH,
+   "Neshoda kontrolního součtu CRC32 mezi souborem s obsahem a uloženým obsahem v záhlaví souboru pro přehrávání. Je vysoce pravděpodobné, že při přehrávání dojde k desynchronizaci."
+   )
+MSG_HASH(
+   MSG_CUSTOM_TIMING_GIVEN,
+   "Vlastní časování zadáno"
+   )
+MSG_HASH(
+   MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
+   "Dekomprese již probíhá."
+   )
+MSG_HASH(
+   MSG_DECOMPRESSION_FAILED,
+   "Dekomprese selhala."
+   )
+MSG_HASH(
+   MSG_DETECTED_VIEWPORT_OF,
+   "Zjištěn port zobrazení"
+   )
+MSG_HASH(
+   MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
+   "Nebyla nalezena platná záplata obsahu."
+   )
+MSG_HASH(
+   MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
+   "Odpojit zařízení od platného portu."
+   )
+MSG_HASH(
+   MSG_DISK_CLOSED,
+   "Zavřený zásobník virtuálních disků."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Vysunutý zásobník virtuálního disku."
+   )
+MSG_HASH(
+   MSG_DOWNLOADING,
+   "Stahování"
+   )
+MSG_HASH(
+   MSG_DOWNLOAD_FAILED,
+   "Stahování se nezdařilo"
+   )
+MSG_HASH(
    MSG_ERROR,
    "Chyba"
+   )
+MSG_HASH(
+   MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT,
+   "Libretro jádro vyžaduje obsah, ale žádný nebyl poskytnut."
+   )
+MSG_HASH(
+   MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT,
+   "Libretro jádro vyžaduje speciální obsah, ale žádný nebyl poskytnut."
+   )
+MSG_HASH(
+   MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS,
+   "Jádro nepodporuje systém VFS a načítání z místní kopie se nezdařilo"
+   )
+MSG_HASH(
+   MSG_ERROR_PARSING_ARGUMENTS,
+   "Chyba při zpracování argumentů."
+   )
+MSG_HASH(
+   MSG_ERROR_SAVING_CORE_OPTIONS_FILE,
+   "Chyba při ukládání možností souboru jádra."
+   )
+MSG_HASH(
+   MSG_ERROR_REMOVING_CORE_OPTIONS_FILE,
+   "Chyba při mazání možností souboru jádra."
+   )
+MSG_HASH(
+   MSG_ERROR_SAVING_REMAP_FILE,
+   "Chyba při ukládání přemapovaných souboru."
+   )
+MSG_HASH(
+   MSG_ERROR_REMOVING_REMAP_FILE,
+   "Chyba při odstraňování přemapovaných souboru."
+   )
+MSG_HASH(
+   MSG_ERROR_SAVING_SHADER_PRESET,
+   "Chyba při ukládání předvolby shaderu."
+   )
+MSG_HASH(
+   MSG_EXTERNAL_APPLICATION_DIR,
+   "Externí Adresář Aplikací"
+   )
+MSG_HASH(
+   MSG_EXTRACTING,
+   "Rozbaluji"
+   )
+MSG_HASH(
+   MSG_EXTRACTING_FILE,
+   "Rozbaluji soubor"
+   )
+MSG_HASH(
+   MSG_FAILED_SAVING_CONFIG_TO,
+   "Nepodařilo se uložit konfiguraci do"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
+   "Nepodařilo se přijmout příchozí diváka."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
+   "Nepodařilo se přidělit paměť pro upravený obsah..."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPLY_SHADER,
+   "Nepodařilo se použít shader."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPLY_SHADER_PRESET,
+   "Nepodařilo se použít předvolbu shaderu:"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_BIND_SOCKET,
+   "Spojení socketu se nezdařilo."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CREATE_THE_DIRECTORY,
+   "Nepodařilo se vytvořit adresář."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
+   "Nepodařilo se rozbalit obsah z komprimovaného souboru"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
+   "Nepodařilo se získat přezdívku od klienta."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD,
+   "Nepodařilo se nahrát"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_CONTENT,
+   "Nepodařilo se nahrát obsah"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_MOVIE_FILE,
+   "Nahrání souboru filmu se nezdařilo"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_OVERLAY,
+   "Nepodařilo se nahrát překrytí."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_STATE,
+   "Nepodařilo se nahrát stav z"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
+   "Nepodařilo se otevřít libretro jádro"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_PATCH,
+   "Nepodařilo se opravit"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT,
+   "Nepodařilo se získat hlavičku od klienta."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_NICKNAME,
+   "Nepodařilo se získat přezdívku."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST,
+   "Nepodařilo se získat přezdívku od hostitele."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_NICKNAME_SIZE_FROM_HOST,
+   "Nepodařilo se získat velikost přezdívky od hostitele."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
+   "Nepodařilo se získat data SRAM od hostitele."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Nepodařilo se odstranit disk z lišky."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
+   "Nepodařilo se odstranit dočasný soubor"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SAVE_SRAM,
+   "Nepodařilo se uložit SRAM"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_SRAM,
+   "Nepodařilo se nahrát SRAM"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SAVE_STATE_TO,
+   "Nepodařilo se uložit stav do"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_NICKNAME,
+   "Nepodařilo se odeslat přezdívku."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_NICKNAME_SIZE,
+   "Nepodařilo se odeslat velikost přezdívky."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT,
+   "Nepodařilo se odeslat přezdívku klientovi."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
+   "Nepodařilo se odeslat přezdívku hostovi."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT,
+   "Nepodařilo se odeslat SRAM data klientovi."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_START_AUDIO_DRIVER,
+   "Nepodařilo se spustit audio ovladač. Bude pokračovat bez zvuku."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_START_MOVIE_RECORD,
+   "Nepodařilo se spustit nahrávku filmu."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_START_RECORDING,
+   "Nepodařilo se spustit nahrávání."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_TAKE_SCREENSHOT,
+   "Nepodařilo se pořídit snímek obrazovky."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_UNDO_LOAD_STATE,
+   "Nepodařilo se vrátit nahrání stavu."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_UNDO_SAVE_STATE,
+   "Nepodařilo se vrátit uložení stavu."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_UNMUTE_AUDIO,
+   "Nepodařilo se zrušit ztlumení zvuku."
+   )
+MSG_HASH(
+   MSG_FATAL_ERROR_RECEIVED_IN,
+   "Přijatá fatální chyba v"
+   )
+MSG_HASH(
+   MSG_FILE_NOT_FOUND,
+   "Soubor nebyl nalezen"
+   )
+MSG_HASH(
+   MSG_FOUND_AUTO_SAVESTATE_IN,
+   "Nalezený stav automatického uložení v"
+   )
+MSG_HASH(
+   MSG_FOUND_DISK_LABEL,
+   "Nalezený popisek disku"
+   )
+MSG_HASH(
+   MSG_FOUND_FIRST_DATA_TRACK_ON_FILE,
+   "Nalezena první datová stopa v souboru"
+   )
+MSG_HASH(
+   MSG_FOUND_LAST_STATE_SLOT,
+   "Nalezen poslední slot stavu"
+   )
+MSG_HASH(
+   MSG_FOUND_SHADER,
+   "Nalezen Shader"
+   )
+MSG_HASH(
+   MSG_FRAMES,
+   "Snímky"
+   )
+MSG_HASH(
+   MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
+   "Možnosti jádra specifické pro hru naleznete na"
+   )
+MSG_HASH(
+   MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
+   "Možnosti jádra specifické pro složku naleznete na"
+   )
+MSG_HASH(
+   MSG_GOT_INVALID_DISK_INDEX,
+   "Máte neplatný index disku."
+   )
+MSG_HASH(
+   MSG_GRAB_MOUSE_STATE,
+   "Získat stav myši"
+   )
+MSG_HASH(
+   MSG_GAME_FOCUS_ON,
+   "Zaměření hry na"
+   )
+MSG_HASH(
+   MSG_GAME_FOCUS_OFF,
+   "Zaměření hry vypnuto"
+   )
+MSG_HASH(
+   MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
+   "Jádro Libretro je vykreslováno hardwarově. Musí také používat post-shaded nahrávání."
+   )
+MSG_HASH(
+   MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
+   "Inflovaný kontrolní součet neodpovídá CRC32."
+   )
+MSG_HASH(
+   MSG_INPUT_CHEAT,
+   "Vstupní cheat"
+   )
+MSG_HASH(
+   MSG_INPUT_CHEAT_FILENAME,
+   "Název Vstupního Cheatu"
+   )
+MSG_HASH(
+   MSG_INPUT_PRESET_FILENAME,
+   "Název vstupní předvolby"
+   )
+MSG_HASH(
+   MSG_INPUT_RENAME_ENTRY,
+   "Přejmenovat Titulek"
+   )
+MSG_HASH(
+   MSG_INTERFACE,
+   "Rozhraní"
+   )
+MSG_HASH(
+   MSG_INTERNAL_STORAGE,
+   "Vnitřní Úložiště"
+   )
+MSG_HASH(
+   MSG_REMOVABLE_STORAGE,
+   "Odstranitelné Úložiště"
+   )
+MSG_HASH(
+   MSG_INVALID_NICKNAME_SIZE,
+   "Nesprávná velikost přezdívky."
+   )
+MSG_HASH(
+   MSG_IN_BYTES,
+   "v bajtech"
+   )
+MSG_HASH(
+   MSG_IN_MEGABYTES,
+   "v megabajtech"
+   )
+MSG_HASH(
+   MSG_IN_GIGABYTES,
+   "v gigabajtech"
+   )
+MSG_HASH(
+   MSG_LIBRETRO_ABI_BREAK,
+   "je zkompilován proti jiné verzi libretro, než je tato implementace libretro."
+   )
+MSG_HASH(
+   MSG_LIBRETRO_FRONTEND,
+   "Frontend pro libretro"
+   )
+MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT,
+   "Nahraný stav ze slotu #%d."
+   )
+MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT_AUTO,
+   "Nahraný stav ze slotu #-1 (auto)."
+   )
+MSG_HASH(
+   MSG_LOADING,
+   "Nahrávání"
+   )
+MSG_HASH(
+   MSG_FIRMWARE,
+   "Chybí jeden nebo více souborů firmwaru"
+   )
+MSG_HASH(
+   MSG_LOADING_CONTENT_FILE,
+   "Načítání obsahu souboru"
+   )
+MSG_HASH(
+   MSG_LOADING_HISTORY_FILE,
+   "Načítání souboru historie"
+   )
+MSG_HASH(
+   MSG_LOADING_FAVORITES_FILE,
+   "Nahrávání souboru oblíbených"
+   )
+MSG_HASH(
+   MSG_LOADING_STATE,
+   "Nahrávání stavu"
+   )
+MSG_HASH(
+   MSG_MEMORY,
+   "Paměť"
+   )
+MSG_HASH(
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
+   "Vstupní soubor videa pro přehrávání videa není platným BSV1 souborem."
+   )
+MSG_HASH(
+   MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
+   "Zdá se, že formát filmu vstupního záznamu má jinou serializérovou verzi. Pravděpodobně selže."
+   )
+MSG_HASH(
+   MSG_MOVIE_PLAYBACK_ENDED,
+   "Vstupní přehrání filmu skončilo přehrání."
+   )
+MSG_HASH(
+   MSG_MOVIE_RECORD_STOPPED,
+   "Zastavuji filmový záznam."
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED,
+   "Nepodařilo se inicializovat netplay."
+   )
+MSG_HASH(
+   MSG_NO_CONTENT_STARTING_DUMMY_CORE,
+   "Žádný obsah, počáteční atrapy jádra."
+   )
+MSG_HASH(
+   MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
+   "Zatím nebyl přepsán žádný stav uložení."
+   )
+MSG_HASH(
+   MSG_NO_STATE_HAS_BEEN_LOADED_YET,
+   "Zatím nebyl nahrán žádný stav."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_ERROR_SAVING,
+   "Chyba při ukládání přepsání."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_SAVED_SUCCESSFULLY,
+   "Přepsání byla úspěšně uložena."
    )
 MSG_HASH(
    MSG_PAUSED,
    "Pozastaveno."
    )
 MSG_HASH(
+   MSG_READING_FIRST_DATA_TRACK,
+   "Čtení první datové stopy..."
+   )
+MSG_HASH(
+   MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
+   "Nahrávání ukončeno kvůli změně velikosti."
+   )
+MSG_HASH(
+   MSG_RECORDING_TO,
+   "Nahrávání do"
+   )
+MSG_HASH(
+   MSG_REDIRECTING_CHEATFILE_TO,
+   "Přesměrování souboru cheat na"
+   )
+MSG_HASH(
+   MSG_REDIRECTING_SAVEFILE_TO,
+   "Přesměrování uložených souborů do"
+   )
+MSG_HASH(
+   MSG_REDIRECTING_SAVESTATE_TO,
+   "Přesměrování stavu uložení do"
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
+   "Soubor s přemapováním byl úspěšně uložen."
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
+   "Soubor s přemapováním byl úspěšně odstraněn."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Vyjmutí disku z přihrádky."
+   )
+MSG_HASH(
+   MSG_REMOVING_TEMPORARY_CONTENT_FILE,
+   "Odstraňování dočasného obsahu souboru"
+   )
+MSG_HASH(
    MSG_RESET,
    "Resetovat"
+   )
+MSG_HASH(
+   MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
+   "Restartování nahrávání z důvodu reinstalace ovladače."
+   )
+MSG_HASH(
+   MSG_RESTORED_OLD_SAVE_STATE,
+   "Obnovení staršího stavu uložení."
+   )
+MSG_HASH(
+   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
+   "Shadery: obnovení výchozí předvolby shaderu na"
+   )
+MSG_HASH(
+   MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
+   "Vrácení adresáře uloženého souboru na"
+   )
+MSG_HASH(
+   MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
+   "Vrácení adresáře stavu uložení do"
+   )
+MSG_HASH(
+   MSG_REWINDING,
+   "Přetáčení."
+   )
+MSG_HASH(
+   MSG_REWIND_UNSUPPORTED,
+   "Přetáčení není k dispozici, protože toto jádro nemá podporu serializovaného stavu ukládání."
+   )
+MSG_HASH(
+   MSG_REWIND_INIT,
+   "Inicializace vyrovnávací paměti pro převíjení s velikostí"
+   )
+MSG_HASH(
+   MSG_REWIND_INIT_FAILED,
+   "Nepodařilo se inicializovat vyrovnávací paměť pro převíjení. Převíjení bude zakázáno."
+   )
+MSG_HASH(
+   MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
+   "Implementace používá threaded zvuk. Nelze použít přetáčení."
+   )
+MSG_HASH(
+   MSG_REWIND_REACHED_END,
+   "Dosažen konec vyrovnávací paměti pro převíjení."
+   )
+MSG_HASH(
+   MSG_SAVED_NEW_CONFIG_TO,
+   "Nová konfigurace byla uložena do"
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT,
+   "Uložen stav do slotu #%d."
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT_AUTO,
+   "Stav uložen do slotu #-1 (auto)."
+   )
+MSG_HASH(
+   MSG_SAVED_SUCCESSFULLY_TO,
+   "Úspěšně uloženo do"
+   )
+MSG_HASH(
+   MSG_SAVING_RAM_TYPE,
+   "Ukládání typu RAM"
+   )
+MSG_HASH(
+   MSG_SAVING_STATE,
+   "Ukládání stavu"
+   )
+MSG_HASH(
+   MSG_SCANNING,
+   "Vyhledávání"
+   )
+MSG_HASH(
+   MSG_SCANNING_OF_DIRECTORY_FINISHED,
+   "Vyhledávání adresáře dokončeno"
+   )
+MSG_HASH(
+   MSG_SENDING_COMMAND,
+   "Odesílání příkazu"
+   )
+MSG_HASH(
+   MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED,
+   "Několik záplat je výslovně definováno, ignoruje všechny..."
+   )
+MSG_HASH(
+   MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
+   "Předvolba shaderu byla úspěšně uložena."
+   )
+MSG_HASH(
+   MSG_SKIPPING_SRAM_LOAD,
+   "Přeskakuji načtení SRAM."
+   )
+MSG_HASH(
+   MSG_SLOW_MOTION,
+   "Pomalý pohyb."
+   )
+MSG_HASH(
+   MSG_FAST_FORWARD,
+   "Rychle vpřed."
+   )
+MSG_HASH(
+   MSG_SLOW_MOTION_REWIND,
+   "Zpomalené přetáčení."
+   )
+MSG_HASH(
+   MSG_SRAM_WILL_NOT_BE_SAVED,
+   "SRAM nebude uložen."
+   )
+MSG_HASH(
+   MSG_STARTING_MOVIE_PLAYBACK,
+   "Spouštění přehrávání videa."
+   )
+MSG_HASH(
+   MSG_STARTING_MOVIE_RECORD_TO,
+   "Spouštění záznamu videa do"
+   )
+MSG_HASH(
+   MSG_STATE_SIZE,
+   "Velikost stavu"
+   )
+MSG_HASH(
+   MSG_STATE_SLOT,
+   "Slot stavu"
+   )
+MSG_HASH(
+   MSG_TAKING_SCREENSHOT,
+   "Pořízení snímku obrazovky."
+   )
+MSG_HASH(
+   MSG_SCREENSHOT_SAVED,
+   "Snímek obrazovky uložen"
+   )
+MSG_HASH(
+   MSG_ACHIEVEMENT_UNLOCKED,
+   "Úspěch odemknut"
+   )
+MSG_HASH(
+   MSG_CHANGE_THUMBNAIL_TYPE,
+   "Změna typu miniatury"
+   )
+MSG_HASH(
+   MSG_TOGGLE_FULLSCREEN_THUMBNAILS,
+   "Miniatury na celou obrazovku"
+   )
+MSG_HASH(
+   MSG_TOGGLE_CONTENT_METADATA,
+   "Přepnout metadata"
    )
 MSG_HASH(
    MSG_NO_THUMBNAIL_AVAILABLE,
    "Není k dispozici žádný náhled"
    )
 MSG_HASH(
+   MSG_PRESS_AGAIN_TO_QUIT,
+   "Stiskněte znovu pro ukončení..."
+   )
+MSG_HASH(
    MSG_TO,
    "do"
+   )
+MSG_HASH(
+   MSG_UNDID_LOAD_STATE,
+   "Nahráti stavu bylo neúspěšné."
+   )
+MSG_HASH(
+   MSG_UNDOING_SAVE_STATE,
+   "Vrácení uloženého stavu"
    )
 MSG_HASH(
    MSG_UNKNOWN,
    "Neznámý"
    )
 MSG_HASH(
+   MSG_UNPAUSED,
+   "Nepozastaveno."
+   )
+MSG_HASH(
+   MSG_UNRECOGNIZED_COMMAND,
+   "Nerozpoznaný příkaz \"%s\" přijat.\n"
+   )
+MSG_HASH(
+   MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
+   "Použití názvu jádra pro novou konfiguraci."
+   )
+MSG_HASH(
+   MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
+   "Používání fiktivního jádra libretro. Přeskočení nahrávání."
+   )
+MSG_HASH(
+   MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
+   "Připojte zařízení z platného portu."
+   )
+MSG_HASH(
+   MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT,
+   "Odpojování zařízení od portu"
+   )
+MSG_HASH(
+   MSG_VALUE_REBOOTING,
+   "Restartování..."
+   )
+MSG_HASH(
+   MSG_VALUE_SHUTTING_DOWN,
+   "Vypínání..."
+   )
+MSG_HASH(
+   MSG_VERSION_OF_LIBRETRO_API,
+   "Verze libretro API"
+   )
+MSG_HASH(
+   MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
+   "Výpočet velikosti zobrazení se nezdařil! Bude nadále používat nezpracovaná data. To pravděpodobně nebude fungovat správně..."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Nepodařilo se vysunout zásobník virtuálního disku."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Nepodařilo se zavřít zásobník virtuálních disků."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FAILED,
+   "Automatické nahrávání uloženého stavu z \"%s\"se nezdařilo."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
+   "Automatické nahrávání uloženého stavu z \"%s\"se podařilo."
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED,
+   "nenakonfigurováno"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
+   "není nakonfigurováno, použít nouzové řešení"
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_SCAN_COMPLETE,
+   "Skenování Bluetooth dokončeno."
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_PAIRING_REMOVED,
+   "Párování odstraněno. Restartujte RetroArch pro opětovné připojení/párování."
+   )
+MSG_HASH(
+   MSG_WIFI_SCAN_COMPLETE,
+   "Skenování Wi-Fi je dokončeno."
+   )
+MSG_HASH(
+   MSG_SCANNING_BLUETOOTH_DEVICES,
+   "Skenování bluetooth zařízení..."
+   )
+MSG_HASH(
+   MSG_SCANNING_WIRELESS_NETWORKS,
+   "Skenování bezdrátových sítí..."
+   )
+MSG_HASH(
+   MSG_ENABLING_WIRELESS,
+   "Povolení Wi-Fi..."
+   )
+MSG_HASH(
+   MSG_DISABLING_WIRELESS,
+   "Vypínání Wi-Fi..."
+   )
+MSG_HASH(
+   MSG_DISCONNECTING_WIRELESS,
+   "Odpojování Wi-Fi..."
+   )
+MSG_HASH(
+   MSG_NETPLAY_LAN_SCANNING,
+   "Vyhledávání hostitelů netplay..."
+   )
+MSG_HASH(
+   MSG_PREPARING_FOR_CONTENT_SCAN,
+   "Příprava na skenování obsahu..."
+   )
+MSG_HASH(
+   MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
+   "Zadejte Heslo"
+   )
+MSG_HASH(
+   MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
+   "Heslo je správné."
+   )
+MSG_HASH(
+   MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
+   "Nesprávné heslo."
+   )
+MSG_HASH(
+   MSG_INPUT_KIOSK_MODE_PASSWORD,
+   "Zadejte Heslo"
+   )
+MSG_HASH(
+   MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
+   "Heslo je správné."
+   )
+MSG_HASH(
+   MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
+   "Nesprávné heslo."
+   )
+MSG_HASH(
+   MSG_CONFIG_OVERRIDE_LOADED,
+   "Načtení přepsáné konfigurace."
+   )
+MSG_HASH(
+   MSG_GAME_REMAP_FILE_LOADED,
+   "Načten soubor s přemapováním hry."
+   )
+MSG_HASH(
+   MSG_DIRECTORY_REMAP_FILE_LOADED,
+   "Načten soubor s přemapováním adresáře obsahu."
+   )
+MSG_HASH(
+   MSG_CORE_REMAP_FILE_LOADED,
+   "Načten soubor s přemapováním jádra."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_ENABLED,
+   "Run-Ahead povolen. Odstraněny snímky zpoždění: %u."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
+   "Povolen Run-Ahead se sekundární instancí. Odstraněny snímky zpoždění: %u."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_DISABLED,
+   "Run-Ahead zakázán."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "Funkce Run-Ahead byla zakázána, protože toto jádro nepodporuje ukládat stavy."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD,
+   "Run-Ahead není k dispozici, protože toto jádro nemá podporu deterministicky ukládat stavy."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
+   "Nepodařilo se uložit stav. Run-Ahead byl zakázán."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
+   "Stav se nepodařilo nahrát. Run-Ahead byl zakázán."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
+   "Nepodařilo se vytvořit druhou instanci. Run-Ahead nyní použije pouze jednu instanci."
+   )
+MSG_HASH(
+   MSG_SCANNING_OF_FILE_FINISHED,
+   "Skenování souboru dokončeno"
+   )
+MSG_HASH(
+   MSG_CHEAT_INIT_SUCCESS,
+   "Vyhledávání cheatu úspěšně spuštěno"
+   )
+MSG_HASH(
+   MSG_CHEAT_INIT_FAIL,
+   "Nepodařilo se spustit vyhledávání cheatu"
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
+   "Hledání nebylo inicializováno/spuštěno"
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_FOUND_MATCHES,
+   "Počet nových shod = %u"
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
+   "Přidáno %u shod"
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
+   "Přidání shody se nezdařilo"
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
+   "Vytvořený kód od shody"
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
+   "Nepodařilo se vytvořit kód"
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
+   "Smazaná shoda"
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
+   "Nedostatek místnosti. Maximální počet současných cheatů je 100."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_TOP_SUCCESS,
+   "Nový cheat přidán do horní části seznamu."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_BOTTOM_SUCCESS,
+   "Nový cheat přidán na konec seznamu."
+   )
+MSG_HASH(
+   MSG_CHEAT_DELETE_ALL_SUCCESS,
+   "Všechny cheaty smazány."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_BEFORE_SUCCESS,
+   "Nový cheat přidán před tento."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_AFTER_SUCCESS,
+   "Nový cheat přidán po tomto."
+   )
+MSG_HASH(
+   MSG_CHEAT_COPY_BEFORE_SUCCESS,
+   "Cheat zkopírován před tímto."
+   )
+MSG_HASH(
+   MSG_CHEAT_COPY_AFTER_SUCCESS,
+   "Cheat zkopírován po tomto."
+   )
+MSG_HASH(
+   MSG_CHEAT_DELETE_SUCCESS,
+   "Cheat odstraněn."
+   )
+MSG_HASH(
+   MSG_DEVICE_CONFIGURED_IN_PORT,
+   "Konfigurováno v portu:"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SET_DISK,
+   "Nepodařilo se nastavit disk"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SET_INITIAL_DISK,
+   "Nepodařilo se nastavit naposledy použitý disk..."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   "Nepodařilo se připojit k klientovi"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "Nepodařilo se připojit k hostiteli"
+   )
+MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "Hostitel netplay je plný"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "Nepodařilo se získat hlavičku od hostitele"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
+   "Pro nahrání stavů je nutné pozastavit nebo vypnout Úspěchy Hardcore režimu."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
+   "Byl nahrán stav uložení. Pro aktuální relaci jsou vypnuty Úspěchy Hardcore režimu."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
+   "Cheat byl aktivován. Úspěchy Hardcore režimu jsou pro aktuální relaci vypnuty."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_MASTERED_GAME,
+   "Zvládnuto %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_COMPLETED_GAME,
+   "Dokončeno %s"
+   )
+MSG_HASH(
+   MSG_RESAMPLER_QUALITY_LOWEST,
+   "Nejnižší"
+   )
+MSG_HASH(
+   MSG_RESAMPLER_QUALITY_LOWER,
+   "Nižší"
+   )
+MSG_HASH(
    MSG_RESAMPLER_QUALITY_NORMAL,
    "Normální"
+   )
+MSG_HASH(
+   MSG_RESAMPLER_QUALITY_HIGHER,
+   "Vyšší"
+   )
+MSG_HASH(
+   MSG_RESAMPLER_QUALITY_HIGHEST,
+   "Nejvyšší"
+   )
+MSG_HASH(
+   MSG_MISSING_ASSETS,
+   "Varování: Chybějící aktiva, použijte online aktualizátor, pokud je k dispozici"
+   )
+MSG_HASH(
+   MSG_RGUI_MISSING_FONTS,
+   "Varování: Chybějící písma pro vybraný jazyk, použijte online aktualizátor, pokud je k dispozici"
+   )
+MSG_HASH(
+   MSG_RGUI_INVALID_LANGUAGE,
+   "Varování: Nepodporovaný jazyk - používá se angličtina"
+   )
+MSG_HASH(
+   MSG_DUMPING_DISC,
+   "Vyhazování disku..."
+   )
+MSG_HASH(
+   MSG_DRIVE_NUMBER,
+   "Jednotka %d"
+   )
+MSG_HASH(
+   MSG_LOAD_CORE_FIRST,
+   "Nejprve prosím nahrajte jádro."
+   )
+MSG_HASH(
+   MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE,
+   "Nepodařilo se načíst z jednotky. Výpis přerušen."
+   )
+MSG_HASH(
+   MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
+   "Nepodařilo se zapsat na disk. Výpis přerušen."
+   )
+MSG_HASH(
+   MSG_NO_DISC_INSERTED,
+   "V mechanice není vložen žádný disk."
+   )
+MSG_HASH(
+   MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY,
+   "Předvolba shaderu byla úspěšně odstraněna."
+   )
+MSG_HASH(
+   MSG_ERROR_REMOVING_SHADER_PRESET,
+   "Chyba při odstraňování předvolby shaderu."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
+   "Vybrán nesprávný soubor arcade DAT"
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
+   "Vybraný soubor arcade DAT je příliš velký (nedostatek volné paměti)"
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
+   "Nepodařilo se načíst soubor arcade DAT (neplatný formát?)"
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
+   "Neplatná konfigurace ručního skenování"
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
+   "Nebyl zjištěn žádný platný obsah"
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_START,
+   "Obsah skenování: "
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP,
+   "Kontrola aktuálních položek: "
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
+   "Skenování: "
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_M3U_CLEANUP,
+   "Čištění položek M3U: "
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_END,
+   "Skenování dokončeno: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_SCANNING_CORE,
+   "Skenování jádra: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_ALREADY_EXISTS,
+   "Záloha nainstalovaného jádra již existuje: "
+   )
+MSG_HASH(
+   MSG_BACKING_UP_CORE,
+   "Zálohování jádra: "
+   )
+MSG_HASH(
+   MSG_PRUNING_CORE_BACKUP_HISTORY,
+   "Odstranění zastaralých záloh: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_COMPLETE,
+   "Záloha jádra dokončena: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_ALREADY_INSTALLED,
+   "Vybraná záloha jádra je již nainstalována: "
+   )
+MSG_HASH(
+   MSG_RESTORING_CORE,
+   "Obnovení jádra: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_COMPLETE,
+   "Obnova jádra dokončena: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_ALREADY_INSTALLED,
+   "Vybraný základní soubor je již nainstalován: "
+   )
+MSG_HASH(
+   MSG_INSTALLING_CORE,
+   "Instalace jádra: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_COMPLETE,
+   "Instalace jádra dokončena: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_INVALID_CONTENT,
+   "Vybrán neplatný soubor jádra: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_FAILED,
+   "Záloha jádra selhala: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_FAILED,
+   "Obnovení jádra selhalo: "
    )
 MSG_HASH(
    MSG_CORE_INSTALLATION_FAILED,
    "Instalace Jádra selhala: "
    )
+MSG_HASH(
+   MSG_CORE_RESTORATION_DISABLED,
+   "Obnova jádra zakázána - jádro je uzamčeno: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_DISABLED,
+   "Instalace jádra zakázána - jádro je uzamčeno: "
+   )
+MSG_HASH(
+   MSG_CORE_LOCK_FAILED,
+   "Nepodařilo se uzamknout jádro: "
+   )
+MSG_HASH(
+   MSG_CORE_UNLOCK_FAILED,
+   "Nepodařilo se odemknout jádro: "
+   )
+MSG_HASH(
+   MSG_CORE_DELETE_DISABLED,
+   "Odstranění jádra zakázáno - jádro je uzamčeno: "
+   )
+MSG_HASH(
+   MSG_UNSUPPORTED_VIDEO_MODE,
+   "Nepodporovaný režim videa"
+   )
+MSG_HASH(
+   MSG_CORE_INFO_CACHE_UNSUPPORTED,
+   "Nelze zapisovat do složky s informacemi o jádru - informační mezipaměť jádra bude vypnuta"
+   )
+MSG_HASH(
+   MSG_FOUND_ENTRY_STATE_IN,
+   "Nalezen stav vstupu v"
+   )
+MSG_HASH(
+   MSG_LOADING_ENTRY_STATE_FROM,
+   "Nahravání stavu vstupu z"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE,
+   "Nepodařilo se vstoupit do Herního Módu"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
+   "Nepodařilo se vstoupit do Herního Módu - ujistěte se, že je GameMode daemon nainstalován/spuštěn"
+   )
 
 /* Lakka */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA,
+   "Aktualizovat Lakku"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
+   "Název frontendu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
+   "Verze Lakky"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REBOOT,
+   "Restartovat"
+   )
 
 /* Environment Specific Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
+   "Rozdělit Joy-Con"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
+   "Přepis měřítka grafických widgetů"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
+   "Použití ručního přepisu faktoru měřítka při kreslení widgetů zobrazení. Platí pouze v případě, že je vypnuta volba 'Automatické Škálování Grafických Widgetů'. Lze použít ke zvětšení nebo zmenšení velikosti vyzdobených oznámení, indikátorů a ovládacích prvků nezávisle na samotné nabídce."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
+   "Rozlišení Obrazovky"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DEFAULT,
+   "Rozlišení Obrazovky: Výchozí"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_NO_DESC,
+   "Rozlišení Obrazovky: %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DESC,
+   "Rozlišení Obrazovky: %dx%d - %s"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
+   "Použití: Výchozí"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
+   "Použití: %dx%d\nSPUSTIT pro resetování"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DESC,
+   "Použití: %dx%d - %s\nSPUSTIT pro resetování"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
+   "Resetování do: Výchozí"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC,
+   "Resetování do: %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DESC,
+   "Resetování do: %dx%d - %s"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
+   "Vyberte režim zobrazení."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHUTDOWN,
+   "Vypnout"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+   "Povolit externí přístup k souborům"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+   "Otevřít nastavení oprávnění pro přístup k souborům Windows"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER,
+   "Otevřít..."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_PICKER,
+   "Otevření jiného adresáře pomocí systémového nástroje pro výběr souborů"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
+   "Filtr blikání"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
+   "Gamma videa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
+   "Jemný Filtr"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
+   "Vyhledejte zařízení Bluetooth a připojte je."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
+   "Vyhledat bezdrátové sítě a navázat připojení."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
+   "Povolit Wi-Fi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
+   "Připojit k síti"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
+   "Připojit k síti"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
+   "Odpojit"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
+   "Nastavení Šířky Obrazovky VI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
+   "Korekce Overscanu (Horní)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
+   "Nastavení oříznutí nadměrného zobrazení zmenšením velikosti obrazu o zadaný počet řádků snímání (počítáno od horního okraje obrazovky). Může způsobit artefakty při škálování."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+   "Korekce Overscanu (Dolní)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+   "Nastavení oříznutí nadměrného zobrazení zmenšením velikosti obrazu o zadaný počet řádků snímání (od spodního okraje obrazovky). Může způsobit artefakty škálování."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
+   "Režim Trvalého Výkonu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERFPOWER,
+   "Výkon a Spotřeba CPU"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_POLICY_ENTRY,
    "Zásady"
@@ -9869,8 +11785,48 @@ MSG_HASH(
    "Příručka"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANUAL,
+   "Umožňuje ručně upravit každý detail každého procesoru: governor, frekvence atd. Doporučeno pouze pro pokročilé uživatele."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
+   "Výkon (Řízený)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
+   "Výchozí a doporučený režim. Maximální výkon při přehrávání, při úsporách energie, při pozastavení, nebo při prohlížení menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
+   "Vlastní Správa"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
+   "Umožňuje zvolit, které ovladače se mají používat v nabídkách a během hry. Během hraní se doporučuje používat výkon, Ondemand nebo Schedutil."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
+   "Maximální Výkon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
+   "Vždy maximální výkon: nejvyšší frekvence pro nejlepší zážitek."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
    "Minimální Výkon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
+   "Pro úsporu energie použijte nejnižší dostupnou frekvenci. U zařízení napájených z baterie je to užitečné, ale výkon se výrazně sníží."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   "Vyvážená"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   "Přizpůsobuje se aktuálnímu pracovnímu zatížení. Funguje dobře s většinou zařízení a emulátorů a pomáhá šetřit energii. U náročných her a jader může na některých zařízeních dojít k poklesu výkonu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,
@@ -9905,6 +11861,10 @@ MSG_HASH(
    "Herní Režim"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
+   "Můžeš zlepšit výkon, snížit latenci a opravit zvukové chyby. Potřebujete https://github.com/FeralInteractive/gamemode, aby to fungovalo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "Použít Režim PAL60"
    )
@@ -9913,12 +11873,56 @@ MSG_HASH(
    "Restartovat RetroArch"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RESTART_KEY,
+   "Ukončete a znovu spusťte RetroArch. Nutné pro aktivaci některých nastavení menu (například při změně ovladače menu)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
+   "Blokové Snímky"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
+   "Preferovat Přední Dotyk"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    "Dotyk"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
+   "Mapování Klávesnice"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   "Typ Mapování Klávesnice"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
    "Malá Klávesnice"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BLOCK_TIMEOUT,
+   "Časový Limit Vstupního Bloku"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
+   "Počet milisekund, které je třeba počkat na získání kompletního vstupního vzorku. Použijte jej, pokud máte problémy se současným stiskem tlačítek (pouze Android)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
+   "Zobrazit 'Restartovat'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
+   "Zobrazit možnost 'Restartovat'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
+   "Zobrazit 'Vypnout'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
+   "Zobrazit možnost 'Vypnout'."
    )
 MSG_HASH(
    MSG_ROOM_PASSWORDED,

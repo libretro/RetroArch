@@ -3489,6 +3489,10 @@ MSG_HASH(
    "القائمة الرئيسيه"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
+   "الكل"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
    "إظهار التاريخ والوقت"
    )

@@ -1390,7 +1390,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   "Especifica el mètode d'interpolació d'imatge que s'usarà quan l'ajust 'Escalar usant nombres entregues' estiga desactivat. 'Veí més proper' afecta menys al rendiment."
+   "Especifica el mètode d'interpolació d'imatge que s'usarà quan l'ajust 'Escalar usant nombres sencers' estiga desactivat. 'Veí més proper' afecta menys al rendiment."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
@@ -1622,13 +1622,117 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   "Escalat en finestra"
+   "Escalat en la finestra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+   "Ajusta la mida de la finestra al múltiple especificat de la mida de l''àrea de visualització del núcli."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
+   "Opacitat de la finestra"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
+   "Vore adornaments de les finestres"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+   "Recordar posició i mida de la finestra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+   "Mostra tots els continguts a una finestra de mida fixa, amb unes dimensions establides pels valors d'«Ample de la finestra» i «Alçada de la finestra», guardant la mida i posició de la finestra actual al tancar RetroArch. Si es desactiva esta opció, la mida de la finestra canviarà de manera dinàmica segons l'ajust «Escala en la finestra»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Usar una mida de finestra personalitzada"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Mostra tots els continguts a una finestra de mida fixa, amb unes dimensions establides pels valors d'«Ample de la finestra» i «Alçada de la finestra». Si es desactiva esta opció, la mida de la finestra canviarà de manera dinàmica segons l'ajust «Escala en la finestra»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   "Ample de la finestra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   "Ajusta una amplada personalitzada per a la finestra."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   "Alçada de la finestra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+   "Ajusta l'alçària personalitzada per a la finestra."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Ample màxim de la finestra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Ajusta l'amplària màxima de la finestra al reescalar-la automàticament d'acord al valor d'«Escalat en la finestra»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Alçada màxima en la finestra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Ajusta l'alçada màxima de la finestra al reescalar-la automàticament d'acord al valor d'«Alçada en la finestra»."
    )
 
 /* Settings > Video > Scaling */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
+   "Escalar usant nombres sencers"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+   "Limita l'escalat de vídeo a múltiples sencers. La mida base dependrà de la geometria indicada pel sistema i la relació d'aspect. Si l'opció «Forçar relació d'aspecte» està desactivada, els valors X i Y s'escalaran individualment."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Sobreescalar la imatge a l'usar nombres sencers"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Força l'escalat per nombres sencers a arrodonir sempre a un valor superior en comptes de a un d'inferior."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
+   "Relació d'aspecte"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
+   "Relació d'aspecte personalitzat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
+   "Valor en coma punt flotant (ample/alçada) de la relació d'aspecte del vídeo si el seu valor es «Personalitzat»."
+   )
 #if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "Mantindre relació d'aspecte"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "Manté les relacions d'aspecte de píxels 1:1 a l'escalar continguts mitjançant la IPU interna. Si es desactiva esta opció, les imatges seran estirades per a que ocupen la totalitat de la pantalla."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
+   "Relació d'aspecte personalitzat (posició X)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
+   "Indica el diferencial de posició respecte a l'eix X de l'área de visualització.\nEste valor s'ignorarà si l'opció «Escalar usant nombres sencers» hi és activa."
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    "Retalla uns quants píxels a les vores de la imatge que de vegades els desenvolupadors solen deixar en blanc, o que també la imatge puga tenir-ne píxels de residu. (cal reiniciar)"
@@ -2028,6 +2132,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
    "Cap"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
+   "Escalar usant nombres sencers"
    )
 
 /* XMB: Settings > User Interface > Appearance */

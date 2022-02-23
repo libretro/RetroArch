@@ -4489,6 +4489,10 @@ MSG_HASH(
    "显示探索游戏选项。(在 Ozone/XMB 中需要重启)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
+   "全部"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
    "显示时间日期"
    )

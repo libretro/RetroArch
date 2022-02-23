@@ -4269,6 +4269,10 @@ MSG_HASH(
    "'エクスプローラー'メニューを表示します. (Ozone/XMBで再起動が必要)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
+   "すべて"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
    "日付/時刻を表示"
    )
