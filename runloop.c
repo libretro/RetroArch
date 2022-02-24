@@ -6902,26 +6902,24 @@ static enum runloop_state_enum runloop_check_state(
    {
       static unsigned volume_hotkey_delay        = 0;
       static unsigned volume_hotkey_delay_active = 0;
-      unsigned volume_hotkey_delay_default       = 15;
-      if (BIT256_GET(current_bits, RARCH_VOLUME_UP))
+      unsigned volume_hotkey_delay_default       = 6;
+      bool volume_hotkey_up                      = BIT256_GET(
+            current_bits, RARCH_VOLUME_UP);
+      bool volume_hotkey_down                    = BIT256_GET(
+            current_bits, RARCH_VOLUME_DOWN);
+
+      if (  (volume_hotkey_up   && !volume_hotkey_down) ||
+            (volume_hotkey_down && !volume_hotkey_up))
       {
          if (volume_hotkey_delay > 0)
             volume_hotkey_delay--;
          else
          {
-            command_event(CMD_EVENT_VOLUME_UP, NULL);
-            if (volume_hotkey_delay_active > 0)
-               volume_hotkey_delay_active--;
-            volume_hotkey_delay = volume_hotkey_delay_active;
-         }
-      }
-      else if (BIT256_GET(current_bits, RARCH_VOLUME_DOWN))
-      {
-         if (volume_hotkey_delay > 0)
-            volume_hotkey_delay--;
-         else
-         {
-            command_event(CMD_EVENT_VOLUME_DOWN, NULL);
+            if (volume_hotkey_up)
+               command_event(CMD_EVENT_VOLUME_UP, NULL);
+            else if (volume_hotkey_down)
+               command_event(CMD_EVENT_VOLUME_DOWN, NULL);
+
             if (volume_hotkey_delay_active > 0)
                volume_hotkey_delay_active--;
             volume_hotkey_delay = volume_hotkey_delay_active;
