@@ -265,8 +265,13 @@ static void dinput_poll(void *data)
          }
       }
       else
+      {
          /* Shifts only when window focused */
          dinput_keyboard_mods(di, RETROKMOD_SHIFT);
+
+         /* Ignore 'unknown/undefined' key */
+         di->state[RETROK_UNKNOWN] = 0;
+      }
 
       /* Left alt keyup when unfocused, to prevent alt-tab sticky */
       dinput_keyboard_mods(di, RETROKMOD_ALT);
