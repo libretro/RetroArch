@@ -48,7 +48,7 @@
 /* Core Info Cache START */
 /*************************/
 
-#define CORE_INFO_CACHE_VERSION "1.1"
+#define CORE_INFO_CACHE_VERSION "1.2"
 #define CORE_INFO_CACHE_DEFAULT_CAPACITY 8
 
 /* TODO/FIXME: Apparently rzip compression is an issue on UWP */
@@ -203,6 +203,8 @@ static bool CCJSONObjectMemberHandler(void *context,
             }
             else if (string_is_equal(pValue, "supports_no_game"))
                pCtx->current_entry_bool_val  = &pCtx->core_info->supports_no_game;
+            else if (string_is_equal(pValue, "single_purpose"))
+               pCtx->current_entry_bool_val  = &pCtx->core_info->single_purpose;
             else if (string_is_equal(pValue, "savestate_support_level"))
                pCtx->current_entry_uint_val  = &pCtx->core_info->savestate_support_level;
             break;
@@ -472,6 +474,7 @@ static void core_info_copy(core_info_t *src, core_info_t *dst)
    dst->savestate_support_level       = src->savestate_support_level;
    dst->has_info                      = src->has_info;
    dst->supports_no_game              = src->supports_no_game;
+   dst->single_purpose                = src->single_purpose;
    dst->database_match_archive_member = src->database_match_archive_member;
    dst->is_experimental               = src->is_experimental;
    dst->is_locked                     = src->is_locked;
@@ -567,6 +570,7 @@ static void core_info_transfer(core_info_t *src, core_info_t *dst)
    dst->savestate_support_level       = src->savestate_support_level;
    dst->has_info                      = src->has_info;
    dst->supports_no_game              = src->supports_no_game;
+   dst->single_purpose                = src->single_purpose;
    dst->database_match_archive_member = src->database_match_archive_member;
    dst->is_experimental               = src->is_experimental;
    dst->is_locked                     = src->is_locked;
@@ -1115,6 +1119,14 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
       rjsonwriter_add_colon(writer);
       rjsonwriter_add_space(writer);
       rjsonwriter_add_bool(writer, info->supports_no_game);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "single_purpose");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_bool(writer, info->single_purpose);
       rjsonwriter_add_comma(writer);
       rjsonwriter_add_newline(writer);
 
@@ -1746,6 +1758,10 @@ static void core_info_parse_config_file(
             &tmp_bool))
       info->supports_no_game = tmp_bool;
 
+   if (config_get_bool(conf, "single_purpose",
+            &tmp_bool))
+      info->single_purpose = tmp_bool;
+
    if (config_get_bool(conf, "database_match_archive_member",
             &tmp_bool))
       info->database_match_archive_member = tmp_bool;
@@ -2178,6 +2194,7 @@ bool core_info_init_current_core(void)
       return false;
    current->has_info                      = false;
    current->supports_no_game              = false;
+   current->single_purpose                = false;
    current->database_match_archive_member = false;
    current->is_experimental               = false;
    current->is_locked                     = false;

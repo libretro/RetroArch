@@ -130,6 +130,16 @@ enum menu_add_content_entry_display_type
    MENU_ADD_CONTENT_ENTRY_DISPLAY_LAST
 };
 
+/* Specifies which type of core will be displayed
+ * in the 'contentless cores' menu */
+enum menu_contentless_cores_display_type
+{
+   MENU_CONTENTLESS_CORES_DISPLAY_NONE = 0,
+   MENU_CONTENTLESS_CORES_DISPLAY_ALL,
+   MENU_CONTENTLESS_CORES_DISPLAY_SINGLE_PURPOSE,
+   MENU_CONTENTLESS_CORES_DISPLAY_LAST
+};
+
 enum rgui_color_theme
 {
    RGUI_THEME_CUSTOM = 0,

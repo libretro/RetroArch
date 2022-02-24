@@ -2334,6 +2334,11 @@ static bool menu_driver_displaylist_push_internal(
          return true;
    }
 #endif
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB)))
+   {
+      if (menu_displaylist_ctl(DISPLAYLIST_CONTENTLESS_CORES, info, settings))
+         return true;
+   }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)))
    {
       if (menu_displaylist_ctl(DISPLAYLIST_NETPLAY_ROOM_LIST, info, settings))
@@ -4155,6 +4160,7 @@ int menu_driver_deferred_push_content_list(file_list_t *list)
    file_list_t *selection_buf     = MENU_LIST_GET_SELECTION(menu_list, (unsigned)0);
 
    menu_st->selection_ptr         = 0;
+   menu_st->contentless_core_ptr  = 0;
 
    if (!menu_driver_displaylist_push(
             menu_st,
@@ -4518,6 +4524,7 @@ bool menu_entries_append_enum(
    if (   enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY
        && enum_idx != MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY
        && enum_idx != MENU_ENUM_LABEL_EXPLORE_ITEM
+       && enum_idx != MENU_ENUM_LABEL_CONTENTLESS_CORE
        && enum_idx != MENU_ENUM_LABEL_RDB_ENTRY)
       cbs->setting                 = menu_setting_find_enum(enum_idx);
 
@@ -6974,8 +6981,12 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
    switch (state)
    {
       case RARCH_MENU_CTL_SET_PENDING_QUICK_MENU:
-         menu_entries_flush_stack(NULL, MENU_SETTINGS);
-         menu_st->pending_quick_menu = true;
+         {
+            bool flush_stack = !data ? true : *((bool *)data);
+            if (flush_stack)
+               menu_entries_flush_stack(NULL, MENU_SETTINGS);
+            menu_st->pending_quick_menu = true;
+         }
          break;
       case RARCH_MENU_CTL_SET_PREVENT_POPULATE:
          menu_st->prevent_populate = true;
@@ -7000,21 +7011,25 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 #ifdef HAVE_NETWORKING
          core_updater_list_free_cached();
 #endif
-#if defined(HAVE_MENU) && defined(HAVE_LIBRETRODB)
+#if defined(HAVE_MENU)
+#if defined(HAVE_LIBRETRODB)
          /* Before freeing the explore menu, we
           * must wait for any explore menu initialisation
           * tasks to complete */
          menu_explore_wait_for_init_task();
          menu_explore_free();
 #endif
+         menu_contentless_cores_free();
+#endif
 
          if (menu_st->driver_data)
          {
             unsigned i;
 
-            menu_st->scroll.acceleration = 0;
-            menu_st->selection_ptr       = 0;
-            menu_st->scroll.index_size   = 0;
+            menu_st->scroll.acceleration  = 0;
+            menu_st->selection_ptr        = 0;
+            menu_st->contentless_core_ptr = 0;
+            menu_st->scroll.index_size    = 0;
 
             for (i = 0; i < SCROLL_INDEX_SIZE; i++)
                menu_st->scroll.index_list[i] = 0;
@@ -7517,6 +7532,7 @@ static int generic_menu_iterate(
                      break;
 #endif
                   case MENU_ENUM_LABEL_CORE_MANAGER_ENTRY:
+                  case MENU_ENUM_LABEL_CONTENTLESS_CORE:
                      {
                         core_info_t *core_info = NULL;
                         const char *path       = selection_buf->list[selection].path;

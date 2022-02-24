@@ -3586,6 +3586,17 @@ static unsigned menu_displaylist_parse_playlists(
                   MENU_EXPLORE_TAB, 0, 0))
             count++;
 #endif
+
+#if defined(HAVE_DYNAMIC)
+      if (settings->uints.menu_content_show_contentless_cores !=
+            MENU_CONTENTLESS_CORES_DISPLAY_NONE)
+         if (menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES),
+                  msg_hash_to_str(MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES),
+                  MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES,
+                  MENU_CONTENTLESS_CORES_TAB, 0, 0))
+            count++;
+#endif
       if (settings->bools.menu_content_show_favorites)
          if (menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
@@ -6321,6 +6332,17 @@ unsigned menu_displaylist_build_list(
                         MENU_EXPLORE_TAB, 0, 0))
                   count++;
 #endif
+
+#if defined(HAVE_DYNAMIC)
+            if (settings->uints.menu_content_show_contentless_cores !=
+                  MENU_CONTENTLESS_CORES_DISPLAY_NONE)
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES),
+                        msg_hash_to_str(MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES),
+                        MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES,
+                        MENU_CONTENTLESS_CORES_TAB, 0, 0))
+                  count++;
+#endif
             if (menu_content_show_favorites)
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
@@ -8268,6 +8290,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS,                                 PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS_PASSWORD,                        PARSE_ONLY_STRING, true},
                {MENU_ENUM_LABEL_CONTENT_SHOW_EXPLORE,                                  PARSE_ONLY_BOOL, true  },
+#if defined(HAVE_DYNAMIC)
+               {MENU_ENUM_LABEL_CONTENT_SHOW_CONTENTLESS_CORES,                        PARSE_ONLY_UINT, true },
+#endif
                {MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES,                                PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_IMAGES,                                   PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_MUSIC,                                    PARSE_ONLY_BOOL, true  },
@@ -8288,6 +8313,9 @@ unsigned menu_displaylist_build_list(
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
+               if (!build_list[i].checked && !include_everything)
+                  continue;
+
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         build_list[i].enum_idx,  build_list[i].parse_type,
                         false) == 0)
@@ -11684,6 +11712,30 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                info->need_navigation_clear = true;
                prev_count                  = count;
             }
+            info->need_push = true;
+         }
+         break;
+      case DISPLAYLIST_CONTENTLESS_CORES:
+         {
+            size_t contentless_core_ptr =
+                  menu_state_get_ptr()->contentless_core_ptr;
+
+            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+            count = menu_displaylist_contentless_cores(info->list, settings);
+
+            /* TODO/FIXME: Selecting an entry in the
+             * contentless cores list will cause the
+             * quick menu to be pushed on the subsequent
+             * frame via the RARCH_MENU_CTL_SET_PENDING_QUICK_MENU
+             * command. The way this is implemented 'breaks' the
+             * menu stack record, so when leaving the quick
+             * menu via a 'cancel' operation, the last selected
+             * menu index is lost. We therefore have to apply
+             * a cached index value after rebuilding the list... */
+            if (contentless_core_ptr < count)
+               menu_navigation_set_selection(contentless_core_ptr);
+
+            info->need_sort = false;
             info->need_push = true;
          }
          break;

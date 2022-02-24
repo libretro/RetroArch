@@ -1088,7 +1088,8 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/cbs/menu_cbs_label.o \
           menu/cbs/menu_cbs_sublabel.o \
           menu/cbs/menu_cbs_title.o \
-          menu/menu_displaylist.o
+          menu/menu_displaylist.o \
+          menu/menu_contentless_cores.o
 endif
 
 ifeq ($(HAVE_GFX_WIDGETS), 1)

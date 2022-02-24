@@ -1303,7 +1303,8 @@ enum materialui_node_icon_type
    MUI_ICON_TYPE_NONE = 0,
    MUI_ICON_TYPE_INTERNAL,
    MUI_ICON_TYPE_MENU_EXPLORE,
-   MUI_ICON_TYPE_PLAYLIST
+   MUI_ICON_TYPE_PLAYLIST,
+   MUI_ICON_TYPE_MENU_CONTENTLESS_CORE
 };
 
 /* This structure holds auxiliary information for
@@ -2797,6 +2798,7 @@ static void materialui_compute_entries_box_default(
             has_icon = mui->textures.list[node->icon_texture_index] != 0;
             break;
          case MUI_ICON_TYPE_MENU_EXPLORE:
+         case MUI_ICON_TYPE_MENU_CONTENTLESS_CORE:
             has_icon = true;
             break;
          case MUI_ICON_TYPE_PLAYLIST:
@@ -3995,6 +3997,9 @@ static void materialui_render_menu_entry_default(
          break;
       case MUI_ICON_TYPE_MENU_EXPLORE:
          icon_texture = menu_explore_get_entry_icon(entry_type);
+         break;
+      case MUI_ICON_TYPE_MENU_CONTENTLESS_CORE:
+         icon_texture = menu_contentless_cores_get_entry_icon(entry->label);
          break;
       case MUI_ICON_TYPE_PLAYLIST:
          icon_texture = materialui_get_playlist_icon(
@@ -10105,6 +10110,7 @@ static void materialui_list_insert(
          case MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS:
          case MENU_SETTING_ACTION_CORE_LOCK:
          case MENU_EXPLORE_TAB:
+         case MENU_CONTENTLESS_CORES_TAB:
             node->icon_texture_index = MUI_TEXTURE_CORES;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
@@ -10188,6 +10194,9 @@ static void materialui_list_insert(
          case MENU_SETTING_ACTION_CORE_OPTIONS_FLUSH:
             node->icon_texture_index = MUI_TEXTURE_FILE;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+            break;
+         case MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN:
+            node->icon_type          = MUI_ICON_TYPE_MENU_CONTENTLESS_CORE;
             break;
          case FILE_TYPE_RPL_ENTRY:
          case MENU_SETTING_DROPDOWN_ITEM:

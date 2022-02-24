@@ -45,6 +45,7 @@
 
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
 #include "../menu/menu_entries.h"
+#include "../menu/menu_driver.h"
 #endif
 
 /* Get core updater list */
@@ -521,6 +522,11 @@ static void cb_task_core_updater_download(
    /* Reload core info files
     * > This must be done on the main thread */
    command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+
+#if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
+   /* Force reload of contentless cores icons */
+   menu_contentless_cores_free();
+#endif
 }
 
 static void cb_decompress_task_core_updater_download(

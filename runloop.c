@@ -6678,13 +6678,20 @@ static enum runloop_state_enum runloop_check_state(
 
       /* Iterate the menu driver for one frame. */
 
+      /* If the user had requested that the Quick Menu
+       * be spawned during the previous frame, do this now
+       * and exit the function to go to the next frame. */
       if (menu_st->pending_quick_menu)
       {
-         /* If the user had requested that the Quick Menu
-          * be spawned during the previous frame, do this now
-          * and exit the function to go to the next frame.
-          */
-         menu_entries_flush_stack(NULL, MENU_SETTINGS);
+         menu_ctx_list_t list_info;
+
+         /* We are going to push a new menu; ensure
+          * that the current one is cached for animation
+          * purposes */
+         list_info.type   = MENU_LIST_PLAIN;
+         list_info.action = 0;
+         menu_driver_list_cache(&list_info);
+
          p_disp->msg_force = true;
 
          generic_action_ok_displaylist_push("", NULL,
