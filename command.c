@@ -683,7 +683,7 @@ bool command_version(command_t *cmd, const char* arg)
    return true;
 }
 
-static const rarch_memory_descriptor_t* command_memory_get_descriptor(const rarch_memory_map_t* mmap, unsigned address)
+static const rarch_memory_descriptor_t* command_memory_get_descriptor(const rarch_memory_map_t* mmap, unsigned address, size_t* offset)
 {
    const rarch_memory_descriptor_t* desc = mmap->descriptors;
    const rarch_memory_descriptor_t* end  = desc + mmap->num_descriptors;
@@ -694,15 +694,37 @@ static const rarch_memory_descriptor_t* command_memory_get_descriptor(const rarc
       {
          /* if select is 0, attempt to explicitly match the address */
          if (address >= desc->core.start && address < desc->core.start + desc->core.len)
+         {
+            *offset = address - desc->core.start;
             return desc;
+         }
       }
       else
       {
          /* otherwise, attempt to match the address by matching the select bits */
          if (((desc->core.start ^ address) & desc->core.select) == 0)
          {
+            /* adjust the address to the start of the descriptor */
+            unsigned desc_offset = address - (unsigned)desc->core.start;
+
+            /* address is unsigned. we only need that much of the disconnect mask */
+            unsigned mask = (unsigned)desc->core.disconnect;
+
+            /* this magic logic is copied from mmap_reduce. it removes any bits from
+             * address that are non-zero in the disconnect field. bits above the
+             * removed bits are shifted down to fill the gap. */
+            while (mask)
+            {
+               const unsigned tmp = (mask - 1) & ~mask;
+               desc_offset = (desc_offset & tmp) | ((desc_offset >> 1) & ~tmp);
+               mask = (mask & (mask - 1)) >> 1;
+            }
+
+            /* we've calculated the actual offset of the data within the descriptor */
+            *offset = desc_offset;
+
             /* sanity check - make sure the descriptor is large enough to hold the target address */
-            if (address - desc->core.start < desc->core.len)
+            if (desc_offset < desc->core.len)
                return desc;
          }
       }
@@ -723,7 +745,8 @@ uint8_t *command_memory_get_pointer(
       strlcpy(reply_at, " -1 no memory map defined\n", len);
    else
    {
-      const rarch_memory_descriptor_t* desc = command_memory_get_descriptor(&system->mmaps, address);
+      size_t offset;
+      const rarch_memory_descriptor_t* desc = command_memory_get_descriptor(&system->mmaps, address, &offset);
       if (!desc)
          strlcpy(reply_at, " -1 no descriptor for address\n", len);
       else if (!desc->core.ptr)
@@ -732,7 +755,6 @@ uint8_t *command_memory_get_pointer(
          strlcpy(reply_at, " -1 descriptor data is readonly\n", len);
       else
       {
-         const size_t offset = address - desc->core.start;
          *max_bytes = (desc->core.len - offset);
          return (uint8_t*)desc->core.ptr + desc->core.offset + offset;
       }
