@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2020 - Daniel De Matteis
+ *  Copyright (C) 2011-2022 - Daniel De Matteis
  *  Copyright (C) 2019-2022 - James Leaver
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -37,11 +37,196 @@ typedef struct
 
 typedef struct
 {
+   contentless_core_info_entry_t **info_entries;
    contentless_core_icons_t *icons;
    bool icons_enabled;
 } contentless_cores_state_t;
 
 static contentless_cores_state_t *contentless_cores_state = NULL;
+
+static void contentless_cores_free_runtime_info(
+      contentless_core_runtime_info_t *runtime_info)
+{
+   if (!runtime_info)
+      return;
+
+   if (runtime_info->runtime_str)
+   {
+      free(runtime_info->runtime_str);
+      runtime_info->runtime_str = NULL;
+   }
+
+   if (runtime_info->last_played_str)
+   {
+      free(runtime_info->last_played_str);
+      runtime_info->last_played_str = NULL;
+   }
+
+   runtime_info->status = CONTENTLESS_CORE_RUNTIME_UNKNOWN;
+}
+
+static void contentless_cores_free_info_entries(
+      contentless_cores_state_t *state)
+{
+   size_t i, cap;
+
+   if (!state || !state->info_entries)
+      return;
+
+   for (i = 0, cap = RHMAP_CAP(state->info_entries); i != cap; i++)
+   {
+      if (RHMAP_KEY(state->info_entries, i))
+      {
+         contentless_core_info_entry_t *entry = state->info_entries[i];
+
+         if (!entry)
+            continue;
+
+         if (entry->licenses_str)
+            free(entry->licenses_str);
+
+         contentless_cores_free_runtime_info(&entry->runtime);
+
+         free(entry);
+      }
+   }
+
+   RHMAP_FREE(state->info_entries);
+}
+
+static void contentless_cores_init_info_entries(
+      contentless_cores_state_t *state)
+{
+   core_info_list_t *core_info_list = NULL;
+   size_t i;
+
+   if (!state)
+      return;
+
+   /* Free any existing entries */
+   contentless_cores_free_info_entries(state);
+
+   /* Create an entry for each contentless core */
+   core_info_get_list(&core_info_list);
+
+   if (!core_info_list)
+      return;
+
+   for (i = 0; i < core_info_list->count; i++)
+   {
+      core_info_t *core_info = core_info_get(core_info_list, i);
+
+      if (core_info &&
+          core_info->supports_no_game)
+      {
+         contentless_core_info_entry_t *entry =
+               (contentless_core_info_entry_t*)malloc(sizeof(*entry));
+         char licenses_str[MENU_SUBLABEL_MAX_LENGTH];
+
+         licenses_str[0] = '\0';
+
+         /* Populate licences string */
+         if (core_info->licenses_list)
+         {
+            char tmp_str[MENU_SUBLABEL_MAX_LENGTH];
+
+            tmp_str[0] = '\0';
+
+            string_list_join_concat(tmp_str, sizeof(tmp_str),
+                  core_info->licenses_list, ", ");
+            snprintf(licenses_str, sizeof(licenses_str), "%s: %s",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
+                  tmp_str);
+         }
+         /* No license found - set to N/A */
+         else
+            snprintf(licenses_str, sizeof(licenses_str), "%s: %s",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+
+         entry->licenses_str = strdup(licenses_str);
+
+         /* Initialise runtime info */
+         entry->runtime.runtime_str     = NULL;
+         entry->runtime.last_played_str = NULL;
+         entry->runtime.status          = CONTENTLESS_CORE_RUNTIME_UNKNOWN;
+
+         /* Add entry to hash map */
+         RHMAP_SET_STR(state->info_entries, core_info->core_file_id.str, entry);
+      }
+   }
+}
+
+void menu_contentless_cores_set_runtime(const char *core_id,
+      const contentless_core_runtime_info_t *runtime_info)
+{
+   contentless_core_info_entry_t *info_entry = NULL;
+
+   if (!contentless_cores_state ||
+       !contentless_cores_state->info_entries ||
+       !runtime_info ||
+       string_is_empty(core_id))
+      return;
+
+   info_entry = RHMAP_GET_STR(contentless_cores_state->info_entries, core_id);
+
+   if (!info_entry)
+      return;
+
+   if (!string_is_empty(runtime_info->runtime_str))
+   {
+      if (info_entry->runtime.runtime_str)
+         free(info_entry->runtime.runtime_str);
+
+      info_entry->runtime.runtime_str = strdup(runtime_info->runtime_str);
+   }
+
+   if (!string_is_empty(runtime_info->last_played_str))
+   {
+      if (info_entry->runtime.last_played_str)
+         free(info_entry->runtime.last_played_str);
+
+      info_entry->runtime.last_played_str = strdup(runtime_info->last_played_str);
+   }
+
+   info_entry->runtime.status = runtime_info->status;
+}
+
+void menu_contentless_cores_get_info(const char *core_id,
+      const contentless_core_info_entry_t **info)
+{
+   if (!info)
+      return;
+
+   if (!contentless_cores_state ||
+       !contentless_cores_state->info_entries ||
+       string_is_empty(core_id))
+      *info = NULL;
+
+   *info = RHMAP_GET_STR(contentless_cores_state->info_entries, core_id);
+}
+
+void menu_contentless_cores_flush_runtime(void)
+{
+   contentless_cores_state_t *state = contentless_cores_state;
+   size_t i, cap;
+
+   if (!state || !state->info_entries)
+      return;
+
+   for (i = 0, cap = RHMAP_CAP(state->info_entries); i != cap; i++)
+   {
+      if (RHMAP_KEY(state->info_entries, i))
+      {
+         contentless_core_info_entry_t *entry = state->info_entries[i];
+
+         if (!entry)
+            continue;
+
+         contentless_cores_free_runtime_info(&entry->runtime);
+      }
+   }
+}
 
 static void contentless_cores_unload_icons(contentless_cores_state_t *state)
 {
@@ -213,6 +398,7 @@ void menu_contentless_cores_free(void)
    if (!contentless_cores_state)
       return;
 
+   contentless_cores_free_info_entries(contentless_cores_state);
    contentless_cores_unload_icons(contentless_cores_state);
    free(contentless_cores_state);
    contentless_cores_state = NULL;
@@ -276,7 +462,7 @@ unsigned menu_displaylist_contentless_cores(file_list_t *list, settings_t *setti
       }
    }
 
-   /* Initialise icons, if required */
+   /* Initialise global state, if required */
    if (!contentless_cores_state && (count > 0))
    {
       contentless_cores_state = (contentless_cores_state_t*)calloc(1,
@@ -287,6 +473,7 @@ unsigned menu_displaylist_contentless_cores(file_list_t *list, settings_t *setti
       contentless_cores_state->icons_enabled =
             !string_is_equal(menu_driver_ident(), "rgui");
 
+      contentless_cores_init_info_entries(contentless_cores_state);
       contentless_cores_load_icons(contentless_cores_state);
    }
 

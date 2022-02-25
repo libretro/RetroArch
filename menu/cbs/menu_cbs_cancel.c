@@ -96,6 +96,7 @@ static int action_cancel_contentless_core(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    menu_state_get_ptr()->contentless_core_ptr = 0;
+   menu_contentless_cores_flush_runtime();
    return action_cancel_pop_default(path, label, type, idx) ;
 }
 
