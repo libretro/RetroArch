@@ -410,7 +410,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
-   "Zobrazit síťová rozhraní a související IP adresy."
+   "Zobrazit síťová(é) rozhraní a související IP adresy."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
@@ -1832,7 +1832,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
-   "Změnit nastavení zvuku."
+   "Změnit nastavení výstupu zvuku."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
@@ -1855,6 +1855,10 @@ MSG_HASH(
    "Změna nastavení MIDI."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
+   "Mixér"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
    "Změna nastavení směšovače zvuku."
    )
@@ -1872,7 +1876,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MUTE,
-   "Ztlumit audio."
+   "Ztlumit zvuk."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
@@ -1892,7 +1896,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
-   "Zvýšení hlasitosti (dB)"
+   "Zesílení Hlasitosti (dB)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
@@ -1919,6 +1923,10 @@ MSG_HASH(
    "Odinstalujte jakýkoli aktivní zvukový zásuvný modul DSP."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
+   "Exkluzivní Režim WASAPI"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    "Umožňuje ovladači WASAPI převzít výhradní kontrolu nad zvukovým zařízením. Pokud je zakázán, použije místo toho sdílený režim."
    )
@@ -1929,6 +1937,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
    "Použijte formát float pro ovladač WASAPI, pokud ho vaše zvukové zařízení podporuje."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   "Délka Sdílené Vyrovnávací Paměti WASAPI"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
@@ -1955,7 +1967,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
-   "Zpoždění zvuku (ms)"
+   "Zpoždění Zvuku (ms)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
@@ -1966,7 +1978,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
-   "Kvalita převzorkování"
+   "Kvalita Převzorkování"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
@@ -1974,7 +1986,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
-   "Výstupní frekvence (Hz)"
+   "Výstupní Frekvence (Hz)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
@@ -2047,7 +2059,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
-   "Přehrávání (ve smyčce)"
+   "Přehrávání (Ve Smyčce)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
@@ -2055,7 +2067,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
-   "Přehrát (sekvenčně)"
+   "Přehrát (Sekvenčně)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
@@ -2067,7 +2079,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
-   "Tím se přehrávání zvukového proudu zastaví, ale z paměti se neodstraní. Znovu jej spustíte výběrem možnosti \"Přehrát\"."
+   "Tím se přehrávání zvukového proudu zastaví, ale z paměti se neodstraní. Znovu jej spustíte výběrem možnosti 'Přehrát'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
@@ -2089,20 +2101,24 @@ MSG_HASH(
 /* Settings > Audio > Menu Sounds */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
+   "Mixér"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
    "Přehrávání souběžných zvukových proudů i v nabídce."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
-   "Povolení zvuku \"OK"
+   "Povolení zvuku 'OK'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
-   "Povolení zvuku \"Zrušit"
+   "Povolení zvuku 'Zrušit'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
-   "Povolení zvuku \"Oznámení"
+   "Povolení zvuku 'Oznámení'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
@@ -2113,7 +2129,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
-   "Maximální počet uživatelů"
+   "Maximální Počet Uživatelů"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
@@ -2125,11 +2141,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
-   "Ovlivnit způsob dotazování vstupu v aplikaci RetroArch. Nastavení na \"Early\" nebo \"Late\" může v závislosti na konfiguraci vést ke snížení latence."
+   "Ovlivnit způsob dotazování vstupu v aplikaci RetroArch. Nastavení na 'Časné' nebo 'Pozdní' může v závislosti na konfiguraci vést ke snížení latence."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
-   "Přemapování Her. Ovládačů pro toto jádro"
+   "Přemapování Her. Ovládačů pro toto Jádro"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
@@ -2137,7 +2153,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
-   "Automatická konfigurace"
+   "Autokonfigurace"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
@@ -2146,7 +2162,7 @@ MSG_HASH(
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
-   "Zakázání Hotkeys kláves systému Windows (nutný restart)"
+   "Zakázání Hotkeys v Systému Windows (Nutný Restart)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
@@ -2171,11 +2187,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
-   "Automatické zapnutí režimu \"Game Focus"
+   "Automatické zapnutí režimu 'Zaměření Hry'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
-   "Při spouštění a obnovování obsahu vždy povolte režim \"Game Focus\". Při nastavení na 'Detekovat' bude volba povolena, pokud aktuální jádro implementuje funkci zpětného volání klávesnice frontendu."
+   "Při spouštění a obnovování obsahu vždy povolte režim 'Zaměření Hry'. Při nastavení na 'Detekovat' bude volba povolena, pokud aktuální jádro implementuje funkci zpětného volání klávesnice frontendu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
@@ -2199,15 +2215,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
-   "Analogova mrtvá zóna"
+   "Analogova Mrtvá Zóna"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
-   "Analogová citlivost"
+   "Analogová Citlivost"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
+   "Časový Limit Vazby"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    "Počet sekund, které je třeba počkat, než se přejde na další vazbu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
+   "Podržení Vazby"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
@@ -2222,8 +2246,16 @@ MSG_HASH(
    "Doba (ve snímcích), po kterou jsou stisknuta tlačítka s funkcí turbo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
+   "Turbo Pracovní Cyklus"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
    "Počet snímků z období Turbo, po které jsou tlačítka držena stisknutá. Pokud je toto číslo rovno nebo větší než perioda Turbo, tlačítka se nikdy neuvolní."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
+   "Turbo Mód"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
@@ -2235,7 +2267,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "Výchozí aktivní tlačítko pro režim Turbo \"Single Button\"."
+   "Výchozí aktivní tlačítko pro režim Turbo 'Jedno Tlačítko'."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
@@ -2274,11 +2306,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
-   "Vibrace při stisknutí klávesy"
+   "Vibrace při Stisknutí Klávesy"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
-   "Povolení vibrací zařízení (pro podporovaná jádra)"
+   "Povolení Vibrací Zařízení (Pro Podporovaná Jádra)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
@@ -2324,7 +2356,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Požadavek na dvojí stisknutí klávesové zkratky Quit pro ukončení aplikace RetroArch."
+   "Ukončit RetroArch dvojím stisknutím Hotkey."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
@@ -2344,11 +2376,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
-   "Hotkey Povolení Zpoždění (Frames)"
+   "Povolit Zpoždění Hotkey (ve Snímcích)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
-   "Přidání prodlevy v počtu snímků, než se po stisknutí (a podržení) přiřazené klávesy \"Hotkey Enable\" zablokuje normální vstup. Umožňuje zachytit normální vstup z klávesy 'Hotkey Enable', když je namapována na jinou akci (např. RetroPad 'Select')."
+   "Přidání prodlevy v počtu snímků, než se po stisknutí (a podržení) přiřazené klávesy 'Hotkey Povolena' zablokuje normální vstup. Umožňuje zachytit normální vstup z klávesy 'Hotkey Povolena', když je namapována na jinou akci (např. RetroPad 'Select')."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
@@ -2384,11 +2416,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
-   "Načtení Stavu"
+   "Nahrát Stav"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
-   "Načte uložený stav z aktuálně vybraného slotu."
+   "Nahraje uložený stav z aktuálně vybraného slotu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
@@ -2524,7 +2556,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
-   "Audio Mute (Přepínání)"
+   "Ztlumit Zvuk (Přepínání)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_MUTE,
@@ -2544,7 +2576,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FPS_TOGGLE,
-   "Zapne/vypne indikátor stavu \"snímků za sekundu\"."
+   "Zapne/vypne indikátor stavu 'snímků za sekundu'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE,
@@ -2564,7 +2596,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
-   "Odeslání informací o ladění"
+   "Odeslat Informace o Ladění"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SEND_DEBUG_INFO,
@@ -2584,7 +2616,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
-   "Přepíná aktuální relaci hry po síti mezi režimy \"hrát\" a \"sledovat\"."
+   "Přepíná aktuální relaci hry po síti mezi režimy 'hrát' a 'sledovat'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
@@ -2604,11 +2636,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
-   "Hotkey Povolení"
+   "Hotkey Povolena"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
-   "Po přiřazení musí být klávesa \"Hotkey Enable\" stisknuta (a podržena), aby byly rozpoznány ostatní klávesové zkratky. Umožňuje namapovat tlačítka ovladače na funkce horkých kláves bez vlivu na normální zadávání."
+   "Po přiřazení musí být klávesa 'Hotkey Povolena' stisknuta (a podržena), aby byly rozpoznány ostatní klávesové zkratky. Umožňuje namapovat tlačítka ovladače na funkce horkých kláves bez vlivu na normální zadávání."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
@@ -2660,7 +2692,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
-   "Grab Mouse (Přepínání)"
+   "Podržení Myši (Přepínání)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE,
@@ -2668,11 +2700,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
-   "Game Focus (Přepínání)"
+   "Zaměření Hry (Přepínání)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
-   "Povolí nebo zakáže režim \"Game Focus\". Když má obsah fokus, jsou klávesové zkratky zakázány (plný vstup z klávesnice je předán běžícímu jádru) a myš je uchopena."
+   "Povolí nebo zakáže režim 'Zaměření Hry'. Když má obsah fokus, jsou klávesové zkratky zakázány (plný vstup z klávesnice je předán běžícímu jádru) a myš je uchopena."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE,
@@ -2727,15 +2759,15 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE,
-   "Typ zařízení"
+   "Typ Zařízení"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
-   "Analog Na Digital Type"
+   "Analogový na Digitální Typ"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
-   "Použijte zadanou analogovou páčku pro vstup D-Pad. Pokud má jádro nativní analogovou podporu, mapování D-Pad bude zakázáno, pokud není vybrána možnost \"(Vynuceně)\". Pokud je mapování D-Pad vynuceno, jádro nebude přijímat žádný analogový vstup ze zadané páčky."
+   "Použijte zadanou analogovou páčku pro vstup D-Pad. Pokud má jádro nativní analogovou podporu, mapování D-Pad bude zakázáno, pokud není vybrána možnost '(Vynucené)'. Pokud je mapování D-Pad vynuceno, jádro nebude přijímat žádný analogový vstup ze zadané páčky."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -2863,11 +2895,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
-   "Spoušť pistole"
+   "Spoušť Pistole"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
-   "Nabíjení zbraně"
+   "Nabíjení Zbraně"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
@@ -2997,7 +3029,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
-   "Informační soubory jádra mezipaměti"
+   "Informační Soubory Jádra Mezipaměti"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
@@ -3074,7 +3106,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GLOBAL_CORE_OPTIONS,
-   "Uložení všech voleb jádra do společného souboru nastavení (retroarch-core-options.cfg). Pokud je vypnuto, budou volby pro každé jádro uloženy do samostatné složky/souboru pro konkrétní jádro v adresáři 'Configs' aplikace RetroArch."
+   "Uložení všech voleb jádra do společného souboru nastavení (retroarch-core-options.cfg). Pokud je vypnuto, budou volby pro každé jádro uloženy do samostatné složky/souboru pro konkrétní jádro v adresáři 'Konfigurace' aplikace RetroArch."
    )
 
 /* Settings > Saving */
@@ -3113,19 +3145,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "Nepřepisovat Paměť SaveRAM při Načítání Stavu Uložení"
+   "Nepřepisovat Paměť Uložené Ram při Načítání Stavu Uložení"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
-   "Blokování přepisování paměti SaveRAM při načítání stavů uložení. Může potenciálně vést k chybám ve hrách."
+   "Blokování přepisování paměti Uložené Ram při načítání stavů uložení. Může potenciálně vést k chybám ve hrách."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-   "Interval Automatického Ukládání Paměti SaveRAM"
+   "Interval Automatického Ukládání Paměti Uložené Ram"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
-   "Automatické ukládání nevolatilní paměti SaveRAM v pravidelném intervalu (Sek)."
+   "Automatické ukládání nevolatilní paměti Uložené Ram v pravidelném intervalu (Sek)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -3145,7 +3177,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-   "Automatické Uložení Stavu"
+   "Automaticky Uložit Stav"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
@@ -3153,7 +3185,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Nahrání Stavu Automaticky"
+   "Automaticky Nahrát Stav"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
@@ -3173,7 +3205,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   "Zápis nevolatilních souborů SaveRAM v archivovaném formátu. Dramaticky snižuje velikost souboru na úkor (zanedbatelně) prodloužené doby ukládání/načítání.\nPouze pro jádra, která umožňují ukládání přes standardní rozhraní libretro SaveRAM."
+   "Zápis nevolatilních souborů Uložené Ram v archivovaném formátu. Dramaticky snižuje velikost souboru na úkor (zanedbatelně) prodloužené doby ukládání/načítání.\nPouze pro jádra, která umožňují ukládání přes standardní rozhraní libretro Uložené Ram."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
@@ -4641,7 +4673,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
-   "Zobrazit 'Vyprázdnit Možnosti na Disk)'"
+   "Zobrazit 'Vyprázdnit Možnosti na Disk'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
@@ -5547,7 +5579,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-   "Při vyhledávání položek v playlistu spojených s komprimovanými soubory porovnávejte pouze název archivního souboru místo [název souboru]+[obsah]. Povolením této funkce se vyhnete duplicitním záznamům historie obsahu při načítání komprimovaných souborů."
+   "Při vyhledávání položek v playlistu spojených s komprimovanými soubory porovnávejte pouze název archivního souboru místo [název souboru]+[content]. Povolením této funkce se vyhnete duplicitním záznamům historie obsahu při načítání komprimovaných souborů."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
@@ -6096,7 +6128,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY,
-   "<Skenování tohoto adresáře>"
+   "<Prohledat Tento Adresář>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_FILE,
@@ -9699,7 +9731,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
-   "Odeslání informací o ladění"
+   "Odeslat Informace o Ladění"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
@@ -10760,11 +10792,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GAME_FOCUS_ON,
-   "Zaměření hry na"
+   "Zaměření Hry zapnout"
    )
 MSG_HASH(
    MSG_GAME_FOCUS_OFF,
-   "Zaměření hry vypnuto"
+   "Zaměření Hry vypnout"
    )
 MSG_HASH(
    MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
@@ -12157,6 +12189,6 @@ MSG_HASH(
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "Skenování dokončeno.<br><br>\nIn aby byl obsah správně naskenován, je třeba:\n<ul><li>mít již stažené kompatibilní jádro</li>\n<li>mít \"Informační Soubory Jádra\" aktualizováné prostřednictvím nástroje Online Updater</li>\n<li>mít \"Databáze\" aktualizováné prostřednictvím Online Updater</li>\n<li>restartovat RetroArch, pokud bylo právě provedeno něco z výše uvedeného</li></ul>\nV neposlední řadě musí obsah odpovídat stávajícím databázím z <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">here</a>. Pokud stále nefunguje, zvažte možnost <a href=\"https://www.github.com/libretro/RetroArch/issues\"> <a href=\"https://www.github.com/libretro/RetroArch/issues\">odeslání hlášení o chybě</a>."
+   "Skenování dokončeno.<br><br>\nAby mohl být obsah správně naskenován, musíte:\n<ul><li>mít již stažené kompatibilní jádro</li>\n<li>aktualizované pomocí Online Updater</li>\n<li>mají \"Databázy\" aktualizované prostřednictvím Online Updater</li>\n<li>restartujte RetroArch, pokud je některý z výše uvedených právě proveden</li></ul>\nKonečně obsah musí odpovídat existujícím databázím z <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">zde</a>. Pokud to stále nefunguje, zvažte <a href=\"https://www.github.com/libretro/RetroArch/issues\">odeslání chybového hlášení</a>."
    )
 #endif
