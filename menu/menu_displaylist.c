@@ -4186,26 +4186,53 @@ static unsigned menu_displaylist_parse_content_information(
    const char *content_path            = NULL;
    const char *core_path               = NULL;
    const char *db_name                 = NULL;
+   bool playlist_origin                = true;
    bool playlist_valid                 = false;
+   const char *origin_label            = NULL;
+   struct menu_state *menu_st          = menu_state_get_ptr();
+   file_list_t *list                   = NULL;
    unsigned count                      = 0;
    bool content_loaded                 = !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
+      && !string_is_empty(loaded_content_path)
       && string_is_equal(menu->deferred_path, loaded_content_path);
+   bool core_supports_no_game          = false;
 
    core_name[0]                        = '\0';
 
-   /* If content is currently running, have to make sure
-    * we have a valid playlist to work with
-    * (if content is not running, then playlist will always
-    * be valid provided that playlist_get_cached() does not
-    * return NULL) */
-   if (content_loaded)
+   /* Check the origin menu from which the information
+    * entry was selected
+    * > Can only assume a valid playlist if the origin
+    *   was an actual playlist - i.e. cached playlist is
+    *   dubious if information was selected from
+    *   'Main Menu > Quick Menu' or 'Standalone Cores >
+    *   Quick Menu' */
+   if (menu_st->entries.list)
+      list  = MENU_LIST_GET(menu_st->entries.list, 0);
+   if (list && (list->size > 2))
    {
-      if (!string_is_empty(loaded_content_path) && !string_is_empty(loaded_core_path))
+      file_list_get_at_offset(list, list->size - 3, NULL,
+            &origin_label, NULL, NULL);
+
+      if (string_is_equal(origin_label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU)) ||
+          string_is_equal(origin_label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB)) ||
+          string_is_equal(origin_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST)))
+         playlist_origin = false;
+   }
+
+   /* If origin menu was a playlist, may rely on
+    * return value from playlist_get_cached() */
+   if (playlist_origin)
+      playlist_valid = !!playlist;
+   else
+   {
+      /* If origin menu was not a playlist, then
+       * check currently loaded content against
+       * last cached playlist */
+      if (content_loaded &&
+          !string_is_empty(loaded_core_path))
          playlist_valid = playlist_index_is_valid(
                playlist, idx, loaded_content_path, loaded_core_path);
    }
-   else if (playlist)
-      playlist_valid = true;
 
    if (playlist_valid)
    {
@@ -4236,39 +4263,48 @@ static unsigned menu_displaylist_parse_content_information(
       core_path      = loaded_core_path;
 
       if (core_info_find(core_path, &core_info))
+      {
+         core_supports_no_game = core_info->supports_no_game;
+
          if (!string_is_empty(core_info->display_name))
             strlcpy(core_name, core_info->display_name, sizeof(core_name));
+      }
    }
 
-   /* Content label */
-   tmp[0]   = '\0';
-   snprintf(tmp, sizeof(tmp),
-         "%s: %s",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL),
-         !string_is_empty(content_label)
-               ? content_label
-               : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
-         );
-   if (menu_entries_append_enum(info->list, tmp,
-         msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_LABEL),
-         MENU_ENUM_LABEL_CONTENT_INFO_LABEL,
-         0, 0, 0))
-      count++;
+   /* If content path is empty and core supports
+    * contentless operation, skip label/path entries */
+   if (!(core_supports_no_game && string_is_empty(content_path)))
+   {
+      /* Content label */
+      tmp[0]   = '\0';
+      snprintf(tmp, sizeof(tmp),
+            "%s: %s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL),
+            !string_is_empty(content_label)
+                  ? content_label
+                  : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
+            );
+      if (menu_entries_append_enum(info->list, tmp,
+            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_LABEL),
+            MENU_ENUM_LABEL_CONTENT_INFO_LABEL,
+            0, 0, 0))
+         count++;
 
-   /* Content path */
-   tmp[0]   = '\0';
-   snprintf(tmp, sizeof(tmp),
-         "%s: %s",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH),
-         !string_is_empty(content_path)
-               ? content_path
-               : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
-         );
-   if (menu_entries_append_enum(info->list, tmp,
-         msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_PATH),
-         MENU_ENUM_LABEL_CONTENT_INFO_PATH,
-         0, 0, 0))
-      count++;
+      /* Content path */
+      tmp[0]   = '\0';
+      snprintf(tmp, sizeof(tmp),
+            "%s: %s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH),
+            !string_is_empty(content_path)
+                  ? content_path
+                  : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
+            );
+      if (menu_entries_append_enum(info->list, tmp,
+            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_PATH),
+            MENU_ENUM_LABEL_CONTENT_INFO_PATH,
+            0, 0, 0))
+         count++;
+   }
 
    /* Core name */
    if (!string_is_empty(core_name) &&

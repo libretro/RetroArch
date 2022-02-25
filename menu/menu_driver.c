@@ -1309,6 +1309,7 @@ void menu_list_flush_stack(
    file_list_t *menu_list      = MENU_LIST_GET(list, (unsigned)idx);
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_contentless_cores_flush_runtime();
 
    if (menu_list && menu_list->size)
       file_list_get_at_offset(menu_list, menu_list->size - 1, &path, &label, &type, &entry_idx);
@@ -4162,6 +4163,8 @@ int menu_driver_deferred_push_content_list(file_list_t *list)
    menu_st->selection_ptr         = 0;
    menu_st->contentless_core_ptr  = 0;
 
+   menu_contentless_cores_flush_runtime();
+
    if (!menu_driver_displaylist_push(
             menu_st,
             settings,
@@ -5269,9 +5272,8 @@ bool menu_driver_init(bool video_is_threaded)
 const char *menu_driver_ident(void)
 {
    struct menu_state    *menu_st  = &menu_driver_state;
-   if (menu_st->alive)
-      if (menu_st->driver_ctx && menu_st->driver_ctx->ident)
-         return menu_st->driver_ctx->ident;
+   if (menu_st->driver_ctx && menu_st->driver_ctx->ident)
+      return menu_st->driver_ctx->ident;
    return NULL;
 }
 
@@ -7030,6 +7032,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_st->selection_ptr        = 0;
             menu_st->contentless_core_ptr = 0;
             menu_st->scroll.index_size    = 0;
+
+            menu_contentless_cores_flush_runtime();
 
             for (i = 0; i < SCROLL_INDEX_SIZE; i++)
                menu_st->scroll.index_list[i] = 0;
