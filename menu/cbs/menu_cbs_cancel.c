@@ -92,6 +92,14 @@ int action_cancel_pop_default(const char *path,
    return 0;
 }
 
+static int action_cancel_contentless_core(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   menu_state_get_ptr()->contentless_core_ptr = 0;
+   menu_contentless_cores_flush_runtime();
+   return action_cancel_pop_default(path, label, type, idx) ;
+}
+
 #ifdef HAVE_CHEATS
 static int action_cancel_cheat_details(const char *path,
       const char *label, unsigned type, size_t idx)
@@ -164,6 +172,11 @@ static int menu_cbs_init_bind_cancel_compare_type(
       case FILE_TYPE_DOWNLOAD_CORE:
          BIND_ACTION_CANCEL(cbs, action_cancel_core_content);
          return 0;
+      case MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN:
+         BIND_ACTION_CANCEL(cbs, action_cancel_contentless_core);
+         return 0;
+      default:
+         break;
    }
 
 #ifdef HAVE_CHEATS

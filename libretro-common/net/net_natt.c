@@ -442,11 +442,14 @@ static bool parse_external_address_node(rxml_node_t *node,
       /* XML recursion */
       rxml_node_t *child = node->children;
 
-      do
+      if (child)
       {
-         if (parse_external_address_node(child, device))
-            return true;
-      } while ((child = child->next));
+         do
+         {
+            if (parse_external_address_node(child, device))
+               return true;
+         } while ((child = child->next));
+      }
    }
 
    return false;
@@ -522,11 +525,14 @@ static bool parse_open_port_node(rxml_node_t *node,
       /* XML recursion */
       rxml_node_t *child = node->children;
 
-      do
+      if (child)
       {
-         if (parse_open_port_node(child, request))
-            return true;
-      } while ((child = child->next));
+         do
+         {
+            if (parse_open_port_node(child, request))
+               return true;
+         } while ((child = child->next));
+      }
    }
 
    return false;

@@ -279,10 +279,6 @@
 #define SYMBOL_VIDEOPROCESSOR(x) current_core->x = libretro_videoprocessor_##x
 #endif
 
-#ifdef HAVE_GONG
-#define SYMBOL_GONG(x) current_core->x = libretro_gong_##x
-#endif
-
 #define CORE_SYMBOLS(x) \
             x(retro_init); \
             x(retro_deinit); \
@@ -3463,11 +3459,6 @@ static bool init_libretro_symbols_custom(
       case CORE_TYPE_VIDEO_PROCESSOR:
 #if defined(HAVE_VIDEOPROCESSOR)
          CORE_SYMBOLS(SYMBOL_VIDEOPROCESSOR);
-#endif
-         break;
-      case CORE_TYPE_GONG:
-#ifdef HAVE_GONG
-         CORE_SYMBOLS(SYMBOL_GONG);
 #endif
          break;
    }
@@ -6687,13 +6678,20 @@ static enum runloop_state_enum runloop_check_state(
 
       /* Iterate the menu driver for one frame. */
 
+      /* If the user had requested that the Quick Menu
+       * be spawned during the previous frame, do this now
+       * and exit the function to go to the next frame. */
       if (menu_st->pending_quick_menu)
       {
-         /* If the user had requested that the Quick Menu
-          * be spawned during the previous frame, do this now
-          * and exit the function to go to the next frame.
-          */
-         menu_entries_flush_stack(NULL, MENU_SETTINGS);
+         menu_ctx_list_t list_info;
+
+         /* We are going to push a new menu; ensure
+          * that the current one is cached for animation
+          * purposes */
+         list_info.type   = MENU_LIST_PLAIN;
+         list_info.action = 0;
+         menu_driver_list_cache(&list_info);
+
          p_disp->msg_force = true;
 
          generic_action_ok_displaylist_push("", NULL,
@@ -6904,26 +6902,24 @@ static enum runloop_state_enum runloop_check_state(
    {
       static unsigned volume_hotkey_delay        = 0;
       static unsigned volume_hotkey_delay_active = 0;
-      unsigned volume_hotkey_delay_default       = 15;
-      if (BIT256_GET(current_bits, RARCH_VOLUME_UP))
+      unsigned volume_hotkey_delay_default       = 6;
+      bool volume_hotkey_up                      = BIT256_GET(
+            current_bits, RARCH_VOLUME_UP);
+      bool volume_hotkey_down                    = BIT256_GET(
+            current_bits, RARCH_VOLUME_DOWN);
+
+      if (  (volume_hotkey_up   && !volume_hotkey_down) ||
+            (volume_hotkey_down && !volume_hotkey_up))
       {
          if (volume_hotkey_delay > 0)
             volume_hotkey_delay--;
          else
          {
-            command_event(CMD_EVENT_VOLUME_UP, NULL);
-            if (volume_hotkey_delay_active > 0)
-               volume_hotkey_delay_active--;
-            volume_hotkey_delay = volume_hotkey_delay_active;
-         }
-      }
-      else if (BIT256_GET(current_bits, RARCH_VOLUME_DOWN))
-      {
-         if (volume_hotkey_delay > 0)
-            volume_hotkey_delay--;
-         else
-         {
-            command_event(CMD_EVENT_VOLUME_DOWN, NULL);
+            if (volume_hotkey_up)
+               command_event(CMD_EVENT_VOLUME_UP, NULL);
+            else if (volume_hotkey_down)
+               command_event(CMD_EVENT_VOLUME_DOWN, NULL);
+
             if (volume_hotkey_delay_active > 0)
                volume_hotkey_delay_active--;
             volume_hotkey_delay = volume_hotkey_delay_active;

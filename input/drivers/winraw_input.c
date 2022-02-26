@@ -500,6 +500,7 @@ static LRESULT CALLBACK winraw_callback(
          /* Ignored scancodes */
          switch (mcode)
          {
+            case RETROK_UNKNOWN:
             case 0xE11D:
             case 0xE02A:
             case 0xE036:

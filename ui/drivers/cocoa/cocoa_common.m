@@ -26,20 +26,33 @@
 #ifdef HAVE_COCOATOUCH
 #import "../../../pkg/apple/WebServer/GCDWebUploader/GCDWebUploader.h"
 #import "WebServer.h"
+#if TARGET_OS_IOS && __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
+#import "RetroArch-Swift.h"
+#endif
 #endif
 
 #include "../../../configuration.h"
 #include "../../../retroarch.h"
 #include "../../../verbosity.h"
 
+#include "../../input/drivers/cocoa_input.h"
+#include "../../input/drivers_keyboard/keyboard_event_apple.h"
+
+
 static CocoaView* g_instance;
 
 #ifdef HAVE_COCOATOUCH
 void *glkitview_init(void);
 
-@interface CocoaView()<GCDWebUploaderDelegate> {
-
+@interface CocoaView()<GCDWebUploaderDelegate, UIGestureRecognizerDelegate
+#ifdef HAVE_IOS_TOUCHMOUSE
+,EmulatorTouchMouseHandlerDelegate> {
+    EmulatorTouchMouseHandler *mouseHandler;
 }
+#else
+>
+#endif
+
 @end
 #endif
 
@@ -76,23 +89,12 @@ void *glkitview_init(void);
 #if defined(HAVE_COCOA)
    ui_window_cocoa_t cocoa_view;
    cocoa_view.data = (CocoaView*)self;
-#elif defined(HAVE_COCOATOUCH)
-#if defined(HAVE_COCOA_METAL)
-   self.view       = [UIView new];
-#else
-   self.view       = (BRIDGE GLKView*)glkitview_init();
-#endif
 #endif
     
 #if defined(OSX)
     video_driver_display_type_set(RARCH_DISPLAY_OSX);
     video_driver_display_set(0);
     video_driver_display_userdata_set((uintptr_t)self);
-#elif TARGET_OS_IOS
-    UISwipeGestureRecognizer *swipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(showNativeMenu)];
-    swipe.numberOfTouchesRequired = 4;
-    swipe.direction = UISwipeGestureRecognizerDirectionDown;
-    [self.view addGestureRecognizer:swipe];
 #endif
 
    return self;
@@ -150,6 +152,35 @@ void *glkitview_init(void);
     dispatch_async(dispatch_get_main_queue(), ^{
         command_event(CMD_EVENT_MENU_TOGGLE, NULL);
     });
+}
+
+-(void) showCustomKeyboard
+{
+#ifdef HAVE_IOS_CUSTOMKEYBOARD
+    [self.keyboardController.view setHidden:false];
+    [self updateOverlayAndFocus];
+#endif
+}
+
+-(void) hideCustomKeyboard
+{
+#ifdef HAVE_IOS_CUSTOMKEYBOARD
+    [self.keyboardController.view setHidden:true];
+    [self updateOverlayAndFocus];
+#endif
+}
+
+-(void) updateOverlayAndFocus
+{
+#ifdef HAVE_IOS_CUSTOMKEYBOARD
+    int cmdData = self.keyboardController.view.isHidden ? 0 : 1;
+    command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &cmdData);
+    if ( self.keyboardController.view.isHidden ) {
+        command_event(CMD_EVENT_OVERLAY_INIT, NULL);
+    } else {
+        command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
+    }
+#endif
 }
 
 -(BOOL)prefersHomeIndicatorAutoHidden { return YES; }
@@ -227,12 +258,15 @@ void *glkitview_init(void);
    }
 
    [self adjustViewFrameForSafeArea];
+#ifdef HAVE_IOS_CUSTOMKEYBOARD
+   [self.view bringSubviewToFront:self.keyboardController.view];
+#endif
 }
 
 /* NOTE: This version runs on iOS6+. */
-- (NSUInteger)supportedInterfaceOrientations
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations
 {
-   return (NSUInteger)apple_frontend_settings.orientation_flags;
+   return (UIInterfaceOrientationMask)apple_frontend_settings.orientation_flags;
 }
 
 /* NOTE: This version runs on iOS2-iOS5, but not iOS6+. */
@@ -265,6 +299,50 @@ void *glkitview_init(void);
 #endif
 
 #ifdef HAVE_COCOATOUCH
+
+#pragma mark - UIViewController Lifecycle
+
+-(void)loadView {
+#if defined(HAVE_COCOA_METAL)
+   self.view       = [UIView new];
+#else
+   self.view       = (BRIDGE GLKView*)glkitview_init();
+#endif
+}
+
+-(void)viewDidLoad {
+    [super viewDidLoad];
+#if TARGET_OS_IOS
+    UISwipeGestureRecognizer *swipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(showNativeMenu)];
+    swipe.numberOfTouchesRequired = 4;
+    swipe.delegate = self;
+    swipe.direction = UISwipeGestureRecognizerDirectionDown;
+    [self.view addGestureRecognizer:swipe];
+#ifdef HAVE_IOS_TOUCHMOUSE
+    mouseHandler = [[EmulatorTouchMouseHandler alloc] initWithView:self.view];
+    mouseHandler.delegate = self;
+#endif
+#ifdef HAVE_IOS_CUSTOMKEYBOARD
+    [self setupEmulatorKeyboard];
+    UISwipeGestureRecognizer *showKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(showCustomKeyboard)];
+    showKeyboardSwipe.numberOfTouchesRequired = 3;
+    showKeyboardSwipe.direction = UISwipeGestureRecognizerDirectionUp;
+    showKeyboardSwipe.delegate = self;
+    [self.view addGestureRecognizer:showKeyboardSwipe];
+    UISwipeGestureRecognizer *hideKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(hideCustomKeyboard)];
+    hideKeyboardSwipe.numberOfTouchesRequired = 3;
+    hideKeyboardSwipe.direction = UISwipeGestureRecognizerDirectionDown;
+    hideKeyboardSwipe.delegate = self;
+    [self.view addGestureRecognizer:hideKeyboardSwipe];
+#endif
+#endif
+}
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    return YES;
+}
+
+
 - (void)viewDidAppear:(BOOL)animated
 {
 #if TARGET_OS_IOS
@@ -281,6 +359,47 @@ void *glkitview_init(void);
     [WebServer sharedInstance].webUploader.delegate = self;
 #endif
 }
+
+#if TARGET_OS_IOS && HAVE_IOS_TOUCHMOUSE
+-(void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    [mouseHandler touchesBeganWithTouches:touches];
+}
+
+-(void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    [mouseHandler touchesMovedWithTouches:touches];
+}
+
+-(void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    [mouseHandler touchesCancelledWithTouches:touches];
+}
+
+-(void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    [mouseHandler touchesEndedWithTouches:touches];
+}
+
+#pragma mark EmulatorTouchMouseHandlerDelegate
+-(void)handleMouseClickWithIsLeftClick:(BOOL)isLeftClick isPressed:(BOOL)isPressed {
+    cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
+    if (apple == NULL) {
+        return;
+    }
+    NSUInteger buttonIndex = isLeftClick ? 0 : 1;
+    if (isPressed) {
+        apple->mouse_buttons |= (1 << buttonIndex);
+    } else {
+        apple->mouse_buttons &= ~(1 << buttonIndex);
+    }
+}
+
+-(void)handleMouseMoveWithX:(CGFloat)x y:(CGFloat)y {
+    cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
+    if (apple == NULL) {
+        return;
+    }
+    apple->mouse_rel_x = (int16_t)x;
+    apple->mouse_rel_y = (int16_t)y;
+}
+#endif
 
 #pragma mark GCDWebServerDelegate
 - (void)webServerDidCompleteBonjourRegistration:(GCDWebServer*)server
@@ -309,6 +428,7 @@ void *glkitview_init(void);
     }];
 #endif
 }
+
 #endif
 
 @end
