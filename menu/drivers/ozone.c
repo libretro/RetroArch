@@ -7870,7 +7870,12 @@ static int ozone_list_push(void *data, void *userdata,
          }
          break;
       case DISPLAYLIST_LOAD_DROPBOX_LIST:{
-         
+         MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
+                        info->list,
+                        MENU_ENUM_LABEL_DROPBOX_LIST_SAVES,
+                        PARSE_ACTION,
+                        false);
+         break;
       }
       case DISPLAYLIST_MAIN_MENU:
          {

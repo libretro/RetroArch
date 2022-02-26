@@ -1140,6 +1140,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_FAVORITES,
    "favorites"
    )
+MSG_HASH(MENU_ENUM_LABEL_DROPBOX_LIST_SAVES, 
+"list_dropbox_saves"
+)
 MSG_HASH(
    MENU_ENUM_LABEL_DIRECTORY_SETTINGS,
    "directory_settings"

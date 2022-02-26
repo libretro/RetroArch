@@ -6407,20 +6407,13 @@ unsigned menu_displaylist_build_list(
             count++;
 #endif
          break;
-      case DISPLAYLIST_LOAD_DROPBOX_LIST:{
-         if (menu_entries_append_enum(list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
-                        msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
-                        MENU_ENUM_LABEL_GOTO_FAVORITES,
-                        MENU_SETTING_ACTION, 0, 0))
-                  count++;
-      }
+      case DISPLAYLIST_LOAD_DROPBOX_LIST:
       case DISPLAYLIST_LOAD_DROPBOX_SPECIAL:{
          if (menu_entries_append_enum(list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
-                        msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
-                        MENU_ENUM_LABEL_GOTO_FAVORITES,
-                        MENU_SETTING_ACTION, 0, 0))
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DROPBOX_LIST_SAVES),
+                        msg_hash_to_str(MENU_ENUM_LABEL_DROPBOX_LIST_SAVES),
+                        MENU_ENUM_LABEL_DROPBOX_LIST_SAVES,
+                        MENU_SETTING_ACTION_FAVORITES_DIR, 0, 0))
                   count++;
       }
          
@@ -11502,6 +11495,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             info->need_sort       = false;
             info->need_refresh    = true;
             info->need_push       = true;
+         }
+         break;
+      case DISPLAYLIST_DROPBOX_SAVES_LIST:
+         {
+            // DISPLAYLIST_DROPBOX_SAVES_LIST
+            
          }
          break;
       case DISPLAYLIST_MUSIC_HISTORY:

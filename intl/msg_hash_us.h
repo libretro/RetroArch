@@ -293,6 +293,11 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
    "Browse all content matching the database via a categorized search interface."
    )
+ /* Main Menu > Dropbox Menu */
+
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DROPBOX_LIST_SAVES,
+   "Browse all saves that have been backed up on Dropbox"
+   )
 
 /* Main Menu > Online Updater */
 
