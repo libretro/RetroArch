@@ -11556,7 +11556,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
-   "Sinun on keskeytettävä tai poistettava Hardcore Mode:n saavutukset käytöstä tilojen lataamiseen."
+   "Sinun on keskeytettävä tai poistettava Hardcore Mode:n saavutukset käytöstä pelitila tallennusten lataamiseen."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,

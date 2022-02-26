@@ -3440,7 +3440,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Resetování Po Nahrání Stavu"
+   "Resetování po Nahrání Stavu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
@@ -3448,7 +3448,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Resetování Po Uložení Stavu"
+   "Resetování po Uložení Stavu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
@@ -3814,19 +3814,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
-   "Použití ručního přepisu faktoru měřítka při kreslení widgetů displeje v celoobrazovkovém režimu. Platí pouze v případě, že je vypnuta volba \"Automatické škálování grafických widgetů\". Lze použít ke zvětšení nebo zmenšení velikosti vyzdobených oznámení, indikátorů a ovládacích prvků nezávisle na samotné nabídce."
+   "Použití ručního přepisu faktoru měřítka při kreslení widgetů displeje v celoobrazovkovém režimu. Platí pouze v případě, že je vypnuta volba 'Automatické škálování grafických widgetů'. Lze použít ke zvětšení nebo zmenšení velikosti vyzdobených oznámení, indikátorů a ovládacích prvků nezávisle na samotné nabídce."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
-   "Přepis Měřítka Grafických Widgetů (Windowed)"
+   "Přepis Měřítka Grafických Widgetů (Režim Okna)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
-   "Použití ručního přepisu faktoru měřítka při kreslení widgetů zobrazení v okenním režimu. Platí pouze v případě, že je vypnuta volba \"Automatické škálování grafických widgetů\". Lze použít ke zvětšení nebo zmenšení velikosti vyzdobených oznámení, indikátorů a ovládacích prvků nezávisle na samotné nabídce."
+   "Použití ručního přepisu faktoru měřítka při kreslení widgetů zobrazení v okenním režimu. Platí pouze v případě, že je vypnuta volba 'Automatické škálování grafických widgetů'. Lze použít ke zvětšení nebo zmenšení velikosti vyzdobených oznámení, indikátorů a ovládacích prvků nezávisle na samotné nabídce."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_SHOW,
-   "Zobrazit snímkovou frekvenci"
+   "Zobrazit Snímkovou Frekvenci"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FPS_SHOW,
@@ -3858,7 +3858,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
-   "Zobrazit využití paměti"
+   "Zobrazit Využití Paměti"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_SHOW,
@@ -4225,7 +4225,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
-   "Pozastavení Obsahu Když Není Aktivní"
+   "Pozastavení Obsahu Když není Aktivní"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
@@ -4256,8 +4256,12 @@ MSG_HASH(
    "Počáteční zpoždění v milisekundách při podržení směru posouvání."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
+   "UI Společník"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
-   "Spuštění UI Companion při spuštění systému"
+   "Spuštění UI Společníka při spuštění systému"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
@@ -4276,7 +4280,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
-   "Rychlé menu"
+   "Rychlé Menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS,
@@ -4304,7 +4308,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
-   "Zobrazení možnosti \"Nahrát Obsah\" v hlavní nabídce."
+   "Zobrazení možnosti 'Nahrát Obsah' v hlavní nabídce."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
@@ -4338,7 +4342,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   "Zobrazení možnosti 'Online Aktualizátor' v hlavní nabídce."
+   "Zobrazení možnost 'Online Aktualizátor' v hlavním menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
@@ -4386,7 +4390,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
-   "Zobrazení možnosti \"Ukončit RetroArch\" v hlavní nabídce."
+   "Zobrazení možnosti 'Ukončit RetroArch' v hlavní nabídce."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
@@ -4394,7 +4398,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
-   "V hlavní nabídce zobrazte možnost \"Restartovat RetroArch\"."
+   "V hlavní nabídce zobrazte možnost 'Restartovat RetroArch'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS,
@@ -4402,7 +4406,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
-   "Zobrazení Nabídky \"Nastavení\". (U zařízení Ozone/XMB je Vyžadován Restart)"
+   "Zobrazení Nabídky 'Nastavení'. (U zařízení Ozone/XMB je Vyžadován Restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
@@ -4410,7 +4414,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
-   "Zadání hesla při skrytí karty nastavení umožňuje její pozdější obnovení z nabídky tak, že přejdete na kartu Hlavní nabídka, vyberete možnost \"Povolit kartu nastavení\" a zadáte heslo."
+   "Zadání hesla při skrytí karty nastavení umožňuje její pozdější obnovení z nabídky tak, že přejdete na kartu Hlavní nabídka, vyberete možnost 'Povolit kartu nastavení' a zadáte heslo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
@@ -4418,7 +4422,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "Zobrazení Nabídky \"Oblíbené\". (Ozone/XMB Vyžaduje Restart)"
+   "Zobrazení Nabídky 'Oblíbené'. (Ozone/XMB Vyžaduje Restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
@@ -4426,7 +4430,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
-   "Zobrazit nabídku \"Obrázky\". (Ozone/XMB Vyžaduje Restart)"
+   "Zobrazit nabídku 'Obrázky'. (Ozone/XMB Vyžaduje Restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
@@ -4434,15 +4438,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
-   "Zobrazení nabídky \"Hudba\". (Ozone/XMB Vyžaduje Restart)"
+   "Zobrazení nabídky 'Hudba'. (Ozone/XMB Vyžaduje Restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
-   "Zobrazit Videa"
+   "Zobrazit 'Videa'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
-   "Zobrazit Nabídku \"Videa\". (Ozone/XMB Vyžaduje Restart)"
+   "Zobrazit menu 'Videa'. (Vyžaduje Restartování v Ozonu/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
@@ -4450,11 +4454,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Zobrazení nabídky \"Netplay\". (Ozone/XMB Vyžaduje Restart)"
+   "Zobrazení nabídky 'Netplay'. (Ozone/XMB Vyžaduje Restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
-   "Zobrazení Historie"
+   "Zobrazení 'Historie'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
@@ -4466,7 +4470,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD,
-   "Zobrazte nabídku \"Importovat obsah\". (Ozone/XMB Vyžaduje Restart)"
+   "Zobrazte nabídku 'Importovat obsah'. (Ozone/XMB Vyžaduje Restart)"
    )
 MSG_HASH( /* FIXME can now be replaced with MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD */
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
@@ -4474,11 +4478,11 @@ MSG_HASH( /* FIXME can now be replaced with MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_A
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   "Zobrazení položky \"Importovat obsah\" v hlavní nabídce nebo v podnabídce seznamů skladeb."
+   "Zobrazení položky 'Importovat obsah' v hlavní nabídce nebo v podnabídce seznamů skladeb."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
-   "Hlavní nabídka"
+   "Hlavní Menu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
@@ -4506,7 +4510,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Zadejte typ jádra (pokud existuje), která se mají zobrazit v menu \"Samostatná Jádra\". (V případě Ozone/XMB je vyžadován restart)"
+   "Zadejte typ jádra (pokud existuje), která se mají zobrazit v menu 'Samostatná Jádra'. (V případě Ozone/XMB je vyžadován restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -4597,7 +4601,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Zobrazit možnost \"Zavřít obsah\"."
+   "Zobrazit možnost 'Zavřít obsah'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
@@ -4852,11 +4856,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FRAME_THROTTLE,
-   "Zobrazit 'Frame Throttle'"
+   "Zobrazit 'Omezení Snímkové Frekvence'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FRAME_THROTTLE,
-   "Zobrazit Nastavení 'Frame Throttle'."
+   "Zobrazit Nastavení 'Omezení Snímkové Frekvence'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
@@ -4991,7 +4995,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "Náhledové obrázky"
+   "Miniatury"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS,
@@ -5325,7 +5329,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Vstupní Latence Frames"
+   "Zpoždění Vstupních Snímků"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
@@ -5333,7 +5337,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Rozsah Vstupní Latence Frames"
+   "Vstupní Zpoždění Rozsah Snímků"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
@@ -5428,7 +5432,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
-   "Zahrnutí \"experimentálních\" jader do seznamu stahovače jader. Ta jsou obvykle určena pouze pro vývojové/testovací účely a nedoporučují se pro obecné použití."
+   "Zahrnutí 'experimentálních' jader do seznamu stahovače jader. Ta jsou obvykle určena pouze pro vývojové/testovací účely a nedoporučují se pro obecné použití."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
@@ -5471,7 +5475,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "Omezit počet položek v playistu oblíbených. Po dosažení limitu nebude možné přidávat nové položky, dokud nebudou staré odstraněny. Nastavení hodnoty -1 umožňuje \"neomezený\" počet záznamů.\nUpozornění: Snížení hodnoty odstraní stávající záznamy!"
+   "Omezit počet položek v playlistu 'Oblíbené'. Po dosažení limitu nebude možné přidávat nové položky, dokud nebudou staré odstraněny. Nastavení hodnoty -1 umožňuje 'neomezený' počet záznamů.\nUpozornění: Snížení hodnoty odstraní stávající záznamy!"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
@@ -5495,7 +5499,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL,
-   "Seřaďte playlist s obsahem v abecedním pořadí, s výjimkou \"Historie\", \"Obrázky\", \"Hudba\" a \"Videa\"."
+   "Seřaďte playlist s obsahem v abecedním pořadí, s výjimkou 'Historie', 'Obrázky', 'Hudba' a 'Videa'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
@@ -5547,11 +5551,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
-   "Naposledy hráno:"
+   "Naposledy Hráno:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
-   "Zobrazit rejstřík položek playlistu"
+   "Zobrazit Rejstřík Položek Playlistu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_ENTRY_IDX,
@@ -5563,7 +5567,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Zvolte, který typ záznamu protokolu běhu se má zobrazit na podznačkách playlistu.\nPříslušný protokol běhu musí být povolen v nabídce možností \"Uložení\"."
+   "Zvolte, který typ záznamu protokolu běhu se má zobrazit na podznačkách playlistu.\nPříslušný protokol běhu musí být povolen v nabídce možností 'Uložení'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
