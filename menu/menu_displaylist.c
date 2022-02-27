@@ -503,6 +503,10 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
    }
 
    {
+      struct retro_system_info *system  = &runloop_state_get_ptr()->system.info;
+      const char *core_version          = (system && system->library_version)
+            ? system->library_version
+            : "";
       unsigned i;
       typedef struct menu_features_info
       {
@@ -513,13 +517,15 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
       menu_features_info_t info_list[] = {
          {NULL, MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME},
          {NULL, MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL},
+         {NULL, MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION},
          {NULL, MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME},
          {NULL, MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER},
       };
       info_list[0].name = core_info->core_name;
       info_list[1].name = core_info->display_name;
-      info_list[2].name = core_info->systemname;
-      info_list[3].name = core_info->system_manufacturer;
+      info_list[2].name = !string_is_empty(core_version) ? core_version : core_info->display_version;
+      info_list[3].name = core_info->systemname;
+      info_list[4].name = core_info->system_manufacturer;
 
       for (i = 0; i < ARRAY_SIZE(info_list); i++)
       {
