@@ -26,7 +26,7 @@
 #ifdef HAVE_COCOATOUCH
 #import "../../../pkg/apple/WebServer/GCDWebUploader/GCDWebUploader.h"
 #import "WebServer.h"
-#if TARGET_OS_IOS && __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
+#ifdef HAVE_IOS_SWIFT
 #import "RetroArch-Swift.h"
 #endif
 #endif
@@ -261,6 +261,9 @@ void *glkitview_init(void);
 #ifdef HAVE_IOS_CUSTOMKEYBOARD
    [self.view bringSubviewToFront:self.keyboardController.view];
 #endif
+#if HAVE_IOS_SWIFT
+    [self.view bringSubviewToFront:self.helperBarView];
+#endif
 }
 
 /* NOTE: This version runs on iOS6+. */
@@ -334,6 +337,9 @@ void *glkitview_init(void);
     hideKeyboardSwipe.direction = UISwipeGestureRecognizerDirectionDown;
     hideKeyboardSwipe.delegate = self;
     [self.view addGestureRecognizer:hideKeyboardSwipe];
+#endif
+#if __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
+    [self setupHelperBar];
 #endif
 #endif
 }

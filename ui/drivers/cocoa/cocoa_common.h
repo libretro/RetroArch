@@ -54,6 +54,10 @@
 @property(nonatomic,assign) unsigned int keyboardModifierState;
 #endif
 
+#if defined(HAVE_IOS_SWIFT)
+@property(nonatomic,strong) UIView *helperBarView;
+#endif
+
 + (CocoaView*)get;
 @end
 

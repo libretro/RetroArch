@@ -10,6 +10,10 @@
 #define HAVE_IOS_CUSTOMKEYBOARD
 #endif
 
+#ifndef HAVE_IOS_SWIFT
+#define HAVE_IOS_SWIFT
+#endif
+
 #include "libretro-common/include/libretro.h"
 #import "../ui/drivers/cocoa/cocoa_common.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
