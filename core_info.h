@@ -104,6 +104,7 @@ typedef struct
    uint32_t savestate_support_level;
    bool has_info;
    bool supports_no_game;
+   bool single_purpose;
    bool database_match_archive_member;
    bool is_experimental;
    bool is_locked;

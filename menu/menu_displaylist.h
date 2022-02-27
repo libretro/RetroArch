@@ -83,6 +83,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS,
    DISPLAYLIST_HISTORY,
    DISPLAYLIST_EXPLORE,
+   DISPLAYLIST_CONTENTLESS_CORES,
    DISPLAYLIST_FAVORITES,
    DISPLAYLIST_PLAYLIST,
    DISPLAYLIST_VIDEO_HISTORY,
@@ -344,6 +345,7 @@ bool menu_displaylist_has_subsystems(void);
 #if defined(HAVE_LIBRETRODB)
 unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings);
 #endif
+unsigned menu_displaylist_contentless_cores(file_list_t *list, settings_t *settings);
 
 enum filebrowser_enums filebrowser_get_type(void);
 

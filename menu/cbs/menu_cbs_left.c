@@ -1006,6 +1006,7 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_SUBSYSTEM_LOAD:
             case MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM:
             case MENU_ENUM_LABEL_EXPLORE_ITEM:
+            case MENU_ENUM_LABEL_CONTENTLESS_CORE:
             case MENU_ENUM_LABEL_NO_SETTINGS_FOUND:
                BIND_ACTION_LEFT(cbs, action_left_mainmenu);
                break;
@@ -1043,6 +1044,7 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
                break;
             case MENU_ENUM_LABEL_NO_ITEMS:
             case MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
+            case MENU_ENUM_LABEL_NO_CORES_AVAILABLE:
             case MENU_ENUM_LABEL_EXPLORE_INITIALISING_LIST:
                if (
                         string_ends_with_size(menu_label, "_tab",

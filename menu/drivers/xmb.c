@@ -32,6 +32,7 @@
 #include <streams/file_stream.h>
 #include <encodings/utf.h>
 #include <features/features_cpu.h>
+#include <array/rhmap.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -248,6 +249,7 @@ enum
 #if defined(HAVE_LIBRETRODB)
    XMB_SYSTEM_TAB_EXPLORE,
 #endif
+   XMB_SYSTEM_TAB_CONTENTLESS_CORES,
 
    /* End of this enum - use the last one to determine num of possible tabs */
    XMB_SYSTEM_TAB_MAX_LENGTH
@@ -278,6 +280,8 @@ typedef struct xmb_handle
 
    file_list_t selection_buf_old; /* ptr alignment */
    file_list_t horizontal_list;   /* ptr alignment */
+   /* Maps console tabs to playlist database names */
+   xmb_node_t **playlist_db_node_map;
 
    xmb_node_t main_menu_node;
 #ifdef HAVE_IMAGEVIEWER
@@ -294,6 +298,7 @@ typedef struct xmb_handle
 #if defined(HAVE_LIBRETRODB)
    xmb_node_t explore_tab_node;
 #endif
+   xmb_node_t contentless_cores_tab_node;
    xmb_node_t netplay_tab_node;
    menu_input_pointer_t pointer;
 
@@ -399,6 +404,7 @@ typedef struct xmb_handle
    /* Favorites, History, Images, Music, Videos, user generated */
    bool is_playlist;
    bool is_db_manager_list;
+   bool is_contentless_cores;
 
    /* Load Content file browser */
    bool is_file_list;
@@ -1978,6 +1984,8 @@ static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
       case XMB_SYSTEM_TAB_EXPLORE:
          return &xmb->explore_tab_node;
 #endif
+      case XMB_SYSTEM_TAB_CONTENTLESS_CORES:
+         return &xmb->contentless_cores_tab_node;
       default:
          if (i > xmb->system_tab_end)
             return xmb_get_userdata_from_horizontal_list(
@@ -2228,6 +2236,8 @@ static void xmb_context_reset_horizontal_list(
    depth                           = (xmb->depth > 1) ? 2 : 1;
    xmb->x                          = xmb->icon_size * -(depth*2-2);
 
+   RHMAP_FREE(xmb->playlist_db_node_map);
+
    for (i = 0; i < list_size; i++)
    {
       const char *path = NULL;
@@ -2249,6 +2259,9 @@ static void xmb_context_reset_horizontal_list(
          char iconpath[PATH_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
          char content_texturepath[PATH_MAX_LENGTH];
+
+         /* Add current node to playlist database name map */
+         RHMAP_SET_STR(xmb->playlist_db_node_map, path, node);
 
          iconpath[0]       = sysname[0]             =
             texturepath[0] = content_texturepath[0] = '\0';
@@ -2321,6 +2334,7 @@ static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
 
    xmb_free_list_nodes(&xmb->horizontal_list, false);
    file_list_deinitialize(&xmb->horizontal_list);
+   RHMAP_FREE(xmb->playlist_db_node_map);
 
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
@@ -2472,6 +2486,10 @@ static void xmb_populate_entries(void *data,
    /* Determine whether this is a database manager list */
    xmb->is_db_manager_list = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST));
 
+   /* Determine whether this is the contentless cores menu */
+   xmb->is_contentless_cores = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB)) ||
+                               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST));
+
    /* Determine whether this is a 'file list'
     * (needed for handling thumbnails when viewing images
     * via 'load content')
@@ -2539,7 +2557,8 @@ static void xmb_populate_entries(void *data,
 static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       xmb_node_t *core_node, xmb_node_t *node,
       enum msg_hash_enums enum_idx, const char *enum_path,
-      unsigned type, bool active, bool checked)
+      const char *enum_label, unsigned type, bool active,
+      bool checked)
 {
    switch (enum_idx)
    {
@@ -2635,7 +2654,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_MUSIC];
       case MENU_ENUM_LABEL_GOTO_EXPLORE:
          return xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
-
+      case MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES:
+         return xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
       case MENU_ENUM_LABEL_LOAD_DISC:
       case MENU_ENUM_LABEL_DUMP_DISC:
 #ifdef HAVE_LAKKA
@@ -2865,6 +2885,13 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          break;
       }
 #endif
+      case MENU_ENUM_LABEL_CONTENTLESS_CORE:
+      {
+         uintptr_t icon = menu_contentless_cores_get_entry_icon(enum_label);
+         if (icon)
+            return icon;
+         break;
+      }
       default:
          break;
    }
@@ -3224,7 +3251,7 @@ static int xmb_draw_item(
       return 0;
 
    MENU_ENTRY_INIT(entry);
-   entry.label_enabled      = false;
+   entry.label_enabled      = xmb->is_contentless_cores;
    entry.sublabel_enabled   = (i == current);
    menu_entry_get(&entry, 0, i, list, true);
    entry_type               = entry.type;
@@ -3582,67 +3609,41 @@ static int xmb_draw_item(
       math_matrix_4x4 mymat_tmp;
       gfx_display_ctx_rotate_draw_t rotate_draw;
       uintptr_t texture        = xmb_icon_get_id(xmb, core_node, node,
-            entry.enum_idx, entry.path, entry_type, (i == current), entry.checked);
+            entry.enum_idx, entry.path, entry.label,
+            entry_type, (i == current), entry.checked);
       float x                  = icon_x;
       float y                  = icon_y;
       float scale_factor       = node->zoom;
 
       /* History/Favorite console specific content icons */
       if (  entry_type == FILE_TYPE_RPL_ENTRY
-            && show_history_icons)
+            && show_history_icons != PLAYLIST_SHOW_HISTORY_ICONS_DEFAULT)
       {
          switch (xmb_get_system_tab(xmb, xmb->categories_selection_ptr))
          {
             case XMB_SYSTEM_TAB_HISTORY:
             case XMB_SYSTEM_TAB_FAVORITES:
                {
-                  unsigned j                  = 0;
-                  unsigned p                  = 0;
-                  size_t icon_list_size       = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL);
-                  size_t playlist_size        = 0;
-                  playlist_t *playlist        = NULL;
-                  const struct playlist_entry
-                              *playlist_entry = NULL;
+                  const struct playlist_entry *pl_entry = NULL;
+                  xmb_node_t *db_node                   = NULL;
 
-                  /* Get current playlist */
-                  playlist = playlist_get_cached();
-                  if (!playlist)
-                     break;
+                  playlist_get_index(playlist_get_cached(),
+                        entry.entry_idx, &pl_entry);
 
-                  playlist_size = playlist_get_size(playlist);
-                  if (i >= playlist_size)
-                     break;
-
-                  /* Read playlist entry */
-                  for (p = i; p < playlist_size && playlist_entry == NULL; p++)
+                  if (pl_entry &&
+                      !string_is_empty(pl_entry->db_name) &&
+                      (db_node = RHMAP_GET_STR(xmb->playlist_db_node_map, pl_entry->db_name)))
                   {
-                     playlist_get_index(playlist, p, &playlist_entry);
-                     if (playlist_entry && !string_is_equal(playlist_entry->label, entry.path))
-                        playlist_entry = NULL;
-                  }
-
-                  if (!playlist_entry)
-                     break;
-
-                  for (j = 0; j < icon_list_size; j++)
-                  {
-                     xmb_node_t *node = xmb_get_userdata_from_horizontal_list(xmb, j);
-                     if (!node)
-                        continue;
-
-                     if (!string_is_empty(playlist_entry->db_name)
-                           && string_is_equal(xmb->horizontal_list.list[j].path, playlist_entry->db_name))
+                     switch (show_history_icons)
                      {
-                        switch (show_history_icons)
-                        {
-                           case PLAYLIST_SHOW_HISTORY_ICONS_MAIN:
-                              texture = node->icon;
-                              break;
-                           case PLAYLIST_SHOW_HISTORY_ICONS_CONTENT:
-                              texture = node->content_icon;
-                              break;
-                        }
-                        break;
+                        case PLAYLIST_SHOW_HISTORY_ICONS_MAIN:
+                           texture = db_node->icon;
+                           break;
+                        case PLAYLIST_SHOW_HISTORY_ICONS_CONTENT:
+                           texture = db_node->content_icon;
+                           break;
+                        default:
+                           break;
                      }
                   }
                }
@@ -5933,6 +5934,12 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_EXPLORE;
 #endif
 
+#if defined(HAVE_DYNAMIC)
+   if (settings->uints.menu_content_show_contentless_cores !=
+         MENU_CONTENTLESS_CORES_DISPLAY_NONE)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_CONTENTLESS_CORES;
+#endif
+
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
 
    /* TODO/FIXME - we don't use framebuffer at all
@@ -5990,6 +5997,7 @@ error:
    xmb_free_list_nodes(&xmb->horizontal_list, false);
    file_list_deinitialize(&xmb->selection_buf_old);
    file_list_deinitialize(&xmb->horizontal_list);
+   RHMAP_FREE(xmb->playlist_db_node_map);
    return NULL;
 }
 
@@ -6003,6 +6011,7 @@ static void xmb_free(void *data)
       xmb_free_list_nodes(&xmb->horizontal_list, false);
       file_list_deinitialize(&xmb->selection_buf_old);
       file_list_deinitialize(&xmb->horizontal_list);
+      RHMAP_FREE(xmb->playlist_db_node_map);
 
       video_coord_array_free(&xmb->raster_block.carr);
       video_coord_array_free(&xmb->raster_block2.carr);
@@ -6409,6 +6418,10 @@ static void xmb_context_reset_textures(
    xmb->explore_tab_node.alpha  = xmb->categories_active_alpha;
    xmb->explore_tab_node.zoom   = xmb->categories_active_zoom;
 #endif
+
+   xmb->contentless_cores_tab_node.icon  = xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
+   xmb->contentless_cores_tab_node.alpha = xmb->categories_active_alpha;
+   xmb->contentless_cores_tab_node.zoom  = xmb->categories_active_zoom;
 
 #ifdef HAVE_NETWORKING
    xmb->netplay_tab_node.icon   = xmb->textures.list[XMB_TEXTURE_NETPLAY];
@@ -6871,6 +6884,12 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
                   MENU_EXPLORE_TAB;
                break;
 #endif
+            case XMB_SYSTEM_TAB_CONTENTLESS_CORES:
+               menu_stack->list[stack_size - 1].label =
+                  strdup(msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB));
+               menu_stack->list[stack_size - 1].type =
+                  MENU_CONTENTLESS_CORES_TAB;
+               break;
             default:
                menu_stack->list[stack_size - 1].label =
                   strdup(msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU));

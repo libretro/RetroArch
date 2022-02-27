@@ -90,6 +90,7 @@ enum menu_settings_type
    MENU_IMAGES_TAB,
    MENU_NETPLAY_TAB,
    MENU_EXPLORE_TAB,
+   MENU_CONTENTLESS_CORES_TAB,
    MENU_ADD_TAB,
    MENU_PLAYLISTS_TAB,
    MENU_SETTING_DROPDOWN_ITEM,
@@ -267,6 +268,8 @@ enum menu_settings_type
    MENU_SETTING_ACTION_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
    MENU_SETTING_ACTION_CORE_OPTIONS_RESET,
    MENU_SETTING_ACTION_CORE_OPTIONS_FLUSH,
+
+   MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN,
 
    MENU_SETTINGS_LAST
 };
@@ -454,6 +457,7 @@ struct menu_state
       size_t begin;
    } entries;
    size_t   selection_ptr;
+   size_t   contentless_core_ptr;
 
    /* Quick jumping indices with L/R.
     * Rebuilt when parsing directory. */
@@ -634,6 +638,38 @@ void menu_explore_free_state(explore_state_t *state);
 void menu_explore_free(void);
 void menu_explore_set_state(explore_state_t *state);
 #endif
+
+/* Contentless cores START */
+enum contentless_core_runtime_status
+{
+   CONTENTLESS_CORE_RUNTIME_UNKNOWN = 0,
+   CONTENTLESS_CORE_RUNTIME_MISSING,
+   CONTENTLESS_CORE_RUNTIME_VALID
+};
+
+typedef struct
+{
+   char *runtime_str;
+   char *last_played_str;
+   enum contentless_core_runtime_status status;
+} contentless_core_runtime_info_t;
+
+typedef struct
+{
+   char *licenses_str;
+   contentless_core_runtime_info_t runtime;
+} contentless_core_info_entry_t;
+
+uintptr_t menu_contentless_cores_get_entry_icon(const char *core_id);
+void menu_contentless_cores_context_init(void);
+void menu_contentless_cores_context_deinit(void);
+void menu_contentless_cores_free(void);
+void menu_contentless_cores_set_runtime(const char *core_id,
+      const contentless_core_runtime_info_t *runtime_info);
+void menu_contentless_cores_get_info(const char *core_id,
+      const contentless_core_info_entry_t **info);
+void menu_contentless_cores_flush_runtime(void);
+/* Contentless cores END */
 
 /* Returns true if search filter is enabled
  * for the specified menu list */

@@ -1,0 +1,30 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "C7C12374C7051F8843B3EFA1ACCAF2907102CCF7",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "76200F0D6584D865E96F58DE862E738E88B23A3C" : 9223372036854775807,
+    "C7C12374C7051F8843B3EFA1ACCAF2907102CCF7" : 9223372036854775807
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "8BA6E269-73BB-4AAE-8F4A-967CCF8ACA14",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "76200F0D6584D865E96F58DE862E738E88B23A3C" : "",
+    "C7C12374C7051F8843B3EFA1ACCAF2907102CCF7" : "retroarch\/"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "RetroArch_iOS10",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "pkg\/apple\/RetroArch_iOS10.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/libretro\/libretro-super.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "76200F0D6584D865E96F58DE862E738E88B23A3C"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/libretro\/RetroArch.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "C7C12374C7051F8843B3EFA1ACCAF2907102CCF7"
+    }
+  ]
+}

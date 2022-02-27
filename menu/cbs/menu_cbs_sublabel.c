@@ -95,6 +95,111 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
    return 1;
 }
 
+static int menu_action_sublabel_contentless_core(file_list_t *list,
+      unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len)
+{
+   const char *core_path                      = path;
+   core_info_t *core_info                     = NULL;
+   const contentless_core_info_entry_t *entry = NULL;
+   const char *menu_ident                     = menu_driver_ident();
+   bool display_licenses                      = true;
+   bool display_runtime                       = true;
+   settings_t *settings                       = config_get_ptr();
+   bool playlist_show_sublabels               = settings->bools.playlist_show_sublabels;
+   unsigned playlist_sublabel_runtime_type    = settings->uints.playlist_sublabel_runtime_type;
+   bool content_runtime_log                   = settings->bools.content_runtime_log;
+   bool content_runtime_log_aggregate         = settings->bools.content_runtime_log_aggregate;
+   const char *directory_runtime_log          = settings->paths.directory_runtime_log;
+   const char *directory_playlist             = settings->paths.directory_playlist;
+   enum playlist_sublabel_last_played_style_type
+         playlist_sublabel_last_played_style  =
+               (enum playlist_sublabel_last_played_style_type)
+                     settings->uints.playlist_sublabel_last_played_style;
+   enum playlist_sublabel_last_played_date_separator_type
+         menu_timedate_date_separator         =
+               (enum playlist_sublabel_last_played_date_separator_type)
+                     settings->uints.menu_timedate_date_separator;
+
+   if (!playlist_show_sublabels)
+      return 0;
+
+   /* Search for specified core */
+   if (!core_info_find(core_path, &core_info) ||
+       !core_info->supports_no_game)
+      return 1;
+
+   /* Get corresponding contentless core info entry */
+   menu_contentless_cores_get_info(core_info->core_file_id.str,
+         &entry);
+
+   if (!entry)
+      return 1;
+
+   /* Determine which info we need to display */
+
+   /* > Runtime info is always omitted when using Ozone
+    * > Check if required runtime log is enabled */
+   if (((playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE) &&
+         !content_runtime_log) ||
+       ((playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_AGGREGATE) &&
+         !content_runtime_log_aggregate) ||
+       string_is_equal(menu_ident, "ozone"))
+      display_runtime = false;
+
+   /* > License info is always displayed unless
+    *   we are using GLUI with runtime info enabled */
+   if (display_runtime && string_is_equal(menu_ident, "glui"))
+      display_licenses = false;
+
+   if (display_licenses)
+      strlcpy(s, entry->licenses_str, len);
+
+   if (display_runtime)
+   {
+      /* Check whether runtime info should be loaded
+       * from log file */
+      if (entry->runtime.status == CONTENTLESS_CORE_RUNTIME_UNKNOWN)
+         runtime_update_contentless_core(
+               core_path,
+               directory_runtime_log,
+               directory_playlist,
+               (playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE),
+               playlist_sublabel_last_played_style,
+               menu_timedate_date_separator);
+
+      /* Check whether runtime info is valid */
+      if (entry->runtime.status == CONTENTLESS_CORE_RUNTIME_VALID)
+      {
+         size_t n = 0;
+         char tmp[64];
+
+         tmp[0] = '\0';
+
+         if (display_licenses)
+         {
+            tmp[0  ] = '\n';
+            tmp[1  ] = '\0';
+         }
+         n           = strlcat(tmp, entry->runtime.runtime_str, sizeof(tmp));
+
+         if (n < 64 - 1)
+         {
+            tmp[n  ] = '\n';
+            tmp[n+1] = '\0';
+            n        = strlcat(tmp, entry->runtime.last_played_str, sizeof(tmp));
+         }
+
+         if (n >= 64)
+            n = 0; /* Silence GCC warnings... */
+         (void)n;
+         if (!string_is_empty(tmp))
+            strlcat(s, tmp, len);
+      }
+   }
+
+   return 0;
+}
+
 #ifdef HAVE_CHEEVOS
 static int menu_action_sublabel_achievement_pause_menu(file_list_t* list,
       unsigned type, unsigned i, const char* label, const char* path, char* s, size_t len)
@@ -693,6 +798,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_goto_images,                        
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_goto_music,                            MENU_ENUM_SUBLABEL_GOTO_MUSIC)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_goto_video,                            MENU_ENUM_SUBLABEL_GOTO_VIDEO)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_goto_explore,                          MENU_ENUM_SUBLABEL_GOTO_EXPLORE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_goto_contentless_cores,                MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_filebrowser_settings,             MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_filebrowser_open_uwp_permissions, MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_filebrowser_open_picker,          MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_PICKER)
@@ -855,6 +961,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_import_content_tab,            
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_import_content_entry,             MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_playlist_tabs,                    MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_explore_tab,                      MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_contentless_cores_tab,            MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_main_menu_enable_settings,             MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_rgui_show_start_screen,                MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_header_opacity,                   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY)
@@ -1549,17 +1656,18 @@ static int action_bind_sublabel_playlist_entry(
       size_t n = 0;
       char tmp[64];
 
-      tmp[0  ] = '\n';
-      tmp[1  ] = '\0';
-
-      n        = strlcat(tmp, entry->runtime_str, sizeof(tmp));
-
-      tmp[n  ] = '\n';
-      tmp[n+1] = '\0';
-
       /* Runtime/last played strings are now cached in the
        * playlist, so we can add both in one go */
-      n = strlcat(tmp, entry->last_played_str, sizeof(tmp));
+      tmp[0  ] = '\n';
+      tmp[1  ] = '\0';
+      n        = strlcat(tmp, entry->runtime_str, sizeof(tmp));
+
+      if (n < 64 - 1)
+      {
+         tmp[n  ] = '\n';
+         tmp[n+1] = '\0';
+         n        = strlcat(tmp, entry->last_played_str, sizeof(tmp));
+      }
 
       if (n >= 64)
          n = 0; /* Silence GCC warnings... */
@@ -1970,6 +2078,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CORE_MANAGER_ENTRY:
             BIND_ACTION_SUBLABEL(cbs, menu_action_sublabel_file_browser_core);
             break;
+         case MENU_ENUM_LABEL_CONTENTLESS_CORE:
+            BIND_ACTION_SUBLABEL(cbs, menu_action_sublabel_contentless_core);
+            break;
 #ifdef HAVE_NETWORKING
          case MENU_ENUM_LABEL_CORE_UPDATER_ENTRY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_updater_entry);
@@ -2297,6 +2408,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CONTENT_SHOW_EXPLORE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_explore_tab);
             break;
+         case MENU_ENUM_LABEL_CONTENT_SHOW_CONTENTLESS_CORES:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_contentless_cores_tab);
+            break;
          case MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_main_menu_enable_settings);
             break;
@@ -2320,6 +2434,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_GOTO_EXPLORE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_goto_explore);
+            break;
+         case MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_goto_contentless_cores);
             break;
          case MENU_ENUM_LABEL_GOTO_FAVORITES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_goto_favorites);
