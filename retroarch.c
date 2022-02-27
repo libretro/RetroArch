@@ -4064,7 +4064,7 @@ static void retroarch_print_version(void)
    frontend_driver_attach_console();
    str[0] = '\0';
 
-   fprintf(stderr, "%s: %s -- v%s",
+   fprintf(stdout, "%s: %s -- v%s",
          msg_hash_to_str(MSG_PROGRAM),
          msg_hash_to_str(MSG_LIBRETRO_FRONTEND),
          PACKAGE_VERSION);
@@ -4095,7 +4095,7 @@ static void retroarch_print_help(const char *arg0)
    puts("===================================================================");
    fputs("\n", stdout);
 
-   printf("Usage: %s [OPTIONS]... [FILE]\n\n", arg0);
+   fprintf(stdout, "Usage: %s [OPTIONS]... [FILE]\n\n", arg0);
 
    strlcat(buf, "  -h, --help                     "
          "Show this help message.\n", sizeof(buf));
@@ -4655,8 +4655,12 @@ static bool retroarch_parse_input_and_config(
 
             /* Must handle '?' otherwise you get an infinite loop */
             case '?':
-               retroarch_print_help(argv[0]);
-               retroarch_fail(1, "retroarch_parse_input()");
+               frontend_driver_attach_console();
+#ifdef _WIN32
+               fprintf(stderr, "\n%s: unrecognized option '%s'\n", argv[0], argv[optind]);
+#endif
+               fprintf(stderr, "Try '%s --help' for more information\n", argv[0]);
+               exit(EXIT_FAILURE);
                break;
             /* All other arguments are handled in the second pass */
          }
