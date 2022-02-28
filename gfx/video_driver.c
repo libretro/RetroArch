@@ -1170,8 +1170,8 @@ void video_switch_refresh_rate_maybe(
    /* Black frame insertion + swap interval multiplier */
    refresh_rate = (refresh_rate * (video_bfi + 1.0f) * video_swap_interval);
 
-   /* Fallback when target refresh rate is not exposed */
-   if (!video_display_server_has_refresh_rate(refresh_rate))
+   /* Fallback when target refresh rate is not exposed or when below standards */
+   if (!video_display_server_has_refresh_rate(refresh_rate) || refresh_rate < 50)
       refresh_rate = video_refresh_rate;
 
    *refresh_rate_suggest = refresh_rate;

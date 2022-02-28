@@ -77,6 +77,8 @@ typedef struct output_info
    unsigned physical_width;
    unsigned physical_height;
    unsigned scale;
+   char *make;
+   char *model;
    struct wl_list link; /* wl->all_outputs */
 } output_info_t;
 
@@ -96,7 +98,7 @@ typedef struct input_ctx_wayland_data
 
    struct
    {
-      struct wl_pointer *surface;
+      struct wl_surface *surface;
       int last_x, last_y;
       int x, y;
       int delta_x, delta_y;
@@ -154,10 +156,10 @@ typedef struct gfx_ctx_wayland_data
    int num_active_touches;
    int swap_interval;
    touch_pos_t active_touch_positions[MAX_TOUCHES]; /* int32_t alignment */
-   unsigned prev_width;
-   unsigned prev_height;
    unsigned width;
    unsigned height;
+   unsigned floating_width;
+   unsigned floating_height;
    unsigned last_buffer_scale;
    unsigned buffer_scale;
 
@@ -167,7 +169,14 @@ typedef struct gfx_ctx_wayland_data
    bool resize;
    bool configured;
    bool activated;
+   bool reported_display_size;
 } gfx_ctx_wayland_data_t;
+
+typedef struct shm_buffer {
+   struct wl_buffer *wl_buffer;
+   void *data;
+   size_t data_size;
+} shm_buffer_t;
 
 #ifdef HAVE_XKBCOMMON
 /* FIXME: Move this into a header? */
@@ -184,6 +193,17 @@ void handle_toplevel_close(void *data,
       struct xdg_toplevel *xdg_toplevel);
 
 void flush_wayland_fd(void *data);
+
+int create_anonymous_file(off_t size);
+
+shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl,
+   int width, int height, uint32_t format);
+
+void shm_buffer_paint_checkerboard(shm_buffer_t *buffer,
+      int width, int height, int scale,
+      size_t chk, uint32_t bg, uint32_t fg);
+
+void draw_splash_screen(gfx_ctx_wayland_data_t *wl);
 
 extern const struct wl_keyboard_listener keyboard_listener;
 
@@ -202,5 +222,7 @@ extern const struct xdg_surface_listener xdg_surface_listener;
 extern const struct wl_output_listener output_listener;
 
 extern const struct wl_registry_listener registry_listener;
+
+extern const struct wl_buffer_listener shm_buffer_listener;
 
 #endif

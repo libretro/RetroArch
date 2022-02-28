@@ -225,7 +225,9 @@ end:
 
 /* Initialise runtime log, loading current parameters
  * if log file exists. Returned object must be free()'d.
- * Returns NULL if content_path and/or core_path are invalid */
+ * Returns NULL if core_path is invalid, or content_path
+ * is invalid and core does not support contentless
+ * operation */
 runtime_log_t *runtime_log_init(
       const char *content_path,
       const char *core_path,
@@ -238,6 +240,7 @@ runtime_log_t *runtime_log_init(
    char log_file_dir[PATH_MAX_LENGTH];
    char log_file_path[PATH_MAX_LENGTH];
    char tmp_buf[PATH_MAX_LENGTH];
+   bool supports_no_game      = false;
    core_info_t *core_info     = NULL;
    runtime_log_t *runtime_log = NULL;
 
@@ -257,18 +260,23 @@ runtime_log_t *runtime_log_init(
 
    if (  string_is_empty(core_path) ||
          string_is_equal(core_path, "builtin") ||
-         string_is_equal(core_path, "DETECT") ||
-         string_is_empty(content_path))
+         string_is_equal(core_path, "DETECT"))
       return NULL;
 
-   /* Get core name
-    * Note: An annoyance - this is required even when
-    * we are performing aggregate (not per core) logging,
-    * since content name is sometimes dependent upon core
+   /* Get core info:
+    * - Need to know if core supports contentless operation
+    * - Need core name in order to generate file path when
+    *   per-core logging is enabled
+    * Note: An annoyance - core name is required even when
+    * we are performing aggregate logging, since content
+    * name is sometimes dependent upon core
     * (e.g. see TyrQuake below) */
-   if (core_info_find(core_path, &core_info) &&
-       core_info->core_name)
-      strlcpy(core_name, core_info->core_name, sizeof(core_name));
+   if (core_info_find(core_path, &core_info))
+   {
+      supports_no_game = core_info->supports_no_game;
+      if (!string_is_empty(core_info->core_name))
+         strlcpy(core_name, core_info->core_name, sizeof(core_name));
+   }
 
    if (string_is_empty(core_name))
       return NULL;
@@ -313,10 +321,18 @@ runtime_log_t *runtime_log_init(
       }
    }
 
-   /* Get content name
-    * NOTE: TyrQuake requires a specific hack, since all
+   /* Get content name */
+   if (string_is_empty(content_path))
+   {
+      /* If core supports contentless operation and
+       * no content is provided, 'content' is simply
+       * the name of the core itself */
+      if (supports_no_game)
+         strlcpy(content_name, core_name, sizeof(content_name));
+   }
+   /* NOTE: TyrQuake requires a specific hack, since all
     * content has the same name... */
-   if (string_is_equal(core_name, "TyrQuake"))
+   else if (string_is_equal(core_name, "TyrQuake"))
    {
       const char *last_slash = find_last_slash(content_path);
       if (last_slash)
@@ -1356,3 +1372,98 @@ void runtime_update_playlist(
    /* Update playlist */
    playlist_update_runtime(playlist, idx, &update_entry, false);
 }
+
+#if defined(HAVE_MENU)
+/* Contentless cores manipulation */
+
+/* Updates specified contentless core runtime values with
+ * contents of associated log file */
+void runtime_update_contentless_core(
+      const char *core_path,
+      const char *dir_runtime_log,
+      const char *dir_playlist,
+      bool log_per_core,
+      enum playlist_sublabel_last_played_style_type timedate_style,
+      enum playlist_sublabel_last_played_date_separator_type date_separator)
+{
+   char runtime_str[64];
+   char last_played_str[64];
+   core_info_t *core_info                       = NULL;
+   runtime_log_t *runtime_log                   = NULL;
+   contentless_core_runtime_info_t runtime_info = {0};
+#if (defined(HAVE_OZONE) || defined(HAVE_MATERIALUI))
+   const char *menu_ident                       = menu_driver_ident();
+#endif
+
+   /* Sanity check */
+   if (string_is_empty(core_path) ||
+       !core_info_find(core_path, &core_info) ||
+       !core_info->supports_no_game)
+      return;
+
+   /* Set fallback runtime status
+    * (saves 'if' checks later...) */
+   runtime_info.status = CONTENTLESS_CORE_RUNTIME_MISSING;
+
+   /* 'Attach' runtime/last played strings */
+   runtime_str[0]               = '\0';
+   last_played_str[0]           = '\0';
+   runtime_info.runtime_str     = runtime_str;
+   runtime_info.last_played_str = last_played_str;
+
+   /* Attempt to open log file */
+   runtime_log = runtime_log_init(
+         NULL,
+         core_path,
+         dir_runtime_log,
+         dir_playlist,
+         log_per_core);
+
+   if (runtime_log)
+   {
+      /* Check whether a non-zero runtime has been recorded */
+      if (runtime_log_has_runtime(runtime_log))
+      {
+         /* Read current runtime */
+         runtime_log_get_runtime_str(runtime_log,
+               runtime_str, sizeof(runtime_str));
+
+         /* Read last played timestamp */
+         runtime_log_get_last_played_str(runtime_log,
+               last_played_str, sizeof(last_played_str),
+               timedate_style, date_separator);
+
+         /* Contentless core entry now contains valid runtime data */
+         runtime_info.status = CONTENTLESS_CORE_RUNTIME_VALID;
+      }
+
+      /* Clean up */
+      free(runtime_log);
+   }
+
+#if (defined(HAVE_OZONE) || defined(HAVE_MATERIALUI))
+   /* Ozone and GLUI require runtime/last played strings
+    * to be populated even when no runtime is recorded */
+   if (runtime_info.status != CONTENTLESS_CORE_RUNTIME_VALID)
+   {
+      if (string_is_equal(menu_ident, "ozone") ||
+          string_is_equal(menu_ident, "glui"))
+      {
+         runtime_log_get_runtime_str(NULL,
+               runtime_str, sizeof(runtime_str));
+         runtime_log_get_last_played_str(NULL,
+               last_played_str, sizeof(last_played_str),
+               timedate_style, date_separator);
+
+         /* While runtime data does not exist, the contentless
+          * core entry does now contain valid information... */
+         runtime_info.status = CONTENTLESS_CORE_RUNTIME_VALID;
+      }
+   }
+#endif
+
+   /* Update contentless core */
+   menu_contentless_cores_set_runtime(core_info->core_file_id.str,
+         &runtime_info);
+}
+#endif

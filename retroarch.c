@@ -1285,10 +1285,6 @@ enum rarch_content_type path_is_media_type(const char *path)
       case FILE_TYPE_XM:
          return RARCH_CONTENT_MUSIC;
 #endif
-#ifdef HAVE_GONG
-      case FILE_TYPE_GONG:
-         return RARCH_CONTENT_GONG;
-#endif
 
       case FILE_TYPE_NONE:
       default:
@@ -5277,12 +5273,6 @@ bool retroarch_main_init(int argc, char *argv[])
                }
                break;
 #endif
-#ifdef HAVE_GONG
-            case RARCH_CONTENT_GONG:
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-               runloop_set_current_core_type(CORE_TYPE_GONG, false);
-               break;
-#endif
             default:
                break;
          }
@@ -5374,6 +5364,12 @@ bool retroarch_main_init(int argc, char *argv[])
          else
             input_remapping_restore_global_config(true);
 
+#ifdef HAVE_DYNAMIC
+         /* Ensure that currently loaded core is properly
+          * deinitialised */
+         if (runloop_st->current_core_type != CORE_TYPE_DUMMY)
+            command_event(CMD_EVENT_CORE_DEINIT, NULL);
+#endif
          /* Attempt initializing dummy core */
          runloop_st->current_core_type = CORE_TYPE_DUMMY;
          if (!command_event(CMD_EVENT_CORE_INIT, &runloop_st->current_core_type))

@@ -286,6 +286,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
    "Przeglądaj wszystkie treści pasujące do bazy danych za pomocą kategoryzowanego interfejsu wyszukiwania."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
+   "Tutaj pojawią się zainstalowane rdzenie, które mogą działać bez wczytywania treści."
+   )
 
 /* Main Menu > Online Updater */
 
@@ -4473,6 +4477,10 @@ MSG_HASH(
    "Pokaż opcję eksploratora zawartości. (Wymagany restart w Ozone/XMB)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
+   "Wszystkie"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
    "Pokaż datę i czas"
    )
@@ -5165,7 +5173,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
-   "Wprowadź adres własnego serwera przekaźnika. Format: adres lub adres|port"
+   "Wprowadź adres własnego serwera. Format: adres lub adres|port."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
@@ -10104,7 +10112,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
-   "Mapowanie portu UPNP Netplay nie powiodło się"
+   "Mapowanie portu UPnP Netplay nie powiodło się"
    )
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,

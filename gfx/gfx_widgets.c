@@ -822,7 +822,28 @@ static void gfx_widgets_layout(
             is_threaded, font_file, BASE_FONT_SIZE);
 
       /* Create msg_queue font */
-      fill_pathname_join(font_file, ozone_path, "regular.ttf", sizeof(font_file));
+      switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
+      {
+         case RETRO_LANGUAGE_ARABIC:
+         case RETRO_LANGUAGE_PERSIAN:
+            fill_pathname_application_special(font_file, sizeof(font_file),
+                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+            fill_pathname_join(font_file, font_file, "fallback-font.ttf", sizeof(font_file));
+            break;
+         case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
+         case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
+            fill_pathname_application_special(font_file, sizeof(font_file),
+                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+            fill_pathname_join(font_file, font_file, "chinese-fallback-font.ttf", sizeof(font_file));
+            break;
+         case RETRO_LANGUAGE_KOREAN:
+            fill_pathname_application_special(font_file, sizeof(font_file),
+                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+            fill_pathname_join(font_file, font_file, "korean-fallback-font.ttf", sizeof(font_file));
+            break;
+         default:
+            fill_pathname_join(font_file, ozone_path, "regular.ttf", sizeof(font_file));
+      }
       gfx_widgets_font_init(p_disp, p_dispwidget,
             &p_dispwidget->gfx_widget_fonts.msg_queue,
             is_threaded, font_file, MSG_QUEUE_FONT_SIZE);

@@ -1799,7 +1799,7 @@ static void frontend_unix_get_env(int *argc,
    char base_path[PATH_MAX] = {0};
 #if defined(RARCH_UNIX_CWD_ENV)
    /* The entire path is zero initialized. */
-   base_path[0] = '.';
+   getcwd(base_path, sizeof(base_path));
 #elif defined(DINGUX)
    dingux_get_base_path(base_path, sizeof(base_path));
 #else

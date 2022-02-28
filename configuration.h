@@ -295,6 +295,7 @@ typedef struct settings
       unsigned menu_ticker_type;
       unsigned menu_scroll_delay;
       unsigned menu_content_show_add_entry;
+      unsigned menu_content_show_contentless_cores;
       unsigned menu_screensaver_timeout;
       unsigned menu_screensaver_animation;
 

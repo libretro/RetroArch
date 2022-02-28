@@ -627,6 +627,7 @@ void drivers_init(
 #ifdef HAVE_LIBRETRODB
          menu_explore_context_init();
 #endif
+         menu_contentless_cores_context_init();
       }
    }
 
@@ -694,6 +695,7 @@ void driver_uninit(int flags)
 #ifdef HAVE_LIBRETRODB
       menu_explore_context_deinit();
 #endif
+      menu_contentless_cores_context_deinit();
 
       menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
    }

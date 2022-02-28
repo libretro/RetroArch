@@ -3586,6 +3586,17 @@ static unsigned menu_displaylist_parse_playlists(
                   MENU_EXPLORE_TAB, 0, 0))
             count++;
 #endif
+
+#if defined(HAVE_DYNAMIC)
+      if (settings->uints.menu_content_show_contentless_cores !=
+            MENU_CONTENTLESS_CORES_DISPLAY_NONE)
+         if (menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES),
+                  msg_hash_to_str(MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES),
+                  MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES,
+                  MENU_CONTENTLESS_CORES_TAB, 0, 0))
+            count++;
+#endif
       if (settings->bools.menu_content_show_favorites)
          if (menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
@@ -4175,26 +4186,53 @@ static unsigned menu_displaylist_parse_content_information(
    const char *content_path            = NULL;
    const char *core_path               = NULL;
    const char *db_name                 = NULL;
+   bool playlist_origin                = true;
    bool playlist_valid                 = false;
+   const char *origin_label            = NULL;
+   struct menu_state *menu_st          = menu_state_get_ptr();
+   file_list_t *list                   = NULL;
    unsigned count                      = 0;
    bool content_loaded                 = !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
+      && !string_is_empty(loaded_content_path)
       && string_is_equal(menu->deferred_path, loaded_content_path);
+   bool core_supports_no_game          = false;
 
    core_name[0]                        = '\0';
 
-   /* If content is currently running, have to make sure
-    * we have a valid playlist to work with
-    * (if content is not running, then playlist will always
-    * be valid provided that playlist_get_cached() does not
-    * return NULL) */
-   if (content_loaded)
+   /* Check the origin menu from which the information
+    * entry was selected
+    * > Can only assume a valid playlist if the origin
+    *   was an actual playlist - i.e. cached playlist is
+    *   dubious if information was selected from
+    *   'Main Menu > Quick Menu' or 'Standalone Cores >
+    *   Quick Menu' */
+   if (menu_st->entries.list)
+      list  = MENU_LIST_GET(menu_st->entries.list, 0);
+   if (list && (list->size > 2))
    {
-      if (!string_is_empty(loaded_content_path) && !string_is_empty(loaded_core_path))
+      file_list_get_at_offset(list, list->size - 3, NULL,
+            &origin_label, NULL, NULL);
+
+      if (string_is_equal(origin_label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU)) ||
+          string_is_equal(origin_label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB)) ||
+          string_is_equal(origin_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST)))
+         playlist_origin = false;
+   }
+
+   /* If origin menu was a playlist, may rely on
+    * return value from playlist_get_cached() */
+   if (playlist_origin)
+      playlist_valid = !!playlist;
+   else
+   {
+      /* If origin menu was not a playlist, then
+       * check currently loaded content against
+       * last cached playlist */
+      if (content_loaded &&
+          !string_is_empty(loaded_core_path))
          playlist_valid = playlist_index_is_valid(
                playlist, idx, loaded_content_path, loaded_core_path);
    }
-   else if (playlist)
-      playlist_valid = true;
 
    if (playlist_valid)
    {
@@ -4225,39 +4263,48 @@ static unsigned menu_displaylist_parse_content_information(
       core_path      = loaded_core_path;
 
       if (core_info_find(core_path, &core_info))
+      {
+         core_supports_no_game = core_info->supports_no_game;
+
          if (!string_is_empty(core_info->display_name))
             strlcpy(core_name, core_info->display_name, sizeof(core_name));
+      }
    }
 
-   /* Content label */
-   tmp[0]   = '\0';
-   snprintf(tmp, sizeof(tmp),
-         "%s: %s",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL),
-         !string_is_empty(content_label)
-               ? content_label
-               : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
-         );
-   if (menu_entries_append_enum(info->list, tmp,
-         msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_LABEL),
-         MENU_ENUM_LABEL_CONTENT_INFO_LABEL,
-         0, 0, 0))
-      count++;
+   /* If content path is empty and core supports
+    * contentless operation, skip label/path entries */
+   if (!(core_supports_no_game && string_is_empty(content_path)))
+   {
+      /* Content label */
+      tmp[0]   = '\0';
+      snprintf(tmp, sizeof(tmp),
+            "%s: %s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL),
+            !string_is_empty(content_label)
+                  ? content_label
+                  : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
+            );
+      if (menu_entries_append_enum(info->list, tmp,
+            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_LABEL),
+            MENU_ENUM_LABEL_CONTENT_INFO_LABEL,
+            0, 0, 0))
+         count++;
 
-   /* Content path */
-   tmp[0]   = '\0';
-   snprintf(tmp, sizeof(tmp),
-         "%s: %s",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH),
-         !string_is_empty(content_path)
-               ? content_path
-               : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
-         );
-   if (menu_entries_append_enum(info->list, tmp,
-         msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_PATH),
-         MENU_ENUM_LABEL_CONTENT_INFO_PATH,
-         0, 0, 0))
-      count++;
+      /* Content path */
+      tmp[0]   = '\0';
+      snprintf(tmp, sizeof(tmp),
+            "%s: %s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH),
+            !string_is_empty(content_path)
+                  ? content_path
+                  : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
+            );
+      if (menu_entries_append_enum(info->list, tmp,
+            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_PATH),
+            MENU_ENUM_LABEL_CONTENT_INFO_PATH,
+            0, 0, 0))
+         count++;
+   }
 
    /* Core name */
    if (!string_is_empty(core_name) &&
@@ -5055,14 +5102,6 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD),
             msg_hash_to_str(MENU_ENUM_LABEL_START_NET_RETROPAD),
             MENU_ENUM_LABEL_START_NET_RETROPAD,
-            MENU_SETTING_ACTION, 0, 0);
-#endif
-
-#ifdef HAVE_GONG
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_GONG),
-            msg_hash_to_str(MENU_ENUM_LABEL_START_GONG),
-            MENU_ENUM_LABEL_START_GONG,
             MENU_SETTING_ACTION, 0, 0);
 #endif
    }
@@ -6327,6 +6366,17 @@ unsigned menu_displaylist_build_list(
                         msg_hash_to_str(MENU_ENUM_LABEL_GOTO_EXPLORE),
                         MENU_ENUM_LABEL_GOTO_EXPLORE,
                         MENU_EXPLORE_TAB, 0, 0))
+                  count++;
+#endif
+
+#if defined(HAVE_DYNAMIC)
+            if (settings->uints.menu_content_show_contentless_cores !=
+                  MENU_CONTENTLESS_CORES_DISPLAY_NONE)
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES),
+                        msg_hash_to_str(MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES),
+                        MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES,
+                        MENU_CONTENTLESS_CORES_TAB, 0, 0))
                   count++;
 #endif
             if (menu_content_show_favorites)
@@ -8287,6 +8337,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS,                                 PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS_PASSWORD,                        PARSE_ONLY_STRING, true},
                {MENU_ENUM_LABEL_CONTENT_SHOW_EXPLORE,                                  PARSE_ONLY_BOOL, true  },
+#if defined(HAVE_DYNAMIC)
+               {MENU_ENUM_LABEL_CONTENT_SHOW_CONTENTLESS_CORES,                        PARSE_ONLY_UINT, true },
+#endif
                {MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES,                                PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_IMAGES,                                   PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_MUSIC,                                    PARSE_ONLY_BOOL, true  },
@@ -8307,6 +8360,9 @@ unsigned menu_displaylist_build_list(
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
+               if (!build_list[i].checked && !include_everything)
+                  continue;
+
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         build_list[i].enum_idx,  build_list[i].parse_type,
                         false) == 0)
@@ -9595,7 +9651,8 @@ unsigned menu_displaylist_build_list(
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_MENU_RGUI_TRANSPARENCY:
-                     if (menu_rgui_color_theme != RGUI_THEME_CUSTOM)
+                     if ((menu_rgui_color_theme != RGUI_THEME_CUSTOM) &&
+                         (menu_rgui_color_theme != RGUI_THEME_DYNAMIC))
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED:
@@ -11708,6 +11765,30 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                info->need_navigation_clear = true;
                prev_count                  = count;
             }
+            info->need_push = true;
+         }
+         break;
+      case DISPLAYLIST_CONTENTLESS_CORES:
+         {
+            size_t contentless_core_ptr =
+                  menu_state_get_ptr()->contentless_core_ptr;
+
+            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+            count = menu_displaylist_contentless_cores(info->list, settings);
+
+            /* TODO/FIXME: Selecting an entry in the
+             * contentless cores list will cause the
+             * quick menu to be pushed on the subsequent
+             * frame via the RARCH_MENU_CTL_SET_PENDING_QUICK_MENU
+             * command. The way this is implemented 'breaks' the
+             * menu stack record, so when leaving the quick
+             * menu via a 'cancel' operation, the last selected
+             * menu index is lost. We therefore have to apply
+             * a cached index value after rebuilding the list... */
+            if (contentless_core_ptr < count)
+               menu_navigation_set_selection(contentless_core_ptr);
+
+            info->need_sort = false;
             info->need_push = true;
          }
          break;

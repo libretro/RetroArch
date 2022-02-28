@@ -612,6 +612,15 @@ int generic_action_ok_displaylist_push(const char *path,
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
+      case ACTION_OK_DL_CONTENTLESS_CORES_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = label;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
       case ACTION_OK_DL_REMAPPINGS_PORT_LIST:
          info.type          = type;
          info.directory_ptr = idx;
@@ -2487,6 +2496,7 @@ static int action_ok_playlist_entry_collection(const char *path,
       }
       else
       {
+#ifndef IOS
          core_info = playlist_entry_get_core_info(entry);
 
          if (core_info && !string_is_empty(core_info->path))
@@ -2498,6 +2508,10 @@ static int action_ok_playlist_entry_collection(const char *path,
             strlcpy(core_path, entry->core_path, sizeof(core_path));
             playlist_resolve_path(PLAYLIST_LOAD, true, core_path, sizeof(core_path));
          }
+#else
+         strlcpy(core_path, entry->core_path, sizeof(core_path));
+         playlist_resolve_path(PLAYLIST_LOAD, true, core_path, sizeof(core_path));
+#endif
       }
    }
 
@@ -3761,7 +3775,6 @@ static int action_ok_load_core_deferred(const char *path,
 }
 
 DEFAULT_ACTION_OK_START_BUILTIN_CORE(action_ok_start_net_retropad_core, CORE_TYPE_NETRETROPAD)
-DEFAULT_ACTION_OK_START_BUILTIN_CORE(action_ok_start_gong_core, CORE_TYPE_GONG)
 DEFAULT_ACTION_OK_START_BUILTIN_CORE(action_ok_start_video_processor_core, CORE_TYPE_VIDEO_PROCESSOR)
 
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
@@ -5168,14 +5181,30 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
    /* Unload core */
    ret = generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
 
-   /* If close content was selected via 'Main Menu > Quick Menu',
-    * have to flush the menu stack back to 'Main Menu'
+   /* If close content was selected via any means other than
+    * 'Playlist > Quick Menu', have to flush the menu stack
     * (otherwise users will be presented with an empty
     * 'No items' quick menu, requiring needless backwards
     * navigation) */
    if (type == MENU_SETTING_ACTION_CLOSE)
    {
-      menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU), 0);
+      const char *flush_target   = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
+      const char *parent_label   = NULL;
+      struct menu_state *menu_st = menu_state_get_ptr();
+      file_list_t *list          = NULL;
+
+      if (menu_st->entries.list)
+         list  = MENU_LIST_GET(menu_st->entries.list, 0);
+      if (list && (list->size > 1))
+      {
+         file_list_get_at_offset(list, list->size - 2, NULL, &parent_label, NULL, NULL);
+
+         if (string_is_equal(parent_label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB)) ||
+             string_is_equal(parent_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST)))
+            flush_target = parent_label;
+      }
+
+      menu_entries_flush_stack(flush_target, 0);
       /* An annoyance - some menu drivers (Ozone...) call
        * RARCH_MENU_CTL_SET_PREVENT_POPULATE in awkward
        * places, which can cause breakage here when flushing
@@ -5607,6 +5636,7 @@ DEFAULT_ACTION_OK_FUNC(action_ok_cdrom_info_list, ACTION_OK_DL_CDROM_INFO_DETAIL
 DEFAULT_ACTION_OK_FUNC(action_ok_goto_video, ACTION_OK_DL_VIDEO_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_goto_music, ACTION_OK_DL_MUSIC_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_goto_explore, ACTION_OK_DL_EXPLORE_LIST)
+DEFAULT_ACTION_OK_FUNC(action_ok_goto_contentless_cores, ACTION_OK_DL_CONTENTLESS_CORES_LIST)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 DEFAULT_ACTION_OK_FUNC(action_ok_shader_preset_save, ACTION_OK_DL_SHADER_PRESET_SAVE)
 DEFAULT_ACTION_OK_FUNC(action_ok_shader_preset_remove, ACTION_OK_DL_SHADER_PRESET_REMOVE)
@@ -6679,15 +6709,71 @@ static int action_ok_start_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    content_ctx_info_t content_info;
+   menu_ctx_list_t list_info;
 
    content_info.argc                   = 0;
    content_info.argv                   = NULL;
    content_info.args                   = NULL;
    content_info.environ_get            = NULL;
 
+   /* We are going to push a new menu; ensure
+    * that the current one is cached for animation
+    * purposes */
+   list_info.type   = MENU_LIST_PLAIN;
+   list_info.action = 0;
+   menu_driver_list_cache(&list_info);
+
    path_clear(RARCH_PATH_BASENAME);
    if (!task_push_start_current_core(&content_info))
       return -1;
+
+   return 0;
+}
+
+static int action_ok_contentless_core_run(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   const char *core_path = path;
+   /* TODO/FIXME: If this function succeeds, the
+    * quick menu will be pushed on the subsequent
+    * frame via the RARCH_MENU_CTL_SET_PENDING_QUICK_MENU
+    * command. The way this is implemented 'breaks' the
+    * menu stack record, so when leaving the quick
+    * menu via a 'cancel' operation, the last selected
+    * menu index is lost. We therefore have to cache
+    * the current selection here, and reapply it manually
+    * when building the contentless cores list... */
+   size_t selection      = menu_navigation_get_selection();
+
+   if (string_is_empty(core_path))
+      return menu_cbs_exit();
+
+   /* If core is already running, open quick menu */
+   if (retroarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path) &&
+       retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+   {
+      bool flush_menu = false;
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, &flush_menu);
+      menu_state_get_ptr()->contentless_core_ptr = selection;
+      menu_navigation_set_selection(0);
+      return 0;
+   }
+
+   /* Cache current menu selection *before* attempting
+    * to start the core, to ensure consistent menu
+    * navigation (i.e. running a core will in general
+    * cause a redraw of the menu, so must record current
+    * position even if the operation fails) */
+   menu_state_get_ptr()->contentless_core_ptr = selection;
+
+   /* Load and start core */
+   path_clear(RARCH_PATH_BASENAME);
+   if (!task_push_load_contentless_core_from_menu(core_path))
+   {
+      if (retroarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
+         generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
+      return -1;
+   }
 
    return 0;
 }
@@ -7393,6 +7479,9 @@ static int action_ok_core_delete(const char *path,
    /* Reload core info files */
    command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
 
+   /* Force reload of contentless cores icons */
+   menu_contentless_cores_free();
+
    /* Return to higher level menu */
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
@@ -7796,13 +7885,13 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_GOTO_IMAGES,                         action_ok_goto_images},
          {MENU_ENUM_LABEL_GOTO_VIDEO,                          action_ok_goto_video},
          {MENU_ENUM_LABEL_GOTO_EXPLORE,                        action_ok_goto_explore},
+         {MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES,              action_ok_goto_contentless_cores},
          {MENU_ENUM_LABEL_BROWSE_START,                        action_ok_browse_url_start},
          {MENU_ENUM_LABEL_FILE_BROWSER_CORE,                   action_ok_load_core},
          {MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION, action_ok_core_deferred_set},
          {MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION_CURRENT_CORE,action_ok_core_deferred_set}, 
          {MENU_ENUM_LABEL_START_CORE,                          action_ok_start_core},
          {MENU_ENUM_LABEL_START_NET_RETROPAD,                  action_ok_start_net_retropad_core},
-         {MENU_ENUM_LABEL_START_GONG,                          action_ok_start_gong_core},
          {MENU_ENUM_LABEL_START_VIDEO_PROCESSOR,               action_ok_start_video_processor_core},
          {MENU_ENUM_LABEL_OPEN_ARCHIVE_DETECT_CORE,            action_ok_open_archive_detect_core},
          {MENU_ENUM_LABEL_OPEN_ARCHIVE,                        action_ok_open_archive},
@@ -8032,6 +8121,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE,       action_ok_playlist_default_core},
          {MENU_ENUM_LABEL_CORE_MANAGER_LIST,                   action_ok_push_core_manager_list},
          {MENU_ENUM_LABEL_EXPLORE_TAB,                         action_ok_push_default},
+         {MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB,               action_ok_push_default},
       };
 
       for (i = 0; i < ARRAY_SIZE(ok_list); i++)
@@ -8665,6 +8755,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_ACTION_AUDIO_DSP_PLUGIN_REMOVE:
             BIND_ACTION_OK(cbs, action_ok_audio_dsp_plugin_remove);
+            break;
+         case MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN:
+            BIND_ACTION_OK(cbs, action_ok_contentless_core_run);
             break;
          default:
             return -1;

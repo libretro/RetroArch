@@ -99,6 +99,9 @@ bool task_push_load_content_from_playlist_from_menu(
       content_ctx_info_t *content_info,
       retro_task_callback_t cb,
       void *user_data);
+
+bool task_push_load_contentless_core_from_menu(
+      const char *core_path);
 #endif
 
 bool task_push_load_content_with_core(
