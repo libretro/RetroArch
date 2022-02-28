@@ -2331,8 +2331,9 @@ bool load_shader_preset(settings_t *settings, const char *core_name,
    const char *video_shader_directory = settings->paths.directory_video_shader;
    const char *menu_config_directory  = settings->paths.directory_menu_config;
    const char *rarch_path_basename    = path_get(RARCH_PATH_BASENAME);
+   bool has_content                   = !string_is_empty(rarch_path_basename);
 
-   const char *game_name              = path_basename(rarch_path_basename);
+   const char *game_name              = NULL;
    const char *dirs[3]                = {0};
    size_t i                           = 0;
 
@@ -2346,17 +2347,16 @@ bool load_shader_preset(settings_t *settings, const char *core_name,
    config_file_directory[0]           = '\0';
    old_presets_directory[0]           = '\0';
 
-   if (!string_is_empty(rarch_path_basename))
+   if (has_content)
+   {
       fill_pathname_parent_dir_name(content_dir_name,
             rarch_path_basename, sizeof(content_dir_name));
-
-   config_file_directory[0]           = '\0';
+      game_name = path_basename(rarch_path_basename);
+   }
 
    if (!path_is_empty(RARCH_PATH_CONFIG))
       fill_pathname_basedir(config_file_directory,
             path_get(RARCH_PATH_CONFIG), sizeof(config_file_directory));
-
-   old_presets_directory[0]           = '\0';
 
    if (!string_is_empty(video_shader_directory))
       fill_pathname_join(old_presets_directory,
@@ -2371,14 +2371,14 @@ bool load_shader_preset(settings_t *settings, const char *core_name,
       if (string_is_empty(dirs[i]))
          continue;
       /* Game-specific shader preset found? */
-      if (retroarch_load_shader_preset_internal(
+      if (has_content && retroarch_load_shader_preset_internal(
                shader_path,
                sizeof(shader_path),
                dirs[i], core_name,
                game_name))
          goto success;
       /* Folder-specific shader preset found? */
-      if (retroarch_load_shader_preset_internal(
+      if (has_content && retroarch_load_shader_preset_internal(
                shader_path,
                sizeof(shader_path),
                dirs[i], core_name,
