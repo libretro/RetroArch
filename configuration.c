@@ -3823,34 +3823,45 @@ bool config_load_override(void *data)
    const char *core_name                  = system ?
       system->info.library_name : NULL;
    const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
-   const char *game_name                  = path_basename(rarch_path_basename);
+   const char *game_name                  = NULL;
    settings_t *settings                   = config_st;
+   bool has_content                       = !string_is_empty(rarch_path_basename);
 
-   if (!string_is_empty(rarch_path_basename))
-      fill_pathname_parent_dir_name(content_dir_name,
-            rarch_path_basename, sizeof(content_dir_name));
+   core_path[0]        = '\0';
+   game_path[0]        = '\0';
+   content_path[0]     = '\0';
+   content_dir_name[0] = '\0';
+   config_directory[0] = '\0';
 
-   if (string_is_empty(core_name) || string_is_empty(game_name))
+   /* Cannot load an override if we have no core */
+   if (string_is_empty(core_name))
       return false;
 
-   config_directory[0] = core_path[0] = game_path[0] = '\0';
-
-   fill_pathname_application_special(config_directory, sizeof(config_directory),
+   /* Get base config directory */
+   fill_pathname_application_special(config_directory,
+         sizeof(config_directory),
          APPLICATION_SPECIAL_DIRECTORY_CONFIG);
 
-   /* Concatenate strings into full paths for core_path, game_path,
-    * content_path */
-   fill_pathname_join_special_ext(game_path,
-         config_directory, core_name,
-         game_name,
-         ".cfg",
-         sizeof(game_path));
+   /* Concatenate strings into full paths for core_path,
+    * game_path, content_path */
+   if (has_content)
+   {
+      fill_pathname_parent_dir_name(content_dir_name,
+            rarch_path_basename, sizeof(content_dir_name));
+      game_name = path_basename(rarch_path_basename);
 
-   fill_pathname_join_special_ext(content_path,
-      config_directory, core_name,
-      content_dir_name,
-      ".cfg",
-      sizeof(content_path));
+      fill_pathname_join_special_ext(game_path,
+            config_directory, core_name,
+            game_name,
+            ".cfg",
+            sizeof(game_path));
+
+      fill_pathname_join_special_ext(content_path,
+         config_directory, core_name,
+         content_dir_name,
+         ".cfg",
+         sizeof(content_path));
+   }
 
    fill_pathname_join_special_ext(core_path,
          config_directory, core_name,
@@ -3873,69 +3884,72 @@ bool config_load_override(void *data)
       RARCH_LOG("[Overrides]: No core-specific overrides found at \"%s\".\n",
             core_path);
 
-   /* per-content-dir overrides */
-   /* Create a new config file from content_path */
-   if (config_file_exists(content_path))
+   if (has_content)
    {
-      char temp_path[PATH_MAX_LENGTH];
+      /* per-content-dir overrides */
+      /* Create a new config file from content_path */
+      if (config_file_exists(content_path))
+      {
+         char temp_path[PATH_MAX_LENGTH];
 
-      RARCH_LOG("[Overrides]: Content dir-specific overrides found at \"%s\".\n",
+         RARCH_LOG("[Overrides]: Content dir-specific overrides found at \"%s\".\n",
+               content_path);
+
+         if (should_append)
+         {
+            RARCH_LOG("[Overrides]: Content dir-specific overrides stacking on top of previous overrides.\n");
+            snprintf(temp_path, sizeof(temp_path),
+                  "%s|%s",
+                  path_get(RARCH_PATH_CONFIG_APPEND),
+                  content_path
+                  );
+         }
+         else
+         {
+            temp_path[0]    = '\0';
+            strlcpy(temp_path, content_path, sizeof(temp_path));
+         }
+
+         path_set(RARCH_PATH_CONFIG_APPEND, temp_path);
+
+         should_append = true;
+      }
+      else
+         RARCH_LOG("[Overrides]: No content-dir-specific overrides found at \"%s\".\n",
             content_path);
 
-      if (should_append)
+      /* per-game overrides */
+      /* Create a new config file from game_path */
+      if (config_file_exists(game_path))
       {
-         RARCH_LOG("[Overrides]: Content dir-specific overrides stacking on top of previous overrides.\n");
-         snprintf(temp_path, sizeof(temp_path),
-               "%s|%s",
-               path_get(RARCH_PATH_CONFIG_APPEND),
-               content_path
-               );
+         char temp_path[PATH_MAX_LENGTH];
+
+         RARCH_LOG("[Overrides]: Game-specific overrides found at \"%s\".\n",
+               game_path);
+
+         if (should_append)
+         {
+            RARCH_LOG("[Overrides]: Game-specific overrides stacking on top of previous overrides.\n");
+            snprintf(temp_path, sizeof(temp_path),
+                  "%s|%s",
+                  path_get(RARCH_PATH_CONFIG_APPEND),
+                  game_path
+                  );
+         }
+         else
+         {
+            temp_path[0]    = '\0';
+            strlcpy(temp_path, game_path, sizeof(temp_path));
+         }
+
+         path_set(RARCH_PATH_CONFIG_APPEND, temp_path);
+
+         should_append = true;
       }
       else
-      {
-         temp_path[0]    = '\0';
-         strlcpy(temp_path, content_path, sizeof(temp_path));
-      }
-
-      path_set(RARCH_PATH_CONFIG_APPEND, temp_path);
-
-      should_append = true;
+         RARCH_LOG("[Overrides]: No game-specific overrides found at \"%s\".\n",
+               game_path);
    }
-   else
-      RARCH_LOG("[Overrides]: No content-dir-specific overrides found at \"%s\".\n",
-         content_path);
-
-   /* per-game overrides */
-   /* Create a new config file from game_path */
-   if (config_file_exists(game_path))
-   {
-      char temp_path[PATH_MAX_LENGTH];
-
-      RARCH_LOG("[Overrides]: Game-specific overrides found at \"%s\".\n",
-            game_path);
-
-      if (should_append)
-      {
-         RARCH_LOG("[Overrides]: Game-specific overrides stacking on top of previous overrides.\n");
-         snprintf(temp_path, sizeof(temp_path),
-               "%s|%s",
-               path_get(RARCH_PATH_CONFIG_APPEND),
-               game_path
-               );
-      }
-      else
-      {
-         temp_path[0]    = '\0';
-         strlcpy(temp_path, game_path, sizeof(temp_path));
-      }
-
-      path_set(RARCH_PATH_CONFIG_APPEND, temp_path);
-
-      should_append = true;
-   }
-   else
-      RARCH_LOG("[Overrides]: No game-specific overrides found at \"%s\".\n",
-            game_path);
 
    if (!should_append)
       return false;
@@ -4789,6 +4803,7 @@ bool config_save_overrides(enum override_type type, void *data)
    char core_path[PATH_MAX_LENGTH];
    char game_path[PATH_MAX_LENGTH];
    char content_path[PATH_MAX_LENGTH];
+   char content_dir_name[PATH_MAX_LENGTH];
    settings_t *overrides                       = config_st;
    int bool_settings_size                      = sizeof(settings->bools)  / sizeof(settings->bools.placeholder);
    int float_settings_size                     = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
@@ -4800,50 +4815,38 @@ bool config_save_overrides(enum override_type type, void *data)
    rarch_system_info_t *system                 = (rarch_system_info_t*)data;
    const char *core_name                       = system ? system->info.library_name : NULL;
    const char *rarch_path_basename             = path_get(RARCH_PATH_BASENAME);
-   const char *game_name                       = path_basename(rarch_path_basename);
-   char content_dir_name[PATH_MAX_LENGTH];
+   const char *game_name                       = NULL;
+   bool has_content                            = !string_is_empty(rarch_path_basename);
 
-   if (!string_is_empty(rarch_path_basename))
-      fill_pathname_parent_dir_name(content_dir_name, rarch_path_basename, sizeof(content_dir_name));
+   config_directory[0]   = '\0';
+   override_directory[0] = '\0';
+   core_path[0]          = '\0';
+   game_path[0]          = '\0';
+   content_path[0]       = '\0';
+   content_dir_name[0]   = '\0';
 
-   if (string_is_empty(core_name) || string_is_empty(game_name))
+   /* > Cannot save an override if we have no core
+    * > Cannot save a per-game or per-content-directory
+    *   override if we have no content */
+   if (string_is_empty(core_name) ||
+       (!has_content && (type != OVERRIDE_CORE)))
       return false;
 
-   settings            = (settings_t*)calloc(1, sizeof(settings_t));
+   settings = (settings_t*)calloc(1, sizeof(settings_t));
+   conf     = config_file_new_alloc();
 
-   config_directory[0] = override_directory[0] = core_path[0] =
-          game_path[0] = '\0';
-
-   fill_pathname_application_special(config_directory, sizeof(config_directory),
+   /* Get base config directory */
+   fill_pathname_application_special(config_directory,
+         sizeof(config_directory),
          APPLICATION_SPECIAL_DIRECTORY_CONFIG);
 
-   fill_pathname_join(override_directory, config_directory, core_name,
+   fill_pathname_join(override_directory,
+      config_directory, core_name,
       sizeof(override_directory));
 
+   /* Ensure base config directory exists */
    if (!path_is_directory(override_directory))
-       path_mkdir(override_directory);
-
-   /* Concatenate strings into full paths for core_path, game_path */
-   fill_pathname_join_special_ext(game_path,
-         config_directory, core_name,
-         game_name,
-         FILE_PATH_CONFIG_EXTENSION,
-         sizeof(game_path));
-
-   fill_pathname_join_special_ext(content_path,
-         config_directory, core_name,
-         content_dir_name,
-         FILE_PATH_CONFIG_EXTENSION,
-         sizeof(content_path));
-
-   fill_pathname_join_special_ext(core_path,
-         config_directory, core_name,
-         core_name,
-         FILE_PATH_CONFIG_EXTENSION,
-         sizeof(core_path));
-
-   if (!conf)
-      conf = config_file_new_alloc();
+      path_mkdir(override_directory);
 
    /* Load the original config file in memory */
    config_load_file(global_get_ptr(),
@@ -4969,14 +4972,32 @@ bool config_save_overrides(enum override_type type, void *data)
       switch (type)
       {
          case OVERRIDE_CORE:
+            fill_pathname_join_special_ext(core_path,
+                  config_directory, core_name,
+                  core_name,
+                  FILE_PATH_CONFIG_EXTENSION,
+                  sizeof(core_path));
             RARCH_LOG ("[Overrides]: Path \"%s\".\n", core_path);
             ret = config_file_write(conf, core_path, true);
             break;
          case OVERRIDE_GAME:
+            game_name = path_basename(rarch_path_basename);
+            fill_pathname_join_special_ext(game_path,
+                  config_directory, core_name,
+                  game_name,
+                  FILE_PATH_CONFIG_EXTENSION,
+                  sizeof(game_path));
             RARCH_LOG ("[Overrides]: Path \"%s\".\n", game_path);
             ret = config_file_write(conf, game_path, true);
             break;
          case OVERRIDE_CONTENT_DIR:
+            fill_pathname_parent_dir_name(content_dir_name,
+                  rarch_path_basename, sizeof(content_dir_name));
+            fill_pathname_join_special_ext(content_path,
+                  config_directory, core_name,
+                  content_dir_name,
+                  FILE_PATH_CONFIG_EXTENSION,
+                  sizeof(content_path));
             RARCH_LOG ("[Overrides]: Path \"%s\".\n", content_path);
             ret = config_file_write(conf, content_path, true);
             break;
