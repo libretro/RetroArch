@@ -93,7 +93,26 @@ static int gfx_ctx_mali_fbdev_get_vinfo(void *data)
            (vinfo.yres + vinfo.upper_margin + vinfo.lower_margin + vinfo.vsync_len) /
            (vinfo.xres + vinfo.left_margin  + vinfo.right_margin + vinfo.hsync_len);
    }else{
-      mali->refresh_rate = 60;
+      //Workaround to retrieve current refresh rate if no info is available from IOCTL. If this fails as well, 60Hz is assumed...
+      FILE *fr;
+      int j=0;
+      float k=60.0;
+      char temp[32];
+      fr=fopen("/sys/class/display/mode", "r");
+      if (fr != NULL){
+         if (fgets(temp, sizeof(temp), fr) != NULL){
+            for (int i=0;i<sizeof(temp);i++){
+               if (*(temp+i)=='p' || *(temp+i)=='i'){
+                  j=i;
+               }else if (*(temp+i)=='h'){
+                  *(temp+i)='\0';
+               }
+            }
+            k=j?atof(temp+j+1):k;
+         }
+         fclose(fr);
+      }
+      mali->refresh_rate = k;
    }
 
    return 0;
