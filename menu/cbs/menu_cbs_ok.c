@@ -6024,6 +6024,19 @@ static int action_ok_scan_directory_list(const char *path,
          entry_idx, ACTION_OK_DL_SCAN_DIR_LIST);
 }
 
+static int action_ok_scan_dropbox_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t            *settings   = config_get_ptr();
+   const char *dir_menu_content      = settings->paths.directory_menu_content;
+   const char *saves_menu_path       = dir_get_ptr(RARCH_DIR_SAVEFILE);
+
+   filebrowser_clear_type();
+   return generic_action_ok_displaylist_push(path,
+         saves_menu_path, label, type, idx,
+         entry_idx, ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
+}
+
 static int action_ok_push_random_dir(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -7945,7 +7958,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_SCAN_DIRECTORY,                      action_ok_scan_directory_list},
          {MENU_ENUM_LABEL_SCAN_FILE,                           action_ok_push_scan_file},
          {MENU_ENUM_LABEL_FAVORITES,                           action_ok_push_content_list},
-         {MENU_ENUM_LABEL_DROPBOX_LIST_SAVES,                  action_ok_push_content_list},
+         {MENU_ENUM_LABEL_DROPBOX_LIST_SAVES,                  action_ok_scan_dropbox_list},
          {MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,      action_ok_push_random_dir},
          {MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,    action_ok_push_downloads_dir},
          {MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,                 action_ok_file_load_detect_core},

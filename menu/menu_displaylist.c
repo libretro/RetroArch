@@ -6413,7 +6413,7 @@ unsigned menu_displaylist_build_list(
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DROPBOX_LIST_SAVES),
                         msg_hash_to_str(MENU_ENUM_LABEL_DROPBOX_LIST_SAVES),
                         MENU_ENUM_LABEL_DROPBOX_LIST_SAVES,
-                        MENU_SETTING_ACTION_FAVORITES_DIR, 0, 0))
+                        MENU_SETTING_ACTION, 0, 0))
                   count++;
       }
          
