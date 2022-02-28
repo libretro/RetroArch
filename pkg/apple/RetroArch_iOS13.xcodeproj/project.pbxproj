@@ -48,6 +48,7 @@
 		9289D20A25E40D7B004B5D52 /* EmulatorKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9289D20925E40D7B004B5D52 /* EmulatorKeyboard.swift */; };
 		9289D22825E88A63004B5D52 /* CocoaView+KeyboardSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9289D22725E88A63004B5D52 /* CocoaView+KeyboardSupport.swift */; };
 		928F7B1327C39F8C00377C40 /* CocoaView+NavBarIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 928F7B1227C39F8C00377C40 /* CocoaView+NavBarIndicator.swift */; };
+		928F7B1827CC6CF000377C40 /* HelperBarViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 928F7B1727CC6CF000377C40 /* HelperBarViewController.swift */; };
 		929784502200EEE400989A60 /* iOS/Resources/Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */; };
 		92A1F81827006CAE00DEAD2A /* JITSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 92A1F81727006CAE00DEAD2A /* JITSupport.m */; };
 		92CC05A221FE3C1700FF79F0 /* GCDWebServerResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC058221FE3C1700FF79F0 /* GCDWebServerResponse.m */; };
@@ -120,6 +121,7 @@
 		9289D20925E40D7B004B5D52 /* EmulatorKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulatorKeyboard.swift; sourceTree = "<group>"; };
 		9289D22725E88A63004B5D52 /* CocoaView+KeyboardSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CocoaView+KeyboardSupport.swift"; sourceTree = "<group>"; };
 		928F7B1227C39F8C00377C40 /* CocoaView+NavBarIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CocoaView+NavBarIndicator.swift"; sourceTree = "<group>"; };
+		928F7B1727CC6CF000377C40 /* HelperBarViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperBarViewController.swift; sourceTree = "<group>"; };
 		92A1F81727006CAE00DEAD2A /* JITSupport.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = JITSupport.m; sourceTree = "<group>"; };
 		92A1F81927006CCB00DEAD2A /* JITSupport.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = JITSupport.h; sourceTree = "<group>"; };
 		92B9EB5724E0518700E6CFB2 /* base64.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = base64.h; sourceTree = "<group>"; };
@@ -425,11 +427,12 @@
 				92B9EAE524E0518600E6CFB2 /* libretro-common */,
 				9289D20925E40D7B004B5D52 /* EmulatorKeyboard.swift */,
 				92DAF33E277A370600FE2A9E /* EmulatorTouchMouse.swift */,
+				928F7B1727CC6CF000377C40 /* HelperBarViewController.swift */,
 				9289D22725E88A63004B5D52 /* CocoaView+KeyboardSupport.swift */,
+				928F7B1227C39F8C00377C40 /* CocoaView+NavBarIndicator.swift */,
 				9289D20825E40D7A004B5D52 /* RetroArch-Bridging-Header.h */,
 				92A1F81927006CCB00DEAD2A /* JITSupport.h */,
 				92A1F81727006CAE00DEAD2A /* JITSupport.m */,
-				928F7B1227C39F8C00377C40 /* CocoaView+NavBarIndicator.swift */,
 			);
 			name = Sources;
 			sourceTree = "<group>";
@@ -1237,6 +1240,7 @@
 				92DAF33F277A370600FE2A9E /* EmulatorTouchMouse.swift in Sources */,
 				92CC05B021FE3C1700FF79F0 /* GCDWebServerDataResponse.m in Sources */,
 				92CC05C221FE3C6D00FF79F0 /* WebServer.m in Sources */,
+				928F7B1827CC6CF000377C40 /* HelperBarViewController.swift in Sources */,
 				9289D22825E88A63004B5D52 /* CocoaView+KeyboardSupport.swift in Sources */,
 				9210C2FC24B4CB4900E6FE7C /* menu_pipeline.metal in Sources */,
 				9210C2FE24B4CB4900E6FE7C /* Shaders.metal in Sources */,
