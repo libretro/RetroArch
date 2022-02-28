@@ -38,6 +38,8 @@
 #include "../../verbosity.h"
 #include "../../configuration.h"
 
+#include <streams/file_stream.h>
+
 typedef struct
 {
 #ifdef HAVE_EGL
@@ -93,7 +95,25 @@ static int gfx_ctx_mali_fbdev_get_vinfo(void *data)
            (vinfo.yres + vinfo.upper_margin + vinfo.lower_margin + vinfo.vsync_len) /
            (vinfo.xres + vinfo.left_margin  + vinfo.right_margin + vinfo.hsync_len);
    }else{
-      mali->refresh_rate = 60;
+      /* Workaround to retrieve current refresh rate if no info is available from IOCTL.
+         If this fails as well, 60Hz is assumed... */
+      int j=0;
+      float k=60.0;
+      char temp[32];
+      RFILE *fr = filestream_open("/sys/class/display/mode", RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      if (fr){
+         if (filestream_gets(fr, temp, sizeof(temp))){
+            for (int i=0;i<sizeof(temp);i++){
+               if (*(temp+i)=='p' || *(temp+i)=='i')
+                  j=i;
+               else if (*(temp+i)=='h')
+                  *(temp+i)='\0';
+            }
+            k = j ? atof(temp+j+1) : k;
+         }
+         filestream_close(fr);
+      }
+      mali->refresh_rate = k;
    }
 
    return 0;
