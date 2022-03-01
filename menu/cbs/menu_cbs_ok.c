@@ -6064,7 +6064,7 @@ static int action_ok_scan_dropbox_list(const char *path,
    filebrowser_clear_type();
    return generic_action_ok_displaylist_push(path,
          saves_menu_path, label, type, idx,
-         entry_idx, ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
+         entry_idx, ACTION_OK_DL_MANUAL_CONTENT_SCAN_DAT_FILE);
 }
 
 static int action_ok_push_random_dir(const char *path,
