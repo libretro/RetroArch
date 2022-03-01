@@ -4024,9 +4024,7 @@ bool config_unload_override(void)
 bool config_load_remap(const char *directory_input_remapping,
       void *data)
 {
-   char content_dir_name[PATH_MAX_LENGTH] = { 0 };
-   /* path to the directory containing retroarch.cfg (prefix)    */
-   char remap_directory[PATH_MAX_LENGTH];
+   char content_dir_name[PATH_MAX_LENGTH];
    /* final path for core-specific configuration (prefix+suffix) */
    char core_path[PATH_MAX_LENGTH];
    /* final path for game-specific configuration (prefix+suffix) */
@@ -4037,52 +4035,56 @@ bool config_load_remap(const char *directory_input_remapping,
    rarch_system_info_t *system            = (rarch_system_info_t*)data;
    const char *core_name                  = system ? system->info.library_name : NULL;
    const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
-   const char *game_name                  = path_basename(rarch_path_basename);
+   const char *game_name                  = NULL;
+   bool has_content                       = !string_is_empty(rarch_path_basename);
    enum msg_hash_enums msg_remap_loaded   = MSG_GAME_REMAP_FILE_LOADED;
    settings_t *settings                   = config_st;
    bool notification_show_remap_load      = settings->bools.notification_show_remap_load;
 
-   if (string_is_empty(core_name))
+   content_dir_name[0] = '\0';
+   core_path[0]        = '\0';
+   game_path[0]        = '\0';
+   content_path[0]     = '\0';
+
+   /* > Cannot load remaps if we have no core
+    * > Cannot load remaps if remap directory is unset */
+   if (string_is_empty(core_name) ||
+       string_is_empty(directory_input_remapping))
       return false;
 
-   /* Remap directory: remap_directory.
-    * Try remap directory setting, no fallbacks defined */
-   if (string_is_empty(directory_input_remapping))
-      return false;
+   RARCH_LOG("[Remaps]: Remap directory: \"%s\".\n", directory_input_remapping);
 
-   if (!string_is_empty(rarch_path_basename))
+   /* Concatenate strings into full paths for core_path,
+    * game_path, content_path */
+   if (has_content)
+   {
       fill_pathname_parent_dir_name(content_dir_name,
             rarch_path_basename, sizeof(content_dir_name));
+      game_name = path_basename(rarch_path_basename);
 
-   remap_directory[0] = core_path[0] = game_path[0] = '\0';
+      fill_pathname_join_special_ext(game_path,
+            directory_input_remapping, core_name,
+            game_name,
+            FILE_PATH_REMAP_EXTENSION,
+            sizeof(game_path));
 
-   strlcpy(remap_directory,
-         directory_input_remapping, sizeof(remap_directory));
-   RARCH_LOG("[Remaps]: Remap directory: \"%s\".\n", remap_directory);
+      fill_pathname_join_special_ext(content_path,
+            directory_input_remapping, core_name,
+            content_dir_name,
+            FILE_PATH_REMAP_EXTENSION,
+            sizeof(content_path));
+   }
 
-   /* Concatenate strings into full paths for core_path, game_path */
    fill_pathname_join_special_ext(core_path,
-         remap_directory, core_name,
+         directory_input_remapping, core_name,
          core_name,
          FILE_PATH_REMAP_EXTENSION,
          sizeof(core_path));
 
-   fill_pathname_join_special_ext(content_path,
-         remap_directory, core_name,
-         content_dir_name,
-         FILE_PATH_REMAP_EXTENSION,
-         sizeof(content_path));
-
-   fill_pathname_join_special_ext(game_path,
-         remap_directory, core_name,
-         game_name,
-         FILE_PATH_REMAP_EXTENSION,
-         sizeof(game_path));
-
    input_remapping_set_defaults(false);
 
    /* If a game remap file exists, load it. */
-   if ((new_conf = config_file_new_from_path_to_string(game_path)))
+   if (has_content && (new_conf = config_file_new_from_path_to_string(game_path)))
    {
       bool ret = input_remapping_load_file(new_conf, game_path);
       config_file_free(new_conf);
@@ -4098,7 +4100,7 @@ bool config_load_remap(const char *directory_input_remapping,
    }
 
    /* If a content-dir remap file exists, load it. */
-   if ((new_conf = config_file_new_from_path_to_string(content_path)))
+   if (has_content && (new_conf = config_file_new_from_path_to_string(content_path)))
    {
       bool ret = input_remapping_load_file(new_conf, content_path);
       config_file_free(new_conf);

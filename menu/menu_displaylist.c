@@ -6279,9 +6279,11 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_OPTIONS_REMAPPINGS:
          {
             unsigned p;
-            unsigned max_users          = settings->uints.input_max_users;
+            unsigned max_users = settings->uints.input_max_users;
 
 #ifdef HAVE_CONFIGFILE
+            bool has_content   = !string_is_empty(path_get(RARCH_PATH_CONTENT));
+
             if (menu_entries_append_enum(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD),
                      msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_LOAD),
@@ -6294,13 +6296,13 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE,
                      MENU_SETTING_ACTION, 0, 0))
                count++;
-            if (menu_entries_append_enum(list,
+            if (has_content && menu_entries_append_enum(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR),
                      msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR),
                      MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR,
                      MENU_SETTING_ACTION, 0, 0))
                count++;
-            if (menu_entries_append_enum(list,
+            if (has_content && menu_entries_append_enum(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME),
                      msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME),
                      MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,
@@ -6315,7 +6317,7 @@ unsigned menu_displaylist_build_list(
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
 
-            if (retroarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
+            if (has_content && retroarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME),
                         msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME),
@@ -6323,7 +6325,7 @@ unsigned menu_displaylist_build_list(
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
 
-            if (retroarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL))
+            if (has_content && retroarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL))
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR),
                         msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR),
@@ -6331,7 +6333,6 @@ unsigned menu_displaylist_build_list(
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
 #endif
-
             if (menu_entries_append_enum(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS),
