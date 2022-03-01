@@ -5807,6 +5807,8 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_SHADER_PRESET_SAVE:
          {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+            bool has_content = !string_is_empty(path_get(RARCH_PATH_CONTENT));
+
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
                      PARSE_ONLY_BOOL, false) == 0)
@@ -5829,13 +5831,13 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
                      MENU_SETTING_ACTION, 0, 0))
                count++;
-            if (menu_entries_append_enum(list,
+            if (has_content && menu_entries_append_enum(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT),
                      msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT),
                      MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
                      MENU_SETTING_ACTION, 0, 0))
                count++;
-            if (menu_entries_append_enum(list,
+            if (has_content && menu_entries_append_enum(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME),
                      msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME),
                      MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME,

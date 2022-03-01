@@ -3882,11 +3882,18 @@ bool menu_shader_manager_operate_auto_preset(
       RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG
    };
    const char *core_name            = system ? system->library_name : NULL;
+   const char *rarch_path_basename  = path_get(RARCH_PATH_BASENAME);
    const char *auto_preset_dirs[3]  = {0};
+   bool has_content                 = !string_is_empty(rarch_path_basename);
 
    old_presets_directory[0] = config_directory[0] = tmp[0] = file[0] = '\0';
 
    if (type != SHADER_PRESET_GLOBAL && string_is_empty(core_name))
+      return false;
+
+   if (!has_content &&
+       ((type == SHADER_PRESET_GAME) ||
+            (type == SHADER_PRESET_PARENT)))
       return false;
 
    if (!path_is_empty(RARCH_PATH_CONFIG))
@@ -3918,13 +3925,12 @@ bool menu_shader_manager_operate_auto_preset(
          break;
       case SHADER_PRESET_PARENT:
          fill_pathname_parent_dir_name(tmp,
-               path_get(RARCH_PATH_BASENAME), sizeof(tmp));
+               rarch_path_basename, sizeof(tmp));
          fill_pathname_join(file, core_name, tmp, sizeof(file));
          break;
       case SHADER_PRESET_GAME:
          {
-            const char *game_name =
-               path_basename(path_get(RARCH_PATH_BASENAME));
+            const char *game_name = path_basename(rarch_path_basename);
             if (string_is_empty(game_name))
                return false;
             fill_pathname_join(file, core_name, game_name, sizeof(file));
