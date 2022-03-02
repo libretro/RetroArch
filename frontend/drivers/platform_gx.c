@@ -29,6 +29,10 @@
 #include "../../config.h"
 #endif
 
+#include <retroarch_types.h>
+#include <msg_hash.h>
+#include <command.h>
+
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
 #include <rthreads/rthreads.h>
 #include "../../memory/wii/mem2_manager.h"

@@ -29,6 +29,7 @@
 
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
+#include <paths.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
