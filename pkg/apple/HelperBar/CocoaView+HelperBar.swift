@@ -38,6 +38,7 @@ extension CocoaView: HelperBarActionDelegate {
    }
    
    func mouseButtonTapped() {
+      mouseHandler.enabled.toggle()
    }
    
    func helpButtonTapped() {
@@ -48,6 +49,6 @@ extension CocoaView: HelperBarActionDelegate {
    }
    
    var isMouseEnabled: Bool {
-      false
+      mouseHandler.enabled
    }
 }

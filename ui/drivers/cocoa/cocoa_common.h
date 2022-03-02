@@ -44,7 +44,12 @@
 #if TARGET_OS_IOS
 @class EmulatorKeyboardController;
 
+#ifdef HAVE_IOS_TOUCHMOUSE
+@class EmulatorTouchMouseHandler;
+#endif
+
 @interface CocoaView : UIViewController
+
 #elif TARGET_OS_TV
 @interface CocoaView : GCEventViewController
 #endif
@@ -53,6 +58,10 @@
 @property(nonatomic,strong) EmulatorKeyboardController *keyboardController;
 @property(nonatomic,assign) unsigned int keyboardModifierState;
 -(void)toggleCustomKeyboard;
+#endif
+
+#ifdef HAVE_IOS_TOUCHMOUSE
+@property(nonatomic,strong) EmulatorTouchMouseHandler *mouseHandler;
 #endif
 
 #if defined(HAVE_IOS_SWIFT)

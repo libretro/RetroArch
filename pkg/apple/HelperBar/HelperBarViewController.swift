@@ -69,6 +69,7 @@ class HelperBarViewController: UIViewController {
       let navItem = UINavigationItem()
       navItem.leftBarButtonItems = barButtonItems
       navigationBar.items = [navItem]
+      updateBarItems()
    }
    
    private func updateBarItems() {

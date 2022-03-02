@@ -46,12 +46,9 @@ void *glkitview_init(void);
 
 @interface CocoaView()<GCDWebUploaderDelegate, UIGestureRecognizerDelegate
 #ifdef HAVE_IOS_TOUCHMOUSE
-,EmulatorTouchMouseHandlerDelegate> {
-    EmulatorTouchMouseHandler *mouseHandler;
-}
-#else
->
+,EmulatorTouchMouseHandlerDelegate
 #endif
+>
 
 @end
 #endif
@@ -319,8 +316,7 @@ void *glkitview_init(void);
     swipe.direction = UISwipeGestureRecognizerDirectionDown;
     [self.view addGestureRecognizer:swipe];
 #ifdef HAVE_IOS_TOUCHMOUSE
-    mouseHandler = [[EmulatorTouchMouseHandler alloc] initWithView:self.view];
-    mouseHandler.delegate = self;
+    [self setupMouseSupport];
 #endif
 #ifdef HAVE_IOS_CUSTOMKEYBOARD
     [self setupEmulatorKeyboard];
@@ -364,23 +360,9 @@ void *glkitview_init(void);
 }
 
 #if TARGET_OS_IOS && HAVE_IOS_TOUCHMOUSE
--(void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    [mouseHandler touchesBeganWithTouches:touches];
-}
-
--(void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    [mouseHandler touchesMovedWithTouches:touches];
-}
-
--(void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    [mouseHandler touchesCancelledWithTouches:touches];
-}
-
--(void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    [mouseHandler touchesEndedWithTouches:touches];
-}
 
 #pragma mark EmulatorTouchMouseHandlerDelegate
+
 -(void)handleMouseClickWithIsLeftClick:(BOOL)isLeftClick isPressed:(BOOL)isPressed {
     cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
     if (apple == NULL) {
