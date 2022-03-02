@@ -44,6 +44,7 @@
 		0FDA2A8A1BE1AFA800F2B5DA /* iOS/Resources/Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */; };
 		92411A35260E4E120069C692 /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 92411A34260E4E120069C692 /* assets.zip */; };
 		92411A38260E4E2C0069C692 /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 92411A37260E4E2C0069C692 /* modules */; };
+		928F7B1627CB086B00377C40 /* JITSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 928F7B1527CB086B00377C40 /* JITSupport.m */; };
 		92CC05C521FEDC9F00FF79F0 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */; };
 		92CC05C721FEDD0B00FF79F0 /* MobileCoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */; };
 /* End PBXBuildFile section */
@@ -96,6 +97,8 @@
 		69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = iOS/Resources/Media.xcassets; sourceTree = SOURCE_ROOT; };
 		92411A34260E4E120069C692 /* assets.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = assets.zip; sourceTree = SOURCE_ROOT; };
 		92411A37260E4E2C0069C692 /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; name = modules; path = iOS/modules; sourceTree = "<group>"; };
+		928F7B1427CB086B00377C40 /* JITSupport.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JITSupport.h; sourceTree = "<group>"; };
+		928F7B1527CB086B00377C40 /* JITSupport.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JITSupport.m; sourceTree = "<group>"; };
 		92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
 		92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = System/Library/Frameworks/MobileCoreServices.framework; sourceTree = SDKROOT; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
@@ -234,6 +237,8 @@
 		96AFAE1A16C1D4EA009DE44C = {
 			isa = PBXGroup;
 			children = (
+				928F7B1427CB086B00377C40 /* JITSupport.h */,
+				928F7B1527CB086B00377C40 /* JITSupport.m */,
 				92411A37260E4E2C0069C692 /* modules */,
 				D42013DA260825EE00A1DEFD /* RetroArchiOS9.entitlements */,
 				83D632D719ECFCC4009E3161 /* Assets */,
@@ -243,7 +248,6 @@
 				96AFAE3416C1D4EA009DE44C /* Supporting Files */,
 				0FDA2A921BE1AFA800F2B5DA /* RetroArch_iOS9-Info.plist */,
 				040A5A2222953F3300BD075F /* WebServer */,
-				508E6B1420185D3200A16D1F /* Recovered References */,
 			);
 			indentWidth = 3;
 			sourceTree = "<group>";
@@ -295,7 +299,6 @@
 			isa = PBXGroup;
 			children = (
 				D48581DC16F823E2004BEB17 /* griffin */,
-				96AFAEE516C1DC73009DE44C /* audio */,
 				96AFAF3116C1E00A009DE44C /* gfx */,
 			);
 			name = core;
@@ -427,6 +430,7 @@
 				040A5A4922953F3300BD075F /* GCDWebServerResponse.m in Sources */,
 				040A5A5322953F3300BD075F /* GCDWebServerMultiPartFormRequest.m in Sources */,
 				040A5A4E22953F3300BD075F /* GCDWebServerErrorResponse.m in Sources */,
+				928F7B1627CB086B00377C40 /* JITSupport.m in Sources */,
 				040A5A4C22953F3300BD075F /* GCDWebServer.m in Sources */,
 				040A5A5822953F3300BD075F /* GCDWebUploader.m in Sources */,
 			);

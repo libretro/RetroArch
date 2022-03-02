@@ -4064,7 +4064,7 @@ static void retroarch_print_version(void)
    frontend_driver_attach_console();
    str[0] = '\0';
 
-   fprintf(stderr, "%s: %s -- v%s",
+   fprintf(stdout, "%s: %s -- v%s",
          msg_hash_to_str(MSG_PROGRAM),
          msg_hash_to_str(MSG_LIBRETRO_FRONTEND),
          PACKAGE_VERSION);
@@ -4085,173 +4085,209 @@ static void retroarch_print_version(void)
  **/
 static void retroarch_print_help(const char *arg0)
 {
+   char buf[2048];
+   buf[0] = '\0';
+
    frontend_driver_attach_console();
+   fputs("\n", stdout);
    puts("===================================================================");
    retroarch_print_version();
    puts("===================================================================");
+   fputs("\n", stdout);
 
-   printf("Usage: %s [OPTIONS]... [FILE]\n", arg0);
+   fprintf(stdout, "Usage: %s [OPTIONS]... [FILE]\n\n", arg0);
 
-   {
-      char buf[2720];
-      buf[0] = '\0';
-
-      strlcpy(buf, "  -h, --help            Show this help message.\n", sizeof(buf));
-      strlcat(buf, "  -v, --verbose         Verbose logging.\n",        sizeof(buf));
-      strlcat(buf, "      --log-file FILE   Log messages to FILE.\n",   sizeof(buf));
-      strlcat(buf, "      --version         Show version.\n",           sizeof(buf));
-      strlcat(buf, "      --features        Prints available features compiled into "
-            "program.\n", sizeof(buf));
+   strlcat(buf, "  -h, --help                     "
+         "Show this help message.\n", sizeof(buf));
+   strlcat(buf, "  -v, --verbose                  "
+         "Verbose logging.\n", sizeof(buf));
+   strlcat(buf, "      --log-file=FILE            "
+         "Log messages to FILE.\n", sizeof(buf));
+   strlcat(buf, "      --version                  "
+         "Show version.\n", sizeof(buf));
+   strlcat(buf, "      --features                 "
+         "Print available features compiled into program.\n", sizeof(buf));
 
 #ifdef HAVE_MENU
-      strlcat(buf, "      --menu            Do not require content or libretro core to "
-            "be loaded,\n"
-            "                        starts directly in menu. If no arguments "
-            "are passed to\n"
-            "                        the program, it is equivalent to using "
-            "--menu as only argument.\n", sizeof(buf));
+   strlcat(buf, "      --menu                     "
+         "Do not require content or libretro core to be loaded,\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  starts directly in menu. If no arguments are passed to\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  the program, it is equivalent to using --menu as only argument.\n", sizeof(buf));
 #endif
 
-      strlcat(buf, "  -s, --save=PATH       Path for save files (*.srm). (DEPRECATED, use --appendconfig and savefile_directory)\n", sizeof(buf));
-      strlcat(buf, "  -S, --savestate=PATH  Path for the save state files (*.state). (DEPRECATED, use --appendconfig and savestate_directory)\n", sizeof(buf));
-      strlcat(buf, "      --set-shader PATH Path to a shader (preset) that will be loaded each time content is loaded.\n"
-            "                        Effectively overrides automatic shader presets.\n"
-            "                        An empty argument \"\" will disable automatic shader presets.\n", sizeof(buf));
-      strlcat(buf, "  -f, --fullscreen      Start the program in fullscreen regardless "
-            "of config settings.\n", sizeof(buf));
 #ifdef HAVE_CONFIGFILE
+   strlcat(buf, "  -c, --config=FILE              "
+         "Path for config file.\n", sizeof(buf));
 #ifdef _WIN32
-      strlcat(buf, "  -c, --config=FILE     Path for config file."
-            "\n\t\tDefaults to retroarch.cfg in same directory as retroarch.exe."
-            "\n\t\tIf a default config is not found, the program will attempt to "
-            "create one.\n"
-            , sizeof(buf));
+   strlcat(buf, "                                 "
+         "  Defaults to retroarch.cfg in same directory as retroarch.exe.\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  If a default config is not found, the program will attempt to create one.\n", sizeof(buf));
 #else
-      strlcat(buf, "  -c, --config=FILE     Path for config file."
-            "\n\t\tBy default looks for config in $XDG_CONFIG_HOME/retroarch/"
-            "retroarch.cfg,\n\t\t$HOME/.config/retroarch/retroarch.cfg,\n\t\t"
-            "and $HOME/.retroarch.cfg.\n\t\tIf a default config is not found, "
-            "the program will attempt to create one based on the \n\t\t"
-            "skeleton config (" GLOBAL_CONFIG_DIR "/retroarch.cfg). \n"
-            , sizeof(buf));
+   strlcat(buf, "                                 "
+         "  By default looks for config in\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  $XDG_CONFIG_HOME/retroarch/retroarch.cfg,\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  $HOME/.config/retroarch/retroarch.cfg, and\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  $HOME/.retroarch.cfg.\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  If a default config is not found, the program will attempt to create one\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  based on the skeleton config (" GLOBAL_CONFIG_DIR "/retroarch.cfg).\n", sizeof(buf));
 #endif
+   strlcat(buf, "      --appendconfig=FILE        "
+         "Extra config files are loaded in, and take priority over\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  config selected in -c (or default). Multiple configs are\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  delimited by '|'.\n", sizeof(buf));
 #endif
-      strlcat(buf, "      --appendconfig=FILE\n"
-            "                        Extra config files are loaded in, "
-            "and take priority over\n"
-            "                        config selected in -c (or default). "
-            "Multiple configs are\n"
-            "                        delimited by '|'.\n", sizeof(buf));
+
+   fputs(buf, stdout);
+   buf[0] = '\0';
+
 #ifdef HAVE_DYNAMIC
-      /* Note: Must strlcat the the string literal in two passes
-       * due to C89 limitations (509 character limit) */
-      strlcat(buf, "  -L, --libretro=FILE   Path to libretro implementation. "
-            "Overrides any config setting. FILE may be one of the following:"
-            , sizeof(buf));
-      strlcat(buf,
-            "\n\t\t1. The full path to a core shared object library: path/to/<core_name>_libretro.<lib_ext>"
-            "\n\t\t2. A core shared object library 'file name' (*): <core_name>_libretro.<lib_ext>"
-            "\n\t\t3. A core 'short name' (*): <core_name>_libretro OR <core_name>"
-            "\n\t\t(*) If 'file name' or 'short name' do not correspond to an existing full file path,"
-            "\n\t\t    the configured frontend 'cores' directory will be searched for a match\n"
-            , sizeof(buf));
+   strlcat(buf, "  -L, --libretro=FILE            "
+         "Path to libretro implementation. Overrides any config setting.\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  FILE may be one of the following:\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  1. The full path to a core shared object library: path/to/<core_name>_libretro.<lib_ext>\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  2. A core shared object library 'file name' (*): <core_name>_libretro.<lib_ext>\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  3. A core 'short name' (*): <core_name>_libretro OR <core_name>\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  (*) If 'file name' or 'short name' do not correspond to an existing full file path,\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  the configured frontend 'cores' directory will be searched for a match.\n", sizeof(buf));
 #endif
-      strlcat(buf, "      --subsystem=NAME  Use a subsystem of the libretro core. "
-            "Multiple content\n"
-            "                        files are loaded as multiple arguments. "
-            "If a content\n"
-            "                        file is skipped, use a blank (\"\") "
-            "command line argument.\n"
-            "                        Content must be loaded in an order "
-            "which depends on the\n"
-            "                        particular subsystem used. See verbose "
-            "log output to learn\n"
-            "                        how a particular subsystem wants content "
-            "to be loaded.\n", sizeof(buf));
-      puts(buf);
-   }
 
-   printf("  -N, --nodevice=PORT\n"
-          "                        Disconnects controller device connected "
-          "to PORT (1 to %d).\n", MAX_USERS);
-   printf("  -A, --dualanalog=PORT\n"
-          "                        Connect a DualAnalog controller to PORT "
-          "(1 to %d).\n", MAX_USERS);
-   printf("  -d, --device=PORT:ID\n"
-          "                        Connect a generic device into PORT of "
-          "the device (1 to %d).\n", MAX_USERS);
+   strlcat(buf, "      --subsystem=NAME           "
+         "Use a subsystem of the libretro core. Multiple content\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  files are loaded as multiple arguments. If a content\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  file is skipped, use a blank (\"\") command line argument.\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  Content must be loaded in an order which depends on the\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  particular subsystem used. See verbose log output to learn\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  how a particular subsystem wants content to be loaded.\n", sizeof(buf));
 
-   {
-      char buf[2560];
-      buf[0] = '\0';
-      strlcpy(buf, "                        Format is PORT:ID, where ID is a number "
-            "corresponding to the particular device.\n", sizeof(buf));
-#ifdef HAVE_BSV_MOVIE
-      strlcat(buf, "  -P, --bsvplay=FILE    Playback a BSV movie file.\n", sizeof(buf));
-      strlcat(buf, "  -R, --bsvrecord=FILE  Start recording a BSV movie file from "
-            "the beginning.\n", sizeof(buf));
-      strlcat(buf, "      --eof-exit        Exit upon reaching the end of the "
-            "BSV movie file.\n", sizeof(buf));
-#endif
-      strlcat(buf, "  -M, --sram-mode=MODE  SRAM handling mode. MODE can be "
-            "'noload-nosave',\n"
-            "                        'noload-save', 'load-nosave' or "
-            "'load-save'.\n"
-            "                        Note: 'noload-save' implies that "
-            "save files *WILL BE OVERWRITTEN*.\n", sizeof(buf));
+   strlcat(buf, "  -f, --fullscreen               "
+         "Start the program in fullscreen regardless of config setting.\n", sizeof(buf));
+   strlcat(buf, "      --set-shader=PATH          "
+         "Path to a shader (preset) that will be loaded each time content is loaded.\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  Effectively overrides automatic shader presets.\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  An empty argument \"\" will disable automatic shader presets.\n", sizeof(buf));
+
+   fputs(buf, stdout);
+   buf[0] = '\0';
+
+   printf(      "  -N, --nodevice=PORT            "
+         "Disconnects controller device connected to PORT (1 to %d).\n", MAX_USERS);
+   printf(      "  -A, --dualanalog=PORT          "
+         "Connect a DualAnalog controller to PORT (1 to %d).\n", MAX_USERS);
+   printf(      "  -d, --device=PORT:ID           "
+         "Connect a generic device into PORT of the device (1 to %d).\n", MAX_USERS);
+   strlcat(buf, "                                 "
+         "  Format is PORT:ID, where ID is a number corresponding to the particular device.\n", sizeof(buf));
+
+   strlcat(buf, "  -M, --sram-mode=MODE           "
+         "SRAM handling mode. MODE can be:\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  'noload-nosave', 'noload-save', 'load-nosave' or 'load-save'.\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  Note: 'noload-save' implies that save files *WILL BE OVERWRITTEN*.\n", sizeof(buf));
+
 #ifdef HAVE_NETWORKING
-      strlcat(buf, "  -H, --host            Host netplay as user 1.\n", sizeof(buf));
-      strlcat(buf, "  -C, --connect=HOST    Connect to netplay server as user 2.\n", sizeof(buf));
-      strlcat(buf, "      --port=PORT       Port used to netplay. Default is 55435.\n", sizeof(buf));
-      strlcat(buf, "      --stateless       Use \"stateless\" mode for netplay\n", sizeof(buf));
-      strlcat(buf, "                        (requires a very fast network).\n", sizeof(buf));
-      strlcat(buf, "      --check-frames=NUMBER\n"
-            "                        Check frames when using netplay.\n", sizeof(buf));
+   strlcat(buf, "  -H, --host                     "
+         "Host netplay as user 1.\n", sizeof(buf));
+   strlcat(buf, "  -C, --connect=HOST             "
+         "Connect to netplay server as user 2.\n", sizeof(buf));
+   strlcat(buf, "      --port=PORT                "
+         "Port used to netplay. Default is 55435.\n", sizeof(buf));
+   strlcat(buf, "      --nick=NICK                "
+         "Picks a username (for use with netplay). Not mandatory.\n", sizeof(buf));
+   strlcat(buf, "      --stateless                "
+         "Use \"stateless\" mode for netplay (requires a very fast network).\n", sizeof(buf));
+   strlcat(buf, "      --check-frames=NUMBER      "
+         "Check frames when using netplay.\n", sizeof(buf));
 #ifdef HAVE_NETWORK_CMD
-      strlcat(buf, "      --command         Sends a command over UDP to an already "
-            "running program process.\n", sizeof(buf));
-      strlcat(buf, "      Available commands are listed if command is invalid.\n", sizeof(buf));
+   strlcat(buf, "      --command                  "
+         "Sends a command over UDP to an already running program process.\n", sizeof(buf));
+   strlcat(buf, "                                 "
+         "  Available commands are listed if command is invalid.\n", sizeof(buf));
+#endif
 #endif
 
+#ifdef HAVE_BSV_MOVIE
+   strlcat(buf, "  -P, --bsvplay=FILE             "
+         "Playback a BSV movie file.\n", sizeof(buf));
+   strlcat(buf, "  -R, --bsvrecord=FILE           "
+         "Start recording a BSV movie file from the beginning.\n", sizeof(buf));
+   strlcat(buf, "      --eof-exit                 "
+         "Exit upon reaching the end of the BSV movie file.\n", sizeof(buf));
 #endif
 
-      strlcat(buf, "      --nick=NICK       Picks a username (for use with netplay). "
-            "Not mandatory.\n", sizeof(buf));
-      strlcat(buf, "  -r, --record=FILE     Path to record video file.\n        "
-            "Using .mkv extension is recommended.\n", sizeof(buf));
-      strlcat(buf, "      --recordconfig    Path to settings used during recording.\n", sizeof(buf));
-      strlcat(buf, "      --size=WIDTHxHEIGHT\n"
-            "                        Overrides output video size when recording.\n", sizeof(buf));
+   strlcat(buf, "  -r, --record=FILE              "
+         "Path to record video file. Using mkv extension is recommended.\n", sizeof(buf));
+   strlcat(buf, "      --recordconfig             "
+         "Path to settings used during recording.\n", sizeof(buf));
+   strlcat(buf, "      --size=WIDTHxHEIGHT        "
+         "Overrides output video size when recording.\n", sizeof(buf));
+
+   fputs(buf, stdout);
+   buf[0] = '\0';
+
+   strlcat(buf, "  -D, --detach                   "
+         "Detach program from the running console. Not relevant for all platforms.\n", sizeof(buf));
+   strlcat(buf, "      --max-frames=NUMBER        "
+         "Runs for the specified number of frames, then exits.\n", sizeof(buf));
+
 #ifdef HAVE_PATCH
-      strlcat(buf, "  -U, --ups=FILE        Specifies path for UPS patch that will be "
-            "applied to content.\n", sizeof(buf));
-      strlcat(buf, "      --bps=FILE        Specifies path for BPS patch that will be "
-            "applied to content.\n", sizeof(buf));
-      strlcat(buf, "      --ips=FILE        Specifies path for IPS patch that will be "
-            "applied to content.\n", sizeof(buf));
-      strlcat(buf, "      --no-patch        Disables all forms of content patching.\n", sizeof(buf));
+   strlcat(buf, "  -U, --ups=FILE                 "
+         "Specifies path for UPS patch that will be applied to content.\n", sizeof(buf));
+   strlcat(buf, "      --bps=FILE                 "
+         "Specifies path for BPS patch that will be applied to content.\n", sizeof(buf));
+   strlcat(buf, "      --ips=FILE                 "
+         "Specifies path for IPS patch that will be applied to content.\n", sizeof(buf));
+   strlcat(buf, "      --no-patch                 "
+         "Disables all forms of content patching.\n", sizeof(buf));
 #endif
-      strlcat(buf, "  -D, --detach          Detach program from the running console. "
-            "Not relevant for all platforms.\n", sizeof(buf));
-      strlcat(buf, "      --max-frames=NUMBER\n"
-            "                        Runs for the specified number of frames, "
-            "then exits.\n", sizeof(buf));
+
 #ifdef HAVE_SCREENSHOTS
-      strlcat(buf, "      --max-frames-ss\n"
-            "                        Takes a screenshot at the end of max-frames.\n", sizeof(buf));
-      strlcat(buf, "      --max-frames-ss-path=FILE\n"
-            "                        Path to save the screenshot to at the end of max-frames.\n", sizeof(buf));
+   strlcat(buf, "      --max-frames-ss            "
+         "Takes a screenshot at the end of max-frames.\n", sizeof(buf));
+   strlcat(buf, "      --max-frames-ss-path=FILE  "
+         "Path to save the screenshot to at the end of max-frames.\n", sizeof(buf));
 #endif
+
 #ifdef HAVE_ACCESSIBILITY
-      strlcat(buf, "      --accessibility\n"
-            "                        Enables accessibilty for blind users using text-to-speech.\n", sizeof(buf));
+   strlcat(buf, "      --accessibility            "
+         "Enables accessibilty for blind users using text-to-speech.\n", sizeof(buf));
 #endif
-      strlcat(buf, "      --load-menu-on-error\n"
-            "                        Open menu instead of quitting if specified core or content fails to load.\n", sizeof(buf));
-      strlcat(buf, "  -e, --entryslot=NUMBER\n"
-            "                        Slot from which to load an entry state\n", sizeof(buf));
-      puts(buf);
-   }
+
+   strlcat(buf, "      --load-menu-on-error       "
+         "Open menu instead of quitting if specified core or content fails to load.\n", sizeof(buf));
+   strlcat(buf, "  -e, --entryslot=NUMBER         "
+         "Slot from which to load an entry state.\n", sizeof(buf));
+
+   strlcat(buf, "  -s, --save=PATH                "
+         "Path for save files (*.srm). (DEPRECATED, use --appendconfig and savefile_directory)\n", sizeof(buf));
+   strlcat(buf, "  -S, --savestate=PATH           "
+         "Path for the save state files (*.state). (DEPRECATED, use --appendconfig and savestate_directory)\n", sizeof(buf));
+
+   fputs(buf, stdout);
+   fputs("\n", stdout);
 }
 
 #ifdef HAVE_DYNAMIC
@@ -4619,8 +4655,12 @@ static bool retroarch_parse_input_and_config(
 
             /* Must handle '?' otherwise you get an infinite loop */
             case '?':
-               retroarch_print_help(argv[0]);
-               retroarch_fail(1, "retroarch_parse_input()");
+               frontend_driver_attach_console();
+#ifdef _WIN32
+               fprintf(stderr, "\n%s: unrecognized option '%s'\n", argv[0], argv[optind]);
+#endif
+               fprintf(stderr, "Try '%s --help' for more information\n", argv[0]);
+               exit(EXIT_FAILURE);
                break;
             /* All other arguments are handled in the second pass */
          }

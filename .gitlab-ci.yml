@@ -376,6 +376,8 @@ build-retroarch-osx-ppc:
     XCCONFIG: OpenGL_GitLabCI.xcconfig
   tags:
    - macosx-legacy
+  rules:
+    - if: '"1" != "1"' # Temporary disable rule while runner is offline
   script:
     - xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch_PPC.xcodeproj ONLY_ACTIVE_ARCH=NO
     - pushd pkg/apple/build/Release/
