@@ -6,6 +6,14 @@
 //  Copyright © 2022 RetroArch. All rights reserved.
 //
 
+protocol HelperBarActionDelegate: AnyObject {
+   func keyboardButtonTapped()
+   func mouseButtonTapped()
+   func helpButtonTapped()
+   var isKeyboardEnabled: Bool { get }
+   var isMouseEnabled: Bool { get }
+}
+
 extension CocoaView {
    @objc func setupHelperBar() {
       let helperVC = HelperBarViewController()
