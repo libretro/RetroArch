@@ -63,16 +63,18 @@ ifeq ("$(wildcard $(ELF2DOL))","")
    ELF2DOL = $(DEVKITPRO)/tools/bin/elf2dol$(EXE_EXT)
 endif
 
-INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Iwii/libogc/include
+INCLUDE += -I.
 
 ifeq ($(EXTERNAL_LIBOGC), 1)
    CFLAGS   += -DEXTERNAL_LIBOGC
    CXXFLAGS += -DEXTERNAL_LIBOGC
    LIBDIRS += -L$(DEVKITPRO)/libogc/lib/wii
+   INCLUDE +=  -I$(DEVKITPRO)/libogc/include
 else
    CFLAGS   += -DINTERNAL_LIBOGC
    CXXFLAGS += -DINTERNAL_LIBOGC
    LIBDIRS += -Lwii/libogc/libs/wii
+   INCLUDE += -Iwii/libogc/include
 endif
 
 ifeq ($(GX_PTHREAD_LEGACY), 1)

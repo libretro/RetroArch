@@ -129,11 +129,12 @@ else ifeq ($(libogc_platform), 1)
    EXT_TARGET := $(TARGET_NAME)_$(platform).dol
    EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
 
-   INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Iwii/libogc/include
+   INCLUDE += -I.
 
    ifeq ($(EXTERNAL_LIBOGC), 1)
       CFLAGS   += -DEXTERNAL_LIBOGC
       CXXFLAGS += -DEXTERNAL_LIBOGC
+      INCLUDE += -I$(DEVKITPRO)/libogc/include
 
       ifeq ($(platform), ngc)
          LIBDIRS += -L$(DEVKITPRO)/libogc/lib/cube
@@ -144,6 +145,7 @@ else ifeq ($(libogc_platform), 1)
    else
       CFLAGS   += -DINTERNAL_LIBOGC
       CXXFLAGS += -DINTERNAL_LIBOGC
+      INCLUDE += -Iwii/libogc/include
 
       ifeq ($(platform), ngc)
          LIBDIRS += -Lwii/libogc/libs/cube
