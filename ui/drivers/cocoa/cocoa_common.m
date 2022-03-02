@@ -154,21 +154,18 @@ void *glkitview_init(void);
     });
 }
 
--(void) showCustomKeyboard
-{
 #ifdef HAVE_IOS_CUSTOMKEYBOARD
-    [self.keyboardController.view setHidden:false];
+-(void)toggleCustomKeyboardUsingSwipe:(id)sender {
+    UISwipeGestureRecognizer *gestureRecognizer = (UISwipeGestureRecognizer*)sender;
+    [self.keyboardController.view setHidden:gestureRecognizer.direction == UISwipeGestureRecognizerDirectionDown];
     [self updateOverlayAndFocus];
-#endif
 }
 
--(void) hideCustomKeyboard
-{
-#ifdef HAVE_IOS_CUSTOMKEYBOARD
-    [self.keyboardController.view setHidden:true];
+-(void)toggleCustomKeyboard {
+    [self.keyboardController.view setHidden:!self.keyboardController.view.isHidden];
     [self updateOverlayAndFocus];
-#endif
 }
+#endif
 
 -(void) updateOverlayAndFocus
 {
@@ -327,12 +324,12 @@ void *glkitview_init(void);
 #endif
 #ifdef HAVE_IOS_CUSTOMKEYBOARD
     [self setupEmulatorKeyboard];
-    UISwipeGestureRecognizer *showKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(showCustomKeyboard)];
+    UISwipeGestureRecognizer *showKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(toggleCustomKeyboardUsingSwipe:)];
     showKeyboardSwipe.numberOfTouchesRequired = 3;
     showKeyboardSwipe.direction = UISwipeGestureRecognizerDirectionUp;
     showKeyboardSwipe.delegate = self;
     [self.view addGestureRecognizer:showKeyboardSwipe];
-    UISwipeGestureRecognizer *hideKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(hideCustomKeyboard)];
+    UISwipeGestureRecognizer *hideKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(toggleCustomKeyboardUsingSwipe:)];
     hideKeyboardSwipe.numberOfTouchesRequired = 3;
     hideKeyboardSwipe.direction = UISwipeGestureRecognizerDirectionDown;
     hideKeyboardSwipe.delegate = self;

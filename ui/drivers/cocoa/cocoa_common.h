@@ -52,6 +52,7 @@
 #if TARGET_OS_IOS && defined(HAVE_IOS_CUSTOMKEYBOARD)
 @property(nonatomic,strong) EmulatorKeyboardController *keyboardController;
 @property(nonatomic,assign) unsigned int keyboardModifierState;
+-(void)toggleCustomKeyboard;
 #endif
 
 #if defined(HAVE_IOS_SWIFT)

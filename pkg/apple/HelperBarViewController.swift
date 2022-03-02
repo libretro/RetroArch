@@ -8,14 +8,65 @@
 
 import Combine
 
-@objc protocol HelperBarControllerDelegate: AnyObject {
+@objc protocol HelperBarActionDelegate: AnyObject {
    func keyboardButtonTapped()
    func mouseButtonTapped()
    func helpButtonTapped()
+   var isKeyboardEnabled: Bool { get }
+   var isMouseEnabled: Bool { get }
 }
 
 protocol HelperBarViewModelDelegate: AnyObject {
    func setNavigationBarHidden(_ isHidden: Bool)
+   func updateNavigationBarItems()
+}
+
+protocol HelperBarItem {
+   var image: UIImage? { get }
+   var selectedImage: UIImage? { get }
+   var isSelected: Bool { get }
+   var shortDescription: String { get }
+   var longDescription: String? { get }
+   func action()
+}
+
+struct KeyboardBarItem: HelperBarItem {
+   let image = UIImage(systemName: "keyboard")
+   let selectedImage = UIImage(systemName: "keyboard.fill")
+   var isSelected: Bool { actionDelegate?.isKeyboardEnabled ?? false }
+   let shortDescription = Strings.shortDescription
+   let longDescription: String? = Strings.longDescription
+   weak var actionDelegate: HelperBarActionDelegate?
+   
+   init(actionDelegate: HelperBarActionDelegate?) {
+      self.actionDelegate = actionDelegate
+   }
+   
+   func action() {
+      actionDelegate?.keyboardButtonTapped()
+   }
+   
+   struct Strings {
+      static let shortDescription = NSLocalizedString("An on-screen keyboard", comment: "Description for on-screen keyboard item on helper bar")
+      static let longDescription = NSLocalizedString("An on-screen keyboard for cores that require keyboard input.", comment: "Description for on-screen keyboard item on helper bar")
+   }
+}
+
+struct MouseBarItem: HelperBarItem {
+   let image = UIImage(systemName: "computermouse")
+   let selectedImage = UIImage(systemName: "computermouse.fill")
+   var isSelected: Bool { actionDelegate?.isMouseEnabled ?? false }
+   let shortDescription = NSLocalizedString("Use the touch screen for mouse input.", comment: "Description for touch screen mouse item on helper bar")
+   var longDescription: String? { nil }
+   weak var actionDelegate: HelperBarActionDelegate?
+
+   init(actionDelegate: HelperBarActionDelegate?) {
+      self.actionDelegate = actionDelegate
+   }
+
+   func action() {
+      actionDelegate?.mouseButtonTapped()
+   }
 }
 
 class HelperBarViewModel {
@@ -24,9 +75,18 @@ class HelperBarViewModel {
    private var timer: DispatchSourceTimer?
    
    weak var delegate: HelperBarViewModelDelegate?
+   weak var actionDelegate: HelperBarActionDelegate?
    
-   init(delegate: HelperBarViewModelDelegate? = nil) {
+   lazy var barItems: [HelperBarItem] = [
+      KeyboardBarItem(actionDelegate: actionDelegate),
+      MouseBarItem(actionDelegate: actionDelegate)
+   ]
+   
+   var barItemMapping = [UIBarButtonItem: HelperBarItem]()
+   
+   init(delegate: HelperBarViewModelDelegate? = nil, actionDelegate: HelperBarActionDelegate? = nil) {
       self.delegate = delegate
+      self.actionDelegate = actionDelegate
       setupSubscription()
    }
    
@@ -60,6 +120,21 @@ class HelperBarViewModel {
             }
       })
    }
+   
+   func createBarButtonItems() -> [UIBarButtonItem] {
+      barItemMapping.removeAll()
+      return barItems.map{ [weak self] item in
+         let barButtonItem = UIBarButtonItem(image: item.image, style: .plain, target: self, action: #selector(didTapBarItem(_:)))
+         self?.barItemMapping[barButtonItem] = item
+         return barButtonItem
+      }
+   }
+   
+   @objc private func didTapBarItem(_ sender: UIBarButtonItem) {
+      guard let item = barItemMapping[sender] else { return }
+      item.action()
+      delegate?.updateNavigationBarItems()
+   }
 }
 
 class HelperBarViewController: UIViewController {
@@ -77,6 +152,7 @@ class HelperBarViewController: UIViewController {
    private let navigationBar: UINavigationBar = {
       let navBar = UINavigationBar()
       navBar.barTintColor = .black
+      navBar.tintColor = .white
       navBar.isHidden = true
       return navBar
    }()
@@ -84,6 +160,7 @@ class HelperBarViewController: UIViewController {
    override func viewDidLoad() {
       viewModel.delegate = self
       setupViews()
+      setupBarItems()
    }
    
    override func viewDidAppear(_ animated: Bool) {
@@ -116,14 +193,32 @@ class HelperBarViewController: UIViewController {
       view.addGestureRecognizer(tap)
       view.isUserInteractionEnabled = true
       navigationBar.delegate = self
-      let item = UINavigationItem()
-      item.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .pause, target: self, action: #selector(didPressBarButton(_:)))
-      navigationBar.items = [item]
    }
    
-   @objc func didPressBarButton(_ sender: UIBarButtonItem) {
+   private func setupBarItems() {
+      let barButtonItems = viewModel.createBarButtonItems()
+      let navItem = UINavigationItem()
+      navItem.leftBarButtonItems = barButtonItems
+      navigationBar.items = [navItem]
    }
-      
+   
+   private func updateBarItems() {
+      guard let navItem = navigationBar.items?[0],
+            let barButtonItems = navItem.leftBarButtonItems else {
+         return
+      }
+      for barButtonItem in barButtonItems {
+         guard let helperBarItem = viewModel.barItemMapping[barButtonItem] else {
+            continue
+         }
+         if helperBarItem.isSelected {
+            barButtonItem.image = helperBarItem.selectedImage
+         } else {
+            barButtonItem.image = helperBarItem.image
+         }
+      }
+   }
+   
    private func showIndicatorAndFadeAway() {
       UIView.animateKeyframes(withDuration: 5.0, delay: 0) {
          UIView.addKeyframe(withRelativeStartTime: 0, relativeDuration: 4/5) { [weak self] in
@@ -150,6 +245,9 @@ extension HelperBarViewController: UIGestureRecognizerDelegate {
 extension HelperBarViewController: HelperBarViewModelDelegate {
    func setNavigationBarHidden(_ isHidden: Bool) {
       navigationBar.isHidden = isHidden
+   }
+   func updateNavigationBarItems() {
+      updateBarItems()
    }
 }
 
