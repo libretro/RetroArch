@@ -327,9 +327,16 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    g_draw_done                 = false;
    /* wait for next even field */
    /* this prevents screen artifacts when switching
-    * between interlaced & non-interlaced modes */
-   do VIDEO_WaitVSync();
-   while (!VIDEO_GetNextField());
+    * between interlaced & non-interlaced modes.
+    *
+    * But move on if it takes over 3 frames as sometimes under dolphin
+    * this stays at constant value.
+    */
+   for (i = 0; i < 3; i++) {
+     VIDEO_WaitVSync();
+     if (VIDEO_GetNextField())
+       break;
+   }
 
    VIDEO_SetBlack(true);
    VIDEO_Flush();
