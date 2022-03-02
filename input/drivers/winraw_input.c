@@ -669,7 +669,8 @@ static int16_t winraw_input_state(
       || (device == RETRO_DEVICE_MOUSE)
       || (device == RARCH_DEVICE_MOUSE_SCREEN)
       || (device == RETRO_DEVICE_LIGHTGUN)
-      || (device == RETRO_DEVICE_POINTER);
+      || (device == RETRO_DEVICE_POINTER)
+      || (device == RARCH_DEVICE_POINTER_SCREEN);
 
    if (port >= MAX_USERS)
       return 0;
