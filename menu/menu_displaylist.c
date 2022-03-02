@@ -6426,7 +6426,7 @@ unsigned menu_displaylist_build_list(
          {
             core_info_list_t *info_list        = NULL;
             core_info_get_list(&info_list);
-            if (info_list->info_count > 0)
+            if (info_list && info_list->info_count > 0)
             {
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(

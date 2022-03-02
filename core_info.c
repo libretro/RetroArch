@@ -2512,7 +2512,12 @@ bool core_info_list_get_display_name(
       core_info_list_t *core_info_list,
       const char *core_path, char *s, size_t len)
 {
-   core_info_t *info = core_info_find_internal(
+   core_info_t *info;
+
+   if (!core_info_list)
+     return false;
+
+   info = core_info_find_internal(
          core_info_list, core_path);
 
    if (s &&
