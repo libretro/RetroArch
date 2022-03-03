@@ -35,6 +35,7 @@
 #include <iphlpapi.h>
 #include <ws2tcpip.h>
 #elif defined (GEKKO) && !defined(WIIU)
+#include <network.h>
 #else
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -111,6 +112,7 @@ bool net_ifinfo_new(net_ifinfo_t *list)
 
    list->entries[0].name  = strdup("lo");
    list->entries[0].host  = strdup("127.0.0.1");
+   list->entries[1].name  = strdup("gekko");
    convert_ip(hostname, sizeof(hostname), net_gethostip(), false);
    list->entries[1].host  = strdup(hostname);
    list->size             = 2;
