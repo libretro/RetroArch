@@ -33,7 +33,9 @@
 #include <retro_timers.h>
 #include <compat/strl.h>
 
-#if defined(_XBOX)
+#ifdef GEKKO
+#define gethostbyname net_gethostbyname
+#elif defined(_XBOX)
 /* TODO - implement h_length and h_addrtype */
 struct hostent
 {
@@ -287,10 +289,6 @@ static int wiiu_net_cmpt_thread_entry(int argc, const char** argv) {
 static char localip[16] = {0};
 static char gateway[16] = {0};
 static char netmask[16] = {0};
-
-const char *gethostip(void) {
-   return localip;
-}
 #endif
 
 /**

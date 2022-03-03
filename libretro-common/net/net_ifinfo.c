@@ -78,7 +78,7 @@ void net_ifinfo_free(net_ifinfo_t *list)
    free(list->entries);
 }
 
-#if defined(HAVE_LIBNX) || defined(_3DS)
+#if defined(HAVE_LIBNX) || defined(_3DS) || defined(GEKKO)
 static void convert_ip(char *dst, size_t size, uint32_t ip, bool inverted)
 {
    unsigned char bytes[4];
@@ -94,14 +94,12 @@ static void convert_ip(char *dst, size_t size, uint32_t ip, bool inverted)
 }
 #endif
 
-#ifdef GEKKO
-const char *gethostip(void);
-#endif
-
 bool net_ifinfo_new(net_ifinfo_t *list)
 {
    unsigned k              = 0;
 #if defined(GEKKO)
+   char hostname[128];
+
    memset(list, 0, sizeof(net_ifinfo_t));
 
    /* loopback */
@@ -113,8 +111,8 @@ bool net_ifinfo_new(net_ifinfo_t *list)
 
    list->entries[0].name  = strdup("lo");
    list->entries[0].host  = strdup("127.0.0.1");
-   list->entries[1].name  = strdup("gekko");
-   list->entries[1].host  = strdup(gethostip());
+   convert_ip(hostname, sizeof(hostname), net_gethostip(), true);
+   list->entries[1].host  = strdup(hostname);
    list->size             = 2;
 
    return true;
@@ -124,17 +122,6 @@ bool net_ifinfo_new(net_ifinfo_t *list)
       can be wlan or eth (with a wiiu adapter)
       so we just use "switch" as a name
    */
-#elif defined(_3DS) || defined (GEKKO)
-   convert_ip(hostname, sizeof(hostname), gethostid(), true);
-
-   ptr = (struct net_ifinfo_entry*)
-         realloc(list->entries, (k+1) * sizeof(struct net_ifinfo_entry));
-
-   if (!ptr)
-      goto error;
-
-   list->entries          = ptr;
-
 #elif defined(HAVE_LIBNX) || defined(_3DS)
    uint32_t id;
 #ifdef HAVE_LIBNX
