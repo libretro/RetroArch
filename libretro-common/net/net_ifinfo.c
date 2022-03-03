@@ -111,7 +111,7 @@ bool net_ifinfo_new(net_ifinfo_t *list)
 
    list->entries[0].name  = strdup("lo");
    list->entries[0].host  = strdup("127.0.0.1");
-   convert_ip(hostname, sizeof(hostname), net_gethostip(), true);
+   convert_ip(hostname, sizeof(hostname), net_gethostip(), false);
    list->entries[1].host  = strdup(hostname);
    list->size             = 2;
 
