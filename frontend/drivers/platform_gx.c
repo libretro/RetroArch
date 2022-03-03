@@ -32,6 +32,7 @@
 #include <retroarch_types.h>
 #include <msg_hash.h>
 #include <command.h>
+#include <verbosity.h>
 
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
 #include <rthreads/rthreads.h>

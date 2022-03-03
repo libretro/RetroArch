@@ -22,6 +22,7 @@
 #include <ogcsys.h>
 
 #include <libretro.h>
+#include <verbosity.h>
 #include <streams/interface_stream.h>
 
 #ifdef HAVE_CONFIG_H
