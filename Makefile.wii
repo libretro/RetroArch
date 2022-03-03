@@ -174,7 +174,9 @@ endif
 
 include Makefile.common
 
-CFLAGS += $(DEFINES)
+CFLAGS += $(DEFINES) -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" \
+		-DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT) \
+
 
 ifeq ($(WANT_GLSLANG), 1)
 	OBJ += griffin/griffin_glslang.o

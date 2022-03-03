@@ -167,6 +167,9 @@ static void frontend_gx_get_env(
 {
    char *last_slash = NULL;
    char *device_end = NULL;
+#if defined(HAVE_LOGGER) && !defined(IS_SALAMANDER)
+   logger_init();
+#endif
 #ifndef IS_SALAMANDER
 
    /* This situation can happen on some loaders so we really need some
