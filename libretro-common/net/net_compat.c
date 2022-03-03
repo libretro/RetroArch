@@ -283,6 +283,16 @@ static int wiiu_net_cmpt_thread_entry(int argc, const char** argv) {
 }
 #endif
 
+#if defined(GEKKO)
+static char localip[16] = {0};
+static char gateway[16] = {0};
+static char netmask[16] = {0};
+
+const char *gethostip(void) {
+   return localip;
+}
+#endif
+
 /**
  * network_init:
  *
@@ -346,8 +356,7 @@ bool network_init(void)
 
    retro_epoll_fd = sceNetEpollCreate("epoll", 0);
 #elif defined(GEKKO)
-   char t[16];
-   if (if_config(t, NULL, NULL, TRUE, 10) < 0)
+   if (if_config(localip, netmask, gateway, true, 10) < 0)
       return false;
 #elif defined(WIIU)
    socket_lib_init();
