@@ -5239,7 +5239,7 @@ bool retroarch_main_init(int argc, char *argv[])
             strlcat(str_output, "\n", sizeof(str_output));
          }
 
-         RARCH_LOG_OUTPUT(str_output);
+         RARCH_LOG_OUTPUT("%s", str_output);
       }
       {
          char str_output[256];
@@ -5261,7 +5261,7 @@ bool retroarch_main_init(int argc, char *argv[])
                msg_hash_to_str(MSG_CAPABILITIES),
                str);
 #endif
-         RARCH_LOG_OUTPUT(str_output);
+         RARCH_LOG_OUTPUT("%s", str_output);
       }
    }
 

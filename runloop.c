@@ -1472,7 +1472,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                snprintf(s, sizeof(s), "[Environ]: GET_VARIABLE: %s = \"%s\"\n",
                      var->key, var->value ? var->value :
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
-               RARCH_LOG(s);
+               RARCH_LOG("%s", s);
             }
          }
 
