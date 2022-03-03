@@ -1,5 +1,8 @@
 # Future
 
+# 1.10.1
+
+
 # 1.10.0
 - 3DS: Add Jaxe, A5200 and WASM4 cores
 - 3DS: Fix rotation
