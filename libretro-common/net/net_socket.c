@@ -27,6 +27,10 @@
 #include <compat/msvc.h>
 #endif
 
+#ifdef GEKKO
+#include <network.h>
+#endif
+
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 
@@ -132,6 +136,9 @@ bool socket_set_block(int fd, bool block)
 #elif defined(_WIN32)
    u_long mode = !block;
    return ioctlsocket(fd, FIONBIO, &mode) == 0;
+#elif defined(GEKKO)
+   u32 set = block;
+   return net_ioctl(fd, FIONBIO, &set) >= 0;
 #else
    return fcntl(fd, F_SETFL, (fcntl(fd, F_GETFL) & ~O_NONBLOCK) | (block ? 0 : O_NONBLOCK)) == 0;
 #endif
@@ -236,8 +243,13 @@ bool socket_bind(int fd, void *data)
 {
    int yes               = 1;
    struct addrinfo *res  = (struct addrinfo*)data;
+#ifdef GEKKO
+   net_setsockopt(fd, SOL_SOCKET,
+         SO_REUSEADDR, (const char*)&yes, sizeof(int));
+#else
    setsockopt(fd, SOL_SOCKET,
          SO_REUSEADDR, (const char*)&yes, sizeof(int));
+#endif
    if (bind(fd, res->ai_addr, res->ai_addrlen) < 0)
       return false;
    return true;
@@ -247,7 +259,7 @@ int socket_connect(int fd, void *data, bool timeout_enable)
 {
    struct addrinfo *addr = (struct addrinfo*)data;
 
-#if !defined(_WIN32) && !defined(VITA) && !defined(WIIU) && !defined(_3DS)
+#if !defined(_WIN32) && !defined(VITA) && !defined(WIIU) && !defined(_3DS) && !defined(GEKKO)
    if (timeout_enable)
    {
       struct timeval timeout;
@@ -255,6 +267,16 @@ int socket_connect(int fd, void *data, bool timeout_enable)
       timeout.tv_usec = 0;
 
       setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof timeout);
+   }
+#endif
+#if defined(GEKKO) && !defined(WIIU)
+   if (timeout_enable)
+   {
+      struct timeval timeout;
+      timeout.tv_sec  = 4;
+      timeout.tv_usec = 0;
+
+      net_setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof timeout);
    }
 #endif
 #if defined(WIIU)

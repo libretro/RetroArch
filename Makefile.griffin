@@ -121,14 +121,20 @@ else ifeq ($(libogc_platform), 1)
    CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
    LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
    ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
+   # Check whether ELF2DOL executable exists
+   # (path has changed in more recent toolchains)
+   ifeq ("$(wildcard $(ELF2DOL))","")
+     ELF2DOL = $(DEVKITPRO)/tools/bin/elf2dol$(EXE_EXT)
+   endif
    EXT_TARGET := $(TARGET_NAME)_$(platform).dol
    EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
 
-   INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Iwii/libogc/include
+   INCLUDE += -I.
 
    ifeq ($(EXTERNAL_LIBOGC), 1)
       CFLAGS   += -DEXTERNAL_LIBOGC
       CXXFLAGS += -DEXTERNAL_LIBOGC
+      INCLUDE += -I$(DEVKITPRO)/libogc/include
 
       ifeq ($(platform), ngc)
          LIBDIRS += -L$(DEVKITPRO)/libogc/lib/cube
@@ -139,6 +145,7 @@ else ifeq ($(libogc_platform), 1)
    else
       CFLAGS   += -DINTERNAL_LIBOGC
       CXXFLAGS += -DINTERNAL_LIBOGC
+      INCLUDE += -Iwii/libogc/include
 
       ifeq ($(platform), ngc)
          LIBDIRS += -Lwii/libogc/libs/cube

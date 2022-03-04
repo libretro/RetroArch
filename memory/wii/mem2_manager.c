@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #include <ogc/machine/asm.h>
+#include <ogc/machine/processor.h>
 #include <ogc/lwp_heap.h>
 #include <ogc/system.h>
 

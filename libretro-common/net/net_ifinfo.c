@@ -34,6 +34,8 @@
 #include <winsock2.h>
 #include <iphlpapi.h>
 #include <ws2tcpip.h>
+#elif defined (GEKKO) && !defined(WIIU)
+#include <network.h>
 #else
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -77,7 +79,7 @@ void net_ifinfo_free(net_ifinfo_t *list)
    free(list->entries);
 }
 
-#if defined(HAVE_LIBNX) || defined(_3DS)
+#if defined(HAVE_LIBNX) || defined(_3DS) || defined(GEKKO)
 static void convert_ip(char *dst, size_t size, uint32_t ip, bool inverted)
 {
    unsigned char bytes[4];
@@ -96,9 +98,37 @@ static void convert_ip(char *dst, size_t size, uint32_t ip, bool inverted)
 bool net_ifinfo_new(net_ifinfo_t *list)
 {
    unsigned k              = 0;
-#if defined(HAVE_LIBNX) || defined(_3DS)
+#if defined(GEKKO)
+   char hostname[128];
+
+   memset(list, 0, sizeof(net_ifinfo_t));
+
+   /* loopback */
+   list->entries = (struct net_ifinfo_entry*)
+         malloc(2 * sizeof(struct net_ifinfo_entry));
+
+   if (!list->entries)
+      goto error;
+
+   list->entries[0].name  = strdup("lo");
+   list->entries[0].host  = strdup("127.0.0.1");
+   list->entries[1].name  = strdup("gekko");
+   convert_ip(hostname, sizeof(hostname), net_gethostip(), false);
+   list->entries[1].host  = strdup(hostname);
+   list->size             = 2;
+
+   return true;
+
+   /*
+      actual interface
+      can be wlan or eth (with a wiiu adapter)
+      so we just use "switch" as a name
+   */
+#elif defined(HAVE_LIBNX) || defined(_3DS)
    uint32_t id;
+#ifdef HAVE_LIBNX
    Result rc;
+#endif
 
    char hostname[128];
    struct net_ifinfo_entry *ptr = NULL;
@@ -127,7 +157,7 @@ bool net_ifinfo_new(net_ifinfo_t *list)
       can be wlan or eth (with a wiiu adapter)
       so we just use "switch" as a name
    */
-#if defined(_3DS)
+#if defined(_3DS) || defined (GEKKO)
    convert_ip(hostname, sizeof(hostname), gethostid(), true);
 #else
    rc = nifmGetCurrentIpAddress(&id);
@@ -253,7 +283,7 @@ error:
 #ifdef _WIN32
    if (adapter_addresses)
       free(adapter_addresses);
-#elif !defined(HAVE_LIBNX) && !defined(_3DS)
+#elif !defined(HAVE_LIBNX) && !defined(_3DS) && !defined(GEKKO)
    freeifaddrs(ifaddr);
 #endif
    net_ifinfo_free(list);
