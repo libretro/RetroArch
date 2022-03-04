@@ -1,7 +1,49 @@
 # Future
 
 # 1.10.1
-
+- ANDROID: Add `HAVE_LANGEXTRA` back to makefile
+- ANDROID: Include adaptive launcher icons
+- ANDROID: Populate external storage devices inside the file browser on Android 11+ devices
+- CHEEVOS: add mastery placard
+- CHEEVOS: more description message for missing RetroAchievements credentials
+- CHEEVOS: prevent occasional infinite wait loading multi-disc game from secondary disc
+- CHEEVOS: stop load process if unable to retrieve achievement data
+- CHEEVOS: support for identifying Dreamcast CHDs
+- CHEEVOS: Updated to 10.3.2
+- CONTENTLESS CORES: Disable per-game and per-content-directory remaps when running contentless cores
+- CONTENTLESS CORES: Disable per-game and per-content-directory shader presets
+- CONTENTLESS CORES: Enable config overrides
+- CONTENTLESS CORES: Enable runtime logging
+- CORE INFORMATION: Show core version
+- CORE UPDATER: Add 'Core System Files Downloader'
+- CORES/SETTINGS: Add 'Standalone Cores' menu
+- D3D10/D3D11: Add Vsync swap interval
+- EMSCRIPTEN: Enable 7zip
+- GBA: New GBA filter Upscale_240x160-320x240
+- GONG: Removed now that it's a standalone core
+- HISTORY/FAVORITES: Fix default core on 'Add to Favorites'
+- INPUT/WAYLAND: Allow toggling mouse grabs
+- INPUT/WAYLAND: Release keys and mouse buttons on lost focus
+- iOS: Support for custom keyboard and touch mouse support, among other iOS 13 features
+- LIBRETRO: Fix crash when cores using RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK return false from retro_load_game()
+- LIBRETRO: Add optional frame skipping when fast-forwarding
+- LOCALIZATION: Fetch translations from Crowdin
+- LOCALIZATION: OSD fonts for Chinese, Korean, Arabic and Persian
+- LOCALIZATION: Translation fixes for various languages
+- MENU/RGUI: Add dynamic theme
+- MIYOO: Enable NEAREST audio resampler
+- MIYOO: Support battery level
+- NETPLAY: Disable savestates on stateless mode
+- NGC/Wii: Several improvements
+- OSX: Enable compilation on PPC
+- OZONE/XMB: Improve efficiency/accuracy of History/Favorites icon rendering
+- RECORDING/FFMPEG: Fix building against FFmpeg 5.0
+- RETROARCH INFORMATION: No longer report on enabled Python support, which was removed in RetroArch 1.7.8
+- SAVESTATES: Disable save states based on save state support level defined in core info files
+- UNIX/WINDOWS: Allow setting the default libretro_directory via environment variable
+- WAYLAND/VULKAN: Fix Wayland Vulkan not reacting to initial resize
+- WINDOWS/WINRAW: Enable mouse overlay control
+- Xbox/UWP: Fix CHD not working with Cheevos / Add 7zip support.
 
 # 1.10.0
 - 3DS: Add Jaxe, A5200 and WASM4 cores
@@ -9,7 +51,7 @@
 - ARCHIVE: Allow loading files from archive subdirectory
 - AUDIO: Remove frame limit from audio batch callback. Before, if a core used the audio batch callback, there would be a hidden cap of 1024 on the number of audio frames that could be sent. If a core exceeded this value, any excess samples were silently discarded. While this is sufficient for 'normal' samplerates/framerates, it means that e.g. a core using the batch callback to send 44100 Hz audio at 30 fps with would have entirely broken sound. This has been fixed by removing the audio batch frame limit.
 - AUDIO/RESAMPLER/NEON: Implement sinc kaiser NEON function
-- CHEEVOS: Reset hardcore default to enabled; show message when trying to load state in hardcore 
+- CHEEVOS: Reset hardcore default to enabled; show message when trying to load state in hardcore
 - CHEEVOS: Fix memory map conversion
 - CHEEVOS: Check netplay status when unlocking achievements
 - CHEEVOS: Support for hashing buffered NDS ROMs
@@ -17,7 +59,6 @@
 - CLI: Load save states from command-line or playlist
 - CORE INFO CACHE/SETTINGS: Restore missing 'Cache Core Info Files' menu entry
 - DATABASE: Serial scanning for Gamecube/MegaCD/SegaCD/Saturn/PSX/PSP/Dreamcast/Wii
-- D3D10/D3D11: Add Vsync swap interval
 - EMSCRIPTEN: Add Jaxe, WASM4 cores
 - FILE IO: Fix incorrect file names for remap files when the content path doesn't have a preceding slash
 - INPUT/OVERLAY: Added support for showing the overlay behind the menu instead of in front. This is currently only supported on the GL, Vulkan, D3D 9/10/11/12 and 3DS drivers.
@@ -33,7 +74,7 @@
 - LOGGING: Log font rendering backend only once
 - HOTKEYS: Added a hotkey toggle for the on-screen technical statistics.
 - HOTKEYS: Add delay + acceleration to volume hotkeys
-- MENU: Add option for showing notifications only in menu 
+- MENU: Add option for showing notifications only in menu
 - MENU/RGUI: Add Finnish to supported languages
 - MENU/XMB: Optional vertical list item fade
 - MENU/XMB/OZONE: Category + History/Favorites icons
@@ -82,7 +123,7 @@
 # 1.9.14
 - ANDROID/PLAYSTORE: Implement MANAGE_EXTERNAL_STORAGE permission
 - ANDROID/PLAYSTORE: Bump up SDK level to 30 to comply with Play Store policies
-- AUDIO/MIXER: Increase sample buffer padding 
+- AUDIO/MIXER: Increase sample buffer padding
 - CHEEVOS: Disallow achievements when spectating netplay
 - CHEEVOS: Fix need-to-activate achievement logic for non-hardcore
 - CHEEVOS: Don't queue rewind re-init if already on main thread
@@ -91,17 +132,17 @@
 - CHEEVOS: Validate hashes for secondary discs in multi-disc games
 - CHEEVOS: Ensure placard is initialized on main thread when game has no achievements
 - CHEEVOS: Audit achievement settings defaults and visibility
-- CHEEVOS: Show error message when no password provided 
+- CHEEVOS: Show error message when no password provided
 - CHEEVOS: Use widget for game loaded achievement progress
 - CONFIG: Honor config_save_on_exit when Reboot/Shutdown is called
 - DISK CONTROL: Focus on current content entry in Disk Control append/insert
 - FRAMEDELAY: Auto Frame Delay Improvements - swap interval handling, D3DX handling, and delay target resets also on core restart. It should now work with high refresh rates and also with Direct3D 10/11/12 drivers
 - INPUT/GYRO/ACCELEROMETER/ANDROID: Re-enable Gyroscope & Accelerometer when RetroArch resumes or regains focus
-- INPUT/HID: Fix gamepad disconnect on unrecognized HID device 
+- INPUT/HID: Fix gamepad disconnect on unrecognized HID device
 - LAKKA: Patch to fix keyboard typing
 - LAKKA: CD-ROM eject menu item
-- LAKKA/BLUETOOTH: Add option to remove pairing 
-- LAKKA/SWITCH: Disable rumble gain 
+- LAKKA/BLUETOOTH: Add option to remove pairing
+- LAKKA/SWITCH: Disable rumble gain
 - LAKKA/SWITCH: Disable cpu scaling, uses its own CPU governor
 - LOGGING: Logging cleanups. A bunch of unifications and reformattings (capitalizations, dots, quotes, prefixes etc). Also added a few missing things, such as Run-Ahead error logging and LED interface init logging when it is enabled.
 - NETPLAY: Networking - should not print country for a local lobby
@@ -112,7 +153,7 @@
 - NETWORK: Make HTTP header parsing case insensitive
 - NETWORK/UPNP: Fixed memory leaks
 - NETWORK/UPNP: Added a task_queue_wait to prevent executing two nat tasks at once, so it's also thread safe now
-- NETWORK/UPNP: Switch to a permanent lease time, but request it to be removed when we do netplay_free. Switch to a permanent lease time, but request it to be removed when we do netplay_free. 
+- NETWORK/UPNP: Switch to a permanent lease time, but request it to be removed when we do netplay_free. Switch to a permanent lease time, but request it to be removed when we do netplay_free.
 - NETWORK/UPNP: Only use a single interface for UPnP, return on the first one found instead of iterating over all of them and opening them one by one
 - OVERLAYS: Revert changes
 - RETROFW: Add OSS audio
@@ -399,7 +440,7 @@ Not that SR works on them but to fix RA compile issues
 # 1.9.5
 - ALSATHREAD: Make alsathread default for all ALSA devices with threads
 - ARCHIVE: Fix loading of archived content with file names containing '#' characters
-- CHEEVOS: Upgrade to rcheevos 10.1 
+- CHEEVOS: Upgrade to rcheevos 10.1
 - CHEEVOS: Challenge indicators
 - CHEEVOS: Group achievements by category in quick menu
 - CHEEVOS: Relabel 'Start Active' with 'Encore Mode'
@@ -414,9 +455,9 @@ Not that SR works on them but to fix RA compile issues
 - INPUT: Allow the 8 analog stick directions to be used as keys for core keyboard mappings
 - LIBRETRO: Add API extension for setting 'need_fullpath' based on content file extension and to request persistent frontend content data buffers
 - MENU/SEARCH: Add enhanced search functionality to the 'Manage Cores' menu
-- OPENDINGUX: Fix black screens when triggering gfx driver initialisation via menu actions 
+- OPENDINGUX: Fix black screens when triggering gfx driver initialisation via menu actions
 - UNIX: Get better battery stats on sysfs nodes
-- VIDEO: Extend Frame Delay range to 19 to accommodate PAL land too 
+- VIDEO: Extend Frame Delay range to 19 to accommodate PAL land too
 - WIFI/LAKKA: Add nmcli to wifi drivers
 - WIFI/LAKKA: Add wifi configuration menu
 - X11: fix fullscreen when swapping monitors/resolution
@@ -449,7 +490,7 @@ Not that SR works on them but to fix RA compile issues
 - CORE INFO/FILE IO: Core Info cache; significant file I/O performance improvements on systems with slow disk file I/O
 - CORE INFO/FILE IO: Enable core info cache by default on all 'console' platforms
 - FREEBSD: FreeBSD build fix
-- LAKKA: Support for tweaking CPU governors/scaling policies 
+- LAKKA: Support for tweaking CPU governors/scaling policies
 - LAKKA: This adds managed policies and settings to store them and reload them at startup
 - LIBRETRO API: Add API extension for cores to override frontend fast-forward state
 - MENU/RGUI: Fix saving of config files/overrides when 'Lock Menu Aspect Ratio' is enabled
@@ -490,7 +531,7 @@ Not that SR works on them but to fix RA compile issues
 - MENU: Add optional menu screensaver
 - MENU: Add search filter support to cheats and overlays file browser menus
 - MENU/FILEBROWSER: Enhanced 'Load Content' file browser search functionality
-- MENU/INPUT: Block accidental diagonals in menu navigation 
+- MENU/INPUT: Block accidental diagonals in menu navigation
 - MENU/RGUI: Add option to disable menu transparency
 - MENU/RGUI: Fix display of 'Video > Scaling' menu when 'Lock Menu Aspect Ratio' is enabled
 - MENU/MATERIALUI: Add icon to 'Turbo Fire' menu entry
@@ -609,7 +650,7 @@ Having remaps for many different cores makes finding the active core files cumbe
 - MAC/UNIVERSAL: Add CoreAudio3 audio driver for Metal Universal build
 - MAC/IOS: Only extract assets once on first install
 - MENU: Add 'L2 + R2' menu toggle gamepad combo
-- MENU: Menu text improvements; clarifications, consistency, text mistakes, 
+- MENU: Menu text improvements; clarifications, consistency, text mistakes,
 - MENU: Tweak menu scroll initial hold delays
 - MENU: Restrict menu acceleration to navigation buttons
 - MENU: Add 'Menu Driver' setting to 'User Interface'
@@ -826,7 +867,7 @@ save state limit (global). Instead of wrapping around the slot counter it will s
 - FILE PATH: Various file path handling optimisations
 - FONT: Fix Arabic, Chinese and Korean font rendering
 - INPUT MAPPING/REMAPPING: Restore broken 'reset to default' functionality with RetroPad 'start' button
-- INPUT MAPPING/REMAPPING: Fix 'reset to default' action for analog sticks and undefined core inputs 
+- INPUT MAPPING/REMAPPING: Fix 'reset to default' action for analog sticks and undefined core inputs
 - LOCALIZATION: Update Arabic translation
 - LOCALIZATION: Update Chinese (Simplified) translation
 - LOCALIZATION: Update Chinese (Traditional) translation
@@ -1088,7 +1129,7 @@ appear to be required in order for mouse input to work on macOS
 - VITA: Re-add Online Updater
 - VULKAN: Fix font driver 'vulkan_get_message_width()' function
 - VIDEO FILTERS: Only use threads when the number exceeds 1. Fixes race conditions with some CPU filters on Vita
-- WINDOWS: Add ANGLE support for x64, separate binary (for now?)  
+- WINDOWS: Add ANGLE support for x64, separate binary (for now?)
 
 # 1.8.2
 - BUG/CRASH/GLSLANG: Fix glslang crashing error - managed to reproduce an issue which has been plaguing
@@ -1265,7 +1306,7 @@ Vulkan, so use the old onContentRectChanged callback to get notified when size c
 # (1.7.9)
 - AI SERVICE: Image mode is now much faster, it now saves the image in-memory in PNG format then passes it along to the translation service
 - BUGFIX: Touch input - When using an overlay to toggle the quick menu on touchscreen devices, we no longer get 'phantom' menu input - i.e. the old bug of hitting the toggle and instantly resuming content (or performing a save state) is fixed
-- BUGFIX: Networking - RetroArch crashed when pressing left while Relay Server Location entry was selected 
+- BUGFIX: Networking - RetroArch crashed when pressing left while Relay Server Location entry was selected
 - BUGFIX: Networking - fix memory leak that could happen at exit after a network
 operation had run
 - CHEEVOS: Improve handling of line endings when calculating CD hashes for retroachievements
