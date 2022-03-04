@@ -46,8 +46,8 @@
 #if defined(_XBOX360)
 #include <PPCIntrinsics.h>
 #elif !defined(__MACH__) && (defined(__POWERPC__) || defined(__powerpc__) || defined(__ppc__) || defined(__PPC64__) || defined(__powerpc64__))
-#ifndef _PPU_INTRINSICS_H	
-#include <ppu_intrinsics.h>	
+#ifndef _PPU_INTRINSICS_H
+#include <ppu_intrinsics.h>
 #endif
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(ANDROID) || defined(__QNX__) || defined(DJGPP)
 /* POSIX_MONOTONIC_CLOCK is not being defined in Android headers despite support being present. */
@@ -868,6 +868,35 @@ end:
    {
       size_t len_size = len;
       sysctlbyname("machdep.cpu.brand_string", name, &len_size, NULL, 0);
+   }
+#elif defined(__linux__)
+   if (!name)
+      return;
+   {
+      char *model_name, line[128];
+      RFILE *fp = filestream_open("/proc/cpuinfo",
+            RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+      if (!fp)
+         return;
+
+      while (filestream_gets(fp, line, sizeof(line)))
+      {
+         if (strncmp(line, "model name", 10))
+            continue;
+
+         if ((model_name = strstr(line + 10, ": ")))
+         {
+            model_name += 2;
+            strncpy(name, model_name, len);
+            name[len - 1] = '\0';
+         }
+
+         break;
+      }
+
+      filestream_close(fp);
    }
 #else
    if (!name)
