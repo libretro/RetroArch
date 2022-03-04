@@ -249,7 +249,7 @@ static void frontend_gx_get_env(
          "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
 
    /* User paths */
-   fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_PORT],
+   fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_CORE],
          "retroarch.cfg", sizeof(g_defaults.path_config));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], g_defaults.dirs[DEFAULT_DIR_PORT],
          "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
