@@ -49,7 +49,7 @@ class HelperBarViewController: UIViewController {
       indicatorImageView.translatesAutoresizingMaskIntoConstraints = false
       view.addSubview(indicatorImageView)
       indicatorImageView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 4).isActive = true
-      indicatorImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
+      indicatorImageView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 40).isActive = true
       indicatorImageView.heightAnchor.constraint(equalToConstant: 40).isActive = true
       indicatorImageView.widthAnchor.constraint(equalTo: indicatorImageView.heightAnchor).isActive = true
       view.addSubview(navigationBar)
@@ -90,12 +90,12 @@ class HelperBarViewController: UIViewController {
    }
    
    private func showIndicatorAndFadeAway() {
-      UIView.animateKeyframes(withDuration: 5.0, delay: 0) {
-         UIView.addKeyframe(withRelativeStartTime: 0, relativeDuration: 4/5) { [weak self] in
+      UIView.animateKeyframes(withDuration: 7.0, delay: 0) {
+         UIView.addKeyframe(withRelativeStartTime: 0, relativeDuration: 1/7) { [weak self] in
             self?.indicatorImageView.alpha = 1.0
          }
          
-         UIView.addKeyframe(withRelativeStartTime: 1/3, relativeDuration: 1/5) { [weak self] in
+         UIView.addKeyframe(withRelativeStartTime: 1/3, relativeDuration: 6/7) { [weak self] in
             self?.indicatorImageView.alpha = 0.0
          }
       }

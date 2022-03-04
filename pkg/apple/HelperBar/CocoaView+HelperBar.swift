@@ -39,6 +39,9 @@ extension CocoaView: HelperBarActionDelegate {
    
    func mouseButtonTapped() {
       mouseHandler.enabled.toggle()
+      let messageKey = mouseHandler.enabled ? MSG_IOS_TOUCH_MOUSE_ENABLED : MSG_IOS_TOUCH_MOUSE_DISABLED
+      let message = msg_hash_to_str(messageKey)
+      runloop_msg_queue_push(message, 1, 100, true, nil, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO)
    }
    
    func helpButtonTapped() {
