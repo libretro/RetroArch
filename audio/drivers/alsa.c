@@ -225,13 +225,20 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
       while (size)
       {
          snd_pcm_sframes_t frames;
-         int rc = snd_pcm_wait(alsa->pcm, -1);
+         /* 500ms timeout to fix random endless wait after game resume from menu */
+         int rc = snd_pcm_wait(alsa->pcm, 500);
 
          if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
          {
             if (snd_pcm_recover(alsa->pcm, rc, 1) < 0)
                return -1;
             continue;
+         }
+         else if (!rc)
+         {
+            RARCH_LOG("[ALSA] snd_pcm_wait timeout occurred.\n");
+            snd_pcm_reset(alsa->pcm);
+            return -1;
          }
 
          frames = snd_pcm_writei(alsa->pcm, buf, size);
