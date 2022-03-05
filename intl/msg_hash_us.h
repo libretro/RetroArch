@@ -300,8 +300,10 @@ MSG_HASH(
 
  /* Main Menu > Dropbox Menu */
 
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DROPBOX_LIST_SAVES,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DROPBOX_LIST_SAVES,
    "Browse all saves that have been backed up on Dropbox"
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,

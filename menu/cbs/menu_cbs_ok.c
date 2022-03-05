@@ -4995,6 +4995,12 @@ static int action_ok_core_updater_download(const char *path,
    return 0;
 }
 
+static int action_ok_core_upload_save(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx){
+         core_updater_list_t *core_list = core_updater_list_get_cached();
+         return 0;
+      }
+
 static int action_ok_update_installed_cores(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -6064,7 +6070,7 @@ static int action_ok_scan_dropbox_list(const char *path,
    filebrowser_clear_type();
    return generic_action_ok_displaylist_push(path,
          saves_menu_path, label, type, idx,
-         entry_idx, ACTION_OK_DL_MANUAL_CONTENT_SCAN_DAT_FILE);
+         entry_idx, ACTION_OK_DL_CONTENT_LIST);
 }
 
 static int action_ok_push_random_dir(const char *path,
@@ -8545,6 +8551,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_SIDELOAD_CORE:
             BIND_ACTION_OK(cbs, action_ok_sideload_core);
             break;
+         case FILE_TYPE_SAVES:
+            BIND_ACTION_OK(cbs, action_ok_core_upload_save);
+            break;
          case FILE_TYPE_DOWNLOAD_URL:
 #ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_download_url);
@@ -8554,6 +8563,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_thumbnails_updater_download);
 #endif
+
             break;
          case FILE_TYPE_DOWNLOAD_LAKKA:
 #if defined(HAVE_NETWORKING) && defined(HAVE_LAKKA)

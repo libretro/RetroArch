@@ -737,7 +737,7 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "If Core Directory is a directory, the menu \n"
                              "will use that as top folder. If Core \n"
                              "Directory is a full path, it will start \n"
-                             "in the folder where the file i   s.");
+                             "in the folder where the file is.");
             break;
         case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
             snprintf(s, len,
