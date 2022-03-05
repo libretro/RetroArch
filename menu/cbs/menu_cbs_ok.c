@@ -6003,8 +6003,8 @@ static void netplay_refresh_lan_cb(retro_task_t *task,
          struct netplay_host *host = &hosts->hosts[i];
          struct netplay_room *room = &net_st->room_list[i];
 
-         room->port = host->port;
-         room->gamecrc = host->content_crc;
+         room->port                = host->port;
+         room->gamecrc             = host->content_crc;
          strlcpy(room->retroarch_version, host->retroarch_version,
             sizeof(room->retroarch_version));
          strlcpy(room->nickname, host->nick,

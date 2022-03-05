@@ -664,10 +664,10 @@ bool rcheevos_unload(void)
       rcheevos_locals.hardcore_active           = false;
    }
 
-   while (rcheevos_locals.game.hashes != NULL)
+   while (rcheevos_locals.game.hashes)
    {
       rcheevos_hash_entry_t* hash_entry = rcheevos_locals.game.hashes;
-      rcheevos_locals.game.hashes = hash_entry->next;
+      rcheevos_locals.game.hashes       = hash_entry->next;
       free(hash_entry);
    }
 

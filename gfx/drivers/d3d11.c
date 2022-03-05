@@ -457,6 +457,9 @@ static void d3d11_free_shader_preset(d3d11_video_t* d3d11)
       free(d3d11->shader_preset->pass[i].source.string.vertex);
       free(d3d11->shader_preset->pass[i].source.string.fragment);
       free(d3d11->pass[i].semantics.textures);
+      d3d11->shader_preset->pass[i].source.string.vertex   = NULL;
+      d3d11->shader_preset->pass[i].source.string.fragment = NULL;
+      d3d11->pass[i].semantics.textures                    = NULL;
       d3d11_release_shader(&d3d11->pass[i].shader);
       d3d11_release_texture(&d3d11->pass[i].rt);
       d3d11_release_texture(&d3d11->pass[i].feedback);
@@ -464,6 +467,7 @@ static void d3d11_free_shader_preset(d3d11_video_t* d3d11)
       for (j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
          free(d3d11->pass[i].semantics.cbuffers[j].uniforms);
+         d3d11->pass[i].semantics.cbuffers[j].uniforms = NULL;
          Release(d3d11->pass[i].buffers[j]);
       }
    }

@@ -458,12 +458,16 @@ static void d3d12_free_shader_preset(d3d12_video_t* d3d12)
       free(d3d12->shader_preset->pass[i].source.string.vertex);
       free(d3d12->shader_preset->pass[i].source.string.fragment);
       free(d3d12->pass[i].semantics.textures);
+      d3d12->shader_preset->pass[i].source.string.vertex   = NULL;
+      d3d12->shader_preset->pass[i].source.string.fragment = NULL;
+      d3d12->pass[i].semantics.textures                    = NULL;
       d3d12_release_texture(&d3d12->pass[i].rt);
       d3d12_release_texture(&d3d12->pass[i].feedback);
 
       for (j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
          free(d3d12->pass[i].semantics.cbuffers[j].uniforms);
+         d3d12->pass[i].semantics.cbuffers[j].uniforms = NULL;
          Release(d3d12->pass[i].buffers[j]);
       }
 
@@ -1016,8 +1020,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
 
       desc.CS.pShaderBytecode = D3DGetBufferPointer(cs_code);
       desc.CS.BytecodeLength  = D3DGetBufferSize(cs_code);
-      if (!D3D12CreateComputePipelineState(d3d12->device, &desc, &d3d12->mipmapgen_pipe))
-
+      if (FAILED(D3D12CreateComputePipelineState(d3d12->device, &desc, &d3d12->mipmapgen_pipe)))
          Release(cs_code);
       cs_code = NULL;
    }

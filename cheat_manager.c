@@ -304,6 +304,8 @@ static void cheat_manager_free(void)
             free(cheat_st->cheats[i].desc);
          if (cheat_st->cheats[i].code)
             free(cheat_st->cheats[i].code);
+         cheat_st->cheats[i].desc = NULL;
+         cheat_st->cheats[i].code = NULL;
       }
 
       free(cheat_st->cheats);
@@ -560,6 +562,8 @@ bool cheat_manager_realloc(unsigned new_size, unsigned default_handler)
             free(cheat_st->cheats[i].code);
          if (cheat_st->cheats[i].desc)
             free(cheat_st->cheats[i].desc);
+         cheat_st->cheats[i].code = NULL;
+         cheat_st->cheats[i].desc = NULL;
       }
 
       val = (struct item_cheat*)

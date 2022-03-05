@@ -540,7 +540,10 @@ bool content_undo_load_state(void)
    }
 
    for (i = 0; i < num_blocks; i++)
+   {
       free(blocks[i].data);
+      blocks[i].data = NULL;
+   }
    free(blocks);
 
    if (!ret)

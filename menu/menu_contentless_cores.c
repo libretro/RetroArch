@@ -84,6 +84,7 @@ static void contentless_cores_free_info_entries(
 
          if (entry->licenses_str)
             free(entry->licenses_str);
+         entry->licenses_str = NULL;
 
          contentless_cores_free_runtime_info(&entry->runtime);
 

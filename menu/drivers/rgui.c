@@ -5951,14 +5951,17 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    return menu;
 
 error:
-   rgui_fonts_free(rgui);
+   if (rgui)
+   {
+      rgui_fonts_free(rgui);
 
-   rgui_framebuffer_free(&rgui->frame_buf);
-   rgui_framebuffer_free(&rgui->background_buf);
+      rgui_framebuffer_free(&rgui->frame_buf);
+      rgui_framebuffer_free(&rgui->background_buf);
 
-   rgui_thumbnail_free(&rgui->fs_thumbnail);
-   rgui_thumbnail_free(&rgui->mini_thumbnail);
-   rgui_thumbnail_free(&rgui->mini_left_thumbnail);
+      rgui_thumbnail_free(&rgui->fs_thumbnail);
+      rgui_thumbnail_free(&rgui->mini_thumbnail);
+      rgui_thumbnail_free(&rgui->mini_left_thumbnail);
+   }
 
    if (menu)
       free(menu);
@@ -5977,17 +5980,17 @@ static void rgui_free(void *data)
 #endif
       if (rgui->thumbnail_path_data)
          free(rgui->thumbnail_path_data);
+
+      rgui_fonts_free(rgui);
+
+      rgui_framebuffer_free(&rgui->frame_buf);
+      rgui_framebuffer_free(&rgui->background_buf);
+      rgui_framebuffer_free(&rgui->upscale_buf);
+
+      rgui_thumbnail_free(&rgui->fs_thumbnail);
+      rgui_thumbnail_free(&rgui->mini_thumbnail);
+      rgui_thumbnail_free(&rgui->mini_left_thumbnail);
    }
-
-   rgui_fonts_free(rgui);
-
-   rgui_framebuffer_free(&rgui->frame_buf);
-   rgui_framebuffer_free(&rgui->background_buf);
-   rgui_framebuffer_free(&rgui->upscale_buf);
-
-   rgui_thumbnail_free(&rgui->fs_thumbnail);
-   rgui_thumbnail_free(&rgui->mini_thumbnail);
-   rgui_thumbnail_free(&rgui->mini_left_thumbnail);
 }
 
 static void rgui_set_texture(void *data)

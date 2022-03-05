@@ -166,10 +166,10 @@ static void content_file_override_free(
       content_file_override_t *override =
             &p_content->content_override_list[i];
 
-      if (!override || !override->ext)
+      if (!override)
          continue;
-
-      free(override->ext);
+      if (override->ext)
+         free(override->ext);
    }
 
    RBUF_FREE(p_content->content_override_list);

@@ -520,6 +520,26 @@ database_info_list_t *database_info_list_new(
                free(db_info.md5);
             if (db_info.sha1)
                free(db_info.sha1);
+
+            db_info.name                 = NULL;
+            db_info.rom_name             = NULL;
+            db_info.serial               = NULL;
+            db_info.genre                = NULL;
+            db_info.description          = NULL;
+            db_info.publisher            = NULL;
+            db_info.developer            = NULL;
+            db_info.origin               = NULL;
+            db_info.franchise            = NULL;
+            db_info.edge_magazine_review = NULL;
+            db_info.cero_rating          = NULL;
+            db_info.pegi_rating          = NULL;
+            db_info.enhancement_hw       = NULL;
+            db_info.elspa_rating         = NULL;
+            db_info.esrb_rating          = NULL;
+            db_info.bbfc_rating          = NULL; 
+            db_info.sha1                 = NULL;
+            db_info.md5                  = NULL;
+
             database_info_list_free(database_info_list);
             free(database_info);
             free(database_info_list);
@@ -576,7 +596,6 @@ void database_info_list_free(database_info_list_t *database_info_list)
          free(info->publisher);
       if (info->developer)
          string_list_free(info->developer);
-      info->developer = NULL;
       if (info->origin)
          free(info->origin);
       if (info->franchise)
@@ -600,6 +619,25 @@ void database_info_list_free(database_info_list_t *database_info_list)
          free(info->sha1);
       if (info->md5)
          free(info->md5);
+
+      info->name                 = NULL;
+      info->rom_name             = NULL;
+      info->serial               = NULL;
+      info->genre                = NULL;
+      info->description          = NULL;
+      info->publisher            = NULL;
+      info->developer            = NULL;
+      info->origin               = NULL;
+      info->franchise            = NULL;
+      info->edge_magazine_review = NULL;
+      info->cero_rating          = NULL;
+      info->pegi_rating          = NULL;
+      info->enhancement_hw       = NULL;
+      info->elspa_rating         = NULL;
+      info->esrb_rating          = NULL;
+      info->bbfc_rating          = NULL; 
+      info->sha1                 = NULL;
+      info->md5                  = NULL;
    }
 
    free(database_info_list->list);
