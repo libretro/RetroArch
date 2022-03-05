@@ -2548,7 +2548,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
-   "Pořídit snímek obrazovky"
+   "Pořídit Snímek Obrazovky"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
@@ -5794,7 +5794,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
-   "Stažené položky"
+   "Stažené Položky"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
@@ -5810,7 +5810,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
-   "Dynamická pozadí"
+   "Dynamická Pozadí"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
@@ -5818,7 +5818,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
-   "Náhledové obrázky"
+   "Miniatury"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
@@ -5826,7 +5826,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   "Správce souborů"
+   "Správce Souborů"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
@@ -5962,7 +5962,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-   "Seznamy"
+   "Playlisty"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
@@ -6069,6 +6069,10 @@ MSG_HASH(
 /* Netplay */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS,
+   "Hostitel"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
    "Připojení k Hostiteli Netplay"
    )
@@ -6174,7 +6178,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Systémový název"
+   "Název Systému"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
@@ -6186,7 +6190,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "Ruční zadání 'systémového názvu' pro skenovaný obsah. Používá se pouze v případě, že je položka \"Název systému\" nastavena na hodnotu '<Vlastní>'."
+   "Ruční zadání 'systémového názvu' pro skenovaný obsah. Používá se pouze v případě, že je položka 'Název systému' nastavena na hodnotu '<Vlastní>'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
@@ -6280,7 +6284,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME,
-   "Vyhledat název ..."
+   "Vyhledat Název ..."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL,
@@ -6304,23 +6308,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,
-   "Podle vývojáře"
+   "Podle Vývojáře"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,
-   "Podle vydavatele"
+   "Podle Vydavatele"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,
-   "Podle roku vydání"
+   "Podle Roku Vydání"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
-   "Podle počtu hráčů"
+   "Podle Počtu Hráčů"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
-   "Podle žánru"
+   "Podle Žánru"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,
@@ -6371,11 +6375,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
-   "Přidat k oblíbeným"
+   "Přidat k Oblíbeným"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
-   "Přidejte obsah do 'Oblíbených'."
+   "Přidejte obsah do 'Oblíbené'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -6429,11 +6433,11 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Unused? */
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_RUNTIME,
-   "Doba hraní"
+   "Doba Hraní"
    )
 MSG_HASH( /* FIXME Unused? */
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LAST_PLAYED,
-   "Naposledy hráno"
+   "Naposledy Hráno"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE,
@@ -6468,7 +6472,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
-   "Pořídit snímek obrazovky"
+   "Pořídit Snímek Obrazovky"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
@@ -6516,15 +6520,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
-   "Přidat k oblíbeným"
+   "Přidat k Oblíbeným"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
-   "Přidejte obsah do 'Oblíbených'."
+   "Přidejte obsah do 'Oblíbené'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
-   "Začít nahrávat"
+   "Začít Nahrávat"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING,
@@ -6532,7 +6536,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
-   "Zastavit nahrávání"
+   "Zastavit Nahrávání"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_RECORDING,
@@ -6969,7 +6973,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
-   "Po každé iteraci se \"Adresa paměti\" zvýší o tento počet násobený \"Velikostí hledání v paměti\"."
+   "Po každé iteraci se 'Adresa Paměti' zvýší o tento počet násobený 'Velikostí hledání v paměti'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_VALUE,
@@ -7036,7 +7040,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "Vysunout disk"
+   "Vysunout Disk"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
@@ -7370,23 +7374,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
-   "Žádné Oblíbené Položky k Dispozici"
+   "Nejsou k Dispozici Žádné Oblíbené Položky"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
-   "Není k dispozici žádná historie"
+   "Není k Dispozici Žádná Historie"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
-   "Nejsou k dispozici žádné obrázky"
+   "Nejsou k Dispozici Žádné Obrázky"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
-   "Není k dispozici žádná hudba"
+   "Není k Dispozici Žádná Hudba"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
-   "Nejsou k dispozici žádná videa"
+   "Nejsou k Dispozici Žádná Videa"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
@@ -8040,7 +8044,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
-   "Zvýšení rozlišení rozhraní nabídky před vykreslením na obrazovku. Při použití se zapnutým \"Lineárním filtrem nabídky\" odstraní artefakty škálování (nerovnoměrné pixely) při zachování ostrého obrazu. Má výrazný dopad na výkon, který se zvyšuje s úrovní zvýšení měřítka."
+   "Zvýšení rozlišení rozhraní nabídky před vykreslením na obrazovku. Při použití se zapnutým 'Lineárním filtrem nabídky' odstraní artefakty škálování (nerovnoměrné pixely) při zachování ostrého obrazu. Má výrazný dopad na výkon, který se zvyšuje s úrovní zvýšení měřítka."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
@@ -8048,7 +8052,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
-   "Vyberte poměr stran nabídky. Širokoúhlý poměr zvyšuje horizontální rozlišení rozhraní nabídky. (Může vyžadovat restart, pokud je funkce \"Zamknout poměr stran nabídky\" vypnutá)"
+   "Vyberte poměr stran nabídky. Širokoúhlý poměr zvyšuje horizontální rozlišení rozhraní nabídky. (Může vyžadovat restart, pokud je funkce 'Zamknout poměr stran nabídky' vypnutá)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
@@ -8064,7 +8068,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
-   "Vyberte jiný barevný motiv. Výběr možnosti \"Vlastní\" umožňuje použití souborů s přednastavenými motivy nabídek."
+   "Vyberte jiný barevný motiv. Výběr možnosti 'Vlastní' umožňuje použití souborů s přednastavenými motivy nabídek."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
@@ -8108,7 +8112,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
-   "Animace spořiče obrazovky"
+   "Animace Spořiče Obrazovky"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
@@ -8324,10 +8328,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_RAIN,
    "Déšť"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_VORTEX,
-   "Vír"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_STARFIELD,
@@ -8997,7 +8997,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
-   "Načíst Jádro"
+   "Nahrát Jádro"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOADING_CORE,
@@ -9005,7 +9005,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_NAME,
-   "Jméno"
+   "Název"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION,
@@ -9013,11 +9013,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
-   "Seznamy"
+   "Playlisty"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
-   "Správce souborů"
+   "Správce Souborů"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_TOP,
@@ -9237,7 +9237,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
-   "Jméno:"
+   "Název:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_PATH,
@@ -9690,10 +9690,6 @@ MSG_HASH( /* FIXME Still exists in a comment about being removed */
    "Upravit průhlednost grafiky záhlaví."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
-   "Online hraní"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT,
    "Spustit Obsah"
    )
@@ -9910,7 +9906,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-   "Stažené položky"
+   "Stažené Položky"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
@@ -9954,7 +9950,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
-   "Posunout nahoru"
+   "Posunout Nahoru"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_START,
@@ -9962,11 +9958,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD,
-   "Otevřít/Zavřít klávesnici"
+   "Přepnout Klávesnici"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU,
-   "Otevřít/zavřít Hlavní menu"
+   "Přepnout Hlavní Menu"
    )
 
 /* Discord Status */
@@ -10940,7 +10936,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PAUSED,
-   "Pozastaveno."
+   "Pauza."
    )
 MSG_HASH(
    MSG_READING_FIRST_DATA_TRACK,
@@ -11136,7 +11132,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NO_THUMBNAIL_AVAILABLE,
-   "Není k dispozici žádný náhled"
+   "Není k dispozici žádná miniatura"
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
@@ -11838,7 +11834,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANUAL,
-   "Příručka"
+   "Ruční"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANUAL,

@@ -29,6 +29,11 @@
 #include "../../config.h"
 #endif
 
+#include <retroarch_types.h>
+#include <msg_hash.h>
+#include <command.h>
+#include <verbosity.h>
+
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
 #include <rthreads/rthreads.h>
 #include "../../memory/wii/mem2_manager.h"
@@ -162,6 +167,9 @@ static void frontend_gx_get_env(
 {
    char *last_slash = NULL;
    char *device_end = NULL;
+#if defined(HAVE_LOGGER) && !defined(IS_SALAMANDER)
+   logger_init();
+#endif
 #ifndef IS_SALAMANDER
 
    /* This situation can happen on some loaders so we really need some
@@ -241,7 +249,7 @@ static void frontend_gx_get_env(
          "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
 
    /* User paths */
-   fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_PORT],
+   fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_CORE],
          "retroarch.cfg", sizeof(g_defaults.path_config));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], g_defaults.dirs[DEFAULT_DIR_PORT],
          "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));

@@ -298,6 +298,7 @@ void sthread_join(sthread_t *thread)
    free(thread);
 }
 
+#if !defined(GEKKO)
 /**
  * sthread_isself:
  * @thread                  : pointer to thread object
@@ -316,6 +317,7 @@ bool sthread_isself(sthread_t *thread)
    return pthread_equal(pthread_self(),thread->id);
 #endif
 }
+#endif
 
 /**
  * slock_new:

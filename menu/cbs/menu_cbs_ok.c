@@ -3407,50 +3407,59 @@ static int generic_action_ok_remap_file_operation(const char *path,
    char content_dir[PATH_MAX_LENGTH];
    struct retro_system_info *system     = &runloop_state_get_ptr()->system.info;
    const char *core_name                = system ? system->library_name : NULL;
+   const char *rarch_path_basename      = path_get(RARCH_PATH_BASENAME);
+   bool has_content                     = !string_is_empty(rarch_path_basename);
    settings_t *settings                 = config_get_ptr();
    const char *path_dir_input_remapping = settings->paths.directory_input_remapping;
 
-   directory[0] = file[0]          = '\0';
+   directory[0]   = '\0';
+   file[0]        = '\0';
+   content_dir[0] = '\0';
 
-   if (!string_is_empty(core_name))
-      fill_pathname_join(
-            directory,
-            path_dir_input_remapping,
-            core_name,
-            sizeof(directory));
+   /* Cannot perform remap file operation if we
+    * have no core */
+   if (string_is_empty(core_name))
+      return menu_cbs_exit();
+
+   /* Get base remap file directory */
+   fill_pathname_join(
+         directory,
+         path_dir_input_remapping,
+         core_name,
+         sizeof(directory));
+
+   if (!path_is_directory(directory))
+      path_mkdir(directory);
 
    switch (action_type)
    {
       case ACTION_OK_REMAP_FILE_SAVE_CORE:
       case ACTION_OK_REMAP_FILE_REMOVE_CORE:
-         if (!string_is_empty(core_name))
-            fill_pathname_join(file, core_name, core_name, sizeof(file));
+         fill_pathname_join(file, core_name, core_name, sizeof(file));
          break;
       case ACTION_OK_REMAP_FILE_SAVE_GAME:
       case ACTION_OK_REMAP_FILE_REMOVE_GAME:
-         if (!string_is_empty(core_name))
+         if (has_content)
             fill_pathname_join(file, core_name,
-                  path_basename(path_get(RARCH_PATH_BASENAME)), sizeof(file));
+                  path_basename(rarch_path_basename), sizeof(file));
          break;
       case ACTION_OK_REMAP_FILE_SAVE_CONTENT_DIR:
       case ACTION_OK_REMAP_FILE_REMOVE_CONTENT_DIR:
-         if (!string_is_empty(core_name))
+         if (has_content)
          {
-            fill_pathname_parent_dir_name(content_dir, path_get(RARCH_PATH_BASENAME), sizeof(content_dir));
+            fill_pathname_parent_dir_name(content_dir,
+                  rarch_path_basename, sizeof(content_dir));
             fill_pathname_join(file, core_name,
                   content_dir, sizeof(file));
          }
          break;
    }
 
-   if (!path_is_directory(directory))
-       path_mkdir(directory);
-
    if (action_type < ACTION_OK_REMAP_FILE_REMOVE_CORE)
    {
-      if (input_remapping_save_file(file))
+      if (!string_is_empty(file) &&
+          input_remapping_save_file(file))
       {
-#ifdef HAVE_CONFIGFILE
          switch (action_type)
          {
             case ACTION_OK_REMAP_FILE_SAVE_CORE:
@@ -3463,7 +3472,6 @@ static int generic_action_ok_remap_file_operation(const char *path,
                retroarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
                break;
          }
-#endif
 
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_REMAP_FILE_SAVED_SUCCESSFULLY),
@@ -3478,7 +3486,8 @@ static int generic_action_ok_remap_file_operation(const char *path,
    }
    else
    {
-      if (input_remapping_remove_file(file, path_dir_input_remapping))
+      if (!string_is_empty(file) &&
+          input_remapping_remove_file(file, path_dir_input_remapping))
       {
          switch (action_type)
          {

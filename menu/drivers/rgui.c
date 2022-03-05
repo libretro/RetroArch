@@ -62,7 +62,7 @@
 /* Required for the Wii build, since we have
  * to query the hardware for the actual display
  * aspect ratio... */
-#include "../../wii/libogc/include/ogc/conf.h"
+#include <ogc/conf.h>
 #endif
 
 #if defined(GEKKO)

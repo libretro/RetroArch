@@ -6,7 +6,7 @@
 
   <package id="retroarch.lifning.001">
 
-    <author name="lifning" website="http://libretro.org/"/>
+    <author name="libretro" website="https://www.libretro.com/"/>
 
     <version major="0" minor="9" release="7" build="2" type="beta"/>
 
