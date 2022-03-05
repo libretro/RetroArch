@@ -820,6 +820,23 @@ build-static-retroarch-dummy-psp:
     - "cp -f pkg/psp1/ICON0.PNG ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
     - "cp -f pkg/psp1/PIC1.PNG ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
 
+build-static-retroarch-djgpp:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-djgpp-build-container:latest
+  stage: prepare-for-static-cores
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    -  retroarch-precompiled/
+    expire_in: 10 min
+  dependencies: []
+  script:
+    # Allow failure since we don't have a core
+    - "make -f Makefile.dos -j$NUMPROC ||:"
+    - "mkdir .retroarch-precompiled"
+    - "cp -r ./* .retroarch-precompiled/"
+    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+
 build-static-retroarch-ctr:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:latest
   stage: prepare-for-static-cores

@@ -199,7 +199,7 @@ static bool vga_gfx_frame(void *data, const void *frame,
 
       if (frame_to_copy == vga->vga_menu_frame)
          dosmemput(frame_to_copy,
-               MIN(VGA_WIDTH,width)*MIN(VGA_HEIGHT,height), 0xA0000);
+               VGA_WIDTH*VGA_HEIGHT, 0xA0000);
       else
       {
          if (bits == 32)
