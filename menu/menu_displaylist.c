@@ -6463,7 +6463,7 @@ unsigned menu_displaylist_build_list(
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DROPBOX_LIST_SAVES),
                         msg_hash_to_str(MENU_ENUM_LABEL_DROPBOX_LIST_SAVES),
                         MENU_ENUM_LABEL_DROPBOX_LIST_SAVES,
-                        MENU_SETTING_ACTION, 0, 0))
+                        MENU_SETTING_ACTION, 8, 0))
                   count++;
       }
          
@@ -11557,6 +11557,27 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_DROPBOX_SAVES_LIST:
          {
             // DISPLAYLIST_DROPBOX_SAVES_LIST
+             /*
+         if (menu_entries_append_enum(info->list,
+                           entry->remote_filename,
+                           "",
+                           MENU_ENUM_LABEL_CORE_UPDATER_ENTRY,
+                           FILE_TYPE_DOWNLOAD_CORE, 0, 0))
+                     {
+                        file_list_set_alt_at_offset(
+                              info->list, menu_index, entry->display_name);
+
+                        menu_index++;
+                        count++;
+                     }
+         */
+
+        if (menu_entries_append_enum(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DROPBOX_LIST_SAVES),
+                        msg_hash_to_str(MENU_ENUM_LABEL_DROPBOX_LIST_SAVES),
+                        MENU_ENUM_LABEL_DROPBOX_LIST_SAVES,
+                        FILE_TYPE_SAVES, 0, 0))
+                  count++;
             
          }
          break;

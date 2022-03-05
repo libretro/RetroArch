@@ -8552,8 +8552,10 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_sideload_core);
             break;
          case FILE_TYPE_SAVES:
+#ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_core_upload_save);
             break;
+#endif
          case FILE_TYPE_DOWNLOAD_URL:
 #ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_download_url);
@@ -8649,8 +8651,8 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                {
                   case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
                   case MENU_ENUM_LABEL_FAVORITES:
-                  case MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
                   case MENU_ENUM_LABEL_DROPBOX_LIST_SAVES:
+                  case MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
 #ifdef HAVE_COMPRESSION
                      if (type == FILE_TYPE_IN_CARCHIVE)
                      {
