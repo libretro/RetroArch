@@ -7991,6 +7991,16 @@ static int ozone_list_push(void *data, void *userdata,
             }
 #endif
 #endif
+#ifdef HAVE_MIST
+            if (settings->bools.menu_show_core_manager_steam && !settings->bools.kiosk_mode_enable)
+            {
+               MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
+                  info->list,
+                  MENU_ENUM_LABEL_CORE_MANAGER_STEAM_LIST,
+                  PARSE_ACTION,
+                  false);
+            }
+#endif
             if (!settings->bools.menu_content_show_settings && !string_is_empty(settings->paths.menu_content_show_settings_password))
             {
                MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(

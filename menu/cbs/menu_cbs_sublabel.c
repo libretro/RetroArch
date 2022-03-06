@@ -525,6 +525,10 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_switch_installed_cores_pfd,    MENU_
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sideload_core_list,            MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_manager_list,             MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST)
+#ifdef HAVE_MIST
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_manager_steam_list,       MENU_ENUM_SUBLABEL_CORE_MANAGER_STEAM_LIST)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_core_manager_steam,  MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_load_disc,                  MENU_ENUM_SUBLABEL_LOAD_DISC)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dump_disc,                  MENU_ENUM_SUBLABEL_DUMP_DISC)
 #ifdef HAVE_LAKKA
@@ -3739,6 +3743,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CORE_MANAGER_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_manager_list);
             break;
+#ifdef HAVE_MIST
+         case MENU_ENUM_LABEL_CORE_MANAGER_STEAM_LIST:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_manager_steam_list);
+            break;
+         case MENU_ENUM_LABEL_MENU_SHOW_CORE_MANAGER_STEAM:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_core_manager_steam);
+            break;
+#endif
          case MENU_ENUM_LABEL_VIDEO_POST_FILTER_RECORD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_post_filter_record);
             break;
