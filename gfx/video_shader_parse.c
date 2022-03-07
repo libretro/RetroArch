@@ -820,31 +820,31 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
          /* Linear filter ON or OFF */
          if (shader->lut[i].filter != RARCH_FILTER_UNSPEC)
          {
-            char key[128];
-            key[0]  = '\0';
-            strlcpy(key, shader->lut[i].id, sizeof(key));
-            strlcat(key, "_linear", sizeof(key));
-            config_set_bool(conf, key, 
+            char k[128];
+            k[0]  = '\0';
+            strlcpy(k, shader->lut[i].id, sizeof(k));
+            strlcat(k, "_linear", sizeof(k));
+            config_set_bool(conf, k, 
                   shader->lut[i].filter == RARCH_FILTER_LINEAR);
          }
 
          /* Wrap Mode */
          {
-            char key[128];
-            key[0]  = '\0';
-            strlcpy(key, shader->lut[i].id, sizeof(key));
-            strlcat(key, "_wrap_mode", sizeof(key));
-            config_set_string(conf, key,
+            char k[128];
+            k[0]  = '\0';
+            strlcpy(k, shader->lut[i].id, sizeof(k));
+            strlcat(k, "_wrap_mode", sizeof(k));
+            config_set_string(conf, k,
                   wrap_mode_to_str(shader->lut[i].wrap));
          }
 
          /* Mipmap On or Off */
          {
-            char key[128];
-            key[0]  = '\0';
-            strlcpy(key, shader->lut[i].id, sizeof(key));
-            strlcat(key, "_mipmap", sizeof(key));
-            config_set_bool(conf, key, shader->lut[i].mipmap);
+            char k[128];
+            k[0]  = '\0';
+            strlcpy(k, shader->lut[i].id, sizeof(k));
+            strlcat(k, "_mipmap", sizeof(k));
+            config_set_bool(conf, k, shader->lut[i].mipmap);
          }
       }
    }

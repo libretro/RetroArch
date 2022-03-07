@@ -115,6 +115,9 @@ static void win32_display_server_destroy(void *data)
 {
    dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
 
+   if (!dispserv)
+      return;
+
    if (dispserv->orig_width > 0 && dispserv->orig_height > 0)
       video_display_server_set_resolution(
             dispserv->orig_width,
@@ -131,8 +134,7 @@ static void win32_display_server_destroy(void *data)
    }
 #endif
 
-   if (dispserv)
-      free(dispserv);
+   free(dispserv);
 }
 
 static bool win32_display_server_set_window_opacity(
@@ -170,8 +172,10 @@ static bool win32_display_server_set_window_progress(
    HWND              hwnd = win32_get_window();
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
 
-   if (serv)
-      serv->progress      = progress;
+   if (!serv)
+      return false;
+
+   serv->progress      = progress;
 
 #ifdef HAS_TASKBAR_EXT
    if (!serv->taskbar_list || !win32_taskbar_is_created())
@@ -208,8 +212,10 @@ static bool win32_display_server_set_window_decorations(void *data, bool on)
 {
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
 
-   if (serv)
-      serv->decorations = on;
+   if (!serv)
+      return false;
+
+   serv->decorations = on;
 
    /* menu_setting performs a reinit instead to properly
     * apply decoration changes */
@@ -316,6 +322,8 @@ static int resolution_list_qsort_func(
    if (!a || !b)
       return 0;
 
+   str_a[0] = str_b[0] = '\0';
+
    snprintf(str_a, sizeof(str_a), "%04dx%04d (%d Hz)",
          a->width,
          a->height,
@@ -333,7 +341,9 @@ static void *win32_display_server_get_resolution_list(
       void *data, unsigned *len)
 {
    DEVMODE dm                        = {0};
-   unsigned i, j, count              = 0;
+   unsigned i                        = 0;
+   unsigned j                        = 0;
+   unsigned count                    = 0;
    unsigned curr_width               = 0;
    unsigned curr_height              = 0;
    unsigned curr_bpp                 = 0;

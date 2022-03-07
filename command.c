@@ -96,6 +96,8 @@ static bool command_get_arg(const char *tok,
       if (str == tok)
       {
          const char *argument = str + strlen(action_map[i].str);
+         if (!argument)
+            return false;
          if (*argument != ' ' && *argument != '\0')
             return false;
 

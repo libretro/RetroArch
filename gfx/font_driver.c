@@ -1302,7 +1302,6 @@ font_data_t *font_driver_init_first(
    void *font_handle       = NULL;
    bool ok                 = false;
 #ifdef HAVE_THREADS
-
    if (     threading_hint
          && is_threaded
          && !video_driver_is_hw_context())
@@ -1316,11 +1315,15 @@ font_data_t *font_driver_init_first(
 
    if (ok)
    {
-      font_data_t *font   = (font_data_t*)malloc(sizeof(*font));
-      font->renderer      = (const font_renderer_t*)font_driver;
-      font->renderer_data = font_handle;
-      font->size          = font_size;
-      return font;
+      font_data_t *font      = (font_data_t*)malloc(sizeof(*font));
+
+      if (font)
+      {
+         font->renderer      = (const font_renderer_t*)font_driver;
+         font->renderer_data = font_handle;
+         font->size          = font_size;
+         return font;
+      }
    }
 
    return NULL;

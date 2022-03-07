@@ -1828,12 +1828,16 @@ void win32_clip_window(bool state)
    {
       PWINDOWINFO info;
       info         = (PWINDOWINFO)malloc(sizeof(*info));
-      info->cbSize = sizeof(PWINDOWINFO);
 
-      if (GetWindowInfo(main_window.hwnd, info))
-         clip_rect = info->rcClient;
+      if (info)
+      {
+         info->cbSize = sizeof(PWINDOWINFO);
 
-      free(info);
+         if (GetWindowInfo(main_window.hwnd, info))
+            clip_rect = info->rcClient;
+
+         free(info);
+      }
       info = NULL;
    }
    else
