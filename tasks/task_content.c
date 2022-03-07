@@ -2173,7 +2173,9 @@ bool task_push_load_contentless_core_from_menu(
    content_state_t *p_content            = content_state_get_ptr();
    bool ret                              = true;
    char *error_string                    = NULL;
+#if defined(HAVE_DYNAMIC)
    runloop_state_t *runloop_st           = runloop_state_get_ptr();
+#endif
    settings_t *settings                  = config_get_ptr();
    const char *path_dir_system           = settings->paths.directory_system;
    bool check_firmware_before_loading    = settings->bools.check_firmware_before_loading;
