@@ -4756,6 +4756,10 @@ MSG_HASH(
    )
 #if defined(_3DS)
 MSG_HASH(
+   MENU_ENUM_LABEL_NEW3DS_SPEEDUP_ENABLE,
+   "new3ds_speedup_enable"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM,
    "video_3ds_lcd_bottom"
    )

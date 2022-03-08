@@ -9097,6 +9097,17 @@ unsigned menu_displaylist_build_list(
                         false) == 0)
                   count++;
             }
+#ifdef _3DS
+            u8 device_model = 0xFF;
+            CFGU_GetSystemModel(&device_model);
+            if ((device_model == 2) || (device_model == 4) || (device_model == 5))
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_NEW3DS_SPEEDUP_ENABLE,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+            }
+#endif
          }
          break;
       case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:

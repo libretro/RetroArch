@@ -1033,6 +1033,7 @@ static void* ctr_init(const video_info_t* video,
    void* ctrinput       = NULL;
    settings_t *settings = config_get_ptr();
    bool lcd_bottom      = settings->bools.video_3ds_lcd_bottom;
+   bool speedup_enable  = settings->bools.new3ds_speedup_enable;
    ctr_video_t* ctr     = (ctr_video_t*)linearAlloc(sizeof(ctr_video_t));
 
    if (!ctr)
@@ -1219,6 +1220,8 @@ static void* ctr_init(const video_info_t* video,
 
    gspSetEventCallback(GSPGPU_EVENT_VBlank0,
          (ThreadFunc)ctr_vsync_hook, ctr, false);
+
+   osSetSpeedupEnable(speedup_enable);
 
    return ctr;
 }

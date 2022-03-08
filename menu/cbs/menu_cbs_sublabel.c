@@ -1072,6 +1072,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_gamemode_enable,                MENU
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_brightness_control,             MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL)
 
 #if defined(_3DS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_new3ds_speedup_enable,          MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_3ds_lcd_bottom,           MENU_ENUM_SUBLABEL_VIDEO_3DS_LCD_BOTTOM)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_3ds_display_mode,         MENU_ENUM_SUBLABEL_VIDEO_3DS_DISPLAY_MODE)
 #endif
@@ -4480,6 +4481,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_brightness_control);
             break;
 #if defined(_3DS)
+         case MENU_ENUM_LABEL_NEW3DS_SPEEDUP_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_new3ds_speedup_enable);
+            break;
          case MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_3ds_lcd_bottom);
             break;

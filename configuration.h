@@ -921,6 +921,9 @@ typedef struct settings
       bool ai_service_pause;
 
       bool gamemode_enable;
+#ifdef _3DS
+      bool new3ds_speedup_enable;
+#endif
    } bools;
 
 } settings_t;

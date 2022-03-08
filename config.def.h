@@ -945,8 +945,10 @@ static const float message_bgcolor_opacity = 1.0f;
 #define DEFAULT_ALLOW_ROTATE true
 
 #if defined(_3DS)
+/* Enable New3DS clock and L2 cache */
+static const bool new3ds_speedup_enable      = true;
 /* Enable bottom LCD screen */
-static const bool video_3ds_lcd_bottom = true;
+static const bool video_3ds_lcd_bottom       = true;
 /* Sets video display mode (3D, 2D, etc.) */
 static const unsigned video_3ds_display_mode = CTR_VIDEO_MODE_3D;
 #endif
