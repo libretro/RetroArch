@@ -8014,6 +8014,13 @@ unsigned menu_displaylist_build_list(
                      PARSE_ONLY_UINT, false) == 0)
                count++;
 
+#if defined(WIIU)
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_WIIU_PREFER_DRC,
+                     PARSE_ONLY_BOOL, false) == 0)
+                     count++;
+#endif
+
 #if defined(GEKKO) || defined(PS2) || !defined(__PSL1GHT__) && defined(__PS3__)
             if (true)
 #else

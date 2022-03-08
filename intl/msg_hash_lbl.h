@@ -3424,6 +3424,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX,
    "video_monitor_index"
    )
+#if defined(WIIU)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_WIIU_PREFER_DRC,
+   "video_wiiu_prefer_drc"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_X,
    "video_window_offset_x"
