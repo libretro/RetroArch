@@ -9295,17 +9295,24 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_CORE_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
-               {MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT,              PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_DRIVER_SWITCH_ENABLE,              PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN,            PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE,        PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE,                PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_CORE_OPTION_CATEGORY_ENABLE,       PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE,            PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE,        PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CORE_OPTION_CATEGORY_ENABLE,       PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_DRIVER_SWITCH_ENABLE,              PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE,                PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT,              PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN,            PARSE_ONLY_BOOL},
 #ifndef HAVE_DYNAMIC
                {MENU_ENUM_LABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT, PARSE_ONLY_BOOL},
 #endif
             };
+
+            if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST),
+                     msg_hash_to_str(MENU_ENUM_LABEL_CORE_MANAGER_LIST),
+                     MENU_ENUM_LABEL_CORE_MANAGER_LIST,
+                     MENU_SETTING_ACTION, 0, 0))
+               count++;
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
@@ -9314,13 +9321,6 @@ unsigned menu_displaylist_build_list(
                         false) == 0)
                   count++;
             }
-
-            if (menu_entries_append_enum(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST),
-                     msg_hash_to_str(MENU_ENUM_LABEL_CORE_MANAGER_LIST),
-                     MENU_ENUM_LABEL_CORE_MANAGER_LIST,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
          }
          break;
       case DISPLAYLIST_CONFIGURATION_SETTINGS_LIST:
