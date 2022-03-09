@@ -790,6 +790,9 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
       free(context.core_info);
    }
 
+   if (!core_info_cache_list)
+      goto end;
+
    /* If info cache file has the wrong version
     * number, discard it */
    if (string_is_empty(core_info_cache_list->version) ||
@@ -1881,8 +1884,12 @@ static void core_info_free(core_info_t* info)
 
    for (i = 0; i < info->firmware_count; i++)
    {
-      free(info->firmware[i].path);
-      free(info->firmware[i].desc);
+      if (info->firmware[i].path)
+         free(info->firmware[i].path);
+      if (info->firmware[i].desc)
+         free(info->firmware[i].desc);
+      info->firmware[i].path = NULL;
+      info->firmware[i].desc = NULL;
    }
    free(info->firmware);
 
@@ -2512,7 +2519,12 @@ bool core_info_list_get_display_name(
       core_info_list_t *core_info_list,
       const char *core_path, char *s, size_t len)
 {
-   core_info_t *info = core_info_find_internal(
+   core_info_t *info;
+
+   if (!core_info_list)
+     return false;
+
+   info = core_info_find_internal(
          core_info_list, core_path);
 
    if (s &&

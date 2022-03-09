@@ -376,9 +376,7 @@ libretro_vfs_implementation_file* retro_vfs_file_open_impl(
         break;
     }
     if (mode == RETRO_VFS_FILE_ACCESS_READ)
-    {
         creationDisposition = OPEN_EXISTING;
-    }
     else
     {
         creationDisposition = (mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING) != 0 ?
@@ -386,20 +384,15 @@ libretro_vfs_implementation_file* retro_vfs_file_open_impl(
     }
     HANDLE file_handle = CreateFile2FromAppW(path_wstring.data(), desireAccess, FILE_SHARE_READ, creationDisposition, NULL);
     if (file_handle != INVALID_HANDLE_VALUE)
-    {
         stream->fh = file_handle;
-    }
     else
-    {
         goto error;
-    }
     stream->fd = _open_osfhandle((uint64)stream->fh, flags);
     if (stream->fd == -1)
         goto error;
     else
     {
-        FILE* fp;
-        fp = _fdopen(stream->fd, mode_str);
+        FILE *fp = _fdopen(stream->fd, mode_str);
 
         if (!fp)
         {

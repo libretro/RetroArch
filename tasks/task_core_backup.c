@@ -938,7 +938,7 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
    retro_task_t *task                  = NULL;
    core_backup_handle_t *backup_handle = NULL;
    char core_path[PATH_MAX_LENGTH];
-   char task_title[PATH_MAX_LENGTH];
+   char task_title[256];
 
    core_path[0]  = '\0';
    task_title[0] = '\0';

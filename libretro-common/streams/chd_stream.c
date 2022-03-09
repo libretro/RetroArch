@@ -87,6 +87,8 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
    uint32_t meta_size = 0;
    chd_error err;
 
+   meta[0] = '\0';
+
    memset(md, 0, sizeof(*md));
 
    err = chd_get_metadata(chd, CDROM_TRACK_METADATA2_TAG, idx, meta,

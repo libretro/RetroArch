@@ -3414,8 +3414,7 @@ void input_overlay_init(void)
    bool overlay_hide_when_gamepad_connected = settings->bools.input_overlay_hide_when_gamepad_connected;
 #if defined(GEKKO)
    /* Avoid a crash at startup or even when toggling overlay in rgui */
-   uint64_t memory_free                     = frontend_driver_get_free_memory();
-   if (memory_free < (3 * 1024 * 1024))
+   if (frontend_driver_get_free_memory() < (3 * 1024 * 1024))
       return;
 #endif
 

@@ -512,6 +512,9 @@ enum msg_hash_enums
    MSG_FAILED_TO_ENTER_GAMEMODE,
    MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
 
+   MSG_IOS_TOUCH_MOUSE_ENABLED,
+   MSG_IOS_TOUCH_MOUSE_DISABLED,
+
    MENU_LABEL(MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT),
    MENU_LABEL(MENU_XMB_ANIMATION_MOVE_UP_DOWN),
    MENU_LABEL(MENU_XMB_ANIMATION_OPENING_MAIN_MENU),
@@ -1118,6 +1121,7 @@ enum msg_hash_enums
    MENU_LABEL(VIDEO_SWAP_INTERVAL),
    MENU_LABEL(VIDEO_FULLSCREEN),
    MENU_LABEL(VIDEO_MONITOR_INDEX),
+   MENU_LABEL(VIDEO_WIIU_PREFER_DRC),
    MENU_LABEL(VIDEO_WINDOW_SCALE),
    MENU_LABEL(VIDEO_WINDOW_OFFSET_X),
    MENU_LABEL(VIDEO_WINDOW_OFFSET_Y),
@@ -3421,6 +3425,9 @@ int msg_hash_get_help_sv_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_uk(enum msg_hash_enums msg);
 int msg_hash_get_help_uk_enum(enum msg_hash_enums msg, char *s, size_t len);
+
+const char *msg_hash_to_str_cs(enum msg_hash_enums msg);
+int msg_hash_get_help_cs_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len);
 

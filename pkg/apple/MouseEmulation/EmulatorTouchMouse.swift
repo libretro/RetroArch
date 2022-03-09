@@ -19,7 +19,7 @@
 import Combine
 import UIKit
 
-@objc protocol EmulatorTouchMouseHandlerDelegate: AnyObject {
+@objc public protocol EmulatorTouchMouseHandlerDelegate: AnyObject {
    func handleMouseClick(isLeftClick: Bool, isPressed: Bool)
    func handleMouseMove(x: CGFloat, y: CGFloat)
 }
@@ -40,6 +40,8 @@ import UIKit
       let holdState: MouseHoldState
    }
 
+   var enabled = false
+   
    let view: UIView
    weak var delegate: EmulatorTouchMouseHandlerDelegate?
    
@@ -58,8 +60,9 @@ import UIKit
    
    private let mediumHaptic = UIImpactFeedbackGenerator(style: .medium)
    
-   public init(view: UIView) {
+   public init(view: UIView, delegate: EmulatorTouchMouseHandlerDelegate? = nil) {
       self.view = view
+      self.delegate = delegate
       super.init()
       setup()
    }
@@ -109,7 +112,7 @@ import UIKit
    }
    
    public func touchesBegan(touches: Set<UITouch>) {
-      guard let touch = touches.first else {
+      guard enabled, let touch = touches.first else {
          return
       }
       if primaryTouch == nil {
@@ -123,6 +126,7 @@ import UIKit
    }
    
    public func touchesEnded(touches: Set<UITouch>) {
+      guard enabled else { return }
       for touch in touches {
          if touch == primaryTouch?.touch {
             if touch.tapCount > 0 {
@@ -145,6 +149,7 @@ import UIKit
    }
    
    public func touchesMoved(touches: Set<UITouch>) {
+      guard enabled else { return }
       for touch in touches {
          if touch == primaryTouch?.touch {
             let a = touch.previousLocation(in: view)
@@ -158,6 +163,7 @@ import UIKit
    }
    
    public func touchesCancelled(touches: Set<UITouch>) {
+      guard enabled else { return }
       for touch in touches {
          if touch == primaryTouch?.touch {
             endHold()

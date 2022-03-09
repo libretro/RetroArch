@@ -121,14 +121,20 @@ else ifeq ($(libogc_platform), 1)
    CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
    LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
    ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
+   # Check whether ELF2DOL executable exists
+   # (path has changed in more recent toolchains)
+   ifeq ("$(wildcard $(ELF2DOL))","")
+     ELF2DOL = $(DEVKITPRO)/tools/bin/elf2dol$(EXE_EXT)
+   endif
    EXT_TARGET := $(TARGET_NAME)_$(platform).dol
    EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
 
-   INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Iwii/libogc/include
+   INCLUDE += -I.
 
    ifeq ($(EXTERNAL_LIBOGC), 1)
       CFLAGS   += -DEXTERNAL_LIBOGC
       CXXFLAGS += -DEXTERNAL_LIBOGC
+      INCLUDE += -I$(DEVKITPRO)/libogc/include
 
       ifeq ($(platform), ngc)
          LIBDIRS += -L$(DEVKITPRO)/libogc/lib/cube
@@ -139,6 +145,7 @@ else ifeq ($(libogc_platform), 1)
    else
       CFLAGS   += -DINTERNAL_LIBOGC
       CXXFLAGS += -DINTERNAL_LIBOGC
+      INCLUDE += -Iwii/libogc/include
 
       ifeq ($(platform), ngc)
          LIBDIRS += -Lwii/libogc/libs/cube
@@ -977,48 +984,6 @@ else ifneq (,$(findstring unix,$(platform)))
    EXT_INTER_TARGET := $(TARGET_NAME)
    INCLUDE += -Ilibretro-common/include -Igfx/include -Ideps -Ideps/stb -Ideps/rcheevos/include -Ideps/SPIRV-Cross -Ideps/glslang -I.
    LIBS += -ldl -lm -lpthread -lGL -ludev -lpulse -lX11 -lX11-xcb -lXxf86vm
-else ifeq (dos,$(platform))
-   HAVE_RPNG                := 1
-   HAVE_RJPEG               := 1
-   HAVE_RBMP                := 1
-   HAVE_RTGA                := 1
-   HAVE_ZLIB                := 1
-   HAVE_7ZIP                := 1
-   HAVE_NETWORKING          := 0
-   HAVE_NETWORK_CMD         := 0
-   HAVE_NETPLAYDISCOVERY    := 0
-   HAVE_OVERLAY             := 1
-   HAVE_VIDEO_LAYOUT        := 0
-   HAVE_MATERIALUI          := 0
-   HAVE_XMB                 := 0
-   HAVE_STB_FONT            := 1
-   HAVE_THREADS             := 0
-   HAVE_LIBRETRODB          := 1
-   HAVE_COMMAND             := 1
-   HAVE_STDIN_CMD           := 1
-   HAVE_CMD                 := 1
-   HAVE_DYLIB               := 0
-   HAVE_DYNAMIC             := 0
-   HAVE_GRIFFIN_CPP         := 0
-   WANT_GLSLANG             := 0
-	HAVE_CONFIGFILE          := 1
-   HAVE_PATCH               := 0
-   HAVE_CHEATS              := 0
-   HAVE_CORE_INFO_CACHE     := 1
-   CC=i586-pc-msdosdjgpp-gcc
-   CXX=i586-pc-msdosdjgpp-g++
-
-   ifeq ($(DEBUG), 1)
-      LDFLAGS += -g
-   endif
-
-   PLATCFLAGS += -DHAVE_SHADERPIPELINE -DHAVE_CC_RESAMPLER -DRC_DISABLE_LUA -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_GFX_WIDGETS -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_SPIRV_CROSS -DHAVE_STB_FONT -DRARCH_INTERNAL  -DHAVE_XCB
-   TARGET_NAME := retrodos
-   EXT_TARGET := $(TARGET_NAME).exe
-   EXT_INTER_TARGET := $(TARGET_NAME).exe
-   INCLUDE += -Ilibretro-common/include -Igfx/include -Ideps -Ideps/stb -Ideps/SPIRV-Cross -Ideps/glslang -I.
-   LIBS += -lm
-   LIBDIRS += -L.
 endif
 
 ifneq (,$(findstring msvc,$(platform)))

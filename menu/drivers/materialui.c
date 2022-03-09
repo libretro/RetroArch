@@ -2160,9 +2160,10 @@ static void materialui_free_playlist_icon_list(materialui_handle_t *mui)
       /* Free file names */
       if (mui->textures.playlist.icons[i].playlist_file)
          free(mui->textures.playlist.icons[i].playlist_file);
-
       if (mui->textures.playlist.icons[i].image_file)
          free(mui->textures.playlist.icons[i].image_file);
+      mui->textures.playlist.icons[i].playlist_file = NULL;
+      mui->textures.playlist.icons[i].image_file    = NULL;
    }
 
    /* Free icons array and set list size to zero */

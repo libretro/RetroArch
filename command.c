@@ -96,6 +96,8 @@ static bool command_get_arg(const char *tok,
       if (str == tok)
       {
          const char *argument = str + strlen(action_map[i].str);
+         if (!argument)
+            return false;
          if (*argument != ' ' && *argument != '\0')
             return false;
 
@@ -334,6 +336,14 @@ command_t* command_stdin_new(void)
 
    cmd          = (command_t*)calloc(1, sizeof(command_t));
    stdincmd     = (command_stdin_t*)calloc(1, sizeof(command_stdin_t));
+
+   if (!cmd)
+      return NULL;
+   if (!stdincmd)
+   {
+      free(cmd);
+      return NULL;
+   }
    cmd->userptr = stdincmd;
    cmd->poll    = command_stdin_poll;
    cmd->replier = stdin_command_reply;

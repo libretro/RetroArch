@@ -5239,7 +5239,7 @@ bool retroarch_main_init(int argc, char *argv[])
             strlcat(str_output, "\n", sizeof(str_output));
          }
 
-         RARCH_LOG_OUTPUT(str_output);
+         RARCH_LOG_OUTPUT("%s", str_output);
       }
       {
          char str_output[256];
@@ -5261,7 +5261,7 @@ bool retroarch_main_init(int argc, char *argv[])
                msg_hash_to_str(MSG_CAPABILITIES),
                str);
 #endif
-         RARCH_LOG_OUTPUT(str_output);
+         RARCH_LOG_OUTPUT("%s", str_output);
       }
    }
 
@@ -6089,6 +6089,7 @@ enum retro_language rarch_get_language_from_iso(const char *iso639)
       {"id", RETRO_LANGUAGE_INDONESIAN},
       {"sv", RETRO_LANGUAGE_SWEDISH},
       {"uk", RETRO_LANGUAGE_UKRAINIAN},
+      {"cs", RETRO_LANGUAGE_CZECH},
    };
 
    if (string_is_empty(iso639))

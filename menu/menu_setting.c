@@ -6704,6 +6704,7 @@ static void setting_get_string_representation_uint_user_language(
    modes[RETRO_LANGUAGE_INDONESIAN]             = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_INDONESIAN);
    modes[RETRO_LANGUAGE_SWEDISH]                = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_SWEDISH);
    modes[RETRO_LANGUAGE_UKRAINIAN]              = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_UKRAINIAN);
+   modes[RETRO_LANGUAGE_CZECH]                  = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_CZECH);
    strlcpy(s, modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)], len);
 }
 #endif
@@ -11265,6 +11266,23 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].get_string_representation =
                   &setting_get_string_representation_int_gpu_index;
             }
+#endif
+
+#ifdef WIIU
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_wiiu_prefer_drc,
+                  MENU_ENUM_LABEL_VIDEO_WIIU_PREFER_DRC,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
+                  DEFAULT_WIIU_PREFER_DRC,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
 #endif
 
             if (video_driver_has_windowed())
