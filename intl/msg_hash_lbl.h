@@ -4083,6 +4083,10 @@ MSG_HASH(
    "core_lock"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CORE_SET_STANDALONE_EXEMPT,
+   "core_set_standalone_exempt"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CORE_DELETE,
    "core_delete"
    )

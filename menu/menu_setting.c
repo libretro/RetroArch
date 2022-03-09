@@ -3701,6 +3701,12 @@ static void setting_get_string_representation_uint_menu_contentless_cores_displa
                   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_SINGLE_PURPOSE),
                len);
          break;
+      case MENU_CONTENTLESS_CORES_DISPLAY_CUSTOM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM),
+               len);
+         break;
    }
 }
 
