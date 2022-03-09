@@ -441,6 +441,10 @@ unsigned menu_displaylist_contentless_cores(file_list_t *list, settings_t *setti
                   core_valid = core_info->supports_no_game &&
                         core_info->single_purpose;
                   break;
+               case MENU_CONTENTLESS_CORES_DISPLAY_CUSTOM:
+                  core_valid = core_info->supports_no_game &&
+                        !core_info->is_standalone_exempt;
+                  break;
                default:
                   break;
             }

@@ -474,6 +474,11 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
    bool menu_show_core_updater   = settings->bools.menu_show_core_updater;
 #endif
 #endif
+#if defined(HAVE_DYNAMIC)
+   enum menu_contentless_cores_display_type
+         contentless_display_type = (enum menu_contentless_cores_display_type)
+               settings->uints.menu_content_show_contentless_cores;
+#endif
 
    tmp[0] = '\0';
 
@@ -729,6 +734,34 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
    }
 
 end:
+
+#if defined(HAVE_DYNAMIC)
+   /* Exclude core from contentless cores menu */
+   if ((contentless_display_type ==
+            MENU_CONTENTLESS_CORES_DISPLAY_CUSTOM) &&
+       core_info &&
+       core_info->supports_no_game &&
+       !string_is_empty(core_path) &&
+       !kiosk_mode_enable)
+   {
+      /* Note: Have to set core_path as both the
+       * 'path' and 'label' parameters (otherwise
+       * cannot access it in menu_cbs_get_value.c
+       * or menu_cbs_left/right.c), which means
+       * entry name must be set as 'alt' text */
+      if (menu_entries_append_enum(info->list,
+            core_path,
+            core_path,
+            MENU_ENUM_LABEL_CORE_SET_STANDALONE_EXEMPT,
+            MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT, 0, 0))
+      {
+         file_list_set_alt_at_offset(
+               info->list, count,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT));
+         count++;
+      }
+   }
+#endif
 
 #if !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
    if (!string_is_empty(core_path) && !kiosk_mode_enable)

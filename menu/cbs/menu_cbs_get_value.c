@@ -768,6 +768,40 @@ static void menu_action_setting_disp_set_label_core_lock(
    *w  = (unsigned)strlen(s);
 }
 
+static void menu_action_setting_disp_set_label_core_set_standalone_exempt(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   core_info_t *core_info = NULL;
+   const char *alt        = list->list[i].alt
+         ? list->list[i].alt
+         : list->list[i].path;
+   *s                     = '\0';
+   *w                     = 0;
+
+   if (alt)
+      strlcpy(s2, alt, len2);
+
+   /* Check whether core is excluded from the
+    * contentless cores menu
+    * > Note: We search core_info here instead of
+    *   calling core_info_get_core_standalone_exempt()
+    *   since we don't want to perform disk access
+    *   every frame */
+   if (core_info_find(path, &core_info) &&
+       core_info->supports_no_game &&
+       core_info->is_standalone_exempt)
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
+   else
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+
+   *w  = (unsigned)strlen(s);
+}
+
 static void menu_action_setting_disp_set_label_input_desc(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -2220,6 +2254,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
       case MENU_SETTING_ACTION_CORE_LOCK:
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_core_lock);
+         break;
+      case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:
+         BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_core_set_standalone_exempt);
          break;
       case 32: /* Recent history entry */
       case 65535: /* System info entry */
