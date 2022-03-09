@@ -1712,6 +1712,7 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE];
       case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
       case MENU_ENUM_LABEL_LOAD_DROPBOX_LIST:
+      case MENU_ENUM_LABEL_DROPBOX_LIST_SAVES:
       case MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS:
       case MENU_ENUM_LABEL_SCAN_FILE:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FILE];

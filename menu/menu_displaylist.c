@@ -3576,6 +3576,7 @@ static unsigned menu_displaylist_parse_playlists(
                MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB);
 
       if (show_add_content)
+      // start here
          if (menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST),
                   msg_hash_to_str(MENU_ENUM_LABEL_ADD_CONTENT_LIST),
@@ -11350,7 +11351,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            entry->remote_filename,
                            "",
                            MENU_ENUM_LABEL_CORE_UPDATER_ENTRY,
-                           FILE_TYPE_DOWNLOAD_CORE, 0, 0))
+                           FILE_TYPE_SAVES, 0, 0))
                      {
                         file_list_set_alt_at_offset(
                               info->list, menu_index, entry->display_name);

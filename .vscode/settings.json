@@ -40,7 +40,9 @@
       "xutility": "c",
       "*.inc": "c",
       "optional": "c",
-      "*.tcc": "c"
+      "*.tcc": "c",
+      "chrono": "c",
+      "algorithm": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }
