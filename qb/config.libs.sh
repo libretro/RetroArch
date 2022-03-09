@@ -595,7 +595,25 @@ if [ "$HAVE_STEAM" = 'yes' ]; then
    add_opt UPDATE_CORES no
    die : 'Notice: Steam build enabled, disabling:'
    die : '* Core info cache.'
+   die : '* Core updater.'
    die : '* Online updater.'
+
+   # Keep base directory relative to installation on Linux just like it is on Windows
+   if [ "$OS" = "Linux" ]; then
+      add_define MAKEFILE UNIX_CWD_ENV 1
+   fi
+fi
+
+if [ "$HAVE_MIST" = 'yes' ]; then
+   if [ "$HAVE_STEAM" != 'yes' ]; then
+      die 1 'Error: mist builds requires steam to be enabled'
+   fi
+
+   if [ ! -d "$MIST_PATH" ]; then
+      die 1 'Error: MIST_PATH must be pointing to the location of mist artifacts'
+   fi
+
+   add_define MAKEFILE MIST_PATH "$MIST_PATH"
 fi
 
 check_enabled CXX SLANG slang 'The C++ compiler is' false

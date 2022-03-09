@@ -491,6 +491,16 @@ error:
    return 0;
 }
 
+#ifdef HAVE_MIST
+static int action_get_core_information_steam_list(
+      const char *path, const char *label, unsigned menu_type,
+      char *s, size_t len)
+{
+   snprintf(s, len, "%s - %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION), path);
+   return 1;
+}
+#endif
+
 static int action_get_title_dropdown_input_description_common(
       const char *input_name, unsigned port, char *s, size_t len)
 {
@@ -758,6 +768,9 @@ DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_contentless_cores_li
 
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_updater_list,             MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST)
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_manager_list,             MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST)
+#ifdef HAVE_MIST
+DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_manager_steam_list,       MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST)
+#endif
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_cheat_options_list,       MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS)
 
 DEFAULT_FILL_TITLE_SEARCH_FILTER_MACRO(action_get_title_video_shader_preset,    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO)
@@ -934,6 +947,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST,                 action_get_title_remap_port},
       {MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST,                   action_get_core_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_LIST,                action_get_core_information_list},
+#ifdef HAVE_MIST
+      {MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_STEAM_LIST,          action_get_core_information_steam_list},
+#endif
       {MENU_ENUM_LABEL_DEFERRED_CORE_RESTORE_BACKUP_LIST,             action_get_title_deferred_core_restore_backup_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_DELETE_BACKUP_LIST,              action_get_title_deferred_core_delete_backup_list},
       {MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST,                       action_get_dump_disc_list},
@@ -1142,6 +1158,10 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          action_get_core_updater_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST,
          action_get_core_manager_list},
+#ifdef HAVE_MIST
+      {MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_STEAM_LIST,
+         action_get_core_manager_steam_list},
+#endif
       {MENU_ENUM_LABEL_CONFIGURATIONS_LIST,
          action_get_configurations_list},
       {MENU_ENUM_LABEL_ADD_CONTENT_LIST,
@@ -1463,6 +1483,11 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_core_manager_list);
             break;
+#ifdef HAVE_MIST
+         case MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_STEAM_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_core_manager_steam_list);
+            break;
+#endif
          case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_add_content_list);
             break;
@@ -1546,6 +1571,11 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_core_information_list);
             break;
+#ifdef HAVE_MIST
+         case MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_STEAM_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_core_information_steam_list);
+            break;
+#endif
          case MENU_ENUM_LABEL_DEFERRED_CORE_RESTORE_BACKUP_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_core_restore_backup_list);
             break;

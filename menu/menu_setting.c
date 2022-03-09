@@ -9202,6 +9202,16 @@ static bool setting_append_list(
                parent_group);
 #endif
 
+#ifdef HAVE_MIST
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_CORE_MANAGER_STEAM_LIST,
+               MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+#endif
+
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_SETTINGS,
@@ -17858,6 +17868,23 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
                MENU_ENUM_LABEL_VALUE_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
                menu_show_legacy_thumbnail_updater,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+#endif
+
+#ifdef HAVE_MIST
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.menu_show_core_manager_steam,
+               MENU_ENUM_LABEL_MENU_SHOW_CORE_MANAGER_STEAM,
+               MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
+               menu_show_core_manager_steam,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,

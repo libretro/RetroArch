@@ -189,6 +189,7 @@ HAVE_METAL=no              # Metal support (macOS-only)
 C89_METAL=no
 HAVE_NETWORK_VIDEO=no
 HAVE_STEAM=no              # Enable Steam build
+HAVE_MIST=no               # Enable Steam build w/ mist
 HAVE_ODROIDGO2=no          # ODROID-GO Advance rotation support (requires librga)
 HAVE_LIBSHAKE=no           # libShake haptic feedback support
 HAVE_CHECK=no              # check support for unit tests

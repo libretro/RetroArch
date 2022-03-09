@@ -123,6 +123,10 @@
 #include "../misc/cpufreq/cpufreq.h"
 #include "../input/input_remapping.h"
 
+#ifdef HAVE_MIST
+#include "../steam/steam.h"
+#endif
+
 /* Spacers used for '<content> - <core name>' labels
  * in playlists */
 #define PL_LABEL_SPACER_DEFAULT "   |   "
@@ -984,6 +988,91 @@ static unsigned menu_displaylist_parse_core_manager_list(
 
    return count;
 }
+
+#ifdef HAVE_MIST
+static unsigned menu_displaylist_parse_core_manager_steam_list(
+      menu_displaylist_info_t *info,
+      settings_t *settings)
+{
+   MistResult result;
+   steam_core_dlc_list_t *dlc_list;
+   steam_core_dlc_t *dlc_info;
+   size_t i;
+   unsigned count = 0;
+
+   result = steam_get_core_dlcs(&dlc_list, false);
+   if (MIST_IS_ERROR(result)) goto error;
+
+   for (i = 0; i < dlc_list->count; i++)
+   {
+      dlc_info = steam_core_dlc_list_get(dlc_list, i);
+
+      if (menu_entries_append_enum(info->list,
+            dlc_info->name,
+            "",
+            MENU_ENUM_LABEL_CORE_MANAGER_STEAM_ENTRY,
+            MENU_SETTING_ACTION_CORE_MANAGER_STEAM_OPTIONS,
+            0, 0))
+         count++;
+   }
+
+   return count;
+   
+error:
+   /* TODO: Send error notification */
+   RARCH_ERR("[Steam] Error enumerating core dlcs for core manager (%d-%d)\n", MIST_UNPACK_RESULT(result));
+   return count;
+}
+
+static unsigned menu_displaylist_parse_core_information_steam(
+      menu_displaylist_info_t *info,
+      settings_t *settings)
+{
+   unsigned count = 0;
+   MistResult result;
+   steam_core_dlc_list_t *dlc_list;
+   steam_core_dlc_t *core_dlc = NULL;
+   bool installed = false;
+
+   result = steam_get_core_dlcs(&dlc_list, false);
+   if (MIST_IS_ERROR(result)) goto error;
+
+   /* Get the core dlc information */
+   core_dlc = steam_get_core_dlc_by_name(dlc_list, info->path);
+   if (core_dlc == NULL) return count;
+   
+   /* Check if installed */
+   result = mist_steam_apps_is_dlc_installed(core_dlc->app_id, &installed);
+   if (MIST_IS_ERROR(result)) goto error;
+
+   if (installed)
+   {
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL),
+            core_dlc->name,
+            MENU_ENUM_LABEL_CORE_STEAM_UNINSTALL,
+            MENU_SETTING_ACTION_CORE_STEAM_UNINSTALL,
+            0, 0))
+         count++;
+   }
+   else
+   {
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL),
+            core_dlc->name,
+            MENU_ENUM_LABEL_CORE_STEAM_INSTALL,
+            MENU_SETTING_ACTION_CORE_STEAM_INSTALL,
+            0, 0))
+         count++;
+   }
+   
+   return count;
+error:
+   /* TODO: Send error notification */
+   RARCH_ERR("[Steam] Error getting core information (%d-%d)\n", MIST_UNPACK_RESULT(result));
+   return count;
+}
+#endif
 
 static unsigned menu_displaylist_parse_core_option_dropdown_list(
       menu_displaylist_info_t *info)
@@ -8328,9 +8417,14 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_LAKKA
                {MENU_ENUM_LABEL_MENU_SHOW_EJECT_DISC,                                  PARSE_ONLY_BOOL, true  },
 #endif
+#ifdef HAVE_ONLINE_UPDATER
                {MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER,                              PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_CORE_UPDATER,                                PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,                    PARSE_ONLY_BOOL, true  },
+#endif
+#ifdef HAVE_MIST
+               {MENU_ENUM_LABEL_MENU_SHOW_CORE_MANAGER_STEAM,                          PARSE_ONLY_BOOL, true  },
+#endif
                {MENU_ENUM_LABEL_MENU_SHOW_INFORMATION,                                 PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_CONFIGURATIONS,                              PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_HELP,                                        PARSE_ONLY_BOOL, true  },
@@ -11778,6 +11872,42 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             info->need_push = true;
          }
          break;
+#ifdef HAVE_MIST
+      case DISPLAYLIST_CORE_MANAGER_STEAM_LIST:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         count = menu_displaylist_parse_core_manager_steam_list(info, settings);
+         info->need_navigation_clear = true;
+         info->need_refresh          = false;
+         info->need_push             = true;
+         
+         /* No core dlcs were found */
+         if (count == 0)
+            if (menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                  FILE_TYPE_NONE, 0, 0))
+               count++;
+         
+         break;
+      case DISPLAYLIST_CORE_INFORMATION_STEAM_LIST:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+      
+         info->need_navigation_clear = true;
+         info->need_refresh          = false;
+         info->need_push             = true;
+               count = menu_displaylist_parse_core_information_steam(info, settings);
+      
+         if (count == 0)
+            if (menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                  FILE_TYPE_NONE, 0, 0))
+               count++;
+      
+         break;
+#endif
       case DISPLAYLIST_CONTENTLESS_CORES:
          {
             size_t contentless_core_ptr =
@@ -12362,7 +12492,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
 #endif
 
-#ifdef HAVE_COMPRESSION
+#if defined(HAVE_COMPRESSION) && !defined(HAVE_MIST)
             if (menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES),
                      msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES),
@@ -12714,6 +12844,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             if (settings->bools.menu_show_online_updater)
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
                      MENU_ENUM_LABEL_ONLINE_UPDATER,
+                     PARSE_ACTION, false) == 0)
+                  count++;
+#endif
+#ifdef HAVE_MIST
+            if (settings->bools.menu_show_core_manager_steam)
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
+                     MENU_ENUM_LABEL_CORE_MANAGER_STEAM_LIST,
                      PARSE_ACTION, false) == 0)
                   count++;
 #endif

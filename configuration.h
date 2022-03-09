@@ -659,6 +659,9 @@ typedef struct settings
       bool menu_horizontal_animation;
       bool menu_scroll_fast;
       bool menu_show_online_updater;
+#ifdef HAVE_MIST
+      bool menu_show_core_manager_steam;
+#endif
       bool menu_show_core_updater;
       bool menu_show_load_core;
       bool menu_show_load_content;

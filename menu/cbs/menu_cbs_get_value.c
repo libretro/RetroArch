@@ -59,6 +59,10 @@
 #include "../../cheevos/cheevos_menu.h"
 #endif
 
+#ifdef HAVE_MIST
+#include "../../steam/steam.h"
+#endif
+
 #ifndef BIND_ACTION_GET_VALUE
 #define BIND_ACTION_GET_VALUE(cbs, name) (cbs)->action_get_value = (name)
 #endif
@@ -518,6 +522,48 @@ static void menu_action_setting_disp_set_label_core_manager_entry(
       *w   = (unsigned)STRLEN_CONST("[!]");
    }
 }
+
+#ifdef HAVE_MIST
+static void menu_action_setting_disp_set_label_core_manager_steam_entry(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   steam_core_dlc_list_t *core_dlc_list = NULL;
+   steam_core_dlc_t *core_dlc = NULL;
+   bool dlc_installed = false;
+
+   *s = '\0';
+   *w = 0;
+
+   if (MIST_IS_ERROR(steam_get_core_dlcs(&core_dlc_list, true))) return;
+
+   strlcpy(s2, path, len2);
+
+   core_dlc = steam_get_core_dlc_by_name(core_dlc_list, path);
+   if (core_dlc == NULL) return;
+
+   MistResult result = mist_steam_apps_is_dlc_installed(core_dlc->app_id, &dlc_installed);
+
+   if (MIST_IS_ERROR(result))
+   {
+      RARCH_ERR("[Steam]: Failed to get dlc install status (%d-%d)\n", MIST_UNPACK_RESULT(result));
+      return;
+   }
+
+   if (dlc_installed)
+   {
+      s[0] = '[';
+      s[1] = '#';
+      s[2] = ']';
+      s[3] = '\0';
+      *w = (unsigned)STRLEN_CONST("[#]");
+   }
+}
+#endif
 
 static void menu_action_setting_disp_set_label_contentless_core(
       file_list_t* list,
@@ -1931,6 +1977,12 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_core_manager_entry);
             break;
+#ifdef HAVE_MIST
+         case MENU_ENUM_LABEL_CORE_MANAGER_STEAM_ENTRY:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_core_manager_steam_entry);
+            break;
+#endif
          case MENU_ENUM_LABEL_CONTENTLESS_CORE:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_contentless_core);

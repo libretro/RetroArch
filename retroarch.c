@@ -106,6 +106,10 @@
 #include "network/discord.h"
 #endif
 
+#ifdef HAVE_MIST
+#include "steam/steam.h"
+#endif
+
 #include "config.def.h"
 
 #include "runloop.h"
@@ -3740,6 +3744,10 @@ void main_exit(void *args)
    play_feature_delivery_deinit();
 #endif
 
+#if defined(HAVE_MIST)
+   steam_deinit();
+#endif
+
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    CoUninitialize();
 #endif
@@ -3786,6 +3794,10 @@ int rarch_main(int argc, char *argv[], void *data)
 
 #if defined(ANDROID)
    play_feature_delivery_init();
+#endif
+
+#if defined(HAVE_MIST)
+   steam_init();
 #endif
 
    libretro_free_system_info(&runloop_st->system.info);
@@ -3849,6 +3861,10 @@ int rarch_main(int argc, char *argv[], void *data)
       ret = runloop_iterate();
 
       task_queue_check();
+
+#ifdef HAVE_MIST
+   steam_poll();
+#endif
 
 #ifdef HAVE_QT
       app_exit = ui_companion_qt.application->exiting;

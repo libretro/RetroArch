@@ -666,6 +666,9 @@ static const bool menu_show_core_updater       = false;
 #else
 static const bool menu_show_core_updater       = true;
 #endif
+#ifdef HAVE_MIST
+static const bool menu_show_core_manager_steam = true;
+#endif
 static const bool menu_show_legacy_thumbnail_updater = false;
 static const bool menu_show_sublabels                = true;
 static const bool menu_dynamic_wallpaper_enable      = true;
