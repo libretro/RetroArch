@@ -38,6 +38,15 @@
 #include "../input_keymaps.h"
 #include "../../frontend/frontend_driver.h"
 
+#define DND_ACTION WL_DATA_DEVICE_MANAGER_DND_ACTION_MOVE
+#define FILE_MIME "text/uri-list"
+#define TEXT_MIME "text/plain;charset=utf-8"
+#define PIPE_MS_TIMEOUT 10
+
+#define IOR_READ 0x1
+#define IOR_WRITE 0x2
+#define IOR_NO_RETRY 0x4
+
 #define SPLASH_SHM_NAME "retroarch-wayland-vk-splash"
 
 static void keyboard_handle_keymap(void* data,
@@ -586,7 +595,13 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
    {
       wl->seat = (struct wl_seat*)wl_registry_bind(reg, id, &wl_seat_interface, MIN(version, 2));
       wl_seat_add_listener(wl->seat, &seat_listener, wl);
+      wl->data_device = wl_data_device_manager_get_data_device(wl->data_device_manager, wl->seat);
+      if (wl->data_device != NULL)
+         wl_data_device_add_listener(wl->data_device, &data_device_listener, wl);
    }
+   else if (string_is_equal(interface, "wl_data_device_manager"))
+      wl->data_device_manager = (struct wl_data_device_manager*)wl_registry_bind(
+                                 reg, id, &wl_data_device_manager_interface, MIN(version, 3));
    else if (string_is_equal(interface, "zwp_idle_inhibit_manager_v1"))
       wl->idle_inhibit_manager = (struct zwp_idle_inhibit_manager_v1*)wl_registry_bind(
                                   reg, id, &zwp_idle_inhibit_manager_v1_interface, MIN(version, 1));
@@ -611,6 +626,252 @@ static void registry_handle_global_remove(void *data,
       }
    }
 }
+
+
+int ioready(int fd, int flags, int timeoutMS)
+{
+   int result;
+
+   do
+   {
+      struct pollfd info;
+      info.fd = fd;
+      info.events = 0;
+      if (flags & IOR_READ)
+         info.events |= POLLIN | POLLPRI;
+      if (flags & IOR_WRITE)
+         info.events |= POLLOUT;
+      result = poll(&info, 1, timeoutMS);
+   } while ( result < 0 && errno == EINTR && !(flags & IOR_NO_RETRY));
+
+   return result;
+}
+
+static ssize_t read_pipe(int fd, void** buffer, size_t* total_length, bool null_terminate)
+{
+   int ready = 0;
+   void* output_buffer = NULL;
+   char temp[PIPE_BUF];
+   size_t new_buffer_length = 0;
+   ssize_t bytes_read = 0;
+   size_t pos = 0;
+
+   ready = ioready(fd, IOR_READ, PIPE_MS_TIMEOUT);
+
+   if (ready == 0)
+   {
+      bytes_read = -1;
+      RARCH_WARN("[Wayland]: Pipe timeout\n");
+   }
+   else if (ready < 0)
+   {
+      bytes_read = -1;
+      RARCH_WARN("[Wayland]: Pipe select error");
+   }
+   else
+      bytes_read = read(fd, temp, sizeof(temp));
+
+   if (bytes_read > 0)
+   {
+      pos = *total_length;
+      *total_length += bytes_read;
+
+      if (null_terminate == true)
+         new_buffer_length = *total_length + 1;
+      else
+          new_buffer_length = *total_length;
+
+      if (*buffer == NULL)
+         output_buffer = malloc(new_buffer_length);
+      else
+         output_buffer = realloc(*buffer, new_buffer_length);
+      if (output_buffer == NULL)
+         RARCH_WARN("[Wayland]: Out of memory for pipe read\n");
+      else
+      {
+         memcpy((uint8_t*)output_buffer + pos, temp, bytes_read);
+
+         if (null_terminate == true)
+            memset((uint8_t*)output_buffer + (new_buffer_length - 1), 0, 1);
+
+         *buffer = output_buffer;
+      }
+   }
+
+   return bytes_read;
+}
+
+void* wayland_data_offer_receive(struct wl_display *display, struct wl_data_offer *offer, size_t *length,
+   const char* mime_type, bool null_terminate)
+{
+   int pipefd[2];
+   void *buffer = NULL;
+   *length = 0;
+
+   if (offer == NULL)
+      RARCH_WARN("[Wayland]: Invalid data offer\n");
+   else if (pipe2(pipefd, O_CLOEXEC|O_NONBLOCK) == -1)
+      RARCH_WARN("[Wayland]: Could not read pipe");
+   else
+   {
+      wl_data_offer_receive(offer, mime_type, pipefd[1]);
+
+      // Wait for sending client to transfer
+      wl_display_roundtrip(display);
+
+      close(pipefd[1]);
+
+      while (read_pipe(pipefd[0], &buffer, length, null_terminate) > 0);
+      close(pipefd[0]);
+   }
+   return buffer;
+}
+
+
+static void data_device_handle_data_offer(void *data,
+      struct wl_data_device *data_device, struct wl_data_offer *offer)
+{
+   data_offer_ctx *offer_data;
+
+   offer_data = calloc(1, sizeof *offer_data);
+   offer_data->offer = offer;
+   offer_data->data_device = data_device;
+   offer_data->dropped = false;
+
+   wl_data_offer_set_user_data(offer, offer_data);
+   wl_data_offer_add_listener(offer, &data_offer_listener, offer_data);
+}
+
+static void data_device_handle_enter(void *data,
+      struct wl_data_device *data_device, uint32_t serial,
+      struct wl_surface *surface, wl_fixed_t x, wl_fixed_t y,
+      struct wl_data_offer *offer)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   data_offer_ctx *offer_data;
+   enum wl_data_device_manager_dnd_action dnd_action = WL_DATA_DEVICE_MANAGER_DND_ACTION_NONE;
+
+   if (offer == NULL)
+      return;
+
+   offer_data = wl_data_offer_get_user_data(offer);
+   wl->current_drag_offer = offer_data;
+
+   wl_data_offer_accept(offer, serial,
+      offer_data->is_file_mime_type ? FILE_MIME : NULL);
+
+   if (offer_data->is_file_mime_type && offer_data->supported_actions & DND_ACTION)
+      dnd_action = DND_ACTION;
+
+   if (wl_data_offer_get_version(offer) >= WL_DATA_OFFER_SET_ACTIONS_SINCE_VERSION)
+     wl_data_offer_set_actions(offer, dnd_action, dnd_action);
+}
+
+static void data_device_handle_leave(void *data,
+      struct wl_data_device *data_device)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   data_offer_ctx *offer_data = wl->current_drag_offer;
+
+   if (offer_data != NULL && !offer_data->dropped)
+   {
+      wl->current_drag_offer = NULL;
+      wl_data_offer_destroy(offer_data->offer);
+      free(offer_data);
+   }
+}
+
+static void data_device_handle_motion(void *data,
+      struct wl_data_device *data_device, uint32_t time,
+      wl_fixed_t x, wl_fixed_t y) { }
+
+static void data_device_handle_drop(void *data,
+      struct wl_data_device *data_device)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   data_offer_ctx *offer_data = wl->current_drag_offer;
+
+   offer_data->dropped = true;
+
+   if (offer_data == NULL)
+      return;
+
+   int pipefd[2];
+   pipe(pipefd);
+   void *buffer;
+   size_t length;
+
+   buffer = wayland_data_offer_receive(wl->input.dpy, offer_data->offer, &length, FILE_MIME, false);
+
+   close(pipefd[1]);
+
+   size_t len = 0;
+   ssize_t read = 0;
+
+   char *line = NULL;
+
+   char file_list[512][512] = { 0 };
+   char file_list_i = 0;
+
+   close(pipefd[0]);
+
+   wl->current_drag_offer = NULL;
+   if (wl_data_offer_get_version(offer_data->offer) >= WL_DATA_OFFER_FINISH_SINCE_VERSION)
+      wl_data_offer_finish(offer_data->offer);
+   wl_data_offer_destroy(offer_data->offer);
+   free(offer_data);
+
+   FILE *stream = fmemopen(buffer, length, "r");
+
+   if (stream == NULL)
+   {
+      RARCH_WARN("[Wayland]: Failed to open DnD buffer\n");
+      return;
+   }
+
+   RARCH_WARN("[Wayland]: Files opp:\n");
+   while ((read = getline(&line,  &len, stream)) != -1)
+   {
+      line[strcspn(line, "\r\n")] = 0;
+      RARCH_LOG("[Wayland]: > \"%s\"\n", line);
+
+      // TODO: Convert from file:// URI, Implement file loading
+      //if (wayland_load_content_from_drop(g_filename_from_uri(line, NULL, NULL)))
+      //   RARCH_WARN("----- wayland_load_content_from_drop success\n");
+   }
+
+   fclose(stream);
+   free(buffer);
+}
+
+static void data_device_handle_selection(void *data,
+      struct wl_data_device *data_device, struct wl_data_offer *offer) { }
+
+
+static void data_offer_handle_offer(void *data, struct wl_data_offer *offer,
+      const char *mime_type)
+{
+   data_offer_ctx *offer_data = data;
+
+   // TODO: Keep list of mime types for offer if beneficial
+   if (string_is_equal(mime_type, FILE_MIME))
+      offer_data->is_file_mime_type = true;
+}
+
+static void data_offer_handle_source_actions(void *data,
+      struct wl_data_offer *offer, enum wl_data_device_manager_dnd_action actions)
+{
+   // Report of actions for this offer supported by compositor
+   data_offer_ctx *offer_data = data;
+   offer_data->supported_actions = actions;
+}
+
+static void data_offer_handle_action(void *data,
+      struct wl_data_offer *offer,
+      enum wl_data_device_manager_dnd_action dnd_action) { }
 
 static void shm_buffer_handle_release(void *data,
    struct wl_buffer *wl_buffer)
@@ -676,6 +937,21 @@ const struct wl_pointer_listener pointer_listener = {
    pointer_handle_motion,
    pointer_handle_button,
    pointer_handle_axis,
+};
+
+const struct wl_data_device_listener data_device_listener = {
+   .data_offer = data_device_handle_data_offer,
+   .enter = data_device_handle_enter,
+   .leave = data_device_handle_leave,
+   .motion = data_device_handle_motion,
+   .drop = data_device_handle_drop,
+   .selection = data_device_handle_selection,
+};
+
+const struct wl_data_offer_listener data_offer_listener = {
+   .offer = data_offer_handle_offer,
+   .source_actions = data_offer_handle_source_actions,
+   .action = data_offer_handle_action,
 };
 
 const struct wl_buffer_listener shm_buffer_listener = {
