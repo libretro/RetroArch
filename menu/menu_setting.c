@@ -8551,6 +8551,18 @@ static void timezone_change_handler(rarch_setting_t *setting)
 }
 #endif
 
+#ifdef _3DS
+static void new3ds_speedup_change_handler(rarch_setting_t *setting)
+{
+   settings_t *settings             = config_get_ptr();
+
+   if (!setting)
+      return;
+
+   osSetSpeedupEnable(*setting->value.target.boolean);
+}
+#endif
+
 static bool setting_append_list_input_player_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -17772,6 +17784,22 @@ static bool setting_append_list(
                   CTR_VIDEO_MODE_LAST - (((device_model == 0) || (device_model == 1)) ? 1 : 3),
                   1, true, true);
          }
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.new3ds_speedup_enable,
+               MENU_ENUM_LABEL_NEW3DS_SPEEDUP_ENABLE,
+               MENU_ENUM_LABEL_VALUE_NEW3DS_SPEEDUP_ENABLE,
+               new3ds_speedup_enable,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_CMD_APPLY_AUTO);
+         (*list)[list_info->index - 1].change_handler = new3ds_speedup_change_handler;
 
          CONFIG_BOOL(
                list, list_info,
