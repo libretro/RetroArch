@@ -1,6 +1,7 @@
 # Future
 - IOS/IOS13+: Support a toolbar that allows toggling of onscreen keyboard and touch mouse
 - LOCALIZATION: Add Czech language support
+- HOTKEYS: Added hotkey for toggling sync to exact content framerate
 
 # 1.10.1
 - ANDROID: Add `HAVE_LANGEXTRA` back to makefile
