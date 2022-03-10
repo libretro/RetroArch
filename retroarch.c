@@ -3414,6 +3414,14 @@ bool command_event(enum event_command cmd, void *data)
                      settings->uints.input_max_users);
          }
          break;
+      case CMD_EVENT_VRR_RUNLOOP_TOGGLE:
+         settings->bools.vrr_runloop_enable = !(settings->bools.vrr_runloop_enable);
+         runloop_msg_queue_push(
+               msg_hash_to_str(
+                     settings->bools.vrr_runloop_enable ? MSG_VRR_RUNLOOP_ENABLED
+                                                        : MSG_VRR_RUNLOOP_DISABLED),
+               1, 100, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         break;
       case CMD_EVENT_NONE:
          return false;
    }
