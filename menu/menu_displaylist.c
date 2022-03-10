@@ -468,8 +468,8 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
    core_info_t *core_info        = NULL;
    const char *core_path         = NULL;
    const char *savestate_support = NULL;
-#if !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
    bool kiosk_mode_enable        = settings->bools.kiosk_mode_enable;
+#if !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
 #if defined(HAVE_NETWORKING) && defined(HAVE_ONLINE_UPDATER)
    bool menu_show_core_updater   = settings->bools.menu_show_core_updater;
 #endif
