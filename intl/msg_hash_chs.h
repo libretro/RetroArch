@@ -3079,7 +3079,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST,
    "在已安装的核心上执行离线维护任务(备份、恢复、删除等)，并查看核心信息。"
    )
+#ifdef HAVE_MIST
 
+
+
+
+
+
+
+#endif
 /* Settings > Configuration */
 
 MSG_HASH(

@@ -3083,7 +3083,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST,
    "Suorita ylläpitotehtäviä asennettuihin ytimiin (varmuuskopiointi, palautus, poistaminen jne.) yhteydettömässä tilassa ja tarkastele ytimen tietoja."
    )
+#ifdef HAVE_MIST
 
+
+
+
+
+
+
+#endif
 /* Settings > Configuration */
 
 MSG_HASH(

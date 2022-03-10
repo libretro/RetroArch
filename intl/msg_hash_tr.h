@@ -3127,7 +3127,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST,
    "Kurulu çekirdeklerde (yedekleme, geri yükleme, silme vb.) Çevrimdışı bakım görevlerini gerçekleştirin ve temel bilgileri görüntüleyin."
    )
+#ifdef HAVE_MIST
 
+
+
+
+
+
+
+#endif
 /* Settings > Configuration */
 
 MSG_HASH(

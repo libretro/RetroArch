@@ -2671,7 +2671,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST,
    "أداء مهام الصيانة دون اتصال على النواة المثبتة (النسخ الاحتياطي، الاستعادة، حذف، إلخ.) وعرض المعلومات الأساسية."
    )
+#ifdef HAVE_MIST
 
+
+
+
+
+
+
+#endif
 /* Settings > Configuration */
 
 MSG_HASH(
