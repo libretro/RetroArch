@@ -16136,7 +16136,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok    = &setting_action_ok_uint;
             (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_with_refresh;
             (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
-            menu_settings_list_current_add_range(list, list_info, 0, 300, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, 0, 500, 1, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             CONFIG_PATH(
