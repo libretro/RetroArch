@@ -499,6 +499,7 @@ struct ozone_handle
    float dimensions_sidebar_width; /* animated field */
    float sidebar_offset;
    float last_scale_factor;
+   float last_thumbnail_scale_factor;
    float pure_white[16];
 
    struct
@@ -7066,6 +7067,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->last_height       = height;
    ozone->last_scale_factor = gfx_display_get_dpi_scale(p_disp,
          settings, width, height, false, false);
+   ozone->last_thumbnail_scale_factor = settings->floats.ozone_thumbnail_scale_factor;
 
    file_list_initialize(&ozone->selection_buf_old);
 
@@ -7493,9 +7495,13 @@ static void ozone_set_layout(
       ozone->dimensions_sidebar_width = (float)ozone->dimensions.sidebar_width_normal;
 
    ozone->dimensions.thumbnail_bar_width          =
-         ozone->dimensions.sidebar_width_normal -
-         ozone->dimensions.sidebar_entry_icon_size -
-         ozone->dimensions.sidebar_entry_icon_padding;
+         (ozone->dimensions.sidebar_width_normal -
+          ozone->dimensions.sidebar_entry_icon_size -
+          ozone->dimensions.sidebar_entry_icon_padding) *
+         ozone->last_thumbnail_scale_factor;
+   /* Prevent the thumbnail sidebar from growing too much and make the UI unusable. */
+   if (ozone->dimensions.thumbnail_bar_width > ozone->last_width / 2.0f)
+      ozone->dimensions.thumbnail_bar_width = ozone->last_width / 2.0f;
 
    ozone->dimensions.cursor_size                  = CURSOR_SIZE * scale_factor;
 
@@ -8146,6 +8152,7 @@ static void ozone_render(void *data,
     * disables optimisations and removes excess precision
     * (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323#c87) */
    volatile float scale_factor;
+   volatile float thumbnail_scale_factor;
    unsigned entries_end             = (unsigned)menu_entries_get_size();
    bool pointer_enabled             = false;
    unsigned language                = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
@@ -8160,12 +8167,15 @@ static void ozone_render(void *data,
     * factor have changed */
    scale_factor = gfx_display_get_dpi_scale(p_disp, settings,
          width, height, false, false);
+   thumbnail_scale_factor = settings->floats.ozone_thumbnail_scale_factor;
 
    if ((scale_factor != ozone->last_scale_factor) ||
+       (thumbnail_scale_factor != ozone->last_thumbnail_scale_factor) ||
        (width != ozone->last_width) ||
        (height != ozone->last_height))
    {
       ozone->last_scale_factor = scale_factor;
+      ozone->last_thumbnail_scale_factor = thumbnail_scale_factor;
       ozone->last_width        = width;
       ozone->last_height       = height;
 

@@ -1887,6 +1887,10 @@ MSG_HASH(
    "ozone_scroll_content_metadata"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "ozone_menu_thumbnail_scale_factor"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME,
    "materialui_menu_color_theme"
    )
