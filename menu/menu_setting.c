@@ -19027,7 +19027,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group,
-               achievement_hardcore_mode_write_handler,
+               achievement_hardcore_mode_write_handler, /* re-evaluate whether hardcore is enabled */
                general_read_handler,
                SD_FLAG_NONE
                );
