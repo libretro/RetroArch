@@ -3394,19 +3394,20 @@ static int xmb_draw_item(
 
    if (menu_xmb_vertical_fade_factor)
    {
-      float factor     = menu_xmb_vertical_fade_factor / 100.0f / 0.004f;
       float min_alpha  = 0.1f;
       float max_alpha  = (i == current) ? xmb->items_active_alpha : xmb->items_passive_alpha;
       float new_alpha  = node->alpha;
-      float top_margin = xmb->margins_screen_top;
       float icon_space = xmb->icon_spacing_vertical;
+      float icon_ratio = icon_space / height / icon_space * 4;
+      float scr_margin = xmb->margins_screen_top + (icon_space / icon_ratio / 400);
+      float factor     = menu_xmb_vertical_fade_factor / 100.0f / icon_ratio;
 
       /* Top */
-      if (node->y < 0)
-         new_alpha = (node->y + top_margin + (icon_space / 4)) / factor;
+      if (i < current)
+         new_alpha = (node->y + scr_margin) / factor;
       /* Bottom */
-      else if (node->y > (height - (top_margin * 2)) && node->y < (height - top_margin + icon_space))
-         new_alpha = (height - node->y - top_margin + (icon_space / 4)) / factor;
+      else if (i > current)
+         new_alpha = (height - node->y - scr_margin + icon_space) / factor;
       /* Rest need to reset after vertical wrap-around */
       else if (node->x == 0 && node->alpha > 0 && node->alpha != max_alpha)
          new_alpha = max_alpha;
