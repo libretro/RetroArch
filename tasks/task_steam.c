@@ -20,18 +20,18 @@ static void task_steam_core_dlc_install_handler(retro_task_t *task)
    uint64_t bytes_downloaded = 0;
    uint64_t bytes_total = 0;
    int8_t progress;
-   
+
    if (!task)
       goto task_finished;
-      
+
    state = (steam_core_dlc_install_state_t*)task->state;
-   
+
    if (!state)
       goto task_finished;
 
    if (task_get_cancelled(task))
       goto task_finished;
-   
+
    result = mist_steam_apps_get_dlc_download_progress(state->app_id, &downloading, &bytes_downloaded, &bytes_total);
    if(MIST_IS_ERROR(result)) goto task_finished;
    if(!downloading)
@@ -40,27 +40,23 @@ static void task_steam_core_dlc_install_handler(retro_task_t *task)
    }
    else
       state->has_downloaded = true;
-      
+
    // Min bytes total to avoid division by zero at start
    if(bytes_total < 1) bytes_total = 1;
 
    progress = (int8_t)((bytes_downloaded * 100) / bytes_total);
    if(progress < 0) progress = 0;
    if(progress > 100) progress = 100;
-   
+
    task_set_progress(task, progress);
-      
+
    return;
 task_finished:
    if (task) task_set_finished(task, true);
-   
+
    /* If finished successfully */
    if(MIST_IS_SUCCESS(result))
    {
-      /* Invalidate the core dlc cache */
-      steam_core_dlc_list_t *list;
-      steam_get_core_dlcs(&list, false);
-
       strlcpy(msg, msg_hash_to_str(MSG_CORE_INSTALLED),
             sizeof(msg));
       strlcat(msg, state->name,
@@ -83,7 +79,7 @@ void task_push_steam_core_dlc_install(
       const char *name)
 {
    char task_title[PATH_MAX_LENGTH];
-   
+
    retro_task_t *task = task_init();
    steam_core_dlc_install_state_t* state = (steam_core_dlc_install_state_t*)calloc(1,
          sizeof(steam_core_dlc_install_state_t));

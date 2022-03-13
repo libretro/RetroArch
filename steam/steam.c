@@ -60,8 +60,8 @@ void steam_poll(void)
       {
          /* Reload core info and Steam Core DLC mappings */
          case MistCallback_DlcInstalled:
-            steam_get_core_dlcs(&core_dlc_list, true);
             command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+            steam_get_core_dlcs(&core_dlc_list, false);
             break;
       }
 
@@ -162,8 +162,9 @@ MistResult steam_generate_core_dlcs_list(steam_core_dlc_list_t **list)
    MistResult result;
    int count;
    steam_core_dlc_list_t *dlc_list = NULL;
-   MistDlcData dlc_data;
-   
+   char dlc_name[PATH_MAX_LENGTH] = { 0 };
+   bool avaliable;
+
    result = mist_steam_apps_get_dlc_count(&count);
    if (MIST_IS_ERROR(result)) goto error;
 
@@ -172,16 +173,14 @@ MistResult steam_generate_core_dlcs_list(steam_core_dlc_list_t **list)
    {
       steam_core_dlc_t core_dlc;
 
-      result = mist_steam_apps_get_dlc_data_by_index(i, &dlc_data);
+      result = mist_steam_apps_get_dlc_data_by_index(i, &core_dlc.app_id, &avaliable, (char*)&dlc_name, PATH_MAX_LENGTH);
       if (MIST_IS_ERROR(result)) goto error;
 
-      core_dlc.app_id = dlc_data.app_id;
-
       /* Strip away the "RetroArch - " prefix if present */
-      if (strncmp(dlc_data.name, "RetroArch - ", sizeof("RetroArch - ") - 1) == 0)
-         core_dlc.name = strdup(dlc_data.name + sizeof("RetroArch - ") - 1);
+      if (strncmp(dlc_name, "RetroArch - ", sizeof("RetroArch - ") - 1) == 0)
+         core_dlc.name = strdup(dlc_name + sizeof("RetroArch - ") - 1);
       else
-         core_dlc.name = strdup(dlc_data.name);
+         core_dlc.name = strdup(dlc_name);
 
       /* Make a lower case version */
       core_dlc.name_lower = strdup(core_dlc.name);
@@ -209,33 +208,33 @@ error:
 MistResult steam_get_core_dlcs(steam_core_dlc_list_t **list, bool cached) {
    MistResult result;
    steam_core_dlc_list_t *new_list = NULL;
-   
+
    if (cached && mist_dlc_list != NULL)
    {
       *list = mist_dlc_list;
       return MistResult_Success;
    }
-   
+
    result = steam_generate_core_dlcs_list(&new_list);
    if (MIST_IS_ERROR(result)) return result;
-   
+
    if (mist_dlc_list != NULL) steam_core_dlc_list_free(mist_dlc_list);
-   
+
    mist_dlc_list = new_list;
    *list = new_list;
-   
+
    return MistResult_Success;
 }
 
 steam_core_dlc_t* steam_get_core_dlc_by_name(steam_core_dlc_list_t *list, const char *name) {
    steam_core_dlc_t *core_info;
-   
+
    for (int i = 0; list->count > i; i++)
    {
       core_info = steam_core_dlc_list_get(list, i);
       if (strcasecmp(core_info->name, name) == 0) return core_info;
    }
-   
+
    return NULL;
 }
 
@@ -243,7 +242,7 @@ void steam_install_core_dlc(steam_core_dlc_t *core_dlc)
 {
    MistResult result;
    char msg[PATH_MAX_LENGTH] = { 0 };
-   
+
    bool downloading = false;
    bool installed = false;
    uint64_t bytes_downloaded = 0;
@@ -261,24 +260,24 @@ void steam_install_core_dlc(steam_core_dlc_t *core_dlc)
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_CORE_STEAM_CURRENTLY_DOWNLOADING), 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-      
+
       return;
    }
-   
+
    result = mist_steam_apps_install_dlc(core_dlc->app_id);
    if (MIST_IS_ERROR(result)) goto error;
-   
+
    task_push_steam_core_dlc_install(core_dlc->app_id, core_dlc->name);
-   
+
    return;
 error:
       snprintf(msg, sizeof(msg), "%s: (%d-%d)",
          msg_hash_to_str(MSG_ERROR),
          MIST_UNPACK_RESULT(result));
-      
+
       runloop_msg_queue_push(msg, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-   
+
       RARCH_ERR("[Steam]: Error installing DLC %d (%d-%d)\n", core_dlc->app_id, MIST_UNPACK_RESULT(result));
    return;
 }
@@ -286,25 +285,25 @@ error:
 void steam_uninstall_core_dlc(steam_core_dlc_t *core_dlc)
 {
    char msg[PATH_MAX_LENGTH] = { 0 };
-   
+
    MistResult result = mist_steam_apps_uninstall_dlc(core_dlc->app_id);
-   
+
    if (MIST_IS_ERROR(result)) goto error;
-   
+
    runloop_msg_queue_push(msg_hash_to_str(MSG_CORE_STEAM_UNINSTALLED), 1, 180, true, NULL,
       MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   
+
    bool refresh = false;
-   
+
    return;
 error:
       snprintf(msg, sizeof(msg), "%s: (%d-%d)",
          msg_hash_to_str(MSG_ERROR),
          MIST_UNPACK_RESULT(result));
-      
+
       runloop_msg_queue_push(msg, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-   
+
       RARCH_ERR("[Steam]: Error uninstalling DLC %d (%d-%d)\n", core_dlc->app_id, MIST_UNPACK_RESULT(result));
    return;
 }
@@ -314,7 +313,7 @@ void steam_deinit(void)
    MistResult result;
 
    result = mist_subprocess_deinit();
-   
+
    /* Free the cached dlc list */
    if (mist_dlc_list != NULL) steam_core_dlc_list_free(mist_dlc_list);
 
