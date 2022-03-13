@@ -1944,6 +1944,12 @@ static bool vulkan_frame(void *data, const void *frame,
       vk->context->current_swapchain_index;
    bool overlay_behind_menu                      = video_info->overlay_behind_menu;
 
+#ifdef VULKAN_HDR_SWAPCHAIN
+   struct video_shader* shader_preset           = vulkan_filter_chain_get_preset(vk->filter_chain); 
+   VkFormat main_buffer_format                  = shader_preset && shader_preset->passes ? vulkan_filter_chain_get_pass_rt_format(vk->filter_chain, shader_preset->passes - 1) : VK_FORMAT_R8G8B8A8_UNORM;
+   bool use_main_buffer                         = main_buffer_format != vk->context->swapchain_format; 
+#endif /* VULKAN_HDR_SWAPCHAIN */
+
    /* Bookkeeping on start of frame. */
    struct vk_per_frame *chain                    = &vk->swapchain[frame_index];
    struct vk_image *backbuffer                   = &vk->backbuffers[swapchain_index];
@@ -2191,7 +2197,7 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-   if(vk->context->hdr_enable)
+   if(vk->context->hdr_enable && use_main_buffer)
    {
       backbuffer = &vk->main_buffer;
    }
@@ -2303,7 +2309,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
 #ifdef VULKAN_HDR_SWAPCHAIN
       /* Copy over back buffer to swap chain render targets */
-      if (vk->context->hdr_enable)
+      if (vk->context->hdr_enable && use_main_buffer)
       {
          backbuffer = &vk->backbuffers[swapchain_index];
 
@@ -2663,12 +2669,9 @@ static bool vulkan_frame(void *data, const void *frame,
       if (!(vk->hdr.support = vk->context->swapchain_colour_space == VK_COLOR_SPACE_HDR10_ST2084_EXT))
          vk->context->hdr_enable                = false;
 
-      if(vk->context->hdr_enable)
+      if(vk->context->hdr_enable && use_main_buffer)
       {
          memset(&vk->main_buffer, 0, sizeof(vk->main_buffer));
-
-         struct video_shader* shader_preset = vulkan_filter_chain_get_preset(vk->filter_chain); 
-         VkFormat format = shader_preset && shader_preset->passes ? vulkan_filter_chain_get_pass_rt_format(vk->filter_chain, shader_preset->passes - 1) : VK_FORMAT_R8G8B8A8_UNORM;
 
          {
             /* Create the image */
@@ -2677,7 +2680,7 @@ static bool vulkan_frame(void *data, const void *frame,
             VkMemoryAllocateInfo alloc      = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
 
             image_info.imageType            = VK_IMAGE_TYPE_2D;
-            image_info.format               = format;
+            image_info.format               = main_buffer_format;
             image_info.extent.width         = video_width;
             image_info.extent.height        = video_height;
             image_info.extent.depth         = 1;
@@ -2709,7 +2712,7 @@ static bool vulkan_frame(void *data, const void *frame,
             VkImageViewCreateInfo view = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
 
             view.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
-            view.format                          = format;
+            view.format                          = main_buffer_format;
             view.image                           = vk->main_buffer.image;
             view.subresourceRange.baseMipLevel   = 0;
             view.subresourceRange.baseArrayLayer = 0;
