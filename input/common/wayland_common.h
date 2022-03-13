@@ -206,7 +206,7 @@ void handle_toplevel_close(void *data,
 
 void flush_wayland_fd(void *data);
 
-int create_anonymous_file(off_t size);
+int create_shm_file(off_t size);
 
 shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl,
    int width, int height, uint32_t format);

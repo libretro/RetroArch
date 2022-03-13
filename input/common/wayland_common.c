@@ -984,32 +984,36 @@ void flush_wayland_fd(void *data)
    }
 }
 
-#ifdef HAVE_MEMFD_CREATE
-int create_anonymous_file(off_t size)
+int create_shm_file(off_t size)
 {
    int fd;
 
    int ret;
 
+   #ifdef HAVE_MEMFD_CREATE
    fd = memfd_create(SPLASH_SHM_NAME, MFD_CLOEXEC | MFD_ALLOW_SEALING);
 
+   if (fd >= 0) {
+     fcntl(fd, F_ADD_SEALS, F_SEAL_SHRINK);
+
+     do {
+        ret = posix_fallocate(fd, 0, size);
+     } while (ret == EINTR);
+     if (ret != 0) {
+        close(fd);
+        errno = ret;
+        fd = -1;
+     }
+   }
    if (fd < 0)
-      return -1;
-
-   fcntl(fd, F_ADD_SEALS, F_SEAL_SHRINK);
-
-   do {
-      ret = posix_fallocate(fd, 0, size);
-   } while (ret == EINTR);
-   if (ret != 0) {
-      close(fd);
-      errno = ret;
-      return -1;
+   #endif
+   {
+      fd = shm_open(SPLASH_SHM_NAME, O_RDWR | O_CREAT, 0660);
+      ftruncate(fd, size);
    }
 
    return fd;
 }
-#endif
 
 shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
    int height,
@@ -1023,12 +1027,7 @@ shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
    stride = width * 4;
    size = stride * height;
 
-#ifdef HAVE_MEMFD_CREATE
-   fd = create_anonymous_file(size);
-#else
-   fd = shm_open(SPLASH_SHM_NAME, O_RDWR | O_CREAT, 0660);
-   ftruncate(fd, size);
-#endif
+   fd = create_shm_file(size);
    if (fd < 0) {
       RARCH_ERR("[Wayland] [SHM]: Creating a buffer file for %d B failed: %s\n",
          size, strerror(errno));
@@ -1050,9 +1049,7 @@ shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
       stride, format);
    wl_buffer_add_listener(buffer->wl_buffer, &shm_buffer_listener, buffer);
    wl_shm_pool_destroy(pool);
-#ifndef HAVE_MEMFD_CREATE
    shm_unlink(SPLASH_SHM_NAME);
-#endif
    close(fd);
 
    buffer->data = data;
