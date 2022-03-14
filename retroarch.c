@@ -2017,7 +2017,8 @@ bool command_event(enum event_command cmd, void *data)
             if (core_type_is_dummy)
                return false;
 
-            state_manager_event_deinit(&runloop_st->rewind_st);
+            state_manager_event_deinit(&runloop_st->rewind_st,
+                  &runloop_st->current_core);
          }
 #endif
          break;
@@ -2779,7 +2780,8 @@ bool command_event(enum event_command cmd, void *data)
             /* Disable rewind & SRAM autosave if it was enabled
              * TODO/FIXME: Add a setting for these tweaks */
 #ifdef HAVE_REWIND
-            state_manager_event_deinit(&runloop_st->rewind_st);
+            state_manager_event_deinit(&runloop_st->rewind_st,
+                  &runloop_st->current_core);
 #endif
 #ifdef HAVE_THREADS
             autosave_deinit();
@@ -2815,7 +2817,8 @@ bool command_event(enum event_command cmd, void *data)
             /* Disable rewind if it was enabled
                TODO/FIXME: Add a setting for these tweaks */
 #ifdef HAVE_REWIND
-            state_manager_event_deinit(&runloop_st->rewind_st);
+            state_manager_event_deinit(&runloop_st->rewind_st,
+                  &runloop_st->current_core);
 #endif
 #ifdef HAVE_THREADS
             autosave_deinit();
@@ -2851,7 +2854,8 @@ bool command_event(enum event_command cmd, void *data)
             /* Disable rewind if it was enabled
              * TODO/FIXME: Add a setting for these tweaks */
 #ifdef HAVE_REWIND
-            state_manager_event_deinit(&runloop_st->rewind_st);
+            state_manager_event_deinit(&runloop_st->rewind_st,
+                  &runloop_st->current_core);
 #endif
 #ifdef HAVE_THREADS
             autosave_deinit();
