@@ -1528,22 +1528,19 @@ static bool d3d12_gfx_frame(
 
       if(d3d12->hdr.enable)
       {
-         if(use_back_buffer)
-         {
-            memset(&d3d12->chain.back_buffer,
-                  0, sizeof(d3d12->chain.back_buffer));
-            d3d12->chain.back_buffer.desc.Width  = video_width;
-            d3d12->chain.back_buffer.desc.Height = video_height;
-            d3d12->chain.back_buffer.desc.Format = back_buffer_format;
-            d3d12->chain.back_buffer.desc.Flags  = 
+         memset(&d3d12->chain.back_buffer,
+               0, sizeof(d3d12->chain.back_buffer));
+         d3d12->chain.back_buffer.desc.Width  = video_width;
+         d3d12->chain.back_buffer.desc.Height = video_height;
+         d3d12->chain.back_buffer.desc.Format = back_buffer_format;
+         d3d12->chain.back_buffer.desc.Flags  = 
                D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-            d3d12->chain.back_buffer.srv_heap    = &d3d12->desc.srv_heap;
-            d3d12->chain.back_buffer.rt_view.ptr = 
+         d3d12->chain.back_buffer.srv_heap    = &d3d12->desc.srv_heap;
+         d3d12->chain.back_buffer.rt_view.ptr = 
                d3d12->desc.rtv_heap.cpu.ptr 
                + countof(d3d12->chain.renderTargets) 
                * d3d12->desc.rtv_heap.stride;
-            d3d12_init_texture(d3d12->device, &d3d12->chain.back_buffer);
-         }
+         d3d12_init_texture(d3d12->device, &d3d12->chain.back_buffer);
 
          dxgi_swapchain_color_space(d3d12->chain.handle,
                &d3d12->chain.color_space,
