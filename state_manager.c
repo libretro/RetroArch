@@ -584,8 +584,16 @@ void state_manager_event_init(
    core_info_t *core_info = NULL;
    void *state            = NULL;
 
-   if (!rewind_st || rewind_st->state)
+   if (!rewind_st ||
+       rewind_st->init_attempted ||
+       rewind_st->state)
       return;
+
+   rewind_st->size               = 0;
+   rewind_st->frame_is_reversed  = false;
+   rewind_st->init_attempted     = true;
+   rewind_st->hotkey_was_checked = false;
+   rewind_st->hotkey_was_pressed = false;
 
    /* We cannot initialise the rewind buffer
     * unless the core info struct for the current
@@ -603,7 +611,7 @@ void state_manager_event_init(
 
    if (audio_driver_has_callback())
    {
-      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_REWIND_INIT_FAILED));
+      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_REWIND_INIT_FAILED_THREADED_AUDIO));
       return;
    }
 
@@ -612,7 +620,7 @@ void state_manager_event_init(
    if (!rewind_st->size)
    {
       RARCH_ERR("%s.\n",
-            msg_hash_to_str(MSG_REWIND_INIT_FAILED_THREADED_AUDIO));
+            msg_hash_to_str(MSG_REWIND_INIT_FAILED));
       return;
    }
 
@@ -634,18 +642,41 @@ void state_manager_event_init(
 }
 
 void state_manager_event_deinit(
-      struct state_manager_rewind_state *rewind_st)
+      struct state_manager_rewind_state *rewind_st,
+      struct retro_core_t *current_core)
 {
+   bool restore_callbacks = false;
+
    if (!rewind_st)
       return;
+
+   restore_callbacks = rewind_st->init_attempted &&
+         rewind_st->state &&
+         current_core;
 
    if (rewind_st->state)
    {
       state_manager_free(rewind_st->state);
       free(rewind_st->state);
    }
-   rewind_st->state = NULL;
-   rewind_st->size  = 0;
+
+   rewind_st->state              = NULL;
+   rewind_st->size               = 0;
+   rewind_st->frame_is_reversed  = false;
+   rewind_st->init_attempted     = false;
+   rewind_st->hotkey_was_checked = false;
+   rewind_st->hotkey_was_pressed = false;
+
+   /* Restore regular (non-rewind) core audio
+    * callbacks if required */
+   if (restore_callbacks)
+   {
+      if (current_core->retro_set_audio_sample)
+         current_core->retro_set_audio_sample(audio_driver_sample);
+
+      if (current_core->retro_set_audio_sample_batch)
+         current_core->retro_set_audio_sample_batch(audio_driver_sample_batch);
+   }
 }
 
 /**
@@ -656,19 +687,37 @@ void state_manager_event_deinit(
  **/
 bool state_manager_check_rewind(
       struct state_manager_rewind_state *rewind_st,
+      struct retro_core_t *current_core,
       bool pressed,
       unsigned rewind_granularity, bool is_paused,
       char *s, size_t len, unsigned *time)
 {
-   bool ret                = false;
-   static bool first       = true;
-   static bool was_pressed = false;
+   bool ret          = false;
 #ifdef HAVE_NETWORKING
-   bool was_reversed       = false;
+   bool was_reversed = false;
 #endif
 
-   if (!rewind_st)
+   if (!rewind_st ||
+       !rewind_st->init_attempted)
       return false;
+
+   if (!rewind_st->hotkey_was_checked)
+   {
+      rewind_st->hotkey_was_checked = true;
+      return false;
+   }
+
+   if (!rewind_st->state)
+   {
+      if ((pressed && !rewind_st->hotkey_was_pressed) &&
+          !core_info_current_supports_rewind())
+         runloop_msg_queue_push(msg_hash_to_str(MSG_REWIND_UNSUPPORTED),
+               1, 100, false, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+      rewind_st->hotkey_was_pressed = pressed;
+      return false;
+   }
 
    if (rewind_st->frame_is_reversed)
    {
@@ -677,24 +726,6 @@ bool state_manager_check_rewind(
 #endif
       audio_driver_frame_is_reverse();
       rewind_st->frame_is_reversed = false;
-   }
-
-   if (first)
-   {
-      first = false;
-      return false;
-   }
-
-   if (!rewind_st->state)
-   {
-      if ((pressed && !was_pressed) &&
-          !core_info_current_supports_rewind())
-         runloop_msg_queue_push(msg_hash_to_str(MSG_REWIND_UNSUPPORTED),
-               1, 100, false, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-      was_pressed = pressed;
-      return false;
    }
 
    if (pressed)
@@ -767,8 +798,18 @@ bool state_manager_check_rewind(
       }
    }
 
-   core_set_rewind_callbacks();
+   /* Update core audio callbacks */
+   if (current_core)
+   {
+      if (current_core->retro_set_audio_sample)
+         current_core->retro_set_audio_sample(rewind_st->frame_is_reversed ?
+               audio_driver_sample_rewind : audio_driver_sample);
 
-   was_pressed = pressed;
+      if (current_core->retro_set_audio_sample_batch)
+         current_core->retro_set_audio_sample_batch(rewind_st->frame_is_reversed ?
+               audio_driver_sample_batch_rewind : audio_driver_sample_batch);
+   }
+
+   rewind_st->hotkey_was_pressed = pressed;
    return ret;
 }
