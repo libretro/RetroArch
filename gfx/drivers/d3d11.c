@@ -1076,18 +1076,12 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
          d3d11->hdr.max_cll,
          d3d11->hdr.max_fall);
 
-   DXGI_FORMAT back_buffer_format = d3d11->shader_preset && d3d11->shader_preset->passes ? glslang_format_to_dxgi(d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format) : DXGI_FORMAT_R8G8B8A8_UNORM;
-   bool use_back_buffer           = back_buffer_format == d3d11->chain_formats[d3d11->chain_bit_depth];
-
-   if(use_back_buffer)
-   {
-      memset(&d3d11->back_buffer, 0, sizeof(d3d11->back_buffer));
-      d3d11->back_buffer.desc.Width              = width;
-      d3d11->back_buffer.desc.Height             = height;
-      d3d11->back_buffer.desc.Format             = back_buffer_format;
-      d3d11->back_buffer.desc.BindFlags          = D3D11_BIND_RENDER_TARGET;
-      d3d11_init_texture(d3d11->device, &d3d11->back_buffer);
-   }
+   memset(&d3d11->back_buffer, 0, sizeof(d3d11->back_buffer));
+   d3d11->back_buffer.desc.Width              = width;
+   d3d11->back_buffer.desc.Height             = height;
+   d3d11->back_buffer.desc.Format             = d3d11->shader_preset && d3d11->shader_preset->passes ? glslang_format_to_dxgi(d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format) : DXGI_FORMAT_R8G8B8A8_UNORM;
+   d3d11->back_buffer.desc.BindFlags          = D3D11_BIND_RENDER_TARGET;
+   d3d11_init_texture(d3d11->device, &d3d11->back_buffer);
 #endif
 
    dxgiFactory->lpVtbl->Release(dxgiFactory);
@@ -1780,7 +1774,7 @@ static bool d3d11_gfx_frame(
 #ifdef HAVE_DXGI_HDR
    bool video_hdr_enable          = video_info->hdr_enable;
    DXGI_FORMAT back_buffer_format = d3d11->shader_preset && d3d11->shader_preset->passes ? glslang_format_to_dxgi(d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format) : DXGI_FORMAT_R8G8B8A8_UNORM;
-   bool use_back_buffer           = back_buffer_format == d3d11->chain_formats[d3d11->chain_bit_depth];
+   bool use_back_buffer           = back_buffer_format != d3d11->chain_formats[d3d11->chain_bit_depth];
 
    if (   d3d11->resize_chain || 
          (d3d11->hdr.enable != video_hdr_enable))
@@ -1829,15 +1823,12 @@ static bool d3d11_gfx_frame(
 
       if(d3d11->hdr.enable)
       {
-         if(use_back_buffer)
-         {
-            memset(&d3d11->back_buffer, 0, sizeof(d3d11->back_buffer));
-            d3d11->back_buffer.desc.Width              = video_width;
-            d3d11->back_buffer.desc.Height             = video_height;
-            d3d11->back_buffer.desc.Format             = back_buffer_format;
-            d3d11->back_buffer.desc.BindFlags          = D3D11_BIND_RENDER_TARGET;
-            d3d11_init_texture(d3d11->device, &d3d11->back_buffer);
-         }
+         memset(&d3d11->back_buffer, 0, sizeof(d3d11->back_buffer));
+         d3d11->back_buffer.desc.Width              = video_width;
+         d3d11->back_buffer.desc.Height             = video_height;
+         d3d11->back_buffer.desc.Format             = back_buffer_format;
+         d3d11->back_buffer.desc.BindFlags          = D3D11_BIND_RENDER_TARGET;
+         d3d11_init_texture(d3d11->device, &d3d11->back_buffer);
 
          dxgi_swapchain_color_space(
                d3d11->swapChain,
