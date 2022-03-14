@@ -10692,16 +10692,40 @@ MSG_HASH(
    "Changing Virtual Controller Overlay"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT,
-   "Loading Content"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
-   "Scanning For Content"
+   MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_RETROARCH,
+   "What is RetroArch?"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
-   "What Is A Core?"
+   "What is a Libretro Core?"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_THE_LIBRETRO_API,
+   "What is the Libretro API?"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_THE_RETROPAD,
+   "What is the RetroPad?"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT,
+   "How to Load Content"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
+   "How to Scan for Content"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_QUICK_MENU,
+   "The Quick Menu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_SHADERS,
+   "Shaders"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_SHADER_PRESETS,
+   "Shader Presets"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,

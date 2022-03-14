@@ -743,13 +743,6 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Directory is a full path, it will start \n"
                              "in the folder where the file is.");
             break;
-        case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
-            snprintf(s, len,
-                     "You can use the following controls below \n"
-                             "on either your gamepad or keyboard in order\n"
-                             "to control the menu: \n"
-                             " \n");
-            break;
         case MENU_ENUM_LABEL_WELCOME_TO_RETROARCH:
             snprintf(s, len,
                      "Welcome to RetroArch\n");
@@ -784,29 +777,6 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                 strlcpy(s, t, len);
                 strlcat(s, u, len);
             }
-            break;
-        case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
-            snprintf(s, len,
-                     "To scan for content, go to '%s' and\n"
-                             "select either '%s' or %s'.\n"
-                             "\n"
-                             "Files will be compared to database entries.\n"
-                             "If there is a match, it will add an entry\n"
-                             "to a playlist.\n"
-                             "\n"
-                             "You can then easily access this content by\n"
-                             "going to '%s' ->\n"
-                             "'%s'\n"
-                             "instead of having to go through the\n"
-                             "file browser every time.\n"
-                             "\n"
-                             "NOTE: Content for some cores might still not be\n"
-                             "scannable.",
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB));
             break;
         case MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT:
             snprintf(s, len,
@@ -2271,52 +2241,6 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Positive X axis is right. \n"
                              "Positive Y axis is down.");
             break;
-        case MENU_ENUM_LABEL_VALUE_WHAT_IS_A_CORE_DESC:
-            snprintf(s, len,
-                     "RetroArch by itself does nothing. \n"
-                            " \n"
-                            "To make it do things, you need to \n"
-                            "load a program into it. \n"
-                            "\n"
-                            "We call such a program 'Libretro core', \n"
-                            "or 'core' in short. \n"
-                            " \n"
-                            "To load a core, select one from\n"
-                            "'Load Core'.\n"
-                            " \n"
-#ifdef HAVE_NETWORKING
-                    "You can obtain cores in several ways: \n"
-                    "* Download them by going to\n"
-                    "'%s' -> '%s'.\n"
-                    "* Manually move them over to\n"
-                    "'%s'.",
-                    msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER),
-                    msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
-                    msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
-#else
-                            "You can obtain cores by\n"
-                            "manually moving them over to\n"
-                            "'%s'.",
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
-#endif
-            );
-            break;
-        case MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC:
-            snprintf(s, len,
-                     "You can change the virtual gamepad overlay\n"
-                             "by going to '%s' -> '%s'."
-                             " \n"
-                             "From there you can change the overlay,\n"
-                             "change the size and opacity of the buttons, etc.\n"
-                             " \n"
-                             "NOTE: By default, virtual gamepad overlays are\n"
-                             "hidden when in the menu.\n"
-                             "If you'd like to change this behavior,\n"
-                             "you can set '%s' to false.",
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU));
-            break;
         case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE:
             snprintf(s, len,
                      "Enables a background color for the OSD.");
@@ -2395,6 +2319,202 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "information on how to install GameMode.");
            break;
 #endif
+
+/* "Help" section under Main Menu */
+
+        case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
+            snprintf(s, len,
+                     "You can use the following controls on either your controller or keyboard in order to control all the menus in RetroArch: \n"
+                     " \n"
+            );
+            break;
+case MENU_ENUM_LABEL_VALUE_WHAT_IS_RETROARCH_DESC:
+            snprintf(s, len,
+                     "RetroArch is the reference frontend for the libretro API. \n"
+                     " \n"
+                     "Popular examples of implementations for this API include video game system emulators and game engines, as well as more generalized 3D and multimedia applications. \n"
+                     " \n"
+                     "These programs are instantiated as dynamic libraries, commonly referred to as 'libretro cores'."
+            );
+            break;
+        case MENU_ENUM_LABEL_VALUE_WHAT_IS_A_CORE_DESC:
+            snprintf(s, len,
+                     "Cores are programs, applications, games and engines that adhere to the libretro API. RetroArch as a libretro frontend requires loading a compatible core in order to run any content. \n"
+                     " \n"
+#ifdef HAVE_NETWORKING
+                     "You can install cores in several ways: \n"
+                     " \n"
+                     "- either download them directly by selecting '%s' -> '%s', \n"
+                     "- or acquire the desired cores elsewhere and then manually move them over to the directory specified in '%s' -> '%s' -> '%s'. \n"
+                     " \n"
+                     "Afterwards, you can load any installed core by selecting one from '%s' -> '%s'.",
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MAIN_MENU),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST)
+#else
+                     "You can install cores by manually moving them over to the directory specified in '%s' -> '%s' -> '%s'."
+                     " \n"
+                     "Afterwards, you can load any installed core by selecting one from '%s' -> '%s'.",
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MAIN_MENU),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST)
+#endif
+            );
+            break;
+case MENU_ENUM_LABEL_VALUE_WHAT_IS_THE_LIBRETRO_API_DESC:
+            {
+               /* Work around C89 limitations */
+               const char *t =
+                        "The libretro API is a lightweight C-based Application Programming Interface (API) that exposes generic audio, video, and input callbacks. \n"
+                        " \n"
+                        "Developers of games, game emulators, media players and other applications do not have to worry about writing different drivers or catering to all input and sound APIs, gamepads, etc. \n"
+                        " \n";
+               const char *u =
+                        "When choosing to use the libretro API, a program is turned into a library file. A frontend that supports the libretro API can then load that file and run the app. \n"
+                        " \n"
+                        "Any project that is ported to work with this API can be made to run on any libretro frontend.";
+               strlcpy(s, t, len);
+               strlcat(s, u, len);
+            }
+            break;
+case MENU_ENUM_LABEL_VALUE_WHAT_IS_THE_RETROPAD_DESC:
+            {
+               /* Work around C89 limitations */
+               const char *t =
+                     "Libretro's input system is based on abstracted input device types. One of these abstractions is called the 'RetroPad', a virtual controller abstraction interface that serves as the primary input device for a libretro frontend. \n"
+                     " \n"
+                     "The RetroPad can be either digital or analog: \n";
+               const char *u =
+                     "- the conceptual arrangement for the digital RetroPad is inspired by classic controllers, with a D-Pad, at least two shoulder buttons, four face buttons, Start/Select buttons and no analog sticks; \n"
+                     "- the analog version of the RetroPad resembles more modern controllers, with one or more analog inputs.";
+               strlcpy(s, t, len);
+               strlcat(s, u, len);
+            }
+            break;
+case MENU_ENUM_LABEL_VALUE_LOADING_CONTENT_DESC:
+            {
+               /* Work around C89 limitations */
+               char t[501];
+               char u[501];
+               snprintf (t, len,
+                     "Once the desired cores have been either downloaded from '%s' -> '%s' or manually placed in the directory specified in '%s' -> '%s' -> '%s', you are ready to run any compatible content of choice. \n"
+                     " \n",
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
+               );
+               snprintf (u, len,
+                     "Select '%s' -> '%s', then launch your content with any suitable core that is available. \n"
+                     " \n"
+                     "The default path for loading content is the directory specified in '%s' -> '%s' -> '%s'.",
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MAIN_MENU),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY)
+               );
+               strlcpy(s, t, len);
+               strlcat(s, u, len);
+            }
+            break;
+        case MENU_ENUM_LABEL_VALUE_SCANNING_CONTENT_DESC:
+            {
+               /* Work around C89 limitations */
+               char t[501];
+               char u[501];
+               snprintf (t, len,
+                     "To scan for content, go to '%s' and select either '%s' or '%s'. The content files will be compared to entries in the internal database and, if a match is detected, the scanned content will be added to a playlist. \n"
+                     " \n",
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE)
+               );
+               snprintf (u, len,
+                     "You can then easily access this content by going to '%s' -> '%s' or browsing the respective playlist tabs, instead of having to go through the file browser every time. \n"
+                     " \n"
+                     "NOTE: Some of the content for certain cores might not always be scannable.",
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB)
+               );
+               strlcpy(s, t, len);
+               strlcat(s, u, len);
+            }
+            break;
+        case MENU_ENUM_LABEL_VALUE_QUICK_MENU_DESC:
+            {
+               /* Work around C89 limitations */
+               char u[501];
+               const char *t =
+                     "The Quick Menu can be opened while running any content to customize and remap controls, use Cheats, apply Shaders, save or load savestates, finetune certain settings, as well as reset or close the content entirely. \n"
+                     " \n";
+               snprintf (u, len,
+                     "To open the Quick Menu, run any piece of content, then press the Menu Toggle hotkey or F1 on your keyboard. You will find the Quick Menu at the top of the '%s' tab.",
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MAIN_MENU)
+               );
+               strlcpy(s, t, len);
+               strlcat(s, u, len);
+            }
+            break;
+        case MENU_ENUM_LABEL_VALUE_SHADERS_DESC:
+            {
+               /* Work around C89 limitations */
+               char u[501];
+               const char *t =
+                     "RetroArch allows to use a wide array of post-processing effects, called 'shaders', that can alter the image output to your liking and greatly improve the rendering of old games. Some of them can also be used to replicate the look and feel of old CRT monitors. \n"
+                     " \n";
+               snprintf (u, len,
+                     "In order to browse and apply your preferred shaders you have to first load any content, then access the Quick Menu by pressing the Menu Toggle hotkey or F1 on your keyboard and finally navigate to the '%s' section.",
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS)
+               );
+               strlcpy(s, t, len);
+               strlcat(s, u, len);
+            }
+            break;
+        case MENU_ENUM_LABEL_VALUE_SHADER_PRESETS_DESC:
+            {
+               /* Work around C89 limitations */
+               char t[501];
+               char u[501];
+               snprintf (t, len,
+                     "Shader Presets are combinations of one or more shaders. They can be loaded via 'Quick Menu' -> '%s' -> '%s'. \n"
+                     "You can also save a customized preset, using the corresponding options in the '%s' menu, and make it load automatically, either globally or when using a specific core, when loading content from a certain directory or running specific content. ",
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS)
+               );
+               snprintf (u, len,
+                     "Content directory and per-game presets are also core-specific. \n"
+                     " \n"
+                     "If more than one automatic preset exist that could be applied, the most specific one is considered to be prevalent. For instance, if both a global and a per-game preset exist, the per-game preset will be used. \n"
+               );
+               strlcpy(s, t, len);
+               strlcat(s, u, len);
+            }
+            break;
+        case MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC:
+            snprintf(s, len,
+                     "You can change the virtual gamepad overlay\n"
+                     "by going to '%s' -> '%s'."
+                     " \n"
+                     "From there you can change the overlay,\n"
+                     "change the size and opacity of the buttons, etc.\n"
+                     " \n"
+                     "NOTE: By default, virtual gamepad overlays are\n"
+                     "hidden when in the menu.\n"
+                     "If you'd like to change this behavior,\n"
+                     "you can set '%s' to false.",
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU));
+            break;
         default:
             if (string_is_empty(s))
                 strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);

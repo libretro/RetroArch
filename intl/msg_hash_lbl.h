@@ -1421,6 +1421,46 @@ MSG_HASH(
    "help"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CONTROLS,
+   "help_controls"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_WHAT_IS_RETROARCH,
+   "help_what_is_retroarch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE,
+   "help_what_is_a_core"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_WHAT_IS_THE_LIBRETRO_API,
+   "help_what_is_the_libretro_api"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_WHAT_IS_THE_RETROPAD,
+   "help_what_is_the_retropad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOADING_CONTENT,
+   "help_loading_content"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SCANNING_CONTENT,
+   "help_scanning_content"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUICK_MENU,
+   "help_quick_menu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SHADERS,
+   "help_shaders"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SHADER_PRESETS,
+   "help_shader_presets"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_CHEEVOS_DESCRIPTION,
    "help_cheevos_description"
    )
@@ -1433,24 +1473,8 @@ MSG_HASH(
    "help_change_virtual_gamepad"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CONTROLS,
-   "help_controls"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_LIST,
    "help_list"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_LOADING_CONTENT,
-   "help_loading_content"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_SCANNING_CONTENT,
-   "help_scanning_content"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE,
-   "help_what_is_a_core"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HISTORY_LIST_ENABLE,

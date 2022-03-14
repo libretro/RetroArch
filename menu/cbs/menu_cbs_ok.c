@@ -6903,10 +6903,16 @@ static int action_ok_help_send_debug_info(const char *path,
 DEFAULT_ACTION_OK_HELP(action_ok_help_audio_video_troubleshooting, MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING, MENU_DIALOG_HELP_AUDIO_VIDEO_TROUBLESHOOTING)
 DEFAULT_ACTION_OK_HELP(action_ok_help, MENU_ENUM_LABEL_HELP, MENU_DIALOG_WELCOME)
 DEFAULT_ACTION_OK_HELP(action_ok_help_controls, MENU_ENUM_LABEL_HELP_CONTROLS, MENU_DIALOG_HELP_CONTROLS)
+DEFAULT_ACTION_OK_HELP(action_ok_help_what_is_retroarch, MENU_ENUM_LABEL_HELP_WHAT_IS_RETROARCH, MENU_DIALOG_HELP_WHAT_IS_RETROARCH)
 DEFAULT_ACTION_OK_HELP(action_ok_help_what_is_a_core, MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE, MENU_DIALOG_HELP_WHAT_IS_A_CORE)
-DEFAULT_ACTION_OK_HELP(action_ok_help_scanning_content, MENU_ENUM_LABEL_HELP_SCANNING_CONTENT, MENU_DIALOG_HELP_SCANNING_CONTENT)
-DEFAULT_ACTION_OK_HELP(action_ok_help_change_virtual_gamepad, MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD, MENU_DIALOG_HELP_CHANGE_VIRTUAL_GAMEPAD)
+DEFAULT_ACTION_OK_HELP(action_ok_help_what_is_the_libretro_api, MENU_ENUM_LABEL_HELP_WHAT_IS_THE_LIBRETRO_API, MENU_DIALOG_HELP_WHAT_IS_THE_LIBRETRO_API)
+DEFAULT_ACTION_OK_HELP(action_ok_help_what_is_the_retropad, MENU_ENUM_LABEL_HELP_WHAT_IS_THE_RETROPAD, MENU_DIALOG_HELP_WHAT_IS_THE_RETROPAD)
 DEFAULT_ACTION_OK_HELP(action_ok_help_load_content, MENU_ENUM_LABEL_HELP_LOADING_CONTENT, MENU_DIALOG_HELP_LOADING_CONTENT)
+DEFAULT_ACTION_OK_HELP(action_ok_help_scanning_content, MENU_ENUM_LABEL_HELP_SCANNING_CONTENT, MENU_DIALOG_HELP_SCANNING_CONTENT)
+DEFAULT_ACTION_OK_HELP(action_ok_help_quick_menu, MENU_ENUM_LABEL_HELP_QUICK_MENU, MENU_DIALOG_HELP_QUICK_MENU)
+DEFAULT_ACTION_OK_HELP(action_ok_help_shaders, MENU_ENUM_LABEL_HELP_SHADERS, MENU_DIALOG_HELP_SHADERS)
+DEFAULT_ACTION_OK_HELP(action_ok_help_shader_presets, MENU_ENUM_LABEL_HELP_SHADER_PRESETS, MENU_DIALOG_HELP_SHADER_PRESETS)
+DEFAULT_ACTION_OK_HELP(action_ok_help_change_virtual_gamepad, MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD, MENU_DIALOG_HELP_CHANGE_VIRTUAL_GAMEPAD)
 
 static int generic_dropdown_box_list(size_t idx, unsigned lbl)
 {
@@ -8033,12 +8039,18 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_SAVE_NEW_CONFIG,                     action_ok_save_new_config},
          {MENU_ENUM_LABEL_HELP,                                action_ok_help},
          {MENU_ENUM_LABEL_HELP_CONTROLS,                       action_ok_help_controls},
+         {MENU_ENUM_LABEL_HELP_WHAT_IS_RETROARCH,              action_ok_help_what_is_retroarch},
          {MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE,                 action_ok_help_what_is_a_core},
+         {MENU_ENUM_LABEL_HELP_WHAT_IS_THE_LIBRETRO_API,       action_ok_help_what_is_the_libretro_api},
+         {MENU_ENUM_LABEL_HELP_WHAT_IS_THE_RETROPAD,           action_ok_help_what_is_the_retropad},
+         {MENU_ENUM_LABEL_HELP_LOADING_CONTENT,                action_ok_help_load_content},
+         {MENU_ENUM_LABEL_HELP_SCANNING_CONTENT,               action_ok_help_scanning_content},
+         {MENU_ENUM_LABEL_HELP_QUICK_MENU,                     action_ok_help_quick_menu},
+         {MENU_ENUM_LABEL_HELP_SHADERS,                        action_ok_help_shaders},
+         {MENU_ENUM_LABEL_HELP_SHADER_PRESETS,                 action_ok_help_shader_presets},
          {MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD,         action_ok_help_change_virtual_gamepad},
          {MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING,    action_ok_help_audio_video_troubleshooting},
          {MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO,                action_ok_help_send_debug_info},
-         {MENU_ENUM_LABEL_HELP_SCANNING_CONTENT,               action_ok_help_scanning_content},
-         {MENU_ENUM_LABEL_HELP_LOADING_CONTENT,                action_ok_help_load_content},
 #ifdef HAVE_CHEATS
          {MENU_ENUM_LABEL_CHEAT_FILE_LOAD,                     action_ok_cheat_file},
          {MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND,              action_ok_cheat_file_append},

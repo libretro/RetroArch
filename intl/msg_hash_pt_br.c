@@ -756,7 +756,7 @@ int msg_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             strlcat(s, u, len);
         }
             break;
-        case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
+        case MENU_ENUM_LABEL_VALUE_SCANNING_CONTENT_DESC:
             snprintf(s, len,
                      "Para analisar por conteúdo, vá para \n"
                              "'%s' e selecione \n"

@@ -6163,6 +6163,60 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_HELP_CONTROLS,
                   0, 0, 0))
             count++;
+         if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_RETROARCH),
+                  msg_hash_to_str(MENU_ENUM_LABEL_HELP_WHAT_IS_RETROARCH),
+                  MENU_ENUM_LABEL_HELP_WHAT_IS_RETROARCH,
+                  0, 0, 0))
+            count++;
+         if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE),
+                  MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE,
+                  0, 0, 0))
+            count++;
+         if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_THE_LIBRETRO_API),
+                  msg_hash_to_str(MENU_ENUM_LABEL_HELP_WHAT_IS_THE_LIBRETRO_API),
+                  MENU_ENUM_LABEL_HELP_WHAT_IS_THE_LIBRETRO_API,
+                  0, 0, 0))
+            count++;
+         if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_THE_RETROPAD),
+                  msg_hash_to_str(MENU_ENUM_LABEL_HELP_WHAT_IS_THE_RETROPAD),
+                  MENU_ENUM_LABEL_HELP_WHAT_IS_THE_RETROPAD,
+                  0, 0, 0))
+            count++;
+         if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT),
+                  msg_hash_to_str(MENU_ENUM_LABEL_HELP_LOADING_CONTENT),
+                  MENU_ENUM_LABEL_HELP_LOADING_CONTENT,
+                  0, 0, 0))
+            count++;
+         if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT),
+                  msg_hash_to_str(MENU_ENUM_LABEL_HELP_SCANNING_CONTENT),
+                  MENU_ENUM_LABEL_HELP_SCANNING_CONTENT,
+                  0, 0, 0))
+            count++;
+         if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_QUICK_MENU),
+                  msg_hash_to_str(MENU_ENUM_LABEL_HELP_QUICK_MENU),
+                  MENU_ENUM_LABEL_HELP_QUICK_MENU,
+                  0, 0, 0))
+            count++;
+         if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_SHADERS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_HELP_SHADERS),
+                  MENU_ENUM_LABEL_HELP_SHADERS,
+                  0, 0, 0))
+            count++;
+         if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_SHADER_PRESETS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_HELP_SHADER_PRESETS),
+                  MENU_ENUM_LABEL_HELP_SHADER_PRESETS,
+                  0, 0, 0))
+            count++;
          break;
       case DISPLAYLIST_AUDIO_RESAMPLER_SETTINGS_LIST:
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
