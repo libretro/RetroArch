@@ -855,7 +855,7 @@ static const unsigned input_backtouch_toggle       = false;
 
 #define DEFAULT_OVERLAY_SHOW_INPUTS_PORT 0
 
-#if defined(ANDROID) || defined(_WIN32)
+#if defined(ANDROID) || defined(_WIN32) || defined(HAVE_STEAM)
 #define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS true
 #else
 #define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS false
