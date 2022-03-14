@@ -469,30 +469,27 @@ static int general_push(menu_displaylist_info_t *info,
          break;
       case PUSH_DEFAULT:
          {
-            bool new_exts_allocated               = false;
-            char *new_exts                        = NULL;
+            const char *valid_extensions     = NULL;
+            struct retro_system_info *system = NULL;
 
             if (menu_setting_get_browser_selection_type(info->setting) 
-                  == ST_DIR) { }
-            else
+                  != ST_DIR)
             {
-               struct retro_system_info *system = 
-                  &runloop_state_get_ptr()->system.info;
+               system = &runloop_state_get_ptr()->system.info;
+
                if (system && !string_is_empty(system->valid_extensions))
-               {
-                  new_exts           = strdup(system->valid_extensions);
-                  new_exts_allocated = true;
-               }
+                  valid_extensions = system->valid_extensions;
             }
 
-            if (!new_exts)
-               new_exts = info->exts;
+            if (!valid_extensions)
+               valid_extensions = info->exts;
 
-            if (!string_is_empty(new_exts))
+            if (!string_is_empty(valid_extensions))
             {
-               struct string_list str_list3   = {0};
+               struct string_list str_list3 = {0};
+
                string_list_initialize(&str_list3);
-               string_split_noalloc(&str_list3, new_exts, "|");
+               string_split_noalloc(&str_list3, valid_extensions, "|");
 
 #ifdef HAVE_IBXM
                {
@@ -506,14 +503,6 @@ static int general_push(menu_displaylist_info_t *info,
                string_list_join_concat(newstring2, sizeof(newstring2),
                      &str_list3, "|");
                string_list_deinitialize(&str_list3);
-            }
-
-            if (new_exts_allocated)
-            {
-               free(new_exts);
-
-               if (new_exts == info->exts)
-                  info->exts = NULL;
             }
          }
          break;
@@ -634,7 +623,7 @@ static int general_push(menu_displaylist_info_t *info,
 
    if (!string_is_empty(newstring2))
    {
-      if (!string_is_empty(info->exts))
+      if (info->exts)
          free(info->exts);
       info->exts = strdup(newstring2);
    }
