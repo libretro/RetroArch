@@ -2669,7 +2669,7 @@ static bool vulkan_frame(void *data, const void *frame,
       if (!(vk->hdr.support = vk->context->swapchain_colour_space == VK_COLOR_SPACE_HDR10_ST2084_EXT))
          vk->context->hdr_enable                = false;
 
-      if(vk->context->hdr_enable && use_main_buffer)
+      if(vk->context->hdr_enable)
       {
          memset(&vk->main_buffer, 0, sizeof(vk->main_buffer));
 
