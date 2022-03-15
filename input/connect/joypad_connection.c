@@ -142,7 +142,7 @@ void init_pad_map(void)
    pad_map[12].pid        = PID_HORI_MINI_WIRED_PS4;
 }
 
-joypad_connection_entry_t *find_connection_entry(int16_t vid, int16_t pid, const char *name)
+joypad_connection_entry_t *find_connection_entry(uint16_t vid, uint16_t pid, const char *name)
 {
    unsigned i;
    const bool has_name = !string_is_empty(name);
