@@ -3448,7 +3448,7 @@ void retroarch_override_setting_set(
             if (val)
             {
                unsigned                bit = *val;
-	       runloop_state_t *runloop_st = runloop_state_get_ptr();
+               runloop_state_t *runloop_st = runloop_state_get_ptr();
                BIT256_SET(runloop_st->has_set_libretro_device, bit);
             }
          }
@@ -3525,7 +3525,7 @@ void retroarch_override_setting_unset(
             if (val)
             {
                unsigned                bit = *val;
-	       runloop_state_t *runloop_st = runloop_state_get_ptr();
+               runloop_state_t *runloop_st = runloop_state_get_ptr();
                BIT256_CLEAR(runloop_st->has_set_libretro_device, bit);
             }
          }
@@ -3596,7 +3596,7 @@ static void retroarch_override_setting_free_state(void)
          unsigned j;
          for (j = 0; j < MAX_USERS; j++)
             retroarch_override_setting_unset(
-                  (enum rarch_override_setting)(i), &j);
+                  RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &j);
       }
       else
          retroarch_override_setting_unset(
@@ -3832,7 +3832,7 @@ int rarch_main(int argc, char *argv[], void *data)
    audio_state_get_ptr()->active = true;
 
    {
-      uint8_t i;
+      unsigned i;
       for (i = 0; i < MAX_USERS; i++)
          input_config_set_device(i, RETRO_DEVICE_JOYPAD);
    }
@@ -4760,7 +4760,7 @@ static bool retroarch_parse_input_and_config(
                      retroarch_print_help(argv[0]);
                      retroarch_fail(1, "retroarch_parse_input()");
                   }
-                  new_port = port -1;
+                  new_port = port - 1;
 
                   input_config_set_device(new_port, id);
 
@@ -4805,7 +4805,7 @@ static bool retroarch_parse_input_and_config(
                      retroarch_fail(1, "retroarch_parse_input()");
                   }
                   new_port = port - 1;
-                  input_config_set_device(port - 1, RETRO_DEVICE_NONE);
+                  input_config_set_device(new_port, RETRO_DEVICE_NONE);
                   retroarch_override_setting_set(
                         RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &new_port);
                }
@@ -5853,7 +5853,7 @@ bool retroarch_override_setting_is_set(
             if (val)
             {
                unsigned                bit = *val;
-	       runloop_state_t *runloop_st = runloop_state_get_ptr();
+               runloop_state_t *runloop_st = runloop_state_get_ptr();
                return BIT256_GET(runloop_st->has_set_libretro_device, bit);
             }
          }
