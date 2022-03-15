@@ -1,8 +1,11 @@
 #include <ctype.h>
 #include <mist.h>
+#include <retro_timers.h>
 #include <stdio.h>
 #include <string.h>
 
+#include "../input/input_driver.h"
+#include "../menu/menu_driver.h"
 #include "../menu/menu_entries.h"
 #include "../retroarch.h"
 #include "../runloop.h"
@@ -11,6 +14,7 @@
 #include "steam.h"
 
 static bool mist_initialized = false;
+static bool mist_showing_osk = false;
 static steam_core_dlc_list_t *mist_dlc_list = NULL;
 
 void str_to_lower(char *str)
@@ -62,6 +66,14 @@ void steam_poll(void)
          case MistCallback_DlcInstalled:
             command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
             steam_get_core_dlcs(&core_dlc_list, false);
+            break;
+         /* The Steam OSK is dismissed */
+         case MistCallback_FloatingGamepadTextInputDismissed:
+            /* If we do not poll for input the callback might race condition and
+               will dismiss the input even when enter is pressed */
+            retro_sleep(50);
+            runloop_iterate();
+            menu_input_dialog_end();
             break;
       }
 
@@ -306,6 +318,36 @@ error:
 
       RARCH_ERR("[Steam]: Error uninstalling DLC %d (%d-%d)\n", core_dlc->app_id, MIST_UNPACK_RESULT(result));
    return;
+}
+
+bool steam_open_osk(void)
+{
+   bool shown = false;
+   bool on_deck = false;
+   video_driver_state_t *video_st = video_state_get_ptr();
+
+   /* Only open the Steam OSK if running on a Steam Deck,
+      as currently the Big Picture OSK seems to be semi-broken */
+   mist_steam_utils_is_steam_running_on_steam_deck(&on_deck);
+   if(!on_deck) return false;
+
+   mist_steam_utils_show_floating_gamepad_text_input(
+      MistFloatingGamepadTextInputMode_SingleLine,
+      0,
+      0,
+      video_st->width,
+      video_st->height / 2,
+      &shown
+   );
+
+   mist_showing_osk = shown;
+
+   return shown;
+}
+
+bool steam_has_osk_open(void)
+{
+   return mist_showing_osk;
 }
 
 void steam_deinit(void)
