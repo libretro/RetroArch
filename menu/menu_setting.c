@@ -8618,7 +8618,6 @@ static bool setting_append_list_input_player_options(
        */
       /* FIXME/TODO - really need to clean up this mess in some way. */
       static char key[MAX_USERS][64];
-      static char key_type[MAX_USERS][64];
       static char key_analog[MAX_USERS][64];
       static char key_bind_all[MAX_USERS][64];
       static char key_bind_all_save_autoconfig[MAX_USERS][64];
@@ -8628,7 +8627,6 @@ static bool setting_append_list_input_player_options(
       static char mouse_index[MAX_USERS][64];
 
       static char label[MAX_USERS][64];
-      static char label_type[MAX_USERS][64];
       static char label_analog[MAX_USERS][64];
       static char label_bind_all[MAX_USERS][64];
       static char label_bind_all_save_autoconfig[MAX_USERS][64];
@@ -8641,9 +8639,6 @@ static bool setting_append_list_input_player_options(
 
       fill_pathname_join_delim(key[user], tmp_string, "joypad_index", '_',
             sizeof(key[user]));
-      snprintf(key_type[user], sizeof(key_type[user]),
-               msg_hash_to_str(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE),
-               user + 1);
       snprintf(key_analog[user], sizeof(key_analog[user]),
                msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE),
                user + 1);
@@ -8668,9 +8663,6 @@ static bool setting_append_list_input_player_options(
       snprintf(label[user], sizeof(label[user]),
                "%s",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX));
-      snprintf(label_type[user], sizeof(label_type[user]),
-               "%s",
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE));
       snprintf(label_analog[user], sizeof(label_analog[user]),
                "%s",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE));
@@ -8686,29 +8678,6 @@ static bool setting_append_list_input_player_options(
       snprintf(label_mouse_index[user], sizeof(label_mouse_index[user]),
                "%s",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX));
-
-      CONFIG_UINT_ALT(
-            list, list_info,
-            input_config_get_device_ptr(user),
-            key_type[user],
-            label_type[user],
-            user,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler);
-      (*list)[list_info->index - 1].index         = user + 1;
-      (*list)[list_info->index - 1].index_offset  = user;
-      (*list)[list_info->index - 1].action_left   = &setting_action_left_libretro_device_type;
-      (*list)[list_info->index - 1].action_right  = &setting_action_right_libretro_device_type;
-      (*list)[list_info->index - 1].action_select = &setting_action_right_libretro_device_type;
-      (*list)[list_info->index - 1].action_start  = &setting_action_start_libretro_device_type;
-      (*list)[list_info->index - 1].action_ok     = &setting_action_ok_libretro_device_type;
-      (*list)[list_info->index - 1].get_string_representation =
-         &setting_get_string_representation_uint_libretro_device;
-      MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
-            (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE + user));
 
       CONFIG_UINT_ALT(
             list, list_info,
@@ -8895,6 +8864,72 @@ static bool setting_append_list_input_player_options(
             &subgroup_info,
             parent_group);
       (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
+   }
+
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
+
+   return true;
+}
+
+static bool setting_append_list_input_libretro_device_options(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
+{
+   settings_t *settings = config_get_ptr();
+   rarch_setting_group_info_t group_info;
+   rarch_setting_group_info_t subgroup_info;
+   static char key_device_type[MAX_USERS][64];
+   static char label_device_type[MAX_USERS][64];
+   unsigned user;
+
+   group_info.name    = NULL;
+   subgroup_info.name = NULL;
+
+   START_GROUP(list, list_info, &group_info,
+         "Libretro Device Type", parent_group);
+
+   parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
+
+   START_SUB_GROUP(list, list_info, "State", &group_info,
+         &subgroup_info, parent_group);
+
+   for (user = 0; user < MAX_USERS; user++)
+   {
+      key_device_type[user][0]   = '\0';
+      label_device_type[user][0] = '\0';
+
+      snprintf(key_device_type[user], sizeof(key_device_type[user]),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE),
+            user + 1);
+
+      snprintf(label_device_type[user], sizeof(label_device_type[user]),
+            "%s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE));
+
+      CONFIG_UINT_ALT(
+            list, list_info,
+            input_config_get_device_ptr(user),
+            key_device_type[user],
+            label_device_type[user],
+            user,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      (*list)[list_info->index - 1].index         = user + 1;
+      (*list)[list_info->index - 1].index_offset  = user;
+      (*list)[list_info->index - 1].action_left   = &setting_action_left_libretro_device_type;
+      (*list)[list_info->index - 1].action_right  = &setting_action_right_libretro_device_type;
+      (*list)[list_info->index - 1].action_select = &setting_action_right_libretro_device_type;
+      (*list)[list_info->index - 1].action_start  = &setting_action_start_libretro_device_type;
+      (*list)[list_info->index - 1].action_ok     = &setting_action_ok_libretro_device_type;
+      (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_uint_libretro_device;
+      MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+            (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE + user));
    }
 
    END_SUB_GROUP(list, list_info, parent_group);
@@ -9837,6 +9872,7 @@ static bool setting_append_list(
          for (user = 0; user < MAX_USERS; user++)
             setting_append_list_input_player_options(list, list_info, parent_group, user);
 
+         setting_append_list_input_libretro_device_options(list, list_info, parent_group);
          setting_append_list_input_remap_port_options(list, list_info, parent_group);
 
          END_SUB_GROUP(list, list_info, parent_group);
