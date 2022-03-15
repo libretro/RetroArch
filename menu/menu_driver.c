@@ -80,6 +80,10 @@
 #include "../switch_performance_profiles.h"
 #endif
 
+#ifdef HAVE_MIST
+#include "../steam/steam.h"
+#endif
+
 #ifdef HAVE_LIBNX
 #define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
 
@@ -5934,6 +5938,11 @@ unsigned menu_event(
 
    if (display_kb)
    {
+#ifdef HAVE_MIST
+      /* Do not process input events if the Steam OSK is open */
+      if (!steam_has_osk_open())
+      {
+#endif
       bool show_osk_symbols = input_event_osk_show_symbol_pages(menu_st->driver_data);
 
       input_event_osk_iterate(input_st->osk_grid, input_st->osk_idx);
@@ -6010,6 +6019,10 @@ unsigned menu_event(
       /* send return key to close keyboard input window */
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START))
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+
+#ifdef HAVE_MIST
+      }
+#endif
 
       BIT256_CLEAR_ALL_PTR(p_trigger_input);
    }
@@ -6404,6 +6417,11 @@ static int menu_input_pointer_post_iterate(
          /* On screen keyboard overrides normal menu input... */
          if (osk_active)
          {
+#ifdef HAVE_MIST
+         /* Disable OSK pointer input if the Steam OSK is used */
+         if (!steam_has_osk_open())
+         {
+#endif
             /* If pointer has been 'dragged', then it counts as
              * a miss. Only register 'release' event if pointer
              * has remained stationary */
@@ -6425,6 +6443,9 @@ static int menu_input_pointer_post_iterate(
                         input_st->osk_grid[input_st->osk_ptr]);
                }
             }
+#ifdef HAVE_MIST
+            }
+#endif
          }
          /* Message boxes override normal menu input...
           * > If a message box is shown, any kind of pointer
@@ -8098,6 +8119,9 @@ bool menu_input_dialog_start_search(void)
    if (!menu)
       return false;
 
+#ifdef HAVE_MIST
+   steam_open_osk();
+#endif
    menu_st->input_dialog_kb_display = true;
    strlcpy(menu_st->input_dialog_kb_label,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
@@ -8146,6 +8170,9 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    if (!line || !menu)
       return false;
 
+#ifdef HAVE_MIST
+   steam_open_osk();
+#endif
    menu_st->input_dialog_kb_display = true;
 
    /* Only copy over the menu label and setting if they exist. */

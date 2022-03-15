@@ -1,6 +1,7 @@
 #ifndef __RARCH_STEAM_H
 #define __RARCH_STEAM_H
 
+#include <boolean.h>
 #include <mist.h>
 
 #include "core_info.h"
@@ -36,6 +37,9 @@ void steam_core_dlc_list_free(steam_core_dlc_list_t *list); /* NOTE: This should
 
 void steam_install_core_dlc(steam_core_dlc_t *core_dlc);
 void steam_uninstall_core_dlc(steam_core_dlc_t *core_dlc);
+
+bool steam_open_osk(void);
+bool steam_has_osk_open(void);
 
 /* Located in tasks/task_steam.c */
 void task_push_steam_core_dlc_install(AppId app_id, const char *name);
