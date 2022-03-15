@@ -1,0 +1,22 @@
+^C:\USERS\JO3LA\SOURCE\REPOS\INTERDICE\RETROARCH\UI\DRIVERS\QT\UI_QT_LOAD_CORE_WINDOW.H
+moc.exe "C:\Users\jo3la\Source\Repos\Interdice\RetroArch\ui\drivers\qt\ui_qt_load_core_window.h" > "C:\Users\jo3la\Source\Repos\Interdice\RetroArch\ui\drivers\qt\moc_ui_qt_load_core_window.cpp"
+^C:\USERS\JO3LA\SOURCE\REPOS\INTERDICE\RETROARCH\UI\DRIVERS\QT\SHADERPARAMSDIALOG.H
+moc.exe "C:\Users\jo3la\Source\Repos\Interdice\RetroArch\ui\drivers\qt\shaderparamsdialog.h" > "C:\Users\jo3la\Source\Repos\Interdice\RetroArch\ui\drivers\qt\moc_shaderparamsdialog.cpp"
+^C:\USERS\JO3LA\SOURCE\REPOS\INTERDICE\RETROARCH\UI\DRIVERS\QT\VIEWOPTIONSDIALOG.H
+moc.exe "C:\Users\jo3la\Source\Repos\Interdice\RetroArch\ui\drivers\qt\viewoptionsdialog.h" > "C:\Users\jo3la\Source\Repos\Interdice\RetroArch\ui\drivers\qt\moc_viewoptionsdialog.cpp"
+^C:\USERS\JO3LA\SOURCE\REPOS\INTERDICE\RETROARCH\UI\DRIVERS\QT\PLAYLISTENTRYDIALOG.H
+moc.exe "C:\Users\jo3la\Source\Repos\Interdice\RetroArch\ui\drivers\qt\playlistentrydialog.h" > "C:\Users\jo3la\Source\Repos\Interdice\RetroArch\ui\drivers\qt\moc_playlistentrydialog.cpp"
+^C:\USERS\JO3LA\SOURCE\REPOS\INTERDICE\RETROARCH\UI\DRIVERS\QT\GRIDVIEW.H
+moc.exe "C:\Users\jo3la\Source\Repos\Interdice\RetroArch\ui\drivers\qt\gridview.h" > "C:\Users\jo3la\Source\Repos\Interdice\RetroArch\ui\drivers\qt\moc_gridview.cpp"
+^C:\USERS\JO3LA\SOURCE\REPOS\INTERDICE\RETROARCH\UI\DRIVERS\QT\COREOPTIONSDIALOG.H
+moc.exe "C:\Users\jo3la\Source\Repos\Interdice\RetroArch\ui\drivers\qt\coreoptionsdialog.h" > "C:\Users\jo3la\Source\Repos\Interdice\RetroArch\ui\drivers\qt\moc_coreoptionsdialog.cpp"
+^C:\USERS\JO3LA\SOURCE\REPOS\INTERDICE\RETROARCH\UI\DRIVERS\QT\COREINFODIALOG.H
+moc.exe "C:\Users\jo3la\Source\Repos\Interdice\RetroArch\ui\drivers\qt\coreinfodialog.h" > "C:\Users\jo3la\Source\Repos\Interdice\RetroArch\ui\drivers\qt\moc_coreinfodialog.cpp"
+^C:\USERS\JO3LA\SOURCE\REPOS\INTERDICE\RETROARCH\UI\DRIVERS\QT\FILEDROPWIDGET.H
+moc.exe "C:\Users\jo3la\Source\Repos\Interdice\RetroArch\ui\drivers\qt\filedropwidget.h" > "C:\Users\jo3la\Source\Repos\Interdice\RetroArch\ui\drivers\qt\moc_filedropwidget.cpp"
+^C:\USERS\JO3LA\SOURCE\REPOS\INTERDICE\RETROARCH\UI\DRIVERS\UI_QT.H
+moc.exe "C:\Users\jo3la\Source\Repos\Interdice\RetroArch\ui\drivers\ui_qt.h" > "C:\Users\jo3la\Source\Repos\Interdice\RetroArch\ui\drivers\moc_ui_qt.cpp"
+^C:\USERS\JO3LA\SOURCE\REPOS\INTERDICE\RETROARCH\UI\DRIVERS\QT\SETTINGSWIDGETS.H
+moc.exe "C:\Users\jo3la\Source\Repos\Interdice\RetroArch\ui\drivers\qt\settingswidgets.h" > "C:\Users\jo3la\Source\Repos\Interdice\RetroArch\ui\drivers\qt\moc_settingswidgets.cpp"
+^C:\USERS\JO3LA\SOURCE\REPOS\INTERDICE\RETROARCH\UI\DRIVERS\QT\QT_OPTIONS.H
+moc.exe "C:\Users\jo3la\Source\Repos\Interdice\RetroArch\ui\drivers\qt\qt_options.h" > "C:\Users\jo3la\Source\Repos\Interdice\RetroArch\ui\drivers\qt\moc_qt_options.cpp"
