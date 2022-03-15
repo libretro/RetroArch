@@ -145,7 +145,7 @@ bool pad_connection_rumble(joypad_connection_t *s,
 const char* pad_connection_get_name(joypad_connection_t *joyconn,
    unsigned idx);
 
-joypad_connection_entry_t *find_connection_entry(int16_t vid, int16_t pid, const char *name);
+joypad_connection_entry_t *find_connection_entry(uint16_t vid, uint16_t pid, const char *name);
 int32_t pad_connection_pad_init_entry(joypad_connection_t *joyconn, joypad_connection_entry_t *entry, void *data, hid_driver_t *driver);
 void pad_connection_pad_register(joypad_connection_t *joyconn, pad_connection_interface_t *iface, void *pad_data, void *handle, input_device_driver_t *input_driver, int slot);
 void pad_connection_pad_deregister(joypad_connection_t *joyconn, pad_connection_interface_t *iface, void *pad_data);
