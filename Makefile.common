@@ -1000,15 +1000,15 @@ ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
       HAVE_RGUI = 1
    endif
 
-   ifeq ($(HAVE_MATERIALUI), 1)
+   ifeq ($(HAVE_MATERIALUI),)
       HAVE_MATERIALUI = 1
    endif
 
-   ifeq ($(HAVE_XMB), 1)
+   ifeq ($(HAVE_XMB),)
       HAVE_XMB = 1
    endif
 
-   ifeq ($(HAVE_OZONE), 1)
+   ifeq ($(HAVE_OZONE),)
       HAVE_OZONE = 1
    endif
 else
