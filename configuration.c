@@ -5295,14 +5295,20 @@ bool input_remapping_save_file(const char *path)
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
       {
          char btn_ident[128];
+         char key_ident[128];
+         const char *key_string = key_strings[j];
          unsigned remap_id      = settings->uints.input_remap_ids[i][j];
          unsigned keymap_id     = settings->uints.input_keymapper_ids[i][j];
-         const char *key_string = key_strings[j];
+
          btn_ident[0]           = '\0';
+         key_ident[0]           = '\0';
+
          fill_pathname_join_delim(btn_ident, s1,
                key_string, '_', sizeof(btn_ident));
+         fill_pathname_join_delim(key_ident, s2,
+               key_string, '_', sizeof(key_ident));
 
-         /* only save values that have been modified */
+         /* Only save modified button values */
          if (remap_id == j)
             config_unset(conf, btn_ident);
          else
@@ -5314,48 +5320,48 @@ bool input_remapping_save_file(const char *path)
                      settings->uints.input_remap_ids[i][j]);
          }
 
-         if (keymap_id != RETROK_UNKNOWN)
-         {
-            char key_ident[128];
-            key_ident[0] = '\0';
-            fill_pathname_join_delim(key_ident, s2,
-                  key_string, '_', sizeof(key_ident));
+         /* Only save non-empty keymapper values */
+         if (keymap_id == RETROK_UNKNOWN)
+            config_unset(conf, key_ident);
+         else
             config_set_int(conf, key_ident,
                   settings->uints.input_keymapper_ids[i][j]);
-         }
       }
 
       for (j = RARCH_FIRST_CUSTOM_BIND; j < (RARCH_FIRST_CUSTOM_BIND + 8); j++)
       {
          char stk_ident[128];
+         char key_ident[128];
+         const char *key_string = key_strings[j];
          unsigned remap_id      = settings->uints.input_remap_ids[i][j];
          unsigned keymap_id     = settings->uints.input_keymapper_ids[i][j];
-         const char *key_string = key_strings[j];
+
          stk_ident[0]           = '\0';
+         key_ident[0]           = '\0';
+
          fill_pathname_join_delim(stk_ident, s3,
                key_string, '_', sizeof(stk_ident));
+         fill_pathname_join_delim(key_ident, s2,
+               key_string, '_', sizeof(key_ident));
 
+         /* Only save modified button values */
          if (remap_id == j)
             config_unset(conf, stk_ident);
          else
          {
             if (remap_id == RARCH_UNMAPPED)
-               config_set_int(conf, stk_ident,
-                     -1);
+               config_set_int(conf, stk_ident, -1);
             else
                config_set_int(conf, stk_ident,
                      settings->uints.input_remap_ids[i][j]);
          }
 
-         if (keymap_id != RETROK_UNKNOWN)
-         {
-            char key_ident[128];
-            key_ident[0] = '\0';
-            fill_pathname_join_delim(key_ident, s2,
-                  key_string, '_', sizeof(key_ident));
+         /* Only save non-empty keymapper values */
+         if (keymap_id == RETROK_UNKNOWN)
+            config_unset(conf, key_ident);
+         else
             config_set_int(conf, key_ident,
                   settings->uints.input_keymapper_ids[i][j]);
-         }
       }
 
       snprintf(s1, sizeof(s1), "input_libretro_device_p%u", i + 1);
