@@ -586,6 +586,7 @@ DEFAULT_TITLE_MACRO(action_get_configurations_list,             MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_core_option_override_list,       MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_LIST)
 DEFAULT_TITLE_MACRO(action_get_quick_menu_list,                 MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_input_remapping_options_list,    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS)
+DEFAULT_TITLE_MACRO(action_get_remap_file_manager_list,         MENU_ENUM_LABEL_VALUE_REMAP_FILE_MANAGER_LIST)
 DEFAULT_TITLE_MACRO(action_get_shader_options_list,             MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS)
 DEFAULT_TITLE_MACRO(action_get_disk_options_list,               MENU_ENUM_LABEL_VALUE_DISK_OPTIONS)
 DEFAULT_TITLE_MACRO(action_get_frontend_counters_list,          MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS)
@@ -1174,6 +1175,8 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          action_get_quick_menu_list},
       {MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
          action_get_input_remapping_options_list},
+      {MENU_ENUM_LABEL_DEFERRED_REMAP_FILE_MANAGER_LIST,
+         action_get_remap_file_manager_list},
       {MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,
          action_get_core_cheat_options_list},
       {MENU_ENUM_LABEL_SHADER_OPTIONS,
@@ -1508,6 +1511,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
             BIND_ACTION_GET_TITLE(cbs, action_get_input_remapping_options_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_REMAP_FILE_MANAGER_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_remap_file_manager_list);
             break;
          case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
             BIND_ACTION_GET_TITLE(cbs, action_get_core_cheat_options_list);

@@ -140,7 +140,7 @@ static void menu_action_setting_disp_set_label_cheevos_entry(
 }
 #endif
 
-static void menu_action_setting_disp_set_label_remap_file_load(
+static void menu_action_setting_disp_set_label_remap_file_info(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
@@ -149,12 +149,21 @@ static void menu_action_setting_disp_set_label_remap_file_load(
       char *s2, size_t len2)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
+   const char *remap_path      = runloop_st->name.remapfile;
+   const char *remap_file      = NULL;
 
+   *s = '\0';
    *w = 19;
+
+   if (!string_is_empty(remap_path))
+      remap_file = path_basename_nocompression(remap_path);
+
+   if (!string_is_empty(remap_file))
+      strlcpy(s, remap_file, len);
+   else
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
+
    strlcpy(s2, path, len2);
-   if (!string_is_empty(runloop_st->name.remapfile))
-      fill_pathname_base(s, runloop_st->name.remapfile,
-            len);
 }
 
 static void menu_action_setting_disp_set_label_configurations(
@@ -1887,9 +1896,9 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
                   menu_action_setting_disp_set_label_cheat_num_passes);
 #endif
             break;
-         case MENU_ENUM_LABEL_REMAP_FILE_LOAD:
+         case MENU_ENUM_LABEL_REMAP_FILE_INFO:
             BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_remap_file_load);
+                  menu_action_setting_disp_set_label_remap_file_info);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
