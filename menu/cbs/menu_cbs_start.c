@@ -81,12 +81,24 @@ static int action_start_audio_mixer_stream_volume(
 }
 #endif
 
-static int action_start_remap_file_load(
+static int action_start_remap_file_info(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   input_remapping_deinit();
+   settings_t *settings                  = config_get_ptr();
+   const char *directory_input_remapping = settings ?
+         settings->paths.directory_input_remapping : NULL;
+   rarch_system_info_t *system           = &runloop_state_get_ptr()->system;
+   bool refresh                          = false;
+
+   input_remapping_deinit(false);
    input_remapping_set_defaults(false);
+   config_load_remap(directory_input_remapping, system);
+
+   /* Refresh menu */
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+
    return 0;
 }
 
@@ -712,8 +724,8 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
             BIND_ACTION_START(cbs, action_start_shader_preset);
             break;
-         case MENU_ENUM_LABEL_REMAP_FILE_LOAD:
-            BIND_ACTION_START(cbs, action_start_remap_file_load);
+         case MENU_ENUM_LABEL_REMAP_FILE_INFO:
+            BIND_ACTION_START(cbs, action_start_remap_file_info);
             break;
          case MENU_ENUM_LABEL_VIDEO_FILTER:
             BIND_ACTION_START(cbs, action_start_video_filter_file_load);

@@ -1927,9 +1927,10 @@ bool command_event(enum event_command cmd, void *data)
             if (     runloop_st->remaps_core_active
                   || runloop_st->remaps_content_dir_active
                   || runloop_st->remaps_game_active
+                  || !string_is_empty(runloop_st->name.remapfile)
                )
             {
-               input_remapping_deinit();
+               input_remapping_deinit(true);
                input_remapping_set_defaults(true);
             }
             else
@@ -5421,9 +5422,10 @@ bool retroarch_main_init(int argc, char *argv[])
          if (     runloop_st->remaps_core_active
                || runloop_st->remaps_content_dir_active
                || runloop_st->remaps_game_active
+               || !string_is_empty(runloop_st->name.remapfile)
             )
          {
-            input_remapping_deinit();
+            input_remapping_deinit(false);
             input_remapping_set_defaults(true);
          }
          else
@@ -5707,17 +5709,25 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_IS_OVERRIDES_ACTIVE:
          return runloop_st->overrides_active;
       case RARCH_CTL_SET_REMAPS_CORE_ACTIVE:
-         runloop_st->remaps_core_active = true;
+         /* Only one type of remap can be active
+          * at any one time */
+         runloop_st->remaps_core_active        = true;
+         runloop_st->remaps_content_dir_active = false;
+         runloop_st->remaps_game_active        = false;
          break;
       case RARCH_CTL_IS_REMAPS_CORE_ACTIVE:
          return runloop_st->remaps_core_active;
       case RARCH_CTL_SET_REMAPS_GAME_ACTIVE:
-         runloop_st->remaps_game_active = true;
+         runloop_st->remaps_core_active        = false;
+         runloop_st->remaps_content_dir_active = false;
+         runloop_st->remaps_game_active        = true;
          break;
       case RARCH_CTL_IS_REMAPS_GAME_ACTIVE:
          return runloop_st->remaps_game_active;
       case RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE:
+         runloop_st->remaps_core_active        = false;
          runloop_st->remaps_content_dir_active = true;
+         runloop_st->remaps_game_active        = false;
          break;
       case RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE:
          return runloop_st->remaps_content_dir_active;
@@ -6053,9 +6063,10 @@ bool retroarch_main_quit(void)
       if (     runloop_st->remaps_core_active
             || runloop_st->remaps_content_dir_active
             || runloop_st->remaps_game_active
+            || !string_is_empty(runloop_st->name.remapfile)
          )
       {
-         input_remapping_deinit();
+         input_remapping_deinit(true);
          input_remapping_set_defaults(true);
       }
       else

@@ -1930,9 +1930,10 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          if (     runloop_st->remaps_core_active
                || runloop_st->remaps_content_dir_active
                || runloop_st->remaps_game_active
+               || !string_is_empty(runloop_st->name.remapfile)
             )
          {
-            input_remapping_deinit();
+            input_remapping_deinit(true);
             input_remapping_set_defaults(true);
          }
          else
@@ -5022,6 +5023,18 @@ void runloop_event_deinit_core(void)
       runloop_st->fastmotion_override.pending = false;
    }
 
+   if (     runloop_st->remaps_core_active
+         || runloop_st->remaps_content_dir_active
+         || runloop_st->remaps_game_active
+         || !string_is_empty(runloop_st->name.remapfile)
+      )
+   {
+      input_remapping_deinit(true);
+      input_remapping_set_defaults(true);
+   }
+   else
+      input_remapping_restore_global_config(true);
+
    RARCH_LOG("[Core]: Unloading core symbols..\n");
    uninit_libretro_symbols(&runloop_st->current_core);
    runloop_st->current_core.symbols_inited = false;
@@ -5048,17 +5061,6 @@ void runloop_event_deinit_core(void)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    runloop_st->runtime_shader_preset_path[0] = '\0';
 #endif
-
-   if (     runloop_st->remaps_core_active
-         || runloop_st->remaps_content_dir_active
-         || runloop_st->remaps_game_active
-      )
-   {
-      input_remapping_deinit();
-      input_remapping_set_defaults(true);
-   }
-   else
-      input_remapping_restore_global_config(true);
 }
 
 static void runloop_path_init_savefile_internal(void)

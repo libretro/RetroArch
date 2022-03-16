@@ -2634,7 +2634,7 @@ void config_set_defaults(void *data)
 #endif
 
    input_config_reset();
-   input_remapping_deinit();
+   input_remapping_deinit(false);
    input_remapping_set_defaults(false);
 
    /* Verify that binds are in proper order. */
@@ -5102,7 +5102,7 @@ bool input_remapping_load_file(void *data, const char *path)
 
    if (!string_is_empty(runloop_st->name.remapfile))
    {
-      input_remapping_deinit();
+      input_remapping_deinit(false);
       input_remapping_set_defaults(false);
    }
    runloop_st->name.remapfile = strdup(path);
@@ -5213,7 +5213,7 @@ bool input_remapping_load_file(void *data, const char *path)
 
 /**
  * input_remapping_save_file:
- * @path                     : Path to remapping file (relative path).
+ * @path                     : Path to remapping file.
  *
  * Saves remapping values to file.
  *
@@ -5223,23 +5223,33 @@ bool input_remapping_save_file(const char *path)
 {
    bool ret;
    unsigned i, j;
-   char remap_file[PATH_MAX_LENGTH];
+   char remap_file_dir[PATH_MAX_LENGTH];
    char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8] = {
       "b", "y", "select", "start",
       "up", "down", "left", "right",
       "a", "x", "l", "r", "l2", "r2",
       "l3", "r3", "l_x+", "l_x-", "l_y+", "l_y-", "r_x+", "r_x-", "r_y+", "r_y-" };
-   config_file_t               *conf = NULL;
-   settings_t              *settings = config_st;
-   unsigned max_users                = settings->uints.input_max_users;
-   const char *dir_input_remapping   = settings->paths.directory_input_remapping;
+   const char      *remap_file = path;
+   config_file_t         *conf = NULL;
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   settings_t        *settings = config_st;
+   unsigned          max_users = settings->uints.input_max_users;
 
-   remap_file[0]                     = '\0';
+   remap_file_dir[0]           = '\0';
 
-   fill_pathname_join_concat(remap_file, dir_input_remapping, path,
-         FILE_PATH_REMAP_EXTENSION,
-         sizeof(remap_file));
+   if (string_is_empty(remap_file))
+      return false;
 
+   /* Create output directory, if required */
+   strlcpy(remap_file_dir, remap_file, sizeof(remap_file_dir));
+   path_parent_dir(remap_file_dir);
+
+   if (!string_is_empty(remap_file_dir) &&
+       !path_is_directory(remap_file_dir) &&
+       !path_mkdir(remap_file_dir))
+      return false;
+
+   /* Attempt to load file */
    if (!(conf = config_file_new_from_path_to_string(remap_file)))
    {
       if (!(conf = config_file_new_alloc()))
@@ -5361,18 +5371,18 @@ bool input_remapping_save_file(const char *path)
    ret = config_file_write(conf, remap_file, true);
    config_file_free(conf);
 
-   return ret;
-}
+   /* Cache remap file path
+    * > Must guard against the case where
+    *   runloop_st->name.remapfile itself
+    *   is passed to this function... */
+   if (runloop_st->name.remapfile != remap_file)
+   {
+      if (runloop_st->name.remapfile)
+         free(runloop_st->name.remapfile);
+      runloop_st->name.remapfile = strdup(remap_file);
+   }
 
-bool input_remapping_remove_file(const char *path,
-      const char *dir_input_remapping)
-{
-   char remap_file[PATH_MAX_LENGTH];
-   remap_file[0]  = '\0';
-   fill_pathname_join_concat(remap_file, dir_input_remapping, path,
-         FILE_PATH_REMAP_EXTENSION,
-         sizeof(remap_file));
-   return filestream_delete(remap_file) == 0 ? true : false;
+   return ret;
 }
 #endif
 

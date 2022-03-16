@@ -5254,11 +5254,16 @@ void input_remapping_update_port_map(void)
    }
 }
 
-void input_remapping_deinit(void)
+void input_remapping_deinit(bool save_remap)
 {
    runloop_state_t *runloop_st             = runloop_state_get_ptr();
    if (runloop_st->name.remapfile)
+   {
+      if (save_remap)
+         input_remapping_save_file(runloop_st->name.remapfile);
+
       free(runloop_st->name.remapfile);
+   }
    runloop_st->name.remapfile              = NULL;
    runloop_st->remaps_core_active          = false;
    runloop_st->remaps_content_dir_active   = false;

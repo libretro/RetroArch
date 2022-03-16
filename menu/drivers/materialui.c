@@ -10131,6 +10131,8 @@ static void materialui_list_insert(
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case MENU_SETTING_ACTION_CORE_OPTION_OVERRIDE_LIST:
+         case MENU_SETTING_ACTION_REMAP_FILE_MANAGER_LIST:
+         case MENU_SETTING_ACTION_REMAP_FILE_LOAD:
             node->icon_texture_index = MUI_TEXTURE_SETTINGS;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
@@ -10186,12 +10188,18 @@ static void materialui_list_insert(
          case MENU_SETTING_ACTION_AUDIO_DSP_PLUGIN_REMOVE:
          case MENU_SETTING_ACTION_GAME_SPECIFIC_CORE_OPTIONS_REMOVE:
          case MENU_SETTING_ACTION_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE:
+         case MENU_SETTING_ACTION_REMAP_FILE_REMOVE_CORE:
+         case MENU_SETTING_ACTION_REMAP_FILE_REMOVE_CONTENT_DIR:
+         case MENU_SETTING_ACTION_REMAP_FILE_REMOVE_GAME:
             node->icon_texture_index = MUI_TEXTURE_REMOVE;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case MENU_SETTING_ACTION_CORE_CREATE_BACKUP:
          case MENU_SETTING_ACTION_GAME_SPECIFIC_CORE_OPTIONS_CREATE:
          case MENU_SETTING_ACTION_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE:
+         case MENU_SETTING_ACTION_REMAP_FILE_SAVE_CORE:
+         case MENU_SETTING_ACTION_REMAP_FILE_SAVE_CONTENT_DIR:
+         case MENU_SETTING_ACTION_REMAP_FILE_SAVE_GAME:
             node->icon_texture_index = MUI_TEXTURE_SAVE_STATE;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
