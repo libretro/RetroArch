@@ -616,7 +616,8 @@ static void *gfx_ctx_wl_init(void *video_driver)
    /* Bind SHM based wl_buffer to wl_surface until the vulkan surface is ready.
     * This shows the window which assigns us a display (wl_output)
     *  which is usefull for HiDPI and auto selecting a display for fullscreen. */
-   draw_splash_screen(wl);
+   if (!draw_splash_screen(wl))
+      RARCH_ERR("[Wayland/GL]: Failed to draw splash screen\n");
 
    wl_display_roundtrip(wl->input.dpy);
 
