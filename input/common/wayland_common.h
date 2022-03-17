@@ -112,6 +112,15 @@ typedef struct input_ctx_wayland_data
    bool blocked;
 } input_ctx_wayland_data_t;
 
+typedef struct data_offer_ctx
+{
+  struct wl_data_offer *offer;
+  struct wl_data_device *data_device;
+  bool is_file_mime_type;
+  bool dropped;
+  enum wl_data_device_manager_dnd_action supported_actions;
+} data_offer_ctx;
+
 typedef struct gfx_ctx_wayland_data
 {
 #ifdef HAVE_EGL
@@ -129,6 +138,9 @@ typedef struct gfx_ctx_wayland_data
    struct wl_touch *wl_touch;
    struct wl_seat *seat;
    struct wl_shm *shm;
+   struct wl_data_device_manager *data_device_manager;
+   struct wl_data_device *data_device;
+   data_offer_ctx *current_drag_offer;
 #ifdef HAVE_LIBDECOR
    struct libdecor *libdecor_context;
    struct libdecor_frame *libdecor_frame;
@@ -194,7 +206,7 @@ void handle_toplevel_close(void *data,
 
 void flush_wayland_fd(void *data);
 
-int create_anonymous_file(off_t size);
+int create_shm_file(off_t size);
 
 shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl,
    int width, int height, uint32_t format);
@@ -224,5 +236,9 @@ extern const struct wl_output_listener output_listener;
 extern const struct wl_registry_listener registry_listener;
 
 extern const struct wl_buffer_listener shm_buffer_listener;
+
+extern const struct wl_data_device_listener data_device_listener;
+
+extern const struct wl_data_offer_listener data_offer_listener;
 
 #endif

@@ -104,6 +104,10 @@
 #include "../../switch_performance_profiles.h"
 #endif
 
+#ifdef HAVE_MIST
+#include "../../steam/steam.h"
+#endif
+
 enum
 {
    ACTION_OK_LOAD_PRESET = 0,
@@ -320,6 +324,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST;
       case ACTION_OK_DL_CORE_INFORMATION_LIST:
          return MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_LIST;
+#ifdef HAVE_MIST
+      case ACTION_OK_DL_CORE_INFORMATION_STEAM_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_STEAM_LIST;
+#endif
       case ACTION_OK_DL_CORE_RESTORE_BACKUP_LIST:
          return MENU_ENUM_LABEL_DEFERRED_CORE_RESTORE_BACKUP_LIST;
       case ACTION_OK_DL_CORE_DELETE_BACKUP_LIST:
@@ -480,8 +488,14 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST;
       case ACTION_OK_DL_CORE_MANAGER_LIST:
          return MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST;
+#ifdef HAVE_MIST
+      case ACTION_OK_DL_CORE_MANAGER_STEAM_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_STEAM_LIST;
+#endif
       case ACTION_OK_DL_CORE_OPTION_OVERRIDE_LIST:
          return MENU_ENUM_LABEL_DEFERRED_CORE_OPTION_OVERRIDE_LIST;
+      case ACTION_OK_DL_REMAP_FILE_MANAGER_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_REMAP_FILE_MANAGER_LIST;
       default:
          break;
    }
@@ -1487,6 +1501,9 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_DRIVER_SETTINGS_LIST:
       case ACTION_OK_DL_CORE_SETTINGS_LIST:
       case ACTION_OK_DL_CORE_INFORMATION_LIST:
+#ifdef HAVE_MIST
+      case ACTION_OK_DL_CORE_INFORMATION_STEAM_LIST:
+#endif
       case ACTION_OK_DL_VIDEO_SETTINGS_LIST:
       case ACTION_OK_DL_VIDEO_HDR_SETTINGS_LIST:
       case ACTION_OK_DL_VIDEO_SYNCHRONIZATION_SETTINGS_LIST:
@@ -1565,7 +1582,11 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_CDROM_INFO_LIST:
       case ACTION_OK_DL_MANUAL_CONTENT_SCAN_LIST:
       case ACTION_OK_DL_CORE_MANAGER_LIST:
+#ifdef HAVE_MIST
+      case ACTION_OK_DL_CORE_MANAGER_STEAM_LIST:
+#endif
       case ACTION_OK_DL_CORE_OPTION_OVERRIDE_LIST:
+      case ACTION_OK_DL_REMAP_FILE_MANAGER_LIST:
          ACTION_OK_DL_LBL(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
          break;
       case ACTION_OK_DL_CDROM_INFO_DETAIL_LIST:
@@ -2208,7 +2229,7 @@ DEFAULT_ACTION_OK_SET(action_ok_cheat_file_load,      ACTION_OK_LOAD_CHEAT_FILE,
 DEFAULT_ACTION_OK_SET(action_ok_cheat_file_load_append,      ACTION_OK_LOAD_CHEAT_FILE_APPEND,       MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS)
 DEFAULT_ACTION_OK_SET(action_ok_record_configfile_load,      ACTION_OK_LOAD_RECORD_CONFIGFILE,       MENU_ENUM_LABEL_RECORDING_SETTINGS)
 DEFAULT_ACTION_OK_SET(action_ok_stream_configfile_load,      ACTION_OK_LOAD_STREAM_CONFIGFILE,       MENU_ENUM_LABEL_RECORDING_SETTINGS)
-DEFAULT_ACTION_OK_SET(action_ok_remap_file_load,      ACTION_OK_LOAD_REMAPPING_FILE,   MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS    )
+DEFAULT_ACTION_OK_SET(action_ok_remap_file_load,      ACTION_OK_LOAD_REMAPPING_FILE,   MENU_ENUM_LABEL_DEFERRED_REMAP_FILE_MANAGER_LIST)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 DEFAULT_ACTION_OK_SET(action_ok_shader_preset_load,   ACTION_OK_LOAD_PRESET   ,        MENU_ENUM_LABEL_SHADER_OPTIONS)
 DEFAULT_ACTION_OK_SET(action_ok_shader_pass_load,     ACTION_OK_LOAD_SHADER_PASS,      MENU_ENUM_LABEL_SHADER_OPTIONS)
@@ -3402,63 +3423,63 @@ static int generic_action_ok_remap_file_operation(const char *path,
       unsigned action_type)
 {
 #ifdef HAVE_CONFIGFILE
-   char directory[PATH_MAX_LENGTH];
-   char file[PATH_MAX_LENGTH];
-   char content_dir[PATH_MAX_LENGTH];
-   struct retro_system_info *system     = &runloop_state_get_ptr()->system.info;
-   const char *core_name                = system ? system->library_name : NULL;
-   const char *rarch_path_basename      = path_get(RARCH_PATH_BASENAME);
-   bool has_content                     = !string_is_empty(rarch_path_basename);
-   settings_t *settings                 = config_get_ptr();
-   const char *path_dir_input_remapping = settings->paths.directory_input_remapping;
+   char content_dir_name[PATH_MAX_LENGTH];
+   char remap_file_path[PATH_MAX_LENGTH];
+   rarch_system_info_t *system           = &runloop_state_get_ptr()->system;
+   const char *core_name                 = system ? system->info.library_name : NULL;
+   const char *rarch_path_basename       = path_get(RARCH_PATH_BASENAME);
+   bool has_content                      = !string_is_empty(rarch_path_basename);
+   settings_t *settings                  = config_get_ptr();
+   const char *directory_input_remapping = settings->paths.directory_input_remapping;
+   bool refresh                          = false;
 
-   directory[0]   = '\0';
-   file[0]        = '\0';
-   content_dir[0] = '\0';
+   content_dir_name[0] = '\0';
+   remap_file_path[0]  = '\0';
 
    /* Cannot perform remap file operation if we
     * have no core */
    if (string_is_empty(core_name))
       return menu_cbs_exit();
 
-   /* Get base remap file directory */
-   fill_pathname_join(
-         directory,
-         path_dir_input_remapping,
-         core_name,
-         sizeof(directory));
-
-   if (!path_is_directory(directory))
-      path_mkdir(directory);
-
    switch (action_type)
    {
       case ACTION_OK_REMAP_FILE_SAVE_CORE:
       case ACTION_OK_REMAP_FILE_REMOVE_CORE:
-         fill_pathname_join(file, core_name, core_name, sizeof(file));
+         fill_pathname_join_special_ext(remap_file_path,
+               directory_input_remapping, core_name,
+               core_name,
+               FILE_PATH_REMAP_EXTENSION,
+               sizeof(remap_file_path));
          break;
       case ACTION_OK_REMAP_FILE_SAVE_GAME:
       case ACTION_OK_REMAP_FILE_REMOVE_GAME:
          if (has_content)
-            fill_pathname_join(file, core_name,
-                  path_basename(rarch_path_basename), sizeof(file));
+            fill_pathname_join_special_ext(remap_file_path,
+                  directory_input_remapping, core_name,
+                  path_basename(rarch_path_basename),
+                  FILE_PATH_REMAP_EXTENSION,
+                  sizeof(remap_file_path));
          break;
       case ACTION_OK_REMAP_FILE_SAVE_CONTENT_DIR:
       case ACTION_OK_REMAP_FILE_REMOVE_CONTENT_DIR:
          if (has_content)
          {
-            fill_pathname_parent_dir_name(content_dir,
-                  rarch_path_basename, sizeof(content_dir));
-            fill_pathname_join(file, core_name,
-                  content_dir, sizeof(file));
+            fill_pathname_parent_dir_name(content_dir_name,
+                  rarch_path_basename, sizeof(content_dir_name));
+
+            fill_pathname_join_special_ext(remap_file_path,
+                  directory_input_remapping, core_name,
+                  content_dir_name,
+                  FILE_PATH_REMAP_EXTENSION,
+                  sizeof(remap_file_path));
          }
          break;
    }
 
    if (action_type < ACTION_OK_REMAP_FILE_REMOVE_CORE)
    {
-      if (!string_is_empty(file) &&
-          input_remapping_save_file(file))
+      if (!string_is_empty(remap_file_path) &&
+          input_remapping_save_file(remap_file_path))
       {
          switch (action_type)
          {
@@ -3486,29 +3507,29 @@ static int generic_action_ok_remap_file_operation(const char *path,
    }
    else
    {
-      if (!string_is_empty(file) &&
-          input_remapping_remove_file(file, path_dir_input_remapping))
+      if (!string_is_empty(remap_file_path) &&
+          (filestream_delete(remap_file_path) == 0))
       {
          switch (action_type)
          {
             case ACTION_OK_REMAP_FILE_REMOVE_CORE:
                if (retroarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
                {
-                  input_remapping_deinit();
+                  input_remapping_deinit(false);
                   input_remapping_set_defaults(false);
                }
                break;
             case ACTION_OK_REMAP_FILE_REMOVE_GAME:
                if (retroarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
                {
-                  input_remapping_deinit();
+                  input_remapping_deinit(false);
                   input_remapping_set_defaults(false);
                }
                break;
             case ACTION_OK_REMAP_FILE_REMOVE_CONTENT_DIR:
                if (retroarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL))
                {
-                  input_remapping_deinit();
+                  input_remapping_deinit(false);
                   input_remapping_set_defaults(false);
                }
                break;
@@ -3518,6 +3539,11 @@ static int generic_action_ok_remap_file_operation(const char *path,
                msg_hash_to_str(MSG_REMAP_FILE_REMOVED_SUCCESSFULLY),
                1, 100, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+         /* After removing a remap file, attempt to
+          * load any remaining remap file with the
+          * next highest priority */
+         config_load_remap(directory_input_remapping, system);
       }
       else
          runloop_msg_queue_push(
@@ -3525,6 +3551,10 @@ static int generic_action_ok_remap_file_operation(const char *path,
                1, 100, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
+
+   /* Refresh menu */
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 #endif
    return 0;
 }
@@ -5753,6 +5783,9 @@ DEFAULT_ACTION_OK_FUNC(action_ok_push_video_output_settings_list, ACTION_OK_DL_V
 DEFAULT_ACTION_OK_FUNC(action_ok_push_configuration_settings_list, ACTION_OK_DL_CONFIGURATION_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_core_settings_list, ACTION_OK_DL_CORE_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_core_information_list, ACTION_OK_DL_CORE_INFORMATION_LIST)
+#ifdef HAVE_MIST
+DEFAULT_ACTION_OK_FUNC(action_ok_push_core_information_steam_list, ACTION_OK_DL_CORE_INFORMATION_STEAM_LIST)
+#endif
 DEFAULT_ACTION_OK_FUNC(action_ok_push_core_restore_backup_list, ACTION_OK_DL_CORE_RESTORE_BACKUP_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_core_delete_backup_list, ACTION_OK_DL_CORE_DELETE_BACKUP_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_audio_settings_list, ACTION_OK_DL_AUDIO_SETTINGS_LIST)
@@ -5790,7 +5823,11 @@ DEFAULT_ACTION_OK_FUNC(action_ok_pl_thumbnails_updater_list, ACTION_OK_DL_PL_THU
 DEFAULT_ACTION_OK_FUNC(action_ok_push_manual_content_scan_list, ACTION_OK_DL_MANUAL_CONTENT_SCAN_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_manual_content_scan_dat_file, ACTION_OK_DL_MANUAL_CONTENT_SCAN_DAT_FILE)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_core_manager_list, ACTION_OK_DL_CORE_MANAGER_LIST)
+#ifdef HAVE_MIST
+DEFAULT_ACTION_OK_FUNC(action_ok_push_core_manager_steam_list, ACTION_OK_DL_CORE_MANAGER_STEAM_LIST)
+#endif
 DEFAULT_ACTION_OK_FUNC(action_ok_push_core_option_override_list, ACTION_OK_DL_CORE_OPTION_OVERRIDE_LIST)
+DEFAULT_ACTION_OK_FUNC(action_ok_push_remap_file_manager_list, ACTION_OK_DL_REMAP_FILE_MANAGER_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_core_options_list, ACTION_OK_DL_CORE_OPTIONS_LIST)
 
 static int action_ok_open_uwp_permission_settings(const char *path,
@@ -6009,8 +6046,8 @@ static void netplay_refresh_lan_cb(retro_task_t *task,
          struct netplay_host *host = &hosts->hosts[i];
          struct netplay_room *room = &net_st->room_list[i];
 
-         room->port = host->port;
-         room->gamecrc = host->content_crc;
+         room->port                = host->port;
+         room->gamecrc             = host->content_crc;
          strlcpy(room->retroarch_version, host->retroarch_version,
             sizeof(room->retroarch_version));
          strlcpy(room->nickname, host->nick,
@@ -7401,6 +7438,64 @@ int action_ok_core_lock(const char *path,
    return ret;
 }
 
+/* Do not declare this static - it is also used
+ * in menu_cbs_left.c and menu_cbs_right.c */
+int action_ok_core_set_standalone_exempt(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   const char *core_path = path;
+   bool exempt           = false;
+   int ret               = 0;
+
+   if (string_is_empty(core_path))
+      return -1;
+
+   /* Simply toggle current 'exempt' status */
+   exempt = !core_info_get_core_standalone_exempt(core_path);
+
+   if (!core_info_set_core_standalone_exempt(core_path, exempt))
+   {
+      const char *core_name = NULL;
+      core_info_t *core_info = NULL;
+      char msg[PATH_MAX_LENGTH];
+
+      msg[0] = '\0';
+
+      /* Need to fetch core name for error message */
+
+      /* If core is found, use display name */
+      if (core_info_find(core_path, &core_info) &&
+          core_info->display_name)
+         core_name = core_info->display_name;
+      /* If not, use core file name */
+      else
+         core_name = path_basename_nocompression(core_path);
+
+      /* Build error message */
+      strlcpy(
+            msg,
+            msg_hash_to_str(exempt ?
+                  MSG_CORE_SET_STANDALONE_EXEMPT_FAILED :
+                  MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED),
+            sizeof(msg));
+
+      if (!string_is_empty(core_name))
+         strlcat(msg, core_name, sizeof(msg));
+
+      /* Generate log + notification */
+      RARCH_ERR("%s\n", msg);
+
+      runloop_msg_queue_push(
+         msg,
+         1, 100, true,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+      ret = -1;
+   }
+
+   return ret;
+}
+
 static int action_ok_core_delete(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -7737,6 +7832,42 @@ static int action_ok_playlist_refresh(const char *path,
    return 0;
 }
 
+#ifdef HAVE_MIST
+static int action_ok_core_steam_install(
+      const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   steam_core_dlc_list_t *core_dlc_list = NULL;
+   steam_core_dlc_t *core_dlc = NULL;
+
+   if (MIST_IS_ERROR(steam_get_core_dlcs(&core_dlc_list, true))) return 0;
+
+   core_dlc = steam_get_core_dlc_by_name(core_dlc_list, label);
+   if (core_dlc == NULL) return 0;
+
+   steam_install_core_dlc(core_dlc);
+
+   return 0;
+}
+
+static int action_ok_core_steam_uninstall(
+      const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   steam_core_dlc_list_t *core_dlc_list = NULL;
+   steam_core_dlc_t *core_dlc = NULL;
+
+   if (MIST_IS_ERROR(steam_get_core_dlcs(&core_dlc_list, true))) return 0;
+
+   core_dlc = steam_get_core_dlc_by_name(core_dlc_list, label);
+   if (core_dlc == NULL) return 0;
+
+   steam_uninstall_core_dlc(core_dlc);
+
+   return 0;
+}
+#endif
+
 static int is_rdb_entry(enum msg_hash_enums enum_idx)
 {
    switch (enum_idx)
@@ -8013,6 +8144,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_CORE_SETTINGS,                       action_ok_push_core_settings_list},
          {MENU_ENUM_LABEL_CORE_INFORMATION,                    action_ok_push_core_information_list},
          {MENU_ENUM_LABEL_CORE_MANAGER_ENTRY,                  action_ok_push_core_information_list},
+#ifdef HAVE_MIST
+         {MENU_ENUM_LABEL_CORE_MANAGER_STEAM_ENTRY,            action_ok_push_core_information_steam_list},
+#endif
          {MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_LIST,            action_ok_push_core_restore_backup_list},
          {MENU_ENUM_LABEL_CORE_DELETE_BACKUP_LIST,             action_ok_push_core_delete_backup_list},
          {MENU_ENUM_LABEL_CONFIGURATION_SETTINGS,              action_ok_push_configuration_settings_list},
@@ -8036,6 +8170,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_SHADER_OPTIONS,                      action_ok_push_default},
          {MENU_ENUM_LABEL_CORE_OPTIONS,                        action_ok_push_core_options_list},
          {MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_LIST,           action_ok_push_core_option_override_list},
+         {MENU_ENUM_LABEL_REMAP_FILE_MANAGER_LIST,             action_ok_push_remap_file_manager_list},
          {MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,                  action_ok_push_default},
          {MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,        action_ok_push_default},
          {MENU_ENUM_LABEL_DISC_INFORMATION,                    action_ok_push_default},
@@ -8135,6 +8270,11 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_SCREEN_RESOLUTION,                   action_ok_video_resolution},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE,       action_ok_playlist_default_core},
          {MENU_ENUM_LABEL_CORE_MANAGER_LIST,                   action_ok_push_core_manager_list},
+#ifdef HAVE_MIST
+         {MENU_ENUM_LABEL_CORE_MANAGER_STEAM_LIST,             action_ok_push_core_manager_steam_list},
+         {MENU_ENUM_LABEL_CORE_STEAM_INSTALL,                  action_ok_core_steam_install},
+         {MENU_ENUM_LABEL_CORE_STEAM_UNINSTALL,                action_ok_core_steam_uninstall},
+#endif
          {MENU_ENUM_LABEL_EXPLORE_TAB,                         action_ok_push_default},
          {MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB,               action_ok_push_default},
       };
@@ -8769,6 +8909,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_ACTION_CORE_LOCK:
             BIND_ACTION_OK(cbs, action_ok_core_lock);
+            break;
+         case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:
+            BIND_ACTION_OK(cbs, action_ok_core_set_standalone_exempt);
             break;
          case MENU_SETTING_ACTION_VIDEO_FILTER_REMOVE:
             BIND_ACTION_OK(cbs, action_ok_video_filter_remove);

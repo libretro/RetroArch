@@ -499,6 +499,7 @@ struct ozone_handle
    float dimensions_sidebar_width; /* animated field */
    float sidebar_offset;
    float last_scale_factor;
+   float last_thumbnail_scale_factor;
    float pure_white[16];
 
    struct
@@ -1647,6 +1648,9 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_CORE_CREATE_BACKUP:
       case MENU_ENUM_LABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE:
       case MENU_ENUM_LABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE:
+      case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE:
+      case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR:
+      case MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SAVESTATE];
       case MENU_ENUM_LABEL_LOAD_STATE:
       case MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_LIST:
@@ -1691,7 +1695,6 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_CONTENT_SETTINGS:
       case MENU_ENUM_LABEL_UPDATE_ASSETS:
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
-      case MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_QUICKMENU];
@@ -1706,7 +1709,6 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
-      case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE:
       case MENU_ENUM_LABEL_SET_CORE_ASSOCIATION:
       case MENU_ENUM_LABEL_CORE_INFORMATION:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE];
@@ -1820,9 +1822,6 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING:
       case MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING:
       case MENU_ENUM_LABEL_CHEAT_DELETE_ALL:
-      case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE:
-      case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME:
-      case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR:
       case MENU_ENUM_LABEL_CORE_DELETE:
       case MENU_ENUM_LABEL_DELETE_PLAYLIST:
       case MENU_ENUM_LABEL_CORE_DELETE_BACKUP_LIST:
@@ -1830,12 +1829,16 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN_REMOVE:
       case MENU_ENUM_LABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE:
       case MENU_ENUM_LABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE:
+      case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE:
+      case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR:
+      case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CLOSE];
       case MENU_ENUM_LABEL_CORE_OPTIONS_RESET:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_UNDO];
       case MENU_ENUM_LABEL_CORE_OPTIONS_FLUSH:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FILE];
       case MENU_ENUM_LABEL_CORE_LOCK:
+      case MENU_ENUM_LABEL_CORE_SET_STANDALONE_EXEMPT:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE];
       case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_OSD];
@@ -1869,7 +1872,6 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
       case MENU_ENUM_LABEL_SCAN_DIRECTORY:
       case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST:
-      case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR:
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FOLDER];
@@ -2020,6 +2022,7 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
          else
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_OPTIONS];
       case MENU_SETTING_ACTION_CORE_OPTION_OVERRIDE_LIST:
+      case MENU_SETTING_ACTION_REMAP_FILE_MANAGER_LIST:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SETTING];
       case MENU_SETTING_ACTION_CORE_INPUT_REMAPPING_OPTIONS:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_REMAPPING_OPTIONS];
@@ -2094,29 +2097,27 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
          {
             input_id = MENU_SETTINGS_INPUT_BEGIN;
             if (type == input_id)
-               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SETTING];
-            if (type == input_id + 1)
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_ADC];
 #ifdef HAVE_LIBNX
             /* account for the additional split joycon option in Input User # Binds */
             input_id++;
 #endif
-            if (type == input_id + 2)
+            if (type == input_id + 1)
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS];
-            if (type == input_id + 3)
+            if (type == input_id + 2)
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_MOUSE];
-            if (type == input_id + 4)
+            if (type == input_id + 3)
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BIND_ALL];
-            if (type == input_id + 5)
+            if (type == input_id + 4)
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RELOAD];
-            if (type == input_id + 6)
+            if (type == input_id + 5)
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SAVING];
-            if ((type > (input_id + 30)) && (type < (input_id + 42)))
+            if ((type > (input_id + 29)) && (type < (input_id + 41)))
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_LGUN];
-            if (type == input_id + 42)
+            if (type == input_id + 41)
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_TURBO];
             /* align to use the same code of Quickmenu controls*/
-            input_id = input_id + 7;
+            input_id = input_id + 6;
          }
          else
          {
@@ -7067,6 +7068,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->last_height       = height;
    ozone->last_scale_factor = gfx_display_get_dpi_scale(p_disp,
          settings, width, height, false, false);
+   ozone->last_thumbnail_scale_factor = settings->floats.ozone_thumbnail_scale_factor;
 
    file_list_initialize(&ozone->selection_buf_old);
 
@@ -7494,9 +7496,13 @@ static void ozone_set_layout(
       ozone->dimensions_sidebar_width = (float)ozone->dimensions.sidebar_width_normal;
 
    ozone->dimensions.thumbnail_bar_width          =
-         ozone->dimensions.sidebar_width_normal -
-         ozone->dimensions.sidebar_entry_icon_size -
-         ozone->dimensions.sidebar_entry_icon_padding;
+         (ozone->dimensions.sidebar_width_normal -
+          ozone->dimensions.sidebar_entry_icon_size -
+          ozone->dimensions.sidebar_entry_icon_padding) *
+         ozone->last_thumbnail_scale_factor;
+   /* Prevent the thumbnail sidebar from growing too much and make the UI unusable. */
+   if (ozone->dimensions.thumbnail_bar_width > ozone->last_width / 2.0f)
+      ozone->dimensions.thumbnail_bar_width = ozone->last_width / 2.0f;
 
    ozone->dimensions.cursor_size                  = CURSOR_SIZE * scale_factor;
 
@@ -8014,6 +8020,16 @@ static int ozone_list_push(void *data, void *userdata,
             }
 #endif
 #endif
+#ifdef HAVE_MIST
+            if (settings->bools.menu_show_core_manager_steam && !settings->bools.kiosk_mode_enable)
+            {
+               MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
+                  info->list,
+                  MENU_ENUM_LABEL_CORE_MANAGER_STEAM_LIST,
+                  PARSE_ACTION,
+                  false);
+            }
+#endif
             if (!settings->bools.menu_content_show_settings && !string_is_empty(settings->paths.menu_content_show_settings_password))
             {
                MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
@@ -8158,6 +8174,7 @@ static void ozone_render(void *data,
     * disables optimisations and removes excess precision
     * (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323#c87) */
    volatile float scale_factor;
+   volatile float thumbnail_scale_factor;
    unsigned entries_end             = (unsigned)menu_entries_get_size();
    bool pointer_enabled             = false;
    unsigned language                = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
@@ -8172,12 +8189,15 @@ static void ozone_render(void *data,
     * factor have changed */
    scale_factor = gfx_display_get_dpi_scale(p_disp, settings,
          width, height, false, false);
+   thumbnail_scale_factor = settings->floats.ozone_thumbnail_scale_factor;
 
    if ((scale_factor != ozone->last_scale_factor) ||
+       (thumbnail_scale_factor != ozone->last_thumbnail_scale_factor) ||
        (width != ozone->last_width) ||
        (height != ozone->last_height))
    {
       ozone->last_scale_factor = scale_factor;
+      ozone->last_thumbnail_scale_factor = thumbnail_scale_factor;
       ozone->last_width        = width;
       ozone->last_height       = height;
 

@@ -2565,6 +2565,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS];
       case MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_LIST:
+      case MENU_ENUM_LABEL_REMAP_FILE_MANAGER_LIST:
          return xmb->textures.list[XMB_TEXTURE_SETTING];
       case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
       case MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST:
@@ -2595,6 +2596,9 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_CORE_CREATE_BACKUP:
       case MENU_ENUM_LABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE:
       case MENU_ENUM_LABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE:
+      case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE:
+      case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR:
+      case MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME:
          return xmb->textures.list[XMB_TEXTURE_SAVESTATE];
       case MENU_ENUM_LABEL_LOAD_STATE:
       case MENU_ENUM_LABEL_CONFIGURATIONS:
@@ -2630,7 +2634,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_DIRECTORY_SETTINGS:
       case MENU_ENUM_LABEL_SCAN_DIRECTORY:
       case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST:
-      case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR:
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT:
       case MENU_ENUM_LABEL_FAVORITES: /* "Start Directory" */
@@ -2667,7 +2670,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_CONTENT_SETTINGS:
       case MENU_ENUM_LABEL_UPDATE_ASSETS:
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
-      case MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME:
          return xmb->textures.list[XMB_TEXTURE_QUICKMENU];
@@ -2682,7 +2684,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
-      case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE:
       case MENU_ENUM_LABEL_SET_CORE_ASSOCIATION:
       case MENU_ENUM_LABEL_CORE_INFORMATION:
          return xmb->textures.list[XMB_TEXTURE_CORE];
@@ -2791,9 +2792,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING:
       case MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING:
       case MENU_ENUM_LABEL_CHEAT_DELETE_ALL:
-      case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE:
-      case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME:
-      case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR:
       case MENU_ENUM_LABEL_CORE_DELETE:
       case MENU_ENUM_LABEL_DELETE_PLAYLIST:
       case MENU_ENUM_LABEL_CORE_DELETE_BACKUP_LIST:
@@ -2801,12 +2799,16 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN_REMOVE:
       case MENU_ENUM_LABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE:
       case MENU_ENUM_LABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE:
+      case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE:
+      case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR:
+      case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME:
          return xmb->textures.list[XMB_TEXTURE_CLOSE];
       case MENU_ENUM_LABEL_CORE_OPTIONS_RESET:
          return xmb->textures.list[XMB_TEXTURE_UNDO];
       case MENU_ENUM_LABEL_CORE_OPTIONS_FLUSH:
          return xmb->textures.list[XMB_TEXTURE_FILE];
       case MENU_ENUM_LABEL_CORE_LOCK:
+      case MENU_ENUM_LABEL_CORE_SET_STANDALONE_EXEMPT:
          return xmb->textures.list[XMB_TEXTURE_CORE];
       case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
          return xmb->textures.list[XMB_TEXTURE_OSD];
@@ -3051,30 +3053,28 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          /* Input User # Binds only */
          {
             input_id = MENU_SETTINGS_INPUT_BEGIN;
-            if ( type == input_id)
-               return xmb->textures.list[XMB_TEXTURE_SETTING];
-            if ( type == input_id + 1)
+            if (type == input_id)
                return xmb->textures.list[XMB_TEXTURE_INPUT_ADC];
 #ifdef HAVE_LIBNX
             /* account for the additional split joycon option in Input # Binds */
             input_id++;
 #endif
-            if ( type == input_id + 2)
+            if (type == input_id + 1)
                return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
-            if ( type == input_id + 3)
+            if (type == input_id + 2)
                return xmb->textures.list[XMB_TEXTURE_INPUT_MOUSE];
-            if ( type == input_id + 4)
+            if (type == input_id + 3)
                return xmb->textures.list[XMB_TEXTURE_INPUT_BIND_ALL];
-            if ( type == input_id + 5)
+            if (type == input_id + 4)
                return xmb->textures.list[XMB_TEXTURE_RELOAD];
-            if ( type == input_id + 6)
+            if (type == input_id + 5)
                return xmb->textures.list[XMB_TEXTURE_SAVING];
-            if ((type > (input_id + 30)) && (type < (input_id + 42)))
+            if ((type > (input_id + 29)) && (type < (input_id + 41)))
                return xmb->textures.list[XMB_TEXTURE_INPUT_LGUN];
-            if ( type == input_id + 42)
+            if (type == input_id + 41)
                return xmb->textures.list[XMB_TEXTURE_INPUT_TURBO];
             /* align to use the same code of Quickmenu controls */
-            input_id = input_id + 7;
+            input_id = input_id + 6;
          }
          else
          {
@@ -3394,19 +3394,20 @@ static int xmb_draw_item(
 
    if (menu_xmb_vertical_fade_factor)
    {
-      float factor     = menu_xmb_vertical_fade_factor / 100.0f / 0.004f;
       float min_alpha  = 0.1f;
       float max_alpha  = (i == current) ? xmb->items_active_alpha : xmb->items_passive_alpha;
       float new_alpha  = node->alpha;
-      float top_margin = xmb->margins_screen_top;
       float icon_space = xmb->icon_spacing_vertical;
+      float icon_ratio = icon_space / height / icon_space * 4;
+      float scr_margin = xmb->margins_screen_top + (icon_space / icon_ratio / 400);
+      float factor     = menu_xmb_vertical_fade_factor / 100.0f / icon_ratio;
 
       /* Top */
-      if (node->y < 0)
-         new_alpha = (node->y + top_margin + (icon_space / 4)) / factor;
+      if (i < current)
+         new_alpha = (node->y + scr_margin) / factor;
       /* Bottom */
-      else if (node->y > (height - (top_margin * 2)) && node->y < (height - top_margin + icon_space))
-         new_alpha = (height - node->y - top_margin + (icon_space / 4)) / factor;
+      else if (i > current)
+         new_alpha = (height - node->y - scr_margin + icon_space) / factor;
       /* Rest need to reset after vertical wrap-around */
       else if (node->x == 0 && node->alpha > 0 && node->alpha != max_alpha)
          new_alpha = max_alpha;
@@ -7039,6 +7040,9 @@ static int xmb_list_push(void *data, void *userdata,
 #if defined(HAVE_NETWORKING) && defined(HAVE_ONLINE_UPDATER)
    bool menu_show_online_updater   = settings->bools.menu_show_online_updater;
 #endif
+#if defined(HAVE_MIST)
+   bool menu_show_core_manager_steam = settings->bools.menu_show_core_manager_steam;
+#endif
    bool menu_content_show_settings = settings->bools.menu_content_show_settings;
    const char *menu_content_show_settings_password =
       settings->paths.menu_content_show_settings_password;
@@ -7209,6 +7213,16 @@ static int xmb_list_push(void *data, void *userdata,
                      false);
             }
 #endif
+#endif
+#ifdef HAVE_MIST
+            if (menu_show_core_manager_steam && !kiosk_mode_enable)
+            {
+               MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
+                  info->list,
+                  MENU_ENUM_LABEL_CORE_MANAGER_STEAM_LIST,
+                  PARSE_ACTION,
+                  false);
+            }
 #endif
             if (  !menu_content_show_settings &&
                   !string_is_empty(menu_content_show_settings_password))

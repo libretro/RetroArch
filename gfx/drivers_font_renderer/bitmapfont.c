@@ -242,6 +242,7 @@ void bitmapfont_free_lut(bitmapfont_lut_t *font)
       {
          if (font->lut[i])
             free(font->lut[i]);
+         font->lut[i] = NULL;
       }
 
       free(font->lut);

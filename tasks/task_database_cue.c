@@ -557,7 +557,6 @@ int detect_scd_game(intfstream_t *fd, char *game_id, const char *filename)
 
 int detect_sat_game(intfstream_t *fd, char *game_id, const char *filename)
 {
-   char hyphen = '-';
    char raw_game_id[15];
    char raw_region_id[15];
    char region_id;

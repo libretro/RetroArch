@@ -628,8 +628,9 @@ static void gx_get_video_output_size(void *data,
 
 static void setup_video_mode(gx_video_t *gx)
 {
-   unsigned width, height;
-   char desc[64] = {0};
+   unsigned width  = 0;
+   unsigned height = 0;
+   char desc[64]   = {0};
 
    if (!gx->framebuf[0])
    {

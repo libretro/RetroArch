@@ -2160,9 +2160,10 @@ static void materialui_free_playlist_icon_list(materialui_handle_t *mui)
       /* Free file names */
       if (mui->textures.playlist.icons[i].playlist_file)
          free(mui->textures.playlist.icons[i].playlist_file);
-
       if (mui->textures.playlist.icons[i].image_file)
          free(mui->textures.playlist.icons[i].image_file);
+      mui->textures.playlist.icons[i].playlist_file = NULL;
+      mui->textures.playlist.icons[i].image_file    = NULL;
    }
 
    /* Free icons array and set list size to zero */
@@ -9345,6 +9346,16 @@ static int materialui_list_push(void *data, void *userdata,
             }
 #endif
 #endif
+#ifdef HAVE_MIST
+            if (settings->bools.menu_show_core_manager_steam)
+            {
+               MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
+                  info->list,
+                  MENU_ENUM_LABEL_CORE_MANAGER_STEAM_LIST,
+                  PARSE_ACTION,
+                  false);
+            }
+#endif
             if (settings->uints.menu_content_show_add_entry ==
                   MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB)
             {
@@ -10117,6 +10128,7 @@ static void materialui_list_insert(
          case FILE_TYPE_CORE:
          case MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS:
          case MENU_SETTING_ACTION_CORE_LOCK:
+         case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:
          case MENU_EXPLORE_TAB:
          case MENU_CONTENTLESS_CORES_TAB:
             node->icon_texture_index = MUI_TEXTURE_CORES;
@@ -10127,6 +10139,8 @@ static void materialui_list_insert(
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case MENU_SETTING_ACTION_CORE_OPTION_OVERRIDE_LIST:
+         case MENU_SETTING_ACTION_REMAP_FILE_MANAGER_LIST:
+         case MENU_SETTING_ACTION_REMAP_FILE_LOAD:
             node->icon_texture_index = MUI_TEXTURE_SETTINGS;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
@@ -10182,12 +10196,18 @@ static void materialui_list_insert(
          case MENU_SETTING_ACTION_AUDIO_DSP_PLUGIN_REMOVE:
          case MENU_SETTING_ACTION_GAME_SPECIFIC_CORE_OPTIONS_REMOVE:
          case MENU_SETTING_ACTION_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE:
+         case MENU_SETTING_ACTION_REMAP_FILE_REMOVE_CORE:
+         case MENU_SETTING_ACTION_REMAP_FILE_REMOVE_CONTENT_DIR:
+         case MENU_SETTING_ACTION_REMAP_FILE_REMOVE_GAME:
             node->icon_texture_index = MUI_TEXTURE_REMOVE;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case MENU_SETTING_ACTION_CORE_CREATE_BACKUP:
          case MENU_SETTING_ACTION_GAME_SPECIFIC_CORE_OPTIONS_CREATE:
          case MENU_SETTING_ACTION_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE:
+         case MENU_SETTING_ACTION_REMAP_FILE_SAVE_CORE:
+         case MENU_SETTING_ACTION_REMAP_FILE_SAVE_CONTENT_DIR:
+         case MENU_SETTING_ACTION_REMAP_FILE_SAVE_GAME:
             node->icon_texture_index = MUI_TEXTURE_SAVE_STATE;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;

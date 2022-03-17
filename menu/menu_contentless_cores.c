@@ -84,6 +84,7 @@ static void contentless_cores_free_info_entries(
 
          if (entry->licenses_str)
             free(entry->licenses_str);
+         entry->licenses_str = NULL;
 
          contentless_cores_free_runtime_info(&entry->runtime);
 
@@ -439,6 +440,10 @@ unsigned menu_displaylist_contentless_cores(file_list_t *list, settings_t *setti
                case MENU_CONTENTLESS_CORES_DISPLAY_SINGLE_PURPOSE:
                   core_valid = core_info->supports_no_game &&
                         core_info->single_purpose;
+                  break;
+               case MENU_CONTENTLESS_CORES_DISPLAY_CUSTOM:
+                  core_valid = core_info->supports_no_game &&
+                        !core_info->is_standalone_exempt;
                   break;
                default:
                   break;

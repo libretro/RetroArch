@@ -67,6 +67,10 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
              snprintf(s, len,
                    "Hold for slowmotion.");
              break;
+          case RARCH_VRR_RUNLOOP_TOGGLE:
+             snprintf(s, len,
+                   "Toggle exact content framerate sync.");
+             break;
           case RARCH_PAUSE_TOGGLE:
              snprintf(s, len,
                    "Toggle between paused and non-paused state.");

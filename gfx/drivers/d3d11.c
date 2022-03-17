@@ -457,6 +457,9 @@ static void d3d11_free_shader_preset(d3d11_video_t* d3d11)
       free(d3d11->shader_preset->pass[i].source.string.vertex);
       free(d3d11->shader_preset->pass[i].source.string.fragment);
       free(d3d11->pass[i].semantics.textures);
+      d3d11->shader_preset->pass[i].source.string.vertex   = NULL;
+      d3d11->shader_preset->pass[i].source.string.fragment = NULL;
+      d3d11->pass[i].semantics.textures                    = NULL;
       d3d11_release_shader(&d3d11->pass[i].shader);
       d3d11_release_texture(&d3d11->pass[i].rt);
       d3d11_release_texture(&d3d11->pass[i].feedback);
@@ -464,6 +467,7 @@ static void d3d11_free_shader_preset(d3d11_video_t* d3d11)
       for (j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
          free(d3d11->pass[i].semantics.cbuffers[j].uniforms);
+         d3d11->pass[i].semantics.cbuffers[j].uniforms = NULL;
          Release(d3d11->pass[i].buffers[j]);
       }
    }
@@ -1077,7 +1081,7 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    d3d11->back_buffer.desc.Height             = height;
    d3d11->back_buffer.desc.Format             = d3d11->shader_preset && d3d11->shader_preset->passes ? glslang_format_to_dxgi(d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format) : DXGI_FORMAT_R8G8B8A8_UNORM;
    d3d11->back_buffer.desc.BindFlags          = D3D11_BIND_RENDER_TARGET;
-   d3d11_init_texture(d3d11->device, &d3d11->back_buffer);            
+   d3d11_init_texture(d3d11->device, &d3d11->back_buffer);
 #endif
 
    dxgiFactory->lpVtbl->Release(dxgiFactory);
@@ -1769,6 +1773,8 @@ static bool d3d11_gfx_frame(
 #endif
 #ifdef HAVE_DXGI_HDR
    bool video_hdr_enable          = video_info->hdr_enable;
+   DXGI_FORMAT back_buffer_format = d3d11->shader_preset && d3d11->shader_preset->passes ? glslang_format_to_dxgi(d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format) : DXGI_FORMAT_R8G8B8A8_UNORM;
+   bool use_back_buffer           = back_buffer_format != d3d11->chain_formats[d3d11->chain_bit_depth];
 
    if (   d3d11->resize_chain || 
          (d3d11->hdr.enable != video_hdr_enable))
@@ -1820,7 +1826,7 @@ static bool d3d11_gfx_frame(
          memset(&d3d11->back_buffer, 0, sizeof(d3d11->back_buffer));
          d3d11->back_buffer.desc.Width              = video_width;
          d3d11->back_buffer.desc.Height             = video_height;
-         d3d11->back_buffer.desc.Format             = d3d11->shader_preset && d3d11->shader_preset->passes ? glslang_format_to_dxgi(d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format) : DXGI_FORMAT_R8G8B8A8_UNORM;
+         d3d11->back_buffer.desc.Format             = back_buffer_format;
          d3d11->back_buffer.desc.BindFlags          = D3D11_BIND_RENDER_TARGET;
          d3d11_init_texture(d3d11->device, &d3d11->back_buffer);
 
@@ -2050,7 +2056,7 @@ static bool d3d11_gfx_frame(
 
 
 #ifdef HAVE_DXGI_HDR
-   if(d3d11->hdr.enable)
+   if(d3d11->hdr.enable && use_back_buffer)
    {
       D3D11SetRenderTargets(context, 1, &d3d11->back_buffer.rt_view, NULL);
       D3D11ClearRenderTargetView(context, d3d11->back_buffer.rt_view, d3d11->clearcolor);
@@ -2161,7 +2167,7 @@ static bool d3d11_gfx_frame(
 
 #ifdef HAVE_DXGI_HDR
    /* Copy over back buffer to swap chain render targets */
-   if(d3d11->hdr.enable)
+   if(d3d11->hdr.enable && use_back_buffer)
    {
       ID3D11ShaderResourceView* nullSRV[1] = {NULL};
       D3D11SetRenderTargets(context, 1, &rtv, NULL);

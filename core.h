@@ -27,10 +27,6 @@
 
 RETRO_BEGIN_DECLS
 
-#ifdef HAVE_REWIND
-bool core_set_rewind_callbacks(void);
-#endif
-
 #ifdef HAVE_NETWORKING
 bool core_set_netplay_callbacks(void);
 

@@ -620,6 +620,16 @@ MSG_HASH(
    MENU_ENUM_LABEL_CORE_MANAGER_LIST,
    "core_manager_list"
    )
+#ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_STEAM_INSTALL,
+   "core_steam_install"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_STEAM_UNINSTALL,
+   "core_steam_uninstall"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_CPU_ARCHITECTURE,
    "system_information_cpu_architecture"
@@ -884,6 +894,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_LIST,
    "deferred_core_information_list"
    )
+#ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_STEAM_LIST,
+   "deferred_core_information_steam_list"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST,
    "core_updater"
@@ -892,6 +908,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST,
    "deferred_core_manager_list"
    )
+#ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_STEAM_LIST,
+   "deferred_core_manager_steam_list"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST,
    "deferred_cursor_manager_list"
@@ -1870,6 +1892,10 @@ MSG_HASH(
    "ozone_scroll_content_metadata"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "ozone_menu_thumbnail_scale_factor"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME,
    "materialui_menu_color_theme"
    )
@@ -2576,6 +2602,78 @@ MSG_HASH(
    "rdb_entry_genre"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_ACHIEVEMENTS,
+   "rdb_entry_achievements"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_CATEGORY,
+   "rdb_entry_category"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_LANGUAGE,
+   "rdb_entry_language"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_REGION,
+   "rdb_entry_region"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_CONSOLE_EXCLUSIVE,
+   "rdb_entry_console_exclusive"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_PLATFORM_EXCLUSIVE,
+   "rdb_entry_platform_exclusive"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_RUMBLE,
+   "rdb_entry_rumble"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_SCORE,
+   "rdb_entry_score"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_MEDIA,
+   "rdb_entry_media"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_CONTROLS,
+   "rdb_entry_controls"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_ARTSTYLE,
+   "rdb_entry_artstyle"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_GAMEPLAY,
+   "rdb_entry_gameplay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_NARRATIVE,
+   "rdb_entry_narrative"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_PACING,
+   "rdb_entry_pacing"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_PERSPECTIVE,
+   "rdb_entry_perspective"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_SETTING,
+   "rdb_entry_setting"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_VISUAL,
+   "rdb_entry_visual"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RDB_ENTRY_VEHICULAR,
+   "rdb_entry_vehicular"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_RDB_ENTRY_MAX_USERS,
    "rdb_entry_max_users"
    )
@@ -2692,6 +2790,18 @@ MSG_HASH(
    "record_use_output_directory"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_REMAP_FILE_MANAGER_LIST,
+   "deferred_remap_file_manager_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_REMAP_FILE_MANAGER_LIST,
+   "remap_file_manager_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_REMAP_FILE_INFO,
+   "remap_file_info"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_REMAP_FILE_LOAD,
    "remap_file_load"
    )
@@ -2719,6 +2829,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,
    "remap_file_remove_game"
    )
+
+
 MSG_HASH(
    MENU_ENUM_LABEL_RESTART_CONTENT,
    "restart_content"
@@ -3429,6 +3541,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX,
    "video_monitor_index"
    )
+#if defined(WIIU)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_WIIU_PREFER_DRC,
+   "video_wiiu_prefer_drc"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_X,
    "video_window_offset_x"
@@ -4058,6 +4176,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CORE_LOCK,
    "core_lock"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_SET_STANDALONE_EXEMPT,
+   "core_set_standalone_exempt"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CORE_DELETE,
@@ -4756,6 +4878,10 @@ MSG_HASH(
    "no_favorites"
    )
 #if defined(_3DS)
+MSG_HASH(
+   MENU_ENUM_LABEL_NEW3DS_SPEEDUP_ENABLE,
+   "new3ds_speedup_enable"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM,
    "video_3ds_lcd_bottom"

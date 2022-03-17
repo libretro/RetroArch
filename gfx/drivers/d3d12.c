@@ -458,12 +458,16 @@ static void d3d12_free_shader_preset(d3d12_video_t* d3d12)
       free(d3d12->shader_preset->pass[i].source.string.vertex);
       free(d3d12->shader_preset->pass[i].source.string.fragment);
       free(d3d12->pass[i].semantics.textures);
+      d3d12->shader_preset->pass[i].source.string.vertex   = NULL;
+      d3d12->shader_preset->pass[i].source.string.fragment = NULL;
+      d3d12->pass[i].semantics.textures                    = NULL;
       d3d12_release_texture(&d3d12->pass[i].rt);
       d3d12_release_texture(&d3d12->pass[i].feedback);
 
       for (j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
          free(d3d12->pass[i].semantics.cbuffers[j].uniforms);
+         d3d12->pass[i].semantics.cbuffers[j].uniforms = NULL;
          Release(d3d12->pass[i].buffers[j]);
       }
 
@@ -1016,8 +1020,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
 
       desc.CS.pShaderBytecode = D3DGetBufferPointer(cs_code);
       desc.CS.BytecodeLength  = D3DGetBufferSize(cs_code);
-      if (!D3D12CreateComputePipelineState(d3d12->device, &desc, &d3d12->mipmapgen_pipe))
-
+      if (FAILED(D3D12CreateComputePipelineState(d3d12->device, &desc, &d3d12->mipmapgen_pipe)))
          Release(cs_code);
       cs_code = NULL;
    }
@@ -1456,6 +1459,8 @@ static bool d3d12_gfx_frame(
 #endif
 #ifdef HAVE_DXGI_HDR
    bool video_hdr_enable          = video_info->hdr_enable;
+   DXGI_FORMAT back_buffer_format = d3d12->shader_preset && d3d12->shader_preset->passes ? glslang_format_to_dxgi(d3d12->pass[d3d12->shader_preset->passes - 1].semantics.format) : DXGI_FORMAT_R8G8B8A8_UNORM;
+   bool use_back_buffer           = back_buffer_format != d3d12->chain.formats[d3d12->chain.bit_depth];
    if (d3d12->resize_chain || (d3d12->hdr.enable != video_hdr_enable))
 #else
    if (d3d12->resize_chain)
@@ -1527,14 +1532,14 @@ static bool d3d12_gfx_frame(
                0, sizeof(d3d12->chain.back_buffer));
          d3d12->chain.back_buffer.desc.Width  = video_width;
          d3d12->chain.back_buffer.desc.Height = video_height;
-         d3d12->chain.back_buffer.desc.Format = d3d12->shader_preset && d3d12->shader_preset->passes ? glslang_format_to_dxgi(d3d12->pass[d3d12->shader_preset->passes - 1].semantics.format) : DXGI_FORMAT_R8G8B8A8_UNORM;
+         d3d12->chain.back_buffer.desc.Format = back_buffer_format;
          d3d12->chain.back_buffer.desc.Flags  = 
-            D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+               D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
          d3d12->chain.back_buffer.srv_heap    = &d3d12->desc.srv_heap;
          d3d12->chain.back_buffer.rt_view.ptr = 
-              d3d12->desc.rtv_heap.cpu.ptr 
-            + countof(d3d12->chain.renderTargets) 
-            * d3d12->desc.rtv_heap.stride;
+               d3d12->desc.rtv_heap.cpu.ptr 
+               + countof(d3d12->chain.renderTargets) 
+               * d3d12->desc.rtv_heap.stride;
          d3d12_init_texture(d3d12->device, &d3d12->chain.back_buffer);
 
          dxgi_swapchain_color_space(d3d12->chain.handle,
@@ -1853,7 +1858,7 @@ static bool d3d12_gfx_frame(
          d3d12->chain.handle);
 
 #ifdef HAVE_DXGI_HDR
-   if(d3d12->hdr.enable)
+   if(d3d12->hdr.enable && use_back_buffer)
    {
       d3d12_resource_transition(
             d3d12->queue.cmd, d3d12->chain.back_buffer.handle,
@@ -1995,7 +2000,7 @@ static bool d3d12_gfx_frame(
 
 #ifdef HAVE_DXGI_HDR
    /* Copy over back buffer to swap chain render targets */
-   if (d3d12->hdr.enable)
+   if (d3d12->hdr.enable && use_back_buffer)
    {
       d3d12_resource_transition(
          d3d12->queue.cmd,
