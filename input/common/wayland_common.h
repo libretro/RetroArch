@@ -215,7 +215,7 @@ void shm_buffer_paint_checkerboard(shm_buffer_t *buffer,
       int width, int height, int scale,
       size_t chk, uint32_t bg, uint32_t fg);
 
-void draw_splash_screen(gfx_ctx_wayland_data_t *wl);
+bool draw_splash_screen(gfx_ctx_wayland_data_t *wl);
 
 extern const struct wl_keyboard_listener keyboard_listener;
 

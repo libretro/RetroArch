@@ -1027,6 +1027,9 @@ shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
    stride = width * 4;
    size = stride * height;
 
+   if (size <= 0)
+      return NULL;
+
    fd = create_shm_file(size);
    if (fd < 0) {
       RARCH_ERR("[Wayland] [SHM]: Creating a buffer file for %d B failed: %s\n",
@@ -1084,7 +1087,7 @@ void shm_buffer_paint_checkerboard(shm_buffer_t *buffer,
 }
 
 
-void draw_splash_screen(gfx_ctx_wayland_data_t *wl)
+bool draw_splash_screen(gfx_ctx_wayland_data_t *wl)
 {
    shm_buffer_t *buffer;
 
@@ -1092,6 +1095,10 @@ void draw_splash_screen(gfx_ctx_wayland_data_t *wl)
       wl->width * wl->buffer_scale,
       wl->height * wl->buffer_scale,
       WL_SHM_FORMAT_XRGB8888);
+
+   if (buffer == NULL)
+     return false;
+
    shm_buffer_paint_checkerboard(buffer, wl->width,
       wl->height, wl->buffer_scale,
       16, 0xffbcbcbc, 0xff8e8e8e);
@@ -1103,5 +1110,6 @@ void draw_splash_screen(gfx_ctx_wayland_data_t *wl)
          wl->width * wl->buffer_scale,
          wl->height * wl->buffer_scale);
    wl_surface_commit(wl->surface);
+   return true;
 }
 
