@@ -1875,6 +1875,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_UNLOAD_CORE:
          {
+            bool load_dummy_core            = data ? *(bool*)data : true;
             bool contentless                = false;
             bool is_inited                  = false;
             content_ctx_info_t content_info = {0};
@@ -1936,7 +1937,7 @@ bool command_event(enum event_command cmd, void *data)
             else
                input_remapping_restore_global_config(true);
 
-            if (is_inited)
+            if (is_inited && load_dummy_core)
             {
 #ifdef HAVE_MENU
                if (  (settings->uints.quit_on_close_content == QUIT_ON_CLOSE_CONTENT_CLI && global->launched_from_cli)

@@ -8061,23 +8061,73 @@ int generic_menu_entry_action(
    }
 #endif
 
-   if (menu_st->pending_close_content)
+   if (menu_st->pending_close_content ||
+       menu_st->pending_env_shutdown_flush)
    {
-      const char *content_path  = path_get(RARCH_PATH_CONTENT);
-      const char *menu_flush_to = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
+      const char *content_path  = menu_st->pending_env_shutdown_flush ?
+            menu_st->pending_env_shutdown_content_path :
+            path_get(RARCH_PATH_CONTENT);
+      const char *deferred_path = menu ? menu->deferred_path : NULL;
+      const char *flush_target  = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
+      size_t stack_offset       = 1;
+      bool reset_navigation     = true;
 
-      /* Flush to playlist entry menu if launched via playlist */
-      if (menu &&
-          !string_is_empty(menu->deferred_path) &&
-          !string_is_empty(content_path) &&
-          string_is_equal(menu->deferred_path, content_path))
-         menu_flush_to = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
+      /* Loop backwards through the menu stack to
+       * find a known reference point */
+      while (menu_stack && (menu_stack->size >= stack_offset))
+      {
+         const char *parent_label = NULL;
 
-      command_event(CMD_EVENT_UNLOAD_CORE, NULL);
-      menu_entries_flush_stack(menu_flush_to, 0);
+         file_list_get_at_offset(menu_stack,
+               menu_stack->size - stack_offset,
+               NULL, &parent_label, NULL, NULL);
+
+         if (string_is_empty(parent_label))
+            continue;
+
+         /* If core was launched via a playlist, flush
+          * to playlist entry menu */
+         if (string_is_equal(parent_label,
+                  msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)) &&
+             (!string_is_empty(deferred_path) &&
+              !string_is_empty(content_path) &&
+              string_is_equal(deferred_path, content_path)))
+         {
+            flush_target = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
+            break;
+         }
+         /* If core was launched via standalone cores menu,
+          * flush to standalone cores menu */
+         else if (string_is_equal(parent_label,
+                        msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB)) ||
+                  string_is_equal(parent_label,
+                        msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST)))
+         {
+            flush_target     = parent_label;
+            reset_navigation = false;
+            break;
+         }
+
+         stack_offset++;
+      }
+
+      if (!menu_st->pending_env_shutdown_flush)
+         command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+
+      menu_entries_flush_stack(flush_target, 0);
+      /* An annoyance - some menu drivers (Ozone...) call
+       * RARCH_MENU_CTL_SET_PREVENT_POPULATE in awkward
+       * places, which can cause breakage here when flushing
+       * the menu stack. We therefore have to force a
+       * RARCH_MENU_CTL_UNSET_PREVENT_POPULATE */
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
-      menu_st->selection_ptr         = 0;
-      menu_st->pending_close_content = false;
+
+      if (reset_navigation)
+         menu_st->selection_ptr = 0;
+
+      menu_st->pending_close_content                = false;
+      menu_st->pending_env_shutdown_flush           = false;
+      menu_st->pending_env_shutdown_content_path[0] = '\0';
    }
 
    return ret;
