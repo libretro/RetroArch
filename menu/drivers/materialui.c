@@ -9239,7 +9239,7 @@ static int materialui_list_push(void *data, void *userdata,
             }
             else
             {
-               if (system->load_no_content)
+               if (system && system->load_no_content)
                {
                   MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
                         info->list,

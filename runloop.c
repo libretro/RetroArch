@@ -1900,48 +1900,34 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_SHUTDOWN:
-         RARCH_LOG("[Environ]: SHUTDOWN.\n");
-
-         /* This case occurs when a core (internally) requests
-          * a shutdown event. Must save runtime log file here,
-          * since normal command.c CMD_EVENT_CORE_DEINIT event
-          * will not occur until after the current content has
-          * been cleared (causing log to be skipped) */
-         runloop_runtime_log_deinit(runloop_st,
-               settings->bools.content_runtime_log,
-               settings->bools.content_runtime_log_aggregate,
-               settings->paths.directory_runtime_log,
-               settings->paths.directory_playlist);
-
-         /* Similarly, since the CMD_EVENT_CORE_DEINIT will
-          * be called *after* the runloop state has been
-          * cleared, must also perform the following actions
-          * here:
-          * - Disable any active config overrides
-          * - Unload any active input remaps */
-#ifdef HAVE_CONFIGFILE
-         if (runloop_st->overrides_active)
-         {
-            /* Reload the original config */
-            config_unload_override();
-            runloop_st->overrides_active = false;
-         }
+      {
+#ifdef HAVE_MENU
+         struct menu_state *menu_st = menu_state_get_ptr();
 #endif
-         if (     runloop_st->remaps_core_active
-               || runloop_st->remaps_content_dir_active
-               || runloop_st->remaps_game_active
-               || !string_is_empty(runloop_st->name.remapfile)
-            )
-         {
-            input_remapping_deinit(true);
-            input_remapping_set_defaults(true);
-         }
-         else
-            input_remapping_restore_global_config(true);
+         /* This case occurs when a core (internally)
+          * requests a shutdown event */
+         RARCH_LOG("[Environ]: SHUTDOWN.\n");
 
          runloop_st->shutdown_initiated      = true;
          runloop_st->core_shutdown_initiated = true;
+#ifdef HAVE_MENU
+         /* Ensure that menu stack is flushed appropriately
+          * after the core has stopped running */
+         if (menu_st)
+         {
+            const char *content_path = path_get(RARCH_PATH_CONTENT);
+
+            menu_st->pending_env_shutdown_flush = true;
+            if (!string_is_empty(content_path))
+               strlcpy(menu_st->pending_env_shutdown_content_path,
+                     content_path,
+                     sizeof(menu_st->pending_env_shutdown_content_path));
+            else
+               menu_st->pending_env_shutdown_content_path[0] = '\0';
+         }
+#endif
          break;
+      }
 
       case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
          if (system)
@@ -6531,30 +6517,36 @@ static enum runloop_state_enum runloop_check_state(
          if (runloop_exec)
             runloop_exec = false;
 
-         if (runloop_st->core_shutdown_initiated &&
-               settings->bools.load_dummy_on_core_shutdown)
+         if (runloop_st->core_shutdown_initiated)
          {
-            content_ctx_info_t content_info;
+            bool load_dummy_core = false;
 
-            content_info.argc               = 0;
-            content_info.argv               = NULL;
-            content_info.args               = NULL;
-            content_info.environ_get        = NULL;
+            runloop_st->core_shutdown_initiated = false;
 
-            if (task_push_start_dummy_core(&content_info))
+            /* Check whether dummy core should be loaded
+             * instead of exiting RetroArch completely
+             * (aborts shutdown if invoked) */
+            if (settings->bools.load_dummy_on_core_shutdown)
             {
-               /* Loads dummy core instead of exiting RetroArch completely.
-                * Aborts core shutdown if invoked. */
-               runloop_st->shutdown_initiated      = false;
-               runloop_st->core_shutdown_initiated = false;
+               load_dummy_core                = true;
+               runloop_st->shutdown_initiated = false;
             }
-            else
-               quit_runloop              = true;
+
+            /* Unload current core, and load dummy if
+             * required */
+            if (!command_event(CMD_EVENT_UNLOAD_CORE, &load_dummy_core))
+            {
+               runloop_st->shutdown_initiated = true;
+               quit_runloop                   = true;
+            }
+
+            if (!load_dummy_core)
+               quit_runloop = true;
          }
          else
             quit_runloop                 = true;
 
-         runloop_st->core_running   = false;
+         runloop_st->core_running        = false;
 
          if (quit_runloop)
          {
