@@ -156,8 +156,7 @@ typedef struct settings
       unsigned input_joypad_index[MAX_USERS];
       unsigned input_device[MAX_USERS];
       unsigned input_mouse_index[MAX_USERS];
-      /* Set by autoconfiguration in joypad_autoconfig_dir.
-       * Does not override main binds. */
+
       unsigned input_libretro_device[MAX_USERS];
       unsigned input_analog_dpad_mode[MAX_USERS];
 
@@ -369,6 +368,7 @@ typedef struct settings
       float menu_ticker_speed;
       float menu_rgui_particle_effect_speed;
       float menu_screensaver_animation_speed;
+      float ozone_thumbnail_scale_factor;
 
       float audio_max_timing_skew;
       float audio_volume; /* dB scale. */
@@ -565,6 +565,7 @@ typedef struct settings
       bool video_memory_show;
       bool video_msg_bgcolor_enable;
       bool video_3ds_lcd_bottom;
+      bool video_wiiu_prefer_drc;
       bool video_notch_write_over_enable;
 #ifdef HAVE_VIDEO_LAYOUT
       bool video_layout_enable;
@@ -658,6 +659,9 @@ typedef struct settings
       bool menu_horizontal_animation;
       bool menu_scroll_fast;
       bool menu_show_online_updater;
+#ifdef HAVE_MIST
+      bool menu_show_core_manager_steam;
+#endif
       bool menu_show_core_updater;
       bool menu_show_load_core;
       bool menu_show_dropbox;
@@ -921,6 +925,9 @@ typedef struct settings
       bool ai_service_pause;
 
       bool gamemode_enable;
+#ifdef _3DS
+      bool new3ds_speedup_enable;
+#endif
    } bools;
 
 } settings_t;

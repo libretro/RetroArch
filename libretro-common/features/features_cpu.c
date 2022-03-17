@@ -46,8 +46,8 @@
 #if defined(_XBOX360)
 #include <PPCIntrinsics.h>
 #elif !defined(__MACH__) && (defined(__POWERPC__) || defined(__powerpc__) || defined(__ppc__) || defined(__PPC64__) || defined(__powerpc64__))
-#ifndef _PPU_INTRINSICS_H	
-#include <ppu_intrinsics.h>	
+#ifndef _PPU_INTRINSICS_H
+#include <ppu_intrinsics.h>
 #endif
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(ANDROID) || defined(__QNX__) || defined(DJGPP)
 /* POSIX_MONOTONIC_CLOCK is not being defined in Android headers despite support being present. */
@@ -242,7 +242,7 @@ retro_time_t cpu_features_get_time_usec(void)
    return (svcGetSystemTick() * 10) / 192;
 #elif defined(_3DS)
    return osGetTime() * 1000;
-#elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__) || defined(DJGPP)
+#elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__)
    struct timespec tv = {0};
    if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
       return 0;
@@ -253,6 +253,8 @@ retro_time_t cpu_features_get_time_usec(void)
    return ps2_clock() / PS2_CLOCKS_PER_MSEC * 1000;
 #elif defined(VITA) || defined(PSP)
    return sceKernelGetSystemTimeWide();
+#elif defined(DJGPP)
+   return uclock() * 1000000LL / UCLOCKS_PER_SEC;
 #else
 #error "Your platform does not have a timer function implemented in cpu_features_get_time_usec(). Cannot continue."
 #endif
@@ -868,6 +870,35 @@ end:
    {
       size_t len_size = len;
       sysctlbyname("machdep.cpu.brand_string", name, &len_size, NULL, 0);
+   }
+#elif defined(__linux__)
+   if (!name)
+      return;
+   {
+      char *model_name, line[128];
+      RFILE *fp = filestream_open("/proc/cpuinfo",
+            RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+      if (!fp)
+         return;
+
+      while (filestream_gets(fp, line, sizeof(line)))
+      {
+         if (strncmp(line, "model name", 10))
+            continue;
+
+         if ((model_name = strstr(line + 10, ": ")))
+         {
+            model_name += 2;
+            strncpy(name, model_name, len);
+            name[len - 1] = '\0';
+         }
+
+         break;
+      }
+
+      filestream_close(fp);
    }
 #else
    if (!name)

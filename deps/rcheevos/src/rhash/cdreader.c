@@ -134,7 +134,7 @@ static void* cdreader_open_bin_track(const char* path, uint32_t track)
     size_t size;
 
     rc_file_seek(cdrom->file_handle, 0, SEEK_END);
-    size = ftell(cdrom->file_handle);
+    size = rc_file_tell(cdrom->file_handle);
 
     if ((size % 2352) == 0)
     {

@@ -59,6 +59,10 @@
 #include "../../cheevos/cheevos_menu.h"
 #endif
 
+#ifdef HAVE_MIST
+#include "../../steam/steam.h"
+#endif
+
 #ifndef BIND_ACTION_GET_VALUE
 #define BIND_ACTION_GET_VALUE(cbs, name) (cbs)->action_get_value = (name)
 #endif
@@ -136,7 +140,7 @@ static void menu_action_setting_disp_set_label_cheevos_entry(
 }
 #endif
 
-static void menu_action_setting_disp_set_label_remap_file_load(
+static void menu_action_setting_disp_set_label_remap_file_info(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
@@ -145,12 +149,21 @@ static void menu_action_setting_disp_set_label_remap_file_load(
       char *s2, size_t len2)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
+   const char *remap_path      = runloop_st->name.remapfile;
+   const char *remap_file      = NULL;
 
+   *s = '\0';
    *w = 19;
+
+   if (!string_is_empty(remap_path))
+      remap_file = path_basename_nocompression(remap_path);
+
+   if (!string_is_empty(remap_file))
+      strlcpy(s, remap_file, len);
+   else
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
+
    strlcpy(s2, path, len2);
-   if (!string_is_empty(runloop_st->name.remapfile))
-      fill_pathname_base(s, runloop_st->name.remapfile,
-            len);
 }
 
 static void menu_action_setting_disp_set_label_configurations(
@@ -519,6 +532,48 @@ static void menu_action_setting_disp_set_label_core_manager_entry(
    }
 }
 
+#ifdef HAVE_MIST
+static void menu_action_setting_disp_set_label_core_manager_steam_entry(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   steam_core_dlc_list_t *core_dlc_list = NULL;
+   steam_core_dlc_t *core_dlc = NULL;
+   bool dlc_installed = false;
+
+   *s = '\0';
+   *w = 0;
+
+   if (MIST_IS_ERROR(steam_get_core_dlcs(&core_dlc_list, true))) return;
+
+   strlcpy(s2, path, len2);
+
+   core_dlc = steam_get_core_dlc_by_name(core_dlc_list, path);
+   if (core_dlc == NULL) return;
+
+   MistResult result = mist_steam_apps_is_dlc_installed(core_dlc->app_id, &dlc_installed);
+
+   if (MIST_IS_ERROR(result))
+   {
+      RARCH_ERR("[Steam]: Failed to get dlc install status (%d-%d)\n", MIST_UNPACK_RESULT(result));
+      return;
+   }
+
+   if (dlc_installed)
+   {
+      s[0] = '[';
+      s[1] = '#';
+      s[2] = ']';
+      s[3] = '\0';
+      *w = (unsigned)STRLEN_CONST("[#]");
+   }
+}
+#endif
+
 static void menu_action_setting_disp_set_label_contentless_core(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -715,6 +770,40 @@ static void menu_action_setting_disp_set_label_core_lock(
     *   don't want to perform disk access every frame */
    if (core_info_find(path, &core_info) &&
        core_info->is_locked)
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
+   else
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+
+   *w  = (unsigned)strlen(s);
+}
+
+static void menu_action_setting_disp_set_label_core_set_standalone_exempt(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   core_info_t *core_info = NULL;
+   const char *alt        = list->list[i].alt
+         ? list->list[i].alt
+         : list->list[i].path;
+   *s                     = '\0';
+   *w                     = 0;
+
+   if (alt)
+      strlcpy(s2, alt, len2);
+
+   /* Check whether core is excluded from the
+    * contentless cores menu
+    * > Note: We search core_info here instead of
+    *   calling core_info_get_core_standalone_exempt()
+    *   since we don't want to perform disk access
+    *   every frame */
+   if (core_info_find(path, &core_info) &&
+       core_info->supports_no_game &&
+       core_info->is_standalone_exempt)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
@@ -1807,9 +1896,9 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
                   menu_action_setting_disp_set_label_cheat_num_passes);
 #endif
             break;
-         case MENU_ENUM_LABEL_REMAP_FILE_LOAD:
+         case MENU_ENUM_LABEL_REMAP_FILE_INFO:
             BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_remap_file_load);
+                  menu_action_setting_disp_set_label_remap_file_info);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -1931,6 +2020,12 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_core_manager_entry);
             break;
+#ifdef HAVE_MIST
+         case MENU_ENUM_LABEL_CORE_MANAGER_STEAM_ENTRY:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_core_manager_steam_entry);
+            break;
+#endif
          case MENU_ENUM_LABEL_CONTENTLESS_CORE:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_contentless_core);
@@ -2168,6 +2263,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
       case MENU_SETTING_ACTION_CORE_LOCK:
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_core_lock);
+         break;
+      case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:
+         BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_core_set_standalone_exempt);
          break;
       case 32: /* Recent history entry */
       case 65535: /* System info entry */

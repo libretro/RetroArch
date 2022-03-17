@@ -307,6 +307,13 @@ static const struct retro_keybind retro_keybinds_1[] = {
    {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE, AXIS_NONE,
+      MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE, RETROK_UNKNOWN,
+      RARCH_VRR_RUNLOOP_TOGGLE, NO_BTN, NO_BTN, 0,
+      true
+   },
+   {
+      NULL, NULL,
+      AXIS_NONE, AXIS_NONE, AXIS_NONE,
       MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY, RETROK_UNKNOWN,
       RARCH_LOAD_STATE_KEY, NO_BTN, NO_BTN, 0,
       true
@@ -889,6 +896,13 @@ static const struct retro_keybind retro_keybinds_1[] = {
    {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE, AXIS_NONE,
+      MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE, RETROK_UNKNOWN,
+      RARCH_VRR_RUNLOOP_TOGGLE, NO_BTN, NO_BTN, 0,
+      true
+   },
+   {
+      NULL, NULL,
+      AXIS_NONE, AXIS_NONE, AXIS_NONE,
       MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY, RETROK_UNKNOWN,
       RARCH_LOAD_STATE_KEY, NO_BTN, NO_BTN, 0,
       true
@@ -1466,6 +1480,13 @@ static const struct retro_keybind retro_keybinds_1[] = {
       AXIS_NONE, AXIS_NONE, AXIS_NONE,
       MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY, RETROK_e,
       RARCH_SLOWMOTION_HOLD_KEY, NO_BTN, NO_BTN, 0,
+      true
+   },
+   {
+      NULL, NULL,
+      AXIS_NONE, AXIS_NONE, AXIS_NONE,
+      MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE, RETROK_UNKNOWN,
+      RARCH_VRR_RUNLOOP_TOGGLE, NO_BTN, NO_BTN, 0,
       true
    },
    {

@@ -478,6 +478,7 @@ static void core_info_copy(core_info_t *src, core_info_t *dst)
    dst->database_match_archive_member = src->database_match_archive_member;
    dst->is_experimental               = src->is_experimental;
    dst->is_locked                     = src->is_locked;
+   dst->is_standalone_exempt          = src->is_standalone_exempt;
    dst->is_installed                  = src->is_installed;
 }
 
@@ -574,6 +575,7 @@ static void core_info_transfer(core_info_t *src, core_info_t *dst)
    dst->database_match_archive_member = src->database_match_archive_member;
    dst->is_experimental               = src->is_experimental;
    dst->is_locked                     = src->is_locked;
+   dst->is_standalone_exempt          = src->is_standalone_exempt;
    dst->is_installed                  = src->is_installed;
 }
 
@@ -789,6 +791,9 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
       core_info_free(context.core_info);
       free(context.core_info);
    }
+
+   if (!core_info_cache_list)
+      goto end;
 
    /* If info cache file has the wrong version
     * number, discard it */
@@ -1279,19 +1284,20 @@ typedef struct
 {
    const char *filename;
    uint32_t hash;
-} core_lock_file_path_t;
+} core_aux_file_path_t;
 
 typedef struct
 {
-   core_lock_file_path_t *list;
+   core_aux_file_path_t *list;
    size_t size;
-} core_lock_file_path_list_t;
+} core_aux_file_path_list_t;
 
 typedef struct
 {
    struct string_list *dir_list;
    core_file_path_list_t *core_list;
-   core_lock_file_path_list_t *lock_list;
+   core_aux_file_path_list_t *lock_list;
+   core_aux_file_path_list_t *standalone_exempt_list;
 } core_path_list_t;
 
 static uint32_t core_info_hash_string(const char *str)
@@ -1322,6 +1328,13 @@ static void core_info_path_list_free(core_path_list_t *path_list)
       free(path_list->lock_list);
    }
 
+   if (path_list->standalone_exempt_list)
+   {
+      if (path_list->standalone_exempt_list->list)
+         free(path_list->standalone_exempt_list->list);
+      free(path_list->standalone_exempt_list);
+   }
+
    if (path_list->dir_list)
       string_list_free(path_list->dir_list);
 
@@ -1349,22 +1362,30 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
       goto error;
 
    /* Allocate list containers */
-   path_list->dir_list  = string_list_new();
-   path_list->core_list = (core_file_path_list_t*)calloc(1,
-         sizeof(*path_list->core_list));
-   path_list->lock_list = (core_lock_file_path_list_t*)calloc(1,
-         sizeof(*path_list->lock_list));
+   path_list->dir_list               = string_list_new();
+   path_list->core_list              = (core_file_path_list_t*)
+         calloc(1, sizeof(*path_list->core_list));
+   path_list->lock_list              = (core_aux_file_path_list_t*)
+         calloc(1, sizeof(*path_list->lock_list));
+   path_list->standalone_exempt_list = (core_aux_file_path_list_t*)
+         calloc(1, sizeof(*path_list->standalone_exempt_list));
 
    if (   !path_list->dir_list
        || !path_list->core_list 
-       || !path_list->lock_list)
+       || !path_list->lock_list
+       || !path_list->standalone_exempt_list)
       goto error;
 
    /* Get list of file extensions to include
-    * (core + lock file) */
-   fill_pathname_join_delim(exts,
-         core_exts, FILE_PATH_LOCK_EXTENSION_NO_DOT,
-         '|', sizeof(exts));
+    * > core + lock */
+   strlcpy(exts, core_exts, sizeof(exts));
+   strlcat(exts, "|" FILE_PATH_LOCK_EXTENSION_NO_DOT,
+         sizeof(exts));
+#if defined(HAVE_DYNAMIC)
+   /* > 'standalone exempt' */
+   strlcat(exts, "|" FILE_PATH_STANDALONE_EXEMPT_EXTENSION_NO_DOT,
+         sizeof(exts));
+#endif
 
    /* Fetch core directory listing */
    dir_list_ok = dir_list_append(path_list->dir_list,
@@ -1393,15 +1414,19 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
 #endif
 
    /* Allocate sub lists */
-   path_list->core_list->list = (core_file_path_t*)
+   path_list->core_list->list              = (core_file_path_t*)
          malloc(path_list->dir_list->size *
                sizeof(*path_list->core_list->list));
-   path_list->lock_list->list = (core_lock_file_path_t*)
+   path_list->lock_list->list              = (core_aux_file_path_t*)
          malloc(path_list->dir_list->size *
                sizeof(*path_list->lock_list->list));
+   path_list->standalone_exempt_list->list = (core_aux_file_path_t*)
+         malloc(path_list->dir_list->size *
+               sizeof(*path_list->standalone_exempt_list->list));
 
    if (!path_list->core_list->list ||
-       !path_list->lock_list->list)
+       !path_list->lock_list->list ||
+       !path_list->standalone_exempt_list->list)
       goto error;
 
    /* Parse directory listing */
@@ -1416,7 +1441,8 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
           || !(file_ext = path_get_extension(filename)))
          continue;
 
-      /* Check whether this is a core or lock file */
+      /* Check whether this is a core, lock or
+       * 'standalone exempt' file */
       if (string_list_find_elem(core_ext_list, file_ext))
       {
          path_list->core_list->list[
@@ -1433,6 +1459,16 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
                path_list->lock_list->size].hash     = core_info_hash_string(filename);
          path_list->lock_list->size++;
       }
+#if defined(HAVE_DYNAMIC)
+      else if (string_is_equal(file_ext, FILE_PATH_STANDALONE_EXEMPT_EXTENSION_NO_DOT))
+      {
+         path_list->standalone_exempt_list->list[
+               path_list->standalone_exempt_list->size].filename = filename;
+         path_list->standalone_exempt_list->list[
+               path_list->standalone_exempt_list->size].hash     = core_info_hash_string(filename);
+         path_list->standalone_exempt_list->size++;
+      }
+#endif
    }
 
    string_list_free(core_ext_list);
@@ -1445,12 +1481,14 @@ error:
 }
 
 static bool core_info_path_is_locked(
-      core_lock_file_path_list_t *lock_list,
+      core_aux_file_path_list_t *lock_list,
       const char *core_file_name)
 {
    size_t i;
    uint32_t hash;
    char lock_filename[256];
+
+   lock_filename[0] = '\0';
 
    if (lock_list->size < 1)
       return false;
@@ -1462,10 +1500,41 @@ static bool core_info_path_is_locked(
 
    for (i = 0; i < lock_list->size; i++)
    {
-      core_lock_file_path_t *lock_file = &lock_list->list[i];
+      core_aux_file_path_t *lock_file = &lock_list->list[i];
 
       if ((lock_file->hash == hash) &&
           string_is_equal(lock_file->filename, lock_filename))
+         return true;
+   }
+
+   return false;
+}
+
+static bool core_info_path_is_standalone_exempt(
+      core_aux_file_path_list_t *exempt_list,
+      const char *core_file_name)
+{
+   size_t i;
+   uint32_t hash;
+   char exempt_filename[256];
+
+   exempt_filename[0] = '\0';
+
+   if (exempt_list->size < 1)
+      return false;
+
+   snprintf(exempt_filename, sizeof(exempt_filename),
+         "%s" FILE_PATH_STANDALONE_EXEMPT_EXTENSION,
+         core_file_name);
+
+   hash = core_info_hash_string(exempt_filename);
+
+   for (i = 0; i < exempt_list->size; i++)
+   {
+      core_aux_file_path_t *exempt_file = &exempt_list->list[i];
+
+      if ((exempt_file->hash == hash) &&
+          string_is_equal(exempt_file->filename, exempt_filename))
          return true;
    }
 
@@ -1881,8 +1950,12 @@ static void core_info_free(core_info_t* info)
 
    for (i = 0; i < info->firmware_count; i++)
    {
-      free(info->firmware[i].path);
-      free(info->firmware[i].desc);
+      if (info->firmware[i].path)
+         free(info->firmware[i].path);
+      if (info->firmware[i].desc)
+         free(info->firmware[i].desc);
+      info->firmware[i].path = NULL;
+      info->firmware[i].desc = NULL;
    }
    free(info->firmware);
 
@@ -1980,23 +2053,35 @@ static core_info_list_t *core_info_list_new(const char *path,
          if (info_cache)
          {
             core_info_copy(info_cache, info);
+
             /* Core path is 'dynamic', and cannot
              * be cached (i.e. core directory may
              * change between runs) */
             if (info->path)
                free(info->path);
-            info->path      = strdup(base_path);
+            info->path = strdup(base_path);
+
             /* Core lock status is 'dynamic', and
              * cannot be cached */
             info->is_locked = core_info_path_is_locked(
                   path_list->lock_list, core_filename);
-                  
+
+            /* Core 'standalone exempt' status is 'dynamic',
+             * and cannot be cached
+             * > It is also dependent upon whether the core
+             *   supports contentless operation */
+            info->is_standalone_exempt = info->supports_no_game &&
+                  core_info_path_is_standalone_exempt(
+                        path_list->standalone_exempt_list,
+                        core_filename);
+
             /* 'info_count' is normally incremented inside
              * core_info_parse_config_file(). If core entry
              * is cached, must instead increment the value
              * here */
             if (info->has_info)
                core_info_list->info_count++;
+
             continue;
          }
       }
@@ -2025,7 +2110,13 @@ static core_info_list_t *core_info_list_new(const char *path,
       if (!info->display_name)
          info->display_name = strdup(core_filename);
 
-      info->is_installed    = true;
+      /* Get core 'standalone exempt' status */
+      info->is_standalone_exempt = info->supports_no_game &&
+            core_info_path_is_standalone_exempt(
+                  path_list->standalone_exempt_list,
+                  core_filename);
+
+      info->is_installed = true;
 
       /* If info cache is enabled and we reach this
        * point, current core is uncached
@@ -2198,6 +2289,8 @@ bool core_info_init_current_core(void)
    current->database_match_archive_member = false;
    current->is_experimental               = false;
    current->is_locked                     = false;
+   current->is_standalone_exempt          = false;
+   current->is_installed                  = false;
    current->firmware_count                = 0;
    current->savestate_support_level       = CORE_INFO_SAVESTATE_DETERMINISTIC;
    current->path                          = NULL;
@@ -3080,6 +3173,43 @@ bool core_info_current_supports_runahead(void)
          CORE_INFO_SAVESTATE_DETERMINISTIC;
 }
 
+static bool core_info_update_core_aux_file(const char *path, bool create)
+{
+   bool aux_file_exists = false;
+
+   if (string_is_empty(path))
+      return false;
+
+   /* Check whether aux file exists */
+   aux_file_exists = path_is_valid(path);
+
+   /* Create or delete aux file, as required */
+   if (create && !aux_file_exists)
+   {
+      RFILE *aux_file = filestream_open(path,
+            RETRO_VFS_FILE_ACCESS_WRITE,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+      if (!aux_file)
+         return false;
+
+      /* We have to write something - just output
+       * a single character */
+      if (filestream_putc(aux_file, 0) != 0)
+      {
+         filestream_close(aux_file);
+         return false;
+      }
+
+      filestream_close(aux_file);
+   }
+   else if (!create && aux_file_exists)
+      if (filestream_delete(path) != 0)
+         return false;
+
+   return true;
+}
+
 /* Sets 'locked' status of specified core
  * > Returns true if successful
  * > Like all functions that access the cached
@@ -3087,8 +3217,9 @@ bool core_info_current_supports_runahead(void)
 bool core_info_set_core_lock(const char *core_path, bool lock)
 {
    core_info_t *core_info = NULL;
-   bool lock_file_exists  = false;
    char lock_file_path[PATH_MAX_LENGTH];
+
+   lock_file_path[0] = '\0';
 
 #if defined(ANDROID)
    /* Play Store builds do not support
@@ -3097,47 +3228,19 @@ bool core_info_set_core_lock(const char *core_path, bool lock)
       return false;
 #endif
 
-   if (string_is_empty(core_path))
-      return false;
-
    /* Search for specified core */
-   if (!core_info_find(core_path, &core_info))
-      return false;
-
-   if (string_is_empty(core_info->path))
+   if (string_is_empty(core_path) ||
+       !core_info_find(core_path, &core_info) ||
+       string_is_empty(core_info->path))
       return false;
 
    /* Get lock file path */
    snprintf(lock_file_path, sizeof(lock_file_path),
          "%s" FILE_PATH_LOCK_EXTENSION, core_info->path);
 
-   /* Check whether lock file exists */
-   lock_file_exists = path_is_valid(lock_file_path);
-
    /* Create or delete lock file, as required */
-   if (lock && !lock_file_exists)
-   {
-      RFILE *lock_file = filestream_open(
-            lock_file_path,
-            RETRO_VFS_FILE_ACCESS_WRITE,
-            RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-      if (!lock_file)
-         return false;
-
-      /* We have to write something - just output
-       * a single character */
-      if (filestream_putc(lock_file, 0) != 0)
-      {
-         filestream_close(lock_file);
-         return false;
-      }
-
-      filestream_close(lock_file);
-   }
-   else if (!lock && lock_file_exists)
-      if (filestream_delete(lock_file_path) != 0)
-         return false;
+   if (!core_info_update_core_aux_file(lock_file_path, lock))
+      return false;
 
    /* File operations were successful - update
     * core info entry */
@@ -3161,6 +3264,8 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
    const char *core_file_path = NULL;
    bool is_locked             = false;
    char lock_file_path[PATH_MAX_LENGTH];
+
+   lock_file_path[0] = '\0';
 
 #if defined(ANDROID)
    /* Play Store builds do not support
@@ -3201,4 +3306,89 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
       core_info->is_locked = is_locked;
 
    return is_locked;
+}
+
+/* Sets 'standalone exempt' status of specified core
+ * > A 'standalone exempt' core will not be shown
+ *   in the contentless cores menu when display type
+ *   is set to 'custom'
+ * > Returns true if successful
+ * > Returns false if core does not support
+ *   contentless operation
+ * > *Not* thread safe */
+bool core_info_set_core_standalone_exempt(const char *core_path, bool exempt)
+{
+#if defined(HAVE_DYNAMIC)
+   core_info_t *core_info = NULL;
+   char exempt_file_path[PATH_MAX_LENGTH];
+
+   exempt_file_path[0] = '\0';
+
+   /* Search for specified core */
+   if (string_is_empty(core_path) ||
+       !core_info_find(core_path, &core_info) ||
+       string_is_empty(core_info->path) ||
+       !core_info->supports_no_game)
+      return false;
+
+   /* Get 'standalone exempt' file path */
+   snprintf(exempt_file_path, sizeof(exempt_file_path),
+         "%s" FILE_PATH_STANDALONE_EXEMPT_EXTENSION,
+         core_info->path);
+
+   /* Create or delete 'standalone exempt' file, as required */
+   if (!core_info_update_core_aux_file(exempt_file_path, exempt))
+      return false;
+
+   /* File operations were successful - update
+    * core info entry */
+   core_info->is_standalone_exempt = exempt;
+
+   return true;
+#else
+   /* Static platforms do not support the contentless
+    * cores menu */
+   return false;
+#endif
+}
+
+/* Fetches 'standalone exempt' status of specified core
+ * > Returns true if core should be excluded from
+ *   the contentless cores menu when display type is
+ *   set to 'custom'
+ * > *Not* thread safe */
+bool core_info_get_core_standalone_exempt(const char *core_path)
+{
+#if defined(HAVE_DYNAMIC)
+   core_info_t *core_info = NULL;
+   bool is_exempt         = false;
+   char exempt_file_path[PATH_MAX_LENGTH];
+
+   exempt_file_path[0] = '\0';
+
+   /* Search for specified core */
+   if (string_is_empty(core_path) ||
+       !core_info_find(core_path, &core_info) ||
+       string_is_empty(core_info->path) ||
+       !core_info->supports_no_game)
+      return false;
+
+   /* Get 'standalone exempt' file path */
+   snprintf(exempt_file_path, sizeof(exempt_file_path),
+         "%s" FILE_PATH_STANDALONE_EXEMPT_EXTENSION,
+         core_info->path);
+
+   /* Check whether 'standalone exempt' file exists */
+   is_exempt = path_is_valid(exempt_file_path);
+
+   /* Ensure that core info 'is_standalone_exempt'
+    * field is up to date */
+   core_info->is_standalone_exempt = is_exempt;
+
+   return is_exempt;
+#else
+   /* Static platforms do not support the contentless
+    * cores menu */
+   return false;
+#endif
 }

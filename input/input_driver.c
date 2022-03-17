@@ -2718,15 +2718,19 @@ void input_config_set_device(unsigned port, unsigned id)
 {
    settings_t        *settings = config_get_ptr();
 
-   if (settings)
+   if (settings && (port < MAX_USERS))
       configuration_set_uint(settings,
-      settings->uints.input_libretro_device[port], id);
+            settings->uints.input_libretro_device[port], id);
 }
 
 unsigned input_config_get_device(unsigned port)
 {
    settings_t             *settings = config_get_ptr();
-   return settings->uints.input_libretro_device[port];
+
+   if (settings && (port < MAX_USERS))
+      return settings->uints.input_libretro_device[port];
+
+   return RETRO_DEVICE_NONE;
 }
 
 const struct retro_keybind *input_config_get_bind_auto(
@@ -2743,7 +2747,11 @@ const struct retro_keybind *input_config_get_bind_auto(
 unsigned *input_config_get_device_ptr(unsigned port)
 {
    settings_t             *settings = config_get_ptr();
-   return &settings->uints.input_libretro_device[port];
+
+   if (settings && (port < MAX_USERS))
+      return &settings->uints.input_libretro_device[port];
+
+   return NULL;
 }
 
 unsigned input_config_get_device_count(void)
@@ -3414,8 +3422,7 @@ void input_overlay_init(void)
    bool overlay_hide_when_gamepad_connected = settings->bools.input_overlay_hide_when_gamepad_connected;
 #if defined(GEKKO)
    /* Avoid a crash at startup or even when toggling overlay in rgui */
-   uint64_t memory_free                     = frontend_driver_get_free_memory();
-   if (memory_free < (3 * 1024 * 1024))
+   if (frontend_driver_get_free_memory() < (3 * 1024 * 1024))
       return;
 #endif
 
@@ -5143,8 +5150,18 @@ void input_remapping_cache_global_config(void)
 
    for (i = 0; i < MAX_USERS; i++)
    {
+      /* Libretro device type is always set to
+       * RETRO_DEVICE_JOYPAD globally *unless*
+       * an override has been set via the command
+       * line interface */
+      unsigned device = RETRO_DEVICE_JOYPAD;
+
+      if (retroarch_override_setting_is_set(
+            RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &i))
+         device = settings->uints.input_libretro_device[i];
+
       input_st->old_analog_dpad_mode[i] = settings->uints.input_analog_dpad_mode[i];
-      input_st->old_libretro_device[i]  = settings->uints.input_libretro_device[i];
+      input_st->old_libretro_device[i]  = device;
    }
 
    input_st->old_analog_dpad_mode_set = true;
@@ -5188,7 +5205,7 @@ end:
    {
       input_st->old_analog_dpad_mode_set = false;
       input_st->old_libretro_device_set  = false;
-      input_st->remapping_cache_active     = false;
+      input_st->remapping_cache_active   = false;
    }
 }
 
@@ -5237,11 +5254,16 @@ void input_remapping_update_port_map(void)
    }
 }
 
-void input_remapping_deinit(void)
+void input_remapping_deinit(bool save_remap)
 {
    runloop_state_t *runloop_st             = runloop_state_get_ptr();
    if (runloop_st->name.remapfile)
+   {
+      if (save_remap)
+         input_remapping_save_file(runloop_st->name.remapfile);
+
       free(runloop_st->name.remapfile);
+   }
    runloop_st->name.remapfile              = NULL;
    runloop_st->remaps_core_active          = false;
    runloop_st->remaps_content_dir_active   = false;

@@ -67,6 +67,8 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
          D3D10SetVertexBuffer(d3d10->device, 0, d3d10->sprites.vbo, sizeof(d3d10_sprite_t), 0);
          D3D10SetPrimitiveTopology(d3d10->device, D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
          return;
+      default:
+         break;
    }
 
    if (draw->coords->vertex && draw->coords->tex_coord && draw->coords->color)
@@ -79,44 +81,44 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
       d3d10->sprites.offset = 0;
 
    {
-      void*           mapped_vbo;
-      d3d10_sprite_t* sprite = NULL;
+      void*           mapped_vbo = NULL;
+      d3d10_sprite_t* sprite     = NULL;
 
       D3D10MapBuffer(d3d10->sprites.vbo, D3D10_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
 
-      sprite = (d3d10_sprite_t*)mapped_vbo + d3d10->sprites.offset;
+      sprite                 = (d3d10_sprite_t*)mapped_vbo + d3d10->sprites.offset;
 
       if (vertex_count == 1)
       {
-         sprite->pos.x = draw->x / (float)d3d10->viewport.Width;
-         sprite->pos.y =
+         sprite->pos.x       = draw->x / (float)d3d10->viewport.Width;
+         sprite->pos.y       =
                (d3d10->viewport.Height - draw->y - draw->height) 
                / (float)d3d10->viewport.Height;
-         sprite->pos.w = draw->width / (float)d3d10->viewport.Width;
-         sprite->pos.h = draw->height / (float)d3d10->viewport.Height;
+         sprite->pos.w       = draw->width / (float)d3d10->viewport.Width;
+         sprite->pos.h       = draw->height / (float)d3d10->viewport.Height;
 
-         sprite->coords.u = 0.0f;
-         sprite->coords.v = 0.0f;
-         sprite->coords.w = 1.0f;
-         sprite->coords.h = 1.0f;
+         sprite->coords.u    = 0.0f;
+         sprite->coords.v    = 0.0f;
+         sprite->coords.w    = 1.0f;
+         sprite->coords.h    = 1.0f;
 
          if (draw->scale_factor)
             sprite->params.scaling = draw->scale_factor;
          else
             sprite->params.scaling = 1.0f;
 
-         sprite->params.rotation = draw->rotation;
+         sprite->params.rotation   = draw->rotation;
 
-         sprite->colors[3] = DXGI_COLOR_RGBA(
+         sprite->colors[3]         = DXGI_COLOR_RGBA(
                0xFF * draw->coords->color[0], 0xFF * draw->coords->color[1],
                0xFF * draw->coords->color[2], 0xFF * draw->coords->color[3]);
-         sprite->colors[2] = DXGI_COLOR_RGBA(
+         sprite->colors[2]         = DXGI_COLOR_RGBA(
                0xFF * draw->coords->color[4], 0xFF * draw->coords->color[5],
                0xFF * draw->coords->color[6], 0xFF * draw->coords->color[7]);
-         sprite->colors[1] = DXGI_COLOR_RGBA(
+         sprite->colors[1]         = DXGI_COLOR_RGBA(
                0xFF * draw->coords->color[8], 0xFF * draw->coords->color[9],
                0xFF * draw->coords->color[10], 0xFF * draw->coords->color[11]);
-         sprite->colors[0] = DXGI_COLOR_RGBA(
+         sprite->colors[0]         = DXGI_COLOR_RGBA(
                0xFF * draw->coords->color[12], 0xFF * draw->coords->color[13],
                0xFF * draw->coords->color[14], 0xFF * draw->coords->color[15]);
       }
@@ -212,7 +214,7 @@ static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
    d3d10->ubo_values.time += 0.01f;
 
    {
-      void* mapped_ubo;
+      void *mapped_ubo              = NULL;
       D3D10MapBuffer(d3d10->ubo, D3D10_MAP_WRITE_DISCARD, 0, (void**)&mapped_ubo);
       *(d3d10_uniform_t*)mapped_ubo = d3d10->ubo_values;
       D3D10UnmapBuffer(d3d10->ubo);

@@ -26,7 +26,7 @@
 #ifdef HAVE_COCOATOUCH
 #import "../../../pkg/apple/WebServer/GCDWebUploader/GCDWebUploader.h"
 #import "WebServer.h"
-#if TARGET_OS_IOS && __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
+#ifdef HAVE_IOS_SWIFT
 #import "RetroArch-Swift.h"
 #endif
 #endif
@@ -46,12 +46,9 @@ void *glkitview_init(void);
 
 @interface CocoaView()<GCDWebUploaderDelegate, UIGestureRecognizerDelegate
 #ifdef HAVE_IOS_TOUCHMOUSE
-,EmulatorTouchMouseHandlerDelegate> {
-    EmulatorTouchMouseHandler *mouseHandler;
-}
-#else
->
+,EmulatorTouchMouseHandlerDelegate
 #endif
+>
 
 @end
 #endif
@@ -154,21 +151,18 @@ void *glkitview_init(void);
     });
 }
 
--(void) showCustomKeyboard
-{
 #ifdef HAVE_IOS_CUSTOMKEYBOARD
-    [self.keyboardController.view setHidden:false];
+-(void)toggleCustomKeyboardUsingSwipe:(id)sender {
+    UISwipeGestureRecognizer *gestureRecognizer = (UISwipeGestureRecognizer*)sender;
+    [self.keyboardController.view setHidden:gestureRecognizer.direction == UISwipeGestureRecognizerDirectionDown];
     [self updateOverlayAndFocus];
-#endif
 }
 
--(void) hideCustomKeyboard
-{
-#ifdef HAVE_IOS_CUSTOMKEYBOARD
-    [self.keyboardController.view setHidden:true];
+-(void)toggleCustomKeyboard {
+    [self.keyboardController.view setHidden:!self.keyboardController.view.isHidden];
     [self updateOverlayAndFocus];
-#endif
 }
+#endif
 
 -(void) updateOverlayAndFocus
 {
@@ -261,6 +255,9 @@ void *glkitview_init(void);
 #ifdef HAVE_IOS_CUSTOMKEYBOARD
    [self.view bringSubviewToFront:self.keyboardController.view];
 #endif
+#if HAVE_IOS_SWIFT
+    [self.view bringSubviewToFront:self.helperBarView];
+#endif
 }
 
 /* NOTE: This version runs on iOS6+. */
@@ -319,21 +316,23 @@ void *glkitview_init(void);
     swipe.direction = UISwipeGestureRecognizerDirectionDown;
     [self.view addGestureRecognizer:swipe];
 #ifdef HAVE_IOS_TOUCHMOUSE
-    mouseHandler = [[EmulatorTouchMouseHandler alloc] initWithView:self.view];
-    mouseHandler.delegate = self;
+    [self setupMouseSupport];
 #endif
 #ifdef HAVE_IOS_CUSTOMKEYBOARD
     [self setupEmulatorKeyboard];
-    UISwipeGestureRecognizer *showKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(showCustomKeyboard)];
+    UISwipeGestureRecognizer *showKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(toggleCustomKeyboardUsingSwipe:)];
     showKeyboardSwipe.numberOfTouchesRequired = 3;
     showKeyboardSwipe.direction = UISwipeGestureRecognizerDirectionUp;
     showKeyboardSwipe.delegate = self;
     [self.view addGestureRecognizer:showKeyboardSwipe];
-    UISwipeGestureRecognizer *hideKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(hideCustomKeyboard)];
+    UISwipeGestureRecognizer *hideKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(toggleCustomKeyboardUsingSwipe:)];
     hideKeyboardSwipe.numberOfTouchesRequired = 3;
     hideKeyboardSwipe.direction = UISwipeGestureRecognizerDirectionDown;
     hideKeyboardSwipe.delegate = self;
     [self.view addGestureRecognizer:hideKeyboardSwipe];
+#endif
+#if __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
+    [self setupHelperBar];
 #endif
 #endif
 }
@@ -361,23 +360,9 @@ void *glkitview_init(void);
 }
 
 #if TARGET_OS_IOS && HAVE_IOS_TOUCHMOUSE
--(void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    [mouseHandler touchesBeganWithTouches:touches];
-}
-
--(void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    [mouseHandler touchesMovedWithTouches:touches];
-}
-
--(void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    [mouseHandler touchesCancelledWithTouches:touches];
-}
-
--(void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    [mouseHandler touchesEndedWithTouches:touches];
-}
 
 #pragma mark EmulatorTouchMouseHandlerDelegate
+
 -(void)handleMouseClickWithIsLeftClick:(BOOL)isLeftClick isPressed:(BOOL)isPressed {
     cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
     if (apple == NULL) {

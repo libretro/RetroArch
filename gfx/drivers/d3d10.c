@@ -96,10 +96,14 @@ d3d10_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w,
 
    D3D10MapBuffer(d3d10->overlays.vbo,
          D3D10_MAP_WRITE_NO_OVERWRITE, 0, (void**)&sprites);
-   sprites[index].pos.x    = x;
-   sprites[index].pos.y    = y;
-   sprites[index].pos.w    = w;
-   sprites[index].pos.h    = h;
+
+   if (sprites)
+   {
+      sprites[index].pos.x = x;
+      sprites[index].pos.y = y;
+      sprites[index].pos.w = w;
+      sprites[index].pos.h = h;
+   }
    D3D10UnmapBuffer(d3d10->overlays.vbo);
 }
 
@@ -132,20 +136,24 @@ static void d3d10_overlay_set_alpha(void* data, unsigned index, float mod)
    D3D10MapBuffer(
          d3d10->overlays.vbo,
          D3D10_MAP_WRITE_NO_OVERWRITE, 0, (void**)&sprites);
-   sprites[index].colors[0] = DXGI_COLOR_RGBA(0xFF, 0xFF, 0xFF, mod * 0xFF);
-   sprites[index].colors[1] = sprites[index].colors[0];
-   sprites[index].colors[2] = sprites[index].colors[0];
-   sprites[index].colors[3] = sprites[index].colors[0];
+
+   if (sprites)
+   {
+      sprites[index].colors[0] = DXGI_COLOR_RGBA(0xFF, 0xFF, 0xFF, mod * 0xFF);
+      sprites[index].colors[1] = sprites[index].colors[0];
+      sprites[index].colors[2] = sprites[index].colors[0];
+      sprites[index].colors[3] = sprites[index].colors[0];
+   }
    D3D10UnmapBuffer(d3d10->overlays.vbo);
 }
 
 static bool d3d10_overlay_load(void* data, const void* image_data, unsigned num_images)
 {
    D3D10_BUFFER_DESC desc;
-   unsigned                          i;
-   d3d10_sprite_t*             sprites;
-   d3d10_video_t*              d3d10  = (d3d10_video_t*)data;
-   const struct texture_image* images = (const struct texture_image*)image_data;
+   unsigned                          i = 0;
+   d3d10_sprite_t*             sprites = NULL;
+   d3d10_video_t*              d3d10   = (d3d10_video_t*)data;
+   const struct texture_image* images  = (const struct texture_image*)image_data;
 
    if (!d3d10)
       return false;
@@ -268,11 +276,14 @@ static void d3d10_set_filtering(void* data, unsigned index, bool smooth, bool ct
    unsigned       i;
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 
-   for (i = 0; i < RARCH_WRAP_MAX; i++)
+   if (smooth)
    {
-      if (smooth)
+      for (i = 0; i < RARCH_WRAP_MAX; i++)
          d3d10->samplers[RARCH_FILTER_UNSPEC][i] = d3d10->samplers[RARCH_FILTER_LINEAR][i];
-      else
+   }
+   else
+   {
+      for (i = 0; i < RARCH_WRAP_MAX; i++)
          d3d10->samplers[RARCH_FILTER_UNSPEC][i] = d3d10->samplers[RARCH_FILTER_NEAREST][i];
    }
 }
@@ -332,6 +343,9 @@ static void d3d10_free_shader_preset(d3d10_video_t* d3d10)
       free(d3d10->shader_preset->pass[i].source.string.vertex);
       free(d3d10->shader_preset->pass[i].source.string.fragment);
       free(d3d10->pass[i].semantics.textures);
+      d3d10->shader_preset->pass[i].source.string.vertex   = NULL;
+      d3d10->shader_preset->pass[i].source.string.fragment = NULL;
+      d3d10->pass[i].semantics.textures                    = NULL;
       d3d10_release_shader(&d3d10->pass[i].shader);
       d3d10_release_texture(&d3d10->pass[i].rt);
       d3d10_release_texture(&d3d10->pass[i].feedback);
@@ -994,9 +1008,9 @@ static void *d3d10_gfx_init(const video_info_t* video,
    {
       D3D10_RASTERIZER_DESC desc = { (D3D10_FILL_MODE)0 };
 
-      desc.FillMode = D3D10_FILL_SOLID;
-      desc.CullMode = D3D10_CULL_NONE;
-      desc.ScissorEnable = TRUE;
+      desc.FillMode              = D3D10_FILL_SOLID;
+      desc.CullMode              = D3D10_CULL_NONE;
+      desc.ScissorEnable         = TRUE;
 
       D3D10CreateRasterizerState(d3d10->device, &desc, &d3d10->state);
    }

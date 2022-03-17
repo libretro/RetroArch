@@ -664,10 +664,10 @@ bool rcheevos_unload(void)
       rcheevos_locals.hardcore_active           = false;
    }
 
-   while (rcheevos_locals.game.hashes != NULL)
+   while (rcheevos_locals.game.hashes)
    {
       rcheevos_hash_entry_t* hash_entry = rcheevos_locals.game.hashes;
-      rcheevos_locals.game.hashes = hash_entry->next;
+      rcheevos_locals.game.hashes       = hash_entry->next;
       free(hash_entry);
    }
 
@@ -863,6 +863,9 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
          runloop_msg_queue_push(msg, 0, 3 * 60, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
+         /* disable slowdown */
+         runloop_state_get_ptr()->slowmotion = false;
+
          /* Reactivate leaderboards */
          if (locals->leaderboards_enabled)
             rcheevos_activate_leaderboards();
@@ -924,7 +927,7 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
 void rcheevos_toggle_hardcore_paused(void)
 {
    settings_t* settings = config_get_ptr();
-   /* if hardcore mode is not enabled, we can't toggle it */
+   /* if hardcore mode is not enabled, we can't toggle whether its active */
    if (settings->bools.cheevos_hardcore_mode_enable)
       rcheevos_toggle_hardcore_active(&rcheevos_locals);
 }

@@ -472,7 +472,8 @@ ifeq ($(HAVE_LANGEXTRA), 1)
           intl/msg_hash_fi.o \
           intl/msg_hash_id.o \
           intl/msg_hash_sv.o \
-          intl/msg_hash_uk.o
+          intl/msg_hash_uk.o \
+          intl/msg_hash_cs.o 
 endif
 
 ifneq ($(HAVE_GETOPT_LONG), 1)
@@ -2454,6 +2455,13 @@ endif
 #####################################
 ifeq ($(ANDROID), 1)
    OBJ += play_feature_delivery/play_feature_delivery.o
+endif
+
+### Steam integration using mist
+ifeq ($(HAVE_MIST), 1)
+   INCLUDE_DIRS += -I$(MIST_PATH)/include
+   LDFLAGS   += -L$(MIST_PATH) -lmist
+   OBJ += steam/steam.o tasks/task_steam.o
 endif
 
 ##################################

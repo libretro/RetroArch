@@ -737,7 +737,7 @@ static bool core_option_manager_parse_variable(
             value, NULL);
 
       /* Set value hash */
-      *value_hash = core_option_manager_hash_string(value);
+      *value_hash                     = core_option_manager_hash_string(value);
       option->vals->elems[i].userdata = (void*)value_hash;
 
       /* Redundant safely check... */

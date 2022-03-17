@@ -23,6 +23,7 @@
 #include "../frontend_driver.h"
 #include "../../defaults.h"
 #include "../../paths.h"
+#include "../command.h"
 
 static enum frontend_fork dos_fork_mode = FRONTEND_FORK_NONE;
 
@@ -145,21 +146,21 @@ static void frontend_dos_exitspawn(char *s, size_t len, char *args)
 	frontend_dos_exec(s, should_load_content);
 }
 
-static bool frontend_unix_set_fork(enum frontend_fork fork_mode)
+static bool frontend_dos_set_fork(enum frontend_fork fork_mode)
 {
    switch (fork_mode)
    {
       case FRONTEND_FORK_CORE:
          RARCH_LOG("FRONTEND_FORK_CORE\n");
-         unix_fork_mode  = fork_mode;
+         dos_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_CORE_WITH_ARGS:
          RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
-         unix_fork_mode  = fork_mode;
+         dos_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_RESTART:
          RARCH_LOG("FRONTEND_FORK_RESTART\n");
-         unix_fork_mode  = FRONTEND_FORK_CORE;
+         dos_fork_mode  = FRONTEND_FORK_CORE;
 
          {
             char executable_path[PATH_MAX_LENGTH] = {0};

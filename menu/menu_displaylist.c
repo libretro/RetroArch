@@ -123,6 +123,10 @@
 #include "../misc/cpufreq/cpufreq.h"
 #include "../input/input_remapping.h"
 
+#ifdef HAVE_MIST
+#include "../steam/steam.h"
+#endif
+
 /* Spacers used for '<content> - <core name>' labels
  * in playlists */
 #define PL_LABEL_SPACER_DEFAULT "   |   "
@@ -464,11 +468,16 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
    core_info_t *core_info        = NULL;
    const char *core_path         = NULL;
    const char *savestate_support = NULL;
-#if !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
    bool kiosk_mode_enable        = settings->bools.kiosk_mode_enable;
+#if !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
 #if defined(HAVE_NETWORKING) && defined(HAVE_ONLINE_UPDATER)
    bool menu_show_core_updater   = settings->bools.menu_show_core_updater;
 #endif
+#endif
+#if defined(HAVE_DYNAMIC)
+   enum menu_contentless_cores_display_type
+         contentless_display_type = (enum menu_contentless_cores_display_type)
+               settings->uints.menu_content_show_contentless_cores;
 #endif
 
    tmp[0] = '\0';
@@ -725,6 +734,34 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
    }
 
 end:
+
+#if defined(HAVE_DYNAMIC)
+   /* Exclude core from contentless cores menu */
+   if ((contentless_display_type ==
+            MENU_CONTENTLESS_CORES_DISPLAY_CUSTOM) &&
+       core_info &&
+       core_info->supports_no_game &&
+       !string_is_empty(core_path) &&
+       !kiosk_mode_enable)
+   {
+      /* Note: Have to set core_path as both the
+       * 'path' and 'label' parameters (otherwise
+       * cannot access it in menu_cbs_get_value.c
+       * or menu_cbs_left/right.c), which means
+       * entry name must be set as 'alt' text */
+      if (menu_entries_append_enum(info->list,
+            core_path,
+            core_path,
+            MENU_ENUM_LABEL_CORE_SET_STANDALONE_EXEMPT,
+            MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT, 0, 0))
+      {
+         file_list_set_alt_at_offset(
+               info->list, count,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT));
+         count++;
+      }
+   }
+#endif
 
 #if !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
    if (!string_is_empty(core_path) && !kiosk_mode_enable)
@@ -985,6 +1022,91 @@ static unsigned menu_displaylist_parse_core_manager_list(
    return count;
 }
 
+#ifdef HAVE_MIST
+static unsigned menu_displaylist_parse_core_manager_steam_list(
+      menu_displaylist_info_t *info,
+      settings_t *settings)
+{
+   MistResult result;
+   steam_core_dlc_list_t *dlc_list;
+   steam_core_dlc_t *dlc_info;
+   size_t i;
+   unsigned count = 0;
+
+   result = steam_get_core_dlcs(&dlc_list, false);
+   if (MIST_IS_ERROR(result)) goto error;
+
+   for (i = 0; i < dlc_list->count; i++)
+   {
+      dlc_info = steam_core_dlc_list_get(dlc_list, i);
+
+      if (menu_entries_append_enum(info->list,
+            dlc_info->name,
+            "",
+            MENU_ENUM_LABEL_CORE_MANAGER_STEAM_ENTRY,
+            MENU_SETTING_ACTION_CORE_MANAGER_STEAM_OPTIONS,
+            0, 0))
+         count++;
+   }
+
+   return count;
+   
+error:
+   /* TODO: Send error notification */
+   RARCH_ERR("[Steam] Error enumerating core dlcs for core manager (%d-%d)\n", MIST_UNPACK_RESULT(result));
+   return count;
+}
+
+static unsigned menu_displaylist_parse_core_information_steam(
+      menu_displaylist_info_t *info,
+      settings_t *settings)
+{
+   unsigned count = 0;
+   MistResult result;
+   steam_core_dlc_list_t *dlc_list;
+   steam_core_dlc_t *core_dlc = NULL;
+   bool installed = false;
+
+   result = steam_get_core_dlcs(&dlc_list, false);
+   if (MIST_IS_ERROR(result)) goto error;
+
+   /* Get the core dlc information */
+   core_dlc = steam_get_core_dlc_by_name(dlc_list, info->path);
+   if (core_dlc == NULL) return count;
+   
+   /* Check if installed */
+   result = mist_steam_apps_is_dlc_installed(core_dlc->app_id, &installed);
+   if (MIST_IS_ERROR(result)) goto error;
+
+   if (installed)
+   {
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL),
+            core_dlc->name,
+            MENU_ENUM_LABEL_CORE_STEAM_UNINSTALL,
+            MENU_SETTING_ACTION_CORE_STEAM_UNINSTALL,
+            0, 0))
+         count++;
+   }
+   else
+   {
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL),
+            core_dlc->name,
+            MENU_ENUM_LABEL_CORE_STEAM_INSTALL,
+            MENU_SETTING_ACTION_CORE_STEAM_INSTALL,
+            0, 0))
+         count++;
+   }
+   
+   return count;
+error:
+   /* TODO: Send error notification */
+   RARCH_ERR("[Steam] Error getting core information (%d-%d)\n", MIST_UNPACK_RESULT(result));
+   return count;
+}
+#endif
+
 static unsigned menu_displaylist_parse_core_option_dropdown_list(
       menu_displaylist_info_t *info)
 {
@@ -1167,6 +1289,106 @@ end:
             msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
             MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
             0, 0, 0))
+         count++;
+
+   return count;
+}
+
+static unsigned menu_displaylist_parse_remap_file_manager_list(
+      menu_displaylist_info_t *info, settings_t *settings)
+{
+   unsigned count                = 0;
+   bool has_content              = !string_is_empty(path_get(RARCH_PATH_CONTENT));
+   bool core_remap_active        = retroarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL);
+   bool content_dir_remap_active = retroarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL);
+   bool game_remap_active        = retroarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL);
+
+   /* Sanity check - cannot handle remap files
+    * unless a valid core is running */
+   if (!retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL) ||
+       retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+      goto end;
+
+   /* Show currently 'active' remap file */
+   if (menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_INFO),
+         msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_INFO),
+         MENU_ENUM_LABEL_REMAP_FILE_INFO,
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
+      count++;
+
+   /* Load remap file */
+   if (menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD),
+         msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_LOAD),
+         MENU_ENUM_LABEL_REMAP_FILE_LOAD,
+         MENU_SETTING_ACTION_REMAP_FILE_LOAD, 0, 0))
+      count++;
+
+   /* Save remap files */
+   if (has_content &&
+       !game_remap_active &&
+       menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME),
+            msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME),
+            MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,
+            MENU_SETTING_ACTION_REMAP_FILE_SAVE_GAME, 0, 0))
+      count++;
+
+   if (has_content &&
+       !game_remap_active &&
+       !content_dir_remap_active &&
+       menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR),
+            msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR),
+            MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR,
+            MENU_SETTING_ACTION_REMAP_FILE_SAVE_CONTENT_DIR, 0, 0))
+      count++;
+
+   if (!game_remap_active &&
+       !content_dir_remap_active &&
+       !core_remap_active &&
+       menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE),
+            msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE),
+            MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE,
+            MENU_SETTING_ACTION_REMAP_FILE_SAVE_CORE, 0, 0))
+      count++;
+
+   /* Remove remap files */
+   if (has_content &&
+       game_remap_active &&
+       menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME),
+            msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME),
+            MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,
+            MENU_SETTING_ACTION_REMAP_FILE_REMOVE_GAME, 0, 0))
+      count++;
+
+   if (has_content &&
+       content_dir_remap_active &&
+       menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR),
+            msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR),
+            MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
+            MENU_SETTING_ACTION_REMAP_FILE_REMOVE_CONTENT_DIR, 0, 0))
+      count++;
+
+   if (core_remap_active &&
+       menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE),
+            msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE),
+            MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE,
+            MENU_SETTING_ACTION_REMAP_FILE_REMOVE_CORE, 0, 0))
+      count++;
+end:
+   /* Fallback */
+   if (count == 0)
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+            MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+            FILE_TYPE_NONE, 0, 0))
          count++;
 
    return count;
@@ -2324,6 +2546,146 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
             goto error;
       }
 
+      if (db_info_entry->category)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_CATEGORY,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_CATEGORY),
+                  db_info_entry->category, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->language)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_LANGUAGE,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_LANGUAGE),
+                  db_info_entry->language, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->region)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_REGION,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_REGION),
+                  db_info_entry->region, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->score)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_SCORE,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_SCORE),
+                  db_info_entry->score, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->media)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_MEDIA,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_MEDIA),
+                  db_info_entry->media, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->controls)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_CONTROLS,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_CONTROLS),
+                  db_info_entry->controls, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->artstyle)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_ARTSTYLE,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_ARTSTYLE),
+                  db_info_entry->artstyle, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->gameplay)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_GAMEPLAY,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_GAMEPLAY),
+                  db_info_entry->gameplay, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->narrative)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_NARRATIVE,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_NARRATIVE),
+                  db_info_entry->narrative, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->pacing)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_PACING,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_PACING),
+                  db_info_entry->pacing, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->perspective)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_PERSPECTIVE,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_PERSPECTIVE),
+                  db_info_entry->perspective, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->setting)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_SETTING,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_SETTING),
+                  db_info_entry->setting, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->visual)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_VISUAL,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_VISUAL),
+                  db_info_entry->visual, info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->vehicular)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_VEHICULAR,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_VEHICULAR),
+                  db_info_entry->vehicular, info->path, info->list) == -1)
+            goto error;
+      }
+
       if (db_info_entry->developer)
       {
          for (k = 0; k < db_info_entry->developer->size; k++)
@@ -2544,6 +2906,36 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_COOP,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_COOP),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->achievements == 1)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_ACHIEVEMENTS,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_ACHIEVEMENTS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->console_exclusive == 1)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_CONSOLE_EXCLUSIVE,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_CONSOLE_EXCLUSIVE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path, info->list) == -1)
+            goto error;
+      }
+
+      if (db_info_entry->platform_exclusive == 1)
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_PLATFORM_EXCLUSIVE,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_PLATFORM_EXCLUSIVE),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path, info->list) == -1)
             goto error;
       }
@@ -6283,56 +6675,12 @@ unsigned menu_displaylist_build_list(
             unsigned max_users = settings->uints.input_max_users;
 
 #ifdef HAVE_CONFIGFILE
-            bool has_content   = !string_is_empty(path_get(RARCH_PATH_CONTENT));
-
             if (menu_entries_append_enum(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD),
-                     msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_LOAD),
-                     MENU_ENUM_LABEL_REMAP_FILE_LOAD,
-                     MENU_SETTING_ACTION, 0, 0))
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_MANAGER_LIST),
+                  msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_MANAGER_LIST),
+                  MENU_ENUM_LABEL_REMAP_FILE_MANAGER_LIST,
+                  MENU_SETTING_ACTION_REMAP_FILE_MANAGER_LIST, 0, 0))
                count++;
-            if (menu_entries_append_enum(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE),
-                     msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE),
-                     MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-            if (has_content && menu_entries_append_enum(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR),
-                     msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR),
-                     MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-            if (has_content && menu_entries_append_enum(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME),
-                     msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME),
-                     MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-
-            if (retroarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
-               if (menu_entries_append_enum(list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE),
-                        msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE),
-                        MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE,
-                        MENU_SETTING_ACTION, 0, 0))
-                  count++;
-
-            if (has_content && retroarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
-               if (menu_entries_append_enum(list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME),
-                        msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME),
-                        MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,
-                        MENU_SETTING_ACTION, 0, 0))
-                  count++;
-
-            if (has_content && retroarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL))
-               if (menu_entries_append_enum(list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR),
-                        msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR),
-                        MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
-                        MENU_SETTING_ACTION, 0, 0))
-                  count++;
 #endif
             if (menu_entries_append_enum(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS),
@@ -8025,6 +8373,13 @@ unsigned menu_displaylist_build_list(
                      PARSE_ONLY_UINT, false) == 0)
                count++;
 
+#if defined(WIIU)
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_WIIU_PREFER_DRC,
+                     PARSE_ONLY_BOOL, false) == 0)
+                     count++;
+#endif
+
 #if defined(GEKKO) || defined(PS2) || !defined(__PSL1GHT__) && defined(__PS3__)
             if (true)
 #else
@@ -8333,9 +8688,14 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_LAKKA
                {MENU_ENUM_LABEL_MENU_SHOW_EJECT_DISC,                                  PARSE_ONLY_BOOL, true  },
 #endif
+#ifdef HAVE_ONLINE_UPDATER
                {MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER,                              PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_CORE_UPDATER,                                PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,                    PARSE_ONLY_BOOL, true  },
+#endif
+#ifdef HAVE_MIST
+               {MENU_ENUM_LABEL_MENU_SHOW_CORE_MANAGER_STEAM,                          PARSE_ONLY_BOOL, true  },
+#endif
                {MENU_ENUM_LABEL_MENU_SHOW_INFORMATION,                                 PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_CONFIGURATIONS,                              PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_HELP,                                        PARSE_ONLY_BOOL, true  },
@@ -9102,6 +9462,17 @@ unsigned menu_displaylist_build_list(
                         false) == 0)
                   count++;
             }
+#ifdef _3DS
+            u8 device_model = 0xFF;
+            CFGU_GetSystemModel(&device_model);
+            if ((device_model == 2) || (device_model == 4) || (device_model == 5))
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_NEW3DS_SPEEDUP_ENABLE,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+            }
+#endif
          }
          break;
       case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
@@ -9289,17 +9660,24 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_CORE_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
-               {MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT,              PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_DRIVER_SWITCH_ENABLE,              PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN,            PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE,        PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE,                PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_CORE_OPTION_CATEGORY_ENABLE,       PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE,            PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE,        PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CORE_OPTION_CATEGORY_ENABLE,       PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_DRIVER_SWITCH_ENABLE,              PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE,                PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT,              PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN,            PARSE_ONLY_BOOL},
 #ifndef HAVE_DYNAMIC
                {MENU_ENUM_LABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT, PARSE_ONLY_BOOL},
 #endif
             };
+
+            if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST),
+                     msg_hash_to_str(MENU_ENUM_LABEL_CORE_MANAGER_LIST),
+                     MENU_ENUM_LABEL_CORE_MANAGER_LIST,
+                     MENU_SETTING_ACTION, 0, 0))
+               count++;
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
@@ -9308,13 +9686,6 @@ unsigned menu_displaylist_build_list(
                         false) == 0)
                   count++;
             }
-
-            if (menu_entries_append_enum(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST),
-                     msg_hash_to_str(MENU_ENUM_LABEL_CORE_MANAGER_LIST),
-                     MENU_ENUM_LABEL_CORE_MANAGER_LIST,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
          }
          break;
       case DISPLAYLIST_CONFIGURATION_SETTINGS_LIST:
@@ -9627,6 +9998,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MATERIALUI_MENU_FOOTER_OPACITY,               PARSE_ONLY_FLOAT,  true},
                {MENU_ENUM_LABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,        PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME,                       PARSE_ONLY_UINT,   false},
+               {MENU_ENUM_LABEL_OZONE_THUMBNAIL_SCALE_FACTOR,                 PARSE_ONLY_FLOAT,  true},
                {MENU_ENUM_LABEL_MENU_RGUI_INLINE_THUMBNAILS,                  PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,      PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,     PARSE_ONLY_UINT,   true},
@@ -11799,6 +12171,42 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             info->need_push = true;
          }
          break;
+#ifdef HAVE_MIST
+      case DISPLAYLIST_CORE_MANAGER_STEAM_LIST:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         count = menu_displaylist_parse_core_manager_steam_list(info, settings);
+         info->need_navigation_clear = true;
+         info->need_refresh          = false;
+         info->need_push             = true;
+         
+         /* No core dlcs were found */
+         if (count == 0)
+            if (menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                  FILE_TYPE_NONE, 0, 0))
+               count++;
+         
+         break;
+      case DISPLAYLIST_CORE_INFORMATION_STEAM_LIST:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+      
+         info->need_navigation_clear = true;
+         info->need_refresh          = false;
+         info->need_push             = true;
+               count = menu_displaylist_parse_core_information_steam(info, settings);
+      
+         if (count == 0)
+            if (menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                  FILE_TYPE_NONE, 0, 0))
+               count++;
+      
+         break;
+#endif
       case DISPLAYLIST_CONTENTLESS_CORES:
          {
             size_t contentless_core_ptr =
@@ -11955,6 +12363,29 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
             count = menu_displaylist_parse_core_option_override_list(info, settings);
+
+            if (selection >= count)
+            {
+               info->need_refresh          = true;
+               info->need_navigation_clear = true;
+            }
+            info->need_push                = true;
+         }
+         break;
+      case DISPLAYLIST_REMAP_FILE_MANAGER:
+         {
+            /* The number of items in the remap file manager
+             * list will vary depending upon which remap type
+             * is currently active (if any).
+             * To prevent the menu selection from going out
+             * of bounds, we therefore have to check that the
+             * current selection index is less than the current
+             * number of menu entries - if not, we reset the
+             * navigation pointer */
+            size_t selection = menu_navigation_get_selection();
+
+            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+            count = menu_displaylist_parse_remap_file_manager_list(info, settings);
 
             if (selection >= count)
             {
@@ -12384,7 +12815,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
 #endif
 
-#ifdef HAVE_COMPRESSION
+#if defined(HAVE_COMPRESSION) && !defined(HAVE_MIST)
             if (menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES),
                      msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES),
@@ -12746,6 +13177,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             if (settings->bools.menu_show_online_updater)
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
                      MENU_ENUM_LABEL_ONLINE_UPDATER,
+                     PARSE_ACTION, false) == 0)
+                  count++;
+#endif
+#ifdef HAVE_MIST
+            if (settings->bools.menu_show_core_manager_steam)
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
+                     MENU_ENUM_LABEL_CORE_MANAGER_STEAM_LIST,
                      PARSE_ACTION, false) == 0)
                   count++;
 #endif
