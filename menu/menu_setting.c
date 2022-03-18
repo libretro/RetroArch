@@ -16175,6 +16175,20 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, 500, 1, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_xmb_title_margin,
+                  MENU_ENUM_LABEL_MENU_XMB_TITLE_MARGIN,
+                  MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN,
+                  DEFAULT_XMB_TITLE_MARGIN,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 0, 12, 1, true, true);
+
             CONFIG_PATH(
                   list, list_info,
                   settings->paths.path_menu_xmb_font,
