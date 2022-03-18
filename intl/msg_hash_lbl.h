@@ -3215,6 +3215,10 @@ MSG_HASH(
    "menu_xmb_vertical_fade_factor"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MENU_XMB_TITLE_MARGIN,
+   "menu_xmb_title_margin"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    "menu_thumbnail_upscale_threshold"
    )

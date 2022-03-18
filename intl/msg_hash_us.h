@@ -9462,6 +9462,10 @@ MSG_HASH(
    "Vertical Fade Factor"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN,
+   "Title Margin"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
    "Enable Settings Tab (Restart Required)"
    )

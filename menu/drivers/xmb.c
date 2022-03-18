@@ -360,6 +360,8 @@ typedef struct xmb_handle
    float margins_title_left;
    float margins_title_top;
    float margins_title_bottom;
+   float margins_title;
+   float last_margins_title;
    float margins_label_left;
    float margins_label_top;
    float icon_spacing_horizontal;
@@ -3534,13 +3536,13 @@ static int xmb_draw_item(
       /* Calculate position depending on the current
        * list and if Thumbnail Vertical Disposition
        * is enabled (branchless version) */
-      float x_position         = (video_width - xmb->margins_title_left/4) *
+      float x_position         = (video_width - xmb->margins_title_left) *
                                        !menu_xmb_vertical_thumbnails +
                                  (node->x + xmb->margins_screen_left +
                                  xmb->icon_spacing_horizontal -
                                  xmb->margins_label_left) *
                                        menu_xmb_vertical_thumbnails;
-      float y_position         = (video_height - xmb->margins_title_bottom/4) *
+      float y_position         = (video_height - xmb->margins_title_bottom) *
                                        !menu_xmb_vertical_thumbnails +
                                  (xmb->margins_screen_top + xmb->margins_label_top +
                                  xmb->icon_spacing_vertical * xmb->active_item_factor) *
@@ -4097,9 +4099,11 @@ static void xmb_render(void *data,
    scale_factor        = xmb_get_scale_factor(settings, xmb->use_ps3_layout, width);
 
    if ((xmb->use_ps3_layout != xmb->last_use_ps3_layout) ||
-       (scale_factor != xmb->last_scale_factor))
+       (xmb->margins_title  != xmb->last_margins_title) ||
+       (scale_factor        != xmb->last_scale_factor))
    {
       xmb->last_use_ps3_layout = xmb->use_ps3_layout;
+      xmb->last_margins_title  = xmb->margins_title;
       xmb->last_scale_factor   = scale_factor;
 
       xmb_context_reset_internal(xmb, video_driver_is_threaded(),
@@ -4958,6 +4962,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    thumbnail_margin_height_full            = (float)video_height - xmb->margins_title_top - ((xmb->icon_size / 4.0f) * 2.0f);
    left_thumbnail_margin_x                 = xmb->icon_size / 6.0f;
    right_thumbnail_margin_x                = (float)video_width - (xmb->icon_size / 6.0f) - right_thumbnail_margin_width;
+   xmb->margins_title                      = (float)settings->uints.menu_xmb_title_margin * 10.0f;
 
    /* Configure shadow effect */
    if (xmb_shadows_enable)
@@ -5270,10 +5275,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       if (powerstate.battery_enabled)
       {
          size_t x_pos      = xmb->icon_size / 6;
-         size_t x_pos_icon = xmb->margins_title_left;
 
          if (!xmb->assets_missing)
          {
+            float margin_offset = -(xmb->icon_size / 2) - (7 * xmb->last_scale_factor);
+
             if (dispctx && dispctx->blend_begin)
                dispctx->blend_begin(userdata);
             xmb_draw_icon(
@@ -5292,8 +5298,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   (powerstate.percent > 20)? XMB_TEXTURE_BATTERY_40   :
                   XMB_TEXTURE_BATTERY_20
                   ],
-                  video_width - (xmb->icon_size / 2) - x_pos_icon,
-                  xmb->icon_size,
+                  video_width - xmb->margins_title_left + margin_offset,
+                  xmb->icon_size + xmb->margins_title_top + margin_offset,
                   video_width,
                   video_height,
                   1,
@@ -5321,14 +5327,14 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    {
       gfx_display_ctx_datetime_t datetime;
       char timedate[255];
-      int x_pos = 0;
+      size_t x_pos = 2;
+
+      if (percent_width)
+         x_pos = percent_width + (xmb->icon_size / 2.5);
 
       if (!xmb->assets_missing)
       {
-         int x_pos = 0;
-
-         if (percent_width)
-            x_pos = percent_width + (xmb->icon_size / 2.5);
+         float margin_offset = -(xmb->icon_size / 2) - (7 * xmb->last_scale_factor);
 
          if (dispctx && dispctx->blend_begin)
             dispctx->blend_begin(userdata);
@@ -5341,8 +5347,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                xmb_shadows_enable,
                xmb->icon_size,
                xmb->textures.list[XMB_TEXTURE_CLOCK],
-               video_width - xmb->icon_size - x_pos,
-               xmb->icon_size,
+               video_width - xmb->margins_title_left + margin_offset - x_pos,
+               xmb->icon_size + xmb->margins_title_top + margin_offset,
                video_width,
                video_height,
                1,
@@ -5363,9 +5369,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       datetime.date_separator = settings->uints.menu_timedate_date_separator;
 
       menu_display_timedate(&datetime);
-
-      if (percent_width)
-         x_pos = percent_width + (xmb->icon_size / 2.5);
 
       xmb_draw_text(xmb_shadows_enable, xmb, settings, timedate,
             video_width - xmb->margins_title_left - xmb->icon_size / 4 - x_pos,
@@ -5608,11 +5611,12 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
 {
    unsigned new_font_size;
    float scale_factor            = xmb->last_scale_factor;
+   float margins_title           = xmb->margins_title;
 
-   xmb->above_subitem_offset     =   1.5;
-   xmb->above_item_offset        =  -1.0;
-   xmb->active_item_factor       =   3.0;
-   xmb->under_item_offset        =   5.0;
+   xmb->above_subitem_offset     =  1.5;
+   xmb->above_item_offset        = -1.0;
+   xmb->active_item_factor       =  3.0;
+   xmb->under_item_offset        =  5.0;
 
    xmb->categories_active_zoom   = 1.0;
    xmb->categories_passive_zoom  = 0.5;
@@ -5626,8 +5630,8 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
 
    xmb->shadow_offset            = 2.0;
 
-   new_font_size                 = 32.0  * scale_factor;
-   xmb->font2_size               = 24.0  * scale_factor;
+   new_font_size                 = 32.0 * scale_factor;
+   xmb->font2_size               = 24.0 * scale_factor;
 
    xmb->cursor_size              = 64.0 * scale_factor;
 
@@ -5637,9 +5641,9 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    xmb->margins_screen_top       = (256+32) * scale_factor;
    xmb->margins_screen_left      = 336.0 * scale_factor;
 
-   xmb->margins_title_left       = 60 * scale_factor;
-   xmb->margins_title_top        = 60 * scale_factor + new_font_size / 3;
-   xmb->margins_title_bottom     = 60 * scale_factor - new_font_size / 3;
+   xmb->margins_title_left       = (margins_title * scale_factor) + (4 * scale_factor);
+   xmb->margins_title_top        = (margins_title * scale_factor) + (new_font_size - (new_font_size / 6) * scale_factor);
+   xmb->margins_title_bottom     = (margins_title * scale_factor) + (4 * scale_factor);
 
    xmb->margins_label_left       = 85.0 * scale_factor;
    xmb->margins_label_top        = new_font_size / 3.0;
@@ -5657,6 +5661,7 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
 {
    unsigned new_font_size;
    float scale_factor            = xmb->last_scale_factor;
+   float margins_title           = xmb->margins_title;
 
    xmb->above_subitem_offset     =  1.5;
    xmb->above_item_offset        = -1.0;
@@ -5675,24 +5680,29 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
 
    xmb->shadow_offset            = 1.0;
 
-   new_font_size                 = 32.0  * scale_factor;
-   xmb->font2_size               = 24.0  * scale_factor;
-   xmb->margins_screen_top       = (256+32) * scale_factor;
+   new_font_size                 = 32.0 * scale_factor;
+   xmb->font2_size               = 24.0 * scale_factor;
 
    xmb->cursor_size              = 64.0;
 
    xmb->icon_spacing_horizontal  = 250.0 * scale_factor;
    xmb->icon_spacing_vertical    = 108.0 * scale_factor;
 
+   xmb->margins_screen_top       = (256+32) * scale_factor;
    xmb->margins_screen_left      = 136.0 * scale_factor;
-   xmb->margins_title_left       = 60 * scale_factor;
-   xmb->margins_title_top        = 60 * scale_factor + new_font_size / 3;
-   xmb->margins_title_bottom     = 60 * scale_factor - new_font_size / 3;
+
+   xmb->margins_title_left       = (margins_title * scale_factor) + (4 * scale_factor);
+   xmb->margins_title_top        = (margins_title * scale_factor) + (new_font_size - (new_font_size / 6) * scale_factor);
+   xmb->margins_title_bottom     = (margins_title * scale_factor) + (4 * scale_factor);
+
    xmb->margins_label_left       = 85.0 * scale_factor;
    xmb->margins_label_top        = new_font_size / 3.0;
+
    xmb->margins_setting_left     = 600.0 * scale_factor;
    xmb->margins_dialog           = 48 * scale_factor;
+
    xmb->margins_slice            = 16 * scale_factor;
+
    xmb->icon_size                = 128.0 * scale_factor;
    xmb->font_size                = new_font_size;
 }
