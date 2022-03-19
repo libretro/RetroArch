@@ -83,12 +83,9 @@ static void handle_toplevel_config_common(void *data,
             break;
       }
    }
-   if (     width  > 0
-         && height > 0)
-   {
-      wl->width  = width;
-      wl->height = height;
-   }
+
+   wl->width  = width  > 0 ? width  : DEFAULT_WINDOWED_WIDTH;
+   wl->height = height > 0 ? height : DEFAULT_WINDOWED_HEIGHT;
 
    wl->configured = false;
 }
