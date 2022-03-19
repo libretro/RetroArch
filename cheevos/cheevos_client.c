@@ -643,7 +643,9 @@ static void rcheevos_async_login_callback(
       settings->arrays.cheevos_password[0] = '\0';
 
       CHEEVOS_LOG(RCHEEVOS_TAG "%s logged in successfully\n",
-            api_response.username);
+            api_response.display_name);
+      strlcpy(rcheevos_locals->displayname, api_response.display_name,
+            sizeof(rcheevos_locals->displayname));
       strlcpy(rcheevos_locals->username, api_response.username,
             sizeof(rcheevos_locals->username));
       strlcpy(rcheevos_locals->token, api_response.api_token,
