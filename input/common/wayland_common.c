@@ -47,7 +47,7 @@
 #define IOR_WRITE 0x2
 #define IOR_NO_RETRY 0x4
 
-#define SPLASH_SHM_NAME "retroarch-wayland-vk-splash"
+#define SPLASH_SHM_NAME "retroarch-wayland-splash"
 
 static void keyboard_handle_keymap(void* data,
       struct wl_keyboard* keyboard,
@@ -1008,8 +1008,21 @@ int create_shm_file(off_t size)
    if (fd < 0)
    #endif
    {
-      fd = shm_open(SPLASH_SHM_NAME, O_RDWR | O_CREAT, 0660);
-      ftruncate(fd, size);
+      for (unsigned retry_count = 0; retry_count < 100; retry_count++)
+      {
+         char *name;
+         if (asprintf (&name, "%s-%02d", SPLASH_SHM_NAME, retry_count) < 0)
+            continue;
+         fd = shm_open(name, O_RDWR | O_CREAT, 0600);
+         if (fd >= 0)
+         {
+            shm_unlink(name);
+            free(name);
+            ftruncate(fd, size);
+            break;
+         }
+         free(name);
+      }
    }
 
    return fd;
@@ -1052,7 +1065,7 @@ shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
       stride, format);
    wl_buffer_add_listener(buffer->wl_buffer, &shm_buffer_listener, buffer);
    wl_shm_pool_destroy(pool);
-   shm_unlink(SPLASH_SHM_NAME);
+
    close(fd);
 
    buffer->data = data;
