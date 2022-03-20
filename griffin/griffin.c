@@ -583,7 +583,12 @@ FONTS
 ============================================================ */
 
 #include "../gfx/drivers_font_renderer/bitmapfont.c"
+
+#ifdef HAVE_LANGEXTRA
 #include "../gfx/drivers_font_renderer/bitmapfont_10x10.c"
+#include "../gfx/drivers_font_renderer/bitmapfont_6x10.c"
+#endif
+
 #include "../gfx/font_driver.c"
 
 #if defined(HAVE_D3D9) && defined(HAVE_D3DX)
