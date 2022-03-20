@@ -115,6 +115,9 @@ int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
       case RETRO_LANGUAGE_CZECH:
          ret = msg_hash_get_help_cs_enum(msg, s, len);
          break;
+      case RETRO_LANGUAGE_VALENCIAN:
+         ret = msg_hash_get_help_val_enum(msg, s, len);
+         break;
       default:
          break;
    }
@@ -192,6 +195,8 @@ const char *get_user_language_iso639_1(bool limit)
          return "uk";
       case RETRO_LANGUAGE_CZECH:
          return "cs";
+      case RETRO_LANGUAGE_VALENCIAN:
+         return "val";
    }
    return "en";
 }
@@ -283,6 +288,9 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
          break;
       case RETRO_LANGUAGE_CZECH:
          ret = msg_hash_to_str_cs(msg);
+         break;
+      case RETRO_LANGUAGE_VALENCIAN:
+         ret = msg_hash_to_str_val(msg);
          break;
       default:
          break;
