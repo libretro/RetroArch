@@ -507,17 +507,10 @@ static void xdg_shell_ping(void *data, struct xdg_wm_base *shell, uint32_t seria
     xdg_wm_base_pong(shell, serial);
 }
 
-static void handle_surface_config(void *data, struct xdg_surface *surface,
+static void xdg_surface_handle_configure(void *data, struct xdg_surface *surface,
                                   uint32_t serial)
 {
     xdg_surface_ack_configure(surface, serial);
-}
-
-void handle_toplevel_close(void *data,
-      struct xdg_toplevel *xdg_toplevel)
-{
-	gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-	command_event(CMD_EVENT_QUIT, NULL);
 }
 
 static void display_handle_geometry(void *data,
@@ -571,10 +564,10 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
 
    RARCH_DBG("[Wayland]: Add global %u, interface %s, version %u\n", id, interface, version);
 
-   if (string_is_equal(interface, "wl_compositor"))
+   if (string_is_equal(interface, wl_compositor_interface.name))
       wl->compositor = (struct wl_compositor*)wl_registry_bind(reg,
             id, &wl_compositor_interface, MIN(version, 4));
-   else if (string_is_equal(interface, "wl_output"))
+   else if (string_is_equal(interface, wl_output_interface.name))
    {
       output_info_t *oi = (output_info_t*)
          calloc(1, sizeof(output_info_t));
@@ -586,12 +579,12 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
       wl_list_insert(&wl->all_outputs, &oi->link);
       wl_display_roundtrip(wl->input.dpy);
    }
-   else if (string_is_equal(interface, "xdg_wm_base"))
+   else if (string_is_equal(interface, xdg_wm_base_interface.name))
       wl->xdg_shell = (struct xdg_wm_base*)
          wl_registry_bind(reg, id, &xdg_wm_base_interface, MIN(version, 3));
-   else if (string_is_equal(interface, "wl_shm"))
+   else if (string_is_equal(interface, wl_shm_interface.name))
       wl->shm = (struct wl_shm*)wl_registry_bind(reg, id, &wl_shm_interface, MIN(version, 1));
-   else if (string_is_equal(interface, "wl_seat"))
+   else if (string_is_equal(interface, wl_seat_interface.name))
    {
       wl->seat = (struct wl_seat*)wl_registry_bind(reg, id, &wl_seat_interface, MIN(version, 2));
       wl_seat_add_listener(wl->seat, &seat_listener, wl);
@@ -599,13 +592,13 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
       if (wl->data_device != NULL)
          wl_data_device_add_listener(wl->data_device, &data_device_listener, wl);
    }
-   else if (string_is_equal(interface, "wl_data_device_manager"))
+   else if (string_is_equal(interface, wl_data_device_manager_interface.name))
       wl->data_device_manager = (struct wl_data_device_manager*)wl_registry_bind(
                                  reg, id, &wl_data_device_manager_interface, MIN(version, 3));
-   else if (string_is_equal(interface, "zwp_idle_inhibit_manager_v1"))
+   else if (string_is_equal(interface, zwp_idle_inhibit_manager_v1_interface.name))
       wl->idle_inhibit_manager = (struct zwp_idle_inhibit_manager_v1*)wl_registry_bind(
                                   reg, id, &zwp_idle_inhibit_manager_v1_interface, MIN(version, 1));
-   else if (string_is_equal(interface, "zxdg_decoration_manager_v1"))
+   else if (string_is_equal(interface, zxdg_decoration_manager_v1_interface.name))
       wl->deco_manager = (struct zxdg_decoration_manager_v1*)wl_registry_bind(
                                   reg, id, &zxdg_decoration_manager_v1_interface, MIN(version, 1));
 }
@@ -873,16 +866,6 @@ static void data_offer_handle_action(void *data,
       struct wl_data_offer *offer,
       enum wl_data_device_manager_dnd_action dnd_action) { }
 
-static void shm_buffer_handle_release(void *data,
-   struct wl_buffer *wl_buffer)
-{
-   shm_buffer_t *buffer = data;
-
-   wl_buffer_destroy(buffer->wl_buffer);
-   munmap(buffer->data, buffer->data_size);
-   free(buffer);
-}
-
 const struct wl_registry_listener registry_listener = {
    registry_handle_global,
    registry_handle_global_remove,
@@ -901,7 +884,7 @@ const struct xdg_wm_base_listener xdg_shell_listener = {
 };
 
 const struct xdg_surface_listener xdg_surface_listener = {
-    handle_surface_config,
+    xdg_surface_handle_configure,
 };
 
 const struct wl_surface_listener wl_surface_listener = {
@@ -954,10 +937,6 @@ const struct wl_data_offer_listener data_offer_listener = {
    .action = data_offer_handle_action,
 };
 
-const struct wl_buffer_listener shm_buffer_listener = {
-   shm_buffer_handle_release,
-};
-
 void flush_wayland_fd(void *data)
 {
    struct pollfd fd = {0};
@@ -984,145 +963,4 @@ void flush_wayland_fd(void *data)
    }
 }
 
-int create_shm_file(off_t size)
-{
-   int fd;
-
-   int ret;
-
-   #ifdef HAVE_MEMFD_CREATE
-   fd = memfd_create(SPLASH_SHM_NAME, MFD_CLOEXEC | MFD_ALLOW_SEALING);
-
-   if (fd >= 0) {
-     fcntl(fd, F_ADD_SEALS, F_SEAL_SHRINK);
-
-     do {
-        ret = posix_fallocate(fd, 0, size);
-     } while (ret == EINTR);
-     if (ret != 0) {
-        close(fd);
-        errno = ret;
-        fd = -1;
-     }
-   }
-   if (fd < 0)
-   #endif
-   {
-      for (unsigned retry_count = 0; retry_count < 100; retry_count++)
-      {
-         char *name;
-         if (asprintf (&name, "%s-%02d", SPLASH_SHM_NAME, retry_count) < 0)
-            continue;
-         fd = shm_open(name, O_RDWR | O_CREAT, 0600);
-         if (fd >= 0)
-         {
-            shm_unlink(name);
-            free(name);
-            ftruncate(fd, size);
-            break;
-         }
-         free(name);
-      }
-   }
-
-   return fd;
-}
-
-shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
-   int height,
-   uint32_t format)
-{
-   struct wl_shm_pool *pool;
-   int fd, size, stride, ofd;
-   void *data;
-   shm_buffer_t *buffer;
-
-   stride = width * 4;
-   size = stride * height;
-
-   if (size <= 0)
-      return NULL;
-
-   fd = create_shm_file(size);
-   if (fd < 0) {
-      RARCH_ERR("[Wayland] [SHM]: Creating a buffer file for %d B failed: %s\n",
-         size, strerror(errno));
-      return NULL;
-   }
-
-   data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-   if (data == MAP_FAILED) {
-      RARCH_ERR("[Wayland] [SHM]: mmap failed: %s\n", strerror(errno));
-      close(fd);
-      return NULL;
-   }
-
-   buffer = calloc(1, sizeof *buffer);
-
-   pool = wl_shm_create_pool(wl->shm, fd, size);
-   buffer->wl_buffer = wl_shm_pool_create_buffer(pool, 0,
-      width, height,
-      stride, format);
-   wl_buffer_add_listener(buffer->wl_buffer, &shm_buffer_listener, buffer);
-   wl_shm_pool_destroy(pool);
-
-   close(fd);
-
-   buffer->data = data;
-   buffer->data_size = size;
-
-   return buffer;
-}
-
-
-void shm_buffer_paint_checkerboard(shm_buffer_t *buffer,
-      int width, int height, int scale,
-      size_t chk, uint32_t bg, uint32_t fg)
-{
-   uint32_t *pixels = buffer->data;
-   uint32_t color;
-   int y, x, sx, sy;
-   size_t off;
-   int stride = width * scale;
-
-   for (y = 0; y < height; y++) {
-      for (x = 0; x < width; x++) {
-         color = (x & chk) ^ (y & chk) ? fg : bg;
-         for (sx = 0; sx < scale; sx++) {
-            for (sy = 0; sy < scale; sy++) {
-               off = x * scale + sx
-                     + (y * scale + sy) * stride;
-               pixels[off] = color;
-            }
-         }
-      }
-   }
-}
-
-
-bool draw_splash_screen(gfx_ctx_wayland_data_t *wl)
-{
-   shm_buffer_t *buffer;
-
-   buffer = create_shm_buffer(wl,
-      wl->width * wl->buffer_scale,
-      wl->height * wl->buffer_scale,
-      WL_SHM_FORMAT_XRGB8888);
-
-   if (buffer == NULL)
-     return false;
-
-   shm_buffer_paint_checkerboard(buffer, wl->width,
-      wl->height, wl->buffer_scale,
-      16, 0xffbcbcbc, 0xff8e8e8e);
-
-   wl_surface_attach(wl->surface, buffer->wl_buffer, 0, 0);
-   wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
-   if (wl_surface_get_version(wl->surface) >= WL_SURFACE_DAMAGE_BUFFER_SINCE_VERSION)
-      wl_surface_damage_buffer(wl->surface, 0, 0,
-         wl->width * wl->buffer_scale,
-         wl->height * wl->buffer_scale);
-   wl_surface_commit(wl->surface);
-   return true;
-}
 
