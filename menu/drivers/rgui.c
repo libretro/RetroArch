@@ -52,7 +52,11 @@
 
 #include "../../configuration.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
+
+#ifdef HAVE_LANGEXTRA
 #include "../../gfx/drivers_font_renderer/bitmapfont_10x10.h"
+#include "../../gfx/drivers_font_renderer/bitmapfont_6x10.h"
+#endif
 
 /* Thumbnail additions */
 #include "../../gfx/gfx_thumbnail_path.h"
@@ -1013,11 +1017,16 @@ typedef struct
    struct
    {
       bitmapfont_lut_t *regular;
+
+#ifdef HAVE_LANGEXTRA
+      bitmapfont_lut_t *eng_6x10;
+      bitmapfont_lut_t *lse_6x10;
       bitmapfont_lut_t *eng_10x10;
       bitmapfont_lut_t *chn_10x10;
       bitmapfont_lut_t *jpn_10x10;
       bitmapfont_lut_t *kor_10x10;
       bitmapfont_lut_t *rus_10x10;
+#endif
    } fonts;
 
    frame_buf_t frame_buf;
@@ -1560,6 +1569,19 @@ static void rgui_fonts_free(rgui_t *rgui)
       rgui->fonts.regular = NULL;
    }
 
+#ifdef HAVE_LANGEXTRA
+   if (rgui->fonts.eng_6x10)
+   {
+      bitmapfont_free_lut(rgui->fonts.eng_6x10);
+      rgui->fonts.eng_6x10 = NULL;
+   }
+
+   if (rgui->fonts.lse_6x10)
+   {
+      bitmapfont_free_lut(rgui->fonts.lse_6x10);
+      rgui->fonts.lse_6x10 = NULL;
+   }
+
    if (rgui->fonts.eng_10x10)
    {
       bitmapfont_free_lut(rgui->fonts.eng_10x10);
@@ -1589,6 +1611,7 @@ static void rgui_fonts_free(rgui_t *rgui)
       bitmapfont_free_lut(rgui->fonts.rus_10x10);
       rgui->fonts.rus_10x10 = NULL;
    }
+#endif
 }
 
 static bool rgui_fonts_init(rgui_t *rgui)
@@ -1600,6 +1623,7 @@ static bool rgui_fonts_init(rgui_t *rgui)
    {
       case RETRO_LANGUAGE_ENGLISH:
          goto english;
+
       case RETRO_LANGUAGE_FRENCH:
       case RETRO_LANGUAGE_SPANISH:
       case RETRO_LANGUAGE_GERMAN:
@@ -1607,17 +1631,11 @@ static bool rgui_fonts_init(rgui_t *rgui)
       case RETRO_LANGUAGE_DUTCH:
       case RETRO_LANGUAGE_PORTUGUESE_BRAZIL:
       case RETRO_LANGUAGE_PORTUGUESE_PORTUGAL:
-      case RETRO_LANGUAGE_ESPERANTO:
-      case RETRO_LANGUAGE_POLISH:
       case RETRO_LANGUAGE_VIETNAMESE:
-      case RETRO_LANGUAGE_TURKISH:
-      case RETRO_LANGUAGE_SLOVAK:
       case RETRO_LANGUAGE_ASTURIAN:
       case RETRO_LANGUAGE_FINNISH:
       case RETRO_LANGUAGE_INDONESIAN:
       case RETRO_LANGUAGE_SWEDISH:
-   /* extended ASCII (ASCII + Latin-1 Suplement) doesn't cover Czech completely*/
-   /* case RETRO_LANGUAGE_CZECH: */
          /* We have at least partial support for
           * these languages, but extended ASCII
           * is required */
@@ -1629,10 +1647,12 @@ static bool rgui_fonts_init(rgui_t *rgui)
             rgui->language              = language;
             goto english;
          }
+
       case RETRO_LANGUAGE_JAPANESE:
       case RETRO_LANGUAGE_KOREAN:
       case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
       case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
+      {
          rgui->fonts.eng_10x10    = bitmapfont_10x10_load(RETRO_LANGUAGE_ENGLISH);
          rgui->fonts.chn_10x10    = bitmapfont_10x10_load(RETRO_LANGUAGE_CHINESE_SIMPLIFIED);
          rgui->fonts.jpn_10x10    = bitmapfont_10x10_load(RETRO_LANGUAGE_JAPANESE);
@@ -1657,7 +1677,10 @@ static bool rgui_fonts_init(rgui_t *rgui)
          rgui->font_height_stride = FONT_10X10_HEIGHT_STRIDE;
          rgui->language           = language;
          break;
+      }
+
       case RETRO_LANGUAGE_RUSSIAN:
+      {
          rgui->fonts.eng_10x10    = bitmapfont_10x10_load(RETRO_LANGUAGE_ENGLISH);
          rgui->fonts.rus_10x10    = bitmapfont_10x10_load(RETRO_LANGUAGE_RUSSIAN);
 
@@ -1678,6 +1701,47 @@ static bool rgui_fonts_init(rgui_t *rgui)
          rgui->font_height_stride = FONT_10X10_HEIGHT_STRIDE;
          rgui->language           = language;
          break;
+      }
+
+      case RETRO_LANGUAGE_ESPERANTO:
+      case RETRO_LANGUAGE_POLISH:
+      case RETRO_LANGUAGE_TURKISH:
+      case RETRO_LANGUAGE_SLOVAK:
+      case RETRO_LANGUAGE_CZECH:
+      /* These languages are not yet implemented
+      case RETRO_LANGUAGE_ROMANIAN:
+      case RETRO_LANGUAGE_CROATIAN:
+      case RETRO_LANGUAGE_HUNGARIAN:
+      case RETRO_LANGUAGE_SERBIAN:
+      case RETRO_LANGUAGE_WELSH:
+      */
+      /* 6x10 fonts, including:
+       * Latin Extended A + B
+       *
+       */
+      {
+         rgui->fonts.eng_6x10 = bitmapfont_6x10_load(RETRO_LANGUAGE_ENGLISH);
+         rgui->fonts.lse_6x10 = bitmapfont_6x10_load(language);
+
+         if (!rgui->fonts.eng_6x10 ||
+             !rgui->fonts.lse_6x10)
+         {
+            rgui_fonts_free(rgui);
+            *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) = RETRO_LANGUAGE_ENGLISH;
+            runloop_msg_queue_push(
+                  msg_hash_to_str(MSG_RGUI_MISSING_FONTS), 1, 256, false, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            goto english;
+         }
+
+         rgui->font_width         = FONT_6X10_WIDTH;
+         rgui->font_height        = FONT_6X10_HEIGHT;
+         rgui->font_width_stride  = FONT_6X10_WIDTH_STRIDE;
+         rgui->font_height_stride = FONT_6X10_HEIGHT_STRIDE;
+         rgui->language           = language;
+         break;
+      }
+
       case RETRO_LANGUAGE_ARABIC:
       case RETRO_LANGUAGE_GREEK:
       case RETRO_LANGUAGE_PERSIAN:
@@ -3545,6 +3609,7 @@ static void blit_line_cjk(
          bool *symbol_lut;
          uint32_t symbol = utf8_walk(&message);
 
+         /* TODO/FIXME: check if really needed */
          if (symbol == 339) /* Latin small ligature oe */
             symbol = 156;
          if (symbol == 338) /* Latin capital ligature oe */
@@ -3608,6 +3673,7 @@ static void blit_line_cjk_shadow(
          bool *symbol_lut;
          uint32_t symbol = utf8_walk(&message);
 
+         /* TODO/FIXME: check if really needed */
          if (symbol == 339) /* Latin small ligature oe */
             symbol = 156;
          if (symbol == 338) /* Latin capital ligature oe */
@@ -3670,6 +3736,7 @@ static void blit_line_rus(
          bool *symbol_lut;
          uint32_t symbol = utf8_walk(&message);
 
+         /* TODO/FIXME: check if really needed */
          if (symbol == 339) /* Latin small ligature oe */
             symbol = 156;
          if (symbol == 338) /* Latin capital ligature oe */
@@ -3727,6 +3794,7 @@ static void blit_line_rus_shadow(
          bool *symbol_lut;
          uint32_t symbol = utf8_walk(&message);
 
+         /* TODO/FIXME: check if really needed */
          if (symbol == 339) /* Latin small ligature oe */
             symbol = 156;
          if (symbol == 338) /* Latin capital ligature oe */
@@ -3762,6 +3830,111 @@ static void blit_line_rus_shadow(
       }
 
       x += FONT_10X10_WIDTH_STRIDE;
+   }
+}
+
+static void blit_line_6x10(
+      rgui_t *rgui,
+      unsigned fb_width, int x, int y,
+      const char *message, uint16_t color, uint16_t shadow_color)
+{
+   uint16_t *frame_buf_data   = rgui->frame_buf.data;
+   bitmapfont_lut_t *font_eng = rgui->fonts.eng_6x10;
+   bitmapfont_lut_t *font_lse = rgui->fonts.lse_6x10;
+
+   while (!string_is_empty(message))
+   {
+      /* Deal with spaces first, for efficiency */
+      if (*message == ' ')
+         message++;
+      else
+      {
+         unsigned i, j;
+         bool *symbol_lut;
+         uint32_t symbol = utf8_walk(&message);
+
+         /* Find glyph LUT data */
+         if (symbol <= font_eng->glyph_max)
+            symbol_lut = font_eng->lut[symbol];
+         else if ((symbol >= font_lse->glyph_min) && (symbol <= font_lse->glyph_max))
+            symbol_lut = font_lse->lut[symbol - font_lse->glyph_min];
+         else
+            continue;
+
+         for (j = 0; j < FONT_6X10_HEIGHT; j++)
+         {
+            unsigned buff_offset = ((y + j) * fb_width) + x;
+
+            for (i = 0; i < FONT_6X10_WIDTH; i++)
+            {
+               if (*(symbol_lut + i + (j * FONT_6X10_WIDTH)))
+                  *(frame_buf_data + buff_offset + i) = color;
+            }
+         }
+      }
+
+      x += FONT_6X10_WIDTH_STRIDE;
+   }
+}
+
+static void blit_line_6x10_shadow(
+      rgui_t *rgui,
+      unsigned fb_width, int x, int y,
+      const char *message, uint16_t color, uint16_t shadow_color)
+{
+   uint16_t *frame_buf_data   = rgui->frame_buf.data;
+   bitmapfont_lut_t *font_eng = rgui->fonts.eng_6x10;
+   bitmapfont_lut_t *font_lse = rgui->fonts.lse_6x10;
+   uint16_t color_buf[2];
+   uint16_t shadow_color_buf[2];
+
+   color_buf[0] = color;
+   color_buf[1] = shadow_color;
+
+   shadow_color_buf[0] = shadow_color;
+   shadow_color_buf[1] = shadow_color;
+
+   while (!string_is_empty(message))
+   {
+      /* Deal with spaces first, for efficiency */
+      if (*message == ' ')
+         message++;
+      else
+      {
+         unsigned i, j;
+         bool *symbol_lut;
+         uint32_t symbol = utf8_walk(&message);
+
+         /* Find glyph LUT data */
+         if (symbol <= font_eng->glyph_max)
+            symbol_lut = font_eng->lut[symbol];
+         else if ((symbol >= font_lse->glyph_min) && (symbol <= font_lse->glyph_max))
+            symbol_lut = font_lse->lut[symbol - font_lse->glyph_min];
+         else
+            continue;
+
+         for (j = 0; j < FONT_6X10_HEIGHT; j++)
+         {
+            unsigned buff_offset = ((y + j) * fb_width) + x;
+
+            for (i = 0; i < FONT_6X10_WIDTH; i++)
+            {
+               if (*(symbol_lut + i + (j * FONT_6X10_WIDTH)))
+               {
+                  uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
+
+                  /* Text pixel + right shadow */
+                  memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
+
+                  /* Bottom shadow */
+                  frame_buf_ptr += fb_width;
+                  memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
+               }
+            }
+         }
+      }
+
+      x += FONT_6X10_WIDTH_STRIDE;
    }
 }
 #endif
@@ -3901,6 +4074,13 @@ static void rgui_set_blit_functions(unsigned language,
          case RETRO_LANGUAGE_RUSSIAN:
             blit_line = blit_line_rus_shadow;
             break;
+         case RETRO_LANGUAGE_ESPERANTO:
+         case RETRO_LANGUAGE_POLISH:
+         case RETRO_LANGUAGE_TURKISH:
+         case RETRO_LANGUAGE_SLOVAK:
+         case RETRO_LANGUAGE_CZECH:
+            blit_line = blit_line_6x10_shadow;
+            break;
          default:
             if (extended_ascii)
                blit_line = blit_line_extended_shadow;
@@ -3930,6 +4110,13 @@ static void rgui_set_blit_functions(unsigned language,
             break;
          case RETRO_LANGUAGE_RUSSIAN:
             blit_line = blit_line_rus;
+            break;
+         case RETRO_LANGUAGE_ESPERANTO:
+         case RETRO_LANGUAGE_POLISH:
+         case RETRO_LANGUAGE_TURKISH:
+         case RETRO_LANGUAGE_SLOVAK:
+         case RETRO_LANGUAGE_CZECH:
+            blit_line = blit_line_6x10;
             break;
          default:
             if (extended_ascii)
