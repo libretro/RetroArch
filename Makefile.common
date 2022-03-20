@@ -1262,6 +1262,7 @@ ifeq ($(HAVE_WAYLAND), 1)
  OBJ += gfx/drivers_context/wayland_ctx.o \
         input/common/wayland_common.o \
         input/drivers/wayland_input.o \
+        gfx/common/wayland_common.o \
         gfx/common/wayland/xdg-shell.o \
         gfx/common/wayland/idle-inhibit-unstable-v1.o \
         gfx/common/wayland/xdg-decoration-unstable-v1.o

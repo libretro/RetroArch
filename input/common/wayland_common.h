@@ -184,12 +184,6 @@ typedef struct gfx_ctx_wayland_data
    bool reported_display_size;
 } gfx_ctx_wayland_data_t;
 
-typedef struct shm_buffer {
-   struct wl_buffer *wl_buffer;
-   void *data;
-   size_t data_size;
-} shm_buffer_t;
-
 #ifdef HAVE_XKBCOMMON
 /* FIXME: Move this into a header? */
 int init_xkb(int fd, size_t size);
@@ -201,21 +195,7 @@ void free_xkb(void);
 
 void gfx_ctx_wl_show_mouse(void *data, bool state);
 
-void handle_toplevel_close(void *data,
-      struct xdg_toplevel *xdg_toplevel);
-
 void flush_wayland_fd(void *data);
-
-int create_shm_file(off_t size);
-
-shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl,
-   int width, int height, uint32_t format);
-
-void shm_buffer_paint_checkerboard(shm_buffer_t *buffer,
-      int width, int height, int scale,
-      size_t chk, uint32_t bg, uint32_t fg);
-
-bool draw_splash_screen(gfx_ctx_wayland_data_t *wl);
 
 extern const struct wl_keyboard_listener keyboard_listener;
 
