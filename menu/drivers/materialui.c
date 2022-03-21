@@ -10208,6 +10208,7 @@ static void materialui_list_insert(
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case MENU_SETTING_ACTION_CORE_OPTIONS_RESET:
+         case MENU_SETTING_ACTION_REMAP_FILE_RESET:
             node->icon_texture_index = MUI_TEXTURE_UNDO_SAVE_STATE;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;

@@ -2824,8 +2824,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,
    "remap_file_remove_game"
    )
-
-
+MSG_HASH(
+   MENU_ENUM_LABEL_REMAP_FILE_RESET,
+   "remap_file_reset"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_RESTART_CONTENT,
    "restart_content"
