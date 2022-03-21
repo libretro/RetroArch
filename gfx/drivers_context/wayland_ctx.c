@@ -134,7 +134,7 @@ static bool gfx_ctx_wl_get_metrics(void *data,
    return gfx_ctx_wl_get_metrics_common(wl, type, value);
 }
 
-#ifdef HAVE_LIBDECOR
+#ifdef HAVE_LIBDECOR_H
 static void
 libdecor_frame_handle_configure(struct libdecor_frame *frame,
       struct libdecor_configuration *configuration, void *data)
@@ -154,18 +154,24 @@ libdecor_frame_handle_configure(struct libdecor_frame *frame,
 
    wl->configured = false;
 }
+#endif
 
 static const toplevel_listener_t toplevel_listener = {
-   libdecor_frame_handle_configure,
-   libdecor_frame_handle_close,
-   libdecor_frame_handle_commit,
-};
-#else
-static const toplevel_listener_t toplevel_listener = {
-    xdg_toplevel_handle_configure,
-    xdg_toplevel_handle_close,
-};
+#ifdef HAVE_LIBDECOR_H
+   .libdecor_frame_interface = {
+     libdecor_frame_handle_configure,
+     libdecor_frame_handle_close,
+     libdecor_frame_handle_commit,
+   },
 #endif
+   .xdg_toplevel_listener = {
+      xdg_toplevel_handle_configure,
+      xdg_toplevel_handle_close,
+   },
+};
+
+static const toplevel_listener_t xdg_toplevel_listener = {
+};
 
 #ifdef HAVE_EGL
 #define WL_EGL_ATTRIBS_BASE \

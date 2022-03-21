@@ -13,8 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef WAYLAND_INPUT_COMMON_H__
-#define WAYLAND_INPUT_COMMON_H__
+#pragma once
 
 #include <stdint.h>
 #include <boolean.h>
@@ -51,6 +50,10 @@
 	for (pos = (type)(array)->data; \
 	     (const char *) pos < ((const char *) (array)->data + (array)->size); \
 	     (pos)++)
+
+#ifdef HAVE_LIBDECOR_H
+#include <libdecor.h>
+#endif
 
 typedef struct
 {
@@ -141,9 +144,14 @@ typedef struct gfx_ctx_wayland_data
    struct wl_data_device_manager *data_device_manager;
    struct wl_data_device *data_device;
    data_offer_ctx *current_drag_offer;
-#ifdef HAVE_LIBDECOR
+#ifdef HAVE_LIBDECOR_H
    struct libdecor *libdecor_context;
    struct libdecor_frame *libdecor_frame;
+#ifdef HAVE_DYNAMIC
+   struct dylib_t *libdecor;
+#define RA_WAYLAND_SYM(rc,fn,params) rc (*fn) params;
+#include "../../gfx/common/wayland/libdecor_sym.h"
+#endif
 #endif
    struct zxdg_decoration_manager_v1 *deco_manager;
    struct zxdg_toplevel_decoration_v1 *deco;
@@ -220,5 +228,3 @@ extern const struct wl_buffer_listener shm_buffer_listener;
 extern const struct wl_data_device_listener data_device_listener;
 
 extern const struct wl_data_offer_listener data_offer_listener;
-
-#endif

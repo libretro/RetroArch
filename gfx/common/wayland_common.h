@@ -15,19 +15,18 @@
 
 #pragma once
 
-#ifdef HAVE_LIBDECOR
+#ifdef HAVE_LIBDECOR_H
 #include <libdecor.h>
 #endif
 
 #include "../../input/common/wayland_common.h"
 
-
-
-#ifdef HAVE_LIBDECOR
-typedef struct libdecor_frame_interface toplevel_listener_t;
-#else
-typedef struct xdg_toplevel_listener toplevel_listener_t;
+typedef struct toplevel_listener {
+#ifdef HAVE_LIBDECOR_H
+   struct libdecor_frame_interface libdecor_frame_interface;
 #endif
+   struct xdg_toplevel_listener xdg_toplevel_listener;
+} toplevel_listener_t;
 
 typedef struct shm_buffer {
    struct wl_buffer *wl_buffer;
@@ -41,7 +40,7 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl, void *topl
 void xdg_toplevel_handle_close(void *data,
       struct xdg_toplevel *xdg_toplevel);
 
-#ifdef HAVE_LIBDECOR
+#ifdef HAVE_LIBDECOR_H
 void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
       struct libdecor_configuration *configuration, gfx_ctx_wayland_data_t *wl);
 
@@ -63,7 +62,7 @@ bool gfx_ctx_wl_get_metrics_common(gfx_ctx_wayland_data_t *wl,
       enum display_metric_types type, float *value);
 
 bool gfx_ctx_wl_init_common(void *video_driver,
-      toplevel_listener_t **toplevel_listener,
+      const toplevel_listener_t *toplevel_listener,
       gfx_ctx_wayland_data_t **wl);
 
 bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
@@ -97,7 +96,7 @@ void shm_buffer_paint_checkerboard(shm_buffer_t *buffer,
 
 bool draw_splash_screen(gfx_ctx_wayland_data_t *wl);
 
-#ifdef HAVE_LIBDECOR
+#ifdef HAVE_LIBDECOR_H
 extern const struct libdecor_interface libdecor_interface;
 #endif
 
