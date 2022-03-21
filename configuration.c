@@ -5164,13 +5164,7 @@ bool input_remapping_load_file(void *data, const char *path)
             key_ident[0]  = '\0';
 
             fill_pathname_join_delim(stk_ident, s3,
-                  key_string, '$', sizeof(stk_ident));
-
-            snprintf(stk_ident,
-                  sizeof(stk_ident),
-                  "%s_%s",
-                  s3,
-                  key_string);
+                  key_string, '_', sizeof(stk_ident));
 
             if (config_get_int(conf, stk_ident, &stk_remap))
             {

@@ -1381,6 +1381,14 @@ static unsigned menu_displaylist_parse_remap_file_manager_list(
             MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE,
             MENU_SETTING_ACTION_REMAP_FILE_REMOVE_CORE, 0, 0))
       count++;
+
+   /* Reset input remaps */
+   if (menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET),
+         msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_RESET),
+         MENU_ENUM_LABEL_REMAP_FILE_RESET,
+         MENU_SETTING_ACTION_REMAP_FILE_RESET, 0, 0))
+      count++;
 end:
    /* Fallback */
    if (count == 0)

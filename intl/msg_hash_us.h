@@ -7094,6 +7094,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
    "Delete Game Remap File"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
+   "Reset Input Mapping"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
+   "Set all input remapping options to default values."
+   )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
 
@@ -12106,6 +12114,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
    "Remap file removed successfully."
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_RESET,
+   "All input remapping options reset to default."
    )
 MSG_HASH(
    MSG_REMOVED_DISK_FROM_TRAY,
