@@ -1242,6 +1242,8 @@ void config_unset(config_file_t *conf, const char *key)
    if (!entry)
       return;
 
+   (void)RHMAP_DEL_STR(conf->entries_map, entry->key);
+
    if (entry->key)
       free(entry->key);
 
@@ -1251,16 +1253,6 @@ void config_unset(config_file_t *conf, const char *key)
    entry->key     = NULL;
    entry->value   = NULL;
    conf->modified = true;
-
-   /* TODO/FIXME: We want to call RHMAP_DEL_STR()
-    * here to remove the current entry from the
-    * internal hash map - but RHMAP_DEL_STR() does
-    * not work correctly and causes hash map corruption.
-    * We therefore work around this by leaving the
-    * entry in the hash map, but setting its value
-    * to NULL... */
-   entry = NULL;
-   RHMAP_SET_STR(conf->entries_map, key, entry);
 }
 
 void config_set_path(config_file_t *conf, const char *entry, const char *val)
@@ -1468,7 +1460,7 @@ void config_file_dump(config_file_t *conf, FILE *file, bool sort)
 
 bool config_entry_exists(config_file_t *conf, const char *entry)
 {
-   return !!RHMAP_GET_STR(conf->entries_map, entry);
+   return (bool)RHMAP_HAS_STR(conf->entries_map, entry);
 }
 
 bool config_get_entry_list_head(config_file_t *conf,
