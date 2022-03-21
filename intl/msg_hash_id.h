@@ -793,6 +793,10 @@ MSG_HASH(
    "Deskripsi"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
+   "Pencapaian"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
    "Penerbit"
    )
@@ -2332,6 +2336,10 @@ MSG_HASH(
    "Atur Core"
    )
 #ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
+   "Atur Core"
+   )
 
 
 

@@ -136,6 +136,10 @@ MSG_HASH(
 
 /* Main Menu > Information > Database Manager > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
+   "Enable Achievements"
+   )
 
 /* Main Menu > Configuration File */
 
