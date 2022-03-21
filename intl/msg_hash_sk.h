@@ -10,7 +10,7 @@
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MAIN_MENU,
-   "Hlavné Menu"
+   "Hlavné menu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
@@ -37,6 +37,10 @@ MSG_HASH(
    "Videá"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
+   "Online hranie"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
    "Prehľadávať"
    )
@@ -46,18 +50,18 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
-   "Import Obsahu"
+   "Importovať obsah"
    )
 
 /* Main Menu */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
-   "Rýchle Menu"
+   "Rýchla ponuka"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
-   "Rýchly prístup ku všetkým vnútro-herným nastaveniam."
+   "Rýchly prístup ku všetkým dôležitým nastaveniam v hre."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
@@ -65,31 +69,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST,
-   "Výber jadra (core) k použití."
+   "Vybrať jadro, ktoré chcete použiť."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
-   "Načítať Obsah"
+   "Načítať obsah"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
-   "Vyber ktorý obsah sa má spustiť."
+   "Vyberte, ktorý obsah chcete spustiť."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-   "Načítať Disk"
+   "Načítať disk"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_DISC,
-   "Možnosť načítať fyzický mediálny disk (CD/DVD). Najprv zvoľ jadro (Načítať Jadro) na spustenie disku."
+   "Vložte fyzický disk. Najprv vyberte jadro (Načítať jadro), ktoré chcete použiť s diskom."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-   "Preniesť Disk"
+   "Kopírovať disk"
    )
 MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
    MENU_ENUM_SUBLABEL_DUMP_DISC,
-   "Prenos dat z fyzického disku. Obrazec sa v úložišti uloží ako ISO formát."
+   "Skopíruje disk fyzického média do internej pamäte. Uloží sa ako obrazový súbor."
    )
 #ifdef HAVE_LAKKA
 MSG_HASH(
@@ -98,52 +102,56 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_EJECT_DISC,
-   "Vysunie disk z fyzickej jednotky CD/DVD."
+   "Vysunie disk z fyzickej DVD mechaniky."
    )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
-   "Hracie zoznamy"
+   "Zoznamy hier"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
-   "Vyhľadávaný obsah ktorý sa bude zhodovať s databázou sa objavý tu."
+   "Tu sa zobrazí naskenovaný obsah podľa údajov uvedených v databáze."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "Import Obsahu"
+   "Importovať obsah"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "Vytvoriť a aktualizovať herný zoznam vyhľadávaním obsahu."
+   "Vytvorte a aktualizujte zoznamy hier skenovaním jeho obsahu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   "Zobraziť Menu ako Plochu"
+   "Zobraziť ponuku pracovnej plochy"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_WIMP,
-   "Zobrazí tradičné menu plochy."
+   "Otvorí klasickú ponuku na pracovnej ploche."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Zakázať režim kiosku (vyžadovaný reštart)"
+   "Zakázať režim kiosku (vyžaduje sa reštart)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   "Zobraziť všetky nastavenia súvisiace s konfiguráciou."
+   "Zobraziť všetky úpravy súvisiace s konfiguráciou."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
-   "Online Aktualizácie"
+   "Online aktualizácie"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   "Stiahnutie prídavkov, komponentov, a obsahu pre RetroArch."
+   "Stiahnite si doplnky, zložky a obsah pre RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY,
+   "Online hranie"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY,
-   "Pridať sa alebo hostiť zasedanie netplay."
+   "Pripojte sa k online hre alebo sa staňte hostiteľom relácie."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
@@ -151,7 +159,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS,
-   "Konfigurácia programu."
+   "Nastavenie programu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
@@ -159,15 +167,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-   "Zobraziť systémové informácie."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-   "Konfiguračný Súbor"
+   "Zobrazí systémové informácie."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
-   "Spravovanie a vytvárenie konfiguračných súborov."
+   "Spracujte a vytvárajte konfiguračné súbory."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LIST,
@@ -175,7 +179,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HELP_LIST,
-   "Zisti viac o tom ako program funguje."
+   "Získajte viac informácií ako program funguje."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
@@ -183,11 +187,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Reštartuje sa program."
+   "Reštartujte program."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Vypnúť RetroArch"
+   "Ukončiť RetroArch"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
@@ -198,23 +202,23 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
-   "Stiahnuť Jadro (Core)"
+   "Stiahnuť jadro"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
-   "Stiahnutie a inštalácia jadra z online aktualizácii."
+   "Stiahnite si a nainštalujte jadro z online aktualizácie."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
-   "Nainštalovať alebo obnoviť jadro"
+   "Inštalácia alebo obnovenie jadra"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-   "Inštalácia alebo obnova jadra zo \"Stiahnuté\" zložky."
+   "Nainštalujte alebo obnovte jadro z adresára \" Stiahnuté súbory\"."
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
-   "Spustiť Video Procesor"
+   "Spustiť videoprocesor"
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
@@ -225,19 +229,19 @@ MSG_HASH( /* FIXME Maybe add a description? */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FAVORITES,
-   "Počiatočný priečinok"
+   "Spustiť adresár"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
-   "Prevzaté"
+   "Sťahovanie"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
-   "Prehľadávať Archív"
+   "Prehľadávať archív"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
-   "Načítať Archív"
+   "Načítať archív"
    )
 
 /* Main Menu > Load Content > Playlists */
@@ -845,6 +849,14 @@ MSG_HASH(
    "Žáner"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
+   "Úspechy"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
+   "Ovládanie"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
    "Vydavateľ"
    )
@@ -1357,6 +1369,10 @@ MSG_HASH(
    "Interpolácia obrazu"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Určuje metódu interpolácie obrazu, keď je vypnutá funkcia \"Integer Scale (Celočíselné zväčšenie)\". Najmenší vplyv na výkon má interpolácia \"Najbližší sused\"."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
    "Najbližší sused"
    )
@@ -1689,8 +1705,32 @@ MSG_HASH(
    "Stlmiť zvuk."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
+   "Automatické stlmenie zvuku pri použití rýchleho posunu vpred."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
+   "Zosilnenie hlasitosti (dB)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
+   "Hlasitosť zvuku (v dB). 0 dB je normálna hlasitosť a nepoužíva sa pri nej žiadne zosilnenie."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
+   "Zosilnenie hlasitosti zmiešavača (dB)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
+   "Globálna hlasitosť zmiešavača zvuku (v dB). 0 dB je normálna hlasitosť a nepoužíva sa pri nej žiadne zosilnenie."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
    "DPS zásuvný modul"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
+   "Zásuvný modul DSP zvuku, ktorý spracováva zvuk pred jeho odoslaním do ovládača."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
@@ -1703,6 +1743,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    "WASAPI exkluzívny mód"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
+   "Umožniť ovládaču WASAPI prevziať výhradnú kontrolu nad zvukovým zariadením. Ak je vypnuté, použije namiesto toho zdieľaný režim."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
+   "Formát WASAPI s pohyblivou desatinnou čiarkou"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+   "Použije formát s pohyblivou desatinnou čiarkou pre ovládač WASAPI, ak ho vaše zvukové zariadenie podporuje."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   "Dĺžka zdieľanej vyrovnávacej pamäte WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   "Veľkosť medzipamäte (v rámcoch) pri použití ovládača WASAPI v zdieľanom režime."
    )
 
 /* Settings > Audio > Output */
@@ -1720,18 +1780,62 @@ MSG_HASH(
    "Zariadenie"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
+   "Prepísať predvolené zvukové zariadenie, ktoré používa ovládač zvuku. Závisí od ovládača zvuku."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Oneskorenie zvuku (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
+   "Požadované oneskorenie zvuku v milisekundách. Nemusí byť dodržaná, ak zvukový ovládač nedokáže danú latenciu dosiahnuť."
    )
 
 /* Settings > Audio > Resampler */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
+   "Kvalita prevzorkovania"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
+   "Znížením tejto hodnoty uprednostníte výkon/nižšiu latenciu pred kvalitou zvuku, zvýšením získate lepšiu kvalitu zvuku na úkor výkonu/nižšej latencie."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
+   "Výstupná frekvencia (Hz)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
+   "Výstupná vzorkovacia frekvencia zvuku."
+   )
 
 /* Settings > Audio > Synchronization */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    "Synchronizácia"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SYNC,
+   "Synchronizuje zvuk. Odporúča sa."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
+   "Maximálny časový posun"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
+   "Maximálna frekvenčná odchýlka zvukového signálu. Zvýšenie hodnoty výrazne ovplyvňuje zmeny časovania, ale výsledkom je nepresná výška tónu (napríklad pri spustení obsahu PAL na obrazovkách NTSC)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
+   "Dynamické regulovanie rýchlosti zvuku"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
+   "Pomáha odstrániť nedokonalosti v načasovaní pri synchronizácii zvuku a videa. Uvedomte si, že ak je vypnutá, správnu synchronizáciu je takmer nemožné dosiahnuť."
    )
 
 /* Settings > Audio > MIDI */
@@ -1768,24 +1872,48 @@ MSG_HASH(
    "Spustiť"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
+   "Spustí prehrávanie audio streamu. Po dokončení odstráni aktuálny zvukový tok z pamäte."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
    "Prehrávať (v slučke)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
+   "Spustí prehrávanie audio streamu. Po skončení prehrávania vytvorí slučku a prehráva skladbu znova od začiatku."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
    "Prehrávať (v poradí)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
+   "Spustí prehrávanie audio streamu. Po dokončení prejde na ďalší zvukový tok v postupnom poradí a toto správanie zopakuje. Použiteľné ako režim prehrávania albumu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
    "Zastaviť"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
+   "Toto zastaví prehrávanie audio streamu, ale neodstráni ho z pamäte. Môžete ho znova spustiť výberom položky „Prehrať“."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
    "Odstrániť"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
+   "Toto zastaví prehrávanie audio streamu a úplne ho odstráni z pamäte."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
    "Hlasitosť"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
+   "Nastavuje hlasitosť audio streamu."
    )
 
 /* Settings > Audio > Menu Sounds */
@@ -1838,6 +1966,10 @@ MSG_HASH(
    "Zmeniť ovládanie pre toto jadro"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+   "Prepíše zmeny pomocou upravených volieb pre aktuálne jadro."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Automatická konfigurácia"
    )
@@ -1864,8 +1996,20 @@ MSG_HASH(
    "Povoliť vstup zo senzorov zrýchlenia, naklonenia a osvetlenia, ak ich podporuje súčasný hardvér. Môže mať dopad na výkon a/alebo zvýšiť spotrebu na niektorých platformách."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   "Automatické zachytenie kurzora"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
+   "Povoliť zachytenie kurzora myši pri označení aplikácie."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    "Automaticky povoliť režim 'Zameranie na hru'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
+   "Povolí režim \"Priorita hry\" pri automatickom spustení a obnovení obsahu. Výberom možnosti \"Detegovať\" sa táto možnosť povolí, ak aktuálne jadro implementuje funkciu spätného volania klávesnice."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
@@ -1880,8 +2024,80 @@ MSG_HASH(
    "Zistiť"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
+   "Odchýlka osi pri stlačení tlačidla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
+   "Určuje, ako ďaleko musí byť os naklonená, aby došlo k stlačeniu tlačidla."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
+   "Analógová mŕtva zóna"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+   "Analógová citlivosť"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
+   "Časový limit párovania tlačidla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
+   "Čas v sekundách, kým sa prejde na ďalšie tlačidlo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
+   "Čas stlačenia tlačidla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
+   "Počet sekúnd, počas ktorých sa má tlačidlo podržať, aby sa spárovalo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
+   "Turbo režim"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
+   "Čas (v snímkoch), keď sú stlačené tlačidlá s funkciou turbo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
+   "Prevádzkový cyklus turba"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
+   "Počet snímok z režimu Turbo, počas ktorého sa tlačidlá držia stlačené. Ak je toto číslo rovné alebo väčšie ako interval Turbo, tlačidlá sa nikdy neuvoľnia."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
    "Turbo mód"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+   "Zvoľte všeobecné správanie režimu Turbo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
+   "Predvolené tlačidlo Turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
+   "Predvolené tlačidlo pre režim Turbo \"Jedno tlačidlo\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
+   "Rýchlo streľba"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "Zmena nastavenia Rychlo streľby."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+   "Haptická spätná väzba/vibrácia"
    )
 
 /* Settings > Input > Haptic Feedback/Vibration */
@@ -2355,6 +2571,10 @@ MSG_HASH(
 
 /* Quick Menu > Disc Control */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "Vysunúť disk"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Vložte disk"
@@ -2958,6 +3178,38 @@ MSG_HASH(
 #else
 #endif
 #if defined(_3DS)
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_DEFAULT,
+   "Dotknite sa dotykovej obrazovky, \naby ste prešli do ponuky Retroarch"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
+   "bottom_menu.png nebol nájdený\nv priečinku assets/ctr"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
+   "Žiadne \núdaje"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
+   "Žiadny\nsnímok obrazovky"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_RESUME,
+   "Pokračovať v hre"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_SAVE_STATE,
+   "Vytvoriť\nbod obnovy"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_LOAD_STATE,
+   "Načítať \nbod obnovy"
+   )
 #endif
 #ifdef HAVE_QT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
+   "Skenovanie je dokončené.<br><br>\nAk chcete, aby bol obsah správne naskenovaný, musíte:\n<ul><li>mať už stiahnuté kompatibilné jadro</li>\n<li>mať aktualizované „Informačné súbory o jadre“ cez Online Updater</li>\n<li>aktualizovať \"Databázy\" cez Online Updater</li>\n<li>reštartovať RetroArch, ak ste práve vykonali čokoľvek z vyššie uvedeného</li></ul>\nNakoniec, obsah sa musí zhodovať s existujúcimi databázami z <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">nachádyajúcimi sa tu</a>. Ak to stále nefunguje, <a href=\"https://www.github.com/libretro/RetroArch/issues\">odošlite hlásenie o chybe</a>."
+   )
 #endif
