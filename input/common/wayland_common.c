@@ -29,7 +29,7 @@
 
 #include <string/stdstring.h>
 
-#ifdef HAVE_LIBDECOR
+#ifdef HAVE_LIBDECOR_H
 #include <libdecor.h>
 #endif
 
@@ -244,11 +244,14 @@ static void pointer_handle_button(void *data,
 
             if (BIT_GET(wl->input.key_state, KEY_LEFTALT))
             {
-#ifdef HAVE_LIBDECOR
-               libdecor_frame_move(wl->libdecor_frame, wl->seat, serial);
-#else
-               xdg_toplevel_move(wl->xdg_toplevel, wl->seat, serial);
+#ifdef HAVE_LIBDECOR_H
+               if (wl->libdecor)
+                   wl->libdecor_frame_move(wl->libdecor_frame, wl->seat, serial);
+               else
 #endif
+               {
+                  xdg_toplevel_move(wl->xdg_toplevel, wl->seat, serial);
+               }
             }
             break;
          case BTN_RIGHT:

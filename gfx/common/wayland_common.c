@@ -25,7 +25,7 @@
 
 #define SPLASH_SHM_NAME "retroarch-wayland-vk-splash"
 
-#ifdef HAVE_LIBDECOR
+#ifdef HAVE_LIBDECOR_H
 #include <libdecor.h>
 #endif
 
@@ -71,7 +71,7 @@ void xdg_toplevel_handle_close(void *data,
    command_event(CMD_EVENT_QUIT, NULL);
 }
 
-#ifdef HAVE_LIBDECOR
+#ifdef HAVE_LIBDECOR_H
 void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
       struct libdecor_configuration *configuration,
       gfx_ctx_wayland_data_t *wl)
@@ -92,7 +92,7 @@ void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
    wl->fullscreen = false;
    wl->maximized  = false;
 
-   if (libdecor_configuration_get_window_state(
+   if (wl->libdecor_configuration_get_window_state(
          configuration, &window_state))
    {
       wl->fullscreen = (window_state & LIBDECOR_WINDOW_STATE_FULLSCREEN) != 0;
@@ -101,7 +101,7 @@ void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
       tiled          = (window_state & tiled_states) != 0;
    }
 
-   if (!libdecor_configuration_get_content_size(configuration, frame,
+   if (!wl->libdecor_configuration_get_content_size(configuration, frame,
          &width, &height))
    {
       width  = wl->floating_width;
@@ -115,11 +115,11 @@ void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
       wl->height = height;
    }
 
-   state = libdecor_state_new(wl->width, wl->height);
-   libdecor_frame_commit(frame, state, configuration);
-   libdecor_state_free(state);
+   state = wl->libdecor_state_new(wl->width, wl->height);
+   wl->libdecor_frame_commit(frame, state, configuration);
+   wl->libdecor_state_free(state);
 
-   if (libdecor_frame_is_floating(frame)) {
+   if (wl->libdecor_frame_is_floating(frame)) {
       wl->floating_width  = width;
       wl->floating_height = height;
    }
@@ -231,18 +231,23 @@ void gfx_ctx_wl_update_title_common(gfx_ctx_wayland_data_t *wl)
 
    video_driver_get_window_title(title, sizeof(title));
 
-#ifdef HAVE_LIBDECOR
-   if (wl && title[0])
-      libdecor_frame_set_title(wl->libdecor_frame, title);
-#else
-   if (wl && title[0])
+#ifdef HAVE_LIBDECOR_H
+   if (wl->libdecor)
    {
-      if (wl->deco)
-         zxdg_toplevel_decoration_v1_set_mode(wl->deco,
-            ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
-      xdg_toplevel_set_title(wl->xdg_toplevel, title);
+      if (wl && title[0])
+         wl->libdecor_frame_set_title(wl->libdecor_frame, title);
    }
+   else
 #endif
+   {
+      if (wl && title[0])
+      {
+         if (wl->deco)
+            zxdg_toplevel_decoration_v1_set_mode(wl->deco,
+               ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
+         xdg_toplevel_set_title(wl->xdg_toplevel, title);
+      }
+   }
 }
 
 bool gfx_ctx_wl_get_metrics_common(gfx_ctx_wayland_data_t *wl,
@@ -279,7 +284,7 @@ bool gfx_ctx_wl_get_metrics_common(gfx_ctx_wayland_data_t *wl,
 }
 
 bool gfx_ctx_wl_init_common(void *video_driver,
-      toplevel_listener_t **toplevel_listener, gfx_ctx_wayland_data_t **wwl)
+      const toplevel_listener_t *toplevel_listener, gfx_ctx_wayland_data_t **wwl)
 {
    int i;
    *wwl = calloc(1, sizeof(gfx_ctx_wayland_data_t));
@@ -287,6 +292,18 @@ bool gfx_ctx_wl_init_common(void *video_driver,
 
    if (!wl)
       return false;
+
+
+#ifdef HAVE_LIBDECOR_H
+#ifdef HAVE_DYNAMIC
+   wl->libdecor = dylib_load("libdecor-0.so");
+   if (wl->libdecor)
+   {
+#define RA_WAYLAND_SYM(rc,fn,params) wl->fn = (rc (*) params)dylib_proc(wl->libdecor, #fn);
+#include "wayland/libdecor_sym.h"
+   }
+#endif
+#endif
 
    wl_list_init(&wl->all_outputs);
 
@@ -343,55 +360,60 @@ bool gfx_ctx_wl_init_common(void *video_driver,
    wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
    wl_surface_add_listener(wl->surface, &wl_surface_listener, wl);
 
-#ifdef HAVE_LIBDECOR
-   wl->libdecor_context = libdecor_new(wl->input.dpy, &libdecor_interface);
-   if (wl->libdecor_context)
+#ifdef HAVE_LIBDECOR_H
+   if (wl->libdecor)
    {
-      wl->libdecor_frame = libdecor_decorate(wl->libdecor_context, wl->surface, toplevel_listener, wl);
-      if (!wl->libdecor_frame)
+      wl->libdecor_context = wl->libdecor_new(wl->input.dpy, &libdecor_interface);
+      if (wl->libdecor_context)
       {
-         RARCH_ERR("[Wayland]: Failed to crate libdecor frame\n");
-         goto error;
+         wl->libdecor_frame = wl->libdecor_decorate(wl->libdecor_context, wl->surface, &toplevel_listener->libdecor_frame_interface, wl);
+         if (!wl->libdecor_frame)
+         {
+            RARCH_ERR("[Wayland]: Failed to crate libdecor frame\n");
+            goto error;
+         }
+
+         wl->libdecor_frame_set_app_id(wl->libdecor_frame, "retroarch");
+         wl->libdecor_frame_set_title(wl->libdecor_frame, "RetroArch");
+         wl->libdecor_frame_map(wl->libdecor_frame);
       }
 
-      libdecor_frame_set_app_id(wl->libdecor_frame, "retroarch");
-      libdecor_frame_set_title(wl->libdecor_frame, "RetroArch");
-      libdecor_frame_map(wl->libdecor_frame);
-   }
+      /* Waiting for libdecor to be configured before starting to draw */
+      wl_surface_commit(wl->surface);
+      wl->configured = true;
 
-   /* Waiting for libdecor to be configured before starting to draw */
-   wl_surface_commit(wl->surface);
-   wl->configured = true;
-
-   while (wl->configured)
-   {
-      if (libdecor_dispatch(wl->libdecor_context, 0) < 0)
+      while (wl->configured)
       {
-         RARCH_ERR("[Wayland]: libdecor failed to dispatch\n");
-         goto error;
+         if (wl->libdecor_dispatch(wl->libdecor_context, 0) < 0)
+         {
+            RARCH_ERR("[Wayland]: libdecor failed to dispatch\n");
+            goto error;
+         }
       }
    }
-#else
-   wl->xdg_surface = xdg_wm_base_get_xdg_surface(wl->xdg_shell, wl->surface);
-   xdg_surface_add_listener(wl->xdg_surface, &xdg_surface_listener, wl);
-
-   wl->xdg_toplevel = xdg_surface_get_toplevel(wl->xdg_surface);
-   xdg_toplevel_add_listener(wl->xdg_toplevel, toplevel_listener, wl);
-
-   xdg_toplevel_set_app_id(wl->xdg_toplevel, "retroarch");
-   xdg_toplevel_set_title(wl->xdg_toplevel, "RetroArch");
-
-   if (wl->deco_manager)
-      wl->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
-            wl->deco_manager, wl->xdg_toplevel);
-
-   /* Waiting for xdg_toplevel to be configured before starting to draw */
-   wl_surface_commit(wl->surface);
-   wl->configured = true;
-
-   while (wl->configured)
-      wl_display_dispatch(wl->input.dpy);
+   else
 #endif
+   {
+      wl->xdg_surface = xdg_wm_base_get_xdg_surface(wl->xdg_shell, wl->surface);
+      xdg_surface_add_listener(wl->xdg_surface, &xdg_surface_listener, wl);
+
+      wl->xdg_toplevel = xdg_surface_get_toplevel(wl->xdg_surface);
+      xdg_toplevel_add_listener(wl->xdg_toplevel, &toplevel_listener->xdg_toplevel_listener, wl);
+
+      xdg_toplevel_set_app_id(wl->xdg_toplevel, "retroarch");
+      xdg_toplevel_set_title(wl->xdg_toplevel, "RetroArch");
+
+      if (wl->deco_manager)
+         wl->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
+               wl->deco_manager, wl->xdg_toplevel);
+
+      /* Waiting for xdg_toplevel to be configured before starting to draw */
+      wl_surface_commit(wl->surface);
+      wl->configured = true;
+
+      while (wl->configured)
+         wl_display_dispatch(wl->input.dpy);
+   }
 
    wl_display_roundtrip(wl->input.dpy);
    xdg_wm_base_add_listener(wl->xdg_shell, &xdg_shell_listener, NULL);
@@ -443,10 +465,13 @@ bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
 
    wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
 
-#ifdef HAVE_LIBDECOR
-   struct libdecor_state *state = libdecor_state_new(width, height);
-   libdecor_frame_commit(wl->libdecor_frame, state, NULL);
-   libdecor_state_free(state);
+#ifdef HAVE_LIBDECOR_H
+   if (wl->libdecor)
+   {
+     struct libdecor_state *state = wl->libdecor_state_new(width, height);
+     wl->libdecor_frame_commit(wl->libdecor_frame, state, NULL);
+     wl->libdecor_state_free(state);
+   }
 #endif
 
    return true;
@@ -486,11 +511,14 @@ bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
       if (output == NULL)
          RARCH_LOG("[Wayland] Failed to specify monitor for fullscreen, letting compositor decide\n");
 
-#ifdef HAVE_LIBDECOR
-      libdecor_frame_set_fullscreen(wl->libdecor_frame, output);
-#else
-      xdg_toplevel_set_fullscreen(wl->xdg_toplevel, output);
+#ifdef HAVE_LIBDECOR_H
+      if (wl->libdecor)
+         wl->libdecor_frame_set_fullscreen(wl->libdecor_frame, output);
+      else
 #endif
+      {
+         xdg_toplevel_set_fullscreen(wl->xdg_toplevel, output);
+      }
    }
 
    flush_wayland_fd(&wl->input);
@@ -589,10 +617,10 @@ static void shm_buffer_handle_release(void *data,
 static void xdg_surface_handle_configure(void *data, struct xdg_surface *surface,
                                   uint32_t serial)
 {
-    xdg_surface_ack_configure(surface, serial);
+   xdg_surface_ack_configure(surface, serial);
 }
 
-#ifdef HAVE_LIBDECOR
+#ifdef HAVE_LIBDECOR_H
 static void libdecor_handle_error(struct libdecor *context,
       enum libdecor_error error, const char *message)
 {
@@ -610,16 +638,16 @@ int create_shm_file(off_t size)
    fd = memfd_create(SPLASH_SHM_NAME, MFD_CLOEXEC | MFD_ALLOW_SEALING);
 
    if (fd >= 0) {
-     fcntl(fd, F_ADD_SEALS, F_SEAL_SHRINK);
+      fcntl(fd, F_ADD_SEALS, F_SEAL_SHRINK);
 
-     do {
-        ret = posix_fallocate(fd, 0, size);
-     } while (ret == EINTR);
-     if (ret != 0) {
-        close(fd);
-        errno = ret;
-        fd = -1;
-     }
+      do {
+         ret = posix_fallocate(fd, 0, size);
+      } while (ret == EINTR);
+      if (ret != 0) {
+         close(fd);
+         errno = ret;
+         fd = -1;
+      }
    }
    if (fd < 0)
    #endif
@@ -747,7 +775,7 @@ const struct wl_buffer_listener shm_buffer_listener = {
    shm_buffer_handle_release,
 };
 
-#ifdef HAVE_LIBDECOR
+#ifdef HAVE_LIBDECOR_H
 const struct libdecor_interface libdecor_interface = {
    .error = libdecor_handle_error,
 };
