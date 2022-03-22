@@ -924,6 +924,54 @@ static const rgui_theme_t rgui_theme_opaque_flux = {
    0xFFEE2000  /* particle_color */
 };
 
+static const rgui_theme_t rgui_theme_gray_dark = {
+   0xFFFFFFFF, /* hover_color */
+   0xFF808080, /* normal_color */
+   0xFFFFFFFF, /* title_color */
+   0xE0101010, /* bg_dark_color */
+   0xE0101010, /* bg_light_color */
+   0xE0303030, /* border_dark_color */
+   0xE0303030, /* border_light_color */
+   0xFF000000, /* shadow_color */
+   0xE0202020  /* particle_color */
+};
+
+static const rgui_theme_t rgui_theme_opaque_gray_dark = {
+   0xFFFFFFFF, /* hover_color */
+   0xFF808080, /* normal_color */
+   0xFFFFFFFF, /* title_color */
+   0xFF101010, /* bg_dark_color */
+   0xFF101010, /* bg_light_color */
+   0xFF303030, /* border_dark_color */
+   0xFF303030, /* border_light_color */
+   0xFF000000, /* shadow_color */
+   0xE0202020  /* particle_color */
+};
+
+static const rgui_theme_t rgui_theme_gray_light = {
+   0xFFFFFFFF, /* hover_color */
+   0xFF808080, /* normal_color */
+   0xFFFFFFFF, /* title_color */
+   0xE0303030, /* bg_dark_color */
+   0xE0303030, /* bg_light_color */
+   0xE0101010, /* border_dark_color */
+   0xE0101010, /* border_light_color */
+   0xFF000000, /* shadow_color */
+   0xE0202020  /* particle_color */
+};
+
+static const rgui_theme_t rgui_theme_opaque_gray_light = {
+   0xFFFFFFFF, /* hover_color */
+   0xFF808080, /* normal_color */
+   0xFFFFFFFF, /* title_color */
+   0xFF303030, /* bg_dark_color */
+   0xFF303030, /* bg_light_color */
+   0xFF101010, /* border_dark_color */
+   0xFF101010, /* border_light_color */
+   0xFF000000, /* shadow_color */
+   0xE0202020  /* particle_color */
+};
+
 typedef struct
 {
    uint16_t hover_color;
@@ -3005,6 +3053,14 @@ static const rgui_theme_t *get_theme(rgui_t *rgui)
          return transparent ?
                &rgui_theme_flux :
                &rgui_theme_opaque_flux;
+      case RGUI_THEME_GRAY_DARK:
+         return transparent ?
+               &rgui_theme_gray_dark :
+               &rgui_theme_opaque_gray_dark;
+      case RGUI_THEME_GRAY_LIGHT:
+         return transparent ?
+               &rgui_theme_gray_light :
+               &rgui_theme_opaque_gray_light;
       default:
          break;
    }
