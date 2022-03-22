@@ -1158,6 +1158,100 @@ static const materialui_theme_t materialui_theme_hacking_the_kernel = {
    0.85f     /* screen_fade_opacity */
 };
 
+static const materialui_theme_t materialui_theme_gray_dark = {
+   /* Text (& small inline icon) colours */
+   0x808080, /* on_sys_bar */
+   0xC0C0C0, /* on_header */
+   0xC0C0C0, /* list_text */
+   0xFFFFFF, /* list_text_highlighted */
+   0x707070, /* list_hint_text */
+   0x808080, /* list_hint_text_highlighted */
+   0x808080, /* status_bar_text */
+   /* Background colours */
+   0x101010, /* sys_bar_background */
+   0x101010, /* title_bar_background */
+   0x101010, /* list_background */
+   0x303030, /* list_highlighted_background */
+   0x101010, /* nav_bar_background */
+   0x202020, /* surface_background */
+   0x0C0C0C, /* thumbnail_background */
+   0x101010, /* side_bar_background */
+   0x101010, /* status_bar_background */
+   /* List icon colours */
+   0xFFFFFF, /* list_icon */
+   0xFFFFFF, /* list_switch_on */
+   0x202020, /* list_switch_on_background */
+   0x707070, /* list_switch_off */
+   0x202020, /* list_switch_off_background */
+   /* Navigation bar icon colours */
+   0xFFFFFF, /* nav_bar_icon_active */
+   0x707070, /* nav_bar_icon_passive */
+   0x202020, /* nav_bar_icon_disabled */
+   /* Screensaver */
+   0x101010, /* screensaver_tint */
+   /* Misc. colours */
+   0x202020, /* header_shadow */
+   0x202020, /* landscape_border_shadow */
+   0x202020, /* status_bar_shadow */
+   0x0C0C0C, /* selection_marker_shadow */
+   0x202020, /* scrollbar */
+   0x101010, /* divider */
+   0x0C0C0C, /* screen_fade */
+   0x202020, /* missing_thumbnail_icon */
+   0.0f,     /* header_shadow_opacity */
+   0.5f,     /* landscape_border_shadow_opacity */
+   0.0f,     /* status_bar_shadow_opacity */
+   0.0f,     /* selection_marker_shadow_opacity */
+   0.5f      /* screen_fade_opacity */
+};
+
+static const materialui_theme_t materialui_theme_gray_light = {
+   /* Text (& small inline icon) colours */
+   0x808080, /* on_sys_bar */
+   0xC0C0C0, /* on_header */
+   0xC0C0C0, /* list_text */
+   0xFFFFFF, /* list_text_highlighted */
+   0x707070, /* list_hint_text */
+   0x808080, /* list_hint_text_highlighted */
+   0x808080, /* status_bar_text */
+   /* Background colours */
+   0x303030, /* sys_bar_background */
+   0x303030, /* title_bar_background */
+   0x303030, /* list_background */
+   0x101010, /* list_highlighted_background */
+   0x303030, /* nav_bar_background */
+   0x202020, /* surface_background */
+   0x0C0C0C, /* thumbnail_background */
+   0x303030, /* side_bar_background */
+   0x303030, /* status_bar_background */
+   /* List icon colours */
+   0xFFFFFF, /* list_icon */
+   0xFFFFFF, /* list_switch_on */
+   0x202020, /* list_switch_on_background */
+   0x707070, /* list_switch_off */
+   0x202020, /* list_switch_off_background */
+   /* Navigation bar icon colours */
+   0xFFFFFF, /* nav_bar_icon_active */
+   0x707070, /* nav_bar_icon_passive */
+   0x202020, /* nav_bar_icon_disabled */
+   /* Screensaver */
+   0x101010, /* screensaver_tint */
+   /* Misc. colours */
+   0x202020, /* header_shadow */
+   0x202020, /* landscape_border_shadow */
+   0x202020, /* status_bar_shadow */
+   0x0C0C0C, /* selection_marker_shadow */
+   0x202020, /* scrollbar */
+   0x303030, /* divider */
+   0x0C0C0C, /* screen_fade */
+   0x202020, /* missing_thumbnail_icon */
+   0.0f,     /* header_shadow_opacity */
+   0.5f,     /* landscape_border_shadow_opacity */
+   0.0f,     /* status_bar_shadow_opacity */
+   0.0f,     /* selection_marker_shadow_opacity */
+   0.5f      /* screen_fade_opacity */
+};
+
 typedef struct
 {
    /* Text */
@@ -1209,6 +1303,8 @@ typedef struct
    float status_bar_shadow_opacity;
    float selection_marker_shadow_opacity;
    float screen_fade_opacity;
+   /* Flags */
+   bool divider_is_list_background;
 } materialui_colors_t;
 
 /* ==============================
@@ -1779,6 +1875,10 @@ static const materialui_theme_t *materialui_get_theme(enum materialui_color_them
          return &materialui_theme_virtual_boy;
       case MATERIALUI_THEME_HACKING_THE_KERNEL:
          return &materialui_theme_hacking_the_kernel;
+      case MATERIALUI_THEME_GRAY_DARK:
+         return &materialui_theme_gray_dark;
+      case MATERIALUI_THEME_GRAY_LIGHT:
+         return &materialui_theme_gray_light;
       default:
          break;
    }
@@ -1927,6 +2027,9 @@ static void materialui_prepare_colors(
 
    /* Screensaver 'tint' */
    mui->colors.screensaver_tint = current_theme->screensaver_tint;
+
+   /* Flags */
+   mui->colors.divider_is_list_background = (current_theme->divider == current_theme->list_background);
 }
 
 static const char *materialui_texture_path(unsigned id)
@@ -4501,8 +4604,11 @@ static void materialui_render_menu_entry_playlist_list(
     * > To prevent any ugly alignment issues, we
     *   only draw a divider if its bottom edge is
     *   more than two times the divider thickness from
-    *   the bottom edge of the list region */
+    *   the bottom edge of the list region,
+    *   and when the divider color is different from
+    *   the list background color */
    draw_divider = (mui->list_view_type != MUI_LIST_VIEW_PLAYLIST) &&
+         !mui->colors.divider_is_list_background &&
          (usable_width > 0) &&
                ((divider_y + (mui->entry_divider_width * 2)) <
                      (video_height - mui->nav_bar_layout_height - mui->status_bar.height));
