@@ -2,7 +2,7 @@
 <qnx xmlns="http://www.qnx.com/schemas/application/1.0">
 
     <id>com.RetroArch</id>
-    <versionNumber>1.10.1</versionNumber>
+    <versionNumber>1.10.2</versionNumber>
     <buildId>3</buildId>
     <description>Cross-platform entertainment system</description>
     <author>Team Libretro</author>

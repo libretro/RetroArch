@@ -1,8 +1,51 @@
 # Future
+
+# 1.10.2
+- 3DS: Add a menu toggle for switching between old and new 3DS speeds, located in the 'Power Management' menu. Enabled by default, hidden on old 3DS devices.
+- CHEEVOS: Update to rcheevos 10.3.3
+- CHEEVOS: Support for Arduboy
+- CHEEVOS: Fix tab sequences in rich presence being turned into t character
+- CHEEVOS: Fix overflow when parsing float value that has more than 9 digits after the decimal
+- CHEEVOS: Fix memory mapping when disconnect mask breaks a region into multiple blocks
+- CORES: Enable manual selection of which cores are displayed in the 'Standalone Cores' menu
+- DATABASE/EXPLORE: Added more categories to the Explore menu
+- INPUT/MAPPING: Add 'Manage Remap Files' submenu + automatically save input remaps when closing content
+- INPUT/MAPPING: Add 'Reset Input Mapping' option to 'Manage Remap Files' menu
+- INPUT/MAPPING: Fix keyboard device remap nulling
 - IOS/IOS13+: Support a toolbar that allows toggling of onscreen keyboard and touch mouse
+- LIBRETRO: RETRO_ENVIRONMENT_SHUTDOWN fix - ensure core is properly unloaded when RETRO_ENVIRONMENT_SHUTDOWN is called
+- LIBRETRO: RETRO_ENVIRONMENT_SHUTDOWN fix - ensure menu stack is properly flushed when RETRO_ENVIRONMENT_SHUTDOWN is called
+- LINUX/MALI FBDEV: Fix segfault switching video threaded from quickmenu
 - LOCALIZATION: Add Czech language support
+- MIYOO: Improve CPU architecture and model name identification for Miyoo
+- MENU/SETTINGS: Remove 'Advanced Settings' flag from 'Settings > Core' menu
+- MENU/MATERIALUI: Add 'Gray Dark + Light' themes
+- MENU/RGUI: Add 6x10 extended ASCII and Latin Extended A and B fonts.  These will enable most Latin alphabets to be displayed in RGUI.
+- MENU/RGUI: Add 'Gray Dark + Light' themes
+- MENU/XMB: Add title margin adjustment
+- MENU/XMB: Vertical fade corrections
+- MENU/OZONE: The size of the thumbnail bar can now be changed though a new option (Settings->User interface->Appearance) up to double its normal size.
+- MENU/OZONE: Add 'Gray Dark + Light' themes
+- MENU/OZONE: Add thumbnail scale option
 - HOTKEYS: Added hotkey for toggling sync to exact content framerate
-- OZONE: The size of the thumbnail bar can now be changed though a new option (Settings->User interface->Appearance) up to double its normal size.
+- HOTKEYS: Prevent log spam when using rewind hotkey with cores that don't support rewind, if rewind functionality itself is disabled
+- HOTKEYS: Add hotkey for toggling sync to exact content framerate
+- STEAM: Use native OSK (Onscreen Keyboard) instead of built-in RetroArch version
+- STEAM: New built-in core DLC downloader
+- STEAM: Swap OK/Cancel buttons by default
+- VIDEO/HDR: Removed redundant copy of buffer in HDR mode if the shader has already a HDR format i.e. R10G10B10A2 (updated Vulkan/D3D11/D3D12 drivers)
+- VIDEO/HDR: Fixed crash when using stock shader and HDR and previous optimisation
+- WAYLAND: Dynamically load libdecor at runtime
+- WAYLAND: Fix splash screen when using xdg_toplevel
+- WAYLAND: SHM anti-collision for the splash screen
+- WAYLAND: Skip splash screen if window is not ready
+- WII: Fix find_connection_entry(): needs unsigned int
+Otherwise the USB gamepad cannot be found, if VID/PID has leading zero. This issue happened with Retrode gamepad adapter
+- WII: Rework Retrode gamepad implementation to support multi_pad interface
+- WII: Fix - Unplugging and re-plugging now works again
+- WII: vWii- Only gamepad 1 is supported, because multi_pad is currently only relevant in the Wii U implementation
+- WIIU: Implemented the multi_pad interface according to input/connect/connect_wiiugca.c
+- WIIU: Add Optimize for Gamepad option
 
 # 1.10.1
 - ANDROID: Add `HAVE_LANGEXTRA` back to makefile
