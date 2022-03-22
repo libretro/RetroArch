@@ -4658,8 +4658,9 @@ static void materialui_render_menu_entry_playlist_dual_icon(
     * more than two times the divider thickness from
     * the bottom edge of the list region */
    bool draw_divider       = (usable_width > 0) &&
-               ((divider_y + (mui->entry_divider_width * 2)) <
-                     (video_height - mui->nav_bar_layout_height - mui->status_bar.height));
+         !mui->colors.divider_is_list_background &&
+         ((divider_y + (mui->entry_divider_width * 2)) <
+               (video_height - mui->nav_bar_layout_height - mui->status_bar.height));
    gfx_display_t *p_disp   = disp_get_ptr();
    settings_t *settings    = config_get_ptr();
 
@@ -4834,8 +4835,9 @@ static void materialui_render_menu_entry_playlist_desktop(
     * more than two times the divider thickness from
     * the bottom edge of the list region */
    bool draw_divider = (usable_width > 0) &&
-               ((divider_y + (mui->entry_divider_width * 2)) <
-                     (video_height - mui->nav_bar_layout_height - mui->status_bar.height));
+         !mui->colors.divider_is_list_background &&
+         ((divider_y + (mui->entry_divider_width * 2)) <
+               (video_height - mui->nav_bar_layout_height - mui->status_bar.height));
 
    /* Read entry parameters */
    if (!string_is_empty(entry->rich_label))
