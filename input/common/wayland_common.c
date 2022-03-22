@@ -559,6 +559,20 @@ static void display_handle_scale(void *data,
    oi->scale = factor;
 }
 
+bool setup_data_device(gfx_ctx_wayland_data_t *wl)
+{
+   if (wl->data_device == NULL && wl->data_device_manager != NULL && wl->seat != NULL)
+   {
+      wl->data_device = wl_data_device_manager_get_data_device(wl->data_device_manager, wl->seat);
+      if (wl->data_device != NULL)
+      {
+         wl_data_device_add_listener(wl->data_device, &data_device_listener, wl);
+         return true;
+      }
+   }
+   return false;
+}
+
 /* Registry callbacks. */
 static void registry_handle_global(void *data, struct wl_registry *reg,
       uint32_t id, const char *interface, uint32_t version)
@@ -591,13 +605,14 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
    {
       wl->seat = (struct wl_seat*)wl_registry_bind(reg, id, &wl_seat_interface, MIN(version, 2));
       wl_seat_add_listener(wl->seat, &seat_listener, wl);
-      wl->data_device = wl_data_device_manager_get_data_device(wl->data_device_manager, wl->seat);
-      if (wl->data_device != NULL)
-         wl_data_device_add_listener(wl->data_device, &data_device_listener, wl);
+      setup_data_device(wl);
    }
    else if (string_is_equal(interface, wl_data_device_manager_interface.name))
+   {
       wl->data_device_manager = (struct wl_data_device_manager*)wl_registry_bind(
                                  reg, id, &wl_data_device_manager_interface, MIN(version, 3));
+      setup_data_device(wl);
+   }
    else if (string_is_equal(interface, zwp_idle_inhibit_manager_v1_interface.name))
       wl->idle_inhibit_manager = (struct zwp_idle_inhibit_manager_v1*)wl_registry_bind(
                                   reg, id, &zwp_idle_inhibit_manager_v1_interface, MIN(version, 1));
