@@ -9,6 +9,7 @@
 - CHEEVOS: Fix memory mapping when disconnect mask breaks a region into multiple blocks
 - CORES: Enable manual selection of which cores are displayed in the 'Standalone Cores' menu
 - DATABASE/EXPLORE: Added more categories to the Explore menu
+- INPUT: Fix analog stick not working with 'Unified Menu Controls'
 - INPUT/MAPPING: Add 'Manage Remap Files' submenu + automatically save input remaps when closing content
 - INPUT/MAPPING: Add 'Reset Input Mapping' option to 'Manage Remap Files' menu
 - INPUT/MAPPING: Fix keyboard device remap nulling
