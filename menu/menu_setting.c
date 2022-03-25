@@ -8909,7 +8909,6 @@ static bool setting_append_list_input_libretro_device_options(
       rarch_setting_info_t *list_info,
       const char *parent_group)
 {
-   settings_t *settings = config_get_ptr();
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    static char key_device_type[MAX_USERS][64];

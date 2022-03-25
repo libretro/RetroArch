@@ -84,7 +84,7 @@ static void filereader_close(void* file_handle)
 }
 
 /* for unit tests - normally would call rc_hash_init_custom_filereader(NULL) */
-void rc_hash_reset_filereader()
+void rc_hash_reset_filereader(void)
 {
   filereader = NULL;
 }
