@@ -9474,13 +9474,13 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
+               {MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS, PARSE_ACTION},
 #if defined(HAVE_OVERLAY)
-               {MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS, PARSE_ACTION},
+               {MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,       PARSE_ACTION},
 #endif
 #ifdef HAVE_VIDEO_LAYOUT
-               {MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS, PARSE_ACTION},
+               {MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,  PARSE_ACTION},
 #endif
-               {MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,  PARSE_ACTION},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
