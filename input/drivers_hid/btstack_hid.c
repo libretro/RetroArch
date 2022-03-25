@@ -1380,7 +1380,6 @@ static int16_t btstack_hid_joypad_button(void *data,
 static int16_t btstack_hid_joypad_axis(void *data,
       unsigned port, uint32_t joyaxis)
 {
-   btstack_hid_t         *hid = (btstack_hid_t*)data;
 
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
