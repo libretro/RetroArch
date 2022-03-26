@@ -957,6 +957,7 @@ static bool mmap_preprocess_descriptors(
    size_t                      top_addr = 1;
    rarch_memory_descriptor_t *desc      = NULL;
    const rarch_memory_descriptor_t *end = first + count;
+   size_t             highest_reachable = 0;
 
    for (desc = first; desc < end; desc++)
    {
@@ -989,17 +990,14 @@ static bool mmap_preprocess_descriptors(
       if (desc->core.start & ~desc->core.select)
          return false;
 
-      while (mmap_reduce(top_addr & ~desc->core.select, desc->core.disconnect) >> 1 > desc->core.len - 1)
+      highest_reachable = mmap_inflate(desc->core.len - 1, desc->core.disconnect);
+
+      /* Disconnect unselected bits that are too high to ever
+       * index into the core's buffer. Higher addresses will
+       * repeat / mirror the buffer as long as they match select */
+      while (mmap_highest_bit(top_addr & ~desc->core.select & ~desc->core.disconnect) >
+                mmap_highest_bit(highest_reachable))
          desc->core.disconnect |= mmap_highest_bit(top_addr & ~desc->core.select & ~desc->core.disconnect);
-
-      desc->disconnect_mask = mmap_add_bits_down(desc->core.len - 1);
-      desc->core.disconnect &= desc->disconnect_mask;
-
-      while ((~desc->disconnect_mask) >> 1 & desc->core.disconnect)
-      {
-         desc->disconnect_mask >>= 1;
-         desc->core.disconnect &= desc->disconnect_mask;
-      }
    }
 
    return true;

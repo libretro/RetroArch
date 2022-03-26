@@ -172,7 +172,7 @@ enum runloop_action
 typedef struct rarch_memory_descriptor
 {
    struct retro_memory_descriptor core;        /* uint64_t alignment */
-   size_t disconnect_mask;
+   // retroarch can have additional context here
 } rarch_memory_descriptor_t;
 
 typedef struct rarch_memory_map
