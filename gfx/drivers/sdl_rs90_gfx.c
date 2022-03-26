@@ -71,8 +71,6 @@
 typedef struct sdl_rs90_video sdl_rs90_video_t;
 struct sdl_rs90_video
 {
-   retro_time_t last_frame_time;
-   retro_time_t ff_frame_time_min;
    SDL_Surface *screen;
    void (*scale_frame16)(sdl_rs90_video_t *vid,
          uint16_t *src, unsigned width, unsigned height,
@@ -80,7 +78,6 @@ struct sdl_rs90_video
    void (*scale_frame32)(sdl_rs90_video_t *vid,
          uint32_t *src, unsigned width, unsigned height,
          unsigned src_pitch);
-   bitmapfont_lut_t *osd_font;
    /* Scaling/padding/cropping parameters */
    unsigned content_width;
    unsigned content_height;
@@ -90,21 +87,24 @@ struct sdl_rs90_video
    unsigned frame_padding_y;
    unsigned frame_crop_x;
    unsigned frame_crop_y;
+   bool rgb32;
+   bool menu_active;
+   bool was_in_menu;
+   bool mode_valid;
+   retro_time_t last_frame_time;
+   retro_time_t ff_frame_time_min;
    enum dingux_rs90_softfilter_type softfilter_type;
 #if defined(DINGUX_BETA)
    enum dingux_refresh_rate refresh_rate;
 #endif
-   uint32_t font_colour32;
-   uint16_t font_colour16;
-   uint16_t menu_texture[SDL_RS90_WIDTH * SDL_RS90_HEIGHT];
-   bool rgb32;
    bool vsync;
    bool keep_aspect;
    bool scale_integer;
-   bool menu_active;
-   bool was_in_menu;
    bool quitting;
-   bool mode_valid;
+   bitmapfont_lut_t *osd_font;
+   uint32_t font_colour32;
+   uint16_t font_colour16;
+   uint16_t menu_texture[SDL_RS90_WIDTH * SDL_RS90_HEIGHT];
 };
 
 /* Image interpolation START */
