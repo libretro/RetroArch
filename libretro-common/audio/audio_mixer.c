@@ -183,12 +183,13 @@ struct audio_mixer_voice
    unsigned type;
    float    volume;
    bool     repeat;
-
 };
 
 /* TODO/FIXME - static globals */
 static struct audio_mixer_voice s_voices[AUDIO_MIXER_MAX_VOICES] = {0};
 static unsigned s_rate = 0;
+
+static void audio_mixer_release(audio_mixer_voice_t* voice);
 
 #ifdef HAVE_RWAV
 static bool wav_to_float(const rwav_t* wav, float** pcm, size_t samples_out)
@@ -319,7 +320,7 @@ void audio_mixer_done(void)
    unsigned i;
 
    for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++)
-      s_voices[i].type = AUDIO_MIXER_TYPE_NONE;
+      audio_mixer_release(&s_voices[i]);
 }
 
 audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
@@ -562,14 +563,6 @@ static bool audio_mixer_play_ogg(
       goto error;
    }
 
-   /* "system" menu sounds may reuse the same voice without freeing anything first, so do that here if needed */
-   if (voice->types.ogg.stream)
-      stb_vorbis_close(voice->types.ogg.stream);
-   if (voice->types.ogg.resampler && voice->types.ogg.resampler_data)
-      voice->types.ogg.resampler->free(voice->types.ogg.resampler_data);
-   if (voice->types.ogg.buffer)
-      memalign_free(voice->types.ogg.buffer);
-
    voice->types.ogg.resampler      = resamp;
    voice->types.ogg.resampler_data = resampler_data;
    voice->types.ogg.buffer         = (float*)ogg_buffer;
@@ -585,6 +578,17 @@ error:
    stb_vorbis_close(stb_vorbis);
    return false;
 }
+
+static void audio_mixer_release_ogg(audio_mixer_voice_t* voice)
+{
+   if (voice->types.ogg.stream)
+      stb_vorbis_close(voice->types.ogg.stream);
+   if (voice->types.ogg.resampler && voice->types.ogg.resampler_data)
+      voice->types.ogg.resampler->free(voice->types.ogg.resampler_data);
+   if (voice->types.ogg.buffer)
+      memalign_free(voice->types.ogg.buffer);
+}
+
 #endif
 
 #ifdef HAVE_IBXM
@@ -642,12 +646,6 @@ static bool audio_mixer_play_mod(
       goto error;
    }
 
-   /* FIXME: stopping and then starting a mod stream will crash here in dispose_replay (ASAN says struct replay is misaligned?) */
-   if (voice->types.mod.stream)
-      dispose_replay(voice->types.mod.stream);
-   if (voice->types.mod.buffer)
-      memalign_free(voice->types.mod.buffer);
-
    voice->types.mod.buffer         = (int*)mod_buffer;
    voice->types.mod.buf_samples    = buf_samples;
    voice->types.mod.stream         = replay;
@@ -663,6 +661,14 @@ error:
       dispose_module(module);
    return false;
 
+}
+
+static void audio_mixer_release_mod(audio_mixer_voice_t* voice)
+{
+   if (voice->types.mod.stream)
+      dispose_replay(voice->types.mod.stream);
+   if (voice->types.mod.buffer)
+      memalign_free(voice->types.mod.buffer);
 }
 #endif
 
@@ -711,13 +717,6 @@ static bool audio_mixer_play_flac(
       goto error;
    }
 
-   if (voice->types.flac.stream)
-      drflac_close(voice->types.flac.stream);
-   if (voice->types.flac.resampler && voice->types.flac.resampler_data)
-      voice->types.flac.resampler->free(voice->types.flac.resampler_data);
-   if (voice->types.flac.buffer)
-      memalign_free(voice->types.flac.buffer);
-
    voice->types.flac.resampler      = resamp;
    voice->types.flac.resampler_data = resampler_data;
    voice->types.flac.buffer         = (float*)flac_buffer;
@@ -732,6 +731,16 @@ static bool audio_mixer_play_flac(
 error:
    drflac_close(dr_flac);
    return false;
+}
+
+static void audio_mixer_release_flac(audio_mixer_voice_t* voice)
+{
+   if (voice->types.flac.stream)
+      drflac_close(voice->types.flac.stream);
+   if (voice->types.flac.resampler && voice->types.flac.resampler_data)
+      voice->types.flac.resampler->free(voice->types.flac.resampler_data);
+   if (voice->types.flac.buffer)
+      memalign_free(voice->types.flac.buffer);
 }
 #endif
 
@@ -750,12 +759,6 @@ static bool audio_mixer_play_mp3(
    void *resampler_data            = NULL;
    const retro_resampler_t* resamp = NULL;
    bool res;
-
-   if (voice->types.mp3.stream.pData)
-   {
-      drmp3_uninit(&voice->types.mp3.stream);
-      memset(&voice->types.mp3.stream, 0, sizeof(voice->types.mp3.stream));
-   }
 
    res = drmp3_init_memory(&voice->types.mp3.stream, (const unsigned char*)sound->types.mp3.data, sound->types.mp3.size, NULL);
 
@@ -789,12 +792,6 @@ static bool audio_mixer_play_mp3(
       goto error;
    }
 
-   /* "system" menu sounds may reuse the same voice without freeing anything first, so do that here if needed */
-   if (voice->types.mp3.resampler && voice->types.mp3.resampler_data)
-      voice->types.mp3.resampler->free(voice->types.mp3.resampler_data);
-   if (voice->types.mp3.buffer)
-      memalign_free(voice->types.mp3.buffer);
-
    voice->types.mp3.resampler      = resamp;
    voice->types.mp3.resampler_data = resampler_data;
    voice->types.mp3.buffer         = (float*)mp3_buffer;
@@ -809,6 +806,17 @@ error:
    drmp3_uninit(&voice->types.mp3.stream);
    return false;
 }
+
+static void audio_mixer_release_mp3(audio_mixer_voice_t* voice)
+{
+   if (voice->types.mp3.resampler && voice->types.mp3.resampler_data)
+      voice->types.mp3.resampler->free(voice->types.mp3.resampler_data);
+   if (voice->types.mp3.buffer)
+      memalign_free(voice->types.mp3.buffer);
+   if (voice->types.mp3.stream.pData)
+      drmp3_uninit(&voice->types.mp3.stream);
+}
+
 #endif
 
 audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
@@ -828,6 +836,9 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
    {
       if (voice->type != AUDIO_MIXER_TYPE_NONE)
          continue;
+
+      /* claim the voice, also helps with cleanup on error */
+      voice->type = sound->type;
 
       switch (sound->type)
       {
@@ -866,16 +877,53 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
 
    if (res)
    {
-      voice->type     = sound->type;
       voice->repeat   = repeat;
       voice->volume   = volume;
       voice->sound    = sound;
       voice->stop_cb  = stop_cb;
    }
    else
+   {
+      audio_mixer_release(voice);
       voice = NULL;
+   }
 
    return voice;
+}
+
+static void audio_mixer_release(audio_mixer_voice_t* voice)
+{
+   if (!voice)
+      return;
+
+   switch (voice->type)
+   {
+#ifdef HAVE_STB_VORBIS
+      case AUDIO_MIXER_TYPE_OGG:
+         audio_mixer_release_ogg(voice);
+         break;
+#endif
+#ifdef HAVE_IBXM
+      case AUDIO_MIXER_TYPE_MOD:
+         audio_mixer_release_mod(voice);
+         break;
+#endif
+#ifdef HAVE_DR_FLAC
+      case AUDIO_MIXER_TYPE_FLAC:
+         audio_mixer_release_flac(voice);
+         break;
+#endif
+#ifdef HAVE_DR_MP3
+      case AUDIO_MIXER_TYPE_MP3:
+         audio_mixer_release_mp3(voice);
+         break;
+#endif
+      default:
+         break;
+   }
+
+   memset(&voice->types, 0, sizeof(voice->types));
+   voice->type = AUDIO_MIXER_TYPE_NONE;
 }
 
 void audio_mixer_stop(audio_mixer_voice_t* voice)
@@ -888,7 +936,7 @@ void audio_mixer_stop(audio_mixer_voice_t* voice)
       stop_cb     = voice->stop_cb;
       sound       = voice->sound;
 
-      voice->type = AUDIO_MIXER_TYPE_NONE;
+      audio_mixer_release(voice);
 
       if (stop_cb)
          stop_cb(sound, AUDIO_MIXER_SOUND_STOPPED);
@@ -928,7 +976,7 @@ again:
       if (voice->stop_cb)
          voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_FINISHED);
 
-      voice->type = AUDIO_MIXER_TYPE_NONE;
+      audio_mixer_release(voice);
    }
    else
    {
@@ -974,7 +1022,7 @@ again:
          if (voice->stop_cb)
             voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_FINISHED);
 
-         voice->type = AUDIO_MIXER_TYPE_NONE;
+         audio_mixer_release(voice);
          goto cleanup;
       }
 
@@ -1052,7 +1100,7 @@ again:
          if (voice->stop_cb)
             voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_FINISHED);
 
-         voice->type = AUDIO_MIXER_TYPE_NONE;
+         audio_mixer_release(voice);
          return;
       }
 
@@ -1116,7 +1164,7 @@ again:
          if (voice->stop_cb)
             voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_FINISHED);
 
-         voice->type = AUDIO_MIXER_TYPE_NONE;
+         audio_mixer_release(voice);
          return;
       }
 
@@ -1187,7 +1235,7 @@ again:
          if (voice->stop_cb)
             voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_FINISHED);
 
-         voice->type = AUDIO_MIXER_TYPE_NONE;
+         audio_mixer_release(voice);
          return;
       }
 
