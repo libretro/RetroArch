@@ -50,9 +50,6 @@ struct hidpad_retrode_data
    uint8_t data[64];
 };
 
-const char *RETRODE_PAD         = "Retrode pad";
-const char *RETRODE_DEVICE_NAME = "Retrode adapter";
-
 static void* hidpad_retrode_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
    int i;
@@ -203,12 +200,9 @@ static void hidpad_retrode_set_rumble(void *data,
 
 const char * hidpad_retrode_get_name(void *pad_data)
 {
-   /* this could be improved by marking it as pad/mouse */
-   retrode_pad_data_t *pad = (retrode_pad_data_t *)pad_data;
-   if(!pad || pad->datatype != RETRODE_TYPE_PAD)
-      return RETRODE_DEVICE_NAME;
-
-   return RETRODE_PAD;
+   (void)pad_data;
+   /* For now we return a single static name */
+   return "Retrode";
 }
 
 static int32_t hidpad_retrode_button(void *pad_data, uint16_t joykey)
