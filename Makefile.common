@@ -2223,6 +2223,7 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    ifeq ($(HAVE_DISCORD), 1)
       NEED_CXX_LINKER = 1
+      HAVE_PRESENCE = 1
       DEFINES += -DHAVE_DISCORD
       INCLUDE_DIRS += -Ideps/discord-rpc/include
 
@@ -2460,9 +2461,18 @@ endif
 
 ### Steam integration using mist
 ifeq ($(HAVE_MIST), 1)
+   HAVE_PRESENCE = 1
+   DEFINES += -DHAVE_MIST
    INCLUDE_DIRS += -I$(MIST_PATH)/include
    LDFLAGS   += -L$(MIST_PATH) -lmist
    OBJ += steam/steam.o tasks/task_steam.o
+endif
+
+### Shared rich presence code for Discord and Steam
+
+ifeq ($(HAVE_PRESENCE), 1)
+   DEFINES += -DHAVE_PRESENCE
+   OBJ += network/presence.o
 endif
 
 ##################################

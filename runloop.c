@@ -106,6 +106,9 @@
 #include "play_feature_delivery/play_feature_delivery.h"
 #endif
 
+#ifdef HAVE_PRESENCE
+#include "network/presence.h"
+#endif
 #ifdef HAVE_DISCORD
 #include "network/discord.h"
 #endif
@@ -5459,8 +5462,8 @@ void runloop_runahead_clear_variables(runloop_state_t *runloop_st)
 
 void runloop_pause_checks(void)
 {
-#ifdef HAVE_DISCORD
-   discord_userdata_t userdata;
+#ifdef HAVE_PRESENCE
+   presence_userdata_t userdata;
 #endif
    runloop_state_t *runloop_st    = &runloop_state;
    bool is_paused                 = runloop_st->paused;
@@ -5485,9 +5488,9 @@ void runloop_pause_checks(void)
       if (!is_idle)
          video_driver_cached_frame();
 
-#ifdef HAVE_DISCORD
-      userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
-      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+#ifdef HAVE_PRESENCE
+      userdata.status = PRESENCE_GAME_PAUSED;
+      command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
 #endif
 
 #ifndef HAVE_LAKKA_SWITCH
@@ -6164,11 +6167,11 @@ static bool display_menu_libretro(
 
    if (runloop_idle)
    {
-#ifdef HAVE_DISCORD
-      discord_userdata_t userdata;
-      userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
+#ifdef HAVE_PRESENCE
+      presence_userdata_t userdata;
+      userdata.status = PRESENCE_GAME_PAUSED;
 
-      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+      command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
 #endif
       return false;
    }
@@ -7694,9 +7697,8 @@ int runloop_iterate(void)
 #ifdef HAVE_CHEATS
    cheat_manager_apply_retro_cheats();
 #endif
-#ifdef HAVE_DISCORD
-   if (discord_st->inited && discord_st->ready)
-      discord_update(DISCORD_PRESENCE_GAME);
+#ifdef HAVE_PRESENCE
+   presence_update(PRESENCE_GAME);
 #endif
 
    /* Restores analog D-pad binds temporarily overridden. */

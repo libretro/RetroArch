@@ -102,6 +102,9 @@
 #include "play_feature_delivery/play_feature_delivery.h"
 #endif
 
+#ifdef HAVE_PRESENCE
+#include "network/presence.h"
+#endif
 #ifdef HAVE_DISCORD
 #include "network/discord.h"
 #endif
@@ -1948,15 +1951,12 @@ bool command_event(enum event_command cmd, void *data)
                if (!task_push_start_dummy_core(&content_info))
                   return false;
             }
-#ifdef HAVE_DISCORD
-            if (discord_state_get_ptr()->inited)
-            {
-               discord_userdata_t userdata;
-               userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;
-               command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-               userdata.status = DISCORD_PRESENCE_MENU;
-               command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-            }
+#ifdef HAVE_PRESENCE
+            presence_userdata_t userdata;
+            userdata.status = PRESENCE_NETPLAY_NETPLAY_STOPPED;
+            command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
+            userdata.status = PRESENCE_MENU;
+            command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
 #endif
 #ifdef HAVE_DYNAMIC
             path_clear(RARCH_PATH_CORE);
@@ -3342,17 +3342,15 @@ bool command_event(enum event_command cmd, void *data)
          }
 #endif
          break;
-      case CMD_EVENT_DISCORD_UPDATE:
+      case CMD_EVENT_PRESENCE_UPDATE:
          {
-#ifdef HAVE_DISCORD
-            discord_userdata_t *userdata = NULL;
-            discord_state_t *discord_st  = discord_state_get_ptr();
-            if (!data || !discord_st->ready)
+#ifdef HAVE_PRESENCE
+            presence_userdata_t *userdata = NULL;
+            if (!data)
                return false;
 
-            userdata = (discord_userdata_t*)data;
-            if (discord_st->ready)
-               discord_update(userdata->status);
+            userdata = (presence_userdata_t*)data;
+            presence_update(userdata->status);
 #endif
          }
          break;
@@ -5497,15 +5495,14 @@ bool retroarch_main_init(int argc, char *argv[])
 
 	   if (command_event(CMD_EVENT_DISCORD_INIT, NULL))
 		   discord_st->inited = true;
-
-	   if (discord_st->inited)
-	   {
-		   discord_userdata_t userdata;
-		   userdata.status = DISCORD_PRESENCE_MENU;
-
-		   command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-	   }
    }
+#endif
+
+#ifdef HAVE_PRESENCE
+   presence_userdata_t userdata;
+   userdata.status = PRESENCE_MENU;
+
+   command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
 #endif
 
 #if defined(HAVE_AUDIOMIXER)
@@ -6013,14 +6010,14 @@ bool retroarch_main_quit(void)
    runloop_state_t *runloop_st   = runloop_state_get_ptr();
    video_driver_state_t*video_st = video_state_get_ptr();
    settings_t *settings          = config_get_ptr();
+
+#ifdef HAVE_PRESENCE
+   presence_userdata_t userdata;
+   userdata.status = PRESENCE_SHUTDOWN;
+   command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
+#endif
 #ifdef HAVE_DISCORD
    discord_state_t *discord_st   = discord_state_get_ptr();
-   if (discord_st->inited)
-   {
-      discord_userdata_t userdata;
-      userdata.status = DISCORD_PRESENCE_SHUTDOWN;
-      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-   }
    if (discord_st->ready)
    {
       Discord_ClearPresence();

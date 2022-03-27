@@ -489,6 +489,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
       case ACTION_OK_DL_CORE_MANAGER_LIST:
          return MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST;
 #ifdef HAVE_MIST
+      case ACTION_OK_DL_STEAM_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_STEAM_SETTINGS_LIST;
       case ACTION_OK_DL_CORE_MANAGER_STEAM_LIST:
          return MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_STEAM_LIST;
 #endif
@@ -1583,6 +1585,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_MANUAL_CONTENT_SCAN_LIST:
       case ACTION_OK_DL_CORE_MANAGER_LIST:
 #ifdef HAVE_MIST
+      case ACTION_OK_DL_STEAM_SETTINGS_LIST:
       case ACTION_OK_DL_CORE_MANAGER_STEAM_LIST:
 #endif
       case ACTION_OK_DL_CORE_OPTION_OVERRIDE_LIST:
@@ -5829,6 +5832,7 @@ DEFAULT_ACTION_OK_FUNC(action_ok_push_manual_content_scan_list, ACTION_OK_DL_MAN
 DEFAULT_ACTION_OK_FUNC(action_ok_manual_content_scan_dat_file, ACTION_OK_DL_MANUAL_CONTENT_SCAN_DAT_FILE)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_core_manager_list, ACTION_OK_DL_CORE_MANAGER_LIST)
 #ifdef HAVE_MIST
+DEFAULT_ACTION_OK_FUNC(action_ok_steam_settings_list, ACTION_OK_DL_STEAM_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_core_manager_steam_list, ACTION_OK_DL_CORE_MANAGER_STEAM_LIST)
 #endif
 DEFAULT_ACTION_OK_FUNC(action_ok_push_core_option_override_list, ACTION_OK_DL_CORE_OPTION_OVERRIDE_LIST)
@@ -8262,6 +8266,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE,       action_ok_playlist_default_core},
          {MENU_ENUM_LABEL_CORE_MANAGER_LIST,                   action_ok_push_core_manager_list},
 #ifdef HAVE_MIST
+         {MENU_ENUM_LABEL_STEAM_SETTINGS,                      action_ok_steam_settings_list},
          {MENU_ENUM_LABEL_CORE_MANAGER_STEAM_LIST,             action_ok_push_core_manager_steam_list},
          {MENU_ENUM_LABEL_CORE_STEAM_INSTALL,                  action_ok_core_steam_install},
          {MENU_ENUM_LABEL_CORE_STEAM_UNINSTALL,                action_ok_core_steam_uninstall},

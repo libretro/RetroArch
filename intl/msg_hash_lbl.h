@@ -629,6 +629,18 @@ MSG_HASH(
    MENU_ENUM_LABEL_CORE_STEAM_UNINSTALL,
    "core_steam_uninstall"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_STEAM_SETTINGS,
+   "steam_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_STEAM_RICH_PRESENCE_ENABLE,
+   "steam_rich_presence_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_STEAM_RICH_PRESENCE_FORMAT,
+   "steam_rich_presence_format"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_CPU_ARCHITECTURE,
@@ -909,6 +921,10 @@ MSG_HASH(
    "deferred_core_manager_list"
    )
 #ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_STEAM_SETTINGS_LIST,
+   "deferred_steam_settings_list"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_STEAM_LIST,
    "deferred_core_manager_steam_list"
@@ -5206,6 +5222,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_SETTINGS_SHOW_DIRECTORY,
    "settings_show_directory"
    )
+#ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_LABEL_SETTINGS_SHOW_STEAM,
+   "settings_show_steam"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
    "frame_time_counter_reset_after_fastforwarding"

@@ -45,6 +45,9 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 
+#ifdef HAVE_PRESENCE
+#include "../presence.h"
+#endif
 #ifdef HAVE_DISCORD
 #include "../discord.h"
 #endif
@@ -3965,13 +3968,10 @@ void netplay_hangup(netplay_t *netplay,
    else
    {
       dmsg = msg_hash_to_str(MSG_NETPLAY_CLIENT_HANGUP);
-#ifdef HAVE_DISCORD
-      if (discord_state_get_ptr()->inited)
-      {
-         discord_userdata_t userdata;
-         userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;
-         command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-      }
+#ifdef HAVE_PRESENCE
+   presence_userdata_t userdata;
+   userdata.status = PRESENCE_NETPLAY_NETPLAY_STOPPED;
+   command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
 #endif
       netplay->is_connected = false;
    }
@@ -7861,13 +7861,10 @@ static void netplay_announce_cb(retro_task_t *task,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
-#ifdef HAVE_DISCORD
-   if (discord_state_get_ptr()->inited)
-   {
-      discord_userdata_t userdata;
-      userdata.status = DISCORD_PRESENCE_NETPLAY_HOSTING;
-      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-   }
+#ifdef HAVE_PRESENCE
+   presence_userdata_t userdata;
+   userdata.status = PRESENCE_NETPLAY_HOSTING;
+   command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
 #endif
 }
 
@@ -8157,13 +8154,10 @@ static void netplay_disconnect(netplay_t *netplay)
 
    deinit_netplay();
 
-#ifdef HAVE_DISCORD
-   if (discord_state_get_ptr()->inited)
-   {
-      discord_userdata_t userdata;
-      userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;
-      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-   }
+#ifdef HAVE_PRESENCE
+   presence_userdata_t userdata;
+   userdata.status = PRESENCE_NETPLAY_NETPLAY_STOPPED;
+   command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
 #endif
 }
 
@@ -8443,13 +8437,10 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 
          case RARCH_NETPLAY_CTL_DISABLE:
             net_st->netplay_enabled    = false;
-#ifdef HAVE_DISCORD
-            if (discord_state_get_ptr()->inited)
-            {
-               discord_userdata_t userdata;
-               userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;
-               command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-            }
+#ifdef HAVE_PRESENCE
+   presence_userdata_t userdata;
+   userdata.status = PRESENCE_NETPLAY_NETPLAY_STOPPED;
+   command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
 #endif
             goto done;
 

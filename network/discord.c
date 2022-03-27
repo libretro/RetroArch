@@ -187,7 +187,7 @@ static void handle_discord_join_cb(retro_task_t *task,
          room->gamename, join_hostname, room->corename, room->subsystem_name);
       discord_st->connecting = true;
       if (discord_st->ready)
-         discord_update(DISCORD_PRESENCE_NETPLAY_CLIENT);
+         discord_update(PRESENCE_NETPLAY_CLIENT);
    }
 
 finish:
@@ -261,7 +261,7 @@ static void handle_discord_join_request(const DiscordUser* request)
 #endif
 }
 
-void discord_update(enum discord_presence presence)
+void discord_update(enum presence presence)
 {
    discord_state_t *discord_st = &discord_state_st;
 #ifdef HAVE_CHEEVOS
@@ -273,8 +273,8 @@ void discord_update(enum discord_presence presence)
 
    if (!discord_st->connecting
          &&
-         (   presence == DISCORD_PRESENCE_NONE
-          || presence == DISCORD_PRESENCE_MENU))
+         (   presence == PRESENCE_NONE
+          || presence == PRESENCE_MENU))
    {
       memset(&discord_st->presence,
             0, sizeof(discord_st->presence));
@@ -283,7 +283,7 @@ void discord_update(enum discord_presence presence)
 
    switch (presence)
    {
-      case DISCORD_PRESENCE_MENU:
+      case PRESENCE_MENU:
          discord_st->presence.details        = msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU);
          discord_st->presence.largeImageKey  = "base";
@@ -291,7 +291,7 @@ void discord_update(enum discord_presence presence)
                MENU_ENUM_LABEL_VALUE_NO_CORE);
          discord_st->presence.instance       = 0;
          break;
-      case DISCORD_PRESENCE_GAME_PAUSED:
+      case PRESENCE_GAME_PAUSED:
          discord_st->presence.smallImageKey  = "paused";
          discord_st->presence.smallImageText = msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED);
@@ -302,7 +302,7 @@ void discord_update(enum discord_presence presence)
                discord_st->start_time);
          discord_st->presence.startTimestamp = discord_st->pause_time;
          break;
-      case DISCORD_PRESENCE_GAME:
+      case PRESENCE_GAME:
          {
             core_info_t      *core_info     = NULL;
             core_info_get_current_core(&core_info);
@@ -372,7 +372,7 @@ void discord_update(enum discord_presence presence)
             }
          }
          break;
-      case DISCORD_PRESENCE_NETPLAY_HOSTING:
+      case PRESENCE_NETPLAY_HOSTING:
          {
             char join_secret[128];
             struct netplay_room *room   = &networking_state_get_ptr()->host_room;
@@ -394,10 +394,10 @@ void discord_update(enum discord_presence presence)
             discord_st->presence.partySize      = 1;
          }
          break;
-      case DISCORD_PRESENCE_NETPLAY_CLIENT:
+      case PRESENCE_NETPLAY_CLIENT:
          discord_st->presence.partyId    = strdup(discord_st->peer_party_id);
          break;
-      case DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED:
+      case PRESENCE_NETPLAY_NETPLAY_STOPPED:
          {
             if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
             !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
@@ -412,16 +412,16 @@ void discord_update(enum discord_presence presence)
          }
          break;
 #ifdef HAVE_CHEEVOS
-      case DISCORD_PRESENCE_RETROACHIEVEMENTS:
+      case PRESENCE_RETROACHIEVEMENTS:
          if (discord_st->pause_time)
             return;
 
          if (rcheevos_get_richpresence(cheevos_richpresence, sizeof(cheevos_richpresence)) > 0)
             discord_st->presence.details = cheevos_richpresence;
-         presence = DISCORD_PRESENCE_GAME;
+         presence = PRESENCE_GAME;
          break;
 #endif
-      case DISCORD_PRESENCE_SHUTDOWN:
+      case PRESENCE_SHUTDOWN:
             discord_st->presence.partyId    = NULL;
             discord_st->presence.partyMax   = 0;
             discord_st->presence.partySize  = 0;

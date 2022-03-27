@@ -339,6 +339,10 @@ typedef struct settings
       unsigned cpu_min_freq;
       unsigned cpu_max_freq;
 #endif
+
+#ifdef HAVE_MIST
+      unsigned steam_rich_presence_format;
+#endif
    } uints;
 
    struct
@@ -740,6 +744,9 @@ typedef struct settings
       bool settings_show_playlists;
       bool settings_show_user;
       bool settings_show_directory;
+#ifdef HAVE_MIST
+      bool settings_show_steam;
+#endif
       bool quick_menu_show_resume_content;
       bool quick_menu_show_restart_content;
       bool quick_menu_show_close_content;
@@ -831,6 +838,11 @@ typedef struct settings
 
       /* Driver */
       bool driver_switch_enable;
+
+#ifdef HAVE_MIST
+      /* Steam */
+      bool steam_rich_presence_enable;
+#endif
 
       /* Misc. */
       bool discord_enable;

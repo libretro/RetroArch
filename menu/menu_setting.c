@@ -309,6 +309,9 @@ enum settings_list_type
    SETTINGS_LIST_DIRECTORY,
    SETTINGS_LIST_PRIVACY,
    SETTINGS_LIST_MIDI,
+#ifdef HAVE_MIST
+   SETTINGS_LIST_STEAM,
+#endif
    SETTINGS_LIST_MANUAL_CONTENT_SCAN
 };
 
@@ -6859,6 +6862,42 @@ static void setting_get_string_representation_uint_menu_screensaver_animation(
 }
 #endif
 
+#ifdef HAVE_MIST
+static void setting_get_string_representation_steam_rich_presence_format(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case STEAM_RICH_PRESENCE_FORMAT_CONTENT:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT), len);
+         break;
+      case STEAM_RICH_PRESENCE_FORMAT_CORE:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CORE), len);
+         break;
+      case STEAM_RICH_PRESENCE_FORMAT_SYSTEM:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_SYSTEM), len);
+         break;
+      case STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM), len);
+         break;
+      case STEAM_RICH_PRESENCE_FORMAT_CONTENT_CORE:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_CORE), len);
+         break;
+      case STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM_CORE:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM_CORE), len);
+         break;
+      case STEAM_RICH_PRESENCE_FORMAT_NONE:
+      default:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
+         break;
+   }
+}
+#endif
+
 enum setting_type menu_setting_get_browser_selection_type(rarch_setting_t *setting)
 {
    if (!setting)
@@ -9886,6 +9925,16 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+
+#ifdef HAVE_MIST
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_STEAM_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_STEAM_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+#endif
 
          if (string_is_not_equal(settings->arrays.midi_driver, "null"))
          {
@@ -18324,6 +18373,23 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
+#ifdef HAVE_MIST
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.settings_show_steam,
+               MENU_ENUM_LABEL_SETTINGS_SHOW_STEAM,
+               MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_STEAM,
+               DEFAULT_SETTINGS_SHOW_STEAM,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+#endif
+
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.quick_menu_show_take_screenshot,
@@ -21118,6 +21184,55 @@ static bool setting_append_list(
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
+#ifdef HAVE_MIST
+     case SETTINGS_LIST_STEAM:
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STEAM_SETTINGS), parent_group);
+
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STEAM_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State",
+               &group_info, &subgroup_info, parent_group);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.steam_rich_presence_enable,
+               MENU_ENUM_LABEL_STEAM_RICH_PRESENCE_ENABLE,
+               MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_ENABLE,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.steam_rich_presence_format,
+               MENU_ENUM_LABEL_STEAM_RICH_PRESENCE_FORMAT,
+               MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT,
+               DEFAULT_STEAM_RICH_PRESENCE_FORMAT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_steam_rich_presence_format;
+         menu_settings_list_current_add_range(list, list_info, 0, (STEAM_RICH_PRESENCE_FORMAT_LAST-1), 1, true, true);
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
+#endif
       case SETTINGS_LIST_NONE:
       default:
          break;
@@ -21266,6 +21381,9 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_DIRECTORY,
       SETTINGS_LIST_PRIVACY,
       SETTINGS_LIST_MIDI,
+#ifdef HAVE_MIST
+      SETTINGS_LIST_STEAM,
+#endif
       SETTINGS_LIST_MANUAL_CONTENT_SCAN
    };
    settings_t *settings                 = config_get_ptr();
