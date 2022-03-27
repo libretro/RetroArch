@@ -1,4 +1,8 @@
 # Future
+- AUDIO/MIXER: Free audio voices properly
+- MMAP: Handle disconnect bits on both sides of len
+- RS90: Optimise layout of sdl_rs90_video
+- WIIU: Fix USB gamepad support
 
 # 1.10.2
 - 3DS: Add a menu toggle for switching between old and new 3DS speeds, located in the 'Power Management' menu. Enabled by default, hidden on old 3DS devices.
