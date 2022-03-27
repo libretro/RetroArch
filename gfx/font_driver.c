@@ -678,6 +678,37 @@ static bool wiiu_font_init_first(
 }
 #endif
 
+#ifdef __PSL1GHT__
+static const font_renderer_t *rsx_font_backends[] = {
+   &rsx_font,
+   NULL
+};
+
+static bool rsx_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path,
+      float font_size, bool is_threaded)
+{
+   unsigned i;
+
+   for (i = 0; rsx_font_backends[i]; i++)
+   {
+      void *data = rsx_font_backends[i]->init(
+            video_data, font_path, font_size,
+            is_threaded);
+
+      if (!data)
+         continue;
+
+      *font_driver = rsx_font_backends[i];
+      *font_handle = data;
+      return true;
+   }
+
+   return false;
+}
+#endif
+
 static bool font_init_first(
       const void **font_driver, void **font_handle,
       void *video_data, const char *font_path, float font_size,
@@ -771,6 +802,11 @@ static bool font_init_first(
 #ifdef HAVE_LIBNX
       case FONT_DRIVER_RENDER_SWITCH:
          return switch_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size, is_threaded);
+#endif
+#ifdef __PSL1GHT__
+      case FONT_DRIVER_RENDER_RSX:
+         return rsx_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);
 #endif
 #ifdef HAVE_GDI

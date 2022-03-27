@@ -1515,6 +1515,16 @@ static uint16_t argb32_to_abgr4444(uint32_t col)
    return (a << 12) | (b << 8) | (g << 4) | r;
 }
 
+/* PS3 */
+static uint16_t argb32_to_argb4444(uint32_t col)
+{
+   unsigned a = ((col >> 24) & 0xFF) >> 4;
+   unsigned r = ((col >> 16) & 0xFF) >> 4;
+   unsigned g = ((col >> 8)  & 0xFF) >> 4;
+   unsigned b = ( col        & 0xFF) >> 4;
+   return (a << 12) | (r << 8) | (g << 4) | b;
+}
+
 /* D3D10/11/12 */
 static uint16_t argb32_to_bgra4444(uint32_t col)
 {
@@ -1586,6 +1596,8 @@ static bool rgui_set_pixel_format_function(void)
       argb32_to_pixel_platform_format = argb32_to_rgb5a3;
    else if (string_is_equal(driver_ident, "psp1"))            /* PSP */
       argb32_to_pixel_platform_format = argb32_to_abgr4444;
+   else if (string_is_equal(driver_ident, "rsx"))             /* PS3 */
+      argb32_to_pixel_platform_format = argb32_to_argb4444;
    else if (string_is_equal(driver_ident, "d3d10") ||         /* D3D10/11/12 */
             string_is_equal(driver_ident, "d3d11") ||
             string_is_equal(driver_ident, "d3d12"))

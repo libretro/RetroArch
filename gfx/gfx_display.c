@@ -120,6 +120,9 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
 #ifdef WIIU
    &gfx_display_ctx_wiiu,
 #endif
+#ifdef __PSL1GHT__
+   &gfx_display_ctx_rsx,
+#endif
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #ifdef HAVE_GDI
    &gfx_display_ctx_gdi,
@@ -222,6 +225,10 @@ static bool gfx_display_check_compatibility(
          break;
       case GFX_VIDEO_DRIVER_SWITCH:
          if (string_is_equal(video_driver, "switch"))
+            return true;
+         break;
+      case GFX_VIDEO_DRIVER_RSX:
+         if (string_is_equal(video_driver, "rsx"))
             return true;
          break;
    }

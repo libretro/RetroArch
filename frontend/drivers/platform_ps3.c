@@ -73,6 +73,18 @@ SYS_PROCESS_PARAM(1001, 0x200000)
 static bool multiman_detected  = false;
 #endif
 
+#ifdef HAVE_MEMINFO
+typedef struct {
+   uint32_t total;
+   uint32_t avail;
+} sys_memory_info_t;
+#ifdef __PSL1GHT__
+#define sys_memory_get_user_memory_size(x) lv2syscall1(352, x)
+#else
+#define sys_memory_get_user_memory_size(x) system_call_1(352, x)
+#endif
+#endif
+
 #ifndef IS_SALAMANDER
 static enum frontend_fork ps3_fork_mode = FRONTEND_FORK_NONE;
 
@@ -363,6 +375,11 @@ static void frontend_ps3_init(void *data)
 #endif
    cellSysmoduleLoadModule(CELL_SYSMODULE_NET);
    cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_NP);
+#endif
+
+#ifdef HAVE_LIGHTGUN
+   cellSysmoduleLoadModule(SYSMODULE_GEM);
+   cellSysmoduleLoadModule(SYSMODULE_CAMERA);
 #endif
 
 #ifndef __PSL1GHT__
@@ -674,6 +691,22 @@ static void frontend_ps3_process_args(int *argc, char *argv[])
 #endif
 }
 
+#ifdef HAVE_MEMINFO
+static size_t frontend_ps3_get_mem_total(void)
+{
+   sys_memory_info_t mem_info;
+   sys_memory_get_user_memory_size(&mem_info);
+   return mem_info.total;
+}
+
+static size_t frontend_ps3_get_mem_used(void)
+{
+   sys_memory_info_t mem_info;
+   sys_memory_get_user_memory_size(&mem_info);
+   return mem_info.avail;
+}
+#endif
+
 frontend_ctx_driver_t frontend_ctx_ps3 = {
    frontend_ps3_get_env,
    frontend_ps3_init,
@@ -694,8 +727,13 @@ frontend_ctx_driver_t frontend_ctx_ps3 = {
    frontend_ps3_get_arch,        /* get_architecture */
    NULL,                         /* get_powerstate */
    frontend_ps3_parse_drive_list,/* parse_drive_list */
+#ifdef HAVE_MEMINFO
+   frontend_ps3_get_mem_total,
+   frontend_ps3_get_mem_used,
+#else
    NULL,                         /* get_total_mem */
    NULL,                         /* get_free_mem */
+#endif
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
    NULL,                         /* set_sighandler_state */

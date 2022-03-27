@@ -536,6 +536,7 @@ VIDEO DRIVER
 
 #if defined(__PSL1GHT__)
 #include "../gfx/drivers/rsx_gfx.c"
+#include "../gfx/drivers_display/gfx_display_rsx.c"
 #elif defined(GEKKO)
 #include "../gfx/drivers/gx_gfx.c"
 #elif defined(PSP)
@@ -640,6 +641,10 @@ FONTS
 #include "../gfx/drivers_font/wiiu_font.c"
 #endif
 
+#if defined(__PSL1GHT__)
+#include "../gfx/drivers_font/rsx_font.c"
+#endif
+
 #if defined(HAVE_CACA)
 #include "../gfx/drivers_font/caca_font.c"
 #endif
@@ -709,7 +714,10 @@ INPUT
 #elif defined(PS2)
 #include "../input/drivers/ps2_input.c"
 #include "../input/drivers_joypad/ps2_joypad.c"
-#elif defined(__PS3__) || defined(__PSL1GHT__)
+#elif defined(__PSL1GHT__)
+#include "../input/drivers/psl1ght_input.c"
+#include "../input/drivers_joypad/ps3_joypad.c"
+#elif defined(__PS3__)
 #include "../input/drivers/ps3_input.c"
 #include "../input/drivers_joypad/ps3_joypad.c"
 #elif defined(ORBIS)

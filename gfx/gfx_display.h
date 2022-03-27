@@ -102,7 +102,8 @@ enum gfx_display_driver_type
    GFX_VIDEO_DRIVER_CTR,
    GFX_VIDEO_DRIVER_WIIU,
    GFX_VIDEO_DRIVER_GDI,
-   GFX_VIDEO_DRIVER_SWITCH
+   GFX_VIDEO_DRIVER_SWITCH,
+   GFX_VIDEO_DRIVER_RSX
 };
 
 typedef struct gfx_display_frame_info
@@ -358,6 +359,7 @@ extern gfx_display_ctx_driver_t gfx_display_ctx_ctr;
 extern gfx_display_ctx_driver_t gfx_display_ctx_wiiu;
 extern gfx_display_ctx_driver_t gfx_display_ctx_gdi;
 extern gfx_display_ctx_driver_t gfx_display_ctx_switch;
+extern gfx_display_ctx_driver_t gfx_display_ctx_rsx;
 
 RETRO_END_DECLS
 
