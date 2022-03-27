@@ -1,6 +1,9 @@
 # Future
 - AUDIO/MIXER: Free audio voices properly
 - MMAP: Handle disconnect bits on both sides of len
+- PS3/PSL1GHT: Add RSX graphics support
+- PS3/PSL1GHT: Add libco support
+- PS3/PSL1GHT: Add experimental PSMove support
 - RS90: Optimise layout of sdl_rs90_video
 - WIIU: Fix USB gamepad support
 
