@@ -1,14 +1,8 @@
 # Future
-- AUDIO/MIXER: Free audio voices properly
-- MMAP: Handle disconnect bits on both sides of len
-- PS3/PSL1GHT: Add RSX graphics support
-- PS3/PSL1GHT: Add libco support
-- PS3/PSL1GHT: Add experimental PSMove support
-- RS90: Optimise layout of sdl_rs90_video
-- WIIU: Fix USB gamepad support
 
 # 1.10.2
 - 3DS: Add a menu toggle for switching between old and new 3DS speeds, located in the 'Power Management' menu. Enabled by default, hidden on old 3DS devices.
+- AUDIO/MIXER: Free audio voices properly
 - CHEEVOS: Update to rcheevos 10.3.3
 - CHEEVOS: Support for Arduboy
 - CHEEVOS: Fix tab sequences in rich presence being turned into t character
@@ -25,6 +19,7 @@
 - LIBRETRO: RETRO_ENVIRONMENT_SHUTDOWN fix - ensure menu stack is properly flushed when RETRO_ENVIRONMENT_SHUTDOWN is called
 - LINUX/MALI FBDEV: Fix segfault switching video threaded from quickmenu
 - LOCALIZATION: Add Czech language support
+- MMAP: Handle disconnect bits on both sides of len
 - MIYOO: Improve CPU architecture and model name identification for Miyoo
 - MENU/SETTINGS: Remove 'Advanced Settings' flag from 'Settings > Core' menu
 - MENU/MATERIALUI: Add 'Gray Dark + Light' themes
@@ -38,6 +33,10 @@
 - HOTKEYS: Added hotkey for toggling sync to exact content framerate
 - HOTKEYS: Prevent log spam when using rewind hotkey with cores that don't support rewind, if rewind functionality itself is disabled
 - HOTKEYS: Add hotkey for toggling sync to exact content framerate
+- PS3/PSL1GHT: Add RSX graphics support
+- PS3/PSL1GHT: Add libco support
+- PS3/PSL1GHT: Add experimental PSMove support
+- RS90: Optimise layout of sdl_rs90_video
 - STEAM: Use native OSK (Onscreen Keyboard) instead of built-in RetroArch version
 - STEAM: New built-in core DLC downloader
 - STEAM: Swap OK/Cancel buttons by default
@@ -54,6 +53,7 @@ Otherwise the USB gamepad cannot be found, if VID/PID has leading zero. This iss
 - WII: vWii- Only gamepad 1 is supported, because multi_pad is currently only relevant in the Wii U implementation
 - WIIU: Implemented the multi_pad interface according to input/connect/connect_wiiugca.c
 - WIIU: Add Optimize for Gamepad option
+- WIIU: Fix USB gamepad support
 
 # 1.10.1
 - ANDROID: Add `HAVE_LANGEXTRA` back to makefile
