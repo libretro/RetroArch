@@ -164,10 +164,9 @@ joypad_connection_entry_t *find_connection_entry(uint16_t vid, uint16_t pid, con
          name_match = has_name
             ? strstr(pad_map[i].name, name)
             : NULL;
-         if (has_name && strlen(name) == 3)
+         if (has_name && strlen(name) < 19)
          {
-            /* Wii U: Argument 'name' is only the prefix of the device name!?
-             * This is not enough for a reliable name match! */
+            /* Wii U: Argument 'name' may be truncated. This is not enough for a reliable name match! */
             RARCH_ERR("find_connection_entry(0x%04x,0x%04x): device name '%s' too short: assuming controller '%s'\n",
                   SWAP_IF_BIG(vid), SWAP_IF_BIG(pid), name, pad_map[i].name);
          }

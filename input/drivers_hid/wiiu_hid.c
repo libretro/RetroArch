@@ -894,13 +894,20 @@ static void delete_adapter(wiiu_adapter_t *adapter)
 static void get_device_name(HIDDevice *device, wiiu_attach_event *event)
 {
    int32_t result;
-   uint8_t *name_buffer = alloc_zeroed(4, device->max_packet_size_rx);
+   uint8_t name_buffer_size = 46; /* enough to detect WiiU Pro controller */
+   uint8_t *name_buffer = alloc_zeroed(4, name_buffer_size);
    uint8_t *top = &event->device_name[0];
 
    if(name_buffer == NULL) {
       return;
    }
-   result = HIDGetDescriptor(device->handle, 3, 2, 0, name_buffer, device->max_packet_size_rx, NULL, NULL);
+
+   /* HIDGetDescriptor() fills name_buffer in this way:
+    * - First two bytes are empty
+    * - Every second byte is empty
+    * - Maximum name_buffer size is unknown (with 63 it starts to fail with one of my controllers)
+    * - Truncates device names if name_buffer is too small */
+   result = HIDGetDescriptor(device->handle, 3, 2, 0, name_buffer, name_buffer_size, NULL, NULL);
    if(result > 0) {
       for(int i = 2; i < result; i += 2) {
          top[0] = name_buffer[i];
