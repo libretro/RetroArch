@@ -893,6 +893,10 @@ MSG_HASH(
    "Perspektive"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
+   "Ansicht"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
    "Fahrzeugtyp"
    )
@@ -3164,13 +3168,29 @@ MSG_HASH(
    "Core deinstallieren"
 )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
+   "Zeige \"Cores verwalten\""
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
+   "Die Option \"Cores verwalten\" im Hauptmenü anzeigen."
+)
 
 MSG_HASH(
    MSG_CORE_STEAM_INSTALLING,
    "Installiere Core: "
 )
 
+MSG_HASH(
+   MSG_CORE_STEAM_UNINSTALLED,
+   "Der Core wird deinstalliert, wenn RetroArch beendet wird."
+)
 
+MSG_HASH(
+   MSG_CORE_STEAM_CURRENTLY_DOWNLOADING,
+   "Der Core wird gerade heruntergeladen"
+)
 #endif
 /* Settings > Configuration */
 
@@ -4601,6 +4621,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
    "\"Eigenständige Cores\" anzeigen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
+   "Den Typ der Cores angeben, der im Menü \"Eigenständige Cores\" angezeigt werden soll. Bei der Einstellung \"Benutzerdefiniert\" kann die Sichtbarkeit einzelner Cores über das Menü \"Cores verwalten\" umgeschaltet werden. (Neustart erforderlich bei Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -6405,6 +6429,10 @@ MSG_HASH(
    "Nach Plattformexklusivität"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RUMBLE,
+   "Nach Rumble-Funktion"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SCORE,
    "Nach Bewertung"
    )
@@ -6429,12 +6457,20 @@ MSG_HASH(
    "Nach Handlung"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PACING,
+   "Nach Geschiwndigkeit"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PERSPECTIVE,
    "Nach Perspektive"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SETTING,
    "Nach Setting"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_VISUAL,
+   "Nach Ansicht"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_VEHICULAR,
@@ -6775,9 +6811,21 @@ MSG_HASH(
 
 /* Quick Menu > Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_MANAGER_LIST,
+   "Tastenzuordnungsdateien verwalten"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_MANAGER_LIST,
+   "Tastenzuordnungsdateien für den aktuellen Inhalt laden, speichern oder löschen."
+   )
 
 /* Quick Menu > Controls > Manage Remap Files */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_INFO,
+   "Aktive Tastenzuordnungsdatei:"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
    "Remap-Datei laden"
@@ -6805,6 +6853,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
    "Lösche Spiel-Remap-Datei"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
+   "Tastenzuordnung zurücksetzen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
+   "Alle Tastenzuordnungsoptionen auf Standardwerte zurücksetzen."
    )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
@@ -8582,6 +8638,10 @@ MSG_HASH(
    "Vertikaler Verblassungsfaktor"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN,
+   "Randsaumbreite"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
    "Einstellungen-Tab aktivieren (Neustart erforderlich)"
    )
@@ -8790,6 +8850,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    "Vorschaubilder-Skalierungsfaktor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "Vorschaubilderleiste skalieren."
    )
 
 /* MaterialUI: Settings > User Interface > Appearance */
@@ -10685,7 +10749,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
-   "Fehler beim zuweisen des Arbeitsspeichers für den gepatchten Inhalt..."
+   "Zuweisung des Arbeitsspeichers für den gepatchten Inhalt fehlgeschlagen..."
    )
 MSG_HASH(
    MSG_FAILED_TO_APPLY_SHADER,
@@ -11054,6 +11118,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
    "Remap-Datei wurde erfolgreich entfernt."
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_RESET,
+   "Alle Tastenzuordnungsoptionen auf Standardwerte zurückgesetzt."
    )
 MSG_HASH(
    MSG_REMOVED_DISK_FROM_TRAY,
@@ -11716,6 +11784,14 @@ MSG_HASH(
    "Fehler beim Entsperren des Cores: "
    )
 MSG_HASH(
+   MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
+   "Fehler beim Entfernen des Cores aus der \"Eigenständige Cores\"-Liste: "
+   )
+MSG_HASH(
+   MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
+   "Fehler beim Hinzufügen des Cores zur \"Eigenständige Cores\"-Liste: "
+   )
+MSG_HASH(
    MSG_CORE_DELETE_DISABLED,
    "Löschen des Cores deaktiviert - Core gesperrt: "
    )
@@ -11742,6 +11818,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    "GameMode kann nicht aufgerufen werden - stelle sicher, dass der GameMode-Daemon installiert ist/läuft"
+   )
+MSG_HASH(
+   MSG_VRR_RUNLOOP_ENABLED,
+   "Synchronisation mit exakter Inhaltssignalfrequenz aktiviert."
+   )
+MSG_HASH(
+   MSG_VRR_RUNLOOP_DISABLED,
+   "Synchronisation mit exakter Inhaltssignalfrequenz deaktiviert."
    )
 
 /* Lakka */
@@ -12239,6 +12323,14 @@ MSG_HASH(
 #endif
 #if defined(_3DS)
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NEW3DS_SPEEDUP_ENABLE,
+   "New3DS-Taktfrequenz / -L2-Cache aktivieren"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE,
+   "New3DS-Taktfrequenz (804MHz) und -L2-Cache aktivieren."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
    "3DS-Bildschirm unten"
    )
@@ -12297,3 +12389,11 @@ MSG_HASH(
    "Scan abgeschlossen. <br><br>\nDas korrekte Scannen nach Inhalten erfordert, dass:\n<ul><li>ein kompatibler Core bereits heruntergeladen worden ist</li>\n<li>die Core-Infodateien aktualisiert wurden</li>\n<li>die Datenbanken aktualisiert wurden</li>\n<li>RetroArch nach dem Ausführen jeglicher der oberen Punkte neu gestartet wurde.</li></ul>\nSchließlich muss der Inhalt mit den <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">Datenbanken von hier</a> übereinstimmen. Falls es immer noch nicht funktioniert, kann <a href=\"https://www.github.com/libretro/RetroArch/issues\">hier ein Fehlerbericht erstattet werden</a>."
    )
 #endif
+MSG_HASH(
+   MSG_IOS_TOUCH_MOUSE_ENABLED,
+   "Mauseingabe per Touchscreen ist aktiviert"
+   )
+MSG_HASH(
+   MSG_IOS_TOUCH_MOUSE_DISABLED,
+   "Mauseingabe per Touchscreen ist deaktiviert"
+   )
