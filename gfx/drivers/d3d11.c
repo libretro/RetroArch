@@ -1002,8 +1002,8 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
     * Also don't use the flip model if it's not supported, because then we can't uncap our
     * present rate. */
 #ifdef __cplusplus
-   if (SUCCEEDED(dxgiFactory->lpVtbl->QueryInterface(
-      dxgiFactory, libretro_IID_IDXGIFactory5, (void**)&dxgiFactory5)))
+   if (SUCCEEDED(dxgiFactory->lpVtbl->QueryInterface(dxgiFactory,
+      libretro_IID_IDXGIFactory5, (void**)&dxgiFactory5)))
 #else
    if (SUCCEEDED(dxgiFactory->lpVtbl->QueryInterface(
       dxgiFactory, &libretro_IID_IDXGIFactory5, (void**)&dxgiFactory5)))
@@ -1045,10 +1045,11 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    }
 
 #ifdef HAVE_WINDOW
-   /* Don't let DXGI mess with the full screen state, because otherwise we end up with a mismatch
-    * between the window size and the buffers. RetroArch only uses windowed mode (see above). */
-   if (FAILED(dxgiFactory->lpVtbl->MakeWindowAssociation(dxgiFactory, desc.OutputWindow,
-                                                         DXGI_MWA_NO_ALT_ENTER)))
+   /* Don't let DXGI mess with the full screen state, 
+    * because otherwise we end up with a mismatch
+    * between the window size and the buffers. 
+    * RetroArch only uses windowed mode (see above). */
+   if (FAILED(dxgiFactory->lpVtbl->MakeWindowAssociation(dxgiFactory, desc.OutputWindow, DXGI_MWA_NO_ALT_ENTER)))
    {
       RARCH_ERR("[D3D11]: Failed to make disable DXGI ALT+ENTER handling.\n");
    }
