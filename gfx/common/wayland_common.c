@@ -475,9 +475,6 @@ bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
 #endif
 
    return true;
-
-error:
-   return false;
 }
 
 bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
@@ -488,9 +485,9 @@ bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
 
    if (fullscreen)
    {
+      output_info_t *oi, *tmp;
       struct wl_output *output = NULL;
       int output_i             = 0;
-      output_info_t *oi, *tmp;
 
       if (video_monitor_index <= 0 && wl->current_output != NULL)
       {
@@ -508,7 +505,7 @@ bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
          }
       }
 
-      if (output == NULL)
+      if (!output)
          RARCH_LOG("[Wayland] Failed to specify monitor for fullscreen, letting compositor decide\n");
 
 #ifdef HAVE_LIBDECOR_H
@@ -532,9 +529,6 @@ bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
       wl->cursor.visible = true;
 
    return true;
-
-error:
-   return false;
 }
 
 bool gfx_ctx_wl_suppress_screensaver(void *data, bool state)
@@ -614,11 +608,13 @@ static void shm_buffer_handle_release(void *data,
    free(buffer);
 }
 
+#if 0
 static void xdg_surface_handle_configure(void *data, struct xdg_surface *surface,
                                   uint32_t serial)
 {
    xdg_surface_ack_configure(surface, serial);
 }
+#endif
 
 #ifdef HAVE_LIBDECOR_H
 static void libdecor_handle_error(struct libdecor *context,
