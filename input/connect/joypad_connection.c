@@ -162,7 +162,7 @@ joypad_connection_entry_t *find_connection_entry(uint16_t vid, uint16_t pid, con
             && pad_map[i].pid == pid)
       {
          name_match = has_name
-            ? strstr(pad_map[i].name, name)
+            ? (char*)strstr(pad_map[i].name, name)
             : NULL;
          if (has_name && strlen(name) < 19)
          {

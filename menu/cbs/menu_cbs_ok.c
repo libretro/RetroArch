@@ -5937,7 +5937,7 @@ static void netplay_refresh_rooms_cb(retro_task_t *task,
    unsigned menu_type           = 0;
    enum msg_hash_enums enum_idx = MSG_UNKNOWN;
    net_driver_state_t *net_st   = networking_state_get_ptr();
-   http_transfer_data_t *data   = task_data;
+   http_transfer_data_t *data   = (http_transfer_data_t*)task_data;
    bool refresh                 = false;
 
    menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
@@ -5961,7 +5961,7 @@ static void netplay_refresh_rooms_cb(retro_task_t *task,
       return;
    }
 
-   new_data = realloc(data->data, data->len + 1);
+   new_data              = (char*)realloc(data->data, data->len + 1);
    if (!new_data)
       return;
    data->data            = new_data;
@@ -5980,7 +5980,7 @@ static void netplay_refresh_rooms_cb(retro_task_t *task,
       netplay_rooms_parse(data->data);
 
       net_st->room_count = netplay_rooms_get_count();
-      net_st->room_list  = calloc(net_st->room_count,
+      net_st->room_list  = (struct netplay_room*)calloc(net_st->room_count,
          sizeof(*net_st->room_list));
 
       for (i = 0; i < net_st->room_count; i++)
@@ -6043,7 +6043,7 @@ static void netplay_refresh_lan_cb(retro_task_t *task,
       int i;
 
       net_st->room_count = hosts->size;
-      net_st->room_list  = calloc(net_st->room_count,
+      net_st->room_list  = (struct netplay_room*)calloc(net_st->room_count,
          sizeof(*net_st->room_list));
 
       for (i = 0; i < net_st->room_count; i++)
