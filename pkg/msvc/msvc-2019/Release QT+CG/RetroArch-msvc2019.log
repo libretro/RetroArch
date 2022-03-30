@@ -1,0 +1,37 @@
+﻿  griffin.c
+C:\Users\jo3la\source\repos\Interdice\RetroArch\input\input_driver.c(3540,51): warning C4018: '<': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\libretro-common\string\stdstring.c(204,16): warning C4018: '<': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\menu_driver.c(1929,51): warning C4018: '>=': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\menu_driver.c(1934,51): warning C4018: '>=': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\rgui.c(4138,13): warning C4018: '>': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\rgui.c(4138,30): warning C4018: '<': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\rgui.c(4139,13): warning C4018: '>': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\rgui.c(4139,30): warning C4018: '<': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\rgui.c(4630,27): warning C4018: '>': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\xmb.c(7401,16): warning C4018: '<': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\xmb.c(7403,19): warning C4018: '>=': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\xmb.c(7408,21): warning C4018: '>': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\xmb.c(7434,16): warning C4018: '>': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\xmb.c(7444,16): warning C4018: '>': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\xmb.c(7451,16): warning C4018: '<': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\xmb.c(7454,21): warning C4018: '<': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\xmb.c(7476,16): warning C4018: '<': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\xmb.c(7479,21): warning C4018: '<': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\ozone.c(10162,17): warning C4018: '<': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\ozone.c(10254,17): warning C4018: '>': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\materialui.c(3726,25): warning C4018: '>': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\materialui.c(3727,25): warning C4018: '<': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\materialui.c(3728,25): warning C4018: '>=': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\materialui.c(3729,25): warning C4018: '<=': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\materialui.c(5449,40): warning C4018: '>': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\materialui.c(5450,40): warning C4018: '<': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\materialui.c(5451,40): warning C4018: '>=': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\materialui.c(5452,40): warning C4018: '<=': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\materialui.c(5934,30): warning C4018: '<': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\materialui.c(8792,37): warning C4018: '>=': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\materialui.c(9902,23): warning C4018: '<': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\menu\drivers\materialui.c(9904,23): warning C4018: '<': signed/unsigned mismatch
+C:\Users\jo3la\source\repos\Interdice\RetroArch\libretro-db\query.c(286,12): warning C4018: '<': signed/unsigned mismatch
+  griffin_cpp.cpp
+  griffin_glslang.cpp
+C:\Users\jo3la\source\repos\Interdice\RetroArch\ui\drivers\ui_qt.cpp(17,10): fatal error C1083: Cannot open include file: 'QApplication': No such file or directory (compiling source file ..\..\..\griffin\griffin_cpp.cpp)

@@ -665,6 +665,7 @@ typedef struct settings
 #endif
       bool menu_show_core_updater;
       bool menu_show_load_core;
+      bool menu_show_dropbox;
       bool menu_show_load_content;
       bool menu_show_load_disc;
       bool menu_show_dump_disc;

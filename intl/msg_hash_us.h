@@ -75,10 +75,17 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "Load Content"
    )
+   
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_DROPBOX_LIST,
+   "Manage Cloudsaving"
+)
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
    "Select which content to start."
    )
+MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_DROPBOX_LIST,
+         "powered by dropbox")
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
    "Load Disc"
@@ -290,6 +297,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
    "Browse all content matching the database via a categorized search interface."
    )
+
+ /* Main Menu > Dropbox Menu */
+ 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DROPBOX_LIST_SAVES,
+   "Browse all saves that have been backed up on Dropbox"
+   )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
    "Standalone Cores"
@@ -297,6 +312,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
    "Installed cores which can operate without loading content will appear here."
+
    )
 
 /* Main Menu > Online Updater */
@@ -4576,10 +4592,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
    "Show 'Load Content'"
    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_DROPBOX,
+   "Show 'Dropbox'")
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
    "Show the 'Load Content' option in the Main Menu."
    )
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_DROPBOX,
+   "Show the 'load' optoin in the main menu")
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
    "Show 'Load Disc'"

@@ -1,0 +1,2 @@
+﻿  griffin_cpp.cpp
+C:\Users\jo3la\source\repos\Interdice\RetroArch\ui\drivers\ui_qt.cpp(17,10): fatal error C1083: Cannot open include file: 'QApplication': No such file or directory

@@ -647,6 +647,7 @@ static const bool quick_menu_show_download_thumbnails         = true;
 
 static const bool menu_show_online_updater     = true;
 static const bool menu_show_load_core          = true;
+static const bool menu_show_dropbox            = true;
 static const bool menu_show_load_content       = true;
 #ifdef HAVE_CDROM
 static const bool menu_show_load_disc          = true;

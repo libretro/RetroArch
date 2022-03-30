@@ -5045,6 +5045,12 @@ static int action_ok_core_updater_download(const char *path,
    return 0;
 }
 
+static int action_ok_core_upload_save(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx){
+         core_updater_list_t *core_list = core_updater_list_get_cached();
+         return 0;
+      }
+
 static int action_ok_update_installed_cores(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -6109,6 +6115,19 @@ static int action_ok_scan_directory_list(const char *path,
    return generic_action_ok_displaylist_push(path,
          dir_menu_content, label, type, idx,
          entry_idx, ACTION_OK_DL_SCAN_DIR_LIST);
+}
+
+static int action_ok_scan_dropbox_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t            *settings   = config_get_ptr();
+   const char *dir_menu_content      = settings->paths.directory_menu_content;
+   const char *saves_menu_path       = dir_get_ptr(RARCH_DIR_SAVEFILE);
+
+   filebrowser_clear_type();
+   return generic_action_ok_displaylist_push(path,
+         saves_menu_path, label, type, idx,
+         entry_idx, ACTION_OK_DL_CONTENT_LIST);
 }
 
 static int action_ok_push_random_dir(const char *path,
@@ -8178,6 +8197,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_ONLINE_UPDATER,                      action_ok_push_default},
          {MENU_ENUM_LABEL_NETPLAY,                             action_ok_push_default},
          {MENU_ENUM_LABEL_LOAD_CONTENT_LIST,                   action_ok_push_default},
+         {MENU_ENUM_LABEL_LOAD_DROPBOX_LIST,                   action_ok_push_default},
          {MENU_ENUM_LABEL_ADD_CONTENT_LIST,                    action_ok_push_default},
          {MENU_ENUM_LABEL_CONFIGURATIONS_LIST,                 action_ok_push_default},
          {MENU_ENUM_LABEL_HELP_LIST,                           action_ok_push_default},
@@ -8188,6 +8208,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_SCAN_DIRECTORY,                      action_ok_scan_directory_list},
          {MENU_ENUM_LABEL_SCAN_FILE,                           action_ok_push_scan_file},
          {MENU_ENUM_LABEL_FAVORITES,                           action_ok_push_content_list},
+         {MENU_ENUM_LABEL_DROPBOX_LIST_SAVES,                  action_ok_scan_dropbox_list},
          {MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,      action_ok_push_random_dir},
          {MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,    action_ok_push_downloads_dir},
          {MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,                 action_ok_file_load_detect_core},
@@ -8690,6 +8711,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_SIDELOAD_CORE:
             BIND_ACTION_OK(cbs, action_ok_sideload_core);
             break;
+         case FILE_TYPE_SAVES:
+#ifdef HAVE_NETWORKING
+            BIND_ACTION_OK(cbs, action_ok_core_upload_save);
+            break;
+#endif
          case FILE_TYPE_DOWNLOAD_URL:
 #ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_download_url);
@@ -8699,6 +8725,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_thumbnails_updater_download);
 #endif
+
             break;
          case FILE_TYPE_DOWNLOAD_LAKKA:
 #if defined(HAVE_NETWORKING) && defined(HAVE_LAKKA)
@@ -8784,6 +8811,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                {
                   case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
                   case MENU_ENUM_LABEL_FAVORITES:
+                  case MENU_ENUM_LABEL_DROPBOX_LIST_SAVES:
                   case MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
 #ifdef HAVE_COMPRESSION
                      if (type == FILE_TYPE_IN_CARCHIVE)

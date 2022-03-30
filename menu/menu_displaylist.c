@@ -3976,6 +3976,7 @@ static unsigned menu_displaylist_parse_playlists(
                MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB);
 
       if (show_add_content)
+      // start here
          if (menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST),
                   msg_hash_to_str(MENU_ENUM_LABEL_ADD_CONTENT_LIST),
@@ -6822,6 +6823,16 @@ unsigned menu_displaylist_build_list(
             count++;
 #endif
          break;
+      case DISPLAYLIST_LOAD_DROPBOX_LIST:
+      case DISPLAYLIST_LOAD_DROPBOX_SPECIAL:{
+         if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DROPBOX_LIST_SAVES),
+                        msg_hash_to_str(MENU_ENUM_LABEL_DROPBOX_LIST_SAVES),
+                        MENU_ENUM_LABEL_DROPBOX_LIST_SAVES,
+                        MENU_SETTING_ACTION, 8, 0))
+                  count++;
+      }
+         
       case DISPLAYLIST_INPUT_MENU_SETTINGS_LIST:
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_INPUT_UNIFIED_MENU_CONTROLS,
@@ -8679,6 +8690,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_SETTINGS_VIEWS_SETTINGS,                             PARSE_ACTION, true     },
                {MENU_ENUM_LABEL_MENU_SHOW_LOAD_CORE,                                   PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT,                                PARSE_ONLY_BOOL, true  },
+               {MENU_ENUM_LABEL_MENU_SHOW_DROPBOX,                                     PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_LOAD_DISC,                                   PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_DUMP_DISC,                                   PARSE_ONLY_BOOL, true  },
 #ifdef HAVE_LAKKA
@@ -11522,7 +11534,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                {
                   char buf_tmp[64];
                   char buf[128];
-
+                  
                   buf[0] = buf_tmp[0] = '\0';
 
                   snprintf(buf_tmp, sizeof(buf_tmp),
@@ -11931,6 +11943,33 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             info->need_sort       = false;
             info->need_refresh    = true;
             info->need_push       = true;
+         }
+         break;
+      case DISPLAYLIST_DROPBOX_SAVES_LIST:
+         {
+            // DISPLAYLIST_DROPBOX_SAVES_LIST
+             /*
+         if (menu_entries_append_enum(info->list,
+                           entry->remote_filename,
+                           "",
+                           MENU_ENUM_LABEL_CORE_UPDATER_ENTRY,
+                           FILE_TYPE_DOWNLOAD_CORE, 0, 0))
+                     {
+                        file_list_set_alt_at_offset(
+                              info->list, menu_index, entry->display_name);
+
+                        menu_index++;
+                        count++;
+                     }
+         */
+
+        if (menu_entries_append_enum(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DROPBOX_LIST_SAVES),
+                        msg_hash_to_str(MENU_ENUM_LABEL_DROPBOX_LIST_SAVES),
+                        MENU_ENUM_LABEL_DROPBOX_LIST_SAVES,
+                        FILE_TYPE_SAVES, 0, 0))
+                  count++;
+            
          }
          break;
       case DISPLAYLIST_MUSIC_HISTORY:
@@ -12555,6 +12594,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
       case DISPLAYLIST_LOAD_CONTENT_LIST:
       case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
+      case DISPLAYLIST_LOAD_DROPBOX_LIST:
       case DISPLAYLIST_OPTIONS_REMAPPINGS:
       case DISPLAYLIST_VIDEO_SETTINGS_LIST:
       case DISPLAYLIST_AUDIO_SETTINGS_LIST:
@@ -13063,6 +13103,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      count++;
                }
             }
+
+            if (settings->bools.menu_show_dropbox)
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list, MENU_ENUM_LABEL_LOAD_DROPBOX_LIST, PARSE_ACTION, false) == 0)
+               {
+                  count++;
+               }
+               
+            }
+            
 
             if (settings->bools.menu_content_show_history)
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,

@@ -2690,6 +2690,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_CORE_INFORMATION:
          return xmb->textures.list[XMB_TEXTURE_CORE];
       case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
+      case MENU_ENUM_LABEL_LOAD_DROPBOX_LIST:
       case MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS:
       case MENU_ENUM_LABEL_SCAN_FILE:
          return xmb->textures.list[XMB_TEXTURE_FILE];
@@ -7027,6 +7028,7 @@ static int xmb_list_push(void *data, void *userdata,
    settings_t *settings            = config_get_ptr();
    bool menu_show_load_core        = settings->bools.menu_show_load_core;
    bool menu_show_load_content     = settings->bools.menu_show_load_content;
+   bool menu_show_load_dropbox     = settings->bools.menu_show_dropbox;
    bool menu_content_show_pl       = settings->bools.menu_content_show_playlists;
    bool menu_show_configurations   = settings->bools.menu_show_configurations;
    bool menu_show_load_disc        = settings->bools.menu_show_load_disc;
@@ -7159,6 +7161,13 @@ static int xmb_list_push(void *data, void *userdata,
                         false);
                }
             }
+
+            if (menu_show_load_dropbox)
+            {
+               MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list, MENU_ENUM_LABEL_LOAD_DROPBOX_LIST,
+               PARSE_ACTION, false);
+            }
+            
 
             if (menu_show_load_disc)
             {

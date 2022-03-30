@@ -1,0 +1,34 @@
+﻿  QT: Generate C:\Users\jo3la\source\repos\Interdice\RetroArch\ui\drivers\qt\moc_ui_qt_load_core_window.cpp
+  'moc.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+  QT: Generate C:\Users\jo3la\source\repos\Interdice\RetroArch\ui\drivers\qt\moc_shaderparamsdialog.cpp
+  'moc.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+  QT: Generate C:\Users\jo3la\source\repos\Interdice\RetroArch\ui\drivers\qt\moc_viewoptionsdialog.cpp
+  'moc.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+  QT: Generate C:\Users\jo3la\source\repos\Interdice\RetroArch\ui\drivers\qt\moc_playlistentrydialog.cpp
+  'moc.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+  QT: Generate C:\Users\jo3la\source\repos\Interdice\RetroArch\ui\drivers\qt\moc_gridview.cpp
+  'moc.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+  QT: Generate C:\Users\jo3la\source\repos\Interdice\RetroArch\ui\drivers\qt\moc_coreoptionsdialog.cpp
+  'moc.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+  QT: Generate C:\Users\jo3la\source\repos\Interdice\RetroArch\ui\drivers\qt\moc_coreinfodialog.cpp
+  'moc.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+  QT: Generate C:\Users\jo3la\source\repos\Interdice\RetroArch\ui\drivers\qt\moc_filedropwidget.cpp
+  'moc.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+  QT: Generate C:\Users\jo3la\source\repos\Interdice\RetroArch\ui\drivers\moc_ui_qt.cpp
+  'moc.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+  QT: Generate C:\Users\jo3la\source\repos\Interdice\RetroArch\ui\drivers\qt\moc_settingswidgets.cpp
+  'moc.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+  QT: Generate C:\Users\jo3la\source\repos\Interdice\RetroArch\ui\drivers\qt\moc_qt_options.cpp
+  'moc.exe' is not recognized as an internal or external command,
+  operable program or batch file.
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppCommon.targets(241,5): error MSB8066: Custom build for '..\..\..\ui\drivers\qt\ui_qt_load_core_window.h;..\..\..\ui\drivers\qt\shaderparamsdialog.h;..\..\..\ui\drivers\qt\viewoptionsdialog.h;..\..\..\ui\drivers\qt\playlistentrydialog.h;..\..\..\ui\drivers\qt\gridview.h;..\..\..\ui\drivers\qt\coreoptionsdialog.h;..\..\..\ui\drivers\qt\coreinfodialog.h;..\..\..\ui\drivers\qt\filedropwidget.h;..\..\..\ui\drivers\ui_qt.h;..\..\..\ui\drivers\qt\settingswidgets.h;..\..\..\ui\drivers\qt\qt_options.h' exited with code 9009.

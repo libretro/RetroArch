@@ -1212,6 +1212,7 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_PLAYLIST_ENTRY:
          case MENU_INFO_MESSAGE:
          case FILE_TYPE_DOWNLOAD_CORE:
+         case FILE_TYPE_SAVES:
          case FILE_TYPE_CHEAT:
          case FILE_TYPE_REMAP:
          case FILE_TYPE_MOVIE:

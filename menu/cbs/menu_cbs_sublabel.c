@@ -428,6 +428,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_dual_thumbnail_list_view_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_thumbnail_background_enable, MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE)
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_add_content_list,              MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_dropbox,             MENU_ENUM_SUBLABEL_MENU_SHOW_DROPBOX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_frame_delay,             MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_frame_delay_auto,        MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_shader_delay,            MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY)
@@ -536,6 +537,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dump_disc,                  MENU_ENU
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_eject_disc,                 MENU_ENUM_SUBLABEL_EJECT_DISC)
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_list,                  MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dropbox_list,                  MENU_ENUM_SUBLABEL_LOAD_DROPBOX_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_special,               MENU_ENUM_SUBLABEL_LOAD_CONTENT_SPECIAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_load_content_history,          MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_network_information,           MENU_ENUM_SUBLABEL_NETWORK_INFORMATION)
@@ -3732,6 +3734,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_list);
+            break;
+         case MENU_ENUM_LABEL_LOAD_DROPBOX_LIST:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_dropbox_list);
+            break;
+         case MENU_ENUM_LABEL_MENU_SHOW_DROPBOX:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_dropbox);
             break;
          case MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_special);
