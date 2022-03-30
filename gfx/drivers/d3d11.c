@@ -68,7 +68,11 @@
 #ifdef __WINRT__
 #include "../../uwp/uwp_func.h"
 #else
+#ifdef __cplusplus
+extern const GUID DECLSPEC_SELECTANY libretro_IID_IDXGIFactory5 = { 0x7632e1f5,0xee65,0x4dca, { 0x87,0xfd,0x84,0xcd,0x75,0xf8,0x83,0x8d } };
+#else
 const GUID DECLSPEC_SELECTANY libretro_IID_IDXGIFactory5 = { 0x7632e1f5,0xee65,0x4dca, { 0x87,0xfd,0x84,0xcd,0x75,0xf8,0x83,0x8d } };
+#endif
 #endif
 
 /* Temporary workaround for d3d11 not being able to poll flags during init */
@@ -997,8 +1001,13 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    /* Check for ALLOW_TEARING support before trying to use it.
     * Also don't use the flip model if it's not supported, because then we can't uncap our
     * present rate. */
+#ifdef __cplusplus
+   if (SUCCEEDED(dxgiFactory->lpVtbl->QueryInterface(dxgiFactory,
+      libretro_IID_IDXGIFactory5, (void**)&dxgiFactory5)))
+#else
    if (SUCCEEDED(dxgiFactory->lpVtbl->QueryInterface(
       dxgiFactory, &libretro_IID_IDXGIFactory5, (void**)&dxgiFactory5)))
+#endif
    {
       BOOL allow_tearing_supported = FALSE;
       if (SUCCEEDED(dxgiFactory5->lpVtbl->CheckFeatureSupport(
@@ -1036,10 +1045,11 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    }
 
 #ifdef HAVE_WINDOW
-   /* Don't let DXGI mess with the full screen state, because otherwise we end up with a mismatch
-    * between the window size and the buffers. RetroArch only uses windowed mode (see above). */
-   if (FAILED(dxgiFactory->lpVtbl->MakeWindowAssociation(dxgiFactory, desc.OutputWindow,
-                                                         DXGI_MWA_NO_ALT_ENTER)))
+   /* Don't let DXGI mess with the full screen state, 
+    * because otherwise we end up with a mismatch
+    * between the window size and the buffers. 
+    * RetroArch only uses windowed mode (see above). */
+   if (FAILED(dxgiFactory->lpVtbl->MakeWindowAssociation(dxgiFactory, desc.OutputWindow, DXGI_MWA_NO_ALT_ENTER)))
    {
       RARCH_ERR("[D3D11]: Failed to make disable DXGI ALT+ENTER handling.\n");
    }

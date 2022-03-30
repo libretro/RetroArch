@@ -696,10 +696,11 @@ void App::ParseProtocolArgs(Windows::ApplicationModel::Activation::IActivatedEve
 	// "cmd" and "launchOnExit" are optional. If none specified, it will normally launch into menu
 	if (args->Kind == ActivationKind::Protocol)
 	{
+		unsigned i;
 		ProtocolActivatedEventArgs^ protocolArgs = dynamic_cast<Windows::ApplicationModel::Activation::ProtocolActivatedEventArgs^>(args);
 		Windows::Foundation::WwwFormUrlDecoder^ query = protocolArgs->Uri->QueryParsed;
 
-		for (int i = 0; i < query->Size; i++)
+		for (i = 0; i < query->Size; i++)
 		{
 			IWwwFormUrlDecoderEntry^ arg = query->GetAt(i);
 

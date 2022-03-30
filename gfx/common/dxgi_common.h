@@ -2,6 +2,7 @@
 #define _DXGI_COMMON_H
 
 #include <retro_inline.h>
+#include <retro_common_api.h>
 
 #ifndef HAVE_DXGI_HDR
 #define HAVE_DXGI_HDR
@@ -17,6 +18,8 @@
 #endif
 
 #include <gfx/math/matrix_4x4.h>
+
+RETRO_BEGIN_DECLS
 
 typedef struct ALIGN(16)
 {

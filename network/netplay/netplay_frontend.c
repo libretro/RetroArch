@@ -7771,7 +7771,7 @@ static void netplay_announce_cb(retro_task_t *task,
    size_t remaining;
    net_driver_state_t *net_st     = &networking_driver_st;
    struct netplay_room *host_room = &net_st->host_room;
-   http_transfer_data_t *data     = task_data;
+   http_transfer_data_t *data     = (http_transfer_data_t*)task_data;
    bool first                     = !host_room->id;
 
    if (error)
@@ -8358,7 +8358,7 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
    net_st->lan_ad_server_fd = -1;
 #endif
 
-   net_st->chat = calloc(1, sizeof(*net_st->chat));
+   net_st->chat             = (struct netplay_chat*)calloc(1, sizeof(*net_st->chat));
    if (!net_st->chat)
       goto failure;
    net_st->chat->message_slots = ARRAY_SIZE(net_st->chat->messages);
@@ -8633,8 +8633,8 @@ static void gfx_widget_netplay_chat_iterate(void *user_data,
    bool is_threaded)
 {
    size_t i;
-   net_driver_state_t *net_st = &networking_driver_st;
-   struct netplay_chat *chat  = net_st->chat;
+   net_driver_state_t *net_st              = &networking_driver_st;
+   struct netplay_chat *chat               = net_st->chat;
    struct netplay_chat_buffer *chat_buffer = &net_st->chat_buffer;
 
    if (chat)
