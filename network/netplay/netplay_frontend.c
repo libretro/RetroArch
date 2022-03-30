@@ -6350,7 +6350,7 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *res,
                sizeof(netplay->mitm_session_id.unique)))
          {
             /* Initialize data for handling tunneled client connections. */
-            netplay->mitm_pending = calloc(1, sizeof(*netplay->mitm_pending));
+            netplay->mitm_pending = (struct netplay_mitm_pending*)calloc(1, sizeof(*netplay->mitm_pending));
             if (netplay->mitm_pending)
             {
                memset(netplay->mitm_pending->fds, -1,
@@ -6743,8 +6743,8 @@ netplay_t *netplay_new(const char *server, const char *mitm, uint16_t port,
    const struct retro_callbacks *cb, bool nat_traversal, const char *nick,
    uint64_t quirks)
 {
-   settings_t *settings = config_get_ptr();
-   netplay_t *netplay   = calloc(1, sizeof(*netplay));
+   settings_t *settings          = config_get_ptr();
+   netplay_t *netplay            = (netplay_t*)calloc(1, sizeof(*netplay));
 
    if (!netplay)
       return NULL;
@@ -7781,13 +7781,13 @@ static void netplay_announce_cb(retro_task_t *task,
    if (data->status != 200)
       return;
 
-   buf_start = malloc(data->len);
+   buf_start                      = (char*)malloc(data->len);
    if (!buf_start)
       return;
    memcpy(buf_start, data->data, data->len);
 
-   buf = buf_start;
-   remaining = data->len;
+   buf                            = buf_start;
+   remaining                      = data->len;
    do
    {
       char *lnbreak, *delim;
@@ -8015,9 +8015,9 @@ static void netplay_mitm_query_cb(retro_task_t *task, void *task_data,
 {
    char *buf_start, *buf;
    size_t remaining;
-   net_driver_state_t *net_st     = &networking_driver_st;
-   struct netplay_room *host_room = &net_st->host_room;
-   http_transfer_data_t *data     = task_data;
+   net_driver_state_t *net_st     = (net_driver_state_t*)&networking_driver_st;
+   struct netplay_room *host_room = (struct netplay_room*)&net_st->host_room;
+   http_transfer_data_t *data     = (http_transfer_data_t*)task_data;
 
    if (error)
       return;
@@ -8026,30 +8026,30 @@ static void netplay_mitm_query_cb(retro_task_t *task, void *task_data,
    if (data->status != 200)
       return;
 
-   buf_start = malloc(data->len);
+   buf_start                      = (char*)malloc(data->len);
    if (!buf_start)
       return;
    memcpy(buf_start, data->data, data->len);
 
-   buf = buf_start;
-   remaining = data->len;
+   buf                            = buf_start;
+   remaining                      = data->len;
    do
    {
-      char *lnbreak, *delim;
-      char *key, *value;
-
-      lnbreak = (char*) memchr(buf, '\n', remaining);
+      char *delim   = NULL;
+      char *key     = NULL;
+      char *value   = NULL;
+      char *lnbreak = (char*) memchr(buf, '\n', remaining);
       if (!lnbreak)
          break;
       *lnbreak++ = '\0';
 
-      delim   = (char*) strchr(buf, '=');
+      delim         = (char*)strchr(buf, '=');
       if (delim)
       {
-         *delim++ = '\0';
+         *delim++   = '\0';
 
-         key   = buf;
-         value = delim;
+         key        = buf;
+         value      = delim;
 
          if (!string_is_empty(key) && !string_is_empty(value))
          {
@@ -8062,7 +8062,7 @@ static void netplay_mitm_query_cb(retro_task_t *task, void *task_data,
       }
 
       remaining -= (size_t)lnbreak - (size_t)buf;
-      buf = lnbreak;
+      buf        = lnbreak;
    } while (remaining);
 
    free(buf_start);
@@ -8082,20 +8082,19 @@ static bool netplay_mitm_query(const char *mitm_name)
    {
       char     addr[256];
       char     sess[sizeof(addr)];
-      unsigned port;
+      unsigned port             = 0;
       settings_t *settings      = config_get_ptr();
       const char *custom_server =
          settings->paths.netplay_custom_mitm_server;
 
-      addr[0] = '\0';
-      sess[0] = '\0';
-      port    = 0;
+      addr[0]                   = '\0';
+      sess[0]                   = '\0';
 
       netplay_decode_hostname(custom_server,
          addr, &port, sess, sizeof(addr));
 
       if (!port)
-         port = RARCH_DEFAULT_PORT;
+         port                   = RARCH_DEFAULT_PORT;
 
       strlcpy(host_room->mitm_address, addr,
          sizeof(host_room->mitm_address));
@@ -8700,8 +8699,8 @@ static void gfx_widget_netplay_chat_iterate(void *user_data,
 static void gfx_widget_netplay_chat_frame(void *data, void *userdata)
 {
    size_t i;
-   video_frame_info_t *video_info = data;
-   dispgfx_widget_t *p_dispwidget = userdata;
+   video_frame_info_t *video_info = (video_frame_info_t*)data;
+   dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)userdata;
    net_driver_state_t *net_st     = &networking_driver_st;
    struct netplay_chat_buffer *chat_buffer = &net_st->chat_buffer;
    int line_height                =
@@ -8798,9 +8797,9 @@ static void gfx_widget_netplay_ping_iterate(void *user_data,
 
 static void gfx_widget_netplay_ping_frame(void *data, void *userdata)
 {
-   video_frame_info_t *video_info = data;
-   dispgfx_widget_t *p_dispwidget = userdata;
-   net_driver_state_t *net_st     = &networking_driver_st;
+   video_frame_info_t *video_info = (video_frame_info_t*)data;
+   dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)userdata;
+   net_driver_state_t *net_st     = (net_driver_state_t*)&networking_driver_st;
    int ping                       = net_st->latest_ping;
 
    if (ping >= 0)
@@ -8808,13 +8807,13 @@ static void gfx_widget_netplay_ping_frame(void *data, void *userdata)
       char ping_str[16];
       int ping_len;
       int ping_width, total_width;
-      gfx_display_t *p_disp = video_info->disp_userdata;
+      gfx_display_t *p_disp       = (gfx_display_t*)video_info->disp_userdata;
 
       /* Limit ping counter to 999. */
       if (ping > 999)
          ping = 999;
 
-      ping_len = snprintf(ping_str, sizeof(ping_str),
+      ping_len    = snprintf(ping_str, sizeof(ping_str),
          "PING: %d", ping);
 
       ping_width  = font_driver_get_message_width(

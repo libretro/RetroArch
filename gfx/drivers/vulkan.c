@@ -896,8 +896,8 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
 #ifdef VULKAN_HDR_SWAPCHAIN
    if (vk->context->hdr_enable)
    {
-      struct video_shader* shader_preset = vulkan_filter_chain_get_preset(vk->filter_chain); 
-      VkFormat rt_format                 = vulkan_filter_chain_get_pass_rt_format(vk->filter_chain, shader_preset->passes - 1);
+      struct video_shader* shader_preset = vulkan_filter_chain_get_preset((vulkan_filter_chain_t*)vk->filter_chain); 
+      VkFormat rt_format                 = vulkan_filter_chain_get_pass_rt_format((vulkan_filter_chain_t*)vk->filter_chain, shader_preset->passes - 1);
 
       if(shader_preset && shader_preset->passes && (rt_format == VK_FORMAT_A2B10G10R10_UNORM_PACK32))
       {
@@ -958,8 +958,8 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
 #ifdef VULKAN_HDR_SWAPCHAIN
    if (vk->context->hdr_enable)
    {
-      struct video_shader* shader_preset = vulkan_filter_chain_get_preset(vk->filter_chain); 
-      VkFormat rt_format                 = vulkan_filter_chain_get_pass_rt_format(vk->filter_chain, shader_preset->passes - 1);
+      struct video_shader* shader_preset = vulkan_filter_chain_get_preset((vulkan_filter_chain_t*)vk->filter_chain); 
+      VkFormat rt_format                 = vulkan_filter_chain_get_pass_rt_format((vulkan_filter_chain_t*)vk->filter_chain, shader_preset->passes - 1);
 
       if(shader_preset && shader_preset->passes && (rt_format == VK_FORMAT_A2B10G10R10_UNORM_PACK32))
       {
@@ -1938,8 +1938,8 @@ static bool vulkan_frame(void *data, const void *frame,
    bool overlay_behind_menu                      = video_info->overlay_behind_menu;
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-   struct video_shader* shader_preset           = vulkan_filter_chain_get_preset(vk->filter_chain); 
-   VkFormat main_buffer_format                  = shader_preset && shader_preset->passes ? vulkan_filter_chain_get_pass_rt_format(vk->filter_chain, shader_preset->passes - 1) : VK_FORMAT_R8G8B8A8_UNORM;
+   struct video_shader* shader_preset           = vulkan_filter_chain_get_preset((vulkan_filter_chain_t*)vk->filter_chain); 
+   VkFormat main_buffer_format                  = shader_preset && shader_preset->passes ? vulkan_filter_chain_get_pass_rt_format((vulkan_filter_chain_t*)vk->filter_chain, shader_preset->passes - 1) : VK_FORMAT_R8G8B8A8_UNORM;
    bool use_main_buffer                         = main_buffer_format != vk->context->swapchain_format; 
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
