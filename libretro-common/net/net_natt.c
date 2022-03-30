@@ -606,7 +606,7 @@ static bool natt_action(struct natt_device *device,
    const char *action, const char *data, retro_task_callback_t cb,
    struct natt_request *request)
 {
-   static const char headers_template[] =
+   static const char headers_tmpl[] =
       "Content-Type: text/xml\r\n"
       "SOAPAction: \"%s#%s\"\r\n";
    char headers[512];
@@ -615,7 +615,7 @@ static bool natt_action(struct natt_device *device,
    if (string_is_empty(device->control))
       return false;
 
-   snprintf(headers, sizeof(headers), headers_template,
+   snprintf(headers, sizeof(headers), headers_tmpl,
       device->service_type, action);
 
    if (request)
@@ -632,7 +632,7 @@ static bool natt_action(struct natt_device *device,
 
 bool natt_external_address(struct natt_device *device, bool block)
 {
-   static const char template[] =
+   static const char tmpl[] =
       "<?xml version=\"1.0\"?>"
       "<s:Envelope "
          "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\" "
@@ -647,7 +647,7 @@ bool natt_external_address(struct natt_device *device, bool block)
    if (!device)
       return false;
 
-   snprintf(buf, sizeof(buf), template,
+   snprintf(buf, sizeof(buf), tmpl,
       device->service_type);
 
    if (device->busy)
@@ -671,7 +671,7 @@ bool natt_open_port(struct natt_device *device,
    struct natt_request *request, enum natt_forward_type forward_type,
    bool block)
 {
-   static const char template[] =
+   static const char tmpl[] =
       "<?xml version=\"1.0\"?>"
       "<s:Envelope "
          "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\" "
@@ -708,7 +708,7 @@ bool natt_open_port(struct natt_device *device,
       "AddAnyPortMapping" : "AddPortMapping";
    protocol = (request->proto == SOCKET_PROTOCOL_UDP) ?
       "UDP" : "TCP";
-   snprintf(buf, sizeof(buf), template,
+   snprintf(buf, sizeof(buf), tmpl,
       action, device->service_type,
       port, protocol, port, host,
       action);
@@ -733,7 +733,7 @@ bool natt_open_port(struct natt_device *device,
 bool natt_close_port(struct natt_device *device,
    struct natt_request *request, bool block)
 {
-   static const char template[] =
+   static const char tmpl[] =
       "<?xml version=\"1.0\"?>"
       "<s:Envelope "
          "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\" "
@@ -763,7 +763,7 @@ bool natt_close_port(struct natt_device *device,
 
    protocol = (request->proto == SOCKET_PROTOCOL_UDP) ?
       "UDP" : "TCP";
-   snprintf(buf, sizeof(buf), template,
+   snprintf(buf, sizeof(buf), tmpl,
       device->service_type, port, protocol);
 
    if (device->busy)
