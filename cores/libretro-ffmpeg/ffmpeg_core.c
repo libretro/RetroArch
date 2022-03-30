@@ -1085,11 +1085,9 @@ static enum AVPixelFormat select_decoder(AVCodecContext *ctx,
    if (!force_sw_decoder)
    {
       if (hw_decoder == AV_HWDEVICE_TYPE_NONE)
-      {
-         format = auto_hw_decoder(ctx, pix_fmts);
-      }
+         format              = auto_hw_decoder(ctx, pix_fmts);
       else
-         format = init_hw_decoder(ctx, hw_decoder, pix_fmts);
+         format              = init_hw_decoder(ctx, hw_decoder, pix_fmts);
    }
 
    /* Fallback to SW rendering */
@@ -1099,17 +1097,17 @@ static enum AVPixelFormat select_decoder(AVCodecContext *ctx,
 
       log_cb(RETRO_LOG_INFO, "[FFMPEG] Using SW decoding.\n");
 
-      ctx->thread_type = FF_THREAD_FRAME;
-      ctx->thread_count = sw_decoder_threads;
+      ctx->thread_type       = FF_THREAD_FRAME;
+      ctx->thread_count      = sw_decoder_threads;
       log_cb(RETRO_LOG_INFO, "[FFMPEG] Configured software decoding threads: %d\n", sw_decoder_threads);
 
-      format = fctx->streams[video_stream_index]->codecpar->format;
+      format                 = (enum AVPixelFormat)fctx->streams[video_stream_index]->codecpar->format;
 
 #if ENABLE_HW_ACCEL
-      hw_decoding_enabled = false;
+      hw_decoding_enabled    = false;
    }
    else
-      hw_decoding_enabled = true;
+      hw_decoding_enabled    = true;
 #endif
 
    return format;
@@ -1122,10 +1120,10 @@ static enum AVPixelFormat get_format(AVCodecContext *ctx,
 {
    /* Look if we can reuse the current decoder */
    for (size_t i = 0; pix_fmts[i] != AV_PIX_FMT_NONE; i++)
+   {
       if (pix_fmts[i] == pix_fmt)
-      {
          return pix_fmt;
-      }
+   }
 
    pix_fmt = select_decoder(ctx, pix_fmts);
 
@@ -1135,8 +1133,7 @@ static enum AVPixelFormat get_format(AVCodecContext *ctx,
 
 static bool open_codec(AVCodecContext **ctx, enum AVMediaType type, unsigned index)
 {
-   int ret = 0;
-
+   int ret              = 0;
    const AVCodec *codec = avcodec_find_decoder(fctx->streams[index]->codecpar->codec_id);
    if (!codec)
    {

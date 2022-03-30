@@ -52,7 +52,7 @@ static bool find_local_address(struct natt_device *device,
       struct addrinfo hints  = {0};
       uint8_t *dev_addr8     = (uint8_t *)&device->addr.sin_addr;
 
-      addrs                  = (struct addrinfo*)calloc(interfaces.size, sizeof(*addrs));
+      addrs                  = (struct addrinfo**)calloc(interfaces.size, sizeof(*addrs));
       if (!addrs)
          goto done;
       scores                 = (uint32_t*)calloc(interfaces.size, sizeof(*scores));
