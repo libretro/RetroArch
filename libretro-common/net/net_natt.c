@@ -352,13 +352,13 @@ static bool parse_desc_node(rxml_node_t *node,
 static void natt_query_device_cb(retro_task_t *task, void *task_data,
    void *user_data, const char *error)
 {
-   char *xml;
-   rxml_document_t *document;
-   http_transfer_data_t *data = task_data;
-   struct natt_device *device = user_data;
+   char *xml                  = NULL;
+   rxml_document_t *document  = NULL;
+   http_transfer_data_t *data = (http_transfer_data_t*)task_data;
+   struct natt_device *device = (struct natt_device*)user_data;
 
-   *device->control      = '\0';
-   *device->service_type = '\0';
+   *device->control           = '\0';
+   *device->service_type      = '\0';
 
    if (error)
       goto done;
@@ -367,7 +367,7 @@ static void natt_query_device_cb(retro_task_t *task, void *task_data,
    if (data->status != 200)
       goto done;
 
-   xml = malloc(data->len + 1);
+   xml                        = (char*)malloc(data->len + 1);
    if (!xml)
       goto done;
    memcpy(xml, data->data, data->len);
@@ -458,10 +458,10 @@ static bool parse_external_address_node(rxml_node_t *node,
 static void natt_external_address_cb(retro_task_t *task, void *task_data,
    void *user_data, const char *error)
 {
-   char *xml;
-   rxml_document_t *document;
-   http_transfer_data_t *data = task_data;
-   struct natt_device *device = user_data;
+   char *xml                  = NULL;
+   rxml_document_t *document  = NULL;
+   http_transfer_data_t *data = (http_transfer_data_t*)task_data;
+   struct natt_device *device = (struct natt_device*)user_data;
 
    memset(&device->ext_addr, 0, sizeof(device->ext_addr));
 
@@ -472,7 +472,7 @@ static void natt_external_address_cb(retro_task_t *task, void *task_data,
    if (data->status != 200)
       goto done;
 
-   xml = malloc(data->len + 1);
+   xml                        = (char*)malloc(data->len + 1);
    if (!xml)
       goto done;
    memcpy(xml, data->data, data->len);
@@ -541,13 +541,13 @@ static bool parse_open_port_node(rxml_node_t *node,
 static void natt_open_port_cb(retro_task_t *task, void *task_data,
    void *user_data, const char *error)
 {
-   char *xml;
-   rxml_document_t *document;
-   http_transfer_data_t *data   = task_data;
-   struct natt_request *request = user_data;
-   struct natt_device *device   = request->device;
+   char *xml                    = NULL;
+   rxml_document_t *document    = NULL;
+   http_transfer_data_t *data   = (http_transfer_data_t*)task_data;
+   struct natt_request *request = (struct natt_request*)user_data;
+   struct natt_device *device   = (struct natt_device*)request->device;
 
-   request->success = false;
+   request->success             = false;
 
    if (error)
       goto done;
@@ -556,7 +556,7 @@ static void natt_open_port_cb(retro_task_t *task, void *task_data,
    if (data->status != 200)
       goto done;
 
-   xml = malloc(data->len + 1);
+   xml                          = (char*)malloc(data->len + 1);
    if (!xml)
       goto done;
    memcpy(xml, data->data, data->len);
@@ -582,11 +582,11 @@ done:
 static void natt_close_port_cb(retro_task_t *task, void *task_data,
    void *user_data, const char *error)
 {
-   http_transfer_data_t *data   = task_data;
-   struct natt_request *request = user_data;
-   struct natt_device *device   = request->device;
+   http_transfer_data_t *data   = (http_transfer_data_t*)task_data;
+   struct natt_request *request = (struct natt_request*)user_data;
+   struct natt_device *device   = (struct natt_device*)request->device;
 
-   request->success = false;
+   request->success             = false;
 
    if (error)
       goto done;
@@ -596,10 +596,10 @@ static void natt_close_port_cb(retro_task_t *task, void *task_data,
       goto done;
 
    /* We don't need to do anything special here. */
-   request->success = true;
+   request->success             = true;
 
 done:
-   device->busy = false;
+   device->busy                 = false;
 }
 
 static bool natt_action(struct natt_device *device,
@@ -621,10 +621,10 @@ static bool natt_action(struct natt_device *device,
    if (request)
    {
       request->device = device;
-      obj = request;
+      obj             = request;
    }
    else
-      obj = device;
+      obj             = device;
 
    return task_push_http_post_transfer_with_headers(device->control,
       data, true, NULL, headers, cb, obj) != NULL;
