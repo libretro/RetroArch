@@ -11895,6 +11895,22 @@ static bool setting_append_list(
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.ui_menubar_enable,
+               MENU_ENUM_LABEL_UI_MENUBAR_ENABLE,
+               MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
+               DEFAULT_UI_MENUBAR_ENABLE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.video_window_save_positions,
@@ -18724,21 +18740,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_ADVANCED);
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.ui_menubar_enable,
-               MENU_ENUM_LABEL_UI_MENUBAR_ENABLE,
-               MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
-               DEFAULT_UI_MENUBAR_ENABLE,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
 
 #ifdef HAVE_QT
          CONFIG_BOOL(
