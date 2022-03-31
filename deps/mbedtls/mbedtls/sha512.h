@@ -98,7 +98,7 @@ void mbedtls_sha512_update( mbedtls_sha512_context *ctx, const unsigned char *in
  * \param ctx      SHA-512 context
  * \param output   SHA-384/512 checksum result
  */
-void mbedtls_sha512_finish( mbedtls_sha512_context *ctx, unsigned char output[64] );
+void mbedtls_sha512_finish( mbedtls_sha512_context *ctx, unsigned char *output );
 
 #ifdef __cplusplus
 }
@@ -131,7 +131,7 @@ void mbedtls_sha512( const unsigned char *input, size_t ilen,
 int mbedtls_sha512_self_test( int verbose );
 
 /* Internal use */
-void mbedtls_sha512_process( mbedtls_sha512_context *ctx, const unsigned char data[128] );
+void mbedtls_sha512_process( mbedtls_sha512_context *ctx, const unsigned char *data );
 
 #ifdef __cplusplus
 }

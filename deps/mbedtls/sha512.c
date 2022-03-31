@@ -181,7 +181,7 @@ static const uint64_t K[80] =
     UL64(0x5FCB6FAB3AD6FAEC),  UL64(0x6C44198C4A475817)
 };
 
-void mbedtls_sha512_process( mbedtls_sha512_context *ctx, const unsigned char data[128] )
+void mbedtls_sha512_process( mbedtls_sha512_context *ctx, const unsigned char *data )
 {
     int i;
     uint64_t temp1, temp2, W[80];
@@ -309,7 +309,7 @@ static const unsigned char sha512_padding[128] =
 /*
  * SHA-512 final digest
  */
-void mbedtls_sha512_finish( mbedtls_sha512_context *ctx, unsigned char output[64] )
+void mbedtls_sha512_finish( mbedtls_sha512_context *ctx, unsigned char *output )
 {
     size_t last, padn;
     uint64_t high, low;
