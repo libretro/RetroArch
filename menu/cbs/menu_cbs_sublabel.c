@@ -471,10 +471,12 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_mixer_volume,            MENU_
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_sync,                    MENU_ENUM_SUBLABEL_AUDIO_SYNC)
 #if defined(GEKKO)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_mouse_scale, MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_mouse_scale,             MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE)
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_touch_scale,             MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_axis_threshold,                MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_button_axis_threshold,         MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_analog_deadzone,               MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_analog_sensitivity,            MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_period,            MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_duty_cycle,              MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_mode,              MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE)
@@ -530,12 +532,13 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_manager_list,             MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_manager_steam_list,       MENU_ENUM_SUBLABEL_CORE_MANAGER_STEAM_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_core_manager_steam,  MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM)
 #endif
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_load_disc,                  MENU_ENUM_SUBLABEL_LOAD_DISC)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dump_disc,                  MENU_ENUM_SUBLABEL_DUMP_DISC)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_load_disc,                     MENU_ENUM_SUBLABEL_LOAD_DISC)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dump_disc,                     MENU_ENUM_SUBLABEL_DUMP_DISC)
 #ifdef HAVE_LAKKA
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_eject_disc,                 MENU_ENUM_SUBLABEL_EJECT_DISC)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_eject_disc,                    MENU_ENUM_SUBLABEL_EJECT_DISC)
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_list,                  MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_subsystem_settings,            MENU_ENUM_SUBLABEL_SUBSYSTEM_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_special,               MENU_ENUM_SUBLABEL_LOAD_CONTENT_SPECIAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_load_content_history,          MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_network_information,           MENU_ENUM_SUBLABEL_NETWORK_INFORMATION)
@@ -546,7 +549,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quit_retroarch,                MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quit_retroarch,                MENU_ENUM_SUBLABEL_QUIT_RETROARCH)
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_restart_retroarch,             MENU_ENUM_SUBLABEL_RESTART_RETROARCH)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_widgets,             MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_widgets,                  MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_load_content_animation, MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_autoconfig,  MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG)
 #ifdef HAVE_CHEATS
@@ -3733,6 +3736,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_list);
             break;
+         case MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_subsystem_settings);
+            break;
          case MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_special);
             break;
@@ -3869,7 +3875,13 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_bind_hold);
             break;
          case MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_axis_threshold);
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_button_axis_threshold);
+            break;
+         case MENU_ENUM_LABEL_INPUT_ANALOG_DEADZONE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_analog_deadzone);
+            break;
+         case MENU_ENUM_LABEL_INPUT_ANALOG_SENSITIVITY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_analog_sensitivity);
             break;
 #if defined(GEKKO)
          case MENU_ENUM_LABEL_INPUT_MOUSE_SCALE:
