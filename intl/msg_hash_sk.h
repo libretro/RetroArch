@@ -2028,10 +2028,6 @@ MSG_HASH(
    "Odchýlka osi pri stlačení tlačidla"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
-   "Určuje, ako ďaleko musí byť os naklonená, aby došlo k stlačeniu tlačidla."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
    "Analógová mŕtva zóna"
    )

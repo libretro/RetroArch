@@ -2782,10 +2782,6 @@ MSG_HASH(
    "UI Companion Enable"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
-   "選單列"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
    "桌面選單(需要重新啟動)"
    )

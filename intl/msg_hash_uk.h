@@ -2292,10 +2292,6 @@ MSG_HASH(
    "Зрушення по осі Кнопки Ввода"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
-   "Як далеко відхиленим стік, щоб спрацьовувати як натиснута кнопка."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
    "Мертва зона анолога"
    )
@@ -3140,10 +3136,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
    "Компаньйон користувацького інтерфейсу"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
-   "Панель меню"
    )
 
 /* Settings > User Interface > Menu Item Visibility */

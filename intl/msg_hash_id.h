@@ -2108,10 +2108,6 @@ MSG_HASH(
    "Ambang Batas Input Tombol Axis"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
-   "Seberapa jauh tombol axis harus dimiringkan agar terbaca pada saat menekan tombol."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
    "Kepekaan Kontroler Analog"
    )
