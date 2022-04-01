@@ -18710,6 +18710,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].offset_by     = 1;
          menu_settings_list_current_add_range(list, list_info, 1, 999, 1, true, true);
 
+#if defined(HAVE_QT) || defined(HAVE_COCOA)
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.ui_companion_enable,
@@ -18740,8 +18741,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_ADVANCED);
 
-
-#ifdef HAVE_QT
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.desktop_menu_enable,
