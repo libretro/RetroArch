@@ -192,7 +192,7 @@ static int action_scan_input_desc(const char *path,
       inp_desc_user      = (unsigned)(player_no_str - 1);
       /* This hardcoded value may cause issues if any entries are added on
          top of the input binds */
-      key                = (unsigned)(idx - 7);
+      key                = (unsigned)(idx - 6);
       /* Select the reorderer bind */
       key                =
             (key < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[key] : key;
