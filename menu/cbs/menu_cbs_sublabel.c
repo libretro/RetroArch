@@ -321,6 +321,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_output_settings_list,         
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_crt_switchres_settings_list,           MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_suspend_screensaver_enable,    MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_scale,            MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_opacity,          MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_show_decorations, MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_show_menubar,     MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_resampler_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_output_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS)
@@ -1029,6 +1032,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu,                         
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_information,                      MENU_ENUM_SUBLABEL_CORE_INFORMATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_disc_information,                      MENU_ENUM_SUBLABEL_DISC_INFORMATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_aspect_ratio,                    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_aspect_ratio_index,              MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX)
 #if defined(DINGUX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_dingux_ipu_keep_aspect,          MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_dingux_ipu_filter_type,          MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE)
@@ -2209,6 +2213,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_aspect_ratio);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_aspect_ratio_index);
             break;
 #if defined(DINGUX)
          case MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT:
@@ -4442,6 +4449,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_SCALE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_scale);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_opacity);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_show_decorations);
+            break;
+         case MENU_ENUM_LABEL_UI_MENUBAR_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_show_menubar);
             break;
          case MENU_ENUM_LABEL_PAUSE_NONACTIVE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_pause_nonactive);
