@@ -1051,9 +1051,9 @@ static const bool audio_enable_menu_bgm    = false;
 #endif
 
 /* Output samplerate. */
-#ifdef GEKKO
+#if defined(GEKKO) || defined(MIYOO)
 #define DEFAULT_OUTPUT_RATE 32000
-#elif defined(_3DS) || defined(RETROFW) || defined(MIYOO)
+#elif defined(_3DS) || defined(RETROFW)
 #define DEFAULT_OUTPUT_RATE 32730
 #else
 #define DEFAULT_OUTPUT_RATE 48000
