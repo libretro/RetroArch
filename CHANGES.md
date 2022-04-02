@@ -6,6 +6,8 @@
 - MENU/SETTINGS: Move 'Show Menu Bar' under 'Windowed Mode' settings
 - MENU/SETTINGS: Add sublabels for 'Subsystems' and 'Input Deadzone/Sensitivity'
 - MENU/SETTINGS: Move 'On-Screen Notifications' to top
+- MENU/XMB: Unified the shadow alpha value to a slightly darker one for better readability
+- MENU/XMB: Corrected the option label and sublabel for actual behavior
 - MIYOO: Enable ALSA audio driver and default to it
 - STEAM: Introduce Steam Rich Presence
 - VIDEO/THREADED: Stability fixes
