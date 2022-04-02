@@ -866,7 +866,7 @@ int detect_wii_game(intfstream_t *fd, char *game_id, const char *filename)
    /* Load raw serial or quit */
    if (intfstream_seek(fd, 0x0000, SEEK_SET) < 0)
       return false;
-   
+
    if (intfstream_read(fd, raw_game_id, 6) <= 0)
       return false;
    
