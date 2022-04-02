@@ -616,6 +616,10 @@ static int task_database_iterate_playlist(
          break;
       /* Consider Wii WBFS files similar to ISO files. */
       case FILE_TYPE_WBFS:
+         db_state->serial[0] = '\0';
+         intfstream_file_get_serial(name, 0, SIZE_MAX, db_state->serial);
+         db->type            =  DATABASE_TYPE_SERIAL_LOOKUP;
+         break;
       case FILE_TYPE_ISO:
          db_state->serial[0] = '\0';
          intfstream_file_get_serial(name, 0, SIZE_MAX, db_state->serial);
