@@ -1400,8 +1400,25 @@ void Pass::build_semantics(uint8_t *buffer,
          memcpy(buffer + offset,
                mvp, sizeof(float) * 16);
       else
-         gl3_build_default_matrix(reinterpret_cast<float *>(
-                  buffer + offset));
+      {
+         float *mvp = reinterpret_cast<float *>(buffer + offset);
+         mvp[0]     = 2.0f;
+         mvp[1]     = 0.0f;
+         mvp[2]     = 0.0f;
+         mvp[3]     = 0.0f;
+         mvp[4]     = 0.0f;
+         mvp[5]     = 2.0f;
+         mvp[6]     = 0.0f;
+         mvp[7]     = 0.0f;
+         mvp[8]     = 0.0f;
+         mvp[9]     = 0.0f;
+         mvp[10]    = 2.0f;
+         mvp[11]    = 0.0f;
+         mvp[12]    = -1.0f;
+         mvp[13]    = -1.0f;
+         mvp[14]    = 0.0f;
+         mvp[15]    = 1.0f;
+      }
    }
 
    if (reflection.semantics[SLANG_SEMANTIC_MVP].push_constant)
@@ -1413,8 +1430,25 @@ void Pass::build_semantics(uint8_t *buffer,
          memcpy(push_constant_buffer.data() + offset,
                mvp, sizeof(float) * 16);
       else
-         gl3_build_default_matrix(reinterpret_cast<float *>(
-                  push_constant_buffer.data() + offset));
+      {
+         float *mvp = reinterpret_cast<float *>(push_constant_buffer.data() + offset);
+         mvp[0]     = 2.0f;
+         mvp[1]     = 0.0f;
+         mvp[2]     = 0.0f;
+         mvp[3]     = 0.0f;
+         mvp[4]     = 0.0f;
+         mvp[5]     = 2.0f;
+         mvp[6]     = 0.0f;
+         mvp[7]     = 0.0f;
+         mvp[8]     = 0.0f;
+         mvp[9]     = 0.0f;
+         mvp[10]    = 2.0f;
+         mvp[11]    = 0.0f;
+         mvp[12]    = -1.0f;
+         mvp[13]    = -1.0f;
+         mvp[14]    = 0.0f;
+         mvp[15]    = 1.0f;
+      }
    }
 
    /* Output information */
