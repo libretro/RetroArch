@@ -965,25 +965,31 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
    if (vk->context->hdr_enable)
    {
       struct video_shader* shader_preset = vulkan_filter_chain_get_preset(vk->filter_chain); 
+      VkFormat rt_format                 = (shader_preset && shader_preset->passes) ? vulkan_filter_chain_get_pass_rt_format(vk->filter_chain, shader_preset->passes - 1) : VK_FORMAT_UNDEFINED;
 
-      if(shader_preset && shader_preset->passes && (vulkan_filter_chain_get_pass_rt_format(vk->filter_chain, shader_preset->passes - 1) == VK_FORMAT_A2B10G10R10_UNORM_PACK32))
+      switch (rt_format)
       {
-         /* If the last shader pass uses a RGB10A2 back buffer and hdr has been enabled assume we want to skip the inverse tonemapper and hdr10 conversion */
-         vulkan_set_hdr_inverse_tonemap(vk, false);
-         vulkan_set_hdr10(vk, false);
-         vk->should_resize = true;
-      }
-      else if(shader_preset && shader_preset->passes && (vulkan_filter_chain_get_pass_rt_format(vk->filter_chain, shader_preset->passes - 1) == VK_FORMAT_R16G16B16A16_SFLOAT))
-      {
-         /* If the last shader pass uses a RGBA16 back buffer and hdr has been enabled assume we want to skip the inverse tonemapper */
-         vulkan_set_hdr_inverse_tonemap(vk, false);
-         vulkan_set_hdr10(vk, true);
-         vk->should_resize = true;
-      }
-      else
-      {
-         vulkan_set_hdr_inverse_tonemap(vk, true);
-         vulkan_set_hdr10(vk, true);
+         case VK_FORMAT_A2B10G10R10_UNORM_PACK32:
+            /* If the last shader pass uses a RGB10A2 backbuffer 
+             * and HDR has been enabled, assume we want to 
+             * skip the inverse tonemapper and HDR10 conversion */
+            vulkan_set_hdr_inverse_tonemap(vk, false);
+            vulkan_set_hdr10(vk, false);
+            vk->should_resize = true;
+            break;
+         case VK_FORMAT_R16G16B16A16_SFLOAT:
+            /* If the last shader pass uses a RGBA16 backbuffer 
+             * and HDR has been enabled, assume we want to 
+             * skip the inverse tonemapper */
+            vulkan_set_hdr_inverse_tonemap(vk, false);
+            vulkan_set_hdr10(vk, true);
+            vk->should_resize = true;
+            break;
+         case VK_FORMAT_UNDEFINED:
+         default:
+            vulkan_set_hdr_inverse_tonemap(vk, true);
+            vulkan_set_hdr10(vk, true);
+            break;
       }
    } 
 #endif /* VULKAN_HDR_SWAPCHAIN */
