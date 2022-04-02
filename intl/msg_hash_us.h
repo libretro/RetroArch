@@ -9463,11 +9463,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-   "Icon Shadows"
+   "Draw Shadows"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
-   "Draw drop shadows for all icons. This will have a minor performance hit."
+   "Draw drop shadows for icons, thumbnails and letters. This will have a minor performance hit."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,

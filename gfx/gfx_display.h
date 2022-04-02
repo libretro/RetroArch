@@ -35,6 +35,8 @@
 
 RETRO_BEGIN_DECLS
 
+#define GFX_SHADOW_ALPHA 0.50f
+
 /* Number of pixels corner-to-corner on a 1080p
  * display:
  * > sqrt((1920 * 1920) + (1080 * 1080))
