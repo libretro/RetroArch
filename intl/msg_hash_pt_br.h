@@ -1715,12 +1715,24 @@ MSG_HASH(
    "Opacidade da janela"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   "Define a transparência da janela."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    "Mostrar botões em janela"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
+   "Mostra a barra de título e bordas da janela."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
    "Mostrar barra de menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
+   "Mostra a barra de menu da janela."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
@@ -1794,12 +1806,16 @@ MSG_HASH(
    "Proporção de tela"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
+   "Define a proporção de tela."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "Proporção de tela personalizada"
+   "Configurar proporção de tela"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Valor do ponto flutuante (largura/altura) da proporção da tela, usado se a \"Proporção de tela\" for definhada como \"Configuração\"."
+   "Valor de vírgula flutuante para a proporção de tela (largura / altura)."
    )
 #if defined(DINGUX)
 MSG_HASH(

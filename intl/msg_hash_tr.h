@@ -1719,8 +1719,24 @@ MSG_HASH(
    "Pencere Şeffaflığı"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   "Pencere şeffaflığını ayarlayın."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    "Pencere Süslemelerini Göster"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
+   "Pencere başlık çubuğunu ve kenarlıklarını göster."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
+   "Menü Çubuğunu Göster"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
+   "Pencere menü çubuğunu göster."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
@@ -1794,12 +1810,16 @@ MSG_HASH(
    "En Boy Oranı"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
+   "Ekran en boy oranını ayarlayın."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "Özel En Boy Oranı"
+   "En Boy Oranını Yapılandır"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Video en boy oranı (genişlik/yükseklik) için kayan nokta değeri, 'En Boy Oranı', 'Yapılandırma' olarak ayarlanmışsa kullanılır."
+   "Video en boy oranı (genişlik/yükseklik) için kayan nokta değeri."
    )
 #if defined(DINGUX)
 MSG_HASH(

@@ -1741,14 +1741,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "Bildseitenverhältnis"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "Benutzerdefiniertes Seitenverhältnis"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Fließkommawert für das Video-Seitenverhältnis (Breite/Höhe). Wird verwendet, wenn \"Bildseitenverhältnis\" auf \"Konfiguration\" gesetzt ist."
-   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,

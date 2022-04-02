@@ -1727,12 +1727,24 @@ MSG_HASH(
    "Opacidad de la ventana"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   "Ajusta la transparencia de la ventana."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    "Mostrar decoraciones de ventanas"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
+   "Muestra la barra de títulos y los bordes de la ventana."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
    "Mostrar barra del menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
+   "Muestra la barra del menú en la ventana."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
@@ -1806,12 +1818,16 @@ MSG_HASH(
    "Relación de aspecto"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
+   "Establece la relación de aspecto de la imagen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "Relación de aspecto personalizada"
+   "Configurar relación de aspecto"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Valor en coma flotante (ancho/alto) de la relación de aspecto del vídeo si su valor es «Personalizado»."
+   "Indica el valor en coma flotante (ancho/alto) de la relación de aspecto de la imagen."
    )
 #if defined(DINGUX)
 MSG_HASH(

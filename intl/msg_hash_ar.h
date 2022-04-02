@@ -1645,10 +1645,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "نسبة الجانب"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "نسبة الجوانب المخصصة"
-   )
 #if defined(DINGUX)
 #endif
 MSG_HASH(

@@ -1651,12 +1651,24 @@ MSG_HASH(
    "Ikkunan näkyvyys"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   "Aseta ikkunan läpinäkyvyys."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    "Näytä ikkunan koristeet"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
+   "Näytä ikkunan otsikkopalkki ja reunat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
    "Näytä valikkorivi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
+   "Näytä ikkunan valikkopalkki."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
@@ -1730,12 +1742,12 @@ MSG_HASH(
    "Kuvasuhde"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "Mukautettu kuvasuhde"
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
+   "Aseta näytön kuvasuhde."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Videon kuvasuhteen liukulukuarvo (leveys / korkeus), jota käytetään, jos 'Kuvasuhde' on asetettu 'Kokoonpano'."
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
+   "Aseta kuvasuhde"
    )
 #if defined(DINGUX)
 MSG_HASH(

@@ -1731,12 +1731,24 @@ MSG_HASH(
    "Opacitat de la finestra"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   "Establix la transparència de la finestra."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    "Vore adornaments de les finestres"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
+   "Mostra la barra de títol i les voreres de la finestra."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
    "Vore barra del menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
+   "Mostra la barra del menú a la finestra."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
@@ -1810,12 +1822,16 @@ MSG_HASH(
    "Relació d'aspecte"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
+   "Ajusta la relació d'aspecte de la imatge."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "Relació d'aspecte personalitzat"
+   "Configura la relació d'aspecte"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Valor en coma punt flotant (ample/alçada) de la relació d'aspecte del vídeo si el seu valor es «Personalitzat»."
+   "Valor de punt flotant per a la relació d'aspecte de vídeo (amplada/altura)."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1824,7 +1840,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-   "Manté les relacions d'aspecte de píxels 1:1 a l'escalar continguts mitjançant la IPU interna. Si es desactiva esta opció, les imatges seran estirades per a que ocupen la totalitat de la pantalla."
+   "Manté les relacions d'aspecte de píxels 1:1 a l'escalar continguts mitjançant la IPU interna. Si es desactiva esta opció, les imatges seran estirades a fi de que ocupen la totalitat de la pantalla."
    )
 #endif
 MSG_HASH(
@@ -2236,6 +2252,22 @@ MSG_HASH(
 
 #if defined(ANDROID)
 #endif
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
+   "Si es suportat per l'actual superposició, es rotarà automàticament a fi que coincidisca amb l'orientació i la relació d'aspecte de la pantalla."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_SCALE,
+   "Ajusta automàticament l'escala de superposició i els elements espaiats de la interfície gràfica per tal de fer-los coincidir amb la relació d'aspecte de la pantalla. Produïx els millors resultats amb les superposicions de comandaments."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "Aplica un factor de correcció de relació d'aspecte a la superposició quan s'usa una horientació de pantalla horitzontal. Els valors positius incrementen (mentre que els valors negatius decreixen) l'amplària efectiva de la superposició."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "Aplica un factor de correcció de relació d'aspecte a la superposició quan s'usa una orientació de pantalla vertical. Els valors positius incrementen (mentre que els valors negatius decreixen) l'altura efectiva de la superposició."
+   )
 
 /* Settings > On-Screen Display > Video Layout */
 
@@ -2535,6 +2567,22 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
    "Afegix un poc de desenfocament al menú per suavitzar la pixelació."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   "Relació d'aspecte del menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
+   "Selecciona la relació d'aspecte del menú. Una relació panoràmica incrementarà la resolució horitzontal de la interfície del menú (podria caldre reiniciar si l'opció \"Fixar relació d'aspecte del menú\" es troba desactivada)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
+   "Fixar relació d'aspecte del menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
+   "Assegura que el menú es mostre sempre amb la relació d'aspecte correcta. Si es desactiva, el menú ràpid serà estirat per adaptar-lo al contingut carregat o en execució."
+   )
 
 /* RGUI: Settings Options */
 
@@ -2551,8 +2599,36 @@ MSG_HASH(
    "Selecció automàtica"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE,
+   "16:9 (centrat)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
+   "16:10 (centrat)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE,
+   "3:2 (centrat)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3_CENTRE,
+   "5:3 (centrat)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
+   "No"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN,
+   "Encaixar a la pantalla"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
    "Escalar usant nombres sencers"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN,
+   "Omplir la pantalla (estirat)"
    )
 
 /* XMB: Settings > User Interface > Appearance */
@@ -2638,6 +2714,14 @@ MSG_HASH(
 
 /* Unused (Only Exist in Translation Files) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO,
+   "Relació d'aspecte automàtic"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT,
+   "Forçar la relació d'aspecte"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
    "Joc en línia"

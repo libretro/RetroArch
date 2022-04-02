@@ -1711,12 +1711,24 @@ MSG_HASH(
    "Opacité de la fenêtre"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   "Définir la transparence de la fenêtre."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    "Afficher les décorations de fenêtre"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
+   "Afficher la barre de titre et les bordures de la fenêtre."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
    "Afficher la barre des menus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
+   "Afficher la barre des menus de la fenêtre."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
@@ -1790,12 +1802,16 @@ MSG_HASH(
    "Rapport d'aspect"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
+   "Définir le rapport d'aspect de l'écran."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "Rapport d'aspect personnalisé"
+   "Configurer le rapport d'aspect"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Valeur en virgule flottante du rapport d'aspect (largeur/hauteur), si 'Rapport d'aspect' est réglé sur 'Configurer'."
+   "Valeur en virgule flottante pour le rapport d'aspect vidéo (largeur / hauteur)."
    )
 #if defined(DINGUX)
 MSG_HASH(

@@ -1667,8 +1667,24 @@ MSG_HASH(
    "Průhlednost Okna"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   "Nastavení průhlednosti okna."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    "Zobrazit Dekorace Oken"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
+   "Zobrazení titulkového pruhu a okrajů okna."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
+   "Zobrazit Panel Menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
+   "Zobrazí menu panel okna."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
@@ -1742,12 +1758,16 @@ MSG_HASH(
    "Poměr Stran"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
+   "Nastavení poměru stran displeje."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "Vlastní Poměr Stran"
+   "Konfigurace Poměru Stran"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Hodnota s pohyblivou desetinnou čárkou pro poměr stran videa (šířka / výška), která se použije, pokud je položka 'Aspect Ratio' nastavena na hodnotu 'Config'."
+   "Hodnota s pohyblivou řádovou čárkou pro poměr stran videa (šířka / výška)."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -2292,12 +2312,24 @@ MSG_HASH(
    "Limit Osy Vstupního Tlačítka"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
+   "Jak daleko musí být osa nakloněna, aby došlo ke stisknutí tlačítka při použití funkce 'Analogu do Digitálu'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
    "Analogova Mrtvá Zóna"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
+   "Ignoruje pohyby analogové páčky pod hodnotou mrtvé zóny."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
    "Analogová Citlivost"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+   "Nastavení citlivosti analogových páček."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -9762,6 +9794,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
    "Podsystémy"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SUBSYSTEM_SETTINGS,
+   "Přístup k nastavení subsystému pro aktuální obsah."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,

@@ -1711,12 +1711,24 @@ MSG_HASH(
    "Przezroczystość okna"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   "Ustaw przeźroczystość okna."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    "Pokaż dekoracje okna"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
+   "Pokaż pasek tytułu okna i obramowania."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
    "Pokaż pasek menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
+   "Pokaż pasek menu okna."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
@@ -1770,8 +1782,16 @@ MSG_HASH(
    "Współczynnik proporcji"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
+   "Ustaw proporcje wyświetlania."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "Niestandardowy współczynnik proporcji"
+   "Konfiguracja współczynnik proporcji"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
+   "Zmienna wartość punktu dla proporcji wideo (szerokość/wysokość)."
    )
 #if defined(DINGUX)
 MSG_HASH(
