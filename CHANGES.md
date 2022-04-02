@@ -1,4 +1,15 @@
 # Future
+- AI/SERVICE: Disable AI Service setting by default
+- INPUT/MAPPING: Fix offset + crash when clearing input port binds
+- LOCALIZATION: Add Valencian language option
+- LOCALIZATION: Updates
+- MENU/SETTINGS: Move 'Show Menu Bar' under 'Windowed Mode' settings
+- MENU/SETTINGS: Add sublabels for 'Subsystems' and 'Input Deadzone/Sensitivity'
+- MENU/SETTINGS: Move 'On-Screen Notifications' to top
+- MIYOO: Enable ALSA audio driver and default to it
+- STEAM: Introduce Steam Rich Presence
+- VIDEO/THREADED: Stability fixes
+- WIIU: Fix USB get_device_name(), don't truncate to three chars
 
 # 1.10.2
 - 3DS: Add a menu toggle for switching between old and new 3DS speeds, located in the 'Power Management' menu. Enabled by default, hidden on old 3DS devices.
