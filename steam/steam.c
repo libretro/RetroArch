@@ -9,6 +9,7 @@
 #include "../menu/menu_entries.h"
 #include "../retroarch.h"
 #include "../runloop.h"
+#include "paths.h"
 #include "verbosity.h"
 
 #include "steam.h"
@@ -16,6 +17,7 @@
 static bool mist_initialized = false;
 static bool mist_showing_osk = false;
 static steam_core_dlc_list_t *mist_dlc_list = NULL;
+static enum presence last_presence = PRESENCE_NONE;
 
 void str_to_lower(char *str)
 {
@@ -43,7 +45,9 @@ void steam_poll(void)
    MistCallbackMsg callback;
    steam_core_dlc_list_t *core_dlc_list;
    bool has_callback = false;
+   settings_t* settings = config_get_ptr();
    static bool has_poll_errored = false;
+   static bool has_rich_presence_enabled = false;
 
    result = mist_poll();
    if (MIST_IS_ERROR(result))
@@ -78,6 +82,13 @@ void steam_poll(void)
       }
 
       result = mist_next_callback(&has_callback, &callback);
+   }
+
+   /* Ensure rich presence state is correct */
+   if(settings->bools.steam_rich_presence_enable != has_rich_presence_enabled)
+   {
+      steam_update_presence(last_presence, true);
+      has_rich_presence_enabled = settings->bools.steam_rich_presence_enable;
    }
 }
 
@@ -348,6 +359,101 @@ bool steam_open_osk(void)
 bool steam_has_osk_open(void)
 {
    return mist_showing_osk;
+}
+
+void steam_update_presence(enum presence presence, bool force)
+{
+   settings_t* settings = config_get_ptr();
+
+   if (!mist_initialized)
+      return;
+
+   /* Avoid spamming steam with presence updates */
+   if (presence == last_presence && !force)
+      return;
+   last_presence = presence;
+
+   /* Ensure rich presence is enabled */
+   if(!settings->bools.steam_rich_presence_enable)
+   {
+      mist_steam_friends_clear_rich_presence();
+      return;
+   }
+
+   switch (presence)
+   {
+   case PRESENCE_MENU:
+      mist_steam_friends_set_rich_presence("steam_display", "#Status_InMenu");
+      break;
+   case PRESENCE_GAME_PAUSED:
+      mist_steam_friends_set_rich_presence("steam_display", "#Status_Paused");
+      break;
+   case PRESENCE_GAME:
+   {
+      const char *label = NULL;
+      const struct playlist_entry *entry = NULL;
+      core_info_t *core_info = NULL;
+      playlist_t *current_playlist = playlist_get_cached();
+      char content[PATH_MAX_LENGTH] = {0};
+
+      core_info_get_current_core(&core_info);
+
+      if (current_playlist)
+      {
+         playlist_get_index_by_path(
+             current_playlist,
+             path_get(RARCH_PATH_CONTENT),
+             &entry);
+
+         if (entry && !string_is_empty(entry->label))
+            label = entry->label;
+      }
+
+      if (!label)
+         label = path_basename(path_get(RARCH_PATH_BASENAME));
+
+      switch(settings->uints.steam_rich_presence_format)
+      {
+         case STEAM_RICH_PRESENCE_FORMAT_CONTENT:
+            strncpy(content, label, sizeof(content) - 1);
+            break;
+         case STEAM_RICH_PRESENCE_FORMAT_CORE:
+            strncpy(content, core_info ? core_info->core_name : "N/A", sizeof(content) - 1);
+            break;
+         case STEAM_RICH_PRESENCE_FORMAT_SYSTEM:
+            strncpy(content, core_info ? core_info->systemname : "N/A", sizeof(content) - 1);
+            break;
+         case STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM:
+            snprintf(content, sizeof(content) - 1, "%s (%s)",
+               label,
+               core_info ? core_info->systemname : "N/A");
+            break;
+         case STEAM_RICH_PRESENCE_FORMAT_CONTENT_CORE:
+            snprintf(content, sizeof(content) - 1, "%s (%s)",
+               label,
+               core_info ? core_info->core_name : "N/A");
+            break;
+         case STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM_CORE:
+            snprintf(content, sizeof(content) - 1, "%s (%s - %s)",
+               label,
+               core_info ? core_info->systemname : "N/A",
+               core_info ? core_info->core_name : "N/A");
+            break;
+         case STEAM_RICH_PRESENCE_FORMAT_NONE:
+         default:
+            break;
+      }
+
+
+      mist_steam_friends_set_rich_presence("content", content);
+      mist_steam_friends_set_rich_presence("steam_display",
+         settings->uints.steam_rich_presence_format != STEAM_RICH_PRESENCE_FORMAT_NONE
+            ? "#Status_RunningContent" : "#Status_Running" );
+   }
+   break;
+   default:
+      break;
+   }
 }
 
 void steam_deinit(void)

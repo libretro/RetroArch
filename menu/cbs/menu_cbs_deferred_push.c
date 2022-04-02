@@ -273,6 +273,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_core_delete_backup_list,        DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_core_manager_list,              DISPLAYLIST_CORE_MANAGER_LIST)
 
 #ifdef HAVE_MIST
+GENERIC_DEFERRED_PUSH(deferred_push_steam_settings_list,            DISPLAYLIST_STEAM_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_core_manager_steam_list,        DISPLAYLIST_CORE_MANAGER_STEAM_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_core_information_steam_list,    DISPLAYLIST_CORE_INFORMATION_STEAM_LIST)
 #endif
@@ -888,6 +889,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_CORE_DELETE_BACKUP_LIST, deferred_push_core_delete_backup_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST, deferred_push_core_manager_list},
 #ifdef HAVE_MIST
+      {MENU_ENUM_LABEL_DEFERRED_STEAM_SETTINGS_LIST, deferred_push_steam_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_STEAM_LIST, deferred_push_core_manager_steam_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_STEAM_LIST, deferred_push_core_information_steam_list},
 #endif
@@ -1322,6 +1324,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_manager_list);
             break;
 #ifdef HAVE_MIST
+         case MENU_ENUM_LABEL_DEFERRED_STEAM_SETTINGS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_steam_settings_list);
+            break;
          case MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_STEAM_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_manager_steam_list);
             break;

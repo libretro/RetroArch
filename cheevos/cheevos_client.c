@@ -32,8 +32,8 @@
 #include "../network/net_http_special.h"
 #include "../tasks/tasks_internal.h"
 
-#ifdef HAVE_DISCORD
-#include "../network/discord.h"
+#ifdef HAVE_PRESENCE
+#include "../network/presence.h"
 #endif
 
 #include "../deps/rcheevos/include/rc_api_runtime.h"
@@ -1268,9 +1268,8 @@ static retro_time_t rcheevos_client_prepare_ping(
    rcheevos_log_post_url(request->request.url,
          request->request.post_data);
 
-#ifdef HAVE_DISCORD
-   if (settings->bools.discord_enable && discord_is_ready())
-      discord_update(DISCORD_PRESENCE_RETROACHIEVEMENTS);
+#ifdef HAVE_PRESENCE
+   presence_update(PRESENCE_RETROACHIEVEMENTS);
 #endif
 
    /* Update rich presence every two minutes */

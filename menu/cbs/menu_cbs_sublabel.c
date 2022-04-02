@@ -532,6 +532,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_switch_installed_cores_pfd,    MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sideload_core_list,            MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_manager_list,             MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST)
 #ifdef HAVE_MIST
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_steam_settings_list,           MENU_ENUM_SUBLABEL_STEAM_SETTINGS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_steam_rich_presence_enable,    MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_steam_rich_presence_format,    MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_manager_steam_list,       MENU_ENUM_SUBLABEL_CORE_MANAGER_STEAM_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_core_manager_steam,  MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM)
 #endif
@@ -914,6 +917,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_settings_show_network,              
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_settings_show_playlists,               MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_settings_show_user,                    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_settings_show_directory,               MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_settings_show_steam,                   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_STEAM)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_take_screenshot,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_resume_content,        MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_restart_content,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT)
@@ -2543,6 +2547,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_SETTINGS_SHOW_DIRECTORY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_directory);
             break;
+         case MENU_ENUM_LABEL_SETTINGS_SHOW_STEAM:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_steam);
+            break;
          case MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESUME_CONTENT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_resume_content);
             break;
@@ -3776,6 +3783,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_manager_list);
             break;
 #ifdef HAVE_MIST
+         case MENU_ENUM_LABEL_STEAM_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_steam_settings_list);
+            break;
+         case MENU_ENUM_LABEL_STEAM_RICH_PRESENCE_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_steam_rich_presence_enable);
+            break;
+         case MENU_ENUM_LABEL_STEAM_RICH_PRESENCE_FORMAT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_steam_rich_presence_format);
+            break;
          case MENU_ENUM_LABEL_CORE_MANAGER_STEAM_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_manager_steam_list);
             break;

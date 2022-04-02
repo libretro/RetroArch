@@ -103,8 +103,8 @@
 #include "../paths.h"
 #include "../verbosity.h"
 
-#ifdef HAVE_DISCORD
-#include "../network/discord.h"
+#ifdef HAVE_PRESENCE
+#include "../network/presence.h"
 #endif
 
 #define MAX_ARGS 32
@@ -2456,15 +2456,12 @@ static bool task_load_content_internal(
    if (firmware_update_status(&content_ctx))
       goto end;
 
-#ifdef HAVE_DISCORD
-   if (discord_state_get_ptr()->inited)
-   {
-      discord_userdata_t userdata;
-      userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;
-      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-      userdata.status = DISCORD_PRESENCE_MENU;
-      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-   }
+#ifdef HAVE_PRESENCE
+   presence_userdata_t userdata;
+   userdata.status = PRESENCE_NETPLAY_NETPLAY_STOPPED;
+   command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
+   userdata.status = PRESENCE_MENU;
+   command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
 #endif
 
    /* Loads content into currently selected core. */
