@@ -896,7 +896,7 @@ static void xmb_draw_icon(
 
    if (xmb_shadows_enable)
    {
-      gfx_display_set_alpha(xmb_coord_shadow, color[3] * 0.35f);
+      gfx_display_set_alpha(xmb_coord_shadow, color[3] * GFX_SHADOW_ALPHA);
 
       coords.color      = xmb_coord_shadow;
       draw.x            = x + shadow_offset;
@@ -4797,7 +4797,7 @@ static void xmb_draw_fullscreen_thumbnails(
          float shadow_offset            = xmb->icon_size / 24.0f;
 
          thumbnail_shadow.type          = GFX_THUMBNAIL_SHADOW_DROP;
-         thumbnail_shadow.alpha         = 0.35f;
+         thumbnail_shadow.alpha         = GFX_SHADOW_ALPHA;
          thumbnail_shadow.drop.x_offset = shadow_offset;
          thumbnail_shadow.drop.y_offset = shadow_offset;
       }
@@ -4977,7 +4977,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          : xmb->shadow_offset;
 
       thumbnail_shadow.type          = GFX_THUMBNAIL_SHADOW_DROP;
-      thumbnail_shadow.alpha         = 0.35f;
+      thumbnail_shadow.alpha         = GFX_SHADOW_ALPHA;
       thumbnail_shadow.drop.x_offset = shadow_offset;
       thumbnail_shadow.drop.y_offset = shadow_offset;
    }

@@ -574,7 +574,7 @@ void gfx_display_draw_text(
    {
       params.drop_x      = shadow_offset;
       params.drop_y      = -shadow_offset;
-      params.drop_alpha  = 0.35f;
+      params.drop_alpha  = GFX_SHADOW_ALPHA;
    }
 
    if (video_st->poke && video_st->poke->set_osd_msg)
