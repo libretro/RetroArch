@@ -25,7 +25,7 @@
 
 #include "glslang_util.h"
 
-#include "../common/vulkan_common.h"
+#include "../include/vulkan/vulkan.h"
 
 RETRO_BEGIN_DECLS
 
