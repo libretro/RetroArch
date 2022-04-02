@@ -66,6 +66,7 @@ static struct magic_entry MAGIC_NUMBERS[] = {
    { 0x000010,   "Sega - Saturn",                 "\x53\x45\x47\x41\x20\x53\x45\x47\x41\x53\x41\x54\x55\x52\x4e",   15},
    { 0x000010,   "Sega - Dreamcast",              "\x53\x45\x47\x41\x20\x53\x45\x47\x41\x4b\x41\x54\x41\x4e\x41",   15},
    { 0x000018,   "Nintendo - Wii",                "\x5d\x1c\x9e\xa3",                                               4},
+   { 0x000218,   "Nintendo - Wii",                "\x5d\x1c\x9e\xa3",                                               4},
    { 0x00001c,   "Nintendo - GameCube",           "\xc2\x33\x9f\x3d",                                               4},
    { 0x008008,   "Sony - PlayStation Portable",   "\x50\x53\x50\x20\x47\x41\x4d\x45",                               8},
    { 0x008008,   "Sony - PlayStation",            "\x50\x4c\x41\x59\x53\x54\x41\x54\x49\x4f\x4e",                   11},
@@ -865,10 +866,17 @@ int detect_wii_game(intfstream_t *fd, char *game_id, const char *filename)
    /* Load raw serial or quit */
    if (intfstream_seek(fd, 0x0000, SEEK_SET) < 0)
       return false;
-
+   
    if (intfstream_read(fd, raw_game_id, 6) <= 0)
       return false;
-
+   
+   if (string_is_equal_fast(raw_game_id, "WBFS", 4))
+   {
+      if (intfstream_seek(fd, 0x0200, SEEK_SET) < 0)
+         return false;
+      if (intfstream_read(fd, raw_game_id, 6) <= 0)
+         return false;
+   }
    raw_game_id[6] = '\0';
 
    /** Scrub files with bad data and log **/
