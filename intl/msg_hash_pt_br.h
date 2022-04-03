@@ -1261,6 +1261,9 @@ MSG_HASH(
    "Altera os diretórios padrões onde os arquivos estão localizados."
    )
 
+#ifdef HAVE_MIST
+#endif
+
 /* Settings > Drivers */
 
 MSG_HASH(
@@ -5161,6 +5164,7 @@ MSG_HASH(
    "Mostre as configurações do \"Diretório\"."
    )
 
+
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
@@ -6254,6 +6258,17 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_DIR,
    "Os Registros de eventos do sistema são armazenados neste diretório."
    )
+
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
+   "Conteúdo"
+   )
+#endif
 
 /* Music */
 
@@ -8760,14 +8775,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
    "Seleciona um tema diferente de ícone para o RetroArch."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-   "Sombras dos ícones"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
-   "Habilita as sombras para todos os ícones. Isto terá um pequeno impacto no desempenho."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,

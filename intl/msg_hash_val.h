@@ -1265,6 +1265,9 @@ MSG_HASH(
    "Canvia els directoris predeterminats a on es troben localitzats els arxius."
    )
 
+#ifdef HAVE_MIST
+#endif
+
 /* Settings > Drivers */
 
 MSG_HASH(
@@ -2341,6 +2344,7 @@ MSG_HASH(
    "Vore els ajustos de 'Gestió d'energia'."
    )
 
+
 /* Settings > User Interface > Appearance */
 
 
@@ -2418,6 +2422,13 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
    "Llistes de reproducció"
    )
+
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+#endif
 
 /* Music */
 

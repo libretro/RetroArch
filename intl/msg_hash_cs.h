@@ -1245,6 +1245,13 @@ MSG_HASH(
    "Změnit výchozí adresáře, kde jsou soubory umístěny."
    )
 
+#ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
+   "Změnit nastavení související se Steamem."
+   )
+#endif
+
 /* Settings > Drivers */
 
 MSG_HASH(
@@ -5113,6 +5120,15 @@ MSG_HASH(
    "Zobrazit nastavení 'Adresáře'."
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_STEAM,
+   "Zobrazit 'Steam'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_STEAM,
+   "Zobrazit nastavení 'Steam'."
+   )
+
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
@@ -6206,6 +6222,53 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_DIR,
    "V tomto adresáři jsou uloženy protokoly systémových událostí."
    )
+
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_ENABLE,
+   "Povolit Bohatou Presenci"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_ENABLE,
+   "Sdílejte svůj aktuální stav RetroArchu na Steamu."
+   )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT,
+   "Formát Bohatého Prezenčního Obsahu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
+   "Rozhodněte, jaké informace týkající se běžícího obsahu budou sdíleny."
+   )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
+   "Obsah"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CORE,
+   "Název jádra"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_SYSTEM,
+   "Název systému"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM,
+   "Obsah (Název systému)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_CORE,
+   "Obsah (Název jádra)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM_CORE,
+   "Obsah (Název systému - Název jádra)"
+   )
+#endif
 
 /* Music */
 
@@ -8687,11 +8750,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-   "Stíny Ikon"
+   "Vykreslovat Stíny"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
-   "Kreslení kapkových stínů pro všechny ikony. To bude mít menší dopad na výkon."
+   "Kreslení kapkových stínů pro ikony, miniatury a písmena. To bude mít menší dopad na výkon."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,

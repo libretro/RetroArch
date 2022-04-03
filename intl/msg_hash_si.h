@@ -117,6 +117,9 @@ MSG_HASH(
 /* Settings */
 
 
+#ifdef HAVE_MIST
+#endif
+
 /* Settings > Drivers */
 
 
@@ -265,6 +268,7 @@ MSG_HASH(
 /* Settings > User Interface > Views > Settings */
 
 
+
 /* Settings > User Interface > Appearance */
 
 
@@ -318,6 +322,13 @@ MSG_HASH(
 
 /* Settings > Directory */
 
+
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+#endif
 
 /* Music */
 

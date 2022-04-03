@@ -1129,6 +1129,9 @@ MSG_HASH(
    "Módosítsa az alapértelmezett könyvtárakat, ahol a fájlok találhatók."
    )
 
+#ifdef HAVE_MIST
+#endif
+
 /* Settings > Drivers */
 
 MSG_HASH(
@@ -1841,6 +1844,7 @@ MSG_HASH(
 /* Settings > User Interface > Views > Settings */
 
 
+
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
@@ -1966,6 +1970,17 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
    "Lejátszási listák"
    )
+
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
+   "Tartalom"
+   )
+#endif
 
 /* Music */
 

@@ -1173,6 +1173,9 @@ MSG_HASH(
    "Zmeniť východzie zložky umiestnenia súborov."
    )
 
+#ifdef HAVE_MIST
+#endif
+
 /* Settings > Drivers */
 
 MSG_HASH(
@@ -2325,6 +2328,7 @@ MSG_HASH(
    "Zobraziť 'Adresár'"
    )
 
+
 /* Settings > User Interface > Appearance */
 
 
@@ -2418,6 +2422,13 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    "Vyrovnávacia pamäť"
    )
+
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+#endif
 
 /* Music */
 

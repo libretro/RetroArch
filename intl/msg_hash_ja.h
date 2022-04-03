@@ -1169,6 +1169,9 @@ MSG_HASH(
    "システムの動作に関係するファイルが格納される初期ディレクトリを変更します."
    )
 
+#ifdef HAVE_MIST
+#endif
+
 /* Settings > Drivers */
 
 MSG_HASH(
@@ -4705,6 +4708,7 @@ MSG_HASH(
    "'ディレクトリ'設定を表示します."
    )
 
+
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
@@ -5734,6 +5738,17 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_DIR,
    "システムイベントログはこのディレクトリに保存されます."
    )
+
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
+   "コンテンツ"
+   )
+#endif
 
 /* Music */
 
@@ -7900,14 +7915,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
    "アイコンに異なるテーマを選択します。変更はプログラムの再起動後に反映されます。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-   "アイコンに影を表示"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
-   "すべてのアイコンにドロップシャドウを適用します. パフォーマンスにわずかに影響を及ぼします."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
