@@ -1257,6 +1257,9 @@ MSG_HASH(
    "Zmień domyślne katalogi, w których znajdują się pliki."
    )
 
+#ifdef HAVE_MIST
+#endif
+
 /* Settings > Drivers */
 
 MSG_HASH(
@@ -5061,6 +5064,7 @@ MSG_HASH(
    "Pokaż ustawienia 'Katalogu'."
    )
 
+
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
@@ -6150,6 +6154,17 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_DIR,
    "Systemowe dzienniki zdarzeń są przechowywane w tym katalogu."
    )
+
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
+   "Zawartość"
+   )
+#endif
 
 /* Music */
 
@@ -8595,11 +8610,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-   "Włącz cienie ikony"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
-   "Rysuj cienie dla wszystkich ikon. To będzie miało niewielki wpływ na wydajność."
+   "Rysuj Cienie"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,

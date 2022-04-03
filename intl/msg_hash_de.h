@@ -1205,6 +1205,9 @@ MSG_HASH(
    "Die Standard-Verzeichnisse für diverse Daten ändern."
    )
 
+#ifdef HAVE_MIST
+#endif
+
 /* Settings > Drivers */
 
 MSG_HASH(
@@ -5053,6 +5056,7 @@ MSG_HASH(
    "Die \"Verzeichnisse\"-Einstellungen anzeigen."
    )
 
+
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
@@ -6106,6 +6110,17 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_DIR,
    "Systemereignisprotokolle werden in diesem Verzeichnis gespeichert."
    )
+
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
+   "Inhalt"
+   )
+#endif
 
 /* Music */
 
@@ -8576,14 +8591,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
    "Wähle ein anderes Thema für das Menü aus. Änderungen werden übernommen, nachdem Du das Programm neu gestartet hast."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-   "Icon-Schatten aktivieren"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
-   "Schlagschatten für alle Symbole zeichnen. Verursacht kleine Leistungseinbuße."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,

@@ -1,5 +1,6 @@
 # Future
 - AI/SERVICE: Disable AI Service setting by default
+- DATABASE: Serial scanning for Wii now includes WBFS 
 - INPUT/MAPPING: Fix offset + crash when clearing input port binds
 - LOCALIZATION: Add Valencian language option
 - LOCALIZATION: Updates

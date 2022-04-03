@@ -1221,6 +1221,9 @@ MSG_HASH(
    "更改文件所在的默认文件夹。"
    )
 
+#ifdef HAVE_MIST
+#endif
+
 /* Settings > Drivers */
 
 MSG_HASH(
@@ -4997,6 +5000,7 @@ MSG_HASH(
    "显示「文件夹」设置。"
    )
 
+
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
@@ -6062,6 +6066,17 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_DIR,
    "保存系统事件日志的文件夹。"
    )
+
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
+   "游戏"
+   )
+#endif
 
 /* Music */
 
@@ -8484,14 +8499,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
    "设置其他图标主题。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-   "启用图标阴影"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
-   "绘制所有图标的阴影。有些许的性能影响。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,

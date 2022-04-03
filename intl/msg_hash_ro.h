@@ -53,6 +53,9 @@
 /* Settings */
 
 
+#ifdef HAVE_MIST
+#endif
+
 /* Settings > Drivers */
 
 
@@ -197,6 +200,7 @@
 /* Settings > User Interface > Views > Settings */
 
 
+
 /* Settings > User Interface > Appearance */
 
 
@@ -246,6 +250,13 @@
 
 /* Settings > Directory */
 
+
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+#endif
 
 /* Music */
 

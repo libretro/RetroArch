@@ -1205,6 +1205,9 @@ MSG_HASH(
    "Muuta tiedostojen sijainnin oletuskansiot."
    )
 
+#ifdef HAVE_MIST
+#endif
+
 /* Settings > Drivers */
 
 MSG_HASH(
@@ -5053,6 +5056,7 @@ MSG_HASH(
    "Näytä \"Kansio\"-asetukset."
    )
 
+
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
@@ -6162,6 +6166,17 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_DIR,
    "Järjestelmän tapahtumalokit on tallennettu tähän kansioon."
    )
+
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
+   "Sisältö"
+   )
+#endif
 
 /* Music */
 
@@ -8652,14 +8667,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
    "Valitse eri kuvaketeema RetroArchille."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-   "Kuvakkeiden varjot"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
-   "Piirrä varjot kaikille kuvakkeille. Vaikutus suorituskykyyn pieni."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
