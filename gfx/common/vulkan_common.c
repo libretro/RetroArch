@@ -3148,9 +3148,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    desired_swapchain_images = settings->uints.video_max_swapchain_images;
 
    /* Clamp images requested to what is supported by the implementation. */
-   if (desired_swapchain_images < surface_properties.minImageCount)
-      desired_swapchain_images = surface_properties.minImageCount;
-
    if ((surface_properties.maxImageCount > 0)
          && (desired_swapchain_images > surface_properties.maxImageCount))
       desired_swapchain_images = surface_properties.maxImageCount;
