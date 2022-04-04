@@ -1906,6 +1906,18 @@ bool command_event(enum event_command cmd, void *data)
                   settings->bools.savestate_auto_save,
                   runloop_st->current_core_type);
 
+            if (     runloop_st->remaps_core_active
+                  || runloop_st->remaps_content_dir_active
+                  || runloop_st->remaps_game_active
+                  || !string_is_empty(runloop_st->name.remapfile)
+               )
+            {
+               input_remapping_deinit(true);
+               input_remapping_set_defaults(true);
+            }
+            else
+               input_remapping_restore_global_config(true);
+
 #ifdef HAVE_CONFIGFILE
             if (runloop_st->overrides_active)
             {
@@ -1927,18 +1939,6 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 
             video_driver_restore_cached(settings);
-
-            if (     runloop_st->remaps_core_active
-                  || runloop_st->remaps_content_dir_active
-                  || runloop_st->remaps_game_active
-                  || !string_is_empty(runloop_st->name.remapfile)
-               )
-            {
-               input_remapping_deinit(true);
-               input_remapping_set_defaults(true);
-            }
-            else
-               input_remapping_restore_global_config(true);
 
             if (is_inited && load_dummy_core)
             {
@@ -5408,16 +5408,8 @@ bool retroarch_main_init(int argc, char *argv[])
       {
          /* Before initialising the dummy core, ensure
           * that we:
-          * - Disable any active config overrides
-          * - Unload any active input remaps */
-#ifdef HAVE_CONFIGFILE
-         if (runloop_st->overrides_active)
-         {
-            /* Reload the original config */
-            config_unload_override();
-            runloop_st->overrides_active = false;
-         }
-#endif
+          * - Unload any active input remaps
+          * - Disable any active config overrides */
          if (     runloop_st->remaps_core_active
                || runloop_st->remaps_content_dir_active
                || runloop_st->remaps_game_active
@@ -5429,6 +5421,15 @@ bool retroarch_main_init(int argc, char *argv[])
          }
          else
             input_remapping_restore_global_config(true);
+
+#ifdef HAVE_CONFIGFILE
+         if (runloop_st->overrides_active)
+         {
+            /* Reload the original config */
+            config_unload_override();
+            runloop_st->overrides_active = false;
+         }
+#endif
 
 #ifdef HAVE_DYNAMIC
          /* Ensure that currently loaded core is properly
@@ -6046,18 +6047,6 @@ bool retroarch_main_quit(void)
        * save state file may be truncated) */
       content_wait_for_save_state_task();
 
-#ifdef HAVE_CONFIGFILE
-      if (runloop_st->overrides_active)
-      {
-         /* Reload the original config */
-         config_unload_override();
-         runloop_st->overrides_active = false;
-      }
-#endif
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-      runloop_st->runtime_shader_preset_path[0] = '\0';
-#endif
-
       if (     runloop_st->remaps_core_active
             || runloop_st->remaps_content_dir_active
             || runloop_st->remaps_game_active
@@ -6069,6 +6058,18 @@ bool retroarch_main_quit(void)
       }
       else
          input_remapping_restore_global_config(true);
+
+#ifdef HAVE_CONFIGFILE
+      if (runloop_st->overrides_active)
+      {
+         /* Reload the original config */
+         config_unload_override();
+         runloop_st->overrides_active = false;
+      }
+#endif
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+      runloop_st->runtime_shader_preset_path[0] = '\0';
+#endif
    }
 
    runloop_st->shutdown_initiated = true;
