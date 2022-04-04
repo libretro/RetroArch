@@ -7823,6 +7823,12 @@ static void general_write_handler(rarch_setting_t *setting)
                   *setting->value.target.fraction);
          }
          break;
+#ifdef HAVE_CHEEVOS
+      case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY:
+      case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO:
+         rcheevos_validate_config_settings();
+         break;
+#endif
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
          driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, setting->value.target.fraction);
 
