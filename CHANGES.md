@@ -3,6 +3,7 @@
 - BLUETOOTH/LAKKA: bluetoothctl: add / modify pairing steps
 - DATABASE: Serial scanning for Wii now includes WBFS 
 - INPUT/MAPPING: Fix offset + crash when clearing input port binds
+- INPUT/MAPPING: Fix saving of 'Analog to Digital Type' when configuration overrides are used
 - LOCALIZATION: Add Valencian language option
 - LOCALIZATION: Updates
 - MENU/SETTINGS: Move 'Show Menu Bar' under 'Windowed Mode' settings
