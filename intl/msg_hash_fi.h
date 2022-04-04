@@ -1206,6 +1206,10 @@ MSG_HASH(
    )
 
 #ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
+   "Muuta Steamiin liittyviä asetuksia."
+   )
 #endif
 
 /* Settings > Drivers */
@@ -5056,6 +5060,10 @@ MSG_HASH(
    "Näytä \"Kansio\"-asetukset."
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_STEAM,
+   "Näytä 'Steam'"
+   )
 
 /* Settings > User Interface > Appearance */
 
@@ -6175,6 +6183,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
    "Sisältö"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CORE,
+   "Ytimen nimi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_SYSTEM,
+   "Järjestelmän nimi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM,
+   "Sisältö (järjestelmän nimi)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_CORE,
+   "Sisältö (ytimen nimi)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM_CORE,
+   "Sisältö (järjestelmän nimi - ytimen nimi)"
    )
 #endif
 
