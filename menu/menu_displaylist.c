@@ -3362,6 +3362,96 @@ static int menu_displaylist_parse_load_content_settings(
                0, 0))
             count++;
 
+      if (settings->bools.quick_menu_show_savestate_submenu)
+      {
+         if (savestates_enabled)
+            if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVESTATE_LIST),
+                  msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_LIST),
+                  MENU_ENUM_LABEL_SAVESTATE_LIST,
+                  MENU_SETTING_ACTION, 0, 0))
+               count++;
+      }
+      else
+      {
+         if (savestates_enabled &&
+             settings->bools.quick_menu_show_save_load_state)
+         {
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_STATE_SLOT, PARSE_ONLY_INT, true) == 0)
+               count++;
+
+            if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_STATE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE),
+                  MENU_ENUM_LABEL_SAVE_STATE,
+                  MENU_SETTING_ACTION_SAVESTATE, 0, 0))
+               count++;
+
+            if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_STATE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE),
+                  MENU_ENUM_LABEL_LOAD_STATE,
+                  MENU_SETTING_ACTION_LOADSTATE, 0, 0))
+               count++;
+         }
+
+         if (savestates_enabled &&
+             settings->bools.quick_menu_show_save_load_state &&
+             settings->bools.quick_menu_show_undo_save_load_state)
+         {
+#ifdef HAVE_CHEEVOS
+            if (!rcheevos_hardcore_active())
+#endif
+            {
+               if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE),
+                     MENU_ENUM_LABEL_UNDO_LOAD_STATE,
+                     MENU_SETTING_ACTION_LOADSTATE, 0, 0))
+                  count++;
+            }
+
+            if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE),
+                  MENU_ENUM_LABEL_UNDO_SAVE_STATE,
+                  MENU_SETTING_ACTION_LOADSTATE, 0, 0))
+               count++;
+         }
+      }
+
+      if (settings->bools.quick_menu_show_options && !settings->bools.kiosk_mode_enable)
+      {
+         /* Empty 'path' string signifies top level
+          * core options menu */
+         if (menu_entries_append_enum(list,
+               "",
+               msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS),
+               MENU_ENUM_LABEL_CORE_OPTIONS,
+               MENU_SETTING_ACTION_CORE_OPTIONS, 0, 0))
+            count++;
+      }
+
+      if (settings->bools.quick_menu_show_controls && !settings->bools.kiosk_mode_enable)
+      {
+         if (menu_entries_append_enum(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
+               msg_hash_to_str(MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS),
+               MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
+               MENU_SETTING_ACTION, 0, 0))
+            count++;
+      }
+
+      if ((!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+            && disk_control_enabled(&system->disk_control))
+         if (menu_entries_append_enum(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS),
+               msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS),
+               MENU_ENUM_LABEL_DISK_OPTIONS,
+               MENU_SETTING_ACTION_CORE_DISK_OPTIONS, 0, 0))
+            count++;
+
 #ifdef HAVE_SCREENSHOTS
       if (settings->bools.quick_menu_show_take_screenshot)
       {
@@ -3373,83 +3463,6 @@ static int menu_displaylist_parse_load_content_settings(
             count++;
       }
 #endif
-
-      if (savestates_enabled &&
-          settings->bools.quick_menu_show_save_load_state)
-      {
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-               MENU_ENUM_LABEL_STATE_SLOT, PARSE_ONLY_INT, true) == 0)
-            count++;
-
-         if (menu_entries_append_enum(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_STATE),
-               msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE),
-               MENU_ENUM_LABEL_SAVE_STATE,
-               MENU_SETTING_ACTION_SAVESTATE, 0, 0))
-            count++;
-
-         if (menu_entries_append_enum(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_STATE),
-               msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE),
-               MENU_ENUM_LABEL_LOAD_STATE,
-               MENU_SETTING_ACTION_LOADSTATE, 0, 0))
-            count++;
-      }
-
-      if (savestates_enabled &&
-          settings->bools.quick_menu_show_save_load_state &&
-          settings->bools.quick_menu_show_undo_save_load_state)
-      {
-#ifdef HAVE_CHEEVOS
-         if (!rcheevos_hardcore_active())
-#endif
-         {
-            if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE),
-                  MENU_ENUM_LABEL_UNDO_LOAD_STATE,
-                  MENU_SETTING_ACTION_LOADSTATE, 0, 0))
-               count++;
-         }
-
-         if (menu_entries_append_enum(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE),
-               msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE),
-               MENU_ENUM_LABEL_UNDO_SAVE_STATE,
-               MENU_SETTING_ACTION_LOADSTATE, 0, 0))
-            count++;
-      }
-
-      if (
-            settings->bools.quick_menu_show_add_to_favorites &&
-            settings->bools.menu_content_show_favorites
-         )
-      {
-         bool add_to_favorites_enabled = true;
-
-         /* Skip 'Add to Favourites' if we are currently
-          * viewing an entry of the favourites playlist */
-         if (horizontal)
-         {
-            playlist_t *playlist      = playlist_get_cached();
-            const char *playlist_path = playlist_get_conf_path(playlist);
-            const char *playlist_file = NULL;
-
-            if (!string_is_empty(playlist_path))
-               playlist_file = path_basename_nocompression(playlist_path);
-
-            if (!string_is_empty(playlist_file) &&
-                string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES))
-               add_to_favorites_enabled = false;
-         }
-
-         if (add_to_favorites_enabled &&
-             menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES),
-                  msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES),
-                  MENU_ENUM_LABEL_ADD_TO_FAVORITES, FILE_TYPE_PLAYLIST_ENTRY, 0, 0))
-            count++;
-      }
 
       if (string_is_not_equal(settings->arrays.record_driver, "null"))
       {
@@ -3496,15 +3509,34 @@ static int menu_displaylist_parse_load_content_settings(
          }
       }
 
-      if (settings->bools.quick_menu_show_options && !settings->bools.kiosk_mode_enable)
+      if (
+            settings->bools.quick_menu_show_add_to_favorites &&
+            settings->bools.menu_content_show_favorites
+         )
       {
-         /* Empty 'path' string signifies top level
-          * core options menu */
-         if (menu_entries_append_enum(list,
-               "",
-               msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS),
-               MENU_ENUM_LABEL_CORE_OPTIONS,
-               MENU_SETTING_ACTION_CORE_OPTIONS, 0, 0))
+         bool add_to_favorites_enabled = true;
+
+         /* Skip 'Add to Favourites' if we are currently
+          * viewing an entry of the favourites playlist */
+         if (horizontal)
+         {
+            playlist_t *playlist      = playlist_get_cached();
+            const char *playlist_path = playlist_get_conf_path(playlist);
+            const char *playlist_file = NULL;
+
+            if (!string_is_empty(playlist_path))
+               playlist_file = path_basename_nocompression(playlist_path);
+
+            if (!string_is_empty(playlist_file) &&
+                string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES))
+               add_to_favorites_enabled = false;
+         }
+
+         if (add_to_favorites_enabled &&
+             menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES),
+                  msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES),
+                  MENU_ENUM_LABEL_ADD_TO_FAVORITES, FILE_TYPE_PLAYLIST_ENTRY, 0, 0))
             count++;
       }
 
@@ -3530,6 +3562,16 @@ static int menu_displaylist_parse_load_content_settings(
       }
 #endif
 
+      if (settings->bools.menu_show_latency && !settings->bools.kiosk_mode_enable)
+      {
+         if (menu_entries_append_enum(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS),
+               msg_hash_to_str(MENU_ENUM_LABEL_LATENCY_SETTINGS),
+               MENU_ENUM_LABEL_LATENCY_SETTINGS,
+               MENU_SETTING_ACTION, 0, 0))
+            count++;
+      }
+
 #ifdef HAVE_REWIND
       if (settings->bools.menu_show_rewind &&
           !settings->bools.kiosk_mode_enable &&
@@ -3541,71 +3583,6 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_ENUM_LABEL_REWIND_SETTINGS,
                MENU_SETTING_ACTION, 0, 0))
             count++;
-      }
-#endif
-
-      if (settings->bools.menu_show_latency && !settings->bools.kiosk_mode_enable)
-      {
-         if (menu_entries_append_enum(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS),
-               msg_hash_to_str(MENU_ENUM_LABEL_LATENCY_SETTINGS),
-               MENU_ENUM_LABEL_LATENCY_SETTINGS,
-               MENU_SETTING_ACTION, 0, 0))
-            count++;
-      }
-
-#if 0
-      if (menu_entries_append_enum(list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS),
-            msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_SETTINGS),
-            MENU_ENUM_LABEL_NETPLAY_SETTINGS,
-            MENU_SETTING_ACTION, 0, 0))
-         count++;
-#endif
-
-      if (settings->bools.quick_menu_show_controls && !settings->bools.kiosk_mode_enable)
-      {
-         if (menu_entries_append_enum(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
-               msg_hash_to_str(MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS),
-               MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
-               MENU_SETTING_ACTION, 0, 0))
-            count++;
-      }
-
-#ifdef HAVE_CHEATS
-      if (settings->bools.quick_menu_show_cheats)
-      {
-         if (menu_entries_append_enum(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS),
-               msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS),
-               MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,
-               MENU_SETTING_ACTION, 0, 0))
-            count++;
-      }
-#endif
-
-      if ((!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-            && disk_control_enabled(&system->disk_control))
-         if (menu_entries_append_enum(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS),
-               msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS),
-               MENU_ENUM_LABEL_DISK_OPTIONS,
-               MENU_SETTING_ACTION_CORE_DISK_OPTIONS, 0, 0))
-            count++;
-
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-      if (video_shader_any_supported())
-      {
-         if (settings->bools.quick_menu_show_shaders && !settings->bools.kiosk_mode_enable)
-         {
-            if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS),
-                  msg_hash_to_str(MENU_ENUM_LABEL_SHADER_OPTIONS),
-                  MENU_ENUM_LABEL_SHADER_OPTIONS,
-                  MENU_SETTING_ACTION, 0, 0))
-               count++;
-         }
       }
 #endif
 
@@ -3630,6 +3607,42 @@ static int menu_displaylist_parse_load_content_settings(
             MENU_ENUM_LABEL_ACHIEVEMENT_LIST,
             MENU_SETTING_ACTION, 0, 0))
             count++;
+      }
+#endif
+
+#ifdef HAVE_CHEATS
+      if (settings->bools.quick_menu_show_cheats)
+      {
+         if (menu_entries_append_enum(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS),
+               msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS),
+               MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,
+               MENU_SETTING_ACTION, 0, 0))
+            count++;
+      }
+#endif
+
+#if 0
+      if (menu_entries_append_enum(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS),
+            msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_SETTINGS),
+            MENU_ENUM_LABEL_NETPLAY_SETTINGS,
+            MENU_SETTING_ACTION, 0, 0))
+         count++;
+#endif
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+      if (video_shader_any_supported())
+      {
+         if (settings->bools.quick_menu_show_shaders && !settings->bools.kiosk_mode_enable)
+         {
+            if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_SHADER_OPTIONS),
+                  MENU_ENUM_LABEL_SHADER_OPTIONS,
+                  MENU_SETTING_ACTION, 0, 0))
+               count++;
+         }
       }
 #endif
 
@@ -3796,6 +3809,54 @@ static int menu_displaylist_parse_horizontal_content_actions(
                MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION, FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
       }
 
+#ifdef HAVE_NETWORKING
+      if (
+             settings->bools.quick_menu_show_download_thumbnails &&
+            !settings->bools.kiosk_mode_enable)
+      {
+         bool download_enabled = true;
+
+         /* Disabled because this won't be shown when content is loaded */
+#if 0
+         /* If content is currently running, have to make sure
+          * we have a valid playlist to work with */
+         if (content_loaded)
+         {
+            const char *core_path = path_get(RARCH_PATH_CORE);
+
+            download_enabled = false;
+            if (!string_is_empty(fullpath) && !string_is_empty(core_path))
+               download_enabled = playlist_index_is_valid(
+                     playlist, idx, fullpath, core_path);
+         }
+#endif
+
+         if (download_enabled)
+         {
+            char system[PATH_MAX_LENGTH];
+
+            system[0] = '\0';
+
+            /* Only show 'download thumbnails' on supported playlists */
+            download_enabled = false;
+            menu_driver_get_thumbnail_system(system, sizeof(system));
+
+            if (!string_is_empty(system))
+               download_enabled = !string_ends_with_size(
+                     system, "_history", strlen(system), STRLEN_CONST("_history"));
+         }
+
+         if (settings->bools.network_on_demand_thumbnails)
+            download_enabled = false;
+
+         if (download_enabled)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS),
+                  MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS, FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
+      }
+#endif
+
       if (settings->bools.quick_menu_show_information)
       {
          menu_entries_append_enum(info->list,
@@ -3804,51 +3865,6 @@ static int menu_displaylist_parse_horizontal_content_actions(
                MENU_ENUM_LABEL_INFORMATION, MENU_SETTING_ACTION, 0, 0);
       }
    }
-
-#ifdef HAVE_NETWORKING
-   if (
-          settings->bools.quick_menu_show_download_thumbnails &&
-         !settings->bools.kiosk_mode_enable)
-   {
-      bool download_enabled = true;
-
-      /* If content is currently running, have to make sure
-       * we have a valid playlist to work with */
-      if (content_loaded)
-      {
-         const char *core_path = path_get(RARCH_PATH_CORE);
-
-         download_enabled = false;
-         if (!string_is_empty(fullpath) && !string_is_empty(core_path))
-            download_enabled = playlist_index_is_valid(
-                  playlist, idx, fullpath, core_path);
-      }
-
-      if (download_enabled)
-      {
-         char system[PATH_MAX_LENGTH];
-
-         system[0] = '\0';
-
-         /* Only show 'download thumbnails' on supported playlists */
-         download_enabled = false;
-         menu_driver_get_thumbnail_system(system, sizeof(system));
-
-         if (!string_is_empty(system))
-            download_enabled = !string_ends_with_size(
-                  system, "_history", strlen(system), STRLEN_CONST("_history"));
-      }
-
-      if (settings->bools.network_on_demand_thumbnails)
-         download_enabled = false;
-
-      if (download_enabled)
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS),
-               msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS),
-               MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS, FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
-   }
-#endif
 
    return 0;
 }
@@ -9653,19 +9669,28 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESUME_CONTENT,         PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESTART_CONTENT,        PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,          PARSE_ONLY_BOOL},
-#ifdef HAVE_SCREENSHOTS
-               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,        PARSE_ONLY_BOOL},
-#endif
+               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,      PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,        PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,   PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,       PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_RECORDING,        PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_STREAMING,        PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,   PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION, PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_OPTIONS,                PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,     PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_CONTROLS,               PARSE_ONLY_BOOL},
+#ifdef HAVE_SCREENSHOTS
+               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,        PARSE_ONLY_BOOL},
+#endif
+               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_RECORDING,        PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_STREAMING,        PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,       PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CONTENT_SHOW_OVERLAYS,                  PARSE_ONLY_BOOL},
+#ifdef HAVE_VIDEO_LAYOUT
+               {MENU_ENUM_LABEL_CONTENT_SHOW_VIDEO_LAYOUT,              PARSE_ONLY_BOOL},
+#endif
+               {MENU_ENUM_LABEL_CONTENT_SHOW_LATENCY,                   PARSE_ONLY_BOOL},
+#ifdef HAVE_REWIND
+               {MENU_ENUM_LABEL_CONTENT_SHOW_REWIND,                    PARSE_ONLY_BOOL},
+#endif
+               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,    PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,    PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_CHEATS,                 PARSE_ONLY_BOOL},
             };
 
@@ -9690,20 +9715,12 @@ unsigned menu_displaylist_build_list(
 
          {
             menu_displaylist_build_info_t build_list[] = {
-#ifdef HAVE_REWIND
-               {MENU_ENUM_LABEL_CONTENT_SHOW_REWIND,                    PARSE_ONLY_BOOL},
-#endif
-               {MENU_ENUM_LABEL_CONTENT_SHOW_LATENCY,                   PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_CONTENT_SHOW_OVERLAYS,                  PARSE_ONLY_BOOL},
-#ifdef HAVE_VIDEO_LAYOUT
-               {MENU_ENUM_LABEL_CONTENT_SHOW_VIDEO_LAYOUT,              PARSE_ONLY_BOOL},
-#endif
-               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,    PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,    PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_INFORMATION,            PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,   PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION, PARSE_ONLY_BOOL},
 #ifdef HAVE_NETWORKING
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,    PARSE_ONLY_BOOL},
 #endif
+               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_INFORMATION,            PARSE_ONLY_BOOL},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -12262,6 +12279,68 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
             info->need_sort = false;
             info->need_push = true;
+         }
+         break;
+      case DISPLAYLIST_SAVESTATE_LIST:
+         {
+            bool savestates_enabled = core_info_current_supports_savestate();
+
+            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+            if (savestates_enabled &&
+                settings->bools.quick_menu_show_save_load_state)
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
+                     MENU_ENUM_LABEL_STATE_SLOT, PARSE_ONLY_INT, true) == 0)
+                  count++;
+
+               if (menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_STATE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE),
+                     MENU_ENUM_LABEL_SAVE_STATE,
+                     MENU_SETTING_ACTION_SAVESTATE, 0, 0))
+                  count++;
+
+               if (menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_STATE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE),
+                     MENU_ENUM_LABEL_LOAD_STATE,
+                     MENU_SETTING_ACTION_LOADSTATE, 0, 0))
+                  count++;
+            }
+
+            if (savestates_enabled &&
+                settings->bools.quick_menu_show_save_load_state &&
+                settings->bools.quick_menu_show_undo_save_load_state)
+            {
+      #ifdef HAVE_CHEEVOS
+               if (!rcheevos_hardcore_active())
+      #endif
+               {
+                  if (menu_entries_append_enum(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE),
+                        msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE),
+                        MENU_ENUM_LABEL_UNDO_LOAD_STATE,
+                        MENU_SETTING_ACTION_LOADSTATE, 0, 0))
+                     count++;
+               }
+
+               if (menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE),
+                     MENU_ENUM_LABEL_UNDO_SAVE_STATE,
+                     MENU_SETTING_ACTION_LOADSTATE, 0, 0))
+                  count++;
+            }
+
+            if (count == 0)
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                     FILE_TYPE_NONE, 0, 0);
+
+            info->need_push                = true;
          }
          break;
       case DISPLAYLIST_CORE_OPTIONS:
