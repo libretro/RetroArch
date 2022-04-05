@@ -1,4 +1,5 @@
 # Future
+- ANDROID: Decouple Play Core dependency to bring app into compliance for F-Droid
 - AI/SERVICE: Disable AI Service setting by default
 - BLUETOOTH/LAKKA: bluetoothctl: add / modify pairing steps
 - DATABASE: Serial scanning for Wii now includes WBFS 
