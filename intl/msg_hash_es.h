@@ -8881,6 +8881,14 @@ MSG_HASH(
    "Selecciona otro tema de iconos de RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
+   "Mostrar sombras"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
+   "Muestra sombras en todos los iconos, miniaturas y textos. Afecta levemente al rendimiento."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
    "Canal de shaders del menú"
    )

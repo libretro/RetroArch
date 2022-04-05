@@ -8969,6 +8969,14 @@ MSG_HASH(
    "Выбор другой темы иконок для RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
+   "Отрисовка теней"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
+   "Включить отбрасывание теней для значков, миниатюр и букв. Незначительно влияет на производительность."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
    "Шейдер меню"
    )

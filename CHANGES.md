@@ -1,7 +1,9 @@
 # Future
 - AI/SERVICE: Disable AI Service setting by default
+- BLUETOOTH/LAKKA: bluetoothctl: add / modify pairing steps
 - DATABASE: Serial scanning for Wii now includes WBFS 
 - INPUT/MAPPING: Fix offset + crash when clearing input port binds
+- INPUT/MAPPING: Fix saving of 'Analog to Digital Type' when configuration overrides are used
 - LOCALIZATION: Add Valencian language option
 - LOCALIZATION: Updates
 - MENU/SETTINGS: Move 'Show Menu Bar' under 'Windowed Mode' settings
@@ -10,6 +12,7 @@
 - MENU/XMB: Unified the shadow alpha value to a slightly darker one for better readability
 - MENU/XMB: Corrected the option label and sublabel for actual behavior
 - MIYOO: Enable ALSA audio driver and default to it
+- STATIC PLATFORMS: Populate all history list metadata when launching content from playlists
 - STEAM: Introduce Steam Rich Presence
 - VIDEO/THREADED: Stability fixes
 - WIIU: Fix USB get_device_name(), don't truncate to three chars
