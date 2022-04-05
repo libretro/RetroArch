@@ -117,7 +117,7 @@ struct audio_mixer_sound
 
 struct audio_mixer_voice
 {
-   union
+   struct
    {
       struct
       {
