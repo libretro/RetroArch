@@ -3575,6 +3575,9 @@ void video_driver_frame(const void *data, unsigned width,
    static retro_time_t frame_time_accumulator;
    static float last_fps, frame_time;
    static uint64_t last_used_memory, last_total_memory;
+   /* Mark the start of nonblock state for
+    * ignoring initial previous frame time */
+   static int8_t nonblock_active;
    /* Initialise 'last_frame_duped' to 'true'
     * to ensure that the first frame is rendered */
    static bool last_frame_duped  = true;
@@ -3639,9 +3642,20 @@ void video_driver_frame(const void *data, unsigned width,
        !(video_info.menu_is_alive ||
             (last_frame_duped && !!data)))
    {
+      retro_time_t frame_time_accumulator_prev = frame_time_accumulator;
+      retro_time_t frame_time_delta            = new_time - last_time;
+
+      /* Ignore initial previous frame time
+       * to prevent rubber band startup */
+      if (!nonblock_active)
+         nonblock_active = -1;
+      else if (nonblock_active < 0)
+         nonblock_active = 1;
+
       /* Accumulate the elapsed time since the
        * last frame */
-      frame_time_accumulator += new_time - last_time;
+      if (nonblock_active > 0)
+         frame_time_accumulator += frame_time_delta;
 
       /* Render frame if the accumulated time is
        * greater than or equal to the expected
@@ -3654,6 +3668,11 @@ void video_driver_frame(const void *data, unsigned width,
       if (render_frame)
       {
          frame_time_accumulator -= video_st->core_frame_time;
+
+         /* Prevent external frame limiters from
+          * pushing fast forward ratio down to 1x */
+         if (frame_time_accumulator + frame_time_accumulator_prev < video_st->core_frame_time)
+            frame_time_accumulator -= frame_time_delta;
 
          /* If fast forward is working correctly,
           * the actual frame time will always be
@@ -3669,7 +3688,10 @@ void video_driver_frame(const void *data, unsigned width,
       }
    }
    else
+   {
+      nonblock_active        = 0;
       frame_time_accumulator = 0;
+   }
 
    last_time        = new_time;
    last_frame_duped = !data;
