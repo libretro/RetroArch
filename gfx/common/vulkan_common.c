@@ -3247,10 +3247,9 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    vkGetSwapchainImagesKHR(vk->context.device, vk->swapchain,
          &vk->context.num_swapchain_images, vk->context.swapchain_images);
 
-#ifdef VULKAN_DEBUG
-   RARCH_LOG("[Vulkan]: Got %u swapchain images.\n",
-         vk->context.num_swapchain_images);
-#endif
+   if (old_swapchain == VK_NULL_HANDLE)
+      RARCH_LOG("[Vulkan]: Got %u swapchain images.\n",
+            vk->context.num_swapchain_images);
 
    /* Force driver to reset swapchain image handles. */
    vk->context.invalid_swapchain      = true;
