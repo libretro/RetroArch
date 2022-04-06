@@ -8256,8 +8256,8 @@ MSG_HASH(
    "Urdu - اُردُو (Restart Required)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_VALENCIAN,
-   "Valencian - Valencià"
+   MENU_ENUM_LABEL_VALUE_LANG_CATALAN_VALENCIA,
+   "Catalan (Valencian) - Català (Valencià)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
