@@ -10553,6 +10553,10 @@ MSG_HASH(
    "OpenGL/Direct3D doku oluştur (çoklu geçişli gölgelendirici) desteği"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_DIR,
+   "İçerik"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_DIR,
    "Genellikle libretro/RetroArch uygulamalarını varlıkları işaret eden paketleyen geliştiriciler tarafından ayarlanır."
    )

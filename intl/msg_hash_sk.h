@@ -2428,6 +2428,10 @@ MSG_HASH(
 
 
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_SYSTEM,
+   "Názov systému"
+   )
 #endif
 
 /* Music */

@@ -6548,10 +6548,6 @@ MSG_HASH(
    "Nach Handlung"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PACING,
-   "Nach Geschiwndigkeit"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PERSPECTIVE,
    "Nach Perspektive"
    )
