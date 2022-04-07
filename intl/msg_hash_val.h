@@ -1266,6 +1266,10 @@ MSG_HASH(
    )
 
 #ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
+   "Canvia els ajustos relacionats amb Steam."
+   )
 #endif
 
 /* Settings > Drivers */
