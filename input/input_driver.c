@@ -3025,8 +3025,16 @@ const char *input_config_get_mouse_display_name(unsigned port)
 void input_config_set_mouse_display_name(unsigned port, const char *name)
 {
    input_driver_state_t *input_st = &input_driver_st;
+   char name_ascii[256];
+
+   name_ascii[0] = '\0';
+
+   /* Strip non-ASCII characters */
    if (!string_is_empty(name))
-      strlcpy(input_st->input_mouse_info[port].display_name, name,
+      string_copy_only_ascii(name_ascii, name);
+
+   if (!string_is_empty(name_ascii))
+      strlcpy(input_st->input_mouse_info[port].display_name, name_ascii,
             sizeof(input_st->input_mouse_info[port].display_name));
 }
 
