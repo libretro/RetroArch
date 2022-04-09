@@ -9493,14 +9493,6 @@ static int materialui_list_push(void *data, void *userdata,
                      false);
             }
 
-            if (settings->bools.menu_show_help)
-            {
-               MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
-                     info->list,
-                     MENU_ENUM_LABEL_HELP_LIST,
-                     PARSE_ACTION,
-                     false);
-            }
 #if !defined(IOS)
 
             if (settings->bools.menu_show_restart_retroarch)

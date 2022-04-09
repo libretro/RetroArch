@@ -13201,11 +13201,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         PARSE_ACTION, false) == 0)
                   count++;
 #endif
-            if (settings->bools.menu_show_help)
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
-                     MENU_ENUM_LABEL_HELP_LIST,
-                     PARSE_ACTION, false) == 0)
-                  count++;
 
             if (settings->bools.menu_show_restart_retroarch)
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
