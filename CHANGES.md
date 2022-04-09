@@ -1,9 +1,13 @@
 # Future
+
+# 1.10.3
 - ANDROID: Decouple Play Core dependency to bring app into compliance for F-Droid
 - AI/SERVICE: Disable AI Service setting by default
 - BLUETOOTH/LAKKA: bluetoothctl: add / modify pairing steps
+- CHEEVOS: Disallow manual frame delay setting in Hardcore Mode
 - DATABASE: Serial scanning for Wii now includes WBFS 
 - INPUT/MAPPING: Fix offset + crash when clearing input port binds
+- INPUT/MAPPING: Fix saving of 'Analog to Digital Type' when configuration overrides are used
 - INPUT/MAPPING: Fix saving of 'Analog to Digital Type' when configuration overrides are used
 - LOCALIZATION: Add Valencian language option
 - LOCALIZATION: Updates
@@ -15,7 +19,9 @@
 - MIYOO: Enable ALSA audio driver and default to it
 - STATIC PLATFORMS: Populate all history list metadata when launching content from playlists
 - STEAM: Introduce Steam Rich Presence
+- VIDEO: Fast-Forward Frameskip improvement
 - VIDEO/THREADED: Stability fixes
+- WINDOWS/WINRAW: Fix multiple light guns
 - WIIU: Fix USB get_device_name(), don't truncate to three chars
 
 # 1.10.2
