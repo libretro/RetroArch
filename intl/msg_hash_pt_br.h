@@ -5336,7 +5336,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
-   "Habilitar conquistas"
+   "Conquistas"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
