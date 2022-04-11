@@ -1446,6 +1446,10 @@ MSG_HASH(
    "Εμφάνιση Διακοσμητικών Παραθύρου"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
+   "Εμφάνιση Γραμμής Μενού"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    "Πλάτος Παραθύρου"
    )

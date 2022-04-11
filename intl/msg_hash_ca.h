@@ -496,6 +496,10 @@ MSG_HASH(
    "Amb sèrie (Desar/Carregar, Rebobinar)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
+   "Determinista (Desa/Carrega, Rebobina, Avança, Netplay)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Falta, requerida:"
    )
@@ -518,6 +522,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
    "Evita la modificació del nucli instal·lat actualment. Es pot utilitzar per evitar actualitzacions no desitjades quan el contingut requereix una versió del nucli específica (per exemple, conjunts de ROM d'arcade)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
+   "Exclou del menú 'Nuclis Autònoms'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
+   "Evita mostrar aquest nucli al menú/pestanya de 'Nuclis Autònoms'. Només aplica quan s'estableix a 'Personalitzat' el mode de visualització."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -857,6 +869,66 @@ MSG_HASH(
    "Assoliments"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
+   "Categoria"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
+   "Idioma"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
+   "Regió"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE,
+   "Exclusiu de consola"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
+   "Exclusiu de plataforma"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
+   "Puntuació"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
+   "Mitjà"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
+   "Estil artístic"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY,
+   "Joc"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
+   "Narrativa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING,
+   "Ritme"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
+   "Perspectiva"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   "Ambientació"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
+   "Estil visual"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
+   "Vehicle"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
    "Editora"
    )
@@ -1182,6 +1254,10 @@ MSG_HASH(
    )
 
 #ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
+   "Canvia les opcions relacionades amb Steam."
+   )
 #endif
 
 /* Settings > Drivers */
@@ -1338,6 +1414,14 @@ MSG_HASH(
    "Evita que el salvapantalles del vostre sistema s'activi."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
+   "Vídeo amb fils"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+   "Millora el rendiment a costa de la latència i de l'entretallament del vídeo. Useu només si no es pot assolir la velocitat màxima de cap altra manera."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    "Insereix fotogrames negres"
    )
@@ -1402,6 +1486,14 @@ MSG_HASH(
 #endif
 #endif
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
+   "Retard de l'Auto-Shader"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
+   "Retard en la càrrega automàtica dels shaders (en ms). Pot solventar algunes errades gràfiques quan s'utilitza programari per capturar la pantalla."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    "Filtre de vídeo"
    )
@@ -1417,6 +1509,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Elimina qualsevol filtre de vídeo per CPU actiu."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "Habilita la pantalla completa als dispositius Android amb osca"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -1424,30 +1520,470 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
    "SwitchRes per a CRT's"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
+   "Només per a pantalles CRT. Intenta usar la resolució i freqüència de refresc exacta al nucli/joc."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+   "Súper-resolució CRT"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
+   "Canvia entre súper-resolucions nativa i ultra-allargada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+   "Centrat de l'eix X"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+   "Rota entre aquestes opcions si la imatge no es centra correctament a la pantalla."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
+   "Adjustament de pòrtic"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
+   "Roteu entre aquestes opcions per ajustar la configuració de pòrtic per canviar la mida de la imatge."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   "Usa menú d'alta resolució"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
+   "Canvia al mode de lína d'alta resolució amb menús d'alta resolució quan no hi ha contingut carregat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   "Freqüència de refresc personalitzada"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   "En cas necessari, utilitzeu una freqüència de refresc personalitzada especificada al fitxer de configuració."
+   )
 
 /* Settings > Video > Output */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
+   "Índex de monitor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
+   "Seleccioneu quina pantalla utilitzar."
+   )
 #if defined (WIIU)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
+   "Optimitza per a controlador de Wii U (requereix reinici)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
+   "Utilitzeu un escalat exacte de 2x del controlador a la subàrea de visualització. Deshabiliteu per mostrar a la resolució nativa de la TV."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
+   "Rotació del vídeo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
+   "Forceu una certa rotació del vídeo. La rotació s'afegeix a les que permet el nucli."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
+   "Orientació de la pantalla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
+   "Forceu una certa orientació de la pantalla des del sistema operatiu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
+   "Indel de GPU"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   "Selecciona quina tarja gràfica usar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
+   "Òfset horitzontal de la pantalla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
+   "Força un cert òfset horitzontal al vídeo. L'òfset s'aplica globalment."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
+   "Òfset vertical de la pantalla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
+   "Força un cert òfset vertical al vídeo. L'òfset s'aplica globalment."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
+   "Freqüència de refresc vertical"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
+   "La freqüència de refresc vertical de la vostra pantalla. S'usa per calcular una freqüència d'àudio adient.\nS'ignorarà si s'activa 'Vídeo amb fils'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
+   "Freqüència de refresc estimat de la pantalla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
+   "La freqüència de refresc precisa estimada de la pantalla en hz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
+   "Estableix la freqüència de refresc notificada per la pantalla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
+   "La freqüència de refresc tal com l'anuncia el controlador de la pantalla."
+   )
 #if defined(DINGUX) && defined(DINGUX_BETA)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
+   "Freqüència de refresc vertical"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
+   "Estableix la freqüència de refresc vertical de la pantalla. '50 Hz' habilitarà un vídeo fluid quan s'executi contingut PAL."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
+   "Desactiva forçadament el FBO sRGB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   "Força la desactivació del suport sRGB del FBO. Amb Windows alguns controladors OpenGL d'Intel tenen problemes de vídeo amb l'FBO sRGB. Activant això es podria resoldre."
+   )
 
 /* Settings > Video > Fullscreen Mode */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   "Inicia en mode de pantalla completa"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   "Inicia en pantalla completa. Es pot canviar durant l'execució. Es pot sobreescriure amb un paràmetre de la consola de comandes."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   "Mode de finestra a pantalla completa"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   "Amb pantalla completa, prefereix usar una finestra a pantalla completa per evitar el canvi del mode de pantalla."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   "Amplada de la pantalla completa"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   "Estableix una mida personalitzada de l'amplada per mode de pantalla completa sense finestra. S'utilitzarà la resolució de l'escriptori si no s'estableix."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   "Alçada de la pantalla completa"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   "Estableix una mida personalitzada de l'alçada per mode de pantalla completa sense finestra. S'utilitzarà la resolució de l'escriptori si no s'estableix."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
+   "Força la resolució amb UWP"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
+   "Força la resolució de la mida de pantalla completa. S'usarà un valor fix de 3840 x 2160 si s'estableix a 0."
+   )
 
 /* Settings > Video > Windowed Mode */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
+   "Escalat de la finestra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+   "Estableix la mida de la finestra al múltiple especificat de la mida de la subàrea de visualització del nucli."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
+   "Opacitat de la finestra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   "Estableix la transparència de la finestra."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
+   "Mostra les decoracions de finestra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
+   "Mostra la barra de títol i les vores."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
+   "Mostra la barra de menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
+   "Mostra la barra del menú de la finestra."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+   "Recorda la posició i mida de la finestra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+   "Mostra tot el contingut dins una finestra de mida fixa amb les dimensions especificades per 'Amplada de la finestra' i 'Alçada de la finestra', i desa la mida i posició actual de la finestra en tancar RetroArch. Si es deshabilita la mida de la finestra s'establirà dinàmicament en funció de l'\"Escalat de la finestra\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Utilitza una mida de finestra personalitzada"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Mostra tot el contingut dins una finestra de mida fixa amb les dimensions especificades per 'Amplada de la finestra' i 'Alçada de la finestra'. Si es deshabilita la mida de la finestra s'establirà dinàmicament en funció de l'\"Escalat de la finestra\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   "Amplada de la finestra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   "Estableix l'amplada personalitzada de la finestra de la pantalla."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   "Alçada de la finestra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+   "Estableix l'alçada personalitzada de la finestra de la pantalla."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Amplada màxima de la finestra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Estableix l'amplada màxima de la finestra de la pantalla quan redimensiona automàticament en funció de l'\"Escalat de la finestra\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Alçada màxima de la finestra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Estableix l'alçada màxima de la finestra de la pantalla quan redimensiona automàticament en funció de l'\"Escalat de la finestra\"."
+   )
 
 /* Settings > Video > Scaling */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
+   "Escalat d'enter"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+   "Escala el vídeo només amb increments enters. La mida base depèn de la geometria informada pel sistema i la relació d'aspecte. Si no s'estableix 'Força la relació d'aspecte' X/Y seran enters escalats independentment."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Sobre-escalat de l'escalat d'enter"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Força l'arrodoniment de l'escalat d'enter fins el següent nombre enter enlloc d'arrodonir cap a baix."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
+   "Relació d'aspecte"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
+   "Estableix la relació d'aspecte."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
+   "Configura la relació d'aspecte"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
+   "Valor de coma flotant per la relació d'aspecte del vídeo (amplada / alçada)."
+   )
 #if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "Manté la relació d'aspecte"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "Manté relacions d'aspecte d'1:1 píxel en escalar el contingut via l'IPU interna. Si es desactiva, les imatges s'estiraran fins a omplir la pantalla completa."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
+   "Relació d'aspecte personalitzat (posició X)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
+   "Òfset de subàrea de visualització personalitzat per definir la posició de l'eix X de la subàrea de visualització.\nS'ignora si s'activa 'Escalat d'enter'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
+   "Relació d'aspecte personalitzat (posició Y)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+   "Òfset de subàrea de visualització personalitzat per definir la posició de l'eix Y de la subàrea de visualització.\nS'ignora si s'activa 'Escalat d'enter'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   "Relació d'aspecte personalitzat (amplada)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   "Amplada personalitzada de la subàrea de visualització que s'usa si la relació d'aspecte s'estableix a 'Relació d'aspecte personalitzada'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   "Relació d'aspecte personalitzat (alçada)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   "Alçada personalitzada de la subàrea de visualització que s'usa si la relació d'aspecte s'estableix a 'Relació d'aspecte personalitzada'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
+   "Retalla el sobre-escalat (requereix reinici)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
+   "Retalla uns quants píxels sobre les vores de la imatge deixats en blanc normalment pels desenvolupadors i que de vegades també contenen píxels brossa."
+   )
 
 /* Settings > Video > HDR */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
+   "Activa l'HDR"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "Activa l'HDR si la pantalla ho suporta."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
+   "Pic de luminància"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
+   "Estableix el pic de luminància (en cd/m2) que pot reproduir la vostra pantalla. Consulteu RTings pel pic de luminància de la vostra pantalla."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Luminància de blancs"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Estableix la luminància a la que hauria d'estar un paper blanc, per exemple un text llegible, o luminància al cim del rang SDR (Standard Dynamic Range). Útil per ajustar a diferents condicions de llum del vostre entorn."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
+   "Control de gamma/contrast per a HDR. Agafa els colors i incrementa el rang general entre les parts més fosques i més brillants de la imatge. Quant més alt és el contrast HDR, més gran es torna la diferència, mentre que quan més baix és el contrast, més desgastada es torna la imatge. Ajuda als usuari a ajustar la imatge al seu gust i al que sembla veure's millor a la seva pantalla."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "Expandeix l'escala"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "Una vegada convertit l'espai de colors a un espai lineal, decideix si s'hauria d'usar una escala de color ampliada per a obtenir HDR10."
+   )
 
 /* Settings > Video > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   "Sincronització vertical (VSync)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   "Sincronitza la sortida de vídeo de la tarja gràfica a la freqüència de refresc de la pantalla. Recomanat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   "Interval d'intercanvi de VSync"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   "Utilitza un interval d'intercanvi personalitzat per a VSync. Establiu això per a dividir acuradament la freqüència de refresc del monitor."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
+   "VSync adaptatiu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
+   "El VSync roman actiu fins que el rendiment cau per davall de la freqüència de refresc establerta. Pot minimitzar l'entretallament quan el rendiment cau per davall del temps real, i pot ser més energèticament eficient."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
+   "Retard de fotograma"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
+   "Redueix la latència a cost d'un risc més alt d'entretallament de vídeo. Afegeix un retard després del VSync (en ms)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
+   "Retard automàtic de fotograma"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   "Redueix temporalment el 'Retard de fotograma' efectiu per a prevenir futures pèrdues de fotogrames. El punt de sortida és el tems de mig fotograma quan 'Retard de fotograma' és 0."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   "Sincronització dura de GPU"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   "Sincronització rígida de la CPU i GPU. Redueix la latència a cost de rendiment."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   "Fotogrames de sincronització dura de GPU"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   "Estableix quants fotogrames de CPU poden anar per davant de la GPU quan s'usa 'Sincronització dura de GPU'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+   "Sincronitza a fotogrames per segon exactes de contingut (S-Sync, FreeSync)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
+   "Sense desviació de la cadència demanada pel nucli. Useu-ho per a pantalles amb freqüència de refresc variable (G-Sync, FreeSync, HDMI 2.1 VRR)."
+   )
 
 /* Settings > Audio */
 
@@ -1460,8 +1996,60 @@ MSG_HASH(
    "Canviar les configuracions de sortida de l'àudio."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
+   "Re-mostreig"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
+   "Canvia les opcions de re-mostreig de l'àudio."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    "Sincronització"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   "Canvia les configuracions de sincronització de l'àudio."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
+   "Canvia les configuracions del MIDI."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
+   "Mesclador"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
+   "Canviar les opcions del mesclador d'àudio."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
+   "Sons del menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   "Canvia les opcions dels sons del menú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
+   "Silencia"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+   "Silencia l'àudio."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
+   "Silencia el mesclador"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
+   "Silencia l'àudio del mesclador."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
+   "Silencia en l'avanç ràpid"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
@@ -1542,15 +2130,59 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
    "Força el dispositiu que fa servir el controlador d’àudio. Això depèn del controlador."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
+   "Latència de l'àudio (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
+   "Latència d'àudio desitjada en mil·lisegons. Si el controlador de l'àudio no pot proporcionar la latència especificada pot ser ignorat."
+   )
 
 /* Settings > Audio > Resampler */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
+   "Qualitat del re-sampleig"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
+   "Baixeu aquest valor per a afavorir el rendiment/baixa latència sobre la qualitat de l'àudio, augmenteu-lo per a una millor qualitat d'àudio a expenses de rendiment/baixa latència."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
+   "Freqüència de sortida (Hz)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
+   "Freqüència de mostreig de la sortida d'àudio."
+   )
 
 /* Settings > Audio > Synchronization */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    "Sincronització"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SYNC,
+   "Sincronitza l'àudio. Recomanat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
+   "Desviació màxima de sincronització"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
+   "El canvi màxim en la freqüència d'entrada d'àudio. Augmentar això activa canvis molt grans en la sincronització a cost d'un to d'àudio imprecís (ex. executar nuclis PAL a pantalles NTSC)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
+   "Control dinàmic de freqüència d'àudio"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
+   "Ajuda a mitigar imperfeccions en la sincronització de l'àudio i vídeo. Teniu en compte que si es desactiva és pràcticament impossible obtenir una sincronització correcta."
    )
 
 /* Settings > Audio > MIDI */
@@ -1560,33 +2192,161 @@ MSG_HASH(
    "Dispositius de joc"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_INPUT,
+   "Seleccioneu el dispositiu d'entrada."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
    "Sortida"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
+   "Seleccioneu el dispositiu de sortida."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
+   "Volum"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_VOLUME,
+   "Estableix el volum de sortida (%)."
    )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
+   "Reprodueix"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
+   "Iniciarà la reproducció del flux d'àudio. En acabar, s'eliminarà de la memòria el flux actual d'àudio."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
+   "Reprodueix (bucle)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
+   "Iniciarà la reproducció del flux d'àudio. En acabar, farà un bucle i reproduirà de nou la pista des del principi."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
+   "Reprodueix (Seqüència)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
+   "Iniciarà la reproducció del flux d'àudio. En acabar, saltarà al següent flux d'àudio en ordre seqüencial i repetirà aquest comportament. Útil com un mode de reproducció d'àlbum."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
+   "Atura"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
+   "Aturarà la reproducció del flux d'àudio, però no l'eliminarà de la memòria. Es pot iniciar de nou seleccionant 'Reprodueix'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
    "Elimina"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
+   "Aturarà la reproducció completament del flux d'àudio i l'eliminarà completament de la memòria."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
+   "Volum"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
+   "Ajusta el volum del flux d'àudio."
    )
 
 /* Settings > Audio > Menu Sounds */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
+   "Mesclador"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+   "Reprodueix fluxos d'àudio simultanis fins i tot al menú."
+   )
 
 /* Settings > Input */
 
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #endif
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+   "Canvia els controls d'aquest port."
+   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
+   "Vibra en prémer la tecla"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
+   "Activa la vibració del dispositiu (per a nuclis suportats)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
+   "Intensitat de la vibració"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
+   "Especifica la magnitud dels efectes de resposta hàptica."
+   )
 
 /* Settings > Input > Menu Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
+   "Controls de menú unificats"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
+   "Useu els mateixos controls per a ambdós, el menú i el joc. Aplica al teclat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
+   "El menú inverteix els botons d'OK i Cancel·la"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+   "Inverteix els botons d'OK/Cancel·la. Desactivat correspon a l'orientació japonesa, activat correspon a l'orientació occidental."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
+   "Tots els usuaris controlen el menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+   "Permet que qualsevol usuari controli el menú. Si es desactiva, només l'usuari 1 pot controlar el menú."
+   )
 
 /* Settings > Input > Hotkeys */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
+   "Confirma la sortida"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
+   "Requereix prémer dues vegades la tecla de Surt per a sortir de RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   "Combo de controlador per activar el menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   "Combinació de botons del controlador per a activar el menú."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
    "Tancar RetroArch"
@@ -2246,6 +3006,10 @@ MSG_HASH(
    "Cap"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
+   "Escalat d'enter"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
    "Personalitzat"
    )
@@ -2518,6 +3282,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
    "Informació"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_STOP,
+   "Atura"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
