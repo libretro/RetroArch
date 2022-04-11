@@ -17,6 +17,7 @@
 - MENU/XMB: Unified the shadow alpha value to a slightly darker one for better readability
 - MENU/XMB: Corrected the option label and sublabel for actual behavior
 - MIYOO: Enable ALSA audio driver and default to it
+- PSP: Take out extra languages/localization, adds about 4/5MB to the binary, and RAM is limited on PSP (32MB and 64MB RAM models)
 - STATIC PLATFORMS: Populate all history list metadata when launching content from playlists
 - STEAM: Introduce Steam Rich Presence
 - VIDEO: Fast-Forward Frameskip improvement
