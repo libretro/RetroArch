@@ -17,6 +17,7 @@
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
+        android:allowAudioPlaybackCapture="true"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="RetroArch"
