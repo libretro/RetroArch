@@ -8198,10 +8198,12 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_POINTER_ENABLE,                                        PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_THREADED_DATA_RUNLOOP_ENABLE,                          PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_VIDEO_DISABLE_COMPOSITION,                             PARSE_ONLY_BOOL,   true},
+#if defined(HAVE_QT) || defined(HAVE_COCOA)
                {MENU_ENUM_LABEL_UI_COMPANION_ENABLE,                                   PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT,                            PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_DESKTOP_MENU_ENABLE,                                   PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_UI_COMPANION_TOGGLE,                                   PARSE_ONLY_BOOL,   false},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_ENABLE,                                   PARSE_ONLY_BOOL,   true},
+#endif
                {MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE,                                PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM,                                  PARSE_ONLY_BOOL,   true},
             };
@@ -8229,10 +8231,12 @@ unsigned menu_displaylist_build_list(
                         build_list[i].checked = true;
                      break;
 #endif
+#if defined(HAVE_QT) || defined(HAVE_COCOA)
                   case MENU_ENUM_LABEL_UI_COMPANION_TOGGLE:
                      if (desktop_menu_enable)
                         build_list[i].checked = true;
                      break;
+#endif
                   default:
                      break;
                }
