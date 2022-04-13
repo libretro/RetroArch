@@ -807,8 +807,6 @@ int detect_dc_game(intfstream_t *fd, char *game_id, const char *filename)
          index = string_index_last_occurance(raw_game_id, hyphen);
          if (index < 0)
             return false;
-         else
-            size_t_var = (size_t)index;
          strncpy(lgame_id, raw_game_id, index - 1);
          lgame_id[index - 1] = '\0';
          strncpy(rgame_id, &raw_game_id[length - 4], length - 3);
