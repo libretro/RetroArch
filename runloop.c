@@ -2093,6 +2093,24 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                                  break;
                            }
                            break;
+                        case RETRO_DEVICE_ID_JOYPAD_R2:
+                           switch (desc->index)
+                           {
+                              case RETRO_DEVICE_INDEX_ANALOG_BUTTON:
+                                 system->input_desc_btn[retro_port]
+                                    [retro_id] = desc->description;
+                                 break;
+                           }
+                           break;
+                        case RETRO_DEVICE_ID_JOYPAD_L2:
+                           switch (desc->index)
+                           {
+                              case RETRO_DEVICE_INDEX_ANALOG_BUTTON:
+                                 system->input_desc_btn[retro_port]
+                                    [retro_id] = desc->description;
+                                 break;
+                           }
+                           break;
                      }
                      break;
                }
