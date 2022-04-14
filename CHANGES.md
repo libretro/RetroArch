@@ -2,6 +2,7 @@
 
 # 1.10.3
 - ANDROID: Decouple Play Core dependency to bring app into compliance for F-Droid
+- ANDROID: Allow audio playback capture on android
 - AI/SERVICE: Disable AI Service setting by default
 - BLUETOOTH/LAKKA: bluetoothctl: add / modify pairing steps
 - CHEEVOS: Disallow manual frame delay setting in Hardcore Mode
