@@ -55,9 +55,11 @@ static const float *gfx_display_d3d8_get_default_tex_coords(void)
 
 static void *gfx_display_d3d8_get_default_mvp(void *data)
 {
-   static math_matrix_4x4 id;
-   matrix_4x4_identity(id);
-
+   static float id[] =         { 1.0f, 0.0f, 0.0f, 0.0f,
+                                 0.0f, 1.0f, 0.0f, 0.0f,
+                                 0.0f, 0.0f, 1.0f, 0.0f, 
+                                 0.0f, 0.0f, 0.0f, 1.0f
+                               };
    return &id;
 }
 
