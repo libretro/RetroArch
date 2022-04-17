@@ -979,6 +979,7 @@ OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.o \
        $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16.o
 
 ifeq ($(HAVE_RWAV), 1)
+DEFINES += -DHAVE_RWAV
 OBJ += $(LIBRETRO_COMM_DIR)/formats/wav/rwav.o
 endif
 
