@@ -77,7 +77,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_DISC,
-   "Ladda en fysisk media skiva. Välj först kärnan (Ladda kärna) för att använda skivan."
+   "Ladda en fysisk medieskiva. Välj först kärnan (Ladda kärna) för att använda skivan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
@@ -85,7 +85,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
    MENU_ENUM_SUBLABEL_DUMP_DISC,
-   "Dumpa den fysiska media skivan till intern lagring. Den kommer att sparas som en avbildningsfil."
+   "Dumpa den fysiska medieskivan till intern lagring. Den kommer att sparas som en avbildningsfil."
    )
 #ifdef HAVE_LAKKA
 MSG_HASH(
@@ -123,7 +123,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Inaktivera Kiosk-läge (Omstart krävs)"
+   "Inaktivera Kiosk-läge (omstart krävs)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -2905,7 +2905,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY,
-   "Olåst"
+   "Upplåst"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNSUPPORTED_ENTRY,
