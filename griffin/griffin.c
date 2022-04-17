@@ -1320,6 +1320,8 @@ THREAD
 #include "../libretro-common/rthreads/rthreads.c"
 #include "../gfx/video_thread_wrapper.c"
 #include "../audio/audio_thread_wrapper.c"
+#else
+#include "../libretro-common/rthreads/single_threaded.c"
 #endif
 
 /* needed for playlists, netplay lobbies and achievements */
