@@ -834,6 +834,12 @@ void rcheevos_leaderboards_enabled_changed(void)
    }
 }
 
+static void rcheevos_enforce_hardcore_settings(void)
+{
+   /* disable slowdown */
+   runloop_state_get_ptr()->slowmotion = false;
+}
+
 static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
 {
    settings_t* settings = config_get_ptr();
@@ -864,8 +870,7 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
          runloop_msg_queue_push(msg, 0, 3 * 60, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-         /* disable slowdown */
-         runloop_state_get_ptr()->slowmotion = false;
+         rcheevos_enforce_hardcore_settings();
 
          /* Reactivate leaderboards */
          if (locals->leaderboards_enabled)
@@ -935,6 +940,9 @@ void rcheevos_toggle_hardcore_paused(void)
 
 void rcheevos_hardcore_enabled_changed(void)
 {
+   /* called whenever a setting that could potentially affect hardcore enabledness changes
+    * (i.e. cheevos_enable, hardcore_mode_enable) to synchronize the internal state to the configs.
+    * also called when a game is first loaded to synchronize the internal state to the configs. */
    const settings_t* settings = config_get_ptr();
    const bool enabled         = settings 
       && settings->bools.cheevos_enable 
@@ -946,6 +954,12 @@ void rcheevos_hardcore_enabled_changed(void)
 
       /* update leaderboard state flags */
       rcheevos_leaderboards_enabled_changed();
+   }
+   else if (rcheevos_locals.hardcore_active && rcheevos_locals.loaded)
+   {
+      /* hardcore enabledness didn't change, but hardcore is active, so make
+       * sure to enforce the restrictions. */
+      rcheevos_enforce_hardcore_settings();
    }
 }
 
@@ -1591,10 +1605,18 @@ static void rcheevos_start_session_async(retro_task_t* task)
    }
 #endif
 
-   /* if there's nothing for the runtime to process,
-    * disable hardcore. */
    if (!needs_runtime)
+   {
+      /* if there's nothing for the runtime to process,
+       * disable hardcore. */
       rcheevos_pause_hardcore();
+   }
+   else if (rcheevos_locals.hardcore_active)
+   {
+      /* hardcore is active. we're going to start processing
+       * achievements. make sure restrictions are enforced */
+      rcheevos_enforce_hardcore_settings();
+   }
 
    task_set_finished(task, true);
 
