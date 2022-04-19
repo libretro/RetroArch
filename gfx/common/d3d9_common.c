@@ -1477,7 +1477,7 @@ bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          }
       }
 
-      d3d9_surface_unlock_rect(dest);
+      IDirect3DSurface9_UnlockRect(dest);
    }
    else
       ret = false;

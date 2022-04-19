@@ -105,18 +105,6 @@ typedef struct d3d9_video
    overlay_t *overlays;
 } d3d9_video_t;
 
-static INLINE bool d3d9_swap(void *data, LPDIRECT3DDEVICE9 dev)
-{
-#ifdef _XBOX
-   IDirect3DDevice9_Present(dev, NULL, NULL, NULL, NULL);
-#else
-   if (IDirect3DDevice9_Present(dev, NULL, NULL, NULL, NULL)
-         == D3DERR_DEVICELOST)
-      return false;
-#endif
-   return true;
-}
-
 void *d3d9_vertex_buffer_new(void *dev,
       unsigned length, unsigned usage, unsigned fvf,
       INT32 pool, void *handle);
@@ -127,10 +115,6 @@ static INLINE void *d3d9_vertex_buffer_lock(LPDIRECT3DVERTEXBUFFER9 vertbuf)
    if (!vertbuf)
       return NULL;
    IDirect3DVertexBuffer9_Lock(vertbuf, 0, 0, &buf, 0);
-
-   if (!buf)
-      return NULL;
-
    return buf;
 }
 
@@ -191,17 +175,6 @@ static INLINE void d3d9_texture_free(LPDIRECT3DTEXTURE9 tex)
 {
    if (tex)
       IDirect3DTexture9_Release(tex);
-}
-
-static INLINE void d3d9_set_transform(
-      LPDIRECT3DDEVICE9 dev,
-      D3DTRANSFORMSTATETYPE state,
-      CONST D3DMATRIX *matrix)
-{
-   /* XBox 360 D3D9 does not support fixed-function pipeline. */
-#ifndef _XBOX
-   IDirect3DDevice9_SetTransform(dev, state, matrix);
-#endif
 }
 
 static INLINE void d3d9_set_sampler_address_u(
@@ -470,18 +443,14 @@ static INLINE void d3d9_set_render_state(
 
 static INLINE void d3d9_enable_blend_func(LPDIRECT3DDEVICE9 dev)
 {
-   if (!dev)
-      return;
-
-   d3d9_set_render_state(dev, D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
-   d3d9_set_render_state(dev, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-   d3d9_set_render_state(dev, D3DRS_ALPHABLENDENABLE, true);
+   IDirect3DDevice9_SetRenderState(dev, D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+   IDirect3DDevice9_SetRenderState(dev, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+   IDirect3DDevice9_SetRenderState(dev, D3DRS_ALPHABLENDENABLE, true);
 }
 
 static INLINE void d3d9_disable_blend_func(LPDIRECT3DDEVICE9 dev)
 {
-   if (dev)
-      d3d9_set_render_state(dev, D3DRS_ALPHABLENDENABLE, false);
+   IDirect3DDevice9_SetRenderState(dev, D3DRS_ALPHABLENDENABLE, false);
 }
 
 static INLINE void
@@ -492,30 +461,18 @@ d3d9_set_vertex_declaration(LPDIRECT3DDEVICE9 dev,
       IDirect3DDevice9_SetVertexDeclaration(dev, vertex_data);
 }
 
-static INLINE void d3d9_set_texture_stage_state(
-      LPDIRECT3DDEVICE9 dev,
-      unsigned sampler,
-      D3DTEXTURESTAGESTATETYPE type,
-      unsigned value)
-{
-#ifndef _XBOX
-   /* XBox 360 has no fixed-function pipeline. */
-   if (IDirect3DDevice9_SetTextureStageState(dev, sampler,
-            type, value) != D3D_OK)
-      RARCH_ERR("SetTextureStageState call failed, sampler"
-            ": %d, value: %d, type: %d\n", sampler, value, type);
-#endif
-}
-
 static INLINE void d3d9_enable_alpha_blend_texture_func(LPDIRECT3DDEVICE9 dev)
 {
    if (!dev)
       return;
 
    /* Also blend the texture with the set alpha value. */
-   d3d9_set_texture_stage_state(dev, 0, D3DTSS_ALPHAOP,     D3DTOP_MODULATE);
-   d3d9_set_texture_stage_state(dev, 0, D3DTSS_ALPHAARG1,   D3DTA_DIFFUSE);
-   d3d9_set_texture_stage_state(dev, 0, D3DTSS_ALPHAARG2,   D3DTA_TEXTURE);
+#ifndef _XBOX
+   /* XBox 360 has no fixed-function pipeline. */
+   IDirect3DDevice9_SetTextureStageState(dev, 0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+   IDirect3DDevice9_SetTextureStageState(dev, 0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
+   IDirect3DDevice9_SetTextureStageState(dev, 0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
+#endif
 }
 
 void d3d9_frame_postprocess(void *data);
@@ -611,12 +568,6 @@ static INLINE bool d3d9_surface_lock_rect(LPDIRECT3DSURFACE9 surf,
 #endif
 
    return true;
-}
-
-static INLINE void d3d9_surface_unlock_rect(LPDIRECT3DSURFACE9 surf)
-{
-   if (surf)
-      IDirect3DSurface9_UnlockRect(surf);
 }
 
 static INLINE bool d3d9_get_adapter_display_mode(

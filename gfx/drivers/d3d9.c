@@ -741,7 +741,14 @@ static bool d3d9_frame(void *data, const void *frame,
       unsigned n;
       for (n = 0; n < video_info->black_frame_insertion; ++n) 
       {   
-        if (!d3d9_swap(d3d, d3d->dev) || d3d->needs_restore)
+#ifdef _XBOX
+        bool ret = true;
+        IDirect3DDevice9_Present(d3d->dev, NULL, NULL, NULL, NULL);
+#else
+        bool ret = (IDirect3DDevice9_Present(d3d->dev,
+                 NULL, NULL, NULL, NULL) != D3DERR_DEVICELOST);
+#endif
+        if (!ret || d3d->needs_restore)
           return true;
         d3d9_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
       }
@@ -807,7 +814,7 @@ static bool d3d9_frame(void *data, const void *frame,
    }
 
    win32_update_title();
-   d3d9_swap(d3d, d3d->dev);
+   IDirect3DDevice9_Present(d3d->dev, NULL, NULL, NULL, NULL);
 
    return true;
 }

@@ -721,8 +721,8 @@ static bool d3d9_cg_renderchain_create_first_pass(
 
    d3d_matrix_identity(&ident);
 
-   d3d9_set_transform(dev, D3DTS_WORLD, (D3DMATRIX*)&ident);
-   d3d9_set_transform(dev, D3DTS_VIEW,  (D3DMATRIX*)&ident);
+   IDirect3DDevice9_SetTransform(dev, D3DTS_WORLD, (D3DMATRIX*)&ident);
+   IDirect3DDevice9_SetTransform(dev, D3DTS_VIEW,  (D3DMATRIX*)&ident);
 
    pass.info        = *info;
    pass.last_width  = 0;
