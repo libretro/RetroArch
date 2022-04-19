@@ -6261,7 +6261,7 @@ static enum runloop_state_enum runloop_check_state(
    bool widgets_active                 = dispwidget_get_ptr()->active;
 #endif
 #ifdef HAVE_CHEEVOS
-   bool cheevos_hardcore_active        = rcheevos_hardcore_active();
+   bool cheevos_hardcore_active        = false;
 #endif
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
@@ -6961,6 +6961,10 @@ static enum runloop_state_enum runloop_check_state(
       bool trig_frameadvance        = false;
       bool pause_pressed            = BIT256_GET(current_bits, RARCH_PAUSE_TOGGLE);
 #ifdef HAVE_CHEEVOS
+      /* make sure not to evaluate this before calling menu_driver_iterate
+       * as that may change its value */
+      cheevos_hardcore_active = rcheevos_hardcore_active();
+
       if (cheevos_hardcore_active)
       {
          static int unpaused_frames = 0;
