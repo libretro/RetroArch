@@ -844,9 +844,6 @@ void d3d9_get_overlay_interface(void *data,
       const video_overlay_interface_t **iface);
 #endif
 
-void d3d9_get_poke_interface(void *data,
-      const video_poke_interface_t **iface);
-
 void d3d9_set_nonblock_state(void *data, bool state,
       bool adaptive_vsync_enabled,
       unsigned swap_interval);
@@ -864,8 +861,6 @@ bool d3d9_has_windowed(void *data);
 bool d3d9_suppress_screensaver(void *data, bool enable);
 
 bool d3d9_process_shader(d3d9_video_t *d3d);
-
-bool d3d9_gfx_widgets_enabled(void *data);
 
 uintptr_t d3d9_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type);
@@ -900,7 +895,6 @@ void d3d9_apply_state_changes(void *data);
 bool d3d9_restore(d3d9_video_t *d3d);
 
 extern LPDIRECT3D9 g_pD3D9;
-extern const video_poke_interface_t d3d9_poke_interface;
 
 RETRO_END_DECLS
 

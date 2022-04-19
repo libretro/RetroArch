@@ -200,7 +200,6 @@ static bool renderchain_d3d_init_first(
    return false;
 }
 
-
 static bool d3d9_init_chain(d3d9_video_t *d3d,
       unsigned input_scale,
       bool rgb32)
@@ -813,7 +812,7 @@ static bool d3d9_frame(void *data, const void *frame,
    return true;
 }
 
-const video_poke_interface_t d3d9_poke_interface = {
+static const video_poke_interface_t d3d9_poke_interface = {
    d3d9_get_flags,
    d3d9_load_texture,
    d3d9_unload_texture,
@@ -846,6 +845,19 @@ const video_poke_interface_t d3d9_poke_interface = {
    NULL,                         /* set_hdr_contrast */
    NULL                          /* set_hdr_expand_gamut */
 };
+
+static void d3d9_get_poke_interface(void *data,
+      const video_poke_interface_t **iface)
+{
+   *iface = &d3d9_poke_interface;
+}
+
+#ifdef HAVE_GFX_WIDGETS
+static bool d3d9_gfx_widgets_enabled(void *data)
+{
+   return false; /* currently disabled due to memory issues */
+}
+#endif
 
 video_driver_t video_d3d9 = {
    d3d9_init,

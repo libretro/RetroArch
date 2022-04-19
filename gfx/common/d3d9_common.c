@@ -1737,16 +1737,3 @@ void d3d9_get_overlay_interface(void *data,
    *iface = &d3d9_overlay_interface;
 }
 #endif
-
-void d3d9_get_poke_interface(void *data,
-      const video_poke_interface_t **iface)
-{
-   *iface = &d3d9_poke_interface;
-}
-
-#ifdef HAVE_GFX_WIDGETS
-bool d3d9_gfx_widgets_enabled(void *data)
-{
-   return false; /* currently disabled due to memory issues */
-}
-#endif
