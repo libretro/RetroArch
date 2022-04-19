@@ -811,6 +811,92 @@ static INLINE void d3d9_convert_geometry(
    }
 }
 
+void d3d9_make_d3dpp(void *data,
+      const video_info_t *info, void *_d3dpp);
+
+void d3d9_calculate_rect(void *data,
+      unsigned *width, unsigned *height,
+      int *x, int *y,
+      bool force_full,
+      bool allow_rotate);
+
+void d3d9_set_font_rect(
+      d3d9_video_t *d3d,
+      const struct font_params *params);
+
+void d3d9_log_info(const struct LinkInfo *info);
+
+#ifdef HAVE_OVERLAY
+void d3d9_free_overlays(d3d9_video_t *d3d);
+#endif
+
+#if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
+void d3d9_free_overlay(d3d9_video_t *d3d, overlay_t *overlay);
+
+void d3d9_overlay_render(d3d9_video_t *d3d,
+      unsigned width,
+      unsigned height,
+      overlay_t *overlay, bool force_linear);
+#endif
+
+#if defined(HAVE_OVERLAY)
+void d3d9_get_overlay_interface(void *data,
+      const video_overlay_interface_t **iface);
+#endif
+
+void d3d9_get_poke_interface(void *data,
+      const video_poke_interface_t **iface);
+
+void d3d9_set_nonblock_state(void *data, bool state,
+      bool adaptive_vsync_enabled,
+      unsigned swap_interval);
+
+bool d3d9_alive(void *data);
+
+void d3d9_set_rotation(void *data, unsigned rot);
+
+void d3d9_viewport_info(void *data, struct video_viewport *vp);
+
+bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle);
+
+bool d3d9_has_windowed(void *data);
+
+bool d3d9_suppress_screensaver(void *data, bool enable);
+
+bool d3d9_process_shader(d3d9_video_t *d3d);
+
+bool d3d9_gfx_widgets_enabled(void *data);
+
+uintptr_t d3d9_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type);
+
+void d3d9_set_osd_msg(void *data,
+      const char *msg,
+      const void *params, void *font);
+
+void d3d9_unload_texture(void *data, 
+      bool threaded, uintptr_t id);
+
+void d3d9_set_video_mode(void *data,
+      unsigned width, unsigned height,
+      bool fullscreen);
+
+void d3d9_set_aspect_ratio(void *data, unsigned aspect_ratio_idx);
+
+void d3d9_apply_state_changes(void *data);
+
+void d3d9_set_menu_texture_frame(void *data,
+      const void *frame, bool rgb32, unsigned width, unsigned height,
+      float alpha);
+
+void d3d9_set_menu_texture_enable(void *data,
+      bool state, bool full_screen);
+
+bool d3d9_restore(d3d9_video_t *d3d);
+
+extern LPDIRECT3D9 g_pD3D9;
+extern const video_poke_interface_t d3d9_poke_interface;
+
 RETRO_END_DECLS
 
 #endif
