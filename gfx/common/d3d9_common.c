@@ -948,6 +948,35 @@ void d3d9_viewport_info(void *data, struct video_viewport *vp)
    vp->full_height     = height;
 }
 
+static void d3d9_set_font_rect(
+      d3d9_video_t *d3d,
+      const struct font_params *params)
+{
+   settings_t *settings             = config_get_ptr();
+   float pos_x                      = settings->floats.video_msg_pos_x;
+   float pos_y                      = settings->floats.video_msg_pos_y;
+   float font_size                  = settings->floats.video_font_size;
+
+   if (params)
+   {
+      pos_x                       = params->x;
+      pos_y                       = params->y;
+      font_size                  *= params->scale;
+   }
+
+   d3d->font_rect.left            = d3d->video_info.width * pos_x;
+   d3d->font_rect.right           = d3d->video_info.width;
+   d3d->font_rect.top             = (1.0f - pos_y) * d3d->video_info.height - font_size;
+   d3d->font_rect.bottom          = d3d->video_info.height;
+
+   d3d->font_rect_shifted         = d3d->font_rect;
+   d3d->font_rect_shifted.left   -= 2;
+   d3d->font_rect_shifted.right  -= 2;
+   d3d->font_rect_shifted.top    += 2;
+   d3d->font_rect_shifted.bottom += 2;
+}
+
+
 void d3d9_set_viewport(void *data,
       unsigned width, unsigned height,
       bool force_full,
@@ -1538,37 +1567,6 @@ void d3d9_calculate_rect(d3d9_video_t *d3d,
          }
       }
    }
-}
-
-void d3d9_set_font_rect(
-      d3d9_video_t *d3d,
-      const struct font_params *params)
-{
-   settings_t *settings             = config_get_ptr();
-   float pos_x                      = settings->floats.video_msg_pos_x;
-   float pos_y                      = settings->floats.video_msg_pos_y;
-   float font_size                  = settings->floats.video_font_size;
-
-   if (params)
-   {
-      pos_x                       = params->x;
-      pos_y                       = params->y;
-      font_size                  *= params->scale;
-   }
-
-   if (!d3d)
-      return;
-
-   d3d->font_rect.left            = d3d->video_info.width * pos_x;
-   d3d->font_rect.right           = d3d->video_info.width;
-   d3d->font_rect.top             = (1.0f - pos_y) * d3d->video_info.height - font_size;
-   d3d->font_rect.bottom          = d3d->video_info.height;
-
-   d3d->font_rect_shifted         = d3d->font_rect;
-   d3d->font_rect_shifted.left   -= 2;
-   d3d->font_rect_shifted.right  -= 2;
-   d3d->font_rect_shifted.top    += 2;
-   d3d->font_rect_shifted.bottom += 2;
 }
 
 void d3d9_set_rotation(void *data, unsigned rot)

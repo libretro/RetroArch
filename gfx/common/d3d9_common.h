@@ -820,10 +820,6 @@ void d3d9_calculate_rect(d3d9_video_t *d3d,
       bool force_full,
       bool allow_rotate);
 
-void d3d9_set_font_rect(
-      d3d9_video_t *d3d,
-      const struct font_params *params);
-
 void d3d9_log_info(const struct LinkInfo *info);
 
 #ifdef HAVE_OVERLAY
