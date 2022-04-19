@@ -72,7 +72,6 @@
 /* TODO/FIXME - Temporary workaround for D3D9 not being able to poll flags during init */
 static gfx_ctx_driver_t d3d9_fake_context;
 
-LPDIRECT3D9 g_pD3D9;
 static enum rarch_shader_type supported_shader_type = RARCH_SHADER_NONE;
 
 extern d3d9_renderchain_driver_t cg_d3d9_renderchain;

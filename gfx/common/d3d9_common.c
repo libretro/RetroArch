@@ -53,6 +53,7 @@
 #define FS_PRESENTINTERVAL(pp) ((pp)->PresentationInterval)
 
 /* TODO/FIXME - static globals */
+LPDIRECT3D9 g_pD3D9;
 static UINT d3d9_SDKVersion = 0;
 #ifdef HAVE_DYNAMIC_D3D
 static dylib_t g_d3d9_dll;
