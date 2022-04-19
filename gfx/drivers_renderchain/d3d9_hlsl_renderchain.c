@@ -609,7 +609,8 @@ static bool hlsl_d3d9_renderchain_render(
       viewport.MaxZ   = 1.0f;
 
       d3d9_set_viewports(chain->chain.dev, &viewport);
-      d3d9_clear(chain->chain.dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+      IDirect3DDevice9_Clear(chain->chain.dev, 0, 0, D3DCLEAR_TARGET,
+            0, 1, 0);
 
       viewport.Width  = out_width;
       viewport.Height = out_height;

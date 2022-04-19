@@ -725,7 +725,8 @@ static bool d3d9_frame(void *data, const void *frame,
    screen_vp.Width  = width;
    screen_vp.Height = height;
    d3d9_set_viewports(d3d->dev, &screen_vp);
-   d3d9_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+   IDirect3DDevice9_Clear(d3d->dev, 0, 0, D3DCLEAR_TARGET,
+         0, 1, 0);
 
    d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const float*)&d3d->mvp_transposed, 4);
    if (!d3d->renderchain_driver->render(
@@ -750,7 +751,8 @@ static bool d3d9_frame(void *data, const void *frame,
 #endif
         if (!ret || d3d->needs_restore)
           return true;
-        d3d9_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+        IDirect3DDevice9_Clear(d3d->dev, 0, 0, D3DCLEAR_TARGET,
+              0, 1, 0);
       }
    }   
 

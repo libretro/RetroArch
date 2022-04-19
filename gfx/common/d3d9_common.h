@@ -251,16 +251,6 @@ static INLINE void d3d9_draw_primitive(
    d3d9_end_scene(dev);
 }
 
-static INLINE void d3d9_clear(
-      LPDIRECT3DDEVICE9 dev,
-      unsigned count, const D3DRECT *rects, unsigned flags,
-      INT32 color, float z, unsigned stencil)
-{
-   if (dev)
-      IDirect3DDevice9_Clear(dev, count, rects, flags,
-            color, z, stencil);
-}
-
 static INLINE bool d3d9_lock_rectangle(
       LPDIRECT3DTEXTURE9 tex,
       unsigned level,
