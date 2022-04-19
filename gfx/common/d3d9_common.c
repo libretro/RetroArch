@@ -674,10 +674,9 @@ static D3DFORMAT d3d9_get_color_format_backbuffer(bool rgb32, bool windowed)
 bool d3d9_has_windowed(void *data) { return true; }
 #endif
 
-void d3d9_make_d3dpp(void *data,
+void d3d9_make_d3dpp(d3d9_video_t *d3d,
       const video_info_t *info, void *_d3dpp)
 {
-   d3d9_video_t *d3d              = (d3d9_video_t*)data;
    D3DPRESENT_PARAMETERS *d3dpp   = (D3DPRESENT_PARAMETERS*)_d3dpp;
 #ifdef _XBOX
    /* TODO/FIXME - get rid of global state dependencies. */
@@ -833,27 +832,22 @@ void d3d9_log_info(const struct LinkInfo *info)
          info->pass->filter == RARCH_FILTER_LINEAR ? "true" : "false");
 }
 
-static bool d3d9_set_resize(d3d9_video_t *d3d,
+static void d3d9_set_resize(d3d9_video_t *d3d,
       unsigned new_width, unsigned new_height)
 {
    /* No changes? */
    if (     (new_width  == d3d->video_info.width)
          && (new_height == d3d->video_info.height))
-      return false;
+      return;
 
    d3d->video_info.width  = new_width;
    d3d->video_info.height = new_height;
    video_driver_set_size(new_width, new_height);
-
-   return true;
 }
 
-static bool d3d9_init_singlepass(d3d9_video_t *d3d)
+static void d3d9_init_singlepass(d3d9_video_t *d3d)
 {
-   struct video_shader_pass *pass = NULL;
-
-   if (!d3d)
-      return false;
+   struct video_shader_pass *pass        = NULL;
 
    memset(&d3d->shader, 0, sizeof(d3d->shader));
    d3d->shader.passes                    = 1;
@@ -870,8 +864,6 @@ static bool d3d9_init_singlepass(d3d9_video_t *d3d)
    if (!string_is_empty(d3d->shader_path))
       strlcpy(pass->source.path, d3d->shader_path,
             sizeof(pass->source.path));
-
-   return true;
 }
 
 static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
@@ -930,13 +922,14 @@ static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
 bool d3d9_process_shader(d3d9_video_t *d3d)
 {
    const char *shader_path = d3d->shader_path;
-   if (d3d && !string_is_empty(shader_path))
+   if (!string_is_empty(shader_path))
    {
       RARCH_ERR("[D3D9]: Failed to parse shader preset.\n");
       return d3d9_init_multipass(d3d, shader_path);
    }
 
-   return d3d9_init_singlepass(d3d);
+   d3d9_init_singlepass(d3d);
+   return true;
 }
 
 void d3d9_viewport_info(void *data, struct video_viewport *vp)
@@ -954,6 +947,35 @@ void d3d9_viewport_info(void *data, struct video_viewport *vp)
    vp->full_width      = width;
    vp->full_height     = height;
 }
+
+void d3d9_set_viewport(void *data,
+      unsigned width, unsigned height,
+      bool force_full,
+      bool allow_rotate)
+{
+   int x               = 0;
+   int y               = 0;
+   d3d9_video_t *d3d   = (d3d9_video_t*)data;
+
+   d3d9_calculate_rect(d3d, &width, &height, &x, &y,
+         force_full, allow_rotate);
+
+   /* D3D doesn't support negative X/Y viewports ... */
+   if (x < 0)
+      x = 0;
+   if (y < 0)
+      y = 0;
+
+   d3d->final_viewport.X      = x;
+   d3d->final_viewport.Y      = y;
+   d3d->final_viewport.Width  = width;
+   d3d->final_viewport.Height = height;
+   d3d->final_viewport.MinZ   = 0.0f;
+   d3d->final_viewport.MaxZ   = 1.0f;
+
+   d3d9_set_font_rect(d3d, NULL);
+}
+
 
 #if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
 void d3d9_overlay_render(d3d9_video_t *d3d,
@@ -978,7 +1000,7 @@ void d3d9_overlay_render(d3d9_video_t *d3d,
       D3DDECL_END()
    };
 
-   if (!d3d || !overlay || !overlay->tex)
+   if (!overlay || !overlay->tex)
       return;
 
    dev                 = d3d->dev;
@@ -1000,7 +1022,7 @@ void d3d9_overlay_render(d3d9_video_t *d3d,
 
    for (i = 0; i < 4; i++)
    {
-      vert[i].z    = 0.5f;
+      vert[i].z       = 0.5f;
       vert[i].color   = (((uint32_t)(overlay->alpha_mod * 0xFF)) << 24) | 0xFFFFFF;
    }
 
@@ -1086,9 +1108,9 @@ void d3d9_set_nonblock_state(void *data, bool state,
       unsigned swap_interval)
 {
 #ifdef _XBOX
-   int interval                 = 0;
+   int interval          = 0;
 #endif
-   d3d9_video_t            *d3d = (d3d9_video_t*)data;
+   d3d9_video_t     *d3d = (d3d9_video_t*)data;
 
    if (!d3d)
       return;
@@ -1107,7 +1129,7 @@ void d3d9_set_nonblock_state(void *data, bool state,
          D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE
          );
 #else
-   d3d->needs_restore = true;
+   d3d->needs_restore    = true;
    d3d9_restore(d3d);
 #endif
 }
@@ -1439,14 +1461,13 @@ end:
    return ret;
 }
 
-void d3d9_calculate_rect(void *data,
+void d3d9_calculate_rect(d3d9_video_t *d3d,
       unsigned *width, unsigned *height,
       int *x, int *y,
       bool force_full,
       bool allow_rotate)
 {
    float device_aspect   = (float)*width / *height;
-   d3d9_video_t *d3d     = (d3d9_video_t*)data;
    settings_t *settings  = config_get_ptr();
    bool scale_integer    = settings->bools.video_scale_integer;
 

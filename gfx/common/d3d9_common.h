@@ -811,10 +811,10 @@ static INLINE void d3d9_convert_geometry(
    }
 }
 
-void d3d9_make_d3dpp(void *data,
+void d3d9_make_d3dpp(d3d9_video_t *d3d,
       const video_info_t *info, void *_d3dpp);
 
-void d3d9_calculate_rect(void *data,
+void d3d9_calculate_rect(d3d9_video_t *d3d,
       unsigned *width, unsigned *height,
       int *x, int *y,
       bool force_full,
@@ -883,14 +883,19 @@ void d3d9_set_video_mode(void *data,
 
 void d3d9_set_aspect_ratio(void *data, unsigned aspect_ratio_idx);
 
-void d3d9_apply_state_changes(void *data);
-
 void d3d9_set_menu_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha);
 
+void d3d9_set_viewport(void *data,
+      unsigned width, unsigned height,
+      bool force_full,
+      bool allow_rotate);
+
 void d3d9_set_menu_texture_enable(void *data,
       bool state, bool full_screen);
+
+void d3d9_apply_state_changes(void *data);
 
 bool d3d9_restore(d3d9_video_t *d3d);
 

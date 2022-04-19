@@ -48,12 +48,7 @@
 #include "../video_coord_array.h"
 #include "../../configuration.h"
 #include "../../dynamic.h"
-#include "../../ui/ui_companion_driver.h"
 #include "../../frontend/frontend_driver.h"
-
-#ifdef HAVE_THREADS
-#include "../video_thread_wrapper.h"
-#endif
 
 #include "../common/win32_common.h"
 
@@ -74,7 +69,7 @@
 #error "UWP does not support D3D9"
 #endif
 
-/* Temporary workaround for d3d9 not being able to poll flags during init */
+/* TODO/FIXME - Temporary workaround for D3D9 not being able to poll flags during init */
 static gfx_ctx_driver_t d3d9_fake_context;
 
 LPDIRECT3D9 g_pD3D9;
@@ -144,7 +139,6 @@ static bool d3d9_set_shader(void *data,
    return false;
 #endif
 }
-
 
 static void d3d9_deinit_chain(d3d9_video_t *d3d)
 {
@@ -320,10 +314,9 @@ static void d3d9_deinitialize(d3d9_video_t *d3d)
    d3d->menu_display.decl   = NULL;
 }
 
-static bool d3d9_init_base(void *data, const video_info_t *info)
+static bool d3d9_init_base(d3d9_video_t *d3d, const video_info_t *info)
 {
    D3DPRESENT_PARAMETERS d3dpp;
-   d3d9_video_t *d3d  = (d3d9_video_t*)data;
 #ifndef _XBOX
    HWND focus_window  = win32_get_window();
 #endif
@@ -336,62 +329,21 @@ static bool d3d9_init_base(void *data, const video_info_t *info)
    d3d9_make_d3dpp(d3d, info, &d3dpp);
 
    if (!g_pD3D9)
-   {
-      RARCH_ERR("[D3D9]: Failed to create D3D interface.\n");
       return false;
-   }
-
    if (!d3d9_create_device(&d3d->dev, &d3dpp,
             g_pD3D9,
             focus_window,
             d3d->cur_mon_id)
       )
-   {
-      RARCH_ERR("[D3D9]: Failed to initialize device.\n");
       return false;
-   }
-
    return true;
 }
-
-static void d3d9_set_viewport(void *data,
-      unsigned width, unsigned height,
-      bool force_full,
-      bool allow_rotate)
-{
-   int x               = 0;
-   int y               = 0;
-   d3d9_video_t *d3d   = (d3d9_video_t*)data;
-
-   d3d9_calculate_rect(data, &width, &height, &x, &y,
-         force_full, allow_rotate);
-
-   /* D3D doesn't support negative X/Y viewports ... */
-   if (x < 0)
-      x = 0;
-   if (y < 0)
-      y = 0;
-
-   d3d->final_viewport.X      = x;
-   d3d->final_viewport.Y      = y;
-   d3d->final_viewport.Width  = width;
-   d3d->final_viewport.Height = height;
-   d3d->final_viewport.MinZ   = 0.0f;
-   d3d->final_viewport.MaxZ   = 1.0f;
-
-   d3d9_set_font_rect(d3d, NULL);
-}
-
-
 
 static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
 {
    unsigned width, height;
    bool ret             = true;
    settings_t *settings = config_get_ptr();
-
-   if (!d3d)
-      return false;
 
    if (!g_pD3D9)
       ret = d3d9_init_base(d3d, info);
@@ -603,7 +555,11 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
 
       version_str[0] = '\0';
 
-      snprintf(version_str, sizeof(version_str), "%u.%u.%u.%u", HIWORD(ident.DriverVersion.HighPart), LOWORD(ident.DriverVersion.HighPart), HIWORD(ident.DriverVersion.LowPart), LOWORD(ident.DriverVersion.LowPart));
+      snprintf(version_str, sizeof(version_str), "%u.%u.%u.%u",
+            HIWORD(ident.DriverVersion.HighPart),
+            LOWORD(ident.DriverVersion.HighPart),
+            HIWORD(ident.DriverVersion.LowPart),
+            LOWORD(ident.DriverVersion.LowPart));
 
       RARCH_LOG("[D3D9]: Using GPU: \"%s\".\n", ident.Description);
       RARCH_LOG("[D3D9]: GPU API Version: %s\n", version_str);
@@ -710,7 +666,6 @@ bool d3d9_restore(d3d9_video_t *d3d)
 
    return true;
 }
-
 
 static bool d3d9_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
