@@ -92,53 +92,6 @@ static uint32_t d3d9_get_flags(void *data)
    return flags;
 }
 
-static bool d3d9_set_shader(void *data,
-      enum rarch_shader_type type, const char *path)
-{
-#if defined(HAVE_CG) || defined(HAVE_HLSL)
-   d3d9_video_t *d3d = (d3d9_video_t*)data;
-
-   if (!d3d)
-      return false;
-
-   if (!string_is_empty(d3d->shader_path))
-      free(d3d->shader_path);
-   d3d->shader_path = NULL;
-
-   switch (type)
-   {
-      case RARCH_SHADER_CG:
-      case RARCH_SHADER_HLSL:
-
-         if (type != supported_shader_type)
-         {
-            RARCH_WARN("[D3D9]: Shader preset %s is using unsupported shader type %s, falling back to stock %s.\n",
-               path, video_shader_type_to_str(type), video_shader_type_to_str(supported_shader_type));
-            break;
-         }
-      
-         if (!string_is_empty(path))
-            d3d->shader_path = strdup(path);
-
-         break;
-      case RARCH_SHADER_NONE:
-         break;
-      default:
-         RARCH_WARN("[D3D9]: Only Cg shaders are supported. Falling back to stock.\n");
-   }
-
-   if (!d3d9_process_shader(d3d) || !d3d9_restore(d3d))
-   {
-      RARCH_ERR("[D3D9]: Failed to set shader.\n");
-      return false;
-   }
-
-   return true;
-#else
-   return false;
-#endif
-}
-
 static void d3d9_deinit_chain(d3d9_video_t *d3d)
 {
    if (!d3d || !d3d->renderchain_driver)
@@ -149,6 +102,46 @@ static void d3d9_deinit_chain(d3d9_video_t *d3d)
 
    d3d->renderchain_driver = NULL;
    d3d->renderchain_data   = NULL;
+}
+
+static void d3d9_deinitialize(d3d9_video_t *d3d)
+{
+   if (!d3d)
+      return;
+
+   font_driver_free_osd();
+
+   d3d9_deinit_chain(d3d);
+   d3d9_vertex_buffer_free(d3d->menu_display.buffer,
+         d3d->menu_display.decl);
+
+   d3d->menu_display.buffer = NULL;
+   d3d->menu_display.decl   = NULL;
+}
+
+static bool d3d9_init_base(d3d9_video_t *d3d, const video_info_t *info)
+{
+   D3DPRESENT_PARAMETERS d3dpp;
+#ifndef _XBOX
+   HWND focus_window  = win32_get_window();
+#endif
+
+   memset(&d3dpp, 0, sizeof(d3dpp));
+
+   g_pD3D9            = (LPDIRECT3D9)d3d9_create();
+
+   /* this needs g_pD3D9 created first */
+   d3d9_make_d3dpp(d3d, info, &d3dpp);
+
+   if (!g_pD3D9)
+      return false;
+   if (!d3d9_create_device(&d3d->dev, &d3dpp,
+            g_pD3D9,
+            focus_window,
+            d3d->cur_mon_id)
+      )
+      return false;
+   return true;
 }
 
 static bool renderchain_d3d_init_first(
@@ -198,6 +191,7 @@ static bool renderchain_d3d_init_first(
 
    return false;
 }
+
 
 static bool d3d9_init_chain(d3d9_video_t *d3d,
       unsigned input_scale,
@@ -297,45 +291,6 @@ static bool d3d9_init_chain(d3d9_video_t *d3d,
    return true;
 }
 
-static void d3d9_deinitialize(d3d9_video_t *d3d)
-{
-   if (!d3d)
-      return;
-
-   font_driver_free_osd();
-
-   d3d9_deinit_chain(d3d);
-   d3d9_vertex_buffer_free(d3d->menu_display.buffer,
-         d3d->menu_display.decl);
-
-   d3d->menu_display.buffer = NULL;
-   d3d->menu_display.decl   = NULL;
-}
-
-static bool d3d9_init_base(d3d9_video_t *d3d, const video_info_t *info)
-{
-   D3DPRESENT_PARAMETERS d3dpp;
-#ifndef _XBOX
-   HWND focus_window  = win32_get_window();
-#endif
-
-   memset(&d3dpp, 0, sizeof(d3dpp));
-
-   g_pD3D9            = (LPDIRECT3D9)d3d9_create();
-
-   /* this needs g_pD3D9 created first */
-   d3d9_make_d3dpp(d3d, info, &d3dpp);
-
-   if (!g_pD3D9)
-      return false;
-   if (!d3d9_create_device(&d3d->dev, &d3dpp,
-            g_pD3D9,
-            focus_window,
-            d3d->cur_mon_id)
-      )
-      return false;
-   return true;
-}
 
 static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
 {
@@ -431,6 +386,70 @@ static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
    d3d9_set_render_state(d3d->dev, D3DRS_SCISSORTESTENABLE, TRUE);
 
    return true;
+}
+
+
+static bool d3d9_restore(d3d9_video_t *d3d)
+{
+   d3d9_deinitialize(d3d);
+
+   if (!d3d9_initialize(d3d, &d3d->video_info))
+   {
+      RARCH_ERR("[D3D9]: Restore error.\n");
+      return false;
+   }
+
+   d3d->needs_restore = false;
+
+   return true;
+}
+
+
+static bool d3d9_set_shader(void *data,
+      enum rarch_shader_type type, const char *path)
+{
+#if defined(HAVE_CG) || defined(HAVE_HLSL)
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+
+   if (!d3d)
+      return false;
+
+   if (!string_is_empty(d3d->shader_path))
+      free(d3d->shader_path);
+   d3d->shader_path = NULL;
+
+   switch (type)
+   {
+      case RARCH_SHADER_CG:
+      case RARCH_SHADER_HLSL:
+
+         if (type != supported_shader_type)
+         {
+            RARCH_WARN("[D3D9]: Shader preset %s is using unsupported shader type %s, falling back to stock %s.\n",
+               path, video_shader_type_to_str(type), video_shader_type_to_str(supported_shader_type));
+            break;
+         }
+      
+         if (!string_is_empty(path))
+            d3d->shader_path = strdup(path);
+
+         break;
+      case RARCH_SHADER_NONE:
+         break;
+      default:
+         RARCH_WARN("[D3D9]: Only Cg shaders are supported. Falling back to stock.\n");
+   }
+
+   if (!d3d9_process_shader(d3d) || !d3d9_restore(d3d))
+   {
+      RARCH_ERR("[D3D9]: Failed to set shader.\n");
+      return false;
+   }
+
+   return true;
+#else
+   return false;
+#endif
 }
 
 static bool d3d9_init_internal(d3d9_video_t *d3d,
@@ -650,21 +669,6 @@ static void d3d9_free(void *data)
    free(d3d);
 }
 
-bool d3d9_restore(d3d9_video_t *d3d)
-{
-   d3d9_deinitialize(d3d);
-
-   if (!d3d9_initialize(d3d, &d3d->video_info))
-   {
-      RARCH_ERR("[D3D9]: Restore error.\n");
-      return false;
-   }
-
-   d3d->needs_restore = false;
-
-   return true;
-}
-
 static bool d3d9_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count, unsigned pitch,
@@ -866,6 +870,83 @@ static bool d3d9_gfx_widgets_enabled(void *data)
    return false; /* currently disabled due to memory issues */
 }
 #endif
+
+static void d3d9_set_resize(d3d9_video_t *d3d,
+      unsigned new_width, unsigned new_height)
+{
+   /* No changes? */
+   if (     (new_width  == d3d->video_info.width)
+         && (new_height == d3d->video_info.height))
+      return;
+
+   d3d->video_info.width  = new_width;
+   d3d->video_info.height = new_height;
+   video_driver_set_size(new_width, new_height);
+}
+
+static bool d3d9_alive(void *data)
+{
+   unsigned temp_width   = 0;
+   unsigned temp_height  = 0;
+   bool ret              = false;
+   bool        quit      = false;
+   bool        resize    = false;
+   d3d9_video_t *d3d     = (d3d9_video_t*)data;
+
+   /* Needed because some context drivers don't track their sizes */
+   video_driver_get_size(&temp_width, &temp_height);
+
+   win32_check_window(NULL, &quit, &resize, &temp_width, &temp_height);
+
+   if (quit)
+      d3d->quitting      = quit;
+
+   if (resize)
+   {
+      d3d->should_resize = true;
+      d3d9_set_resize(d3d, temp_width, temp_height);
+      d3d9_restore(d3d);
+   }
+
+   ret = !quit;
+
+   if (  temp_width  != 0 &&
+         temp_height != 0)
+      video_driver_set_size(temp_width, temp_height);
+
+   return ret;
+}
+
+static void d3d9_set_nonblock_state(void *data, bool state,
+      bool adaptive_vsync_enabled,
+      unsigned swap_interval)
+{
+#ifdef _XBOX
+   int interval          = 0;
+#endif
+   d3d9_video_t     *d3d = (d3d9_video_t*)data;
+
+   if (!d3d)
+      return;
+
+#ifdef _XBOX
+   if (!state)
+      interval           = 1;
+#endif
+
+   d3d->video_info.vsync = !state;
+
+#ifdef _XBOX
+   d3d9_set_render_state(d3d->dev,
+         D3DRS_PRESENTINTERVAL,
+         interval ?
+         D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE
+         );
+#else
+   d3d->needs_restore    = true;
+   d3d9_restore(d3d);
+#endif
+}
 
 video_driver_t video_d3d9 = {
    d3d9_init,

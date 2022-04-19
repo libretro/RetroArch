@@ -781,12 +781,6 @@ void d3d9_get_overlay_interface(void *data,
       const video_overlay_interface_t **iface);
 #endif
 
-void d3d9_set_nonblock_state(void *data, bool state,
-      bool adaptive_vsync_enabled,
-      unsigned swap_interval);
-
-bool d3d9_alive(void *data);
-
 void d3d9_set_rotation(void *data, unsigned rot);
 
 void d3d9_viewport_info(void *data, struct video_viewport *vp);
@@ -828,8 +822,6 @@ void d3d9_set_menu_texture_enable(void *data,
       bool state, bool full_screen);
 
 void d3d9_apply_state_changes(void *data);
-
-bool d3d9_restore(d3d9_video_t *d3d);
 
 extern LPDIRECT3D9 g_pD3D9;
 

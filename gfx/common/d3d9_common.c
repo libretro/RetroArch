@@ -833,19 +833,6 @@ void d3d9_log_info(const struct LinkInfo *info)
          info->pass->filter == RARCH_FILTER_LINEAR ? "true" : "false");
 }
 
-static void d3d9_set_resize(d3d9_video_t *d3d,
-      unsigned new_width, unsigned new_height)
-{
-   /* No changes? */
-   if (     (new_width  == d3d->video_info.width)
-         && (new_height == d3d->video_info.height))
-      return;
-
-   d3d->video_info.width  = new_width;
-   d3d->video_info.height = new_height;
-   video_driver_set_size(new_width, new_height);
-}
-
 static void d3d9_init_singlepass(d3d9_video_t *d3d)
 {
    struct video_shader_pass *pass        = NULL;
@@ -1132,70 +1119,6 @@ void d3d9_free_overlay(d3d9_video_t *d3d, overlay_t *overlay)
    d3d9_vertex_buffer_free(overlay->vert_buf, NULL);
 }
 #endif
-
-void d3d9_set_nonblock_state(void *data, bool state,
-      bool adaptive_vsync_enabled,
-      unsigned swap_interval)
-{
-#ifdef _XBOX
-   int interval          = 0;
-#endif
-   d3d9_video_t     *d3d = (d3d9_video_t*)data;
-
-   if (!d3d)
-      return;
-
-#ifdef _XBOX
-   if (!state)
-      interval           = 1;
-#endif
-
-   d3d->video_info.vsync = !state;
-
-#ifdef _XBOX
-   d3d9_set_render_state(d3d->dev,
-         D3DRS_PRESENTINTERVAL,
-         interval ?
-         D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE
-         );
-#else
-   d3d->needs_restore    = true;
-   d3d9_restore(d3d);
-#endif
-}
-
-bool d3d9_alive(void *data)
-{
-   unsigned temp_width   = 0;
-   unsigned temp_height  = 0;
-   bool ret              = false;
-   bool        quit      = false;
-   bool        resize    = false;
-   d3d9_video_t *d3d     = (d3d9_video_t*)data;
-
-   /* Needed because some context drivers don't track their sizes */
-   video_driver_get_size(&temp_width, &temp_height);
-
-   win32_check_window(NULL, &quit, &resize, &temp_width, &temp_height);
-
-   if (quit)
-      d3d->quitting      = quit;
-
-   if (resize)
-   {
-      d3d->should_resize = true;
-      d3d9_set_resize(d3d, temp_width, temp_height);
-      d3d9_restore(d3d);
-   }
-
-   ret = !quit;
-
-   if (  temp_width  != 0 &&
-         temp_height != 0)
-      video_driver_set_size(temp_width, temp_height);
-
-   return ret;
-}
 
 bool d3d9_suppress_screensaver(void *data, bool enable)
 {
