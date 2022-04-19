@@ -301,7 +301,12 @@ const video_driver_t *video_drivers[] = {
    &video_d3d10,
 #endif
 #if defined(HAVE_D3D9)
-   &video_d3d9,
+#if defined(HAVE_HLSL)
+   &video_d3d9_hlsl,
+#endif
+#if defined(HAVE_CG)
+   &video_d3d9_cg,
+#endif
 #endif
 #if defined(HAVE_D3D8)
    &video_d3d8,
@@ -453,8 +458,10 @@ video_driver_t *hw_render_context_driver(
 #endif
       case RETRO_HW_CONTEXT_DIRECT3D:
 #if defined(HAVE_D3D9)
+#if defined(HAVE_HLSL)
          if (major == 9)
-            return &video_d3d9;
+            return &video_d3d9_hlsl;
+#endif
 #endif
 #if defined(HAVE_D3D11)
          if (major == 11)
@@ -506,8 +513,10 @@ const char *hw_render_context_name(
       return "d3d11";
 #endif
 #ifdef HAVE_D3D9
+#if defined(HAVE_HLSL)
    if (type == RETRO_HW_CONTEXT_DIRECT3D && major == 9)
-      return "d3d9";
+      return "d3d9_hlsl";
+#endif
 #endif
    return "N/A";
 }
@@ -531,7 +540,7 @@ enum retro_hw_context_type hw_render_context_type(const char *s)
       return RETRO_HW_CONTEXT_DIRECT3D;
 #endif
 #ifdef HAVE_D3D11
-   if (string_is_equal(s, "d3d9"))
+   if (string_is_equal(s, "d3d9_hlsl"))
       return RETRO_HW_CONTEXT_DIRECT3D;
 #endif
    return RETRO_HW_CONTEXT_NONE;
@@ -3134,7 +3143,7 @@ enum gfx_ctx_api video_context_driver_get_api(void)
          : NULL;
       if (string_starts_with_size(video_ident, "d3d", STRLEN_CONST("d3d")))
       {
-         if (string_is_equal(video_ident, "d3d9"))
+         if (string_is_equal(video_ident, "d3d9_hlsl"))
             return GFX_CTX_DIRECT3D9_API;
          else if (string_is_equal(video_ident, "d3d10"))
             return GFX_CTX_DIRECT3D10_API;

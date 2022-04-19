@@ -88,7 +88,8 @@ enum video_driver_enum
    VIDEO_CTR,
    VIDEO_SWITCH,
    VIDEO_D3D8,
-   VIDEO_D3D9,
+   VIDEO_D3D9_CG,
+   VIDEO_D3D9_HLSL,
    VIDEO_D3D10,
    VIDEO_D3D11,
    VIDEO_D3D12,
@@ -960,8 +961,10 @@ const char *config_get_default_video(void)
          return "xenon360";
       case VIDEO_D3D8:
          return "d3d8";
-      case VIDEO_D3D9:
-         return "d3d9";
+      case VIDEO_D3D9_CG:
+         return "d3d9_cg";
+      case VIDEO_D3D9_HLSL:
+         return "d3d9_hlsl";
       case VIDEO_D3D10:
          return "d3d10";
       case VIDEO_D3D11:
@@ -2991,9 +2994,9 @@ static bool check_menu_driver_compatibility(settings_t *settings)
    /* TODO/FIXME - maintenance hazard */
    if (string_starts_with_size(video_driver, "d3d", STRLEN_CONST("d3d")))
       if (
-            string_is_equal(video_driver, "d3d9")   ||
-            string_is_equal(video_driver, "d3d10")  ||
-            string_is_equal(video_driver, "d3d11")  ||
+            string_is_equal(video_driver, "d3d9_hlsl") ||
+            string_is_equal(video_driver, "d3d10")     ||
+            string_is_equal(video_driver, "d3d11")     ||
             string_is_equal(video_driver, "d3d12")
          )
       return true;

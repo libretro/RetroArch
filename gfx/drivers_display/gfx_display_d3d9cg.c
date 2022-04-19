@@ -29,31 +29,31 @@
 #include "../common/d3d_common.h"
 #include "../common/d3d9_common.h"
 
-static const float d3d9_vertexes[] = {
+static const float d3d9_cg_vertexes[] = {
    0, 0,
    1, 0,
    0, 1,
    1, 1
 };
 
-static const float d3d9_tex_coords[] = {
+static const float d3d9_cg_tex_coords[] = {
    0, 1,
    1, 1,
    0, 0,
    1, 0
 };
 
-static const float *gfx_display_d3d9_get_default_vertices(void)
+static const float *gfx_display_d3d9_cg_get_default_vertices(void)
 {
-   return &d3d9_vertexes[0];
+   return &d3d9_cg_vertexes[0];
 }
 
-static const float *gfx_display_d3d9_get_default_tex_coords(void)
+static const float *gfx_display_d3d9_cg_get_default_tex_coords(void)
 {
-   return &d3d9_tex_coords[0];
+   return &d3d9_cg_tex_coords[0];
 }
 
-static void *gfx_display_d3d9_get_default_mvp(void *data)
+static void *gfx_display_d3d9_cg_get_default_mvp(void *data)
 {
    static float id[] =         { 1.0f, 0.0f, 0.0f, 0.0f,
                                  0.0f, 1.0f, 0.0f, 0.0f,
@@ -63,7 +63,7 @@ static void *gfx_display_d3d9_get_default_mvp(void *data)
    return &id;
 }
 
-static INT32 gfx_display_prim_to_d3d9_enum(
+static INT32 gfx_display_prim_to_d3d9_cg_enum(
       enum gfx_display_prim_type prim_type)
 {
    switch (prim_type)
@@ -80,7 +80,7 @@ static INT32 gfx_display_prim_to_d3d9_enum(
    return 0;
 }
 
-static void gfx_display_d3d9_blend_begin(void *data)
+static void gfx_display_d3d9_cg_blend_begin(void *data)
 {
    d3d9_video_t *d3d = (d3d9_video_t*)data;
 
@@ -90,7 +90,7 @@ static void gfx_display_d3d9_blend_begin(void *data)
    d3d9_enable_blend_func(d3d->dev);
 }
 
-static void gfx_display_d3d9_blend_end(void *data)
+static void gfx_display_d3d9_cg_blend_end(void *data)
 {
    d3d9_video_t *d3d = (d3d9_video_t*)data;
 
@@ -100,7 +100,7 @@ static void gfx_display_d3d9_blend_end(void *data)
    d3d9_disable_blend_func(d3d->dev);
 }
 
-static void gfx_display_d3d9_bind_texture(gfx_display_ctx_draw_t *draw,
+static void gfx_display_d3d9_cg_bind_texture(gfx_display_ctx_draw_t *draw,
       d3d9_video_t *d3d)
 {
    LPDIRECT3DDEVICE9 dev = d3d->dev;
@@ -113,7 +113,7 @@ static void gfx_display_d3d9_bind_texture(gfx_display_ctx_draw_t *draw,
    d3d9_set_sampler_mipfilter(dev, 0, D3DTEXF_COMM_LINEAR);
 }
 
-static void gfx_display_d3d9_draw(gfx_display_ctx_draw_t *draw,
+static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
    unsigned i;
@@ -147,9 +147,9 @@ static void gfx_display_d3d9_draw(gfx_display_ctx_draw_t *draw,
    color        = draw->coords->color;
 
    if (!vertex)
-      vertex    = &d3d9_vertexes[0];
+      vertex    = &d3d9_cg_vertexes[0];
    if (!tex_coord)
-      tex_coord = &d3d9_tex_coords[0];
+      tex_coord = &d3d9_cg_tex_coords[0];
 
    for (i = 0; i < draw->coords->vertices; i++)
    {
@@ -178,7 +178,7 @@ static void gfx_display_d3d9_draw(gfx_display_ctx_draw_t *draw,
          d3d->menu_display.buffer);
 
    if (!draw->matrix_data)
-      draw->matrix_data = gfx_display_d3d9_get_default_mvp(d3d);
+      draw->matrix_data = gfx_display_d3d9_cg_get_default_mvp(d3d);
 
    /* ugh */
    matrix_4x4_scale(m1,       2.0,  2.0, 0);
@@ -200,10 +200,10 @@ static void gfx_display_d3d9_draw(gfx_display_ctx_draw_t *draw,
    d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const float*)&m2, 4);
 
    if (draw && draw->texture)
-      gfx_display_d3d9_bind_texture(draw, d3d);
+      gfx_display_d3d9_cg_bind_texture(draw, d3d);
 
    d3d9_draw_primitive(dev,
-         (D3DPRIMITIVETYPE)gfx_display_prim_to_d3d9_enum(draw->prim_type),
+         (D3DPRIMITIVETYPE)gfx_display_prim_to_d3d9_cg_enum(draw->prim_type),
          d3d->menu_display.offset,
          draw->coords->vertices -
          ((draw->prim_type == GFX_DISPLAY_PRIM_TRIANGLESTRIP)
@@ -212,7 +212,7 @@ static void gfx_display_d3d9_draw(gfx_display_ctx_draw_t *draw,
    d3d->menu_display.offset += draw->coords->vertices;
 }
 
-static void gfx_display_d3d9_draw_pipeline(gfx_display_ctx_draw_t *draw,
+static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
       gfx_display_t *p_disp,
       void *data, unsigned video_width, unsigned video_height)
 {
@@ -272,7 +272,7 @@ static bool gfx_display_d3d9_font_init_first(
    return true;
 }
 
-void gfx_display_d3d9_scissor_begin(
+void gfx_display_d3d9_cg_scissor_begin(
       void *data,
       unsigned video_width, unsigned video_height,
       int x, int y, unsigned width, unsigned height)
@@ -291,7 +291,7 @@ void gfx_display_d3d9_scissor_begin(
    d3d9_set_scissor_rect(d3d9->dev, &rect);
 }
 
-void gfx_display_d3d9_scissor_end(void *data,
+void gfx_display_d3d9_cg_scissor_end(void *data,
       unsigned video_width, unsigned video_height)
 {
    RECT rect;
@@ -309,17 +309,17 @@ void gfx_display_d3d9_scissor_end(void *data,
 }
 
 gfx_display_ctx_driver_t gfx_display_ctx_d3d9 = {
-   gfx_display_d3d9_draw,
-   gfx_display_d3d9_draw_pipeline,
-   gfx_display_d3d9_blend_begin,
-   gfx_display_d3d9_blend_end,
-   gfx_display_d3d9_get_default_mvp,
-   gfx_display_d3d9_get_default_vertices,
-   gfx_display_d3d9_get_default_tex_coords,
+   gfx_display_d3d9_cg_draw,
+   gfx_display_d3d9_cg_draw_pipeline,
+   gfx_display_d3d9_cg_blend_begin,
+   gfx_display_d3d9_cg_blend_end,
+   gfx_display_d3d9_cg_get_default_mvp,
+   gfx_display_d3d9_cg_get_default_vertices,
+   gfx_display_d3d9_cg_get_default_tex_coords,
    gfx_display_d3d9_font_init_first,
-   GFX_VIDEO_DRIVER_DIRECT3D9,
-   "d3d9",
+   GFX_VIDEO_DRIVER_DIRECT3D9_CG,
+   "d3d9_cg",
    false,
-   gfx_display_d3d9_scissor_begin,
-   gfx_display_d3d9_scissor_end
+   gfx_display_d3d9_cg_scissor_begin,
+   gfx_display_d3d9_cg_scissor_end
 };

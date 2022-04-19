@@ -419,15 +419,17 @@ VIDEO DRIVER
 #endif
 
 #if defined(HAVE_D3D9)
-#include "../gfx/drivers/d3d9.c"
 #include "../gfx/common/d3d9_common.c"
-#include "../gfx/drivers_display/gfx_display_d3d9.c"
 
 #ifdef HAVE_HLSL
+#include "../gfx/drivers/d3d9hlsl.c"
+#include "../gfx/drivers_display/gfx_display_d3d9hlsl.c"
 #include "../gfx/drivers_renderchain/d3d9_hlsl_renderchain.c"
 #endif
 
 #ifdef HAVE_CG
+#include "../gfx/drivers/d3d9cg.c"
+#include "../gfx/drivers_display/gfx_display_d3d9cg.c"
 #include "../gfx/drivers_renderchain/d3d9_cg_renderchain.c"
 #endif
 

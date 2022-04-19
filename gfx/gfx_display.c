@@ -85,7 +85,12 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
    &gfx_display_ctx_d3d8,
 #endif
 #ifdef HAVE_D3D9
-   &gfx_display_ctx_d3d9,
+#ifdef HAVE_HLSL
+   &gfx_display_ctx_d3d9_hlsl,
+#endif
+#ifdef HAVE_CG
+   &gfx_display_ctx_d3d9_cg,
+#endif
 #endif
 #ifdef HAVE_D3D10
    &gfx_display_ctx_d3d10,
@@ -191,8 +196,12 @@ static bool gfx_display_check_compatibility(
          if (string_is_equal(video_driver, "d3d8"))
             return true;
          break;
-      case GFX_VIDEO_DRIVER_DIRECT3D9:
-         if (string_is_equal(video_driver, "d3d9"))
+      case GFX_VIDEO_DRIVER_DIRECT3D9_HLSL:
+         if (string_is_equal(video_driver, "d3d9_hlsl"))
+            return true;
+         break;
+      case GFX_VIDEO_DRIVER_DIRECT3D9_CG:
+         if (string_is_equal(video_driver, "d3d9_cg"))
             return true;
          break;
       case GFX_VIDEO_DRIVER_DIRECT3D10:

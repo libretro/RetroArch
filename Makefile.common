@@ -1743,7 +1743,9 @@ ifeq ($(HAVE_D3D9), 1)
    OBJ  += gfx/drivers_font/d3d_w32_font.o
    ifeq ($(HAVE_CG), 1)
       LIBS += -lcgD3D9
+      OBJ  += gfx/drivers/d3d9cg.o
       OBJ  += gfx/drivers_renderchain/d3d9_cg_renderchain.o
+      OBJ  += gfx/drivers_display/gfx_display_d3d9cg.o
    endif
 endif
 
@@ -1813,9 +1815,7 @@ endif
 
 ifeq ($(HAVE_D3D9), 1)
    DEFINES += -DHAVE_D3D9
-   OBJ += gfx/drivers/d3d9.o
    OBJ += gfx/common/d3d9_common.o
-	OBJ += gfx/drivers_display/gfx_display_d3d9.o
 endif
 
 ifeq ($(HAVE_D3D_COMMON), 1)
@@ -1836,7 +1836,9 @@ endif
 
 ifeq ($(HAVE_HLSL),1)
    DEFINES += -DHAVE_HLSL
+   OBJ += gfx/drivers/d3d9hlsl.o
    OBJ += gfx/drivers_renderchain/d3d9_hlsl_renderchain.o
+   OBJ += gfx/drivers_display/gfx_display_d3d9hlsl.o
 endif
 
 ifeq ($(HAVE_SLANG),1)

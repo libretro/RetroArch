@@ -15,11 +15,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* Direct3D 9 driver.
+/* Direct3D 9 driver with HLSL runtime backend.
  *
  * Minimum version : Direct3D 9.0 (2002)
  * Minimum OS      : Windows 98, Windows 2000, Windows ME
  * Recommended OS  : Windows XP
+ * Requirements    : HLSL or fixed function backend
  */
 
 #define CINTERFACE
@@ -70,29 +71,22 @@
 #endif
 
 /* TODO/FIXME - Temporary workaround for D3D9 not being able to poll flags during init */
-static gfx_ctx_driver_t d3d9_fake_context;
+static gfx_ctx_driver_t d3d9_hlsl_fake_context;
 
-static enum rarch_shader_type supported_shader_type = RARCH_SHADER_NONE;
-
-extern d3d9_renderchain_driver_t cg_d3d9_renderchain;
 extern d3d9_renderchain_driver_t hlsl_d3d9_renderchain;
 
-static uint32_t d3d9_get_flags(void *data)
+static uint32_t d3d9_hlsl_get_flags(void *data)
 {
    uint32_t flags = 0;
 
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
-
-   if (supported_shader_type == RARCH_SHADER_CG)
-      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_CG);
-   else if (supported_shader_type == RARCH_SHADER_HLSL)
-      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_HLSL);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_HLSL);
 
    return flags;
 }
 
-static void d3d9_deinit_chain(d3d9_video_t *d3d)
+static void d3d9_hlsl_deinit_chain(d3d9_video_t *d3d)
 {
    if (!d3d || !d3d->renderchain_driver)
       return;
@@ -104,14 +98,11 @@ static void d3d9_deinit_chain(d3d9_video_t *d3d)
    d3d->renderchain_data   = NULL;
 }
 
-static void d3d9_deinitialize(d3d9_video_t *d3d)
+static void d3d9_hlsl_deinitialize(d3d9_video_t *d3d)
 {
-   if (!d3d)
-      return;
-
    font_driver_free_osd();
 
-   d3d9_deinit_chain(d3d);
+   d3d9_hlsl_deinit_chain(d3d);
    d3d9_vertex_buffer_free(d3d->menu_display.buffer,
          d3d->menu_display.decl);
 
@@ -119,7 +110,7 @@ static void d3d9_deinitialize(d3d9_video_t *d3d)
    d3d->menu_display.decl   = NULL;
 }
 
-static bool d3d9_init_base(d3d9_video_t *d3d, const video_info_t *info)
+static bool d3d9_hlsl_init_base(d3d9_video_t *d3d, const video_info_t *info)
 {
    D3DPRESENT_PARAMETERS d3dpp;
 #ifndef _XBOX
@@ -144,7 +135,7 @@ static bool d3d9_init_base(d3d9_video_t *d3d, const video_info_t *info)
    return true;
 }
 
-static bool renderchain_d3d_init_first(
+static bool renderchain_d3d_hlsl_init_first(
       enum gfx_ctx_api api,
       const d3d9_renderchain_driver_t **renderchain_driver,
       void **renderchain_handle)
@@ -155,12 +146,7 @@ static bool renderchain_d3d_init_first(
          {
             static const d3d9_renderchain_driver_t *renderchain_d3d_drivers[] =
             {
-#if defined(_WIN32) && defined(HAVE_CG)
-               &cg_d3d9_renderchain,
-#endif
-#if defined(_WIN32) && defined(HAVE_HLSL)
                &hlsl_d3d9_renderchain,
-#endif
                NULL
             };
             unsigned i;
@@ -175,11 +161,6 @@ static bool renderchain_d3d_init_first(
                *renderchain_driver = renderchain_d3d_drivers[i];
                *renderchain_handle = data;
 
-               if (string_is_equal(renderchain_d3d_drivers[i]->ident, "cg_d3d9"))
-                  supported_shader_type = RARCH_SHADER_CG;
-               else if (string_is_equal(renderchain_d3d_drivers[i]->ident, "hlsl_d3d9"))
-                  supported_shader_type = RARCH_SHADER_HLSL;
-
                return true;
             }
          }
@@ -192,8 +173,7 @@ static bool renderchain_d3d_init_first(
    return false;
 }
 
-
-static bool d3d9_init_chain(d3d9_video_t *d3d,
+static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
       unsigned input_scale,
       bool rgb32)
 {
@@ -209,7 +189,7 @@ static bool d3d9_init_chain(d3d9_video_t *d3d,
    link_info.tex_h = input_scale * RARCH_SCALE_BASE;
    link_info.pass  = &d3d->shader.pass[0];
 
-   if (!renderchain_d3d_init_first(GFX_CTX_DIRECT3D9_API,
+   if (!renderchain_d3d_hlsl_init_first(GFX_CTX_DIRECT3D9_API,
             &d3d->renderchain_driver,
             &d3d->renderchain_data))
    {
@@ -291,15 +271,14 @@ static bool d3d9_init_chain(d3d9_video_t *d3d,
    return true;
 }
 
-
-static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
+static bool d3d9_hlsl_initialize(d3d9_video_t *d3d, const video_info_t *info)
 {
    unsigned width, height;
    bool ret             = true;
    settings_t *settings = config_get_ptr();
 
    if (!g_pD3D9)
-      ret = d3d9_init_base(d3d, info);
+      ret = d3d9_hlsl_init_base(d3d, info);
    else if (d3d->needs_restore)
    {
       D3DPRESENT_PARAMETERS d3dpp;
@@ -316,11 +295,11 @@ static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
 
       if (!d3d9_reset(d3d->dev, &d3dpp))
       {
-         d3d9_deinitialize(d3d);
+         d3d9_hlsl_deinitialize(d3d);
          d3d9_device_free(NULL, g_pD3D9);
          g_pD3D9 = NULL;
 
-         ret = d3d9_init_base(d3d, info);
+         ret = d3d9_hlsl_init_base(d3d, info);
          if (ret)
             RARCH_LOG("[D3D9]: Recovered from dead state.\n");
       }
@@ -333,7 +312,7 @@ static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
    if (!ret)
       return ret;
 
-   if (!d3d9_init_chain(d3d, info->input_scale, info->rgb32))
+   if (!d3d9_hlsl_init_chain(d3d, info->input_scale, info->rgb32))
    {
       RARCH_ERR("[D3D9]: Failed to initialize render chain.\n");
       return false;
@@ -388,12 +367,11 @@ static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
    return true;
 }
 
-
-static bool d3d9_restore(d3d9_video_t *d3d)
+static bool d3d9_hlsl_restore(d3d9_video_t *d3d)
 {
-   d3d9_deinitialize(d3d);
+   d3d9_hlsl_deinitialize(d3d);
 
-   if (!d3d9_initialize(d3d, &d3d->video_info))
+   if (!d3d9_hlsl_initialize(d3d, &d3d->video_info))
    {
       RARCH_ERR("[D3D9]: Restore error.\n");
       return false;
@@ -404,11 +382,9 @@ static bool d3d9_restore(d3d9_video_t *d3d)
    return true;
 }
 
-
-static bool d3d9_set_shader(void *data,
+static bool d3d9_hlsl_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
-#if defined(HAVE_CG) || defined(HAVE_HLSL)
    d3d9_video_t *d3d = (d3d9_video_t*)data;
 
    if (!d3d)
@@ -422,14 +398,6 @@ static bool d3d9_set_shader(void *data,
    {
       case RARCH_SHADER_CG:
       case RARCH_SHADER_HLSL:
-
-         if (type != supported_shader_type)
-         {
-            RARCH_WARN("[D3D9]: Shader preset %s is using unsupported shader type %s, falling back to stock %s.\n",
-               path, video_shader_type_to_str(type), video_shader_type_to_str(supported_shader_type));
-            break;
-         }
-      
          if (!string_is_empty(path))
             d3d->shader_path = strdup(path);
 
@@ -440,19 +408,16 @@ static bool d3d9_set_shader(void *data,
          RARCH_WARN("[D3D9]: Only Cg shaders are supported. Falling back to stock.\n");
    }
 
-   if (!d3d9_process_shader(d3d) || !d3d9_restore(d3d))
+   if (!d3d9_process_shader(d3d) || !d3d9_hlsl_restore(d3d))
    {
       RARCH_ERR("[D3D9]: Failed to set shader.\n");
       return false;
    }
 
    return true;
-#else
-   return false;
-#endif
 }
 
-static bool d3d9_init_internal(d3d9_video_t *d3d,
+static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
       const video_info_t *info, input_driver_t **input,
       void **input_data)
 {
@@ -544,22 +509,20 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
 
    d3d->video_info = *info;
 
-   if (!d3d9_initialize(d3d, &d3d->video_info))
+   if (!d3d9_hlsl_initialize(d3d, &d3d->video_info))
       return false;
 
-   d3d9_fake_context.get_flags   = d3d9_get_flags;
+   d3d9_hlsl_fake_context.get_flags   = d3d9_hlsl_get_flags;
 #ifndef _XBOX_
-   d3d9_fake_context.get_metrics = win32_get_metrics;
+   d3d9_hlsl_fake_context.get_metrics = win32_get_metrics;
 #endif
-   video_context_driver_set(&d3d9_fake_context); 
-#if defined(HAVE_CG) || defined(HAVE_HLSL)
+   video_context_driver_set(&d3d9_hlsl_fake_context); 
    {
       const char *shader_preset   = retroarch_get_shader_preset();
       enum rarch_shader_type type = video_shader_parse_type(shader_preset);
 
-      d3d9_set_shader(d3d, type, shader_preset);
+      d3d9_hlsl_set_shader(d3d, type, shader_preset);
    }
-#endif
 
    d3d_input_driver(settings->arrays.input_joypad_driver,
       settings->arrays.input_joypad_driver, input, input_data);
@@ -589,7 +552,7 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
    return true;
 }
 
-static void *d3d9_init(const video_info_t *info,
+static void *d3d9_hlsl_init(const video_info_t *info,
       input_driver_t **input, void **input_data)
 {
    d3d9_video_t *d3d = (d3d9_video_t*)calloc(1, sizeof(*d3d));
@@ -618,7 +581,7 @@ static void *d3d9_init(const video_info_t *info,
    d3d->should_resize        = false;
    d3d->menu                 = NULL;
 
-   if (!d3d9_init_internal(d3d, info, input, input_data))
+   if (!d3d9_hlsl_init_internal(d3d, info, input, input_data))
    {
       RARCH_ERR("[D3D9]: Failed to init D3D.\n");
       free(d3d);
@@ -630,7 +593,7 @@ static void *d3d9_init(const video_info_t *info,
    return d3d;
 }
 
-static void d3d9_free(void *data)
+static void d3d9_hlsl_free(void *data)
 {
    d3d9_video_t   *d3d = (d3d9_video_t*)data;
 
@@ -650,7 +613,7 @@ static void d3d9_free(void *data)
       free(d3d->menu);
    d3d->menu          = NULL;
 
-   d3d9_deinitialize(d3d);
+   d3d9_hlsl_deinitialize(d3d);
 
    if (!string_is_empty(d3d->shader_path))
       free(d3d->shader_path);
@@ -669,7 +632,7 @@ static void d3d9_free(void *data)
    free(d3d);
 }
 
-static bool d3d9_frame(void *data, const void *frame,
+static bool d3d9_hlsl_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count, unsigned pitch,
       const char *msg, video_frame_info_t *video_info)
@@ -702,7 +665,7 @@ static bool d3d9_frame(void *data, const void *frame,
          return true;
 #endif
 
-      if (!d3d9_restore(d3d))
+      if (!d3d9_hlsl_restore(d3d))
       {
          RARCH_ERR("[D3D9]: Failed to restore.\n");
          return false;
@@ -824,8 +787,8 @@ static bool d3d9_frame(void *data, const void *frame,
    return true;
 }
 
-static const video_poke_interface_t d3d9_poke_interface = {
-   d3d9_get_flags,
+static const video_poke_interface_t d3d9_hlsl_poke_interface = {
+   d3d9_hlsl_get_flags,
    d3d9_load_texture,
    d3d9_unload_texture,
    d3d9_set_video_mode,
@@ -858,20 +821,20 @@ static const video_poke_interface_t d3d9_poke_interface = {
    NULL                          /* set_hdr_expand_gamut */
 };
 
-static void d3d9_get_poke_interface(void *data,
+static void d3d9_hlsl_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
-   *iface = &d3d9_poke_interface;
+   *iface = &d3d9_hlsl_poke_interface;
 }
 
 #ifdef HAVE_GFX_WIDGETS
-static bool d3d9_gfx_widgets_enabled(void *data)
+static bool d3d9_hlsl_gfx_widgets_enabled(void *data)
 {
    return false; /* currently disabled due to memory issues */
 }
 #endif
 
-static void d3d9_set_resize(d3d9_video_t *d3d,
+static void d3d9_hlsl_set_resize(d3d9_video_t *d3d,
       unsigned new_width, unsigned new_height)
 {
    /* No changes? */
@@ -884,7 +847,7 @@ static void d3d9_set_resize(d3d9_video_t *d3d,
    video_driver_set_size(new_width, new_height);
 }
 
-static bool d3d9_alive(void *data)
+static bool d3d9_hlsl_alive(void *data)
 {
    unsigned temp_width   = 0;
    unsigned temp_height  = 0;
@@ -904,8 +867,8 @@ static bool d3d9_alive(void *data)
    if (resize)
    {
       d3d->should_resize = true;
-      d3d9_set_resize(d3d, temp_width, temp_height);
-      d3d9_restore(d3d);
+      d3d9_hlsl_set_resize(d3d, temp_width, temp_height);
+      d3d9_hlsl_restore(d3d);
    }
 
    ret = !quit;
@@ -917,7 +880,7 @@ static bool d3d9_alive(void *data)
    return ret;
 }
 
-static void d3d9_set_nonblock_state(void *data, bool state,
+static void d3d9_hlsl_set_nonblock_state(void *data, bool state,
       bool adaptive_vsync_enabled,
       unsigned swap_interval)
 {
@@ -944,21 +907,21 @@ static void d3d9_set_nonblock_state(void *data, bool state,
          );
 #else
    d3d->needs_restore    = true;
-   d3d9_restore(d3d);
+   d3d9_hlsl_restore(d3d);
 #endif
 }
 
-video_driver_t video_d3d9 = {
-   d3d9_init,
-   d3d9_frame,
-   d3d9_set_nonblock_state,
-   d3d9_alive,
+video_driver_t video_d3d9_hlsl = {
+   d3d9_hlsl_init,
+   d3d9_hlsl_frame,
+   d3d9_hlsl_set_nonblock_state,
+   d3d9_hlsl_alive,
    NULL,                      /* focus */
    d3d9_suppress_screensaver,
    d3d9_has_windowed,
-   d3d9_set_shader,
-   d3d9_free,
-   "d3d9",
+   d3d9_hlsl_set_shader,
+   d3d9_hlsl_free,
+   "d3d9_hlsl",
    d3d9_set_viewport,
    d3d9_set_rotation,
    d3d9_viewport_info,
@@ -970,9 +933,9 @@ video_driver_t video_d3d9 = {
 #ifdef HAVE_VIDEO_LAYOUT
    NULL,
 #endif
-   d3d9_get_poke_interface,
+   d3d9_hlsl_get_poke_interface,
    NULL, /* wrap_type_to_enum */
 #ifdef HAVE_GFX_WIDGETS
-   d3d9_gfx_widgets_enabled
+   d3d9_hlsl_gfx_widgets_enabled
 #endif
 };

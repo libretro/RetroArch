@@ -96,7 +96,8 @@ enum gfx_display_driver_type
    GFX_VIDEO_DRIVER_VULKAN,
    GFX_VIDEO_DRIVER_METAL,
    GFX_VIDEO_DRIVER_DIRECT3D8,
-   GFX_VIDEO_DRIVER_DIRECT3D9,
+   GFX_VIDEO_DRIVER_DIRECT3D9_CG,
+   GFX_VIDEO_DRIVER_DIRECT3D9_HLSL,
    GFX_VIDEO_DRIVER_DIRECT3D10,
    GFX_VIDEO_DRIVER_DIRECT3D11,
    GFX_VIDEO_DRIVER_DIRECT3D12,
@@ -352,7 +353,8 @@ extern gfx_display_ctx_driver_t gfx_display_ctx_gl1;
 extern gfx_display_ctx_driver_t gfx_display_ctx_vulkan;
 extern gfx_display_ctx_driver_t gfx_display_ctx_metal;
 extern gfx_display_ctx_driver_t gfx_display_ctx_d3d8;
-extern gfx_display_ctx_driver_t gfx_display_ctx_d3d9;
+extern gfx_display_ctx_driver_t gfx_display_ctx_d3d9_cg;
+extern gfx_display_ctx_driver_t gfx_display_ctx_d3d9_hlsl;
 extern gfx_display_ctx_driver_t gfx_display_ctx_d3d10;
 extern gfx_display_ctx_driver_t gfx_display_ctx_d3d11;
 extern gfx_display_ctx_driver_t gfx_display_ctx_d3d12;
