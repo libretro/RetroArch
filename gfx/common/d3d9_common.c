@@ -123,9 +123,9 @@ static D3D9Create_t D3D9Create;
 void *d3d9_create(void)
 {
 #ifdef _XBOX
-   unsigned ver = 0;
+   UINT ver = 0;
 #else
-   unsigned ver = 31;
+   UINT ver = 31;
 #endif
    return D3D9Create(ver);
 }

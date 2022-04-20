@@ -175,12 +175,6 @@ static INLINE void d3d8_texture_free(LPDIRECT3DTEXTURE8 tex)
       IDirect3DTexture8_Release(tex);
 }
 
-static INLINE void d3d8_set_transform(LPDIRECT3DDEVICE8 dev,
-      D3DTRANSFORMSTATETYPE state, const D3DMATRIX *matrix)
-{
-   IDirect3DDevice8_SetTransform(dev, state, matrix);
-}
-
 static INLINE void d3d8_set_texture_stage_state(LPDIRECT3DDEVICE8 dev,
       unsigned sampler, D3DTEXTURESTAGESTATETYPE type, unsigned value)
 {
@@ -246,15 +240,6 @@ static INLINE void d3d8_draw_primitive(LPDIRECT3DDEVICE8 dev,
    d3d8_end_scene(dev);
 }
 
-static INLINE void d3d8_clear(LPDIRECT3DDEVICE8 dev,
-      unsigned count, const void *rects, unsigned flags,
-      INT32 color, float z, unsigned stencil)
-{
-   if (dev)
-      IDirect3DDevice8_Clear(dev, count, (const D3DRECT*)rects, flags,
-            color, z, stencil);
-}
-
 static INLINE bool d3d8_lock_rectangle(
       LPDIRECT3DTEXTURE8 tex,
       unsigned level, D3DLOCKED_RECT *lr, RECT *rect,
@@ -267,12 +252,6 @@ static INLINE bool d3d8_lock_rectangle(
    return false;
 }
 
-static INLINE void d3d8_unlock_rectangle(LPDIRECT3DTEXTURE8 tex)
-{
-   if (tex)
-      IDirect3DTexture8_UnlockRect(tex, 0);
-}
-
 static INLINE void d3d8_lock_rectangle_clear(
       void *tex,
       unsigned level, D3DLOCKED_RECT *lr, RECT *rect,
@@ -282,7 +261,7 @@ static INLINE void d3d8_lock_rectangle_clear(
    level              = 0;
 #endif
    memset(lr->pBits, level, rectangle_height * lr->Pitch);
-   d3d8_unlock_rectangle(tex);
+   IDirect3DTexture8_UnlockRect(tex, 0);
 }
 
 static INLINE void d3d8_set_texture(

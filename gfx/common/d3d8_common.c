@@ -40,7 +40,6 @@
 #endif
 
 /* TODO/FIXME - static globals */
-static UINT SDKVersion        = 0;
 #ifdef HAVE_DYNAMIC_D3D
 static dylib_t g_d3d8_dll;
 #ifdef HAVE_D3DX
@@ -83,7 +82,12 @@ static D3DCreate_t D3DCreate;
 
 void *d3d8_create(void)
 {
-   return D3DCreate(SDKVersion);
+#ifdef _XBOX
+   UINT ver = 0;
+#else
+   UINT ver = 220;
+#endif
+   return D3DCreate(ver);
 }
 
 #ifdef HAVE_DYNAMIC_D3D
@@ -114,7 +118,6 @@ bool d3d8_initialize_symbols(enum gfx_ctx_api api)
       return false;
 #endif
 
-   SDKVersion               = 220;
 #ifdef HAVE_DYNAMIC_D3D
    D3DCreate                = (D3DCreate_t)dylib_proc(g_d3d8_dll, "Direct3DCreate8");
 #ifdef HAVE_D3DX
@@ -136,9 +139,6 @@ bool d3d8_initialize_symbols(enum gfx_ctx_api api)
    if (!D3DCreate)
       goto error;
 
-#ifdef _XBOX
-   SDKVersion        = 0;
-#endif
 #ifdef HAVE_DYNAMIC_D3D
    dylib_initialized = true;
 #endif
