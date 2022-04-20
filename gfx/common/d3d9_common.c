@@ -1087,7 +1087,7 @@ void d3d9_overlay_render(d3d9_video_t *d3d,
       vp_full.Height = height;
       vp_full.MinZ   = 0.0f;
       vp_full.MaxZ   = 1.0f;
-      d3d9_set_viewports(dev, &vp_full);
+      IDirect3DDevice9_SetViewport(dev, (D3DVIEWPORT9*)&vp_full);
    }
 
    filter_type = D3DTEXF_LINEAR;
@@ -1101,16 +1101,18 @@ void d3d9_overlay_render(d3d9_video_t *d3d,
    }
 
    /* Render overlay. */
-   d3d9_set_texture(dev, 0, (LPDIRECT3DTEXTURE9)overlay->tex);
-   d3d9_set_sampler_address_u(dev, 0, D3DTADDRESS_BORDER);
-   d3d9_set_sampler_address_v(dev, 0, D3DTADDRESS_BORDER);
-   d3d9_set_sampler_minfilter(dev, 0, filter_type);
-   d3d9_set_sampler_magfilter(dev, 0, filter_type);
+   IDirect3DDevice9_SetTexture(dev, 0,(IDirect3DBaseTexture9*)overlay->tex);
+   IDirect3DDevice9_SetSamplerState(dev,0,D3DSAMP_ADDRESSU,
+         D3DTADDRESS_BORDER);
+   IDirect3DDevice9_SetSamplerState(dev,0,D3DSAMP_ADDRESSV,
+         D3DTADDRESS_BORDER);
+   IDirect3DDevice9_SetSamplerState(dev,0,D3DSAMP_MINFILTER, filter_type);
+   IDirect3DDevice9_SetSamplerState(dev,0,D3DSAMP_MAGFILTER, filter_type);
    d3d9_draw_primitive(dev, D3DPT_TRIANGLESTRIP, 0, 2);
 
    /* Restore previous state. */
-   d3d9_disable_blend_func(dev);
-   d3d9_set_viewports(dev, &d3d->final_viewport);
+   IDirect3DDevice9_SetRenderState(dev, D3DRS_ALPHABLENDENABLE, false);
+   IDirect3DDevice9_SetViewport(dev, (D3DVIEWPORT9*)&d3d->final_viewport);
 }
 
 void d3d9_free_overlay(d3d9_video_t *d3d, overlay_t *overlay)
@@ -1157,10 +1159,10 @@ void d3d9_set_osd_msg(void *data,
          struct font_params*)params;
 
    d3d9_set_font_rect(d3d, d3d_font_params);
-   d3d9_begin_scene(dev);
+   IDirect3DDevice9_BeginScene(dev);
    font_driver_render_msg(d3d,
          msg, d3d_font_params, font);
-   d3d9_end_scene(dev);
+   IDirect3DDevice9_EndScene(dev);
 }
 
 void d3d9_set_menu_texture_frame(void *data,

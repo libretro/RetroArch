@@ -429,20 +429,6 @@ d3d9_set_vertex_declaration(LPDIRECT3DDEVICE9 dev,
       IDirect3DDevice9_SetVertexDeclaration(dev, vertex_data);
 }
 
-static INLINE void d3d9_enable_alpha_blend_texture_func(LPDIRECT3DDEVICE9 dev)
-{
-   if (!dev)
-      return;
-
-   /* Also blend the texture with the set alpha value. */
-#ifndef _XBOX
-   /* XBox 360 has no fixed-function pipeline. */
-   IDirect3DDevice9_SetTextureStageState(dev, 0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
-   IDirect3DDevice9_SetTextureStageState(dev, 0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
-   IDirect3DDevice9_SetTextureStageState(dev, 0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
-#endif
-}
-
 void d3d9_frame_postprocess(void *data);
 
 static INLINE void d3d9_surface_free(LPDIRECT3DSURFACE9 surf)

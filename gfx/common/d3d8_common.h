@@ -353,14 +353,6 @@ static INLINE void d3d8_disable_blend_func(void *data)
    d3d8_set_render_state(data, D3DRS_ALPHABLENDENABLE, false);
 }
 
-static INLINE void d3d8_enable_alpha_blend_texture_func(void *data)
-{
-   /* Also blend the texture with the set alpha value. */
-   d3d8_set_texture_stage_state(data, 0, D3DTSS_ALPHAOP,     D3DTOP_MODULATE);
-   d3d8_set_texture_stage_state(data, 0, D3DTSS_ALPHAARG1,   D3DTA_DIFFUSE);
-   d3d8_set_texture_stage_state(data, 0, D3DTSS_ALPHAARG2,   D3DTA_TEXTURE);
-}
-
 void d3d8_frame_postprocess(void *data);
 
 static INLINE void d3d8_surface_free(LPDIRECT3DSURFACE8 surf)
