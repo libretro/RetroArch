@@ -87,7 +87,9 @@ static void gfx_display_d3d9_cg_blend_begin(void *data)
    if (!d3d)
       return;
 
-   d3d9_enable_blend_func(d3d->dev);
+   IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+   IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+   IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_ALPHABLENDENABLE, true);
 }
 
 static void gfx_display_d3d9_cg_blend_end(void *data)
@@ -97,7 +99,7 @@ static void gfx_display_d3d9_cg_blend_end(void *data)
    if (!d3d)
       return;
 
-   d3d9_disable_blend_func(d3d->dev);
+   IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_ALPHABLENDENABLE, false);
 }
 
 static void gfx_display_d3d9_cg_bind_texture(gfx_display_ctx_draw_t *draw,
@@ -105,12 +107,18 @@ static void gfx_display_d3d9_cg_bind_texture(gfx_display_ctx_draw_t *draw,
 {
    LPDIRECT3DDEVICE9 dev = d3d->dev;
 
-   d3d9_set_texture(dev, 0, (LPDIRECT3DTEXTURE9)draw->texture);
-   d3d9_set_sampler_address_u(dev, 0, D3DTADDRESS_COMM_CLAMP);
-   d3d9_set_sampler_address_v(dev, 0, D3DTADDRESS_COMM_CLAMP);
-   d3d9_set_sampler_minfilter(dev, 0, D3DTEXF_COMM_LINEAR);
-   d3d9_set_sampler_magfilter(dev, 0, D3DTEXF_COMM_LINEAR);
-   d3d9_set_sampler_mipfilter(dev, 0, D3DTEXF_COMM_LINEAR);
+   IDirect3DDevice9_SetTexture(dev, 0,
+         (IDirect3DBaseTexture9*)draw->texture);
+   IDirect3DDevice9_SetSamplerState(dev,
+         0, D3DSAMP_ADDRESSU, D3DTADDRESS_COMM_CLAMP);
+   IDirect3DDevice9_SetSamplerState(dev,
+         0, D3DSAMP_ADDRESSV, D3DTADDRESS_COMM_CLAMP);
+   IDirect3DDevice9_SetSamplerState(dev,
+         0, D3DSAMP_MINFILTER, D3DTEXF_COMM_LINEAR);
+   IDirect3DDevice9_SetSamplerState(dev,
+         0, D3DSAMP_MAGFILTER, D3DTEXF_COMM_LINEAR);
+   IDirect3DDevice9_SetSamplerState(dev, 0,
+         D3DSAMP_MIPFILTER, D3DTEXF_COMM_LINEAR);
 }
 
 static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
@@ -216,7 +224,6 @@ static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
       gfx_display_t *p_disp,
       void *data, unsigned video_width, unsigned video_height)
 {
-#if defined(HAVE_HLSL) || defined(HAVE_CG)
    static float t                    = 0;
    video_coord_array_t *ca           = NULL;
 
@@ -255,7 +262,6 @@ static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
          }
          break;
    }
-#endif
 }
 
 static bool gfx_display_d3d9_font_init_first(
@@ -288,7 +294,7 @@ void gfx_display_d3d9_cg_scissor_begin(
    rect.right         = width + x;
    rect.bottom        = height + y;
 
-   d3d9_set_scissor_rect(d3d9->dev, &rect);
+   IDirect3DDevice9_SetScissorRect(d3d9->dev, &rect);
 }
 
 void gfx_display_d3d9_cg_scissor_end(void *data,
@@ -305,7 +311,7 @@ void gfx_display_d3d9_cg_scissor_end(void *data,
    rect.right           = video_width;
    rect.bottom          = video_height;
 
-   d3d9_set_scissor_rect(d3d9->dev, &rect);
+   IDirect3DDevice9_SetScissorRect(d3d9->dev, &rect);
 }
 
 gfx_display_ctx_driver_t gfx_display_ctx_d3d9 = {

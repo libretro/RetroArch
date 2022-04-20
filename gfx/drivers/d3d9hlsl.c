@@ -573,7 +573,9 @@ static void hlsl_d3d9_renderchain_render_pass(
       struct shader_pass *pass,
       unsigned pass_index)
 {
-   /* Currently we override the passes shader program with the stock shader as at least the last pass is not setup correctly */
+   /* Currently we override the passes shader program 
+      with the stock shader as at least the last pass 
+      is not setup correctly */
 #if 0
    d3d9_hlsl_bind_program(pass, chain->chain.dev);
 #else
@@ -587,8 +589,10 @@ static void hlsl_d3d9_renderchain_render_pass(
       I've left them out for the time being 
       but maybe this is a bug in d3d9 */
 #if 0
-   IDirect3DDevice9_SetSamplerState(chain->chain.dev, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-   IDirect3DDevice9_SetSamplerState(chain->chain.dev, 0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+   IDirect3DDevice9_SetSamplerState(chain->chain.dev,
+         0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+   IDirect3DDevice9_SetSamplerState(chain->chain.dev,
+         0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 #endif
    IDirect3DDevice9_SetSamplerState(chain->chain.dev,
          0, D3DSAMP_MINFILTER,
@@ -597,8 +601,10 @@ static void hlsl_d3d9_renderchain_render_pass(
          0, D3DSAMP_MAGFILTER,
          d3d_translate_filter(pass->info.pass->filter));
 
-   IDirect3DDevice9_SetVertexDeclaration(chain->chain.dev, pass->vertex_decl);
-   IDirect3DDevice9_SetStreamSource(chain->chain.dev, 0, pass->vertex_buf,
+   IDirect3DDevice9_SetVertexDeclaration(
+         chain->chain.dev, pass->vertex_decl);
+   IDirect3DDevice9_SetStreamSource(
+         chain->chain.dev, 0, pass->vertex_buf,
          0,sizeof(struct Vertex));
 
 #if 0
@@ -637,11 +643,14 @@ static void hlsl_d3d9_renderchain_render_pass(
 
    /* We only bother binding passes which are two indices behind. */
    if (pass_index >= 3)
-      d3d9_hlsl_renderchain_bind_pass(chain, chain->chain.dev, pass, pass_index);
-
+      d3d9_hlsl_renderchain_bind_pass(chain, chain->chain.dev,
+            pass, pass_index);
 #endif
 
-   d3d9_draw_primitive(chain->chain.dev, D3DPT_TRIANGLESTRIP, 0, 2);
+   IDirect3DDevice9_BeginScene(chain->chain.dev);
+   IDirect3DDevice9_DrawPrimitive(chain->chain.dev,
+         D3DPT_TRIANGLESTRIP, 0, 2);
+   IDirect3DDevice9_EndScene(chain->chain.dev);
 
    /* So we don't render with linear filter into render targets,
     * which apparently looked odd (too blurry). */
@@ -660,7 +669,8 @@ static bool hlsl_d3d9_renderchain_render(
       unsigned pitch, unsigned rotation)
 {
    LPDIRECT3DSURFACE9 back_buffer, target;
-   unsigned i, current_width, current_height, out_width = 0, out_height = 0;
+   unsigned i, current_width, current_height,
+          out_width = 0, out_height = 0;
    struct shader_pass *last_pass    = NULL;
    struct shader_pass *first_pass   = NULL;
    hlsl_renderchain_t *chain        = (hlsl_renderchain_t*)
@@ -691,12 +701,13 @@ static bool hlsl_d3d9_renderchain_render(
          chain->chain.pixel_size);
 
    /* Grab back buffer. */
-   d3d9_device_get_render_target(chain->chain.dev, 0, (void**)&back_buffer);
+   d3d9_device_get_render_target(
+         chain->chain.dev, 0, (void**)&back_buffer);
 
    /* In-between render target passes. */
    for (i = 0; i < chain->chain.passes->count - 1; i++)
    {
-      D3DVIEWPORT9   viewport = {0};
+      D3DVIEWPORT9   viewport        = {0};
       struct shader_pass *from_pass  = (struct shader_pass*)
          &chain->chain.passes->data[i];
       struct shader_pass *to_pass    = (struct shader_pass*)
@@ -716,14 +727,17 @@ static bool hlsl_d3d9_renderchain_render(
       viewport.MinZ   = 0.0f;
       viewport.MaxZ   = 1.0f;
 
-      IDirect3DDevice9_SetViewport(chain->chain.dev, (D3DVIEWPORT9*)&viewport);
-      IDirect3DDevice9_Clear(chain->chain.dev, 0, 0, D3DCLEAR_TARGET,
+      IDirect3DDevice9_SetViewport(
+            chain->chain.dev, (D3DVIEWPORT9*)&viewport);
+      IDirect3DDevice9_Clear(
+            chain->chain.dev, 0, 0, D3DCLEAR_TARGET,
             0, 1, 0);
 
       viewport.Width  = out_width;
       viewport.Height = out_height;
 
-      IDirect3DDevice9_SetViewport(chain->chain.dev, (D3DVIEWPORT9*)&viewport);
+      IDirect3DDevice9_SetViewport(
+            chain->chain.dev, (D3DVIEWPORT9*)&viewport);
 
       hlsl_d3d9_renderchain_set_vertices(
             d3d,
@@ -752,7 +766,8 @@ static bool hlsl_d3d9_renderchain_render(
          &out_width, &out_height,
          current_width, current_height, chain->chain.final_viewport);
 
-   IDirect3DDevice9_SetViewport(chain->chain.dev, (D3DVIEWPORT9*)chain->chain.final_viewport);
+   IDirect3DDevice9_SetViewport(
+         chain->chain.dev, (D3DVIEWPORT9*)chain->chain.final_viewport);
 
    hlsl_d3d9_renderchain_set_vertices(
          d3d,
@@ -772,7 +787,8 @@ static bool hlsl_d3d9_renderchain_render(
 
    d3d9_renderchain_end_render(&chain->chain);
    d3d9_hlsl_bind_program(&chain->stock_shader, chain->chain.dev);
-   hlsl_d3d9_renderchain_calc_and_set_shader_mvp(chain, &chain->stock_shader,
+   hlsl_d3d9_renderchain_calc_and_set_shader_mvp(
+         chain, &chain->stock_shader,
          chain->chain.final_viewport->Width,
          chain->chain.final_viewport->Height, 0);
 
@@ -792,7 +808,8 @@ static bool hlsl_d3d9_renderchain_add_pass(
       unsigned_vector_list_new();
    pass.pool                   = D3DPOOL_DEFAULT;
 
-   d3d9_hlsl_load_program_from_file(chain->chain.dev, &pass, info->pass->source.path);
+   d3d9_hlsl_load_program_from_file(
+         chain->chain.dev, &pass, info->pass->source.path);
 
    if (!hlsl_d3d9_renderchain_init_shader_fvf(&chain->chain, &pass))
       return false;
@@ -880,11 +897,11 @@ static bool renderchain_d3d_hlsl_init_first(
 static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
       unsigned input_scale, bool rgb32)
 {
-   unsigned i = 0;
    struct LinkInfo link_info;
 #ifndef _XBOX
    unsigned current_width, current_height, out_width, out_height;
 #endif
+   unsigned i           = 0;
    settings_t *settings = config_get_ptr();
    bool video_smooth    = settings->bools.video_smooth;
 
@@ -958,7 +975,8 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
    return true;
 }
 
-static bool d3d9_hlsl_initialize(d3d9_video_t *d3d, const video_info_t *info)
+static bool d3d9_hlsl_initialize(
+      d3d9_video_t *d3d, const video_info_t *info)
 {
    unsigned width, height;
    bool ret             = true;
@@ -1015,12 +1033,15 @@ static bool d3d9_hlsl_initialize(d3d9_video_t *d3d, const video_info_t *info)
 
    {
       static const D3DVERTEXELEMENT9 VertexElements[4] = {
-         {0, offsetof(Vertex, x),  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT,
-            D3DDECLUSAGE_POSITION, 0},
-         {0, offsetof(Vertex, u), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT,
-            D3DDECLUSAGE_TEXCOORD, 0},
-         {0, offsetof(Vertex, color), D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT,
-            D3DDECLUSAGE_COLOR, 0},
+         {0, offsetof(Vertex, x),
+            D3DDECLTYPE_FLOAT3,   D3DDECLMETHOD_DEFAULT,
+            D3DDECLUSAGE_POSITION,0},
+         {0, offsetof(Vertex, u),
+            D3DDECLTYPE_FLOAT2,   D3DDECLMETHOD_DEFAULT,
+            D3DDECLUSAGE_TEXCOORD,0},
+         {0, offsetof(Vertex, color),
+            D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT,
+            D3DDECLUSAGE_COLOR,   0},
          D3DDECL_END()
       };
       if (!d3d9_vertex_declaration_new(d3d->dev,
@@ -1369,7 +1390,8 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
    IDirect3DDevice9_Clear(d3d->dev, 0, 0, D3DCLEAR_TARGET,
          0, 1, 0);
 
-   d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const float*)&d3d->mvp_transposed, 4);
+   IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev, 0,
+         (const float*)&d3d->mvp_transposed, 4);
    if (!hlsl_d3d9_renderchain_render(
             d3d, frame, frame_width, frame_height,
             pitch, d3d->dev_rotation))
@@ -1397,7 +1419,8 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled && overlay_behind_menu)
    {
-      d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const float*)&d3d->mvp_transposed, 4);
+      IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev, 0,
+            (const float*)&d3d->mvp_transposed, 4);
       for (i = 0; i < d3d->overlays_size; i++)
          d3d9_overlay_render(d3d, width, height, &d3d->overlays[i], true);
    }
@@ -1406,8 +1429,8 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
 #ifdef HAVE_MENU
    if (d3d->menu && d3d->menu->enabled)
    {
-      d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const
-               float*)&d3d->mvp_transposed, 4);
+      IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev, 0,
+            (const float*)&d3d->mvp_transposed, 4);
       d3d9_overlay_render(d3d, width, height, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
@@ -1423,7 +1446,7 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
       if (osd_params)
       {
          IDirect3DDevice9_SetViewport(d3d->dev, (D3DVIEWPORT9*)&screen_vp);
-         d3d9_begin_scene(d3d->dev);
+         IDirect3DDevice9_BeginScene(d3d->dev);
          font_driver_render_msg(d3d, stat_text,
                (const struct font_params*)osd_params, NULL);
          IDirect3DDevice9_EndScene(d3d->dev);
@@ -1434,8 +1457,8 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled && !overlay_behind_menu)
    {
-      d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const
-               float*)&d3d->mvp_transposed, 4);
+      IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev, 0,
+            (const float*)&d3d->mvp_transposed, 4);
       for (i = 0; i < d3d->overlays_size; i++)
          d3d9_overlay_render(d3d, width, height, &d3d->overlays[i], true);
    }
@@ -1449,7 +1472,7 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
    if (msg && *msg)
    {
       IDirect3DDevice9_SetViewport(d3d->dev, (D3DVIEWPORT9*)&screen_vp);
-      d3d9_begin_scene(d3d->dev);
+      IDirect3DDevice9_BeginScene(d3d->dev);
       font_driver_render_msg(d3d, msg, NULL, NULL);
       IDirect3DDevice9_EndScene(d3d->dev);
    }
