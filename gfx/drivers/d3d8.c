@@ -535,9 +535,9 @@ static void d3d8_overlay_render(d3d8_video_t *d3d,
          (D3DTEXTURESTAGESTATETYPE)D3DTSS_ADDRESSU, D3DTADDRESS_BORDER);
    IDirect3DDevice8_SetTextureStageState(d3d->dev, 0,
          (D3DTEXTURESTAGESTATETYPE)D3DTSS_ADDRESSV, D3DTADDRESS_BORDER);
-   IDirect3DDevice8_SetTextureStageState(d3dr, 0,
+   IDirect3DDevice8_SetTextureStageState(d3d->dev, 0,
          (D3DTEXTURESTAGESTATETYPE)D3DTSS_MAGFILTER, filter_type);
-   IDirect3DDevice8_SetTextureStageState(d3dr, 0,
+   IDirect3DDevice8_SetTextureStageState(d3d->dev, 0,
          (D3DTEXTURESTAGESTATETYPE)D3DTSS_MINFILTER, filter_type);
    d3d8_draw_primitive(d3d->dev, D3DPT_TRIANGLESTRIP, 0, 2);
 
