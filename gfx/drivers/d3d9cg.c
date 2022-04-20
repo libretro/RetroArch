@@ -905,6 +905,74 @@ static void d3d9_cg_renderchain_calc_and_set_shader_mvp(
    d3d9_cg_set_param_matrix(data, NULL, "modelViewProj", (const void*)&matrix);
 }
 
+static INLINE void d3d9_cg_renderchain_set_vertices_on_change(
+      d3d9_renderchain_t *chain,
+      struct shader_pass *pass,
+      unsigned width, unsigned height,
+      unsigned out_width, unsigned out_height,
+      unsigned vp_width, unsigned vp_height,
+      unsigned rotation
+      )
+{
+   struct Vertex vert[4];
+   void *verts       = NULL;
+   const struct
+      LinkInfo *info = (const struct LinkInfo*)&pass->info;
+   float _u          = (float)(width)  / info->tex_w;
+   float _v          = (float)(height) / info->tex_h;
+
+   pass->last_width  = width;
+   pass->last_height = height;
+
+   /* Copied from d3d8 driver */
+   vert[0].x        =  0.0f;
+   vert[0].y        =  1.0f;
+   vert[0].z        =  1.0f;
+
+   vert[1].x        =  1.0f;
+   vert[1].y        =  1.0f;
+   vert[1].z        =  1.0f;
+
+   vert[2].x        =  0.0f;
+   vert[2].y        =  0.0f;
+   vert[2].z        =  1.0f;
+
+   vert[3].x        =  1.0f;
+   vert[3].y        =  0.0f;
+   vert[3].z        =  1.0f;
+
+   vert[0].u        = 0.0f;
+   vert[0].v        = 0.0f;
+   vert[1].v        = 0.0f;
+   vert[2].u        = 0.0f;
+   vert[1].u        = _u;
+   vert[2].v        = _v;
+   vert[3].u        = _u;
+   vert[3].v        = _v;
+
+   vert[0].color    = 0xFFFFFFFF;
+   vert[1].color    = 0xFFFFFFFF;
+   vert[2].color    = 0xFFFFFFFF;
+   vert[3].color    = 0xFFFFFFFF;
+
+   /* Align texels and vertices.
+    *
+    * Fixes infamous 'half-texel offset' issue of D3D9
+    *	http://msdn.microsoft.com/en-us/library/bb219690%28VS.85%29.aspx.
+    */
+   /* Maybe we do need something like this left out for now
+   for (i = 0; i < 4; i++)
+   {
+      vert[i].x     -= 0.5f;
+      vert[i].y     += 0.5f;
+   }
+   */
+
+   verts             = d3d9_vertex_buffer_lock(pass->vertex_buf);
+   memcpy(verts, vert, sizeof(vert));
+   d3d9_vertex_buffer_unlock(pass->vertex_buf);
+}
+
 static void d3d9_cg_renderchain_set_vertices(
       d3d9_renderchain_t *chain,
       struct shader_pass *pass,
@@ -914,7 +982,7 @@ static void d3d9_cg_renderchain_set_vertices(
       unsigned rotation)
 {
    if (pass->last_width != width || pass->last_height != height)
-      d3d9_renderchain_set_vertices_on_change(chain,
+      d3d9_cg_renderchain_set_vertices_on_change(chain,
             pass, width, height, out_width, out_height,
             vp_width, vp_height, rotation);
 
