@@ -322,14 +322,16 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
       if (!chain->prev.tex[i])
          return false;
 
-      d3d9_set_texture(chain->dev, 0, chain->prev.tex[i]);
-      d3d9_set_sampler_minfilter(dev, 0,
-            d3d_translate_filter(info->pass->filter));
-      d3d9_set_sampler_magfilter(dev, 0,
-            d3d_translate_filter(info->pass->filter));
-      d3d9_set_sampler_address_u(dev, 0, D3DTADDRESS_BORDER);
-      d3d9_set_sampler_address_v(dev, 0, D3DTADDRESS_BORDER);
-      d3d9_set_texture(chain->dev, 0, NULL);
+      IDirect3DDevice9_SetTexture(chain->dev, 0,
+            (IDirect3DBaseTexture9*)chain->prev.tex[i]);
+      IDirect3DDevice9_SetSamplerState(dev,
+            0, D3DSAMP_MINFILTER, d3d_translate_filter(info->pass->filter));
+      IDirect3DDevice9_SetSamplerState(dev,
+            0, D3DSAMP_MAGFILTER, d3d_translate_filter(info->pass->filter));
+      IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+      IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+      IDirect3DDevice9_SetTexture(chain->dev, 0,
+            (IDirect3DBaseTexture9*)NULL);
    }
 
    d3d9_hlsl_load_program_from_file(chain->dev,
@@ -398,7 +400,7 @@ static void d3d9_hlsl_deinit_progs(hlsl_renderchain_t *chain)
       for (i = 1; i < chain->chain.passes->count; i++)
       {
          if (chain->chain.passes->data[i].tex)
-            d3d9_texture_free(chain->chain.passes->data[i].tex);
+            IDirect3DTexture9_Release(chain->chain.passes->data[i].tex);
          chain->chain.passes->data[i].tex = NULL;
          d3d9_vertex_buffer_free(
                chain->chain.passes->data[i].vertex_buf,
@@ -414,7 +416,7 @@ static void d3d9_hlsl_destroy_resources(hlsl_renderchain_t *chain)
    for (i = 0; i < TEXTURES; i++)
    {
       if (chain->chain.prev.tex[i])
-         d3d9_texture_free(chain->chain.prev.tex[i]);
+         IDirect3DTexture9_Release(chain->chain.prev.tex[i]);
       if (chain->chain.prev.vertex_buf[i])
          d3d9_vertex_buffer_free(chain->chain.prev.vertex_buf[i], NULL);
    }
@@ -424,7 +426,7 @@ static void d3d9_hlsl_destroy_resources(hlsl_renderchain_t *chain)
    for (i = 0; i < chain->chain.luts->count; i++)
    {
       if (chain->chain.luts->data[i].tex)
-         d3d9_texture_free(chain->chain.luts->data[i].tex);
+         IDirect3DTexture9_Release(chain->chain.luts->data[i].tex);
    }
 }
 
@@ -503,24 +505,32 @@ static void hlsl_d3d9_renderchain_render_pass(
       unsigned pass_index)
 {
    /* Currently we override the passes shader program with the stock shader as at least the last pass is not setup correctly */
-   /*d3d9_hlsl_bind_program(pass, chain->chain.dev);*/
+#if 0
+   d3d9_hlsl_bind_program(pass, chain->chain.dev);
+#else
    d3d9_hlsl_bind_program(&chain->stock_shader, chain->chain.dev);
+#endif
 
-   d3d9_set_texture(chain->chain.dev, 0, pass->tex);
+   IDirect3DDevice9_SetTexture(chain->chain.dev, 0,
+         (IDirect3DBaseTexture9*)pass->tex);
 
-   /* d3d8 sets the sampler address modes - I've left them out for the time being but maybe this is a bug in d3d9 */
-   /*d3d9_set_sampler_address_u(chain->chain.dev, 0, D3DTADDRESS_BORDER);*/
-   /*d3d9_set_sampler_address_v(chain->chain.dev, 0, D3DTADDRESS_BORDER);*/
-   d3d9_set_sampler_minfilter(chain->chain.dev, 0,
+   /* D3D8 sets the sampler address modes - 
+      I've left them out for the time being 
+      but maybe this is a bug in d3d9 */
+#if 0
+   IDirect3DDevice9_SetSamplerState(chain->chain.dev, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+   IDirect3DDevice9_SetSamplerState(chain->chain.dev, 0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+#endif
+   IDirect3DDevice9_SetSamplerState(chain->chain.dev,
+         0, D3DSAMP_MINFILTER,
          d3d_translate_filter(pass->info.pass->filter));
-   d3d9_set_sampler_magfilter(chain->chain.dev, 0,
+   IDirect3DDevice9_SetSamplerState(chain->chain.dev,
+         0, D3DSAMP_MAGFILTER,
          d3d_translate_filter(pass->info.pass->filter));
 
-   d3d9_set_vertex_declaration(chain->chain.dev, pass->vertex_decl);
-
-   d3d9_set_stream_source(chain->chain.dev, 0,
-         pass->vertex_buf, 0,
-         sizeof(struct Vertex));
+   IDirect3DDevice9_SetVertexDeclaration(chain->chain.dev, pass->vertex_decl);
+   IDirect3DDevice9_SetStreamSource(chain->chain.dev, 0, pass->vertex_buf,
+         0,sizeof(struct Vertex));
 
 #if 0
    /* Set orig texture. */
@@ -566,8 +576,10 @@ static void hlsl_d3d9_renderchain_render_pass(
 
    /* So we don't render with linear filter into render targets,
     * which apparently looked odd (too blurry). */
-   d3d9_set_sampler_minfilter(chain->chain.dev, 0, D3DTEXF_POINT);
-   d3d9_set_sampler_magfilter(chain->chain.dev, 0, D3DTEXF_POINT);
+   IDirect3DDevice9_SetSamplerState(chain->chain.dev,
+         0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+   IDirect3DDevice9_SetSamplerState(chain->chain.dev,
+         0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
 
    d3d9_renderchain_unbind_all(&chain->chain);
 }
@@ -635,14 +647,14 @@ static bool hlsl_d3d9_renderchain_render(
       viewport.MinZ   = 0.0f;
       viewport.MaxZ   = 1.0f;
 
-      d3d9_set_viewports(chain->chain.dev, &viewport);
+      IDirect3DDevice9_SetViewport(chain->chain.dev, (D3DVIEWPORT9*)&viewport);
       IDirect3DDevice9_Clear(chain->chain.dev, 0, 0, D3DCLEAR_TARGET,
             0, 1, 0);
 
       viewport.Width  = out_width;
       viewport.Height = out_height;
 
-      d3d9_set_viewports(chain->chain.dev, &viewport);
+      IDirect3DDevice9_SetViewport(chain->chain.dev, (D3DVIEWPORT9*)&viewport);
 
       hlsl_d3d9_renderchain_set_vertices(
             d3d,
@@ -671,7 +683,7 @@ static bool hlsl_d3d9_renderchain_render(
          &out_width, &out_height,
          current_width, current_height, chain->chain.final_viewport);
 
-   d3d9_set_viewports(chain->chain.dev, chain->chain.final_viewport);
+   IDirect3DDevice9_SetViewport(chain->chain.dev, (D3DVIEWPORT9*)chain->chain.final_viewport);
 
    hlsl_d3d9_renderchain_set_vertices(
          d3d,
@@ -966,8 +978,8 @@ static bool d3d9_hlsl_initialize(d3d9_video_t *d3d, const video_info_t *info)
    d3d_matrix_ortho_off_center_lh(&d3d->mvp_transposed, 0, 1, 0, 1, 0, 1);
    d3d_matrix_transpose(&d3d->mvp, &d3d->mvp_transposed);
 
-   d3d9_set_render_state(d3d->dev, D3DRS_CULLMODE, D3DCULL_NONE);
-   d3d9_set_render_state(d3d->dev, D3DRS_SCISSORTESTENABLE, TRUE);
+   IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_CULLMODE, D3DCULL_NONE);
+   IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_SCISSORTESTENABLE, TRUE);
 
    return true;
 }
@@ -1284,7 +1296,7 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
    screen_vp.MaxZ   = 1;
    screen_vp.Width  = width;
    screen_vp.Height = height;
-   d3d9_set_viewports(d3d->dev, &screen_vp);
+   IDirect3DDevice9_SetViewport(d3d->dev, (D3DVIEWPORT9*)&screen_vp);
    IDirect3DDevice9_Clear(d3d->dev, 0, 0, D3DCLEAR_TARGET,
          0, 1, 0);
 
@@ -1330,21 +1342,22 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
       d3d9_overlay_render(d3d, width, height, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
-      d3d9_set_vertex_declaration(d3d->dev, (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
-      d3d9_set_stream_source(d3d->dev, 0, (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer, 0, sizeof(Vertex));
-
-      d3d9_set_viewports(d3d->dev, &screen_vp);
+      IDirect3DDevice9_SetVertexDeclaration(d3d->dev, (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
+      IDirect3DDevice9_SetStreamSource(d3d->dev, 0,
+            (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer,
+            0, sizeof(Vertex));
+      IDirect3DDevice9_SetViewport(d3d->dev, (D3DVIEWPORT9*)&screen_vp);
       menu_driver_frame(menu_is_alive, video_info);
    }
    else if (statistics_show)
    {
       if (osd_params)
       {
-         d3d9_set_viewports(d3d->dev, &screen_vp);
+         IDirect3DDevice9_SetViewport(d3d->dev, (D3DVIEWPORT9*)&screen_vp);
          d3d9_begin_scene(d3d->dev);
          font_driver_render_msg(d3d, stat_text,
                (const struct font_params*)osd_params, NULL);
-         d3d9_end_scene(d3d->dev);
+         IDirect3DDevice9_EndScene(d3d->dev);
       }
    }
 #endif
@@ -1366,10 +1379,10 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
 
    if (msg && *msg)
    {
-      d3d9_set_viewports(d3d->dev, &screen_vp);
+      IDirect3DDevice9_SetViewport(d3d->dev, (D3DVIEWPORT9*)&screen_vp);
       d3d9_begin_scene(d3d->dev);
       font_driver_render_msg(d3d, msg, NULL, NULL);
-      d3d9_end_scene(d3d->dev);
+      IDirect3DDevice9_EndScene(d3d->dev);
    }
 
    win32_update_title();
@@ -1491,11 +1504,10 @@ static void d3d9_hlsl_set_nonblock_state(void *data, bool state,
    d3d->video_info.vsync = !state;
 
 #ifdef _XBOX
-   d3d9_set_render_state(d3d->dev,
+   IDirect3DDevice9_SetRenderState(d3d->dev,
          D3DRS_PRESENTINTERVAL,
          interval ?
-         D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE
-         );
+         D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE);
 #else
    d3d->needs_restore    = true;
    d3d9_hlsl_restore(d3d);
