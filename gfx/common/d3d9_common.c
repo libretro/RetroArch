@@ -54,7 +54,6 @@
 
 /* TODO/FIXME - static globals */
 LPDIRECT3D9 g_pD3D9;
-static UINT d3d9_SDKVersion = 0;
 #ifdef HAVE_DYNAMIC_D3D
 static dylib_t g_d3d9_dll;
 #ifdef HAVE_D3DX
@@ -123,7 +122,12 @@ static D3D9Create_t D3D9Create;
 
 void *d3d9_create(void)
 {
-   return D3D9Create(d3d9_SDKVersion);
+#ifdef _XBOX
+   unsigned ver = 0;
+#else
+   unsigned ver = 31;
+#endif
+   return D3D9Create(ver);
 }
 
 #ifdef HAVE_DYNAMIC_D3D
@@ -191,7 +195,6 @@ bool d3d9_initialize_symbols(enum gfx_ctx_api api)
       return false;
 #endif
 
-   d3d9_SDKVersion            = 31;
 #ifdef HAVE_DYNAMIC_D3D
    D3D9Create                 = (D3D9Create_t)dylib_proc(g_d3d9_dll, "Direct3DCreate9");
 #ifdef HAVE_D3DX
@@ -217,9 +220,6 @@ bool d3d9_initialize_symbols(enum gfx_ctx_api api)
    if (!D3D9Create)
       goto error;
 
-#ifdef _XBOX
-   d3d9_SDKVersion          = 0;
-#endif
 #ifdef HAVE_DYNAMIC_D3D
    d3d9_dylib_initialized = true;
 #endif
