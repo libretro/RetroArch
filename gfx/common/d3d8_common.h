@@ -261,7 +261,7 @@ static INLINE void d3d8_lock_rectangle_clear(
    level              = 0;
 #endif
    memset(lr->pBits, level, rectangle_height * lr->Pitch);
-   IDirect3DTexture8_UnlockRect(tex, 0);
+   IDirect3DTexture8_UnlockRect((LPDIRECT3DTEXTURE8)tex, 0);
 }
 
 static INLINE void d3d8_set_texture(
