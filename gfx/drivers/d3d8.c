@@ -103,13 +103,13 @@ void d3d8_set_mvp(void *data, const void *mat_data)
 
    d3d_matrix_identity(&matrix);
 
-   d3d8_set_transform(d3dr, D3DTS_PROJECTION, (D3DMATRIX*)&matrix);
-   d3d8_set_transform(d3dr, D3DTS_VIEW, (D3DMATRIX*)&matrix);
+   IDirect3DDevice8_SetTransform(d3dr, D3DTS_PROJECTION, (D3DMATRIX*)&matrix);
+   IDirect3DDevice8_SetTransform(d3dr, D3DTS_VIEW, (D3DMATRIX*)&matrix);
 
    if (mat_data)
       d3d_matrix_transpose(&matrix, mat_data);
 
-   d3d8_set_transform(d3dr, D3DTS_WORLD, (D3DMATRIX*)&matrix);
+   IDirect3DDevice8_SetTransform(d3dr, D3DTS_WORLD, (D3DMATRIX*)&matrix);
 }
 
 static bool d3d8_renderchain_create_first_pass(
@@ -139,11 +139,13 @@ static bool d3d8_renderchain_create_first_pass(
    if (!chain->tex)
       return false;
 
-   d3d8_set_sampler_address_u(d3dr, 0, D3DTADDRESS_BORDER);
-   d3d8_set_sampler_address_v(d3dr, 0, D3DTADDRESS_BORDER);
-   d3d8_set_render_state(d3dr, D3DRS_LIGHTING, 0);
-   d3d8_set_render_state(d3dr, D3DRS_CULLMODE, D3DCULL_NONE);
-   d3d8_set_render_state(d3dr, D3DRS_ZENABLE, FALSE);
+   IDirect3DDevice8_SetTextureStageState(d3dr, 0,
+         (D3DTEXTURESTAGESTATETYPE)D3DTSS_ADDRESSU, D3DTADDRESS_BORDER);
+   IDirect3DDevice8_SetTextureStageState(d3dr, 0,
+         (D3DTEXTURESTAGESTATETYPE)D3DTSS_ADDRESSV, D3DTADDRESS_BORDER);
+   IDirect3DDevice8_SetRenderState(d3dr, D3DRS_LIGHTING, 0);
+   IDirect3DDevice8_SetRenderState(d3dr, D3DRS_CULLMODE, D3DCULL_NONE);
+   IDirect3DDevice8_SetRenderState(d3dr, D3DRS_ZENABLE,  FALSE);
 
    return true;
 }
@@ -231,13 +233,13 @@ static void d3d8_renderchain_blit_to_texture(
    }
 
    /* Set the texture to NULL so D3D doesn't complain about it being in use... */
-   d3d8_set_texture(d3dr, 0, NULL);
+   IDirect3DDevice8_SetTexture(d3dr, 0, NULL);
 
    if (d3d8_lock_rectangle(chain->tex, 0, &d3dlr, NULL, 0, 0))
    {
       d3d8_texture_blit(chain->pixel_size, chain->tex,
             &d3dlr, frame, width, height, pitch);
-      d3d8_unlock_rectangle(chain->tex);
+      IDirect3DTexture8_UnlockRect(chain->tex, 0);
    }
 }
 
@@ -249,8 +251,11 @@ static void d3d8_renderchain_free(void *data)
       return;
 
    if (chain->tex)
-      d3d8_texture_free(chain->tex);
-   d3d8_vertex_buffer_free(chain->vertex_buf, chain->vertex_decl);
+      IDirect3DTexture8_Release(chain->tex);
+   if (chain->vertex_buf)
+      IDirect3DVertexBuffer8_Release(chain->vertex_buf);
+   chain->vertex_buf = NULL;
+   chain->tex        = NULL;
 
    free(chain);
 }
@@ -284,17 +289,22 @@ static void d3d8_renderchain_render_pass(
    settings_t *settings      = config_get_ptr();
    bool video_smooth         = settings->bools.video_smooth;
 
-   d3d8_set_texture(d3dr, 0, chain->tex);
-   d3d8_set_sampler_magfilter(d3dr, pass_index, video_smooth ?
+   IDirect3DDevice8_SetTexture(d3dr, 0,
+         (IDirect3DBaseTexture8*)chain->tex);
+   IDirect3DDevice8_SetTextureStageState(d3dr, pass_index,
+         (D3DTEXTURESTAGESTATETYPE)D3DTSS_MAGFILTER,
+         video_smooth ?
          D3DTEXF_LINEAR : D3DTEXF_POINT);
-   d3d8_set_sampler_minfilter(d3dr, pass_index, video_smooth ?
+   IDirect3DDevice8_SetTextureStageState(d3dr, pass_index,
+         (D3DTEXTURESTAGESTATETYPE)D3DTSS_MINFILTER,
+         video_smooth ?
          D3DTEXF_LINEAR : D3DTEXF_POINT);
 
-   d3d8_set_viewports(chain->dev, &d3d->final_viewport);
-   d3d8_set_vertex_shader(d3dr,
-         D3DFVF_XYZ | D3DFVF_TEX1 | D3DFVF_DIFFUSE,
-         NULL);
-   d3d8_set_stream_source(d3dr, 0, chain->vertex_buf, 0, sizeof(Vertex));
+   IDirect3DDevice8_SetViewport(chain->dev, (D3DVIEWPORT8*)&d3d->final_viewport);
+   IDirect3DDevice8_SetVertexShader(d3dr,
+         D3DFVF_XYZ | D3DFVF_TEX1 | D3DFVF_DIFFUSE);
+   IDirect3DDevice8_SetStreamSource(d3dr,
+         0, chain->vertex_buf, sizeof(Vertex));
    d3d8_set_mvp(d3d->dev, &d3d->mvp_rotate);
    d3d8_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
 }
@@ -306,7 +316,7 @@ static bool d3d8_renderchain_render(
       unsigned pitch, unsigned rotation)
 {
    LPDIRECT3DDEVICE8 d3dr     = (LPDIRECT3DDEVICE8)d3d->dev;
-   d3d8_renderchain_t *chain = (d3d8_renderchain_t*)d3d->renderchain_data;
+   d3d8_renderchain_t *chain  = (d3d8_renderchain_t*)d3d->renderchain_data;
 
    d3d8_renderchain_blit_to_texture(chain, frame, frame_width, frame_height, pitch);
    d3d8_renderchain_set_vertices(d3d, chain, 1, frame_width, frame_height, chain->frame_count);
@@ -489,13 +499,13 @@ static void d3d8_overlay_render(d3d8_video_t *d3d,
    memcpy(verts, vert, sizeof(vert));
    d3d8_vertex_buffer_unlock(overlay->vert_buf);
 
-   d3d8_enable_blend_func(d3d->dev);
-   d3d8_set_vertex_shader(d3d->dev,
-         D3DFVF_XYZ | D3DFVF_TEX1 | D3DFVF_DIFFUSE,
-         NULL);
-
-   d3d8_set_stream_source(d3d->dev, 0, overlay->vert_buf,
-         0, sizeof(*vert));
+   IDirect3DDevice8_SetRenderState(d3d->dev, D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+   IDirect3DDevice8_SetRenderState(d3d->dev, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+   IDirect3DDevice8_SetRenderState(d3d->dev, D3DRS_ALPHABLENDENABLE, true);
+   IDirect3DDevice8_SetVertexShader(d3d->dev,
+         D3DFVF_XYZ | D3DFVF_TEX1 | D3DFVF_DIFFUSE);
+   IDirect3DDevice8_SetStreamSource(d3d->dev,
+         0, overlay->vert_buf, sizeof(*vert));
 
    if (overlay->fullscreen)
    {
@@ -506,7 +516,7 @@ static void d3d8_overlay_render(d3d8_video_t *d3d,
       vp_full.Height = height;
       vp_full.MinZ   = 0.0f;
       vp_full.MaxZ   = 1.0f;
-      d3d8_set_viewports(d3d->dev, &vp_full);
+      IDirect3DDevice8_SetViewport(d3d->dev, &vp_full);
    }
 
    if (!force_linear)
@@ -519,17 +529,21 @@ static void d3d8_overlay_render(d3d8_video_t *d3d,
    }
 
    /* Render overlay. */
-   d3d8_set_texture(d3d->dev, 0, overlay->tex);
-   d3d8_set_sampler_address_u(d3d->dev, 0, D3DTADDRESS_BORDER);
-   d3d8_set_sampler_address_v(d3d->dev, 0, D3DTADDRESS_BORDER);
-   d3d8_set_sampler_minfilter(d3d->dev, 0, filter_type);
-   d3d8_set_sampler_magfilter(d3d->dev, 0, filter_type);
+   IDirect3DDevice8_SetTexture(d3d->dev, 0,
+         (IDirect3DBaseTexture8*)overlay->tex);
+   IDirect3DDevice8_SetTextureStageState(d3d->dev, 0,
+         (D3DTEXTURESTAGESTATETYPE)D3DTSS_ADDRESSU, D3DTADDRESS_BORDER);
+   IDirect3DDevice8_SetTextureStageState(d3d->dev, 0,
+         (D3DTEXTURESTAGESTATETYPE)D3DTSS_ADDRESSV, D3DTADDRESS_BORDER);
+   IDirect3DDevice8_SetTextureStageState(d3dr, 0,
+         (D3DTEXTURESTAGESTATETYPE)D3DTSS_MAGFILTER, filter_type);
+   IDirect3DDevice8_SetTextureStageState(d3dr, 0,
+         (D3DTEXTURESTAGESTATETYPE)D3DTSS_MINFILTER, filter_type);
    d3d8_draw_primitive(d3d->dev, D3DPT_TRIANGLESTRIP, 0, 2);
 
    /* Restore previous state. */
-   d3d8_disable_blend_func(d3d->dev);
-
-   d3d8_set_viewports(d3d->dev, &d3d->final_viewport);
+   IDirect3DDevice8_SetRenderState(d3d->dev, D3DRS_ALPHABLENDENABLE, false);
+   IDirect3DDevice8_SetViewport(d3d->dev, (D3DVIEWPORT8*)&d3d->final_viewport);
 }
 
 static void d3d8_free_overlay(d3d8_video_t *d3d, overlay_t *overlay)
@@ -537,8 +551,11 @@ static void d3d8_free_overlay(d3d8_video_t *d3d, overlay_t *overlay)
    if (!d3d)
       return;
 
-   d3d8_texture_free(overlay->tex);
-   d3d8_vertex_buffer_free(overlay->vert_buf, NULL);
+   IDirect3DTexture8_Release(overlay->tex);
+   if (overlay->vert_buf)
+      IDirect3DVertexBuffer8_Release(overlay->vert_buf);
+   overlay->vert_buf = NULL;
+   chain->vertex_buf = NULL;
 }
 
 static void d3d8_deinit_chain(d3d8_video_t *d3d)
@@ -556,9 +573,10 @@ static void d3d8_deinitialize(d3d8_video_t *d3d)
    font_driver_free_osd();
 
    d3d8_deinit_chain(d3d);
-   d3d8_vertex_buffer_free(d3d->menu_display.buffer, d3d->menu_display.decl);
+   if (d3d->menu_display.buffer)
+      IDirect3DVertexBuffer8_Release(d3d->menu_display.buffer);
    d3d->menu_display.buffer = NULL;
-   d3d->menu_display.decl = NULL;
+   d3d->menu_display.decl   = NULL;
 }
 
 #define FS_PRESENTINTERVAL(pp) ((pp)->FullScreen_PresentationInterval)
@@ -982,7 +1000,7 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
    d3d_matrix_ortho_off_center_lh(&d3d->mvp_transposed, 0, 1, 0, 1, 0, 1);
    d3d_matrix_transpose(&d3d->mvp, &d3d->mvp_transposed);
 
-   d3d8_set_render_state(d3d->dev, D3DRS_CULLMODE, D3DCULL_NONE);
+   IDirect3DDevice8_SetRenderState(d3d->dev, D3DRS_CULLMODE, D3DCULL_NONE);
 
    return true;
 }
@@ -1022,7 +1040,8 @@ static void d3d8_set_nonblock_state(void *data, bool state,
    d3d->video_info.vsync        = !state;
 
 #ifdef _XBOX
-   d3d8_set_render_state(d3d->dev, D3D8_PRESENTATIONINTERVAL,
+   IDirect3DDevice8_SetRenderState(d3d->dev,
+         D3D8_PRESENTATIONINTERVAL,
          interval ?
          D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE
          );
@@ -1113,9 +1132,9 @@ static void d3d8_set_osd_msg(void *data,
 {
    d3d8_video_t          *d3d = (d3d8_video_t*)data;
 
-   d3d8_begin_scene(d3d->dev);
+   IDirect3DDevice8_BeginScene(d3d->dev);
    font_driver_render_msg(d3d, msg, params, font);
-   d3d8_end_scene(d3d->dev);
+   IDirect3DDevice8_EndScene(d3d->dev);
 }
 
 static bool d3d8_init_internal(d3d8_video_t *d3d,
@@ -1412,7 +1431,7 @@ static bool d3d8_overlay_load(void *data,
 
          for (y = 0; y < height; y++, dst += pitch, src += width)
             memcpy(dst, src, width << 2);
-         d3d8_unlock_rectangle(overlay->tex);
+         IDirect3DTexture8_UnlockRect(overlay->tex, 0);
       }
 
       overlay->tex_w         = width;
@@ -1546,9 +1565,8 @@ static bool d3d8_frame(void *data, const void *frame,
    screen_vp.MaxZ   = 1;
    screen_vp.Width  = width;
    screen_vp.Height = height;
-   d3d8_set_viewports(d3d->dev, &screen_vp);
-   d3d8_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
-
+   IDirect3DDevice8_SetViewport(d3d->dev, (D3DVIEWPORT8*)&screen_vp);
+   IDirect3DDevice8_Clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
    if (!d3d8_renderchain_render(
             d3d,
@@ -1563,10 +1581,13 @@ static bool d3d8_frame(void *data, const void *frame,
    {
       unsigned n;
       for (n = 0; n < video_info->black_frame_insertion; ++n) 
-      {   
-        if (!d3d8_swap(d3d, d3d->dev) || d3d->needs_restore)
-          return true;
-        d3d8_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+      {
+         if (IDirect3DDevice8_Present(d3d->dev, NULL, NULL, NULL, NULL)
+               == D3DERR_DEVICELOST)
+            return true;
+         if (d3d->needs_restore)
+            return true;
+         IDirect3DDevice8_Clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
       }
    }
 
@@ -1577,9 +1598,10 @@ static bool d3d8_frame(void *data, const void *frame,
       d3d8_overlay_render(d3d, width, height, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
-      d3d8_set_stream_source(d3d->dev, 0, d3d->menu_display.buffer, 0, sizeof(Vertex));
+      IDirect3DDevice8_SetStreamSource(d3d->dev,
+            0, d3d->menu_display.buffer, sizeof(Vertex));
 
-      d3d8_set_viewports(d3d->dev, &screen_vp);
+      IDirect3DDevice8_SetViewport(d3d->dev, (D3DVIEWPORT8*)&screen_vp);
       menu_driver_frame(menu_is_alive, video_info);
    }
    else if (statistics_show)
@@ -1601,14 +1623,14 @@ static bool d3d8_frame(void *data, const void *frame,
 
    if (!string_is_empty(msg))
    {
-      d3d8_set_viewports(d3d->dev, &screen_vp);
-      d3d8_begin_scene(d3d->dev);
+      IDirect3DDevice8_SetViewport(d3d->dev, (D3DVIEWPORT8*)&screen_vp);
+      IDirect3DDevice8_BeginScene(d3d->dev);
       font_driver_render_msg(d3d, msg, NULL, NULL);
-      d3d8_end_scene(d3d->dev);
+      IDirect3DDevice8_EndScene(d3d->dev);
    }
 
    d3d8_update_title();
-   d3d8_swap(d3d, d3d->dev);
+   IDirect3DDevice8_Present(d3d->dev, NULL, NULL, NULL, NULL);
 
    return true;
 }
@@ -1625,20 +1647,12 @@ static void d3d8_set_menu_texture_frame(void *data,
 {
    D3DLOCKED_RECT d3dlr;
    d3d8_video_t *d3d = (d3d8_video_t*)data;
-
-   (void)d3dlr;
-   (void)frame;
-   (void)rgb32;
-   (void)width;
-   (void)height;
-   (void)alpha;
-
    if (    !d3d->menu->tex            ||
             d3d->menu->tex_w != width ||
             d3d->menu->tex_h != height)
    {
       if (d3d->menu)
-	     d3d8_texture_free(d3d->menu->tex);
+         IDirect3DTexture8_Release(d3d->menu->tex);
 
       d3d->menu->tex = d3d8_texture_new(d3d->dev, NULL,
             width, height, 1,
@@ -1701,7 +1715,7 @@ static void d3d8_set_menu_texture_frame(void *data,
       }
 
       if (d3d->menu)
-         d3d8_unlock_rectangle(d3d->menu->tex);
+         IDirect3DTexture8_UnlockRect(d3d->menu->tex, 0);
    }
 }
 
@@ -1747,7 +1761,7 @@ static void d3d8_video_texture_load_d3d(
 
       for (i = 0; i < ti->height; i++, dst += pitch, src += ti->width)
          memcpy(dst, src, ti->width << 2);
-      d3d8_unlock_rectangle(tex);
+      IDirect3DTexture8_UnlockRect(tex, 0);
    }
 
    *id = (uintptr_t)tex;
@@ -1789,7 +1803,7 @@ static void d3d8_unload_texture(void *data, bool threaded,
 	   return;
 
    texid = (LPDIRECT3DTEXTURE8)id;
-   d3d8_texture_free(texid);
+   IDirect3DTexture8_Release(texid);
 }
 
 static void d3d8_set_video_mode(void *data,
