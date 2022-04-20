@@ -386,6 +386,12 @@ static INLINE void d3d8_surface_unlock_rect(LPDIRECT3DSURFACE8 surf)
       IDirect3DSurface8_UnlockRect(surf);
 }
 
+static INLINE void d3d8_unlock_rectangle(LPDIRECT3DTEXTURE8 tex)
+{
+   if (tex)
+      IDirect3DTexture8_UnlockRect(tex, 0);
+}
+
 static INLINE bool d3d8_get_adapter_display_mode(
       LPDIRECT3D8 d3d,
       unsigned idx,

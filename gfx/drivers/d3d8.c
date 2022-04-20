@@ -551,11 +551,8 @@ static void d3d8_free_overlay(d3d8_video_t *d3d, overlay_t *overlay)
    if (!d3d)
       return;
 
-   IDirect3DTexture8_Release(overlay->tex);
-   if (overlay->vert_buf)
-      IDirect3DVertexBuffer8_Release(overlay->vert_buf);
-   overlay->vert_buf = NULL;
-   chain->vertex_buf = NULL;
+   d3d8_texture_free(overlay->tex);
+   d3d8_vertex_buffer_free(overlay->vert_buf, NULL);
 }
 
 static void d3d8_deinit_chain(d3d8_video_t *d3d)
@@ -573,8 +570,7 @@ static void d3d8_deinitialize(d3d8_video_t *d3d)
    font_driver_free_osd();
 
    d3d8_deinit_chain(d3d);
-   if (d3d->menu_display.buffer)
-      IDirect3DVertexBuffer8_Release(d3d->menu_display.buffer);
+   d3d8_vertex_buffer_free(d3d->menu_display.buffer, d3d->menu_display.decl);
    d3d->menu_display.buffer = NULL;
    d3d->menu_display.decl   = NULL;
 }
@@ -1431,7 +1427,7 @@ static bool d3d8_overlay_load(void *data,
 
          for (y = 0; y < height; y++, dst += pitch, src += width)
             memcpy(dst, src, width << 2);
-         IDirect3DTexture8_UnlockRect(overlay->tex, 0);
+         d3d8_unlock_rectangle(overlay->tex);
       }
 
       overlay->tex_w         = width;
@@ -1652,7 +1648,7 @@ static void d3d8_set_menu_texture_frame(void *data,
             d3d->menu->tex_h != height)
    {
       if (d3d->menu)
-         IDirect3DTexture8_Release(d3d->menu->tex);
+         d3d8_texture_free(d3d->menu->tex);
 
       d3d->menu->tex = d3d8_texture_new(d3d->dev, NULL,
             width, height, 1,
@@ -1715,7 +1711,7 @@ static void d3d8_set_menu_texture_frame(void *data,
       }
 
       if (d3d->menu)
-         IDirect3DTexture8_UnlockRect(d3d->menu->tex, 0);
+         d3d8_unlock_rectangle(d3d->menu->tex);
    }
 }
 
