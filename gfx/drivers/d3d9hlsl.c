@@ -91,50 +91,44 @@ typedef struct hlsl_renderchain
    struct shader_pass stock_shader;
 } hlsl_renderchain_t;
 
-static void *d3d9_hlsl_get_constant_by_name(void *data, const char *name)
+static void *d3d9_hlsl_get_constant_by_name(LPD3DXCONSTANTTABLE prog, const char *name)
 {
-   LPD3DXCONSTANTTABLE prog = (LPD3DXCONSTANTTABLE)data;
    char lbl[64];
    lbl[0] = '\0';
    snprintf(lbl, sizeof(lbl), "$%s", name);
    return d3d9x_constant_table_get_constant_by_name(prog, NULL, lbl);
 }
 
-static INLINE void d3d9_hlsl_set_param_2f(void *data, void *userdata, const char *name, const void *values)
+static INLINE void d3d9_hlsl_set_param_2f(LPD3DXCONSTANTTABLE prog, LPDIRECT3DDEVICE9 userdata, const char *name, const void *values)
 {
-   LPD3DXCONSTANTTABLE prog = (LPD3DXCONSTANTTABLE)data;
    D3DXHANDLE param         = (D3DXHANDLE)d3d9_hlsl_get_constant_by_name(prog, name);
    if (param)
-      d3d9x_constant_table_set_float_array((LPDIRECT3DDEVICE9)userdata, prog, (void*)param, values, 2);
+      d3d9x_constant_table_set_float_array(userdata, prog, (void*)param, values, 2);
 }
 
-static INLINE void d3d9_hlsl_set_param_1f(void *data, void *userdata, const char *name, const void *value)
+static INLINE void d3d9_hlsl_set_param_1f(LPD3DXCONSTANTTABLE prog, LPDIRECT3DDEVICE9 userdata, const char *name, const void *value)
 {
-   LPD3DXCONSTANTTABLE prog = (LPD3DXCONSTANTTABLE)data;
    D3DXHANDLE param         = (D3DXHANDLE)d3d9_hlsl_get_constant_by_name(prog, name);
    float *val               = (float*)value;
    if (param)
-      d3d9x_constant_table_set_float(prog, (LPDIRECT3DDEVICE9)userdata, (void*)param, *val);
+      d3d9x_constant_table_set_float(prog, userdata, (void*)param, *val);
 }
 
-static INLINE void d3d9_hlsl_bind_program(void *data,
+static INLINE void d3d9_hlsl_bind_program(struct shader_pass *pass,
       LPDIRECT3DDEVICE9 dev)
 {
-   struct shader_pass *pass = (struct shader_pass*)data;
    if (!pass)
       return;
    d3d9_set_vertex_shader(dev, (LPDIRECT3DVERTEXSHADER9)pass->vprg);
    d3d9_set_pixel_shader(dev,  (LPDIRECT3DPIXELSHADER9)pass->fprg);
 }
 
-static INLINE void d3d9_hlsl_set_param_matrix(void *data, void *userdata,
+static INLINE void d3d9_hlsl_set_param_matrix(LPD3DXCONSTANTTABLE prog, LPDIRECT3DDEVICE9 userdata,
       const char *name, const void *values)
 {
-   LPD3DXCONSTANTTABLE prog = (LPD3DXCONSTANTTABLE)data;
    D3DXHANDLE param         = (D3DXHANDLE)d3d9_hlsl_get_constant_by_name(prog, name);
    if (param)
-      d3d9x_constant_table_set_matrix((LPDIRECT3DDEVICE9)userdata, prog,
-            (void*)param, (D3DMATRIX*)values);
+      d3d9x_constant_table_set_matrix(userdata, prog, (void*)param, (D3DMATRIX*)values);
 }
 
 static bool d3d9_hlsl_load_program_from_file(
@@ -462,9 +456,9 @@ static bool hlsl_d3d9_renderchain_init(
       bool rgb32
       )
 {
-   hlsl_renderchain_t *chain     = (hlsl_renderchain_t*)
+   hlsl_renderchain_t *chain                = (hlsl_renderchain_t*)
       d3d->renderchain_data;
-   unsigned fmt                       = (rgb32)
+   unsigned fmt                             = (rgb32)
       ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
 
    if (!chain)
@@ -746,24 +740,16 @@ static uint32_t d3d9_hlsl_get_flags(void *data)
    return flags;
 }
 
-static void d3d9_hlsl_deinit_chain(d3d9_video_t *d3d)
-{
-   if (!d3d)
-      return;
-
-   hlsl_d3d9_renderchain_free(d3d->renderchain_data);
-
-   d3d->renderchain_data   = NULL;
-}
-
 static void d3d9_hlsl_deinitialize(d3d9_video_t *d3d)
 {
    font_driver_free_osd();
 
-   d3d9_hlsl_deinit_chain(d3d);
+   hlsl_d3d9_renderchain_free(d3d->renderchain_data);
+
    d3d9_vertex_buffer_free(d3d->menu_display.buffer,
          d3d->menu_display.decl);
 
+   d3d->renderchain_data    = NULL;
    d3d->menu_display.buffer = NULL;
    d3d->menu_display.decl   = NULL;
 }
@@ -897,7 +883,7 @@ static bool d3d9_hlsl_initialize(d3d9_video_t *d3d, const video_info_t *info)
    bool ret             = true;
 
    if (!g_pD3D9)
-      ret = d3d9_hlsl_init_base(d3d, info);
+      ret               = d3d9_hlsl_init_base(d3d, info);
    else if (d3d->needs_restore)
    {
       D3DPRESENT_PARAMETERS d3dpp;
