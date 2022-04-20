@@ -1271,6 +1271,7 @@ RETROARCH
 #include "../intl/msg_hash_uk.c"
 #include "../intl/msg_hash_cs.c"
 #include "../intl/msg_hash_val.c"
+#include "../intl/msg_hash_ca.c"
 #endif
 
 #include "../intl/msg_hash_us.c"
