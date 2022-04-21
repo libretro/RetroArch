@@ -72,6 +72,7 @@
 #error "UWP does not support D3D9"
 #endif
 
+#include "d3d_shaders/opaque.cg.d3d9.h"
 #include "d3d9_renderchain.h"
 
 /* TODO/FIXME - Temporary workaround for D3D9 not being able to poll flags during init */
@@ -1326,7 +1327,7 @@ static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
       current_width   = out_width;
       current_height  = out_height;
 
-      if (!d3d_cg_renderchain_add_pass(
+      if (!d3d9_cg_renderchain_add_pass(
                d3d->renderchain_data, &link_info))
       {
          RARCH_ERR("[D3D9]: Failed to add pass.\n");
