@@ -336,8 +336,8 @@ static bool d3d8_renderchain_init(void *data,
       )
 {
    unsigned width, height;
-   d3d8_video_t *d3d                       = (d3d8_video_t*)data;
-   LPDIRECT3DDEVICE8 d3dr                  = (LPDIRECT3DDEVICE8)d3d->dev;
+   d3d8_video_t *d3d                      = (d3d8_video_t*)data;
+   LPDIRECT3DDEVICE8 d3dr                 = (LPDIRECT3DDEVICE8)d3d->dev;
    d3d8_renderchain_t *chain              = (d3d8_renderchain_t*)d3d->renderchain_data;
    unsigned fmt                           = (rgb32) ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
    struct video_viewport *custom_vp       = video_viewport_get_custom();
@@ -379,19 +379,13 @@ static bool d3d8_init_chain(d3d8_video_t *d3d, const video_info_t *video_info)
    unsigned current_width, current_height, out_width, out_height;
    unsigned i                   = 0;
 
-   (void)i;
-   (void)current_width;
-   (void)current_height;
-   (void)out_width;
-   (void)out_height;
-
    /* Setup information for first pass. */
-   link_info.pass  = NULL;
-   link_info.tex_w = video_info->input_scale * RARCH_SCALE_BASE;
-   link_info.tex_h = video_info->input_scale * RARCH_SCALE_BASE;
-   link_info.pass  = &d3d->shader.pass[0];
+   link_info.pass               = NULL;
+   link_info.tex_w              = video_info->input_scale * RARCH_SCALE_BASE;
+   link_info.tex_h              = video_info->input_scale * RARCH_SCALE_BASE;
+   link_info.pass               = &d3d->shader.pass[0];
 
-   d3d->renderchain_data = d3d8_renderchain_new();
+   d3d->renderchain_data        = d3d8_renderchain_new();
 
    if (
          !d3d8_renderchain_init(
@@ -400,13 +394,7 @@ static bool d3d8_init_chain(d3d8_video_t *d3d, const video_info_t *video_info)
             d3d->dev, &link_info,
             d3d->video_info.rgb32)
       )
-   {
-      RARCH_ERR("[D3D8]: Failed to init render chain.\n");
       return false;
-   }
-
-   RARCH_LOG("[D3D8]: Renderchain driver: %s\n", "d3d8");
-
    return true;
 }
 
@@ -774,36 +762,26 @@ static void d3d8_make_d3dpp(void *data,
 static bool d3d8_init_base(void *data, const video_info_t *info)
 {
    D3DPRESENT_PARAMETERS d3dpp;
+#ifdef _XBOX
    HWND focus_window = NULL;
-   d3d8_video_t *d3d  = (d3d8_video_t*)data;
-
-#ifndef _XBOX
-   focus_window      = win32_get_window();
+#else
+   HWND focus_window = win32_get_window();
 #endif
+   d3d8_video_t *d3d = (d3d8_video_t*)data;
 
-   memset(&d3dpp, 0, sizeof(d3dpp));
-
-   g_pD3D8            = (LPDIRECT3D8)d3d8_create();
+   g_pD3D8           = (LPDIRECT3D8)d3d8_create();
 
    /* this needs g_pD3D created first */
    d3d8_make_d3dpp(d3d, info, &d3dpp);
 
    if (!g_pD3D8)
-   {
-      RARCH_ERR("[D3D8]: Failed to create D3D interface.\n");
       return false;
-   }
-
    if (!d3d8_create_device(&d3d->dev, &d3dpp,
             g_pD3D8,
             focus_window,
             d3d->cur_mon_id)
       )
-   {
-      RARCH_ERR("[D3D8]: Failed to initialize device.\n");
       return false;
-   }
-
    return true;
 }
 
@@ -821,8 +799,8 @@ static void d3d8_calculate_rect(void *data,
 
    video_driver_get_size(width, height);
 
-   *x                   = 0;
-   *y                   = 0;
+   *x                        = 0;
+   *y                        = 0;
 
    if (video_scale_integer && !force_full)
    {
@@ -967,10 +945,7 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
       return ret;
 
    if (!d3d8_init_chain(d3d, info))
-   {
-      RARCH_ERR("[D3D8]: Failed to initialize render chain.\n");
       return false;
-   }
 
    video_driver_get_size(&width, &height);
    d3d8_set_viewport(d3d,
@@ -1042,25 +1017,22 @@ static void d3d8_set_nonblock_state(void *data, bool state,
          D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE
          );
 #else
-   d3d->needs_restore = true;
+   d3d->needs_restore           = true;
    d3d8_restore(d3d);
 #endif
 }
 
-static bool d3d8_set_resize(d3d8_video_t *d3d,
+static void d3d8_set_resize(d3d8_video_t *d3d,
       unsigned new_width, unsigned new_height)
 {
    /* No changes? */
    if (     (new_width  == d3d->video_info.width)
          && (new_height == d3d->video_info.height))
-      return false;
+      return;
 
-   RARCH_LOG("[D3D8]: Resize %ux%u.\n", new_width, new_height);
    d3d->video_info.width  = new_width;
    d3d->video_info.height = new_height;
    video_driver_set_size(new_width, new_height);
-
-   return true;
 }
 
 static bool d3d8_alive(void *data)
@@ -1068,7 +1040,7 @@ static bool d3d8_alive(void *data)
    unsigned temp_width  = 0;
    unsigned temp_height = 0;
    bool ret             = false;
-   d3d8_video_t *d3d     = (d3d8_video_t*)data;
+   d3d8_video_t *d3d    = (d3d8_video_t*)data;
    bool        quit     = false;
    bool        resize   = false;
 
@@ -1195,10 +1167,6 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
       (mon_rect.right  - mon_rect.left) : info->width;
    full_y                = (windowed_full || info->height == 0) ?
       (mon_rect.bottom - mon_rect.top)  : info->height;
-
-   RARCH_LOG("[D3D8]: Monitor size: %dx%d.\n",
-         (int)(mon_rect.right  - mon_rect.left),
-         (int)(mon_rect.bottom - mon_rect.top));
 #else
    d3d8_get_video_size(d3d, &full_x, &full_y);
 #endif
@@ -1236,7 +1204,7 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
 
 static void d3d8_set_rotation(void *data, unsigned rot)
 {
-   d3d8_video_t *d3d = (d3d8_video_t*)data;
+   d3d8_video_t *d3d  = (d3d8_video_t*)data;
 
    if (!d3d)
       return;
@@ -1348,14 +1316,14 @@ static void d3d8_overlay_tex_geom(
       float x, float y,
       float w, float h)
 {
-   d3d8_video_t *d3d = (d3d8_video_t*)data;
+   d3d8_video_t *d3d                   = (d3d8_video_t*)data;
    if (!d3d)
       return;
 
-   d3d->overlays[index].tex_coords[0] = x;
-   d3d->overlays[index].tex_coords[1] = y;
-   d3d->overlays[index].tex_coords[2] = w;
-   d3d->overlays[index].tex_coords[3] = h;
+   d3d->overlays[index].tex_coords[0]  = x;
+   d3d->overlays[index].tex_coords[1]  = y;
+   d3d->overlays[index].tex_coords[2]  = w;
+   d3d->overlays[index].tex_coords[3]  = h;
 #ifdef _XBOX
    d3d->overlays[index].tex_coords[0] *= d3d->overlays[index].tex_w;
    d3d->overlays[index].tex_coords[1] *= d3d->overlays[index].tex_h;
@@ -1387,12 +1355,11 @@ static bool d3d8_overlay_load(void *data,
 {
    unsigned i, y;
    overlay_t *new_overlays            = NULL;
-   d3d8_video_t *d3d                   = (d3d8_video_t*)data;
-   const struct texture_image *images = (const struct texture_image*)
-      image_data;
+   d3d8_video_t *d3d                  = (d3d8_video_t*)data;
+   const struct texture_image *images = (const struct texture_image*)image_data;
 
    if (!d3d)
-	   return false;
+      return false;
 
    d3d8_free_overlays(d3d);
    d3d->overlays      = (overlay_t*)calloc(num_images, sizeof(*d3d->overlays));
@@ -1406,17 +1373,13 @@ static bool d3d8_overlay_load(void *data,
       overlay_t *overlay = (overlay_t*)&d3d->overlays[i];
 
       overlay->tex       = d3d8_texture_new(d3d->dev, NULL,
-                  width, height, 1,
-                  0,
+                  width, height, 1, 0,
                   d3d8_get_argb8888_format(),
                   D3DPOOL_MANAGED, 0, 0, 0,
                   NULL, NULL, false);
 
       if (!overlay->tex)
-      {
-         RARCH_ERR("[D3D8]: Failed to create overlay texture\n");
          return false;
-      }
 
       if (d3d8_lock_rectangle(overlay->tex, 0, &d3dlr,
                NULL, 0, D3DLOCK_NOSYSLOCK))
@@ -1568,10 +1531,7 @@ static bool d3d8_frame(void *data, const void *frame,
             d3d,
             frame, frame_width, frame_height,
             pitch, d3d->dev_rotation))
-   {
-      RARCH_ERR("[D3D8]: Failed to render scene.\n");
       return false;
-   }
 
    if (black_frame_insertion && !d3d->menu->enabled)
    {
@@ -1656,10 +1616,7 @@ static void d3d8_set_menu_texture_frame(void *data,
             D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
 
       if (!d3d->menu->tex)
-      {
-         RARCH_ERR("[D3D8]: Failed to create menu texture.\n");
          return;
-      }
 
       d3d->menu->tex_w          = width;
       d3d->menu->tex_h          = height;
@@ -1742,10 +1699,7 @@ static void d3d8_video_texture_load_d3d(
                NULL, NULL, false);
 
    if (!tex)
-   {
-      RARCH_ERR("[D3D8]: Failed to create texture\n");
       return;
-   }
 
    if (d3d8_lock_rectangle(tex, 0, &d3dlr,
             NULL, 0, D3DLOCK_NOSYSLOCK))
