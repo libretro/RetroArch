@@ -2995,6 +2995,7 @@ static bool check_menu_driver_compatibility(settings_t *settings)
    if (string_starts_with_size(video_driver, "d3d", STRLEN_CONST("d3d")))
       if (
             string_is_equal(video_driver, "d3d9_hlsl") ||
+            string_is_equal(video_driver, "d3d9_cg")   ||
             string_is_equal(video_driver, "d3d10")     ||
             string_is_equal(video_driver, "d3d11")     ||
             string_is_equal(video_driver, "d3d12")

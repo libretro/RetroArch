@@ -204,8 +204,9 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
          0);
    matrix_4x4_multiply(m1, mop, m2);
    matrix_4x4_multiply(m2, d3d->mvp_transposed, m1);
-
-   d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const float*)&m2, 4);
+   d3d_matrix_transpose(&m1, &m2);
+  
+   d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const float*)&m1, 4);
 
    if (draw && draw->texture)
       gfx_display_d3d9_cg_bind_texture(draw, d3d);
@@ -264,7 +265,7 @@ static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
    }
 }
 
-static bool gfx_display_d3d9_font_init_first(
+static bool gfx_display_d3d9_cg_font_init_first(
       void **font_handle, void *video_data,
       const char *font_path, float menu_font_size,
       bool is_threaded)
@@ -314,7 +315,7 @@ void gfx_display_d3d9_cg_scissor_end(void *data,
    IDirect3DDevice9_SetScissorRect(d3d9->dev, &rect);
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_d3d9 = {
+gfx_display_ctx_driver_t gfx_display_ctx_d3d9_cg = {
    gfx_display_d3d9_cg_draw,
    gfx_display_d3d9_cg_draw_pipeline,
    gfx_display_d3d9_cg_blend_begin,
@@ -322,7 +323,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d9 = {
    gfx_display_d3d9_cg_get_default_mvp,
    gfx_display_d3d9_cg_get_default_vertices,
    gfx_display_d3d9_cg_get_default_tex_coords,
-   gfx_display_d3d9_font_init_first,
+   gfx_display_d3d9_cg_font_init_first,
    GFX_VIDEO_DRIVER_DIRECT3D9_CG,
    "d3d9_cg",
    false,

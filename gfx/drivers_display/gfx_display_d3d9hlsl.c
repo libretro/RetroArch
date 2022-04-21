@@ -267,7 +267,7 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
    }
 }
 
-static bool gfx_display_d3d9_font_init_first(
+static bool gfx_display_d3d9_hlsl_font_init_first(
       void **font_handle, void *video_data,
       const char *font_path, float menu_font_size,
       bool is_threaded)
@@ -325,7 +325,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d9_hlsl = {
    gfx_display_d3d9_hlsl_get_default_mvp,
    gfx_display_d3d9_hlsl_get_default_vertices,
    gfx_display_d3d9_hlsl_get_default_tex_coords,
-   gfx_display_d3d9_font_init_first,
+   gfx_display_d3d9_hlsl_font_init_first,
    GFX_VIDEO_DRIVER_DIRECT3D9_HLSL,
    "d3d9_hlsl",
    false,
