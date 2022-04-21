@@ -78,6 +78,14 @@
 /* TODO/FIXME - Temporary workaround for D3D9 not being able to poll flags during init */
 static gfx_ctx_driver_t d3d9_cg_fake_context;
 
+struct D3D9CGVertex
+{
+   float x, y, z;
+   float u, v;
+   float lut_u, lut_v;
+   float r, g, b, a;
+};
+
 #ifdef _MSC_VER
 #pragma comment(lib, "cgd3d9")
 #endif
@@ -489,7 +497,7 @@ static void d3d9_cg_renderchain_bind_orig(
       unsigned index = attrib_map->data[cgGetParameterResourceIndex(param)];
 
       d3d9_set_stream_source(chain->dev, index,
-            vert_buf, 0, sizeof(struct D3D9Vertex));
+            vert_buf, 0, sizeof(struct D3D9CGVertex));
       unsigned_vector_list_append(chain->bound_vert, index);
    }
 }
@@ -566,7 +574,7 @@ static void d3d9_cg_renderchain_bind_prev(d3d9_renderchain_t *chain,
          unsigned index = attrib_map->data[cgGetParameterResourceIndex(param)];
 
          d3d9_set_stream_source(chain->dev, index,
-               vert_buf, 0, sizeof(struct D3D9Vertex));
+               vert_buf, 0, sizeof(struct D3D9CGVertex));
          unsigned_vector_list_append(chain->bound_vert, index);
       }
    }
@@ -630,7 +638,7 @@ static void d3d9_cg_renderchain_bind_pass(
          unsigned index = attrib_map->data[cgGetParameterResourceIndex(param)];
 
          d3d9_set_stream_source(chain->dev, index, curr_pass->vertex_buf,
-               0, sizeof(struct D3D9Vertex));
+               0, sizeof(struct D3D9CGVertex));
          unsigned_vector_list_append(chain->bound_vert, index);
       }
    }
@@ -777,7 +785,7 @@ static bool d3d9_cg_renderchain_create_first_pass(
       chain->prev.last_height[i] = 0;
       chain->prev.vertex_buf[i]  = (LPDIRECT3DVERTEXBUFFER9)
          d3d9_vertex_buffer_new(
-            chain->dev, 4 * sizeof(struct D3D9Vertex),
+            chain->dev, 4 * sizeof(struct D3D9CGVertex),
             D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, NULL);
 
       if (!chain->prev.vertex_buf[i])
@@ -915,61 +923,77 @@ static INLINE void d3d9_cg_renderchain_set_vertices_on_change(
       unsigned rotation
       )
 {
-   struct Vertex vert[4];
-   void *verts       = NULL;
+   struct D3D9CGVertex vert[4];
+   unsigned i;
+   void* verts = NULL;
    const struct
-      LinkInfo *info = (const struct LinkInfo*)&pass->info;
-   float _u          = (float)(width)  / info->tex_w;
-   float _v          = (float)(height) / info->tex_h;
+      LinkInfo* info = (const struct LinkInfo*)&pass->info;
+   float _u = (float)(width) / info->tex_w;
+   float _v = (float)(height) / info->tex_h;
 
-   pass->last_width  = width;
+   pass->last_width = width;
    pass->last_height = height;
 
-   /* Copied from d3d8 driver */
-   vert[0].x        =  0.0f;
-   vert[0].y        =  1.0f;
-   vert[0].z        =  1.0f;
+   vert[0].x = 0.0f;
+   vert[0].y = out_height;
+   vert[0].z = 0.5f;
+   vert[0].u = 0.0f;
+   vert[0].v = 0.0f;
+   vert[0].lut_u = 0.0f;
+   vert[0].lut_v = 0.0f;
+   vert[0].r = 1.0f;
+   vert[0].g = 1.0f;
+   vert[0].b = 1.0f;
+   vert[0].a = 1.0f;
 
-   vert[1].x        =  1.0f;
-   vert[1].y        =  1.0f;
-   vert[1].z        =  1.0f;
+   vert[1].x = out_width;
+   vert[1].y = out_height;
+   vert[1].z = 0.5f;
+   vert[1].u = _u;
+   vert[1].v = 0.0f;
+   vert[1].lut_u = 1.0f;
+   vert[1].lut_v = 0.0f;
+   vert[1].r = 1.0f;
+   vert[1].g = 1.0f;
+   vert[1].b = 1.0f;
+   vert[1].a = 1.0f;
 
-   vert[2].x        =  0.0f;
-   vert[2].y        =  0.0f;
-   vert[2].z        =  1.0f;
+   vert[2].x = 0.0f;
+   vert[2].y = 0.0f;
+   vert[2].z = 0.5f;
+   vert[2].u = 0.0f;
+   vert[2].v = _v;
+   vert[2].lut_u = 0.0f;
+   vert[2].lut_v = 1.0f;
+   vert[2].r = 1.0f;
+   vert[2].g = 1.0f;
+   vert[2].b = 1.0f;
+   vert[2].a = 1.0f;
 
-   vert[3].x        =  1.0f;
-   vert[3].y        =  0.0f;
-   vert[3].z        =  1.0f;
-
-   vert[0].u        = 0.0f;
-   vert[0].v        = 0.0f;
-   vert[1].v        = 0.0f;
-   vert[2].u        = 0.0f;
-   vert[1].u        = _u;
-   vert[2].v        = _v;
-   vert[3].u        = _u;
-   vert[3].v        = _v;
-
-   vert[0].color    = 0xFFFFFFFF;
-   vert[1].color    = 0xFFFFFFFF;
-   vert[2].color    = 0xFFFFFFFF;
-   vert[3].color    = 0xFFFFFFFF;
+   vert[3].x = out_width;
+   vert[3].y = 0.0f;
+   vert[3].z = 0.5f;
+   vert[3].u = _u;
+   vert[3].v = _v;
+   vert[3].lut_u = 1.0f;
+   vert[3].lut_v = 1.0f;
+   vert[3].r = 1.0f;
+   vert[3].g = 1.0f;
+   vert[3].b = 1.0f;
+   vert[3].a = 1.0f;
 
    /* Align texels and vertices.
     *
     * Fixes infamous 'half-texel offset' issue of D3D9
     *	http://msdn.microsoft.com/en-us/library/bb219690%28VS.85%29.aspx.
     */
-   /* Maybe we do need something like this left out for now
    for (i = 0; i < 4; i++)
    {
-      vert[i].x     -= 0.5f;
-      vert[i].y     += 0.5f;
+      vert[i].x -= 0.5f;
+      vert[i].y += 0.5f;
    }
-   */
 
-   verts             = d3d9_vertex_buffer_lock(pass->vertex_buf);
+   verts = d3d9_vertex_buffer_lock(pass->vertex_buf);
    memcpy(verts, vert, sizeof(vert));
    d3d9_vertex_buffer_unlock(pass->vertex_buf);
 }
@@ -1015,7 +1039,7 @@ static void d3d9_cg_renderchain_render_pass(
    for (i = 0; i < 4; i++)
       d3d9_set_stream_source(chain->dev, i,
             pass->vertex_buf, 0,
-            sizeof(struct D3D9Vertex));
+            sizeof(struct D3D9CGVertex));
 
    /* Set orig texture. */
    d3d9_cg_renderchain_bind_orig(chain, chain->dev, pass);
@@ -1769,7 +1793,7 @@ static bool d3d9_cg_frame(void *data, const void *frame,
    IDirect3DDevice9_Clear(d3d->dev, 0, 0, D3DCLEAR_TARGET,
          0, 1, 0);
 
-   d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const float*)&d3d->mvp_transposed, 4);
+   d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const float*)&d3d->mvp, 4);
    if (!d3d9_cg_renderchain_render(
             d3d, frame, frame_width, frame_height,
             pitch, d3d->dev_rotation))
@@ -1795,7 +1819,7 @@ static bool d3d9_cg_frame(void *data, const void *frame,
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled && overlay_behind_menu)
    {
-      d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const float*)&d3d->mvp_transposed, 4);
+      d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const float*)&d3d->mvp, 4);
       for (i = 0; i < d3d->overlays_size; i++)
          d3d9_overlay_render(d3d, width, height, &d3d->overlays[i], true);
    }
@@ -1805,7 +1829,7 @@ static bool d3d9_cg_frame(void *data, const void *frame,
    if (d3d->menu && d3d->menu->enabled)
    {
       d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const
-               float*)&d3d->mvp_transposed, 4);
+               float*)&d3d->mvp, 4);
       d3d9_overlay_render(d3d, width, height, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
@@ -1832,7 +1856,7 @@ static bool d3d9_cg_frame(void *data, const void *frame,
    if (d3d->overlays_enabled && !overlay_behind_menu)
    {
       d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const
-               float*)&d3d->mvp_transposed, 4);
+               float*)&d3d->mvp, 4);
       for (i = 0; i < d3d->overlays_size; i++)
          d3d9_overlay_render(d3d, width, height, &d3d->overlays[i], true);
    }

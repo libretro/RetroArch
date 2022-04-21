@@ -204,8 +204,9 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
          0);
    matrix_4x4_multiply(m1, mop, m2);
    matrix_4x4_multiply(m2, d3d->mvp_transposed, m1);
-
-   d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const float*)&m2, 4);
+   d3d_matrix_transpose(&m1, &m2);
+  
+   d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const float*)&m1, 4);
 
    if (draw && draw->texture)
       gfx_display_d3d9_cg_bind_texture(draw, d3d);

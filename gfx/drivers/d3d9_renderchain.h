@@ -74,14 +74,6 @@ struct shader_pass
 #undef VECTOR_LIST_TYPE
 #undef VECTOR_LIST_NAME
 
-struct D3D9Vertex
-{
-   float x, y, z;
-   float u, v;
-   float lut_u, lut_v;
-   float r, g, b, a;
-};
-
 typedef struct d3d9_renderchain
 {
    unsigned pixel_size;
