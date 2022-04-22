@@ -102,30 +102,22 @@ static void gfx_display_d3d8_blend_end(void *data)
    IDirect3DDevice8_SetRenderState(d3d->dev, D3DRS_ALPHABLENDENABLE, false);
 }
 
-static void gfx_display_d3d8_bind_texture(gfx_display_ctx_draw_t *draw,
-      d3d8_video_t *d3d)
-{
-   LPDIRECT3DDEVICE8 dev = d3d->dev;
-
-   IDirect3DDevice8_SetTexture(d3d->dev, 0,
-         (IDirect3DBaseTexture8*)draw->texture);
-   IDirect3DDevice8_SetTextureStageState(d3d->dev, 0,
-            (D3DTEXTURESTAGESTATETYPE)D3DTSS_ADDRESSU, D3DTADDRESS_COMM_CLAMP);
-   IDirect3DDevice8_SetTextureStageState(d3d->dev, 0,
-            (D3DTEXTURESTAGESTATETYPE)D3DTSS_ADDRESSV, D3DTADDRESS_COMM_CLAMP);
-   IDirect3DDevice8_SetTextureStageState(d3d->dev, 0,
-            (D3DTEXTURESTAGESTATETYPE)D3DTSS_MINFILTER, D3DTEXF_COMM_LINEAR);
-   IDirect3DDevice8_SetTextureStageState(d3d->dev, 0,
-            (D3DTEXTURESTAGESTATETYPE)D3DTSS_MAGFILTER, D3DTEXF_COMM_LINEAR);
-}
-
 static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
       void *data,
       unsigned video_width, 
       unsigned video_height)
 {
+   static float default_mvp[] ={ 1.0f, 0.0f, 0.0f, 0.0f,
+                                 0.0f, 1.0f, 0.0f, 0.0f,
+                                 0.0f, 0.0f, 1.0f, 0.0f, 
+                                 0.0f, 0.0f, 0.0f, 1.0f
+                               };
    unsigned i;
    math_matrix_4x4 mop, m1, m2;
+   LPDIRECT3DDEVICE8 dev;
+   D3DPRIMITIVETYPE type;
+   unsigned start                = 0;
+   unsigned count                = 0;
    d3d8_video_t *d3d             = (d3d8_video_t*)data;
    Vertex * pv                   = NULL;
    const float *vertex           = NULL;
@@ -137,8 +129,8 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
    if ((d3d->menu_display.offset + draw->coords->vertices )
          > (unsigned)d3d->menu_display.size)
       return;
-
-   pv           = (Vertex*)
+   dev                           = d3d->dev;
+   pv                            = (Vertex*)
       d3d8_vertex_buffer_lock(d3d->menu_display.buffer);
 
    if (!pv)
@@ -192,7 +184,7 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
    d3d8_vertex_buffer_unlock(d3d->menu_display.buffer);
 
    if (!draw->matrix_data)
-      draw->matrix_data = gfx_display_d3d8_get_default_mvp(d3d);
+      draw->matrix_data = &default_mvp;
 
    /* ugh */
    matrix_4x4_scale(m1,       2.0,  2.0, 0);
@@ -212,17 +204,31 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
    matrix_4x4_multiply(m2, d3d->mvp_transposed, m1);
    d3d_matrix_transpose(&m1, &m2);
 
-   d3d8_set_mvp(d3d->dev, &m1);
+   d3d8_set_mvp(dev, &m1);
 
-   if (draw && draw->texture)
-      gfx_display_d3d8_bind_texture(draw, d3d);
+   if (draw->texture)
+   {
+      IDirect3DDevice8_SetTexture(dev, 0,
+            (IDirect3DBaseTexture8*)draw->texture);
+      IDirect3DDevice8_SetTextureStageState(dev, 0,
+            (D3DTEXTURESTAGESTATETYPE)D3DTSS_ADDRESSU, D3DTADDRESS_COMM_CLAMP);
+      IDirect3DDevice8_SetTextureStageState(dev, 0,
+            (D3DTEXTURESTAGESTATETYPE)D3DTSS_ADDRESSV, D3DTADDRESS_COMM_CLAMP);
+      IDirect3DDevice8_SetTextureStageState(dev, 0,
+            (D3DTEXTURESTAGESTATETYPE)D3DTSS_MINFILTER, D3DTEXF_COMM_LINEAR);
+      IDirect3DDevice8_SetTextureStageState(dev, 0,
+            (D3DTEXTURESTAGESTATETYPE)D3DTSS_MAGFILTER, D3DTEXF_COMM_LINEAR);
+   }
 
-   d3d8_draw_primitive(d3d->dev,
-         gfx_display_prim_to_d3d8_enum(draw->prim_type),
-         d3d->menu_display.offset,
-         draw->coords->vertices -
+   type  = gfx_display_prim_to_d3d8_enum(draw->prim_type);
+   start = d3d->menu_display.offset;
+   count = draw->coords->vertices -
          ((draw->prim_type == GFX_DISPLAY_PRIM_TRIANGLESTRIP)
-          ? 2 : 0));
+          ? 2 : 0);
+
+   IDirect3DDevice8_BeginScene(dev);
+   IDirect3DDevice8_DrawPrimitive(dev, type, start, count);
+   IDirect3DDevice8_EndScene(dev);
 
    d3d->menu_display.offset += draw->coords->vertices;
 }

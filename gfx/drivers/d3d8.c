@@ -306,7 +306,9 @@ static void d3d8_renderchain_render_pass(
    IDirect3DDevice8_SetStreamSource(d3dr,
          0, chain->vertex_buf, sizeof(Vertex));
    d3d8_set_mvp(d3d->dev, &d3d->mvp_rotate);
-   d3d8_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
+   IDirect3DDevice8_BeginScene(d3dr);
+   IDirect3DDevice8_DrawPrimitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
+   IDirect3DDevice8_EndScene(d3dr);
 }
 
 static bool d3d8_renderchain_render(
@@ -527,7 +529,9 @@ static void d3d8_overlay_render(d3d8_video_t *d3d,
          (D3DTEXTURESTAGESTATETYPE)D3DTSS_MAGFILTER, filter_type);
    IDirect3DDevice8_SetTextureStageState(d3d->dev, 0,
          (D3DTEXTURESTAGESTATETYPE)D3DTSS_MINFILTER, filter_type);
-   d3d8_draw_primitive(d3d->dev, D3DPT_TRIANGLESTRIP, 0, 2);
+   IDirect3DDevice8_BeginScene(d3d->dev);
+   IDirect3DDevice8_DrawPrimitive(d3d->dev, D3DPT_TRIANGLESTRIP, 0, 2);
+   IDirect3DDevice8_EndScene(d3d->dev);
 
    /* Restore previous state. */
    IDirect3DDevice8_SetRenderState(d3d->dev, D3DRS_ALPHABLENDENABLE, false);
@@ -539,7 +543,8 @@ static void d3d8_free_overlay(d3d8_video_t *d3d, overlay_t *overlay)
    if (!d3d)
       return;
 
-   d3d8_texture_free(overlay->tex);
+   if (overlay->tex)
+      IDirect3DTexture8_Release(overlay->tex);
    d3d8_vertex_buffer_free(overlay->vert_buf, NULL);
 }
 
@@ -1390,7 +1395,7 @@ static bool d3d8_overlay_load(void *data,
 
          for (y = 0; y < height; y++, dst += pitch, src += width)
             memcpy(dst, src, width << 2);
-         d3d8_unlock_rectangle(overlay->tex);
+         IDirect3DTexture8_UnlockRect(overlay->tex, 0);
       }
 
       overlay->tex_w         = width;
@@ -1608,7 +1613,7 @@ static void d3d8_set_menu_texture_frame(void *data,
             d3d->menu->tex_h != height)
    {
       if (d3d->menu)
-         d3d8_texture_free(d3d->menu->tex);
+         IDirect3DTexture8_Release(d3d->menu->tex);
 
       d3d->menu->tex = d3d8_texture_new(d3d->dev, NULL,
             width, height, 1,
@@ -1668,7 +1673,7 @@ static void d3d8_set_menu_texture_frame(void *data,
       }
 
       if (d3d->menu)
-         d3d8_unlock_rectangle(d3d->menu->tex);
+         IDirect3DTexture8_UnlockRect(d3d->menu->tex, 0);
    }
 }
 
