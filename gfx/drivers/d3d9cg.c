@@ -249,7 +249,7 @@ static void d3d9_cg_renderchain_set_shader_params(
    float video_size[2];
    float texture_size[2];
    float output_size[2];
-   CGProgram fprg       = (CGprogram)pass->fprg;
+   CGprogram fprg       = (CGprogram)pass->fprg;
    CGprogram vprg       = (CGprogram)pass->vprg;
 
    video_size[0]        = video_w;
@@ -434,7 +434,7 @@ static void d3d9_cg_renderchain_bind_orig(
    float video_size[2];
    float texture_size[2];
    struct shader_pass *first_pass = (struct shader_pass*)&chain->passes->data[0];
-   CGProgram fprg             = (CGprogram)pass->fprg;
+   CGprogram fprg             = (CGprogram)pass->fprg;
    CGprogram vprg             = (CGprogram)pass->vprg;
    video_size[0]              = first_pass->last_width;
    video_size[1]              = first_pass->last_height;
@@ -502,7 +502,7 @@ static void d3d9_cg_renderchain_bind_prev(d3d9_renderchain_t *chain,
    {
       CGparameter param;
       float video_size[2];
-      CGProgram fprg = (CGprogram)pass->fprg;
+      CGprogram fprg = (CGprogram)pass->fprg;
       CGprogram vprg = (CGprogram)pass->vprg;
 
       snprintf(attr_texture,    sizeof(attr_texture),    "%s.texture",      prev_names[i]);
@@ -573,7 +573,7 @@ static void d3d9_cg_renderchain_bind_pass(
       char attr_tex_size[64]    = {0};
       char attr_coord[64]       = {0};
       struct shader_pass *curr_pass = (struct shader_pass*)&chain->passes->data[i];
-      CGProgram fprg            = (CGprogram)pass->fprg;
+      CGprogram fprg            = (CGprogram)pass->fprg;
       CGprogram vprg            = (CGprogram)pass->vprg;
 
       snprintf(pass_base,       sizeof(pass_base),       "PASS%u",          i);
@@ -1254,7 +1254,6 @@ static bool renderchain_d3d_cg_init_first(
    {
       case GFX_CTX_DIRECT3D9_API:
          {
-            unsigned i;
             void *data = d3d9_cg_renderchain_new();
 
             if (!data)
