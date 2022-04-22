@@ -7825,7 +7825,7 @@ static void netplay_announce_cb(retro_task_t *task,
             else if (string_is_equal(key, "game_name"))
                strlcpy(host_room->gamename, value, sizeof(host_room->gamename));
             else if (string_is_equal(key, "game_crc"))
-               sscanf(value, "%08d", &host_room->gamecrc);
+               sscanf(value, "%08lX", &host_room->gamecrc);
             else if (string_is_equal(key, "host_method"))
                sscanf(value, "%i", &host_room->host_method);
             else if (string_is_equal(key, "has_password"))
