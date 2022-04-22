@@ -2672,13 +2672,3 @@ static INLINE void d3d11_release_shader(d3d11_shader_t* shader)
    Release(shader->ps);
    Release(shader->gs);
 }
-#if !defined(__cplusplus) || defined(CINTERFACE)
-static INLINE void d3d11_set_shader(D3D11DeviceContext ctx, d3d11_shader_t* shader)
-{
-   ctx->lpVtbl->IASetInputLayout(ctx, shader->layout);
-   ctx->lpVtbl->VSSetShader(ctx, shader->vs, NULL, 0);
-   ctx->lpVtbl->PSSetShader(ctx, shader->ps, NULL, 0);
-   ctx->lpVtbl->GSSetShader(ctx, shader->gs, NULL, 0);
-}
-
-#endif

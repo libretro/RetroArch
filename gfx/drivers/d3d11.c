@@ -405,14 +405,18 @@ static void d3d11_set_hdr10(d3d11_video_t* d3d11, bool hdr10)
 static void d3d11_set_filtering(void* data, unsigned index,
       bool smooth, bool ctx_scaling)
 {
-   unsigned       i;
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
-   for (i = 0; i < RARCH_WRAP_MAX; i++)
+   if (smooth)
    {
-      if (smooth)
+      unsigned i;
+      for (i = 0; i < RARCH_WRAP_MAX; i++)
          d3d11->samplers[RARCH_FILTER_UNSPEC][i] = d3d11->samplers[RARCH_FILTER_LINEAR][i];
-      else
+   }
+   else
+   {
+      unsigned i;
+      for (i = 0; i < RARCH_WRAP_MAX; i++)
          d3d11->samplers[RARCH_FILTER_UNSPEC][i] = d3d11->samplers[RARCH_FILTER_NEAREST][i];
    }
 }
@@ -2002,7 +2006,13 @@ static bool d3d11_gfx_frame(
       {
          unsigned j;
 
-         d3d11_set_shader(context, &d3d11->pass[i].shader);
+         {
+            d3d11_shader_t *shader = &d3d11->pass[i].shader;
+            context->lpVtbl->IASetInputLayout(context, shader->layout);
+            context->lpVtbl->VSSetShader(context, shader->vs, NULL, 0);
+            context->lpVtbl->PSSetShader(context, shader->ps, NULL, 0);
+            context->lpVtbl->GSSetShader(context, shader->gs, NULL, 0);
+         }
 
          if (d3d11->shader_preset->pass[i].frame_count_mod)
             d3d11->pass[i].frame_count =
@@ -2097,7 +2107,13 @@ static bool d3d11_gfx_frame(
 
    if (texture)
    {
-      d3d11_set_shader(context, &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]);
+      {
+         d3d11_shader_t *shader = &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND];
+         context->lpVtbl->IASetInputLayout(context, shader->layout);
+         context->lpVtbl->VSSetShader(context, shader->vs, NULL, 0);
+         context->lpVtbl->PSSetShader(context, shader->ps, NULL, 0);
+         context->lpVtbl->GSSetShader(context, shader->gs, NULL, 0);
+      }
       D3D11SetPShaderResources(context, 0, 1, &texture->view);
       D3D11SetPShaderSamplers(
             context, 0, 1, &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
@@ -2115,7 +2131,13 @@ static bool d3d11_gfx_frame(
       if (d3d11->menu.fullscreen)
          D3D11SetViewports(context, 1, &d3d11->viewport);
 
-      d3d11_set_shader(context, &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]);
+      {
+         d3d11_shader_t *shader = &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND];
+         context->lpVtbl->IASetInputLayout(context, shader->layout);
+         context->lpVtbl->VSSetShader(context, shader->vs, NULL, 0);
+         context->lpVtbl->PSSetShader(context, shader->ps, NULL, 0);
+         context->lpVtbl->GSSetShader(context, shader->gs, NULL, 0);
+      }
       {
          UINT stride = sizeof(d3d11_vertex_t);
          UINT offset = 0;
@@ -2132,7 +2154,13 @@ static bool d3d11_gfx_frame(
 #endif
 
    D3D11SetViewports(context, 1, &d3d11->viewport);
-   d3d11_set_shader(context, &d3d11->sprites.shader);
+   {
+      d3d11_shader_t *shader = &d3d11->sprites.shader;
+      context->lpVtbl->IASetInputLayout(context, shader->layout);
+      context->lpVtbl->VSSetShader(context, shader->vs, NULL, 0);
+      context->lpVtbl->PSSetShader(context, shader->ps, NULL, 0);
+      context->lpVtbl->GSSetShader(context, shader->gs, NULL, 0);
+   }
    D3D11SetPrimitiveTopology(context, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
    D3D11SetVShaderConstantBuffers(context, 0, 1, &d3d11->ubo);
    D3D11SetPShaderConstantBuffers(context, 0, 1, &d3d11->ubo);
@@ -2229,8 +2257,13 @@ static bool d3d11_gfx_frame(
       D3D11SetScissorRects(context, 1,
             &d3d11->scissor);
 
-      d3d11_set_shader(context,
-            &d3d11->shaders[VIDEO_SHADER_STOCK_HDR]);
+      {
+         d3d11_shader_t *shader = &d3d11->shaders[VIDEO_SHADER_STOCK_HDR];
+         context->lpVtbl->IASetInputLayout(context, shader->layout);
+         context->lpVtbl->VSSetShader(context, shader->vs, NULL, 0);
+         context->lpVtbl->PSSetShader(context, shader->ps, NULL, 0);
+         context->lpVtbl->GSSetShader(context, shader->gs, NULL, 0);
+      }
       D3D11SetVShaderConstantBuffers(context, 0, 1,
             &d3d11->hdr.ubo);
       D3D11SetPShaderResources(context, 0, 1,
