@@ -233,11 +233,9 @@ static INLINE void d3d8_end_scene(LPDIRECT3DDEVICE8 dev)
 static INLINE void d3d8_draw_primitive(LPDIRECT3DDEVICE8 dev,
       D3DPRIMITIVETYPE type, unsigned start, unsigned count)
 {
-   if (!d3d8_begin_scene(dev))
-      return;
-
+   IDirect3DDevice8_BeginScene(dev);
    IDirect3DDevice8_DrawPrimitive(dev, type, start, count);
-   d3d8_end_scene(dev);
+   IDirect3DDevice8_EndScene(dev);
 }
 
 static INLINE bool d3d8_lock_rectangle(
