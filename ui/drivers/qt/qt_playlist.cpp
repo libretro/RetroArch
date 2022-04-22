@@ -13,7 +13,7 @@
 #include <QtConcurrent>
 
 #include "../ui_qt.h"
-#include "playlistentrydialog.h"
+#include "qt_dialogs.h"
 
 #ifndef CXX_BUILD
 extern "C" {

@@ -18,9 +18,8 @@
 #include <QAction>
 #include <QMenu>
 
-#include "filedropwidget.h"
-#include "settingswidgets.h"
-#include "playlistentrydialog.h"
+#include "qt_widgets.h"
+#include "qt_dialogs.h"
 #include "../ui_qt.h"
 
 #ifndef CXX_BUILD
