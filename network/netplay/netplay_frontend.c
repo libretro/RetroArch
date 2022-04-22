@@ -6809,6 +6809,8 @@ netplay_t *netplay_new(const char *server, const char *mitm, uint16_t port,
          memcpy(netplay->mitm_session_id.unique, buf, flen);
          free(buf);
       }
+
+      netplay->allow_pausing = true;
    }
 
    strlcpy(netplay->nick, !string_is_empty(nick)
