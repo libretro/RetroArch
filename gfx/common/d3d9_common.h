@@ -222,33 +222,6 @@ static INLINE void d3d9_free_pixel_shader(LPDIRECT3DDEVICE9 dev,
       IDirect3DPixelShader9_Release(ps);
 }
 
-static INLINE bool d3d9_set_pixel_shader(
-      LPDIRECT3DDEVICE9 dev,
-      LPDIRECT3DPIXELSHADER9 shader)
-{
-#ifdef _XBOX
-   /* Returns void on Xbox */
-   IDirect3DDevice9_SetPixelShader(dev, shader);
-#else
-   if (IDirect3DDevice9_SetPixelShader(dev, shader) != D3D_OK)
-      return false;
-#endif
-   return true;
-}
-
-static INLINE bool d3d9_set_vertex_shader(
-      LPDIRECT3DDEVICE9 dev, LPDIRECT3DVERTEXSHADER9 shader)
-{
-#ifdef _XBOX
-   IDirect3DDevice9_SetVertexShader(dev, shader);
-#else
-   if (IDirect3DDevice9_SetVertexShader(dev, shader) != D3D_OK)
-      return false;
-#endif
-
-   return true;
-}
-
 static INLINE bool d3d9_set_vertex_shader_constantf(
       LPDIRECT3DDEVICE9 dev,
       UINT start_register,

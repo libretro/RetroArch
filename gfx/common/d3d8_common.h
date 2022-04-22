@@ -207,26 +207,6 @@ static INLINE void d3d8_surface_free(LPDIRECT3DSURFACE8 surf)
       IDirect3DSurface8_Release(surf);
 }
 
-static INLINE bool d3d8_device_get_render_target(
-      LPDIRECT3DDEVICE8 dev,
-      unsigned idx, void **data)
-{
-   if (dev &&
-         SUCCEEDED(IDirect3DDevice8_GetRenderTarget(dev,
-               (LPDIRECT3DSURFACE8*)data)))
-      return true;
-   return false;
-}
-
-static INLINE bool d3d8_get_render_state(LPDIRECT3DDEVICE8 dev,
-      D3DRENDERSTATETYPE state, DWORD *value)
-{
-   if (dev &&
-         IDirect3DDevice8_GetRenderState(dev, state, value) == D3D_OK)
-      return true;
-   return false;
-}
-
 static INLINE bool d3d8_surface_lock_rect(
       LPDIRECT3DSURFACE8 surf, void *data2)
 {

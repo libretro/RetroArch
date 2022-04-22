@@ -114,13 +114,11 @@ static INLINE void d3d9_hlsl_set_param_1f(LPD3DXCONSTANTTABLE prog, LPDIRECT3DDE
       d3d9x_constant_table_set_float(prog, userdata, (void*)param, *val);
 }
 
-static INLINE void d3d9_hlsl_bind_program(struct shader_pass *pass,
-      LPDIRECT3DDEVICE9 dev)
+static INLINE void d3d9_hlsl_bind_program(LPDIRECT3DDEVICE9 dev,
+      struct shader_pass *pass)
 {
-   if (!pass)
-      return;
-   d3d9_set_vertex_shader(dev, (LPDIRECT3DVERTEXSHADER9)pass->vprg);
-   d3d9_set_pixel_shader(dev,  (LPDIRECT3DPIXELSHADER9)pass->fprg);
+   IDirect3DDevice9_SetVertexShader(dev, (LPDIRECT3DVERTEXSHADER9)pass->vprg);
+   IDirect3DDevice9_SetPixelShader(dev, (LPDIRECT3DPIXELSHADER9)pass->fprg);
 }
 
 static INLINE void d3d9_hlsl_set_param_matrix(LPD3DXCONSTANTTABLE prog, LPDIRECT3DDEVICE9 userdata,
@@ -550,7 +548,7 @@ static bool hlsl_d3d9_renderchain_init(
    if (!d3d9_hlsl_load_program(chain->chain.dev, &chain->stock_shader, stock_hlsl_program))
       return false;
 
-   d3d9_hlsl_bind_program(&chain->stock_shader, dev);
+   d3d9_hlsl_bind_program(dev, &chain->stock_shader);
 
    return true;
 }
@@ -577,9 +575,9 @@ static void hlsl_d3d9_renderchain_render_pass(
       with the stock shader as at least the last pass 
       is not setup correctly */
 #if 0
-   d3d9_hlsl_bind_program(pass, chain->chain.dev);
+   d3d9_hlsl_bind_program(chain->chain.dev, pass);
 #else
-   d3d9_hlsl_bind_program(&chain->stock_shader, chain->chain.dev);
+   d3d9_hlsl_bind_program(chain->chain.dev, &chain->stock_shader);
 #endif
 
    IDirect3DDevice9_SetTexture(chain->chain.dev, 0,
@@ -786,7 +784,7 @@ static bool hlsl_d3d9_renderchain_render(
    d3d9_surface_free(back_buffer);
 
    d3d9_renderchain_end_render(&chain->chain);
-   d3d9_hlsl_bind_program(&chain->stock_shader, chain->chain.dev);
+   d3d9_hlsl_bind_program(chain->chain.dev, &chain->stock_shader);
    hlsl_d3d9_renderchain_calc_and_set_shader_mvp(
          chain, &chain->stock_shader,
          chain->chain.final_viewport->Width,
