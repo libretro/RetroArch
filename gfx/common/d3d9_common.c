@@ -1067,7 +1067,9 @@ void d3d9_overlay_render(d3d9_video_t *d3d,
    memcpy(verts, vert, sizeof(vert));
    d3d9_vertex_buffer_unlock((LPDIRECT3DVERTEXBUFFER9)overlay->vert_buf);
 
-   d3d9_enable_blend_func(d3d->dev);
+   IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+   IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+   IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_ALPHABLENDENABLE, true);
 
    /* set vertex declaration for overlay. */
    d3d9_vertex_declaration_new(dev, &vElems, (void**)&vertex_decl);
@@ -1117,7 +1119,8 @@ void d3d9_overlay_render(d3d9_video_t *d3d,
 
 void d3d9_free_overlay(d3d9_video_t *d3d, overlay_t *overlay)
 {
-   d3d9_texture_free((LPDIRECT3DTEXTURE9)overlay->tex);
+   if ((LPDIRECT3DTEXTURE9)overlay->tex)
+      IDirect3DTexture9_Release((LPDIRECT3DTEXTURE9)overlay->tex);
    d3d9_vertex_buffer_free(overlay->vert_buf, NULL);
 }
 #endif
@@ -1179,7 +1182,7 @@ void d3d9_set_menu_texture_frame(void *data,
             d3d->menu->tex_w != width ||
             d3d->menu->tex_h != height)
    {
-      d3d9_texture_free((LPDIRECT3DTEXTURE9)d3d->menu->tex);
+      IDirect3DTexture9_Release((LPDIRECT3DTEXTURE9)d3d->menu->tex);
 
       d3d->menu->tex = d3d9_texture_new(d3d->dev, NULL,
             width, height, 1,
@@ -1238,7 +1241,7 @@ void d3d9_set_menu_texture_frame(void *data,
       }
 
       if (d3d->menu)
-         d3d9_unlock_rectangle((LPDIRECT3DTEXTURE9)d3d->menu->tex);
+         IDirect3DTexture9_UnlockRect((LPDIRECT3DTEXTURE9)d3d->menu->tex, 0);
    }
 }
 
@@ -1301,7 +1304,7 @@ static void d3d9_video_texture_load_d3d(
 
       for (i = 0; i < ti->height; i++, dst += pitch, src += ti->width)
          memcpy(dst, src, ti->width << 2);
-      d3d9_unlock_rectangle(tex);
+      IDirect3DTexture9_UnlockRect(tex, 0);
    }
 
    *id = (uintptr_t)tex;
@@ -1347,7 +1350,7 @@ void d3d9_unload_texture(void *data,
       return;
 
    texid = (LPDIRECT3DTEXTURE9)id;
-   d3d9_texture_free(texid);
+   IDirect3DTexture9_Release(texid);
 }
 
 void d3d9_set_video_mode(void *data,
@@ -1530,7 +1533,7 @@ void d3d9_blit_to_texture(
    {
       d3d9_texture_blit(pixel_size, tex,
             &d3dlr, frame, width, height, pitch);
-      d3d9_unlock_rectangle(tex);
+      IDirect3DTexture9_UnlockRect(tex, 0);
    }
 }
 
@@ -1627,7 +1630,7 @@ static bool d3d9_overlay_load(void *data,
 
          for (y = 0; y < height; y++, dst += pitch, src += width)
             memcpy(dst, src, width << 2);
-         d3d9_unlock_rectangle((LPDIRECT3DTEXTURE9)overlay->tex);
+         IDirect3DTexture9_UnlockRect((LPDIRECT3DTEXTURE9)overlay->tex, 0);
       }
 
       overlay->tex_w         = width;

@@ -478,12 +478,12 @@ static void d3d9_cg_renderchain_bind_orig(
    {
       unsigned index = cgGetParameterResourceIndex(param);
       d3d9_set_texture(chain->dev, index, first_pass->tex);
-      d3d9_set_sampler_magfilter(chain->dev, index,
-            d3d_translate_filter(first_pass->info.pass->filter));
-      d3d9_set_sampler_minfilter(chain->dev, index,
-            d3d_translate_filter(first_pass->info.pass->filter));
-      d3d9_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
-      d3d9_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
+      IDirect3DDevice9_SetSamplerState(chain->dev,
+            index, D3DSAMP_MINFILTER, d3d_translate_filter(first_pass->info.pass->filter));
+      IDirect3DDevice9_SetSamplerState(chain->dev,
+            index, D3DSAMP_MAGFILTER, d3d_translate_filter(first_pass->info.pass->filter));
+      IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+      IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
       unsigned_vector_list_append(chain->bound_tex, index);
    }
 
@@ -568,12 +568,12 @@ static void d3d9_cg_renderchain_bind_prev(d3d9_renderchain_t *chain,
          d3d9_set_texture(chain->dev, index, tex);
          unsigned_vector_list_append(chain->bound_tex, index);
 
-         d3d9_set_sampler_magfilter(chain->dev, index,
+         IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_MINFILTER,
                d3d_translate_filter(chain->passes->data[0].info.pass->filter));
-         d3d9_set_sampler_minfilter(chain->dev, index,
+         IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_MAGFILTER,
                d3d_translate_filter(chain->passes->data[0].info.pass->filter));
-         d3d9_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
-         d3d9_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
+         IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+         IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
       }
 
       param = cgGetNamedParameter(vprg, attr_coord);
@@ -647,12 +647,12 @@ static void d3d9_cg_renderchain_bind_pass(
          unsigned_vector_list_append(chain->bound_tex, index);
 
          d3d9_set_texture(chain->dev, index, curr_pass->tex);
-         d3d9_set_sampler_magfilter(chain->dev, index,
+         IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_MINFILTER,
                d3d_translate_filter(curr_pass->info.pass->filter));
-         d3d9_set_sampler_minfilter(chain->dev, index,
+         IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_MAGFILTER,
                d3d_translate_filter(curr_pass->info.pass->filter));
-         d3d9_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
-         d3d9_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
+         IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+         IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
       }
 
       param = cgGetNamedParameter(vprg, attr_coord);
@@ -680,7 +680,7 @@ static void d3d9_cg_deinit_progs(cg_renderchain_t *chain)
       for (i = 1; i < chain->chain.passes->count; i++)
       {
          if (chain->chain.passes->data[i].tex)
-            d3d9_texture_free(chain->chain.passes->data[i].tex);
+            IDirect3DTexture9_Release(chain->chain.passes->data[i].tex);
          chain->chain.passes->data[i].tex = NULL;
          d3d9_vertex_buffer_free(
                chain->chain.passes->data[i].vertex_buf,
@@ -706,7 +706,7 @@ static void d3d9_cg_destroy_resources(cg_renderchain_t *chain)
    for (i = 0; i < TEXTURES; i++)
    {
       if (chain->chain.prev.tex[i])
-         d3d9_texture_free(chain->chain.prev.tex[i]);
+         IDirect3DTexture9_Release(chain->chain.prev.tex[i]);
       if (chain->chain.prev.vertex_buf[i])
          d3d9_vertex_buffer_free(chain->chain.prev.vertex_buf[i], NULL);
    }
@@ -716,7 +716,7 @@ static void d3d9_cg_destroy_resources(cg_renderchain_t *chain)
    for (i = 0; i < chain->chain.luts->count; i++)
    {
       if (chain->chain.luts->data[i].tex)
-         d3d9_texture_free(chain->chain.luts->data[i].tex);
+         IDirect3DTexture9_Release(chain->chain.luts->data[i].tex);
    }
 
    cgD3D9UnloadAllPrograms();
@@ -820,12 +820,12 @@ static bool d3d9_cg_renderchain_create_first_pass(
          return false;
 
       d3d9_set_texture(chain->dev, 0, chain->prev.tex[i]);
-      d3d9_set_sampler_minfilter(dev, 0,
-            d3d_translate_filter(info->pass->filter));
-      d3d9_set_sampler_magfilter(dev, 0,
-            d3d_translate_filter(info->pass->filter));
-      d3d9_set_sampler_address_u(dev, 0, D3DTADDRESS_BORDER);
-      d3d9_set_sampler_address_v(dev, 0, D3DTADDRESS_BORDER);
+      IDirect3DDevice9_SetSamplerState(dev,
+            0, D3DSAMP_MINFILTER, d3d_translate_filter(info->pass->filter));
+      IDirect3DDevice9_SetSamplerState(dev,
+            0, D3DSAMP_MAGFILTER, d3d_translate_filter(info->pass->filter));
+      IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+      IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
       d3d9_set_texture(chain->dev, 0, NULL);
    }
 
@@ -1050,10 +1050,10 @@ static void d3d9_cg_renderchain_render_pass(
    cgD3D9BindProgram((CGprogram)pass->vprg);
 
    d3d9_set_texture(chain->dev, 0, pass->tex);
-   d3d9_set_sampler_minfilter(chain->dev, 0,
-         d3d_translate_filter(pass->info.pass->filter));
-   d3d9_set_sampler_magfilter(chain->dev, 0,
-         d3d_translate_filter(pass->info.pass->filter));
+   IDirect3DDevice9_SetSamplerState(chain->dev,
+         0, D3DSAMP_MINFILTER, d3d_translate_filter(pass->info.pass->filter));
+   IDirect3DDevice9_SetSamplerState(chain->dev,
+         0, D3DSAMP_MAGFILTER, d3d_translate_filter(pass->info.pass->filter));
 
    d3d9_set_vertex_declaration(chain->dev, pass->vertex_decl);
    for (i = 0; i < 4; i++)
@@ -1102,8 +1102,10 @@ static void d3d9_cg_renderchain_render_pass(
 
    /* So we don't render with linear filter into render targets,
     * which apparently looked odd (too blurry). */
-   d3d9_set_sampler_minfilter(chain->dev, 0, D3DTEXF_POINT);
-   d3d9_set_sampler_magfilter(chain->dev, 0, D3DTEXF_POINT);
+   IDirect3DDevice9_SetSamplerState(chain->dev,
+         0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+   IDirect3DDevice9_SetSamplerState(chain->dev,
+         0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
 
    d3d9_renderchain_unbind_all(chain);
 }
@@ -1167,14 +1169,14 @@ static bool d3d9_cg_renderchain_render(
       viewport.MinZ   = 0.0f;
       viewport.MaxZ   = 1.0f;
 
-      d3d9_set_viewports(chain->dev, &viewport);
+      IDirect3DDevice9_SetViewport(chain->dev, (D3DVIEWPORT9*)&viewport);
       IDirect3DDevice9_Clear(chain->dev, 0, 0, D3DCLEAR_TARGET,
             0, 1, 0);
 
       viewport.Width  = out_width;
       viewport.Height = out_height;
 
-      d3d9_set_viewports(chain->dev, &viewport);
+      IDirect3DDevice9_SetViewport(chain->dev, (D3DVIEWPORT9*)&viewport);
 
       d3d9_cg_renderchain_set_vertices(
             chain, from_pass,
@@ -1201,7 +1203,7 @@ static bool d3d9_cg_renderchain_render(
          &out_width, &out_height,
          current_width, current_height, chain->final_viewport);
 
-   d3d9_set_viewports(chain->dev, chain->final_viewport);
+   IDirect3DDevice9_SetViewport(chain->dev, (D3DVIEWPORT9*)chain->final_viewport);
 
    d3d9_cg_renderchain_set_vertices(
          chain, last_pass,
@@ -1489,8 +1491,8 @@ static bool d3d9_cg_initialize(d3d9_video_t *d3d, const video_info_t *info)
    d3d_matrix_ortho_off_center_lh(&d3d->mvp_transposed, 0, 1, 0, 1, 0, 1);
    d3d_matrix_transpose(&d3d->mvp, &d3d->mvp_transposed);
 
-   d3d9_set_render_state(d3d->dev, D3DRS_CULLMODE, D3DCULL_NONE);
-   d3d9_set_render_state(d3d->dev, D3DRS_SCISSORTESTENABLE, TRUE);
+   IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_CULLMODE, D3DCULL_NONE);
+   IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_SCISSORTESTENABLE, TRUE);
 
    return true;
 }
@@ -1803,7 +1805,7 @@ static bool d3d9_cg_frame(void *data, const void *frame,
    screen_vp.MaxZ   = 1;
    screen_vp.Width  = width;
    screen_vp.Height = height;
-   d3d9_set_viewports(d3d->dev, &screen_vp);
+   IDirect3DDevice9_SetViewport(d3d->dev, (D3DVIEWPORT9*)&screen_vp);
    IDirect3DDevice9_Clear(d3d->dev, 0, 0, D3DCLEAR_TARGET,
          0, 1, 0);
 
@@ -1850,18 +1852,18 @@ static bool d3d9_cg_frame(void *data, const void *frame,
       d3d9_set_vertex_declaration(d3d->dev, (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
       d3d9_set_stream_source(d3d->dev, 0, (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer, 0, sizeof(Vertex));
 
-      d3d9_set_viewports(d3d->dev, &screen_vp);
+      IDirect3DDevice9_SetViewport(d3d->dev, (D3DVIEWPORT9*)&screen_vp);
       menu_driver_frame(menu_is_alive, video_info);
    }
    else if (statistics_show)
    {
       if (osd_params)
       {
-         d3d9_set_viewports(d3d->dev, &screen_vp);
-         d3d9_begin_scene(d3d->dev);
+         IDirect3DDevice9_SetViewport(d3d->dev, (D3DVIEWPORT9*)&screen_vp);
+         IDirect3DDevice9_BeginScene(d3d->dev);
          font_driver_render_msg(d3d, stat_text,
                (const struct font_params*)osd_params, NULL);
-         d3d9_end_scene(d3d->dev);
+         IDirect3DDevice9_EndScene(d3d->dev);
       }
    }
 #endif
@@ -1883,10 +1885,10 @@ static bool d3d9_cg_frame(void *data, const void *frame,
 
    if (msg && *msg)
    {
-      d3d9_set_viewports(d3d->dev, &screen_vp);
-      d3d9_begin_scene(d3d->dev);
+      IDirect3DDevice9_SetViewport(d3d->dev, (D3DVIEWPORT9*)&screen_vp);
+      IDirect3DDevice9_BeginScene(d3d->dev);
       font_driver_render_msg(d3d, msg, NULL, NULL);
-      d3d9_end_scene(d3d->dev);
+      IDirect3DDevice9_EndScene(d3d->dev);
    }
 
    win32_update_title();

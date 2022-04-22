@@ -149,84 +149,14 @@ static INLINE void d3d9_set_stream_source(
             stride);
 }
 
-static INLINE void d3d9_texture_free(LPDIRECT3DTEXTURE9 tex)
-{
-   if (tex)
-      IDirect3DTexture9_Release(tex);
-}
-
-static INLINE void d3d9_set_sampler_address_u(
-      LPDIRECT3DDEVICE9 dev,
-      unsigned sampler, unsigned value)
-{
-   IDirect3DDevice9_SetSamplerState(dev,
-         sampler, D3DSAMP_ADDRESSU, value);
-}
-
-static INLINE void d3d9_set_sampler_address_v(
-      LPDIRECT3DDEVICE9 dev,
-      unsigned sampler, unsigned value)
-{
-   IDirect3DDevice9_SetSamplerState(dev,
-         sampler, D3DSAMP_ADDRESSV, value);
-}
-
-static INLINE void d3d9_set_sampler_minfilter(
-      LPDIRECT3DDEVICE9 dev,
-      unsigned sampler, unsigned value)
-{
-   if (dev)
-      IDirect3DDevice9_SetSamplerState(dev,
-            sampler, D3DSAMP_MINFILTER, value);
-}
-
-static INLINE void d3d9_set_sampler_magfilter(
-      LPDIRECT3DDEVICE9 dev,
-      unsigned sampler, unsigned value)
-{
-   if (dev)
-      IDirect3DDevice9_SetSamplerState(dev,
-            sampler, D3DSAMP_MAGFILTER, value);
-}
-
-static INLINE void d3d9_set_sampler_mipfilter(
-      LPDIRECT3DDEVICE9 dev,
-      unsigned sampler, unsigned value)
-{
-   if (dev)
-      IDirect3DDevice9_SetSamplerState(dev, sampler,
-            D3DSAMP_MIPFILTER, value);
-}
-
-static INLINE bool d3d9_begin_scene(LPDIRECT3DDEVICE9 dev)
-{
-   if (!dev)
-      return false;
-#if defined(_XBOX)
-   IDirect3DDevice9_BeginScene(dev);
-#else
-   if (FAILED(IDirect3DDevice9_BeginScene(dev)))
-      return false;
-#endif
-
-   return true;
-}
-
-static INLINE void d3d9_end_scene(LPDIRECT3DDEVICE9 dev)
-{
-   if (dev)
-      IDirect3DDevice9_EndScene(dev);
-}
-
 static INLINE void d3d9_draw_primitive(
       LPDIRECT3DDEVICE9 dev,
       D3DPRIMITIVETYPE type,
       unsigned start, unsigned count)
 {
-   if (!dev || !d3d9_begin_scene(dev))
-      return;
+   IDirect3DDevice9_BeginScene(dev);
    IDirect3DDevice9_DrawPrimitive(dev, type, start, count);
-   d3d9_end_scene(dev);
+   IDirect3DDevice9_EndScene(dev);
 }
 
 static INLINE bool d3d9_lock_rectangle(
@@ -248,12 +178,6 @@ static INLINE bool d3d9_lock_rectangle(
    return true;
 }
 
-static INLINE void d3d9_unlock_rectangle(LPDIRECT3DTEXTURE9 tex)
-{
-   if (tex)
-      IDirect3DTexture9_UnlockRect(tex, 0);
-}
-
 static INLINE void d3d9_lock_rectangle_clear(void *tex,
       unsigned level, D3DLOCKED_RECT *lr, RECT *rect,
       unsigned rectangle_height, unsigned flags)
@@ -262,7 +186,7 @@ static INLINE void d3d9_lock_rectangle_clear(void *tex,
    level              = 0;
 #endif
    memset(lr->pBits, level, rectangle_height * lr->Pitch);
-   d3d9_unlock_rectangle((LPDIRECT3DTEXTURE9)tex);
+   IDirect3DTexture9_UnlockRect((LPDIRECT3DTEXTURE9)tex, 0);
 }
 
 static INLINE void d3d9_set_texture(
@@ -388,37 +312,6 @@ static INLINE void d3d9_vertex_declaration_free(
 {
    if (decl)
       IDirect3DVertexDeclaration9_Release(decl);
-}
-
-static INLINE void d3d9_set_viewports(LPDIRECT3DDEVICE9 dev,
-      void *vp)
-{
-   if (dev)
-      IDirect3DDevice9_SetViewport(dev, (D3DVIEWPORT9*)vp);
-}
-
-static INLINE void d3d9_set_scissor_rect(
-      LPDIRECT3DDEVICE9 dev, RECT *rect)
-{
-   IDirect3DDevice9_SetScissorRect(dev, rect);
-}
-
-static INLINE void d3d9_set_render_state(
-      LPDIRECT3DDEVICE9 dev, D3DRENDERSTATETYPE state, DWORD value)
-{
-   IDirect3DDevice9_SetRenderState(dev, state, value);
-}
-
-static INLINE void d3d9_enable_blend_func(LPDIRECT3DDEVICE9 dev)
-{
-   IDirect3DDevice9_SetRenderState(dev, D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-   IDirect3DDevice9_SetRenderState(dev, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-   IDirect3DDevice9_SetRenderState(dev, D3DRS_ALPHABLENDENABLE, true);
-}
-
-static INLINE void d3d9_disable_blend_func(LPDIRECT3DDEVICE9 dev)
-{
-   IDirect3DDevice9_SetRenderState(dev, D3DRS_ALPHABLENDENABLE, false);
 }
 
 static INLINE void
