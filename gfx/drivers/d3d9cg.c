@@ -1276,7 +1276,6 @@ static bool renderchain_d3d_cg_init_first(
    {
       case GFX_CTX_DIRECT3D9_API:
          {
-            unsigned i;
             void *data = d3d9_cg_renderchain_new();
 
             if (!data)
@@ -1360,7 +1359,6 @@ static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
       d3d9_log_info(&link_info);
    }
 
-   if (d3d9_cg_renderchain_add_lut)
    {
       unsigned i;
       settings_t *settings = config_get_ptr();
