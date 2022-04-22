@@ -75,6 +75,10 @@
 #include "d3d_shaders/opaque.cg.d3d9.h"
 #include "d3d9_renderchain.h"
 
+#define DECL_FVF_COLOR(stream, offset, index) \
+   { (WORD)(stream), (WORD)(offset * sizeof(float)), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, \
+      D3DDECLUSAGE_COLOR, (BYTE)(index) } \
+
 /* TODO/FIXME - Temporary workaround for D3D9 not being able to poll flags during init */
 static gfx_ctx_driver_t d3d9_cg_fake_context;
 
@@ -96,15 +100,6 @@ typedef struct cg_renderchain
    struct shader_pass stock_shader;
    CGcontext cgCtx;
 } cg_renderchain_t;
-
-static INLINE void d3d9_cg_set_uniform(CGprogram prog, 
-      const char *name, const void *values)
-{
-   CGparameter cgp = cgGetNamedParameter(prog, name);
-   if (cgp)
-      cgD3D9SetUniform(cgp, values);
-}
-
 
 static INLINE bool d3d9_cg_validate_param_name(const char *name)
 {
@@ -245,6 +240,7 @@ static void d3d9_cg_renderchain_set_shader_params(
       unsigned viewport_w,
       unsigned viewport_h)
 {
+   CGparameter param;
    float frame_cnt;
    float video_size[2];
    float texture_size[2];
@@ -259,26 +255,40 @@ static void d3d9_cg_renderchain_set_shader_params(
    output_size[0]       = viewport_w;
    output_size[1]       = viewport_h;
 
-   d3d9_cg_set_uniform(vprg, "IN.video_size",   &video_size);
-   d3d9_cg_set_uniform(fprg, "IN.video_size",   &video_size);
-   d3d9_cg_set_uniform(vprg, "IN.texture_size", &texture_size);
-   d3d9_cg_set_uniform(fprg, "IN.texture_size", &texture_size);
-   d3d9_cg_set_uniform(vprg, "IN.output_size",  &output_size);
-   d3d9_cg_set_uniform(fprg, "IN.output_size",  &output_size);
-
    frame_cnt            = chain->frame_count;
 
    if (pass->info.pass->frame_count_mod)
       frame_cnt         = chain->frame_count
          % pass->info.pass->frame_count_mod;
 
-   d3d9_cg_set_uniform(fprg, "IN.frame_count", &frame_cnt);
-   d3d9_cg_set_uniform(vprg, "IN.frame_count", &frame_cnt);
-}
+   /* Vertex program */
+   param                = cgGetNamedParameter(vprg, "IN.video_size");
+   if (param)
+      cgD3D9SetUniform(param, &video_size);
+   param                = cgGetNamedParameter(vprg, "IN.texture_size");
+   if (param)
+      cgD3D9SetUniform(param, &texture_size);
+   param                = cgGetNamedParameter(vprg, "IN.output_size");
+   if (param)
+      cgD3D9SetUniform(param, &output_size);
+   param                = cgGetNamedParameter(vprg, "IN.frame_count");
+   if (param)
+      cgD3D9SetUniform(param, &frame_cnt);
 
-#define DECL_FVF_COLOR(stream, offset, index) \
-   { (WORD)(stream), (WORD)(offset * sizeof(float)), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, \
-      D3DDECLUSAGE_COLOR, (BYTE)(index) } \
+   /* Fragment program */
+   param                = cgGetNamedParameter(fprg, "IN.video_size");
+   if (param)
+      cgD3D9SetUniform(param, &video_size);
+   param                = cgGetNamedParameter(fprg, "IN.texture_size");
+   if (param)
+      cgD3D9SetUniform(param, &texture_size);
+   param                = cgGetNamedParameter(fprg, "IN.output_size");
+   if (param)
+      cgD3D9SetUniform(param, &output_size);
+   param                = cgGetNamedParameter(fprg, "IN.frame_count");
+   if (param)
+      cgD3D9SetUniform(param, &frame_cnt);
+}
 
 static bool d3d9_cg_renderchain_init_shader_fvf(
       d3d9_renderchain_t *chain,
@@ -293,8 +303,10 @@ static bool d3d9_cg_renderchain_init_shader_fvf(
    static const D3DVERTEXELEMENT9 decl_end     = D3DDECL_END();
    D3DVERTEXELEMENT9 decl[MAXD3DDECLLENGTH]    = {{0}};
    bool *indices                               = NULL;
+   CGprogram fprg                              = (CGprogram)pass->fprg;
+   CGprogram vprg                              = (CGprogram)pass->vprg;
 
-   if (cgD3D9GetVertexDeclaration(pass->vprg, decl) == CG_FALSE)
+   if (cgD3D9GetVertexDeclaration(vprg, decl) == CG_FALSE)
       return false;
 
    for (count = 0; count < MAXD3DDECLLENGTH; count++)
@@ -317,9 +329,9 @@ static bool d3d9_cg_renderchain_init_shader_fvf(
 
    indices  = (bool*)calloc(1, count * sizeof(*indices));
 
-   param    = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(pass->vprg, CG_PROGRAM), "POSITION");
+   param    = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(vprg, CG_PROGRAM), "POSITION");
    if (!param)
-      param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(pass->vprg, CG_PROGRAM), "POSITION0");
+      param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(vprg, CG_PROGRAM), "POSITION0");
 
    if (param)
    {
@@ -339,45 +351,48 @@ static bool d3d9_cg_renderchain_init_shader_fvf(
       RARCH_LOG("[D3D9 Cg]: FVF POSITION semantic found.\n");
    }
 
-   param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(pass->vprg, CG_PROGRAM), "TEXCOORD");
+   param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(vprg, CG_PROGRAM), "TEXCOORD");
    if (!param)
-      param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(pass->vprg, CG_PROGRAM), "TEXCOORD0");
+      param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(vprg, CG_PROGRAM), "TEXCOORD0");
 
    if (param)
    {
-      static const D3DVERTEXELEMENT9 tex_coord0    = D3D9_DECL_FVF_TEXCOORD(1, 3, 0);
+      static const D3DVERTEXELEMENT9 tex_coord0 = D3D9_DECL_FVF_TEXCOORD(1, 3, 0);
       stream_taken[1] = true;
       texcoord0_taken = true;
-      RARCH_LOG("[D3D9 Cg]: FVF TEXCOORD0 semantic found.\n");
       index           = cgGetParameterResourceIndex(param);
       decl[index]     = tex_coord0;
       indices[index]  = true;
+
+      RARCH_LOG("[D3D9 Cg]: FVF TEXCOORD0 semantic found.\n");
    }
 
-   param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(pass->vprg, CG_PROGRAM), "TEXCOORD1");
+   param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(vprg, CG_PROGRAM), "TEXCOORD1");
    if (param)
    {
       static const D3DVERTEXELEMENT9 tex_coord1    = D3D9_DECL_FVF_TEXCOORD(2, 5, 1);
       stream_taken[2] = true;
       texcoord1_taken = true;
-      RARCH_LOG("[D3D9 Cg]: FVF TEXCOORD1 semantic found.\n");
       index           = cgGetParameterResourceIndex(param);
       decl[index]     = tex_coord1;
       indices[index]  = true;
+
+      RARCH_LOG("[D3D9 Cg]: FVF TEXCOORD1 semantic found.\n");
    }
 
-   param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(pass->vprg, CG_PROGRAM), "COLOR");
+   param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(vprg, CG_PROGRAM), "COLOR");
    if (!param)
-      param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(pass->vprg, CG_PROGRAM), "COLOR0");
+      param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(vprg, CG_PROGRAM), "COLOR0");
 
    if (param)
    {
       static const D3DVERTEXELEMENT9 color = DECL_FVF_COLOR(3, 7, 0);
       stream_taken[3] = true;
-      RARCH_LOG("[D3D9 Cg]: FVF COLOR0 semantic found.\n");
       index           = cgGetParameterResourceIndex(param);
       decl[index]     = color;
       indices[index]  = true;
+
+      RARCH_LOG("[D3D9 Cg]: FVF COLOR0 semantic found.\n");
    }
 
    /* Stream {0, 1, 2, 3} might be already taken. Find first vacant stream. */
@@ -441,12 +456,23 @@ static void d3d9_cg_renderchain_bind_orig(
    texture_size[0]            = first_pass->info.tex_w;
    texture_size[1]            = first_pass->info.tex_h;
 
-   d3d9_cg_set_uniform(vprg, "ORIG.video_size",   &video_size);
-   d3d9_cg_set_uniform(fprg, "ORIG.video_size",   &video_size);
-   d3d9_cg_set_uniform(vprg, "ORIG.texture_size", &texture_size);
-   d3d9_cg_set_uniform(fprg, "ORIG.texture_size", &texture_size);
+   /* Vertex program */
+   param                      = cgGetNamedParameter(vprg, "ORIG.video_size");
+   if (param)
+      cgD3D9SetUniform(param, &video_size);
+   param                      = cgGetNamedParameter(vprg, "ORIG.texture_size");
+   if (param)
+      cgD3D9SetUniform(param, &texture_size);
 
-   param = cgGetNamedParameter((CGprogram)pass->fprg, "ORIG.texture");
+   /* Fragment program */
+   param                      = cgGetNamedParameter(fprg, "ORIG.video_size");
+   if (param)
+      cgD3D9SetUniform(param, &video_size);
+   param                      = cgGetNamedParameter(fprg, "ORIG.texture_size");
+   if (param)
+      cgD3D9SetUniform(param, &texture_size);
+
+   param = cgGetNamedParameter(fprg, "ORIG.texture");
 
    if (param)
    {
@@ -461,7 +487,7 @@ static void d3d9_cg_renderchain_bind_orig(
       unsigned_vector_list_append(chain->bound_tex, index);
    }
 
-   param = cgGetNamedParameter((CGprogram)pass->vprg, "ORIG.tex_coord");
+   param = cgGetNamedParameter(vprg, "ORIG.tex_coord");
    if (param)
    {
       LPDIRECT3DVERTEXBUFFER9 vert_buf = (LPDIRECT3DVERTEXBUFFER9)first_pass->vertex_buf;
@@ -515,12 +541,23 @@ static void d3d9_cg_renderchain_bind_prev(d3d9_renderchain_t *chain,
       video_size[1]  = chain->prev.last_height[
          (chain->prev.ptr - (i + 1)) & TEXTURESMASK];
 
-      d3d9_cg_set_uniform(vprg, attr_input_size, &video_size);
-      d3d9_cg_set_uniform(fprg, attr_input_size, &video_size);
-      d3d9_cg_set_uniform(vprg, attr_tex_size,   &texture_size);
-      d3d9_cg_set_uniform(fprg, attr_tex_size,   &texture_size);
+      /* Vertex program */
+      param = cgGetNamedParameter(vprg, attr_input_size);
+      if (param)
+         cgD3D9SetUniform(param, &video_size);
+      param = cgGetNamedParameter(vprg, attr_tex_size);
+      if (param)
+         cgD3D9SetUniform(param, &texture_size);
 
-      param = cgGetNamedParameter((CGprogram)pass->fprg, attr_texture);
+      /* Fragment program */
+      param = cgGetNamedParameter(fprg, attr_input_size);
+      if (param)
+         cgD3D9SetUniform(param, &video_size);
+      param = cgGetNamedParameter(fprg, attr_tex_size);
+      if (param)
+         cgD3D9SetUniform(param, &texture_size);
+
+      param = cgGetNamedParameter(fprg, attr_texture);
       if (param)
       {
          unsigned         index = cgGetParameterResourceIndex(param);
@@ -539,7 +576,7 @@ static void d3d9_cg_renderchain_bind_prev(d3d9_renderchain_t *chain,
          d3d9_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
       }
 
-      param = cgGetNamedParameter((CGprogram)pass->vprg, attr_coord);
+      param = cgGetNamedParameter(vprg, attr_coord);
       if (param)
       {
          LPDIRECT3DVERTEXBUFFER9 vert_buf = (LPDIRECT3DVERTEXBUFFER9)
@@ -561,6 +598,8 @@ static void d3d9_cg_renderchain_bind_pass(
       struct shader_pass *pass, unsigned pass_index)
 {
    unsigned i;
+   CGprogram fprg               = (CGprogram)pass->fprg;
+   CGprogram vprg               = (CGprogram)pass->vprg;
 
    for (i = 1; i < pass_index - 1; i++)
    {
@@ -573,8 +612,6 @@ static void d3d9_cg_renderchain_bind_pass(
       char attr_tex_size[64]    = {0};
       char attr_coord[64]       = {0};
       struct shader_pass *curr_pass = (struct shader_pass*)&chain->passes->data[i];
-      CGprogram fprg            = (CGprogram)pass->fprg;
-      CGprogram vprg            = (CGprogram)pass->vprg;
 
       snprintf(pass_base,       sizeof(pass_base),       "PASS%u",          i);
       snprintf(attr_texture,    sizeof(attr_texture),    "%s.texture",      pass_base);
@@ -587,12 +624,23 @@ static void d3d9_cg_renderchain_bind_pass(
       texture_size[0] = curr_pass->info.tex_w;
       texture_size[1] = curr_pass->info.tex_h;
 
-      d3d9_cg_set_uniform(vprg, attr_input_size,   &video_size);
-      d3d9_cg_set_uniform(fprg, attr_input_size,   &video_size);
-      d3d9_cg_set_uniform(vprg, attr_tex_size,     &texture_size);
-      d3d9_cg_set_uniform(fprg, attr_tex_size,     &texture_size);
+      /* Vertex program */
+      param           = cgGetNamedParameter(vprg, attr_input_size);
+      if (param)
+         cgD3D9SetUniform(param, &video_size);
+      param           = cgGetNamedParameter(vprg, attr_tex_size);
+      if (param)
+         cgD3D9SetUniform(param, &texture_size);
 
-      param = cgGetNamedParameter((CGprogram)pass->fprg, attr_texture);
+      /* Fragment program */
+      param           = cgGetNamedParameter(fprg, attr_input_size);
+      if (param)
+         cgD3D9SetUniform(param, &video_size);
+      param           = cgGetNamedParameter(fprg, attr_tex_size);
+      if (param)
+         cgD3D9SetUniform(param, &texture_size);
+
+      param = cgGetNamedParameter(fprg, attr_texture);
       if (param)
       {
          unsigned index = cgGetParameterResourceIndex(param);
@@ -607,7 +655,7 @@ static void d3d9_cg_renderchain_bind_pass(
          d3d9_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
       }
 
-      param = cgGetNamedParameter((CGprogram)pass->vprg, attr_coord);
+      param = cgGetNamedParameter(vprg, attr_coord);
       if (param)
       {
          struct unsigned_vector_list *attrib_map =
@@ -624,8 +672,6 @@ static void d3d9_cg_renderchain_bind_pass(
 static void d3d9_cg_deinit_progs(cg_renderchain_t *chain)
 {
    unsigned i;
-
-   RARCH_LOG("[D3D9 Cg]: Destroying programs.\n");
 
    if (chain->chain.passes->count >= 1)
    {
@@ -680,10 +726,7 @@ static void d3d9_cg_destroy_resources(cg_renderchain_t *chain)
 static void d3d9_cg_deinit_context_state(cg_renderchain_t *chain)
 {
    if (chain->cgCtx)
-   {
-      RARCH_LOG("[D3D9 Cg]: Destroying context.\n");
       cgDestroyContext(chain->cgCtx);
-   }
 
    chain->cgCtx = NULL;
 }
@@ -1563,10 +1606,6 @@ static bool d3d9_cg_init_internal(d3d9_video_t *d3d,
       (mon_rect.right  - mon_rect.left) : info->width;
    full_y                = (windowed_full || info->height == 0) ?
       (mon_rect.bottom - mon_rect.top)  : info->height;
-
-   RARCH_LOG("[D3D9]: Monitor size: %dx%d.\n",
-         (int)(mon_rect.right  - mon_rect.left),
-         (int)(mon_rect.bottom - mon_rect.top));
 #else
    {
       d3d9_get_video_size(d3d, &full_x, &full_y);
@@ -1630,7 +1669,6 @@ static bool d3d9_cg_init_internal(d3d9_video_t *d3d,
       video_driver_set_gpu_api_version_string(version_str);
    }
 
-   RARCH_LOG("[D3D9]: Init complete.\n");
    return true;
 }
 
