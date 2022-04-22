@@ -1506,6 +1506,34 @@ void d3d9_set_rotation(void *data, unsigned rot)
    d3d->dev_rotation = rot;
 }
 
+void d3d9_blit_to_texture(
+      LPDIRECT3DTEXTURE9 tex,
+      const void *frame,
+      unsigned tex_width,  unsigned tex_height,
+      unsigned width,      unsigned height,
+      unsigned last_width, unsigned last_height,
+      unsigned pitch, unsigned pixel_size)
+{
+   D3DLOCKED_RECT d3dlr    = {0, NULL};
+
+   if (
+         (last_width != width || last_height != height)
+      )
+   {
+      d3d9_lock_rectangle(tex, 0, &d3dlr,
+            NULL, tex_height, D3DLOCK_NOSYSLOCK);
+      d3d9_lock_rectangle_clear(tex, 0, &d3dlr,
+            NULL, tex_height, D3DLOCK_NOSYSLOCK);
+   }
+
+   if (d3d9_lock_rectangle(tex, 0, &d3dlr, NULL, 0, 0))
+   {
+      d3d9_texture_blit(pixel_size, tex,
+            &d3dlr, frame, width, height, pitch);
+      d3d9_unlock_rectangle(tex);
+   }
+}
+
 #ifdef HAVE_OVERLAY
 void d3d9_free_overlays(d3d9_video_t *d3d)
 {

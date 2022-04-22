@@ -689,7 +689,7 @@ static bool hlsl_d3d9_renderchain_render(
          &out_width, &out_height,
          current_width, current_height, chain->chain.final_viewport);
 
-   d3d9_renderchain_blit_to_texture(first_pass->tex,
+   d3d9_blit_to_texture(first_pass->tex,
          frame,
          first_pass->info.tex_w,
          first_pass->info.tex_h,

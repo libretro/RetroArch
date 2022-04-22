@@ -214,7 +214,7 @@ static void d3d8_renderchain_set_vertices(
    }
 }
 
-static void d3d8_renderchain_blit_to_texture(
+static void d3d8_blit_to_texture(
       d3d8_renderchain_t *chain,
       const void *frame,
       unsigned width, unsigned height, unsigned pitch)
@@ -318,7 +318,7 @@ static bool d3d8_renderchain_render(
    LPDIRECT3DDEVICE8 d3dr     = (LPDIRECT3DDEVICE8)d3d->dev;
    d3d8_renderchain_t *chain  = (d3d8_renderchain_t*)d3d->renderchain_data;
 
-   d3d8_renderchain_blit_to_texture(chain, frame, frame_width, frame_height, pitch);
+   d3d8_blit_to_texture(chain, frame, frame_width, frame_height, pitch);
    d3d8_renderchain_set_vertices(d3d, chain, 1, frame_width, frame_height, chain->frame_count);
 
    d3d8_renderchain_render_pass(d3d, d3dr, chain, 0, rotation);

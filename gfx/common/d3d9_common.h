@@ -785,6 +785,14 @@ void d3d9_set_viewport(void *data,
 void d3d9_set_menu_texture_enable(void *data,
       bool state, bool full_screen);
 
+void d3d9_blit_to_texture(
+      LPDIRECT3DTEXTURE9 tex,
+      const void *frame,
+      unsigned tex_width,  unsigned tex_height,
+      unsigned width,      unsigned height,
+      unsigned last_width, unsigned last_height,
+      unsigned pitch, unsigned pixel_size);
+
 void d3d9_apply_state_changes(void *data);
 
 extern LPDIRECT3D9 g_pD3D9;
