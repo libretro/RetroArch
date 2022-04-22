@@ -480,7 +480,7 @@ static void menu_input_st_float_cb(void *userdata, const char *str)
 
 static void menu_input_st_string_cb(void *userdata, const char *str)
 {
-   if (str && *str)
+   if (str)
    {
       rarch_setting_t *setting = NULL;
       const char        *label = menu_input_dialog_get_label_setting_buffer();

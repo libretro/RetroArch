@@ -1017,9 +1017,9 @@ const char **input_keyboard_start_line(
       struct input_keyboard_line *keyboard_line,
       input_keyboard_line_complete_t cb)
 {
-   keyboard_line->buffer    = NULL;
+   keyboard_line->buffer    = calloc(1,1);
    keyboard_line->ptr       = 0;
-   keyboard_line->size      = 0;
+   keyboard_line->size      = 1;
    keyboard_line->cb        = cb;
    keyboard_line->userdata  = userdata;
    keyboard_line->enabled   = true;
