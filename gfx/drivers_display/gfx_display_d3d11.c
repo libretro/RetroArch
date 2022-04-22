@@ -63,7 +63,12 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
 
          D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
          d3d11_set_shader(d3d11->context, &d3d11->sprites.shader);
-         D3D11SetVertexBuffer(d3d11->context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
+         {
+            UINT stride = sizeof(d3d11_sprite_t);
+            UINT offset = 0;
+            D3D11SetVertexBuffers(d3d11->context, 0, 1,
+               &d3d11->sprites.vbo, &stride, &offset);
+         }
          D3D11SetPrimitiveTopology(d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
          return;
    }
@@ -148,7 +153,12 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
       D3D11UnmapBuffer(d3d11->context, d3d11->sprites.vbo, 0);
    }
 
-   d3d11_set_texture_and_sampler(d3d11->context, 0, (d3d11_texture_t*)draw->texture);
+   {
+      d3d11_texture_t *texture = (d3d11_texture_t*)draw->texture;
+      D3D11SetPShaderResources(d3d11->context, 0, 1, &texture->view);
+      D3D11SetPShaderSamplers(d3d11->context,  0, 1, (D3D11SamplerState*)&texture->sampler);
+   }
+
    D3D11Draw(d3d11->context, vertex_count, d3d11->sprites.offset);
    d3d11->sprites.offset += vertex_count;
 
@@ -189,7 +199,11 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
                D3D11CreateBuffer(d3d11->device, &desc, &vertexData, &d3d11->menu_pipeline_vbo);
 			}
          }
-         D3D11SetVertexBuffer(d3d11->context, 0, d3d11->menu_pipeline_vbo, 2 * sizeof(float), 0);
+         {
+            UINT stride = 2 * sizeof(float);
+            UINT offset = 0;
+            D3D11SetVertexBuffers(d3d11->context, 0, 1, &d3d11->menu_pipeline_vbo, &stride, &offset);
+         }
          draw->coords->vertices = ca->coords.vertices;
          D3D11SetBlendState(d3d11->context, d3d11->blend_pipeline, NULL, D3D11_DEFAULT_SAMPLE_MASK);
          break;
@@ -199,7 +213,11 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
-         D3D11SetVertexBuffer(d3d11->context, 0, d3d11->frame.vbo, sizeof(d3d11_vertex_t), 0);
+         {
+            UINT stride = sizeof(d3d11_vertex_t);
+            UINT offset = 0;
+            D3D11SetVertexBuffers(d3d11->context, 0, 1, &d3d11->frame.vbo, &stride, &offset);
+         }
          draw->coords->vertices = 4;
          break;
       default:

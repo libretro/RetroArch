@@ -280,7 +280,18 @@ static void d3d11_render_overlay(void *data)
       D3D11SetViewports(d3d11->context, 1, &d3d11->frame.viewport);
 
    D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
-   D3D11SetVertexBuffer(d3d11->context, 0, d3d11->overlays.vbo, sizeof(d3d11_sprite_t), 0);
+   { 
+      UINT stride = sizeof(d3d11_sprite_t);
+      UINT offset = 0;
+      D3D11SetVertexBuffers(d3d11->context, 0, 1,
+            &d3d11->overlays.vbo, &stride, &offset);
+   }
+   {
+      UINT stride = sizeof(d3d11_sprite_t);
+      UINT offset = 0;
+      D3D11SetVertexBuffers(d3d11->context, 0, 1, &d3d11->frame.vbo,
+            &stride, &offset);    
+   }
    D3D11SetPShaderSamplers(
          d3d11->context, 0, 1, &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
 
@@ -1967,7 +1978,11 @@ static bool d3d11_gfx_frame(
    D3D11SetRasterizerState(context, d3d11->scissor_disabled);
    D3D11SetBlendState(context, d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
    D3D11SetPrimitiveTopology(context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-   D3D11SetVertexBuffer(context, 0, d3d11->frame.vbo, sizeof(d3d11_vertex_t), 0);
+   {
+      UINT stride = sizeof(d3d11_vertex_t);
+      UINT offset = 0;
+      D3D11SetVertexBuffers(context, 0, 1, &d3d11->frame.vbo, &stride, &offset);
+   }
 
    texture = d3d11->frame.texture;
 
@@ -2101,9 +2116,17 @@ static bool d3d11_gfx_frame(
          D3D11SetViewports(context, 1, &d3d11->viewport);
 
       d3d11_set_shader(context, &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]);
-      D3D11SetVertexBuffer(context, 0, d3d11->menu.vbo, sizeof(d3d11_vertex_t), 0);
+      {
+         UINT stride = sizeof(d3d11_vertex_t);
+         UINT offset = 0;
+         D3D11SetVertexBuffers(context, 0, 1, &d3d11->menu.vbo, &stride, &offset);
+      }
       D3D11SetVShaderConstantBuffers(context, 0, 1, &d3d11->ubo);
-      d3d11_set_texture_and_sampler(context, 0, &d3d11->menu.texture);
+      {
+         d3d11_texture_t *texture = (d3d11_texture_t*)&d3d11->menu.texture;
+         D3D11SetPShaderResources(d3d11->context, 0, 1, &texture->view);
+         D3D11SetPShaderSamplers(d3d11->context,  0, 1, (D3D11SamplerState*)&texture->sampler);
+      }
       D3D11Draw(context, 4, 0);
    }
 #endif
@@ -2111,9 +2134,14 @@ static bool d3d11_gfx_frame(
    D3D11SetViewports(context, 1, &d3d11->viewport);
    d3d11_set_shader(context, &d3d11->sprites.shader);
    D3D11SetPrimitiveTopology(context, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-   D3D11SetVShaderConstantBuffer(context, 0, d3d11->ubo);
-   D3D11SetPShaderConstantBuffer(context, 0, d3d11->ubo);
-   D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
+   D3D11SetVShaderConstantBuffers(context, 0, 1, &d3d11->ubo);
+   D3D11SetPShaderConstantBuffers(context, 0, 1, &d3d11->ubo);
+   {
+         UINT stride = sizeof(d3d11_sprite_t);
+         UINT offset = 0;
+         D3D11SetVertexBuffers(context, 0, 1,
+               &d3d11->sprites.vbo, &stride, &offset);
+   }
    d3d11->sprites.enabled = true;
 
 #ifdef HAVE_OVERLAY
@@ -2127,7 +2155,12 @@ static bool d3d11_gfx_frame(
 #endif
    {
       D3D11SetViewports(context, 1, &d3d11->viewport);
-      D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
+      {
+         UINT stride = sizeof(d3d11_sprite_t);
+         UINT offset = 0;
+         D3D11SetVertexBuffers(context, 0, 1,
+               &d3d11->sprites.vbo, &stride, &offset);
+      }
    }
 #endif
 
@@ -2142,7 +2175,12 @@ static bool d3d11_gfx_frame(
       {
          D3D11SetViewports(context, 1, &d3d11->viewport);
          D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
-         D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
+         {
+            UINT stride = sizeof(d3d11_sprite_t);
+            UINT offset = 0;
+            D3D11SetVertexBuffers(context, 0, 1,
+                  &d3d11->sprites.vbo, &stride, &offset);
+         }
          font_driver_render_msg(d3d11,
                stat_text,
                (const struct font_params*)osd_params, NULL);
@@ -2164,9 +2202,12 @@ static bool d3d11_gfx_frame(
 
    if (msg && *msg)
    {
+      UINT stride = sizeof(d3d11_sprite_t);
+      UINT offset = 0;
       D3D11SetViewports(context, 1, &d3d11->viewport);
       D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
-      D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
+      D3D11SetVertexBuffers(context, 0, 1, 
+            &d3d11->sprites.vbo, &stride, &offset);
       font_driver_render_msg(d3d11, msg, NULL, NULL);
    }
    d3d11->sprites.enabled = false;
@@ -2190,15 +2231,19 @@ static bool d3d11_gfx_frame(
 
       d3d11_set_shader(context,
             &d3d11->shaders[VIDEO_SHADER_STOCK_HDR]);
-      D3D11SetVShaderConstantBuffer(context, 0,
-            d3d11->hdr.ubo);
+      D3D11SetVShaderConstantBuffers(context, 0, 1,
+            &d3d11->hdr.ubo);
       D3D11SetPShaderResources(context, 0, 1,
             &d3d11->back_buffer.view);
       D3D11SetPShaderSamplers(context, 0, 1,
             &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
-      D3D11SetPShaderConstantBuffer(context, 0, d3d11->hdr.ubo);
-      D3D11SetVertexBuffer(context, 0, d3d11->frame.vbo,
-            sizeof(d3d11_vertex_t), 0);    
+      D3D11SetPShaderConstantBuffers(context, 0, 1, &d3d11->hdr.ubo);
+      {
+         UINT stride = sizeof(d3d11_vertex_t);
+         UINT offset = 0;
+         D3D11SetVertexBuffers(context, 0, 1, &d3d11->frame.vbo,
+            &stride, &offset);    
+      }
 
       D3D11SetRasterizerState(context, d3d11->scissor_disabled);
       D3D11SetBlendState(context, d3d11->blend_disable, NULL,

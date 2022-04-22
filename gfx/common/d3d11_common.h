@@ -239,15 +239,6 @@ static INLINE void D3D11SetPShaderResources(
          device_context, start_slot, num_views,
          shader_resource_views);
 }
-static INLINE void D3D11SetPShader(
-      D3D11DeviceContext        device_context,
-      D3D11PixelShader          pixel_shader,
-      D3D11ClassInstance* const class_instances,
-      UINT                      num_class_instances)
-{
-   device_context->lpVtbl->PSSetShader(
-         device_context, pixel_shader, class_instances, num_class_instances);
-}
 static INLINE void D3D11SetPShaderSamplers(
       D3D11DeviceContext          device_context,
       UINT                        start_slot,
@@ -258,15 +249,6 @@ static INLINE void D3D11SetPShaderSamplers(
          device_context, start_slot, num_samplers, samplers);
 }
 
-static INLINE void D3D11SetVShader(
-      D3D11DeviceContext        device_context,
-      D3D11VertexShader         vertex_shader,
-      D3D11ClassInstance* const class_instances,
-      UINT                      num_class_instances)
-{
-   device_context->lpVtbl->VSSetShader(
-         device_context, vertex_shader, class_instances, num_class_instances);
-}
 static INLINE void D3D11DrawIndexed(
       D3D11DeviceContext device_context,
       UINT               index_count,
@@ -297,6 +279,7 @@ D3D11Unmap(D3D11DeviceContext device_context, D3D11Resource resource, UINT subre
 {
    device_context->lpVtbl->Unmap(device_context, resource, subresource);
 }
+
 static INLINE void D3D11SetPShaderConstantBuffers(
       D3D11DeviceContext device_context,
       UINT               start_slot,
@@ -306,11 +289,7 @@ static INLINE void D3D11SetPShaderConstantBuffers(
    device_context->lpVtbl->PSSetConstantBuffers(
          device_context, start_slot, num_buffers, constant_buffers);
 }
-static INLINE void
-D3D11SetInputLayout(D3D11DeviceContext device_context, D3D11InputLayout input_layout)
-{
-   device_context->lpVtbl->IASetInputLayout(device_context, input_layout);
-}
+
 static INLINE void D3D11SetVertexBuffers(
       D3D11DeviceContext device_context,
       UINT               start_slot,
@@ -359,15 +338,7 @@ static INLINE void D3D11SetGShaderConstantBuffers(
    device_context->lpVtbl->GSSetConstantBuffers(
          device_context, start_slot, num_buffers, constant_buffers);
 }
-static INLINE void D3D11SetGShader(
-      D3D11DeviceContext        device_context,
-      D3D11GeometryShader       shader,
-      D3D11ClassInstance* const class_instances,
-      UINT                      num_class_instances)
-{
-   device_context->lpVtbl->GSSetShader(
-         device_context, shader, class_instances, num_class_instances);
-}
+
 static INLINE void
 D3D11SetPrimitiveTopology(D3D11DeviceContext device_context, D3D11_PRIMITIVE_TOPOLOGY topology)
 {
@@ -2702,37 +2673,12 @@ static INLINE void d3d11_release_shader(d3d11_shader_t* shader)
    Release(shader->gs);
 }
 #if !defined(__cplusplus) || defined(CINTERFACE)
-static INLINE void
-d3d11_set_texture_and_sampler(D3D11DeviceContext ctx, UINT slot, d3d11_texture_t* texture)
-{
-   D3D11SetPShaderResources(ctx, slot, 1, &texture->view);
-   D3D11SetPShaderSamplers(ctx, slot, 1, (D3D11SamplerState*)&texture->sampler);
-}
-
 static INLINE void d3d11_set_shader(D3D11DeviceContext ctx, d3d11_shader_t* shader)
 {
-   D3D11SetInputLayout(ctx, shader->layout);
-   D3D11SetVShader(ctx, shader->vs, NULL, 0);
-   D3D11SetPShader(ctx, shader->ps, NULL, 0);
-   D3D11SetGShader(ctx, shader->gs, NULL, 0);
+   ctx->lpVtbl->IASetInputLayout(ctx, shader->layout);
+   ctx->lpVtbl->VSSetShader(ctx, shader->vs, NULL, 0);
+   ctx->lpVtbl->PSSetShader(ctx, shader->ps, NULL, 0);
+   ctx->lpVtbl->GSSetShader(ctx, shader->gs, NULL, 0);
 }
-static INLINE void D3D11SetVertexBuffer(
-      D3D11DeviceContext device_context,
-      UINT               slot,
-      D3D11Buffer const  vertex_buffer,
-      UINT               stride,
-      UINT               offset)
-{
-   D3D11SetVertexBuffers(device_context, slot, 1, &vertex_buffer, &stride, &offset);
-}
-static INLINE void D3D11SetVShaderConstantBuffer(
-      D3D11DeviceContext device_context, UINT slot, D3D11Buffer const constant_buffer)
-{
-   D3D11SetVShaderConstantBuffers(device_context, slot, 1, &constant_buffer);
-}
-static INLINE void D3D11SetPShaderConstantBuffer(
-      D3D11DeviceContext device_context, UINT slot, D3D11Buffer const constant_buffer)
-{
-   D3D11SetPShaderConstantBuffers(device_context, slot, 1, &constant_buffer);
-}
+
 #endif
