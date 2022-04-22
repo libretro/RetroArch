@@ -1811,7 +1811,8 @@ static bool d3d9_cg_frame(void *data, const void *frame,
    IDirect3DDevice9_Clear(d3d->dev, 0, 0, D3DCLEAR_TARGET,
          0, 1, 0);
 
-   d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const float*)&d3d->mvp, 4);
+   IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev,
+         0, (const float*)&d3d->mvp, 4);
    if (!d3d9_cg_renderchain_render(
             d3d, frame, frame_width, frame_height,
             pitch, d3d->dev_rotation))
@@ -1837,7 +1838,8 @@ static bool d3d9_cg_frame(void *data, const void *frame,
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled && overlay_behind_menu)
    {
-      d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const float*)&d3d->mvp, 4);
+      IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev,
+         0, (const float*)&d3d->mvp, 4);
       for (i = 0; i < d3d->overlays_size; i++)
          d3d9_overlay_render(d3d, width, height, &d3d->overlays[i], true);
    }
@@ -1846,8 +1848,8 @@ static bool d3d9_cg_frame(void *data, const void *frame,
 #ifdef HAVE_MENU
    if (d3d->menu && d3d->menu->enabled)
    {
-      d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const
-               float*)&d3d->mvp, 4);
+      IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev,
+         0, (const float*)&d3d->mvp, 4);
       d3d9_overlay_render(d3d, width, height, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
@@ -1873,8 +1875,8 @@ static bool d3d9_cg_frame(void *data, const void *frame,
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled && !overlay_behind_menu)
    {
-      d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const
-               float*)&d3d->mvp, 4);
+      IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev,
+         0, (const float*)&d3d->mvp, 4);
       for (i = 0; i < d3d->overlays_size; i++)
          d3d9_overlay_render(d3d, width, height, &d3d->overlays[i], true);
    }

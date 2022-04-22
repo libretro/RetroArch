@@ -222,24 +222,6 @@ static INLINE void d3d9_free_pixel_shader(LPDIRECT3DDEVICE9 dev,
       IDirect3DPixelShader9_Release(ps);
 }
 
-static INLINE bool d3d9_set_vertex_shader_constantf(
-      LPDIRECT3DDEVICE9 dev,
-      UINT start_register,
-      const float* constant_data,
-      unsigned vector4f_count)
-{
-#ifdef _XBOX
-   IDirect3DDevice9_SetVertexShaderConstantF(dev,
-         start_register, constant_data, vector4f_count);
-#else
-   if (IDirect3DDevice9_SetVertexShaderConstantF(dev,
-            start_register, constant_data, vector4f_count) != D3D_OK)
-      return false;
-#endif
-
-   return true;
-}
-
 static INLINE void d3d9_texture_blit(
       unsigned pixel_size,
       void *tex,

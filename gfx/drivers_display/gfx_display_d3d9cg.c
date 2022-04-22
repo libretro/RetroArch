@@ -102,25 +102,6 @@ static void gfx_display_d3d9_cg_blend_end(void *data)
    IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_ALPHABLENDENABLE, false);
 }
 
-static void gfx_display_d3d9_cg_bind_texture(gfx_display_ctx_draw_t *draw,
-      d3d9_video_t *d3d)
-{
-   LPDIRECT3DDEVICE9 dev = d3d->dev;
-
-   IDirect3DDevice9_SetTexture(dev, 0,
-         (IDirect3DBaseTexture9*)draw->texture);
-   IDirect3DDevice9_SetSamplerState(dev,
-         0, D3DSAMP_ADDRESSU, D3DTADDRESS_COMM_CLAMP);
-   IDirect3DDevice9_SetSamplerState(dev,
-         0, D3DSAMP_ADDRESSV, D3DTADDRESS_COMM_CLAMP);
-   IDirect3DDevice9_SetSamplerState(dev,
-         0, D3DSAMP_MINFILTER, D3DTEXF_COMM_LINEAR);
-   IDirect3DDevice9_SetSamplerState(dev,
-         0, D3DSAMP_MAGFILTER, D3DTEXF_COMM_LINEAR);
-   IDirect3DDevice9_SetSamplerState(dev, 0,
-         D3DSAMP_MIPFILTER, D3DTEXF_COMM_LINEAR);
-}
-
 static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
@@ -209,10 +190,24 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
    matrix_4x4_multiply(m2, d3d->mvp_transposed, m1);
    d3d_matrix_transpose(&m1, &m2);
   
-   d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const float*)&m1, 4);
+   IDirect3DDevice9_SetVertexShaderConstantF(dev,
+         0, (const float*)&m1, 4);
 
-   if (draw && draw->texture)
-      gfx_display_d3d9_cg_bind_texture(draw, d3d);
+   if (draw->texture)
+   {
+      IDirect3DDevice9_SetTexture(dev, 0,
+         (IDirect3DBaseTexture9*)draw->texture);
+      IDirect3DDevice9_SetSamplerState(dev,
+         0, D3DSAMP_ADDRESSU, D3DTADDRESS_COMM_CLAMP);
+      IDirect3DDevice9_SetSamplerState(dev,
+         0, D3DSAMP_ADDRESSV, D3DTADDRESS_COMM_CLAMP);
+      IDirect3DDevice9_SetSamplerState(dev,
+         0, D3DSAMP_MINFILTER, D3DTEXF_COMM_LINEAR);
+      IDirect3DDevice9_SetSamplerState(dev,
+         0, D3DSAMP_MAGFILTER, D3DTEXF_COMM_LINEAR);
+      IDirect3DDevice9_SetSamplerState(dev, 0,
+         D3DSAMP_MIPFILTER, D3DTEXF_COMM_LINEAR);
+   }
 
    type  = (D3DPRIMITIVETYPE)gfx_display_prim_to_d3d9_cg_enum(draw->prim_type);
    start = d3d->menu_display.offset;
