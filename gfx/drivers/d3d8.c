@@ -378,7 +378,6 @@ static void *d3d8_renderchain_new(void)
 static bool d3d8_init_chain(d3d8_video_t *d3d, const video_info_t *video_info)
 {
    struct LinkInfo link_info;
-   unsigned current_width, current_height, out_width, out_height;
    unsigned i                   = 0;
 
    /* Setup information for first pass. */
@@ -540,11 +539,13 @@ static void d3d8_overlay_render(d3d8_video_t *d3d,
 
 static void d3d8_free_overlay(d3d8_video_t *d3d, overlay_t *overlay)
 {
+   LPDIRECT3DTEXTURE8 tex;
    if (!d3d)
       return;
 
-   if (overlay->tex)
-      IDirect3DTexture8_Release(overlay->tex);
+   tex = overlay->tex;
+   if (tex)
+      IDirect3DTexture8_Release(tex);
    d3d8_vertex_buffer_free(overlay->vert_buf, NULL);
 }
 
@@ -1389,13 +1390,13 @@ static bool d3d8_overlay_load(void *data,
       if (d3d8_lock_rectangle(overlay->tex, 0, &d3dlr,
                NULL, 0, D3DLOCK_NOSYSLOCK))
       {
-         uint32_t       *dst = (uint32_t*)(d3dlr.pBits);
-         const uint32_t *src = images[i].pixels;
-         unsigned      pitch = d3dlr.Pitch >> 2;
-
+         uint32_t       *dst    = (uint32_t*)(d3dlr.pBits);
+         const uint32_t *src    = images[i].pixels;
+         unsigned      pitch    = d3dlr.Pitch >> 2;
+         LPDIRECT3DTEXTURE8 tex = overlay->tex;
          for (y = 0; y < height; y++, dst += pitch, src += width)
             memcpy(dst, src, width << 2);
-         IDirect3DTexture8_UnlockRect(overlay->tex, 0);
+         IDirect3DTexture8_UnlockRect(tex, 0);
       }
 
       overlay->tex_w         = width;
@@ -1612,8 +1613,9 @@ static void d3d8_set_menu_texture_frame(void *data,
             d3d->menu->tex_w != width ||
             d3d->menu->tex_h != height)
    {
-      if (d3d->menu)
-         IDirect3DTexture8_Release(d3d->menu->tex);
+      LPDIRECT3DTEXTURE8 tex = d3d->menu->tex;
+      if (tex)
+         IDirect3DTexture8_Release(tex);
 
       d3d->menu->tex = d3d8_texture_new(d3d->dev, NULL,
             width, height, 1,
@@ -1637,6 +1639,7 @@ static void d3d8_set_menu_texture_frame(void *data,
             NULL, 0, D3DLOCK_NOSYSLOCK))
    {
       unsigned h, w;
+
       if (rgb32)
       {
          uint8_t        *dst = (uint8_t*)d3dlr.pBits;
@@ -1673,7 +1676,11 @@ static void d3d8_set_menu_texture_frame(void *data,
       }
 
       if (d3d->menu)
-         IDirect3DTexture8_UnlockRect(d3d->menu->tex, 0);
+      {
+         LPDIRECT3DTEXTURE8 tex = d3d->menu->tex;
+         if (tex)
+            IDirect3DTexture8_UnlockRect(tex, 0);
+      }
    }
 }
 
