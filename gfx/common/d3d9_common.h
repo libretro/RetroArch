@@ -149,16 +149,6 @@ static INLINE void d3d9_set_stream_source(
             stride);
 }
 
-static INLINE void d3d9_draw_primitive(
-      LPDIRECT3DDEVICE9 dev,
-      D3DPRIMITIVETYPE type,
-      unsigned start, unsigned count)
-{
-   IDirect3DDevice9_BeginScene(dev);
-   IDirect3DDevice9_DrawPrimitive(dev, type, start, count);
-   IDirect3DDevice9_EndScene(dev);
-}
-
 static INLINE bool d3d9_lock_rectangle(
       LPDIRECT3DTEXTURE9 tex,
       unsigned level,

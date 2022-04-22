@@ -211,12 +211,15 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
    if (draw && draw->texture)
       gfx_display_d3d9_bind_texture(draw, d3d);
 
-   d3d9_draw_primitive(dev,
-         (D3DPRIMITIVETYPE)gfx_display_prim_to_d3d9_enum(draw->prim_type),
-         d3d->menu_display.offset,
-         draw->coords->vertices -
+   type  = (D3DPRIMITIVETYPE)gfx_display_prim_to_d3d9_cg_enum(draw->prim_type);
+   start = d3d->menu_display.offset;
+   count = draw->coords->vertices -
          ((draw->prim_type == GFX_DISPLAY_PRIM_TRIANGLESTRIP)
-          ? 2 : 0));
+          ? 2 : 0);
+
+   IDirect3DDevice9_BeginScene(dev);
+   IDirect3DDevice9_DrawPrimitive(dev, type, start, count);
+   IDirect3DDevice9_EndScene(dev);
 
    d3d->menu_display.offset += draw->coords->vertices;
 }

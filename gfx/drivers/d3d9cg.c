@@ -1098,7 +1098,9 @@ static void d3d9_cg_renderchain_render_pass(
    if (pass_index >= 3)
       d3d9_cg_renderchain_bind_pass(chain, chain->dev, pass, pass_index);
 
-   d3d9_draw_primitive(chain->dev, D3DPT_TRIANGLESTRIP, 0, 2);
+   IDirect3DDevice9_BeginScene(chain->dev);
+   IDirect3DDevice9_DrawPrimitive(chain->dev, D3DPT_TRIANGLESTRIP, 0, 2);
+   IDirect3DDevice9_EndScene(chain->dev);
 
    /* So we don't render with linear filter into render targets,
     * which apparently looked odd (too blurry). */

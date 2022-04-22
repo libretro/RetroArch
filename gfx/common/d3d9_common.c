@@ -1110,7 +1110,9 @@ void d3d9_overlay_render(d3d9_video_t *d3d,
          D3DTADDRESS_BORDER);
    IDirect3DDevice9_SetSamplerState(dev,0,D3DSAMP_MINFILTER, filter_type);
    IDirect3DDevice9_SetSamplerState(dev,0,D3DSAMP_MAGFILTER, filter_type);
-   d3d9_draw_primitive(dev, D3DPT_TRIANGLESTRIP, 0, 2);
+   IDirect3DDevice9_BeginScene(dev);
+   IDirect3DDevice9_DrawPrimitive(dev, D3DPT_TRIANGLESTRIP, 0, 2);
+   IDirect3DDevice9_EndScene(dev);
 
    /* Restore previous state. */
    IDirect3DDevice9_SetRenderState(dev, D3DRS_ALPHABLENDENABLE, false);
