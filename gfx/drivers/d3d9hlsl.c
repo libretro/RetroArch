@@ -1052,11 +1052,7 @@ static bool d3d9_hlsl_initialize(
    d3d->menu_display.buffer = d3d9_vertex_buffer_new(
          d3d->dev, d3d->menu_display.size * sizeof(Vertex),
          D3DUSAGE_WRITEONLY,
-#ifdef _XBOX
          0,
-#else
-         D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1,
-#endif
          D3DPOOL_DEFAULT,
          NULL);
 
