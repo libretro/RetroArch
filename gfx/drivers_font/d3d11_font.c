@@ -219,7 +219,8 @@ static void d3d11_font_render_line(
             d3d11->context, 0, 1,
             (D3D11SamplerState*)&texture->sampler);
    }
-   D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+   d3d11->context->lpVtbl->OMSetBlendState(d3d11->context, d3d11->blend_enable,
+         NULL, D3D11_DEFAULT_SAMPLE_MASK);
 
    d3d11->context->lpVtbl->PSSetShader(d3d11->context, d3d11->sprites.shader_font.ps, NULL, 0);
    D3D11Draw(d3d11->context, count, d3d11->sprites.offset);

@@ -381,14 +381,7 @@ static INLINE void D3D11SetRenderTargetsAndUnorderedAccessViews(
          device_context, num_rtvs, render_target_views, depth_stencil_view, uavstart_slot, num_uavs,
          unordered_access_views, uavinitial_counts);
 }
-static INLINE void D3D11SetBlendState(
-      D3D11DeviceContext device_context,
-      D3D11BlendState    blend_state,
-      FLOAT              blend_factor[4],
-      UINT               sample_mask)
-{
-   device_context->lpVtbl->OMSetBlendState(device_context, blend_state, blend_factor, sample_mask);
-}
+
 static INLINE void D3D11SetDepthStencilState(
       D3D11DeviceContext     device_context,
       D3D11DepthStencilState depth_stencil_state,
@@ -440,17 +433,6 @@ static INLINE void D3D11DispatchIndirect(
 {
    device_context->lpVtbl->DispatchIndirect(
          device_context, buffer_for_args, aligned_byte_offset_for_args);
-}
-static INLINE void
-D3D11SetRasterizerState(D3D11DeviceContext device_context, D3D11RasterizerState rasterizer_state)
-{
-   device_context->lpVtbl->RSSetState(device_context, rasterizer_state);
-}
-
-static INLINE void
-D3D11SetScissorRects(D3D11DeviceContext device_context, UINT num_rects, D3D11_RECT* rects)
-{
-   device_context->lpVtbl->RSSetScissorRects(device_context, num_rects, rects);
 }
 
 static INLINE void D3D11CopySubresourceRegion(
