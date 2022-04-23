@@ -215,7 +215,9 @@ static void d3d11_font_render_line(
    {
       d3d11_texture_t *texture = (d3d11_texture_t*)&font->texture;
       D3D11SetPShaderResources(d3d11->context, 0, 1, &texture->view);
-      D3D11SetPShaderSamplers(d3d11->context,  0, 1, (D3D11SamplerState*)&texture->sampler);
+      d3d11->context->lpVtbl->PSSetSamplers(
+            d3d11->context, 0, 1,
+            (D3D11SamplerState*)&texture->sampler);
    }
    D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 

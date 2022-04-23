@@ -239,15 +239,6 @@ static INLINE void D3D11SetPShaderResources(
          device_context, start_slot, num_views,
          shader_resource_views);
 }
-static INLINE void D3D11SetPShaderSamplers(
-      D3D11DeviceContext          device_context,
-      UINT                        start_slot,
-      UINT                        num_samplers,
-      ID3D11SamplerState* const*  samplers)
-{
-   device_context->lpVtbl->PSSetSamplers(
-         device_context, start_slot, num_samplers, samplers);
-}
 
 static INLINE void D3D11DrawIndexed(
       D3D11DeviceContext device_context,
@@ -280,32 +271,6 @@ D3D11Unmap(D3D11DeviceContext device_context, D3D11Resource resource, UINT subre
    device_context->lpVtbl->Unmap(device_context, resource, subresource);
 }
 
-static INLINE void D3D11SetPShaderConstantBuffers(
-      D3D11DeviceContext device_context,
-      UINT               start_slot,
-      UINT               num_buffers,
-      const D3D11Buffer* constant_buffers)
-{
-   device_context->lpVtbl->PSSetConstantBuffers(
-         device_context, start_slot, num_buffers, constant_buffers);
-}
-
-static INLINE void D3D11SetVertexBuffers(
-      D3D11DeviceContext device_context,
-      UINT               start_slot,
-      UINT               num_buffers,
-      const D3D11Buffer* vertex_buffers,
-      UINT*              strides,
-      UINT*              offsets)
-{
-   device_context->lpVtbl->IASetVertexBuffers(
-         device_context, start_slot, num_buffers, vertex_buffers, strides, offsets);
-}
-static INLINE void D3D11SetIndexBuffer(
-      D3D11DeviceContext device_context, D3D11Buffer index_buffer, DXGI_FORMAT format, UINT offset)
-{
-   device_context->lpVtbl->IASetIndexBuffer(device_context, index_buffer, format, offset);
-}
 static INLINE void D3D11DrawIndexedInstanced(
       D3D11DeviceContext device_context,
       UINT               index_count_per_instance,
@@ -353,14 +318,7 @@ static INLINE void D3D11SetVShaderResources(
    device_context->lpVtbl->VSSetShaderResources(
          device_context, start_slot, num_views, shader_resource_views);
 }
-static INLINE void D3D11SetVShaderSamplers(
-      D3D11DeviceContext       device_context,
-      UINT                     start_slot,
-      UINT                     num_samplers,
-      D3D11SamplerState* const samplers)
-{
-   device_context->lpVtbl->VSSetSamplers(device_context, start_slot, num_samplers, samplers);
-}
+
 static INLINE void D3D11Begin(D3D11DeviceContext device_context, D3D11Asynchronous async)
 {
    device_context->lpVtbl->Begin(device_context, async);
@@ -488,16 +446,13 @@ D3D11SetRasterizerState(D3D11DeviceContext device_context, D3D11RasterizerState 
 {
    device_context->lpVtbl->RSSetState(device_context, rasterizer_state);
 }
-static INLINE void
-D3D11SetViewports(D3D11DeviceContext device_context, UINT num_viewports, D3D11_VIEWPORT* viewports)
-{
-   device_context->lpVtbl->RSSetViewports(device_context, num_viewports, viewports);
-}
+
 static INLINE void
 D3D11SetScissorRects(D3D11DeviceContext device_context, UINT num_rects, D3D11_RECT* rects)
 {
    device_context->lpVtbl->RSSetScissorRects(device_context, num_rects, rects);
 }
+
 static INLINE void D3D11CopySubresourceRegion(
       D3D11DeviceContext device_context,
       D3D11Resource      dst_resource,
@@ -599,11 +554,7 @@ static INLINE void D3D11ResolveSubresource(
    device_context->lpVtbl->ResolveSubresource(
          device_context, dst_resource, dst_subresource, src_resource, src_subresource, format);
 }
-static INLINE void D3D11ExecuteCommandList(
-      D3D11DeviceContext device_context, D3D11CommandList command_list, BOOL restore_context_state)
-{
-   device_context->lpVtbl->ExecuteCommandList(device_context, command_list, restore_context_state);
-}
+
 static INLINE void D3D11HSSetShaderResources(
       D3D11DeviceContext             device_context,
       UINT                           start_slot,
@@ -693,6 +644,7 @@ static INLINE void D3D11SetCShaderUnorderedAccessViews(
    device_context->lpVtbl->CSSetUnorderedAccessViews(
          device_context, start_slot, num_uavs, unordered_access_views, uavinitial_counts);
 }
+
 static INLINE void D3D11SetCShader(
       D3D11DeviceContext        device_context,
       D3D11ComputeShader        compute_shader,
@@ -2136,10 +2088,7 @@ static INLINE HRESULT D3D11SetSwapChain(D3D11Debug debug, IDXGISwapChain* swap_c
 {
    return debug->lpVtbl->SetSwapChain(debug, (IDXGISwapChain*)swap_chain);
 }
-static INLINE HRESULT D3D11GetSwapChain(D3D11Debug debug, IDXGISwapChain** swap_chain)
-{
-   return debug->lpVtbl->GetSwapChain(debug, (IDXGISwapChain**)swap_chain);
-}
+
 static INLINE HRESULT D3D11ValidateContext(D3D11Debug debug, D3D11DeviceContext context)
 {
    return debug->lpVtbl->ValidateContext(debug, context);
@@ -2343,12 +2292,6 @@ static INLINE BOOL D3D11GetMuteDebugOutput(D3D11InfoQueue info_queue)
 #endif
 
 /* end of auto-generated */
-
-static INLINE HRESULT
-DXGIGetSwapChainBufferD3D11(DXGISwapChain swap_chain, UINT buffer, D3D11Texture2D* out)
-{
-   return swap_chain->lpVtbl->GetBuffer(swap_chain, buffer, uuidof(ID3D11Texture2D), (void**)out);
-}
 
 static INLINE HRESULT D3D11MapTexture2D(
       D3D11DeviceContext        device_context,

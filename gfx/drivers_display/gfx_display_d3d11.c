@@ -78,8 +78,9 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
          {
             UINT stride = sizeof(d3d11_sprite_t);
             UINT offset = 0;
-            D3D11SetVertexBuffers(d3d11->context, 0, 1,
-               &d3d11->sprites.vbo, &stride, &offset);
+            d3d11->context->lpVtbl->IASetVertexBuffers(
+                  d3d11->context, 0, 1,
+                  &d3d11->sprites.vbo, &stride, &offset);
          }
          D3D11SetPrimitiveTopology(d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
          return;
@@ -174,7 +175,8 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
    {
       d3d11_texture_t *texture = (d3d11_texture_t*)draw->texture;
       D3D11SetPShaderResources(d3d11->context, 0, 1, &texture->view);
-      D3D11SetPShaderSamplers(d3d11->context,  0, 1, (D3D11SamplerState*)&texture->sampler);
+      d3d11->context->lpVtbl->PSSetSamplers(
+            d3d11->context, 0, 1, (D3D11SamplerState*)&texture->sampler);
    }
 
    D3D11Draw(d3d11->context, vertex_count, d3d11->sprites.offset);
@@ -222,7 +224,9 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
          {
             UINT stride = 2 * sizeof(float);
             UINT offset = 0;
-            D3D11SetVertexBuffers(d3d11->context, 0, 1, &d3d11->menu_pipeline_vbo, &stride, &offset);
+            d3d11->context->lpVtbl->IASetVertexBuffers(
+                  d3d11->context, 0, 1,
+                  &d3d11->menu_pipeline_vbo, &stride, &offset);
          }
          draw->coords->vertices = ca->coords.vertices;
          D3D11SetBlendState(d3d11->context, d3d11->blend_pipeline, NULL, D3D11_DEFAULT_SAMPLE_MASK);
@@ -236,7 +240,9 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
          {
             UINT stride = sizeof(d3d11_vertex_t);
             UINT offset = 0;
-            D3D11SetVertexBuffers(d3d11->context, 0, 1, &d3d11->frame.vbo, &stride, &offset);
+            d3d11->context->lpVtbl->IASetVertexBuffers(
+                  d3d11->context, 0, 1,
+                  &d3d11->frame.vbo, &stride, &offset);
          }
          draw->coords->vertices = 4;
          break;
