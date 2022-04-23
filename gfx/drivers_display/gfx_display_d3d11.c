@@ -97,8 +97,8 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
       D3D11_MAPPED_SUBRESOURCE mapped_vbo;
       d3d11_sprite_t*          sprite = NULL;
 
-      D3D11MapBuffer(
-            d3d11->context, d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
+      d3d11->context->lpVtbl->Map(
+         d3d11->context, (D3D11Resource)d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
 
       sprite = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
 
@@ -167,7 +167,7 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
 	 d3d11->context->lpVtbl->IASetPrimitiveTopology(d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
       }
 
-      D3D11UnmapBuffer(d3d11->context, d3d11->sprites.vbo, 0);
+      d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->sprites.vbo, 0);
    }
 
    {
@@ -254,9 +254,10 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
 
    {
       D3D11_MAPPED_SUBRESOURCE mapped_ubo;
-      D3D11MapBuffer(d3d11->context, d3d11->ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
+      d3d11->context->lpVtbl->Map(
+         d3d11->context, (D3D11Resource)d3d11->ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
       *(d3d11_uniform_t*)mapped_ubo.pData = d3d11->ubo_values;
-      D3D11UnmapBuffer(d3d11->context, d3d11->ubo, 0);
+      d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->ubo, 0);
    }
 }
 

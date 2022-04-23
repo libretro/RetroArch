@@ -115,8 +115,8 @@ static void d3d11_overlay_vertex_geom(
    if (!d3d11)
       return;
 
-   D3D11MapBuffer(
-         d3d11->context, d3d11->overlays.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
+   d3d11->context->lpVtbl->Map(
+         d3d11->context, (D3D11Resource)d3d11->overlays.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
    {
       d3d11_sprite_t* sprites = (d3d11_sprite_t*)mapped_vbo.pData;
       sprites[index].pos.x    = x;
@@ -124,7 +124,7 @@ static void d3d11_overlay_vertex_geom(
       sprites[index].pos.w    = w;
       sprites[index].pos.h    = h;
    }
-   D3D11UnmapBuffer(d3d11->context, d3d11->overlays.vbo, 0);
+   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->overlays.vbo, 0);
 }
 
 static void d3d11_overlay_tex_geom(
@@ -137,8 +137,8 @@ static void d3d11_overlay_tex_geom(
    if (!d3d11)
       return;
 
-   D3D11MapBuffer(
-         d3d11->context, d3d11->overlays.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
+   d3d11->context->lpVtbl->Map(
+         d3d11->context, (D3D11Resource)d3d11->overlays.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
    {
       d3d11_sprite_t* sprites = (d3d11_sprite_t*)mapped_vbo.pData;
       sprites[index].coords.u = u;
@@ -146,7 +146,7 @@ static void d3d11_overlay_tex_geom(
       sprites[index].coords.w = w;
       sprites[index].coords.h = h;
    }
-   D3D11UnmapBuffer(d3d11->context, d3d11->overlays.vbo, 0);
+   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->overlays.vbo, 0);
 }
 
 static void d3d11_overlay_set_alpha(void* data, unsigned index, float mod)
@@ -157,8 +157,8 @@ static void d3d11_overlay_set_alpha(void* data, unsigned index, float mod)
    if (!d3d11)
       return;
 
-   D3D11MapBuffer(
-         d3d11->context, d3d11->overlays.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
+   d3d11->context->lpVtbl->Map(
+         d3d11->context, (D3D11Resource)d3d11->overlays.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
    {
       d3d11_sprite_t* sprites  = (d3d11_sprite_t*)mapped_vbo.pData;
       sprites[index].colors[0] = DXGI_COLOR_RGBA(0xFF, 0xFF, 0xFF, mod * 0xFF);
@@ -166,7 +166,7 @@ static void d3d11_overlay_set_alpha(void* data, unsigned index, float mod)
       sprites[index].colors[2] = sprites[index].colors[0];
       sprites[index].colors[3] = sprites[index].colors[0];
    }
-   D3D11UnmapBuffer(d3d11->context, d3d11->overlays.vbo, 0);
+   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->overlays.vbo, 0);
 }
 
 static bool d3d11_overlay_load(void* data, const void* image_data, unsigned num_images)
@@ -194,7 +194,8 @@ static bool d3d11_overlay_load(void* data, const void* image_data, unsigned num_
    desc.StructureByteStride = 0;
    D3D11CreateBuffer(d3d11->device, &desc, NULL, &d3d11->overlays.vbo);
 
-   D3D11MapBuffer(d3d11->context, d3d11->overlays.vbo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_vbo);
+   d3d11->context->lpVtbl->Map(
+         d3d11->context, (D3D11Resource)d3d11->overlays.vbo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_vbo);
    sprites                  = (d3d11_sprite_t*)mapped_vbo.pData;
 
    for (i = 0; i < num_images; i++)
@@ -229,7 +230,7 @@ static bool d3d11_overlay_load(void* data, const void* image_data, unsigned num_
       sprites[i].colors[2]       = sprites[i].colors[0];
       sprites[i].colors[3]       = sprites[i].colors[0];
    }
-   D3D11UnmapBuffer(d3d11->context, d3d11->overlays.vbo, 0);
+   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->overlays.vbo, 0);
 
    return true;
 }
@@ -314,13 +315,13 @@ static void d3d11_set_hdr_max_nits(void *data, float max_nits)
    d3d11->hdr.max_output_nits             = max_nits;
    d3d11->hdr.ubo_values.max_nits         = max_nits;
 
-   D3D11MapBuffer(d3d11->context, d3d11->hdr.ubo,
-         0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_ubo);
+   d3d11->context->lpVtbl->Map(
+         d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_ubo);
    {
       dxgi_hdr_uniform_t *ubo = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
       *ubo                    = d3d11->hdr.ubo_values;
    }
-   D3D11UnmapBuffer(d3d11->context, d3d11->hdr.ubo, 0);
+   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0);
 
    dxgi_set_hdr_metadata(
          d3d11->swapChain,
@@ -341,11 +342,11 @@ static void d3d11_set_hdr_paper_white_nits(void* data, float paper_white_nits)
 
    d3d11->hdr.ubo_values.paper_white_nits = paper_white_nits;
 
-   D3D11MapBuffer(d3d11->context, d3d11->hdr.ubo,
-         0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
+   d3d11->context->lpVtbl->Map(
+         d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
    ubo  = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
    *ubo = d3d11->hdr.ubo_values;
-   D3D11UnmapBuffer(d3d11->context, d3d11->hdr.ubo, 0);
+   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0);
 }
 
 static void d3d11_set_hdr_contrast(void* data, float contrast)
@@ -356,11 +357,11 @@ static void d3d11_set_hdr_contrast(void* data, float contrast)
 
    d3d11->hdr.ubo_values.contrast         = contrast;
 
-   D3D11MapBuffer(d3d11->context, d3d11->hdr.ubo,
-         0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
+   d3d11->context->lpVtbl->Map(
+         d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
    ubo  = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
    *ubo = d3d11->hdr.ubo_values;
-   D3D11UnmapBuffer(d3d11->context, d3d11->hdr.ubo, 0);
+   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0);
 }
 
 static void d3d11_set_hdr_expand_gamut(void* data, bool expand_gamut)
@@ -371,10 +372,11 @@ static void d3d11_set_hdr_expand_gamut(void* data, bool expand_gamut)
 
    d3d11->hdr.ubo_values.expand_gamut     = expand_gamut ? 1.0f : 0.0f;
 
-   D3D11MapBuffer(d3d11->context, d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
+   d3d11->context->lpVtbl->Map(
+         d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
    ubo  = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
    *ubo = d3d11->hdr.ubo_values;
-   D3D11UnmapBuffer(d3d11->context, d3d11->hdr.ubo, 0);
+   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0);
 }
 
 static void d3d11_set_hdr_inverse_tonemap(d3d11_video_t* d3d11, bool inverse_tonemap)
@@ -384,10 +386,11 @@ static void d3d11_set_hdr_inverse_tonemap(d3d11_video_t* d3d11, bool inverse_ton
 
    d3d11->hdr.ubo_values.inverse_tonemap  = inverse_tonemap ? 1.0f : 0.0f;
 
-   D3D11MapBuffer(d3d11->context, d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
+   d3d11->context->lpVtbl->Map(
+         d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
    ubo  = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
    *ubo = d3d11->hdr.ubo_values;
-   D3D11UnmapBuffer(d3d11->context, d3d11->hdr.ubo, 0);
+   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0);
 }
 
 static void d3d11_set_hdr10(d3d11_video_t* d3d11, bool hdr10)
@@ -397,10 +400,11 @@ static void d3d11_set_hdr10(d3d11_video_t* d3d11, bool hdr10)
 
    d3d11->hdr.ubo_values.hdr10  = hdr10 ? 1.0f : 0.0f;
 
-   D3D11MapBuffer(d3d11->context, d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
+   d3d11->context->lpVtbl->Map(
+         d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
    ubo  = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
    *ubo = d3d11->hdr.ubo_values;
-   D3D11UnmapBuffer(d3d11->context, d3d11->hdr.ubo, 0);
+   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0);
 }
 #endif
 
@@ -435,9 +439,10 @@ static void d3d11_gfx_set_rotation(void* data, unsigned rotation)
    matrix_4x4_rotate_z(rot, rotation * (M_PI / 2.0f));
    matrix_4x4_multiply(d3d11->mvp, rot, d3d11->ubo_values.mvp);
 
-   D3D11MapBuffer(d3d11->context, d3d11->frame.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
+   d3d11->context->lpVtbl->Map(
+         d3d11->context, (D3D11Resource)d3d11->frame.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
    *(math_matrix_4x4*)mapped_ubo.pData = d3d11->mvp;
-   D3D11UnmapBuffer(d3d11->context, d3d11->frame.ubo, 0);
+   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->frame.ubo, 0);
 }
 
 static void d3d11_update_viewport(void* data, bool force_full)
@@ -1972,8 +1977,12 @@ uuidof(ID3D11Texture2D), (void**)&back_buffer);
       if (hw_texture)
       {
           D3D11_BOX frame_box = { 0, 0, 0, width, height, 1 };
-          D3D11CopyTexture2DSubresourceRegion(
-              context, d3d11->frame.texture[0].handle, 0, 0, 0, 0, hw_texture, 0, &frame_box);
+          context->lpVtbl->CopySubresourceRegion(
+                context,
+                (D3D11Resource)d3d11->frame.texture[0].handle,
+                0, 0, 0, 0,
+                (D3D11Resource)hw_texture, 0, &frame_box);
+
           Release(hw_texture);
           hw_texture = NULL;
       }
@@ -1983,7 +1992,8 @@ uuidof(ID3D11Texture2D), (void**)&back_buffer);
    }
 
    context->lpVtbl->RSSetState(context, d3d11->scissor_disabled);
-   d3d11->context->lpVtbl->OMSetBlendState(d3d11->context, d3d11->blend_disable,
+   d3d11->context->lpVtbl->OMSetBlendState(
+         d3d11->context, d3d11->blend_disable,
          NULL, D3D11_DEFAULT_SAMPLE_MASK);
    context->lpVtbl->IASetPrimitiveTopology(context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
    {
@@ -2041,14 +2051,15 @@ uuidof(ID3D11Texture2D), (void**)&back_buffer);
                D3D11_MAPPED_SUBRESOURCE res;
                uniform_sem_t*           uniform = buffer_sem->uniforms;
 
-               D3D11MapBuffer(context, buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
+	       d3d11->context->lpVtbl->Map(
+			       d3d11->context, (D3D11Resource)buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
                while (uniform->size)
                {
                   if (uniform->data)
                      memcpy((uint8_t*)res.pData + uniform->offset, uniform->data, uniform->size);
                   uniform++;
                }
-               D3D11UnmapBuffer(context, buffer, 0);
+	       context->lpVtbl->Unmap(context, (D3D11Resource)buffer, 0);
 
                if (buffer_sem->stage_mask & SLANG_STAGE_VERTEX_MASK)
                   D3D11SetVShaderConstantBuffers(context, buffer_sem->binding, 1, &buffer);

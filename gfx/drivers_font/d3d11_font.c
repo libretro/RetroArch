@@ -153,7 +153,8 @@ static void d3d11_font_render_line(
          break;
    }
 
-   D3D11MapBuffer(d3d11->context, d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
+   d3d11->context->lpVtbl->Map(
+         d3d11->context, (D3D11Resource)d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
    v = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
 
    for (i = 0; i < msg_len; i++)
@@ -199,7 +200,7 @@ static void d3d11_font_render_line(
    }
 
    count = v - ((d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset);
-   D3D11UnmapBuffer(d3d11->context, d3d11->sprites.vbo, 0);
+   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->sprites.vbo, 0);
 
    if (!count)
       return;

@@ -173,8 +173,8 @@ void d3d11_update_texture(
    if (!texture || !texture->staging)
       return;
 
-   D3D11MapTexture2D(ctx, texture->staging,
-         0, D3D11_MAP_WRITE, 0, &mapped_texture);
+   ctx->lpVtbl->Map(
+         ctx, (D3D11Resource)texture->staging, 0, D3D11_MAP_WRITE, 0, &mapped_texture);
 
 #if 0
    conv_rgb565_argb8888(mapped_texture.pData, data, width, height,
@@ -186,10 +186,10 @@ void d3d11_update_texture(
          mapped_texture.pData);
 #endif
 
-   D3D11UnmapTexture2D(ctx, texture->staging, 0);
+   ctx->lpVtbl->Unmap(ctx, (D3D11Resource)texture->staging, 0);
 
-   D3D11CopyTexture2DSubresourceRegion(
-         ctx, texture->handle, 0, 0, 0, 0, texture->staging, 0, &frame_box);
+   ctx->lpVtbl->CopySubresourceRegion(
+         ctx, (D3D11Resource)texture->handle, 0, 0, 0, 0, (D3D11Resource)texture->staging, 0, &frame_box);
 
    if (texture->desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
       D3D11GenerateMips(ctx, texture->view);

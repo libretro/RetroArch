@@ -319,14 +319,6 @@ static INLINE void D3D11SetVShaderResources(
          device_context, start_slot, num_views, shader_resource_views);
 }
 
-static INLINE void D3D11Begin(D3D11DeviceContext device_context, D3D11Asynchronous async)
-{
-   device_context->lpVtbl->Begin(device_context, async);
-}
-static INLINE void D3D11End(D3D11DeviceContext device_context, D3D11Asynchronous async)
-{
-   device_context->lpVtbl->End(device_context, async);
-}
 static INLINE HRESULT D3D11GetData(
       D3D11DeviceContext device_context,
       D3D11Asynchronous  async,
@@ -382,13 +374,6 @@ static INLINE void D3D11SetRenderTargetsAndUnorderedAccessViews(
          unordered_access_views, uavinitial_counts);
 }
 
-static INLINE void D3D11SetDepthStencilState(
-      D3D11DeviceContext     device_context,
-      D3D11DepthStencilState depth_stencil_state,
-      UINT                   stencil_ref)
-{
-   device_context->lpVtbl->OMSetDepthStencilState(device_context, depth_stencil_state, stencil_ref);
-}
 static INLINE void D3D11SOSetTargets(
       D3D11DeviceContext device_context,
       UINT               num_buffers,
@@ -477,13 +462,7 @@ static INLINE void D3D11CopyStructureCount(
    device_context->lpVtbl->CopyStructureCount(
          device_context, dst_buffer, dst_aligned_byte_offset, src_view);
 }
-static INLINE void D3D11ClearRenderTargetView(
-      D3D11DeviceContext    device_context,
-      D3D11RenderTargetView render_target_view,
-      FLOAT                 color_rgba[4])
-{
-   device_context->lpVtbl->ClearRenderTargetView(device_context, render_target_view, color_rgba);
-}
+
 static INLINE void D3D11ClearUnorderedAccessViewUint(
       D3D11DeviceContext       device_context,
       D3D11UnorderedAccessView unordered_access_view,
@@ -671,15 +650,7 @@ static INLINE void D3D11GetPShaderResources(
    device_context->lpVtbl->PSGetShaderResources(
          device_context, start_slot, num_views, shader_resource_views);
 }
-static INLINE void D3D11GetPShader(
-      D3D11DeviceContext  device_context,
-      D3D11PixelShader*   pixel_shader,
-      D3D11ClassInstance* class_instances,
-      UINT*               num_class_instances)
-{
-   device_context->lpVtbl->PSGetShader(
-         device_context, pixel_shader, class_instances, num_class_instances);
-}
+
 static INLINE void D3D11GetPShaderSamplers(
       D3D11DeviceContext device_context,
       UINT               start_slot,
@@ -688,15 +659,7 @@ static INLINE void D3D11GetPShaderSamplers(
 {
    device_context->lpVtbl->PSGetSamplers(device_context, start_slot, num_samplers, samplers);
 }
-static INLINE void D3D11GetVShader(
-      D3D11DeviceContext  device_context,
-      D3D11VertexShader*  vertex_shader,
-      D3D11ClassInstance* class_instances,
-      UINT*               num_class_instances)
-{
-   device_context->lpVtbl->VSGetShader(
-         device_context, vertex_shader, class_instances, num_class_instances);
-}
+
 static INLINE void D3D11GetPShaderConstantBuffers(
       D3D11DeviceContext device_context,
       UINT               start_slot,
@@ -814,14 +777,7 @@ static INLINE void D3D11GetRenderTargetsAndUnorderedAccessViews(
          device_context, num_rtvs, render_target_views, depth_stencil_view, uavstart_slot, num_uavs,
          unordered_access_views);
 }
-static INLINE void D3D11GetBlendState(
-      D3D11DeviceContext device_context,
-      D3D11BlendState*   blend_state,
-      FLOAT              blend_factor[4],
-      UINT*              sample_mask)
-{
-   device_context->lpVtbl->OMGetBlendState(device_context, blend_state, blend_factor, sample_mask);
-}
+
 static INLINE void D3D11GetDepthStencilState(
       D3D11DeviceContext      device_context,
       D3D11DepthStencilState* depth_stencil_state,
@@ -2275,37 +2231,6 @@ static INLINE BOOL D3D11GetMuteDebugOutput(D3D11InfoQueue info_queue)
 
 /* end of auto-generated */
 
-static INLINE HRESULT D3D11MapTexture2D(
-      D3D11DeviceContext        device_context,
-      D3D11Texture2D            texture,
-      UINT                      subresource,
-      D3D11_MAP                 map_type,
-      UINT                      map_flags,
-      D3D11_MAPPED_SUBRESOURCE* mapped_resource)
-{
-   return device_context->lpVtbl->Map(
-         device_context, (D3D11Resource)texture, subresource, map_type, map_flags, mapped_resource);
-}
-static INLINE void
-D3D11UnmapTexture2D(D3D11DeviceContext device_context, D3D11Texture2D texture, UINT subresource)
-{
-   device_context->lpVtbl->Unmap(device_context, (D3D11Resource)texture, subresource);
-}
-static INLINE void D3D11CopyTexture2DSubresourceRegion(
-      D3D11DeviceContext device_context,
-      D3D11Texture2D     dst_texture,
-      UINT               dst_subresource,
-      UINT               dst_x,
-      UINT               dst_y,
-      UINT               dst_z,
-      D3D11Texture2D     src_texture,
-      UINT               src_subresource,
-      D3D11_BOX*         src_box)
-{
-   device_context->lpVtbl->CopySubresourceRegion(
-         device_context, (D3D11Resource)dst_texture, dst_subresource, dst_x, dst_y, dst_z,
-         (D3D11Resource)src_texture, src_subresource, src_box);
-}
 static INLINE HRESULT D3D11CreateTexture2DRenderTargetView(
       D3D11Device                    device,
       D3D11Texture2D                 texture,
@@ -2333,11 +2258,6 @@ static INLINE HRESULT D3D11MapBuffer(
 {
    return device_context->lpVtbl->Map(
          device_context, (D3D11Resource)buffer, subresource, map_type, map_flags, mapped_resource);
-}
-static INLINE void
-D3D11UnmapBuffer(D3D11DeviceContext device_context, D3D11Buffer buffer, UINT subresource)
-{
-   device_context->lpVtbl->Unmap(device_context, (D3D11Resource)buffer, subresource);
 }
 #endif
 
