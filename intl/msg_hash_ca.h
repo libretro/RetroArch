@@ -3400,6 +3400,22 @@ MSG_HASH(
 /* Quick Menu */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
+   "Tanca contingut"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
+   "Fes una captura de pantalla"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_STATE,
+   "Desa estat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_STATE,
+   "Carrega estat"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
    "Afegeix als preferits"
    )
