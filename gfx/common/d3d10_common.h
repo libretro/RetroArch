@@ -259,15 +259,6 @@ D3D10GetDepthStencilViewResource(D3D10DepthStencilView depth_stencil_view, D3D10
 }
 static INLINE void D3D10BeginQuery(D3D10Query query) { query->lpVtbl->Begin(query); }
 static INLINE void D3D10EndQuery(D3D10Query query) { query->lpVtbl->End(query); }
-static INLINE HRESULT
-D3D10GetQueryData(D3D10Query query, void* data, UINT data_size, UINT get_data_flags)
-{
-   return query->lpVtbl->GetData(query, data, data_size, get_data_flags);
-}
-static INLINE UINT D3D10GetQueryDataSize(D3D10Query query)
-{
-   return query->lpVtbl->GetDataSize(query);
-}
 static INLINE void D3D10SetVShaderConstantBuffers(
       D3D10Device device, UINT start_slot, UINT num_buffers, D3D10Buffer* const constant_buffers)
 {
