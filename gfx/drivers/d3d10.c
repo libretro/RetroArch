@@ -458,11 +458,6 @@ static bool d3d10_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d10_vertex_t, texcoord),
                D3D10_INPUT_PER_VERTEX_DATA, 0 },
          };
-#ifdef DEBUG
-         bool save_hlsl = true;
-#else
-         bool save_hlsl = false;
-#endif
          static const char vs_ext[] = ".vs.hlsl";
          static const char ps_ext[] = ".ps.hlsl";
          char              vs_path[PATH_MAX_LENGTH] = {0};
@@ -478,24 +473,11 @@ static bool d3d10_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
          if (!d3d10_init_shader(
                   d3d10->device, vs_src, 0, vs_path, "main", NULL, NULL, desc, countof(desc),
-                  &d3d10->pass[i].shader))
-            save_hlsl = true;
+                  &d3d10->pass[i].shader)) { }
 
          if (!d3d10_init_shader(
                   d3d10->device, ps_src, 0, ps_path, NULL, "main", NULL, NULL, 0,
-                  &d3d10->pass[i].shader))
-            save_hlsl = true;
-
-         if (save_hlsl)
-         {
-            FILE* fp = fopen(vs_path, "w");
-            fwrite(vs_src, 1, strlen(vs_src), fp);
-            fclose(fp);
-
-            fp = fopen(ps_path, "w");
-            fwrite(ps_src, 1, strlen(ps_src), fp);
-            fclose(fp);
-         }
+                  &d3d10->pass[i].shader)) { }
 
          free(d3d10->shader_preset->pass[i].source.string.vertex);
          free(d3d10->shader_preset->pass[i].source.string.fragment);

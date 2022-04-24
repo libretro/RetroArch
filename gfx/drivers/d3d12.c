@@ -579,11 +579,6 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, texcoord),
               D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
          };
-#ifdef DEBUG
-         bool save_hlsl = true;
-#else
-         bool save_hlsl = false;
-#endif
          static const char vs_ext[] = ".vs.hlsl";
          static const char ps_ext[] = ".ps.hlsl";
          char              vs_path[PATH_MAX_LENGTH] = {0};
@@ -597,10 +592,8 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          strlcat(vs_path, vs_ext, sizeof(vs_path));
          strlcat(ps_path, ps_ext, sizeof(ps_path));
 
-         if (!d3d_compile(vs_src, 0, vs_path, "main", "vs_5_0", &vs_code))
-            save_hlsl = true;
-         if (!d3d_compile(ps_src, 0, ps_path, "main", "ps_5_0", &ps_code))
-            save_hlsl = true;
+         if (!d3d_compile(vs_src, 0, vs_path,"main","vs_5_0", &vs_code)){ }
+         if (!d3d_compile(ps_src, 0, ps_path,"main","ps_5_0", &ps_code)){ }
 
          desc.BlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
          if (i == d3d12->shader_preset->passes - 1)
@@ -613,19 +606,7 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          desc.InputLayout.NumElements        = countof(inputElementDesc);
 
          if (!d3d12_init_pipeline(
-                   d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pass[i].pipe))
-            save_hlsl = true;
-
-         if (save_hlsl)
-         {
-            FILE* fp = fopen(vs_path, "w");
-            fwrite(vs_src, 1, strlen(vs_src), fp);
-            fclose(fp);
-
-            fp = fopen(ps_path, "w");
-            fwrite(ps_src, 1, strlen(ps_src), fp);
-            fclose(fp);
-         }
+                   d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pass[i].pipe)) { }
 
          free(d3d12->shader_preset->pass[i].source.string.vertex);
          free(d3d12->shader_preset->pass[i].source.string.fragment);
