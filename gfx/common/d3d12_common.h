@@ -311,7 +311,6 @@ typedef enum {
    CS_ROOT_ID_MAX
 } compute_root_index_t;
 
-
 static INLINE ULONG D3D12Release(void* object)
 {
    return ((ID3D12Object*)object)->lpVtbl->Release((ID3D12Object*)object);
@@ -486,18 +485,7 @@ static INLINE void D3D12DrawInstanced(
          graphics_command_list, vertex_count_per_instance, instance_count, start_vertex_location,
          start_instance_location);
 }
-static INLINE void D3D12DrawIndexedInstanced(
-      D3D12GraphicsCommandList graphics_command_list,
-      UINT                     index_count_per_instance,
-      UINT                     instance_count,
-      UINT                     start_index_location,
-      INT                      base_vertex_location,
-      UINT                     start_instance_location)
-{
-   graphics_command_list->lpVtbl->DrawIndexedInstanced(
-         graphics_command_list, index_count_per_instance, instance_count, start_index_location,
-         base_vertex_location, start_instance_location);
-}
+
 static INLINE void D3D12Dispatch(
       D3D12GraphicsCommandList graphics_command_list,
       UINT                     thread_group_count_x,
@@ -536,19 +524,6 @@ static INLINE void D3D12CopyResource(
 {
    graphics_command_list->lpVtbl->CopyResource(
          graphics_command_list, (ID3D12Resource*)dst_resource, (ID3D12Resource*)src_resource);
-}
-static INLINE void D3D12CopyTiles(
-      D3D12GraphicsCommandList         graphics_command_list,
-      void*                            tiled_resource,
-      D3D12_TILED_RESOURCE_COORDINATE* tile_region_start_coordinate,
-      D3D12_TILE_REGION_SIZE*          tile_region_size,
-      void*                            buffer,
-      UINT64                           buffer_start_offset_in_bytes,
-      D3D12_TILE_COPY_FLAGS            flags)
-{
-   graphics_command_list->lpVtbl->CopyTiles(
-         graphics_command_list, (ID3D12Resource*)tiled_resource, tile_region_start_coordinate,
-         tile_region_size, (ID3D12Resource*)buffer, buffer_start_offset_in_bytes, flags);
 }
 static INLINE void D3D12ResolveSubresource(
       D3D12GraphicsCommandList graphics_command_list,
@@ -593,11 +568,6 @@ static INLINE void D3D12ResourceBarrier(
       D3D12_RESOURCE_BARRIER*  barriers)
 {
    graphics_command_list->lpVtbl->ResourceBarrier(graphics_command_list, num_barriers, barriers);
-}
-static INLINE void D3D12ExecuteBundle(
-      D3D12GraphicsCommandList graphics_command_list, D3D12GraphicsCommandList command_list)
-{
-   graphics_command_list->lpVtbl->ExecuteBundle(graphics_command_list, command_list);
 }
 static INLINE void D3D12SetComputeRootSignature(
       D3D12GraphicsCommandList graphics_command_list, D3D12RootSignature root_signature)
@@ -727,14 +697,7 @@ static INLINE void D3D12IASetVertexBuffers(
    graphics_command_list->lpVtbl->IASetVertexBuffers(
          graphics_command_list, start_slot, num_views, views);
 }
-static INLINE void D3D12SOSetTargets(
-      D3D12GraphicsCommandList         graphics_command_list,
-      UINT                             start_slot,
-      UINT                             num_views,
-      D3D12_STREAM_OUTPUT_BUFFER_VIEW* views)
-{
-   graphics_command_list->lpVtbl->SOSetTargets(graphics_command_list, start_slot, num_views, views);
-}
+
 static INLINE void D3D12OMSetRenderTargets(
       D3D12GraphicsCommandList     graphics_command_list,
       UINT                         num_render_target_descriptors,
@@ -764,22 +727,6 @@ static INLINE void D3D12DiscardResource(
    graphics_command_list->lpVtbl->DiscardResource(
          graphics_command_list, (ID3D12Resource*)resource, region);
 }
-static INLINE void D3D12BeginQuery(
-      D3D12GraphicsCommandList graphics_command_list,
-      D3D12QueryHeap           query_heap,
-      D3D12_QUERY_TYPE         type,
-      UINT                     index)
-{
-   graphics_command_list->lpVtbl->BeginQuery(graphics_command_list, query_heap, type, index);
-}
-static INLINE void D3D12EndQuery(
-      D3D12GraphicsCommandList graphics_command_list,
-      D3D12QueryHeap           query_heap,
-      D3D12_QUERY_TYPE         type,
-      UINT                     index)
-{
-   graphics_command_list->lpVtbl->EndQuery(graphics_command_list, query_heap, type, index);
-}
 static INLINE void D3D12ResolveQueryData(
       D3D12GraphicsCommandList graphics_command_list,
       D3D12QueryHeap           query_heap,
@@ -792,15 +739,6 @@ static INLINE void D3D12ResolveQueryData(
    graphics_command_list->lpVtbl->ResolveQueryData(
          graphics_command_list, query_heap, type, start_index, num_queries,
          (ID3D12Resource*)destination_buffer, aligned_destination_buffer_offset);
-}
-static INLINE void D3D12SetPredication(
-      D3D12GraphicsCommandList graphics_command_list,
-      void*                    buffer,
-      UINT64                   aligned_buffer_offset,
-      D3D12_PREDICATION_OP     operation)
-{
-   graphics_command_list->lpVtbl->SetPredication(
-         graphics_command_list, (ID3D12Resource*)buffer, aligned_buffer_offset, operation);
 }
 static INLINE void D3D12SetGraphicsCommandListMarker(
       D3D12GraphicsCommandList graphics_command_list, UINT metadata, void* data, UINT size)
@@ -816,55 +754,12 @@ static INLINE void D3D12EndGraphicsCommandListEvent(D3D12GraphicsCommandList gra
 {
    graphics_command_list->lpVtbl->EndEvent(graphics_command_list);
 }
-static INLINE void D3D12ExecuteIndirect(
-      D3D12GraphicsCommandList graphics_command_list,
-      D3D12CommandSignature    command_signature,
-      UINT                     max_command_count,
-      void*                    argument_buffer,
-      UINT64                   argument_buffer_offset,
-      void*                    count_buffer,
-      UINT64                   count_buffer_offset)
-{
-   graphics_command_list->lpVtbl->ExecuteIndirect(
-         graphics_command_list, command_signature, max_command_count,
-         (ID3D12Resource*)argument_buffer, argument_buffer_offset, (ID3D12Resource*)count_buffer,
-         count_buffer_offset);
-}
+
 static INLINE ULONG D3D12ReleaseCommandQueue(D3D12CommandQueue command_queue)
 {
    return command_queue->lpVtbl->Release(command_queue);
 }
-static INLINE void D3D12UpdateTileMappings(
-      D3D12CommandQueue                command_queue,
-      void*                            resource,
-      UINT                             num_resource_regions,
-      D3D12_TILED_RESOURCE_COORDINATE* resource_region_start_coordinates,
-      D3D12_TILE_REGION_SIZE*          resource_region_sizes,
-      D3D12Heap                        heap,
-      UINT                             num_ranges,
-      D3D12_TILE_RANGE_FLAGS*          range_flags,
-      UINT*                            heap_range_start_offsets,
-      UINT*                            range_tile_counts,
-      D3D12_TILE_MAPPING_FLAGS         flags)
-{
-   command_queue->lpVtbl->UpdateTileMappings(
-         command_queue, (ID3D12Resource*)resource, num_resource_regions,
-         resource_region_start_coordinates, resource_region_sizes, heap, num_ranges, range_flags,
-         heap_range_start_offsets, range_tile_counts, flags);
-}
-static INLINE void D3D12CopyTileMappings(
-      D3D12CommandQueue                command_queue,
-      void*                            dst_resource,
-      D3D12_TILED_RESOURCE_COORDINATE* dst_region_start_coordinate,
-      void*                            src_resource,
-      D3D12_TILED_RESOURCE_COORDINATE* src_region_start_coordinate,
-      D3D12_TILE_REGION_SIZE*          region_size,
-      D3D12_TILE_MAPPING_FLAGS         flags)
-{
-   command_queue->lpVtbl->CopyTileMappings(
-         command_queue, (ID3D12Resource*)dst_resource, dst_region_start_coordinate,
-         (ID3D12Resource*)src_resource, src_region_start_coordinate, region_size, flags);
-}
+
 static INLINE void
 D3D12SetCommandQueueMarker(D3D12CommandQueue command_queue, UINT metadata, void* data, UINT size)
 {
@@ -887,15 +782,6 @@ D3D12SignalCommandQueue(D3D12CommandQueue command_queue, D3D12Fence fence, UINT6
 static INLINE HRESULT D3D12Wait(D3D12CommandQueue command_queue, D3D12Fence fence, UINT64 value)
 {
    return command_queue->lpVtbl->Wait(command_queue, fence, value);
-}
-static INLINE HRESULT D3D12GetTimestampFrequency(D3D12CommandQueue command_queue, UINT64* frequency)
-{
-   return command_queue->lpVtbl->GetTimestampFrequency(command_queue, frequency);
-}
-static INLINE HRESULT D3D12GetClockCalibration(
-      D3D12CommandQueue command_queue, UINT64* gpu_timestamp, UINT64* cpu_timestamp)
-{
-   return command_queue->lpVtbl->GetClockCalibration(command_queue, gpu_timestamp, cpu_timestamp);
 }
 static INLINE ULONG D3D12ReleaseDevice(D3D12Device device)
 {
@@ -1020,32 +906,6 @@ static INLINE void D3D12CreateSampler(
 {
    device->lpVtbl->CreateSampler(device, desc, dest_descriptor);
 }
-static INLINE void D3D12CopyDescriptors(
-      D3D12Device                  device,
-      UINT                         num_dest_descriptor_ranges,
-      D3D12_CPU_DESCRIPTOR_HANDLE* dest_descriptor_range_starts,
-      UINT*                        dest_descriptor_range_sizes,
-      UINT                         num_src_descriptor_ranges,
-      D3D12_CPU_DESCRIPTOR_HANDLE* src_descriptor_range_starts,
-      UINT*                        src_descriptor_range_sizes,
-      D3D12_DESCRIPTOR_HEAP_TYPE   descriptor_heaps_type)
-{
-   device->lpVtbl->CopyDescriptors(
-         device, num_dest_descriptor_ranges, dest_descriptor_range_starts,
-         dest_descriptor_range_sizes, num_src_descriptor_ranges, src_descriptor_range_starts,
-         src_descriptor_range_sizes, descriptor_heaps_type);
-}
-static INLINE void D3D12CopyDescriptorsSimple(
-      D3D12Device                 device,
-      UINT                        num_descriptors,
-      D3D12_CPU_DESCRIPTOR_HANDLE dest_descriptor_range_start,
-      D3D12_CPU_DESCRIPTOR_HANDLE src_descriptor_range_start,
-      D3D12_DESCRIPTOR_HEAP_TYPE  descriptor_heaps_type)
-{
-   device->lpVtbl->CopyDescriptorsSimple(
-         device, num_descriptors, dest_descriptor_range_start, src_descriptor_range_start,
-         descriptor_heaps_type);
-}
 static INLINE D3D12_RESOURCE_ALLOCATION_INFO D3D12GetResourceAllocationInfo(
       D3D12Device          device,
       UINT                 visible_mask,
@@ -1106,10 +966,7 @@ static INLINE HRESULT D3D12CreateFence(
    return device->lpVtbl->CreateFence(
          device, initial_value, flags, uuidof(ID3D12Fence), (void**)out);
 }
-static INLINE HRESULT D3D12GetDeviceRemovedReason(D3D12Device device)
-{
-   return device->lpVtbl->GetDeviceRemovedReason(device);
-}
+
 static INLINE void D3D12GetCopyableFootprints(
       D3D12Device                         device,
       D3D12_RESOURCE_DESC*                resource_desc,
@@ -1130,10 +987,7 @@ D3D12CreateQueryHeap(D3D12Device device, D3D12_QUERY_HEAP_DESC* desc, ID3D12Heap
 {
    return device->lpVtbl->CreateQueryHeap(device, desc, uuidof(ID3D12Heap), (void**)out);
 }
-static INLINE HRESULT D3D12SetStablePowerState(D3D12Device device, BOOL enable)
-{
-   return device->lpVtbl->SetStablePowerState(device, enable);
-}
+
 static INLINE HRESULT D3D12CreateCommandSignature(
       D3D12Device                   device,
       D3D12_COMMAND_SIGNATURE_DESC* desc,
@@ -1180,249 +1034,6 @@ static INLINE HRESULT D3D12LoadGraphicsPipeline(
    return pipeline_library->lpVtbl->LoadGraphicsPipeline(
          pipeline_library, name, desc, uuidof(ID3D12PipelineState), (void**)out);
 }
-static INLINE HRESULT D3D12LoadComputePipeline(
-      D3D12PipelineLibrary               pipeline_library,
-      LPCWSTR                            name,
-      D3D12_COMPUTE_PIPELINE_STATE_DESC* desc,
-      ID3D12PipelineState**              out)
-{
-   return pipeline_library->lpVtbl->LoadComputePipeline(
-         pipeline_library, name, desc, uuidof(ID3D12PipelineState), (void**)out);
-}
-static INLINE SIZE_T D3D12GetSerializedSize(D3D12PipelineLibrary pipeline_library)
-{
-   return pipeline_library->lpVtbl->GetSerializedSize(pipeline_library);
-}
-static INLINE HRESULT
-D3D12Serialize(D3D12PipelineLibrary pipeline_library, void* data, SIZE_T data_size_in_bytes)
-{
-   return pipeline_library->lpVtbl->Serialize(pipeline_library, data, data_size_in_bytes);
-}
-
-#ifdef DEBUG
-static INLINE ULONG D3D12ReleaseDebug(D3D12Debug debug) { return debug->lpVtbl->Release(debug); }
-static INLINE void  D3D12EnableDebugLayer(D3D12Debug debug)
-{
-   debug->lpVtbl->EnableDebugLayer(debug);
-}
-static INLINE ULONG D3D12ReleaseDebugDevice(D3D12DebugDevice debug_device)
-{
-   return debug_device->lpVtbl->Release(debug_device);
-}
-static INLINE HRESULT
-D3D12SetDebugDeviceFeatureMask(D3D12DebugDevice debug_device, D3D12_DEBUG_FEATURE mask)
-{
-   return debug_device->lpVtbl->SetFeatureMask(debug_device, mask);
-}
-static INLINE D3D12_DEBUG_FEATURE D3D12GetDebugDeviceFeatureMask(D3D12DebugDevice debug_device)
-{
-   return debug_device->lpVtbl->GetFeatureMask(debug_device);
-}
-static INLINE HRESULT
-D3D12ReportLiveDeviceObjects(D3D12DebugDevice debug_device, D3D12_RLDO_FLAGS flags)
-{
-   return debug_device->lpVtbl->ReportLiveDeviceObjects(debug_device, flags);
-}
-static INLINE ULONG D3D12ReleaseDebugCommandQueue(D3D12DebugCommandQueue debug_command_queue)
-{
-   return debug_command_queue->lpVtbl->Release(debug_command_queue);
-}
-static INLINE BOOL D3D12AssertDebugCommandQueueResourceState(
-      D3D12DebugCommandQueue debug_command_queue, void* resource, UINT subresource, UINT state)
-{
-   return debug_command_queue->lpVtbl->AssertResourceState(
-         debug_command_queue, (ID3D12Resource*)resource, subresource, state);
-}
-static INLINE ULONG D3D12ReleaseDebugCommandList(D3D12DebugCommandList debug_command_list)
-{
-   return debug_command_list->lpVtbl->Release(debug_command_list);
-}
-static INLINE BOOL D3D12AssertDebugCommandListResourceState(
-      D3D12DebugCommandList debug_command_list, void* resource, UINT subresource, UINT state)
-{
-   return debug_command_list->lpVtbl->AssertResourceState(
-         debug_command_list, (ID3D12Resource*)resource, subresource, state);
-}
-static INLINE HRESULT D3D12SetDebugCommandListFeatureMask(
-      D3D12DebugCommandList debug_command_list, D3D12_DEBUG_FEATURE mask)
-{
-   return debug_command_list->lpVtbl->SetFeatureMask(debug_command_list, mask);
-}
-static INLINE D3D12_DEBUG_FEATURE
-D3D12GetDebugCommandListFeatureMask(D3D12DebugCommandList debug_command_list)
-{
-   return debug_command_list->lpVtbl->GetFeatureMask(debug_command_list);
-}
-#endif
-
-static INLINE ULONG D3D12ReleaseInfoQueue(D3D12InfoQueue info_queue)
-{
-   return info_queue->lpVtbl->Release(info_queue);
-}
-static INLINE HRESULT
-D3D12SetMessageCountLimit(D3D12InfoQueue info_queue, UINT64 message_count_limit)
-{
-   return info_queue->lpVtbl->SetMessageCountLimit(info_queue, message_count_limit);
-}
-static INLINE void D3D12ClearStoredMessages(D3D12InfoQueue info_queue)
-{
-   info_queue->lpVtbl->ClearStoredMessages(info_queue);
-}
-#ifndef __WINRT__
-static INLINE HRESULT D3D12GetMessageA(
-      D3D12InfoQueue info_queue,
-      UINT64         message_index,
-      D3D12_MESSAGE* message,
-      SIZE_T*        message_byte_length)
-{
-   return info_queue->lpVtbl->GetMessageA(info_queue, message_index, message, message_byte_length);
-}
-#endif
-static INLINE UINT64 D3D12GetNumMessagesAllowedByStorageFilter(D3D12InfoQueue info_queue)
-{
-   return info_queue->lpVtbl->GetNumMessagesAllowedByStorageFilter(info_queue);
-}
-static INLINE UINT64 D3D12GetNumMessagesDeniedByStorageFilter(D3D12InfoQueue info_queue)
-{
-   return info_queue->lpVtbl->GetNumMessagesDeniedByStorageFilter(info_queue);
-}
-static INLINE UINT64 D3D12GetNumStoredMessages(D3D12InfoQueue info_queue)
-{
-   return info_queue->lpVtbl->GetNumStoredMessages(info_queue);
-}
-static INLINE UINT64 D3D12GetNumStoredMessagesAllowedByRetrievalFilter(D3D12InfoQueue info_queue)
-{
-   return info_queue->lpVtbl->GetNumStoredMessagesAllowedByRetrievalFilter(info_queue);
-}
-static INLINE UINT64 D3D12GetNumMessagesDiscardedByMessageCountLimit(D3D12InfoQueue info_queue)
-{
-   return info_queue->lpVtbl->GetNumMessagesDiscardedByMessageCountLimit(info_queue);
-}
-static INLINE UINT64 D3D12GetMessageCountLimit(D3D12InfoQueue info_queue)
-{
-   return info_queue->lpVtbl->GetMessageCountLimit(info_queue);
-}
-static INLINE HRESULT
-D3D12AddStorageFilterEntries(D3D12InfoQueue info_queue, D3D12_INFO_QUEUE_FILTER* filter)
-{
-   return info_queue->lpVtbl->AddStorageFilterEntries(info_queue, filter);
-}
-static INLINE HRESULT D3D12GetStorageFilter(
-      D3D12InfoQueue info_queue, D3D12_INFO_QUEUE_FILTER* filter, SIZE_T* filter_byte_length)
-{
-   return info_queue->lpVtbl->GetStorageFilter(info_queue, filter, filter_byte_length);
-}
-static INLINE void D3D12ClearStorageFilter(D3D12InfoQueue info_queue)
-{
-   info_queue->lpVtbl->ClearStorageFilter(info_queue);
-}
-static INLINE HRESULT D3D12PushEmptyStorageFilter(D3D12InfoQueue info_queue)
-{
-   return info_queue->lpVtbl->PushEmptyStorageFilter(info_queue);
-}
-static INLINE HRESULT D3D12PushCopyOfStorageFilter(D3D12InfoQueue info_queue)
-{
-   return info_queue->lpVtbl->PushCopyOfStorageFilter(info_queue);
-}
-static INLINE HRESULT
-D3D12PushStorageFilter(D3D12InfoQueue info_queue, D3D12_INFO_QUEUE_FILTER* filter)
-{
-   return info_queue->lpVtbl->PushStorageFilter(info_queue, filter);
-}
-static INLINE void D3D12PopStorageFilter(D3D12InfoQueue info_queue)
-{
-   info_queue->lpVtbl->PopStorageFilter(info_queue);
-}
-static INLINE UINT D3D12GetStorageFilterStackSize(D3D12InfoQueue info_queue)
-{
-   return info_queue->lpVtbl->GetStorageFilterStackSize(info_queue);
-}
-static INLINE HRESULT
-D3D12AddRetrievalFilterEntries(D3D12InfoQueue info_queue, D3D12_INFO_QUEUE_FILTER* filter)
-{
-   return info_queue->lpVtbl->AddRetrievalFilterEntries(info_queue, filter);
-}
-static INLINE HRESULT D3D12GetRetrievalFilter(
-      D3D12InfoQueue info_queue, D3D12_INFO_QUEUE_FILTER* filter, SIZE_T* filter_byte_length)
-{
-   return info_queue->lpVtbl->GetRetrievalFilter(info_queue, filter, filter_byte_length);
-}
-static INLINE void D3D12ClearRetrievalFilter(D3D12InfoQueue info_queue)
-{
-   info_queue->lpVtbl->ClearRetrievalFilter(info_queue);
-}
-static INLINE HRESULT D3D12PushEmptyRetrievalFilter(D3D12InfoQueue info_queue)
-{
-   return info_queue->lpVtbl->PushEmptyRetrievalFilter(info_queue);
-}
-static INLINE HRESULT D3D12PushCopyOfRetrievalFilter(D3D12InfoQueue info_queue)
-{
-   return info_queue->lpVtbl->PushCopyOfRetrievalFilter(info_queue);
-}
-static INLINE HRESULT
-D3D12PushRetrievalFilter(D3D12InfoQueue info_queue, D3D12_INFO_QUEUE_FILTER* filter)
-{
-   return info_queue->lpVtbl->PushRetrievalFilter(info_queue, filter);
-}
-static INLINE void D3D12PopRetrievalFilter(D3D12InfoQueue info_queue)
-{
-   info_queue->lpVtbl->PopRetrievalFilter(info_queue);
-}
-static INLINE UINT D3D12GetRetrievalFilterStackSize(D3D12InfoQueue info_queue)
-{
-   return info_queue->lpVtbl->GetRetrievalFilterStackSize(info_queue);
-}
-static INLINE HRESULT D3D12AddMessage(
-      D3D12InfoQueue         info_queue,
-      D3D12_MESSAGE_CATEGORY category,
-      D3D12_MESSAGE_SEVERITY severity,
-      D3D12_MESSAGE_ID       i_d,
-      LPCSTR                 description)
-{
-   return info_queue->lpVtbl->AddMessage(info_queue, category, severity, i_d, description);
-}
-static INLINE HRESULT D3D12AddApplicationMessage(
-      D3D12InfoQueue info_queue, D3D12_MESSAGE_SEVERITY severity, LPCSTR description)
-{
-   return info_queue->lpVtbl->AddApplicationMessage(info_queue, severity, description);
-}
-static INLINE HRESULT
-D3D12SetBreakOnCategory(D3D12InfoQueue info_queue, D3D12_MESSAGE_CATEGORY category, BOOL b_enable)
-{
-   return info_queue->lpVtbl->SetBreakOnCategory(info_queue, category, b_enable);
-}
-static INLINE HRESULT
-D3D12SetBreakOnSeverity(D3D12InfoQueue info_queue, D3D12_MESSAGE_SEVERITY severity, BOOL b_enable)
-{
-   return info_queue->lpVtbl->SetBreakOnSeverity(info_queue, severity, b_enable);
-}
-static INLINE HRESULT
-D3D12SetBreakOnID(D3D12InfoQueue info_queue, D3D12_MESSAGE_ID i_d, BOOL b_enable)
-{
-   return info_queue->lpVtbl->SetBreakOnID(info_queue, i_d, b_enable);
-}
-static INLINE BOOL
-D3D12GetBreakOnCategory(D3D12InfoQueue info_queue, D3D12_MESSAGE_CATEGORY category)
-{
-   return info_queue->lpVtbl->GetBreakOnCategory(info_queue, category);
-}
-static INLINE BOOL
-D3D12GetBreakOnSeverity(D3D12InfoQueue info_queue, D3D12_MESSAGE_SEVERITY severity)
-{
-   return info_queue->lpVtbl->GetBreakOnSeverity(info_queue, severity);
-}
-static INLINE BOOL D3D12GetBreakOnID(D3D12InfoQueue info_queue, D3D12_MESSAGE_ID i_d)
-{
-   return info_queue->lpVtbl->GetBreakOnID(info_queue, i_d);
-}
-static INLINE void D3D12SetMuteDebugOutput(D3D12InfoQueue info_queue, BOOL b_mute)
-{
-   info_queue->lpVtbl->SetMuteDebugOutput(info_queue, b_mute);
-}
-static INLINE BOOL D3D12GetMuteDebugOutput(D3D12InfoQueue info_queue)
-{
-   return info_queue->lpVtbl->GetMuteDebugOutput(info_queue);
-}
 
 /* end of auto-generated */
 #ifdef DEBUG
@@ -1461,14 +1072,6 @@ static INLINE void D3D12ClearRenderTargetView(
 {
    command_list->lpVtbl->ClearRenderTargetView(
          command_list, render_target_view, colorRGBA, num_rects, rects);
-}
-
-static INLINE void D3D12ExecuteCommandLists(
-      D3D12CommandQueue       command_queue,
-      UINT                    num_command_lists,
-      const D3D12CommandList* command_lists)
-{
-   command_queue->lpVtbl->ExecuteCommandLists(command_queue, num_command_lists, command_lists);
 }
 
 static INLINE void D3D12ExecuteGraphicsCommandLists(
