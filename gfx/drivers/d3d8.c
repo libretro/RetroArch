@@ -112,45 +112,7 @@ void d3d8_set_mvp(void *data, const void *mat_data)
    IDirect3DDevice8_SetTransform(d3dr, D3DTS_WORLD, (D3DMATRIX*)&matrix);
 }
 
-static bool d3d8_renderchain_create_first_pass(
-      d3d8_video_t *d3d,
-      d3d8_renderchain_t *chain,
-      const video_info_t *info)
-{
-   LPDIRECT3DDEVICE8 d3dr     = (LPDIRECT3DDEVICE8)d3d->dev;
-
-   chain->vertex_buf         = (LPDIRECT3DVERTEXBUFFER8)d3d8_vertex_buffer_new(d3dr, 4 * sizeof(Vertex),
-         D3DUSAGE_WRITEONLY,
-         D3DFVF_XYZ | D3DFVF_TEX1 | D3DFVF_DIFFUSE,
-         D3DPOOL_MANAGED,
-         NULL);
-
-   if (!chain->vertex_buf)
-      return false;
-
-   chain->tex = (LPDIRECT3DTEXTURE8)d3d8_texture_new(d3dr, NULL,
-         chain->tex_w, chain->tex_h, 1, 0,
-         info->rgb32
-         ?
-         d3d8_get_xrgb8888_format() : d3d8_get_rgb565_format(),
-         D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL,
-         false);
-
-   if (!chain->tex)
-      return false;
-
-   IDirect3DDevice8_SetTextureStageState(d3dr, 0,
-         (D3DTEXTURESTAGESTATETYPE)D3DTSS_ADDRESSU, D3DTADDRESS_BORDER);
-   IDirect3DDevice8_SetTextureStageState(d3dr, 0,
-         (D3DTEXTURESTAGESTATETYPE)D3DTSS_ADDRESSV, D3DTADDRESS_BORDER);
-   IDirect3DDevice8_SetRenderState(d3dr, D3DRS_LIGHTING, 0);
-   IDirect3DDevice8_SetRenderState(d3dr, D3DRS_CULLMODE, D3DCULL_NONE);
-   IDirect3DDevice8_SetRenderState(d3dr, D3DRS_ZENABLE,  FALSE);
-
-   return true;
-}
-
-static void d3d8_renderchain_set_vertices(
+static void d3d8_set_vertices(
       d3d8_video_t *d3d,
       d3d8_renderchain_t *chain,
       unsigned pass,
@@ -243,59 +205,27 @@ static void d3d8_blit_to_texture(
    }
 }
 
-static void d3d8_renderchain_free(void *data)
-{
-   d3d8_renderchain_t *chain = (d3d8_renderchain_t*)data;
-
-   if (!chain)
-      return;
-
-   if (chain->tex)
-      IDirect3DTexture8_Release(chain->tex);
-   if (chain->vertex_buf)
-      IDirect3DVertexBuffer8_Release(chain->vertex_buf);
-   chain->vertex_buf = NULL;
-   chain->tex        = NULL;
-
-   free(chain);
-}
-
-static void d3d8_renderchain_viewport_info(
+static void d3d8_render(
       d3d8_video_t *d3d,
-      struct video_viewport *vp)
-{
-   unsigned width, height;
-
-   if (!d3d || !vp)
-      return;
-
-   video_driver_get_size(&width, &height);
-
-   vp->x            = d3d->final_viewport.X;
-   vp->y            = d3d->final_viewport.Y;
-   vp->width        = d3d->final_viewport.Width;
-   vp->height       = d3d->final_viewport.Height;
-
-   vp->full_width   = width;
-   vp->full_height  = height;
-}
-
-static void d3d8_renderchain_render_pass(
-      d3d8_video_t *d3d, LPDIRECT3DDEVICE8 d3dr,
+      LPDIRECT3DDEVICE8 d3dr,
       d3d8_renderchain_t *chain,
-      unsigned pass_index,
-      unsigned rotation)
+      const void *frame,
+      unsigned frame_width, unsigned frame_height,
+      unsigned pitch, unsigned rotation)
 {
    settings_t *settings      = config_get_ptr();
    bool video_smooth         = settings->bools.video_smooth;
 
+   d3d8_blit_to_texture(chain, frame, frame_width, frame_height, pitch);
+   d3d8_set_vertices(d3d, chain, 1, frame_width, frame_height, chain->frame_count);
+
    IDirect3DDevice8_SetTexture(d3dr, 0,
          (IDirect3DBaseTexture8*)chain->tex);
-   IDirect3DDevice8_SetTextureStageState(d3dr, pass_index,
+   IDirect3DDevice8_SetTextureStageState(d3dr, 0,
          (D3DTEXTURESTAGESTATETYPE)D3DTSS_MAGFILTER,
          video_smooth ?
          D3DTEXF_LINEAR : D3DTEXF_POINT);
-   IDirect3DDevice8_SetTextureStageState(d3dr, pass_index,
+   IDirect3DDevice8_SetTextureStageState(d3dr, 0,
          (D3DTEXTURESTAGESTATETYPE)D3DTSS_MINFILTER,
          video_smooth ?
          D3DTEXF_LINEAR : D3DTEXF_POINT);
@@ -309,28 +239,11 @@ static void d3d8_renderchain_render_pass(
    IDirect3DDevice8_BeginScene(d3dr);
    IDirect3DDevice8_DrawPrimitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
    IDirect3DDevice8_EndScene(d3dr);
-}
-
-static bool d3d8_renderchain_render(
-      d3d8_video_t *d3d,
-      const void *frame,
-      unsigned frame_width, unsigned frame_height,
-      unsigned pitch, unsigned rotation)
-{
-   LPDIRECT3DDEVICE8 d3dr     = (LPDIRECT3DDEVICE8)d3d->dev;
-   d3d8_renderchain_t *chain  = (d3d8_renderchain_t*)d3d->renderchain_data;
-
-   d3d8_blit_to_texture(chain, frame, frame_width, frame_height, pitch);
-   d3d8_renderchain_set_vertices(d3d, chain, 1, frame_width, frame_height, chain->frame_count);
-
-   d3d8_renderchain_render_pass(d3d, d3dr, chain, 0, rotation);
 
    chain->frame_count++;
-
-   return true;
 }
 
-static bool d3d8_renderchain_init(void *data,
+static bool d3d8_setup_init(void *data,
       const video_info_t *video_info,
       void *dev_data,
       const struct LinkInfo *link_info,
@@ -353,8 +266,33 @@ static bool d3d8_renderchain_init(void *data,
    chain->tex_w                           = link_info->tex_w;
    chain->tex_h                           = link_info->tex_h;
 
-   if (!d3d8_renderchain_create_first_pass(d3d, chain, video_info))
+   chain->vertex_buf                      = (LPDIRECT3DVERTEXBUFFER8)d3d8_vertex_buffer_new(d3dr, 4 * sizeof(Vertex),
+         D3DUSAGE_WRITEONLY,
+         D3DFVF_XYZ | D3DFVF_TEX1 | D3DFVF_DIFFUSE,
+         D3DPOOL_MANAGED,
+         NULL);
+
+   if (!chain->vertex_buf)
       return false;
+
+   chain->tex = (LPDIRECT3DTEXTURE8)d3d8_texture_new(d3dr, NULL,
+         chain->tex_w, chain->tex_h, 1, 0,
+         video_info->rgb32
+         ?
+         d3d8_get_xrgb8888_format() : d3d8_get_rgb565_format(),
+         D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL,
+         false);
+
+   if (!chain->tex)
+      return false;
+
+   IDirect3DDevice8_SetTextureStageState(d3dr, 0,
+         (D3DTEXTURESTAGESTATETYPE)D3DTSS_ADDRESSU, D3DTADDRESS_BORDER);
+   IDirect3DDevice8_SetTextureStageState(d3dr, 0,
+         (D3DTEXTURESTAGESTATETYPE)D3DTSS_ADDRESSV, D3DTADDRESS_BORDER);
+   IDirect3DDevice8_SetRenderState(d3dr, D3DRS_LIGHTING, 0);
+   IDirect3DDevice8_SetRenderState(d3dr, D3DRS_CULLMODE, D3DCULL_NONE);
+   IDirect3DDevice8_SetRenderState(d3dr, D3DRS_ZENABLE,  FALSE);
 
    /* FIXME */
    if (custom_vp->width == 0)
@@ -375,62 +313,23 @@ static void *d3d8_renderchain_new(void)
    return renderchain;
 }
 
-static bool d3d8_init_chain(d3d8_video_t *d3d, const video_info_t *video_info)
-{
-   struct LinkInfo link_info;
-   unsigned i                   = 0;
-
-   /* Setup information for first pass. */
-   link_info.pass               = NULL;
-   link_info.tex_w              = video_info->input_scale * RARCH_SCALE_BASE;
-   link_info.tex_h              = video_info->input_scale * RARCH_SCALE_BASE;
-   link_info.pass               = &d3d->shader.pass[0];
-
-   d3d->renderchain_data        = d3d8_renderchain_new();
-
-   if (
-         !d3d8_renderchain_init(
-            d3d,
-            &d3d->video_info,
-            d3d->dev, &link_info,
-            d3d->video_info.rgb32)
-      )
-      return false;
-   return true;
-}
-
-static bool d3d8_init_singlepass(d3d8_video_t *d3d)
-{
-   struct video_shader_pass *pass = NULL;
-
-   if (!d3d)
-      return false;
-
-   memset(&d3d->shader, 0, sizeof(d3d->shader));
-   d3d->shader.passes                    = 1;
-
-   pass                                  = (struct video_shader_pass*)
-      &d3d->shader.pass[0];
-
-   pass->fbo.valid                       = true;
-   pass->fbo.scale_y                     = 1.0;
-   pass->fbo.type_y                      = RARCH_SCALE_VIEWPORT;
-   pass->fbo.scale_x                     = pass->fbo.scale_y;
-   pass->fbo.type_x                      = pass->fbo.type_y;
-
-   if (!string_is_empty(d3d->shader_path))
-      strlcpy(pass->source.path, d3d->shader_path,
-            sizeof(pass->source.path));
-
-   return true;
-}
-
 static void d3d8_viewport_info(void *data, struct video_viewport *vp)
 {
+   unsigned width, height;
    d3d8_video_t *d3d   = (d3d8_video_t*)data;
 
-   if (d3d)
-      d3d8_renderchain_viewport_info(d3d, vp);
+   if (!d3d || !vp)
+      return;
+
+   video_driver_get_size(&width, &height);
+
+   vp->x            = d3d->final_viewport.X;
+   vp->y            = d3d->final_viewport.Y;
+   vp->width        = d3d->final_viewport.Width;
+   vp->height       = d3d->final_viewport.Height;
+
+   vp->full_width   = width;
+   vp->full_height  = height;
 }
 
 static void d3d8_overlay_render(d3d8_video_t *d3d,
@@ -549,21 +448,26 @@ static void d3d8_free_overlay(d3d8_video_t *d3d, overlay_t *overlay)
    d3d8_vertex_buffer_free(overlay->vert_buf, NULL);
 }
 
-static void d3d8_deinit_chain(d3d8_video_t *d3d)
-{
-   d3d8_renderchain_free(d3d->renderchain_data);
-
-   d3d->renderchain_data   = NULL;
-}
-
 static void d3d8_deinitialize(d3d8_video_t *d3d)
 {
+   d3d8_renderchain_t *chain = NULL;
    if (!d3d)
       return;
-
+   chain                     = (d3d8_renderchain_t*)d3d->renderchain_data;
    font_driver_free_osd();
 
-   d3d8_deinit_chain(d3d);
+   if (chain)
+   {
+      if (chain->tex)
+         IDirect3DTexture8_Release(chain->tex);
+      if (chain->vertex_buf)
+         IDirect3DVertexBuffer8_Release(chain->vertex_buf);
+      chain->vertex_buf = NULL;
+      chain->tex        = NULL;
+
+      free(chain);
+   }
+   d3d->renderchain_data    = NULL;
    d3d8_vertex_buffer_free(d3d->menu_display.buffer, d3d->menu_display.decl);
    d3d->menu_display.buffer = NULL;
    d3d->menu_display.decl   = NULL;
@@ -908,7 +812,9 @@ static void d3d8_set_viewport(void *data,
 
 static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
 {
+   struct LinkInfo link_info;
    unsigned width, height;
+   unsigned i           = 0;
    bool ret             = true;
    settings_t *settings = config_get_ptr();
 
@@ -950,7 +856,21 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
    if (!ret)
       return ret;
 
-   if (!d3d8_init_chain(d3d, info))
+   /* Setup information. */
+   link_info.pass               = NULL;
+   link_info.tex_w              = info->input_scale * RARCH_SCALE_BASE;
+   link_info.tex_h              = info->input_scale * RARCH_SCALE_BASE;
+   link_info.pass               = &d3d->shader.pass[0];
+
+   d3d->renderchain_data        = d3d8_renderchain_new();
+
+   if (
+         !d3d8_setup_init(
+            d3d,
+            &d3d->video_info,
+            d3d->dev, &link_info,
+            d3d->video_info.rgb32)
+      )
       return false;
 
    video_driver_get_size(&width, &height);
@@ -1121,6 +1041,7 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
    MONITORINFOEX current_mon;
    HMONITOR hm_to_use;
 #endif
+   struct video_shader_pass *pass = NULL;
 #ifdef HAVE_WINDOW
    DWORD style;
    unsigned win_width        = 0;
@@ -1195,16 +1116,28 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
 	   windowed_full, &rect);
 #endif
 
-   if (!d3d8_init_singlepass(d3d))
-      return false;
+   memset(&d3d->shader, 0, sizeof(d3d->shader));
+   d3d->shader.passes                    = 1;
 
-   d3d->video_info = *info;
+   pass                                  = (struct video_shader_pass*)
+      &d3d->shader.pass[0];
+
+   pass->fbo.valid                       = true;
+   pass->fbo.scale_y                     = 1.0;
+   pass->fbo.type_y                      = RARCH_SCALE_VIEWPORT;
+   pass->fbo.scale_x                     = pass->fbo.scale_y;
+   pass->fbo.type_x                      = pass->fbo.type_y;
+
+   if (!string_is_empty(d3d->shader_path))
+      strlcpy(pass->source.path, d3d->shader_path,
+            sizeof(pass->source.path));
+
+   d3d->video_info                       = *info;
    if (!d3d8_initialize(d3d, &d3d->video_info))
       return false;
 
    d3d_input_driver(settings->arrays.input_driver, settings->arrays.input_joypad_driver, input, input_data);
 
-   RARCH_LOG("[D3D8]: Init complete.\n");
    return true;
 }
 
@@ -1533,11 +1466,9 @@ static bool d3d8_frame(void *data, const void *frame,
    IDirect3DDevice8_SetViewport(d3d->dev, (D3DVIEWPORT8*)&screen_vp);
    IDirect3DDevice8_Clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
-   if (!d3d8_renderchain_render(
-            d3d,
-            frame, frame_width, frame_height,
-            pitch, d3d->dev_rotation))
-      return false;
+   d3d8_render(d3d, d3d->dev, (d3d8_renderchain_t*)d3d->renderchain_data, frame,
+            frame_width, frame_height,
+            pitch, d3d->dev_rotation);
 
    if (black_frame_insertion && !d3d->menu->enabled)
    {
