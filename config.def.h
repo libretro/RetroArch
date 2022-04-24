@@ -53,6 +53,11 @@
 #include "../input/input_overlay.h"
 #endif
 
+/* Required for Steam enum settings */
+#if defined(HAVE_MIST)
+#include "steam/steam.h"
+#endif
+
 #if defined(HW_RVL)
 #define MAX_GAMMA_SETTING 30
 #elif defined(GEKKO)
@@ -558,6 +563,7 @@
 #define DEFAULT_OZONE_TRUNCATE_PLAYLIST_NAME true
 #define DEFAULT_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME true
 #define DEFAULT_OZONE_SCROLL_CONTENT_METADATA false
+#define DEFAULT_OZONE_THUMBNAIL_SCALE_FACTOR 1.0f
 #endif
 
 #define DEFAULT_SETTINGS_SHOW_DRIVERS true
@@ -603,6 +609,8 @@
 #define DEFAULT_SETTINGS_SHOW_USER true
 
 #define DEFAULT_SETTINGS_SHOW_DIRECTORY true
+
+#define DEFAULT_SETTINGS_SHOW_STEAM true
 
 #define DEFAULT_QUICK_MENU_SHOW_RESUME_CONTENT true
 
@@ -665,6 +673,9 @@ static const bool menu_show_shutdown           = true;
 static const bool menu_show_core_updater       = false;
 #else
 static const bool menu_show_core_updater       = true;
+#endif
+#ifdef HAVE_MIST
+static const bool menu_show_core_manager_steam = true;
 #endif
 static const bool menu_show_legacy_thumbnail_updater = false;
 static const bool menu_show_sublabels                = true;
@@ -735,6 +746,7 @@ static const bool content_show_playlists    = true;
 #ifdef HAVE_XMB
 #define DEFAULT_XMB_ANIMATION 0
 #define DEFAULT_XMB_VERTICAL_FADE_FACTOR 100
+#define DEFAULT_XMB_TITLE_MARGIN 5
 
 static const unsigned xmb_alpha_factor      = 75;
 static const unsigned menu_font_color_red   = 255;
@@ -851,7 +863,7 @@ static const unsigned input_backtouch_toggle       = false;
 
 #define DEFAULT_OVERLAY_SHOW_INPUTS_PORT 0
 
-#if defined(ANDROID) || defined(_WIN32)
+#if defined(ANDROID) || defined(_WIN32) || defined(HAVE_STEAM)
 #define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS true
 #else
 #define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS false
@@ -945,8 +957,10 @@ static const float message_bgcolor_opacity = 1.0f;
 #define DEFAULT_ALLOW_ROTATE true
 
 #if defined(_3DS)
+/* Enable New3DS clock and L2 cache */
+static const bool new3ds_speedup_enable      = true;
 /* Enable bottom LCD screen */
-static const bool video_3ds_lcd_bottom = true;
+static const bool video_3ds_lcd_bottom       = true;
 /* Sets video display mode (3D, 2D, etc.) */
 static const unsigned video_3ds_display_mode = CTR_VIDEO_MODE_3D;
 #endif
@@ -1044,9 +1058,9 @@ static const bool audio_enable_menu_bgm    = false;
 #endif
 
 /* Output samplerate. */
-#ifdef GEKKO
+#if defined(GEKKO) || defined(MIYOO)
 #define DEFAULT_OUTPUT_RATE 32000
-#elif defined(_3DS) || defined(RETROFW) || defined(MIYOO)
+#elif defined(_3DS) || defined(RETROFW)
 #define DEFAULT_OUTPUT_RATE 32730
 #else
 #define DEFAULT_OUTPUT_RATE 48000
@@ -1511,6 +1525,11 @@ static const enum resampler_quality audio_resampler_quality_level = RESAMPLER_QU
 
 static const unsigned midi_volume = 100;
 
+#ifdef HAVE_MIST
+/* Steam */
+#define DEFAULT_STEAM_RICH_PRESENCE_FORMAT STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM
+#endif
+
 /* Only applies to Android 7.0 (API 24) and up */
 static const bool sustained_performance_mode = false;
 
@@ -1639,7 +1658,7 @@ static const bool enable_device_vibration    = false;
 
 #define DEFAULT_AI_SERVICE_TARGET_LANG 0
 
-#define DEFAULT_AI_SERVICE_ENABLE true
+#define DEFAULT_AI_SERVICE_ENABLE false
 
 #define DEFAULT_AI_SERVICE_PAUSE false
 

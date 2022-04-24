@@ -159,16 +159,17 @@ RHMAP__UNUSED static uint32_t rhmap_hash_string(const char* str)
 
 struct rhmap__hdr { size_t len, maxlen; uint32_t *keys; char** key_strs; };
 #define RHMAP__HDR(b) (((struct rhmap__hdr *)&(b)[-1])-1)
-#define RHMAP__GROW(b, n) (*(void**)(&(b)) = rhmap__grow(RHMAP__HDR(b), (void*)(b), sizeof(*(b)), (size_t)(n)))
+#define RHMAP__GROW(b, n) (*(void**)(&(b)) = rhmap__grow((void*)(b), sizeof(*(b)), (size_t)(n)))
 #define RHMAP__FIT1(b) ((b) && RHMAP_LEN(b) * 2 <= RHMAP_MAX(b) ? 0 : RHMAP__GROW(b, 0))
 
-RHMAP__UNUSED static void* rhmap__grow(struct rhmap__hdr *old_hdr, void* old_ptr, size_t elem_size, size_t reserve)
+RHMAP__UNUSED static void* rhmap__grow(void* old_ptr, size_t elem_size, size_t reserve)
 {
+   struct rhmap__hdr *old_hdr = (old_ptr ? ((struct rhmap__hdr *)((char*)old_ptr-elem_size))-1 : NULL);
    struct rhmap__hdr *new_hdr;
    char *new_vals;
    size_t new_max = (old_ptr ? old_hdr->maxlen * 2 + 1 : 15);
-   while (new_max && new_max / 2 <= reserve)
-      if (!(new_max = new_max * 2 + 1))
+   for (; new_max / 2 <= reserve; new_max = new_max * 2 + 1)
+      if (new_max == (size_t)-1)
          return old_ptr; /* overflow */
 
    new_hdr = (struct rhmap__hdr *)malloc(sizeof(struct rhmap__hdr) + (new_max + 2) * elem_size);
@@ -246,7 +247,7 @@ RHMAP__UNUSED static ptrdiff_t rhmap__idx(struct rhmap__hdr* hdr, uint32_t key, 
             hdr->key_strs[i] = NULL;
             while ((key = hdr->keys[i = (i + 1) & hdr->maxlen]) != 0)
             {
-               if ((key = (uint32_t)rhmap__idx(hdr, key, str, 1, 0)) == i) continue;
+               if ((key = (uint32_t)rhmap__idx(hdr, key, hdr->key_strs[i], 1, 0)) == i) continue;
                hdr->len--;
                hdr->keys[i] = 0;
                free(hdr->key_strs[i]);

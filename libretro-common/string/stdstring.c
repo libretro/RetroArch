@@ -630,3 +630,24 @@ int string_find_index_substring_string(const char* str1, const char* str2)
 
    return -1;
 }
+
+/* Strips non-ASCII characters from a string. */
+void string_copy_only_ascii(char *str_stripped, const char* str)
+{
+   if (!string_is_empty(str))
+   {
+      unsigned i = 0;
+      unsigned j = 0;
+
+      for (i = 0; i < strlen(str); i++)
+      {
+         if (str[i] > 0x1F && str[i] < 0x80)
+         {
+            str_stripped[j] = str[i];
+            j++;
+         }
+      }
+
+      str_stripped[j] = '\0';
+   }
+}

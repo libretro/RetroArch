@@ -21,6 +21,9 @@ const char* rc_console_name(int console_id)
     case RC_CONSOLE_ARCADE:
       return "Arcade";
 
+    case RC_CONSOLE_ARDUBOY:
+      return "Arduboy";
+
     case RC_CONSOLE_ATARI_2600:
       return "Atari 2600";
 
@@ -259,6 +262,21 @@ static const rc_memory_region_t _rc_memory_regions_appleii[] = {
     { 0x010000U, 0x01FFFFU, 0x010000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Auxillary RAM" }
 };
 static const rc_memory_regions_t rc_memory_regions_appleii = { _rc_memory_regions_appleii, 2 };
+
+/* ===== Arduboy ===== */
+/* https://scienceprog.com/avr-microcontroller-memory-map/ (Atmega32) */
+static const rc_memory_region_t _rc_memory_regions_arduboy[] = {
+    { 0x000000U, 0x0000FFU, 0x00000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Registers" },
+    /* https://www.dailydot.com/debug/arduboy-kickstarter/ 2.5KB of RAM */
+    /* https://github.com/buserror/simavr/blob/1d227277b3d0039f9faef9ea62880ca3051b14f8/simavr/cores/avr/iom32u4.h#L1444-L1445 */
+    { 0x000100U, 0x000AFFU, 0x00000100U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
+    /* 1KB of EEPROM https://github.com/libretro/arduous/blob/93e1a6289b42ef48de1fcfb96443981725955ad0/src/arduous/arduous.cpp#L453-L455
+     * https://github.com/buserror/simavr/blob/1d227277b3d0039f9faef9ea62880ca3051b14f8/simavr/cores/avr/iom32u4.h#L1450 */
+    /* EEPROM has it's own addressing scheme starting at $0000. I've chosen to virtualize the address
+     * at $80000000 to avoid a conflict */
+    { 0x000B00U, 0x000EFFU, 0x80000000U, RC_MEMORY_TYPE_SAVE_RAM, "EEPROM" }
+};
+static const rc_memory_regions_t rc_memory_regions_arduboy = { _rc_memory_regions_arduboy, 3 };
 
 /* ===== Atari 2600 ===== */
 static const rc_memory_region_t _rc_memory_regions_atari2600[] = {
@@ -684,6 +702,9 @@ const rc_memory_regions_t* rc_console_memory_regions(int console_id)
 
     case RC_CONSOLE_APPLE_II:
       return &rc_memory_regions_appleii;
+
+    case RC_CONSOLE_ARDUBOY:
+      return &rc_memory_regions_arduboy;
 
     case RC_CONSOLE_ATARI_2600:
       return &rc_memory_regions_atari2600;

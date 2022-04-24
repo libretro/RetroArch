@@ -209,6 +209,76 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
          if (!string_is_empty(val_string))
             db_info->genre = strdup(val_string);
       }
+      else if (string_is_equal(str, "category"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->category = strdup(val_string);
+      }
+      else if (string_is_equal(str, "language"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->language = strdup(val_string);
+      }
+      else if (string_is_equal(str, "region"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->region = strdup(val_string);
+      }
+      else if (string_is_equal(str, "score"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->score = strdup(val_string);
+      }
+      else if (string_is_equal(str, "media"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->media = strdup(val_string);
+      }
+      else if (string_is_equal(str, "controls"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->controls = strdup(val_string);
+      }
+      else if (string_is_equal(str, "artstyle"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->artstyle = strdup(val_string);
+      }
+      else if (string_is_equal(str, "gameplay"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->gameplay = strdup(val_string);
+      }
+      else if (string_is_equal(str, "narrative"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->narrative = strdup(val_string);
+      }
+      else if (string_is_equal(str, "pacing"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->pacing = strdup(val_string);
+      }
+      else if (string_is_equal(str, "perspective"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->perspective = strdup(val_string);
+      }
+      else if (string_is_equal(str, "setting"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->setting = strdup(val_string);
+      }
+      else if (string_is_equal(str, "visual"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->visual = strdup(val_string);
+      }
+      else if (string_is_equal(str, "vehicular"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->vehicular = strdup(val_string);
+      }
       else if (string_is_equal(str, "origin"))
       {
          if (!string_is_empty(val_string))
@@ -274,6 +344,12 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
          db_info->releaseyear             = (unsigned)val->val.uint_;
       else if (string_is_equal(str, "rumble"))
          db_info->rumble_supported        = (int)val->val.uint_;
+      else if (string_is_equal(str, "achievements"))
+         db_info->achievements            = (int)val->val.uint_;
+      else if (string_is_equal(str, "console_exclusive"))
+         db_info->console_exclusive       = (int)val->val.uint_;
+      else if (string_is_equal(str, "platform_exclusive"))
+         db_info->platform_exclusive      = (int)val->val.uint_;
       else if (string_is_equal(str, "coop"))
          db_info->coop_supported          = (int)val->val.uint_;
       else if (string_is_equal(str, "analog"))
@@ -504,6 +580,34 @@ database_info_list_t *database_info_list_new(
                free(db_info.franchise);
             if (db_info.genre)
                free(db_info.genre);
+            if (db_info.category)
+               free(db_info.category);
+            if (db_info.language)
+               free(db_info.language);
+            if (db_info.region)
+               free(db_info.region);
+            if (db_info.score)
+               free(db_info.score);
+            if (db_info.media)
+               free(db_info.media);
+            if (db_info.controls)
+               free(db_info.controls);
+            if (db_info.artstyle)
+               free(db_info.artstyle);
+            if (db_info.gameplay)
+               free(db_info.gameplay);
+            if (db_info.narrative)
+               free(db_info.narrative);
+            if (db_info.pacing)
+               free(db_info.pacing);
+            if (db_info.perspective)
+               free(db_info.perspective);
+            if (db_info.setting)
+               free(db_info.setting);
+            if (db_info.visual)
+               free(db_info.visual);
+            if (db_info.vehicular)
+               free(db_info.vehicular);
             if (db_info.name)
                free(db_info.name);
             if (db_info.origin)
@@ -590,6 +694,34 @@ void database_info_list_free(database_info_list_t *database_info_list)
          free(info->serial);
       if (info->genre)
          free(info->genre);
+      if (info->category)
+         free(info->category);
+      if (info->language)
+         free(info->language);
+      if (info->region)
+         free(info->region);
+      if (info->score)
+         free(info->score);
+      if (info->media)
+         free(info->media);
+      if (info->controls)
+         free(info->controls);
+      if (info->artstyle)
+         free(info->artstyle);
+      if (info->gameplay)
+         free(info->gameplay);
+      if (info->narrative)
+         free(info->narrative);
+      if (info->pacing)
+         free(info->pacing);
+      if (info->perspective)
+         free(info->perspective);
+      if (info->setting)
+         free(info->setting);
+      if (info->visual)
+         free(info->visual);
+      if (info->vehicular)
+         free(info->vehicular);
       if (info->description)
          free(info->description);
       if (info->publisher)

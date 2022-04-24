@@ -33,6 +33,7 @@
 #include "slang_reflection.h"
 #include "slang_reflection.hpp"
 
+#include "../common/vulkan_common.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../msg_hash.h"

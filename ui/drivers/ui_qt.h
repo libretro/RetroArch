@@ -43,7 +43,7 @@
 #include <QSortFilterProxyModel>
 #include <QDir>
 
-#include "qt/filedropwidget.h"
+#include "qt/qt_widgets.h"
 
 #ifndef CXX_BUILD
 extern "C" {

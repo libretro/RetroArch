@@ -129,7 +129,6 @@ bool net_ifinfo_new(net_ifinfo_t *list)
 #ifdef HAVE_LIBNX
    Result rc;
 #endif
-
    char hostname[128];
    struct net_ifinfo_entry *ptr = NULL;
 
@@ -186,14 +185,12 @@ bool net_ifinfo_new(net_ifinfo_t *list)
    return true;
 #elif defined(_WIN32) && !defined(_XBOX)
    PIP_ADAPTER_ADDRESSES adapter_addresses = NULL, aa = NULL;
-   PIP_ADAPTER_UNICAST_ADDRESS ua = NULL;
+   PIP_ADAPTER_UNICAST_ADDRESS ua          = NULL;
 #ifdef _WIN32_WINNT_WINXP
-   DWORD size = 0;
-   DWORD rv = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, NULL, &size);
-
-   adapter_addresses = (PIP_ADAPTER_ADDRESSES)malloc(size);
-
-   rv = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, adapter_addresses, &size);
+   DWORD size                              = 0;
+   DWORD rv                                = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, NULL, &size);
+   adapter_addresses                       = (PIP_ADAPTER_ADDRESSES)malloc(size);
+   rv                                      = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, adapter_addresses, &size);
 
    memset(list, 0, sizeof(net_ifinfo_t));
 
@@ -323,7 +320,7 @@ bool net_ifinfo_best(const char *dst, void *src, bool ipv6)
       {
          /* Microsoft docs recommend doing it this way. */
          ULONG len                       = 15 * 1024;
-         PIP_ADAPTER_ADDRESSES addresses = calloc(1, len);
+         PIP_ADAPTER_ADDRESSES addresses = (PIP_ADAPTER_ADDRESSES)calloc(1, len);
 
          if (addresses)
          {
@@ -336,7 +333,7 @@ bool net_ifinfo_best(const char *dst, void *src, bool ipv6)
 
             if (result == ERROR_BUFFER_OVERFLOW)
             {
-               PIP_ADAPTER_ADDRESSES new_addresses = realloc(addresses, len);
+               PIP_ADAPTER_ADDRESSES new_addresses = (PIP_ADAPTER_ADDRESSES)realloc(addresses, len);
 
                if (new_addresses)
                {

@@ -103,8 +103,8 @@
 #include "../paths.h"
 #include "../verbosity.h"
 
-#ifdef HAVE_DISCORD
-#include "../network/discord.h"
+#ifdef HAVE_PRESENCE
+#include "../network/presence.h"
 #endif
 
 #define MAX_ARGS 32
@@ -1713,6 +1713,135 @@ static void task_push_to_history_list(
    }
 }
 
+#ifndef HAVE_DYNAMIC
+/**
+ * task_push_to_history_list_from_playlist_pre_load_static:
+ *
+ * Will push content from the currently selected playlist
+ * to the history playlist before loading content. Required
+ * on static platforms, where essential playlist information
+ * (label, db_name, etc.) would otherwise be lost when the
+ * core is forked.
+ **/
+static bool task_push_to_history_list_from_playlist_pre_load_static(
+      const char *content_path,
+      const char *core)
+{
+   const char *core_path     = NULL;
+   const char *core_name     = NULL;
+   const char *label         = NULL;
+   const char *crc32         = NULL;
+   const char *db_name       = NULL;
+   unsigned ss_entry_slot    = 0;
+   playlist_t *playlist_hist = g_defaults.content_history;
+   settings_t *settings      = config_get_ptr();
+#ifdef HAVE_MENU
+   menu_handle_t *menu       = menu_state_get_ptr()->driver_data;
+#endif
+
+   if (!settings ||
+       !settings->bools.history_list_enable ||
+       string_is_empty(content_path))
+      return false;
+
+   switch (path_is_media_type(content_path))
+   {
+      case RARCH_CONTENT_MOVIE:
+#ifdef HAVE_FFMPEG
+         playlist_hist       = g_defaults.video_history;
+         core_name           = "movieplayer";
+         core_path           = "builtin";
+#endif
+         break;
+      case RARCH_CONTENT_MUSIC:
+         playlist_hist       = g_defaults.music_history;
+         core_name           = "musicplayer";
+         core_path           = "builtin";
+         break;
+      case RARCH_CONTENT_IMAGE:
+#ifdef HAVE_IMAGEVIEWER
+         playlist_hist       = g_defaults.image_history;
+         core_name           = "imageviewer";
+         core_path           = "builtin";
+#endif
+         break;
+      default:
+      {
+         core_info_t *core_info = NULL;
+
+         if (!string_is_empty(core) &&
+             core_info_find(core, &core_info))
+         {
+            /* Set core path and core display name */
+            core_path = core_info->path;
+            core_name = core_info->display_name;
+
+#ifdef HAVE_MENU
+            /* Read remaining information from currently selected
+             * playlist entry (label, database name, checksum,
+             * save state slot) */
+            if (menu)
+            {
+               playlist_t *playlist_curr = playlist_get_cached();
+
+               if (playlist_index_is_valid(playlist_curr,
+                     menu->rpl_entry_selection_ptr,
+                     content_path, core_path))
+               {
+                  const struct playlist_entry *pl_entry = NULL;
+
+                  playlist_get_index(playlist_curr,
+                        menu->rpl_entry_selection_ptr,
+                        &pl_entry);
+
+                  if (pl_entry)
+                  {
+                     label         = pl_entry->label;
+                     crc32         = pl_entry->crc32;
+                     ss_entry_slot = pl_entry->entry_slot;
+                  }
+
+                  playlist_get_db_name(playlist_curr,
+                        menu->rpl_entry_selection_ptr,
+                        &db_name);
+               }
+            }
+#endif
+         }
+
+         break;
+      }
+   }
+
+   if (!string_is_empty(core_path) &&
+       playlist_hist)
+   {
+      struct playlist_entry new_entry = {0};
+
+      /* The push function reads our entry as const,
+       * so these casts are safe */
+      new_entry.path       = (char*)content_path;
+      new_entry.label      = (char*)label;
+      new_entry.core_path  = (char*)core_path;
+      new_entry.core_name  = (char*)core_name;
+      new_entry.crc32      = (char*)crc32;
+      new_entry.db_name    = (char*)db_name;
+      new_entry.entry_slot = ss_entry_slot;
+
+      /* TODO/FIXME: Subsystems are not properly supported
+       * on static platforms, so exclude the following:
+       * - subsystem_ident
+       * - subsystem_name
+       * - subsystem_roms */
+
+      command_playlist_push_write(playlist_hist, &new_entry);
+      return true;
+   }
+
+   return false;
+}
+#endif
+
 #ifdef HAVE_MENU
 static bool command_event_cmd_exec(
       content_state_t *p_content,
@@ -1986,6 +2115,13 @@ bool task_push_load_content_from_playlist_from_menu(
    path_set(RARCH_PATH_CORE, core_path);
 #ifdef HAVE_DYNAMIC
    command_event(CMD_EVENT_LOAD_CORE, NULL);
+#else
+   /* On targets that do not support dynamic core loading,
+    * must push content to the history list before calling
+    * command_event_cmd_exec() or playlist metadata will
+    * be lost */
+   task_push_to_history_list_from_playlist_pre_load_static(
+         fullpath, core_path);
 #endif
 
    /* Load content
@@ -2456,15 +2592,12 @@ static bool task_load_content_internal(
    if (firmware_update_status(&content_ctx))
       goto end;
 
-#ifdef HAVE_DISCORD
-   if (discord_state_get_ptr()->inited)
-   {
-      discord_userdata_t userdata;
-      userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;
-      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-      userdata.status = DISCORD_PRESENCE_MENU;
-      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-   }
+#ifdef HAVE_PRESENCE
+   presence_userdata_t userdata;
+   userdata.status = PRESENCE_NETPLAY_NETPLAY_STOPPED;
+   command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
+   userdata.status = PRESENCE_MENU;
+   command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
 #endif
 
    /* Loads content into currently selected core. */

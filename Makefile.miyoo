@@ -45,8 +45,7 @@ HAVE_SCREENSHOTS = 0
 HAVE_REWIND = 0
 HAVE_7ZIP = 1
 HAVE_AL = 0
-# ALSA freezes when switching back from menu
-HAVE_ALSA = 0
+HAVE_ALSA = 1
 HAVE_DSP_FILTER = 1
 HAVE_VIDEO_FILTER = 1
 HAVE_STATIC_VIDEO_FILTERS = 1
@@ -123,7 +122,7 @@ DEF_FLAGS += -ffunction-sections -fdata-sections
 DEF_FLAGS += -I. -Ideps -Ideps/stb -DMIYOO=1 -DDINGUX -MMD
 DEF_FLAGS += -Wall -Wno-unused-variable -flto
 DEF_FLAGS += -std=gnu99 -D_GNU_SOURCE
-LIBS := -ldl -lz -lrt -pthread
+LIBS := -ldl -lz -lrt -pthread -lasound
 CFLAGS :=
 CXXFLAGS := -fno-exceptions -fno-rtti -std=c++11 -D__STDC_CONSTANT_MACROS
 ASFLAGS :=
@@ -133,7 +132,7 @@ LIBRARY_DIRS = -L$(GCW0_LIB_DIR)
 DEFINES := -DRARCH_INTERNAL -D_FILE_OFFSET_BITS=64 -UHAVE_STATIC_DUMMY
 DEFINES += -DHAVE_C99=1 -DHAVE_CXX=1
 DEFINES += -DHAVE_GETOPT_LONG=1 -DHAVE_STRCASESTR=1 -DHAVE_DYNAMIC=1
-DEFINES += -DHAVE_FILTERS_BUILTIN
+DEFINES += -DHAVE_FILTERS_BUILTIN -DHAVE_ALSA
 
 SDL_DINGUX_CFLAGS := $(shell $(GCW0_SDL_CONFIG) --cflags)
 SDL_DINGUX_LIBS := $(shell $(GCW0_SDL_CONFIG) --libs)

@@ -84,7 +84,7 @@ static void filereader_close(void* file_handle)
 }
 
 /* for unit tests - normally would call rc_hash_init_custom_filereader(NULL) */
-void rc_hash_reset_filereader()
+void rc_hash_reset_filereader(void)
 {
   filereader = NULL;
 }
@@ -651,6 +651,37 @@ static int rc_hash_arcade(char hash[33], const char* path)
   }
 
   return rc_hash_buffer(hash, (uint8_t*)filename, filename_length);
+}
+
+static int rc_hash_text(char hash[33], const uint8_t* buffer, size_t buffer_size)
+{
+  md5_state_t md5;
+  const uint8_t* scan = buffer;
+  const uint8_t* stop = buffer + buffer_size;
+
+  md5_init(&md5);
+
+  do {
+    /* find end of line */
+    while (scan < stop && *scan != '\r' && *scan != '\n')
+      ++scan;
+
+    md5_append(&md5, buffer, (int)(scan - buffer));
+
+    /* include a normalized line ending */
+    /* NOTE: this causes a line ending to be hashed at the end of the file, even if one was not present */
+    md5_append(&md5, (const uint8_t*)"\n", 1);
+
+    /* skip newline */
+    if (scan < stop && *scan == '\r')
+      ++scan;
+    if (scan < stop && *scan == '\n')
+      ++scan;
+
+    buffer = scan;
+  } while (scan < stop);
+
+  return rc_hash_finalize(&md5, hash);
 }
 
 static int rc_hash_lynx(char hash[33], const uint8_t* buffer, size_t buffer_size)
@@ -1601,6 +1632,10 @@ int rc_hash_generate_from_buffer(char hash[33], int console_id, const uint8_t* b
     case RC_CONSOLE_WONDERSWAN:
       return rc_hash_buffer(hash, buffer, buffer_size);
 
+    case RC_CONSOLE_ARDUBOY:
+      /* https://en.wikipedia.org/wiki/Intel_HEX */
+      return rc_hash_text(hash, buffer, buffer_size);
+
     case RC_CONSOLE_ATARI_7800:
       return rc_hash_7800(hash, buffer, buffer_size);
 
@@ -1895,6 +1930,7 @@ int rc_hash_generate_from_file(char hash[33], int console_id, const char* path)
 
       return rc_hash_whole_file(hash, path);
 
+    case RC_CONSOLE_ARDUBOY:
     case RC_CONSOLE_ATARI_7800:
     case RC_CONSOLE_ATARI_LYNX:
     case RC_CONSOLE_NINTENDO:
@@ -2186,6 +2222,13 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         else if (rc_path_compare_extension(ext, "gdi"))
         {
           iterator->consoles[0] = RC_CONSOLE_DREAMCAST;
+        }
+        break;
+
+      case 'h':
+        if (rc_path_compare_extension(ext, "hex"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_ARDUBOY;
         }
         break;
 

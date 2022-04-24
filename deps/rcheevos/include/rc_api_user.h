@@ -35,6 +35,8 @@ typedef struct rc_api_login_response_t {
   unsigned score;
   /* The number of unread messages waiting for the player on the web site */
   unsigned num_unread_messages;
+  /* The preferred name to display for the player */
+  const char* display_name;
 
   /* Common server-provided response information */
   rc_api_response_t response;

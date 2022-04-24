@@ -37,7 +37,8 @@ int rc_api_process_login_response(rc_api_login_response_t* response, const char*
     {"User"},
     {"Token"},
     {"Score"},
-    {"Messages"}
+    {"Messages"},
+    {"DisplayName"}
   };
 
   memset(response, 0, sizeof(*response));
@@ -54,6 +55,8 @@ int rc_api_process_login_response(rc_api_login_response_t* response, const char*
 
   rc_json_get_optional_unum(&response->score, &fields[4], "Score", 0);
   rc_json_get_optional_unum(&response->num_unread_messages, &fields[5], "Messages", 0);
+
+  rc_json_get_optional_string(&response->display_name, &response->response, &fields[6], "DisplayName", response->username);
 
   return RC_OK;
 }

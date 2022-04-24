@@ -193,6 +193,7 @@ extern font_renderer_t gdi_font;
 extern font_renderer_t vga_font;
 extern font_renderer_t sixel_font;
 extern font_renderer_t switch_font;
+extern font_renderer_t rsx_font;
 
 extern font_renderer_driver_t stb_font_renderer;
 extern font_renderer_driver_t stb_unicode_font_renderer;

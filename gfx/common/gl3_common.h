@@ -153,8 +153,6 @@ void gl3_framebuffer_copy_partial(
       GLuint image,
       float rx, float ry);
 
-void gl3_build_default_matrix(float *data);
-
 uint32_t gl3_get_cross_compiler_target_version(void);
 
 RETRO_END_DECLS

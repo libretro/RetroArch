@@ -339,6 +339,7 @@ endif
 OBJ += \
        gfx/drivers_font_renderer/bitmapfont.o \
        gfx/drivers_font_renderer/bitmapfont_10x10.o \
+       gfx/drivers_font_renderer/bitmapfont_6x10.o \
        tasks/task_autodetect.o \
        input/input_autodetect_builtin.o \
        input/input_keymaps.o \
@@ -473,7 +474,9 @@ ifeq ($(HAVE_LANGEXTRA), 1)
           intl/msg_hash_id.o \
           intl/msg_hash_sv.o \
           intl/msg_hash_uk.o \
-          intl/msg_hash_cs.o 
+          intl/msg_hash_cs.o \
+          intl/msg_hash_val.o \
+          intl/msg_hash_ca.o
 endif
 
 ifneq ($(HAVE_GETOPT_LONG), 1)
@@ -533,17 +536,10 @@ ifeq ($(HAVE_QT), 1)
    MOC_HEADERS += ui/drivers/ui_qt.h \
                   ui/drivers/qt/ui_qt_load_core_window.h \
                   ui/drivers/qt/gridview.h \
-                  ui/drivers/qt/coreoptionsdialog.h \
-                  ui/drivers/qt/filedropwidget.h \
-                  ui/drivers/qt/coreinfodialog.h \
-                  ui/drivers/qt/playlistentrydialog.h \
-                  ui/drivers/qt/viewoptionsdialog.h
+                  ui/drivers/qt/qt_dialogs.h \
+                  ui/drivers/qt/qt_widgets.h
    ifeq ($(HAVE_MENU), 1)
-   ifeq ($(HAVE_SHADERS_COMMON), 1)
-      MOC_HEADERS += ui/drivers/qt/shaderparamsdialog.h
-   endif
-      MOC_HEADERS += ui/drivers/qt/settingswidgets.h \
-                     ui/drivers/qt/qt_options.h
+      MOC_HEADERS += ui/drivers/qt/qt_options.h
    endif
 
    DEFINES += -DHAVE_MAIN
@@ -876,8 +872,10 @@ ifeq ($(HAVE_ALSA), 1)
       endif
    endif
 
-   ifeq ($(HAVE_THREADS), 1)
-      OBJ += audio/drivers/alsathread.o
+   ifneq ($(MIYOO), 1)
+      ifeq ($(HAVE_THREADS), 1)
+         OBJ += audio/drivers/alsathread.o
+      endif
    endif
 
    LIBS += $(ALSA_LIBS)
@@ -975,6 +973,7 @@ OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.o \
        $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16.o
 
 ifeq ($(HAVE_RWAV), 1)
+DEFINES += -DHAVE_RWAV
 OBJ += $(LIBRETRO_COMM_DIR)/formats/wav/rwav.o
 endif
 
@@ -1262,6 +1261,7 @@ ifeq ($(HAVE_WAYLAND), 1)
  OBJ += gfx/drivers_context/wayland_ctx.o \
         input/common/wayland_common.o \
         input/drivers/wayland_input.o \
+        gfx/common/wayland_common.o \
         gfx/common/wayland/xdg-shell.o \
         gfx/common/wayland/idle-inhibit-unstable-v1.o \
         gfx/common/wayland/xdg-decoration-unstable-v1.o
@@ -1274,8 +1274,7 @@ ifeq ($(HAVE_WAYLAND), 1)
  LIBS += $(WAYLAND_LIBS) $(WAYLAND_CURSOR_LIBS)
 
  ifeq ($(HAVE_LIBDECOR), 1)
-    DEFINES += -DHAVE_LIBDECOR
-    LIBS += $(LIBDECOR_LIBS)
+    DEFINES += -DHAVE_LIBDECOR_H
     DEF_FLAGS += $(LIBDECOR_CFLAGS)
  endif
 
@@ -1738,7 +1737,8 @@ ifeq ($(HAVE_D3D9), 1)
    OBJ  += gfx/drivers_font/d3d_w32_font.o
    ifeq ($(HAVE_CG), 1)
       LIBS += -lcgD3D9
-      OBJ  += gfx/drivers_renderchain/d3d9_cg_renderchain.o
+      OBJ  += gfx/drivers/d3d9cg.o
+      OBJ  += gfx/drivers_display/gfx_display_d3d9cg.o
    endif
 endif
 
@@ -1808,9 +1808,7 @@ endif
 
 ifeq ($(HAVE_D3D9), 1)
    DEFINES += -DHAVE_D3D9
-   OBJ += gfx/drivers/d3d9.o
    OBJ += gfx/common/d3d9_common.o
-	OBJ += gfx/drivers_display/gfx_display_d3d9.o
 endif
 
 ifeq ($(HAVE_D3D_COMMON), 1)
@@ -1831,7 +1829,8 @@ endif
 
 ifeq ($(HAVE_HLSL),1)
    DEFINES += -DHAVE_HLSL
-   OBJ += gfx/drivers_renderchain/d3d9_hlsl_renderchain.o
+   OBJ += gfx/drivers/d3d9hlsl.o
+   OBJ += gfx/drivers_display/gfx_display_d3d9hlsl.o
 endif
 
 ifeq ($(HAVE_SLANG),1)
@@ -2222,6 +2221,7 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    ifeq ($(HAVE_DISCORD), 1)
       NEED_CXX_LINKER = 1
+      HAVE_PRESENCE = 1
       DEFINES += -DHAVE_DISCORD
       INCLUDE_DIRS += -Ideps/discord-rpc/include
 
@@ -2455,6 +2455,22 @@ endif
 #####################################
 ifeq ($(ANDROID), 1)
    OBJ += play_feature_delivery/play_feature_delivery.o
+endif
+
+### Steam integration using mist
+ifeq ($(HAVE_MIST), 1)
+   HAVE_PRESENCE = 1
+   DEFINES += -DHAVE_MIST
+   INCLUDE_DIRS += -I$(MIST_PATH)/include
+   LDFLAGS   += -L$(MIST_PATH) -lmist
+   OBJ += steam/steam.o tasks/task_steam.o
+endif
+
+### Shared rich presence code for Discord and Steam
+
+ifeq ($(HAVE_PRESENCE), 1)
+   DEFINES += -DHAVE_PRESENCE
+   OBJ += network/presence.o
 endif
 
 ##################################

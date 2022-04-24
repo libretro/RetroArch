@@ -73,14 +73,6 @@ typedef struct d3d8_video
    overlay_t *overlays;
 } d3d8_video_t;
 
-static INLINE bool d3d8_swap(void *data, LPDIRECT3DDEVICE8 dev)
-{
-   if (IDirect3DDevice8_Present(dev, NULL, NULL, NULL, NULL)
-         == D3DERR_DEVICELOST)
-      return false;
-   return true;
-}
-
 static INLINE void *d3d8_vertex_buffer_new(
       LPDIRECT3DDEVICE8 dev,
       unsigned length, unsigned usage,
@@ -158,101 +150,12 @@ void *d3d8_texture_new(LPDIRECT3DDEVICE8 dev,
       INT32 color_key, void *src_info_data,
       PALETTEENTRY *palette, bool want_mipmap);
 
-static INLINE void d3d8_set_stream_source(LPDIRECT3DDEVICE8 dev,
-      unsigned stream_no,
-      LPDIRECT3DVERTEXBUFFER8 stream_vertbuf,
-      unsigned offset_bytes,
-      unsigned stride)
-{
-   if (stream_vertbuf)
-      IDirect3DDevice8_SetStreamSource(dev,
-            stream_no, stream_vertbuf, stride);
-}
-
-static INLINE void d3d8_texture_free(LPDIRECT3DTEXTURE8 tex)
-{
-   if (tex)
-      IDirect3DTexture8_Release(tex);
-}
-
-static INLINE void d3d8_set_transform(LPDIRECT3DDEVICE8 dev,
-      D3DTRANSFORMSTATETYPE state, const D3DMATRIX *matrix)
-{
-   IDirect3DDevice8_SetTransform(dev, state, matrix);
-}
-
-static INLINE void d3d8_set_texture_stage_state(LPDIRECT3DDEVICE8 dev,
-      unsigned sampler, D3DTEXTURESTAGESTATETYPE type, unsigned value)
-{
-   if (IDirect3DDevice8_SetTextureStageState(dev, sampler,
-            (D3DTEXTURESTAGESTATETYPE)type, value) != D3D_OK)
-      RARCH_ERR("SetTextureStageState call failed, sampler: %d, value: %d, type: %d\n", sampler, value, type);
-}
-
-static INLINE void d3d8_set_sampler_address_u(LPDIRECT3DDEVICE8 dev,
-      unsigned sampler, unsigned value)
-{
-   d3d8_set_texture_stage_state(dev, sampler, D3DTSS_ADDRESSU, value);
-}
-
-static INLINE void d3d8_set_sampler_address_v(LPDIRECT3DDEVICE8 dev,
-      unsigned sampler, unsigned value)
-{
-   d3d8_set_texture_stage_state(dev, sampler, D3DTSS_ADDRESSV, value);
-}
-
-static INLINE void d3d8_set_sampler_minfilter(void *_dev,
-      unsigned sampler, enum D3DTEXTUREFILTERTYPE value)
-{
-   d3d8_set_texture_stage_state(_dev, sampler, D3DTSS_MINFILTER, value);
-}
-
-static INLINE void d3d8_set_sampler_magfilter(void *_dev,
-      unsigned sampler, enum D3DTEXTUREFILTERTYPE value)
-{
-   d3d8_set_texture_stage_state(_dev, sampler, D3DTSS_MAGFILTER, value);
-}
-
-void d3d8_set_sampler_mipfilter(void *dev,
-      unsigned sampler, unsigned value);
-
-static INLINE bool d3d8_begin_scene(LPDIRECT3DDEVICE8 dev)
-{
-   if (!dev)
-      return false;
-#ifdef _XBOX
-   IDirect3DDevice8_BeginScene(dev);
-#else
-   if (FAILED(IDirect3DDevice8_BeginScene(dev)))
-      return false;
-#endif
-
-   return true;
-}
-
-static INLINE void d3d8_end_scene(LPDIRECT3DDEVICE8 dev)
-{
-   if (dev)
-      IDirect3DDevice8_EndScene(dev);
-}
-
 static INLINE void d3d8_draw_primitive(LPDIRECT3DDEVICE8 dev,
       D3DPRIMITIVETYPE type, unsigned start, unsigned count)
 {
-   if (!d3d8_begin_scene(dev))
-      return;
-
+   IDirect3DDevice8_BeginScene(dev);
    IDirect3DDevice8_DrawPrimitive(dev, type, start, count);
-   d3d8_end_scene(dev);
-}
-
-static INLINE void d3d8_clear(LPDIRECT3DDEVICE8 dev,
-      unsigned count, const void *rects, unsigned flags,
-      INT32 color, float z, unsigned stencil)
-{
-   if (dev)
-      IDirect3DDevice8_Clear(dev, count, (const D3DRECT*)rects, flags,
-            color, z, stencil);
+   IDirect3DDevice8_EndScene(dev);
 }
 
 static INLINE bool d3d8_lock_rectangle(
@@ -267,12 +170,6 @@ static INLINE bool d3d8_lock_rectangle(
    return false;
 }
 
-static INLINE void d3d8_unlock_rectangle(LPDIRECT3DTEXTURE8 tex)
-{
-   if (tex)
-      IDirect3DTexture8_UnlockRect(tex, 0);
-}
-
 static INLINE void d3d8_lock_rectangle_clear(
       void *tex,
       unsigned level, D3DLOCKED_RECT *lr, RECT *rect,
@@ -282,26 +179,7 @@ static INLINE void d3d8_lock_rectangle_clear(
    level              = 0;
 #endif
    memset(lr->pBits, level, rectangle_height * lr->Pitch);
-   d3d8_unlock_rectangle(tex);
-}
-
-static INLINE void d3d8_set_texture(
-      LPDIRECT3DDEVICE8 dev, unsigned sampler,
-      LPDIRECT3DTEXTURE8 tex)
-{
-   if (dev && tex)
-      IDirect3DDevice8_SetTexture(dev, sampler,
-            (IDirect3DBaseTexture8*)tex);
-}
-
-static INLINE bool d3d8_set_vertex_shader(
-      LPDIRECT3DDEVICE8 dev,
-      unsigned index,
-      void *data)
-{
-   if (IDirect3DDevice8_SetVertexShader(dev, index) != D3D_OK)
-      return false;
-   return true;
+   IDirect3DTexture8_UnlockRect((LPDIRECT3DTEXTURE8)tex, 0);
 }
 
 static INLINE void d3d8_texture_blit(
@@ -321,80 +199,12 @@ static INLINE void d3d8_texture_blit(
    }
 }
 
-static INLINE void d3d8_set_viewports(
-      LPDIRECT3DDEVICE8 dev,
-      void *vp)
-{
-   if (dev)
-      IDirect3DDevice8_SetViewport(dev, (D3DVIEWPORT8*)vp);
-}
-
-static INLINE void d3d8_set_render_state(
-      LPDIRECT3DDEVICE8 dev,
-      D3DRENDERSTATETYPE state,
-      DWORD value)
-{
-   if (dev)
-      IDirect3DDevice8_SetRenderState(dev, state, value);
-}
-
-static INLINE void d3d8_enable_blend_func(void *data)
-{
-   if (!data)
-      return;
-
-   d3d8_set_render_state(data, D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
-   d3d8_set_render_state(data, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-   d3d8_set_render_state(data, D3DRS_ALPHABLENDENABLE, true);
-}
-
-static INLINE void d3d8_disable_blend_func(void *data)
-{
-   d3d8_set_render_state(data, D3DRS_ALPHABLENDENABLE, false);
-}
-
-static INLINE void d3d8_enable_alpha_blend_texture_func(void *data)
-{
-   /* Also blend the texture with the set alpha value. */
-   d3d8_set_texture_stage_state(data, 0, D3DTSS_ALPHAOP,     D3DTOP_MODULATE);
-   d3d8_set_texture_stage_state(data, 0, D3DTSS_ALPHAARG1,   D3DTA_DIFFUSE);
-   d3d8_set_texture_stage_state(data, 0, D3DTSS_ALPHAARG2,   D3DTA_TEXTURE);
-}
-
 void d3d8_frame_postprocess(void *data);
 
 static INLINE void d3d8_surface_free(LPDIRECT3DSURFACE8 surf)
 {
    if (surf)
       IDirect3DSurface8_Release(surf);
-}
-
-static INLINE bool d3d8_device_get_render_target(
-      LPDIRECT3DDEVICE8 dev,
-      unsigned idx, void **data)
-{
-   if (dev &&
-         SUCCEEDED(IDirect3DDevice8_GetRenderTarget(dev,
-               (LPDIRECT3DSURFACE8*)data)))
-      return true;
-   return false;
-}
-
-static INLINE void d3d8_device_set_render_target(
-      LPDIRECT3DDEVICE8 dev, unsigned idx,
-      LPDIRECT3DSURFACE8 surf)
-{
-   if (dev)
-      IDirect3DDevice8_SetRenderTarget(dev, surf, NULL);
-}
-
-static INLINE bool d3d8_get_render_state(LPDIRECT3DDEVICE8 dev,
-      D3DRENDERSTATETYPE state, DWORD *value)
-{
-   if (dev &&
-         IDirect3DDevice8_GetRenderState(dev, state, value) == D3D_OK)
-      return true;
-   return false;
 }
 
 static INLINE bool d3d8_surface_lock_rect(
@@ -407,12 +217,6 @@ static INLINE bool d3d8_surface_lock_rect(
                NULL, D3DLOCK_READONLY)))
       return true;
    return false;
-}
-
-static INLINE void d3d8_surface_unlock_rect(LPDIRECT3DSURFACE8 surf)
-{
-   if (surf)
-      IDirect3DSurface8_UnlockRect(surf);
 }
 
 static INLINE bool d3d8_get_adapter_display_mode(

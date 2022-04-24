@@ -106,6 +106,9 @@
 #include "play_feature_delivery/play_feature_delivery.h"
 #endif
 
+#ifdef HAVE_PRESENCE
+#include "network/presence.h"
+#endif
 #ifdef HAVE_DISCORD
 #include "network/discord.h"
 #endif
@@ -957,6 +960,7 @@ static bool mmap_preprocess_descriptors(
    size_t                      top_addr = 1;
    rarch_memory_descriptor_t *desc      = NULL;
    const rarch_memory_descriptor_t *end = first + count;
+   size_t             highest_reachable = 0;
 
    for (desc = first; desc < end; desc++)
    {
@@ -989,17 +993,14 @@ static bool mmap_preprocess_descriptors(
       if (desc->core.start & ~desc->core.select)
          return false;
 
-      while (mmap_reduce(top_addr & ~desc->core.select, desc->core.disconnect) >> 1 > desc->core.len - 1)
+      highest_reachable = mmap_inflate(desc->core.len - 1, desc->core.disconnect);
+
+      /* Disconnect unselected bits that are too high to ever
+       * index into the core's buffer. Higher addresses will
+       * repeat / mirror the buffer as long as they match select */
+      while (mmap_highest_bit(top_addr & ~desc->core.select & ~desc->core.disconnect) >
+                mmap_highest_bit(highest_reachable))
          desc->core.disconnect |= mmap_highest_bit(top_addr & ~desc->core.select & ~desc->core.disconnect);
-
-      desc->disconnect_mask = mmap_add_bits_down(desc->core.len - 1);
-      desc->core.disconnect &= desc->disconnect_mask;
-
-      while ((~desc->disconnect_mask) >> 1 & desc->core.disconnect)
-      {
-         desc->disconnect_mask >>= 1;
-         desc->core.disconnect &= desc->disconnect_mask;
-      }
    }
 
    return true;
@@ -1900,47 +1901,34 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_SHUTDOWN:
-         RARCH_LOG("[Environ]: SHUTDOWN.\n");
-
-         /* This case occurs when a core (internally) requests
-          * a shutdown event. Must save runtime log file here,
-          * since normal command.c CMD_EVENT_CORE_DEINIT event
-          * will not occur until after the current content has
-          * been cleared (causing log to be skipped) */
-         runloop_runtime_log_deinit(runloop_st,
-               settings->bools.content_runtime_log,
-               settings->bools.content_runtime_log_aggregate,
-               settings->paths.directory_runtime_log,
-               settings->paths.directory_playlist);
-
-         /* Similarly, since the CMD_EVENT_CORE_DEINIT will
-          * be called *after* the runloop state has been
-          * cleared, must also perform the following actions
-          * here:
-          * - Disable any active config overrides
-          * - Unload any active input remaps */
-#ifdef HAVE_CONFIGFILE
-         if (runloop_st->overrides_active)
-         {
-            /* Reload the original config */
-            config_unload_override();
-            runloop_st->overrides_active = false;
-         }
+      {
+#ifdef HAVE_MENU
+         struct menu_state *menu_st = menu_state_get_ptr();
 #endif
-         if (     runloop_st->remaps_core_active
-               || runloop_st->remaps_content_dir_active
-               || runloop_st->remaps_game_active
-            )
-         {
-            input_remapping_deinit();
-            input_remapping_set_defaults(true);
-         }
-         else
-            input_remapping_restore_global_config(true);
+         /* This case occurs when a core (internally)
+          * requests a shutdown event */
+         RARCH_LOG("[Environ]: SHUTDOWN.\n");
 
          runloop_st->shutdown_initiated      = true;
          runloop_st->core_shutdown_initiated = true;
+#ifdef HAVE_MENU
+         /* Ensure that menu stack is flushed appropriately
+          * after the core has stopped running */
+         if (menu_st)
+         {
+            const char *content_path = path_get(RARCH_PATH_CONTENT);
+
+            menu_st->pending_env_shutdown_flush = true;
+            if (!string_is_empty(content_path))
+               strlcpy(menu_st->pending_env_shutdown_content_path,
+                     content_path,
+                     sizeof(menu_st->pending_env_shutdown_content_path));
+            else
+               menu_st->pending_env_shutdown_content_path[0] = '\0';
+         }
+#endif
          break;
+      }
 
       case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
          if (system)
@@ -2102,6 +2090,24 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                                     [RARCH_ANALOG_RIGHT_Y_PLUS] = desc->description;
                                  system->input_desc_btn[retro_port]
                                     [RARCH_ANALOG_RIGHT_Y_MINUS] = desc->description;
+                                 break;
+                           }
+                           break;
+                        case RETRO_DEVICE_ID_JOYPAD_R2:
+                           switch (desc->index)
+                           {
+                              case RETRO_DEVICE_INDEX_ANALOG_BUTTON:
+                                 system->input_desc_btn[retro_port]
+                                    [retro_id] = desc->description;
+                                 break;
+                           }
+                           break;
+                        case RETRO_DEVICE_ID_JOYPAD_L2:
+                           switch (desc->index)
+                           {
+                              case RETRO_DEVICE_INDEX_ANALOG_BUTTON:
+                                 system->input_desc_btn[retro_port]
+                                    [retro_id] = desc->description;
                                  break;
                            }
                            break;
@@ -5022,6 +5028,18 @@ void runloop_event_deinit_core(void)
       runloop_st->fastmotion_override.pending = false;
    }
 
+   if (     runloop_st->remaps_core_active
+         || runloop_st->remaps_content_dir_active
+         || runloop_st->remaps_game_active
+         || !string_is_empty(runloop_st->name.remapfile)
+      )
+   {
+      input_remapping_deinit(true);
+      input_remapping_set_defaults(true);
+   }
+   else
+      input_remapping_restore_global_config(true);
+
    RARCH_LOG("[Core]: Unloading core symbols..\n");
    uninit_libretro_symbols(&runloop_st->current_core);
    runloop_st->current_core.symbols_inited = false;
@@ -5048,17 +5066,6 @@ void runloop_event_deinit_core(void)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    runloop_st->runtime_shader_preset_path[0] = '\0';
 #endif
-
-   if (     runloop_st->remaps_core_active
-         || runloop_st->remaps_content_dir_active
-         || runloop_st->remaps_game_active
-      )
-   {
-      input_remapping_deinit();
-      input_remapping_set_defaults(true);
-   }
-   else
-      input_remapping_restore_global_config(true);
 }
 
 static void runloop_path_init_savefile_internal(void)
@@ -5471,8 +5478,8 @@ void runloop_runahead_clear_variables(runloop_state_t *runloop_st)
 
 void runloop_pause_checks(void)
 {
-#ifdef HAVE_DISCORD
-   discord_userdata_t userdata;
+#ifdef HAVE_PRESENCE
+   presence_userdata_t userdata;
 #endif
    runloop_state_t *runloop_st    = &runloop_state;
    bool is_paused                 = runloop_st->paused;
@@ -5497,9 +5504,9 @@ void runloop_pause_checks(void)
       if (!is_idle)
          video_driver_cached_frame();
 
-#ifdef HAVE_DISCORD
-      userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
-      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+#ifdef HAVE_PRESENCE
+      userdata.status = PRESENCE_GAME_PAUSED;
+      command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
 #endif
 
 #ifndef HAVE_LAKKA_SWITCH
@@ -6176,11 +6183,11 @@ static bool display_menu_libretro(
 
    if (runloop_idle)
    {
-#ifdef HAVE_DISCORD
-      discord_userdata_t userdata;
-      userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
+#ifdef HAVE_PRESENCE
+      presence_userdata_t userdata;
+      userdata.status = PRESENCE_GAME_PAUSED;
 
-      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+      command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
 #endif
       return false;
    }
@@ -6254,7 +6261,7 @@ static enum runloop_state_enum runloop_check_state(
    bool widgets_active                 = dispwidget_get_ptr()->active;
 #endif
 #ifdef HAVE_CHEEVOS
-   bool cheevos_hardcore_active        = rcheevos_hardcore_active();
+   bool cheevos_hardcore_active        = false;
 #endif
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
@@ -6529,30 +6536,36 @@ static enum runloop_state_enum runloop_check_state(
          if (runloop_exec)
             runloop_exec = false;
 
-         if (runloop_st->core_shutdown_initiated &&
-               settings->bools.load_dummy_on_core_shutdown)
+         if (runloop_st->core_shutdown_initiated)
          {
-            content_ctx_info_t content_info;
+            bool load_dummy_core = false;
 
-            content_info.argc               = 0;
-            content_info.argv               = NULL;
-            content_info.args               = NULL;
-            content_info.environ_get        = NULL;
+            runloop_st->core_shutdown_initiated = false;
 
-            if (task_push_start_dummy_core(&content_info))
+            /* Check whether dummy core should be loaded
+             * instead of exiting RetroArch completely
+             * (aborts shutdown if invoked) */
+            if (settings->bools.load_dummy_on_core_shutdown)
             {
-               /* Loads dummy core instead of exiting RetroArch completely.
-                * Aborts core shutdown if invoked. */
-               runloop_st->shutdown_initiated      = false;
-               runloop_st->core_shutdown_initiated = false;
+               load_dummy_core                = true;
+               runloop_st->shutdown_initiated = false;
             }
-            else
-               quit_runloop              = true;
+
+            /* Unload current core, and load dummy if
+             * required */
+            if (!command_event(CMD_EVENT_UNLOAD_CORE, &load_dummy_core))
+            {
+               runloop_st->shutdown_initiated = true;
+               quit_runloop                   = true;
+            }
+
+            if (!load_dummy_core)
+               quit_runloop = true;
          }
          else
             quit_runloop                 = true;
 
-         runloop_st->core_running   = false;
+         runloop_st->core_running        = false;
 
          if (quit_runloop)
          {
@@ -6948,6 +6961,10 @@ static enum runloop_state_enum runloop_check_state(
       bool trig_frameadvance        = false;
       bool pause_pressed            = BIT256_GET(current_bits, RARCH_PAUSE_TOGGLE);
 #ifdef HAVE_CHEEVOS
+      /* make sure not to evaluate this before calling menu_driver_iterate
+       * as that may change its value */
+      cheevos_hardcore_active = rcheevos_hardcore_active();
+
       if (cheevos_hardcore_active)
       {
          static int unpaused_frames = 0;
@@ -7187,6 +7204,7 @@ static enum runloop_state_enum runloop_check_state(
 
          rewinding      = state_manager_check_rewind(
                &runloop_st->rewind_st,
+               &runloop_st->current_core,
                BIT256_GET(current_bits, RARCH_REWIND),
                settings->uints.rewind_granularity,
                runloop_st->paused,
@@ -7248,6 +7266,8 @@ static enum runloop_state_enum runloop_check_state(
          old_slowmotion_hold_button_state             = new_slowmotion_hold_button_state;
       }
    }
+
+   HOTKEY_CHECK(RARCH_VRR_RUNLOOP_TOGGLE, CMD_EVENT_VRR_RUNLOOP_TOGGLE, true, NULL);
 
    /* Check movie record toggle */
    HOTKEY_CHECK(RARCH_BSV_RECORD_TOGGLE, CMD_EVENT_BSV_RECORDING_TOGGLE, true, NULL);
@@ -7697,9 +7717,8 @@ int runloop_iterate(void)
 #ifdef HAVE_CHEATS
    cheat_manager_apply_retro_cheats();
 #endif
-#ifdef HAVE_DISCORD
-   if (discord_st->inited && discord_st->ready)
-      discord_update(DISCORD_PRESENCE_GAME);
+#ifdef HAVE_PRESENCE
+   presence_update(PRESENCE_GAME);
 #endif
 
    /* Restores analog D-pad binds temporarily overridden. */
@@ -7968,33 +7987,6 @@ bool core_set_default_callbacks(void *data)
 
    return true;
 }
-
-#ifdef HAVE_REWIND
-/**
- * core_set_rewind_callbacks:
- *
- * Sets the audio sampling callbacks based on whether or not
- * rewinding is currently activated.
- **/
-bool core_set_rewind_callbacks(void)
-{
-   runloop_state_t *runloop_st  = &runloop_state;
-   struct state_manager_rewind_state
-      *rewind_st                = &runloop_st->rewind_st;
-
-   if (rewind_st->frame_is_reversed)
-   {
-      runloop_st->current_core.retro_set_audio_sample(audio_driver_sample_rewind);
-      runloop_st->current_core.retro_set_audio_sample_batch(audio_driver_sample_batch_rewind);
-   }
-   else
-   {
-      runloop_st->current_core.retro_set_audio_sample(audio_driver_sample);
-      runloop_st->current_core.retro_set_audio_sample_batch(audio_driver_sample_batch);
-   }
-   return true;
-}
-#endif
 
 #ifdef HAVE_NETWORKING
 /**

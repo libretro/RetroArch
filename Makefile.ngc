@@ -188,10 +188,6 @@ ifeq ($(HAVE_ZLIB), 1)
    CFLAGS      += -I./libretro-common/include/compat/zlib
 endif
 
-ifeq ($(HAVE_RWAV), 1)
-   CFLAGS      += -DHAVE_RWAV
-endif
-
 ifeq ($(RARCH_CONSOLE), 1)
    CFLAGS += -DRARCH_CONSOLE
 endif

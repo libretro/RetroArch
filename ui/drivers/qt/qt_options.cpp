@@ -4,7 +4,7 @@
 #include <QButtonGroup>
 
 #include "qt_options.h"
-#include "viewoptionsdialog.h"
+#include "qt_dialogs.h"
 
 #ifndef CXX_BUILD
 extern "C" {

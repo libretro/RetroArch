@@ -6,7 +6,7 @@
 #include <QScrollArea>
 #include <QDebug>
 
-#include "settingswidgets.h"
+#include "qt_widgets.h"
 
 #include "../../../configuration.h"
 

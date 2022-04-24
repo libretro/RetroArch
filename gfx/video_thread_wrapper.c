@@ -138,144 +138,137 @@ static bool video_thread_handle_packet(
       thread_video_t *thr,
       const thread_packet_t *incoming)
 {
-#ifdef HAVE_OVERLAY
-   unsigned i;
-#endif
    thread_packet_t pkt = *incoming;
-   bool            ret = false;
 
    switch (pkt.type)
    {
       case CMD_INIT:
-         thr->driver_data = thr->driver->init(&thr->info,
-               thr->input, thr->input_data);
+         if (thr->driver && thr->driver->init)
+         {
+            thr->driver_data = thr->driver->init(&thr->info,
+                  thr->input, thr->input_data);
+            if (thr->driver->viewport_info)
+               thr->driver->viewport_info(thr->driver_data, &thr->vp);
+         }
+         else
+         {
+            thr->driver_data = NULL;
+         }
          pkt.data.b = (thr->driver_data != NULL);
-         thr->driver->viewport_info(thr->driver_data, &thr->vp);
          video_thread_reply(thr, &pkt);
          break;
 
       case CMD_FREE:
-         if (thr->driver_data)
-         {
-            if (thr->driver && thr->driver->free)
-               thr->driver->free(thr->driver_data);
-         }
+         if (thr->driver_data && thr->driver && thr->driver->free)
+            thr->driver->free(thr->driver_data);
          thr->driver_data = NULL;
          video_thread_reply(thr, &pkt);
          return true;
 
       case CMD_SET_ROTATION:
-         if (thr->driver && thr->driver->set_rotation)
+         if (thr->driver_data && thr->driver && thr->driver->set_rotation)
             thr->driver->set_rotation(thr->driver_data, pkt.data.i);
          video_thread_reply(thr, &pkt);
          break;
 
       case CMD_READ_VIEWPORT:
-      {
-         struct video_viewport vp;
-
-         vp.x                     = 0;
-         vp.y                     = 0;
-         vp.width                 = 0;
-         vp.height                = 0;
-         vp.full_width            = 0;
-         vp.full_height           = 0;
-
-         thr->driver->viewport_info(thr->driver_data, &vp);
-
-         if (string_is_equal_fast(&vp, &thr->read_vp, sizeof(vp)))
+         if (thr->driver_data && thr->driver &&
+               thr->driver->viewport_info && thr->driver->read_viewport)
          {
-            /* We can read safely
-             *
-             * read_viewport() in GL driver calls
-             * 'cached frame render' to be able to read from
-             * back buffer.
-             *
-             * This means frame() callback in threaded wrapper will
-             * be called from this thread, causing a timeout, and
-             * no frame to be rendered.
-             *
-             * To avoid this, set a flag so wrapper can see if
-             * it's called in this "special" way. */
-            thr->frame.within_thread = true;
+            struct video_viewport vp = {0};
 
-            if (thr->driver->read_viewport)
-               ret = thr->driver->read_viewport(thr->driver_data,
+            thr->driver->viewport_info(thr->driver_data, &vp);
+
+            if (string_is_equal_fast(&vp, &thr->read_vp, sizeof(vp)))
+            {
+               /* We can read safely
+                *
+                * read_viewport() in GL driver calls
+                * 'cached frame render' to be able to read from
+                * back buffer.
+                *
+                * This means frame() callback in threaded wrapper will
+                * be called from this thread, causing a timeout, and
+                * no frame to be rendered.
+                *
+                * To avoid this, set a flag so wrapper can see if
+                * it's called in this "special" way. */
+               thr->frame.within_thread = true;
+               pkt.data.b = thr->driver->read_viewport(thr->driver_data,
                      (uint8_t*)pkt.data.v, thr->is_idle);
-
-            pkt.data.b = ret;
-            thr->frame.within_thread = false;
+               thr->frame.within_thread = false;
+            }
+            else
+            {
+               /* Viewport dimensions changed right after main
+                * thread read the async value. Cannot read safely. */
+               pkt.data.b = false;
+            }
          }
          else
          {
-            /* Viewport dimensions changed right after main
-             * thread read the async value. Cannot read safely. */
             pkt.data.b = false;
          }
          video_thread_reply(thr, &pkt);
          break;
-      }
 
       case CMD_SET_SHADER:
-         if (thr->driver && thr->driver->set_shader)
-            ret = thr->driver->set_shader(thr->driver_data,
-                     pkt.data.set_shader.type,
-                     pkt.data.set_shader.path);
-
-         pkt.data.b = ret;
+         if (thr->driver_data && thr->driver && thr->driver->set_shader)
+            pkt.data.b = thr->driver->set_shader(thr->driver_data,
+               pkt.data.set_shader.type, pkt.data.set_shader.path);
+         else
+            pkt.data.b = false;
          video_thread_reply(thr, &pkt);
          break;
 
       case CMD_ALIVE:
-         if (thr->driver && thr->driver->alive)
-            ret = thr->driver->alive(thr->driver_data);
-
-         pkt.data.b = ret;
+         if (thr->driver_data && thr->driver && thr->driver->alive)
+            pkt.data.b = thr->driver->alive(thr->driver_data);
+         else
+            pkt.data.b = false;
          video_thread_reply(thr, &pkt);
          break;
 
 #ifdef HAVE_OVERLAY
       case CMD_OVERLAY_ENABLE:
-         if (thr->overlay && thr->overlay->enable)
+         if (thr->driver_data && thr->overlay && thr->overlay->enable)
             thr->overlay->enable(thr->driver_data, pkt.data.b);
          video_thread_reply(thr, &pkt);
          break;
 
       case CMD_OVERLAY_LOAD:
+         if (thr->driver_data && thr->overlay && thr->overlay->load)
+            pkt.data.b = thr->overlay->load(thr->driver_data,
+               pkt.data.image.data, pkt.data.image.num);
+         else
+            pkt.data.b = false;
+
+         thr->alpha_mods = pkt.data.image.num;
+         if (thr->alpha_mods > 0)
          {
-            if (thr->overlay && thr->overlay->load)
-               ret = thr->overlay->load(thr->driver_data,
-                     pkt.data.image.data,
-                     pkt.data.image.num);
+            float *tmp_alpha_mod = (float*)realloc(thr->alpha_mod,
+               thr->alpha_mods * sizeof(float));
+            if (tmp_alpha_mod)
+               thr->alpha_mod = tmp_alpha_mod;
+         }
+         else
+         {
+            free(thr->alpha_mod);
+            thr->alpha_mod = NULL;
+         }
 
-            pkt.data.b         = ret;
-            thr->alpha_mods    = pkt.data.image.num;
-
-            if (thr->alpha_mods > 0)
-            {
-               float *tmp_alpha_mod = (float*)realloc(thr->alpha_mod,
-                     thr->alpha_mods * sizeof(float));
-
-               if (tmp_alpha_mod)
-                  thr->alpha_mod = tmp_alpha_mod;
-            }
-            else
-            {
-               if (thr->alpha_mod)
-                  free(thr->alpha_mod);
-               thr->alpha_mod = NULL;
-            }
-
-            /* Avoid temporary garbage data. */
+         /* Avoid temporary garbage data. */
+         {
+            unsigned i;
             for (i = 0; i < thr->alpha_mods; i++)
                thr->alpha_mod[i] = 1.0f;
-
-            video_thread_reply(thr, &pkt);
          }
+
+         video_thread_reply(thr, &pkt);
          break;
 
       case CMD_OVERLAY_TEX_GEOM:
-         if (thr->overlay && thr->overlay->tex_geom)
+         if (thr->driver_data && thr->overlay && thr->overlay->tex_geom)
             thr->overlay->tex_geom(thr->driver_data,
                   pkt.data.rect.index,
                   pkt.data.rect.x,
@@ -286,7 +279,7 @@ static bool video_thread_handle_packet(
          break;
 
       case CMD_OVERLAY_VERTEX_GEOM:
-         if (thr->overlay && thr->overlay->vertex_geom)
+         if (thr->driver_data && thr->overlay && thr->overlay->vertex_geom)
             thr->overlay->vertex_geom(thr->driver_data,
                   pkt.data.rect.index,
                   pkt.data.rect.x,
@@ -297,23 +290,23 @@ static bool video_thread_handle_packet(
          break;
 
       case CMD_OVERLAY_FULL_SCREEN:
-         if (thr->overlay && thr->overlay->full_screen)
-            thr->overlay->full_screen(thr->driver_data,
-                  pkt.data.b);
+         if (thr->driver_data && thr->overlay && thr->overlay->full_screen)
+            thr->overlay->full_screen(thr->driver_data, pkt.data.b);
          video_thread_reply(thr, &pkt);
          break;
 #endif
 
       case CMD_POKE_SET_VIDEO_MODE:
-         if (thr->poke && thr->poke->set_video_mode)
+         if (thr->driver_data && thr->poke && thr->poke->set_video_mode)
             thr->poke->set_video_mode(thr->driver_data,
                   pkt.data.new_mode.width,
                   pkt.data.new_mode.height,
                   pkt.data.new_mode.fullscreen);
          video_thread_reply(thr, &pkt);
          break;
+
       case CMD_POKE_SET_FILTERING:
-         if (thr->poke && thr->poke->set_filtering)
+         if (thr->driver_data && thr->poke && thr->poke->set_filtering)
             thr->poke->set_filtering(thr->driver_data,
                   pkt.data.filtering.index,
                   pkt.data.filtering.smooth,
@@ -322,43 +315,40 @@ static bool video_thread_handle_packet(
          break;
 
       case CMD_POKE_SET_ASPECT_RATIO:
-         if (thr->poke && thr->poke->set_aspect_ratio)
-            thr->poke->set_aspect_ratio(thr->driver_data,
-                  pkt.data.i);
+         if (thr->driver_data && thr->poke && thr->poke->set_aspect_ratio)
+            thr->poke->set_aspect_ratio(thr->driver_data, pkt.data.i);
          video_thread_reply(thr, &pkt);
          break;
 
       case CMD_FONT_INIT:
          if (pkt.data.font_init.method)
-            pkt.data.font_init.return_value =
-                  pkt.data.font_init.method
-                  (pkt.data.font_init.font_driver,
-                     pkt.data.font_init.font_handle,
-                     pkt.data.font_init.video_data,
-                     pkt.data.font_init.font_path,
-                     pkt.data.font_init.font_size,
-                     pkt.data.font_init.api,
-                     pkt.data.font_init.is_threaded);
+            pkt.data.font_init.return_value = pkt.data.font_init.method(
+               pkt.data.font_init.font_driver,
+               pkt.data.font_init.font_handle,
+               pkt.data.font_init.video_data,
+               pkt.data.font_init.font_path,
+               pkt.data.font_init.font_size,
+               pkt.data.font_init.api,
+               pkt.data.font_init.is_threaded
+            );
          video_thread_reply(thr, &pkt);
          break;
 
       case CMD_CUSTOM_COMMAND:
          if (pkt.data.custom_command.method)
             pkt.data.custom_command.return_value =
-                  pkt.data.custom_command.method
-                  (pkt.data.custom_command.data);
+               pkt.data.custom_command.method(pkt.data.custom_command.data);
          video_thread_reply(thr, &pkt);
          break;
 
       case CMD_POKE_SHOW_MOUSE:
-         if (thr->poke && thr->poke->show_mouse)
-            thr->poke->show_mouse(thr->driver_data,
-                  pkt.data.b);
+         if (thr->driver_data && thr->poke && thr->poke->show_mouse)
+            thr->poke->show_mouse(thr->driver_data, pkt.data.b);
          video_thread_reply(thr, &pkt);
          break;
 
       case CMD_POKE_GRAB_MOUSE_TOGGLE:
-         if (thr->poke && thr->poke->grab_mouse_toggle)
+         if (thr->driver_data && thr->poke && thr->poke->grab_mouse_toggle)
             thr->poke->grab_mouse_toggle(thr->driver_data);
          video_thread_reply(thr, &pkt);
          break;
@@ -369,32 +359,42 @@ static bool video_thread_handle_packet(
          break;
          
       case CMD_POKE_SET_HDR_MAX_NITS:
-         if (thr->poke && thr->poke->set_hdr_max_nits)
-            thr->poke->set_hdr_max_nits(thr->driver_data,
-                  pkt.data.hdr.max_nits);
+         if (thr->driver_data && thr->poke && thr->poke->set_hdr_max_nits)
+            thr->poke->set_hdr_max_nits(
+               thr->driver_data,
+               pkt.data.hdr.max_nits
+            );
          video_thread_reply(thr, &pkt);
          break;
          
       case CMD_POKE_SET_HDR_PAPER_WHITE_NITS:
-         if (thr->poke && thr->poke->set_hdr_paper_white_nits)
-            thr->poke->set_hdr_paper_white_nits(thr->driver_data,
-                  pkt.data.hdr.paper_white_nits);
+         if (thr->driver_data &&
+               thr->poke && thr->poke->set_hdr_paper_white_nits)
+            thr->poke->set_hdr_paper_white_nits(
+               thr->driver_data,
+               pkt.data.hdr.paper_white_nits
+            );
          video_thread_reply(thr, &pkt);
          break;
          
       case CMD_POKE_SET_HDR_CONTRAST:
-         if (thr->poke && thr->poke->set_hdr_contrast)
-            thr->poke->set_hdr_contrast(thr->driver_data,
-                  pkt.data.hdr.contrast);
+         if (thr->driver_data && thr->poke && thr->poke->set_hdr_contrast)
+            thr->poke->set_hdr_contrast(
+               thr->driver_data,
+               pkt.data.hdr.contrast
+            );
          video_thread_reply(thr, &pkt);
          break;
          
       case CMD_POKE_SET_HDR_EXPAND_GAMUT:
-         if (thr->poke && thr->poke->set_hdr_expand_gamut)
-            thr->poke->set_hdr_expand_gamut(thr->driver_data,
-                  pkt.data.hdr.expand_gamut);
+         if (thr->driver_data && thr->poke && thr->poke->set_hdr_expand_gamut)
+            thr->poke->set_hdr_expand_gamut(
+               thr->driver_data,
+               pkt.data.hdr.expand_gamut
+            );
          video_thread_reply(thr, &pkt);
          break;
+
       default:
          video_thread_reply(thr, &pkt);
          break;

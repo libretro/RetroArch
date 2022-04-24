@@ -1,6 +1,86 @@
 # Future
+
+# 1.10.3
+- ANDROID: Decouple Play Core dependency to bring app into compliance for F-Droid
+- ANDROID: Allow audio playback capture on android
+- AI/SERVICE: Disable AI Service setting by default
+- BLUETOOTH/LAKKA: bluetoothctl: add / modify pairing steps
+- CHEEVOS: Disallow manual frame delay setting in Hardcore Mode
+- DATABASE: Serial scanning for Wii now includes WBFS
+- INPUT: Allow proper descriptor declaration for analog triggers
+- INPUT/MAPPING: Fix offset + crash when clearing input port binds
+- INPUT/MAPPING: Fix saving of 'Analog to Digital Type' when configuration overrides are used
+- INPUT/MAPPING: Fix saving of 'Analog to Digital Type' when configuration overrides are used
+- LOCALIZATION: Add Valencian language option
+- LOCALIZATION: Updates
+- MENU/SETTINGS: Move 'Show Menu Bar' under 'Windowed Mode' settings
+- MENU/SETTINGS: Add sublabels for 'Subsystems' and 'Input Deadzone/Sensitivity'
+- MENU/SETTINGS: Move 'On-Screen Notifications' to top
+- MENU/XMB: Unified the shadow alpha value to a slightly darker one for better readability
+- MENU/XMB: Corrected the option label and sublabel for actual behavior
+- MIYOO: Enable ALSA audio driver and default to it
+- PSP: Take out extra languages/localization, adds about 4/5MB to the binary, and RAM is limited on PSP (32MB and 64MB RAM models)
+- STATIC PLATFORMS: Populate all history list metadata when launching content from playlists
+- STEAM: Introduce Steam Rich Presence
+- VIDEO: Fast-Forward Frameskip improvement
+- VIDEO/THREADED: Stability fixes
+- WINDOWS/WINRAW: Fix multiple light guns
+- WIIU: Fix USB get_device_name(), don't truncate to three chars
+
+# 1.10.2
+- 3DS: Add a menu toggle for switching between old and new 3DS speeds, located in the 'Power Management' menu. Enabled by default, hidden on old 3DS devices.
+- AUDIO/MIXER: Free audio voices properly
+- CHEEVOS: Update to rcheevos 10.3.3
+- CHEEVOS: Support for Arduboy
+- CHEEVOS: Fix tab sequences in rich presence being turned into t character
+- CHEEVOS: Fix overflow when parsing float value that has more than 9 digits after the decimal
+- CHEEVOS: Fix memory mapping when disconnect mask breaks a region into multiple blocks
+- CORES: Enable manual selection of which cores are displayed in the 'Standalone Cores' menu
+- DATABASE/EXPLORE: Added more categories to the Explore menu
+- INPUT: Fix analog stick not working with 'Unified Menu Controls'
+- INPUT/MAPPING: Add 'Manage Remap Files' submenu + automatically save input remaps when closing content
+- INPUT/MAPPING: Add 'Reset Input Mapping' option to 'Manage Remap Files' menu
+- INPUT/MAPPING: Fix keyboard device remap nulling
 - IOS/IOS13+: Support a toolbar that allows toggling of onscreen keyboard and touch mouse
+- LIBRETRO: RETRO_ENVIRONMENT_SHUTDOWN fix - ensure core is properly unloaded when RETRO_ENVIRONMENT_SHUTDOWN is called
+- LIBRETRO: RETRO_ENVIRONMENT_SHUTDOWN fix - ensure menu stack is properly flushed when RETRO_ENVIRONMENT_SHUTDOWN is called
+- LINUX/MALI FBDEV: Fix segfault switching video threaded from quickmenu
 - LOCALIZATION: Add Czech language support
+- MMAP: Handle disconnect bits on both sides of len
+- MIYOO: Improve CPU architecture and model name identification for Miyoo
+- MENU/SETTINGS: Remove 'Advanced Settings' flag from 'Settings > Core' menu
+- MENU/MATERIALUI: Add 'Gray Dark + Light' themes
+- MENU/RGUI: Add 6x10 extended ASCII and Latin Extended A and B fonts.  These will enable most Latin alphabets to be displayed in RGUI.
+- MENU/RGUI: Add 'Gray Dark + Light' themes
+- MENU/XMB: Add title margin adjustment
+- MENU/XMB: Vertical fade corrections
+- MENU/OZONE: The size of the thumbnail bar can now be changed though a new option (Settings->User interface->Appearance) up to double its normal size.
+- MENU/OZONE: Add 'Gray Dark + Light' themes
+- MENU/OZONE: Add thumbnail scale option
+- HOTKEYS: Added hotkey for toggling sync to exact content framerate
+- HOTKEYS: Prevent log spam when using rewind hotkey with cores that don't support rewind, if rewind functionality itself is disabled
+- HOTKEYS: Add hotkey for toggling sync to exact content framerate
+- PS3/PSL1GHT: Add RSX graphics support
+- PS3/PSL1GHT: Add libco support
+- PS3/PSL1GHT: Add experimental PSMove support
+- RS90: Optimise layout of sdl_rs90_video
+- STEAM: Use native OSK (Onscreen Keyboard) instead of built-in RetroArch version
+- STEAM: New built-in core DLC downloader
+- STEAM: Swap OK/Cancel buttons by default
+- VIDEO/HDR: Removed redundant copy of buffer in HDR mode if the shader has already a HDR format i.e. R10G10B10A2 (updated Vulkan/D3D11/D3D12 drivers)
+- VIDEO/HDR: Fixed crash when using stock shader and HDR and previous optimisation
+- WAYLAND: Dynamically load libdecor at runtime
+- WAYLAND: Fix splash screen when using xdg_toplevel
+- WAYLAND: SHM anti-collision for the splash screen
+- WAYLAND: Skip splash screen if window is not ready
+- WII: Fix find_connection_entry(): needs unsigned int
+Otherwise the USB gamepad cannot be found, if VID/PID has leading zero. This issue happened with Retrode gamepad adapter
+- WII: Rework Retrode gamepad implementation to support multi_pad interface
+- WII: Fix - Unplugging and re-plugging now works again
+- WII: vWii- Only gamepad 1 is supported, because multi_pad is currently only relevant in the Wii U implementation
+- WIIU: Implemented the multi_pad interface according to input/connect/connect_wiiugca.c
+- WIIU: Add Optimize for Gamepad option
+- WIIU: Fix USB gamepad support
 
 # 1.10.1
 - ANDROID: Add `HAVE_LANGEXTRA` back to makefile

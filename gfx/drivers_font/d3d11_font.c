@@ -153,7 +153,8 @@ static void d3d11_font_render_line(
          break;
    }
 
-   D3D11MapBuffer(d3d11->context, d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
+   d3d11->context->lpVtbl->Map(
+         d3d11->context, (D3D11Resource)d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
    v = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
 
    for (i = 0; i < msg_len; i++)
@@ -199,7 +200,7 @@ static void d3d11_font_render_line(
    }
 
    count = v - ((d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset);
-   D3D11UnmapBuffer(d3d11->context, d3d11->sprites.vbo, 0);
+   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->sprites.vbo, 0);
 
    if (!count)
       return;
@@ -212,12 +213,19 @@ static void d3d11_font_render_line(
       font->atlas->dirty = false;
    }
 
-   d3d11_set_texture_and_sampler(d3d11->context, 0, &font->texture);
-   D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+   {
+      d3d11_texture_t *texture = (d3d11_texture_t*)&font->texture;
+      D3D11SetPShaderResources(d3d11->context, 0, 1, &texture->view);
+      d3d11->context->lpVtbl->PSSetSamplers(
+            d3d11->context, 0, 1,
+            (D3D11SamplerState*)&texture->sampler);
+   }
+   d3d11->context->lpVtbl->OMSetBlendState(d3d11->context, d3d11->blend_enable,
+         NULL, D3D11_DEFAULT_SAMPLE_MASK);
 
-   D3D11SetPShader(d3d11->context, d3d11->sprites.shader_font.ps, NULL, 0);
+   d3d11->context->lpVtbl->PSSetShader(d3d11->context, d3d11->sprites.shader_font.ps, NULL, 0);
    D3D11Draw(d3d11->context, count, d3d11->sprites.offset);
-   D3D11SetPShader(d3d11->context, d3d11->sprites.shader.ps, NULL, 0);
+   d3d11->context->lpVtbl->PSSetShader(d3d11->context, d3d11->sprites.shader.ps, NULL, 0);
 
    d3d11->sprites.offset += count;
 }

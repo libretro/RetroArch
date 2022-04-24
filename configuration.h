@@ -156,8 +156,7 @@ typedef struct settings
       unsigned input_joypad_index[MAX_USERS];
       unsigned input_device[MAX_USERS];
       unsigned input_mouse_index[MAX_USERS];
-      /* Set by autoconfiguration in joypad_autoconfig_dir.
-       * Does not override main binds. */
+
       unsigned input_libretro_device[MAX_USERS];
       unsigned input_analog_dpad_mode[MAX_USERS];
 
@@ -279,6 +278,7 @@ typedef struct settings
       unsigned menu_xmb_color_theme;
       unsigned menu_xmb_thumbnail_scale_factor;
       unsigned menu_xmb_vertical_fade_factor;
+      unsigned menu_xmb_title_margin;
       unsigned menu_materialui_color_theme;
       unsigned menu_materialui_transition_animation;
       unsigned menu_materialui_thumbnail_view_portrait;
@@ -339,6 +339,10 @@ typedef struct settings
       unsigned cpu_min_freq;
       unsigned cpu_max_freq;
 #endif
+
+#ifdef HAVE_MIST
+      unsigned steam_rich_presence_format;
+#endif
    } uints;
 
    struct
@@ -369,6 +373,7 @@ typedef struct settings
       float menu_ticker_speed;
       float menu_rgui_particle_effect_speed;
       float menu_screensaver_animation_speed;
+      float ozone_thumbnail_scale_factor;
 
       float audio_max_timing_skew;
       float audio_volume; /* dB scale. */
@@ -659,6 +664,9 @@ typedef struct settings
       bool menu_horizontal_animation;
       bool menu_scroll_fast;
       bool menu_show_online_updater;
+#ifdef HAVE_MIST
+      bool menu_show_core_manager_steam;
+#endif
       bool menu_show_core_updater;
       bool menu_show_load_core;
       bool menu_show_load_content;
@@ -736,6 +744,9 @@ typedef struct settings
       bool settings_show_playlists;
       bool settings_show_user;
       bool settings_show_directory;
+#ifdef HAVE_MIST
+      bool settings_show_steam;
+#endif
       bool quick_menu_show_resume_content;
       bool quick_menu_show_restart_content;
       bool quick_menu_show_close_content;
@@ -827,6 +838,11 @@ typedef struct settings
 
       /* Driver */
       bool driver_switch_enable;
+
+#ifdef HAVE_MIST
+      /* Steam */
+      bool steam_rich_presence_enable;
+#endif
 
       /* Misc. */
       bool discord_enable;
@@ -921,6 +937,9 @@ typedef struct settings
       bool ai_service_pause;
 
       bool gamemode_enable;
+#ifdef _3DS
+      bool new3ds_speedup_enable;
+#endif
    } bools;
 
 } settings_t;

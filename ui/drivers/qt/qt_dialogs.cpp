@@ -29,10 +29,7 @@
 #include <QStackedLayout>
 #include <QScrollBar>
 
-#include "coreoptionsdialog.h"
-#include "viewoptionsdialog.h"
-#include "coreinfodialog.h"
-#include "playlistentrydialog.h"
+#include "qt_dialogs.h"
 #include "../ui_qt.h"
 
 #ifndef CXX_BUILD
@@ -67,12 +64,6 @@ extern "C" {
 
 #ifndef CXX_BUILD
 }
-#endif
-
-#if defined(HAVE_MENU)
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-#include "shaderparamsdialog.h"
-#endif
 #endif
 
 #include "qt_options.h"

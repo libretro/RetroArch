@@ -352,13 +352,13 @@ static bool parse_desc_node(rxml_node_t *node,
 static void natt_query_device_cb(retro_task_t *task, void *task_data,
    void *user_data, const char *error)
 {
-   char *xml;
-   rxml_document_t *document;
-   http_transfer_data_t *data = task_data;
-   struct natt_device *device = user_data;
+   char *xml                  = NULL;
+   rxml_document_t *document  = NULL;
+   http_transfer_data_t *data = (http_transfer_data_t*)task_data;
+   struct natt_device *device = (struct natt_device*)user_data;
 
-   *device->control      = '\0';
-   *device->service_type = '\0';
+   *device->control           = '\0';
+   *device->service_type      = '\0';
 
    if (error)
       goto done;
@@ -367,7 +367,7 @@ static void natt_query_device_cb(retro_task_t *task, void *task_data,
    if (data->status != 200)
       goto done;
 
-   xml = malloc(data->len + 1);
+   xml                        = (char*)malloc(data->len + 1);
    if (!xml)
       goto done;
    memcpy(xml, data->data, data->len);
@@ -458,10 +458,10 @@ static bool parse_external_address_node(rxml_node_t *node,
 static void natt_external_address_cb(retro_task_t *task, void *task_data,
    void *user_data, const char *error)
 {
-   char *xml;
-   rxml_document_t *document;
-   http_transfer_data_t *data = task_data;
-   struct natt_device *device = user_data;
+   char *xml                  = NULL;
+   rxml_document_t *document  = NULL;
+   http_transfer_data_t *data = (http_transfer_data_t*)task_data;
+   struct natt_device *device = (struct natt_device*)user_data;
 
    memset(&device->ext_addr, 0, sizeof(device->ext_addr));
 
@@ -472,7 +472,7 @@ static void natt_external_address_cb(retro_task_t *task, void *task_data,
    if (data->status != 200)
       goto done;
 
-   xml = malloc(data->len + 1);
+   xml                        = (char*)malloc(data->len + 1);
    if (!xml)
       goto done;
    memcpy(xml, data->data, data->len);
@@ -541,13 +541,13 @@ static bool parse_open_port_node(rxml_node_t *node,
 static void natt_open_port_cb(retro_task_t *task, void *task_data,
    void *user_data, const char *error)
 {
-   char *xml;
-   rxml_document_t *document;
-   http_transfer_data_t *data   = task_data;
-   struct natt_request *request = user_data;
-   struct natt_device *device   = request->device;
+   char *xml                    = NULL;
+   rxml_document_t *document    = NULL;
+   http_transfer_data_t *data   = (http_transfer_data_t*)task_data;
+   struct natt_request *request = (struct natt_request*)user_data;
+   struct natt_device *device   = (struct natt_device*)request->device;
 
-   request->success = false;
+   request->success             = false;
 
    if (error)
       goto done;
@@ -556,7 +556,7 @@ static void natt_open_port_cb(retro_task_t *task, void *task_data,
    if (data->status != 200)
       goto done;
 
-   xml = malloc(data->len + 1);
+   xml                          = (char*)malloc(data->len + 1);
    if (!xml)
       goto done;
    memcpy(xml, data->data, data->len);
@@ -582,11 +582,11 @@ done:
 static void natt_close_port_cb(retro_task_t *task, void *task_data,
    void *user_data, const char *error)
 {
-   http_transfer_data_t *data   = task_data;
-   struct natt_request *request = user_data;
-   struct natt_device *device   = request->device;
+   http_transfer_data_t *data   = (http_transfer_data_t*)task_data;
+   struct natt_request *request = (struct natt_request*)user_data;
+   struct natt_device *device   = (struct natt_device*)request->device;
 
-   request->success = false;
+   request->success             = false;
 
    if (error)
       goto done;
@@ -596,17 +596,17 @@ static void natt_close_port_cb(retro_task_t *task, void *task_data,
       goto done;
 
    /* We don't need to do anything special here. */
-   request->success = true;
+   request->success             = true;
 
 done:
-   device->busy = false;
+   device->busy                 = false;
 }
 
 static bool natt_action(struct natt_device *device,
    const char *action, const char *data, retro_task_callback_t cb,
    struct natt_request *request)
 {
-   static const char headers_template[] =
+   static const char headers_tmpl[] =
       "Content-Type: text/xml\r\n"
       "SOAPAction: \"%s#%s\"\r\n";
    char headers[512];
@@ -615,16 +615,16 @@ static bool natt_action(struct natt_device *device,
    if (string_is_empty(device->control))
       return false;
 
-   snprintf(headers, sizeof(headers), headers_template,
+   snprintf(headers, sizeof(headers), headers_tmpl,
       device->service_type, action);
 
    if (request)
    {
       request->device = device;
-      obj = request;
+      obj             = request;
    }
    else
-      obj = device;
+      obj             = device;
 
    return task_push_http_post_transfer_with_headers(device->control,
       data, true, NULL, headers, cb, obj) != NULL;
@@ -632,7 +632,7 @@ static bool natt_action(struct natt_device *device,
 
 bool natt_external_address(struct natt_device *device, bool block)
 {
-   static const char template[] =
+   static const char tmpl[] =
       "<?xml version=\"1.0\"?>"
       "<s:Envelope "
          "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\" "
@@ -647,7 +647,7 @@ bool natt_external_address(struct natt_device *device, bool block)
    if (!device)
       return false;
 
-   snprintf(buf, sizeof(buf), template,
+   snprintf(buf, sizeof(buf), tmpl,
       device->service_type);
 
    if (device->busy)
@@ -671,7 +671,7 @@ bool natt_open_port(struct natt_device *device,
    struct natt_request *request, enum natt_forward_type forward_type,
    bool block)
 {
-   static const char template[] =
+   static const char tmpl[] =
       "<?xml version=\"1.0\"?>"
       "<s:Envelope "
          "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\" "
@@ -708,7 +708,7 @@ bool natt_open_port(struct natt_device *device,
       "AddAnyPortMapping" : "AddPortMapping";
    protocol = (request->proto == SOCKET_PROTOCOL_UDP) ?
       "UDP" : "TCP";
-   snprintf(buf, sizeof(buf), template,
+   snprintf(buf, sizeof(buf), tmpl,
       action, device->service_type,
       port, protocol, port, host,
       action);
@@ -733,7 +733,7 @@ bool natt_open_port(struct natt_device *device,
 bool natt_close_port(struct natt_device *device,
    struct natt_request *request, bool block)
 {
-   static const char template[] =
+   static const char tmpl[] =
       "<?xml version=\"1.0\"?>"
       "<s:Envelope "
          "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\" "
@@ -763,7 +763,7 @@ bool natt_close_port(struct natt_device *device,
 
    protocol = (request->proto == SOCKET_PROTOCOL_UDP) ?
       "UDP" : "TCP";
-   snprintf(buf, sizeof(buf), template,
+   snprintf(buf, sizeof(buf), tmpl,
       device->service_type, port, protocol);
 
    if (device->busy)

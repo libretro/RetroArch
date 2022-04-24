@@ -33,7 +33,7 @@ LIBDIRS += -L.
 MACHDEP := -D__PSL1GHT__ -D__PS3__ -mcpu=cell
 CFLAGS += -Wall $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP)
-LIBS := -lretro_psl1ght -laudio -lrsx -lgcm_sys -lnet -lio -lsysutil -lsysmodule -lm -ljpgdec -lpngdec -llv2 -lnet -lnetctl -lsysfs
+LIBS := -lretro_psl1ght -laudio -lrsx -lgcm_sys -lnet -lio -lsysutil -lsysmodule -lm -ljpgdec -lpngdec -llv2 -lnet -lnetctl -lsysfs -lfreetype -lcamera -lgem -lspurs
 
 # system platform
 system_platform = unix
@@ -53,7 +53,12 @@ else
 GIT			= git.exe
 endif
 
-OBJ = griffin/griffin.o
+SHADER_OBJS = gfx/drivers/rsx_shaders/vpshader_basic.vpo.o \
+              gfx/drivers/rsx_shaders/fpshader_basic.fpo.o
+
+LIBCO_OBJ = libretro-common/libco/ps3.o
+
+OBJ = $(SHADER_OBJS) $(LIBCO_OBJ) griffin/griffin.o
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
@@ -92,7 +97,9 @@ SHARED_FLAGS += -DHAVE_MENU \
 		-DHAVE_SCREENSHOTS \
 		-DHAVE_REWIND \
 		-DHAVE_MULTIMAN \
+		-DHAVE_MEMINFO \
 		-DHAVE_RGUI \
+		-DHAVE_FREETYPE \
 		-DHAVE_CORE_INFO_CACHE
 CFLAGS += -std=gnu99 $(SHARED_FLAGS)
 CXXFLAGS += $(SHARED_FLAGS)

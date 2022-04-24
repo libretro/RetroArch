@@ -83,7 +83,7 @@ audio_driver_t audio_null = {
 audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_ALSA
    &audio_alsa,
-#if !defined(__QNX__) && defined(HAVE_THREADS)
+#if !defined(__QNX__) && !defined(MIYOO) && defined(HAVE_THREADS)
    &audio_alsathread,
 #endif
 #endif

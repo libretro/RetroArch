@@ -142,7 +142,7 @@ void init_pad_map(void)
    pad_map[12].pid        = PID_HORI_MINI_WIRED_PS4;
 }
 
-joypad_connection_entry_t *find_connection_entry(int16_t vid, int16_t pid, const char *name)
+joypad_connection_entry_t *find_connection_entry(uint16_t vid, uint16_t pid, const char *name)
 {
    unsigned i;
    const bool has_name = !string_is_empty(name);
@@ -152,18 +152,28 @@ joypad_connection_entry_t *find_connection_entry(int16_t vid, int16_t pid, const
 
    for(i = 0; pad_map[i].name != NULL; i++)
    {
-      const char *name_match = has_name 
-         ? strstr(pad_map[i].name, name) 
-         : NULL;
-      /* The Wii Pro Controller and WiiU Pro controller have 
+      char *name_match = NULL;
+      /* The Wii Pro Controller and WiiU Pro controller have
        * the same VID/PID, so we have to use the
        * descriptor string to differentiate them. */
-      if(      pad_map[i].vid == VID_NINTENDO 
-            && pad_map[i].pid == PID_NINTENDO_PRO)
+      if(      pad_map[i].vid == VID_NINTENDO
+            && pad_map[i].pid == PID_NINTENDO_PRO
+            && pad_map[i].vid == vid
+            && pad_map[i].pid == pid)
       {
-         if(!string_is_equal(pad_map[i].name, name))
-            continue;
-      }      
+         name_match = has_name
+            ? (char*)strstr(pad_map[i].name, name)
+            : NULL;
+         if (has_name && strlen(name) < 19)
+         {
+            /* Wii U: Argument 'name' may be truncated. This is not enough for a reliable name match! */
+            RARCH_ERR("find_connection_entry(0x%04x,0x%04x): device name '%s' too short: assuming controller '%s'\n",
+                  SWAP_IF_BIG(vid), SWAP_IF_BIG(pid), name, pad_map[i].name);
+         }
+         else
+            if(!string_is_equal(pad_map[i].name, name))
+               continue;
+      }
 
       if(name_match || (pad_map[i].vid == vid && pad_map[i].pid == pid))
          return &pad_map[i];

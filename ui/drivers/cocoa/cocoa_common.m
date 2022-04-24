@@ -229,27 +229,12 @@ void *glkitview_init(void);
 
 - (void)viewWillLayoutSubviews
 {
-   float width       = 0.0f, height = 0.0f;
    RAScreen *screen  = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
-   UIInterfaceOrientation orientation = self.interfaceOrientation;
    CGRect screenSize = [screen bounds];
    SEL selector      = NSSelectorFromString(BOXSTRING("coordinateSpace"));
 
    if ([screen respondsToSelector:selector])
-   {
       screenSize  = [[screen coordinateSpace] bounds];
-      width       = CGRectGetWidth(screenSize);
-      height      = CGRectGetHeight(screenSize);
-   }
-   else
-   {
-      width       = ((int)orientation < 3) 
-         ? CGRectGetWidth(screenSize) 
-         : CGRectGetHeight(screenSize);
-      height      = ((int)orientation < 3) 
-         ? CGRectGetHeight(screenSize) 
-         : CGRectGetWidth(screenSize);
-   }
 
    [self adjustViewFrameForSafeArea];
 #ifdef HAVE_IOS_CUSTOMKEYBOARD

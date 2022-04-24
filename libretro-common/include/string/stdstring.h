@@ -282,6 +282,9 @@ int string_index_last_occurance(char str[], char t);
 /* Find the position of a substring in a string. */
 int string_find_index_substring_string(const char* str1, const char* str2);
 
+/* Strips non-ASCII characters from a string. */
+void string_copy_only_ascii(char *str_stripped, const char* str);
+
 RETRO_END_DECLS
 
 #endif

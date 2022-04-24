@@ -32,8 +32,8 @@
 #include "../network/net_http_special.h"
 #include "../tasks/tasks_internal.h"
 
-#ifdef HAVE_DISCORD
-#include "../network/discord.h"
+#ifdef HAVE_PRESENCE
+#include "../network/presence.h"
 #endif
 
 #include "../deps/rcheevos/include/rc_api_runtime.h"
@@ -643,7 +643,9 @@ static void rcheevos_async_login_callback(
       settings->arrays.cheevos_password[0] = '\0';
 
       CHEEVOS_LOG(RCHEEVOS_TAG "%s logged in successfully\n",
-            api_response.username);
+            api_response.display_name);
+      strlcpy(rcheevos_locals->displayname, api_response.display_name,
+            sizeof(rcheevos_locals->displayname));
       strlcpy(rcheevos_locals->username, api_response.username,
             sizeof(rcheevos_locals->username));
       strlcpy(rcheevos_locals->token, api_response.api_token,
@@ -1266,9 +1268,8 @@ static retro_time_t rcheevos_client_prepare_ping(
    rcheevos_log_post_url(request->request.url,
          request->request.post_data);
 
-#ifdef HAVE_DISCORD
-   if (settings->bools.discord_enable && discord_is_ready())
-      discord_update(DISCORD_PRESENCE_RETROACHIEVEMENTS);
+#ifdef HAVE_PRESENCE
+   presence_update(PRESENCE_RETROACHIEVEMENTS);
 #endif
 
    /* Update rich presence every two minutes */

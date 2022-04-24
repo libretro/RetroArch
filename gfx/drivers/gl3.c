@@ -57,26 +57,6 @@
 
 static const struct video_ortho gl3_default_ortho = {0, 1, 0, 1, -1, 1};
 
-void gl3_build_default_matrix(float *data)
-{
-   data[0] = 2.0f;
-   data[1] = 0.0f;
-   data[2] = 0.0f;
-   data[3] = 0.0f;
-   data[4] = 0.0f;
-   data[5] = 2.0f;
-   data[6] = 0.0f;
-   data[7] = 0.0f;
-   data[8] = 0.0f;
-   data[9] = 0.0f;
-   data[10] = 2.0f;
-   data[11] = 0.0f;
-   data[12] = -1.0f;
-   data[13] = -1.0f;
-   data[14] = 0.0f;
-   data[15] = 1.0f;
-}
-
 void gl3_framebuffer_copy(
       GLuint fb_id,
       GLuint quad_program,
@@ -98,8 +78,12 @@ void gl3_framebuffer_copy(
    glUseProgram(quad_program);
    if (flat_ubo_vertex >= 0)
    {
-      float mvp[16];
-      gl3_build_default_matrix(mvp);
+      static float mvp[16] = { 
+                                2.0f, 0.0f, 0.0f, 0.0f,
+                                0.0f, 2.0f, 0.0f, 0.0f,
+                                0.0f, 0.0f, 2.0f, 0.0f,
+                               -1.0f,-1.0f, 0.0f, 1.0f
+                             };
       glUniform4fv(flat_ubo_vertex, 4, mvp);
    }
 
@@ -153,8 +137,12 @@ void gl3_framebuffer_copy_partial(
    glUseProgram(quad_program);
    if (flat_ubo_vertex >= 0)
    {
-      float mvp[16];
-      gl3_build_default_matrix(mvp);
+      static float mvp[16] = { 
+                                2.0f, 0.0f, 0.0f, 0.0f,
+                                0.0f, 2.0f, 0.0f, 0.0f,
+                                0.0f, 0.0f, 2.0f, 0.0f,
+                               -1.0f,-1.0f, 0.0f, 1.0f
+                             };
       glUniform4fv(flat_ubo_vertex, 4, mvp);
    }
    glDisable(GL_CULL_FACE);

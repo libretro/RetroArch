@@ -20,6 +20,10 @@
 #include "../configuration.h"
 #include "../verbosity.h"
 
+#ifdef HAVE_MIST
+#include "../steam/steam.h"
+#endif
+
 /* Standard reference DPI value, used when determining
  * DPI-aware scaling factors */
 #define REFERENCE_DPI 96.0f
@@ -81,7 +85,12 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
    &gfx_display_ctx_d3d8,
 #endif
 #ifdef HAVE_D3D9
-   &gfx_display_ctx_d3d9,
+#ifdef HAVE_HLSL
+   &gfx_display_ctx_d3d9_hlsl,
+#endif
+#ifdef HAVE_CG
+   &gfx_display_ctx_d3d9_cg,
+#endif
 #endif
 #ifdef HAVE_D3D10
    &gfx_display_ctx_d3d10,
@@ -115,6 +124,9 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
 #endif
 #ifdef WIIU
    &gfx_display_ctx_wiiu,
+#endif
+#ifdef __PSL1GHT__
+   &gfx_display_ctx_rsx,
 #endif
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #ifdef HAVE_GDI
@@ -184,8 +196,12 @@ static bool gfx_display_check_compatibility(
          if (string_is_equal(video_driver, "d3d8"))
             return true;
          break;
-      case GFX_VIDEO_DRIVER_DIRECT3D9:
-         if (string_is_equal(video_driver, "d3d9"))
+      case GFX_VIDEO_DRIVER_DIRECT3D9_HLSL:
+         if (string_is_equal(video_driver, "d3d9_hlsl"))
+            return true;
+         break;
+      case GFX_VIDEO_DRIVER_DIRECT3D9_CG:
+         if (string_is_equal(video_driver, "d3d9_cg"))
             return true;
          break;
       case GFX_VIDEO_DRIVER_DIRECT3D10:
@@ -218,6 +234,10 @@ static bool gfx_display_check_compatibility(
          break;
       case GFX_VIDEO_DRIVER_SWITCH:
          if (string_is_equal(video_driver, "switch"))
+            return true;
+         break;
+      case GFX_VIDEO_DRIVER_RSX:
+         if (string_is_equal(video_driver, "rsx"))
             return true;
          break;
    }
@@ -563,7 +583,7 @@ void gfx_display_draw_text(
    {
       params.drop_x      = shadow_offset;
       params.drop_y      = -shadow_offset;
-      params.drop_alpha  = 0.35f;
+      params.drop_alpha  = GFX_SHADOW_ALPHA;
    }
 
    if (video_st->poke && video_st->poke->set_osd_msg)
@@ -1174,6 +1194,10 @@ void gfx_display_draw_keyboard(
    rotate_draw.scale_y      = 1.0;
    rotate_draw.scale_z      = 1;
    rotate_draw.scale_enable = true;
+
+#ifdef HAVE_MIST
+   if(steam_has_osk_open()) return;
+#endif
 
    gfx_display_draw_quad(
          p_disp,

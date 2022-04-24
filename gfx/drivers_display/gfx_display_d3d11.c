@@ -30,15 +30,13 @@
 static void gfx_display_d3d11_blend_begin(void *data)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
-   D3D11SetBlendState(d3d11->context,
-         d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+   d3d11->context->lpVtbl->OMSetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 }
 
 static void gfx_display_d3d11_blend_end(void *data)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
-   D3D11SetBlendState(d3d11->context,
-         d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+   d3d11->context->lpVtbl->OMSetBlendState(d3d11->context, d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 }
 
 static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
@@ -58,13 +56,31 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
-         d3d11_set_shader(d3d11->context, &d3d11->shaders[draw->pipeline_id]);
+         {
+            d3d11_shader_t *shader = &d3d11->shaders[draw->pipeline_id];
+            d3d11->context->lpVtbl->IASetInputLayout(d3d11->context, shader->layout);
+            d3d11->context->lpVtbl->VSSetShader(d3d11->context, shader->vs, NULL, 0);
+            d3d11->context->lpVtbl->PSSetShader(d3d11->context, shader->ps, NULL, 0);
+            d3d11->context->lpVtbl->GSSetShader(d3d11->context, shader->gs, NULL, 0);
+         }
          D3D11Draw(d3d11->context, draw->coords->vertices, 0);
 
-         D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
-         d3d11_set_shader(d3d11->context, &d3d11->sprites.shader);
-         D3D11SetVertexBuffer(d3d11->context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
-         D3D11SetPrimitiveTopology(d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+	 d3d11->context->lpVtbl->OMSetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+         {
+            d3d11_shader_t *shader = &d3d11->sprites.shader;
+            d3d11->context->lpVtbl->IASetInputLayout(d3d11->context, shader->layout);
+            d3d11->context->lpVtbl->VSSetShader(d3d11->context, shader->vs, NULL, 0);
+            d3d11->context->lpVtbl->PSSetShader(d3d11->context, shader->ps, NULL, 0);
+            d3d11->context->lpVtbl->GSSetShader(d3d11->context, shader->gs, NULL, 0);
+         }
+         {
+            UINT stride = sizeof(d3d11_sprite_t);
+            UINT offset = 0;
+            d3d11->context->lpVtbl->IASetVertexBuffers(
+                  d3d11->context, 0, 1,
+                  &d3d11->sprites.vbo, &stride, &offset);
+         }
+	 d3d11->context->lpVtbl->IASetPrimitiveTopology(d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
          return;
    }
 
@@ -81,18 +97,18 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
       D3D11_MAPPED_SUBRESOURCE mapped_vbo;
       d3d11_sprite_t*          sprite = NULL;
 
-      D3D11MapBuffer(
-            d3d11->context, d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
+      d3d11->context->lpVtbl->Map(
+         d3d11->context, (D3D11Resource)d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
 
       sprite = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
 
       if (vertex_count == 1)
       {
-         sprite->pos.x = draw->x / (float)d3d11->viewport.Width;
-         sprite->pos.y =
+         sprite->pos.x    = draw->x / (float)d3d11->viewport.Width;
+         sprite->pos.y    =
                (d3d11->viewport.Height - draw->y - draw->height) / (float)d3d11->viewport.Height;
-         sprite->pos.w = draw->width / (float)d3d11->viewport.Width;
-         sprite->pos.h = draw->height / (float)d3d11->viewport.Height;
+         sprite->pos.w    = draw->width / (float)d3d11->viewport.Width;
+         sprite->pos.h    = draw->height / (float)d3d11->viewport.Height;
 
          sprite->coords.u = 0.0f;
          sprite->coords.v = 0.0f;
@@ -104,18 +120,18 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
          else
             sprite->params.scaling = 1.0f;
 
-         sprite->params.rotation = draw->rotation;
+         sprite->params.rotation   = draw->rotation;
 
-         sprite->colors[3] = DXGI_COLOR_RGBA(
+         sprite->colors[3]         = DXGI_COLOR_RGBA(
                0xFF * draw->coords->color[0], 0xFF * draw->coords->color[1],
                0xFF * draw->coords->color[2], 0xFF * draw->coords->color[3]);
-         sprite->colors[2] = DXGI_COLOR_RGBA(
+         sprite->colors[2]         = DXGI_COLOR_RGBA(
                0xFF * draw->coords->color[4], 0xFF * draw->coords->color[5],
                0xFF * draw->coords->color[6], 0xFF * draw->coords->color[7]);
-         sprite->colors[1] = DXGI_COLOR_RGBA(
+         sprite->colors[1]         = DXGI_COLOR_RGBA(
                0xFF * draw->coords->color[8], 0xFF * draw->coords->color[9],
                0xFF * draw->coords->color[10], 0xFF * draw->coords->color[11]);
-         sprite->colors[0] = DXGI_COLOR_RGBA(
+         sprite->colors[0]         = DXGI_COLOR_RGBA(
                0xFF * draw->coords->color[12], 0xFF * draw->coords->color[13],
                0xFF * draw->coords->color[14], 0xFF * draw->coords->color[15]);
       }
@@ -141,24 +157,38 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
             sprite++;
          }
 
-         d3d11_set_shader(d3d11->context, &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]);
-         D3D11SetPrimitiveTopology(d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+         {
+            d3d11_shader_t *shader = &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND];
+            d3d11->context->lpVtbl->IASetInputLayout(d3d11->context, shader->layout);
+            d3d11->context->lpVtbl->VSSetShader(d3d11->context, shader->vs, NULL, 0);
+            d3d11->context->lpVtbl->PSSetShader(d3d11->context, shader->ps, NULL, 0);
+            d3d11->context->lpVtbl->GSSetShader(d3d11->context, shader->gs, NULL, 0);
+         }
+	 d3d11->context->lpVtbl->IASetPrimitiveTopology(d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
       }
 
-      D3D11UnmapBuffer(d3d11->context, d3d11->sprites.vbo, 0);
+      d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->sprites.vbo, 0);
    }
 
-   d3d11_set_texture_and_sampler(d3d11->context, 0, (d3d11_texture_t*)draw->texture);
+   {
+      d3d11_texture_t *texture = (d3d11_texture_t*)draw->texture;
+      D3D11SetPShaderResources(d3d11->context, 0, 1, &texture->view);
+      d3d11->context->lpVtbl->PSSetSamplers(
+            d3d11->context, 0, 1, (D3D11SamplerState*)&texture->sampler);
+   }
+
    D3D11Draw(d3d11->context, vertex_count, d3d11->sprites.offset);
    d3d11->sprites.offset += vertex_count;
 
    if (vertex_count > 1)
    {
-      d3d11_set_shader(d3d11->context, &d3d11->sprites.shader);
-      D3D11SetPrimitiveTopology(d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+      d3d11_shader_t *shader = &d3d11->sprites.shader;
+      d3d11->context->lpVtbl->IASetInputLayout(d3d11->context, shader->layout);
+      d3d11->context->lpVtbl->VSSetShader(d3d11->context, shader->vs, NULL, 0);
+      d3d11->context->lpVtbl->PSSetShader(d3d11->context, shader->ps, NULL, 0);
+      d3d11->context->lpVtbl->GSSetShader(d3d11->context, shader->gs, NULL, 0);
+      d3d11->context->lpVtbl->IASetPrimitiveTopology(d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
    }
-
-   return;
 }
 
 static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
@@ -184,14 +214,20 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
             desc.ByteWidth         = ca->coords.vertices * 2 * sizeof(float);
             desc.BindFlags         = D3D11_BIND_VERTEX_BUFFER;
 
-			{
+            {
                D3D11_SUBRESOURCE_DATA vertexData = { ca->coords.vertex };
                D3D11CreateBuffer(d3d11->device, &desc, &vertexData, &d3d11->menu_pipeline_vbo);
-			}
+            }
          }
-         D3D11SetVertexBuffer(d3d11->context, 0, d3d11->menu_pipeline_vbo, 2 * sizeof(float), 0);
+         {
+            UINT stride = 2 * sizeof(float);
+            UINT offset = 0;
+            d3d11->context->lpVtbl->IASetVertexBuffers(
+                  d3d11->context, 0, 1,
+                  &d3d11->menu_pipeline_vbo, &stride, &offset);
+         }
          draw->coords->vertices = ca->coords.vertices;
-         D3D11SetBlendState(d3d11->context, d3d11->blend_pipeline, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+	 d3d11->context->lpVtbl->OMSetBlendState(d3d11->context, d3d11->blend_pipeline, NULL, D3D11_DEFAULT_SAMPLE_MASK);
          break;
       }
 
@@ -199,22 +235,29 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
-         D3D11SetVertexBuffer(d3d11->context, 0, d3d11->frame.vbo, sizeof(d3d11_vertex_t), 0);
+         {
+            UINT stride = sizeof(d3d11_vertex_t);
+            UINT offset = 0;
+            d3d11->context->lpVtbl->IASetVertexBuffers(
+                  d3d11->context, 0, 1,
+                  &d3d11->frame.vbo, &stride, &offset);
+         }
          draw->coords->vertices = 4;
          break;
       default:
          return;
    }
 
-   D3D11SetPrimitiveTopology(d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+   d3d11->context->lpVtbl->IASetPrimitiveTopology(d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
    d3d11->ubo_values.time += 0.01f;
 
    {
       D3D11_MAPPED_SUBRESOURCE mapped_ubo;
-      D3D11MapBuffer(d3d11->context, d3d11->ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
+      d3d11->context->lpVtbl->Map(
+         d3d11->context, (D3D11Resource)d3d11->ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
       *(d3d11_uniform_t*)mapped_ubo.pData = d3d11->ubo_values;
-      D3D11UnmapBuffer(d3d11->context, d3d11->ubo, 0);
+      d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->ubo, 0);
    }
 }
 
@@ -248,10 +291,10 @@ void gfx_display_d3d11_scissor_begin(void *data,
 
    rect.left            = x;
    rect.top             = y;
-   rect.right           = width + x;
+   rect.right           = width  + x;
    rect.bottom          = height + y;
 
-   D3D11SetScissorRects(d3d11->context, 1, &rect);
+   d3d11->context->lpVtbl->RSSetScissorRects(d3d11->context, 1, &rect);
 }
 
 void gfx_display_d3d11_scissor_end(void *data,
@@ -269,7 +312,7 @@ void gfx_display_d3d11_scissor_end(void *data,
    rect.right           = video_width;
    rect.bottom          = video_height;
 
-   D3D11SetScissorRects(d3d11->context, 1, &rect);
+   d3d11->context->lpVtbl->RSSetScissorRects(d3d11->context, 1, &rect);
 }
 
 gfx_display_ctx_driver_t gfx_display_ctx_d3d11 = {

@@ -343,11 +343,24 @@ static const struct retro_memory_descriptor* rc_libretro_memory_get_descriptor(c
       /* otherwise, attempt to match the address by matching the select bits */
       /* address is in the block if (addr & select) == (start & select) */
       if (((desc->start ^ real_address) & desc->select) == 0) {
-        /* calculate the offset within the descriptor, removing any disconnected bits */
-        *offset = (real_address & ~desc->disconnect) - desc->start;
+        /* get the relative offset of the address from the start of the memory block */
+        unsigned reduced_address = real_address - (unsigned)desc->start;
+
+        /* remove any bits from the reduced_address that correspond to the bits in the disconnect
+         * mask and collapse the remaining bits. this code was copied from the mmap_reduce function
+         * in RetroArch. i'm not exactly sure how it works, but it does. */
+        unsigned disconnect_mask = (unsigned)desc->disconnect;
+        while (disconnect_mask) {
+          const unsigned tmp = (disconnect_mask - 1) & ~disconnect_mask;
+          reduced_address = (reduced_address & tmp) | ((reduced_address >> 1) & ~tmp);
+          disconnect_mask = (disconnect_mask & (disconnect_mask - 1)) >> 1;
+        }
+
+        /* calculate the offset within the descriptor */
+        *offset = reduced_address;
 
         /* sanity check - make sure the descriptor is large enough to hold the target address */
-        if (*offset < desc->len)
+        if (reduced_address < desc->len)
           return desc;
       }
     }
@@ -370,6 +383,7 @@ static void rc_libretro_memory_init_from_memory_map(rc_libretro_memory_regions_t
     const rc_memory_region_t* console_region = &console_regions->region[i];
     size_t console_region_size = console_region->end_address - console_region->start_address + 1;
     unsigned real_address = console_region->real_address;
+    unsigned disconnect_size = 0;
 
     while (console_region_size > 0) {
       const struct retro_memory_descriptor* desc = rc_libretro_memory_get_descriptor(mmap, real_address, &offset);
@@ -378,6 +392,14 @@ static void rc_libretro_memory_init_from_memory_map(rc_libretro_memory_regions_t
           snprintf(description, sizeof(description), "Could not map region starting at $%06X",
                    real_address - console_region->real_address + console_region->start_address);
           rc_libretro_verbose(description);
+        }
+
+        if (disconnect_size && console_region_size > disconnect_size) {
+          rc_libretro_memory_register_region(regions, console_region->type, NULL, disconnect_size, "null filler");
+          console_region_size -= disconnect_size;
+          real_address += disconnect_size;
+          disconnect_size = 0;
+          continue;
         }
 
         rc_libretro_memory_register_region(regions, console_region->type, NULL, console_region_size, "null filler");
@@ -396,6 +418,13 @@ static void rc_libretro_memory_init_from_memory_map(rc_libretro_memory_regions_t
       }
 
       desc_size = desc->len - offset;
+      if (desc->disconnect && desc_size > desc->disconnect) {
+        /* if we need to extract a disconnect bit, the largest block we can read is up to
+         * the next time that bit flips */
+        /* https://stackoverflow.com/questions/12247186/find-the-lowest-set-bit */
+        disconnect_size = (desc->disconnect & -((int)desc->disconnect));
+        desc_size = disconnect_size - (real_address & (disconnect_size - 1));
+      }
 
       if (console_region_size > desc_size) {
         if (desc_size == 0) {

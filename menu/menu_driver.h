@@ -129,8 +129,14 @@ enum menu_settings_type
    MENU_SETTING_ACTION_CORE_OPTIONS,
    MENU_SETTING_ACTION_CORE_OPTION_OVERRIDE_LIST,
    MENU_SETTING_ACTION_CORE_INPUT_REMAPPING_OPTIONS,
+   MENU_SETTING_ACTION_REMAP_FILE_MANAGER_LIST,
    MENU_SETTING_ACTION_CORE_CHEAT_OPTIONS,
    MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS,
+#ifdef HAVE_MIST
+   MENU_SETTING_ACTION_CORE_MANAGER_STEAM_OPTIONS,
+   MENU_SETTING_ACTION_CORE_STEAM_INSTALL,
+   MENU_SETTING_ACTION_CORE_STEAM_UNINSTALL,
+#endif
    MENU_SETTING_ACTION_CORE_DISK_OPTIONS,
    MENU_SETTING_ACTION_CORE_SHADER_OPTIONS,
    MENU_SETTING_ACTION_SAVESTATE,
@@ -139,6 +145,7 @@ enum menu_settings_type
    MENU_SETTING_ACTION_DELETE_ENTRY,
    MENU_SETTING_ACTION_RESET,
    MENU_SETTING_ACTION_CORE_LOCK,
+   MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT,
    MENU_SETTING_ACTION_CORE_DELETE,
    MENU_SETTING_ACTION_FAVORITES_DIR, /* "Start Directory" */
    MENU_SETTING_STRING_OPTIONS,
@@ -268,6 +275,15 @@ enum menu_settings_type
    MENU_SETTING_ACTION_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
    MENU_SETTING_ACTION_CORE_OPTIONS_RESET,
    MENU_SETTING_ACTION_CORE_OPTIONS_FLUSH,
+
+   MENU_SETTING_ACTION_REMAP_FILE_LOAD,
+   MENU_SETTING_ACTION_REMAP_FILE_SAVE_CORE,
+   MENU_SETTING_ACTION_REMAP_FILE_SAVE_CONTENT_DIR,
+   MENU_SETTING_ACTION_REMAP_FILE_SAVE_GAME,
+   MENU_SETTING_ACTION_REMAP_FILE_REMOVE_CORE,
+   MENU_SETTING_ACTION_REMAP_FILE_REMOVE_CONTENT_DIR,
+   MENU_SETTING_ACTION_REMAP_FILE_REMOVE_GAME,
+   MENU_SETTING_ACTION_REMAP_FILE_RESET,
 
    MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN,
 
@@ -486,6 +502,12 @@ struct menu_state
    /* Storage container for current menu datetime
     * representation string */
    char datetime_cache[255];
+   /* Filled with current content path when a core calls
+    * RETRO_ENVIRONMENT_SHUTDOWN. Value is required in
+    * generic_menu_entry_action(), and must be cached
+    * since RETRO_ENVIRONMENT_SHUTDOWN will cause
+    * RARCH_PATH_CONTENT to be cleared */
+   char pending_env_shutdown_content_path[PATH_MAX_LENGTH];
 
 #ifdef HAVE_MENU
    char input_dialog_kb_label_setting[256];
@@ -505,6 +527,9 @@ struct menu_state
    bool entries_nonblocking_refresh;
    /* 'Close Content'-hotkey menu resetting */
    bool pending_close_content;
+   /* Flagged when a core calls RETRO_ENVIRONMENT_SHUTDOWN,
+    * requiring the menu to be flushed on the next iteration */
+   bool pending_env_shutdown_flush;
    /* Screensaver status
     * - Does menu driver support screensaver functionality?
     * - Is screensaver currently active? */
