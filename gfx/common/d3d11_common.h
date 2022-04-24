@@ -90,41 +90,6 @@ static INLINE UINT D3D11GetResourceEvictionPriority(D3D11Resource resource)
 {
    return resource->lpVtbl->GetEvictionPriority(resource);
 }
-static INLINE void D3D11SetBufferEvictionPriority(D3D11Buffer buffer, UINT eviction_priority)
-{
-   buffer->lpVtbl->SetEvictionPriority(buffer, eviction_priority);
-}
-static INLINE UINT D3D11GetBufferEvictionPriority(D3D11Buffer buffer)
-{
-   return buffer->lpVtbl->GetEvictionPriority(buffer);
-}
-static INLINE void
-D3D11SetTexture1DEvictionPriority(D3D11Texture1D texture1d, UINT eviction_priority)
-{
-   texture1d->lpVtbl->SetEvictionPriority(texture1d, eviction_priority);
-}
-static INLINE UINT D3D11GetTexture1DEvictionPriority(D3D11Texture1D texture1d)
-{
-   return texture1d->lpVtbl->GetEvictionPriority(texture1d);
-}
-static INLINE void
-D3D11SetTexture2DEvictionPriority(D3D11Texture2D texture2d, UINT eviction_priority)
-{
-   texture2d->lpVtbl->SetEvictionPriority(texture2d, eviction_priority);
-}
-static INLINE UINT D3D11GetTexture2DEvictionPriority(D3D11Texture2D texture2d)
-{
-   return texture2d->lpVtbl->GetEvictionPriority(texture2d);
-}
-static INLINE void
-D3D11SetTexture3DEvictionPriority(D3D11Texture3D texture3d, UINT eviction_priority)
-{
-   texture3d->lpVtbl->SetEvictionPriority(texture3d, eviction_priority);
-}
-static INLINE UINT D3D11GetTexture3DEvictionPriority(D3D11Texture3D texture3d)
-{
-   return texture3d->lpVtbl->GetEvictionPriority(texture3d);
-}
 static INLINE void D3D11GetTexture2DDesc(D3D11Texture2D texture2d, D3D11_TEXTURE2D_DESC* desc)
 {
     texture2d->lpVtbl->GetDesc(texture2d, desc);
@@ -179,56 +144,7 @@ static INLINE UINT D3D11GetCounterDataSize(D3D11Counter counter)
 {
    return counter->lpVtbl->GetDataSize(counter);
 }
-static INLINE void
-D3D11GetClassLinkage(D3D11ClassInstance class_instance, D3D11ClassLinkage* linkage)
-{
-   class_instance->lpVtbl->GetClassLinkage(class_instance, linkage);
-}
-static INLINE void
-D3D11GetInstanceName(D3D11ClassInstance class_instance, LPSTR instance_name, SIZE_T* buffer_length)
-{
-   class_instance->lpVtbl->GetInstanceName(class_instance, instance_name, buffer_length);
-}
-static INLINE void
-D3D11GetTypeName(D3D11ClassInstance class_instance, LPSTR type_name, SIZE_T* buffer_length)
-{
-   class_instance->lpVtbl->GetTypeName(class_instance, type_name, buffer_length);
-}
-static INLINE HRESULT D3D11GetClassInstance(
-      D3D11ClassLinkage   class_linkage,
-      LPCSTR              class_instance_name,
-      UINT                instance_index,
-      D3D11ClassInstance* instance)
-{
-   return class_linkage->lpVtbl->GetClassInstance(
-         class_linkage, class_instance_name, instance_index, instance);
-}
-static INLINE HRESULT D3D11CreateClassInstance(
-      D3D11ClassLinkage   class_linkage,
-      LPCSTR              class_type_name,
-      UINT                constant_buffer_offset,
-      UINT                constant_vector_offset,
-      UINT                texture_offset,
-      UINT                sampler_offset,
-      D3D11ClassInstance* instance)
-{
-   return class_linkage->lpVtbl->CreateClassInstance(
-         class_linkage, class_type_name, constant_buffer_offset, constant_vector_offset,
-         texture_offset, sampler_offset, instance);
-}
-static INLINE UINT D3D11GetCommandListContextFlags(D3D11CommandList command_list)
-{
-   return command_list->lpVtbl->GetContextFlags(command_list);
-}
-static INLINE void D3D11SetVShaderConstantBuffers(
-      D3D11DeviceContext device_context,
-      UINT               start_slot,
-      UINT               num_buffers,
-      const D3D11Buffer* constant_buffers)
-{
-   device_context->lpVtbl->VSSetConstantBuffers(
-         device_context, start_slot, num_buffers, constant_buffers);
-}
+
 static INLINE void D3D11SetPShaderResources(
       D3D11DeviceContext               device_context,
       UINT                             start_slot,
@@ -238,12 +154,6 @@ static INLINE void D3D11SetPShaderResources(
    device_context->lpVtbl->PSSetShaderResources(
          device_context, start_slot, num_views,
          shader_resource_views);
-}
-
-static INLINE void
-D3D11Draw(D3D11DeviceContext device_context, UINT vertex_count, UINT start_vertex_location)
-{
-   device_context->lpVtbl->Draw(device_context, vertex_count, start_vertex_location);
 }
 
 static INLINE void D3D11SetGShaderConstantBuffers(
@@ -302,47 +212,7 @@ static INLINE void D3D11SetGShaderSamplers(
 {
    device_context->lpVtbl->GSSetSamplers(device_context, start_slot, num_samplers, samplers);
 }
-static INLINE void D3D11SetRenderTargets(
-      D3D11DeviceContext           device_context,
-      UINT                         num_views,
-      D3D11RenderTargetView* const render_target_views,
-      D3D11DepthStencilView        depth_stencil_view)
-{
-   device_context->lpVtbl->OMSetRenderTargets(
-         device_context, num_views, render_target_views, depth_stencil_view);
-}
-static INLINE void D3D11SetRenderTargetsAndUnorderedAccessViews(
-      D3D11DeviceContext              device_context,
-      UINT                            num_rtvs,
-      D3D11RenderTargetView* const    render_target_views,
-      D3D11DepthStencilView           depth_stencil_view,
-      UINT                            uavstart_slot,
-      UINT                            num_uavs,
-      D3D11UnorderedAccessView* const unordered_access_views,
-      UINT*                           uavinitial_counts)
-{
-   device_context->lpVtbl->OMSetRenderTargetsAndUnorderedAccessViews(
-         device_context, num_rtvs, render_target_views, depth_stencil_view, uavstart_slot, num_uavs,
-         unordered_access_views, uavinitial_counts);
-}
 
-static INLINE void D3D11SOSetTargets(
-      D3D11DeviceContext device_context,
-      UINT               num_buffers,
-      D3D11Buffer* const sotargets,
-      UINT*              offsets)
-{
-   device_context->lpVtbl->SOSetTargets(device_context, num_buffers, sotargets, offsets);
-}
-static INLINE void D3D11Dispatch(
-      D3D11DeviceContext device_context,
-      UINT               thread_group_count_x,
-      UINT               thread_group_count_y,
-      UINT               thread_group_count_z)
-{
-   device_context->lpVtbl->Dispatch(
-         device_context, thread_group_count_x, thread_group_count_y, thread_group_count_z);
-}
 static INLINE void D3D11DispatchIndirect(
       D3D11DeviceContext device_context,
       D3D11Buffer        buffer_for_args,
@@ -483,96 +353,7 @@ static INLINE void D3D11HSSetConstantBuffers(
    device_context->lpVtbl->HSSetConstantBuffers(
          device_context, start_slot, num_buffers, constant_buffers);
 }
-static INLINE void D3D11SetDShaderResources(
-      D3D11DeviceContext             device_context,
-      UINT                           start_slot,
-      UINT                           num_views,
-      D3D11ShaderResourceView* const shader_resource_views)
-{
-   device_context->lpVtbl->DSSetShaderResources(
-         device_context, start_slot, num_views, shader_resource_views);
-}
-static INLINE void D3D11SetDShader(
-      D3D11DeviceContext        device_context,
-      D3D11DomainShader         domain_shader,
-      D3D11ClassInstance* const class_instances,
-      UINT                      num_class_instances)
-{
-   device_context->lpVtbl->DSSetShader(
-         device_context, domain_shader, class_instances, num_class_instances);
-}
-static INLINE void D3D11SetDShaderSamplers(
-      D3D11DeviceContext       device_context,
-      UINT                     start_slot,
-      UINT                     num_samplers,
-      D3D11SamplerState* const samplers)
-{
-   device_context->lpVtbl->DSSetSamplers(device_context, start_slot, num_samplers, samplers);
-}
-static INLINE void D3D11SetDShaderConstantBuffers(
-      D3D11DeviceContext device_context,
-      UINT               start_slot,
-      UINT               num_buffers,
-      D3D11Buffer* const constant_buffers)
-{
-   device_context->lpVtbl->DSSetConstantBuffers(
-         device_context, start_slot, num_buffers, constant_buffers);
-}
-static INLINE void D3D11SetCShaderResources(
-      D3D11DeviceContext             device_context,
-      UINT                           start_slot,
-      UINT                           num_views,
-      D3D11ShaderResourceView* const shader_resource_views)
-{
-   device_context->lpVtbl->CSSetShaderResources(
-         device_context, start_slot, num_views, shader_resource_views);
-}
-static INLINE void D3D11SetCShaderUnorderedAccessViews(
-      D3D11DeviceContext              device_context,
-      UINT                            start_slot,
-      UINT                            num_uavs,
-      D3D11UnorderedAccessView* const unordered_access_views,
-      UINT*                           uavinitial_counts)
-{
-   device_context->lpVtbl->CSSetUnorderedAccessViews(
-         device_context, start_slot, num_uavs, unordered_access_views, uavinitial_counts);
-}
 
-static INLINE void D3D11SetCShader(
-      D3D11DeviceContext        device_context,
-      D3D11ComputeShader        compute_shader,
-      D3D11ClassInstance* const class_instances,
-      UINT                      num_class_instances)
-{
-   device_context->lpVtbl->CSSetShader(
-         device_context, compute_shader, class_instances, num_class_instances);
-}
-static INLINE void D3D11SetCShaderSamplers(
-      D3D11DeviceContext       device_context,
-      UINT                     start_slot,
-      UINT                     num_samplers,
-      D3D11SamplerState* const samplers)
-{
-   device_context->lpVtbl->CSSetSamplers(device_context, start_slot, num_samplers, samplers);
-}
-static INLINE void D3D11SetCShaderConstantBuffers(
-      D3D11DeviceContext device_context,
-      UINT               start_slot,
-      UINT               num_buffers,
-      D3D11Buffer* const constant_buffers)
-{
-   device_context->lpVtbl->CSSetConstantBuffers(
-         device_context, start_slot, num_buffers, constant_buffers);
-}
-static INLINE void D3D11GetVShaderConstantBuffers(
-      D3D11DeviceContext device_context,
-      UINT               start_slot,
-      UINT               num_buffers,
-      D3D11Buffer*       constant_buffers)
-{
-   device_context->lpVtbl->VSGetConstantBuffers(
-         device_context, start_slot, num_buffers, constant_buffers);
-}
 static INLINE void D3D11GetPShaderResources(
       D3D11DeviceContext       device_context,
       UINT                     start_slot,
@@ -625,89 +406,10 @@ static INLINE void D3D11GetIndexBuffer(
 {
    device_context->lpVtbl->IAGetIndexBuffer(device_context, index_buffer, format, offset);
 }
-static INLINE void D3D11GetGShaderConstantBuffers(
-      D3D11DeviceContext device_context,
-      UINT               start_slot,
-      UINT               num_buffers,
-      D3D11Buffer*       constant_buffers)
-{
-   device_context->lpVtbl->GSGetConstantBuffers(
-         device_context, start_slot, num_buffers, constant_buffers);
-}
-static INLINE void D3D11GetGShader(
-      D3D11DeviceContext   device_context,
-      D3D11GeometryShader* geometry_shader,
-      D3D11ClassInstance*  class_instances,
-      UINT*                num_class_instances)
-{
-   device_context->lpVtbl->GSGetShader(
-         device_context, geometry_shader, class_instances, num_class_instances);
-}
 static INLINE void
 D3D11GetPrimitiveTopology(D3D11DeviceContext device_context, D3D11_PRIMITIVE_TOPOLOGY* topology)
 {
    device_context->lpVtbl->IAGetPrimitiveTopology(device_context, topology);
-}
-static INLINE void D3D11GetVShaderResources(
-      D3D11DeviceContext       device_context,
-      UINT                     start_slot,
-      UINT                     num_views,
-      D3D11ShaderResourceView* shader_resource_views)
-{
-   device_context->lpVtbl->VSGetShaderResources(
-         device_context, start_slot, num_views, shader_resource_views);
-}
-static INLINE void D3D11GetVShaderSamplers(
-      D3D11DeviceContext device_context,
-      UINT               start_slot,
-      UINT               num_samplers,
-      D3D11SamplerState* samplers)
-{
-   device_context->lpVtbl->VSGetSamplers(device_context, start_slot, num_samplers, samplers);
-}
-static INLINE void D3D11GetPredication(
-      D3D11DeviceContext device_context, D3D11Predicate* predicate, BOOL* predicate_value)
-{
-   device_context->lpVtbl->GetPredication(device_context, predicate, predicate_value);
-}
-static INLINE void D3D11GetGShaderResources(
-      D3D11DeviceContext       device_context,
-      UINT                     start_slot,
-      UINT                     num_views,
-      D3D11ShaderResourceView* shader_resource_views)
-{
-   device_context->lpVtbl->GSGetShaderResources(
-         device_context, start_slot, num_views, shader_resource_views);
-}
-static INLINE void D3D11GetGShaderSamplers(
-      D3D11DeviceContext device_context,
-      UINT               start_slot,
-      UINT               num_samplers,
-      D3D11SamplerState* samplers)
-{
-   device_context->lpVtbl->GSGetSamplers(device_context, start_slot, num_samplers, samplers);
-}
-static INLINE void D3D11GetRenderTargets(
-      D3D11DeviceContext     device_context,
-      UINT                   num_views,
-      D3D11RenderTargetView* render_target_views,
-      D3D11DepthStencilView* depth_stencil_view)
-{
-   device_context->lpVtbl->OMGetRenderTargets(
-         device_context, num_views, render_target_views, depth_stencil_view);
-}
-static INLINE void D3D11GetRenderTargetsAndUnorderedAccessViews(
-      D3D11DeviceContext        device_context,
-      UINT                      num_rtvs,
-      D3D11RenderTargetView*    render_target_views,
-      D3D11DepthStencilView*    depth_stencil_view,
-      UINT                      uavstart_slot,
-      UINT                      num_uavs,
-      D3D11UnorderedAccessView* unordered_access_views)
-{
-   device_context->lpVtbl->OMGetRenderTargetsAndUnorderedAccessViews(
-         device_context, num_rtvs, render_target_views, depth_stencil_view, uavstart_slot, num_uavs,
-         unordered_access_views);
 }
 
 static INLINE void D3D11GetDepthStencilState(
@@ -717,26 +419,13 @@ static INLINE void D3D11GetDepthStencilState(
 {
    device_context->lpVtbl->OMGetDepthStencilState(device_context, depth_stencil_state, stencil_ref);
 }
-static INLINE void
-D3D11SOGetTargets(D3D11DeviceContext device_context, UINT num_buffers, D3D11Buffer* sotargets)
-{
-   device_context->lpVtbl->SOGetTargets(device_context, num_buffers, sotargets);
-}
+
 static INLINE void
 D3D11GetState(D3D11DeviceContext device_context, D3D11RasterizerState* rasterizer_state)
 {
    device_context->lpVtbl->RSGetState(device_context, rasterizer_state);
 }
-static INLINE void
-D3D11GetViewports(D3D11DeviceContext device_context, UINT* num_viewports, D3D11_VIEWPORT* viewports)
-{
-   device_context->lpVtbl->RSGetViewports(device_context, num_viewports, viewports);
-}
-static INLINE void
-D3D11GetScissorRects(D3D11DeviceContext device_context, UINT* num_rects, D3D11_RECT* rects)
-{
-   device_context->lpVtbl->RSGetScissorRects(device_context, num_rects, rects);
-}
+
 static INLINE void D3D11HSGetShaderResources(
       D3D11DeviceContext       device_context,
       UINT                     start_slot,
@@ -770,85 +459,6 @@ static INLINE void D3D11HSGetConstantBuffers(
       D3D11Buffer*       constant_buffers)
 {
    device_context->lpVtbl->HSGetConstantBuffers(
-         device_context, start_slot, num_buffers, constant_buffers);
-}
-static INLINE void D3D11GetDShaderResources(
-      D3D11DeviceContext       device_context,
-      UINT                     start_slot,
-      UINT                     num_views,
-      D3D11ShaderResourceView* shader_resource_views)
-{
-   device_context->lpVtbl->DSGetShaderResources(
-         device_context, start_slot, num_views, shader_resource_views);
-}
-static INLINE void D3D11GetDShader(
-      D3D11DeviceContext  device_context,
-      D3D11DomainShader*  domain_shader,
-      D3D11ClassInstance* class_instances,
-      UINT*               num_class_instances)
-{
-   device_context->lpVtbl->DSGetShader(
-         device_context, domain_shader, class_instances, num_class_instances);
-}
-static INLINE void D3D11GetDShaderSamplers(
-      D3D11DeviceContext device_context,
-      UINT               start_slot,
-      UINT               num_samplers,
-      D3D11SamplerState* samplers)
-{
-   device_context->lpVtbl->DSGetSamplers(device_context, start_slot, num_samplers, samplers);
-}
-static INLINE void D3D11GetDShaderConstantBuffers(
-      D3D11DeviceContext device_context,
-      UINT               start_slot,
-      UINT               num_buffers,
-      D3D11Buffer*       constant_buffers)
-{
-   device_context->lpVtbl->DSGetConstantBuffers(
-         device_context, start_slot, num_buffers, constant_buffers);
-}
-static INLINE void D3D11GetCShaderResources(
-      D3D11DeviceContext       device_context,
-      UINT                     start_slot,
-      UINT                     num_views,
-      D3D11ShaderResourceView* shader_resource_views)
-{
-   device_context->lpVtbl->CSGetShaderResources(
-         device_context, start_slot, num_views, shader_resource_views);
-}
-static INLINE void D3D11GetCShaderUnorderedAccessViews(
-      D3D11DeviceContext        device_context,
-      UINT                      start_slot,
-      UINT                      num_uavs,
-      D3D11UnorderedAccessView* unordered_access_views)
-{
-   device_context->lpVtbl->CSGetUnorderedAccessViews(
-         device_context, start_slot, num_uavs, unordered_access_views);
-}
-static INLINE void D3D11GetCShader(
-      D3D11DeviceContext  device_context,
-      D3D11ComputeShader* compute_shader,
-      D3D11ClassInstance* class_instances,
-      UINT*               num_class_instances)
-{
-   device_context->lpVtbl->CSGetShader(
-         device_context, compute_shader, class_instances, num_class_instances);
-}
-static INLINE void D3D11GetCShaderSamplers(
-      D3D11DeviceContext device_context,
-      UINT               start_slot,
-      UINT               num_samplers,
-      D3D11SamplerState* samplers)
-{
-   device_context->lpVtbl->CSGetSamplers(device_context, start_slot, num_samplers, samplers);
-}
-static INLINE void D3D11GetCShaderConstantBuffers(
-      D3D11DeviceContext device_context,
-      UINT               start_slot,
-      UINT               num_buffers,
-      D3D11Buffer*       constant_buffers)
-{
-   device_context->lpVtbl->CSGetConstantBuffers(
          device_context, start_slot, num_buffers, constant_buffers);
 }
 

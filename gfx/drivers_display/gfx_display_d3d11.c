@@ -63,9 +63,10 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
             d3d11->context->lpVtbl->PSSetShader(d3d11->context, shader->ps, NULL, 0);
             d3d11->context->lpVtbl->GSSetShader(d3d11->context, shader->gs, NULL, 0);
          }
-         D3D11Draw(d3d11->context, draw->coords->vertices, 0);
 
-	 d3d11->context->lpVtbl->OMSetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+         d3d11->context->lpVtbl->Draw(d3d11->context, draw->coords->vertices, 0);
+         d3d11->context->lpVtbl->OMSetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+
          {
             d3d11_shader_t *shader = &d3d11->sprites.shader;
             d3d11->context->lpVtbl->IASetInputLayout(d3d11->context, shader->layout);
@@ -177,7 +178,8 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
             d3d11->context, 0, 1, (D3D11SamplerState*)&texture->sampler);
    }
 
-   D3D11Draw(d3d11->context, vertex_count, d3d11->sprites.offset);
+   d3d11->context->lpVtbl->Draw(d3d11->context, vertex_count,
+         d3d11->sprites.offset);
    d3d11->sprites.offset += vertex_count;
 
    if (vertex_count > 1)

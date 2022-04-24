@@ -224,7 +224,7 @@ static void d3d11_font_render_line(
          NULL, D3D11_DEFAULT_SAMPLE_MASK);
 
    d3d11->context->lpVtbl->PSSetShader(d3d11->context, d3d11->sprites.shader_font.ps, NULL, 0);
-   D3D11Draw(d3d11->context, count, d3d11->sprites.offset);
+   d3d11->context->lpVtbl->Draw(d3d11->context, count, d3d11->sprites.offset);
    d3d11->context->lpVtbl->PSSetShader(d3d11->context, d3d11->sprites.shader.ps, NULL, 0);
 
    d3d11->sprites.offset += count;

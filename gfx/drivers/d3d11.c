@@ -296,8 +296,10 @@ static void d3d11_render_overlay(d3d11_video_t *d3d11)
 
    for (i = 0; i < (unsigned)d3d11->overlays.count; i++)
    {
-      D3D11SetPShaderResources(d3d11->context, 0, 1, &d3d11->overlays.textures[i].view);
-      D3D11Draw(d3d11->context, 1, i);
+      d3d11->context->lpVtbl->PSSetShaderResources(
+            d3d11->context, 0, 1,
+            &d3d11->overlays.textures[i].view);
+      d3d11->context->lpVtbl->Draw(d3d11->context, 1, i);
    }
 }
 #endif
@@ -2056,7 +2058,8 @@ uuidof(ID3D11Texture2D), (void**)&back_buffer);
 	       context->lpVtbl->Unmap(context, (D3D11Resource)buffer, 0);
 
                if (buffer_sem->stage_mask & SLANG_STAGE_VERTEX_MASK)
-                  D3D11SetVShaderConstantBuffers(context, buffer_sem->binding, 1, &buffer);
+                  context->lpVtbl->VSSetConstantBuffers(context,
+                        buffer_sem->binding, 1, &buffer);
 
                if (buffer_sem->stage_mask & SLANG_STAGE_FRAGMENT_MASK)
                   context->lpVtbl->PSSetConstantBuffers(
@@ -2082,7 +2085,9 @@ uuidof(ID3D11Texture2D), (void**)&back_buffer);
                texture_sem++;
             }
 
-            D3D11SetPShaderResources(context, 0, SLANG_NUM_BINDINGS, textures);
+            context->lpVtbl->PSSetShaderResources(
+                  context, 0, SLANG_NUM_BINDINGS,
+                  textures);
             context->lpVtbl->PSSetSamplers(
                   context, 0, SLANG_NUM_BINDINGS, samplers);
          }
@@ -2097,7 +2102,7 @@ uuidof(ID3D11Texture2D), (void**)&back_buffer);
                &d3d11->pass[i].rt.rt_view, NULL);
          context->lpVtbl->RSSetViewports(context, 1, &d3d11->pass[i].viewport);
 
-         D3D11Draw(context, 4, 0);
+         context->lpVtbl->Draw(context, 4, 0);
          texture = &d3d11->pass[i].rt;
       }
    }
@@ -2109,7 +2114,7 @@ uuidof(ID3D11Texture2D), (void**)&back_buffer);
       context->lpVtbl->OMSetRenderTargets(context, 1,
             &d3d11->back_buffer.rt_view, NULL);
       context->lpVtbl->ClearRenderTargetView(context,
-d3d11->back_buffer.rt_view, d3d11->clearcolor);
+             d3d11->back_buffer.rt_view, d3d11->clearcolor);
    }
    else
 #endif
@@ -2129,14 +2134,16 @@ d3d11->back_buffer.rt_view, d3d11->clearcolor);
          context->lpVtbl->PSSetShader(context, shader->ps, NULL, 0);
          context->lpVtbl->GSSetShader(context, shader->gs, NULL, 0);
       }
-      D3D11SetPShaderResources(context, 0, 1, &texture->view);
+      context->lpVtbl->PSSetShaderResources(
+            context, 0, 1,
+            &texture->view);
       context->lpVtbl->PSSetSamplers(
             context, 0, 1,
             &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
-      D3D11SetVShaderConstantBuffers(context, 0, 1, &d3d11->frame.ubo);
+      context->lpVtbl->VSSetConstantBuffers(context, 0, 1, &d3d11->frame.ubo);
    }
 
-   D3D11Draw(context, 4, 0);
+   context->lpVtbl->Draw(context, 4, 0);
    context->lpVtbl->RSSetState(context, d3d11->scissor_enabled);
    d3d11->context->lpVtbl->RSSetScissorRects(d3d11->context, 1, &d3d11->scissor);
    context->lpVtbl->OMSetBlendState(context, d3d11->blend_enable,
@@ -2161,15 +2168,17 @@ d3d11->back_buffer.rt_view, d3d11->clearcolor);
          d3d11->context->lpVtbl->IASetVertexBuffers(
                d3d11->context, 0, 1, &d3d11->menu.vbo, &stride, &offset);
       }
-      D3D11SetVShaderConstantBuffers(context, 0, 1, &d3d11->ubo);
+      context->lpVtbl->VSSetConstantBuffers(context, 0, 1, &d3d11->ubo);
       {
          d3d11_texture_t *texture = (d3d11_texture_t*)&d3d11->menu.texture;
-         D3D11SetPShaderResources(d3d11->context, 0, 1, &texture->view);
+         d3d11->context->lpVtbl->PSSetShaderResources(
+               d3d11->context, 0, 1,
+               &texture->view);
          d3d11->context->lpVtbl->PSSetSamplers(
                d3d11->context, 0, 1,
                (D3D11SamplerState*)&texture->sampler);
       }
-      D3D11Draw(context, 4, 0);
+      context->lpVtbl->Draw(context, 4, 0);
    }
 #endif
 
@@ -2183,7 +2192,7 @@ d3d11->back_buffer.rt_view, d3d11->clearcolor);
    }
    context->lpVtbl->IASetPrimitiveTopology(context,
          D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-   D3D11SetVShaderConstantBuffers(context, 0, 1, &d3d11->ubo);
+   context->lpVtbl->VSSetConstantBuffers(context, 0, 1, &d3d11->ubo);
    context->lpVtbl->PSSetConstantBuffers(
          context, 0, 1, &d3d11->ubo);
    {
@@ -2285,9 +2294,9 @@ d3d11->back_buffer.rt_view, d3d11->clearcolor);
          context->lpVtbl->PSSetShader(context, shader->ps, NULL, 0);
          context->lpVtbl->GSSetShader(context, shader->gs, NULL, 0);
       }
-      D3D11SetVShaderConstantBuffers(context, 0, 1,
-            &d3d11->hdr.ubo);
-      D3D11SetPShaderResources(context, 0, 1,
+      context->lpVtbl->VSSetConstantBuffers(context, 0, 1, &d3d11->hdr.ubo);
+      context->lpVtbl->PSSetShaderResources(
+            context, 0, 1,
             &d3d11->back_buffer.view);
       context->lpVtbl->PSSetSamplers(
             context, 0, 1,
@@ -2307,9 +2316,10 @@ d3d11->back_buffer.rt_view, d3d11->clearcolor);
       context->lpVtbl->IASetPrimitiveTopology(context,
             D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-      D3D11Draw(context, 4, 0);
+      context->lpVtbl->Draw(context, 4, 0);
 
-      D3D11SetPShaderResources(context, 0, 1, nullSRV);
+      context->lpVtbl->PSSetShaderResources(
+            context, 0, 1, nullSRV);
       context->lpVtbl->RSSetState(context, d3d11->scissor_enabled);
       d3d11->context->lpVtbl->OMSetBlendState(d3d11->context, d3d11->blend_enable,
          NULL, D3D11_DEFAULT_SAMPLE_MASK);
