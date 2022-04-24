@@ -282,7 +282,7 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 {
    unsigned i;
    HRESULT hr;
-   HWND hwnd;
+   HWND hwnd                               = (HWND)corewindow;
 #ifdef __WINRT__
    DXGI_SWAP_CHAIN_DESC1 desc              = {{0}};
 #else
@@ -290,15 +290,13 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 #endif
 #ifdef HAVE_DXGI_HDR
    DXGI_COLOR_SPACE_TYPE color_space;
+#endif
 
+#ifdef HAVE_DXGI_HDR
    d3d12->chain.formats[DXGI_SWAPCHAIN_BIT_DEPTH_8]    = DXGI_FORMAT_R8G8B8A8_UNORM;
    d3d12->chain.formats[DXGI_SWAPCHAIN_BIT_DEPTH_10]   = DXGI_FORMAT_R10G10B10A2_UNORM;
    d3d12->chain.formats[DXGI_SWAPCHAIN_BIT_DEPTH_16]   = DXGI_FORMAT_R16G16B16A16_UNORM;
-#endif
 
-   hwnd = (HWND)corewindow;
-
-#ifdef HAVE_DXGI_HDR
    if (!(d3d12->hdr.support                              = 
       dxgi_check_display_hdr_support(d3d12->factory, hwnd)))
       d3d12->hdr.enable                            = false;
@@ -366,12 +364,6 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    /* Check display HDR support and 
       initialize ST.2084 support to match 
       the display's support. */
-#if 0
-   d3d12->hdr.max_output_nits  = 300.0f;
-   d3d12->hdr.min_output_nits  = 0.001f;
-   d3d12->hdr.max_cll          = 0.0f;
-   d3d12->hdr.max_fall         = 0.0f;
-#endif
    color_space                 = 
         d3d12->hdr.enable 
       ? DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020 

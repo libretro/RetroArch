@@ -17,9 +17,18 @@
 #pragma once
 
 #include <retro_inline.h>
+#include <retro_math.h>
+#include <retro_common_api.h>
+
+#include <gfx/math/matrix_4x4.h>
 
 #include "dxgi_common.h"
 #include <d3d12.h>
+
+#include "../common/d3dcompiler_common.h"
+#include "../drivers_shader/slang_process.h"
+
+#define D3D12_MAX_GPU_COUNT 16
 
 typedef const ID3D12PipelineState* D3D12PipelineStateRef;
 
@@ -51,6 +60,257 @@ typedef ID3D12DebugCommandQueue*                  D3D12DebugCommandQueue;
 typedef ID3D12DebugCommandList*                   D3D12DebugCommandList;
 #endif
 typedef ID3D12InfoQueue*                          D3D12InfoQueue;
+
+typedef struct d3d12_vertex_t
+{
+   float position[2];
+   float texcoord[2];
+   float color[4];
+} d3d12_vertex_t;
+
+typedef struct
+{
+   struct
+   {
+      float x, y, w, h;
+   } pos;
+   struct
+   {
+      float u, v, w, h;
+   } coords;
+   UINT32 colors[4];
+   struct
+   {
+      float scaling;
+      float rotation;
+   } params;
+} d3d12_sprite_t;
+
+typedef struct
+{
+   D3D12DescriptorHeap         handle; /* descriptor pool */
+   D3D12_DESCRIPTOR_HEAP_DESC  desc;
+   D3D12_CPU_DESCRIPTOR_HANDLE cpu; /* descriptor */
+   D3D12_GPU_DESCRIPTOR_HANDLE gpu; /* descriptor */
+   UINT                        stride;
+   bool*                       map;
+   int                         start;
+} d3d12_descriptor_heap_t;
+
+typedef struct
+{
+   D3D12Resource                      handle;
+   D3D12Resource                      upload_buffer;
+   D3D12_RESOURCE_DESC                desc;
+   /* the first view is srv, the rest are mip levels uavs */
+   D3D12_CPU_DESCRIPTOR_HANDLE        cpu_descriptor[D3D12_MAX_TEXTURE_DIMENSION_2_TO_EXP - 5];
+   D3D12_GPU_DESCRIPTOR_HANDLE        gpu_descriptor[D3D12_MAX_TEXTURE_DIMENSION_2_TO_EXP - 5];
+   D3D12_GPU_DESCRIPTOR_HANDLE        sampler;
+   D3D12_CPU_DESCRIPTOR_HANDLE        rt_view;
+   D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout;
+   UINT                               num_rows;
+   UINT64                             row_size_in_bytes;
+   UINT64                             total_bytes;
+   d3d12_descriptor_heap_t*           srv_heap;
+   bool                               dirty;
+   float4_t                           size_data;
+} d3d12_texture_t;
+
+#ifndef ALIGN
+#ifdef _MSC_VER
+#define ALIGN(x) __declspec(align(x))
+#else
+#define ALIGN(x) __attribute__((aligned(x)))
+#endif
+#endif
+
+typedef struct ALIGN(16)
+{
+   math_matrix_4x4 mvp;
+   struct
+   {
+      float width;
+      float height;
+   } OutputSize;
+   float time;
+} d3d12_uniform_t;
+
+typedef struct
+{
+   unsigned    cur_mon_id;
+#ifdef __WINRT__
+   DXGIFactory2 factory;
+#else
+   DXGIFactory factory;
+#endif
+   DXGIAdapter adapter;
+   D3D12Device device;
+
+   IDXGIAdapter1 *adapters[D3D12_MAX_GPU_COUNT];
+   struct string_list *gpu_list;
+
+   struct
+   {
+      D3D12CommandQueue        handle;
+      D3D12CommandAllocator    allocator;
+      D3D12GraphicsCommandList cmd;
+      D3D12Fence               fence;
+      HANDLE                   fenceEvent;
+      UINT64                   fenceValue;
+   } queue;
+
+   struct
+   {
+      D3D12RootSignature      cs_rootSignature; /* descriptor layout */
+      D3D12RootSignature      sl_rootSignature; /* descriptor layout */
+      D3D12RootSignature      rootSignature;    /* descriptor layout */
+      d3d12_descriptor_heap_t srv_heap;         /* ShaderResouceView descritor heap */
+      d3d12_descriptor_heap_t rtv_heap;         /* RenderTargetView descritor heap */
+      d3d12_descriptor_heap_t sampler_heap;
+   } desc;
+
+   struct
+   {
+      DXGISwapChain               handle;
+      D3D12Resource               renderTargets[2];
+#ifdef HAVE_DXGI_HDR
+      d3d12_texture_t             back_buffer;
+#endif
+      D3D12_CPU_DESCRIPTOR_HANDLE desc_handles[2];
+      D3D12_VIEWPORT              viewport;
+      D3D12_RECT                  scissorRect;
+      float                       clearcolor[4];
+      int                         frame_index;
+      bool                        vsync;
+      unsigned                    swap_interval;
+#ifdef HAVE_DXGI_HDR
+      enum dxgi_swapchain_bit_depth bit_depth;
+      DXGI_COLOR_SPACE_TYPE       color_space;
+      DXGI_FORMAT                 formats[DXGI_SWAPCHAIN_BIT_DEPTH_COUNT];
+#endif
+   } chain;
+
+   struct
+   {
+      d3d12_texture_t                 texture[GFX_MAX_FRAME_HISTORY + 1];
+      D3D12Resource                   ubo;
+      D3D12_CONSTANT_BUFFER_VIEW_DESC ubo_view;
+      D3D12Resource                   vbo;
+      D3D12_VERTEX_BUFFER_VIEW        vbo_view;
+      D3D12_VIEWPORT                  viewport;
+      D3D12_RECT                      scissorRect;
+      float4_t                        output_size;
+      int                             rotation;
+   } frame;
+
+#ifdef HAVE_DXGI_HDR
+   struct
+   {
+      dxgi_hdr_uniform_t               ubo_values;
+      D3D12Resource                    ubo;
+      D3D12_CONSTANT_BUFFER_VIEW_DESC  ubo_view;
+      float                            max_output_nits;
+      float                            min_output_nits;
+      float                            max_cll;
+      float                            max_fall;
+      bool                             support;
+      bool                             enable;
+   } hdr;
+#endif
+
+   struct
+   {
+      D3D12Resource            vbo;
+      D3D12_VERTEX_BUFFER_VIEW vbo_view;
+      d3d12_texture_t          texture;
+
+      float alpha;
+      bool  enabled;
+      bool  fullscreen;
+   } menu;
+
+   struct
+   {
+      D3D12PipelineStateRef    pipe;
+      D3D12PipelineState       pipe_blend;
+      D3D12PipelineState       pipe_noblend;
+      D3D12PipelineState       pipe_font;
+      D3D12Resource            vbo;
+      D3D12_VERTEX_BUFFER_VIEW vbo_view;
+      int                      offset;
+      int                      capacity;
+      bool                     enabled;
+   } sprites;
+
+#ifdef HAVE_OVERLAY
+   struct
+   {
+      D3D12Resource            vbo;
+      D3D12_VERTEX_BUFFER_VIEW vbo_view;
+      d3d12_texture_t*         textures;
+      bool                     enabled;
+      bool                     fullscreen;
+      int                      count;
+   } overlays;
+#endif
+
+   struct
+   {
+      D3D12PipelineState              pipe;
+      D3D12_GPU_DESCRIPTOR_HANDLE     sampler;
+      D3D12Resource                   buffers[SLANG_CBUFFER_MAX];
+      D3D12_CONSTANT_BUFFER_VIEW_DESC buffer_view[SLANG_CBUFFER_MAX];
+      d3d12_texture_t                 rt;
+      d3d12_texture_t                 feedback;
+      D3D12_VIEWPORT                  viewport;
+      D3D12_RECT                      scissorRect;
+      pass_semantics_t                semantics;
+      uint32_t                        frame_count;
+      int32_t                         frame_direction;
+      D3D12_GPU_DESCRIPTOR_HANDLE     textures;
+      D3D12_GPU_DESCRIPTOR_HANDLE     samplers;
+   } pass[GFX_MAX_SHADERS];
+
+   struct video_shader* shader_preset;
+   d3d12_texture_t      luts[GFX_MAX_TEXTURES];
+
+   D3D12PipelineState              pipes[GFX_MAX_SHADERS];
+   D3D12PipelineState              mipmapgen_pipe;
+   d3d12_uniform_t                 ubo_values;
+   D3D12Resource                   ubo;
+   D3D12_CONSTANT_BUFFER_VIEW_DESC ubo_view;
+   DXGI_FORMAT                     format;
+   D3D12_GPU_DESCRIPTOR_HANDLE     samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX];
+   math_matrix_4x4                 mvp, mvp_no_rot;
+   struct video_viewport           vp;
+   bool                            resize_chain;
+   bool                            keep_aspect;
+   bool                            resize_viewport;
+   bool                            resize_render_targets;
+   bool                            init_history;
+   D3D12Resource                   menu_pipeline_vbo;
+   D3D12_VERTEX_BUFFER_VIEW        menu_pipeline_vbo_view;
+
+#ifdef DEBUG
+   D3D12Debug debugController;
+#endif
+} d3d12_video_t;
+
+typedef enum {
+   ROOT_ID_TEXTURE_T = 0,
+   ROOT_ID_SAMPLER_T,
+   ROOT_ID_UBO,
+   ROOT_ID_PC,
+   ROOT_ID_MAX
+} root_signature_parameter_index_t;
+
+typedef enum {
+   CS_ROOT_ID_TEXTURE_T = 0,
+   CS_ROOT_ID_UAV_T,
+   CS_ROOT_ID_CONSTANTS,
+   CS_ROOT_ID_MAX
+} compute_root_index_t;
+
 
 static INLINE ULONG D3D12Release(void* object)
 {
@@ -1210,6 +1470,7 @@ static INLINE void D3D12ExecuteCommandLists(
 {
    command_queue->lpVtbl->ExecuteCommandLists(command_queue, num_command_lists, command_lists);
 }
+
 static INLINE void D3D12ExecuteGraphicsCommandLists(
       D3D12CommandQueue               command_queue,
       UINT                            num_command_lists,
@@ -1224,6 +1485,7 @@ DXGIGetSwapChainBuffer(DXGISwapChain swapchain, UINT buffer, D3D12Resource* surf
 {
    return swapchain->lpVtbl->GetBuffer(swapchain, buffer, uuidof(ID3D12Resource), (void**)surface);
 }
+
 static INLINE void D3D12SetDescriptorHeaps(
       D3D12GraphicsCommandList   command_list,
       UINT                       num_descriptor_heaps,
@@ -1231,18 +1493,7 @@ static INLINE void D3D12SetDescriptorHeaps(
 {
    command_list->lpVtbl->SetDescriptorHeaps(command_list, num_descriptor_heaps, descriptor_heaps);
 }
-#if 0 /* function prototype is wrong ... */
-static INLINE D3D12_CPU_DESCRIPTOR_HANDLE D3D12GetCPUDescriptorHandleForHeapStart(
-   D3D12DescriptorHeap descriptor_heap)
-{
-   return descriptor_heap->lpVtbl->GetCPUDescriptorHandleForHeapStart(descriptor_heap);
-}
-static INLINE D3D12_GPU_DESCRIPTOR_HANDLE D3D12GetGPUDescriptorHandleForHeapStart(
-   D3D12DescriptorHeap descriptor_heap)
-{
-   return descriptor_heap->lpVtbl->GetGPUDescriptorHandleForHeapStart(descriptor_heap);
-}
-#else
+
 static INLINE D3D12_CPU_DESCRIPTOR_HANDLE
 D3D12GetCPUDescriptorHandleForHeapStart(D3D12DescriptorHeap descriptor_heap)
 {
@@ -1251,6 +1502,7 @@ D3D12GetCPUDescriptorHandleForHeapStart(D3D12DescriptorHeap descriptor_heap)
           descriptor_heap->lpVtbl->GetCPUDescriptorHandleForHeapStart)(descriptor_heap, &out);
    return out;
 }
+
 static INLINE D3D12_GPU_DESCRIPTOR_HANDLE
 D3D12GetGPUDescriptorHandleForHeapStart(D3D12DescriptorHeap descriptor_heap)
 {
@@ -1259,269 +1511,6 @@ D3D12GetGPUDescriptorHandleForHeapStart(D3D12DescriptorHeap descriptor_heap)
           descriptor_heap->lpVtbl->GetGPUDescriptorHandleForHeapStart)(descriptor_heap, &out);
    return out;
 }
-#endif
-
-   /* internal */
-
-#include <retro_math.h>
-#include <retro_common_api.h>
-#include <gfx/math/matrix_4x4.h>
-
-#include "../common/d3dcompiler_common.h"
-#include "../../retroarch.h"
-#include "../drivers_shader/slang_process.h"
-
-#define D3D12_MAX_GPU_COUNT 16
-
-typedef struct d3d12_vertex_t
-{
-   float position[2];
-   float texcoord[2];
-   float color[4];
-} d3d12_vertex_t;
-
-typedef struct
-{
-   struct
-   {
-      float x, y, w, h;
-   } pos;
-   struct
-   {
-      float u, v, w, h;
-   } coords;
-   UINT32 colors[4];
-   struct
-   {
-      float scaling;
-      float rotation;
-   } params;
-} d3d12_sprite_t;
-
-typedef struct
-{
-   D3D12DescriptorHeap         handle; /* descriptor pool */
-   D3D12_DESCRIPTOR_HEAP_DESC  desc;
-   D3D12_CPU_DESCRIPTOR_HANDLE cpu; /* descriptor */
-   D3D12_GPU_DESCRIPTOR_HANDLE gpu; /* descriptor */
-   UINT                        stride;
-   bool*                       map;
-   int                         start;
-} d3d12_descriptor_heap_t;
-
-typedef struct
-{
-   D3D12Resource                      handle;
-   D3D12Resource                      upload_buffer;
-   D3D12_RESOURCE_DESC                desc;
-   /* the first view is srv, the rest are mip levels uavs */
-   D3D12_CPU_DESCRIPTOR_HANDLE        cpu_descriptor[D3D12_MAX_TEXTURE_DIMENSION_2_TO_EXP - 5];
-   D3D12_GPU_DESCRIPTOR_HANDLE        gpu_descriptor[D3D12_MAX_TEXTURE_DIMENSION_2_TO_EXP - 5];
-   D3D12_GPU_DESCRIPTOR_HANDLE        sampler;
-   D3D12_CPU_DESCRIPTOR_HANDLE        rt_view;
-   D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout;
-   UINT                               num_rows;
-   UINT64                             row_size_in_bytes;
-   UINT64                             total_bytes;
-   d3d12_descriptor_heap_t*           srv_heap;
-   bool                               dirty;
-   float4_t                           size_data;
-} d3d12_texture_t;
-
-#ifndef ALIGN
-#ifdef _MSC_VER
-#define ALIGN(x) __declspec(align(x))
-#else
-#define ALIGN(x) __attribute__((aligned(x)))
-#endif
-#endif
-
-typedef struct ALIGN(16)
-{
-   math_matrix_4x4 mvp;
-   struct
-   {
-      float width;
-      float height;
-   } OutputSize;
-   float time;
-} d3d12_uniform_t;
-
-typedef struct
-{
-   unsigned    cur_mon_id;
-#ifdef __WINRT__
-   DXGIFactory2 factory;
-#else
-   DXGIFactory factory;
-#endif
-   DXGIAdapter adapter;
-   D3D12Device device;
-
-   IDXGIAdapter1 *adapters[D3D12_MAX_GPU_COUNT];
-   struct string_list *gpu_list;
-
-   struct
-   {
-      D3D12CommandQueue        handle;
-      D3D12CommandAllocator    allocator;
-      D3D12GraphicsCommandList cmd;
-      D3D12Fence               fence;
-      HANDLE                   fenceEvent;
-      UINT64                   fenceValue;
-   } queue;
-
-   struct
-   {
-      D3D12RootSignature      cs_rootSignature; /* descriptor layout */
-      D3D12RootSignature      sl_rootSignature; /* descriptor layout */
-      D3D12RootSignature      rootSignature;    /* descriptor layout */
-      d3d12_descriptor_heap_t srv_heap;         /* ShaderResouceView descritor heap */
-      d3d12_descriptor_heap_t rtv_heap;         /* RenderTargetView descritor heap */
-      d3d12_descriptor_heap_t sampler_heap;
-   } desc;
-
-   struct
-   {
-      DXGISwapChain               handle;
-      D3D12Resource               renderTargets[2];
-#ifdef HAVE_DXGI_HDR
-      d3d12_texture_t             back_buffer;
-#endif
-      D3D12_CPU_DESCRIPTOR_HANDLE desc_handles[2];
-      D3D12_VIEWPORT              viewport;
-      D3D12_RECT                  scissorRect;
-      float                       clearcolor[4];
-      int                         frame_index;
-      bool                        vsync;
-      unsigned                    swap_interval;
-#ifdef HAVE_DXGI_HDR
-      enum dxgi_swapchain_bit_depth bit_depth;
-      DXGI_COLOR_SPACE_TYPE       color_space;
-      DXGI_FORMAT                 formats[DXGI_SWAPCHAIN_BIT_DEPTH_COUNT];
-#endif
-   } chain;
-
-   struct
-   {
-      d3d12_texture_t                 texture[GFX_MAX_FRAME_HISTORY + 1];
-      D3D12Resource                   ubo;
-      D3D12_CONSTANT_BUFFER_VIEW_DESC ubo_view;
-      D3D12Resource                   vbo;
-      D3D12_VERTEX_BUFFER_VIEW        vbo_view;
-      D3D12_VIEWPORT                  viewport;
-      D3D12_RECT                      scissorRect;
-      float4_t                        output_size;
-      int                             rotation;
-   } frame;
-
-#ifdef HAVE_DXGI_HDR
-   struct
-   {
-      dxgi_hdr_uniform_t               ubo_values;
-      D3D12Resource                    ubo;
-      D3D12_CONSTANT_BUFFER_VIEW_DESC  ubo_view;
-      float                            max_output_nits;
-      float                            min_output_nits;
-      float                            max_cll;
-      float                            max_fall;
-      bool                             support;
-      bool                             enable;
-   } hdr;
-#endif
-
-   struct
-   {
-      D3D12Resource            vbo;
-      D3D12_VERTEX_BUFFER_VIEW vbo_view;
-      d3d12_texture_t          texture;
-
-      float alpha;
-      bool  enabled;
-      bool  fullscreen;
-   } menu;
-
-   struct
-   {
-      D3D12PipelineStateRef    pipe;
-      D3D12PipelineState       pipe_blend;
-      D3D12PipelineState       pipe_noblend;
-      D3D12PipelineState       pipe_font;
-      D3D12Resource            vbo;
-      D3D12_VERTEX_BUFFER_VIEW vbo_view;
-      int                      offset;
-      int                      capacity;
-      bool                     enabled;
-   } sprites;
-
-#ifdef HAVE_OVERLAY
-   struct
-   {
-      D3D12Resource            vbo;
-      D3D12_VERTEX_BUFFER_VIEW vbo_view;
-      d3d12_texture_t*         textures;
-      bool                     enabled;
-      bool                     fullscreen;
-      int                      count;
-   } overlays;
-#endif
-
-   struct
-   {
-      D3D12PipelineState              pipe;
-      D3D12_GPU_DESCRIPTOR_HANDLE     sampler;
-      D3D12Resource                   buffers[SLANG_CBUFFER_MAX];
-      D3D12_CONSTANT_BUFFER_VIEW_DESC buffer_view[SLANG_CBUFFER_MAX];
-      d3d12_texture_t                 rt;
-      d3d12_texture_t                 feedback;
-      D3D12_VIEWPORT                  viewport;
-      D3D12_RECT                      scissorRect;
-      pass_semantics_t                semantics;
-      uint32_t                        frame_count;
-      int32_t                         frame_direction;
-      D3D12_GPU_DESCRIPTOR_HANDLE     textures;
-      D3D12_GPU_DESCRIPTOR_HANDLE     samplers;
-   } pass[GFX_MAX_SHADERS];
-
-   struct video_shader* shader_preset;
-   d3d12_texture_t      luts[GFX_MAX_TEXTURES];
-
-   D3D12PipelineState              pipes[GFX_MAX_SHADERS];
-   D3D12PipelineState              mipmapgen_pipe;
-   d3d12_uniform_t                 ubo_values;
-   D3D12Resource                   ubo;
-   D3D12_CONSTANT_BUFFER_VIEW_DESC ubo_view;
-   DXGI_FORMAT                     format;
-   D3D12_GPU_DESCRIPTOR_HANDLE     samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX];
-   math_matrix_4x4                 mvp, mvp_no_rot;
-   struct video_viewport           vp;
-   bool                            resize_chain;
-   bool                            keep_aspect;
-   bool                            resize_viewport;
-   bool                            resize_render_targets;
-   bool                            init_history;
-   D3D12Resource                   menu_pipeline_vbo;
-   D3D12_VERTEX_BUFFER_VIEW        menu_pipeline_vbo_view;
-
-#ifdef DEBUG
-   D3D12Debug debugController;
-#endif
-} d3d12_video_t;
-
-typedef enum {
-   ROOT_ID_TEXTURE_T = 0,
-   ROOT_ID_SAMPLER_T,
-   ROOT_ID_UBO,
-   ROOT_ID_PC,
-   ROOT_ID_MAX
-} root_signature_parameter_index_t;
-
-typedef enum {
-   CS_ROOT_ID_TEXTURE_T = 0,
-   CS_ROOT_ID_UAV_T,
-   CS_ROOT_ID_CONSTANTS,
-   CS_ROOT_ID_MAX
-} compute_root_index_t;
 
 RETRO_BEGIN_DECLS
 
