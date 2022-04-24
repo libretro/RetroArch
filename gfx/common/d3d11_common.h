@@ -240,60 +240,12 @@ static INLINE void D3D11SetPShaderResources(
          shader_resource_views);
 }
 
-static INLINE void D3D11DrawIndexed(
-      D3D11DeviceContext device_context,
-      UINT               index_count,
-      UINT               start_index_location,
-      INT                base_vertex_location)
-{
-   device_context->lpVtbl->DrawIndexed(
-         device_context, index_count, start_index_location, base_vertex_location);
-}
 static INLINE void
 D3D11Draw(D3D11DeviceContext device_context, UINT vertex_count, UINT start_vertex_location)
 {
    device_context->lpVtbl->Draw(device_context, vertex_count, start_vertex_location);
 }
-static INLINE HRESULT D3D11Map(
-      D3D11DeviceContext        device_context,
-      D3D11Resource             resource,
-      UINT                      subresource,
-      D3D11_MAP                 map_type,
-      UINT                      map_flags,
-      D3D11_MAPPED_SUBRESOURCE* mapped_resource)
-{
-   return device_context->lpVtbl->Map(
-         device_context, resource, subresource, map_type, map_flags, mapped_resource);
-}
-static INLINE void
-D3D11Unmap(D3D11DeviceContext device_context, D3D11Resource resource, UINT subresource)
-{
-   device_context->lpVtbl->Unmap(device_context, resource, subresource);
-}
 
-static INLINE void D3D11DrawIndexedInstanced(
-      D3D11DeviceContext device_context,
-      UINT               index_count_per_instance,
-      UINT               instance_count,
-      UINT               start_index_location,
-      INT                base_vertex_location,
-      UINT               start_instance_location)
-{
-   device_context->lpVtbl->DrawIndexedInstanced(
-         device_context, index_count_per_instance, instance_count, start_index_location,
-         base_vertex_location, start_instance_location);
-}
-static INLINE void D3D11DrawInstanced(
-      D3D11DeviceContext device_context,
-      UINT               vertex_count_per_instance,
-      UINT               instance_count,
-      UINT               start_vertex_location,
-      UINT               start_instance_location)
-{
-   device_context->lpVtbl->DrawInstanced(
-         device_context, vertex_count_per_instance, instance_count, start_vertex_location,
-         start_instance_location);
-}
 static INLINE void D3D11SetGShaderConstantBuffers(
       D3D11DeviceContext device_context,
       UINT               start_slot,
@@ -381,26 +333,6 @@ static INLINE void D3D11SOSetTargets(
       UINT*              offsets)
 {
    device_context->lpVtbl->SOSetTargets(device_context, num_buffers, sotargets, offsets);
-}
-static INLINE void D3D11DrawAuto(D3D11DeviceContext device_context)
-{
-   device_context->lpVtbl->DrawAuto(device_context);
-}
-static INLINE void D3D11DrawIndexedInstancedIndirect(
-      D3D11DeviceContext device_context,
-      D3D11Buffer        buffer_for_args,
-      UINT               aligned_byte_offset_for_args)
-{
-   device_context->lpVtbl->DrawIndexedInstancedIndirect(
-         device_context, buffer_for_args, aligned_byte_offset_for_args);
-}
-static INLINE void D3D11DrawInstancedIndirect(
-      D3D11DeviceContext device_context,
-      D3D11Buffer        buffer_for_args,
-      UINT               aligned_byte_offset_for_args)
-{
-   device_context->lpVtbl->DrawInstancedIndirect(
-         device_context, buffer_for_args, aligned_byte_offset_for_args);
 }
 static INLINE void D3D11Dispatch(
       D3D11DeviceContext device_context,
@@ -919,26 +851,12 @@ static INLINE void D3D11GetCShaderConstantBuffers(
    device_context->lpVtbl->CSGetConstantBuffers(
          device_context, start_slot, num_buffers, constant_buffers);
 }
-static INLINE void D3D11ClearState(D3D11DeviceContext device_context)
-{
-   device_context->lpVtbl->ClearState(device_context);
-}
-static INLINE void D3D11Flush(D3D11DeviceContext device_context)
-{
-   device_context->lpVtbl->Flush(device_context);
-}
+
 static INLINE UINT D3D11GetDeviceContextContextFlags(D3D11DeviceContext device_context)
 {
    return device_context->lpVtbl->GetContextFlags(device_context);
 }
-static INLINE HRESULT D3D11FinishCommandList(
-      D3D11DeviceContext device_context,
-      BOOL               restore_deferred_context_state,
-      D3D11CommandList*  command_list)
-{
-   return device_context->lpVtbl->FinishCommandList(
-         device_context, restore_deferred_context_state, command_list);
-}
+
 static INLINE HRESULT D3D11GetCreationParameters(
       D3D11VideoDecoder           video_decoder,
       D3D11_VIDEO_DECODER_DESC*   video_desc,
@@ -949,60 +867,6 @@ static INLINE HRESULT D3D11GetCreationParameters(
 static INLINE HRESULT D3D11GetDriverHandle(D3D11VideoDecoder video_decoder, HANDLE* driver_handle)
 {
    return video_decoder->lpVtbl->GetDriverHandle(video_decoder, driver_handle);
-}
-static INLINE HRESULT D3D11GetVideoProcessorContentDesc(
-      D3D11VideoProcessorEnumerator       video_processor_enumerator,
-      D3D11_VIDEO_PROCESSOR_CONTENT_DESC* content_desc)
-{
-   return video_processor_enumerator->lpVtbl->GetVideoProcessorContentDesc(
-         video_processor_enumerator, content_desc);
-}
-static INLINE HRESULT D3D11CheckVideoProcessorFormat(
-      D3D11VideoProcessorEnumerator video_processor_enumerator, DXGI_FORMAT format, UINT* flags)
-{
-   return video_processor_enumerator->lpVtbl->CheckVideoProcessorFormat(
-         video_processor_enumerator, format, flags);
-}
-static INLINE HRESULT D3D11GetVideoProcessorCaps(
-      D3D11VideoProcessorEnumerator video_processor_enumerator, D3D11_VIDEO_PROCESSOR_CAPS* caps)
-{
-   return video_processor_enumerator->lpVtbl->GetVideoProcessorCaps(
-         video_processor_enumerator, caps);
-}
-static INLINE HRESULT D3D11GetVideoProcessorRateConversionCaps(
-      D3D11VideoProcessorEnumerator               video_processor_enumerator,
-      UINT                                        type_index,
-      D3D11_VIDEO_PROCESSOR_RATE_CONVERSION_CAPS* caps)
-{
-   return video_processor_enumerator->lpVtbl->GetVideoProcessorRateConversionCaps(
-         video_processor_enumerator, type_index, caps);
-}
-static INLINE HRESULT D3D11GetVideoProcessorCustomRate(
-      D3D11VideoProcessorEnumerator      video_processor_enumerator,
-      UINT                               type_index,
-      UINT                               custom_rate_index,
-      D3D11_VIDEO_PROCESSOR_CUSTOM_RATE* rate)
-{
-   return video_processor_enumerator->lpVtbl->GetVideoProcessorCustomRate(
-         video_processor_enumerator, type_index, custom_rate_index, rate);
-}
-static INLINE HRESULT D3D11GetVideoProcessorFilterRange(
-      D3D11VideoProcessorEnumerator       video_processor_enumerator,
-      D3D11_VIDEO_PROCESSOR_FILTER        filter,
-      D3D11_VIDEO_PROCESSOR_FILTER_RANGE* range)
-{
-   return video_processor_enumerator->lpVtbl->GetVideoProcessorFilterRange(
-         video_processor_enumerator, filter, range);
-}
-static INLINE void
-D3D11GetContentDesc(D3D11VideoProcessor video_processor, D3D11_VIDEO_PROCESSOR_CONTENT_DESC* desc)
-{
-   video_processor->lpVtbl->GetContentDesc(video_processor, desc);
-}
-static INLINE void D3D11GetRateConversionCaps(
-      D3D11VideoProcessor video_processor, D3D11_VIDEO_PROCESSOR_RATE_CONVERSION_CAPS* caps)
-{
-   video_processor->lpVtbl->GetRateConversionCaps(video_processor, caps);
 }
 static INLINE HRESULT D3D11GetAuthenticatedChannelCertificateSize(
       D3D11AuthenticatedChannel authenticated_channel, UINT* certificate_size)
@@ -1049,16 +913,6 @@ static INLINE void D3D11GetVideoDecoderOutputViewResource(
 {
    video_decoder_output_view->lpVtbl->GetResource(video_decoder_output_view, resource);
 }
-static INLINE void D3D11GetVideoProcessorInputViewResource(
-      D3D11VideoProcessorInputView video_processor_input_view, D3D11Resource* resource)
-{
-   video_processor_input_view->lpVtbl->GetResource(video_processor_input_view, resource);
-}
-static INLINE void D3D11GetVideoProcessorOutputViewResource(
-      D3D11VideoProcessorOutputView video_processor_output_view, D3D11Resource* resource)
-{
-   video_processor_output_view->lpVtbl->GetResource(video_processor_output_view, resource);
-}
 static INLINE HRESULT D3D11GetDecoderBuffer(
       D3D11VideoContext               video_context,
       D3D11VideoDecoder               decoder,
@@ -1076,21 +930,6 @@ static INLINE HRESULT D3D11ReleaseDecoderBuffer(
 {
    return video_context->lpVtbl->ReleaseDecoderBuffer(video_context, decoder, type);
 }
-static INLINE HRESULT D3D11DecoderBeginFrame(
-      D3D11VideoContext           video_context,
-      D3D11VideoDecoder           decoder,
-      D3D11VideoDecoderOutputView view,
-      UINT                        content_key_size,
-      void*                       content_key)
-{
-   return video_context->lpVtbl->DecoderBeginFrame(
-         video_context, decoder, view, content_key_size, content_key);
-}
-static INLINE HRESULT
-D3D11DecoderEndFrame(D3D11VideoContext video_context, D3D11VideoDecoder decoder)
-{
-   return video_context->lpVtbl->DecoderEndFrame(video_context, decoder);
-}
 static INLINE HRESULT D3D11SubmitDecoderBuffers(
       D3D11VideoContext                video_context,
       D3D11VideoDecoder                decoder,
@@ -1100,413 +939,7 @@ static INLINE HRESULT D3D11SubmitDecoderBuffers(
    return video_context->lpVtbl->SubmitDecoderBuffers(
          video_context, decoder, num_buffers, buffer_desc);
 }
-static INLINE APP_DEPRECATED_HRESULT D3D11DecoderExtension(
-      D3D11VideoContext              video_context,
-      D3D11VideoDecoder              decoder,
-      D3D11_VIDEO_DECODER_EXTENSION* extension_data)
-{
-   return video_context->lpVtbl->DecoderExtension(video_context, decoder, extension_data);
-}
-static INLINE void D3D11VideoProcessorSetOutputTargetRect(
-      D3D11VideoContext video_context, D3D11VideoProcessor video_processor, BOOL enable, RECT* rect)
-{
-   video_context->lpVtbl->VideoProcessorSetOutputTargetRect(
-         video_context, video_processor, enable, rect);
-}
-static INLINE void D3D11VideoProcessorSetOutputBackgroundColor(
-      D3D11VideoContext   video_context,
-      D3D11VideoProcessor video_processor,
-      BOOL                ycb_cr,
-      D3D11_VIDEO_COLOR*  color)
-{
-   video_context->lpVtbl->VideoProcessorSetOutputBackgroundColor(
-         video_context, video_processor, ycb_cr, color);
-}
-static INLINE void D3D11VideoProcessorSetOutputColorSpace(
-      D3D11VideoContext                  video_context,
-      D3D11VideoProcessor                video_processor,
-      D3D11_VIDEO_PROCESSOR_COLOR_SPACE* color_space)
-{
-   video_context->lpVtbl->VideoProcessorSetOutputColorSpace(
-         video_context, video_processor, color_space);
-}
-static INLINE void D3D11VideoProcessorSetOutputAlphaFillMode(
-      D3D11VideoContext                     video_context,
-      D3D11VideoProcessor                   video_processor,
-      D3D11_VIDEO_PROCESSOR_ALPHA_FILL_MODE alpha_fill_mode,
-      UINT                                  stream_index)
-{
-   video_context->lpVtbl->VideoProcessorSetOutputAlphaFillMode(
-         video_context, video_processor, alpha_fill_mode, stream_index);
-}
-static INLINE void D3D11VideoProcessorSetOutputConstriction(
-      D3D11VideoContext video_context, D3D11VideoProcessor video_processor, BOOL enable, SIZE size)
-{
-   video_context->lpVtbl->VideoProcessorSetOutputConstriction(
-         video_context, video_processor, enable, size);
-}
-static INLINE void D3D11VideoProcessorSetOutputStereoMode(
-      D3D11VideoContext video_context, D3D11VideoProcessor video_processor, BOOL enable)
-{
-   video_context->lpVtbl->VideoProcessorSetOutputStereoMode(video_context, video_processor, enable);
-}
-static INLINE APP_DEPRECATED_HRESULT D3D11VideoProcessorSetOutputExtension(
-      D3D11VideoContext   video_context,
-      D3D11VideoProcessor video_processor,
-      GUID*               extension_guid,
-      UINT                data_size,
-      void*               data)
-{
-   return video_context->lpVtbl->VideoProcessorSetOutputExtension(
-         video_context, video_processor, extension_guid, data_size, data);
-}
-static INLINE void D3D11VideoProcessorGetOutputTargetRect(
-      D3D11VideoContext   video_context,
-      D3D11VideoProcessor video_processor,
-      BOOL*               enabled,
-      RECT*               rect)
-{
-   video_context->lpVtbl->VideoProcessorGetOutputTargetRect(
-         video_context, video_processor, enabled, rect);
-}
-static INLINE void D3D11VideoProcessorGetOutputBackgroundColor(
-      D3D11VideoContext   video_context,
-      D3D11VideoProcessor video_processor,
-      BOOL*               ycb_cr,
-      D3D11_VIDEO_COLOR*  color)
-{
-   video_context->lpVtbl->VideoProcessorGetOutputBackgroundColor(
-         video_context, video_processor, ycb_cr, color);
-}
-static INLINE void D3D11VideoProcessorGetOutputColorSpace(
-      D3D11VideoContext                  video_context,
-      D3D11VideoProcessor                video_processor,
-      D3D11_VIDEO_PROCESSOR_COLOR_SPACE* color_space)
-{
-   video_context->lpVtbl->VideoProcessorGetOutputColorSpace(
-         video_context, video_processor, color_space);
-}
-static INLINE void D3D11VideoProcessorGetOutputAlphaFillMode(
-      D3D11VideoContext                      video_context,
-      D3D11VideoProcessor                    video_processor,
-      D3D11_VIDEO_PROCESSOR_ALPHA_FILL_MODE* alpha_fill_mode,
-      UINT*                                  stream_index)
-{
-   video_context->lpVtbl->VideoProcessorGetOutputAlphaFillMode(
-         video_context, video_processor, alpha_fill_mode, stream_index);
-}
-static INLINE void D3D11VideoProcessorGetOutputConstriction(
-      D3D11VideoContext   video_context,
-      D3D11VideoProcessor video_processor,
-      BOOL*               enabled,
-      SIZE*               size)
-{
-   video_context->lpVtbl->VideoProcessorGetOutputConstriction(
-         video_context, video_processor, enabled, size);
-}
-static INLINE void D3D11VideoProcessorGetOutputStereoMode(
-      D3D11VideoContext video_context, D3D11VideoProcessor video_processor, BOOL* enabled)
-{
-   video_context->lpVtbl->VideoProcessorGetOutputStereoMode(
-         video_context, video_processor, enabled);
-}
-static INLINE APP_DEPRECATED_HRESULT D3D11VideoProcessorGetOutputExtension(
-      D3D11VideoContext   video_context,
-      D3D11VideoProcessor video_processor,
-      GUID*               extension_guid,
-      UINT                data_size,
-      void*               data)
-{
-   return video_context->lpVtbl->VideoProcessorGetOutputExtension(
-         video_context, video_processor, extension_guid, data_size, data);
-}
-static INLINE void D3D11VideoProcessorSetStreamFrameFormat(
-      D3D11VideoContext        video_context,
-      D3D11VideoProcessor      video_processor,
-      UINT                     stream_index,
-      D3D11_VIDEO_FRAME_FORMAT frame_format)
-{
-   video_context->lpVtbl->VideoProcessorSetStreamFrameFormat(
-         video_context, video_processor, stream_index, frame_format);
-}
-static INLINE void D3D11VideoProcessorSetStreamColorSpace(
-      D3D11VideoContext                  video_context,
-      D3D11VideoProcessor                video_processor,
-      UINT                               stream_index,
-      D3D11_VIDEO_PROCESSOR_COLOR_SPACE* color_space)
-{
-   video_context->lpVtbl->VideoProcessorSetStreamColorSpace(
-         video_context, video_processor, stream_index, color_space);
-}
-static INLINE void D3D11VideoProcessorSetStreamOutputRate(
-      D3D11VideoContext                 video_context,
-      D3D11VideoProcessor               video_processor,
-      UINT                              stream_index,
-      D3D11_VIDEO_PROCESSOR_OUTPUT_RATE output_rate,
-      BOOL                              repeat_frame,
-      DXGI_RATIONAL*                    custom_rate)
-{
-   video_context->lpVtbl->VideoProcessorSetStreamOutputRate(
-         video_context, video_processor, stream_index, output_rate, repeat_frame, custom_rate);
-}
-static INLINE void D3D11VideoProcessorSetStreamSourceRect(
-      D3D11VideoContext   video_context,
-      D3D11VideoProcessor video_processor,
-      UINT                stream_index,
-      BOOL                enable,
-      RECT*               rect)
-{
-   video_context->lpVtbl->VideoProcessorSetStreamSourceRect(
-         video_context, video_processor, stream_index, enable, rect);
-}
-static INLINE void D3D11VideoProcessorSetStreamDestRect(
-      D3D11VideoContext   video_context,
-      D3D11VideoProcessor video_processor,
-      UINT                stream_index,
-      BOOL                enable,
-      RECT*               rect)
-{
-   video_context->lpVtbl->VideoProcessorSetStreamDestRect(
-         video_context, video_processor, stream_index, enable, rect);
-}
-static INLINE void D3D11VideoProcessorSetStreamAlpha(
-      D3D11VideoContext   video_context,
-      D3D11VideoProcessor video_processor,
-      UINT                stream_index,
-      BOOL                enable,
-      FLOAT               alpha)
-{
-   video_context->lpVtbl->VideoProcessorSetStreamAlpha(
-         video_context, video_processor, stream_index, enable, alpha);
-}
-static INLINE void D3D11VideoProcessorSetStreamPalette(
-      D3D11VideoContext   video_context,
-      D3D11VideoProcessor video_processor,
-      UINT                stream_index,
-      UINT                count,
-      UINT*               entries)
-{
-   video_context->lpVtbl->VideoProcessorSetStreamPalette(
-         video_context, video_processor, stream_index, count, entries);
-}
-static INLINE void D3D11VideoProcessorSetStreamPixelAspectRatio(
-      D3D11VideoContext   video_context,
-      D3D11VideoProcessor video_processor,
-      UINT                stream_index,
-      BOOL                enable,
-      DXGI_RATIONAL*      source_aspect_ratio,
-      DXGI_RATIONAL*      destination_aspect_ratio)
-{
-   video_context->lpVtbl->VideoProcessorSetStreamPixelAspectRatio(
-         video_context, video_processor, stream_index, enable, source_aspect_ratio,
-         destination_aspect_ratio);
-}
-static INLINE void D3D11VideoProcessorSetStreamLumaKey(
-      D3D11VideoContext   video_context,
-      D3D11VideoProcessor video_processor,
-      UINT                stream_index,
-      BOOL                enable,
-      FLOAT               lower,
-      FLOAT               upper)
-{
-   video_context->lpVtbl->VideoProcessorSetStreamLumaKey(
-         video_context, video_processor, stream_index, enable, lower, upper);
-}
-static INLINE void D3D11VideoProcessorSetStreamStereoFormat(
-      D3D11VideoContext                      video_context,
-      D3D11VideoProcessor                    video_processor,
-      UINT                                   stream_index,
-      BOOL                                   enable,
-      D3D11_VIDEO_PROCESSOR_STEREO_FORMAT    format,
-      BOOL                                   left_view_frame0,
-      BOOL                                   base_view_frame0,
-      D3D11_VIDEO_PROCESSOR_STEREO_FLIP_MODE flip_mode,
-      int                                    mono_offset)
-{
-   video_context->lpVtbl->VideoProcessorSetStreamStereoFormat(
-         video_context, video_processor, stream_index, enable, format, left_view_frame0,
-         base_view_frame0, flip_mode, mono_offset);
-}
-static INLINE void D3D11VideoProcessorSetStreamAutoProcessingMode(
-      D3D11VideoContext   video_context,
-      D3D11VideoProcessor video_processor,
-      UINT                stream_index,
-      BOOL                enable)
-{
-   video_context->lpVtbl->VideoProcessorSetStreamAutoProcessingMode(
-         video_context, video_processor, stream_index, enable);
-}
-static INLINE void D3D11VideoProcessorSetStreamFilter(
-      D3D11VideoContext            video_context,
-      D3D11VideoProcessor          video_processor,
-      UINT                         stream_index,
-      D3D11_VIDEO_PROCESSOR_FILTER filter,
-      BOOL                         enable,
-      int                          level)
-{
-   video_context->lpVtbl->VideoProcessorSetStreamFilter(
-         video_context, video_processor, stream_index, filter, enable, level);
-}
-static INLINE APP_DEPRECATED_HRESULT D3D11VideoProcessorSetStreamExtension(
-      D3D11VideoContext   video_context,
-      D3D11VideoProcessor video_processor,
-      UINT                stream_index,
-      GUID*               extension_guid,
-      UINT                data_size,
-      void*               data)
-{
-   return video_context->lpVtbl->VideoProcessorSetStreamExtension(
-         video_context, video_processor, stream_index, extension_guid, data_size, data);
-}
-static INLINE void D3D11VideoProcessorGetStreamFrameFormat(
-      D3D11VideoContext         video_context,
-      D3D11VideoProcessor       video_processor,
-      UINT                      stream_index,
-      D3D11_VIDEO_FRAME_FORMAT* frame_format)
-{
-   video_context->lpVtbl->VideoProcessorGetStreamFrameFormat(
-         video_context, video_processor, stream_index, frame_format);
-}
-static INLINE void D3D11VideoProcessorGetStreamColorSpace(
-      D3D11VideoContext                  video_context,
-      D3D11VideoProcessor                video_processor,
-      UINT                               stream_index,
-      D3D11_VIDEO_PROCESSOR_COLOR_SPACE* color_space)
-{
-   video_context->lpVtbl->VideoProcessorGetStreamColorSpace(
-         video_context, video_processor, stream_index, color_space);
-}
-static INLINE void D3D11VideoProcessorGetStreamOutputRate(
-      D3D11VideoContext                  video_context,
-      D3D11VideoProcessor                video_processor,
-      UINT                               stream_index,
-      D3D11_VIDEO_PROCESSOR_OUTPUT_RATE* output_rate,
-      BOOL*                              repeat_frame,
-      DXGI_RATIONAL*                     custom_rate)
-{
-   video_context->lpVtbl->VideoProcessorGetStreamOutputRate(
-         video_context, video_processor, stream_index, output_rate, repeat_frame, custom_rate);
-}
-static INLINE void D3D11VideoProcessorGetStreamSourceRect(
-      D3D11VideoContext   video_context,
-      D3D11VideoProcessor video_processor,
-      UINT                stream_index,
-      BOOL*               enabled,
-      RECT*               rect)
-{
-   video_context->lpVtbl->VideoProcessorGetStreamSourceRect(
-         video_context, video_processor, stream_index, enabled, rect);
-}
-static INLINE void D3D11VideoProcessorGetStreamDestRect(
-      D3D11VideoContext   video_context,
-      D3D11VideoProcessor video_processor,
-      UINT                stream_index,
-      BOOL*               enabled,
-      RECT*               rect)
-{
-   video_context->lpVtbl->VideoProcessorGetStreamDestRect(
-         video_context, video_processor, stream_index, enabled, rect);
-}
-static INLINE void D3D11VideoProcessorGetStreamAlpha(
-      D3D11VideoContext   video_context,
-      D3D11VideoProcessor video_processor,
-      UINT                stream_index,
-      BOOL*               enabled,
-      FLOAT*              alpha)
-{
-   video_context->lpVtbl->VideoProcessorGetStreamAlpha(
-         video_context, video_processor, stream_index, enabled, alpha);
-}
-static INLINE void D3D11VideoProcessorGetStreamPalette(
-      D3D11VideoContext   video_context,
-      D3D11VideoProcessor video_processor,
-      UINT                stream_index,
-      UINT                count,
-      UINT*               entries)
-{
-   video_context->lpVtbl->VideoProcessorGetStreamPalette(
-         video_context, video_processor, stream_index, count, entries);
-}
-static INLINE void D3D11VideoProcessorGetStreamPixelAspectRatio(
-      D3D11VideoContext   video_context,
-      D3D11VideoProcessor video_processor,
-      UINT                stream_index,
-      BOOL*               enabled,
-      DXGI_RATIONAL*      source_aspect_ratio,
-      DXGI_RATIONAL*      destination_aspect_ratio)
-{
-   video_context->lpVtbl->VideoProcessorGetStreamPixelAspectRatio(
-         video_context, video_processor, stream_index, enabled, source_aspect_ratio,
-         destination_aspect_ratio);
-}
-static INLINE void D3D11VideoProcessorGetStreamLumaKey(
-      D3D11VideoContext   video_context,
-      D3D11VideoProcessor video_processor,
-      UINT                stream_index,
-      BOOL*               enabled,
-      FLOAT*              lower,
-      FLOAT*              upper)
-{
-   video_context->lpVtbl->VideoProcessorGetStreamLumaKey(
-         video_context, video_processor, stream_index, enabled, lower, upper);
-}
-static INLINE void D3D11VideoProcessorGetStreamStereoFormat(
-      D3D11VideoContext                       video_context,
-      D3D11VideoProcessor                     video_processor,
-      UINT                                    stream_index,
-      BOOL*                                   enable,
-      D3D11_VIDEO_PROCESSOR_STEREO_FORMAT*    format,
-      BOOL*                                   left_view_frame0,
-      BOOL*                                   base_view_frame0,
-      D3D11_VIDEO_PROCESSOR_STEREO_FLIP_MODE* flip_mode,
-      int*                                    mono_offset)
-{
-   video_context->lpVtbl->VideoProcessorGetStreamStereoFormat(
-         video_context, video_processor, stream_index, enable, format, left_view_frame0,
-         base_view_frame0, flip_mode, mono_offset);
-}
-static INLINE void D3D11VideoProcessorGetStreamAutoProcessingMode(
-      D3D11VideoContext   video_context,
-      D3D11VideoProcessor video_processor,
-      UINT                stream_index,
-      BOOL*               enabled)
-{
-   video_context->lpVtbl->VideoProcessorGetStreamAutoProcessingMode(
-         video_context, video_processor, stream_index, enabled);
-}
-static INLINE void D3D11VideoProcessorGetStreamFilter(
-      D3D11VideoContext            video_context,
-      D3D11VideoProcessor          video_processor,
-      UINT                         stream_index,
-      D3D11_VIDEO_PROCESSOR_FILTER filter,
-      BOOL*                        enabled,
-      int*                         level)
-{
-   video_context->lpVtbl->VideoProcessorGetStreamFilter(
-         video_context, video_processor, stream_index, filter, enabled, level);
-}
-static INLINE APP_DEPRECATED_HRESULT D3D11VideoProcessorGetStreamExtension(
-      D3D11VideoContext   video_context,
-      D3D11VideoProcessor video_processor,
-      UINT                stream_index,
-      GUID*               extension_guid,
-      UINT                data_size,
-      void*               data)
-{
-   return video_context->lpVtbl->VideoProcessorGetStreamExtension(
-         video_context, video_processor, stream_index, extension_guid, data_size, data);
-}
-static INLINE HRESULT D3D11VideoProcessorBlt(
-      D3D11VideoContext             video_context,
-      D3D11VideoProcessor           video_processor,
-      D3D11VideoProcessorOutputView view,
-      UINT                          output_frame,
-      UINT                          stream_count,
-      D3D11_VIDEO_PROCESSOR_STREAM* streams)
-{
-   return video_context->lpVtbl->VideoProcessorBlt(
-         video_context, video_processor, view, output_frame, stream_count, streams);
-}
+
 static INLINE HRESULT D3D11NegotiateCryptoSessionKeyExchange(
       D3D11VideoContext  video_context,
       D3D11CryptoSession crypto_session,
@@ -1623,15 +1056,6 @@ static INLINE HRESULT D3D11CreateVideoDecoder(
 {
    return video_device->lpVtbl->CreateVideoDecoder(video_device, video_desc, config, decoder);
 }
-static INLINE HRESULT D3D11CreateVideoProcessor(
-      D3D11VideoDevice              video_device,
-      D3D11VideoProcessorEnumerator enumerator,
-      UINT                          rate_conversion_index,
-      D3D11VideoProcessor*          video_processor)
-{
-   return video_device->lpVtbl->CreateVideoProcessor(
-         video_device, enumerator, rate_conversion_index, video_processor);
-}
 static INLINE HRESULT D3D11CreateAuthenticatedChannel(
       D3D11VideoDevice                 video_device,
       D3D11_AUTHENTICATED_CHANNEL_TYPE channel_type,
@@ -1658,33 +1082,6 @@ static INLINE HRESULT D3D11CreateVideoDecoderOutputView(
 {
    return video_device->lpVtbl->CreateVideoDecoderOutputView(
          video_device, resource, desc, vdovview);
-}
-static INLINE HRESULT D3D11CreateVideoProcessorInputView(
-      D3D11VideoDevice                       video_device,
-      D3D11Resource                          resource,
-      D3D11VideoProcessorEnumerator          enumerator,
-      D3D11_VIDEO_PROCESSOR_INPUT_VIEW_DESC* desc,
-      D3D11VideoProcessorInputView*          vpiview)
-{
-   return video_device->lpVtbl->CreateVideoProcessorInputView(
-         video_device, resource, enumerator, desc, vpiview);
-}
-static INLINE HRESULT D3D11CreateVideoProcessorOutputView(
-      D3D11VideoDevice                        video_device,
-      D3D11Resource                           resource,
-      D3D11VideoProcessorEnumerator           enumerator,
-      D3D11_VIDEO_PROCESSOR_OUTPUT_VIEW_DESC* desc,
-      D3D11VideoProcessorOutputView*          vpoview)
-{
-   return video_device->lpVtbl->CreateVideoProcessorOutputView(
-         video_device, resource, enumerator, desc, vpoview);
-}
-static INLINE HRESULT D3D11CreateVideoProcessorEnumerator(
-      D3D11VideoDevice                    video_device,
-      D3D11_VIDEO_PROCESSOR_CONTENT_DESC* desc,
-      D3D11VideoProcessorEnumerator*      enumerator)
-{
-   return video_device->lpVtbl->CreateVideoProcessorEnumerator(video_device, desc, enumerator);
 }
 static INLINE UINT D3D11GetVideoDecoderProfileCount(D3D11VideoDevice video_device)
 {
@@ -1889,30 +1286,7 @@ static INLINE HRESULT D3D11CreateClassLinkage(D3D11Device device, D3D11ClassLink
 {
    return device->lpVtbl->CreateClassLinkage(device, linkage);
 }
-static INLINE HRESULT D3D11CreateBlendState(
-      D3D11Device device, D3D11_BLEND_DESC* blend_state_desc, D3D11BlendState* blend_state)
-{
-   return device->lpVtbl->CreateBlendState(device, blend_state_desc, blend_state);
-}
-static INLINE HRESULT D3D11CreateDepthStencilState(
-      D3D11Device               device,
-      D3D11_DEPTH_STENCIL_DESC* depth_stencil_desc,
-      D3D11DepthStencilState*   depth_stencil_state)
-{
-   return device->lpVtbl->CreateDepthStencilState(device, depth_stencil_desc, depth_stencil_state);
-}
-static INLINE HRESULT D3D11CreateRasterizerState(
-      D3D11Device            device,
-      D3D11_RASTERIZER_DESC* rasterizer_desc,
-      D3D11RasterizerState*  rasterizer_state)
-{
-   return device->lpVtbl->CreateRasterizerState(device, rasterizer_desc, rasterizer_state);
-}
-static INLINE HRESULT D3D11CreateSamplerState(
-      D3D11Device device, D3D11_SAMPLER_DESC* sampler_desc, D3D11SamplerState* sampler_state)
-{
-   return device->lpVtbl->CreateSamplerState(device, sampler_desc, sampler_state);
-}
+
 static INLINE HRESULT
 D3D11CreateQuery(D3D11Device device, D3D11_QUERY_DESC* query_desc, D3D11Query* query)
 {
@@ -1950,26 +1324,7 @@ static INLINE HRESULT D3D11CheckMultisampleQualityLevels(
    return device->lpVtbl->CheckMultisampleQualityLevels(
          device, format, sample_count, num_quality_levels);
 }
-static INLINE void D3D11CheckCounterInfo(D3D11Device device, D3D11_COUNTER_INFO* counter_info)
-{
-   device->lpVtbl->CheckCounterInfo(device, counter_info);
-}
-static INLINE HRESULT D3D11CheckCounter(
-      D3D11Device         device,
-      D3D11_COUNTER_DESC* desc,
-      D3D11_COUNTER_TYPE* type,
-      UINT*               active_counters,
-      LPSTR               sz_name,
-      UINT*               name_length,
-      LPSTR               sz_units,
-      UINT*               units_length,
-      LPSTR               sz_description,
-      UINT*               description_length)
-{
-   return device->lpVtbl->CheckCounter(
-         device, desc, type, active_counters, sz_name, name_length, sz_units, units_length,
-         sz_description, description_length);
-}
+
 static INLINE HRESULT D3D11CheckFeatureSupport(
       D3D11Device   device,
       D3D11_FEATURE feature,
@@ -2005,52 +1360,6 @@ static INLINE UINT D3D11GetExceptionMode(D3D11Device device)
    return device->lpVtbl->GetExceptionMode(device);
 }
 
-#ifdef DEBUG
-static INLINE HRESULT D3D11SetDebugFeatureMask(D3D11Debug debug, UINT mask)
-{
-   return debug->lpVtbl->SetFeatureMask(debug, mask);
-}
-static INLINE UINT D3D11GetDebugFeatureMask(D3D11Debug debug)
-{
-   return debug->lpVtbl->GetFeatureMask(debug);
-}
-static INLINE HRESULT D3D11SetPresentPerRenderOpDelay(D3D11Debug debug, UINT milliseconds)
-{
-   return debug->lpVtbl->SetPresentPerRenderOpDelay(debug, milliseconds);
-}
-static INLINE UINT D3D11GetPresentPerRenderOpDelay(D3D11Debug debug)
-{
-   return debug->lpVtbl->GetPresentPerRenderOpDelay(debug);
-}
-static INLINE HRESULT D3D11SetSwapChain(D3D11Debug debug, IDXGISwapChain* swap_chain)
-{
-   return debug->lpVtbl->SetSwapChain(debug, (IDXGISwapChain*)swap_chain);
-}
-
-static INLINE HRESULT D3D11ValidateContext(D3D11Debug debug, D3D11DeviceContext context)
-{
-   return debug->lpVtbl->ValidateContext(debug, context);
-}
-static INLINE HRESULT D3D11ReportLiveDeviceObjects(D3D11Debug debug, D3D11_RLDO_FLAGS flags)
-{
-   return debug->lpVtbl->ReportLiveDeviceObjects(debug, flags);
-}
-static INLINE HRESULT D3D11ValidateContextForDispatch(D3D11Debug debug, D3D11DeviceContext context)
-{
-   return debug->lpVtbl->ValidateContextForDispatch(debug, context);
-}
-#endif
-
-#ifndef __WINRT__
-static INLINE BOOL D3D11SetUseRef(D3D11SwitchToRef switch_to_ref, BOOL use_ref)
-{
-   return switch_to_ref->lpVtbl->SetUseRef(switch_to_ref, use_ref);
-}
-static INLINE BOOL D3D11GetUseRef(D3D11SwitchToRef switch_to_ref)
-{
-   return switch_to_ref->lpVtbl->GetUseRef(switch_to_ref);
-}
-#endif
 static INLINE HRESULT D3D11SetShaderTrackingOptionsByType(
       D3D11TracingDevice tracing_device, UINT resource_type_flags, UINT options)
 {
@@ -2072,40 +1381,7 @@ static INLINE void D3D11ClearStoredMessages(D3D11InfoQueue info_queue)
 {
    info_queue->lpVtbl->ClearStoredMessages(info_queue);
 }
-#ifndef __WINRT__
-static INLINE HRESULT D3D11GetMessageA(
-      D3D11InfoQueue info_queue,
-      UINT64         message_index,
-      D3D11_MESSAGE* message,
-      SIZE_T*        message_byte_length)
-{
-   return info_queue->lpVtbl->GetMessageA(info_queue, message_index, message, message_byte_length);
-}
-#endif
-static INLINE UINT64 D3D11GetNumMessagesAllowedByStorageFilter(D3D11InfoQueue info_queue)
-{
-   return info_queue->lpVtbl->GetNumMessagesAllowedByStorageFilter(info_queue);
-}
-static INLINE UINT64 D3D11GetNumMessagesDeniedByStorageFilter(D3D11InfoQueue info_queue)
-{
-   return info_queue->lpVtbl->GetNumMessagesDeniedByStorageFilter(info_queue);
-}
-static INLINE UINT64 D3D11GetNumStoredMessages(D3D11InfoQueue info_queue)
-{
-   return info_queue->lpVtbl->GetNumStoredMessages(info_queue);
-}
-static INLINE UINT64 D3D11GetNumStoredMessagesAllowedByRetrievalFilter(D3D11InfoQueue info_queue)
-{
-   return info_queue->lpVtbl->GetNumStoredMessagesAllowedByRetrievalFilter(info_queue);
-}
-static INLINE UINT64 D3D11GetNumMessagesDiscardedByMessageCountLimit(D3D11InfoQueue info_queue)
-{
-   return info_queue->lpVtbl->GetNumMessagesDiscardedByMessageCountLimit(info_queue);
-}
-static INLINE UINT64 D3D11GetMessageCountLimit(D3D11InfoQueue info_queue)
-{
-   return info_queue->lpVtbl->GetMessageCountLimit(info_queue);
-}
+
 static INLINE HRESULT
 D3D11AddStorageFilterEntries(D3D11InfoQueue info_queue, D3D11_INFO_QUEUE_FILTER* filter)
 {
@@ -2176,58 +1452,6 @@ static INLINE UINT D3D11GetRetrievalFilterStackSize(D3D11InfoQueue info_queue)
 {
    return info_queue->lpVtbl->GetRetrievalFilterStackSize(info_queue);
 }
-static INLINE HRESULT D3D11AddMessage(
-      D3D11InfoQueue         info_queue,
-      D3D11_MESSAGE_CATEGORY category,
-      D3D11_MESSAGE_SEVERITY severity,
-      D3D11_MESSAGE_ID       id,
-      LPCSTR                 description)
-{
-   return info_queue->lpVtbl->AddMessage(info_queue, category, severity, id, description);
-}
-static INLINE HRESULT D3D11AddApplicationMessage(
-      D3D11InfoQueue info_queue, D3D11_MESSAGE_SEVERITY severity, LPCSTR description)
-{
-   return info_queue->lpVtbl->AddApplicationMessage(info_queue, severity, description);
-}
-static INLINE HRESULT
-D3D11SetBreakOnCategory(D3D11InfoQueue info_queue, D3D11_MESSAGE_CATEGORY category, BOOL enable)
-{
-   return info_queue->lpVtbl->SetBreakOnCategory(info_queue, category, enable);
-}
-static INLINE HRESULT
-D3D11SetBreakOnSeverity(D3D11InfoQueue info_queue, D3D11_MESSAGE_SEVERITY severity, BOOL enable)
-{
-   return info_queue->lpVtbl->SetBreakOnSeverity(info_queue, severity, enable);
-}
-static INLINE HRESULT D3D11SetBreakOnID(D3D11InfoQueue info_queue, D3D11_MESSAGE_ID id, BOOL enable)
-{
-   return info_queue->lpVtbl->SetBreakOnID(info_queue, id, enable);
-}
-static INLINE BOOL
-D3D11GetBreakOnCategory(D3D11InfoQueue info_queue, D3D11_MESSAGE_CATEGORY category)
-{
-   return info_queue->lpVtbl->GetBreakOnCategory(info_queue, category);
-}
-static INLINE BOOL
-D3D11GetBreakOnSeverity(D3D11InfoQueue info_queue, D3D11_MESSAGE_SEVERITY severity)
-{
-   return info_queue->lpVtbl->GetBreakOnSeverity(info_queue, severity);
-}
-static INLINE BOOL D3D11GetBreakOnID(D3D11InfoQueue info_queue, D3D11_MESSAGE_ID id)
-{
-   return info_queue->lpVtbl->GetBreakOnID(info_queue, id);
-}
-#ifdef DEBUG
-static INLINE void D3D11SetMuteDebugOutput(D3D11InfoQueue info_queue, BOOL mute)
-{
-   info_queue->lpVtbl->SetMuteDebugOutput(info_queue, mute);
-}
-static INLINE BOOL D3D11GetMuteDebugOutput(D3D11InfoQueue info_queue)
-{
-   return info_queue->lpVtbl->GetMuteDebugOutput(info_queue);
-}
-#endif
 
 /* end of auto-generated */
 
@@ -2246,18 +1470,6 @@ static INLINE HRESULT D3D11CreateTexture2DShaderResourceView(
       D3D11ShaderResourceView*         srview)
 {
    return device->lpVtbl->CreateShaderResourceView(device, (D3D11Resource)texture, desc, srview);
-}
-
-static INLINE HRESULT D3D11MapBuffer(
-      D3D11DeviceContext        device_context,
-      D3D11Buffer               buffer,
-      UINT                      subresource,
-      D3D11_MAP                 map_type,
-      UINT                      map_flags,
-      D3D11_MAPPED_SUBRESOURCE* mapped_resource)
-{
-   return device_context->lpVtbl->Map(
-         device_context, (D3D11Resource)buffer, subresource, map_type, map_flags, mapped_resource);
 }
 #endif
 

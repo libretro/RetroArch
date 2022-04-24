@@ -555,7 +555,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          break;
    }
 
-   D3D11Flush(d3d11->context);
+   d3d11->context->lpVtbl->Flush(d3d11->context);
    d3d11_free_shader_preset(d3d11);
 
    if (string_is_empty(path))
@@ -1318,14 +1318,18 @@ static void *d3d11_gfx_init(const video_info_t* video,
                desc.AddressU = D3D11_TEXTURE_ADDRESS_MIRROR;
                break;
          }
+
          desc.AddressV = desc.AddressU;
          desc.AddressW = desc.AddressU;
+         desc.Filter   = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 
-         desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-         D3D11CreateSamplerState(d3d11->device, &desc, &d3d11->samplers[RARCH_FILTER_LINEAR][i]);
+         d3d11->device->lpVtbl->CreateSamplerState(d3d11->device, &desc,
+               &d3d11->samplers[RARCH_FILTER_LINEAR][i]);
 
-         desc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-         D3D11CreateSamplerState(d3d11->device, &desc, &d3d11->samplers[RARCH_FILTER_NEAREST][i]);
+         desc.Filter   = D3D11_FILTER_MIN_MAG_MIP_POINT;
+
+         d3d11->device->lpVtbl->CreateSamplerState(d3d11->device, &desc,
+               &d3d11->samplers[RARCH_FILTER_NEAREST][i]);
       }
    }
 
@@ -1433,12 +1437,14 @@ static void *d3d11_gfx_init(const video_info_t* video,
          ;
 
       if (!d3d11_init_shader(
-               d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", "GSMain", desc,
+               d3d11->device, shader,
+               sizeof(shader), NULL, "VSMain", "PSMain", "GSMain", desc,
                countof(desc), &d3d11->sprites.shader,
                D3D11_FEATURE_LEVEL_HINT_DONTCARE))
          goto error;
       if (!d3d11_init_shader(
-               d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMainA8", "GSMain", desc,
+               d3d11->device, shader,
+               sizeof(shader), NULL, "VSMain", "PSMainA8", "GSMain", desc,
                countof(desc), &d3d11->sprites.shader_font,
                D3D11_FEATURE_LEVEL_HINT_DONTCARE))
          goto error;
@@ -1459,13 +1465,15 @@ static void *d3d11_gfx_init(const video_info_t* video,
             ;
 
          if (!d3d11_init_shader(
-                  d3d11->device, ribbon, sizeof(ribbon), NULL, "VSMain", "PSMain", NULL, desc,
+                  d3d11->device, ribbon,
+                  sizeof(ribbon), NULL, "VSMain", "PSMain", NULL, desc,
                   countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU],
                   D3D11_FEATURE_LEVEL_HINT_DONTCARE))
             goto error;
 
          if (!d3d11_init_shader(
-                  d3d11->device, ribbon_simple, sizeof(ribbon_simple), NULL, "VSMain", "PSMain", NULL,
+                  d3d11->device, ribbon_simple,
+                  sizeof(ribbon_simple), NULL, "VSMain", "PSMain", NULL,
                   desc, countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_2],
                   D3D11_FEATURE_LEVEL_HINT_DONTCARE))
             goto error;
@@ -1473,9 +1481,11 @@ static void *d3d11_gfx_init(const video_info_t* video,
 
       {
          D3D11_INPUT_ELEMENT_DESC desc[] = {
-            { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, position),
+            { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT,
+               0, offsetof(d3d11_vertex_t, position),
                D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, texcoord),
+            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,
+               0, offsetof(d3d11_vertex_t, texcoord),
                D3D11_INPUT_PER_VERTEX_DATA, 0 },
          };
 
@@ -1493,24 +1503,28 @@ static void *d3d11_gfx_init(const video_info_t* video,
             ;
 
          if (!d3d11_init_shader(
-                  d3d11->device, simple_snow, sizeof(simple_snow), NULL, "VSMain", "PSMain", NULL,
+                  d3d11->device, simple_snow,
+                  sizeof(simple_snow), NULL, "VSMain", "PSMain", NULL,
                   desc, countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_3],
                   D3D11_FEATURE_LEVEL_HINT_DONTCARE))
             goto error;
          if (!d3d11_init_shader(
-                  d3d11->device, snow, sizeof(snow), NULL, "VSMain", "PSMain", NULL, desc,
+                  d3d11->device, snow,
+                  sizeof(snow), NULL, "VSMain", "PSMain", NULL, desc,
                   countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_4],
                   D3D11_FEATURE_LEVEL_HINT_DONTCARE))
             goto error;
 
          if (!d3d11_init_shader(
-                  d3d11->device, bokeh, sizeof(bokeh), NULL, "VSMain", "PSMain", NULL, desc,
+                  d3d11->device, bokeh,
+                  sizeof(bokeh), NULL, "VSMain", "PSMain", NULL, desc,
                   countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_5],
                   D3D11_FEATURE_LEVEL_HINT_DONTCARE))
             goto error;
 
          if (!d3d11_init_shader(
-                  d3d11->device, snowflake, sizeof(snowflake), NULL, "VSMain", "PSMain", NULL, desc,
+                  d3d11->device, snowflake,
+                  sizeof(snowflake), NULL, "VSMain", "PSMain", NULL, desc,
                   countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_6],
                   D3D11_FEATURE_LEVEL_HINT_DONTCARE))
             goto error;
@@ -1530,26 +1544,30 @@ static void *d3d11_gfx_init(const video_info_t* video,
       blend_desc.RenderTarget[0].DestBlendAlpha        = D3D11_BLEND_INV_SRC_ALPHA;
       blend_desc.RenderTarget[0].BlendOpAlpha          = D3D11_BLEND_OP_ADD;
       blend_desc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-      D3D11CreateBlendState(d3d11->device, &blend_desc, &d3d11->blend_enable);
+      d3d11->device->lpVtbl->CreateBlendState(d3d11->device, &blend_desc, &d3d11->blend_enable);
 
       blend_desc.RenderTarget[0].SrcBlend  = D3D11_BLEND_ONE;
       blend_desc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
-      D3D11CreateBlendState(d3d11->device, &blend_desc, &d3d11->blend_pipeline);
+      d3d11->device->lpVtbl->CreateBlendState(d3d11->device, &blend_desc,
+            &d3d11->blend_pipeline);
 
       blend_desc.RenderTarget[0].BlendEnable = FALSE;
-      D3D11CreateBlendState(d3d11->device, &blend_desc, &d3d11->blend_disable);
+      d3d11->device->lpVtbl->CreateBlendState(d3d11->device, &blend_desc,
+            &d3d11->blend_disable);
    }
    {
       D3D11_RASTERIZER_DESC desc = { (D3D11_FILL_MODE)0 };
 
-      desc.FillMode = D3D11_FILL_SOLID;
-      desc.CullMode = D3D11_CULL_NONE;
+      desc.FillMode      = D3D11_FILL_SOLID;
+      desc.CullMode      = D3D11_CULL_NONE;
 
       desc.ScissorEnable = TRUE;
-      D3D11CreateRasterizerState(d3d11->device, &desc, &d3d11->scissor_enabled);
+      d3d11->device->lpVtbl->CreateRasterizerState(d3d11->device, &desc,
+            &d3d11->scissor_enabled);
 
       desc.ScissorEnable = FALSE;
-      D3D11CreateRasterizerState(d3d11->device, &desc, &d3d11->scissor_disabled);
+      d3d11->device->lpVtbl->CreateRasterizerState(d3d11->device, &desc,
+            &d3d11->scissor_disabled);
    }
 
    font_driver_init_osd(d3d11,
