@@ -106,8 +106,8 @@ d3d12_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w,
    sprites[index].pos.w = w;
    sprites[index].pos.h = h;
 
-   range.Begin = index * sizeof(*sprites);
-   range.End   = range.Begin + sizeof(*sprites);
+   range.Begin          = index * sizeof(*sprites);
+   range.End            = range.Begin + sizeof(*sprites);
    D3D12Unmap(d3d12->overlays.vbo, 0, &range);
 }
 
@@ -127,8 +127,8 @@ static void d3d12_overlay_tex_geom(void* data, unsigned index, float u, float v,
    sprites[index].coords.w = w;
    sprites[index].coords.h = h;
 
-   range.Begin = index * sizeof(*sprites);
-   range.End   = range.Begin + sizeof(*sprites);
+   range.Begin             = index * sizeof(*sprites);
+   range.End               = range.Begin + sizeof(*sprites);
    D3D12Unmap(d3d12->overlays.vbo, 0, &range);
 }
 
@@ -148,8 +148,8 @@ static void d3d12_overlay_set_alpha(void* data, unsigned index, float mod)
    sprites[index].colors[2] = sprites[index].colors[0];
    sprites[index].colors[3] = sprites[index].colors[0];
 
-   range.Begin = index * sizeof(*sprites);
-   range.End   = range.Begin + sizeof(*sprites);
+   range.Begin              = index * sizeof(*sprites);
+   range.End                = range.Begin + sizeof(*sprites);
    D3D12Unmap(d3d12->overlays.vbo, 0, &range);
 }
 
@@ -244,13 +244,9 @@ static void d3d12_get_overlay_interface(void* data, const video_overlay_interfac
    *iface = &overlay_interface;
 }
 
-static void d3d12_render_overlay(void* data)
+static void d3d12_render_overlay(d3d12_video_t *d3d12)
 {
    unsigned       i;
-   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
-
-   if (!d3d12)
-      return;
 
    if (d3d12->overlays.fullscreen)
    {
@@ -414,10 +410,8 @@ static void d3d12_gfx_set_rotation(void* data, unsigned rotation)
    D3D12Unmap(d3d12->frame.ubo, 0, NULL);
 }
 
-static void d3d12_update_viewport(void* data, bool force_full)
+static void d3d12_update_viewport(d3d12_video_t *d3d12, bool force_full)
 {
-   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
-
    video_driver_update_viewport(&d3d12->vp, force_full, d3d12->keep_aspect);
 
    d3d12->frame.viewport.TopLeftX = d3d12->vp.x;

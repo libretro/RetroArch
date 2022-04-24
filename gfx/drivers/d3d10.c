@@ -245,13 +245,9 @@ static void d3d10_get_overlay_interface(void* data, const video_overlay_interfac
    *iface = &overlay_interface;
 }
 
-static void d3d10_render_overlay(void *data)
+static void d3d10_render_overlay(d3d10_video_t *d3d10)
 {
    unsigned       i;
-   d3d10_video_t* d3d10 = (d3d10_video_t*)data;
-
-   if (!d3d10)
-      return;
 
    if (d3d10->overlays.fullscreen)
       D3D10SetViewports(d3d10->device, 1, &d3d10->viewport);
@@ -305,29 +301,27 @@ static void d3d10_gfx_set_rotation(void* data, unsigned rotation)
    D3D10UnmapBuffer(d3d10->frame.ubo);
 }
 
-static void d3d10_update_viewport(void* data, bool force_full)
+static void d3d10_update_viewport(d3d10_video_t *d3d10, bool force_full)
 {
-   d3d10_video_t* d3d10 = (d3d10_video_t*)data;
-
    video_driver_update_viewport(&d3d10->vp, force_full, d3d10->keep_aspect);
 
-   d3d10->frame.viewport.TopLeftX = d3d10->vp.x;
-   d3d10->frame.viewport.TopLeftY = d3d10->vp.y;
-   d3d10->frame.viewport.Width    = d3d10->vp.width;
-   d3d10->frame.viewport.Height   = d3d10->vp.height;
-   d3d10->frame.viewport.MaxDepth = 0.0f;
-   d3d10->frame.viewport.MaxDepth = 1.0f;
+   d3d10->frame.viewport.TopLeftX  = d3d10->vp.x;
+   d3d10->frame.viewport.TopLeftY  = d3d10->vp.y;
+   d3d10->frame.viewport.Width     = d3d10->vp.width;
+   d3d10->frame.viewport.Height    = d3d10->vp.height;
+   d3d10->frame.viewport.MaxDepth  = 0.0f;
+   d3d10->frame.viewport.MaxDepth  = 1.0f;
 
    if (d3d10->shader_preset && (d3d10->frame.output_size.x != d3d10->vp.width ||
             d3d10->frame.output_size.y != d3d10->vp.height))
       d3d10->resize_render_targets = true;
 
-   d3d10->frame.output_size.x = d3d10->vp.width;
-   d3d10->frame.output_size.y = d3d10->vp.height;
-   d3d10->frame.output_size.z = 1.0f / d3d10->vp.width;
-   d3d10->frame.output_size.w = 1.0f / d3d10->vp.height;
+   d3d10->frame.output_size.x      = d3d10->vp.width;
+   d3d10->frame.output_size.y      = d3d10->vp.height;
+   d3d10->frame.output_size.z      = 1.0f / d3d10->vp.width;
+   d3d10->frame.output_size.w      = 1.0f / d3d10->vp.height;
 
-   d3d10->resize_viewport = false;
+   d3d10->resize_viewport          = false;
 }
 
 static void d3d10_free_shader_preset(d3d10_video_t* d3d10)

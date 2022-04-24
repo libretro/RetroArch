@@ -267,13 +267,9 @@ static void d3d11_get_overlay_interface(
    *iface = &overlay_interface;
 }
 
-static void d3d11_render_overlay(void *data)
+static void d3d11_render_overlay(d3d11_video_t *d3d11)
 {
    unsigned       i;
-   d3d11_video_t* d3d11 = (d3d11_video_t*)data;
-
-   if (!d3d11)
-      return;
 
    if (d3d11->overlays.fullscreen)
       d3d11->context->lpVtbl->RSSetViewports(d3d11->context, 1, &d3d11->viewport);
@@ -445,10 +441,8 @@ static void d3d11_gfx_set_rotation(void* data, unsigned rotation)
    d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->frame.ubo, 0);
 }
 
-static void d3d11_update_viewport(void* data, bool force_full)
+static void d3d11_update_viewport(d3d11_video_t *d3d11, bool force_full)
 {
-   d3d11_video_t* d3d11 = (d3d11_video_t*)data;
-
    video_driver_update_viewport(&d3d11->vp, force_full, d3d11->keep_aspect);
 
    d3d11->frame.viewport.TopLeftX = d3d11->vp.x;
@@ -467,7 +461,7 @@ static void d3d11_update_viewport(void* data, bool force_full)
    d3d11->frame.output_size.z = 1.0f / d3d11->vp.width;
    d3d11->frame.output_size.w = 1.0f / d3d11->vp.height;
 
-   d3d11->resize_viewport = false;
+   d3d11->resize_viewport     = false;
 }
 
 static void d3d11_free_shader_preset(d3d11_video_t* d3d11)
