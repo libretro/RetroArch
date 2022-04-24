@@ -340,7 +340,7 @@ void d3d9_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
    {
       LPDIRECT3DVERTEXDECLARATION9 vertex_decl =
          (LPDIRECT3DVERTEXDECLARATION9)vertex_declaration;
-      d3d9_vertex_declaration_free(vertex_decl);
+      IDirect3DVertexDeclaration9_Release(vertex_decl);
       vertex_decl = NULL;
    }
 }
@@ -1073,8 +1073,8 @@ void d3d9_overlay_render(d3d9_video_t *d3d,
 
    /* set vertex declaration for overlay. */
    d3d9_vertex_declaration_new(dev, &vElems, (void**)&vertex_decl);
-   d3d9_set_vertex_declaration(dev, vertex_decl);
-   d3d9_vertex_declaration_free(vertex_decl);
+   IDirect3DDevice9_SetVertexDeclaration(dev, vertex_decl);
+   IDirect3DVertexDeclaration9_Release(vertex_decl);
 
    d3d9_set_stream_source(dev, 0, (LPDIRECT3DVERTEXBUFFER9)overlay->vert_buf,
          0, sizeof(*vert));
@@ -1388,7 +1388,8 @@ bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       goto end;
    }
 
-   if (d3d9_surface_lock_rect(dest, &rect))
+   IDirect3DSurface9_LockRect(dest, &rect, NULL, D3DLOCK_READONLY);
+
    {
       unsigned x, y;
       unsigned pitchpix       = rect.Pitch / 4;
@@ -1410,14 +1411,12 @@ bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
       IDirect3DSurface9_UnlockRect(dest);
    }
-   else
-      ret = false;
 
 end:
    if (target)
-      d3d9_surface_free(target);
+      IDirect3DSurface9_Release(target);
    if (dest)
-      d3d9_surface_free(dest);
+      IDirect3DSurface9_Release(dest);
    return ret;
 }
 

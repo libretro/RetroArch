@@ -477,7 +477,7 @@ static void d3d9_cg_renderchain_bind_orig(
    if (param)
    {
       unsigned index = cgGetParameterResourceIndex(param);
-      d3d9_set_texture(chain->dev, index, first_pass->tex);
+      IDirect3DDevice9_SetTexture(chain->dev, index, (IDirect3DBaseTexture9*)first_pass->tex);
       IDirect3DDevice9_SetSamplerState(chain->dev,
             index, D3DSAMP_MINFILTER, d3d_translate_filter(first_pass->info.pass->filter));
       IDirect3DDevice9_SetSamplerState(chain->dev,
@@ -565,7 +565,7 @@ static void d3d9_cg_renderchain_bind_prev(d3d9_renderchain_t *chain,
             chain->prev.tex[
             (chain->prev.ptr - (i + 1)) & TEXTURESMASK];
 
-         d3d9_set_texture(chain->dev, index, tex);
+         IDirect3DDevice9_SetTexture(chain->dev, index, (IDirect3DBaseTexture9*)tex);
          unsigned_vector_list_append(chain->bound_tex, index);
 
          IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_MINFILTER,
@@ -646,7 +646,7 @@ static void d3d9_cg_renderchain_bind_pass(
          unsigned index = cgGetParameterResourceIndex(param);
          unsigned_vector_list_append(chain->bound_tex, index);
 
-         d3d9_set_texture(chain->dev, index, curr_pass->tex);
+         IDirect3DDevice9_SetTexture(chain->dev, index, (IDirect3DBaseTexture9*)curr_pass->tex);
          IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_MINFILTER,
                d3d_translate_filter(curr_pass->info.pass->filter));
          IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_MAGFILTER,
@@ -819,14 +819,14 @@ static bool d3d9_cg_renderchain_create_first_pass(
       if (!chain->prev.tex[i])
          return false;
 
-      d3d9_set_texture(chain->dev, 0, chain->prev.tex[i]);
+      IDirect3DDevice9_SetTexture(chain->dev, 0, (IDirect3DBaseTexture9*)chain->prev.tex[i]);
       IDirect3DDevice9_SetSamplerState(dev,
             0, D3DSAMP_MINFILTER, d3d_translate_filter(info->pass->filter));
       IDirect3DDevice9_SetSamplerState(dev,
             0, D3DSAMP_MAGFILTER, d3d_translate_filter(info->pass->filter));
       IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
       IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-      d3d9_set_texture(chain->dev, 0, NULL);
+      IDirect3DDevice9_SetTexture(chain->dev, 0, NULL);
    }
 
    d3d9_cg_load_program((cg_renderchain_t*)cg_chain, &pass, info->pass->source.path, true);
@@ -1049,13 +1049,13 @@ static void d3d9_cg_renderchain_render_pass(
    cgD3D9BindProgram((CGprogram)pass->fprg);
    cgD3D9BindProgram((CGprogram)pass->vprg);
 
-   d3d9_set_texture(chain->dev, 0, pass->tex);
+   IDirect3DDevice9_SetTexture(chain->dev, 0, (IDirect3DBaseTexture9*)pass->tex);
    IDirect3DDevice9_SetSamplerState(chain->dev,
          0, D3DSAMP_MINFILTER, d3d_translate_filter(pass->info.pass->filter));
    IDirect3DDevice9_SetSamplerState(chain->dev,
          0, D3DSAMP_MAGFILTER, d3d_translate_filter(pass->info.pass->filter));
 
-   d3d9_set_vertex_declaration(chain->dev, pass->vertex_decl);
+   IDirect3DDevice9_SetVertexDeclaration(chain->dev, pass->vertex_decl);
    for (i = 0; i < 4; i++)
       d3d9_set_stream_source(chain->dev, i,
             pass->vertex_buf, 0,
@@ -1159,7 +1159,7 @@ static bool d3d9_cg_renderchain_render(
 
       d3d9_texture_get_surface_level(to_pass->tex, 0, (void**)&target);
 
-      d3d9_device_set_render_target(chain->dev, 0, target);
+      IDirect3DDevice9_SetRenderTarget(chain->dev, 0, target);
 
       d3d9_convert_geometry(&from_pass->info,
             &out_width, &out_height,
@@ -1190,13 +1190,13 @@ static bool d3d9_cg_renderchain_render(
             from_pass,
             i + 1);
 
-      current_width = out_width;
+      current_width  = out_width;
       current_height = out_height;
-      d3d9_surface_free(target);
+      IDirect3DSurface9_Release(target);
    }
 
    /* Final pass */
-   d3d9_device_set_render_target(chain->dev, 0, back_buffer);
+   IDirect3DDevice9_SetRenderTarget(chain->dev, 0, back_buffer);
 
    last_pass = (struct shader_pass*)&chain->passes->
       data[chain->passes->count - 1];
@@ -1221,7 +1221,8 @@ static bool d3d9_cg_renderchain_render(
 
    chain->frame_count++;
 
-   d3d9_surface_free(back_buffer);
+   if (back_buffer)
+      IDirect3DSurface9_Release(back_buffer);
 
    d3d9_renderchain_end_render(chain);
    cgD3D9BindProgram((CGprogram)&_chain->stock_shader.fprg);
@@ -1853,7 +1854,7 @@ static bool d3d9_cg_frame(void *data, const void *frame,
       d3d9_overlay_render(d3d, width, height, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
-      d3d9_set_vertex_declaration(d3d->dev, (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
+      IDirect3DDevice9_SetVertexDeclaration(d3d->dev, (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
       d3d9_set_stream_source(d3d->dev, 0, (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer, 0, sizeof(Vertex));
 
       IDirect3DDevice9_SetViewport(d3d->dev, (D3DVIEWPORT9*)&screen_vp);

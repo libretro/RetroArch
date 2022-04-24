@@ -126,10 +126,10 @@ static INLINE bool d3d9_renderchain_add_pass(d3d9_renderchain_t *chain,
 
    pass->tex        = tex;
 
-   d3d9_set_texture(chain->dev, 0, pass->tex);
+   IDirect3DDevice9_SetTexture(chain->dev, 0, (IDirect3DBaseTexture9*)pass->tex);
    IDirect3DDevice9_SetSamplerState(chain->dev, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
    IDirect3DDevice9_SetSamplerState(chain->dev, 0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-   d3d9_set_texture(chain->dev, 0, NULL);
+   IDirect3DDevice9_SetTexture(chain->dev, 0, (IDirect3DBaseTexture9*)NULL);
 
    shader_pass_vector_list_append(chain->passes, *pass);
 
@@ -166,10 +166,10 @@ static INLINE bool d3d9_renderchain_add_lut(d3d9_renderchain_t *chain,
    if (!lut)
       return false;
 
-   d3d9_set_texture(chain->dev, 0, lut);
+   IDirect3DDevice9_SetTexture(chain->dev, 0, (IDirect3DBaseTexture9*)lut);
    IDirect3DDevice9_SetSamplerState(chain->dev, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
    IDirect3DDevice9_SetSamplerState(chain->dev, 0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-   d3d9_set_texture(chain->dev, 0, NULL);
+   IDirect3DDevice9_SetTexture(chain->dev, 0, (IDirect3DBaseTexture9*)NULL);
 
    lut_info_vector_list_append(chain->luts, info);
 
@@ -207,7 +207,7 @@ static INLINE void d3d9_renderchain_add_lut_internal(
       d3d9_renderchain_t *chain,
       unsigned index, unsigned i)
 {
-   d3d9_set_texture(chain->dev, index, chain->luts->data[i].tex);
+   IDirect3DDevice9_SetTexture(chain->dev, index, (IDirect3DBaseTexture9*)chain->luts->data[i].tex);
    IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_MAGFILTER,
          d3d_translate_filter(chain->luts->data[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
    IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_MINFILTER,
@@ -249,8 +249,8 @@ static INLINE void d3d9_renderchain_unbind_all(d3d9_renderchain_t *chain)
             chain->bound_tex->data[i], D3DSAMP_MINFILTER, D3DTEXF_POINT);
       IDirect3DDevice9_SetSamplerState(chain->dev,
             chain->bound_tex->data[i], D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-      d3d9_set_texture(chain->dev,
-            chain->bound_tex->data[i], NULL);
+      IDirect3DDevice9_SetTexture(chain->dev,
+            chain->bound_tex->data[i], (IDirect3DBaseTexture9*)NULL);
    }
 
    for (i = 0; i < chain->bound_vert->count; i++)
@@ -295,10 +295,10 @@ static INLINE bool d3d9_renderchain_set_pass_size(
       if (!pass->tex)
          return false;
 
-      d3d9_set_texture(dev, 0, pass->tex);
+      IDirect3DDevice9_SetTexture(dev, 0, (IDirect3DBaseTexture9*)pass->tex);
       IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
       IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-      d3d9_set_texture(dev, 0, NULL);
+      IDirect3DDevice9_SetTexture(dev, 0, (IDirect3DBaseTexture9*)NULL);
    }
 
    return true;

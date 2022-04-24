@@ -713,7 +713,7 @@ static bool hlsl_d3d9_renderchain_render(
 
       d3d9_texture_get_surface_level(to_pass->tex, 0, (void**)&target);
 
-      d3d9_device_set_render_target(chain->chain.dev, 0, target);
+      IDirect3DDevice9_SetRenderTarget(chain->chain.dev, 0, target);
 
       d3d9_convert_geometry(&from_pass->info,
             &out_width, &out_height,
@@ -749,13 +749,13 @@ static bool hlsl_d3d9_renderchain_render(
             from_pass, 
             i + 1);
 
-      current_width = out_width;
+      current_width  = out_width;
       current_height = out_height;
-      d3d9_surface_free(target);
+      IDirect3DSurface9_Release(target);
    }
 
    /* Final pass */
-   d3d9_device_set_render_target(chain->chain.dev, 0, back_buffer);
+   IDirect3DDevice9_SetRenderTarget(chain->chain.dev, 0, back_buffer);
 
    last_pass = (struct shader_pass*)&chain->chain.passes->
       data[chain->chain.passes->count - 1];
@@ -781,7 +781,8 @@ static bool hlsl_d3d9_renderchain_render(
 
    chain->chain.frame_count++;
 
-   d3d9_surface_free(back_buffer);
+   if (back_buffer)
+      IDirect3DSurface9_Release(back_buffer);
 
    d3d9_renderchain_end_render(&chain->chain);
    d3d9_hlsl_bind_program(chain->chain.dev, &chain->stock_shader);

@@ -104,20 +104,6 @@ static INLINE void d3d9_vertex_buffer_unlock(LPDIRECT3DVERTEXBUFFER9 vertbuf)
 
 void d3d9_vertex_buffer_free(void *vertex_data, void *vertex_declaration);
 
-static INLINE bool d3d9_texture_get_level_desc(
-      LPDIRECT3DTEXTURE9 tex,
-      unsigned idx,
-      D3DSURFACE_DESC *_ppsurface_level)
-{
-#if defined(_XBOX)
-   D3DTexture_GetLevelDesc(tex, idx, _ppsurface_level);
-#else
-   if (FAILED(IDirect3DTexture9_GetLevelDesc(tex, idx, _ppsurface_level)))
-      return false;
-#endif
-   return true;
-}
-
 static INLINE bool d3d9_texture_get_surface_level(
       LPDIRECT3DTEXTURE9 tex,
       unsigned idx, void **_ppsurface_level)
@@ -179,16 +165,6 @@ static INLINE void d3d9_lock_rectangle_clear(void *tex,
    IDirect3DTexture9_UnlockRect((LPDIRECT3DTEXTURE9)tex, 0);
 }
 
-static INLINE void d3d9_set_texture(
-      LPDIRECT3DDEVICE9 dev,
-      unsigned sampler,
-      LPDIRECT3DTEXTURE9 tex)
-{
-   if (dev && tex)
-      IDirect3DDevice9_SetTexture(dev, sampler,
-            (IDirect3DBaseTexture9*)tex);
-}
-
 static INLINE bool d3d9_create_vertex_shader(
       LPDIRECT3DDEVICE9 dev, const DWORD *a, void **b)
 {
@@ -208,20 +184,6 @@ static INLINE bool d3d9_create_pixel_shader(
    return false;
 }
 
-static INLINE void d3d9_free_vertex_shader(
-      LPDIRECT3DDEVICE9 dev, IDirect3DVertexShader9 *vs)
-{
-   if (dev && vs)
-      IDirect3DVertexShader9_Release(vs);
-}
-
-static INLINE void d3d9_free_pixel_shader(LPDIRECT3DDEVICE9 dev,
-      IDirect3DPixelShader9 *ps)
-{
-   if (dev && ps)
-      IDirect3DPixelShader9_Release(ps);
-}
-
 static INLINE void d3d9_texture_blit(
       unsigned pixel_size,
       void *tex,
@@ -233,7 +195,7 @@ static INLINE void d3d9_texture_blit(
    for (y = 0; y < height; y++)
    {
       const uint8_t *in = (const uint8_t*)frame + y * pitch;
-      uint8_t *out = (uint8_t*)lr->pBits + y * lr->Pitch;
+      uint8_t      *out = (uint8_t*)lr->pBits   + y * lr->Pitch;
       memcpy(out, in, width * pixel_size);
    }
 }
@@ -252,28 +214,7 @@ static INLINE bool d3d9_vertex_declaration_new(
    return false;
 }
 
-static INLINE void d3d9_vertex_declaration_free(
-      LPDIRECT3DVERTEXDECLARATION9 decl)
-{
-   if (decl)
-      IDirect3DVertexDeclaration9_Release(decl);
-}
-
-static INLINE void
-d3d9_set_vertex_declaration(LPDIRECT3DDEVICE9 dev,
-      LPDIRECT3DVERTEXDECLARATION9 vertex_data)
-{
-   if (dev)
-      IDirect3DDevice9_SetVertexDeclaration(dev, vertex_data);
-}
-
 void d3d9_frame_postprocess(void *data);
-
-static INLINE void d3d9_surface_free(LPDIRECT3DSURFACE9 surf)
-{
-   if (surf)
-      IDirect3DSurface9_Release(surf);
-}
 
 static INLINE bool d3d9_device_get_render_target_data(
       LPDIRECT3DDEVICE9 dev,
@@ -300,31 +241,6 @@ static INLINE bool d3d9_device_get_render_target(
    return false;
 }
 
-static INLINE void d3d9_device_set_render_target(
-      LPDIRECT3DDEVICE9 dev, unsigned idx,
-      LPDIRECT3DSURFACE9 surf)
-{
-   if (dev)
-      IDirect3DDevice9_SetRenderTarget(dev, idx, surf);
-}
-
-static INLINE bool d3d9_get_render_state(
-      LPDIRECT3DDEVICE9 dev, INT32 state, DWORD *value)
-{
-   if (!dev)
-      return false;
-
-#ifdef _XBOX
-   IDirect3DDevice9_GetRenderState(dev,
-         (D3DRENDERSTATETYPE)state, value);
-#else
-   if (IDirect3DDevice9_GetRenderState(dev,
-            (D3DRENDERSTATETYPE)state, value) != D3D_OK)
-      return false;
-#endif
-   return true;
-}
-
 static INLINE bool d3d9_device_create_offscreen_plain_surface(
       LPDIRECT3DDEVICE9 dev,
       unsigned width,
@@ -343,23 +259,6 @@ static INLINE bool d3d9_device_create_offscreen_plain_surface(
       return true;
 #endif
    return false;
-}
-
-static INLINE bool d3d9_surface_lock_rect(LPDIRECT3DSURFACE9 surf,
-      D3DLOCKED_RECT *data2)
-{
-   if (!surf)
-      return false;
-#if defined(_XBOX)
-   IDirect3DSurface9_LockRect(surf,
-         data2, NULL, D3DLOCK_READONLY);
-#else
-   if (FAILED(IDirect3DSurface9_LockRect(surf,
-               data2, NULL, D3DLOCK_READONLY)))
-      return false;
-#endif
-
-   return true;
 }
 
 static INLINE bool d3d9_get_adapter_display_mode(
@@ -386,20 +285,6 @@ bool d3d9_create_device(void *dev,
       unsigned cur_mon_id);
 
 bool d3d9_reset(void *dev, void *d3dpp);
-
-static INLINE bool d3d9_device_get_backbuffer(
-      LPDIRECT3DDEVICE9 dev,
-      unsigned idx, unsigned swapchain_idx,
-      unsigned backbuffer_type, void **data)
-{
-   if (dev &&
-         SUCCEEDED(IDirect3DDevice9_GetBackBuffer(dev,
-               swapchain_idx, idx,
-               (D3DBACKBUFFER_TYPE)backbuffer_type,
-               (LPDIRECT3DSURFACE9*)data)))
-      return true;
-   return false;
-}
 
 static INLINE void d3d9_device_free(LPDIRECT3DDEVICE9 dev, LPDIRECT3D9 pd3d)
 {

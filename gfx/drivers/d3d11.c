@@ -1908,7 +1908,7 @@ uuidof(ID3D11Texture2D), (void**)&back_buffer);
       {
           D3D11_SHADER_RESOURCE_VIEW_DESC hw_desc;
           D3D11ShaderResourceView hw_view = NULL;
-          D3D11GetPShaderResources(context, 0, 1, &hw_view);
+          context->lpVtbl->PSGetShaderResources(context, 0, 1, &hw_view);
           D3D11GetShaderResourceViewDesc(hw_view, &hw_desc);
           D3D11GetShaderResourceViewTexture2D(hw_view, &hw_texture);
 
