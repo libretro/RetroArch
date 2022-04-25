@@ -237,11 +237,11 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
    /* if content is already loaded and the lobby gave us a CRC, check the loaded content first */
    if (have_crc && content_get_crc() > 0)
    {
-      char current[PATH_MAX_LENGTH];
+      char current[16];
 
       RARCH_LOG("[Lobby]: Testing CRC matching for: %s\n", state->content_crc);
 
-      snprintf(current, sizeof(current), "%lX|crc", (unsigned long)content_get_crc());
+      snprintf(current, sizeof(current), "%08lX|crc", (unsigned long)content_get_crc());
       RARCH_LOG("[Lobby]: Current content CRC: %s\n", current);
 
       if (string_is_equal(current, state->content_crc))
