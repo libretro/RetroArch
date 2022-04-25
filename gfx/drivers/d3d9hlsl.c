@@ -351,9 +351,7 @@ static void hlsl_d3d9_renderchain_calc_and_set_shader_mvp(
 
    d3d_matrix_ortho_off_center_lh(&ortho, 0,
          vp_width, 0, vp_height, 0, 1);
-   d3d_matrix_identity(&rot);
    d3d_matrix_rotation_z(&rot, rotation * (D3D_PI / 2.0));
-
    d3d_matrix_multiply(&proj, &ortho, &rot);
    d3d_matrix_transpose(&matrix, &proj);
 

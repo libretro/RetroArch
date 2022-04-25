@@ -803,7 +803,6 @@ static void d3d8_set_viewport(void *data,
    d3d->final_viewport.MaxZ   = 0.0f;
 
    d3d_matrix_ortho_off_center_lh(&ortho, 0, 1, 0, 1, 0.0f, 1.0f);
-   d3d_matrix_identity(&rot);
    d3d_matrix_rotation_z(&rot, d3d->dev_rotation * (M_PI / 2.0));
    d3d_matrix_multiply(&proj, &ortho, &rot);
    d3d_matrix_transpose(&d3d->mvp, &ortho);
