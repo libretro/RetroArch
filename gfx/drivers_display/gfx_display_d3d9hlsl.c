@@ -145,10 +145,8 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
          > (unsigned)d3d->menu_display.size)
       return;
 
-   pv           = (Vertex*)
-      d3d9_vertex_buffer_lock((LPDIRECT3DVERTEXBUFFER9)
-            d3d->menu_display.buffer);
-
+   IDirect3DVertexBuffer9_Lock((LPDIRECT3DVERTEXBUFFER9)
+            d3d->menu_display.buffer, 0, 0, (void**)&pv, 0);
    if (!pv)
       return;
 
@@ -185,7 +183,7 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
                colors[2]  /* B */
                );
    }
-   d3d9_vertex_buffer_unlock((LPDIRECT3DVERTEXBUFFER9)
+   IDirect3DVertexBuffer9_Unlock((LPDIRECT3DVERTEXBUFFER9)
          d3d->menu_display.buffer);
 
    if (!draw->matrix_data)

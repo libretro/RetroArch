@@ -424,9 +424,9 @@ static INLINE void d3d9_hlsl_renderchain_set_vertices_on_change(
    }
    */
 
-   verts             = d3d9_vertex_buffer_lock(pass->vertex_buf);
+   IDirect3DVertexBuffer9_Lock(pass->vertex_buf, 0, 0, &verts, 0);
    memcpy(verts, vert, sizeof(vert));
-   d3d9_vertex_buffer_unlock(pass->vertex_buf);
+   IDirect3DVertexBuffer9_Unlock(pass->vertex_buf);
 }
 
 

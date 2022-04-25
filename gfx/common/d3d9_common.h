@@ -87,21 +87,6 @@ void *d3d9_vertex_buffer_new(void *dev,
       unsigned length, unsigned usage, unsigned fvf,
       INT32 pool, void *handle);
 
-static INLINE void *d3d9_vertex_buffer_lock(LPDIRECT3DVERTEXBUFFER9 vertbuf)
-{
-   void *buf = NULL;
-   if (!vertbuf)
-      return NULL;
-   IDirect3DVertexBuffer9_Lock(vertbuf, 0, 0, &buf, 0);
-   return buf;
-}
-
-static INLINE void d3d9_vertex_buffer_unlock(LPDIRECT3DVERTEXBUFFER9 vertbuf)
-{
-   if (vertbuf)
-      IDirect3DVertexBuffer9_Unlock(vertbuf);
-}
-
 void d3d9_vertex_buffer_free(void *vertex_data, void *vertex_declaration);
 
 static INLINE bool d3d9_texture_get_surface_level(
@@ -135,36 +120,6 @@ static INLINE void d3d9_set_stream_source(
             stride);
 }
 
-static INLINE bool d3d9_lock_rectangle(
-      LPDIRECT3DTEXTURE9 tex,
-      unsigned level,
-      D3DLOCKED_RECT *lr,
-      const RECT *rect,
-      unsigned rectangle_height, unsigned flags)
-{
-   if (!tex)
-      return false;
-#ifdef _XBOX
-   IDirect3DTexture9_LockRect(tex, level, lr, rect, flags);
-#else
-   if (IDirect3DTexture9_LockRect(tex, level, lr, rect, flags) != D3D_OK)
-      return false;
-#endif
-
-   return true;
-}
-
-static INLINE void d3d9_lock_rectangle_clear(void *tex,
-      unsigned level, D3DLOCKED_RECT *lr, RECT *rect,
-      unsigned rectangle_height, unsigned flags)
-{
-#if defined(_XBOX)
-   level              = 0;
-#endif
-   memset(lr->pBits, level, rectangle_height * lr->Pitch);
-   IDirect3DTexture9_UnlockRect((LPDIRECT3DTEXTURE9)tex, 0);
-}
-
 static INLINE bool d3d9_create_vertex_shader(
       LPDIRECT3DDEVICE9 dev, const DWORD *a, void **b)
 {
@@ -182,22 +137,6 @@ static INLINE bool d3d9_create_pixel_shader(
             (LPDIRECT3DPIXELSHADER9*)b) == D3D_OK)
       return true;
    return false;
-}
-
-static INLINE void d3d9_texture_blit(
-      unsigned pixel_size,
-      void *tex,
-      D3DLOCKED_RECT *lr, const void *frame,
-      unsigned width, unsigned height, unsigned pitch)
-{
-   unsigned y;
-
-   for (y = 0; y < height; y++)
-   {
-      const uint8_t *in = (const uint8_t*)frame + y * pitch;
-      uint8_t      *out = (uint8_t*)lr->pBits   + y * lr->Pitch;
-      memcpy(out, in, width * pixel_size);
-   }
 }
 
 static INLINE bool d3d9_vertex_declaration_new(

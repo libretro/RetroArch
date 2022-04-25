@@ -62,6 +62,13 @@ static dylib_t g_d3d9x_dll;
 static bool d3d9_dylib_initialized = false;
 #endif
 
+struct d3d9_texture_info
+{
+   void *userdata;
+   void *data;
+   enum texture_filter_type type;
+};
+
 typedef IDirect3D9 *(__stdcall *D3D9Create_t)(UINT);
 #ifdef HAVE_D3DX
 typedef HRESULT (__stdcall
@@ -1063,9 +1070,9 @@ void d3d9_overlay_render(d3d9_video_t *d3d,
    vert[2].v      = overlay->tex_coords[1] + overlay->tex_coords[3];
    vert[3].v      = overlay->tex_coords[1] + overlay->tex_coords[3];
 
-   verts = d3d9_vertex_buffer_lock((LPDIRECT3DVERTEXBUFFER9)overlay->vert_buf);
+   IDirect3DVertexBuffer9_Lock((LPDIRECT3DVERTEXBUFFER9)overlay->vert_buf, 0, 0, &verts, 0);
    memcpy(verts, vert, sizeof(vert));
-   d3d9_vertex_buffer_unlock((LPDIRECT3DVERTEXBUFFER9)overlay->vert_buf);
+   IDirect3DVertexBuffer9_Unlock((LPDIRECT3DVERTEXBUFFER9)overlay->vert_buf);
 
    IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
    IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
@@ -1203,8 +1210,8 @@ void d3d9_set_menu_texture_frame(void *data,
 
    d3d->menu->alpha_mod = alpha;
 
-   if (d3d9_lock_rectangle((LPDIRECT3DTEXTURE9)d3d->menu->tex, 0, &d3dlr,
-            NULL, 0, D3DLOCK_NOSYSLOCK))
+   IDirect3DTexture9_LockRect((LPDIRECT3DTEXTURE9)d3d->menu->tex,
+         0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
    {
       unsigned h, w;
       if (rgb32)
@@ -1224,7 +1231,9 @@ void d3d9_set_menu_texture_frame(void *data,
          uint32_t       *dst = (uint32_t*)d3dlr.pBits;
          const uint16_t *src = (const uint16_t*)frame;
 
-         for (h = 0; h < height; h++, dst += d3dlr.Pitch >> 2, src += width)
+         for (h = 0; h < height; h++, 
+               dst += d3dlr.Pitch >> 2,
+               src += width)
          {
             for (w = 0; w < width; w++)
             {
@@ -1241,10 +1250,9 @@ void d3d9_set_menu_texture_frame(void *data,
             }
          }
       }
-
-      if (d3d->menu)
-         IDirect3DTexture9_UnlockRect((LPDIRECT3DTEXTURE9)d3d->menu->tex, 0);
    }
+
+   IDirect3DTexture9_UnlockRect((LPDIRECT3DTEXTURE9)d3d->menu->tex, 0);
 }
 
 void d3d9_set_menu_texture_enable(void *data,
@@ -1258,13 +1266,6 @@ void d3d9_set_menu_texture_enable(void *data,
    d3d->menu->enabled            = state;
    d3d->menu->fullscreen         = full_screen;
 }
-
-struct d3d9_texture_info
-{
-   void *userdata;
-   void *data;
-   enum texture_filter_type type;
-};
 
 static void d3d9_video_texture_load_d3d(
       struct d3d9_texture_info *info,
@@ -1291,23 +1292,18 @@ static void d3d9_video_texture_load_d3d(
                NULL, NULL, want_mipmap);
 
    if (!tex)
-   {
-      RARCH_ERR("[D3D9]: Failed to create texture\n");
       return;
-   }
 
-   if (d3d9_lock_rectangle(tex, 0, &d3dlr,
-            NULL, 0, D3DLOCK_NOSYSLOCK))
+   IDirect3DTexture9_LockRect(tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
    {
       unsigned i;
       uint32_t       *dst = (uint32_t*)(d3dlr.pBits);
       const uint32_t *src = ti->pixels;
       unsigned      pitch = d3dlr.Pitch >> 2;
-
       for (i = 0; i < ti->height; i++, dst += pitch, src += ti->width)
          memcpy(dst, src, ti->width << 2);
-      IDirect3DTexture9_UnlockRect(tex, 0);
    }
+   IDirect3DTexture9_UnlockRect(tex, 0);
 
    *id = (uintptr_t)tex;
 }
@@ -1518,24 +1514,26 @@ void d3d9_blit_to_texture(
       unsigned last_width, unsigned last_height,
       unsigned pitch, unsigned pixel_size)
 {
-   D3DLOCKED_RECT d3dlr    = {0, NULL};
+   unsigned y;
+   D3DLOCKED_RECT d3dlr;
+   d3dlr.Pitch  = 0;
+   d3dlr.pBits  = NULL;
 
-   if (
-         (last_width != width || last_height != height)
-      )
+   if ((last_width != width || last_height != height))
    {
-      d3d9_lock_rectangle(tex, 0, &d3dlr,
-            NULL, tex_height, D3DLOCK_NOSYSLOCK);
-      d3d9_lock_rectangle_clear(tex, 0, &d3dlr,
-            NULL, tex_height, D3DLOCK_NOSYSLOCK);
+      IDirect3DTexture9_LockRect(tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+      memset(d3dlr.pBits, 0, tex_height * d3dlr.Pitch);
+      IDirect3DTexture9_UnlockRect((LPDIRECT3DTEXTURE9)tex, 0);
    }
 
-   if (d3d9_lock_rectangle(tex, 0, &d3dlr, NULL, 0, 0))
+   IDirect3DTexture9_LockRect(tex, 0, &d3dlr, NULL, 0);
+   for (y = 0; y < height; y++)
    {
-      d3d9_texture_blit(pixel_size, tex,
-            &d3dlr, frame, width, height, pitch);
-      IDirect3DTexture9_UnlockRect(tex, 0);
+      const uint8_t *in = (const uint8_t*)frame + y * pitch;
+      uint8_t      *out = (uint8_t*)d3dlr.pBits   + y * d3dlr.Pitch;
+      memcpy(out, in, width * pixel_size);
    }
+   IDirect3DTexture9_UnlockRect(tex, 0);
 }
 
 #ifdef HAVE_OVERLAY
@@ -1622,17 +1620,15 @@ static bool d3d9_overlay_load(void *data,
          return false;
       }
 
-      if (d3d9_lock_rectangle((LPDIRECT3DTEXTURE9)overlay->tex, 0, &d3dlr,
-               NULL, 0, D3DLOCK_NOSYSLOCK))
+      IDirect3DTexture9_LockRect((LPDIRECT3DTEXTURE9)overlay->tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
       {
          uint32_t       *dst = (uint32_t*)(d3dlr.pBits);
          const uint32_t *src = images[i].pixels;
          unsigned      pitch = d3dlr.Pitch >> 2;
-
          for (y = 0; y < height; y++, dst += pitch, src += width)
             memcpy(dst, src, width << 2);
-         IDirect3DTexture9_UnlockRect((LPDIRECT3DTEXTURE9)overlay->tex, 0);
       }
+      IDirect3DTexture9_UnlockRect((LPDIRECT3DTEXTURE9)overlay->tex, 0);
 
       overlay->tex_w         = width;
       overlay->tex_h         = height;
