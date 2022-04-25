@@ -1083,8 +1083,8 @@ void d3d9_overlay_render(d3d9_video_t *d3d,
    IDirect3DDevice9_SetVertexDeclaration(dev, vertex_decl);
    IDirect3DVertexDeclaration9_Release(vertex_decl);
 
-   d3d9_set_stream_source(dev, 0, (LPDIRECT3DVERTEXBUFFER9)overlay->vert_buf,
-         0, sizeof(*vert));
+   IDirect3DDevice9_SetStreamSource(dev, 0,
+         (LPDIRECT3DVERTEXBUFFER9)overlay->vert_buf, 0, sizeof(*vert));
 
    if (overlay->fullscreen)
    {

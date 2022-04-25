@@ -495,8 +495,8 @@ static void d3d9_cg_renderchain_bind_orig(
          pass->attrib_map;
       unsigned index = attrib_map->data[cgGetParameterResourceIndex(param)];
 
-      d3d9_set_stream_source(chain->dev, index,
-            vert_buf, 0, sizeof(struct D3D9CGVertex));
+      IDirect3DDevice9_SetStreamSource(chain->dev, index, vert_buf, 0,
+sizeof(struct D3D9CGVertex));
       unsigned_vector_list_append(chain->bound_vert, index);
    }
 }
@@ -585,8 +585,8 @@ static void d3d9_cg_renderchain_bind_prev(d3d9_renderchain_t *chain,
          struct unsigned_vector_list *attrib_map = (struct unsigned_vector_list*)pass->attrib_map;
          unsigned index = attrib_map->data[cgGetParameterResourceIndex(param)];
 
-         d3d9_set_stream_source(chain->dev, index,
-               vert_buf, 0, sizeof(struct D3D9CGVertex));
+         IDirect3DDevice9_SetStreamSource(chain->dev, index, vert_buf, 0,
+               sizeof(struct D3D9CGVertex));
          unsigned_vector_list_append(chain->bound_vert, index);
       }
    }
@@ -662,8 +662,9 @@ static void d3d9_cg_renderchain_bind_pass(
             (struct unsigned_vector_list*)pass->attrib_map;
          unsigned index = attrib_map->data[cgGetParameterResourceIndex(param)];
 
-         d3d9_set_stream_source(chain->dev, index, curr_pass->vertex_buf,
-               0, sizeof(struct D3D9CGVertex));
+         IDirect3DDevice9_SetStreamSource(chain->dev, index,
+               cur_pass->vertex_buf, 0,
+               sizeof(struct D3D9CGVertex));
          unsigned_vector_list_append(chain->bound_vert, index);
       }
    }
@@ -1057,9 +1058,8 @@ static void d3d9_cg_renderchain_render_pass(
 
    IDirect3DDevice9_SetVertexDeclaration(chain->dev, pass->vertex_decl);
    for (i = 0; i < 4; i++)
-      d3d9_set_stream_source(chain->dev, i,
-            pass->vertex_buf, 0,
-            sizeof(struct D3D9CGVertex));
+      IDirect3DDevice9_SetStreamSource(chain->dev, i, pass->vertex_buf,
+            0, sizeof(struct D3D9CGVertex));
 
    /* Set orig texture. */
    d3d9_cg_renderchain_bind_orig(chain, chain->dev, pass);
@@ -1855,7 +1855,9 @@ static bool d3d9_cg_frame(void *data, const void *frame,
 
       d3d->menu_display.offset = 0;
       IDirect3DDevice9_SetVertexDeclaration(d3d->dev, (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
-      d3d9_set_stream_source(d3d->dev, 0, (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer, 0, sizeof(Vertex));
+      IDirect3DDevice9_SetStreamSource(d3d->dev, 0,
+            (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer,
+            0, sizeof(Vertex));
 
       IDirect3DDevice9_SetViewport(d3d->dev, (D3DVIEWPORT9*)&screen_vp);
       menu_driver_frame(menu_is_alive, video_info);

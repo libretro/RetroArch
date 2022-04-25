@@ -107,19 +107,6 @@ void *d3d9_texture_new(void *dev,
       INT32 color_key, void *src_info,
       PALETTEENTRY *palette, bool want_mipmap);
 
-static INLINE void d3d9_set_stream_source(
-      LPDIRECT3DDEVICE9 dev,
-      unsigned stream_no,
-      LPDIRECT3DVERTEXBUFFER9 stream_vertbuf,
-      unsigned offset_bytes,
-      unsigned stride)
-{
-   if (stream_vertbuf)
-      IDirect3DDevice9_SetStreamSource(dev, stream_no, stream_vertbuf,
-            offset_bytes,
-            stride);
-}
-
 static INLINE bool d3d9_create_vertex_shader(
       LPDIRECT3DDEVICE9 dev, const DWORD *a, void **b)
 {

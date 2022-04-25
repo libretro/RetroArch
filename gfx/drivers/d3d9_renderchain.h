@@ -254,8 +254,7 @@ static INLINE void d3d9_renderchain_unbind_all(d3d9_renderchain_t *chain)
    }
 
    for (i = 0; i < chain->bound_vert->count; i++)
-      d3d9_set_stream_source(chain->dev,
-            chain->bound_vert->data[i], 0, 0, 0);
+      IDirect3DDevice9_SetStreamSource(chain->dev, chain->bound_vert->data[i], 0, 0, 0);
 
    if (chain->bound_tex)
    {
