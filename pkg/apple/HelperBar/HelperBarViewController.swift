@@ -21,6 +21,8 @@ class HelperBarViewController: UIViewController {
    private let navigationBar: UINavigationBar = {
       let navBar = UINavigationBar()
       navBar.barTintColor = .black
+      navBar.isTranslucent = true
+      navBar.alpha = 0.7
       navBar.tintColor = .white
       navBar.isHidden = true
       return navBar
@@ -90,7 +92,7 @@ class HelperBarViewController: UIViewController {
    }
    
    private func showIndicatorAndFadeAway() {
-      UIView.animateKeyframes(withDuration: 7.0, delay: 0) {
+      UIView.animateKeyframes(withDuration: 4.0, delay: 0) {
          UIView.addKeyframe(withRelativeStartTime: 0, relativeDuration: 1/7) { [weak self] in
             self?.indicatorImageView.alpha = 1.0
          }
@@ -101,8 +103,16 @@ class HelperBarViewController: UIViewController {
       }
    }
 
-   @objc func didTap(_ sender: UIGestureRecognizer) {
-      viewModel.didInteractWithBar = true
+   @objc func didTap(_ sender: UITapGestureRecognizer) {
+      let point = sender.location(in: view)
+      guard point.y <= 60 else { return }   // detect top portion of view only
+      if point.x <= 100 {
+         viewModel.didInteractWithBar = true
+         indicatorImageView.layer.removeAllAnimations()
+         indicatorImageView.alpha = 0
+      } else {
+         showIndicatorAndFadeAway()
+      }
    }
 }
 
