@@ -288,7 +288,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
             playlist_path = playlist_entry->path;
             playlist_crc32 = playlist_entry->crc32;
 
-            if (have_crc && string_starts_with(state->content_crc, playlist_crc32))
+            if (have_crc && string_is_equal(playlist_crc32, state->content_crc))
             {
                RARCH_LOG("[Lobby]: CRC match %s\n", playlist_crc32);
                strlcpy(state->content_path, playlist_path, sizeof(state->content_path));
