@@ -61,9 +61,13 @@ int win32_change_display_settings(const char *str, void *devmode_data,
 
 void create_wgl_context(HWND hwnd, bool *quit);
 
+#if defined(HAVE_VULKAN)
 void create_vk_context(HWND hwnd, bool *quit);
+#endif
 
+#if defined(HAVE_GDI)
 void create_gdi_context(HWND hwnd, bool *quit);
+#endif
 
 bool win32_get_video_output(DEVMODE *dm, int mode, size_t len);
 
@@ -156,12 +160,14 @@ LRESULT CALLBACK wnd_proc_vk_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 #endif
 
+#if defined(HAVE_GDI)
 LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 LRESULT CALLBACK wnd_proc_gdi_winraw(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 LRESULT CALLBACK wnd_proc_gdi_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
+#endif
 
 #ifdef _XBOX
 BOOL IsIconic(HWND hwnd);
