@@ -45,7 +45,6 @@
 #include <QDropEvent>
 #include <QtConcurrentRun>
 #include <QtNetwork>
-#include <QFile>
 
 #include "ui_qt.h"
 #include "qt/gridview.h"
@@ -83,7 +82,6 @@ extern "C" {
 #include "../../command.h"
 #include "../ui_companion_driver.h"
 #include "../../configuration.h"
-#include "../../encodings/crc32.h"
 #include "../../frontend/frontend.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../file_path_special.h"
@@ -2601,7 +2599,7 @@ void MainWindow::onFileDoubleClicked(const QModelIndex &proxyIndex)
    if (m_fileModel->isDir(index))
       m_dirTree->setCurrentIndex(m_dirModel->index(m_fileModel->filePath(index)));
    else
-      loadContent(getFileContentHashWithCRC32(index));
+      loadContent(getFileContentHash(index));
 }
 
 void MainWindow::selectBrowserDir(QString path)
@@ -2670,29 +2668,6 @@ QHash<QString, QString> MainWindow::getFileContentHash(const QModelIndex &index)
    hash["db_name"]     = fileInfo.dir().dirName();
 
    return hash;
-}
-
-QHash<QString, QString> MainWindow::getFileContentHashWithCRC32(const QModelIndex &index)
-{
-   QHash<QString, QString> hash = getFileContentHash(index);
-   hash["crc32"] = getFileCRC32(hash["path"]);
-   return hash;
-}
-
-QString MainWindow::getFileCRC32(const QString &path)
-{
-   QString crc32;
-   QFile file(path);
-   if (file.exists() && file.open(QIODevice::ReadOnly)) {
-       const QByteArray buf = file.readAll();
-       file.close();
-       crc32 = QString::number(encoding_crc32(0, (const uint8_t *) buf.data(), buf.size()), 16).toUpper();
-       while (crc32.length() < 8) {
-           crc32 = crc32.prepend('0');
-       }
-   }
-
-   return crc32;
 }
 
 void MainWindow::onContentItemDoubleClicked(const QModelIndex &index)
@@ -2958,7 +2933,7 @@ void MainWindow::onRunClicked()
    switch (m_currentBrowser)
    {
       case BROWSER_TYPE_FILES:
-         contentHash = getFileContentHashWithCRC32(
+         contentHash = getFileContentHash(
                m_proxyFileModel->mapToSource(m_fileTableView->currentIndex()));
          break;
       case BROWSER_TYPE_PLAYLISTS:

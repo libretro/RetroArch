@@ -398,8 +398,6 @@ public:
    QModelIndex getCurrentContentIndex();
    QHash<QString, QString> getCurrentContentHash();
    QHash<QString, QString> getFileContentHash(const QModelIndex &index);
-   QHash<QString, QString> getFileContentHashWithCRC32(const QModelIndex &index);
-   QString getFileCRC32(const QString &path);
    static double lerp(double x, double y, double a, double b, double d);
    QString getSpecialPlaylistPath(SpecialPlaylist playlist);
    QVector<QPair<QString, QString> > getPlaylists();
