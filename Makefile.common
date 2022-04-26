@@ -189,9 +189,9 @@ endif
 ifeq ($(HAVE_UNIX), 1)
    OBJ += frontend/drivers/platform_unix.o
 
-	ifeq ($(UNIX_CWD_ENV), 1)
-		DEF_FLAGS += -DRARCH_UNIX_CWD_ENV
-	endif
+   ifeq ($(UNIX_CWD_ENV), 1)
+      DEF_FLAGS += -DRARCH_UNIX_CWD_ENV
+   endif
 endif
 
 ifeq ($(TARGET), retroarch_3ds)
@@ -2463,7 +2463,7 @@ ifeq ($(HAVE_MIST), 1)
    DEFINES += -DHAVE_MIST
    INCLUDE_DIRS += -I$(MIST_PATH)/include
    LDFLAGS   += -L$(MIST_PATH) -lmist
-   OBJ += steam/steam.o tasks/task_steam.o
+   OBJ += steam/steam.o tasks/task_steam.o frontend/drivers/platform_steam.o
 endif
 
 ### Shared rich presence code for Discord and Steam

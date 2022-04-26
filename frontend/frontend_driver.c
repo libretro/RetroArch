@@ -98,6 +98,10 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(__APPLE__) && defined(__MACH__)
    &frontend_ctx_darwin,
 #endif
+#if defined(HAVE_MIST)
+   /* This will override the win32/unix frontend with the Steam frontend. */
+   &frontend_ctx_steam,
+#endif
 #if defined(__linux__) || (defined(BSD) && !defined(__MACH__))
    &frontend_ctx_unix,
 #endif
@@ -110,7 +114,7 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(_3DS)
    &frontend_ctx_ctr,
 #endif
-#if defined(SWITCH) && defined(HAVE_LIBNX)
+#if defined(SWITCH) || defined(HAVE_LIBNX)
    &frontend_ctx_switch,
 #endif
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
@@ -124,9 +128,6 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #endif
 #ifdef DJGPP
    &frontend_ctx_dos,
-#endif
-#ifdef SWITCH
-   &frontend_ctx_switch,
 #endif
 #if defined(ORBIS)
    &frontend_ctx_orbis,
