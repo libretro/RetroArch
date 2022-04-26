@@ -302,6 +302,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
 
    for (i = 0; i < TEXTURES; i++)
    {
+      int32_t filter             = d3d_translate_filter(info->pass->filter);
       chain->prev.last_width[i]  = 0;
       chain->prev.last_height[i] = 0;
       chain->prev.vertex_buf[i]  = (LPDIRECT3DVERTEXBUFFER9)
@@ -320,16 +321,12 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
       if (!chain->prev.tex[i])
          return false;
 
-      IDirect3DDevice9_SetTexture(chain->dev, 0,
-            (IDirect3DBaseTexture9*)chain->prev.tex[i]);
-      IDirect3DDevice9_SetSamplerState(dev,
-            0, D3DSAMP_MINFILTER, d3d_translate_filter(info->pass->filter));
-      IDirect3DDevice9_SetSamplerState(dev,
-            0, D3DSAMP_MAGFILTER, d3d_translate_filter(info->pass->filter));
-      IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-      IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-      IDirect3DDevice9_SetTexture(chain->dev, 0,
-            (IDirect3DBaseTexture9*)NULL);
+      IDirect3DDevice9_SetTexture(chain->dev, 0, (IDirect3DBaseTexture9*)chain->prev.tex[i]);
+      IDirect3DDevice9_SetSamplerState(dev,   0, D3DSAMP_MINFILTER, filter);
+      IDirect3DDevice9_SetSamplerState(dev,   0, D3DSAMP_MAGFILTER, filter);
+      IDirect3DDevice9_SetSamplerState(dev,   0, D3DSAMP_ADDRESSU,  D3DTADDRESS_BORDER);
+      IDirect3DDevice9_SetSamplerState(dev,   0, D3DSAMP_ADDRESSV,  D3DTADDRESS_BORDER);
+      IDirect3DDevice9_SetTexture(chain->dev, 0, (IDirect3DBaseTexture9*)NULL);
    }
 
    d3d9_hlsl_load_program_from_file(chain->dev,

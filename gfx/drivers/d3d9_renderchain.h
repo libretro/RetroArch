@@ -207,11 +207,11 @@ static INLINE void d3d9_renderchain_add_lut_internal(
       d3d9_renderchain_t *chain,
       unsigned index, unsigned i)
 {
+   /* 2 = D3D_TEXTURE_FILTER_LINEAR, 1 = D3D_TEXTURE_FILTER_POINT */
+   int32_t filter = chain->luts->data[i].smooth ? 2 : 1;
    IDirect3DDevice9_SetTexture(chain->dev, index, (IDirect3DBaseTexture9*)chain->luts->data[i].tex);
-   IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_MAGFILTER,
-         d3d_translate_filter(chain->luts->data[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
-   IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_MINFILTER,
-         d3d_translate_filter(chain->luts->data[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
+   IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_MAGFILTER, filter);
+   IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_MINFILTER, filter);
    IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
    IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
    unsigned_vector_list_append(chain->bound_tex, index);
