@@ -1153,8 +1153,6 @@ ifeq ($(HAVE_THREADS), 1)
    ifeq ($(findstring Haiku,$(OS)),)
       LIBS += $(THREADS_LIBS)
    endif
-else
-   OBJ += $(LIBRETRO_COMM_DIR)/rthreads/single_threaded.o
 endif
 
 ifeq ($(HAVE_THREAD_STORAGE), 1)
