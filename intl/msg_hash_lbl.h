@@ -461,6 +461,10 @@ MSG_HASH(
    "config_save_on_exit"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_REMAP_SAVE_ON_EXIT,
+   "remap_save_on_exit"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CONNECT_WIFI,
    "connect_wifi"
    )
@@ -2843,6 +2847,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_REMAP_FILE_RESET,
    "remap_file_reset"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_REMAP_FILE_FLUSH,
+   "remap_file_flush"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RESTART_CONTENT,

@@ -450,6 +450,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_hard_sync_frames,        MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_threaded,                MENU_ENUM_SUBLABEL_VIDEO_THREADED)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_settings,                      MENU_ENUM_SUBLABEL_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_config_save_on_exit,           MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_remap_save_on_exit,            MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_configuration_settings_list,   MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_configurations_list_list,      MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_shared_context,          MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT)
@@ -844,6 +845,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_options,                     
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_input_remapping_options,          MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_remap_file_manager_list,               MENU_ENUM_SUBLABEL_REMAP_FILE_MANAGER_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_remap_file_reset,                      MENU_ENUM_SUBLABEL_REMAP_FILE_RESET)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_remap_file_flush,                      MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_option_override_list,             MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_options_reset,                    MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_options_flush,                    MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH)
@@ -2918,6 +2920,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_REMAP_FILE_RESET:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_file_reset);
             break;
+         case MENU_ENUM_LABEL_REMAP_FILE_FLUSH:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_file_flush);
+            break;
          case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
 #ifdef HAVE_CHEATS
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_cheat_options);
@@ -4034,6 +4039,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_config_save_on_exit);
+            break;
+         case MENU_ENUM_LABEL_REMAP_SAVE_ON_EXIT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_save_on_exit);
             break;
          case MENU_ENUM_LABEL_CONFIGURATION_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_configuration_settings_list);

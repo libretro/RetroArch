@@ -1302,6 +1302,7 @@ static unsigned menu_displaylist_parse_remap_file_manager_list(
    bool core_remap_active        = retroarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL);
    bool content_dir_remap_active = retroarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL);
    bool game_remap_active        = retroarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL);
+   bool remap_save_on_exit       = settings->bools.remap_save_on_exit;
 
    /* Sanity check - cannot handle remap files
     * unless a valid core is running */
@@ -1388,6 +1389,18 @@ static unsigned menu_displaylist_parse_remap_file_manager_list(
          msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_RESET),
          MENU_ENUM_LABEL_REMAP_FILE_RESET,
          MENU_SETTING_ACTION_REMAP_FILE_RESET, 0, 0))
+      count++;
+
+   /* Flush input remaps to disk */
+   if (!remap_save_on_exit &&
+       (core_remap_active ||
+        content_dir_remap_active ||
+        game_remap_active) &&
+       menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH),
+         msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_FLUSH),
+         MENU_ENUM_LABEL_REMAP_FILE_FLUSH,
+         MENU_SETTING_ACTION_REMAP_FILE_FLUSH, 0, 0))
       count++;
 end:
    /* Fallback */
@@ -9737,6 +9750,7 @@ unsigned menu_displaylist_build_list(
          {
             menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,   PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_REMAP_SAVE_ON_EXIT,    PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS, PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE, PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE,    PARSE_ONLY_BOOL},

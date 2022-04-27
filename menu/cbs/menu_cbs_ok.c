@@ -3615,6 +3615,49 @@ static int action_ok_remap_file_reset(const char *path,
    return 0;
 }
 
+static int action_ok_remap_file_flush(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   const char *path_remapfile  = runloop_st->name.remapfile;
+   const char *remapfile       = NULL;
+   bool success                = false;
+   char msg[256];
+
+   msg[0] = '\0';
+
+   /* Check if a remap file is active */
+   if (!string_is_empty(path_remapfile))
+   {
+      /* Update existing remap file */
+      success = input_remapping_save_file(path_remapfile);
+
+      /* Get remap file name for display purposes */
+      remapfile = path_basename(path_remapfile);
+   }
+
+   if (string_is_empty(remapfile))
+      remapfile = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN);
+
+   /* Log result */
+   RARCH_LOG(success ?
+         "[Remaps]: Saved input remapping options to \"%s\".\n" :
+               "[Remaps]: Failed to save input remapping options to \"%s\".\n",
+            path_remapfile ? path_remapfile : "UNKNOWN");
+
+   snprintf(msg, sizeof(msg), "%s \"%s\"",
+         success ?
+               msg_hash_to_str(MSG_REMAP_FILE_FLUSHED) :
+                     msg_hash_to_str(MSG_REMAP_FILE_FLUSH_FAILED),
+         remapfile);
+
+   runloop_msg_queue_push(
+         msg, 1, 100, true,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+   return 0;
+}
+
 int action_ok_path_use_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -8210,6 +8253,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR,       action_ok_remap_file_remove_content_dir},
          {MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,              action_ok_remap_file_remove_game},
          {MENU_ENUM_LABEL_REMAP_FILE_RESET,                    action_ok_remap_file_reset},
+         {MENU_ENUM_LABEL_REMAP_FILE_FLUSH,                    action_ok_remap_file_flush},
          {MENU_ENUM_LABEL_PLAYLISTS_TAB,                       action_ok_content_collection_list},
          {MENU_ENUM_LABEL_BROWSE_URL_LIST,                     action_ok_browse_url_list},
          {MENU_ENUM_LABEL_CORE_LIST,                           action_ok_core_list},
