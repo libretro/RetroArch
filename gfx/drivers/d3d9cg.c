@@ -907,15 +907,6 @@ static bool d3d9_cg_renderchain_add_pass(void *data, const struct LinkInfo *info
          info);
 }
 
-static bool d3d9_cg_renderchain_add_lut(void *data,
-      const char *id, const char *path, bool smooth)
-{
-   cg_renderchain_t *_chain  = (cg_renderchain_t*)data;
-   d3d9_renderchain_t *chain = (d3d9_renderchain_t*)&_chain->chain;
-
-   return d3d9_renderchain_add_lut(chain, id, path, smooth);
-}
-
 static void d3d9_cg_renderchain_calc_and_set_shader_mvp(
       CGprogram data, /* stock vertex program */
       unsigned vp_width, unsigned vp_height,
