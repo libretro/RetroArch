@@ -872,20 +872,6 @@ static bool d3d9_cg_renderchain_init(
    return true;
 }
 
-static void d3d9_cg_renderchain_set_final_viewport(
-      d3d9_video_t *d3d,
-      void *renderchain_data,
-      const D3DVIEWPORT9 *final_viewport)
-{
-   cg_renderchain_t   *_chain = (cg_renderchain_t*)renderchain_data;
-   d3d9_renderchain_t *chain  = (d3d9_renderchain_t*)&_chain->chain;
-
-   if (chain && final_viewport)
-      chain->final_viewport = (D3DVIEWPORT9*)final_viewport;
-
-   d3d9_recompute_pass_sizes(chain->dev, chain, d3d);
-}
-
 static bool d3d9_cg_renderchain_add_pass(void *data, const struct LinkInfo *info)
 {
    struct shader_pass pass;
@@ -935,62 +921,62 @@ static INLINE void d3d9_cg_renderchain_set_vertices_on_change(
 {
    struct D3D9CGVertex vert[4];
    unsigned i;
-   void* verts = NULL;
+   void* verts       = NULL;
    const struct
       LinkInfo* info = (const struct LinkInfo*)&pass->info;
-   float _u = (float)(width) / info->tex_w;
-   float _v = (float)(height) / info->tex_h;
+   float          _u = (float)(width) / info->tex_w;
+   float          _v = (float)(height) / info->tex_h;
 
-   pass->last_width = width;
+   pass->last_width  = width;
    pass->last_height = height;
 
-   vert[0].x = 0.0f;
-   vert[0].y = out_height;
-   vert[0].z = 0.5f;
-   vert[0].u = 0.0f;
-   vert[0].v = 0.0f;
-   vert[0].lut_u = 0.0f;
-   vert[0].lut_v = 0.0f;
-   vert[0].r = 1.0f;
-   vert[0].g = 1.0f;
-   vert[0].b = 1.0f;
-   vert[0].a = 1.0f;
+   vert[0].x         = 0.0f;
+   vert[0].y         = out_height;
+   vert[0].z         = 0.5f;
+   vert[0].u         = 0.0f;
+   vert[0].v         = 0.0f;
+   vert[0].lut_u     = 0.0f;
+   vert[0].lut_v     = 0.0f;
+   vert[0].r         = 1.0f;
+   vert[0].g         = 1.0f;
+   vert[0].b         = 1.0f;
+   vert[0].a         = 1.0f;
 
-   vert[1].x = out_width;
-   vert[1].y = out_height;
-   vert[1].z = 0.5f;
-   vert[1].u = _u;
-   vert[1].v = 0.0f;
-   vert[1].lut_u = 1.0f;
-   vert[1].lut_v = 0.0f;
-   vert[1].r = 1.0f;
-   vert[1].g = 1.0f;
-   vert[1].b = 1.0f;
-   vert[1].a = 1.0f;
+   vert[1].x         = out_width;
+   vert[1].y         = out_height;
+   vert[1].z         = 0.5f;
+   vert[1].u         = _u;
+   vert[1].v         = 0.0f;
+   vert[1].lut_u     = 1.0f;
+   vert[1].lut_v     = 0.0f;
+   vert[1].r         = 1.0f;
+   vert[1].g         = 1.0f;
+   vert[1].b         = 1.0f;
+   vert[1].a         = 1.0f;
 
-   vert[2].x = 0.0f;
-   vert[2].y = 0.0f;
-   vert[2].z = 0.5f;
-   vert[2].u = 0.0f;
-   vert[2].v = _v;
-   vert[2].lut_u = 0.0f;
-   vert[2].lut_v = 1.0f;
-   vert[2].r = 1.0f;
-   vert[2].g = 1.0f;
-   vert[2].b = 1.0f;
-   vert[2].a = 1.0f;
+   vert[2].x         = 0.0f;
+   vert[2].y         = 0.0f;
+   vert[2].z         = 0.5f;
+   vert[2].u         = 0.0f;
+   vert[2].v         = _v;
+   vert[2].lut_u     = 0.0f;
+   vert[2].lut_v     = 1.0f;
+   vert[2].r         = 1.0f;
+   vert[2].g         = 1.0f;
+   vert[2].b         = 1.0f;
+   vert[2].a         = 1.0f;
 
-   vert[3].x = out_width;
-   vert[3].y = 0.0f;
-   vert[3].z = 0.5f;
-   vert[3].u = _u;
-   vert[3].v = _v;
-   vert[3].lut_u = 1.0f;
-   vert[3].lut_v = 1.0f;
-   vert[3].r = 1.0f;
-   vert[3].g = 1.0f;
-   vert[3].b = 1.0f;
-   vert[3].a = 1.0f;
+   vert[3].x         = out_width;
+   vert[3].y         = 0.0f;
+   vert[3].z         = 0.5f;
+   vert[3].u         = _u;
+   vert[3].v         = _v;
+   vert[3].lut_u     = 1.0f;
+   vert[3].lut_v     = 1.0f;
+   vert[3].r         = 1.0f;
+   vert[3].g         = 1.0f;
+   vert[3].b         = 1.0f;
+   vert[3].a         = 1.0f;
 
    /* Align texels and vertices.
     *
@@ -1102,7 +1088,7 @@ static void d3d9_cg_renderchain_render_pass(
    d3d9_renderchain_unbind_all(chain);
 }
 
-static bool d3d9_cg_renderchain_render(
+static void d3d9_cg_renderchain_render(
       d3d9_video_t *d3d,
       const void *frame_data,
       unsigned width, unsigned height,
@@ -1221,8 +1207,6 @@ static bool d3d9_cg_renderchain_render(
          (CGprogram)_chain->stock_shader.vprg,
          chain->final_viewport->Width,
          chain->final_viewport->Height, 0);
-
-   return true;
 }
 
 static uint32_t d3d9_cg_get_flags(void *data)
@@ -1783,9 +1767,15 @@ static bool d3d9_cg_frame(void *data, const void *frame,
 
    if (d3d->should_resize)
    {
+      cg_renderchain_t   *_chain = (cg_renderchain_t*)
+         d3d->renderchain_data;
+      d3d9_renderchain_t *chain  = (d3d9_renderchain_t*)&_chain->chain;
       d3d9_set_viewport(d3d, width, height, false, true);
-      d3d9_cg_renderchain_set_final_viewport(d3d,
-            d3d->renderchain_data, &d3d->final_viewport);
+
+      if (chain)
+         chain->final_viewport = (D3DVIEWPORT9*)&d3d->final_viewport;
+
+      d3d9_recompute_pass_sizes(chain->dev, chain, d3d);
 
       d3d->should_resize = false;
    }
@@ -1804,13 +1794,9 @@ static bool d3d9_cg_frame(void *data, const void *frame,
 
    IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev,
          0, (const float*)&d3d->mvp, 4);
-   if (!d3d9_cg_renderchain_render(
+   d3d9_cg_renderchain_render(
             d3d, frame, frame_width, frame_height,
-            pitch, d3d->dev_rotation))
-   {
-      RARCH_ERR("[D3D9]: Failed to render scene.\n");
-      return false;
-   }
+            pitch, d3d->dev_rotation);
    
    if (black_frame_insertion && !d3d->menu->enabled)
    {

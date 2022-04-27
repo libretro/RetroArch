@@ -411,13 +411,14 @@ static INLINE void d3d9_hlsl_renderchain_set_vertices_on_change(
     * Fixes infamous 'half-texel offset' issue of D3D9
     *	http://msdn.microsoft.com/en-us/library/bb219690%28VS.85%29.aspx.
     */
-   /* Maybe we do need something like this left out for now
+   /* Maybe we do need something like this left out for now */
+#if 0
    for (i = 0; i < 4; i++)
    {
-      vert[i].x     -= 0.5f;
-      vert[i].y     += 0.5f;
+      vert[i].x    -= 0.5f;
+      vert[i].y    += 0.5f;
    }
-   */
+#endif
 
    IDirect3DVertexBuffer9_Lock(pass->vertex_buf, 0, 0, &verts, 0);
    memcpy(verts, vert, sizeof(vert));
@@ -504,14 +505,6 @@ static void hlsl_d3d9_renderchain_free(void *data)
    free(chain);
 }
 
-static bool hlsl_d3d9_renderchain_init_shader(d3d9_video_t *d3d,
-      hlsl_renderchain_t *chain)
-{
-   RARCH_LOG("[D3D9]: Using HLSL shader backend.\n");
-
-   return true;
-}
-
 static bool hlsl_d3d9_renderchain_init(
       d3d9_video_t *d3d,
       LPDIRECT3DDEVICE9 dev,
@@ -527,11 +520,8 @@ static bool hlsl_d3d9_renderchain_init(
 
    if (!chain)
       return false;
-   if (!hlsl_d3d9_renderchain_init_shader(d3d, chain))
-   {
-      RARCH_ERR("[D3D9 HLSL]: Failed to initialize shader subsystem.\n");
-      return false;
-   }
+
+   RARCH_LOG("[D3D9]: Using HLSL shader backend.\n");
 
    chain->chain.dev                         = dev;
    chain->chain.final_viewport              = (D3DVIEWPORT9*)final_viewport;
@@ -546,19 +536,6 @@ static bool hlsl_d3d9_renderchain_init(
    d3d9_hlsl_bind_program(dev, &chain->stock_shader);
 
    return true;
-}
-
-static void hlsl_d3d9_renderchain_set_final_viewport(
-      d3d9_video_t *d3d,
-      hlsl_renderchain_t *_chain,
-      const D3DVIEWPORT9 *final_viewport)
-{
-   d3d9_renderchain_t *chain  = (d3d9_renderchain_t*)&_chain->chain;
-
-   if (chain && final_viewport)
-      chain->final_viewport = (D3DVIEWPORT9*)final_viewport;
-
-   d3d9_recompute_pass_sizes(chain->dev, chain, d3d);
 }
 
 static void hlsl_d3d9_renderchain_render_pass(
@@ -655,7 +632,7 @@ static void hlsl_d3d9_renderchain_render_pass(
    d3d9_renderchain_unbind_all(&chain->chain);
 }
 
-static bool hlsl_d3d9_renderchain_render(
+static void hlsl_d3d9_renderchain_render(
       d3d9_video_t *d3d,
       const void *frame,
       unsigned width, unsigned height,
@@ -785,8 +762,6 @@ static bool hlsl_d3d9_renderchain_render(
          chain, &chain->stock_shader,
          chain->chain.final_viewport->Width,
          chain->chain.final_viewport->Height, 0);
-
-   return true;
 }
 
 static bool hlsl_d3d9_renderchain_add_pass(
@@ -805,18 +780,10 @@ static bool hlsl_d3d9_renderchain_add_pass(
    d3d9_hlsl_load_program_from_file(
          chain->chain.dev, &pass, info->pass->source.path);
 
-   if (!hlsl_d3d9_renderchain_init_shader_fvf(&chain->chain, &pass))
-      return false;
-
-   return d3d9_renderchain_add_pass(&chain->chain, &pass,
-         info);
-}
-
-static bool hlsl_d3d9_renderchain_add_lut(hlsl_renderchain_t *_chain,
-      const char *id, const char *path, bool smooth)
-{
-   d3d9_renderchain_t *chain   = (d3d9_renderchain_t*)&_chain->chain;
-   return d3d9_renderchain_add_lut(chain, id, path, smooth);
+   if (hlsl_d3d9_renderchain_init_shader_fvf(&chain->chain, &pass))
+      return d3d9_renderchain_add_pass(&chain->chain, &pass,
+            info);
+   return false;
 }
 
 /* END HLSL RENDERCHAIN */
@@ -951,18 +918,23 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
    }
 #endif
 
-
-   for (i = 0; i < d3d->shader.luts; i++)
    {
-      if (!hlsl_d3d9_renderchain_add_lut(
-               d3d->renderchain_data,
-               d3d->shader.lut[i].id, d3d->shader.lut[i].path,
-               d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC 
-               ? video_smooth 
-               : (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR)))
+      hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
+      d3d9_renderchain_t *chain   = (d3d9_renderchain_t*)&_chain->chain;
+
+      for (i = 0; i < d3d->shader.luts; i++)
       {
-         RARCH_ERR("[D3D9]: Failed to init LUTs.\n");
-         return false;
+         if (!d3d9_renderchain_add_lut(
+                  chain,
+                  d3d->shader.lut[i].id,
+                  d3d->shader.lut[i].path,
+                  d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC 
+                  ? video_smooth 
+                  : (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR)))
+         {
+            RARCH_ERR("[D3D9]: Failed to init LUTs.\n");
+            return false;
+         }
       }
    }
 
@@ -1361,11 +1333,17 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
 
    if (d3d->should_resize)
    {
-      d3d9_set_viewport(d3d, width, height, false, true);
-      hlsl_d3d9_renderchain_set_final_viewport(d3d,
-               d3d->renderchain_data, &d3d->final_viewport);
+      hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
+      d3d9_renderchain_t *chain  = (d3d9_renderchain_t*)&_chain->chain;
 
-      d3d->should_resize = false;
+      d3d9_set_viewport(d3d, width, height, false, true);
+
+      if (chain)
+         chain->final_viewport   = (D3DVIEWPORT9*)&d3d->final_viewport;
+
+      d3d9_recompute_pass_sizes(chain->dev, chain, d3d);
+
+      d3d->should_resize         = false;
    }
 
    /* render_chain() only clears out viewport,
@@ -1382,10 +1360,9 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
 
    IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev, 0,
          (const float*)&d3d->mvp_transposed, 4);
-   if (!hlsl_d3d9_renderchain_render(
-            d3d, frame, frame_width, frame_height,
-            pitch, d3d->dev_rotation))
-      return false;
+   hlsl_d3d9_renderchain_render(
+         d3d, frame, frame_width, frame_height,
+         pitch, d3d->dev_rotation);
    
    if (black_frame_insertion && !d3d->menu->enabled)
    {
