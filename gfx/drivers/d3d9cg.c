@@ -663,7 +663,7 @@ static void d3d9_cg_renderchain_bind_pass(
          unsigned index = attrib_map->data[cgGetParameterResourceIndex(param)];
 
          IDirect3DDevice9_SetStreamSource(chain->dev, index,
-               cur_pass->vertex_buf, 0,
+               pass->vertex_buf, 0,
                sizeof(struct D3D9CGVertex));
          unsigned_vector_list_append(chain->bound_vert, index);
       }
