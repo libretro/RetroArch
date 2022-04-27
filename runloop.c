@@ -5034,7 +5034,7 @@ void runloop_event_deinit_core(void)
          || !string_is_empty(runloop_st->name.remapfile)
       )
    {
-      input_remapping_deinit(true);
+      input_remapping_deinit(settings->bools.remap_save_on_exit);
       input_remapping_set_defaults(true);
    }
    else

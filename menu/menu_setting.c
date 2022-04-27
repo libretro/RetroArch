@@ -10226,7 +10226,7 @@ static bool setting_append_list(
       case SETTINGS_LIST_CONFIGURATION:
          {
             uint8_t i;
-            struct bool_entry bool_entries[7];
+            struct bool_entry bool_entries[8];
             START_GROUP(list, list_info, &group_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS), parent_group);
 
@@ -10276,6 +10276,12 @@ static bool setting_append_list(
             bool_entries[6].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS;
             bool_entries[6].default_value  = default_global_core_options;
             bool_entries[6].flags          = SD_FLAG_NONE;
+
+            bool_entries[7].target         = &settings->bools.remap_save_on_exit;
+            bool_entries[7].name_enum_idx  = MENU_ENUM_LABEL_REMAP_SAVE_ON_EXIT;
+            bool_entries[7].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT;
+            bool_entries[7].default_value  = DEFAULT_REMAP_SAVE_ON_EXIT;
+            bool_entries[7].flags          = SD_FLAG_NONE;
 
             for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
             {

@@ -497,6 +497,9 @@
 /* Save configuration file on exit. */
 #define DEFAULT_CONFIG_SAVE_ON_EXIT true
 
+/* Save active input remap file on exit/close content */
+#define DEFAULT_REMAP_SAVE_ON_EXIT true
+
 #define DEFAULT_SHOW_HIDDEN_FILES false
 
 /* Initialise file browser with the last used start directory */
