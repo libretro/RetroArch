@@ -3286,6 +3286,14 @@ MSG_HASH(
    "Salva le modifiche al file di configurazione all'uscita."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
+   "Salva i file Remap all'uscita"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
+   "Salva le modifiche a qualsiasi file di remap di input attivo quando si chiude il contenuto o esce da RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
    "Carica il Contenuto Specifico delle opzioni del Core Automaticamente"
    )
@@ -7036,6 +7044,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
    "Imposta tutte le opzioni di remapping di input ai valori predefiniti."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
+   "Aggiorna File Remap Input"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
+   "Sovrascrivi il file remap attivo con le opzioni di remapping di input correnti."
    )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
@@ -11721,6 +11737,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_REMAP_FILE_LOADED,
    "File di remap del Core caricato."
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSHED,
+   "Opzioni di remapping di input salvate in:"
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSH_FAILED,
+   "Impossibile salvare le opzioni di remapping di input in:"
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED,

@@ -3218,6 +3218,10 @@ MSG_HASH(
    "Zapisz zmiany w pliku konfiguracyjnym po zakończeniu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
+   "Zapisz pliki Remap po zakończeniu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
    "Automatyczne ładowanie opcji rdzenia specyficznych dla zawartości"
    )

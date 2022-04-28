@@ -3314,6 +3314,14 @@ MSG_HASH(
    "Çıkışta yapılandırma dosyasındaki değişiklikleri kaydedin."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
+   "Çıkışta Yeniden Eşleme Dosyalarını Kaydet"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
+   "İçeriği kapatırken veya RetroArch'tan çıkarken herhangi bir etkin giriş yeniden eşleme dosyasındaki değişiklikleri kaydedin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
    "İçeriğe Özgü Çekirdek Seçeneklerini Otomatik Olarak Yükle"
    )
@@ -7104,6 +7112,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
    "Tüm giriş yeniden eşleme seçeneklerini varsayılan değerlere ayarlayın."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
+   "Girdi Yeniden Eşleme Dosyasını Güncelle"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
+   "Geçerli girdi yeniden eşleme seçenekleriyle etkin yeniden eşleme dosyasının üzerine yazın."
    )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
@@ -11941,6 +11957,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_REMAP_FILE_LOADED,
    "Çekirdek yeniden yapılandırma dosyası yüklendi."
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSHED,
+   "Girdi yeniden eşleme seçenekleri şuraya kaydedildi:"
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSH_FAILED,
+   "Girdi yeniden eşleme seçenekleri şuraya kaydedilemedi:"
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED,

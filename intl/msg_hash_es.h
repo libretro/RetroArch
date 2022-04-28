@@ -3318,6 +3318,14 @@ MSG_HASH(
    "Guarda los cambios en el archivo de configuración al cerrar RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
+   "Guardar archivos de reasignación al salir"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
+   "Guarda los cambios de cualquier archivo de reasignación de entrada activo al cerrar un contenido o al salir de RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
    "Cargar automáticamente las opciones del núcleo para el contenido"
    )
@@ -7100,6 +7108,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
    "Cambia todas las opciones de reasignaciones de entrada a sus valores predeterminados."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
+   "Actualizar archivo de reasignación de entrada"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
+   "Sobrescribe el archivo de reasignación activo con las opciones actuales de reasignación de entrada."
    )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
@@ -11833,6 +11849,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_REMAP_FILE_LOADED,
    "Se ha cargado el archivo de reasignaciones del núcleo."
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSHED,
+   "Opciones de reasignación de entrada guardadas en:"
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSH_FAILED,
+   "Error al guardar las opciones de reasignación de entrada en:"
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED,
