@@ -7811,13 +7811,13 @@ static void netplay_announce_cb(retro_task_t *task,
          if (!string_is_empty(key) && !string_is_empty(value))
          {
             if (string_is_equal(key, "id"))
-               sscanf(value, "%i", &host_room->id);
+               host_room->id = (int)strtol(value, NULL, 10);
             else if (string_is_equal(key, "username"))
                strlcpy(host_room->nickname, value, sizeof(host_room->nickname));
             else if (string_is_equal(key, "ip"))
                strlcpy(host_room->address, value, sizeof(host_room->address));
             else if (string_is_equal(key, "port"))
-               sscanf(value, "%i", &host_room->port);
+               host_room->port = (int)strtol(value, NULL, 10);
             else if (string_is_equal(key, "core_name"))
                strlcpy(host_room->corename, value, sizeof(host_room->corename));
             else if (string_is_equal(key, "frontend"))
@@ -7827,9 +7827,9 @@ static void netplay_announce_cb(retro_task_t *task,
             else if (string_is_equal(key, "game_name"))
                strlcpy(host_room->gamename, value, sizeof(host_room->gamename));
             else if (string_is_equal(key, "game_crc"))
-               sscanf(value, "%08lX", &host_room->gamecrc);
+               host_room->gamecrc = (int)strtoul(value, NULL, 16);
             else if (string_is_equal(key, "host_method"))
-               sscanf(value, "%i", &host_room->host_method);
+               host_room->host_method = (int)strtol(value, NULL, 10);
             else if (string_is_equal(key, "has_password"))
                host_room->has_password = string_is_equal_noncase(value, "true") ||
                   string_is_equal(value, "1");
@@ -8056,7 +8056,7 @@ static void netplay_mitm_query_cb(retro_task_t *task, void *task_data,
                strlcpy(host_room->mitm_address, value,
                   sizeof(host_room->mitm_address));
             else if (string_is_equal(key, "tunnel_port"))
-               sscanf(value, "%i", &host_room->mitm_port);
+               host_room->mitm_port = (int)strtol(value, NULL, 10);
          }
       }
 
