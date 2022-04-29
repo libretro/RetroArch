@@ -284,12 +284,6 @@ static void d3d11_render_overlay(d3d11_video_t *d3d11)
       d3d11->context->lpVtbl->IASetVertexBuffers(
             d3d11->context, 0, 1, &d3d11->overlays.vbo, &stride, &offset);
    }
-   {
-      UINT stride = sizeof(d3d11_sprite_t);
-      UINT offset = 0;
-      d3d11->context->lpVtbl->IASetVertexBuffers(
-            d3d11->context, 0, 1, &d3d11->frame.vbo, &stride, &offset);
-   }
    d3d11->context->lpVtbl->PSSetSamplers(
          d3d11->context, 0, 1,
          &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
