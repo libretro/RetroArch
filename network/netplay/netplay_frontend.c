@@ -358,7 +358,8 @@ static bool netplay_lan_ad_client_response(void)
          &addr_size) == sizeof(net_st->ad_packet_buffer))
       {
          char address[256];
-         struct netplay_host *host = NULL;
+         struct netplay_host *host        = NULL;
+         uint32_t            has_password = 0;
 
          /* Make sure it's a valid response */
          if (ntohl(net_st->ad_packet_buffer.header) !=
@@ -425,8 +426,8 @@ static bool netplay_lan_ad_client_response(void)
          host = &net_st->discovered_hosts.hosts[net_st->discovered_hosts.size++];
 
          /* Copy in the response */
-         host->content_crc = ntohl(net_st->ad_packet_buffer.content_crc);
-         host->port        = ntohl(net_st->ad_packet_buffer.port);
+         host->content_crc = (int)ntohl(net_st->ad_packet_buffer.content_crc);
+         host->port        = (int)ntohl(net_st->ad_packet_buffer.port);
          strlcpy(host->address,
             address,
             sizeof(host->address));
@@ -451,14 +452,9 @@ static bool netplay_lan_ad_client_response(void)
          strlcpy(host->subsystem_name,
             net_st->ad_packet_buffer.subsystem_name,
             sizeof(host->subsystem_name));
-         if (net_st->ad_packet_buffer.has_password & 1)
-            host->has_password = true;
-         else
-            host->has_password = false;
-         if (net_st->ad_packet_buffer.has_password & 2)
-            host->has_spectate_password = true;
-         else
-            host->has_spectate_password = false;
+         has_password = ntohl(net_st->ad_packet_buffer.has_password);
+         host->has_password          = (has_password & 1) ? true : false;
+         host->has_spectate_password = (has_password & 2) ? true : false;
       }
    }
 
@@ -574,6 +570,7 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
       const frontend_ctx_driver_t *frontend_drv;
       char frontend_architecture_tmp[24];
       uint32_t content_crc             = 0;
+      uint32_t has_password            = 0;
       struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
       struct string_list *subsystem    = path_get_subsystem_list();
       settings_t *settings             = config_get_ptr();
@@ -602,7 +599,7 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
 
       net_st->ad_packet_buffer.header = htonl(DISCOVERY_RESPONSE_MAGIC);
 
-      net_st->ad_packet_buffer.port = htonl((int) netplay->tcp_port);
+      net_st->ad_packet_buffer.port = (int32_t)htonl((uint32_t)netplay->tcp_port);
 
       strlcpy(net_st->ad_packet_buffer.nick, netplay->nick,
          sizeof(net_st->ad_packet_buffer.nick));
@@ -666,13 +663,13 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
          content_crc = content_get_crc();
       }
 
-      net_st->ad_packet_buffer.content_crc = htonl(content_crc);
+      net_st->ad_packet_buffer.content_crc = (int32_t)htonl(content_crc);
 
-      net_st->ad_packet_buffer.has_password = 0;
       if (!string_is_empty(settings->paths.netplay_password))
-         net_st->ad_packet_buffer.has_password |= 1;
+         has_password |= 1;
       if (!string_is_empty(settings->paths.netplay_spectate_password))
-         net_st->ad_packet_buffer.has_password |= 2;
+         has_password |= 2;
+      net_st->ad_packet_buffer.has_password = htonl(has_password);
 
       /* Send our response */
       sendto(net_st->lan_ad_server_fd,
