@@ -3242,6 +3242,14 @@ MSG_HASH(
    "Při ukončení uložte změny do konfiguračního souboru."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
+   "Uložit Přemapované Soubory a Ukončit"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
+   "Uložení změn v jakémkoli aktivním souboru přemapování vstupů při zavření obsahu nebo ukončení aplikace RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
    "Automatické Načtení Obsahu Specifické Pro Možnosti Jádra"
    )
@@ -7020,6 +7028,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
    "Nastavení všech možností přemapování vstupů na výchozí hodnoty."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
+   "Aktualizace Vstupního Přemapovaného Souboru"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
+   "Přepsat aktivní soubor přemapování aktuálními možnostmi přemapování vstupu."
    )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
@@ -11657,6 +11673,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_REMAP_FILE_LOADED,
    "Načten soubor s přemapováním jádra."
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSHED,
+   "Možnosti přemapování vstupu uložené do:"
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSH_FAILED,
+   "Nepodařilo se uložit možnosti přemapování vstupu do:"
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED,

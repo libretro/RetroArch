@@ -3294,6 +3294,14 @@ MSG_HASH(
    "Salve as alterações nos arquivos de configuração ao sair."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
+   "Salvar arquivos de remapeamento ao sair"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
+   "Salva as alterações em qualquer arquivo de remapeamento de entrada ativo ao fechar o contéudo ou sair do RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
    "Carregar automaticamente opções específicas do núcleo por conteúdo"
    )
@@ -7068,6 +7076,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
    "Define todas as opções de remapeamento aos valores padrão."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
+   "Atualizar arquivo de remapeamento de entrada"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
+   "Sobrescreve o arquivo de remapeamento ativo com as opções de remapeamento de entrada atuais."
    )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
@@ -11769,6 +11785,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_REMAP_FILE_LOADED,
    "Arquivo de remapeamento principal carregado."
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSHED,
+   "Opções de remapeamento de entrada salvadas em:"
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSH_FAILED,
+   "Falha ao salvar as opções de remapeamento de entrada em:"
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED,

@@ -3134,6 +3134,10 @@ MSG_HASH(
 
 /* Settings > Playlists > Playlist Management */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE,
+   "Nucli per defecte"
+   )
 
 /* Settings > User */
 
@@ -3306,8 +3310,84 @@ MSG_HASH(
 /* Import Content > Manual Scan */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
+   "Selecciona un directori on cercar continguts."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
    "Nom del sistema"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+   "Especifica un «nom de sistema» amb el qual associar els continguts trobats. Es fa servir per donar nom a la llista de reproducció generada i per identificar-ne les miniatures."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+   "Nom de sistema personalitzat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+   "Especifica manualment un «nom de sistema» pels continguts trobats. Només es fa servir quan el «Nom de sistema» és «<Personalitzat>»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
+   "Nucli per defecte"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
+   "Selecciona un nucli per defecte pels continguts trobats."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
+   "Extensions de fitxer"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_FILE_EXTS,
+   "Llista de tipus de fitxer que s’inclouran a la cerca, separats amb espais. Si és buida inclou tots els tipus de fitxer, o tots els fitxers admesos pel nucli si aquest s’ha especificat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
+   "Cerca recursiva"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
+   "Quan s’activa inclou a la cerca tots els subdirectoris del «Directori de continguts» especificat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
+   "Cerca dins dels arxius"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
+   "Quan s’activa, se cercaran continguts vàlids o admesos dins dels fitxers d’arxiu (.zip, .7z, etc.). Pot afectar significativament el rendiment."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE,
+   "Fitxer DAT d’arcade"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
+   "Sobreescriu la llista de reproducció existent"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
+   "Si s’activa s’esborrarà qualsevol llista de reproducció existent abans de cercar continguts. Si es desactiva es mantenen les entrades de la llista i només s’hi afegeixen els continguts que falten."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   "Valida les entrades existents"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   "Si s’activa es verificaran les entrades de qualsevol llista de reproducció existent abans de cercar continguts nous. S’esborraran les entrades que facin referència a continguts desapareguts i/o fitxers amb extensions no vàlides."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
+   "Comença la cerca"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_START,
+   "Cerca els continguts seleccionats."
    )
 
 /* Explore tab */

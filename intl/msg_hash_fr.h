@@ -3298,6 +3298,14 @@ MSG_HASH(
    "Enregistrer les modifications dans le fichier de configuration à la fermeture."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
+   "Enregistrer les fichiers de remappage en quittant"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
+   "Enregistrer les modifications dans tous les fichiers de remappage actifs à la fermeture du contenu ou de RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
    "Charger les options du cœur par contenu"
    )
@@ -7076,6 +7084,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
    "Définit toutes les options du remappage des entrées aux valeurs par défaut."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
+   "Mettre à jour le fichier de remappage des entrées"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
+   "Écraser le fichier de remappage actif avec les options actuelles de remappage des entrées."
    )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
@@ -11821,6 +11837,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_REMAP_FILE_LOADED,
    "Fichier de remappage pour le cœur chargé."
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSHED,
+   "Options de remappage des entrées enregistrées vers :"
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSH_FAILED,
+   "Impossible d'enregistrer les options de remappage des entrées vers :"
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED,

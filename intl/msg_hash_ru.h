@@ -3342,6 +3342,14 @@ MSG_HASH(
    "Сохранять изменения в файл конфигурации при выходе."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
+   "Сохранять файлы привязок при выходе"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
+   "Сохранять изменения в любом загруженном файле привязок при закрытии контента или выходе из RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
    "Автозагрузка файлов опций для игр"
    )
@@ -7136,6 +7144,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
    "Возврат всех привязок ввода к стандартным значениям."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
+   "Обновить файл привязок ввода"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
+   "Записывает текущие настройки привязок ввода в загруженный файл привязок."
    )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
@@ -11949,6 +11965,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_REMAP_FILE_LOADED,
    "Загружены привязки ввода для ядра."
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSHED,
+   "Настройки привязок ввода сохранены в:"
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSH_FAILED,
+   "Не удалось сохранить настройки привязок ввода в:"
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED,
