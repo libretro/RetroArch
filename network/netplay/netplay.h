@@ -118,8 +118,8 @@ typedef struct netplay netplay_t;
 struct ad_packet
 {
    uint32_t header;
-   int      content_crc;
-   int      port;
+   int32_t  content_crc;
+   int32_t  port;
    uint32_t has_password;
    char     nick[NETPLAY_NICK_LEN];
    char     frontend[NETPLAY_HOST_STR_LEN];
