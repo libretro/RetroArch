@@ -93,10 +93,6 @@
 #define HAVE_INET6 1
 #endif
 
-#ifdef GEKKO
-#define setsockopt net_setsockopt
-#endif
-
 #ifdef TCP_NODELAY
 #define SET_TCP_NODELAY(fd) \
    { \
