@@ -3242,6 +3242,14 @@ MSG_HASH(
    "Änderungen an der Konfigurationsdatei beim Beenden speichern."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
+   "Remapping-Dateien beim Beenden speichern"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
+   "Änderungen in jede aktive Eingabe-Remapping-Datei beim Schließen von Inhalten oder Beenden von RetroArch speichern."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
    "Inhaltsspezifische Core-Einstellungen automatisch laden"
    )
@@ -6948,6 +6956,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
    "Alle Tastenzuordnungsoptionen auf Standardwerte zurücksetzen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
+   "Eingabe-Remapping-Datei aktualisieren"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
+   "Aktive Remapping-Datei mit den aktuellen Eingabe-Remapping-Optionen überschreiben."
    )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
@@ -11541,6 +11557,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_REMAP_FILE_LOADED,
    "Core Remap-Datei geladen."
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSHED,
+   "Eingabe-Remapping-Optionen gespeichert in:"
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSH_FAILED,
+   "Fehler beim Speichern der Eingabe-Remapping-Optionen in:"
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED,
