@@ -56,6 +56,8 @@
 
 #include <network.h>
 
+#define setsockopt net_setsockopt
+
 #elif defined(VITA)
 
 #include <psp2/net/net.h>
