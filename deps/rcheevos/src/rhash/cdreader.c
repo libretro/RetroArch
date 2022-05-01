@@ -563,32 +563,34 @@ static void* cdreader_open_cue_track(const char* path, uint32_t track)
 
 static void* cdreader_open_gdi_track(const char* path, uint32_t track)
 {
+  void* file_handle;
   char buffer[1024];
   char mode[16] = "MODE1/";
   char sector_size[16];
   char file[256];
   int64_t track_size;
   int track_type;
-  char *ptr, *ptr2, *end;
+  char* bin_path = "";
+  uint32_t current_track = 0;
+  char* ptr, *ptr2, *end;
+  int lba = 0;
 
+  uint32_t largest_track = 0;
+  int64_t largest_track_size = 0;
   char largest_track_file[256];
   char largest_track_sector_size[16];
-  char *bin_path                     = NULL; 
-  uint32_t current_track             = 0;
-  int lba                            = 0;
-  uint32_t largest_track             = 0;
-  int64_t largest_track_size         = 0;
-  int largest_track_lba              = 0;
+  int largest_track_lba = 0;
 
-  int found                          = 0;
-  size_t num_read                    = 0;
-  int64_t file_offset                = 0;
-  struct cdrom_t* cdrom              = NULL;
-  void *file_handle                  = rc_file_open(path);
+  int found = 0;
+  size_t num_read = 0;
+  int64_t file_offset = 0;
+  struct cdrom_t* cdrom = NULL;
+
+  file_handle = rc_file_open(path);
   if (!file_handle)
     return NULL;
 
-  file[0]                            = '\0';
+  file[0] = '\0';
   do
   {
     num_read = rc_file_read(file_handle, buffer, sizeof(buffer) - 1);

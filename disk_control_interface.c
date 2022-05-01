@@ -331,7 +331,16 @@ bool disk_control_set_eject_state(
 
 #ifdef HAVE_CHEEVOS
    if (!error && !eject)
-      rcheevos_change_disc(disk_control->index_record.image_path, false);
+   {
+      if (disk_control->cb.get_image_index && disk_control->cb.get_image_path)
+      {
+         char image_path[PATH_MAX_LENGTH] = "";
+         unsigned image_index = disk_control->cb.get_image_index();
+
+         if (disk_control->cb.get_image_path(image_index, image_path, sizeof(image_path)))
+            rcheevos_change_disc(image_path, false);
+      }
+   }
 #endif
 
    return !error;
