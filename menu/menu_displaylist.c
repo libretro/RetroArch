@@ -5296,14 +5296,13 @@ static int menu_displaylist_parse_netplay_mitm_server_list(
    size_t menu_index           = 0;
    char entry_label[21];
 
+   unsigned i;
+   unsigned list_len = ARRAY_SIZE(netplay_mitm_server_list);
+
    entry_label[0] = '\0';
 
    if (!system || !settings)
       goto end;
-
-
-   unsigned i;
-   unsigned list_len = ARRAY_SIZE(netplay_mitm_server_list);
 
    for (i = 0; i < list_len; i++)
    {

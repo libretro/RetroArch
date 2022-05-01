@@ -6807,18 +6807,18 @@ static int action_ok_push_dropdown_item_netplay_mitm_server(const char *path,
    const char *menu_path        = NULL;
    enum msg_hash_enums enum_idx;
    rarch_setting_t     *setting;
+
+   unsigned list_len = ARRAY_SIZE(netplay_mitm_server_list);
+   bool found        = false;
+   int offset        = 0;
+   unsigned i;
+
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
    enum_idx = (enum msg_hash_enums)atoi(menu_path);
    setting  = menu_setting_find_enum(enum_idx);
 
    if (!setting)
       return menu_cbs_exit();
-
-
-   unsigned list_len = ARRAY_SIZE(netplay_mitm_server_list);
-   bool found        = false;
-   int offset        = 0;
-   unsigned i;
 
    for (i = 0; i < list_len; i++)
    {
