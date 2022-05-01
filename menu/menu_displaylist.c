@@ -5287,6 +5287,65 @@ end:
    return count;
 }
 
+static int menu_displaylist_parse_netplay_mitm_server_list(
+      menu_displaylist_info_t *info, settings_t *settings)
+{
+   unsigned count              = 0;
+#ifdef HAVE_NETWORKING
+   rarch_system_info_t *system = &runloop_state_get_ptr()->system;
+   size_t menu_index           = 0;
+   char entry_label[21];
+
+   entry_label[0] = '\0';
+
+   if (!system || !settings)
+      goto end;
+
+
+   unsigned i;
+   unsigned list_len = ARRAY_SIZE(netplay_mitm_server_list);
+
+   for (i = 0; i < list_len; i++)
+   {
+
+       /* Add menu entry */
+       if (menu_entries_append_enum(info->list,
+             netplay_mitm_server_list[i].description,
+             entry_label,
+             MENU_ENUM_LABEL_INPUT_DESCRIPTION,
+             MENU_SETTING_DROPDOWN_ITEM_NETPLAY_MITM_SERVER,
+             0, i))
+       {
+          /* Add checkmark if input is currently
+           * mapped to this entry */
+          if (string_is_equal(settings->arrays.netplay_mitm_server, netplay_mitm_server_list[i].name))
+          {
+             menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[menu_index].actiondata;
+             if (cbs)
+                cbs->checked = true;
+             menu_navigation_set_selection(menu_index);
+          }
+
+          count++;
+          menu_index++;
+       }
+
+   }
+
+end:
+   /* Fallback */
+   if (count == 0)
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+            MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+            FILE_TYPE_NONE, 0, 0))
+         count++;
+#endif
+   return count;
+}
+
+
 static int menu_displaylist_parse_input_description_kbd_list(
       menu_displaylist_info_t *info, settings_t *settings)
 {
@@ -12540,6 +12599,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          info->need_refresh = true;
          info->need_push    = true;
          break;
+      case DISPLAYLIST_DROPDOWN_LIST_NETPLAY_MITM_SERVER:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         count              = menu_displaylist_parse_netplay_mitm_server_list(info, settings);
+         info->need_refresh = true;
+         info->need_push    = true;
+       break;
       case DISPLAYLIST_SAVING_SETTINGS_LIST:
       case DISPLAYLIST_DRIVER_SETTINGS_LIST:
       case DISPLAYLIST_LOGGING_SETTINGS_LIST:
