@@ -6819,7 +6819,7 @@ static int action_ok_push_dropdown_item_netplay_mitm_server(const char *path,
       return menu_cbs_exit();
 
    strlcpy(setting->value.target.string,
-           netplay_mitm_server_list[idx].name, setting->size);
+           netplay_mitm_server_list[entry_idx].name, setting->size);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
@@ -8595,9 +8595,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION_KBD:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_input_description_kbd);
             break;
+#ifdef HAVE_NETWORKING
          case MENU_SETTING_DROPDOWN_ITEM_NETPLAY_MITM_SERVER:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_netplay_mitm_server);
             break;
+#endif
          case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
             BIND_ACTION_OK(cbs, action_ok_push_default);
             break;
