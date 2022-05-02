@@ -5287,6 +5287,55 @@ end:
    return count;
 }
 
+#ifdef HAVE_NETWORKING
+static int menu_displaylist_parse_netplay_mitm_server_list(
+      menu_displaylist_info_t *info, settings_t *settings)
+{
+   size_t count    = 0;
+   size_t i;
+   size_t list_len = ARRAY_SIZE(netplay_mitm_server_list);
+
+   if (!settings)
+      goto end;
+
+   for (i = 0; i < list_len; i++)
+   {
+       /* Add menu entry */
+       if (menu_entries_append_enum(info->list,
+             netplay_mitm_server_list[i].description,
+             netplay_mitm_server_list[i].name,
+             MENU_ENUM_LABEL_NETPLAY_MITM_SERVER_LOCATION,
+             MENU_SETTING_DROPDOWN_ITEM_NETPLAY_MITM_SERVER,
+             0, i))
+       {
+          if (string_is_equal(settings->arrays.netplay_mitm_server, netplay_mitm_server_list[i].name))
+          {
+             menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[count].actiondata;
+             if (cbs)
+                cbs->checked = true;
+             menu_navigation_set_selection(count);
+          }
+
+          count++;
+       }
+
+   }
+
+end:
+   /* Fallback */
+   if (count == 0)
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+            MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+            FILE_TYPE_NONE, 0, 0))
+         count++;
+
+   return count;
+}
+#endif
+
+
 static int menu_displaylist_parse_input_description_kbd_list(
       menu_displaylist_info_t *info, settings_t *settings)
 {
@@ -12540,6 +12589,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          info->need_refresh = true;
          info->need_push    = true;
          break;
+#ifdef HAVE_NETWORKING
+      case DISPLAYLIST_DROPDOWN_LIST_NETPLAY_MITM_SERVER:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         count              = menu_displaylist_parse_netplay_mitm_server_list(info, settings);
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+#endif
       case DISPLAYLIST_SAVING_SETTINGS_LIST:
       case DISPLAYLIST_DRIVER_SETTINGS_LIST:
       case DISPLAYLIST_LOGGING_SETTINGS_LIST:

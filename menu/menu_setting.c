@@ -5858,6 +5858,22 @@ static int setting_string_action_left_driver(
 }
 
 #ifdef HAVE_NETWORKING
+static int setting_string_action_ok_netplay_mitm_server(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+    char enum_idx[16];
+    if (!setting)
+       return -1;
+
+    snprintf(enum_idx, sizeof(enum_idx), "%d", setting->enum_idx);
+
+    generic_action_ok_displaylist_push(
+          enum_idx, /* we will pass the enumeration index of the string as a path */
+          NULL, NULL, 0, idx, 0,
+          ACTION_OK_DL_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER);
+    return 0;
+}
+
 static int setting_string_action_left_netplay_mitm_server(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
@@ -19585,6 +19601,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
          (*list)[list_info->index - 1].action_start = setting_generic_action_start_default;
+         (*list)[list_info->index - 1].action_ok    = setting_string_action_ok_netplay_mitm_server;
          (*list)[list_info->index - 1].action_left  = setting_string_action_left_netplay_mitm_server;
          (*list)[list_info->index - 1].action_right = setting_string_action_right_netplay_mitm_server;
          (*list)[list_info->index - 1].get_string_representation =

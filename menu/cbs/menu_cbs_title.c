@@ -1764,6 +1764,9 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_INDEX,                       action_get_title_dropdown_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION,                        action_get_title_dropdown_input_description},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD,                    action_get_title_dropdown_input_description_kbd},
+#ifdef HAVE_NETWORKING
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER,                      action_get_title_dropdown_item},
+#endif
       {MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS,                                          action_get_quick_menu_views_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST,                                              action_get_title_deferred_playlist_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS,                                  action_get_title_deferred_playlist_list},

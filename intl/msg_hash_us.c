@@ -1864,6 +1864,14 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "to use for netplay. A server that is \n"
                              "located closer to you may have less latency. \n");
             break;
+        case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER_LOCATION:
+            snprintf(s, len,
+                     "Man-in-the-middle server location \n"
+                             " \n"
+                             "Picks which man-in-the-middle server \n"
+                             "will be used for netplay. A server that is \n"
+                             "located closer to you may have less latency. \n");
+            break;
         case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
             snprintf(s, len,
                      "Maximum amount of swapchain images. This \n"

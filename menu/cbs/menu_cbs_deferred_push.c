@@ -663,6 +663,9 @@ GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_device_type,
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_device_index, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DEVICE_INDEX)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_description, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_description_kbd, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION_KBD)
+#ifdef HAVE_NETWORKING
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_netplay_mitm_server, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_NETPLAY_MITM_SERVER)
+#endif
 
 static int menu_cbs_init_bind_deferred_push_compare_label(
       menu_file_list_cbs_t *cbs,
@@ -698,6 +701,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_INDEX, deferred_push_dropdown_box_list_input_device_index},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION, deferred_push_dropdown_box_list_input_description},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD, deferred_push_dropdown_box_list_input_description_kbd},
+#ifdef HAVE_NETWORKING
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER, deferred_push_dropdown_box_list_netplay_mitm_server},
+#endif
       {MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_LIST, deferred_push_browse_url_list},
       {MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_START, deferred_push_browse_url_start},
       {MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST, deferred_push_core_settings_list},
