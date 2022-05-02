@@ -3350,6 +3350,14 @@ MSG_HASH(
    "종료 시 변경된 설정을 저장합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
+   "종료 시 입력설정 파일 저장하기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
+   "컨텐츠를 중단하거나 RetroArch를 종료할 때 입력설정의 변경 사항을 파일에 저장합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
    "컨텐츠 특정 코어 옵션 자동으로 불러오기"
    )
@@ -7144,6 +7152,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
    "모든 입력설정 옵션을 기본값으로 초기화합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
+   "입력설정 파일 갱신"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
+   "현재 입력 설정을 활성 입력설정 파일에 덮어씌워 저장합니다."
    )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
@@ -11949,6 +11965,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_REMAP_FILE_LOADED,
    "코어 입력설정 파일을 불러왔습니다."
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSHED,
+   "입력설정이 저장됨:"
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSH_FAILED,
+   "입력설정 저장에 실패함:"
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED,
