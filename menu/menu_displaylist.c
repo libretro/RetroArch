@@ -5305,7 +5305,7 @@ static int menu_displaylist_parse_netplay_mitm_server_list(
        if (menu_entries_append_enum(info->list,
              netplay_mitm_server_list[i].description,
              netplay_mitm_server_list[i].name,
-             MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER,
+             MENU_ENUM_LABEL_NETPLAY_MITM_SERVER_LOCATION,
              MENU_SETTING_DROPDOWN_ITEM_NETPLAY_MITM_SERVER,
              0, i))
        {
