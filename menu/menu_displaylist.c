@@ -5300,7 +5300,6 @@ static int menu_displaylist_parse_netplay_mitm_server_list(
 
    for (i = 0; i < list_len; i++)
    {
-
        /* Add menu entry */
        if (menu_entries_append_enum(info->list,
              netplay_mitm_server_list[i].description,
@@ -5309,8 +5308,6 @@ static int menu_displaylist_parse_netplay_mitm_server_list(
              MENU_SETTING_DROPDOWN_ITEM_NETPLAY_MITM_SERVER,
              0, i))
        {
-          /* Add checkmark if input is currently
-           * mapped to this entry */
           if (string_is_equal(settings->arrays.netplay_mitm_server, netplay_mitm_server_list[i].name))
           {
              menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[count].actiondata;
