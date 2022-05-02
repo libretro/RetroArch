@@ -5287,21 +5287,15 @@ end:
    return count;
 }
 
+#ifdef HAVE_NETWORKING
 static int menu_displaylist_parse_netplay_mitm_server_list(
       menu_displaylist_info_t *info, settings_t *settings)
 {
-   unsigned count              = 0;
-#ifdef HAVE_NETWORKING
-   rarch_system_info_t *system = &runloop_state_get_ptr()->system;
-   size_t menu_index           = 0;
-   char entry_label[21];
+   size_t count    = 0;
+   size_t i;
+   size_t list_len = ARRAY_SIZE(netplay_mitm_server_list);
 
-   unsigned i;
-   unsigned list_len = ARRAY_SIZE(netplay_mitm_server_list);
-
-   entry_label[0] = '\0';
-
-   if (!system || !settings)
+   if (!settings)
       goto end;
 
    for (i = 0; i < list_len; i++)
@@ -5310,8 +5304,8 @@ static int menu_displaylist_parse_netplay_mitm_server_list(
        /* Add menu entry */
        if (menu_entries_append_enum(info->list,
              netplay_mitm_server_list[i].description,
-             entry_label,
-             MENU_ENUM_LABEL_INPUT_DESCRIPTION,
+             netplay_mitm_server_list[i].name,
+             MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER,
              MENU_SETTING_DROPDOWN_ITEM_NETPLAY_MITM_SERVER,
              0, i))
        {
@@ -5319,14 +5313,13 @@ static int menu_displaylist_parse_netplay_mitm_server_list(
            * mapped to this entry */
           if (string_is_equal(settings->arrays.netplay_mitm_server, netplay_mitm_server_list[i].name))
           {
-             menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[menu_index].actiondata;
+             menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[count].actiondata;
              if (cbs)
                 cbs->checked = true;
-             menu_navigation_set_selection(menu_index);
+             menu_navigation_set_selection(count);
           }
 
           count++;
-          menu_index++;
        }
 
    }
@@ -5340,9 +5333,10 @@ end:
             MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
             FILE_TYPE_NONE, 0, 0))
          count++;
-#endif
+
    return count;
 }
+#endif
 
 
 static int menu_displaylist_parse_input_description_kbd_list(

@@ -6819,7 +6819,7 @@ static int action_ok_push_dropdown_item_netplay_mitm_server(const char *path,
       return menu_cbs_exit();
 
    strlcpy(setting->value.target.string,
-           netplay_mitm_server_list[entry_idx].name, setting->size);
+           label, setting->size);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
