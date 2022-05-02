@@ -302,8 +302,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD;
+#ifdef HAVE_NETWORKING
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER;
+#endif
       case ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST;
       case ACTION_OK_DL_ACCOUNTS_LIST:
@@ -810,6 +812,7 @@ int generic_action_ok_displaylist_push(const char *path,
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
+#ifdef HAVE_NETWORKING
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER:
          info.type          = type;
          info.directory_ptr = idx;
@@ -819,6 +822,7 @@ int generic_action_ok_displaylist_push(const char *path,
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
+#endif
       case ACTION_OK_DL_USER_BINDS_LIST:
          info.type          = type;
          info.directory_ptr = idx;
@@ -6799,19 +6803,13 @@ static int action_ok_push_dropdown_item_input_description_kbd(
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
+#ifdef HAVE_NETWORKING
 static int action_ok_push_dropdown_item_netplay_mitm_server(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETWORKING
-
    const char *menu_path        = NULL;
    enum msg_hash_enums enum_idx;
    rarch_setting_t     *setting;
-
-   unsigned list_len = ARRAY_SIZE(netplay_mitm_server_list);
-   bool found        = false;
-   int offset        = 0;
-   unsigned i;
 
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
    enum_idx = (enum msg_hash_enums)atoi(menu_path);
@@ -6820,28 +6818,12 @@ static int action_ok_push_dropdown_item_netplay_mitm_server(const char *path,
    if (!setting)
       return menu_cbs_exit();
 
-   for (i = 0; i < list_len; i++)
-   {
-      /* find the currently selected server in the list */
-      if (string_is_equal(path, netplay_mitm_server_list[i].description))
-      {
-         found  = true;
-         offset = i;
-         break;
-      }
-   }
-
-   /* current entry was invalid, go back to the end */
-   if (!found)
-      offset = list_len - 1;
-
-   if (offset >= 0)
-      strlcpy(setting->value.target.string,
-            netplay_mitm_server_list[offset].name, setting->size);
-#endif
+   strlcpy(setting->value.target.string,
+           netplay_mitm_server_list[idx].name, setting->size);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
+#endif
 
 static int action_ok_push_default(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)

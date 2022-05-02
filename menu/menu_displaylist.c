@@ -12598,12 +12598,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          info->need_refresh = true;
          info->need_push    = true;
          break;
+#ifdef HAVE_NETWORKING
       case DISPLAYLIST_DROPDOWN_LIST_NETPLAY_MITM_SERVER:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count              = menu_displaylist_parse_netplay_mitm_server_list(info, settings);
          info->need_refresh = true;
          info->need_push    = true;
-       break;
+         break;
+#endif
       case DISPLAYLIST_SAVING_SETTINGS_LIST:
       case DISPLAYLIST_DRIVER_SETTINGS_LIST:
       case DISPLAYLIST_LOGGING_SETTINGS_LIST:
