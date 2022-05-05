@@ -6263,11 +6263,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
-   "Päivitä Netplay LAN luettelo"
+   "Päivitä verkkopelin LAN-luettelo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
-   "Etsi LAN verkkopelipalvelimia."
+   "Etsi LAN-verkkopelipalvelimia."
    )
 
 /* Netplay > Host */

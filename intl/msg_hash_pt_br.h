@@ -6877,7 +6877,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
-   "Adicionar o conteúdo aos \"Favoritos\"."
+   "Adiciona o conteúdo aos \"Favoritos\"."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
