@@ -4242,8 +4242,8 @@ static void retroarch_print_help(const char *arg0)
          "Port used to netplay. Default is 55435.\n", sizeof(buf));
    strlcat(buf, "      --nick=NICK                "
          "Picks a username (for use with netplay). Not mandatory.\n", sizeof(buf));
-   strlcat(buf, "      --stateless                "
-         "Use \"stateless\" mode for netplay (requires a very fast network).\n", sizeof(buf));
+   /*strlcat(buf, "      --stateless                "
+         "Use \"stateless\" mode for netplay (requires a very fast network).\n", sizeof(buf));*/
    strlcat(buf, "      --check-frames=NUMBER      "
          "Check frames when using netplay.\n", sizeof(buf));
 #ifdef HAVE_NETWORK_CMD
