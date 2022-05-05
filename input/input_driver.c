@@ -3919,6 +3919,7 @@ int16_t input_state_device(
                         if (input_st->overlay_ptr &&
                             input_st->overlay_ptr->alive &&
                             (port == 0) &&
+                            (idx != RETRO_DEVICE_INDEX_ANALOG_BUTTON) &&
                             !(((input_analog_dpad_mode == ANALOG_DPAD_LSTICK) &&
                                  (idx == RETRO_DEVICE_INDEX_ANALOG_LEFT)) ||
                              ((input_analog_dpad_mode == ANALOG_DPAD_RSTICK) &&
@@ -4939,7 +4940,14 @@ int16_t input_state_internal(unsigned port, unsigned device,
             {
                if (id < RARCH_FIRST_CUSTOM_BIND)
                {
-                  bool valid_bind = (*input_st->libretro_input_binds[mapped_port])[id].valid;
+                  /* TODO/FIXME: Analog buttons can only be read as analog
+                   * when the default mapping is applied. If the user
+                   * remaps any analog buttons, they will become 'digital'
+                   * due to the way that mapping is handled elsewhere. We
+                   * cannot fix this without rewriting the entire mess that
+                   * is the input remapping system... */
+                  bool valid_bind = (*input_st->libretro_input_binds[mapped_port])[id].valid &&
+                        (id == settings->uints.input_remap_ids[mapped_port][id]);
 
                   if (valid_bind)
                   {
