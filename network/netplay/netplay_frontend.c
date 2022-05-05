@@ -8354,7 +8354,8 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
 
    net_st->data = netplay_new(
          server, mitm, port, mitm_session,
-         settings->bools.netplay_stateless_mode,
+         /*settings->bools.netplay_stateless_mode,*/
+         false,
          settings->ints.netplay_check_frames,
          &cbs,
          settings->bools.netplay_nat_traversal,
