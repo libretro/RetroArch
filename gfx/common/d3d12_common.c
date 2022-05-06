@@ -172,6 +172,7 @@ bool d3d12_init_base(d3d12_video_t* d3d12)
    D3D12GetDebugInterface_(&d3d12->debugController);
    D3D12EnableDebugLayer(d3d12->debugController);
 #endif
+#endif
 
 #ifdef __WINRT__
    DXGICreateFactory2(&d3d12->factory);
