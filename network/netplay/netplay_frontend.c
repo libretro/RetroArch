@@ -1303,10 +1303,10 @@ static bool netplay_handshake_sync(netplay_t *netplay,
    size_t nicklen, nickmangle = 0;
    bool nick_matched          = false;
 
+   mem_info.id = RETRO_MEMORY_SAVE_RAM;
 #ifdef HAVE_THREADS
    autosave_lock();
 #endif
-   mem_info.id = RETRO_MEMORY_SAVE_RAM;
    core_get_memory(&mem_info);
 #ifdef HAVE_THREADS
    autosave_unlock();
@@ -1879,54 +1879,72 @@ static bool netplay_handshake_pre_sync(netplay_t *netplay,
    }
 
    /* Now check the SRAM */
+   mem_info.id = RETRO_MEMORY_SAVE_RAM;
 #ifdef HAVE_THREADS
    autosave_lock();
 #endif
-   mem_info.id = RETRO_MEMORY_SAVE_RAM;
    core_get_memory(&mem_info);
-
    local_sram_size  = (unsigned)mem_info.size;
-   remote_sram_size = ntohl(cmd[1]) -
-         (2+2*MAX_INPUT_DEVICES)*sizeof(uint32_t) - (MAX_INPUT_DEVICES)*sizeof(uint8_t) - NETPLAY_NICK_LEN;
-
-   if (local_sram_size != 0 && local_sram_size == remote_sram_size)
-   {
-      RECV(mem_info.data, local_sram_size)
-      {
-         RARCH_ERR("[Netplay] %s\n",
-               msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
-#ifdef HAVE_THREADS
-         autosave_unlock();
-#endif
-         return false;
-      }
-
-   }
-   else if (remote_sram_size != 0)
-   {
-      /* We can't load this, but we still need to get rid of the data */
-      uint32_t quickbuf;
-      while (remote_sram_size > 0)
-      {
-         RECV(&quickbuf, (remote_sram_size > sizeof(uint32_t)) ? sizeof(uint32_t) : remote_sram_size)
-         {
-            RARCH_ERR("[Netplay] %s\n",
-                  msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
-#ifdef HAVE_THREADS
-            autosave_unlock();
-#endif
-            return false;
-         }
-         if (remote_sram_size > sizeof(uint32_t))
-            remote_sram_size -= sizeof(uint32_t);
-         else
-            remote_sram_size = 0;
-      }
-
-   }
 #ifdef HAVE_THREADS
    autosave_unlock();
 #endif
+   remote_sram_size = ntohl(cmd[1]) -
+         (2+2*MAX_INPUT_DEVICES)*sizeof(uint32_t) - (MAX_INPUT_DEVICES)*sizeof(uint8_t) - NETPLAY_NICK_LEN;
+
+   if (local_sram_size && local_sram_size == remote_sram_size)
+   {
+      void *sram_buf = malloc(remote_sram_size);
+
+      if (!sram_buf)
+         return false;
+
+      /* We cannot use the RECV macro here as we need to ALWAYS free sram_buf. */
+      recvd = netplay_recv(&connection->recv_packet_buffer, connection->fd,
+         sram_buf, remote_sram_size, false);
+      if (recvd < 0)
+      {
+         free(sram_buf);
+         RARCH_ERR("[Netplay] %s\n",
+               msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
+         return false;
+      }
+      if (recvd < (ssize_t)remote_sram_size)
+      {
+         free(sram_buf);
+         netplay_recv_reset(&connection->recv_packet_buffer);
+         return true;
+      }
+
+      mem_info.id = RETRO_MEMORY_SAVE_RAM;
+#ifdef HAVE_THREADS
+      autosave_lock();
+#endif
+      core_get_memory(&mem_info);
+      memcpy(mem_info.data, sram_buf, local_sram_size);
+#ifdef HAVE_THREADS
+      autosave_unlock();
+#endif
+
+      free(sram_buf);
+   }
+   else if (remote_sram_size)
+   {
+      /* We can't load this, but we still need to get rid of the data */
+      unsigned char sram_buf[1024];
+
+      while (remote_sram_size)
+      {
+         RECV(sram_buf,
+               (remote_sram_size > sizeof(sram_buf)) ?
+                  sizeof(sram_buf) : remote_sram_size)
+         {
+            RARCH_ERR("[Netplay] %s\n",
+               msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
+            return false;
+         }
+         remote_sram_size -= recvd;
+      }
+   }
 
    /* We're ready! */
    *had_input = true;
