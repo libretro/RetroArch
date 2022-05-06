@@ -53,6 +53,9 @@
 /* Miyoo defines */
 #define MIYOO_BATTERY_VOLTAGE_NOW_FILE    "/sys/class/power_supply/miyoo-battery/voltage_now"
 
+/* RetroFW */
+#define RETROFW_BATTERY_VOLTAGE_NOW_FILE "/proc/jz/battery"
+
 /* Enables/disables downscaling when using
  * the IPU hardware scaler */
 bool dingux_ipu_set_downscaling_enable(bool enable)
@@ -249,6 +252,64 @@ bool dingux_ipu_reset(void)
 #endif
 }
 
+#if defined(RETROFW)
+static uint64_t read_battery_ignore_size(const char *path)
+{
+   int64_t file_len   = 0;
+   char file_buf[20];
+   int sys_file_value = 0;
+   RFILE *file;
+
+   /* Check whether file exists */
+   if (!path_is_valid(path))
+      return -1;
+
+   memset(file_buf, 0, sizeof(file_buf));
+
+   file              = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!file)
+   {
+      return -1;
+   }
+
+   file_len = filestream_read(file, file_buf, sizeof(file_buf) - 1);
+   if (filestream_close(file) != 0)
+      if (file)
+         free(file);
+
+   if (file_len <= 0)
+      return -1;
+
+   return strtoul(file_buf, NULL, 10);
+}
+
+int retrofw_get_battery_level(enum frontend_powerstate *state)
+{
+   /* retrofw battery only provides "voltage_now". Values are based on gmenu2x with some interpolation */
+   uint32_t rawval = read_battery_ignore_size(RETROFW_BATTERY_VOLTAGE_NOW_FILE);
+   int voltage_now = rawval & 0x7fffffff;
+   if (voltage_now > 10000) {
+      *state = FRONTEND_POWERSTATE_NONE;
+      return -1;
+   }
+   if (rawval & 0x80000000) {
+      *state = FRONTEND_POWERSTATE_CHARGING;
+      if (voltage_now > 4000)
+	 *state = FRONTEND_POWERSTATE_CHARGED;
+   } else
+      *state = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
+   if (voltage_now < 0) return -1;     // voltage_now not available
+   if (voltage_now > 4000) return 100;
+   if (voltage_now > 3700) return 40 + (voltage_now - 3700) / 5;
+   if (voltage_now > 3520) return 20 + (voltage_now - 3520) / 9;
+   if (voltage_now > 3330) return 1 + (voltage_now - 3330) * 10;
+   return 0;
+}
+#else
+
 static int dingux_read_battery_sys_file(const char *path)
 {
    int64_t file_len   = 0;
@@ -333,6 +394,7 @@ int dingux_get_battery_level(void)
    return dingux_read_battery_sys_file(DINGUX_BATTERY_CAPACITY_FILE);
 #endif
 }
+#endif
 
 /* Fetches the path of the base 'retroarch'
  * directory */
