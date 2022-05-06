@@ -363,28 +363,28 @@ build-retroarch-osx-opengl-x64:
     XCPROJECT_NAME: RetroArch
     XCCONFIG: OpenGL_GitLabCI.xcconfig
 
-build-retroarch-osx-ppc:
-  stage: build
-  artifacts:
-    paths:
-    - ${XCPROJECT_NAME}.zip
-    - retroarch-repo/
-    expire_in: 10 min
-  dependencies: []
-  variables:
-    XCPROJECT_NAME: RetroArch
-    XCCONFIG: OpenGL_GitLabCI.xcconfig
-  tags:
-   - macosx-legacy
-  script:
-    - xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch_PPC.xcodeproj ONLY_ACTIVE_ARCH=NO
-    - pushd pkg/apple/build/Release/
-    - ditto -c -k --sequesterRsrc --keepParent RetroArch.app ${XCPROJECT_NAME}.zip
-    - popd
-    - mv pkg/apple/build/Release/RetroArch.zip ${XCPROJECT_NAME}.zip
-    - mkdir .retroarch-repo
-    - "cp -r ./* .retroarch-repo"
-    - "mv .retroarch-repo/ retroarch-repo/"
+#build-retroarch-osx-ppc:
+#  stage: build
+#  artifacts:
+#    paths:
+#    - ${XCPROJECT_NAME}.zip
+#    - retroarch-repo/
+#    expire_in: 10 min
+#  dependencies: []
+#  variables:
+#    XCPROJECT_NAME: RetroArch
+#    XCCONFIG: OpenGL_GitLabCI.xcconfig
+#  tags:
+#   - macosx-legacy
+#  script:
+#    - xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch_PPC.xcodeproj ONLY_ACTIVE_ARCH=NO
+#    - pushd pkg/apple/build/Release/
+#    - ditto -c -k --sequesterRsrc --keepParent RetroArch.app ${XCPROJECT_NAME}.zip
+#    - popd
+#    - mv pkg/apple/build/Release/RetroArch.zip ${XCPROJECT_NAME}.zip
+#    - mkdir .retroarch-repo
+#    - "cp -r ./* .retroarch-repo"
+#    - "mv .retroarch-repo/ retroarch-repo/"
 
 build-retroarch-ios-arm64:
   extends: .build-retroarch-macos-xcode
