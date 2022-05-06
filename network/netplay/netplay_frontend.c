@@ -8277,20 +8277,29 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
    if (!net_st->netplay_enabled)
       return false;
 
+#ifdef HAVE_NETPLAYDISCOVERY
+   net_st->lan_ad_server_fd = -1;
+#endif
+
+   serialization_quirks = core_serialization_quirks();
+
+   if (!core_info_current_supports_netplay() ||
+         serialization_quirks & ~((uint64_t) NETPLAY_QUIRK_MAP_UNDERSTOOD) ||
+         serialization_quirks & NETPLAY_QUIRK_MAP_NO_SAVESTATES ||
+         serialization_quirks & NETPLAY_QUIRK_MAP_NO_TRANSMISSION)
+   {
+      RARCH_ERR("[Netplay] %s\n", msg_hash_to_str(MSG_NETPLAY_UNSUPPORTED));
+      runloop_msg_queue_push(
+         msg_hash_to_str(MSG_NETPLAY_UNSUPPORTED), 0, 180, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      goto failure;
+   }
+
    core_set_default_callbacks(&cbs);
    if (!core_set_netplay_callbacks())
       goto failure;
 
    /* Map the core's quirks to our quirks */
-   serialization_quirks = core_serialization_quirks();
-
-   /* Quirks we don't support! Just disable everything. */
-   if (serialization_quirks & ~((uint64_t) NETPLAY_QUIRK_MAP_UNDERSTOOD))
-      quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
-   if (serialization_quirks & NETPLAY_QUIRK_MAP_NO_SAVESTATES)
-      quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
-   if (serialization_quirks & NETPLAY_QUIRK_MAP_NO_TRANSMISSION)
-      quirks |= NETPLAY_QUIRK_NO_TRANSMISSION;
    if (serialization_quirks & NETPLAY_QUIRK_MAP_INITIALIZATION)
       quirks |= NETPLAY_QUIRK_INITIALIZATION;
    if (serialization_quirks & NETPLAY_QUIRK_MAP_ENDIAN_DEPENDENT)
@@ -8342,10 +8351,6 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
    }
 
    net_st->netplay_client_deferred = false;
-
-#ifdef HAVE_NETPLAYDISCOVERY
-   net_st->lan_ad_server_fd = -1;
-#endif
 
    net_st->chat             = (struct netplay_chat*)calloc(1, sizeof(*net_st->chat));
    if (!net_st->chat)
