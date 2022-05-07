@@ -11167,6 +11167,10 @@ MSG_HASH(
    "Nie udało się zainicjować gry sieciowej."
    )
 MSG_HASH(
+   MSG_NETPLAY_UNSUPPORTED,
+   "Rdzeń nie obsługuje netplay."
+   )
+MSG_HASH(
    MSG_NO_CONTENT_STARTING_DUMMY_CORE,
    "Bez zawartości, zaczynając sztuczny rdzeń."
    )

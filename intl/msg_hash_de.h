@@ -889,10 +889,6 @@ MSG_HASH(
    "Handlung"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING,
-   "Geschwindigkeitssteuerung"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
    "Perspektive"
    )
@@ -1778,7 +1774,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Fließkommawert für Videoseitenverhältnis (Breite / Höhe)."
+   "Gleitkommawert für Videoseitenverhältnis (Breite:Höhe)."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -2312,7 +2308,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
-   "Wie weit eine Achse gekippt werden muss, um einen Tastendruck zu bewirken, wenn „Analog zu Digital“ verwendet wird."
+   "Wie weit eine Achse gekippt werden muss, um einen Tastendruck zu bewirken, wenn \"Analog zu Digital\" verwendet wird."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
@@ -2320,7 +2316,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
-   "Analogstickbewegungen unterhalb Deadzone-Wert ignorieren."
+   "Analogstickbewegungen unterhalb des Deadzone-Wertes ignorieren."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
@@ -3243,11 +3239,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
-   "Remapping-Dateien beim Beenden speichern"
+   "Remap-Dateien beim Beenden speichern"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
-   "Änderungen in jede aktive Eingabe-Remapping-Datei beim Schließen von Inhalten oder Beenden von RetroArch speichern."
+   "Änderungen an allen aktiven Eingabe-Remap-Dateien beim Schließen von Inhalten oder Beenden von RetroArch speichern."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
@@ -6556,6 +6552,10 @@ MSG_HASH(
    "Nach Handlung"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PACING,
+   "Nach Pacing"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PERSPECTIVE,
    "Nach Perspektive"
    )
@@ -6959,11 +6959,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
-   "Eingabe-Remapping-Datei aktualisieren"
+   "Eingabe-Remap-Datei aktualisieren"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
-   "Aktive Remapping-Datei mit den aktuellen Eingabe-Remapping-Optionen überschreiben."
+   "Aktive Remap-Datei mit den aktuellen Eingabe-Remap-Optionen überschreiben."
    )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
@@ -11171,6 +11171,10 @@ MSG_HASH(
    "Netzwerkspiel-Initialisierung fehlgeschlagen."
    )
 MSG_HASH(
+   MSG_NETPLAY_UNSUPPORTED,
+   "Core unterstützt kein Netzwerkspiel."
+   )
+MSG_HASH(
    MSG_NO_CONTENT_STARTING_DUMMY_CORE,
    "Kein Inhalt, starte Dummy-Core."
    )
@@ -11560,11 +11564,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REMAP_FILE_FLUSHED,
-   "Eingabe-Remapping-Optionen gespeichert in:"
+   "Eingabe-Remap-Optionen gespeichert in:"
    )
 MSG_HASH(
    MSG_REMAP_FILE_FLUSH_FAILED,
-   "Fehler beim Speichern der Eingabe-Remapping-Optionen in:"
+   "Fehler beim Speichern der Eingabe-Remap-Optionen in:"
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED,

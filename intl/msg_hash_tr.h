@@ -11567,6 +11567,10 @@ MSG_HASH(
    "Netplay başlatılamadı."
    )
 MSG_HASH(
+   MSG_NETPLAY_UNSUPPORTED,
+   "Çekirdek üstünde netplay desteği yok."
+   )
+MSG_HASH(
    MSG_NO_CONTENT_STARTING_DUMMY_CORE,
    "İçerik yok, kukla çekirdek başlatılıyor."
    )

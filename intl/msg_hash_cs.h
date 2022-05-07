@@ -11287,6 +11287,10 @@ MSG_HASH(
    "Nepodařilo se inicializovat netplay."
    )
 MSG_HASH(
+   MSG_NETPLAY_UNSUPPORTED,
+   "Jádro nepodporuje hraní po síti."
+   )
+MSG_HASH(
    MSG_NO_CONTENT_STARTING_DUMMY_CORE,
    "Žádný obsah, počáteční atrapy jádra."
    )

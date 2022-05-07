@@ -7064,7 +7064,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_MANAGER_LIST,
-   "Carga, guarda o elimina los archivos de resasignaciones de entrada del contenido actual."
+   "Carga, guarda o elimina los archivos de reasignaciones de entrada del contenido actual."
    )
 
 /* Quick Menu > Controls > Manage Remap Files */
@@ -11461,6 +11461,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_FAILED,
    "Error al iniciar el juego en red."
+   )
+MSG_HASH(
+   MSG_NETPLAY_UNSUPPORTED,
+   "El núcleo no soporta el juego en red."
    )
 MSG_HASH(
    MSG_NO_CONTENT_STARTING_DUMMY_CORE,

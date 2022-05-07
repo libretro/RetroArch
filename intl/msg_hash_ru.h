@@ -11575,6 +11575,10 @@ MSG_HASH(
    "Ошибка запуска сетевой игры."
    )
 MSG_HASH(
+   MSG_NETPLAY_UNSUPPORTED,
+   "Ядро не поддерживает сетевую игру."
+   )
+MSG_HASH(
    MSG_NO_CONTENT_STARTING_DUMMY_CORE,
    "Контент отсутствует, запуск фиктивного ядра."
    )

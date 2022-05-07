@@ -11575,6 +11575,10 @@ MSG_HASH(
    "넷플레이 초기화 실패."
    )
 MSG_HASH(
+   MSG_NETPLAY_UNSUPPORTED,
+   "코어가 넷플레이를 지원하지 않습니다."
+   )
+MSG_HASH(
    MSG_NO_CONTENT_STARTING_DUMMY_CORE,
    "컨텐츠 없음, 더미 코어 시작."
    )

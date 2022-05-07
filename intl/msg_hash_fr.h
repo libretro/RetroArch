@@ -11451,6 +11451,10 @@ MSG_HASH(
    "Échec de l'initialisation du jeu en réseau."
    )
 MSG_HASH(
+   MSG_NETPLAY_UNSUPPORTED,
+   "Le cœur ne prend pas en charge le jeu en réseau."
+   )
+MSG_HASH(
    MSG_NO_CONTENT_STARTING_DUMMY_CORE,
    "Aucun contenu, chargement d'un cœur factice."
    )

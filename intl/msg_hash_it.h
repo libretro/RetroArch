@@ -11351,6 +11351,10 @@ MSG_HASH(
    "Impossibile inizializzare il netplay."
    )
 MSG_HASH(
+   MSG_NETPLAY_UNSUPPORTED,
+   "Il core non supporta netplay."
+   )
+MSG_HASH(
    MSG_NO_CONTENT_STARTING_DUMMY_CORE,
    "Nessun contenuto, avvio dummy core."
    )
