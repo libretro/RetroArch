@@ -412,6 +412,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_UPDATER_SETTINGS_LIST;
       case ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_NETWORK_HOSTING_SETTINGS_LIST;
+      case ACTION_OK_DL_NETPLAY_LOBBY_FILTERS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_NETPLAY_LOBBY_FILTERS_LIST;
       case ACTION_OK_DL_SUBSYSTEM_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_SUBSYSTEM_SETTINGS_LIST;
       case ACTION_OK_DL_NETWORK_SETTINGS_LIST:
@@ -1559,6 +1561,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_UPDATER_SETTINGS_LIST:
       case ACTION_OK_DL_NETWORK_SETTINGS_LIST:
       case ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST:
+      case ACTION_OK_DL_NETPLAY_LOBBY_FILTERS_LIST:
       case ACTION_OK_DL_SUBSYSTEM_SETTINGS_LIST:
       case ACTION_OK_DL_BLUETOOTH_SETTINGS_LIST:
       case ACTION_OK_DL_WIFI_SETTINGS_LIST:
@@ -5759,6 +5762,7 @@ DEFAULT_ACTION_OK_FUNC(action_ok_configurations_list, ACTION_OK_DL_CONFIGURATION
 DEFAULT_ACTION_OK_FUNC(action_ok_saving_list, ACTION_OK_DL_SAVING_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_network_list, ACTION_OK_DL_NETWORK_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_network_hosting_list, ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST)
+DEFAULT_ACTION_OK_FUNC(action_ok_netplay_lobby_filters_list, ACTION_OK_DL_NETPLAY_LOBBY_FILTERS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_subsystem_list, ACTION_OK_DL_SUBSYSTEM_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_database_manager_list, ACTION_OK_DL_DATABASE_MANAGER_LIST)
 #ifdef HAVE_BLUETOOTH
@@ -8335,6 +8339,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,                action_ok_netplay_connect_room},
 #endif
          {MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS,            action_ok_network_hosting_list},
+         {MENU_ENUM_LABEL_NETPLAY_LOBBY_FILTERS,               action_ok_netplay_lobby_filters_list},
          {MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS,                  action_ok_subsystem_list},
          {MENU_ENUM_LABEL_NETWORK_SETTINGS,                    action_ok_network_list},
          {MENU_ENUM_LABEL_LAKKA_SERVICES,                      action_ok_lakka_services},

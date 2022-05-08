@@ -1184,8 +1184,9 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_AUTOSAVE_INTERVAL 0
 #endif
 
-/* Show only connectable rooms */
+/* Netplay lobby filters */
 #define DEFAULT_NETPLAY_SHOW_ONLY_CONNECTABLE true
+#define DEFAULT_NETPLAY_SHOW_PASSWORDED       true
 
 /* Publicly announce netplay */
 #define DEFAULT_NETPLAY_PUBLIC_ANNOUNCE true

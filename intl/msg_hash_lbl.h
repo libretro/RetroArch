@@ -1047,6 +1047,10 @@ MSG_HASH(
    "deferred_network_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_NETPLAY_LOBBY_FILTERS_LIST,
+   "deferred_netplay_lobby_filters_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST,
    "deferred_onscreen_display_settings_list"
    )
@@ -2155,6 +2159,10 @@ MSG_HASH(
    "network_settings"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_LOBBY_FILTERS,
+   "netplay_lobby_filters"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY,
    "no_achievements_to_display"
    )
@@ -3041,6 +3049,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_SHOW_ONLY_CONNECTABLE,
    "netplay_show_only_connectable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_SHOW_PASSWORDED,
+   "netplay_show_passworded"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
