@@ -11399,6 +11399,10 @@ MSG_HASH(
    "Falha em inicializar o jogo em rede."
    )
 MSG_HASH(
+   MSG_NETPLAY_UNSUPPORTED,
+   "O núcleo não tem suporte para jogo em rede."
+   )
+MSG_HASH(
    MSG_NO_CONTENT_STARTING_DUMMY_CORE,
    "Sem conteúdo, iniciando um núcleo vazio."
    )
