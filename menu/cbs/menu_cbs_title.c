@@ -648,6 +648,7 @@ DEFAULT_TITLE_MACRO(action_get_bluetooth_settings_list,         MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_wifi_networks_list,              MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS)
 DEFAULT_TITLE_MACRO(action_get_wifi_settings_list,              MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_network_hosting_settings_list,   MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_netplay_lobby_filters_list,      MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS)
 DEFAULT_TITLE_MACRO(action_get_subsystem_settings_list,         MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_network_settings_list,           MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_netplay_lan_scan_settings_list,  MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS)
@@ -992,6 +993,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST,                   action_get_wifi_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_UPDATER_SETTINGS_LIST,                action_get_updater_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_NETWORK_HOSTING_SETTINGS_LIST,        action_get_network_hosting_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_NETPLAY_LOBBY_FILTERS_LIST,           action_get_netplay_lobby_filters_list},
       {MENU_ENUM_LABEL_DEFERRED_SUBSYSTEM_SETTINGS_LIST,              action_get_subsystem_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_NETWORK_SETTINGS_LIST,                action_get_network_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST,       action_get_netplay_lan_scan_settings_list},

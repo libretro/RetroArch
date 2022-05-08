@@ -777,6 +777,7 @@ typedef struct settings
 
       /* Netplay */
       bool netplay_show_only_connectable;
+      bool netplay_show_passworded;
       bool netplay_public_announce;
       bool netplay_start_as_spectator;
       bool netplay_fade_chat;
