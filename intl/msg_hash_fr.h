@@ -6390,12 +6390,20 @@ MSG_HASH(
    "Déconnecter une connexion de jeu en réseau active."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
+   "Filtres du salon"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
-   "Salons connectables uniquement"
+   "Salles connectables uniquement"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
+   "Salles avec mot de passe"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
-   "Rafraîchir la liste des salons"
+   "Rafraîchir la liste des hôtes de jeu en réseau"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
@@ -10632,7 +10640,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ROOM_NOT_CONNECTABLE,
-   "Votre salon n'est pas connectable depuis internet."
+   "Votre salle n'est pas connectable depuis internet."
    )
 MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,

@@ -3666,6 +3666,14 @@ MSG_HASH(
    "Від'єднатися від Netplay хоста"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
+   "Фильтры Лобби"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
+   "Кімнати з Паролем"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
    "Оновити список хостів мережевих ігор"
    )

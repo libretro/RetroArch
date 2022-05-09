@@ -5064,6 +5064,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_STEAM,
    "Näytä 'Steam'"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_STEAM,
+   "Näytä \"Steam\"-asetukset."
+   )
 
 /* Settings > User Interface > Appearance */
 
@@ -6252,6 +6256,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
    "Vain yhdistettävissä olevat huoneet"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
+   "Salasanalliset huoneet"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
