@@ -1952,11 +1952,13 @@ bool command_event(enum event_command cmd, void *data)
                   return false;
             }
 #ifdef HAVE_PRESENCE
-            presence_userdata_t userdata;
-            userdata.status = PRESENCE_NETPLAY_NETPLAY_STOPPED;
-            command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
-            userdata.status = PRESENCE_MENU;
-            command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
+            {
+               presence_userdata_t userdata;
+               userdata.status = PRESENCE_NETPLAY_NETPLAY_STOPPED;
+               command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
+               userdata.status = PRESENCE_MENU;
+               command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
+            }
 #endif
 #ifdef HAVE_DYNAMIC
             path_clear(RARCH_PATH_CORE);
@@ -5500,10 +5502,11 @@ bool retroarch_main_init(int argc, char *argv[])
 #endif
 
 #ifdef HAVE_PRESENCE
-   presence_userdata_t userdata;
-   userdata.status = PRESENCE_MENU;
-
-   command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
+   {
+      presence_userdata_t userdata;
+      userdata.status = PRESENCE_MENU;
+      command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
+   }
 #endif
 
 #if defined(HAVE_AUDIOMIXER)
@@ -6013,22 +6016,26 @@ bool retroarch_main_quit(void)
    settings_t *settings          = config_get_ptr();
 
 #ifdef HAVE_PRESENCE
-   presence_userdata_t userdata;
-   userdata.status = PRESENCE_SHUTDOWN;
-   command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
+   {
+      presence_userdata_t userdata;
+      userdata.status = PRESENCE_SHUTDOWN;
+      command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
+   }
 #endif
 #ifdef HAVE_DISCORD
-   discord_state_t *discord_st   = discord_state_get_ptr();
-   if (discord_st->ready)
    {
-      Discord_ClearPresence();
+      discord_state_t *discord_st = discord_state_get_ptr();
+      if (discord_st->ready)
+      {
+         Discord_ClearPresence();
 #ifdef DISCORD_DISABLE_IO_THREAD
-      Discord_UpdateConnection();
+         Discord_UpdateConnection();
 #endif
-      Discord_Shutdown();
-      discord_st->ready       = false;
+         Discord_Shutdown();
+         discord_st->ready       = false;
+      }
+      discord_st->inited         = false;
    }
-   discord_st->inited         = false;
 #endif
 
    /* Restore original refresh rate, if it has been changed
