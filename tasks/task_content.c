@@ -2593,11 +2593,13 @@ static bool task_load_content_internal(
       goto end;
 
 #ifdef HAVE_PRESENCE
-   presence_userdata_t userdata;
-   userdata.status = PRESENCE_NETPLAY_NETPLAY_STOPPED;
-   command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
-   userdata.status = PRESENCE_MENU;
-   command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
+   {
+      presence_userdata_t userdata;
+      userdata.status = PRESENCE_NETPLAY_NETPLAY_STOPPED;
+      command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
+      userdata.status = PRESENCE_MENU;
+      command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
+   }
 #endif
 
    /* Loads content into currently selected core. */
