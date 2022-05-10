@@ -7875,9 +7875,11 @@ static void netplay_announce_cb(retro_task_t *task,
    }
 
 #ifdef HAVE_PRESENCE
-   presence_userdata_t userdata;
-   userdata.status = PRESENCE_NETPLAY_HOSTING;
-   command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
+   {
+      presence_userdata_t userdata;
+      userdata.status = PRESENCE_NETPLAY_HOSTING;
+      command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
+   }
 #endif
 }
 
