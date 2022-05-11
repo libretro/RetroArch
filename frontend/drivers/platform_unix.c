@@ -1222,6 +1222,11 @@ static enum frontend_powerstate frontend_unix_get_powerstate(
    *percent = battery_level;
 
    ret = (enum frontend_powerstate)powerstate;
+#elif defined(RETROFW)
+   *percent = retrofw_get_battery_level(&ret);
+
+   /* 'Time left' reporting is unsupported */
+   *seconds = -1;
 #elif defined(DINGUX)
    /* Dingux seems to have limited battery
     * reporting capability - if we get a valid
