@@ -3827,12 +3827,24 @@ MSG_HASH(
    "Запустити"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN,
+   "Запустити вміст."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
    "Перейменувати"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RENAME_ENTRY,
+   "Перейменувати заголовок запису."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
    "Вилучити"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DELETE_ENTRY,
+   "Видалити цей запис зі списку відтворення."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
@@ -3849,6 +3861,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,
    "Інформація"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INFORMATION,
+   "Переглянути більше інформації про вміст."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
@@ -4252,6 +4268,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DETAIL,
    "Запис у базі даних"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RDB_ENTRY_DETAIL,
+   "Показати інформацію з бази даних для поточного вмісту."
    )
 
 /* Miscellaneous UI Items */
