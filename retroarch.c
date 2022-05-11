@@ -2405,7 +2405,8 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_VIDEO_SET_BLOCKING_STATE:
          {
             bool adaptive_vsync       = settings->bools.video_adaptive_vsync;
-            unsigned swap_interval    = settings->uints.video_swap_interval;
+            unsigned swap_interval    = runloop_get_video_swap_interval(
+                  settings->uints.video_swap_interval);
             video_driver_state_t
                *video_st              = video_state_get_ptr();
 
@@ -5786,6 +5787,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
             input_game_focus_free();
             runloop_fastmotion_override_free();
             runloop_core_options_cb_free();
+            runloop_st->video_swap_interval_auto = 1;
             memset(&input_st->analog_requested, 0,
                   sizeof(input_st->analog_requested));
          }

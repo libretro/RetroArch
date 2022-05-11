@@ -1177,6 +1177,7 @@ bool video_driver_monitor_adjust_system_rates(
       float video_refresh_rate,
       bool vrr_runloop_enable,
       float audio_max_timing_skew,
+      unsigned video_swap_interval,
       double input_fps);
 
 void crt_switch_driver_refresh(void);

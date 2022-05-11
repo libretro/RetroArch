@@ -584,7 +584,8 @@ static void d3d8_make_d3dpp(void *data,
    if (info->vsync)
    {
       settings_t *settings         = config_get_ptr();
-      unsigned video_swap_interval = settings->uints.video_swap_interval;
+      unsigned video_swap_interval = runloop_get_video_swap_interval(
+            settings->uints.video_swap_interval);
 
       switch (video_swap_interval)
       {

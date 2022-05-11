@@ -6726,7 +6726,6 @@ void menu_driver_toggle(
    bool input_overlay_enable          = false;
 #endif
    bool video_adaptive_vsync          = false;
-   bool video_swap_interval           = false;
 
    if (settings)
    {
@@ -6744,7 +6743,6 @@ void menu_driver_toggle(
       input_overlay_enable            = settings->bools.input_overlay_enable;
 #endif
       video_adaptive_vsync            = settings->bools.video_adaptive_vsync;
-      video_swap_interval             = settings->uints.video_swap_interval;
    }
 
    if (on) 
@@ -6796,15 +6794,18 @@ void menu_driver_toggle(
 
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
-      /* Menu should always run with vsync on. */
+      /* Menu should always run with vsync on and
+       * a video swap interval of 1 */
       if (current_video->set_nonblock_state)
+      {
          current_video->set_nonblock_state(
                video_driver_data,
                false,
                video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
                video_adaptive_vsync,
-               video_swap_interval
+               1
                );
+      }
       /* Stop all rumbling before entering the menu. */
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
