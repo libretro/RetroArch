@@ -348,9 +348,10 @@ static int action_right_shader_scale_pass(unsigned type, const char *label,
    if (!shader_pass)
       return menu_cbs_exit();
 
+   /* A 20x scale is used to support scaling handheld border shaders up to 8K resolutions */
    current_scale            = shader_pass->fbo.scale_x;
    delta                    = 1;
-   current_scale            = (current_scale + delta) % 6;
+   current_scale            = (current_scale + delta) % 21;
 
    shader_pass->fbo.valid   = current_scale;
    shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = current_scale;
