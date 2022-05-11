@@ -437,108 +437,6 @@ error:
     return NULL;
 }
 
-//this is enables you to copy access permissions from one file/folder to another
-//however depending on the target and where the file is being transferred to and from it may not be needed.
-//(use disgression)
-int uwp_copy_acl(const wchar_t* source, const wchar_t* target)
-{
-    PSECURITY_DESCRIPTOR sidOwnerDescriptor = nullptr;
-    PSECURITY_DESCRIPTOR sidGroupDescriptor = nullptr;
-    PSECURITY_DESCRIPTOR daclDescriptor = nullptr;
-    PSID sidOwner;
-    PSID sidGroup;
-    PACL dacl;
-    PACL sacl;
-    DWORD result;
-    HANDLE original_file = CreateFileFromAppW(source, GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
-    if (original_file != INVALID_HANDLE_VALUE)
-    {
-        result = GetSecurityInfo(original_file, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, &sidOwner, &sidGroup, &dacl, &sacl, &daclDescriptor);
-        if (result != 0)
-        {
-            LocalFree(daclDescriptor);
-            CloseHandle(original_file);
-            return result;
-        }
-
-        result = GetSecurityInfo(original_file, SE_FILE_OBJECT, OWNER_SECURITY_INFORMATION, &sidOwner, &sidGroup, &dacl, &sacl, &sidOwnerDescriptor);
-        if (result != 0)
-        {
-            LocalFree(sidOwnerDescriptor);
-            LocalFree(daclDescriptor);
-            CloseHandle(original_file);
-            return result;
-        }
-
-        result = GetSecurityInfo(original_file, SE_FILE_OBJECT, GROUP_SECURITY_INFORMATION, &sidOwner, &sidGroup, &dacl, &sacl, &sidGroupDescriptor);
-
-        //close file handle regardless of result
-        CloseHandle(original_file);
-
-        if (result != 0)
-        {
-            LocalFree(sidOwnerDescriptor);
-            LocalFree(sidGroupDescriptor);
-            LocalFree(daclDescriptor);
-            return result;
-        }
-    }
-    else
-    {
-        result = GetNamedSecurityInfoW(source, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, &sidOwner, &sidGroup, &dacl, &sacl, &daclDescriptor);
-        if (result != 0)
-        {
-            LocalFree(daclDescriptor);
-            return result;
-        }
-        result = GetNamedSecurityInfoW(source, SE_FILE_OBJECT, OWNER_SECURITY_INFORMATION, &sidOwner, &sidGroup, &dacl, &sacl, &sidOwnerDescriptor);
-        if (result != 0)
-        {
-            LocalFree(sidOwnerDescriptor);
-            LocalFree(daclDescriptor);
-            return result;
-        }
-        result = GetNamedSecurityInfoW(source, SE_FILE_OBJECT, GROUP_SECURITY_INFORMATION, &sidOwner, &sidGroup, &dacl, &sacl, &sidGroupDescriptor);
-        if (result != 0)
-        {
-            LocalFree(sidOwnerDescriptor);
-            LocalFree(sidGroupDescriptor);
-            LocalFree(daclDescriptor);
-            return result;
-        }
-    }
-    SECURITY_INFORMATION info = DACL_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION;
-    HANDLE target_file = CreateFileFromAppW(target, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
-    if (target_file != INVALID_HANDLE_VALUE)
-    {
-        result = SetSecurityInfo(target_file, SE_FILE_OBJECT, info, sidOwner, sidGroup, dacl, sacl);
-        CloseHandle(target_file);
-    }
-    else
-    {
-        wchar_t* temp = wcsdup(target);
-        result = SetNamedSecurityInfoW(temp, SE_FILE_OBJECT, info, sidOwner, sidGroup, dacl, sacl);
-        free(temp);
-    }
-
-    if (result != 0)
-    {
-        LocalFree(sidOwnerDescriptor);
-        LocalFree(sidGroupDescriptor);
-        LocalFree(daclDescriptor);
-        return result;
-    }
-
-    if ((sidOwnerDescriptor != nullptr && LocalFree(sidOwnerDescriptor) != nullptr) || (daclDescriptor != nullptr && LocalFree(daclDescriptor) != nullptr) || (daclDescriptor != nullptr && LocalFree(daclDescriptor) != nullptr))
-    {
-        //an error occured but idk what error code is right so we just return -1
-        return -1;
-    }
-
-    //woo we made it all the way to the end so we can return success
-    return 0;
-}
-
 int uwp_mkdir_impl(std::experimental::filesystem::path dir)
 {
     //I feel like this should create the directory recursively but the existing implementation does not so this update won't
@@ -657,13 +555,8 @@ int uwp_move_path(std::filesystem::path old_path, std::filesystem::path new_path
                         //failed to move the file
                         return -1;
                     }
-                    //set acl - this step fucking sucks or at least to before I made a whole ass function
-                    //idk if we actually "need" to set the acl though
-                    if (uwp_copy_acl(new_path.parent_path().wstring().c_str(), new_path.wstring().c_str()) != 0)
-                    {
-                        //setting acl failed
-                        return -1;
-                    }
+                    //set acl
+                    uwp_set_acl(new_path.wstring().c_str(), L"S-1-15-2-1");
                 }
             }
         }
@@ -722,11 +615,7 @@ int uwp_move_path(std::filesystem::path old_path, std::filesystem::path new_path
                         }
                         //set acl - this step fucking sucks or at least to before I made a whole ass function
                         //idk if we actually "need" to set the acl though
-                        if (uwp_copy_acl(new_path.wstring().c_str(), temp_new.wstring().c_str()) != 0)
-                        {
-                            //setting acl failed
-                            fail = true;
-                        }
+                        uwp_set_acl(temp_new.wstring().c_str(), L"S-1-15-2-1");
                     }
                 }
             } while (FindNextFile(searchResults, &findDataResult));
