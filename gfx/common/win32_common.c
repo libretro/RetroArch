@@ -1929,17 +1929,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
    RECT *rect, RECT *mon_rect, DWORD *style)
 {
 #if !defined(_XBOX)
-   win32_common_state_t *g_win32    = (win32_common_state_t*)&win32_st;
-   bool position_set_from_config    = false;
    settings_t *settings             = config_get_ptr();
-   bool video_window_save_positions = settings->bools.video_window_save_positions;
-   float video_refresh              = settings->floats.video_refresh_rate;
-   unsigned swap_interval           = settings->uints.video_swap_interval;
-   unsigned bfi                     = settings->uints.video_black_frame_insertion;
-   unsigned window_position_x       = settings->uints.window_position_x;
-   unsigned window_position_y       = settings->uints.window_position_y;
-   unsigned window_position_width   = settings->uints.window_position_width;
-   unsigned window_position_height  = settings->uints.window_position_height;
 
    if (fullscreen)
    {
@@ -1947,8 +1937,10 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
        * an integer, so video_refresh_rate needs to be rounded. Also, account
        * for black frame insertion using video_refresh_rate set to a portion
        * of the display refresh rate, as well as higher vsync swap intervals. */
+      float video_refresh    = settings->floats.video_refresh_rate;
+      unsigned bfi           = settings->uints.video_black_frame_insertion;
       float refresh_mod      = bfi + 1.0f;
-      float refresh_rate     = (video_refresh * refresh_mod * swap_interval);
+      float refresh_rate     = video_refresh * refresh_mod;
 
       if (windowed_full)
       {
@@ -1970,6 +1962,10 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
    }
    else
    {
+      win32_common_state_t *g_win32    = (win32_common_state_t*)&win32_st;
+      bool position_set_from_config    = false;
+      bool video_window_save_positions = settings->bools.video_window_save_positions;
+
       *style          = WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
       rect->right     = *width;
       rect->bottom    = *height;
@@ -1979,14 +1975,18 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
       if (video_window_save_positions)
       {
          /* Set position from config */
-         int border_thickness  = GetSystemMetrics(SM_CXSIZEFRAME);
-         int title_bar_height  = GetSystemMetrics(SM_CYCAPTION);
+         int border_thickness             = GetSystemMetrics(SM_CXSIZEFRAME);
+         int title_bar_height             = GetSystemMetrics(SM_CYCAPTION);
+         unsigned window_position_x       = settings->uints.window_position_x;
+         unsigned window_position_y       = settings->uints.window_position_y;
+         unsigned window_position_width   = settings->uints.window_position_width;
+         unsigned window_position_height  = settings->uints.window_position_height;
 
-         g_win32->pos_x         = window_position_x;
-         g_win32->pos_y         = window_position_y;
-         g_win32->pos_width     = window_position_width
+         g_win32->pos_x                   = window_position_x;
+         g_win32->pos_y                   = window_position_y;
+         g_win32->pos_width               = window_position_width
             + border_thickness * 2;
-         g_win32->pos_height    = window_position_height
+         g_win32->pos_height              = window_position_height
             + border_thickness * 2 + title_bar_height;
 
          if (g_win32->pos_width != 0 && g_win32->pos_height != 0)
