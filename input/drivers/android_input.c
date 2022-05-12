@@ -838,7 +838,6 @@ static int android_input_get_id_port(android_input_t *android, int id,
    return ret;
 }
 
-#ifdef HAVE_DYNAMIC
 /* Returns the index inside android->pad_state */
 static int android_input_get_id_index_from_name(android_input_t *android,
       const char *name)
@@ -852,7 +851,25 @@ static int android_input_get_id_index_from_name(android_input_t *android,
 
    return -1;
 }
-#endif
+
+static int android_input_recover_port(android_input_t *android, int id)
+{
+   char device_name[256] = { 0 };
+   int vendorId                 = 0;
+   int productId                = 0;
+   settings_t *settings = config_get_ptr();
+
+   if (!settings->bools.android_input_disconnect_workaround)
+       return -1;
+   if (!engine_lookup_name(device_name, &vendorId,
+			   &productId, sizeof(device_name), id))
+       return -1;
+   int ret = android_input_get_id_index_from_name(android, device_name);
+   if (ret >= 0)
+       android->pad_states[ret].id = id;
+   return ret;
+}
+
 
 static void handle_hotplug(android_input_t *android,
       struct android_app *android_app, int *port, int id,
@@ -1194,6 +1211,9 @@ static void android_input_poll_input(android_input_t *android,
          int    type_event = AInputEvent_getType(event);
          int            id = android_input_get_id(event);
          int          port = android_input_get_id_port(android, id, source);
+
+	 if (port < 0 && !android_is_keyboard_id(id))
+	     port = android_input_recover_port(android, id);
 
          if (port < 0 && !android_is_keyboard_id(id))
             handle_hotplug(android, android_app,

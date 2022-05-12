@@ -2028,6 +2028,10 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("wifi_enabled",          &settings->bools.wifi_enabled, true, DEFAULT_WIFI_ENABLE, false);
    SETTING_BOOL("gamemode_enable",       &settings->bools.gamemode_enable, true, DEFAULT_GAMEMODE_ENABLE, false);
 
+#ifdef ANDROID
+   SETTING_BOOL("android_input_disconnect_workaround",   &settings->bools.android_input_disconnect_workaround, true, false, false);
+#endif
+
    *size = count;
 
    return tmp;

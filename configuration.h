@@ -942,6 +942,10 @@ typedef struct settings
 #ifdef _3DS
       bool new3ds_speedup_enable;
 #endif
+
+#ifdef ANDROID
+      bool android_input_disconnect_workaround;
+#endif
    } bools;
 
 } settings_t;

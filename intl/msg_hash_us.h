@@ -2597,6 +2597,15 @@ MSG_HASH(
    "Allow any user to control the menu. If disabled, only User 1 can control the menu."
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Android disconnect workaround"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Workaround for controllers disconnecting and reconnecting. Impedes 2 players with the identical controllers."
+   )
+
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(
