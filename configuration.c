@@ -3520,7 +3520,7 @@ static bool config_load_file(global_t *global,
    if (settings->uints.video_frame_delay > MAXIMUM_FRAME_DELAY)
       settings->uints.video_frame_delay = MAXIMUM_FRAME_DELAY;
 
-   settings->uints.video_swap_interval = MAX(settings->uints.video_swap_interval, 1);
+   settings->uints.video_swap_interval = MAX(settings->uints.video_swap_interval, 0);
    settings->uints.video_swap_interval = MIN(settings->uints.video_swap_interval, 4);
 
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, settings->floats.audio_volume);

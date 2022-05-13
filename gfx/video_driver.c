@@ -894,12 +894,16 @@ bool video_driver_monitor_adjust_system_rates(
       float video_refresh_rate,
       bool vrr_runloop_enable,
       float audio_max_timing_skew,
+      unsigned video_swap_interval,
       double input_fps)
 {
+   float target_video_sync_rate = timing_skew_hz
+         / (float)video_swap_interval;
+
    if (!vrr_runloop_enable)
    {
       float timing_skew                    = fabs(
-            1.0f - input_fps / timing_skew_hz);
+            1.0f - input_fps / target_video_sync_rate);
       /* We don't want to adjust pitch too much. If we have extreme cases,
        * just don't readjust at all. */
       if (timing_skew <= audio_max_timing_skew)
@@ -909,7 +913,7 @@ bool video_driver_monitor_adjust_system_rates(
             video_refresh_rate,
             (float)input_fps);
    }
-   return input_fps <= timing_skew_hz;
+   return input_fps <= target_video_sync_rate;
 }
 
 void video_driver_reset_custom_viewport(settings_t *settings)
@@ -1166,7 +1170,8 @@ void video_switch_refresh_rate_maybe(
    float refresh_rate                 = *refresh_rate_suggest;
    float video_refresh_rate           = settings->floats.video_refresh_rate;
    unsigned crt_switch_resolution     = settings->uints.crt_switch_resolution;
-   unsigned video_swap_interval       = settings->uints.video_swap_interval;
+   unsigned video_swap_interval       = runloop_get_video_swap_interval(
+         settings->uints.video_swap_interval);
    unsigned video_bfi                 = settings->uints.video_black_frame_insertion;
    bool video_fullscreen              = settings->bools.video_fullscreen;
    bool video_windowed_full           = settings->bools.video_windowed_fullscreen;
@@ -3432,7 +3437,8 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
       !runloop_st->force_nonblock;
    video.force_aspect                = settings->bools.video_force_aspect;
    video.font_enable                 = settings->bools.video_font_enable;
-   video.swap_interval               = settings->uints.video_swap_interval;
+   video.swap_interval               = runloop_get_video_swap_interval(
+         settings->uints.video_swap_interval);
    video.adaptive_vsync              = settings->bools.video_adaptive_vsync;
 #ifdef GEKKO
    video.viwidth                     = settings->uints.video_viwidth;

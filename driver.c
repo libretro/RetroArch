@@ -308,6 +308,18 @@ static void driver_adjust_system_rates(
    double input_sample_rate               = info->sample_rate;
    double input_fps                       = info->fps;
 
+   /* Update video swap interval if automatic
+    * switching is enabled */
+   runloop_set_video_swap_interval(
+         vrr_runloop_enable,
+         video_st->crt_switching_active,
+         video_swap_interval,
+         audio_max_timing_skew,
+         video_refresh_rate,
+         input_fps);
+   video_swap_interval = runloop_get_video_swap_interval(
+         video_swap_interval);
+
    if (input_sample_rate > 0.0)
    {
       audio_driver_state_t *audio_st      = audio_state_get_ptr();
@@ -341,6 +353,7 @@ static void driver_adjust_system_rates(
          video_refresh_rate,
          vrr_runloop_enable,
          audio_max_timing_skew,
+         video_swap_interval,
          input_fps))
       {
          /* We won't be able to do VSync reliably 
@@ -389,7 +402,8 @@ void driver_set_nonblock_state(void)
    bool audio_sync             = settings->bools.audio_sync;
    bool video_vsync            = settings->bools.video_vsync;
    bool adaptive_vsync         = settings->bools.video_adaptive_vsync;
-   unsigned swap_interval      = settings->uints.video_swap_interval;
+   unsigned swap_interval      = runloop_get_video_swap_interval(
+         settings->uints.video_swap_interval);
    bool video_driver_active    = video_st->active;
    bool audio_driver_active    = audio_st->active;
    bool runloop_force_nonblock = runloop_st->force_nonblock;

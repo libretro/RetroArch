@@ -219,6 +219,7 @@ struct runloop
    unsigned perf_ptr_libretro;
    unsigned subsystem_current_count;
    unsigned entry_state_slot;
+   unsigned video_swap_interval_auto;
 
    fastmotion_overrides_t fastmotion_override; /* float alignment */
 
@@ -414,6 +415,16 @@ float runloop_set_frame_limit(
 float runloop_get_fastforward_ratio(
       settings_t *settings,
       struct retro_fastforwarding_override *fastmotion_override);
+
+void runloop_set_video_swap_interval(
+      bool vrr_runloop_enable,
+      bool crt_switching_active,
+      unsigned swap_interval_config,
+      float audio_max_timing_skew,
+      float video_refresh_rate,
+      double input_fps);
+unsigned runloop_get_video_swap_interval(
+      unsigned swap_interval_config);
 
 void runloop_task_msg_queue_push(
       retro_task_t *task, const char *msg,

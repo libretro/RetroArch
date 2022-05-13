@@ -1740,7 +1740,7 @@ void command_event_reinit(const int flags)
    struct menu_state *menu_st     = menu_state_get_ptr();
    bool video_fullscreen          = settings->bools.video_fullscreen;
    bool adaptive_vsync            = settings->bools.video_adaptive_vsync;
-   unsigned swap_interval         = settings->uints.video_swap_interval;
+   unsigned swap_interval_config  = settings->uints.video_swap_interval;
 #endif
    enum input_game_focus_cmd_type 
       game_focus_cmd              = GAME_FOCUS_CMD_REAPPLY;
@@ -1775,6 +1775,6 @@ void command_event_reinit(const int flags)
             video_st->data, false,
             video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
             adaptive_vsync,
-            swap_interval);
+            runloop_get_video_swap_interval(swap_interval_config));
 #endif
 }

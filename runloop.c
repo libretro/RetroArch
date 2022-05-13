@@ -3589,6 +3589,7 @@ static void uninit_libretro_symbols(
    input_game_focus_free();
    runloop_fastmotion_override_free();
    runloop_core_options_cb_free();
+   runloop_st->video_swap_interval_auto          = 1;
    camera_st->active                             = false;
    location_st->active                           = false;
 
@@ -5208,6 +5209,76 @@ float runloop_get_fastforward_ratio(
          && (fastmotion_override->ratio >= 0.0f))
       return fastmotion_override->ratio;
    return settings->floats.fastforward_ratio;
+}
+
+void runloop_set_video_swap_interval(
+      bool vrr_runloop_enable,
+      bool crt_switching_active,
+      unsigned swap_interval_config,
+      float audio_max_timing_skew,
+      float video_refresh_rate,
+      double input_fps)
+{
+   runloop_state_t *runloop_st = &runloop_state;
+   float core_hz               = input_fps;
+   float timing_hz             = crt_switching_active ?
+         input_fps : video_refresh_rate;
+   float swap_ratio;
+   unsigned swap_integer;
+   float timing_skew;
+
+   /* If automatic swap interval selection is
+    * disabled, just record user-set value */
+   if (swap_interval_config != 0)
+   {
+      runloop_st->video_swap_interval_auto =
+            swap_interval_config;
+      return;
+   }
+
+   /* > If VRR is enabled, swap interval is irrelevant,
+    *   just set to 1
+    * > If core fps is higher than display refresh rate,
+    *   set swap interval to 1
+    * > If core fps or display refresh rate are zero,
+    *   set swap interval to 1 */
+   if (vrr_runloop_enable ||
+       (core_hz > timing_hz) ||
+       (core_hz <= 0.0f) ||
+       (timing_hz <= 0.0f))
+   {
+      runloop_st->video_swap_interval_auto = 1;
+      return;
+   }
+
+   /* Check whether display refresh rate is an integer
+    * multiple of core fps (within timing skew tolerance) */
+   swap_ratio = timing_hz / core_hz;
+   swap_integer = (unsigned)(swap_ratio + 0.5f);
+
+   /* > Sanity check: swap interval must be in the
+    *   range [1,4] - if we are outside this, then
+    *   bail... */
+   if ((swap_integer < 1) || (swap_integer > 4))
+   {
+      runloop_st->video_swap_interval_auto = 1;
+      return;
+   }
+
+   timing_skew = fabs(1.0f - core_hz / (timing_hz / (float)swap_integer));
+
+   runloop_st->video_swap_interval_auto =
+         (timing_skew <= audio_max_timing_skew) ?
+               swap_integer : 1;
+}
+
+unsigned runloop_get_video_swap_interval(
+      unsigned swap_interval_config)
+{
+   runloop_state_t *runloop_st = &runloop_state;
+   return (swap_interval_config == 0) ?
+         runloop_st->video_swap_interval_auto :
+         swap_interval_config;
 }
 
 unsigned int retroarch_get_rotation(void)
@@ -7634,7 +7705,8 @@ int runloop_iterate(void)
       if (settings->bools.video_frame_delay_auto)
       {
          float refresh_rate           = settings->floats.video_refresh_rate;
-         unsigned video_swap_interval = settings->uints.video_swap_interval;
+         unsigned video_swap_interval = runloop_get_video_swap_interval(
+               settings->uints.video_swap_interval);
          unsigned video_bfi           = settings->uints.video_black_frame_insertion;
          unsigned frame_time_interval = 8;
          bool frame_time_update       =
