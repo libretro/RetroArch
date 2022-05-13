@@ -2377,6 +2377,7 @@ MSG_HASH(
    "Всі користувачі керують меню"
    )
 
+
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(

@@ -2301,6 +2301,7 @@ MSG_HASH(
    "任意のユーザがメニューを操作することを許可します. 無効にすると, ユーザ1のみが操作できます."
    )
 
+
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(

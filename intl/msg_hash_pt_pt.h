@@ -1913,6 +1913,7 @@ MSG_HASH(
    "Menu de teclas de todos os utilizadores"
    )
 
+
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(

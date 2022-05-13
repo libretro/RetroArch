@@ -1161,6 +1161,7 @@ MSG_HASH(
    "Tolos usuarios controlen el menú"
    )
 
+
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(

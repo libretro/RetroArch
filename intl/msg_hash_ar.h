@@ -2153,6 +2153,7 @@ MSG_HASH(
    "قائمة التحكم في جميع المستخدمين"
    )
 
+
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(

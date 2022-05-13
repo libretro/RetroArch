@@ -2237,6 +2237,7 @@ MSG_HASH(
    "Semua pengguna boleh mengendalikan manu. Jika dimatikan, hanya Pengguna 1 yang bisa kendalikan menu."
    )
 
+
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(

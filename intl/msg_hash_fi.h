@@ -2449,6 +2449,7 @@ MSG_HASH(
    "Salli kaikkien käyttäjien hallita valikkoa. Jos poistettu käytöstä, vain käyttäjä 1 voi hallita valikkoa."
    )
 
+
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(

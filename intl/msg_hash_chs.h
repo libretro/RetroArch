@@ -2545,6 +2545,7 @@ MSG_HASH(
    "允许任何用户打开菜单。如果禁用，则只有用户 1 能打开菜单。"
    )
 
+
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(

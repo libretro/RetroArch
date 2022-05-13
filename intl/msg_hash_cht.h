@@ -2069,6 +2069,7 @@ MSG_HASH(
    "所有用戶都能控制選單"
    )
 
+
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(

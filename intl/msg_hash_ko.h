@@ -2565,6 +2565,7 @@ MSG_HASH(
    "모든 사용자가 메뉴를 제어할 수 있도록 허용합니다. 비활성 시 1번 사용자만 메뉴를 제어할 수 있습니다."
    )
 
+
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(

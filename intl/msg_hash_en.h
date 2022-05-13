@@ -509,6 +509,7 @@ MSG_HASH(
    "Swap buttons for Okay/Cancel. When disabled, the Japanese button orientation is on by default, when this is enabled, it is the western orientation instead."
    )
 
+
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(

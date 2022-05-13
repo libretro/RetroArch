@@ -2477,6 +2477,7 @@ MSG_HASH(
    "Zezwalaj każdemu użytkownikowi na kontrolowanie menu. Jeśli wyłączone, tylko użytkownik 1 może kontrolować menu."
    )
 
+
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(

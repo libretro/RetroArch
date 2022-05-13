@@ -2465,6 +2465,7 @@ MSG_HASH(
    "Umožnit libovolnému uživateli ovládat nabídku. Pokud je zakázáno, může nabídku ovládat pouze 1 uživatel."
    )
 
+
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(
