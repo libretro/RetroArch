@@ -997,33 +997,23 @@ static int select_compression(netplay_t *netplay, uint32_t compression)
    if (compression & NETPLAY_COMPRESSION_ZLIB)
    {
       ctrans = &netplay->compress_zlib;
-
       if (!ctrans->compression_backend)
          ctrans->compression_backend =
             trans_stream_get_zlib_deflate_backend();
-
-      if (ctrans->compression_backend)
-      {
-         ret = NETPLAY_COMPRESSION_ZLIB;
-         goto done;
-      }
+      ret = NETPLAY_COMPRESSION_ZLIB;
    }
-
-   ctrans = &netplay->compress_nil;
+   else
+   {
+      ctrans = &netplay->compress_nil;
+      if (!ctrans->compression_backend)
+         ctrans->compression_backend =
+            trans_stream_get_pipe_backend();
+      ret = 0;
+   }
 
    if (!ctrans->compression_backend)
-      ctrans->compression_backend =
-         trans_stream_get_pipe_backend();
+      return -1;
 
-   if (ctrans->compression_backend)
-   {
-      ret = 0;
-      goto done;
-   }
-
-   return -1;
-
-done:
    if (!ctrans->decompression_backend)
       ctrans->decompression_backend = ctrans->compression_backend->reverse;
 
@@ -1342,7 +1332,7 @@ static void select_nickname(netplay_t *netplay,
 
 try_next:
    /* Find an available nickname for this client. */
-   if (!strncmp(nickname, netplay->nick, sizeof(nickname)))
+   if (string_is_equal(nickname, netplay->nick))
       /* Nickname conflict with host; try the next one. */
       goto gen_nick;
    for (i = 0; i < netplay->connections_size; i++)
@@ -1355,11 +1345,10 @@ try_next:
          continue;
       if (conn->mode < NETPLAY_CONNECTION_CONNECTED)
          continue;
-      if (strncmp(nickname, conn->nick, sizeof(nickname)))
-         continue;
 
-      /* Nickname conflict with client; try the next one. */
-      goto gen_nick;
+      if (string_is_equal(nickname, conn->nick))
+         /* Nickname conflict with client; try the next one. */
+         goto gen_nick;
    }
 
    /* Ensure that all unused bytes are NULL. */
@@ -1460,24 +1449,27 @@ static bool netplay_handshake_sync(netplay_t *netplay,
       return false;
 
    /* And finally, the SRAM */
-   mem_info.id = RETRO_MEMORY_SAVE_RAM;
-#ifdef HAVE_THREADS
-   autosave_lock();
-#endif
-   core_get_memory(&mem_info);
-   if (!netplay_send(&connection->send_packet_buffer, connection->fd,
-            mem_info.data, mem_info.size) ||
-         !netplay_send_flush(&connection->send_packet_buffer, connection->fd,
-            false))
+   if (sram_size)
    {
+      mem_info.id = RETRO_MEMORY_SAVE_RAM;
+#ifdef HAVE_THREADS
+      autosave_lock();
+#endif
+      core_get_memory(&mem_info);
+      if (!netplay_send(&connection->send_packet_buffer, connection->fd,
+               mem_info.data, mem_info.size) ||
+            !netplay_send_flush(&connection->send_packet_buffer, connection->fd,
+               false))
+      {
+#ifdef HAVE_THREADS
+         autosave_unlock();
+#endif
+         return false;
+      }
 #ifdef HAVE_THREADS
       autosave_unlock();
 #endif
-      return false;
    }
-#ifdef HAVE_THREADS
-   autosave_unlock();
-#endif
 
    /* Send our settings. */
    REQUIRE_PROTOCOL_VERSION(connection, 6)
@@ -1724,8 +1716,8 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
    /* Check the core info */
    if (system)
    {
-      if (strncmp(info_buf.core_name,
-            system->library_name, sizeof(info_buf.core_name)))
+      if (!string_is_equal_case_insensitive(
+            info_buf.core_name, system->library_name))
       {
          /* Wrong core! */
          dmsg = msg_hash_to_str(MSG_NETPLAY_DIFFERENT_CORES);
@@ -1735,8 +1727,8 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          return false;
       }
-      if (strncmp(info_buf.core_version,
-            system->library_version, sizeof(info_buf.core_version)))
+      if (!string_is_equal_case_insensitive(
+            info_buf.core_version, system->library_version))
       {
          dmsg = msg_hash_to_str(MSG_NETPLAY_DIFFERENT_CORE_VERSIONS);
          RARCH_WARN("[Netplay] %s\n", dmsg);
@@ -1939,7 +1931,7 @@ static bool netplay_handshake_pre_sync(netplay_t *netplay,
    RECV(new_nick, sizeof(new_nick))
       return false;
 
-   if (strncmp(netplay->nick, new_nick, sizeof(netplay->nick)))
+   if (!string_is_equal(new_nick, netplay->nick))
    {
       char msg[512];
 
