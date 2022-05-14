@@ -6045,7 +6045,14 @@ static bool netplay_get_cmd(netplay_t *netplay,
          break;
 
       case NETPLAY_CMD_PING_REQUEST:
-         answer_ping(netplay, connection);
+         {
+            answer_ping(netplay, connection);
+
+            /* If we are the server,
+               we should request our own ping after answering. */
+            if (netplay->is_server)
+               request_ping(netplay, connection);
+         }
          break;
 
       case NETPLAY_CMD_PING_RESPONSE:
@@ -8480,6 +8487,94 @@ failure:
    return false;
 }
 
+static size_t retrieve_client_info(netplay_t *netplay, netplay_client_info_t *buf)
+{
+   size_t i, j = 0;
+
+   for (i = 0; i < netplay->connections_size; i++)
+   {
+      struct netplay_connection *conn = &netplay->connections[i];
+
+      /* We only want info from already connected clients. */
+      if (conn->active && conn->mode >= NETPLAY_CONNECTION_CONNECTED)
+      {
+         netplay_client_info_t *info = &buf[j++];
+         info->id = (int)i;
+         strlcpy(info->name, conn->nick, sizeof(info->name));
+         info->mode = conn->mode;
+         info->ping = conn->ping;
+      }
+   }
+
+   return j;
+}
+
+static bool kick_client_by_id(netplay_t *netplay, int client_id)
+{
+   struct netplay_connection *connection = NULL;
+
+   /* Make sure the id is valid. */
+   if ((size_t)client_id >= netplay->connections_size)
+      return false;
+
+   connection = &netplay->connections[client_id];
+   /* We can only kick connected clients. */
+   if (!connection->active || connection->mode < NETPLAY_CONNECTION_CONNECTED)
+      return false;
+
+   netplay_hangup(netplay, connection);
+
+   return true;
+}
+
+static bool kick_client_by_name(netplay_t *netplay, const char *client_name)
+{
+   size_t i;
+
+   /* Find the connection with the name we want. */
+   for (i = 0; i < netplay->connections_size; i++)
+   {
+      struct netplay_connection *connection = &netplay->connections[i];
+
+      /* We can only kick connected clients. */
+      if (!connection->active || connection->mode < NETPLAY_CONNECTION_CONNECTED)
+         continue;
+
+      /* Kick the first client with a matched name. */
+      if (string_is_equal(client_name, connection->nick))
+      {
+         netplay_hangup(netplay, connection);
+
+         return true;
+      }
+   }
+
+   return false;
+}
+
+static bool kick_client_by_id_and_name(netplay_t *netplay,
+      int client_id, const char *client_name)
+{
+   struct netplay_connection *connection = NULL;
+
+   /* Make sure the id is valid. */
+   if ((size_t)client_id >= netplay->connections_size)
+      return false;
+
+   connection = &netplay->connections[client_id];
+   /* We can only kick connected clients. */
+   if (!connection->active || connection->mode < NETPLAY_CONNECTION_CONNECTED)
+      return false;
+
+   /* Make sure the name matches. */
+   if (!string_is_equal(client_name, connection->nick))
+      return false;
+
+   netplay_hangup(netplay, connection);
+
+   return true;
+}
+
 /**
  * netplay_driver_ctl
  *
@@ -8487,157 +8582,219 @@ failure:
  */
 bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 {
-   settings_t *settings        = config_get_ptr();
-   net_driver_state_t *net_st  = &networking_driver_st;
-   netplay_t *netplay          = net_st->data;
-   bool ret                    = true;
+   settings_t *settings       = config_get_ptr();
+   net_driver_state_t *net_st = &networking_driver_st;
+   netplay_t *netplay         = net_st->data;
+   bool ret                   = true;
 
    if (net_st->in_netplay)
       return true;
    net_st->in_netplay         = true;
 
-   if (!netplay)
-   {
-      switch (state)
-      {
-         case RARCH_NETPLAY_CTL_ENABLE_SERVER:
-            net_st->netplay_enabled    = true;
-            net_st->netplay_is_client  = false;
-            goto done;
-
-         case RARCH_NETPLAY_CTL_ENABLE_CLIENT:
-            net_st->netplay_enabled    = true;
-            net_st->netplay_is_client  = true;
-            break;
-
-         case RARCH_NETPLAY_CTL_DISABLE:
-            net_st->netplay_enabled    = false;
-#ifdef HAVE_PRESENCE
-            {
-               presence_userdata_t userdata;
-               userdata.status = PRESENCE_NETPLAY_NETPLAY_STOPPED;
-               command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
-            }
-#endif
-            goto done;
-
-         case RARCH_NETPLAY_CTL_IS_ENABLED:
-            ret = net_st->netplay_enabled;
-            goto done;
-
-         case RARCH_NETPLAY_CTL_IS_REPLAYING:
-         case RARCH_NETPLAY_CTL_IS_DATA_INITED:
-            ret = false;
-            goto done;
-
-         case RARCH_NETPLAY_CTL_IS_SERVER:
-            ret =  net_st->netplay_enabled
-               && !net_st->netplay_is_client;
-            goto done;
-
-         case RARCH_NETPLAY_CTL_IS_CONNECTED:
-            ret = false;
-            goto done;
-
-         case RARCH_NETPLAY_CTL_IS_SPECTATING:
-         case RARCH_NETPLAY_CTL_IS_PLAYING:
-            ret = false;
-            goto done;
-
-         default:
-            goto done;
-      }
-   }
-
    switch (state)
    {
       case RARCH_NETPLAY_CTL_ENABLE_SERVER:
+         if (netplay)
+         {
+            ret = false;
+            break;
+         }
+         net_st->netplay_enabled   = true;
+         net_st->netplay_is_client = false;
+         break;
+
       case RARCH_NETPLAY_CTL_ENABLE_CLIENT:
-      case RARCH_NETPLAY_CTL_IS_DATA_INITED:
-         goto done;
+         if (netplay)
+         {
+            ret = false;
+            break;
+         }
+         net_st->netplay_enabled   = true;
+         net_st->netplay_is_client = true;
+         break;
+
       case RARCH_NETPLAY_CTL_DISABLE:
-         ret = false;
-         goto done;
+         if (netplay)
+         {
+            ret = false;
+            break;
+         }
+         net_st->netplay_enabled = false;
+#ifdef HAVE_PRESENCE
+         {
+            presence_userdata_t userdata;
+            userdata.status = PRESENCE_NETPLAY_NETPLAY_STOPPED;
+            command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
+         }
+#endif
+         break;
+
+      case RARCH_NETPLAY_CTL_REFRESH_CLIENT_INFO:
+         if (!netplay)
+         {
+            ret = false;
+            break;
+         }
+         if (!net_st->client_info)
+         {
+            net_st->client_info = (netplay_client_info_t*)calloc(
+               MAX_CLIENTS, sizeof(*net_st->client_info));
+            if (!net_st->client_info)
+            {
+               ret = false;
+               break;
+            }
+         }
+         net_st->client_info_count = retrieve_client_info(netplay,
+            net_st->client_info);
+         break;
+
       case RARCH_NETPLAY_CTL_IS_ENABLED:
-         goto done;
+         ret = net_st->netplay_enabled;
+         break;
+
+      case RARCH_NETPLAY_CTL_IS_DATA_INITED:
+         ret = netplay != NULL;
+         break;
+
       case RARCH_NETPLAY_CTL_IS_REPLAYING:
-         ret = netplay->is_replay;
-         goto done;
+         ret = netplay && netplay->is_replay;
+         break;
+
       case RARCH_NETPLAY_CTL_IS_SERVER:
-         ret =  net_st->netplay_enabled
-            && !net_st->netplay_is_client;
-         goto done;
+         ret = net_st->netplay_enabled && !net_st->netplay_is_client;
+         break;
+
       case RARCH_NETPLAY_CTL_IS_CONNECTED:
-         ret = netplay->is_connected;
-         goto done;
+         ret = netplay && netplay->is_connected;
+         break;
+
       case RARCH_NETPLAY_CTL_IS_SPECTATING:
-         ret = netplay->self_mode == NETPLAY_CONNECTION_SPECTATING;
+         ret = netplay &&
+            (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING);
          break;
+
       case RARCH_NETPLAY_CTL_IS_PLAYING:
-         ret = netplay->self_mode == NETPLAY_CONNECTION_PLAYING ||
-            netplay->self_mode == NETPLAY_CONNECTION_SLAVE;
+         ret = netplay &&
+            (netplay->self_mode == NETPLAY_CONNECTION_PLAYING ||
+               netplay->self_mode == NETPLAY_CONNECTION_SLAVE);
          break;
+
       case RARCH_NETPLAY_CTL_POST_FRAME:
+         if (!netplay)
+            break;
          netplay_post_frame(netplay);
-	 /* If we're disconnected, deinitialize */
-	 if (!netplay->is_server && !netplay->connections[0].active)
-		 netplay_disconnect(netplay);
+	     /* If we're disconnected, deinitialize */
+	     if (!netplay->is_server && !netplay->connections[0].active)
+		    netplay_disconnect(netplay);
          break;
+
       case RARCH_NETPLAY_CTL_PRE_FRAME:
-         ret = netplay_pre_frame(
+         if (netplay)
+            ret = netplay_pre_frame(
                settings->bools.netplay_public_announce,
                netplay->mitm_pending != NULL,
                netplay);
-         goto done;
+         break;
+
       case RARCH_NETPLAY_CTL_GAME_WATCH:
-         netplay_toggle_play_spectate(netplay);
+         if (netplay)
+            netplay_toggle_play_spectate(netplay);
+         else
+            ret = false;
          break;
+
       case RARCH_NETPLAY_CTL_PLAYER_CHAT:
-         netplay_input_chat(netplay);
+         if (netplay)
+            netplay_input_chat(netplay);
+         else
+            ret = false;
          break;
+
       case RARCH_NETPLAY_CTL_ALLOW_PAUSE:
-         ret = netplay->allow_pausing;
+         ret = !netplay || netplay->allow_pausing;
          break;
+
       case RARCH_NETPLAY_CTL_PAUSE:
-         if (netplay->local_paused != true)
+         if (netplay && !netplay->local_paused)
             netplay_frontend_paused(netplay, true);
          break;
+
       case RARCH_NETPLAY_CTL_UNPAUSE:
-         if (netplay->local_paused != false)
+         if (netplay && netplay->local_paused)
             netplay_frontend_paused(netplay, false);
          break;
+
       case RARCH_NETPLAY_CTL_LOAD_SAVESTATE:
-         netplay_load_savestate(netplay, (retro_ctx_serialize_info_t*)data, true);
+         if (netplay)
+            netplay_load_savestate(netplay,
+               (retro_ctx_serialize_info_t*)data, true);
          break;
+
       case RARCH_NETPLAY_CTL_RESET:
-         netplay_core_reset(netplay);
+         if (netplay)
+            netplay_core_reset(netplay);
          break;
+
       case RARCH_NETPLAY_CTL_DISCONNECT:
-         ret    = true;
          if (netplay)
             netplay_disconnect(netplay);
-         goto done;
-      case RARCH_NETPLAY_CTL_FINISHED_NAT_TRAVERSAL:
-         netplay_announce_nat_traversal(netplay);
-         goto done;
-      case RARCH_NETPLAY_CTL_DESYNC_PUSH:
-         netplay->desync++;
+         else
+            ret = false;
          break;
+
+      case RARCH_NETPLAY_CTL_FINISHED_NAT_TRAVERSAL:
+         if (netplay)
+            netplay_announce_nat_traversal(netplay);
+         break;
+
+      case RARCH_NETPLAY_CTL_DESYNC_PUSH:
+         if (netplay)
+            netplay->desync++;
+         break;
+
       case RARCH_NETPLAY_CTL_DESYNC_POP:
-         if (netplay->desync)
+         if (netplay && netplay->desync)
          {
-            netplay->desync--;
-            if (!netplay->desync)
+            if (!(--netplay->desync))
                netplay_load_savestate(netplay, NULL, true);
          }
          break;
-      default:
+
+      case RARCH_NETPLAY_CTL_KICK_CLIENT:
+         /* Only the server should be able to kick others. */
+         if (netplay && netplay->is_server)
+         {
+            netplay_client_info_t *client = (netplay_client_info_t*)data;
+            if (!client)
+            {
+               ret = false;
+               break;
+            }
+            if (client->id >= 0 && !string_is_empty(client->name))
+               ret = kick_client_by_id_and_name(netplay,
+                  client->id, client->name);
+            else if (client->id >= 0)
+               ret = kick_client_by_id(netplay, client->id);
+            else if (!string_is_empty(client->name))
+               ret = kick_client_by_name(netplay, client->name);
+            else
+               ret = false;
+         }
+         else
+         {
+            ret = false;
+         }
+         break;
+
       case RARCH_NETPLAY_CTL_NONE:
+      default:
          ret = false;
+         break;
    }
 
-done:
    net_st->in_netplay = false;
+
    return ret;
 }
 
