@@ -1,6 +1,6 @@
 /*
  * xxhsum - Command line interface for xxhash algorithms
- * Copyright (C) 2013-2020 Yann Collet
+ * Copyright (C) 2013-2021 Yann Collet
  *
  * GPL v2 License
  *
@@ -23,16 +23,16 @@
  *   - xxHash source repository: https://github.com/Cyan4973/xxHash
  */
 
-#include "xsum_config.h"
 #include "xsum_sanity_check.h"
-#include "xsum_output.h"
-#include <stdlib.h>
-#include <assert.h>
-#include <string.h>
+#include "xsum_output.h"  /* XSUM_log */
 #ifndef XXH_STATIC_LINKING_ONLY
 #  define XXH_STATIC_LINKING_ONLY
 #endif
 #include "../xxhash.h"
+
+#include <stdlib.h>  /* exit */
+#include <assert.h>
+#include <string.h>  /* memcmp */
 
 /* use #define to make them constant, required for initialization */
 #define PRIME32 2654435761U
@@ -60,7 +60,7 @@ XSUM_API void XSUM_fillTestBuffer(XSUM_U8* buffer, size_t len)
 
 /* ************************************************
  * Self-test:
- * ensure results consistency accross platforms
+ * ensure results consistency across platforms
  *********************************************** */
 #if XSUM_NO_TESTS
 XSUM_API void XSUM_sanityCheck(void)
@@ -90,9 +90,10 @@ typedef struct {
     XXH128_hash_t Nresult;
 } XSUM_testdata128_t;
 
-#define SECRET_SAMPLE_NBBYTES 4
+#define SECRET_SAMPLE_NBBYTES 5
 typedef struct {
-    XSUM_U32 len;
+    XSUM_U32 seedLen;
+    XSUM_U32 secretLen;
     XSUM_U8 byte[SECRET_SAMPLE_NBBYTES];
 } XSUM_testdata_sample_t;
 
@@ -213,11 +214,12 @@ static const XSUM_testdata128_t XSUM_XXH128_withSecret_testdata[] = {
     { 12, 0, { 0xAF82F6EBA263D7D8ULL, 0x90A3C2D839F57D0FULL } }   /*  9 - 16 */
 };
 
+#define SECRET_SIZE_MAX 9867
 static const XSUM_testdata_sample_t XSUM_XXH3_generateSecret_testdata[] = {
-    {                              0, { 0xB8, 0x26, 0x83, 0x7E } },
-    {                              1, { 0xA6, 0x16, 0x06, 0x7B } },
-    {     XXH3_SECRET_SIZE_MIN -   1, { 0xDA, 0x2A, 0x12, 0x11 } },
-    { XXH3_SECRET_DEFAULT_SIZE + 500, { 0x7E, 0x48, 0x0C, 0xA7 } }
+    {                              0, 192, { 0xE7, 0x8C, 0x77, 0x77, 0x00 } },
+    {                              1, 240, { 0x2B, 0x3E, 0xDE, 0xC1, 0x00 } },
+    {     XXH3_SECRET_SIZE_MIN -   1, 277, { 0xE8, 0x39, 0x6C, 0xCC, 0x7B } },
+    { XXH3_SECRET_DEFAULT_SIZE + 500, SECRET_SIZE_MAX, { 0xD6, 0x1C, 0x41, 0x17, 0xB3 } }
 };
 
 static void XSUM_checkResult32(XXH32_hash_t r1, XXH32_hash_t r2)
@@ -378,6 +380,16 @@ static void XSUM_testXXH3(const void* data, const XSUM_testdata64_t* testData)
         XSUM_checkResult64(Dresult, Nresult);
     }
 
+    /* check that the combination of
+     * XXH3_generateSecret_fromSeed() and XXH3_64bits_withSecretandSeed()
+     * results in exactly the same hash generation as XXH3_64bits_withSeed() */
+    {   char secretBuffer[XXH3_SECRET_DEFAULT_SIZE+1];
+        char* const secret = secretBuffer + 1;  /* intentional unalignment */
+        XXH3_generateSecret_fromSeed(secret, seed);
+        {   XSUM_U64 const Dresult = XXH3_64bits_withSecretandSeed(data, len, secret, XXH3_SECRET_DEFAULT_SIZE, seed);
+            XSUM_checkResult64(Dresult, Nresult);
+    }   }
+
     /* streaming API test */
     {   XXH3_state_t* const state = XXH3_createState();
         assert(state != NULL);
@@ -398,9 +410,28 @@ static void XSUM_testXXH3(const void* data, const XSUM_testdata64_t* testData)
                 (void)XXH3_64bits_update(state, ((const char*)data)+pos, 1);
             XSUM_checkResult64(XXH3_64bits_digest(state), Nresult);
         }
+
+        /* check that streaming with a combination of
+         * XXH3_generateSecret_fromSeed() and XXH3_64bits_reset_withSecretandSeed()
+         * results in exactly the same hash generation as XXH3_64bits_reset_withSeed() */
+        {   char secretBuffer[XXH3_SECRET_DEFAULT_SIZE+1];
+            char* const secret = secretBuffer + 1;  /* intentional unalignment */
+            XXH3_generateSecret_fromSeed(secret, seed);
+            /* single ingestion */
+            (void)XXH3_64bits_reset_withSecretandSeed(state, secret, XXH3_SECRET_DEFAULT_SIZE, seed);
+            (void)XXH3_64bits_update(state, data, len);
+            XSUM_checkResult64(XXH3_64bits_digest(state), Nresult);
+        }
+
         XXH3_freeState(state);
     }
+
 }
+
+
+#ifndef XXH3_MIDSIZE_MAX
+# define XXH3_MIDSIZE_MAX 240
+#endif
 
 static void XSUM_testXXH3_withSecret(const void* data, const void* secret,
                                      size_t secretSize, const XSUM_testdata64_t* testData)
@@ -414,6 +445,13 @@ static void XSUM_testXXH3_withSecret(const void* data, const void* secret,
         assert(data != NULL);
     }
     {   XSUM_U64 const Dresult = XXH3_64bits_withSecret(data, len, secret, secretSize);
+        XSUM_checkResult64(Dresult, Nresult);
+    }
+
+    /* check that XXH3_64bits_withSecretandSeed()
+     * results in exactly the same return value as XXH3_64bits_withSecret() */
+    if (len > XXH3_MIDSIZE_MAX)
+    {   XSUM_U64 const Dresult = XXH3_64bits_withSecretandSeed(data, len, secret, secretSize, 0);
         XSUM_checkResult64(Dresult, Nresult);
     }
 
@@ -436,6 +474,16 @@ static void XSUM_testXXH3_withSecret(const void* data, const void* secret,
                 (void)XXH3_64bits_update(state, ((const char*)data)+pos, 1);
             XSUM_checkResult64(XXH3_64bits_digest(state), Nresult);
         }
+
+        /* check that XXH3_64bits_reset_withSecretandSeed()
+         * results in exactly the same return value as XXH3_64bits_reset_withSecret() */
+         if (len > XXH3_MIDSIZE_MAX) {
+            /* single ingestion */
+            (void)XXH3_64bits_reset_withSecretandSeed(state, secret, secretSize, 0);
+            (void)XXH3_64bits_update(state, data, len);
+            XSUM_checkResult64(XXH3_64bits_digest(state), Nresult);
+        }
+
         XXH3_freeState(state);
     }
 }
@@ -466,6 +514,16 @@ static void XSUM_testXXH128(const void* data, const XSUM_testdata128_t* testData
         XSUM_checkResult128(Dresult, Nresult);
     }
 
+    /* check that the combination of
+     * XXH3_generateSecret_fromSeed() and XXH3_128bits_withSecretandSeed()
+     * results in exactly the same hash generation as XXH3_64bits_withSeed() */
+    {   char secretBuffer[XXH3_SECRET_DEFAULT_SIZE+1];
+        char* const secret = secretBuffer + 1;  /* intentional unalignment */
+        XXH3_generateSecret_fromSeed(secret, seed);
+        {   XXH128_hash_t const Dresult = XXH3_128bits_withSecretandSeed(data, len, secret, XXH3_SECRET_DEFAULT_SIZE, seed);
+            XSUM_checkResult128(Dresult, Nresult);
+    }   }
+
     /* streaming API test */
     {   XXH3_state_t *state = XXH3_createState();
         assert(state != NULL);
@@ -487,6 +545,19 @@ static void XSUM_testXXH128(const void* data, const XSUM_testdata128_t* testData
                 (void)XXH3_128bits_update(state, ((const char*)data)+pos, 1);
             XSUM_checkResult128(XXH3_128bits_digest(state), Nresult);
         }
+
+        /* check that streaming with a combination of
+         * XXH3_generateSecret_fromSeed() and XXH3_128bits_reset_withSecretandSeed()
+         * results in exactly the same hash generation as XXH3_128bits_reset_withSeed() */
+        {   char secretBuffer[XXH3_SECRET_DEFAULT_SIZE+1];
+            char* const secret = secretBuffer + 1;  /* intentional unalignment */
+            XXH3_generateSecret_fromSeed(secret, seed);
+            /* single ingestion */
+            (void)XXH3_128bits_reset_withSecretandSeed(state, secret, XXH3_SECRET_DEFAULT_SIZE, seed);
+            (void)XXH3_128bits_update(state, data, len);
+            XSUM_checkResult128(XXH3_128bits_digest(state), Nresult);
+        }
+
         XXH3_freeState(state);
     }
 }
@@ -501,6 +572,13 @@ static void XSUM_testXXH128_withSecret(const void* data, const void* secret, siz
         assert(data != NULL);
     }
     {   XXH128_hash_t const Dresult = XXH3_128bits_withSecret(data, len, secret, secretSize);
+        XSUM_checkResult128(Dresult, Nresult);
+    }
+
+    /* check that XXH3_128bits_withSecretandSeed()
+     * results in exactly the same return value as XXH3_128bits_withSecret() */
+    if (len > XXH3_MIDSIZE_MAX)
+    {   XXH128_hash_t const Dresult = XXH3_128bits_withSecretandSeed(data, len, secret, secretSize, 0);
         XSUM_checkResult128(Dresult, Nresult);
     }
 
@@ -523,6 +601,16 @@ static void XSUM_testXXH128_withSecret(const void* data, const void* secret, siz
                 (void)XXH3_128bits_update(state, ((const char*)data)+pos, 1);
             XSUM_checkResult128(XXH3_128bits_digest(state), Nresult);
         }
+
+        /* check that XXH3_128bits_reset_withSecretandSeed()
+         * results in exactly the same return value as XXH3_128bits_reset_withSecret() */
+         if (len > XXH3_MIDSIZE_MAX) {
+            /* single ingestion */
+            (void)XXH3_128bits_reset_withSecretandSeed(state, secret, secretSize, 0);
+            (void)XXH3_128bits_update(state, data, len);
+            XSUM_checkResult128(XXH3_128bits_digest(state), Nresult);
+        }
+
         XXH3_freeState(state);
     }
 }
@@ -530,20 +618,21 @@ static void XSUM_testXXH128_withSecret(const void* data, const void* secret, siz
 static void XSUM_testSecretGenerator(const void* customSeed, const XSUM_testdata_sample_t* testData)
 {
     static int nbTests = 1;
-    const int sampleIndex[SECRET_SAMPLE_NBBYTES] = { 0, 62, 131, 191};
-    XSUM_U8 secretBuffer[XXH3_SECRET_DEFAULT_SIZE] = {0};
+    const int sampleIndex[SECRET_SAMPLE_NBBYTES] = { 0, 62, 131, 191, 241 };  /* position of sampled bytes */
+    XSUM_U8 secretBuffer[SECRET_SIZE_MAX] = {0};
     XSUM_U8 samples[SECRET_SAMPLE_NBBYTES];
     int i;
 
-    XXH3_generateSecret(secretBuffer, customSeed, testData->len);
+    assert(testData->secretLen <= SECRET_SIZE_MAX);
+    XXH3_generateSecret(secretBuffer, testData->secretLen, customSeed, testData->seedLen);
     for (i=0; i<SECRET_SAMPLE_NBBYTES; i++) {
         samples[i] = secretBuffer[sampleIndex[i]];
     }
     if (memcmp(samples, testData->byte, sizeof(testData->byte))) {
         XSUM_log("\rError: Secret generation test %i: Internal sanity check failed. \n", nbTests);
-        XSUM_log("\rGot { 0x%02X, 0x%02X, 0x%02X, 0x%02X }, expected { 0x%02X, 0x%02X, 0x%02X, 0x%02X } \n",
-                samples[0], samples[1], samples[2], samples[3],
-                testData->byte[0], testData->byte[1], testData->byte[2], testData->byte[3] );
+        XSUM_log("\rGot { 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X }, expected { 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X } \n",
+                samples[0], samples[1], samples[2], samples[3], samples[4],
+                testData->byte[0], testData->byte[1], testData->byte[2], testData->byte[3], testData->byte[4] );
         exit(1);
     }
     nbTests++;
@@ -592,6 +681,7 @@ XSUM_API void XSUM_sanityCheck(void)
     }
     /* secret generator */
     for (i = 0; i < (sizeof(XSUM_XXH3_generateSecret_testdata)/sizeof(XSUM_XXH3_generateSecret_testdata[0])); i++) {
+        assert(XSUM_XXH3_generateSecret_testdata[i].seedLen <= SANITY_BUFFER_SIZE);
         XSUM_testSecretGenerator(sanityBuffer, &XSUM_XXH3_generateSecret_testdata[i]);
     }
 

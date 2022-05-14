@@ -1,6 +1,6 @@
 /*
  * xxHash - XXH3 Dispatcher for x86-based targets
- * Copyright (C) 2020 Yann Collet
+ * Copyright (C) 2020-2021 Yann Collet
  *
  * BSD 2-Clause License (https://www.opensource.org/licenses/bsd-license.php)
  *
@@ -71,7 +71,6 @@ XXH_PUBLIC_API XXH_errorcode XXH3_128bits_update_dispatch(XXH3_state_t* state, c
 
 # undef  XXH128
 # define XXH128 XXH3_128bits_withSeed_dispatch
-# define XXH3_128bits XXH3_128bits_dispatch
 # undef  XXH3_128bits
 # define XXH3_128bits XXH3_128bits_dispatch
 # undef  XXH3_128bits_withSeed

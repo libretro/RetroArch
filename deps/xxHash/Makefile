@@ -1,6 +1,6 @@
 # ################################################################
 # xxHash Makefile
-# Copyright (C) 2012-2020 Yann Collet
+# Copyright (C) 2012-2021 Yann Collet
 #
 # GPL v2 License
 #
@@ -75,13 +75,15 @@ XXHSUM_SRC_DIR = cli
 XXHSUM_SPLIT_SRCS = $(XXHSUM_SRC_DIR)/xxhsum.c \
                     $(XXHSUM_SRC_DIR)/xsum_os_specific.c \
                     $(XXHSUM_SRC_DIR)/xsum_output.c \
-                    $(XXHSUM_SRC_DIR)/xsum_sanity_check.c
+                    $(XXHSUM_SRC_DIR)/xsum_sanity_check.c \
+                    $(XXHSUM_SRC_DIR)/xsum_bench.c
 XXHSUM_SPLIT_OBJS = $(XXHSUM_SPLIT_SRCS:.c=.o)
 XXHSUM_HEADERS = $(XXHSUM_SRC_DIR)/xsum_config.h \
                  $(XXHSUM_SRC_DIR)/xsum_arch.h \
                  $(XXHSUM_SRC_DIR)/xsum_os_specific.h \
                  $(XXHSUM_SRC_DIR)/xsum_output.h \
-                 $(XXHSUM_SRC_DIR)/xsum_sanity_check.h
+                 $(XXHSUM_SRC_DIR)/xsum_sanity_check.h \
+                 $(XXHSUM_SRC_DIR)/xsum_bench.h
 
 ## generate CLI and libraries in release mode (default for `make`)
 .PHONY: default
@@ -204,6 +206,8 @@ check: xxhsum   ## basic tests for xxhsum CLI, set RUN_ENV for emulated environm
 	$(RUN_ENV) ./xxhsum$(EXT) -H0 xxhash.c
 	# 128-bit
 	$(RUN_ENV) ./xxhsum$(EXT) -H2 xxhash.c
+	# XXH3 (enforce BSD style)
+	$(RUN_ENV) ./xxhsum$(EXT) -H3 xxhash.c | grep "XXH3"
 	# request incorrect variant
 	$(RUN_ENV) ./xxhsum$(EXT) -H9 xxhash.c ; test $$? -eq 1
 	@printf "\n .......   checks completed successfully   ....... \n"
@@ -250,12 +254,18 @@ test-xxhsum-c: xxhsum
 	./xxhsum -H2 --tag $(TEST_FILES) > .test.xxh128_tag
 	./xxhsum -H2 --little-endian $(TEST_FILES) > .test.le_xxh128
 	./xxhsum -H2 --tag --little-endian $(TEST_FILES) > .test.le_xxh128_tag
+	./xxhsum -H3 $(TEST_FILES) > .test.xxh3
+	./xxhsum -H3 --tag $(TEST_FILES) > .test.xxh3_tag
+	./xxhsum -H3 --little-endian $(TEST_FILES) > .test.le_xxh3
+	./xxhsum -H3 --tag --little-endian $(TEST_FILES) > .test.le_xxh3_tag
 	./xxhsum -c .test.xxh*
 	./xxhsum -c --little-endian .test.le_xxh*
 	./xxhsum -c .test.*_tag
 	# read list of files from stdin
-	./xxhsum -c < .test.xxh64
 	./xxhsum -c < .test.xxh32
+	./xxhsum -c < .test.xxh64
+	./xxhsum -c < .test.xxh128
+	./xxhsum -c < .test.xxh3
 	cat .test.xxh* | ./xxhsum -c -
 	# check variant with '*' marker as second separator
 	$(SED) 's/  / \*/' .test.xxh32 | ./xxhsum -c
@@ -264,12 +274,15 @@ test-xxhsum-c: xxhsum
 	./xxhsum --tag -H0 xxhsum* | $(GREP) XXH32
 	./xxhsum --tag -H1 xxhsum* | $(GREP) XXH64
 	./xxhsum --tag -H2 xxhsum* | $(GREP) XXH128
+	./xxhsum --tag -H3 xxhsum* | $(GREP) XXH3
+	./xxhsum       -H3 xxhsum* | $(GREP) XXH3  # --tag is implicit for H3
 	./xxhsum --tag -H32 xxhsum* | $(GREP) XXH32
 	./xxhsum --tag -H64 xxhsum* | $(GREP) XXH64
 	./xxhsum --tag -H128 xxhsum* | $(GREP) XXH128
 	./xxhsum --tag -H0 --little-endian xxhsum* | $(GREP) XXH32_LE
 	./xxhsum --tag -H1 --little-endian xxhsum* | $(GREP) XXH64_LE
 	./xxhsum --tag -H2 --little-endian xxhsum* | $(GREP) XXH128_LE
+	./xxhsum       -H3 --little-endian xxhsum* | $(GREP) XXH3_LE
 	./xxhsum --tag -H32 --little-endian xxhsum* | $(GREP) XXH32_LE
 	./xxhsum --tag -H64 --little-endian xxhsum* | $(GREP) XXH64_LE
 	./xxhsum --tag -H128 --little-endian xxhsum* | $(GREP) XXH128_LE
@@ -288,6 +301,10 @@ test-xxhsum-c: xxhsum
 	echo "0000000000000000  test-expects-file-not-found" | ./xxhsum -c -; test $$? -eq 1
 	echo "00000000  test-expects-file-not-found" | ./xxhsum -c -; test $$? -eq 1
 	@$(RM) .test.*
+
+.PHONY: test-filename-escape
+test-filename-escape:
+	$(MAKE) -C tests test_filename_escape
 
 .PHONY: armtest
 armtest: clean
@@ -319,14 +336,35 @@ c90test: xxhash.c
 	$(RM) xxhash.o
 endif
 
+.PHONY: noxxh3test
 noxxh3test: CPPFLAGS += -DXXH_NO_XXH3
 noxxh3test: CFLAGS += -Werror -pedantic -Wno-long-long  # XXH64 requires long long support
+noxxh3test: OFILE = xxh_noxxh3.o
 noxxh3test: xxhash.c
 	@echo ---- test compilation without XXH3 ----
-	$(RM) xxhash.o
-	$(CC) $(FLAGS) $^ -c
-	$(NM) xxhash.o | $(GREP) XXH3_ ; test $$? -eq 1
-	$(RM) xxhash.o
+	$(CC) $(FLAGS) -c $^ -o $(OFILE)
+	$(NM) $(OFILE) | $(GREP) XXH3_ ; test $$? -eq 1
+	$(RM) $(OFILE)
+
+.PHONY: nostreamtest
+nostreamtest: CPPFLAGS += -DXXH_NO_STREAM
+nostreamtest: CFLAGS += -Werror -pedantic -Wno-long-long  # XXH64 requires long long support
+nostreamtest: OFILE = xxh_nostream.o
+nostreamtest: xxhash.c
+	@echo ---- test compilation without streaming ----
+	$(CC) $(FLAGS) -c $^ -o $(OFILE)
+	$(NM) $(OFILE) | $(GREP) update ; test $$? -eq 1
+	$(RM) $(OFILE)
+
+.PHONY: nostdlibtest
+nostdlibtest: CPPFLAGS += -DXXH_NO_STDLIB
+nostdlibtest: CFLAGS += -Werror -pedantic -Wno-long-long  # XXH64 requires long long support
+nostdlibtest: OFILE = xxh_nostdlib.o
+nostdlibtest: xxhash.c
+	@echo ---- test compilation without \<stdlib.h\> ----
+	$(CC) $(FLAGS) -c $^ -o $(OFILE)
+	$(NM) $(OFILE) | $(GREP) "U _free\|U free" ; test $$? -eq 1
+	$(RM) $(OFILE)
 
 .PHONY: usan
 usan: CC=clang
@@ -374,7 +412,7 @@ preview-man: man
 
 .PHONY: test
 test: DEBUGFLAGS += -DXXH_DEBUGLEVEL=1
-test: all namespaceTest check test-xxhsum-c c90test test-tools
+test: all namespaceTest check test-xxhsum-c c90test test-tools noxxh3test nostdlibtest
 
 .PHONY: test-inline
 test-inline:
@@ -444,6 +482,7 @@ endif
 
 INSTALL_PROGRAM ?= $(INSTALL)
 INSTALL_DATA    ?= $(INSTALL) -m 644
+INSTALL_DIR     ?= $(INSTALL) -d -m 755
 
 
 # Escape special symbols by putting each character into its separate class
@@ -480,11 +519,14 @@ libxxhash.pc: libxxhash.pc.in
           $< > $@
 
 
-.PHONY: install
-install: lib libxxhash.pc xxhsum  ## install libraries, CLI, links and man page
-	@echo Installing libxxhash
-	$(Q)$(INSTALL) -d -m 755 $(DESTDIR)$(LIBDIR)
+install_libxxhash.a: libxxhash.a
+	@echo Installing libxxhash.a
+	$(Q)$(INSTALL_DIR) $(DESTDIR)$(LIBDIR)
 	$(Q)$(INSTALL_DATA) libxxhash.a $(DESTDIR)$(LIBDIR)
+
+install_libxxhash: libxxhash
+	@echo Installing libxxhash
+	$(Q)$(INSTALL_DIR) $(DESTDIR)$(LIBDIR)
 	$(Q)$(INSTALL_PROGRAM) $(LIBXXH) $(DESTDIR)$(LIBDIR)
 	$(Q)ln -sf $(LIBXXH) $(DESTDIR)$(LIBDIR)/libxxhash.$(SHARED_EXT_MAJOR)
 	$(Q)ln -sf $(LIBXXH) $(DESTDIR)$(LIBDIR)/libxxhash.$(SHARED_EXT)
@@ -494,20 +536,30 @@ install: lib libxxhash.pc xxhsum  ## install libraries, CLI, links and man page
 ifeq ($(DISPATCH),1)
 	$(Q)$(INSTALL_DATA) xxh_x86dispatch.h $(DESTDIR)$(INCLUDEDIR)
 endif
+
+install_libxxhash.pc: libxxhash.pc
 	@echo Installing pkgconfig
-	$(Q)$(INSTALL) -d -m 755 $(DESTDIR)$(PKGCONFIGDIR)/
+	$(Q)$(INSTALL_DIR) $(DESTDIR)$(PKGCONFIGDIR)/
 	$(Q)$(INSTALL_DATA) libxxhash.pc $(DESTDIR)$(PKGCONFIGDIR)/
+
+install_xxhsum: xxhsum
 	@echo Installing xxhsum
-	$(Q)$(INSTALL) -d -m 755 $(DESTDIR)$(BINDIR)/ $(DESTDIR)$(MANDIR)/
+	$(Q)$(INSTALL_DIR) $(DESTDIR)$(BINDIR)/
 	$(Q)$(INSTALL_PROGRAM) xxhsum $(DESTDIR)$(BINDIR)/xxhsum
 	$(Q)ln -sf xxhsum $(DESTDIR)$(BINDIR)/xxh32sum
 	$(Q)ln -sf xxhsum $(DESTDIR)$(BINDIR)/xxh64sum
 	$(Q)ln -sf xxhsum $(DESTDIR)$(BINDIR)/xxh128sum
+
+install_man:
 	@echo Installing man pages
+	$(Q)$(INSTALL_DIR) $(DESTDIR)$(MANDIR)/
 	$(Q)$(INSTALL_DATA) $(MAN) $(DESTDIR)$(MANDIR)/xxhsum.1
-	$(Q)ln -sf $(MAN) $(DESTDIR)$(MANDIR)/xxh32sum.1
-	$(Q)ln -sf $(MAN) $(DESTDIR)$(MANDIR)/xxh64sum.1
-	$(Q)ln -sf $(MAN) $(DESTDIR)$(MANDIR)/xxh128sum.1
+	$(Q)ln -sf xxhsum.1 $(DESTDIR)$(MANDIR)/xxh32sum.1
+	$(Q)ln -sf xxhsum.1 $(DESTDIR)$(MANDIR)/xxh64sum.1
+	$(Q)ln -sf xxhsum.1 $(DESTDIR)$(MANDIR)/xxh128sum.1
+
+.PHONY: install
+install: install_libxxhash.a install_libxxhash install_libxxhash.pc install_xxhsum install_man ## install libraries, CLI, links and man page
 	@echo xxhash installation completed
 
 .PHONY: uninstall

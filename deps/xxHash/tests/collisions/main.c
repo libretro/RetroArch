@@ -1,7 +1,7 @@
 /*
  * Brute force collision tester for 64-bit hashes
  * Part of the xxHash project
- * Copyright (C) 2019-2020 Yann Collet
+ * Copyright (C) 2019-2021 Yann Collet
  *
  * GPL v2 License
  *
@@ -800,7 +800,7 @@ static size_t search_collisions(
         for (int nbHBits = 1; nbHBits < hashBits; nbHBits++) {
             uint64_t const nbSlots = (uint64_t)1 << nbHBits;
             double const expectedCollisions = estimateNbCollisions(nbCandidates, nbHBits);
-            if ( (nbSlots > nbCandidates * 100)  /* within range for meaningfull collision analysis results */
+            if ( (nbSlots > nbCandidates * 100)  /* within range for meaningful collision analysis results */
               && (expectedCollisions > 18.0) ) {
                 int const rShift = hashBits - nbHBits;
                 size_t HBits_collisions = 0;

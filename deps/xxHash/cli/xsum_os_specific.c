@@ -1,6 +1,6 @@
 /*
  * xxhsum - Command line interface for xxhash algorithms
- * Copyright (C) 2013-2020 Yann Collet
+ * Copyright (C) 2013-2021 Yann Collet
  *
  * GPL v2 License
  *
@@ -23,12 +23,7 @@
  *   - xxHash source repository: https://github.com/Cyan4973/xxHash
  */
 
-#include "xsum_config.h"
-#include "xsum_os_specific.h"
-#include <stdio.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <sys/types.h>  /* struct stat / __wstat64 */
+#include "xsum_os_specific.h"  /* XSUM_API */
 #include <sys/stat.h>   /* stat() / _stat64() */
 
 /*
@@ -47,7 +42,8 @@
 #if (defined(__linux__) && (XSUM_PLATFORM_POSIX_VERSION >= 1)) \
  || (XSUM_PLATFORM_POSIX_VERSION >= 200112L) \
  || defined(__DJGPP__) \
- || defined(__MSYS__)
+ || defined(__MSYS__) \
+ || defined(__HAIKU__)
 #  include <unistd.h>   /* isatty */
 #  define XSUM_IS_CONSOLE(stdStream) isatty(fileno(stdStream))
 #elif defined(MSDOS) || defined(OS2)
@@ -112,7 +108,7 @@ static int XSUM_stat(const char* infilename, XSUM_stat_t* statbuf)
 }
 
 #ifndef XSUM_NO_MAIN
-int main(int argc, char* argv[])
+int main(int argc, const char* argv[])
 {
     return XSUM_main(argc, argv);
 }
@@ -383,7 +379,7 @@ static int XSUM_wmain(int argc, wchar_t* utf16_argv[])
         setvbuf(stderr, NULL, _IONBF, 0);
 
         /* Call our real main function */
-        ret = XSUM_main(argc, utf8_argv);
+        ret = XSUM_main(argc, (void*)utf8_argv);
 
         /* Cleanup */
         XSUM_freeArgv(argc, utf8_argv);
@@ -439,7 +435,7 @@ int __cdecl __wgetmainargs(
     _startupinfo* StartInfo
 );
 
-int main(int ansi_argc, char* ansi_argv[])
+int main(int ansi_argc, const char* ansi_argv[])
 {
     int       utf16_argc;
     wchar_t** utf16_argv;

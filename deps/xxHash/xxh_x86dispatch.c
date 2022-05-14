@@ -1,6 +1,6 @@
 /*
  * xxHash - Extremely Fast Hash algorithm
- * Copyright (C) 2020 Yann Collet
+ * Copyright (C) 2020-2021 Yann Collet
  *
  * BSD 2-Clause License (https://www.opensource.org/licenses/bsd-license.php)
  *
@@ -36,7 +36,7 @@
 /*!
  * @file xxh_x86dispatch.c
  *
- * Automatic dispatcher code for the @ref xxh3_family on x86-based targets.
+ * Automatic dispatcher code for the @ref XXH3_family on x86-based targets.
  *
  * Optional add-on.
  *
@@ -229,7 +229,7 @@ extern "C" {
  * @internal
  * @brief Runs CPUID.
  *
- * @param eax, ecx The parameters to pass to CPUID, %eax and %ecx respectively.
+ * @param eax , ecx The parameters to pass to CPUID, %eax and %ecx respectively.
  * @param abcd The array to store the result in, `{ eax, ebx, ecx, edx }`
  */
 static void XXH_cpuid(xxh_u32 eax, xxh_u32 ecx, xxh_u32* abcd)
@@ -316,7 +316,7 @@ static xxh_u64 XXH_xgetbv(void)
  *
  * Runs various CPUID/XGETBV tests to try and determine the best implementation.
  *
- * @ret The best @ref XXH_VECTOR implementation.
+ * @return The best @ref XXH_VECTOR implementation.
  * @see XXH_VECTOR_TYPES
  */
 static int XXH_featureTest(void)

@@ -43,6 +43,15 @@ if(NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "xxHash build type: ${CMAKE_BUILD_TYPE}")
 endif()
 
+# Enable assert() statements in debug builds
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+    if("${CMAKE_VERSION}" VERSION_LESS "3.12")
+        # add_compile_definitions is not available for older cmake => do nothing
+    else()
+        add_compile_definitions(XXH_DEBUGLEVEL=1)
+    endif()
+endif()
+
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 option(XXHASH_BUILD_XXHSUM "Build the xxhsum binary" ON)
 
@@ -88,6 +97,7 @@ if(XXHASH_BUILD_XXHSUM)
                         "${XXHSUM_DIR}/xsum_os_specific.c"
                         "${XXHSUM_DIR}/xsum_output.c"
                         "${XXHSUM_DIR}/xsum_sanity_check.c"
+                        "${XXHSUM_DIR}/xsum_bench.c"
                 )
   add_executable(${PROJECT_NAME}::xxhsum ALIAS xxhsum)
 
@@ -117,7 +127,7 @@ if(NOT XXHASH_BUNDLED_MODE)
     install(TARGETS xxhsum
       EXPORT xxHashTargets
       RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
-    install(FILES "${XXHASH_DIR}/xxhsum.1"
+    install(FILES "${XXHSUM_DIR}/xxhsum.1"
       DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
   endif(XXHASH_BUILD_XXHSUM)
 

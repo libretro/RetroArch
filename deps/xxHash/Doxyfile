@@ -2,7 +2,7 @@
 DOXYFILE_ENCODING      = UTF-8
 
 PROJECT_NAME           = "xxHash"
-PROJECT_NUMBER         = "0.8.0"
+PROJECT_NUMBER         = "0.8.1"
 PROJECT_BRIEF          = "Extremely fast non-cryptographic hash function"
 OUTPUT_DIRECTORY       = doxygen
 OUTPUT_LANGUAGE        = English
@@ -42,6 +42,9 @@ PREDEFINED             = "XXH_DOXYGEN=" \
                          "XSUM_API=" \
                          "XXH_STATIC_LINKING_ONLY" \
                          "XXH_IMPLEMENTATION" \
+                         "XXH_PUREF=[[gnu::pure]]" \
+                         "XXH_CONSTF=[[gnu::const]]" \
+                         "XXH_MALLOCF=[[gnu::malloc]]" \
                          "XXH_ALIGN(N)=alignas(N)" \
                          "XXH_ALIGN_MEMBER(align,type)=alignas(align) type"
 

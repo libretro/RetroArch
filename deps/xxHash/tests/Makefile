@@ -1,6 +1,6 @@
 # ################################################################
 # xxHash Makefile
-# Copyright (C) 2012-2020 Yann Collet
+# Copyright (C) 2012-2021 Yann Collet
 #
 # GPL v2 License
 #
@@ -99,6 +99,10 @@ test_unicode: $(XXHSUM) generate_unicode_test.c
 	./generate_unicode_test$(EXT)
 	$(SHELL) ./unicode_test.sh
 endif
+
+.PHONY: test_filename_escape
+test_filename_escape: $(XXHSUM)
+	./filename-escape.sh
 
 xxhash.o: ../xxhash.c ../xxhash.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -c -o $@ $<

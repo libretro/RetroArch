@@ -1,6 +1,6 @@
 /*
  * xxhsum - Command line interface for xxhash algorithms
- * Copyright (C) 2013-2020 Yann Collet
+ * Copyright (C) 2013-2021 Yann Collet
  *
  * GPL v2 License
  *
@@ -39,7 +39,7 @@ extern "C" {
  *
  * Functions like main(), but is passed UTF-8 arguments even on Windows.
  */
-XSUM_API int XSUM_main(int argc, char* argv[]);
+XSUM_API int XSUM_main(int argc, const char* argv[]);
 
 /*
  * Returns whether stream is a console.

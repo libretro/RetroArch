@@ -1,6 +1,6 @@
 /*
  * xxhsum - Command line interface for xxhash algorithms
- * Copyright (C) 2013-2020 Yann Collet
+ * Copyright (C) 2013-2021 Yann Collet
  *
  * GPL v2 License
  *
@@ -201,5 +201,14 @@
 #   endif
     typedef unsigned long long XSUM_U64;
 #endif /* not C++/C99 */
+
+/* ***************************
+ * Common constants
+ * ***************************/
+
+#define KB *( 1<<10)
+#define MB *( 1<<20)
+#define GB *(1U<<30)
+
 
 #endif /* XSUM_CONFIG_H */

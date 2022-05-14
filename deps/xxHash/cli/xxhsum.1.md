@@ -7,9 +7,9 @@ SYNOPSIS
 `xxhsum [<OPTION>] ... [<FILE>] ...`
 `xxhsum -b [<OPTION>] ...`
 
-`xxh32sum` is equivalent to `xxhsum -H0`
-`xxh64sum` is equivalent to `xxhsum -H1`
-`xxh128sum` is equivalent to `xxhsum -H2`
+`xxh32sum` is equivalent to `xxhsum -H0`,
+`xxh64sum` is equivalent to `xxhsum -H1`,
+`xxh128sum` is equivalent to `xxhsum -H2`.
 
 
 DESCRIPTION
@@ -23,7 +23,7 @@ When <FILE> is `-`, read standard input even if it's the console.
 Differences are:
 `xxhsum` doesn't have text/binary mode switch (`-b`, `-t`);
 `xxhsum` always treats files as binary file;
-`xxhsum` has a hash bit width switch (`-H`);
+`xxhsum` has a hash selection switch (`-H`);
 
 As xxHash is a fast non-cryptographic checksum algorithm,
 `xxhsum` should not be used for security related purposes.
@@ -37,9 +37,11 @@ OPTIONS
   Displays xxhsum version and exits
 
 * `-H`<HASHTYPE>:
-  Hash selection. <HASHTYPE> means `0`=32bits, `1`=64bits, `2`=128bits.
-  Alternatively, <HASHTYPE> `32`=32bits, `64`=64bits, `128`=128bits.
-  Default value is `1` (64bits)
+  Hash selection. <HASHTYPE> means `0`=XXH32, `1`=XXH64, `2`=XXH128, `3`=XXH3.
+  Note that `-H3` triggers `--tag`, which can't be skipped
+  (this is to reduce risks of confusion with `-H2` (`XXH64`)).
+  Alternatively, <HASHTYPE> `32`=XXH32, `64`=XXH64, `128`=XXH128.
+  Default value is `1` (XXH64)
 
 * `--tag`:
   Output in the BSD style.

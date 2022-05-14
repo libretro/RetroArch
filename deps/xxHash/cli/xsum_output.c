@@ -1,6 +1,6 @@
 /*
  * xxhsum - Command line interface for xxhash algorithms
- * Copyright (C) 2013-2020 Yann Collet
+ * Copyright (C) 2013-2021 Yann Collet
  *
  * GPL v2 License
  *
@@ -24,8 +24,7 @@
  */
 
 #include "xsum_output.h"
-#include "xsum_os_specific.h"
-#include <stdio.h>
+#include "xsum_os_specific.h"  /* XSUM_API */
 
 int XSUM_logLevel = 2;
 

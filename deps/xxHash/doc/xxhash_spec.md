@@ -198,7 +198,7 @@ The algorithm uses 64-bit addition, multiplication, rotate, shift and xor operat
 
 These constants are prime numbers, and feature a good mix of bits 1 and 0, neither too regular, nor too dissymmetric. These properties help dispersion capabilities.
 
-### Step 1. Initialise internal accumulators
+### Step 1. Initialize internal accumulators
 
 Each accumulator gets an initial value based on optional `seed` input. Since the `seed` is optional, it can be `0`.
 
