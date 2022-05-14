@@ -8684,9 +8684,9 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          if (!netplay)
             break;
          netplay_post_frame(netplay);
-	     /* If we're disconnected, deinitialize */
-	     if (!netplay->is_server && !netplay->connections[0].active)
-		    netplay_disconnect(netplay);
+         /* If we're disconnected, deinitialize */
+         if (!netplay->is_server && !netplay->connections[0].active)
+            netplay_disconnect(netplay);
          break;
 
       case RARCH_NETPLAY_CTL_PRE_FRAME:
@@ -8782,9 +8782,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
                ret = false;
          }
          else
-         {
             ret = false;
-         }
          break;
 
       case RARCH_NETPLAY_CTL_NONE:
@@ -8803,7 +8801,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 bool netplay_decode_hostname(const char *hostname,
       char *address, unsigned *port, char *session, size_t len)
 {
-   struct string_list *hostname_data;
+   struct string_list *hostname_data = NULL;
 
    if (string_is_empty(hostname))
       return false;
