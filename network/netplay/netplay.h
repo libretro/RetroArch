@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2017 - Gregor Richards
- *  Copyright (C) 2021-2021 - Roberto V. Rampim
+ *  Copyright (C) 2021-2022 - Roberto V. Rampim
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -58,6 +58,7 @@ enum rarch_netplay_ctl_state
    RARCH_NETPLAY_CTL_ENABLE_SERVER,
    RARCH_NETPLAY_CTL_ENABLE_CLIENT,
    RARCH_NETPLAY_CTL_DISABLE,
+   RARCH_NETPLAY_CTL_REFRESH_CLIENT_INFO,
    RARCH_NETPLAY_CTL_IS_ENABLED,
    RARCH_NETPLAY_CTL_IS_REPLAYING,
    RARCH_NETPLAY_CTL_IS_SERVER,
@@ -73,7 +74,31 @@ enum rarch_netplay_ctl_state
    RARCH_NETPLAY_CTL_DISCONNECT,
    RARCH_NETPLAY_CTL_FINISHED_NAT_TRAVERSAL,
    RARCH_NETPLAY_CTL_DESYNC_PUSH,
-   RARCH_NETPLAY_CTL_DESYNC_POP
+   RARCH_NETPLAY_CTL_DESYNC_POP,
+   RARCH_NETPLAY_CTL_KICK_CLIENT
+};
+
+/* The current status of a connection */
+enum rarch_netplay_connection_mode
+{
+   NETPLAY_CONNECTION_NONE = 0,
+
+   NETPLAY_CONNECTION_DELAYED_DISCONNECT, 
+   /* The connection is dead, but data
+      is still waiting to be forwarded */
+
+   /* Initialization: */
+   NETPLAY_CONNECTION_INIT,         /* Waiting for header */
+   NETPLAY_CONNECTION_PRE_NICK,     /* Waiting for nick */
+   NETPLAY_CONNECTION_PRE_PASSWORD, /* Waiting for password */
+   NETPLAY_CONNECTION_PRE_INFO,     /* Waiting for core/content info */
+   NETPLAY_CONNECTION_PRE_SYNC,     /* Waiting for sync */
+
+   /* Ready: */
+   NETPLAY_CONNECTION_CONNECTED, /* Modes above this are connected */
+   NETPLAY_CONNECTION_SPECTATING, /* Spectator mode */
+   NETPLAY_CONNECTION_SLAVE, /* Playing in slave mode */
+   NETPLAY_CONNECTION_PLAYING /* Normal ready state */
 };
 
 /* Preferences for sharing digital devices */
@@ -114,6 +139,14 @@ enum rarch_netplay_discovery_ctl_state
 };
 
 typedef struct netplay netplay_t;
+
+typedef struct netplay_client_info
+{
+   int32_t ping;
+   int id;
+   enum rarch_netplay_connection_mode mode;
+   char name[NETPLAY_NICK_LEN];
+} netplay_client_info_t;
 
 struct ad_packet
 {
@@ -237,8 +270,10 @@ typedef struct
    struct netplay_rooms *rooms_data;
    /* Used while Netplay is running */
    netplay_t *data;
+   netplay_client_info_t *client_info;
    /* Chat messages */
    struct netplay_chat *chat;
+   size_t client_info_count;
 #ifdef HAVE_NETPLAYDISCOVERY
    size_t discovered_hosts_allocated;
    /* LAN discovery sockets */

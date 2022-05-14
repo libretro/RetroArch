@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2017 - Gregor Richards
- *  Copyright (C) 2021-2021 - Roberto V. Rampim
+ *  Copyright (C) 2021-2022 - Roberto V. Rampim
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -244,29 +244,6 @@ enum rarch_netplay_share_preference
    NETPLAY_SHARE_ANALOG_BITS = 0xE0,
    NETPLAY_SHARE_ANALOG_MAX = 0x20,
    NETPLAY_SHARE_ANALOG_AVERAGE = 0x40
-};
-
-/* The current status of a connection */
-enum rarch_netplay_connection_mode
-{
-   NETPLAY_CONNECTION_NONE = 0,
-
-   NETPLAY_CONNECTION_DELAYED_DISCONNECT, 
-   /* The connection is dead, but data
-      is still waiting to be forwarded */
-
-   /* Initialization: */
-   NETPLAY_CONNECTION_INIT,         /* Waiting for header */
-   NETPLAY_CONNECTION_PRE_NICK,     /* Waiting for nick */
-   NETPLAY_CONNECTION_PRE_PASSWORD, /* Waiting for password */
-   NETPLAY_CONNECTION_PRE_INFO,     /* Waiting for core/content info */
-   NETPLAY_CONNECTION_PRE_SYNC,     /* Waiting for sync */
-
-   /* Ready: */
-   NETPLAY_CONNECTION_CONNECTED, /* Modes above this are connected */
-   NETPLAY_CONNECTION_SPECTATING, /* Spectator mode */
-   NETPLAY_CONNECTION_SLAVE, /* Playing in slave mode */
-   NETPLAY_CONNECTION_PLAYING /* Normal ready state */
 };
 
 enum rarch_netplay_stall_reason
