@@ -8341,6 +8341,10 @@ void deinit_netplay(void)
 #endif
    }
 
+   free(net_st->client_info);
+   net_st->client_info       = NULL;
+   net_st->client_info_count = 0;
+
    free(net_st->chat);
    net_st->chat = NULL;
 
@@ -8493,16 +8497,16 @@ static size_t retrieve_client_info(netplay_t *netplay, netplay_client_info_t *bu
 
    for (i = 0; i < netplay->connections_size; i++)
    {
-      struct netplay_connection *conn = &netplay->connections[i];
+      struct netplay_connection *connection = &netplay->connections[i];
 
       /* We only want info from already connected clients. */
-      if (conn->active && conn->mode >= NETPLAY_CONNECTION_CONNECTED)
+      if (connection->active && connection->mode >= NETPLAY_CONNECTION_CONNECTED)
       {
          netplay_client_info_t *info = &buf[j++];
          info->id = (int)i;
-         strlcpy(info->name, conn->nick, sizeof(info->name));
-         info->mode = conn->mode;
-         info->ping = conn->ping;
+         strlcpy(info->name, connection->nick, sizeof(info->name));
+         info->mode = connection->mode;
+         info->ping = connection->ping;
       }
    }
 
