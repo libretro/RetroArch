@@ -1945,8 +1945,8 @@ MSG_HASH(
    "Interval d'intercanvi de VSync"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   "Usa un interval personalitzat d'intercanvi per al VSync. Establix esta opció per reduir a la mitat de manera efectiva la freqüència de refresc d'imatge del monitor."
+   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
+   "Selecció automàtica"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,

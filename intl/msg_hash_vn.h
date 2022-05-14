@@ -1072,6 +1072,10 @@ MSG_HASH(
 
 /* Settings > Video > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
+   "Tự động"
+   )
 
 /* Settings > Audio */
 

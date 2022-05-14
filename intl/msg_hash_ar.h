@@ -1697,6 +1697,10 @@ MSG_HASH(
    "المزامنة العمودية (VSync)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
+   "تلقائي"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
    "Vsync (Adaptive) تكيفية"
    )

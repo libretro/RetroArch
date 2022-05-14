@@ -1933,10 +1933,6 @@ MSG_HASH(
    "Interval d'intercanvi de VSync"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   "Utilitza un interval d'intercanvi personalitzat per a VSync. Establiu això per a dividir acuradament la freqüència de refresc del monitor."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
    "VSync adaptatiu"
    )
@@ -4060,6 +4056,10 @@ MSG_HASH(
 
 /* Quick Menu > Cheats */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
+   "Comença o continua la cerca de trucs"
+   )
 
 /* Quick Menu > Cheats > Start or Continue Cheat Search */
 
@@ -4916,6 +4916,10 @@ MSG_HASH(
    "Historial"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS,
+   "Comença o continua la cerca de trucs"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
    "Executa"
    )
@@ -4973,6 +4977,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_CONTINUE_SEARCH,
    "Continua la cerca"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_SEARCH,
+   "Comença o continua la cerca de trucs"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_NUM_PASSES,
@@ -5302,6 +5310,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_IN_GIGABYTES,
    "en gigabytes"
+   )
+MSG_HASH(
+   MSG_PAUSED,
+   "En pausa."
    )
 MSG_HASH(
    MSG_REWIND_UNSUPPORTED,

@@ -1865,8 +1865,8 @@ MSG_HASH(
    "VSync-vaihtoväli"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   "Käytä mukautettua vaihtoväliä VSyncille. Aseta tämä puolittaaksesi tehokkaasti näytön päivitysnopeuden."
+   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
+   "Automaattinen"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
@@ -2449,6 +2449,10 @@ MSG_HASH(
    "Salli kaikkien käyttäjien hallita valikkoa. Jos poistettu käytöstä, vain käyttäjä 1 voi hallita valikkoa."
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Android-yhteyden katkaisun kiertotapa"
+   )
 
 /* Settings > Input > Hotkeys */
 

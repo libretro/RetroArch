@@ -1525,6 +1525,10 @@ MSG_HASH(
    "Κάθετος Συγχρονισμός (VSync)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
+   "Αυτόματο"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
    "Προσαρμοστικός Συγχρονισμός Vsync"
    )

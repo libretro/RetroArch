@@ -1705,10 +1705,6 @@ MSG_HASH(
    "Sinkronkan video keluaran kartu grafis ke laju penyegaran layar. Direkomendasikan."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   "Gunakan interval swap khusus untuk VSync. Setel ini untuk mengurangi separuh kecepatan refresh monitor secara efektif."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
    "VSync diaktifkan hingga performa turun di bawah kecepatan refresh target. Dapat meminimalkan kegagapan saat performa turun di bawah waktu nyata, dan lebih hemat energi."
    )

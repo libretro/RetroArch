@@ -337,10 +337,6 @@ MSG_HASH(
    "V-Sync Swap Interval"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   "Use a custom swap interval for V-Sync. Set this to effectively halve monitor refresh rate."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
    "Adaptive V-Sync"
    )

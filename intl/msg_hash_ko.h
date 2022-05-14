@@ -1966,7 +1966,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   "수직 동기에 사용자 스왑 간격을 사용합니다. 모니터 주사율을 반씩 줄이는데 사용할 수 있습니다."
+   "수직 동기화에 사용자 정의 스왑 간격을 사용합니다. 모니터 주사율을 정한 값으로 나누는 것과 같습니다. '자동'은 값을 코어가 보고하는 프레임 레이트에 맞춰 설정하며, 30FPS 컨텐츠를 60FPS 화면에서 실행할 때 또는 60FPS 컨텐츠를 120FPS 화면에서 실행할 때 등의 상황에서 프레임 페이스를 개선합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
+   "자동"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
@@ -2565,6 +2569,14 @@ MSG_HASH(
    "모든 사용자가 메뉴를 제어할 수 있도록 허용합니다. 비활성 시 1번 사용자만 메뉴를 제어할 수 있습니다."
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Android 재연결 문제 우회 해결"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "연결이 끊겼다가 돌아오는 컨트롤러를 위한 우회 방안입니다. 같은 종류의 컨트롤러를 2명의 플레이어로 인식하지 않게 합니다."
+   )
 
 /* Settings > Input > Hotkeys */
 

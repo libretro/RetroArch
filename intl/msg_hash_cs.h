@@ -485,7 +485,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
-   "Uložit Stav Podpory"
+   "Podpora Uložené Pozice"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
@@ -1882,7 +1882,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   "Použijte vlastní interval výměny pro VSync. Nastavte jej tak, aby se obnovovací frekvence monitoru snížila na polovinu."
+   "Použijte vlastní interval výměny pro VSync. Účinně sníží obnovovací frekvenci monitoru o zadaný faktor. \"Automaticky\" nastaví faktor na základě snímkové frekvence hlášené jádrem, čímž zajistí lepší krokování snímků při spuštění např. obsahu s 30 fps na displeji s 60 Hz nebo obsahu s 60 fps na displeji se 120 Hz."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
@@ -2465,6 +2465,14 @@ MSG_HASH(
    "Umožnit libovolnému uživateli ovládat nabídku. Pokud je zakázáno, může nabídku ovládat pouze 1 uživatel."
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Řešení odpojení Androidu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Řešení pro odpojení a opětovné připojení ovládačů. Impeduje 2 hráče se stejnými ovladači."
+   )
 
 /* Settings > Input > Hotkeys */
 
@@ -2542,7 +2550,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
-   "Načíst Stav"
+   "Načíst Pozici"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
@@ -2550,7 +2558,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
-   "Uložení Stavu"
+   "Uložit Pozici"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
@@ -2586,7 +2594,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
-   "Zvýší index aktuálně vybraného slotu stavu uložení."
+   "Zvýší index aktuálně vybraného slotu uložené pozice."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
@@ -2594,7 +2602,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
-   "Sníží index aktuálně vybraného slotu stavu uložení."
+   "Sníží index aktuálně vybraného slotu uložené pozice."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
@@ -3072,7 +3080,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_UNSUPPORTED,
-   "Současné jádro je nekompatibilní s run-ahead kvůli chybějící podpoře deterministického stavu ukládání."
+   "Současné jádro je nekompatibilní s run-ahead kvůli chybějící podpoře deterministického ukládání pozic."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
@@ -3104,7 +3112,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
-   "Skrytí varovné zprávy, která se zobrazí při použití funkce Run-Ahead a jádro nepodporuje stavy uložení."
+   "Skrytí varovné zprávy, která se zobrazí při použití funkce Run-Ahead a jádro nepodporuje uložení pozice."
    )
 
 /* Settings > Core */
@@ -3303,7 +3311,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
-   "Třídit stavy ukládání do složek pojmenovaných podle použitého jádra."
+   "Třídit uložené pozice do složek pojmenovaných podle použitého jádra."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
@@ -3323,7 +3331,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "Nepřepisovat Paměť Uložené Ram při Načítání Stavu Uložení"
+   "Nepřepisovat UloženíRAM při Načítání Uložené Pozice"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
@@ -3339,39 +3347,39 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-   "Automatické Zvyšování Indexu Stavu Uložení"
+   "Automatické Zvyšování Indexu Uložení Pozic"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
-   "Před vytvořením stavu uložení se automaticky zvýší index stavu uložení. Při načítání obsahu se index nastaví na nejvyšší existující index."
+   "Před vytvořením uložené pozice se automaticky zvýší index uložené pozice. Při načítání obsahu se index nastaví na nejvyšší existující index."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
-   "Maximální Auto-Navýšení Zachová Uložené Stavy"
+   "Maximální Auto-Navýšení Zachová Uložené Pozice"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
-   "Omezit počet stavů uložení, které budou vytvořeny, když je povolena možnost 'Automaticky zvyšovat index stavu uložení'. Pokud je limit při ukládání nového stavu překročen, stávající stav s nejnižším indexem bude odstraněn. Hodnota '0' znamená, že bude zaznamenáno neomezené množství stavů."
+   "Omezí počet uložených pozic, které budou vytvořeny, když je povolena možnost 'Automaticky zvyšovat index uložených pozic'. Pokud je limit při ukládání nové pozice překročen, stávající pozice s nejnižším indexem bude odstraněna. Hodnota '0' znamená, že bude zaznamenáno neomezené množství pozic."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-   "Automaticky Uložit Stav"
+   "Automaticky Uložit Pozici"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Automatické vytvoření stavu uložení při zavření obsahu. Pokud je povolena volba 'Automaticky načíst stav', RetroArch tento stav uložení automaticky načte."
+   "Automatické vytvoření pozice uložení při zavření obsahu. Pokud je povolena volba 'Automaticky načíst pozici', RetroArch tuto pozici uložení automaticky načte."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Automaticky Načíst Stav"
+   "Automaticky Načíst Pozici"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
-   "Automatické načtení stavu automatického ukládání při spuštění."
+   "Automatické načtení pozice automatického ukládání při spuštění."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-   "Miniatury Uložených Stavu"
+   "Miniatury Uložené Pozice"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
@@ -3387,11 +3395,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   "Komprese Uložených Stavu"
+   "Komprese Uložené Pozice"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
-   "Zápis souborů s uloženými stavy v archivovaném formátu. Dramaticky snižuje velikost souboru na úkor prodloužení doby ukládání/načítání."
+   "Zápis souborů uložených pozic v archivovaném formátu. Dramaticky snižuje velikost souboru na úkor prodloužení doby ukládání/načítání."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
@@ -3407,7 +3415,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "Zapsat Uložené Stavy do Adresáře Obsahu"
+   "Zapsat Uložené Pozice do Adresáře Obsahu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
@@ -3618,19 +3626,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Resetování po Nahrání Stavu"
+   "Resetování po Načtení Pozice"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Vynulování čítače času snímku po načtení stavu."
+   "Vynulování čítače času snímku po načtení pozice."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Resetování po Uložení Stavu"
+   "Resetování po Uložení Pozice"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Resetování čítače času snímku po uložení stavu."
+   "Resetování čítače času snímku po uložení pozice."
    )
 
 /* Settings > Recording */
@@ -4319,11 +4327,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
-   "Obnovení Obsahu po Použití Funkce Uložit Stavy"
+   "Obnovení Obsahu po Použití Funkce Uložení Pozic"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
-   "Automatické zavření nabídky a obnovení obsahu po uložení nebo načtení stavu. Vypnutím této funkce lze zlepšit výkon ukládání stavu na velmi pomalých zařízeních."
+   "Automatické zavření nabídky a obnovení obsahu po uložení nebo načtení pozice. Vypnutím této funkce lze zlepšit výkon ukládání pozice na velmi pomalých zařízeních."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
@@ -4791,19 +4799,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-   "Zobrazit 'Uložit/Načíst Stav'"
+   "Zobrazit 'Uložit/Načíst Pozici'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-   "Zobrazení možností pro uložení/nahrání stavu."
+   "Zobrazení možností pro uložení/načtení pozice."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Zobrazit 'Zrušit Uložit/Načíst Stav'"
+   "Zobrazit 'Vrátit Zpět Uložení/Načtení Pozice'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Zobrazení možností pro zrušení uložení/nahrání stavu."
+   "Zobrazení možností pro zrušení uložení/nahrání pozice."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
@@ -5305,7 +5313,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Zdvojnásobte počet získaných bodů. Zakáže stavy ukládání, cheaty, přetáčení, pauzu a zpomalený pohyb pro všechny hry. Přepnutím tohoto nastavení za běhu se hra restartuje."
+   "Zdvojnásobte počet získaných bodů. Zakáže ukládání pozic, cheatu, přetáčení, pauzu a zpomalený pohyb pro všechny hry. Přepnutím tohoto nastavení za běhu se hra restartuje."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -5504,7 +5512,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,
-   "Spusťte hru po síti v režimu, který nevyžaduje stavy ukládání. Je vyžadována velmi rychlá síť, ale neprovádí se žádné převíjení, takže nedochází k žádnému trhání při přehrávání v síti."
+   "Spusťte hru po síti v režimu, který nevyžaduje uložení pozic. Je vyžadována velmi rychlá síť, ale neprovádí se žádné převíjení, takže nedochází k žádnému trhání při přehrávání v síti."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
@@ -6213,11 +6221,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
-   "Uložené Stavy"
+   "Uložené Pozice"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "V tomto adresáři jsou uloženy stavy uložení. Pokud není nastaven, pokusí se je uložit do adresáře, kde je umístěn obsah."
+   "V tomto adresáři jsou uloženy pozice. Pokud není nastaven, pokusí se je uložit do adresáře, kde je umístěn obsah."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
@@ -6790,23 +6798,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STATE_SLOT,
-   "Slot Uložených Stavu"
+   "Uložené Pozice"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STATE_SLOT,
-   "Změna aktuálně vybraného stavového slotu."
+   "Změna aktuálně vybraného slotu pozice."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_STATE,
-   "Uložit Stav"
+   "Uložit Pozici"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_STATE,
-   "Uložení stavu rozehrané hry do aktuálně vybraného slotu."
+   "Uložení pozice rozehrané hry do aktuálně vybraného slotu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
-   "Načíst Stav"
+   "Načíst Pozici"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_STATE,
@@ -6818,7 +6826,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
-   "Pokud byl načten stav, obsah se vrátí do stavu před načtením."
+   "Pokud byla načtena pozice, obsah se vrátí do stavu před načtením."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
@@ -6826,7 +6834,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
-   "Pokud byl stav přepsán, vrátí se do předchozího uloženého stavu."
+   "Pokud byl stav přepsán, vrátí se do předchozího stavu uložené pozice."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
@@ -7649,7 +7657,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Pozastavení režimu hardcore úspěchů pro aktuální relaci. Tato akce umožní ukládat stavy, cheaty, přetáčení, pozastavení a zpomalení."
+   "Pozastavení režimu hardcore úspěchů pro aktuální relaci. Tato akce umožní ukládat pozice, cheaty, přetáčení, pozastavení a zpomalení."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
@@ -7657,7 +7665,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Obnovení režimu hardcore úspěchů pro aktuální relaci. Tato akce zakáže stavy ukládání, cheaty, přetáčení, pauzu a zpomalení a obnoví aktuální hru."
+   "Obnovení režimu hardcore úspěchů pro aktuální relaci. Tato akce zakáže uložení pozic, cheatu, přetáčení, pauzu, zpomalení a obnoví aktuální hru."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
@@ -10593,7 +10601,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Automaticky načíst stav uložení z"
+   "Automaticky načíst pozici uložení z"
    )
 MSG_HASH(
    MSG_CAPABILITIES,
@@ -10773,7 +10781,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTO_SAVE_STATE_TO,
-   "Automaticky uložit stav do"
+   "Automaticky uložit pozici do"
    )
 MSG_HASH(
    MSG_BLOCKING_SRAM_OVERWRITE,
@@ -10825,7 +10833,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "Jádro nepodporuje stavy uložení."
+   "Jádro nepodporuje uložení pozic."
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
@@ -11025,7 +11033,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_STATE,
-   "Nepodařilo se načíst stav z"
+   "Nepodařilo se načíst pozici z"
    )
 MSG_HASH(
    MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
@@ -11073,7 +11081,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SAVE_STATE_TO,
-   "Nepodařilo se uložit stav do"
+   "Nepodařilo se uložit pozici do"
    )
 MSG_HASH(
    MSG_FAILED_TO_SEND_NICKNAME,
@@ -11113,11 +11121,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_UNDO_LOAD_STATE,
-   "Nepodařilo se vrátit nahrání stavu."
+   "Nepodařilo se vrátit načtenou pozici."
    )
 MSG_HASH(
    MSG_FAILED_TO_UNDO_SAVE_STATE,
-   "Nepodařilo se vrátit uložení stavu."
+   "Nepodařilo se vrátit uloženou pozici."
    )
 MSG_HASH(
    MSG_FAILED_TO_UNMUTE_AUDIO,
@@ -11145,7 +11153,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FOUND_LAST_STATE_SLOT,
-   "Nalezen poslední slot stavu"
+   "Nalezen poslední slot pozice"
    )
 MSG_HASH(
    MSG_FOUND_SHADER,
@@ -11269,7 +11277,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADING_STATE,
-   "Nahrávání stavu"
+   "Načítání pozice"
    )
 MSG_HASH(
    MSG_MEMORY,
@@ -11345,7 +11353,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REDIRECTING_SAVESTATE_TO,
-   "Přesměrování stavu uložení do"
+   "Přesměrování uložení pozice do"
    )
 MSG_HASH(
    MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
@@ -11377,7 +11385,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
-   "Obnovení staršího stavu uložení."
+   "Obnovení starší uložení pozice."
    )
 MSG_HASH(
    MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
@@ -11389,7 +11397,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
-   "Vrácení adresáře stavu uložení do"
+   "Vrácení adresáře uložení pozice do"
    )
 MSG_HASH(
    MSG_REWINDING,
@@ -11397,7 +11405,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REWIND_UNSUPPORTED,
-   "Přetáčení není k dispozici, protože toto jádro nemá podporu serializovaného stavu ukládání."
+   "Přetáčení není k dispozici, protože toto jádro nemá podporu serializovaného ukládání pozice."
    )
 MSG_HASH(
    MSG_REWIND_INIT,
@@ -11437,7 +11445,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVING_STATE,
-   "Ukládání stavu"
+   "Ukládání pozice"
    )
 MSG_HASH(
    MSG_SCANNING,
@@ -11489,11 +11497,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_STATE_SIZE,
-   "Velikost stavu"
+   "Velikost pozice"
    )
 MSG_HASH(
    MSG_STATE_SLOT,
-   "Slot stavu"
+   "Slot pozice"
    )
 MSG_HASH(
    MSG_TAKING_SCREENSHOT,
@@ -11533,11 +11541,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
-   "Načtení stavu bylo neúspěšné."
+   "Načtení pozice bylo neúspěšné."
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
-   "Vrácení uloženého stavu"
+   "Vrácení uložené pozice"
    )
 MSG_HASH(
    MSG_UNKNOWN,
@@ -11593,11 +11601,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
-   "Automatické nahrávání uloženého stavu z \"%s\"se nezdařilo."
+   "Automatické načtení uložené pozice z \"%s\"se nezdařilo."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
-   "Automatické nahrávání uloženého stavu z \"%s\"se podařilo."
+   "Automatické načtení uložené pozice z \"%s\"se podařilo."
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -11709,19 +11717,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "Funkce Run-Ahead byla zakázána, protože toto jádro nepodporuje ukládat stavy."
+   "Funkce Run-Ahead byla zakázána, protože toto jádro nepodporuje uložení pozic."
    )
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD,
-   "Run-Ahead není k dispozici, protože toto jádro nemá podporu deterministicky ukládat stavy."
+   "Run-Ahead není k dispozici, protože toto jádro nemá podporu deterministicky ukládat pozici."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
-   "Nepodařilo se uložit stav. Run-Ahead byl zakázán."
+   "Nepodařilo se uložit pozici. Run-Ahead byl zakázán."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
-   "Stav se nepodařilo načíst. Run-Ahead byl zakázán."
+   "Pozici se nepodařilo načíst. Run-Ahead byl zakázán."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
@@ -12057,7 +12065,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADING_ENTRY_STATE_FROM,
-   "Nahravání stavu vstupu z"
+   "Načtení pozice vstupu z"
    )
 MSG_HASH(
    MSG_FAILED_TO_ENTER_GAMEMODE,
