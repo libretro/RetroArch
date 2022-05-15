@@ -6545,6 +6545,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
    "Stop Netplay Host"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
+   "Kick Client"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_KICK,
+   "Kick a client from your currently hosted room."
+   )
 
 /* Import Content */
 
@@ -10776,6 +10784,10 @@ MSG_HASH(
    "No netplay hosts found."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
+   "No netplay clients found."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
    "No performance counters."
    )
@@ -11499,6 +11511,23 @@ MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,
    "Your nickname changed to \"%s\""
    )
+MSG_HASH(
+   MSG_NETPLAY_KICKED_CLIENT_S,
+   "Client kicked: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
+   "Failed to kick client: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_PLAYING,
+   "Playing"
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_SPECTATING,
+   "Spectating"
+   )
+
 MSG_HASH(
    MSG_AUDIO_VOLUME,
    "Audio volume"

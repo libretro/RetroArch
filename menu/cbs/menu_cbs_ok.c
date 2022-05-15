@@ -412,6 +412,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_UPDATER_SETTINGS_LIST;
       case ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_NETWORK_HOSTING_SETTINGS_LIST;
+      case ACTION_OK_DL_NETPLAY_KICK_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_NETPLAY_KICK_LIST;
       case ACTION_OK_DL_NETPLAY_LOBBY_FILTERS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_NETPLAY_LOBBY_FILTERS_LIST;
       case ACTION_OK_DL_SUBSYSTEM_SETTINGS_LIST:
@@ -1561,6 +1563,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_UPDATER_SETTINGS_LIST:
       case ACTION_OK_DL_NETWORK_SETTINGS_LIST:
       case ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST:
+      case ACTION_OK_DL_NETPLAY_KICK_LIST:
       case ACTION_OK_DL_NETPLAY_LOBBY_FILTERS_LIST:
       case ACTION_OK_DL_SUBSYSTEM_SETTINGS_LIST:
       case ACTION_OK_DL_BLUETOOTH_SETTINGS_LIST:
@@ -5762,6 +5765,7 @@ DEFAULT_ACTION_OK_FUNC(action_ok_configurations_list, ACTION_OK_DL_CONFIGURATION
 DEFAULT_ACTION_OK_FUNC(action_ok_saving_list, ACTION_OK_DL_SAVING_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_network_list, ACTION_OK_DL_NETWORK_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_network_hosting_list, ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST)
+DEFAULT_ACTION_OK_FUNC(action_ok_netplay_kick_list, ACTION_OK_DL_NETPLAY_KICK_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_netplay_lobby_filters_list, ACTION_OK_DL_NETPLAY_LOBBY_FILTERS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_subsystem_list, ACTION_OK_DL_SUBSYSTEM_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_database_manager_list, ACTION_OK_DL_DATABASE_MANAGER_LIST)
@@ -6158,6 +6162,28 @@ static int action_ok_push_netplay_refresh_lan(const char *path,
    return 0;
 }
 #endif
+
+static int action_ok_push_netplay_kick(const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   char msg[256];
+   netplay_client_info_t client;
+
+   client.id = (int)strtol(label, NULL, 10);
+   strlcpy(client.name, path, sizeof(client.name));
+
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_KICK_CLIENT, &client))
+      snprintf(msg, sizeof(msg),
+         msg_hash_to_str(MSG_NETPLAY_KICKED_CLIENT_S), client.name);
+   else
+      snprintf(msg, sizeof(msg),
+         msg_hash_to_str(MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S), client.name);
+
+   runloop_msg_queue_push(msg, 1, 180, true, NULL,
+      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
 #endif
 
 DEFAULT_ACTION_OK_DL_PUSH(action_ok_content_collection_list, FILEBROWSER_SELECT_COLLECTION, ACTION_OK_DL_CONTENT_COLLECTION_LIST, NULL)
@@ -8339,6 +8365,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,                action_ok_netplay_connect_room},
 #endif
          {MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS,            action_ok_network_hosting_list},
+         {MENU_ENUM_LABEL_NETPLAY_KICK,                        action_ok_netplay_kick_list},
          {MENU_ENUM_LABEL_NETPLAY_LOBBY_FILTERS,               action_ok_netplay_lobby_filters_list},
          {MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS,                  action_ok_subsystem_list},
          {MENU_ENUM_LABEL_NETWORK_SETTINGS,                    action_ok_network_list},
@@ -8833,6 +8860,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_WIFI
             BIND_ACTION_OK(cbs, action_ok_wifi);
 #endif
+#endif
+            break;
+         case MENU_NETPLAY_KICK:
+#ifdef HAVE_NETWORKING
+            BIND_ACTION_OK(cbs, action_ok_push_netplay_kick);
 #endif
             break;
          case FILE_TYPE_CURSOR:
