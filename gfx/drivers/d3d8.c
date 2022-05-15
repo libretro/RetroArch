@@ -172,7 +172,7 @@ static void d3d8_set_vertices(
 
          verts            = d3d8_vertex_buffer_lock(chain->vertex_buf);
          memcpy(verts, vert, sizeof(vert));
-         IDirect3DVertexBuffer8_Unlock(chain->vertex_buf);
+         IDirect3DVertexBuffer8_Unlock((LPDIRECT3DVERTEXBUFFER8)chain->vertex_buf);
       }
    }
 }
@@ -414,7 +414,7 @@ static void d3d8_overlay_render(d3d8_video_t *d3d,
    {
       void *verts = d3d8_vertex_buffer_lock(overlay->vert_buf);
       memcpy(verts, vert, sizeof(vert));
-      IDirect3DVertexBuffer8_Unlock(overlay->vert_buf);
+      IDirect3DVertexBuffer8_Unlock((LPDIRECT3DVERTEXBUFFER8)overlay->vert_buf);
    }
    IDirect3DDevice8_SetRenderState(d3d->dev, D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
    IDirect3DDevice8_SetRenderState(d3d->dev, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
@@ -475,7 +475,7 @@ static void d3d8_free_overlay(d3d8_video_t *d3d, overlay_t *overlay)
    if (tex)
       IDirect3DTexture8_Release(tex);
    if (overlay->vert_buf)
-      IDirect3DVertexBuffer8_Release(overlay->vert_buf);
+      IDirect3DVertexBuffer8_Release((LPDIRECT3DVERTEXBUFFER8)overlay->vert_buf);
    overlay->vert_buf = NULL;
 }
 
@@ -499,7 +499,7 @@ static void d3d8_deinitialize(d3d8_video_t *d3d)
       free(chain);
    }
    d3d->renderchain_data    = NULL;
-   IDirect3DVertexBuffer8_Release(d3d->menu_display.buffer);
+   IDirect3DVertexBuffer8_Release((LPDIRECT3DVERTEXBUFFER8)d3d->menu_display.buffer);
    d3d->menu_display.buffer = NULL;
    d3d->menu_display.decl   = NULL;
 }
@@ -1363,7 +1363,8 @@ static bool d3d8_overlay_load(void *data,
       if (!overlay->tex)
          return false;
 
-      if (IDirect3DTexture8_LockRect(overlay->tex, 0,
+      if (IDirect3DTexture8_LockRect(
+               (LPDIRECT3DTEXTURE8)overlay->tex, 0,
                &d3dlr, NULL, D3DLOCK_NOSYSLOCK) == D3D_OK)
       {
          uint32_t       *dst    = (uint32_t*)(d3dlr.pBits);
