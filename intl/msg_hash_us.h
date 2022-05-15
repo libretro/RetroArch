@@ -3260,7 +3260,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
-   "The number of frames to run ahead. Causes gameplay issues such as jitter if the number of lag frames internal to the game is exceed."
+   "The number of frames to run ahead. Causes gameplay issues such as jitter if the number of lag frames internal to the game is exceeded."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
@@ -3892,7 +3892,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
-   "Toggle the visibility of specific types of notification."
+   "Toggle the visibility of specific types of notifications."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
@@ -5854,7 +5854,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "Limit the number of entries in the 'Favorites' playlist. Once limit is reached, new additions will be prevented until old entries are removed. Setting a value of -1 allows 'unlimited' entries.\nWARNING: Reducing the value will delete existing entries!"
+   "Limit the number of entries in the 'Favorites' playlist. Once the limit is reached, new additions will be prevented until old entries are removed. Setting a value of -1 allows 'unlimited' entries.\nWARNING: Reducing the value will delete existing entries!"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
@@ -6696,7 +6696,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
-   "When using an arcade DAT file, only add content to playlist if a matching DAT file entry is found."
+   "When using an arcade DAT file, content will only be added to the playlist if a matching DAT file entry is found."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
@@ -7969,7 +7969,7 @@ MSG_HASH(
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
-   "Cannot activate achievements using this core"
+   "Achievements can't be activated with this core"
 )
 
 /* Quick Menu > Information */
@@ -11846,7 +11846,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_COULD_NOT_OPEN_DATA_TRACK,
-   "could not open data track"
+   "Could not open data track"
    )
 MSG_HASH(
    MSG_COULD_NOT_READ_CONTENT_FILE,
@@ -13276,7 +13276,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
-   "Default and recommended mode. Maximum performance while playing while saving power when paused or browsing menus."
+   "Default and recommended mode. Maximum performance while playing, while saving power when paused or browsing menus."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
@@ -13308,7 +13308,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_BALANCED,
-   "Adapts to the current workload. Works well with most devices and emulators and helps saving power. Demanding games and cores might suffer a performance drop on some devices."
+   "Adapts to the current workload. Works well with most devices and emulators and helps to save power. Demanding games and cores might suffer a performance drop on some devices."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,
