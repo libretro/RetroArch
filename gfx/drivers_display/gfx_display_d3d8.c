@@ -114,6 +114,7 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
                                };
    unsigned i;
    math_matrix_4x4 mop, m1, m2;
+   LPDIRECT3DVERTEXBUFFER8 vbo;
    LPDIRECT3DDEVICE8 dev;
    D3DPRIMITIVETYPE type;
    unsigned start                = 0;
@@ -129,9 +130,9 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
    if ((d3d->menu_display.offset + draw->coords->vertices )
          > (unsigned)d3d->menu_display.size)
       return;
+   vbo                           = (LPDIRECT3DVERTEXBUFFER8)d3d->menu_display.buffer;
    dev                           = d3d->dev;
-   pv                            = (Vertex*)
-      d3d8_vertex_buffer_lock(d3d->menu_display.buffer);
+   pv                            = (Vertex*)d3d8_vertex_buffer_lock(vbo);
 
    if (!pv)
       return;
@@ -161,16 +162,17 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
       pv[i].u     = *tex_coord++;
       pv[i].v     = *tex_coord++;
 
-	  if ((void*)draw->texture)
-     {
-        D3DSURFACE_DESC desc;
-        if (SUCCEEDED(IDirect3DTexture8_GetLevelDesc(
-                    (void*)draw->texture, 0, (D3DSURFACE_DESC*)&desc)))
-        {
-           pv[i].u *= desc.Width;
-           pv[i].v *= desc.Height;
-        }
-     }
+      if ((void*)draw->texture)
+      {
+         D3DSURFACE_DESC desc;
+         LPDIRECT3DTEXTURE8 tex = (LPDIRECT3DTEXTURE8)draw->texture;
+         if (SUCCEEDED(IDirect3DTexture8_GetLevelDesc(tex,
+                     0, (D3DSURFACE_DESC*)&desc)))
+         {
+            pv[i].u *= desc.Width;
+            pv[i].v *= desc.Height;
+         }
+      }
 
       pv[i].color =
          D3DCOLOR_ARGB(
@@ -180,7 +182,7 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
                colors[2]  /* B */
                );
    }
-   IDirect3DVertexBuffer8_Unlock(d3d->menu_display.buffer);
+   IDirect3DVertexBuffer8_Unlock(vbo);
 
    if (!draw->matrix_data)
       draw->matrix_data = &default_mvp;

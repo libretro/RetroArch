@@ -1588,6 +1588,10 @@ static void d3d8_set_menu_texture_frame(void *data,
 {
    D3DLOCKED_RECT d3dlr;
    d3d8_video_t *d3d = (d3d8_video_t*)data;
+
+   if (!d3d || !d3d->menu)
+      return;
+
    if (    !d3d->menu->tex            ||
             d3d->menu->tex_w != width ||
             d3d->menu->tex_h != height)
@@ -1614,51 +1618,49 @@ static void d3d8_set_menu_texture_frame(void *data,
 
    d3d->menu->alpha_mod = alpha;
 
-   if (IDirect3DTexture8_LockRect(d3d->menu->tex,
-            0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK) == D3D_OK)
    {
-      unsigned h, w;
-
-      if (rgb32)
+      LPDIRECT3DTEXTURE8 tex = d3d->menu->tex;
+      if (IDirect3DTexture8_LockRect(tex,
+               0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK) == D3D_OK)
       {
-         uint8_t        *dst = (uint8_t*)d3dlr.pBits;
-         const uint32_t *src = (const uint32_t*)frame;
+         unsigned h, w;
 
-         for (h = 0; h < height; h++, dst += d3dlr.Pitch, src += width)
+         if (rgb32)
          {
-            memcpy(dst, src, width * sizeof(uint32_t));
-            memset(dst + width * sizeof(uint32_t), 0,
-                  d3dlr.Pitch - width * sizeof(uint32_t));
-         }
-      }
-      else
-      {
-         uint32_t       *dst = (uint32_t*)d3dlr.pBits;
-         const uint16_t *src = (const uint16_t*)frame;
+            uint8_t        *dst = (uint8_t*)d3dlr.pBits;
+            const uint32_t *src = (const uint32_t*)frame;
 
-         for (h = 0; h < height; h++, dst += d3dlr.Pitch >> 2, src += width)
-         {
-            for (w = 0; w < width; w++)
+            for (h = 0; h < height; h++, dst += d3dlr.Pitch, src += width)
             {
-               uint16_t c = src[w];
-               uint32_t r = (c >> 12) & 0xf;
-               uint32_t g = (c >>  8) & 0xf;
-               uint32_t b = (c >>  4) & 0xf;
-               uint32_t a = (c >>  0) & 0xf;
-               r          = ((r << 4) | r) << 16;
-               g          = ((g << 4) | g) <<  8;
-               b          = ((b << 4) | b) <<  0;
-               a          = ((a << 4) | a) << 24;
-               dst[w]     = r | g | b | a;
+               memcpy(dst, src, width * sizeof(uint32_t));
+               memset(dst + width * sizeof(uint32_t), 0,
+                     d3dlr.Pitch - width * sizeof(uint32_t));
             }
          }
-      }
+         else
+         {
+            uint32_t       *dst = (uint32_t*)d3dlr.pBits;
+            const uint16_t *src = (const uint16_t*)frame;
 
-      if (d3d->menu)
-      {
-         LPDIRECT3DTEXTURE8 tex = d3d->menu->tex;
-         if (tex)
-            IDirect3DTexture8_UnlockRect(tex, 0);
+            for (h = 0; h < height; h++, dst += d3dlr.Pitch >> 2, src += width)
+            {
+               for (w = 0; w < width; w++)
+               {
+                  uint16_t c = src[w];
+                  uint32_t r = (c >> 12) & 0xf;
+                  uint32_t g = (c >>  8) & 0xf;
+                  uint32_t b = (c >>  4) & 0xf;
+                  uint32_t a = (c >>  0) & 0xf;
+                  r          = ((r << 4) | r) << 16;
+                  g          = ((g << 4) | g) <<  8;
+                  b          = ((b << 4) | b) <<  0;
+                  a          = ((a << 4) | a) << 24;
+                  dst[w]     = r | g | b | a;
+               }
+            }
+         }
+
+         IDirect3DTexture8_UnlockRect(tex, 0);
       }
    }
 }
