@@ -103,12 +103,12 @@ void d3d8_set_mvp(void *data, const void *mat_data)
 
    d3d_matrix_identity(&matrix);
 
-   IDirect3DDevice8_SetTransform(d3dr, D3DTS_PROJECTION, (D3DMATRIX*)&matrix);
-   IDirect3DDevice8_SetTransform(d3dr, D3DTS_VIEW, (D3DMATRIX*)&matrix);
-
+   IDirect3DDevice8_SetTransform(d3dr,
+         D3DTS_PROJECTION, (D3DMATRIX*)&matrix);
+   IDirect3DDevice8_SetTransform(d3dr,
+         D3DTS_VIEW, (D3DMATRIX*)&matrix);
    if (mat_data)
       d3d_matrix_transpose(&matrix, mat_data);
-
    IDirect3DDevice8_SetTransform(d3dr, D3DTS_WORLD, (D3DMATRIX*)&matrix);
 }
 
@@ -171,9 +171,9 @@ static void d3d8_set_vertices(
          vert[2].color    = 0xFFFFFFFF;
          vert[3].color    = 0xFFFFFFFF;
 
-         verts            = d3d8_vertex_buffer_lock(chain->vertex_buf);
+         vbo              = (LPDIRECT3DVERTEXBUFFER8)chain->vertex_buf;
+         verts            = d3d8_vertex_buffer_lock(vbo);
          memcpy(verts, vert, sizeof(vert));
-         vbo = (LPDIRECT3DVERTEXBUFFER8)chain->vertex_buf;
          IDirect3DVertexBuffer8_Unlock(vbo);
       }
    }
@@ -274,6 +274,16 @@ static INLINE void *d3d8_vertex_buffer_new(
    return buf;
 }
 
+#ifdef _XBOX
+#define D3D8_RGB565_FORMAT D3DFMT_LIN_R5G6B5
+#define D3D8_XRGB8888_FORMAT D3DFMT_LIN_X8R8G8B8
+#define D3D8_ARGB8888_FORMAT D3DFMT_LIN_A8R8G8B8
+#else
+#define D3D8_RGB565_FORMAT D3DFMT_R5G6B5
+#define D3D8_XRGB8888_FORMAT D3DFMT_X8R8G8B8
+#define D3D8_ARGB8888_FORMAT D3DFMT_A8R8G8B8
+#endif
+
 static bool d3d8_setup_init(void *data,
       const video_info_t *video_info,
       void *dev_data,
@@ -309,7 +319,7 @@ static bool d3d8_setup_init(void *data,
          chain->tex_w, chain->tex_h, 1, 0,
          video_info->rgb32
          ?
-         d3d8_get_xrgb8888_format() : d3d8_get_rgb565_format(),
+         D3D8_XRGB8888_FORMAT : D3D8_RGB565_FORMAT,
          D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL,
          false);
 
@@ -527,7 +537,7 @@ static D3DFORMAT d3d8_get_color_format_backbuffer(bool rgb32, bool windowed)
    D3DFORMAT fmt = D3DFMT_X8R8G8B8;
 #ifdef _XBOX
    if (!rgb32)
-      fmt        = d3d8_get_rgb565_format();
+      fmt        = D3D8_RGB565_FORMAT;
 #else
    if (windowed)
    {
@@ -1360,7 +1370,7 @@ static bool d3d8_overlay_load(void *data,
 
       overlay->tex       = d3d8_texture_new(d3d->dev, NULL,
                   width, height, 1, 0,
-                  d3d8_get_argb8888_format(),
+                  D3D8_ARGB8888_FORMAT,
                   D3DPOOL_MANAGED, 0, 0, 0,
                   NULL, NULL, false);
 
@@ -1602,7 +1612,7 @@ static void d3d8_set_menu_texture_frame(void *data,
 
       d3d->menu->tex = d3d8_texture_new(d3d->dev, NULL,
             width, height, 1,
-            0, d3d8_get_argb8888_format(),
+            0, D3D8_ARGB8888_FORMAT,
             D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
 
       if (!d3d->menu->tex)
@@ -1687,7 +1697,7 @@ static void d3d8_video_texture_load_d3d(
    struct texture_image *ti  = (struct texture_image*)info->data;
    LPDIRECT3DTEXTURE8 tex    = (LPDIRECT3DTEXTURE8)d3d8_texture_new(d3d->dev, NULL,
                ti->width, ti->height, 0,
-               usage, d3d8_get_argb8888_format(),
+               usage, D3D8_ARGB8888_FORMAT,
                D3DPOOL_MANAGED, 0, 0, 0,
                NULL, NULL, false);
 

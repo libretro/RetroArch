@@ -102,24 +102,6 @@ bool d3d8_initialize_symbols(enum gfx_ctx_api api);
 
 void d3d8_deinitialize_symbols(void);
 
-static INLINE bool d3d8_check_device_type(
-      LPDIRECT3D8 d3d,
-      unsigned idx,
-      INT32 disp_format,
-      INT32 backbuffer_format,
-      bool windowed_mode)
-{
-   if (d3d &&
-         SUCCEEDED(IDirect3D8_CheckDeviceType(d3d,
-               0,
-               D3DDEVTYPE_HAL,
-               disp_format,
-               backbuffer_format,
-               windowed_mode)))
-      return true;
-   return false;
-}
-
 bool d3d8x_create_font_indirect(LPDIRECT3DDEVICE8 dev,
       void *desc, void **font_data);
 
@@ -129,33 +111,6 @@ void d3d8x_font_draw_text(void *data, void *sprite_data, void *string_data,
 void d3d8x_font_get_text_metrics(void *data, void *metrics);
 
 void d3d8x_font_release(void *data);
-
-static INLINE INT32 d3d8_get_rgb565_format(void)
-{
-#ifdef _XBOX
-   return D3DFMT_LIN_R5G6B5;
-#else
-   return D3DFMT_R5G6B5;
-#endif
-}
-
-static INLINE INT32 d3d8_get_argb8888_format(void)
-{
-#ifdef _XBOX
-   return D3DFMT_LIN_A8R8G8B8;
-#else
-   return D3DFMT_A8R8G8B8;
-#endif
-}
-
-static INLINE INT32 d3d8_get_xrgb8888_format(void)
-{
-#ifdef _XBOX
-   return D3DFMT_LIN_X8R8G8B8;
-#else
-   return D3DFMT_X8R8G8B8;
-#endif
-}
 
 void d3d8_set_mvp(void *data, const void *userdata);
 
