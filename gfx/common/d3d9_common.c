@@ -254,26 +254,6 @@ void d3d9_deinitialize_symbols(void)
 #endif
 }
 
-#ifdef HAVE_D3DX
-static void *d3d9_texture_new_from_file(
-      void *dev,
-      const char *path, unsigned width, unsigned height,
-      unsigned miplevels, unsigned usage, D3DFORMAT format,
-      INT32 pool, unsigned filter, unsigned mipfilter,
-      INT32 color_key, void *src_info_data,
-      PALETTEENTRY *palette)
-{
-   void *buf  = NULL;
-   if (FAILED(D3D9CreateTextureFromFile((LPDIRECT3DDEVICE9)dev,
-               path, width, height, miplevels, usage, format,
-               (D3DPOOL)pool, filter, mipfilter, color_key,
-               (D3DXIMAGE_INFO*)src_info_data,
-               palette, (struct IDirect3DTexture9**)&buf)))
-      return NULL;
-   return buf;
-}
-#endif
-
 void *d3d9_texture_new(void *_dev,
       const char *path, unsigned width, unsigned height,
       unsigned miplevels, unsigned usage, INT32 format,
@@ -287,14 +267,15 @@ void *d3d9_texture_new(void *_dev,
    if (path)
    {
 #ifdef HAVE_D3DX
-      return d3d9_texture_new_from_file(_dev,
-            path, width, height, miplevels,
-            usage, (D3DFORMAT)format,
-            (D3DPOOL)pool, filter, mipfilter,
-            color_key, src_info_data, palette);
-#else
-      return NULL;
+      void *buf  = NULL;
+      if (SUCCEEDED(D3D9CreateTextureFromFile((LPDIRECT3DDEVICE9)dev,
+                  path, width, height, miplevels, usage, format,
+                  (D3DPOOL)pool, filter, mipfilter, color_key,
+                  (D3DXIMAGE_INFO*)src_info_data,
+                  palette, (struct IDirect3DTexture9**)&buf)))
+         return buf;
 #endif
+      return NULL;
    }
 
 #ifndef _XBOX
