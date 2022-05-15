@@ -649,7 +649,7 @@ static bool d3d9_is_windowed_enable(bool info_fullscreen)
    return false;
 }
 
-static D3DFORMAT d3d9_get_color_format_backbuffer(bool rgb32, bool windowed)
+static D3DFORMAT d3d9_get_color_format_backbuffer(bool rgb32)
 {
    if (rgb32)
       return D3DFMT_X8R8G8B8;
@@ -668,12 +668,13 @@ static bool d3d9_is_windowed_enable(bool info_fullscreen)
    return false;
 }
 
-static D3DFORMAT d3d9_get_color_format_backbuffer(bool rgb32, bool windowed)
+static D3DFORMAT d3d9_get_color_format_backbuffer(
+      bool rgb32, bool windowed)
 {
    if (windowed)
    {
       D3DDISPLAYMODE display_mode;
-      if (d3d9_get_adapter_display_mode(g_pD3D9, 0, &display_mode))
+      if (IDirect3D9_GetAdapterDisplayMode(g_pD3D9, 0, &display_mode))
          return display_mode.Format;
    }
    return D3DFMT_X8R8G8B8;
@@ -725,10 +726,10 @@ void d3d9_make_d3dpp(d3d9_video_t *d3d,
 
    d3dpp->SwapEffect              = D3DSWAPEFFECT_DISCARD;
    d3dpp->BackBufferCount         = 2;
-   d3dpp->BackBufferFormat        = d3d9_get_color_format_backbuffer(
-         info->rgb32, windowed_enable);
 
 #ifdef _XBOX
+   d3dpp->BackBufferFormat        = d3d9_get_color_format_backbuffer(
+         info->rgb32);
    d3dpp->FrontBufferFormat       = d3d9_get_color_format_front_buffer();
 
    if (gamma_enable)
@@ -739,6 +740,8 @@ void d3d9_make_d3dpp(d3d9_video_t *d3d,
             d3dpp->FrontBufferFormat);
    }
 #else
+   d3dpp->BackBufferFormat        = d3d9_get_color_format_backbuffer(
+         info->rgb32, windowed_enable);
    d3dpp->hDeviceWindow           = win32_get_window();
 #endif
 
@@ -1359,6 +1362,19 @@ void d3d9_set_video_mode(void *data,
 #ifndef _XBOX
    win32_show_cursor(data, !fullscreen);
 #endif
+}
+
+static INLINE bool d3d9_device_get_render_target_data(
+      LPDIRECT3DDEVICE9 dev,
+      LPDIRECT3DSURFACE9 src, LPDIRECT3DSURFACE9 dst)
+{
+#ifndef _XBOX
+   if (dev &&
+         SUCCEEDED(IDirect3DDevice9_GetRenderTargetData(
+               dev, src, dst)))
+      return true;
+#endif
+   return false;
 }
 
 bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle)

@@ -1133,8 +1133,8 @@ static void d3d9_cg_renderchain_render(
       struct shader_pass *from_pass  = (struct shader_pass*)&chain->passes->data[i];
       struct shader_pass *to_pass    = (struct shader_pass*)&chain->passes->data[i + 1];
 
-      d3d9_texture_get_surface_level(to_pass->tex, 0, (void**)&target);
-
+      IDirect3DTexture9_GetSurfaceLevel(
+		      (LPDIRECT3DTEXTURE9)to_pass->tex, 0, (IDirect3DSurface9**)&target);
       IDirect3DDevice9_SetRenderTarget(chain->dev, 0, target);
 
       d3d9_convert_geometry(&from_pass->info,
@@ -1407,7 +1407,7 @@ static bool d3d9_cg_initialize(d3d9_video_t *d3d, const video_info_t *info)
       if (!d3d9_reset(d3d->dev, &d3dpp))
       {
          d3d9_cg_deinitialize(d3d);
-         d3d9_device_free(NULL, g_pD3D9);
+         IDirect3D9_Release(g_pD3D9);
          g_pD3D9 = NULL;
 
          ret = d3d9_cg_init_base(d3d, info);
@@ -1715,8 +1715,9 @@ static void d3d9_cg_free(void *data)
    if (!string_is_empty(d3d->shader_path))
       free(d3d->shader_path);
 
+   IDirect3DDevice9_Release(d3d->dev);
+   IDirect3D9_Release(g_pD3D9);
    d3d->shader_path = NULL;
-   d3d9_device_free(d3d->dev, g_pD3D9);
    d3d->dev         = NULL;
    g_pD3D9          = NULL;
 

@@ -155,8 +155,12 @@ static bool d3d9_hlsl_load_program_from_file(
       goto error;
    }
 
-   d3d9_create_pixel_shader(dev,  (const DWORD*)d3d9x_get_buffer_ptr(code_f),  (void**)&pass->fprg);
-   d3d9_create_vertex_shader(dev, (const DWORD*)d3d9x_get_buffer_ptr(code_v), (void**)&pass->vprg);
+   IDirect3DDevice9_CreatePixelShader(dev,
+         (const DWORD*)d3d9x_get_buffer_ptr(code_f),
+         (LPDIRECT3DPIXELSHADER9*)&pass->fprg);
+   IDirect3DDevice9_CreateVertexShader(dev,
+         (const DWORD*)d3d9x_get_buffer_ptr(code_v),
+         (LPDIRECT3DVERTEXSHADER9*)&pass->vprg);
    d3d9x_buffer_release((void*)code_f);
    d3d9x_buffer_release((void*)code_v);
 
@@ -199,8 +203,12 @@ static bool d3d9_hlsl_load_program(
       goto error;
    }
 
-   d3d9_create_pixel_shader(dev,  (const DWORD*)d3d9x_get_buffer_ptr(code_f),  (void**)&pass->fprg);
-   d3d9_create_vertex_shader(dev, (const DWORD*)d3d9x_get_buffer_ptr(code_v), (void**)&pass->vprg);
+   IDirect3DDevice9_CreatePixelShader(dev,
+         (const DWORD*)d3d9x_get_buffer_ptr(code_f),
+         (LPDIRECT3DPIXELSHADER9*)&pass->fprg);
+   IDirect3DDevice9_CreateVertexShader(dev,
+         (const DWORD*)d3d9x_get_buffer_ptr(code_v),
+         (LPDIRECT3DVERTEXSHADER9*)&pass->vprg);
    d3d9x_buffer_release((void*)code_f);
    d3d9x_buffer_release((void*)code_v);
 
@@ -683,8 +691,8 @@ static void hlsl_d3d9_renderchain_render(
       struct shader_pass *to_pass    = (struct shader_pass*)
          &chain->chain.passes->data[i + 1];
 
-      d3d9_texture_get_surface_level(to_pass->tex, 0, (void**)&target);
-
+      IDirect3DTexture9_GetSurfaceLevel(
+		      (LPDIRECT3DTEXTURE9)to_pass->tex, 0, (IDirect3DSurface9**)&target);
       IDirect3DDevice9_SetRenderTarget(chain->chain.dev, 0, target);
 
       d3d9_convert_geometry(&from_pass->info,
@@ -966,7 +974,7 @@ static bool d3d9_hlsl_initialize(
       if (!d3d9_reset(d3d->dev, &d3dpp))
       {
          d3d9_hlsl_deinitialize(d3d);
-         d3d9_device_free(NULL, g_pD3D9);
+         IDirect3D9_Release(g_pD3D9);
          g_pD3D9 = NULL;
 
          ret     = d3d9_hlsl_init_base(d3d, info);
@@ -1277,8 +1285,9 @@ static void d3d9_hlsl_free(void *data)
    if (!string_is_empty(d3d->shader_path))
       free(d3d->shader_path);
 
+   IDirect3DDevice9_Release(d3d->dev);
+   IDirect3D9_Release(g_pD3D9);
    d3d->shader_path = NULL;
-   d3d9_device_free(d3d->dev, g_pD3D9);
    d3d->dev         = NULL;
    g_pD3D9          = NULL;
 

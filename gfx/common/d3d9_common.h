@@ -89,42 +89,12 @@ void *d3d9_vertex_buffer_new(void *dev,
 
 void d3d9_vertex_buffer_free(void *vertex_data, void *vertex_declaration);
 
-static INLINE bool d3d9_texture_get_surface_level(
-      LPDIRECT3DTEXTURE9 tex,
-      unsigned idx, void **_ppsurface_level)
-{
-   if (tex &&
-         SUCCEEDED(IDirect3DTexture9_GetSurfaceLevel(
-               tex, idx, (IDirect3DSurface9**)_ppsurface_level)))
-      return true;
-   return false;
-}
-
 void *d3d9_texture_new(void *dev,
       const char *path, unsigned width, unsigned height,
       unsigned miplevels, unsigned usage, INT32 format,
       INT32 pool, unsigned filter, unsigned mipfilter,
       INT32 color_key, void *src_info,
       PALETTEENTRY *palette, bool want_mipmap);
-
-static INLINE bool d3d9_create_vertex_shader(
-      LPDIRECT3DDEVICE9 dev, const DWORD *a, void **b)
-{
-   if (dev && IDirect3DDevice9_CreateVertexShader(dev, a,
-            (LPDIRECT3DVERTEXSHADER9*)b) == D3D_OK)
-      return true;
-   return false;
-}
-
-static INLINE bool d3d9_create_pixel_shader(
-      LPDIRECT3DDEVICE9 dev, const DWORD *a, void **b)
-{
-   if (dev &&
-         IDirect3DDevice9_CreatePixelShader(dev, a,
-            (LPDIRECT3DPIXELSHADER9*)b) == D3D_OK)
-      return true;
-   return false;
-}
 
 static INLINE bool d3d9_vertex_declaration_new(
       LPDIRECT3DDEVICE9 dev,
@@ -136,22 +106,6 @@ static INLINE bool d3d9_vertex_declaration_new(
    if (SUCCEEDED(IDirect3DDevice9_CreateVertexDeclaration(dev,
                vertex_elements, (IDirect3DVertexDeclaration9**)vertex_decl)))
       return true;
-
-   return false;
-}
-
-void d3d9_frame_postprocess(void *data);
-
-static INLINE bool d3d9_device_get_render_target_data(
-      LPDIRECT3DDEVICE9 dev,
-      LPDIRECT3DSURFACE9 src, LPDIRECT3DSURFACE9 dst)
-{
-#ifndef _XBOX
-   if (dev &&
-         SUCCEEDED(IDirect3DDevice9_GetRenderTargetData(
-               dev, src, dst)))
-      return true;
-#endif
 
    return false;
 }
@@ -187,23 +141,6 @@ static INLINE bool d3d9_device_create_offscreen_plain_surface(
    return false;
 }
 
-static INLINE bool d3d9_get_adapter_display_mode(
-      LPDIRECT3D9 d3d,
-      unsigned idx,
-      D3DDISPLAYMODE *display_mode)
-{
-   if (!d3d)
-      return false;
-#ifndef _XBOX
-   if (FAILED(
-            IDirect3D9_GetAdapterDisplayMode(
-               d3d, idx, display_mode)))
-      return false;
-#endif
-
-   return true;
-}
-
 bool d3d9_create_device(void *dev,
       void *d3dpp,
       void *d3d,
@@ -212,37 +149,11 @@ bool d3d9_create_device(void *dev,
 
 bool d3d9_reset(void *dev, void *d3dpp);
 
-static INLINE void d3d9_device_free(LPDIRECT3DDEVICE9 dev, LPDIRECT3D9 pd3d)
-{
-   if (dev)
-      IDirect3DDevice9_Release(dev);
-   if (pd3d)
-      IDirect3D9_Release(pd3d);
-}
-
 void *d3d9_create(void);
 
 bool d3d9_initialize_symbols(enum gfx_ctx_api api);
 
 void d3d9_deinitialize_symbols(void);
-
-static INLINE bool d3d9_check_device_type(
-      LPDIRECT3D9 d3d,
-      unsigned idx,
-      INT32 disp_format,
-      INT32 backbuffer_format,
-      bool windowed_mode)
-{
-   if (d3d &&
-         SUCCEEDED(IDirect3D9_CheckDeviceType(d3d,
-               0,
-               D3DDEVTYPE_HAL,
-               (D3DFORMAT)disp_format,
-               (D3DFORMAT)backbuffer_format,
-               windowed_mode)))
-      return true;
-   return false;
-}
 
 bool d3d9x_create_font_indirect(void *dev,
       void *desc, void **font_data);
