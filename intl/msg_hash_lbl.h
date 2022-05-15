@@ -1047,6 +1047,10 @@ MSG_HASH(
    "deferred_network_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_NETPLAY_KICK_LIST,
+   "deferred_netplay_kick_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_NETPLAY_LOBBY_FILTERS_LIST,
    "deferred_netplay_lobby_filters_list"
    )
@@ -2035,6 +2039,10 @@ MSG_HASH(
    "menu_netplay_enable_host"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_KICK,
+   "menu_netplay_kick"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES,
    "netplay_allow_slaves"
    )
@@ -2197,6 +2205,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_NO_NETPLAY_HOSTS_FOUND,
    "no_netplay_hosts_found"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NO_NETPLAY_CLIENTS_FOUND,
+   "no_netplay_clients_found"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NO_BT_DEVICES_FOUND,

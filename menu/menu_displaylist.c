@@ -5288,10 +5288,10 @@ end:
 }
 
 #ifdef HAVE_NETWORKING
-static int menu_displaylist_parse_netplay_mitm_server_list(
+static unsigned menu_displaylist_parse_netplay_mitm_server_list(
       menu_displaylist_info_t *info, settings_t *settings)
 {
-   size_t count    = 0;
+   unsigned count  = 0;
    size_t i;
    size_t list_len = ARRAY_SIZE(netplay_mitm_server_list);
 
@@ -5315,10 +5315,8 @@ static int menu_displaylist_parse_netplay_mitm_server_list(
                 cbs->checked = true;
              menu_navigation_set_selection(count);
           }
-
           count++;
        }
-
    }
 
 end:
@@ -10595,6 +10593,41 @@ static unsigned print_buf_lines(file_list_t *list, char *buf,
 
    return count;
 }
+
+static unsigned menu_displaylist_netplay_kick(file_list_t *list)
+{
+   unsigned count = 0;
+
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_REFRESH_CLIENT_INFO, NULL))
+   {
+      char client_id[4];
+      size_t i;
+      net_driver_state_t *net_st = networking_state_get_ptr();
+
+      for (i = 0; i < net_st->client_info_count; i++)
+      {
+         netplay_client_info_t *client = &net_st->client_info[i];
+
+         snprintf(client_id, sizeof(client_id), "%d", client->id);
+         if (menu_entries_append_enum(list, client->name, client_id,
+               MENU_ENUM_LABEL_NETPLAY_KICK_CLIENT,
+               MENU_NETPLAY_KICK,
+               0, i))
+            count++;
+      }
+   }
+
+   if (count == 0)
+      if (menu_entries_append_enum(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND),
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_NETPLAY_CLIENTS_FOUND),
+            MENU_ENUM_LABEL_NO_NETPLAY_CLIENTS_FOUND,
+            0, 0, 0))
+         count++;
+
+   return count;
+}
+
 #endif
 
 bool menu_displaylist_has_subsystems(void)
@@ -10634,43 +10667,46 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef HAVE_NETWORKING
          {
             size_t i;
-            bool include_everything        = false;
-            file_list_t *list              = info->list;
+            file_list_t *list    = info->list;
+            bool use_mitm_server = settings->bools.netplay_use_mitm_server;
             menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,                                  PARSE_ONLY_UINT,   true},
-               {MENU_ENUM_LABEL_NETPLAY_MAX_CONNECTIONS,                               PARSE_ONLY_UINT,   true},
-               {MENU_ENUM_LABEL_NETPLAY_MAX_PING,                                      PARSE_ONLY_UINT,   true},
-               {MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,                               PARSE_ONLY_BOOL,   true  },
-               {MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER,                               PARSE_ONLY_BOOL,   true  },
-               {MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,                                   PARSE_ONLY_STRING, false},
-               {MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER,                            PARSE_ONLY_STRING, false},
-               {MENU_ENUM_LABEL_NETPLAY_PASSWORD,                                      PARSE_ONLY_STRING, true},
-               {MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD,                             PARSE_ONLY_STRING, true},
+               {MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,       PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_NETPLAY_MAX_CONNECTIONS,    PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_NETPLAY_MAX_PING,           PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,    PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER,    PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,        PARSE_ONLY_STRING, false},
+               {MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER, PARSE_ONLY_STRING, false},
+               {MENU_ENUM_LABEL_NETPLAY_PASSWORD,           PARSE_ONLY_STRING, true},
+               {MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD,  PARSE_ONLY_STRING, true},
             };
 
 		    menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, list);
 
-            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
-                  netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
+            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
             {
-               menu_entries_append_enum(list,
+               if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
+               {
+                  menu_entries_append_enum(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST),
                      msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_DISCONNECT),
                      MENU_ENUM_LABEL_NETPLAY_DISCONNECT,
                      MENU_SETTING_ACTION, 0, 0);
-            }
-            else if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
-                  !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL) &&
-                  netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
-            {
+                  if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+                     menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_KICK),
+                        msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_KICK),
+                        MENU_ENUM_LABEL_NETPLAY_KICK,
+                        MENU_SETTING_ACTION, 0, 0);
+               }
             }
             else
             {
                menu_entries_append_enum(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
-                     msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
-                     MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
-                     MENU_SETTING_ACTION, 0, 0);
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
+                  MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
+                  MENU_SETTING_ACTION, 0, 0);
             }
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -10678,11 +10714,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                switch (build_list[i].enum_idx)
                {
                   case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
-                     if (settings->bools.netplay_use_mitm_server)
-                        build_list[i].checked = true;
-                     break;
                   case MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER:
-                     if (settings->bools.netplay_use_mitm_server)
+                     if (use_mitm_server)
                         build_list[i].checked = true;
                      break;
                   default:
@@ -10692,14 +10725,22 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
-               if (!build_list[i].checked && !include_everything)
+               if (!build_list[i].checked)
                   continue;
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        build_list[i].enum_idx,  build_list[i].parse_type,
-                        false) == 0)
+                     build_list[i].enum_idx, build_list[i].parse_type,
+                     false) == 0)
                   count++;
             }
          }
+#endif
+         info->need_push    = true;
+         info->need_refresh = true;
+         break;
+      case DISPLAYLIST_NETPLAY_KICK_LIST:
+#ifdef HAVE_NETWORKING
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         count = menu_displaylist_netplay_kick(info->list);
 #endif
          info->need_push    = true;
          info->need_refresh = true;

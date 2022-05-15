@@ -682,7 +682,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_nowinkey_enable,         MENU_
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_sensors_enable,          MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_auto_mouse_grab,         MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_android_input_disconnect_workaround, MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_auto_game_focus,         MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_swap_ok_cancel,          MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_pause_libretro,                MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO)
@@ -786,6 +785,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_resampler_quality,            
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_enable_host,                   MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_enable_client,                 MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_disconnect,                    MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_kick,                          MENU_ENUM_SUBLABEL_NETPLAY_KICK)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_scan_file,                             MENU_ENUM_SUBLABEL_SCAN_FILE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_scan_directory,                        MENU_ENUM_SUBLABEL_SCAN_DIRECTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_swap_interval,                   MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL)
@@ -1579,6 +1579,55 @@ static int action_bind_sublabel_netplay_room(
    }
    return 0;
 }
+
+static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   char buf[256];
+   netplay_client_info_t *client = NULL;
+   const char            *status = NULL;
+   size_t                idx     = list->list[i].entry_idx;
+   net_driver_state_t    *net_st = networking_state_get_ptr();
+
+   if (idx >= net_st->client_info_count)
+      return menu_cbs_exit();
+
+   client = &net_st->client_info[idx];
+
+   switch (client->mode)
+   {
+      case NETPLAY_CONNECTION_SLAVE:
+      case NETPLAY_CONNECTION_PLAYING:
+         status = msg_hash_to_str(MSG_NETPLAY_STATUS_PLAYING);
+         break;
+      case NETPLAY_CONNECTION_SPECTATING:
+         status = msg_hash_to_str(MSG_NETPLAY_STATUS_SPECTATING);
+         break;
+      default:
+         break;
+   }
+
+   *s = '\0';
+
+   if (status)
+   {
+      snprintf(buf, sizeof(buf), "%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATUS), status);
+      strlcat(s, buf, len);
+   }
+   if (client->ping >= 0)
+   {
+      if (*s)
+         strlcat(s, "\n", len);
+      snprintf(buf, sizeof(buf), "Ping: %u", (unsigned)client->ping);
+      strlcat(s, buf, len);
+   }
+
+   return 0;
+}
+
 #endif
 
 static int action_bind_sublabel_playlist_entry(
@@ -3089,6 +3138,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_SCAN_DIRECTORY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_scan_directory);
             break;
+         case MENU_ENUM_LABEL_NETPLAY_KICK:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_kick);
+            break;
          case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_disconnect);
             break;
@@ -3977,6 +4029,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_NETWORKING
          case MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_room);
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_KICK_CLIENT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_kick_client);
             break;
 #endif
 #ifdef HAVE_CHEEVOS
