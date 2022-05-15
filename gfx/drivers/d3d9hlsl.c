@@ -297,8 +297,8 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
    struct shader_pass pass       = { 0 };
    unsigned fmt                  =
         (_fmt == RETRO_PIXEL_FORMAT_RGB565) 
-      ? d3d9_get_rgb565_format()
-      : d3d9_get_xrgb8888_format();
+      ? D3D9_RGB565_FORMAT
+      : D3D9_XRGB8888_FORMAT;
 
    pass.info                     = *info;
    pass.last_width               = 0;
@@ -515,22 +515,13 @@ static void hlsl_d3d9_renderchain_free(void *data)
 
 static bool hlsl_d3d9_renderchain_init(
       d3d9_video_t *d3d,
+      hlsl_renderchain_t *chain,
       LPDIRECT3DDEVICE9 dev,
       const D3DVIEWPORT9 *final_viewport,
       const struct LinkInfo *info,
-      bool rgb32
+      unsigned fmt
       )
 {
-   hlsl_renderchain_t *chain                = (hlsl_renderchain_t*)
-      d3d->renderchain_data;
-   unsigned fmt                             = (rgb32)
-      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
-
-   if (!chain)
-      return false;
-
-   RARCH_LOG("[D3D9]: Using HLSL shader backend.\n");
-
    chain->chain.dev                         = dev;
    chain->chain.final_viewport              = (D3DVIEWPORT9*)final_viewport;
    chain->chain.frame_count                 = 0;
@@ -886,11 +877,16 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
    if (!d3d->renderchain_data)
       return false;
 
+   RARCH_LOG("[D3D9]: Using HLSL shader backend.\n");
+
    if (
          !hlsl_d3d9_renderchain_init(
-            d3d,
+            d3d, d3d->renderchain_data,
             d3d->dev, &d3d->final_viewport, &link_info,
-            rgb32)
+            rgb32
+            ? RETRO_PIXEL_FORMAT_XRGB8888 
+            : RETRO_PIXEL_FORMAT_RGB565
+            )
       )
       return false;
 

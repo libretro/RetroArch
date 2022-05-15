@@ -785,7 +785,7 @@ static bool d3d9_cg_renderchain_create_first_pass(
    struct shader_pass pass;
    struct d3d_matrix ident;
    unsigned fmt = (_fmt == RETRO_PIXEL_FORMAT_RGB565) ?
-      d3d9_get_rgb565_format() : d3d9_get_xrgb8888_format();
+      D3D9_RGB565_FORMAT : D3D9_XRGB8888_FORMAT;
 
    d3d_matrix_identity(&ident);
 

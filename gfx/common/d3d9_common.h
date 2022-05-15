@@ -31,6 +31,17 @@
    { (WORD)(stream), (WORD)(offset * sizeof(float)), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, \
       D3DDECLUSAGE_TEXCOORD, (BYTE)(index) }
 
+#ifdef _XBOX
+#define D3D9_RGB565_FORMAT D3DFMT_LIN_R5G6B5
+#define D3D9_ARGB8888_FORMAT D3DFMT_LIN_A8R8G8B8
+#define D3D9_XRGB8888_FORMAT D3DFMT_LIN_X8R8G8B8
+#else
+#define D3D9_RGB565_FORMAT D3DFMT_R5G6B5
+#define D3D9_ARGB8888_FORMAT D3DFMT_A8R8G8B8
+#define D3D9_XRGB8888_FORMAT D3DFMT_X8R8G8B8
+#endif
+
+
 RETRO_BEGIN_DECLS
 
 typedef struct d3d9_video d3d9_video_t;
@@ -207,75 +218,6 @@ const bool d3d9x_constant_table_set_float(void *p,
 void *d3d9x_constant_table_get_constant_by_name(void *_tbl,
       void *_handle, void *_name);
 
-static INLINE INT32 d3d9_get_rgb565_format(void)
-{
-#ifdef _XBOX
-   return D3DFMT_LIN_R5G6B5;
-#else
-   return D3DFMT_R5G6B5;
-#endif
-}
-
-static INLINE INT32 d3d9_get_argb8888_format(void)
-{
-#ifdef _XBOX
-   return D3DFMT_LIN_A8R8G8B8;
-#else
-   return D3DFMT_A8R8G8B8;
-#endif
-}
-
-static INLINE INT32 d3d9_get_xrgb8888_format(void)
-{
-#ifdef _XBOX
-   return D3DFMT_LIN_X8R8G8B8;
-#else
-   return D3DFMT_X8R8G8B8;
-#endif
-}
-
-static INLINE void d3d9_convert_geometry(
-      const struct LinkInfo *info,
-      unsigned *out_width,
-      unsigned *out_height,
-      unsigned width,
-      unsigned height,
-      D3DVIEWPORT9 *final_viewport)
-{
-   if (!info)
-      return;
-
-   switch (info->pass->fbo.type_x)
-   {
-      case RARCH_SCALE_VIEWPORT:
-         *out_width = info->pass->fbo.scale_x * final_viewport->Width;
-         break;
-
-      case RARCH_SCALE_ABSOLUTE:
-         *out_width = info->pass->fbo.abs_x;
-         break;
-
-      case RARCH_SCALE_INPUT:
-         *out_width = info->pass->fbo.scale_x * width;
-         break;
-   }
-
-   switch (info->pass->fbo.type_y)
-   {
-      case RARCH_SCALE_VIEWPORT:
-         *out_height = info->pass->fbo.scale_y * final_viewport->Height;
-         break;
-
-      case RARCH_SCALE_ABSOLUTE:
-         *out_height = info->pass->fbo.abs_y;
-         break;
-
-      case RARCH_SCALE_INPUT:
-         *out_height = info->pass->fbo.scale_y * height;
-         break;
-   }
-}
-
 void d3d9_make_d3dpp(d3d9_video_t *d3d,
       const video_info_t *info, void *_d3dpp);
 
@@ -287,10 +229,6 @@ void d3d9_calculate_rect(d3d9_video_t *d3d,
 
 void d3d9_log_info(const struct LinkInfo *info);
 
-#ifdef HAVE_OVERLAY
-void d3d9_free_overlays(d3d9_video_t *d3d);
-#endif
-
 #if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
 void d3d9_free_overlay(d3d9_video_t *d3d, overlay_t *overlay);
 
@@ -301,6 +239,7 @@ void d3d9_overlay_render(d3d9_video_t *d3d,
 #endif
 
 #if defined(HAVE_OVERLAY)
+void d3d9_free_overlays(d3d9_video_t *d3d);
 void d3d9_get_overlay_interface(void *data,
       const video_overlay_interface_t **iface);
 #endif

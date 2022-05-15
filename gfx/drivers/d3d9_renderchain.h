@@ -118,7 +118,7 @@ static INLINE bool d3d9_renderchain_add_pass(d3d9_renderchain_t *chain,
          D3DUSAGE_RENDERTARGET,
          chain->passes->data[
          chain->passes->count - 1].info.pass->fbo.fp_fbo
-         ? D3DFMT_A32B32G32R32F : d3d9_get_argb8888_format(),
+         ? D3DFMT_A32B32G32R32F : D3D9_ARGB8888_FORMAT,
          D3DPOOL_DEFAULT, 0, 0, 0, NULL, NULL, false);
 
    if (!tex)
@@ -287,7 +287,7 @@ static INLINE bool d3d9_renderchain_set_pass_size(
             width, height, 1,
             D3DUSAGE_RENDERTARGET,
             pass2->info.pass->fbo.fp_fbo ?
-            D3DFMT_A32B32G32R32F : d3d9_get_argb8888_format(),
+            D3DFMT_A32B32G32R32F : D3D9_ARGB8888_FORMAT,
             D3DPOOL_DEFAULT, 0, 0, 0,
             NULL, NULL, false);
 
@@ -301,6 +301,45 @@ static INLINE bool d3d9_renderchain_set_pass_size(
    }
 
    return true;
+}
+
+static INLINE void d3d9_convert_geometry(
+      const struct LinkInfo *info,
+      unsigned *out_width,
+      unsigned *out_height,
+      unsigned width,
+      unsigned height,
+      D3DVIEWPORT9 *final_viewport)
+{
+   switch (info->pass->fbo.type_x)
+   {
+      case RARCH_SCALE_VIEWPORT:
+         *out_width = info->pass->fbo.scale_x * final_viewport->Width;
+         break;
+
+      case RARCH_SCALE_ABSOLUTE:
+         *out_width = info->pass->fbo.abs_x;
+         break;
+
+      case RARCH_SCALE_INPUT:
+         *out_width = info->pass->fbo.scale_x * width;
+         break;
+   }
+
+   switch (info->pass->fbo.type_y)
+   {
+      case RARCH_SCALE_VIEWPORT:
+         *out_height = info->pass->fbo.scale_y * final_viewport->Height;
+         break;
+
+      case RARCH_SCALE_ABSOLUTE:
+         *out_height = info->pass->fbo.abs_y;
+         break;
+
+      case RARCH_SCALE_INPUT:
+         *out_height = info->pass->fbo.scale_y * height;
+         break;
+   }
 }
 
 static INLINE void d3d9_recompute_pass_sizes(

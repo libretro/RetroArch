@@ -653,7 +653,7 @@ static D3DFORMAT d3d9_get_color_format_backbuffer(bool rgb32)
 {
    if (rgb32)
       return D3DFMT_X8R8G8B8;
-   return d3d9_get_rgb565_format();
+   return D3D9_RGB565_FORMAT;
 }
 
 bool d3d9_has_windowed(void *data) { return false; }
@@ -1199,7 +1199,7 @@ void d3d9_set_menu_texture_frame(void *data,
 
       d3d->menu->tex = d3d9_texture_new(d3d->dev, NULL,
             width, height, 1,
-            0, d3d9_get_argb8888_format(),
+            0, D3D9_ARGB8888_FORMAT,
             D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
 
       if (!d3d->menu->tex)
@@ -1291,7 +1291,7 @@ static void d3d9_video_texture_load_d3d(
 
    tex = (LPDIRECT3DTEXTURE9)d3d9_texture_new(d3d->dev, NULL,
                ti->width, ti->height, 0,
-               usage, d3d9_get_argb8888_format(),
+               usage, D3D9_ARGB8888_FORMAT,
                D3DPOOL_MANAGED, 0, 0, 0,
                NULL, NULL, want_mipmap);
 
@@ -1392,7 +1392,7 @@ bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    if (
          !d3d9_device_get_render_target(d3dr, 0, (void**)&target)     ||
          !d3d9_device_create_offscreen_plain_surface(d3dr, width, height,
-            d3d9_get_xrgb8888_format(),
+            D3D9_XRGB8888_FORMAT,
             D3DPOOL_SYSTEMMEM, (void**)&dest, NULL) ||
          !d3d9_device_get_render_target_data(d3dr, target, dest)
          )
@@ -1627,7 +1627,7 @@ static bool d3d9_overlay_load(void *data,
       overlay->tex       = d3d9_texture_new(d3d->dev, NULL,
                   width, height, 1,
                   0,
-                  d3d9_get_argb8888_format(),
+                  D3D9_ARGB8888_FORMAT,
                   D3DPOOL_MANAGED, 0, 0, 0,
                   NULL, NULL, false);
 
