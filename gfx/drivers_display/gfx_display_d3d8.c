@@ -161,17 +161,16 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
       pv[i].u     = *tex_coord++;
       pv[i].v     = *tex_coord++;
 
-#if 1
 	  if ((void*)draw->texture)
-      {
-         D3DSURFACE_DESC desc;
-         if (d3d8_texture_get_level_desc((void*)draw->texture, 0, &desc))
-         {
-            pv[i].u *= desc.Width;
-            pv[i].v *= desc.Height;
-         }
-      }
-#endif
+     {
+        D3DSURFACE_DESC desc;
+        if (SUCCEEDED(IDirect3DTexture8_GetLevelDesc(
+                    (void*)draw->texture, 0, (D3DSURFACE_DESC*)&desc)))
+        {
+           pv[i].u *= desc.Width;
+           pv[i].v *= desc.Height;
+        }
+     }
 
       pv[i].color =
          D3DCOLOR_ARGB(
@@ -181,7 +180,7 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
                colors[2]  /* B */
                );
    }
-   d3d8_vertex_buffer_unlock(d3d->menu_display.buffer);
+   IDirect3DVertexBuffer8_Unlock(d3d->menu_display.buffer);
 
    if (!draw->matrix_data)
       draw->matrix_data = &default_mvp;

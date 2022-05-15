@@ -125,54 +125,55 @@ static void d3d8_set_vertices(
    if (chain->last_width != vert_width || chain->last_height != vert_height)
    {
       Vertex vert[4];
-      float tex_w, tex_h;
       void *verts        = NULL;
+      float tex_w        = vert_width;
+      float tex_h        = vert_height;
 
       chain->last_width  = vert_width;
       chain->last_height = vert_height;
 
-      tex_w              = vert_width;
-      tex_h              = vert_height;
+      if (chain->vertex_buf)
+      {
+         vert[0].x        =  0.0f;
+         vert[0].y        =  1.0f;
+         vert[0].z        =  1.0f;
 
-      vert[0].x        =  0.0f;
-      vert[0].y        =  1.0f;
-      vert[0].z        =  1.0f;
+         vert[1].x        =  1.0f;
+         vert[1].y        =  1.0f;
+         vert[1].z        =  1.0f;
 
-      vert[1].x        =  1.0f;
-      vert[1].y        =  1.0f;
-      vert[1].z        =  1.0f;
+         vert[2].x        =  0.0f;
+         vert[2].y        =  0.0f;
+         vert[2].z        =  1.0f;
 
-      vert[2].x        =  0.0f;
-      vert[2].y        =  0.0f;
-      vert[2].z        =  1.0f;
+         vert[3].x        =  1.0f;
+         vert[3].y        =  0.0f;
+         vert[3].z        =  1.0f;
 
-      vert[3].x        =  1.0f;
-      vert[3].y        =  0.0f;
-      vert[3].z        =  1.0f;
-
-      vert[0].u        = 0.0f;
-      vert[0].v        = 0.0f;
-      vert[1].v        = 0.0f;
-      vert[2].u        = 0.0f;
-      vert[1].u        = tex_w;
-      vert[2].v        = tex_h;
-      vert[3].u        = tex_w;
-      vert[3].v        = tex_h;
+         vert[0].u        = 0.0f;
+         vert[0].v        = 0.0f;
+         vert[1].v        = 0.0f;
+         vert[2].u        = 0.0f;
+         vert[1].u        = tex_w;
+         vert[2].v        = tex_h;
+         vert[3].u        = tex_w;
+         vert[3].v        = tex_h;
 #ifndef _XBOX
-      vert[1].u       /= chain->tex_w;
-      vert[2].v       /= chain->tex_h;
-      vert[3].u       /= chain->tex_w;
-      vert[3].v       /= chain->tex_h;
+         vert[1].u       /= chain->tex_w;
+         vert[2].v       /= chain->tex_h;
+         vert[3].u       /= chain->tex_w;
+         vert[3].v       /= chain->tex_h;
 #endif
 
-      vert[0].color    = 0xFFFFFFFF;
-      vert[1].color    = 0xFFFFFFFF;
-      vert[2].color    = 0xFFFFFFFF;
-      vert[3].color    = 0xFFFFFFFF;
+         vert[0].color    = 0xFFFFFFFF;
+         vert[1].color    = 0xFFFFFFFF;
+         vert[2].color    = 0xFFFFFFFF;
+         vert[3].color    = 0xFFFFFFFF;
 
-      verts = d3d8_vertex_buffer_lock(chain->vertex_buf);
-      memcpy(verts, vert, sizeof(vert));
-      d3d8_vertex_buffer_unlock(chain->vertex_buf);
+         verts            = d3d8_vertex_buffer_lock(chain->vertex_buf);
+         memcpy(verts, vert, sizeof(vert));
+         IDirect3DVertexBuffer8_Unlock(chain->vertex_buf);
+      }
    }
 }
 
@@ -182,26 +183,40 @@ static void d3d8_blit_to_texture(
       unsigned width, unsigned height, unsigned pitch)
 {
    D3DLOCKED_RECT d3dlr;
+   D3DLOCKED_RECT *lr         = &d3dlr;
    LPDIRECT3DDEVICE8 d3dr     = (LPDIRECT3DDEVICE8)chain->dev;
-
-   d3d8_frame_postprocess(chain);
+   LPDIRECT3DTEXTURE8 tex     = (LPDIRECT3DTEXTURE8)chain->tex;                
+#ifdef _XBOX
+   global_t        *global    = global_get_ptr();
+   D3DDevice_SetFlickerFilter(global->console.screen.flicker_filter_index);
+   D3DDevice_SetSoftDisplayFilter(global->console.softfilter_enable);
+#endif
 
    if (chain->last_width != width || chain->last_height != height)
    {
-      d3d8_lock_rectangle(chain->tex,
-            0, &d3dlr, NULL, chain->tex_h, D3DLOCK_NOSYSLOCK);
-      d3d8_lock_rectangle_clear(chain->tex,
-            0, &d3dlr, NULL, chain->tex_h, D3DLOCK_NOSYSLOCK);
+      if (IDirect3DTexture8_LockRect(tex, level, lr, NULL, D3DLOCK_NOSYSLOCK) ==
+            D3D_OK)
+      {
+         memset(lr->pBits, 0, chain->tex_h * lr->Pitch);
+         IDirect3DTexture8_UnlockRect((LPDIRECT3DTEXTURE8)tex, 0);
+      }
    }
 
    /* Set the texture to NULL so D3D doesn't complain about it being in use... */
    IDirect3DDevice8_SetTexture(d3dr, 0, NULL);
 
-   if (d3d8_lock_rectangle(chain->tex, 0, &d3dlr, NULL, 0, 0))
+   if (IDirect3DTexture8_LockRect(tex, 0, &d3dlr, NULL, 0) == D3D_OK)
    {
-      d3d8_texture_blit(chain->pixel_size, chain->tex,
-            &d3dlr, frame, width, height, pitch);
-      IDirect3DTexture8_UnlockRect(chain->tex, 0);
+      unsigned y;
+      unsigned pixel_size = chain->pixel_size;
+
+      for (y = 0; y < height; y++)
+      {
+         const uint8_t *in = (const uint8_t*)frame + y * pitch;
+         uint8_t      *out = (uint8_t*)lr->pBits + y * lr->Pitch;
+         memcpy(out, in, width * pixel_size);
+      }
+      IDirect3DTexture8_UnlockRect(tex, 0);
    }
 }
 
@@ -243,6 +258,20 @@ static void d3d8_render(
    chain->frame_count++;
 }
 
+static INLINE void *d3d8_vertex_buffer_new(
+      LPDIRECT3DDEVICE8 dev,
+      unsigned length, unsigned usage,
+      unsigned fvf, D3DPOOL pool, void *handle)
+{
+   void              *buf = NULL;
+   if (FAILED(IDirect3DDevice8_CreateVertexBuffer(
+               dev, length, usage, fvf,
+               pool,
+               (struct IDirect3DVertexBuffer8**)&buf)))
+      return NULL;
+   return buf;
+}
+
 static bool d3d8_setup_init(void *data,
       const video_info_t *video_info,
       void *dev_data,
@@ -269,8 +298,7 @@ static bool d3d8_setup_init(void *data,
    chain->vertex_buf                      = (LPDIRECT3DVERTEXBUFFER8)d3d8_vertex_buffer_new(d3dr, 4 * sizeof(Vertex),
          D3DUSAGE_WRITEONLY,
          D3DFVF_XYZ | D3DFVF_TEX1 | D3DFVF_DIFFUSE,
-         D3DPOOL_MANAGED,
-         NULL);
+         D3DPOOL_MANAGED);
 
    if (!chain->vertex_buf)
       return false;
@@ -338,7 +366,6 @@ static void d3d8_overlay_render(d3d8_video_t *d3d,
 {
    D3DVIEWPORT8 vp_full;
    struct video_viewport vp;
-   void *verts;
    unsigned i;
    Vertex vert[4];
    enum D3DTEXTUREFILTERTYPE filter_type = D3DTEXF_LINEAR;
@@ -351,7 +378,7 @@ static void d3d8_overlay_render(d3d8_video_t *d3d,
       overlay->vert_buf = d3d8_vertex_buffer_new(
       d3d->dev, sizeof(vert), D3DUSAGE_WRITEONLY,
       D3DFVF_XYZ | D3DFVF_TEX1 | D3DFVF_DIFFUSE,
-      D3DPOOL_MANAGED, NULL);
+      D3DPOOL_MANAGED);
 
 	  if (!overlay->vert_buf)
 		  return;
@@ -383,10 +410,12 @@ static void d3d8_overlay_render(d3d8_video_t *d3d,
    vert[2].v      = overlay->tex_coords[1] + overlay->tex_coords[3];
    vert[3].v      = overlay->tex_coords[1] + overlay->tex_coords[3];
 
-   verts = d3d8_vertex_buffer_lock(overlay->vert_buf);
-   memcpy(verts, vert, sizeof(vert));
-   d3d8_vertex_buffer_unlock(overlay->vert_buf);
-
+   if (overlay->vert_buf)
+   {
+      void *verts = d3d8_vertex_buffer_lock(overlay->vert_buf);
+      memcpy(verts, vert, sizeof(vert));
+      IDirect3DVertexBuffer8_Unlock(overlay->vert_buf);
+   }
    IDirect3DDevice8_SetRenderState(d3d->dev, D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
    IDirect3DDevice8_SetRenderState(d3d->dev, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
    IDirect3DDevice8_SetRenderState(d3d->dev, D3DRS_ALPHABLENDENABLE, true);
@@ -445,7 +474,9 @@ static void d3d8_free_overlay(d3d8_video_t *d3d, overlay_t *overlay)
    tex = overlay->tex;
    if (tex)
       IDirect3DTexture8_Release(tex);
-   d3d8_vertex_buffer_free(overlay->vert_buf, NULL);
+   if (overlay->vert_buf)
+      IDirect3DVertexBuffer8_Release(overlay->vert_buf);
+   overlay->vert_buf = NULL;
 }
 
 static void d3d8_deinitialize(d3d8_video_t *d3d)
@@ -468,12 +499,24 @@ static void d3d8_deinitialize(d3d8_video_t *d3d)
       free(chain);
    }
    d3d->renderchain_data    = NULL;
-   d3d8_vertex_buffer_free(d3d->menu_display.buffer, d3d->menu_display.decl);
+   IDirect3DVertexBuffer8_Release(d3d->menu_display.buffer);
    d3d->menu_display.buffer = NULL;
    d3d->menu_display.decl   = NULL;
 }
 
 #define FS_PRESENTINTERVAL(pp) ((pp)->FullScreen_PresentationInterval)
+
+static INLINE bool d3d8_get_adapter_display_mode(
+      LPDIRECT3D8 d3d,
+      unsigned idx,
+      void *display_mode)
+{
+   if (d3d &&
+         SUCCEEDED(IDirect3D8_GetAdapterDisplayMode(
+               d3d, idx, (D3DDISPLAYMODE*)display_mode)))
+      return true;
+   return false;
+}
 
 static D3DFORMAT d3d8_get_color_format_backbuffer(bool rgb32, bool windowed)
 {
@@ -840,7 +883,7 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
       if (!d3d8_reset(d3d->dev, &d3dpp))
       {
          d3d8_deinitialize(d3d);
-         d3d8_device_free(NULL, g_pD3D8);
+         IDirect3D8_Release(g_pD3D8);
          g_pD3D8 = NULL;
 
          ret = d3d8_init_base(d3d, info);
@@ -888,8 +931,7 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
          d3d->dev, d3d->menu_display.size * sizeof(Vertex),
          D3DUSAGE_WRITEONLY,
          D3DFVF_XYZ | D3DFVF_TEX1 | D3DFVF_DIFFUSE,
-         D3DPOOL_DEFAULT,
-         NULL);
+         D3DPOOL_DEFAULT);
 
    if (!d3d->menu_display.buffer)
       return false;
@@ -1234,8 +1276,9 @@ static void d3d8_free(void *data)
    if (!string_is_empty(d3d->shader_path))
       free(d3d->shader_path);
 
+   IDirect3DDevice8_Release(d3d->dev);
+   IDirect3D8_Release(g_pD3D8);
    d3d->shader_path = NULL;
-   d3d8_device_free(d3d->dev, g_pD3D8);
    d3d->dev         = NULL;
    g_pD3D8          = NULL;
 
@@ -1320,8 +1363,8 @@ static bool d3d8_overlay_load(void *data,
       if (!overlay->tex)
          return false;
 
-      if (d3d8_lock_rectangle(overlay->tex, 0, &d3dlr,
-               NULL, 0, D3DLOCK_NOSYSLOCK))
+      if (IDirect3DTexture8_LockRect(overlay->tex, 0,
+               &d3dlr, NULL, D3DLOCK_NOSYSLOCK) == D3D_OK)
       {
          uint32_t       *dst    = (uint32_t*)(d3dlr.pBits);
          const uint32_t *src    = images[i].pixels;
@@ -1566,8 +1609,8 @@ static void d3d8_set_menu_texture_frame(void *data,
 
    d3d->menu->alpha_mod = alpha;
 
-   if (d3d8_lock_rectangle(d3d->menu->tex, 0, &d3dlr,
-            NULL, 0, D3DLOCK_NOSYSLOCK))
+   if (IDirect3DTexture8_LockRect(d3d->menu->tex,
+            0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK) == D3D_OK)
    {
       unsigned h, w;
 
@@ -1644,8 +1687,8 @@ static void d3d8_video_texture_load_d3d(
    if (!tex)
       return;
 
-   if (d3d8_lock_rectangle(tex, 0, &d3dlr,
-            NULL, 0, D3DLOCK_NOSYSLOCK))
+   if (IDirect3DTexture8_LockRect(tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK) ==
+         D3D_OK)
    {
       unsigned i;
       uint32_t       *dst = (uint32_t*)(d3dlr.pBits);

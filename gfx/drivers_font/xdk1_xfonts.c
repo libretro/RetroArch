@@ -85,6 +85,7 @@ static void xfonts_render_msg(
    settings_t *settings  = config_get_ptr();
    float video_msg_pos_x = settings->floats.video_msg_pos_x;
    float video_msg_pos_y = settings->floats.video_msg_pos_y;
+   LPDIRECT3DDEVICE8 dev = xfonts->d3d->dev;
 
    if (params)
    {
@@ -97,8 +98,9 @@ static void xfonts_render_msg(
       y = video_msg_pos_y;
    }
 
-   d3d8_device_get_backbuffer(xfonts->d3d->dev,
-         -1, 0, D3DBACKBUFFER_TYPE_MONO, &xfonts->surf);
+   IDirect3DDevice8_GetBackBuffer(dev, -1,
+         D3DBACKBUFFER_TYPE_MONO,
+         (LPDIRECT3DSURFACE8*)&xfonts->surf);
 
    wc = utf8_to_utf16_string_alloc(msg);
 
@@ -113,7 +115,7 @@ static void xfonts_render_msg(
 #endif
       free(wc);
    }
-   d3d8_surface_free(xfonts->surf);
+   IDirect3DSurface8_Release((LPDIRECT3DSURFACE8)xfonts->surf);
 }
 
 font_renderer_t d3d_xdk1_font = {

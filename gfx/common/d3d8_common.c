@@ -216,15 +216,6 @@ void *d3d8_texture_new(LPDIRECT3DDEVICE8 dev,
    return buf;
 }
 
-void d3d8_frame_postprocess(void *data)
-{
-#if defined(_XBOX)
-   global_t        *global = global_get_ptr();
-   D3DDevice_SetFlickerFilter(global->console.screen.flicker_filter_index);
-   D3DDevice_SetSoftDisplayFilter(global->console.softfilter_enable);
-#endif
-}
-
 static bool d3d8_reset_internal(LPDIRECT3DDEVICE8 dev,
       D3DPRESENT_PARAMETERS *d3dpp
       )
