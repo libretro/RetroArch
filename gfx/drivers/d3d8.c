@@ -194,8 +194,8 @@ static void d3d8_blit_to_texture(
 
    if (chain->last_width != width || chain->last_height != height)
    {
-      if (IDirect3DTexture8_LockRect(tex, level, lr, NULL, D3DLOCK_NOSYSLOCK) ==
-            D3D_OK)
+      if (IDirect3DTexture8_LockRect(tex, 0, lr,
+               NULL, D3DLOCK_NOSYSLOCK) == D3D_OK)
       {
          memset(lr->pBits, 0, chain->tex_h * lr->Pitch);
          IDirect3DTexture8_UnlockRect((LPDIRECT3DTEXTURE8)tex, 0);
@@ -261,7 +261,7 @@ static void d3d8_render(
 static INLINE void *d3d8_vertex_buffer_new(
       LPDIRECT3DDEVICE8 dev,
       unsigned length, unsigned usage,
-      unsigned fvf, D3DPOOL pool, void *handle)
+      unsigned fvf, D3DPOOL pool)
 {
    void              *buf = NULL;
    if (FAILED(IDirect3DDevice8_CreateVertexBuffer(
