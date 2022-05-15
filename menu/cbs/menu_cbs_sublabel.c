@@ -1613,15 +1613,22 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
 
    if (status)
    {
-      snprintf(buf, sizeof(buf), "%s: %s",
+      snprintf(buf, sizeof(buf), "%s: %s\n",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATUS), status);
       strlcat(s, buf, len);
    }
+
+   snprintf(buf, sizeof(buf), "%s: %s",
+      msg_hash_to_str(MSG_NETPLAY_CHAT_SUPPORTED),
+      msg_hash_to_str((client->protocol >= 6) ?
+         MENU_ENUM_LABEL_VALUE_YES :
+         MENU_ENUM_LABEL_VALUE_NO));
+   strlcat(s, buf, len);
+
    if (client->ping >= 0)
    {
-      if (*s)
-         strlcat(s, "\n", len);
-      snprintf(buf, sizeof(buf), "Ping: %u", (unsigned)client->ping);
+      snprintf(buf, sizeof(buf), "\nPing: %u",
+         (unsigned)client->ping);
       strlcat(s, buf, len);
    }
 
