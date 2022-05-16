@@ -272,6 +272,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
                posY:(float)posY
             aligned:(unsigned)aligned
 {
+   const struct font_glyph* glyph_q;
    const char  *msg_end = msg + length;
    int                x = (int)roundf(posX * _driver.viewport->full_width);
    int                y = (int)roundf((1.0f - posY) * _driver.viewport->full_height);
