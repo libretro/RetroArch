@@ -101,6 +101,13 @@ void *d3d9_vertex_buffer_new(void *dev,
 void d3d9_vertex_buffer_free(void *vertex_data, void *vertex_declaration);
 
 void *d3d9_texture_new(void *dev,
+      unsigned width, unsigned height,
+      unsigned miplevels, unsigned usage, INT32 format,
+      INT32 pool, unsigned filter, unsigned mipfilter,
+      INT32 color_key, void *src_info,
+      PALETTEENTRY *palette, bool want_mipmap);
+
+void *d3d9_texture_new_from_file(void *dev,
       const char *path, unsigned width, unsigned height,
       unsigned miplevels, unsigned usage, INT32 format,
       INT32 pool, unsigned filter, unsigned mipfilter,

@@ -254,8 +254,28 @@ void d3d9_deinitialize_symbols(void)
 #endif
 }
 
-void *d3d9_texture_new(void *_dev,
+void *d3d9_texture_new_from_file(void *_dev,
       const char *path, unsigned width, unsigned height,
+      unsigned miplevels, unsigned usage, INT32 format,
+      INT32 pool, unsigned filter, unsigned mipfilter,
+      INT32 color_key, void *src_info_data,
+      PALETTEENTRY *palette, bool want_mipmap)
+{
+#ifdef HAVE_D3DX
+   LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
+   void *buf             = NULL;
+   if (SUCCEEDED(D3D9CreateTextureFromFile((LPDIRECT3DDEVICE9)dev,
+               path, width, height, miplevels, usage, format,
+               (D3DPOOL)pool, filter, mipfilter, color_key,
+               (D3DXIMAGE_INFO*)src_info_data,
+               palette, (struct IDirect3DTexture9**)&buf)))
+      return buf;
+#endif
+   return NULL;
+}
+
+void *d3d9_texture_new(void *_dev,
+      unsigned width, unsigned height,
       unsigned miplevels, unsigned usage, INT32 format,
       INT32 pool, unsigned filter, unsigned mipfilter,
       INT32 color_key, void *src_info_data,
@@ -263,26 +283,10 @@ void *d3d9_texture_new(void *_dev,
 {
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
    void *buf             = NULL;
-
-   if (path)
-   {
-#ifdef HAVE_D3DX
-      void *buf  = NULL;
-      if (SUCCEEDED(D3D9CreateTextureFromFile((LPDIRECT3DDEVICE9)dev,
-                  path, width, height, miplevels, usage, format,
-                  (D3DPOOL)pool, filter, mipfilter, color_key,
-                  (D3DXIMAGE_INFO*)src_info_data,
-                  palette, (struct IDirect3DTexture9**)&buf)))
-         return buf;
-#endif
-      return NULL;
-   }
-
 #ifndef _XBOX
    if (want_mipmap)
       usage |= D3DUSAGE_AUTOGENMIPMAP;
 #endif
-
    if (FAILED(IDirect3DDevice9_CreateTexture(dev,
                width, height, miplevels, usage,
                (D3DFORMAT)format,
@@ -1147,7 +1151,7 @@ void d3d9_set_menu_texture_frame(void *data,
    {
       IDirect3DTexture9_Release((LPDIRECT3DTEXTURE9)d3d->menu->tex);
 
-      d3d->menu->tex = d3d9_texture_new(d3d->dev, NULL,
+      d3d->menu->tex = d3d9_texture_new(d3d->dev,
             width, height, 1,
             0, D3D9_ARGB8888_FORMAT,
             D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
@@ -1239,7 +1243,7 @@ static void d3d9_video_texture_load_d3d(
       (info->type == TEXTURE_FILTER_MIPMAP_NEAREST))
       want_mipmap        = true;
 
-   tex = (LPDIRECT3DTEXTURE9)d3d9_texture_new(d3d->dev, NULL,
+   tex = (LPDIRECT3DTEXTURE9)d3d9_texture_new(d3d->dev,
                ti->width, ti->height, 0,
                usage, D3D9_ARGB8888_FORMAT,
                D3DPOOL_MANAGED, 0, 0, 0,
@@ -1574,7 +1578,7 @@ static bool d3d9_overlay_load(void *data,
       unsigned height    = images[i].height;
       overlay_t *overlay = (overlay_t*)&d3d->overlays[i];
 
-      overlay->tex       = d3d9_texture_new(d3d->dev, NULL,
+      overlay->tex       = d3d9_texture_new(d3d->dev,
                   width, height, 1,
                   0,
                   D3D9_ARGB8888_FORMAT,

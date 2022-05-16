@@ -322,7 +322,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
          return false;
 
       chain->prev.tex[i] = (LPDIRECT3DTEXTURE9)
-         d3d9_texture_new(chain->dev, NULL,
+         d3d9_texture_new(chain->dev,
             info->tex_w, info->tex_h, 1, 0, fmt,
             D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
 

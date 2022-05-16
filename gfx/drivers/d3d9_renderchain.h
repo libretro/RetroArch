@@ -111,7 +111,6 @@ static INLINE bool d3d9_renderchain_add_pass(d3d9_renderchain_t *chain,
 
    tex = (LPDIRECT3DTEXTURE9)d3d9_texture_new(
          chain->dev,
-         NULL,
          info->tex_w,
          info->tex_h,
          1,
@@ -141,7 +140,7 @@ static INLINE bool d3d9_renderchain_add_lut(d3d9_renderchain_t *chain,
 {
    struct lut_info info;
    LPDIRECT3DTEXTURE9 lut    = (LPDIRECT3DTEXTURE9)
-      d3d9_texture_new(
+      d3d9_texture_new_from_file(
             chain->dev,
             path,
             D3D_DEFAULT_NONPOW2,
@@ -283,7 +282,7 @@ static INLINE bool d3d9_renderchain_set_pass_size(
       pass->info.tex_h = height;
       pass->pool       = D3DPOOL_DEFAULT;
       pass->tex        = (LPDIRECT3DTEXTURE9)
-         d3d9_texture_new(dev, NULL,
+         d3d9_texture_new(dev,
             width, height, 1,
             D3DUSAGE_RENDERTARGET,
             pass2->info.pass->fbo.fp_fbo ?
