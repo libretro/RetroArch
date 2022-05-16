@@ -90,17 +90,17 @@ typedef struct Vertex
 /* Clear target surface */
 #define D3D_COMM_CLEAR_TARGET            0x00000001l
 
-void *d3d_matrix_transpose(void *_pout, const void *_pm);
+void d3d_matrix_transpose(void *_pout, const void *_pm);
 
-void *d3d_matrix_identity(void *_pout);
+void d3d_matrix_identity(void *_pout);
 
-void *d3d_matrix_ortho_off_center_lh(void *_pout,
+void d3d_matrix_ortho_off_center_lh(void *_pout,
       float l, float r, float b, float t, float zn, float zf);
 
-void *d3d_matrix_multiply(void *_pout,
+void d3d_matrix_multiply(void *_pout,
       const void *_pm1, const void *_pm2);
 
-void *d3d_matrix_rotation_z(void *_pout, float angle);
+void d3d_matrix_rotation_z(void *_pout, float angle);
 
 int32_t d3d_translate_filter(unsigned type);
 

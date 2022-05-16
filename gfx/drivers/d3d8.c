@@ -859,7 +859,9 @@ static void d3d8_set_viewport(void *data,
    d3d->final_viewport.MinZ   = 0.0f;
    d3d->final_viewport.MaxZ   = 0.0f;
 
+   d3d_matrix_identity(&ortho);
    d3d_matrix_ortho_off_center_lh(&ortho, 0, 1, 0, 1, 0.0f, 1.0f);
+   d3d_matrix_identity(&rot);
    d3d_matrix_rotation_z(&rot, d3d->dev_rotation * (M_PI / 2.0));
    d3d_matrix_multiply(&proj, &ortho, &rot);
    d3d_matrix_transpose(&d3d->mvp, &ortho);
@@ -949,6 +951,7 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
    if (!d3d->menu_display.buffer)
       return false;
 
+   d3d_matrix_identity(&d3d->mvp_transposed);
    d3d_matrix_ortho_off_center_lh(&d3d->mvp_transposed, 0, 1, 0, 1, 0, 1);
    d3d_matrix_transpose(&d3d->mvp, &d3d->mvp_transposed);
 
