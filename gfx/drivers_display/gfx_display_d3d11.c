@@ -212,24 +212,24 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
          if (!d3d11->menu_pipeline_vbo)
          {
             D3D11_BUFFER_DESC desc;
-            D3D11_SUBRESOURCE_DATA vertex_data;
-            UINT stride                  = 2 * sizeof(float);
-            UINT offset                  = 0;
+            desc.Usage               = D3D11_USAGE_IMMUTABLE;
+            desc.ByteWidth           = ca->coords.vertices * 2 * sizeof(float);
+            desc.BindFlags           = D3D11_BIND_VERTEX_BUFFER;
+            desc.CPUAccessFlags      = 0;
+            desc.MiscFlags           = 0;
+            desc.StructureByteStride = 0;
 
-            desc.ByteWidth               = ca->coords.vertices 
-                                           * 2 * sizeof(float);
-            desc.Usage                   = D3D11_USAGE_IMMUTABLE;
-            desc.BindFlags               = D3D11_BIND_VERTEX_BUFFER;
-            desc.CPUAccessFlags          = 0;
-            desc.MiscFlags               = 0;
-            desc.StructureByteStride     = 0;
-
-            vertex_data.pSysMem          = ca->coords.vertex;
-            vertex_data.SysMemPitch      = 0;
-            vertex_data.SysMemSlicePitch = 0;
-            D3D11CreateBuffer(d3d11->device, &desc, &vertex_data,
-                  &d3d11->menu_pipeline_vbo);
-
+            {
+               D3D11_SUBRESOURCE_DATA vertex_data;
+               vertex_data.pSysMem          = ca->coords.vertex;
+               vertex_data.SysMemPitch      = 0;
+               vertex_data.SysMemSlicePitch = 0;
+               D3D11CreateBuffer(d3d11->device, &desc, &vertex_data, &d3d11->menu_pipeline_vbo);
+            }
+         }
+         {
+            UINT stride = 2 * sizeof(float);
+            UINT offset = 0;
             d3d11->context->lpVtbl->IASetVertexBuffers(
                   d3d11->context, 0, 1,
                   &d3d11->menu_pipeline_vbo, &stride, &offset);
