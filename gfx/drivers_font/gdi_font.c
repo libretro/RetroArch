@@ -35,7 +35,6 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
-
 typedef struct
 {
    const font_renderer_driver_t *gdi_font_driver;
@@ -96,7 +95,6 @@ static void gdi_render_msg(
    unsigned newX, newY, newDropX, newDropY;
    unsigned align;
    unsigned red, green, blue;
-   unsigned drop_red, drop_green, drop_blue;
    gdi_t *gdi                       = (gdi_t*)userdata;
    gdi_raster_t *font               = (gdi_raster_t*)data;
    unsigned width                   = gdi->video_width;
@@ -168,8 +166,8 @@ static void gdi_render_msg(
          break;
    }
 
-   newY = height - (y * height * scale) - textSize.cy;
-   newDropY = height - (drop_y * height * scale) - textSize.cy;
+   newY               = height - (y * height * scale)      - textSize.cy;
+   newDropY           = height - (drop_y * height * scale) - textSize.cy;
 
    font->gdi->bmp_old = (HBITMAP)SelectObject(font->gdi->memDC, font->gdi->bmp);
 
@@ -180,10 +178,10 @@ static void gdi_render_msg(
 
    if (drop_x || drop_y)
    {
-      float dark_alpha = drop_alpha;
-      drop_red   = red * drop_mod * dark_alpha;
-      drop_green = green * drop_mod * dark_alpha;
-      drop_blue  = blue * drop_mod * dark_alpha;
+      float    dark_alpha = drop_alpha;
+      unsigned drop_red   = red * drop_mod * dark_alpha;
+      unsigned drop_green = green * drop_mod * dark_alpha;
+      unsigned drop_blue  = blue * drop_mod * dark_alpha;
 
       SetTextColor(font->gdi->memDC, RGB(drop_red, drop_green, drop_blue));
 

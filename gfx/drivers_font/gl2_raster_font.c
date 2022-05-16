@@ -233,6 +233,7 @@ error:
 static int gl_get_message_width(void *data, const char *msg,
       unsigned msg_len, float scale)
 {
+   const struct font_glyph* glyph_q = NULL;
    gl_raster_t *font   = (gl_raster_t*)data;
    const char* msg_end = msg + msg_len;
    int delta_x         = 0;
@@ -243,16 +244,18 @@ static int gl_get_message_width(void *data, const char *msg,
          || !font->font_data )
       return 0;
 
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+
    while (msg < msg_end)
    {
+      const struct font_glyph *glyph;
       unsigned code                  = utf8_walk(&msg);
-      const struct font_glyph *glyph = font->font_driver->get_glyph(
-            font->font_data, code);
 
-      if (!glyph) /* Do something smarter here ... */
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
-      if (!glyph)
-         continue;
+      /* Do something smarter here ... */
+      if (!(glyph = font->font_driver->get_glyph(
+            font->font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
 
       delta_x += glyph->advance_x;
    }
@@ -286,6 +289,7 @@ static void gl_raster_font_render_line(
 {
    unsigned i;
    struct video_coords coords;
+   const struct font_glyph* glyph_q = NULL;
    GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
@@ -311,21 +315,22 @@ static void gl_raster_font_render_line(
          break;
    }
 
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+
    while (msg < msg_end)
    {
       i = 0;
       while ((i < MAX_MSG_LEN_CHUNK) && (msg < msg_end))
       {
+         const struct font_glyph *glyph;
          int off_x, off_y, tex_x, tex_y, width, height;
          unsigned                  code = utf8_walk(&msg);
-         const struct font_glyph *glyph = font->font_driver->get_glyph(
-               font->font_data, code);
 
-         if (!glyph) /* Do something smarter here ... */
-            glyph = font->font_driver->get_glyph(font->font_data, '?');
-
-         if (!glyph)
-            continue;
+         /* Do something smarter here ... */
+         if (!(glyph = font->font_driver->get_glyph(
+               font->font_data, code)))
+            if (!(glyph = glyph_q))
+               continue;
 
          off_x  = glyph->draw_offset_x;
          off_y  = glyph->draw_offset_y;
@@ -527,12 +532,9 @@ static const struct font_glyph *gl_raster_font_get_glyph(
       void *data, uint32_t code)
 {
    gl_raster_t *font = (gl_raster_t*)data;
-
-   if (!font || !font->font_driver)
-      return NULL;
-   if (!font->font_driver->ident)
-       return NULL;
-   return font->font_driver->get_glyph((void*)font->font_driver, code);
+   if (font && font->font_driver && font->font_driver->ident)
+      return font->font_driver->get_glyph((void*)font->font_driver, code);
+   return NULL;
 }
 
 static void gl_raster_font_flush_block(unsigned width, unsigned height,
@@ -569,11 +571,9 @@ static void gl_raster_font_bind_block(void *data, void *userdata)
 static bool gl_get_line_metrics(void* data, struct font_line_metrics **metrics)
 {
    gl_raster_t *font   = (gl_raster_t*)data;
-
-   if (!font || !font->font_driver || !font->font_data)
-      return -1;
-
-   return font->font_driver->get_line_metrics(font->font_data, metrics);
+   if (font && font->font_driver && font->font_data)
+      return font->font_driver->get_line_metrics(font->font_data, metrics);
+   return -1;
 }
 
 font_renderer_t gl_raster_font = {

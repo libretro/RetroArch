@@ -42,19 +42,16 @@ typedef struct
 static INLINE void vulkan_raster_font_update_glyph(
       vulkan_raster_t *font, const struct font_glyph *glyph)
 {
-   if(font->atlas->dirty)
+   unsigned row;
+   for (row = glyph->atlas_offset_y; row < (glyph->atlas_offset_y + glyph->height); row++)
    {
-      unsigned row;
-      for (row = glyph->atlas_offset_y; row < (glyph->atlas_offset_y + glyph->height); row++)
-      {
-         uint8_t *src = font->atlas->buffer + row * font->atlas->width + glyph->atlas_offset_x;
-         uint8_t *dst = (uint8_t*)font->texture.mapped + row * font->texture.stride + glyph->atlas_offset_x;
-         memcpy(dst, src, glyph->width);
-      }
-
-      font->atlas->dirty = false;
-      font->needs_update = true;
+      uint8_t *src = font->atlas->buffer + row * font->atlas->width + glyph->atlas_offset_x;
+      uint8_t *dst = (uint8_t*)font->texture.mapped + row * font->texture.stride + glyph->atlas_offset_x;
+      memcpy(dst, src, glyph->width);
    }
+
+   font->atlas->dirty = false;
+   font->needs_update = true;
 }
 
 
@@ -128,6 +125,7 @@ static void *vulkan_raster_font_init_font(void *data,
 static int vulkan_get_message_width(void *data, const char *msg,
       unsigned msg_len, float scale)
 {
+   const struct font_glyph* glyph_q = NULL;
    vulkan_raster_t *font = (vulkan_raster_t*)data;
    const char* msg_end   = msg + msg_len;
    int delta_x           = 0;
@@ -138,20 +136,22 @@ static int vulkan_get_message_width(void *data, const char *msg,
          || !font->font_data )
       return 0;
 
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+
    while (msg < msg_end)
    {
+      const struct font_glyph *glyph;
       uint32_t code                  = utf8_walk(&msg);
-      const struct font_glyph *glyph = font->font_driver->get_glyph(
-            font->font_data, code);
 
-      if (!glyph) /* Do something smarter here ... */
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
+      /* Do something smarter here ... */
+      if (!(glyph = font->font_driver->get_glyph(
+                  font->font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
 
-      if (glyph)
-      {
+      if(font->atlas->dirty)
          vulkan_raster_font_update_glyph(font, glyph);
-         delta_x += glyph->advance_x;
-      }
+      delta_x += glyph->advance_x;
    }
 
    return delta_x * scale;
@@ -163,6 +163,7 @@ static void vulkan_raster_font_render_line(
       float pos_y, unsigned text_align)
 {
    struct vk_color vk_color;
+   const struct font_glyph* glyph_q = NULL;
    vk_t *vk             = font->vk;
    const char* msg_end  = msg + msg_len;
    int x                = roundf(pos_x * vk->vp.width);
@@ -189,19 +190,22 @@ static void vulkan_raster_font_render_line(
          break;
    }
 
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+
    while (msg < msg_end)
    {
+      const struct font_glyph *glyph;
       int off_x, off_y, tex_x, tex_y, width, height;
       unsigned code                  = utf8_walk(&msg);
-      const struct font_glyph *glyph =
-         font->font_driver->get_glyph(font->font_data, code);
 
-      if (!glyph) /* Do something smarter here ... */
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
-      if (!glyph)
-         continue;
+      /* Do something smarter here ... */
+      if (!(glyph =
+               font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
 
-      vulkan_raster_font_update_glyph(font, glyph);
+      if(font->atlas->dirty)
+         vulkan_raster_font_update_glyph(font, glyph);
 
       off_x  = glyph->draw_offset_x;
       off_y  = glyph->draw_offset_y;
@@ -456,16 +460,13 @@ static const struct font_glyph *vulkan_raster_font_get_glyph(
    const struct font_glyph* glyph;
    vulkan_raster_t *font = (vulkan_raster_t*)data;
 
-   if (!font || !font->font_driver)
+   if (!font || !font->font_driver || !font->font_driver->ident)
       return NULL;
-   if (!font->font_driver->ident)
-       return NULL;
 
    glyph = font->font_driver->get_glyph((void*)font->font_driver, code);
 
-   if(glyph)
+   if(glyph && font->atlas->dirty)
       vulkan_raster_font_update_glyph(font, glyph);
-
    return glyph;
 }
 
@@ -473,11 +474,9 @@ static bool vulkan_get_line_metrics(void* data,
       struct font_line_metrics **metrics)
 {
    vulkan_raster_t *font = (vulkan_raster_t*)data;
-
-   if (!font || !font->font_driver || !font->font_data)
-      return -1;
-
-   return font->font_driver->get_line_metrics(font->font_data, metrics);
+   if (font && font->font_driver && font->font_data)
+      return font->font_driver->get_line_metrics(font->font_data, metrics);
+   return -1;
 }
 
 font_renderer_t vulkan_raster_font = {

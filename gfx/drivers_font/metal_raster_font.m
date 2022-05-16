@@ -206,18 +206,18 @@
 - (int)getWidthForMessage:(const char *)msg length:(NSUInteger)length scale:(float)scale
 {
    int delta_x = 0;
+   const struct font_glyph* glyph_q = _font_driver->get_glyph(_font_data, '?');
 
    for (NSUInteger i = 0; i < length; i++)
    {
-      const struct font_glyph *glyph = _font_driver->get_glyph(_font_data, (uint8_t)msg[i]);
-      if (!glyph) /* Do something smarter here ... */
-         glyph = _font_driver->get_glyph(_font_data, '?');
+      const struct font_glyph *glyph;
+      /* Do something smarter here ... */
+      if (!(glyph = _font_driver->get_glyph(_font_data, (uint8_t)msg[i])))
+         if (!(glyph = glyph_q))
+            continue;
 
-      if (glyph)
-      {
-         [self updateGlyph:glyph];
-         delta_x += glyph->advance_x;
-      }
+      [self updateGlyph:glyph];
+      delta_x += glyph->advance_x;
    }
 
    return (int)(delta_x * scale);
@@ -238,9 +238,9 @@
 }
 
 static INLINE void write_quad6(SpriteVertex *pv,
-                               float x, float y, float width, float height,
-                               float tex_x, float tex_y, float tex_width, float tex_height,
-                               const vector_float4 *color)
+      float x, float y, float width, float height,
+      float tex_x, float tex_y, float tex_width, float tex_height,
+      const vector_float4 *color)
 {
    unsigned i;
    static const float strip[2 * 6] = {
@@ -254,11 +254,13 @@ static INLINE void write_quad6(SpriteVertex *pv,
 
    for (i = 0; i < 6; i++)
    {
-      pv[i].position = simd_make_float2(x + strip[2 * i + 0] * width,
-                                        y + strip[2 * i + 1] * height);
-      pv[i].texCoord = simd_make_float2(tex_x + strip[2 * i + 0] * tex_width,
-                                        tex_y + strip[2 * i + 1] * tex_height);
-      pv[i].color = *color;
+      pv[i].position = simd_make_float2(
+            x + strip[2 * i + 0] * width,
+            y + strip[2 * i + 1] * height);
+      pv[i].texCoord = simd_make_float2(
+            tex_x + strip[2 * i + 0] * tex_width,
+            tex_y + strip[2 * i + 1] * tex_height);
+      pv[i].color    = *color;
    }
 }
 
@@ -270,14 +272,14 @@ static INLINE void write_quad6(SpriteVertex *pv,
                posY:(float)posY
             aligned:(unsigned)aligned
 {
-   const char *msg_end = msg + length;
-   int x = (int)roundf(posX * _driver.viewport->full_width);
-   int y = (int)roundf((1.0f - posY) * _driver.viewport->full_height);
-   int delta_x = 0;
-   int delta_y = 0;
+   const char  *msg_end = msg + length;
+   int                x = (int)roundf(posX * _driver.viewport->full_width);
+   int                y = (int)roundf((1.0f - posY) * _driver.viewport->full_height);
+   int          delta_x = 0;
+   int          delta_y = 0;
    float inv_tex_size_x = 1.0f / _texture.width;
    float inv_tex_size_y = 1.0f / _texture.height;
-   float inv_win_width = 1.0f / _driver.viewport->full_width;
+   float inv_win_width  = 1.0f / _driver.viewport->full_width;
    float inv_win_height = 1.0f / _driver.viewport->full_height;
 
    switch (aligned)
@@ -295,27 +297,27 @@ static INLINE void write_quad6(SpriteVertex *pv,
    }
 
    SpriteVertex *v = (SpriteVertex *)_vert.contents;
-   v += _offset + _vertices;
+   v              += _offset + _vertices;
+   glyph_q         = _font_driver->get_glyph(_font_data, '?');
 
    while (msg < msg_end)
    {
+      int off_x, off_y, tex_x, tex_y, width, height;
+      const struct font_glyph *glyph;
       unsigned code = utf8_walk(&msg);
-      const struct font_glyph *glyph = _font_driver->get_glyph(_font_data, code);
 
-      if (!glyph) /* Do something smarter here ... */
-         glyph = _font_driver->get_glyph(_font_data, '?');
-
-      if (!glyph)
-         continue;
+      /* Do something smarter here .. */
+      if (!(glyph = _font_driver->get_glyph(_font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
 
       [self updateGlyph:glyph];
 
-      int off_x, off_y, tex_x, tex_y, width, height;
-      off_x = glyph->draw_offset_x;
-      off_y = glyph->draw_offset_y;
-      tex_x = glyph->atlas_offset_x;
-      tex_y = glyph->atlas_offset_y;
-      width = glyph->width;
+      off_x  = glyph->draw_offset_x;
+      off_y  = glyph->draw_offset_y;
+      tex_x  = glyph->atlas_offset_x;
+      tex_y  = glyph->atlas_offset_y;
+      width  = glyph->width;
       height = glyph->height;
 
       write_quad6(v,
@@ -330,10 +332,10 @@ static INLINE void write_quad6(SpriteVertex *pv,
                   &color);
 
       _vertices += 6;
-      v += 6;
+      v         += 6;
 
-      delta_x += glyph->advance_x;
-      delta_y += glyph->advance_y;
+      delta_x   += glyph->advance_x;
+      delta_y   += glyph->advance_y;
    }
 }
 
@@ -368,6 +370,8 @@ static INLINE void write_quad6(SpriteVertex *pv,
                  posY:(float)posY
               aligned:(unsigned)aligned
 {
+   int lines = 0;
+   float line_height;
    struct font_line_metrics *line_metrics = NULL;
 
    /* If font line metrics are not supported just draw as usual */
@@ -378,8 +382,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
       return;
    }
 
-   int lines = 0;
-   float line_height = line_metrics->height * scale / height;
+   line_height = line_metrics->height * scale / height;
 
    for (;;)
    {
@@ -504,8 +507,8 @@ static INLINE void write_quad6(SpriteVertex *pv,
 static void metal_raster_font_free_font(void *data, bool is_threaded);
 
 static void *metal_raster_font_init_font(void *data,
-                                         const char *font_path, float font_size,
-                                         bool is_threaded)
+      const char *font_path, float font_size,
+      bool is_threaded)
 {
    MetalRaster *r = [[MetalRaster alloc] initWithDriver:(__bridge MetalDriver *)data fontPath:font_path fontSize:(unsigned)font_size];
 
@@ -535,11 +538,11 @@ static void metal_raster_font_render_msg(
       void *data, const char *msg,
       const struct font_params *params)
 {
-   MetalRaster *r  = (__bridge MetalRaster *)data;
-   MetalDriver *d  = (__bridge MetalDriver *)userdata;
+   MetalRaster *r       = (__bridge MetalRaster *)data;
+   MetalDriver *d       = (__bridge MetalDriver *)userdata;
    video_viewport_t *vp = [d viewport];
-   unsigned width  = vp->full_width;
-   unsigned height = vp->full_height;
+   unsigned width       = vp->full_width;
+   unsigned height      = vp->full_height;
    [r renderMessage:msg width:width height:height params:params];
 }
 

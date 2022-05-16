@@ -202,6 +202,7 @@ error:
 static int rsx_font_get_message_width(void *data, const char *msg,
       unsigned msg_len, float scale)
 {
+   const struct font_glyph* glyph_q = NULL;
    rsx_font_t *font   = (rsx_font_t*)data;
    const char* msg_end = msg + msg_len;
    int delta_x         = 0;
@@ -212,16 +213,18 @@ static int rsx_font_get_message_width(void *data, const char *msg,
          || !font->font_data )
       return 0;
 
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+
    while (msg < msg_end)
    {
+      const struct font_glyph *glyph;
       unsigned code                  = utf8_walk(&msg);
-      const struct font_glyph *glyph = font->font_driver->get_glyph(
-            font->font_data, code);
 
-      if (!glyph) /* Do something smarter here ... */
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
-      if (!glyph)
-         continue;
+      /* Do something smarter here ... */
+      if (!(glyph = font->font_driver->get_glyph(
+                  font->font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
 
       delta_x += glyph->advance_x;
    }
@@ -232,17 +235,19 @@ static int rsx_font_get_message_width(void *data, const char *msg,
 static void rsx_font_draw_vertices(rsx_font_t *font,
       const video_coords_t *coords)
 {
+   unsigned i;
+   const float *vertex              = coords->vertex;
+   const float *tex_coord           = coords->tex_coord;
+   const float *color               = coords->color;
+
    if (font->atlas->dirty)
    {
       rsx_font_upload_atlas(font);
       font->atlas->dirty   = false;
    }
 
-   const float *vertex              = coords->vertex;
-   const float *tex_coord           = coords->tex_coord;
-   const float *color               = coords->color;
-
-   for (u32 i = 0; i < coords->vertices; i++) {
+   for (i = 0; i < coords->vertices; i++)
+   {
       font->vertices[i].x = *vertex++;
       font->vertices[i].y = *vertex++;
       font->vertices[i].z = 0.0f;
@@ -270,6 +275,7 @@ static void rsx_font_render_line(
 {
    unsigned i;
    struct video_coords coords;
+   const struct font_glyph* glyph_q = NULL;
    float font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    float font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
    float font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
@@ -294,21 +300,22 @@ static void rsx_font_render_line(
          break;
    }
 
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+
    while (msg < msg_end)
    {
       i = 0;
       while ((i < MAX_MSG_LEN_CHUNK) && (msg < msg_end))
       {
+         const struct font_glyph *glyph;
          int off_x, off_y, tex_x, tex_y, width, height;
          unsigned                  code = utf8_walk(&msg);
-         const struct font_glyph *glyph = font->font_driver->get_glyph(
-               font->font_data, code);
 
-         if (!glyph) /* Do something smarter here ... */
-            glyph = font->font_driver->get_glyph(font->font_data, '?');
-
-         if (!glyph)
-            continue;
+         /* Do something smarter here ... */
+         if (!(glyph = font->font_driver->get_glyph(
+               font->font_data, code)))
+            if (!(glyph = glyph_q))
+               continue;
 
          off_x  = glyph->draw_offset_x;
          off_y  = glyph->draw_offset_y;
@@ -389,7 +396,8 @@ static void rsx_font_setup_viewport(unsigned width, unsigned height,
 {
    video_driver_set_viewport(width, height, full_screen, false);
 
-  if (font->rsx) {
+  if (font->rsx)
+  {
      rsxSetBlendFunc(font->rsx->context, GCM_SRC_ALPHA, GCM_ONE_MINUS_SRC_ALPHA, GCM_SRC_ALPHA, GCM_ONE_MINUS_SRC_ALPHA);
      rsxSetBlendEquation(font->rsx->context, GCM_FUNC_ADD, GCM_FUNC_ADD);
      rsxSetBlendEnable(font->rsx->context, GCM_TRUE);
@@ -507,10 +515,9 @@ static const struct font_glyph *rsx_font_get_glyph(
       void *data, uint32_t code)
 {
    rsx_font_t *font = (rsx_font_t*)data;
-
-   if (!font || !font->font_driver || !font->font_driver->ident)
-       return NULL;
-   return font->font_driver->get_glyph((void*)font->font_driver, code);
+   if (font && font->font_driver && font->font_driver->ident)
+      return font->font_driver->get_glyph((void*)font->font_driver, code);
+   return NULL;
 }
 
 static void rsx_font_flush_block(unsigned width, unsigned height,
@@ -545,11 +552,9 @@ static void rsx_font_bind_block(void *data, void *userdata)
 static bool rsx_font_get_line_metrics(void* data, struct font_line_metrics **metrics)
 {
    rsx_font_t *font = (rsx_font_t*)data;
-
-   if (!font || !font->font_driver || !font->font_data)
-      return -1;
-
-   return font->font_driver->get_line_metrics(font->font_data, metrics);
+   if (font && font->font_driver && font->font_data)
+      return font->font_driver->get_line_metrics(font->font_data, metrics);
+   return -1;
 }
 
 font_renderer_t rsx_font = {

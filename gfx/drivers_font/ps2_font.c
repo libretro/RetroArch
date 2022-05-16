@@ -103,16 +103,19 @@ static void ps2_font_free_font(void* data, bool is_threaded)
 static int ps2_font_get_message_width(void* data, const char* msg,
                                       unsigned msg_len, float scale)
 {
-   ps2_font_t* font = (ps2_font_t*)data;
-
+   const struct font_glyph* glyph_q = NULL;
    unsigned i;
-   int delta_x = 0;
+   int delta_x      = 0;
+   ps2_font_t* font = (ps2_font_t*)data;
 
    if (!font)
       return 0;
 
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+
    for (i = 0; i < msg_len; i++)
    {
+      const struct font_glyph* glyph;
       const char* msg_tmp            = &msg[i];
       unsigned code                  = utf8_walk(&msg_tmp);
       unsigned skip                  = msg_tmp - &msg[i];
@@ -120,14 +123,11 @@ static int ps2_font_get_message_width(void* data, const char* msg,
       if (skip > 1)
          i += skip - 1;
 
-      const struct font_glyph* glyph =
-         font->font_driver->get_glyph(font->font_data, code);
-
-      if (!glyph) /* Do something smarter here ... */
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
-
-      if (!glyph)
-         continue;
+      /* Do something smarter here ... */
+      if (!(glyph =
+         font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
 
       delta_x += glyph->advance_x;
    }
@@ -143,7 +143,7 @@ static void ps2_font_render_line(
       unsigned width, unsigned height, unsigned text_align)
 {
    unsigned i;
-
+   const struct font_glyph* glyph_q = NULL;
    int x            = roundf(pos_x * width);
    int y            = roundf((1.0f - pos_y) * height);
    int delta_x      = 0;
@@ -170,13 +170,15 @@ static void ps2_font_render_line(
    }
 
    /* We need to >> 1, because GS_SETREG_RGBAQ expect 0x80 as max color */
-   colorA = (int)(((color & 0xFF000000) >> 24) >> 2);
-   colorB = (int)(((color & 0x00FF0000) >> 16) >> 1);
-   colorG = (int)(((color & 0x0000FF00) >> 8) >> 1);
-   colorR = (int)(((color & 0x000000FF) >> 0) >> 1);
+   colorA  = (int)(((color & 0xFF000000) >> 24) >> 2);
+   colorB  = (int)(((color & 0x00FF0000) >> 16) >> 1);
+   colorG  = (int)(((color & 0x0000FF00) >> 8) >> 1);
+   colorR  = (int)(((color & 0x000000FF) >> 0) >> 1);
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
+      const struct font_glyph* glyph;
       int off_x, off_y, tex_x, tex_y, width, height;
       float x1, y1, u1, v1, x2, y2, u2, v2;
       const char* msg_tmp            = &msg[i];
@@ -186,14 +188,11 @@ static void ps2_font_render_line(
       if (skip > 1)
          i += skip - 1;
 
-      const struct font_glyph* glyph =
-         font->font_driver->get_glyph(font->font_data, code);
-
-      if (!glyph) /* Do something smarter here ... */
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
-
-      if (!glyph)
-         continue;
+      /* Do something smarter here ... */
+      if (!(glyph =
+               font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
 
       off_x  = glyph->draw_offset_x;
       off_y  = glyph->draw_offset_y;
@@ -202,17 +201,19 @@ static void ps2_font_render_line(
       width  = glyph->width;
       height = glyph->height;
 
-      /* The -0.5 is needed to achieve pixel perfect. More info here (PS2 uses same logic than Directx 9)
-      *  https://docs.microsoft.com/en-us/windows/win32/direct3d10/d3d10-graphics-programming-guide-resources-coordinates
+      /* The -0.5 is needed to achieve pixel perfect. 
+       * More info here (PS2 uses
+       * same logic as Direct3D 9)
+       * https://docs.microsoft.com/en-us/windows/win32/direct3d10/d3d10-graphics-programming-guide-resources-coordinates
       */
-      x1 = -0.5f + x + (off_x + delta_x) * scale;
-      y1 = -0.5f + y + (off_y + delta_y) * scale;
-      u1 = tex_x;
-      v1 = tex_y;
-      x2 = x1 + width * scale;
-      y2 = y1 + height * scale;
-      u2 = u1 + width;
-      v2 = v1 + height;
+      x1     = -0.5f + x + (off_x + delta_x) * scale;
+      y1     = -0.5f + y + (off_y + delta_y) * scale;
+      u1     = tex_x;
+      v1     = tex_y;
+      x2     = x1 + width * scale;
+      y2     = y1 + height * scale;
+      u2     = u1 + width;
+      v2     = v1 + height;
 
       gsKit_prim_sprite_texture(ps2->gsGlobal, font->texture,
             x1,                /* X1 */
@@ -281,10 +282,8 @@ static void ps2_font_render_msg(
 {
    float x, y, scale, drop_mod, drop_alpha;
    int drop_x, drop_y;
-   unsigned max_glyphs;
    enum text_alignment text_align;
-   unsigned color, color_dark, r, g, b,
-            alpha, r_dark, g_dark, b_dark, alpha_dark;
+   unsigned color, r, g, b, alpha;
    ps2_font_t                * font = (ps2_font_t*)data;
    ps2_video_t                *ps2  = (ps2_video_t*)userdata;
    unsigned width                   = ps2->vp.full_width;
@@ -336,21 +335,15 @@ static void ps2_font_render_msg(
       drop_alpha     = 0.75f;
    }
 
-   max_glyphs        = strlen(msg);
-
-   if (drop_x || drop_y)
-      max_glyphs    *= 2;
-
    gsKit_TexManager_bind(ps2->gsGlobal, font->texture);
 
    if (drop_x || drop_y)
    {
-      r_dark         = r * drop_mod;
-      g_dark         = g * drop_mod;
-      b_dark         = b * drop_mod;
-      alpha_dark     = alpha * drop_alpha;
-      color_dark     = COLOR_ABGR(r_dark, g_dark, b_dark, alpha_dark);
-
+      unsigned r_dark         = r * drop_mod;
+      unsigned g_dark         = g * drop_mod;
+      unsigned b_dark         = b * drop_mod;
+      unsigned alpha_dark     = alpha * drop_alpha;
+      unsigned color_dark     = COLOR_ABGR(r_dark, g_dark, b_dark, alpha_dark);
       ps2_font_render_message(ps2, font, msg, scale, color_dark,
                               x + scale * drop_x / width, y +
                               scale * drop_y / height,
@@ -366,24 +359,17 @@ static const struct font_glyph* ps2_font_get_glyph(
    void* data, uint32_t code)
 {
    ps2_font_t* font = (ps2_font_t*)data;
-
-   if (!font || !font->font_driver)
-      return NULL;
-
-   if (!font->font_driver->ident)
-      return NULL;
-
-   return font->font_driver->get_glyph((void*)font->font_driver, code);
+   if (font && font->font_driver && font->font_driver->ident)
+      return font->font_driver->get_glyph((void*)font->font_driver, code);
+   return NULL;
 }
 
 static bool ps2_font_get_line_metrics(void* data, struct font_line_metrics **metrics)
 {
    ps2_font_t* font = (ps2_font_t*)data;
-
-   if (!font || !font->font_driver || !font->font_data)
-      return -1;
-
-   return font->font_driver->get_line_metrics(font->font_data, metrics);
+   if (font && font->font_driver && font->font_data)
+      return font->font_driver->get_line_metrics(font->font_data, metrics);
+   return -1;
 }
 
 font_renderer_t ps2_font = {

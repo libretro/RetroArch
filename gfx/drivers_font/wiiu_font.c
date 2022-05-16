@@ -56,7 +56,7 @@ static void* wiiu_font_init_font(void* data, const char* font_path,
       return NULL;
    }
 
-   font->atlas = font->font_driver->get_atlas(font->font_data);
+   font->atlas                       = font->font_driver->get_atlas(font->font_data);
    font->texture.surface.width       = font->atlas->width;
    font->texture.surface.height      = font->atlas->height;
    font->texture.surface.depth       = 1;
@@ -64,25 +64,28 @@ static void* wiiu_font_init_font(void* data, const char* font_path,
    font->texture.surface.tileMode    = GX2_TILE_MODE_LINEAR_ALIGNED;
    font->texture.viewNumSlices       = 1;
 
-   font->texture.surface.format   = GX2_SURFACE_FORMAT_UNORM_R8;
-   font->texture.compMap          = GX2_COMP_SEL(_1, _1, _1, _R);
+   font->texture.surface.format      = GX2_SURFACE_FORMAT_UNORM_R8;
+   font->texture.compMap             = GX2_COMP_SEL(_1, _1, _1, _R);
 
    GX2CalcSurfaceSizeAndAlignment(&font->texture.surface);
    GX2InitTextureRegs(&font->texture);
-   font->texture.surface.image = MEM1_alloc(font->texture.surface.imageSize,
-                                 font->texture.surface.alignment);
+   font->texture.surface.image       = MEM1_alloc(
+         font->texture.surface.imageSize,
+         font->texture.surface.alignment);
 
    for (i = 0; (i < font->atlas->height) && (i < font->texture.surface.height); i++)
-      memcpy((uint8_t*)font->texture.surface.image + (i * font->texture.surface.pitch),
-             font->atlas->buffer + (i * font->atlas->width), font->atlas->width);
+      memcpy((uint8_t*)font->texture.surface.image 
+            + (i * font->texture.surface.pitch),
+            font->atlas->buffer + (i * font->atlas->width),
+            font->atlas->width);
 
-   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, font->texture.surface.image,
-                 font->texture.surface.imageSize);
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE,
+         font->texture.surface.image,
+         font->texture.surface.imageSize);
 
-   font->atlas->dirty = false;
-
-   font->ubo_tex = MEM1_alloc(sizeof(*font->ubo_tex), GX2_UNIFORM_BLOCK_ALIGNMENT);
-   font->ubo_tex->width = font->texture.surface.width;
+   font->atlas->dirty    = false;
+   font->ubo_tex         = MEM1_alloc(sizeof(*font->ubo_tex), GX2_UNIFORM_BLOCK_ALIGNMENT);
+   font->ubo_tex->width  = font->texture.surface.width;
    font->ubo_tex->height = font->texture.surface.height;
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, font->ubo_tex,
                  sizeof(*font->ubo_tex));
@@ -109,18 +112,21 @@ static void wiiu_font_free_font(void* data, bool is_threaded)
 }
 
 static int wiiu_font_get_message_width(void* data, const char* msg,
-                                      unsigned msg_len, float scale)
+      unsigned msg_len, float scale)
 {
-   wiiu_font_t* font = (wiiu_font_t*)data;
-
    unsigned i;
    int delta_x = 0;
+   const struct font_glyph* glyph_q = NULL;
+   wiiu_font_t                *font = (wiiu_font_t*)data;
 
    if (!font)
       return 0;
 
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+
    for (i = 0; i < msg_len; i++)
    {
+      const struct font_glyph* glyph;
       const char* msg_tmp            = &msg[i];
       unsigned code                  = utf8_walk(&msg_tmp);
       unsigned skip                  = msg_tmp - &msg[i];
@@ -128,14 +134,11 @@ static int wiiu_font_get_message_width(void* data, const char* msg,
       if (skip > 1)
          i += skip - 1;
 
-      const struct font_glyph* glyph =
-         font->font_driver->get_glyph(font->font_data, code);
-
-      if (!glyph) /* Do something smarter here ... */
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
-
-      if (!glyph)
-         continue;
+      /* Do something smarter here ... */
+      if (!(glyph =
+               font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
 
       delta_x += glyph->advance_x;
    }
@@ -151,12 +154,16 @@ static void wiiu_font_render_line(
       unsigned width, unsigned height, unsigned text_align)
 {
    unsigned i;
-   int x              = roundf(pos_x * width);
-   int y              = roundf((1.0 - pos_y) * height);
+   int count, x, y;
+   sprite_vertex_t *v;
+   const struct font_glyph* glyph_q = NULL;
 
    if(  !wiiu ||
          wiiu->vertex_cache.current + (msg_len * 4) > wiiu->vertex_cache.size)
       return;
+
+   x                  = roundf(pos_x * width);
+   y                  = roundf((1.0 - pos_y) * height);
 
    switch (text_align)
    {
@@ -169,10 +176,12 @@ static void wiiu_font_render_line(
          break;
    }
 
-   sprite_vertex_t* v = wiiu->vertex_cache.v + wiiu->vertex_cache.current;
+   v       = wiiu->vertex_cache.v + wiiu->vertex_cache.current;
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
+      const struct font_glyph* glyph;
       const char* msg_tmp            = &msg[i];
       unsigned code                  = utf8_walk(&msg_tmp);
       unsigned skip                  = msg_tmp - &msg[i];
@@ -180,34 +189,31 @@ static void wiiu_font_render_line(
       if (skip > 1)
          i += skip - 1;
 
-      const struct font_glyph* glyph =
-         font->font_driver->get_glyph(font->font_data, code);
+      /* Do something smarter here ... */
+      if (!(glyph =
+               font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph  = glyph_q))
+            continue;
 
-      if (!glyph) /* Do something smarter here ... */
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
+      v->pos.x        = x + glyph->draw_offset_x * scale;
+      v->pos.y        = y + glyph->draw_offset_y * scale;
+      v->pos.width    = glyph->width * scale;
+      v->pos.height   = glyph->height * scale;
 
-      if (!glyph)
-         continue;
-
-      v->pos.x = x + glyph->draw_offset_x * scale;
-      v->pos.y = y + glyph->draw_offset_y * scale;
-      v->pos.width = glyph->width * scale;
-      v->pos.height = glyph->height * scale;
-
-      v->coord.u = glyph->atlas_offset_x;
-      v->coord.v = glyph->atlas_offset_y;
-      v->coord.width = glyph->width;
+      v->coord.u      = glyph->atlas_offset_x;
+      v->coord.v      = glyph->atlas_offset_y;
+      v->coord.width  = glyph->width;
       v->coord.height = glyph->height;
 
-      v->color = color;
+      v->color        = color;
 
       v++;
 
-      x += glyph->advance_x * scale;
-      y += glyph->advance_y * scale;
+      x              += glyph->advance_x * scale;
+      y              += glyph->advance_y * scale;
    }
 
-   int count = v - wiiu->vertex_cache.v - wiiu->vertex_cache.current;
+   count = v - wiiu->vertex_cache.v - wiiu->vertex_cache.current;
 
    if (!count)
       return;
@@ -220,13 +226,17 @@ static void wiiu_font_render_line(
          memcpy(font->texture.surface.image + (i * font->texture.surface.pitch),
                 font->atlas->buffer + (i * font->atlas->width), font->atlas->width);
 
-      GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, font->texture.surface.image,
-                    font->texture.surface.imageSize);
+      GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE,
+            font->texture.surface.image,
+            font->texture.surface.imageSize);
       font->atlas->dirty = false;
    }
 
-   GX2SetPixelTexture(&font->texture, sprite_shader.ps.samplerVars[0].location);
-   GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[1].offset, sprite_shader.vs.uniformBlocks[1].size, font->ubo_tex);
+   GX2SetPixelTexture(&font->texture,
+         sprite_shader.ps.samplerVars[0].location);
+   GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[1].offset,
+         sprite_shader.vs.uniformBlocks[1].size,
+         font->ubo_tex);
 
    GX2DrawEx(GX2_PRIMITIVE_MODE_POINTS, count, wiiu->vertex_cache.current, 1);
 
@@ -287,10 +297,9 @@ static void wiiu_font_render_msg(
 {
    float x, y, scale, drop_mod, drop_alpha;
    int drop_x, drop_y;
-   unsigned max_glyphs;
    enum text_alignment text_align;
-   unsigned color, color_dark, r, g, b,
-            alpha, r_dark, g_dark, b_dark, alpha_dark;
+   unsigned color, r, g, b,
+            alpha;
    wiiu_video_t              *wiiu  = (wiiu_video_t*)userdata;
    wiiu_font_t                *font = (wiiu_font_t*)data;
    unsigned width                   = wiiu->vp.full_width;
@@ -341,19 +350,13 @@ static void wiiu_font_render_msg(
       drop_alpha     = 1.0f;
    }
 
-   max_glyphs        = strlen(msg);
-
-   if (drop_x || drop_y)
-      max_glyphs    *= 2;
-
    if (drop_x || drop_y)
    {
-      r_dark         = r * drop_mod;
-      g_dark         = g * drop_mod;
-      b_dark         = b * drop_mod;
-      alpha_dark     = alpha * drop_alpha;
-      color_dark     = COLOR_RGBA(r_dark, g_dark, b_dark, alpha_dark);
-
+      unsigned r_dark         = r * drop_mod;
+      unsigned g_dark         = g * drop_mod;
+      unsigned b_dark         = b * drop_mod;
+      unsigned alpha_dark     = alpha * drop_alpha;
+      unsigned color_dark     = COLOR_RGBA(r_dark, g_dark, b_dark, alpha_dark);
       wiiu_font_render_message(wiiu, font, msg, scale, color_dark,
             x + scale * drop_x / width, y +
             scale * drop_y / height, width, height, text_align);
@@ -367,24 +370,17 @@ static const struct font_glyph* wiiu_font_get_glyph(
    void* data, uint32_t code)
 {
    wiiu_font_t* font = (wiiu_font_t*)data;
-
-   if (!font || !font->font_driver)
-      return NULL;
-
-   if (!font->font_driver->ident)
-      return NULL;
-
-   return font->font_driver->get_glyph((void*)font->font_driver, code);
+   if (font && font->font_driver && font->font_driver->ident)
+      return font->font_driver->get_glyph((void*)font->font_driver, code);
+   return NULL;
 }
 
 static bool wiiu_font_get_line_metrics(void* data, struct font_line_metrics **metrics)
 {
    wiiu_font_t* font = (wiiu_font_t*)data;
-
-   if (!font || !font->font_driver || !font->font_data)
-      return -1;
-
-   return font->font_driver->get_line_metrics(font->font_data, metrics);
+   if (font && font->font_driver && font->font_data)
+      return font->font_driver->get_line_metrics(font->font_data, metrics);
+   return -1;
 }
 
 font_renderer_t wiiu_font =
