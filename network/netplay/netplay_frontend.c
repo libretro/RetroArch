@@ -8505,8 +8505,9 @@ static size_t retrieve_client_info(netplay_t *netplay, netplay_client_info_t *bu
          netplay_client_info_t *info = &buf[j++];
          info->id = (int)i;
          strlcpy(info->name, connection->nick, sizeof(info->name));
-         info->mode = connection->mode;
-         info->ping = connection->ping;
+         info->protocol = connection->netplay_protocol;
+         info->mode     = connection->mode;
+         info->ping     = connection->ping;
       }
    }
 
