@@ -62,7 +62,7 @@ d3d10_font_init_font(void* data, const char* font_path, float font_size, bool is
          d3d10->device,
          font->atlas->width, font->atlas->height, font->atlas->width,
          DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
-   font->atlas->dirty = false;
+   font->atlas->dirty        = false;
 
    return font;
 }
@@ -85,13 +85,15 @@ static void d3d10_font_free_font(void* data, bool is_threaded)
 
 static int d3d10_font_get_message_width(void* data, const char* msg, unsigned msg_len, float scale)
 {
-   d3d10_font_t* font = (d3d10_font_t*)data;
-
    unsigned i;
-   int      delta_x = 0;
+   int      delta_x                 = 0;
+   const struct font_glyph* glyph_q = NULL;
+   d3d10_font_t* font               = (d3d10_font_t*)data;
 
    if (!font)
       return 0;
+
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
@@ -103,13 +105,10 @@ static int d3d10_font_get_message_width(void* data, const char* msg, unsigned ms
       if (skip > 1)
          i += skip - 1;
 
-      glyph = font->font_driver->get_glyph(font->font_data, code);
-
-      if (!glyph) /* Do something smarter here ... */
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
-
-      if (!glyph)
-         continue;
+      /* Do something smarter here ... */
+      if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
 
       delta_x += glyph->advance_x;
    }
@@ -130,11 +129,11 @@ static void d3d10_font_render_line(
       unsigned            height,
       unsigned            text_align)
 {
+   int                      x, y;
    unsigned                 i, count;
    void*                    mapped_vbo;
    d3d10_sprite_t*          v;
-   int                      x      = roundf(pos_x * width);
-   int                      y      = roundf((1.0 - pos_y) * height);
+   const struct font_glyph* glyph_q = NULL;
 
    if (  !d3d10                  ||
          !d3d10->sprites.enabled ||
@@ -143,6 +142,9 @@ static void d3d10_font_render_line(
 
    if (d3d10->sprites.offset + msg_len > (unsigned)d3d10->sprites.capacity)
       d3d10->sprites.offset = 0;
+
+   x = roundf(pos_x * width);
+   y = roundf((1.0 - pos_y) * height);
 
    switch (text_align)
    {
@@ -156,48 +158,47 @@ static void d3d10_font_render_line(
    }
 
    D3D10MapBuffer(d3d10->sprites.vbo, D3D10_MAP_WRITE_NO_OVERWRITE, 0, (void**)&mapped_vbo);
-   v = (d3d10_sprite_t*)mapped_vbo + d3d10->sprites.offset;
+
+   v       = (d3d10_sprite_t*)mapped_vbo + d3d10->sprites.offset;
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
       const struct font_glyph* glyph;
-      const char*              msg_tmp = &msg[i];
-      unsigned                 code    = utf8_walk(&msg_tmp);
-      unsigned                 skip    = msg_tmp - &msg[i];
+      const char *msg_tmp= &msg[i];
+      unsigned   code    = utf8_walk(&msg_tmp);
+      unsigned   skip    = msg_tmp - &msg[i];
 
       if (skip > 1)
          i += skip - 1;
 
-      glyph = font->font_driver->get_glyph(font->font_data, code);
+      /* Do something smarter here ... */
+      if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
 
-      if (!glyph) /* Do something smarter here ... */
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
+      v->pos.x           = (x + (glyph->draw_offset_x * scale)) / (float)d3d10->viewport.Width;
+      v->pos.y           = (y + (glyph->draw_offset_y * scale)) / (float)d3d10->viewport.Height;
+      v->pos.w           = glyph->width * scale / (float)d3d10->viewport.Width;
+      v->pos.h           = glyph->height * scale / (float)d3d10->viewport.Height;
 
-      if (!glyph)
-         continue;
-
-      v->pos.x = (x + (glyph->draw_offset_x * scale)) / (float)d3d10->viewport.Width;
-      v->pos.y = (y + (glyph->draw_offset_y * scale)) / (float)d3d10->viewport.Height;
-      v->pos.w = glyph->width * scale / (float)d3d10->viewport.Width;
-      v->pos.h = glyph->height * scale / (float)d3d10->viewport.Height;
-
-      v->coords.u = glyph->atlas_offset_x / (float)font->texture.desc.Width;
-      v->coords.v = glyph->atlas_offset_y / (float)font->texture.desc.Height;
-      v->coords.w = glyph->width / (float)font->texture.desc.Width;
-      v->coords.h = glyph->height / (float)font->texture.desc.Height;
+      v->coords.u        = glyph->atlas_offset_x / (float)font->texture.desc.Width;
+      v->coords.v        = glyph->atlas_offset_y / (float)font->texture.desc.Height;
+      v->coords.w        = glyph->width / (float)font->texture.desc.Width;
+      v->coords.h        = glyph->height / (float)font->texture.desc.Height;
 
       v->params.scaling  = 1;
       v->params.rotation = 0;
 
-      v->colors[0] = color;
-      v->colors[1] = color;
-      v->colors[2] = color;
-      v->colors[3] = color;
+      v->colors[0]       = color;
+      v->colors[1]       = color;
+      v->colors[2]       = color;
+      v->colors[3]       = color;
 
       v++;
 
-      x += glyph->advance_x * scale;
-      y += glyph->advance_y * scale;
+      x                 += glyph->advance_x * scale;
+      y                 += glyph->advance_y * scale;
    }
 
    count = v - ((d3d10_sprite_t*)mapped_vbo + d3d10->sprites.offset);
@@ -361,24 +362,17 @@ static void d3d10_font_render_msg(
 static const struct font_glyph* d3d10_font_get_glyph(void *data, uint32_t code)
 {
    d3d10_font_t* font = (d3d10_font_t*)data;
-
-   if (!font || !font->font_driver)
-      return NULL;
-
-   if (!font->font_driver->ident)
-      return NULL;
-
-   return font->font_driver->get_glyph((void*)font->font_driver, code);
+   if (font && font->font_driver && font->font_driver->ident)
+      return font->font_driver->get_glyph((void*)font->font_driver, code);
+   return NULL;
 }
 
 static bool d3d10_font_get_line_metrics(void* data, struct font_line_metrics **metrics)
 {
    d3d10_font_t* font = (d3d10_font_t*)data;
-
-   if (!font || !font->font_driver || !font->font_data)
-      return -1;
-
-   return font->font_driver->get_line_metrics(font->font_data, metrics);
+   if (font && font->font_driver && font->font_data)
+      return font->font_driver->get_line_metrics(font->font_data, metrics);
+   return -1;
 }
 
 font_renderer_t d3d10_font = {
