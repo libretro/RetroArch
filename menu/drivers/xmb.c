@@ -1709,6 +1709,9 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
    size_t skip             = 0;
    int        threshold    = xmb->icon_size * 10;
    size_t end              = list ? list->size : 0;
+   settings_t *settings    = config_get_ptr();
+   bool savestate_thumbnail_enable
+                           = settings ? settings->bools.savestate_thumbnail_enable : false;
 
    video_driver_get_size(NULL, &height);
 
@@ -1800,6 +1803,16 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
             xmb_update_thumbnail_image(xmb);
          }
       }
+   }
+
+   if (savestate_thumbnail_enable &&
+            xmb->is_quick_menu &&
+            (xmb->depth == 3))
+   {
+      /* This shows savestate thumbnail after
+       * opening savestate submenu */
+      xmb_update_savestate_thumbnail_path(xmb, 0);
+      xmb_update_savestate_thumbnail_image(xmb);
    }
 }
 
@@ -2502,7 +2515,8 @@ static void xmb_populate_entries(void *data,
 
    /* Determine whether this is the quick menu */
    xmb->is_quick_menu = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)) ||
-                        string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS));
+                        string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS)) ||
+                        string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_LIST));
 
    xmb_set_title(xmb);
    xmb_update_dynamic_wallpaper(xmb);
@@ -2593,6 +2607,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
       case MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE:
          return xmb->textures.list[XMB_TEXTURE_ACHIEVEMENT_LIST];
+      case MENU_ENUM_LABEL_SAVESTATE_LIST:
       case MENU_ENUM_LABEL_SAVE_STATE:
       case MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE:
       case MENU_ENUM_LABEL_CORE_CREATE_BACKUP:

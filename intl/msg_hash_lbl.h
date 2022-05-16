@@ -581,6 +581,10 @@ MSG_HASH(
    "sideload_core"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_SAVESTATE_LIST,
+   "savestate_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CORE_OPTIONS,
    "core_options"
    )
@@ -4399,6 +4403,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
    "quick_menu_show_reset_core_association"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
+   "quick_menu_show_savestate_submenu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_OPTIONS,

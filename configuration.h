@@ -751,6 +751,7 @@ typedef struct settings
       bool quick_menu_show_restart_content;
       bool quick_menu_show_close_content;
       bool quick_menu_show_take_screenshot;
+      bool quick_menu_show_savestate_submenu;
       bool quick_menu_show_save_load_state;
       bool quick_menu_show_undo_save_load_state;
       bool quick_menu_show_add_to_favorites;
