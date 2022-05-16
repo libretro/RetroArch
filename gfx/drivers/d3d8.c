@@ -98,10 +98,13 @@ struct d3d8_texture_info
 
 void d3d8_set_mvp(void *data, const void *mat_data)
 {
-   struct d3d_matrix matrix;
+   struct d3d_matrix matrix   = {
+      1.0f, 0.0f, 0.0f, 0.0f,
+      0.0f, 1.0f, 0.0f, 0.0f,
+      0.0f, 0.0f, 1.0f, 0.0f,
+      0.0f, 0.0f, 0.0f, 1.0f
+   };
    LPDIRECT3DDEVICE8 d3dr     = (LPDIRECT3DDEVICE8)data;
-
-   d3d_matrix_identity(&matrix);
 
    IDirect3DDevice8_SetTransform(d3dr,
          D3DTS_PROJECTION, (D3DMATRIX*)&matrix);

@@ -783,11 +783,14 @@ static bool d3d9_cg_renderchain_create_first_pass(
 {
    unsigned i;
    struct shader_pass pass;
-   struct d3d_matrix ident;
+   struct d3d_matrix ident   = {
+      1.0f, 0.0f, 0.0f, 0.0f,
+      0.0f, 1.0f, 0.0f, 0.0f,
+      0.0f, 0.0f, 1.0f, 0.0f,
+      0.0f, 0.0f, 0.0f, 1.0f
+   };
    unsigned fmt = (_fmt == RETRO_PIXEL_FORMAT_RGB565) ?
       D3D9_RGB565_FORMAT : D3D9_XRGB8888_FORMAT;
-
-   d3d_matrix_identity(&ident);
 
    IDirect3DDevice9_SetTransform(dev, D3DTS_WORLD, (D3DMATRIX*)&ident);
    IDirect3DDevice9_SetTransform(dev, D3DTS_VIEW,  (D3DMATRIX*)&ident);
