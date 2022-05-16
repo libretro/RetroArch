@@ -174,8 +174,6 @@ void d3d9x_font_draw_text(void *data, void *sprite_data, void *string_data,
 
 void d3d9x_font_get_text_metrics(void *data, void *metrics);
 
-void d3d9x_buffer_release(void *data);
-
 void d3d9x_font_release(void *data);
 
 bool d3d9x_compile_shader(
@@ -209,8 +207,6 @@ void d3d9x_constant_table_set_defaults(LPDIRECT3DDEVICE9 dev,
 
 void d3d9x_constant_table_set_matrix(LPDIRECT3DDEVICE9 dev,
       void *p, void *data, const void *matrix);
-
-const void *d3d9x_get_buffer_ptr(void *data);
 
 const bool d3d9x_constant_table_set_float(void *p,
       void *a, void *b, float val);

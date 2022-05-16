@@ -156,24 +156,24 @@ static bool d3d9_hlsl_load_program_from_file(
    }
 
    IDirect3DDevice9_CreatePixelShader(dev,
-         (const DWORD*)d3d9x_get_buffer_ptr(code_f),
+         (const DWORD*)code_f->lpVtbl->GetBufferPointer(code_f),
          (LPDIRECT3DPIXELSHADER9*)&pass->fprg);
    IDirect3DDevice9_CreateVertexShader(dev,
-         (const DWORD*)d3d9x_get_buffer_ptr(code_v),
+         (const DWORD*)code_v->lpVtbl->GetBufferPointer(code_v),
          (LPDIRECT3DVERTEXSHADER9*)&pass->vprg);
-   d3d9x_buffer_release((void*)code_f);
-   d3d9x_buffer_release((void*)code_v);
+   code_f->lpVtbl->Release(code_f);
+   code_v->lpVtbl->Release(code_v);
 
    return true;
 
 error:
    RARCH_ERR("Cg/HLSL error:\n");
    if (listing_f)
-      RARCH_ERR("Fragment:\n%s\n", (char*)d3d9x_get_buffer_ptr(listing_f));
+      RARCH_ERR("Fragment:\n%s\n", (char*)listing_f->lpVtbl->GetBufferPointer(listing_f));
    if (listing_v)
-      RARCH_ERR("Vertex:\n%s\n", (char*)d3d9x_get_buffer_ptr(listing_v));
-   d3d9x_buffer_release((void*)listing_f);
-   d3d9x_buffer_release((void*)listing_v);
+      RARCH_ERR("Vertex:\n%s\n", (char*)listing_v->lpVtbl->GetBufferPointer(listing_v));
+   listing_f->lpVtbl->Release(listing_f);
+   listing_v->lpVtbl->Release(listing_v);
 
    return false;
 }
@@ -204,24 +204,24 @@ static bool d3d9_hlsl_load_program(
    }
 
    IDirect3DDevice9_CreatePixelShader(dev,
-         (const DWORD*)d3d9x_get_buffer_ptr(code_f),
+         (const DWORD*)code_f->lpVtbl->GetBufferPointer(code_f),
          (LPDIRECT3DPIXELSHADER9*)&pass->fprg);
    IDirect3DDevice9_CreateVertexShader(dev,
-         (const DWORD*)d3d9x_get_buffer_ptr(code_v),
+         (const DWORD*)code_v->lpVtbl->GetBufferPointer(code_v),
          (LPDIRECT3DVERTEXSHADER9*)&pass->vprg);
-   d3d9x_buffer_release((void*)code_f);
-   d3d9x_buffer_release((void*)code_v);
+   code_f->lpVtbl->Release(code_f);
+   code_v->lpVtbl->Release(code_v);
 
    return true;
 
 error:
    RARCH_ERR("Cg/HLSL error:\n");
    if (listing_f)
-      RARCH_ERR("Fragment:\n%s\n", (char*)d3d9x_get_buffer_ptr(listing_f));
+      RARCH_ERR("Fragment:\n%s\n", (char*)listing_f->lpVtbl->GetBufferPointer(listing_f));
    if (listing_v)
-      RARCH_ERR("Vertex:\n%s\n", (char*)d3d9x_get_buffer_ptr(listing_v));
-   d3d9x_buffer_release((void*)listing_f);
-   d3d9x_buffer_release((void*)listing_v);
+      RARCH_ERR("Vertex:\n%s\n", (char*)listing_v->lpVtbl->GetBufferPointer(listing_v));
+   listing_f->lpVtbl->Release(listing_f);
+   listing_v->lpVtbl->Release(listing_v);
 
    return false;
 }

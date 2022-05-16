@@ -439,17 +439,6 @@ bool d3d9x_create_font_indirect(void *_dev,
    return false;
 }
 
-void d3d9x_buffer_release(void *data)
-{
-#ifdef HAVE_D3DX
-   LPD3DXBUFFER p = (LPD3DXBUFFER)data;
-   if (!p)
-      return;
-
-   p->lpVtbl->Release(p);
-#endif
-}
-
 bool d3d9x_compile_shader(
       const char *src,
       unsigned src_data_len,
@@ -536,16 +525,6 @@ bool d3d9x_compile_shader_from_file(
          return true;
 #endif
    return false;
-}
-
-const void *d3d9x_get_buffer_ptr(void *data)
-{
-#if defined(HAVE_D3DX)
-   ID3DXBuffer *listing = (ID3DXBuffer*)data;
-   if (listing)
-      return listing->lpVtbl->GetBufferPointer(listing);
-#endif
-   return NULL;
 }
 
 void *d3d9x_constant_table_get_constant_by_name(void *_tbl,
