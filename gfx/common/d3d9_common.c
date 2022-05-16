@@ -329,28 +329,6 @@ void d3d9_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
    }
 }
 
-static bool d3d9_reset_internal(void *data,
-      D3DPRESENT_PARAMETERS *d3dpp
-      )
-{
-   LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
-   if (dev &&
-         IDirect3DDevice9_Reset(dev, d3dpp) == D3D_OK)
-      return true;
-
-   return false;
-}
-
-static HRESULT d3d9_test_cooperative_level(void *data)
-{
-#ifndef _XBOX
-   LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
-   if (dev)
-      return IDirect3DDevice9_TestCooperativeLevel(dev);
-#endif
-   return E_FAIL;
-}
-
 static bool d3d9_create_device_internal(
       void *data,
       D3DPRESENT_PARAMETERS *d3dpp,
@@ -395,18 +373,16 @@ bool d3d9_create_device(void *dev,
    return true;
 }
 
-bool d3d9_reset(void *dev, void *d3dpp)
+bool d3d9_reset(void *data, void *d3dpp)
 {
-   const char *err = NULL;
-
-   if (d3d9_reset_internal(dev, (D3DPRESENT_PARAMETERS*)d3dpp))
+   const char       *err = NULL;
+   LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
+   if (dev && IDirect3DDevice9_Reset(dev, (D3DPRESENT_PARAMETERS*)d3dpp) == D3D_OK)
       return true;
-
-   RARCH_WARN("[D3D]: Attempting to recover from dead state...\n");
-
 #ifndef _XBOX
+   RARCH_WARN("[D3D]: Attempting to recover from dead state...\n");
    /* Try to recreate the device completely. */
-   switch (d3d9_test_cooperative_level(dev))
+   switch (IDirect3DDevice9_TestCooperativeLevel(dev))
    {
       case D3DERR_DEVICELOST:
          err = "DEVICELOST";
@@ -425,7 +401,6 @@ bool d3d9_reset(void *dev, void *d3dpp)
    }
    RARCH_WARN("[D3D]: recovering from dead state: (%s).\n", err);
 #endif
-
    return false;
 }
 
