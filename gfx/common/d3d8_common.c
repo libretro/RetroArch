@@ -75,7 +75,6 @@ typedef HRESULT (__stdcall
 #endif
 
 #ifdef HAVE_D3DX
-static D3DXCreateFontIndirect_t   D3DCreateFontIndirect;
 static D3DCreateTextureFromFile_t D3DCreateTextureFromFile;
 #endif
 static D3DCreate_t D3DCreate;
@@ -121,17 +120,11 @@ bool d3d8_initialize_symbols(enum gfx_ctx_api api)
 #ifdef HAVE_DYNAMIC_D3D
    D3DCreate                = (D3DCreate_t)dylib_proc(g_d3d8_dll, "Direct3DCreate8");
 #ifdef HAVE_D3DX
-#ifdef UNICODE
-   D3DCreateFontIndirect    = (D3DXCreateFontIndirect_t)dylib_proc(g_d3d8x_dll, "D3DXCreateFontIndirectW");
-#else
-   D3DCreateFontIndirect    = (D3DXCreateFontIndirect_t)dylib_proc(g_d3d8x_dll, "D3DXCreateFontIndirectA");
-#endif
    D3DCreateTextureFromFile = (D3DCreateTextureFromFile_t)dylib_proc(g_d3d8x_dll, "D3DXCreateTextureFromFileExA");
 #endif
 #else
    D3DCreate                = Direct3DCreate8;
 #ifdef HAVE_D3DX
-   D3DCreateFontIndirect    = D3DXCreateFontIndirect;
    D3DCreateTextureFromFile = D3DXCreateTextureFromFileExA;
 #endif
 #endif
@@ -166,25 +159,6 @@ void d3d8_deinitialize_symbols(void)
 #endif
 }
 
-#ifdef HAVE_D3DX
-static void *d3d8_texture_new_from_file(
-      LPDIRECT3DDEVICE8 dev,
-      const char *path, unsigned width, unsigned height,
-      unsigned miplevels, unsigned usage, D3DFORMAT format,
-      D3DPOOL pool, unsigned filter, unsigned mipfilter,
-      INT32 color_key, void *src_info_data,
-      PALETTEENTRY *palette)
-{
-   void *buf  = NULL;
-   if (FAILED(D3DCreateTextureFromFile(dev,
-         path, width, height, miplevels, usage, format,
-         pool, filter, mipfilter, color_key, src_info_data,
-         palette, (struct IDirect3DTeture8**)&buf)))
-      return NULL;
-   return buf;
-}
-#endif
-
 void *d3d8_texture_new(LPDIRECT3DDEVICE8 dev,
       const char *path, unsigned width, unsigned height,
       unsigned miplevels, unsigned usage, INT32 format,
@@ -197,14 +171,14 @@ void *d3d8_texture_new(LPDIRECT3DDEVICE8 dev,
    if (path)
    {
 #ifdef HAVE_D3DX
-      return d3d8_texture_new_from_file(_dev,
-            path, width, height, miplevels,
-            usage, (D3DFORMAT)format,
-            (D3DPOOL)pool, filter, mipfilter,
-            color_key, src_info_data, palette);
-#else
-      return NULL;
+      void *buf  = NULL;
+      if (SUCCEEDED(D3DCreateTextureFromFile(dev,
+                  path, width, height, miplevels, usage, format,
+                  pool, filter, mipfilter, color_key, src_info_data,
+                  palette, (struct IDirect3DTeture8**)&buf)))
+         return buf;
 #endif
+      return NULL;
    }
 
    if (FAILED(IDirect3DDevice8_CreateTexture(dev,
@@ -309,48 +283,4 @@ bool d3d8_reset(void *dev, void *d3dpp)
 #endif
 
    return false;
-}
-
-bool d3d8x_create_font_indirect(LPDIRECT3DDEVICE8 dev,
-      void *desc, void **font_data)
-{
-#ifdef HAVE_D3DX
-   if (SUCCEEDED(D3DCreateFontIndirect(
-               dev, (CONST LOGFONT*)desc,
-               (struct ID3DXFont**)font_data)))
-      return true;
-#endif
-   return false;
-}
-
-void d3d8x_font_draw_text(void *data,
-      void *sprite_data, void *string_data,
-      unsigned count, void *rect_data,
-      unsigned format, unsigned color)
-{
-#ifdef HAVE_D3DX
-   ID3DXFont *font = (ID3DXFont*)data;
-   if (font)
-      font->lpVtbl->DrawText(font, (LPD3DXSPRITE)sprite_data,
-            (LPCTSTR)string_data, count, (LPRECT)rect_data,
-            (DWORD)format, (D3DCOLOR)color);
-#endif
-}
-
-void d3d8x_font_release(void *data)
-{
-#ifdef HAVE_D3DX
-   ID3DXFont *font = (ID3DXFont*)data;
-   if (font)
-      font->lpVtbl->Release(font);
-#endif
-}
-
-void d3d8x_font_get_text_metrics(void *data, void *metrics)
-{
-#ifdef HAVE_D3DX
-   ID3DXFont *font = (ID3DXFont*)data;
-   if (font)
-      font->lpVtbl->GetTextMetrics(font, (TEXTMETRICA*)metrics);
-#endif
 }

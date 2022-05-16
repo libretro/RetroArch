@@ -107,8 +107,7 @@ void d3d8_set_mvp(void *data, const void *mat_data)
          D3DTS_PROJECTION, (D3DMATRIX*)&matrix);
    IDirect3DDevice8_SetTransform(d3dr,
          D3DTS_VIEW, (D3DMATRIX*)&matrix);
-   if (mat_data)
-      d3d_matrix_transpose(&matrix, mat_data);
+   d3d_matrix_transpose(&matrix, mat_data);
    IDirect3DDevice8_SetTransform(d3dr, D3DTS_WORLD, (D3DMATRIX*)&matrix);
 }
 

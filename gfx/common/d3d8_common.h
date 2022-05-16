@@ -102,16 +102,6 @@ bool d3d8_initialize_symbols(enum gfx_ctx_api api);
 
 void d3d8_deinitialize_symbols(void);
 
-bool d3d8x_create_font_indirect(LPDIRECT3DDEVICE8 dev,
-      void *desc, void **font_data);
-
-void d3d8x_font_draw_text(void *data, void *sprite_data, void *string_data,
-      unsigned count, void *rect_data, unsigned format, unsigned color);
-
-void d3d8x_font_get_text_metrics(void *data, void *metrics);
-
-void d3d8x_font_release(void *data);
-
 void d3d8_set_mvp(void *data, const void *userdata);
 
 RETRO_END_DECLS
