@@ -75,6 +75,15 @@ enum rotation
    ORIENTATION_END
 };
 
+enum autoswitch_refresh_rate
+{
+   AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN = 0,
+   AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
+   AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
+   AUTOSWITCH_REFRESH_RATE_OFF,
+   AUTOSWITCH_REFRESH_RATE_LAST
+};
+
 enum rarch_display_type
 {
    /* Non-bindable types like consoles, KMS, VideoCore, etc. */

@@ -520,24 +520,33 @@ void drivers_init(
    {
       struct retro_system_av_info *av_info = &video_st->av_info;
       float refresh_rate                   = av_info->timing.fps;
-
+      unsigned autoswitch_refresh_rate     = settings->uints.video_autoswitch_refresh_rate;
+      bool exclusive_fullscreen            = settings->bools.video_fullscreen && !settings->bools.video_windowed_fullscreen;
+      bool windowed_fullscreen             = settings->bools.video_fullscreen && settings->bools.video_windowed_fullscreen;
+      bool all_fullscreen                  = settings->bools.video_fullscreen || settings->bools.video_windowed_fullscreen;
+   
       if (  refresh_rate > 0.0 &&
             !settings->uints.crt_switch_resolution &&
             !settings->bools.vrr_runloop_enable &&
-            !settings->bools.video_windowed_fullscreen &&
-            settings->bools.video_fullscreen &&
+            video_display_server_has_resolution_list() &&
+            (autoswitch_refresh_rate != AUTOSWITCH_REFRESH_RATE_OFF) &&
             fabs(settings->floats.video_refresh_rate - refresh_rate) > 1)
       {
-         bool video_switch_refresh_rate = false;
-
-         video_switch_refresh_rate_maybe(&refresh_rate, &video_switch_refresh_rate);
-
-         if (video_switch_refresh_rate && video_display_server_set_refresh_rate(refresh_rate))
+         if (((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN) && exclusive_fullscreen) ||
+             ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN) && windowed_fullscreen)   ||
+             ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN) && all_fullscreen))
          {
-            int reinit_flags = DRIVER_AUDIO_MASK;
-            video_monitor_set_refresh_rate(refresh_rate);
-            /* Audio must reinit after successful rate switch */
-            command_event(CMD_EVENT_REINIT, &reinit_flags);
+            bool video_switch_refresh_rate = false;
+   
+            video_switch_refresh_rate_maybe(&refresh_rate, &video_switch_refresh_rate);
+   
+            if (video_switch_refresh_rate && video_display_server_set_refresh_rate(refresh_rate))
+            {
+               int reinit_flags = DRIVER_AUDIO_MASK;
+               video_monitor_set_refresh_rate(refresh_rate);
+               /* Audio must reinit after successful rate switch */
+               command_event(CMD_EVENT_REINIT, &reinit_flags);
+            }
          }
       }
    }

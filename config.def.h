@@ -224,6 +224,10 @@
 #define DEFAULT_WINDOWED_FULLSCREEN true 
 #endif 
 
+/* Enable automatic switching of the screen refresh rate when using the specified screen mode(s),
+ * based on running core/content */
+#define DEFAULT_AUTOSWITCH_REFRESH_RATE AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN
+
 /* Which monitor to prefer. 0 is any monitor, 1 and up selects
  * specific monitors, 1 being the first monitor. */
 #define DEFAULT_MONITOR_INDEX 0
