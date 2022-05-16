@@ -6489,6 +6489,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
    "Остановить Netplay-хост"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
+   "Отключить клиента"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_KICK,
+   "Отключить клиента от текущей комнаты."
+   )
 
 /* Import Content */
 
@@ -10172,6 +10180,10 @@ MSG_HASH(
    "Сетевые хосты не найдены."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
+   "Сетевые клиенты не найдены."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
    "Нет счетчиков производительности."
    )
@@ -10879,6 +10891,23 @@ MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,
    "Ваш ник изменён на \"%s\""
    )
+MSG_HASH(
+   MSG_NETPLAY_KICKED_CLIENT_S,
+   "Отключен клиент: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
+   "Не удалось отключить клиента: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_PLAYING,
+   "Играет в"
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_SPECTATING,
+   "В режиме зрителя"
+   )
+
 MSG_HASH(
    MSG_AUDIO_VOLUME,
    "Громкость звука"

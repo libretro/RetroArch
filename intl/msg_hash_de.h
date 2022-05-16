@@ -6317,6 +6317,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
    "Netzwerkspiel-Hosting stoppen"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
+   "Client rausschmeißen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_KICK,
+   "Einen Client aus dem aktuell gehosteten Raum schmeißen."
+   )
 
 /* Import Content */
 
@@ -9788,6 +9796,10 @@ MSG_HASH(
    "Keine Netzwerkspiele gefunden."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
+   "Keine Netzwerkspiel-Clients gefunden."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
    "Keine Leistungsindikatoren."
    )
@@ -10254,7 +10266,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
-   "Wiedergebend"
+   "Im Spiel"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
@@ -10475,6 +10487,23 @@ MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,
    "Dein Spitzname wurde geändert zu \"%s\""
    )
+MSG_HASH(
+   MSG_NETPLAY_KICKED_CLIENT_S,
+   "Client rausgeschmissen: „%s“"
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
+   "Client konnte nicht rausgeschmissen werden: „%s“"
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_PLAYING,
+   "Im Spiel"
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_SPECTATING,
+   "Zuschauer"
+   )
+
 MSG_HASH(
    MSG_AUDIO_VOLUME,
    "Audio-Lautstärke"

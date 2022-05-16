@@ -4887,6 +4887,7 @@ MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,
    "你的暱稱已修改為 \"%s\""
    )
+
 MSG_HASH(
    MSG_AUDIO_VOLUME,
    "聲音音量"

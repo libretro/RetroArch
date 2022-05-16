@@ -10880,6 +10880,11 @@ MSG_HASH(
    "닉네임이 \"%s\"(으)로 변경됨"
    )
 MSG_HASH(
+   MSG_NETPLAY_STATUS_PLAYING,
+   "실행 중"
+   )
+
+MSG_HASH(
    MSG_AUDIO_VOLUME,
    "오디오 볼륨"
    )

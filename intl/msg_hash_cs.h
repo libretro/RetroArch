@@ -6373,6 +6373,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
    "Zastavení Hostitele Netplay"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
+   "Vyhodit Klienta"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_KICK,
+   "Vyberte klienta z aktuálně hostované místnosti."
+   )
 
 /* Import Content */
 
@@ -9900,6 +9908,10 @@ MSG_HASH(
    "Nebyli nalezeni žádní hostitelé netplay."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
+   "Nebyli nalezeni žádní klienti netplay."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
    "Žádné počitadla výkonu."
    )
@@ -10591,6 +10603,23 @@ MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,
    "Vaše přezdívka změněna na \"%s\""
    )
+MSG_HASH(
+   MSG_NETPLAY_KICKED_CLIENT_S,
+   "Klient vyhozen: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
+   "Nepodařilo se vyhodit klienta: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_PLAYING,
+   "Přehrává se"
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_SPECTATING,
+   "Sledující"
+   )
+
 MSG_HASH(
    MSG_AUDIO_VOLUME,
    "Hlasitost zvuku"

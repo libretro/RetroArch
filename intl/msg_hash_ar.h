@@ -7972,6 +7972,11 @@ MSG_HASH(
    "تم تغيير اسمك المستعار إلى\"%s\""
    )
 MSG_HASH(
+   MSG_NETPLAY_STATUS_PLAYING,
+   "تشغيل"
+   )
+
+MSG_HASH(
    MSG_AUDIO_VOLUME,
    "صوت الصوت"
    )

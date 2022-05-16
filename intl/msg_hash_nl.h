@@ -4672,6 +4672,11 @@ MSG_HASH(
    "Kan niet overschakelen naar speelmodus"
    )
 MSG_HASH(
+   MSG_NETPLAY_STATUS_PLAYING,
+   "Afspelen"
+   )
+
+MSG_HASH(
    MSG_AUDIO_VOLUME,
    "Geluidsvolume"
    )

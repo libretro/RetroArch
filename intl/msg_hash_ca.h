@@ -5204,6 +5204,11 @@ MSG_HASH(
    "Premeu una vegada més per enviar informació de diagnòstic a l’equip del RetroArch."
    )
 MSG_HASH(
+   MSG_NETPLAY_STATUS_PLAYING,
+   "Jugant"
+   )
+
+MSG_HASH(
    MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
    "No s'ha pogut enviar el sobrenom a l'amfitrió."
    )

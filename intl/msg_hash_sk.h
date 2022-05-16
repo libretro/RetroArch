@@ -3111,6 +3111,7 @@ MSG_HASH(
    MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S,
    "%.*s sa pripojil so vstupnými zariadeniami %.*s"
    )
+
 MSG_HASH(
    MSG_AUDIO_VOLUME,
    "Hlasitosť zvuku"

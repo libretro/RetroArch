@@ -3725,6 +3725,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
    "Зупинити хост мережевої гри"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
+   "Викинути Клієнта"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_KICK,
+   "Викинути клієнта з вашої кімнати."
+   )
 
 /* Import Content */
 
@@ -6144,6 +6152,10 @@ MSG_HASH(
    "Не знайдено хостів мережевої гри."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
+   "Не знайдено клієнтів для гри в мережі."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
    "Немає списків відтворення."
    )
@@ -6583,6 +6595,23 @@ MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,
    "Ваш псевдонім змінено на \"%s\""
    )
+MSG_HASH(
+   MSG_NETPLAY_KICKED_CLIENT_S,
+   "Клієнта викинуто: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
+   "Не вдалося викинути клієнта: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_PLAYING,
+   "Грає"
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_SPECTATING,
+   "Глядач"
+   )
+
 MSG_HASH(
    MSG_AUDIO_VOLUME,
    "Гучність звуку"

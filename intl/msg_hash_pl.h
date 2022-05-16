@@ -6257,6 +6257,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
    "Zatrzymaj hosta gry sieciowej"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
+   "Wyrzuć klienta"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_KICK,
+   "Wyrzuć klienta z aktualnie hostowanego pokoju."
+   )
 
 /* Import Content */
 
@@ -9764,6 +9772,10 @@ MSG_HASH(
    "Nie znaleziono hostów gry sieciowej."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
+   "Nie znaleziono klientów sieciowych."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
    "Brak liczników wydajności."
    )
@@ -10463,6 +10475,23 @@ MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,
    "Twój pseudonim został zmieniony na \"%s\""
    )
+MSG_HASH(
+   MSG_NETPLAY_KICKED_CLIENT_S,
+   "Klient wyrzucony: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
+   "Nie udało się wyrzucić klienta: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_PLAYING,
+   "Granie"
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_SPECTATING,
+   "Oglądanie"
+   )
+
 MSG_HASH(
    MSG_AUDIO_VOLUME,
    "Głośność dźwięku"

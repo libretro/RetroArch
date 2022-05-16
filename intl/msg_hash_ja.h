@@ -9524,6 +9524,11 @@ MSG_HASH(
    "ニックネームを \"%s\" に変更しました"
    )
 MSG_HASH(
+   MSG_NETPLAY_STATUS_PLAYING,
+   "実行中"
+   )
+
+MSG_HASH(
    MSG_AUDIO_VOLUME,
    "音量"
    )

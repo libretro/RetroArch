@@ -2171,6 +2171,7 @@ MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Đang đợi máy khách  ..."
    )
+
 MSG_HASH(
    MSG_AUDIO_VOLUME,
    "Âm lượng âm thanh"

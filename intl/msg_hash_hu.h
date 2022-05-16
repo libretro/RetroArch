@@ -2608,6 +2608,11 @@ MSG_HASH(
    "Csatlakoztál mint %u"
    )
 MSG_HASH(
+   MSG_NETPLAY_STATUS_PLAYING,
+   "Lejátszás"
+   )
+
+MSG_HASH(
    MSG_AUDIO_VOLUME,
    "Hangerő"
    )

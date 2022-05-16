@@ -6397,6 +6397,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
    "Ferma l'host netplay"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
+   "Espelli Client"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_KICK,
+   "Espelli un client dalla tua stanza attualmente ospitata."
+   )
 
 /* Import Content */
 
@@ -9952,6 +9960,10 @@ MSG_HASH(
    "Nessun host netplay trovato."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
+   "Nessun client netplay trovato."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
    "Nessun contatore delle prestazioni."
    )
@@ -10651,6 +10663,23 @@ MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,
    "Il tuo soprannome è cambiato in \"%s\""
    )
+MSG_HASH(
+   MSG_NETPLAY_KICKED_CLIENT_S,
+   "Client espulso: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
+   "Impossibile espellere il client: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_PLAYING,
+   "In Gioco"
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_SPECTATING,
+   "Spettatore"
+   )
+
 MSG_HASH(
    MSG_AUDIO_VOLUME,
    "Volume audio"

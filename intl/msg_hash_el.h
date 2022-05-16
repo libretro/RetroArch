@@ -5084,6 +5084,11 @@ MSG_HASH(
    "Το ψευδώνυμο σας άλλαξε σε \"%s\""
    )
 MSG_HASH(
+   MSG_NETPLAY_STATUS_PLAYING,
+   "Σε αναπαραγωγή"
+   )
+
+MSG_HASH(
    MSG_AUDIO_VOLUME,
    "Ένταση ήχου"
    )

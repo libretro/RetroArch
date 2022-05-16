@@ -10504,6 +10504,11 @@ MSG_HASH(
    "Nimimerkkisi muutettiin muotoon \"%s\""
    )
 MSG_HASH(
+   MSG_NETPLAY_STATUS_PLAYING,
+   "Pelaa"
+   )
+
+MSG_HASH(
    MSG_AUDIO_VOLUME,
    "Äänenvoimakkuus"
    )

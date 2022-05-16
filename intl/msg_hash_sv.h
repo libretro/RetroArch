@@ -3740,6 +3740,11 @@ MSG_HASH(
 /* Notifications */
 
 MSG_HASH(
+   MSG_NETPLAY_STATUS_PLAYING,
+   "Spelar"
+   )
+
+MSG_HASH(
    MSG_AUDIO_VOLUME,
    "Ljudvolym"
    )

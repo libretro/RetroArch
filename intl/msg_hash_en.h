@@ -1783,6 +1783,7 @@ MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,
    "Your nickname was changed to \"%s\""
    )
+
 MSG_HASH(
    MSG_CONNECTING_TO_NETPLAY_HOST,
    "Connecting to net-play host"

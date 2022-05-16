@@ -6457,6 +6457,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
    "Netplay Sunucusu Durdur"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
+   "İstemciyi At"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_KICK,
+   "Şu anda barındırılan odanızdan bir oyuncuyu atın."
+   )
 
 /* Import Content */
 
@@ -10172,6 +10180,10 @@ MSG_HASH(
    "Netplay sunucuları yok."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
+   "Netplay istemcisi bulunamadı."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
    "Performans sayacı yok."
    )
@@ -10871,6 +10883,23 @@ MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,
    "Takma adınız \"%s\" olarak değiştirildi"
    )
+MSG_HASH(
+   MSG_NETPLAY_KICKED_CLIENT_S,
+   "İstemci atıldı: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
+   "İstemci atılamadı: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_PLAYING,
+   "Oynanıyor"
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_SPECTATING,
+   "İzleyici"
+   )
+
 MSG_HASH(
    MSG_AUDIO_VOLUME,
    "Ses seviyesi"

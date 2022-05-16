@@ -4339,6 +4339,7 @@ MSG_HASH(
    MSG_NETPLAY_CANNOT_PLAY,
    "Não é possível entrar no modo de reprodução"
    )
+
 MSG_HASH(
    MSG_AUDIO_VOLUME,
    "Volume de som"

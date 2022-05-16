@@ -6457,6 +6457,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
    "Detener servidor de juego en red"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
+   "Expulsar a cliente"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_KICK,
+   "Expulsa a un cliente de tu sala."
+   )
 
 /* Import Content */
 
@@ -10064,6 +10072,10 @@ MSG_HASH(
    "No se han encontrado servidores de juego en red."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
+   "No se han encontrado clientes de juego en red."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
    "No hay contadores de rendimiento."
    )
@@ -10775,6 +10787,23 @@ MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,
    "Tu apodo ha sido cambiado a «%s»"
    )
+MSG_HASH(
+   MSG_NETPLAY_KICKED_CLIENT_S,
+   "Cliente expulsado: «%s»"
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
+   "Error al expulsar al cliente: «%s»"
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_PLAYING,
+   "Jugando"
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_SPECTATING,
+   "Espectador"
+   )
+
 MSG_HASH(
    MSG_AUDIO_VOLUME,
    "Volumen de audio"

@@ -3123,6 +3123,7 @@ MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,
    "El to nomatu camudó a «%s»"
    )
+
 MSG_HASH(
    MSG_FETCHING_CORE_LIST,
    "Diendo en cata de la llista de nucleos…"

@@ -10512,6 +10512,11 @@ MSG_HASH(
    "您的昵称已更改为「%s」"
    )
 MSG_HASH(
+   MSG_NETPLAY_STATUS_PLAYING,
+   "正在播放"
+   )
+
+MSG_HASH(
    MSG_AUDIO_VOLUME,
    "音频音量"
    )
