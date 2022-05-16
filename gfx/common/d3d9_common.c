@@ -298,20 +298,12 @@ void *d3d9_vertex_buffer_new(void *_dev,
 {
    void              *buf = NULL;
    LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
-
-#ifndef _XBOX
-   if (usage == 0)
-      if (IDirect3DDevice9_GetSoftwareVertexProcessing(dev))
-         usage = D3DUSAGE_SOFTWAREPROCESSING;
-#endif
-
-   if (FAILED(IDirect3DDevice9_CreateVertexBuffer(
+   if (SUCCEEDED(IDirect3DDevice9_CreateVertexBuffer(
                dev, length, usage, fvf,
                (D3DPOOL)pool,
                (LPDIRECT3DVERTEXBUFFER9*)&buf, NULL)))
-      return NULL;
-
-   return buf;
+      return buf;
+   return NULL;
 }
 
 void d3d9_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
