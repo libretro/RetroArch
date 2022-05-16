@@ -183,6 +183,10 @@ void win32_set_input_userdata(void *data);
 
 void win32_update_title(void);
 
+void win32_input_driver(const char* input_name,
+   const char* joypad_name, input_driver_t** input, void** input_data);
+
+
 RETRO_END_DECLS
 
 #endif

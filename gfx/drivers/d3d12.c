@@ -1163,7 +1163,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
    d3d12->hdr.max_fall                    = 0.0f;
 #endif
 
-   d3d_input_driver(settings->arrays.input_driver, settings->arrays.input_joypad_driver, input, input_data);
+   win32_input_driver(settings->arrays.input_driver, settings->arrays.input_joypad_driver, input, input_data);
 
    if (!d3d12_init_base(d3d12))
       goto error;

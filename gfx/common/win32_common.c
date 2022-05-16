@@ -2627,3 +2627,48 @@ void win32_update_title(void)
    }
 #endif
 }
+
+void win32_input_driver(const char* input_name, const char* joypad_name,
+      input_driver_t** input, void** input_data)
+{
+#if defined(__WINRT__)
+   /* Plain xinput is supported on UWP, but it
+    * supports joypad only (uwp driver was added later) */
+   if (string_is_equal(input_name, "xinput"))
+   {
+      void *xinput = input_driver_init_wrap(&input_xinput, joypad_name);
+      *input       = xinput ? (input_driver_t*)&input_xinput : NULL;
+      *input_data  = xinput;
+   }
+   else
+   {
+      void *uwp    = input_driver_init_wrap(&input_uwp, joypad_name);
+      *input       = uwp ? (input_driver_t*)&input_uwp : NULL;
+      *input_data  = uwp;
+   }
+#elif defined(_XBOX)
+   void *xinput    = input_driver_init_wrap(&input_xinput, joypad_name);
+   *input          = xinput ? (input_driver_t*)&input_xinput : NULL;
+   *input_data     = xinput;
+#else
+#if _WIN32_WINNT >= 0x0501
+#ifdef HAVE_WINRAWINPUT
+   /* winraw only available since XP */
+   if (string_is_equal(input_name, "raw"))
+   {
+      *input_data = input_driver_init_wrap(&input_winraw, joypad_name);
+      if (*input_data)
+      {
+         *input = &input_winraw;
+         return;
+      }
+   }
+#endif
+#endif
+
+#ifdef HAVE_DINPUT
+   *input_data = input_driver_init_wrap(&input_dinput, joypad_name);
+   *input      = *input_data ? &input_dinput : NULL;
+#endif
+#endif
+}

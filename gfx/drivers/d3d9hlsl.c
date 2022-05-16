@@ -1194,7 +1194,7 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
       d3d9_hlsl_set_shader(d3d, type, shader_preset);
    }
 
-   d3d_input_driver(settings->arrays.input_joypad_driver,
+   win32_input_driver(settings->arrays.input_joypad_driver,
       settings->arrays.input_joypad_driver, input, input_data);
 
    {

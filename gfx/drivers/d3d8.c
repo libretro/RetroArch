@@ -1194,7 +1194,7 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
    if (!d3d8_initialize(d3d, &d3d->video_info))
       return false;
 
-   d3d_input_driver(settings->arrays.input_driver, settings->arrays.input_joypad_driver, input, input_data);
+   win32_input_driver(settings->arrays.input_driver, settings->arrays.input_joypad_driver, input, input_data);
 
    return true;
 }
