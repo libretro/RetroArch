@@ -82,7 +82,7 @@ d3d8_vertex_buffer_lock(LPDIRECT3DVERTEXBUFFER8 vertbuf)
 }
 
 void *d3d8_texture_new(LPDIRECT3DDEVICE8 dev,
-      const char *path, unsigned width, unsigned height,
+      unsigned width,     unsigned height,
       unsigned miplevels, unsigned usage, INT32 format,
       INT32 pool, unsigned filter, unsigned mipfilter,
       INT32 color_key, void *src_info_data,

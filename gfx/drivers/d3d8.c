@@ -314,7 +314,7 @@ static bool d3d8_setup_init(void *data,
    if (!chain->vertex_buf)
       return false;
 
-   chain->tex = (LPDIRECT3DTEXTURE8)d3d8_texture_new(d3dr, NULL,
+   chain->tex = (LPDIRECT3DTEXTURE8)d3d8_texture_new(d3dr,
          chain->tex_w, chain->tex_h, 1, 0,
          video_info->rgb32
          ?
@@ -1370,7 +1370,7 @@ static bool d3d8_overlay_load(void *data,
       unsigned height    = images[i].height;
       overlay_t *overlay = (overlay_t*)&d3d->overlays[i];
 
-      overlay->tex       = d3d8_texture_new(d3d->dev, NULL,
+      overlay->tex       = d3d8_texture_new(d3d->dev,
                   width, height, 1, 0,
                   D3D8_ARGB8888_FORMAT,
                   D3DPOOL_MANAGED, 0, 0, 0,
@@ -1612,7 +1612,7 @@ static void d3d8_set_menu_texture_frame(void *data,
       if (tex)
          IDirect3DTexture8_Release(tex);
 
-      d3d->menu->tex = d3d8_texture_new(d3d->dev, NULL,
+      d3d->menu->tex = d3d8_texture_new(d3d->dev,
             width, height, 1,
             0, D3D8_ARGB8888_FORMAT,
             D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
@@ -1697,7 +1697,7 @@ static void d3d8_video_texture_load_d3d(
    unsigned usage            = 0;
    d3d8_video_t *d3d         = (d3d8_video_t*)info->userdata;
    struct texture_image *ti  = (struct texture_image*)info->data;
-   LPDIRECT3DTEXTURE8 tex    = (LPDIRECT3DTEXTURE8)d3d8_texture_new(d3d->dev, NULL,
+   LPDIRECT3DTEXTURE8 tex    = (LPDIRECT3DTEXTURE8)d3d8_texture_new(d3d->dev,
                ti->width, ti->height, 0,
                usage, D3D8_ARGB8888_FORMAT,
                D3DPOOL_MANAGED, 0, 0, 0,
