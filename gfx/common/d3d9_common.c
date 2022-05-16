@@ -609,6 +609,38 @@ static D3DFORMAT d3d9_get_color_format_backbuffer(bool rgb32)
 }
 
 bool d3d9_has_windowed(void *data) { return false; }
+
+static void d3d9_get_video_size(d3d9_video_t *d3d,
+      unsigned *width, unsigned *height)
+{
+   XVIDEO_MODE video_mode;
+
+   XGetVideoMode(&video_mode);
+
+   *width                       = video_mode.dwDisplayWidth;
+   *height                      = video_mode.dwDisplayHeight;
+
+   d3d->resolution_hd_enable    = false;
+
+   if(video_mode.fIsHiDef)
+   {
+      *width                    = 1280;
+      *height                   = 720;
+      d3d->resolution_hd_enable = true;
+   }
+   else
+   {
+      *width                    = 640;
+      *height                   = 480;
+   }
+
+   d3d->widescreen_mode         = video_mode.fIsWideScreen;
+}
+
+static D3DFORMAT d3d9_get_color_format_front_buffer(void)
+{
+   return D3DFMT_LE_X8R8G8B8;
+}
 #else
 static bool d3d9_is_windowed_enable(bool info_fullscreen)
 {
@@ -718,39 +750,6 @@ void d3d9_make_d3dpp(d3d9_video_t *d3d,
 #endif
 }
 
-#ifdef _XBOX
-static void d3d9_get_video_size(d3d9_video_t *d3d,
-      unsigned *width, unsigned *height)
-{
-   XVIDEO_MODE video_mode;
-
-   XGetVideoMode(&video_mode);
-
-   *width                       = video_mode.dwDisplayWidth;
-   *height                      = video_mode.dwDisplayHeight;
-
-   d3d->resolution_hd_enable    = false;
-
-   if(video_mode.fIsHiDef)
-   {
-      *width                    = 1280;
-      *height                   = 720;
-      d3d->resolution_hd_enable = true;
-   }
-   else
-   {
-      *width                    = 640;
-      *height                   = 480;
-   }
-
-   d3d->widescreen_mode         = video_mode.fIsWideScreen;
-}
-
-static D3DFORMAT d3d9_get_color_format_front_buffer(void)
-{
-   return D3DFMT_LE_X8R8G8B8;
-}
-#endif
 
 void d3d9_log_info(const struct LinkInfo *info)
 {
@@ -955,7 +954,6 @@ void d3d9_set_viewport(void *data,
 
    d3d9_set_font_rect(d3d, NULL);
 }
-
 
 #if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
 void d3d9_overlay_render(d3d9_video_t *d3d,
