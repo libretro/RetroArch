@@ -1777,10 +1777,6 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
    vk->vk_vp.maxDepth   = 1.0f;
 
    vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
-
-#if 0
-   RARCH_LOG("Setting viewport @ %ux%u\n", viewport_width, viewport_height);
-#endif
 }
 
 static void vulkan_readback(vk_t *vk)
@@ -1836,12 +1832,13 @@ static void vulkan_readback(vk_t *vk)
          1, &barrier, 0, NULL, 0, NULL);
 }
 
-static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info,
+static void vulkan_inject_black_frame(
+      vk_t *vk, video_frame_info_t *video_info,
       void *context_data)
 {
-   VkCommandBufferBeginInfo begin_info           = {
+   VkCommandBufferBeginInfo begin_info = {
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-   VkSubmitInfo submit_info                      = {
+   VkSubmitInfo submit_info            = {
       VK_STRUCTURE_TYPE_SUBMIT_INFO };
 
    const VkClearColorValue clear_color = {{ 0.0f, 0.0f, 0.0f, 1.0f }};
@@ -2137,24 +2134,12 @@ static bool vulkan_frame(void *data, const void *frame,
       }
       else
       {
-         struct vk_texture *tex = NULL;
-
-#if 0 /* VULKAN_HDR_SWAPCHAIN */
-         if(vk->context->hdr_enable)
-         {
-            tex = &vk->main_buffer.texture;
-            vulkan_transition_texture(vk, vk->cmd, tex);
-         }
+         struct vk_texture *tex = &vk->swapchain[vk->last_valid_index].texture;
+         if (vk->swapchain[vk->last_valid_index].texture_optimal.memory 
+               != VK_NULL_HANDLE)
+            tex = &vk->swapchain[vk->last_valid_index].texture_optimal;
          else
-#endif /* VULKAN_HDR_SWAPCHAIN */
-         {
-            tex = &vk->swapchain[vk->last_valid_index].texture;
-            if (vk->swapchain[vk->last_valid_index].texture_optimal.memory 
-                  != VK_NULL_HANDLE)
-               tex = &vk->swapchain[vk->last_valid_index].texture_optimal;
-            else
-               vulkan_transition_texture(vk, vk->cmd, tex);
-         }
+            vulkan_transition_texture(vk, vk->cmd, tex);
 
          input.image  = tex->image;
          input.view   = tex->view;
@@ -2409,10 +2394,10 @@ static bool vulkan_frame(void *data, const void *frame,
          {
             VkViewport viewport;
 
-            viewport.x        = 0.0f;
-            viewport.y        = 0.0f;
-            viewport.width    = vk->context->swapchain_width;
-            viewport.height   = vk->context->swapchain_height;
+            viewport.x             = 0.0f;
+            viewport.y             = 0.0f;
+            viewport.width         = vk->context->swapchain_width;
+            viewport.height        = vk->context->swapchain_height;
 
             const VkRect2D scissor = {
                {
@@ -2675,87 +2660,81 @@ static bool vulkan_frame(void *data, const void *frame,
 
       if(vk->context->hdr_enable)
       {
+         VkMemoryRequirements mem_reqs;
+         VkImageCreateInfo image_info;
+         VkMemoryAllocateInfo alloc;
+         VkImageViewCreateInfo view;
+         VkFramebufferCreateInfo info;
+
          memset(&vk->main_buffer, 0, sizeof(vk->main_buffer));
 
-         {
-            /* Create the image */
-            VkMemoryRequirements mem_reqs;
-            VkImageCreateInfo image_info    = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
-            VkMemoryAllocateInfo alloc      = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
+         /* Create the image */
+         image_info.sType                = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+         image_info.pNext                = NULL;
+         image_info.flags                = 0;
+         image_info.imageType            = VK_IMAGE_TYPE_2D;
+         image_info.format               = main_buffer_format;
+         image_info.extent.width         = video_width;
+         image_info.extent.height        = video_height;
+         image_info.extent.depth         = 1;
+         image_info.mipLevels            = 1;
+         image_info.arrayLayers          = 1;
+         image_info.samples              = VK_SAMPLE_COUNT_1_BIT;
+         image_info.tiling               = VK_IMAGE_TILING_OPTIMAL;
+         image_info.usage                = VK_IMAGE_USAGE_SAMPLED_BIT |
+            VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+         image_info.sharingMode          = VK_SHARING_MODE_EXCLUSIVE;
+         image_info.queueFamilyIndexCount= 0;
+         image_info.pQueueFamilyIndices  = NULL;
+         image_info.initialLayout        = VK_IMAGE_LAYOUT_GENERAL; /* VK_IMAGE_LAYOUT_UNDEFINED; */
 
-            image_info.imageType            = VK_IMAGE_TYPE_2D;
-            image_info.format               = main_buffer_format;
-            image_info.extent.width         = video_width;
-            image_info.extent.height        = video_height;
-            image_info.extent.depth         = 1;
-            image_info.mipLevels            = 1;
-            image_info.arrayLayers          = 1;
-            image_info.samples              = VK_SAMPLE_COUNT_1_BIT;
-            image_info.tiling               = VK_IMAGE_TILING_OPTIMAL;
-            image_info.usage                = VK_IMAGE_USAGE_SAMPLED_BIT |
-                                             VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-                                             VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-            image_info.initialLayout        = VK_IMAGE_LAYOUT_GENERAL; /* VK_IMAGE_LAYOUT_UNDEFINED; */
+         vkCreateImage(vk->context->device, &image_info, NULL, &vk->main_buffer.image);
+         vkGetImageMemoryRequirements(vk->context->device, vk->main_buffer.image, &mem_reqs);
+         alloc.sType                     = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+         alloc.pNext                     = NULL;
+         alloc.allocationSize            = mem_reqs.size;
+         alloc.memoryTypeIndex           = vulkan_find_memory_type(
+               &vk->context->memory_properties,
+               mem_reqs.memoryTypeBits,
+               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-            vkCreateImage(vk->context->device, &image_info, NULL, &vk->main_buffer.image);
-            vkGetImageMemoryRequirements(vk->context->device, vk->main_buffer.image, &mem_reqs);
+         vkAllocateMemory(vk->context->device, &alloc, NULL, &vk->main_buffer.memory);
 
-            alloc.allocationSize            = mem_reqs.size;
-            alloc.memoryTypeIndex           = vulkan_find_memory_type(
-                  &vk->context->memory_properties,
-                  mem_reqs.memoryTypeBits,
-                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+         vkBindImageMemory(vk->context->device, vk->main_buffer.image, vk->main_buffer.memory, 0);
 
-            vkAllocateMemory(vk->context->device, &alloc, NULL, &vk->main_buffer.memory);
+         /* Create an image view which we can render into. */
+         view.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+         view.pNext                           = NULL;
+         view.flags                           = 0;
+         view.image                           = vk->main_buffer.image;
+         view.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
+         view.format                          = main_buffer_format;
+         view.components.r                    = VK_COMPONENT_SWIZZLE_R;
+         view.components.g                    = VK_COMPONENT_SWIZZLE_G;
+         view.components.b                    = VK_COMPONENT_SWIZZLE_B;
+         view.components.a                    = VK_COMPONENT_SWIZZLE_A;
+         view.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+         view.subresourceRange.baseMipLevel   = 0;
+         view.subresourceRange.levelCount     = 1;
+         view.subresourceRange.baseArrayLayer = 0;
+         view.subresourceRange.layerCount     = 1;
 
-            vkBindImageMemory(vk->context->device, vk->main_buffer.image, vk->main_buffer.memory, 0);
-         }
+         vkCreateImageView(vk->context->device, &view, NULL, &vk->main_buffer.view);
 
-         {
-            /* Create an image view which we can render into. */
-            VkImageViewCreateInfo view = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+         /* Create the framebuffer */
+         info.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+         info.pNext           = NULL;
+         info.flags           = 0;
+         info.renderPass      = vk->render_pass;
+         info.attachmentCount = 1;
+         info.pAttachments    = &vk->main_buffer.view;
+         info.width           = vk->context->swapchain_width;
+         info.height          = vk->context->swapchain_height;
+         info.layers          = 1;
 
-            view.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
-            view.format                          = main_buffer_format;
-            view.image                           = vk->main_buffer.image;
-            view.subresourceRange.baseMipLevel   = 0;
-            view.subresourceRange.baseArrayLayer = 0;
-            view.subresourceRange.levelCount     = 1;
-            view.subresourceRange.layerCount     = 1;
-            view.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-            view.components.r                    = VK_COMPONENT_SWIZZLE_R;
-            view.components.g                    = VK_COMPONENT_SWIZZLE_G;
-            view.components.b                    = VK_COMPONENT_SWIZZLE_B;
-            view.components.a                    = VK_COMPONENT_SWIZZLE_A;
-
-            vkCreateImageView(vk->context->device, &view, NULL, &vk->main_buffer.view);
-         }
-
-         {
-            /* Create the framebuffer */
-            VkFramebufferCreateInfo info = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
-
-            info.renderPass      = vk->render_pass;
-            info.attachmentCount = 1;
-            info.pAttachments    = &vk->main_buffer.view;
-            info.width           = vk->context->swapchain_width;
-            info.height          = vk->context->swapchain_height;
-            info.layers          = 1;
-
-            vkCreateFramebuffer(vk->context->device, &info, NULL, &vk->main_buffer.framebuffer);
-         }
+         vkCreateFramebuffer(vk->context->device, &info, NULL, &vk->main_buffer.framebuffer);
       }
-
-      /*
-      vulkan_set_hdr_metadata(
-            vk->hdr.support,
-            vk->context->swapchain_format,
-            vk->context->swapchain_color_space,
-            vk->hdr.max_output_nits,
-            vk->hdr.min_output_nits,
-            vk->hdr.max_cll,
-            vk->hdr.max_fall);
-         */
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
       vk->should_resize = false;
@@ -2776,9 +2755,7 @@ static bool vulkan_frame(void *data, const void *frame,
    {   
       unsigned n;
       for (n = 0; n < black_frame_insertion; ++n) 
-      { 
          vulkan_inject_black_frame(vk, video_info, vk->ctx_data);
-      }
    }
 
    /* Vulkan doesn't directly support swap_interval > 1, 

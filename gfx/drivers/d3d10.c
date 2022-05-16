@@ -815,25 +815,27 @@ static void *d3d10_gfx_init(const video_info_t* video,
 
    {
       D3D10_BUFFER_DESC desc;
-      d3d10_vertex_t vertices[] = {
+      D3D10_SUBRESOURCE_DATA vertex_data;
+      d3d10_vertex_t vertices[]    = {
          { { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
          { { 0.0f, 1.0f }, { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
          { { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
          { { 1.0f, 1.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
       };
-      D3D10_SUBRESOURCE_DATA
-         vertexData               = { vertices };
+      vertex_data.pSysMem          = vertices;
+      vertex_data.SysMemPitch      = 0;
+      vertex_data.SysMemSlicePitch = 0;
 
-      desc.ByteWidth              = sizeof(vertices);
-      desc.Usage                  = D3D10_USAGE_IMMUTABLE;
-      desc.BindFlags              = D3D10_BIND_VERTEX_BUFFER;
-      desc.CPUAccessFlags         = 0;
-      desc.MiscFlags              = 0;
+      desc.ByteWidth               = sizeof(vertices);
+      desc.Usage                   = D3D10_USAGE_IMMUTABLE;
+      desc.BindFlags               = D3D10_BIND_VERTEX_BUFFER;
+      desc.CPUAccessFlags          = 0;
+      desc.MiscFlags               = 0;
 
-      D3D10CreateBuffer(d3d10->device, &desc, &vertexData, &d3d10->frame.vbo);
-      desc.Usage          = D3D10_USAGE_DYNAMIC;
-      desc.CPUAccessFlags = D3D10_CPU_ACCESS_WRITE;
-      D3D10CreateBuffer(d3d10->device, &desc, &vertexData, &d3d10->menu.vbo);
+      D3D10CreateBuffer(d3d10->device, &desc, &vertex_data, &d3d10->frame.vbo);
+      desc.Usage                   = D3D10_USAGE_DYNAMIC;
+      desc.CPUAccessFlags          = D3D10_CPU_ACCESS_WRITE;
+      D3D10CreateBuffer(d3d10->device, &desc, &vertex_data, &d3d10->menu.vbo);
 
       d3d10->sprites.capacity  = 16 * 1024;
       desc.ByteWidth           = sizeof(d3d10_sprite_t) * d3d10->sprites.capacity;
@@ -982,11 +984,18 @@ static void *d3d10_gfx_init(const video_info_t* video,
    }
 
    {
-      D3D10_RASTERIZER_DESC desc = { (D3D10_FILL_MODE)0 };
+      D3D10_RASTERIZER_DESC desc;
 
       desc.FillMode              = D3D10_FILL_SOLID;
       desc.CullMode              = D3D10_CULL_NONE;
+      desc.FrontCounterClockwise = FALSE;
+      desc.DepthBias             = 0;
+      desc.DepthBiasClamp        = 0.0f;
+      desc.SlopeScaledDepthBias  = 0.0f;
+      desc.DepthClipEnable       = FALSE;
       desc.ScissorEnable         = TRUE;
+      desc.MultisampleEnable     = FALSE;
+      desc.AntialiasedLineEnable = FALSE;
 
       D3D10CreateRasterizerState(d3d10->device, &desc, &d3d10->state);
    }

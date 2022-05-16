@@ -92,34 +92,38 @@ static void d3d12_free_overlays(d3d12_video_t* d3d12)
 static void
 d3d12_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w, float h)
 {
+   D3D12_RANGE     range;
    d3d12_sprite_t* sprites = NULL;
-   D3D12_RANGE     range   = { 0, 0 };
    d3d12_video_t*  d3d12   = (d3d12_video_t*)data;
 
    if (!d3d12)
       return;
 
+   range.Begin             = 0;
+   range.End               = 0;
    D3D12Map(d3d12->overlays.vbo, 0, &range, (void**)&sprites);
 
-   sprites[index].pos.x = x;
-   sprites[index].pos.y = y;
-   sprites[index].pos.w = w;
-   sprites[index].pos.h = h;
+   sprites[index].pos.x    = x;
+   sprites[index].pos.y    = y;
+   sprites[index].pos.w    = w;
+   sprites[index].pos.h    = h;
 
-   range.Begin          = index * sizeof(*sprites);
-   range.End            = range.Begin + sizeof(*sprites);
+   range.Begin             = index * sizeof(*sprites);
+   range.End               = range.Begin + sizeof(*sprites);
    D3D12Unmap(d3d12->overlays.vbo, 0, &range);
 }
 
 static void d3d12_overlay_tex_geom(void* data, unsigned index, float u, float v, float w, float h)
 {
+   D3D12_RANGE     range;
    d3d12_sprite_t* sprites = NULL;
-   D3D12_RANGE     range   = { 0, 0 };
    d3d12_video_t*  d3d12   = (d3d12_video_t*)data;
 
    if (!d3d12)
       return;
 
+   range.Begin             = 0;
+   range.End               = 0;
    D3D12Map(d3d12->overlays.vbo, 0, &range, (void**)&sprites);
 
    sprites[index].coords.u = u;
@@ -134,13 +138,15 @@ static void d3d12_overlay_tex_geom(void* data, unsigned index, float u, float v,
 
 static void d3d12_overlay_set_alpha(void* data, unsigned index, float mod)
 {
-   d3d12_sprite_t* sprites = NULL;
-   D3D12_RANGE     range   = { 0, 0 };
-   d3d12_video_t*  d3d12   = (d3d12_video_t*)data;
+   D3D12_RANGE     range;
+   d3d12_sprite_t* sprites  = NULL;
+   d3d12_video_t*  d3d12    = (d3d12_video_t*)data;
 
    if (!d3d12)
       return;
 
+   range.Begin              = 0;
+   range.End                = 0;
    D3D12Map(d3d12->overlays.vbo, 0, &range, (void**)&sprites);
 
    sprites[index].colors[0] = DXGI_COLOR_RGBA(0xFF, 0xFF, 0xFF, mod * 0xFF);
@@ -155,9 +161,9 @@ static void d3d12_overlay_set_alpha(void* data, unsigned index, float mod)
 
 static bool d3d12_overlay_load(void* data, const void* image_data, unsigned num_images)
 {
+   D3D12_RANGE     range;
    unsigned                    i;
    d3d12_sprite_t*             sprites = NULL;
-   D3D12_RANGE                 range   = { 0, 0 };
    d3d12_video_t*              d3d12   = (d3d12_video_t*)data;
    const struct texture_image* images  = (const struct texture_image*)image_data;
 
@@ -175,38 +181,40 @@ static bool d3d12_overlay_load(void* data, const void* image_data, unsigned num_
    d3d12->overlays.vbo_view.BufferLocation = d3d12_create_buffer(
          d3d12->device, d3d12->overlays.vbo_view.SizeInBytes, &d3d12->overlays.vbo);
 
+   range.Begin                             = 0;
+   range.End                               = 0;
    D3D12Map(d3d12->overlays.vbo, 0, &range, (void**)&sprites);
 
    for (i = 0; i < num_images; i++)
    {
-
       d3d12->overlays.textures[i].desc.Width  = images[i].width;
       d3d12->overlays.textures[i].desc.Height = images[i].height;
       d3d12->overlays.textures[i].desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
       d3d12->overlays.textures[i].srv_heap    = &d3d12->desc.srv_heap;
-      d3d12_init_texture(d3d12->device, &d3d12->overlays.textures[i]);
 
+      d3d12_init_texture(d3d12->device, &d3d12->overlays.textures[i]);
       d3d12_update_texture(
-            images[i].width, images[i].height, 0, DXGI_FORMAT_B8G8R8A8_UNORM, images[i].pixels,
+            images[i].width, images[i].height,
+            0, DXGI_FORMAT_B8G8R8A8_UNORM, images[i].pixels,
             &d3d12->overlays.textures[i]);
 
-      sprites[i].pos.x = 0.0f;
-      sprites[i].pos.y = 0.0f;
-      sprites[i].pos.w = 1.0f;
-      sprites[i].pos.h = 1.0f;
+      sprites[i].pos.x           = 0.0f;
+      sprites[i].pos.y           = 0.0f;
+      sprites[i].pos.w           = 1.0f;
+      sprites[i].pos.h           = 1.0f;
 
-      sprites[i].coords.u = 0.0f;
-      sprites[i].coords.v = 0.0f;
-      sprites[i].coords.w = 1.0f;
-      sprites[i].coords.h = 1.0f;
+      sprites[i].coords.u        = 0.0f;
+      sprites[i].coords.v        = 0.0f;
+      sprites[i].coords.w        = 1.0f;
+      sprites[i].coords.h        = 1.0f;
 
       sprites[i].params.scaling  = 1;
       sprites[i].params.rotation = 0;
 
-      sprites[i].colors[0] = 0xFFFFFFFF;
-      sprites[i].colors[1] = sprites[i].colors[0];
-      sprites[i].colors[2] = sprites[i].colors[0];
-      sprites[i].colors[3] = sprites[i].colors[0];
+      sprites[i].colors[0]       = 0xFFFFFFFF;
+      sprites[i].colors[1]       = sprites[i].colors[0];
+      sprites[i].colors[2]       = sprites[i].colors[0];
+      sprites[i].colors[3]       = sprites[i].colors[0];
    }
    D3D12Unmap(d3d12->overlays.vbo, 0, NULL);
 
@@ -289,15 +297,17 @@ static void d3d12_render_overlay(d3d12_video_t *d3d12)
 #ifdef HAVE_DXGI_HDR
 static void d3d12_set_hdr_max_nits(void* data, float max_nits)
 {
+   D3D12_RANGE read_range;
    dxgi_hdr_uniform_t *mapped_ubo         = NULL;
-   D3D12_RANGE read_range                 = { 0, 0 };
    d3d12_video_t *d3d12                   = (d3d12_video_t*)data;
 
    d3d12->hdr.max_output_nits             = max_nits;
    d3d12->hdr.ubo_values.max_nits         = max_nits;
 
+   read_range.Begin                       = 0;
+   read_range.End                         = 0;
    D3D12Map(d3d12->hdr.ubo, 0, &read_range, (void**)&mapped_ubo);
-   *mapped_ubo = d3d12->hdr.ubo_values;
+   *mapped_ubo                            = d3d12->hdr.ubo_values;
    D3D12Unmap(d3d12->hdr.ubo, 0, NULL);
 
    dxgi_set_hdr_metadata(
@@ -313,12 +323,14 @@ static void d3d12_set_hdr_max_nits(void* data, float max_nits)
 
 static void d3d12_set_hdr_paper_white_nits(void* data, float paper_white_nits)
 {
-   D3D12_RANGE read_range                 = { 0, 0 };
+   D3D12_RANGE read_range;
    dxgi_hdr_uniform_t *mapped_ubo         = NULL;
    d3d12_video_t *d3d12                   = (d3d12_video_t*)data;
 
    d3d12->hdr.ubo_values.paper_white_nits = paper_white_nits;
 
+   read_range.Begin                       = 0;
+   read_range.End                         = 0;
    D3D12Map(d3d12->hdr.ubo, 0, &read_range, (void**)&mapped_ubo);
    *mapped_ubo = d3d12->hdr.ubo_values;
    D3D12Unmap(d3d12->hdr.ubo, 0, NULL);
@@ -326,12 +338,14 @@ static void d3d12_set_hdr_paper_white_nits(void* data, float paper_white_nits)
 
 static void d3d12_set_hdr_contrast(void* data, float contrast)
 {
-   D3D12_RANGE read_range                 = { 0, 0 };
+   D3D12_RANGE read_range;
    d3d12_video_t *d3d12                   = (d3d12_video_t*)data;
    dxgi_hdr_uniform_t *mapped_ubo         = NULL;
 
    d3d12->hdr.ubo_values.contrast         = contrast;
 
+   read_range.Begin                       = 0;
+   read_range.End                         = 0;
    D3D12Map(d3d12->hdr.ubo, 0, &read_range, (void**)&mapped_ubo);
    *mapped_ubo = d3d12->hdr.ubo_values;
    D3D12Unmap(d3d12->hdr.ubo, 0, NULL);
@@ -339,12 +353,14 @@ static void d3d12_set_hdr_contrast(void* data, float contrast)
 
 static void d3d12_set_hdr_expand_gamut(void* data, bool expand_gamut)
 {
-   D3D12_RANGE read_range                 = { 0, 0 };
+   D3D12_RANGE read_range;
    dxgi_hdr_uniform_t *mapped_ubo         = NULL;
    d3d12_video_t *d3d12                   = (d3d12_video_t*)data;
 
    d3d12->hdr.ubo_values.expand_gamut     = expand_gamut ? 1.0f : 0.0f;
 
+   read_range.Begin                       = 0;
+   read_range.End                         = 0;
    D3D12Map(d3d12->hdr.ubo, 0, &read_range, (void**)&mapped_ubo);
    *mapped_ubo = d3d12->hdr.ubo_values;
    D3D12Unmap(d3d12->hdr.ubo, 0, NULL);
@@ -352,11 +368,13 @@ static void d3d12_set_hdr_expand_gamut(void* data, bool expand_gamut)
 
 static void d3d12_set_hdr_inverse_tonemap(d3d12_video_t* d3d12, bool inverse_tonemap)
 {
-   D3D12_RANGE read_range                 = { 0, 0 };
+   D3D12_RANGE read_range;
    dxgi_hdr_uniform_t *mapped_ubo         = NULL;
 
    d3d12->hdr.ubo_values.inverse_tonemap  = inverse_tonemap ? 1.0f : 0.0f;
 
+   read_range.Begin                       = 0;
+   read_range.End                         = 0;
    D3D12Map(d3d12->hdr.ubo, 0, &read_range, (void**)&mapped_ubo);
    *mapped_ubo = d3d12->hdr.ubo_values;
    D3D12Unmap(d3d12->hdr.ubo, 0, NULL);
@@ -364,11 +382,13 @@ static void d3d12_set_hdr_inverse_tonemap(d3d12_video_t* d3d12, bool inverse_ton
 
 static void d3d12_set_hdr10(d3d12_video_t* d3d12, bool hdr10)
 {
-   D3D12_RANGE read_range                 = { 0, 0 };
+   D3D12_RANGE read_range;
    dxgi_hdr_uniform_t *mapped_ubo         = NULL;
 
    d3d12->hdr.ubo_values.hdr10            = hdr10 ? 1.0f : 0.0f;
 
+   read_range.Begin                       = 0;
+   read_range.End                         = 0;
    D3D12Map(d3d12->hdr.ubo, 0, &read_range, (void**)&mapped_ubo);
    *mapped_ubo = d3d12->hdr.ubo_values;
    D3D12Unmap(d3d12->hdr.ubo, 0, NULL);
@@ -393,7 +413,7 @@ static void d3d12_gfx_set_rotation(void* data, unsigned rotation)
 {
    math_matrix_4x4  rot;
    math_matrix_4x4* mvp;
-   D3D12_RANGE      read_range = { 0, 0 };
+   D3D12_RANGE      read_range;
    d3d12_video_t*   d3d12      = (d3d12_video_t*)data;
 
    if (!d3d12)
@@ -405,6 +425,8 @@ static void d3d12_gfx_set_rotation(void* data, unsigned rotation)
    matrix_4x4_rotate_z(rot, d3d12->frame.rotation * (M_PI / 2.0f));
    matrix_4x4_multiply(d3d12->mvp, rot, d3d12->mvp_no_rot);
 
+   read_range.Begin            = 0;
+   read_range.End              = 0;
    D3D12Map(d3d12->frame.ubo, 0, &read_range, (void**)&mvp);
    *mvp = d3d12->mvp;
    D3D12Unmap(d3d12->frame.ubo, 0, NULL);
@@ -1213,7 +1235,9 @@ static void *d3d12_gfx_init(const video_info_t* video,
 
    {
       math_matrix_4x4* mvp;
-      D3D12_RANGE      read_range = { 0, 0 };
+      D3D12_RANGE read_range;
+      read_range.Begin            = 0;
+      read_range.End              = 0;
       D3D12Map(d3d12->ubo, 0, &read_range, (void**)&mvp);
       *mvp = d3d12->mvp_no_rot;
       D3D12Unmap(d3d12->ubo, 0, NULL);
@@ -1234,7 +1258,9 @@ static void *d3d12_gfx_init(const video_info_t* video,
 
    {
       dxgi_hdr_uniform_t* mapped_ubo;
-      D3D12_RANGE      read_range = { 0, 0 };
+      D3D12_RANGE read_range;
+      read_range.Begin            = 0;
+      read_range.End              = 0;
       D3D12Map(d3d12->hdr.ubo, 0, &read_range, (void**)&mapped_ubo);
       *mapped_ubo = d3d12->hdr.ubo_values;
       D3D12Unmap(d3d12->hdr.ubo, 0, NULL);
@@ -1675,9 +1701,12 @@ static bool d3d12_gfx_frame(
 
             if (buffer_sem->stage_mask && buffer_sem->uniforms)
             {
-               D3D12_RANGE    range       = { 0, 0 };
+               D3D12_RANGE    range;
                uint8_t*       mapped_data = NULL;
                uniform_sem_t* uniform     = buffer_sem->uniforms;
+
+               range.Begin                = 0;
+               range.End                  = 0;
 
                D3D12Map(d3d12->pass[i].buffers[j], 0, &range,
                      (void**)&mapped_data);
@@ -2120,14 +2149,16 @@ static void d3d12_set_menu_texture_frame(
    d3d12->menu.alpha = alpha;
 
    {
-      D3D12_RANGE     read_range = { 0, 0 };
+      D3D12_RANGE read_range;
       d3d12_vertex_t* v          = NULL;
 
+      read_range.Begin           = 0;
+      read_range.End             = 0;
       D3D12Map(d3d12->menu.vbo, 0, &read_range, (void**)&v);
-      v[0].color[3] = alpha;
-      v[1].color[3] = alpha;
-      v[2].color[3] = alpha;
-      v[3].color[3] = alpha;
+      v[0].color[3]              = alpha;
+      v[1].color[3]              = alpha;
+      v[2].color[3]              = alpha;
+      v[3].color[3]              = alpha;
       D3D12Unmap(d3d12->menu.vbo, 0, NULL);
    }
 
@@ -2148,7 +2179,8 @@ static void d3d12_set_menu_texture_enable(void* data,
    d3d12->menu.fullscreen = full_screen;
 }
 
-static void d3d12_gfx_set_aspect_ratio(void* data, unsigned aspect_ratio_idx)
+static void d3d12_gfx_set_aspect_ratio(
+      void* data, unsigned aspect_ratio_idx)
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 

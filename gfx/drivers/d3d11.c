@@ -1315,20 +1315,23 @@ static void *d3d11_gfx_init(const video_info_t* video,
          { { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
          { { 1.0f, 1.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
       };
-      D3D11_SUBRESOURCE_DATA
-         vertexData             = { vertices };
+      D3D11_SUBRESOURCE_DATA vertex_data;
 
-      desc.ByteWidth            = sizeof(vertices);
-      desc.Usage                = D3D11_USAGE_IMMUTABLE;
-      desc.BindFlags            = D3D11_BIND_VERTEX_BUFFER;
-      desc.CPUAccessFlags       = 0;
-      desc.MiscFlags            = 0;
-      desc.StructureByteStride  = 0;
+      vertex_data.pSysMem          = vertices;
+      vertex_data.SysMemPitch      = 0;
+      vertex_data.SysMemSlicePitch = 0;
 
-      D3D11CreateBuffer(d3d11->device, &desc, &vertexData, &d3d11->frame.vbo);
-      desc.Usage                = D3D11_USAGE_DYNAMIC;
-      desc.CPUAccessFlags       = D3D11_CPU_ACCESS_WRITE;
-      D3D11CreateBuffer(d3d11->device, &desc, &vertexData, &d3d11->menu.vbo);
+      desc.ByteWidth               = sizeof(vertices);
+      desc.Usage                   = D3D11_USAGE_IMMUTABLE;
+      desc.BindFlags               = D3D11_BIND_VERTEX_BUFFER;
+      desc.CPUAccessFlags          = 0;
+      desc.MiscFlags               = 0;
+      desc.StructureByteStride     = 0;
+
+      D3D11CreateBuffer(d3d11->device, &desc, &vertex_data, &d3d11->frame.vbo);
+      desc.Usage                   = D3D11_USAGE_DYNAMIC;
+      desc.CPUAccessFlags          = D3D11_CPU_ACCESS_WRITE;
+      D3D11CreateBuffer(d3d11->device, &desc, &vertex_data, &d3d11->menu.vbo);
 
       d3d11->sprites.capacity  = 16 * 1024;
       desc.ByteWidth           = sizeof(d3d11_sprite_t) * d3d11->sprites.capacity;
@@ -1528,15 +1531,21 @@ static void *d3d11_gfx_init(const video_info_t* video,
             &d3d11->blend_disable);
    }
    {
-      D3D11_RASTERIZER_DESC desc = { (D3D11_FILL_MODE)0 };
+      D3D11_RASTERIZER_DESC desc;
 
-      desc.FillMode      = D3D11_FILL_SOLID;
-      desc.CullMode      = D3D11_CULL_NONE;
+      desc.FillMode              = D3D11_FILL_SOLID;
+      desc.CullMode              = D3D11_CULL_NONE;
+      desc.FrontCounterClockwise = false;
+      desc.DepthBias             = 0;
+      desc.DepthBiasClamp        = 0.0f;
+      desc.SlopeScaledDepthBias  = 0.0f;
+      desc.DepthClipEnable       = FALSE;
+      desc.MultisampleEnable     = FALSE;
+      desc.AntialiasedLineEnable = FALSE;
 
-      desc.ScissorEnable = TRUE;
+      desc.ScissorEnable         = TRUE;
       d3d11->device->lpVtbl->CreateRasterizerState(d3d11->device, &desc,
             &d3d11->scissor_enabled);
-
       desc.ScissorEnable = FALSE;
       d3d11->device->lpVtbl->CreateRasterizerState(d3d11->device, &desc,
             &d3d11->scissor_disabled);
@@ -1966,13 +1975,18 @@ uuidof(ID3D11Texture2D), (void**)&back_buffer);
 
       if (hw_texture)
       {
-          D3D11_BOX frame_box = { 0, 0, 0, width, height, 1 };
+          D3D11_BOX frame_box;
+          frame_box.left   = 0;
+          frame_box.top    = 0;
+          frame_box.front  = 0;
+          frame_box.right  = width;
+          frame_box.bottom = height;
+          frame_box.back   = 1;
           context->lpVtbl->CopySubresourceRegion(
                 context,
                 (D3D11Resource)d3d11->frame.texture[0].handle,
                 0, 0, 0, 0,
                 (D3D11Resource)hw_texture, 0, &frame_box);
-
           Release(hw_texture);
           hw_texture = NULL;
       }
