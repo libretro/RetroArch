@@ -79,7 +79,9 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
 
    {
       d3d12_sprite_t* sprite;
-      D3D12_RANGE     range = { 0, 0 };
+      D3D12_RANGE range;
+      range.Begin           = 0;
+      range.End             = 0;
       D3D12Map(d3d12->sprites.vbo, 0, &range, (void**)&sprite);
       sprite += d3d12->sprites.offset;
 
@@ -196,8 +198,8 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
 
          if (!d3d12->menu_pipeline_vbo)
          {
+            D3D12_RANGE read_range;
             void*       vertex_data_begin;
-            D3D12_RANGE read_range = { 0, 0 };
 
             d3d12->menu_pipeline_vbo_view.StrideInBytes = 2 * sizeof(float);
             d3d12->menu_pipeline_vbo_view.SizeInBytes =
@@ -206,6 +208,8 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
                   d3d12->device, d3d12->menu_pipeline_vbo_view.SizeInBytes,
                   &d3d12->menu_pipeline_vbo);
 
+            read_range.Begin           = 0;
+            read_range.End             = 0;
             D3D12Map(d3d12->menu_pipeline_vbo, 0, &read_range, &vertex_data_begin);
             memcpy(vertex_data_begin, ca->coords.vertex, d3d12->menu_pipeline_vbo_view.SizeInBytes);
             D3D12Unmap(d3d12->menu_pipeline_vbo, 0, NULL);
@@ -230,8 +234,11 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
    d3d12->ubo_values.time += 0.01f;
 
    {
-      D3D12_RANGE      read_range = { 0, 0 };
+      D3D12_RANGE read_range;
       d3d12_uniform_t* mapped_ubo;
+
+      read_range.Begin     = 0;
+      read_range.End       = 0;
       D3D12Map(d3d12->ubo, 0, &read_range, (void**)&mapped_ubo);
       *mapped_ubo = d3d12->ubo_values;
       D3D12Unmap(d3d12->ubo, 0, NULL);

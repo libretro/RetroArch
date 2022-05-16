@@ -58,10 +58,11 @@ d3d10_font_init_font(void* data, const char* font_path, float font_size, bool is
    font->texture.desc.Height = font->atlas->height;
    font->texture.desc.Format = DXGI_FORMAT_A8_UNORM;
    d3d10_init_texture(d3d10->device, &font->texture);
-   d3d10_update_texture(
-         d3d10->device,
-         font->atlas->width, font->atlas->height, font->atlas->width,
-         DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
+   if (font->texture.staging)
+      d3d10_update_texture(
+            d3d10->device,
+            font->atlas->width, font->atlas->height, font->atlas->width,
+            DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
    font->atlas->dirty        = false;
 
    return font;
@@ -209,10 +210,11 @@ static void d3d10_font_render_line(
 
    if (font->atlas->dirty)
    {
-      d3d10_update_texture(
-            d3d10->device,
-            font->atlas->width, font->atlas->height, font->atlas->width,
-            DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
+      if (font->texture.staging)
+         d3d10_update_texture(
+               d3d10->device,
+               font->atlas->width, font->atlas->height, font->atlas->width,
+               DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
       font->atlas->dirty = false;
    }
 

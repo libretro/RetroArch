@@ -182,15 +182,20 @@ static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
 
          if (!d3d10->menu_pipeline_vbo)
          {
-            D3D10_BUFFER_DESC desc = { 0 };
-            desc.Usage             = D3D10_USAGE_IMMUTABLE;
-            desc.ByteWidth         = ca->coords.vertices * 2 * sizeof(float);
-            desc.BindFlags         = D3D10_BIND_VERTEX_BUFFER;
+            D3D10_BUFFER_DESC desc;
+            D3D10_SUBRESOURCE_DATA vertex_data;
 
-			{
-               D3D10_SUBRESOURCE_DATA vertexData = { ca->coords.vertex };
-               D3D10CreateBuffer(d3d10->device, &desc, &vertexData, &d3d10->menu_pipeline_vbo);
-			}
+            desc.ByteWidth               = ca->coords.vertices * 2 * sizeof(float);
+            desc.Usage                   = D3D10_USAGE_IMMUTABLE;
+            desc.BindFlags               = D3D10_BIND_VERTEX_BUFFER;
+            desc.CPUAccessFlags          = 0;
+            desc.MiscFlags               = 0;
+
+            vertex_data.pSysMem          = ca->coords.vertex;
+            vertex_data.SysMemPitch      = 0;
+            vertex_data.SysMemSlicePitch = 0;
+            D3D10CreateBuffer(d3d10->device, &desc, &vertex_data,
+                  &d3d10->menu_pipeline_vbo);
          }
          D3D10SetVertexBuffer(d3d10->device, 0, d3d10->menu_pipeline_vbo, 2 * sizeof(float), 0);
          draw->coords->vertices = ca->coords.vertices;

@@ -131,7 +131,7 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
    D3D11CreateTexture2D(device, &texture->desc, NULL, &texture->handle);
 
    {
-      D3D11_SHADER_RESOURCE_VIEW_DESC view_desc = { DXGI_FORMAT_UNKNOWN };
+      D3D11_SHADER_RESOURCE_VIEW_DESC view_desc;
       view_desc.Format                          = texture->desc.Format;
       view_desc.ViewDimension                   = D3D_SRV_DIMENSION_TEXTURE2D;
       view_desc.Texture2D.MostDetailedMip       = 0;
@@ -168,10 +168,7 @@ void d3d11_update_texture(
       d3d11_texture_t*   texture)
 {
    D3D11_MAPPED_SUBRESOURCE mapped_texture;
-   D3D11_BOX                frame_box = { 0, 0, 0, width, height, 1 };
-
-   if (!texture || !texture->staging)
-      return;
+   D3D11_BOX frame_box;
 
    ctx->lpVtbl->Map(
          ctx, (D3D11Resource)texture->staging, 0, D3D11_MAP_WRITE, 0, &mapped_texture);
@@ -186,10 +183,16 @@ void d3d11_update_texture(
          mapped_texture.pData);
 #endif
 
+   frame_box.left   = 0;
+   frame_box.top    = 0;
+   frame_box.front  = 0;
+   frame_box.right  = width;
+   frame_box.bottom = height;
+   frame_box.back   = 1;
    ctx->lpVtbl->Unmap(ctx, (D3D11Resource)texture->staging, 0);
-
    ctx->lpVtbl->CopySubresourceRegion(
-         ctx, (D3D11Resource)texture->handle, 0, 0, 0, 0, (D3D11Resource)texture->staging, 0, &frame_box);
+         ctx, (D3D11Resource)texture->handle, 0, 0, 0, 0,
+         (D3D11Resource)texture->staging, 0, &frame_box);
 
    if (texture->desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
       D3D11GenerateMips(ctx, texture->view);

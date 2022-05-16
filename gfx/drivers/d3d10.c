@@ -185,11 +185,12 @@ static bool d3d10_overlay_load(void* data, const void* image_data, unsigned num_
 
       d3d10_init_texture(d3d10->device, &d3d10->overlays.textures[i]);
 
-      d3d10_update_texture(
-            d3d10->device,
-            images[i].width,
-            images[i].height, 0, DXGI_FORMAT_B8G8R8A8_UNORM,
-            images[i].pixels, &d3d10->overlays.textures[i]);
+      if (d3d10->overlays.textures[i].staging)
+         d3d10_update_texture(
+               d3d10->device,
+               images[i].width,
+               images[i].height, 0, DXGI_FORMAT_B8G8R8A8_UNORM,
+               images[i].pixels, &d3d10->overlays.textures[i]);
 
       sprites[i].pos.x           = 0.0f;
       sprites[i].pos.y           = 0.0f;
@@ -517,11 +518,12 @@ static bool d3d10_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
       d3d10_init_texture(d3d10->device, &d3d10->luts[i]);
 
-      d3d10_update_texture(
-            d3d10->device,
-            image.width, image.height, 0,
-            DXGI_FORMAT_R8G8B8A8_UNORM, image.pixels,
-            &d3d10->luts[i]);
+      if (d3d10->luts[i].staging)
+         d3d10_update_texture(
+               d3d10->device,
+               image.width, image.height, 0,
+               DXGI_FORMAT_R8G8B8A8_UNORM, image.pixels,
+               &d3d10->luts[i]);
 
       image_texture_free(&image);
    }
@@ -1345,9 +1347,10 @@ static bool d3d10_gfx_frame(
          d3d10_init_render_targets(d3d10, width, height);
 
       if (frame != RETRO_HW_FRAME_BUFFER_VALID)
-         d3d10_update_texture(
-               d3d10->device,
-               width, height, pitch, d3d10->format, frame, &d3d10->frame.texture[0]);
+         if (d3d10->frame.texture[0].staging)
+            d3d10_update_texture(
+                  d3d10->device,
+                  width, height, pitch, d3d10->format, frame, &d3d10->frame.texture[0]);
    }
 
    D3D10SetVertexBuffer(context, 0, d3d10->frame.vbo, sizeof(d3d10_vertex_t), 0);
@@ -1632,8 +1635,9 @@ static void d3d10_set_menu_texture_frame(
       d3d10_init_texture(d3d10->device, &d3d10->menu.texture);
    }
 
-   d3d10_update_texture(d3d10->device, width, height, 0,
-         format, frame, &d3d10->menu.texture);
+   if (d3d10->menu.texture.staging)
+      d3d10_update_texture(d3d10->device, width, height, 0,
+            format, frame, &d3d10->menu.texture);
    d3d10->menu.texture.sampler = d3d10->samplers
       [settings->bools.menu_linear_filter
       ? RARCH_FILTER_LINEAR
@@ -1720,10 +1724,11 @@ static uintptr_t d3d10_gfx_load_texture(
 
    d3d10_init_texture(d3d10->device, texture);
 
-   d3d10_update_texture(
-         d3d10->device,
-         image->width, image->height, 0, DXGI_FORMAT_B8G8R8A8_UNORM, image->pixels,
-         texture);
+   if (texture->staging)
+      d3d10_update_texture(
+            d3d10->device,
+            image->width, image->height, 0, DXGI_FORMAT_B8G8R8A8_UNORM, image->pixels,
+            texture);
 
    return (uintptr_t)texture;
 }

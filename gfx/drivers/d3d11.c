@@ -207,10 +207,11 @@ static bool d3d11_overlay_load(void* data, const void* image_data, unsigned num_
 
       d3d11_init_texture(d3d11->device, &d3d11->overlays.textures[i]);
 
-      d3d11_update_texture(
-            d3d11->context, images[i].width,
-            images[i].height, 0, DXGI_FORMAT_B8G8R8A8_UNORM,
-            images[i].pixels, &d3d11->overlays.textures[i]);
+      if (d3d11->overlays.textures[i].staging)
+         d3d11_update_texture(
+               d3d11->context, images[i].width,
+               images[i].height, 0, DXGI_FORMAT_B8G8R8A8_UNORM,
+               images[i].pixels, &d3d11->overlays.textures[i]);
 
       sprites[i].pos.x           = 0.0f;
       sprites[i].pos.y           = 0.0f;
@@ -708,9 +709,10 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
       d3d11_init_texture(d3d11->device, &d3d11->luts[i]);
 
-      d3d11_update_texture(
-            d3d11->context, image.width, image.height, 0, DXGI_FORMAT_R8G8B8A8_UNORM, image.pixels,
-            &d3d11->luts[i]);
+      if (d3d11->luts[i].staging)
+         d3d11_update_texture(
+               d3d11->context, image.width, image.height, 0, DXGI_FORMAT_R8G8B8A8_UNORM, image.pixels,
+               &d3d11->luts[i]);
 
       image_texture_free(&image);
    }
@@ -1990,7 +1992,7 @@ uuidof(ID3D11Texture2D), (void**)&back_buffer);
           Release(hw_texture);
           hw_texture = NULL;
       }
-      else
+      else if (d3d11->frame.texture[0].staging)
          d3d11_update_texture(
                context, width, height, pitch, d3d11->format, frame, &d3d11->frame.texture[0]);
    }
@@ -2414,8 +2416,9 @@ static void d3d11_set_menu_texture_frame(
       d3d11_init_texture(d3d11->device, &d3d11->menu.texture);
    }
 
-   d3d11_update_texture(d3d11->context, width, height, 0,
-         format, frame, &d3d11->menu.texture);
+   if (d3d11->menu.texture.staging)
+      d3d11_update_texture(d3d11->context, width, height, 0,
+            format, frame, &d3d11->menu.texture);
    d3d11->menu.texture.sampler = d3d11->samplers
       [menu_linear_filter
          ? RARCH_FILTER_LINEAR
@@ -2508,9 +2511,10 @@ static uintptr_t d3d11_gfx_load_texture(
 
    d3d11_init_texture(d3d11->device, texture);
 
-   d3d11_update_texture(
-         d3d11->context, image->width, image->height, 0, DXGI_FORMAT_B8G8R8A8_UNORM, image->pixels,
-         texture);
+   if (texture->staging)
+      d3d11_update_texture(
+            d3d11->context, image->width, image->height, 0, DXGI_FORMAT_B8G8R8A8_UNORM, image->pixels,
+            texture);
 
    return (uintptr_t)texture;
 }

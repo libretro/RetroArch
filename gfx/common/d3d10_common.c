@@ -105,7 +105,7 @@ void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture)
    D3D10CreateTexture2D(device, &texture->desc, NULL, &texture->handle);
 
    {
-      D3D10_SHADER_RESOURCE_VIEW_DESC view_desc = { DXGI_FORMAT_UNKNOWN };
+      D3D10_SHADER_RESOURCE_VIEW_DESC view_desc;
       view_desc.Format                          = texture->desc.Format;
       view_desc.ViewDimension                   = D3D_SRV_DIMENSION_TEXTURE2D;
       view_desc.Texture2D.MostDetailedMip       = 0;
@@ -142,11 +142,7 @@ void d3d10_update_texture(
       d3d10_texture_t* texture)
 {
    D3D10_MAPPED_TEXTURE2D mapped_texture;
-   D3D10_BOX                frame_box = { 0, 0, 0, (UINT)width,
-      (UINT)height, 1 };
-
-   if (!texture || !texture->staging)
-      return;
+   D3D10_BOX                frame_box;
 
    D3D10MapTexture2D(texture->staging,
          0, D3D10_MAP_WRITE, 0,
@@ -163,7 +159,12 @@ void d3d10_update_texture(
 #endif
 
    D3D10UnmapTexture2D(texture->staging, 0);
-
+   frame_box.left   = 0;
+   frame_box.top    = 0;
+   frame_box.front  = 0;
+   frame_box.right  = (UINT)width;
+   frame_box.bottom = (UINT)height;
+   frame_box.back   = 1;
    D3D10CopyTexture2DSubresourceRegion(
          ctx, texture->handle, 0, 0, 0, 0, texture->staging, 0, &frame_box);
 

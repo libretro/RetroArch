@@ -361,7 +361,7 @@ static void vulkan_track_dealloc(VkImage image)
 
 static unsigned vulkan_num_miplevels(unsigned width, unsigned height)
 {
-   unsigned size = MAX(width, height);
+   unsigned size   = MAX(width, height);
    unsigned levels = 0;
    while (size)
    {
@@ -1588,17 +1588,17 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    bool use_device_ext;
    uint32_t queue_count;
    unsigned i;
-   static const float one             = 1.0f;
-   bool found_queue                   = false;
+   static const float one                  = 1.0f;
+   bool found_queue                        = false;
 
-   VkPhysicalDeviceFeatures features  = { false };
-   VkDeviceQueueCreateInfo queue_info = { VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO };
-   VkDeviceCreateInfo device_info     = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
+   VkPhysicalDeviceFeatures features       = { false };
+   VkDeviceQueueCreateInfo queue_info      = { VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO };
+   VkDeviceCreateInfo device_info          = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
 
    const char *enabled_device_extensions[8];
    unsigned enabled_device_extension_count = 0;
 
-   static const char *device_extensions[] = {
+   static const char *device_extensions[]  = {
       "VK_KHR_swapchain",
    };
 
@@ -1623,7 +1623,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 
    if (!cached_device_vk && iface && iface->create_device)
    {
-      struct retro_vulkan_context context = { 0 };
+      struct retro_vulkan_context context     = { 0 };
       const VkPhysicalDeviceFeatures features = { 0 };
 
       bool ret = iface->create_device(&context, vk->context.instance,
@@ -1642,11 +1642,11 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       }
       else
       {
-         vk->context.destroy_device = iface->destroy_device;
+         vk->context.destroy_device       = iface->destroy_device;
 
-         vk->context.device = context.device;
-         vk->context.queue = context.queue;
-         vk->context.gpu = context.gpu;
+         vk->context.device               = context.device;
+         vk->context.queue                = context.queue;
+         vk->context.gpu                  = context.gpu;
          vk->context.graphics_queue_index = context.queue_family_index;
 
          if (context.presentation_queue != context.queue)
@@ -1700,8 +1700,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       char driver_version[64];
       char api_version[64];
       char version_str[128];
-      int pos = 0;
-
+      int pos       = 0;
       device_str[0] = driver_version[0] = api_version[0] = version_str[0] = '\0';
 
       strlcpy(device_str, vk->context.gpu_properties.deviceName, sizeof(device_str));
@@ -1944,7 +1943,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       return false;
    }
 
-   use_instance_ext = vulkan_find_instance_extensions(instance_extensions, ext_count);
+   use_instance_ext                  = vulkan_find_instance_extensions(instance_extensions, ext_count);
 
    app.pApplicationName              = msg_hash_to_str(MSG_PROGRAM);
    app.applicationVersion            = 0;
@@ -2901,9 +2900,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VkSurfaceFormatKHR format;
    VkExtent2D swapchain_size;
    VkSwapchainKHR old_swapchain;
+   VkSwapchainCreateInfoKHR info;
    VkSurfaceTransformFlagBitsKHR pre_transform;
-   VkSwapchainCreateInfoKHR info           = {
-      VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR };
    VkPresentModeKHR swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
    settings_t                    *settings = config_get_ptr();
    VkCompositeAlphaFlagBitsKHR composite   = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
@@ -3172,6 +3170,9 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    old_swapchain               = vk->swapchain;
 
+   info.sType                  = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+   info.pNext                  = NULL;
+   info.flags                  = 0;
    info.surface                = vk->vk_surface;
    info.minImageCount          = desired_swapchain_images;
    info.imageFormat            = format.format;
@@ -3179,14 +3180,17 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.imageExtent.width      = swapchain_size.width;
    info.imageExtent.height     = swapchain_size.height;
    info.imageArrayLayers       = 1;
+   info.imageUsage             =  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+	   			| VK_IMAGE_USAGE_TRANSFER_SRC_BIT 
+				| VK_IMAGE_USAGE_TRANSFER_DST_BIT;
    info.imageSharingMode       = VK_SHARING_MODE_EXCLUSIVE;
+   info.queueFamilyIndexCount  = 0;
+   info.pQueueFamilyIndices    = NULL;
    info.preTransform           = pre_transform;
    info.compositeAlpha         = composite;
    info.presentMode            = swapchain_present_mode;
    info.clipped                = true;
    info.oldSwapchain           = old_swapchain;
-   info.imageUsage             = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-      | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
 #ifdef _WIN32
    /* On Windows, do not try to reuse the swapchain.
@@ -3268,7 +3272,7 @@ void vulkan_initialize_render_pass(VkDevice device, VkFormat format,
    VkAttachmentReference color_ref;
    VkRenderPassCreateInfo rp_info;
    VkAttachmentDescription attachment;
-   VkSubpassDescription subpass       = {0};
+   VkSubpassDescription subpass = {0};
 
    rp_info.sType                = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
    rp_info.pNext                = NULL;
@@ -3342,10 +3346,7 @@ void vulkan_framebuffer_generate_mips(
    unsigned i;
    /* This is run every frame, so make sure
     * we aren't opting into the "lazy" way of doing this. :) */
-   VkImageMemoryBarrier barriers[2] = {
-      { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER },
-      { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER },
-   };
+   VkImageMemoryBarrier barriers[2];
 
    /* First, transfer the input mip level to TRANSFER_SRC_OPTIMAL.
     * This should allow the surface to stay compressed.
@@ -3354,30 +3355,36 @@ void vulkan_framebuffer_generate_mips(
     */
 
    /* Input */
-   barriers[0].srcAccessMask                 = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-   barriers[0].dstAccessMask                 = VK_ACCESS_TRANSFER_READ_BIT;
-   barriers[0].oldLayout                     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-   barriers[0].newLayout                     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-   barriers[0].srcQueueFamilyIndex           = VK_QUEUE_FAMILY_IGNORED;
-   barriers[0].dstQueueFamilyIndex           = VK_QUEUE_FAMILY_IGNORED;
-   barriers[0].image                         = image;
-   barriers[0].subresourceRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
-   barriers[0].subresourceRange.baseMipLevel = 0;
-   barriers[0].subresourceRange.levelCount   = 1;
-   barriers[0].subresourceRange.layerCount   = VK_REMAINING_ARRAY_LAYERS;
+   barriers[0].sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+   barriers[0].pNext                           = NULL;
+   barriers[0].srcAccessMask                   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+   barriers[0].dstAccessMask                   = VK_ACCESS_TRANSFER_READ_BIT;
+   barriers[0].oldLayout                       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+   barriers[0].newLayout                       = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+   barriers[0].srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+   barriers[0].dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+   barriers[0].image                           = image;
+   barriers[0].subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+   barriers[0].subresourceRange.baseMipLevel   = 0;
+   barriers[0].subresourceRange.levelCount     = 1;
+   barriers[0].subresourceRange.baseArrayLayer = 0;
+   barriers[0].subresourceRange.layerCount     = VK_REMAINING_ARRAY_LAYERS;
 
    /* The rest of the mip chain */
-   barriers[1].srcAccessMask                 = 0;
-   barriers[1].dstAccessMask                 = VK_ACCESS_TRANSFER_WRITE_BIT;
-   barriers[1].oldLayout                     = VK_IMAGE_LAYOUT_UNDEFINED;
-   barriers[1].newLayout                     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-   barriers[1].srcQueueFamilyIndex           = VK_QUEUE_FAMILY_IGNORED;
-   barriers[1].dstQueueFamilyIndex           = VK_QUEUE_FAMILY_IGNORED;
-   barriers[1].image                         = image;
-   barriers[1].subresourceRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
-   barriers[1].subresourceRange.baseMipLevel = 1;
-   barriers[1].subresourceRange.levelCount   = VK_REMAINING_MIP_LEVELS;
-   barriers[1].subresourceRange.layerCount   = VK_REMAINING_ARRAY_LAYERS;
+   barriers[1].sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+   barriers[1].pNext                           = NULL;
+   barriers[1].srcAccessMask                   = 0;
+   barriers[1].dstAccessMask                   = VK_ACCESS_TRANSFER_WRITE_BIT;
+   barriers[1].oldLayout                       = VK_IMAGE_LAYOUT_UNDEFINED;
+   barriers[1].newLayout                       = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+   barriers[1].srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+   barriers[1].dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+   barriers[1].image                           = image;
+   barriers[1].subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+   barriers[1].subresourceRange.baseMipLevel   = 1;
+   barriers[1].subresourceRange.levelCount     = VK_REMAINING_MIP_LEVELS;
+   barriers[0].subresourceRange.baseArrayLayer = 0;
+   barriers[1].subresourceRange.layerCount     = VK_REMAINING_ARRAY_LAYERS;
 
    vkCmdPipelineBarrier(cmd,
          VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
