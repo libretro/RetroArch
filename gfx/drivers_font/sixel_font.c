@@ -82,31 +82,29 @@ static void sixel_render_msg(
       const struct font_params *_params)
 {
    float x, y, scale;
-   unsigned width, height;
-   unsigned new_x, new_y;
-   unsigned align;
+   unsigned width, height, new_x, new_y, align;
    sixel_raster_t              *font = (sixel_raster_t*)data;
    const struct font_params *params  = (const struct font_params*)_params;
-   settings_t *settings              = config_get_ptr();
-   float video_msg_pos_x             = settings->floats.video_msg_pos_x;
-   float video_msg_pos_y             = settings->floats.video_msg_pos_y;
 
    if (!font || string_is_empty(msg))
       return;
 
    if (params)
    {
-      x     = params->x;
-      y     = params->y;
-      scale = params->scale;
-      align = params->text_align;
+      x                              = params->x;
+      y                              = params->y;
+      scale                          = params->scale;
+      align                          = params->text_align;
    }
    else
    {
-      x     = video_msg_pos_x;
-      y     = video_msg_pos_y;
-      scale = 1.0f;
-      align = TEXT_ALIGN_LEFT;
+      settings_t *settings           = config_get_ptr();
+      float video_msg_pos_x          = settings->floats.video_msg_pos_x;
+      float video_msg_pos_y          = settings->floats.video_msg_pos_y;
+      x                              = video_msg_pos_x;
+      y                              = video_msg_pos_y;
+      scale                          = 1.0f;
+      align                          = TEXT_ALIGN_LEFT;
    }
 
    if (!font->sixel)

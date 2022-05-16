@@ -346,20 +346,13 @@ static void ctr_font_render_msg(
    float x, y, scale, drop_mod, drop_alpha;
    int drop_x, drop_y;
    enum text_alignment text_align;
-   unsigned color, color_dark, r, g, b,
-            alpha, r_dark, g_dark, b_dark, alpha_dark;
+   unsigned color, r, g, b, alpha;
    ctr_font_t                * font = (ctr_font_t*)data;
    ctr_video_t                *ctr  = (ctr_video_t*)userdata;
    unsigned width                   = ctr->render_font_bottom ?
       CTR_BOTTOM_FRAMEBUFFER_WIDTH : CTR_TOP_FRAMEBUFFER_WIDTH;
    unsigned height                  = ctr->render_font_bottom ?
       CTR_BOTTOM_FRAMEBUFFER_HEIGHT : CTR_TOP_FRAMEBUFFER_HEIGHT;
-   settings_t *settings             = config_get_ptr();
-   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
-   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
-   float video_msg_color_r          = settings->floats.video_msg_color_r;
-   float video_msg_color_g          = settings->floats.video_msg_color_g;
-   float video_msg_color_b          = settings->floats.video_msg_color_b;
 
    if (!font || !msg || !*msg)
       return;
@@ -384,31 +377,37 @@ static void ctr_font_render_msg(
    }
    else
    {
-      x              = video_msg_pos_x;
-      y              = video_msg_pos_y;
-      scale          = 1.0f;
-      text_align     = TEXT_ALIGN_LEFT;
+      settings_t *settings    = config_get_ptr();
+      float video_msg_pos_x   = settings->floats.video_msg_pos_x;
+      float video_msg_pos_y   = settings->floats.video_msg_pos_y;
+      float video_msg_color_r = settings->floats.video_msg_color_r;
+      float video_msg_color_g = settings->floats.video_msg_color_g;
+      float video_msg_color_b = settings->floats.video_msg_color_b;
+      x                       = video_msg_pos_x;
+      y                       = video_msg_pos_y;
+      scale                   = 1.0f;
+      text_align              = TEXT_ALIGN_LEFT;
 
-      r              = (video_msg_color_r * 255);
-      g              = (video_msg_color_g * 255);
-      b              = (video_msg_color_b * 255);
-      alpha          = 255;
-      color          = COLOR_ABGR(r, g, b, alpha);
+      r                       = (video_msg_color_r * 255);
+      g                       = (video_msg_color_g * 255);
+      b                       = (video_msg_color_b * 255);
+      alpha                   = 255;
+      color                   = COLOR_ABGR(r, g, b, alpha);
 
-      drop_x         = 1;
-      drop_y         = -1;
-      drop_mod       = 0.0f;
-      drop_alpha     = 0.75f;
+      drop_x                  = 1;
+      drop_y                  = -1;
+      drop_mod                = 0.0f;
+      drop_alpha              = 0.75f;
    }
 
    if (drop_x || drop_y)
    {
-      r_dark         = r * drop_mod;
-      g_dark         = g * drop_mod;
-      b_dark         = b * drop_mod;
-      alpha_dark     = alpha * drop_alpha;
-      color_dark     = COLOR_ABGR(r_dark, g_dark, b_dark, alpha_dark);
-
+      unsigned r_dark         = r * drop_mod;
+      unsigned g_dark         = g * drop_mod;
+      unsigned b_dark         = b * drop_mod;
+      unsigned alpha_dark     = alpha * drop_alpha;
+      unsigned color_dark     = COLOR_ABGR(r_dark, g_dark,
+            b_dark, alpha_dark);
       ctr_font_render_message(ctr, font, msg, scale, color_dark,
                               x + scale * drop_x / width, y +
                               scale * drop_y / height,

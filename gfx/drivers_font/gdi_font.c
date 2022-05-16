@@ -99,52 +99,52 @@ static void gdi_render_msg(
    gdi_raster_t *font               = (gdi_raster_t*)data;
    unsigned width                   = gdi->video_width;
    unsigned height                  = gdi->video_height;
-   SIZE textSize                    = {0};
+   SIZE text_size                   = {0};
    struct string_list msg_list      = {0};
-   settings_t *settings             = config_get_ptr();
-   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
-   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
-   float video_msg_color_r          = settings->floats.video_msg_color_r;
-   float video_msg_color_g          = settings->floats.video_msg_color_g;
-   float video_msg_color_b          = settings->floats.video_msg_color_b;
 
    if (!font || string_is_empty(msg) || !font->gdi)
       return;
 
    if (params)
    {
-      x          = params->x;
-      y          = params->y;
-      drop_x     = params->drop_x;
-      drop_y     = params->drop_y;
-      drop_mod   = params->drop_mod;
-      drop_alpha = params->drop_alpha;
-      scale      = params->scale;
-      align      = params->text_align;
+      x                       = params->x;
+      y                       = params->y;
+      drop_x                  = params->drop_x;
+      drop_y                  = params->drop_y;
+      drop_mod                = params->drop_mod;
+      drop_alpha              = params->drop_alpha;
+      scale                   = params->scale;
+      align                   = params->text_align;
 
-      red        = FONT_COLOR_GET_RED(params->color);
-      green      = FONT_COLOR_GET_GREEN(params->color);
-      blue       = FONT_COLOR_GET_BLUE(params->color);
+      red                     = FONT_COLOR_GET_RED(params->color);
+      green                   = FONT_COLOR_GET_GREEN(params->color);
+      blue                    = FONT_COLOR_GET_BLUE(params->color);
    }
    else
    {
-      x          = video_msg_pos_x;
-      y          = video_msg_pos_y;
-      drop_x     = -2;
-      drop_y     = -2;
-      drop_mod   = 0.3f;
-      drop_alpha = 1.0f;
-      scale      = 1.0f;
-      align      = TEXT_ALIGN_LEFT;
-      red        = video_msg_color_r * 255.0f;
-      green      = video_msg_color_g * 255.0f;
-      blue       = video_msg_color_b * 255.0f;
+      settings_t *settings    = config_get_ptr();
+      float video_msg_pos_x   = settings->floats.video_msg_pos_x;
+      float video_msg_pos_y   = settings->floats.video_msg_pos_y;
+      float video_msg_color_r = settings->floats.video_msg_color_r;
+      float video_msg_color_g = settings->floats.video_msg_color_g;
+      float video_msg_color_b = settings->floats.video_msg_color_b;
+      x                       = video_msg_pos_x;
+      y                       = video_msg_pos_y;
+      drop_x                  = -2;
+      drop_y                  = -2;
+      drop_mod                = 0.3f;
+      drop_alpha              = 1.0f;
+      scale                   = 1.0f;
+      align                   = TEXT_ALIGN_LEFT;
+      red                     = video_msg_color_r * 255.0f;
+      green                   = video_msg_color_g * 255.0f;
+      blue                    = video_msg_color_b * 255.0f;
    }
 
-   msg_local  = utf8_to_local_string_alloc(msg);
-   msg_strlen = strlen(msg_local);
+   msg_local                  = utf8_to_local_string_alloc(msg);
+   msg_strlen                 = strlen(msg_local);
 
-   GetTextExtentPoint32(font->gdi->memDC, msg_local, msg_strlen, &textSize);
+   GetTextExtentPoint32(font->gdi->memDC, msg_local, msg_strlen, &text_size);
 
    switch (align)
    {
@@ -153,12 +153,12 @@ static void gdi_render_msg(
          newDropX = drop_x * width * scale;
          break;
       case TEXT_ALIGN_RIGHT:
-         newX     = (x * width * scale) - textSize.cx;
-         newDropX = (drop_x * width * scale) - textSize.cx;
+         newX     = (x * width * scale) - text_size.cx;
+         newDropX = (drop_x * width * scale) - text_size.cx;
          break;
       case TEXT_ALIGN_CENTER:
-         newX     = (x * width * scale) - (textSize.cx / 2);
-         newDropX = (drop_x * width * scale) - (textSize.cx / 2);
+         newX     = (x * width * scale) - (text_size.cx / 2);
+         newDropX = (drop_x * width * scale) - (text_size.cx / 2);
          break;
       default:
          newX     = 0;
@@ -166,8 +166,8 @@ static void gdi_render_msg(
          break;
    }
 
-   newY               = height - (y * height * scale)      - textSize.cy;
-   newDropY           = height - (drop_y * height * scale) - textSize.cy;
+   newY               = height - (y * height * scale)      - text_size.cy;
+   newDropY           = height - (drop_y * height * scale) - text_size.cy;
 
    font->gdi->bmp_old = (HBITMAP)SelectObject(font->gdi->memDC, font->gdi->bmp);
 
@@ -186,7 +186,7 @@ static void gdi_render_msg(
       SetTextColor(font->gdi->memDC, RGB(drop_red, drop_green, drop_blue));
 
       for (i = 0; i < msg_list.size; i++)
-         TextOut(font->gdi->memDC, newDropX, newDropY + (textSize.cy * i),
+         TextOut(font->gdi->memDC, newDropX, newDropY + (text_size.cy * i),
                msg_list.elems[i].data,
                strlen(msg_list.elems[i].data));
    }
@@ -194,7 +194,7 @@ static void gdi_render_msg(
    SetTextColor(font->gdi->memDC, RGB(red, green, blue));
 
    for (i = 0; i < msg_list.size; i++)
-      TextOut(font->gdi->memDC, newX, newY + (textSize.cy * i),
+      TextOut(font->gdi->memDC, newX, newY + (text_size.cy * i),
             msg_list.elems[i].data,
             strlen(msg_list.elems[i].data));
 

@@ -298,18 +298,11 @@ static void wiiu_font_render_msg(
    float x, y, scale, drop_mod, drop_alpha;
    int drop_x, drop_y;
    enum text_alignment text_align;
-   unsigned color, r, g, b,
-            alpha;
+   unsigned color, r, g, b, alpha;
    wiiu_video_t              *wiiu  = (wiiu_video_t*)userdata;
    wiiu_font_t                *font = (wiiu_font_t*)data;
    unsigned width                   = wiiu->vp.full_width;
    unsigned height                  = wiiu->vp.full_height;
-   settings_t *settings             = config_get_ptr();
-   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
-   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
-   float video_msg_color_r          = settings->floats.video_msg_color_r;
-   float video_msg_color_g          = settings->floats.video_msg_color_g;
-   float video_msg_color_b          = settings->floats.video_msg_color_b;
 
    if (!font || !msg || !*msg)
       return;
@@ -333,21 +326,27 @@ static void wiiu_font_render_msg(
    }
    else
    {
-      x              = video_msg_pos_x;
-      y              = video_msg_pos_y;
-      scale          = 1.0f;
-      text_align     = TEXT_ALIGN_LEFT;
+      settings_t *settings    = config_get_ptr();
+      float video_msg_pos_x   = settings->floats.video_msg_pos_x;
+      float video_msg_pos_y   = settings->floats.video_msg_pos_y;
+      float video_msg_color_r = settings->floats.video_msg_color_r;
+      float video_msg_color_g = settings->floats.video_msg_color_g;
+      float video_msg_color_b = settings->floats.video_msg_color_b;
+      x                       = video_msg_pos_x;
+      y                       = video_msg_pos_y;
+      scale                   = 1.0f;
+      text_align              = TEXT_ALIGN_LEFT;
 
-      r              = (video_msg_color_r * 255);
-      g              = (video_msg_color_g * 255);
-      b              = (video_msg_color_b * 255);
-      alpha          = 255;
-      color          = COLOR_RGBA(r, g, b, alpha);
+      r                       = (video_msg_color_r * 255);
+      g                       = (video_msg_color_g * 255);
+      b                       = (video_msg_color_b * 255);
+      alpha                   = 255;
+      color                   = COLOR_RGBA(r, g, b, alpha);
 
-      drop_x         = -2;
-      drop_y         = -2;
-      drop_mod       = 0.3f;
-      drop_alpha     = 1.0f;
+      drop_x                  = -2;
+      drop_y                  = -2;
+      drop_mod                = 0.3f;
+      drop_alpha              = 1.0f;
    }
 
    if (drop_x || drop_y)

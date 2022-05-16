@@ -412,20 +412,13 @@ static INLINE void write_quad6(SpriteVertex *pv,
                 height:(unsigned)height
                params:(const struct font_params *)params
 {
-
-   if (!msg || !*msg)
-      return;
-
    float x, y, scale, drop_mod, drop_alpha;
    int drop_x, drop_y;
    enum text_alignment text_align;
-   vector_float4 color, color_dark;
-   settings_t *settings             = config_get_ptr();
-   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
-   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
-   float video_msg_color_r          = settings->floats.video_msg_color_r;
-   float video_msg_color_g          = settings->floats.video_msg_color_g;
-   float video_msg_color_b          = settings->floats.video_msg_color_b;
+   vector_float4 color;
+
+   if (!msg || !*msg)
+      return;
 
    if (params)
    {
@@ -447,21 +440,27 @@ static INLINE void write_quad6(SpriteVertex *pv,
    }
    else
    {
-      x          = video_msg_pos_x;
-      y          = video_msg_pos_y;
-      scale      = 1.0f;
-      text_align = TEXT_ALIGN_LEFT;
+      settings_t *settings     = config_get_ptr();
+      float video_msg_pos_x    = settings->floats.video_msg_pos_x;
+      float video_msg_pos_y    = settings->floats.video_msg_pos_y;
+      float video_msg_color_r  = settings->floats.video_msg_color_r;
+      float video_msg_color_g  = settings->floats.video_msg_color_g;
+      float video_msg_color_b  = settings->floats.video_msg_color_b;
+      x                        = video_msg_pos_x;
+      y                        = video_msg_pos_y;
+      scale                    = 1.0f;
+      text_align               = TEXT_ALIGN_LEFT;
 
-      color      = simd_make_float4(
-         video_msg_color_r,
-         video_msg_color_g,
-         video_msg_color_b,
-         1.0f);
+      color                    = simd_make_float4(
+            video_msg_color_r,
+            video_msg_color_g,
+            video_msg_color_b,
+            1.0f);
 
-      drop_x     = -2;
-      drop_y     = -2;
-      drop_mod   = 0.3f;
-      drop_alpha = 1.0f;
+      drop_x                   = -2;
+      drop_y                   = -2;
+      drop_mod                 = 0.3f;
+      drop_alpha               = 1.0f;
    }
 
    @autoreleasepool
@@ -476,6 +475,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
 
       if (drop_x || drop_y)
       {
+         vector_float4 color_dark;
          color_dark.x = color.x * drop_mod;
          color_dark.y = color.y * drop_mod;
          color_dark.z = color.z * drop_mod;

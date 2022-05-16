@@ -141,12 +141,6 @@ static void d3dfonts_w32_render_msg(
    float drop_alpha                 = 1.0f;
    int drop_x                       = -2;
    int drop_y                       = -2;
-   settings_t *settings             = config_get_ptr();
-   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
-   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
-   float video_msg_color_r          = settings->floats.video_msg_color_r;
-   float video_msg_color_g          = settings->floats.video_msg_color_g;
-   float video_msg_color_b          = settings->floats.video_msg_color_b;
 
    if (!d3dfonts || !msg)
       return;
@@ -158,7 +152,7 @@ static void d3dfonts_w32_render_msg(
    p_rect_shifted                   = &d3dfonts->d3d->font_rect_shifted;
    format                           = DT_LEFT;
 
-   if(params)
+   if (params)
    {
       a = FONT_COLOR_GET_ALPHA(params->color);
       r = FONT_COLOR_GET_RED(params->color);
@@ -192,7 +186,7 @@ static void d3dfonts_w32_render_msg(
       drop_x      = params->drop_x;
       drop_y      = params->drop_y;
 
-      if(drop_x || drop_y)
+      if (drop_x || drop_y)
       {
          drop_mod             = params->drop_mod;
          drop_alpha           = params->drop_alpha;
@@ -206,13 +200,19 @@ static void d3dfonts_w32_render_msg(
    }
    else
    {
-      a = 255;
-      r = video_msg_color_r * 255;
-      g = video_msg_color_g * 255;
-      b = video_msg_color_b * 255;
+      settings_t *settings     = config_get_ptr();
+      float video_msg_pos_x    = settings->floats.video_msg_pos_x;
+      float video_msg_pos_y    = settings->floats.video_msg_pos_y;
+      float video_msg_color_r  = settings->floats.video_msg_color_r;
+      float video_msg_color_g  = settings->floats.video_msg_color_g;
+      float video_msg_color_b  = settings->floats.video_msg_color_b;
+      a                        = 255;
+      r                        = video_msg_color_r * 255;
+      g                        = video_msg_color_g * 255;
+      b                        = video_msg_color_b * 255;
    }
 
-   if(drop_x || drop_y)
+   if (drop_x || drop_y)
    {
       unsigned drop_a = a * drop_alpha;
       unsigned drop_r = r * drop_mod;

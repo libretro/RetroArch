@@ -49,11 +49,7 @@ static INLINE void vulkan_raster_font_update_glyph(
       uint8_t *dst = (uint8_t*)font->texture.mapped + row * font->texture.stride + glyph->atlas_offset_x;
       memcpy(dst, src, glyph->width);
    }
-
-   font->atlas->dirty = false;
-   font->needs_update = true;
 }
-
 
 static void vulkan_raster_font_free_font(void *data, bool is_threaded)
 {
@@ -80,15 +76,6 @@ static void *vulkan_raster_font_init_font(void *data,
    vulkan_raster_t *font          =
       (vulkan_raster_t*)calloc(1, sizeof(*font));
 
-#if 0
-   VkComponentMapping swizzle = {
-      VK_COMPONENT_SWIZZLE_ONE,
-      VK_COMPONENT_SWIZZLE_ONE,
-      VK_COMPONENT_SWIZZLE_ONE,
-      VK_COMPONENT_SWIZZLE_R,
-   };
-#endif
-
    if (!font)
       return NULL;
 
@@ -106,7 +93,7 @@ static void *vulkan_raster_font_init_font(void *data,
    font->atlas   = font->font_driver->get_atlas(font->font_data);
    font->texture = vulkan_create_texture(font->vk, NULL,
          font->atlas->width, font->atlas->height, VK_FORMAT_R8_UNORM, font->atlas->buffer,
-         NULL /*&swizzle*/, VULKAN_TEXTURE_STAGING);
+         NULL, VULKAN_TEXTURE_STAGING);
 
    {
       struct vk_texture *texture = &font->texture;
@@ -115,7 +102,7 @@ static void *vulkan_raster_font_init_font(void *data,
 
    font->texture_optimal = vulkan_create_texture(font->vk, NULL,
          font->atlas->width, font->atlas->height, VK_FORMAT_R8_UNORM, NULL,
-         NULL /*&swizzle*/, VULKAN_TEXTURE_DYNAMIC);
+         NULL, VULKAN_TEXTURE_DYNAMIC);
 
    font->needs_update = true;
 
@@ -149,8 +136,12 @@ static int vulkan_get_message_width(void *data, const char *msg,
          if (!(glyph = glyph_q))
             continue;
 
-      if(font->atlas->dirty)
+      if (font->atlas->dirty)
+      {
          vulkan_raster_font_update_glyph(font, glyph);
+         font->atlas->dirty = false;
+         font->needs_update = true;
+      }
       delta_x += glyph->advance_x;
    }
 
@@ -204,8 +195,12 @@ static void vulkan_raster_font_render_line(
          if (!(glyph = glyph_q))
             continue;
 
-      if(font->atlas->dirty)
+      if (font->atlas->dirty)
+      {
          vulkan_raster_font_update_glyph(font, glyph);
+         font->atlas->dirty = false;
+         font->needs_update = true;
+      }
 
       off_x  = glyph->draw_offset_x;
       off_y  = glyph->draw_offset_y;
@@ -292,7 +287,7 @@ static void vulkan_raster_font_flush(vulkan_raster_t *font)
    call.vbo          = &font->range;
    call.vertices     = font->vertices;
 
-   if(font->needs_update)
+   if (font->needs_update)
    {
       VkCommandBuffer staging;
       VkSubmitInfo submit_info;
@@ -361,7 +356,7 @@ static void vulkan_raster_font_render_msg(
       const char *msg,
       const struct font_params *params)
 {
-   float color[4], color_dark[4];
+   float color[4];
    int drop_x, drop_y;
    bool full_screen;
    unsigned max_glyphs;
@@ -439,6 +434,7 @@ static void vulkan_raster_font_render_msg(
 
    if (drop_x || drop_y)
    {
+      float color_dark[4];
       color_dark[0] = color[0] * drop_mod;
       color_dark[1] = color[1] * drop_mod;
       color_dark[2] = color[2] * drop_mod;
@@ -465,8 +461,12 @@ static const struct font_glyph *vulkan_raster_font_get_glyph(
 
    glyph = font->font_driver->get_glyph((void*)font->font_driver, code);
 
-   if(glyph && font->atlas->dirty)
+   if (glyph && font->atlas->dirty)
+   {
       vulkan_raster_font_update_glyph(font, glyph);
+      font->atlas->dirty = false;
+      font->needs_update = true;
+   }
    return glyph;
 }
 
