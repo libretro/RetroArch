@@ -1170,12 +1170,14 @@ void video_switch_refresh_rate_maybe(
    float refresh_rate                 = *refresh_rate_suggest;
    float video_refresh_rate           = settings->floats.video_refresh_rate;
    unsigned crt_switch_resolution     = settings->uints.crt_switch_resolution;
+   unsigned autoswitch_refresh_rate   = settings->uints.video_autoswitch_refresh_rate;
    unsigned video_swap_interval       = runloop_get_video_swap_interval(
          settings->uints.video_swap_interval);
    unsigned video_bfi                 = settings->uints.video_black_frame_insertion;
-   bool video_fullscreen              = settings->bools.video_fullscreen;
-   bool video_windowed_full           = settings->bools.video_windowed_fullscreen;
    bool vrr_runloop_enable            = settings->bools.vrr_runloop_enable;
+   bool exclusive_fullscreen          = settings->bools.video_fullscreen && !settings->bools.video_windowed_fullscreen;
+   bool windowed_fullscreen           = settings->bools.video_fullscreen && settings->bools.video_windowed_fullscreen;
+   bool all_fullscreen                = settings->bools.video_fullscreen || settings->bools.video_windowed_fullscreen;
 
    /* Roundings to PAL & NTSC standards */
    refresh_rate = (refresh_rate > 54 && refresh_rate < 60) ? 59.94f : refresh_rate;
@@ -1196,15 +1198,21 @@ void video_switch_refresh_rate_maybe(
    if (!video_st->video_refresh_rate_original)
       video_st->video_refresh_rate_original = video_refresh_rate;
 
-   /* Try to switch display rate when:
+   /* Try to switch display rate for the desired screen mode(s) when:
     * - Not already at correct rate
-    * - In exclusive fullscreen
     * - 'CRT SwitchRes' OFF & 'Sync to Exact Content Framerate' OFF
+    * - Automatic refresh rate switching not OFF
     */
-   *video_switch_refresh_rate = (
-         refresh_rate != video_refresh_rate &&
-         !crt_switch_resolution && !vrr_runloop_enable &&
-         video_fullscreen && !video_windowed_full);
+    if (refresh_rate != video_refresh_rate &&
+        !crt_switch_resolution &&
+        !vrr_runloop_enable &&
+        (autoswitch_refresh_rate != AUTOSWITCH_REFRESH_RATE_OFF))
+    {
+      *video_switch_refresh_rate = (
+          ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN) && exclusive_fullscreen) ||
+          ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN) && windowed_fullscreen)   ||
+          ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN) && all_fullscreen));
+    }
 }
 
 bool video_display_server_set_refresh_rate(float hz)

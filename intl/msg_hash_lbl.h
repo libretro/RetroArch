@@ -3629,6 +3629,10 @@ MSG_HASH(
    "video_refresh_rate_polled"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "video_autoswitch_refresh_rate"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_ROTATION,
    "video_rotation"
    )

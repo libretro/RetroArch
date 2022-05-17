@@ -332,6 +332,7 @@ typedef struct settings
 
       unsigned core_updater_auto_backup_history_size;
       unsigned video_black_frame_insertion;
+      unsigned video_autoswitch_refresh_rate;
       unsigned quit_on_close_content;
 
 #ifdef HAVE_LAKKA

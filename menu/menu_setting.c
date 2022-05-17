@@ -4951,6 +4951,30 @@ static void setting_get_string_representation_uint_notification_show_screenshot_
 #endif
 #endif
 
+static void setting_get_string_representation_uint_video_autoswitch_refresh_rate(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN), len);
+         break;
+      case AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN), len);
+         break;
+      case AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN), len);
+         break;
+      case AUTOSWITCH_REFRESH_RATE_OFF:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+         break;
+   }
+}
+
 static void setting_get_string_representation_uint_video_monitor_index(rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -11634,6 +11658,23 @@ static bool setting_append_list(
                   SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
                }
             }
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.video_autoswitch_refresh_rate,
+                  MENU_ENUM_LABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
+                  DEFAULT_AUTOSWITCH_REFRESH_RATE,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_video_autoswitch_refresh_rate;
+            menu_settings_list_current_add_range(list, list_info, 0, AUTOSWITCH_REFRESH_RATE_LAST - 1, 1, true, true);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
             if (string_is_equal(settings->arrays.video_driver, "gl"))
             {
