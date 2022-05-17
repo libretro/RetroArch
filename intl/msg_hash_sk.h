@@ -2505,10 +2505,6 @@ MSG_HASH(
    "Zavrieť obsah"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
-   "Nastavenia"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
    "Ovládanie"
    )

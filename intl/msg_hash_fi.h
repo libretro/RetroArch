@@ -4718,14 +4718,6 @@ MSG_HASH(
    "Näytä \"Sulje sisältö\"-valinta."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-   "Näytä \"Ota kuvakaappaus\""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-   "Näytä \"Ota kuvakaappaus\"-valinta."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
    "Näytä \"Tallenna/lataa pelitila\""
    )
@@ -4742,52 +4734,12 @@ MSG_HASH(
    "Näytä pelitilan tallentamisen/lataamisen peruutuksen valinnat."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-   "Näytä \"Lisää suosikkeihin\""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-   "Näytä \"Lisää suosikkeihin\"-valinta."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
-   "Näytä \"Aloita nauhoitus\""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
-   "Näytä \"Aloita nauhoitus\"-valinta."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
-   "Näytä \"Käynnistä suoratoisto\""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
-   "Näytä 'Käynnistä striimaus' valinta."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
-   "Näytä \"Liitä ydin\""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
-   "Näytä \"Liitä ydin\"-valinta."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-   "Näytä ''Nollaa ytimen liitos\""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-   "Näytä \"Nollaa ydinliitos\"-valinta."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
-   "Näytä \"Asetukset\""
+   "Näytä \"Ytimen asetukset\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
-   "Näytä \"Asetukset\"-valinta."
+   "Näytä \"Ytimen asetukset\"-valinta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
@@ -4806,36 +4758,28 @@ MSG_HASH(
    "Näytä \"Ohjaimet\"-valinta."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
-   "Näytä \"Huijaukset\""
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+   "Näytä \"Ota kuvakaappaus\""
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
-   "Näytä \"Huijaukset\"-valinta."
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+   "Näytä \"Ota kuvakaappaus\"-valinta."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
-   "Näytä \"Varjostimet\""
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
+   "Näytä \"Aloita nauhoitus\""
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
-   "Näytä \"Varjostimet\"-valinta."
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
+   "Näytä \"Aloita nauhoitus\"-valinta."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
-   "Näytä \"Takaisinkelaus\""
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
+   "Näytä \"Käynnistä suoratoisto\""
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-   "Näytä \"Takaisinkelaus\"-valinnat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
-   "Näytä \"Viive\""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
-   "Näytä \"Viive\"-valinta."
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
+   "Näytä 'Käynnistä striimaus' valinta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
@@ -4854,6 +4798,22 @@ MSG_HASH(
    "Näytä \"Videon asettelu\"-valinta."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
+   "Näytä \"Viive\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
+   "Näytä \"Viive\"-valinta."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
+   "Näytä \"Takaisinkelaus\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
+   "Näytä \"Takaisinkelaus\"-valinnat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    "Näytä \"Tallenna ytimen ohitukset\""
    )
@@ -4870,20 +4830,48 @@ MSG_HASH(
    "Näytä \"Tallenna ytimen ohitukset\"-valinta \"Ohitukset\"-valikossa."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
-   "Näytä \"Tiedot\""
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
+   "Näytä \"Huijaukset\""
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
-   "Näytä \"Tiedot\"-valinta."
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
+   "Näytä \"Huijaukset\"-valinta."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
+   "Näytä \"Varjostimet\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
+   "Näytä \"Varjostimet\"-valinta."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+   "Näytä \"Lisää suosikkeihin\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+   "Näytä \"Lisää suosikkeihin\"-valinta."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+   "Näytä \"Liitä ydin\""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+   "Näytä ''Nollaa ytimen liitos\""
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
    "Näytä \"Lataa esikatselukuvat\""
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
-   "Näytä \"Lataa esikatselukuvat\"-valinta."
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
+   "Näytä \"Tiedot\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
+   "Näytä \"Tiedot\"-valinta."
    )
 
 /* Settings > User Interface > Views > Settings */
@@ -6737,8 +6725,12 @@ MSG_HASH(
    "Lopeta suoratoisto."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_LIST,
+   "Pelitilan tallennukset"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
-   "Asetukset"
+   "Ytimen asetukset"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS,
@@ -8710,6 +8702,10 @@ MSG_HASH(
    "Valitse eri kuvaketeema RetroArchille."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
+   "Piirrä varjot"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
    "Valikon varjostimen liukuhihna"
    )
@@ -10507,6 +10503,10 @@ MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
    "Pelaa"
    )
+MSG_HASH(
+   MSG_NETPLAY_CHAT_SUPPORTED,
+   "Keskustelu tuettu"
+   )
 
 MSG_HASH(
    MSG_AUDIO_VOLUME,
@@ -11223,6 +11223,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_FAILED,
    "Verkkopelin alustaminen epäonnistui."
+   )
+MSG_HASH(
+   MSG_NETPLAY_UNSUPPORTED,
+   "Ydin ei tue verkkopelaamista."
    )
 MSG_HASH(
    MSG_NO_CONTENT_STARTING_DUMMY_CORE,

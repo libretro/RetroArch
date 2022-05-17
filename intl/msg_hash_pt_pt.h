@@ -3029,10 +3029,6 @@ MSG_HASH(
    "Se o estado foi sobrescrito, ele voltará ao estado de gravação anterior."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
-   "Opções"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS,
    "Altera as opções para a execução de conteúdo atual."
    )

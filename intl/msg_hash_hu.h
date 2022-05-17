@@ -2097,10 +2097,6 @@ MSG_HASH(
    "Kedvencekhez ad"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
-   "Beállítások"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
    "Eredmények"
    )

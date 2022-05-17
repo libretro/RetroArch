@@ -1941,10 +1941,6 @@ MSG_HASH(
    "Zarrar el conteníu"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
-   "Opciones"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
    "Trampes"
    )

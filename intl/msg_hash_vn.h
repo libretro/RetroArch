@@ -1729,10 +1729,6 @@ MSG_HASH(
    "Undo Tải State"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
-   "Options\" \"Tùy chọn"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
    "Điều khiển"
    )
