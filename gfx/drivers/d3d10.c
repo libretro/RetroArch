@@ -706,7 +706,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
       goto error;
    }
 
-   win32_input_driver(settings->arrays.input_driver, settings->arrays.input_joypad_driver, input, input_data);
+   d3d_input_driver(settings->arrays.input_driver, settings->arrays.input_joypad_driver, input, input_data);
 
    if (!d3d10_init_swapchain(d3d10,
             d3d10->vp.full_width,
