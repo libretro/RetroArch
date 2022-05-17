@@ -185,7 +185,7 @@ static bool gl1_font_init_first(
 
 #if defined(HAVE_OPENGL)
 static const font_renderer_t *gl_font_backends[] = {
-   &gl_raster_font,
+   &gl2_raster_font,
    NULL,
 };
 
