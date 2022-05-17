@@ -82,6 +82,14 @@ static D3D11Device           cached_device_d3d11;
 static D3D_FEATURE_LEVEL     cached_supportedFeatureLevel;
 static D3D11DeviceContext    cached_context_d3d11;
 
+static INLINE void d3d11_release_shader(d3d11_shader_t* shader)
+{
+   Release(shader->layout);
+   Release(shader->vs);
+   Release(shader->ps);
+   Release(shader->gs);
+}
+
 static uint32_t d3d11_get_flags(void *data)
 {
    uint32_t flags = 0;
@@ -192,7 +200,8 @@ static bool d3d11_overlay_load(void* data, const void* image_data, unsigned num_
    desc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
    desc.MiscFlags           = 0;
    desc.StructureByteStride = 0;
-   D3D11CreateBuffer(d3d11->device, &desc, NULL, &d3d11->overlays.vbo);
+   d3d11->device->lpVtbl->CreateBuffer(d3d11->device, &desc, NULL,
+         &d3d11->overlays.vbo);
 
    d3d11->context->lpVtbl->Map(
          d3d11->context, (D3D11Resource)d3d11->overlays.vbo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_vbo);
@@ -665,7 +674,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          if (!desc.ByteWidth)
             continue;
 
-         D3D11CreateBuffer(d3d11->device, &desc, NULL, &d3d11->pass[i].buffers[j]);
+         d3d11->device->lpVtbl->CreateBuffer(d3d11->device, &desc, NULL, &d3d11->pass[i].buffers[j]);
       }
    }
 
@@ -1223,8 +1232,10 @@ static void *d3d11_gfx_init(const video_info_t* video,
       ubo_data.SysMemPitch      = 0;
       ubo_data.SysMemSlicePitch = 0;
 
-      D3D11CreateBuffer(d3d11->device, &desc, &ubo_data, &d3d11->ubo);
-      D3D11CreateBuffer(d3d11->device, &desc, NULL, &d3d11->frame.ubo);
+      d3d11->device->lpVtbl->CreateBuffer(d3d11->device, &desc, &ubo_data,
+            &d3d11->ubo);
+      d3d11->device->lpVtbl->CreateBuffer(d3d11->device, &desc, NULL,
+            &d3d11->frame.ubo);
    }
 
    d3d11_gfx_set_rotation(d3d11, 0);
@@ -1260,7 +1271,8 @@ static void *d3d11_gfx_init(const video_info_t* video,
       ubo_data.SysMemPitch                 = 0;
       ubo_data.SysMemSlicePitch            = 0;
 
-      D3D11CreateBuffer(d3d11->device, &desc, &ubo_data, &d3d11->hdr.ubo);
+      d3d11->device->lpVtbl->CreateBuffer(d3d11->device, &desc, &ubo_data,
+            &d3d11->hdr.ubo);
    }
 #endif
 
@@ -1330,14 +1342,17 @@ static void *d3d11_gfx_init(const video_info_t* video,
       desc.MiscFlags               = 0;
       desc.StructureByteStride     = 0;
 
-      D3D11CreateBuffer(d3d11->device, &desc, &vertex_data, &d3d11->frame.vbo);
+      d3d11->device->lpVtbl->CreateBuffer(d3d11->device, &desc, &vertex_data,
+            &d3d11->frame.vbo);
       desc.Usage                   = D3D11_USAGE_DYNAMIC;
       desc.CPUAccessFlags          = D3D11_CPU_ACCESS_WRITE;
-      D3D11CreateBuffer(d3d11->device, &desc, &vertex_data, &d3d11->menu.vbo);
+      d3d11->device->lpVtbl->CreateBuffer(d3d11->device, &desc, &vertex_data,
+            &d3d11->menu.vbo);
 
       d3d11->sprites.capacity  = 16 * 1024;
       desc.ByteWidth           = sizeof(d3d11_sprite_t) * d3d11->sprites.capacity;
-      D3D11CreateBuffer(d3d11->device, &desc, NULL, &d3d11->sprites.vbo);
+      d3d11->device->lpVtbl->CreateBuffer(d3d11->device, &desc, NULL,
+            &d3d11->sprites.vbo);
    }
 
 #ifdef HAVE_DXGI_HDR
@@ -1895,8 +1910,9 @@ static bool d3d11_gfx_frame(
    {
        D3D11Texture2D back_buffer;
        d3d11->swapChain->lpVtbl->GetBuffer(d3d11->swapChain, 0,
-uuidof(ID3D11Texture2D), (void**)&back_buffer);
-       D3D11CreateTexture2DRenderTargetView(d3d11->device, back_buffer, NULL, &rtv);
+             uuidof(ID3D11Texture2D), (void**)&back_buffer);
+       d3d11->device->lpVtbl->CreateRenderTargetView(d3d11->device,
+             (D3D11Resource)back_buffer, NULL, &rtv);
        Release(back_buffer);
    }
 
@@ -1914,8 +1930,8 @@ uuidof(ID3D11Texture2D), (void**)&back_buffer);
           D3D11_SHADER_RESOURCE_VIEW_DESC hw_desc;
           D3D11ShaderResourceView hw_view = NULL;
           context->lpVtbl->PSGetShaderResources(context, 0, 1, &hw_view);
-          D3D11GetShaderResourceViewDesc(hw_view, &hw_desc);
-          D3D11GetShaderResourceViewTexture2D(hw_view, &hw_texture);
+          hw_view->lpVtbl->GetDesc(hw_view, &hw_desc);
+          hw_view->lpVtbl->GetResource(hw_view, (D3D11Resource*)&hw_texture);
 
           if (d3d11->frame.texture[0].desc.Format != hw_desc.Format)
           {

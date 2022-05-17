@@ -219,7 +219,8 @@ static void d3d11_font_render_line(
 
    {
       d3d11_texture_t *texture = (d3d11_texture_t*)&font->texture;
-      D3D11SetPShaderResources(d3d11->context, 0, 1, &texture->view);
+      d3d11->context->lpVtbl->PSSetShaderResources(
+            d3d11->context, 0, 1, &texture->view);
       d3d11->context->lpVtbl->PSSetSamplers(
             d3d11->context, 0, 1,
             (D3D11SamplerState*)&texture->sampler);

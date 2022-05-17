@@ -173,7 +173,8 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
 
    {
       d3d11_texture_t *texture = (d3d11_texture_t*)draw->texture;
-      D3D11SetPShaderResources(d3d11->context, 0, 1, &texture->view);
+      d3d11->context->lpVtbl->PSSetShaderResources(
+            d3d11->context, 0, 1, &texture->view);
       d3d11->context->lpVtbl->PSSetSamplers(
             d3d11->context, 0, 1, (D3D11SamplerState*)&texture->sampler);
    }
@@ -224,7 +225,8 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
                vertex_data.pSysMem          = ca->coords.vertex;
                vertex_data.SysMemPitch      = 0;
                vertex_data.SysMemSlicePitch = 0;
-               D3D11CreateBuffer(d3d11->device, &desc, &vertex_data, &d3d11->menu_pipeline_vbo);
+               d3d11->device->lpVtbl->CreateBuffer(d3d11->device, &desc, &vertex_data,
+                     &d3d11->menu_pipeline_vbo);
             }
          }
          {

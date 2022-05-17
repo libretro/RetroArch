@@ -128,7 +128,8 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
 
    texture->desc.Format = d3d11_get_closest_match(device, texture->desc.Format, format_support);
 
-   D3D11CreateTexture2D(device, &texture->desc, NULL, &texture->handle);
+   device->lpVtbl->CreateTexture2D(device, &texture->desc, NULL,
+         &texture->handle);
 
    {
       D3D11_SHADER_RESOURCE_VIEW_DESC view_desc;
@@ -136,11 +137,13 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
       view_desc.ViewDimension                   = D3D_SRV_DIMENSION_TEXTURE2D;
       view_desc.Texture2D.MostDetailedMip       = 0;
       view_desc.Texture2D.MipLevels             = -1;
-      D3D11CreateTexture2DShaderResourceView(device, texture->handle, &view_desc, &texture->view);
+      device->lpVtbl->CreateShaderResourceView(device,
+            (D3D11Resource)texture->handle, &view_desc, &texture->view);
    }
 
    if (is_render_target)
-      D3D11CreateTexture2DRenderTargetView(device, texture->handle, NULL, &texture->rt_view);
+      device->lpVtbl->CreateRenderTargetView(device,
+            (D3D11Resource)texture->handle, NULL, &texture->rt_view);
    else
    {
       D3D11_TEXTURE2D_DESC desc = texture->desc;
@@ -149,7 +152,7 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
       desc.MiscFlags            = 0;
       desc.Usage                = D3D11_USAGE_STAGING;
       desc.CPUAccessFlags       = D3D11_CPU_ACCESS_WRITE;
-      D3D11CreateTexture2D(device, &desc, NULL, &texture->staging);
+      device->lpVtbl->CreateTexture2D(device, &desc, NULL, &texture->staging);
    }
 
    texture->size_data.x = texture->desc.Width;
@@ -195,7 +198,7 @@ void d3d11_update_texture(
          (D3D11Resource)texture->staging, 0, &frame_box);
 
    if (texture->desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
-      D3D11GenerateMips(ctx, texture->view);
+      ctx->lpVtbl->GenerateMips(ctx, texture->view);
 }
 
    DXGI_FORMAT
@@ -210,7 +213,8 @@ d3d11_get_closest_match(D3D11Device device, DXGI_FORMAT desired_format, UINT des
    while (*format != DXGI_FORMAT_UNKNOWN)
    {
       UINT         format_support;
-      if (SUCCEEDED(D3D11CheckFormatSupport(device, *format, &format_support)) &&
+      if (SUCCEEDED(device->lpVtbl->CheckFormatSupport(device, *format,
+                  &format_support)) &&
             ((format_support & desired_format_support) == desired_format_support))
          break;
       format++;
@@ -279,19 +283,22 @@ bool d3d11_init_shader(
    }
 
    if (vs_code)
-      D3D11CreateVertexShader(
-            device, D3DGetBufferPointer(vs_code), D3DGetBufferSize(vs_code), NULL, &out->vs);
+      device->lpVtbl->CreateVertexShader(
+            device, D3DGetBufferPointer(vs_code), D3DGetBufferSize(vs_code),
+            NULL, &out->vs);
 
    if (ps_code)
-      D3D11CreatePixelShader(
-            device, D3DGetBufferPointer(ps_code), D3DGetBufferSize(ps_code), NULL, &out->ps);
+      device->lpVtbl->CreatePixelShader(
+            device, D3DGetBufferPointer(ps_code), D3DGetBufferSize(ps_code),
+            NULL, &out->ps);
 
    if (gs_code)
-      D3D11CreateGeometryShader(
-            device, D3DGetBufferPointer(gs_code), D3DGetBufferSize(gs_code), NULL, &out->gs);
+      device->lpVtbl->CreateGeometryShader(
+            device, D3DGetBufferPointer(gs_code), D3DGetBufferSize(gs_code),
+            NULL, &out->gs);
 
    if (vs_code && input_element_descs)
-      D3D11CreateInputLayout(
+      device->lpVtbl->CreateInputLayout(
             device, input_element_descs, num_elements, D3DGetBufferPointer(vs_code),
             D3DGetBufferSize(vs_code), &out->layout);
 

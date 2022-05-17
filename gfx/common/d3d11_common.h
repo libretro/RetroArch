@@ -295,171 +295,6 @@ typedef struct
    d3d11_texture_t      luts[GFX_MAX_TEXTURES];
 } d3d11_video_t;
 
-#if !defined(__cplusplus) || defined(CINTERFACE)
-static INLINE void D3D11GetTexture2DDesc(D3D11Texture2D texture2d, D3D11_TEXTURE2D_DESC* desc)
-{
-    texture2d->lpVtbl->GetDesc(texture2d, desc);
-}
-
-static INLINE void D3D11GetShaderResourceViewResource(
-      D3D11ShaderResourceView shader_resource_view, D3D11Resource* resource)
-{
-   shader_resource_view->lpVtbl->GetResource(shader_resource_view, resource);
-}
-
-static INLINE void D3D11GetShaderResourceViewTexture2D(
-    D3D11ShaderResourceView shader_resource_view, D3D11Texture2D* texture2d)
-{
-    shader_resource_view->lpVtbl->GetResource(shader_resource_view, (D3D11Resource*)texture2d);
-}
-
-static INLINE void D3D11GetShaderResourceViewDesc(
-    D3D11ShaderResourceView shader_resource_view, D3D11_SHADER_RESOURCE_VIEW_DESC* desc)
-{
-    shader_resource_view->lpVtbl->GetDesc(shader_resource_view, desc);
-}
-
-static INLINE void D3D11SetPShaderResources(
-      D3D11DeviceContext               device_context,
-      UINT                             start_slot,
-      UINT                             num_views,
-      ID3D11ShaderResourceView* const* shader_resource_views)
-{
-   device_context->lpVtbl->PSSetShaderResources(
-         device_context, start_slot, num_views,
-         shader_resource_views);
-}
-
-static INLINE void
-D3D11GenerateMips(D3D11DeviceContext device_context, D3D11ShaderResourceView shader_resource_view)
-{
-   device_context->lpVtbl->GenerateMips(device_context, shader_resource_view);
-}
-
-static INLINE void
-D3D11GetState(D3D11DeviceContext device_context, D3D11RasterizerState* rasterizer_state)
-{
-   device_context->lpVtbl->RSGetState(device_context, rasterizer_state);
-}
-
-static INLINE HRESULT D3D11CreateBuffer(
-      D3D11Device             device,
-      D3D11_BUFFER_DESC*      desc,
-      D3D11_SUBRESOURCE_DATA* initial_data,
-      D3D11Buffer*            buffer)
-{
-   return device->lpVtbl->CreateBuffer(device, desc, initial_data, buffer);
-}
-
-static INLINE HRESULT D3D11CreateTexture2D(
-      D3D11Device             device,
-      D3D11_TEXTURE2D_DESC*   desc,
-      D3D11_SUBRESOURCE_DATA* initial_data,
-      D3D11Texture2D*         texture2d)
-{
-   return device->lpVtbl->CreateTexture2D(device, desc, initial_data, texture2d);
-}
-static INLINE HRESULT D3D11CreateShaderResourceView(
-      D3D11Device                      device,
-      D3D11Resource                    resource,
-      D3D11_SHADER_RESOURCE_VIEW_DESC* desc,
-      D3D11ShaderResourceView*         srview)
-{
-   return device->lpVtbl->CreateShaderResourceView(device, resource, desc, srview);
-}
-static INLINE HRESULT D3D11CreateRenderTargetView(
-      D3D11Device                    device,
-      D3D11Resource                  resource,
-      D3D11_RENDER_TARGET_VIEW_DESC* desc,
-      D3D11RenderTargetView*         rtview)
-{
-   return device->lpVtbl->CreateRenderTargetView(device, resource, desc, rtview);
-}
-static INLINE HRESULT D3D11CreateDepthStencilView(
-      D3D11Device                    device,
-      D3D11Resource                  resource,
-      D3D11_DEPTH_STENCIL_VIEW_DESC* desc,
-      D3D11DepthStencilView*         depth_stencil_view)
-{
-   return device->lpVtbl->CreateDepthStencilView(device, resource, desc, depth_stencil_view);
-}
-static INLINE HRESULT D3D11CreateInputLayout(
-      D3D11Device                     device,
-      const D3D11_INPUT_ELEMENT_DESC* input_element_descs,
-      UINT                            num_elements,
-      void*                           shader_bytecode_with_input_signature,
-      SIZE_T                          bytecode_length,
-      D3D11InputLayout*               input_layout)
-{
-   return device->lpVtbl->CreateInputLayout(
-         device, input_element_descs, num_elements, shader_bytecode_with_input_signature,
-         bytecode_length, input_layout);
-}
-static INLINE HRESULT D3D11CreateVertexShader(
-      D3D11Device        device,
-      void*              shader_bytecode,
-      SIZE_T             bytecode_length,
-      D3D11ClassLinkage  class_linkage,
-      D3D11VertexShader* vertex_shader)
-{
-   return device->lpVtbl->CreateVertexShader(
-         device, shader_bytecode, bytecode_length, class_linkage, vertex_shader);
-}
-static INLINE HRESULT D3D11CreateGeometryShader(
-      D3D11Device          device,
-      void*                shader_bytecode,
-      SIZE_T               bytecode_length,
-      D3D11ClassLinkage    class_linkage,
-      D3D11GeometryShader* geometry_shader)
-{
-   return device->lpVtbl->CreateGeometryShader(
-         device, shader_bytecode, bytecode_length, class_linkage, geometry_shader);
-}
-static INLINE HRESULT D3D11CreatePixelShader(
-      D3D11Device       device,
-      void*             shader_bytecode,
-      SIZE_T            bytecode_length,
-      D3D11ClassLinkage class_linkage,
-      D3D11PixelShader* pixel_shader)
-{
-   return device->lpVtbl->CreatePixelShader(
-         device, shader_bytecode, bytecode_length, class_linkage, pixel_shader);
-}
-
-static INLINE HRESULT
-D3D11CheckFormatSupport(D3D11Device device, DXGI_FORMAT format, UINT* format_support)
-{
-   return device->lpVtbl->CheckFormatSupport(device, format, format_support);
-}
-
-static INLINE D3D_FEATURE_LEVEL D3D11GetFeatureLevel(D3D11Device device)
-{
-   return device->lpVtbl->GetFeatureLevel(device);
-}
-
-/* end of auto-generated */
-
-static INLINE HRESULT D3D11CreateTexture2DRenderTargetView(
-      D3D11Device                    device,
-      D3D11Texture2D                 texture,
-      D3D11_RENDER_TARGET_VIEW_DESC* desc,
-      D3D11RenderTargetView*         rtview)
-{
-   return device->lpVtbl->CreateRenderTargetView(device, (D3D11Resource)texture, desc, rtview);
-}
-
-static INLINE HRESULT D3D11CreateTexture2DShaderResourceView(
-      D3D11Device                      device,
-      D3D11Texture2D                   texture,
-      D3D11_SHADER_RESOURCE_VIEW_DESC* desc,
-      D3D11ShaderResourceView*         srview)
-{
-   return device->lpVtbl->CreateShaderResourceView(device, (D3D11Resource)texture, desc, srview);
-}
-#endif
-
-void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture);
-
 static INLINE void d3d11_release_texture(d3d11_texture_t* texture)
 {
    Release(texture->handle);
@@ -467,6 +302,8 @@ static INLINE void d3d11_release_texture(d3d11_texture_t* texture)
    Release(texture->view);
    Release(texture->rt_view);
 }
+
+void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture);
 
 void d3d11_update_texture(
       D3D11DeviceContext ctx,
@@ -492,11 +329,3 @@ bool d3d11_init_shader(
       UINT                            num_elements,
       d3d11_shader_t*                 out,
       enum d3d11_feature_level_hint   hint);
-
-static INLINE void d3d11_release_shader(d3d11_shader_t* shader)
-{
-   Release(shader->layout);
-   Release(shader->vs);
-   Release(shader->ps);
-   Release(shader->gs);
-}
