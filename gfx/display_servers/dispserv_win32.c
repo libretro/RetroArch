@@ -59,9 +59,7 @@
 typedef struct
 {
    bool decorations;
-   int progress;
    int crt_center;
-   unsigned opacity;
    unsigned orig_width;
    unsigned orig_height;
    unsigned orig_refresh;
@@ -140,13 +138,9 @@ static void win32_display_server_destroy(void *data)
 static bool win32_display_server_set_window_opacity(
       void *data, unsigned opacity)
 {
+#ifdef HAVE_WINDOW_TRANSP
    HWND              hwnd = win32_get_window();
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
-
-   if (serv)
-      serv->opacity       = opacity;
-
-#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
    /* Set window transparency on Windows 2000 and above */
    if (opacity < 100)
    {
@@ -174,8 +168,6 @@ static bool win32_display_server_set_window_progress(
 
    if (!serv)
       return false;
-
-   serv->progress      = progress;
 
 #ifdef HAS_TASKBAR_EXT
    if (!serv->taskbar_list || !win32_taskbar_is_created())

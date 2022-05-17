@@ -184,7 +184,7 @@ static void *dinput_init(const char *joypad_driver)
    input_keymaps_init_keyboard_lut(rarch_key_map_dinput);
 
 #ifndef _XBOX
-   win32_set_input_userdata(di);
+   SetWindowLongPtr(main_window.hwnd, GWLP_USERDATA, (LONG_PTR)di);
 #endif
 
    return di;
@@ -988,7 +988,7 @@ static void dinput_free(void *data)
    g_dinput_ctx = NULL;
 
 #ifndef _XBOX
-   win32_unset_input_userdata();
+   SetWindowLongPtr(main_window.hwnd, GWLP_USERDATA, 0);
 #endif
 
    g_dinput_ctx = hold_ctx;
