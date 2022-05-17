@@ -158,7 +158,8 @@ static void d3d10_font_render_line(
          break;
    }
 
-   D3D10MapBuffer(d3d10->sprites.vbo, D3D10_MAP_WRITE_NO_OVERWRITE, 0, (void**)&mapped_vbo);
+   d3d10->sprites.vbo->lpVtbl->Map(d3d10->sprites.vbo,
+         D3D10_MAP_WRITE_NO_OVERWRITE, 0, (void**)&mapped_vbo);
 
    v       = (d3d10_sprite_t*)mapped_vbo + d3d10->sprites.offset;
    glyph_q = font->font_driver->get_glyph(font->font_data, '?');
@@ -203,7 +204,7 @@ static void d3d10_font_render_line(
    }
 
    count = v - ((d3d10_sprite_t*)mapped_vbo + d3d10->sprites.offset);
-   D3D10UnmapBuffer(d3d10->sprites.vbo);
+   d3d10->sprites.vbo->lpVtbl->Unmap(d3d10->sprites.vbo);
 
    if (!count)
       return;
@@ -219,7 +220,9 @@ static void d3d10_font_render_line(
    }
 
    d3d10_set_texture_and_sampler(d3d10->device, 0, &font->texture);
-   D3D10SetBlendState(d3d10->device, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
+   d3d10->device->lpVtbl->OMSetBlendState(d3d10->device,
+         d3d10->blend_enable,
+         NULL, D3D10_DEFAULT_SAMPLE_MASK);
 
    d3d10->device->lpVtbl->PSSetShader(d3d10->device, d3d10->sprites.shader_font.ps);
    d3d10->device->lpVtbl->Draw(d3d10->device, count, d3d10->sprites.offset);

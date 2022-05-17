@@ -217,15 +217,7 @@ typedef struct
    IDXGIAdapter1 *current_adapter;
 } d3d10_video_t;
 
-
 #if !defined(__cplusplus) || defined(CINTERFACE)
-static INLINE HRESULT
-D3D10MapBuffer(D3D10Buffer buffer, D3D10_MAP map_type, UINT map_flags, void** data)
-{
-   return buffer->lpVtbl->Map(buffer, map_type, map_flags, data);
-}
-static INLINE void D3D10UnmapBuffer(D3D10Buffer buffer) { buffer->lpVtbl->Unmap(buffer); }
-
 static INLINE void D3D10SetVertexBuffer(
       D3D10Device device_context,
       UINT               slot,
@@ -235,39 +227,6 @@ static INLINE void D3D10SetVertexBuffer(
 {
    device_context->lpVtbl->IASetVertexBuffers(
          device_context, slot, 1, (D3D10Buffer* const)&vertex_buffer, &stride, &offset);
-}
-
-static INLINE void D3D10SetPrimitiveTopology(D3D10Device device, D3D10_PRIMITIVE_TOPOLOGY topology)
-{
-   device->lpVtbl->IASetPrimitiveTopology(device, topology);
-}
-
-static INLINE void D3D10SetRenderTargets(
-      D3D10Device                  device,
-      UINT                         num_views,
-      D3D10RenderTargetView* const render_target_views,
-      D3D10DepthStencilView        depth_stencil_view)
-{
-   device->lpVtbl->OMSetRenderTargets(device, num_views, render_target_views, depth_stencil_view);
-}
-static INLINE void D3D10SetBlendState(
-      D3D10Device device, D3D10BlendState blend_state, FLOAT blend_factor[4], UINT sample_mask)
-{
-   device->lpVtbl->OMSetBlendState(device, blend_state, blend_factor, sample_mask);
-}
-
-static INLINE void D3D10SetScissorRects(D3D10Device device, UINT num_rects, D3D10_RECT* rects)
-{
-   device->lpVtbl->RSSetScissorRects(device, num_rects, rects);
-}
-
-static INLINE HRESULT D3D10CreateBuffer(
-      D3D10Device             device,
-      D3D10_BUFFER_DESC*      desc,
-      D3D10_SUBRESOURCE_DATA* initial_data,
-      D3D10Buffer*            buffer)
-{
-   return device->lpVtbl->CreateBuffer(device, desc, initial_data, buffer);
 }
 /* end of auto-generated */
 #endif
@@ -319,7 +278,8 @@ d3d10_get_closest_match_texture2D(D3D10Device device, DXGI_FORMAT desired_format
 {
    return d3d10_get_closest_match(
          device, desired_format,
-         D3D10_FORMAT_SUPPORT_TEXTURE2D | D3D10_FORMAT_SUPPORT_SHADER_SAMPLE);
+           D3D10_FORMAT_SUPPORT_TEXTURE2D 
+         | D3D10_FORMAT_SUPPORT_SHADER_SAMPLE);
 }
 
 static INLINE void d3d10_set_shader(D3D10Device ctx, d3d10_shader_t* shader)

@@ -31,15 +31,17 @@
 static void gfx_display_d3d10_blend_begin(void *data)
 {
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
-   D3D10SetBlendState(d3d10->device,
-         d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
+   d3d10->device->lpVtbl->OMSetBlendState(d3d10->device,
+         d3d10->blend_enable,
+         NULL, D3D10_DEFAULT_SAMPLE_MASK);
 }
 
 static void gfx_display_d3d10_blend_end(void *data)
 {
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
-   D3D10SetBlendState(d3d10->device,
-         d3d10->blend_disable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
+   d3d10->device->lpVtbl->OMSetBlendState(d3d10->device,
+         d3d10->blend_disable,
+         NULL, D3D10_DEFAULT_SAMPLE_MASK);
 }
 
 static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
@@ -62,10 +64,13 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
          d3d10_set_shader(d3d10->device, &d3d10->shaders[draw->pipeline_id]);
          d3d10->device->lpVtbl->Draw(d3d10->device, draw->coords->vertices, 0);
 
-         D3D10SetBlendState(d3d10->device, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
+         d3d10->device->lpVtbl->OMSetBlendState(d3d10->device,
+               d3d10->blend_enable,
+               NULL, D3D10_DEFAULT_SAMPLE_MASK);
          d3d10_set_shader(d3d10->device, &d3d10->sprites.shader);
          D3D10SetVertexBuffer(d3d10->device, 0, d3d10->sprites.vbo, sizeof(d3d10_sprite_t), 0);
-         D3D10SetPrimitiveTopology(d3d10->device, D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
+         d3d10->device->lpVtbl->IASetPrimitiveTopology(d3d10->device,
+               D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
          return;
       default:
          break;
@@ -84,7 +89,9 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
       void*           mapped_vbo = NULL;
       d3d10_sprite_t* sprite     = NULL;
 
-      D3D10MapBuffer(d3d10->sprites.vbo, D3D10_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
+      d3d10->sprites.vbo->lpVtbl->Map(d3d10->sprites.vbo,
+            D3D10_MAP_WRITE_NO_OVERWRITE, 0,
+            (void**)&mapped_vbo);
 
       sprite                 = (d3d10_sprite_t*)mapped_vbo + d3d10->sprites.offset;
 
@@ -145,10 +152,11 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
          }
 
          d3d10_set_shader(d3d10->device, &d3d10->shaders[VIDEO_SHADER_STOCK_BLEND]);
-         D3D10SetPrimitiveTopology(d3d10->device, D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+         d3d10->device->lpVtbl->IASetPrimitiveTopology(d3d10->device,
+               D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
       }
 
-      D3D10UnmapBuffer(d3d10->sprites.vbo);
+      d3d10->sprites.vbo->lpVtbl->Unmap(d3d10->sprites.vbo);
    }
 
    d3d10_set_texture_and_sampler(d3d10->device, 0, (d3d10_texture_t*)draw->texture);
@@ -159,7 +167,8 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
    if (vertex_count > 1)
    {
       d3d10_set_shader(d3d10->device, &d3d10->sprites.shader);
-      D3D10SetPrimitiveTopology(d3d10->device, D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
+      d3d10->device->lpVtbl->IASetPrimitiveTopology(d3d10->device,
+            D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
    }
 
    return;
@@ -195,12 +204,14 @@ static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
             vertex_data.pSysMem          = ca->coords.vertex;
             vertex_data.SysMemPitch      = 0;
             vertex_data.SysMemSlicePitch = 0;
-            D3D10CreateBuffer(d3d10->device, &desc, &vertex_data,
-                  &d3d10->menu_pipeline_vbo);
+            d3d10->device->lpVtbl->CreateBuffer(d3d10->device, &desc,
+                  &vertex_data, &d3d10->menu_pipeline_vbo);
          }
          D3D10SetVertexBuffer(d3d10->device, 0, d3d10->menu_pipeline_vbo, 2 * sizeof(float), 0);
          draw->coords->vertices = ca->coords.vertices;
-         D3D10SetBlendState(d3d10->device, d3d10->blend_pipeline, NULL, D3D10_DEFAULT_SAMPLE_MASK);
+         d3d10->device->lpVtbl->OMSetBlendState(d3d10->device,
+               d3d10->blend_pipeline,
+               NULL, D3D10_DEFAULT_SAMPLE_MASK);
          break;
       }
 
@@ -215,15 +226,17 @@ static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
          return;
    }
 
-   D3D10SetPrimitiveTopology(d3d10->device, D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+   d3d10->device->lpVtbl->IASetPrimitiveTopology(d3d10->device,
+         D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
    d3d10->ubo_values.time += 0.01f;
 
    {
       void *mapped_ubo              = NULL;
-      D3D10MapBuffer(d3d10->ubo, D3D10_MAP_WRITE_DISCARD, 0, (void**)&mapped_ubo);
+      d3d10->ubo->lpVtbl->Map(d3d10->ubo, D3D10_MAP_WRITE_DISCARD, 0,
+            (void**)&mapped_ubo);
       *(d3d10_uniform_t*)mapped_ubo = d3d10->ubo_values;
-      D3D10UnmapBuffer(d3d10->ubo);
+      d3d10->ubo->lpVtbl->Unmap(d3d10->ubo);
    }
 }
 
@@ -259,7 +272,7 @@ void gfx_display_d3d10_scissor_begin(void *data,
    rect.right           = width + x;
    rect.bottom          = height + y;
 
-   D3D10SetScissorRects(d3d10->device, 1, &rect);
+   d3d10->device->lpVtbl->RSSetScissorRects(d3d10->device, 1, &rect);
 }
 
 void gfx_display_d3d10_scissor_end(void *data,
@@ -276,7 +289,7 @@ void gfx_display_d3d10_scissor_end(void *data,
    rect.right           = video_width;
    rect.bottom          = video_height;
 
-   D3D10SetScissorRects(d3d10->device, 1, &rect);
+   d3d10->device->lpVtbl->RSSetScissorRects(d3d10->device, 1, &rect);
 }
 
 gfx_display_ctx_driver_t gfx_display_ctx_d3d10 = {
