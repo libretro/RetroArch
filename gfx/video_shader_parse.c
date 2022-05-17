@@ -488,9 +488,10 @@ bool video_shader_resolve_parameters(struct video_shader *shader)
 
    shader->num_parameters = 0;
 
+#ifdef DEBUG
    /* Find all parameters in our shaders. */
-
    RARCH_DBG("[Shaders]: Finding parameters in shader passes (#pragma parameter)..\n");
+#endif
 
    for (i = 0; i < shader->passes; i++)
    {
@@ -573,9 +574,11 @@ bool video_shader_resolve_parameters(struct video_shader *shader)
 
             param->pass     = i;
 
+#ifdef DEBUG
             RARCH_DBG("[Shaders]: Found #pragma parameter %s (%s) %f %f %f %f in pass %d.\n",
                   param->desc,    param->id,      param->initial,
                   param->minimum, param->maximum, param->step, param->pass);
+#endif
             param->current  = param->initial;
 
             shader->num_parameters++;
@@ -604,33 +607,22 @@ bool video_shader_load_current_parameter_values(
       config_file_t *conf, struct video_shader *shader)
 {
    unsigned i;
-   bool load_parameter_message_shown      = false;
-   const struct config_entry_list *entry  = NULL;
 
    if (!conf)
-   {
-      RARCH_ERR("[Shaders]: Load parameter values - No config.\n");
       return false;
-   }
 
    /* For all parameters in the shader see if there is any config value set */
    for (i = 0; i < shader->num_parameters; i++)
    {
-      entry = config_get_entry(conf, shader->parameters[i].id);
+      const struct config_entry_list *entry = config_get_entry(conf, shader->parameters[i].id);
       
       /* Only try to load the parameter value if an entry exists in the config */
       if (entry)
       {
          struct video_shader_parameter *parameter = (struct video_shader_parameter*)
-                                                   video_shader_parse_find_parameter(shader->parameters, 
-                                                                                    shader->num_parameters, 
-                                                                                    shader->parameters[i].id);
-         /* Log the message for loading parameter values only once*/
-         if (!load_parameter_message_shown)
-         {
-            RARCH_DBG("[Shaders]: Loading base parameter values..\n");
-            load_parameter_message_shown = true;
-         }
+            video_shader_parse_find_parameter(shader->parameters, 
+                  shader->num_parameters, 
+                  shader->parameters[i].id);
 
          /* Log each parameter read */
          if (config_get_float(conf, shader->parameters[i].id, &parameter->current))
@@ -866,7 +858,10 @@ static config_file_t *video_shader_get_root_preset_config(const char *path)
    char* nested_reference_path   = (char*)malloc(PATH_MAX_LENGTH);
 
    if (!conf)
-      goto end;
+   {
+      free(nested_reference_path);
+      return NULL;
+   }
 
    while (conf->reference)
    {
@@ -882,7 +877,8 @@ static config_file_t *video_shader_get_root_preset_config(const char *path)
                "This chain of referenced presets is likely cyclical.\n", SHADER_MAX_REFERENCE_DEPTH);
          config_file_free(conf);
          conf = NULL;
-         goto end;
+         free(nested_reference_path);
+         return NULL;
       }
 
       /* Get the absolute path for the reference */
@@ -896,13 +892,13 @@ static config_file_t *video_shader_get_root_preset_config(const char *path)
       if (!conf)
       {
          RARCH_WARN("[Shaders]: Could not read shader preset in #reference line: \"%s\".\n", nested_reference_path);
-         goto end;
+         free(nested_reference_path);
+         return NULL;
       }
 
       reference_depth += 1;
    }
 
-end:
    free(nested_reference_path);
    return conf;
 }
