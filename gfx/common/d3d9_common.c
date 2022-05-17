@@ -1067,15 +1067,6 @@ void d3d9_free_overlay(d3d9_video_t *d3d, overlay_t *overlay)
 }
 #endif
 
-bool d3d9_suppress_screensaver(void *data, bool enable)
-{
-#ifdef _XBOX
-   return true;
-#else
-   return win32_suppress_screensaver(data, enable);
-#endif
-}
-
 void d3d9_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    d3d9_video_t *d3d = (d3d9_video_t*)data;

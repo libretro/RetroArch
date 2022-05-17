@@ -1997,7 +1997,7 @@ video_driver_t video_d3d9_cg = {
    d3d9_cg_set_nonblock_state,
    d3d9_cg_alive,
    NULL,                      /* focus */
-   d3d9_suppress_screensaver,
+   win32_suppress_screensaver,
    d3d9_has_windowed,
    d3d9_cg_set_shader,
    d3d9_cg_free,

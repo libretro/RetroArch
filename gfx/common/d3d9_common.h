@@ -255,8 +255,6 @@ bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle);
 
 bool d3d9_has_windowed(void *data);
 
-bool d3d9_suppress_screensaver(void *data, bool enable);
-
 bool d3d9_process_shader(d3d9_video_t *d3d);
 
 uintptr_t d3d9_load_texture(void *video_data, void *data,
