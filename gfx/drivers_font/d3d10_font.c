@@ -221,9 +221,9 @@ static void d3d10_font_render_line(
    d3d10_set_texture_and_sampler(d3d10->device, 0, &font->texture);
    D3D10SetBlendState(d3d10->device, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
 
-   D3D10SetPShader(d3d10->device, d3d10->sprites.shader_font.ps);
-   D3D10Draw(d3d10->device, count, d3d10->sprites.offset);
-   D3D10SetPShader(d3d10->device, d3d10->sprites.shader.ps);
+   d3d10->device->lpVtbl->PSSetShader(d3d10->device, d3d10->sprites.shader_font.ps);
+   d3d10->device->lpVtbl->Draw(d3d10->device, count, d3d10->sprites.offset);
+   d3d10->device->lpVtbl->PSSetShader(d3d10->device, d3d10->sprites.shader.ps);
 
    d3d10->sprites.offset += count;
 }

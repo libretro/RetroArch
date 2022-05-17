@@ -225,91 +225,6 @@ D3D10MapBuffer(D3D10Buffer buffer, D3D10_MAP map_type, UINT map_flags, void** da
    return buffer->lpVtbl->Map(buffer, map_type, map_flags, data);
 }
 static INLINE void D3D10UnmapBuffer(D3D10Buffer buffer) { buffer->lpVtbl->Unmap(buffer); }
-static INLINE HRESULT D3D10MapTexture2D(
-      D3D10Texture2D          texture2d,
-      UINT                    subresource,
-      D3D10_MAP               map_type,
-      UINT                    map_flags,
-      D3D10_MAPPED_TEXTURE2D* mapped_tex2d)
-{
-   return texture2d->lpVtbl->Map(texture2d, subresource, map_type, map_flags, mapped_tex2d);
-}
-static INLINE void D3D10UnmapTexture2D(D3D10Texture2D texture2d, UINT subresource)
-{
-   texture2d->lpVtbl->Unmap(texture2d, subresource);
-}
-static INLINE void D3D10GetViewResource(D3D10View view, D3D10Resource* resource)
-{
-   view->lpVtbl->GetResource(view, resource);
-}
-static INLINE void D3D10GetShaderResourceViewResource(
-      D3D10ShaderResourceView shader_resource_view, D3D10Resource* resource)
-{
-   shader_resource_view->lpVtbl->GetResource(shader_resource_view, resource);
-}
-static INLINE void
-D3D10GetRenderTargetViewResource(D3D10RenderTargetView render_target_view, D3D10Resource* resource)
-{
-   render_target_view->lpVtbl->GetResource(render_target_view, resource);
-}
-static INLINE void
-D3D10GetDepthStencilViewResource(D3D10DepthStencilView depth_stencil_view, D3D10Resource* resource)
-{
-   depth_stencil_view->lpVtbl->GetResource(depth_stencil_view, resource);
-}
-static INLINE void D3D10BeginQuery(D3D10Query query) { query->lpVtbl->Begin(query); }
-static INLINE void D3D10EndQuery(D3D10Query query) { query->lpVtbl->End(query); }
-static INLINE void D3D10SetVShaderConstantBuffers(
-      D3D10Device device, UINT start_slot, UINT num_buffers, D3D10Buffer* const constant_buffers)
-{
-   device->lpVtbl->VSSetConstantBuffers(device, start_slot, num_buffers, constant_buffers);
-}
-static INLINE void D3D10SetPShaderResources(
-      D3D10Device                    device,
-      UINT                           start_slot,
-      UINT                           num_views,
-      D3D10ShaderResourceView* const shader_resource_views)
-{
-   device->lpVtbl->PSSetShaderResources(device, start_slot, num_views, shader_resource_views);
-}
-static INLINE void D3D10SetPShader(D3D10Device device, D3D10PixelShader pixel_shader)
-{
-   device->lpVtbl->PSSetShader(device, pixel_shader);
-}
-static INLINE void D3D10SetPShaderSamplers(
-      D3D10Device device, UINT start_slot, UINT num_samplers, D3D10SamplerState* const samplers)
-{
-   device->lpVtbl->PSSetSamplers(device, start_slot, num_samplers, samplers);
-}
-static INLINE void D3D10SetVShader(D3D10Device device, D3D10VertexShader vertex_shader)
-{
-   device->lpVtbl->VSSetShader(device, vertex_shader);
-}
-
-static INLINE void D3D10Draw(D3D10Device device, UINT vertex_count, UINT start_vertex_location)
-{
-   device->lpVtbl->Draw(device, vertex_count, start_vertex_location);
-}
-static INLINE void D3D10SetPShaderConstantBuffers(
-      D3D10Device device, UINT start_slot, UINT num_buffers, D3D10Buffer* const constant_buffers)
-{
-   device->lpVtbl->PSSetConstantBuffers(device, start_slot, num_buffers, constant_buffers);
-}
-static INLINE void D3D10SetInputLayout(D3D10Device device, D3D10InputLayout input_layout)
-{
-   device->lpVtbl->IASetInputLayout(device, input_layout);
-}
-static INLINE void D3D10SetVertexBuffers(
-      D3D10Device        device,
-      UINT               start_slot,
-      UINT               num_buffers,
-      D3D10Buffer* const vertex_buffers,
-      UINT*              strides,
-      UINT*              offsets)
-{
-   device->lpVtbl->IASetVertexBuffers(
-         device, start_slot, num_buffers, vertex_buffers, strides, offsets);
-}
 
 static INLINE void D3D10SetVertexBuffer(
       D3D10Device device_context,
@@ -318,59 +233,15 @@ static INLINE void D3D10SetVertexBuffer(
       UINT               stride,
       UINT               offset)
 {
-   D3D10SetVertexBuffers(device_context, slot, 1, (D3D10Buffer* const)&vertex_buffer, &stride, &offset);
-}
-static INLINE void D3D10SetVShaderConstantBuffer(
-      D3D10Device device_context, UINT slot, D3D10Buffer const constant_buffer)
-{
-   D3D10SetVShaderConstantBuffers(device_context, slot, 1, (ID3D10Buffer ** const)&constant_buffer);
+   device_context->lpVtbl->IASetVertexBuffers(
+         device_context, slot, 1, (D3D10Buffer* const)&vertex_buffer, &stride, &offset);
 }
 
-static INLINE void D3D10SetPShaderConstantBuffer(
-      D3D10Device device_context, UINT slot, D3D10Buffer const constant_buffer)
-{
-   D3D10SetPShaderConstantBuffers(device_context, slot, 1, (ID3D10Buffer** const)&constant_buffer);
-}
-
-static INLINE void D3D10SetGShaderConstantBuffers(
-      D3D10Device device, UINT start_slot, UINT num_buffers, D3D10Buffer* const constant_buffers)
-{
-   device->lpVtbl->GSSetConstantBuffers(device, start_slot, num_buffers, constant_buffers);
-}
-static INLINE void D3D10SetGShader(D3D10Device device, D3D10GeometryShader shader)
-{
-   device->lpVtbl->GSSetShader(device, shader);
-}
 static INLINE void D3D10SetPrimitiveTopology(D3D10Device device, D3D10_PRIMITIVE_TOPOLOGY topology)
 {
    device->lpVtbl->IASetPrimitiveTopology(device, topology);
 }
-static INLINE void D3D10SetVShaderResources(
-      D3D10Device                    device,
-      UINT                           start_slot,
-      UINT                           num_views,
-      D3D10ShaderResourceView* const shader_resource_views)
-{
-   device->lpVtbl->VSSetShaderResources(device, start_slot, num_views, shader_resource_views);
-}
-static INLINE void D3D10SetVShaderSamplers(
-      D3D10Device device, UINT start_slot, UINT num_samplers, D3D10SamplerState* const samplers)
-{
-   device->lpVtbl->VSSetSamplers(device, start_slot, num_samplers, samplers);
-}
-static INLINE void D3D10SetGShaderResources(
-      D3D10Device                    device,
-      UINT                           start_slot,
-      UINT                           num_views,
-      D3D10ShaderResourceView* const shader_resource_views)
-{
-   device->lpVtbl->GSSetShaderResources(device, start_slot, num_views, shader_resource_views);
-}
-static INLINE void D3D10SetGShaderSamplers(
-      D3D10Device device, UINT start_slot, UINT num_samplers, D3D10SamplerState* const samplers)
-{
-   device->lpVtbl->GSSetSamplers(device, start_slot, num_samplers, samplers);
-}
+
 static INLINE void D3D10SetRenderTargets(
       D3D10Device                  device,
       UINT                         num_views,
@@ -384,184 +255,12 @@ static INLINE void D3D10SetBlendState(
 {
    device->lpVtbl->OMSetBlendState(device, blend_state, blend_factor, sample_mask);
 }
-static INLINE void D3D10SetDepthStencilState(
-      D3D10Device device, D3D10DepthStencilState depth_stencil_state, UINT stencil_ref)
-{
-   device->lpVtbl->OMSetDepthStencilState(device, depth_stencil_state, stencil_ref);
-}
-static INLINE void
-D3D10SOSetTargets(D3D10Device device, UINT num_buffers, D3D10Buffer* const sotargets, UINT* offsets)
-{
-   device->lpVtbl->SOSetTargets(device, num_buffers, sotargets, offsets);
-}
-static INLINE void D3D10SetState(D3D10Device device, D3D10RasterizerState rasterizer_state)
-{
-   device->lpVtbl->RSSetState(device, rasterizer_state);
-}
-static INLINE void
-D3D10SetViewports(D3D10Device device, UINT num_viewports, D3D10_VIEWPORT* viewports)
-{
-   device->lpVtbl->RSSetViewports(device, num_viewports, viewports);
-}
+
 static INLINE void D3D10SetScissorRects(D3D10Device device, UINT num_rects, D3D10_RECT* rects)
 {
    device->lpVtbl->RSSetScissorRects(device, num_rects, rects);
 }
-static INLINE void D3D10CopySubresourceRegionDevice(
-      D3D10Device   device,
-      D3D10Resource dst_resource,
-      UINT          dst_subresource,
-      UINT          dst_x,
-      UINT          dst_y,
-      UINT          dst_z,
-      D3D10Resource src_resource,
-      UINT          src_subresource,
-      D3D10_BOX*    src_box)
-{
-   device->lpVtbl->CopySubresourceRegion(
-         device, dst_resource, dst_subresource, dst_x, dst_y, dst_z, src_resource, src_subresource,
-         src_box);
-}
 
-static INLINE void D3D10UpdateSubresource(
-      D3D10Device   device,
-      D3D10Resource dst_resource,
-      UINT          dst_subresource,
-      D3D10_BOX*    dst_box,
-      void*         src_data,
-      UINT          src_row_pitch,
-      UINT          src_depth_pitch)
-{
-   device->lpVtbl->UpdateSubresource(
-         device, dst_resource, dst_subresource, dst_box, src_data, src_row_pitch, src_depth_pitch);
-}
-static INLINE void D3D10ClearRenderTargetView(
-      D3D10Device device, D3D10RenderTargetView render_target_view, FLOAT color_rgba[4])
-{
-   device->lpVtbl->ClearRenderTargetView(device, render_target_view, color_rgba);
-}
-static INLINE void D3D10ClearDepthStencilView(
-      D3D10Device           device,
-      D3D10DepthStencilView depth_stencil_view,
-      UINT                  clear_flags,
-      FLOAT                 depth,
-      UINT8                 stencil)
-{
-   device->lpVtbl->ClearDepthStencilView(device, depth_stencil_view, clear_flags, depth, stencil);
-}
-static INLINE void
-D3D10GenerateMips(D3D10Device device, D3D10ShaderResourceView shader_resource_view)
-{
-   device->lpVtbl->GenerateMips(device, shader_resource_view);
-}
-static INLINE void D3D10GetVShaderConstantBuffers(
-      D3D10Device device, UINT start_slot, UINT num_buffers, D3D10Buffer* constant_buffers)
-{
-   device->lpVtbl->VSGetConstantBuffers(device, start_slot, num_buffers, constant_buffers);
-}
-static INLINE void D3D10GetPShaderResources(
-      D3D10Device              device,
-      UINT                     start_slot,
-      UINT                     num_views,
-      D3D10ShaderResourceView* shader_resource_views)
-{
-   device->lpVtbl->PSGetShaderResources(device, start_slot, num_views, shader_resource_views);
-}
-static INLINE void D3D10GetPShader(D3D10Device device, D3D10PixelShader* pixel_shader)
-{
-   device->lpVtbl->PSGetShader(device, pixel_shader);
-}
-static INLINE void D3D10GetPShaderSamplers(
-      D3D10Device device, UINT start_slot, UINT num_samplers, D3D10SamplerState* samplers)
-{
-   device->lpVtbl->PSGetSamplers(device, start_slot, num_samplers, samplers);
-}
-static INLINE void D3D10GetVShader(D3D10Device device, D3D10VertexShader* vertex_shader)
-{
-   device->lpVtbl->VSGetShader(device, vertex_shader);
-}
-static INLINE void D3D10GetPShaderConstantBuffers(
-      D3D10Device device, UINT start_slot, UINT num_buffers, D3D10Buffer* constant_buffers)
-{
-   device->lpVtbl->PSGetConstantBuffers(device, start_slot, num_buffers, constant_buffers);
-}
-static INLINE void D3D10GetInputLayout(D3D10Device device, D3D10InputLayout* input_layout)
-{
-   device->lpVtbl->IAGetInputLayout(device, input_layout);
-}
-static INLINE void D3D10GetVertexBuffers(
-      D3D10Device  device,
-      UINT         start_slot,
-      UINT         num_buffers,
-      D3D10Buffer* vertex_buffers,
-      UINT*        strides,
-      UINT*        offsets)
-{
-   device->lpVtbl->IAGetVertexBuffers(
-         device, start_slot, num_buffers, vertex_buffers, strides, offsets);
-}
-
-static INLINE void D3D10GetGShaderConstantBuffers(
-      D3D10Device device, UINT start_slot, UINT num_buffers, D3D10Buffer* constant_buffers)
-{
-   device->lpVtbl->GSGetConstantBuffers(device, start_slot, num_buffers, constant_buffers);
-}
-static INLINE void D3D10GetGShader(D3D10Device device, D3D10GeometryShader* geometry_shader)
-{
-   device->lpVtbl->GSGetShader(device, geometry_shader);
-}
-
-static INLINE void D3D10GetVShaderResources(
-      D3D10Device              device,
-      UINT                     start_slot,
-      UINT                     num_views,
-      D3D10ShaderResourceView* shader_resource_views)
-{
-   device->lpVtbl->VSGetShaderResources(device, start_slot, num_views, shader_resource_views);
-}
-static INLINE void D3D10GetVShaderSamplers(
-      D3D10Device device, UINT start_slot, UINT num_samplers, D3D10SamplerState* samplers)
-{
-   device->lpVtbl->VSGetSamplers(device, start_slot, num_samplers, samplers);
-}
-static INLINE void D3D10GetRenderTargets(
-      D3D10Device            device,
-      UINT                   num_views,
-      D3D10RenderTargetView* render_target_views,
-      D3D10DepthStencilView* depth_stencil_view)
-{
-   device->lpVtbl->OMGetRenderTargets(device, num_views, render_target_views, depth_stencil_view);
-}
-static INLINE void D3D10GetBlendState(
-      D3D10Device device, D3D10BlendState* blend_state, FLOAT blend_factor[4], UINT* sample_mask)
-{
-   device->lpVtbl->OMGetBlendState(device, blend_state, blend_factor, sample_mask);
-}
-static INLINE void D3D10GetDepthStencilState(
-      D3D10Device device, D3D10DepthStencilState* depth_stencil_state, UINT* stencil_ref)
-{
-   device->lpVtbl->OMGetDepthStencilState(device, depth_stencil_state, stencil_ref);
-}
-static INLINE void
-D3D10SOGetTargets(D3D10Device device, UINT num_buffers, D3D10Buffer* sotargets, UINT* offsets)
-{
-   device->lpVtbl->SOGetTargets(device, num_buffers, sotargets, offsets);
-}
-static INLINE void D3D10GetState(D3D10Device device, D3D10RasterizerState* rasterizer_state)
-{
-   device->lpVtbl->RSGetState(device, rasterizer_state);
-}
-static INLINE void
-D3D10GetViewports(D3D10Device device, UINT* num_viewports, D3D10_VIEWPORT* viewports)
-{
-   device->lpVtbl->RSGetViewports(device, num_viewports, viewports);
-}
-static INLINE void D3D10GetScissorRects(D3D10Device device, UINT* num_rects, D3D10_RECT* rects)
-{
-   device->lpVtbl->RSGetScissorRects(device, num_rects, rects);
-}
-static INLINE void    D3D10ClearState(D3D10Device device) { device->lpVtbl->ClearState(device); }
-static INLINE void    D3D10Flush(D3D10Device device) { device->lpVtbl->Flush(device); }
 static INLINE HRESULT D3D10CreateBuffer(
       D3D10Device             device,
       D3D10_BUFFER_DESC*      desc,
@@ -570,171 +269,7 @@ static INLINE HRESULT D3D10CreateBuffer(
 {
    return device->lpVtbl->CreateBuffer(device, desc, initial_data, buffer);
 }
-static INLINE HRESULT D3D10CreateTexture1D(
-      D3D10Device             device,
-      D3D10_TEXTURE1D_DESC*   desc,
-      D3D10_SUBRESOURCE_DATA* initial_data,
-      D3D10Texture1D*         texture1d)
-{
-   return device->lpVtbl->CreateTexture1D(device, desc, initial_data, texture1d);
-}
-static INLINE HRESULT D3D10CreateTexture2D(
-      D3D10Device             device,
-      D3D10_TEXTURE2D_DESC*   desc,
-      D3D10_SUBRESOURCE_DATA* initial_data,
-      D3D10Texture2D*         texture2d)
-{
-   return device->lpVtbl->CreateTexture2D(device, desc, initial_data, texture2d);
-}
-
-static INLINE HRESULT D3D10CreateShaderResourceViewDevice(
-      D3D10Device                      device,
-      D3D10Resource                    resource,
-      D3D10_SHADER_RESOURCE_VIEW_DESC* desc,
-      D3D10ShaderResourceView*         srview)
-{
-   return device->lpVtbl->CreateShaderResourceView(device, resource, desc, srview);
-}
-static INLINE HRESULT D3D10CreateRenderTargetViewDevice(
-      D3D10Device                    device,
-      D3D10Resource                  resource,
-      D3D10_RENDER_TARGET_VIEW_DESC* desc,
-      D3D10RenderTargetView*         rtview)
-{
-   return device->lpVtbl->CreateRenderTargetView(device, resource, desc, rtview);
-}
-static INLINE HRESULT D3D10CreateDepthStencilView(
-      D3D10Device                    device,
-      D3D10Resource                  resource,
-      D3D10_DEPTH_STENCIL_VIEW_DESC* desc,
-      D3D10DepthStencilView*         depth_stencil_view)
-{
-   return device->lpVtbl->CreateDepthStencilView(device, resource, desc, depth_stencil_view);
-}
-static INLINE HRESULT D3D10CreateInputLayout(
-      D3D10Device               device,
-      D3D10_INPUT_ELEMENT_DESC* input_element_descs,
-      UINT                      num_elements,
-      void*                     shader_bytecode_with_input_signature,
-      SIZE_T                    bytecode_length,
-      D3D10InputLayout*         input_layout)
-{
-   return device->lpVtbl->CreateInputLayout(
-         device, input_element_descs, num_elements, shader_bytecode_with_input_signature,
-         bytecode_length, input_layout);
-}
-static INLINE HRESULT D3D10CreateVertexShader(
-      D3D10Device        device,
-      void*              shader_bytecode,
-      SIZE_T             bytecode_length,
-      D3D10VertexShader* vertex_shader)
-{
-   return device->lpVtbl->CreateVertexShader(
-         device, shader_bytecode, bytecode_length, vertex_shader);
-}
-static INLINE HRESULT D3D10CreateGeometryShader(
-      D3D10Device          device,
-      void*                shader_bytecode,
-      SIZE_T               bytecode_length,
-      D3D10GeometryShader* geometry_shader)
-{
-   return device->lpVtbl->CreateGeometryShader(
-         device, shader_bytecode, bytecode_length, geometry_shader);
-}
-
-static INLINE HRESULT D3D10CreatePixelShader(
-      D3D10Device       device,
-      void*             shader_bytecode,
-      SIZE_T            bytecode_length,
-      D3D10PixelShader* pixel_shader)
-{
-   return device->lpVtbl->CreatePixelShader(device, shader_bytecode, bytecode_length, pixel_shader);
-}
-static INLINE HRESULT D3D10CreateBlendState(
-      D3D10Device device, D3D10_BLEND_DESC* blend_state_desc, D3D10BlendState* blend_state)
-{
-   return device->lpVtbl->CreateBlendState(device, blend_state_desc, blend_state);
-}
-static INLINE HRESULT D3D10CreateDepthStencilState(
-      D3D10Device               device,
-      D3D10_DEPTH_STENCIL_DESC* depth_stencil_desc,
-      D3D10DepthStencilState*   depth_stencil_state)
-{
-   return device->lpVtbl->CreateDepthStencilState(device, depth_stencil_desc, depth_stencil_state);
-}
-static INLINE HRESULT D3D10CreateRasterizerState(
-      D3D10Device            device,
-      D3D10_RASTERIZER_DESC* rasterizer_desc,
-      D3D10RasterizerState*  rasterizer_state)
-{
-   return device->lpVtbl->CreateRasterizerState(device, rasterizer_desc, rasterizer_state);
-}
-static INLINE HRESULT D3D10CreateSamplerState(
-      D3D10Device device, D3D10_SAMPLER_DESC* sampler_desc, D3D10SamplerState* sampler_state)
-{
-   return device->lpVtbl->CreateSamplerState(device, sampler_desc, sampler_state);
-}
-static INLINE HRESULT
-D3D10CreateQuery(D3D10Device device, D3D10_QUERY_DESC* query_desc, D3D10Query* query)
-{
-   return device->lpVtbl->CreateQuery(device, query_desc, query);
-}
-static INLINE HRESULT
-D3D10CheckFormatSupport(D3D10Device device, DXGI_FORMAT format, UINT* format_support)
-{
-   return device->lpVtbl->CheckFormatSupport(device, format, format_support);
-}
-static INLINE HRESULT D3D10CheckMultisampleQualityLevels(
-      D3D10Device device, DXGI_FORMAT format, UINT sample_count, UINT* num_quality_levels)
-{
-   return device->lpVtbl->CheckMultisampleQualityLevels(
-         device, format, sample_count, num_quality_levels);
-}
-static INLINE UINT D3D10GetCreationFlags(D3D10Device device)
-{
-   return device->lpVtbl->GetCreationFlags(device);
-}
-
 /* end of auto-generated */
-
-static INLINE HRESULT
-DXGIGetSwapChainBufferD3D10(DXGISwapChain swap_chain, UINT buffer, D3D10Texture2D* out)
-{
-   return swap_chain->lpVtbl->GetBuffer(swap_chain, buffer, uuidof(ID3D10Texture2D), (void**)out);
-}
-
-static INLINE void D3D10CopyTexture2DSubresourceRegion(
-      D3D10Device    device,
-      D3D10Texture2D dst_texture,
-      UINT           dst_subresource,
-      UINT           dst_x,
-      UINT           dst_y,
-      UINT           dst_z,
-      D3D10Texture2D src_texture,
-      UINT           src_subresource,
-      D3D10_BOX*     src_box)
-{
-   device->lpVtbl->CopySubresourceRegion(
-         device, (D3D10Resource)dst_texture, dst_subresource, dst_x, dst_y, dst_z,
-         (D3D10Resource)src_texture, src_subresource, src_box);
-}
-
-static INLINE HRESULT D3D10CreateTexture2DRenderTargetView(
-      D3D10Device                    device,
-      D3D10Texture2D                 texture,
-      D3D10_RENDER_TARGET_VIEW_DESC* desc,
-      D3D10RenderTargetView*         rtview)
-{
-   return device->lpVtbl->CreateRenderTargetView(device, (D3D10Resource)texture, desc, rtview);
-}
-static INLINE HRESULT D3D10CreateTexture2DShaderResourceView(
-      D3D10Device                      device,
-      D3D10Texture2D                   texture,
-      D3D10_SHADER_RESOURCE_VIEW_DESC* desc,
-      D3D10ShaderResourceView*         srview)
-{
-   return device->lpVtbl->CreateShaderResourceView(device, (D3D10Resource)texture, desc, srview);
-}
 #endif
 
 void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture);
@@ -789,17 +324,17 @@ d3d10_get_closest_match_texture2D(D3D10Device device, DXGI_FORMAT desired_format
 
 static INLINE void d3d10_set_shader(D3D10Device ctx, d3d10_shader_t* shader)
 {
-   D3D10SetInputLayout(ctx, shader->layout);
-   D3D10SetVShader(ctx, shader->vs);
-   D3D10SetPShader(ctx, shader->ps);
-   D3D10SetGShader(ctx, shader->gs);
+   ctx->lpVtbl->IASetInputLayout(ctx, shader->layout);
+   ctx->lpVtbl->VSSetShader(ctx, shader->vs);
+   ctx->lpVtbl->PSSetShader(ctx, shader->ps);
+   ctx->lpVtbl->GSSetShader(ctx, shader->gs);
 }
 
 #if !defined(__cplusplus) || defined(CINTERFACE)
 static INLINE void
 d3d10_set_texture_and_sampler(D3D10Device ctx, UINT slot, d3d10_texture_t* texture)
 {
-   D3D10SetPShaderResources(ctx, slot, 1, &texture->view);
-   D3D10SetPShaderSamplers(ctx, slot, 1, (D3D10SamplerState*)&texture->sampler);
+   ctx->lpVtbl->PSSetShaderResources(ctx, slot, 1, &texture->view);
+   ctx->lpVtbl->PSSetSamplers(ctx, slot, 1, (D3D10SamplerState*)&texture->sampler);
 }
 #endif

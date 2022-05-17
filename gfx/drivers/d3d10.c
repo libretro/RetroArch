@@ -251,19 +251,19 @@ static void d3d10_render_overlay(d3d10_video_t *d3d10)
    unsigned       i;
 
    if (d3d10->overlays.fullscreen)
-      D3D10SetViewports(d3d10->device, 1, &d3d10->viewport);
+      d3d10->device->lpVtbl->RSSetViewports(d3d10->device, 1, &d3d10->viewport);
    else
-      D3D10SetViewports(d3d10->device, 1, &d3d10->frame.viewport);
+      d3d10->device->lpVtbl->RSSetViewports(d3d10->device, 1, &d3d10->frame.viewport);
 
    D3D10SetBlendState(d3d10->device, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
    D3D10SetVertexBuffer(d3d10->device, 0, d3d10->overlays.vbo, sizeof(d3d10_sprite_t), 0);
-   D3D10SetPShaderSamplers(
-         d3d10->device, 0, 1, &d3d10->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
+   d3d10->device->lpVtbl->PSSetSamplers(d3d10->device, 0, 1,
+         &d3d10->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
 
    for (i = 0; i < (unsigned)d3d10->overlays.count; i++)
    {
-      D3D10SetPShaderResources(d3d10->device, 0, 1, &d3d10->overlays.textures[i].view);
-      D3D10Draw(d3d10->device, 1, i);
+      d3d10->device->lpVtbl->PSSetShaderResources(d3d10->device, 0, 1, &d3d10->overlays.textures[i].view);
+      d3d10->device->lpVtbl->Draw(d3d10->device, 1, i);
    }
 }
 #endif
@@ -383,7 +383,7 @@ static bool d3d10_gfx_set_shader(void* data, enum rarch_shader_type type, const 
    if (!d3d10)
       return false;
 
-   D3D10Flush(d3d10->device);
+   d3d10->device->lpVtbl->Flush(d3d10->device);
    d3d10_free_shader_preset(d3d10);
 
    if (string_is_empty(path))
@@ -721,9 +721,10 @@ static void *d3d10_gfx_init(const video_info_t* video,
 
    {
       D3D10Texture2D backBuffer;
-      DXGIGetSwapChainBufferD3D10(d3d10->swapChain, 0, &backBuffer);
-      D3D10CreateTexture2DRenderTargetView(
-            d3d10->device, backBuffer, NULL, &d3d10->renderTargetView);
+      d3d10->swapChain->lpVtbl->GetBuffer(d3d10->swapChain, 0,
+            uuidof(ID3D10Texture2D), (void**)&backBuffer);
+      d3d10->device->lpVtbl->CreateRenderTargetView(d3d10->device,
+            (D3D10Resource)backBuffer, NULL, &d3d10->renderTargetView);
       Release(backBuffer);
    }
 
@@ -804,11 +805,11 @@ static void *d3d10_gfx_init(const video_info_t* video,
          desc.AddressW = desc.AddressU;
 
          desc.Filter = D3D10_FILTER_MIN_MAG_MIP_LINEAR;
-         D3D10CreateSamplerState(d3d10->device, &desc,
+         d3d10->device->lpVtbl->CreateSamplerState(d3d10->device, &desc,
                &d3d10->samplers[RARCH_FILTER_LINEAR][i]);
 
          desc.Filter = D3D10_FILTER_MIN_MAG_MIP_POINT;
-         D3D10CreateSamplerState(d3d10->device, &desc,
+         d3d10->device->lpVtbl->CreateSamplerState(d3d10->device, &desc,
                &d3d10->samplers[RARCH_FILTER_NEAREST][i]);
       }
    }
@@ -975,14 +976,17 @@ static void *d3d10_gfx_init(const video_info_t* video,
       blend_desc.DestBlendAlpha           = D3D10_BLEND_INV_SRC_ALPHA;
       blend_desc.BlendOpAlpha             = D3D10_BLEND_OP_ADD;
       blend_desc.RenderTargetWriteMask[0] = D3D10_COLOR_WRITE_ENABLE_ALL;
-      D3D10CreateBlendState(d3d10->device, &blend_desc, &d3d10->blend_enable);
+      d3d10->device->lpVtbl->CreateBlendState(d3d10->device, &blend_desc,
+            &d3d10->blend_enable);
 
       blend_desc.SrcBlend  = D3D10_BLEND_ONE;
       blend_desc.DestBlend = D3D10_BLEND_ONE;
-      D3D10CreateBlendState(d3d10->device, &blend_desc, &d3d10->blend_pipeline);
+      d3d10->device->lpVtbl->CreateBlendState(d3d10->device, &blend_desc,
+            &d3d10->blend_pipeline);
 
       blend_desc.BlendEnable[0] = FALSE;
-      D3D10CreateBlendState(d3d10->device, &blend_desc, &d3d10->blend_disable);
+      d3d10->device->lpVtbl->CreateBlendState(d3d10->device, &blend_desc,
+            &d3d10->blend_disable);
    }
 
    {
@@ -999,10 +1003,11 @@ static void *d3d10_gfx_init(const video_info_t* video,
       desc.MultisampleEnable     = FALSE;
       desc.AntialiasedLineEnable = FALSE;
 
-      D3D10CreateRasterizerState(d3d10->device, &desc, &d3d10->state);
+      d3d10->device->lpVtbl->CreateRasterizerState(d3d10->device, &desc,
+            &d3d10->state);
    }
 
-   D3D10SetState(d3d10->device, d3d10->state);
+   d3d10->device->lpVtbl->RSSetState(d3d10->device, d3d10->state);
 
    font_driver_init_osd(d3d10,
          video,
@@ -1262,9 +1267,10 @@ static bool d3d10_gfx_frame(
       Release(d3d10->renderTargetView);
       DXGIResizeBuffers(d3d10->swapChain, 0, 0, 0, (DXGI_FORMAT)0, 0);
 
-      DXGIGetSwapChainBufferD3D10(d3d10->swapChain, 0, &backBuffer);
-      D3D10CreateTexture2DRenderTargetView(
-            d3d10->device, backBuffer, NULL, &d3d10->renderTargetView);
+      d3d10->swapChain->lpVtbl->GetBuffer(d3d10->swapChain, 0,
+            uuidof(ID3D10Texture2D), (void**)&backBuffer);
+      d3d10->device->lpVtbl->CreateRenderTargetView(d3d10->device,
+            (D3D10Resource)backBuffer, NULL, &d3d10->renderTargetView);
       Release(backBuffer);
 
       D3D10SetRenderTargets(d3d10->device, 1, &d3d10->renderTargetView, NULL);
@@ -1291,7 +1297,7 @@ static bool d3d10_gfx_frame(
    if (d3d10->hw.enable)
    {
       D3D10SetRenderTargets(context, 1, &d3d10->renderTargetView, NULL);
-      D3D10SetState(context, d3d10->state);
+      context->lpVtbl->RSSetState(context, d3d10->state);
    }
 #endif
 
@@ -1411,10 +1417,11 @@ static bool d3d10_gfx_frame(
                D3D10UnmapBuffer(buffer);
 
                if (buffer_sem->stage_mask & SLANG_STAGE_VERTEX_MASK)
-                  D3D10SetVShaderConstantBuffers(context, buffer_sem->binding, 1, &buffer);
+                  context->lpVtbl->VSSetConstantBuffers(context, buffer_sem->binding, 1, &buffer);
 
                if (buffer_sem->stage_mask & SLANG_STAGE_FRAGMENT_MASK)
-                  D3D10SetPShaderConstantBuffers(context, buffer_sem->binding, 1, &buffer);
+                  context->lpVtbl->PSSetConstantBuffers(context,
+                        buffer_sem->binding, 1, &buffer);
             }
          }
 
@@ -1438,23 +1445,22 @@ static bool d3d10_gfx_frame(
 
 #if 0
             if (d3d10->hw.enable && (i == 0))
-               D3D10SetPShaderResources(context, 1, SLANG_NUM_BINDINGS - 1, textures + 1);
+               context->lpVtbl->PSSetShaderResources(context, 1,
+                     SLANG_NUM_BINDINGS - 1, textures + 1);
             else
 #endif
-               D3D10SetPShaderResources(context, 0, SLANG_NUM_BINDINGS, textures);
+               context->lpVtbl->PSSetShaderResources(context, 0,
+                     SLANG_NUM_BINDINGS, textures);
 
-            D3D10SetPShaderSamplers(context, 0, SLANG_NUM_BINDINGS, samplers);
+            context->lpVtbl->PSSetSamplers(context, 0, SLANG_NUM_BINDINGS, samplers);
          }
 
          if (d3d10->pass[i].rt.handle)
          {
             D3D10SetRenderTargets(context, 1, &d3d10->pass[i].rt.rt_view, NULL);
-#if 0
-            D3D10ClearRenderTargetView(context, d3d10->pass[i].rt.rt_view, d3d10->clearcolor);
-#endif
-            D3D10SetViewports(context, 1, &d3d10->pass[i].viewport);
+            context->lpVtbl->RSSetViewports(context, 1, &d3d10->pass[i].viewport);
 
-            D3D10Draw(context, 4, 0);
+            context->lpVtbl->Draw(context, 4, 0);
             texture = &d3d10->pass[i].rt;
          }
          else
@@ -1473,37 +1479,40 @@ static bool d3d10_gfx_frame(
       /* TODO/FIXME */
       if (!d3d10->hw.enable || d3d10->shader_preset)
 #endif
-         D3D10SetPShaderResources(context, 0, 1, &texture->view);
-      D3D10SetPShaderSamplers(
-            context, 0, 1, &d3d10->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
-      D3D10SetVShaderConstantBuffers(context, 0, 1, &d3d10->frame.ubo);
+         context->lpVtbl->PSSetShaderResources(context, 0, 1, &texture->view);
+      context->lpVtbl->PSSetSamplers(context, 0, 1,
+            &d3d10->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
+      context->lpVtbl->VSSetConstantBuffers(context, 0, 1, &d3d10->frame.ubo);
    }
 
-   D3D10ClearRenderTargetView(context, d3d10->renderTargetView, d3d10->clearcolor);
-   D3D10SetViewports(context, 1, &d3d10->frame.viewport);
+   context->lpVtbl->ClearRenderTargetView(context, d3d10->renderTargetView,
+         d3d10->clearcolor);
+   context->lpVtbl->RSSetViewports(context, 1, &d3d10->frame.viewport);
 
    d3d10_clear_scissor(d3d10, video_width, video_height);
 
-   D3D10Draw(context, 4, 0);
+   context->lpVtbl->Draw(context, 4, 0);
 
    D3D10SetBlendState(context, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
 
    if (d3d10->menu.enabled && d3d10->menu.texture.handle)
    {
       if (d3d10->menu.fullscreen)
-         D3D10SetViewports(context, 1, &d3d10->viewport);
+         context->lpVtbl->RSSetViewports(context, 1, &d3d10->viewport);
 
       d3d10_set_shader(context, &d3d10->shaders[VIDEO_SHADER_STOCK_BLEND]);
       D3D10SetVertexBuffer(context, 0, d3d10->menu.vbo, sizeof(d3d10_vertex_t), 0);
-      D3D10SetVShaderConstantBuffers(context, 0, 1, &d3d10->ubo);
+      context->lpVtbl->VSSetConstantBuffers(context, 0, 1, &d3d10->ubo);
       d3d10_set_texture_and_sampler(context, 0, &d3d10->menu.texture);
-      D3D10Draw(context, 4, 0);
+      context->lpVtbl->Draw(context, 4, 0);
    }
 
    d3d10_set_shader(context, &d3d10->sprites.shader);
    D3D10SetPrimitiveTopology(context, D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
-   D3D10SetVShaderConstantBuffer(context, 0, d3d10->ubo);
-   D3D10SetPShaderConstantBuffer(context, 0, d3d10->ubo);
+   context->lpVtbl->VSSetConstantBuffers(context, 0, 1, (ID3D10Buffer **
+            const)&d3d10->ubo);
+   context->lpVtbl->PSSetConstantBuffers(context, 0, 1, (ID3D10Buffer **
+            const)&d3d10->ubo);
 
    d3d10->sprites.enabled = true;
 
@@ -1517,7 +1526,7 @@ static bool d3d10_gfx_frame(
    if (d3d10->menu.enabled)
 #endif
    {
-      D3D10SetViewports(context, 1, &d3d10->viewport);
+      context->lpVtbl->RSSetViewports(context, 1, &d3d10->viewport);
       D3D10SetVertexBuffer(context, 0, d3d10->sprites.vbo, sizeof(d3d10_sprite_t), 0);
    }
 #endif
@@ -1531,7 +1540,7 @@ static bool d3d10_gfx_frame(
       {
          if (osd_params)
          {
-            D3D10SetViewports(context, 1, &d3d10->viewport);
+            context->lpVtbl->RSSetViewports(context, 1, &d3d10->viewport);
             D3D10SetBlendState(d3d10->device, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
             D3D10SetVertexBuffer(context, 0, d3d10->sprites.vbo, sizeof(d3d10_sprite_t), 0);
             font_driver_render_msg(d3d10,
@@ -1552,7 +1561,7 @@ static bool d3d10_gfx_frame(
 
    if (msg && *msg)
    {
-      D3D10SetViewports(d3d10->device, 1, &d3d10->viewport);
+      d3d10->device->lpVtbl->RSSetViewports(d3d10->device, 1, &d3d10->viewport);
       D3D10SetBlendState(d3d10->device, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
       D3D10SetVertexBuffer(d3d10->device, 0, d3d10->sprites.vbo, sizeof(d3d10_sprite_t), 0);
       font_driver_render_msg(d3d10, msg, NULL, NULL);

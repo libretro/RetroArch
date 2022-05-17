@@ -60,7 +60,7 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
          d3d10_set_shader(d3d10->device, &d3d10->shaders[draw->pipeline_id]);
-         D3D10Draw(d3d10->device, draw->coords->vertices, 0);
+         d3d10->device->lpVtbl->Draw(d3d10->device, draw->coords->vertices, 0);
 
          D3D10SetBlendState(d3d10->device, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
          d3d10_set_shader(d3d10->device, &d3d10->sprites.shader);
@@ -152,7 +152,8 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
    }
 
    d3d10_set_texture_and_sampler(d3d10->device, 0, (d3d10_texture_t*)draw->texture);
-   D3D10Draw(d3d10->device, vertex_count, d3d10->sprites.offset);
+   d3d10->device->lpVtbl->Draw(d3d10->device, vertex_count,
+         d3d10->sprites.offset);
    d3d10->sprites.offset += vertex_count;
 
    if (vertex_count > 1)
