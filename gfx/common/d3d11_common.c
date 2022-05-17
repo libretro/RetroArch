@@ -282,11 +282,6 @@ bool d3d11_init_shader(
          success = false;
    }
 
-   if (vs_code)
-      device->lpVtbl->CreateVertexShader(
-            device, D3DGetBufferPointer(vs_code), D3DGetBufferSize(vs_code),
-            NULL, &out->vs);
-
    if (ps_code)
       device->lpVtbl->CreatePixelShader(
             device, D3DGetBufferPointer(ps_code), D3DGetBufferSize(ps_code),
@@ -297,10 +292,15 @@ bool d3d11_init_shader(
             device, D3DGetBufferPointer(gs_code), D3DGetBufferSize(gs_code),
             NULL, &out->gs);
 
-   if (vs_code && input_element_descs)
-      device->lpVtbl->CreateInputLayout(
-            device, input_element_descs, num_elements, D3DGetBufferPointer(vs_code),
-            D3DGetBufferSize(vs_code), &out->layout);
+   if (vs_code)
+   {
+      LPVOID buf_ptr  = D3DGetBufferPointer(vs_code);
+      SIZE_T buf_size = D3DGetBufferSize(vs_code);
+      device->lpVtbl->CreateVertexShader(device, buf_ptr, buf_size, NULL, &out->vs);
+      if (input_element_descs)
+         device->lpVtbl->CreateInputLayout(device, input_element_descs, num_elements,
+               buf_ptr, buf_size, &out->layout);
+   }
 
    Release(vs_code);
    Release(ps_code);
