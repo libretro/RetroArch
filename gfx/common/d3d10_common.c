@@ -48,18 +48,12 @@ HRESULT WINAPI D3D10CreateDeviceAndSwapChain(
    static PFN_D3D10_CREATE_DEVICE_AND_SWAP_CHAIN fp;
 
    if (!d3d10_dll)
-      d3d10_dll = dylib_load("d3d10.dll");
-
-   if (!d3d10_dll)
-      return TYPE_E_CANTLOADLIBRARY;
-
+      if (!(d3d10_dll = dylib_load("d3d10.dll")))
+         return TYPE_E_CANTLOADLIBRARY;
    if (!fp)
-      fp = (PFN_D3D10_CREATE_DEVICE_AND_SWAP_CHAIN)dylib_proc(
-            d3d10_dll, "D3D10CreateDeviceAndSwapChain");
-
-   if (!fp)
-      return TYPE_E_DLLFUNCTIONNOTFOUND;
-
+      if (!(fp = (PFN_D3D10_CREATE_DEVICE_AND_SWAP_CHAIN)dylib_proc(
+            d3d10_dll, "D3D10CreateDeviceAndSwapChain")))
+         return TYPE_E_DLLFUNCTIONNOTFOUND;
    return fp(
          pAdapter, DriverType, Software, Flags, SDKVersion,
          pSwapChainDesc, ppSwapChain, ppDevice);

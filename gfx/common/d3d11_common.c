@@ -39,18 +39,12 @@ HRESULT WINAPI D3D11CreateDevice(
    static PFN_D3D11_CREATE_DEVICE                fp;
 
    if (!d3d11_dll)
-      d3d11_dll = dylib_load("d3d11.dll");
-
-   if (!d3d11_dll)
-      return TYPE_E_CANTLOADLIBRARY;
-
+      if (!(d3d11_dll = dylib_load("d3d11.dll")))
+         return TYPE_E_CANTLOADLIBRARY;
    if (!fp)
-      fp = (PFN_D3D11_CREATE_DEVICE)dylib_proc(
-            d3d11_dll, "D3D11CreateDevice");
-
-   if (!fp)
-      return TYPE_E_DLLFUNCTIONNOTFOUND;
-
+      if (!(fp = (PFN_D3D11_CREATE_DEVICE)dylib_proc(
+            d3d11_dll, "D3D11CreateDevice")))
+         return TYPE_E_DLLFUNCTIONNOTFOUND;
    return fp(
          pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion,
          ppDevice, pFeatureLevel, ppImmediateContext);
@@ -74,18 +68,12 @@ HRESULT WINAPI D3D11CreateDeviceAndSwapChain(
    static PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN fp;
 
    if (!d3d11_dll)
-      d3d11_dll = dylib_load("d3d11.dll");
-
-   if (!d3d11_dll)
-      return TYPE_E_CANTLOADLIBRARY;
-
+      if (!(d3d11_dll = dylib_load("d3d11.dll")))
+         return TYPE_E_CANTLOADLIBRARY;
    if (!fp)
-      fp = (PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN)dylib_proc(
-            d3d11_dll, "D3D11CreateDeviceAndSwapChain");
-
-   if (!fp)
-      return TYPE_E_DLLFUNCTIONNOTFOUND;
-
+      if (!(fp = (PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN)dylib_proc(
+            d3d11_dll, "D3D11CreateDeviceAndSwapChain")))
+         return TYPE_E_DLLFUNCTIONNOTFOUND;
    return fp(
          pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion,
          pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
@@ -117,7 +105,7 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
 
       while (width && height)
       {
-         width >>= 1;
+         width  >>= 1;
          height >>= 1;
          texture->desc.MipLevels++;
       }

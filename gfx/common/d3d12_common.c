@@ -84,17 +84,12 @@ HRESULT WINAPI D3D12CreateDevice(
 {
    static PFN_D3D12_CREATE_DEVICE fp;
    if (!d3d12_dll)
-      d3d12_dll = dylib_load(d3d12_dll_name);
-
-   if (!d3d12_dll)
-      return TYPE_E_CANTLOADLIBRARY;
-
+      if (!(d3d12_dll = dylib_load(d3d12_dll_name)))
+         return TYPE_E_CANTLOADLIBRARY;
    if (!fp)
-      fp = (PFN_D3D12_CREATE_DEVICE)dylib_proc(d3d12_dll, "D3D12CreateDevice");
-
-   if (!fp)
-      return TYPE_E_DLLFUNCTIONNOTFOUND;
-
+      if (!(fp = (PFN_D3D12_CREATE_DEVICE)dylib_proc(d3d12_dll,
+                  "D3D12CreateDevice")))
+         return TYPE_E_DLLFUNCTIONNOTFOUND;
    return fp(pAdapter, MinimumFeatureLevel, riid, ppDevice);
 }
 
@@ -102,17 +97,12 @@ HRESULT WINAPI D3D12GetDebugInterface(REFIID riid, void** ppvDebug)
 {
    static PFN_D3D12_GET_DEBUG_INTERFACE fp;
    if (!d3d12_dll)
-      d3d12_dll = dylib_load(d3d12_dll_name);
-
-   if (!d3d12_dll)
-      return TYPE_E_CANTLOADLIBRARY;
-
+      if (!(d3d12_dll = dylib_load(d3d12_dll_name)))
+         return TYPE_E_CANTLOADLIBRARY;
    if (!fp)
-      fp = (PFN_D3D12_GET_DEBUG_INTERFACE)dylib_proc(d3d12_dll, "D3D12GetDebugInterface");
-
-   if (!fp)
-      return TYPE_E_DLLFUNCTIONNOTFOUND;
-
+      if (!(fp = (PFN_D3D12_GET_DEBUG_INTERFACE)dylib_proc(d3d12_dll,
+                  "D3D12GetDebugInterface")))
+         return TYPE_E_DLLFUNCTIONNOTFOUND;
    return fp(riid, ppvDebug);
 }
 
@@ -124,17 +114,12 @@ HRESULT WINAPI D3D12SerializeRootSignature(
 {
    static PFN_D3D12_SERIALIZE_ROOT_SIGNATURE fp;
    if (!d3d12_dll)
-      d3d12_dll = dylib_load(d3d12_dll_name);
-
-   if (!d3d12_dll)
-      return TYPE_E_CANTLOADLIBRARY;
-
+      if (!(d3d12_dll = dylib_load(d3d12_dll_name)))
+         return TYPE_E_CANTLOADLIBRARY;
    if (!fp)
-      fp = (PFN_D3D12_SERIALIZE_ROOT_SIGNATURE)dylib_proc(d3d12_dll, "D3D12SerializeRootSignature");
-
-   if (!fp)
-      return TYPE_E_DLLFUNCTIONNOTFOUND;
-
+      if (!(fp = (PFN_D3D12_SERIALIZE_ROOT_SIGNATURE)dylib_proc(d3d12_dll,
+                  "D3D12SerializeRootSignature")))
+         return TYPE_E_DLLFUNCTIONNOTFOUND;
    return fp(pRootSignature, Version, ppBlob, ppErrorBlob);
 }
 
@@ -145,18 +130,12 @@ HRESULT WINAPI D3D12SerializeVersionedRootSignature(
 {
    static PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE fp;
    if (!d3d12_dll)
-      d3d12_dll = dylib_load(d3d12_dll_name);
-
-   if (!d3d12_dll)
-      return TYPE_E_CANTLOADLIBRARY;
-
+      if (!(d3d12_dll = dylib_load(d3d12_dll_name)))
+         return TYPE_E_CANTLOADLIBRARY;
    if (!fp)
-      fp = (PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE)dylib_proc(
-            d3d12_dll, "D3D12SerializeRootSignature");
-
-   if (!fp)
-      return TYPE_E_DLLFUNCTIONNOTFOUND;
-
+      if (!(fp = (PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE)dylib_proc(
+            d3d12_dll, "D3D12SerializeRootSignature")))
+         return TYPE_E_DLLFUNCTIONNOTFOUND;
    return fp(pRootSignature, ppBlob, ppErrorBlob);
 }
 #endif
