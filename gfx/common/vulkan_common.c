@@ -677,12 +677,16 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
             {
                VkBufferImageCopy region;
                VkCommandBuffer staging;
-               struct vk_texture tmp       = vulkan_create_texture(vk, NULL,
+               enum VkImageLayout layout_fmt = 
+                  tex.mipmap
+                  ? VK_IMAGE_LAYOUT_GENERAL
+                  : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+               struct vk_texture tmp         = vulkan_create_texture(vk, NULL,
                      width, height, format, initial, NULL, VULKAN_TEXTURE_STAGING);
 
-               cmd_info.commandPool        = vk->staging_pool;
-               cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-               cmd_info.commandBufferCount = 1;
+               cmd_info.commandPool          = vk->staging_pool;
+               cmd_info.level                = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+               cmd_info.commandBufferCount   = 1;
 
                vkAllocateCommandBuffers(vk->context->device,
                      &cmd_info, &staging);
@@ -701,9 +705,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
                      staging,
                      tex.image,
                      VK_IMAGE_LAYOUT_UNDEFINED,
-                     tex.mipmap 
-                     ? VK_IMAGE_LAYOUT_GENERAL 
-                     : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                     layout_fmt,
                      0, VK_ACCESS_TRANSFER_WRITE_BIT,
                      VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -715,13 +717,8 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
                region.imageExtent.height          = height;
                region.imageExtent.depth           = 1;
 
-               vkCmdCopyBufferToImage(staging,
-                     tmp.buffer,
-                     tex.image,
-                     tex.mipmap 
-                     ? VK_IMAGE_LAYOUT_GENERAL 
-                     : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                     1, &region);
+               vkCmdCopyBufferToImage(staging, tmp.buffer,
+                     tex.image, layout_fmt, 1, &region);
 
                if (tex.mipmap)
                {
@@ -769,30 +766,18 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
                            &blit_region,
                            VK_FILTER_LINEAR);
                   }
+               }
 
-                  /* Complete our texture. */
-                  VULKAN_IMAGE_LAYOUT_TRANSITION(
-                        staging,
-                        tex.image,
-                        VK_IMAGE_LAYOUT_GENERAL,
-                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                        VK_ACCESS_TRANSFER_WRITE_BIT,
-                        VK_ACCESS_SHADER_READ_BIT,
-                        VK_PIPELINE_STAGE_TRANSFER_BIT,
-                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-               }
-               else
-               {
-                  VULKAN_IMAGE_LAYOUT_TRANSITION(
-                        staging,
-                        tex.image,
-                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                        VK_ACCESS_TRANSFER_WRITE_BIT,
-                        VK_ACCESS_SHADER_READ_BIT,
-                        VK_PIPELINE_STAGE_TRANSFER_BIT,
-                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-               }
+               /* Complete our texture. */
+               VULKAN_IMAGE_LAYOUT_TRANSITION(
+                     staging,
+                     tex.image,
+                     layout_fmt,
+                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                     VK_ACCESS_TRANSFER_WRITE_BIT,
+                     VK_ACCESS_SHADER_READ_BIT,
+                     VK_PIPELINE_STAGE_TRANSFER_BIT,
+                     VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
                vkEndCommandBuffer(staging);
                submit_info.commandBufferCount = 1;
