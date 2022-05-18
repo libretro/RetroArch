@@ -2138,7 +2138,7 @@ static bool vulkan_frame(void *data, const void *frame,
          if (vk->swapchain[vk->last_valid_index].texture_optimal.memory 
                != VK_NULL_HANDLE)
             tex = &vk->swapchain[vk->last_valid_index].texture_optimal;
-         else
+         else if (tex->image)
             vulkan_transition_texture(vk, vk->cmd, tex);
 
          input.image  = tex->image;

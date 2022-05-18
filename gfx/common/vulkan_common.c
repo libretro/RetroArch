@@ -915,9 +915,6 @@ static void vulkan_write_quad_descriptors(
 
 void vulkan_transition_texture(vk_t *vk, VkCommandBuffer cmd, struct vk_texture *texture)
 {
-   if (!texture->image)
-      return;
-
    /* Transition to GENERAL layout for linear streamed textures.
     * We're using linear textures here, so only
     * GENERAL layout is supported.
@@ -968,7 +965,7 @@ static void vulkan_check_dynamic_state(vk_t *vk)
 
 void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 {
-   if (call->texture)
+   if (call->texture->image)
       vulkan_transition_texture(vk, vk->cmd, call->texture);
 
    if (call->pipeline != vk->tracker.pipeline)
@@ -1034,7 +1031,8 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 
 void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
 {
-   vulkan_transition_texture(vk, vk->cmd, quad->texture);
+   if (quad->texture->image)
+      vulkan_transition_texture(vk, vk->cmd, quad->texture);
 
    if (quad->pipeline != vk->tracker.pipeline)
    {
