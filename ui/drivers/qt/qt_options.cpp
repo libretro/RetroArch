@@ -1282,6 +1282,7 @@ QWidget *VideoPage::widget()
    outputGroup->add(MENU_ENUM_LABEL_VIDEO_ROTATION);
    outputGroup->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION), m_resolutionCombo);
    outputGroup->add(MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE);
+   outputGroup->add(MENU_ENUM_LABEL_VIDEO_AUTOSWITCH_REFRESH_RATE);
 
    fullscreenGroup->add(MENU_ENUM_LABEL_VIDEO_FULLSCREEN);
    fullscreenGroup->add(MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN);
@@ -1318,17 +1319,13 @@ QWidget *VideoPage::widget()
    windowedGroup->addRow(savePosGroup);
 
    windowedGroup->add(MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS);
-
-   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_ENABLE);
-   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS);
-   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS);
-   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST);
-   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT);
-
+   windowedGroup->add(MENU_ENUM_LABEL_UI_MENUBAR_ENABLE);
+   
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL);
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION);
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC);
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY);
+   vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO);
    syncGroup->addRow(vSyncGroup);
 
    rarch_setting_t *hardSyncSetting = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_HARD_SYNC);
@@ -1343,6 +1340,7 @@ QWidget *VideoPage::widget()
    }
 
    syncGroup->add(MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES);
+   syncGroup->add(MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE);
 
    miscGroup->add(MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_THREADED);
@@ -1351,7 +1349,16 @@ QWidget *VideoPage::widget()
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_CTX_SCALING);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_DELAY);
 
-   hdrLayout->addWidget(hdrGroup);
+   if (video_driver_supports_hdr())
+   {
+      hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_ENABLE);
+      hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS);
+      hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS);
+      hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST);
+      hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT);
+
+      hdrLayout->addWidget(hdrGroup);
+   }
 
    syncMiscLayout->addWidget(syncGroup);
    syncMiscLayout->addWidget(miscGroup);
