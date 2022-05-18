@@ -950,7 +950,7 @@ static void vulkan_check_dynamic_state(vk_t *vk)
 
 void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 {
-   if (call->texture->image)
+   if (call->texture && call->texture->image)
       vulkan_transition_texture(vk, vk->cmd, call->texture);
 
    if (call->pipeline != vk->tracker.pipeline)
@@ -1016,7 +1016,7 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 
 void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
 {
-   if (quad->texture->image)
+   if (quad->texture && quad->texture->image)
       vulkan_transition_texture(vk, vk->cmd, quad->texture);
 
    if (quad->pipeline != vk->tracker.pipeline)
