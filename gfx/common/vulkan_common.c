@@ -2819,7 +2819,6 @@ retry:
 #ifdef HAVE_THREADS
          slock_lock(vk->context.queue_lock);
 #endif
-         RARCH_LOG("[Vulkan]: Destroying stale acquire semaphore.\n");
          vkDeviceWaitIdle(vk->context.device);
          vkDestroySemaphore(vk->context.device, vk->context.swapchain_acquire_semaphore, NULL);
 #ifdef HAVE_THREADS
@@ -2852,15 +2851,11 @@ retry:
       case VK_SUBOPTIMAL_KHR:
          /* Throw away the old swapchain and try again. */
          vulkan_destroy_swapchain(vk);
-
+         /* Swapchain out of date, trying to create new one ... */
          if (is_retrying)
-         {
-            RARCH_ERR("[Vulkan]: Swapchain is out of date, trying to create new one. Have tried multiple times ...\n");
             retro_sleep(10);
-         }
          else
-            RARCH_ERR("[Vulkan]: Swapchain is out of date, trying to create new one.\n");
-         is_retrying = true;
+            is_retrying = true;
          vulkan_acquire_clear_fences(vk);
          goto retry;
       default:
@@ -2895,7 +2890,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    uint32_t format_count;
    uint32_t present_mode_count;
    uint32_t desired_swapchain_images;
-   VkResult res;
    VkSurfaceCapabilitiesKHR surface_properties;
    VkSurfaceFormatKHR formats[256];
    VkPresentModeKHR present_modes[16];
@@ -2954,20 +2948,19 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
                !vk->emulating_mailbox 
             &&  vk->mailbox.swapchain != VK_NULL_HANDLE)
       {
+         VkResult res;
          /* We are tearing down, and entering a state 
           * where we are supposed to have
           * acquired an image, so block until we have acquired. */
-         if (!vk->context.has_acquired_swapchain)
+         if (vk->context.has_acquired_swapchain)
+            res    = VK_SUCCESS;
+         else
          {
-            if (vk->mailbox.swapchain == VK_NULL_HANDLE)
-               res = VK_ERROR_OUT_OF_DATE_KHR;
-            else
+            if (vk->mailbox.swapchain != VK_NULL_HANDLE)
                res = vulkan_emulated_mailbox_acquire_next_image_blocking(
                      &vk->mailbox,
                      &vk->context.current_swapchain_index);
          }
-         else
-            res    = VK_SUCCESS;
 
          vulkan_emulated_mailbox_deinit(&vk->mailbox);
 
@@ -2979,11 +2972,11 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          }
 
          /* We failed for some reason, so create a new swapchain. */
-         vk->context.has_acquired_swapchain = false;
+         vk->context.has_acquired_swapchain    = false;
       }
       else
       {
-         vk->created_new_swapchain = false;
+         vk->created_new_swapchain             = false;
          return true;
       }
    }
@@ -3072,9 +3065,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       }
 
       if (!vk->context.hdr_enable || format.format == VK_FORMAT_UNDEFINED)
-      {
          vk->context.hdr_enable = false;
-      }
 
       if (!vk->context.hdr_enable)
 #endif /* VULKAN_HDR_SWAPCHAIN */
@@ -3253,9 +3244,11 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    vkGetSwapchainImagesKHR(vk->context.device, vk->swapchain,
          &vk->context.num_swapchain_images, vk->context.swapchain_images);
 
+#ifdef VULKAN_DEBUG
    if (old_swapchain == VK_NULL_HANDLE)
       RARCH_LOG("[Vulkan]: Got %u swapchain images.\n",
             vk->context.num_swapchain_images);
+#endif
 
    /* Force driver to reset swapchain image handles. */
    vk->context.invalid_swapchain      = true;
