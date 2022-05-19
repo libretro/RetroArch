@@ -2838,7 +2838,9 @@ retry:
          vulkan_destroy_swapchain(vk);
          /* Swapchain out of date, trying to create new one ... */
          if (is_retrying)
+         {
             retro_sleep(10);
+         }
          else
             is_retrying = true;
          vulkan_acquire_clear_fences(vk);
