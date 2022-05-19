@@ -247,18 +247,14 @@ void gfx_thumbnail_request(
       gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id,
       playlist_t *playlist, size_t idx, gfx_thumbnail_t *thumbnail,
       unsigned gfx_thumbnail_upscale_threshold,
-      bool network_on_demand_thumbnails
-      )
+      bool network_on_demand_thumbnails)
 {
    const char *thumbnail_path         = NULL;
    bool has_thumbnail                 = false;
-   gfx_thumbnail_state_t *p_gfx_thumb = NULL;
-   p_gfx_thumb                        = NULL;
+   gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
    
    if (!path_data || !thumbnail)
       return;
-
-   p_gfx_thumb                        = &gfx_thumb_st;
 
    /* Reset thumbnail, then set 'missing' status by default
     * (saves a number of checks later) */
@@ -354,8 +350,7 @@ end:
  * once the image load is complete */
 void gfx_thumbnail_request_file(
       const char *file_path, gfx_thumbnail_t *thumbnail,
-      unsigned gfx_thumbnail_upscale_threshold
-      )
+      unsigned gfx_thumbnail_upscale_threshold)
 {
    gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
    gfx_thumbnail_tag_t *thumbnail_tag = NULL;
@@ -424,6 +419,174 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
 
 /* Stream processing */
 
+/* Requests loading of the specified thumbnail via
+ * the stream interface
+ * - Must be called on each frame for the duration
+ *   that specified thumbnail is on-screen
+ * - Actual load request is deferred by currently
+ *   set stream delay
+ * - Function becomes a no-op once load request is
+ *   made
+ * - Thumbnails loaded via this function must be
+ *   deleted manually via gfx_thumbnail_reset()
+ *   when they move off-screen
+ * NOTE 1: Must be called *after* gfx_thumbnail_set_system()
+ *         and gfx_thumbnail_set_content*()
+ * NOTE 2: 'playlist' and 'idx' are only required here for
+ *         on-demand thumbnail download support
+ *         (an annoyance...)
+ * NOTE 3: This function is intended for use in situations
+ *         where each menu entry has a *single* thumbnail.
+ *         If each entry has two thumbnails, use
+ *         gfx_thumbnail_request_streams() for improved
+ *         performance */
+void gfx_thumbnail_request_stream(
+      gfx_thumbnail_path_data_t *path_data,
+      gfx_animation_t *p_anim,
+      enum gfx_thumbnail_id thumbnail_id,
+      playlist_t *playlist, size_t idx,
+      gfx_thumbnail_t *thumbnail,
+      unsigned gfx_thumbnail_upscale_threshold,
+      bool network_on_demand_thumbnails)
+{
+   gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
+
+   /* Only process request if current status
+    * is GFX_THUMBNAIL_STATUS_UNKNOWN */
+   if (!thumbnail ||
+       (thumbnail->status != GFX_THUMBNAIL_STATUS_UNKNOWN))
+      return;
+
+   /* Check if stream delay timer has elapsed */
+   thumbnail->delay_timer += p_anim->delta_time;
+
+   if (thumbnail->delay_timer > p_gfx_thumb->stream_delay)
+   {
+      /* Sanity check */
+      if (!path_data)
+      {
+         /* No path information
+          * > Reset thumbnail and set missing status
+          *   to prevent repeated load attempts */
+         gfx_thumbnail_reset(thumbnail);
+         thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
+         thumbnail->alpha  = 1.0f;
+         return;
+      }
+
+      /* Request image load */
+      gfx_thumbnail_request(
+            path_data, thumbnail_id, playlist, idx, thumbnail,
+            gfx_thumbnail_upscale_threshold,
+            network_on_demand_thumbnails);
+   }
+}
+
+/* Requests loading of the specified thumbnails via
+ * the stream interface
+ * - Must be called on each frame for the duration
+ *   that specified thumbnails are on-screen
+ * - Actual load request is deferred by currently
+ *   set stream delay
+ * - Function becomes a no-op once load request is
+ *   made
+ * - Thumbnails loaded via this function must be
+ *   deleted manually via gfx_thumbnail_reset()
+ *   when they move off-screen
+ * NOTE 1: Must be called *after* gfx_thumbnail_set_system()
+ *         and gfx_thumbnail_set_content*()
+ * NOTE 2: 'playlist' and 'idx' are only required here for
+ *         on-demand thumbnail download support
+ *         (an annoyance...)
+ * NOTE 3: This function is intended for use in situations
+ *         where each menu entry has *two* thumbnails.
+ *         If each entry only has a single thumbnail, use
+ *         gfx_thumbnail_request_stream() for improved
+ *         performance */
+void gfx_thumbnail_request_streams(
+      gfx_thumbnail_path_data_t *path_data,
+      gfx_animation_t *p_anim,
+      playlist_t *playlist, size_t idx,
+      gfx_thumbnail_t *right_thumbnail,
+      gfx_thumbnail_t *left_thumbnail,
+      unsigned gfx_thumbnail_upscale_threshold,
+      bool network_on_demand_thumbnails)
+{
+   bool process_right = false;
+   bool process_left  = false;
+
+   if (!right_thumbnail || !left_thumbnail)
+      return;
+
+   /* Only process request if current status
+    * is GFX_THUMBNAIL_STATUS_UNKNOWN */
+   process_right = (right_thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN);
+   process_left  = (left_thumbnail->status  == GFX_THUMBNAIL_STATUS_UNKNOWN);
+
+   if (process_right || process_left)
+   {
+      /* Check if stream delay timer has elapsed */
+      gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
+      float delta_time                   = p_anim->delta_time;
+      bool request_right                 = false;
+      bool request_left                  = false;
+
+      if (process_right)
+      {
+         right_thumbnail->delay_timer += delta_time;
+         request_right                 =
+               (right_thumbnail->delay_timer > p_gfx_thumb->stream_delay);
+      }
+
+      if (process_left)
+      {
+         left_thumbnail->delay_timer  += delta_time;
+         request_left                  =
+               (left_thumbnail->delay_timer > p_gfx_thumb->stream_delay);
+      }
+
+      /* Check if one or more thumbnails should be requested */
+      if (request_right || request_left)
+      {
+         /* Sanity check */
+         if (!path_data)
+         {
+            /* No path information
+             * > Reset thumbnail and set missing status
+             *   to prevent repeated load attempts */
+            if (request_right)
+            {
+               gfx_thumbnail_reset(right_thumbnail);
+               right_thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
+               right_thumbnail->alpha  = 1.0f;
+            }
+
+            if (request_left)
+            {
+               gfx_thumbnail_reset(left_thumbnail);
+               left_thumbnail->status  = GFX_THUMBNAIL_STATUS_MISSING;
+               left_thumbnail->alpha   = 1.0f;
+            }
+
+            return;
+         }
+
+         /* Request image load */
+         if (request_right)
+            gfx_thumbnail_request(
+                  path_data, GFX_THUMBNAIL_RIGHT, playlist, idx, right_thumbnail,
+                  gfx_thumbnail_upscale_threshold,
+                  network_on_demand_thumbnails);
+
+         if (request_left)
+            gfx_thumbnail_request(
+                  path_data, GFX_THUMBNAIL_LEFT, playlist, idx, left_thumbnail,
+                  gfx_thumbnail_upscale_threshold,
+                  network_on_demand_thumbnails);
+      }
+   }
+}
+
 /* Handles streaming of the specified thumbnail as it moves
  * on/off screen
  * - Must be called each frame for every on-screen entry
@@ -440,13 +603,11 @@ void gfx_thumbnail_process_stream(
       gfx_thumbnail_path_data_t *path_data,
       gfx_animation_t *p_anim,
       enum gfx_thumbnail_id thumbnail_id,
-      playlist_t *playlist,
-      size_t idx,
+      playlist_t *playlist, size_t idx,
       gfx_thumbnail_t *thumbnail,
       bool on_screen,
       unsigned gfx_thumbnail_upscale_threshold,
-      bool network_on_demand_thumbnails
-      )
+      bool network_on_demand_thumbnails)
 {
    if (!thumbnail)
       return;
@@ -458,10 +619,10 @@ void gfx_thumbnail_process_stream(
        *   GFX_THUMBNAIL_STATUS_UNKNOWN */
       if (thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN)
       {
-	 gfx_thumbnail_state_t *p_gfx_thumb  = &gfx_thumb_st;
+         gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
 
          /* Check if stream delay timer has elapsed */
-         thumbnail->delay_timer             += p_anim->delta_time;
+         thumbnail->delay_timer += p_anim->delta_time;
 
          if (thumbnail->delay_timer > p_gfx_thumb->stream_delay)
          {
@@ -482,8 +643,7 @@ void gfx_thumbnail_process_stream(
             gfx_thumbnail_request(
                   path_data, thumbnail_id, playlist, idx, thumbnail,
                   gfx_thumbnail_upscale_threshold,
-                  network_on_demand_thumbnails
-                  );
+                  network_on_demand_thumbnails);
          }
       }
    }
@@ -521,8 +681,7 @@ void gfx_thumbnail_process_streams(
       gfx_thumbnail_t *left_thumbnail,
       bool on_screen,
       unsigned gfx_thumbnail_upscale_threshold,
-      bool network_on_demand_thumbnails
-      )
+      bool network_on_demand_thumbnails)
 {
    if (!right_thumbnail || !left_thumbnail)
       return;
@@ -538,7 +697,7 @@ void gfx_thumbnail_process_streams(
       if (process_right || process_left)
       {
          /* Check if stream delay timer has elapsed */
-	 gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
+         gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
          float delta_time                   = p_anim->delta_time;
          bool request_right                 = false;
          bool request_left                  = false;

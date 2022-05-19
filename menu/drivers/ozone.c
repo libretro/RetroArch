@@ -63,6 +63,8 @@
 #define ANIMATION_CURSOR_DURATION      133
 #define ANIMATION_CURSOR_PULSE         500
 
+#define OZONE_THUMBNAIL_STREAM_DELAY 166.66667f
+
 #define FONT_SIZE_FOOTER            18
 #define FONT_SIZE_TITLE             36
 #define FONT_SIZE_TIME              22
@@ -317,6 +319,14 @@ enum
    OZONE_ENTRIES_ICONS_TEXTURE_LAST
 };
 
+enum ozone_pending_thumbnail_type
+{
+   OZONE_PENDING_THUMBNAIL_NONE = 0,
+   OZONE_PENDING_THUMBNAIL_RIGHT,
+   OZONE_PENDING_THUMBNAIL_LEFT,
+   OZONE_PENDING_THUMBNAIL_BOTH
+};
+
 /* This structure holds all objects + metadata
  * corresponding to a particular font */
 typedef struct
@@ -432,6 +442,8 @@ struct ozone_handle
    {
       gfx_thumbnail_t right;  /* uintptr_t alignment */
       gfx_thumbnail_t left;   /* uintptr_t alignment */
+      float stream_delay;
+      enum ozone_pending_thumbnail_type pending;
    } thumbnails;
    uintptr_t textures[OZONE_THEME_TEXTURE_LAST];
    uintptr_t icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LAST];
@@ -3378,6 +3390,11 @@ static void ozone_entries_update_thumbnail_bar(
       }
 
       ozone->pending_hide_thumbnail_bar = false;
+
+      /* Want thumbnails to load instantly when thumbnail
+       * sidebar first opens */
+      ozone->thumbnails.stream_delay = 0.0f;
+      gfx_thumbnail_set_stream_delay(ozone->thumbnails.stream_delay);
    }
    /* Hide it */
    else
@@ -3989,6 +4006,11 @@ static void ozone_refresh_sidebars(
    {
       ozone->animations.thumbnail_bar_position = ozone->dimensions.thumbnail_bar_width;
       ozone->show_thumbnail_bar                = true;
+
+      /* Want thumbnails to load instantly when thumbnail
+       * sidebar first opens */
+      ozone->thumbnails.stream_delay = 0.0f;
+      gfx_thumbnail_set_stream_delay(ozone->thumbnails.stream_delay);
    }
    else
    {
@@ -6818,6 +6840,17 @@ static enum menu_action ozone_parse_menu_entry_action(
    size_t selection;
    size_t selection_total;
 
+   /* We have to override the thumbnail stream
+    * delay when opening the thumbnail sidebar;
+    * ensure that the proper value is restored
+    * whenever the user performs regular navigation */
+   if ((action != MENU_ACTION_NOOP) &&
+       (ozone->thumbnails.stream_delay != OZONE_THUMBNAIL_STREAM_DELAY))
+   {
+      ozone->thumbnails.stream_delay = OZONE_THUMBNAIL_STREAM_DELAY;
+      gfx_thumbnail_set_stream_delay(ozone->thumbnails.stream_delay);
+   }
+
    /* If fullscreen thumbnail view is active, any
     * valid menu action will disable it... */
    if (ozone->show_fullscreen_thumbnails)
@@ -7225,7 +7258,9 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->animations.left_thumbnail_alpha       = 1.0f;
    ozone->force_metadata_display                = false;
 
-   gfx_thumbnail_set_stream_delay(-1.0f);
+   ozone->thumbnails.pending      = OZONE_PENDING_THUMBNAIL_NONE;
+   ozone->thumbnails.stream_delay = OZONE_THUMBNAIL_STREAM_DELAY;
+   gfx_thumbnail_set_stream_delay(ozone->thumbnails.stream_delay);
    gfx_thumbnail_set_fade_duration(-1.0f);
    gfx_thumbnail_set_fade_missing(false);
 
@@ -7407,47 +7442,29 @@ static void ozone_free(void *data)
 
 static void ozone_update_thumbnail_image(void *data)
 {
-   ozone_handle_t *ozone             = (ozone_handle_t*)data;
-   size_t selection                  = menu_navigation_get_selection();
-   settings_t *settings              = config_get_ptr();
-   playlist_t *playlist              = playlist_get_cached();
-   unsigned gfx_thumbnail_upscale_threshold = settings->uints.gfx_thumbnail_upscale_threshold;
-   bool network_on_demand_thumbnails = settings->bools.network_on_demand_thumbnails;
+   ozone_handle_t *ozone = (ozone_handle_t*)data;
 
    if (!ozone)
       return;
 
+   ozone->thumbnails.pending = OZONE_PENDING_THUMBNAIL_NONE;
    gfx_thumbnail_cancel_pending_requests();
+   gfx_thumbnail_reset(&ozone->thumbnails.right);
+   gfx_thumbnail_reset(&ozone->thumbnails.left);
 
-   gfx_thumbnail_request(
-         ozone->thumbnail_path_data,
-         GFX_THUMBNAIL_RIGHT,
-         playlist,
-         selection,
-         &ozone->thumbnails.right,
-         gfx_thumbnail_upscale_threshold,
-         network_on_demand_thumbnails
-         );
+   /* Right thumbnail */
+   if (gfx_thumbnail_is_enabled(ozone->thumbnail_path_data,
+         GFX_THUMBNAIL_RIGHT))
+      ozone->thumbnails.pending = OZONE_PENDING_THUMBNAIL_RIGHT;
 
-   /* Image (and video/music) content requires special
-    * treatment... */
-   if (ozone->selection_core_is_viewer)
-   {
-      /* Left thumbnail is simply reset */
-      gfx_thumbnail_reset(&ozone->thumbnails.left);
-   }
-   else
-   {
-      /* Left thumbnail */
-      gfx_thumbnail_request(
-         ozone->thumbnail_path_data,
-         GFX_THUMBNAIL_LEFT,
-         playlist,
-         selection,
-         &ozone->thumbnails.left,
-         gfx_thumbnail_upscale_threshold,
-         network_on_demand_thumbnails);
-   }
+   /* Left thumbnail
+    * > Disabled for image (and video/music) content */
+   if (!ozone->selection_core_is_viewer &&
+       gfx_thumbnail_is_enabled(ozone->thumbnail_path_data,
+         GFX_THUMBNAIL_LEFT))
+      ozone->thumbnails.pending =
+            (ozone->thumbnails.pending == OZONE_PENDING_THUMBNAIL_RIGHT) ?
+                  OZONE_PENDING_THUMBNAIL_BOTH : OZONE_PENDING_THUMBNAIL_LEFT;
 }
 
 static void ozone_refresh_thumbnail_image(void *data, unsigned i)
@@ -7847,6 +7864,7 @@ static void ozone_unload_thumbnail_textures(void *data)
    if (!ozone)
       return;
 
+   ozone->thumbnails.pending = OZONE_PENDING_THUMBNAIL_NONE;
    gfx_thumbnail_cancel_pending_requests();
    gfx_thumbnail_reset(&ozone->thumbnails.right);
    gfx_thumbnail_reset(&ozone->thumbnails.left);
@@ -8642,6 +8660,59 @@ static void ozone_render(void *data,
          }
 
          if (last_category_found)
+            break;
+      }
+   }
+
+   /* Handle any pending thumbnail load requests */
+   if (ozone->show_thumbnail_bar &&
+       (ozone->thumbnails.pending != OZONE_PENDING_THUMBNAIL_NONE))
+   {
+      size_t selection                         = menu_navigation_get_selection();
+      playlist_t *playlist                     = playlist_get_cached();
+      unsigned gfx_thumbnail_upscale_threshold = settings->uints.gfx_thumbnail_upscale_threshold;
+      bool network_on_demand_thumbnails        = settings->bools.network_on_demand_thumbnails;
+
+      switch (ozone->thumbnails.pending)
+      {
+         case OZONE_PENDING_THUMBNAIL_BOTH:
+            gfx_thumbnail_request_streams(
+                  ozone->thumbnail_path_data,
+                  p_anim,
+                  playlist, selection,
+                  &ozone->thumbnails.right,
+                  &ozone->thumbnails.left,
+                  gfx_thumbnail_upscale_threshold,
+                  network_on_demand_thumbnails);
+            if ((ozone->thumbnails.right.status != GFX_THUMBNAIL_STATUS_UNKNOWN) &&
+                (ozone->thumbnails.left.status  != GFX_THUMBNAIL_STATUS_UNKNOWN))
+               ozone->thumbnails.pending = OZONE_PENDING_THUMBNAIL_NONE;
+            break;
+         case OZONE_PENDING_THUMBNAIL_RIGHT:
+            gfx_thumbnail_request_stream(
+                  ozone->thumbnail_path_data,
+                  p_anim,
+                  GFX_THUMBNAIL_RIGHT,
+                  playlist, selection,
+                  &ozone->thumbnails.right,
+                  gfx_thumbnail_upscale_threshold,
+                  network_on_demand_thumbnails);
+            if (ozone->thumbnails.right.status != GFX_THUMBNAIL_STATUS_UNKNOWN)
+               ozone->thumbnails.pending = OZONE_PENDING_THUMBNAIL_NONE;
+            break;
+         case OZONE_PENDING_THUMBNAIL_LEFT:
+            gfx_thumbnail_request_stream(
+                  ozone->thumbnail_path_data,
+                  p_anim,
+                  GFX_THUMBNAIL_LEFT,
+                  playlist, selection,
+                  &ozone->thumbnails.left,
+                  gfx_thumbnail_upscale_threshold,
+                  network_on_demand_thumbnails);
+            if (ozone->thumbnails.left.status != GFX_THUMBNAIL_STATUS_UNKNOWN)
+               ozone->thumbnails.pending = OZONE_PENDING_THUMBNAIL_NONE;
+            break;
+         default:
             break;
       }
    }
