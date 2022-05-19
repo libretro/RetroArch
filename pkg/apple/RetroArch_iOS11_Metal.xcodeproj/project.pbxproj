@@ -142,7 +142,6 @@
 		92B9EB7A24E0518700E6CFB2 /* net_ifinfo.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_ifinfo.h; sourceTree = "<group>"; };
 		92B9EB7B24E0518700E6CFB2 /* net_compat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_compat.h; sourceTree = "<group>"; };
 		92B9EB7C24E0518700E6CFB2 /* net_socket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_socket.h; sourceTree = "<group>"; };
-		92B9EB7D24E0518700E6CFB2 /* net_natt.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_natt.h; sourceTree = "<group>"; };
 		92B9EB7E24E0518700E6CFB2 /* net_socket_ssl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_socket_ssl.h; sourceTree = "<group>"; };
 		92B9EB7F24E0518700E6CFB2 /* net_http.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_http.h; sourceTree = "<group>"; };
 		92B9EB8024E0518700E6CFB2 /* net_http_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_http_parse.h; sourceTree = "<group>"; };
@@ -571,7 +570,6 @@
 				92B9EB7A24E0518700E6CFB2 /* net_ifinfo.h */,
 				92B9EB7B24E0518700E6CFB2 /* net_compat.h */,
 				92B9EB7C24E0518700E6CFB2 /* net_socket.h */,
-				92B9EB7D24E0518700E6CFB2 /* net_natt.h */,
 				92B9EB7E24E0518700E6CFB2 /* net_socket_ssl.h */,
 				92B9EB7F24E0518700E6CFB2 /* net_http.h */,
 				92B9EB8024E0518700E6CFB2 /* net_http_parse.h */,

@@ -30,7 +30,7 @@
 #include <net/net_ifinfo.h>
 #endif
 
-#include <net/net_natt.h>
+#include "../network/natt.h"
 #include "../network/netplay/netplay.h"
 
 /* Find the most suitable address within the device's network. */

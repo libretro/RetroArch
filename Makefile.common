@@ -2108,8 +2108,8 @@ ifeq ($(HAVE_NETWORKING), 1)
           $(LIBRETRO_COMM_DIR)/net/net_http.o \
           $(LIBRETRO_COMM_DIR)/net/net_http_parse.o \
           $(LIBRETRO_COMM_DIR)/net/net_socket.o \
-          $(LIBRETRO_COMM_DIR)/net/net_natt.o \
           core_updater_list.o \
+          network/natt.o \
           network/net_http_special.o \
           tasks/task_http.o \
           tasks/task_netplay_lan_scan.o \
