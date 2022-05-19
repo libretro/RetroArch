@@ -1,34 +1,26 @@
-/* Copyright  (C) 2010-2022 The RetroArch team
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2021-2022 - Roberto V. Rampim
  *
- * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (net_natt.h).
- * ---------------------------------------------------------------------------------------
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
  *
- * Permission is hereby granted, free of charge,
- * to any person obtaining a copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation the rights to
- * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
- * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
  *
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _LIBRETRO_SDK_NET_NATT_H
-#define _LIBRETRO_SDK_NET_NATT_H
+#ifndef __RARCH_NATT_H
+#define __RARCH_NATT_H
+
+#include <libretro.h>
+#include <boolean.h>
 
 #include <net/net_compat.h>
 #include <net/net_socket.h>
-
-#include <retro_common_api.h>
-
-RETRO_BEGIN_DECLS
 
 enum natt_forward_type
 {
@@ -182,6 +174,4 @@ bool natt_open_port(struct natt_device *device,
 bool natt_close_port(struct natt_device *device,
    struct natt_request *request, bool block);
 
-RETRO_END_DECLS
-
-#endif
+#endif /* __RARCH_NATT_H */

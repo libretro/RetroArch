@@ -31,10 +31,11 @@
 
 #include <net/net_compat.h>
 #include <net/net_ifinfo.h>
-#include <net/net_natt.h>
 #include <retro_miscellaneous.h>
 
 #include "../../core.h"
+
+#include "../natt.h"
 
 #include "netplay_protocol.h"
 
