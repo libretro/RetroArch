@@ -2382,9 +2382,9 @@ static bool vulkan_frame(void *data, const void *frame,
          }
 
          {
-            VkDescriptorSet set;
-
-            set = vulkan_descriptor_manager_alloc(
+            VkWriteDescriptorSet write;
+            VkDescriptorImageInfo image_info;
+            VkDescriptorSet set = vulkan_descriptor_manager_alloc(
                   vk->context->device,
                   &vk->chain->descriptor_manager);     
 
@@ -2394,9 +2394,6 @@ static bool vulkan_frame(void *data, const void *frame,
                   vk->hdr.ubo.buffer,
                   0,
                   vk->hdr.ubo.size);                  
-
-            VkWriteDescriptorSet write;
-            VkDescriptorImageInfo image_info;
 
             image_info.sampler              = vk->samplers.nearest;
             image_info.imageView            = vk->main_buffer.view;
@@ -2657,6 +2654,8 @@ static bool vulkan_frame(void *data, const void *frame,
 
       if (vk->context->hdr_enable)
       {
+         struct vk_image* img;
+
 #ifdef HAVE_THREADS
          slock_lock(vk->context->queue_lock);
 #endif
@@ -2664,8 +2663,7 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef HAVE_THREADS
          slock_unlock(vk->context->queue_lock);
 #endif
-
-         struct vk_image* img = &vk->main_buffer;
+         img = &vk->main_buffer;
 
          if (img->framebuffer)
             vkDestroyFramebuffer(vk->context->device, img->framebuffer, NULL);
