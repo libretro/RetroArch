@@ -245,6 +245,18 @@ MSG_HASH(
    "Optimise for Wii U GamePad (Restart Required)"
    )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
+   "Only in Exclusive Full-screen Mode"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
+   "Only in Windowed Full-screen Mode"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
+   "All Full-screen Modes"
+   )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 #endif
 
