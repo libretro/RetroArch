@@ -185,24 +185,15 @@ bool d3d9_initialize_symbols(enum gfx_ctx_api api)
 #ifdef HAVE_DYNAMIC_D3D
    if (d3d9_dylib_initialized)
       return true;
-
-#if defined(DEBUG) || defined(_DEBUG)
-   g_d3d9_dll     = dylib_load("d3d9d.dll");
-   if(!g_d3d9_dll)
-#endif
-      g_d3d9_dll  = dylib_load("d3d9.dll");
 #ifdef HAVE_D3DX
-   g_d3d9x_dll    = dylib_load_d3d9x();
-
-   if (!g_d3d9x_dll)
+   if (!(g_d3d9x_dll = dylib_load_d3d9x()))
       return false;
 #endif
-
-   if (!g_d3d9_dll)
-      return false;
+#if defined(DEBUG) || defined(_DEBUG)
+   if (!(g_d3d9_dll     = dylib_load("d3d9d.dll")))
 #endif
-
-#ifdef HAVE_DYNAMIC_D3D
+      if (!(g_d3d9_dll  = dylib_load("d3d9.dll")))
+	      return false;
    D3D9Create                 = (D3D9Create_t)dylib_proc(g_d3d9_dll, "Direct3DCreate9");
 #ifdef HAVE_D3DX
    D3D9CompileShaderFromFile  = (D3D9CompileShaderFromFile_t)dylib_proc(g_d3d9x_dll, "D3DXCompileShaderFromFile");
