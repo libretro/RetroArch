@@ -196,11 +196,9 @@ static void vulkan_init_framebuffers(
 static void vulkan_init_pipeline_layout(
       vk_t *vk)
 {
-   VkDescriptorSetLayoutCreateInfo set_layout_info = {
-      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
-   VkPipelineLayoutCreateInfo layout_info          = {
-      VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
-   VkDescriptorSetLayoutBinding bindings[3]        = {{0}};
+   VkPipelineLayoutCreateInfo layout_info;
+   VkDescriptorSetLayoutCreateInfo set_layout_info;
+   VkDescriptorSetLayoutBinding bindings[3];
 
    bindings[0].binding            = 0;
    bindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -220,14 +218,24 @@ static void vulkan_init_pipeline_layout(
    bindings[2].stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT;
    bindings[2].pImmutableSamplers = NULL;
 
+   set_layout_info.sType          = 
+      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+   set_layout_info.pNext          = NULL;
+   set_layout_info.flags          = 0;
    set_layout_info.bindingCount   = 3;
    set_layout_info.pBindings      = bindings;
 
    vkCreateDescriptorSetLayout(vk->context->device,
          &set_layout_info, NULL, &vk->pipelines.set_layout);
 
-   layout_info.setLayoutCount     = 1;
-   layout_info.pSetLayouts        = &vk->pipelines.set_layout;
+   layout_info.sType                  = 
+      VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+   layout_info.pNext                  = NULL;
+   layout_info.flags                  = 0;
+   layout_info.setLayoutCount         = 1;
+   layout_info.pSetLayouts            = &vk->pipelines.set_layout;
+   layout_info.pushConstantRangeCount = 0;
+   layout_info.pPushConstantRanges    = NULL;
 
    vkCreatePipelineLayout(vk->context->device,
          &layout_info, NULL, &vk->pipelines.layout);
@@ -627,23 +635,6 @@ static void vulkan_deinit_buffers(vk_t *vk)
             vk->context->device, &vk->swapchain[i].vbo);
       vulkan_buffer_chain_free(
             vk->context->device, &vk->swapchain[i].ubo);
-   }
-}
-
-static void vulkan_init_descriptor_pool(vk_t *vk)
-{
-   unsigned i;
-   static const VkDescriptorPoolSize pool_sizes[2] = {
-      { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
-      { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS * 2 },
-   };
-
-   for (i = 0; i < vk->num_swapchain_images; i++)
-   {
-      vk->swapchain[i].descriptor_manager =
-         vulkan_create_descriptor_manager(
-               vk->context->device,
-               pool_sizes, 2, vk->pipelines.set_layout);
    }
 }
 
@@ -1411,12 +1402,15 @@ static void *vulkan_init(const video_info_t *video,
    if (vk->context)
    {
       unsigned i;
+      static const VkDescriptorPoolSize pool_sizes[2] = {
+         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
+         { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS * 2 },
+      };
       vk->num_swapchain_images = vk->context->num_swapchain_images;
 
       vulkan_init_render_pass(vk);
       vulkan_init_framebuffers(vk);
       vulkan_init_pipelines(vk);
-      vulkan_init_descriptor_pool(vk);
       vulkan_init_samplers(vk);
       vulkan_init_textures(vk);
 
@@ -1425,10 +1419,16 @@ static void *vulkan_init(const video_info_t *video,
          VkCommandPoolCreateInfo pool_info;
          VkCommandBufferAllocateInfo info;
 
-         vk->swapchain[i].vbo       = vulkan_buffer_chain_init(
+         vk->swapchain[i].descriptor_manager =
+            vulkan_create_descriptor_manager(
+                  vk->context->device,
+                  pool_sizes, 2, vk->pipelines.set_layout);
+         vk->swapchain[i].vbo                = 
+            vulkan_buffer_chain_init(
                VULKAN_BUFFER_BLOCK_SIZE, 16,
                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-         vk->swapchain[i].ubo = vulkan_buffer_chain_init(
+         vk->swapchain[i].ubo                = 
+            vulkan_buffer_chain_init(
                VULKAN_BUFFER_BLOCK_SIZE,
                vk->context->gpu_properties.limits.minUniformBufferOffsetAlignment,
                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
@@ -1505,18 +1505,27 @@ static void vulkan_check_swapchain(vk_t *vk)
    if (vk->context)
    {
       unsigned i;
+      static const VkDescriptorPoolSize pool_sizes[2] = {
+         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
+         { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS * 2 },
+      };
       vk->num_swapchain_images = vk->context->num_swapchain_images;
 
       vulkan_init_render_pass(vk);
       vulkan_init_framebuffers(vk);
       vulkan_init_pipelines(vk);
-      vulkan_init_descriptor_pool(vk);
       vulkan_init_samplers(vk);
       vulkan_init_textures(vk);
+
       for (i = 0; i < vk->num_swapchain_images; i++)
       {
          VkCommandPoolCreateInfo pool_info;
          VkCommandBufferAllocateInfo info;
+
+         vk->swapchain[i].descriptor_manager =
+            vulkan_create_descriptor_manager(
+                  vk->context->device,
+                  pool_sizes, 2, vk->pipelines.set_layout);
 
          vk->swapchain[i].vbo       = vulkan_buffer_chain_init(
                VULKAN_BUFFER_BLOCK_SIZE,
