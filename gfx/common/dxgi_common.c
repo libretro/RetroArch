@@ -57,21 +57,14 @@ typedef enum hdr_root_constants
 HRESULT WINAPI CreateDXGIFactory1(REFIID riid, void** ppFactory)
 {
    static HRESULT(WINAPI * fp)(REFIID, void**);
-
    static dylib_t dxgi_dll;
-
    if (!dxgi_dll)
-      dxgi_dll = dylib_load("dxgi.dll");
-
-   if (!dxgi_dll)
-      return TYPE_E_CANTLOADLIBRARY;
-
+      if (!(dxgi_dll = dylib_load("dxgi.dll")))
+         return TYPE_E_CANTLOADLIBRARY;
    if (!fp)
-      fp = (HRESULT(WINAPI*)(REFIID, void**))dylib_proc(dxgi_dll, "CreateDXGIFactory1");
-
-   if (!fp)
-      return TYPE_E_DLLFUNCTIONNOTFOUND;
-
+      if (!(fp = (HRESULT(WINAPI*)(REFIID, void**))dylib_proc(dxgi_dll,
+                  "CreateDXGIFactory1")))
+         return TYPE_E_DLLFUNCTIONNOTFOUND;
    return fp(riid, ppFactory);
 }
 #endif
@@ -155,6 +148,19 @@ DXGI_FORMAT* dxgi_get_format_fallback_list(DXGI_FORMAT format)
    return NULL;
 }
 
+/* clang-format off */
+/*                                                        r, g, b, a,     r,  g,  b,  a */
+
+#define DXGI_FORMAT_R8G8B8A8_UNORM_DESCS       UINT32,    8, 8, 8, 8,     0,  8, 16, 24
+#define DXGI_FORMAT_B8G8R8X8_UNORM_DESCS       UINT32,    8, 8, 8, 0,    16,  8,  0,  0
+#define DXGI_FORMAT_B8G8R8A8_UNORM_DESCS       UINT32,    8, 8, 8, 8,    16,  8,  0, 24
+#define DXGI_FORMAT_A8_UNORM_DESCS             UINT8,     0, 0, 0, 8,     0,  0,  0,  0
+#define DXGI_FORMAT_R8_UNORM_DESCS             UINT8,     8, 0, 0, 0,     0,  0,  0,  0
+#define DXGI_FORMAT_B5G6R5_UNORM_DESCS         UINT16,    5, 6, 5, 0,    11,  5,  0,  0
+#define DXGI_FORMAT_B5G5R5A1_UNORM_DESCS       UINT16,    5, 5, 5, 1,    10,  5,  0, 11
+#define DXGI_FORMAT_B4G4R4A4_UNORM_DESCS       UINT16,    4, 4, 4, 4,     8,  4,  0, 12
+#define DXGI_FORMAT_EX_A4R4G4B4_UNORM_DESCS    UINT16,    4, 4, 4, 4,     4,  8, 12,  0
+
 #define FORMAT_PROCESS_( \
       src_type, src_rb, src_gb, src_bb, src_ab, src_rs, src_gs, src_bs, src_as, dst_type, dst_rb, \
       dst_gb, dst_bb, dst_ab, dst_rs, dst_gs, dst_bs, dst_as) \
@@ -233,19 +239,56 @@ DXGI_FORMAT* dxgi_get_format_fallback_list(DXGI_FORMAT format)
 
 #define FORMAT_PROCESS(args) FORMAT_PROCESS_ args
 
-#define FORMAT_DST(st, dt) \
-   case dt: \
-   { \
-      FORMAT_PROCESS((st##_DESCS, dt##_DESCS)); \
-      break; \
-   }
-
 #define FORMAT_SRC(st) \
    case st: \
    { \
       switch ((unsigned)dst_format) \
       { \
-         FORMAT_DST_LIST(st); \
+         case DXGI_FORMAT_R8G8B8A8_UNORM: \
+         { \
+             FORMAT_PROCESS((st##_DESCS, DXGI_FORMAT_R8G8B8A8_UNORM_DESCS)); \
+             break; \
+         } \
+         case DXGI_FORMAT_B8G8R8X8_UNORM: \
+         { \
+             FORMAT_PROCESS((st##_DESCS, DXGI_FORMAT_B8G8R8X8_UNORM_DESCS)); \
+             break; \
+         } \
+         case DXGI_FORMAT_A8_UNORM: \
+         { \
+             FORMAT_PROCESS((st##_DESCS, DXGI_FORMAT_A8_UNORM_DESCS)); \
+             break; \
+         } \
+         case DXGI_FORMAT_R8_UNORM: \
+         { \
+             FORMAT_PROCESS((st##_DESCS, DXGI_FORMAT_R8_UNORM_DESCS)); \
+             break; \
+         } \
+         case DXGI_FORMAT_B5G6R5_UNORM: \
+         { \
+             FORMAT_PROCESS((st##_DESCS, DXGI_FORMAT_B5G6R5_UNORM_DESCS)); \
+             break; \
+         } \
+         case DXGI_FORMAT_B5G5R5A1_UNORM: \
+         { \
+             FORMAT_PROCESS((st##_DESCS, DXGI_FORMAT_B5G5R5A1_UNORM_DESCS)); \
+             break; \
+         } \
+         case DXGI_FORMAT_B4G4R4A4_UNORM: \
+         { \
+             FORMAT_PROCESS((st##_DESCS, DXGI_FORMAT_B4G4R4A4_UNORM_DESCS)); \
+             break; \
+         } \
+         case DXGI_FORMAT_B8G8R8A8_UNORM: \
+         { \
+             FORMAT_PROCESS((st##_DESCS, DXGI_FORMAT_B8G8R8A8_UNORM_DESCS)); \
+             break; \
+         } \
+         case DXGI_FORMAT_EX_A4R4G4B4_UNORM: \
+         { \
+             FORMAT_PROCESS((st##_DESCS, DXGI_FORMAT_EX_A4R4G4B4_UNORM_DESCS)); \
+             break; \
+         } \
          default: \
             assert(0); \
             break; \
@@ -253,40 +296,7 @@ DXGI_FORMAT* dxgi_get_format_fallback_list(DXGI_FORMAT format)
       break; \
    }
 
-/* clang-format off */
-/*                                                        r, g, b, a,     r,  g,  b,  a */
-#define DXGI_FORMAT_R8G8B8A8_UNORM_DESCS       UINT32,    8, 8, 8, 8,     0,  8, 16, 24
-#define DXGI_FORMAT_B8G8R8X8_UNORM_DESCS       UINT32,    8, 8, 8, 0,    16,  8,  0,  0
-#define DXGI_FORMAT_B8G8R8A8_UNORM_DESCS       UINT32,    8, 8, 8, 8,    16,  8,  0, 24
-#define DXGI_FORMAT_A8_UNORM_DESCS             UINT8,     0, 0, 0, 8,     0,  0,  0,  0
-#define DXGI_FORMAT_R8_UNORM_DESCS             UINT8,     8, 0, 0, 0,     0,  0,  0,  0
-#define DXGI_FORMAT_B5G6R5_UNORM_DESCS         UINT16,    5, 6, 5, 0,    11,  5,  0,  0
-#define DXGI_FORMAT_B5G5R5A1_UNORM_DESCS       UINT16,    5, 5, 5, 1,    10,  5,  0, 11
-#define DXGI_FORMAT_B4G4R4A4_UNORM_DESCS       UINT16,    4, 4, 4, 4,     8,  4,  0, 12
-#define DXGI_FORMAT_EX_A4R4G4B4_UNORM_DESCS    UINT16,    4, 4, 4, 4,     4,  8, 12,  0
-
-#define FORMAT_SRC_LIST() \
-   FORMAT_SRC(DXGI_FORMAT_R8G8B8A8_UNORM); \
-   FORMAT_SRC(DXGI_FORMAT_B8G8R8X8_UNORM); \
-   FORMAT_SRC(DXGI_FORMAT_A8_UNORM); \
-   FORMAT_SRC(DXGI_FORMAT_R8_UNORM); \
-   FORMAT_SRC(DXGI_FORMAT_B5G6R5_UNORM); \
-   FORMAT_SRC(DXGI_FORMAT_B5G5R5A1_UNORM); \
-   FORMAT_SRC(DXGI_FORMAT_B4G4R4A4_UNORM); \
-   FORMAT_SRC(DXGI_FORMAT_B8G8R8A8_UNORM); \
-   FORMAT_SRC(DXGI_FORMAT_EX_A4R4G4B4_UNORM)
-
-#define FORMAT_DST_LIST(srcfmt) \
-   FORMAT_DST(srcfmt, DXGI_FORMAT_R8G8B8A8_UNORM); \
-   FORMAT_DST(srcfmt, DXGI_FORMAT_B8G8R8X8_UNORM); \
-   FORMAT_DST(srcfmt, DXGI_FORMAT_A8_UNORM); \
-   FORMAT_DST(srcfmt, DXGI_FORMAT_R8_UNORM); \
-   FORMAT_DST(srcfmt, DXGI_FORMAT_B5G6R5_UNORM); \
-   FORMAT_DST(srcfmt, DXGI_FORMAT_B5G5R5A1_UNORM); \
-   FORMAT_DST(srcfmt, DXGI_FORMAT_B4G4R4A4_UNORM); \
-   FORMAT_DST(srcfmt, DXGI_FORMAT_B8G8R8A8_UNORM); \
-   FORMAT_DST(srcfmt, DXGI_FORMAT_EX_A4R4G4B4_UNORM)
-   /* clang-format on */
+/* clang-format on */
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4293)
@@ -305,11 +315,19 @@ void dxgi_copy(
 
    switch ((unsigned)src_format)
    {
-      FORMAT_SRC_LIST();
+      FORMAT_SRC(DXGI_FORMAT_R8G8B8A8_UNORM);
+      FORMAT_SRC(DXGI_FORMAT_B8G8R8X8_UNORM);
+      FORMAT_SRC(DXGI_FORMAT_A8_UNORM);
+      FORMAT_SRC(DXGI_FORMAT_R8_UNORM);
+      FORMAT_SRC(DXGI_FORMAT_B5G6R5_UNORM);
+      FORMAT_SRC(DXGI_FORMAT_B5G5R5A1_UNORM);
+      FORMAT_SRC(DXGI_FORMAT_B4G4R4A4_UNORM);
+      FORMAT_SRC(DXGI_FORMAT_B8G8R8A8_UNORM);
+      FORMAT_SRC(DXGI_FORMAT_EX_A4R4G4B4_UNORM);
 
       default:
-      assert(0);
-      break;
+         assert(0);
+         break;
    }
 }
 
@@ -319,50 +337,71 @@ void dxgi_copy(
 
 DXGI_FORMAT glslang_format_to_dxgi(glslang_format fmt)
 {
-#undef FMT_
-#define FMT_(x)  case SLANG_FORMAT_##x: return DXGI_FORMAT_##x
-#undef FMT2
-#define FMT2(x,y) case SLANG_FORMAT_##x: return y
-
    switch (fmt)
    {
-   FMT_(R8_UNORM);
-   FMT_(R8_SINT);
-   FMT_(R8_UINT);
-   FMT_(R8G8_UNORM);
-   FMT_(R8G8_SINT);
-   FMT_(R8G8_UINT);
-   FMT_(R8G8B8A8_UNORM);
-   FMT_(R8G8B8A8_SINT);
-   FMT_(R8G8B8A8_UINT);
-   FMT2(R8G8B8A8_SRGB, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
-
-   FMT2(A2B10G10R10_UNORM_PACK32, DXGI_FORMAT_R10G10B10A2_UNORM);
-   FMT2(A2B10G10R10_UINT_PACK32, DXGI_FORMAT_R10G10B10A2_UNORM);
-
-   FMT_(R16_UINT);
-   FMT_(R16_SINT);
-   FMT2(R16_SFLOAT, DXGI_FORMAT_R16_FLOAT);
-   FMT_(R16G16_UINT);
-   FMT_(R16G16_SINT);
-   FMT2(R16G16_SFLOAT, DXGI_FORMAT_R16G16_FLOAT);
-   FMT_(R16G16B16A16_UINT);
-   FMT_(R16G16B16A16_SINT);
-   FMT2(R16G16B16A16_SFLOAT, DXGI_FORMAT_R16G16B16A16_FLOAT);
-
-   FMT_(R32_UINT);
-   FMT_(R32_SINT);
-   FMT2(R32_SFLOAT, DXGI_FORMAT_R32_FLOAT);
-   FMT_(R32G32_UINT);
-   FMT_(R32G32_SINT);
-   FMT2(R32G32_SFLOAT, DXGI_FORMAT_R32G32_FLOAT);
-   FMT_(R32G32B32A32_UINT);
-   FMT_(R32G32B32A32_SINT);
-   FMT2(R32G32B32A32_SFLOAT, DXGI_FORMAT_R32G32B32A32_FLOAT);
-
-   case SLANG_FORMAT_UNKNOWN:
-   default:
-      break;
+      case SLANG_FORMAT_R8_UNORM:
+         return DXGI_FORMAT_R8_UNORM;
+      case SLANG_FORMAT_R8_SINT:
+         return DXGI_FORMAT_R8_SINT;
+      case SLANG_FORMAT_R8_UINT:
+         return DXGI_FORMAT_R8_UINT;
+      case SLANG_FORMAT_R8G8_UNORM:
+         return DXGI_FORMAT_R8G8_UNORM;
+      case SLANG_FORMAT_R8G8_SINT:
+         return DXGI_FORMAT_R8G8_SINT;
+      case SLANG_FORMAT_R8G8_UINT:
+         return DXGI_FORMAT_R8G8_UINT;
+      case SLANG_FORMAT_R8G8B8A8_UNORM:
+         return DXGI_FORMAT_R8G8B8A8_UNORM;
+      case SLANG_FORMAT_R8G8B8A8_SINT:
+         return DXGI_FORMAT_R8G8B8A8_SINT;
+      case SLANG_FORMAT_R8G8B8A8_UINT:
+         return DXGI_FORMAT_R8G8B8A8_UINT;
+      case SLANG_FORMAT_R8G8B8A8_SRGB:
+         return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+      case SLANG_FORMAT_A2B10G10R10_UNORM_PACK32:
+         return DXGI_FORMAT_R10G10B10A2_UNORM;
+      case SLANG_FORMAT_A2B10G10R10_UINT_PACK32:
+         return DXGI_FORMAT_R10G10B10A2_UNORM;
+      case SLANG_FORMAT_R16_UINT:
+         return DXGI_FORMAT_R16_UINT;
+      case SLANG_FORMAT_R16_SINT:
+         return DXGI_FORMAT_R16_SINT;
+      case SLANG_FORMAT_R16_SFLOAT:
+         return DXGI_FORMAT_R16_FLOAT;
+      case SLANG_FORMAT_R16G16_UINT:
+         return DXGI_FORMAT_R16G16_UINT;
+      case SLANG_FORMAT_R16G16_SINT:
+         return DXGI_FORMAT_R16G16_SINT;
+      case SLANG_FORMAT_R16G16_SFLOAT:
+         return DXGI_FORMAT_R16G16_FLOAT;
+      case SLANG_FORMAT_R16G16B16A16_UINT:
+         return DXGI_FORMAT_R16G16B16A16_UINT;
+      case SLANG_FORMAT_R16G16B16A16_SINT:
+         return DXGI_FORMAT_R16G16B16A16_SINT;
+      case SLANG_FORMAT_R16G16B16A16_SFLOAT:
+         return DXGI_FORMAT_R16G16B16A16_FLOAT;
+      case SLANG_FORMAT_R32_UINT:
+         return DXGI_FORMAT_R32_UINT;
+      case SLANG_FORMAT_R32_SINT:
+         return DXGI_FORMAT_R32_SINT;
+      case SLANG_FORMAT_R32_SFLOAT:
+         return DXGI_FORMAT_R32_FLOAT;
+      case SLANG_FORMAT_R32G32_UINT:
+         return DXGI_FORMAT_R32G32_UINT;
+      case SLANG_FORMAT_R32G32_SINT:
+         return DXGI_FORMAT_R32G32_SINT;
+      case SLANG_FORMAT_R32G32_SFLOAT:
+         return DXGI_FORMAT_R32G32_FLOAT;
+      case SLANG_FORMAT_R32G32B32A32_UINT:
+         return DXGI_FORMAT_R32G32B32A32_UINT;
+      case SLANG_FORMAT_R32G32B32A32_SINT:
+         return DXGI_FORMAT_R32G32B32A32_SINT;
+      case SLANG_FORMAT_R32G32B32A32_SFLOAT:
+         return DXGI_FORMAT_R32G32B32A32_FLOAT;
+      case SLANG_FORMAT_UNKNOWN:
+      default:
+         break;
    }
 
    return DXGI_FORMAT_UNKNOWN;
