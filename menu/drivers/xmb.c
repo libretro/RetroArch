@@ -72,6 +72,8 @@
 #define XMB_DELAY 166.66667f
 #endif
 
+#define XMB_THUMBNAIL_STREAM_DELAY 166.66667f
+
 /* Specifies minimum period (in usec) between
  * tab switch events when input repeat is
  * active (i.e. when navigating between top level
@@ -255,6 +257,14 @@ enum
    XMB_SYSTEM_TAB_MAX_LENGTH
 };
 
+enum xmb_pending_thumbnail_type
+{
+   XMB_PENDING_THUMBNAIL_NONE = 0,
+   XMB_PENDING_THUMBNAIL_RIGHT,
+   XMB_PENDING_THUMBNAIL_LEFT,
+   XMB_PENDING_THUMBNAIL_BOTH
+};
+
 /* NOTE: If you change this you HAVE to update
  * xmb_alloc_node() and xmb_copy_node() */
 typedef struct
@@ -317,6 +327,7 @@ typedef struct xmb_handle
       gfx_thumbnail_t right;
       gfx_thumbnail_t left;
       gfx_thumbnail_t savestate;
+      enum xmb_pending_thumbnail_type pending;
    } thumbnails;
 
    struct
@@ -1213,70 +1224,44 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
 static void xmb_update_thumbnail_image(void *data)
 {
+   xmb_handle_t *xmb     = (xmb_handle_t*)data;
    const char *core_name = NULL;
-   xmb_handle_t                *xmb     = (xmb_handle_t*)data;
-   size_t                selection      = menu_navigation_get_selection();
-   playlist_t                *playlist  = playlist_get_cached();
-   settings_t                *settings  = config_get_ptr();
-   unsigned thumbnail_upscale_threshold = settings->uints.gfx_thumbnail_upscale_threshold;
-   bool network_on_demand_thumbnails    = settings->bools.network_on_demand_thumbnails;
 
    if (!xmb)
       return;
 
+   xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
    gfx_thumbnail_cancel_pending_requests();
+   gfx_thumbnail_reset(&xmb->thumbnails.right);
+   gfx_thumbnail_reset(&xmb->thumbnails.left);
 
    /* imageviewer content requires special treatment... */
    gfx_thumbnail_get_core_name(xmb->thumbnail_path_data, &core_name);
+
    if (string_is_equal(core_name, "imageviewer"))
    {
-      gfx_thumbnail_reset(&xmb->thumbnails.right);
-      gfx_thumbnail_reset(&xmb->thumbnails.left);
-
       /* Right thumbnail */
       if (gfx_thumbnail_is_enabled(xmb->thumbnail_path_data,
-               GFX_THUMBNAIL_RIGHT))
-         gfx_thumbnail_request(
-            xmb->thumbnail_path_data,
-            GFX_THUMBNAIL_RIGHT,
-            playlist,
-            selection,
-            &xmb->thumbnails.right,
-            thumbnail_upscale_threshold,
-            network_on_demand_thumbnails);
+            GFX_THUMBNAIL_RIGHT))
+         xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_RIGHT;
       /* Left thumbnail */
       else if (gfx_thumbnail_is_enabled(xmb->thumbnail_path_data,
-               GFX_THUMBNAIL_LEFT))
-         gfx_thumbnail_request(
-            xmb->thumbnail_path_data,
-            GFX_THUMBNAIL_LEFT,
-            playlist,
-            selection,
-            &xmb->thumbnails.left,
-            thumbnail_upscale_threshold,
-            network_on_demand_thumbnails);
+            GFX_THUMBNAIL_LEFT))
+         xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_LEFT;
    }
    else
    {
       /* Right thumbnail */
-      gfx_thumbnail_request(
-         xmb->thumbnail_path_data,
-         GFX_THUMBNAIL_RIGHT,
-         playlist,
-         selection,
-         &xmb->thumbnails.right,
-         thumbnail_upscale_threshold,
-         network_on_demand_thumbnails);
+      if (gfx_thumbnail_is_enabled(xmb->thumbnail_path_data,
+            GFX_THUMBNAIL_RIGHT))
+         xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_RIGHT;
 
       /* Left thumbnail */
-      gfx_thumbnail_request(
-         xmb->thumbnail_path_data,
-         GFX_THUMBNAIL_LEFT,
-         playlist,
-         selection,
-         &xmb->thumbnails.left,
-         thumbnail_upscale_threshold,
-         network_on_demand_thumbnails);
+      if (gfx_thumbnail_is_enabled(xmb->thumbnail_path_data,
+            GFX_THUMBNAIL_LEFT))
+         xmb->thumbnails.pending =
+               (xmb->thumbnails.pending == XMB_PENDING_THUMBNAIL_RIGHT) ?
+                     XMB_PENDING_THUMBNAIL_BOTH : XMB_PENDING_THUMBNAIL_LEFT;
    }
 }
 
@@ -1338,6 +1323,7 @@ static void xmb_unload_thumbnail_textures(void *data)
    if (!xmb)
       return;
 
+   xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
    gfx_thumbnail_cancel_pending_requests();
    gfx_thumbnail_reset(&xmb->thumbnails.right);
    gfx_thumbnail_reset(&xmb->thumbnails.left);
@@ -1577,6 +1563,7 @@ static void xmb_selection_pointer_changed(
                    * content + right/left thumbnails
                    * (otherwise last loaded thumbnail will
                    * persist, and be shown on the wrong entry) */
+                  xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
                   gfx_thumbnail_set_content(xmb->thumbnail_path_data, NULL);
                   gfx_thumbnail_cancel_pending_requests();
                   gfx_thumbnail_reset(&xmb->thumbnails.right);
@@ -2563,6 +2550,7 @@ static void xmb_populate_entries(void *data,
     * file list is populated... */
    if (xmb->is_file_list)
    {
+      xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
       gfx_thumbnail_set_content(xmb->thumbnail_path_data, NULL);
       gfx_thumbnail_cancel_pending_requests();
       gfx_thumbnail_reset(&xmb->thumbnails.right);
@@ -4283,6 +4271,58 @@ static void xmb_render(void *data,
                /* Do nothing */
                break;
          }
+      }
+   }
+
+   /* Handle any pending thumbnail load requests */
+   if (xmb->thumbnails.pending != XMB_PENDING_THUMBNAIL_NONE)
+   {
+      size_t selection                         = menu_navigation_get_selection();
+      playlist_t *playlist                     = playlist_get_cached();
+      unsigned gfx_thumbnail_upscale_threshold = settings->uints.gfx_thumbnail_upscale_threshold;
+      bool network_on_demand_thumbnails        = settings->bools.network_on_demand_thumbnails;
+
+      switch (xmb->thumbnails.pending)
+      {
+         case XMB_PENDING_THUMBNAIL_BOTH:
+            gfx_thumbnail_request_streams(
+                  xmb->thumbnail_path_data,
+                  p_anim,
+                  playlist, selection,
+                  &xmb->thumbnails.right,
+                  &xmb->thumbnails.left,
+                  gfx_thumbnail_upscale_threshold,
+                  network_on_demand_thumbnails);
+            if ((xmb->thumbnails.right.status != GFX_THUMBNAIL_STATUS_UNKNOWN) &&
+                (xmb->thumbnails.left.status  != GFX_THUMBNAIL_STATUS_UNKNOWN))
+               xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
+            break;
+         case XMB_PENDING_THUMBNAIL_RIGHT:
+            gfx_thumbnail_request_stream(
+                  xmb->thumbnail_path_data,
+                  p_anim,
+                  GFX_THUMBNAIL_RIGHT,
+                  playlist, selection,
+                  &xmb->thumbnails.right,
+                  gfx_thumbnail_upscale_threshold,
+                  network_on_demand_thumbnails);
+            if (xmb->thumbnails.right.status != GFX_THUMBNAIL_STATUS_UNKNOWN)
+               xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
+            break;
+         case XMB_PENDING_THUMBNAIL_LEFT:
+            gfx_thumbnail_request_stream(
+                  xmb->thumbnail_path_data,
+                  p_anim,
+                  GFX_THUMBNAIL_LEFT,
+                  playlist, selection,
+                  &xmb->thumbnails.left,
+                  gfx_thumbnail_upscale_threshold,
+                  network_on_demand_thumbnails);
+            if (xmb->thumbnails.left.status != GFX_THUMBNAIL_STATUS_UNKNOWN)
+               xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
+            break;
+         default:
+            break;
       }
    }
 
@@ -6008,7 +6048,8 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb->fullscreen_thumbnail_selection  = 0;
    xmb->fullscreen_thumbnail_label[0]   = '\0';
 
-   gfx_thumbnail_set_stream_delay(-1.0f);
+   xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
+   gfx_thumbnail_set_stream_delay(XMB_THUMBNAIL_STREAM_DELAY);
    gfx_thumbnail_set_fade_duration(-1.0f);
    gfx_thumbnail_set_fade_missing(false);
 
