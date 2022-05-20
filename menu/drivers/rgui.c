@@ -6072,9 +6072,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    if (!menu)
       return NULL;
 
-   rgui = (rgui_t*)calloc(1, sizeof(rgui_t));
-
-   if (!rgui)
+   if (!(rgui = (rgui_t*)calloc(1, sizeof(rgui_t))))
       goto error;
 
    *userdata = rgui;
@@ -6206,25 +6204,25 @@ static void rgui_free(void *data)
 {
    rgui_t            *rgui = (rgui_t*)data;
 
-   if (rgui)
-   {
+   if (!rgui)
+      return;
+
 #ifdef HAVE_GFX_WIDGETS
-      if (rgui->widgets_supported)
-         gfx_display_deinit_white_texture();
+   if (rgui->widgets_supported)
+      gfx_display_deinit_white_texture();
 #endif
-      if (rgui->thumbnail_path_data)
-         free(rgui->thumbnail_path_data);
+   if (rgui->thumbnail_path_data)
+      free(rgui->thumbnail_path_data);
 
-      rgui_fonts_free(rgui);
+   rgui_fonts_free(rgui);
 
-      rgui_framebuffer_free(&rgui->frame_buf);
-      rgui_framebuffer_free(&rgui->background_buf);
-      rgui_framebuffer_free(&rgui->upscale_buf);
+   rgui_framebuffer_free(&rgui->frame_buf);
+   rgui_framebuffer_free(&rgui->background_buf);
+   rgui_framebuffer_free(&rgui->upscale_buf);
 
-      rgui_thumbnail_free(&rgui->fs_thumbnail);
-      rgui_thumbnail_free(&rgui->mini_thumbnail);
-      rgui_thumbnail_free(&rgui->mini_left_thumbnail);
-   }
+   rgui_thumbnail_free(&rgui->fs_thumbnail);
+   rgui_thumbnail_free(&rgui->mini_thumbnail);
+   rgui_thumbnail_free(&rgui->mini_left_thumbnail);
 }
 
 static void rgui_set_texture(void *data)
@@ -6249,10 +6247,8 @@ static void rgui_set_texture(void *data)
    p_disp->framebuf_dirty = false;
 
    if (internal_upscale_level == RGUI_UPSCALE_NONE)
-   {
       video_driver_set_texture_frame(rgui->frame_buf.data,
          false, fb_width, fb_height, 1.0f);
-   }
    else
    {
       struct video_viewport vp;
@@ -6263,10 +6259,8 @@ static void rgui_set_texture(void *data)
       /* If viewport is currently the same size (or smaller)
        * than the menu framebuffer, no scaling is required */
       if ((vp.width <= fb_width) && (vp.height <= fb_height))
-      {
          video_driver_set_texture_frame(rgui->frame_buf.data,
             false, fb_width, fb_height, 1.0f);
-      }
       else
       {
          unsigned out_width;
@@ -6294,7 +6288,7 @@ static void rgui_set_texture(void *data)
                (upscale_buf->height != out_height) ||
                !upscale_buf->data)
          {
-            upscale_buf->width = out_width;
+            upscale_buf->width  = out_width;
             upscale_buf->height = out_height;
             
             if (upscale_buf->data)
@@ -6303,9 +6297,8 @@ static void rgui_set_texture(void *data)
                upscale_buf->data = NULL;
             }
             
-            upscale_buf->data = (uint16_t*)
-                  calloc(out_width * out_height, sizeof(uint16_t));
-            if (!upscale_buf->data)
+            if (!(upscale_buf->data = (uint16_t*)
+                  calloc(out_width * out_height, sizeof(uint16_t))))
             {
                /* Uh oh... This could mean we don't have enough
                 * memory, so disable upscaling and draw the usual
@@ -6395,14 +6388,12 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, bool download_missing)
    {
       if (gfx_thumbnail_get_path(rgui->thumbnail_path_data,
             GFX_THUMBNAIL_LEFT, &left_thumbnail_path))
-      {
          rgui->entry_has_left_thumbnail = rgui_request_thumbnail(
                &rgui->mini_left_thumbnail,
                GFX_THUMBNAIL_LEFT,
                &rgui->left_thumbnail_queue_size,
                left_thumbnail_path,
                &thumbnails_missing);
-      }
    }
    
    /* Reset 'load pending' state */
@@ -6676,7 +6667,7 @@ static void rgui_populate_entries(void *data,
    /* Check whether user language has changed */
    if (rgui->language != *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
    {
-      /* Reinitialise fonts */
+      /* Reinitialize fonts */
       rgui_fonts_free(rgui);
       rgui_fonts_init(rgui);
 
@@ -6694,9 +6685,9 @@ static void rgui_populate_entries(void *data,
 #endif
    
    /* Check whether we are currently viewing a playlist */
-   rgui->is_playlist = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST)) ||
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)) ||
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST));
+   rgui->is_playlist =    string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST))
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST));
    
    /* Set menu title */
    menu_entries_get_title(rgui->menu_title, sizeof(rgui->menu_title));
@@ -6878,9 +6869,9 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
 
    if (bg_filler_thickness_enable != rgui->bg_thickness)
    {
-      rgui->bg_thickness = bg_filler_thickness_enable;
-      rgui->bg_modified  = true;
-      rgui->force_redraw = true;
+      rgui->bg_thickness     = bg_filler_thickness_enable;
+      rgui->bg_modified      = true;
+      rgui->force_redraw     = true;
    }
 
    if (border_filler_thickness_enable != rgui->border_thickness)
@@ -6904,24 +6895,24 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
             settings->bools.menu_rgui_shadows,
             settings->bools.menu_rgui_extended_ascii);
 
-      rgui->shadow_enable = settings->bools.menu_rgui_shadows;
-      rgui->bg_modified   = true;
-      rgui->force_redraw  = true;
+      rgui->shadow_enable    = settings->bools.menu_rgui_shadows;
+      rgui->bg_modified      = true;
+      rgui->force_redraw     = true;
    }
 
    if (settings->uints.menu_rgui_particle_effect != rgui->particle_effect)
    {
-      rgui->particle_effect = settings->uints.menu_rgui_particle_effect;
+      rgui->particle_effect  = settings->uints.menu_rgui_particle_effect;
 
       if (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
          rgui_init_particle_effect(rgui, p_disp);
 
-      rgui->force_redraw = true;
+      rgui->force_redraw     = true;
    }
 
    if ((rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE) &&
        (!rgui->show_screensaver || settings->bools.menu_rgui_particle_effect_screensaver))
-      rgui->force_redraw = true;
+      rgui->force_redraw     = true;
 
    if (settings->bools.menu_rgui_extended_ascii != rgui->extended_ascii_enable)
    {
@@ -7119,45 +7110,46 @@ static void rgui_toggle(void *userdata, bool menu_on)
     * exit, this doesn't get called. */
    if (!rgui || !settings)
       return;
-   
-   if (aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE)
+
+   if (menu_on)
    {
-      if (menu_on)
+      if (aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE)
       {
          /* Cache content video settings */
          rgui_get_video_config(&rgui->content_video_settings, settings->uints.video_aspect_ratio_idx);
-         
          /* Update menu viewport */
          rgui_update_menu_viewport(rgui, p_disp, settings->uints.menu_rgui_aspect_ratio_lock);
-         
          /* Apply menu video settings */
          rgui_set_video_config(rgui, settings, &rgui->menu_video_settings, false);
       }
-      else
+   }
+   else
+   {
+      if (aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE)
       {
          /* Restore content video settings *if* user
           * has not changed video settings since menu was
           * last toggled on */
          rgui_video_settings_t current_video_settings = {{0}};
          rgui_get_video_config(&current_video_settings, settings->uints.video_aspect_ratio_idx);
-         
+
          if (rgui_is_video_config_equal(&current_video_settings, &rgui->menu_video_settings))
             rgui_set_video_config(rgui, settings, &rgui->content_video_settings, false);
-         
+
          /* Any modified video scaling settings have now been
           * registered, so it is again 'safe' to respond to window
           * resize events */
          rgui->ignore_resize_events = false;
       }
-   }
-   
-   /* Upscaling buffer is only required while menu is on. Save
-    * memory by freeing it whenever we switch back to the current
-    * content */
-   if (!menu_on && rgui->upscale_buf.data)
-   {
-      free(rgui->upscale_buf.data);
-      rgui->upscale_buf.data = NULL;
+
+      /* Upscaling buffer is only required while menu is on. Save
+       * memory by freeing it whenever we switch back to the current
+       * content */
+      if (rgui->upscale_buf.data)
+      {
+         free(rgui->upscale_buf.data);
+         rgui->upscale_buf.data = NULL;
+      }
    }
 }
 
