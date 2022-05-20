@@ -3392,24 +3392,23 @@ static bool ozone_is_playlist(ozone_handle_t *ozone, bool depth)
 
 static void ozone_sidebar_update_collapse(
       ozone_handle_t *ozone,
-      settings_t *settings,
+      bool ozone_collapse_sidebar,
       bool allow_animation)
 {
    /* Collapse sidebar if needed */
    struct gfx_animation_ctx_entry entry;
    bool is_playlist          = ozone_is_playlist(ozone, false);
    uintptr_t tag             = (uintptr_t)&ozone->sidebar_collapsed;
-   bool collapse_sidebar     = settings->bools.ozone_collapse_sidebar;
 
-   entry.easing_enum    = EASING_OUT_QUAD;
-   entry.tag            = tag;
-   entry.userdata       = ozone;
-   entry.duration       = ANIMATION_CURSOR_DURATION;
+   entry.easing_enum         = EASING_OUT_QUAD;
+   entry.tag                 = tag;
+   entry.userdata            = ozone;
+   entry.duration            = ANIMATION_CURSOR_DURATION;
 
    gfx_animation_kill_by_tag(&tag);
 
    /* Collapse it */
-   if (collapse_sidebar || (is_playlist && !ozone->cursor_in_sidebar))
+   if (ozone_collapse_sidebar || (is_playlist && !ozone->cursor_in_sidebar))
    {
       if (allow_animation)
       {
@@ -3436,7 +3435,7 @@ static void ozone_sidebar_update_collapse(
       }
    }
    /* Show it */
-   else if (ozone->cursor_in_sidebar || (!is_playlist && !collapse_sidebar))
+   else if (ozone->cursor_in_sidebar || (!is_playlist && !ozone_collapse_sidebar))
    {
       if (allow_animation)
       {
@@ -3469,7 +3468,7 @@ static void ozone_sidebar_update_collapse(
 
 
 static void ozone_go_to_sidebar(ozone_handle_t *ozone,
-      settings_t *settings,
+      bool ozone_collapse_sidebar,
       uintptr_t tag)
 {
    struct gfx_animation_ctx_entry entry;
@@ -3491,7 +3490,7 @@ static void ozone_go_to_sidebar(ozone_handle_t *ozone,
 
    gfx_animation_push(&entry);
 
-   ozone_sidebar_update_collapse(ozone, settings, true);
+   ozone_sidebar_update_collapse(ozone, ozone_collapse_sidebar, true);
 }
 
 static void ozone_update_content_metadata(ozone_handle_t *ozone)
@@ -3631,13 +3630,10 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
 
 
 static void ozone_leave_sidebar(ozone_handle_t *ozone,
-      settings_t *settings,
+      bool ozone_collapse_sidebar,
       uintptr_t tag)
 {
    struct gfx_animation_ctx_entry entry;
-
-   if (ozone->empty_playlist)
-      return;
 
    ozone_update_content_metadata(ozone);
 
@@ -3648,17 +3644,16 @@ static void ozone_leave_sidebar(ozone_handle_t *ozone,
    /* Cursor animation */
    ozone->animations.cursor_alpha   = 0.0f;
 
-   entry.cb             = NULL;
-   entry.duration       = ANIMATION_CURSOR_DURATION;
-   entry.easing_enum    = EASING_OUT_QUAD;
-   entry.subject        = &ozone->animations.cursor_alpha;
-   entry.tag            = tag;
-   entry.target_value   = 1.0f;
-   entry.userdata       = NULL;
+   entry.cb                         = NULL;
+   entry.duration                   = ANIMATION_CURSOR_DURATION;
+   entry.easing_enum                = EASING_OUT_QUAD;
+   entry.subject                    = &ozone->animations.cursor_alpha;
+   entry.tag                        = tag;
+   entry.target_value               = 1.0f;
+   entry.userdata                   = NULL;
 
    gfx_animation_push(&entry);
-
-   ozone_sidebar_update_collapse(ozone, settings, true);
+   ozone_sidebar_update_collapse(ozone, ozone_collapse_sidebar, true);
 }
 
 static void ozone_free_node(ozone_node_t *node)
@@ -3931,7 +3926,7 @@ static void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
 
 static void ozone_refresh_sidebars(
       ozone_handle_t *ozone,
-      settings_t *settings,
+      bool ozone_collapse_sidebar,
       unsigned video_height)
 {
    uintptr_t collapsed_tag              = (uintptr_t)&ozone->sidebar_collapsed;
@@ -3939,7 +3934,6 @@ static void ozone_refresh_sidebars(
    uintptr_t thumbnail_tag              = (uintptr_t)&ozone->show_thumbnail_bar;
    uintptr_t scroll_tag                 = (uintptr_t)ozone;
    bool is_playlist                     = ozone_is_playlist(ozone, false);
-   bool collapse_sidebar                = settings->bools.ozone_collapse_sidebar;
 
    /* Kill any existing animations */
    gfx_animation_kill_by_tag(&collapsed_tag);
@@ -3949,13 +3943,13 @@ static void ozone_refresh_sidebars(
       gfx_animation_kill_by_tag(&scroll_tag);
 
    /* Set sidebar width */
-   if (collapse_sidebar || (is_playlist && !ozone->cursor_in_sidebar))
+   if (ozone_collapse_sidebar || (is_playlist && !ozone->cursor_in_sidebar))
    {
       ozone->animations.sidebar_text_alpha = 0.0f;
       ozone->dimensions_sidebar_width      = ozone->dimensions.sidebar_width_collapsed;
       ozone->sidebar_collapsed             = true;
    }
-   else if (ozone->cursor_in_sidebar || (!is_playlist && !collapse_sidebar))
+   else if (ozone->cursor_in_sidebar || (!is_playlist && !ozone_collapse_sidebar))
    {
       ozone->animations.sidebar_text_alpha = 1.0f;
       ozone->dimensions_sidebar_width      = ozone->dimensions.sidebar_width_normal;
@@ -4584,7 +4578,7 @@ static void ozone_update_scroll(ozone_handle_t *ozone,
 
 static void ozone_compute_entries_position(
       ozone_handle_t *ozone,
-      settings_t *settings,
+      bool menu_show_sublabels,
       size_t entries_end)
 {
    /* Compute entries height and adjust scrolling if needed */
@@ -4594,7 +4588,6 @@ static void ozone_compute_entries_position(
    file_list_t *selection_buf    = NULL;
    int entry_padding             = ozone_get_entries_padding(ozone);
    float scale_factor            = ozone->last_scale_factor;
-   bool menu_show_sublabels      = settings->bools.menu_show_sublabels;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
@@ -6802,7 +6795,9 @@ static void ozone_start_cursor_wiggle(
 
 
 static enum menu_action ozone_parse_menu_entry_action(
-      ozone_handle_t *ozone, settings_t *settings,
+      ozone_handle_t *ozone,
+      bool menu_navigation_wraparound_enable,
+      bool ozone_collapse_sidebar,
       enum menu_action action)
 {
    uintptr_t tag;
@@ -6810,7 +6805,6 @@ static enum menu_action ozone_parse_menu_entry_action(
    enum menu_action new_action   = action;
    file_list_t *selection_buf    = NULL;
    unsigned horizontal_list_size = 0;
-   bool menu_navigation_wraparound_enable;
    bool is_current_entry_settings;
    size_t selection;
    size_t selection_total;
@@ -6866,8 +6860,6 @@ static enum menu_action ozone_parse_menu_entry_action(
    tag                        = (uintptr_t)selection_buf;
    selection                  = menu_navigation_get_selection();
    selection_total            = menu_entries_get_size();
-
-   menu_navigation_wraparound_enable   = settings->bools.menu_navigation_wraparound_enable;
 
    /* Don't wiggle left or right if the current entry is a setting. This is
       partially wrong because some settings don't use left and right to change their value, such as
@@ -6972,7 +6964,7 @@ static enum menu_action ozone_parse_menu_entry_action(
             break;
          }
 
-         ozone_go_to_sidebar(ozone, settings, tag);
+         ozone_go_to_sidebar(ozone, ozone_collapse_sidebar, tag);
 
          new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
          break;
@@ -6994,7 +6986,8 @@ static enum menu_action ozone_parse_menu_entry_action(
             break;
          }
 
-         ozone_leave_sidebar(ozone, settings, tag);
+         if (!ozone->empty_playlist)
+            ozone_leave_sidebar(ozone, ozone_collapse_sidebar, tag);
 
          new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_LABEL;
          break;
@@ -7002,7 +6995,8 @@ static enum menu_action ozone_parse_menu_entry_action(
          ozone->cursor_mode = false;
          if (ozone->cursor_in_sidebar)
          {
-            ozone_leave_sidebar(ozone, settings, tag);
+            if (!ozone->empty_playlist)
+               ozone_leave_sidebar(ozone, ozone_collapse_sidebar, tag);
             new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_LABEL;
             break;
          }
@@ -7028,7 +7022,7 @@ static enum menu_action ozone_parse_menu_entry_action(
 
          if (menu_entries_get_stack_size(0) == 1)
          {
-            ozone_go_to_sidebar(ozone, settings, tag);
+            ozone_go_to_sidebar(ozone, ozone_collapse_sidebar, tag);
             new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
          }
          break;
@@ -7104,7 +7098,6 @@ static enum menu_action ozone_parse_menu_entry_action(
    return new_action;
 }
 
-
 /* Menu entry action callback */
 static int ozone_menu_entry_action(
       void *userdata, menu_entry_t *entry,
@@ -7116,7 +7109,9 @@ static int ozone_menu_entry_action(
    settings_t *settings        = config_get_ptr();
    size_t selection            = i;
    /* Process input action */
-   enum menu_action new_action = ozone_parse_menu_entry_action(ozone, settings,
+   enum menu_action new_action = ozone_parse_menu_entry_action(ozone,
+         settings->bools.menu_navigation_wraparound_enable,
+         settings->bools.ozone_collapse_sidebar,
          action);
    /* Check whether current selection has changed
     * (due to automatic on screen entry selection...) */
@@ -7239,7 +7234,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    gfx_thumbnail_set_fade_duration(-1.0f);
    gfx_thumbnail_set_fade_missing(false);
 
-   ozone_sidebar_update_collapse(ozone, settings, false);
+   ozone_sidebar_update_collapse(ozone, settings->bools.ozone_collapse_sidebar, false);
 
    ozone->system_tab_end                        = 0;
    ozone->tabs[ozone->system_tab_end]           = OZONE_SYSTEM_TAB_MAIN;
@@ -7359,7 +7354,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
        APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE_ICONS);
 
    ozone_last_use_preferred_system_color_theme = settings->bools.menu_use_preferred_system_color_theme;
-   p_anim->updatetime_cb = ozone_menu_animation_update_time;
+   p_anim->updatetime_cb                       = ozone_menu_animation_update_time;
 
    /* set word_wrap function pointer */
    ozone->word_wrap = msg_hash_get_wideglyph_str() ? word_wrap_wideglyph : word_wrap;
@@ -7555,20 +7550,15 @@ static void ozone_cache_footer_labels(ozone_handle_t *ozone)
 /* Determines the size of all menu elements */
 static void ozone_set_layout(
       ozone_handle_t *ozone, 
-      settings_t *settings,
+      bool ozone_collapse_sidebar,
       bool is_threaded)
 {
    char s1[PATH_MAX_LENGTH];
    char font_path[PATH_MAX_LENGTH];
-   float scale_factor  = 0.0f;
    bool font_inited    = false;
+   float scale_factor  = ozone->last_scale_factor;
 
-   font_path[0] = s1[0]= '\0';
-
-   if (!ozone)
-      return;
-
-   scale_factor = ozone->last_scale_factor;
+   font_path[0]        = s1[0]= '\0';
 
    /* Calculate dimensions */
    ozone->dimensions.header_height                 = HEADER_HEIGHT * scale_factor;
@@ -7702,7 +7692,7 @@ static void ozone_set_layout(
     * > ozone_refresh_sidebars() cancels any existing
     *   animations and 'force updates' the affected
     *   variables with newly scaled values */
-   ozone_refresh_sidebars(ozone, settings, ozone->last_height);
+   ozone_refresh_sidebars(ozone, ozone_collapse_sidebar, ozone->last_height);
 
    /* Entry dimensions must be recalculated after
     * updating menu layout */
@@ -7730,13 +7720,12 @@ static void ozone_context_reset(void *data, bool is_threaded)
    };
    unsigned i;
    ozone_handle_t *ozone = (ozone_handle_t*) data;
-   settings_t *settings  = config_get_ptr();
 
    if (ozone)
    {
       ozone->has_all_assets = true;
 
-      ozone_set_layout(ozone, settings, is_threaded);
+      ozone_set_layout(ozone, config_get_ptr()->bools.ozone_collapse_sidebar, is_threaded);
 
       /* Textures init */
       for (i = 0; i < OZONE_TEXTURE_LAST; i++)
@@ -8266,13 +8255,16 @@ static void ozone_render(void *data,
     * (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323#c87) */
    volatile float scale_factor;
    volatile float thumbnail_scale_factor;
-   unsigned entries_end             = (unsigned)menu_entries_get_size();
-   bool pointer_enabled             = false;
-   unsigned language                = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
-   ozone_handle_t *ozone            = (ozone_handle_t*)data;
-   gfx_display_t *p_disp            = disp_get_ptr();
-   gfx_animation_t          *p_anim = anim_get_ptr();
-   settings_t             *settings = config_get_ptr();
+   unsigned entries_end               = (unsigned)menu_entries_get_size();
+   bool pointer_enabled               = false;
+   unsigned language                  = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
+   ozone_handle_t *ozone              = (ozone_handle_t*)data;
+   gfx_display_t *p_disp              = disp_get_ptr();
+   gfx_animation_t          *p_anim   = anim_get_ptr();
+   settings_t             *settings   = config_get_ptr();
+   bool ozone_collapse_sidebar        = settings->bools.ozone_collapse_sidebar;
+   float ozone_thumbnail_scale_factor =
+      settings->floats.ozone_thumbnail_scale_factor;
    if (!ozone)
       return;
 
@@ -8280,27 +8272,26 @@ static void ozone_render(void *data,
     * factor have changed */
    scale_factor = gfx_display_get_dpi_scale(p_disp, settings,
          width, height, false, false);
-   thumbnail_scale_factor = settings->floats.ozone_thumbnail_scale_factor;
 
    if ((scale_factor != ozone->last_scale_factor) ||
        (thumbnail_scale_factor != ozone->last_thumbnail_scale_factor) ||
        (width != ozone->last_width) ||
        (height != ozone->last_height))
    {
-      ozone->last_scale_factor = scale_factor;
+      ozone->last_scale_factor           = scale_factor;
       ozone->last_thumbnail_scale_factor = thumbnail_scale_factor;
-      ozone->last_width        = width;
-      ozone->last_height       = height;
+      ozone->last_width                  = width;
+      ozone->last_height                 = height;
 
       /* Note: We don't need a full context reset here
        * > Just rescale layout, and reset frame time counter */
-      ozone_set_layout(ozone, settings, video_driver_is_threaded());
+      ozone_set_layout(ozone, ozone_collapse_sidebar, video_driver_is_threaded());
       video_driver_monitor_reset();
    }
 
    if (ozone->need_compute)
    {
-      ozone_compute_entries_position(ozone, settings, entries_end);
+      ozone_compute_entries_position(ozone, settings->bools.menu_show_sublabels, entries_end);
       ozone->need_compute = false;
    }
 
@@ -8439,11 +8430,12 @@ static void ozone_render(void *data,
          if (ozone->pointer_in_sidebar &&
              !ozone->last_pointer_in_sidebar &&
              !ozone->cursor_in_sidebar)
-            ozone_go_to_sidebar(ozone, settings, animation_tag);
+            ozone_go_to_sidebar(ozone, ozone_collapse_sidebar, animation_tag);
          else if (!ozone->pointer_in_sidebar &&
                   ozone->last_pointer_in_sidebar &&
                   ozone->cursor_in_sidebar)
-            ozone_leave_sidebar(ozone, settings, animation_tag);
+            if (!ozone->empty_playlist)
+               ozone_leave_sidebar(ozone, ozone_collapse_sidebar, animation_tag);
       }
 
       /* Update scrolling - must be done first, otherwise
@@ -8584,7 +8576,10 @@ static void ozone_render(void *data,
 
                   /* If we are currently in the sidebar, leave it */
                   if (ozone->cursor_in_sidebar)
-                     ozone_leave_sidebar(ozone, settings, animation_tag);
+                  {
+                     if (!ozone->empty_playlist)
+                        ozone_leave_sidebar(ozone, ozone_collapse_sidebar, animation_tag);
+                  }
                   /* If this is a playlist, must update thumbnails */
                   else if (ozone->is_playlist && (ozone->depth == 1))
                   {
@@ -9898,7 +9893,7 @@ static void ozone_animation_end(void *userdata)
    ozone->animations.cursor_alpha   = 1.0f;
 }
 
-static void ozone_list_open(ozone_handle_t *ozone, settings_t *settings)
+static void ozone_list_open(ozone_handle_t *ozone, bool ozone_collapse_sidebar)
 {
    struct gfx_animation_ctx_entry entry;
    uintptr_t sidebar_tag        = (uintptr_t)&ozone->sidebar_offset;
@@ -9919,7 +9914,7 @@ static void ozone_list_open(ozone_handle_t *ozone, settings_t *settings)
    gfx_animation_push(&entry);
 
    /* Sidebar animation */
-   ozone_sidebar_update_collapse(ozone, settings, true);
+   ozone_sidebar_update_collapse(ozone, ozone_collapse_sidebar, true);
 
    /* Kill any existing sidebar slide-in/out animations
     * before pushing a new one
@@ -9963,16 +9958,17 @@ static void ozone_list_open(ozone_handle_t *ozone, settings_t *settings)
 static void ozone_populate_entries(void *data,
       const char *path, const char *label, unsigned k)
 {
-   settings_t *settings  = NULL;
-   ozone_handle_t *ozone = (ozone_handle_t*) data;
-
-   int new_depth;
-   bool animate;
+   int new_depth               = 0;
+   bool animate                = false;
+   settings_t *settings        = NULL;
+   ozone_handle_t *ozone       = (ozone_handle_t*) data;
+   bool ozone_collapse_sidebar = false;
 
    if (!ozone)
       return;
 
-   settings              = config_get_ptr();
+   settings                    = config_get_ptr();
+   ozone_collapse_sidebar      = settings->bools.ozone_collapse_sidebar;
 
    ozone_set_header(ozone);
 
@@ -10021,7 +10017,7 @@ static void ozone_populate_entries(void *data,
                {
                   gfx_animation_kill_by_tag(&animation_tag);
                   ozone->empty_playlist = true;
-                  ozone_go_to_sidebar(ozone, settings, animation_tag);
+                  ozone_go_to_sidebar(ozone, ozone_collapse_sidebar, animation_tag);
                }
             }
 
@@ -10032,12 +10028,12 @@ static void ozone_populate_entries(void *data,
       return;
    }
 
-   ozone->need_compute = true;
+   ozone->need_compute         = true;
 
-   ozone->first_onscreen_entry    = 0;
-   ozone->last_onscreen_entry     = 0;
+   ozone->first_onscreen_entry = 0;
+   ozone->last_onscreen_entry  = 0;
 
-   new_depth = (int)ozone_list_get_size(ozone, MENU_LIST_PLAIN);
+   new_depth                   = (int)ozone_list_get_size(ozone, MENU_LIST_PLAIN);
 
    animate                     = new_depth != ozone->depth;
    ozone->fade_direction       = new_depth <= ozone->depth;
@@ -10052,7 +10048,7 @@ static void ozone_populate_entries(void *data,
 
    if (animate)
       if (ozone->categories_selection_ptr == ozone->categories_active_idx_old)
-         ozone_list_open(ozone, settings);
+         ozone_list_open(ozone, ozone_collapse_sidebar);
 
    /* Thumbnails
     * > Note: Leave current thumbnails loaded when
@@ -10114,7 +10110,7 @@ static void ozone_toggle(void *userdata, bool menu_on)
       ozone->sidebar_offset = 0.0f;
    }
 
-   ozone_sidebar_update_collapse(ozone, settings, false);
+   ozone_sidebar_update_collapse(ozone, settings->bools.ozone_collapse_sidebar, false);
 }
 
 static bool ozone_menu_init_list(void *data)
@@ -10299,6 +10295,7 @@ static int ozone_pointer_up(void *userdata,
    size_t selection                  = menu_navigation_get_selection();
    size_t entries_end                = menu_entries_get_size();
    settings_t *settings              = config_get_ptr();
+   bool ozone_collapse_sidebar       = settings->bools.ozone_collapse_sidebar;
 
    if (!ozone)
       return -1;
@@ -10358,7 +10355,8 @@ static int ozone_pointer_up(void *userdata,
                         selection, MENU_ACTION_SELECT);
 
                /* If we currently in the sidebar, leave it */
-               ozone_leave_sidebar(ozone, settings, sidebar_tag);
+               if (!ozone->empty_playlist)
+                  ozone_leave_sidebar(ozone, ozone_collapse_sidebar, sidebar_tag);
             }
             else
             {
@@ -10372,7 +10370,10 @@ static int ozone_pointer_up(void *userdata,
 
                /* If we are currently in the sidebar, leave it */
                if (ozone->cursor_in_sidebar)
-                  ozone_leave_sidebar(ozone, settings, sidebar_tag);
+               {
+                  if (!ozone->empty_playlist)
+                     ozone_leave_sidebar(ozone, ozone_collapse_sidebar, sidebar_tag);
+               }
                /* If this is a playlist and the selection
                 * has changed, must update thumbnails */
                else if (ozone->is_playlist &&
@@ -10401,7 +10402,7 @@ static int ozone_pointer_up(void *userdata,
          {
             /* If cursor is not in sidebar, return to sidebar */
             if (!ozone->cursor_in_sidebar)
-               ozone_go_to_sidebar(ozone, settings, sidebar_tag);
+               ozone_go_to_sidebar(ozone, ozone_collapse_sidebar, sidebar_tag);
             /* Otherwise, select current category */
             else if (
                      ozone->pointer_categories_selection 
