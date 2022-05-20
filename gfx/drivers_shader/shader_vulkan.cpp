@@ -415,10 +415,7 @@ struct vulkan_filter_chain
       vulkan_filter_chain_swapchain_info swapchain_info;
       unsigned current_sync_index;
 
-      void flush();
-
       void set_num_passes(unsigned passes);
-      void execute_deferred();
       void set_num_sync_indices(unsigned num_indices);
       void set_swapchain_info(const vulkan_filter_chain_swapchain_info &info);
 
@@ -429,7 +426,6 @@ struct vulkan_filter_chain
       void update_history(DeferredDisposer &disposer, VkCommandBuffer cmd);
       std::vector<std::unique_ptr<Framebuffer>> original_history;
       bool require_clear = false;
-      void clear_history_and_feedback(VkCommandBuffer cmd);
       void update_feedback_info();
       void update_history_info();
 };
@@ -773,7 +769,13 @@ vulkan_filter_chain::vulkan_filter_chain(
 
 vulkan_filter_chain::~vulkan_filter_chain()
 {
-   flush();
+   vkDeviceWaitIdle(device);
+   for (auto &calls : deferred_calls)
+   {
+      for (auto &call : calls)
+         call();
+      calls.clear();
+   }
 }
 
 void vulkan_filter_chain::set_swapchain_info(
@@ -785,7 +787,12 @@ void vulkan_filter_chain::set_swapchain_info(
 
 void vulkan_filter_chain::set_num_sync_indices(unsigned num_indices)
 {
-   execute_deferred();
+   for (auto &calls : deferred_calls)
+   {
+      for (auto &call : calls)
+         call();
+      calls.clear();
+   }
    deferred_calls.resize(num_indices);
 }
 
@@ -806,7 +813,13 @@ void vulkan_filter_chain::notify_sync_index(unsigned index)
 bool vulkan_filter_chain::update_swapchain_info(
       const vulkan_filter_chain_swapchain_info &info)
 {
-   flush();
+   vkDeviceWaitIdle(device);
+   for (auto &calls : deferred_calls)
+   {
+      for (auto &call : calls)
+         call();
+      calls.clear();
+   }
    set_swapchain_info(info);
    return init();
 }
@@ -816,22 +829,6 @@ void vulkan_filter_chain::release_staging_buffers()
    unsigned i;
    for (i = 0; i < common.luts.size(); i++)
       common.luts[i]->release_staging_buffer();
-}
-
-void vulkan_filter_chain::execute_deferred()
-{
-   for (auto &calls : deferred_calls)
-   {
-      for (auto &call : calls)
-         call();
-      calls.clear();
-   }
-}
-
-void vulkan_filter_chain::flush()
-{
-   vkDeviceWaitIdle(device);
-   execute_deferred();
 }
 
 void vulkan_filter_chain::update_history_info()
@@ -860,8 +857,6 @@ void vulkan_filter_chain::update_history_info()
 void vulkan_filter_chain::update_feedback_info()
 {
    unsigned i;
-   if (common.fb_feedback.empty())
-      return;
 
    for (i = 0; i < passes.size() - 1; i++)
    {
@@ -895,12 +890,21 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
     * are in a clean state. */
    if (require_clear)
    {
-      clear_history_and_feedback(cmd);
+      unsigned i;
+      for (i = 0; i < original_history.size(); i++)
+         vulkan_framebuffer_clear(original_history[i]->get_image(), cmd);
+      for (i = 0; i < passes.size(); i++)
+      {
+         Framebuffer *fb = passes[i]->get_feedback_framebuffer();
+         if (fb)
+            vulkan_framebuffer_clear(fb->get_image(), cmd);
+      }
       require_clear = false;
    }
 
    update_history_info();
-   update_feedback_info();
+   if (!common.fb_feedback.empty())
+      update_feedback_info();
 
    DeferredDisposer disposer(deferred_calls[current_sync_index]);
    const Texture original = {
@@ -1009,7 +1013,15 @@ void vulkan_filter_chain::build_viewport_pass(
     * feedback textures are in a clean state. */
    if (require_clear)
    {
-      clear_history_and_feedback(cmd);
+      unsigned i;
+      for (i = 0; i < original_history.size(); i++)
+         vulkan_framebuffer_clear(original_history[i]->get_image(), cmd);
+      for (i = 0; i < passes.size(); i++)
+      {
+         Framebuffer *fb = passes[i]->get_feedback_framebuffer();
+         if (fb)
+            vulkan_framebuffer_clear(fb->get_image(), cmd);
+      }
       require_clear = false;
    }
 
@@ -1079,7 +1091,8 @@ bool vulkan_filter_chain::init_history()
    common.original_history.resize(required_images);
 
    for (i = 0; i < required_images; i++)
-      original_history.emplace_back(new Framebuffer(device, memory_properties,
+      original_history.emplace_back(
+            new Framebuffer(device, memory_properties,
                max_input_size, original_format, 1));
 
 #ifdef VULKAN_DEBUG
@@ -1119,11 +1132,14 @@ bool vulkan_filter_chain::init_feedback()
          }
       }
 
-      if (use_feedback && !passes[i]->init_feedback())
-         return false;
-
       if (use_feedback)
+      {
+         if (!passes[i]->init_feedback())
+            return false;
+#ifdef VULKAN_DEBUG
          RARCH_LOG("[Vulkan filter chain]: Using framebuffer feedback for pass #%u.\n", i);
+#endif
+      }
    }
 
    if (!use_feedbacks)
@@ -1299,19 +1315,6 @@ bool vulkan_filter_chain::init()
       return false;
    common.pass_outputs.resize(passes.size());
    return true;
-}
-
-void vulkan_filter_chain::clear_history_and_feedback(VkCommandBuffer cmd)
-{
-   unsigned i;
-   for (i = 0; i < original_history.size(); i++)
-      vulkan_framebuffer_clear(original_history[i]->get_image(), cmd);
-   for (i = 0; i < passes.size(); i++)
-   {
-      Framebuffer *fb = passes[i]->get_feedback_framebuffer();
-      if (fb)
-         vulkan_framebuffer_clear(fb->get_image(), cmd);
-   }
 }
 
 void vulkan_filter_chain::set_input_texture(
@@ -2294,11 +2297,9 @@ void Pass::build_commands(
          0, 1, &sets[sync_index], 0, nullptr);
 
    if (push.stages != 0)
-   {
       vkCmdPushConstants(cmd, pipeline_layout,
             push.stages, 0, reflection.push_constant_size,
             push.buffer.data());
-   }
 
    {
       VkDeviceSize offset = final_pass ? 16 * sizeof(float) : 0;
@@ -2385,8 +2386,10 @@ Framebuffer::Framebuffer(
    memory_properties(mem_props),
    device(device)
 {
+#ifdef VULKAN_DEBUG
    RARCH_LOG("[Vulkan filter chain]: Creating framebuffer %ux%u (max %u level(s)).\n",
          max_size.width, max_size.height, max_levels);
+#endif
    vulkan_initialize_render_pass(device, format, &render_pass);
    init(nullptr);
 }
@@ -2486,8 +2489,10 @@ void Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size, VkFor
    if (format != VK_FORMAT_UNDEFINED)
 	  this->format = format;
 
+#ifdef VULKAN_DEBUG
    RARCH_LOG("[Vulkan filter chain]: Updating framebuffer size %ux%u (format: %u).\n",
          size.width, size.height, (unsigned)this->format);
+#endif
 
    {
       /* The current framebuffers, etc, might still be in use
@@ -2739,8 +2744,10 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             {
                pass_info.rt_format    = glslang_format_to_vk( output.meta.rt_format);
 
+#ifdef VULKAN_DEBUG
                RARCH_LOG("[slang]: Using render target format %s for pass output #%u.\n",
                      glslang_format_to_string(output.meta.rt_format), i);
+#endif
             }
             else
 #endif /* VULKAN_HDR_SWAPCHAIN */
@@ -2756,8 +2763,10 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          {
             pass_info.rt_format    = glslang_format_to_vk(
                   output.meta.rt_format);
+#ifdef VULKAN_DEBUG
             RARCH_LOG("[slang]: Using render target format %s for pass output #%u.\n",
                   glslang_format_to_string(output.meta.rt_format), i);
+#endif
          }
       }
       else
@@ -2771,8 +2780,10 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
          pass_info.rt_format      = glslang_format_to_vk(output.meta.rt_format);
 
+#ifdef VULKAN_DEBUG
          RARCH_LOG("[slang]: Using render target format %s for pass output #%u.\n",
                glslang_format_to_string(output.meta.rt_format), i);
+#endif
 
          switch (pass->fbo.type_x)
          {

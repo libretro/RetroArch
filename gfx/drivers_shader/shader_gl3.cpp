@@ -1681,7 +1681,6 @@ private:
    bool init_alias();
    std::vector<std::unique_ptr<gl3_shader::Framebuffer>> original_history;
    bool require_clear = false;
-   void clear_history_and_feedback();
    void update_feedback_info();
    void update_history_info();
 };
@@ -1741,7 +1740,18 @@ void gl3_filter_chain::build_offscreen_passes(const gl3_viewport &vp)
     * are in a clean state. */
    if (require_clear)
    {
-      clear_history_and_feedback();
+      unsigned i;
+      for (i = 0; i < original_history.size(); i++)
+      {
+         if (original_history[i]->is_complete())
+            gl3_framebuffer_clear(original_history[i]->get_framebuffer());
+      }
+      for (i = 0; i < passes.size(); i++)
+      {
+         gl3_shader::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
+         if (fb && fb->is_complete())
+            gl3_framebuffer_clear(fb->get_framebuffer());
+      }
       require_clear = false;
    }
 
@@ -1816,7 +1826,18 @@ void gl3_filter_chain::build_viewport_pass(
     * feedback textures are in a clean state. */
    if (require_clear)
    {
-      clear_history_and_feedback();
+      unsigned i;
+      for (i = 0; i < original_history.size(); i++)
+      {
+         if (original_history[i]->is_complete())
+            gl3_framebuffer_clear(original_history[i]->get_framebuffer());
+      }
+      for (i = 0; i < passes.size(); i++)
+      {
+         gl3_shader::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
+         if (fb && fb->is_complete())
+            gl3_framebuffer_clear(fb->get_framebuffer());
+      }
       require_clear = false;
    }
 
@@ -2051,22 +2072,6 @@ bool gl3_filter_chain::init()
       return false;
    common.pass_outputs.resize(passes.size());
    return true;
-}
-
-void gl3_filter_chain::clear_history_and_feedback()
-{
-   unsigned i;
-   for (i = 0; i < original_history.size(); i++)
-   {
-      if (original_history[i]->is_complete())
-         gl3_framebuffer_clear(original_history[i]->get_framebuffer());
-   }
-   for (i = 0; i < passes.size(); i++)
-   {
-      gl3_shader::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
-      if (fb && fb->is_complete())
-         gl3_framebuffer_clear(fb->get_framebuffer());
-   }
 }
 
 void gl3_filter_chain::set_input_texture(

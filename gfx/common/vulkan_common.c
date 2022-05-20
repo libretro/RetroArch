@@ -1261,12 +1261,6 @@ void vulkan_destroy_descriptor_manager(
    memset(manager, 0, sizeof(*manager));
 }
 
-static void vulkan_buffer_chain_step(struct vk_buffer_chain *chain)
-{
-   chain->current = chain->current->next;
-   chain->offset  = 0;
-}
-
 static bool vulkan_buffer_chain_suballoc(struct vk_buffer_chain *chain,
       size_t size, struct vk_buffer_range *range)
 {
@@ -1338,7 +1332,8 @@ bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
     * can find a block we can use. Usually, we just step once. */
    while (chain->current->next)
    {
-      vulkan_buffer_chain_step(chain);
+      chain->current = chain->current->next;
+      chain->offset  = 0;
       if (vulkan_buffer_chain_suballoc(chain, size, range))
          return true;
    }
@@ -1353,7 +1348,8 @@ bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
          context, size, chain->usage)))
       return false;
 
-   vulkan_buffer_chain_step(chain);
+   chain->current = chain->current->next;
+   chain->offset  = 0;
    /* This cannot possibly fail. */
    retro_assert(vulkan_buffer_chain_suballoc(chain, size, range));
    return true;
