@@ -2564,16 +2564,14 @@ static float ozone_sidebar_get_scroll_y(
    return scroll_y;
 }
 
+/* Flushing is slow - only do it if font
+ * has actually been used */
 static void ozone_font_flush(
       unsigned video_width, unsigned video_height,
       ozone_font_data_t *font_data)
 {
-   /* Flushing is slow - only do it if font
-    * has actually been used */
-   if (!font_data ||
-       (font_data->raster_block.carr.coords.vertices == 0))
+   if (font_data->raster_block.carr.coords.vertices == 0)
       return;
-
    font_driver_flush(video_width, video_height, font_data->font);
    font_data->raster_block.carr.coords.vertices = 0;
 }
@@ -9485,8 +9483,7 @@ static void ozone_messagebox_fadeout_cb(void *userdata)
    ozone_handle_t *ozone = (ozone_handle_t*) userdata;
 
    free(ozone->pending_message);
-   ozone->pending_message = NULL;
-
+   ozone->pending_message        = NULL;
    ozone->should_draw_messagebox = false;
 }
 
@@ -9503,8 +9500,9 @@ static void INLINE ozone_font_unbind(ozone_font_data_t *font_data)
 
 static void ozone_frame(void *data, video_frame_info_t *video_info)
 {
+   math_matrix_4x4 mymat;
    gfx_animation_ctx_entry_t entry;
-   ozone_handle_t* ozone                  = (ozone_handle_t*) data;
+   ozone_handle_t* ozone                  = (ozone_handle_t*)data;
    settings_t  *settings                  = config_get_ptr();
    unsigned color_theme                   = settings->uints.menu_ozone_color_theme;
    bool use_preferred_system_color_theme  = settings->bools.menu_use_preferred_system_color_theme;
@@ -9526,7 +9524,6 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    gfx_display_t            *p_disp       = (gfx_display_t*)video_info->disp_userdata;
    gfx_animation_t *p_anim                = anim_get_ptr();
    gfx_display_ctx_driver_t *dispctx      = p_disp->dispctx;
-   math_matrix_4x4 mymat;
 
 #if 0
    static bool reset                      = false;
@@ -9537,7 +9534,6 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       reset = true;
    }
 #endif
-
 
    if (!ozone)
       return;
@@ -9763,37 +9759,37 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       /* Fade in animation */
       if (ozone->messagebox_state_old != ozone->messagebox_state && ozone->messagebox_state)
       {
-         ozone->messagebox_state_old = ozone->messagebox_state;
+         ozone->messagebox_state_old        = ozone->messagebox_state;
 
          gfx_animation_kill_by_tag(&messagebox_tag);
          ozone->animations.messagebox_alpha = 0.0f;
 
-         entry.cb = NULL;
-         entry.duration = ANIMATION_PUSH_ENTRY_DURATION;
-         entry.easing_enum = EASING_OUT_QUAD;
-         entry.subject = &ozone->animations.messagebox_alpha;
-         entry.tag = messagebox_tag;
-         entry.target_value = 1.0f;
-         entry.userdata = NULL;
+         entry.cb                           = NULL;
+         entry.duration                     = ANIMATION_PUSH_ENTRY_DURATION;
+         entry.easing_enum                  = EASING_OUT_QUAD;
+         entry.subject                      = &ozone->animations.messagebox_alpha;
+         entry.tag                          = messagebox_tag;
+         entry.target_value                 = 1.0f;
+         entry.userdata                     = NULL;
 
          gfx_animation_push(&entry);
       }
       /* Fade out animation */
       else if (ozone->messagebox_state_old != ozone->messagebox_state && !ozone->messagebox_state)
       {
-         ozone->messagebox_state_old = ozone->messagebox_state;
-         ozone->messagebox_state = false;
+         ozone->messagebox_state_old        = ozone->messagebox_state;
+         ozone->messagebox_state            = false;
 
          gfx_animation_kill_by_tag(&messagebox_tag);
          ozone->animations.messagebox_alpha = 1.0f;
 
-         entry.cb = ozone_messagebox_fadeout_cb;
-         entry.duration = ANIMATION_PUSH_ENTRY_DURATION;
-         entry.easing_enum = EASING_OUT_QUAD;
-         entry.subject = &ozone->animations.messagebox_alpha;
-         entry.tag = messagebox_tag;
-         entry.target_value = 0.0f;
-         entry.userdata = ozone;
+         entry.cb                           = ozone_messagebox_fadeout_cb;
+         entry.duration                     = ANIMATION_PUSH_ENTRY_DURATION;
+         entry.easing_enum                  = EASING_OUT_QUAD;
+         entry.subject                      = &ozone->animations.messagebox_alpha;
+         entry.tag                          = messagebox_tag;
+         entry.target_value                 = 0.0f;
+         entry.userdata                     = ozone;
 
          gfx_animation_push(&entry);
       }
@@ -9888,7 +9884,7 @@ static void ozone_set_header(ozone_handle_t *ozone)
 
 static void ozone_animation_end(void *userdata)
 {
-   ozone_handle_t *ozone = (ozone_handle_t*) userdata;
+   ozone_handle_t *ozone            = (ozone_handle_t*) userdata;
    ozone->draw_old_list             = false;
    ozone->animations.cursor_alpha   = 1.0f;
 }
@@ -10007,11 +10003,9 @@ static void ozone_populate_entries(void *data,
                bool goto_sidebar       = false;
 
                if (!list || (list->size < 1))
-                  goto_sidebar = true;
-
-               if (!goto_sidebar &&
-                   (list->list[0].type != FILE_TYPE_RPL_ENTRY))
-                  goto_sidebar = true;
+                  goto_sidebar         = true;
+               else if ((list->list[0].type != FILE_TYPE_RPL_ENTRY))
+                  goto_sidebar         = true;
 
                if (goto_sidebar)
                {
@@ -10096,17 +10090,14 @@ static void ozone_toggle(void *userdata, bool menu_on)
       return;
 
    settings              = config_get_ptr();
-   tmp                   = !menu_entries_ctl(
-         MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL);
-
-   if (tmp)
+   if ((tmp = !menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL)))
       menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    else
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
 
    if (ozone->depth == 1)
    {
-      ozone->draw_sidebar = true;
+      ozone->draw_sidebar   = true;
       ozone->sidebar_offset = 0.0f;
    }
 
@@ -10134,7 +10125,7 @@ static bool ozone_menu_init_list(void *data)
          MENU_ENUM_LABEL_MAIN_MENU,
          info.type, info.flags, 0);
 
-   info.list  = selection_buf;
+   info.list                    = selection_buf;
 
    if (!menu_displaylist_ctl(DISPLAYLIST_MAIN_MENU, &info, settings))
       goto error;
@@ -10161,23 +10152,21 @@ static void ozone_list_insert(void *userdata,
       unsigned type)
 {
    ozone_handle_t *ozone = (ozone_handle_t*) userdata;
-   ozone_node_t *node = NULL;
-   int i = (int)list_size;
+   ozone_node_t *node    = NULL;
+   int i                 = (int)list_size;
 
    if (!ozone || !list)
       return;
 
    ozone->need_compute = true;
 
-   node = (ozone_node_t*)list->list[i].userdata;
-
-   if (!node)
-      node = ozone_alloc_node();
-
-   if (!node)
+   if (!(node = (ozone_node_t*)list->list[i].userdata))
    {
-      RARCH_ERR("ozone node could not be allocated.\n");
-      return;
+      if (!(node = ozone_alloc_node()))
+      {
+         RARCH_ERR("ozone node could not be allocated.\n");
+         return;
+      }
    }
 
    if (!string_is_empty(fullpath))
@@ -10185,7 +10174,7 @@ static void ozone_list_insert(void *userdata,
       if (node->fullpath)
          free(node->fullpath);
 
-      node->fullpath = strdup(fullpath);
+      node->fullpath      = strdup(fullpath);
    }
 
    list->list[i].userdata = node;
@@ -10209,10 +10198,7 @@ static int ozone_environ_cb(enum menu_environ_cb type, void *data, void *userdat
       case MENU_ENVIRON_RESET_HORIZONTAL_LIST:
          if (!ozone)
             return -1;
-         {
-            settings_t *settings              = config_get_ptr();
-            ozone_refresh_horizontal_list(ozone, settings);
-         }
+         ozone_refresh_horizontal_list(ozone, config_get_ptr());
          break;
       case MENU_ENVIRON_ENABLE_SCREENSAVER:
          ozone->show_screensaver = true;
@@ -10237,7 +10223,7 @@ static void ozone_messagebox(void *data, const char *message)
    if (ozone->pending_message)
    {
       free(ozone->pending_message);
-      ozone->pending_message = NULL;
+      ozone->pending_message     = NULL;
    }
 
    ozone->pending_message        = strdup(message);

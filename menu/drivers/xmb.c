@@ -452,7 +452,7 @@ static float xmb_coord_white[]  = {
    1, 1, 1, 1
 };
 
-static float item_color[]       = {
+static float xmb_item_color[]       = {
    1, 1, 1, 1,
    1, 1, 1, 1,
    1, 1, 1, 1,
@@ -5310,7 +5310,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    /**************************/
 
    /* Clock image */
-   gfx_display_set_alpha(item_color, MIN(xmb->alpha, 1.00f));
+   gfx_display_set_alpha(xmb_item_color, MIN(xmb->alpha, 1.00f));
 
    if (battery_level_enable)
    {
@@ -5357,7 +5357,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   1,
                   0,
                   1,
-                  &item_color[0],
+                  &xmb_item_color[0],
                   xmb->shadow_offset,
                   &mymat);
                   if (dispctx && dispctx->blend_end)
@@ -5406,7 +5406,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                1,
                0,
                1,
-               &item_color[0],
+               &xmb_item_color[0],
                xmb->shadow_offset,
                &mymat);
          if (dispctx && dispctx->blend_end)
@@ -5429,7 +5429,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Arrow image */
-   gfx_display_set_alpha(item_color,
+   gfx_display_set_alpha(xmb_item_color,
          MIN(xmb->textures_arrow_alpha, xmb->alpha));
 
    if (!xmb->assets_missing)
@@ -5456,7 +5456,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             xmb->textures_arrow_alpha,
             0,
             1,
-            &item_color[0],
+            &xmb_item_color[0],
             xmb->shadow_offset,
             &mymat);
       if (dispctx && dispctx->blend_end)
@@ -5478,9 +5478,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          if (!node)
             continue;
 
-         gfx_display_set_alpha(item_color, MIN(node->alpha, xmb->alpha));
+         gfx_display_set_alpha(xmb_item_color, MIN(node->alpha, xmb->alpha));
 
-         if (item_color[3] != 0)
+         if (xmb_item_color[3] != 0)
          {
             gfx_display_ctx_rotate_draw_t rotate_draw;
             math_matrix_4x4 mymat_tmp;
@@ -5501,7 +5501,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
                if (x > x_threshold)
                {
-                  float fade_alpha      = item_color[3];
+                  float fade_alpha      = xmb_item_color[3];
                   float fade_offset     = (x - x_threshold) * 2.0f;
 
                   fade_offset = (fade_offset > xmb->icon_size) ? xmb->icon_size : fade_offset;
@@ -5510,7 +5510,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   if (fade_alpha <= 0.0f)
                      continue;
 
-                  gfx_display_set_alpha(item_color, fade_alpha);
+                  gfx_display_set_alpha(xmb_item_color, fade_alpha);
                }
             }
 
@@ -5539,7 +5539,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   1.0,
                   0, /* rotation */
                   scale_factor,
-                  &item_color[0],
+                  &xmb_item_color[0],
                   xmb->shadow_offset,
                   &mymat_tmp);
          }
@@ -5562,7 +5562,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          (xmb_list_get_size(xmb, MENU_LIST_PLAIN) > 1)
          ? xmb->categories_selection_ptr :
          xmb->categories_selection_ptr_old,
-         &item_color[0],
+         &xmb_item_color[0],
          video_width,
          video_height,
          &mymat);
@@ -5581,7 +5581,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          selection_buf,
          selection,
          xmb->categories_selection_ptr,
-         &item_color[0],
+         &xmb_item_color[0],
          video_width,
          video_height,
          &mymat);
@@ -6498,7 +6498,7 @@ static void xmb_context_reset_textures(
          (settings->uints.menu_xmb_theme == XMB_ICON_THEME_MONOCHROME_INVERTED) ||
          (settings->uints.menu_xmb_theme == XMB_ICON_THEME_AUTOMATIC_INVERTED)
       )
-      memcpy(item_color, xmb_coord_black, sizeof(item_color));
+      memcpy(xmb_item_color, xmb_coord_black, sizeof(xmb_item_color));
    else
    {
       if (
@@ -6510,14 +6510,14 @@ static void xmb_context_reset_textures(
          {
             if ((i==3) || (i==7) || (i==11) || (i==15))
             {
-               item_color[i] = 1;
+               xmb_item_color[i] = 1;
                continue;
             }
-            item_color[i] = 0.95;
+            xmb_item_color[i] = 0.95;
          }
       }
       else
-         memcpy(item_color, xmb_coord_white, sizeof(item_color));
+         memcpy(xmb_item_color, xmb_coord_white, sizeof(xmb_item_color));
    }
 
    return;
@@ -6708,15 +6708,13 @@ static void xmb_list_insert(void *userdata,
    if (!xmb || !list)
       return;
 
-   node = (xmb_node_t*)list->list[i].userdata;
-
-   if (!node)
-      node = xmb_alloc_node();
-
-   if (!node)
+   if (!(node = (xmb_node_t*)list->list[i].userdata))
    {
-      RARCH_ERR("XMB node could not be allocated.\n");
-      return;
+      if (!(node = xmb_alloc_node()))
+      {
+         RARCH_ERR("XMB node could not be allocated.\n");
+         return;
+      }
    }
 
    current           = (int)selection;

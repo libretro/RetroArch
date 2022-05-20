@@ -2303,10 +2303,8 @@ static void materialui_refresh_playlist_icon_list(materialui_handle_t *mui,
     *   necessary (if 'invalid' playlist files
     *   are included in the list), but this
     *   reduces code complexity */
-   mui->textures.playlist.icons = (materialui_playlist_icon_t*)
-         malloc(file_list->size * sizeof(materialui_playlist_icon_t));
-
-   if (!mui->textures.playlist.icons)
+   if (!(mui->textures.playlist.icons = (materialui_playlist_icon_t*)
+         malloc(file_list->size * sizeof(materialui_playlist_icon_t))))
       goto end;
 
    mui->textures.playlist.size  = file_list->size;
@@ -2369,24 +2367,8 @@ static void materialui_set_node_playlist_icon(
       materialui_handle_t *mui, materialui_node_t* node,
       const char *playlist_path)
 {
-   const char *playlist_file = NULL;
    size_t i;
-
-   /* Set defaults */
-   node->icon_texture_index = MUI_TEXTURE_PLAYLIST;
-   node->icon_type          = MUI_ICON_TYPE_INTERNAL;
-
-   if (mui->textures.playlist.size < 1)
-      return;
-
-   /* Get playlist file name */
-   if (string_is_empty(playlist_path))
-      return;
-
-   playlist_file = path_basename_nocompression(playlist_path);
-
-   if (string_is_empty(playlist_path))
-      return;
+   const char *playlist_file = path_basename_nocompression(playlist_path);
 
    /* Search icon list for specified file */
    for (i = 0; i < mui->textures.playlist.size; i++)
@@ -2410,15 +2392,13 @@ static uintptr_t materialui_get_playlist_icon(
       materialui_handle_t *mui, unsigned texture_index)
 {
    uintptr_t playlist_icon;
-
    /* Always use MUI_TEXTURE_PLAYLIST as
     * a fallback */
    if (texture_index >= mui->textures.playlist.size)
       return mui->textures.list[MUI_TEXTURE_PLAYLIST];
-
-   playlist_icon = mui->textures.playlist.icons[texture_index].image;
-
-   return playlist_icon ? playlist_icon : mui->textures.list[MUI_TEXTURE_PLAYLIST];
+   if ((playlist_icon = mui->textures.playlist.icons[texture_index].image))
+      return playlist_icon;
+   return mui->textures.list[MUI_TEXTURE_PLAYLIST];
 }
 
 /* ==============================
@@ -2516,21 +2496,12 @@ static void materialui_draw_thumbnail(
       float scale_factor,
       math_matrix_4x4 *mymat)
 {
-   float bg_x;
-   float bg_y;
-   float bg_width;
-   float bg_height;
-
-   /* Sanity check */
-   if (scale_factor <= 0)
-      return;
-
    /* Get background draw position + dimensions,
     * accounting for scale factor */
-   bg_width  = (float)mui->thumbnail_width_max * scale_factor;
-   bg_height = (float)mui->thumbnail_height_max * scale_factor;
-   bg_x      = x - (bg_width - (float)mui->thumbnail_width_max) / 2.0f;
-   bg_y      = y - (bg_height - (float)mui->thumbnail_height_max) / 2.0f;
+   float bg_width  = (float)mui->thumbnail_width_max  * scale_factor;
+   float bg_height = (float)mui->thumbnail_height_max * scale_factor;
+   float bg_x      = x - (bg_width - (float)mui->thumbnail_width_max) / 2.0f;
+   float bg_y      = y - (bg_height - (float)mui->thumbnail_height_max) / 2.0f;
 
    /* If thumbnail is missing, draw fallback image... */
    switch (thumbnail->status)
@@ -10236,7 +10207,12 @@ static void materialui_list_insert(
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case FILE_TYPE_PLAYLIST_COLLECTION:
-            materialui_set_node_playlist_icon(mui, node, path);
+            /* Set defaults */
+            node->icon_texture_index = MUI_TEXTURE_PLAYLIST;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+            if (mui->textures.playlist.size >= 1)
+               if (!string_is_empty(path))
+                  materialui_set_node_playlist_icon(mui, node, path);
             break;
          case FILE_TYPE_RDB:
             node->icon_texture_index = MUI_TEXTURE_DATABASE;
