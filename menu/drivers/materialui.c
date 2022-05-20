@@ -2177,16 +2177,14 @@ static void INLINE materialui_font_unbind(materialui_font_data_t *font_data)
    font_driver_bind_block(font_data->font, NULL);
 }
 
+/* Flushing is slow - only do it if font
+ * has actually been used */
 void materialui_font_flush(
       unsigned video_width, unsigned video_height,
       materialui_font_data_t *font_data)
 {
-   /* Flushing is slow - only do it if font
-    * has actually been used */
-   if (!font_data ||
-       (font_data->raster_block.carr.coords.vertices == 0))
+   if (font_data->raster_block.carr.coords.vertices == 0)
       return;
-
    font_driver_flush(video_width, video_height, font_data->font);
    font_data->raster_block.carr.coords.vertices = 0;
 }
@@ -2203,16 +2201,12 @@ static void materialui_context_destroy_playlist_icons(materialui_handle_t *mui)
       video_driver_texture_unload(&mui->textures.playlist.icons[i].image);
 }
 
-static void materialui_context_reset_playlist_icons(materialui_handle_t *mui)
+static void materialui_context_reset_playlist_icons(
+      materialui_handle_t *mui)
 {
    size_t i;
    char icon_path[PATH_MAX_LENGTH];
-
    icon_path[0] = '\0';
-
-   if (mui->textures.playlist.size < 1)
-      return;
-
    /* Get icon directory */
    fill_pathname_application_special(
          icon_path, sizeof(icon_path),
@@ -2268,17 +2262,14 @@ static void materialui_free_playlist_icon_list(materialui_handle_t *mui)
    mui->textures.playlist.size  = 0;
 }
 
-static void materialui_refresh_playlist_icon_list(materialui_handle_t *mui,
-      settings_t *settings)
+static void materialui_refresh_playlist_icon_list(
+      materialui_handle_t *mui,
+      const char *dir_playlist,
+      bool icons_enabled,
+      bool playlist_icons_enabled)
 {
-   const char *dir_playlist      = settings ?
-         settings->paths.directory_playlist : NULL;
-   bool icons_enabled            = settings ?
-         settings->bools.menu_materialui_icons_enable : false;
-   bool playlist_icons_enabled   = settings ?
-         settings->bools.menu_materialui_playlist_icons_enable : false;
-   struct string_list *file_list = NULL;
    size_t i;
+   struct string_list *file_list = NULL;
 
    /* Free existing icon list */
    materialui_free_playlist_icon_list(mui);
@@ -2650,9 +2641,7 @@ static void materialui_render_messagebox(
        !mui->font_data.list.font)
       return;
 
-   usable_width = (int)video_width - (mui->margin * 4.0);
-
-   if (usable_width < 1)
+   if ((usable_width = (int)video_width - (mui->margin * 4.0)) < 1)
       return;
 
    /* Split message into lines */
@@ -5159,37 +5148,12 @@ static void (*materialui_render_selected_entry_aux)(
  * materialui_render_selected_entry_aux() END
  * ============================== */
 
-static void materialui_render_scrollbar(
-      materialui_handle_t *mui,
-      gfx_display_t *p_disp,
-      void *userdata,
-      unsigned video_width, unsigned video_height)
-{
-   /* Do nothing if scrollbar is disabled */
-   if (!mui->scrollbar.active)
-      return;
-
-   /* Draw scrollbar */
-   gfx_display_draw_quad(
-         p_disp,
-         userdata,
-         video_width,
-         video_height,
-         mui->scrollbar.x,
-         mui->scrollbar.y,
-         mui->scrollbar.width,
-         mui->scrollbar.height,
-         video_width,
-         video_height,
-         mui->colors.scrollbar,
-         NULL);
-}
-
 /* Draws current menu list */
 static void materialui_render_menu_list(
       materialui_handle_t *mui,
       gfx_display_t *p_disp,
       void *userdata,
+      size_t selection,
       unsigned video_width,
       unsigned video_height,
       int x_offset)
@@ -5199,7 +5163,6 @@ static void materialui_render_menu_list(
    size_t last_entry;
    file_list_t *list           = NULL;
    size_t entries_end          = menu_entries_get_size();
-   size_t selection            = menu_navigation_get_selection();
    unsigned header_height      = p_disp->header_height; 
    bool touch_feedback_enabled =
          !mui->scrollbar.dragged &&
@@ -5211,7 +5174,7 @@ static void materialui_render_menu_list(
          (mui->list_view_type != MUI_LIST_VIEW_PLAYLIST_THUMB_DUAL_ICON) &&
          (mui->list_view_type != MUI_LIST_VIEW_PLAYLIST_THUMB_DESKTOP);
 
-   list = menu_entries_get_selection_buf_ptr(0);
+   list                        = menu_entries_get_selection_buf_ptr(0);
    if (!list)
       return;
 
@@ -5261,9 +5224,20 @@ static void materialui_render_menu_list(
             list, selection);
 
    /* Draw scrollbar */
-   materialui_render_scrollbar(
-         mui, p_disp, userdata,
-         video_width, video_height);
+   if (mui->scrollbar.active)
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
+            video_width,
+            video_height,
+            mui->scrollbar.x,
+            mui->scrollbar.y,
+            mui->scrollbar.width,
+            mui->scrollbar.height,
+            video_width,
+            video_height,
+            mui->colors.scrollbar,
+            NULL);
 }
 
 static size_t materialui_list_get_size(void *data, enum menu_list_type type)
@@ -6911,28 +6885,24 @@ static void materialui_update_scrollbar(
       unsigned width, unsigned height,
       unsigned header_height, int x_offset)
 {
-   /* Do nothing if scrollbar is disabled */
-   if (mui->scrollbar.active)
-   {
-      int view_height = (int)height - (int)header_height -
-            (int)mui->nav_bar_layout_height - (int)mui->status_bar.height;
-      int y_max       = view_height + (int)header_height -
-            (int)(mui->scrollbar.width + mui->scrollbar.height);
+   int view_height = (int)height - (int)header_height -
+      (int)mui->nav_bar_layout_height - (int)mui->status_bar.height;
+   int y_max       = view_height + (int)header_height -
+      (int)(mui->scrollbar.width + mui->scrollbar.height);
 
-      /* Get X position */
-      mui->scrollbar.x = x_offset + (int)width - (int)mui->scrollbar.width -
-            (int)mui->landscape_optimization.border_width -
-            (int)mui->nav_bar_layout_width;
+   /* Get X position */
+   mui->scrollbar.x = x_offset + (int)width - (int)mui->scrollbar.width -
+      (int)mui->landscape_optimization.border_width -
+      (int)mui->nav_bar_layout_width;
 
-      /* Get Y position */
-      mui->scrollbar.y = (int)header_height + (int)(mui->scroll_y * (float)view_height / mui->content_height);
+   /* Get Y position */
+   mui->scrollbar.y = (int)header_height + (int)(mui->scroll_y * (float)view_height / mui->content_height);
 
-      /* > Apply vertical padding to improve visual appearance */
-      mui->scrollbar.y += (int)mui->scrollbar.width;
+   /* > Apply vertical padding to improve visual appearance */
+   mui->scrollbar.y += (int)mui->scrollbar.width;
 
-      /* > Ensure we don't fall off the bottom of the screen... */
-      mui->scrollbar.y = (mui->scrollbar.y > y_max) ? y_max : mui->scrollbar.y;
-   }
+   /* > Ensure we don't fall off the bottom of the screen... */
+   mui->scrollbar.y = (mui->scrollbar.y > y_max) ? y_max : mui->scrollbar.y;
 }
 
 /* Main function of the menu driver
@@ -6975,16 +6945,14 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       return;
    }
 
-   {
-      rotate_draw.matrix       = &mymat;
-      rotate_draw.rotation     = 0.0f;
-      rotate_draw.scale_x      = 1.0f;
-      rotate_draw.scale_y      = 1.0f;
-      rotate_draw.scale_z      = 1;
-      rotate_draw.scale_enable = true;
+   rotate_draw.matrix       = &mymat;
+   rotate_draw.rotation     = 0.0f;
+   rotate_draw.scale_x      = 1.0f;
+   rotate_draw.scale_y      = 1.0f;
+   rotate_draw.scale_z      = 1;
+   rotate_draw.scale_enable = true;
 
-      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
-   }
+   gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
 
    video_driver_set_viewport(video_width, video_height, true, false);
 
@@ -7072,10 +7040,11 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
     *   like this because we need to track its
     *   position in order to enable fast navigation
     *   via scrollbar 'dragging' */
-   materialui_update_scrollbar(mui, video_width, video_height,
-         header_height, list_x_offset);
+   if (mui->scrollbar.active)
+      materialui_update_scrollbar(mui, video_width, video_height,
+            header_height, list_x_offset);
    materialui_render_menu_list(mui, p_disp,
-         userdata,
+         userdata, selection,
          video_width, video_height, list_x_offset);
 
    /* Flush first layer of text
@@ -8106,9 +8075,12 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    mui->status_bar.last_played_fallback_str[0] = '\0';
 
    /* Initialise playlist icon list */
-   mui->textures.playlist.size  = 0;
-   mui->textures.playlist.icons = NULL;
-   materialui_refresh_playlist_icon_list(mui, settings);
+   mui->textures.playlist.size                 = 0;
+   mui->textures.playlist.icons                = NULL;
+   materialui_refresh_playlist_icon_list(mui,
+         settings->paths.directory_playlist,
+         settings->bools.menu_materialui_icons_enable,
+         settings->bools.menu_materialui_playlist_icons_enable);
 
    p_anim->updatetime_cb = materialui_menu_animation_update_time;
 
@@ -8682,7 +8654,8 @@ static void materialui_context_reset(void *data, bool is_threaded)
    gfx_display_deinit_white_texture();
    gfx_display_init_white_texture();
    materialui_context_reset_textures(mui);
-   materialui_context_reset_playlist_icons(mui);
+   if (mui->textures.playlist.size >= 1)
+      materialui_context_reset_playlist_icons(mui);
    menu_screensaver_context_destroy(mui->screensaver);
 
    if (path_is_valid(path_menu_wallpaper))
@@ -8714,8 +8687,12 @@ static int materialui_environ(enum menu_environ_cb type,
             settings_t *settings          = config_get_ptr();
             /* Reset playlist icon list */
             materialui_context_destroy_playlist_icons(mui);
-            materialui_refresh_playlist_icon_list(mui, settings);
-            materialui_context_reset_playlist_icons(mui);
+            materialui_refresh_playlist_icon_list(mui,
+                  settings->paths.directory_playlist,
+                  settings->bools.menu_materialui_icons_enable,
+                  settings->bools.menu_materialui_playlist_icons_enable);
+            if (mui->textures.playlist.size >= 1)
+               materialui_context_reset_playlist_icons(mui);
 
             /* If we are currently viewing the playlists tab,
              * the menu must be refreshed (since icon indices
