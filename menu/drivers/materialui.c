@@ -8937,7 +8937,71 @@ static int materialui_switch_tabs(
    return 0;
 }
 
-static void materialui_switch_list_view(materialui_handle_t *mui, settings_t *settings);
+/* If viewing a playlist with thumbnails enabled,
+ * cycles current thumbnail view mode */
+static void materialui_switch_list_view(materialui_handle_t *mui, settings_t *settings)
+{
+   bool secondary_thumbnail_enabled_prev = mui->secondary_thumbnail_enabled;
+
+   /* Only enable view switching if we are currently viewing
+    * a playlist with thumbnails enabled */
+   if ((mui->list_view_type == MUI_LIST_VIEW_DEFAULT) ||
+       !mui->primary_thumbnail_available)
+      return;
+
+   /* If currently selected item is off screen, then
+    * changing the view mode will throw the user to
+    * an unexpected off screen location...
+    * To prevent this, must immediately select the
+    * 'middle' on screen entry */
+   materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_CENTRE);
+
+   /* Update setting based upon current display orientation */
+   if (mui->is_portrait)
+   {
+      configuration_set_uint(
+            settings,
+            settings->uints.menu_materialui_thumbnail_view_portrait,
+            settings->uints.menu_materialui_thumbnail_view_portrait + 1);
+
+      if (settings->uints.menu_materialui_thumbnail_view_portrait >=
+            MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LAST)
+         configuration_set_uint(settings,
+               settings->uints.menu_materialui_thumbnail_view_portrait, 0);
+   }
+   else
+   {
+      configuration_set_uint(settings,
+            settings->uints.menu_materialui_thumbnail_view_landscape,
+            settings->uints.menu_materialui_thumbnail_view_landscape + 1);
+
+      if (settings->uints.menu_materialui_thumbnail_view_landscape >=
+            MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LAST)
+         configuration_set_uint(settings,
+               settings->uints.menu_materialui_thumbnail_view_landscape, 0);
+   }
+
+   /* Update list view parameters */
+   materialui_update_list_view(mui, settings);
+
+   /* If the new list view does not have thumbnails
+    * enabled, or last view had dual thumbnails and
+    * current does not, reset all existing thumbnails
+    * (this would happen automatically at the next
+    * menu level change - or destroy context, etc.
+    * - but it's cleanest to do it here) */
+   if ((mui->list_view_type == MUI_LIST_VIEW_DEFAULT) ||
+       (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST) ||
+       (secondary_thumbnail_enabled_prev && !mui->secondary_thumbnail_enabled))
+      materialui_reset_thumbnails();
+
+   /* We want to 'fade in' when switching views, so
+    * trigger normal transition animation */
+   materialui_init_transition_animation(mui, settings);
+
+   mui->need_compute = true;
+}
+
 
 /* Material UI requires special handling of certain
  * menu input functions, due to the fact that navigation
@@ -9791,71 +9855,6 @@ static int materialui_pointer_up_nav_bar(
             mui, &mui->nav_bar.menu_tabs[tab_index - 1], MENU_ACTION_NOOP);
 
    return 0;
-}
-
-/* If viewing a playlist with thumbnails enabled,
- * cycles current thumbnail view mode */
-static void materialui_switch_list_view(materialui_handle_t *mui, settings_t *settings)
-{
-   bool secondary_thumbnail_enabled_prev = mui->secondary_thumbnail_enabled;
-
-   /* Only enable view switching if we are currently viewing
-    * a playlist with thumbnails enabled */
-   if ((mui->list_view_type == MUI_LIST_VIEW_DEFAULT) ||
-       !mui->primary_thumbnail_available)
-      return;
-
-   /* If currently selected item is off screen, then
-    * changing the view mode will throw the user to
-    * an unexpected off screen location...
-    * To prevent this, must immediately select the
-    * 'middle' on screen entry */
-   materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_CENTRE);
-
-   /* Update setting based upon current display orientation */
-   if (mui->is_portrait)
-   {
-      configuration_set_uint(
-            settings,
-            settings->uints.menu_materialui_thumbnail_view_portrait,
-            settings->uints.menu_materialui_thumbnail_view_portrait + 1);
-
-      if (settings->uints.menu_materialui_thumbnail_view_portrait >=
-            MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LAST)
-         configuration_set_uint(settings,
-               settings->uints.menu_materialui_thumbnail_view_portrait, 0);
-   }
-   else
-   {
-      configuration_set_uint(settings,
-            settings->uints.menu_materialui_thumbnail_view_landscape,
-            settings->uints.menu_materialui_thumbnail_view_landscape + 1);
-
-      if (settings->uints.menu_materialui_thumbnail_view_landscape >=
-            MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LAST)
-         configuration_set_uint(settings,
-               settings->uints.menu_materialui_thumbnail_view_landscape, 0);
-   }
-
-   /* Update list view parameters */
-   materialui_update_list_view(mui, settings);
-
-   /* If the new list view does not have thumbnails
-    * enabled, or last view had dual thumbnails and
-    * current does not, reset all existing thumbnails
-    * (this would happen automatically at the next
-    * menu level change - or destroy context, etc.
-    * - but it's cleanest to do it here) */
-   if ((mui->list_view_type == MUI_LIST_VIEW_DEFAULT) ||
-       (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST) ||
-       (secondary_thumbnail_enabled_prev && !mui->secondary_thumbnail_enabled))
-      materialui_reset_thumbnails();
-
-   /* We want to 'fade in' when switching views, so
-    * trigger normal transition animation */
-   materialui_init_transition_animation(mui, settings);
-
-   mui->need_compute = true;
 }
 
 /* Pointer up event */

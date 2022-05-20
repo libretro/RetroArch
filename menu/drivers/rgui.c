@@ -5580,25 +5580,19 @@ static void rgui_set_video_config(rgui_t *rgui, settings_t *settings,
 /* Note: This function is only called when aspect ratio
  * lock is enabled */
 static void rgui_update_menu_viewport(rgui_t *rgui,
-      gfx_display_t    *p_disp)
+      gfx_display_t    *p_disp,
+      unsigned menu_rgui_aspect_ratio_lock
+)
 {
    struct video_viewport vp;
-   unsigned fb_width, fb_height;
-#if !defined(GEKKO)
-   bool do_integer_scaling    = false;
-   settings_t       *settings = config_get_ptr();
-#if defined(DINGUX)
-   unsigned aspect_ratio_lock = RGUI_ASPECT_RATIO_LOCK_NONE;
-#else
-   unsigned aspect_ratio_lock = settings ? settings->uints.menu_rgui_aspect_ratio_lock : 0;
+   unsigned fb_width           = p_disp->framebuf_width;
+   unsigned fb_height          = p_disp->framebuf_height;
+
+#ifndef GEKKO
+#ifdef DINGUX
+   menu_rgui_aspect_ratio_lock = RGUI_ASPECT_RATIO_LOCK_NONE;
 #endif
-   
-   if (!settings)
-      return;
 #endif
-   
-   fb_width                   = p_disp->framebuf_width;
-   fb_height                  = p_disp->framebuf_height;
 
    video_driver_get_viewport_info(&vp);
    
@@ -5636,7 +5630,7 @@ static void rgui_update_menu_viewport(rgui_t *rgui,
       }
 #else
       /* Check whether we need to perform integer scaling */
-      do_integer_scaling = (aspect_ratio_lock 
+      bool do_integer_scaling = (menu_rgui_aspect_ratio_lock 
             == RGUI_ASPECT_RATIO_LOCK_INTEGER);
       
       if (do_integer_scaling)
@@ -5659,7 +5653,7 @@ static void rgui_update_menu_viewport(rgui_t *rgui,
       /* Check whether menu should be stretched to
        * fill the screen, regardless of internal
        * aspect ratio */
-      if (aspect_ratio_lock == RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN)
+      if (menu_rgui_aspect_ratio_lock == RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN)
       {
          rgui->menu_video_settings.viewport.width  = vp.full_width;
          rgui->menu_video_settings.viewport.height = vp.full_height;
@@ -6033,7 +6027,7 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui,
    if ((aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE) &&
        !rgui->ignore_resize_events)
    {
-      rgui_update_menu_viewport(rgui, p_disp);
+      rgui_update_menu_viewport(rgui, p_disp, settings->uints.menu_rgui_aspect_ratio_lock);
       rgui_set_video_config(rgui, settings, &rgui->menu_video_settings, delay_update);
    }
    
@@ -6563,65 +6557,56 @@ static void rgui_refresh_thumbnail_image(void *userdata, unsigned i)
    }
 }
 
-static void rgui_update_menu_sublabel(rgui_t *rgui)
+static void rgui_update_menu_sublabel(rgui_t *rgui, size_t selection)
 {
-   size_t     selection     = menu_navigation_get_selection();
-   settings_t *settings     = config_get_ptr();
-   bool menu_show_sublabels = settings->bools.menu_show_sublabels;
-   
-   rgui->menu_sublabel[0] = '\0';
-   
-   if (menu_show_sublabels && selection < menu_entries_get_size())
+   menu_entry_t entry;
+
+   MENU_ENTRY_INIT(entry);
+   entry.path_enabled       = false;
+   entry.label_enabled      = false;
+   entry.rich_label_enabled = false;
+   entry.value_enabled      = false;
+   menu_entry_get(&entry, 0, (unsigned)selection, NULL, true);
+
+   if (!string_is_empty(entry.sublabel))
    {
-      menu_entry_t entry;
-      
-      MENU_ENTRY_INIT(entry);
-      entry.path_enabled       = false;
-      entry.label_enabled      = false;
-      entry.rich_label_enabled = false;
-      entry.value_enabled      = false;
-      menu_entry_get(&entry, 0, (unsigned)selection, NULL, true);
-      
-      if (!string_is_empty(entry.sublabel))
+      size_t line_index;
+      static const char* const 
+         sublabel_spacer       = RGUI_TICKER_SPACER;
+      bool prev_line_empty     = true;
+      /* Sanitise sublabel
+       * > Replace newline characters with standard delimiter
+       * > Remove whitespace surrounding each sublabel line */
+      struct string_list list  = {0};
+
+      string_list_initialize(&list);
+
+      if (string_split_noalloc(&list, entry.sublabel, "\n"))
       {
-         size_t line_index;
-         static const char* const 
-            sublabel_spacer       = RGUI_TICKER_SPACER;
-         bool prev_line_empty     = true;
-         /* Sanitise sublabel
-          * > Replace newline characters with standard delimiter
-          * > Remove whitespace surrounding each sublabel line */
-         struct string_list list  = {0};
-         
-         string_list_initialize(&list);
-         
-         if (string_split_noalloc(&list, entry.sublabel, "\n"))
+         for (line_index = 0; line_index < list.size; line_index++)
          {
-            for (line_index = 0; line_index < list.size; line_index++)
+            const char *line = string_trim_whitespace(
+                  list.elems[line_index].data);
+            if (!string_is_empty(line))
             {
-               const char *line = string_trim_whitespace(
-                     list.elems[line_index].data);
-               if (!string_is_empty(line))
-               {
-                  if (!prev_line_empty)
-                     strlcat(rgui->menu_sublabel,
-                           sublabel_spacer, sizeof(rgui->menu_sublabel));
+               if (!prev_line_empty)
                   strlcat(rgui->menu_sublabel,
-                        line, sizeof(rgui->menu_sublabel));
-                  prev_line_empty = false;
-               }
+                        sublabel_spacer, sizeof(rgui->menu_sublabel));
+               strlcat(rgui->menu_sublabel,
+                     line, sizeof(rgui->menu_sublabel));
+               prev_line_empty = false;
             }
          }
-
-         string_list_deinitialize(&list);
       }
+
+      string_list_deinitialize(&list);
    }
 }
 
 static void rgui_navigation_set(void *data, bool scroll)
 {
-   size_t start;
-   bool do_set_start              = false;
+   size_t start                   = 0;
+   bool menu_show_sublabels       = false;
    size_t end                     = menu_entries_get_size();
    size_t selection               = menu_navigation_get_selection();
    rgui_t *rgui                   = (rgui_t*)data;
@@ -6629,34 +6614,28 @@ static void rgui_navigation_set(void *data, bool scroll)
    if (!rgui)
       return;
 
+   menu_show_sublabels            = config_get_ptr()->bools.menu_show_sublabels;
+
    rgui_scan_selected_entry_thumbnail(rgui, false);
-   rgui_update_menu_sublabel(rgui);
+
+   rgui->menu_sublabel[0]         = '\0';
+   if (menu_show_sublabels && selection < end)
+      rgui_update_menu_sublabel(rgui, selection);
 
    if (!scroll)
       return;
 
-   if (selection < rgui->term_layout.height / 2)
-   {
-      start        = 0;
-      do_set_start = true;
-   }
+   if      (selection < rgui->term_layout.height / 2) { }
    else if (selection >= (rgui->term_layout.height / 2)
          && selection < (end - rgui->term_layout.height / 2))
-   {
       start        = selection - rgui->term_layout.height / 2;
-      do_set_start = true;
-   }
    else if (selection >= (end - rgui->term_layout.height / 2))
-   {
       start        = end - rgui->term_layout.height;
-      do_set_start = true;
-   }
+   else
+      return;
 
-   if (do_set_start)
-   {
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
-      rgui->scroll_y = start * rgui->font_height_stride;
-   }
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
+   rgui->scroll_y = start * rgui->font_height_stride;
 }
 
 static void rgui_navigation_set_last(void *data)
@@ -7029,7 +7008,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
           * events should be monitored again */
          rgui->ignore_resize_events = false;
 
-         rgui_update_menu_viewport(rgui, p_disp);
+         rgui_update_menu_viewport(rgui, p_disp, settings->uints.menu_rgui_aspect_ratio_lock);
          rgui_set_video_config(rgui, settings, &rgui->menu_video_settings, true);
       }
 
@@ -7088,7 +7067,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
       if ((aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE) &&
           !rgui->ignore_resize_events)
       {
-         rgui_update_menu_viewport(rgui, p_disp);
+         rgui_update_menu_viewport(rgui, p_disp, settings->uints.menu_rgui_aspect_ratio_lock);
          rgui_set_video_config(rgui, settings, &rgui->menu_video_settings, true);
       }
 
@@ -7149,7 +7128,7 @@ static void rgui_toggle(void *userdata, bool menu_on)
          rgui_get_video_config(&rgui->content_video_settings, settings->uints.video_aspect_ratio_idx);
          
          /* Update menu viewport */
-         rgui_update_menu_viewport(rgui, p_disp);
+         rgui_update_menu_viewport(rgui, p_disp, settings->uints.menu_rgui_aspect_ratio_lock);
          
          /* Apply menu video settings */
          rgui_set_video_config(rgui, settings, &rgui->menu_video_settings, false);
