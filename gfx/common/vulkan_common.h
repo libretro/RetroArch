@@ -798,24 +798,6 @@ void vulkan_set_uniform_buffer(
       VkDeviceSize offset,
       VkDeviceSize range);
 
-void vulkan_framebuffer_generate_mips(
-      VkFramebuffer framebuffer,
-      VkImage image,
-      struct Size2D size,
-      VkCommandBuffer cmd,
-      unsigned levels
-      );
-
-void vulkan_framebuffer_copy(VkImage image, 
-      struct Size2D size,
-      VkCommandBuffer cmd,
-      VkImage src_image, VkImageLayout src_layout);
-
-void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd);
-
-void vulkan_initialize_render_pass(VkDevice device,
-      VkFormat format, VkRenderPass *render_pass);
-
 RETRO_END_DECLS
 
 #endif
