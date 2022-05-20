@@ -683,9 +683,7 @@ static bool video_thread_init(thread_video_t *thr,
       return false;
 
    {
-      size_t max_size;
-
-      max_size               = info.input_scale * RARCH_SCALE_BASE;
+      size_t max_size        = info.input_scale * RARCH_SCALE_BASE;
       max_size              *= max_size;
       max_size              *= info.rgb32 ?
          sizeof(uint32_t) : sizeof(uint16_t);
@@ -725,7 +723,7 @@ static bool video_thread_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
    thread_packet_t pkt;
-   thread_video_t *thr = (thread_video_t*)data;
+   thread_video_t *thr      = (thread_video_t*)data;
 
    if (!thr)
       return false;
