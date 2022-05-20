@@ -56,6 +56,74 @@
 
 #include "../video_coord_array.h"
 
+static struct vk_descriptor_manager vulkan_create_descriptor_manager(
+      VkDevice device,
+      const VkDescriptorPoolSize *sizes,
+      unsigned num_sizes,
+      VkDescriptorSetLayout set_layout)
+{
+   unsigned i;
+   struct vk_descriptor_manager manager;
+
+   retro_assert(num_sizes <= VULKAN_MAX_DESCRIPTOR_POOL_SIZES);
+
+   manager.current    = NULL;
+   manager.count      = 0;
+
+   for (i = 0; i < VULKAN_MAX_DESCRIPTOR_POOL_SIZES; i++)
+   {
+      manager.sizes[i].type            = VK_DESCRIPTOR_TYPE_SAMPLER;
+      manager.sizes[i].descriptorCount = 0;
+   }
+   memcpy(manager.sizes, sizes, num_sizes * sizeof(*sizes));
+   manager.set_layout = set_layout;
+   manager.num_sizes  = num_sizes;
+
+   manager.head       = vulkan_alloc_descriptor_pool(device, &manager);
+   retro_assert(manager.head);
+   return manager;
+}
+
+static void vulkan_destroy_descriptor_manager(
+      VkDevice device,
+      struct vk_descriptor_manager *manager)
+{
+   struct vk_descriptor_pool *node = manager->head;
+
+   while (node)
+   {
+      struct vk_descriptor_pool *next = node->next;
+
+      vkFreeDescriptorSets(device, node->pool,
+            VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS, node->sets);
+      vkDestroyDescriptorPool(device, node->pool, NULL);
+
+      free(node);
+      node = next;
+   }
+
+   memset(manager, 0, sizeof(*manager));
+}
+
+static struct vk_buffer_chain vulkan_buffer_chain_init(
+      VkDeviceSize block_size,
+      VkDeviceSize alignment,
+      VkBufferUsageFlags usage)
+{
+   struct vk_buffer_chain chain;
+
+   chain.block_size = block_size;
+   chain.alignment  = alignment;
+   chain.offset     = 0;
+   chain.usage      = usage;
+   chain.head       = NULL;
+   chain.current    = NULL;
+
+   return chain;
+}
+
+
+
 static void vulkan_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate);
 static bool vulkan_is_mapped_swapchain_texture_ptr(const vk_t* vk,
@@ -625,6 +693,23 @@ static void vulkan_init_samplers(vk_t *vk)
    vkCreateSampler(vk->context->device,
          &info, NULL, &vk->samplers.mipmap_linear);
 }
+
+static void vulkan_buffer_chain_free(
+      VkDevice device,
+      struct vk_buffer_chain *chain)
+{
+   struct vk_buffer_node *node = chain->head;
+   while (node)
+   {
+      struct vk_buffer_node *next = node->next;
+      vulkan_destroy_buffer(device, &node->buffer);
+
+      free(node);
+      node = next;
+   }
+   memset(chain, 0, sizeof(*chain));
+}
+
 
 static void vulkan_deinit_buffers(vk_t *vk)
 {

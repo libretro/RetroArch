@@ -927,27 +927,6 @@ void vulkan_transition_texture(vk_t *vk, VkCommandBuffer cmd, struct vk_texture 
    texture->layout = VK_IMAGE_LAYOUT_GENERAL;
 }
 
-static void vulkan_check_dynamic_state(vk_t *vk)
-{
-   VkRect2D sci;
-
-   if (vk->tracker.use_scissor)
-      sci = vk->tracker.scissor;
-   else
-   {
-      /* No scissor -> viewport */
-      sci.offset.x      = vk->vp.x;
-      sci.offset.y      = vk->vp.y;
-      sci.extent.width  = vk->vp.width;
-      sci.extent.height = vk->vp.height;
-   }
-
-   vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
-   vkCmdSetScissor (vk->cmd, 0, 1, &sci);
-
-   vk->tracker.dirty &= ~VULKAN_DIRTY_DYNAMIC_BIT;
-}
-
 void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 {
    if (call->texture && call->texture->image)
@@ -955,16 +934,49 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 
    if (call->pipeline != vk->tracker.pipeline)
    {
+      VkRect2D sci;
       vkCmdBindPipeline(vk->cmd,
             VK_PIPELINE_BIND_POINT_GRAPHICS, call->pipeline);
       vk->tracker.pipeline = call->pipeline;
 
       /* Changing pipeline invalidates dynamic state. */
       vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
-      vulkan_check_dynamic_state(vk);
+
+      if (vk->tracker.use_scissor)
+         sci               = vk->tracker.scissor;
+      else
+      {
+         /* No scissor -> viewport */
+         sci.offset.x      = vk->vp.x;
+         sci.offset.y      = vk->vp.y;
+         sci.extent.width  = vk->vp.width;
+         sci.extent.height = vk->vp.height;
+      }
+
+      vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
+      vkCmdSetScissor (vk->cmd, 0, 1, &sci);
+
+      vk->tracker.dirty &= ~VULKAN_DIRTY_DYNAMIC_BIT;
    }
    else if (vk->tracker.dirty & VULKAN_DIRTY_DYNAMIC_BIT)
-      vulkan_check_dynamic_state(vk);
+   {
+      VkRect2D sci;
+      if (vk->tracker.use_scissor)
+         sci               = vk->tracker.scissor;
+      else
+      {
+         /* No scissor -> viewport */
+         sci.offset.x      = vk->vp.x;
+         sci.offset.y      = vk->vp.y;
+         sci.extent.width  = vk->vp.width;
+         sci.extent.height = vk->vp.height;
+      }
+
+      vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
+      vkCmdSetScissor (vk->cmd, 0, 1, &sci);
+
+      vk->tracker.dirty &= ~VULKAN_DIRTY_DYNAMIC_BIT;
+   }
 
    /* Upload descriptors */
    {
@@ -1021,16 +1033,48 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
 
    if (quad->pipeline != vk->tracker.pipeline)
    {
+      VkRect2D sci;
       vkCmdBindPipeline(vk->cmd,
             VK_PIPELINE_BIND_POINT_GRAPHICS, quad->pipeline);
 
       vk->tracker.pipeline = quad->pipeline;
       /* Changing pipeline invalidates dynamic state. */
       vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
-      vulkan_check_dynamic_state(vk);
+      if (vk->tracker.use_scissor)
+         sci               = vk->tracker.scissor;
+      else
+      {
+         /* No scissor -> viewport */
+         sci.offset.x      = vk->vp.x;
+         sci.offset.y      = vk->vp.y;
+         sci.extent.width  = vk->vp.width;
+         sci.extent.height = vk->vp.height;
+      }
+
+      vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
+      vkCmdSetScissor (vk->cmd, 0, 1, &sci);
+
+      vk->tracker.dirty &= ~VULKAN_DIRTY_DYNAMIC_BIT;
    }
    else if (vk->tracker.dirty & VULKAN_DIRTY_DYNAMIC_BIT)
-      vulkan_check_dynamic_state(vk);
+   {
+      VkRect2D sci;
+      if (vk->tracker.use_scissor)
+         sci               = vk->tracker.scissor;
+      else
+      {
+         /* No scissor -> viewport */
+         sci.offset.x      = vk->vp.x;
+         sci.offset.y      = vk->vp.y;
+         sci.extent.width  = vk->vp.width;
+         sci.extent.height = vk->vp.height;
+      }
+
+      vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
+      vkCmdSetScissor (vk->cmd, 0, 1, &sci);
+
+      vk->tracker.dirty &= ~VULKAN_DIRTY_DYNAMIC_BIT;
+   }
 
    /* Upload descriptors */
    {
@@ -1152,7 +1196,7 @@ void vulkan_destroy_buffer(
    memset(buffer, 0, sizeof(*buffer));
 }
 
-static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
+struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
       VkDevice device,
       const struct vk_descriptor_manager *manager)
 {
@@ -1212,55 +1256,6 @@ VkDescriptorSet vulkan_descriptor_manager_alloc(
    return manager->current->sets[manager->count++];
 }
 
-struct vk_descriptor_manager vulkan_create_descriptor_manager(
-      VkDevice device,
-      const VkDescriptorPoolSize *sizes,
-      unsigned num_sizes,
-      VkDescriptorSetLayout set_layout)
-{
-   unsigned i;
-   struct vk_descriptor_manager manager;
-
-   retro_assert(num_sizes <= VULKAN_MAX_DESCRIPTOR_POOL_SIZES);
-
-   manager.current    = NULL;
-   manager.count      = 0;
-
-   for (i = 0; i < VULKAN_MAX_DESCRIPTOR_POOL_SIZES; i++)
-   {
-      manager.sizes[i].type            = VK_DESCRIPTOR_TYPE_SAMPLER;
-      manager.sizes[i].descriptorCount = 0;
-   }
-   memcpy(manager.sizes, sizes, num_sizes * sizeof(*sizes));
-   manager.set_layout = set_layout;
-   manager.num_sizes  = num_sizes;
-
-   manager.head       = vulkan_alloc_descriptor_pool(device, &manager);
-   retro_assert(manager.head);
-   return manager;
-}
-
-void vulkan_destroy_descriptor_manager(
-      VkDevice device,
-      struct vk_descriptor_manager *manager)
-{
-   struct vk_descriptor_pool *node = manager->head;
-
-   while (node)
-   {
-      struct vk_descriptor_pool *next = node->next;
-
-      vkFreeDescriptorSets(device, node->pool,
-            VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS, node->sets);
-      vkDestroyDescriptorPool(device, node->pool, NULL);
-
-      free(node);
-      node = next;
-   }
-
-   memset(manager, 0, sizeof(*manager));
-}
-
 static bool vulkan_buffer_chain_suballoc(struct vk_buffer_chain *chain,
       size_t size, struct vk_buffer_range *range)
 {
@@ -1292,23 +1287,6 @@ static struct vk_buffer_node *vulkan_buffer_chain_alloc_node(
          context, size, usage);
    node->next   = NULL;
    return node;
-}
-
-struct vk_buffer_chain vulkan_buffer_chain_init(
-      VkDeviceSize block_size,
-      VkDeviceSize alignment,
-      VkBufferUsageFlags usage)
-{
-   struct vk_buffer_chain chain;
-
-   chain.block_size = block_size;
-   chain.alignment  = alignment;
-   chain.offset     = 0;
-   chain.usage      = usage;
-   chain.head       = NULL;
-   chain.current    = NULL;
-
-   return chain;
 }
 
 bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
@@ -1353,22 +1331,6 @@ bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
    /* This cannot possibly fail. */
    retro_assert(vulkan_buffer_chain_suballoc(chain, size, range));
    return true;
-}
-
-void vulkan_buffer_chain_free(
-      VkDevice device,
-      struct vk_buffer_chain *chain)
-{
-   struct vk_buffer_node *node = chain->head;
-   while (node)
-   {
-      struct vk_buffer_node *next = node->next;
-      vulkan_destroy_buffer(device, &node->buffer);
-
-      free(node);
-      node = next;
-   }
-   memset(chain, 0, sizeof(*chain));
 }
 
 static bool vulkan_load_instance_symbols(gfx_ctx_vulkan_data_t *vk)
@@ -2102,16 +2064,14 @@ static bool vulkan_create_display_surface(gfx_ctx_vulkan_data_t *vk,
 
    if (vkGetPhysicalDeviceDisplayPropertiesKHR(vk->context.gpu, &display_count, NULL) != VK_SUCCESS)
       GOTO_FAIL();
-   displays = (VkDisplayPropertiesKHR*)calloc(display_count, sizeof(*displays));
-   if (!displays)
+   if (!(displays = (VkDisplayPropertiesKHR*)calloc(display_count, sizeof(*displays))))
       GOTO_FAIL();
    if (vkGetPhysicalDeviceDisplayPropertiesKHR(vk->context.gpu, &display_count, displays) != VK_SUCCESS)
       GOTO_FAIL();
 
    if (vkGetPhysicalDeviceDisplayPlanePropertiesKHR(vk->context.gpu, &plane_count, NULL) != VK_SUCCESS)
       GOTO_FAIL();
-   planes = (VkDisplayPlanePropertiesKHR*)calloc(plane_count, sizeof(*planes));
-   if (!planes)
+   if (!(planes = (VkDisplayPlanePropertiesKHR*)calloc(plane_count, sizeof(*planes))))
       GOTO_FAIL();
    if (vkGetPhysicalDeviceDisplayPlanePropertiesKHR(vk->context.gpu, &plane_count, planes) != VK_SUCCESS)
       GOTO_FAIL();
@@ -2137,8 +2097,7 @@ retry:
             display, &mode_count, NULL) != VK_SUCCESS)
          GOTO_FAIL();
 
-      modes = (VkDisplayModePropertiesKHR*)calloc(mode_count, sizeof(*modes));
-      if (!modes)
+      if (!(modes = (VkDisplayModePropertiesKHR*)calloc(mode_count, sizeof(*modes))))
          GOTO_FAIL();
 
       if (vkGetDisplayModePropertiesKHR(vk->context.gpu,
@@ -2153,7 +2112,7 @@ retry:
       }
 
       free(modes);
-      modes = NULL;
+      modes      = NULL;
       mode_count = 0;
 
       if (best_mode == VK_NULL_HANDLE)
@@ -3128,7 +3087,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
     * We hard sync against the swapchain, so if we have 2 images,
     * we would be unable to overlap CPU and GPU, which can get very slow
     * for GPU-rendered cores. */
-   desired_swapchain_images = settings->uints.video_max_swapchain_images;
+   desired_swapchain_images    = settings->uints.video_max_swapchain_images;
 
    /* Clamp images requested to what is supported by the implementation. */
    if (desired_swapchain_images < surface_properties.minImageCount)
@@ -3145,13 +3104,13 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       pre_transform            = surface_properties.currentTransform;
 
    if (surface_properties.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR)
-      composite = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+      composite                = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
    else if (surface_properties.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR)
-      composite = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
+      composite                = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
    else if (surface_properties.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR)
-      composite = VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR;
+      composite                = VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR;
    else if (surface_properties.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR)
-      composite = VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR;
+      composite                = VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR;
 
    old_swapchain               = vk->swapchain;
 
@@ -3197,8 +3156,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
 #endif
 
-   vk->context.swapchain_width  = swapchain_size.width;
-   vk->context.swapchain_height = swapchain_size.height;
+   vk->context.swapchain_width        = swapchain_size.width;
+   vk->context.swapchain_height       = swapchain_size.height;
 #ifdef VULKAN_HDR_SWAPCHAIN
    vk->context.swapchain_colour_space = format.colorSpace;
 #endif /* VULKAN_HDR_SWAPCHAIN */

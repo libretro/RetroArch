@@ -620,19 +620,13 @@ typedef struct vk
    pv[5].color.a  = a; \
 }
 
-
-struct vk_buffer_chain vulkan_buffer_chain_init(
-      VkDeviceSize block_size,
-      VkDeviceSize alignment,
-      VkBufferUsageFlags usage);
-
 bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
       struct vk_buffer_chain *chain, size_t size,
       struct vk_buffer_range *range);
 
-void vulkan_buffer_chain_free(
+struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
       VkDevice device,
-      struct vk_buffer_chain *chain);
+      const struct vk_descriptor_manager *manager);
 
 uint32_t vulkan_find_memory_type(
       const VkPhysicalDeviceMemoryProperties *mem_props,
@@ -758,15 +752,6 @@ void vulkan_destroy_buffer(
       struct vk_buffer *buffer);
 
 VkDescriptorSet vulkan_descriptor_manager_alloc(
-      VkDevice device,
-      struct vk_descriptor_manager *manager);
-
-struct vk_descriptor_manager vulkan_create_descriptor_manager(
-      VkDevice device,
-      const VkDescriptorPoolSize *sizes, unsigned num_sizes,
-      VkDescriptorSetLayout set_layout);
-
-void vulkan_destroy_descriptor_manager(
       VkDevice device,
       struct vk_descriptor_manager *manager);
 
