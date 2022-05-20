@@ -148,8 +148,8 @@ bool d3d12_init_base(d3d12_video_t* d3d12)
    if (SUCCEEDED(D3D12GetDebugInterface_(&d3d12->debugController)))
       d3d12->debugController->lpVtbl->EnableDebugLayer(&d3d12->debugController);
 #else
-   D3D12GetDebugInterface_(&d3d12->debugController);
-   D3D12EnableDebugLayer(d3d12->debugController);
+   if (SUCCEEDED(D3D12GetDebugInterface_(&d3d12->debugController)))
+      d3d12->debugController->lpVtbl->EnableDebugLayer(d3d12->debugController);
 #endif
 #endif
 
