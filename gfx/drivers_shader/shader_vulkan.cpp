@@ -238,15 +238,12 @@ class Pass
       VkRenderPass swapchain_render_pass;
 
       slang_reflection reflection;
-      void build_semantic_vec4(uint8_t *data, slang_semantic semantic,
-            unsigned width, unsigned height);
-      void build_semantic_uint(uint8_t *data, slang_semantic semantic, uint32_t value);
-      void build_semantic_int(uint8_t *data, slang_semantic semantic, int32_t value);
-      void build_semantic_parameter(uint8_t *data, unsigned index, float value);
       void build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
             slang_texture_semantic semantic, const Texture &texture);
-      void build_semantic_texture_array(VkDescriptorSet set, uint8_t *buffer,
-            slang_texture_semantic semantic, unsigned index, const Texture &texture);
+      void build_semantic_texture_array(
+            VkDescriptorSet set, uint8_t *buffer,
+            slang_texture_semantic semantic,
+            unsigned index, const Texture &texture);
 
       uint64_t frame_count        = 0;
       int32_t frame_direction     = 1;
@@ -365,39 +362,64 @@ static void vulkan_framebuffer_generate_mips(
          2,
          barriers);
 
-   for (i = 1; i < levels; i++)
+   /* First pass */
+   {
+      VkImageBlit blit_region                   = {{0}};
+      unsigned src_width                        = MAX(size.width,       1u);
+      unsigned src_height                       = MAX(size.height,      1u);
+      unsigned target_width                     = MAX(size.width  >> 1, 1u);
+      unsigned target_height                    = MAX(size.height >> 1, 1u);
+
+      blit_region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+      blit_region.srcSubresource.mipLevel       = 0;
+      blit_region.srcSubresource.baseArrayLayer = 0;
+      blit_region.srcSubresource.layerCount     = 1;
+      blit_region.dstSubresource                = blit_region.srcSubresource;
+      blit_region.dstSubresource.mipLevel       = 1;
+      blit_region.srcOffsets[1].x               = src_width;
+      blit_region.srcOffsets[1].y               = src_height;
+      blit_region.srcOffsets[1].z               = 1;
+      blit_region.dstOffsets[1].x               = target_width;
+      blit_region.dstOffsets[1].y               = target_height;
+      blit_region.dstOffsets[1].z               = 1;
+
+      vkCmdBlitImage(cmd,
+            image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            1, &blit_region, VK_FILTER_LINEAR);
+   }
+
+   /* For subsequent passes, we have to transition
+    * from DST_OPTIMAL to SRC_OPTIMAL,
+    * but only do so one mip-level at a time. */
+
+   for (i = 2; i < levels; i++)
    {
       unsigned src_width, src_height, target_width, target_height;
-      VkImageBlit blit_region = {{0}};
+      VkImageBlit blit_region                   = {{0}};
 
-      /* For subsequent passes, we have to transition
-       * from DST_OPTIMAL to SRC_OPTIMAL,
-       * but only do so one mip-level at a time. */
-      if (i > 1)
-      {
-         barriers[0].srcAccessMask                 = VK_ACCESS_TRANSFER_WRITE_BIT;
-         barriers[0].dstAccessMask                 = VK_ACCESS_TRANSFER_READ_BIT;
-         barriers[0].subresourceRange.baseMipLevel = i - 1;
-         barriers[0].subresourceRange.levelCount   = 1;
-         barriers[0].oldLayout                     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-         barriers[0].newLayout                     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+      barriers[0].srcAccessMask                 = VK_ACCESS_TRANSFER_WRITE_BIT;
+      barriers[0].dstAccessMask                 = VK_ACCESS_TRANSFER_READ_BIT;
+      barriers[0].subresourceRange.baseMipLevel = i - 1;
+      barriers[0].subresourceRange.levelCount   = 1;
+      barriers[0].oldLayout                     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+      barriers[0].newLayout                     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
-         vkCmdPipelineBarrier(cmd,
-               VK_PIPELINE_STAGE_TRANSFER_BIT,
-               VK_PIPELINE_STAGE_TRANSFER_BIT,
-               false,
-               0,
-               NULL,
-               0,
-               NULL,
-               1,
-               barriers);
-      }
+      vkCmdPipelineBarrier(cmd,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            false,
+            0,
+            NULL,
+            0,
+            NULL,
+            1,
+            barriers);
 
-      src_width                                 = MAX(size.width >> (i - 1), 1u);
+      src_width                                 = MAX(size.width  >> (i - 1), 1u);
       src_height                                = MAX(size.height >> (i - 1), 1u);
-      target_width                              = MAX(size.width >> i, 1u);
-      target_height                             = MAX(size.height >> i, 1u);
+      target_width                              = MAX(size.width  >> i,       1u);
+      target_height                             = MAX(size.height >> i,       1u);
 
       blit_region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
       blit_region.srcSubresource.mipLevel       = i - 1;
@@ -1733,59 +1755,6 @@ bool Pass::build()
    return true;
 }
 
-void Pass::build_semantic_vec4(uint8_t *u, slang_semantic semantic,
-      unsigned width, unsigned height)
-{
-   auto &refl = reflection.semantics[semantic];
-   if (u && refl.uniform)
-   {
-      float *_data = reinterpret_cast<float *>(u + refl.ubo_offset);
-      _data[0]     = (float)(width);
-      _data[1]     = (float)(height);
-      _data[2]     = 1.0f / (float)(width);
-      _data[3]     = 1.0f / (float)(height);
-   }
-   if (refl.push_constant)
-   {
-      float *_data = reinterpret_cast<float *>
-            (push.buffer.data() + (refl.push_constant_offset >> 2));
-      _data[0]     = (float)(width);
-      _data[1]     = (float)(height);
-      _data[2]     = 1.0f / (float)(width);
-      _data[3]     = 1.0f / (float)(height);
-   }
-}
-
-void Pass::build_semantic_parameter(uint8_t *u, unsigned index, float value)
-{
-   auto &refl = reflection.semantic_float_parameters[index];
-   /* We will have filtered out stale parameters. */
-   if (u && refl.uniform)
-      *reinterpret_cast<float*>(u + refl.ubo_offset) = value;
-   if (refl.push_constant)
-      *reinterpret_cast<float*>(push.buffer.data() + (refl.push_constant_offset >> 2)) = value;
-}
-
-void Pass::build_semantic_uint(uint8_t *u, slang_semantic semantic,
-      uint32_t value)
-{
-   auto &refl = reflection.semantics[semantic];
-   if (u && refl.uniform)
-      *reinterpret_cast<uint32_t*>(u + reflection.semantics[semantic].ubo_offset) = value;
-   if (refl.push_constant)
-      *reinterpret_cast<uint32_t*>(push.buffer.data() + (refl.push_constant_offset >> 2)) = value;
-}
-
-void Pass::build_semantic_int(uint8_t *u, slang_semantic semantic,
-                              int32_t value)
-{
-   auto &refl = reflection.semantics[semantic];
-   if (u && refl.uniform)
-      *reinterpret_cast<int32_t*>(u + reflection.semantics[semantic].ubo_offset) = value;
-   if (refl.push_constant)
-      *reinterpret_cast<int32_t*>(push.buffer.data() + (refl.push_constant_offset >> 2)) = value;
-}
-
 void Pass::build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
       slang_texture_semantic semantic, const Texture &texture)
 {
@@ -1813,9 +1782,16 @@ void Pass::build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
          _data[3]     = 1.0f / (float)(height);
       }
    }
+
    if (reflection.semantic_textures[semantic][0].texture)
    {
-      VULKAN_PASS_SET_TEXTURE(device, set, common->samplers[texture.filter][texture.mip_filter][texture.address], reflection.semantic_textures[semantic][0].binding, texture.texture.view, texture.texture.layout);
+      VULKAN_PASS_SET_TEXTURE(
+            device,
+            set,
+            common->samplers[texture.filter][texture.mip_filter][texture.address],
+            reflection.semantic_textures[semantic][0].binding,
+            texture.texture.view,
+            texture.texture.layout);
    }
 }
 
@@ -1849,7 +1825,13 @@ void Pass::build_semantic_texture_array(VkDescriptorSet set, uint8_t *buffer,
    if (index < reflection.semantic_textures[semantic].size() &&
          reflection.semantic_textures[semantic][index].texture)
    {
-      VULKAN_PASS_SET_TEXTURE(device, set, common->samplers[texture.filter][texture.mip_filter][texture.address],  reflection.semantic_textures[semantic][index].binding, texture.texture.view, texture.texture.layout);
+      VULKAN_PASS_SET_TEXTURE(
+            device,
+            set,
+            common->samplers[texture.filter][texture.mip_filter][texture.address],
+            reflection.semantic_textures[semantic][index].binding,
+            texture.texture.view,
+            texture.texture.layout);
    }
 }
 
@@ -1939,20 +1921,72 @@ void Pass::build_commands(
    }
 
    /* Output information */
-   build_semantic_vec4(u, SLANG_SEMANTIC_OUTPUT,
-                       current_framebuffer_size.width,
-                       current_framebuffer_size.height);
-   build_semantic_vec4(u, SLANG_SEMANTIC_FINAL_VIEWPORT,
-                       unsigned(current_viewport.width),
-                       unsigned(current_viewport.height));
+   {
+      auto &refl      = reflection.semantics[SLANG_SEMANTIC_OUTPUT];
+      unsigned width  = current_framebuffer_size.width;
+      unsigned height = current_framebuffer_size.height;
 
-   build_semantic_uint(u, SLANG_SEMANTIC_FRAME_COUNT,
-                       frame_count_period 
-                       ? uint32_t(frame_count % frame_count_period) 
-                       : uint32_t(frame_count));
+      if (u && refl.uniform)
+      {
+         float *_data = reinterpret_cast<float *>(u + refl.ubo_offset);
+         _data[0]     = (float)(width);
+         _data[1]     = (float)(height);
+         _data[2]     = 1.0f / (float)(width);
+         _data[3]     = 1.0f / (float)(height);
+      }
+      if (refl.push_constant)
+      {
+         float *_data = reinterpret_cast<float *>
+            (push.buffer.data() + (refl.push_constant_offset >> 2));
+         _data[0]     = (float)(width);
+         _data[1]     = (float)(height);
+         _data[2]     = 1.0f / (float)(width);
+         _data[3]     = 1.0f / (float)(height);
+      }
+   }
+   {
+      auto &refl      = reflection.semantics[
+         SLANG_SEMANTIC_FINAL_VIEWPORT];
+      unsigned width  = unsigned(current_viewport.width);
+      unsigned height = unsigned(current_viewport.height);
+      if (u && refl.uniform)
+      {
+         float *_data = reinterpret_cast<float *>(u + refl.ubo_offset);
+         _data[0]     = (float)(width);
+         _data[1]     = (float)(height);
+         _data[2]     = 1.0f / (float)(width);
+         _data[3]     = 1.0f / (float)(height);
+      }
+      if (refl.push_constant)
+      {
+         float *_data = reinterpret_cast<float *>
+            (push.buffer.data() + (refl.push_constant_offset >> 2));
+         _data[0]     = (float)(width);
+         _data[1]     = (float)(height);
+         _data[2]     = 1.0f / (float)(width);
+         _data[3]     = 1.0f / (float)(height);
+      }
+   }
 
-   build_semantic_int(u, SLANG_SEMANTIC_FRAME_DIRECTION,
-                      frame_direction);
+   {
+      uint32_t value = frame_count_period 
+         ? uint32_t(frame_count % frame_count_period) 
+         : uint32_t(frame_count);
+      auto &refl     = reflection.semantics[SLANG_SEMANTIC_FRAME_COUNT];
+      if (u && refl.uniform)
+         *reinterpret_cast<uint32_t*>(u + reflection.semantics[SLANG_SEMANTIC_FRAME_COUNT].ubo_offset) = value;
+      if (refl.push_constant)
+         *reinterpret_cast<uint32_t*>(push.buffer.data() + (refl.push_constant_offset >> 2)) = value;
+   }
+   {
+      auto &refl = reflection.semantics[SLANG_SEMANTIC_FRAME_DIRECTION];
+      if (u && refl.uniform)
+         *reinterpret_cast<int32_t*>(u + reflection.semantics[SLANG_SEMANTIC_FRAME_DIRECTION].ubo_offset)
+            = frame_direction;
+      if (refl.push_constant)
+         *reinterpret_cast<int32_t*>(push.buffer.data() +
+               (refl.push_constant_offset >> 2)) = frame_direction;
+   }
 
    /* Standard inputs */
    build_semantic_texture(set, u, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
@@ -1964,10 +1998,17 @@ void Pass::build_commands(
 
    /* Parameters. */
    for (i = 0; i < filtered_parameters.size(); i++)
-      build_semantic_parameter(u,
-            filtered_parameters[i].semantic_index,
-            common->shader_preset->parameters[
-            filtered_parameters[i].index].current);
+   {
+      unsigned index = filtered_parameters[i].semantic_index;
+      float    value = common->shader_preset->parameters[
+         filtered_parameters[i].index].current;
+      auto &refl     = reflection.semantic_float_parameters[index];
+      /* We will have filtered out stale parameters. */
+      if (u && refl.uniform)
+         *reinterpret_cast<float*>(u + refl.ubo_offset) = value;
+      if (refl.push_constant)
+         *reinterpret_cast<float*>(push.buffer.data() + (refl.push_constant_offset >> 2)) = value;
+   }
 
    /* Previous inputs. */
    for (i = 0; i < common->original_history.size(); i++)
