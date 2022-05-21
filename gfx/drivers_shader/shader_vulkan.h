@@ -98,10 +98,6 @@ void vulkan_filter_chain_set_shader(vulkan_filter_chain_t *chain,
       const uint32_t *spirv,
       size_t spirv_words);
 
-void vulkan_filter_chain_set_pass_info(vulkan_filter_chain_t *chain,
-      unsigned pass,
-      const struct vulkan_filter_chain_pass_info *info);
-
 VkFormat vulkan_filter_chain_get_pass_rt_format(
       vulkan_filter_chain_t *chain,
       unsigned pass);      
@@ -126,10 +122,6 @@ void vulkan_filter_chain_set_frame_count_period(vulkan_filter_chain_t *chain,
 
 void vulkan_filter_chain_set_frame_direction(vulkan_filter_chain_t *chain,
       int32_t direction);
-
-void vulkan_filter_chain_set_pass_name(vulkan_filter_chain_t *chain,
-      unsigned pass,
-      const char *name);
 
 void vulkan_filter_chain_build_offscreen_passes(vulkan_filter_chain_t *chain,
       VkCommandBuffer cmd, const VkViewport *vp);

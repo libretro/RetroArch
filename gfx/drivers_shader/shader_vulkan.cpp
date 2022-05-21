@@ -185,8 +185,6 @@ class Pass
       Pass(Pass&&) = delete;
       void operator=(Pass&&) = delete;
 
-      bool build();
-
       VkDevice device;
       const VkPhysicalDeviceMemoryProperties &memory_properties;
       VkPipelineCache cache;
@@ -267,7 +265,301 @@ struct vulkan_filter_chain
       bool require_clear = false;
 };
 
-static void pass_build_semantic_texture(Pass *pass,
+static bool vulkan_pass_build(Pass *pass)
+{
+   unsigned i;
+   unsigned j = 0;
+   std::unordered_map<std::string, slang_semantic_map> semantic_map;
+
+   pass->framebuffer.reset();
+   pass->fb_feedback.reset();
+
+   if (!pass->final_pass)
+      pass->framebuffer = std::unique_ptr<Framebuffer>(
+            new Framebuffer(pass->device,
+               pass->memory_properties,
+               pass->current_framebuffer_size,
+               pass->pass_info.rt_format,
+               pass->pass_info.max_levels));
+
+   for (i = 0; i < pass->parameters.size(); i++)
+   {
+      if (!slang_set_unique_map(
+               semantic_map, pass->parameters[i].id,
+               slang_semantic_map{ SLANG_SEMANTIC_FLOAT_PARAMETER, j }))
+         return false;
+      j++;
+   }
+
+   pass->reflection                              = slang_reflection{};
+   pass->reflection.pass_number                  = pass->pass_number;
+   pass->reflection.texture_semantic_map         = 
+      &pass->common->texture_semantic_map;
+   pass->reflection.texture_semantic_uniform_map = 
+      &pass->common->texture_semantic_uniform_map;
+   pass->reflection.semantic_map                 = &semantic_map;
+
+   if (!slang_reflect_spirv(
+            pass->vertex_shader,
+            pass->fragment_shader, &pass->reflection))
+      return false;
+
+   /* Filter out parameters which we will never use anyways. */
+   pass->filtered_parameters.clear();
+
+   for (i = 0; 
+         i < pass->reflection.semantic_float_parameters.size(); i++)
+   {
+      if (pass->reflection.semantic_float_parameters[i].uniform ||
+          pass->reflection.semantic_float_parameters[i].push_constant)
+         pass->filtered_parameters.push_back(pass->parameters[i]);
+   }
+
+   VkPipelineInputAssemblyStateCreateInfo input_assembly = {
+      VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
+   VkVertexInputAttributeDescription attributes[2]       = {{0}};
+   VkVertexInputBindingDescription binding               = {0};
+   VkPipelineVertexInputStateCreateInfo vertex_input     = {
+      VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
+   VkPipelineRasterizationStateCreateInfo raster         = {
+      VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
+   VkPipelineColorBlendAttachmentState blend_attachment  = {0};
+   VkPipelineColorBlendStateCreateInfo blend             = {
+      VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
+   VkPipelineViewportStateCreateInfo viewport            = {
+      VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
+   VkPipelineDepthStencilStateCreateInfo depth_stencil   = {
+      VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
+   VkPipelineMultisampleStateCreateInfo multisample      = {
+      VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
+   VkPipelineDynamicStateCreateInfo dynamic              = {
+      VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
+   static const VkDynamicState dynamics[]                = {
+      VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+   VkPipelineShaderStageCreateInfo shader_stages[2]      = {
+      { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO },
+      { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO },
+   };
+   VkShaderModuleCreateInfo module_info                  = {
+      VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
+   VkGraphicsPipelineCreateInfo pipe                     = {
+      VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
+   std::vector<VkDescriptorSetLayoutBinding> bindings;
+   std::vector<VkDescriptorPoolSize> desc_counts;
+   VkPushConstantRange push_range                  = {};
+   VkDescriptorSetLayoutCreateInfo set_layout_info = {
+      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
+   VkPipelineLayoutCreateInfo layout_info          = {
+      VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
+   VkDescriptorPoolCreateInfo pool_info            = {
+      VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
+   VkDescriptorSetAllocateInfo alloc_info          = {
+      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
+
+   /* Main UBO. */
+   VkShaderStageFlags ubo_mask                     = 0;
+
+   if (pass->reflection.ubo_stage_mask & SLANG_STAGE_VERTEX_MASK)
+      ubo_mask |= VK_SHADER_STAGE_VERTEX_BIT;
+   if (pass->reflection.ubo_stage_mask & SLANG_STAGE_FRAGMENT_MASK)
+      ubo_mask |= VK_SHADER_STAGE_FRAGMENT_BIT;
+
+   if (ubo_mask != 0)
+   {
+      bindings.push_back({ pass->reflection.ubo_binding,
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+            ubo_mask, nullptr });
+      desc_counts.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            pass->num_sync_indices });
+   }
+
+   /* Semantic textures. */
+   for (auto &semantic : pass->reflection.semantic_textures)
+   {
+      for (auto &texture : semantic)
+      {
+         VkShaderStageFlags stages = 0;
+
+         if (!texture.texture)
+            continue;
+
+         if (texture.stage_mask & SLANG_STAGE_VERTEX_MASK)
+            stages |= VK_SHADER_STAGE_VERTEX_BIT;
+         if (texture.stage_mask & SLANG_STAGE_FRAGMENT_MASK)
+            stages |= VK_SHADER_STAGE_FRAGMENT_BIT;
+
+         bindings.push_back({ texture.binding,
+               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
+               stages, nullptr });
+         desc_counts.push_back({ 
+               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+               pass->num_sync_indices });
+      }
+   }
+
+   set_layout_info.bindingCount           = bindings.size();
+   set_layout_info.pBindings              = bindings.data();
+
+   if (vkCreateDescriptorSetLayout(pass->device,
+            &set_layout_info, NULL, &pass->set_layout) != VK_SUCCESS)
+      return false;
+
+   layout_info.setLayoutCount             = 1;
+   layout_info.pSetLayouts                = &pass->set_layout;
+
+   /* Push constants */
+   if (     pass->reflection.push_constant_stage_mask 
+         && pass->reflection.push_constant_size)
+   {
+      if (pass->reflection.push_constant_stage_mask 
+            & SLANG_STAGE_VERTEX_MASK)
+         push_range.stageFlags |= VK_SHADER_STAGE_VERTEX_BIT;
+      if (pass->reflection.push_constant_stage_mask 
+            & SLANG_STAGE_FRAGMENT_MASK)
+         push_range.stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
+
+#ifdef VULKAN_DEBUG
+      RARCH_LOG("[Vulkan]: Push Constant Block: %u bytes.\n",
+            (unsigned int)pass->reflection.push_constant_size);
+#endif
+
+      layout_info.pushConstantRangeCount = 1;
+      layout_info.pPushConstantRanges    = &push_range;
+      pass->push.buffer.resize((pass->reflection.push_constant_size 
+               + sizeof(uint32_t) - 1) / sizeof(uint32_t));
+   }
+
+   pass->push.stages     = push_range.stageFlags;
+   push_range.size       = pass->reflection.push_constant_size;
+
+   if (vkCreatePipelineLayout(pass->device,
+            &layout_info, NULL, &pass->pipeline_layout) != VK_SUCCESS)
+      return false;
+
+   pool_info.maxSets                    = pass->num_sync_indices;
+   pool_info.poolSizeCount              = desc_counts.size();
+   pool_info.pPoolSizes                 = desc_counts.data();
+   if (vkCreateDescriptorPool(pass->device,
+            &pool_info, nullptr, &pass->pool) != VK_SUCCESS)
+      return false;
+
+   alloc_info.descriptorPool            = pass->pool;
+   alloc_info.descriptorSetCount        = 1;
+   alloc_info.pSetLayouts               = &pass->set_layout;
+
+   pass->sets.resize(pass->num_sync_indices);
+
+   for (i = 0; i < pass->num_sync_indices; i++)
+      vkAllocateDescriptorSets(pass->device,
+            &alloc_info, &pass->sets[i]);
+
+   /* Input assembly */
+   input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+
+   /* VAO state */
+   attributes[0].location  = 0;
+   attributes[0].binding   = 0;
+   attributes[0].format    = VK_FORMAT_R32G32_SFLOAT;
+   attributes[0].offset    = 0;
+   attributes[1].location  = 1;
+   attributes[1].binding   = 0;
+   attributes[1].format    = VK_FORMAT_R32G32_SFLOAT;
+   attributes[1].offset    = 2 * sizeof(float);
+
+   binding.binding         = 0;
+   binding.stride          = 4 * sizeof(float);
+   binding.inputRate       = VK_VERTEX_INPUT_RATE_VERTEX;
+
+   vertex_input.vertexBindingDescriptionCount   = 1;
+   vertex_input.pVertexBindingDescriptions      = &binding;
+   vertex_input.vertexAttributeDescriptionCount = 2;
+   vertex_input.pVertexAttributeDescriptions    = attributes;
+
+   /* Raster state */
+   raster.polygonMode                           = VK_POLYGON_MODE_FILL;
+   raster.cullMode                              = VK_CULL_MODE_NONE;
+   raster.frontFace                             = 
+      VK_FRONT_FACE_COUNTER_CLOCKWISE;
+   raster.depthClampEnable                      = false;
+   raster.rasterizerDiscardEnable               = false;
+   raster.depthBiasEnable                       = false;
+   raster.lineWidth                             = 1.0f;
+
+   /* Blend state */
+   blend_attachment.blendEnable                 = false;
+   blend_attachment.colorWriteMask              = 0xf;
+   blend.attachmentCount                        = 1;
+   blend.pAttachments                           = &blend_attachment;
+
+   /* Viewport state */
+   viewport.viewportCount                       = 1;
+   viewport.scissorCount                        = 1;
+
+   /* Depth-stencil state */
+   depth_stencil.depthTestEnable                = false;
+   depth_stencil.depthWriteEnable               = false;
+   depth_stencil.depthBoundsTestEnable          = false;
+   depth_stencil.stencilTestEnable              = false;
+   depth_stencil.minDepthBounds                 = 0.0f;
+   depth_stencil.maxDepthBounds                 = 1.0f;
+
+   /* Multisample state */
+   multisample.rasterizationSamples             = 
+      VK_SAMPLE_COUNT_1_BIT;
+
+   /* Dynamic state */
+   dynamic.pDynamicStates    = dynamics;
+   dynamic.dynamicStateCount = ARRAY_SIZE(dynamics);
+
+   /* Shaders */
+   module_info.codeSize      = pass->vertex_shader.size() 
+      * sizeof(uint32_t);
+   module_info.pCode         = pass->vertex_shader.data();
+   shader_stages[0].stage    = VK_SHADER_STAGE_VERTEX_BIT;
+   shader_stages[0].pName    = "main";
+   vkCreateShaderModule(pass->device, &module_info, NULL,
+         &shader_stages[0].module);
+
+   module_info.codeSize     = pass->fragment_shader.size() 
+      * sizeof(uint32_t);
+   module_info.pCode        = pass->fragment_shader.data();
+   shader_stages[1].stage   = VK_SHADER_STAGE_FRAGMENT_BIT;
+   shader_stages[1].pName   = "main";
+   vkCreateShaderModule(pass->device, &module_info, NULL,
+         &shader_stages[1].module);
+
+   pipe.stageCount          = 2;
+   pipe.pStages             = shader_stages;
+   pipe.pVertexInputState   = &vertex_input;
+   pipe.pInputAssemblyState = &input_assembly;
+   pipe.pRasterizationState = &raster;
+   pipe.pColorBlendState    = &blend;
+   pipe.pMultisampleState   = &multisample;
+   pipe.pViewportState      = &viewport;
+   pipe.pDepthStencilState  = &depth_stencil;
+   pipe.pDynamicState       = &dynamic;
+   pipe.renderPass          = pass->final_pass 
+      ? pass->swapchain_render_pass
+      : pass->framebuffer->render_pass;
+   pipe.layout              = pass->pipeline_layout;
+
+   if (vkCreateGraphicsPipelines(pass->device,
+            pass->cache, 1, &pipe,
+            NULL, &pass->pipeline) != VK_SUCCESS)
+   {
+      vkDestroyShaderModule(pass->device,
+            shader_stages[0].module, NULL);
+      vkDestroyShaderModule(pass->device,
+            shader_stages[1].module, NULL);
+      return false;
+   }
+
+   vkDestroyShaderModule(pass->device, shader_stages[0].module, NULL);
+   vkDestroyShaderModule(pass->device, shader_stages[1].module, NULL);
+   return true;
+}
+
+static void vulkan_pass_build_semantic_texture(Pass *pass,
       VkDescriptorSet set, uint8_t *buffer,
       slang_texture_semantic semantic, const Texture &texture)
 {
@@ -308,7 +600,7 @@ static void pass_build_semantic_texture(Pass *pass,
    }
 }
 
-static void pass_build_semantic_texture_array(Pass *pass,
+static void vulkan_pass_build_semantic_texture_array(Pass *pass,
       VkDescriptorSet set, uint8_t *buffer,
       slang_texture_semantic semantic, unsigned index, const Texture &texture)
 {
@@ -529,7 +821,7 @@ static void vulkan_framebuffer_generate_mips(
     * next pass until the mipchain is complete. */
 }
 
-static void framebuffer_set_size(Framebuffer *_fb,
+static void vulkan_framebuffer_set_size(Framebuffer *_fb,
       DeferredDisposer &disposer, const Size2D &size, VkFormat format)
 {
    _fb->size = size;
@@ -570,8 +862,7 @@ static void framebuffer_set_size(Framebuffer *_fb,
    _fb->init(&disposer);
 }
 
-
-static Size2D pass_get_output_size(Pass *pass,
+static Size2D vulkan_pass_get_output_size(Pass *pass,
       const Size2D &original,
       const Size2D &source)
 {
@@ -630,8 +921,7 @@ static Size2D pass_get_output_size(Pass *pass,
    return { unsigned(roundf(width)), unsigned(roundf(height)) };
 }
 
-
-static void pass_build_commands(
+static void vulkan_pass_build_commands(
       Pass *pass,
       DeferredDisposer &disposer,
       VkCommandBuffer cmd,
@@ -645,14 +935,14 @@ static void pass_build_commands(
    uint8_t *u             = nullptr;
 
    pass->current_viewport = vp;
-   size                   = pass_get_output_size(pass,
+   size                   = vulkan_pass_get_output_size(pass,
          { original.texture.width, original.texture.height },
          { source.texture.width, source.texture.height });
 
    if (pass->framebuffer &&
          (size.width  != pass->framebuffer->size.width ||
           size.height != pass->framebuffer->size.height))
-      framebuffer_set_size(pass->framebuffer.get(), disposer, size, VK_FORMAT_UNDEFINED);
+      vulkan_framebuffer_set_size(pass->framebuffer.get(), disposer, size, VK_FORMAT_UNDEFINED);
 
    pass->current_framebuffer_size = size;
 
@@ -789,11 +1079,11 @@ static void pass_build_commands(
    }
 
    /* Standard inputs */
-   pass_build_semantic_texture(pass, set, u, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
-   pass_build_semantic_texture(pass, set, u, SLANG_TEXTURE_SEMANTIC_SOURCE, source);
+   vulkan_pass_build_semantic_texture(pass, set, u, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
+   vulkan_pass_build_semantic_texture(pass, set, u, SLANG_TEXTURE_SEMANTIC_SOURCE, source);
 
    /* ORIGINAL_HISTORY[0] is an alias of ORIGINAL. */
-   pass_build_semantic_texture_array(pass, set, u,
+   vulkan_pass_build_semantic_texture_array(pass, set, u,
          SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, 0, original);
 
    /* Parameters. */
@@ -812,25 +1102,25 @@ static void pass_build_commands(
 
    /* Previous inputs. */
    for (i = 0; i < pass->common->original_history.size(); i++)
-      pass_build_semantic_texture_array(pass, set, u,
+      vulkan_pass_build_semantic_texture_array(pass, set, u,
             SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, i + 1,
             pass->common->original_history[i]);
 
    /* Previous passes. */
    for (i = 0; i < pass->common->pass_outputs.size(); i++)
-      pass_build_semantic_texture_array(pass, set, u,
+      vulkan_pass_build_semantic_texture_array(pass, set, u,
             SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i,
             pass->common->pass_outputs[i]);
 
    /* Feedback FBOs. */
    for (i = 0; i < pass->common->fb_feedback.size(); i++)
-      pass_build_semantic_texture_array(pass, set, u,
+      vulkan_pass_build_semantic_texture_array(pass, set, u,
             SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i,
             pass->common->fb_feedback[i]);
 
    /* LUTs. */
    for (i = 0; i < pass->common->luts.size(); i++)
-      pass_build_semantic_texture_array(pass, set, u,
+      vulkan_pass_build_semantic_texture_array(pass, set, u,
             SLANG_TEXTURE_SEMANTIC_USER, i,
             pass->common->luts[i]->texture);
 
@@ -1054,7 +1344,6 @@ static void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd)
          VK_QUEUE_FAMILY_IGNORED,
          VK_QUEUE_FAMILY_IGNORED);
 }
-
 
 static uint32_t find_memory_type_fallback(
       const VkPhysicalDeviceMemoryProperties &mem_props,
@@ -1664,274 +1953,6 @@ CommonResources::~CommonResources()
                vkDestroySampler(device, k, nullptr);
 }
 
-bool Pass::build()
-{
-   unsigned i;
-   unsigned j = 0;
-   std::unordered_map<std::string, slang_semantic_map> semantic_map;
-
-   framebuffer.reset();
-   fb_feedback.reset();
-
-   if (!final_pass)
-      framebuffer = std::unique_ptr<Framebuffer>(
-            new Framebuffer(device, memory_properties,
-               current_framebuffer_size,
-               pass_info.rt_format, pass_info.max_levels));
-
-   for (i = 0; i < parameters.size(); i++)
-   {
-      if (!slang_set_unique_map(
-               semantic_map, parameters[i].id,
-               slang_semantic_map{ SLANG_SEMANTIC_FLOAT_PARAMETER, j }))
-         return false;
-      j++;
-   }
-
-   reflection                              = slang_reflection{};
-   reflection.pass_number                  = pass_number;
-   reflection.texture_semantic_map         = &common->texture_semantic_map;
-   reflection.texture_semantic_uniform_map = &common->texture_semantic_uniform_map;
-   reflection.semantic_map                 = &semantic_map;
-
-   if (!slang_reflect_spirv(vertex_shader, fragment_shader, &reflection))
-      return false;
-
-   /* Filter out parameters which we will never use anyways. */
-   filtered_parameters.clear();
-
-   for (i = 0; i < reflection.semantic_float_parameters.size(); i++)
-   {
-      if (reflection.semantic_float_parameters[i].uniform ||
-          reflection.semantic_float_parameters[i].push_constant)
-         filtered_parameters.push_back(parameters[i]);
-   }
-
-   VkPipelineInputAssemblyStateCreateInfo input_assembly = {
-      VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
-   VkVertexInputAttributeDescription attributes[2]       = {{0}};
-   VkVertexInputBindingDescription binding               = {0};
-   VkPipelineVertexInputStateCreateInfo vertex_input     = {
-      VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
-   VkPipelineRasterizationStateCreateInfo raster         = {
-      VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
-   VkPipelineColorBlendAttachmentState blend_attachment  = {0};
-   VkPipelineColorBlendStateCreateInfo blend             = {
-      VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
-   VkPipelineViewportStateCreateInfo viewport            = {
-      VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
-   VkPipelineDepthStencilStateCreateInfo depth_stencil   = {
-      VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
-   VkPipelineMultisampleStateCreateInfo multisample      = {
-      VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
-   VkPipelineDynamicStateCreateInfo dynamic              = {
-      VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
-   static const VkDynamicState dynamics[]                = {
-      VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
-   VkPipelineShaderStageCreateInfo shader_stages[2]      = {
-      { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO },
-      { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO },
-   };
-   VkShaderModuleCreateInfo module_info                  = {
-      VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
-   VkGraphicsPipelineCreateInfo pipe                     = {
-      VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
-   std::vector<VkDescriptorSetLayoutBinding> bindings;
-   std::vector<VkDescriptorPoolSize> desc_counts;
-   VkPushConstantRange push_range                  = {};
-   VkDescriptorSetLayoutCreateInfo set_layout_info = {
-      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
-   VkPipelineLayoutCreateInfo layout_info          = {
-      VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
-   VkDescriptorPoolCreateInfo pool_info            = {
-      VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
-   VkDescriptorSetAllocateInfo alloc_info          = {
-      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
-
-   /* Main UBO. */
-   VkShaderStageFlags ubo_mask                     = 0;
-
-   if (reflection.ubo_stage_mask & SLANG_STAGE_VERTEX_MASK)
-      ubo_mask |= VK_SHADER_STAGE_VERTEX_BIT;
-   if (reflection.ubo_stage_mask & SLANG_STAGE_FRAGMENT_MASK)
-      ubo_mask |= VK_SHADER_STAGE_FRAGMENT_BIT;
-
-   if (ubo_mask != 0)
-   {
-      bindings.push_back({ reflection.ubo_binding,
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-            ubo_mask, nullptr });
-      desc_counts.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, num_sync_indices });
-   }
-
-   /* Semantic textures. */
-   for (auto &semantic : reflection.semantic_textures)
-   {
-      for (auto &texture : semantic)
-      {
-         VkShaderStageFlags stages = 0;
-
-         if (!texture.texture)
-            continue;
-
-         if (texture.stage_mask & SLANG_STAGE_VERTEX_MASK)
-            stages |= VK_SHADER_STAGE_VERTEX_BIT;
-         if (texture.stage_mask & SLANG_STAGE_FRAGMENT_MASK)
-            stages |= VK_SHADER_STAGE_FRAGMENT_BIT;
-
-         bindings.push_back({ texture.binding,
-               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
-               stages, nullptr });
-         desc_counts.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, num_sync_indices });
-      }
-   }
-
-   set_layout_info.bindingCount           = bindings.size();
-   set_layout_info.pBindings              = bindings.data();
-
-   if (vkCreateDescriptorSetLayout(device,
-            &set_layout_info, NULL, &set_layout) != VK_SUCCESS)
-      return false;
-
-   layout_info.setLayoutCount             = 1;
-   layout_info.pSetLayouts                = &set_layout;
-
-   /* Push constants */
-   if (reflection.push_constant_stage_mask && reflection.push_constant_size)
-   {
-      if (reflection.push_constant_stage_mask & SLANG_STAGE_VERTEX_MASK)
-         push_range.stageFlags |= VK_SHADER_STAGE_VERTEX_BIT;
-      if (reflection.push_constant_stage_mask & SLANG_STAGE_FRAGMENT_MASK)
-         push_range.stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
-
-#ifdef VULKAN_DEBUG
-      RARCH_LOG("[Vulkan]: Push Constant Block: %u bytes.\n", (unsigned int)reflection.push_constant_size);
-#endif
-
-      layout_info.pushConstantRangeCount = 1;
-      layout_info.pPushConstantRanges    = &push_range;
-      push.buffer.resize((reflection.push_constant_size + sizeof(uint32_t) - 1) / sizeof(uint32_t));
-   }
-
-   push.stages     = push_range.stageFlags;
-   push_range.size = reflection.push_constant_size;
-
-   if (vkCreatePipelineLayout(device,
-            &layout_info, NULL, &pipeline_layout) != VK_SUCCESS)
-      return false;
-
-   pool_info.maxSets                    = num_sync_indices;
-   pool_info.poolSizeCount              = desc_counts.size();
-   pool_info.pPoolSizes                 = desc_counts.data();
-   if (vkCreateDescriptorPool(device, &pool_info, nullptr, &pool) != VK_SUCCESS)
-      return false;
-
-   alloc_info.descriptorPool     = pool;
-   alloc_info.descriptorSetCount = 1;
-   alloc_info.pSetLayouts        = &set_layout;
-
-   sets.resize(num_sync_indices);
-
-   for (i = 0; i < num_sync_indices; i++)
-      vkAllocateDescriptorSets(device, &alloc_info, &sets[i]);
-
-   /* Input assembly */
-   input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-
-   /* VAO state */
-   attributes[0].location  = 0;
-   attributes[0].binding   = 0;
-   attributes[0].format    = VK_FORMAT_R32G32_SFLOAT;
-   attributes[0].offset    = 0;
-   attributes[1].location  = 1;
-   attributes[1].binding   = 0;
-   attributes[1].format    = VK_FORMAT_R32G32_SFLOAT;
-   attributes[1].offset    = 2 * sizeof(float);
-
-   binding.binding         = 0;
-   binding.stride          = 4 * sizeof(float);
-   binding.inputRate       = VK_VERTEX_INPUT_RATE_VERTEX;
-
-   vertex_input.vertexBindingDescriptionCount   = 1;
-   vertex_input.pVertexBindingDescriptions      = &binding;
-   vertex_input.vertexAttributeDescriptionCount = 2;
-   vertex_input.pVertexAttributeDescriptions    = attributes;
-
-   /* Raster state */
-   raster.polygonMode                           = VK_POLYGON_MODE_FILL;
-   raster.cullMode                              = VK_CULL_MODE_NONE;
-   raster.frontFace                             = 
-      VK_FRONT_FACE_COUNTER_CLOCKWISE;
-   raster.depthClampEnable                      = false;
-   raster.rasterizerDiscardEnable               = false;
-   raster.depthBiasEnable                       = false;
-   raster.lineWidth                             = 1.0f;
-
-   /* Blend state */
-   blend_attachment.blendEnable                 = false;
-   blend_attachment.colorWriteMask              = 0xf;
-   blend.attachmentCount                        = 1;
-   blend.pAttachments                           = &blend_attachment;
-
-   /* Viewport state */
-   viewport.viewportCount                       = 1;
-   viewport.scissorCount                        = 1;
-
-   /* Depth-stencil state */
-   depth_stencil.depthTestEnable                = false;
-   depth_stencil.depthWriteEnable               = false;
-   depth_stencil.depthBoundsTestEnable          = false;
-   depth_stencil.stencilTestEnable              = false;
-   depth_stencil.minDepthBounds                 = 0.0f;
-   depth_stencil.maxDepthBounds                 = 1.0f;
-
-   /* Multisample state */
-   multisample.rasterizationSamples             = VK_SAMPLE_COUNT_1_BIT;
-
-   /* Dynamic state */
-   dynamic.pDynamicStates    = dynamics;
-   dynamic.dynamicStateCount = sizeof(dynamics) / sizeof(dynamics[0]);
-
-   /* Shaders */
-   module_info.codeSize     = vertex_shader.size() * sizeof(uint32_t);
-   module_info.pCode        = vertex_shader.data();
-   shader_stages[0].stage   = VK_SHADER_STAGE_VERTEX_BIT;
-   shader_stages[0].pName   = "main";
-   vkCreateShaderModule(device, &module_info, NULL, &shader_stages[0].module);
-
-   module_info.codeSize     = fragment_shader.size() * sizeof(uint32_t);
-   module_info.pCode        = fragment_shader.data();
-   shader_stages[1].stage   = VK_SHADER_STAGE_FRAGMENT_BIT;
-   shader_stages[1].pName   = "main";
-   vkCreateShaderModule(device, &module_info, NULL, &shader_stages[1].module);
-
-   pipe.stageCount          = 2;
-   pipe.pStages             = shader_stages;
-   pipe.pVertexInputState   = &vertex_input;
-   pipe.pInputAssemblyState = &input_assembly;
-   pipe.pRasterizationState = &raster;
-   pipe.pColorBlendState    = &blend;
-   pipe.pMultisampleState   = &multisample;
-   pipe.pViewportState      = &viewport;
-   pipe.pDepthStencilState  = &depth_stencil;
-   pipe.pDynamicState       = &dynamic;
-   pipe.renderPass          = final_pass ? swapchain_render_pass :
-      framebuffer->render_pass;
-   pipe.layout              = pipeline_layout;
-
-   if (vkCreateGraphicsPipelines(device,
-            cache, 1, &pipe, NULL, &pipeline) != VK_SUCCESS)
-   {
-      vkDestroyShaderModule(device, shader_stages[0].module, NULL);
-      vkDestroyShaderModule(device, shader_stages[1].module, NULL);
-      return false;
-   }
-
-   vkDestroyShaderModule(device, shader_stages[0].module, NULL);
-   vkDestroyShaderModule(device, shader_stages[1].module, NULL);
-   return true;
-}
-
 static void vulkan_initialize_render_pass(VkDevice device, VkFormat format,
       VkRenderPass *render_pass)
 {
@@ -1971,7 +1992,6 @@ static void vulkan_initialize_render_pass(VkDevice device, VkFormat format,
 
    vkCreateRenderPass(device, &rp_info, NULL, render_pass);
 }
-
 
 Framebuffer::Framebuffer(
       VkDevice device,
@@ -2190,12 +2210,12 @@ static bool vulkan_filter_chain_initialize(vulkan_filter_chain_t *chain)
       chain->passes[i]->sync_index               = 0;
 
       chain->passes[i]->current_framebuffer_size =
-         pass_get_output_size(chain->passes[i].get(),
+         vulkan_pass_get_output_size(chain->passes[i].get(),
                chain->max_input_size, source);
       chain->passes[i]->swapchain_render_pass    = chain->swapchain_info.render_pass;
 
       source                                     = chain->passes[i]->current_framebuffer_size;
-      if (!chain->passes[i]->build())
+      if (!vulkan_pass_build(chain->passes[i].get()))
          return false;
    }
 
@@ -2683,14 +2703,6 @@ void vulkan_filter_chain_set_shader(
    }
 }
 
-void vulkan_filter_chain_set_pass_info(
-      vulkan_filter_chain_t *chain,
-      unsigned pass,
-      const struct vulkan_filter_chain_pass_info *info)
-{
-   chain->pass_info[pass] = *info;
-}
-
 VkFormat vulkan_filter_chain_get_pass_rt_format(
       vulkan_filter_chain_t *chain,
       unsigned pass)
@@ -2776,14 +2788,6 @@ void vulkan_filter_chain_set_frame_direction(
       chain->passes[i]->frame_direction = direction;
 }
 
-void vulkan_filter_chain_set_pass_name(
-      vulkan_filter_chain_t *chain,
-      unsigned pass,
-      const char *name)
-{
-   chain->passes[pass]->pass_name = name;
-}
-
 void vulkan_filter_chain_build_offscreen_passes(
       vulkan_filter_chain_t *chain,
       VkCommandBuffer cmd, const VkViewport *vp)
@@ -2863,7 +2867,7 @@ void vulkan_filter_chain_build_offscreen_passes(
 
    for (i = 0; i < chain->passes.size() - 1; i++)
    {
-      pass_build_commands(chain->passes[i].get(), 
+      vulkan_pass_build_commands(chain->passes[i].get(), 
             disposer, cmd,
             original, source, *vp, nullptr);
 
@@ -2933,7 +2937,7 @@ void vulkan_filter_chain_build_viewport_pass(
       source.address         = chain->passes.back()->pass_info.address;
    }
 
-   pass_build_commands(chain->passes.back().get(), 
+   vulkan_pass_build_commands(chain->passes.back().get(), 
          disposer, cmd,
          original, source, *vp, mvp);
 
@@ -2984,8 +2988,11 @@ void vulkan_filter_chain_end_frame(
             chain->input_texture.height     != tmp->size.height ||
             (chain->input_texture.format    != VK_FORMAT_UNDEFINED 
              && chain->input_texture.format != tmp->format))
-         framebuffer_set_size(tmp.get(), disposer, { chain->input_texture.width,
-               chain->input_texture.height }, chain->input_texture.format);
+         vulkan_framebuffer_set_size(
+			 tmp.get(), disposer,
+			 { chain->input_texture.width,
+			 chain->input_texture.height },
+			 chain->input_texture.format);
 
       vulkan_framebuffer_copy(tmp->image, tmp->size,
             cmd, chain->input_texture.image, src_layout);
