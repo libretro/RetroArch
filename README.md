@@ -155,8 +155,10 @@ anything other than what the respective SDKs provide.
 
 *OpenGL1*
 The OpenGL1 driver needs a graphics card that at least implements the OpenGL 1.1 feature spec.
+
 *OpenGL2*
 The OpenGL2 driver needs a graphics card that at least implements the OpenGL 2.1 feature spec.
+
 *Direct3D 11*
 The Direct3D11 driver needs a graphics card that supports at least Feature Model 11.0. The card
 also needs to support at least Shader Model 4.0.
