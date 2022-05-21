@@ -1250,101 +1250,6 @@ static void vulkan_pass_build_commands(
    }
 }
 
-static void vulkan_framebuffer_copy(VkImage image,
-      struct Size2D size,
-      VkCommandBuffer cmd,
-      VkImage src_image, VkImageLayout src_layout)
-{
-   VkImageCopy region;
-
-   VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, image,VK_REMAINING_MIP_LEVELS,
-         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         0, VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_QUEUE_FAMILY_IGNORED,
-         VK_QUEUE_FAMILY_IGNORED);
-
-   region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-   region.srcSubresource.mipLevel       = 0;
-   region.srcSubresource.baseArrayLayer = 0;
-   region.srcSubresource.layerCount     = 1;
-   region.srcOffset.x                   = 0;
-   region.srcOffset.y                   = 0;
-   region.srcOffset.z                   = 0;
-   region.dstSubresource                = region.srcSubresource;
-   region.dstOffset.x                   = 0;
-   region.dstOffset.y                   = 0;
-   region.dstOffset.z                   = 0;
-   region.extent.width                  = size.width;
-   region.extent.height                 = size.height;
-   region.extent.depth                  = 1;
-
-   vkCmdCopyImage(cmd,
-         src_image, src_layout,
-         image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         1, &region);
-
-   VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
-         image,
-         VK_REMAINING_MIP_LEVELS,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-         VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_ACCESS_SHADER_READ_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-         VK_QUEUE_FAMILY_IGNORED,
-         VK_QUEUE_FAMILY_IGNORED);
-}
-
-static void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd)
-{
-   VkClearColorValue color;
-   VkImageSubresourceRange range;
-
-   VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
-         image,
-         VK_REMAINING_MIP_LEVELS,
-         VK_IMAGE_LAYOUT_UNDEFINED,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         0,
-         VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_QUEUE_FAMILY_IGNORED,
-         VK_QUEUE_FAMILY_IGNORED);
-
-   color.float32[0]     = 0.0f;
-   color.float32[1]     = 0.0f;
-   color.float32[2]     = 0.0f;
-   color.float32[3]     = 0.0f;
-   range.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-   range.baseMipLevel   = 0;
-   range.levelCount     = 1;
-   range.baseArrayLayer = 0;
-   range.layerCount     = 1;
-
-   vkCmdClearColorImage(cmd,
-         image,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         &color,
-         1,
-         &range);
-
-   VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
-         image,
-         VK_REMAINING_MIP_LEVELS,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-         VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_ACCESS_SHADER_READ_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-         VK_QUEUE_FAMILY_IGNORED,
-         VK_QUEUE_FAMILY_IGNORED);
-}
-
 static uint32_t find_memory_type_fallback(
       const VkPhysicalDeviceMemoryProperties &mem_props,
       uint32_t device_reqs, uint32_t host_reqs)
@@ -2796,17 +2701,109 @@ void vulkan_filter_chain_build_offscreen_passes(
    Texture source;
 
    /* First frame, make sure our history and feedback textures 
-    * are in a clean state. */
+    * are in a clean state.
+    * Clear framebuffers.
+    */
    if (chain->require_clear)
    {
       unsigned i;
       for (i = 0; i < chain->original_history.size(); i++)
-         vulkan_framebuffer_clear(chain->original_history[i]->image, cmd);
+      {
+         VkClearColorValue color;
+         VkImageSubresourceRange range;
+         VkImage image = chain->original_history[i]->image;
+
+         VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
+               image,
+               VK_REMAINING_MIP_LEVELS,
+               VK_IMAGE_LAYOUT_UNDEFINED,
+               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+               0,
+               VK_ACCESS_TRANSFER_WRITE_BIT,
+               VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+               VK_PIPELINE_STAGE_TRANSFER_BIT,
+               VK_QUEUE_FAMILY_IGNORED,
+               VK_QUEUE_FAMILY_IGNORED);
+
+         color.float32[0]     = 0.0f;
+         color.float32[1]     = 0.0f;
+         color.float32[2]     = 0.0f;
+         color.float32[3]     = 0.0f;
+         range.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+         range.baseMipLevel   = 0;
+         range.levelCount     = 1;
+         range.baseArrayLayer = 0;
+         range.layerCount     = 1;
+
+         vkCmdClearColorImage(cmd,
+               image,
+               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+               &color,
+               1,
+               &range);
+
+         VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
+               image,
+               VK_REMAINING_MIP_LEVELS,
+               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+               VK_ACCESS_TRANSFER_WRITE_BIT,
+               VK_ACCESS_SHADER_READ_BIT,
+               VK_PIPELINE_STAGE_TRANSFER_BIT,
+               VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+               VK_QUEUE_FAMILY_IGNORED,
+               VK_QUEUE_FAMILY_IGNORED);
+      }
       for (i = 0; i < chain->passes.size(); i++)
       {
          Framebuffer *fb = chain->passes[i]->fb_feedback.get();
          if (fb)
-            vulkan_framebuffer_clear(fb->image, cmd);
+         {
+            VkClearColorValue color;
+            VkImageSubresourceRange range;
+            VkImage image = fb->image;
+
+            VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
+                  image,
+                  VK_REMAINING_MIP_LEVELS,
+                  VK_IMAGE_LAYOUT_UNDEFINED,
+                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                  0,
+                  VK_ACCESS_TRANSFER_WRITE_BIT,
+                  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                  VK_PIPELINE_STAGE_TRANSFER_BIT,
+                  VK_QUEUE_FAMILY_IGNORED,
+                  VK_QUEUE_FAMILY_IGNORED);
+
+            color.float32[0]     = 0.0f;
+            color.float32[1]     = 0.0f;
+            color.float32[2]     = 0.0f;
+            color.float32[3]     = 0.0f;
+            range.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+            range.baseMipLevel   = 0;
+            range.levelCount     = 1;
+            range.baseArrayLayer = 0;
+            range.layerCount     = 1;
+
+            vkCmdClearColorImage(cmd,
+                  image,
+                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                  &color,
+                  1,
+                  &range);
+
+            VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
+                  image,
+                  VK_REMAINING_MIP_LEVELS,
+                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                  VK_ACCESS_TRANSFER_WRITE_BIT,
+                  VK_ACCESS_SHADER_READ_BIT,
+                  VK_PIPELINE_STAGE_TRANSFER_BIT,
+                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                  VK_QUEUE_FAMILY_IGNORED,
+                  VK_QUEUE_FAMILY_IGNORED);
+         }
       }
       chain->require_clear = false;
    }
@@ -2893,17 +2890,109 @@ void vulkan_filter_chain_build_viewport_pass(
    Texture source;
 
    /* First frame, make sure our history and 
-    * feedback textures are in a clean state. */
+    * feedback textures are in a clean state.
+    * Clear framebuffers.
+    */
    if (chain->require_clear)
    {
       unsigned i;
       for (i = 0; i < chain->original_history.size(); i++)
-         vulkan_framebuffer_clear(chain->original_history[i]->image, cmd);
+      {
+         VkClearColorValue color;
+         VkImageSubresourceRange range;
+         VkImage image = chain->original_history[i]->image;
+
+         VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
+               image,
+               VK_REMAINING_MIP_LEVELS,
+               VK_IMAGE_LAYOUT_UNDEFINED,
+               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+               0,
+               VK_ACCESS_TRANSFER_WRITE_BIT,
+               VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+               VK_PIPELINE_STAGE_TRANSFER_BIT,
+               VK_QUEUE_FAMILY_IGNORED,
+               VK_QUEUE_FAMILY_IGNORED);
+
+         color.float32[0]     = 0.0f;
+         color.float32[1]     = 0.0f;
+         color.float32[2]     = 0.0f;
+         color.float32[3]     = 0.0f;
+         range.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+         range.baseMipLevel   = 0;
+         range.levelCount     = 1;
+         range.baseArrayLayer = 0;
+         range.layerCount     = 1;
+
+         vkCmdClearColorImage(cmd,
+               image,
+               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+               &color,
+               1,
+               &range);
+
+         VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
+               image,
+               VK_REMAINING_MIP_LEVELS,
+               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+               VK_ACCESS_TRANSFER_WRITE_BIT,
+               VK_ACCESS_SHADER_READ_BIT,
+               VK_PIPELINE_STAGE_TRANSFER_BIT,
+               VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+               VK_QUEUE_FAMILY_IGNORED,
+               VK_QUEUE_FAMILY_IGNORED);
+      }
       for (i = 0; i < chain->passes.size(); i++)
       {
          Framebuffer *fb = chain->passes[i]->fb_feedback.get();
          if (fb)
-            vulkan_framebuffer_clear(fb->image, cmd);
+         {
+            VkClearColorValue color;
+            VkImageSubresourceRange range;
+            VkImage image = fb->image;
+
+            VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
+                  image,
+                  VK_REMAINING_MIP_LEVELS,
+                  VK_IMAGE_LAYOUT_UNDEFINED,
+                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                  0,
+                  VK_ACCESS_TRANSFER_WRITE_BIT,
+                  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                  VK_PIPELINE_STAGE_TRANSFER_BIT,
+                  VK_QUEUE_FAMILY_IGNORED,
+                  VK_QUEUE_FAMILY_IGNORED);
+
+            color.float32[0]     = 0.0f;
+            color.float32[1]     = 0.0f;
+            color.float32[2]     = 0.0f;
+            color.float32[3]     = 0.0f;
+            range.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+            range.baseMipLevel   = 0;
+            range.levelCount     = 1;
+            range.baseArrayLayer = 0;
+            range.layerCount     = 1;
+
+            vkCmdClearColorImage(cmd,
+                  image,
+                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                  &color,
+                  1,
+                  &range);
+
+            VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
+                  image,
+                  VK_REMAINING_MIP_LEVELS,
+                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                  VK_ACCESS_TRANSFER_WRITE_BIT,
+                  VK_ACCESS_SHADER_READ_BIT,
+                  VK_PIPELINE_STAGE_TRANSFER_BIT,
+                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                  VK_QUEUE_FAMILY_IGNORED,
+                  VK_QUEUE_FAMILY_IGNORED);
+         }
       }
       chain->require_clear = false;
    }
@@ -2994,8 +3083,53 @@ void vulkan_filter_chain_end_frame(
 			 chain->input_texture.height },
 			 chain->input_texture.format);
 
-      vulkan_framebuffer_copy(tmp->image, tmp->size,
-            cmd, chain->input_texture.image, src_layout);
+      /* Copy framebuffer */
+      {
+         VkImageCopy region;
+         VkImage image                        = tmp->image;
+         VkImage src_image                    = chain->input_texture.image;
+         struct Size2D size                   = tmp->size;
+
+         VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, image,VK_REMAINING_MIP_LEVELS,
+               VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+               0, VK_ACCESS_TRANSFER_WRITE_BIT,
+               VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+               VK_PIPELINE_STAGE_TRANSFER_BIT,
+               VK_QUEUE_FAMILY_IGNORED,
+               VK_QUEUE_FAMILY_IGNORED);
+
+         region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+         region.srcSubresource.mipLevel       = 0;
+         region.srcSubresource.baseArrayLayer = 0;
+         region.srcSubresource.layerCount     = 1;
+         region.srcOffset.x                   = 0;
+         region.srcOffset.y                   = 0;
+         region.srcOffset.z                   = 0;
+         region.dstSubresource                = region.srcSubresource;
+         region.dstOffset.x                   = 0;
+         region.dstOffset.y                   = 0;
+         region.dstOffset.z                   = 0;
+         region.extent.width                  = size.width;
+         region.extent.height                 = size.height;
+         region.extent.depth                  = 1;
+
+         vkCmdCopyImage(cmd,
+               src_image, src_layout,
+               image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+               1, &region);
+
+         VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
+               image,
+               VK_REMAINING_MIP_LEVELS,
+               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+               VK_ACCESS_TRANSFER_WRITE_BIT,
+               VK_ACCESS_SHADER_READ_BIT,
+               VK_PIPELINE_STAGE_TRANSFER_BIT,
+               VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+               VK_QUEUE_FAMILY_IGNORED,
+               VK_QUEUE_FAMILY_IGNORED);
+      }
 
       /* Transition input texture back. */
       if (chain->input_texture.layout != VK_IMAGE_LAYOUT_GENERAL)
