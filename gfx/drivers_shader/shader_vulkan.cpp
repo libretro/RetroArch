@@ -187,12 +187,6 @@ class Pass
       Pass(Pass&&) = delete;
       void operator=(Pass&&) = delete;
 
-      Size2D set_pass_info(
-            const Size2D &max_original,
-            const Size2D &max_source,
-            const vulkan_filter_chain_swapchain_info &swapchain,
-            const vulkan_filter_chain_pass_info &info);
-
       void set_shader(VkShaderStageFlags stage,
             const uint32_t *spirv,
             size_t spirv_words);
@@ -1030,16 +1024,26 @@ bool vulkan_filter_chain::init()
       if (passes[i]->pipeline_layout != VK_NULL_HANDLE)
          vkDestroyPipelineLayout(device, passes[i]->pipeline_layout, nullptr);
 
-      passes[i]->pool       = VK_NULL_HANDLE;
-      passes[i]->pipeline   = VK_NULL_HANDLE;
-      passes[i]->set_layout = VK_NULL_HANDLE;
-      source                = passes[i]->set_pass_info(max_input_size,
-            source, swapchain_info, pass_info[i]);
+      passes[i]->pool                     = VK_NULL_HANDLE;
+      passes[i]->pipeline                 = VK_NULL_HANDLE;
+      passes[i]->set_layout               = VK_NULL_HANDLE;
+
+      passes[i]->current_viewport         = swapchain_info.viewport;
+      passes[i]->pass_info                = pass_info[i];
+
+      passes[i]->num_sync_indices         = swapchain_info.num_indices;
+      passes[i]->sync_index               = 0;
+
+      passes[i]->current_framebuffer_size = passes[i]->get_output_size(
+            max_input_size, source);
+      passes[i]->swapchain_render_pass    = swapchain_info.render_pass;
+
+      source                              = passes[i]->current_framebuffer_size;
       if (!passes[i]->build())
          return false;
    }
 
-   require_clear = false;
+   require_clear                = false;
 
    /* Initialize UBO (Uniform Buffer Object) */
    common.ubo.reset();
@@ -1335,24 +1339,6 @@ Size2D Pass::get_output_size(const Size2D &original,
    }
 
    return { unsigned(roundf(width)), unsigned(roundf(height)) };
-}
-
-Size2D Pass::set_pass_info(
-      const Size2D &max_original,
-      const Size2D &max_source,
-      const vulkan_filter_chain_swapchain_info &swapchain,
-      const vulkan_filter_chain_pass_info &info)
-{
-   current_viewport         = swapchain.viewport;
-   pass_info                = info;
-
-   num_sync_indices         = swapchain.num_indices;
-   sync_index               = 0;
-
-   current_framebuffer_size = get_output_size(max_original, max_source);
-   swapchain_render_pass    = swapchain.render_pass;
-
-   return current_framebuffer_size;
 }
 
 CommonResources::CommonResources(VkDevice device,
