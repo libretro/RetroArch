@@ -66,7 +66,17 @@ RetroArch also emphasizes being easy to integrate into various launcher frontend
 RetroArch has been ported to the following platforms:
 
    - DOS
-   - Windows
+   - Windows 11
+   - Windows 10
+   - Windows 8
+   - Windows 7
+   - Windows Vista
+   - Windows XP
+   - Windows Millennium
+   - Windows 2000
+   - Windows NT 3.5
+   - Windows 98
+   - Windows 95
    - Linux
    - Emscripten (WebAssembly and JavaScript)
    - FreeBSD
@@ -74,13 +84,19 @@ RetroArch has been ported to the following platforms:
    - OpenBSD
    - Haiku
    - Solaris
-   - macOS (PPC, x86-32 and x86-64)
-   - PlayStation 2
-   - PlayStation 3
+   - Apple macOS (PPC, x86-32 and x86-64)
+   - Apple iOS
+   - Apple tvOS
+   - Android (2.x to most recent version)
+   - PlayStation2
+   - PlayStation3
+   - PlayStation4
    - PlayStation Portable
    - PlayStation Vita
    - Original Microsoft Xbox
    - Microsoft Xbox 360 (Libxenon/XeXDK)
+   - Microsoft Xbox One
+   - Microsoft Xbox Series S/X
    - Nintendo GameCube
    - Nintendo Wii
    - Nintendo Wii U
@@ -88,9 +104,11 @@ RetroArch has been ported to the following platforms:
    - Nintendo Switch
    - Nintendo NES/SNES Classic Edition
    - Raspberry Pi
-   - Android
-   - iOS
    - Blackberry
+   - OpenDingux
+   - Miyoo
+   - RS90
+   - RetroFW
 
 ## Dependencies (PC)
 
@@ -132,6 +150,16 @@ dynamically, it's not required at build time.
 
 Console ports have their own dependencies, but generally do not require
 anything other than what the respective SDKs provide.
+
+## Requirements
+
+*OpenGL1*
+The OpenGL1 driver needs a graphics card that at least implements the OpenGL 1.1 feature spec.
+*OpenGL2*
+The OpenGL2 driver needs a graphics card that at least implements the OpenGL 2.1 feature spec.
+*Direct3D 11*
+The Direct3D11 driver needs a graphics card that supports at least Feature Model 11.0. The card
+also needs to support at least Shader Model 4.0.
 
 ## Configuring
 
