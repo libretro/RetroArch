@@ -58,13 +58,6 @@ class DeferredDisposer
 {
    public:
       DeferredDisposer(std::vector<std::function<void ()>> &calls) : calls(calls) {}
-
-      void defer(std::function<void ()> func)
-      {
-         calls.push_back(std::move(func));
-      }
-
-   private:
       std::vector<std::function<void ()>> &calls;
 };
 
@@ -75,8 +68,6 @@ class Buffer
             const VkPhysicalDeviceMemoryProperties &mem_props,
             size_t size, VkBufferUsageFlags usage);
       ~Buffer();
-
-      void *map();
 
       Buffer(Buffer&&) = delete;
       void operator=(Buffer&&) = delete;
@@ -721,7 +712,9 @@ static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    buffer                                = 
       std::unique_ptr<Buffer>(new Buffer(info->device, *info->memory_properties,
                image.width * image.height * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_SRC_BIT));
-   ptr                                   = buffer->map();
+   if (!buffer->mapped && vkMapMemory(buffer->device, buffer->memory, 0,
+            buffer->size, 0, &buffer->mapped) == VK_SUCCESS)
+      ptr = buffer->mapped;
    memcpy(ptr, image.pixels, image.width * image.height * sizeof(uint32_t));
    if (buffer->mapped)
       vkUnmapMemory(buffer->device, buffer->memory);
@@ -1063,7 +1056,9 @@ bool vulkan_filter_chain::init()
                memory_properties, common.ubo_offset * deferred_calls.size(),
                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
 
-   common.ubo_mapped            = static_cast<uint8_t*>(common.ubo->map());
+   if (!common.ubo->mapped && vkMapMemory(common.ubo->device,
+            common.ubo->memory, 0, common.ubo->size, 0, &common.ubo->mapped) == VK_SUCCESS)
+      common.ubo_mapped = static_cast<uint8_t*>(common.ubo->mapped);
 
    /* Initialize history */
    original_history.clear();
@@ -1213,13 +1208,6 @@ Buffer::Buffer(VkDevice device,
    vkBindBufferMemory(device, buffer, memory, 0);
 }
 
-void *Buffer::map()
-{
-   if (!mapped && vkMapMemory(device, memory, 0, size, 0, &mapped) == VK_SUCCESS)
-      return mapped;
-   return nullptr;
-}
-
 Buffer::~Buffer()
 {
    if (mapped)
@@ -1350,6 +1338,7 @@ CommonResources::CommonResources(VkDevice device,
    : device(device)
 {
    unsigned i;
+   void *ptr                    = NULL;
    VkSamplerCreateInfo info     = { 
       VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
    /* The final pass uses an MVP designed for [0, 1] range VBO.
@@ -1374,7 +1363,9 @@ CommonResources::CommonResources(VkDevice device,
       std::unique_ptr<Buffer>(new Buffer(device,
                memory_properties, sizeof(vbo_data), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
 
-   void *ptr                    = vbo->map();
+   if (!vbo->mapped && vkMapMemory(vbo->device, vbo->memory, 0, vbo->size, 0,
+            &vbo->mapped) == VK_SUCCESS)
+      ptr = vbo->mapped;
    memcpy(ptr, vbo_data, sizeof(vbo_data));
    if (vbo->mapped)
       vkUnmapMemory(vbo->device, vbo->memory);
@@ -2232,7 +2223,7 @@ void Framebuffer::init(DeferredDisposer *disposer)
       {
          VkDevice       d = device;
          VkDeviceMemory m = memory.memory;
-         disposer->defer([=] { vkFreeMemory(d, m, nullptr); });
+         disposer->calls.push_back(std::move([=] { vkFreeMemory(d, m, nullptr); }));
       }
 
       memory.type = alloc.memoryTypeIndex;
@@ -2299,7 +2290,7 @@ void Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size, VkFor
       VkImageView v    = view;
       VkImageView fbv  = fb_view;
       VkFramebuffer fb = framebuffer;
-      disposer.defer([=]
+      disposer.calls.push_back(std::move([=]
       {
          if (fb != VK_NULL_HANDLE)
             vkDestroyFramebuffer(d, fb, nullptr);
@@ -2309,7 +2300,7 @@ void Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size, VkFor
             vkDestroyImageView(d, fbv, nullptr);
          if (i != VK_NULL_HANDLE)
             vkDestroyImage(d, i, nullptr);
-      });
+      }));
    }
 
    init(&disposer);
