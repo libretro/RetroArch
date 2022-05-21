@@ -117,8 +117,6 @@ class Framebuffer
       Framebuffer(Framebuffer&&) = delete;
       void operator=(Framebuffer&&) = delete;
 
-      void set_size(DeferredDisposer &disposer, const Size2D &size, VkFormat format = VK_FORMAT_UNDEFINED);
-
       Size2D size;
       VkFormat format;
       unsigned max_levels;
@@ -187,21 +185,7 @@ class Pass
       Pass(Pass&&) = delete;
       void operator=(Pass&&) = delete;
 
-      void set_shader(VkShaderStageFlags stage,
-            const uint32_t *spirv,
-            size_t spirv_words);
-
       bool build();
-
-      void build_commands(
-            DeferredDisposer &disposer,
-            VkCommandBuffer cmd,
-            const Texture &original,
-            const Texture &source,
-            const VkViewport &vp,
-            const float *mvp);
-
-      void add_parameter(unsigned parameter_index, const std::string &id);
 
       VkDevice device;
       const VkPhysicalDeviceMemoryProperties &memory_properties;
@@ -209,9 +193,6 @@ class Pass
       unsigned num_sync_indices;
       unsigned sync_index;
       bool final_pass;
-
-      Size2D get_output_size(const Size2D &original_size,
-            const Size2D &max_source) const;
 
       VkPipeline pipeline              = VK_NULL_HANDLE;
       VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
@@ -232,12 +213,6 @@ class Pass
       VkRenderPass swapchain_render_pass;
 
       slang_reflection reflection;
-      void build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
-            slang_texture_semantic semantic, const Texture &texture);
-      void build_semantic_texture_array(
-            VkDescriptorSet set, uint8_t *buffer,
-            slang_texture_semantic semantic,
-            unsigned index, const Texture &texture);
 
       uint64_t frame_count        = 0;
       int32_t frame_direction     = 1;
@@ -272,8 +247,6 @@ struct vulkan_filter_chain
       vulkan_filter_chain(const vulkan_filter_chain_create_info &info);
       ~vulkan_filter_chain();
 
-      bool init();
-
       VkDevice device;
       VkPhysicalDevice gpu;
       const VkPhysicalDeviceMemoryProperties &memory_properties;
@@ -293,6 +266,88 @@ struct vulkan_filter_chain
       std::vector<std::unique_ptr<Framebuffer>> original_history;
       bool require_clear = false;
 };
+
+static void pass_build_semantic_texture(Pass *pass,
+      VkDescriptorSet set, uint8_t *buffer,
+      slang_texture_semantic semantic, const Texture &texture)
+{
+   unsigned width  = texture.texture.width;
+   unsigned height = texture.texture.height;
+   unsigned index  = 0;
+   auto &refl      = pass->reflection.semantic_textures[semantic];
+
+   if (index < refl.size())
+   {
+      if (buffer && refl[index].uniform)
+      {
+         float *_data = reinterpret_cast<float *>(buffer + refl[index].ubo_offset);
+         _data[0]     = (float)(width);
+         _data[1]     = (float)(height);
+         _data[2]     = 1.0f / (float)(width);
+         _data[3]     = 1.0f / (float)(height);
+      }
+      if (refl[index].push_constant)
+      {
+         float *_data = reinterpret_cast<float *>(pass->push.buffer.data() + (refl[index].push_constant_offset >> 2));
+         _data[0]     = (float)(width);
+         _data[1]     = (float)(height);
+         _data[2]     = 1.0f / (float)(width);
+         _data[3]     = 1.0f / (float)(height);
+      }
+   }
+
+   if (pass->reflection.semantic_textures[semantic][0].texture)
+   {
+      VULKAN_PASS_SET_TEXTURE(
+            pass->device,
+            set,
+            pass->common->samplers[texture.filter][texture.mip_filter][texture.address],
+            pass->reflection.semantic_textures[semantic][0].binding,
+            texture.texture.view,
+            texture.texture.layout);
+   }
+}
+
+static void pass_build_semantic_texture_array(Pass *pass,
+      VkDescriptorSet set, uint8_t *buffer,
+      slang_texture_semantic semantic, unsigned index, const Texture &texture)
+{
+   auto &refl      = pass->reflection.semantic_textures[semantic];
+   unsigned width  = texture.texture.width;
+   unsigned height = texture.texture.height;
+
+   if (index < refl.size())
+   {
+      if (buffer && refl[index].uniform)
+      {
+         float *_data = reinterpret_cast<float *>(buffer + refl[index].ubo_offset);
+         _data[0]     = (float)(width);
+         _data[1]     = (float)(height);
+         _data[2]     = 1.0f / (float)(width);
+         _data[3]     = 1.0f / (float)(height);
+      }
+      if (refl[index].push_constant)
+      {
+         float *_data = reinterpret_cast<float *>(pass->push.buffer.data() + (refl[index].push_constant_offset >> 2));
+         _data[0]     = (float)(width);
+         _data[1]     = (float)(height);
+         _data[2]     = 1.0f / (float)(width);
+         _data[3]     = 1.0f / (float)(height);
+      }
+   }
+
+   if (index < pass->reflection.semantic_textures[semantic].size() &&
+         pass->reflection.semantic_textures[semantic][index].texture)
+   {
+      VULKAN_PASS_SET_TEXTURE(
+            pass->device,
+            set,
+            pass->common->samplers[texture.filter][texture.mip_filter][texture.address],
+            pass->reflection.semantic_textures[semantic][index].binding,
+            texture.texture.view,
+            texture.texture.layout);
+   }
+}
 
 static void vulkan_framebuffer_generate_mips(
       VkFramebuffer framebuffer,
@@ -472,6 +527,437 @@ static void vulkan_framebuffer_generate_mips(
     * we have dstStage as FRAGMENT_SHADER,
     * the dependency chain will ensure we don't start
     * next pass until the mipchain is complete. */
+}
+
+static void framebuffer_set_size(Framebuffer *_fb,
+      DeferredDisposer &disposer, const Size2D &size, VkFormat format)
+{
+   _fb->size = size;
+   if (format != VK_FORMAT_UNDEFINED)
+	  _fb->format = format;
+
+#ifdef VULKAN_DEBUG
+   RARCH_LOG("[Vulkan filter chain]: Updating framebuffer size %ux%u (format: %u).\n",
+         size.width, size.height, (unsigned)fb->format);
+#endif
+
+   {
+      /* The current framebuffers, etc, might still be in use
+       * so defer deletion.
+       * We'll most likely be able to reuse the memory,
+       * so don't free it here.
+       *
+       * Fake lambda init captures for C++11.
+       */
+      VkDevice d       = _fb->device;
+      VkImage i        = _fb->image;
+      VkImageView v    = _fb->view;
+      VkImageView fbv  = _fb->fb_view;
+      VkFramebuffer fb = _fb->framebuffer;
+      disposer.calls.push_back(std::move([=]
+      {
+         if (fb != VK_NULL_HANDLE)
+            vkDestroyFramebuffer(d, fb, nullptr);
+         if (v != VK_NULL_HANDLE)
+            vkDestroyImageView(d, v, nullptr);
+         if (fbv != VK_NULL_HANDLE)
+            vkDestroyImageView(d, fbv, nullptr);
+         if (i != VK_NULL_HANDLE)
+            vkDestroyImage(d, i, nullptr);
+      }));
+   }
+
+   _fb->init(&disposer);
+}
+
+
+static Size2D pass_get_output_size(Pass *pass,
+      const Size2D &original,
+      const Size2D &source)
+{
+   float width  = 0.0f;
+   float height = 0.0f;
+   switch (pass->pass_info.scale_type_x)
+   {
+      case GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL:
+         width = float(original.width) * pass->pass_info.scale_x;
+         break;
+
+      case GLSLANG_FILTER_CHAIN_SCALE_SOURCE:
+         width = float(source.width) * pass->pass_info.scale_x;
+         break;
+
+      case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
+         width = (retroarch_get_rotation() % 2 
+               ? pass->current_viewport.height 
+               : pass->current_viewport.width)
+               * pass->pass_info.scale_x;
+         break;
+
+      case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
+         width = pass->pass_info.scale_x;
+         break;
+
+      default:
+         break;
+   }
+
+   switch (pass->pass_info.scale_type_y)
+   {
+      case GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL:
+         height = float(original.height) * pass->pass_info.scale_y;
+         break;
+
+      case GLSLANG_FILTER_CHAIN_SCALE_SOURCE:
+         height = float(source.height) * pass->pass_info.scale_y;
+         break;
+
+      case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
+         height = (retroarch_get_rotation() % 2 
+               ? pass->current_viewport.width 
+               : pass->current_viewport.height) 
+            * pass->pass_info.scale_y;
+         break;
+
+      case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
+         height = pass->pass_info.scale_y;
+         break;
+
+      default:
+         break;
+   }
+
+   return { unsigned(roundf(width)), unsigned(roundf(height)) };
+}
+
+
+static void pass_build_commands(
+      Pass *pass,
+      DeferredDisposer &disposer,
+      VkCommandBuffer cmd,
+      const Texture &original,
+      const Texture &source,
+      const VkViewport &vp,
+      const float *mvp)
+{
+   unsigned i;
+   Size2D size;
+   uint8_t *u             = nullptr;
+
+   pass->current_viewport = vp;
+   size                   = pass_get_output_size(pass,
+         { original.texture.width, original.texture.height },
+         { source.texture.width, source.texture.height });
+
+   if (pass->framebuffer &&
+         (size.width  != pass->framebuffer->size.width ||
+          size.height != pass->framebuffer->size.height))
+      framebuffer_set_size(pass->framebuffer.get(), disposer, size, VK_FORMAT_UNDEFINED);
+
+   pass->current_framebuffer_size = size;
+
+   if (pass->reflection.ubo_stage_mask && pass->common->ubo_mapped)
+      u =  pass->common->ubo_mapped 
+         + pass->ubo_offset
+         + pass->sync_index 
+         * pass->common->ubo_sync_index_stride;
+
+   VkDescriptorSet set = pass->sets[pass->sync_index];
+
+   /* MVP */
+   if (u && pass->reflection.semantics[SLANG_SEMANTIC_MVP].uniform)
+   {
+      size_t offset = pass->reflection.semantics[SLANG_SEMANTIC_MVP].ubo_offset;
+      if (mvp)
+         memcpy(u + offset, mvp, sizeof(float) * 16);
+      else /* Build identity matrix */
+      {
+         float *data = reinterpret_cast<float *>(u + offset);
+         data[ 0] = 1.0f;
+         data[ 1] = 0.0f;
+         data[ 2] = 0.0f;
+         data[ 3] = 0.0f;
+         data[ 4] = 0.0f;
+         data[ 5] = 1.0f;
+         data[ 6] = 0.0f;
+         data[ 7] = 0.0f;
+         data[ 8] = 0.0f;
+         data[ 9] = 0.0f;
+         data[10] = 1.0f;
+         data[11] = 0.0f;
+         data[12] = 0.0f;
+         data[13] = 0.0f;
+         data[14] = 0.0f;
+         data[15] = 1.0f;
+      }
+   }
+
+   if (pass->reflection.semantics[SLANG_SEMANTIC_MVP].push_constant)
+   {
+      size_t offset = pass->reflection.semantics[SLANG_SEMANTIC_MVP].push_constant_offset;
+      if (mvp)
+         memcpy(pass->push.buffer.data() + (offset >> 2), mvp, sizeof(float) * 16);
+      else /* Build identity matrix */
+      {
+         float *data = reinterpret_cast<float *>(pass->push.buffer.data() + (offset >>
+                  2));
+         data[ 0] = 1.0f;
+         data[ 1] = 0.0f;
+         data[ 2] = 0.0f;
+         data[ 3] = 0.0f;
+         data[ 4] = 0.0f;
+         data[ 5] = 1.0f;
+         data[ 6] = 0.0f;
+         data[ 7] = 0.0f;
+         data[ 8] = 0.0f;
+         data[ 9] = 0.0f;
+         data[10] = 1.0f;
+         data[11] = 0.0f;
+         data[12] = 0.0f;
+         data[13] = 0.0f;
+         data[14] = 0.0f;
+         data[15] = 1.0f;
+      }
+   }
+
+   /* Output information */
+   {
+      auto &refl      = pass->reflection.semantics[SLANG_SEMANTIC_OUTPUT];
+      unsigned width  = pass->current_framebuffer_size.width;
+      unsigned height = pass->current_framebuffer_size.height;
+
+      if (u && refl.uniform)
+      {
+         float *_data = reinterpret_cast<float *>(u + refl.ubo_offset);
+         _data[0]     = (float)(width);
+         _data[1]     = (float)(height);
+         _data[2]     = 1.0f / (float)(width);
+         _data[3]     = 1.0f / (float)(height);
+      }
+      if (refl.push_constant)
+      {
+         float *_data = reinterpret_cast<float *>
+            (pass->push.buffer.data() + (refl.push_constant_offset >> 2));
+         _data[0]     = (float)(width);
+         _data[1]     = (float)(height);
+         _data[2]     = 1.0f / (float)(width);
+         _data[3]     = 1.0f / (float)(height);
+      }
+   }
+   {
+      auto &refl      = pass->reflection.semantics[
+         SLANG_SEMANTIC_FINAL_VIEWPORT];
+      unsigned width  = unsigned(pass->current_viewport.width);
+      unsigned height = unsigned(pass->current_viewport.height);
+      if (u && refl.uniform)
+      {
+         float *_data = reinterpret_cast<float *>(u + refl.ubo_offset);
+         _data[0]     = (float)(width);
+         _data[1]     = (float)(height);
+         _data[2]     = 1.0f / (float)(width);
+         _data[3]     = 1.0f / (float)(height);
+      }
+      if (refl.push_constant)
+      {
+         float *_data = reinterpret_cast<float *>
+            (pass->push.buffer.data() + (refl.push_constant_offset >> 2));
+         _data[0]     = (float)(width);
+         _data[1]     = (float)(height);
+         _data[2]     = 1.0f / (float)(width);
+         _data[3]     = 1.0f / (float)(height);
+      }
+   }
+
+   {
+      uint32_t value = pass->frame_count_period 
+         ? uint32_t(pass->frame_count % pass->frame_count_period) 
+         : uint32_t(pass->frame_count);
+      auto &refl     = pass->reflection.semantics[SLANG_SEMANTIC_FRAME_COUNT];
+      if (u && refl.uniform)
+         *reinterpret_cast<uint32_t*>(u + pass->reflection.semantics[SLANG_SEMANTIC_FRAME_COUNT].ubo_offset) = value;
+      if (refl.push_constant)
+         *reinterpret_cast<uint32_t*>(pass->push.buffer.data() + (refl.push_constant_offset >> 2)) = value;
+   }
+   {
+      auto &refl = pass->reflection.semantics[SLANG_SEMANTIC_FRAME_DIRECTION];
+      if (u && refl.uniform)
+         *reinterpret_cast<int32_t*>(u + pass->reflection.semantics[SLANG_SEMANTIC_FRAME_DIRECTION].ubo_offset)
+            = pass->frame_direction;
+      if (refl.push_constant)
+         *reinterpret_cast<int32_t*>(pass->push.buffer.data() +
+               (refl.push_constant_offset >> 2)) = pass->frame_direction;
+   }
+
+   /* Standard inputs */
+   pass_build_semantic_texture(pass, set, u, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
+   pass_build_semantic_texture(pass, set, u, SLANG_TEXTURE_SEMANTIC_SOURCE, source);
+
+   /* ORIGINAL_HISTORY[0] is an alias of ORIGINAL. */
+   pass_build_semantic_texture_array(pass, set, u,
+         SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, 0, original);
+
+   /* Parameters. */
+   for (i = 0; i < pass->filtered_parameters.size(); i++)
+   {
+      unsigned index = pass->filtered_parameters[i].semantic_index;
+      float    value = pass->common->shader_preset->parameters[
+         pass->filtered_parameters[i].index].current;
+      auto &refl     = pass->reflection.semantic_float_parameters[index];
+      /* We will have filtered out stale parameters. */
+      if (u && refl.uniform)
+         *reinterpret_cast<float*>(u + refl.ubo_offset) = value;
+      if (refl.push_constant)
+         *reinterpret_cast<float*>(pass->push.buffer.data() + (refl.push_constant_offset >> 2)) = value;
+   }
+
+   /* Previous inputs. */
+   for (i = 0; i < pass->common->original_history.size(); i++)
+      pass_build_semantic_texture_array(pass, set, u,
+            SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, i + 1,
+            pass->common->original_history[i]);
+
+   /* Previous passes. */
+   for (i = 0; i < pass->common->pass_outputs.size(); i++)
+      pass_build_semantic_texture_array(pass, set, u,
+            SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i,
+            pass->common->pass_outputs[i]);
+
+   /* Feedback FBOs. */
+   for (i = 0; i < pass->common->fb_feedback.size(); i++)
+      pass_build_semantic_texture_array(pass, set, u,
+            SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i,
+            pass->common->fb_feedback[i]);
+
+   /* LUTs. */
+   for (i = 0; i < pass->common->luts.size(); i++)
+      pass_build_semantic_texture_array(pass, set, u,
+            SLANG_TEXTURE_SEMANTIC_USER, i,
+            pass->common->luts[i]->texture);
+
+   if (pass->reflection.ubo_stage_mask)
+      vulkan_set_uniform_buffer(
+            pass->device,
+            pass->sets[pass->sync_index],
+            pass->reflection.ubo_binding,
+            pass->common->ubo->buffer,
+            pass->ubo_offset + pass->sync_index * pass->common->ubo_sync_index_stride,
+            pass->reflection.ubo_size);
+
+   /* The final pass is always executed inside
+    * another render pass since the frontend will
+    * want to overlay various things on top for
+    * the passes that end up on-screen. */
+   if (!pass->final_pass)
+   {
+      VkRenderPassBeginInfo rp_info;
+
+      /* Render. */
+      VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
+            pass->framebuffer->image,
+            1,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            0,
+            VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | 
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_QUEUE_FAMILY_IGNORED,
+            VK_QUEUE_FAMILY_IGNORED);
+
+      rp_info.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+      rp_info.pNext                    = NULL;
+      rp_info.renderPass               = pass->framebuffer->render_pass;
+      rp_info.framebuffer              = pass->framebuffer->framebuffer;
+      rp_info.renderArea.offset.x      = 0;
+      rp_info.renderArea.offset.y      = 0;
+      rp_info.renderArea.extent.width  = pass->current_framebuffer_size.width;
+      rp_info.renderArea.extent.height = pass->current_framebuffer_size.height;
+      rp_info.clearValueCount          = 0;
+      rp_info.pClearValues             = nullptr;
+
+      vkCmdBeginRenderPass(cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
+   }
+
+   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->pipeline);
+   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+         pass->pipeline_layout,
+         0, 1, &pass->sets[pass->sync_index], 0, nullptr);
+
+   if (pass->push.stages != 0)
+      vkCmdPushConstants(cmd, pass->pipeline_layout,
+            pass->push.stages, 0,
+            pass->reflection.push_constant_size,
+            pass->push.buffer.data());
+
+   {
+      VkDeviceSize offset = pass->final_pass ? 16 * sizeof(float) : 0;
+      vkCmdBindVertexBuffers(cmd, 0, 1,
+            &pass->common->vbo->buffer,
+            &offset);
+   }
+
+   if (pass->final_pass)
+   {
+      const VkRect2D sci = {
+         {
+            int32_t(pass->current_viewport.x),
+            int32_t(pass->current_viewport.y)
+         },
+         {
+            uint32_t(pass->current_viewport.width),
+            uint32_t(pass->current_viewport.height)
+         },
+      };
+      vkCmdSetViewport(cmd, 0, 1, &pass->current_viewport);
+      vkCmdSetScissor(cmd, 0, 1, &sci);
+      vkCmdDraw(cmd, 4, 1, 0, 0);
+   }
+   else
+   {
+      const VkViewport _vp = {
+         0.0f, 0.0f,
+         float(pass->current_framebuffer_size.width),
+         float(pass->current_framebuffer_size.height),
+         0.0f, 1.0f
+      };
+      const VkRect2D sci = {
+         { 0, 0 },
+         {
+            pass->current_framebuffer_size.width,
+            pass->current_framebuffer_size.height
+         },
+      };
+
+      vkCmdSetViewport(cmd, 0, 1, &_vp);
+      vkCmdSetScissor(cmd, 0, 1, &sci);
+      vkCmdDraw(cmd, 4, 1, 0, 0);
+      vkCmdEndRenderPass(cmd);
+
+      if (pass->framebuffer->levels > 1)
+         vulkan_framebuffer_generate_mips(
+               pass->framebuffer->framebuffer,
+               pass->framebuffer->image,
+               pass->framebuffer->size,
+               cmd,
+               pass->framebuffer->levels);
+      else
+      {
+         /* Barrier to sync with next pass. */
+         VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(
+               cmd,
+               pass->framebuffer->image,
+               VK_REMAINING_MIP_LEVELS,
+               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+               VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+               VK_ACCESS_SHADER_READ_BIT,
+               VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+               VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+               VK_QUEUE_FAMILY_IGNORED,
+               VK_QUEUE_FAMILY_IGNORED);
+      }
+   }
 }
 
 static void vulkan_framebuffer_copy(VkImage image,
@@ -949,223 +1435,6 @@ vulkan_filter_chain::~vulkan_filter_chain()
    }
 }
 
-bool vulkan_filter_chain::init()
-{
-   unsigned i, j;
-   size_t required_images = 0;
-   bool use_feedbacks     = false;
-   VkPhysicalDeviceProperties props;
-   Size2D source          = max_input_size;
-
-   /* Initialize alias */
-   common.texture_semantic_map.clear();
-   common.texture_semantic_uniform_map.clear();
-
-   for (i = 0; i < passes.size(); i++)
-   {
-      const std::string name = passes[i]->pass_name;
-      if (name.empty())
-         continue;
-
-      j = &passes[i] - passes.data();
-
-      if (!slang_set_unique_map(
-               common.texture_semantic_map, name,
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j }))
-         return false;
-
-      if (!slang_set_unique_map(
-               common.texture_semantic_uniform_map, name + "Size",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j }))
-         return false;
-
-      if (!slang_set_unique_map(
-               common.texture_semantic_map, name + "Feedback",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j }))
-         return false;
-
-      if (!slang_set_unique_map(
-               common.texture_semantic_uniform_map, name + "FeedbackSize",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j }))
-         return false;
-   }
-
-   for (i = 0; i < common.luts.size(); i++)
-   {
-      j = &common.luts[i] - common.luts.data();
-      if (!slang_set_unique_map(
-               common.texture_semantic_map,
-               common.luts[i]->id,
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, j }))
-         return false;
-
-      if (!slang_set_unique_map(
-               common.texture_semantic_uniform_map,
-               common.luts[i]->id + "Size",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, j }))
-         return false;
-   }
-
-   for (i = 0; i < passes.size(); i++)
-   {
-#ifdef VULKAN_DEBUG
-      const char *name = passes[i]->pass_name.c_str();
-      RARCH_LOG("[slang]: Building pass #%u (%s)\n", i,
-            string_is_empty(name) ?
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) :
-            name);
-#endif
-      if (passes[i]->pool != VK_NULL_HANDLE)
-         vkDestroyDescriptorPool(device, passes[i]->pool, nullptr);
-      if (passes[i]->pipeline != VK_NULL_HANDLE)
-         vkDestroyPipeline(device, passes[i]->pipeline, nullptr);
-      if (passes[i]->set_layout != VK_NULL_HANDLE)
-         vkDestroyDescriptorSetLayout(device, passes[i]->set_layout, nullptr);
-      if (passes[i]->pipeline_layout != VK_NULL_HANDLE)
-         vkDestroyPipelineLayout(device, passes[i]->pipeline_layout, nullptr);
-
-      passes[i]->pool                     = VK_NULL_HANDLE;
-      passes[i]->pipeline                 = VK_NULL_HANDLE;
-      passes[i]->set_layout               = VK_NULL_HANDLE;
-
-      passes[i]->current_viewport         = swapchain_info.viewport;
-      passes[i]->pass_info                = pass_info[i];
-
-      passes[i]->num_sync_indices         = swapchain_info.num_indices;
-      passes[i]->sync_index               = 0;
-
-      passes[i]->current_framebuffer_size = passes[i]->get_output_size(
-            max_input_size, source);
-      passes[i]->swapchain_render_pass    = swapchain_info.render_pass;
-
-      source                              = passes[i]->current_framebuffer_size;
-      if (!passes[i]->build())
-         return false;
-   }
-
-   require_clear                = false;
-
-   /* Initialize UBO (Uniform Buffer Object) */
-   common.ubo.reset();
-   common.ubo_offset            = 0;
-
-   vkGetPhysicalDeviceProperties(gpu, &props);
-   common.ubo_alignment         = props.limits.minUniformBufferOffsetAlignment;
-
-   /* Who knows. :) */
-   if (common.ubo_alignment == 0)
-      common.ubo_alignment = 1;
-
-   /* Allocate pass buffers */
-   for (i = 0; i < passes.size(); i++)
-   {
-      if (passes[i]->reflection.ubo_stage_mask)
-      {
-         /* Align */
-         passes[i]->common->ubo_offset = (passes[i]->common->ubo_offset +
-               passes[i]->common->ubo_alignment - 1) &
-            ~(passes[i]->common->ubo_alignment - 1);
-         passes[i]->ubo_offset = passes[i]->common->ubo_offset;
-
-         /* Allocate */
-         passes[i]->common->ubo_offset += passes[i]->reflection.ubo_size;
-      }
-   }
-
-   common.ubo_offset            = 
-      (common.ubo_offset + common.ubo_alignment - 1) &
-      ~(common.ubo_alignment - 1);
-   common.ubo_sync_index_stride = common.ubo_offset;
-
-   if (common.ubo_offset != 0)
-      common.ubo                = std::unique_ptr<Buffer>(new Buffer(device,
-               memory_properties, common.ubo_offset * deferred_calls.size(),
-               VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
-
-   if (!common.ubo->mapped && vkMapMemory(common.ubo->device,
-            common.ubo->memory, 0, common.ubo->size, 0, &common.ubo->mapped) == VK_SUCCESS)
-      common.ubo_mapped = static_cast<uint8_t*>(common.ubo->mapped);
-
-   /* Initialize history */
-   original_history.clear();
-   common.original_history.clear();
-
-   for (i = 0; i < passes.size(); i++)
-      required_images =
-         std::max(required_images,
-               passes[i]->reflection.semantic_textures[
-               SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size());
-
-   /* If required images are less than 2, not using frame history */
-   if (required_images >= 2)
-   {
-      /* We don't need to store array element #0,
-       * since it's aliased with the actual original. */
-      required_images--;
-      original_history.reserve(required_images);
-      common.original_history.resize(required_images);
-
-      for (i = 0; i < required_images; i++)
-         original_history.emplace_back(
-               new Framebuffer(device, memory_properties,
-                  max_input_size, original_format, 1));
-
-#ifdef VULKAN_DEBUG
-      RARCH_LOG("[Vulkan filter chain]: Using history of %u frames.\n", unsigned(required_images));
-#endif
-
-      /* On first frame, we need to clear the textures to
-       * a known state, but we need
-       * a command buffer for that, so just defer to first frame.
-       */
-      require_clear = true;
-   }
-
-   /* Initialize feedback */
-   common.fb_feedback.clear();
-   /* Final pass cannot have feedback. */
-   for (i = 0; i < passes.size() - 1; i++)
-   {
-      bool use_feedback = false;
-      for (auto &pass : passes)
-      {
-         const slang_reflection &r = pass->reflection;
-         auto          &feedbacks  = r.semantic_textures[
-            SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
-
-         if (i < feedbacks.size() && feedbacks[i].texture)
-         {
-            use_feedback  = true;
-            use_feedbacks = true;
-            break;
-         }
-      }
-
-      if (use_feedback)
-      {
-         if (!passes[i]->final_pass)
-            return false;
-         passes[i]->fb_feedback = std::unique_ptr<Framebuffer>(
-               new Framebuffer(device, memory_properties,
-                  passes[i]->current_framebuffer_size,
-                  passes[i]->pass_info.rt_format,
-                  passes[i]->pass_info.max_levels));
-#ifdef VULKAN_DEBUG
-         RARCH_LOG("[Vulkan filter chain]: Using framebuffer feedback for pass #%u.\n", i);
-#endif
-      }
-   }
-
-   if (use_feedbacks)
-   {
-      common.fb_feedback.resize(passes.size() - 1);
-      require_clear = true;
-   }
-
-   common.pass_outputs.resize(passes.size());
-   return true;
-}
-
 StaticTexture::StaticTexture(std::string id,
       VkDevice device,
       VkImage image,
@@ -1261,84 +1530,6 @@ Pass::~Pass()
    pool       = VK_NULL_HANDLE;
    pipeline   = VK_NULL_HANDLE;
    set_layout = VK_NULL_HANDLE;
-}
-
-void Pass::add_parameter(unsigned index, const std::string &id)
-{
-   parameters.push_back({ id, index, unsigned(parameters.size()) });
-}
-
-void Pass::set_shader(VkShaderStageFlags stage,
-      const uint32_t *spirv,
-      size_t spirv_words)
-{
-   switch (stage)
-   {
-      case VK_SHADER_STAGE_VERTEX_BIT:
-         vertex_shader.clear();
-         vertex_shader.insert(end(vertex_shader),
-               spirv, spirv + spirv_words);
-         break;
-      case VK_SHADER_STAGE_FRAGMENT_BIT:
-         fragment_shader.clear();
-         fragment_shader.insert(end(fragment_shader),
-               spirv, spirv + spirv_words);
-         break;
-      default:
-         break;
-   }
-}
-
-Size2D Pass::get_output_size(const Size2D &original,
-      const Size2D &source) const
-{
-   float width  = 0.0f;
-   float height = 0.0f;
-   switch (pass_info.scale_type_x)
-   {
-      case GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL:
-         width = float(original.width) * pass_info.scale_x;
-         break;
-
-      case GLSLANG_FILTER_CHAIN_SCALE_SOURCE:
-         width = float(source.width) * pass_info.scale_x;
-         break;
-
-      case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
-         width = (retroarch_get_rotation() % 2 ? current_viewport.height : current_viewport.width) * pass_info.scale_x;
-         break;
-
-      case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
-         width = pass_info.scale_x;
-         break;
-
-      default:
-         break;
-   }
-
-   switch (pass_info.scale_type_y)
-   {
-      case GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL:
-         height = float(original.height) * pass_info.scale_y;
-         break;
-
-      case GLSLANG_FILTER_CHAIN_SCALE_SOURCE:
-         height = float(source.height) * pass_info.scale_y;
-         break;
-
-      case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
-         height = (retroarch_get_rotation() % 2 ? current_viewport.width : current_viewport.height) * pass_info.scale_y;
-         break;
-
-      case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
-         height = pass_info.scale_y;
-         break;
-
-      default:
-         break;
-   }
-
-   return { unsigned(roundf(width)), unsigned(roundf(height)) };
 }
 
 CommonResources::CommonResources(VkDevice device,
@@ -1741,409 +1932,6 @@ bool Pass::build()
    return true;
 }
 
-void Pass::build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
-      slang_texture_semantic semantic, const Texture &texture)
-{
-   unsigned width  = texture.texture.width;
-   unsigned height = texture.texture.height;
-   unsigned index  = 0;
-   auto &refl      = reflection.semantic_textures[semantic];
-
-   if (index < refl.size())
-   {
-      if (buffer && refl[index].uniform)
-      {
-         float *_data = reinterpret_cast<float *>(buffer + refl[index].ubo_offset);
-         _data[0]     = (float)(width);
-         _data[1]     = (float)(height);
-         _data[2]     = 1.0f / (float)(width);
-         _data[3]     = 1.0f / (float)(height);
-      }
-      if (refl[index].push_constant)
-      {
-         float *_data = reinterpret_cast<float *>(push.buffer.data() + (refl[index].push_constant_offset >> 2));
-         _data[0]     = (float)(width);
-         _data[1]     = (float)(height);
-         _data[2]     = 1.0f / (float)(width);
-         _data[3]     = 1.0f / (float)(height);
-      }
-   }
-
-   if (reflection.semantic_textures[semantic][0].texture)
-   {
-      VULKAN_PASS_SET_TEXTURE(
-            device,
-            set,
-            common->samplers[texture.filter][texture.mip_filter][texture.address],
-            reflection.semantic_textures[semantic][0].binding,
-            texture.texture.view,
-            texture.texture.layout);
-   }
-}
-
-void Pass::build_semantic_texture_array(VkDescriptorSet set, uint8_t *buffer,
-      slang_texture_semantic semantic, unsigned index, const Texture &texture)
-{
-   auto &refl      = reflection.semantic_textures[semantic];
-   unsigned width  = texture.texture.width;
-   unsigned height = texture.texture.height;
-
-   if (index < refl.size())
-   {
-      if (buffer && refl[index].uniform)
-      {
-         float *_data = reinterpret_cast<float *>(buffer + refl[index].ubo_offset);
-         _data[0]     = (float)(width);
-         _data[1]     = (float)(height);
-         _data[2]     = 1.0f / (float)(width);
-         _data[3]     = 1.0f / (float)(height);
-      }
-      if (refl[index].push_constant)
-      {
-         float *_data = reinterpret_cast<float *>(push.buffer.data() + (refl[index].push_constant_offset >> 2));
-         _data[0]     = (float)(width);
-         _data[1]     = (float)(height);
-         _data[2]     = 1.0f / (float)(width);
-         _data[3]     = 1.0f / (float)(height);
-      }
-   }
-
-   if (index < reflection.semantic_textures[semantic].size() &&
-         reflection.semantic_textures[semantic][index].texture)
-   {
-      VULKAN_PASS_SET_TEXTURE(
-            device,
-            set,
-            common->samplers[texture.filter][texture.mip_filter][texture.address],
-            reflection.semantic_textures[semantic][index].binding,
-            texture.texture.view,
-            texture.texture.layout);
-   }
-}
-
-void Pass::build_commands(
-      DeferredDisposer &disposer,
-      VkCommandBuffer cmd,
-      const Texture &original,
-      const Texture &source,
-      const VkViewport &vp,
-      const float *mvp)
-{
-   unsigned i;
-   uint8_t *u       = nullptr;
-
-   current_viewport = vp;
-   Size2D size      = get_output_size(
-         { original.texture.width, original.texture.height },
-         { source.texture.width, source.texture.height });
-
-   if (framebuffer &&
-         (size.width  != framebuffer->size.width ||
-          size.height != framebuffer->size.height))
-      framebuffer->set_size(disposer, size);
-
-   current_framebuffer_size = size;
-
-   if (reflection.ubo_stage_mask && common->ubo_mapped)
-      u = common->ubo_mapped + ubo_offset +
-         sync_index * common->ubo_sync_index_stride;
-
-   VkDescriptorSet set = sets[sync_index];
-
-   /* MVP */
-   if (u && reflection.semantics[SLANG_SEMANTIC_MVP].uniform)
-   {
-      size_t offset = reflection.semantics[SLANG_SEMANTIC_MVP].ubo_offset;
-      if (mvp)
-         memcpy(u + offset, mvp, sizeof(float) * 16);
-      else /* Build identity matrix */
-      {
-         float *data = reinterpret_cast<float *>(u + offset);
-         data[ 0] = 1.0f;
-         data[ 1] = 0.0f;
-         data[ 2] = 0.0f;
-         data[ 3] = 0.0f;
-         data[ 4] = 0.0f;
-         data[ 5] = 1.0f;
-         data[ 6] = 0.0f;
-         data[ 7] = 0.0f;
-         data[ 8] = 0.0f;
-         data[ 9] = 0.0f;
-         data[10] = 1.0f;
-         data[11] = 0.0f;
-         data[12] = 0.0f;
-         data[13] = 0.0f;
-         data[14] = 0.0f;
-         data[15] = 1.0f;
-      }
-   }
-
-   if (reflection.semantics[SLANG_SEMANTIC_MVP].push_constant)
-   {
-      size_t offset = reflection.semantics[SLANG_SEMANTIC_MVP].push_constant_offset;
-      if (mvp)
-         memcpy(push.buffer.data() + (offset >> 2), mvp, sizeof(float) * 16);
-      else /* Build identity matrix */
-      {
-         float *data = reinterpret_cast<float *>(push.buffer.data() + (offset >>
-                  2));
-         data[ 0] = 1.0f;
-         data[ 1] = 0.0f;
-         data[ 2] = 0.0f;
-         data[ 3] = 0.0f;
-         data[ 4] = 0.0f;
-         data[ 5] = 1.0f;
-         data[ 6] = 0.0f;
-         data[ 7] = 0.0f;
-         data[ 8] = 0.0f;
-         data[ 9] = 0.0f;
-         data[10] = 1.0f;
-         data[11] = 0.0f;
-         data[12] = 0.0f;
-         data[13] = 0.0f;
-         data[14] = 0.0f;
-         data[15] = 1.0f;
-      }
-   }
-
-   /* Output information */
-   {
-      auto &refl      = reflection.semantics[SLANG_SEMANTIC_OUTPUT];
-      unsigned width  = current_framebuffer_size.width;
-      unsigned height = current_framebuffer_size.height;
-
-      if (u && refl.uniform)
-      {
-         float *_data = reinterpret_cast<float *>(u + refl.ubo_offset);
-         _data[0]     = (float)(width);
-         _data[1]     = (float)(height);
-         _data[2]     = 1.0f / (float)(width);
-         _data[3]     = 1.0f / (float)(height);
-      }
-      if (refl.push_constant)
-      {
-         float *_data = reinterpret_cast<float *>
-            (push.buffer.data() + (refl.push_constant_offset >> 2));
-         _data[0]     = (float)(width);
-         _data[1]     = (float)(height);
-         _data[2]     = 1.0f / (float)(width);
-         _data[3]     = 1.0f / (float)(height);
-      }
-   }
-   {
-      auto &refl      = reflection.semantics[
-         SLANG_SEMANTIC_FINAL_VIEWPORT];
-      unsigned width  = unsigned(current_viewport.width);
-      unsigned height = unsigned(current_viewport.height);
-      if (u && refl.uniform)
-      {
-         float *_data = reinterpret_cast<float *>(u + refl.ubo_offset);
-         _data[0]     = (float)(width);
-         _data[1]     = (float)(height);
-         _data[2]     = 1.0f / (float)(width);
-         _data[3]     = 1.0f / (float)(height);
-      }
-      if (refl.push_constant)
-      {
-         float *_data = reinterpret_cast<float *>
-            (push.buffer.data() + (refl.push_constant_offset >> 2));
-         _data[0]     = (float)(width);
-         _data[1]     = (float)(height);
-         _data[2]     = 1.0f / (float)(width);
-         _data[3]     = 1.0f / (float)(height);
-      }
-   }
-
-   {
-      uint32_t value = frame_count_period 
-         ? uint32_t(frame_count % frame_count_period) 
-         : uint32_t(frame_count);
-      auto &refl     = reflection.semantics[SLANG_SEMANTIC_FRAME_COUNT];
-      if (u && refl.uniform)
-         *reinterpret_cast<uint32_t*>(u + reflection.semantics[SLANG_SEMANTIC_FRAME_COUNT].ubo_offset) = value;
-      if (refl.push_constant)
-         *reinterpret_cast<uint32_t*>(push.buffer.data() + (refl.push_constant_offset >> 2)) = value;
-   }
-   {
-      auto &refl = reflection.semantics[SLANG_SEMANTIC_FRAME_DIRECTION];
-      if (u && refl.uniform)
-         *reinterpret_cast<int32_t*>(u + reflection.semantics[SLANG_SEMANTIC_FRAME_DIRECTION].ubo_offset)
-            = frame_direction;
-      if (refl.push_constant)
-         *reinterpret_cast<int32_t*>(push.buffer.data() +
-               (refl.push_constant_offset >> 2)) = frame_direction;
-   }
-
-   /* Standard inputs */
-   build_semantic_texture(set, u, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
-   build_semantic_texture(set, u, SLANG_TEXTURE_SEMANTIC_SOURCE, source);
-
-   /* ORIGINAL_HISTORY[0] is an alias of ORIGINAL. */
-   build_semantic_texture_array(set, u,
-         SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, 0, original);
-
-   /* Parameters. */
-   for (i = 0; i < filtered_parameters.size(); i++)
-   {
-      unsigned index = filtered_parameters[i].semantic_index;
-      float    value = common->shader_preset->parameters[
-         filtered_parameters[i].index].current;
-      auto &refl     = reflection.semantic_float_parameters[index];
-      /* We will have filtered out stale parameters. */
-      if (u && refl.uniform)
-         *reinterpret_cast<float*>(u + refl.ubo_offset) = value;
-      if (refl.push_constant)
-         *reinterpret_cast<float*>(push.buffer.data() + (refl.push_constant_offset >> 2)) = value;
-   }
-
-   /* Previous inputs. */
-   for (i = 0; i < common->original_history.size(); i++)
-      build_semantic_texture_array(set, u,
-            SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, i + 1,
-            common->original_history[i]);
-
-   /* Previous passes. */
-   for (i = 0; i < common->pass_outputs.size(); i++)
-      build_semantic_texture_array(set, u,
-            SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i,
-            common->pass_outputs[i]);
-
-   /* Feedback FBOs. */
-   for (i = 0; i < common->fb_feedback.size(); i++)
-      build_semantic_texture_array(set, u,
-            SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i,
-            common->fb_feedback[i]);
-
-   /* LUTs. */
-   for (i = 0; i < common->luts.size(); i++)
-      build_semantic_texture_array(set, u,
-            SLANG_TEXTURE_SEMANTIC_USER, i,
-            common->luts[i]->texture);
-
-   if (reflection.ubo_stage_mask)
-      vulkan_set_uniform_buffer(device,
-            sets[sync_index],
-            reflection.ubo_binding,
-            common->ubo->buffer,
-            ubo_offset + sync_index * common->ubo_sync_index_stride,
-            reflection.ubo_size);
-
-   /* The final pass is always executed inside
-    * another render pass since the frontend will
-    * want to overlay various things on top for
-    * the passes that end up on-screen. */
-   if (!final_pass)
-   {
-      VkRenderPassBeginInfo rp_info;
-
-      /* Render. */
-      VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
-            framebuffer->image,
-            1,
-            VK_IMAGE_LAYOUT_UNDEFINED,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            0,
-            VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | 
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_QUEUE_FAMILY_IGNORED,
-            VK_QUEUE_FAMILY_IGNORED);
-
-      rp_info.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-      rp_info.pNext                    = NULL;
-      rp_info.renderPass               = framebuffer->render_pass;
-      rp_info.framebuffer              = framebuffer->framebuffer;
-      rp_info.renderArea.offset.x      = 0;
-      rp_info.renderArea.offset.y      = 0;
-      rp_info.renderArea.extent.width  = current_framebuffer_size.width;
-      rp_info.renderArea.extent.height = current_framebuffer_size.height;
-      rp_info.clearValueCount          = 0;
-      rp_info.pClearValues             = nullptr;
-
-      vkCmdBeginRenderPass(cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
-   }
-
-   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-         pipeline_layout,
-         0, 1, &sets[sync_index], 0, nullptr);
-
-   if (push.stages != 0)
-      vkCmdPushConstants(cmd, pipeline_layout,
-            push.stages, 0, reflection.push_constant_size,
-            push.buffer.data());
-
-   {
-      VkDeviceSize offset = final_pass ? 16 * sizeof(float) : 0;
-      vkCmdBindVertexBuffers(cmd, 0, 1,
-            &common->vbo->buffer,
-            &offset);
-   }
-
-   if (final_pass)
-   {
-      const VkRect2D sci = {
-         {
-            int32_t(current_viewport.x),
-            int32_t(current_viewport.y)
-         },
-         {
-            uint32_t(current_viewport.width),
-            uint32_t(current_viewport.height)
-         },
-      };
-      vkCmdSetViewport(cmd, 0, 1, &current_viewport);
-      vkCmdSetScissor(cmd, 0, 1, &sci);
-      vkCmdDraw(cmd, 4, 1, 0, 0);
-   }
-   else
-   {
-      const VkViewport _vp = {
-         0.0f, 0.0f,
-         float(current_framebuffer_size.width),
-         float(current_framebuffer_size.height),
-         0.0f, 1.0f
-      };
-      const VkRect2D sci = {
-         { 0, 0 },
-         {
-            current_framebuffer_size.width,
-            current_framebuffer_size.height
-         },
-      };
-
-      vkCmdSetViewport(cmd, 0, 1, &_vp);
-      vkCmdSetScissor(cmd, 0, 1, &sci);
-      vkCmdDraw(cmd, 4, 1, 0, 0);
-      vkCmdEndRenderPass(cmd);
-
-      if (framebuffer->levels > 1)
-         vulkan_framebuffer_generate_mips(
-               framebuffer->framebuffer,
-               framebuffer->image,
-               framebuffer->size,
-               cmd,
-               framebuffer->levels);
-      else
-      {
-         /* Barrier to sync with next pass. */
-         VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(
-               cmd,
-               framebuffer->image,
-               VK_REMAINING_MIP_LEVELS,
-               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-               VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-               VK_ACCESS_SHADER_READ_BIT,
-               VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-               VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-               VK_QUEUE_FAMILY_IGNORED,
-               VK_QUEUE_FAMILY_IGNORED);
-      }
-   }
-}
-
 static void vulkan_initialize_render_pass(VkDevice device, VkFormat format,
       VkRenderPass *render_pass)
 {
@@ -2293,46 +2081,6 @@ void Framebuffer::init(DeferredDisposer *disposer)
    }
 }
 
-void Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size, VkFormat format)
-{
-   this->size = size;
-   if (format != VK_FORMAT_UNDEFINED)
-	  this->format = format;
-
-#ifdef VULKAN_DEBUG
-   RARCH_LOG("[Vulkan filter chain]: Updating framebuffer size %ux%u (format: %u).\n",
-         size.width, size.height, (unsigned)this->format);
-#endif
-
-   {
-      /* The current framebuffers, etc, might still be in use
-       * so defer deletion.
-       * We'll most likely be able to reuse the memory,
-       * so don't free it here.
-       *
-       * Fake lambda init captures for C++11.
-       */
-      VkDevice d       = device;
-      VkImage i        = image;
-      VkImageView v    = view;
-      VkImageView fbv  = fb_view;
-      VkFramebuffer fb = framebuffer;
-      disposer.calls.push_back(std::move([=]
-      {
-         if (fb != VK_NULL_HANDLE)
-            vkDestroyFramebuffer(d, fb, nullptr);
-         if (v != VK_NULL_HANDLE)
-            vkDestroyImageView(d, v, nullptr);
-         if (fbv != VK_NULL_HANDLE)
-            vkDestroyImageView(d, fbv, nullptr);
-         if (i != VK_NULL_HANDLE)
-            vkDestroyImage(d, i, nullptr);
-      }));
-   }
-
-   init(&disposer);
-}
-
 Framebuffer::~Framebuffer()
 {
    if (framebuffer != VK_NULL_HANDLE)
@@ -2354,6 +2102,229 @@ vulkan_filter_chain_t *vulkan_filter_chain_new(
       const vulkan_filter_chain_create_info *info)
 {
    return new vulkan_filter_chain(*info);
+}
+
+static bool vulkan_filter_chain_initialize(vulkan_filter_chain_t *chain)
+{
+   unsigned i, j;
+   VkPhysicalDeviceProperties props;
+   size_t required_images = 0;
+   bool use_feedbacks     = false;
+   Size2D source          = chain->max_input_size;
+
+   /* Initialize alias */
+   chain->common.texture_semantic_map.clear();
+   chain->common.texture_semantic_uniform_map.clear();
+
+   for (i = 0; i < chain->passes.size(); i++)
+   {
+      const std::string name = chain->passes[i]->pass_name;
+      if (name.empty())
+         continue;
+
+      j = &chain->passes[i] - chain->passes.data();
+
+      if (!slang_set_unique_map(
+               chain->common.texture_semantic_map, name,
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j }))
+         return false;
+
+      if (!slang_set_unique_map(
+               chain->common.texture_semantic_uniform_map, name + "Size",
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j }))
+         return false;
+
+      if (!slang_set_unique_map(
+               chain->common.texture_semantic_map, name + "Feedback",
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j }))
+         return false;
+
+      if (!slang_set_unique_map(
+               chain->common.texture_semantic_uniform_map, name + "FeedbackSize",
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j }))
+         return false;
+   }
+
+   for (i = 0; i < chain->common.luts.size(); i++)
+   {
+      j = &chain->common.luts[i] - chain->common.luts.data();
+      if (!slang_set_unique_map(
+               chain->common.texture_semantic_map,
+               chain->common.luts[i]->id,
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, j }))
+         return false;
+
+      if (!slang_set_unique_map(
+               chain->common.texture_semantic_uniform_map,
+               chain->common.luts[i]->id + "Size",
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, j }))
+         return false;
+   }
+
+   for (i = 0; i < chain->passes.size(); i++)
+   {
+#ifdef VULKAN_DEBUG
+      const char *name = chain->passes[i]->pass_name.c_str();
+      RARCH_LOG("[slang]: Building pass #%u (%s)\n", i,
+            string_is_empty(name) ?
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) :
+            name);
+#endif
+      if (chain->passes[i]->pool != VK_NULL_HANDLE)
+         vkDestroyDescriptorPool(chain->device, chain->passes[i]->pool, nullptr);
+      if (chain->passes[i]->pipeline != VK_NULL_HANDLE)
+         vkDestroyPipeline(chain->device, chain->passes[i]->pipeline, nullptr);
+      if (chain->passes[i]->set_layout != VK_NULL_HANDLE)
+         vkDestroyDescriptorSetLayout(chain->device, chain->passes[i]->set_layout, nullptr);
+      if (chain->passes[i]->pipeline_layout != VK_NULL_HANDLE)
+         vkDestroyPipelineLayout(chain->device, chain->passes[i]->pipeline_layout, nullptr);
+
+      chain->passes[i]->pool                     = VK_NULL_HANDLE;
+      chain->passes[i]->pipeline                 = VK_NULL_HANDLE;
+      chain->passes[i]->set_layout               = VK_NULL_HANDLE;
+
+      chain->passes[i]->current_viewport         = chain->swapchain_info.viewport;
+      chain->passes[i]->pass_info                = chain->pass_info[i];
+
+      chain->passes[i]->num_sync_indices         = chain->swapchain_info.num_indices;
+      chain->passes[i]->sync_index               = 0;
+
+      chain->passes[i]->current_framebuffer_size =
+         pass_get_output_size(chain->passes[i].get(),
+               chain->max_input_size, source);
+      chain->passes[i]->swapchain_render_pass    = chain->swapchain_info.render_pass;
+
+      source                                     = chain->passes[i]->current_framebuffer_size;
+      if (!chain->passes[i]->build())
+         return false;
+   }
+
+   chain->require_clear         = false;
+
+   /* Initialize UBO (Uniform Buffer Object) */
+   chain->common.ubo.reset();
+   chain->common.ubo_offset     = 0;
+
+   vkGetPhysicalDeviceProperties(chain->gpu, &props);
+   chain->common.ubo_alignment  = props.limits.minUniformBufferOffsetAlignment;
+
+   /* Who knows. :) */
+   if (chain->common.ubo_alignment == 0)
+      chain->common.ubo_alignment = 1;
+
+   /* Allocate pass buffers */
+   for (i = 0; i < chain->passes.size(); i++)
+   {
+      if (chain->passes[i]->reflection.ubo_stage_mask)
+      {
+         /* Align */
+         chain->passes[i]->common->ubo_offset = (chain->passes[i]->common->ubo_offset +
+               chain->passes[i]->common->ubo_alignment - 1) &
+            ~(chain->passes[i]->common->ubo_alignment - 1);
+         chain->passes[i]->ubo_offset = chain->passes[i]->common->ubo_offset;
+
+         /* Allocate */
+         chain->passes[i]->common->ubo_offset += chain->passes[i]->reflection.ubo_size;
+      }
+   }
+
+   chain->common.ubo_offset            = 
+      (chain->common.ubo_offset + chain->common.ubo_alignment - 1) &
+      ~(chain->common.ubo_alignment - 1);
+   chain->common.ubo_sync_index_stride = chain->common.ubo_offset;
+
+   if (chain->common.ubo_offset != 0)
+      chain->common.ubo                = std::unique_ptr<Buffer>(new Buffer(chain->device,
+               chain->memory_properties,
+	       chain->common.ubo_offset * chain->deferred_calls.size(),
+               VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
+
+   if (!chain->common.ubo->mapped && vkMapMemory(chain->common.ubo->device,
+            chain->common.ubo->memory, 0, chain->common.ubo->size, 0, &chain->common.ubo->mapped) == VK_SUCCESS)
+      chain->common.ubo_mapped = static_cast<uint8_t*>(chain->common.ubo->mapped);
+
+   /* Initialize history */
+   chain->original_history.clear();
+   chain->common.original_history.clear();
+
+   for (i = 0; i < chain->passes.size(); i++)
+      required_images =
+         std::max(required_images,
+               chain->passes[i]->reflection.semantic_textures[
+               SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size());
+
+   /* If required images are less than 2, not using frame history */
+   if (required_images >= 2)
+   {
+      /* We don't need to store array element #0,
+       * since it's aliased with the actual original. */
+      required_images--;
+      chain->original_history.reserve(required_images);
+      chain->common.original_history.resize(required_images);
+
+      for (i = 0; i < required_images; i++)
+         chain->original_history.emplace_back(
+               new Framebuffer(chain->device,
+		       chain->memory_properties,
+		       chain->max_input_size,
+		       chain->original_format, 1));
+
+#ifdef VULKAN_DEBUG
+      RARCH_LOG("[Vulkan filter chain]: Using history of %u frames.\n", unsigned(required_images));
+#endif
+
+      /* On first frame, we need to clear the textures to
+       * a known state, but we need
+       * a command buffer for that, so just defer to first frame.
+       */
+      chain->require_clear = true;
+   }
+
+   /* Initialize feedback */
+   chain->common.fb_feedback.clear();
+   /* Final pass cannot have feedback. */
+   for (i = 0; i < chain->passes.size() - 1; i++)
+   {
+      bool use_feedback = false;
+      for (auto &pass : chain->passes)
+      {
+         const slang_reflection &r = pass->reflection;
+         auto          &feedbacks  = r.semantic_textures[
+            SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
+
+         if (i < feedbacks.size() && feedbacks[i].texture)
+         {
+            use_feedback  = true;
+            use_feedbacks = true;
+            break;
+         }
+      }
+
+      if (use_feedback)
+      {
+         if (!chain->passes[i]->final_pass)
+            return false;
+         chain->passes[i]->fb_feedback = std::unique_ptr<Framebuffer>(
+               new Framebuffer(
+		       chain->device,
+		       chain->memory_properties,
+		       chain->passes[i]->current_framebuffer_size,
+		       chain->passes[i]->pass_info.rt_format,
+		       chain->passes[i]->pass_info.max_levels));
+#ifdef VULKAN_DEBUG
+         RARCH_LOG("[Vulkan filter chain]: Using framebuffer feedback for pass #%u.\n", i);
+#endif
+      }
+   }
+
+   if (use_feedbacks)
+   {
+      chain->common.fb_feedback.resize(chain->passes.size() - 1);
+      chain->require_clear = true;
+   }
+
+   chain->common.pass_outputs.resize(chain->passes.size());
+   return true;
 }
 
 vulkan_filter_chain_t *vulkan_filter_chain_create_default(
@@ -2381,14 +2352,16 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
 
    chain->pass_info[0]     = pass_info;
 
-   chain->passes[0]->set_shader(VK_SHADER_STAGE_VERTEX_BIT,
+   vulkan_filter_chain_set_shader(chain.get(), 0,
+         VK_SHADER_STAGE_VERTEX_BIT,
          opaque_vert,
          sizeof(opaque_vert) / sizeof(uint32_t));
-   chain->passes[0]->set_shader(VK_SHADER_STAGE_FRAGMENT_BIT,
+   vulkan_filter_chain_set_shader(chain.get(), 0,
+         VK_SHADER_STAGE_FRAGMENT_BIT,
          opaque_frag,
          sizeof(opaque_frag) / sizeof(uint32_t));
 
-   if (!chain->init())
+   if (!vulkan_filter_chain_initialize(chain.get()))
       return nullptr;
 
    return chain.release();
@@ -2473,8 +2446,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
                      itr->id);
                return nullptr;
             }
-            chain->passes[i]->add_parameter(itr - shader->parameters,
-meta_param.id);
+            chain->passes[i]->parameters.push_back({ meta_param.id, unsigned(itr - shader->parameters), unsigned(chain->passes[i]->parameters.size()) });
          }
          else
          {
@@ -2485,16 +2457,17 @@ meta_param.id);
             param->minimum = meta_param.minimum;
             param->maximum = meta_param.maximum;
             param->step    = meta_param.step;
-            chain->passes[i]->add_parameter(shader->num_parameters,
-meta_param.id);
+            chain->passes[i]->parameters.push_back({ meta_param.id, shader->num_parameters, unsigned(chain->passes[i]->parameters.size()) });
             shader->num_parameters++;
          }
       }
 
-      chain->passes[i]->set_shader(VK_SHADER_STAGE_VERTEX_BIT,
+      vulkan_filter_chain_set_shader(chain.get(), i,
+            VK_SHADER_STAGE_VERTEX_BIT,
             output.vertex.data(),
             output.vertex.size());
-      chain->passes[i]->set_shader(VK_SHADER_STAGE_FRAGMENT_BIT,
+      vulkan_filter_chain_set_shader(chain.get(), i,
+            VK_SHADER_STAGE_FRAGMENT_BIT,
             output.fragment.data(),
             output.fragment.size());
       chain->passes[i]->frame_count_period = pass->frame_count_mod;
@@ -2652,11 +2625,13 @@ meta_param.id);
 
       chain->pass_info[shader->passes] = pass_info;
 
-      chain->passes[shader->passes]->set_shader(
+      vulkan_filter_chain_set_shader(chain.get(),
+            shader->passes,
             VK_SHADER_STAGE_VERTEX_BIT,
             opaque_vert,
             sizeof(opaque_vert) / sizeof(uint32_t));
-      chain->passes[shader->passes]->set_shader(
+      vulkan_filter_chain_set_shader(chain.get(),
+            shader->passes,
             VK_SHADER_STAGE_FRAGMENT_BIT,
             opaque_frag,
             sizeof(opaque_frag) / sizeof(uint32_t));
@@ -2664,7 +2639,7 @@ meta_param.id);
 
    chain->common.shader_preset = std::move(std::move(shader));
 
-   if (!chain->init())
+   if (!vulkan_filter_chain_initialize(chain.get()))
       return nullptr;
 
    return chain.release();
@@ -2689,7 +2664,23 @@ void vulkan_filter_chain_set_shader(
       const uint32_t *spirv,
       size_t spirv_words)
 {
-   chain->passes[pass]->set_shader(stage, spirv, spirv_words);
+   switch (stage)
+   {
+      case VK_SHADER_STAGE_VERTEX_BIT:
+         chain->passes[pass]->vertex_shader.clear();
+         chain->passes[pass]->vertex_shader.insert(
+               end(chain->passes[pass]->vertex_shader),
+               spirv, spirv + spirv_words);
+         break;
+      case VK_SHADER_STAGE_FRAGMENT_BIT:
+         chain->passes[pass]->fragment_shader.clear();
+         chain->passes[pass]->fragment_shader.insert(
+               end(chain->passes[pass]->fragment_shader),
+               spirv, spirv + spirv_words);
+         break;
+      default:
+         break;
+   }
 }
 
 void vulkan_filter_chain_set_pass_info(
@@ -2728,7 +2719,7 @@ bool vulkan_filter_chain_update_swapchain_info(
       calls.clear();
    }
    chain->deferred_calls.resize(num_indices);
-   return chain->init();
+   return vulkan_filter_chain_initialize(chain);
 }
 
 void vulkan_filter_chain_notify_sync_index(
@@ -2749,7 +2740,7 @@ void vulkan_filter_chain_notify_sync_index(
 
 bool vulkan_filter_chain_init(vulkan_filter_chain_t *chain)
 {
-   return chain->init();
+   return vulkan_filter_chain_initialize(chain);
 }
 
 void vulkan_filter_chain_set_input_texture(
@@ -2872,7 +2863,8 @@ void vulkan_filter_chain_build_offscreen_passes(
 
    for (i = 0; i < chain->passes.size() - 1; i++)
    {
-      chain->passes[i]->build_commands(disposer, cmd,
+      pass_build_commands(chain->passes[i].get(), 
+            disposer, cmd,
             original, source, *vp, nullptr);
 
       const Framebuffer &fb   = *chain->passes[i]->framebuffer;
@@ -2941,7 +2933,8 @@ void vulkan_filter_chain_build_viewport_pass(
       source.address         = chain->passes.back()->pass_info.address;
    }
 
-   chain->passes.back()->build_commands(disposer, cmd,
+   pass_build_commands(chain->passes.back().get(), 
+         disposer, cmd,
          original, source, *vp, mvp);
 
    /* For feedback FBOs, swap current and previous. */
@@ -2991,7 +2984,7 @@ void vulkan_filter_chain_end_frame(
             chain->input_texture.height     != tmp->size.height ||
             (chain->input_texture.format    != VK_FORMAT_UNDEFINED 
              && chain->input_texture.format != tmp->format))
-         tmp->set_size(disposer, { chain->input_texture.width,
+         framebuffer_set_size(tmp.get(), disposer, { chain->input_texture.width,
                chain->input_texture.height }, chain->input_texture.format);
 
       vulkan_framebuffer_copy(tmp->image, tmp->size,
