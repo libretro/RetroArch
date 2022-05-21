@@ -8261,8 +8261,6 @@ static void ozone_render(void *data,
    gfx_animation_t          *p_anim   = anim_get_ptr();
    settings_t             *settings   = config_get_ptr();
    bool ozone_collapse_sidebar        = settings->bools.ozone_collapse_sidebar;
-   float ozone_thumbnail_scale_factor =
-      settings->floats.ozone_thumbnail_scale_factor;
    if (!ozone)
       return;
 
@@ -8270,6 +8268,7 @@ static void ozone_render(void *data,
     * factor have changed */
    scale_factor = gfx_display_get_dpi_scale(p_disp, settings,
          width, height, false, false);
+   thumbnail_scale_factor = settings->floats.ozone_thumbnail_scale_factor;
 
    if ((scale_factor != ozone->last_scale_factor) ||
        (thumbnail_scale_factor != ozone->last_thumbnail_scale_factor) ||
