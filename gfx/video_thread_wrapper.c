@@ -236,33 +236,36 @@ static bool video_thread_handle_packet(
          break;
 
       case CMD_OVERLAY_LOAD:
-         thr->alpha_mods = pkt.data.image.num;
-
-         if (thr->driver_data && thr->overlay && thr->overlay->load)
-            pkt.data.b = thr->overlay->load(thr->driver_data,
-               pkt.data.image.data, pkt.data.image.num);
-         else
-            pkt.data.b = false;
-
-         if (thr->alpha_mods > 0)
          {
-            float *tmp_alpha_mod = (float*)realloc(thr->alpha_mod,
-               thr->alpha_mods * sizeof(float));
-            if (tmp_alpha_mod)
+            unsigned tmp_alpha_mods = pkt.data.image.num;
+
+            if (thr->driver_data && thr->overlay && thr->overlay->load)
+               pkt.data.b = thr->overlay->load(thr->driver_data,
+                  pkt.data.image.data, pkt.data.image.num);
+            else
+               pkt.data.b = false;
+
+            if (tmp_alpha_mods > 0)
             {
-               /* Avoid temporary garbage data. */
-               unsigned i;
-               for (i = 0; i < thr->alpha_mods; i++)
-                  tmp_alpha_mod[i] = 1.0f;
-               thr->alpha_mod = tmp_alpha_mod;
+               float *tmp_alpha_mod = (float*)realloc(thr->alpha_mod,
+                  tmp_alpha_mods * sizeof(float));
+               if (tmp_alpha_mod)
+               {
+                  /* Avoid temporary garbage data. */
+                  unsigned i;
+                  for (i = 0; i < tmp_alpha_mods; i++)
+                     tmp_alpha_mod[i] = 1.0f;
+                  thr->alpha_mods = tmp_alpha_mods;
+                  thr->alpha_mod  = tmp_alpha_mod;
+               }
+            }
+            else
+            {
+               free(thr->alpha_mod);
+               thr->alpha_mods = 0;
+               thr->alpha_mod  = NULL;
             }
          }
-         else
-         {
-            free(thr->alpha_mod);
-            thr->alpha_mod = NULL;
-         }
-
          video_thread_reply(thr, &pkt);
          break;
 
@@ -819,6 +822,13 @@ static void video_thread_free(void *data)
          video_thread_send_and_wait_user_to_thread(thr, &pkt);
 
          sthread_join(thr->thread);
+      }
+      else
+      {
+         /* If we don't have a thread,
+            we must call the driver's free function ourselves. */
+         if (thr->driver_data && thr->driver && thr->driver->free)
+            thr->driver->free(thr->driver_data);
       }
 
       free(thr->texture.frame);
