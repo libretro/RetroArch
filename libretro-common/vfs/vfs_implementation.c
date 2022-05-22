@@ -57,11 +57,6 @@
 #  include <dirent.h>
 #  endif
 #  include <unistd.h>
-#  if defined(ORBIS)
-#  include <sys/fcntl.h>
-#  include <sys/dirent.h>
-#  include <orbisFile.h>
-#  endif
 #  if defined(WIIU)
 #  include <malloc.h>
 #  endif
@@ -74,11 +69,6 @@
 #  include <psp2/io/fcntl.h>
 #  include <psp2/io/dirent.h>
 #  include <psp2/io/stat.h>
-#elif defined(ORBIS)
-#  include <orbisFile.h>
-#  include <ps4link.h>
-#  include <sys/dirent.h>
-#  include <sys/fcntl.h>
 #elif !defined(_WIN32)
 #  if defined(PSP)
 #    include <pspiofilemgr.h>
@@ -124,11 +114,7 @@
 #include <unistd.h>
 #endif
 
-#if defined(ORBIS)
-#include <orbisFile.h>
-#include <sys/fcntl.h>
-#include <sys/dirent.h>
-#endif
+
 #if defined(PSP)
 #include <pspkernel.h>
 #endif
@@ -200,13 +186,6 @@ int64_t retro_vfs_file_seek_internal(
 #ifdef ATLEAST_VC2005
       /* VC2005 and up have a special 64-bit fseek */
       return _fseeki64(stream->fp, offset, whence);
-#elif defined(ORBIS)
-      {
-         int ret = orbisLseek(stream->fd, offset, whence);
-         if (ret < 0)
-            return -1;
-         return 0;
-      }
 #elif defined(HAVE_64BIT_OFFSETS)
       return fseeko(stream->fp, (off_t)offset, whence);
 #else
@@ -359,24 +338,20 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
          mode_str = "wb";
 
          flags    = O_WRONLY | O_CREAT | O_TRUNC;
-#if !defined(ORBIS)
 #if !defined(_WIN32)
          flags   |= S_IRUSR | S_IWUSR;
 #else
          flags   |= O_BINARY;
-#endif
 #endif
          break;
 
       case RETRO_VFS_FILE_ACCESS_READ_WRITE:
          mode_str = "w+b";
          flags    = O_RDWR | O_CREAT | O_TRUNC;
-#if !defined(ORBIS)
 #if !defined(_WIN32)
          flags   |= S_IRUSR | S_IWUSR;
 #else
          flags   |= O_BINARY;
-#endif
 #endif
          break;
 
@@ -385,12 +360,10 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
          mode_str = "r+b";
 
          flags    = O_RDWR;
-#if !defined(ORBIS)
 #if !defined(_WIN32)
          flags   |= S_IRUSR | S_IWUSR;
 #else
          flags   |= O_BINARY;
-#endif
 #endif
          break;
 
@@ -400,15 +373,6 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
-#ifdef ORBIS
-      int fd = orbisOpen(path, flags, 0644);
-      if (fd < 0)
-      {
-         stream->fd = -1;
-         goto error;
-      }
-      stream->fd    = fd;
-#else
       FILE *fp;
 #ifdef HAVE_CDROM
       if (stream->scheme == VFS_SCHEME_CDROM)
@@ -467,7 +431,6 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
             setvbuf(stream->fp, stream->buf, _IOFBF, 0x4000);
       }
 #endif
-#endif
    }
    else
    {
@@ -510,10 +473,6 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       }
 #endif
    }
-#ifdef ORBIS
-   stream->size = orbisLseek(stream->fd, 0, SEEK_END);
-   orbisLseek(stream->fd, 0, SEEK_SET);
-#else
 #ifdef HAVE_CDROM
    if (stream->scheme == VFS_SCHEME_CDROM)
    {
@@ -534,7 +493,6 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 
       retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
    }
-#endif
    return stream;
 
 error:
@@ -570,12 +528,7 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
 
    if (stream->fd > 0)
    {
-#ifdef ORBIS
-      orbisClose(stream->fd);
-      stream->fd = -1;
-#else
       close(stream->fd);
-#endif
    }
 #ifdef HAVE_CDROM
 end:
@@ -599,12 +552,7 @@ int retro_vfs_file_error_impl(libretro_vfs_implementation_file *stream)
    if (stream->scheme == VFS_SCHEME_CDROM)
       return retro_vfs_file_error_cdrom(stream);
 #endif
-#ifdef ORBIS
-   /* TODO/FIXME - implement this? */
-   return 0;
-#else
    return ferror(stream->fp);
-#endif
 }
 
 int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream)
@@ -641,14 +589,6 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
       if (stream->scheme == VFS_SCHEME_CDROM)
          return retro_vfs_file_tell_cdrom(stream);
 #endif
-#ifdef ORBIS
-      {
-         int64_t ret = orbisLseek(stream->fd, 0, SEEK_CUR);
-         if (ret < 0)
-            return -1;
-         return ret;
-      }
-#else
 #ifdef ATLEAST_VC2005
       /* VC2005 and up have a special 64-bit ftell */
       return _ftelli64(stream->fp);
@@ -656,7 +596,6 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
       return ftello(stream->fp);
 #else
       return ftell(stream->fp);
-#endif
 #endif
    }
 #ifdef HAVE_MMAP
@@ -704,13 +643,7 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
       if (stream->scheme == VFS_SCHEME_CDROM)
          return retro_vfs_file_read_cdrom(stream, s, len);
 #endif
-#ifdef ORBIS
-      if (orbisRead(stream->fd, s, (size_t)len) < 0)
-         return -1;
-      return 0;
-#else
       return fread(s, 1, (size_t)len, stream->fp);
-#endif
    }
 #ifdef HAVE_MMAP
    if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
@@ -738,13 +671,7 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, cons
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
-#ifdef ORBIS
-      if (orbisWrite(stream->fd, s, (size_t)len) < 0)
-         return -1;
-      return 0;
-#else
       return fwrite(s, 1, (size_t)len, stream->fp);
-#endif
    }
 
 #ifdef HAVE_MMAP
@@ -758,11 +685,7 @@ int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream)
 {
    if (!stream)
       return -1;
-#ifdef ORBIS
-   return 0;
-#else
    return fflush(stream->fp) == 0 ? 0 : -1;
-#endif
 }
 
 int retro_vfs_file_remove_impl(const char *path)
@@ -801,10 +724,6 @@ int retro_vfs_file_remove_impl(const char *path)
    }
 #endif
    return -1;
-#elif defined(ORBIS)
-   /* Orbis
-    * TODO/FIXME - stub for now */
-   return 0;
 #else
    if (remove(path) == 0)
       return 0;
@@ -861,13 +780,6 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
 #endif
    return ret;
 
-#elif defined(ORBIS)
-   /* Orbis */
-   /* TODO/FIXME - Stub for now */
-   if (!old_path || !*old_path || !new_path || !*new_path)
-      return -1;
-   return 0;
-
 #else
    /* Every other platform */
    if (!old_path || !*old_path || !new_path || !*new_path)
@@ -913,21 +825,6 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
       *size                  = (int32_t)buf.st_size;
 
    is_dir                    = FIO_S_ISDIR(buf.st_mode);
-#elif defined(ORBIS)
-   /* Orbis */
-   int dir_ret               = 0;
-
-   if (!path || !*path)
-      return 0;
-
-   if (size)
-      *size                  = (int32_t)buf.st_size;
-
-   dir_ret                   = orbisDopen(path);
-   is_dir                    = dir_ret > 0;
-   orbisDclose(dir_ret);
-
-   is_character_special      = S_ISCHR(buf.st_mode);
 #elif defined(__PSL1GHT__) || defined(__PS3__)
    /* Lowlevel Lv2 */
    sysFSStat buf;
@@ -1034,7 +931,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
 
 #if defined(VITA)
 #define path_mkdir_error(ret) (((ret) == SCE_ERROR_ERRNO_EEXIST))
-#elif defined(PSP) || defined(PS2) || defined(_3DS) || defined(WIIU) || defined(SWITCH) || defined(ORBIS)
+#elif defined(PSP) || defined(PS2) || defined(_3DS) || defined(WIIU) || defined(SWITCH)
 #define path_mkdir_error(ret) ((ret) == -1)
 #else
 #define path_mkdir_error(ret) ((ret) < 0 && errno == EEXIST)
@@ -1059,8 +956,6 @@ int retro_vfs_mkdir_impl(const char *dir)
    int ret = mkdir(dir, 0755);
 #elif defined(VITA)
    int ret = sceIoMkdir(dir, 0777);
-#elif defined(ORBIS)
-   int ret = orbisMkdir(dir, 0755);
 #elif defined(__QNX__)
    int ret = mkdir(dir, 0777);
 #elif defined(GEKKO)
@@ -1117,9 +1012,6 @@ struct libretro_vfs_implementation_dir
    int error;
    int directory;
    sysFSDirent entry;
-#elif defined(ORBIS)
-   int directory;
-   struct dirent entry;
 #else
    DIR *directory;
    const struct dirent *entry;
@@ -1199,8 +1091,6 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
    rdir->entry           = NULL;
 #elif defined(__PSL1GHT__) || defined(__PS3__)
    rdir->error           = sysFsOpendir(name, &rdir->directory);
-#elif defined(ORBIS)
-   rdir->directory       = orbisDopen(name);
 #else
    rdir->directory       = opendir(name);
    rdir->entry           = NULL;
@@ -1238,8 +1128,6 @@ bool retro_vfs_readdir_impl(libretro_vfs_implementation_dir *rdir)
    uint64_t nread;
    rdir->error = sysFsReaddir(rdir->directory, &rdir->entry, &nread);
    return (nread != 0);
-#elif defined(ORBIS)
-   return (orbisDread(rdir->directory, &rdir->entry) > 0);
 #else
    return ((rdir->entry = readdir(rdir->directory)) != NULL);
 #endif
@@ -1258,7 +1146,7 @@ const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *rdir
    if (name)
       free(name);
    return (char*)rdir->entry.cFileName;
-#elif defined(VITA) || defined(ORBIS) || defined(__PSL1GHT__) || defined(__PS3__)
+#elif defined(VITA) || defined(__PSL1GHT__) || defined(__PS3__)
    return rdir->entry.d_name;
 #else
    if (!rdir || !rdir->entry)
@@ -1278,12 +1166,6 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
 #elif defined(__PSL1GHT__) || defined(__PS3__)
    sysFSDirent *entry          = (sysFSDirent*)&rdir->entry;
    return (entry->d_type == FS_TYPE_DIR);
-#elif defined(ORBIS)
-   const struct dirent *entry   = &rdir->entry;
-   if (entry->d_type == DT_DIR)
-      return true;
-   if (!(entry->d_type == DT_UNKNOWN || entry->d_type == DT_LNK))
-      return false;
 #else
    struct stat buf;
    char path[PATH_MAX_LENGTH];
@@ -1316,8 +1198,6 @@ int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *rdir)
    sceIoDclose(rdir->directory);
 #elif defined(__PSL1GHT__) || defined(__PS3__)
    rdir->error = sysFsClosedir(rdir->directory);
-#elif defined(ORBIS)
-   orbisDclose(rdir->directory);
 #else
    if (rdir->directory)
       closedir(rdir->directory);

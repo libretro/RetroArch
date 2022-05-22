@@ -15,8 +15,11 @@
  */
 
 #include <stdlib.h>
-
+#include <string/stdstring.h>
 #include <compat/strl.h>
+#include <piglet.h>
+#include <orbis/libkernel.h>
+#include <EGL/egl.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -29,12 +32,14 @@
 #include "../common/orbis_common.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../configuration.h"
+#include <defines/ps4_defines.h>
 
 /* TODO/FIXME - static globals */
 static enum gfx_ctx_api ctx_orbis_api = GFX_CTX_OPENGL_API;
 
 /* TODO/FIXME - global reference */
 extern bool platform_orbis_has_focus;
+extern SceKernelModule s_piglet_module;
 
 void orbis_ctx_destroy(void *data)
 {
@@ -53,7 +58,7 @@ void orbis_ctx_destroy(void *data)
 static void orbis_ctx_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
-   orbis_ctx_data_t 
+   orbis_ctx_data_t
       *ctx_orbis = (orbis_ctx_data_t *)data;
 
    *width        = ATTR_ORBISGL_WIDTH;
@@ -75,7 +80,11 @@ static void *orbis_ctx_init(void *video_driver)
          EGL_STENCIL_SIZE, 0,
          EGL_SAMPLE_BUFFERS, 0,
          EGL_SAMPLES, 0,
+#if defined(HAVE_OPENGLES3)
+         EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
+#else
          EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+#endif
          EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
          EGL_NONE};
 #endif
@@ -91,18 +100,18 @@ static void *orbis_ctx_init(void *video_driver)
    memset(&ctx_orbis->pgl_config, 0, sizeof(ctx_orbis->pgl_config));
 
    {
-      ctx_orbis->pgl_config.size                    = 
+      ctx_orbis->pgl_config.size                    =
          sizeof(ctx_orbis->pgl_config);
-      ctx_orbis->pgl_config.flags                   = 
-           SCE_PGL_FLAGS_USE_COMPOSITE_EXT 
-         | SCE_PGL_FLAGS_USE_FLEXIBLE_MEMORY 
+      ctx_orbis->pgl_config.flags                   =
+           SCE_PGL_FLAGS_USE_COMPOSITE_EXT
+         | SCE_PGL_FLAGS_USE_FLEXIBLE_MEMORY
          | 0x60;
       ctx_orbis->pgl_config.processOrder            = 1;
-      ctx_orbis->pgl_config.systemSharedMemorySize  = 0x200000;
-      ctx_orbis->pgl_config.videoSharedMemorySize   = 0x2400000;
-      ctx_orbis->pgl_config.maxMappedFlexibleMemory = 0xAA00000;
-      ctx_orbis->pgl_config.drawCommandBufferSize   = 0xC0000;
-      ctx_orbis->pgl_config.lcueResourceBufferSize  = 0x10000;
+      ctx_orbis->pgl_config.systemSharedMemorySize =  0x1000000;
+      ctx_orbis->pgl_config.videoSharedMemorySize =   0x3000000;
+      ctx_orbis->pgl_config.maxMappedFlexibleMemory = 0xFFFFFFFF;
+      ctx_orbis->pgl_config.drawCommandBufferSize =   0x100000;
+      ctx_orbis->pgl_config.lcueResourceBufferSize =  0x1000000;
       ctx_orbis->pgl_config.dbgPosCmd_0x40          = ATTR_ORBISGL_WIDTH;
       ctx_orbis->pgl_config.dbgPosCmd_0x44          = ATTR_ORBISGL_HEIGHT;
       ctx_orbis->pgl_config.dbgPosCmd_0x48          = 0;
@@ -115,6 +124,22 @@ static void *orbis_ctx_init(void *video_driver)
 		  printf("[ORBISGL] scePigletSetConfigurationVSH failed 0x%08X.\n",ret);
         goto error;
     }
+
+#if defined(HAVE_OOSDK)
+    const char *shdr_cache_dir = "/data/retroarch/temp/";
+    memset(&ctx_orbis->shdr_cache_config, 0, sizeof(ctx_orbis->shdr_cache_config));
+    {
+      ctx_orbis->shdr_cache_config.ver = 0x00010064;
+      snprintf(ctx_orbis->shdr_cache_config.cache_dir, strlen(shdr_cache_dir) + 1, "%s", shdr_cache_dir);
+    }
+
+    ret = scePigletSetShaderCacheConfiguration(&ctx_orbis->shdr_cache_config);
+    if (!ret)
+    {
+        printf("[ORBISGL] scePigletSetShaderCacheConfiguration failed 0x%08X.\n",ret);
+        goto error;
+    }
+#endif
 
     if (!egl_init_context(&ctx_orbis->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
                           &major, &minor, &n, attribs, NULL))
@@ -154,10 +179,14 @@ static bool orbis_ctx_set_video_mode(void *data,
       bool fullscreen)
 {
     /* Create an EGL rendering context */
-    static const EGLint 
+    static const EGLint
        contextAttributeList[]       =
         {
-            EGL_CONTEXT_CLIENT_VERSION, 2,
+#if defined(HAVE_OPENGLES3)
+            EGL_CONTEXT_CLIENT_VERSION, 3, // GLES3
+#else
+            EGL_CONTEXT_CLIENT_VERSION, 2, // GLES2
+#endif
             EGL_NONE};
 
     orbis_ctx_data_t *ctx_orbis     = (orbis_ctx_data_t *)data;
@@ -239,6 +268,16 @@ static void orbis_ctx_swap_buffers(void *data)
 #endif
 }
 
+static gfx_ctx_proc_t orbis_ctx_get_proc_address(const char *symbol)
+{
+    gfx_ctx_proc_t ptr_sym = NULL;
+#ifdef HAVE_EGL
+    ptr_sym = egl_get_proc_address(symbol);
+#endif
+  if (!ptr_sym && s_piglet_module > 0)
+    sceKernelDlsym(s_piglet_module, symbol, (void **)&ptr_sym);
+  return ptr_sym;
+}
 static void orbis_ctx_bind_hw_render(void *data, bool enable)
 {
    orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)data;

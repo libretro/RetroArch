@@ -422,7 +422,7 @@ void network_deinit(void)
 
 uint16_t inet_htons(uint16_t hostshort)
 {
-#if defined(VITA) || defined(__ORBIS__)
+#if defined(VITA)
    return sceNetHtons(hostshort);
 #else
    return htons(hostshort);
@@ -432,7 +432,7 @@ uint16_t inet_htons(uint16_t hostshort)
 
 int inet_ptrton(int af, const char *src, void *dst)
 {
-#if defined(VITA) || defined(__ORBIS__)
+#if defined(VITA)
    return sceNetInetPton(af, src, dst);
 #elif defined(GEKKO) || defined(_WIN32)
    /* TODO/FIXME - should use InetPton on Vista and later */
@@ -597,7 +597,7 @@ static const char *isockaddr_ntop(int af,
 
 const char *inet_ntop_compat(int af, const void *src, char *dst, socklen_t cnt)
 {
-#if defined(VITA) || defined(__ORBIS__)
+#if defined(VITA)
    return sceNetInetNtop(af,src,dst,cnt);
 #elif defined(WIIU)
    return inet_ntop(af, src, dst, cnt);

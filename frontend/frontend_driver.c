@@ -195,6 +195,9 @@ bool frontend_driver_get_core_extension(char *s, size_t len)
 #if defined(PSP)
    strcpy_literal(s, "pbp");
    return true;
+#elif defined(ORBIS)
+   strlcpy(s, "self|bin", len);
+   return true;
 #elif defined(VITA)
    strcpy_literal(s, "self|bin");
    return true;
@@ -246,6 +249,9 @@ bool frontend_driver_get_salamander_basename(char *s, size_t len)
 
 #if defined(PSP)
    strcpy_literal(s, "EBOOT.PBP");
+   return true;
+#elif defined(ORBIS)
+   strlcpy(s, "eboot.bin", len);
    return true;
 #elif defined(VITA)
    strcpy_literal(s, "eboot.bin");

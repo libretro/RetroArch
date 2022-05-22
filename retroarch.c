@@ -4604,10 +4604,7 @@ static bool retroarch_parse_input_and_config(
    optstring = "hs:fvS:A:U:DN:d:e:"
       BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
 
-#if defined(ORBIS)
-   argv      = &(argv[2]);
-   argc      = argc - 2;
-#elif defined(WEBOS)
+#if defined(WEBOS)
    argv      = &(argv[1]);
    argc      = argc - 1;
 #endif

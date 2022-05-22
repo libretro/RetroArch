@@ -312,6 +312,14 @@ static const char *font_renderer_stb_unicode_get_default_font(void)
       "vs0:data/external/font/pvf/k006004ds.ttf",
       "vs0:data/external/font/pvf/n023055ms.ttf",
       "vs0:data/external/font/pvf/n023055ts.ttf",
+#elif defined(ORBIS)
+      "/preinst/common/font/c041056ts.ttf",
+      "/preinst/common/font/d013013ds.ttf",
+      "/preinst/common/font/e046323ms.ttf",
+      "/preinst/common/font/e046323ts.ttf",
+      "/preinst/common/font/k006004ds.ttf",
+      "/preinst/common/font/n023055ms.ttf",
+      "/preinst/common/font/n023055ts.ttf",
 #elif !defined(__WINRT__)
       "/usr/share/fonts/TTF/DejaVuSansMono.ttf",
       "/usr/share/fonts/TTF/DejaVuSans.ttf",

@@ -1133,9 +1133,6 @@ FILE
 #if defined(HAVE_MMAP_WIN32)
 #include "../libretro-common/file/nbio/nbio_windowsmmap.c"
 #endif
-#if defined(ORBIS)
-#include "../libretro-common/file/nbio/nbio_orbis.c"
-#endif
 #include "../libretro-common/file/nbio/nbio_intf.c"
 
 /*============================================================
