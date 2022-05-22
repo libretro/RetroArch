@@ -91,13 +91,8 @@ static enum frontend_fork orbis_fork_mode = FRONTEND_FORK_NONE;
 #define MEM_SIZE (3UL * 1024 * 1024 * 1024) /* 2600 MiB */
 #define MEM_ALIGN (16UL * 1024)
 
-/* TODO: INCLUDING <orbislink.h> produces duplication errors */
+/* TODO/FIXME: INCLUDING <orbislink.h> produces duplication errors */
 int initOrbisLinkAppVanillaGl(void);
-
-
-static OrbisMspace s_mspace = 0;
-static void *address = 0;
-static size_t s_mem_size = MEM_SIZE;
 
 #if defined(HAVE_TAUON_SDK)
 void catchReturnFromMain(int exit_code)
@@ -111,10 +106,6 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
 {
    unsigned i;
    struct rarch_main_wrap *params = NULL;
-
-   (void)args;
-
-   int ret;
 
    strlcpy(eboot_path, EBOOT_PATH, sizeof(eboot_path));
    strlcpy(g_defaults.dirs[DEFAULT_DIR_PORT], eboot_path, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
@@ -192,39 +183,23 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
          args->content_path   = path;
          args->libretro_path  = NULL;
 
-         RARCH_LOG("argv[0]: %s\n", argv[0]);
-         RARCH_LOG("argv[1]: %s\n", argv[1]);
-         RARCH_LOG("argv[2]: %s\n", argv[2]);
-
          RARCH_LOG("Auto-start game %s.\n", argv[CONTENT_PATH_ARG_INDEX]);
       }
    }
 
    dir_check_defaults("host0:app/custom.ini");
 #endif
-
-   RARCH_LOG("[%s][%s][%d]\n",__FILE__,__PRETTY_FUNCTION__,__LINE__);
 }
 
-static void frontend_orbis_deinit(void *data)
-{
-   (void)data;
-}
+static void frontend_orbis_deinit(void *data) { }
+static void frontend_orbis_shutdown(bool unused) { }
 
-static void frontend_orbis_shutdown(bool unused)
+static bool frontend_orbis_init_app(void)
 {
-   (void)unused;
-   return;
-}
-
-static bool initApp()
-{
-	int ret=initOrbisLinkAppVanillaGl();
-	if(ret==0)
+	if (initOrbisLinkAppVanillaGl() == 0)
 	{
 		debugNetInit(PC_DEVELOPMENT_IP_ADDRESS,PC_DEVELOPMENT_UDP_PORT,3);
 		debugNetPrintf(DEBUGNET_INFO,"Ready to have a lot of fun\n");
-
 		sceSystemServiceHideSplashScreen();
 		return true;
 	}
@@ -233,39 +208,16 @@ static bool initApp()
 
 static void frontend_orbis_init(void *data)
 {
-   printf("[%s][%s][%d]\n",__FILE__,__PRETTY_FUNCTION__,__LINE__);
-   int ret=initApp();
-   printf("[%s][%s][%d]\n",__FILE__,__PRETTY_FUNCTION__,__LINE__);
-
-   RARCH_LOG("[%s][%s][%d] Hello from retroarch level info\n",__FILE__,__PRETTY_FUNCTION__,__LINE__);
-   RARCH_ERR("[%s][%s][%d] Hello from retroarch level error\n",__FILE__,__PRETTY_FUNCTION__,__LINE__);
-   RARCH_WARN("[%s][%s][%d] Hello from retroarch level warning no warning level on debugnet yet\n",__FILE__,__PRETTY_FUNCTION__,__LINE__);
-   RARCH_DBG("[%s][%s][%d] Hello from retroarch level debug\n",__FILE__,__PRETTY_FUNCTION__,__LINE__);
-
-   ret=sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_INTERNAL_AUDIO_OUT);
-    if (ret) 
-    {
-        RARCH_LOG("sceSysmoduleLoadModuleInternal(%s) failed: 0x%08X\n", "SCE_SYSMODULE_INTERNAL_AUDIO_OUT", ret);
-
-    }
-   
+   frontend_orbis_init_app();
+   sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_INTERNAL_AUDIO_OUT);
    verbosity_enable();
-
-   printf("[%s][%s][%d]\n",__FILE__,__PRETTY_FUNCTION__,__LINE__);
 }
 
 static void frontend_orbis_exec(const char *path, bool should_load_game)
 {
    int ret;
    char argp[512] = {0};
-   int   args = 0;
-
-#if !defined(HAVE_LIBORBIS)
-   // SceKernelStat sb;
-   // sceKernelStat(path, &sb);
-   // if (!(sb.st_mode & S_IXUSR))
-   //    sceKernelChmod(path, S_IRWXU);
-#endif
+   int   args     = 0;
 
 #ifndef IS_SALAMANDER
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
@@ -279,14 +231,8 @@ static void frontend_orbis_exec(const char *path, bool should_load_game)
       };
       args = 2;
       RARCH_LOG("Attempt to load executable: %d [%s].\n", args, argp);
-      // ret = sceSystemServiceLoadExec(path, (char *const *)argp);
    }
-   else
 #endif
-   {
-      // ret =  sceSystemServiceLoadExec(path, NULL);
-   }
-   //RARCH_LOG("Attempt to load executable: [%d].\n", ret);
 }
 
 #ifndef IS_SALAMANDER
@@ -339,7 +285,8 @@ static void frontend_orbis_exitspawn(char *s, size_t len, char *args)
 
 static int frontend_orbis_get_rating(void)
 {
-   return 6; /* Go with a conservative figure for now. */
+   /* TODO/FIXME - needs a different rating */
+   return 6;
 }
 
 enum frontend_architecture frontend_orbis_get_arch(void)

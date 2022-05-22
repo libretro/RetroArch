@@ -129,45 +129,35 @@ static void *psp_audio_init(const char *device,
       unsigned block_frames,
       unsigned *new_rate)
 {
+   int port;
    psp_audio_t *psp = (psp_audio_t*)calloc(1, sizeof(psp_audio_t));
 
    if (!psp)
       return NULL;
 
-   int port = configureAudio(rate);
-   if (port < 0)
+   if ((port = configureAudio(rate)) < 0)
       return NULL;
 
 #if defined(ORBIS)
    sceAudioOutInit();
 #endif
    /* Cache aligned, not necessary but helpful. */
-   psp->buffer      = (uint32_t*)malloc(AUDIO_BUFFER_SIZE * sizeof(uint32_t));
-   //(uint32_t*)memalign(64, AUDIO_BUFFER_SIZE * sizeof(uint32_t));
-   if(!psp->buffer)
-   {
-      RARCH_LOG("[%s][%s][%d]  psp->buffer  NULL\n",__FILE__,__PRETTY_FUNCTION__,__LINE__);
-   }
-   else
-   {
-      RARCH_LOG("[%s][%s][%d]  psp->buffer  NOT NULL %d %x\n",__FILE__,__PRETTY_FUNCTION__,__LINE__,AUDIO_BUFFER_SIZE * sizeof(uint32_t),psp->buffer);
-   }
+   psp->buffer        = (uint32_t*)malloc(AUDIO_BUFFER_SIZE * sizeof(uint32_t));
    memset(psp->buffer, 0, AUDIO_BUFFER_SIZE * sizeof(uint32_t));
 
-   psp->zeroBuffer  = (uint32_t*)malloc(AUDIO_OUT_COUNT   * sizeof(uint32_t));
-   //(uint32_t*)memalign(64, AUDIO_OUT_COUNT   * sizeof(uint32_t));
+   psp->zeroBuffer    = (uint32_t*)malloc(AUDIO_OUT_COUNT   * sizeof(uint32_t));
    memset(psp->zeroBuffer, 0, AUDIO_OUT_COUNT * sizeof(uint32_t));
 
-   psp->read_pos    = 0;
-   psp->write_pos   = 0;
-   psp->port        = port;
+   psp->read_pos      = 0;
+   psp->write_pos     = 0;
+   psp->port          = port;
 
-   psp->fifo_lock = slock_new();
-   psp->cond_lock = slock_new();
-   psp->cond = scond_new();
+   psp->fifo_lock     = slock_new();
+   psp->cond_lock     = slock_new();
+   psp->cond          = scond_new();
 
-   psp->nonblock    = false;
-   psp->running     = true;
+   psp->nonblock      = false;
+   psp->running       = true;
    psp->worker_thread = sthread_create(audioMainLoop, psp);
 
    return psp;
