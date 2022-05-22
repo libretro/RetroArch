@@ -283,13 +283,14 @@ static void gl_glsl_print_linker_log(GLuint obj)
 #if defined(ORBIS)
 void glPigletGetShaderBinarySCE(GLuint program, GLsizei bufSize, GLsizei* length, GLenum* binaryFormat, void* binary);
 
-static const XXH64_hash_t gl_glsl_hash_shader(const char **source, const int source_length)
+static const XXH64_hash_t gl_glsl_hash_shader(
+      const char **source, const int source_length)
 {
    int n;
-   
    XXH64_state_t* const state = XXH64_createState();
+
    XXH64_reset(state, 0xAABBCCDDu);
-   for(n=0; n<source_length; n++)
+   for(n = 0; n < source_length; n++)
    {
       XXH64_update(state, source[n], strlen(source[n]));
    }
@@ -303,61 +304,55 @@ static const XXH64_hash_t gl_glsl_hash_shader(const char **source, const int sou
 
 static bool gl_glsl_load_binary_shader(GLuint shader, char *save_path)
 {
-   FILE * shader_binary;
    GLsizei shader_size;
    GLint status;
+   FILE *shader_binary = fopen(save_path, "rb" );
 
-   shader_binary = fopen(save_path, "rb" );
-
-   if( shader_binary != NULL)
+   if(shader_binary)
    {
-      printf("[ShaderDumper] Reading shader dump ... %s\n", save_path);
-      
-      fseek (shader_binary, 0, SEEK_END);   // non-portable
+      char *shader_data = NULL;
+
+      fseek (shader_binary, 0, SEEK_END);
       shader_size=ftell (shader_binary);
       fseek(shader_binary, 0, SEEK_SET);
 
-      char * shader_data = malloc(shader_size);
+      shader_data = malloc(shader_size);
       fread(shader_data, shader_size, 1, shader_binary);
-
       fclose(shader_binary);
 
       glShaderBinary(1, &shader, 2, shader_data, shader_size);
-
       free(shader_data);
-
       glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-      printf("GL_COMPILE_STATUS %x\n", status);
       return status == GL_TRUE;
    }
 
    return false;
 }
 
+#if 0
 static void gl_glsl_dump_shader(GLuint shader, char *save_path)
 {
-      GLint length;
+   FILE * fShader;
+   GLint length;
+   GLenum format;
+   GLsizei shader_size;
+   GLsizei bufferSize;
+   void *shaderBinary = NULL;
 
-      glGetShaderiv(shader, 0x8b89, &length);
-      printf("[gl_glsl_compile_shader]: Shader Binary Length: %x\n", length);
+   glGetShaderiv(shader, 0x8b89, &length);
 
-      GLsizei bufferSize = length;
-      void* shaderBinary = malloc(bufferSize);
+   bufferSize   = length;
+   shaderBinary = malloc(bufferSize);
 
-      printf("[ShaderDumper] Starting shader dump ... %s\n", save_path);
+   memset(shaderBinary, 0, bufferSize);
 
-      memset(shaderBinary, 0, bufferSize);
+   glPigletGetShaderBinarySCE(shader, bufferSize, &shader_size, &format, shaderBinary);
 
-      GLsizei shader_size;
-      GLenum format;
-
-      glPigletGetShaderBinarySCE(shader, bufferSize, &shader_size, &format, shaderBinary);
-
-      FILE * fShader = fopen(save_path, "wb");
-      fwrite(shaderBinary, shader_size, 1, fShader);
-      fclose(fShader);
+   fShader = fopen(save_path, "wb");
+   fwrite(shaderBinary, shader_size, 1, fShader);
+   fclose(fShader);
 }
-
+#endif
 #endif
 
 static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
@@ -374,23 +369,26 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
    if (existing_version)
    {
       const char* version_extra = "";
-      unsigned version_no = (unsigned)strtoul(existing_version + 8, (char**)&program, 10);
+      unsigned version_no       = (unsigned)
+         strtoul(existing_version + 8, (char**)&program, 10);
+
 #ifdef HAVE_OPENGLES
       if (version_no < 130)
-         version_no = 100;
+         version_no    = 100;
       else
       {
          version_extra = " es";
-         version_no = 300;
+         version_no    = 300;
       }
 #endif
-      snprintf(version, sizeof(version), "#version %u%s\n", version_no, version_extra);
+      snprintf(version,
+            sizeof(version), "#version %u%s\n", version_no, version_extra);
       RARCH_LOG("[GLSL]: Using GLSL version %u%s.\n", version_no, version_extra);
    }
    else if (glsl_core)
    {
       unsigned version_no = 0;
-      unsigned gl_ver = glsl_major * 100 + glsl_minor * 10;
+      unsigned gl_ver     = glsl_major * 100 + glsl_minor * 10;
 
       switch (gl_ver)
       {
@@ -418,13 +416,15 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
    source[3] = program;
 
 #if defined(ORBIS) 
-   XXH64_hash_t const hash = gl_glsl_hash_shader(source, ARRAY_SIZE(source));
-
-   char save_path[250];
-   sprintf(save_path, "/data/retroarch/temp/%lx.sb", hash);
-
-   if(gl_glsl_load_binary_shader(shader, save_path))
-      return true;
+   {
+      char save_path[250];
+      XXH64_hash_t const hash = 
+         gl_glsl_hash_shader(source, ARRAY_SIZE(source));
+      snprintf(save_path, sizeof(save_path),
+            "/data/retroarch/temp/%lx.sb", hash);
+      if(gl_glsl_load_binary_shader(shader, save_path))
+         return true;
+   }
 #endif
 
    glShaderSource(shader, ARRAY_SIZE(source), source, NULL);
@@ -433,10 +433,11 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
    gl_glsl_print_shader_log(shader);
 
+#if 0
 #if defined(ORBIS)
-   if(status == GL_TRUE){
+   if(status == GL_TRUE)
       gl_glsl_dump_shader(shader, save_path);
-   }
+#endif
 #endif
 
    return status == GL_TRUE;
@@ -464,9 +465,10 @@ static bool gl_glsl_compile_program(
       void *program_data,
       struct shader_program_info *program_info)
 {
-   glsl_shader_data_t *glsl = (glsl_shader_data_t*)data;
-   struct shader_program_glsl_data *program = (struct shader_program_glsl_data*)program_data;
-   GLuint prog = glCreateProgram();
+   glsl_shader_data_t                 *glsl = (glsl_shader_data_t*)data;
+   struct shader_program_glsl_data *program = 
+      (struct shader_program_glsl_data*)program_data;
+   GLuint prog                              = glCreateProgram();
 
    if (!program)
       program = &glsl->prg[idx];
@@ -496,7 +498,8 @@ static bool gl_glsl_compile_program(
       RARCH_LOG("[GLSL]: Found GLSL fragment shader.\n");
       program->fprg = glCreateShader(GL_FRAGMENT_SHADER);
       if (!gl_glsl_compile_shader(glsl, program->fprg,
-               "#define FRAGMENT\n#define PARAMETER_UNIFORM\n", program_info->fragment))
+               "#define FRAGMENT\n#define PARAMETER_UNIFORM\n",
+               program_info->fragment))
       {
          RARCH_ERR("Failed to compile fragment shader #%u\n", idx);
          goto error;
@@ -566,13 +569,15 @@ static bool gl_glsl_load_source_path(struct video_shader_pass *pass,
    if (nitems <= 0 || len <= 0)
       return false;
 
-   gl_glsl_strip_parameter_pragmas(pass->source.string.vertex, "#pragma parameter");
+   gl_glsl_strip_parameter_pragmas(pass->source.string.vertex,
+         "#pragma parameter");
    pass->source.string.fragment = strdup(pass->source.string.vertex);
    return pass->source.string.fragment && pass->source.string.vertex;
 }
 
 static bool gl_glsl_compile_programs(
-      glsl_shader_data_t *glsl, struct shader_program_glsl_data *program)
+      glsl_shader_data_t *glsl,
+      struct shader_program_glsl_data *program)
 {
    unsigned i;
 
@@ -678,7 +683,8 @@ static INLINE void gl_glsl_set_attribs(glsl_shader_data_t *glsl,
    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-static void gl_glsl_clear_uniforms_frame(struct shader_uniforms_frame *frame)
+static void gl_glsl_clear_uniforms_frame(
+      struct shader_uniforms_frame *frame)
 {
    frame->texture      = -1;
    frame->texture_size = -1;
