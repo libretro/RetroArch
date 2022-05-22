@@ -1258,6 +1258,10 @@ MSG_HASH(
    )
 
 #ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
+   "Zmień ustawienia powiązane ze Steam."
+   )
 #endif
 
 /* Settings > Drivers */
@@ -1648,6 +1652,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "Tylko w trybie ekskluzywnym pełnoekranowym"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
+   "Tylko w trybie okna bez ramki"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
@@ -3205,6 +3213,10 @@ MSG_HASH(
    "Zarządzaj Rdzeniami"
    )
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_MANAGER_STEAM_LIST,
+   "Zainstaluj lub odinstaluj rdzenie rozprowadzane przez Steam."
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
@@ -3220,6 +3232,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
    "Pokaż 'Zarządzaj rdzeniami'"
 )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
+   "Pokaż opcję \"Zarządzaj rdzeniami\" w menu głównym."
+)
 
 MSG_HASH(
    MSG_CORE_STEAM_INSTALLING,
@@ -3227,6 +3243,10 @@ MSG_HASH(
 )
 
 
+MSG_HASH(
+   MSG_CORE_STEAM_CURRENTLY_DOWNLOADING,
+   "Rdzeń jest obecnie pobierany"
+)
 #endif
 /* Settings > Configuration */
 
@@ -5081,6 +5101,14 @@ MSG_HASH(
    "Pokaż ustawienia 'Katalogu'."
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_STEAM,
+   "Pokaż \"Steam\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_STEAM,
+   "Pokaż ustawienia \"Steam\"."
+   )
 
 /* Settings > User Interface > Appearance */
 
@@ -5379,6 +5407,10 @@ MSG_HASH(
    "Maksymalna liczba połączeń równoległych"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
+   "Maksymalna liczba aktywnych połączeń, które host zaakceptuje, zanim odrzuci nowe."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_PING,
    "Ogranicznik Ping"
    )
@@ -5417,6 +5449,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT,
    "Wyciszanie z czasem wiadomości czatu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
+   "Zezwalaj na pauzowanie"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
@@ -6823,9 +6859,21 @@ MSG_HASH(
 
 /* Quick Menu > Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_MANAGER_LIST,
+   "Zarządzaj plikami remap'u"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_MANAGER_LIST,
+   "Załaduj, zapisz lub usuń pliki remap'u wejścia dla aktualnej zawartości."
+   )
 
 /* Quick Menu > Controls > Manage Remap Files */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_INFO,
+   "Aktywny plik remap'u:"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
    "Załaduj plik przemapowania"
@@ -6853,6 +6901,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
    "Usuń plik przemapowania gry"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
+   "Aktualizuj plik remap'u wejścia"
    )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
@@ -11911,6 +11963,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNSUPPORTED_VIDEO_MODE,
    "Nieobsługiwany tryb wideo"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
+   "Nie udało się wejść do GameMode — sprawdź, czy daemon GameMode jest zainstalowany i uruchomiony"
    )
 
 /* Lakka */
