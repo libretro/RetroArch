@@ -37,6 +37,26 @@
 #include "../../verbosity.h"
 #include "../../msg_hash.h"
 
+static void gl3_build_default_matrix(float *data)
+{
+   data[0]  =  2.0f;
+   data[1]  =  0.0f;
+   data[2]  =  0.0f;
+   data[3]  =  0.0f;
+   data[4]  =  0.0f;
+   data[5]  =  2.0f;
+   data[6]  =  0.0f;
+   data[7]  =  0.0f;
+   data[8]  =  0.0f;
+   data[9]  =  0.0f;
+   data[10] =  2.0f;
+   data[11] =  0.0f;
+   data[12] = -1.0f;
+   data[13] = -1.0f;
+   data[14] =  0.0f;
+   data[15] =  1.0f;
+}
+
 GLuint gl3_cross_compile_program(
       const uint32_t *vertex, size_t vertex_size,
       const uint32_t *fragment, size_t fragment_size,
@@ -1400,25 +1420,8 @@ void Pass::build_semantics(uint8_t *buffer,
          memcpy(buffer + offset,
                mvp, sizeof(float) * 16);
       else
-      {
-         float *mvp = reinterpret_cast<float *>(buffer + offset);
-         mvp[0]     = 2.0f;
-         mvp[1]     = 0.0f;
-         mvp[2]     = 0.0f;
-         mvp[3]     = 0.0f;
-         mvp[4]     = 0.0f;
-         mvp[5]     = 2.0f;
-         mvp[6]     = 0.0f;
-         mvp[7]     = 0.0f;
-         mvp[8]     = 0.0f;
-         mvp[9]     = 0.0f;
-         mvp[10]    = 2.0f;
-         mvp[11]    = 0.0f;
-         mvp[12]    = -1.0f;
-         mvp[13]    = -1.0f;
-         mvp[14]    = 0.0f;
-         mvp[15]    = 1.0f;
-      }
+         gl3_build_default_matrix(reinterpret_cast<float *>(
+                  buffer + offset));
    }
 
    if (reflection.semantics[SLANG_SEMANTIC_MVP].push_constant)
@@ -1430,25 +1433,8 @@ void Pass::build_semantics(uint8_t *buffer,
          memcpy(push_constant_buffer.data() + offset,
                mvp, sizeof(float) * 16);
       else
-      {
-         float *mvp = reinterpret_cast<float *>(push_constant_buffer.data() + offset);
-         mvp[0]     = 2.0f;
-         mvp[1]     = 0.0f;
-         mvp[2]     = 0.0f;
-         mvp[3]     = 0.0f;
-         mvp[4]     = 0.0f;
-         mvp[5]     = 2.0f;
-         mvp[6]     = 0.0f;
-         mvp[7]     = 0.0f;
-         mvp[8]     = 0.0f;
-         mvp[9]     = 0.0f;
-         mvp[10]    = 2.0f;
-         mvp[11]    = 0.0f;
-         mvp[12]    = -1.0f;
-         mvp[13]    = -1.0f;
-         mvp[14]    = 0.0f;
-         mvp[15]    = 1.0f;
-      }
+         gl3_build_default_matrix(reinterpret_cast<float *>(
+                  push_constant_buffer.data() + offset));
    }
 
    /* Output information */
@@ -1681,6 +1667,7 @@ private:
    bool init_alias();
    std::vector<std::unique_ptr<gl3_shader::Framebuffer>> original_history;
    bool require_clear = false;
+   void clear_history_and_feedback();
    void update_feedback_info();
    void update_history_info();
 };
@@ -1740,18 +1727,7 @@ void gl3_filter_chain::build_offscreen_passes(const gl3_viewport &vp)
     * are in a clean state. */
    if (require_clear)
    {
-      unsigned i;
-      for (i = 0; i < original_history.size(); i++)
-      {
-         if (original_history[i]->is_complete())
-            gl3_framebuffer_clear(original_history[i]->get_framebuffer());
-      }
-      for (i = 0; i < passes.size(); i++)
-      {
-         gl3_shader::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
-         if (fb && fb->is_complete())
-            gl3_framebuffer_clear(fb->get_framebuffer());
-      }
+      clear_history_and_feedback();
       require_clear = false;
    }
 
@@ -1826,18 +1802,7 @@ void gl3_filter_chain::build_viewport_pass(
     * feedback textures are in a clean state. */
    if (require_clear)
    {
-      unsigned i;
-      for (i = 0; i < original_history.size(); i++)
-      {
-         if (original_history[i]->is_complete())
-            gl3_framebuffer_clear(original_history[i]->get_framebuffer());
-      }
-      for (i = 0; i < passes.size(); i++)
-      {
-         gl3_shader::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
-         if (fb && fb->is_complete())
-            gl3_framebuffer_clear(fb->get_framebuffer());
-      }
+      clear_history_and_feedback();
       require_clear = false;
    }
 
@@ -2072,6 +2037,22 @@ bool gl3_filter_chain::init()
       return false;
    common.pass_outputs.resize(passes.size());
    return true;
+}
+
+void gl3_filter_chain::clear_history_and_feedback()
+{
+   unsigned i;
+   for (i = 0; i < original_history.size(); i++)
+   {
+      if (original_history[i]->is_complete())
+         gl3_framebuffer_clear(original_history[i]->get_framebuffer());
+   }
+   for (i = 0; i < passes.size(); i++)
+   {
+      gl3_shader::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
+      if (fb && fb->is_complete())
+         gl3_framebuffer_clear(fb->get_framebuffer());
+   }
 }
 
 void gl3_filter_chain::set_input_texture(
