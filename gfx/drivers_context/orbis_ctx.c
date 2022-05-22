@@ -67,33 +67,36 @@ static void orbis_ctx_get_video_size(void *data,
 
 static void *orbis_ctx_init(void *video_driver)
 {
+#if defined(HAVE_OOSDK)
+   const char *shdr_cache_dir;
+#endif
 #ifdef HAVE_EGL
-    int ret;
-    EGLint n;
-    EGLint major, minor;
-    static const EGLint attribs[] = {
-        EGL_RED_SIZE, 8,
-         EGL_GREEN_SIZE, 8,
-         EGL_BLUE_SIZE, 8,
-         EGL_ALPHA_SIZE, 8,
-         EGL_DEPTH_SIZE, 16,
-         EGL_STENCIL_SIZE, 0,
-         EGL_SAMPLE_BUFFERS, 0,
-         EGL_SAMPLES, 0,
+   int ret;
+   EGLint n;
+   EGLint major, minor;
+   static const EGLint attribs[] = {
+      EGL_RED_SIZE, 8,
+      EGL_GREEN_SIZE, 8,
+      EGL_BLUE_SIZE, 8,
+      EGL_ALPHA_SIZE, 8,
+      EGL_DEPTH_SIZE, 16,
+      EGL_STENCIL_SIZE, 0,
+      EGL_SAMPLE_BUFFERS, 0,
+      EGL_SAMPLES, 0,
 #if defined(HAVE_OPENGLES3)
-         EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
+      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
 #else
-         EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
 #endif
-         EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-         EGL_NONE};
+      EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+      EGL_NONE};
 #endif
 
-    orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)
-       calloc(1, sizeof(*ctx_orbis));
+   orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)
+      calloc(1, sizeof(*ctx_orbis));
 
-    if (!ctx_orbis)
-        return NULL;
+   if (!ctx_orbis)
+      return NULL;
 
 #ifdef HAVE_EGL
 
@@ -103,7 +106,7 @@ static void *orbis_ctx_init(void *video_driver)
       ctx_orbis->pgl_config.size                    =
          sizeof(ctx_orbis->pgl_config);
       ctx_orbis->pgl_config.flags                   =
-           SCE_PGL_FLAGS_USE_COMPOSITE_EXT
+         SCE_PGL_FLAGS_USE_COMPOSITE_EXT
          | SCE_PGL_FLAGS_USE_FLEXIBLE_MEMORY
          | 0x60;
       ctx_orbis->pgl_config.processOrder            = 1;
@@ -118,43 +121,36 @@ static void *orbis_ctx_init(void *video_driver)
       ctx_orbis->pgl_config.dbgPosCmd_0x4C          = 0;
       ctx_orbis->pgl_config.unk_0x5C                = 2;
    }
-    ret = scePigletSetConfigurationVSH(&ctx_orbis->pgl_config);
-    if (!ret)
-    {
-		  printf("[ORBISGL] scePigletSetConfigurationVSH failed 0x%08X.\n",ret);
-        goto error;
-    }
+   ret = scePigletSetConfigurationVSH(&ctx_orbis->pgl_config);
+   if (!ret)
+      goto error;
 
 #if defined(HAVE_OOSDK)
-    const char *shdr_cache_dir = "/data/retroarch/temp/";
-    memset(&ctx_orbis->shdr_cache_config, 0, sizeof(ctx_orbis->shdr_cache_config));
-    {
-      ctx_orbis->shdr_cache_config.ver = 0x00010064;
-      snprintf(ctx_orbis->shdr_cache_config.cache_dir, strlen(shdr_cache_dir) + 1, "%s", shdr_cache_dir);
-    }
+   shdr_cache_dir = "/data/retroarch/temp/";
+   memset(&ctx_orbis->shdr_cache_config, 0, sizeof(ctx_orbis->shdr_cache_config));
+   ctx_orbis->shdr_cache_config.ver = 0x00010064;
+   snprintf(ctx_orbis->shdr_cache_config.cache_dir,
+         strlen(shdr_cache_dir) + 1, "%s",
+         shdr_cache_dir);
 
-    ret = scePigletSetShaderCacheConfiguration(&ctx_orbis->shdr_cache_config);
-    if (!ret)
-    {
-        printf("[ORBISGL] scePigletSetShaderCacheConfiguration failed 0x%08X.\n",ret);
-        goto error;
-    }
+   if (!(ret =
+            scePigletSetShaderCacheConfiguration(&ctx_orbis->shdr_cache_config)))
+      goto error;
 #endif
 
-    if (!egl_init_context(&ctx_orbis->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
-                          &major, &minor, &n, attribs, NULL))
-    {
-        egl_report_error();
-        printf("[ORBIS]: EGL error: %d.\n", eglGetError());
-        goto error;
-    }
+   if (!egl_init_context(&ctx_orbis->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
+            &major, &minor, &n, attribs, NULL))
+   {
+      egl_report_error();
+      goto error;
+   }
 #endif
 
-    return ctx_orbis;
+   return ctx_orbis;
 
 error:
-    orbis_ctx_destroy(video_driver);
-    return NULL;
+   orbis_ctx_destroy(video_driver);
+   return NULL;
 }
 
 static void orbis_ctx_check_window(void *data, bool *quit,

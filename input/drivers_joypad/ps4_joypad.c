@@ -19,13 +19,13 @@
 #include <stddef.h>
 #include <boolean.h>
 
+#include <orbis/libScePad.h>
+#include <defines/ps4_defines.h>
+
 #include "../input_driver.h"
 
 #include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
-
-#include <orbis/libScePad.h>
-#include <defines/ps4_defines.h>
 
 #define LERP(p, f, t) ((((p * 10) * (t * 10)) / (f * 10)) / 10)
 
@@ -74,52 +74,57 @@ static const char *ps4_joypad_name(unsigned pad)
 static void *ps4_joypad_init(void *data)
 {
    int result, handle;
-   SceUserServiceLoginUserIdList userIdList;
+   SceUserServiceLoginUserIdList user_id_list;
 
    num_players = 0;
 
    scePadInit();
-   confPad=orbisPadGetConf();
-	 result = sceUserServiceGetLoginUserIdList(&userIdList);
+
+   confPad     = orbisPadGetConf();
+   result      = sceUserServiceGetLoginUserIdList(&user_id_list);
 
    if (result == 0)
    {
       unsigned i;
       for (i = 0; i < SCE_USER_SERVICE_MAX_LOGIN_USERS; i++)
       {
-         SceUserServiceUserId userId = userIdList.userId[i];
+         SceUserServiceUserId user_id = user_id_list.userId[i];
 
-         if (userId != SCE_USER_SERVICE_USER_ID_INVALID)
+         if (user_id != SCE_USER_SERVICE_USER_ID_INVALID)
          {
             int index = 0;
 
             while (index < num_players)
             {
-               ds_joypad_states[index].userId = userId;
+               ds_joypad_states[index].userId = user_id;
                index++;
             }
 
             if (index == num_players)
             {
-               ds_joypad_states[num_players].handle[0] = scePadOpen(userId, SCE_PAD_PORT_TYPE_STANDARD, 0, NULL);
+               ds_joypad_states[num_players].handle[0] = scePadOpen(user_id, SCE_PAD_PORT_TYPE_STANDARD, 0, NULL);
                if (ds_joypad_states[num_players].handle[0] == SCE_ORBISPAD_ERROR_ALREADY_OPENED)
-                   ds_joypad_states[num_players].handle[0] = confPad->padHandle;//scePadGetHandle(userId, SCE_PAD_PORT_TYPE_STANDARD, 0);
+                  ds_joypad_states[num_players].handle[0] = confPad->padHandle;
+#if 0
+               scePadGetHandle(user_id, SCE_PAD_PORT_TYPE_STANDARD, 0);
 
-               //ds_joypad_states[num_players].handle[1] = scePadOpen(userId, SCE_PAD_PORT_TYPE_SPECIAL, 0, NULL);
-               // if (ds_joypad_states[num_players].handle[1] == SCE_ORBISPAD_ERROR_ALREADY_OPENED)
-               //    ds_joypad_states[num_players].handle[1] = scePadGetHandle(userId, SCE_PAD_PORT_TYPE_SPECIAL, 0);
+               ds_joypad_states[num_players].handle[1]    = scePadOpen(user_id, SCE_PAD_PORT_TYPE_SPECIAL, 0, NULL);
+               if (ds_joypad_states[num_players].handle[1] == SCE_ORBISPAD_ERROR_ALREADY_OPENED)
+                  ds_joypad_states[num_players].handle[1] =
+                     scePadGetHandle(user_id, SCE_PAD_PORT_TYPE_SPECIAL, 0);
 
-               //ds_joypad_states[num_players].handle[2] = scePadOpen(userId, SCE_PAD_PORT_TYPE_REMOTE_CONTROL, 0, NULL);
-               // if (ds_joypad_states[num_players].handle[2] == SCE_ORBISPAD_ERROR_ALREADY_OPENED)
-               //    ds_joypad_states[num_players].handle[2] = scePadGetHandle(userId, SCE_PAD_PORT_TYPE_REMOTE_CONTROL, 0);
+               ds_joypad_states[num_players].handle[2]    = scePadOpen(user_id, SCE_PAD_PORT_TYPE_REMOTE_CONTROL, 0, NULL);
+               if (ds_joypad_states[num_players].handle[2] == SCE_ORBISPAD_ERROR_ALREADY_OPENED)
+                  ds_joypad_states[num_players].handle[2] =
+                     scePadGetHandle(user_id, SCE_PAD_PORT_TYPE_REMOTE_CONTROL, 0);
+#endif
 
-               RARCH_LOG("USER %x HANDLE %x\n", userId, handle);
-               if (ds_joypad_states[num_players].handle[0] > 0 ||
-                   ds_joypad_states[num_players].handle[1] > 0 ||
-                   ds_joypad_states[num_players].handle[2] > 0)
+               if (  ds_joypad_states[num_players].handle[0] > 0 ||
+                     ds_joypad_states[num_players].handle[1] > 0 ||
+                     ds_joypad_states[num_players].handle[2] > 0)
                {
                   ds_joypad_states[num_players].connected = true;
-                  ds_joypad_states[num_players].userId = userId;
+                  ds_joypad_states[num_players].userId    = user_id;
 
                   input_autoconfigure_connect(
                         ps4_joypad_name(num_players),
@@ -230,23 +235,24 @@ static void ps4_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 static void ps4_joypad_poll(void)
 {
    unsigned player;
-   unsigned players_count = num_players;
    ScePadData buttons;
+   unsigned players_count = num_players;
 
    for (player = 0; player < SCE_USER_SERVICE_MAX_LOGIN_USERS; player++)
    {
+      int ret;
       unsigned j, k;
       unsigned i  = player;
 
       if (ds_joypad_states[player].connected == false)
-        continue;
+         continue;
 
-      int ret     = scePadReadState(ds_joypad_states[player].handle[0],&buttons);
+      ret     = scePadReadState(ds_joypad_states[player].handle[0],&buttons);
 
-      if (buttons.connected == false)
+      if (!~buttons.connected)
       {
-        ds_joypad_states[player].connected = false;
-        continue;
+         ds_joypad_states[player].connected = false;
+         continue;
       }
 
       if (ret == 0)
@@ -276,9 +282,9 @@ static void ps4_joypad_poll(void)
          analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16(buttons.ry);
       }
       for (j = 0; j < 2; j++)
-        for (k = 0; k < 2; k++)
-          if (analog_state[i][j][k] == -0x8000)
-            analog_state[i][j][k] = -0x7fff;
+         for (k = 0; k < 2; k++)
+            if (analog_state[i][j][k] == -0x8000)
+               analog_state[i][j][k] = -0x7fff;
    }
 }
 
@@ -288,49 +294,56 @@ static bool ps4_joypad_query_pad(unsigned pad)
 }
 
 static bool ps4_joypad_rumble(unsigned pad,
-      enum retro_rumble_effect effect, uint16_t strength) { return false; }
-   // ScePadVibrationParam params;
+      enum retro_rumble_effect effect, uint16_t strength)
+{
+#if 0
+   ScePadVibrationParam params;
 
-   // switch (effect)
-   // {
-   //    case RETRO_RUMBLE_WEAK:
-   //       params.smallMotor = LERP(strength, 0xffff, 0xff);
-   //       break;
-   //    case RETRO_RUMBLE_STRONG:
-   //       params.largeMotor = LERP(strength, 0xffff, 0xff);
-   //       break;
-   // }
+   switch (effect)
+   {
+      case RETRO_RUMBLE_WEAK:
+         params.smallMotor = LERP(strength, 0xffff, 0xff);
+         break;
+      case RETRO_RUMBLE_STRONG:
+         params.largeMotor = LERP(strength, 0xffff, 0xff);
+         break;
+   }
 
-   // scePadSetVibration(ds_joypad_states[pad].handle[0], &params);
+   scePadSetVibration(ds_joypad_states[pad].handle[0], &params);
 
-   // return true;
+   return true;
+#else
+   return false;
+#endif
+}
 
-static void ps4_joypad_destroy(void) { }
-//   int result, handle;
-//   SceUserServiceLoginUserIdList userIdList;
-//   SceUserServiceUserId userId;
-
-//   result = sceUserServiceGetLoginUserIdList(&userIdList);
-//   if (result == 0)
-//   {
-//     unsigned i;
-//     for (i = 0; i < SCE_USER_SERVICE_MAX_LOGIN_USERS; i++)
-//     {
-//        userId = userIdList.userId[i];
-//        if (userId != SCE_USER_SERVICE_USER_ID_INVALID)
-//        {
-         //  handle = scePadGetHandle(userId, SCE_PAD_PORT_TYPE_STANDARD, 0);
-         //  if (handle > 0)
-         //    scePadClose(handle);
-         //  handle = scePadGetHandle(userId, SCE_PAD_PORT_TYPE_SPECIAL, 0);
-         //  if (handle > 0)
-         //    scePadClose(handle);
-         //  handle = scePadGetHandle(userId, SCE_PAD_PORT_TYPE_REMOTE_CONTROL, 0);
-         //  if (handle > 0)
-         //    scePadClose(handle);
-//        }
-//     }
-//   }
+static void ps4_joypad_destroy(void)
+{
+#if 0
+   SceUserServiceUserId user_id;
+   SceUserServiceLoginUserIdList user_id_list;
+   if (sceUserServiceGetLoginUserIdList(&user_id_list) == 0)
+   {
+      unsigned i;
+      for (i = 0; i < SCE_USER_SERVICE_MAX_LOGIN_USERS; i++)
+      {
+         user_id = user_id_list.userId[i];
+         if (user_id != SCE_USER_SERVICE_USER_ID_INVALID)
+         {
+            int handle = scePadGetHandle(user_id, SCE_PAD_PORT_TYPE_STANDARD, 0);
+            if (handle > 0)
+               scePadClose(handle);
+            if ((handle = scePadGetHandle(user_id, SCE_PAD_PORT_TYPE_SPECIAL, 0))
+                  > 0)
+               scePadClose(handle);
+            if ((handle = scePadGetHandle(user_id,
+                        SCE_PAD_PORT_TYPE_REMOTE_CONTROL, 0)) > 0)
+               scePadClose(handle);
+         }
+      }
+   }
+#endif
+}
 
 input_device_driver_t ps4_joypad = {
    ps4_joypad_init,

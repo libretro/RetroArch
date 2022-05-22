@@ -91,8 +91,10 @@ int16_t ps4_input_state(void *data,
          }
          break;
       case RETRO_DEVICE_ANALOG:
-      //   if (retro_keybinds[port])
-        //    return input_joypad_analog(ps4->joypad, joypad_info, port, idx, id, retro_keybinds[port]);
+#if 0
+         if (retro_keybinds[port])
+            return input_joypad_analog(ps4->joypad, joypad_info, port, idx, id, retro_keybinds[port]);
+#endif
          break;
    }
 

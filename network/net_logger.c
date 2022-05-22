@@ -41,8 +41,8 @@
 void logger_init(void)
 {
    debugNetInit(PC_DEVELOPMENT_IP_ADDRESS,PC_DEVELOPMENT_UDP_PORT,3);
-
 }
+
 void logger_shutdown(void)
 {
    debugNetFinish();
@@ -59,10 +59,7 @@ void logger_init(void)
    unsigned      port = PC_DEVELOPMENT_UDP_PORT;
 
    if (!network_init())
-   {
-      printf("Could not initialize network logger interface.\n");
       return;
-   }
 
    g_sid  = socket_create(
          "ra_netlogger",
@@ -79,8 +76,7 @@ void logger_init(void)
 
 void logger_shutdown(void)
 {
-   if (socket_close(g_sid) < 0)
-      printf("Could not close socket.\n");
+   if (socket_close(g_sid) < 0) { }
 
    network_deinit();
 }
