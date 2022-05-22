@@ -154,17 +154,16 @@ anything other than what the respective SDKs provide.
 ## Requirements
 
 ### OpenGL1 ###
-To run this driver, your videocard needs to at least support the OpenGL 1.1 spec.
+Your videocard needs to at least support the OpenGL 1.1 spec.
 
-**Shaders**: Since OpenGL 1.x has no shader capabilities whatsoever, it is not possible 
-to use shaders with this driver.
+***Shaders***: N/A
 
 **Menu driver support**: MaterialUI, XMB, Ozone and RGUI should all work correctly.
 XMB won't have shader pipeline effects because of the aforementioned lack of shader
 support.
 
 ### OpenGL2 ###
-To run this driver, your videocard needs to at least support the OpenGL 2.1 spec.
+Your videocard needs to at least support the OpenGL 2.1 spec.
 
 ***Shaders:*** You can choose between either NVIDIA Cg shaders (deprecated, requires separate runtime
 to be installed on your system), or GLSL shaders.
@@ -172,15 +171,22 @@ to be installed on your system), or GLSL shaders.
 ***Menu driver support:*** MaterialUI, XMB, Ozone and RGUI should all work correctly.
 
 ### OpenGL3 ###
-To run this driver, your videocard needs to at least support the OpenGL 3.2 core feature spec.
+Your videocard needs to at least support the OpenGL 3.2 core feature spec.
 
 ***Shaders:*** You will be able to use modern Slang shaders with this driver.
 
 ***Menu driver support:*** MaterialUI, XMB, Ozone and RGUI should all work correctly.
 
 ### Direct3D 11 ###
-The Direct3D11 driver needs a graphics card that supports at least Feature Level 11.0. The card
+Your vudeocard needs to least supports Direct3D11 Feature Level 11.0. The card
 also needs to support at least Shader Model 4.0.
+
+***Shaders:*** You will be able to use modern Slang shaders with this driver.
+
+***Menu driver support:*** MaterialUI, XMB, Ozone and RGUI should all work correctly.
+
+### Vulkan ###
+Your videocard needs to at least support the Vulkan 1.0 spec.
 
 ***Shaders:*** You will be able to use modern Slang shaders with this driver.
 
