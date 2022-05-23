@@ -31,7 +31,7 @@ typedef struct
    void (*upscale_mix_240x160_320x240)(
          uint16_t *dst, const uint16_t *src,
          uint16_t dst_stride, uint16_t src_stride);
-} upscale_function_t;
+} upscale_mix_function_t;
 
 struct softfilter_thread_data
 {
@@ -51,7 +51,7 @@ struct filter_data
    unsigned threads;
    struct softfilter_thread_data *workers;
    unsigned in_fmt;
-   upscale_function_t function;
+   upscale_mix_function_t function;
 };
 
 /*******************************************************************
