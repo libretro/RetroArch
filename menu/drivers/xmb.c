@@ -6540,11 +6540,6 @@ static void xmb_context_reset_background(xmb_handle_t *xmb, const char *iconpath
                video_driver_supports_rgba(), 0,
                menu_display_handle_wallpaper_upload, NULL);
    }
-
-#ifdef ORBIS
-   /* To avoid weird behaviour on orbis with remote host */
-   sleep(5);
-#endif
 }
 
 static void xmb_context_reset_internal(xmb_handle_t *xmb,

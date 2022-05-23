@@ -214,10 +214,6 @@ bool config_file_write(config_file_t *conf, const char *path, bool val);
  * Does not close the file. */
 void config_file_dump(config_file_t *conf, FILE *file, bool val);
 
-#ifdef ORBIS
-void config_file_dump_orbis(config_file_t *conf, int fd);
-#endif
-
 bool config_file_exists(const char *path);
 
 RETRO_END_DECLS
