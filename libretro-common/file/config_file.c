@@ -39,12 +39,6 @@
 
 #define MAX_INCLUDE_DEPTH 16
 
-struct config_include_list
-{
-   char *path;
-   struct config_include_list *next;
-};
-
 /* Forward declaration */
 static bool config_file_parse_line(config_file_t *conf,
       struct config_entry_list *list, char *line, config_file_cb_t *cb);
@@ -383,29 +377,26 @@ static void config_file_get_realpath(char *s, size_t len,
 static void config_file_add_sub_conf(config_file_t *conf, char *path,
       char *real_path, size_t len, config_file_cb_t *cb)
 {
-   struct config_include_list *head = conf->includes;
-   struct config_include_list *node = (struct config_include_list*)
-      malloc(sizeof(*node));
+   if (!conf->includes)
+      conf->includes = path_linked_list_new();
 
-   if (node)
-   {
-      node->next        = NULL;
-      /* Add include list */
-      node->path        = strdup(path);
+   path_linked_list_add_path(conf->includes, path);
 
-      if (head)
-      {
-         while (head->next)
-            head        = head->next;
+   config_file_get_realpath(real_path, len, path, conf->path);
+}
 
-         head->next     = node;
-      }
-      else
-         conf->includes = node;
-   }
+void config_file_add_reference(config_file_t *conf, char *path)
+{
+   /* It is expected that the conf has it's path already set */
+   char short_path[PATH_MAX_LENGTH];
+   
+   short_path[0] = '\0';
+   
+   if (!conf->references)
+      conf->references = path_linked_list_new();
 
-   config_file_get_realpath(real_path, len, path,
-         conf->path);
+   fill_pathname_abbreviated_or_relative(short_path, conf->path, path, sizeof(short_path));
+   path_linked_list_add_path(conf->references, short_path);
 }
 
 static int config_file_load_internal(
@@ -581,7 +572,7 @@ static bool config_file_parse_line(config_file_t *conf,
          if (!path)
             return false;
 
-         config_file_set_reference_path(conf, path);
+         config_file_add_reference(conf, path);
 
          if (!path)
             return false;
@@ -702,31 +693,11 @@ static int config_file_from_string_internal(
    return 0;
 }
 
-void config_file_set_reference_path(config_file_t *conf, char *path)
-{
-   /* It is expected that the conf has it's path already set */
-   
-   char short_path[PATH_MAX_LENGTH];
-   
-   short_path[0] = '\0';
-
-   if (!conf)
-      return;
-
-   if (conf->reference)
-   {
-      free(conf->reference);
-      conf->reference = NULL;
-   }
-
-   fill_pathname_abbreviated_or_relative(short_path, conf->path, path, sizeof(short_path));
-   
-   conf->reference = strdup(short_path);
-}
 
 bool config_file_deinitialize(config_file_t *conf)
 {
-   struct config_include_list *inc_tmp = NULL;
+   struct path_linked_list *inc_tmp = NULL;
+   struct path_linked_list *ref_tmp = NULL;
    struct config_entry_list *tmp       = NULL;
    if (!conf)
       return false;
@@ -750,20 +721,8 @@ bool config_file_deinitialize(config_file_t *conf)
          free(hold);
    }
 
-   inc_tmp = (struct config_include_list*)conf->includes;
-   while (inc_tmp)
-   {
-      struct config_include_list *hold = NULL;
-      if (inc_tmp->path)
-         free(inc_tmp->path);
-      hold    = (struct config_include_list*)inc_tmp;
-      inc_tmp = inc_tmp->next;
-      if (hold)
-         free(hold);
-   }
-
-   if (conf->reference)
-      free(conf->reference);
+   path_linked_list_free(conf->includes);
+   path_linked_list_free(conf->references);
 
    if (conf->path)
       free(conf->path);
@@ -905,7 +864,7 @@ void config_file_initialize(struct config_file *conf)
    conf->entries                  = NULL;
    conf->tail                     = NULL;
    conf->last                     = NULL;
-   conf->reference                = NULL;
+   conf->references               = NULL;
    conf->includes                 = NULL;
    conf->include_depth            = 0;
    conf->guaranteed_no_duplicates = false;
@@ -1362,12 +1321,14 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
 void config_file_dump(config_file_t *conf, FILE *file, bool sort)
 {
    struct config_entry_list       *list = NULL;
-   struct config_include_list *includes = conf->includes;
+   struct path_linked_list *inc_tmp = conf->includes;
+   struct path_linked_list *ref_tmp = conf->references;
 
-   if (conf->reference)
+   while (ref_tmp)
    {
-      pathname_make_slashes_portable(conf->reference);
-      fprintf(file, "#reference \"%s\"\n", conf->reference);
+      pathname_make_slashes_portable(ref_tmp->path);
+      fprintf(file, "#reference \"%s\"\n", ref_tmp->path);
+      ref_tmp = ref_tmp->next;
    }
 
    if (sort)
@@ -1392,10 +1353,10 @@ void config_file_dump(config_file_t *conf, FILE *file, bool sort)
     * '#include' directives must go *after* individual
     * config entries, otherwise they will override
     * any custom-set values */
-   while (includes)
+   while (inc_tmp)
    {
-      fprintf(file, "#include \"%s\"\n", includes->path);
-      includes = includes->next;
+      fprintf(file, "#include \"%s\"\n", inc_tmp->path);
+      inc_tmp = inc_tmp->next;
    }
 }
 
