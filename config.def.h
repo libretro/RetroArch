@@ -1233,8 +1233,8 @@ static const bool netplay_use_mitm_server = false;
 static const unsigned netplay_max_connections = 3;
 static const unsigned netplay_max_ping        = 0;
 
-static const unsigned netplay_share_digital = RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE;
-static const unsigned netplay_share_analog  = RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE;
+static const unsigned netplay_share_digital = RARCH_NETPLAY_SHARE_DIGITAL_NO_SHARING;
+static const unsigned netplay_share_analog  = RARCH_NETPLAY_SHARE_ANALOG_NO_SHARING;
 #endif
 
 /* On save state load, block SRAM from being overwritten.

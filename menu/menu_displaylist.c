@@ -7818,33 +7818,35 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_NETWORK_SETTINGS_LIST:
          {
+            unsigned user;
             bool netplay_allow_slaves    = settings->bools.netplay_allow_slaves;
             bool netplay_use_mitm_server = settings->bools.netplay_use_mitm_server;
             bool network_cmd_enable      = settings->bools.network_cmd_enable;
+            bool network_remote_enable   = settings->bools.network_remote_enable;
 
             menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,                               PARSE_ONLY_BOOL,   true  },
-               {MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER,                               PARSE_ONLY_BOOL,   true  },
-               {MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,                                   PARSE_ONLY_STRING, false},
-               {MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER,                            PARSE_ONLY_STRING, false},
-               {MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS,                                    PARSE_ONLY_STRING, true},
-               {MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,                                  PARSE_ONLY_UINT,   true},
-               {MENU_ENUM_LABEL_NETPLAY_MAX_CONNECTIONS,                               PARSE_ONLY_UINT,   true},
-               {MENU_ENUM_LABEL_NETPLAY_MAX_PING,                                      PARSE_ONLY_UINT,   true},
-               {MENU_ENUM_LABEL_NETPLAY_PASSWORD,                                      PARSE_ONLY_STRING, true},
-               {MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD,                             PARSE_ONLY_STRING, true},
-               {MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR,                            PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_NETPLAY_FADE_CHAT,                                     PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING,                                 PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES,                                  PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES,                                PARSE_ONLY_BOOL,   false},
-               /*{MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE,                              PARSE_ONLY_BOOL,   true},*/
-               {MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES,                                  PARSE_ONLY_INT,    true},
-               {MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,                      PARSE_ONLY_INT,    true},
-               {MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,                    PARSE_ONLY_INT,    true},
-               {MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL,                                 PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_NETPLAY_SHARE_DIGITAL,                                 PARSE_ONLY_UINT,   true},
-               {MENU_ENUM_LABEL_NETPLAY_SHARE_ANALOG,                                  PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,            PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER,            PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,                PARSE_ONLY_STRING, false},
+               {MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER,         PARSE_ONLY_STRING, false},
+               {MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS,                 PARSE_ONLY_STRING, true},
+               {MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,               PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_NETPLAY_MAX_CONNECTIONS,            PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_NETPLAY_MAX_PING,                   PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_NETPLAY_PASSWORD,                   PARSE_ONLY_STRING, true},
+               {MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD,          PARSE_ONLY_STRING, true},
+               {MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR,         PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_NETPLAY_FADE_CHAT,                  PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING,              PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES,               PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES,             PARSE_ONLY_BOOL,   false},
+               /*{MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE,           PARSE_ONLY_BOOL,   true},*/
+               {MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES,               PARSE_ONLY_INT,    true},
+               {MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,   PARSE_ONLY_INT,    true},
+               {MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE, PARSE_ONLY_INT,    true},
+               {MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL,              PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_NETPLAY_SHARE_DIGITAL,              PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_NETPLAY_SHARE_ANALOG,               PARSE_ONLY_UINT,   true},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -7856,9 +7858,6 @@ unsigned menu_displaylist_build_list(
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
-                     if (netplay_use_mitm_server)
-                        build_list[i].checked = true;
-                     break;
                   case MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER:
                      if (netplay_use_mitm_server)
                         build_list[i].checked = true;
@@ -7873,71 +7872,69 @@ unsigned menu_displaylist_build_list(
                if (!build_list[i].checked && !include_everything)
                   continue;
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        build_list[i].enum_idx,  build_list[i].parse_type,
-                        false) == 0)
+                     build_list[i].enum_idx, build_list[i].parse_type,
+                     false) == 0)
                   count++;
             }
 
+            for (user = 0; user < MAX_USERS; user++)
             {
-               unsigned user;
-               for (user = 0; user < MAX_USERS; user++)
-               {
-                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                           (enum msg_hash_enums)(MENU_ENUM_LABEL_NETPLAY_REQUEST_DEVICE_1 + user),
-                           PARSE_ONLY_BOOL, false) != -1)
-                     count++;
-               }
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     (enum msg_hash_enums)
+                        MENU_ENUM_LABEL_NETPLAY_REQUEST_DEVICE_1 + user,
+                     PARSE_ONLY_BOOL, false) == 0)
+                  count++;
             }
 
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_NETWORK_CMD_ENABLE,
-                     PARSE_ONLY_BOOL, false) != -1)
+                  MENU_ENUM_LABEL_NETWORK_CMD_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
                count++;
 
             if (network_cmd_enable)
             {
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_NETWORK_CMD_PORT,
-                        PARSE_ONLY_UINT, false) != -1)
+                     MENU_ENUM_LABEL_NETWORK_CMD_PORT,
+                     PARSE_ONLY_UINT, false) == 0)
                   count++;
             }
 
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_NETWORK_REMOTE_ENABLE,
-                     PARSE_ONLY_BOOL, false) != -1)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_NETWORK_REMOTE_PORT,
-                     PARSE_ONLY_UINT, false) != -1)
+                  MENU_ENUM_LABEL_NETWORK_REMOTE_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
                count++;
 
+            if (network_remote_enable)
             {
-               unsigned user;
-               unsigned max_users          = settings->uints.input_max_users;
-               for (user = 0; user < max_users; user++)
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_NETWORK_REMOTE_PORT,
+                     PARSE_ONLY_UINT, false) == 0)
+                  count++;
+
+               for (user = 0; user < settings->uints.input_max_users; user++)
                {
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                           (enum msg_hash_enums)(
-                              MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE + user),
-                           PARSE_ONLY_BOOL, false) != -1)
+                        (enum msg_hash_enums)
+                           MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE + user,
+                        PARSE_ONLY_BOOL, false) == 0)
                      count++;
                }
             }
 
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_STDIN_CMD_ENABLE,
-                     PARSE_ONLY_BOOL, false) != -1)
+                  MENU_ENUM_LABEL_STDIN_CMD_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
                count++;
 
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS,
-                     PARSE_ONLY_BOOL, false) != -1)
+                  MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS,
+                  PARSE_ONLY_BOOL, false) == 0)
                count++;
 
 #ifdef HAVE_ONLINE_UPDATER
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_UPDATER_SETTINGS,
-                     PARSE_ACTION, false) != -1)
+                  MENU_ENUM_LABEL_UPDATER_SETTINGS,
+                  PARSE_ACTION, false) == 0)
                count++;
 #endif
          }
@@ -10691,8 +10688,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef HAVE_NETWORKING
          {
             size_t i;
-            file_list_t *list    = info->list;
-            bool use_mitm_server = settings->bools.netplay_use_mitm_server;
+            file_list_t *list            = info->list;
+            bool netplay_allow_slaves    = settings->bools.netplay_allow_slaves;
+            bool netplay_use_mitm_server = settings->bools.netplay_use_mitm_server;
+
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,       PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_NETPLAY_MAX_CONNECTIONS,    PARSE_ONLY_UINT,   true},
@@ -10703,6 +10702,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                {MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER, PARSE_ONLY_STRING, false},
                {MENU_ENUM_LABEL_NETPLAY_PASSWORD,           PARSE_ONLY_STRING, true},
                {MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD,  PARSE_ONLY_STRING, true},
+               {MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING,      PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES,       PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES,     PARSE_ONLY_BOOL,   false},
+               {MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL,      PARSE_ONLY_BOOL,   true},
             };
 
 		    menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, list);
@@ -10737,9 +10740,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             {
                switch (build_list[i].enum_idx)
                {
+                  case MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES:
+                     if (netplay_allow_slaves)
+                        build_list[i].checked = true;
+                     break;
                   case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
                   case MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER:
-                     if (use_mitm_server)
+                     if (netplay_use_mitm_server)
                         build_list[i].checked = true;
                      break;
                   default:
