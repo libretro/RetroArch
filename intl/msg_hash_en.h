@@ -795,10 +795,6 @@ MSG_HASH(
    "Frame-rate display will be updated at the set interval in frames."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
-   "Display the current on-screen frame count."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
    "Display Net-play Ping"
    )
