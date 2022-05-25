@@ -140,9 +140,9 @@ done:
 
 static void task_netplay_nat_traversal_handler(retro_task_t *task)
 {
-   static struct natt_discovery discovery = {-1};
+   static struct natt_discovery discovery = {-1, -1};
    static struct natt_device    device    = {0};
-   struct nat_traversal_data *data        = (struct nat_traversal_data*)task->task_data;
+   struct nat_traversal_data   *data      = (struct nat_traversal_data*)task->task_data;
 
    /* Try again on the next call. */
    if (device.busy)
