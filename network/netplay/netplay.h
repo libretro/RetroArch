@@ -294,8 +294,6 @@ typedef struct
    /* Only used before init_netplay */
    bool netplay_enabled;
    bool netplay_is_client;
-   /* Used to avoid recursive netplay calls */
-   bool in_netplay;
    bool has_set_netplay_mode;
    bool has_set_netplay_ip_address;
    bool has_set_netplay_ip_port;
@@ -401,18 +399,6 @@ bool netplay_is_alive(netplay_t *netplay);
 bool netplay_should_skip(netplay_t *netplay);
 
 /**
- * netplay_post_frame:
- * @netplay              : pointer to netplay object
- *
- * Post-frame for Netplay.
- * We check if we have new input and replay from recorded input.
- * Call this after running retro_run().
- **/
-void netplay_post_frame(netplay_t *netplay);
-
-void deinit_netplay(void);
-
-/**
  * init_netplay
  * @server               : server address to connect to (client only)
  * @port                 : TCP port to host on/connect to
@@ -427,6 +413,8 @@ void deinit_netplay(void);
 bool init_netplay(const char *server, unsigned port, const char *mitm_session);
 
 bool init_netplay_deferred(const char *server, unsigned port, const char *mitm_session);
+
+void deinit_netplay(void);
 
 void video_frame_net(const void *data, unsigned width,
       unsigned height, size_t pitch);
