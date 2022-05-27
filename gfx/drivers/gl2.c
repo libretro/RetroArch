@@ -4014,9 +4014,9 @@ static bool gl2_alive(void *data)
 #ifdef __WINRT__
    if (is_running_on_xbox())
    {
-      //we can set it to 1920x1080 as xbox uwp windowsize is guaranteed to be 1920x1080 and currently there is now way to set angle to use a variable resolution swapchain so regardless of the size the window is always 1080p
-      temp_width = 1920;
-      temp_height = 1080;
+      //match the output res to the display res
+      temp_width = uwp_get_width();
+      temp_height = uwp_get_height();
    }
 #endif
    if (quit)
