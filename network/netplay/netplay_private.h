@@ -884,13 +884,6 @@ int netplay_poll_net_input(netplay_t *netplay, bool block);
 void netplay_handle_slaves(netplay_t *netplay);
 
 /**
- * netplay_announce_nat_traversal
- *
- * Announce successful NAT traversal.
- */
-void netplay_announce_nat_traversal(netplay_t *netplay);
-
-/**
  * netplay_init_nat_traversal
  *
  * Initialize the NAT traversal library and try to open a port

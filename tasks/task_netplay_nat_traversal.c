@@ -276,7 +276,11 @@ finished:
 static void netplay_nat_traversal_callback(retro_task_t *task,
    void *task_data, void *user_data, const char *error)
 {
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_FINISHED_NAT_TRAVERSAL, NULL);
+   struct nat_traversal_data *data = (struct nat_traversal_data*)task_data;
+   uintptr_t ext_port              = ntohs(data->request.addr.sin_port);
+
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_FINISHED_NAT_TRAVERSAL,
+      (void*)ext_port);
 }
 
 static bool nat_task_finder(retro_task_t *task, void *userdata)
