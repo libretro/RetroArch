@@ -6592,7 +6592,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
-   "Lors de l'utilisation d'un fichier DAT d'arcade, ajouter du contenu à la liste de lecture uniquement si une entrée correspondante est trouvée dans le fichier DAT."
+   "Lors de l'utilisation d'un fichier DAT d'arcade, le contenu sera ajouté à la liste de lecture uniquement si une entrée correspondante est trouvée dans le fichier DAT."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
@@ -7781,7 +7781,7 @@ MSG_HASH(
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
-   "Impossible d'activer les succès avec ce cœur"
+   "Les succès ne peuvent pas être activés avec ce cœur"
 )
 
 /* Quick Menu > Information */
@@ -11106,7 +11106,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_COULD_NOT_OPEN_DATA_TRACK,
-   "Impossible d'ouvrir la piste de données."
+   "Impossible d'ouvrir la piste de données"
    )
 MSG_HASH(
    MSG_COULD_NOT_READ_CONTENT_FILE,

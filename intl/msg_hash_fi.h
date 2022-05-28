@@ -3083,10 +3083,6 @@ MSG_HASH(
    "Edellä olevien kuvien lukumäärä"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
-   "Edellä olevien kuvien lukumäärä. Aiheuttaa pelattavuuteen liittyviä ongelmia, kuten värinää, jos pelin sisäisten viivekuvien määrä ylittyy."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
    "Käytä toista instanssia edelläpyörityksessä"
    )
@@ -3681,10 +3677,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
    "Ilmoitusten näkyvyys"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
-   "Vaihtele tietyntyyppisten ilmoitusten näkyvyyttä."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
@@ -5617,10 +5609,6 @@ MSG_HASH(
    "Suosikkien koko"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "Rajoita \"Suosikit\"-soittolistan kohteiden määrää. Kun raja on saavutettu, uudet lisäykset estetään kunnes vanhat merkinnät on poistettu. Asettamalla arvo -1 sallii \"rajoittamattomat\" merkinnät.\nVAROITUS: Arvon pienentäminen poistaa olemassa olevat merkinnät!"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
    "Salli sisällön uudelleennimeäminen"
    )
@@ -6417,10 +6405,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
    "Arcade DAT -suodatin"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
-   "Kun käytät arcade DAT -tiedostoa, sisältö lisätään soittolistaan vain, jos DAT-tiedostosta löytyy sisältöä vastaava kohde."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
@@ -7534,10 +7518,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
    "Tuntematon peli"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
-   "Ei voida aktivoida saavutuksia käyttämällä tätä ydintä"
 )
 
 /* Quick Menu > Information */
@@ -10805,10 +10785,6 @@ MSG_HASH(
    "Ei löytynyt kelpaavaa raitaa"
    )
 MSG_HASH(
-   MSG_COULD_NOT_OPEN_DATA_TRACK,
-   "raitaa ei voitu lukea"
-   )
-MSG_HASH(
    MSG_COULD_NOT_READ_CONTENT_FILE,
    "Sisältötiedostoa ei voitu lukea"
    )
@@ -12175,10 +12151,6 @@ MSG_HASH(
    "Tehokkuus (hallittu)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
-   "Oletus ja suositeltu tila. Suurin suorituskyky pelatessa ja virransäästö kun selataan valikoita tai keskeytettynä."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
    "Mukautettu hallinta"
    )
@@ -12205,10 +12177,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
    "Tasapainotettu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_BALANCED,
-   "Mukautuu nykyiseen työmäärään. Toimii hyvin useimmilla laitteilla ja emulaattoreilla ja auttaa säästämään virtaa. Vaativat pelit ja ytimet saattavat kärsiä suorituskyvyn heittelystä joissakin laitteissa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,

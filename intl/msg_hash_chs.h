@@ -3127,10 +3127,6 @@ MSG_HASH(
    "超前运行的帧数"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
-   "设置要超前运行的帧数。如果滞后于游戏本体的帧数将导致类似于抖动之类的游戏问题。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
    "使用第二实例来超前运行"
    )
@@ -3717,10 +3713,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
    "通知可见性"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
-   "切换特定类型通知的可见性。"
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
@@ -5573,10 +5565,6 @@ MSG_HASH(
    "收藏夹大小"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "限制「收藏」列表中的条目数量。一旦达到限制，将无法添加新条目，除非删除旧条目。 设置值为 -1 允许“无限多”条目。\n警告：减少此数值将删除现有条目！"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
    "允许重命名条目"
    )
@@ -6361,10 +6349,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
    "街机 DAT 过滤器"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
-   "当使用街机 DAT 文件时，只添加匹配 DAT 文件的游戏到列表。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
@@ -7558,10 +7542,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
    "未知游戏"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
-   "无法使用此核心激活成就"
 )
 
 /* Quick Menu > Information */
@@ -10777,10 +10757,6 @@ MSG_HASH(
    "无法找到有效的数据轨"
    )
 MSG_HASH(
-   MSG_COULD_NOT_OPEN_DATA_TRACK,
-   "无法打开数据轨"
-   )
-MSG_HASH(
    MSG_COULD_NOT_READ_CONTENT_FILE,
    "无法读取游戏文件"
    )
@@ -12139,10 +12115,6 @@ MSG_HASH(
    "高性能 (受管)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
-   "默认推荐的模式。游玩时为最高性能，暂停或浏览菜单时将自动节能。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
    "自定义受管"
    )
@@ -12169,10 +12141,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
    "平衡"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_BALANCED,
-   "根据当前负载进行自动调节，此选项兼容大多数设备及模拟器，且有助节能。部分设备上，对性能要求较高的游戏及核心可能会降低性能。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,

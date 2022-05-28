@@ -3195,10 +3195,6 @@ MSG_HASH(
    "Fotogramas a calcular en la reducción predictiva"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
-   "Ajusta el número de fotogramas a ejecutar de forma anticipada. Puede haber tirones si el número de fotogramas retrasados supera al valor interno del juego."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
    "Usar una segunda instancia para la reducción predictiva"
    )
@@ -3825,10 +3821,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
    "Visibilidad de notificaciones"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
-   "Cambia la visibilidad de determinadas notificaciones."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
@@ -5785,10 +5777,6 @@ MSG_HASH(
    "Tamaño del listado de favoritos"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "Limita la cantidad de elementos de la lista de reproducción de la sección Favoritos. Cuando se alcance el límite, no se añadirán más entradas hasta que se eliminen otras. Introduce -1 para tener un número de entradas «ilimitado».\nADVERTENCIA: ¡Si se reduce este valor, se borrarán las entradas ya existentes!"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
    "Permitir renombrar elementos"
    )
@@ -6605,10 +6593,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
    "Filtrar según archivo DAT de arcade"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
-   "Al utilizar un archivo DAT de arcade, solo se añadirán contenidos a una lista de reproducción si coinciden con la información del archivo DAT."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
@@ -7814,10 +7798,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
    "Juego desconocido"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
-   "No se pueden activar los logros con este núcleo"
 )
 
 /* Quick Menu > Information */
@@ -11117,10 +11097,6 @@ MSG_HASH(
    "No se encontró una pista de datos válida."
    )
 MSG_HASH(
-   MSG_COULD_NOT_OPEN_DATA_TRACK,
-   "No se pudo abrir la pista de datos"
-   )
-MSG_HASH(
    MSG_COULD_NOT_READ_CONTENT_FILE,
    "No se puede leer el contenido"
    )
@@ -12523,10 +12499,6 @@ MSG_HASH(
    "Rendimiento (administrado)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
-   "El modo predeterminado y recomendado. Da un rendimiento total en juegos mientras ahorra energía al pausar la partida o navegar por los menús."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
    "Administración personalizada"
    )
@@ -12553,10 +12525,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
    "Equilibrado"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_BALANCED,
-   "Se adapta a la carga de trabajo actual. Ahorra energía y funciona bien con la mayoría de dispositivos y emuladores. Los juegos y núcleos más exigentes podrían sufrir bajadas de rendimiento en algunos dispositivos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,

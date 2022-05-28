@@ -3119,10 +3119,6 @@ MSG_HASH(
    "Počet Snímků Do Režimu Run-Ahead"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
-   "Počet snímků, které se mají spustit dopředu. Způsobuje problémy s hraním, například trhání, pokud je počet zpožděných snímků ve hře překročen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
    "Použít Druhý Stupeň Run-Ahead"
    )
@@ -3749,10 +3745,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
    "Viditelnost Oznámení"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
-   "Přepínání viditelnosti konkrétních typů oznámení."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
@@ -5701,10 +5693,6 @@ MSG_HASH(
    "Velikost Oblíbených Položek"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "Omezit počet položek v playlistu 'Oblíbené'. Po dosažení limitu nebude možné přidávat nové položky, dokud nebudou staré odstraněny. Nastavení hodnoty -1 umožňuje 'neomezený' počet záznamů.\nUpozornění: Snížení hodnoty odstraní stávající záznamy!"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
    "Povolení Přejmenování Záznamů"
    )
@@ -6525,10 +6513,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
    "Arcade DAT Filtr"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
-   "Při použití arkádového souboru DAT přidejte obsah do seznamu skladeb pouze v případě, že je nalezena odpovídající položka souboru DAT."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
@@ -7726,10 +7710,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
    "Neznáma Hra"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
-   "Nelze aktivovat úspěchy pomocí tohoto jádra"
 )
 
 /* Quick Menu > Information */
@@ -10941,10 +10921,6 @@ MSG_HASH(
    "Nelze najít platnou datovou stopu"
    )
 MSG_HASH(
-   MSG_COULD_NOT_OPEN_DATA_TRACK,
-   "nelze otevřít datovou stopu"
-   )
-MSG_HASH(
    MSG_COULD_NOT_READ_CONTENT_FILE,
    "Nelze načíst obsah souboru"
    )
@@ -12339,10 +12315,6 @@ MSG_HASH(
    "Výkon (Řízený)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
-   "Výchozí a doporučený režim. Maximální výkon při přehrávání, při úsporách energie, při pozastavení, nebo při prohlížení menu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
    "Vlastní Správa"
    )
@@ -12369,10 +12341,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
    "Vyvážená"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_BALANCED,
-   "Přizpůsobuje se aktuálnímu pracovnímu zatížení. Funguje dobře s většinou zařízení a emulátorů a pomáhá šetřit energii. U náročných her a jader může na některých zařízeních dojít k poklesu výkonu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,

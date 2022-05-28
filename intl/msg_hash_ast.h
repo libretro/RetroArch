@@ -2119,10 +2119,6 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
-   "Nun se puen activar los llogros con esti nucleu"
-)
 
 /* Quick Menu > Information */
 
@@ -3195,10 +3191,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_COULD_NOT_FIND_VALID_DATA_TRACK,
    "Nun se pudo atopar nenguna pista de datos válida"
-   )
-MSG_HASH(
-   MSG_COULD_NOT_OPEN_DATA_TRACK,
-   "nun se pudo abrir la pista de datos"
    )
 MSG_HASH(
    MSG_COULD_NOT_READ_MOVIE_HEADER,

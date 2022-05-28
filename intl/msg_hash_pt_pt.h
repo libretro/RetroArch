@@ -4457,10 +4457,6 @@ MSG_HASH(
    "Não foi possível encontrar uma pista de dados válida"
    )
 MSG_HASH(
-   MSG_COULD_NOT_OPEN_DATA_TRACK,
-   "Não foi possível abrir a pista de dados"
-   )
-MSG_HASH(
    MSG_COULD_NOT_READ_CONTENT_FILE,
    "Não foi possível ler o ficheiro de conteúdo"
    )

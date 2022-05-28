@@ -2859,10 +2859,6 @@ MSG_HASH(
    "先行実行するフレーム数"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
-   "先行実行するフレーム数です. ゲーム内部のラグフレームの数を超えると, ジッターなどのゲームプレイの問題が発生します."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
    "先行実行に2番目のインスタンスを使用"
    )
@@ -3429,10 +3425,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
    "通知の表示"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
-   "特定の種類の通知の表示を切り替えます."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
@@ -5173,10 +5165,6 @@ MSG_HASH(
    "お気に入りのサイズ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "'お気に入り'プレイリストの項目数を制限します. 制限に達すると, 古い項目が削除されるまで新しく追加できなくなります. 値を -1 に設定すると, 項目数を制限しません.\n警告: 値を減らすと, 既存の項目が削除されます!"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
    "エントリの名前変更を許可"
    )
@@ -5921,10 +5909,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
    "Arcade DAT フィルタ"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
-   "DATファイルを使用する場合, DATファイル内に一致する項目が見つかった場合にのみプレイリストにコンテンツを追加します."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
@@ -6930,10 +6914,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
    "ネットワークエラー"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
-   "このコアを使用して実績を有効にすることはできません"
 )
 
 /* Quick Menu > Information */
@@ -9729,10 +9709,6 @@ MSG_HASH(
    "有効なデータトラックを見つけることができませんでした"
    )
 MSG_HASH(
-   MSG_COULD_NOT_OPEN_DATA_TRACK,
-   "データトラックを開くことができませんでした"
-   )
-MSG_HASH(
    MSG_COULD_NOT_READ_CONTENT_FILE,
    "コンテンツファイルを読み込むことができませんでした"
    )
@@ -10887,10 +10863,6 @@ MSG_HASH(
    "パフォーマンス (管理)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
-   "デフォルトかつ推奨のモードです. ゲーム中は最大パフォーマンス, 一時停止中やメニュー表示中は電力節約します."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
    "カスタム管理"
    )
@@ -10913,10 +10885,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
    "バランス"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_BALANCED,
-   "現在の作業負荷に適応します. ほとんどのデバイスやエミュレータで動作し, 節電に役立ちます. 負荷の高いゲームやコアを使用すると, デバイスによってはパフォーマンスが低下する場合があります."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,

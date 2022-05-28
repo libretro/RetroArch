@@ -5041,10 +5041,6 @@ MSG_HASH(
    "無法找到有效的數據軌"
    )
 MSG_HASH(
-   MSG_COULD_NOT_OPEN_DATA_TRACK,
-   "無法打開數據軌"
-   )
-MSG_HASH(
    MSG_COULD_NOT_READ_CONTENT_FILE,
    "無法讀取內容文件"
    )

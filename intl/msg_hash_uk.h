@@ -2914,10 +2914,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
    "Видимість сповіщень"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
-   "Перемкнути видимість конкретних типів сповіщень."
-   )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
 
@@ -7323,10 +7319,6 @@ MSG_HASH(
    "Продуктивність (Керована)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
-   "Стандартний і рекомендований режим. Максимальна продуктивність під час гри і економія ресурсів при зупинці або навігації по меню."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
    "Самостійне Управління"
    )
@@ -7353,10 +7345,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
    "Збалансований"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_BALANCED,
-   "Адаптується до поточного навантаження. Добре працює з більшістю пристроїв та емуляторів та допомагає економити енергію. Вимогливі ігри та ядра можуть погіршити продуктивність на деяких пристроях."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,

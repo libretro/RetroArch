@@ -3090,10 +3090,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
    "رؤية الإشعارات"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
-   "تبديل رؤية أنواع محددة من الإشعار."
-   )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
 
@@ -4345,10 +4341,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
    "فلتر DAT ARCADE"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
-   "عند استخدام ملف DAT المرسوم، أضف محتوى لقائمة التشغيل فقط إذا تم العثور على إدخال ملف DAT مطابق."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
@@ -8187,10 +8179,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_COULD_NOT_FIND_VALID_DATA_TRACK,
    "تعذر العثور على مسار بيانات صالح"
-   )
-MSG_HASH(
-   MSG_COULD_NOT_OPEN_DATA_TRACK,
-   "تعذر فتح مسار البيانات"
    )
 MSG_HASH(
    MSG_COULD_NOT_READ_CONTENT_FILE,

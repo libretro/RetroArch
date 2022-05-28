@@ -650,10 +650,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_UNSUPPORTED,
    "[Run-Ahead is Unavailable]"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
-   "The number of frames to run ahead. Causes gameplay issues such as jitter if the number of lag frames internal to the game is exceeded."
-   )
 
 /* Settings > Core */
 
@@ -738,10 +734,6 @@ MSG_HASH(
 
 /* Settings > On-Screen Display */
 
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
-   "Toggle the visibility of specific types of notifications."
-   )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
 
@@ -1053,10 +1045,6 @@ MSG_HASH(
    "Favourites Size"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "Limit the number of entries in the 'Favourites' playlist. Once the limit is reached, new additions will be prevented until old entries are removed. Setting a value of -1 allows 'unlimited' entries.\nWARNING: Reducing the value will delete existing entries!"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
    "Allow the Renaming of Entries"
    )
@@ -1214,10 +1202,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
    "Specify a 'system name' with which to associate scanned content. Used to name the system to the generated playlist file and to identify playlist thumbnails."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
-   "When using an arcade DAT file, content will only be added to the playlist if a matching DAT file entry is found."
-   )
 
 /* Explore tab */
 MSG_HASH(
@@ -1367,10 +1351,6 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
-   "Achievements cannot be activated using this core"
-)
 
 /* Quick Menu > Information */
 
@@ -1841,10 +1821,6 @@ MSG_HASH(
    "Configuration directory not set. Cannot save new configuration."
    )
 MSG_HASH(
-   MSG_COULD_NOT_OPEN_DATA_TRACK,
-   "Could not open data track"
-   )
-MSG_HASH(
    MSG_COULD_NOT_READ_MOVIE_HEADER,
    "Could not read film header."
    )
@@ -2039,20 +2015,12 @@ MSG_HASH(
    "Adjust display overscan cropping by reducing image size by specified number of scan lines (taken from bottom of screen). May introduce scaling artefacts."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
-   "Default and recommended mode. Maximum performance while playing, while saving power when paused or while browsing menus."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
    "Allows the choice of what governors to use in menus and during gameplay. Performance, Ondemand or Schedutil are recommended during gameplay."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
    "Use the lowest frequency available to save power. Useful on battery powered devices, but performance will be significantly reduced."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_BALANCED,
-   "Adapts to the current workload. Works well with most devices and emulators and helps to save power. Demanding games and cores might suffer a performance drop on some devices."
    )
 
 #ifdef HAVE_LAKKA_SWITCH

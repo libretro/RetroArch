@@ -1142,7 +1142,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
-   "Canvia les configuracions per defecte per arxius de configuració."
+   "Canvia els ajustos per defecte dels arxius de configuració."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
@@ -1158,7 +1158,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-   "Canvia els ajustos de registre."
+   "Canvia els ajustos del registre."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -1206,7 +1206,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
-   "Canvia els ajustos del servei d'AI (Traducció/Text a veu/etc.)."
+   "Canvia els ajustos del servei d'IA (traducció/text a veu/etc.)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
@@ -1379,7 +1379,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
-   "Canvia els ajustos d'eixida de vídeo."
+   "Canvia els ajustos de l'eixida de vídeo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
@@ -2234,6 +2234,18 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
    "No"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "Canvia els ajustos per disparar amb turbo."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+   "Canvia els ajustos de vibració i resposta hàptica."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
+   "Canvia els ajustos de control del menú."
+   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -2311,6 +2323,10 @@ MSG_HASH(
 /* Settings > Frame Throttle */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
+   "Canvia els ajustos del comptador de duració de fotogrames.\nNomés en funcionament quan estiga desactivat el vídeo multifil."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    "Limitar velocitat de fotogrames del menú"
    )
@@ -2362,6 +2378,18 @@ MSG_HASH(
 /* Settings > User Interface */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SETTINGS,
+   "Canvia els ajustos de l'aspecte del menú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
+   "Vore ajustos avançats"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
+   "Mostra els ajustos avançats per a usuaris experts."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    "Els gestors de finestres empraran la composició per aplicar efectes visuals, detectar finestres que no responguen, entre d'altres coses."
    )
@@ -2376,6 +2404,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    "Ajustos"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_VIEWS_SETTINGS,
+   "Canvia la visibilitat dels elements al menú d'Ajustos."
+   )
 #ifdef HAVE_LAKKA
 #endif
 MSG_HASH(
@@ -2385,6 +2417,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
    "Vore la opció \"Arxiu de configuració\" al Menú principal."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS,
+   "Vore 'Ajustos'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
+   "Mostra el menú 'Ajustos'. (Cal reiniciar a Ozone/XMB)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
+   "Establir contrasenya per activar la secció 'Ajustos'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
+   "Establix una contrasenya per ocultar la secció 'Ajustos', permetent restaurar-la des del menú principal seleccionant 'Mostrar la secció d'Ajustos' i introduint la contrasenya."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
@@ -2400,6 +2448,14 @@ MSG_HASH(
 
 /* Settings > User Interface > Views > Settings */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,
+   "Mostra els ajustos de controladors."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_VIDEO,
+   "Mostra els ajustos de vídeo."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CONFIGURATION,
    "Mostra 'Configuració'"

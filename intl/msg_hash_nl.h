@@ -2827,10 +2827,6 @@ MSG_HASH(
    "Aantal Frames om Vooruit te Lopen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
-   "Het aantal frames dat vooruit moet lopen. Veroorzaakt gameplay-problemen zoals jitter als het aantal lagframes in de game wordt overschreden."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
    "Tweede Instantie voor Run-Ahead gebruiken"
    )

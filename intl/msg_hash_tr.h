@@ -3824,7 +3824,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
-   "Belirli bildirim türlerinin görünürlüğünü aç/kapat."
+   "Belirli bildirimlerin türlerinin görünürlüğünü aç/kapat."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
@@ -6608,7 +6608,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
-   "Bir arcade DAT dosyası kullanırken, sadece eşleşen bir DAT dosya girişi bulunursa oynatma listesine içerik ekle."
+   "Bir arcade DAT dosyası kullanırken, içerik sadece eşleşen bir DAT dosyası girişi bulunursa oynatma listesine eklenecektir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
@@ -7829,7 +7829,7 @@ MSG_HASH(
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
-   "Bu çekirdek kullanılarak başarılar etkinleştirilemez"
+   "Başarılar bu çekirdekle etkinleştirilemez"
 )
 
 /* Quick Menu > Information */
@@ -11218,7 +11218,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_COULD_NOT_OPEN_DATA_TRACK,
-   "veri parçası açılamadı"
+   "Veri yolu açılamadı"
    )
 MSG_HASH(
    MSG_COULD_NOT_READ_CONTENT_FILE,
