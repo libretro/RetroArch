@@ -30,7 +30,6 @@
 #endif
 
 #include "gfx/video_defines.h"
-#include "input/input_defines.h"
 #include "led/led_defines.h"
 
 #ifdef HAVE_LAKKA
@@ -69,8 +68,6 @@
    strlcpy(var, newvar, sizeof(var)); \
 }
 
-#define INPUT_CONFIG_BIND_MAP_GET(i) ((const struct input_bind_map*)&input_config_bind_map[(i)])
-
 enum crt_switch_type
 {
    CRT_SWITCH_NONE = 0,
@@ -89,25 +86,6 @@ enum override_type
 };
 
 RETRO_BEGIN_DECLS
-
-/* Input config. */
-struct input_bind_map
-{
-   const char *base;
-
-   enum msg_hash_enums desc;
-
-   /* Meta binds get input as prefix, not input_playerN".
-    * 0 = libretro related.
-    * 1 = Common hotkey.
-    * 2 = Uncommon/obscure hotkey.
-    */
-   uint8_t meta;
-
-   uint8_t retro_key;
-
-   bool valid;
-};
 
 typedef struct settings
 {
@@ -1160,8 +1138,6 @@ void input_config_parse_mouse_button(
       const char *btn, void *bind_data);
 
 const char *input_config_get_prefix(unsigned user, bool meta);
-
-extern const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL];
 
 RETRO_END_DECLS
 
