@@ -2869,16 +2869,11 @@ static bool vulkan_frame(void *data, const void *frame,
          && !vk->menu.enable)
    {   
       unsigned n;
-      if (vk->ctx_driver->swap_buffers)
+      for (n = 0; n < black_frame_insertion; ++n)
       {
-         for (n = 0; n < black_frame_insertion; ++n) 
-            vulkan_inject_black_frame(vk, video_info);
-      }
-      else
-      {
-         for (n = 0; n < black_frame_insertion; ++n) 
+         vulkan_inject_black_frame(vk, video_info);
+         if (vk->ctx_driver->swap_buffers)
          {
-            vulkan_inject_black_frame(vk, video_info);
             vk->ctx_driver->swap_buffers(vk->ctx_data);
          }
       }
