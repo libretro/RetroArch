@@ -3193,6 +3193,10 @@ MSG_HASH(
    "Nun se pudo atopar nenguna pista de datos válida"
    )
 MSG_HASH(
+   MSG_COULD_NOT_OPEN_DATA_TRACK,
+   "Nun se pudo abrir la pista de datos"
+   )
+MSG_HASH(
    MSG_COULD_NOT_READ_MOVIE_HEADER,
    "Nun se pudo lleer la testera del filme."
    )

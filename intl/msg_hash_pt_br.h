@@ -7771,6 +7771,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
    "Jogo desconhecido"
 )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
+   "Conquistas não funcionam neste núcleo"
+)
 
 /* Quick Menu > Information */
 

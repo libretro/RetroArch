@@ -3115,6 +3115,10 @@ MSG_HASH(
    "Anzahl der Run-Ahead-Frames"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
+   "Die Anzahl Frames, die im Voraus ausgeführt werden sollen. Verursacht Gameplay-Probleme wie z. B. Ruckeln, wenn die Anzahl der spielinternen Verzögerungsframes überschritten wird."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
    "Zweite Instanz für Run-Ahead verwenden"
    )
@@ -3733,6 +3737,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
    "Benachrichtigungssichtbarkeit"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+   "Die Sichtbarkeit bestimmter Benachrichtigungstypen umschalten."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
@@ -5677,6 +5685,10 @@ MSG_HASH(
    "Favoritenanzahl"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
+   "Die Anzahl der Einträge in der Favoritenliste begrenzen. Sobald das Limit erreicht ist, werden neue Ergänzungen verhindert, bis alte Einträge entfernt wurden. Das Festlegen eines Werts von -1 ermöglicht „unbegrenzte“ Einträge.\nWARNUNG: Das Verringern des Wertes löscht vorhandene Einträge!"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
    "Umbenennen von Einträgen erlauben"
    )
@@ -6453,6 +6465,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
    "Arcade DAT-Filter"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
+   "Wenn eine Arcade-DAT-Datei verwendet wird, wird der Inhalt nur dann zur Wiedergabeliste hinzugefügt, wenn ein passender DAT-Dateieintrag gefunden wird."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
@@ -7626,6 +7642,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
    "Unbekanntes Spiel"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
+   "Errungenschaften lassen sich mit diesem Core nicht aktivieren"
 )
 
 /* Quick Menu > Information */
@@ -10801,6 +10821,10 @@ MSG_HASH(
    "Konnte keinen gültigen Daten-Track finden"
    )
 MSG_HASH(
+   MSG_COULD_NOT_OPEN_DATA_TRACK,
+   "Datentrack konnte nicht geöffnet werden"
+   )
+MSG_HASH(
    MSG_COULD_NOT_READ_CONTENT_FILE,
    "Konnte Inhalts-Datei nicht lesen"
    )
@@ -12203,6 +12227,10 @@ MSG_HASH(
    "Leistung (verwaltet)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
+   "Standard und empfohlener Modus. Maximale Leistung beim Abspielen, während Strom gespart wird, wenn die Wiedergabe pausiert oder die Menüs durchsucht werden."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
    "Individuell verwaltet"
    )
@@ -12229,6 +12257,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
    "Ausgewogen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   "Passt sich der aktuellen Auslastung an. Funktioniert mit den meisten Geräten und Emulatoren gut und hilft, Strom zu sparen. Anspruchsvolle Spiele und Cores können auf manchen Geräten einen Leistungsabfall erleiden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,
