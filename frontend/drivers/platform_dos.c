@@ -16,6 +16,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <time.h>
 #include <process.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
@@ -29,7 +30,9 @@ static enum frontend_fork dos_fork_mode = FRONTEND_FORK_NONE;
 
 static void frontend_dos_init(void *data)
 {
-	printf("Loading RetroArch...\n");
+	// Keep a call to time() as otherwise we trigger some obscure bug in
+	// djgpp libc code and time(NULL) return only -1
+	printf("Loading RetroArch. Time is @%ld...\n", (long) time(NULL));
 }
 
 static void frontend_dos_shutdown(bool unused)
