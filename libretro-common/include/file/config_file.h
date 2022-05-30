@@ -54,12 +54,12 @@ RETRO_BEGIN_DECLS
 struct config_file
 {
    char *path;
+   char *reference;
    struct config_entry_list **entries_map;
    struct config_entry_list *entries;
    struct config_entry_list *tail;
    struct config_entry_list *last;
-   struct path_linked_list *includes;
-   struct path_linked_list *references;
+   struct config_include_list *includes;
    unsigned include_depth;
    bool guaranteed_no_duplicates;
    bool modified;
@@ -92,8 +92,6 @@ config_file_t *config_file_new_alloc(void);
 
 void config_file_initialize(struct config_file *conf);
 
-void config_file_add_reference(config_file_t *conf, char *path);
-
 /* Loads a config file. Returns NULL if file doesn't exist.
  * NULL path will create an empty config file.
  * Includes cb callbacks to run custom code during config file processing.*/
@@ -110,6 +108,8 @@ config_file_t *config_file_new_from_path_to_string(const char *path);
 
 /* Frees config file. */
 void config_file_free(config_file_t *conf);
+
+void config_file_set_reference_path(config_file_t *conf, char *path);
 
 bool config_file_deinitialize(config_file_t *conf);
 
