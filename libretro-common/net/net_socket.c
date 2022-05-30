@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2020 The RetroArch team
+/* Copyright  (C) 2010-2022 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (net_socket.c).
@@ -30,6 +30,8 @@
 #ifdef GEKKO
 #include <network.h>
 #endif
+
+#include <features/features_cpu.h>
 
 #include <net/net_compat.h>
 #include <net/net_socket.h>
@@ -90,38 +92,89 @@ int socket_next(void **addrinfo)
 ssize_t socket_receive_all_nonblocking(int fd, bool *error,
       void *data_, size_t size)
 {
-   const uint8_t *data = (const uint8_t*)data_;
-   ssize_t         ret = recv(fd, (char*)data, size, 0);
+   ssize_t ret = recv(fd, (char*)data_, size, 0);
 
    if (ret > 0)
       return ret;
 
-   if (ret == 0)
-   {
-      /* Socket closed */
-      *error = true;
-      return -1;
-   }
-
-   if (isagain((int)ret))
+   if (ret < 0 && isagain((int)ret))
       return 0;
 
    *error = true;
    return -1;
 }
 
-int socket_receive_all_blocking(int fd, void *data_, size_t size)
+bool socket_receive_all_blocking(int fd, void *data_, size_t size)
 {
    const uint8_t *data = (const uint8_t*)data_;
 
    while (size)
    {
       ssize_t ret = recv(fd, (char*)data, size, 0);
-      if (ret <= 0)
+
+      if (!ret)
          return false;
 
-      data += ret;
-      size -= ret;
+      if (ret < 0)
+      {
+         if (!isagain((int)ret))
+            return false;
+      }
+      else
+      {
+         data += ret;
+         size -= ret;
+      }
+   }
+
+   return true;
+}
+
+bool socket_receive_all_blocking_with_timeout(int fd,
+      void *data_, size_t size,
+      unsigned timeout)
+{
+   const uint8_t *data    = (const uint8_t*)data_;
+   retro_time_t  deadline = cpu_features_get_time_usec();
+
+   if (timeout)
+      deadline += (retro_time_t)timeout * 1000000;
+   else
+      deadline += 5000000;
+
+   while (size)
+   {
+      ssize_t ret = recv(fd, (char*)data, size, 0);
+
+      if (!ret)
+         return false;
+
+      if (ret < 0)
+      {
+         retro_time_t time_delta;
+         fd_set fds;
+         struct timeval tv;
+
+         if (!isagain((int)ret))
+            return false;
+
+         time_delta = deadline - cpu_features_get_time_usec();
+
+         if (time_delta <= 0)
+            return false;
+
+         FD_ZERO(&fds);
+         FD_SET(fd, &fds);
+         tv.tv_sec  = (unsigned)(time_delta / 1000000);
+         tv.tv_usec = (unsigned)(time_delta % 1000000);
+         if (socket_select(fd + 1, &fds, NULL, NULL, &tv) <= 0)
+            return false;
+      }
+      else
+      {
+         data += ret;
+         size -= ret;
+      }
    }
 
    return true;
@@ -187,25 +240,80 @@ int socket_select(int nfds, fd_set *readfs, fd_set *writefds,
 #endif
 }
 
-int socket_send_all_blocking(int fd, const void *data_, size_t size,
+bool socket_send_all_blocking(int fd, const void *data_, size_t size,
       bool no_signal)
 {
    const uint8_t *data = (const uint8_t*)data_;
+   int           flags = no_signal ? MSG_NOSIGNAL : 0;
 
    while (size)
    {
-      ssize_t ret = send(fd, (const char*)data, size,
-            no_signal ? MSG_NOSIGNAL : 0);
-      if (ret <= 0)
+      ssize_t ret = send(fd, (const char*)data, size, flags);
+
+      if (!ret)
+         continue;
+
+      if (ret < 0)
       {
-         if (isagain((int)ret))
-            continue;
-
-         return false;
+         if (!isagain((int)ret))
+            return false;
       }
+      else
+      {
+         data += ret;
+         size -= ret;
+      }
+   }
 
-      data += ret;
-      size -= ret;
+   return true;
+}
+
+bool socket_send_all_blocking_with_timeout(int fd,
+      const void *data_, size_t size,
+      unsigned timeout, bool no_signal)
+{
+   const uint8_t *data    = (const uint8_t*)data_;
+   int           flags    = no_signal ? MSG_NOSIGNAL : 0;
+   retro_time_t  deadline = cpu_features_get_time_usec();
+
+   if (timeout)
+      deadline += (retro_time_t)timeout * 1000000;
+   else
+      deadline += 5000000;
+
+   while (size)
+   {
+      ssize_t ret = send(fd, (const char*)data, size, flags);
+
+      if (!ret)
+         continue;
+
+      if (ret < 0)
+      {
+         retro_time_t time_delta;
+         fd_set fds;
+         struct timeval tv;
+
+         if (!isagain((int)ret))
+            return false;
+
+         time_delta = deadline - cpu_features_get_time_usec();
+
+         if (time_delta <= 0)
+            return false;
+
+         FD_ZERO(&fds);
+         FD_SET(fd, &fds);
+         tv.tv_sec  = (unsigned)(time_delta / 1000000);
+         tv.tv_usec = (unsigned)(time_delta % 1000000);
+         if (socket_select(fd + 1, NULL, &fds, NULL, &tv) <= 0)
+            return false;
+      }
+      else
+      {
+         data += ret;
+         size -= ret;
+      }
    }
 
    return true;
@@ -215,12 +323,15 @@ ssize_t socket_send_all_nonblocking(int fd, const void *data_, size_t size,
       bool no_signal)
 {
    const uint8_t *data = (const uint8_t*)data_;
-   ssize_t sent = 0;
+   int           flags = no_signal ? MSG_NOSIGNAL : 0;
 
    while (size)
    {
-      ssize_t ret = send(fd, (const char*)data, size,
-            no_signal ? MSG_NOSIGNAL : 0);
+      ssize_t ret = send(fd, (const char*)data, size, flags);
+
+      if (!ret)
+         break;
+
       if (ret < 0)
       {
          if (isagain((int)ret))
@@ -228,15 +339,14 @@ ssize_t socket_send_all_nonblocking(int fd, const void *data_, size_t size,
 
          return -1;
       }
-      else if (ret == 0)
-         break;
-
-      data += ret;
-      size -= ret;
-      sent += ret;
+      else
+      {
+         data += ret;
+         size -= ret;
+      }
    }
 
-   return sent;
+   return (ssize_t)((size_t)data - (size_t)data_);
 }
 
 bool socket_bind(int fd, void *data)
@@ -266,35 +376,104 @@ int socket_connect(int fd, void *data, bool timeout_enable)
       timeout.tv_sec  = 4;
       timeout.tv_usec = 0;
 
-      setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof timeout);
+      setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(timeout));
    }
-#endif
-#if defined(GEKKO) && !defined(WIIU)
+#elif defined(GEKKO) && !defined(WIIU)
    if (timeout_enable)
    {
       struct timeval timeout;
       timeout.tv_sec  = 4;
       timeout.tv_usec = 0;
 
-      net_setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof timeout);
+      net_setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(timeout));
    }
 #endif
-#if defined(WIIU)
-   int op = 1;
-   setsockopt(fd, SOL_SOCKET, SO_WINSCALE, &op, sizeof(op));
-   if (addr->ai_socktype == SOCK_STREAM) {
-      setsockopt(fd, SOL_SOCKET, SO_TCPSACK, &op, sizeof(op));
 
-      setsockopt(fd, SOL_SOCKET, 0x10000, &op, sizeof(op));
-      int recvsz = WIIU_RCVBUF;
-      setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &recvsz, sizeof(recvsz));
-      int sendsz = WIIU_SNDBUF;
-      setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &sendsz, sizeof(sendsz));
+#ifdef WIIU
+   {
+      int op = 1;
+
+      setsockopt(fd, SOL_SOCKET, SO_WINSCALE, &op, sizeof(op));
+
+      if (addr->ai_socktype == SOCK_STREAM)
+      {
+         int recvsz = WIIU_RCVBUF;
+         int sendsz = WIIU_SNDBUF;
+
+         setsockopt(fd, SOL_SOCKET, SO_TCPSACK, &op, sizeof(op));
+         setsockopt(fd, SOL_SOCKET, 0x10000, &op, sizeof(op));
+         setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &recvsz, sizeof(recvsz));
+         setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &sendsz, sizeof(sendsz));
+      }
    }
-
 #endif
 
    return connect(fd, addr->ai_addr, addr->ai_addrlen);
+}
+
+bool socket_connect_with_timeout(int fd, void *data, unsigned timeout)
+{
+   int res;
+   struct addrinfo *addr = (struct addrinfo*)data;
+
+   if (!socket_nonblock(fd))
+      return false;
+
+#ifdef WIIU
+   {
+      int op = 1;
+
+      setsockopt(fd, SOL_SOCKET, SO_WINSCALE, &op, sizeof(op));
+
+      if (addr->ai_socktype == SOCK_STREAM)
+      {
+         int recvsz = WIIU_RCVBUF;
+         int sendsz = WIIU_SNDBUF;
+
+         setsockopt(fd, SOL_SOCKET, SO_TCPSACK, &op, sizeof(op));
+         setsockopt(fd, SOL_SOCKET, 0x10000, &op, sizeof(op));
+         setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &recvsz, sizeof(recvsz));
+         setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &sendsz, sizeof(sendsz));
+      }
+   }
+#endif
+
+   res = connect(fd, addr->ai_addr, addr->ai_addrlen);
+   if (res)
+   {
+      fd_set wfd, efd;
+      struct timeval tv = {0};
+
+      if (!isagain(res))
+#if !defined(_WIN32) && defined(EINPROGRESS)
+      if (errno != EINPROGRESS)
+#else
+         return false;
+#endif
+
+      FD_ZERO(&wfd);
+      FD_ZERO(&efd);
+      FD_SET(fd, &wfd);
+      FD_SET(fd, &efd);
+      tv.tv_sec = timeout ? timeout : 5;
+      if (socket_select(fd + 1, NULL, &wfd, &efd, &tv) <= 0)
+         return false;
+      if (FD_ISSET(fd, &efd))
+         return false;
+   }
+
+#ifdef SO_ERROR
+   {
+      int       error = -1;
+      socklen_t errsz = sizeof(error);
+
+      getsockopt(fd, SOL_SOCKET, SO_ERROR, &error, &errsz);
+      if (error)
+         return false;
+   }
+#endif
+
+   return true;
 }
 
 static int domain_get(enum socket_domain type)
