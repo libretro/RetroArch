@@ -1338,6 +1338,10 @@ MSG_HASH(
 /* Settings > Video */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
+   "Přepínač Rozlišení CRT"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    "Výstupní nativní signály s nízkým rozlišením pro použití displeje CRT."
    )
@@ -4398,10 +4402,6 @@ MSG_HASH(
    "Hvězdné Pole"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_VORTEX,
-   "Vír"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SPEED,
    "Rychlost Animace Spořiče Obrazovky"
    )
@@ -7118,7 +7118,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
-   "Načíst Cheatový Soubor (Nahradit)"
+   "Načíst Soubor Cheatu (Nahradit)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
@@ -7126,7 +7126,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND,
-   "Načtení Souboru Cheatu (Přidat)"
+   "Načíst Soubor Cheatu (Přidat)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD_APPEND,

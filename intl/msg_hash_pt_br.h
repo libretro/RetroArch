@@ -3171,6 +3171,10 @@ MSG_HASH(
    "Número de quadros para a execução antecipada"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
+   "O número de quadros para a execução antecipada. Pode causar problemas de jogabilidade, como jitter, caso o número de quadros atrasados internos seja excedido."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
    "Usar segunda instância para a \"Execução antecipada\""
    )
@@ -3797,6 +3801,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
    "Visibilidade das notificações"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+   "Alterna a visibilidade dos tipos específicos de notificações."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
@@ -11035,6 +11043,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_COULD_NOT_FIND_VALID_DATA_TRACK,
    "Não foi possível encontrar uma faixa de dados válida"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_OPEN_DATA_TRACK,
+   "Não foi possível abrir a faixa de dados"
    )
 MSG_HASH(
    MSG_COULD_NOT_READ_CONTENT_FILE,
