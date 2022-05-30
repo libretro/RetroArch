@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2020 The RetroArch team
+/* Copyright  (C) 2010-2022 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (net_compat.h).
@@ -56,6 +56,7 @@
 
 #include <network.h>
 
+#define getsockopt net_getsockopt
 #define setsockopt net_setsockopt
 
 #elif defined(VITA)
@@ -70,6 +71,7 @@
 #define socket(a,b,c) sceNetSocket("unknown",a,b,c)
 #define bind sceNetBind
 #define accept sceNetAccept
+#define getsockopt sceNetGetsockopt
 #define setsockopt sceNetSetsockopt
 #define connect sceNetConnect
 #define listen sceNetListen

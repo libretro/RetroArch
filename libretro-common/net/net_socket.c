@@ -447,9 +447,8 @@ bool socket_connect_with_timeout(int fd, void *data, unsigned timeout)
       if (!isagain(res))
 #if !defined(_WIN32) && defined(EINPROGRESS)
       if (errno != EINPROGRESS)
-#else
-         return false;
 #endif
+         return false;
 
       FD_ZERO(&wfd);
       FD_ZERO(&efd);
