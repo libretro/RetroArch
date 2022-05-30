@@ -51,28 +51,6 @@ enum
    RARCH_FILE_UNSUPPORTED
 };
 
-struct path_linked_list
-{
-   char *path;
-   struct path_linked_list *next;
-};
-
-/**
- * Create a new linked list with one item in it
- * The path on this item will be set to NULL
-**/
-struct path_linked_list* path_linked_list_new();
-
-/* Free the entire linked list */
-bool path_linked_list_free(struct path_linked_list *in_path_linked_list);
-
-/**
- * Add a node to the linked list with this path
- * If the first node's path if it's not yet set, 
- * set this instead
-**/
-void path_linked_list_add_path(struct path_linked_list *in_path_linked_list, char *path);
-
 /**
  * path_is_compressed_file:
  * @path               : path
