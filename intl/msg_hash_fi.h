@@ -9916,6 +9916,10 @@ MSG_HASH(
    "Verkkopelin isäntiä ei löytynyt."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
+   "Verkkopelin asiakkaita ei löytynyt."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
    "Ei suorituskykylaskureita."
    )
@@ -10266,6 +10270,62 @@ MSG_HASH(
    "Tietokannan kohdistinluettelo"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
+   "Tietokanta - Suodatin: Kehittäjä"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
+   "Tietokanta - Suodatin: Julkaisija"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ORIGIN,
+   "Tietokanta - Suodatin: Alkuperä"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_FRANCHISE,
+   "Tietokanta - Suodatin: Sarja"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ESRB_RATING,
+   "Tietokanta - Suodatin: ESRB-luokitus"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ELSPA_RATING,
+   "Tietokanta - Suodatin: ELSPA-luokitus"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PEGI_RATING,
+   "Tietokanta - Suodatin: PEGI-luokitus"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_CERO_RATING,
+   "Tietokanta - Suodatin: CERO-luokitus"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_BBFC_RATING,
+   "Tietokanta - Suodatin: BBFC-luokitus"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_MAX_USERS,
+   "Tietokanta - Suodatin: Käyttäjien enimmäismäärä"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_MONTH,
+   "Tietokanta - Suodatin: Julkaisukuukauden mukaan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_YEAR,
+   "Tietokanta - Suodatin: Julkaisuvuoden mukaan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_ISSUE,
+   "Tietokanta - Suodatin: Edge Magazine julkaisu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_RATING,
+   "Tietokanta - Suodatin: Edge Magazine luokitus"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
    "Tietokannan tiedot"
    )
@@ -10572,8 +10632,20 @@ MSG_HASH(
    "Nimimerkkisi muutettiin muotoon \"%s\""
    )
 MSG_HASH(
+   MSG_NETPLAY_KICKED_CLIENT_S,
+   "Potkaistiin asiakas: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
+   "Epäonnistuttiin potkimaan asakas: \"%s\""
+   )
+MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
    "Pelaa"
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_SPECTATING,
+   "Katsomassa"
    )
 MSG_HASH(
    MSG_NETPLAY_CHAT_SUPPORTED,
@@ -11351,6 +11423,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
    "Uudelleenmääritystiedosto poistettu onnistuneesti."
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_RESET,
+   "Kaikki syötteen uudelleenkartoitusasetukset palautetaan oletukselle."
    )
 MSG_HASH(
    MSG_REMOVED_DISK_FROM_TRAY,

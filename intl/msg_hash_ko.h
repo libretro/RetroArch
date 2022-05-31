@@ -3227,6 +3227,10 @@ MSG_HASH(
    "미리 실행할 프레임 수"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
+   "먼저 실행할 프레임 수를 설정합니다. 게임 자체의 지연 프레임을 넘어설 경우 화면이 떨리는 등 게임플레이에 문제가 생길 수 있습니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
    "미리 실행에 두 번째 인스턴스 사용"
    )
@@ -3853,6 +3857,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
    "알림 표시 설정"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+   "특정 형식의 알림 표시 유무를 설정합니다."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
@@ -5813,6 +5821,10 @@ MSG_HASH(
    "즐겨찾기 크기"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
+   "즐겨찾기 목록의 항목 수를 제한합니다. 제한 수량까지 채우면 이전 목록을 삭제하기 전까지 추가 저장이 제한됩니다. 설정값을 -1로 하면 '무제한'으로 설정됩니다.\n경고: 값을 줄이면 기존 항목이 삭제될 수 있습니다!"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
    "항목 편집 허용"
    )
@@ -6633,6 +6645,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
    "아케이드 DAT 필터"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
+   "아케이드 DAT 파일 사용 시, 일치하는 DAT 파일 항목이 발견되는 컨텐츠만 실행 목록에 추가됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
@@ -7854,6 +7870,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
    "알 수 없는 게임"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
+   "이 코어로는 도전 과제를 사용할 수 없습니다"
 )
 
 /* Quick Menu > Information */
@@ -11205,6 +11225,10 @@ MSG_HASH(
    "올바른 데이터 트랙을 찾지 못함"
    )
 MSG_HASH(
+   MSG_COULD_NOT_OPEN_DATA_TRACK,
+   "데이터 트랙을 열지 못함"
+   )
+MSG_HASH(
    MSG_COULD_NOT_READ_CONTENT_FILE,
    "컨텐츠 파일을 읽지 못함"
    )
@@ -12619,6 +12643,10 @@ MSG_HASH(
    "성능 (관리)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
+   "추천하는 기본 모드입니다. 게임 플레이 중에는 최고 성능, 일시 정지 중이거나 메뉴 탐색 중에는 전원 절약 모드로 설정합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
    "사용자 정의 관리"
    )
@@ -12645,6 +12673,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
    "균형"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   "작업량에 따라 성능을 유동적으로 조정합니다. 대부분의 기기와 에뮬레이터에서 잘 작동하고 전원을 절약할 수 있습니다. 높은 성능을 필요로 하는 게임이나 코어에서는 성능 문제가 일어날 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,
