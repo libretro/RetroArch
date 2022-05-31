@@ -139,18 +139,18 @@ static void gfx_ctx_w_vk_swap_buffers(void *data)
 static bool gfx_ctx_w_vk_set_resize(void *data,
       unsigned width, unsigned height)
 {
-   if (!vulkan_create_swapchain(&win32_vk, width, height, win32_vk_interval))
+   if (vulkan_create_swapchain(&win32_vk, width, height, win32_vk_interval))
    {
-      RARCH_ERR("[Vulkan]: Failed to update swapchain.\n");
-      return false;
+      if (win32_vk.created_new_swapchain)
+         vulkan_acquire_next_image(&win32_vk);
+      win32_vk.context.invalid_swapchain = true;
+      win32_vk.need_new_swapchain        = false;
+
+      return true;
    }
 
-   if (win32_vk.created_new_swapchain)
-      vulkan_acquire_next_image(&win32_vk);
-   win32_vk.context.invalid_swapchain = true;
-   win32_vk.need_new_swapchain        = false;
-
-   return true;
+   RARCH_ERR("[Vulkan]: Failed to update swapchain.\n");
+   return false;
 }
 
 static void gfx_ctx_w_vk_update_title(void *data)
@@ -174,8 +174,6 @@ static void gfx_ctx_w_vk_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
    HWND         window  = win32_get_window();
-
-   (void)data;
 
    if (!window)
    {
@@ -270,20 +268,17 @@ static bool gfx_ctx_w_vk_set_video_mode(void *data,
 {
    win32_vk.fullscreen = fullscreen;
 
-   if (!win32_set_video_mode(NULL, width, height, fullscreen))
+   if (win32_set_video_mode(NULL, width, height, fullscreen))
    {
-      RARCH_ERR("[Vulkan]: win32_set_video_mode failed.\n");
-      goto error;
-   }
-   else
       /* Create a new swapchain in order to prevent fullscreen
        * emulated mailbox crash caused by refresh rate change */
       vulkan_create_swapchain(&win32_vk, width, height, win32_vk_interval);
 
-   gfx_ctx_w_vk_swap_interval(data, win32_vk_interval);
-   return true;
+      gfx_ctx_w_vk_swap_interval(data, win32_vk_interval);
+      return true;
+   }
 
-error:
+   RARCH_ERR("[Vulkan]: win32_set_video_mode failed.\n");
    gfx_ctx_w_vk_destroy(data);
    return false;
 }
