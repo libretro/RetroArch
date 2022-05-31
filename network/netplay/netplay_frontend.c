@@ -3255,15 +3255,12 @@ static bool netplay_tunnel_connect(int fd, const struct addrinfo *addr)
    if (!socket_nonblock(fd))
       return false;
 
-   result = socket_connect(fd, (void*) addr, false);
-   if (result && !isagain(result))
-#if !defined(_WIN32) && defined(EINPROGRESS)
-   if (errno != EINPROGRESS)
-#endif
-      return false;
-
    SET_TCP_NODELAY(fd)
    SET_FD_CLOEXEC(fd)
+
+   result = socket_connect(fd, (void*) addr, false);
+   if (result && !isinprogress(result) && !isagain(result))
+      return false;
 
    return true;
 }
