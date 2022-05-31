@@ -18,12 +18,13 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+
 #include <string/stdstring.h>
-#include <compat/strl.h>
 #include <formats/rjson.h>
-#include "netplay.h"
+
 #include "../../verbosity.h"
+
+#include "netplay.h"
 
 enum netplay_parse_state
 {

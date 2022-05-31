@@ -23,54 +23,37 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <string.h>
 
-#include <boolean.h>
-#include <retro_assert.h>
-
-#include <compat/strl.h>
-#include <net/net_compat.h>
-#include <net/net_socket.h>
-#include <net/net_http.h>
-#include <encodings/crc32.h>
-#include <encodings/base64.h>
-#include <lrc_hash.h>
 #include <retro_timers.h>
-
-#ifndef HAVE_SOCKET_LEGACY
-#include <net/net_ifinfo.h>
-#endif
+#include <retro_assert.h>
 
 #include <math/float_minmax.h>
 #include <string/stdstring.h>
+#include <net/net_socket.h>
+#include <net/net_http.h>
 #include <file/file_path.h>
+#include <encodings/crc32.h>
+#include <encodings/base64.h>
+#include <features/features_cpu.h>
+#include <lrc_hash.h>
 
-#ifdef HAVE_PRESENCE
-#include "../presence.h"
-#endif
-#ifdef HAVE_DISCORD
-#include "../discord.h"
-#endif
-
-#include "../../file_path_special.h"
-#include "../../paths.h"
-#include "../../content.h"
-
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
+#ifndef HAVE_SOCKET_LEGACY
+#include <net/net_ifinfo.h>
 #endif
 
 #include "../../autosave.h"
 #include "../../configuration.h"
 #include "../../command.h"
 #include "../../content.h"
+#include "../../core.h"
 #include "../../driver.h"
+#include "../../file_path_special.h"
+#include "../../paths.h"
 #include "../../retroarch.h"
 #include "../../version.h"
 #include "../../verbosity.h"
 
 #include "../../tasks/tasks_internal.h"
-
 #include "../../input/input_driver.h"
 
 #ifdef HAVE_MENU
@@ -82,11 +65,14 @@
 #include "../../gfx/gfx_widgets.h"
 #endif
 
+#ifdef HAVE_PRESENCE
+#include "../presence.h"
+#endif
+
 #ifdef HAVE_DISCORD
 #include "../discord.h"
 #endif
 
-#include "netplay.h"
 #include "netplay_private.h"
 
 #if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY) && !defined(_3DS)
@@ -115,12 +101,15 @@
 
 #define RECV(buf, sz) \
    recvd = netplay_recv(&connection->recv_packet_buffer, connection->fd, (buf), (sz), false); \
-   if (recvd >= 0 && recvd < (ssize_t) (sz)) \
+   if (recvd >= 0) \
    { \
-      netplay_recv_reset(&connection->recv_packet_buffer); \
-      return true; \
+      if (recvd < (ssize_t) (sz)) \
+      { \
+         netplay_recv_reset(&connection->recv_packet_buffer); \
+         return true; \
+      } \
    } \
-   else if (recvd < 0)
+   else
 
 #define SET_PING(connection) \
    ping = (int32_t)((cpu_features_get_time_usec() - (connection)->ping_timer) / 1000); \
@@ -212,35 +201,6 @@ net_driver_state_t *networking_state_get_ptr(void)
 {
    return &networking_driver_st;
 }
-
-#ifdef HAVE_SOCKET_LEGACY
-#ifndef htons
-/* The fact that I need to write this is deeply depressing */
-static int16_t htons_for_morons(int16_t value)
-{
-   union {
-      int32_t l;
-      int16_t s[2];
-   } val;
-   val.l = htonl(value);
-   return val.s[1];
-}
-#define htons htons_for_morons
-#endif
-
-#ifndef ntohs
-static int16_t ntohs_for_morons(int16_t value)
-{
-   union {
-      int32_t l;
-      int16_t s[2];
-   } val;
-   val.l = ntohl(value);
-   return val.l == value ? val.s[1] : val.s[0];
-}
-#define ntohs ntohs_for_morons
-#endif
-#endif
 
 #ifdef HAVE_NETPLAYDISCOVERY
 /** Initialize Netplay discovery (client) */
@@ -3292,19 +3252,18 @@ static bool netplay_tunnel_connect(int fd, const struct addrinfo *addr)
 {
    int result;
 
-   SET_TCP_NODELAY(fd)
-   SET_FD_CLOEXEC(fd)
-
    if (!socket_nonblock(fd))
       return false;
 
    result = socket_connect(fd, (void*) addr, false);
    if (result && !isagain(result))
 #if !defined(_WIN32) && defined(EINPROGRESS)
-      return result < 0 && errno == EINPROGRESS;
-#else
-      return false;
+   if (errno != EINPROGRESS)
 #endif
+      return false;
+
+   SET_TCP_NODELAY(fd)
+   SET_FD_CLOEXEC(fd)
 
    return true;
 }
@@ -5116,10 +5075,13 @@ static void answer_ping(netplay_t *netplay,
 
 #undef RECV
 #define RECV(buf, sz) \
-recvd = netplay_recv(&connection->recv_packet_buffer, connection->fd, (buf), \
-(sz), false); \
-if (recvd >= 0 && recvd < (ssize_t) (sz)) goto shrt; \
-else if (recvd < 0)
+   recvd = netplay_recv(&connection->recv_packet_buffer, connection->fd, (buf), (sz), false); \
+   if (recvd >= 0) \
+   { \
+      if (recvd < (ssize_t) (sz)) \
+         goto shrt; \
+   } \
+   else
 
 static bool netplay_get_cmd(netplay_t *netplay,
    struct netplay_connection *connection, bool *had_input)
@@ -7977,11 +7939,7 @@ static void netplay_announce(netplay_t *netplay)
    struct netplay_room *host_room   = &net_st->host_room;
    struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
    struct string_list *subsystem    = path_get_subsystem_list();
-#ifndef NETPLAY_TEST_BUILD
-   const char *url                  = "http://lobby.libretro.com/add";
-#else
-   const char *url                  = "http://lobbytest.libretro.com/add";
-#endif
+   const char *url                  = FILE_PATH_LOBBY_LIBRETRO_URL "add";
 
    net_http_urlencode(&username, netplay->nick);
 
@@ -8187,11 +8145,7 @@ static bool netplay_mitm_query(const char *mitm_name)
    else
    {
       char query[512];
-#ifndef NETPLAY_TEST_BUILD
-      const char *url = "http://lobby.libretro.com/tunnel";
-#else
-      const char *url = "http://lobbytest.libretro.com/tunnel";
-#endif
+      const char *url = FILE_PATH_LOBBY_LIBRETRO_URL "tunnel";
 
       snprintf(query, sizeof(query), "%s?name=%s", url, mitm_name);
 

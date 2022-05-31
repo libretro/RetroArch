@@ -24,16 +24,15 @@
 
 #include <boolean.h>
 #include <libretro.h>
+#include <retro_miscellaneous.h>
+
+#include <net/net_compat.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
-#include <net/net_compat.h>
-#include <net/net_ifinfo.h>
-#include <retro_miscellaneous.h>
-
-#include "../../core.h"
+#include "../../retroarch_types.h"
 
 #include "../natt.h"
 
