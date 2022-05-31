@@ -13,10 +13,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
+#define _GNU_SOURCE
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/mman.h>
+#include <sys/syscall.h>
 #include <poll.h>
 #include <unistd.h>
 
@@ -31,6 +32,14 @@
 
 #define DEFAULT_WINDOWED_WIDTH 640
 #define DEFAULT_WINDOWED_HEIGHT 480
+
+#ifndef MFD_CLOEXEC
+#define MFD_CLOEXEC		0x0001U
+#endif
+
+#ifndef MFD_ALLOW_SEALING
+#define MFD_ALLOW_SEALING	0x0002U
+#endif
 
 void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
       void *toplevel,
@@ -282,6 +291,32 @@ bool gfx_ctx_wl_get_metrics_common(gfx_ctx_wayland_data_t *wl,
 
    return true;
 }
+
+static bool draw_splash_screen(gfx_ctx_wayland_data_t *wl)
+{
+   shm_buffer_t *buffer = create_shm_buffer(wl,
+      wl->width * wl->buffer_scale,
+      wl->height * wl->buffer_scale,
+      WL_SHM_FORMAT_XRGB8888);
+
+   if (!buffer)
+     return false;
+
+   shm_buffer_paint_checkerboard(buffer, wl->width,
+      wl->height, wl->buffer_scale,
+      16, 0xffbcbcbc, 0xff8e8e8e);
+
+   wl_surface_attach(wl->surface, buffer->wl_buffer, 0, 0);
+   wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
+   if (wl_surface_get_version(wl->surface) >= WL_SURFACE_DAMAGE_BUFFER_SINCE_VERSION)
+      wl_surface_damage_buffer(wl->surface, 0, 0,
+         wl->width * wl->buffer_scale,
+         wl->height * wl->buffer_scale);
+   wl_surface_commit(wl->surface);
+   return true;
+}
+
+
 
 bool gfx_ctx_wl_init_common(void *video_driver,
       const toplevel_listener_t *toplevel_listener, gfx_ctx_wayland_data_t **wwl)
@@ -624,31 +659,29 @@ static void libdecor_handle_error(struct libdecor *context,
 }
 #endif
 
-int create_shm_file(off_t size)
+static int create_shm_file(off_t size)
 {
    int fd;
-
    int ret;
-
-   #ifdef HAVE_MEMFD_CREATE
-   fd = memfd_create(SPLASH_SHM_NAME, MFD_CLOEXEC | MFD_ALLOW_SEALING);
-
-   if (fd >= 0) {
+   if ((fd = syscall(SYS_memfd_create, SPLASH_SHM_NAME,
+               MFD_CLOEXEC | MFD_ALLOW_SEALING)) >= 0)
+   {
       fcntl(fd, F_ADD_SEALS, F_SEAL_SHRINK);
 
       do {
          ret = posix_fallocate(fd, 0, size);
       } while (ret == EINTR);
-      if (ret != 0) {
+      if (ret != 0)
+      {
          close(fd);
          errno = ret;
-         fd = -1;
+         fd    = -1;
       }
    }
    if (fd < 0)
-   #endif
    {
-      for (unsigned retry_count = 0; retry_count < 100; retry_count++)
+      unsigned retry_count;
+      for (retry_count = 0; retry_count < 100; retry_count++)
       {
          char *name;
          if (asprintf (&name, "%s-%02d", SPLASH_SHM_NAME, retry_count) < 0)
@@ -668,7 +701,7 @@ int create_shm_file(off_t size)
    return fd;
 }
 
-shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
+static shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
    int height,
    uint32_t format)
 {
@@ -715,7 +748,8 @@ shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
 }
 
 
-void shm_buffer_paint_checkerboard(shm_buffer_t *buffer,
+static void shm_buffer_paint_checkerboard(
+      shm_buffer_t *buffer,
       int width, int height, int scale,
       size_t chk, uint32_t bg, uint32_t fg)
 {
@@ -738,34 +772,6 @@ void shm_buffer_paint_checkerboard(shm_buffer_t *buffer,
       }
    }
 }
-
-
-bool draw_splash_screen(gfx_ctx_wayland_data_t *wl)
-{
-   shm_buffer_t *buffer;
-
-   buffer = create_shm_buffer(wl,
-      wl->width * wl->buffer_scale,
-      wl->height * wl->buffer_scale,
-      WL_SHM_FORMAT_XRGB8888);
-
-   if (buffer == NULL)
-     return false;
-
-   shm_buffer_paint_checkerboard(buffer, wl->width,
-      wl->height, wl->buffer_scale,
-      16, 0xffbcbcbc, 0xff8e8e8e);
-
-   wl_surface_attach(wl->surface, buffer->wl_buffer, 0, 0);
-   wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
-   if (wl_surface_get_version(wl->surface) >= WL_SURFACE_DAMAGE_BUFFER_SINCE_VERSION)
-      wl_surface_damage_buffer(wl->surface, 0, 0,
-         wl->width * wl->buffer_scale,
-         wl->height * wl->buffer_scale);
-   wl_surface_commit(wl->surface);
-   return true;
-}
-
 
 const struct wl_buffer_listener shm_buffer_listener = {
    shm_buffer_handle_release,
