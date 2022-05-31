@@ -33,7 +33,6 @@
 
 #include <features/features_cpu.h>
 
-#include <net/net_compat.h>
 #include <net/net_socket.h>
 
 int socket_init(void **address, uint16_t port, const char *server, enum socket_type type)
@@ -466,7 +465,7 @@ bool socket_connect_with_timeout(int fd, void *data, unsigned timeout)
       int       error = -1;
       socklen_t errsz = sizeof(error);
 
-      getsockopt(fd, SOL_SOCKET, SO_ERROR, &error, &errsz);
+      getsockopt(fd, SOL_SOCKET, SO_ERROR, (char*)&error, &errsz);
       if (error)
          return false;
    }
