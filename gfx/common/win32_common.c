@@ -1403,7 +1403,6 @@ LRESULT CALLBACK wnd_proc_vk_dinput(HWND hwnd, UINT message,
       create_vk_context(hwnd, &g_win32->quit);
       if (DragAcceptFiles_func)
          DragAcceptFiles_func(hwnd, true);
-      g_win32_inited        = true;
       return 0;
    }
 
@@ -1422,7 +1421,6 @@ LRESULT CALLBACK wnd_proc_vk_winraw(HWND hwnd, UINT message,
       create_vk_context(hwnd, &g_win32->quit);
       if (DragAcceptFiles_func)
          DragAcceptFiles_func(hwnd, true);
-      g_win32_inited        = true;
       return 0;
    }
 
