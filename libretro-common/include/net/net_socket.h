@@ -69,8 +69,8 @@ bool socket_set_block(int fd, bool block);
 /* TODO: all callers should be converted to socket_set_block() */
 bool socket_nonblock(int fd);
 
-int socket_select(int nfds, void *readfs, void *writefds,
-      void *errorfds, struct timeval *timeout);
+int socket_select(int nfds, fd_set *readfs, fd_set *writefds,
+      fd_set *errorfds, struct timeval *timeout);
 
 bool socket_send_all_blocking(int fd, const void *data_, size_t size, bool no_signal);
 

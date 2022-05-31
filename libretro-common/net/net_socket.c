@@ -216,20 +216,17 @@ int socket_close(int fd)
 #endif
 }
 
-int socket_select(int nfds, void *_readfs, void *_writefds,
-      void *_errorfds, struct timeval *timeout)
+int socket_select(int nfds, fd_set *readfs, fd_set *writefds,
+      fd_set *errorfds, struct timeval *timeout)
 {
 #if !defined(__PSL1GHT__) && defined(__PS3__)
-   fd_set *readfs   = (fd_set*)_readfs;
-   fd_set *writefds = (fd_set*)_writefds;
-   fd_set *errorfds = (fd_set*)_errorfds;
    return socketselect(nfds, readfs, writefds, errorfds, timeout);
 #elif defined(VITA)
    extern int retro_epoll_fd;
    SceNetEpollEvent ev = {0};
 
-   ev.events           = SCE_NET_EPOLLIN | SCE_NET_EPOLLHUP;
-   ev.data.fd          = nfds;
+   ev.events = SCE_NET_EPOLLIN | SCE_NET_EPOLLHUP;
+   ev.data.fd = nfds;
 
    if((sceNetEpollControl(retro_epoll_fd, SCE_NET_EPOLL_CTL_ADD, nfds, &ev)))
    {
@@ -239,9 +236,6 @@ int socket_select(int nfds, void *_readfs, void *_writefds,
    }
    return 0;
 #else
-   fd_set *readfs   = (fd_set*)_readfs;
-   fd_set *writefds = (fd_set*)_writefds;
-   fd_set *errorfds = (fd_set*)_errorfds;
    return select(nfds, readfs, writefds, errorfds, timeout);
 #endif
 }
