@@ -40,9 +40,6 @@ const GUID DECLSPEC_SELECTANY libretro_IID_IDXGIOutput6 = { 0x068346e8,0xaaec,
 #endif
 
 #ifdef HAVE_DXGI_HDR
-/* TODO/FIXME - globals */
-static DXGI_HDR_METADATA_HDR10 g_hdr10_meta_data = {0};
-
 typedef enum hdr_root_constants
 {
    HDR_ROOT_CONSTANTS_REFERENCE_WHITE_NITS = 0,
@@ -662,15 +659,16 @@ void dxgi_set_hdr_metadata(
       float                         max_fall
 )
 {
+   static DXGI_HDR_METADATA_HDR10 g_hdr10_meta_data = {0};
    static const display_chromaticities_t 
-      display_chromaticity_list[]               =
+      display_chromaticity_list[]                   =
    {
       { 0.64000f, 0.33000f, 0.30000f, 0.60000f, 0.15000f, 0.06000f, 0.31270f, 0.32900f }, /* Rec709  */   
       { 0.70800f, 0.29200f, 0.17000f, 0.79700f, 0.13100f, 0.04600f, 0.31270f, 0.32900f }, /* Rec2020 */  
    };
-   const display_chromaticities_t* chroma       = NULL;
-   DXGI_HDR_METADATA_HDR10 hdr10_meta_data      = {0};
-   int selected_chroma                          = 0;
+   const display_chromaticities_t* chroma           = NULL;
+   DXGI_HDR_METADATA_HDR10 hdr10_meta_data          = {0};
+   int selected_chroma                              = 0;
    
    if (!handle)
       return;
