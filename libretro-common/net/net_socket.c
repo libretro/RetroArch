@@ -443,10 +443,7 @@ bool socket_connect_with_timeout(int fd, void *data, unsigned timeout)
       fd_set wfd, efd;
       struct timeval tv = {0};
 
-      if (!isagain(res))
-#if !defined(_WIN32) && defined(EINPROGRESS)
-      if (errno != EINPROGRESS)
-#endif
+      if (!isinprogress(res) && !isagain(res))
          return false;
 
       FD_ZERO(&wfd);
@@ -460,7 +457,7 @@ bool socket_connect_with_timeout(int fd, void *data, unsigned timeout)
          return false;
    }
 
-#ifdef SO_ERROR
+#if !defined(GEKKO) && defined(SO_ERROR)
    {
       int       error = -1;
       socklen_t errsz = sizeof(error);

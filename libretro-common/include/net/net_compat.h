@@ -56,6 +56,16 @@
 
 #include <network.h>
 
+#define sendto(s, msg, len, flags, addr, tolen) net_sendto(s, msg, len, 0, addr, 8)
+#define socket(domain, type, protocol) net_socket(domain, type, protocol)
+#define bind(s, name, namelen) net_bind(s, name, namelen)
+#define listen(s, backlog) net_listen(s, backlog)
+#define accept(s, addr, addrlen) net_accept(s, addr, addrlen)
+#define connect(s, addr, addrlen) net_connect(s, addr, addrlen)
+#define send(s, data, size, flags) net_send(s, data, size, flags)
+#define recv(s, mem, len, flags) net_recv(s, mem, len, flags)
+#define recvfrom(s, mem, len, flags, from, fromlen) net_recvfrom(s, mem, len, flags, from, fromlen)
+#define select(maxfdp1, readset, writeset, exceptset, timeout) net_select(maxfdp1, readset, writeset, exceptset, timeout)
 #define getsockopt net_getsockopt
 #define setsockopt net_setsockopt
 
@@ -132,35 +142,33 @@ struct SceNetInAddr inet_aton(const char *ip_addr);
 
 #include <errno.h>
 
-#ifdef GEKKO
-#define sendto(s, msg, len, flags, addr, tolen) net_sendto(s, msg, len, 0, addr, 8)
-#define socket(domain, type, protocol) net_socket(domain, type, protocol)
-#define bind(s, name, namelen) net_bind(s, name, namelen)
-#define listen(s, backlog) net_listen(s, backlog)
-#define accept(s, addr, addrlen) net_accept(s, addr, addrlen)
-#define connect(s, addr, addrlen) net_connect(s, addr, addrlen)
-#define send(s, data, size, flags) net_send(s, data, size, flags)
-#define recv(s, mem, len, flags) net_recv(s, mem, len, flags)
-#define recvfrom(s, mem, len, flags, from, fromlen) net_recvfrom(s, mem, len, flags, from, fromlen)
-#define select(maxfdp1, readset, writeset, exceptset, timeout) net_select(maxfdp1, readset, writeset, exceptset, timeout)
-#endif
-
 static INLINE bool isagain(int bytes)
 {
 #if defined(_WIN32)
-   if (bytes != SOCKET_ERROR)
-      return false;
-   if (WSAGetLastError() != WSAEWOULDBLOCK)
-      return false;
-   return true;
+   return (bytes == SOCKET_ERROR) && (WSAGetLastError() == WSAEWOULDBLOCK);
 #elif !defined(__PSL1GHT__) && defined(__PS3__) 
-   return (sys_net_errno == SYS_NET_EWOULDBLOCK) || (sys_net_errno == SYS_NET_EAGAIN);
+   return (sys_net_errno == SYS_NET_EAGAIN) || (sys_net_errno == SYS_NET_EWOULDBLOCK);
 #elif defined(VITA)
-   return (bytes<0 && (bytes == SCE_NET_ERROR_EAGAIN || bytes == SCE_NET_ERROR_EWOULDBLOCK));
+   return (bytes == SCE_NET_ERROR_EAGAIN) || (bytes == SCE_NET_ERROR_EWOULDBLOCK);
 #elif defined(WIIU)
-   return (bytes == -1) && ((socketlasterr() == SO_SUCCESS) || (socketlasterr() == SO_EWOULDBLOCK));
+   return (bytes == -1) && (socketlasterr() == SO_SUCCESS || socketlasterr() == SO_EWOULDBLOCK);
 #else
-   return (bytes < 0 && (errno == EAGAIN || errno == EWOULDBLOCK));
+   return (bytes < 0) && (errno == EAGAIN || errno == EWOULDBLOCK);
+#endif
+}
+
+static INLINE bool isinprogress(int bytes)
+{
+#if defined(_WIN32)
+   return (bytes == SOCKET_ERROR) && (WSAGetLastError() == WSAEWOULDBLOCK);
+#elif !defined(__PSL1GHT__) && defined(__PS3__) 
+   return (sys_net_errno == SYS_NET_EINPROGRESS);
+#elif defined(VITA)
+   return (bytes == SCE_NET_ERROR_EINPROGRESS);
+#elif defined(WIIU)
+   return (bytes == -1) && (socketlasterr() == SO_SUCCESS || socketlasterr() == SO_EWOULDBLOCK);
+#else
+   return (bytes < 0) && (errno == EINPROGRESS);
 #endif
 }
 
