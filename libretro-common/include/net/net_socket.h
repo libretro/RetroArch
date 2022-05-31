@@ -27,6 +27,8 @@
 #include <boolean.h>
 #include <string.h>
 
+#include <net/net_compat.h>
+
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
