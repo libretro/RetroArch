@@ -457,7 +457,7 @@ bool socket_connect_with_timeout(int fd, void *data, unsigned timeout)
          return false;
    }
 
-#ifdef SO_ERROR
+#if !defined(GEKKO) && defined(SO_ERROR)
    {
       int       error = -1;
       socklen_t errsz = sizeof(error);
