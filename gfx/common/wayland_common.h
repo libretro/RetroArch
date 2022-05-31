@@ -61,7 +61,7 @@ void gfx_ctx_wl_update_title_common(gfx_ctx_wayland_data_t *wl);
 bool gfx_ctx_wl_get_metrics_common(gfx_ctx_wayland_data_t *wl,
       enum display_metric_types type, float *value);
 
-bool gfx_ctx_wl_init_common(void *video_driver,
+bool gfx_ctx_wl_init_common(
       const toplevel_listener_t *toplevel_listener,
       gfx_ctx_wayland_data_t **wl);
 

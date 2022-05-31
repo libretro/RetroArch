@@ -412,9 +412,7 @@ static bool draw_splash_screen(gfx_ctx_wayland_data_t *wl)
    return true;
 }
 
-
-
-bool gfx_ctx_wl_init_common(void *video_driver,
+bool gfx_ctx_wl_init_common(
       const toplevel_listener_t *toplevel_listener, gfx_ctx_wayland_data_t **wwl)
 {
    int i;

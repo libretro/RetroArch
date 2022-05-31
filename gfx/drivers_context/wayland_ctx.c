@@ -271,12 +271,12 @@ error:
 }
 #endif
 
-static void *gfx_ctx_wl_init(void *video_driver)
+static void *gfx_ctx_wl_init(void *data)
 {
    int i;
    gfx_ctx_wayland_data_t *wl = NULL;
 
-   if (!gfx_ctx_wl_init_common(video_driver, &toplevel_listener, &wl))
+   if (!gfx_ctx_wl_init_common(&toplevel_listener, &wl))
       goto error;
 
 #ifdef HAVE_EGL
@@ -460,7 +460,7 @@ static enum gfx_ctx_api gfx_ctx_wl_get_api(void *data)
    return wl_api;
 }
 
-static bool gfx_ctx_wl_bind_api(void *video_driver,
+static bool gfx_ctx_wl_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
 #ifdef HAVE_EGL
@@ -531,17 +531,18 @@ static uint32_t gfx_ctx_wl_get_flags(void *data)
 {
    uint32_t             flags = 0;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   const char *video_ident    = video_driver_get_ident();
 
    if (wl->core_hw_context_enable)
       BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
-   if (string_is_equal(video_driver_get_ident(), "glcore"))
+   if (string_is_equal(video_ident, "glcore"))
    {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
    }
-   else if (string_is_equal(video_driver_get_ident(), "gl"))
+   else if (string_is_equal(video_ident, "gl"))
    {
 #ifdef HAVE_GLSL
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);

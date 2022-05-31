@@ -151,12 +151,12 @@ static const toplevel_listener_t toplevel_listener = {
    },
 };
 
-static void *gfx_ctx_wl_init(void *video_driver)
+static void *gfx_ctx_wl_init(void *data)
 {
    int i;
    gfx_ctx_wayland_data_t *wl = NULL;
 
-   if (!gfx_ctx_wl_init_common(video_driver, &toplevel_listener, &wl))
+   if (!gfx_ctx_wl_init_common(&toplevel_listener, &wl))
       goto error;
 
    if (!vulkan_context_init(&wl->vk, VULKAN_WSI_WAYLAND))
@@ -257,7 +257,7 @@ static enum gfx_ctx_api gfx_ctx_wl_get_api(void *data)
    return GFX_CTX_VULKAN_API;
 }
 
-static bool gfx_ctx_wl_bind_api(void *video_driver,
+static bool gfx_ctx_wl_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    if (api == GFX_CTX_VULKAN_API)
