@@ -152,19 +152,23 @@ void libdecor_frame_handle_commit(struct libdecor_frame *frame,
 void gfx_ctx_wl_get_video_size_common(gfx_ctx_wayland_data_t *wl,
       unsigned *width, unsigned *height)
 {
-   if (!wl->reported_display_size) {
-      wl->reported_display_size = true;
-      output_info_t *oi, *tmp;
-      oi = wl->current_output;
+   if (!wl->reported_display_size)
+   {
+      output_info_t *tmp        = NULL;
+      output_info_t *oi         = wl->current_output;
 
-      // If window is not ready get any monitor
+      wl->reported_display_size = true;
+
+      /* If window is not ready get any monitor */
       if (!oi)
           wl_list_for_each_safe(oi, tmp, &wl->all_outputs, link)
               break;
 
       *width  = oi->width;
       *height = oi->height;
-   } else {
+   }
+   else
+   {
       *width  = wl->width  * wl->buffer_scale;
       *height = wl->height * wl->buffer_scale;
    }
@@ -262,8 +266,8 @@ void gfx_ctx_wl_update_title_common(gfx_ctx_wayland_data_t *wl)
 bool gfx_ctx_wl_get_metrics_common(gfx_ctx_wayland_data_t *wl,
       enum display_metric_types type, float *value)
 {
-   output_info_t *oi, *tmp;
-   oi = wl->current_output;
+   output_info_t *tmp;
+   output_info_t *oi = wl->current_output;
 
    if (!oi)
       wl_list_for_each_safe(oi, tmp, &wl->all_outputs, link)
@@ -291,6 +295,98 @@ bool gfx_ctx_wl_get_metrics_common(gfx_ctx_wayland_data_t *wl,
 
    return true;
 }
+
+static int create_shm_file(off_t size)
+{
+   int fd;
+   int ret;
+   if ((fd = syscall(SYS_memfd_create, SPLASH_SHM_NAME,
+               MFD_CLOEXEC | MFD_ALLOW_SEALING)) >= 0)
+   {
+      fcntl(fd, F_ADD_SEALS, F_SEAL_SHRINK);
+
+      do {
+         ret = posix_fallocate(fd, 0, size);
+      } while (ret == EINTR);
+      if (ret != 0)
+      {
+         close(fd);
+         errno = ret;
+         fd    = -1;
+      }
+   }
+   if (fd < 0)
+   {
+      unsigned retry_count;
+      for (retry_count = 0; retry_count < 100; retry_count++)
+      {
+         char *name;
+         if (asprintf (&name, "%s-%02d", SPLASH_SHM_NAME, retry_count) < 0)
+            continue;
+         fd = shm_open(name, O_RDWR | O_CREAT, 0600);
+         if (fd >= 0)
+         {
+            shm_unlink(name);
+            free(name);
+            ftruncate(fd, size);
+            break;
+         }
+         free(name);
+      }
+   }
+
+   return fd;
+}
+
+
+static shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
+   int height,
+   uint32_t format)
+{
+   int fd, ofd;
+   struct wl_shm_pool *pool = NULL;
+   void *data               = NULL;
+   shm_buffer_t *buffer     = NULL;
+   int stride               = width  * 4;
+   int size                 = stride * height;
+
+   if (size <= 0)
+      return NULL;
+
+   fd = create_shm_file(size);
+   if (fd < 0)
+   {
+      RARCH_ERR("[Wayland] [SHM]: Creating a buffer file for %d B failed: %s\n",
+         size, strerror(errno));
+      return NULL;
+   }
+
+   data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+   if (data == MAP_FAILED)
+   {
+      RARCH_ERR("[Wayland] [SHM]: mmap failed: %s\n", strerror(errno));
+      close(fd);
+      return NULL;
+   }
+
+   buffer            = calloc(1, sizeof *buffer);
+
+   pool              = wl_shm_create_pool(wl->shm, fd, size);
+   buffer->wl_buffer = wl_shm_pool_create_buffer(pool, 0,
+      width, height,
+      stride, format);
+   wl_buffer_add_listener(buffer->wl_buffer, &shm_buffer_listener, buffer);
+   wl_shm_pool_destroy(pool);
+
+   close(fd);
+
+   buffer->data      = data;
+   buffer->data_size = size;
+
+   return buffer;
+}
+
+
 
 static bool draw_splash_screen(gfx_ctx_wayland_data_t *wl)
 {
@@ -658,95 +754,6 @@ static void libdecor_handle_error(struct libdecor *context,
    RARCH_ERR("[Wayland]: libdecor Caught error (%d): %s\n", error, message);
 }
 #endif
-
-static int create_shm_file(off_t size)
-{
-   int fd;
-   int ret;
-   if ((fd = syscall(SYS_memfd_create, SPLASH_SHM_NAME,
-               MFD_CLOEXEC | MFD_ALLOW_SEALING)) >= 0)
-   {
-      fcntl(fd, F_ADD_SEALS, F_SEAL_SHRINK);
-
-      do {
-         ret = posix_fallocate(fd, 0, size);
-      } while (ret == EINTR);
-      if (ret != 0)
-      {
-         close(fd);
-         errno = ret;
-         fd    = -1;
-      }
-   }
-   if (fd < 0)
-   {
-      unsigned retry_count;
-      for (retry_count = 0; retry_count < 100; retry_count++)
-      {
-         char *name;
-         if (asprintf (&name, "%s-%02d", SPLASH_SHM_NAME, retry_count) < 0)
-            continue;
-         fd = shm_open(name, O_RDWR | O_CREAT, 0600);
-         if (fd >= 0)
-         {
-            shm_unlink(name);
-            free(name);
-            ftruncate(fd, size);
-            break;
-         }
-         free(name);
-      }
-   }
-
-   return fd;
-}
-
-static shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
-   int height,
-   uint32_t format)
-{
-   struct wl_shm_pool *pool;
-   int fd, size, stride, ofd;
-   void *data;
-   shm_buffer_t *buffer;
-
-   stride = width * 4;
-   size = stride * height;
-
-   if (size <= 0)
-      return NULL;
-
-   fd = create_shm_file(size);
-   if (fd < 0) {
-      RARCH_ERR("[Wayland] [SHM]: Creating a buffer file for %d B failed: %s\n",
-         size, strerror(errno));
-      return NULL;
-   }
-
-   data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-   if (data == MAP_FAILED) {
-      RARCH_ERR("[Wayland] [SHM]: mmap failed: %s\n", strerror(errno));
-      close(fd);
-      return NULL;
-   }
-
-   buffer = calloc(1, sizeof *buffer);
-
-   pool = wl_shm_create_pool(wl->shm, fd, size);
-   buffer->wl_buffer = wl_shm_pool_create_buffer(pool, 0,
-      width, height,
-      stride, format);
-   wl_buffer_add_listener(buffer->wl_buffer, &shm_buffer_listener, buffer);
-   wl_shm_pool_destroy(pool);
-
-   close(fd);
-
-   buffer->data = data;
-   buffer->data_size = size;
-
-   return buffer;
-}
-
 
 static void shm_buffer_paint_checkerboard(
       shm_buffer_t *buffer,
