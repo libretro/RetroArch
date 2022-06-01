@@ -41,6 +41,14 @@
 #define MFD_ALLOW_SEALING	0x0002U
 #endif
 
+#ifndef F_ADD_SEALS
+#define F_ADD_SEALS		(1024 + 9)
+#endif
+
+#ifndef F_SEAL_SHRINK
+#define F_SEAL_SHRINK		0x0002
+#endif
+
 void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
       void *toplevel,
       int32_t width, int32_t height, struct wl_array *states)
