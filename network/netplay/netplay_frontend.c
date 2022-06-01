@@ -333,13 +333,17 @@ static bool netplay_lan_ad_client_response(void)
 
          /* And that we know how to handle it */
 #ifdef HAVE_INET6
+#ifndef ANDROID
          if (their_addr.ss_family != AF_INET)
             continue;
 #endif
-
-         if (!netplay_is_lan_address(
-               (struct sockaddr_in *) &their_addr))
-            continue;
+#endif
+         if (their_addr.ss_family != AF_INET)
+         {
+            if (!netplay_is_lan_address(
+                  (struct sockaddr_in *) &their_addr))
+               continue;
+         }
 
 #ifndef HAVE_SOCKET_LEGACY
          if (getnameinfo((struct sockaddr *)
