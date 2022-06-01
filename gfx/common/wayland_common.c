@@ -13,7 +13,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
+
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/mman.h>
