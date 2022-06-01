@@ -333,23 +333,19 @@ static bool netplay_lan_ad_client_response(void)
 
          /* And that we know how to handle it */
 #ifdef HAVE_INET6
-/* skip the early return on android*/
-#ifndef ANDROID
-         if (their_addr.ss_family != AF_INET)
+         if (their_addr.ss_family == AF_INET6)
+         {
+            /* Check for IPv4 tunneling */
+            if (!netplay_6to4(&their_addr))
+               continue;
+         }
+         else if (their_addr.ss_family != AF_INET)
             continue;
 #endif
-#endif
 
-/* NOTE - Even if the IP address family is IPv4 it will be seen as an IPV6
-   mapped IPv4 address on Android, so until someone can fix netplay_is_lan_address 
-   let's skip that check for that use case. The netplay_is_lan_address function 
-   was just meant to filter out bogus entries caused by TAP adapters or VNET adapters
-*/
-#ifndef ANDROID
          if (!netplay_is_lan_address(
                (struct sockaddr_in *) &their_addr))
-            continue; 
-#endif
+            continue;
 
 #ifndef HAVE_SOCKET_LEGACY
          if (getnameinfo((struct sockaddr *)
@@ -558,7 +554,13 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
       }
 
 #ifdef HAVE_INET6
-      if (their_addr.ss_family != AF_INET)
+      if (their_addr.ss_family == AF_INET6)
+      {
+         /* Check for IPv4 tunneling */
+         if (!netplay_6to4(&their_addr))
+            return true;
+      }
+      else if (their_addr.ss_family != AF_INET)
          return true;
 #endif
 
@@ -8845,6 +8847,33 @@ bool netplay_is_lan_address(struct sockaddr_in *addr)
          return true;
 
    return false;
+}
+
+bool netplay_6to4(struct sockaddr_storage *addr)
+{
+#ifdef HAVE_INET6
+   /* ::ffff:a.b.c.d */
+   static const uint16_t preffix[] = {0,0,0,0,0,0xffff};
+   uint32_t address;
+   uint16_t port;
+   struct sockaddr_in6 *addr6 = (struct sockaddr_in6*)addr;
+   struct sockaddr_in  *addr4 = (struct sockaddr_in*)addr;
+
+   /* Is the address provided an IPv4? */
+   if (memcmp(&addr6->sin6_addr, preffix, sizeof(preffix)))
+      return false;
+
+   memcpy(&address, ((uint8_t*)&addr6->sin6_addr) + sizeof(preffix),
+      sizeof(address));
+   port = addr6->sin6_port;
+
+   memset(addr, 0, sizeof(*addr));
+   addr4->sin_family = AF_INET;
+   addr4->sin_port   = port;
+   memcpy(&addr4->sin_addr, &address, sizeof(addr4->sin_addr));
+#endif
+
+   return true;
 }
 
 /* Netplay Widgets */
