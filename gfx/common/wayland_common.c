@@ -397,6 +397,34 @@ static shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
    return buffer;
 }
 
+static void shm_buffer_paint_checkerboard(
+      shm_buffer_t *buffer,
+      int width, int height, int scale,
+      size_t chk, uint32_t bg, uint32_t fg)
+{
+   int y, x;
+   uint32_t *pixels = buffer->data;
+   int stride       = width * scale;
+
+   for (y = 0; y < height; y++)
+   {
+      for (x = 0; x < width; x++)
+      {
+         int sx;
+         uint32_t color = (x & chk) ^ (y & chk) ? fg : bg;
+         for (sx = 0; sx < scale; sx++)
+         {
+            int sy;
+            for (sy = 0; sy < scale; sy++)
+            {
+               size_t  off = x * scale + sx
+                     + (y * scale + sy) * stride;
+               pixels[off] = color;
+            }
+         }
+      }
+   }
+}
 
 
 static bool draw_splash_screen(gfx_ctx_wayland_data_t *wl)
@@ -763,31 +791,6 @@ static void libdecor_handle_error(struct libdecor *context,
    RARCH_ERR("[Wayland]: libdecor Caught error (%d): %s\n", error, message);
 }
 #endif
-
-static void shm_buffer_paint_checkerboard(
-      shm_buffer_t *buffer,
-      int width, int height, int scale,
-      size_t chk, uint32_t bg, uint32_t fg)
-{
-   uint32_t *pixels = buffer->data;
-   uint32_t color;
-   int y, x, sx, sy;
-   size_t off;
-   int stride = width * scale;
-
-   for (y = 0; y < height; y++) {
-      for (x = 0; x < width; x++) {
-         color = (x & chk) ^ (y & chk) ? fg : bg;
-         for (sx = 0; sx < scale; sx++) {
-            for (sy = 0; sy < scale; sy++) {
-               off = x * scale + sx
-                     + (y * scale + sy) * stride;
-               pixels[off] = color;
-            }
-         }
-      }
-   }
-}
 
 const struct wl_buffer_listener shm_buffer_listener = {
    shm_buffer_handle_release,
