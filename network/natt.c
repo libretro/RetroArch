@@ -194,8 +194,12 @@ bool natt_device_next(struct natt_discovery *discovery,
 
    recvd = recvfrom(discovery->fd, buf, sizeof(buf), 0,
       (struct sockaddr *) &device->addr, &addr_size);
-   if (recvd <= 0)
+   if (recvd < 0)
       return false;
+   /* Zero-length datagrams are valid, but we can't do anything with them.
+      Don't treat them as an error. */
+   if (!recvd)
+      return true;
 
    /* Parse the data we received.
       We are only looking for the 'Location' HTTP header. */
