@@ -2155,7 +2155,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
                (int)refresh_rate, current_mon->szDevice))
          {
             RARCH_LOG("[Video]: Fullscreen set to %ux%u @ %uHz on device %s.\n",
-                  width, height, (int)refresh_rate, current_mon->szDevice);
+                  *width, *height, (int)refresh_rate, current_mon->szDevice);
          }
 
          /* Display settings might have changed, get new coordinates. */
