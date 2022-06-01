@@ -333,17 +333,23 @@ static bool netplay_lan_ad_client_response(void)
 
          /* And that we know how to handle it */
 #ifdef HAVE_INET6
+/* skip the early return on android*/
 #ifndef ANDROID
          if (their_addr.ss_family != AF_INET)
             continue;
 #endif
 #endif
-         if (their_addr.ss_family != AF_INET)
-         {
-            if (!netplay_is_lan_address(
-                  (struct sockaddr_in *) &their_addr))
-               continue;
-         }
+
+/* NOTE - Even if the IP address family is IPv4 it will be seen as an IPV6
+   mapped IPv4 address on Android, so until someone can fix netplay_is_lan_address 
+   let's skip that check for that use case. The netplay_is_lan_address function 
+   was just meant to filter out bogus entries caused by TAP adapters or VNET adapters
+*/
+#ifndef ANDROID
+         if (!netplay_is_lan_address(
+               (struct sockaddr_in *) &their_addr))
+            continue; 
+#endif
 
 #ifndef HAVE_SOCKET_LEGACY
          if (getnameinfo((struct sockaddr *)
