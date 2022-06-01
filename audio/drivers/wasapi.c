@@ -26,6 +26,9 @@
 #include "../../verbosity.h"
 #include "../../configuration.h"
 
+/* Get automatic buffer size from client buffer instead of device period */
+#define USE_CLIENT_BUFFER
+
 typedef struct
 {
    HANDLE write_event;
@@ -49,13 +52,9 @@ static IMMDevice *wasapi_init_device(const char *id)
    IMMDeviceCollection *collection = NULL;
 
    if (id)
-   {
-      RARCH_LOG("[WASAPI]: Initializing device %s ...\n", id);
-   }
+      RARCH_LOG("[WASAPI]: Initializing device: \"%s\"..\n", id);
    else
-   {
-      RARCH_LOG("[WASAPI]: Initializing default device.. \n");
-   }
+      RARCH_LOG("[WASAPI]: Initializing default device..\n");
 
 #ifdef __cplusplus
    hr = CoCreateInstance(CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
@@ -80,16 +79,16 @@ static IMMDevice *wasapi_init_device(const char *id)
             unsigned i;
             for (i = 0; i < list->size; i++)
             {
-               RARCH_LOG("[WASAPI]: %d : %s\n", i, list->elems[i].data);
                if (string_is_equal(id, list->elems[i].data))
                {
+                  RARCH_DBG("[WASAPI]: Found device #%d: \"%s\"\n", i, list->elems[i].data);
                   idx_found = i;
                   break;
                }
             }
+
             /* Index was not found yet based on name string,
              * just assume id is a one-character number index. */
-
             if (idx_found == -1 && isdigit(id[0]))
             {
                idx_found = strtoul(id, NULL, 0);
@@ -145,13 +144,9 @@ error:
    IFACE_RELEASE(enumerator);
 
    if (id)
-   {
-      RARCH_WARN("[WASAPI]: Failed to initialize device.\n");
-   }
+      RARCH_ERR("[WASAPI]: Failed to initialize device: \"%s\".\n", id);
    else
-   {
-      RARCH_ERR("[WASAPI]: Failed to initialize device.\n");
-   }
+      RARCH_ERR("[WASAPI]: Failed to initialize default device.\n");
 
    return NULL;
 }
@@ -217,20 +212,19 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
       /* for requested rate (first) and all preferred rates */
       for (j = 0; rate_res; ++j)
       {
-         RARCH_LOG("[WASAPI]: Initializing client (shared, %s, %uHz, %ums) ...\n",
-               float_fmt_res ? "float" : "pcm", rate_res, latency);
+         RARCH_LOG("[WASAPI]: Initializing client (shared, %s, %uHz, %.1fms)..\n",
+               float_fmt_res ? "float" : "pcm", rate_res, (float)latency);
 
          wasapi_set_format(&wf, float_fmt_res, rate_res);
 #ifdef __cplusplus
          hr = client->Initialize(AUDCLNT_SHAREMODE_SHARED,
-               AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
+               AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
                0, 0, (WAVEFORMATEX*)&wf, NULL);
 #else
          hr = client->lpVtbl->Initialize(client, AUDCLNT_SHAREMODE_SHARED,
-               AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
+               AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
                0, 0, (WAVEFORMATEX*)&wf, NULL);
 #endif
-
          if (hr == AUDCLNT_E_ALREADY_INITIALIZED)
          {
             HRESULT hr;
@@ -243,11 +237,11 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
 
 #ifdef __cplusplus
             hr = client->Initialize(AUDCLNT_SHAREMODE_SHARED,
-                  AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
+                  AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
                   0, 0, (WAVEFORMATEX*)&wf, NULL);
 #else
             hr = client->lpVtbl->Initialize(client, AUDCLNT_SHAREMODE_SHARED,
-                  AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
+                  AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
                   0, 0, (WAVEFORMATEX*)&wf, NULL);
 #endif
          }
@@ -259,7 +253,7 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
 
          RARCH_WARN("[WASAPI]: Unsupported format.\n");
          rate_res = wasapi_pref_rate(j);
-         if (rate_res == *rate) /* requested rate is allready tested */
+         if (rate_res == *rate) /* requested rate is already tested */
             rate_res = wasapi_pref_rate(++j); /* skip it */
       }
    }
@@ -314,8 +308,8 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
       /* for requested rate (first) and all preferred rates */
       for (j = 0; rate_res; ++j)
       {
-         RARCH_LOG("[WASAPI]: Initializing client (exclusive, %s, %uHz, %ums) ...\n",
-               float_fmt_res ? "float" : "pcm", rate_res, latency);
+         RARCH_LOG("[WASAPI]: Initializing client (exclusive, %s, %uHz, %.1fms)..\n",
+               float_fmt_res ? "float" : "pcm", rate_res, (float)latency);
 
          wasapi_set_format(&wf, float_fmt_res, rate_res);
 #ifdef __cplusplus
@@ -334,13 +328,14 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
                goto error;
 
             IFACE_RELEASE(client);
-            hr                     = _IMMDevice_Activate(device,
+            hr = _IMMDevice_Activate(device,
                   IID_IAudioClient,
                   CLSCTX_ALL, NULL, (void**)&client);
             if (FAILED(hr))
                return NULL;
 
             buffer_duration = 10000.0 * 1000.0 / rate_res * buffer_length + 0.5;
+
 #ifdef __cplusplus
             hr = client->Initialize(AUDCLNT_SHAREMODE_EXCLUSIVE,
                   AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
@@ -354,7 +349,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
          if (hr == AUDCLNT_E_ALREADY_INITIALIZED)
          {
             IFACE_RELEASE(client);
-            hr                     = _IMMDevice_Activate(device,
+            hr = _IMMDevice_Activate(device,
                   IID_IAudioClient,
                   CLSCTX_ALL, NULL, (void**)&client);
             if (FAILED(hr))
@@ -384,7 +379,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
 
          RARCH_WARN("[WASAPI]: Unsupported format.\n");
          rate_res = wasapi_pref_rate(j);
-         if (rate_res == *rate) /* requested rate is allready tested */
+         if (rate_res == *rate) /* requested rate is already tested */
             rate_res = wasapi_pref_rate(++j); /* skip it */
       }
    }
@@ -445,24 +440,18 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
       hr = _IAudioClient_GetDevicePeriod(client, &device_period, NULL);
 
    if (FAILED(hr))
-   {
       RARCH_WARN("[WASAPI]: IAudioClient::GetDevicePeriod failed with error 0x%.8X.\n", hr);
-   }
 
    if (!*exclusive)
    {
       hr = _IAudioClient_GetStreamLatency(client, &stream_latency);
       if (FAILED(hr))
-      {
          RARCH_WARN("[WASAPI]: IAudioClient::GetStreamLatency failed with error 0x%.8X.\n", hr);
-      }
    }
 
    hr = _IAudioClient_GetBufferSize(client, &buffer_length);
    if (FAILED(hr))
-   {
       RARCH_WARN("[WASAPI]: IAudioClient::GetBufferSize failed with error 0x%.8X.\n", hr);
-   }
 
    if (*exclusive)
       latency_res = (double)buffer_length * 1000.0 / (*rate);
@@ -471,13 +460,16 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
 
    RARCH_LOG("[WASAPI]: Client initialized (%s, %s, %uHz, %.1fms).\n",
          *exclusive ? "exclusive" : "shared",
-         *float_fmt ? "float" : "pcm", *rate, latency_res);
+         *float_fmt ? "float" : "pcm",
+         *rate, latency_res);
 
-   RARCH_LOG("[WASAPI]: Client's buffer length is %u frames (%.1fms).\n",
-         buffer_length, (double)buffer_length * 1000.0 / (*rate));
+   RARCH_LOG("[WASAPI]: Client buffer length is %u frames (%.1fms).\n",
+         buffer_length,
+         (double)buffer_length * 1000.0 / (*rate));
 
    RARCH_LOG("[WASAPI]: Device period is %.1fms (%lld frames).\n",
-         (double)device_period / 10000.0, device_period * (*rate) / 10000000);
+         (double)device_period / 10000.0,
+         device_period * (*rate) / 10000000);
 
    return client;
 }
@@ -530,11 +522,16 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    {
       if (sh_buffer_length < 0)
       {
+#ifdef USE_CLIENT_BUFFER
+         sh_buffer_length = frame_count;
+#else
          hr = _IAudioClient_GetDevicePeriod(w->client, &dev_period, NULL);
+
          if (FAILED(hr))
             goto error;
 
          sh_buffer_length = dev_period * rate / 10000000;
+#endif
       }
 
       w->buffer = fifo_new(sh_buffer_length * w->frame_size);
@@ -575,6 +572,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    hr = _IAudioClient_Start(w->client);
    if (FAILED(hr))
       goto error;
+
    w->running  = true;
    w->nonblock = !settings->bools.audio_sync;
 
@@ -599,13 +597,13 @@ static bool wasapi_flush(wasapi_t * w, const void * data, size_t size)
    UINT32 frame_count = size / w->frame_size;
 
    if (FAILED(_IAudioRenderClient_GetBuffer(
-               w->renderer, frame_count, &dest)))
+         w->renderer, frame_count, &dest)))
       return false;
 
    memcpy(dest, data, size);
+
    if (FAILED(_IAudioRenderClient_ReleaseBuffer(
-               w->renderer, frame_count,
-               0)))
+         w->renderer, frame_count, 0)))
       return false;
 
    return true;
@@ -615,14 +613,15 @@ static bool wasapi_flush_buffer(wasapi_t * w, size_t size)
 {
    BYTE *dest         = NULL;
    UINT32 frame_count = size / w->frame_size;
+
    if (FAILED(_IAudioRenderClient_GetBuffer(
          w->renderer, frame_count, &dest)))
       return false;
 
    fifo_read(w->buffer, dest, size);
+
    if (FAILED(_IAudioRenderClient_ReleaseBuffer(
-         w->renderer, frame_count,
-         0)))
+         w->renderer, frame_count, 0)))
       return false;
 
    return true;
@@ -631,8 +630,8 @@ static bool wasapi_flush_buffer(wasapi_t * w, size_t size)
 static ssize_t wasapi_write_sh_buffer(wasapi_t *w, const void * data, size_t size)
 {
    ssize_t written    = -1;
-   UINT32 padding     = 0;
    size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
+   UINT32 padding     = 0;
 
    if (!write_avail)
    {
@@ -661,8 +660,8 @@ static ssize_t wasapi_write_sh_buffer(wasapi_t *w, const void * data, size_t siz
 
 static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
 {
-   size_t write_avail = 0;
    ssize_t written    = -1;
+   size_t write_avail = 0;
    UINT32 padding     = 0;
 
    if (!(WaitForSingleObject(w->write_event, INFINITE) == WAIT_OBJECT_0))
@@ -685,16 +684,16 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
 
 static ssize_t wasapi_write_sh_nonblock(wasapi_t *w, const void * data, size_t size)
 {
-   size_t write_avail       = 0;
    ssize_t written          = -1;
+   size_t write_avail       = 0;
    UINT32 padding           = 0;
 
    if (w->buffer)
    {
-      write_avail           = FIFO_WRITE_AVAIL(w->buffer);
+      write_avail = FIFO_WRITE_AVAIL(w->buffer);
       if (!write_avail)
       {
-         size_t read_avail  = 0;
+         size_t read_avail = 0;
          if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
             return -1;
 
@@ -801,6 +800,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t size)
 static bool wasapi_stop(void *wh)
 {
    wasapi_t *w = (wasapi_t*)wh;
+
    if (FAILED(_IAudioClient_Stop(w->client)))
       return !w->running;
 
@@ -836,7 +836,7 @@ static void wasapi_set_nonblock_state(void *wh, bool nonblock)
 {
    wasapi_t *w = (wasapi_t*)wh;
 
-   RARCH_LOG("[WASAPI]: Sync %s.\n", nonblock ? "off" : "on");
+   RARCH_DBG("[WASAPI]: Sync %s.\n", nonblock ? "off" : "on");
 
    w->nonblock = nonblock;
 }
@@ -858,9 +858,7 @@ static void wasapi_free(void *wh)
 
    ir = WaitForSingleObject(write_event, 20);
    if (ir == WAIT_FAILED)
-   {
       RARCH_ERR("[WASAPI]: WaitForSingleObject failed with error %d.\n", GetLastError());
-   }
 
    /* If event isn't signaled log and leak */
    if (!(ir == WAIT_OBJECT_0))

@@ -5119,8 +5119,7 @@ static void setting_get_string_representation_int_audio_wasapi_sh_buffer_length(
       return;
 
    if (*setting->value.target.integer > 0)
-      snprintf(s, len, "%d",
-            *setting->value.target.integer);
+      snprintf(s, len, "%d", *setting->value.target.integer);
    else if (*setting->value.target.integer == 0)
       strlcpy(s, "0 (Off)", len);
    else

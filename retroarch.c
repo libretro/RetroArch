@@ -956,7 +956,7 @@ void drivers_init(
    if (flags & DRIVER_LED_MASK)
       led_driver_init(settings->arrays.led_driver);
 
-   /* Initialize MIDI  driver */
+   /* Initialize MIDI driver */
    if (flags & DRIVER_MIDI_MASK)
       midi_driver_init(settings);
 
