@@ -657,79 +657,6 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
 }
 #endif
 
-/* TODO/FIXME - replace netplay_log_connection with calls
- * to inet_ntop_compat and move runloop message queue pushing
- * outside */
-#if !defined(HAVE_SOCKET_LEGACY) && !defined(WIIU) && !defined(_3DS)
-/* Custom inet_ntop. Win32 doesn't seem to support this ... */
-static void netplay_log_connection(
-      const struct sockaddr_storage *their_addr,
-      unsigned slot, const char *nick, char *s, size_t len)
-{
-   union
-   {
-      const struct sockaddr_storage *storage;
-      const struct sockaddr_in *v4;
-      const struct sockaddr_in6 *v6;
-   } u;
-   const char *str               = NULL;
-   char buf_v4[INET_ADDRSTRLEN]  = {0};
-   char buf_v6[INET6_ADDRSTRLEN] = {0};
-
-   u.storage                     = their_addr;
-
-   switch (their_addr->ss_family)
-   {
-      case AF_INET:
-         {
-            struct sockaddr_in in;
-
-            memset(&in, 0, sizeof(in));
-
-            str           = buf_v4;
-            in.sin_family = AF_INET;
-            memcpy(&in.sin_addr, &u.v4->sin_addr, sizeof(struct in_addr));
-
-            getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in),
-                  buf_v4, sizeof(buf_v4),
-                  NULL, 0, NI_NUMERICHOST);
-         }
-         break;
-      case AF_INET6:
-         {
-            struct sockaddr_in6 in;
-            memset(&in, 0, sizeof(in));
-
-            str            = buf_v6;
-            in.sin6_family = AF_INET6;
-            memcpy(&in.sin6_addr, &u.v6->sin6_addr, sizeof(struct in6_addr));
-
-            getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in6),
-                  buf_v6, sizeof(buf_v6), NULL, 0, NI_NUMERICHOST);
-         }
-         break;
-      default:
-         break;
-   }
-
-   if (str)
-      snprintf(s, len, msg_hash_to_str(MSG_GOT_CONNECTION_FROM_NAME),
-            nick, str);
-   else
-      snprintf(s, len, msg_hash_to_str(MSG_GOT_CONNECTION_FROM),
-            nick);
-}
-#else
-static void netplay_log_connection(
-      const struct sockaddr_storage *their_addr,
-      unsigned slot, const char *nick, char *s, size_t len)
-{
-   /* Stub code - will need to be implemented */
-   snprintf(s, len, msg_hash_to_str(MSG_GOT_CONNECTION_FROM),
-         nick);
-}
-#endif
-
 /**
  * netplay_impl_magic:
  *
@@ -1222,8 +1149,8 @@ static void netplay_handshake_ready(netplay_t *netplay,
    {
       unsigned slot = (unsigned)(connection - netplay->connections);
 
-      netplay_log_connection(&connection->addr,
-            slot, connection->nick, msg, sizeof(msg));
+      snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_GOT_CONNECTION_FROM),
+         connection->nick);
 
       RARCH_LOG("[Netplay] %s %u\n", msg_hash_to_str(MSG_CONNECTION_SLOT), slot);
 
@@ -1235,6 +1162,7 @@ static void netplay_handshake_ready(netplay_t *netplay,
    else
    {
       netplay->is_connected = true;
+
       snprintf(msg, sizeof(msg), "%s: \"%s\"",
          msg_hash_to_str(MSG_CONNECTED_TO),
          connection->nick);
