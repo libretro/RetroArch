@@ -437,5 +437,6 @@ bool netplay_discovery_driver_ctl(
 bool netplay_decode_hostname(const char *hostname,
       char *address, unsigned *port, char *session, size_t len);
 bool netplay_is_lan_address(struct sockaddr_in *addr);
+bool netplay_6to4(struct sockaddr_storage *addr);
 
 #endif
