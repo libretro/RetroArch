@@ -20,8 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef LIBRETRO_SDK_NETPLAY_COMPAT_H__
-#define LIBRETRO_SDK_NETPLAY_COMPAT_H__
+#ifndef LIBRETRO_SDK_NET_COMPAT_H__
+#define LIBRETRO_SDK_NET_COMPAT_H__
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -46,73 +46,114 @@
 #define MSG_NOSIGNAL 0
 #endif
 
-#elif defined(_XBOX)
+#if _WIN32_WINNT >= 0x0600
+#define NETWORK_HAVE_POLL 1
+#endif
 
+#elif defined(_XBOX)
 #define NOD3D
 #include <xtl.h>
 #include <io.h>
 
 #elif defined(GEKKO)
-
 #include <network.h>
 
-#define sendto(s, msg, len, flags, addr, tolen) net_sendto(s, msg, len, 0, addr, 8)
-#define socket(domain, type, protocol) net_socket(domain, type, protocol)
-#define bind(s, name, namelen) net_bind(s, name, namelen)
-#define listen(s, backlog) net_listen(s, backlog)
-#define accept(s, addr, addrlen) net_accept(s, addr, addrlen)
-#define connect(s, addr, addrlen) net_connect(s, addr, addrlen)
-#define send(s, data, size, flags) net_send(s, data, size, flags)
-#define recv(s, mem, len, flags) net_recv(s, mem, len, flags)
-#define recvfrom(s, mem, len, flags, from, fromlen) net_recvfrom(s, mem, len, flags, from, fromlen)
-#define select(maxfdp1, readset, writeset, exceptset, timeout) net_select(maxfdp1, readset, writeset, exceptset, timeout)
+#define NETWORK_HAVE_POLL 1
+
+#define pollfd pollsd
+
+#define socket net_socket
 #define getsockopt net_getsockopt
 #define setsockopt net_setsockopt
+#define bind net_bind
+#define listen net_listen
+#define accept net_accept
+#define connect net_connect
+#define send net_send
+#define sendto net_sendto
+#define recv net_recv
+#define recvfrom net_recvfrom
+#define select net_select
+#define poll net_poll
 
 #elif defined(VITA)
-
 #include <psp2/net/net.h>
 #include <psp2/net/netctl.h>
 
-#define sockaddr_in SceNetSockaddrIn
-#define sockaddr SceNetSockaddr
-#define sendto sceNetSendto
-#define recvfrom sceNetRecvfrom
-#define socket(a,b,c) sceNetSocket("unknown",a,b,c)
-#define bind sceNetBind
-#define accept sceNetAccept
-#define getsockopt sceNetGetsockopt
-#define setsockopt sceNetSetsockopt
-#define connect sceNetConnect
-#define listen sceNetListen
-#define send sceNetSend
-#define recv sceNetRecv
-#define MSG_DONTWAIT SCE_NET_MSG_DONTWAIT
-#define AF_INET SCE_NET_AF_INET
+#define NETWORK_HAVE_POLL 1
+
 #define AF_UNSPEC 0
-#define INADDR_ANY SCE_NET_INADDR_ANY
-#define INADDR_NONE 0xffffffff
+#define AF_INET SCE_NET_AF_INET
+
 #define SOCK_STREAM SCE_NET_SOCK_STREAM
 #define SOCK_DGRAM SCE_NET_SOCK_DGRAM
+
+#define INADDR_ANY SCE_NET_INADDR_ANY
+#define INADDR_NONE 0xFFFFFFFF
+
 #define SOL_SOCKET SCE_NET_SOL_SOCKET
 #define SO_REUSEADDR SCE_NET_SO_REUSEADDR
+#define SO_KEEPALIVE SCE_NET_SO_KEEPALIVE
+#define SO_BROADCAST SCE_NET_SO_BROADCAST
 #define SO_SNDBUF SCE_NET_SO_SNDBUF
+#define SO_RCVBUF SCE_NET_SO_RCVBUF
 #define SO_SNDTIMEO SCE_NET_SO_SNDTIMEO
+#define SO_RCVTIMEO SCE_NET_SO_RCVTIMEO
+#define SO_ERROR SCE_NET_SO_ERROR
 #define SO_NBIO SCE_NET_SO_NBIO
+
+#define IPPROTO_IP SCE_NET_IPPROTO_IP
+#define IP_MULTICAST_TTL SCE_NET_IP_MULTICAST_TTL
+
+#define IPPROTO_TCP SCE_NET_IPPROTO_TCP
+#define TCP_NODELAY SCE_NET_TCP_NODELAY
+
+#define IPPROTO_UDP SCE_NET_IPPROTO_UDP
+
+#define MSG_DONTWAIT SCE_NET_MSG_DONTWAIT
+
+#define POLLIN   SCE_NET_EPOLLIN
+#define POLLOUT  SCE_NET_EPOLLOUT
+#define POLLERR  SCE_NET_EPOLLERR
+#define POLLHUP  SCE_NET_EPOLLHUP
+#define POLLNVAL 0
+
+#define sockaddr_in SceNetSockaddrIn
+#define sockaddr SceNetSockaddr
+#define socklen_t unsigned int
+
+#define socket(a,b,c) sceNetSocket("unknown",a,b,c)
+#define getsockopt sceNetGetsockopt
+#define setsockopt sceNetSetsockopt
+#define bind sceNetBind
+#define listen sceNetListen
+#define accept sceNetAccept
+#define connect sceNetConnect
+#define send sceNetSend
+#define sendto sceNetSendto
+#define recv sceNetRecv
+#define recvfrom sceNetRecvfrom
 #define htonl sceNetHtonl
 #define ntohl sceNetNtohl
 #define htons sceNetHtons
 #define ntohs sceNetNtohs
-#define socklen_t unsigned int
+
+struct pollfd
+{
+   int fd;
+   unsigned events;
+   unsigned revents;
+   unsigned __pad; /* Align to 64-bits boundary */
+};
 
 struct hostent
 {
-	char *h_name;
-	char **h_aliases;
-	int  h_addrtype;
-	int  h_length;
-	char **h_addr_list;
-	char *h_addr;
+   char *h_name;
+   char **h_aliases;
+   int  h_addrtype;
+   int  h_length;
+   char **h_addr_list;
+   char *h_addr;
 };
 
 struct SceNetInAddr inet_aton(const char *ip_addr);
@@ -138,6 +179,18 @@ struct SceNetInAddr inet_aton(const char *ip_addr);
 #include <signal.h>
 #endif
 
+
+#if defined(__PSL1GHT__)
+#include <net/poll.h>
+
+#define NETWORK_HAVE_POLL 1
+
+#elif !defined(WIIU) && !defined(__PS3__)
+#include <poll.h>
+
+#define NETWORK_HAVE_POLL 1
+
+#endif
 #endif
 
 #include <errno.h>
@@ -196,6 +249,16 @@ static INLINE bool isinprogress(int bytes)
 #ifndef _WIN32
 #include <sys/time.h>
 #include <unistd.h>
+#endif
+
+#ifdef NETWORK_HAVE_POLL
+#ifdef GEKKO
+#define NET_POLL_FD(sockfd, sockfds)    (sockfds)->socket  = (sockfd)
+#else
+#define NET_POLL_FD(sockfd, sockfds)    (sockfds)->fd      = (sockfd)
+#endif
+#define NET_POLL_EVENT(sockev, sockfds) (sockfds)->events |= (sockev)
+#define NET_POLL_HAS_EVENT(sockev, sockfds) ((sockfds)->revents & (sockev))
 #endif
 
 /* Compatibility layer for legacy or incomplete BSD socket implementations.

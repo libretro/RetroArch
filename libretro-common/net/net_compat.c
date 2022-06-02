@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2020 The RetroArch team
+/* Copyright  (C) 2010-2022 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (net_compat.c).
@@ -80,9 +80,7 @@ error:
    return NULL;
 }
 #elif defined(VITA)
-static void *_net_compat_net_memory = NULL;
 #define COMPAT_NET_INIT_SIZE 512*1024
-#define INET_ADDRSTRLEN sizeof(struct sockaddr_in)
 #define MAX_NAME 512
 
 typedef uint32_t in_addr_t;
@@ -92,14 +90,17 @@ struct in_addr
    in_addr_t s_addr;
 };
 
+static void *_net_compat_net_memory = NULL;
+int retro_epoll_fd = -1;
+
 char *inet_ntoa(struct SceNetInAddr in)
 {
-	static char ip_addr[INET_ADDRSTRLEN + 1];
+   static char ip_addr[16];
 
-   if (!inet_ntop_compat(AF_INET, &in, ip_addr, INET_ADDRSTRLEN))
-		strlcpy(ip_addr, "Invalid", sizeof(ip_addr));
+   if (!inet_ntop_compat(AF_INET, &in, ip_addr, sizeof(ip_addr)))
+      strlcpy(ip_addr, "Invalid", sizeof(ip_addr));
 
-	return ip_addr;
+   return ip_addr;
 }
 
 struct SceNetInAddr inet_aton(const char *ip_addr)
@@ -107,6 +108,7 @@ struct SceNetInAddr inet_aton(const char *ip_addr)
    SceNetInAddr inaddr;
 
    inet_ptrton(AF_INET, ip_addr, &inaddr);
+
    return inaddr;
 }
 
@@ -143,14 +145,15 @@ struct hostent *gethostbyname(const char *name)
    return &ent;
 }
 
-int retro_epoll_fd;
 #elif defined(_3DS)
 #include <malloc.h>
 #include <3ds/types.h>
 #include <3ds/services/soc.h>
+
 #define SOC_ALIGN       0x1000
 #define SOC_BUFFERSIZE  0x100000
-static u32* _net_compat_net_memory;
+
+static u32* _net_compat_net_memory = NULL;
 #endif
 
 #if defined(_WIN32)
@@ -259,8 +262,11 @@ error:
 void freeaddrinfo_retro(struct addrinfo *res)
 {
 #ifdef HAVE_SOCKET_LEGACY
-   free(res->ai_addr);
-   free(res);
+   if (res)
+   {
+      free(res->ai_addr);
+      free(res);
+   }
 #else
    freeaddrinfo(res);
 #endif
@@ -270,10 +276,14 @@ void freeaddrinfo_retro(struct addrinfo *res)
 #include <malloc.h>
 
 static OSThread wiiu_net_cmpt_thread;
-static void wiiu_net_cmpt_thread_cleanup(OSThread *thread, void *stack) {
+
+static void wiiu_net_cmpt_thread_cleanup(OSThread *thread, void *stack)
+{
    free(stack);
 }
-static int wiiu_net_cmpt_thread_entry(int argc, const char** argv) {
+
+static int wiiu_net_cmpt_thread_entry(int argc, const char** argv)
+{
    const int buf_size = WIIU_RCVBUF + WIIU_SNDBUF;
    void* buf = memalign(128, buf_size);
    if (!buf) return -1;
@@ -300,89 +310,107 @@ static char netmask[16] = {0};
  **/
 bool network_init(void)
 {
-#ifdef _WIN32
-   WSADATA wsaData;
-#endif
    static bool inited = false;
+
+#if defined(_WIN32)
+   WSADATA wsaData;
+#elif defined(__PSL1GHT__) || defined(__PS3__)
+   int timeout_count = 10;
+#elif defined(WIIU)
+   void* stack;
+#endif
+
    if (inited)
       return true;
 
 #if defined(_WIN32)
-   if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
-   {
-      network_deinit();
-      return false;
-   }
-#elif defined(__PSL1GHT__) || defined(__PS3__) 
-   int timeout_count = 10;
-
+   if (WSAStartup(MAKEWORD(2, 2), &wsaData))
+      goto failure;
+#elif defined(__PSL1GHT__) || defined(__PS3__)
    sysModuleLoad(SYSMODULE_NET);
    netInitialize();
-
    if (netCtlInit() < 0)
-      return false;
+      goto failure;
 
    for (;;)
    {
       int state;
-      if (netCtlGetState(&state) < 0)
-         return false;
 
+      if (netCtlGetState(&state) < 0)
+         goto failure;
       if (state == NET_CTL_STATE_IPObtained)
          break;
 
+      if (!(timeout_count--))
+         goto failure;
+
       retro_sleep(500);
-      timeout_count--;
-      if (timeout_count < 0)
-         return 0;
    }
 #elif defined(VITA)
-   SceNetInitParam initparam;
-
    if (sceNetShowNetstat() == SCE_NET_ERROR_ENOTINIT)
    {
+      SceNetInitParam param;
+
       _net_compat_net_memory = malloc(COMPAT_NET_INIT_SIZE);
 
-      initparam.memory       = _net_compat_net_memory;
-      initparam.size         = COMPAT_NET_INIT_SIZE;
-      initparam.flags        = 0;
-
-      sceNetInit(&initparam);
+      param.memory           = _net_compat_net_memory;
+      param.size             = COMPAT_NET_INIT_SIZE;
+      param.flags            = 0;
+      if (sceNetInit(&param) < 0)
+         goto failure;
 
       sceNetCtlInit();
-   }
 
-   retro_epoll_fd = sceNetEpollCreate("epoll", 0);
+      retro_epoll_fd = sceNetEpollCreate("epoll", 0);
+      if (retro_epoll_fd < 0)
+         goto failure;
+   }
 #elif defined(GEKKO)
    if (if_config(localip, netmask, gateway, true, 10) < 0)
-      return false;
+      goto failure;
 #elif defined(WIIU)
+   stack = malloc(4096);
+   if (!stack)
+      goto failure;
+
    socket_lib_init();
 
-   const int stack_size = 4096;
-   void* stack = malloc(stack_size);
-   if (stack && OSCreateThread(&wiiu_net_cmpt_thread,
-      wiiu_net_cmpt_thread_entry, 0, NULL, stack+stack_size, stack_size,
-      3, OS_THREAD_ATTRIB_AFFINITY_ANY)) {
-
+   if (OSCreateThread(&wiiu_net_cmpt_thread, wiiu_net_cmpt_thread_entry,
+         0, NULL, stack+4096, 4096, 3,
+         OS_THREAD_ATTRIB_AFFINITY_ANY))
+   {
       OSSetThreadName(&wiiu_net_cmpt_thread, "Network compat thread");
       OSSetThreadDeallocator(&wiiu_net_cmpt_thread,
          wiiu_net_cmpt_thread_cleanup);
       OSResumeThread(&wiiu_net_cmpt_thread);
    }
+   else
+   {
+      free(stack);
+      goto failure;
+   }
 #elif defined(_3DS)
-    _net_compat_net_memory = (u32*)memalign(SOC_ALIGN, SOC_BUFFERSIZE);
-	if (!_net_compat_net_memory)
-		return false;
-	Result ret = socInit(_net_compat_net_memory, SOC_BUFFERSIZE);//WIFI init
-	if (ret != 0)
-		return false;
+   _net_compat_net_memory = (u32*)memalign(SOC_ALIGN, SOC_BUFFERSIZE);
+   if (!_net_compat_net_memory)
+      goto failure;
+
+   /* WIFI init */
+   if (socInit(_net_compat_net_memory, SOC_BUFFERSIZE))
+      goto failure;
 #else
    signal(SIGPIPE, SIG_IGN); /* Do not like SIGPIPE killing our app. */
 #endif
 
    inited = true;
+
    return true;
+
+#if defined(_WIN32) || defined(__PSL1GHT__) || defined(__PS3__) || defined(VITA) || defined(GEKKO) || defined(WIIU) || defined(_3DS)
+failure:
+   network_deinit();
+
+   return false;
+#endif
 }
 
 /**
@@ -399,24 +427,24 @@ void network_deinit(void)
    netFinalizeNetwork();
    sysModuleUnload(SYSMODULE_NET);
 #elif defined(VITA)
+   if (retro_epoll_fd >= 0)
+   {
+      sceNetEpollDestroy(retro_epoll_fd);
+      retro_epoll_fd = -1;
+   }
+
    sceNetCtlTerm();
    sceNetTerm();
 
-   if (_net_compat_net_memory)
-   {
-      free(_net_compat_net_memory);
-      _net_compat_net_memory = NULL;
-   }
+   free(_net_compat_net_memory);
+   _net_compat_net_memory = NULL;
 #elif defined(GEKKO) && !defined(HW_DOL)
    net_deinit();
 #elif defined(_3DS)
    socExit();
 
-   if(_net_compat_net_memory)
-   {
-	  free(_net_compat_net_memory);
-	  _net_compat_net_memory = NULL;
-   }
+   free(_net_compat_net_memory);
+   _net_compat_net_memory = NULL;
 #endif
 }
 

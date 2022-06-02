@@ -23,9 +23,9 @@
 #ifndef _LIBRETRO_SDK_NET_SOCKET_H
 #define _LIBRETRO_SDK_NET_SOCKET_H
 
+#include <stddef.h>
 #include <stdint.h>
 #include <boolean.h>
-#include <string.h>
 
 #include <net/net_compat.h>
 
@@ -71,8 +71,14 @@ bool socket_set_block(int fd, bool block);
 /* TODO: all callers should be converted to socket_set_block() */
 bool socket_nonblock(int fd);
 
-int socket_select(int nfds, fd_set *readfs, fd_set *writefds,
+int socket_select(int nfds, fd_set *readfds, fd_set *writefds,
       fd_set *errorfds, struct timeval *timeout);
+
+#ifdef NETWORK_HAVE_POLL
+int socket_poll(struct pollfd *fds, unsigned nfds, int timeout);
+#endif
+
+bool socket_wait(int fd, bool *rd, bool *wr, int timeout);
 
 bool socket_send_all_blocking(int fd, const void *data_, size_t size, bool no_signal);
 
