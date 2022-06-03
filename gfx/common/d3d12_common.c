@@ -37,7 +37,6 @@
 
 #ifdef __MINGW32__
 /* clang-format off */
-#ifndef __d3d12_h__
 #ifdef __cplusplus
 #define DEFINE_GUIDW(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) EXTERN_C const GUID DECLSPEC_SELECTANY name = { l, w1, w2, { b1, b2, b3, b4, b5, b6, b7, b8 } }
 #else
@@ -74,7 +73,6 @@ DEFINE_GUIDW(IID_ID3D12DebugCommandList1, 0x102ca951, 0x311b, 0x4b01, 0xb1, 0x1f
 DEFINE_GUIDW(IID_ID3D12DebugCommandList, 0x09e0bf36, 0x54ac, 0x484f, 0x88, 0x47, 0x4b, 0xae, 0xea, 0xb6, 0x05, 0x3f);
 #endif
 /* clang-format on */
-#endif
 #endif
 
 #if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
