@@ -296,7 +296,8 @@ typedef struct
 #endif
 } d3d12_video_t;
 
-typedef enum {
+typedef enum
+{
    ROOT_ID_TEXTURE_T = 0,
    ROOT_ID_SAMPLER_T,
    ROOT_ID_UBO,
@@ -304,64 +305,14 @@ typedef enum {
    ROOT_ID_MAX
 } root_signature_parameter_index_t;
 
-typedef enum {
+typedef enum
+{
    CS_ROOT_ID_TEXTURE_T = 0,
    CS_ROOT_ID_UAV_T,
    CS_ROOT_ID_CONSTANTS,
    CS_ROOT_ID_MAX
 } compute_root_index_t;
 
-static INLINE ULONG D3D12Release(void* object)
-{
-   return ((ID3D12Object*)object)->lpVtbl->Release((ID3D12Object*)object);
-}
-static INLINE ULONG D3D12ReleaseDeviceChild(D3D12DeviceChild device_child)
-{
-   return device_child->lpVtbl->Release(device_child);
-}
-static INLINE ULONG D3D12ReleaseRootSignature(D3D12RootSignature root_signature)
-{
-   return root_signature->lpVtbl->Release(root_signature);
-}
-static INLINE ULONG
-D3D12ReleaseRootSignatureDeserializer(D3D12RootSignatureDeserializer root_signature_deserializer)
-{
-   return root_signature_deserializer->lpVtbl->Release(root_signature_deserializer);
-}
-static INLINE const D3D12_ROOT_SIGNATURE_DESC*
-D3D12GetRootSignatureDesc(D3D12RootSignatureDeserializer root_signature_deserializer)
-{
-   return root_signature_deserializer->lpVtbl->GetRootSignatureDesc(root_signature_deserializer);
-}
-static INLINE ULONG D3D12ReleaseVersionedRootSignatureDeserializer(
-      D3D12VersionedRootSignatureDeserializer versioned_root_signature_deserializer)
-{
-   return versioned_root_signature_deserializer->lpVtbl->Release(
-         versioned_root_signature_deserializer);
-}
-static INLINE HRESULT D3D12GetRootSignatureDescAtVersion(
-      D3D12VersionedRootSignatureDeserializer     versioned_root_signature_deserializer,
-      D3D_ROOT_SIGNATURE_VERSION                  convert_to_version,
-      const D3D12_VERSIONED_ROOT_SIGNATURE_DESC** desc)
-{
-   return versioned_root_signature_deserializer->lpVtbl->GetRootSignatureDescAtVersion(
-         versioned_root_signature_deserializer, convert_to_version, desc);
-}
-static INLINE const D3D12_VERSIONED_ROOT_SIGNATURE_DESC* D3D12GetUnconvertedRootSignatureDesc(
-      D3D12VersionedRootSignatureDeserializer versioned_root_signature_deserializer)
-{
-   return versioned_root_signature_deserializer->lpVtbl->GetUnconvertedRootSignatureDesc(
-         versioned_root_signature_deserializer);
-}
-static INLINE ULONG D3D12ReleasePageable(D3D12Pageable pageable)
-{
-   return pageable->lpVtbl->Release(pageable);
-}
-static INLINE ULONG D3D12ReleaseHeap(D3D12Heap heap) { return heap->lpVtbl->Release(heap); }
-static INLINE ULONG D3D12ReleaseResource(void* resource)
-{
-   return ((ID3D12Resource*)resource)->lpVtbl->Release((ID3D12Resource*)resource);
-}
 static INLINE HRESULT
 D3D12Map(void* resource, UINT subresource, D3D12_RANGE* read_range, void** data)
 {
@@ -377,42 +328,7 @@ static INLINE D3D12_GPU_VIRTUAL_ADDRESS D3D12GetGPUVirtualAddress(void* resource
 {
    return ((ID3D12Resource*)resource)->lpVtbl->GetGPUVirtualAddress((ID3D12Resource*)resource);
 }
-static INLINE HRESULT D3D12WriteToSubresource(
-      void*      resource,
-      UINT       dst_subresource,
-      D3D12_BOX* dst_box,
-      void*      src_data,
-      UINT       src_row_pitch,
-      UINT       src_depth_pitch)
-{
-   return ((ID3D12Resource*)resource)
-         ->lpVtbl->WriteToSubresource(
-               (ID3D12Resource*)resource, dst_subresource, dst_box, src_data, src_row_pitch,
-               src_depth_pitch);
-}
-static INLINE HRESULT D3D12ReadFromSubresource(
-      void*      resource,
-      void*      dst_data,
-      UINT       dst_row_pitch,
-      UINT       dst_depth_pitch,
-      UINT       src_subresource,
-      D3D12_BOX* src_box)
-{
-   return ((ID3D12Resource*)resource)
-         ->lpVtbl->ReadFromSubresource(
-               (ID3D12Resource*)resource, dst_data, dst_row_pitch, dst_depth_pitch, src_subresource,
-               src_box);
-}
-static INLINE HRESULT D3D12GetHeapProperties(
-      void* resource, D3D12_HEAP_PROPERTIES* heap_properties, D3D12_HEAP_FLAGS* heap_flags)
-{
-   return ((ID3D12Resource*)resource)
-         ->lpVtbl->GetHeapProperties((ID3D12Resource*)resource, heap_properties, heap_flags);
-}
-static INLINE ULONG D3D12ReleaseCommandAllocator(D3D12CommandAllocator command_allocator)
-{
-   return command_allocator->lpVtbl->Release(command_allocator);
-}
+
 static INLINE HRESULT D3D12ResetCommandAllocator(D3D12CommandAllocator command_allocator)
 {
    return command_allocator->lpVtbl->Reset(command_allocator);
@@ -426,38 +342,7 @@ static INLINE HRESULT D3D12SetEventOnCompletion(D3D12Fence fence, UINT64 value, 
 {
    return fence->lpVtbl->SetEventOnCompletion(fence, value, h_event);
 }
-static INLINE HRESULT D3D12SignalFence(D3D12Fence fence, UINT64 value)
-{
-   return fence->lpVtbl->Signal(fence, value);
-}
-static INLINE ULONG D3D12ReleasePipelineState(D3D12PipelineState pipeline_state)
-{
-   return pipeline_state->lpVtbl->Release(pipeline_state);
-}
-static INLINE HRESULT D3D12GetCachedBlob(D3D12PipelineState pipeline_state, ID3DBlob** blob)
-{
-   return pipeline_state->lpVtbl->GetCachedBlob(pipeline_state, blob);
-}
-static INLINE ULONG D3D12ReleaseDescriptorHeap(D3D12DescriptorHeap descriptor_heap)
-{
-   return descriptor_heap->lpVtbl->Release(descriptor_heap);
-}
-static INLINE ULONG D3D12ReleaseQueryHeap(D3D12QueryHeap query_heap)
-{
-   return query_heap->lpVtbl->Release(query_heap);
-}
-static INLINE ULONG D3D12ReleaseCommandSignature(D3D12CommandSignature command_signature)
-{
-   return command_signature->lpVtbl->Release(command_signature);
-}
-static INLINE ULONG D3D12ReleaseCommandList(D3D12CommandList command_list)
-{
-   return command_list->lpVtbl->Release(command_list);
-}
-static INLINE ULONG D3D12ReleaseGraphicsCommandList(D3D12GraphicsCommandList graphics_command_list)
-{
-   return graphics_command_list->lpVtbl->Release(graphics_command_list);
-}
+
 static INLINE HRESULT D3D12CloseGraphicsCommandList(D3D12GraphicsCommandList graphics_command_list)
 {
    return graphics_command_list->lpVtbl->Close(graphics_command_list);
@@ -469,11 +354,7 @@ static INLINE HRESULT D3D12ResetGraphicsCommandList(
 {
    return graphics_command_list->lpVtbl->Reset(graphics_command_list, allocator, initial_state);
 }
-static INLINE void
-D3D12ClearState(D3D12GraphicsCommandList graphics_command_list, D3D12PipelineState pipeline_state)
-{
-   graphics_command_list->lpVtbl->ClearState(graphics_command_list, pipeline_state);
-}
+
 static INLINE void D3D12DrawInstanced(
       D3D12GraphicsCommandList graphics_command_list,
       UINT                     vertex_count_per_instance,
@@ -495,18 +376,7 @@ static INLINE void D3D12Dispatch(
    graphics_command_list->lpVtbl->Dispatch(
          graphics_command_list, thread_group_count_x, thread_group_count_y, thread_group_count_z);
 }
-static INLINE void D3D12CopyBufferRegion(
-      D3D12GraphicsCommandList graphics_command_list,
-      D3D12Resource            dst_buffer,
-      UINT64                   dst_offset,
-      D3D12Resource            src_buffer,
-      UINT64                   src_offset,
-      UINT64                   num_bytes)
-{
-   graphics_command_list->lpVtbl->CopyBufferRegion(
-         graphics_command_list, dst_buffer, dst_offset, (ID3D12Resource*)src_buffer, src_offset,
-         num_bytes);
-}
+
 static INLINE void D3D12CopyTextureRegion(
       D3D12GraphicsCommandList     graphics_command_list,
       D3D12_TEXTURE_COPY_LOCATION* dst,
@@ -519,49 +389,31 @@ static INLINE void D3D12CopyTextureRegion(
    graphics_command_list->lpVtbl->CopyTextureRegion(
          graphics_command_list, dst, dst_x, dst_y, dst_z, src, src_box);
 }
-static INLINE void D3D12CopyResource(
-      D3D12GraphicsCommandList graphics_command_list, void* dst_resource, void* src_resource)
-{
-   graphics_command_list->lpVtbl->CopyResource(
-         graphics_command_list, (ID3D12Resource*)dst_resource, (ID3D12Resource*)src_resource);
-}
-static INLINE void D3D12ResolveSubresource(
-      D3D12GraphicsCommandList graphics_command_list,
-      void*                    dst_resource,
-      UINT                     dst_subresource,
-      void*                    src_resource,
-      UINT                     src_subresource,
-      DXGI_FORMAT              format)
-{
-   graphics_command_list->lpVtbl->ResolveSubresource(
-         graphics_command_list, (ID3D12Resource*)dst_resource, dst_subresource,
-         (ID3D12Resource*)src_resource, src_subresource, format);
-}
+
 static INLINE void D3D12IASetPrimitiveTopology(
       D3D12GraphicsCommandList graphics_command_list, D3D12_PRIMITIVE_TOPOLOGY primitive_topology)
 {
    graphics_command_list->lpVtbl->IASetPrimitiveTopology(graphics_command_list, primitive_topology);
 }
+
 static INLINE void D3D12RSSetViewports(
       D3D12GraphicsCommandList graphics_command_list, UINT num_viewports, D3D12_VIEWPORT* viewports)
 {
    graphics_command_list->lpVtbl->RSSetViewports(graphics_command_list, num_viewports, viewports);
 }
+
 static INLINE void D3D12RSSetScissorRects(
       D3D12GraphicsCommandList graphics_command_list, UINT num_rects, D3D12_RECT* rects)
 {
    graphics_command_list->lpVtbl->RSSetScissorRects(graphics_command_list, num_rects, rects);
 }
-static INLINE void
-D3D12OMSetStencilRef(D3D12GraphicsCommandList graphics_command_list, UINT stencil_ref)
-{
-   graphics_command_list->lpVtbl->OMSetStencilRef(graphics_command_list, stencil_ref);
-}
+
 static INLINE void D3D12SetPipelineState(
       D3D12GraphicsCommandList graphics_command_list, D3D12PipelineStateRef pipeline_state)
 {
    graphics_command_list->lpVtbl->SetPipelineState(graphics_command_list, (D3D12PipelineState)pipeline_state);
 }
+
 static INLINE void D3D12ResourceBarrier(
       D3D12GraphicsCommandList graphics_command_list,
       UINT                     num_barriers,
@@ -569,16 +421,19 @@ static INLINE void D3D12ResourceBarrier(
 {
    graphics_command_list->lpVtbl->ResourceBarrier(graphics_command_list, num_barriers, barriers);
 }
+
 static INLINE void D3D12SetComputeRootSignature(
       D3D12GraphicsCommandList graphics_command_list, D3D12RootSignature root_signature)
 {
    graphics_command_list->lpVtbl->SetComputeRootSignature(graphics_command_list, root_signature);
 }
+
 static INLINE void D3D12SetGraphicsRootSignature(
       D3D12GraphicsCommandList graphics_command_list, D3D12RootSignature root_signature)
 {
    graphics_command_list->lpVtbl->SetGraphicsRootSignature(graphics_command_list, root_signature);
 }
+
 static INLINE void D3D12SetComputeRootDescriptorTable(
       D3D12GraphicsCommandList    graphics_command_list,
       UINT                        root_parameter_index,
@@ -587,6 +442,7 @@ static INLINE void D3D12SetComputeRootDescriptorTable(
    graphics_command_list->lpVtbl->SetComputeRootDescriptorTable(
          graphics_command_list, root_parameter_index, base_descriptor);
 }
+
 static INLINE void D3D12SetGraphicsRootDescriptorTable(
       D3D12GraphicsCommandList    graphics_command_list,
       UINT                        root_parameter_index,
@@ -595,24 +451,7 @@ static INLINE void D3D12SetGraphicsRootDescriptorTable(
    graphics_command_list->lpVtbl->SetGraphicsRootDescriptorTable(
          graphics_command_list, root_parameter_index, base_descriptor);
 }
-static INLINE void D3D12SetComputeRoot32BitConstant(
-      D3D12GraphicsCommandList graphics_command_list,
-      UINT                     root_parameter_index,
-      UINT                     src_data,
-      UINT                     dest_offset_in32_bit_values)
-{
-   graphics_command_list->lpVtbl->SetComputeRoot32BitConstant(
-         graphics_command_list, root_parameter_index, src_data, dest_offset_in32_bit_values);
-}
-static INLINE void D3D12SetGraphicsRoot32BitConstant(
-      D3D12GraphicsCommandList graphics_command_list,
-      UINT                     root_parameter_index,
-      UINT                     src_data,
-      UINT                     dest_offset_in32_bit_values)
-{
-   graphics_command_list->lpVtbl->SetGraphicsRoot32BitConstant(
-         graphics_command_list, root_parameter_index, src_data, dest_offset_in32_bit_values);
-}
+
 static INLINE void D3D12SetComputeRoot32BitConstants(
       D3D12GraphicsCommandList graphics_command_list,
       UINT                     root_parameter_index,
@@ -624,17 +463,7 @@ static INLINE void D3D12SetComputeRoot32BitConstants(
          graphics_command_list, root_parameter_index, num32_bit_values_to_set, src_data,
          dest_offset_in32_bit_values);
 }
-static INLINE void D3D12SetGraphicsRoot32BitConstants(
-      D3D12GraphicsCommandList graphics_command_list,
-      UINT                     root_parameter_index,
-      UINT                     num32_bit_values_to_set,
-      void*                    src_data,
-      UINT                     dest_offset_in32_bit_values)
-{
-   graphics_command_list->lpVtbl->SetGraphicsRoot32BitConstants(
-         graphics_command_list, root_parameter_index, num32_bit_values_to_set, src_data,
-         dest_offset_in32_bit_values);
-}
+
 static INLINE void D3D12SetComputeRootConstantBufferView(
       D3D12GraphicsCommandList  graphics_command_list,
       UINT                      root_parameter_index,
@@ -667,27 +496,7 @@ static INLINE void D3D12SetGraphicsRootShaderResourceView(
    graphics_command_list->lpVtbl->SetGraphicsRootShaderResourceView(
          graphics_command_list, root_parameter_index, buffer_location);
 }
-static INLINE void D3D12SetComputeRootUnorderedAccessView(
-      D3D12GraphicsCommandList  graphics_command_list,
-      UINT                      root_parameter_index,
-      D3D12_GPU_VIRTUAL_ADDRESS buffer_location)
-{
-   graphics_command_list->lpVtbl->SetComputeRootUnorderedAccessView(
-         graphics_command_list, root_parameter_index, buffer_location);
-}
-static INLINE void D3D12SetGraphicsRootUnorderedAccessView(
-      D3D12GraphicsCommandList  graphics_command_list,
-      UINT                      root_parameter_index,
-      D3D12_GPU_VIRTUAL_ADDRESS buffer_location)
-{
-   graphics_command_list->lpVtbl->SetGraphicsRootUnorderedAccessView(
-         graphics_command_list, root_parameter_index, buffer_location);
-}
-static INLINE void
-D3D12IASetIndexBuffer(D3D12GraphicsCommandList graphics_command_list, D3D12_INDEX_BUFFER_VIEW* view)
-{
-   graphics_command_list->lpVtbl->IASetIndexBuffer(graphics_command_list, view);
-}
+
 static INLINE void D3D12IASetVertexBuffers(
       D3D12GraphicsCommandList  graphics_command_list,
       UINT                      start_slot,
@@ -709,6 +518,7 @@ static INLINE void D3D12OMSetRenderTargets(
          graphics_command_list, num_render_target_descriptors, render_target_descriptors,
          r_ts_single_handle_to_descriptor_range, depth_stencil_descriptor);
 }
+
 static INLINE void D3D12ClearDepthStencilView(
       D3D12GraphicsCommandList    graphics_command_list,
       D3D12_CPU_DESCRIPTOR_HANDLE depth_stencil_view,
@@ -721,76 +531,18 @@ static INLINE void D3D12ClearDepthStencilView(
    graphics_command_list->lpVtbl->ClearDepthStencilView(
          graphics_command_list, depth_stencil_view, clear_flags, depth, stencil, num_rects, rects);
 }
-static INLINE void D3D12DiscardResource(
-      D3D12GraphicsCommandList graphics_command_list, void* resource, D3D12_DISCARD_REGION* region)
-{
-   graphics_command_list->lpVtbl->DiscardResource(
-         graphics_command_list, (ID3D12Resource*)resource, region);
-}
-static INLINE void D3D12ResolveQueryData(
-      D3D12GraphicsCommandList graphics_command_list,
-      D3D12QueryHeap           query_heap,
-      D3D12_QUERY_TYPE         type,
-      UINT                     start_index,
-      UINT                     num_queries,
-      void*                    destination_buffer,
-      UINT64                   aligned_destination_buffer_offset)
-{
-   graphics_command_list->lpVtbl->ResolveQueryData(
-         graphics_command_list, query_heap, type, start_index, num_queries,
-         (ID3D12Resource*)destination_buffer, aligned_destination_buffer_offset);
-}
-static INLINE void D3D12SetGraphicsCommandListMarker(
-      D3D12GraphicsCommandList graphics_command_list, UINT metadata, void* data, UINT size)
-{
-   graphics_command_list->lpVtbl->SetMarker(graphics_command_list, metadata, data, size);
-}
-static INLINE void D3D12BeginGraphicsCommandListEvent(
-      D3D12GraphicsCommandList graphics_command_list, UINT metadata, void* data, UINT size)
-{
-   graphics_command_list->lpVtbl->BeginEvent(graphics_command_list, metadata, data, size);
-}
-static INLINE void D3D12EndGraphicsCommandListEvent(D3D12GraphicsCommandList graphics_command_list)
-{
-   graphics_command_list->lpVtbl->EndEvent(graphics_command_list);
-}
 
-static INLINE ULONG D3D12ReleaseCommandQueue(D3D12CommandQueue command_queue)
-{
-   return command_queue->lpVtbl->Release(command_queue);
-}
-
-static INLINE void
-D3D12SetCommandQueueMarker(D3D12CommandQueue command_queue, UINT metadata, void* data, UINT size)
-{
-   command_queue->lpVtbl->SetMarker(command_queue, metadata, data, size);
-}
-static INLINE void
-D3D12BeginCommandQueueEvent(D3D12CommandQueue command_queue, UINT metadata, void* data, UINT size)
-{
-   command_queue->lpVtbl->BeginEvent(command_queue, metadata, data, size);
-}
-static INLINE void D3D12EndCommandQueueEvent(D3D12CommandQueue command_queue)
-{
-   command_queue->lpVtbl->EndEvent(command_queue);
-}
 static INLINE HRESULT
 D3D12SignalCommandQueue(D3D12CommandQueue command_queue, D3D12Fence fence, UINT64 value)
 {
    return command_queue->lpVtbl->Signal(command_queue, fence, value);
 }
-static INLINE HRESULT D3D12Wait(D3D12CommandQueue command_queue, D3D12Fence fence, UINT64 value)
-{
-   return command_queue->lpVtbl->Wait(command_queue, fence, value);
-}
+
 static INLINE ULONG D3D12ReleaseDevice(D3D12Device device)
 {
    return device->lpVtbl->Release(device);
 }
-static INLINE UINT D3D12GetNodeCount(D3D12Device device)
-{
-   return device->lpVtbl->GetNodeCount(device);
-}
+
 static INLINE HRESULT D3D12CreateCommandQueue(
       D3D12Device device, D3D12_COMMAND_QUEUE_DESC* desc, ID3D12CommandQueue** out)
 {
@@ -814,18 +566,7 @@ static INLINE HRESULT D3D12CreateComputePipelineState(
    return device->lpVtbl->CreateComputePipelineState(
          device, desc, uuidof(ID3D12PipelineState), (void**)out);
 }
-static INLINE HRESULT D3D12CreateCommandList(
-      D3D12Device             device,
-      UINT                    node_mask,
-      D3D12_COMMAND_LIST_TYPE type,
-      D3D12CommandAllocator   command_allocator,
-      D3D12PipelineState      initial_state,
-      ID3D12CommandList**     out)
-{
-   return device->lpVtbl->CreateCommandList(
-         device, node_mask, type, command_allocator, initial_state, uuidof(ID3D12CommandList),
-         (void**)out);
-}
+
 static INLINE HRESULT D3D12CheckFeatureSupport(
       D3D12Device   device,
       D3D12_FEATURE feature,
@@ -835,6 +576,7 @@ static INLINE HRESULT D3D12CheckFeatureSupport(
    return device->lpVtbl->CheckFeatureSupport(
          device, feature, feature_support_data, feature_support_data_size);
 }
+
 static INLINE HRESULT D3D12CreateDescriptorHeap(
       D3D12Device                 device,
       D3D12_DESCRIPTOR_HEAP_DESC* descriptor_heap_desc,
@@ -843,11 +585,13 @@ static INLINE HRESULT D3D12CreateDescriptorHeap(
    return device->lpVtbl->CreateDescriptorHeap(
          device, descriptor_heap_desc, uuidof(ID3D12DescriptorHeap), (void**)out);
 }
+
 static INLINE UINT D3D12GetDescriptorHandleIncrementSize(
       D3D12Device device, D3D12_DESCRIPTOR_HEAP_TYPE descriptor_heap_type)
 {
    return device->lpVtbl->GetDescriptorHandleIncrementSize(device, descriptor_heap_type);
 }
+
 static INLINE HRESULT D3D12CreateRootSignature(
       D3D12Device           device,
       UINT                  node_mask,
@@ -859,13 +603,7 @@ static INLINE HRESULT D3D12CreateRootSignature(
          device, node_mask, blob_with_root_signature, blob_length_in_bytes,
          uuidof(ID3D12RootSignature), (void**)out);
 }
-static INLINE void D3D12CreateConstantBufferView(
-      D3D12Device                      device,
-      D3D12_CONSTANT_BUFFER_VIEW_DESC* desc,
-      D3D12_CPU_DESCRIPTOR_HANDLE      dest_descriptor)
-{
-   device->lpVtbl->CreateConstantBufferView(device, desc, dest_descriptor);
-}
+
 static INLINE void D3D12CreateShaderResourceView(
       D3D12Device                      device,
       D3D12Resource                    resource,
@@ -874,6 +612,7 @@ static INLINE void D3D12CreateShaderResourceView(
 {
    device->lpVtbl->CreateShaderResourceView(device, resource, desc, dest_descriptor);
 }
+
 static INLINE void D3D12CreateUnorderedAccessView(
       D3D12Device                       device,
       void*                             resource,
@@ -885,6 +624,7 @@ static INLINE void D3D12CreateUnorderedAccessView(
          device, (ID3D12Resource*)resource, (ID3D12Resource*)counter_resource, desc,
          dest_descriptor);
 }
+
 static INLINE void D3D12CreateRenderTargetView(
       D3D12Device                    device,
       void*                          resource,
@@ -901,25 +641,13 @@ static INLINE void D3D12CreateDepthStencilView(
 {
    device->lpVtbl->CreateDepthStencilView(device, (ID3D12Resource*)resource, desc, dest_descriptor);
 }
+
 static INLINE void D3D12CreateSampler(
       D3D12Device device, D3D12_SAMPLER_DESC* desc, D3D12_CPU_DESCRIPTOR_HANDLE dest_descriptor)
 {
    device->lpVtbl->CreateSampler(device, desc, dest_descriptor);
 }
-static INLINE D3D12_RESOURCE_ALLOCATION_INFO D3D12GetResourceAllocationInfo(
-      D3D12Device          device,
-      UINT                 visible_mask,
-      UINT                 num_resource_descs,
-      D3D12_RESOURCE_DESC* resource_descs)
-{
-   return device->lpVtbl->GetResourceAllocationInfo(
-         device, visible_mask, num_resource_descs, resource_descs);
-}
-static INLINE D3D12_HEAP_PROPERTIES
-D3D12GetCustomHeapProperties(D3D12Device device, UINT node_mask, D3D12_HEAP_TYPE heap_type)
-{
-   return device->lpVtbl->GetCustomHeapProperties(device, node_mask, heap_type);
-}
+
 static INLINE HRESULT D3D12CreateCommittedResource(
       D3D12Device            device,
       D3D12_HEAP_PROPERTIES* heap_properties,
@@ -933,33 +661,7 @@ static INLINE HRESULT D3D12CreateCommittedResource(
          device, heap_properties, heap_flags, desc, initial_resource_state, optimized_clear_value,
          uuidof(ID3D12Resource), (void**)out);
 }
-static INLINE HRESULT D3D12CreateHeap(D3D12Device device, D3D12_HEAP_DESC* desc, ID3D12Heap** out)
-{
-   return device->lpVtbl->CreateHeap(device, desc, uuidof(ID3D12Heap), (void**)out);
-}
-static INLINE HRESULT D3D12CreatePlacedResource(
-      D3D12Device           device,
-      D3D12Heap             heap,
-      UINT64                heap_offset,
-      D3D12_RESOURCE_DESC*  desc,
-      D3D12_RESOURCE_STATES initial_state,
-      D3D12_CLEAR_VALUE*    optimized_clear_value,
-      ID3D12Resource**      out)
-{
-   return device->lpVtbl->CreatePlacedResource(
-         device, heap, heap_offset, desc, initial_state, optimized_clear_value,
-         uuidof(ID3D12Resource), (void**)out);
-}
-static INLINE HRESULT D3D12CreateReservedResource(
-      D3D12Device           device,
-      D3D12_RESOURCE_DESC*  desc,
-      D3D12_RESOURCE_STATES initial_state,
-      D3D12_CLEAR_VALUE*    optimized_clear_value,
-      ID3D12Resource**      out)
-{
-   return device->lpVtbl->CreateReservedResource(
-         device, desc, initial_state, optimized_clear_value, uuidof(ID3D12Resource), (void**)out);
-}
+
 static INLINE HRESULT D3D12CreateFence(
       D3D12Device device, UINT64 initial_value, D3D12_FENCE_FLAGS flags, ID3D12Fence** out)
 {
@@ -981,58 +683,6 @@ static INLINE void D3D12GetCopyableFootprints(
    device->lpVtbl->GetCopyableFootprints(
          device, resource_desc, first_subresource, num_subresources, base_offset, layouts, num_rows,
          row_size_in_bytes, total_bytes);
-}
-static INLINE HRESULT
-D3D12CreateQueryHeap(D3D12Device device, D3D12_QUERY_HEAP_DESC* desc, ID3D12Heap** out)
-{
-   return device->lpVtbl->CreateQueryHeap(device, desc, uuidof(ID3D12Heap), (void**)out);
-}
-
-static INLINE HRESULT D3D12CreateCommandSignature(
-      D3D12Device                   device,
-      D3D12_COMMAND_SIGNATURE_DESC* desc,
-      D3D12RootSignature            root_signature,
-      ID3D12CommandSignature**      out)
-{
-   return device->lpVtbl->CreateCommandSignature(
-         device, desc, root_signature, uuidof(ID3D12CommandSignature), (void**)out);
-}
-static INLINE void D3D12GetResourceTiling(
-      D3D12Device               device,
-      void*                     tiled_resource,
-      UINT*                     num_tiles_for_entire_resource,
-      D3D12_PACKED_MIP_INFO*    packed_mip_desc,
-      D3D12_TILE_SHAPE*         standard_tile_shape_for_non_packed_mips,
-      UINT*                     num_subresource_tilings,
-      UINT                      first_subresource_tiling_to_get,
-      D3D12_SUBRESOURCE_TILING* subresource_tilings_for_non_packed_mips)
-{
-   device->lpVtbl->GetResourceTiling(
-         device, (ID3D12Resource*)tiled_resource, num_tiles_for_entire_resource, packed_mip_desc,
-         standard_tile_shape_for_non_packed_mips, num_subresource_tilings,
-         first_subresource_tiling_to_get, subresource_tilings_for_non_packed_mips);
-}
-static INLINE LUID D3D12GetAdapterLuid(D3D12Device device)
-{
-   return device->lpVtbl->GetAdapterLuid(device);
-}
-static INLINE ULONG D3D12ReleasePipelineLibrary(D3D12PipelineLibrary pipeline_library)
-{
-   return pipeline_library->lpVtbl->Release(pipeline_library);
-}
-static INLINE HRESULT
-D3D12StorePipeline(D3D12PipelineLibrary pipeline_library, LPCWSTR name, D3D12PipelineState pipeline)
-{
-   return pipeline_library->lpVtbl->StorePipeline(pipeline_library, name, pipeline);
-}
-static INLINE HRESULT D3D12LoadGraphicsPipeline(
-      D3D12PipelineLibrary                pipeline_library,
-      LPCWSTR                             name,
-      D3D12_GRAPHICS_PIPELINE_STATE_DESC* desc,
-      ID3D12PipelineState**               out)
-{
-   return pipeline_library->lpVtbl->LoadGraphicsPipeline(
-         pipeline_library, name, desc, uuidof(ID3D12PipelineState), (void**)out);
 }
 
 /* end of auto-generated */
