@@ -480,22 +480,6 @@ static INLINE void D3D12SetGraphicsRootConstantBufferView(
    graphics_command_list->lpVtbl->SetGraphicsRootConstantBufferView(
          graphics_command_list, root_parameter_index, buffer_location);
 }
-static INLINE void D3D12SetComputeRootShaderResourceView(
-      D3D12GraphicsCommandList  graphics_command_list,
-      UINT                      root_parameter_index,
-      D3D12_GPU_VIRTUAL_ADDRESS buffer_location)
-{
-   graphics_command_list->lpVtbl->SetComputeRootShaderResourceView(
-         graphics_command_list, root_parameter_index, buffer_location);
-}
-static INLINE void D3D12SetGraphicsRootShaderResourceView(
-      D3D12GraphicsCommandList  graphics_command_list,
-      UINT                      root_parameter_index,
-      D3D12_GPU_VIRTUAL_ADDRESS buffer_location)
-{
-   graphics_command_list->lpVtbl->SetGraphicsRootShaderResourceView(
-         graphics_command_list, root_parameter_index, buffer_location);
-}
 
 static INLINE void D3D12IASetVertexBuffers(
       D3D12GraphicsCommandList  graphics_command_list,
@@ -519,28 +503,10 @@ static INLINE void D3D12OMSetRenderTargets(
          r_ts_single_handle_to_descriptor_range, depth_stencil_descriptor);
 }
 
-static INLINE void D3D12ClearDepthStencilView(
-      D3D12GraphicsCommandList    graphics_command_list,
-      D3D12_CPU_DESCRIPTOR_HANDLE depth_stencil_view,
-      D3D12_CLEAR_FLAGS           clear_flags,
-      FLOAT                       depth,
-      UINT8                       stencil,
-      UINT                        num_rects,
-      D3D12_RECT*                 rects)
-{
-   graphics_command_list->lpVtbl->ClearDepthStencilView(
-         graphics_command_list, depth_stencil_view, clear_flags, depth, stencil, num_rects, rects);
-}
-
 static INLINE HRESULT
 D3D12SignalCommandQueue(D3D12CommandQueue command_queue, D3D12Fence fence, UINT64 value)
 {
    return command_queue->lpVtbl->Signal(command_queue, fence, value);
-}
-
-static INLINE ULONG D3D12ReleaseDevice(D3D12Device device)
-{
-   return device->lpVtbl->Release(device);
 }
 
 static INLINE HRESULT D3D12CreateCommandQueue(
@@ -548,18 +514,21 @@ static INLINE HRESULT D3D12CreateCommandQueue(
 {
    return device->lpVtbl->CreateCommandQueue(device, desc, uuidof(ID3D12CommandQueue), (void**)out);
 }
+
 static INLINE HRESULT D3D12CreateCommandAllocator(
       D3D12Device device, D3D12_COMMAND_LIST_TYPE type, ID3D12CommandAllocator** out)
 {
    return device->lpVtbl->CreateCommandAllocator(
          device, type, uuidof(ID3D12CommandAllocator), (void**)out);
 }
+
 static INLINE HRESULT D3D12CreateGraphicsPipelineState(
       D3D12Device device, D3D12_GRAPHICS_PIPELINE_STATE_DESC* desc, ID3D12PipelineState** out)
 {
    return device->lpVtbl->CreateGraphicsPipelineState(
          device, desc, uuidof(ID3D12PipelineState), (void**)out);
 }
+
 static INLINE HRESULT D3D12CreateComputePipelineState(
       D3D12Device device, D3D12_COMPUTE_PIPELINE_STATE_DESC* desc, ID3D12PipelineState** out)
 {
