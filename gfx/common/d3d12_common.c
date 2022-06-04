@@ -165,6 +165,7 @@ d3d12_create_buffer(D3D12Device device, UINT size_in_bytes, D3D12Resource* buffe
    heap_props.VisibleNodeMask          = 1;
 
    resource_desc.Dimension             = D3D12_RESOURCE_DIMENSION_BUFFER;
+   resource_desc.Alignment             = 0;
    resource_desc.Width                 = size_in_bytes;
    resource_desc.Height                = 1;
    resource_desc.DepthOrArraySize      = 1;
@@ -306,9 +307,8 @@ void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
    assert(texture->srv_heap);
 
    {
-      D3D12_SHADER_RESOURCE_VIEW_DESC desc;
+      D3D12_SHADER_RESOURCE_VIEW_DESC desc = { texture->desc.Format };
 
-      desc.Format                      = texture->desc.Format;
       desc.ViewDimension               = D3D12_SRV_DIMENSION_TEXTURE2D;
       desc.Shader4ComponentMapping     = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
       desc.Texture2D.MipLevels         = texture->desc.MipLevels;
@@ -326,6 +326,7 @@ void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
       desc.Format                      = texture->desc.Format;
       desc.ViewDimension               = D3D12_UAV_DIMENSION_TEXTURE2D;
       desc.Texture2D.MipSlice          = i;
+      desc.Texture2D.PlaneSlice        = 0;
 
       texture->cpu_descriptor[i]       = d3d12_descriptor_heap_slot_alloc(texture->srv_heap);
       D3D12CreateUnorderedAccessView(
@@ -355,6 +356,7 @@ void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
       heap_props.VisibleNodeMask       = 1;
 
       buffer_desc.Dimension            = D3D12_RESOURCE_DIMENSION_BUFFER;
+      buffer_desc.Alignment            = 0;
       buffer_desc.Width                = texture->total_bytes;
       buffer_desc.Height               = 1;
       buffer_desc.DepthOrArraySize     = 1;
