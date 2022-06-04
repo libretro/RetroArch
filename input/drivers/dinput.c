@@ -497,6 +497,7 @@ static int16_t dinput_input_state(
       unsigned id)
 {
    settings_t *settings;
+   int16_t ret                = 0;
    struct dinput_input *di    = (struct dinput_input*)data;
 
 	if (port >= MAX_USERS)
@@ -511,7 +512,6 @@ static int16_t dinput_input_state(
             if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
             {
                unsigned i;
-               int16_t ret = 0;
 
                if (settings->uints.input_mouse_index[port] == 0)
                {
@@ -568,13 +568,11 @@ static int16_t dinput_input_state(
          return (id < RETROK_LAST) && 
             di->state[rarch_keysym_lut[(enum retro_key)id]] & 0x80;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
          {
             int id_minus_key      = 0;
             int id_plus_key       = 0;
             unsigned id_minus     = 0;
             unsigned id_plus      = 0;
-            int16_t ret           = 0;
             bool id_plus_valid    = false;
             bool id_minus_valid   = false;
 
@@ -597,9 +595,8 @@ static int16_t dinput_input_state(
                if (di->state[sym] & 0x80)
                   ret += -0x7fff;
             }
-            return ret;
          }
-         break;
+         return ret;
       case RARCH_DEVICE_MOUSE_SCREEN:
          settings                   = config_get_ptr();
          if (settings->uints.input_mouse_index[ port ] != 0)
