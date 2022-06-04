@@ -59,6 +59,7 @@ d3d12_font_init_font(void* data, const char* font_path,
    font->texture.desc.Height = font->atlas->height;
    font->texture.desc.Format = DXGI_FORMAT_A8_UNORM;
    font->texture.srv_heap    = &d3d12->desc.srv_heap;
+   d3d12_release_texture(&font->texture);
    d3d12_init_texture(d3d12->device, &font->texture);
    d3d12_update_texture(
          font->atlas->width, font->atlas->height,

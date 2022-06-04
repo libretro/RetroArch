@@ -57,6 +57,7 @@ d3d10_font_init_font(void* data, const char* font_path, float font_size, bool is
    font->texture.desc.Width  = font->atlas->width;
    font->texture.desc.Height = font->atlas->height;
    font->texture.desc.Format = DXGI_FORMAT_A8_UNORM;
+   d3d10_release_texture(&font->texture);
    d3d10_init_texture(d3d10->device, &font->texture);
    if (font->texture.staging)
       d3d10_update_texture(

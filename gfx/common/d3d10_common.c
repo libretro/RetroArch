@@ -83,10 +83,8 @@ d3d10_get_closest_match(D3D10Device device,
 
 void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture)
 {
-   bool is_render_target = texture->desc.BindFlags & D3D10_BIND_RENDER_TARGET;
-   UINT format_support   = D3D10_FORMAT_SUPPORT_TEXTURE2D | D3D10_FORMAT_SUPPORT_SHADER_SAMPLE;
-
-   d3d10_release_texture(texture);
+   bool is_render_target            = texture->desc.BindFlags & D3D10_BIND_RENDER_TARGET;
+   UINT format_support              = D3D10_FORMAT_SUPPORT_TEXTURE2D | D3D10_FORMAT_SUPPORT_SHADER_SAMPLE;
 
    texture->desc.MipLevels          = 1;
    texture->desc.ArraySize          = 1;
@@ -113,7 +111,7 @@ void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture)
    }
 
    if (texture->desc.BindFlags & D3D10_BIND_RENDER_TARGET)
-      format_support |= D3D10_FORMAT_SUPPORT_RENDER_TARGET;
+      format_support   |= D3D10_FORMAT_SUPPORT_RENDER_TARGET;
 
    texture->desc.Format = d3d10_get_closest_match(device, texture->desc.Format, format_support);
 

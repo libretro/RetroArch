@@ -221,6 +221,7 @@ static bool d3d12_overlay_load(void* data, const void* image_data, unsigned num_
       d3d12->overlays.textures[i].desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
       d3d12->overlays.textures[i].srv_heap    = &d3d12->desc.srv_heap;
 
+      d3d12_release_texture(&d3d12->overlays.textures[i]);
       d3d12_init_texture(d3d12->device, &d3d12->overlays.textures[i]);
       d3d12_update_texture(
             images[i].width, images[i].height,
@@ -788,6 +789,7 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       if (d3d12->shader_preset->lut[i].mipmap)
          d3d12->luts[i].desc.MipLevels = UINT16_MAX;
 
+      d3d12_release_texture(&d3d12->luts[i]);
       d3d12_init_texture(d3d12->device, &d3d12->luts[i]);
 
       d3d12_update_texture(
@@ -1323,6 +1325,7 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
         d3d12->desc.rtv_heap.cpu.ptr 
       + (countof(d3d12->chain.renderTargets)) 
       * d3d12->desc.rtv_heap.stride;
+   d3d12_release_texture(&d3d12->chain.back_buffer);
    d3d12_init_texture(d3d12->device, &d3d12->chain.back_buffer);
 #endif
 
@@ -1851,6 +1854,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
    d3d12->frame.texture[0].desc.Width  = 4;
    d3d12->frame.texture[0].desc.Height = 4;
    d3d12->frame.texture[0].srv_heap    = &d3d12->desc.srv_heap;
+   d3d12_release_texture(&d3d12->frame.texture[0]);
    d3d12_init_texture(d3d12->device, &d3d12->frame.texture[0]);
 
    font_driver_init_osd(d3d12,
@@ -1892,8 +1896,9 @@ static void d3d12_init_history(d3d12_video_t* d3d12, unsigned width, unsigned he
       d3d12->frame.texture[i].desc.Format    = d3d12->frame.texture[0].desc.Format;
       d3d12->frame.texture[i].desc.MipLevels = d3d12->frame.texture[0].desc.MipLevels;
       d3d12->frame.texture[i].srv_heap       = &d3d12->desc.srv_heap;
+      d3d12_release_texture(&d3d12->frame.texture[i]);
       d3d12_init_texture(d3d12->device, &d3d12->frame.texture[i]);
-      /* todo: clear texture ?  */
+      /* TODO/FIXME: clear texture ?  */
    }
    d3d12->init_history = false;
 }
@@ -1973,14 +1978,16 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
          d3d12->pass[i].rt.desc.Flags      = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
          d3d12->pass[i].rt.srv_heap        = &d3d12->desc.srv_heap;
          d3d12->pass[i].rt.desc.Format = glslang_format_to_dxgi(d3d12->pass[i].semantics.format);
+         d3d12_release_texture(&d3d12->pass[i].rt);
          d3d12_init_texture(d3d12->device, &d3d12->pass[i].rt);
 
          if (pass->feedback)
          {
             d3d12->pass[i].feedback.desc     = d3d12->pass[i].rt.desc;
             d3d12->pass[i].feedback.srv_heap = &d3d12->desc.srv_heap;
+            d3d12_release_texture(&d3d12->pass[i].feedback);
             d3d12_init_texture(d3d12->device, &d3d12->pass[i].feedback);
-            /* todo: do we need to clear it to black here ? */
+            /* TODO/FIXME: do we need to clear it to black here ? */
          }
       }
       else
@@ -2107,6 +2114,7 @@ static bool d3d12_gfx_frame(
                d3d12->desc.rtv_heap.cpu.ptr 
                + countof(d3d12->chain.renderTargets) 
                * d3d12->desc.rtv_heap.stride;
+         d3d12_release_texture(&d3d12->chain.back_buffer);
          d3d12_init_texture(d3d12->device, &d3d12->chain.back_buffer);
 
          dxgi_swapchain_color_space(d3d12->chain.handle,
@@ -2211,6 +2219,7 @@ static bool d3d12_gfx_frame(
          d3d12->frame.texture[0].desc.Width  = width;
          d3d12->frame.texture[0].desc.Height = height;
          d3d12->frame.texture[0].srv_heap    = &d3d12->desc.srv_heap;
+         d3d12_release_texture(&d3d12->frame.texture[0]);
          d3d12_init_texture(d3d12->device, &d3d12->frame.texture[0]);
       }
 
@@ -2706,6 +2715,7 @@ static void d3d12_set_menu_texture_frame(
       d3d12->menu.texture.desc.Height = height;
       d3d12->menu.texture.desc.Format = format;
       d3d12->menu.texture.srv_heap    = &d3d12->desc.srv_heap;
+      d3d12_release_texture(&d3d12->menu.texture);
       d3d12_init_texture(d3d12->device, &d3d12->menu.texture);
    }
 
@@ -2817,6 +2827,7 @@ static uintptr_t d3d12_gfx_load_texture(
    texture->desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
    texture->srv_heap    = &d3d12->desc.srv_heap;
 
+   d3d12_release_texture(texture);
    d3d12_init_texture(d3d12->device, texture);
 
    d3d12_update_texture(
