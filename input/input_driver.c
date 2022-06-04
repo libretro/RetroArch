@@ -681,9 +681,8 @@ int16_t input_state_wrap(
 {
    int16_t ret                   = 0;
 
-   if(!binds || !binds[_port]) {
+   if (!binds)
       return 0;
-   }
 
    /* Do a bitwise OR to combine input states together */
 
@@ -3536,7 +3535,7 @@ void input_keys_pressed(
    unsigned i;
    input_driver_state_t *input_st = &input_driver_st;
 
-   if(!binds || !binds[port])
+   if (!binds)
       return;
 
    if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))

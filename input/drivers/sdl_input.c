@@ -129,7 +129,8 @@ static int16_t sdl_input_state(
       unsigned idx,
       unsigned id)
 {
-   sdl_input_t            *sdl = (sdl_input_t*)data;
+   int16_t      ret = 0;
+   sdl_input_t *sdl = (sdl_input_t*)data;
 
    switch (device)
    {
@@ -137,7 +138,6 @@ static int16_t sdl_input_state(
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = 0;
 
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
@@ -157,13 +157,11 @@ static int16_t sdl_input_state(
          }
          break;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
          {
             int id_minus_key      = 0;
             int id_plus_key       = 0;
             unsigned id_minus     = 0;
             unsigned id_plus      = 0;
-            int16_t ret           = 0;
             bool id_plus_valid    = false;
             bool id_minus_valid   = false;
 
@@ -184,10 +182,8 @@ static int16_t sdl_input_state(
                if (sdl_key_pressed(id_minus_key))
                   ret += -0x7fff;
             }
-
-            return ret;
          }
-         break;
+	 return ret;
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
          if (config_get_ptr()->uints.input_mouse_index[ port ] == 0)

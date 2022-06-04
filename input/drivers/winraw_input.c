@@ -697,6 +697,7 @@ static int16_t winraw_input_state(
       unsigned idx,
       unsigned id)
 {
+   int16_t ret           = 0;
    settings_t *settings  = NULL;
    winraw_mouse_t *mouse = NULL;
    winraw_input_t *wr    = (winraw_input_t*)data;
@@ -733,7 +734,6 @@ static int16_t winraw_input_state(
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = 0;
 
             if (mouse)
             {
@@ -782,13 +782,11 @@ static int16_t winraw_input_state(
          }
          break;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
          {
             int id_minus_key      = 0;
             int id_plus_key       = 0;
             unsigned id_minus     = 0;
             unsigned id_plus      = 0;
-            int16_t ret           = 0;
             bool id_plus_valid    = false;
             bool id_minus_valid   = false;
 
@@ -809,9 +807,8 @@ static int16_t winraw_input_state(
                if (WINRAW_KEYBOARD_PRESSED(wr, id_minus_key))
                   ret += -0x7fff;
             }
-            return ret;
          }
-         break;
+         return ret;
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && WINRAW_KEYBOARD_PRESSED(wr, id);
       case RETRO_DEVICE_MOUSE:
