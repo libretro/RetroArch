@@ -736,25 +736,7 @@ D3D12GetGPUDescriptorHandleForHeapStart(D3D12DescriptorHeap descriptor_heap)
 
 RETRO_BEGIN_DECLS
 
-extern D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_enable_desc;
-extern D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_disable_desc;
-
-bool d3d12_init_base(d3d12_video_t* d3d12);
-
-bool d3d12_init_descriptors(d3d12_video_t* d3d12);
-void d3d12_init_samplers(d3d12_video_t* d3d12);
-
-bool d3d12_init_pipeline(
-      D3D12Device                         device,
-      D3DBlob                             vs_code,
-      D3DBlob                             ps_code,
-      D3DBlob                             gs_code,
-      D3D12_GRAPHICS_PIPELINE_STATE_DESC* desc,
-      D3D12PipelineState*                 out);
-
-bool d3d12_init_swapchain(d3d12_video_t* d3d12, int width, int height, void *corewindow);
-
-bool d3d12_init_queue(d3d12_video_t* d3d12);
+D3D12_CPU_DESCRIPTOR_HANDLE d3d12_descriptor_heap_slot_alloc(d3d12_descriptor_heap_t* heap);
 
 D3D12_GPU_VIRTUAL_ADDRESS
 d3d12_create_buffer(D3D12Device device, UINT size_in_bytes, D3D12Resource* buffer);
@@ -772,11 +754,6 @@ void d3d12_update_texture(
 
 void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
       d3d12_texture_t* texture, void *userdata);
-
-void d3d12_create_fullscreen_quad_vbo(
-      D3D12Device device, D3D12_VERTEX_BUFFER_VIEW* view, D3D12Resource* vbo);
-
-DXGI_FORMAT d3d12_get_closest_match(D3D12Device device, D3D12_FEATURE_DATA_FORMAT_SUPPORT* desired);
 
 #if !defined(__cplusplus) || defined(CINTERFACE)
 static INLINE void d3d12_resource_transition(
