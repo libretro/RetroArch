@@ -44,7 +44,6 @@
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QtConcurrentRun>
-#include <QtNetwork>
 
 #include "ui_qt.h"
 #include "qt/gridview.h"
