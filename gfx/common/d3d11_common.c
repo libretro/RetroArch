@@ -49,41 +49,35 @@ HRESULT WINAPI D3D11CreateDevice(
          pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion,
          ppDevice, pFeatureLevel, ppImmediateContext);
 }
-
-HRESULT WINAPI D3D11CreateDeviceAndSwapChain(
-      IDXGIAdapter*   pAdapter,
-      D3D_DRIVER_TYPE DriverType,
-      HMODULE         Software,
-      UINT            Flags,
-      CONST D3D_FEATURE_LEVEL* pFeatureLevels,
-      UINT                     FeatureLevels,
-      UINT                     SDKVersion,
-      CONST DXGI_SWAP_CHAIN_DESC* pSwapChainDesc,
-      IDXGISwapChain**            ppSwapChain,
-      ID3D11Device**              ppDevice,
-      D3D_FEATURE_LEVEL*          pFeatureLevel,
-      ID3D11DeviceContext**       ppImmediateContext)
-{
-   static dylib_t                                d3d11_dll;
-   static PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN fp;
-
-   if (!d3d11_dll)
-      if (!(d3d11_dll = dylib_load("d3d11.dll")))
-         return TYPE_E_CANTLOADLIBRARY;
-   if (!fp)
-      if (!(fp = (PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN)dylib_proc(
-            d3d11_dll, "D3D11CreateDeviceAndSwapChain")))
-         return TYPE_E_DLLFUNCTIONNOTFOUND;
-   return fp(
-         pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion,
-         pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
-}
 #endif
+
+static DXGI_FORMAT
+d3d11_get_closest_match(D3D11Device device, DXGI_FORMAT desired_format, UINT desired_format_support)
+{
+   DXGI_FORMAT default_list[] = {desired_format, DXGI_FORMAT_UNKNOWN};
+   DXGI_FORMAT* format        = dxgi_get_format_fallback_list(desired_format);
+
+   if(!format)
+      format = default_list;
+
+   while (*format != DXGI_FORMAT_UNKNOWN)
+   {
+      UINT         format_support;
+      if (SUCCEEDED(device->lpVtbl->CheckFormatSupport(device, *format,
+                  &format_support)) &&
+            ((format_support & desired_format_support) == desired_format_support))
+         break;
+      format++;
+   }
+   assert(*format);
+   return *format;
+}
+
 
 void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
 {
-   bool is_render_target = texture->desc.BindFlags & D3D11_BIND_RENDER_TARGET;
-   UINT format_support   = D3D11_FORMAT_SUPPORT_TEXTURE2D | D3D11_FORMAT_SUPPORT_SHADER_SAMPLE;
+   bool is_render_target            = texture->desc.BindFlags & D3D11_BIND_RENDER_TARGET;
+   UINT format_support              = D3D11_FORMAT_SUPPORT_TEXTURE2D | D3D11_FORMAT_SUPPORT_SHADER_SAMPLE;
 
    d3d11_release_texture(texture);
 
@@ -100,7 +94,7 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
       unsigned width, height;
 
       texture->desc.BindFlags |= D3D11_BIND_RENDER_TARGET;
-      width                    = texture->desc.Width >> 5;
+      width                    = texture->desc.Width  >> 5;
       height                   = texture->desc.Height >> 5;
 
       while (width && height)
@@ -164,15 +158,10 @@ void d3d11_update_texture(
    ctx->lpVtbl->Map(
          ctx, (D3D11Resource)texture->staging, 0, D3D11_MAP_WRITE, 0, &mapped_texture);
 
-#if 0
-   conv_rgb565_argb8888(mapped_texture.pData, data, width, height,
-         mapped_texture.RowPitch, pitch);
-#else
    dxgi_copy(
          width, height, format, pitch, data,
          texture->desc.Format, mapped_texture.RowPitch,
          mapped_texture.pData);
-#endif
 
    frame_box.left   = 0;
    frame_box.top    = 0;
@@ -187,112 +176,4 @@ void d3d11_update_texture(
 
    if (texture->desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
       ctx->lpVtbl->GenerateMips(ctx, texture->view);
-}
-
-   DXGI_FORMAT
-d3d11_get_closest_match(D3D11Device device, DXGI_FORMAT desired_format, UINT desired_format_support)
-{
-   DXGI_FORMAT default_list[] = {desired_format, DXGI_FORMAT_UNKNOWN};
-   DXGI_FORMAT* format = dxgi_get_format_fallback_list(desired_format);
-
-   if(!format)
-      format = default_list;
-
-   while (*format != DXGI_FORMAT_UNKNOWN)
-   {
-      UINT         format_support;
-      if (SUCCEEDED(device->lpVtbl->CheckFormatSupport(device, *format,
-                  &format_support)) &&
-            ((format_support & desired_format_support) == desired_format_support))
-         break;
-      format++;
-   }
-   assert(*format);
-   return *format;
-}
-
-bool d3d11_init_shader(
-      D3D11Device                     device,
-      const char*                     src,
-      size_t                          size,
-      const void*                     src_name,
-      LPCSTR                          vs_entry,
-      LPCSTR                          ps_entry,
-      LPCSTR                          gs_entry,
-      const D3D11_INPUT_ELEMENT_DESC* input_element_descs,
-      UINT                            num_elements,
-      d3d11_shader_t*                 out,
-      enum d3d11_feature_level_hint   hint)
-{
-   D3DBlob vs_code    = NULL;
-   D3DBlob ps_code    = NULL;
-   D3DBlob gs_code    = NULL;
-   bool success       = true;
-   const char *vs_str = NULL;
-   const char *ps_str = NULL;
-   const char *gs_str = NULL;
-
-   switch (hint)
-   {
-      case D3D11_FEATURE_LEVEL_HINT_11_0:
-      case D3D11_FEATURE_LEVEL_HINT_11_1:
-      case D3D11_FEATURE_LEVEL_HINT_12_0:
-      case D3D11_FEATURE_LEVEL_HINT_12_1:
-      case D3D11_FEATURE_LEVEL_HINT_12_2:
-         vs_str       = "vs_5_0";
-         ps_str       = "ps_5_0";
-         gs_str       = "gs_5_0";
-         break;
-      case D3D11_FEATURE_LEVEL_HINT_DONTCARE:
-      default:
-         vs_str       = "vs_4_0";
-         ps_str       = "ps_4_0";
-         gs_str       = "gs_4_0";
-         break;
-   }
-
-   if (!src) /* LPCWSTR filename */
-   {
-      if (vs_entry && !d3d_compile_from_file((LPCWSTR)src_name, vs_entry, vs_str, &vs_code))
-         success = false;
-      if (ps_entry && !d3d_compile_from_file((LPCWSTR)src_name, ps_entry, ps_str, &ps_code))
-         success = false;
-      if (gs_entry && !d3d_compile_from_file((LPCWSTR)src_name, gs_entry, gs_str, &gs_code))
-         success = false;
-   }
-   else /* char array */
-   {
-      if (vs_entry && !d3d_compile(src, size, (LPCSTR)src_name, vs_entry, vs_str, &vs_code))
-         success = false;
-      if (ps_entry && !d3d_compile(src, size, (LPCSTR)src_name, ps_entry, ps_str, &ps_code))
-         success = false;
-      if (gs_entry && !d3d_compile(src, size, (LPCSTR)src_name, gs_entry, gs_str, &gs_code))
-         success = false;
-   }
-
-   if (ps_code)
-      device->lpVtbl->CreatePixelShader(
-            device, D3DGetBufferPointer(ps_code), D3DGetBufferSize(ps_code),
-            NULL, &out->ps);
-
-   if (gs_code)
-      device->lpVtbl->CreateGeometryShader(
-            device, D3DGetBufferPointer(gs_code), D3DGetBufferSize(gs_code),
-            NULL, &out->gs);
-
-   if (vs_code)
-   {
-      LPVOID buf_ptr  = D3DGetBufferPointer(vs_code);
-      SIZE_T buf_size = D3DGetBufferSize(vs_code);
-      device->lpVtbl->CreateVertexShader(device, buf_ptr, buf_size, NULL, &out->vs);
-      if (input_element_descs)
-         device->lpVtbl->CreateInputLayout(device, input_element_descs, num_elements,
-               buf_ptr, buf_size, &out->layout);
-   }
-
-   Release(vs_code);
-   Release(ps_code);
-   Release(gs_code);
-
-   return success;
 }

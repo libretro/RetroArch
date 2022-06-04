@@ -519,6 +519,92 @@ static void d3d11_free_shader_preset(d3d11_video_t* d3d11)
    d3d11->resize_render_targets = false;
 }
 
+static bool d3d11_init_shader(
+      D3D11Device                     device,
+      const char*                     src,
+      size_t                          size,
+      const void*                     src_name,
+      LPCSTR                          vs_entry,
+      LPCSTR                          ps_entry,
+      LPCSTR                          gs_entry,
+      const D3D11_INPUT_ELEMENT_DESC* input_element_descs,
+      UINT                            num_elements,
+      d3d11_shader_t*                 out,
+      enum d3d11_feature_level_hint   hint)
+{
+   D3DBlob vs_code    = NULL;
+   D3DBlob ps_code    = NULL;
+   D3DBlob gs_code    = NULL;
+   bool success       = true;
+   const char *vs_str = NULL;
+   const char *ps_str = NULL;
+   const char *gs_str = NULL;
+
+   switch (hint)
+   {
+      case D3D11_FEATURE_LEVEL_HINT_11_0:
+      case D3D11_FEATURE_LEVEL_HINT_11_1:
+      case D3D11_FEATURE_LEVEL_HINT_12_0:
+      case D3D11_FEATURE_LEVEL_HINT_12_1:
+      case D3D11_FEATURE_LEVEL_HINT_12_2:
+         vs_str       = "vs_5_0";
+         ps_str       = "ps_5_0";
+         gs_str       = "gs_5_0";
+         break;
+      case D3D11_FEATURE_LEVEL_HINT_DONTCARE:
+      default:
+         vs_str       = "vs_4_0";
+         ps_str       = "ps_4_0";
+         gs_str       = "gs_4_0";
+         break;
+   }
+
+   if (!src) /* LPCWSTR filename */
+   {
+      if (vs_entry && !d3d_compile_from_file((LPCWSTR)src_name, vs_entry, vs_str, &vs_code))
+         success = false;
+      if (ps_entry && !d3d_compile_from_file((LPCWSTR)src_name, ps_entry, ps_str, &ps_code))
+         success = false;
+      if (gs_entry && !d3d_compile_from_file((LPCWSTR)src_name, gs_entry, gs_str, &gs_code))
+         success = false;
+   }
+   else /* char array */
+   {
+      if (vs_entry && !d3d_compile(src, size, (LPCSTR)src_name, vs_entry, vs_str, &vs_code))
+         success = false;
+      if (ps_entry && !d3d_compile(src, size, (LPCSTR)src_name, ps_entry, ps_str, &ps_code))
+         success = false;
+      if (gs_entry && !d3d_compile(src, size, (LPCSTR)src_name, gs_entry, gs_str, &gs_code))
+         success = false;
+   }
+
+   if (ps_code)
+      device->lpVtbl->CreatePixelShader(
+            device, D3DGetBufferPointer(ps_code), D3DGetBufferSize(ps_code),
+            NULL, &out->ps);
+
+   if (gs_code)
+      device->lpVtbl->CreateGeometryShader(
+            device, D3DGetBufferPointer(gs_code), D3DGetBufferSize(gs_code),
+            NULL, &out->gs);
+
+   if (vs_code)
+   {
+      LPVOID buf_ptr  = D3DGetBufferPointer(vs_code);
+      SIZE_T buf_size = D3DGetBufferSize(vs_code);
+      device->lpVtbl->CreateVertexShader(device, buf_ptr, buf_size, NULL, &out->vs);
+      if (input_element_descs)
+         device->lpVtbl->CreateInputLayout(device, input_element_descs, num_elements,
+               buf_ptr, buf_size, &out->layout);
+   }
+
+   Release(vs_code);
+   Release(ps_code);
+   Release(gs_code);
+
+   return success;
+}
+
 static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const char* path)
 {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
@@ -1066,12 +1152,6 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
   /* Check display HDR support and 
      initialize ST.2084 support to match 
      the display's support. */
-#if 0
-   d3d11->hdr.max_output_nits  = 300.0f;
-   d3d11->hdr.min_output_nits  = 0.001f;
-   d3d11->hdr.max_cll          = 0.0f;
-   d3d11->hdr.max_fall         = 0.0f;
-#endif
    color_space                 = 
         d3d11->hdr.enable 
       ? DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020 
@@ -1538,12 +1618,12 @@ static void *d3d11_gfx_init(const video_info_t* video,
       blend_desc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
       d3d11->device->lpVtbl->CreateBlendState(d3d11->device, &blend_desc, &d3d11->blend_enable);
 
-      blend_desc.RenderTarget[0].SrcBlend  = D3D11_BLEND_ONE;
-      blend_desc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
+      blend_desc.RenderTarget[0].SrcBlend              = D3D11_BLEND_ONE;
+      blend_desc.RenderTarget[0].DestBlend             = D3D11_BLEND_ONE;
       d3d11->device->lpVtbl->CreateBlendState(d3d11->device, &blend_desc,
             &d3d11->blend_pipeline);
 
-      blend_desc.RenderTarget[0].BlendEnable = FALSE;
+      blend_desc.RenderTarget[0].BlendEnable           = FALSE;
       d3d11->device->lpVtbl->CreateBlendState(d3d11->device, &blend_desc,
             &d3d11->blend_disable);
    }
@@ -1563,7 +1643,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
       desc.ScissorEnable         = TRUE;
       d3d11->device->lpVtbl->CreateRasterizerState(d3d11->device, &desc,
             &d3d11->scissor_enabled);
-      desc.ScissorEnable = FALSE;
+      desc.ScissorEnable         = FALSE;
       d3d11->device->lpVtbl->CreateRasterizerState(d3d11->device, &desc,
             &d3d11->scissor_disabled);
    }
@@ -1583,8 +1663,8 @@ static void *d3d11_gfx_init(const video_info_t* video,
       d3d11_gfx_set_shader(d3d11, type, shader_preset);
    }
 
-   if (video_driver_get_hw_context()->context_type == RETRO_HW_CONTEXT_DIRECT3D &&
-         video_driver_get_hw_context()->version_major == 11)
+   if (     video_driver_get_hw_context()->context_type  == RETRO_HW_CONTEXT_DIRECT3D
+         && video_driver_get_hw_context()->version_major == 11)
    {
       d3d11->hw.enable                  = true;
       d3d11->hw.iface.interface_type    = RETRO_HW_RENDER_INTERFACE_D3D11;
@@ -1607,10 +1687,11 @@ static void *d3d11_gfx_init(const video_info_t* video,
 
       for (;;)
       {
-         DXGI_ADAPTER_DESC desc = {0};
          char str[128];
-         union string_list_elem_attr attr = {0};
+         union string_list_elem_attr attr;
+         DXGI_ADAPTER_DESC desc = {0};
 
+         attr.i = 0;
          str[0] = '\0';
 
 #ifdef __WINRT__
@@ -1687,7 +1768,7 @@ static void d3d11_init_history(d3d11_video_t* d3d11, unsigned width, unsigned he
       d3d11->frame.texture[i].desc.Format = d3d11->frame.texture[0].desc.Format;
       d3d11->frame.texture[i].desc.Usage  = d3d11->frame.texture[0].desc.Usage;
       d3d11_init_texture(d3d11->device, &d3d11->frame.texture[i]);
-      /* todo: clear texture ?  */
+      /* TODO/FIXME: clear texture ?  */
    }
    d3d11->init_history = false;
 }
@@ -1704,7 +1785,6 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
 
       if (pass->fbo.valid)
       {
-
          switch (pass->fbo.type_x)
          {
             case RARCH_SCALE_INPUT:
@@ -1771,7 +1851,7 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
          {
             d3d11->pass[i].feedback.desc = d3d11->pass[i].rt.desc;
             d3d11_init_texture(d3d11->device, &d3d11->pass[i].feedback);
-            /* todo: do we need to clear it to black here ? */
+            /* TODO/FIXME: do we need to clear it to black here ? */
          }
       }
       else
@@ -1784,12 +1864,6 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
    }
 
    d3d11->resize_render_targets = false;
-
-#if 0
-error:
-   d3d11_free_shader_preset(d3d11);
-   return false;
-#endif
 }
 
 static bool d3d11_gfx_frame(

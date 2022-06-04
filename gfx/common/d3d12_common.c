@@ -155,16 +155,25 @@ d3d12_descriptor_heap_slot_free(d3d12_descriptor_heap_t* heap, D3D12_CPU_DESCRIP
 D3D12_GPU_VIRTUAL_ADDRESS
 d3d12_create_buffer(D3D12Device device, UINT size_in_bytes, D3D12Resource* buffer)
 {
-   D3D12_HEAP_PROPERTIES heap_props    = { D3D12_HEAP_TYPE_UPLOAD, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-                                           D3D12_MEMORY_POOL_UNKNOWN, 1, 1 };
-   D3D12_RESOURCE_DESC   resource_desc = { D3D12_RESOURCE_DIMENSION_BUFFER };
+   D3D12_RESOURCE_DESC resource_desc;
+   D3D12_HEAP_PROPERTIES heap_props;
 
+   heap_props.Type                     = D3D12_HEAP_TYPE_UPLOAD;
+   heap_props.CPUPageProperty          = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+   heap_props.MemoryPoolPreference     = D3D12_MEMORY_POOL_UNKNOWN;
+   heap_props.CreationNodeMask         = 1;
+   heap_props.VisibleNodeMask          = 1;
+
+   resource_desc.Dimension             = D3D12_RESOURCE_DIMENSION_BUFFER;
    resource_desc.Width                 = size_in_bytes;
    resource_desc.Height                = 1;
    resource_desc.DepthOrArraySize      = 1;
    resource_desc.MipLevels             = 1;
+   resource_desc.Format                = DXGI_FORMAT_UNKNOWN;
    resource_desc.SampleDesc.Count      = 1;
+   resource_desc.SampleDesc.Quality    = 0;
    resource_desc.Layout                = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+   resource_desc.Flags                 = D3D12_RESOURCE_FLAG_NONE;
 
    D3D12CreateCommittedResource(
          device, (D3D12_HEAP_PROPERTIES*)&heap_props, D3D12_HEAP_FLAG_NONE, &resource_desc,
@@ -221,7 +230,7 @@ static DXGI_FORMAT d3d12_get_closest_match(D3D12Device device, D3D12_FEATURE_DAT
    DXGI_FORMAT* format         = dxgi_get_format_fallback_list(desired->Format);
 
    if (!format)
-      format = default_list;
+      format                   = default_list;
 
    while (*format != DXGI_FORMAT_UNKNOWN)
    {
@@ -243,14 +252,14 @@ void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
    d3d12_release_texture(texture);
 
    if (!texture->desc.MipLevels)
-      texture->desc.MipLevels = 1;
+      texture->desc.MipLevels          = 1;
 
-   if (!(texture->desc.Width >> (texture->desc.MipLevels - 1)) &&
+   if (!(texture->desc.Width  >> (texture->desc.MipLevels - 1)) &&
        !(texture->desc.Height >> (texture->desc.MipLevels - 1)))
    {
-      unsigned width          = texture->desc.Width >> 5;
-      unsigned height         = texture->desc.Height >> 5;
-      texture->desc.MipLevels = 1;
+      unsigned width                   = texture->desc.Width >> 5;
+      unsigned height                  = texture->desc.Height >> 5;
+      texture->desc.MipLevels          = 1;
       while (width && height)
       {
          width  >>= 1;
@@ -260,26 +269,34 @@ void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
    }
 
    {
-      D3D12_FEATURE_DATA_FORMAT_SUPPORT format_support = {
-         texture->desc.Format, D3D12_FORMAT_SUPPORT1_TEXTURE2D | D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE
-      };
-      D3D12_HEAP_PROPERTIES heap_props = { D3D12_HEAP_TYPE_DEFAULT, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-                                           D3D12_MEMORY_POOL_UNKNOWN, 1, 1 };
+      D3D12_HEAP_PROPERTIES heap_props;
+      D3D12_FEATURE_DATA_FORMAT_SUPPORT format_support;
+
+      heap_props.Type                  = D3D12_HEAP_TYPE_DEFAULT;
+      heap_props.CPUPageProperty       = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+      heap_props.MemoryPoolPreference  = D3D12_MEMORY_POOL_UNKNOWN;
+      heap_props.CreationNodeMask      = 1;
+      heap_props.VisibleNodeMask       = 1;
+
+      format_support.Format            = texture->desc.Format;
+      format_support.Support1          = D3D12_FORMAT_SUPPORT1_TEXTURE2D | D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE;
 
       if (texture->desc.MipLevels > 1)
       {
-         texture->desc.Flags        |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-         format_support.Support1    |= D3D12_FORMAT_SUPPORT1_MIP;
-         format_support.Support2    |= D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE;
+         texture->desc.Flags          |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+         format_support.Support1      |= D3D12_FORMAT_SUPPORT1_MIP;
+         format_support.Support2       = D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE;
       }
+      else
+         format_support.Support2       = D3D12_FORMAT_SUPPORT2_NONE;
 
       if (texture->desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
-         format_support.Support1    |= D3D12_FORMAT_SUPPORT1_RENDER_TARGET;
+         format_support.Support1      |= D3D12_FORMAT_SUPPORT1_RENDER_TARGET;
 
-      texture->desc.Dimension        = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-      texture->desc.DepthOrArraySize = 1;
-      texture->desc.SampleDesc.Count = 1;
-      texture->desc.Format           = d3d12_get_closest_match(device, &format_support);
+      texture->desc.Dimension          = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+      texture->desc.DepthOrArraySize   = 1;
+      texture->desc.SampleDesc.Count   = 1;
+      texture->desc.Format             = d3d12_get_closest_match(device, &format_support);
 
       D3D12CreateCommittedResource(
             device, &heap_props, D3D12_HEAP_FLAG_NONE, &texture->desc,
@@ -289,29 +306,31 @@ void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
    assert(texture->srv_heap);
 
    {
-      D3D12_SHADER_RESOURCE_VIEW_DESC desc = { texture->desc.Format };
+      D3D12_SHADER_RESOURCE_VIEW_DESC desc;
 
-      desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-      desc.ViewDimension           = D3D12_SRV_DIMENSION_TEXTURE2D;
-      desc.Texture2D.MipLevels     = texture->desc.MipLevels;
+      desc.Format                      = texture->desc.Format;
+      desc.ViewDimension               = D3D12_SRV_DIMENSION_TEXTURE2D;
+      desc.Shader4ComponentMapping     = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+      desc.Texture2D.MipLevels         = texture->desc.MipLevels;
 
-      texture->cpu_descriptor[0] = d3d12_descriptor_heap_slot_alloc(texture->srv_heap);
+      texture->cpu_descriptor[0]       = d3d12_descriptor_heap_slot_alloc(texture->srv_heap);
       D3D12CreateShaderResourceView(device, texture->handle, &desc, texture->cpu_descriptor[0]);
-      texture->gpu_descriptor[0].ptr = texture->cpu_descriptor[0].ptr - texture->srv_heap->cpu.ptr +
+      texture->gpu_descriptor[0].ptr   = texture->cpu_descriptor[0].ptr - texture->srv_heap->cpu.ptr +
                                        texture->srv_heap->gpu.ptr;
    }
 
    for (i = 1; i < texture->desc.MipLevels; i++)
    {
-      D3D12_UNORDERED_ACCESS_VIEW_DESC desc = { texture->desc.Format };
+      D3D12_UNORDERED_ACCESS_VIEW_DESC desc;
 
-      desc.ViewDimension         = D3D12_UAV_DIMENSION_TEXTURE2D;
-      desc.Texture2D.MipSlice    = i;
+      desc.Format                      = texture->desc.Format;
+      desc.ViewDimension               = D3D12_UAV_DIMENSION_TEXTURE2D;
+      desc.Texture2D.MipSlice          = i;
 
-      texture->cpu_descriptor[i] = d3d12_descriptor_heap_slot_alloc(texture->srv_heap);
+      texture->cpu_descriptor[i]       = d3d12_descriptor_heap_slot_alloc(texture->srv_heap);
       D3D12CreateUnorderedAccessView(
             device, texture->handle, NULL, &desc, texture->cpu_descriptor[i]);
-      texture->gpu_descriptor[i].ptr = texture->cpu_descriptor[i].ptr - texture->srv_heap->cpu.ptr +
+      texture->gpu_descriptor[i].ptr   = texture->cpu_descriptor[i].ptr - texture->srv_heap->cpu.ptr +
                                        texture->srv_heap->gpu.ptr;
    }
 
@@ -322,33 +341,38 @@ void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
    }
    else
    {
-      D3D12_HEAP_PROPERTIES heap_props  = { D3D12_HEAP_TYPE_UPLOAD, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-                                           D3D12_MEMORY_POOL_UNKNOWN, 1, 1 };
-      D3D12_RESOURCE_DESC   buffer_desc = { D3D12_RESOURCE_DIMENSION_BUFFER };
+      D3D12_HEAP_PROPERTIES heap_props;
+      D3D12_RESOURCE_DESC   buffer_desc;
 
       D3D12GetCopyableFootprints(
             device, &texture->desc, 0, 1, 0, &texture->layout, &texture->num_rows,
             &texture->row_size_in_bytes, &texture->total_bytes);
 
-      buffer_desc.Width            = texture->total_bytes;
-      buffer_desc.Height           = 1;
-      buffer_desc.DepthOrArraySize = 1;
-      buffer_desc.MipLevels        = 1;
-      buffer_desc.SampleDesc.Count = 1;
-      buffer_desc.Layout           = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-#if 0
-      buffer_desc.Flags            = D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
-#endif
+      heap_props.Type                  = D3D12_HEAP_TYPE_UPLOAD;
+      heap_props.CPUPageProperty       = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+      heap_props.MemoryPoolPreference  = D3D12_MEMORY_POOL_UNKNOWN;
+      heap_props.CreationNodeMask      = 1;
+      heap_props.VisibleNodeMask       = 1;
+
+      buffer_desc.Dimension            = D3D12_RESOURCE_DIMENSION_BUFFER;
+      buffer_desc.Width                = texture->total_bytes;
+      buffer_desc.Height               = 1;
+      buffer_desc.DepthOrArraySize     = 1;
+      buffer_desc.MipLevels            = 1;
+      buffer_desc.SampleDesc.Count     = 1;
+      buffer_desc.SampleDesc.Quality   = 0;
+      buffer_desc.Layout               = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+      buffer_desc.Flags                = D3D12_RESOURCE_FLAG_NONE;
 
       D3D12CreateCommittedResource(
             device, &heap_props, D3D12_HEAP_FLAG_NONE, &buffer_desc,
             D3D12_RESOURCE_STATE_GENERIC_READ, NULL, &texture->upload_buffer);
    }
 
-   texture->size_data.x = texture->desc.Width;
-   texture->size_data.y = texture->desc.Height;
-   texture->size_data.z = 1.0f / texture->desc.Width;
-   texture->size_data.w = 1.0f / texture->desc.Height;
+   texture->size_data.x                = texture->desc.Width;
+   texture->size_data.y                = texture->desc.Height;
+   texture->size_data.z                = 1.0f / texture->desc.Width;
+   texture->size_data.w                = 1.0f / texture->desc.Height;
 }
 
 void d3d12_update_texture(
@@ -413,7 +437,7 @@ void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
 
       for (i = 1; i < texture->desc.MipLevels; i++)
       {
-         unsigned width  = texture->desc.Width >> i;
+         unsigned width  = texture->desc.Width  >> i;
          unsigned height = texture->desc.Height >> i;
          struct
          {
@@ -422,11 +446,13 @@ void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
          } cbuffer = { i - 1, { 1.0f / width, 1.0f / height } };
 
          {
-            D3D12_RESOURCE_BARRIER barrier = { D3D12_RESOURCE_BARRIER_TYPE_TRANSITION };
+            D3D12_RESOURCE_BARRIER barrier;
+            barrier.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+            barrier.Flags                  = D3D12_RESOURCE_BARRIER_FLAG_NONE;
             barrier.Transition.pResource   = texture->handle;
+            barrier.Transition.Subresource = i;
             barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
             barrier.Transition.StateAfter  = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-            barrier.Transition.Subresource = i;
             D3D12ResourceBarrier(cmd, 1, &barrier);
          }
 
@@ -436,17 +462,21 @@ void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
          D3D12Dispatch(cmd, (width + 0x7) >> 3, (height + 0x7) >> 3, 1);
 
          {
-            D3D12_RESOURCE_BARRIER barrier = { D3D12_RESOURCE_BARRIER_TYPE_UAV };
+            D3D12_RESOURCE_BARRIER barrier;
+            barrier.Type                   = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+            barrier.Flags                  = D3D12_RESOURCE_BARRIER_FLAG_NONE;
             barrier.UAV.pResource          = texture->handle;
             D3D12ResourceBarrier(cmd, 1, &barrier);
          }
 
          {
-            D3D12_RESOURCE_BARRIER barrier = { D3D12_RESOURCE_BARRIER_TYPE_TRANSITION };
+            D3D12_RESOURCE_BARRIER barrier;
+            barrier.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+            barrier.Flags                  = D3D12_RESOURCE_BARRIER_FLAG_NONE;
             barrier.Transition.pResource   = texture->handle;
+            barrier.Transition.Subresource = i;
             barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
             barrier.Transition.StateAfter  = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-            barrier.Transition.Subresource = i;
             D3D12ResourceBarrier(cmd, 1, &barrier);
          }
       }

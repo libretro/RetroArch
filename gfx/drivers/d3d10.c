@@ -168,9 +168,6 @@ static bool d3d10_overlay_load(void* data, const void* image_data, unsigned num_
    desc.BindFlags           = D3D10_BIND_VERTEX_BUFFER;
    desc.CPUAccessFlags      = D3D10_CPU_ACCESS_WRITE;
    desc.MiscFlags           = 0;
-#if 0
-   desc.StructureByteStride = 0;
-#endif
    d3d10->device->lpVtbl->CreateBuffer(d3d10->device, &desc,
          NULL, &d3d10->overlays.vbo);
    d3d10->overlays.vbo->lpVtbl->Map(d3d10->overlays.vbo,
@@ -374,6 +371,71 @@ static void d3d10_free_shader_preset(d3d10_video_t* d3d10)
    d3d10->shader_preset         = NULL;
    d3d10->init_history          = false;
    d3d10->resize_render_targets = false;
+}
+
+static bool d3d10_init_shader(
+      D3D10Device                     device,
+      const char*                     src,
+      size_t                          size,
+      const void*                     src_name,
+      LPCSTR                          vs_entry,
+      LPCSTR                          ps_entry,
+      LPCSTR                          gs_entry,
+      const D3D10_INPUT_ELEMENT_DESC* input_element_descs,
+      UINT                            num_elements,
+      d3d10_shader_t*                 out)
+{
+   D3DBlob vs_code = NULL;
+   D3DBlob ps_code = NULL;
+   D3DBlob gs_code = NULL;
+
+   bool success = true;
+
+   if (!src) /* LPCWSTR filename */
+   {
+      if (vs_entry && !d3d_compile_from_file((LPCWSTR)src_name, vs_entry, "vs_4_0", &vs_code))
+         success = false;
+      if (ps_entry && !d3d_compile_from_file((LPCWSTR)src_name, ps_entry, "ps_4_0", &ps_code))
+         success = false;
+      if (gs_entry && !d3d_compile_from_file((LPCWSTR)src_name, gs_entry, "gs_4_0", &gs_code))
+         success = false;
+   }
+   else /* char array */
+   {
+      if (vs_entry && !d3d_compile(src, size, (LPCSTR)src_name, vs_entry, "vs_4_0", &vs_code))
+         success = false;
+      if (ps_entry && !d3d_compile(src, size, (LPCSTR)src_name, ps_entry, "ps_4_0", &ps_code))
+         success = false;
+      if (gs_entry && !d3d_compile(src, size, (LPCSTR)src_name, gs_entry, "gs_4_0", &gs_code))
+         success = false;
+   }
+
+
+   if (ps_code)
+      device->lpVtbl->CreatePixelShader(device, D3DGetBufferPointer(ps_code),
+            D3DGetBufferSize(ps_code), &out->ps);
+
+   if (gs_code)
+      device->lpVtbl->CreateGeometryShader(
+            device, D3DGetBufferPointer(gs_code), D3DGetBufferSize(gs_code),
+            &out->gs);
+
+   if (vs_code)
+   {
+      LPVOID buf_ptr  = D3DGetBufferPointer(vs_code);
+      SIZE_T buf_size = D3DGetBufferSize(vs_code);
+      device->lpVtbl->CreateVertexShader(device, buf_ptr, buf_size, &out->vs);
+      if (input_element_descs)
+         device->lpVtbl->CreateInputLayout(
+               device, (D3D10_INPUT_ELEMENT_DESC*)input_element_descs,
+               num_elements, buf_ptr, buf_size, &out->layout);
+   }
+
+   Release(vs_code);
+   Release(ps_code);
+   Release(gs_code);
+
+   return success;
 }
 
 static bool d3d10_gfx_set_shader(void* data, enum rarch_shader_type type, const char* path)
@@ -1234,12 +1296,6 @@ static void d3d10_init_render_targets(d3d10_video_t* d3d10,
    }
 
    d3d10->resize_render_targets = false;
-
-#if 0
-error:
-   d3d10_free_shader_preset(d3d10);
-   return false;
-#endif
 }
 
 static bool d3d10_gfx_frame(

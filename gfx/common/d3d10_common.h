@@ -250,36 +250,12 @@ void d3d10_update_texture(
       const void*      data,
       d3d10_texture_t* texture);
 
-DXGI_FORMAT d3d10_get_closest_match(
-      D3D10Device device, DXGI_FORMAT desired_format, UINT desired_format_support);
-
-bool d3d10_init_shader(
-      D3D10Device                     device,
-      const char*                     src,
-      size_t                          size,
-      const void*                     src_name,
-      LPCSTR                          vs_entry,
-      LPCSTR                          ps_entry,
-      LPCSTR                          gs_entry,
-      const D3D10_INPUT_ELEMENT_DESC* input_element_descs,
-      UINT                            num_elements,
-      d3d10_shader_t*                 out);
-
 static INLINE void d3d10_release_shader(d3d10_shader_t* shader)
 {
    Release(shader->layout);
    Release(shader->vs);
    Release(shader->ps);
    Release(shader->gs);
-}
-
-static INLINE DXGI_FORMAT
-d3d10_get_closest_match_texture2D(D3D10Device device, DXGI_FORMAT desired_format)
-{
-   return d3d10_get_closest_match(
-         device, desired_format,
-           D3D10_FORMAT_SUPPORT_TEXTURE2D 
-         | D3D10_FORMAT_SUPPORT_SHADER_SAMPLE);
 }
 
 static INLINE void d3d10_set_shader(D3D10Device ctx, d3d10_shader_t* shader)

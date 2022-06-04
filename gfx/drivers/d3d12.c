@@ -1995,12 +1995,6 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
    }
 
    d3d12->resize_render_targets = false;
-
-#if 0
-error:
-   d3d12_free_shader_preset(d3d12);
-   return false;
-#endif
 }
 
 static bool d3d12_gfx_frame(
