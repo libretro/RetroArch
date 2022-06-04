@@ -90,6 +90,10 @@ CFLAGS	+=	-mword-relocations \
 #CFLAGS	+= -Wall
 CFLAGS	+=	-DARM11 -D_3DS
 
+ifeq ($(strip $(USE_CTRULIB_2)),1)
+   CFLAGS	+= -D__3DS__
+endif
+
 ifeq ($(DEBUG), 1)
    CFLAGS	+= -O0 -g
 else
