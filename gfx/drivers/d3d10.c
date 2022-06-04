@@ -413,18 +413,22 @@ static bool d3d10_init_shader(
 
 
    if (ps_code)
-      device->lpVtbl->CreatePixelShader(device, D3DGetBufferPointer(ps_code),
-            D3DGetBufferSize(ps_code), &out->ps);
+      device->lpVtbl->CreatePixelShader(device,
+            ps_code->lpVtbl->GetBufferPointer(ps_code),
+            ps_code->lpVtbl->GetBufferSize(ps_code),
+            &out->ps);
 
    if (gs_code)
       device->lpVtbl->CreateGeometryShader(
-            device, D3DGetBufferPointer(gs_code), D3DGetBufferSize(gs_code),
+            device,
+            gs_code->lpVtbl->GetBufferPointer(gs_code),
+            gs_code->lpVtbl->GetBufferSize(gs_code),
             &out->gs);
 
    if (vs_code)
    {
-      LPVOID buf_ptr  = D3DGetBufferPointer(vs_code);
-      SIZE_T buf_size = D3DGetBufferSize(vs_code);
+      LPVOID buf_ptr  = vs_code->lpVtbl->GetBufferPointer(vs_code);
+      SIZE_T buf_size = vs_code->lpVtbl->GetBufferSize(vs_code);
       device->lpVtbl->CreateVertexShader(device, buf_ptr, buf_size, &out->vs);
       if (input_element_descs)
          device->lpVtbl->CreateInputLayout(
