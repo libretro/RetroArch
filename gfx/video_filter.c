@@ -509,8 +509,6 @@ void rarch_softfilter_free(rarch_softfilter_t *filt)
    {
       for (i = 0; i < filt->threads; i++)
       {
-         if (!&filt->thread_data[i])
-            continue;
          if (!filt->thread_data[i].thread)
             continue;
          slock_lock(filt->thread_data[i].lock);
