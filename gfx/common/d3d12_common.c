@@ -76,14 +76,13 @@ DEFINE_GUIDW(IID_ID3D12DebugCommandList, 0x09e0bf36, 0x54ac, 0x484f, 0x88, 0x47,
 
 #if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
 static dylib_t     d3d12_dll;
-static const char* d3d12_dll_name = "d3d12.dll";
 
 HRESULT WINAPI D3D12CreateDevice(
       IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
 {
    static PFN_D3D12_CREATE_DEVICE fp;
    if (!d3d12_dll)
-      if (!(d3d12_dll = dylib_load(d3d12_dll_name)))
+      if (!(d3d12_dll = dylib_load("d3d12.dll")))
          return TYPE_E_CANTLOADLIBRARY;
    if (!fp)
       if (!(fp = (PFN_D3D12_CREATE_DEVICE)dylib_proc(d3d12_dll,
@@ -96,7 +95,7 @@ HRESULT WINAPI D3D12GetDebugInterface(REFIID riid, void** ppvDebug)
 {
    static PFN_D3D12_GET_DEBUG_INTERFACE fp;
    if (!d3d12_dll)
-      if (!(d3d12_dll = dylib_load(d3d12_dll_name)))
+      if (!(d3d12_dll = dylib_load("d3d12.dll")))
          return TYPE_E_CANTLOADLIBRARY;
    if (!fp)
       if (!(fp = (PFN_D3D12_GET_DEBUG_INTERFACE)dylib_proc(d3d12_dll,
@@ -113,7 +112,7 @@ HRESULT WINAPI D3D12SerializeRootSignature(
 {
    static PFN_D3D12_SERIALIZE_ROOT_SIGNATURE fp;
    if (!d3d12_dll)
-      if (!(d3d12_dll = dylib_load(d3d12_dll_name)))
+      if (!(d3d12_dll = dylib_load("d3d12.dll")))
          return TYPE_E_CANTLOADLIBRARY;
    if (!fp)
       if (!(fp = (PFN_D3D12_SERIALIZE_ROOT_SIGNATURE)dylib_proc(d3d12_dll,
@@ -129,7 +128,7 @@ HRESULT WINAPI D3D12SerializeVersionedRootSignature(
 {
    static PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE fp;
    if (!d3d12_dll)
-      if (!(d3d12_dll = dylib_load(d3d12_dll_name)))
+      if (!(d3d12_dll = dylib_load("d3d12.dll")))
          return TYPE_E_CANTLOADLIBRARY;
    if (!fp)
       if (!(fp = (PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE)dylib_proc(
@@ -142,14 +141,7 @@ HRESULT WINAPI D3D12SerializeVersionedRootSignature(
 static void
 d3d12_descriptor_heap_slot_free(d3d12_descriptor_heap_t* heap, D3D12_CPU_DESCRIPTOR_HANDLE handle)
 {
-   unsigned i;
-
-   if (!handle.ptr)
-      return;
-
-   assert(((handle.ptr - heap->cpu.ptr) % heap->stride) == 0);
-
-   i = (handle.ptr - heap->cpu.ptr) / heap->stride;
+   unsigned i = (handle.ptr - heap->cpu.ptr) / heap->stride;
    assert(i >= 0 && i < heap->desc.NumDescriptors);
    assert(heap->map[i]);
 
@@ -162,15 +154,15 @@ D3D12_GPU_VIRTUAL_ADDRESS
 d3d12_create_buffer(D3D12Device device, UINT size_in_bytes, D3D12Resource* buffer)
 {
    D3D12_HEAP_PROPERTIES heap_props    = { D3D12_HEAP_TYPE_UPLOAD, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-                                        D3D12_MEMORY_POOL_UNKNOWN, 1, 1 };
+                                           D3D12_MEMORY_POOL_UNKNOWN, 1, 1 };
    D3D12_RESOURCE_DESC   resource_desc = { D3D12_RESOURCE_DIMENSION_BUFFER };
 
-   resource_desc.Width            = size_in_bytes;
-   resource_desc.Height           = 1;
-   resource_desc.DepthOrArraySize = 1;
-   resource_desc.MipLevels        = 1;
-   resource_desc.SampleDesc.Count = 1;
-   resource_desc.Layout           = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+   resource_desc.Width                 = size_in_bytes;
+   resource_desc.Height                = 1;
+   resource_desc.DepthOrArraySize      = 1;
+   resource_desc.MipLevels             = 1;
+   resource_desc.SampleDesc.Count      = 1;
+   resource_desc.Layout                = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
    D3D12CreateCommittedResource(
          device, (D3D12_HEAP_PROPERTIES*)&heap_props, D3D12_HEAP_FLAG_NONE, &resource_desc,
@@ -189,7 +181,8 @@ void d3d12_release_texture(d3d12_texture_t* texture)
       int i;
       for (i = 0; i < texture->desc.MipLevels; i++)
       {
-         d3d12_descriptor_heap_slot_free(texture->srv_heap, texture->cpu_descriptor[i]);
+         if (texture->cpu_descriptor[i].ptr)
+            d3d12_descriptor_heap_slot_free(texture->srv_heap, texture->cpu_descriptor[i]);
          texture->cpu_descriptor[i].ptr = 0;
       }
    }
@@ -200,8 +193,10 @@ void d3d12_release_texture(d3d12_texture_t* texture)
 
 D3D12_CPU_DESCRIPTOR_HANDLE d3d12_descriptor_heap_slot_alloc(d3d12_descriptor_heap_t* heap)
 {
-   int                         i;
-   D3D12_CPU_DESCRIPTOR_HANDLE handle = { 0 };
+   int i;
+   D3D12_CPU_DESCRIPTOR_HANDLE handle;
+
+   handle.ptr = 0;
 
    for (i = heap->start; i < (int)heap->desc.NumDescriptors; i++)
    {
@@ -256,7 +251,7 @@ void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
       texture->desc.MipLevels = 1;
       while (width && height)
       {
-         width >>= 1;
+         width  >>= 1;
          height >>= 1;
          texture->desc.MipLevels++;
       }
@@ -271,13 +266,13 @@ void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
 
       if (texture->desc.MipLevels > 1)
       {
-         texture->desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-         format_support.Support1 |= D3D12_FORMAT_SUPPORT1_MIP;
-         format_support.Support2 |= D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE;
+         texture->desc.Flags        |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+         format_support.Support1    |= D3D12_FORMAT_SUPPORT1_MIP;
+         format_support.Support2    |= D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE;
       }
 
       if (texture->desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
-         format_support.Support1 |= D3D12_FORMAT_SUPPORT1_RENDER_TARGET;
+         format_support.Support1    |= D3D12_FORMAT_SUPPORT1_RENDER_TARGET;
 
       texture->desc.Dimension        = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
       texture->desc.DepthOrArraySize = 1;
@@ -308,8 +303,8 @@ void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
    {
       D3D12_UNORDERED_ACCESS_VIEW_DESC desc = { texture->desc.Format };
 
-      desc.ViewDimension      = D3D12_UAV_DIMENSION_TEXTURE2D;
-      desc.Texture2D.MipSlice = i;
+      desc.ViewDimension         = D3D12_UAV_DIMENSION_TEXTURE2D;
+      desc.Texture2D.MipSlice    = i;
 
       texture->cpu_descriptor[i] = d3d12_descriptor_heap_slot_alloc(texture->srv_heap);
       D3D12CreateUnorderedAccessView(
@@ -362,11 +357,14 @@ void d3d12_update_texture(
       const void*      data,
       d3d12_texture_t* texture)
 {
-   uint8_t*    dst;
-   D3D12_RANGE read_range = { 0, 0 };
+   uint8_t *dst;
+   D3D12_RANGE read_range;
 
    if (!texture || !texture->upload_buffer)
       return;
+
+   read_range.Begin = 0;
+   read_range.End   = 0;
 
    D3D12Map(texture->upload_buffer, 0, &read_range, (void**)&dst);
 
@@ -382,8 +380,7 @@ void d3d12_update_texture(
 void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
       d3d12_texture_t* texture, void *userdata)
 {
-   D3D12_TEXTURE_COPY_LOCATION src = { 0 };
-   D3D12_TEXTURE_COPY_LOCATION dst = { 0 };
+   D3D12_TEXTURE_COPY_LOCATION src, dst;
 
    src.pResource       = texture->upload_buffer;
    src.Type            = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;

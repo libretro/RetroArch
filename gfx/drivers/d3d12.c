@@ -121,7 +121,7 @@ static void d3d12_free_overlays(d3d12_video_t* d3d12)
 static void
 d3d12_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w, float h)
 {
-   D3D12_RANGE     range;
+   D3D12_RANGE range;
    d3d12_sprite_t* sprites = NULL;
    d3d12_video_t*  d3d12   = (d3d12_video_t*)data;
 
@@ -144,7 +144,7 @@ d3d12_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w,
 
 static void d3d12_overlay_tex_geom(void* data, unsigned index, float u, float v, float w, float h)
 {
-   D3D12_RANGE     range;
+   D3D12_RANGE range;
    d3d12_sprite_t* sprites = NULL;
    d3d12_video_t*  d3d12   = (d3d12_video_t*)data;
 
@@ -167,7 +167,7 @@ static void d3d12_overlay_tex_geom(void* data, unsigned index, float u, float v,
 
 static void d3d12_overlay_set_alpha(void* data, unsigned index, float mod)
 {
-   D3D12_RANGE     range;
+   D3D12_RANGE range;
    d3d12_sprite_t* sprites  = NULL;
    d3d12_video_t*  d3d12    = (d3d12_video_t*)data;
 
@@ -190,7 +190,7 @@ static void d3d12_overlay_set_alpha(void* data, unsigned index, float mod)
 
 static bool d3d12_overlay_load(void* data, const void* image_data, unsigned num_images)
 {
-   D3D12_RANGE     range;
+   D3D12_RANGE range;
    unsigned                    i;
    d3d12_sprite_t*             sprites = NULL;
    d3d12_video_t*              d3d12   = (d3d12_video_t*)data;
@@ -1365,9 +1365,10 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
       for (;;)
       {
          char str[128];
-         union string_list_elem_attr attr = {0};
-         DXGI_ADAPTER_DESC desc           = {0};
+         union string_list_elem_attr attr;
+         DXGI_ADAPTER_DESC desc = {0};
 
+         attr.i = 0;
          str[0] = '\0';
 
 #ifdef __WINRT__
@@ -1442,8 +1443,7 @@ static void d3d12_init_descriptor_heap(D3D12Device device, d3d12_descriptor_heap
 static bool d3d12_create_root_signature(
       D3D12Device device, D3D12_ROOT_SIGNATURE_DESC* desc, D3D12RootSignature* out)
 {
-   D3DBlob signature;
-   D3DBlob error;
+   D3DBlob signature, error;
    D3D12SerializeRootSignature(desc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error);
 
    if (error)
@@ -1589,8 +1589,9 @@ static void d3d12_init_descriptors(d3d12_video_t* d3d12)
 static INLINE D3D12_GPU_DESCRIPTOR_HANDLE
               d3d12_create_sampler(D3D12Device device, D3D12_SAMPLER_DESC* desc, d3d12_descriptor_heap_t* heap)
 {
+   D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle;
    D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = d3d12_descriptor_heap_slot_alloc(heap);
-   D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle = { cpu_handle.ptr - heap->cpu.ptr + heap->gpu.ptr };
+   gpu_handle.ptr = cpu_handle.ptr - heap->cpu.ptr + heap->gpu.ptr;
 
    D3D12CreateSampler(device, desc, cpu_handle);
    return gpu_handle;
@@ -1598,10 +1599,17 @@ static INLINE D3D12_GPU_DESCRIPTOR_HANDLE
 
 static void d3d12_init_samplers(d3d12_video_t* d3d12)
 {
-   int                i;
-   D3D12_SAMPLER_DESC desc = { D3D12_FILTER_MIN_MAG_MIP_POINT };
+   int i;
+   D3D12_SAMPLER_DESC desc;
+
+   desc.Filter             = D3D12_FILTER_MIN_MAG_MIP_POINT;
+   desc.MipLODBias         = 0.0f;
    desc.MaxAnisotropy      = 1;
    desc.ComparisonFunc     = D3D12_COMPARISON_FUNC_NEVER;
+   desc.BorderColor[0]     =
+   desc.BorderColor[1]     =
+   desc.BorderColor[2]     =
+   desc.BorderColor[3]     = 0.0f;
    desc.MinLOD             = -D3D12_FLOAT32_MAX;
    desc.MaxLOD             = D3D12_FLOAT32_MAX;
 
@@ -1629,7 +1637,7 @@ static void d3d12_init_samplers(d3d12_video_t* d3d12)
       desc.AddressV = desc.AddressU;
       desc.AddressW = desc.AddressU;
 
-      desc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+      desc.Filter   = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
       d3d12->samplers[RARCH_FILTER_LINEAR][i] =
             d3d12_create_sampler(d3d12->device, &desc, &d3d12->desc.sampler_heap);
 
@@ -1673,8 +1681,8 @@ static void d3d12_init_queue(d3d12_video_t* d3d12)
 static void d3d12_create_fullscreen_quad_vbo(
       D3D12Device device, D3D12_VERTEX_BUFFER_VIEW* view, D3D12Resource* vbo)
 {
+   D3D12_RANGE read_range;
    void *vertex_data_begin                = NULL;
-   D3D12_RANGE read_range                 = { 0, 0 };
    static const d3d12_vertex_t vertices[] = {
       { { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
       { { 0.0f, 1.0f }, { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
@@ -1685,6 +1693,9 @@ static void d3d12_create_fullscreen_quad_vbo(
    view->SizeInBytes    = sizeof(vertices);
    view->StrideInBytes  = sizeof(*vertices);
    view->BufferLocation = d3d12_create_buffer(device, view->SizeInBytes, vbo);
+
+   read_range.Begin     = 0;
+   read_range.End       = 0;
 
    D3D12Map(*vbo, 0, &read_range, &vertex_data_begin);
    memcpy(vertex_data_begin, vertices, sizeof(vertices));
