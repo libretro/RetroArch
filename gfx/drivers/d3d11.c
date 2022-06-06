@@ -82,6 +82,15 @@ static D3D11Device           cached_device_d3d11;
 static D3D_FEATURE_LEVEL     cached_supportedFeatureLevel;
 static D3D11DeviceContext    cached_context_d3d11;
 
+/* Waitable swap chain */
+static void WaitOnSwapChain(HANDLE frameLatencyWaitableObject)
+{
+   DWORD result = WaitForSingleObjectEx(
+         frameLatencyWaitableObject,
+         1000,
+         true);
+}
+
 static INLINE void d3d11_release_shader(d3d11_shader_t* shader)
 {
    Release(shader->layout);
@@ -94,6 +103,7 @@ static uint32_t d3d11_get_flags(void *data)
 {
    uint32_t flags = 0;
 
+   BIT32_SET(flags, GFX_CTX_FLAGS_CUSTOMIZABLE_FRAME_LATENCY);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
@@ -1034,34 +1044,34 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
       switch (d3d11->supportedFeatureLevel)
       {
          case D3D_FEATURE_LEVEL_9_1:
-            RARCH_LOG("[D3D11] Device created (Feature Level: 9.1)\n");
+            RARCH_LOG("[D3D11]: Device created (Feature Level: 9.1)\n");
             break;
          case D3D_FEATURE_LEVEL_9_2:
-            RARCH_LOG("[D3D11] Device created (Feature Level: 9.2)\n");
+            RARCH_LOG("[D3D11]: Device created (Feature Level: 9.2)\n");
             break;
          case D3D_FEATURE_LEVEL_9_3:
-            RARCH_LOG("[D3D11] Device created (Feature Level: 9.3)\n");
+            RARCH_LOG("[D3D11]: Device created (Feature Level: 9.3)\n");
             break;
          case D3D_FEATURE_LEVEL_10_0:
-            RARCH_LOG("[D3D11] Device created (Feature Level: 10.0)\n");
+            RARCH_LOG("[D3D11]: Device created (Feature Level: 10.0)\n");
             break;
          case D3D_FEATURE_LEVEL_10_1:
-            RARCH_LOG("[D3D11] Device created (Feature Level: 10.1)\n");
+            RARCH_LOG("[D3D11]: Device created (Feature Level: 10.1)\n");
             break;
          case D3D_FEATURE_LEVEL_11_0:
-            RARCH_LOG("[D3D11] Device created (Feature Level: 11.0)\n");
+            RARCH_LOG("[D3D11]: Device created (Feature Level: 11.0)\n");
             break;
          case D3D_FEATURE_LEVEL_11_1:
-            RARCH_LOG("[D3D11] Device created (Feature Level: 11.1)\n");
+            RARCH_LOG("[D3D11]: Device created (Feature Level: 11.1)\n");
             break;
          case D3D_FEATURE_LEVEL_12_0:
-            RARCH_LOG("[D3D11] Device created (Feature Level: 12.0)\n");
+            RARCH_LOG("[D3D11]: Device created (Feature Level: 12.0)\n");
             break;
          case D3D_FEATURE_LEVEL_12_1:
-            RARCH_LOG("[D3D11] Device created (Feature Level: 12.1)\n");
+            RARCH_LOG("[D3D11]: Device created (Feature Level: 12.1)\n");
             break;
          default:
-            RARCH_LOG("[D3D11] Device created (Feature Level: N/A)\n");
+            RARCH_LOG("[D3D11]: Device created (Feature Level: N/A)\n");
             break;
       }
    }
@@ -1080,6 +1090,7 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    d3d11->has_flip_model                   = true;
    d3d11->has_allow_tearing                = true;
    desc.Flags                              = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+   desc.Flags                              |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
    desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 #endif
 
@@ -1090,6 +1101,7 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
                &desc, NULL, (IDXGISwapChain1**)&d3d11->swapChain)))
       return false;
 #else
+   desc.Flags                              |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
    desc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
 
    adapter->lpVtbl->GetParent(
@@ -1153,6 +1165,17 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
 #endif
 
 #endif    /* __WINRT__ */
+
+   if ((d3d11->frameLatencyWaitableObject = DXGIGetFrameLatencyWaitableObject(d3d11->swapChain)))
+   {
+      settings_t* settings = config_get_ptr();
+      UINT max_latency     = settings->uints.video_max_frame_latency;
+      UINT cur_latency     = 0;
+
+      DXGISetMaximumFrameLatency(d3d11->swapChain, max_latency);
+      DXGIGetMaximumFrameLatency(d3d11->swapChain, &cur_latency);
+      RARCH_LOG("[D3D11]: Requesting %u maximum frame latency, using %u.\n", max_latency, cur_latency);
+   }
 
 #ifdef HAVE_DXGI_HDR
   /* Check display HDR support and 
@@ -1917,6 +1940,8 @@ static bool d3d11_gfx_frame(
    {
       UINT swapchain_flags        = d3d11->has_allow_tearing 
          ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
+      swapchain_flags             |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+
 #ifdef HAVE_DXGI_HDR
       d3d11->hdr.enable           = video_hdr_enable;
 
@@ -1992,6 +2017,8 @@ static bool d3d11_gfx_frame(
             d3d11->hdr.max_fall);
 #endif
    }
+   else
+      WaitOnSwapChain(d3d11->frameLatencyWaitableObject);
 
    {
        D3D11Texture2D back_buffer;

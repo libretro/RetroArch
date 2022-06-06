@@ -8617,6 +8617,14 @@ unsigned menu_displaylist_build_list(
                   count++;
             }
 
+            if (video_driver_test_all_flags(GFX_CTX_FLAGS_CUSTOMIZABLE_FRAME_LATENCY))
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,
+                        PARSE_ONLY_UINT, false) == 0)
+                  count++;
+            }
+
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,
                      PARSE_ONLY_BOOL, false) == 0)
@@ -9051,6 +9059,14 @@ unsigned menu_displaylist_build_list(
             {
                MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+                     PARSE_ONLY_UINT, false);
+               count++;
+            }
+
+            if (video_driver_test_all_flags(GFX_CTX_FLAGS_CUSTOMIZABLE_FRAME_LATENCY))
+            {
+               MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,
                      PARSE_ONLY_UINT, false);
                count++;
             }

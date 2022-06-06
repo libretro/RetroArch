@@ -108,6 +108,15 @@ static void d3d12_gfx_sync(d3d12_video_t* d3d12)
    }
 }
 
+/* Waitable swap chain */
+static void WaitOnSwapChain(HANDLE frameLatencyWaitableObject)
+{
+   DWORD result = WaitForSingleObjectEx(
+         frameLatencyWaitableObject,
+         1000,
+         true);
+}
+
 #ifdef HAVE_OVERLAY
 static void d3d12_free_overlays(d3d12_video_t* d3d12)
 {
@@ -1262,7 +1271,8 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 #else
    desc.SwapEffect           = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 #endif
-   desc.Flags      = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+   desc.Flags                = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+   desc.Flags                |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 
 #ifdef __WINRT__
    hr = DXGICreateSwapChainForCoreWindow(d3d12->factory, d3d12->queue.handle, corewindow, &desc, NULL, &d3d12->chain.handle);
@@ -1273,6 +1283,17 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    {
       RARCH_ERR("[D3D12]: Failed to create the swap chain (0x%08X)\n", hr);
       return false;
+   }
+
+   if ((d3d12->chain.frameLatencyWaitableObject = DXGIGetFrameLatencyWaitableObject(d3d12->chain.handle)))
+   {
+      settings_t* settings = config_get_ptr();
+      UINT max_latency     = settings->uints.video_max_frame_latency;
+      UINT cur_latency     = 0;
+
+      DXGISetMaximumFrameLatency(d3d12->chain.handle, max_latency);
+      DXGIGetMaximumFrameLatency(d3d12->chain.handle, &cur_latency);
+      RARCH_LOG("[D3D12]: Requesting %u maximum frame latency, using %u.\n", max_latency, cur_latency);
    }
 
 #ifdef HAVE_WINDOW
@@ -2039,6 +2060,11 @@ static bool d3d12_gfx_frame(
    bool video_hdr_enable          = video_info->hdr_enable;
    DXGI_FORMAT back_buffer_format = d3d12->shader_preset && d3d12->shader_preset->passes ? glslang_format_to_dxgi(d3d12->pass[d3d12->shader_preset->passes - 1].semantics.format) : DXGI_FORMAT_R8G8B8A8_UNORM;
    bool use_back_buffer           = back_buffer_format != d3d12->chain.formats[d3d12->chain.bit_depth];
+#endif
+
+   d3d12_gfx_sync(d3d12);
+
+#ifdef HAVE_DXGI_HDR
    if (d3d12->resize_chain || (d3d12->hdr.enable != video_hdr_enable))
 #else
    if (d3d12->resize_chain)
@@ -2147,6 +2173,8 @@ static bool d3d12_gfx_frame(
             d3d12->hdr.max_fall);
 #endif
    }
+   else
+      WaitOnSwapChain(d3d12->chain.frameLatencyWaitableObject);
 
    D3D12ResetCommandAllocator(d3d12->queue.allocator);
 
@@ -2646,9 +2674,6 @@ static bool d3d12_gfx_frame(
 #endif
    DXGIPresent(d3d12->chain.handle, sync_interval, present_flags);
 
-   /* Sync after Present for minimal delay */
-   d3d12_gfx_sync(d3d12);
-
    return true;
 }
 
@@ -2857,6 +2882,7 @@ static uint32_t d3d12_get_flags(void *data)
 {
    uint32_t flags = 0;
 
+   BIT32_SET(flags, GFX_CTX_FLAGS_CUSTOMIZABLE_FRAME_LATENCY);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
