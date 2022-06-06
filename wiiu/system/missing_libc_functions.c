@@ -143,6 +143,15 @@ long sysconf(int name) {
 }
 
 /**
+ * Intended to replace libgcc's __clear_cache builtin.
+ * For cores that need it, add -D__clear_cache=wiiu_clear_cache to CFLAGS.
+ */
+void wiiu_clear_cache (char *beg, char *end) {
+   DCFlushRange(beg, (uint32_t)(end - beg));
+   ICInvalidateRange(beg, (uint32_t)(end - beg));
+}
+
+/**
  * Implementation of getifaddrs() and freeifaddrs() for WiiU.
  */
 
