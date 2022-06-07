@@ -203,6 +203,7 @@ typedef struct settings
       unsigned video_fullscreen_x;
       unsigned video_fullscreen_y;
       unsigned video_max_swapchain_images;
+      unsigned video_max_frame_latency;
       unsigned video_swap_interval;
       unsigned video_hard_sync_frames;
       unsigned video_frame_delay;

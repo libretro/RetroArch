@@ -335,8 +335,13 @@
 /* Video VSYNC (recommended) */
 #define DEFAULT_VSYNC true
 
+/* Vulkan specific */
 #define DEFAULT_MAX_SWAPCHAIN_IMAGES 3
 
+/* D3D1x specific */
+#define DEFAULT_MAX_FRAME_LATENCY 1
+
+/* GL specific */
 #define DEFAULT_ADAPTIVE_VSYNC false
 
 /* Attempts to hard-synchronize CPU and GPU.

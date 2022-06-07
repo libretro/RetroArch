@@ -354,6 +354,7 @@ QWidget *LatencyPage::widget()
    }
 
    layout->add(MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES);
+   layout->add(MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY);
 
    layout->add(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY);
    layout->add(MENU_ENUM_LABEL_AUDIO_LATENCY);
@@ -1340,6 +1341,7 @@ QWidget *VideoPage::widget()
    }
 
    syncGroup->add(MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES);
+   syncGroup->add(MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY);
    syncGroup->add(MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE);
 
    miscGroup->add(MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE);
