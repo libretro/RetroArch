@@ -2434,6 +2434,10 @@ ifneq ($(findstring Win32,$(OS)),)
    OBJ += led/drivers/led_win32_keyboard.o
 endif
 
+ifeq ($(HAVE_X11), 1)
+   OBJ += led/drivers/led_x11_keyboard.o
+endif
+
 ifeq ($(HAVE_VITAGLES), 1)
    DEFINES += -DHAVE_VITAGLES
    INCLUDE_DIRS += -I$(DEPS_DIR)/Pigs-In-A-Blanket/include

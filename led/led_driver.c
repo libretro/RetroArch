@@ -49,7 +49,7 @@ void led_driver_init(const char *led_driver)
       current_led_driver  = &rpi_led_driver;
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || defined(HAVE_X11)
    if (string_is_equal("keyboard", drivername))
       current_led_driver  = &keyboard_led_driver;
 #endif
