@@ -835,6 +835,7 @@ static void ctr_render_bottom_screen(void *data)
 // https://github.com/smealum/3ds_hb_menu/blob/master/source/gfx.c
 void ctr_fade_bottom_screen(gfxScreen_t screen, gfx3dSide_t side, u32 f)
 {
+#ifndef CONSOLE_LOG
    int i;
    u16 fbWidth, fbHeight;
    u8* fbAdr = gfxGetFramebuffer(screen, side, &fbWidth, &fbHeight);
@@ -854,6 +855,7 @@ void ctr_fade_bottom_screen(gfxScreen_t screen, gfx3dSide_t side, u32 f)
       *fbAdr = (*fbAdr * f) >> 8;
       fbAdr++;
    }
+#endif
 }
 
 static void ctr_set_bottom_screen_idle(ctr_video_t * ctr)
@@ -893,6 +895,7 @@ static void ctr_set_bottom_screen_idle(ctr_video_t * ctr)
 
 static void ctr_set_bottom_screen_enable(bool enabled, bool idle)
 {
+#ifndef CONSOLE_LOG
    Handle lcd_handle;
    u8 not_2DS;
 
@@ -905,7 +908,7 @@ static void ctr_set_bottom_screen_enable(bool enabled, bool idle)
       svcSendSyncRequest(lcd_handle);
       svcCloseHandle(lcd_handle);
    }
-
+#endif
    if (!idle)
       ctr_bottom_screen_enabled = enabled;
 }
