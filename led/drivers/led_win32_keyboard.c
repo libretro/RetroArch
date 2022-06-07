@@ -5,16 +5,10 @@
 #include "../../configuration.h"
 #include "../../retroarch.h"
 
-#undef MAX_LEDS
-#define MAX_LEDS 3
-
-#ifdef _WIN32
 #include <windows.h>
-#endif
 
 static void key_translate(int *key)
 {
-#ifdef _WIN32
    switch (*key)
    {
       case 0:
@@ -26,8 +20,10 @@ static void key_translate(int *key)
       case 2:
          *key = VK_SCROLL;
          break;
+      default:
+         *key = 0;
+         break;
    }
-#endif
 }
 
 typedef struct
@@ -42,6 +38,17 @@ typedef struct
 static keyboard_led_t win32kb_curins;
 static keyboard_led_t *win32kb_cur = &win32kb_curins;
 
+static int get_led(int key)
+{
+   return GetKeyState(key);
+}
+
+static void set_led(int key)
+{
+   keybd_event(key, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+   keybd_event(key, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+}
+
 static int keyboard_led(int led, int state)
 {
    int status;
@@ -51,10 +58,10 @@ static int keyboard_led(int led, int state)
       return -1;
 
    key_translate(&key);
+   if (!key)
+      return -1;
 
-#ifdef _WIN32
-   status = GetKeyState(key);
-#endif
+   status = get_led(key);
 
    if (state == -1)
       return status;
@@ -62,11 +69,8 @@ static int keyboard_led(int led, int state)
    if ((state && !status) ||
        (!state && status))
    {
-#ifdef _WIN32
-      keybd_event(key, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-      keybd_event(key, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+      set_led(key);
       win32kb_cur->state[led] = state;
-#endif
    }
    return -1;
 }
