@@ -83,7 +83,7 @@ static D3D_FEATURE_LEVEL     cached_supportedFeatureLevel;
 static D3D11DeviceContext    cached_context_d3d11;
 
 /* Waitable swap chain */
-static void D3D11WaitOnSwapChain(HANDLE frameLatencyWaitableObject)
+static void WaitOnSwapChain(HANDLE frameLatencyWaitableObject)
 {
    DWORD result = WaitForSingleObjectEx(
          frameLatencyWaitableObject,
@@ -2018,7 +2018,7 @@ static bool d3d11_gfx_frame(
 #endif
    }
    else
-      D3D11WaitOnSwapChain(d3d11->frameLatencyWaitableObject);
+      WaitOnSwapChain(d3d11->frameLatencyWaitableObject);
 
    {
        D3D11Texture2D back_buffer;
