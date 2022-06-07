@@ -15,6 +15,8 @@
 
 #define CINTERFACE
 
+#include <gfx/scaler/pixconv.h>
+
 #include "d3d10_common.h"
 #include "d3dcompiler_common.h"
 
@@ -58,29 +60,6 @@ HRESULT WINAPI D3D10CreateDeviceAndSwapChain(
 }
 #endif
 
-static DXGI_FORMAT
-d3d10_get_closest_match(D3D10Device device,
-      DXGI_FORMAT desired_format, UINT desired_format_support)
-{
-   DXGI_FORMAT default_list[] = {desired_format, DXGI_FORMAT_UNKNOWN};
-   DXGI_FORMAT* format = dxgi_get_format_fallback_list(desired_format);
-
-   if(!format)
-      format = default_list;
-
-   while (*format != DXGI_FORMAT_UNKNOWN)
-   {
-      UINT format_support;
-      if (SUCCEEDED(device->lpVtbl->CheckFormatSupport(device, *format,
-                  &format_support)) &&
-            ((format_support & desired_format_support) == desired_format_support))
-         break;
-      format++;
-   }
-   assert(*format);
-   return *format;
-}
-
 void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture)
 {
    bool is_render_target = texture->desc.BindFlags & D3D10_BIND_RENDER_TARGET;
@@ -101,12 +80,12 @@ void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture)
       unsigned width, height;
 
       texture->desc.BindFlags |= D3D10_BIND_RENDER_TARGET;
-      width                    = texture->desc.Width  >> 5;
+      width                    = texture->desc.Width >> 5;
       height                   = texture->desc.Height >> 5;
 
       while (width && height)
       {
-         width  >>= 1;
+         width >>= 1;
          height >>= 1;
          texture->desc.MipLevels++;
       }
@@ -165,10 +144,15 @@ void d3d10_update_texture(
    texture->staging->lpVtbl->Map(texture->staging, 0, D3D10_MAP_WRITE, 0,
          &mapped_texture);
 
+#if 0
+   conv_rgb565_argb8888(mapped_texture.pData, data, width, height,
+         mapped_texture.RowPitch, pitch);
+#else
    dxgi_copy(
          width, height, format, pitch, data, texture->desc.Format,
          mapped_texture.RowPitch,
          mapped_texture.pData);
+#endif
 
    texture->staging->lpVtbl->Unmap(texture->staging, 0);
    frame_box.left   = 0;
@@ -183,4 +167,92 @@ void d3d10_update_texture(
 
    if (texture->desc.MiscFlags & D3D10_RESOURCE_MISC_GENERATE_MIPS)
       ctx->lpVtbl->GenerateMips(ctx, texture->view);
+}
+
+   DXGI_FORMAT
+d3d10_get_closest_match(D3D10Device device,
+      DXGI_FORMAT desired_format, UINT desired_format_support)
+{
+   DXGI_FORMAT default_list[] = {desired_format, DXGI_FORMAT_UNKNOWN};
+   DXGI_FORMAT* format = dxgi_get_format_fallback_list(desired_format);
+
+   if(!format)
+      format = default_list;
+
+   while (*format != DXGI_FORMAT_UNKNOWN)
+   {
+      UINT format_support;
+      if (SUCCEEDED(device->lpVtbl->CheckFormatSupport(device, *format,
+                  &format_support)) &&
+            ((format_support & desired_format_support) == desired_format_support))
+         break;
+      format++;
+   }
+   assert(*format);
+   return *format;
+}
+
+bool d3d10_init_shader(
+      D3D10Device                     device,
+      const char*                     src,
+      size_t                          size,
+      const void*                     src_name,
+      LPCSTR                          vs_entry,
+      LPCSTR                          ps_entry,
+      LPCSTR                          gs_entry,
+      const D3D10_INPUT_ELEMENT_DESC* input_element_descs,
+      UINT                            num_elements,
+      d3d10_shader_t*                 out)
+{
+   D3DBlob vs_code = NULL;
+   D3DBlob ps_code = NULL;
+   D3DBlob gs_code = NULL;
+
+   bool success = true;
+
+   if (!src) /* LPCWSTR filename */
+   {
+      if (vs_entry && !d3d_compile_from_file((LPCWSTR)src_name, vs_entry, "vs_4_0", &vs_code))
+         success = false;
+      if (ps_entry && !d3d_compile_from_file((LPCWSTR)src_name, ps_entry, "ps_4_0", &ps_code))
+         success = false;
+      if (gs_entry && !d3d_compile_from_file((LPCWSTR)src_name, gs_entry, "gs_4_0", &gs_code))
+         success = false;
+   }
+   else /* char array */
+   {
+      if (vs_entry && !d3d_compile(src, size, (LPCSTR)src_name, vs_entry, "vs_4_0", &vs_code))
+         success = false;
+      if (ps_entry && !d3d_compile(src, size, (LPCSTR)src_name, ps_entry, "ps_4_0", &ps_code))
+         success = false;
+      if (gs_entry && !d3d_compile(src, size, (LPCSTR)src_name, gs_entry, "gs_4_0", &gs_code))
+         success = false;
+   }
+
+
+   if (ps_code)
+      device->lpVtbl->CreatePixelShader(device, D3DGetBufferPointer(ps_code),
+            D3DGetBufferSize(ps_code), &out->ps);
+
+   if (gs_code)
+      device->lpVtbl->CreateGeometryShader(
+            device, D3DGetBufferPointer(gs_code), D3DGetBufferSize(gs_code),
+            &out->gs);
+
+   if (vs_code)
+   {
+      LPVOID buf_ptr  = D3DGetBufferPointer(vs_code);
+      SIZE_T buf_size = D3DGetBufferSize(vs_code);
+      device->lpVtbl->CreateVertexShader(device, buf_ptr, buf_size, &out->vs);
+      if (input_element_descs)
+         device->lpVtbl->CreateInputLayout(
+               device, (D3D10_INPUT_ELEMENT_DESC*)input_element_descs,
+               num_elements, buf_ptr, buf_size, &out->layout);
+   }
+
+   Release(vs_code);
+   Release(ps_code);
+   Release(gs_code);
+
+   return success;
 }

@@ -313,3 +313,19 @@ void d3d11_update_texture(
       DXGI_FORMAT        format,
       const void*        data,
       d3d11_texture_t*   texture);
+
+DXGI_FORMAT d3d11_get_closest_match(
+      D3D11Device device, DXGI_FORMAT desired_format, UINT desired_format_support);
+
+bool d3d11_init_shader(
+      D3D11Device                     device,
+      const char*                     src,
+      size_t                          size,
+      const void*                     src_name,
+      LPCSTR                          vs_entry,
+      LPCSTR                          ps_entry,
+      LPCSTR                          gs_entry,
+      const D3D11_INPUT_ELEMENT_DESC* input_element_descs,
+      UINT                            num_elements,
+      d3d11_shader_t*                 out,
+      enum d3d11_feature_level_hint   hint);
