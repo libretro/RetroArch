@@ -82,15 +82,6 @@ static D3D11Device           cached_device_d3d11;
 static D3D_FEATURE_LEVEL     cached_supportedFeatureLevel;
 static D3D11DeviceContext    cached_context_d3d11;
 
-/* Waitable swap chain */
-static void D3D11WaitOnSwapChain(HANDLE frameLatencyWaitableObject)
-{
-   DWORD result = WaitForSingleObjectEx(
-         frameLatencyWaitableObject,
-         1000,
-         true);
-}
-
 static INLINE void d3d11_release_shader(d3d11_shader_t* shader)
 {
    Release(shader->layout);
@@ -530,96 +521,6 @@ static void d3d11_free_shader_preset(d3d11_video_t* d3d11)
    d3d11->resize_render_targets = false;
 }
 
-static bool d3d11_init_shader(
-      D3D11Device                     device,
-      const char*                     src,
-      size_t                          size,
-      const void*                     src_name,
-      LPCSTR                          vs_entry,
-      LPCSTR                          ps_entry,
-      LPCSTR                          gs_entry,
-      const D3D11_INPUT_ELEMENT_DESC* input_element_descs,
-      UINT                            num_elements,
-      d3d11_shader_t*                 out,
-      enum d3d11_feature_level_hint   hint)
-{
-   D3DBlob vs_code    = NULL;
-   D3DBlob ps_code    = NULL;
-   D3DBlob gs_code    = NULL;
-   bool success       = true;
-   const char *vs_str = NULL;
-   const char *ps_str = NULL;
-   const char *gs_str = NULL;
-
-   switch (hint)
-   {
-      case D3D11_FEATURE_LEVEL_HINT_11_0:
-      case D3D11_FEATURE_LEVEL_HINT_11_1:
-      case D3D11_FEATURE_LEVEL_HINT_12_0:
-      case D3D11_FEATURE_LEVEL_HINT_12_1:
-      case D3D11_FEATURE_LEVEL_HINT_12_2:
-         vs_str       = "vs_5_0";
-         ps_str       = "ps_5_0";
-         gs_str       = "gs_5_0";
-         break;
-      case D3D11_FEATURE_LEVEL_HINT_DONTCARE:
-      default:
-         vs_str       = "vs_4_0";
-         ps_str       = "ps_4_0";
-         gs_str       = "gs_4_0";
-         break;
-   }
-
-   if (!src) /* LPCWSTR filename */
-   {
-      if (vs_entry && !d3d_compile_from_file((LPCWSTR)src_name, vs_entry, vs_str, &vs_code))
-         success = false;
-      if (ps_entry && !d3d_compile_from_file((LPCWSTR)src_name, ps_entry, ps_str, &ps_code))
-         success = false;
-      if (gs_entry && !d3d_compile_from_file((LPCWSTR)src_name, gs_entry, gs_str, &gs_code))
-         success = false;
-   }
-   else /* char array */
-   {
-      if (vs_entry && !d3d_compile(src, size, (LPCSTR)src_name, vs_entry, vs_str, &vs_code))
-         success = false;
-      if (ps_entry && !d3d_compile(src, size, (LPCSTR)src_name, ps_entry, ps_str, &ps_code))
-         success = false;
-      if (gs_entry && !d3d_compile(src, size, (LPCSTR)src_name, gs_entry, gs_str, &gs_code))
-         success = false;
-   }
-
-   if (ps_code)
-      device->lpVtbl->CreatePixelShader(
-            device,
-            ps_code->lpVtbl->GetBufferPointer(ps_code),
-            ps_code->lpVtbl->GetBufferSize(ps_code),
-            NULL, &out->ps);
-
-   if (gs_code)
-      device->lpVtbl->CreateGeometryShader(
-            device,
-            gs_code->lpVtbl->GetBufferPointer(gs_code),
-            gs_code->lpVtbl->GetBufferSize(gs_code),
-            NULL, &out->gs);
-
-   if (vs_code)
-   {
-      LPVOID buf_ptr  = vs_code->lpVtbl->GetBufferPointer(vs_code);
-      SIZE_T buf_size = vs_code->lpVtbl->GetBufferSize(vs_code);
-      device->lpVtbl->CreateVertexShader(device, buf_ptr, buf_size, NULL, &out->vs);
-      if (input_element_descs)
-         device->lpVtbl->CreateInputLayout(device, input_element_descs, num_elements,
-               buf_ptr, buf_size, &out->layout);
-   }
-
-   Release(vs_code);
-   Release(ps_code);
-   Release(gs_code);
-
-   return success;
-}
-
 static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const char* path)
 {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
@@ -1014,9 +915,6 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
 #endif
    desc.SampleDesc.Count                   = 1;
    desc.SampleDesc.Quality                 = 0;
-#if 0
-   desc.Scaling                            = DXGI_SCALING_STRETCH;
-#endif
 #ifdef HAVE_WINDOW
    desc.Windowed                           = TRUE;
 #endif
@@ -1090,7 +988,7 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    d3d11->has_flip_model                   = true;
    d3d11->has_allow_tearing                = true;
    desc.Flags                              = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
-   desc.Flags                              |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+   desc.Flags                             |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
    desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 #endif
 
@@ -1101,7 +999,7 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
                &desc, NULL, (IDXGISwapChain1**)&d3d11->swapChain)))
       return false;
 #else
-   desc.Flags                              |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+   desc.Flags                             |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
    desc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
 
    adapter->lpVtbl->GetParent(
@@ -1176,6 +1074,7 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
       DXGIGetMaximumFrameLatency(d3d11->swapChain, &cur_latency);
       RARCH_LOG("[D3D11]: Requesting %u maximum frame latency, using %u.\n", max_latency, cur_latency);
    }
+
 
 #ifdef HAVE_DXGI_HDR
   /* Check display HDR support and 
@@ -1787,7 +1686,7 @@ static void d3d11_init_history(d3d11_video_t* d3d11, unsigned width, unsigned he
 {
    unsigned i;
 
-   /* todo: should we init history to max_width/max_height instead ?
+   /* TODO/FIXME: should we init history to max_width/max_height instead ?
     * to prevent out of memory errors happening several frames later
     * and to reduce memory fragmentation */
 
@@ -1817,6 +1716,7 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
 
       if (pass->fbo.valid)
       {
+
          switch (pass->fbo.type_x)
          {
             case RARCH_SCALE_INPUT:
@@ -1940,8 +1840,7 @@ static bool d3d11_gfx_frame(
    {
       UINT swapchain_flags        = d3d11->has_allow_tearing 
          ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
-      swapchain_flags             |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
-
+      swapchain_flags            |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 #ifdef HAVE_DXGI_HDR
       d3d11->hdr.enable           = video_hdr_enable;
 
@@ -2018,7 +1917,12 @@ static bool d3d11_gfx_frame(
 #endif
    }
    else
-      D3D11WaitOnSwapChain(d3d11->frameLatencyWaitableObject);
+   {
+      WaitForSingleObjectEx(
+            d3d11->frameLatencyWaitableObject,
+            1000,
+            true);
+   }
 
    {
        D3D11Texture2D back_buffer;

@@ -108,15 +108,6 @@ static void d3d12_gfx_sync(d3d12_video_t* d3d12)
    }
 }
 
-/* Waitable swap chain */
-static void D3D12WaitOnSwapChain(HANDLE frameLatencyWaitableObject)
-{
-   DWORD result = WaitForSingleObjectEx(
-         frameLatencyWaitableObject,
-         1000,
-         true);
-}
-
 #ifdef HAVE_OVERLAY
 static void d3d12_free_overlays(d3d12_video_t* d3d12)
 {
@@ -1266,13 +1257,9 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    desc.OutputWindow         = hwnd;
    desc.Windowed             = TRUE;
 #endif
-#if 0
-   desc.SwapEffect           = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
-#else
    desc.SwapEffect           = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-#endif
    desc.Flags                = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
-   desc.Flags                |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+   desc.Flags               |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 
 #ifdef __WINRT__
    hr = DXGICreateSwapChainForCoreWindow(d3d12->factory, d3d12->queue.handle, corewindow, &desc, NULL, &d3d12->chain.handle);
@@ -1295,6 +1282,7 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
       DXGIGetMaximumFrameLatency(d3d12->chain.handle, &cur_latency);
       RARCH_LOG("[D3D12]: Requesting %u maximum frame latency, using %u.\n", max_latency, cur_latency);
    }
+
 
 #ifdef HAVE_WINDOW
    DXGIMakeWindowAssociation(d3d12->factory, hwnd, DXGI_MWA_NO_ALT_ENTER);
@@ -1473,8 +1461,7 @@ static bool d3d12_create_root_signature(
    if (error)
    {
       RARCH_ERR(
-            "[D3D12]: CreateRootSignature failed : %s", (const
-char*)error->lpVtbl->GetBufferPointer(error));
+            "[D3D12]: CreateRootSignature failed : %s\n", (const char*)error->lpVtbl->GetBufferPointer(error));
       Release(error);
       return false;
    }
@@ -1552,12 +1539,6 @@ static void d3d12_init_descriptors(d3d12_video_t* d3d12)
    static_sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
    static_sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
    static_sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-#if 0
-   static_sampler.MaxAnisotropy             = 1;
-   static_sampler.ComparisonFunc            = D3D12_COMPARISON_FUNC_NEVER;
-   static_sampler.MinLOD                    = -D3D12_FLOAT32_MAX;
-   static_sampler.MaxLOD                    = D3D12_FLOAT32_MAX;
-#endif
 
    desc.NumParameters     = countof(cs_root_params);
    desc.pParameters       = cs_root_params;
@@ -1909,7 +1890,7 @@ static void d3d12_init_history(d3d12_video_t* d3d12, unsigned width, unsigned he
 {
    unsigned i;
 
-   /* todo: should we init history to max_width/max_height instead ?
+   /* TODO/FIXME: should we init history to max_width/max_height instead ?
     * to prevent out of memory errors happening several frames later
     * and to reduce memory fragmentation */
 
@@ -2174,7 +2155,12 @@ static bool d3d12_gfx_frame(
 #endif
    }
    else
-      D3D12WaitOnSwapChain(d3d12->chain.frameLatencyWaitableObject);
+   {
+      WaitForSingleObjectEx(
+            d3d12->chain.frameLatencyWaitableObject,
+            1000,
+            true);
+   }
 
    D3D12ResetCommandAllocator(d3d12->queue.allocator);
 

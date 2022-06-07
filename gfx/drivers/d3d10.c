@@ -374,75 +374,6 @@ static void d3d10_free_shader_preset(d3d10_video_t* d3d10)
    d3d10->resize_render_targets = false;
 }
 
-static bool d3d10_init_shader(
-      D3D10Device                     device,
-      const char*                     src,
-      size_t                          size,
-      const void*                     src_name,
-      LPCSTR                          vs_entry,
-      LPCSTR                          ps_entry,
-      LPCSTR                          gs_entry,
-      const D3D10_INPUT_ELEMENT_DESC* input_element_descs,
-      UINT                            num_elements,
-      d3d10_shader_t*                 out)
-{
-   D3DBlob vs_code = NULL;
-   D3DBlob ps_code = NULL;
-   D3DBlob gs_code = NULL;
-
-   bool success = true;
-
-   if (!src) /* LPCWSTR filename */
-   {
-      if (vs_entry && !d3d_compile_from_file((LPCWSTR)src_name, vs_entry, "vs_4_0", &vs_code))
-         success = false;
-      if (ps_entry && !d3d_compile_from_file((LPCWSTR)src_name, ps_entry, "ps_4_0", &ps_code))
-         success = false;
-      if (gs_entry && !d3d_compile_from_file((LPCWSTR)src_name, gs_entry, "gs_4_0", &gs_code))
-         success = false;
-   }
-   else /* char array */
-   {
-      if (vs_entry && !d3d_compile(src, size, (LPCSTR)src_name, vs_entry, "vs_4_0", &vs_code))
-         success = false;
-      if (ps_entry && !d3d_compile(src, size, (LPCSTR)src_name, ps_entry, "ps_4_0", &ps_code))
-         success = false;
-      if (gs_entry && !d3d_compile(src, size, (LPCSTR)src_name, gs_entry, "gs_4_0", &gs_code))
-         success = false;
-   }
-
-
-   if (ps_code)
-      device->lpVtbl->CreatePixelShader(device,
-            ps_code->lpVtbl->GetBufferPointer(ps_code),
-            ps_code->lpVtbl->GetBufferSize(ps_code),
-            &out->ps);
-
-   if (gs_code)
-      device->lpVtbl->CreateGeometryShader(
-            device,
-            gs_code->lpVtbl->GetBufferPointer(gs_code),
-            gs_code->lpVtbl->GetBufferSize(gs_code),
-            &out->gs);
-
-   if (vs_code)
-   {
-      LPVOID buf_ptr  = vs_code->lpVtbl->GetBufferPointer(vs_code);
-      SIZE_T buf_size = vs_code->lpVtbl->GetBufferSize(vs_code);
-      device->lpVtbl->CreateVertexShader(device, buf_ptr, buf_size, &out->vs);
-      if (input_element_descs)
-         device->lpVtbl->CreateInputLayout(
-               device, (D3D10_INPUT_ELEMENT_DESC*)input_element_descs,
-               num_elements, buf_ptr, buf_size, &out->layout);
-   }
-
-   Release(vs_code);
-   Release(ps_code);
-   Release(gs_code);
-
-   return success;
-}
-
 static bool d3d10_gfx_set_shader(void* data, enum rarch_shader_type type, const char* path)
 {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
@@ -1193,7 +1124,7 @@ static void d3d10_init_history(d3d10_video_t* d3d10, unsigned width, unsigned he
 {
    unsigned i;
 
-   /* todo: should we init history to max_width/max_height instead ?
+   /* TODO/FIXME: should we init history to max_width/max_height instead ?
     * to prevent out of memory errors happening several frames later
     * and to reduce memory fragmentation */
 
@@ -1408,7 +1339,7 @@ static bool d3d10_gfx_frame(
             else
             {
                int k;
-               /* todo: what about frame-duping ?
+               /* TODO/FIXME: what about frame-duping ?
                 * maybe clone d3d10_texture_t with AddRef */
                d3d10_texture_t tmp = d3d10->frame.texture[d3d10->shader_preset->history_size];
                for (k = d3d10->shader_preset->history_size; k > 0; k--)
