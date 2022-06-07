@@ -214,7 +214,6 @@ static bool d3d11_overlay_load(void* data, const void* image_data, unsigned num_
       d3d11->overlays.textures[i].desc.Height = images[i].height;
       d3d11->overlays.textures[i].desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
 
-      d3d11_release_texture(&d3d11->overlays.textures[i]);
       d3d11_init_texture(d3d11->device, &d3d11->overlays.textures[i]);
 
       if (d3d11->overlays.textures[i].staging)
@@ -803,7 +802,6 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       if (d3d11->shader_preset->lut[i].mipmap)
          d3d11->luts[i].desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
 
-      d3d11_release_texture(&d3d11->luts[i]);
       d3d11_init_texture(d3d11->device, &d3d11->luts[i]);
 
       if (d3d11->luts[i].staging)
@@ -1178,7 +1176,6 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    d3d11->back_buffer.desc.Height             = height;
    d3d11->back_buffer.desc.Format             = d3d11->shader_preset && d3d11->shader_preset->passes ? glslang_format_to_dxgi(d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format) : DXGI_FORMAT_R8G8B8A8_UNORM;
    d3d11->back_buffer.desc.BindFlags          = D3D11_BIND_RENDER_TARGET;
-   d3d11_release_texture(&d3d11->back_buffer);
    d3d11_init_texture(d3d11->device, &d3d11->back_buffer);
 #endif
 
@@ -1292,7 +1289,6 @@ static void *d3d11_gfx_init(const video_info_t* video,
    d3d11->frame.texture[0].desc.Width  = 4;
    d3d11->frame.texture[0].desc.Height = 4;
 
-   d3d11_release_texture(&d3d11->frame.texture[0]);
    d3d11_init_texture(d3d11->device, &d3d11->frame.texture[0]);
 
    d3d11->menu.texture.desc.Usage = D3D11_USAGE_DEFAULT;
@@ -1771,7 +1767,6 @@ static void d3d11_init_history(d3d11_video_t* d3d11, unsigned width, unsigned he
       d3d11->frame.texture[i].desc.Height = height;
       d3d11->frame.texture[i].desc.Format = d3d11->frame.texture[0].desc.Format;
       d3d11->frame.texture[i].desc.Usage  = d3d11->frame.texture[0].desc.Usage;
-      d3d11_release_texture(&d3d11->frame.texture[i]);
       d3d11_init_texture(d3d11->device, &d3d11->frame.texture[i]);
       /* TODO/FIXME: clear texture ?  */
    }
@@ -1850,13 +1845,11 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
          d3d11->pass[i].rt.desc.Height    = height;
          d3d11->pass[i].rt.desc.BindFlags = D3D11_BIND_RENDER_TARGET;
          d3d11->pass[i].rt.desc.Format    = glslang_format_to_dxgi(d3d11->pass[i].semantics.format);
-         d3d11_release_texture(&d3d11->pass[i].rt);
          d3d11_init_texture(d3d11->device, &d3d11->pass[i].rt);
 
          if (pass->feedback)
          {
             d3d11->pass[i].feedback.desc = d3d11->pass[i].rt.desc;
-            d3d11_release_texture(&d3d11->pass[i].feedback);
             d3d11_init_texture(d3d11->device, &d3d11->pass[i].feedback);
             /* TODO/FIXME: do we need to clear it to black here ? */
          }
@@ -1957,7 +1950,6 @@ static bool d3d11_gfx_frame(
          d3d11->back_buffer.desc.Height             = video_height;
          d3d11->back_buffer.desc.Format             = back_buffer_format;
          d3d11->back_buffer.desc.BindFlags          = D3D11_BIND_RENDER_TARGET;
-         d3d11_release_texture(&d3d11->back_buffer);
          d3d11_init_texture(d3d11->device, &d3d11->back_buffer);
 
          dxgi_swapchain_color_space(
@@ -2020,7 +2012,6 @@ static bool d3d11_gfx_frame(
               d3d11->frame.texture[0].desc.Width  = width;
               d3d11->frame.texture[0].desc.Height = height;
               d3d11->frame.texture[0].desc.Format = hw_desc.Format;
-              d3d11_release_texture(&d3d11->frame.texture[0]);
               d3d11_init_texture(d3d11->device, &d3d11->frame.texture[0]);
 
               d3d11->init_history = true;
@@ -2068,7 +2059,6 @@ static bool d3d11_gfx_frame(
       {
          d3d11->frame.texture[0].desc.Width  = width;
          d3d11->frame.texture[0].desc.Height = height;
-         d3d11_release_texture(&d3d11->frame.texture[0]);
          d3d11_init_texture(d3d11->device, &d3d11->frame.texture[0]);
       }
 
@@ -2513,7 +2503,6 @@ static void d3d11_set_menu_texture_frame(
       d3d11->menu.texture.desc.Format = format;
       d3d11->menu.texture.desc.Width  = width;
       d3d11->menu.texture.desc.Height = height;
-      d3d11_release_texture(&d3d11->menu.texture);
       d3d11_init_texture(d3d11->device, &d3d11->menu.texture);
    }
 
@@ -2610,7 +2599,6 @@ static uintptr_t d3d11_gfx_load_texture(
    texture->desc.Height = image->height;
    texture->desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
 
-   d3d11_release_texture(texture);
    d3d11_init_texture(d3d11->device, texture);
 
    if (texture->staging)

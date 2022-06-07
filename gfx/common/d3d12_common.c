@@ -250,6 +250,7 @@ static DXGI_FORMAT d3d12_get_closest_match(D3D12Device device, D3D12_FEATURE_DAT
 void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
 {
    int i;
+   d3d12_release_texture(texture);
 
    if (!texture->desc.MipLevels)
       texture->desc.MipLevels          = 1;

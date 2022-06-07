@@ -180,7 +180,6 @@ static bool d3d10_overlay_load(void* data, const void* image_data, unsigned num_
       d3d10->overlays.textures[i].desc.Height = images[i].height;
       d3d10->overlays.textures[i].desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
 
-      d3d10_release_texture(&d3d10->overlays.textures[i]);
       d3d10_init_texture(d3d10->device, &d3d10->overlays.textures[i]);
 
       if (d3d10->overlays.textures[i].staging)
@@ -582,7 +581,6 @@ static bool d3d10_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       if (d3d10->shader_preset->lut[i].mipmap)
          d3d10->luts[i].desc.MiscFlags = D3D10_RESOURCE_MISC_GENERATE_MIPS;
 
-      d3d10_release_texture(&d3d10->luts[i]);
       d3d10_init_texture(d3d10->device, &d3d10->luts[i]);
 
       if (d3d10->luts[i].staging)
@@ -812,7 +810,6 @@ static void *d3d10_gfx_init(const video_info_t* video,
    d3d10->frame.texture[0].desc.Width  = 4;
    d3d10->frame.texture[0].desc.Height = 4;
 
-   d3d10_release_texture(&d3d10->frame.texture[0]);
    d3d10_init_texture(d3d10->device, &d3d10->frame.texture[0]);
 
    d3d10->menu.texture.desc.Usage  = D3D10_USAGE_DEFAULT;
@@ -1200,9 +1197,8 @@ static void d3d10_init_history(d3d10_video_t* d3d10, unsigned width, unsigned he
       d3d10->frame.texture[i].desc.Height = height;
       d3d10->frame.texture[i].desc.Format = d3d10->frame.texture[0].desc.Format;
       d3d10->frame.texture[i].desc.Usage  = d3d10->frame.texture[0].desc.Usage;
-      d3d10_release_texture(&d3d10->frame.texture[i]);
       d3d10_init_texture(d3d10->device, &d3d10->frame.texture[i]);
-      /* TODO/FIXME: clear texture ?  */
+      /* todo: clear texture ?  */
    }
    d3d10->init_history = false;
 }
@@ -1281,15 +1277,13 @@ static void d3d10_init_render_targets(d3d10_video_t* d3d10,
          d3d10->pass[i].rt.desc.Height    = height;
          d3d10->pass[i].rt.desc.BindFlags = D3D10_BIND_RENDER_TARGET;
          d3d10->pass[i].rt.desc.Format    = glslang_format_to_dxgi(d3d10->pass[i].semantics.format);
-         d3d10_release_texture(&d3d10->pass[i].rt);
          d3d10_init_texture(d3d10->device, &d3d10->pass[i].rt);
 
          if (pass->feedback)
          {
             d3d10->pass[i].feedback.desc = d3d10->pass[i].rt.desc;
-            d3d10_release_texture(&d3d10->pass[i].feedback);
             d3d10_init_texture(d3d10->device, &d3d10->pass[i].feedback);
-            /* TODO/FIXME: do we need to clear it to black here ? */
+            /* todo: do we need to clear it to black here ? */
          }
       }
       else
@@ -1420,7 +1414,6 @@ static bool d3d10_gfx_frame(
       {
          d3d10->frame.texture[0].desc.Width  = width;
          d3d10->frame.texture[0].desc.Height = height;
-         d3d10_release_texture(&d3d10->frame.texture[0]);
          d3d10_init_texture(d3d10->device, &d3d10->frame.texture[0]);
       }
 
@@ -1724,7 +1717,6 @@ static void d3d10_set_menu_texture_frame(
       d3d10->menu.texture.desc.Format = format;
       d3d10->menu.texture.desc.Width  = width;
       d3d10->menu.texture.desc.Height = height;
-      d3d10_release_texture(&d3d10->menu.texture);
       d3d10_init_texture(d3d10->device, &d3d10->menu.texture);
    }
 
@@ -1815,7 +1807,6 @@ static uintptr_t d3d10_gfx_load_texture(
    texture->desc.Height = image->height;
    texture->desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
 
-   d3d10_release_texture(texture);
    d3d10_init_texture(d3d10->device, texture);
 
    if (texture->staging)

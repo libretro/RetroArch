@@ -79,6 +79,8 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
    bool is_render_target            = texture->desc.BindFlags & D3D11_BIND_RENDER_TARGET;
    UINT format_support              = D3D11_FORMAT_SUPPORT_TEXTURE2D | D3D11_FORMAT_SUPPORT_SHADER_SAMPLE;
 
+   d3d11_release_texture(texture);
+
    texture->desc.MipLevels          = 1;
    texture->desc.ArraySize          = 1;
    texture->desc.SampleDesc.Count   = 1;
