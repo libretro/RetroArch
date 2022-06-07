@@ -551,8 +551,8 @@ static void d3d12_init_pipeline(
 {
    if (vs_code)
    {
-      desc->VS.pShaderBytecode = vs_code->lpVtbl->GetBufferPointer(vs_code);
-      desc->VS.BytecodeLength  = vs_code->lpVtbl->GetBufferSize(vs_code);
+      desc->VS.pShaderBytecode = D3DGetBufferPointer(vs_code);
+      desc->VS.BytecodeLength  = D3DGetBufferSize(vs_code);
    }
    else
    {
@@ -562,8 +562,8 @@ static void d3d12_init_pipeline(
 
    if (ps_code)
    {
-      desc->PS.pShaderBytecode = ps_code->lpVtbl->GetBufferPointer(ps_code);
-      desc->PS.BytecodeLength  = ps_code->lpVtbl->GetBufferSize(ps_code);
+      desc->PS.pShaderBytecode = D3DGetBufferPointer(ps_code);
+      desc->PS.BytecodeLength  = D3DGetBufferSize(ps_code);
    }
    else
    {
@@ -573,8 +573,8 @@ static void d3d12_init_pipeline(
 
    if (gs_code)
    {
-      desc->GS.pShaderBytecode = gs_code->lpVtbl->GetBufferPointer(gs_code);
-      desc->GS.BytecodeLength  = gs_code->lpVtbl->GetBufferSize(gs_code);
+      desc->GS.pShaderBytecode = D3DGetBufferPointer(gs_code);
+      desc->GS.BytecodeLength  = D3DGetBufferSize(gs_code);
    }
    else
    {
@@ -1085,8 +1085,8 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       if (!d3d_compile(shader, sizeof(shader), NULL, "CSMain", "cs_5_0", &cs_code))
          goto error;
 
-      desc.CS.pShaderBytecode = cs_code->lpVtbl->GetBufferPointer(cs_code);
-      desc.CS.BytecodeLength  = cs_code->lpVtbl->GetBufferSize(cs_code);
+      desc.CS.pShaderBytecode = D3DGetBufferPointer(cs_code);
+      desc.CS.BytecodeLength  = D3DGetBufferSize(cs_code);
       if (FAILED(D3D12CreateComputePipelineState(d3d12->device, &desc, &d3d12->mipmapgen_pipe)))
          Release(cs_code);
       cs_code = NULL;
@@ -1452,17 +1452,13 @@ static bool d3d12_create_root_signature(
    if (error)
    {
       RARCH_ERR(
-            "[D3D12]: CreateRootSignature failed : %s", (const
-char*)error->lpVtbl->GetBufferPointer(error));
+            "[D3D12]: CreateRootSignature failed : %s", (const char*)D3DGetBufferPointer(error));
       Release(error);
       return false;
    }
 
    D3D12CreateRootSignature(
-         device, 0,
-         signature->lpVtbl->GetBufferPointer(signature),
-         signature->lpVtbl->GetBufferSize(signature),
-         out);
+         device, 0, D3DGetBufferPointer(signature), D3DGetBufferSize(signature), out);
    Release(signature);
 
    return true;
