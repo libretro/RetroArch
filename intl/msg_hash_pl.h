@@ -9880,11 +9880,11 @@ MSG_HASH(
    "Użyj wbudowanej przeglądarki zdjęć"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   "Maksymalne obrazy swapchain"
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "Informuje sterownik wideo, aby jawnie użył określonego trybu buforowania."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    "Informuje sterownik wideo, aby jawnie użył określonego trybu buforowania."
    )
 MSG_HASH(

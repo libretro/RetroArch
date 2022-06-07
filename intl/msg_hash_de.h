@@ -9896,11 +9896,11 @@ MSG_HASH(
    "Integrierten Bildbetrachter verwenden"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   "Maximale Anzahl von Zwischenbildern"
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "Zwingt den Videotreiber dazu, einen bestimmten Framebuffer zu verwenden."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    "Zwingt den Videotreiber dazu, einen bestimmten Framebuffer zu verwenden."
    )
 MSG_HASH(

@@ -4672,10 +4672,6 @@ MSG_HASH(
    "Χρήση Ενσωματωμένου Προβολέα Εικόνων"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   "Μέγιστες εικόνες swapchain"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_START,
    "Έναρξη"
    )

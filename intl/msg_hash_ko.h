@@ -10284,11 +10284,11 @@ MSG_HASH(
    "내장 이미지 뷰어 사용"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   "최대 스왑체인 이미지"
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "비디오 드라이버가 지정된 버퍼링 모드를 사용하도록 지시합니다."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    "비디오 드라이버가 지정된 버퍼링 모드를 사용하도록 지시합니다."
    )
 MSG_HASH(

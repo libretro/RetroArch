@@ -8968,11 +8968,11 @@ MSG_HASH(
    "内蔵の画像ビューアを使用"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   "スワップチェーンイメージの最大値"
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "指定したバッファリングモードを明示的に使用するようビデオドライバに指定します. "
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    "指定したバッファリングモードを明示的に使用するようビデオドライバに指定します. "
    )
 MSG_HASH(

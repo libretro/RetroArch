@@ -10280,11 +10280,11 @@ MSG_HASH(
    "Dahili Resim Görüntüleyici Kullan"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   "En fazla takas zinciri görüntüleri"
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "Video sürücüsüne belirli bir arabelleğe alım kipini açıkça kullanmasını söyler."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    "Video sürücüsüne belirli bir arabelleğe alım kipini açıkça kullanmasını söyler."
    )
 MSG_HASH(

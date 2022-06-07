@@ -7400,11 +7400,11 @@ MSG_HASH(
    "استخدام عارض الصور المدمج"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   "ماكس صور المبادلة"
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "يلغي مشغل الفيديو أن يستخدم صراحة وضع التخزين المؤقت المحدد."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    "يلغي مشغل الفيديو أن يستخدم صراحة وضع التخزين المؤقت المحدد."
    )
 MSG_HASH(

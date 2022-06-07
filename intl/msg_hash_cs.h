@@ -10008,11 +10008,11 @@ MSG_HASH(
    "Použít Vestavěný Prohlížeč Obrázků"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   "Maximum obrázků swapchain"
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "Říká ovladači videa, aby explicitně použil zadaný režim vyrovnávací paměti."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    "Říká ovladači videa, aby explicitně použil zadaný režim vyrovnávací paměti."
    )
 MSG_HASH(

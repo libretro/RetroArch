@@ -9988,11 +9988,11 @@ MSG_HASH(
    "Käytä sisäänrakennettua kuvankatselinta"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   "Suurin kuvien vaihtoketju"
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "Määrää videoajurin käyttämään yksiselitteisesti määritettyä puskurointitilaa."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    "Määrää videoajurin käyttämään yksiselitteisesti määritettyä puskurointitilaa."
    )
 MSG_HASH(

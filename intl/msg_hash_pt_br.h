@@ -10112,11 +10112,11 @@ MSG_HASH(
    "Utilizar o visualizador de imagem integrado"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   "Máximo de imagens na cadeia de troca"
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "Informa ao driver de vídeo para utilizar explicitamente um modo de buffer específico."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    "Informa ao driver de vídeo para utilizar explicitamente um modo de buffer específico."
    )
 MSG_HASH(

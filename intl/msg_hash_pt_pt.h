@@ -3972,11 +3972,11 @@ MSG_HASH(
    "Utilizador"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   "Número máximo de trocas de imagem encadeadas"
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "Informar o controlador de vídeo sobre a utilização explícita de um modo de carregamento específico."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    "Informar o controlador de vídeo sobre a utilização explícita de um modo de carregamento específico."
    )
 MSG_HASH(
