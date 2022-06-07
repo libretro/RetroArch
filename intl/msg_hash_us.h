@@ -10893,18 +10893,10 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   "Max Swapchain Images"
+   "Max swapchain images"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   "Tells the video driver to explicitly use a specified buffering mode."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
-   "Max Frame Latency"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    "Tells the video driver to explicitly use a specified buffering mode."
    )
 MSG_HASH(

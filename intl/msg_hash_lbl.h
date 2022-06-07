@@ -3587,10 +3587,6 @@ MSG_HASH(
    "video_max_swapchain_images"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,
-   "video_max_frame_latency"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X,
    "video_message_pos_x"
    )

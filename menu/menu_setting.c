@@ -12507,23 +12507,6 @@ static bool setting_append_list(
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
 
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.video_max_frame_latency,
-                  MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
-                  DEFAULT_MAX_FRAME_LATENCY,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].offset_by = 1;
-            menu_settings_list_current_add_range(list, list_info, (*list)[list_info->index - 1].offset_by, 3, 1, true, true);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
-
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.video_hard_sync,

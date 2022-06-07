@@ -353,11 +353,10 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_localap_enable,                MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_timezone,                      MENU_ENUM_SUBLABEL_TIMEZONE)
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_user_language,                 MENU_ENUM_SUBLABEL_USER_LANGUAGE)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_max_swapchain_images,          MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_max_frame_latency,             MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_max_swapchain_images,          MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES )
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_online_updater,                MENU_ENUM_SUBLABEL_ONLINE_UPDATER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_fps_show,                      MENU_ENUM_SUBLABEL_FPS_SHOW)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_fps_update_interval,           MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_fps_update_interval,                      MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_framecount_show,               MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_memory_show,                   MENU_ENUM_SUBLABEL_MEMORY_SHOW)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_memory_update_interval,        MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL)
@@ -4231,9 +4230,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_max_swapchain_images);
-            break;
-         case MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_max_frame_latency);
             break;
          case MENU_ENUM_LABEL_NETPLAY_PING_SHOW:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_ping_show);

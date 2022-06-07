@@ -171,7 +171,6 @@ typedef struct
 
    struct
    {
-      HANDLE                      frameLatencyWaitableObject;
       DXGISwapChain               handle;
       D3D12Resource               renderTargets[2];
 #ifdef HAVE_DXGI_HDR

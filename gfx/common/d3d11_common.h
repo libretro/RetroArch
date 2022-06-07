@@ -172,7 +172,6 @@ typedef struct d3d11_shader_t
 typedef struct
 {
    unsigned              cur_mon_id;
-   HANDLE                frameLatencyWaitableObject;
    DXGISwapChain         swapChain;
    D3D11Device           device;
    D3D_FEATURE_LEVEL     supportedFeatureLevel;
