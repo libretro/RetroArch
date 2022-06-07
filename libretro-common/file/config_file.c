@@ -408,6 +408,20 @@ static void config_file_add_sub_conf(config_file_t *conf, char *path,
          conf->path);
 }
 
+void config_file_add_reference(config_file_t *conf, char *path)
+{
+   /* It is expected that the conf has it's path already set */
+   char short_path[PATH_MAX_LENGTH];
+   
+   short_path[0] = '\0';
+   
+   if (!conf->references)
+      conf->references = path_linked_list_new();
+
+   fill_pathname_abbreviated_or_relative(short_path, conf->path, path, sizeof(short_path));
+   path_linked_list_add_path(conf->references, short_path);
+}
+
 static int config_file_load_internal(
       struct config_file *conf,
       const char *path, unsigned depth, config_file_cb_t *cb)
@@ -581,7 +595,7 @@ static bool config_file_parse_line(config_file_t *conf,
          if (!path)
             return false;
 
-         config_file_set_reference_path(conf, path);
+         config_file_add_reference(conf, path);
 
          if (!path)
             return false;
@@ -702,32 +716,13 @@ static int config_file_from_string_internal(
    return 0;
 }
 
-void config_file_set_reference_path(config_file_t *conf, char *path)
-{
-   /* It is expected that the conf has it's path already set */
-   
-   char short_path[PATH_MAX_LENGTH];
-   
-   short_path[0] = '\0';
-
-   if (!conf)
-      return;
-
-   if (conf->reference)
-   {
-      free(conf->reference);
-      conf->reference = NULL;
-   }
-
-   fill_pathname_abbreviated_or_relative(short_path, conf->path, path, sizeof(short_path));
-   
-   conf->reference = strdup(short_path);
-}
 
 bool config_file_deinitialize(config_file_t *conf)
 {
    struct config_include_list *inc_tmp = NULL;
    struct config_entry_list *tmp       = NULL;
+   struct path_linked_list *ref_tmp = NULL;
+
    if (!conf)
       return false;
 
@@ -762,8 +757,7 @@ bool config_file_deinitialize(config_file_t *conf)
          free(hold);
    }
 
-   if (conf->reference)
-      free(conf->reference);
+   path_linked_list_free(conf->references);
 
    if (conf->path)
       free(conf->path);
@@ -905,7 +899,7 @@ void config_file_initialize(struct config_file *conf)
    conf->entries                  = NULL;
    conf->tail                     = NULL;
    conf->last                     = NULL;
-   conf->reference                = NULL;
+   conf->references               = NULL;
    conf->includes                 = NULL;
    conf->include_depth            = 0;
    conf->guaranteed_no_duplicates = false;
@@ -1363,11 +1357,13 @@ void config_file_dump(config_file_t *conf, FILE *file, bool sort)
 {
    struct config_entry_list       *list = NULL;
    struct config_include_list *includes = conf->includes;
+   struct path_linked_list *ref_tmp = conf->references;
 
-   if (conf->reference)
+   while (ref_tmp)
    {
-      pathname_make_slashes_portable(conf->reference);
-      fprintf(file, "#reference \"%s\"\n", conf->reference);
+      pathname_make_slashes_portable(ref_tmp->path);
+      fprintf(file, "#reference \"%s\"\n", ref_tmp->path);
+      ref_tmp = ref_tmp->next;
    }
 
    if (sort)

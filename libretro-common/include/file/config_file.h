@@ -54,12 +54,12 @@ RETRO_BEGIN_DECLS
 struct config_file
 {
    char *path;
-   char *reference;
    struct config_entry_list **entries_map;
    struct config_entry_list *entries;
    struct config_entry_list *tail;
    struct config_entry_list *last;
    struct config_include_list *includes;
+   struct path_linked_list *references;
    unsigned include_depth;
    bool guaranteed_no_duplicates;
    bool modified;
@@ -109,7 +109,7 @@ config_file_t *config_file_new_from_path_to_string(const char *path);
 /* Frees config file. */
 void config_file_free(config_file_t *conf);
 
-void config_file_set_reference_path(config_file_t *conf, char *path);
+void config_file_add_reference(config_file_t *conf, char *path);
 
 bool config_file_deinitialize(config_file_t *conf);
 
