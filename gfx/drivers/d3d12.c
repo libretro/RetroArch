@@ -109,7 +109,7 @@ static void d3d12_gfx_sync(d3d12_video_t* d3d12)
 }
 
 /* Waitable swap chain */
-static void WaitOnSwapChain(HANDLE frameLatencyWaitableObject)
+static void D3D12WaitOnSwapChain(HANDLE frameLatencyWaitableObject)
 {
    DWORD result = WaitForSingleObjectEx(
          frameLatencyWaitableObject,
@@ -2174,7 +2174,7 @@ static bool d3d12_gfx_frame(
 #endif
    }
    else
-      WaitOnSwapChain(d3d12->chain.frameLatencyWaitableObject);
+      D3D12WaitOnSwapChain(d3d12->chain.frameLatencyWaitableObject);
 
    D3D12ResetCommandAllocator(d3d12->queue.allocator);
 
