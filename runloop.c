@@ -7704,6 +7704,8 @@ int runloop_iterate(void)
    {
       if (settings->bools.video_frame_delay_auto)
       {
+         static bool slowmotion_prev  = false;
+         static unsigned skip_frames  = 0;
          float refresh_rate           = settings->floats.video_refresh_rate;
          unsigned video_swap_interval = runloop_get_video_swap_interval(
                settings->uints.video_swap_interval);
@@ -7713,6 +7715,21 @@ int runloop_iterate(void)
                /* Skip some starting frames for stabilization */
                video_st->frame_count > frame_time_interval &&
                video_st->frame_count % frame_time_interval == 0;
+
+         /* A few frames need to get ignored after slowmotion is disabled */
+         if (!runloop_st->slowmotion && slowmotion_prev)
+            skip_frames = frame_time_interval * 2;
+
+         if (skip_frames)
+            skip_frames--;
+
+         slowmotion_prev = runloop_st->slowmotion;
+         /* Always skip when slowmotion is active */
+         if (slowmotion_prev)
+            skip_frames = 1;
+
+         if (skip_frames)
+            frame_time_update = false;
 
          /* Black frame insertion + swap interval multiplier */
          refresh_rate = (refresh_rate / (video_bfi + 1.0f) / video_swap_interval);
@@ -7724,7 +7741,7 @@ int runloop_iterate(void)
          if (video_st->frame_delay_target != video_frame_delay)
          {
             video_st->frame_delay_target = video_frame_delay_effective = video_frame_delay;
-            RARCH_LOG("[Video]: Frame delay reset to %d.\n", video_frame_delay);
+            RARCH_LOG("[Video]: Frame delay reset to %d ms.\n", video_frame_delay);
          }
 
          if (video_frame_delay_effective > 0 && frame_time_update)
@@ -7737,7 +7754,7 @@ int runloop_iterate(void)
             if (vfda.decrease > 0)
             {
                video_frame_delay_effective -= vfda.decrease;
-               RARCH_LOG("[Video]: Frame delay decrease by %d to %d due to frame time: %d > %d.\n",
+               RARCH_LOG("[Video]: Frame delay decrease by %d ms to %d ms due to frame time: %d > %d.\n",
                      vfda.decrease, video_frame_delay_effective, vfda.time, vfda.target);
             }
          }
