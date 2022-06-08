@@ -10060,8 +10060,16 @@ MSG_HASH(
    "Usa Visualizzatore Di Immagini Integrato"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "Massimo di immagini in swapchain"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
    "Indica al driver video di utilizzare esplicitamente una modalità di buffering specifica."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   "Latenza massima di fotogrammi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,

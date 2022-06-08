@@ -3576,6 +3576,10 @@ MSG_HASH(
    )
 
 /* Explore tab */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,
+   "Regio"
+   )
 
 /* Playlist > Playlist Item */
 

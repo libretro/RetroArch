@@ -10180,8 +10180,16 @@ MSG_HASH(
    "Usar visor de imágenes integrado"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "Máximo de imágenes en «swap chain»"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
    "Informa al controlador de vídeo que utilice un modo de búfer concreto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   "Latencia máxima de fotogramas"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,

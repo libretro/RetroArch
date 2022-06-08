@@ -416,7 +416,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Desired audio latency in milliseconds. Might not be honoured if the audio driver can't provide the given latency."
+   "Desired audio latency in milliseconds. Might not be honoured if the audio driver cannot provide the given latency."
    )
 
 /* Settings > Audio > Resampler */
@@ -1045,6 +1045,10 @@ MSG_HASH(
    "Favourites Size"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
+   "Limit the number of entries in the 'Favourites' playlist. Once the limit is reached, new additions will be prevented until old entries are removed. Setting a value of -1 allows 'unlimited' entries.\nWARNING: Reducing the value will delete existing entries!"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
    "Allow the Renaming of Entries"
    )
@@ -1351,6 +1355,10 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
+   "Achievements cannot be activated with this core"
+)
 
 /* Quick Menu > Information */
 
@@ -1630,6 +1638,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
    "No net-play clients found."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "Maximum Swap-chain Images"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   "Maximum Frame Latency"
    )
 
 /* Unused (Only Exist in Translation Files) */

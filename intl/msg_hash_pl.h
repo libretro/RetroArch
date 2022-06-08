@@ -9884,8 +9884,12 @@ MSG_HASH(
    "Informuje sterownik wideo, aby jawnie użył określonego trybu buforowania."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   "Maksymalne opóźnienie ramki"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
-   "Informuje sterownik wideo, aby jawnie użył określonego trybu buforowania."
+   "Pozwala sterownikowi wideo na wyraźne użycie określonego trybu buforowania."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,

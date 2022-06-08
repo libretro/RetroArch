@@ -6480,7 +6480,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
-   "Только комнаты с возможностью подключения"
+   "Только доступные для подключения"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
@@ -10288,8 +10288,16 @@ MSG_HASH(
    "Встроенный просмотр изображений"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "Макс. изображений в свопчейне"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
    "Задаёт точный режим буферизации, используемый видеодрайвером."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   "Макс. задержка кадра"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,

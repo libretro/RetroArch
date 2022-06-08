@@ -10280,8 +10280,16 @@ MSG_HASH(
    "Dahili Resim Görüntüleyici Kullan"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "Azami Takas Zinciri Görüntüleri"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
    "Video sürücüsüne belirli bir arabelleğe alım kipini açıkça kullanmasını söyler."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   "Azami Kare Gecikmesi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,

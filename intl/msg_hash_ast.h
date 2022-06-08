@@ -1744,6 +1744,10 @@ MSG_HASH(
    "Llistes"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
+   "Puntos de guardáu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    "Caché"
    )
@@ -2975,6 +2979,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
    "Les miniatures baxáronse con ésitu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
+   "Opciones del nucleu"
    )
 
 /* Unsorted */

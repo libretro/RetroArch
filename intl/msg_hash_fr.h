@@ -10172,8 +10172,16 @@ MSG_HASH(
    "Utiliser le lecteur d'images intégré"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "Nombre d'images max en mémoire tampon "
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
    "Indique au pilote vidéo d'utiliser explicitement le mode de mise en mémoire tampon spécifié."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   "Latence maximale des images"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
