@@ -6255,6 +6255,10 @@ MSG_HASH(
    "Katkaise aktiivinen verkkopeliyhteys."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
+   "Aulan suodattimet"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
    "Vain yhdistettävissä olevat huoneet"
    )
@@ -6292,6 +6296,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
    "Lopeta verkkopelin isännöinti"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
+   "Potki asiakas"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_KICK,
@@ -6923,9 +6931,21 @@ MSG_HASH(
 
 /* Quick Menu > Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_MANAGER_LIST,
+   "Hallitse uudelleenmääritys tiedostoja"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_MANAGER_LIST,
+   "Lataa, tallenna tai poista syötteen uudelleenmääritystiedostot nykyiselle sisällölle."
+   )
 
 /* Quick Menu > Controls > Manage Remap Files */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_INFO,
+   "Aktiivinen uudelleenmääritystiedosto:"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
    "Lataa uudelleenmääritystiedosto"
@@ -6953,6 +6973,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
    "Poista pelin uudelleenmääritystiedosto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
+   "Nollaa syötteen määritykset"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
+   "Aseta kaikki syötteen uudelleenmäärityksen asetukset oletusarvoihin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
+   "Päivitä syötteen uudelleenmääritystiedosto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
+   "Korvaa aktiivinen uudelleenmääritystiedosto nykyisen syötteen uudelleenmäärityksen asetuksilla."
    )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
@@ -7590,6 +7626,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
    "Tuntematon peli"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
+   "Saavutuksia ei voida aktivoida tällä ytimellä"
 )
 
 /* Quick Menu > Information */
@@ -8776,6 +8816,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
    "Piirrä varjot"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
+   "Piirrä varjot kuvakkeille, pikkukuville ja kirjaimille. Tällä on pieni vaikutus suorituskykyyn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
@@ -9992,6 +10036,10 @@ MSG_HASH(
    "Määrää videoajurin käyttämään yksiselitteisesti määritettyä puskurointitilaa."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   "Kehyksen suurin viive"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    "Määrää videoajurin käyttämään yksiselitteisesti määritettyä puskurointitilaa."
    )
@@ -10927,6 +10975,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_COULD_NOT_FIND_VALID_DATA_TRACK,
    "Ei löytynyt kelpaavaa raitaa"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_OPEN_DATA_TRACK,
+   "Dataraitaa ei voitu avata"
    )
 MSG_HASH(
    MSG_COULD_NOT_READ_CONTENT_FILE,
