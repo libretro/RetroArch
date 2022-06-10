@@ -74,7 +74,6 @@
 #define recv(a,b,c,d) net_recv(a,b,c,d)
 #define recvfrom(a,b,c,d,e,f) net_recvfrom(a,b,c,d,e,f)
 #define select(a,b,c,d,e) net_select(a,b,c,d,e)
-#define poll(a,b,c) net_poll(a,b,c)
 
 #elif defined(VITA)
 #include <psp2/net/net.h>
