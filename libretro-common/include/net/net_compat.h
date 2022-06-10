@@ -62,7 +62,7 @@
 
 #define pollfd pollsd
 
-#define socket net_socket
+#define socket(a,b,c) net_socket(a,b,c)
 #define getsockopt net_getsockopt
 #define setsockopt net_setsockopt
 #define bind net_bind
@@ -73,7 +73,7 @@
 #define sendto net_sendto
 #define recv net_recv
 #define recvfrom net_recvfrom
-#define select net_select
+#define select(a,b,c,d,e) net_select(a,b,c,d,e)
 #define poll net_poll
 
 #elif defined(VITA)
