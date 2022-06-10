@@ -2304,7 +2304,9 @@ bool task_push_load_new_core(
 bool task_push_load_contentless_core_from_menu(
       const char *core_path)
 {
+#if defined(HAVE_DYNAMIC)
    content_ctx_info_t content_info       = {0};
+#endif
    content_information_ctx_t content_ctx = {0};
    content_state_t *p_content            = content_state_get_ptr();
    bool ret                              = true;
@@ -2321,8 +2323,6 @@ bool task_push_load_contentless_core_from_menu(
    if (string_is_empty(core_path))
       return false;
 
-   content_info.environ_get                  = menu_content_environment_get;
-
    content_ctx.check_firmware_before_loading = check_firmware_before_loading;
    content_ctx.bios_is_missing               = retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    if (!string_is_empty(path_dir_system))
@@ -2335,6 +2335,7 @@ bool task_push_load_contentless_core_from_menu(
    path_clear(RARCH_PATH_CONTENT);
 
 #if defined(HAVE_DYNAMIC)
+   content_info.environ_get                  = menu_content_environment_get;
    /* Load core */
    command_event(CMD_EVENT_LOAD_CORE, NULL);
 
