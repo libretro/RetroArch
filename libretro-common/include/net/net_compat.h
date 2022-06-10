@@ -63,18 +63,18 @@
 #define pollfd pollsd
 
 #define socket(a,b,c) net_socket(a,b,c)
-#define getsockopt net_getsockopt
-#define setsockopt net_setsockopt
-#define bind net_bind
-#define listen net_listen
-#define accept net_accept
-#define connect net_connect
-#define send net_send
-#define sendto net_sendto
-#define recv net_recv
-#define recvfrom net_recvfrom
+#define getsockopt(a,b,c,d,e) net_getsockopt(a,b,c,d,e)
+#define setsockopt(a,b,c,d,e) net_setsockopt(a,b,c,d,e)
+#define bind(a,b,c) net_bind(a,b,c)
+#define listen(a,b) net_listen(a,b)
+#define accept(a,b,c) net_accept(a,b,c)
+#define connect(a,b,c) net_connect(a,b,c)
+#define send(a,b,c,d) net_send(a,b,c,d)
+#define sendto(a,b,c,d,e,f) net_sendto(a,b,c,d,e,f)
+#define recv(a,b,c,d) net_recv(a,b,c,d)
+#define recvfrom(a,b,c,d,e,f) net_recvfrom(a,b,c,d,e,f)
 #define select(a,b,c,d,e) net_select(a,b,c,d,e)
-#define poll net_poll
+#define poll(a,b,c) net_poll(a,b,c)
 
 #elif defined(VITA)
 #include <psp2/net/net.h>
