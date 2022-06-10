@@ -464,6 +464,8 @@ done:
    sceNetEpollDestroy(epoll_fd);
 
    return ret;
+#elif defined(GEKKO)
+   return net_poll(fds, nfds, timeout);
 #else
    return poll(fds, nfds, timeout);
 #endif
