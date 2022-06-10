@@ -311,7 +311,7 @@ int socket_select(int nfds, fd_set *readfds, fd_set *writefds,
       if (writefds)
          memcpy(&wfds, writefds, sizeof(wfds));
       if (errorfds)
-         memcpy(&efds, errorfds, sizeof(efds))
+         memcpy(&efds, errorfds, sizeof(efds));
    }
    else
    {
