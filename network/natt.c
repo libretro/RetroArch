@@ -16,11 +16,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <string/stdstring.h>
 #include <formats/rxml.h>
 #include <features/features_cpu.h>
-#include <retro_miscellaneous.h>
 
-#include <string/stdstring.h>
+#include <retro_miscellaneous.h>
 
 #ifndef HAVE_SOCKET_LEGACY
 #include <net/net_ifinfo.h>
@@ -161,12 +161,10 @@ done:
 bool natt_device_next(struct natt_discovery *discovery,
    struct natt_device *device)
 {
-   fd_set  fds;
    char    buf[2048];
    ssize_t recvd;
    char    *data;
    size_t  remaining;
-   struct timeval tv   = {0};
    socklen_t addr_size = sizeof(device->addr);
 
    if (!discovery || !device)
@@ -183,19 +181,16 @@ bool natt_device_next(struct natt_discovery *discovery,
    *device->service_type = '\0';
    device->busy          = false;
 
-   /* Check our file descriptor to see if a device sent data to it. */
-   FD_ZERO(&fds);
-   FD_SET(discovery->fd, &fds);
-   if (socket_select(discovery->fd + 1, &fds, NULL, NULL, &tv) < 0)
-      return false;
-   /* If there was no data, check for timeout. */
-   if (!FD_ISSET(discovery->fd, &fds))
-      return cpu_features_get_time_usec() < discovery->timeout;
-
    recvd = recvfrom(discovery->fd, buf, sizeof(buf), 0,
-      (struct sockaddr *) &device->addr, &addr_size);
+      (struct sockaddr*)&device->addr, &addr_size);
    if (recvd < 0)
+   {
+      /* If there was no data, check for timeout. */
+      if (isagain((int)recvd))
+         return cpu_features_get_time_usec() < discovery->timeout;
+
       return false;
+   }
    /* Zero-length datagrams are valid, but we can't do anything with them.
       Don't treat them as an error. */
    if (!recvd)
@@ -204,12 +199,14 @@ bool natt_device_next(struct natt_discovery *discovery,
    /* Parse the data we received.
       We are only looking for the 'Location' HTTP header. */
    data      = buf;
-   remaining = (size_t) recvd;
+   remaining = (size_t)recvd;
    do
    {
-      char *lnbreak = (char *) memchr(data, '\n', remaining);
+      char *lnbreak = (char*)memchr(data, '\n', remaining);
+
       if (!lnbreak)
          break;
+
       *lnbreak++ = '\0';
 
       /* This also gets rid of any trailing carriage return. */
@@ -230,7 +227,7 @@ bool natt_device_next(struct natt_discovery *discovery,
          }
       }
 
-      remaining -= (size_t) lnbreak - (size_t) data;
+      remaining -= (size_t)lnbreak - (size_t)data;
       data = lnbreak;
    } while (remaining);
 

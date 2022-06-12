@@ -91,7 +91,6 @@ struct in_addr
 };
 
 static void *_net_compat_net_memory = NULL;
-int retro_epoll_fd = -1;
 
 char *inet_ntoa(struct SceNetInAddr in)
 {
@@ -352,17 +351,15 @@ bool network_init(void)
       SceNetInitParam param;
 
       _net_compat_net_memory = malloc(COMPAT_NET_INIT_SIZE);
+      if (!_net_compat_net_memory)
+         goto failure;
 
       param.memory           = _net_compat_net_memory;
       param.size             = COMPAT_NET_INIT_SIZE;
       param.flags            = 0;
       if (sceNetInit(&param) < 0)
          goto failure;
-
-      sceNetCtlInit();
-
-      retro_epoll_fd = sceNetEpollCreate("epoll", 0);
-      if (retro_epoll_fd < 0)
+      if (sceNetCtlInit() < 0)
          goto failure;
    }
 #elif defined(GEKKO)
@@ -427,12 +424,6 @@ void network_deinit(void)
    netFinalizeNetwork();
    sysModuleUnload(SYSMODULE_NET);
 #elif defined(VITA)
-   if (retro_epoll_fd >= 0)
-   {
-      sceNetEpollDestroy(retro_epoll_fd);
-      retro_epoll_fd = -1;
-   }
-
    sceNetCtlTerm();
    sceNetTerm();
 

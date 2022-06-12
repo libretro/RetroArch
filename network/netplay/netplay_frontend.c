@@ -27,6 +27,10 @@
 #include <retro_timers.h>
 #include <retro_assert.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include <math/float_minmax.h>
 #include <string/stdstring.h>
 #include <net/net_socket.h>
@@ -303,24 +307,20 @@ static bool netplay_lan_ad_client_response(void)
    /* Check for any ad queries */
    for (;;)
    {
-      fd_set fds;
-      struct timeval tv                  = {0};
+      bool has_data                      = true;
       struct sockaddr_storage their_addr = {0};
       socklen_t addr_size                = sizeof(their_addr);
 
-      FD_ZERO(&fds);
-      FD_SET(net_st->lan_ad_client_fd, &fds);
-      tv.tv_usec = 500000;
-      if (socket_select(net_st->lan_ad_client_fd + 1,
-            &fds, NULL, NULL, &tv) <= 0)
+      if (!socket_wait(net_st->lan_ad_client_fd, &has_data, NULL, 500) ||
+            !has_data)
          break;
 
       /* Somebody queried, so check that it's valid */
       if (recvfrom(net_st->lan_ad_client_fd,
-         (char *) &net_st->ad_packet_buffer,
-         sizeof(net_st->ad_packet_buffer), 0,
-         (struct sockaddr *) &their_addr,
-         &addr_size) == sizeof(net_st->ad_packet_buffer))
+            (char*)&net_st->ad_packet_buffer, sizeof(net_st->ad_packet_buffer),
+            0,
+            (struct sockaddr*)&their_addr, &addr_size) ==
+         sizeof(net_st->ad_packet_buffer))
       {
          char address[256];
          struct netplay_host *host        = NULL;
@@ -343,23 +343,20 @@ static bool netplay_lan_ad_client_response(void)
             continue;
 #endif
 
-         if (!netplay_is_lan_address(
-               (struct sockaddr_in *) &their_addr))
+         if (!netplay_is_lan_address((struct sockaddr_in*)&their_addr))
             continue;
 
 #ifndef HAVE_SOCKET_LEGACY
-         if (getnameinfo((struct sockaddr *)
-               &their_addr, sizeof(their_addr),
+         if (getnameinfo((struct sockaddr*)&their_addr, sizeof(their_addr),
                address, sizeof(address), NULL, 0,
                NI_NUMERICHOST))
             continue;
 #else
          /* We need to convert the address manually */
          {
-            uint8_t *addr8 = (uint8_t *)
-               &((struct sockaddr_in *) &their_addr)->sin_addr;
-            snprintf(address, sizeof(address),
-               "%d.%d.%d.%d",
+            uint8_t *addr8 =
+               (uint8_t*)&((struct sockaddr_in*)&their_addr)->sin_addr;
+            snprintf(address, sizeof(address), "%d.%d.%d.%d",
                (int)addr8[0], (int)addr8[1],
                (int)addr8[2], (int)addr8[3]);
          }
@@ -377,14 +374,14 @@ static bool netplay_lan_ad_client_response(void)
                allocated *= 2;
 
             if (net_st->discovered_hosts.hosts)
-               new_hosts  = (struct netplay_host *)
-                  realloc(net_st->discovered_hosts.hosts, allocated * sizeof(struct
-                  netplay_host));
+               new_hosts  = (struct netplay_host*)realloc(
+                  net_st->discovered_hosts.hosts,
+                  allocated * sizeof(struct netplay_host));
             else
                /* Should be equivalent to realloc, 
                 * but I don't trust screwy libcs */
-               new_hosts = (struct netplay_host *)
-                  malloc(allocated * sizeof(struct netplay_host));
+               new_hosts = (struct netplay_host*)malloc(
+                  allocated * sizeof(struct netplay_host));
 
             if (!new_hosts)
                return false;
@@ -399,29 +396,21 @@ static bool netplay_lan_ad_client_response(void)
          /* Copy in the response */
          host->content_crc = (int)ntohl(net_st->ad_packet_buffer.content_crc);
          host->port        = (int)ntohl(net_st->ad_packet_buffer.port);
-         strlcpy(host->address,
-            address,
-            sizeof(host->address));
-         strlcpy(host->nick,
-            net_st->ad_packet_buffer.nick,
+         strlcpy(host->address, address, sizeof(host->address));
+         strlcpy(host->nick, net_st->ad_packet_buffer.nick,
             sizeof(host->nick));
-         strlcpy(host->frontend,
-            net_st->ad_packet_buffer.frontend,
+         strlcpy(host->frontend, net_st->ad_packet_buffer.frontend,
             sizeof(host->frontend));
-         strlcpy(host->core,
-            net_st->ad_packet_buffer.core,
+         strlcpy(host->core, net_st->ad_packet_buffer.core,
             sizeof(host->core));
-         strlcpy(host->core_version,
-            net_st->ad_packet_buffer.core_version,
+         strlcpy(host->core_version, net_st->ad_packet_buffer.core_version,
             sizeof(host->core_version));
          strlcpy(host->retroarch_version,
             net_st->ad_packet_buffer.retroarch_version,
             sizeof(host->retroarch_version));
-         strlcpy(host->content,
-            net_st->ad_packet_buffer.content,
+         strlcpy(host->content, net_st->ad_packet_buffer.content,
             sizeof(host->content));
-         strlcpy(host->subsystem_name,
-            net_st->ad_packet_buffer.subsystem_name,
+         strlcpy(host->subsystem_name, net_st->ad_packet_buffer.subsystem_name,
             sizeof(host->subsystem_name));
          has_password = ntohl(net_st->ad_packet_buffer.has_password);
          host->has_password          = (has_password & 1) ? true : false;
@@ -513,30 +502,28 @@ static void deinit_lan_ad_server_socket(void)
  */
 static bool netplay_lan_ad_server(netplay_t *netplay)
 {
-   fd_set fds;
+   ssize_t ret;
    uint32_t header;
-   struct timeval tv                  = {0};
    struct sockaddr_storage their_addr = {0};
    socklen_t addr_size                = sizeof(their_addr);
    net_driver_state_t *net_st         = &networking_driver_st;
 
    /* Check for any ad queries */
-   FD_ZERO(&fds);
-   FD_SET(net_st->lan_ad_server_fd, &fds);
-   if (socket_select(net_st->lan_ad_server_fd + 1,
-      &fds, NULL, NULL, &tv) < 0)
+   ret = recvfrom(net_st->lan_ad_server_fd,
+      (char*)&header, sizeof(header), 0,
+      (struct sockaddr*)&their_addr, &addr_size);
+   if (ret < 0)
    {
+      if (isagain((int)ret))
+         return true;
+
       deinit_lan_ad_server_socket();
+
       return false;
    }
-   if (!FD_ISSET(net_st->lan_ad_server_fd, &fds))
-      return true;
 
    /* Somebody queried, so check that it's valid */
-   if (recvfrom(net_st->lan_ad_server_fd,
-      (char *) &header, sizeof(header), 0,
-      (struct sockaddr *) &their_addr,
-      &addr_size) == sizeof(header))
+   if (ret == sizeof(header))
    {
       const frontend_ctx_driver_t *frontend_drv;
       char frontend_architecture_tmp[24];
@@ -564,15 +551,13 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
          return true;
 #endif
 
-      if (!netplay_is_lan_address(
-            (struct sockaddr_in *) &their_addr))
+      if (!netplay_is_lan_address((struct sockaddr_in*)&their_addr))
          return true;
 
       RARCH_LOG("[Discovery] Query received on LAN interface.\n");
 
       /* Now build our response */
-      memset(&net_st->ad_packet_buffer, 0,
-         sizeof(net_st->ad_packet_buffer));
+      memset(&net_st->ad_packet_buffer, 0, sizeof(net_st->ad_packet_buffer));
 
       net_st->ad_packet_buffer.header = htonl(DISCOVERY_RESPONSE_MAGIC);
 
@@ -582,27 +567,22 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
          sizeof(net_st->ad_packet_buffer.nick));
 
       frontend_drv =
-         (const frontend_ctx_driver_t*) frontend_driver_get_cpu_architecture_str(
+         (const frontend_ctx_driver_t*)frontend_driver_get_cpu_architecture_str(
             frontend_architecture_tmp, sizeof(frontend_architecture_tmp));
       if (frontend_drv)
          snprintf(net_st->ad_packet_buffer.frontend,
             sizeof(net_st->ad_packet_buffer.frontend),
-            "%s %s",
-            frontend_drv->ident, frontend_architecture_tmp);
+            "%s %s", frontend_drv->ident, frontend_architecture_tmp);
       else
-         strlcpy(net_st->ad_packet_buffer.frontend,
-            "N/A",
+         strlcpy(net_st->ad_packet_buffer.frontend, "N/A",
             sizeof(net_st->ad_packet_buffer.frontend));
 
-      strlcpy(net_st->ad_packet_buffer.core,
-         system->library_name,
+      strlcpy(net_st->ad_packet_buffer.core, system->library_name,
          sizeof(net_st->ad_packet_buffer.core));
-      strlcpy(net_st->ad_packet_buffer.core_version,
-         system->library_version,
+      strlcpy(net_st->ad_packet_buffer.core_version, system->library_version,
          sizeof(net_st->ad_packet_buffer.core_version));
 
-      strlcpy(net_st->ad_packet_buffer.retroarch_version,
-         PACKAGE_VERSION,
+      strlcpy(net_st->ad_packet_buffer.retroarch_version, PACKAGE_VERSION,
          sizeof(net_st->ad_packet_buffer.retroarch_version));
 
       if (subsystem && subsystem->size > 0)
@@ -613,7 +593,8 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
          buf[0] = '\0';
          for (i = 0;;)
          {
-            strlcat(buf, path_basename(subsystem->elems[i++].data), sizeof(buf));
+            strlcat(buf, path_basename(subsystem->elems[i++].data),
+               sizeof(buf));
             if (i >= subsystem->size)
                break;
             strlcat(buf, "|", sizeof(buf));
@@ -650,9 +631,8 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
 
       /* Send our response */
       sendto(net_st->lan_ad_server_fd,
-         (char *) &net_st->ad_packet_buffer,
-         sizeof(net_st->ad_packet_buffer),
-         0, (struct sockaddr *) &their_addr, sizeof(their_addr));
+         (char*)&net_st->ad_packet_buffer, sizeof(net_st->ad_packet_buffer),
+         0, (struct sockaddr*)&their_addr, sizeof(their_addr));
    }
 
    return true;
@@ -2525,34 +2505,33 @@ static bool netplay_full(netplay_t *netplay, int sockfd)
    unsigned max_connections = settings->uints.netplay_max_connections;
    unsigned total           = 0;
 
-   if (max_connections)
+   if (!max_connections || max_connections >= MAX_CLIENTS)
+      max_connections = MAX_CLIENTS - 1;
+
+   for (i = 0; i < netplay->connections_size; i++)
+      if (netplay->connections[i].active) total++;
+
+   if (total >= max_connections)
    {
-      for (i = 0; i < netplay->connections_size; i++)
-         if (netplay->connections[i].active) total++;
+      /* We send a header to let the client 
+         know we are full */
+      uint32_t header[6];
 
-      if (total >= max_connections)
-      {
-         /* We send a header to let the client 
-            know we are full */
-         uint32_t header[6];
+      /* The only parameter that we need to set is 
+         netplay magic;
+         we set the protocol version parameter 
+         too for backwards compatibility */
+      memset(header, 0, sizeof(header));
+      header[0] = htonl(FULL_MAGIC);
+      header[4] = htonl(HIGH_NETPLAY_PROTOCOL_VERSION);
 
-         /* The only parameter that we need to set is 
-            netplay magic;
-            we set the protocol version parameter 
-            too for backwards compatibility */
-         memset(header, 0, sizeof(header));
-         header[0] = htonl(FULL_MAGIC);
-         header[4] = htonl(HIGH_NETPLAY_PROTOCOL_VERSION);
+      /* The kernel might close the socket before 
+         sending our data.
+         This is fine; the header is just a warning 
+         for the client. */
+      socket_send_all_nonblocking(sockfd, header, sizeof(header), true);
 
-         /* The kernel might close the socket before 
-            sending our data.
-            This is fine; the header is just a warning 
-            for the client. */
-         socket_send_all_nonblocking(sockfd, header,
-               sizeof(header), true);
-
-         return true;
-      }
+      return true;
    }
 
    return false;
@@ -3142,50 +3121,33 @@ static void netplay_handle_frame_hash(netplay_t *netplay,
  */
 static int handle_connection(netplay_t *netplay, bool *error)
 {
-   fd_set fds;
-   int result;
-   struct timeval tv = {0};
-   int new_fd        = -1;
+   int new_fd;
+   struct sockaddr_storage their_addr;
+   socklen_t addr_size = sizeof(their_addr);
 
-   FD_ZERO(&fds);
-   FD_SET(netplay->listen_fd, &fds);
-
-   /* Check for a connection */
-   result = socket_select(netplay->listen_fd + 1, &fds, NULL, NULL, &tv);
-
-   if (result < 0)
-      goto critical_failure;
-
-   if (result)
+   new_fd = accept(netplay->listen_fd,
+      (struct sockaddr*)&their_addr, &addr_size);
+   if (new_fd < 0)
    {
-      struct sockaddr_storage their_addr;
-      socklen_t addr_size = sizeof(their_addr);
+      if (!isagain(new_fd))
+         *error = true;
 
-      new_fd = accept(netplay->listen_fd,
-         (struct sockaddr*) &their_addr, &addr_size);
-
-      if (new_fd >= 0)
-      {
-         /* Set the socket nonblocking */
-         if (!socket_nonblock(new_fd))
-            goto critical_failure;
-
-         SET_TCP_NODELAY(new_fd)
-         SET_FD_CLOEXEC(new_fd)
-      }
-      else
-         goto critical_failure;
+      return -1;
    }
 
-   return new_fd;
-
-critical_failure:
-   if (new_fd >= 0)
+   /* Set the socket nonblocking */
+   if (!socket_nonblock(new_fd))
+   {
       socket_close(new_fd);
+      *error = true;
 
-   *error = true;
+      return -1;
+   }
 
-   return -1;
+   SET_TCP_NODELAY(new_fd)
+   SET_FD_CLOEXEC(new_fd)
+
+   return new_fd;
 }
 
 static bool netplay_tunnel_connect(int fd, const struct addrinfo *addr)
@@ -3198,7 +3160,7 @@ static bool netplay_tunnel_connect(int fd, const struct addrinfo *addr)
    SET_TCP_NODELAY(fd)
    SET_FD_CLOEXEC(fd)
 
-   result = socket_connect(fd, (void*) addr, false);
+   result = socket_connect(fd, (void*)addr, false);
    if (result && !isinprogress(result) && !isagain(result))
       return false;
 
@@ -3221,40 +3183,34 @@ static bool netplay_tunnel_connect(int fd, const struct addrinfo *addr)
  */
 static int handle_mitm_connection(netplay_t *netplay, bool *error)
 {
-   size_t   i;
-   void*    recv_buf;
-   size_t   recv_len;
-   ssize_t  recvd;
+   size_t  i;
+   void*   recv_buf;
+   size_t  recv_len;
+   ssize_t recvd;
    int new_fd         = -1;
    retro_time_t ctime = cpu_features_get_time_usec();
 
-   /* We want to call select individually in order to handle errors on a per
-      connection basis. */
    for (i = 0; i < NETPLAY_MITM_MAX_PENDING; i++)
    {
       int fd = netplay->mitm_pending->fds[i];
+
       if (fd >= 0)
       {
-         fd_set wfd, efd;
-         struct timeval tv = {0};
+         bool ready = true;
 
-         FD_ZERO(&wfd);
-         FD_ZERO(&efd);
-         FD_SET(fd, &wfd);
-         FD_SET(fd, &efd);
-
-         if (socket_select(fd + 1, NULL, &wfd, &efd, &tv) < 0 ||
-            FD_ISSET(fd, &efd))
+         if (!socket_wait(fd, NULL, &ready, 0))
          {
             /* Error */
             RARCH_ERR("[Netplay] Tunnel link connection failed.\n");
          }
-         else if (FD_ISSET(fd, &wfd))
+         else if (ready)
          {
             /* Connection is ready.
                Send the linking id. */
             mitm_id_t *lid = &netplay->mitm_pending->ids[i];
-            if (socket_send_all_nonblocking(fd, lid, sizeof(*lid), true) == sizeof(*lid))
+
+            if (socket_send_all_nonblocking(fd, lid, sizeof(*lid), true) ==
+                  sizeof(*lid))
             {
                new_fd = fd;
                RARCH_LOG("[Netplay] Tunnel link connection completed.\n");
@@ -3272,8 +3228,10 @@ static int handle_mitm_connection(netplay_t *netplay, bool *error)
          {
             /* Check if the connection timeouted. */
             retro_time_t timeout = netplay->mitm_pending->timeouts[i];
+
             if (ctime < timeout)
                continue;
+
             RARCH_ERR("[Netplay] Tunnel link connection timeout.\n");
          }
 
@@ -3282,9 +3240,10 @@ static int handle_mitm_connection(netplay_t *netplay, bool *error)
       }
    }
 
-   recv_buf = (void*) ((size_t) &netplay->mitm_pending->id_buf +
-      netplay->mitm_pending->id_recvd);
-   if (netplay->mitm_pending->id_recvd < sizeof(netplay->mitm_pending->id_buf.magic))
+   recv_buf = ((uint8_t*)&netplay->mitm_pending->id_buf) +
+      netplay->mitm_pending->id_recvd;
+   if (netplay->mitm_pending->id_recvd <
+         sizeof(netplay->mitm_pending->id_buf.magic))
       recv_len = sizeof(netplay->mitm_pending->id_buf.magic) -
          netplay->mitm_pending->id_recvd;
    else
@@ -3301,55 +3260,59 @@ static int handle_mitm_connection(netplay_t *netplay, bool *error)
    }
 
    netplay->mitm_pending->id_recvd += recvd;
-   if (netplay->mitm_pending->id_recvd >= sizeof(netplay->mitm_pending->id_buf.magic))
+   if (netplay->mitm_pending->id_recvd >=
+         sizeof(netplay->mitm_pending->id_buf.magic))
    {
       switch (ntohl(netplay->mitm_pending->id_buf.magic))
       {
          case MITM_LINK_MAGIC:
          {
-            if (netplay->mitm_pending->id_recvd == sizeof(netplay->mitm_pending->id_buf))
-            {
-               netplay->mitm_pending->id_recvd = 0;
+            if (netplay->mitm_pending->id_recvd <
+                  sizeof(netplay->mitm_pending->id_buf))
+               break;
 
-               /* Find a free spot to allocate this connection. */
-               for (i = 0; i < NETPLAY_MITM_MAX_PENDING; i++)
-                  if (netplay->mitm_pending->fds[i] < 0)
-                     break;
-               if (i < NETPLAY_MITM_MAX_PENDING)
+            netplay->mitm_pending->id_recvd = 0;
+
+            /* Find a free spot to allocate this connection. */
+            for (i = 0; i < NETPLAY_MITM_MAX_PENDING; i++)
+               if (netplay->mitm_pending->fds[i] < 0)
+                  break;
+            if (i < NETPLAY_MITM_MAX_PENDING)
+            {
+               int fd = socket(
+                  netplay->mitm_pending->addr->ai_family,
+                  netplay->mitm_pending->addr->ai_socktype,
+                  netplay->mitm_pending->addr->ai_protocol
+               );
+
+               if (fd >= 0)
                {
-                  int fd = socket(
-                     netplay->mitm_pending->addr->ai_family,
-                     netplay->mitm_pending->addr->ai_socktype,
-                     netplay->mitm_pending->addr->ai_protocol
-                  );
-                  if (fd >= 0)
+                  if (netplay_tunnel_connect(fd, netplay->mitm_pending->addr))
                   {
-                     if (netplay_tunnel_connect(fd, netplay->mitm_pending->addr))
-                     {
-                        netplay->mitm_pending->fds[i] = fd;
-                        memcpy(&netplay->mitm_pending->ids[i],
-                           &netplay->mitm_pending->id_buf,
-                           sizeof(*netplay->mitm_pending->ids));
-                        /* 30 seconds */
-                        netplay->mitm_pending->timeouts[i] = ctime + 30000000;
-                        RARCH_LOG("[Netplay] Queued tunnel link connection.\n");
-                     }
-                     else
-                     {
-                        socket_close(fd);
-                        RARCH_ERR("[Netplay] Failed to connect to tunnel server.\n");
-                     }
+                     netplay->mitm_pending->fds[i] = fd;
+                     memcpy(&netplay->mitm_pending->ids[i],
+                        &netplay->mitm_pending->id_buf,
+                        sizeof(*netplay->mitm_pending->ids));
+                     /* 30 seconds */
+                     netplay->mitm_pending->timeouts[i] = ctime + 30000000;
+                     RARCH_LOG("[Netplay] Queued tunnel link connection.\n");
                   }
                   else
                   {
-                     RARCH_ERR("[Netplay] Failed to create socket for tunnel link connection.\n");
+                     socket_close(fd);
+                     RARCH_ERR("[Netplay] Failed to connect to tunnel server.\n");
                   }
                }
                else
                {
-                  RARCH_WARN("[Netplay] Cannot create more tunnel link connections.\n");
+                  RARCH_ERR("[Netplay] Failed to create socket for tunnel link connection.\n");
                }
             }
+            else
+            {
+               RARCH_WARN("[Netplay] Cannot create any more tunnel link connections.\n");
+            }
+
             break;
          }
          case MITM_PING_MAGIC:
@@ -3369,10 +3332,10 @@ static int handle_mitm_connection(netplay_t *netplay, bool *error)
             }
 
             break;
-        }
-        default:
-           RARCH_ERR("[Netplay] Received unknown magic from tunnel server.\n");
-           goto critical_failure;
+         }
+         default:
+            RARCH_ERR("[Netplay] Received unknown magic from tunnel server.\n");
+            goto critical_failure;
       }
    }
 
@@ -6095,19 +6058,8 @@ shrt:
  */
 int netplay_poll_net_input(netplay_t *netplay, bool block)
 {
-   bool had_input = false;
-   int max_fd = 0;
    size_t i;
-
-   for (i = 0; i < netplay->connections_size; i++)
-   {
-      struct netplay_connection *connection = &netplay->connections[i];
-      if (connection->active && connection->fd >= max_fd)
-         max_fd = connection->fd + 1;
-   }
-
-   if (max_fd == 0)
-      return 0;
+   bool had_input;
 
    netplay->timeout_cnt = 0;
 
@@ -6115,14 +6067,14 @@ int netplay_poll_net_input(netplay_t *netplay, bool block)
    {
       had_input = false;
 
-      netplay->timeout_cnt++;
-
       /* Read input from each connection */
       for (i = 0; i < netplay->connections_size; i++)
       {
          struct netplay_connection *connection = &netplay->connections[i];
-         if (connection->active && !netplay_get_cmd(netplay, connection, &had_input))
-            netplay_hangup(netplay, connection);
+
+         if (connection->active)
+            if (!netplay_get_cmd(netplay, connection, &had_input))
+               netplay_hangup(netplay, connection);
       }
 
       if (block)
@@ -6136,29 +6088,70 @@ int netplay_poll_net_input(netplay_t *netplay, bool block)
          /* If we're supposed to block but we didn't have enough input, wait for it */
          if (!had_input)
          {
+#ifdef NETWORK_HAVE_POLL
+            struct pollfd fds[MAX_CLIENTS];
+            unsigned nfds     = 0;
+#else
             fd_set fds;
+            int max_fd        = -1;
             struct timeval tv = {0};
-            tv.tv_usec = RETRY_MS * 1000;
+#endif
 
-            FD_ZERO(&fds);
+            if (netplay->timeout_cnt >= MAX_RETRIES && !netplay->remote_paused)
+               return -1;
+
+#ifdef NETWORK_HAVE_POLL
             for (i = 0; i < netplay->connections_size; i++)
             {
                struct netplay_connection *connection = &netplay->connections[i];
+
                if (connection->active)
-                  FD_SET(connection->fd, &fds);
+               {
+                  struct pollfd *fd = &fds[nfds++];
+
+                  NET_POLL_FD(connection->fd, fd);
+                  fd->events  = POLLIN;
+                  fd->revents = 0;
+               }
             }
 
-            if (socket_select(max_fd, &fds, NULL, NULL, &tv) < 0)
-               return -1;
+            if (!nfds)
+               break;
+#else
+            FD_ZERO(&fds);
+
+            for (i = 0; i < netplay->connections_size; i++)
+            {
+               struct netplay_connection *connection = &netplay->connections[i];
+
+               if (connection->active)
+               {
+                  FD_SET(connection->fd, &fds);
+
+                  if (connection->fd > max_fd)
+                     max_fd = connection->fd;
+               }
+            }
+
+            if (max_fd < 0)
+               break;
+
+            tv.tv_usec = RETRY_MS * 1000;
+#endif
+
+            netplay->timeout_cnt++;
 
             RARCH_LOG(
-                  "[Netplay] Network is stalling at frame %u, count %u of %d ...\n",
-                  netplay->run_frame_count,
-                  netplay->timeout_cnt,
-                  MAX_RETRIES);
+               "[Netplay] Network is stalling at frame %lu, count %u of %d ...\n",
+               (unsigned long)netplay->run_frame_count,
+               netplay->timeout_cnt,
+               MAX_RETRIES);
 
-            if (      netplay->timeout_cnt >= MAX_RETRIES 
-                  && !netplay->remote_paused)
+#ifdef NETWORK_HAVE_POLL
+            if (socket_poll(fds, nfds, RETRY_MS) < 0)
+#else
+            if (socket_select(max_fd + 1, &fds, NULL, NULL, &tv) < 0)
+#endif
                return -1;
          }
       }
@@ -6314,14 +6307,14 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *addr,
 
    if (!is_server)
    {
-      if (socket_connect_with_timeout(fd, (void*)addr, 10))
+      if (socket_connect_with_timeout(fd, (void*)addr, 10000))
       {
          /* If we are connecting to a tunnel server,
             we must also send our session linking request. */
          if (!netplay->mitm_session_id.magic ||
                socket_send_all_blocking_with_timeout(fd,
                   &netplay->mitm_session_id, sizeof(netplay->mitm_session_id),
-                  5, true))
+                  5000, true))
             return fd;
       }
 
@@ -6341,7 +6334,7 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *addr,
    }
    else if (is_mitm)
    {
-      if (socket_connect_with_timeout(fd, (void*)addr, 10))
+      if (socket_connect_with_timeout(fd, (void*)addr, 10000))
       {
          mitm_id_t new_session = {0};
 
@@ -6351,10 +6344,10 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *addr,
 
          /* Tunnel server should provide us with our session ID. */
          if (socket_send_all_blocking_with_timeout(fd,
-               &new_session, sizeof(new_session), 5, true) &&
+               &new_session, sizeof(new_session), 5000, true) &&
             socket_receive_all_blocking_with_timeout(fd,
                &netplay->mitm_session_id, sizeof(netplay->mitm_session_id),
-               5))
+               5000))
          {
             if (ntohl(netplay->mitm_session_id.magic) == MITM_SESSION_MAGIC &&
                   memcmp(netplay->mitm_session_id.unique, new_session.unique,
