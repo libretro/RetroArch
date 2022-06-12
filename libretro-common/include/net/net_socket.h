@@ -84,7 +84,7 @@ bool socket_send_all_blocking(int fd, const void *data_, size_t size, bool no_si
 
 bool socket_send_all_blocking_with_timeout(int fd,
       const void *data_, size_t size,
-      unsigned timeout, bool no_signal);
+      int timeout, bool no_signal);
 
 ssize_t socket_send_all_nonblocking(int fd, const void *data_, size_t size,
       bool no_signal);
@@ -93,7 +93,7 @@ bool socket_receive_all_blocking(int fd, void *data_, size_t size);
 
 bool socket_receive_all_blocking_with_timeout(int fd,
       void *data_, size_t size,
-      unsigned timeout);
+      int timeout);
 
 ssize_t socket_receive_all_nonblocking(int fd, bool *error,
       void *data_, size_t size);
@@ -102,7 +102,7 @@ bool socket_bind(int fd, void *data);
 
 int socket_connect(int fd, void *data, bool timeout_enable);
 
-bool socket_connect_with_timeout(int fd, void *data, unsigned timeout);
+bool socket_connect_with_timeout(int fd, void *data, int timeout);
 
 int socket_create(
       const char *name,

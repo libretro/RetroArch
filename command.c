@@ -180,35 +180,21 @@ static void network_command_free(command_t *handle)
 
 static void command_network_poll(command_t *handle)
 {
-   fd_set fds;
-   struct timeval       tmp_tv = {0};
-   command_network_t   *netcmd = (command_network_t*)handle->userptr;
+   ssize_t ret;
+   char buf[2048];
+   command_network_t *netcmd = (command_network_t*)handle->userptr;
 
    if (netcmd->net_fd < 0)
       return;
 
-   FD_ZERO(&fds);
-   FD_SET(netcmd->net_fd, &fds);
-
-   if (socket_select(netcmd->net_fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
-      return;
-
-   if (!FD_ISSET(netcmd->net_fd, &fds))
-      return;
-
    for (;;)
    {
-      ssize_t ret;
-      char buf[1024];
+      netcmd->cmd_source_len = sizeof(netcmd->cmd_source);
 
-      buf[0] = '\0';
-      netcmd->cmd_source_len = sizeof(struct sockaddr_storage);
-      ret  = recvfrom(netcmd->net_fd, buf, sizeof(buf) - 1, 0,
-            (struct sockaddr*)&netcmd->cmd_source,
-            &netcmd->cmd_source_len);
-
+      ret = recvfrom(netcmd->net_fd, buf, sizeof(buf) - 1, 0,
+         (struct sockaddr*)&netcmd->cmd_source, &netcmd->cmd_source_len);
       if (ret <= 0)
-         break;
+         return;
 
       buf[ret] = '\0';
 
@@ -431,71 +417,58 @@ static void uds_command_free(command_t *handle)
 static void command_uds_poll(command_t *handle)
 {
    int i;
-   fd_set fds;
-   command_uds_t *udscmd       = (command_uds_t*)handle->userptr;
-   int maxfd                   = udscmd->sfd;
-   struct timeval       tmp_tv = {0};
+   int fd;
+   ssize_t ret;
+   char buf[2048];
+   command_uds_t *udscmd = (command_uds_t*)handle->userptr;
 
    if (udscmd->sfd < 0)
-      return;
-
-   FD_ZERO(&fds);
-   FD_SET(udscmd->sfd, &fds);
-
-   for (i = 0; i < MAX_USER_CONNECTIONS; i++)
-   {
-      if (udscmd->userfd[i] >= 0)
-      {
-         maxfd = MAX(udscmd->userfd[i], maxfd);
-         FD_SET(udscmd->userfd[i], &fds);
-      }
-   }
-
-   if (socket_select(maxfd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
       return;
 
    /* Read data from clients and process commands */
    for (i = 0; i < MAX_USER_CONNECTIONS; i++)
    {
-      if (udscmd->userfd[i] >= 0 && FD_ISSET(udscmd->userfd[i], &fds))
+      bool err = false;
+
+      fd = udscmd->userfd[i];
+      if (fd < 0)
+         continue;
+
+      ret = socket_receive_all_nonblocking(fd, &err, buf, sizeof(buf) - 1);
+      if (!ret)
+         continue;
+
+      if (!err)
       {
-         while (1)
-         {
-            char buf[2048];
-            ssize_t ret = recv(udscmd->userfd[i], buf, sizeof(buf) - 1, 0);
+         buf[ret]        = '\0';
+         udscmd->last_fd = fd;
 
-            if (ret < 0)
-               break;   /* no more data */
-            if (!ret)
-            {
-               socket_close(udscmd->userfd[i]);
-               udscmd->userfd[i] = -1;
-               break;
-            }
-
-            buf[ret] = 0;
-            udscmd->last_fd = udscmd->userfd[i];
-            command_parse_msg(handle, buf);
-         }
+         command_parse_msg(handle, buf);
+      }
+      else
+      {
+         socket_close(fd);
+         udscmd->userfd[i] = -1;
       }
    }
 
-   if (FD_ISSET(udscmd->sfd, &fds))
+   /* Accepts new connections from clients */
+   fd = accept(udscmd->sfd, NULL, NULL);
+   if (fd >= 0)
    {
-      /* Accepts new connections from clients */
-      int cfd = accept(udscmd->sfd, NULL, NULL);
-      if (cfd >= 0) {
-         if (!socket_nonblock(cfd))
-            socket_close(cfd);
-         else {
-            for (i = 0; i < MAX_USER_CONNECTIONS; i++)
-               if (udscmd->userfd[i] < 0)
-               {
-                  udscmd->userfd[i] = cfd;
-                  break;
-               }
+      if (socket_nonblock(fd))
+      {
+         for (i = 0; i < MAX_USER_CONNECTIONS; i++)
+         {
+            if (udscmd->userfd[i] < 0)
+            {
+               udscmd->userfd[i] = fd;
+               return;
+            }
          }
       }
+
+      socket_close(fd);
    }
 }
 

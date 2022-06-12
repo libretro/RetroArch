@@ -28,10 +28,6 @@
 #include <compat/msvc.h>
 #endif
 
-#ifdef GEKKO
-#include <network.h>
-#endif
-
 #include <features/features_cpu.h>
 
 #include <net/net_socket.h>
@@ -128,13 +124,13 @@ bool socket_receive_all_blocking(int fd, void *data_, size_t size)
 
 bool socket_receive_all_blocking_with_timeout(int fd,
       void *data_, size_t size,
-      unsigned timeout)
+      int timeout)
 {
    const uint8_t *data    = (const uint8_t*)data_;
    retro_time_t  deadline = cpu_features_get_time_usec();
 
-   if (timeout)
-      deadline += (retro_time_t)timeout * 1000000;
+   if (timeout > 0)
+      deadline += (retro_time_t)timeout * 1000;
    else
       deadline += 5000000;
 
@@ -147,23 +143,17 @@ bool socket_receive_all_blocking_with_timeout(int fd,
 
       if (ret < 0)
       {
-         retro_time_t time_delta;
-         fd_set fds;
-         struct timeval tv;
+         int _timeout;
+         bool ready = true;
 
          if (!isagain((int)ret))
             return false;
 
-         time_delta = deadline - cpu_features_get_time_usec();
-
-         if (time_delta <= 0)
+         _timeout = (int)((deadline - cpu_features_get_time_usec()) / 1000);
+         if (_timeout <= 0)
             return false;
 
-         FD_ZERO(&fds);
-         FD_SET(fd, &fds);
-         tv.tv_sec  = (unsigned)(time_delta / 1000000);
-         tv.tv_usec = (unsigned)(time_delta % 1000000);
-         if (socket_select(fd + 1, &fds, NULL, NULL, &tv) <= 0)
+         if (!socket_wait(fd, &ready, NULL, _timeout) || !ready)
             return false;
       }
       else
@@ -568,14 +558,14 @@ bool socket_send_all_blocking(int fd, const void *data_, size_t size,
 
 bool socket_send_all_blocking_with_timeout(int fd,
       const void *data_, size_t size,
-      unsigned timeout, bool no_signal)
+      int timeout, bool no_signal)
 {
    const uint8_t *data    = (const uint8_t*)data_;
    int           flags    = no_signal ? MSG_NOSIGNAL : 0;
    retro_time_t  deadline = cpu_features_get_time_usec();
 
-   if (timeout)
-      deadline += (retro_time_t)timeout * 1000000;
+   if (timeout > 0)
+      deadline += (retro_time_t)timeout * 1000;
    else
       deadline += 5000000;
 
@@ -588,23 +578,17 @@ bool socket_send_all_blocking_with_timeout(int fd,
 
       if (ret < 0)
       {
-         retro_time_t time_delta;
-         fd_set fds;
-         struct timeval tv;
+         int _timeout;
+         bool ready = true;
 
          if (!isagain((int)ret))
             return false;
 
-         time_delta = deadline - cpu_features_get_time_usec();
-
-         if (time_delta <= 0)
+         _timeout = (int)((deadline - cpu_features_get_time_usec()) / 1000);
+         if (_timeout <= 0)
             return false;
 
-         FD_ZERO(&fds);
-         FD_SET(fd, &fds);
-         tv.tv_sec  = (unsigned)(time_delta / 1000000);
-         tv.tv_usec = (unsigned)(time_delta % 1000000);
-         if (socket_select(fd + 1, NULL, &fds, NULL, &tv) <= 0)
+         if (!socket_wait(fd, NULL, &ready, _timeout) || !ready)
             return false;
       }
       else
@@ -698,7 +682,7 @@ int socket_connect(int fd, void *data, bool timeout_enable)
    return connect(fd, addr->ai_addr, addr->ai_addrlen);
 }
 
-bool socket_connect_with_timeout(int fd, void *data, unsigned timeout)
+bool socket_connect_with_timeout(int fd, void *data, int timeout)
 {
    int res;
    struct addrinfo *addr = (struct addrinfo*)data;
@@ -728,20 +712,15 @@ bool socket_connect_with_timeout(int fd, void *data, unsigned timeout)
    res = connect(fd, addr->ai_addr, addr->ai_addrlen);
    if (res)
    {
-      fd_set wfd, efd;
-      struct timeval tv = {0};
+      bool ready = true;
 
       if (!isinprogress(res) && !isagain(res))
          return false;
 
-      FD_ZERO(&wfd);
-      FD_ZERO(&efd);
-      FD_SET(fd, &wfd);
-      FD_SET(fd, &efd);
-      tv.tv_sec = timeout ? timeout : 5;
-      if (socket_select(fd + 1, NULL, &wfd, &efd, &tv) <= 0)
-         return false;
-      if (FD_ISSET(fd, &efd))
+      if (timeout <= 0)
+         timeout = 5000;
+
+      if (!socket_wait(fd, NULL, &ready, timeout) || !ready)
          return false;
    }
 

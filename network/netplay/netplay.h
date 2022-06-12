@@ -26,11 +26,11 @@
 #include <libretro.h>
 #include <retro_miscellaneous.h>
 
-#include <net/net_compat.h>
-
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
+
+#include <net/net_compat.h>
 
 #include "../../retroarch_types.h"
 
