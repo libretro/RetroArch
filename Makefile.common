@@ -2014,6 +2014,90 @@ ifeq ($(HAVE_ZLIB_COMMON), 1)
    ifeq ($(HAVE_CHD), 1)
       INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
       DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
+      ifeq ($(HAVE_STATIC_CORES), 1)
+         DEFINES += -Dbitstream_overflow=retroarch_internal_bitstream_overflow
+         DEFINES += -Dcreate_bitstream=retroarch_internal_create_bitstream
+         DEFINES += -Dbitstream_peek=retroarch_internal_bitstream_peek
+         DEFINES += -Dbitstream_remove=retroarch_internal_bitstream_remove
+         DEFINES += -Dbitstream_read=retroarch_internal_bitstream_read
+         DEFINES += -Dbitstream_read_offset=retroarch_internal_bitstream_read_offset
+         DEFINES += -Dbitstream_flush=retroarch_internal_bitstream_flush
+
+         DEFINES += -Decc_compute_bytes=retroarch_internal_ecc_compute_bytes
+         DEFINES += -Decc_verify=retroarch_internal_ecc_verify
+         DEFINES += -Decc_generate=retroarch_internal_ecc_generate
+         DEFINES += -Decc_clear=retroarch_internal_ecc_clear
+
+         DEFINES += -Ds_cd_sync_header=retroarch_internal_s_cd_sync_header
+         DEFINES += -Dchd_open_file=retroarch_internal_chd_open_file
+         DEFINES += -Dchd_precache=retroarch_internal_chd_precache
+         DEFINES += -Dchd_open=retroarch_internal_chd_open
+         DEFINES += -Dchd_close=retroarch_internal_chd_close
+         DEFINES += -Dchd_core_file=retroarch_internal_chd_core_file
+         DEFINES += -Dchd_error_string=retroarch_internal_chd_error_string
+         DEFINES += -Dchd_get_header=retroarch_internal_chd_get_header
+         DEFINES += -Dchd_read=retroarch_internal_chd_read
+         DEFINES += -Dchd_get_metadata=retroarch_internal_chd_get_metadata
+         DEFINES += -Dchd_codec_config=retroarch_internal_chd_codec_config
+         DEFINES += -Dchd_get_codec_name=retroarch_internal_chd_get_codec_name
+
+         DEFINES += -Dcreate_huffman_decoder=retroarch_internal_create_huffman_decoder
+         DEFINES += -Ddelete_huffman_decoder=retroarch_internal_delete_huffman_decoder
+         DEFINES += -Dhuffman_decode_one=retroarch_internal_huffman_decode_one
+         DEFINES += -Dhuffman_import_tree_rle=retroarch_internal_huffman_import_tree_rle
+         DEFINES += -Dhuffman_import_tree_huffman=retroarch_internal_huffman_import_tree_huffman
+         DEFINES += -Dhuffman_compute_tree_from_histo=retroarch_internal_huffman_compute_tree_from_histo
+         DEFINES += -Dhuffman_build_tree=retroarch_internal_huffman_build_tree
+         DEFINES += -Dhuffman_assign_canonical_codes=retroarch_internal_huffman_assign_canonical_codes
+         DEFINES += -Dhuffman_build_lookup_table=retroarch_internal_huffman_build_lookup_table
+
+         DEFINES += -Dcdzl_codec_init=retroarch_internal_cdzl_codec_init
+         DEFINES += -Dcdzl_codec_free=retroarch_internal_cdzl_codec_free
+         DEFINES += -Dcdzl_codec_decompress=retroarch_internal_cdzl_codec_decompress
+         DEFINES += -Dzlib_codec_init=retroarch_internal_zlib_codec_init
+         DEFINES += -Dzlib_codec_free=retroarch_internal_zlib_codec_free
+         DEFINES += -Dzlib_codec_decompress=retroarch_internal_zlib_codec_decompress
+         DEFINES += -Dzlib_fast_alloc=retroarch_internal_zlib_fast_alloc
+         DEFINES += -Dzlib_fast_free=retroarch_internal_zlib_fast_free
+
+         DEFINES += -Dchdstream_open=retroarch_internal_chdstream_open
+         DEFINES += -Dchdstream_close=retroarch_internal_chdstream_close
+         DEFINES += -Dchdstream_read=retroarch_internal_chdstream_read
+         DEFINES += -Dchdstream_getc=retroarch_internal_chdstream_getc
+         DEFINES += -Dchdstream_gets=retroarch_internal_chdstream_gets
+         DEFINES += -Dchdstream_tell=retroarch_internal_chdstream_tell
+         DEFINES += -Dchdstream_rewind=retroarch_internal_chdstream_rewind
+         DEFINES += -Dchdstream_seek=retroarch_internal_chdstream_seek
+         DEFINES += -Dchdstream_get_size=retroarch_internal_chdstream_get_size
+         DEFINES += -Dchdstream_get_track_start=retroarch_internal_chdstream_get_track_start
+         DEFINES += -Dchdstream_get_frame_size=retroarch_internal_chdstream_get_frame_size
+         DEFINES += -Dchdstream_get_first_track_sector=retroarch_internal_chdstream_get_first_track_sector
+
+         DEFINES += -Dflac_decoder_init=retroarch_internal_flac_decoder_init
+         DEFINES += -Dflac_decoder_free=retroarch_internal_flac_decoder_free
+         DEFINES += -Dflac_decoder_reset=retroarch_internal_flac_decoder_reset
+         DEFINES += -Dflac_decoder_decode_interleaved=retroarch_internal_flac_decoder_decode_interleaved
+         DEFINES += -Dflac_decoder_finish=retroarch_internal_flac_decoder_finish
+         DEFINES += -Dflac_decoder_read_callback_static=retroarch_internal_flac_decoder_read_callback_static
+         DEFINES += -Dflac_decoder_read_callback=retroarch_internal_flac_decoder_read_callback
+         DEFINES += -Dflac_decoder_metadata_callback_static=retroarch_internal_flac_decoder_metadata_callback_static
+         DEFINES += -Dflac_decoder_tell_callback_static=retroarch_internal_flac_decoder_tell_callback_static
+         DEFINES += -Dflac_decoder_write_callback_static=retroarch_internal_flac_decoder_write_callback_static
+         DEFINES += -Dflac_decoder_write_callback=retroarch_internal_flac_decoder_write_callback
+         DEFINES += -Dflac_decoder_error_callback_static=retroarch_internal_flac_decoder_error_callback_static
+         DEFINES += -Dcdfl_codec_init=retroarch_internal_cdfl_codec_init
+         DEFINES += -Dcdfl_codec_free=retroarch_internal_cdfl_codec_free
+         DEFINES += -Dcdfl_codec_decompress=retroarch_internal_cdfl_codec_decompress
+
+         DEFINES += -Dlzma_allocator_init=retroarch_internal_lzma_allocator_init
+         DEFINES += -Dlzma_allocator_free=retroarch_internal_lzma_allocator_free
+         DEFINES += -Dlzma_codec_init=retroarch_internal_lzma_codec_init
+         DEFINES += -Dlzma_codec_free=retroarch_internal_lzma_codec_free
+         DEFINES += -Dlzma_codec_decompress=retroarch_internal_lzma_codec_decompress
+         DEFINES += -Dcdlz_codec_init=retroarch_internal_cdlz_codec_init
+         DEFINES += -Dcdlz_codec_free=retroarch_internal_cdlz_codec_free
+         DEFINES += -Dcdlz_codec_decompress=retroarch_internal_cdlz_codec_decompress
+      endif
       OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_bitstream.o \
                  $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_cdrom.o \
                  $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_chd.o \
