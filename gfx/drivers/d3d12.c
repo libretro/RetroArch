@@ -2660,6 +2660,13 @@ static bool d3d12_gfx_frame(
 #endif
    DXGIPresent(d3d12->chain.handle, sync_interval, present_flags);
 
+   if (vsync)
+   {
+      IDXGIOutput *pOutput;
+      DXGIGetContainingOutput(d3d12->chain.handle, &pOutput);
+      DXGIWaitForVBlank(pOutput);
+   }
+
    return true;
 }
 

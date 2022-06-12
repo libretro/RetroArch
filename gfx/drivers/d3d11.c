@@ -2374,6 +2374,14 @@ static bool d3d11_gfx_frame(
 #endif
 
    DXGIPresent(d3d11->swapChain, d3d11->swap_interval, present_flags);
+
+   if (vsync)
+   {
+      IDXGIOutput *pOutput;
+      DXGIGetContainingOutput(d3d11->swapChain, &pOutput);
+      DXGIWaitForVBlank(pOutput);
+   }
+
    Release(rtv);
 
    return true;
