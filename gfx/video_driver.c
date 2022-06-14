@@ -4137,8 +4137,8 @@ void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_au
    unsigned frame_time_limit_min = frame_time_target * 1.30f;
    unsigned frame_time_limit_med = frame_time_target * 1.50f;
    unsigned frame_time_limit_max = frame_time_target * 1.90f;
-   unsigned frame_time_limit_cap = frame_time_target * 2.50f;
-   unsigned frame_time_limit_ign = frame_time_target * 3.75f;
+   unsigned frame_time_limit_cap = frame_time_target * 3.00f;
+   unsigned frame_time_limit_ign = frame_time_target * 3.50f;
    unsigned frame_time_min       = frame_time_target;
    unsigned frame_time_max       = frame_time_target;
    unsigned frame_time_count_pos = 0;
@@ -4210,9 +4210,14 @@ void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_au
       /* D3Dx stripe equalizer */
       else if (
                frame_time_count_pos == frame_time_frames_half
-            && frame_time_count_min >= 1
-            && frame_time_delta > (frame_time_target / 3)
-            && frame_time_delta < (frame_time_target / 2)
+            && ((
+                  (  frame_time_count_min > 1
+                  || frame_time_count_med > 0)
+                  && frame_time_delta > (frame_time_target / 3)
+                  && frame_time_delta < (frame_time_target / 2)
+               )
+               || (frame_time_count_min > 2)
+               )
             && frame_time > frame_time_target
          )
          mode = 3;
@@ -4226,7 +4231,8 @@ void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_au
          )
          mode = 4;
       /* Ignore */
-      else if (frame_time_delta > frame_time_target
+      else if (
+               frame_time_delta > frame_time_target
             && frame_time_count_med == 0
          )
          mode = -1;

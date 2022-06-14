@@ -6355,6 +6355,32 @@ static void setting_get_string_representation_video_swap_interval(rarch_setting_
       snprintf(s, len, "%u", *setting->value.target.unsigned_integer);
 }
 
+static void setting_get_string_representation_video_frame_delay(rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   settings_t *settings           = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+
+   if (!setting)
+      return;
+
+   if (settings && settings->bools.video_frame_delay_auto)
+   {
+      if (*setting->value.target.unsigned_integer == 0)
+         snprintf(s, len, "%s (%u %s)",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC),
+               video_st->frame_delay_effective,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
+      else
+         snprintf(s, len, "%u (%u %s)",
+               *setting->value.target.unsigned_integer,
+               video_st->frame_delay_effective,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
+   }
+   else
+      snprintf(s, len, "%u", *setting->value.target.unsigned_integer);
+}
+
 static void setting_get_string_representation_uint_video_rotation(rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -12588,6 +12614,8 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0, MAXIMUM_FRAME_DELAY, 1, true, true);
+            (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_video_frame_delay;
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             CONFIG_BOOL(
