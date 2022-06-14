@@ -2312,7 +2312,14 @@ bool win32_set_video_mode(void *data,
 
 void win32_update_title(void)
 {
-   const ui_window_t *window      = ui_companion_driver_get_window_ptr();
+   const ui_window_t *window         = ui_companion_driver_get_window_ptr();
+   static unsigned update_title_wait = 0;
+
+   if (update_title_wait)
+   {
+      update_title_wait--;
+      return;
+   }
 
    if (window)
    {
@@ -2321,6 +2328,7 @@ void win32_update_title(void)
       title[0] = '\0';
 
       video_driver_get_window_title(title, sizeof(title));
+      update_title_wait = g_win32_refresh_rate;
 
       if (title[0])
          window->set_title(&main_window, title);
