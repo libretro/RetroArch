@@ -2001,10 +2001,6 @@ MSG_HASH(
    "설정된 주사율보다 낮은 성능이 감지될 경우 수직 동기화가 자동으로 비활성화됩니다. 퍼포먼스가 떨어질 때 버벅임을 방지할 수 있습니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "프레임 지연"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    "화면 끊김을 감수하면서 지연을 줄입니다. 수직동기 이후 지연(밀리초)을 추가합니다."
    )
@@ -2015,6 +2011,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
    "필요한 경우 '프레임 지연'을 일시적으로 감소시키며 프레임 누락을 방지합니다. '프레임 지연'이 0일 경우 시작 값은 프레임 간격의 절반입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   "자동"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,

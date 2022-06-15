@@ -1537,8 +1537,8 @@ MSG_HASH(
    "Το V-Sync είναι ενεργό μέχρι τα καρέ να πέσουν χαμηλότερα από τα αναγραφόμενα. Με αυτόν το τρόπο θα μειωθεί το τραύλισμα της οθόνης (stuttering) όταν οι επιδόσεις χαμηλώνουν ενώ ταυτόχρονα είναι ενεργειακά πιο αποδοτικό."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Καθυστέρηση Καρέ"
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   "Αυτόματο"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,

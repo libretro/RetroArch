@@ -1973,10 +1973,6 @@ MSG_HASH(
    "垂直同步默认启用，除非性能降到低于目标刷新率。当性能低于实时水平，这可以最大限度地减少卡顿，并且更加节能。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "帧延时"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    "以增加画面卡顿的风险换取低延时，在垂直同步后增加时延 (毫秒)。"
    )
@@ -1987,6 +1983,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
    "暂时降低有效的“帧中继”以防止将来的帧丢失。起始点是当“帧延迟”为0时的半帧时间。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   "自动"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,

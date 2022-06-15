@@ -1965,10 +1965,6 @@ MSG_HASH(
    "El VSync roman actiu fins que el rendiment cau per davall de la freqüència de refresc establerta. Pot minimitzar l'entretallament quan el rendiment cau per davall del temps real, i pot ser més energèticament eficient."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Retard de fotograma"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    "Redueix la latència a cost d'un risc més alt d'entretallament de vídeo. Afegeix un retard després del VSync (en ms)."
    )
@@ -1979,6 +1975,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
    "Redueix temporalment el 'Retard de fotograma' efectiu per a prevenir futures pèrdues de fotogrames. El punt de sortida és el tems de mig fotograma quan 'Retard de fotograma' és 0."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   "Automàtic"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,

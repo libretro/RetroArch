@@ -1277,12 +1277,12 @@ MSG_HASH(
    "خودکار"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "تأخیر فریم"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "تأخیر خودکار فریم"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   "خودکار"
    )
 
 /* Settings > Audio */

@@ -1869,10 +1869,6 @@ MSG_HASH(
    "V-Sync is ingeschakeld totdat de prestaties onder de doelvernieuwingsfrequentie komen. Kan stotteren minimaliseren wanneer de prestaties onder realtime vallen en kan energiezuiniger zijn."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Frame Vertraging"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    "Vermindert latentie ten koste van een hoger risico op haperende video. Voegt een vertraging toe na V-Sync (in ms)."
    )
@@ -1883,6 +1879,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
    "Verlaag de effectieve 'Frame-vertraging' tijdelijk om toekomstige framedalen te voorkomen. Beginpunt is half-framesneltijd wanneer 'Frame-vertraging' 0 is."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   "Automatisch"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,

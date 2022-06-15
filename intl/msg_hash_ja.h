@@ -1745,12 +1745,12 @@ MSG_HASH(
    "パフォーマンスが目標のリフレッシュレートを下回るまでは垂直同期が有効になります. パフォーマンスがリアルタイムを下回ったときのちらつきを最小限にでき, 効率もよくなります."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "遅延フレーム"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    "ビデオのちらつきリスクが高くなりますが, 遅延を減少します. 垂直同期の後に遅延(ms)を追加します."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   "自動"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,

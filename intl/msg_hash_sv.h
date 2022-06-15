@@ -1913,16 +1913,16 @@ MSG_HASH(
    "VSync är aktiverat tills prestandan blir för dålig för att nå optimal uppdateringsfrekvens. Kan minimera hackande bild när prestandan är dålig, och vara mer energieffektivt."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Bildrutefördröjning"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    "Minskar latens på bekostnad av högre risk för hackande bild. Lägger till en fördröjning efter VSync (i ms)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Automatisk Fördröjning av Bildruta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   "Automatiskt"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,

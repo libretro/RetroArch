@@ -1657,10 +1657,6 @@ MSG_HASH(
    "Synchronizovať video výstup grafickej karty s obnovovacou frekvenciou obrazovky. Odporúčané."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Oneskorenie snímky"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
    "Pevná synchronizácia GPU"
    )

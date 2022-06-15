@@ -1881,10 +1881,6 @@ MSG_HASH(
    "VSync буде увімкнено, поки продуктивність не знизиться за межі цільового курсу. Може мінімізувати заїкання, коли продуктивність падає нижче в режимі реального часу, і бути більш енергоефективною."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Затримка кадру"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    "Зменшує затримку ціною вищого ризику заїкання відео. Додає затримку після VSync (у мс)."
    )
@@ -1895,6 +1891,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
    "Зменшує ефективність 'Автозатримки кадру' за потреби запобігти падінню частоти. Початкове значення становить половину часу кадра, якщо 'Затримка кадру' дорівнює 0."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   "Автоматично"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
