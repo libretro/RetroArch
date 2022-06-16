@@ -436,6 +436,7 @@ typedef struct
 
    bool block_hotkey;
    bool block_libretro_input;
+   bool block_pointer_input;
    bool grab_mouse_state;
    bool analog_requested[MAX_USERS];
    bool keyboard_mapping_blocked;

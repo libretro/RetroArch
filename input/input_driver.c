@@ -2052,10 +2052,14 @@ void input_poll_overlay(
          break;
    }
 
-   if (input_overlay_show_inputs != OVERLAY_SHOW_INPUT_NONE)
-      button_pressed = input_overlay_add_inputs(ol,
-            (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_TOUCHED),
-            input_overlay_show_inputs_port);
+   button_pressed = input_overlay_add_inputs(ol,
+         (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_TOUCHED),
+         input_overlay_show_inputs_port);
+
+   input_st->block_pointer_input = button_pressed;
+
+   if (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_NONE)
+      button_pressed = false;
 
    if (button_pressed || polled)
       input_overlay_post_poll(overlay_visibility, ol,
@@ -3976,6 +3980,9 @@ int16_t input_state_device(
       case RETRO_DEVICE_MOUSE:
       case RETRO_DEVICE_LIGHTGUN:
       case RETRO_DEVICE_POINTER:
+
+         if (input_st->block_pointer_input)
+            break;
 
          if (id < RARCH_FIRST_META_KEY)
          {
