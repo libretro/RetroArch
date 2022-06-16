@@ -407,11 +407,16 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
    }
    else if (state->lLastX || state->lLastY)
    {
-      /* Menu requires GetCursorPos() for accurate
+      /* Menu and pointer require GetCursorPos() for
        * positioning, but using that always will
        * break multiple mice positions */
+      bool getcursorpos = (mouse->device == RETRO_DEVICE_POINTER) ? true : false;
 #ifdef HAVE_MENU
       if (menu_state_get_ptr()->alive)
+         getcursorpos = true;
+#endif
+
+      if (getcursorpos)
       {
          if (!GetCursorPos(&crs_pos))
             RARCH_DBG("[WinRaw]: GetCursorPos failed with error %lu.\n", GetLastError());
@@ -419,7 +424,6 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
             RARCH_DBG("[WinRaw]: ScreenToClient failed with error %lu.\n", GetLastError());
       }
       else
-#endif
       {
          /* Handle different sensitivity for lightguns */
          if (mouse->device == RETRO_DEVICE_LIGHTGUN)
