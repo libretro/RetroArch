@@ -1494,93 +1494,48 @@ static int action_bind_sublabel_cheat_desc(
 #endif
 
 #ifdef HAVE_NETWORKING
-static int action_bind_sublabel_netplay_room(
-      file_list_t *list,
+static int action_bind_sublabel_netplay_room(file_list_t *list,
       unsigned type, unsigned i,
       const char *label, const char *path,
       char *s, size_t len)
 {
-   uint32_t gamecrc           = 0;
-   const char *ra_version     = NULL;
-   const char *corename       = NULL;
-   const char *gamename       = NULL;
-   const char *core_ver       = NULL;
-   const char *frontend       = NULL;
-   const char *na             = NULL;
-   const char *subsystem      = NULL;
+   char buf[512];
+   struct netplay_room *room;
    net_driver_state_t *net_st = networking_state_get_ptr();
    unsigned room_index        = type - MENU_SETTINGS_NETPLAY_ROOMS_START;
 
    if (room_index >= (unsigned)net_st->room_count)
       return menu_cbs_exit();
 
-   ra_version = net_st->room_list[room_index].retroarch_version;
-   corename   = net_st->room_list[room_index].corename;
-   gamename   = net_st->room_list[room_index].gamename;
-   core_ver   = net_st->room_list[room_index].coreversion;
-   gamecrc    = net_st->room_list[room_index].gamecrc;
-   frontend   = net_st->room_list[room_index].frontend;
-   subsystem  = net_st->room_list[room_index].subsystem_name;
-   na         = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
+   room = &net_st->room_list[room_index];
 
-   if (string_is_empty(subsystem) || string_is_equal(subsystem,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)))
-   {
-      snprintf(s, len,
-         "%s: %s (%s)\n%s: %s (%s)\nGame: %s (%08lx)",
-         msg_hash_to_str(MSG_PROGRAM),
-         string_is_empty(ra_version)    ? na : ra_version,
-         string_is_empty(frontend)      ? na : frontend,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME),
-         corename, core_ver,
-         !string_is_equal(gamename, na) ? gamename : na,
-         (unsigned long)gamecrc);
-   }
+   snprintf(s, len,
+      "%s: %s (%s)\n"
+      "%s: %s (%s)\n"
+      "%s: %s ",
+      msg_hash_to_str(MSG_PROGRAM),
+      !string_is_empty(room->retroarch_version) ? room->retroarch_version :
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+      (!string_is_empty(room->frontend) &&
+         !string_is_equal_case_insensitive(room->frontend, "N/A")) ?
+            room->frontend :
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME),
+      room->corename, room->coreversion,
+      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT),
+      (!string_is_empty(room->gamename) &&
+         !string_is_equal_case_insensitive(room->gamename, "N/A")) ?
+            room->gamename :
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+
+   if (string_is_empty(room->subsystem_name) ||
+         string_is_equal_case_insensitive(room->subsystem_name, "N/A"))
+      snprintf(buf, sizeof(buf), "(%08lX)", (unsigned long)room->gamecrc);
    else
-   {
-      if (strstr(gamename, "|"))
-      {
-         char buf[4096];
-         unsigned i               = 0;
-         struct string_list list  = {0};
+      snprintf(buf, sizeof(buf), "(%s)", room->subsystem_name);
 
-         string_list_initialize(&list);
-         string_split_noalloc(&list, gamename, "|");
+   strlcat(s, buf, len);
 
-         buf[0] = '\0';
-
-         for (i = 0; i < list.size; i++)
-         {
-            strlcat(buf, "   ", sizeof(buf));
-            strlcat(buf, list.elems[i].data, sizeof(buf));
-            /* Never terminate a UI string with a newline */
-            if (i != list.size - 1)
-               strlcat(buf, "\n", sizeof(buf));
-         }
-         snprintf(s, len,
-            "%s: %s (%s)\n%s: %s (%s)\nSubsystem: %s\nGames:\n%s",
-            msg_hash_to_str(MSG_PROGRAM),
-            string_is_empty(ra_version)    ? na : ra_version,
-            string_is_empty(frontend)      ? na : frontend,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME),
-            corename, core_ver, subsystem,
-            !string_is_equal(gamename, na) ? buf : na
-            );
-         string_list_deinitialize(&list);
-      }
-      else
-      {
-         snprintf(s, len,
-            "%s: %s (%s)\n%s: %s (%s)\nSubsystem: %s\nGame: %s (%08lx)",
-            msg_hash_to_str(MSG_PROGRAM),
-            string_is_empty(ra_version)    ? na : ra_version,
-            string_is_empty(frontend)      ? na : frontend,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME),
-            corename, core_ver, subsystem,
-            !string_is_equal(gamename, na) ? gamename : na,
-            (unsigned long)gamecrc);
-      }
-   }
    return 0;
 }
 
@@ -1590,10 +1545,10 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
       char *s, size_t len)
 {
    char buf[256];
-   netplay_client_info_t *client = NULL;
-   const char            *status = NULL;
-   size_t                idx     = list->list[i].entry_idx;
-   net_driver_state_t    *net_st = networking_state_get_ptr();
+   netplay_client_info_t *client;
+   const char         *status = NULL;
+   size_t             idx     = list->list[i].entry_idx;
+   net_driver_state_t *net_st = networking_state_get_ptr();
 
    if (idx >= net_st->client_info_count)
       return menu_cbs_exit();
@@ -1625,20 +1580,17 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
    snprintf(buf, sizeof(buf), "%s: %s",
       msg_hash_to_str(MSG_NETPLAY_CHAT_SUPPORTED),
       msg_hash_to_str((client->protocol >= 6) ?
-         MENU_ENUM_LABEL_VALUE_YES :
-         MENU_ENUM_LABEL_VALUE_NO));
+         MENU_ENUM_LABEL_VALUE_YES : MENU_ENUM_LABEL_VALUE_NO));
    strlcat(s, buf, len);
 
    if (client->ping >= 0)
    {
-      snprintf(buf, sizeof(buf), "\nPing: %u",
-         (unsigned)client->ping);
+      snprintf(buf, sizeof(buf), "\nPing: %u", (unsigned)client->ping);
       strlcat(s, buf, len);
    }
 
    return 0;
 }
-
 #endif
 
 static int action_bind_sublabel_playlist_entry(

@@ -53,7 +53,7 @@ extern "C"
 }
 #endif
 
-static discord_state_t discord_state_st; /* int64_t alignment */
+static discord_state_t discord_state_st = {0}; /* int64_t alignment */
 
 discord_state_t *discord_state_get_ptr(void)
 {
@@ -153,99 +153,113 @@ static void handle_discord_error(int errcode, const char* message)
 {
 }
 
-static void handle_discord_join_cb(retro_task_t *task,
-      void *task_data, void *user_data, const char *err)
+static void handle_discord_join_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
 {
-   char join_hostname[PATH_MAX_LENGTH];
-   struct netplay_room *room         = NULL;
-   http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
-   discord_state_t *discord_st       = &discord_state_st;
+   char hostname[512];
+   struct netplay_room *room;
+   char *room_data             = NULL;
+   http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
+   discord_state_t *discord_st = &discord_state_st;
 
-   if (!data || err || !data->data || !data->len)
-      goto finish;
+   if (error)
+      goto done;
+   if (!data || !data->data || !data->len)
+      goto done;
+   if (data->status != 200)
+      goto done;
 
-   data->data                        = (char*)realloc(data->data, data->len + 1);
-   data->data[data->len]             = '\0';
+   room_data = (char*)malloc(data->len + 1);
+   if (!room_data)
+      goto done;
+   memcpy(room_data, data->data, data->len);
+   room_data[data->len] = '\0';
 
-   netplay_rooms_parse(data->data);
-   room                              = netplay_room_get(0);
+   netplay_rooms_parse(room_data);
+   free(room_data);
 
+   room = netplay_room_get(0);
    if (room)
    {
-      if (room->host_method == NETPLAY_HOST_METHOD_MITM)
-         snprintf(join_hostname, sizeof(join_hostname), "%s|%d|%s",
-            room->mitm_address, room->mitm_port, room->mitm_session);
-      else
-         snprintf(join_hostname, sizeof(join_hostname), "%s|%d",
-            room->address, room->port);
-
       if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
          deinit_netplay();
+
       netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
-      task_push_netplay_crc_scan(room->gamecrc,
-         room->gamename, join_hostname, room->corename, room->subsystem_name);
+      if (room->host_method == NETPLAY_HOST_METHOD_MITM)
+         snprintf(hostname, sizeof(hostname), "%s|%d|%s",
+            room->mitm_address, room->mitm_port, room->mitm_session);
+      else
+         snprintf(hostname, sizeof(hostname), "%s|%d",
+            room->address, room->port);
+
+      task_push_netplay_crc_scan(room->gamecrc, room->gamename, hostname,
+         room->corename, room->subsystem_name);
+
       discord_st->connecting = true;
       if (discord_st->ready)
          discord_update(PRESENCE_NETPLAY_CLIENT);
    }
 
-finish:
-   if (user_data)
-      free(user_data);
+   netplay_rooms_free();
+
+done:
+   free(user_data);
 }
 
-static void handle_discord_join(const char* secret)
+static void handle_discord_join(const char *secret)
 {
-   char url[2048];
-   struct string_list    *list = string_split(secret, "|");
+   char url[512];
    discord_state_t *discord_st = &discord_state_st;
+   int room_id                 = (int)strtol(secret, NULL, 10);
 
-   strlcpy(discord_st->peer_party_id,
-         list->elems[0].data, sizeof(discord_st->peer_party_id));
-   snprintf(url, sizeof(url), FILE_PATH_LOBBY_LIBRETRO_URL "%s/",
-         discord_st->peer_party_id);
+   if (room_id)
+   {
+      snprintf(discord_st->peer_party_id, sizeof(discord_st->peer_party_id),
+         "%d", room_id);
 
-   task_push_http_transfer(url, true, NULL, handle_discord_join_cb, NULL);
+      strlcpy(url, FILE_PATH_LOBBY_LIBRETRO_URL, sizeof(url));
+      strlcat(url, discord_st->peer_party_id, sizeof(url));
+
+      task_push_http_transfer(url, true, NULL, handle_discord_join_cb, NULL);
+   }
 }
 
-static void handle_discord_spectate(const char* secret)
+static void handle_discord_spectate(const char *secret)
 {
 }
 
-#ifdef HAVE_MENU
 #if 0
+#ifdef HAVE_MENU
 static void handle_discord_join_response(void *ignore, const char *line)
 {
    /* TODO/FIXME: needs in-game widgets */
    if (strstr(line, "yes"))
       Discord_Respond(user_id, DISCORD_REPLY_YES);
 
-#ifdef HAVE_MENU
    menu_input_dialog_end();
    retroarch_menu_running_finished(false);
-#endif
 }
 #endif
 #endif
 
-static void handle_discord_join_request(const DiscordUser* request)
+static void handle_discord_join_request(const DiscordUser *request)
 {
 #ifdef HAVE_MENU
 #if 0
    char buf[PATH_MAX_LENGTH];
-   menu_input_ctx_line_t line;
+   menu_input_ctx_line_t line = {0};
 #endif
    discord_state_t *discord_st = &discord_state_st;
+
    discord_download_avatar(discord_st, request->userId, request->avatar);
 
 #if 0
    /* TODO/FIXME: Needs in-game widgets */
    retroarch_menu_running();
 
-   memset(&line, 0, sizeof(line));
    snprintf(buf, sizeof(buf), "%s %s?",
-         msg_hash_to_str(MSG_DISCORD_CONNECTION_REQUEST), request->username);
+      msg_hash_to_str(MSG_DISCORD_CONNECTION_REQUEST), request->username);
    line.label         = buf;
    line.label_setting = "no_setting";
    line.cb            = handle_discord_join_response;

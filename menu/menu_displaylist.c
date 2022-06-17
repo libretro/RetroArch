@@ -10386,9 +10386,16 @@ static unsigned menu_displaylist_build_shader_parameter(
 unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 {
    int i;
+   char buf[256];
+   char passworded[64];
+   char country[8];
+   const char *room_type;
+   struct netplay_room *room;
    unsigned count             = 0;
    settings_t *settings       = config_get_ptr();
    net_driver_state_t *net_st = networking_state_get_ptr();
+   bool show_only_connectable = settings->bools.netplay_show_only_connectable;
+   bool show_passworded       = settings->bools.netplay_show_passworded;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, list);
 
@@ -10400,8 +10407,8 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
       count++;
 
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
-      !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL) &&
-      netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
+         !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL) &&
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
    {
       if (menu_entries_append_enum(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT),
@@ -10412,10 +10419,10 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
    }
 
    if (menu_entries_append_enum(list,
-      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT),
-      msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT),
-      MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT,
-      MENU_SETTING_ACTION, 0, 0))
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT),
+         MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT,
+         MENU_SETTING_ACTION, 0, 0))
       count++;
 
    if (menu_entries_append_enum(list,
@@ -10450,11 +10457,7 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 
    for (i = 0; i < net_st->room_count; i++)
    {
-      char buf[8192];
-      char passworded[64];
-      char country[8];
-      const char *room_type;
-      struct netplay_room *room = &net_st->room_list[i];
+      room = &net_st->room_list[i];
 
       /* Get rid of any room that is not running RetroArch. */
       if (!room->is_retroarch)
@@ -10464,7 +10467,7 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
          if the user opt-in. */
       if (!room->connectable)
       {
-         if (settings->bools.netplay_show_only_connectable)
+         if (show_only_connectable)
             continue;
 
          room_type = msg_hash_to_str(MSG_INTERNET_NOT_CONNECTABLE);
@@ -10480,7 +10483,7 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
          if the user opt-in. */
       if (room->has_password || room->has_spectate_password)
       {
-         if (!settings->bools.netplay_show_passworded)
+         if (!show_passworded)
             continue;
 
          snprintf(passworded, sizeof(passworded), "[%s] ",
@@ -10490,45 +10493,19 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
          *passworded = '\0';
 
       if (!room->lan && !string_is_empty(room->country))
-         snprintf(country, sizeof(country), " (%s)",
-            room->country);
+         snprintf(country, sizeof(country), " (%s)", room->country);
       else
          *country = '\0';
 
       snprintf(buf, sizeof(buf), "%s%s: %s%s",
-         passworded, room_type,
-         room->nickname, country);
+         passworded, room_type, room->nickname, country);
 
-      if (menu_entries_append_enum(list,
-            buf,
+      if (menu_entries_append_enum(list, buf,
             msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
             MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
-            (unsigned)(MENU_SETTINGS_NETPLAY_ROOMS_START + i), 0, 0))
+            (unsigned)MENU_SETTINGS_NETPLAY_ROOMS_START + i, 0, 0))
          count++;
-
-      /* Uncomment this to debug mismatched room parameters*/
-#if 0
-      RARCH_LOG("[Lobby]: Room Data: %d\n"
-         "Nickname:         %s\n"
-         "Address:          %s\n"
-         "Port:             %d\n"
-         "Core:             %s\n"
-         "Core Version:     %s\n"
-         "Game:             %s\n"
-         "Game CRC:         %08x\n"
-         "Timestamp:        %d\n", room_data->elems[j + 6].data,
-         room->nickname,
-         room->address,
-         room->port,
-         room->corename,
-         room->coreversion,
-         room->gamename,
-         room->gamecrc,
-         room->timestamp);
-#endif
    }
-
-   netplay_rooms_free();
 
    return count;
 }
@@ -10637,13 +10614,14 @@ static unsigned menu_displaylist_netplay_kick(file_list_t *list)
 
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_REFRESH_CLIENT_INFO, NULL))
    {
-      char client_id[4];
       size_t i;
+      char client_id[4];
+      netplay_client_info_t *client;
       net_driver_state_t *net_st = networking_state_get_ptr();
 
       for (i = 0; i < net_st->client_info_count; i++)
       {
-         netplay_client_info_t *client = &net_st->client_info[i];
+         client = &net_st->client_info[i];
 
          snprintf(client_id, sizeof(client_id), "%d", client->id);
          if (menu_entries_append_enum(list, client->name, client_id,
@@ -10664,7 +10642,6 @@ static unsigned menu_displaylist_netplay_kick(file_list_t *list)
 
    return count;
 }
-
 #endif
 
 bool menu_displaylist_has_subsystems(void)
