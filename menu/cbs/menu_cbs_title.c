@@ -801,9 +801,12 @@ static int action_get_title_generic(char *s, size_t len,
          string_list_deinitialize(&list_path);
 
          if (!string_is_empty(elem0_path))
-            snprintf(s, len, "%s- %s",
+         {
+            path_remove_extension(elem0_path);
+            snprintf(s, len, "%s: %s",
                   text,
                   path_basename(elem0_path));
+         }
          else
             strlcpy(s, text, len);
          return 0;
