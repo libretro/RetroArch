@@ -1917,6 +1917,10 @@ MSG_HASH(
    "VSync bleibt aktiviert, bis die Leistung unter die Ziel-Wiederholfrequenz fällt. Kann energieeffizienter sein und Ruckeln minimieren, wenn die Leistung unter Echtzeit fällt."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
+   "Bildverzögerung (ms)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    "Reduziert Latenz, kann aber zu Ruckeln führen. Fügt eine Verzögerung nach VSync hinzu (in ms)."
    )
@@ -1927,6 +1931,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
    "Die effektive \"Bildverzögerung\" vorübergehend verringern, um Frame-Drops zu verhindern. Ausgangspunkt ist die halbe Frame-Zeit, wenn \"Bildverzögerung\" 0 ist."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   "Automatisch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
+   "effektiv"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
