@@ -271,6 +271,9 @@ static void download_pl_thumbnail(pl_thumb_handle_t *pl_thumb)
          transf->user_data            = (void*)pl_thumb;
          strlcpy(transf->path, path, sizeof(transf->path));
 
+         RARCH_LOG("url: %s\n", url);
+         RARCH_LOG("transf path: %s\n", transf->path);
+
          /* Note: We don't actually care if this fails since that
           * just means the file is missing from the server, so it's
           * not something we can handle here... */
