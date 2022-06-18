@@ -3380,7 +3380,7 @@ critical_failure:
 static struct netplay_connection *allocate_connection(netplay_t *netplay)
 {
    size_t i;
-   struct netplay_connection *connection;
+   struct netplay_connection *connection = NULL;
 
    /* Look for an existing non-used connection first. */
    for (i = 0; i < netplay->connections_size; i++)
@@ -3391,7 +3391,9 @@ static struct netplay_connection *allocate_connection(netplay_t *netplay)
          break;
    }
    if (i < netplay->connections_size)
+   {
       memset(connection, 0, sizeof(*connection));
+   }
    else if (!netplay->connections_size)
    {
       netplay->connections = 
