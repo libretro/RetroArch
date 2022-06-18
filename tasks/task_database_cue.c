@@ -437,7 +437,7 @@ int detect_scd_game(intfstream_t *fd, char *game_id, const char *filename)
    char check_prefix_g_hyp[10];
    char check_prefix_mk_hyp[10];
    char region_id[10];
-   int length;
+   size_t length;
    int lengthref;
    int index;
    char lgame_id[10];
@@ -470,18 +470,18 @@ int detect_scd_game(intfstream_t *fd, char *game_id, const char *filename)
 
    region_id[1] = '\0';
 
+#ifdef DEBUG
    /** Scrub files with bad data and log **/
    if (raw_game_id[0] == '\0' || raw_game_id[0] == ' ' || raw_game_id[0] == '0')
-   {
       RARCH_LOG("[Scanner]: Scrubbing: %s\n", filename);
-   }
+#endif
 
    /** convert raw Sega - Mega-CD - Sega CD serial to redump serial. **/
    /** process raw serial to a pre serial without spaces **/
    string_remove_all_whitespace(pre_game_id, raw_game_id);  /** rule: remove all spaces from the raw serial globally **/
 
    /** disect this pre serial into parts **/
-   length = strlen(pre_game_id);
+   length    = strlen(pre_game_id);
    lengthref = length - 2;
    strncpy(check_prefix_t_hyp, pre_game_id, 2);
    check_prefix_t_hyp[2] = '\0';
@@ -667,8 +667,8 @@ int detect_dc_game(intfstream_t *fd, char *game_id, const char *filename)
    char check_prefix_t[10];
    char check_prefix_hdr_hyp[10];
    char check_prefix_mk_hyp[10];
-   int length;
-   int length_recalc;
+   size_t length;
+   size_t length_recalc;
    int index;
    size_t size_t_var;
    char lgame_id[20];
@@ -686,14 +686,16 @@ int detect_dc_game(intfstream_t *fd, char *game_id, const char *filename)
    /** Scrub files with bad data and log **/
    if (raw_game_id[0] == '\0' || raw_game_id[0] == ' ')
    {
+#ifdef DEBUG
       RARCH_LOG("[Scanner]: Scrubbing: %s\n", filename);
+#endif
       return false;
    }
 
    string_trim_whitespace(raw_game_id);
    string_replace_multi_space_with_single_space(raw_game_id);
    string_replace_whitespace_with_single_character(raw_game_id, hyphen);
-   length = strlen(raw_game_id);
+   length        = strlen(raw_game_id);
    total_hyphens = string_count_occurrences_single_character(raw_game_id, hyphen);
 
    /** disect this raw serial into parts **/
@@ -767,7 +769,7 @@ int detect_dc_game(intfstream_t *fd, char *game_id, const char *filename)
             size_t_var = (size_t)index;
          strncpy(lgame_id, pre_game_id, size_t_var);
          lgame_id[index] = '\0';
-         length_recalc = strlen(pre_game_id);
+         length_recalc   = strlen(pre_game_id);
          strncpy(rgame_id, &pre_game_id[length_recalc - 2], length_recalc - 1);
          rgame_id[length_recalc - 1] = '\0';
          strcat(game_id, lgame_id);
