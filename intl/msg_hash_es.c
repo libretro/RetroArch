@@ -48,13 +48,6 @@ int msg_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
     settings_t *settings = config_get_ptr();
 
-    if (msg == MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM)
-    {
-       snprintf(s, len,
-             "PENDIENTE: Rellenar este mensaje."
-             );
-       return 0;
-    }
     if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
         msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
     {
