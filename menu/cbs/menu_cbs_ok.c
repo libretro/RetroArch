@@ -1152,7 +1152,19 @@ int generic_action_ok_displaylist_push(const char *path,
             dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
 
             /* Focus on current content entry */
-            menu_driver_set_pending_selection(path_basename(path_get(RARCH_PATH_CONTENT)));
+            {
+               char path_content[PATH_MAX_LENGTH];
+               path_content[0] = '\0';
+               strlcpy(path_content, path_get(RARCH_PATH_CONTENT), sizeof(path_content));
+               /* Remove archive browsed file from the path */
+               if (strstr(path_content, "#"))
+               {
+                  char *token = strtok(path_content, "#");
+                  while (token != NULL)
+                     token = strtok(NULL, "#");
+               }
+               menu_driver_set_pending_selection(path_basename(path_content));
+            }
          }
          break;
       case ACTION_OK_DL_SUBSYSTEM_ADD_LIST:
