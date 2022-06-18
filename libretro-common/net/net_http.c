@@ -383,7 +383,7 @@ void net_http_urlencode_full(char *dest,
 {
    size_t buf_pos                    = 0;
    char *tmp                         = NULL;
-   char url_domain[255]              = {0};
+   char url_domain[256]              = {0};
    char url_path[PATH_MAX_LENGTH]    = {0};
    int count                         = 0;
 

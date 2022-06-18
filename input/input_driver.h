@@ -151,7 +151,7 @@ typedef struct
    char name[256];
    char display_name[256];
    char config_path[PATH_MAX_LENGTH]; /* Path to the RetroArch config file */
-   char config_name[255]; /* Base name of the RetroArch config file */
+   char config_name[256]; /* Base name of the RetroArch config file */
    bool autoconfigured;
 } input_device_info_t;
 
