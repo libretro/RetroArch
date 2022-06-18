@@ -67,7 +67,7 @@
 { \
    const char *title = msg_hash_to_str(lbl); \
    if (!string_is_empty(path) && !string_is_empty(title)) \
-      fill_pathname_join_delim(s, title, path, ' ', len); \
+      snprintf(s, len, "%s: %s", title, path); \
    else if (!string_is_empty(title)) \
       strlcpy(s, title, len); \
    return 1; \
