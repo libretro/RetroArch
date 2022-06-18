@@ -2153,7 +2153,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    }
    else if (!string_is_empty(info->path))
    {
-      char lpl_basename[PATH_MAX_LENGTH];
+      char lpl_basename[255];
       lpl_basename[0] = '\0';
 
       fill_pathname_base_noext(lpl_basename, info->path, sizeof(lpl_basename));
