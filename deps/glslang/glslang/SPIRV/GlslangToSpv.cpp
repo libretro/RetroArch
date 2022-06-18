@@ -5364,8 +5364,10 @@ spv::Id TGlslangToSpvTraverser::createAtomicOperation(glslang::TOperator op, spv
 // Create group invocation operations.
 spv::Id TGlslangToSpvTraverser::createInvocationsOperation(glslang::TOperator op, spv::Id typeId, std::vector<spv::Id>& operands, glslang::TBasicType typeProxy)
 {
+#ifdef AMD_EXTENSIONS
     bool isUnsigned = isTypeUnsignedInt(typeProxy);
-    bool isFloat = isTypeFloat(typeProxy);
+    bool isFloat    = isTypeFloat(typeProxy);
+#endif
 
     spv::Op opCode = spv::OpNop;
     std::vector<spv::Id> spvGroupOperands;

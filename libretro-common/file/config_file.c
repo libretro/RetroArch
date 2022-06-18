@@ -721,7 +721,6 @@ bool config_file_deinitialize(config_file_t *conf)
 {
    struct config_include_list *inc_tmp = NULL;
    struct config_entry_list *tmp       = NULL;
-   struct path_linked_list *ref_tmp = NULL;
 
    if (!conf)
       return false;

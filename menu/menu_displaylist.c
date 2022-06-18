@@ -8269,7 +8269,9 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
          {
             bool kiosk_mode_enable                                  = settings->bools.kiosk_mode_enable;
+#if defined(HAVE_QT) || defined(HAVE_COCOA)
             bool desktop_menu_enable                                = settings->bools.desktop_menu_enable;
+#endif
             bool menu_screensaver_supported                         = menu_driver_screensaver_supported();
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
             enum menu_screensaver_effect menu_screensaver_animation =
