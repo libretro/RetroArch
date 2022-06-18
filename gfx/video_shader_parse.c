@@ -1775,7 +1775,6 @@ bool video_shader_write_preset(const char *path,
 bool video_shader_load_preset_into_shader(const char *path,
       struct video_shader *shader)
 {
-   unsigned i                                        = 0;
    bool ret                                          = true;
    config_file_t *conf                               = NULL;
    config_file_t *root_conf                          = video_shader_get_root_preset_config(path);
