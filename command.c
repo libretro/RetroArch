@@ -1232,8 +1232,8 @@ void command_event_load_auto_state(void)
 void command_event_set_savestate_auto_index(settings_t *settings)
 {
    size_t i;
+   char state_base[128];
    char state_dir[PATH_MAX_LENGTH];
-   char state_base[PATH_MAX_LENGTH];
 
    struct string_list *dir_list      = NULL;
    unsigned max_idx                  = 0;
@@ -1301,7 +1301,7 @@ void command_event_set_savestate_garbage_collect(
 {
    size_t i, cnt = 0;
    char state_dir[PATH_MAX_LENGTH];
-   char state_base[PATH_MAX_LENGTH];
+   char state_base[128];
    runloop_state_t *runloop_st       = runloop_state_get_ptr();
 
    struct string_list *dir_list      = NULL;
@@ -1394,14 +1394,10 @@ bool command_set_shader(command_t *cmd, const char *arg)
       /* rebase on shader directory */
       if (!path_is_absolute(arg))
       {
-         static char abs_arg[PATH_MAX_LENGTH];
+         char abs_arg[PATH_MAX_LENGTH];
          const char *ref_path = settings->paths.directory_video_shader;
-         fill_pathname_join(abs_arg,
-               ref_path, arg, sizeof(abs_arg));
-         /* TODO/FIXME - pointer to local variable -
-          * making abs_arg static for now to workaround this
-          */
-         arg = abs_arg;
+         fill_pathname_join(abs_arg, ref_path, arg, sizeof(abs_arg));
+         return apply_shader(settings, type, abs_arg, true);
       }
    }
 
@@ -1415,10 +1411,10 @@ bool command_event_save_core_config(
       const char *rarch_path_config)
 {
    char msg[128];
-   char config_name[PATH_MAX_LENGTH];
+   char config_name[255];
    char config_path[PATH_MAX_LENGTH];
    char config_dir[PATH_MAX_LENGTH];
-   bool found_path                 = false;
+   bool new_path_available         = false;
    bool overrides_active           = false;
    const char *core_path           = NULL;
    runloop_state_t *runloop_st     = runloop_state_get_ptr();
@@ -1447,40 +1443,33 @@ bool command_event_save_core_config(
    if (path_is_valid(core_path))
    {
       unsigned i;
+      char tmp[PATH_MAX_LENGTH];
       RARCH_LOG("[Config]: %s\n", msg_hash_to_str(MSG_USING_CORE_NAME_FOR_NEW_CONFIG));
+
+      fill_pathname_base_noext(
+            config_name,
+            core_path,
+            sizeof(config_name));
+      fill_pathname_join(config_path, config_dir, config_name,
+            sizeof(config_path));
 
       /* In case of collision, find an alternative name. */
       for (i = 0; i < 16; i++)
       {
-         char tmp[64];
-
-         fill_pathname_base_noext(
-               config_name,
-               core_path,
-               sizeof(config_name));
-
-         fill_pathname_join(config_path, config_dir, config_name,
-               sizeof(config_path));
-
          if (i)
-            snprintf(tmp, sizeof(tmp), "-%u.cfg", i);
+            snprintf(tmp, sizeof(tmp), "%s-%u.cfg", config_path, i);
          else
-         {
-            tmp[0] = '\0';
-            strlcpy(tmp, ".cfg", sizeof(tmp));
-         }
+            snprintf(tmp, sizeof(tmp), "%s.cfg", config_path);
 
-         strlcat(config_path, tmp, sizeof(config_path));
-
-         if (!path_is_valid(config_path))
+         if (!path_is_valid(tmp))
          {
-            found_path = true;
+            new_path_available = true;
             break;
          }
       }
    }
 
-   if (!found_path)
+   if (!new_path_available)
    {
       /* Fallback to system time... */
       RARCH_WARN("[Config]: %s\n",

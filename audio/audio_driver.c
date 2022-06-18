@@ -917,8 +917,8 @@ bool audio_driver_dsp_filter_init(const char *device)
    retro_dsp_filter_t *audio_driver_dsp = NULL;
    struct string_list *plugs            = NULL;
 #if defined(HAVE_DYLIB) && !defined(HAVE_FILTERS_BUILTIN)
-   char basedir[PATH_MAX_LENGTH];
-   char ext_name[PATH_MAX_LENGTH];
+   char ext_name[32];
+   char basedir[256];
 
    basedir[0] = ext_name[0]             = '\0';
 
@@ -1350,9 +1350,9 @@ static void audio_driver_load_menu_bgm_callback(retro_task_t *task,
 
 void audio_driver_load_system_sounds(void)
 {
+   char basename_noext[256];
    char sounds_path[PATH_MAX_LENGTH];
    char sounds_fallback_path[PATH_MAX_LENGTH];
-   char basename_noext[PATH_MAX_LENGTH];
    settings_t *settings                  = config_get_ptr();
    const char *dir_assets                = settings->paths.directory_assets;
    const bool audio_enable_menu          = settings->bools.audio_enable_menu;
