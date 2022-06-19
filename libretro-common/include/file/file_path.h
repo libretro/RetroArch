@@ -61,7 +61,7 @@ struct path_linked_list
  * Create a new linked list with one item in it
  * The path on this item will be set to NULL
 **/
-struct path_linked_list* path_linked_list_new();
+struct path_linked_list* path_linked_list_new(void);
 
 /* Free the entire linked list */
 bool path_linked_list_free(struct path_linked_list *in_path_linked_list);
