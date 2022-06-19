@@ -4859,10 +4859,10 @@ static void relay_chat(netplay_t *netplay, const char *nick, const char *msg)
 
 static void show_chat(netplay_t *netplay, const char *nick, const char *msg)
 {
-   char formatted_chat[NETPLAY_CHAT_MAX_SIZE + 64];
-
-   /* Truncate the message if necessary. */
-   snprintf(formatted_chat, sizeof(formatted_chat), "%s: %s", nick, msg);
+   char formatted_chat[NETPLAY_CHAT_MAX_SIZE];
+   /* Truncate the message if necessary. Truncation here is intentional. */
+   int ret = snprintf(formatted_chat, sizeof(formatted_chat), "%s: %s", nick, msg);
+   (void)ret;
 
    RARCH_LOG("[Netplay] %s\n", formatted_chat);
 
