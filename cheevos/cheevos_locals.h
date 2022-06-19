@@ -190,14 +190,6 @@ bool rcheevos_load_aborted(void);
 
 void rcheevos_show_mastery_placard(void);
 
-#ifdef HAVE_THREADS
- #define CHEEVOS_LOCK(l)   do { slock_lock(l); } while (0)
- #define CHEEVOS_UNLOCK(l) do { slock_unlock(l); } while (0)
-#else
- #define CHEEVOS_LOCK(l)
- #define CHEEVOS_UNLOCK(l)
-#endif
-
 RETRO_END_DECLS
 
 #endif /* __RARCH_CHEEVOS_LOCALS_H */

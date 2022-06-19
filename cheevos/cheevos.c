@@ -1913,10 +1913,14 @@ static void rcheevos_login_callback(void* userdata)
 /* Increment the outstanding requests counter and set the load state */
 void rcheevos_begin_load_state(enum rcheevos_load_state state)
 {
-   CHEEVOS_LOCK(rcheevos_locals.load_info.request_lock);
+#ifdef HAVE_THREADS
+   slock_lock(rcheevos_locals.load_info.request_lock);
+#endif
    ++rcheevos_locals.load_info.outstanding_requests;
    rcheevos_locals.load_info.state = state;
-   CHEEVOS_UNLOCK(rcheevos_locals.load_info.request_lock);
+#ifdef HAVE_THREADS
+   slock_unlock(rcheevos_locals.load_info.request_lock);
+#endif
 }
 
 /* Decrement and return the outstanding requests counter. 
@@ -1925,11 +1929,15 @@ int rcheevos_end_load_state(void)
 {
    int requests = 0;
 
-   CHEEVOS_LOCK(rcheevos_locals.load_info.request_lock);
+#ifdef HAVE_THREADS
+   slock_lock(rcheevos_locals.load_info.request_lock);
+#endif
    if (rcheevos_locals.load_info.outstanding_requests > 0)
       --rcheevos_locals.load_info.outstanding_requests;
    requests = rcheevos_locals.load_info.outstanding_requests;
-   CHEEVOS_UNLOCK(rcheevos_locals.load_info.request_lock);
+#ifdef HAVE_THREADS
+   slock_unlock(rcheevos_locals.load_info.request_lock);
+#endif
 
    return requests;
 }
