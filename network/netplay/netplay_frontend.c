@@ -240,7 +240,7 @@ bool init_netplay_discovery(void)
 
       net_st->lan_ad_client_fd = fd;
 
-      ret = socket_bind(fd, addr);
+      ret = socket_bind(fd, addr) && socket_nonblock(fd);
    }
    if (!ret)
    {
@@ -305,6 +305,8 @@ static bool netplay_lan_ad_client_query(void)
 
 static bool netplay_lan_ad_client_response(void)
 {
+   size_t count;
+   ssize_t ret;
    char address[16];
    struct ad_packet ad_packet_buffer;
    struct netplay_host *host;
@@ -312,21 +314,19 @@ static bool netplay_lan_ad_client_response(void)
    net_driver_state_t *net_st = &networking_driver_st;
 
    /* Check for any ad queries */
-   for (;;)
+   for (count = 0;;)
    {
-      bool has_data                      = true;
       struct sockaddr_storage their_addr = {0};
       socklen_t addr_size                = sizeof(their_addr);
 
-      if (!socket_wait(net_st->lan_ad_client_fd, &has_data, NULL, 500) ||
-            !has_data)
-         break;
+      ret = recvfrom(net_st->lan_ad_client_fd,
+         (char*)&ad_packet_buffer, sizeof(ad_packet_buffer), 0,
+         (struct sockaddr*)&their_addr, &addr_size);
+      if (ret < 0)
+         return isagain((int)ret) && count > 0;
 
       /* Somebody queried, so check that it's valid */
-      if (recvfrom(net_st->lan_ad_client_fd,
-               (char*)&ad_packet_buffer, sizeof(ad_packet_buffer), 0,
-               (struct sockaddr*)&their_addr, &addr_size) !=
-            sizeof(ad_packet_buffer))
+      if (ret != sizeof(ad_packet_buffer))
          continue;
 
       /* Make sure it's a valid response */
@@ -430,9 +430,9 @@ static bool netplay_lan_ad_client_response(void)
       has_password                = ntohl(ad_packet_buffer.has_password);
       host->has_password          = (has_password & 1) ? true : false;
       host->has_spectate_password = (has_password & 2) ? true : false;
-   }
 
-   return true;
+      count++;
+   }
 }
 
 /** Discovery control */
@@ -441,19 +441,14 @@ bool netplay_discovery_driver_ctl(
 {
    net_driver_state_t *net_st = &networking_driver_st;
 
-   if (net_st->lan_ad_client_fd < 0)
-      return false;
-
    switch (state)
    {
       case RARCH_NETPLAY_DISCOVERY_CTL_LAN_SEND_QUERY:
-         return netplay_lan_ad_client_query();
+         return net_st->lan_ad_client_fd >= 0 && netplay_lan_ad_client_query();
 
       case RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES:
-         if (!netplay_lan_ad_client_response())
-            return false;
-         *(struct netplay_host_list**)data = &net_st->discovered_hosts;
-         break;
+         return net_st->lan_ad_client_fd >= 0 &&
+            netplay_lan_ad_client_response();
 
       case RARCH_NETPLAY_DISCOVERY_CTL_LAN_CLEAR_RESPONSES:
          net_st->discovered_hosts.size = 0;
@@ -473,7 +468,8 @@ static bool init_lan_ad_server_socket(void)
    net_driver_state_t *net_st = &networking_driver_st;
    int fd                     = socket_init((void**)&addr, RARCH_DEFAULT_PORT,
       NULL, SOCKET_TYPE_DATAGRAM);
-   bool ret                   = fd >= 0 && addr && socket_bind(fd, addr);
+   bool ret                   = fd >= 0 && addr &&
+      socket_bind(fd, addr) && socket_nonblock(fd);
 
    if (ret)
    {

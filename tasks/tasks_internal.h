@@ -87,7 +87,7 @@ bool task_push_wifi_disable(retro_task_callback_t cb);
 bool task_push_wifi_disconnect(retro_task_callback_t cb);
 bool task_push_wifi_connect(retro_task_callback_t cb, void*);
 
-bool task_push_netplay_lan_scan(retro_task_callback_t cb);
+bool task_push_netplay_lan_scan(void (*cb)(const void*), unsigned timeout);
 
 bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       const char *hostname, const char *corename, const char* subsystem);

@@ -6088,17 +6088,17 @@ static int action_ok_push_netplay_refresh_rooms(const char *path,
 }
 
 #ifdef HAVE_NETPLAYDISCOVERY
-static void netplay_refresh_lan_cb(retro_task_t *task, void *task_data,
-      void *user_data, const char *error)
+static void netplay_refresh_lan_cb(const void *data)
 {
    int i;
-   const char *path                = NULL;
-   const char *label               = NULL;
-   unsigned menu_type              = 0;
-   enum msg_hash_enums enum_idx    = MSG_UNKNOWN;
-   struct netplay_host_list *hosts = NULL;
-   bool refresh                    = false;
-   net_driver_state_t *net_st      = networking_state_get_ptr();
+   const char *path                      = NULL;
+   const char *label                     = NULL;
+   unsigned menu_type                    = 0;
+   enum msg_hash_enums enum_idx          = MSG_UNKNOWN;
+   bool refresh                          = false;
+   const struct netplay_host_list *hosts =
+      (const struct netplay_host_list*)data;
+   net_driver_state_t *net_st            = networking_state_get_ptr();
 
    free(net_st->room_list);
    net_st->room_list  = NULL;
@@ -6109,11 +6109,8 @@ static void netplay_refresh_lan_cb(retro_task_t *task, void *task_data,
    /* Don't push the results if we left the netplay menu */
    if (!string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)) &&
          !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)))
-      goto deinit;
+      return;
 
-   if (!netplay_discovery_driver_ctl(
-         RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &hosts))
-      goto done;
    if (!hosts || !hosts->size)
       goto done;
 
@@ -6154,15 +6151,12 @@ static void netplay_refresh_lan_cb(retro_task_t *task, void *task_data,
 done:
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-
-deinit:
-   deinit_netplay_discovery();
 }
 
 static int action_ok_push_netplay_refresh_lan(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   task_push_netplay_lan_scan(netplay_refresh_lan_cb);
+   task_push_netplay_lan_scan(netplay_refresh_lan_cb, 800);
 
    return 0;
 }
