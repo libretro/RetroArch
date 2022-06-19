@@ -1259,7 +1259,8 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 #endif
    desc.SwapEffect           = DXGI_SWAP_EFFECT_FLIP_DISCARD;
    desc.Flags                = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
-   desc.Flags               |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+   if (d3d12->chain.waitable_swapchains)
+      desc.Flags            |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 
 #ifdef __WINRT__
    hr = DXGICreateSwapChainForCoreWindow(d3d12->factory, d3d12->queue.handle, corewindow, &desc, NULL, &d3d12->chain.handle);
@@ -1272,7 +1273,8 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
       return false;
    }
 
-   if ((d3d12->chain.frameLatencyWaitableObject = DXGIGetFrameLatencyWaitableObject(d3d12->chain.handle)))
+   if (d3d12->chain.waitable_swapchains &&
+         (d3d12->chain.frameLatencyWaitableObject = DXGIGetFrameLatencyWaitableObject(d3d12->chain.handle)))
    {
       settings_t* settings = config_get_ptr();
       UINT max_latency     = settings->uints.video_max_frame_latency;
@@ -1778,6 +1780,8 @@ static void *d3d12_gfx_init(const video_info_t* video,
    d3d12->hdr.max_fall                    = 0.0f;
 #endif
 
+   d3d12->chain.waitable_swapchains       = settings->bools.video_waitable_swapchains;
+
    d3d_input_driver(settings->arrays.input_driver, settings->arrays.input_joypad_driver, input, input_data);
 
    d3d12_init_base(d3d12);
@@ -2163,7 +2167,7 @@ static bool d3d12_gfx_frame(
             d3d12->hdr.max_fall);
 #endif
    }
-   else
+   else if (d3d12->chain.waitable_swapchains)
    {
       WaitForSingleObjectEx(
             d3d12->chain.frameLatencyWaitableObject,

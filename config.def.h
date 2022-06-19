@@ -339,7 +339,13 @@
 #define DEFAULT_MAX_SWAPCHAIN_IMAGES 3
 
 /* D3D1x specific */
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#define DEFAULT_WAITABLE_SWAPCHAINS false
+#else
+#define DEFAULT_WAITABLE_SWAPCHAINS true
+#endif
 #define DEFAULT_MAX_FRAME_LATENCY 1
+#define MAXIMUM_MAX_FRAME_LATENCY 4
 
 /* GL specific */
 #define DEFAULT_ADAPTIVE_VSYNC false
