@@ -1070,6 +1070,14 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
       UINT max_latency     = settings->uints.video_max_frame_latency;
       UINT cur_latency     = 0;
 
+      if (max_latency == 0)
+      {
+         d3d11->wait_for_vblank = true;
+         max_latency            = 1;
+      }
+      else
+         d3d11->wait_for_vblank = false;
+
       DXGISetMaximumFrameLatency(d3d11->swapChain, max_latency);
       DXGIGetMaximumFrameLatency(d3d11->swapChain, &cur_latency);
       RARCH_LOG("[D3D11]: Requesting %u maximum frame latency, using %u.\n", max_latency, cur_latency);
@@ -1816,6 +1824,7 @@ static bool d3d11_gfx_frame(
    d3d11_video_t* d3d11           = (d3d11_video_t*)data;
    D3D11DeviceContext context     = d3d11->context;
    bool vsync                     = d3d11->vsync;
+   bool wait_for_vblank           = d3d11->wait_for_vblank;
    unsigned present_flags         = (vsync || !d3d11->has_allow_tearing) ? 0 : DXGI_PRESENT_ALLOW_TEARING;
    const char *stat_text          = video_info->stat_text;
    unsigned video_width           = video_info->width;
@@ -2375,7 +2384,7 @@ static bool d3d11_gfx_frame(
 
    DXGIPresent(d3d11->swapChain, d3d11->swap_interval, present_flags);
 
-   if (vsync)
+   if (vsync && wait_for_vblank)
    {
       IDXGIOutput *pOutput;
       DXGIGetContainingOutput(d3d11->swapChain, &pOutput);
