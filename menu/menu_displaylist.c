@@ -8568,6 +8568,7 @@ unsigned menu_displaylist_build_list(
          {
             bool video_vsync          = settings->bools.video_vsync;
             bool video_hard_sync      = settings->bools.video_hard_sync;
+            bool video_wait_swap      = settings->bools.video_waitable_swapchains;
 
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_VSYNC,
@@ -8622,9 +8623,14 @@ unsigned menu_displaylist_build_list(
             if (video_driver_test_all_flags(GFX_CTX_FLAGS_CUSTOMIZABLE_FRAME_LATENCY))
             {
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,
-                        PARSE_ONLY_UINT, false) == 0)
+                        MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS,
+                        PARSE_ONLY_BOOL, false) == 0)
                   count++;
+               if (video_wait_swap)
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,
+                           PARSE_ONLY_UINT, false) == 0)
+                     count++;
             }
 
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
@@ -9039,6 +9045,7 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_LATENCY_SETTINGS_LIST:
          {
             bool video_hard_sync          = settings->bools.video_hard_sync;
+            bool video_wait_swap          = settings->bools.video_waitable_swapchains;
 #ifdef HAVE_RUNAHEAD
             bool runahead_supported       = true;
             bool runahead_enabled         = settings->bools.run_ahead_enabled;
@@ -9068,9 +9075,16 @@ unsigned menu_displaylist_build_list(
             if (video_driver_test_all_flags(GFX_CTX_FLAGS_CUSTOMIZABLE_FRAME_LATENCY))
             {
                MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,
-                     PARSE_ONLY_UINT, false);
+                     MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS,
+                     PARSE_ONLY_BOOL, false);
                count++;
+               if (video_wait_swap)
+               {
+                  MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,
+                        PARSE_ONLY_UINT, false);
+                     count++;
+               }
             }
 
             if (video_driver_test_all_flags(GFX_CTX_FLAGS_HARD_SYNC))

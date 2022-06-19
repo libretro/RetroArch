@@ -988,7 +988,8 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    d3d11->has_flip_model                   = true;
    d3d11->has_allow_tearing                = true;
    desc.Flags                              = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
-   desc.Flags                             |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+   if (d3d11->waitable_swapchains)
+      desc.Flags                          |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
    desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 #endif
 
@@ -999,7 +1000,8 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
                &desc, NULL, (IDXGISwapChain1**)&d3d11->swapChain)))
       return false;
 #else
-   desc.Flags                             |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+   if (d3d11->waitable_swapchains)
+      desc.Flags                          |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
    desc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
 
    adapter->lpVtbl->GetParent(
@@ -1064,7 +1066,8 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
 
 #endif    /* __WINRT__ */
 
-   if ((d3d11->frameLatencyWaitableObject = DXGIGetFrameLatencyWaitableObject(d3d11->swapChain)))
+   if (d3d11->waitable_swapchains &&
+         (d3d11->frameLatencyWaitableObject = DXGIGetFrameLatencyWaitableObject(d3d11->swapChain)))
    {
       settings_t* settings = config_get_ptr();
       UINT max_latency     = settings->uints.video_max_frame_latency;
@@ -1189,6 +1192,8 @@ static void *d3d11_gfx_init(const video_info_t* video,
    d3d11->hdr.max_cll                     = 0.0f;
    d3d11->hdr.max_fall                    = 0.0f;
 #endif
+
+   d3d11->waitable_swapchains             = settings->bools.video_waitable_swapchains;
 
 #ifdef __WINRT__
    if (!d3d11_init_swapchain(d3d11,
@@ -1849,7 +1854,8 @@ static bool d3d11_gfx_frame(
    {
       UINT swapchain_flags        = d3d11->has_allow_tearing 
          ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
-      swapchain_flags            |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+      if (d3d11->waitable_swapchains)
+         swapchain_flags         |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 #ifdef HAVE_DXGI_HDR
       d3d11->hdr.enable           = video_hdr_enable;
 
@@ -1925,7 +1931,7 @@ static bool d3d11_gfx_frame(
             d3d11->hdr.max_fall);
 #endif
    }
-   else
+   else if (d3d11->waitable_swapchains)
    {
       WaitForSingleObjectEx(
             d3d11->frameLatencyWaitableObject,

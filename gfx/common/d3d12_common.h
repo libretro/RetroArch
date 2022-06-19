@@ -183,6 +183,7 @@ typedef struct
       float                       clearcolor[4];
       int                         frame_index;
       bool                        vsync;
+      bool                        waitable_swapchains;
       bool                        wait_for_vblank;
       unsigned                    swap_interval;
 #ifdef HAVE_DXGI_HDR
