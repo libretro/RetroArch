@@ -1278,6 +1278,14 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
       UINT max_latency     = settings->uints.video_max_frame_latency;
       UINT cur_latency     = 0;
 
+      if (max_latency == 0)
+      {
+         d3d12->chain.wait_for_vblank = true;
+         max_latency                  = 1;
+      }
+      else
+         d3d12->chain.wait_for_vblank = false;
+
       DXGISetMaximumFrameLatency(d3d12->chain.handle, max_latency);
       DXGIGetMaximumFrameLatency(d3d12->chain.handle, &cur_latency);
       RARCH_LOG("[D3D12]: Requesting %u maximum frame latency, using %u.\n", max_latency, cur_latency);
@@ -2024,6 +2032,7 @@ static bool d3d12_gfx_frame(
    d3d12_texture_t* texture       = NULL;
    d3d12_video_t*   d3d12         = (d3d12_video_t*)data;
    bool vsync                     = d3d12->chain.vsync;
+   bool wait_for_vblank           = d3d12->chain.wait_for_vblank;
    unsigned sync_interval         = (vsync) ? d3d12->chain.swap_interval : 0;
    unsigned present_flags         = (vsync) ? 0 : DXGI_PRESENT_ALLOW_TEARING;
    const char *stat_text          = video_info->stat_text;
@@ -2660,7 +2669,7 @@ static bool d3d12_gfx_frame(
 #endif
    DXGIPresent(d3d12->chain.handle, sync_interval, present_flags);
 
-   if (vsync)
+   if (vsync && wait_for_vblank)
    {
       IDXGIOutput *pOutput;
       DXGIGetContainingOutput(d3d12->chain.handle, &pOutput);
