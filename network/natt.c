@@ -31,7 +31,9 @@
 #include "natt.h"
 
 #if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY) && !defined(_3DS)
+#ifndef HAVE_INET6
 #define HAVE_INET6 1
+#endif
 #endif
 
 static bool translate_addr(struct sockaddr_in *addr,
