@@ -1476,7 +1476,7 @@ bool command_event(enum event_command cmd, void *data)
    struct rarch_state *p_rarch     = &rarch_st;
    runloop_state_t *runloop_st     = runloop_state_get_ptr();
    uico_driver_state_t *uico_st    = uico_state_get_ptr();
-#ifdef HAVE_ACCESSIBILITY
+#if defined(HAVE_ACCESSIBILITY) || defined(HAVE_TRANSLATE)
    access_state_t *access_st       = access_state_get_ptr();
 #endif
 #ifdef HAVE_MENU
