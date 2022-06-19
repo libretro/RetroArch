@@ -65,6 +65,43 @@ static bool translate_addr(struct sockaddr_in *addr,
    return true;
 }
 
+static bool addr_6to4(struct sockaddr_storage *addr)
+{
+#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
+   /* ::ffff:a.b.c.d */
+   static const uint16_t preffix[] = {0,0,0,0,0,0xffff};
+   uint32_t address;
+   uint16_t port;
+   struct sockaddr_in6 *addr6 = (struct sockaddr_in6*)addr;
+   struct sockaddr_in  *addr4 = (struct sockaddr_in*)addr;
+
+   switch (addr->ss_family)
+   {
+      case AF_INET:
+         /* No need to convert. */
+         return true;
+      case AF_INET6:
+         /* Is the address provided an IPv4? */
+         if (!memcmp(&addr6->sin6_addr, preffix, sizeof(preffix)))
+            break;
+      default:
+         /* We don't know how to handle this. */
+         return false;
+   }
+
+   memcpy(&address, ((uint8_t*)&addr6->sin6_addr) + sizeof(preffix),
+      sizeof(address));
+   port = addr6->sin6_port;
+
+   memset(addr, 0, sizeof(*addr));
+   addr4->sin_family = AF_INET;
+   addr4->sin_port   = port;
+   memcpy(&addr4->sin_addr, &address, sizeof(addr4->sin_addr));
+#endif
+
+   return true;
+}
+
 bool natt_init(struct natt_discovery *discovery)
 {
    static const char msearch[] =
@@ -165,7 +202,8 @@ bool natt_device_next(struct natt_discovery *discovery,
    ssize_t recvd;
    char    *data;
    size_t  remaining;
-   socklen_t addr_size = sizeof(device->addr);
+   struct sockaddr_storage addr = {0};
+   socklen_t addr_size          = sizeof(addr);
 
    if (!discovery || !device)
       return false;
@@ -182,7 +220,7 @@ bool natt_device_next(struct natt_discovery *discovery,
    device->busy          = false;
 
    recvd = recvfrom(discovery->fd, buf, sizeof(buf), 0,
-      (struct sockaddr*)&device->addr, &addr_size);
+      (struct sockaddr*)&addr, &addr_size);
    if (recvd < 0)
    {
       /* If there was no data, check for timeout. */
@@ -195,6 +233,12 @@ bool natt_device_next(struct natt_discovery *discovery,
       Don't treat them as an error. */
    if (!recvd)
       return true;
+
+   /* Make sure we've an IPv4. */
+   if (!addr_6to4(&addr))
+      return true;
+
+   memcpy(&device->addr, &addr, sizeof(device->addr));
 
    /* Parse the data we received.
       We are only looking for the 'Location' HTTP header. */
