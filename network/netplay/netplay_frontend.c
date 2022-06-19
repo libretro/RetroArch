@@ -4857,7 +4857,7 @@ static void relay_chat(netplay_t *netplay, const char *nick, const char *msg)
 
 static void show_chat(netplay_t *netplay, const char *nick, const char *msg)
 {
-   char formatted_chat[NETPLAY_CHAT_MAX_SIZE];
+   char formatted_chat[NETPLAY_CHAT_MAX_SIZE + 64];
 
    /* Truncate the message if necessary. */
    snprintf(formatted_chat, sizeof(formatted_chat), "%s: %s", nick, msg);
