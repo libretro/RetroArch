@@ -3970,9 +3970,9 @@ const struct retro_subsystem_info *libretro_find_subsystem_info(
    unsigned i;
    for (i = 0; i < num_info; i++)
    {
-      if (string_is_equal(info[i].ident, ident))
-         return &info[i];
-      else if (string_is_equal(info[i].desc, ident))
+      if (     string_is_equal(info[i].ident, ident)
+            || string_is_equal(info[i].desc,  ident)
+         )
          return &info[i];
    }
 

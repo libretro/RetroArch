@@ -5863,7 +5863,8 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui,
    }
 
 #ifdef DJGPP
-   if (string_is_equal(driver_ident, "vga")) {
+   if (string_is_equal(driver_ident, "vga"))
+   {
       rgui->frame_buf.width = 320;
       rgui->frame_buf.height = 200;
    }

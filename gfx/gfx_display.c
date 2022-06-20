@@ -49,12 +49,10 @@ static bool gfx_display_null_font_init_first(
       bool is_threaded)
 {
    font_data_t **handle = (font_data_t**)font_handle;
-   if ((*handle = font_driver_init_first(video_data,
+   return ((*handle = font_driver_init_first(video_data,
          font_path, font_size, true,
          is_threaded,
-         FONT_DRIVER_RENDER_DONT_CARE)))
-      return true;
-   return false;
+         FONT_DRIVER_RENDER_DONT_CARE)));
 }
 
 static const float *null_get_default_matrix(void)
@@ -153,93 +151,57 @@ float gfx_display_get_adjusted_scale(
          adjusted_scale  = (new_width / (float)OZONE_SIDEBAR_WIDTH);
    }
 #endif
-
    /* Ensure final scale is 'sane' */
-   if (adjusted_scale <= 0.0001f)
-      return 1.0f;
-   return adjusted_scale;
+   if (adjusted_scale > 0.0001f)
+      return adjusted_scale;
+   return 1.0f;
 }
 
 /* Check if the current menu driver is compatible
  * with your video driver. */
 static bool gfx_display_check_compatibility(
+      const char *video_driver,
       enum gfx_display_driver_type type,
       bool video_is_threaded)
 {
-   const char *video_driver = video_driver_get_ident();
-
    switch (type)
    {
       case GFX_VIDEO_DRIVER_GENERIC:
          return true;
       case GFX_VIDEO_DRIVER_OPENGL:
-         if (string_is_equal(video_driver, "gl"))
-            return true;
-         break;
+         return string_is_equal(video_driver, "gl");
       case GFX_VIDEO_DRIVER_OPENGL1:
-         if (string_is_equal(video_driver, "gl1"))
-            return true;
-         break;
+         return string_is_equal(video_driver, "gl1");
       case GFX_VIDEO_DRIVER_OPENGL_CORE:
-         if (string_is_equal(video_driver, "glcore"))
-            return true;
-         break;
+         return string_is_equal(video_driver, "glcore");
       case GFX_VIDEO_DRIVER_VULKAN:
-         if (string_is_equal(video_driver, "vulkan"))
-            return true;
-         break;
+         return string_is_equal(video_driver, "vulkan");
       case GFX_VIDEO_DRIVER_METAL:
-         if (string_is_equal(video_driver, "metal"))
-            return true;
-         break;
+         return string_is_equal(video_driver, "metal");
       case GFX_VIDEO_DRIVER_DIRECT3D8:
-         if (string_is_equal(video_driver, "d3d8"))
-            return true;
-         break;
+         return string_is_equal(video_driver, "d3d8");
       case GFX_VIDEO_DRIVER_DIRECT3D9_HLSL:
-         if (string_is_equal(video_driver, "d3d9_hlsl"))
-            return true;
-         break;
+         return string_is_equal(video_driver, "d3d9_hlsl");
       case GFX_VIDEO_DRIVER_DIRECT3D9_CG:
-         if (string_is_equal(video_driver, "d3d9_cg"))
-            return true;
-         break;
+         return string_is_equal(video_driver, "d3d9_cg");
       case GFX_VIDEO_DRIVER_DIRECT3D10:
-         if (string_is_equal(video_driver, "d3d10"))
-            return true;
-         break;
+         return string_is_equal(video_driver, "d3d10");
       case GFX_VIDEO_DRIVER_DIRECT3D11:
-         if (string_is_equal(video_driver, "d3d11"))
-            return true;
-         break;
+         return string_is_equal(video_driver, "d3d11");
       case GFX_VIDEO_DRIVER_DIRECT3D12:
-         if (string_is_equal(video_driver, "d3d12"))
-            return true;
-         break;
+         return string_is_equal(video_driver, "d3d12");
       case GFX_VIDEO_DRIVER_VITA2D:
-         if (string_is_equal(video_driver, "vita2d"))
-            return true;
-         break;
+         return string_is_equal(video_driver, "vita2d");
       case GFX_VIDEO_DRIVER_CTR:
-         if (string_is_equal(video_driver, "ctr"))
-            return true;
-         break;
+         return string_is_equal(video_driver, "ctr");
       case GFX_VIDEO_DRIVER_WIIU:
-         if (string_is_equal(video_driver, "gx2"))
-            return true;
-         break;
+         return string_is_equal(video_driver, "gx2");
       case GFX_VIDEO_DRIVER_GDI:
-         if (string_is_equal(video_driver, "gdi"))
-            return true;
-         break;
+         return string_is_equal(video_driver, "gdi");
       case GFX_VIDEO_DRIVER_SWITCH:
-         if (string_is_equal(video_driver, "switch"))
-            return true;
-         break;
+         return string_is_equal(video_driver, "switch");
       case GFX_VIDEO_DRIVER_RSX:
-         if (string_is_equal(video_driver, "rsx"))
-            return true;
-         break;
+         return string_is_equal(video_driver, "rsx");
    }
 
    return false;
@@ -1026,9 +988,7 @@ void gfx_display_rotate_z(gfx_display_t *p_disp,
       )
       return;
 
-   b = (math_matrix_4x4*)dispctx->get_default_mvp(data);
-
-   if (!b)
+   if (!(b = (math_matrix_4x4*)dispctx->get_default_mvp(data)))
       return;
 
    matrix_4x4_rotate_z(matrix_rotated, draw->rotation);
@@ -1188,16 +1148,18 @@ void gfx_display_draw_keyboard(
    };
    math_matrix_4x4 mymat;
    gfx_display_ctx_rotate_draw_t rotate_draw;
+
+#ifdef HAVE_MIST
+   if(steam_has_osk_open())
+      return;
+#endif
+
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = 0.0;
    rotate_draw.scale_x      = 1.0;
    rotate_draw.scale_y      = 1.0;
    rotate_draw.scale_z      = 1;
    rotate_draw.scale_enable = true;
-
-#ifdef HAVE_MIST
-   if(steam_has_osk_open()) return;
-#endif
 
    gfx_display_draw_quad(
          p_disp,
@@ -1366,10 +1328,11 @@ bool gfx_display_init_first_driver(gfx_display_t *p_disp,
       bool video_is_threaded)
 {
    unsigned i;
+   const char *video_driver = video_driver_get_ident();
 
    for (i = 0; gfx_display_ctx_drivers[i]; i++)
    {
-      if (!gfx_display_check_compatibility(
+      if (!gfx_display_check_compatibility(video_driver,
                gfx_display_ctx_drivers[i]->type,
                video_is_threaded))
          continue;
