@@ -6224,6 +6224,10 @@ MSG_HASH(
    "Використовувати вбудований переглядач зображень"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   "Жорстко синхронізувати центральний процесор та графічний. Зменшує затримку за рахунок продуктивності."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
    "Пресет шейдера"
    )

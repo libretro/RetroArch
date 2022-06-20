@@ -2900,6 +2900,10 @@ MSG_HASH(
    "Usuari"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   "Força la sincronització entre CPU i GPU. Reduix la latència a canvi de pèrdua de rendiment."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_START,
    "Començar"
    )

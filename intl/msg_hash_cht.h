@@ -4524,6 +4524,10 @@ MSG_HASH(
    "強制顯示驅動程序使用特定的緩衝模式。"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   "強制同步CPU和GPU，以性能為代價換取低延遲。"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    "強制顯示驅動程序使用特定的緩衝模式。"
    )

@@ -10072,6 +10072,14 @@ MSG_HASH(
    "Indica al driver video di utilizzare esplicitamente una modalità di buffering specifica."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
+   "Swapchains Attivi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   "Sincronizza forzatamente la CPU con la GPU. Riduce la latenza al costo delle prestazioni."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
    "Latenza massima di fotogrammi"
    )

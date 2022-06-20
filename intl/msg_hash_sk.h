@@ -2980,6 +2980,10 @@ MSG_HASH(
    "Používateľ"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   "Napevno synchronizovať CPU a GPU. Znižuje latenciu na úkor výkonu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_START,
    "Štart"
    )

@@ -10292,6 +10292,10 @@ MSG_HASH(
    "비디오 드라이버가 지정된 버퍼링 모드를 사용하도록 지시합니다."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   "CPU와 GPU를 강제 동기화합니다. 성능을 희생해 지연시간을 줄입니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
    "최대 프레임 지연"
    )

@@ -7404,6 +7404,10 @@ MSG_HASH(
    "يلغي مشغل الفيديو أن يستخدم صراحة وضع التخزين المؤقت المحدد."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   "المزامنة الصارمة لوحدة المعالجة المركزية و GPU. يقلل الوقت على حساب الأداء."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    "يلغي مشغل الفيديو أن يستخدم صراحة وضع التخزين المؤقت المحدد."
    )

@@ -4519,6 +4519,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER,
    "Gebruiker"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   "Hard-synchronisatie van de CPU en GPU. Vermindert latentie ten koste van prestaties."
+   )
 
 /* Unused (Only Exist in Translation Files) */
 

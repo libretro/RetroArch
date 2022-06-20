@@ -10300,6 +10300,10 @@ MSG_HASH(
    "Задаёт точный режим буферизации, используемый видеодрайвером."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   "Жёстко синхронизировать CPU и GPU. Уменьшает задержку, но снижает производительность."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
    "Макс. задержка кадра"
    )

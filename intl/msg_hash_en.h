@@ -1644,6 +1644,10 @@ MSG_HASH(
    "Maximum Swap-chain Images"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   "Hard-synchronise the CPU and GPU. Reduces latency at the cost of performance."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
    "Maximum Frame Latency"
    )

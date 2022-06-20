@@ -5412,6 +5412,10 @@ MSG_HASH(
    "Usuari"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   "Sincronització rígida de la CPU i GPU. Redueix la latència a cost de rendiment."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_START,
    "Iniciar"
    )
@@ -5692,6 +5696,114 @@ MSG_HASH(
    "Jugant"
    )
 
+MSG_HASH(
+   MSG_APPLICATION_DIR,
+   "Directori de l’aplicació"
+   )
+MSG_HASH(
+   MSG_APPLYING_CHEAT,
+   "S’estan aplicant els canvis de trucs."
+   )
+MSG_HASH(
+   MSG_APPLYING_PATCH,
+   "S’està aplicant el pedaç: %s"
+   )
+MSG_HASH(
+   MSG_APPLYING_SHADER,
+   "S’està aplicant el shader"
+   )
+MSG_HASH(
+   MSG_AUDIO_MUTED,
+   "S’ha silenciat l’àudio."
+   )
+MSG_HASH(
+   MSG_AUDIO_UNMUTED,
+   "S’ha activat l’àudio."
+   )
+MSG_HASH(
+   MSG_AUTOCONFIG_FILE_ERROR_SAVING,
+   "S’ha produït un error desant el perfil del controlador."
+   )
+MSG_HASH(
+   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
+   "S’ha desat correctament el perfil del controlador."
+   )
+MSG_HASH(
+   MSG_AUTOSAVE_FAILED,
+   "No s’ha pogut inicialitzar el desament automàtic."
+   )
+MSG_HASH(
+   MSG_AUTO_SAVE_STATE_TO,
+   "Desa l’estat automàticament a"
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "S’està blocant la sobreescriptura de SRAM"
+   )
+MSG_HASH(
+   MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
+   "S’està iniciant la interfície de comandes al port"
+   )
+MSG_HASH(
+   MSG_CANNOT_INFER_NEW_CONFIG_PATH,
+   "No es pot inferir el nou camí de configuració. Useu l’hora actual."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "S’ha activat el mode expert d’assoliments; s’han desactivat el desament d’estat i el rebobinat."
+   )
+MSG_HASH(
+   MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
+   "S’està comparant amb nombres màgics coneguts..."
+   )
+MSG_HASH(
+   MSG_COMPILED_AGAINST_API,
+   "Compilat amb l’API"
+   )
+MSG_HASH(
+   MSG_CONFIG_DIRECTORY_NOT_SET,
+   "No s’ha establert el directori de configuració. No es pot desar la nova configuració."
+   )
+MSG_HASH(
+   MSG_CONNECTED_TO,
+   "S’ha connectat a"
+   )
+MSG_HASH(
+   MSG_CONTENT_CRC32S_DIFFER,
+   "Els CRC32 dels continguts són diferents. No es poden usar jocs diferents."
+   )
+MSG_HASH(
+   MSG_PING_TOO_HIGH,
+   "El vostre ping és massa alt per aquest amfitrió."
+   )
+MSG_HASH(
+   MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
+   "S’ha omès la càrrega de contingut. La implementació el carregarà pel seu compte."
+   )
+MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "El nucli no admet estats desats."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
+   "S’ha creat correctament el fitxer d’opcions del nucli."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FILE_REMOVED_SUCCESSFULLY,
+   "S’ha eliminat correctament el fitxer d’opcions del nucli."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_RESET,
+   "Totes les opcions del nucli s’han restablert als valors predeterminats."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSHED,
+   "S’han desat les opcions del nucli a:"
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSH_FAILED,
+   "No s’han pogut desar les opcions del nucli a:"
+   )
 MSG_HASH(
    MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
    "No s'ha pogut enviar el sobrenom a l'amfitrió."

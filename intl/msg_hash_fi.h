@@ -10036,6 +10036,10 @@ MSG_HASH(
    "Määrää videoajurin käyttämään yksiselitteisesti määritettyä puskurointitilaa."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   "Kova-synkronoi CPU ja GPU. Vähentää viivettä suorituskyvyn kustannuksella."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
    "Kehyksen suurin viive"
    )

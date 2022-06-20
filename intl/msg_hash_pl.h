@@ -9888,6 +9888,10 @@ MSG_HASH(
    "Informuje sterownik wideo, aby jawnie użył określonego trybu buforowania."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   "Twarda synchronizacja CPU i GPU. Zmniejsza opóźnienie kosztem wydajności."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
    "Maksymalne opóźnienie ramki"
    )

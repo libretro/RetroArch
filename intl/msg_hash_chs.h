@@ -9884,6 +9884,10 @@ MSG_HASH(
    "强制显示驱动程序使用特定的缓冲模式。"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   "强制同步 CPU 和 GPU，以性能为代价换取低延迟。"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    "强制显示驱动程序使用特定的缓冲模式。"
    )
