@@ -950,6 +950,21 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
    return 0;
 }
 
+static int action_left_state_slot(unsigned type, const char *label,
+      bool wraparound)
+{
+   settings_t           *settings = config_get_ptr();
+
+   settings->ints.state_slot--;
+   if (settings->ints.state_slot < -1)
+      settings->ints.state_slot = 999;
+
+   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
+   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
+
+   return 0;
+}
+
 static int bind_left_generic(unsigned type, const char *label,
       bool wraparound)
 {
@@ -1251,6 +1266,10 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:
             BIND_ACTION_LEFT(cbs, action_left_core_set_standalone_exempt);
+            break;
+         case MENU_SETTING_ACTION_SAVESTATE:
+         case MENU_SETTING_ACTION_LOADSTATE:
+            BIND_ACTION_LEFT(cbs, action_left_state_slot);
             break;
          case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION:
          case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION_KBD:
