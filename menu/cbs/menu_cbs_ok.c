@@ -1157,11 +1157,10 @@ int generic_action_ok_displaylist_push(const char *path,
                path_content[0] = '\0';
                strlcpy(path_content, path_get(RARCH_PATH_CONTENT), sizeof(path_content));
                /* Remove archive browsed file from the path */
-               if (strstr(path_content, "#"))
                {
-                  char *token = strtok(path_content, "#");
-                  while (token != NULL)
-                     token = strtok(NULL, "#");
+                  char *delim = (char*)strchr(path_content, '#');
+                  if (delim)
+                     *delim = '\0';
                }
                menu_driver_set_pending_selection(path_basename(path_content));
             }
