@@ -643,7 +643,7 @@ static void winraw_poll(void *data)
    }
 
    /* Prevent LAlt sticky after unfocusing with Alt-Tab */
-   if (    !winraw_focus
+   if (     !winraw_focus
          && wr->keyboard.keys[SC_LALT] 
          && !(GetKeyState(VK_MENU) & 0x8000))
    {
@@ -652,6 +652,9 @@ static void winraw_poll(void *data)
             input_keymaps_translate_keysym_to_rk(SC_LALT),
             0, 0, RETRO_DEVICE_KEYBOARD);
    }
+   /* Clear all keyboard key states when unfocused */
+   else if (!winraw_focus && !(GetKeyState(VK_MENU) & 0x8000))
+      memset(wr->keyboard.keys, 0, SC_LAST);
 }
 
 static unsigned winraw_retro_id_to_rarch(unsigned id)
