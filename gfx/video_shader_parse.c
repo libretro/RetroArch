@@ -1878,7 +1878,6 @@ bool video_shader_load_preset_into_shader(const char *path,
       override_conf = config_file_new_from_path_to_string(path_list_tmp->path);
       
 #ifdef DEBUG
-      RARCH_DBG("[Shaders]: Depth %u apply overrides..\n", i);
       RARCH_DBG("[Shaders]: Apply values from: \"%s\".\n", override_conf->path);
 #endif
 
