@@ -162,46 +162,31 @@ float gfx_display_get_adjusted_scale(
 static bool gfx_display_check_compatibility(
       const char *video_driver,
       enum gfx_display_driver_type type,
+      const char *ident,
       bool video_is_threaded)
 {
    switch (type)
    {
+      case GFX_VIDEO_DRIVER_OPENGL:
+      case GFX_VIDEO_DRIVER_OPENGL1:
+      case GFX_VIDEO_DRIVER_OPENGL_CORE:
+      case GFX_VIDEO_DRIVER_VULKAN:
+      case GFX_VIDEO_DRIVER_METAL:
+      case GFX_VIDEO_DRIVER_DIRECT3D8:
+      case GFX_VIDEO_DRIVER_DIRECT3D9_HLSL:
+      case GFX_VIDEO_DRIVER_DIRECT3D9_CG:
+      case GFX_VIDEO_DRIVER_DIRECT3D10:
+      case GFX_VIDEO_DRIVER_DIRECT3D11:
+      case GFX_VIDEO_DRIVER_DIRECT3D12:
+      case GFX_VIDEO_DRIVER_VITA2D:
+      case GFX_VIDEO_DRIVER_CTR:
+      case GFX_VIDEO_DRIVER_WIIU:
+      case GFX_VIDEO_DRIVER_GDI:
+      case GFX_VIDEO_DRIVER_SWITCH:
+      case GFX_VIDEO_DRIVER_RSX:
+         return string_is_equal(video_driver, ident);
       case GFX_VIDEO_DRIVER_GENERIC:
          return true;
-      case GFX_VIDEO_DRIVER_OPENGL:
-         return string_is_equal(video_driver, "gl");
-      case GFX_VIDEO_DRIVER_OPENGL1:
-         return string_is_equal(video_driver, "gl1");
-      case GFX_VIDEO_DRIVER_OPENGL_CORE:
-         return string_is_equal(video_driver, "glcore");
-      case GFX_VIDEO_DRIVER_VULKAN:
-         return string_is_equal(video_driver, "vulkan");
-      case GFX_VIDEO_DRIVER_METAL:
-         return string_is_equal(video_driver, "metal");
-      case GFX_VIDEO_DRIVER_DIRECT3D8:
-         return string_is_equal(video_driver, "d3d8");
-      case GFX_VIDEO_DRIVER_DIRECT3D9_HLSL:
-         return string_is_equal(video_driver, "d3d9_hlsl");
-      case GFX_VIDEO_DRIVER_DIRECT3D9_CG:
-         return string_is_equal(video_driver, "d3d9_cg");
-      case GFX_VIDEO_DRIVER_DIRECT3D10:
-         return string_is_equal(video_driver, "d3d10");
-      case GFX_VIDEO_DRIVER_DIRECT3D11:
-         return string_is_equal(video_driver, "d3d11");
-      case GFX_VIDEO_DRIVER_DIRECT3D12:
-         return string_is_equal(video_driver, "d3d12");
-      case GFX_VIDEO_DRIVER_VITA2D:
-         return string_is_equal(video_driver, "vita2d");
-      case GFX_VIDEO_DRIVER_CTR:
-         return string_is_equal(video_driver, "ctr");
-      case GFX_VIDEO_DRIVER_WIIU:
-         return string_is_equal(video_driver, "gx2");
-      case GFX_VIDEO_DRIVER_GDI:
-         return string_is_equal(video_driver, "gdi");
-      case GFX_VIDEO_DRIVER_SWITCH:
-         return string_is_equal(video_driver, "switch");
-      case GFX_VIDEO_DRIVER_RSX:
-         return string_is_equal(video_driver, "rsx");
    }
 
    return false;
@@ -1334,6 +1319,7 @@ bool gfx_display_init_first_driver(gfx_display_t *p_disp,
    {
       if (!gfx_display_check_compatibility(video_driver,
                gfx_display_ctx_drivers[i]->type,
+               gfx_display_ctx_drivers[i]->ident,
                video_is_threaded))
          continue;
 
