@@ -10020,6 +10020,10 @@ MSG_HASH(
    "Říká ovladači videa, aby explicitně použil zadaný režim vyrovnávací paměti."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
+   "Vyčkávání Výměny Řetězců"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
    "Těžká synchronizace CPU a GPU. Snižuje latenci na úkor výkonu."
    )

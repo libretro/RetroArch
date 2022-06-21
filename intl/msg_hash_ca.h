@@ -3818,6 +3818,10 @@ MSG_HASH(
    "Mostra l’opció “Inicia l’enregistrament”."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
+   "Mostra l’opció de «Shaders»."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "Mostra “Afegeix als preferits”"
    )
@@ -3826,19 +3830,119 @@ MSG_HASH(
    "Mostra l’opció “Afegeix als preferits”."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+   "Mostra «Estableix l’associació de nucli»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+   "Mostra l’opció «Estableix l’associació de nucli» quan no s’executa el contingut."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+   "Mostra «Restableix l’associació de nucli»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+   "Mostra l’opció «Restableix l’associació de nucli» quan no s’executa el contingut."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+   "Mostra «Baixa les miniatures»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+   "Mostra l’opció «Baixa les miniatures» quan no s’executa el contingut."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
    "Mostra «Informació»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
+   "Mostra l’opció «Informació»."
    )
 
 /* Settings > User Interface > Views > Settings */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
+   "Mostra «Controladors»"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,
    "Mostra les opcions de controladors."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,
+   "Mostra «Vídeo»"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_VIDEO,
    "Mostra les opcions de vídeo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AUDIO,
+   "Mostra «Àudio»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AUDIO,
+   "Mostra les opcions d’«Àudio»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_INPUT,
+   "Mostra «Entrada»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_INPUT,
+   "Mostra les opcions d’«Entrada»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LATENCY,
+   "Mostra «Latència»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
+   "Mostra les opcions de «Latència»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CORE,
+   "Mostra «Nucli»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CORE,
+   "Mostra les opcions del «Nucli»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CONFIGURATION,
+   "Mostra «Configuració»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CONFIGURATION,
+   "Mostra les opcions de «Configuració»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
+   "Mostra «Desament»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
+   "Mostra les opcions de «Desament»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LOGGING,
+   "Mostra «Registre»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
+   "Mostra les opcions de «Registre»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FILE_BROWSER,
+   "Mostra «Navegador de fitxers»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FILE_BROWSER,
+   "Mostra les opcions de «Navegador de fitxers»."
    )
 
 

@@ -10184,6 +10184,10 @@ MSG_HASH(
    "Indique au pilote vidéo d'utiliser explicitement le mode de mise en mémoire tampon spécifié."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
+   "Chaînes d'échanges en attente"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
    "Synchronisation matérielle du processeur et du processeur graphique. Réduit la latence mais affecte les performances."
    )
