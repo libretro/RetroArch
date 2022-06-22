@@ -3634,6 +3634,13 @@ static void ozone_go_to_sidebar(ozone_handle_t *ozone,
    ozone_sidebar_update_collapse(ozone, ozone_collapse_sidebar, true);
 }
 
+static void linebreak_after_colon(char (*str)[255])
+{
+   char *delim = (char*)strchr(*str, ':');
+   if (delim)
+      *++delim = '\n';
+}
+
 static void ozone_update_content_metadata(ozone_handle_t *ozone)
 {
    const char *core_name             = NULL;
@@ -3687,9 +3694,14 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
 
       /* Fill entry enumeration */
       if (show_entry_idx)
+      {
          snprintf(ozone->selection_entry_enumeration, sizeof(ozone->selection_entry_enumeration),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_ENTRY_IDX),
             (unsigned long)(playlist_index + 1), (unsigned long)list_size);
+
+         if (!scroll_content_metadata)
+            linebreak_after_colon(&ozone->selection_entry_enumeration);
+      }
       else
          ozone->selection_entry_enumeration[0] = '\0';
 
@@ -3701,6 +3713,9 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
 
       snprintf(ozone->selection_core_name, sizeof(ozone->selection_core_name),
          "%s %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), core_label);
+
+      if (!scroll_content_metadata)
+         linebreak_after_colon(&ozone->selection_core_name);
 
       /* Word wrap core name string, if required */
       if (!scroll_content_metadata)
@@ -3748,6 +3763,12 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
          snprintf(ozone->selection_lastplayed, sizeof(ozone->selection_lastplayed), "%s %s",
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED));
+      }
+
+      if (!scroll_content_metadata)
+      {
+         linebreak_after_colon(&ozone->selection_playtime);
+         linebreak_after_colon(&ozone->selection_lastplayed);
       }
 
       /* Word wrap last played string, if required */
@@ -5753,7 +5774,7 @@ static void ozone_draw_thumbnail_bar(
                   column_x,
                   ozone->selection_entry_enumeration,
                   text_color,
-                  1);
+                  ozone_count_lines(ozone->selection_entry_enumeration));
 
          /* Core association */
          ozone_content_metadata_line(
@@ -5775,7 +5796,7 @@ static void ozone_draw_thumbnail_bar(
                column_x,
                ozone->selection_playtime,
                text_color,
-               1);
+               ozone_count_lines(ozone->selection_playtime));
 
          /* Last played */
          ozone_content_metadata_line(
