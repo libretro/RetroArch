@@ -625,6 +625,27 @@ void runtime_log_get_last_played_time(runtime_log_t *runtime_log,
    mktime(time_info);
 }
 
+void runtime_log_get_current_time(runtime_log_t *runtime_log,
+      struct tm *time_info)
+{
+   time_t time_;
+   struct tm tm_;
+
+   /* Get current time */
+   time(&time_);
+   rtime_localtime(&time_, &tm_);
+
+   if (!time_ || !time_info)
+      return;
+
+   /* Set tm values */
+   time_info = &tm_;
+
+   /* Perform any required range adjustment + populate
+    * missing entries */
+   mktime(time_info);
+}
+
 static void last_played_strftime(runtime_log_t *runtime_log,
       char *str, size_t len, const char *format)
 {
@@ -656,6 +677,61 @@ static void last_played_strftime(runtime_log_t *runtime_log,
       local = NULL;
    }
 #endif
+}
+
+static void last_played_human(runtime_log_t *runtime_log,
+      char *str, size_t len)
+{
+   struct tm time_info;
+   struct tm time_info_current;
+   time_t last_played;
+   time_t current;
+   time_t delta;
+   unsigned i;
+   char tmp[32];
+
+   unsigned units[7][2] =
+   {
+      {MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE, MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL},
+      {MENU_ENUM_LABEL_VALUE_TIME_UNIT_MINUTES_SINGLE, MENU_ENUM_LABEL_VALUE_TIME_UNIT_MINUTES_PLURAL},
+      {MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_SINGLE, MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_PLURAL},
+      {MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_SINGLE, MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_PLURAL},
+      {MENU_ENUM_LABEL_VALUE_TIME_UNIT_WEEKS_SINGLE, MENU_ENUM_LABEL_VALUE_TIME_UNIT_WEEKS_PLURAL},
+      {MENU_ENUM_LABEL_VALUE_TIME_UNIT_MONTHS_SINGLE, MENU_ENUM_LABEL_VALUE_TIME_UNIT_MONTHS_PLURAL},
+      {MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_SINGLE, MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_PLURAL},
+   };
+
+   float periods[6] = {60.0f, 60.0f, 24.0f, 7.0f, 4.35f, 12.0f};
+
+   if (!runtime_log)
+   {
+      strlcat(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER), len);
+      return;
+   }
+
+   /* Get times */
+   runtime_log_get_last_played_time(runtime_log, &time_info);
+   runtime_log_get_current_time(runtime_log, &time_info_current);
+
+   last_played = mktime(&time_info);
+   current     = mktime(&time_info_current);
+   delta       = current - last_played;
+
+   if (delta <= 0)
+   {
+      strlcat(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER), len);
+      return;
+   }
+
+   for (i = 0; delta >= periods[i] && i < sizeof(periods) - 1; i++)
+      delta /= periods[i];
+
+   /* Generate string */
+   snprintf(tmp, sizeof(tmp), "%u %s",
+         (int)delta, msg_hash_to_str((delta == 1) ? units[i][0] : units[i][1]));
+   strlcat(str, tmp, len);
+   strlcat(str, " ", len);
+   strlcat(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO), len);
 }
 
 /* Gets last played entry value as a pre-formatted string */
@@ -1087,6 +1163,13 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
                   msg_hash_to_str(
                      MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
                   runtime_log->last_played.day, runtime_log->last_played.month);
+            return;
+         case PLAYLIST_LAST_PLAYED_STYLE_AGO:
+            last_played_human(runtime_log, tmp, sizeof(tmp));
+            snprintf(str, len, "%s %s",
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
+                  tmp);
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS:
          default:

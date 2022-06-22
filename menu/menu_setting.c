@@ -5235,6 +5235,12 @@ static void setting_get_string_representation_uint_playlist_sublabel_last_played
                   MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM_HM_AMPM),
                len);
          break;
+      case PLAYLIST_LAST_PLAYED_STYLE_AGO:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO),
+               len);
+         break;
    }
 
    /* Change date separator, if required */
