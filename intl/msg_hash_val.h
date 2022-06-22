@@ -1973,6 +1973,10 @@ MSG_HASH(
    "Selecció automàtica"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
+   "real(s)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
    "Sincronització rigorosa de la GPU"
    )
@@ -2272,9 +2276,25 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "Servei d'IA"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
+   "Captura una imatge del contingut actual i traduïx o llegix en veu alta els textos que hi hagen.\nCal haver activat i configurat el servei d'IA."
+   )
 
 /* Settings > Input > Port # Controls */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "Usa la palanca analògica especificada com a senyal d'entrada per a la creueta. Si el nucli té suport natiu de control analògic, les assignacions de la creueta es desactivarán llevat que s'haja seleccionat una opció forçada. Forçant les assignacions de creueta, el nucli no rebrá cap entrada analògica de la palanca especificada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
+   "Port assignat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
+   "Especifica quin dels ports del nucli (usualment, el número del jugador) rebrà les senyals d'entrada del port de comandament %u del front-end."
+   )
 
 /* Settings > Latency */
 
