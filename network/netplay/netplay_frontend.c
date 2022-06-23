@@ -4860,9 +4860,17 @@ static void relay_chat(netplay_t *netplay, const char *nick, const char *msg)
 static void show_chat(netplay_t *netplay, const char *nick, const char *msg)
 {
    char formatted_chat[NETPLAY_CHAT_MAX_SIZE];
-   /* Truncate the message if necessary. Truncation here is intentional. */
-   int ret = snprintf(formatted_chat, sizeof(formatted_chat), "%s: %s", nick, msg);
-   (void)ret;
+
+   /* Truncate the message if necessary.
+      Truncation here is intentional. */
+#ifdef GEKKO
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-truncation"
+#endif
+   snprintf(formatted_chat, sizeof(formatted_chat), "%s: %s", nick, msg);
+#ifdef GEKKO
+#pragma GCC diagnostic pop
+#endif
 
    RARCH_LOG("[Netplay] %s\n", formatted_chat);
 

@@ -97,7 +97,6 @@ static void convert_ip(char *dst, size_t size, uint32_t ip, bool inverted)
 
 bool net_ifinfo_new(net_ifinfo_t *list)
 {
-   unsigned k              = 0;
 #if defined(GEKKO)
    char hostname[128];
 
@@ -130,6 +129,7 @@ bool net_ifinfo_new(net_ifinfo_t *list)
    Result rc;
 #endif
    char hostname[128];
+   unsigned k                   = 0;
    struct net_ifinfo_entry *ptr = NULL;
 
    memset(list, 0, sizeof(net_ifinfo_t));
@@ -184,6 +184,7 @@ bool net_ifinfo_new(net_ifinfo_t *list)
 
    return true;
 #elif defined(_WIN32) && !defined(_XBOX)
+   unsigned k                              = 0;
    PIP_ADAPTER_ADDRESSES adapter_addresses = NULL, aa = NULL;
    PIP_ADAPTER_UNICAST_ADDRESS ua          = NULL;
 #ifdef _WIN32_WINNT_WINXP
@@ -231,6 +232,7 @@ bool net_ifinfo_new(net_ifinfo_t *list)
 
    free(adapter_addresses);
 #else
+   unsigned k              = 0;
    struct ifaddrs *ifa     = NULL;
    struct ifaddrs *ifaddr  = NULL;
 

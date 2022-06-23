@@ -620,6 +620,20 @@ const char *inet_ntop_compat(int af, const void *src, char *dst, socklen_t cnt)
    return sceNetInetNtop(af,src,dst,cnt);
 #elif defined(WIIU)
    return inet_ntop(af, src, dst, cnt);
+#elif defined(GEKKO)
+   if (af == AF_INET)
+   {
+      const char *addr_str = inet_ntoa(*(struct in_addr*)src);
+
+      if (addr_str)
+      {
+         strlcpy(dst, addr_str, cnt);
+
+         return dst;
+      }
+   }
+
+   return NULL;
 #elif defined(_XBOX)
    return isockaddr_ntop(af, src, dst, cnt);
 #elif defined(_WIN32)
