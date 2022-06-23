@@ -422,6 +422,7 @@ typedef struct xmb_handle
    /* Load Content file browser */
    bool is_file_list;
    bool is_quick_menu;
+   bool libretro_running;
 
    /* Whether to show entry index for current list */
    bool entry_idx_enabled;
@@ -784,11 +785,10 @@ static float *xmb_gradient_ident(unsigned xmb_color_theme)
       case XMB_THEME_ICE_COLD:
          return &gradient_ice_cold[0];
       case XMB_THEME_LEGACY_RED:
+         return &gradient_legacy_red[0];
       default:
-         break;
+         return &gradient_dark[0];
    }
-
-   return &gradient_legacy_red[0];
 }
 
 static size_t xmb_list_get_selection(void *data)
@@ -1185,9 +1185,13 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
             strlcat(path, FILE_PATH_PNG_EXTENSION, sizeof(path));
 
             if (path_is_valid(path))
+            {
                strlcpy(
                      xmb->savestate_thumbnail_file_path, path,
                      sizeof(xmb->savestate_thumbnail_file_path));
+
+               xmb->fullscreen_thumbnails_available = true;
+            }
          }
       }
    }
@@ -2514,6 +2518,10 @@ static void xmb_populate_entries(void *data,
          (xmb->is_playlist || xmb->is_db_manager_list || xmb->is_file_list) &&
          !xmb->is_quick_menu &&
          !((xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS) && (xmb->depth > 2));
+
+   if (xmb->is_quick_menu &&
+         (!string_is_empty(xmb->savestate_thumbnail_file_path) || !xmb->libretro_running))
+      xmb->fullscreen_thumbnails_available = true;
 
    /* Hack: XMB gets into complete muddle when
     * performing 'complex' directory navigation
@@ -3871,7 +3879,8 @@ static void xmb_show_fullscreen_thumbnails(
     * and all thumbnails for current selection are already
     * loaded/available */
    gfx_thumbnail_get_core_name(xmb->thumbnail_path_data, &core_name);
-   if (string_is_equal(core_name, "imageviewer"))
+   if (string_is_equal(core_name, "imageviewer") ||
+         !string_is_empty(xmb->savestate_thumbnail_file_path))
    {
       /* imageviewer content requires special treatment,
        * since only one thumbnail can ever be loaded
@@ -3880,6 +3889,8 @@ static void xmb_show_fullscreen_thumbnails(
                xmb->thumbnail_path_data, GFX_THUMBNAIL_RIGHT))
       {
          if (     xmb->thumbnails.right.status 
+               != GFX_THUMBNAIL_STATUS_AVAILABLE &&
+                  xmb->thumbnails.savestate.status
                != GFX_THUMBNAIL_STATUS_AVAILABLE)
             return;
       }
@@ -3932,7 +3943,7 @@ static void xmb_show_fullscreen_thumbnails(
    /* > Get entry label */
    if (!string_is_empty(selected_entry.rich_label))
       thumbnail_label          = selected_entry.rich_label;
-   else
+   else if (!xmb->is_quick_menu)
       thumbnail_label          = selected_entry.path;
 
    /* > Sanity check */
@@ -4027,6 +4038,9 @@ static enum menu_action xmb_parse_menu_entry_action(
          }
          break;
       case MENU_ACTION_START:
+         if (xmb->is_quick_menu && xmb->libretro_running)
+            break;
+
          /* If this is a menu with thumbnails, attempt
           * to show fullscreen thumbnail view */
          if (xmb->fullscreen_thumbnails_available)
@@ -4039,6 +4053,16 @@ static enum menu_action xmb_parse_menu_entry_action(
             xmb_hide_fullscreen_thumbnails(xmb, false);
             if (xmb->fullscreen_thumbnails_available)
                xmb_show_fullscreen_thumbnails(xmb, selection);
+            new_action = MENU_ACTION_NOOP;
+         }
+         break;
+      case MENU_ACTION_SCAN:
+         if (xmb->is_quick_menu && xmb->libretro_running &&
+               !string_is_empty(xmb->savestate_thumbnail_file_path) &&
+               xmb->fullscreen_thumbnails_available)
+         {
+            xmb_hide_fullscreen_thumbnails(xmb, false);
+            xmb_show_fullscreen_thumbnails(xmb, menu_navigation_get_selection());
             new_action = MENU_ACTION_NOOP;
          }
          break;
@@ -4628,6 +4652,13 @@ static void xmb_draw_fullscreen_thumbnails(
       show_right_thumbnail = (right_thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE);
       show_left_thumbnail  = (left_thumbnail->status  == GFX_THUMBNAIL_STATUS_AVAILABLE);
 
+      if (xmb->is_quick_menu && !string_is_empty(xmb->savestate_thumbnail_file_path))
+      {
+         left_thumbnail       = &xmb->thumbnails.savestate;
+         show_left_thumbnail  = (left_thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE);
+         show_right_thumbnail = false;
+      }
+
       if (show_right_thumbnail)
          num_thumbnails++;
 
@@ -5114,6 +5145,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    /**************************/
    /* Draw thumbnails: START */
    /**************************/
+   xmb->libretro_running = libretro_running;
 
    /* Note: This is incredibly ugly, but there are
     * so many combinations here that we would go insane
@@ -5147,7 +5179,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
     * Quick Menu as well as when selecting "Information" for a playlist entry.
     * NOTE: This is currently a pretty crude check, simply going by menu depth
     * and not specifically identifying which menu we're actually in. */
-   else if (!((xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS) && (xmb->depth > 2)))
+   else if (!((xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS) &&
+         ((xmb->depth > 1 && libretro_running) || (xmb->depth > 2 && !libretro_running))))
    {
       bool show_right_thumbnail =
             (xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_AVAILABLE) ||
