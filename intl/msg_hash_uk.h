@@ -3513,6 +3513,10 @@ MSG_HASH(
    "Востаннє зіграно:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
+   "секунди"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
    "Показувати Індекс Списку Відтворення"
    )

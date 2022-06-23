@@ -1633,6 +1633,10 @@ MSG_HASH(
    "Tiempu d'execución:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
+   "segundos"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
    "Fai xeres de caltenimientu nes llistes."
    )

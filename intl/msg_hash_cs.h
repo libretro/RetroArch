@@ -5785,6 +5785,10 @@ MSG_HASH(
    "Naposledy Hráno:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
+   "sekundy"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
    "Zobrazit Rejstřík Položek Playlistu"
    )

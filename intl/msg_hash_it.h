@@ -5817,6 +5817,10 @@ MSG_HASH(
    "Ultima Riproduzione:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
+   "secondi"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
    "Mostra l'Indice Voce della scaletta"
    )

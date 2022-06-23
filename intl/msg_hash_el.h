@@ -2865,6 +2865,10 @@ MSG_HASH(
    "Τελευταίο Παιχνίδι:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
+   "δευτερόλεπτα"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
    "Φορητές Λίστες Αναπαραγωγής"
    )

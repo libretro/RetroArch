@@ -5769,6 +5769,10 @@ MSG_HASH(
    "Zuletzt gespielt:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
+   "Sekunden"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
    "Wiedergabelisteneintragsnummer anzeigen"
    )

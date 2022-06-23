@@ -3496,6 +3496,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
    "Laatst Gespeeld:"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
+   "secondes"
+   )
 
 /* Settings > Playlists > Playlist Management */
 

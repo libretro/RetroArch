@@ -3929,6 +3929,10 @@ MSG_HASH(
    "آخر لعب:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
+   "ثواني"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "تشغيل قائمة التشغيل الفرعية"
    )

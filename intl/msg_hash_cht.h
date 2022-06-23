@@ -2996,6 +2996,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME,
    "運行時間:"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
+   "秒"
+   )
 
 /* Settings > Playlists > Playlist Management */
 

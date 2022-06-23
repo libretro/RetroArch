@@ -5233,6 +5233,10 @@ MSG_HASH(
    "最終プレイ日時:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
+   "秒"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
    "プレイリストの項目にインデックス番号を表示"
    )

@@ -5685,6 +5685,10 @@ MSG_HASH(
    "Viimeksi pelattu:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
+   "sekuntia"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
    "Näytä soittolistan kohteen Indeksi"
    )

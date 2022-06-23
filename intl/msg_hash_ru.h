@@ -5897,6 +5897,10 @@ MSG_HASH(
    "Время запуска:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
+   "секунд"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
    "Показывать номер записи в плейлисте"
    )

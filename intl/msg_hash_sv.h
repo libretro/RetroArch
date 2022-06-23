@@ -2520,6 +2520,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
    "Senast spelad:"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
+   "sekunder"
+   )
 
 /* Settings > Playlists > Playlist Management */
 
