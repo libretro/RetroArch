@@ -5999,8 +5999,8 @@ static int action_ok_netplay_connect_room(const char *path, const char *label,
       hostname, room->gamename, room->gamecrc);
 #endif
 
-   task_push_netplay_crc_scan(room->gamecrc, room->gamename, hostname,
-      room->corename, room->subsystem_name);
+   task_push_netplay_crc_scan(room->gamecrc, room->gamename,
+      room->subsystem_name, room->corename, hostname);
 
    return 0;
 }
