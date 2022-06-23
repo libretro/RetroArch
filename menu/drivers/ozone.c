@@ -3348,12 +3348,14 @@ static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
             strlcat(path, FILE_PATH_PNG_EXTENSION, sizeof(path));
 
             if (path_is_valid(path))
+            {
                strlcpy(
                      ozone->savestate_thumbnail_file_path, path,
                      sizeof(ozone->savestate_thumbnail_file_path));
 
-            ozone->thumbnails.show_savestate = true;
-            ozone->selection_core_is_viewer  = true;
+               ozone->thumbnails.show_savestate = true;
+               ozone->selection_core_is_viewer  = true;
+            }
          }
 
          /* Reset other images, otherwise they will flash
@@ -4131,7 +4133,8 @@ static void ozone_refresh_sidebars(
    }
 
    /* Set thumbnail bar position */
-   if (is_playlist && !ozone->cursor_in_sidebar && ozone->depth == 1)
+   if ((is_playlist && !ozone->cursor_in_sidebar && ozone->depth == 1) ||
+         (ozone->is_quick_menu && ozone->thumbnails.show_savestate && ozone->depth >= 2))
    {
       ozone->animations.thumbnail_bar_position = ozone->dimensions.thumbnail_bar_width;
       ozone->show_thumbnail_bar                = true;
@@ -5427,7 +5430,7 @@ static void ozone_draw_thumbnail_bar(
          thumbnail_x_position = x_position - (ozone->dimensions.sidebar_entry_icon_padding * 2);
       }
       else
-         show_right_thumbnail = false;
+         return;
    }
 
    /* If this entry is associated with the image viewer
