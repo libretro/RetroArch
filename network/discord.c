@@ -193,8 +193,8 @@ static void handle_discord_join_cb(retro_task_t *task, void *task_data,
          snprintf(hostname, sizeof(hostname), "%s|%d",
             room->address, room->port);
 
-      task_push_netplay_crc_scan(room->gamecrc, room->gamename, hostname,
-         room->corename, room->subsystem_name);
+      task_push_netplay_crc_scan(room->gamecrc, room->gamename,
+         room->subsystem_name, room->corename, hostname);
 
       discord_st->connecting = true;
       if (discord_st->ready)
