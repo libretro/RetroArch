@@ -4706,10 +4706,74 @@ static unsigned menu_displaylist_parse_content_information(
       }
    }
 
+#ifdef HAVE_LIBRETRODB
+   /* Database entry */
+   if (!string_is_empty(content_label) && !string_is_empty(db_name))
+   {
+      char db_path[PATH_MAX_LENGTH];
+
+      db_path[0] = '\0';
+
+      fill_pathname_join_noext(db_path,
+            settings->paths.path_content_database,
+            db_name,
+            sizeof(db_path));
+      strlcat(db_path, ".rdb", sizeof(db_path));
+
+      if (path_is_valid(db_path))
+         if (menu_entries_append_enum(info->list,
+               content_label,
+               db_path,
+               MENU_ENUM_LABEL_RDB_ENTRY_DETAIL,
+               FILE_TYPE_RDB_ENTRY, 0, 0))
+            count++;
+   }
+#endif
+
+   /* Database */
+   if (!string_is_empty(db_name))
+   {
+      char *db_name_no_ext = NULL;
+      char db_name_no_ext_buff[PATH_MAX_LENGTH];
+
+      db_name_no_ext_buff[0] = '\0';
+
+      /* Remove .lpl extension
+      * > path_remove_extension() requires a char * (not const)
+      *   so have to use a temporary buffer... */
+      strlcpy(db_name_no_ext_buff, db_name, sizeof(db_name_no_ext_buff));
+      db_name_no_ext = path_remove_extension(db_name_no_ext_buff);
+
+      if (!string_is_empty(db_name_no_ext))
+      {
+         tmp[0]   = '\0';
+         snprintf(tmp, sizeof(tmp),
+               "%s: %s",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE),
+               db_name_no_ext
+               );
+         if (menu_entries_append_enum(info->list, tmp,
+               msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_DATABASE),
+               MENU_ENUM_LABEL_CONTENT_INFO_DATABASE,
+               0, 0, 0))
+            count++;
+      }
+   }
+
    /* If content path is empty and core supports
     * contentless operation, skip label/path entries */
    if (!(core_supports_no_game && string_is_empty(content_path)))
    {
+      /* If content label is empty, create it from the path */
+      if (string_is_empty(content_label))
+      {
+         char content_tmp[PATH_MAX_LENGTH];
+         content_tmp[0] = '\0';
+         strlcpy(content_tmp, content_path, sizeof(content_tmp));
+         path_remove_extension(content_tmp);
+         content_label  = path_basename(content_tmp);
+      }
+
       /* Content label */
       tmp[0]   = '\0';
       snprintf(tmp, sizeof(tmp),
@@ -4823,61 +4887,6 @@ static unsigned menu_displaylist_parse_content_information(
    }
 #endif
 
-   /* Database */
-   if (!string_is_empty(db_name))
-   {
-      char *db_name_no_ext = NULL;
-      char db_name_no_ext_buff[PATH_MAX_LENGTH];
-
-      db_name_no_ext_buff[0] = '\0';
-
-      /* Remove .lpl extension
-      * > path_remove_extension() requires a char * (not const)
-      *   so have to use a temporary buffer... */
-      strlcpy(db_name_no_ext_buff, db_name, sizeof(db_name_no_ext_buff));
-      db_name_no_ext = path_remove_extension(db_name_no_ext_buff);
-
-      if (!string_is_empty(db_name_no_ext))
-      {
-         tmp[0]   = '\0';
-         snprintf(tmp, sizeof(tmp),
-               "%s: %s",
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE),
-               db_name_no_ext
-               );
-         if (menu_entries_append_enum(info->list, tmp,
-               msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_DATABASE),
-               MENU_ENUM_LABEL_CONTENT_INFO_DATABASE,
-               0, 0, 0))
-            count++;
-      }
-   }
-
-#ifdef HAVE_LIBRETRODB
-
-   /* Database entry */
-   if (!string_is_empty(content_label) && !string_is_empty(db_name))
-   {
-      char db_path[PATH_MAX_LENGTH];
-
-      db_path[0] = '\0';
-
-      fill_pathname_join_noext(db_path,
-            settings->paths.path_content_database,
-            db_name,
-            sizeof(db_path));
-      strlcat(db_path, ".rdb", sizeof(db_path));
-
-      if (path_is_valid(db_path))
-         if (menu_entries_append_enum(info->list,
-               content_label,
-               db_path,
-               MENU_ENUM_LABEL_RDB_ENTRY_DETAIL,
-               FILE_TYPE_RDB_ENTRY, 0, 0))
-            count++;
-   }
-
-#endif
 
    return count;
 }
