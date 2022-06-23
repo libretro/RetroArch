@@ -6984,8 +6984,16 @@ MSG_HASH(
    "Set Core Association"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SET_CORE_ASSOCIATION,
+   "Set the core associated with this content."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
    "Reset Core Association"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_CORE_ASSOCIATION,
+   "Reset the core associated with this content."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,

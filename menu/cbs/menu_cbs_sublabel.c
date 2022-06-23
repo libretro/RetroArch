@@ -812,6 +812,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_delete_entry,                       
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_information,                           MENU_ENUM_SUBLABEL_INFORMATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_run,                                   MENU_ENUM_SUBLABEL_RUN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_add_to_favorites,                      MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_set_core_association,                  MENU_ENUM_SUBLABEL_SET_CORE_ASSOCIATION)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_reset_core_association,                MENU_ENUM_SUBLABEL_RESET_CORE_ASSOCIATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_download_pl_entry_thumbnails,          MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_goto_favorites,                        MENU_ENUM_SUBLABEL_GOTO_FAVORITES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_goto_images,                           MENU_ENUM_SUBLABEL_GOTO_IMAGES)
@@ -3043,7 +3045,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_filebrowser_open_picker);
             break;
          case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
+         case MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_add_to_favorites);
+            break;
+         case MENU_ENUM_LABEL_SET_CORE_ASSOCIATION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_set_core_association);
+            break;
+         case MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_reset_core_association);
             break;
          case MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_download_pl_entry_thumbnails);
