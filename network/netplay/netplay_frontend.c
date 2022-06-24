@@ -78,12 +78,6 @@
 
 #include "netplay_private.h"
 
-#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY) && !defined(_3DS)
-#ifndef HAVE_INET6
-#define HAVE_INET6 1
-#endif
-#endif
-
 #ifdef TCP_NODELAY
 #define SET_TCP_NODELAY(fd) \
    { \

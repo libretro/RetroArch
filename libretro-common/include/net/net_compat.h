@@ -52,8 +52,19 @@
 
 #elif defined(_XBOX)
 #define NOD3D
+
 #include <xtl.h>
 #include <io.h>
+
+#define socklen_t int
+
+#ifndef h_addr
+#define h_addr h_addr_list[0] /* for backward compatibility */
+#endif
+
+#ifndef SO_KEEPALIVE
+#define SO_KEEPALIVE 0 /* verify if correct */
+#endif
 
 #elif defined(GEKKO)
 #include <network.h>
@@ -178,6 +189,10 @@ struct SceNetInAddr inet_aton(const char *ip_addr);
 #include <signal.h>
 #endif
 
+#ifdef WIIU
+#define WIIU_RCVBUF (128 * 2 * 1024)
+#define WIIU_SNDBUF (128 * 2 * 1024)
+#endif
 
 #if defined(__PSL1GHT__)
 #include <net/poll.h>
@@ -192,7 +207,58 @@ struct SceNetInAddr inet_aton(const char *ip_addr);
 #endif
 #endif
 
+#ifndef _WIN32
+#include <sys/time.h>
+#include <unistd.h>
+#endif
+
 #include <errno.h>
+
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
+
+#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY) && !defined(_3DS)
+#define HAVE_INET6 1
+#endif
+
+#ifdef NETWORK_HAVE_POLL
+#ifdef GEKKO
+#define NET_POLL_FD(sockfd, sockfds)    (sockfds)->socket  = (sockfd)
+#else
+#define NET_POLL_FD(sockfd, sockfds)    (sockfds)->fd      = (sockfd)
+#endif
+#define NET_POLL_EVENT(sockev, sockfds) (sockfds)->events |= (sockev)
+#define NET_POLL_HAS_EVENT(sockev, sockfds) ((sockfds)->revents & (sockev))
+#endif
+
+/* Compatibility layer for legacy or incomplete BSD socket implementations.
+ * Only for IPv4. Mostly useful for the consoles which do not support
+ * anything reasonably modern on the socket API side of things. */
+#ifdef HAVE_SOCKET_LEGACY
+
+#define sockaddr_storage sockaddr_in
+#define addrinfo addrinfo_retro__
+
+#ifndef AI_PASSIVE
+#define AI_PASSIVE 1
+#endif
+
+struct addrinfo
+{
+   int ai_flags;
+   int ai_family;
+   int ai_socktype;
+   int ai_protocol;
+   size_t ai_addrlen;
+   struct sockaddr *ai_addr;
+   char *ai_canonname;
+   struct addrinfo *ai_next;
+};
+
+/* gai_strerror() not used, so we skip that. */
+
+#endif
 
 static INLINE bool isagain(int bytes)
 {
@@ -223,71 +289,6 @@ static INLINE bool isinprogress(int bytes)
    return (bytes < 0) && (errno == EINPROGRESS);
 #endif
 }
-
-#ifdef WIIU
-#define WIIU_RCVBUF (128 * 2 * 1024)
-#define WIIU_SNDBUF (128 * 2 * 1024)
-#endif
-
-#ifdef _XBOX
-#define socklen_t int
-
-#ifndef h_addr
-#define h_addr h_addr_list[0] /* for backward compatibility */
-#endif
-
-#ifndef SO_KEEPALIVE
-#define SO_KEEPALIVE 0 /* verify if correct */
-#endif
-#endif
-
-#ifndef MSG_NOSIGNAL
-#define MSG_NOSIGNAL 0
-#endif
-
-#ifndef _WIN32
-#include <sys/time.h>
-#include <unistd.h>
-#endif
-
-#ifdef NETWORK_HAVE_POLL
-#ifdef GEKKO
-#define NET_POLL_FD(sockfd, sockfds)    (sockfds)->socket  = (sockfd)
-#else
-#define NET_POLL_FD(sockfd, sockfds)    (sockfds)->fd      = (sockfd)
-#endif
-#define NET_POLL_EVENT(sockev, sockfds) (sockfds)->events |= (sockev)
-#define NET_POLL_HAS_EVENT(sockev, sockfds) ((sockfds)->revents & (sockev))
-#endif
-
-/* Compatibility layer for legacy or incomplete BSD socket implementations.
- * Only for IPv4. Mostly useful for the consoles which do not support
- * anything reasonably modern on the socket API side of things. */
-
-#ifdef HAVE_SOCKET_LEGACY
-
-#define sockaddr_storage sockaddr_in
-#define addrinfo addrinfo_retro__
-
-struct addrinfo
-{
-   int ai_flags;
-   int ai_family;
-   int ai_socktype;
-   int ai_protocol;
-   size_t ai_addrlen;
-   struct sockaddr *ai_addr;
-   char *ai_canonname;
-   struct addrinfo *ai_next;
-};
-
-#ifndef AI_PASSIVE
-#define AI_PASSIVE 1
-#endif
-
-/* gai_strerror() not used, so we skip that. */
-
-#endif
 
 uint16_t inet_htons(uint16_t hostshort);
 
