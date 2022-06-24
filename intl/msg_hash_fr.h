@@ -6864,8 +6864,16 @@ MSG_HASH(
    "Associer au cœur"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SET_CORE_ASSOCIATION,
+   "Définir le cœur associé à ce contenu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
    "Réinitialiser l'association au cœur"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_CORE_ASSOCIATION,
+   "Réinitialiser le cœur associé à ce contenu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,

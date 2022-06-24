@@ -6868,8 +6868,16 @@ MSG_HASH(
    "Привязать ядро"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SET_CORE_ASSOCIATION,
+   "Установить привязку ядра для данного контента."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
    "Сбросить привязку ядра"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_CORE_ASSOCIATION,
+   "Сбросить ядро, привязанное к данному контенту."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,

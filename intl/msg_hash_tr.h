@@ -6896,8 +6896,16 @@ MSG_HASH(
    "Çekirdek Eşleşmesi Ayarla"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SET_CORE_ASSOCIATION,
+   "Bu içerikle ilişkili çekirdeği ayarlayın."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
    "Çekirdek Eşleşmesini Sıfırla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_CORE_ASSOCIATION,
+   "Bu içerikle ilişkili çekirdeği sıfırlayın."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,

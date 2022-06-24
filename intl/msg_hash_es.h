@@ -6896,8 +6896,16 @@ MSG_HASH(
    "Asignar asociación de núcleo"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SET_CORE_ASSOCIATION,
+   "Establece el núcleo asociado a este contenido."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
    "Restablecer asociación de núcleo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_CORE_ASSOCIATION,
+   "Reinicia el núcleo asociado a este contenido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,

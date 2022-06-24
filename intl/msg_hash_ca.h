@@ -4421,6 +4421,26 @@ MSG_HASH(
    "%u elements"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ARTSTYLE,
+   "Per estil artístic"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GAMEPLAY,
+   "Per mecànica de joc"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_NARRATIVE,
+   "Per narrativa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PACING,
+   "Per ritme"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PERSPECTIVE,
+   "Per perspectiva"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SETTING,
    "Per ambientació"
    )
