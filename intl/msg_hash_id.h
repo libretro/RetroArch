@@ -2973,6 +2973,22 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
    "Belum Ada 'Riwayat'"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
+   "Tidak Ditemukan Pengaturan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_BT_DEVICES_FOUND,
+   "Tidak Ditemukan Peranti Bluetooth"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
+   "Tidak Ditemukan Jejaringan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
+   "Direktori Tidak Ditemukan"
+   )
 
 /* Settings Options */
 
@@ -3112,6 +3128,14 @@ MSG_HASH(
    "Dapat memilih konten dari daftar putar riwayat terkini."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
+   "Tidak ditemukan tuan rumah netplay."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
+   "Tidak ditemukan tamu main netplay."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER,
    "Pengguna"
    )
@@ -3122,6 +3146,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_START,
    "Mulai"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_LOOK,
+   "Sedang mencari konten kompatibel..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_CORE,
+   "Inti tidak ditemukan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_PLAYLISTS,
+   "Daftar putar tidak ditemukan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
+   "Konten kompatibel ditemukan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NOT_FOUND,
+   "Gagal melacak konten yang cocok berdasar CRC atau nama berkas"
    )
 
 /* Unused (Only Exist in Translation Files) */
@@ -3223,6 +3267,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_ADD_TO_FAVORITES_FAILED,
    "Gagal menambahkan kesukaan: daftar putar penuh"
+   )
+MSG_HASH(
+   MSG_FILE_NOT_FOUND,
+   "Berkas tidak Ditemukan"
+   )
+MSG_HASH(
+   MSG_FOUND_AUTO_SAVESTATE_IN,
+   "Save state otomatis ditemukan di"
    )
 MSG_HASH(
    MSG_LOADING_HISTORY_FILE,

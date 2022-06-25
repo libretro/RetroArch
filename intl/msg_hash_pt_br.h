@@ -10220,6 +10220,10 @@ MSG_HASH(
    "Apelido: %s"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_CORE,
+   "Nenhum núcleo encontrado"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
    "Conteúdo compatível encontrado"
    )
@@ -11990,7 +11994,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
-   "Verificação do arquivo terminado"
+   "Verificação concluída"
    )
 MSG_HASH(
    MSG_CHEAT_INIT_SUCCESS,

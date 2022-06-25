@@ -10128,8 +10128,24 @@ MSG_HASH(
    "Přezdívka: %s"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_LOOK,
+   "Hledá se kompatibilní obsah..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_CORE,
+   "Nebylo nalezeno žádné jádro"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_PLAYLISTS,
+   "Nenalezeny žádné playlisty"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
    "Nalezen kompatibilní obsah"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NOT_FOUND,
+   "Nepodařilo se vyhledat odpovídající obsah podle CRC nebo názvu souboru"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_START_GONG,
