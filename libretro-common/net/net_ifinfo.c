@@ -38,7 +38,9 @@
 #include <compat/ifaddrs.h>
 #elif !defined(HAVE_LIBNX) && !defined(_3DS)
 #include <ifaddrs.h>
+#ifndef WIIU
 #include <net/if.h>
+#endif
 #endif
 #endif
 
@@ -222,8 +224,10 @@ failure:
    {
       if (!addr->ifa_addr)
          continue;
+#ifndef WIIU
       if (!(addr->ifa_flags & IFF_UP))
          continue;
+#endif
 
       switch (addr->ifa_addr->sa_family)
       {
@@ -255,8 +259,10 @@ failure:
 
       if (!addr->ifa_addr)
          continue;
+#ifndef WIIU
       if (!(addr->ifa_flags & IFF_UP))
          continue;
+#endif
 
       switch (addr->ifa_addr->sa_family)
       {
