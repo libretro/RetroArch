@@ -3017,16 +3017,47 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                && !(video_st->current_video->frame == video_null.frame))
             result |= 1;
 #ifdef HAVE_RUNAHEAD
-         if (runloop_st->request_fast_savestate)
-            result |= 4;
          if (audio_st->hard_disable)
             result |= 8;
 #endif
 #ifdef HAVE_NETWORKING
          if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_REPLAYING, NULL))
             result &= ~(1|2);
-         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+#endif
+#if defined(HAVE_RUNAHEAD) || defined(HAVE_NETWORKING)
+         if (runloop_st->request_fast_savestate)
             result |= 4;
+#endif
+         if (data)
+         {
+            int* result_p = (int*)data;
+            *result_p = result;
+         }
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT:
+      {
+         int result           = RETRO_SAVESTATE_CONTEXT_NORMAL;
+         settings_t
+            *settings         = config_get_ptr();
+#if defined(HAVE_RUNAHEAD) || defined(HAVE_NETWORKING)
+         if (runloop_st->request_fast_savestate)
+         {
+#ifdef HAVE_RUNAHEAD
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+            result = (settings->bools.run_ahead_secondary_instance
+               && runloop_st->runahead_secondary_core_available
+               && secondary_core_ensure_exists(settings) ? RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_BINARY : RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_INSTANCE);
+#else
+            result = RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_INSTANCE;
+#endif
+#endif
+#ifdef HAVE_NETWORKING
+            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+               result = RETRO_SAVESTATE_CONTEXT_ROLLBACK_NETPLAY;
+#endif
+         }
 #endif
          if (data)
          {

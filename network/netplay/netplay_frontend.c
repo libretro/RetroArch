@@ -3422,12 +3422,17 @@ static bool netplay_sync_pre_frame(netplay_t *netplay, bool *disconnect)
             (NETPLAY_QUIRK_INITIALIZATION | NETPLAY_QUIRK_NO_SAVESTATES)))
       {
          retro_ctx_serialize_info_t serial_info = {0};
+         bool okay                              = false;
+         runloop_state_t *runloop_st            = runloop_state_get_ptr();
 
          serial_info.data = netplay->buffer[netplay->run_ptr].state;
          serial_info.size = netplay->state_size;
          memset(serial_info.data, 0, serial_info.size);
 
-         if (core_serialize(&serial_info))
+         runloop_st->request_fast_savestate = true;
+         okay                               = core_serialize(&serial_info);
+         runloop_st->request_fast_savestate = false;
+         if (okay)
          {
             if (netplay->force_send_savestate && !netplay->stall &&
                   !netplay->remote_paused)
@@ -3638,6 +3643,8 @@ static void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
        netplay->replay_frame_count < netplay->run_frame_count)
    {
       retro_ctx_serialize_info_t serial_info;
+      bool okay                   = false;
+      runloop_state_t *runloop_st = runloop_state_get_ptr();
 
       /* Replay frames. */
       netplay->is_replay = true;
@@ -3668,7 +3675,10 @@ static void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       serial_info.data_const = netplay->buffer[netplay->replay_ptr].state;
       serial_info.size       = netplay->state_size;
 
-      if (!core_unserialize(&serial_info))
+      runloop_st->request_fast_savestate = true;
+      okay                               = core_unserialize(&serial_info);
+      runloop_st->request_fast_savestate = false;
+      if (!okay)
       {
          RARCH_ERR("[Netplay] Netplay savestate loading failed: Prepare for desync!\n");
       }
@@ -3686,7 +3696,9 @@ static void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
 
          /* Remember the current state */
          memset(serial_info.data, 0, serial_info.size);
+         runloop_st->request_fast_savestate = true;
          core_serialize(&serial_info);
+         runloop_st->request_fast_savestate = false;
          if (netplay->replay_frame_count < netplay->unread_frame_count)
             netplay_handle_frame_hash(netplay, ptr);
 
@@ -3714,7 +3726,9 @@ static void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
             ptr = &netplay->buffer[netplay->replay_ptr];
             serial_info.data = ptr->state;
             memset(serial_info.data, 0, serial_info.size);
+            runloop_st->request_fast_savestate = true;
             core_serialize(&serial_info);
+            runloop_st->request_fast_savestate = false;
             RARCH_LOG("POST %u: %X\n", netplay->replay_frame_count-1, netplay->state_size ? netplay_delta_frame_crc(netplay, ptr) : 0);
          }
 #endif
@@ -6616,12 +6630,15 @@ static bool netplay_init_socket_buffers(netplay_t *netplay)
 static bool netplay_init_serialization(netplay_t *netplay)
 {
    size_t i;
-   retro_ctx_size_info_t info = {0};
+   retro_ctx_size_info_t info  = {0};
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
 
    if (netplay->state_size)
       return true;
 
+   runloop_st->request_fast_savestate = true;
    core_serialize_size(&info);
+   runloop_st->request_fast_savestate = false;
    if (!info.size)
       return false;
 
@@ -6662,6 +6679,8 @@ static bool netplay_init_serialization(netplay_t *netplay)
 static bool netplay_try_init_serialization(netplay_t *netplay)
 {
    retro_ctx_serialize_info_t serial_info;
+   bool okay                   = false;
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
 
    if (netplay->state_size)
       return true;
@@ -6674,7 +6693,10 @@ static bool netplay_try_init_serialization(netplay_t *netplay)
    serial_info.data       = netplay->buffer[netplay->run_ptr].state;
    serial_info.size       = netplay->state_size;
 
-   if (!core_serialize(&serial_info))
+   runloop_st->request_fast_savestate = true;
+   okay                               = core_serialize(&serial_info);
+   runloop_st->request_fast_savestate = false;
+   if (!okay)
       return false;
 
    /* Once initialized, we no longer exhibit this quirk */
@@ -7138,6 +7160,8 @@ void netplay_load_savestate(netplay_t *netplay,
       retro_ctx_serialize_info_t *serial_info, bool save)
 {
    retro_ctx_serialize_info_t tmp_serial_info;
+   bool okay                   = false;
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
 
    netplay_force_future(netplay);
 
@@ -7153,7 +7177,11 @@ void netplay_load_savestate(netplay_t *netplay,
       {
          tmp_serial_info.size = netplay->state_size;
          tmp_serial_info.data = netplay->buffer[netplay->run_ptr].state;
-         if (!core_serialize(&tmp_serial_info))
+
+         runloop_st->request_fast_savestate = true;
+         okay                               = core_serialize(&tmp_serial_info);
+         runloop_st->request_fast_savestate = false;
+         if (!okay)
             return;
          tmp_serial_info.data_const = tmp_serial_info.data;
          serial_info = &tmp_serial_info;

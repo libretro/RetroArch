@@ -288,10 +288,12 @@ struct runloop
    bool has_variable_update;
    bool input_is_dirty;
    bool runahead_save_state_size_known;
-   bool request_fast_savestate;
    bool runahead_available;
    bool runahead_secondary_core_available;
    bool runahead_force_input_dirty;
+#endif
+#if defined(HAVE_RUNAHEAD) || defined(HAVE_NETWORKING)
+   bool request_fast_savestate;
 #endif
 #ifdef HAVE_PATCH
    bool patch_blocked;
