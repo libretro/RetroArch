@@ -299,6 +299,8 @@ int getaddrinfo_retro(const char *node, const char *service,
 
 void freeaddrinfo_retro(struct addrinfo *res);
 
+bool addr_6to4(struct sockaddr_storage *addr);
+
 /**
  * network_init:
  *
