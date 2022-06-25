@@ -232,7 +232,9 @@ failure:
       switch (addr->ifa_addr->sa_family)
       {
          case AF_INET:
+#ifdef HAVE_INET6
          case AF_INET6:
+#endif
             interfaces++;
             break;
          default:
@@ -269,9 +271,11 @@ failure:
          case AF_INET:
             addrlen = sizeof(struct sockaddr_in);
             break;
+#ifdef HAVE_INET6
          case AF_INET6:
             addrlen = sizeof(struct sockaddr_in6);
             break;
+#endif
          default:
             continue;
       }
