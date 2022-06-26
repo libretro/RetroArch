@@ -243,12 +243,6 @@ void gfx_display_draw_text(
       float scale_factor, bool shadows_enable, float shadow_offset,
       bool draw_outside);
 
-font_data_t *gfx_display_font(
-      gfx_display_t *p_disp,
-      enum application_special_type type,
-      float font_size,
-      bool video_is_threaded);
-
 void gfx_display_scissor_begin(
       gfx_display_t *p_disp,
       void *userdata,

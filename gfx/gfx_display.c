@@ -1030,24 +1030,6 @@ void gfx_display_draw_cursor(
       dispctx->blend_end(userdata);
 }
 
-/* Setup: Initializes the font associated
- * to the menu driver */
-font_data_t *gfx_display_font(
-      gfx_display_t *p_disp,
-      enum application_special_type type,
-      float menu_font_size,
-      bool is_threaded)
-{
-   char fontpath[PATH_MAX_LENGTH];
-
-   fontpath[0] = '\0';
-
-   fill_pathname_application_special(
-         fontpath, sizeof(fontpath), type);
-
-   return gfx_display_font_file(p_disp, fontpath, menu_font_size, is_threaded);
-}
-
 /* Returns the OSK key at a given position */
 int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height)

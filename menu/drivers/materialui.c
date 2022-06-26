@@ -7763,21 +7763,22 @@ static void materialui_init_font(
    const char *str_latin
    )
 {
+   char fontpath[PATH_MAX_LENGTH];
    const char *wideglyph_str = msg_hash_get_wideglyph_str();
+   fontpath[0]               = '\0';
 
    /* We assume the average glyph aspect ratio is close to 3:4 */
-   font_data->glyph_width = (int)((font_size * (3.0f / 4.0f)) + 0.5f);
+   font_data->glyph_width    = (int)((font_size * (3.0f / 4.0f)) + 0.5f);
 
    if (font_data->font)
    {
       gfx_display_font_free(font_data->font);
       font_data->font = NULL;
    }
-
-   font_data->font = gfx_display_font(
-         p_disp,
-         APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT,
-         font_size, video_is_threaded);
+   fill_pathname_application_special(
+         fontpath, sizeof(fontpath), APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT);
+   font_data->font = gfx_display_font_file(p_disp,
+         fontpath, font_size, video_is_threaded);
 
   if (font_data->font)
    {
