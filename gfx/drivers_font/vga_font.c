@@ -34,7 +34,7 @@ typedef struct
    vga_t *vga;
 } vga_raster_t;
 
-static void *vga_init_font(void *data,
+static void *vga_font_init(void *data,
       const char *font_path, float font_size,
       bool is_threaded)
 {
@@ -58,25 +58,13 @@ static void *vga_init_font(void *data,
    return font;
 }
 
-static void vga_render_free_font(void *data, bool is_threaded)
-{
-   (void)data;
-   (void)is_threaded;
-}
-
-static int vga_get_message_width(void *data, const char *msg,
-      unsigned msg_len, float scale)
-{
-   return 0;
-}
-
+static void vga_font_render_free(void *data, bool is_threaded) { }
+static int vga_font_get_message_width(void *data, const char *msg,
+      unsigned msg_len, float scale) { return 0; }
 static const struct font_glyph *vga_font_get_glyph(
-      void *data, uint32_t code)
-{
-   return NULL;
-}
+      void *data, uint32_t code) { return NULL; }
 
-static void vga_render_msg(
+static void vga_font_render_msg(
       void *userdata,
       void *data, const char *msg,
       const struct font_params *params)
@@ -85,7 +73,7 @@ static void vga_render_msg(
    unsigned width, height;
    unsigned new_x, new_y;
    unsigned align;
-   vga_raster_t              *font = (vga_raster_t*)data;
+   vga_raster_t *font = (vga_raster_t*)data;
 
    if (!font || string_is_empty(msg))
       return;
@@ -134,13 +122,13 @@ static void vga_render_msg(
 }
 
 font_renderer_t vga_font = {
-   vga_init_font,
-   vga_render_free_font,
-   vga_render_msg,
-   "vga font",
-   vga_font_get_glyph,       /* get_glyph */
-   NULL,                     /* bind_block */
-   NULL,                     /* flush */
-   vga_get_message_width,    /* get_message_width */
-   NULL                      /* get_line_metrics */
+   vga_font_init,
+   vga_font_render_free,
+   vga_font_render_msg,
+   "vga_font",
+   vga_font_get_glyph,         /* get_glyph */
+   NULL,                       /* bind_block */
+   NULL,                       /* flush */
+   vga_font_get_message_width, /* get_message_width */
+   NULL                        /* get_line_metrics */
 };

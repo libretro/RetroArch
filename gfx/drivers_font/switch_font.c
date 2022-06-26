@@ -40,7 +40,7 @@ typedef struct
    void *font_data;
 } switch_font_t;
 
-static void *switch_font_init_font(void *data, const char *font_path,
+static void *switch_font_init(void *data, const char *font_path,
       float font_size, bool is_threaded)
 {
    switch_font_t *font = (switch_font_t *)calloc(1, sizeof(switch_font_t));
@@ -61,7 +61,7 @@ static void *switch_font_init_font(void *data, const char *font_path,
    return font;
 }
 
-static void switch_font_free_font(void *data, bool is_threaded)
+static void switch_font_free(void *data, bool is_threaded)
 {
    switch_font_t *font = (switch_font_t *)data;
 
@@ -301,15 +301,15 @@ static bool switch_font_get_line_metrics(void* data, struct font_line_metrics **
    switch_font_t *font = (switch_font_t *)data;
    if (font && font->font_driver && font->font_data)
       return font->font_driver->get_line_metrics(font->font_data, metrics);
-   return -1;
+   return false;
 }
 
 font_renderer_t switch_font =
 {
-   switch_font_init_font,
-   switch_font_free_font,
+   switch_font_init,
+   switch_font_free,
    switch_font_render_msg,
-   "switchfont",
+   "switch_font",
    switch_font_get_glyph,
    NULL, /* bind_block  */
    NULL, /* flush_block */

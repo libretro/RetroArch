@@ -65,7 +65,7 @@ typedef struct
    video_font_raster_block_t *block;
 } rsx_font_t;
 
-static void rsx_font_free_font(void *data,
+static void rsx_font_free(void *data,
       bool is_threaded)
 {
    rsx_font_t *font = (rsx_font_t*)data;
@@ -131,7 +131,7 @@ static bool rsx_font_upload_atlas(rsx_font_t *font)
    return true;
 }
 
-static void *rsx_font_init_font(void *data,
+static void *rsx_font_init(void *data,
       const char *font_path, float font_size,
       bool is_threaded)
 {
@@ -195,7 +195,7 @@ static void *rsx_font_init_font(void *data,
    return font;
 
 error:
-   rsx_font_free_font(font, is_threaded);
+   rsx_font_free(font, is_threaded);
    return NULL;
 }
 
@@ -554,14 +554,14 @@ static bool rsx_font_get_line_metrics(void* data, struct font_line_metrics **met
    rsx_font_t *font = (rsx_font_t*)data;
    if (font && font->font_driver && font->font_data)
       return font->font_driver->get_line_metrics(font->font_data, metrics);
-   return -1;
+   return false;
 }
 
 font_renderer_t rsx_font = {
-   rsx_font_init_font,
-   rsx_font_free_font,
+   rsx_font_init,
+   rsx_font_free,
    rsx_font_render_msg,
-   "rsxfont",
+   "rsx_font",
    rsx_font_get_glyph,
    rsx_font_bind_block,
    rsx_font_flush_block,

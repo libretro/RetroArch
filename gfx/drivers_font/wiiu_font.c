@@ -38,7 +38,7 @@ typedef struct
    struct font_atlas* atlas;
 } wiiu_font_t;
 
-static void* wiiu_font_init_font(void* data, const char* font_path,
+static void* wiiu_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
 {
    uint32_t i;
@@ -93,7 +93,7 @@ static void* wiiu_font_init_font(void* data, const char* font_path,
    return font;
 }
 
-static void wiiu_font_free_font(void* data, bool is_threaded)
+static void wiiu_font_free(void* data, bool is_threaded)
 {
    wiiu_font_t* font = (wiiu_font_t*)data;
 
@@ -379,15 +379,15 @@ static bool wiiu_font_get_line_metrics(void* data, struct font_line_metrics **me
    wiiu_font_t* font = (wiiu_font_t*)data;
    if (font && font->font_driver && font->font_data)
       return font->font_driver->get_line_metrics(font->font_data, metrics);
-   return -1;
+   return false;
 }
 
 font_renderer_t wiiu_font =
 {
-   wiiu_font_init_font,
-   wiiu_font_free_font,
+   wiiu_font_init,
+   wiiu_font_free,
    wiiu_font_render_msg,
-   "wiiufont",
+   "wiiu_font",
    wiiu_font_get_glyph,
    NULL,                   /* bind_block */
    NULL,                   /* flush */

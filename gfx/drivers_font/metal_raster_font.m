@@ -505,9 +505,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
 
 @end
 
-static void metal_raster_font_free_font(void *data, bool is_threaded);
-
-static void *metal_raster_font_init_font(void *data,
+static void *metal_raster_font_init(void *data,
       const char *font_path, float font_size,
       bool is_threaded)
 {
@@ -519,7 +517,7 @@ static void *metal_raster_font_init_font(void *data,
    return (__bridge_retained void *)r;
 }
 
-static void metal_raster_font_free_font(void *data, bool is_threaded)
+static void metal_raster_font_free(void *data, bool is_threaded)
 {
    MetalRaster *r = (__bridge_transfer MetalRaster *)data;
    
@@ -527,8 +525,8 @@ static void metal_raster_font_free_font(void *data, bool is_threaded)
    r = nil;
 }
 
-static int metal_get_message_width(void *data, const char *msg,
-                                   unsigned msg_len, float scale)
+static int metal_raster_font_get_message_width(void *data, const char *msg,
+      unsigned msg_len, float scale)
 {
    MetalRaster *r = (__bridge MetalRaster *)data;
    return [r getWidthForMessage:msg length:msg_len scale:scale];
@@ -555,13 +553,13 @@ static const struct font_glyph *metal_raster_font_get_glyph(
 }
 
 font_renderer_t metal_raster_font = {
-   .init              = metal_raster_font_init_font,
-   .free              = metal_raster_font_free_font,
-   .render_msg        = metal_raster_font_render_msg,
-   .ident             = "Metal raster",
-   .get_glyph         = metal_raster_font_get_glyph,
+   metal_raster_font_init,
+   metal_raster_font_free,
+   metal_raster_font_render_msg,
+   "metal_raster",
+   metal_raster_font_get_glyph,
    NULL, /* bind_block  */
    NULL, /* flush_block */
-   .get_message_width = metal_get_message_width,
+   metal_raster_font_get_message_width,
    NULL  /* get_line_metrics */
 };

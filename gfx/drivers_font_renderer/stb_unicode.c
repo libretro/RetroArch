@@ -358,6 +358,6 @@ font_renderer_driver_t stb_unicode_font_renderer = {
    font_renderer_stb_unicode_get_glyph,
    font_renderer_stb_unicode_free,
    font_renderer_stb_unicode_get_default_font,
-   "stb-unicode",
+   "font_renderer_stb_unicode",
    font_renderer_stb_unicode_get_line_metrics
 };

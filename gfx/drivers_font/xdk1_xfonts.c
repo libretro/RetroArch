@@ -33,7 +33,7 @@ typedef struct
    D3DSurface *surf;
 } xfonts_t;
 
-static void *xfonts_init_font(void *video_data,
+static void *xfonts_init(void *video_data,
       const char *font_path, float font_size,
       bool is_threaded)
 {
@@ -63,7 +63,7 @@ static void *xfonts_init_font(void *video_data,
    return xfont;
 }
 
-static void xfonts_free_font(void *data, bool is_threaded)
+static void xfonts_free(void *data, bool is_threaded)
 {
    xfonts_t *font = (xfonts_t*)data;
 
@@ -119,8 +119,8 @@ static void xfonts_render_msg(
 }
 
 font_renderer_t d3d_xdk1_font = {
-   xfonts_init_font,
-   xfonts_free_font,
+   xfonts_init,
+   xfonts_free,
    xfonts_render_msg,
    "xfonts",
    NULL,                      /* get_glyph */

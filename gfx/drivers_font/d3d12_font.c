@@ -34,8 +34,7 @@ typedef struct
    struct font_atlas*            atlas;
 } d3d12_font_t;
 
-static void*
-d3d12_font_init_font(void* data, const char* font_path,
+static void * d3d12_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
@@ -70,7 +69,7 @@ d3d12_font_init_font(void* data, const char* font_path,
    return font;
 }
 
-static void d3d12_font_free_font(void* data, bool is_threaded)
+static void d3d12_font_free(void* data, bool is_threaded)
 {
    d3d12_font_t* font = (d3d12_font_t*)data;
 
@@ -383,14 +382,14 @@ static bool d3d12_font_get_line_metrics(void* data, struct font_line_metrics **m
    d3d12_font_t* font = (d3d12_font_t*)data;
    if (font && font->font_driver && font->font_data)
       return font->font_driver->get_line_metrics(font->font_data, metrics);
-   return -1;
+   return false;
 }
 
 font_renderer_t d3d12_font = {
-   d3d12_font_init_font,
-   d3d12_font_free_font,
+   d3d12_font_init,
+   d3d12_font_free,
    d3d12_font_render_msg,
-   "d3d12font",
+   "d3d12_font",
    d3d12_font_get_glyph,
    NULL, /* bind_block */
    NULL, /* flush */

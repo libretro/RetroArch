@@ -56,7 +56,7 @@ typedef struct
    video_font_raster_block_t *block;
 } gl1_raster_t;
 
-static void gl1_raster_font_free_font(void *data,
+static void gl1_raster_font_free(void *data,
       bool is_threaded)
 {
    gl1_raster_t *font = (gl1_raster_t*)data;
@@ -157,7 +157,7 @@ static bool gl1_raster_font_upload_atlas(gl1_raster_t *font)
    return true;
 }
 
-static void *gl1_raster_font_init_font(void *data,
+static void *gl1_raster_font_init(void *data,
       const char *font_path, float font_size,
       bool is_threaded)
 {
@@ -205,13 +205,13 @@ static void *gl1_raster_font_init_font(void *data,
    return font;
 
 error:
-   gl1_raster_font_free_font(font, is_threaded);
+   gl1_raster_font_free(font, is_threaded);
    font = NULL;
 
    return NULL;
 }
 
-static int gl1_get_message_width(void *data, const char *msg,
+static int gl1_raster_font_get_message_width(void *data, const char *msg,
       unsigned msg_len, float scale)
 {
    const struct font_glyph* glyph_q = NULL;
@@ -327,10 +327,10 @@ static void gl1_raster_font_render_line(
    switch (text_align)
    {
       case TEXT_ALIGN_RIGHT:
-         x -= gl1_get_message_width(font, msg, msg_len, scale);
+         x -= gl1_raster_font_get_message_width(font, msg, msg_len, scale);
          break;
       case TEXT_ALIGN_CENTER:
-         x -= gl1_get_message_width(font, msg, msg_len, scale) / 2.0;
+         x -= gl1_raster_font_get_message_width(font, msg, msg_len, scale) / 2.0;
          break;
    }
 
@@ -582,22 +582,22 @@ static void gl1_raster_font_bind_block(void *data, void *userdata)
       font->block = block;
 }
 
-static bool gl1_get_line_metrics(void* data, struct font_line_metrics **metrics)
+static bool gl1_raster_font_get_line_metrics(void* data, struct font_line_metrics **metrics)
 {
    gl1_raster_t *font = (gl1_raster_t*)data;
    if (font && font->font_driver && font->font_data)
       return font->font_driver->get_line_metrics(font->font_data, metrics);
-   return -1;
+   return false;
 }
 
 font_renderer_t gl1_raster_font = {
-   gl1_raster_font_init_font,
-   gl1_raster_font_free_font,
+   gl1_raster_font_init,
+   gl1_raster_font_free,
    gl1_raster_font_render_msg,
-   "GL1 raster",
+   "gl1_raster_font",
    gl1_raster_font_get_glyph,
    gl1_raster_font_bind_block,
    gl1_raster_font_flush_block,
-   gl1_get_message_width,
-   gl1_get_line_metrics
+   gl1_raster_font_get_message_width,
+   gl1_raster_font_get_line_metrics
 };

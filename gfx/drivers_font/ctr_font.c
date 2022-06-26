@@ -40,7 +40,7 @@ typedef struct
    void* font_data;
 } ctr_font_t;
 
-static void* ctr_font_init_font(void* data, const char* font_path,
+static void* ctr_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
 {
    const struct font_atlas* atlas = NULL;
@@ -101,7 +101,7 @@ static void* ctr_font_init_font(void* data, const char* font_path,
    return font;
 }
 
-static void ctr_font_free_font(void* data, bool is_threaded)
+static void ctr_font_free(void* data, bool is_threaded)
 {
    ctr_font_t* font = (ctr_font_t*)data;
 
@@ -433,15 +433,15 @@ static bool ctr_font_get_line_metrics(void* data, struct font_line_metrics **met
    ctr_font_t* font = (ctr_font_t*)data;
    if (font && font->font_driver && font->font_data)
       return font->font_driver->get_line_metrics(font->font_data, metrics);
-   return -1;
+   return false;
 }
 
 font_renderer_t ctr_font =
 {
-   ctr_font_init_font,
-   ctr_font_free_font,
+   ctr_font_init,
+   ctr_font_free,
    ctr_font_render_msg,
-   "ctrfont",
+   "ctr_font",
    ctr_font_get_glyph,
    NULL,                         /* bind_block */
    NULL,                         /* flush_block */

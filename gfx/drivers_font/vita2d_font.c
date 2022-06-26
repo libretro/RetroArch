@@ -34,7 +34,7 @@ typedef struct
    struct font_atlas *atlas;
 } vita_font_t;
 
-static void *vita2d_font_init_font(void *data,
+static void *vita2d_font_init(void *data,
       const char *font_path, float font_size,
       bool is_threaded)
 {
@@ -91,7 +91,7 @@ error:
    return NULL;
 }
 
-static void vita2d_font_free_font(void *data, bool is_threaded)
+static void vita2d_font_free(void *data, bool is_threaded)
 {
    vita_font_t *font = (vita_font_t*)data;
    if (!font)
@@ -355,14 +355,14 @@ static bool vita2d_font_get_line_metrics(void* data, struct font_line_metrics **
    vita_font_t *font = (vita_font_t*)data;
    if (font && font->font_driver && font->font_data)
       return font->font_driver->get_line_metrics(font->font_data, metrics);
-   return -1;
+   return false;
 }
 
 font_renderer_t vita2d_vita_font = {
-   vita2d_font_init_font,
-   vita2d_font_free_font,
+   vita2d_font_init,
+   vita2d_font_free,
    vita2d_font_render_msg,
-   "vita2dfont",
+   "vita2d_font",
    vita2d_font_get_glyph,
    NULL,                      /* bind_block */
    NULL,                      /* flush */

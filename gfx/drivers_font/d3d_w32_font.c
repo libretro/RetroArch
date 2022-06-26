@@ -52,7 +52,7 @@ typedef struct
    uint32_t ascent;
 } d3dfonts_t;
 
-static void *d3dfonts_w32_init_font(void *video_data,
+static void *d3d_win32_font_init(void *video_data,
       const char *font_path, float font_size,
       bool is_threaded)
 {
@@ -97,7 +97,7 @@ error:
    return NULL;
 }
 
-static void d3dfonts_w32_free_font(void *data, bool is_threaded)
+static void d3d_win32_font_free(void *data, bool is_threaded)
 {
    d3dfonts_t *d3dfonts = (d3dfonts_t*)data;
 
@@ -110,7 +110,7 @@ static void d3dfonts_w32_free_font(void *data, bool is_threaded)
    free(d3dfonts);
 }
 
-static int d3dfonts_w32_get_message_width(void* data, const char* msg,
+static int d3d_win32_font_get_message_width(void* data, const char* msg,
       unsigned msg_len, float scale)
 {
    RECT box             = {0,0,0,0};
@@ -125,7 +125,7 @@ static int d3dfonts_w32_get_message_width(void* data, const char* msg,
    return box.right - box.left;
 }
 
-static void d3dfonts_w32_render_msg(
+static void d3d_win32_font_render_msg(
       void *userdata,
       void *data, const char *msg,
       const struct font_params *params)
@@ -229,13 +229,13 @@ static void d3dfonts_w32_render_msg(
 }
 
 font_renderer_t d3d_win32_font = {
-   d3dfonts_w32_init_font,
-   d3dfonts_w32_free_font,
-   d3dfonts_w32_render_msg,
-   "d3dxfont",
+   d3d_win32_font_init,
+   d3d_win32_font_free,
+   d3d_win32_font_render_msg,
+   "d3d_win32_font",
    NULL,                      /* get_glyph */
    NULL,                      /* bind_block */
    NULL,                      /* flush */
-   d3dfonts_w32_get_message_width,
+   d3d_win32_font_get_message_width,
    NULL                       /* get_line_metrics */
 };

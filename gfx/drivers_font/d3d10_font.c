@@ -35,8 +35,8 @@ typedef struct
    struct font_atlas*            atlas;
 } d3d10_font_t;
 
-static void*
-d3d10_font_init_font(void* data, const char* font_path, float font_size, bool is_threaded)
+static void *d3d10_font_init(void* data, const char* font_path,
+      float font_size, bool is_threaded)
 {
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
    d3d10_font_t*  font  = (d3d10_font_t*)calloc(1, sizeof(*font));
@@ -69,7 +69,7 @@ d3d10_font_init_font(void* data, const char* font_path, float font_size, bool is
    return font;
 }
 
-static void d3d10_font_free_font(void* data, bool is_threaded)
+static void d3d10_font_free(void* data, bool is_threaded)
 {
    d3d10_font_t* font = (d3d10_font_t*)data;
 
@@ -377,12 +377,12 @@ static bool d3d10_font_get_line_metrics(void* data, struct font_line_metrics **m
    d3d10_font_t* font = (d3d10_font_t*)data;
    if (font && font->font_driver && font->font_data)
       return font->font_driver->get_line_metrics(font->font_data, metrics);
-   return -1;
+   return false;
 }
 
 font_renderer_t d3d10_font = {
-   d3d10_font_init_font,
-   d3d10_font_free_font,
+   d3d10_font_init,
+   d3d10_font_free,
    d3d10_font_render_msg,
    "d3d10font",
    d3d10_font_get_glyph,

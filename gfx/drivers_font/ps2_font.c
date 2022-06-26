@@ -36,7 +36,7 @@ typedef struct
    void* font_data;
 } ps2_font_t;
 
-static void* ps2_font_init_font(void* data, const char* font_path,
+static void* ps2_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
 {
    const struct font_atlas* atlas = NULL;
@@ -80,7 +80,7 @@ static void* ps2_font_init_font(void* data, const char* font_path,
    return font;
 }
 
-static void ps2_font_free_font(void* data, bool is_threaded)
+static void ps2_font_free(void* data, bool is_threaded)
 {
    ps2_font_t* font = (ps2_font_t*)data;
 
@@ -369,14 +369,14 @@ static bool ps2_font_get_line_metrics(void* data, struct font_line_metrics **met
    ps2_font_t* font = (ps2_font_t*)data;
    if (font && font->font_driver && font->font_data)
       return font->font_driver->get_line_metrics(font->font_data, metrics);
-   return -1;
+   return false;
 }
 
 font_renderer_t ps2_font = {
-   ps2_font_init_font,
-   ps2_font_free_font,
+   ps2_font_init,
+   ps2_font_free,
    ps2_font_render_msg,
-   "PS2 font",
+   "ps2_font",
    ps2_font_get_glyph,
    NULL,                      /* bind_block */
    NULL,                      /* flush */

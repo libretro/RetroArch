@@ -429,6 +429,6 @@ font_renderer_driver_t freetype_font_renderer = {
    font_renderer_ft_get_glyph,
    font_renderer_ft_free,
    font_renderer_ft_get_default_font,
-   "freetype",
+   "font_renderer_ft",
    font_renderer_ft_get_line_metrics
 };

@@ -35,7 +35,7 @@ typedef struct
    sixel_t *sixel;
 } sixel_raster_t;
 
-static void *sixel_init_font(void *data,
+static void *sixel_font_init(void *data,
       const char *font_path, float font_size,
       bool is_threaded)
 {
@@ -57,30 +57,20 @@ static void *sixel_init_font(void *data,
    return font;
 }
 
-static void sixel_render_free_font(void *data, bool is_threaded)
-{
-   (void)data;
-   (void)is_threaded;
-}
-
-static int sixel_get_message_width(void *data, const char *msg,
-      unsigned msg_len, float scale)
-{
-   return 0;
-}
-
+static void sixel_font_free(void *data, bool is_threaded) { }
+static int sixel_font_get_message_width(void *data, const char *msg,
+      unsigned msg_len, float scale) { return 0; }
 static const struct font_glyph *sixel_font_get_glyph(
-      void *data, uint32_t code)
-{
-   return NULL;
-}
+      void *data, uint32_t code) { return NULL; }
 
-static void sixel_render_msg(
+static void sixel_font_render_msg(
       void *userdata,
       void *data,
       const char *msg,
       const struct font_params *_params)
 {
+   /* TODO/FIXME: add text drawing support */
+#if 0
    float x, y, scale;
    unsigned width, height, new_x, new_y, align;
    sixel_raster_t              *font = (sixel_raster_t*)data;
@@ -127,18 +117,17 @@ static void sixel_render_msg(
          new_x = x * width * scale;
          break;
    }
-
-   /* FIXME: add text drawing support */
+#endif
 }
 
 font_renderer_t sixel_font = {
-   sixel_init_font,
-   sixel_render_free_font,
-   sixel_render_msg,
-   "sixel font",
-   sixel_font_get_glyph,       /* get_glyph */
+   sixel_font_init,
+   sixel_font_free,
+   sixel_font_render_msg,
+   "sixel_font",
+   sixel_font_get_glyph,
    NULL,                       /* bind_block */
    NULL,                       /* flush */
-   sixel_get_message_width,    /* get_message_width */
+   sixel_font_get_message_width,
    NULL                        /* get_line_metrics */
 };

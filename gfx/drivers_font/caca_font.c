@@ -36,7 +36,7 @@ typedef struct
    caca_t *caca;
 } caca_raster_t;
 
-static void *caca_init_font(void *data,
+static void *caca_font_init(void *data,
       const char *font_path, float font_size,
       bool is_threaded)
 {
@@ -58,13 +58,9 @@ static void *caca_init_font(void *data,
    return font;
 }
 
-static void caca_render_free_font(void *data, bool is_threaded)
-{
-   (void)data;
-   (void)is_threaded;
-}
+static void caca_font_free(void *data, bool is_threaded) { }
 
-static int caca_get_message_width(void *data, const char *msg,
+static int caca_font_get_message_width(void *data, const char *msg,
       unsigned msg_len, float scale)
 {
    return 0;
@@ -76,7 +72,7 @@ static const struct font_glyph *caca_font_get_glyph(
    return NULL;
 }
 
-static void caca_render_msg(
+static void caca_font_render_msg(
       void *userdata,
       void *data, const char *msg,
       const struct font_params *params)
@@ -136,13 +132,13 @@ static void caca_render_msg(
 }
 
 font_renderer_t caca_font = {
-   caca_init_font,
-   caca_render_free_font,
-   caca_render_msg,
+   caca_font_init,
+   caca_font_free,
+   caca_font_render_msg,
    "caca font",
-   caca_font_get_glyph,       /* get_glyph */
+   caca_font_get_glyph,
    NULL,                      /* bind_block */
    NULL,                      /* flush */
-   caca_get_message_width,    /* get_message_width */
+   caca_font_get_message_width,
    NULL                       /* get_line_metrics */
 };
