@@ -22,8 +22,9 @@
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 
-#include "../../retroarch.h"
 #include "../../configuration.h"
+#include "../../file_path_special.h"
+#include "../../retroarch.h"
 #include "../../core_option_manager.h"
 #include "../../core_info.h"
 

@@ -15,17 +15,20 @@
  */
 
 #include <stddef.h>
-#include "menu_driver.h"
-#include "menu_cbs.h"
-#include "../retroarch.h"
-#include "../configuration.h"
-#include "../playlist.h"
-#include "../libretro-db/libretrodb.h"
-#include "../tasks/tasks_internal.h"
+
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
 #include <array/rbuf.h>
 #include <array/rhmap.h>
+
+#include "menu_driver.h"
+#include "menu_cbs.h"
+#include "../retroarch.h"
+#include "../configuration.h"
+#include "../file_path_special.h"
+#include "../playlist.h"
+#include "../libretro-db/libretrodb.h"
+#include "../tasks/tasks_internal.h"
 
 #define EX_ARENA_ALIGNMENT 8
 #define EX_ARENA_BLOCK_SIZE (64 * 1024)

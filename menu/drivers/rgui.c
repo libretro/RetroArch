@@ -51,6 +51,7 @@
 #include "../../input/input_osk.h"
 
 #include "../../configuration.h"
+#include "../../file_path_special.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
 
 #ifdef HAVE_LANGEXTRA

@@ -43,6 +43,7 @@
 #include "../../config.def.h"
 #include "../../config.def.keybinds.h"
 #include "../../driver.h"
+#include "../../file_path_special.h"
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"

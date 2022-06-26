@@ -30,7 +30,6 @@
 #include <gfx/math/matrix_4x4.h>
 
 #include "../retroarch.h"
-#include "../file_path_special.h"
 #include "../gfx/font_driver.h"
 
 RETRO_BEGIN_DECLS

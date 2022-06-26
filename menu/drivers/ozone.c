@@ -34,6 +34,7 @@
 #include <array/rhmap.h>
 
 #include "../../config.def.h"
+#include "../../file_path_special.h"
 
 #if 0
 #include "../../discord/discord.h"

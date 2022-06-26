@@ -31,6 +31,7 @@
 #endif
 
 #include "../../configuration.h"
+#include "../../file_path_special.h"
 #include "../../core.h"
 #include "../../core_info.h"
 #include "../../core_option_manager.h"

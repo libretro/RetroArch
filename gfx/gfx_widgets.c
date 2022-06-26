@@ -33,6 +33,7 @@
 #include "font_driver.h"
 
 #include "../configuration.h"
+#include "../file_path_special.h"
 #include "../msg_hash.h"
 
 #include "../tasks/task_content.h"
