@@ -376,18 +376,16 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
    {
       if (wr->rect_delay < 10)
       {
-          RARCH_DBG("[CRT][WinRaw]: Resize RECT delay for absolute co-ords - %d \n", wr->rect_delay);
           winraw_init_mouse_xy_mapping(wr); /* Triggering fewer times seems to fix the issue. Forcing resize while resolution is changing */
           wr->rect_delay ++;
       }
       else
       {
-	      int bottom = wr->prev_rect.bottom;
-	      int right = wr->prev_rect.right;
-	      RARCH_DBG("[CRT][WinRaw]: Resizing RECT for absolute coordinates to match new resolution - %dx%d\n", right ,bottom);
+	      int bottom      = wr->prev_rect.bottom;
+	      int right       = wr->prev_rect.right;
 	      wr->active_rect = wr->prev_rect;
 	      winraw_init_mouse_xy_mapping(wr);
-	      wr->rect_delay = 0;
+	      wr->rect_delay  = 0;
       }
    }
 
