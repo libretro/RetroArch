@@ -26,7 +26,7 @@
 
 #ifdef HAVE_NETWORKING
 
-#ifndef HAVE_SOCKET_LEGACY
+#if !defined(HAVE_SOCKET_LEGACY) || defined(GEKKO)
 #include <net/net_ifinfo.h>
 #endif
 
@@ -35,12 +35,13 @@
 
 /* Find the most suitable address within the device's network. */
 static bool find_local_address(struct natt_device *device,
-   struct natt_request *request)
+      struct natt_request *request)
 {
-   bool ret                     = false;
+   bool ret = false;
+
 /* TODO/FIXME: Find a way to get the network's interface on
    HAVE_SOCKET_LEGACY platforms */
-#ifndef HAVE_SOCKET_LEGACY
+#if !defined(HAVE_SOCKET_LEGACY) || defined(GEKKO)
    struct net_ifinfo interfaces = {0};
    struct addrinfo **addrs      = NULL;
    uint32_t *scores             = NULL;
@@ -50,16 +51,16 @@ static bool find_local_address(struct natt_device *device,
       size_t i, j, k;
       uint32_t highest_score = 0;
       struct addrinfo hints  = {0};
-      uint8_t *dev_addr8     = (uint8_t *)&device->addr.sin_addr;
+      uint8_t *dev_addr8     = (uint8_t*)&device->addr.sin_addr;
 
-      addrs                  = (struct addrinfo**)calloc(interfaces.size, sizeof(*addrs));
+      addrs  = (struct addrinfo**)calloc(interfaces.size, sizeof(*addrs));
       if (!addrs)
          goto done;
-      scores                 = (uint32_t*)calloc(interfaces.size, sizeof(*scores));
+      scores = (uint32_t*)calloc(interfaces.size, sizeof(*scores));
       if (!scores)
          goto done;
 
-      hints.ai_family        = AF_INET;
+      hints.ai_family = AF_INET;
 
       /* Score interfaces based on how "close" their address
          is from the device's address. */
@@ -67,15 +68,16 @@ static bool find_local_address(struct natt_device *device,
       {
          struct net_ifinfo_entry *entry = &interfaces.entries[i];
          struct addrinfo         **addr = &addrs[i];
-         uint32_t                *score = &scores[i];       
+         uint32_t                *score = &scores[i];
 
          if (getaddrinfo_retro(entry->host, NULL, &hints, addr))
             continue;
 
-         if (*addr)
+         /* Sanity check */
+         if (*addr && (*addr)->ai_family == AF_INET)
          {
-            uint8_t *addr8 = (uint8_t *)
-               &((struct sockaddr_in *) (*addr)->ai_addr)->sin_addr;
+            uint8_t *addr8 =
+               (uint8_t*)&((struct sockaddr_in*)(*addr)->ai_addr)->sin_addr;
             bool stop_score = false;
 
             for (j = 0; j < sizeof(device->addr.sin_addr) && !stop_score; j++)
@@ -120,7 +122,7 @@ static bool find_local_address(struct natt_device *device,
       {
          /* Copy the interface's address to our request. */
          memcpy(&request->addr.sin_addr,
-            &((struct sockaddr_in *) addrs[i]->ai_addr)->sin_addr,
+            &((struct sockaddr_in*)addrs[i]->ai_addr)->sin_addr,
             sizeof(request->addr.sin_addr));
          ret = true;
       }
@@ -273,8 +275,8 @@ finished:
    task_set_finished(task, true);
 }
 
-static void netplay_nat_traversal_callback(retro_task_t *task,
-   void *task_data, void *user_data, const char *error)
+static void task_netplay_nat_traversal_callback(retro_task_t *task,
+      void *task_data, void *user_data, const char *error)
 {
    struct nat_traversal_data *data = (struct nat_traversal_data*)task_data;
    uintptr_t ext_port              = ntohs(data->request.addr.sin_port);
@@ -317,7 +319,7 @@ bool task_push_netplay_nat_traversal(void *data, uint16_t port)
    natt_data->status                    = NAT_TRAVERSAL_STATUS_DISCOVERY;
 
    task->handler                        = task_netplay_nat_traversal_handler;
-   task->callback                       = netplay_nat_traversal_callback;
+   task->callback                       = task_netplay_nat_traversal_callback;
    task->task_data                      = data;
 
    task_queue_push(task);
