@@ -6936,8 +6936,16 @@ MSG_HASH(
    "코어 연결 설정"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SET_CORE_ASSOCIATION,
+   "이 컨텐츠를 실행할 코어를 설정합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
    "코어 연결 초기화"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_CORE_ASSOCIATION,
+   "이 컨텐츠를 실행할 코어 설정을 초기화합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,
@@ -9404,7 +9412,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
-   "메뉴 항목에 왼쪽에 표시되는 메뉴 아이콘들을 표시합니다."
+   "메뉴 항목의 왼쪽에 아이콘들을 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
@@ -9428,7 +9436,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_SHOW_NAV_BAR,
-   "항상 표시되는 네이게이션 바로가기를 사용합니다. 메뉴 카테고리 상의전환을 빠르게 할 수 있습니다. 터치스크린 사용자에게 추천합니다."
+   "메뉴를 탐색할 수 있는 바로가기를 화면에 항상 표시합니다. 메뉴 카테고리 사이를 빠르게 전환할 수 있습니다. 터치스크린 사용자에게 권장됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,
@@ -10404,8 +10412,24 @@ MSG_HASH(
    "사용자: %s"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_LOOK,
+   "호환되는 컨텐츠 찾는 중..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_CORE,
+   "코어를 찾을 수 없음"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_PLAYLISTS,
+   "실행목록을 찾을 수 없음"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
    "호환되는 컨텐츠 발견"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NOT_FOUND,
+   "CRC 또는 파일명이 일치하는 컨텐츠를 찾을 수 없음"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_START_GONG,
