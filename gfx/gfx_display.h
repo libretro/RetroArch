@@ -137,11 +137,7 @@ typedef struct gfx_display_ctx_driver
    const float *(*get_default_vertices)(void);
    /* Get the default texture coordinates matrix */
    const float *(*get_default_tex_coords)(void);
-   /* Initialize the first compatible font driver for this menu driver. */
-   bool (*font_init_first)(
-         void **font_handle, void *video_data,
-         const char *font_path, float font_size,
-         bool is_threaded);
+   enum font_driver_render_api  font_type;
    enum gfx_display_driver_type type;
    const char *ident;
    bool handles_transform;

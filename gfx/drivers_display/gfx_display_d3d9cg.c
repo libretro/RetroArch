@@ -264,20 +264,6 @@ static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
    }
 }
 
-static bool gfx_display_d3d9_cg_font_init_first(
-      void **font_handle, void *video_data,
-      const char *font_path, float menu_font_size,
-      bool is_threaded)
-{
-   font_data_t **handle = (font_data_t**)font_handle;
-   if (!(*handle = font_driver_init_first(video_data,
-         font_path, menu_font_size, true,
-         is_threaded,
-         FONT_DRIVER_RENDER_D3D9_API)))
-		 return false;
-   return true;
-}
-
 void gfx_display_d3d9_cg_scissor_begin(
       void *data,
       unsigned video_width, unsigned video_height,
@@ -322,7 +308,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d9_cg = {
    gfx_display_d3d9_cg_get_default_mvp,
    gfx_display_d3d9_cg_get_default_vertices,
    gfx_display_d3d9_cg_get_default_tex_coords,
-   gfx_display_d3d9_cg_font_init_first,
+   FONT_DRIVER_RENDER_D3D9_API,
    GFX_VIDEO_DRIVER_DIRECT3D9_CG,
    "d3d9_cg",
    false,

@@ -24,7 +24,6 @@
 #include "../gfx_display.h"
 
 #include "../../retroarch.h"
-#include "../font_driver.h"
 #include "../common/d3d12_common.h"
 
 static void gfx_display_d3d12_blend_begin(void *data)
@@ -247,22 +246,6 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
          d3d12->queue.cmd, ROOT_ID_UBO, d3d12->ubo_view.BufferLocation);
 }
 
-static bool gfx_display_d3d12_font_init_first(
-      void**      font_handle,
-      void*       video_data,
-      const char* font_path,
-      float       menu_font_size,
-      bool        is_threaded)
-{
-   font_data_t** handle     = (font_data_t**)font_handle;
-   font_data_t*  new_handle = font_driver_init_first(
-         video_data, font_path, menu_font_size, true, is_threaded, FONT_DRIVER_RENDER_D3D12_API);
-   if (!new_handle)
-      return false;
-   *handle = new_handle;
-   return true;
-}
-
 void gfx_display_d3d12_scissor_begin(void *data,
       unsigned video_width, unsigned video_height,
       int x, int y, unsigned width, unsigned height)
@@ -307,7 +290,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d12 = {
    NULL,                                     /* get_default_mvp        */
    NULL,                                     /* get_default_vertices   */
    NULL,                                     /* get_default_tex_coords */
-   gfx_display_d3d12_font_init_first,
+   FONT_DRIVER_RENDER_D3D12_API,
    GFX_VIDEO_DRIVER_DIRECT3D12,
    "d3d12",
    true,

@@ -23,7 +23,6 @@
 #include "../gfx_display.h"
 
 #include "../../retroarch.h"
-#include "../font_driver.h"
 #include "../common/gx2_common.h"
 #include "../../wiiu/system/memory.h"
 #include "../../wiiu/wiiu_dbg.h"
@@ -263,19 +262,6 @@ static void gfx_display_wiiu_draw_pipeline(
    GX2SetPixelUniformBlock(1, sizeof(*wiiu->menu_shader_ubo), wiiu->menu_shader_ubo);
 }
 
-static bool gfx_display_wiiu_font_init_first(
-      void **font_handle, void *video_data,
-      const char *font_path, float font_size,
-      bool is_threaded)
-{
-   font_data_t **handle = (font_data_t**)font_handle;
-   *handle              = font_driver_init_first(video_data,
-         font_path, font_size, true,
-         is_threaded,
-         FONT_DRIVER_RENDER_WIIU);
-   return *handle;
-}
-
 static void gfx_display_wiiu_scissor_begin(
       void *data,
       unsigned video_width,
@@ -303,7 +289,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_wiiu = {
    NULL,                                     /* get_default_mvp        */
    NULL,                                     /* get_default_vertices   */
    NULL,                                     /* get_default_tex_coords */
-   gfx_display_wiiu_font_init_first,
+   FONT_DRIVER_RENDER_WIIU,
    GFX_VIDEO_DRIVER_WIIU,
    "gx2",
    true,

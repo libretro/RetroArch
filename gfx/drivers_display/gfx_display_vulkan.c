@@ -22,7 +22,6 @@
 
 #include "../gfx_display.h"
 
-#include "../font_driver.h"
 #include "../../retroarch.h"
 #include "../common/vulkan_common.h"
 
@@ -287,22 +286,6 @@ static void gfx_display_vk_blend_end(void *data)
       vk->display.blend = false;
 }
 
-static bool gfx_display_vk_font_init_first(
-      void **font_handle, void *video_data, const char *font_path,
-      float menu_font_size, bool is_threaded)
-{
-   font_data_t **handle = (font_data_t**)font_handle;
-   *handle = font_driver_init_first(video_data,
-         font_path, menu_font_size, true,
-         is_threaded,
-         FONT_DRIVER_RENDER_VULKAN_API);
-
-   if (*handle)
-      return true;
-
-   return false;
-}
-
 static void gfx_display_vk_scissor_begin(
       void *data,
       unsigned video_width,
@@ -341,7 +324,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_vulkan = {
    gfx_display_vk_get_default_mvp,
    gfx_display_vk_get_default_vertices,
    gfx_display_vk_get_default_tex_coords,
-   gfx_display_vk_font_init_first,
+   FONT_DRIVER_RENDER_VULKAN_API,
    GFX_VIDEO_DRIVER_VULKAN,
    "vulkan",
    false,

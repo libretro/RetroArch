@@ -23,7 +23,6 @@
 
 #include "../../retroarch.h"
 #include "../common/rsx_common.h"
-#include "../font_driver.h"
 
 static const float rsx_vertexes[] = {
    0, 0,
@@ -132,19 +131,6 @@ static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
    rsxDrawVertexArray(rsx->context, GCM_TYPE_TRIANGLE_STRIP, 0, draw->coords->vertices);
 }
 
-static bool gfx_display_rsx_font_init_first(
-      void **font_handle, void *video_data,
-      const char *font_path, float font_size,
-      bool is_threaded)
-{
-   font_data_t **handle = (font_data_t**)font_handle;
-   *handle = font_driver_init_first(video_data,
-         font_path, font_size, true,
-         is_threaded,
-         FONT_DRIVER_RENDER_RSX);
-   return *handle;
-}
-
 static void gfx_display_rsx_scissor_begin(void *data,
       unsigned video_width,
       unsigned video_height,
@@ -196,7 +182,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_rsx = {
    gfx_display_rsx_get_default_mvp,
    gfx_display_rsx_get_default_vertices,
    gfx_display_rsx_get_default_tex_coords,
-   gfx_display_rsx_font_init_first,
+   FONT_DRIVER_RENDER_RSX,
    GFX_VIDEO_DRIVER_RSX,
    "rsx",
    true,
