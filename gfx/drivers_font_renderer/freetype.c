@@ -277,7 +277,7 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
       if (!OSGetSharedData(SHARED_FONT_DEFAULT, 0, &font_data, &font_size))
          goto error;
 
-      err = FT_New_Memory_Face(handle->lib, font_data, font_size, 0, &handle->face);
+      err = FT_New_Memory_Face(handle->lib, (const FT_Byte*)font_data, (FT_Long)font_size, (FT_Long)0, &handle->face);
    }
    else
 #elif defined(HAVE_FONTCONFIG_SUPPORT)
@@ -285,6 +285,8 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
    if (!*font_path || strstr(font_path, "fallback"))
    {
       FcValue locale_boxed;
+      uint8_t* font_data    = NULL;
+      int64_t font_size     = 0;
       FcPattern *found     = NULL;
       FcConfig* config     = FcInitLoadConfigAndFonts();
       FcResult result      = FcResultNoMatch;
@@ -319,10 +321,11 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
          goto error;
       if (FcPatternGetInteger(found, FC_INDEX, 0, &face_index) != FcResultMatch)
          goto error;
+      if (!filestream_read_file((const char*)_font_path, (void**)&font_data, &font_size))
+         goto error;
 
       /* Initialize font renderer */
-      err = FT_New_Face(handle->lib, (const char*)_font_path,
-            face_index, &handle->face);
+      err = FT_New_Memory_Face(handle->lib, (const FT_Byte*)font_data, (FT_Long)font_size, (FT_Long)face_index, &handle->face);
 
       /* free up fontconfig internal structures */
       FcPatternDestroy(pattern);
@@ -333,9 +336,13 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
    else
 #endif
    {
+      uint8_t* font_data    = NULL;
+      int64_t font_size     = 0;
       if (!path_is_valid(font_path))
          goto error;
-      err = FT_New_Face(handle->lib, font_path, 0, &handle->face);
+      if (!filestream_read_file(font_path, (void**)&font_data, &font_size))
+         goto error;
+      err = FT_New_Memory_Face(handle->lib, (const FT_Byte*)font_data, (FT_Long)font_size, (FT_Long)0, &handle->face);
    }
 
    if (err)
