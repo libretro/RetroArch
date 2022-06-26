@@ -39,8 +39,6 @@ static bool find_local_address(struct natt_device *device,
 {
    bool ret = false;
 
-/* TODO/FIXME: Find a way to get the network's interface on
-   HAVE_SOCKET_LEGACY platforms */
 #if !defined(HAVE_SOCKET_LEGACY) || defined(GEKKO)
    struct net_ifinfo interfaces = {0};
    struct addrinfo **addrs      = NULL;
@@ -135,6 +133,31 @@ done:
    free(scores);
    free(addrs);
    net_ifinfo_free(&interfaces);
+#else
+   int dummy_fd = socket_create("dummy",
+      SOCKET_DOMAIN_INET, SOCKET_TYPE_DATAGRAM, SOCKET_PROTOCOL_UDP);
+
+   if (dummy_fd >= 0)
+   {
+      struct sockaddr_in addr    = {0};
+      socklen_t          addrlen = sizeof(addr);
+
+      if (!connect(dummy_fd, (struct sockaddr*)&device->addr,
+               sizeof(device->addr)) &&
+            !getsockname(dummy_fd, (struct sockaddr*)&addr, &addrlen))
+      {
+         /* Make sure this is not "0.0.0.0". */
+         if (addr.sin_addr.s_addr)
+         {
+            /* Copy the address to our request. */
+            memcpy(&request->addr.sin_addr, &addr.sin_addr,
+               sizeof(request->addr.sin_addr));
+            ret = true;
+         }
+      }
+
+      socket_close(dummy_fd);
+   }
 #endif
 
    return ret;
