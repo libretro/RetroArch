@@ -40,7 +40,7 @@
 #include <features/features_cpu.h>
 #include <lrc_hash.h>
 
-#ifndef HAVE_SOCKET_LEGACY
+#if !defined(HAVE_SOCKET_LEGACY) || defined(GEKKO)
 #include <net/net_ifinfo.h>
 #endif
 
@@ -218,7 +218,7 @@ bool init_netplay_discovery(void)
 
    if (ret)
    {
-#ifndef HAVE_SOCKET_LEGACY
+#if !defined(HAVE_SOCKET_LEGACY) || defined(GEKKO)
       net_ifinfo_best("223.255.255.255",
          &((struct sockaddr_in*)addr->ai_addr)->sin_addr, false);
 #endif

@@ -22,7 +22,7 @@
 
 #include <retro_miscellaneous.h>
 
-#ifndef HAVE_SOCKET_LEGACY
+#if !defined(HAVE_SOCKET_LEGACY) || defined(GEKKO)
 #include <net/net_ifinfo.h>
 #endif
 
@@ -96,7 +96,7 @@ bool natt_init(struct natt_discovery *discovery)
    if (!bind_addr)
       goto failure;
 
-#ifndef HAVE_SOCKET_LEGACY
+#if !defined(HAVE_SOCKET_LEGACY) || defined(GEKKO)
    {
       struct sockaddr_in *addr = (struct sockaddr_in *) bind_addr->ai_addr;
 
