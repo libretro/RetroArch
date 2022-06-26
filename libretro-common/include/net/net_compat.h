@@ -133,6 +133,7 @@
 #define socklen_t unsigned int
 
 #define socket(a,b,c) sceNetSocket("unknown",a,b,c)
+#define getsockname sceNetGetsockname
 #define getsockopt sceNetGetsockopt
 #define setsockopt sceNetSetsockopt
 #define bind sceNetBind
