@@ -6696,8 +6696,16 @@ MSG_HASH(
    "Aseta ydinliitos"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SET_CORE_ASSOCIATION,
+   "Aseta tähän sisältöön yhdistetty ydin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
    "Nollaa ytimen liitos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_CORE_ASSOCIATION,
+   "Nollaa tähän sisältöön yhdistetty ydin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,
