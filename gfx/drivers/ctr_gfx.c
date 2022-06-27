@@ -659,15 +659,11 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
    }
 }
 
-static void font_driver_render_msg_bottom(
-      void *data,         
-      const char *msg,    
-      const void *_params,
-      void *font_data)    
+static void font_driver_render_msg_bottom(ctr_video_t *ctr,
+      const char *msg, const void *_params)
 {
-   ctr_video_t *ctr        = (ctr_video_t*)data;
    ctr->render_font_bottom = true;
-   font_driver_render_msg(ctr, msg, _params, font_data);
+   font_driver_render_msg(ctr, msg, _params, NULL);
    ctr->render_font_bottom = false;
 }
 
@@ -691,7 +687,7 @@ static void ctr_render_bottom_screen(void *data)
 
          font_driver_render_msg_bottom(ctr,
                msg_hash_to_str(MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND),
-               &params, NULL);
+               &params);
          break;
       case CTR_BOTTOM_MENU_DEFAULT:
          params.scale = 1.6f;
@@ -700,7 +696,7 @@ static void ctr_render_bottom_screen(void *data)
 
          font_driver_render_msg_bottom(ctr,
                msg_hash_to_str(MSG_3DS_BOTTOM_MENU_DEFAULT),
-               &params, NULL);
+               &params);
          break;
       case CTR_BOTTOM_MENU_SELECT:
          {
@@ -755,7 +751,7 @@ static void ctr_render_bottom_screen(void *data)
                   font_driver_render_msg_bottom(ctr, 
                      msg_hash_to_str(
                         MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL),
-                     &params, NULL);
+                     &params);
                }
             }
             else
@@ -765,7 +761,7 @@ static void ctr_render_bottom_screen(void *data)
                font_driver_render_msg_bottom(ctr, 
                   msg_hash_to_str(
                      MSG_3DS_BOTTOM_MENU_NO_STATE_DATA),
-                  &params, NULL);
+                  &params);
             }
 
             /* draw bottom menu */
@@ -803,7 +799,7 @@ static void ctr_render_bottom_screen(void *data)
 
             font_driver_render_msg_bottom(ctr, 
                msg_hash_to_str(MSG_3DS_BOTTOM_MENU_RESUME),
-               &params, NULL);
+               &params);
 
             /* draw create restore point */
             params.x = -0.178f;
@@ -811,7 +807,7 @@ static void ctr_render_bottom_screen(void *data)
 
             font_driver_render_msg_bottom(ctr, 
                msg_hash_to_str(MSG_3DS_BOTTOM_MENU_SAVE_STATE),
-               &params, NULL);
+               &params);
 
             /* draw load restore point */
             params.x = 0.266f;
@@ -819,13 +815,13 @@ static void ctr_render_bottom_screen(void *data)
 
             font_driver_render_msg_bottom(ctr, 
                msg_hash_to_str(MSG_3DS_BOTTOM_MENU_LOAD_STATE),
-               &params, NULL);
+               &params);
 
             /* draw date */
             params.x = 0.266f;
             params.y = 0.87f;
             font_driver_render_msg_bottom(ctr, ctr->state_date,
-               &params, NULL);
+               &params);
          }
          break;
    }

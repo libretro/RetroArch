@@ -1724,12 +1724,8 @@ static void wiiu_gfx_set_osd_msg(void *data,
       const void *params, void *font)
 {
    wiiu_video_t *wiiu = (wiiu_video_t *)data;
-
-   if (wiiu)
-   {
-      if (wiiu->render_msg_enabled)
-         font_driver_render_msg(wiiu, msg, params, font);
-   }
+   if (wiiu && wiiu->render_msg_enabled)
+      font_driver_render_msg(wiiu, msg, params, font);
 }
 
 static uint32_t wiiu_gfx_get_flags(void *data)
