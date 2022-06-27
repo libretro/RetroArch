@@ -826,27 +826,30 @@ static void win32_save_position(void)
    WINDOWPLACEMENT placement;
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
    settings_t *settings          = config_get_ptr();
-   int border_thickness          = GetSystemMetrics(SM_CXSIZEFRAME);
-   int title_bar_height          = GetSystemMetrics(SM_CYCAPTION);
-   int menu_bar_height           = GetSystemMetrics(SM_CYMENU);
    bool window_save_positions    = settings->bools.video_window_save_positions;
    bool video_fullscreen         = settings->bools.video_fullscreen;
    bool ui_menubar_enable        = settings->bools.ui_menubar_enable;
+   bool window_show_decor        = settings->bools.video_window_show_decorations;
+   int border_thickness          = window_show_decor ? GetSystemMetrics(SM_CXSIZEFRAME) : 0;
+   int title_bar_height          = window_show_decor ? GetSystemMetrics(SM_CYCAPTION) : 0;
+   int menu_bar_height           = ui_menubar_enable ? GetSystemMetrics(SM_CYMENU) : 0;
 
    memset(&placement, 0, sizeof(placement));
 
-   placement.length              = sizeof(placement);
+   placement.length = sizeof(placement);
 
-   GetWindowPlacement(main_window.hwnd, &placement);
-
-   g_win32->pos_x                = placement.rcNormalPosition.left;
-   g_win32->pos_y                = placement.rcNormalPosition.top;
+   if (GetWindowPlacement(main_window.hwnd, &placement))
+   {
+      g_win32->pos_x = placement.rcNormalPosition.left;
+      g_win32->pos_y = placement.rcNormalPosition.top;
+   }
 
    if (GetWindowRect(main_window.hwnd, &rect))
    {
-      g_win32->pos_width         = rect.right  - rect.left;
-      g_win32->pos_height        = rect.bottom - rect.top;
+      g_win32->pos_width  = rect.right  - rect.left;
+      g_win32->pos_height = rect.bottom - rect.top;
    }
+
    if (window_save_positions)
    {
       video_driver_state_t *video_st = video_state_get_ptr();
@@ -857,11 +860,8 @@ static void win32_save_position(void)
       {
          settings->uints.window_position_x      = g_win32->pos_x;
          settings->uints.window_position_y      = g_win32->pos_y;
-         settings->uints.window_position_width  = g_win32->pos_width  - 
-            border_thickness * 2;
-         settings->uints.window_position_height = g_win32->pos_height - 
-            border_thickness * 2 - title_bar_height - 
-            (ui_menubar_enable ? menu_bar_height : 0);
+         settings->uints.window_position_width  = g_win32->pos_width - border_thickness * 2;
+         settings->uints.window_position_height = g_win32->pos_height - border_thickness * 2 - title_bar_height - menu_bar_height;
       }
    }
 }
@@ -1604,7 +1604,6 @@ bool win32_window_create(void *data, unsigned style,
 #endif
 #ifdef HAVE_WINDOW_TRANSP
    unsigned    window_opacity    = settings->uints.video_window_opacity;
-   bool    window_show_decor     = settings->bools.video_window_show_decorations;
 #endif
    bool    window_save_positions = settings->bools.video_window_save_positions;
    unsigned    user_width        = width;
@@ -1661,9 +1660,6 @@ bool win32_window_create(void *data, unsigned style,
    video_driver_window_set((uintptr_t)main_window.hwnd);
 
 #ifdef HAVE_WINDOW_TRANSP
-   if (!window_show_decor)
-      SetWindowLongPtr(main_window.hwnd, GWL_STYLE, WS_POPUP);
-
    /* Windows 2000 and above use layered windows to enable transparency */
    if (window_opacity < 100)
    {
@@ -2168,18 +2164,25 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
       win32_common_state_t *g_win32    = (win32_common_state_t*)&win32_st;
       bool position_set_from_config    = false;
       bool video_window_save_positions = settings->bools.video_window_save_positions;
+      bool window_show_decor = settings->bools.video_window_show_decorations;
 
       *style          = WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
       rect->right     = *width;
       rect->bottom    = *height;
+
+      if (!window_show_decor)
+      {
+         *style &= ~WS_OVERLAPPEDWINDOW;
+         *style |= WS_POPUP;
+      }
 
       AdjustWindowRect(rect, *style, FALSE);
 
       if (video_window_save_positions)
       {
          /* Set position from config */
-         int border_thickness             = GetSystemMetrics(SM_CXSIZEFRAME);
-         int title_bar_height             = GetSystemMetrics(SM_CYCAPTION);
+         int border_thickness             = window_show_decor ? GetSystemMetrics(SM_CXSIZEFRAME) : 0;
+         int title_bar_height             = window_show_decor ? GetSystemMetrics(SM_CYCAPTION) : 0;
          unsigned window_position_x       = settings->uints.window_position_x;
          unsigned window_position_y       = settings->uints.window_position_y;
          unsigned window_position_width   = settings->uints.window_position_width;
