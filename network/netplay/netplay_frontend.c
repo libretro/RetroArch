@@ -5655,19 +5655,36 @@ static bool netplay_get_cmd(netplay_t *netplay,
          break;
 
       case NETPLAY_CMD_LOAD_SAVESTATE:
-      case NETPLAY_CMD_RESET:
          {
+            uint32_t i;
             uint32_t frame;
-            uint32_t isize;
-            uint32_t rd, wn;
-            uint32_t client;
+            uint32_t state_size, state_size_raw;
+            size_t   load_ptr;
             uint32_t load_frame_count;
-            size_t load_ptr;
+            uint32_t rd, wn;
             struct compression_transcoder *ctrans = NULL;
-            uint32_t                   client_num = (uint32_t)
-             (connection - netplay->connections + 1);
 
-            /* Make sure we're ready for it */
+            if (netplay->is_server)
+            {
+               RARCH_ERR("[Netplay] NETPLAY_CMD_LOAD_SAVESTATE from client.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
+
+            if (cmd_size < sizeof(frame) + sizeof(state_size))
+            {
+               RARCH_ERR("[Netplay] Received invalid payload size for NETPLAY_CMD_LOAD_SAVESTATE.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
+
+            /* Only players may load states. */
+            if (connection->mode != NETPLAY_CONNECTION_PLAYING &&
+                  connection->mode != NETPLAY_CONNECTION_SLAVE)
+            {
+               RARCH_ERR("[Netplay] Netplay state load from a spectator.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
+
+            /* Make sure we're ready for it. */
             if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
             {
                if (!netplay->is_replay)
@@ -5676,131 +5693,92 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   netplay->replay_ptr         = netplay->run_ptr;
                   netplay->replay_frame_count = netplay->run_frame_count;
                   netplay_wait_and_init_serialization(netplay);
-                  netplay->is_replay         = false;
+                  netplay->is_replay          = false;
                }
                else
                   netplay_wait_and_init_serialization(netplay);
             }
 
-            /* Only players may load states */
-            if (connection->mode != NETPLAY_CONNECTION_PLAYING &&
-                connection->mode != NETPLAY_CONNECTION_SLAVE)
-            {
-               RARCH_ERR("[Netplay] Netplay state load from a spectator.\n");
-               return netplay_cmd_nak(netplay, connection);
-            }
-
-            /* We only allow players to load state if we're in a simple
-             * two-player situation */
-            if (netplay->is_server && netplay->connections_size > 1)
-            {
-               RARCH_ERR("[Netplay] Netplay state load from a client with other clients connected disallowed.\n");
-               return netplay_cmd_nak(netplay, connection);
-            }
-
-            /* There is a subtlty in whether the load comes before or after the
-             * current frame:
+            /* There is a subtlety in whether the load comes before or after
+             * the current frame:
              *
              * If it comes before the current frame, then we need to force a
              * rewind to that point.
              *
-             * If it comes after the current frame, we need to jump ahead, then
-             * (strangely) force a rewind to the frame we're already on, so it
-             * gets loaded. This is just to avoid having reloading implemented in
-             * too many places. */
-
-            /* Check the payload size */
-            if ((cmd == NETPLAY_CMD_LOAD_SAVESTATE &&
-                 (cmd_size < 2*sizeof(uint32_t) || cmd_size > netplay->zbuffer_size + 2*sizeof(uint32_t))) ||
-                (cmd == NETPLAY_CMD_RESET && cmd_size != sizeof(frame)))
-            {
-               RARCH_ERR("[Netplay] CMD_LOAD_SAVESTATE received an unexpected payload size.\n");
-               return netplay_cmd_nak(netplay, connection);
-            }
+             * If it comes after the current frame, we need to jump ahead,
+             * then (strangely) force a rewind to the frame we're already on,
+             * so it gets loaded.
+             * This is just to avoid having reloading implemented
+             * in too many places. */
 
             RECV(&frame, sizeof(frame))
                return false;
-
             frame = ntohl(frame);
 
-            if (netplay->is_server)
-            {
-               load_ptr = netplay->read_ptr[client_num];
-               load_frame_count = netplay->read_frame_count[client_num];
-            }
-            else
-            {
-               load_ptr = netplay->server_ptr;
-               load_frame_count = netplay->server_frame_count;
-            }
+            load_ptr         = netplay->server_ptr;
+            load_frame_count = netplay->server_frame_count;
 
             if (frame != load_frame_count)
             {
-               RARCH_ERR("[Netplay] CMD_LOAD_SAVESTATE loading a state out of order!\n");
+               RARCH_ERR("[Netplay] Netplay state load out of order!\n");
                return netplay_cmd_nak(netplay, connection);
             }
 
-            if (!netplay_delta_frame_ready(netplay, &netplay->buffer[load_ptr], load_frame_count))
-            {
-               /* Hopefully it will be after another round of input */
+            if (!netplay_delta_frame_ready(netplay,
+                  &netplay->buffer[load_ptr], load_frame_count))
+               /* Hopefully it will be ready after another round of input. */
                goto shrt;
+
+            RECV(&state_size, sizeof(state_size))
+               return false;
+            state_size     = ntohl(state_size);
+            state_size_raw = cmd_size - (sizeof(frame) + sizeof(state_size));
+
+            if (state_size != netplay->state_size ||
+                  state_size_raw > netplay->zbuffer_size)
+            {
+               RARCH_ERR("[Netplay] Netplay state load with an unexpected save state size.\n");
+               return netplay_cmd_nak(netplay, connection);
             }
 
-            /* Now we switch based on whether we're loading a state or resetting */
-            if (cmd == NETPLAY_CMD_LOAD_SAVESTATE)
+            RECV(netplay->zbuffer, state_size_raw)
+               return false;
+
+            switch (connection->compression_supported)
             {
-               RECV(&isize, sizeof(isize))
-                  return false;
-
-               isize = ntohl(isize);
-
-               if (isize != netplay->state_size)
-               {
-                  RARCH_ERR("[Netplay] CMD_LOAD_SAVESTATE received an unexpected save state size.\n");
-                  return netplay_cmd_nak(netplay, connection);
-               }
-
-               RECV(netplay->zbuffer, cmd_size - 2*sizeof(uint32_t))
-                  return false;
-
-               /* And decompress it */
-               switch (connection->compression_supported)
-               {
-                  case NETPLAY_COMPRESSION_ZLIB:
-                     ctrans = &netplay->compress_zlib;
-                     break;
-                  default:
-                     ctrans = &netplay->compress_nil;
-               }
-               ctrans->decompression_backend->set_in(ctrans->decompression_stream,
-                  netplay->zbuffer, cmd_size - 2*sizeof(uint32_t));
-               ctrans->decompression_backend->set_out(ctrans->decompression_stream,
-                  (uint8_t*)netplay->buffer[load_ptr].state,
-                  (unsigned)netplay->state_size);
-               ctrans->decompression_backend->trans(ctrans->decompression_stream,
-                  true, &rd, &wn, NULL);
-
-               /* Force a rewind to the relevant frame */
-               netplay->force_rewind = true;
-            }
-            else
-            {
-               /* Resetting */
-               netplay->force_reset = true;
-
+               case NETPLAY_COMPRESSION_ZLIB:
+                  ctrans = &netplay->compress_zlib;
+                  break;
+               default:
+                  ctrans = &netplay->compress_nil;
+                  break;
             }
 
-            /* Skip ahead if it's past where we are */
-            if (load_frame_count > netplay->run_frame_count ||
-                cmd == NETPLAY_CMD_RESET)
+            ctrans->decompression_backend->set_in(
+               ctrans->decompression_stream,
+               netplay->zbuffer, state_size_raw);
+            ctrans->decompression_backend->set_out(
+               ctrans->decompression_stream,
+               (uint8_t*)netplay->buffer[load_ptr].state, state_size);
+            ctrans->decompression_backend->trans(
+               ctrans->decompression_stream,
+               true, &rd, &wn, NULL);
+
+            /* Force a rewind to the relevant frame. */
+            netplay->force_rewind = true;
+
+            /* Skip ahead if it's past where we are. */
+            if (load_frame_count > netplay->run_frame_count)
             {
-               /* This is squirrely: We need to assure that when we advance the
-                * frame in post_frame, THEN we're referring to the frame to
-                * load into. If we refer directly to read_ptr, then we'll end
-                * up never reading the input for read_frame_count itself, which
-                * will make the other side unhappy. */
-               netplay->run_ptr           = PREV_PTR(load_ptr);
-               netplay->run_frame_count   = load_frame_count - 1;
+               /* This is squirrely:
+                * We need to assure that when we advance the frame in post_frame,
+                * THEN we're referring to the frame to load into.
+                * If we refer directly to read_ptr,
+                * then we'll end up never reading the input for read_frame_count itself,
+                * which will make the other side unhappy. */
+               netplay->run_ptr         = PREV_PTR(load_ptr);
+               netplay->run_frame_count = load_frame_count - 1;
+
                if (frame > netplay->self_frame_count)
                {
                   netplay->self_ptr         = netplay->run_ptr;
@@ -5808,28 +5786,122 @@ static bool netplay_get_cmd(netplay_t *netplay,
                }
             }
 
-            /* Don't expect earlier data from other clients */
-            for (client = 0; client < MAX_CLIENTS; client++)
+            /* Don't expect earlier data from other clients. */
+            for (i = 0; i < MAX_CLIENTS; i++)
             {
-               if (!(netplay->connected_players & (1<<client)))
+               if (!(netplay->connected_players & (1 << i)))
                   continue;
 
-               if (frame > netplay->read_frame_count[client])
+               if (frame > netplay->read_frame_count[i])
                {
-                  netplay->read_ptr[client] = load_ptr;
-                  netplay->read_frame_count[client] = load_frame_count;
+                  netplay->read_ptr[i]         = load_ptr;
+                  netplay->read_frame_count[i] = load_frame_count;
                }
             }
 
-            /* Make sure our states are correct */
+            /* Make sure our states are correct. */
             netplay->savestate_request_outstanding = false;
             netplay->other_ptr                     = load_ptr;
             netplay->other_frame_count             = load_frame_count;
 
-#ifdef DEBUG_NETPLAY_STEPS
-            RARCH_LOG("[Netplay] Loading state at %u\n", load_frame_count);
-            print_state(netplay);
-#endif
+            break;
+         }
+
+      case NETPLAY_CMD_RESET:
+         {
+            uint32_t i;
+            uint32_t frame;
+            size_t   reset_ptr;
+            uint32_t reset_frame_count;
+
+            if (netplay->is_server)
+            {
+               RARCH_ERR("[Netplay] NETPLAY_CMD_RESET from client.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
+
+            if (cmd_size != sizeof(frame))
+            {
+               RARCH_ERR("[Netplay] Received invalid payload size for NETPLAY_CMD_RESET.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
+
+            /* Only players may reset the core. */
+            if (connection->mode != NETPLAY_CONNECTION_PLAYING &&
+                  connection->mode != NETPLAY_CONNECTION_SLAVE)
+            {
+               RARCH_ERR("[Netplay] Netplay core reset from a spectator.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
+
+            /* Make sure we're ready for it. */
+            if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
+            {
+               if (!netplay->is_replay)
+               {
+                  netplay->is_replay          = true;
+                  netplay->replay_ptr         = netplay->run_ptr;
+                  netplay->replay_frame_count = netplay->run_frame_count;
+                  netplay_wait_and_init_serialization(netplay);
+                  netplay->is_replay          = false;
+               }
+               else
+                  netplay_wait_and_init_serialization(netplay);
+            }
+
+            RECV(&frame, sizeof(frame))
+               return false;
+            frame = ntohl(frame);
+
+            reset_ptr         = netplay->server_ptr;
+            reset_frame_count = netplay->server_frame_count;
+
+            if (frame != reset_frame_count)
+            {
+               RARCH_ERR("[Netplay] Netplay core reset out of order!\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
+
+            if (!netplay_delta_frame_ready(netplay,
+                  &netplay->buffer[reset_ptr], reset_frame_count))
+               /* Hopefully it will be ready after another round of input. */
+               goto shrt;
+
+            netplay->force_reset = true;
+
+            /* This is squirrely:
+             * We need to assure that when we advance the frame in post_frame,
+             * THEN we're referring to the frame to load into.
+             * If we refer directly to read_ptr,
+             * then we'll end up never reading the input for read_frame_count itself,
+             * which will make the other side unhappy. */
+
+            netplay->run_ptr         = PREV_PTR(reset_ptr);
+            netplay->run_frame_count = reset_frame_count - 1;
+
+            if (frame > netplay->self_frame_count)
+            {
+               netplay->self_ptr         = netplay->run_ptr;
+               netplay->self_frame_count = netplay->run_frame_count;
+            }
+
+            /* Don't expect earlier data from other clients. */
+            for (i = 0; i < MAX_CLIENTS; i++)
+            {
+               if (!(netplay->connected_players & (1 << i)))
+                  continue;
+
+               if (frame > netplay->read_frame_count[i])
+               {
+                  netplay->read_ptr[i]         = reset_ptr;
+                  netplay->read_frame_count[i] = reset_frame_count;
+               }
+            }
+
+            /* Make sure our states are correct. */
+            netplay->savestate_request_outstanding = false;
+            netplay->other_ptr                     = reset_ptr;
+            netplay->other_frame_count             = reset_frame_count;
 
             break;
          }
