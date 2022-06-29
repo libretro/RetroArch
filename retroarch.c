@@ -821,9 +821,7 @@ void retroarch_path_set_redirect(settings_t *settings)
       path_basedir(new_savefile_dir);
 
       if (string_is_empty(new_savefile_dir))
-         RARCH_LOG("Cannot resolve save file path.\n",
-            msg_hash_to_str(MSG_REVERTING_SAVEFILE_DIRECTORY_TO),
-            new_savefile_dir);
+         RARCH_LOG("Cannot resolve save file path.\n");
       else if (sort_savefiles_enable || sort_savefiles_by_content_enable)
          RARCH_LOG("Saving files in content directory is set. This overrides other save file directory settings.\n");
    }
@@ -837,12 +835,24 @@ void retroarch_path_set_redirect(settings_t *settings)
       path_basedir(new_savestate_dir);
 
       if (string_is_empty(new_savestate_dir))
-         RARCH_LOG("Cannot resolve save state file path.\n",
-            msg_hash_to_str(MSG_REVERTING_SAVESTATE_DIRECTORY_TO),
-            new_savestate_dir);
+         RARCH_LOG("Cannot resolve save state file path.\n");
       else if (sort_savestates_enable || sort_savestates_by_content_enable)
          RARCH_LOG("Saving save states in content directory is set. This overrides other save state file directory settings.\n");
    }
+
+#ifdef HAVE_NETWORKING
+   /* Special save directory for netplay clients. */
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
+         !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
+   {
+      fill_pathname_join(new_savefile_dir, new_savefile_dir, ".netplay",
+         sizeof(new_savefile_dir));
+
+      if (!path_is_directory(new_savefile_dir) &&
+            !path_mkdir(new_savefile_dir))
+         path_basedir(new_savefile_dir);
+   }
+#endif
 
    if (system && !string_is_empty(system->library_name))
    {
