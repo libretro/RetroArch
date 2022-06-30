@@ -3165,7 +3165,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NOT_FOUND,
-   "Gagal melacak konten yang cocok berdasar CRC atau nama berkas"
+   "Gagal melacak konten yang cocok berdasarkan CRC atau nama berkas"
    )
 
 /* Unused (Only Exist in Translation Files) */
