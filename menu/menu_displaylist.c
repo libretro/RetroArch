@@ -137,7 +137,7 @@
 #define BYTES_TO_GB(bytes) (((bytes) / 1024) / 1024 / 1024)
 
 #ifdef HAVE_NETWORKING
-#if !defined(HAVE_SOCKET_LEGACY) && (!defined(SWITCH) || defined(SWITCH) && defined(HAVE_LIBNX)) || defined(GEKKO)
+#if !defined(HAVE_SOCKET_LEGACY) || defined(GEKKO)
 #include <net/net_ifinfo.h>
 #endif
 #endif
@@ -3913,7 +3913,7 @@ static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
 #endif
 
 #ifdef HAVE_NETWORKING
-#if !defined (HAVE_SOCKET_LEGACY) || defined(GEKKO)
+#if !defined(HAVE_SOCKET_LEGACY) || defined(GEKKO)
    if (menu_entries_append_enum(info_list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION),
          msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_INFORMATION),
@@ -7185,32 +7185,34 @@ unsigned menu_displaylist_build_list(
             count++;
          break;
       case DISPLAYLIST_NETWORK_INFO:
-#if defined(HAVE_NETWORKING) && (!defined(HAVE_SOCKET_LEGACY) && (!defined(SWITCH) || defined(SWITCH) && defined(HAVE_LIBNX)) || defined(GEKKO))
-         network_init();
+#ifdef HAVE_NETWORKING
+#if !defined(HAVE_SOCKET_LEGACY) || defined(GEKKO)
          {
-            net_ifinfo_t      netlist;
+            net_ifinfo_t interfaces = {0};
 
-            if (net_ifinfo_new(&netlist))
+            network_init();
+
+            if (net_ifinfo_new(&interfaces))
             {
-               unsigned k;
-               for (k = 0; k < netlist.size; k++)
+               size_t i;
+               char buf[768];
+
+               for (i = 0; i < interfaces.size; i++)
                {
-                  char tmp[255];
+                  struct net_ifinfo_entry *entry = &interfaces.entries[i];
 
-                  tmp[0] = '\0';
-
-                  snprintf(tmp, sizeof(tmp), "%s (%s) : %s\n",
-                        msg_hash_to_str(MSG_INTERFACE),
-                        netlist.entries[k].name, netlist.entries[k].host);
-                  if (menu_entries_append_enum(list, tmp, "",
-                           MENU_ENUM_LABEL_NETWORK_INFO_ENTRY,
-                           MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
+                  snprintf(buf, sizeof(buf), "%s (%s) : %s\n",
+                     msg_hash_to_str(MSG_INTERFACE), entry->name, entry->host);
+                  if (menu_entries_append_enum(list, buf, entry->name,
+                        MENU_ENUM_LABEL_NETWORK_INFO_ENTRY,
+                        MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
                      count++;
                }
 
-               net_ifinfo_free(&netlist);
+               net_ifinfo_free(&interfaces);
             }
          }
+#endif
 #endif
          break;
       case DISPLAYLIST_OPTIONS_CHEATS:
@@ -10486,6 +10488,10 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 
       /* Get rid of any room that is not running RetroArch. */
       if (!room->is_retroarch)
+         continue;
+
+      /* Get rid of rooms running older (incompatible) versions. */
+      if (!netplay_compatible_version(room->retroarch_version))
          continue;
 
       /* Get rid of any room that is not connectable,

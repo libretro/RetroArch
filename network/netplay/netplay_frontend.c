@@ -8889,6 +8889,44 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 
 /* Netplay Utils */
 
+bool netplay_compatible_version(const char *version)
+{
+   static const uint64_t min_version = 0x0001000900010000ULL; /* 1.9.1 */
+   size_t   version_parts = 0;
+   uint64_t version_value = 0;
+   char     *version_end  = NULL;
+   bool     loop          = true;
+
+   /* Convert the version string to an integer first. */
+   do
+   {
+      uint16_t version_part = (uint16_t)strtoul(version, &version_end, 10);
+
+      if (version_end == version) /* Nothing to convert */
+         return false;
+
+      switch (*version_end)
+      {
+         case '\0': /* End of version string */
+            loop = false;
+            break;
+         case '.':
+            version = (const char*)version_end + 1;
+            break;
+         default: /* Invalid version string */
+            return false;
+      }
+
+      /* We only want enough bits as to fit into version_value. */
+      if (version_parts++ < (sizeof(version_value) / sizeof(version_part)))
+         version_value |= (uint64_t)version_part <<
+            ((sizeof(version_value) << 3) -
+               ((sizeof(version_part) << 3) * version_parts));
+   } while (loop);
+
+   return version_value >= min_version;
+}
+
 bool netplay_decode_hostname(const char *hostname,
       char *address, unsigned *port, char *session, size_t len)
 {
