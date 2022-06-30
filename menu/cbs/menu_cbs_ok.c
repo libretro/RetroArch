@@ -5984,21 +5984,11 @@ static int action_ok_netplay_connect_room(const char *path, const char *label,
 
    room = &net_st->room_list[room_index];
 
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-      generic_action_ok_command(CMD_EVENT_NETPLAY_DEINIT);
-
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
-
    if (room->host_method == NETPLAY_HOST_METHOD_MITM)
       snprintf(hostname, sizeof(hostname), "%s|%d|%s",
          room->mitm_address, room->mitm_port, room->mitm_session);
    else
       snprintf(hostname, sizeof(hostname), "%s|%d", room->address, room->port);
-
-#if 0
-   RARCH_LOG("[Lobby] Connecting to: %s with game: %s/%08x\n",
-      hostname, room->gamename, room->gamecrc);
-#endif
 
    task_push_netplay_crc_scan(room->gamecrc, room->gamename,
       room->subsystem_name, room->corename, hostname);
@@ -7337,81 +7327,66 @@ static int action_ok_netplay_enable_host(const char *path,
 {
    if (command_event(CMD_EVENT_NETPLAY_ENABLE_HOST, NULL))
       return generic_action_ok_command(CMD_EVENT_RESUME);
+
    return -1;
 }
 
-static void action_ok_netplay_enable_client_hostname_cb(
-   void *ignore, const char *hostname)
+static void action_ok_netplay_enable_client_hostname_cb(void *userdata,
+      const char *line)
 {
-
-   if (hostname && hostname[0])
+   if (!string_is_empty(line))
    {
-      bool contentless   = false;
-      bool is_inited     = false;
-      char *tmp_hostname = strdup(hostname);
-
-      content_get_status(&contentless, &is_inited);
-
-      if (!is_inited)
+      if (!task_push_netplay_content_reload(line))
       {
-         command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
-               (void*)tmp_hostname);
+         command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+         command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, (void*)line);
+
          runloop_msg_queue_push(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
-            1, 480, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      }
-      else
-      {
-         command_event(CMD_EVENT_NETPLAY_INIT_DIRECT,
-               (void*)tmp_hostname);
-         generic_action_ok_command(CMD_EVENT_RESUME);
+            1, 480, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
 
-      free(tmp_hostname);
+      menu_input_dialog_end();
+      retroarch_menu_running_finished(false);
    }
    else
-   {
       menu_input_dialog_end();
-      return;
-   }
-
-   menu_input_dialog_end();
-   retroarch_menu_running_finished(false);
 }
 
 static int action_ok_netplay_enable_client(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_input_ctx_line_t line;
-   settings_t       *settings = config_get_ptr();
+   settings_t *settings       = config_get_ptr();
    const char *netplay_server = settings->paths.netplay_server;
-
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-      generic_action_ok_command(CMD_EVENT_NETPLAY_DEINIT);
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
    if (!string_is_empty(netplay_server))
    {
       action_ok_netplay_enable_client_hostname_cb(NULL, netplay_server);
+
       return 0;
    }
-   line.label         = msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS);
-   line.label_setting = "no_setting";
-   line.type          = 0;
-   line.idx           = 0;
-   line.cb            = action_ok_netplay_enable_client_hostname_cb;
+   else
+   {
+      menu_input_ctx_line_t hostname = {0};
 
-   if (menu_input_dialog_start(&line))
-      return 0;
+      hostname.label         =
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS);
+      hostname.label_setting = "no_setting";
+      hostname.cb            = action_ok_netplay_enable_client_hostname_cb;
+
+      if (menu_input_dialog_start(&hostname))
+         return 0;
+   }
+
    return -1;
 }
 
 static int action_ok_netplay_disconnect(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   generic_action_ok_command(CMD_EVENT_NETPLAY_DISCONNECT);
+   command_event(CMD_EVENT_NETPLAY_DISCONNECT, NULL);
 
    return generic_action_ok_command(CMD_EVENT_RESUME);
 }
