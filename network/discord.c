@@ -181,11 +181,6 @@ static void handle_discord_join_cb(retro_task_t *task, void *task_data,
    room = netplay_room_get(0);
    if (room)
    {
-      if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-         deinit_netplay();
-
-      netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
-
       if (room->host_method == NETPLAY_HOST_METHOD_MITM)
          snprintf(hostname, sizeof(hostname), "%s|%d|%s",
             room->mitm_address, room->mitm_port, room->mitm_session);
@@ -193,12 +188,12 @@ static void handle_discord_join_cb(retro_task_t *task, void *task_data,
          snprintf(hostname, sizeof(hostname), "%s|%d",
             room->address, room->port);
 
-      task_push_netplay_crc_scan(room->gamecrc, room->gamename,
-         room->subsystem_name, room->corename, hostname);
-
       discord_st->connecting = true;
       if (discord_st->ready)
          discord_update(PRESENCE_NETPLAY_CLIENT);
+
+      task_push_netplay_crc_scan(room->gamecrc, room->gamename,
+         room->subsystem_name, room->corename, hostname);
    }
 
    netplay_rooms_free();

@@ -47,11 +47,15 @@
 
 enum
 {
-   STATE_NONE,
+   /* values */
+   STATE_NONE             = 0,
    STATE_LOAD,
    STATE_LOAD_SUBSYSTEM,
    STATE_LOAD_CONTENTLESS,
-   STATE_LOAD_CURRENT
+   /* values mask */
+   STATE_MASK             = 0xFF,
+   /* flags */
+   STATE_RELOAD           = 0x100
 };
 
 struct netplay_crc_scan_state
@@ -67,6 +71,7 @@ struct netplay_crc_scan_data
       struct string_list *subsystem_content;
       uint32_t crc;
       char content[NETPLAY_HOST_LONGSTR_LEN];
+      char content_path[PATH_MAX_LENGTH];
       char subsystem[NETPLAY_HOST_LONGSTR_LEN];
       char extension[32];
       bool core_loaded;
@@ -81,6 +86,8 @@ struct netplay_crc_scan_data
    char core[PATH_MAX_LENGTH];
    char hostname[512];
 };
+
+static struct netplay_crc_scan_state scan_state = {0};
 
 static bool find_content_by_crc(playlist_config_t *playlist_config,
       const struct string_list *playlists, uint32_t crc,
@@ -242,6 +249,9 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
    const char                    *title = NULL;
    struct string_list content_list      = {0};
 
+   if (state->state != STATE_NONE)
+      goto finished; /* We already have what we need. */
+
    /* We really can't do much without the core's path. */
    if (string_is_empty(data->core))
    {
@@ -255,8 +265,11 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
    {
       title        =
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND);
-      state->state = data->current.core_loaded ? STATE_LOAD_CURRENT :
-         STATE_LOAD_CONTENTLESS;
+      state->state = STATE_LOAD_CONTENTLESS;
+
+      if (data->current.core_loaded)
+         state->state |= STATE_RELOAD;
+
       goto finished;
    }
 
@@ -273,7 +286,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 
          title        = msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND);
-         state->state = STATE_LOAD_CURRENT;
+         state->state = STATE_LOAD | STATE_RELOAD;
          goto finished;
       }
    }
@@ -297,7 +310,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 
                title        = msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND);
-               state->state = STATE_LOAD_CURRENT;
+               state->state = STATE_LOAD | STATE_RELOAD;
                goto finished;
             }
          }
@@ -385,7 +398,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 
                title        = msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND);
-               state->state = STATE_LOAD_CURRENT;
+               state->state = STATE_LOAD_SUBSYSTEM | STATE_RELOAD;
                goto finished;
             }
          }
@@ -440,24 +453,27 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
    struct netplay_crc_scan_data  *data  =
       (struct netplay_crc_scan_data*)task_data;
 
-   switch (state->state)
+   switch (state->state & STATE_MASK)
    {
       case STATE_LOAD:
          {
-            const char *content_path        =
-               data->content_paths.elems[0].data;
             content_ctx_info_t content_info = {0};
+            const char *content_path        = (state->state & STATE_RELOAD) ?
+               data->current.content_path : data->content_paths.elems[0].data;
+
+            if (data->current.core_loaded)
+               command_event(CMD_EVENT_UNLOAD_CORE, NULL);
 
             RARCH_LOG("[Lobby] Loading core '%s' with content file '%s'.\n",
                data->core, content_path);
 
-            if (!data->current.core_loaded)
-               task_push_load_new_core(data->core,
-                  NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
-
+            command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
             command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
                data->hostname);
 
+            task_push_load_new_core(data->core,
+               NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
             task_push_load_content_with_core(content_path,
                &content_info, CORE_TYPE_PLAIN, NULL, NULL);
          }
@@ -465,22 +481,41 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
 
       case STATE_LOAD_SUBSYSTEM:
          {
-            RARCH_LOG("[Lobby] Loading core '%s' with subsystem '%s'.\n",
-               data->core, data->subsystem);
+            const char *subsystem;
+            struct string_list *subsystem_content;
 
-            if (!data->current.core_loaded)
-               task_push_load_new_core(data->core,
-                  NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
+            if (data->current.core_loaded)
+               command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+
+            if (state->state & STATE_RELOAD)
+            {
+               subsystem         = data->current.subsystem;
+               subsystem_content = data->current.subsystem_content;
+            }
+            else
+            {
+               subsystem         = data->subsystem;
+               subsystem_content = &data->content_paths;
+            }
+
+            RARCH_LOG("[Lobby] Loading core '%s' with subsystem '%s'.\n",
+               data->core, subsystem);
+
+            command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+
+            task_push_load_new_core(data->core,
+               NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
 
             content_clear_subsystem();
 
-            if (content_set_subsystem_by_name(data->subsystem))
+            if (content_set_subsystem_by_name(subsystem))
             {
                size_t i;
                content_ctx_info_t content_info = {0};
 
-               for (i = 0; i < data->content_paths.size; i++)
-                  content_add_subsystem(data->content_paths.elems[i].data);
+               for (i = 0; i < subsystem_content->size; i++)
+                  content_add_subsystem(subsystem_content->elems[i].data);
 
                command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
                   data->hostname);
@@ -494,6 +529,8 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
 
                /* Disable netplay if we don't have the subsystem. */
                netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
+
+               command_event(CMD_EVENT_UNLOAD_CORE, NULL);
             }
          }
          break;
@@ -502,33 +539,40 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
          {
             content_ctx_info_t content_info = {0};
 
+            if (data->current.core_loaded)
+               command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+
             RARCH_LOG("[Lobby] Loading contentless core '%s'.\n", data->core);
 
+            command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
             command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
                data->hostname);
 
             task_push_load_new_core(data->core,
                NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
-
             task_push_start_current_core(&content_info);
          }
          break;
 
-      case STATE_LOAD_CURRENT:
+      case STATE_NONE:
          {
-            RARCH_LOG("[Lobby] Loading core '%s' with current content.\n",
-               data->core);
+            if (state->state & STATE_RELOAD)
+            {
+               if (data->current.core_loaded)
+                  command_event(CMD_EVENT_UNLOAD_CORE, NULL);
 
-            command_event(CMD_EVENT_NETPLAY_INIT_DIRECT, data->hostname);
-            command_event(CMD_EVENT_RESUME, NULL);
+               command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+               command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
+                  data->hostname);
+            }
+            else
+               RARCH_WARN("[Lobby] Nothing to load.\n");
          }
          break;
 
-      case STATE_NONE:
-         RARCH_WARN("[Lobby] Nothing to load.\n");
-         /* fallthrough */
       default:
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
          break;
    }
 }
@@ -554,7 +598,6 @@ static void task_netplay_crc_scan_cleanup(retro_task_t *task)
 bool task_push_netplay_crc_scan(uint32_t crc, const char *content,
       const char *subsystem, const char *core, const char *hostname)
 {
-   static struct netplay_crc_scan_state state = {0};
    size_t i;
    struct netplay_crc_scan_data *data;
    retro_task_t *task;
@@ -564,7 +607,7 @@ bool task_push_netplay_crc_scan(uint32_t crc, const char *content,
    struct retro_system_info *system    = &runloop_state_get_ptr()->system.info;
 
    /* Do not run more than one CRC scan task at a time. */
-   if (state.running)
+   if (scan_state.running)
       return false;
 
    data = (struct netplay_crc_scan_data*)calloc(1, sizeof(*data));
@@ -574,9 +617,6 @@ bool task_push_netplay_crc_scan(uint32_t crc, const char *content,
    {
       free(data);
       free(task);
-
-      /* Make sure we disable netplay on failure. */
-      netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
 
       return false;
    }
@@ -637,8 +677,12 @@ bool task_push_netplay_crc_scan(uint32_t crc, const char *content,
 
    pcontent   = path_get(RARCH_PATH_CONTENT);
    if (!string_is_empty(pcontent))
+   {
+      strlcpy(data->current.content_path, pcontent,
+         sizeof(data->current.content_path));
       strlcpy(data->current.extension, path_get_extension(pcontent),
          sizeof(data->current.extension));
+   }
 
    psubsystem = path_get(RARCH_PATH_SUBSYSTEM);
    if (!string_is_empty(psubsystem))
@@ -652,16 +696,96 @@ bool task_push_netplay_crc_scan(uint32_t crc, const char *content,
    data->current.core_loaded =
       string_is_equal_case_insensitive(system->library_name, core);
 
-   state.state   = STATE_NONE;
-   state.running = true;
+   scan_state.state   = STATE_NONE;
+   scan_state.running = true;
 
    task->handler   = task_netplay_crc_scan_handler;
    task->callback  = task_netplay_crc_scan_callback;
    task->cleanup   = task_netplay_crc_scan_cleanup;
    task->task_data = data;
-   task->state     = &state;
+   task->state     = &scan_state;
    task->title     = strdup(
       msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_LOOK));
+
+   task_queue_push(task);
+
+   return true;
+}
+
+bool task_push_netplay_content_reload(const char *hostname)
+{
+   struct netplay_crc_scan_data *data;
+   retro_task_t *task;
+   const char *pcore;
+   bool contentless, is_inited;
+
+   /* Do not run more than one CRC scan task at a time. */
+   if (scan_state.running)
+      return false;
+
+   pcore = path_get(RARCH_PATH_CORE);
+   if (string_is_empty(pcore) || string_is_equal(pcore, "builtin"))
+      return false; /* Nothing to reload. */
+
+   data = (struct netplay_crc_scan_data*)calloc(1, sizeof(*data));
+   task = task_init();
+
+   if (!data || !task)
+   {
+      free(data);
+      free(task);
+
+      return false;
+   }
+
+   scan_state.state = STATE_RELOAD;
+
+   strlcpy(data->core, pcore, sizeof(data->core));
+   strlcpy(data->hostname, hostname, sizeof(data->hostname));
+
+   content_get_status(&contentless, &is_inited);
+   if (contentless)
+   {
+      scan_state.state |= STATE_LOAD_CONTENTLESS;
+   }
+   else if (is_inited)
+   {
+      const char *psubsystem = path_get(RARCH_PATH_SUBSYSTEM);
+
+      if (!string_is_empty(psubsystem))
+      {
+         strlcpy(data->current.subsystem, psubsystem,
+            sizeof(data->current.subsystem));
+
+         if (path_get_subsystem_list())
+            data->current.subsystem_content =
+               string_list_clone(path_get_subsystem_list());
+
+         scan_state.state |= STATE_LOAD_SUBSYSTEM;
+      }
+      else if (!string_is_empty(path_get(RARCH_PATH_BASENAME)))
+      {
+         const char *pcontent = path_get(RARCH_PATH_CONTENT);
+
+         if (!string_is_empty(pcontent))
+         {
+            strlcpy(data->current.content_path, pcontent,
+               sizeof(data->current.content_path));
+
+            scan_state.state |= STATE_LOAD;
+         }
+      }
+   }
+
+   data->current.core_loaded = true;
+
+   scan_state.running = true;
+
+   task->handler   = task_netplay_crc_scan_handler;
+   task->callback  = task_netplay_crc_scan_callback;
+   task->cleanup   = task_netplay_crc_scan_cleanup;
+   task->task_data = data;
+   task->state     = &scan_state;
 
    task_queue_push(task);
 
@@ -670,6 +794,11 @@ bool task_push_netplay_crc_scan(uint32_t crc, const char *content,
 #else
 bool task_push_netplay_crc_scan(uint32_t crc, const char *content,
       const char *subsystem, const char *core, const char *hostname)
+{
+   return false;
+}
+
+bool task_push_netplay_content_reload(const char *hostname)
 {
    return false;
 }
