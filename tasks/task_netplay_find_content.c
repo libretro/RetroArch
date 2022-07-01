@@ -557,15 +557,28 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
 
       case STATE_NONE:
          {
-            if (state->state & STATE_RELOAD)
+            if (data->current.core_loaded && (state->state & STATE_RELOAD))
             {
-               if (data->current.core_loaded)
-                  command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+               command_event(CMD_EVENT_UNLOAD_CORE, NULL);
 
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
                command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
                   data->hostname);
+
+               task_push_load_new_core(data->core,
+                  NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
+
+               if (!string_is_empty(data->current.subsystem))
+               {
+                  content_clear_subsystem();
+                  content_set_subsystem_by_name(data->current.subsystem);
+               }
+
+               runloop_msg_queue_push(
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
+                  1, 480, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             }
             else
                RARCH_WARN("[Lobby] Nothing to load.\n");
@@ -758,10 +771,14 @@ bool task_push_netplay_content_reload(const char *hostname)
             sizeof(data->current.subsystem));
 
          if (path_get_subsystem_list())
+         {
             data->current.subsystem_content =
                string_list_clone(path_get_subsystem_list());
 
-         scan_state.state |= STATE_LOAD_SUBSYSTEM;
+            if (data->current.subsystem_content &&
+                  data->current.subsystem_content->size > 0)
+               scan_state.state |= STATE_LOAD_SUBSYSTEM;
+         }
       }
       else if (!string_is_empty(path_get(RARCH_PATH_BASENAME)))
       {
