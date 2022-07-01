@@ -3067,6 +3067,10 @@ MSG_HASH(
    "netplay_show_only_connectable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
+   "netplay_show_only_installed_cores"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_SHOW_PASSWORDED,
    "netplay_show_passworded"
    )

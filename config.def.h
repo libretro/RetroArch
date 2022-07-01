@@ -1202,8 +1202,9 @@ static const bool audio_enable_menu_bgm    = false;
 #endif
 
 /* Netplay lobby filters */
-#define DEFAULT_NETPLAY_SHOW_ONLY_CONNECTABLE true
-#define DEFAULT_NETPLAY_SHOW_PASSWORDED       true
+#define DEFAULT_NETPLAY_SHOW_ONLY_CONNECTABLE     true
+#define DEFAULT_NETPLAY_SHOW_ONLY_INSTALLED_CORES false
+#define DEFAULT_NETPLAY_SHOW_PASSWORDED           true
 
 /* Publicly announce netplay */
 #define DEFAULT_NETPLAY_PUBLIC_ANNOUNCE true
