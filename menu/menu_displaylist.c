@@ -7953,8 +7953,9 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_NETPLAY_LOBBY_FILTERS_LIST:
          {
             menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_NETPLAY_SHOW_ONLY_CONNECTABLE, PARSE_ONLY_BOOL, true},
-               {MENU_ENUM_LABEL_NETPLAY_SHOW_PASSWORDED,       PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_NETPLAY_SHOW_ONLY_CONNECTABLE,     PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_NETPLAY_SHOW_ONLY_INSTALLED_CORES, PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_NETPLAY_SHOW_PASSWORDED,           PARSE_ONLY_BOOL, true},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -10412,17 +10413,21 @@ static unsigned menu_displaylist_build_shader_parameter(
 #ifdef HAVE_NETWORKING
 unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 {
-   int i;
+   int i, j;
    char buf[256];
    char passworded[64];
    char country[8];
    const char *room_type;
    struct netplay_room *room;
-   unsigned count             = 0;
-   settings_t *settings       = config_get_ptr();
-   net_driver_state_t *net_st = networking_state_get_ptr();
-   bool show_only_connectable = settings->bools.netplay_show_only_connectable;
-   bool show_passworded       = settings->bools.netplay_show_passworded;
+   unsigned count                 = 0;
+   core_info_list_t *coreinfos    = NULL;
+   settings_t *settings           = config_get_ptr();
+   net_driver_state_t *net_st     = networking_state_get_ptr();
+   bool show_only_connectable     =
+      settings->bools.netplay_show_only_connectable;
+   bool show_only_installed_cores =
+      settings->bools.netplay_show_only_installed_cores;
+   bool show_passworded           = settings->bools.netplay_show_passworded;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, list);
 
@@ -10482,6 +10487,8 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
       count++;
 #endif
 
+   core_info_get_list(&coreinfos);
+
    for (i = 0; i < net_st->room_count; i++)
    {
       room = &net_st->room_list[i];
@@ -10509,6 +10516,20 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
          room_type = msg_hash_to_str(MSG_INTERNET_RELAY);
       else
          room_type = msg_hash_to_str(MSG_INTERNET);
+
+      /* Get rid of any room running a core that we don't have installed,
+         if the user opt-in. */
+      if (show_only_installed_cores)
+      {
+         for (j = 0; j < coreinfos->count; j++)
+         {
+            if (string_is_equal_case_insensitive(coreinfos->list[j].core_name,
+                  room->corename))
+               break;
+         }
+         if (j >= coreinfos->count)
+            continue;
+      }
 
       /* Get rid of any room that is passworded,
          if the user opt-in. */

@@ -6607,6 +6607,10 @@ MSG_HASH(
    "Only Connectable Rooms"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
+   "Only Installed Cores"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
    "Passworded Rooms"
    )
