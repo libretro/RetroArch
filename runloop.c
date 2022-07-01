@@ -3039,13 +3039,13 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT:
       {
          int result           = RETRO_SAVESTATE_CONTEXT_NORMAL;
-         settings_t
-            *settings         = config_get_ptr();
 #if defined(HAVE_RUNAHEAD) || defined(HAVE_NETWORKING)
          if (runloop_st->request_fast_savestate)
          {
 #ifdef HAVE_RUNAHEAD
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+            settings_t
+            *settings         = config_get_ptr();
             result = (settings->bools.run_ahead_secondary_instance
                && runloop_st->runahead_secondary_core_available
                && secondary_core_ensure_exists(settings) ? RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_BINARY : RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_INSTANCE);
