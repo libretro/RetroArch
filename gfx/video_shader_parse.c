@@ -891,8 +891,7 @@ static bool video_shader_is_shader_chain_config(config_file_t *conf)
       a shader chain config, vs a config which may only have 
       parameter values and texture overrides
    */
-   
-   return config_get_entry(conf, "shaders");
+   return config_get_entry(conf, "shaders") != NULL;
 }
 
 static config_file_t *video_shader_get_root_preset_config(const char *path)
