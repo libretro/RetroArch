@@ -340,6 +340,7 @@ typedef struct xmb_handle
    size_t categories_selection_ptr_old;
    size_t selection_ptr_old;
    size_t fullscreen_thumbnail_selection;
+   size_t playlist_index;
 
    /* size of the current list */
    size_t list_size;
@@ -422,6 +423,8 @@ typedef struct xmb_handle
    /* Load Content file browser */
    bool is_file_list;
    bool is_quick_menu;
+   bool is_state_slot;
+   bool libretro_running;
 
    /* Whether to show entry index for current list */
    bool entry_idx_enabled;
@@ -784,11 +787,10 @@ static float *xmb_gradient_ident(unsigned xmb_color_theme)
       case XMB_THEME_ICE_COLD:
          return &gradient_ice_cold[0];
       case XMB_THEME_LEGACY_RED:
+         return &gradient_legacy_red[0];
       default:
-         break;
+         return &gradient_dark[0];
    }
-
-   return &gradient_legacy_red[0];
 }
 
 static size_t xmb_list_get_selection(void *data)
@@ -1147,8 +1149,8 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
    xmb->savestate_thumbnail_file_path[0] = '\0';
 
    /* Savestate thumbnails are only relevant
-    * when viewing the quick menu */
-   if (!xmb->is_quick_menu)
+    * when viewing the running quick menu or state slots */
+   if (!((xmb->is_quick_menu || xmb->is_state_slot) && xmb->libretro_running))
       return;
 
    if (savestate_thumbnail_enable)
@@ -1164,7 +1166,8 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
       if (!string_is_empty(entry.label))
       {
-         if (string_is_equal(entry.label, "state_slot") ||
+         if (string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT ||
+             string_is_equal(entry.label, "state_slot") ||
              string_is_equal(entry.label, "loadstate") ||
              string_is_equal(entry.label, "savestate"))
          {
@@ -1172,6 +1175,13 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
             runloop_state_t *runloop_st = runloop_state_get_ptr();
 
             path[0] = '\0';
+
+            /* State slot dropdown */
+            if (string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
+            {
+               state_slot = menu_navigation_get_selection() - 1;
+               xmb->is_state_slot = true;
+            }
 
             if (state_slot > 0)
                snprintf(path, sizeof(path), "%s%d",
@@ -1185,9 +1195,13 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
             strlcat(path, FILE_PATH_PNG_EXTENSION, sizeof(path));
 
             if (path_is_valid(path))
+            {
                strlcpy(
                      xmb->savestate_thumbnail_file_path, path,
                      sizeof(xmb->savestate_thumbnail_file_path));
+
+               xmb->fullscreen_thumbnails_available = true;
+            }
          }
       }
    }
@@ -1336,6 +1350,9 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
             playlist_index = list->list[selection].entry_idx;
          }
 
+         /* Remember playlist index for Quick Menu fullscreen thumbnail title */
+         xmb->playlist_index = playlist_index;
+
          gfx_thumbnail_set_content_playlist(xmb->thumbnail_path_data,
                playlist_valid ? playlist_get_cached() : NULL, playlist_index);
          xmb->fullscreen_thumbnails_available = true;
@@ -1411,8 +1428,8 @@ static void xmb_update_savestate_thumbnail_image(void *data)
       return;
 
    /* Savestate thumbnails are only relevant
-    * when viewing the quick menu */
-   if (!xmb->is_quick_menu)
+    * when viewing the running quick menu or state slots */
+   if (!((xmb->is_quick_menu || xmb->is_state_slot) && xmb->libretro_running))
       return;
 
    /* If path is empty, just reset thumbnail */
@@ -1764,12 +1781,12 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
    }
 
    if (savestate_thumbnail_enable &&
-            xmb->is_quick_menu &&
-            (xmb->depth == 3))
+            ((xmb->is_quick_menu && xmb->depth >= 2) ||
+             (xmb->is_state_slot)))
    {
       /* This shows savestate thumbnail after
        * opening savestate submenu */
-      xmb_update_savestate_thumbnail_path(xmb, 0);
+      xmb_update_savestate_thumbnail_path(xmb, menu_navigation_get_selection());
       xmb_update_savestate_thumbnail_image(xmb);
    }
 }
@@ -2477,6 +2494,7 @@ static void xmb_populate_entries(void *data,
    xmb->is_quick_menu = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)) ||
                         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS)) ||
                         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_LIST));
+   xmb->is_state_slot = string_to_unsigned(path) == MENU_ENUM_LABEL_STATE_SLOT;
 
    xmb_set_title(xmb);
    if (menu_dynamic_wallpaper_enable)
@@ -2514,6 +2532,11 @@ static void xmb_populate_entries(void *data,
          (xmb->is_playlist || xmb->is_db_manager_list || xmb->is_file_list) &&
          !xmb->is_quick_menu &&
          !((xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS) && (xmb->depth > 2));
+
+   if ((xmb->is_quick_menu &&
+         (!string_is_empty(xmb->savestate_thumbnail_file_path) || !xmb->libretro_running)) ||
+               xmb->is_state_slot)
+      xmb->fullscreen_thumbnails_available = true;
 
    /* Hack: XMB gets into complete muddle when
     * performing 'complex' directory navigation
@@ -3866,12 +3889,16 @@ static void xmb_show_fullscreen_thumbnails(
    uintptr_t              alpha_tag   = (uintptr_t)
       &xmb->fullscreen_thumbnail_alpha;
 
+   char tmpstr[64];
+   tmpstr[0] = '\0';
+
    /* We can only enable fullscreen thumbnails if
     * current selection has at least one valid thumbnail
     * and all thumbnails for current selection are already
     * loaded/available */
    gfx_thumbnail_get_core_name(xmb->thumbnail_path_data, &core_name);
-   if (string_is_equal(core_name, "imageviewer"))
+   if (string_is_equal(core_name, "imageviewer") ||
+         !string_is_empty(xmb->savestate_thumbnail_file_path))
    {
       /* imageviewer content requires special treatment,
        * since only one thumbnail can ever be loaded
@@ -3880,6 +3907,8 @@ static void xmb_show_fullscreen_thumbnails(
                xmb->thumbnail_path_data, GFX_THUMBNAIL_RIGHT))
       {
          if (     xmb->thumbnails.right.status 
+               != GFX_THUMBNAIL_STATUS_AVAILABLE &&
+                  xmb->thumbnails.savestate.status
                != GFX_THUMBNAIL_STATUS_AVAILABLE)
             return;
       }
@@ -3931,9 +3960,36 @@ static void xmb_show_fullscreen_thumbnails(
 
    /* > Get entry label */
    if (!string_is_empty(selected_entry.rich_label))
-      thumbnail_label          = selected_entry.rich_label;
+      thumbnail_label = selected_entry.rich_label;
+   /* > State slot label */
+   else if (xmb->is_quick_menu && (
+            string_is_equal(selected_entry.label, "state_slot") ||
+            string_is_equal(selected_entry.label, "loadstate") ||
+            string_is_equal(selected_entry.label, "savestate")
+         ))
+   {
+      snprintf(tmpstr, sizeof(tmpstr), "%s %d",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
+            config_get_ptr()->ints.state_slot);
+      thumbnail_label = tmpstr;
+   }
+   else if (string_to_unsigned(selected_entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
+   {
+      snprintf(tmpstr, sizeof(tmpstr), "%s %s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
+            selected_entry.path);
+      thumbnail_label = tmpstr;
+   }
+   /* > Quick Menu playlist label */
+   else if (xmb->is_quick_menu)
+   {
+      const struct playlist_entry *entry = NULL;
+      playlist_get_index(playlist_get_cached(), xmb->playlist_index, &entry);
+      if (entry)
+         thumbnail_label = entry->label;
+   }
    else
-      thumbnail_label          = selected_entry.path;
+      thumbnail_label = selected_entry.path;
 
    /* > Sanity check */
    if (!string_is_empty(thumbnail_label))
@@ -3987,6 +4043,8 @@ static enum menu_action xmb_parse_menu_entry_action(
           *   and a sudden transition from fullscreen
           *   thumbnail to content is jarring... */
          if (xmb->is_file_list ||
+             xmb->is_quick_menu ||
+             xmb->is_state_slot ||
                ((action != MENU_ACTION_SELECT) &&
                 (action != MENU_ACTION_OK)))
             return MENU_ACTION_NOOP;
@@ -4027,6 +4085,10 @@ static enum menu_action xmb_parse_menu_entry_action(
          }
          break;
       case MENU_ACTION_START:
+         if ((xmb->is_quick_menu && xmb->libretro_running) ||
+               xmb->is_state_slot)
+            break;
+
          /* If this is a menu with thumbnails, attempt
           * to show fullscreen thumbnail view */
          if (xmb->fullscreen_thumbnails_available)
@@ -4039,6 +4101,16 @@ static enum menu_action xmb_parse_menu_entry_action(
             xmb_hide_fullscreen_thumbnails(xmb, false);
             if (xmb->fullscreen_thumbnails_available)
                xmb_show_fullscreen_thumbnails(xmb, selection);
+            new_action = MENU_ACTION_NOOP;
+         }
+         break;
+      case MENU_ACTION_SCAN:
+         if (xmb->fullscreen_thumbnails_available &&
+               ((xmb->is_quick_menu && !string_is_empty(xmb->savestate_thumbnail_file_path)) ||
+                (xmb->is_state_slot)))
+         {
+            xmb_hide_fullscreen_thumbnails(xmb, false);
+            xmb_show_fullscreen_thumbnails(xmb, menu_navigation_get_selection());
             new_action = MENU_ACTION_NOOP;
          }
          break;
@@ -4628,6 +4700,14 @@ static void xmb_draw_fullscreen_thumbnails(
       show_right_thumbnail = (right_thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE);
       show_left_thumbnail  = (left_thumbnail->status  == GFX_THUMBNAIL_STATUS_AVAILABLE);
 
+      if ((xmb->is_quick_menu && !string_is_empty(xmb->savestate_thumbnail_file_path)) ||
+            xmb->is_state_slot)
+      {
+         left_thumbnail       = &xmb->thumbnails.savestate;
+         show_left_thumbnail  = (left_thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE);
+         show_right_thumbnail = false;
+      }
+
       if (show_right_thumbnail)
          num_thumbnails++;
 
@@ -5114,15 +5194,16 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    /**************************/
    /* Draw thumbnails: START */
    /**************************/
+   xmb->libretro_running = libretro_running;
 
    /* Note: This is incredibly ugly, but there are
     * so many combinations here that we would go insane
     * trying to rationalise this any further... */
 
    /* Save state thumbnail, right side */
-   if (xmb->is_quick_menu &&
+   if ((xmb->is_quick_menu || xmb->is_state_slot) &&
          ((xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_AVAILABLE) ||
-         (xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_PENDING)))
+          (xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_PENDING)))
    {
       float thumb_width         = right_thumbnail_margin_width;
       float thumb_height        = thumbnail_margin_height_full;
@@ -5147,7 +5228,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
     * Quick Menu as well as when selecting "Information" for a playlist entry.
     * NOTE: This is currently a pretty crude check, simply going by menu depth
     * and not specifically identifying which menu we're actually in. */
-   else if (!((xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS) && (xmb->depth > 2)))
+   else if (!((xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS) &&
+         ((xmb->depth > 1 && libretro_running) || (xmb->depth > 2 && !libretro_running))))
    {
       bool show_right_thumbnail =
             (xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_AVAILABLE) ||
@@ -6639,6 +6721,9 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
          xmb_update_thumbnail_image(xmb);
    }
 
+   /* Have to reset this, otherwise savestate
+    * thumbnail won't update after fullscreen toggle */
+   gfx_thumbnail_reset(&xmb->thumbnails.savestate);
    xmb_update_savestate_thumbnail_image(xmb);
 }
 
@@ -6992,7 +7077,8 @@ static void xmb_toggle(void *userdata, bool menu_on)
    /* Have to reset this, otherwise savestate
     * thumbnail won't update after selecting
     * 'save state' option */
-   gfx_thumbnail_reset(&xmb->thumbnails.savestate);
+   if (xmb->is_quick_menu)
+      gfx_thumbnail_reset(&xmb->thumbnails.savestate);
 
    entry.duration     = XMB_DELAY * 2;
    entry.target_value = 1.0f;
