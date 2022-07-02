@@ -1443,7 +1443,7 @@ bool command_event_save_core_config(
    if (path_is_valid(core_path))
    {
       unsigned i;
-      char tmp[PATH_MAX_LENGTH];
+      char tmp[PATH_MAX_LENGTH + 8];
       RARCH_LOG("[Config]: %s\n", msg_hash_to_str(MSG_USING_CORE_NAME_FOR_NEW_CONFIG));
 
       fill_pathname_base_noext(

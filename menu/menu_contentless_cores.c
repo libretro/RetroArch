@@ -130,7 +130,7 @@ static void contentless_cores_init_info_entries(
          /* Populate licences string */
          if (core_info->licenses_list)
          {
-            char tmp_str[MENU_SUBLABEL_MAX_LENGTH];
+            char tmp_str[MENU_SUBLABEL_MAX_LENGTH - 2];
 
             tmp_str[0] = '\0';
 

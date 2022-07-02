@@ -770,7 +770,8 @@ static int database_info_list_iterate_found_match(
 
    if (!string_is_empty(db_state->serial))
    {
-      snprintf(db_crc, str_len, "%s|serial", db_state->serial);
+      if (snprintf(db_crc, str_len, "%s|serial", db_state->serial) < 0)
+         RARCH_ERR("Serial string encoding error\n");
    }
    else
    {
