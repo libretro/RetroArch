@@ -74,6 +74,7 @@ typedef struct
    float delay_timer;
    enum gfx_thumbnail_status status;
    bool fade_active;
+   bool core_aspect;
 } gfx_thumbnail_t;
 
 /* Holds all configuration parameters associated
