@@ -3925,7 +3925,7 @@ bool config_load_override(void *data)
       /* Create a new config file from content_path */
       if (config_file_exists(content_path))
       {
-         char temp_path[PATH_MAX_LENGTH];
+         char temp_path[PATH_MAX_LENGTH + 1];
 
          RARCH_LOG("[Overrides]: Content dir-specific overrides found at \"%s\".\n",
                content_path);
@@ -3957,7 +3957,7 @@ bool config_load_override(void *data)
       /* Create a new config file from game_path */
       if (config_file_exists(game_path))
       {
-         char temp_path[PATH_MAX_LENGTH];
+         char temp_path[PATH_MAX_LENGTH + 1];
 
          RARCH_LOG("[Overrides]: Game-specific overrides found at \"%s\".\n",
                game_path);

@@ -3975,9 +3975,9 @@ static void xmb_show_fullscreen_thumbnails(
    }
    else if (string_to_unsigned(selected_entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
    {
-      snprintf(tmpstr, sizeof(tmpstr), "%s %s",
+      snprintf(tmpstr, sizeof(tmpstr), "%s %d",
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
-            selected_entry.path);
+            string_to_unsigned(selected_entry.path));
       thumbnail_label = tmpstr;
    }
    /* > Quick Menu playlist label */

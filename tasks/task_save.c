@@ -1830,7 +1830,7 @@ static bool dump_to_file_desperate(const void *data,
    time_t time_;
    struct tm tm_;
    char timebuf[256];
-   char path[PATH_MAX_LENGTH];
+   char path[PATH_MAX_LENGTH + 256 + 32];
    char application_data[PATH_MAX_LENGTH];
 
    application_data[0]    = '\0';
