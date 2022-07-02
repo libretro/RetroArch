@@ -20,7 +20,7 @@ jobs:
         with:
           java-version: 1.8
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
       - name: Checkout
         uses: actions/checkout@v2
       - name: Crowdin Sync
