@@ -6479,6 +6479,10 @@ MSG_HASH(
    "Apenas salas que possam ser conectadas"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
+   "Apenas núcleos instalados"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
    "Salas com senha"
    )

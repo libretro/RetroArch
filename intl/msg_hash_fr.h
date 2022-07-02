@@ -6491,6 +6491,10 @@ MSG_HASH(
    "Salles connectables uniquement"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
+   "Uniquement les cœurs installés"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
    "Salles avec mot de passe"
    )
