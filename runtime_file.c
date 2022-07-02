@@ -625,27 +625,6 @@ void runtime_log_get_last_played_time(runtime_log_t *runtime_log,
    mktime(time_info);
 }
 
-void runtime_log_get_current_time(runtime_log_t *runtime_log,
-      struct tm *time_info)
-{
-   time_t time_;
-   struct tm tm_;
-
-   /* Get current time */
-   time(&time_);
-   rtime_localtime(&time_, &tm_);
-
-   if (!time_ || !time_info)
-      return;
-
-   /* Set tm values */
-   time_info = &tm_;
-
-   /* Perform any required range adjustment + populate
-    * missing entries */
-   mktime(time_info);
-}
-
 static void last_played_strftime(runtime_log_t *runtime_log,
       char *str, size_t len, const char *format)
 {
@@ -683,7 +662,6 @@ static void last_played_human(runtime_log_t *runtime_log,
       char *str, size_t len)
 {
    struct tm time_info;
-   struct tm time_info_current;
    time_t last_played;
    time_t current;
    time_t delta;
@@ -709,12 +687,11 @@ static void last_played_human(runtime_log_t *runtime_log,
       return;
    }
 
-   /* Get times */
+   /* Get time */
    runtime_log_get_last_played_time(runtime_log, &time_info);
-   runtime_log_get_current_time(runtime_log, &time_info_current);
 
    last_played = mktime(&time_info);
-   current     = mktime(&time_info_current);
+   current     = time(NULL);
    delta       = current - last_played;
 
    if (delta <= 0)
