@@ -1547,7 +1547,7 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
       const char *label, const char *path,
       char *s, size_t len)
 {
-   char buf[256];
+   char buf[512];
    netplay_client_info_t *client;
    const char         *status = NULL;
    size_t             idx     = list->list[i].entry_idx;
@@ -1578,6 +1578,54 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
       snprintf(buf, sizeof(buf), "%s: %s\n",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATUS), status);
       strlcat(s, buf, len);
+   }
+
+   if (client->devices)
+   {
+      int written = snprintf(buf, sizeof(buf), "%s:",
+         msg_hash_to_str(MSG_NETPLAY_CLIENT_DEVICES));
+
+      /* Ensure that at least one device can be written. */
+      if (written > 0 && written < (sizeof(buf) - STRLEN_CONST(" 16\n")))
+      {
+         uint32_t device;
+         char *buf_written = buf + written;
+
+         for (device = 0; device < (sizeof(client->devices) << 3); device++)
+         {
+            if (client->devices & (1 << device))
+            {
+               int tmp_written = snprintf(buf_written, sizeof(buf) - written,
+                  " %u,", (unsigned)(device + 1));
+
+               /* Write nothing on error. */
+               if (tmp_written <= 0)
+               {
+                  written = -1;
+                  break;
+               }
+
+               written += tmp_written;
+               if (written >= (sizeof(buf) - 1))
+                  break;
+
+               buf_written += tmp_written;
+            }
+         }
+
+         if (written > 0)
+         {
+            /* Now convert the last comma into a newline. */
+            buf_written = strrchr(buf, ',');
+            if (buf_written)
+            {
+               *buf_written++ = '\n';
+               *buf_written   = '\0';
+
+               strlcat(s, buf, len);
+            }
+         }
+      }
    }
 
    snprintf(buf, sizeof(buf), "%s: %s",
