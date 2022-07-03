@@ -167,9 +167,8 @@ static void gfx_ctx_psl1ght_swap_buffers(void *data)
 static void gfx_ctx_psl1ght_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
-   gfx_ctx_psl1ght_data_t *psl1ght = (gfx_ctx_psl1ght_data_t*)data;
-
 #if defined(HAVE_PSGL)
+   gfx_ctx_psl1ght_data_t *psl1ght = (gfx_ctx_psl1ght_data_t*)data;
    if (psl1ght)
       psglGetDeviceDimensions(ps3->gl_device, width, height);
 #endif
@@ -177,7 +176,6 @@ static void gfx_ctx_psl1ght_get_video_size(void *data,
 
 static void *gfx_ctx_psl1ght_init(void *video_driver)
 {
-   printf("gfx_ctx_psl1ght_init: %p\n", video_driver);
    global_t *global = global_get_ptr();
    gfx_ctx_psl1ght_data_t *psl1ght = (gfx_ctx_psl1ght_data_t*)
       calloc(1, sizeof(gfx_ctx_psl1ght_data_t));

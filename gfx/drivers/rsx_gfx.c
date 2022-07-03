@@ -624,7 +624,6 @@ static uintptr_t rsx_load_texture(void *video_data, void *data,
 static void rsx_unload_texture(void *data,
       bool threaded, uintptr_t handle)
 {
-   rsx_t *rsx = (rsx_t *)data;
    rsx_texture_t *texture = (rsx_texture_t *)handle;
    if (texture) {
       if(texture->data)
@@ -1118,7 +1117,7 @@ static void rsx_set_rotation(void* data, unsigned rotation)
    rsx_set_projection(gcm, &ortho, true);
 }
 
-static void rsx_set_filtering(void* data, unsigned index, bool smooth)
+static void rsx_set_filtering(void* data, unsigned index, bool smooth, bool ctx_scaling)
 {
    rsx_t* gcm = (rsx_t*)data;
 

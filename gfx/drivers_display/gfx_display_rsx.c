@@ -68,7 +68,6 @@ static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
    const float *color               = NULL;
    rsx_t             *rsx = (rsx_t*)data;
    rsx_viewport_t vp;
-   video_shader_ctx_mvp_t mvp;
 
    if (!rsx || !draw)
       return;
