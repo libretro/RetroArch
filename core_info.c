@@ -1486,7 +1486,7 @@ static bool core_info_path_is_locked(
 {
    size_t i;
    uint32_t hash;
-   char lock_filename[256];
+   char lock_filename[NAME_MAX_LENGTH];
 
    lock_filename[0] = '\0';
 
@@ -1516,7 +1516,7 @@ static bool core_info_path_is_standalone_exempt(
 {
    size_t i;
    uint32_t hash;
-   char exempt_filename[256];
+   char exempt_filename[NAME_MAX_LENGTH];
 
    exempt_filename[0] = '\0';
 
@@ -1570,9 +1570,9 @@ static core_info_t *core_info_find_internal(
       core_info_list_t *list,
       const char *core_path)
 {
-   char core_file_id[256];
-   uint32_t hash;
    size_t i;
+   uint32_t hash;
+   char core_file_id[256];
 
    core_file_id[0] = '\0';
 

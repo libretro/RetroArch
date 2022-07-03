@@ -233,7 +233,7 @@ struct runloop
 #endif
 
    char runtime_content_path_basename[8192];
-   char current_library_name[256];
+   char current_library_name[NAME_MAX_LENGTH];
    char current_library_version[256];
    char current_valid_extensions[256];
    char subsystem_path[256];

@@ -562,7 +562,7 @@ static bool content_file_list_set_info(
       const char *archive_delim = NULL;
       const char *ext           = NULL;
       char dir[PATH_MAX_LENGTH];
-      char name[256];
+      char name[NAME_MAX_LENGTH];
 
       dir[0]  = '\0';
       name[0] = '\0';

@@ -230,7 +230,7 @@ struct screenshot_task_state
    unsigned pixel_format_type;
 
    char filename[PATH_MAX_LENGTH];
-   char shotname[256];
+   char shotname[NAME_MAX_LENGTH];
 
    bool bgr24;
    bool silence;
