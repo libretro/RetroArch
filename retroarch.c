@@ -292,6 +292,22 @@ enum
 extern const bluetooth_driver_t *bluetooth_drivers[];
 #endif
 
+#define RARCH_FLAGS_NONE                         (0)
+#define RARCH_FLAGS_HAS_SET_USERNAME             (1 << 0)
+#define RARCH_FLAGS_HAS_SET_VERBOSITY            (1 << 1)
+#define RARCH_FLAGS_HAS_SET_LIBRETRO             (1 << 2)
+#define RARCH_FLAGS_HAS_SET_LIBRETRO_DIRECTORY   (1 << 3)
+#define RARCH_FLAGS_HAS_SET_SAVE_PATH            (1 << 4)
+#define RARCH_FLAGS_HAS_SET_STATE_PATH           (1 << 5)
+#define RARCH_FLAGS_HAS_SET_UPS_PREF             (1 << 6)
+#define RARCH_FLAGS_HAS_SET_BPS_PREF             (1 << 7)
+#define RARCH_FLAGS_HAS_SET_IPS_PREF             (1 << 8)
+#define RARCH_FLAGS_HAS_SET_LOG_TO_FILE          (1 << 9)
+#define RARCH_FLAGS_UPS_PREF                     (1 << 10)
+#define RARCH_FLAGS_BPS_PREF                     (1 << 11)
+#define RARCH_FLAGS_IPS_PREF                     (1 << 12)
+#define RARCH_FLAGS_BLOCK_CONFIG_READ            (1 << 13)
+
 /* MAIN GLOBAL VARIABLES */
 struct rarch_state
 {
@@ -304,6 +320,8 @@ struct rarch_state
 #endif
    unsigned perf_ptr_rarch;
 
+   uint16_t flags;
+
    char launch_arguments[4096];
    char path_default_shader_preset[PATH_MAX_LENGTH];
    char path_content[PATH_MAX_LENGTH];
@@ -314,25 +332,6 @@ struct rarch_state
    char dir_system[PATH_MAX_LENGTH];
    char dir_savefile[PATH_MAX_LENGTH];
    char dir_savestate[PATH_MAX_LENGTH];
-   bool has_set_username;
-   bool has_set_verbosity;
-   bool has_set_libretro;
-   bool has_set_libretro_directory;
-   bool has_set_save_path;
-   bool has_set_state_path;
-#ifdef HAVE_PATCH
-   bool has_set_ups_pref;
-   bool has_set_bps_pref;
-   bool has_set_ips_pref;
-#endif
-   bool has_set_log_to_file;
-   bool rarch_ups_pref;
-   bool rarch_bps_pref;
-   bool rarch_ips_pref;
-
-#ifdef HAVE_CONFIGFILE
-   bool rarch_block_config_read;
-#endif
 };
 
 /* Forward declarations */
@@ -3471,19 +3470,19 @@ void retroarch_override_setting_set(
          }
          break;
       case RARCH_OVERRIDE_SETTING_VERBOSITY:
-         p_rarch->has_set_verbosity = true;
+         BIT16_SET(p_rarch->flags, RARCH_FLAGS_HAS_SET_VERBOSITY);
          break;
       case RARCH_OVERRIDE_SETTING_LIBRETRO:
-         p_rarch->has_set_libretro = true;
+         BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_HAS_SET_VERBOSITY);
          break;
       case RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY:
-         p_rarch->has_set_libretro_directory = true;
+         BIT16_SET(p_rarch->flags, RARCH_FLAGS_HAS_SET_LIBRETRO_DIRECTORY);
          break;
       case RARCH_OVERRIDE_SETTING_SAVE_PATH:
-         p_rarch->has_set_save_path = true;
+         BIT16_SET(p_rarch->flags, RARCH_FLAGS_HAS_SET_SAVE_PATH);
          break;
       case RARCH_OVERRIDE_SETTING_STATE_PATH:
-         p_rarch->has_set_state_path = true;
+         BIT16_SET(p_rarch->flags, RARCH_FLAGS_HAS_SET_STATE_PATH);
          break;
 #ifdef HAVE_NETWORKING
       case RARCH_OVERRIDE_SETTING_NETPLAY_MODE:
@@ -3504,21 +3503,21 @@ void retroarch_override_setting_set(
 #endif
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
 #ifdef HAVE_PATCH
-         p_rarch->has_set_ups_pref = true;
+         BIT16_SET(p_rarch->flags, RARCH_FLAGS_HAS_SET_UPS_PREF);
 #endif
          break;
       case RARCH_OVERRIDE_SETTING_BPS_PREF:
 #ifdef HAVE_PATCH
-         p_rarch->has_set_bps_pref = true;
+         BIT16_SET(p_rarch->flags, RARCH_FLAGS_HAS_SET_BPS_PREF);
 #endif
          break;
       case RARCH_OVERRIDE_SETTING_IPS_PREF:
 #ifdef HAVE_PATCH
-         p_rarch->has_set_ips_pref = true;
+         BIT16_SET(p_rarch->flags, RARCH_FLAGS_HAS_SET_IPS_PREF);
 #endif
          break;
       case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
-         p_rarch->has_set_log_to_file = true;
+         BIT16_SET(p_rarch->flags, RARCH_FLAGS_HAS_SET_LOG_TO_FILE);
          break;
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
@@ -3548,19 +3547,19 @@ void retroarch_override_setting_unset(
          }
          break;
       case RARCH_OVERRIDE_SETTING_VERBOSITY:
-         p_rarch->has_set_verbosity = false;
+         BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_HAS_SET_VERBOSITY);
          break;
       case RARCH_OVERRIDE_SETTING_LIBRETRO:
-         p_rarch->has_set_libretro = false;
+         BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_HAS_SET_LIBRETRO);
          break;
       case RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY:
-         p_rarch->has_set_libretro_directory = false;
+         BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_HAS_SET_LIBRETRO_DIRECTORY);
          break;
       case RARCH_OVERRIDE_SETTING_SAVE_PATH:
-         p_rarch->has_set_save_path = false;
+         BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_HAS_SET_SAVE_PATH);
          break;
       case RARCH_OVERRIDE_SETTING_STATE_PATH:
-         p_rarch->has_set_state_path = false;
+         BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_HAS_SET_STATE_PATH);
          break;
 #ifdef HAVE_NETWORKING
       case RARCH_OVERRIDE_SETTING_NETPLAY_MODE:
@@ -3581,21 +3580,21 @@ void retroarch_override_setting_unset(
 #endif
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
 #ifdef HAVE_PATCH
-         p_rarch->has_set_ups_pref = false;
+         BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_HAS_SET_UPS_PREF);
 #endif
          break;
       case RARCH_OVERRIDE_SETTING_BPS_PREF:
 #ifdef HAVE_PATCH
-         p_rarch->has_set_bps_pref = false;
+         BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_HAS_SET_BPS_PREF);
 #endif
          break;
       case RARCH_OVERRIDE_SETTING_IPS_PREF:
 #ifdef HAVE_PATCH
-         p_rarch->has_set_ips_pref = false;
+         BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_HAS_SET_IPS_PREF);
 #endif
          break;
       case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
-         p_rarch->has_set_log_to_file = false;
+         BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_HAS_SET_LOG_TO_FILE);
          break;
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
@@ -3637,13 +3636,13 @@ static void global_free(struct rarch_state *p_rarch)
    runloop_st->is_sram_save_disabled                  = false;
    runloop_st->use_sram                               = false;
 #ifdef HAVE_PATCH
-   p_rarch->rarch_bps_pref                            = false;
-   p_rarch->rarch_ips_pref                            = false;
-   p_rarch->rarch_ups_pref                            = false;
+   BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_BPS_PREF);
+   BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_IPS_PREF);
+   BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_UPS_PREF);
    runloop_st->patch_blocked                          = false;
 #endif
 #ifdef HAVE_CONFIGFILE
-   p_rarch->rarch_block_config_read                   = false;
+   BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_BLOCK_CONFIG_READ);
    runloop_st->overrides_active                       = false;
    runloop_st->remaps_core_active                     = false;
    runloop_st->remaps_game_active                     = false;
@@ -3738,11 +3737,11 @@ void main_exit(void *args)
          path_get_realsize(RARCH_PATH_CORE),
          p_rarch->launch_arguments);
 
-   p_rarch->has_set_username        = false;
+   BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_HAS_SET_USERNAME);
    runloop_st->is_inited            = false;
    global_get_ptr()->error_on_init  = false;
 #ifdef HAVE_CONFIGFILE
-   p_rarch->rarch_block_config_read = false;
+   BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_BLOCK_CONFIG_READ);
 #endif
 
    runloop_msg_queue_deinit();
@@ -4599,11 +4598,11 @@ static bool retroarch_parse_input_and_config(
 
    retroarch_override_setting_free_state();
 
-   p_rarch->has_set_username             = false;
+   BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_HAS_SET_USERNAME);
 #ifdef HAVE_PATCH
-   p_rarch->rarch_ups_pref               = false;
-   p_rarch->rarch_ips_pref               = false;
-   p_rarch->rarch_bps_pref               = false;
+   BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_UPS_PREF);
+   BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_IPS_PREF);
+   BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_BPS_PREF);
    *runloop_st->name.ups                 = '\0';
    *runloop_st->name.bps                 = '\0';
    *runloop_st->name.ips                 = '\0';
@@ -4720,7 +4719,7 @@ static bool retroarch_parse_input_and_config(
 
    /* Load the config file now that we know what it is */
 #ifdef HAVE_CONFIGFILE
-   if (!p_rarch->rarch_block_config_read)
+   if (!BIT16_GET(p_rarch->flags, RARCH_FLAGS_BLOCK_CONFIG_READ))
 #endif
    {
       /* If this is a static build, load salamander
@@ -4956,7 +4955,7 @@ static bool retroarch_parse_input_and_config(
 #ifdef HAVE_PATCH
                strlcpy(runloop_st->name.bps, optarg,
                      sizeof(runloop_st->name.bps));
-               p_rarch->rarch_bps_pref = true;
+               BIT16_SET(p_rarch->flags, RARCH_FLAGS_BPS_PREF);
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_BPS_PREF, NULL);
 #endif
                break;
@@ -4965,7 +4964,7 @@ static bool retroarch_parse_input_and_config(
 #ifdef HAVE_PATCH
                strlcpy(runloop_st->name.ups, optarg,
                      sizeof(runloop_st->name.ups));
-               p_rarch->rarch_ups_pref = true;
+               BIT16_SET(p_rarch->flags, RARCH_FLAGS_UPS_PREF);
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_UPS_PREF, NULL);
 #endif
                break;
@@ -4974,7 +4973,7 @@ static bool retroarch_parse_input_and_config(
 #ifdef HAVE_PATCH
                strlcpy(runloop_st->name.ips, optarg,
                      sizeof(runloop_st->name.ips));
-               p_rarch->rarch_ips_pref = true;
+               BIT16_SET(p_rarch->flags, RARCH_FLAGS_IPS_PREF);
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_IPS_PREF, NULL);
 #endif
                break;
@@ -4994,7 +4993,7 @@ static bool retroarch_parse_input_and_config(
                break;
 
             case RA_OPT_NICK:
-               p_rarch->has_set_username = true;
+               BIT16_SET(p_rarch->flags, RARCH_FLAGS_HAS_SET_USERNAME);
 
                configuration_set_string(settings,
                      settings->paths.username, optarg);
@@ -5575,19 +5574,19 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
 #endif
 #ifdef HAVE_PATCH
       case RARCH_CTL_IS_BPS_PREF:
-         return p_rarch->rarch_bps_pref;
+         return BIT16_GET(p_rarch->flags, RARCH_FLAGS_BPS_PREF);
       case RARCH_CTL_UNSET_BPS_PREF:
-         p_rarch->rarch_bps_pref = false;
+         BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_BPS_PREF);
          break;
       case RARCH_CTL_IS_UPS_PREF:
-         return p_rarch->rarch_ups_pref;
+         return BIT16_GET(p_rarch->flags, RARCH_FLAGS_UPS_PREF);
       case RARCH_CTL_UNSET_UPS_PREF:
-         p_rarch->rarch_ups_pref = false;
+         BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_UPS_PREF);
          break;
       case RARCH_CTL_IS_IPS_PREF:
-         return p_rarch->rarch_ips_pref;
+         return BIT16_GET(p_rarch->flags, RARCH_FLAGS_IPS_PREF);
       case RARCH_CTL_UNSET_IPS_PREF:
-         p_rarch->rarch_ips_pref = false;
+         BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_IPS_PREF);
          break;
 #endif
       case RARCH_CTL_IS_DUMMY_CORE:
@@ -5620,7 +5619,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
                && (runloop_st->secondary_lib_handle != NULL);
 #endif
       case RARCH_CTL_HAS_SET_USERNAME:
-         return p_rarch->has_set_username;
+         return BIT16_GET(p_rarch->flags, RARCH_FLAGS_HAS_SET_USERNAME);
       case RARCH_CTL_IS_INITED:
          return runloop_st->is_inited;
       case RARCH_CTL_MAIN_DEINIT:
@@ -5675,10 +5674,10 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
          break;
 #ifdef HAVE_CONFIGFILE
       case RARCH_CTL_SET_BLOCK_CONFIG_READ:
-         p_rarch->rarch_block_config_read = true;
+         BIT16_SET(p_rarch->flags, RARCH_FLAGS_BLOCK_CONFIG_READ);
          break;
       case RARCH_CTL_UNSET_BLOCK_CONFIG_READ:
-         p_rarch->rarch_block_config_read = false;
+         BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_BLOCK_CONFIG_READ);
          break;
 #endif
       case RARCH_CTL_GET_CORE_OPTION_SIZE:
@@ -5884,15 +5883,15 @@ bool retroarch_override_setting_is_set(
          }
          break;
       case RARCH_OVERRIDE_SETTING_VERBOSITY:
-         return p_rarch->has_set_verbosity;
+         return BIT16_GET(p_rarch->flags, RARCH_FLAGS_HAS_SET_VERBOSITY);
       case RARCH_OVERRIDE_SETTING_LIBRETRO:
-         return p_rarch->has_set_libretro;
+         return BIT16_GET(p_rarch->flags, RARCH_FLAGS_HAS_SET_LIBRETRO);
       case RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY:
-         return p_rarch->has_set_libretro_directory;
+         return BIT16_GET(p_rarch->flags, RARCH_FLAGS_HAS_SET_LIBRETRO_DIRECTORY);
       case RARCH_OVERRIDE_SETTING_SAVE_PATH:
-         return p_rarch->has_set_save_path;
+         return BIT16_GET(p_rarch->flags, RARCH_FLAGS_HAS_SET_SAVE_PATH);
       case RARCH_OVERRIDE_SETTING_STATE_PATH:
-         return p_rarch->has_set_state_path;
+         return BIT16_GET(p_rarch->flags, RARCH_FLAGS_HAS_SET_STATE_PATH);
 #ifdef HAVE_NETWORKING
       case RARCH_OVERRIDE_SETTING_NETPLAY_MODE:
          return net_st->has_set_netplay_mode;
@@ -5907,14 +5906,14 @@ bool retroarch_override_setting_is_set(
 #endif
 #ifdef HAVE_PATCH
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
-         return p_rarch->has_set_ups_pref;
+         return BIT16_GET(p_rarch->flags, RARCH_FLAGS_HAS_SET_UPS_PREF);
       case RARCH_OVERRIDE_SETTING_BPS_PREF:
-         return p_rarch->has_set_bps_pref;
+         return BIT16_GET(p_rarch->flags, RARCH_FLAGS_HAS_SET_BPS_PREF);
       case RARCH_OVERRIDE_SETTING_IPS_PREF:
-         return p_rarch->has_set_ips_pref;
+         return BIT16_GET(p_rarch->flags, RARCH_FLAGS_HAS_SET_IPS_PREF);
 #endif
       case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
-         return p_rarch->has_set_log_to_file;
+         return BIT16_GET(p_rarch->flags, RARCH_FLAGS_HAS_SET_LOG_TO_FILE);
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
          break;
