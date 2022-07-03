@@ -988,12 +988,15 @@ void gfx_display_rotate_z(gfx_display_t *p_disp,
 
    if (draw->scale_enable)
    {
-      math_matrix_4x4 matrix_scaled = {
-         { draw->scale_x, 0.0f,          0.0f,          0.0f ,
-           0.0f,          draw->scale_y, 0.0f,          0.0f ,
-           0.0f,          0.0f,          draw->scale_z, 0.0f ,
+      math_matrix_4x4 matrix_scaled     = {
+         { 0.0f,          0.0f,          0.0f,          0.0f ,
+           0.0f,          0.0f,          0.0f,          0.0f ,
+           0.0f,          0.0f,          0.0f,          0.0f ,
            0.0f,          0.0f,          0.0f,          1.0f } 
       };
+      MAT_ELEM_4X4(matrix_scaled, 0, 0) = draw->scale_x;
+      MAT_ELEM_4X4(matrix_scaled, 1, 1) = draw->scale_y;
+      MAT_ELEM_4X4(matrix_scaled, 2, 2) = draw->scale_z;
       matrix_4x4_multiply(*draw->matrix, matrix_scaled, *draw->matrix);
    }
 }
