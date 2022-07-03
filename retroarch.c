@@ -3473,7 +3473,7 @@ void retroarch_override_setting_set(
          BIT16_SET(p_rarch->flags, RARCH_FLAGS_HAS_SET_VERBOSITY);
          break;
       case RARCH_OVERRIDE_SETTING_LIBRETRO:
-         BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_HAS_SET_VERBOSITY);
+         BIT16_CLEAR(p_rarch->flags, RARCH_FLAGS_HAS_SET_LIBRETRO);
          break;
       case RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY:
          BIT16_SET(p_rarch->flags, RARCH_FLAGS_HAS_SET_LIBRETRO_DIRECTORY);
