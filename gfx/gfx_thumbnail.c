@@ -787,8 +787,10 @@ void gfx_thumbnail_get_draw_dimensions(
       unsigned width, unsigned height, float scale_factor,
       float *draw_width, float *draw_height)
 {
+   video_driver_state_t *video_st = video_state_get_ptr();
    float display_aspect;
    float thumbnail_aspect;
+   float core_aspect;
 
    /* Sanity check */
    if (!thumbnail || (width < 1) || (height < 1))
@@ -797,20 +799,31 @@ void gfx_thumbnail_get_draw_dimensions(
    if ((thumbnail->width < 1) || (thumbnail->height < 1))
       goto error;
 
-   /* Account for display/thumbnail aspect ratio
+   /* Account for display/thumbnail/core aspect ratio
     * differences */
    display_aspect   = (float)width            / (float)height;
    thumbnail_aspect = (float)thumbnail->width / (float)thumbnail->height;
+   core_aspect      = (thumbnail->core_aspect && video_st)
+         ? video_st->av_info.geometry.aspect_ratio : thumbnail_aspect;
 
    if (thumbnail_aspect > display_aspect)
    {
       *draw_width  = (float)width;
       *draw_height = (float)thumbnail->height * (*draw_width / (float)thumbnail->width);
+      *draw_height = *draw_height * (thumbnail_aspect / core_aspect);
+
+      if (*draw_height > height)
+      {
+         *draw_height = (float)height;
+         *draw_width  = (float)thumbnail->width * (*draw_height / (float)thumbnail->height);
+         *draw_width  = *draw_width / (thumbnail_aspect / core_aspect);
+      }
    }
    else
    {
       *draw_height = (float)height;
       *draw_width  = (float)thumbnail->width * (*draw_height / (float)thumbnail->height);
+      *draw_width  = *draw_width / (thumbnail_aspect / core_aspect);
    }
 
    /* Account for scale factor
