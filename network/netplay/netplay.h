@@ -139,6 +139,7 @@ typedef struct netplay netplay_t;
 typedef struct netplay_client_info
 {
    uint32_t protocol;
+   uint32_t devices;
    int32_t  ping;
    int      id;
    enum     rarch_netplay_connection_mode mode;

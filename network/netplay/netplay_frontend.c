@@ -8595,11 +8595,13 @@ static size_t retrieve_client_info(netplay_t *netplay, netplay_client_info_t *bu
       if (connection->active && connection->mode >= NETPLAY_CONNECTION_CONNECTED)
       {
          netplay_client_info_t *info = &buf[j++];
-         info->id = (int)i;
-         strlcpy(info->name, connection->nick, sizeof(info->name));
+
+         info->id       = (int)i;
          info->protocol = connection->netplay_protocol;
          info->mode     = connection->mode;
          info->ping     = connection->ping;
+         info->devices  = netplay->client_devices[i];
+         strlcpy(info->name, connection->nick, sizeof(info->name));
       }
    }
 
@@ -8728,7 +8730,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          break;
 
       case RARCH_NETPLAY_CTL_REFRESH_CLIENT_INFO:
-         if (!netplay)
+         if (!netplay || !netplay->is_server)
          {
             ret = false;
             break;

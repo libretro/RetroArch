@@ -11680,6 +11680,10 @@ MSG_HASH(
    "Spectating"
    )
 MSG_HASH(
+   MSG_NETPLAY_CLIENT_DEVICES,
+   "Devices"
+   )
+MSG_HASH(
    MSG_NETPLAY_CHAT_SUPPORTED,
    "Chat Supported"
    )
