@@ -8599,7 +8599,7 @@ static size_t retrieve_client_info(netplay_t *netplay, netplay_client_info_t *bu
          info->protocol = connection->netplay_protocol;
          info->mode     = connection->mode;
          info->ping     = connection->ping;
-         info->devices  = netplay->client_devices[i];
+         info->devices  = netplay->client_devices[i + 1];
          strlcpy(info->name, connection->nick, sizeof(info->name));
       }
    }
