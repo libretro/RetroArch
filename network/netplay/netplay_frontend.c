@@ -190,13 +190,12 @@ struct vote_count
    uint16_t votes[32];
 };
 
-/* TODO/FIXME: description member should be replaced with localization enums */
 const mitm_server_t netplay_mitm_server_list[NETPLAY_MITM_SERVERS] = {
-   { "nyc", "New York City, USA" },
-   { "madrid", "Madrid, Spain" },
-   { "saopaulo", "Sao Paulo, Brazil" },
-   { "singapore", "Singapore" },
-   { "custom", "Custom" },
+   { "nyc",       MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1 },
+   { "madrid",    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2 },
+   { "saopaulo",  MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3 },
+   { "singapore", MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4 },
+   { "custom",    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM }
 };
 
 static net_driver_state_t networking_driver_st = {0};
