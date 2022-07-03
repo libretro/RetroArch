@@ -474,36 +474,36 @@ QWidget *NetplayPage::widget()
 
 QGroupBox *NetplayPage::createMitmServerGroup()
 {
-   unsigned i;
+   size_t i;
+   const char *netplay_mitm_server;
    CheckableSettingsGroup *groupBox = new CheckableSettingsGroup(
-         MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER);
+      MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER);
    QButtonGroup *buttonGroup        = new QButtonGroup(this);
-   unsigned list_len                = ARRAY_SIZE(netplay_mitm_server_list);
    rarch_setting_t *setting         = menu_setting_find_enum(
-         MENU_ENUM_LABEL_NETPLAY_MITM_SERVER);
+      MENU_ENUM_LABEL_NETPLAY_MITM_SERVER);
 
    if (!setting)
       return nullptr;
 
-   for (i = 0; i < list_len; i++)
-   {
-      QRadioButton *radioButton = new QRadioButton(
-            netplay_mitm_server_list[i].description);
+   netplay_mitm_server = setting->value.target.string;
 
-      /* find the currently selected server in the list */
-      if (string_is_equal(setting->value.target.string,
-               netplay_mitm_server_list[i].name))
+   for (i = 0; i < ARRAY_SIZE(netplay_mitm_server_list); i++)
+   {
+      const mitm_server_t *server      = &netplay_mitm_server_list[i];
+      QRadioButton        *radioButton = new QRadioButton(
+         msg_hash_to_str(server->description));
+
+      if (string_is_equal(server->name, netplay_mitm_server))
          radioButton->setChecked(true);
 
       buttonGroup->addButton(radioButton, i);
-
       groupBox->addRow(radioButton);
    }
 
    groupBox->add(MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER);
 
-   connect(buttonGroup, SIGNAL(buttonClicked(int)),
-         this, SLOT(onRadioButtonClicked(int)));
+   connect(buttonGroup, SIGNAL(buttonClicked(int)), this,
+      SLOT(onRadioButtonClicked(int)));
 
    return groupBox;
 }

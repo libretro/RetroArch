@@ -30,6 +30,8 @@
 
 #include <net/net_compat.h>
 
+#include "../../msg_hash.h"
+
 #include "../natt.h"
 
 #define NETPLAY_NICK_LEN         32
@@ -149,7 +151,7 @@ typedef struct netplay_client_info
 typedef struct mitm_server
 {
    const char *name;
-   const char *description;
+   enum msg_hash_enums description;
 } mitm_server_t;
 
 struct netplay_room

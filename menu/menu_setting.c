@@ -5891,58 +5891,55 @@ static int setting_string_action_left_driver(
 static int setting_string_action_ok_netplay_mitm_server(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-    char enum_idx[16];
-    if (!setting)
-       return -1;
+   char enum_idx[16];
 
-    snprintf(enum_idx, sizeof(enum_idx), "%d", setting->enum_idx);
+   if (!setting)
+      return -1;
 
-    generic_action_ok_displaylist_push(
-          enum_idx, /* we will pass the enumeration index of the string as a path */
-          NULL, NULL, 0, idx, 0,
-          ACTION_OK_DL_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER);
-    return 0;
+   snprintf(enum_idx, sizeof(enum_idx), "%d", setting->enum_idx);
+
+   generic_action_ok_displaylist_push(
+      enum_idx,
+      NULL, NULL, 0, idx, 0,
+      ACTION_OK_DL_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER);
+
+   return 0;
 }
 
 static int setting_string_action_left_netplay_mitm_server(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   unsigned i;
-   int offset               = 0;
-   bool               found = false;
-   unsigned        list_len = ARRAY_SIZE(netplay_mitm_server_list);
+   size_t i;
+   char *netplay_mitm_server;
+   int offset = -1;
+
    if (!setting)
       return -1;
 
-   for (i = 0; i < list_len; i++)
-   {
-      /* find the currently selected server in the list */
-      if (string_is_equal(setting->value.target.string, netplay_mitm_server_list[i].name))
-      {
-         /* move to the previous one in the list, wrap around if necessary */
-         if (i >= 1)
-         {
-            found  = true;
-            offset = i - 1;
-         }
-         else if (wraparound)
-         {
-            found  = true;
-            offset = list_len - 1;
-         }
+   netplay_mitm_server = setting->value.target.string;
 
-         if (found)
-            break;
+   for (i = 0; i < ARRAY_SIZE(netplay_mitm_server_list); i++)
+   {
+      const mitm_server_t *server = &netplay_mitm_server_list[i];
+
+      if (string_is_equal(server->name, netplay_mitm_server))
+      {
+         if (i > 0)
+            offset = i - 1;
+         else if (wraparound)
+            offset = ARRAY_SIZE(netplay_mitm_server_list) - 1;
+         else
+            offset = i;
+
+         break;
       }
    }
 
-   /* current entry was invalid, go back to the end */
-   if (!found)
-      offset = list_len - 1;
+   if (offset < 0)
+      offset = 0;
 
-   if (offset >= 0)
-      strlcpy(setting->value.target.string,
-            netplay_mitm_server_list[offset].name, setting->size);
+   strlcpy(netplay_mitm_server, netplay_mitm_server_list[offset].name,
+      setting->size);
 
    return 0;
 }
@@ -5950,38 +5947,37 @@ static int setting_string_action_left_netplay_mitm_server(
 static int setting_string_action_right_netplay_mitm_server(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   unsigned i;
-   int offset               = 0;
-   bool               found = false;
-   unsigned        list_len = ARRAY_SIZE(netplay_mitm_server_list);
+   size_t i;
+   char *netplay_mitm_server;
+   int offset = -1;
+
    if (!setting)
       return -1;
 
-   for (i = 0; i < list_len; i++)
-   {
-      /* find the currently selected server in the list */
-      if (string_is_equal(setting->value.target.string, netplay_mitm_server_list[i].name))
-      {
-         /* move to the next one in the list, wrap around if necessary */
-         if (i + 1 < list_len)
-         {
-            offset = i + 1;
-            found  = true;
-         }
-         else if (wraparound)
-            found = true;
+   netplay_mitm_server = setting->value.target.string;
 
-         if (found)
-            break;
+   for (i = 0; i < ARRAY_SIZE(netplay_mitm_server_list); i++)
+   {
+      const mitm_server_t *server = &netplay_mitm_server_list[i];
+
+      if (string_is_equal(server->name, netplay_mitm_server))
+      {
+         if (i < (ARRAY_SIZE(netplay_mitm_server_list) - 1))
+            offset = i + 1;
+         else if (wraparound)
+            offset = 0;
+         else
+            offset = i;
+
+         break;
       }
    }
 
-   /* current entry was invalid, go back to the start */
-   if (!found)
-      offset = 0;
+   if (offset < 0)
+      offset = ARRAY_SIZE(netplay_mitm_server_list) - 1;
 
-   strlcpy(setting->value.target.string,
-         netplay_mitm_server_list[offset].name, setting->size);
+   strlcpy(netplay_mitm_server, netplay_mitm_server_list[offset].name,
+      setting->size);
 
    return 0;
 }
@@ -20180,6 +20176,9 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_ADVANCED);
+            (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
 
             CONFIG_UINT(
                   list, list_info,
@@ -20195,9 +20194,9 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].offset_by = 1;
             menu_settings_list_current_add_range(list, list_info, 1, 99999, 1, true, true);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
-            /* TODO/FIXME - add enum_idx */
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
+            /* TODO/FIXME - add enum_idx */
             {
                unsigned max_users        = settings->uints.input_max_users;
                for (user = 0; user < max_users; user++)

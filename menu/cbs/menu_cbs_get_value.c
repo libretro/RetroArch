@@ -392,30 +392,34 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
 
 #ifdef HAVE_NETWORKING
 static void menu_action_setting_disp_set_label_netplay_mitm_server(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *path,
-      char *s2, size_t len2)
+      file_list_t *list, unsigned *w, unsigned type, unsigned i,
+      const char *label, char *s, size_t len,
+      const char *path, char *path_buf, size_t path_buf_size)
 {
-   unsigned j;
-   menu_file_list_cbs_t       *cbs = (menu_file_list_cbs_t*)
-      list->list[i].actiondata;
-   const char *netplay_mitm_server = cbs->setting->value.target.string;
+   size_t j;
+   const char *netplay_mitm_server;
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i].actiondata;
 
-   *s = '\0';
    *w = 19;
-   strlcpy(s2, path, len2);
+   *s = '\0';
+   strlcpy(path_buf, path, path_buf_size);
 
+   if (!cbs || !cbs->setting)
+      return;
+
+   netplay_mitm_server = cbs->setting->value.target.string;
    if (string_is_empty(netplay_mitm_server))
       return;
 
    for (j = 0; j < ARRAY_SIZE(netplay_mitm_server_list); j++)
    {
-      if (string_is_equal(netplay_mitm_server,
-               netplay_mitm_server_list[j].name))
-         strlcpy(s, netplay_mitm_server_list[j].description, len);
+      const mitm_server_t *server = &netplay_mitm_server_list[j];
+
+      if (string_is_equal(server->name, netplay_mitm_server))
+      {
+         strlcpy(s, msg_hash_to_str(server->description), len);
+         break;
+      }
    }
 }
 #endif
