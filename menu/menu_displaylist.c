@@ -2364,7 +2364,7 @@ static int create_string_list_rdb_entry_int(
    string_list_join_concat(output_label, str_len, &str_list, "|");
    string_list_deinitialize(&str_list);
 
-   snprintf(tmp, sizeof(tmp), "%s : %d", desc, actual_int);
+   snprintf(tmp, sizeof(tmp), "%s: %d", desc, actual_int);
    menu_entries_append_enum(list, tmp, output_label,
          enum_idx,
          0, 0, 0);
