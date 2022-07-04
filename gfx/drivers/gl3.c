@@ -723,7 +723,13 @@ static const gfx_ctx_driver_t *gl3_get_context(gl3_t *gl)
 static void gl3_set_projection(gl3_t *gl,
       const struct video_ortho *ortho, bool allow_rotate)
 {
-   math_matrix_4x4 rot;
+   static math_matrix_4x4 rot     = {
+      { 0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    1.0f }
+   };
+   float radians, cosine, sine;
 
    /* Calculate projection. */
    matrix_4x4_ortho(gl->mvp_no_rot, ortho->left, ortho->right,
@@ -735,7 +741,13 @@ static void gl3_set_projection(gl3_t *gl,
       return;
    }
 
-   matrix_4x4_rotate_z(rot, M_PI * gl->rotation / 180.0f);
+   radians                 = M_PI * gl->rotation / 180.0f;
+   cosine                  = cosf(radians);
+   sine                    = sinf(radians);
+   MAT_ELEM_4X4(rot, 0, 0) = cosine;
+   MAT_ELEM_4X4(rot, 0, 1) = -sine;
+   MAT_ELEM_4X4(rot, 1, 0) = sine;
+   MAT_ELEM_4X4(rot, 1, 1) = cosine;
    matrix_4x4_multiply(gl->mvp, rot, gl->mvp_no_rot);
 
    memcpy(gl->mvp_no_rot_yflip.data, gl->mvp_no_rot.data, sizeof(gl->mvp_no_rot.data));

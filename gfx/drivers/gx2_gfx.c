@@ -86,9 +86,23 @@ static void wiiu_set_tex_coords(frame_vertex_t *v,
 
 static void wiiu_set_projection(wiiu_video_t *wiiu)
 {
-   math_matrix_4x4 proj, rot;
+   static math_matrix_4x4 rot     = {
+      { 0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    1.0f }
+   };
+   float radians, cosine, sine;
+   math_matrix_4x4 proj;
+
    matrix_4x4_ortho(proj, 0, 1, 1, 0, -1, 1);
-   matrix_4x4_rotate_z(rot, wiiu->rotation * M_PI_2);
+   radians                 = wiiu->rotation * M_PI_2;
+   cosine                  = cosf(radians);
+   sine                    = sinf(radians);
+   MAT_ELEM_4X4(rot, 0, 0) = cosine;
+   MAT_ELEM_4X4(rot, 0, 1) = -sine;
+   MAT_ELEM_4X4(rot, 1, 0) = sine;
+   MAT_ELEM_4X4(rot, 1, 1) = cosine;
    matrix_4x4_multiply((*wiiu->ubo_mvp), rot, proj);
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, wiiu->ubo_mvp, sizeof(*wiiu->ubo_mvp));
 }

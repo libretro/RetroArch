@@ -433,14 +433,26 @@ static void d3d11_set_filtering(void* data, unsigned index,
 
 static void d3d11_gfx_set_rotation(void* data, unsigned rotation)
 {
-   math_matrix_4x4 rot;
+   float radians, cosine, sine;
    D3D11_MAPPED_SUBRESOURCE mapped_ubo;
-   d3d11_video_t*  d3d11 = (d3d11_video_t*)data;
+   static math_matrix_4x4 rot     = {
+      { 0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    1.0f }
+   };
+   d3d11_video_t*  d3d11   = (d3d11_video_t*)data;
 
    if (!d3d11)
       return;
 
-   matrix_4x4_rotate_z(rot, rotation * (M_PI / 2.0f));
+   radians                 = rotation * (M_PI / 2.0f);
+   cosine                  = cosf(radians);
+   sine                    = sinf(radians);
+   MAT_ELEM_4X4(rot, 0, 0) = cosine;
+   MAT_ELEM_4X4(rot, 0, 1) = -sine;
+   MAT_ELEM_4X4(rot, 1, 0) = sine;
+   MAT_ELEM_4X4(rot, 1, 1) = cosine;
    matrix_4x4_multiply(d3d11->mvp, rot, d3d11->ubo_values.mvp);
 
    d3d11->context->lpVtbl->Map(

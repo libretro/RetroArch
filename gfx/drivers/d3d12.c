@@ -441,8 +441,14 @@ static void d3d12_set_filtering(void* data, unsigned index, bool smooth, bool ct
 
 static void d3d12_gfx_set_rotation(void* data, unsigned rotation)
 {
-   math_matrix_4x4  rot;
    math_matrix_4x4* mvp;
+   static math_matrix_4x4 rot  = {
+      { 0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    1.0f }
+   };
+   float radians, cosine, sine;
    D3D12_RANGE      read_range;
    d3d12_video_t*   d3d12      = (d3d12_video_t*)data;
 
@@ -452,13 +458,19 @@ static void d3d12_gfx_set_rotation(void* data, unsigned rotation)
    d3d12_gfx_sync(d3d12);
    d3d12->frame.rotation = rotation;
 
-   matrix_4x4_rotate_z(rot, d3d12->frame.rotation * (M_PI / 2.0f));
+   radians                 = d3d12->frame.rotation * (M_PI / 2.0f);
+   cosine                  = cosf(radians);
+   sine                    = sinf(radians);
+   MAT_ELEM_4X4(rot, 0, 0) = cosine;
+   MAT_ELEM_4X4(rot, 0, 1) = -sine;
+   MAT_ELEM_4X4(rot, 1, 0) = sine;
+   MAT_ELEM_4X4(rot, 1, 1) = cosine;
    matrix_4x4_multiply(d3d12->mvp, rot, d3d12->mvp_no_rot);
 
    read_range.Begin            = 0;
    read_range.End              = 0;
    D3D12Map(d3d12->frame.ubo, 0, &read_range, (void**)&mvp);
-   *mvp = d3d12->mvp;
+   *mvp                        = d3d12->mvp;
    D3D12Unmap(d3d12->frame.ubo, 0, NULL);
 }
 
