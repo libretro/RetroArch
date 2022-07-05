@@ -1432,8 +1432,6 @@ static void xmb_update_savestate_thumbnail_image(void *data)
    if (!((xmb->is_quick_menu || xmb->is_state_slot) && xmb->libretro_running))
       return;
 
-   xmb->thumbnails.savestate.core_aspect = true;
-
    /* If path is empty, just reset thumbnail */
    if (string_is_empty(xmb->savestate_thumbnail_file_path))
       gfx_thumbnail_reset(&xmb->thumbnails.savestate);
@@ -1449,6 +1447,8 @@ static void xmb_update_savestate_thumbnail_image(void *data)
                &xmb->thumbnails.savestate,
                thumbnail_upscale_threshold);
    }
+
+   xmb->thumbnails.savestate.core_aspect = true;
 }
 
 /* Is called when the pointer position changes within a list/sub-list (vertically) */
