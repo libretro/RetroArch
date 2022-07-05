@@ -3679,7 +3679,7 @@ static int xmb_draw_item(
       rotate_draw.scale_x      = scale_factor;
       rotate_draw.scale_y      = scale_factor;
       rotate_draw.scale_z      = 1.0f;
-      rotate_draw.scale_enable = true;
+      rotate_draw.scale_enable = (scale_factor == 1.0f) ? false : true;
 
       gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
 
@@ -5608,7 +5608,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             rotate_draw.scale_x      = scale_factor;
             rotate_draw.scale_y      = scale_factor;
             rotate_draw.scale_z      = 1.0f;
-            rotate_draw.scale_enable = true;
+            rotate_draw.scale_enable = (scale_factor == 1.0f) ? false : true;
 
             gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
 

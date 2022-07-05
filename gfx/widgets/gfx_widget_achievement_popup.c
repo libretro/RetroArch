@@ -176,7 +176,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
                   MENU_WIDGETS_ICON_ACHIEVEMENT],
                   0,
                   state->y,
-                  0, 1, pure_white);
+                  0, pure_white);
             if (dispctx && dispctx->blend_end)
                dispctx->blend_end(video_info->userdata);
          }
@@ -194,9 +194,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
                state->queue[state->queue_read_index].badge,
                0,
                state->y,
-               0,
-               1,
-               pure_white);
+               0, pure_white);
       }
 
       /* I _think_ state->unfold changes in another thread */

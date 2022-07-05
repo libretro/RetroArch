@@ -609,7 +609,7 @@ void gfx_widgets_draw_icon(
       unsigned icon_height,
       uintptr_t texture,
       float x, float y,
-      float rotation, float scale_factor,
+      float rotation,
       float *color)
 {
    gfx_display_ctx_rotate_draw_t rotate_draw;
@@ -624,10 +624,10 @@ void gfx_widgets_draw_icon(
 
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = rotation;
-   rotate_draw.scale_x      = scale_factor;
-   rotate_draw.scale_y      = scale_factor;
+   rotate_draw.scale_x      = 1.0f;
+   rotate_draw.scale_y      = 1.0f;
    rotate_draw.scale_z      = 1.0f;
-   rotate_draw.scale_enable = true;
+   rotate_draw.scale_enable = false;
 
    gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
 
@@ -641,7 +641,7 @@ void gfx_widgets_draw_icon(
    draw.y               = video_height - y - icon_height;
    draw.width           = icon_width;
    draw.height          = icon_height;
-   draw.scale_factor    = scale_factor;
+   draw.scale_factor    = 1.0f;
    draw.rotation        = rotation;
    draw.coords          = &coords;
    draw.matrix_data     = &mymat;
@@ -1108,7 +1108,7 @@ static int gfx_widgets_draw_indicator(
             video_height,
             width, height,
             icon, top_right_x_advance - width, y,
-            0, 1,
+            0,
             p_dispwidget->pure_white
             );
       if (dispctx && dispctx->blend_end)
@@ -1272,7 +1272,6 @@ static void gfx_widgets_draw_task_msg(
          p_dispwidget->msg_queue_task_hourglass_x,
          video_height - msg->offset_y,
          msg->task_finished ? 0 : msg->hourglass_rotation,
-         1,
          p_dispwidget->pure_white);
    if (dispctx && dispctx->blend_end)
       dispctx->blend_end(userdata);
@@ -1456,7 +1455,6 @@ static void gfx_widgets_draw_regular_msg(
             p_dispwidget->msg_queue_spacing,
             video_height - msg->offset_y  - p_dispwidget->msg_queue_icon_offset_y,
             0,
-            1,
             msg_queue_info);
 
       if (dispctx && dispctx->blend_end)
@@ -1538,7 +1536,6 @@ void gfx_widgets_frame(void *data)
                0,
                0,
                0,
-               1,
                p_dispwidget->pure_white
                );
          if (dispctx->blend_end)

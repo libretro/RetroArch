@@ -241,7 +241,7 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
             state->thumbnail_height,
             state->texture,
             0, state->y,
-            0, 1, pure_white
+            0, pure_white
             );
 
       gfx_widgets_draw_text(font_regular,

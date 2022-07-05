@@ -179,7 +179,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                         widget_size, widget_size,
                         p_dispwidget->gfx_widgets_icons_textures[
                               MENU_WIDGETS_ICON_ACHIEVEMENT],
-                        x, y, 0, 1, pure_white);
+                        x, y, 0, pure_white);
 
                   if (dispctx && dispctx->blend_end)
                      dispctx->blend_end(video_info->userdata);
@@ -192,7 +192,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                      p_disp, video_width, video_height,
                      widget_size, widget_size,
                      state->challenge_info[i].image,
-                     x, y, 0, 1, pure_white);
+                     x, y, 0, pure_white);
             }
          }
       }

@@ -199,7 +199,7 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
                icon_size, icon_size,
                volume_icon,
                0, 0,
-               0, 1, pure_white
+               0, pure_white
                );
          if (dispctx && dispctx->blend_end)
             dispctx->blend_end(userdata);

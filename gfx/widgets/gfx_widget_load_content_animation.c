@@ -806,7 +806,6 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                   icon_x,
                   state->icon_y,
                   0.0f,
-                  1.0f,
                   state->icon_color);
 
             if (dispctx && dispctx->blend_end)
