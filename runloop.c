@@ -1948,14 +1948,14 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                const char *fullpath = path_get(RARCH_PATH_CONTENT);
                if (!string_is_empty(fullpath))
                {
-                  char temp_path[PATH_MAX_LENGTH];
-                  temp_path[0]     = '\0';
+                  char tmp_path[PATH_MAX_LENGTH];
+                  tmp_path[0]     = '\0';
 
                   if (string_is_empty(dir_system))
                      RARCH_WARN("[Environ]: SYSTEM DIR is empty, assume CONTENT DIR %s\n",
                            fullpath);
-                  fill_pathname_basedir(temp_path, fullpath, sizeof(temp_path));
-                  dir_set(RARCH_DIR_SYSTEM, temp_path);
+                  fill_pathname_basedir(tmp_path, fullpath, sizeof(tmp_path));
+                  dir_set(RARCH_DIR_SYSTEM, tmp_path);
                }
 
                *(const char**)data = dir_get_ptr(RARCH_DIR_SYSTEM);

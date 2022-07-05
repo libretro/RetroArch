@@ -800,11 +800,11 @@ static bool content_file_extract_from_archive(
       const char **content_path,
       char **error_string)
 {
-   const char *temp_path_ptr = NULL;
-   char temp_path[PATH_MAX_LENGTH];
+   const char *tmp_path_ptr = NULL;
+   char tmp_path[PATH_MAX_LENGTH];
    char msg[1024];
 
-   temp_path[0] = '\0';
+   tmp_path[0] = '\0';
    msg[0]       = '\0';
 
    RARCH_LOG("[Content]: Core requires uncompressed content - "
@@ -815,7 +815,7 @@ static bool content_file_extract_from_archive(
          *content_path, valid_exts,
          string_is_empty(content_ctx->directory_cache) ?
                NULL : content_ctx->directory_cache,
-         temp_path, sizeof(temp_path)))
+         tmp_path, sizeof(tmp_path)))
    {
       snprintf(msg, sizeof(msg), "%s: \"%s\".\n",
             msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
@@ -827,16 +827,16 @@ static bool content_file_extract_from_archive(
    /* Add path of extracted file to temporary content
     * list (so it can be deleted when deinitialising
     * the core) */
-   temp_path_ptr = content_file_list_append_temporary(
-         p_content->content_list, temp_path);
-   if (!temp_path_ptr)
+   tmp_path_ptr = content_file_list_append_temporary(
+         p_content->content_list, tmp_path);
+   if (!tmp_path_ptr)
       return false;
 
    /* Update content path pointer */
-   *content_path = temp_path_ptr;
+   *content_path = tmp_path_ptr;
 
    RARCH_LOG("[Content]: Content successfully extracted to: \"%s\".\n",
-         temp_path);
+         tmp_path);
 
    return true;
 }

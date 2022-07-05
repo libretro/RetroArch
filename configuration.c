@@ -3925,7 +3925,7 @@ bool config_load_override(void *data)
       /* Create a new config file from content_path */
       if (config_file_exists(content_path))
       {
-         char temp_path[PATH_MAX_LENGTH + 1];
+         char tmp_path[PATH_MAX_LENGTH + 1];
 
          RARCH_LOG("[Overrides]: Content dir-specific overrides found at \"%s\".\n",
                content_path);
@@ -3933,7 +3933,7 @@ bool config_load_override(void *data)
          if (should_append)
          {
             RARCH_LOG("[Overrides]: Content dir-specific overrides stacking on top of previous overrides.\n");
-            snprintf(temp_path, sizeof(temp_path),
+            snprintf(tmp_path, sizeof(tmp_path),
                   "%s|%s",
                   path_get(RARCH_PATH_CONFIG_APPEND),
                   content_path
@@ -3941,11 +3941,11 @@ bool config_load_override(void *data)
          }
          else
          {
-            temp_path[0]    = '\0';
-            strlcpy(temp_path, content_path, sizeof(temp_path));
+            tmp_path[0]    = '\0';
+            strlcpy(tmp_path, content_path, sizeof(tmp_path));
          }
 
-         path_set(RARCH_PATH_CONFIG_APPEND, temp_path);
+         path_set(RARCH_PATH_CONFIG_APPEND, tmp_path);
 
          should_append = true;
       }
@@ -3957,7 +3957,7 @@ bool config_load_override(void *data)
       /* Create a new config file from game_path */
       if (config_file_exists(game_path))
       {
-         char temp_path[PATH_MAX_LENGTH + 1];
+         char tmp_path[PATH_MAX_LENGTH + 1];
 
          RARCH_LOG("[Overrides]: Game-specific overrides found at \"%s\".\n",
                game_path);
@@ -3965,7 +3965,7 @@ bool config_load_override(void *data)
          if (should_append)
          {
             RARCH_LOG("[Overrides]: Game-specific overrides stacking on top of previous overrides.\n");
-            snprintf(temp_path, sizeof(temp_path),
+            snprintf(tmp_path, sizeof(tmp_path),
                   "%s|%s",
                   path_get(RARCH_PATH_CONFIG_APPEND),
                   game_path
@@ -3973,11 +3973,11 @@ bool config_load_override(void *data)
          }
          else
          {
-            temp_path[0]    = '\0';
-            strlcpy(temp_path, game_path, sizeof(temp_path));
+            tmp_path[0]    = '\0';
+            strlcpy(tmp_path, game_path, sizeof(tmp_path));
          }
 
-         path_set(RARCH_PATH_CONFIG_APPEND, temp_path);
+         path_set(RARCH_PATH_CONFIG_APPEND, tmp_path);
 
          should_append = true;
       }
