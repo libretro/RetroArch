@@ -3678,12 +3678,22 @@ static int xmb_draw_item(
          gfx_display_ctx_rotate_draw_t rotate_draw;
          rotate_draw.matrix       = &mymat_tmp;
          rotate_draw.rotation     = 0;
-         rotate_draw.scale_x      = scale_factor;
-         rotate_draw.scale_y      = scale_factor;
-         rotate_draw.scale_z      = 1.0f;
-         rotate_draw.scale_enable = (scale_factor == 1.0f) ? false : true;
 
          gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+
+         if (scale_factor != 1.0f)
+         {
+            static math_matrix_4x4 matrix_scaled = {
+                { 0.0f,          0.0f,          0.0f,          0.0f ,
+                  0.0f,          0.0f,          0.0f,          0.0f ,
+                  0.0f,          0.0f,          0.0f,          0.0f ,
+                  0.0f,          0.0f,          0.0f,          1.0f } 
+            };
+            MAT_ELEM_4X4(matrix_scaled, 0, 0)    = scale_factor;
+            MAT_ELEM_4X4(matrix_scaled, 1, 1)    = scale_factor;
+            MAT_ELEM_4X4(matrix_scaled, 2, 2)    = 1.0f;
+            matrix_4x4_multiply(mymat_tmp, matrix_scaled, mymat_tmp);
+         }
       }
 
       xmb_draw_icon(
@@ -5191,10 +5201,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       gfx_display_ctx_rotate_draw_t rotate_draw;
       rotate_draw.matrix       = &mymat;
       rotate_draw.rotation     = 0;
-      rotate_draw.scale_x      = 1.0f;
-      rotate_draw.scale_y      = 1.0f;
-      rotate_draw.scale_z      = 1.0f;
-      rotate_draw.scale_enable = false;
 
       gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
    }
@@ -5613,12 +5619,22 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                gfx_display_ctx_rotate_draw_t rotate_draw;
                rotate_draw.matrix       = &mymat_tmp;
                rotate_draw.rotation     = 0;
-               rotate_draw.scale_x      = scale_factor;
-               rotate_draw.scale_y      = scale_factor;
-               rotate_draw.scale_z      = 1.0f;
-               rotate_draw.scale_enable = (scale_factor == 1.0f) ? false : true;
 
                gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+
+               if (scale_factor != 1.0f)
+               {
+                  static math_matrix_4x4 matrix_scaled = {
+                     { 0.0f,          0.0f,          0.0f,          0.0f ,
+                        0.0f,          0.0f,          0.0f,          0.0f ,
+                        0.0f,          0.0f,          0.0f,          0.0f ,
+                        0.0f,          0.0f,          0.0f,          1.0f } 
+                  };
+                  MAT_ELEM_4X4(matrix_scaled, 0, 0)    = scale_factor;
+                  MAT_ELEM_4X4(matrix_scaled, 1, 1)    = scale_factor;
+                  MAT_ELEM_4X4(matrix_scaled, 2, 2)    = 1.0f;
+                  matrix_4x4_multiply(mymat_tmp, matrix_scaled, mymat_tmp);
+               }
             }
 
             xmb_draw_icon(

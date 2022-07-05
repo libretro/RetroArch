@@ -959,43 +959,26 @@ void gfx_display_draw_texture_slice(
 void gfx_display_rotate_z(gfx_display_t *p_disp,
       gfx_display_ctx_rotate_draw_t *draw, void *data)
 {
-   float cosine, sine;
-   static math_matrix_4x4 rot         = {
-      {  0.0f,          0.0f,          0.0f,          0.0f ,
-         0.0f,          0.0f,          0.0f,          0.0f ,
-         0.0f,          0.0f,          1.0f,          0.0f ,
-         0.0f,          0.0f,          0.0f,          1.0f } 
-   };
    gfx_display_ctx_driver_t *dispctx  = p_disp->dispctx;
    math_matrix_4x4 *b                 = (dispctx->get_default_mvp) 
       ? (math_matrix_4x4*)dispctx->get_default_mvp(data)
       : NULL;
-   float radians                      = draw->rotation;
-
-   if (!b)
-      return;
-
-   cosine                             = cosf(radians);
-   sine                               = sinf(radians);
-   MAT_ELEM_4X4(rot, 0, 0)            = cosine;
-   MAT_ELEM_4X4(rot, 0, 1)            = -sine;
-   MAT_ELEM_4X4(rot, 1, 0)            = sine;
-   MAT_ELEM_4X4(rot, 1, 1)            = cosine;
-
-   matrix_4x4_multiply(*draw->matrix, rot, *b);
-
-   if (draw->scale_enable)
+   if (b)
    {
-      static math_matrix_4x4 matrix_scaled = {
-         { 0.0f,          0.0f,          0.0f,          0.0f ,
-           0.0f,          0.0f,          0.0f,          0.0f ,
-           0.0f,          0.0f,          0.0f,          0.0f ,
-           0.0f,          0.0f,          0.0f,          1.0f } 
+      static math_matrix_4x4 rot         = {
+         {  0.0f,          0.0f,          0.0f,          0.0f ,
+            0.0f,          0.0f,          0.0f,          0.0f ,
+            0.0f,          0.0f,          1.0f,          0.0f ,
+            0.0f,          0.0f,          0.0f,          1.0f } 
       };
-      MAT_ELEM_4X4(matrix_scaled, 0, 0)    = draw->scale_x;
-      MAT_ELEM_4X4(matrix_scaled, 1, 1)    = draw->scale_y;
-      MAT_ELEM_4X4(matrix_scaled, 2, 2)    = draw->scale_z;
-      matrix_4x4_multiply(*draw->matrix, matrix_scaled, *draw->matrix);
+      float radians                      = draw->rotation;
+      float cosine                       = cosf(radians);
+      float sine                         = sinf(radians);
+      MAT_ELEM_4X4(rot, 0, 0)            = cosine;
+      MAT_ELEM_4X4(rot, 0, 1)            = -sine;
+      MAT_ELEM_4X4(rot, 1, 0)            = sine;
+      MAT_ELEM_4X4(rot, 1, 1)            = cosine;
+      matrix_4x4_multiply(*draw->matrix, rot, *b);
    }
 }
 
@@ -1157,10 +1140,6 @@ void gfx_display_draw_keyboard(
       gfx_display_ctx_rotate_draw_t rotate_draw;
       rotate_draw.matrix       = &mymat;
       rotate_draw.rotation     = 0.0f;
-      rotate_draw.scale_x      = 1.0f;
-      rotate_draw.scale_y      = 1.0f;
-      rotate_draw.scale_z      = 1.0f;
-      rotate_draw.scale_enable = false;
 
       gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
    }

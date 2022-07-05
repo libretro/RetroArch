@@ -626,10 +626,6 @@ void gfx_widgets_draw_icon(
       gfx_display_ctx_rotate_draw_t rotate_draw;
       rotate_draw.matrix       = &mymat;
       rotate_draw.rotation     = rotation;
-      rotate_draw.scale_x      = 1.0f;
-      rotate_draw.scale_y      = 1.0f;
-      rotate_draw.scale_z      = 1.0f;
-      rotate_draw.scale_enable = false;
 
       gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
    }

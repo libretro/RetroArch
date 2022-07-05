@@ -174,10 +174,6 @@ typedef struct gfx_display_ctx_rotate_draw
 {
    math_matrix_4x4 *matrix;
    float rotation;
-   float scale_x;
-   float scale_y;
-   float scale_z;
-   bool scale_enable;
 } gfx_display_ctx_rotate_draw_t;
 
 typedef struct gfx_display_ctx_coord_draw
