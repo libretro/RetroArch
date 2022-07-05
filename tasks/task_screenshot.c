@@ -122,14 +122,10 @@ static void task_screenshot_handler(retro_task_t *task)
    if (!task)
       return;
 
-   state = (screenshot_task_state_t*)task->state;
-
-   if (!state)
+   if (!(state = (screenshot_task_state_t*)task->state))
       goto task_finished;
-
    if (task_get_cancelled(task))
       goto task_finished;
-
    if (task_get_progress(task) == 100)
       goto task_finished;
 
@@ -412,17 +408,11 @@ static bool take_screenshot_viewport(
 
    if (!vp.width || !vp.height)
       return false;
-
-   buffer = (uint8_t*)malloc(vp.width * vp.height * 3);
-
-   if (!buffer)
+   if (!(buffer = (uint8_t*)malloc(vp.width * vp.height * 3)))
       return false;
 
    if (!video_driver_read_viewport(buffer, is_idle))
-   {
-      free(buffer);
-      return false;
-   }
+      goto error;
 
    /* Data read from viewport is in bottom-up order, suitable for BMP. */
    if (!screenshot_dump(screenshot_dir,
@@ -431,12 +421,13 @@ static bool take_screenshot_viewport(
             vp.width * 3, true, buffer,
             savestate, is_idle, is_paused, fullpath, use_thread,
             pixel_format_type))
-   {
-      free(buffer);
-      return false;
-   }
+      goto error;
 
    return true;
+
+error:
+   free(buffer);
+   return false;
 }
 
 static bool take_screenshot_raw(const char *screenshot_dir,
@@ -447,13 +438,11 @@ static bool take_screenshot_raw(const char *screenshot_dir,
    size_t pitch;
    unsigned width, height;
    const void *data                      = NULL;
-
    video_driver_cached_frame_get(&data, &width, &height, &pitch);
-
    /* Negative pitch is needed as screenshot takes bottom-up,
     * but we use top-down.
     */
-   if (!screenshot_dump(screenshot_dir,
+   return screenshot_dump(screenshot_dir,
             name_base,
             (const uint8_t*)data + (height - 1) * pitch,
             width,
@@ -466,10 +455,7 @@ static bool take_screenshot_raw(const char *screenshot_dir,
             is_paused,
             fullpath,
             use_thread,
-            pixel_format_type))
-      return false;
-
-   return true;
+            pixel_format_type);
 }
 
 static bool take_screenshot_choice(
@@ -486,11 +472,6 @@ static bool take_screenshot_choice(
       unsigned pixel_format_type
       )
 {
-   size_t old_pitch;
-   unsigned old_width, old_height;
-   void *frame_data            = NULL;
-   const void* old_data        = NULL;
-
    if (supports_viewport_read)
    {
       /* Avoid taking screenshot of GUI overlays. */
@@ -507,25 +488,28 @@ static bool take_screenshot_choice(
             name_base, NULL, savestate, is_idle, is_paused, fullpath, use_thread,
             pixel_format_type);
 
-   if (!supports_read_frame_raw)
-      return false;
-
-   video_driver_cached_frame_get(&old_data, &old_width, &old_height,
-         &old_pitch);
-
-   frame_data = video_driver_read_frame_raw(
-         &old_width, &old_height, &old_pitch);
-
-   video_driver_cached_frame_set(old_data, old_width, old_height,
-         old_pitch);
-
-   if (frame_data)
+   if (supports_read_frame_raw)
    {
-      video_driver_set_cached_frame_ptr(frame_data);
-      if (take_screenshot_raw(screenshot_dir,
+      size_t old_pitch;
+      unsigned old_width, old_height;
+      void *frame_data            = NULL;
+      const void* old_data        = NULL;
+      video_driver_cached_frame_get(&old_data, &old_width, &old_height,
+            &old_pitch);
+
+      frame_data = video_driver_read_frame_raw(
+            &old_width, &old_height, &old_pitch);
+
+      video_driver_cached_frame_set(old_data, old_width, old_height,
+            old_pitch);
+
+      if (frame_data)
+      {
+         video_driver_set_cached_frame_ptr(frame_data);
+         return take_screenshot_raw(screenshot_dir,
                name_base, frame_data, savestate, is_idle, is_paused, fullpath, use_thread,
-               pixel_format_type))
-         return true;
+               pixel_format_type);
+      }
    }
 
    return false;
