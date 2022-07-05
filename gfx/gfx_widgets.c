@@ -612,7 +612,6 @@ void gfx_widgets_draw_icon(
       float rotation,
       float *color)
 {
-   gfx_display_ctx_rotate_draw_t rotate_draw;
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    math_matrix_4x4 mymat;
@@ -622,14 +621,18 @@ void gfx_widgets_draw_icon(
    if (!texture)
       return;
 
-   rotate_draw.matrix       = &mymat;
-   rotate_draw.rotation     = rotation;
-   rotate_draw.scale_x      = 1.0f;
-   rotate_draw.scale_y      = 1.0f;
-   rotate_draw.scale_z      = 1.0f;
-   rotate_draw.scale_enable = false;
+   if (!p_disp->dispctx->handles_transform)
+   {
+      gfx_display_ctx_rotate_draw_t rotate_draw;
+      rotate_draw.matrix       = &mymat;
+      rotate_draw.rotation     = rotation;
+      rotate_draw.scale_x      = 1.0f;
+      rotate_draw.scale_y      = 1.0f;
+      rotate_draw.scale_z      = 1.0f;
+      rotate_draw.scale_enable = false;
 
-   gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+   }
 
    coords.vertices      = 4;
    coords.vertex        = NULL;

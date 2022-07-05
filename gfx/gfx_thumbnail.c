@@ -881,7 +881,6 @@ void gfx_thumbnail_draw(
    /* Only draw thumbnail if it is available... */
    if (thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE)
    {
-      gfx_display_ctx_rotate_draw_t rotate_draw;
       gfx_display_ctx_draw_t draw;
       struct video_coords coords;
       math_matrix_4x4 mymat;
@@ -911,25 +910,29 @@ void gfx_thumbnail_draw(
       if (dispctx->blend_begin)
          dispctx->blend_begin(userdata);
 
-      /* Perform 'rotation' step
-       * > Note that rotation does not actually work...
-       * > It rotates the image all right, but distorts it
-       *   to fit the aspect of the bounding box while clipping
-       *   off any 'corners' that extend beyond the bounding box
-       * > Since the result is visual garbage, we disable
-       *   rotation entirely
-       * > But we still have to call gfx_display_rotate_z(),
-       *   or nothing will be drawn...
-       * Note that we also disable scaling here (scale_enable),
-       * since we handle scaling internally... */
-      rotate_draw.matrix       = &mymat;
-      rotate_draw.rotation     = 0.0f;
-      rotate_draw.scale_x      = 1.0f;
-      rotate_draw.scale_y      = 1.0f;
-      rotate_draw.scale_z      = 1.0f;
-      rotate_draw.scale_enable = false;
+      if (!p_disp->dispctx->handles_transform)
+      {
+         /* Perform 'rotation' step
+          * > Note that rotation does not actually work...
+          * > It rotates the image all right, but distorts it
+          *   to fit the aspect of the bounding box while clipping
+          *   off any 'corners' that extend beyond the bounding box
+          * > Since the result is visual garbage, we disable
+          *   rotation entirely
+          * > But we still have to call gfx_display_rotate_z(),
+          *   or nothing will be drawn...
+          * Note that we also disable scaling here (scale_enable),
+          * since we handle scaling internally... */
+         gfx_display_ctx_rotate_draw_t rotate_draw;
+         rotate_draw.matrix       = &mymat;
+         rotate_draw.rotation     = 0.0f;
+         rotate_draw.scale_x      = 1.0f;
+         rotate_draw.scale_y      = 1.0f;
+         rotate_draw.scale_z      = 1.0f;
+         rotate_draw.scale_enable = false;
 
-      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+         gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+      }
 
       /* Configure draw object
        * > Note: Colour, width/height and position must

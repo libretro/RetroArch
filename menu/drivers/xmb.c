@@ -3628,7 +3628,6 @@ static int xmb_draw_item(
       )
    {
       math_matrix_4x4 mymat_tmp;
-      gfx_display_ctx_rotate_draw_t rotate_draw;
       uintptr_t texture        = xmb_icon_get_id(xmb, core_node, node,
             entry.enum_idx, entry.path, entry.label,
             entry_type, (i == current), entry.checked);
@@ -3674,14 +3673,18 @@ static int xmb_draw_item(
          }
       }
 
-      rotate_draw.matrix       = &mymat_tmp;
-      rotate_draw.rotation     = 0;
-      rotate_draw.scale_x      = scale_factor;
-      rotate_draw.scale_y      = scale_factor;
-      rotate_draw.scale_z      = 1.0f;
-      rotate_draw.scale_enable = (scale_factor == 1.0f) ? false : true;
+      if (!p_disp->dispctx->handles_transform)
+      {
+         gfx_display_ctx_rotate_draw_t rotate_draw;
+         rotate_draw.matrix       = &mymat_tmp;
+         rotate_draw.rotation     = 0;
+         rotate_draw.scale_x      = scale_factor;
+         rotate_draw.scale_y      = scale_factor;
+         rotate_draw.scale_z      = 1.0f;
+         rotate_draw.scale_enable = (scale_factor == 1.0f) ? false : true;
 
-      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+         gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+      }
 
       xmb_draw_icon(
             userdata,
@@ -5027,7 +5030,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 {
    math_matrix_4x4 mymat;
    unsigned i;
-   gfx_display_ctx_rotate_draw_t rotate_draw;
    char msg[1024];
    char title_msg[255];
    char title_truncated[255];
@@ -5184,14 +5186,18 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             video_width, video_height, xmb->font);
    }
 
-   rotate_draw.matrix       = &mymat;
-   rotate_draw.rotation     = 0;
-   rotate_draw.scale_x      = 1.0f;
-   rotate_draw.scale_y      = 1.0f;
-   rotate_draw.scale_z      = 1.0f;
-   rotate_draw.scale_enable = false;
+   if (!p_disp->dispctx->handles_transform)
+   {
+      gfx_display_ctx_rotate_draw_t rotate_draw;
+      rotate_draw.matrix       = &mymat;
+      rotate_draw.rotation     = 0;
+      rotate_draw.scale_x      = 1.0f;
+      rotate_draw.scale_y      = 1.0f;
+      rotate_draw.scale_z      = 1.0f;
+      rotate_draw.scale_enable = false;
 
-   gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+   }
 
    /**************************/
    /* Draw thumbnails: START */
@@ -5571,7 +5577,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
          if (xmb_item_color[3] != 0)
          {
-            gfx_display_ctx_rotate_draw_t rotate_draw;
             math_matrix_4x4 mymat_tmp;
             uintptr_t texture        = node->icon;
             float x                  = xmb->x + xmb->categories_x_pos +
@@ -5603,14 +5608,18 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                }
             }
 
-            rotate_draw.matrix       = &mymat_tmp;
-            rotate_draw.rotation     = 0;
-            rotate_draw.scale_x      = scale_factor;
-            rotate_draw.scale_y      = scale_factor;
-            rotate_draw.scale_z      = 1.0f;
-            rotate_draw.scale_enable = (scale_factor == 1.0f) ? false : true;
+            if (!p_disp->dispctx->handles_transform)
+            {
+               gfx_display_ctx_rotate_draw_t rotate_draw;
+               rotate_draw.matrix       = &mymat_tmp;
+               rotate_draw.rotation     = 0;
+               rotate_draw.scale_x      = scale_factor;
+               rotate_draw.scale_y      = scale_factor;
+               rotate_draw.scale_z      = 1.0f;
+               rotate_draw.scale_enable = (scale_factor == 1.0f) ? false : true;
 
-            gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+               gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+            }
 
             xmb_draw_icon(
                   userdata,

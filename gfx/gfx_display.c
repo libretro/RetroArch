@@ -959,32 +959,30 @@ void gfx_display_draw_texture_slice(
 void gfx_display_rotate_z(gfx_display_t *p_disp,
       gfx_display_ctx_rotate_draw_t *draw, void *data)
 {
-   float cosine, sine, radians;
-   static math_matrix_4x4 matrix_rotated     = {
+   float cosine, sine;
+   static math_matrix_4x4 rot         = {
       {  0.0f,          0.0f,          0.0f,          0.0f ,
          0.0f,          0.0f,          0.0f,          0.0f ,
          0.0f,          0.0f,          1.0f,          0.0f ,
          0.0f,          0.0f,          0.0f,          1.0f } 
    };
-   math_matrix_4x4 *b                 = NULL;
    gfx_display_ctx_driver_t *dispctx  = p_disp->dispctx;
+   math_matrix_4x4 *b                 = (dispctx->get_default_mvp) 
+      ? (math_matrix_4x4*)dispctx->get_default_mvp(data)
+      : NULL;
+   float radians                      = draw->rotation;
 
-   if (
-              dispctx->handles_transform
-         ||  !dispctx->get_default_mvp 
-         || !(b = (math_matrix_4x4*)dispctx->get_default_mvp(data))
-      )
+   if (!b)
       return;
 
-   radians                            = draw->rotation;
    cosine                             = cosf(radians);
    sine                               = sinf(radians);
-   MAT_ELEM_4X4(matrix_rotated, 0, 0) = cosine;
-   MAT_ELEM_4X4(matrix_rotated, 0, 1) = -sine;
-   MAT_ELEM_4X4(matrix_rotated, 1, 0) = sine;
-   MAT_ELEM_4X4(matrix_rotated, 1, 1) = cosine;
+   MAT_ELEM_4X4(rot, 0, 0)            = cosine;
+   MAT_ELEM_4X4(rot, 0, 1)            = -sine;
+   MAT_ELEM_4X4(rot, 1, 0)            = sine;
+   MAT_ELEM_4X4(rot, 1, 1)            = cosine;
 
-   matrix_4x4_multiply(*draw->matrix, matrix_rotated, *b);
+   matrix_4x4_multiply(*draw->matrix, rot, *b);
 
    if (draw->scale_enable)
    {
@@ -1128,19 +1126,11 @@ void gfx_display_draw_keyboard(
       0.00, 0.00, 0.00, 0.85,
    };
    math_matrix_4x4 mymat;
-   gfx_display_ctx_rotate_draw_t rotate_draw;
 
 #ifdef HAVE_MIST
    if(steam_has_osk_open())
       return;
 #endif
-
-   rotate_draw.matrix       = &mymat;
-   rotate_draw.rotation     = 0.0f;
-   rotate_draw.scale_x      = 1.0f;
-   rotate_draw.scale_y      = 1.0f;
-   rotate_draw.scale_z      = 1.0f;
-   rotate_draw.scale_enable = false;
 
    gfx_display_draw_quad(
          p_disp,
@@ -1162,7 +1152,18 @@ void gfx_display_draw_keyboard(
    if (ptr_width >= ptr_height)
       ptr_width = ptr_height;
 
-   gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+   if (!p_disp->dispctx->handles_transform)
+   {
+      gfx_display_ctx_rotate_draw_t rotate_draw;
+      rotate_draw.matrix       = &mymat;
+      rotate_draw.rotation     = 0.0f;
+      rotate_draw.scale_x      = 1.0f;
+      rotate_draw.scale_y      = 1.0f;
+      rotate_draw.scale_z      = 1.0f;
+      rotate_draw.scale_enable = false;
+
+      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+   }
 
    for (i = 0; i < 44; i++)
    {

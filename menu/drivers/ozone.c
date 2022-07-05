@@ -9940,6 +9940,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          background_color,
          NULL);
 
+   if (!p_disp->dispctx->handles_transform)
    {
       gfx_display_ctx_rotate_draw_t rotate_draw;
       rotate_draw.matrix       = &mymat;
