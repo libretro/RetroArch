@@ -348,6 +348,16 @@ struct socket_buffer
    size_t read;
 };
 
+/* We do it like this instead of using sockaddr_storage
+   in order to have relay server IPv6 support on platforms
+   that do not support IPv6. */
+typedef struct netplay_address
+{
+   /* Can hold an IPv6 address aswell as an IPv4 address in the
+      ::ffff:a.b.c.d format. */
+   uint8_t addr[16];
+} netplay_address_t;
+
 /* Each connection gets a connection struct */
 struct netplay_connection
 {
@@ -356,6 +366,9 @@ struct netplay_connection
 
    /* Timer used to estimate a connection's latency */
    retro_time_t ping_timer;
+
+   /* Connection's address */
+   netplay_address_t addr;
 
    /* Buffers for sending and receiving data */
    struct socket_buffer send_packet_buffer;
@@ -428,15 +441,30 @@ typedef struct mitm_id
 } mitm_id_t;
 
 #define NETPLAY_MITM_MAX_PENDING 8
-struct netplay_mitm_pending
+struct netplay_mitm_handler
 {
-   retro_time_t timeouts[NETPLAY_MITM_MAX_PENDING];
-   mitm_id_t ids[NETPLAY_MITM_MAX_PENDING];
+   struct
+   {
+      retro_time_t timeout;
+      mitm_id_t id;
+      netplay_address_t addr;
+      int fd;
+      bool has_addr;
+   } pending[NETPLAY_MITM_MAX_PENDING];
+
    mitm_id_t id_buf;
+   netplay_address_t addr_buf;
    struct addrinfo *base_addr;
    const struct addrinfo *addr;
    size_t id_recvd;
-   int fds[NETPLAY_MITM_MAX_PENDING];
+   size_t addr_recvd;
+};
+
+struct netplay_ban_list
+{
+   netplay_address_t *list;
+   size_t size;
+   size_t allocated;
 };
 
 struct netplay_chat
@@ -477,11 +505,14 @@ struct netplay
    /* MITM session id */
    mitm_id_t mitm_session_id;
 
+   /* Banned addresses */
+   struct netplay_ban_list ban_list;
+
    /* Chat messages */
    struct netplay_chat chat;
 
    /* MITM connection handler */
-   struct netplay_mitm_pending *mitm_pending;
+   struct netplay_mitm_handler *mitm_handler;
 
    /* All of our connections */
    struct netplay_connection *connections;

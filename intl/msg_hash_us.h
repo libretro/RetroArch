@@ -12965,6 +12965,10 @@ MSG_HASH(
    "Netplay host full"
    )
 MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "You are banned from this host"
+   )
+MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
    "Failed to receive header from host"
    )
