@@ -415,6 +415,7 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
    thumbnail->alpha       = 0.0f;
    thumbnail->delay_timer = 0.0f;
    thumbnail->fade_active = false;
+   thumbnail->core_aspect = false;
 }
 
 /* Stream processing */
@@ -810,20 +811,26 @@ void gfx_thumbnail_get_draw_dimensions(
    {
       *draw_width  = (float)width;
       *draw_height = (float)thumbnail->height * (*draw_width / (float)thumbnail->width);
-      *draw_height = *draw_height * (thumbnail_aspect / core_aspect);
 
-      if (*draw_height > height)
+      if (thumbnail->core_aspect)
       {
-         *draw_height = (float)height;
-         *draw_width  = (float)thumbnail->width * (*draw_height / (float)thumbnail->height);
-         *draw_width  = *draw_width / (thumbnail_aspect / core_aspect);
+         *draw_height = *draw_height * (thumbnail_aspect / core_aspect);
+
+         if (*draw_height > height)
+         {
+            *draw_height = (float)height;
+            *draw_width  = (float)thumbnail->width * (*draw_height / (float)thumbnail->height);
+            *draw_width  = *draw_width / (thumbnail_aspect / core_aspect);
+         }
       }
    }
    else
    {
       *draw_height = (float)height;
       *draw_width  = (float)thumbnail->width * (*draw_height / (float)thumbnail->height);
-      *draw_width  = *draw_width / (thumbnail_aspect / core_aspect);
+
+      if (thumbnail->core_aspect)
+         *draw_width  = *draw_width / (thumbnail_aspect / core_aspect);
    }
 
    /* Account for scale factor

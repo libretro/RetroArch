@@ -3397,8 +3397,6 @@ static void ozone_update_savestate_thumbnail_image(void *data)
    if (!((ozone->is_quick_menu || ozone->is_state_slot) && ozone->libretro_running))
       return;
 
-   ozone->thumbnails.savestate.core_aspect = true;
-
    /* If path is empty, just reset thumbnail */
    if (string_is_empty(ozone->savestate_thumbnail_file_path))
       gfx_thumbnail_reset(&ozone->thumbnails.savestate);
@@ -3416,6 +3414,8 @@ static void ozone_update_savestate_thumbnail_image(void *data)
                thumbnail_upscale_threshold);
       }
    }
+
+   ozone->thumbnails.savestate.core_aspect = true;
 }
 
 static void ozone_entries_update_thumbnail_bar(
