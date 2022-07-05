@@ -416,9 +416,6 @@ typedef struct settings
 
       char translation_service_url[2048];
 
-      char bundle_assets_src[PATH_MAX_LENGTH];
-      char bundle_assets_dst[PATH_MAX_LENGTH];
-      char bundle_assets_dst_subdir[PATH_MAX_LENGTH];
       char youtube_stream_key[PATH_MAX_LENGTH];
       char twitch_stream_key[PATH_MAX_LENGTH];
       char facebook_stream_key[PATH_MAX_LENGTH];
@@ -451,6 +448,9 @@ typedef struct settings
 
       char path_stream_url[8192];
 
+      char bundle_assets_src[PATH_MAX_LENGTH];
+      char bundle_assets_dst[PATH_MAX_LENGTH];
+      char bundle_assets_dst_subdir[PATH_MAX_LENGTH];
       char path_menu_xmb_font[PATH_MAX_LENGTH];
       char menu_content_show_settings_password[PATH_MAX_LENGTH];
       char kiosk_mode_password[PATH_MAX_LENGTH];

@@ -474,10 +474,10 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
     {
        settings_t *settings = config_get_ptr();
        configuration_set_string(settings,
-             settings->arrays.bundle_assets_src,
+             settings->paths.bundle_assets_src,
              assets_zip_path);
        configuration_set_string(settings,
-             settings->arrays.bundle_assets_dst,
+             settings->paths.bundle_assets_dst,
 #if TARGET_OS_IOS || TARGET_OS_TV
              home_dir_buf
 #else

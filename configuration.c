@@ -1414,9 +1414,6 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("input_driver",             settings->arrays.input_driver,           false, NULL, true);
    SETTING_ARRAY("input_joypad_driver",      settings->arrays.input_joypad_driver,    false, NULL, true);
    SETTING_ARRAY("input_keyboard_layout",    settings->arrays.input_keyboard_layout,  false, NULL, true);
-   SETTING_ARRAY("bundle_assets_src_path",   settings->arrays.bundle_assets_src, false, NULL, true);
-   SETTING_ARRAY("bundle_assets_dst_path",   settings->arrays.bundle_assets_dst, false, NULL, true);
-   SETTING_ARRAY("bundle_assets_dst_path_subdir", settings->arrays.bundle_assets_dst_subdir, false, NULL, true);
    SETTING_ARRAY("led_driver",               settings->arrays.led_driver, false, NULL, true);
    SETTING_ARRAY("netplay_mitm_server",      settings->arrays.netplay_mitm_server, false, NULL, true);
    SETTING_ARRAY("midi_driver",              settings->arrays.midi_driver, false, NULL, true);
@@ -1577,6 +1574,10 @@ static struct config_path_setting *populate_settings_path(
          recording_st->output_dir, false, NULL, true);
    SETTING_PATH("recording_config_directory",
          recording_st->config_dir, false, NULL, true);
+
+   SETTING_PATH("bundle_assets_src_path",   settings->paths.bundle_assets_src, false, NULL, true);
+   SETTING_PATH("bundle_assets_dst_path",   settings->paths.bundle_assets_dst, false, NULL, true);
+   SETTING_PATH("bundle_assets_dst_path_subdir", settings->paths.bundle_assets_dst_subdir, false, NULL, true);
 
    SETTING_ARRAY("log_dir", settings->paths.log_dir, true, NULL, true);
 
@@ -2745,9 +2746,9 @@ void config_set_defaults(void *data)
    *settings->paths.path_content_video_history   = '\0';
    *settings->paths.path_cheat_settings          = '\0';
 #if !defined(__APPLE__)
-   *settings->arrays.bundle_assets_src           = '\0';
-   *settings->arrays.bundle_assets_dst           = '\0';
-   *settings->arrays.bundle_assets_dst_subdir    = '\0';
+   *settings->paths.bundle_assets_src            = '\0';
+   *settings->paths.bundle_assets_dst            = '\0';
+   *settings->paths.bundle_assets_dst_subdir     = '\0';
 #endif
    *settings->paths.path_cheat_database    = '\0';
    *settings->paths.path_menu_wallpaper    = '\0';

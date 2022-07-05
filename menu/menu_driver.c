@@ -3464,18 +3464,18 @@ bool rarch_menu_init(
 
 #ifdef HAVE_COMPRESSION
    if (      settings->bools.bundle_assets_extract_enable
-         && !string_is_empty(settings->arrays.bundle_assets_src)
-         && !string_is_empty(settings->arrays.bundle_assets_dst)
+         && !string_is_empty(settings->paths.bundle_assets_src)
+         && !string_is_empty(settings->paths.bundle_assets_dst)
          && (settings->uints.bundle_assets_extract_version_current
             != settings->uints.bundle_assets_extract_last_version)
       )
    {
       p_dialog->current_type         = MENU_DIALOG_HELP_EXTRACT;
       task_push_decompress(
-            settings->arrays.bundle_assets_src,
-            settings->arrays.bundle_assets_dst,
+            settings->paths.bundle_assets_src,
+            settings->paths.bundle_assets_dst,
             NULL,
-            settings->arrays.bundle_assets_dst_subdir,
+            settings->paths.bundle_assets_dst_subdir,
             NULL,
             bundle_decompressed,
             NULL,
