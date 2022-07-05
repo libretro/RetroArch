@@ -9947,7 +9947,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       rotate_draw.scale_x      = 1.0f;
       rotate_draw.scale_y      = 1.0f;
       rotate_draw.scale_z      = 1.0f;
-      rotate_draw.scale_enable = true;
+      rotate_draw.scale_enable = false;
 
       gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
    }

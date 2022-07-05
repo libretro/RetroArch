@@ -3678,7 +3678,7 @@ static int xmb_draw_item(
       rotate_draw.rotation     = 0;
       rotate_draw.scale_x      = scale_factor;
       rotate_draw.scale_y      = scale_factor;
-      rotate_draw.scale_z      = 1;
+      rotate_draw.scale_z      = 1.0f;
       rotate_draw.scale_enable = true;
 
       gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
@@ -5186,10 +5186,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = 0;
-   rotate_draw.scale_x      = 1;
-   rotate_draw.scale_y      = 1;
-   rotate_draw.scale_z      = 1;
-   rotate_draw.scale_enable = true;
+   rotate_draw.scale_x      = 1.0f;
+   rotate_draw.scale_y      = 1.0f;
+   rotate_draw.scale_z      = 1.0f;
+   rotate_draw.scale_enable = false;
 
    gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
 
@@ -5607,7 +5607,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             rotate_draw.rotation     = 0;
             rotate_draw.scale_x      = scale_factor;
             rotate_draw.scale_y      = scale_factor;
-            rotate_draw.scale_z      = 1;
+            rotate_draw.scale_z      = 1.0f;
             rotate_draw.scale_enable = true;
 
             gfx_display_rotate_z(p_disp, &rotate_draw, userdata);

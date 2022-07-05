@@ -1136,11 +1136,11 @@ void gfx_display_draw_keyboard(
 #endif
 
    rotate_draw.matrix       = &mymat;
-   rotate_draw.rotation     = 0.0;
-   rotate_draw.scale_x      = 1.0;
-   rotate_draw.scale_y      = 1.0;
-   rotate_draw.scale_z      = 1;
-   rotate_draw.scale_enable = true;
+   rotate_draw.rotation     = 0.0f;
+   rotate_draw.scale_x      = 1.0f;
+   rotate_draw.scale_y      = 1.0f;
+   rotate_draw.scale_z      = 1.0f;
+   rotate_draw.scale_enable = false;
 
    gfx_display_draw_quad(
          p_disp,

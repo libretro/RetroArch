@@ -626,7 +626,7 @@ void gfx_widgets_draw_icon(
    rotate_draw.rotation     = rotation;
    rotate_draw.scale_x      = scale_factor;
    rotate_draw.scale_y      = scale_factor;
-   rotate_draw.scale_z      = 1;
+   rotate_draw.scale_z      = 1.0f;
    rotate_draw.scale_enable = true;
 
    gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
