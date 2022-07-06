@@ -170,12 +170,6 @@ struct gfx_display_ctx_draw
    bool pipeline_active;
 };
 
-typedef struct gfx_display_ctx_rotate_draw
-{
-   math_matrix_4x4 *matrix;
-   float rotation;
-} gfx_display_ctx_rotate_draw_t;
-
 typedef struct gfx_display_ctx_coord_draw
 {
    const float *ptr;
@@ -296,7 +290,7 @@ void gfx_display_draw_texture_slice(
       math_matrix_4x4 *mymat);
 
 void gfx_display_rotate_z(gfx_display_t *p_disp,
-      gfx_display_ctx_rotate_draw_t *draw, void *data);
+      math_matrix_4x4 *matrix, float cosine, float sine, void *data);
 
 font_data_t *gfx_display_font_file(gfx_display_t *p_disp,
       char* fontpath, float font_size, bool is_threaded);

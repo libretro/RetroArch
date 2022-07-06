@@ -922,11 +922,9 @@ void gfx_thumbnail_draw(
           * > But we still have to call gfx_display_rotate_z(),
           *   or nothing will be drawn...
           */
-         gfx_display_ctx_rotate_draw_t rotate_draw;
-         rotate_draw.matrix       = &mymat;
-         rotate_draw.rotation     = 0.0f;
-
-         gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+         float cosine             = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
+         float sine               = 0.0f; /* sine(rad) = sine(0) = 0.0f */
+         gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
       }
 
       /* Configure draw object

@@ -4002,11 +4002,9 @@ static void materialui_render_menu_entry_default(
 
    if (!p_disp->dispctx->handles_transform)
    {
-      gfx_display_ctx_rotate_draw_t rotate_draw;
-      rotate_draw.matrix       = &mymat;
-      rotate_draw.rotation     = 0.0f;
-
-      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+      float cosine     = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
+      float sine       = 0.0f; /* sine(rad) = sine(0) = 0.0f */
+      gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
    }
 
    /* Initial ticker configuration
@@ -4353,11 +4351,9 @@ static void materialui_render_menu_entry_playlist_list(
 
    if (!p_disp->dispctx->handles_transform)
    {
-      gfx_display_ctx_rotate_draw_t rotate_draw;
-      rotate_draw.matrix       = &mymat;
-      rotate_draw.rotation     = 0.0f;
-
-      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+      float cosine     = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
+      float sine       = 0.0f; /* sine(rad) = sine(0) = 0.0f */
+      gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
    }
 
    /* Initial ticker configuration
@@ -4610,11 +4606,9 @@ static void materialui_render_menu_entry_playlist_dual_icon(
 
    if (!p_disp->dispctx->handles_transform)
    {
-      gfx_display_ctx_rotate_draw_t rotate_draw;
-      rotate_draw.matrix       = &mymat;
-      rotate_draw.rotation     = 0.0f;
-
-      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+      float cosine     = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
+      float sine       = 0.0f; /* sine(rad) = sine(0) = 0.0f */
+      gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
    }
 
    /* Initial ticker configuration
@@ -4905,11 +4899,9 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
 
    if (!p_disp->dispctx->handles_transform)
    {
-      gfx_display_ctx_rotate_draw_t rotate_draw;
-      rotate_draw.matrix       = &mymat;
-      rotate_draw.rotation     = 0.0f;
-
-      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+      float cosine     = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
+      float sine       = 0.0f; /* sine(rad) = sine(0) = 0.0f */
+      gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
    }
 
    /* Draw sidebar background
@@ -6934,11 +6926,9 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    if (!p_disp->dispctx->handles_transform)
    {
-      gfx_display_ctx_rotate_draw_t rotate_draw;
-      rotate_draw.matrix       = &mymat;
-      rotate_draw.rotation     = 0.0f;
-
-      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+      float cosine     = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
+      float sine       = 0.0f; /* sine(rad) = sine(0) = 0.0f */
+      gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
    }
 
    video_driver_set_viewport(video_width, video_height, true, false);

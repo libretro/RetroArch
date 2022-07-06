@@ -3675,11 +3675,9 @@ static int xmb_draw_item(
 
       if (!p_disp->dispctx->handles_transform)
       {
-         gfx_display_ctx_rotate_draw_t rotate_draw;
-         rotate_draw.matrix       = &mymat_tmp;
-         rotate_draw.rotation     = 0;
-
-         gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+         float cosine             = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
+         float sine               = 0.0f; /* sine(rad) = sine(0) = 0.0f */
+         gfx_display_rotate_z(p_disp, &mymat_tmp, cosine, sine, userdata);
 
          if (scale_factor != 1.0f)
          {
@@ -5198,11 +5196,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (!p_disp->dispctx->handles_transform)
    {
-      gfx_display_ctx_rotate_draw_t rotate_draw;
-      rotate_draw.matrix       = &mymat;
-      rotate_draw.rotation     = 0;
-
-      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+      float cosine             = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
+      float sine               = 0.0f; /* sine(rad) = sine(0) = 0.0f */
+      gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
    }
 
    /**************************/
@@ -5616,11 +5612,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
             if (!p_disp->dispctx->handles_transform)
             {
-               gfx_display_ctx_rotate_draw_t rotate_draw;
-               rotate_draw.matrix       = &mymat_tmp;
-               rotate_draw.rotation     = 0;
+               float cosine     = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
+               float sine       = 0.0f; /* sine(rad) = sine(0) = 0.0f */
 
-               gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+               gfx_display_rotate_z(p_disp, &mymat_tmp, cosine, sine, userdata);
 
                if (scale_factor != 1.0f)
                {

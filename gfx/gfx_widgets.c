@@ -609,7 +609,7 @@ void gfx_widgets_draw_icon(
       unsigned icon_height,
       uintptr_t texture,
       float x, float y,
-      float rotation,
+      float radians,
       float *color)
 {
    gfx_display_ctx_draw_t draw;
@@ -623,11 +623,9 @@ void gfx_widgets_draw_icon(
 
    if (!p_disp->dispctx->handles_transform)
    {
-      gfx_display_ctx_rotate_draw_t rotate_draw;
-      rotate_draw.matrix       = &mymat;
-      rotate_draw.rotation     = rotation;
-
-      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+      float cosine             = cosf(radians);
+      float sine               = sinf(radians);
+      gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
    }
 
    coords.vertices      = 4;
@@ -641,7 +639,7 @@ void gfx_widgets_draw_icon(
    draw.width           = icon_width;
    draw.height          = icon_height;
    draw.scale_factor    = 1.0f;
-   draw.rotation        = rotation;
+   draw.rotation        = radians;
    draw.coords          = &coords;
    draw.matrix_data     = &mymat;
    draw.texture         = texture;
