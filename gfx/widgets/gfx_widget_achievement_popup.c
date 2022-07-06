@@ -20,14 +20,6 @@
 
 #include "../cheevos/cheevos.h"
 
-#ifdef HAVE_THREADS
-#define SLOCK_LOCK(x) slock_lock(x)
-#define SLOCK_UNLOCK(x) slock_unlock(x)
-#else
-#define SLOCK_LOCK(x)
-#define SLOCK_UNLOCK(x)
-#endif
-
 #define CHEEVO_NOTIFICATION_DURATION      4000
 
 #define CHEEVO_QUEUE_SIZE 8
@@ -84,12 +76,14 @@ static void gfx_widget_achievement_popup_free_all(gfx_widget_achievement_popup_s
 {
    if (state->queue_read_index >= 0)
    {
-      SLOCK_LOCK(state->queue_lock);
-
+#ifdef HAVE_THREADS
+      slock_lock(state->queue_lock);
+#endif
       while (state->queue[state->queue_read_index].title)
          gfx_widget_achievement_popup_free_current(state);
-
-      SLOCK_UNLOCK(state->queue_lock);
+#ifdef HAVE_THREADS
+      slock_unlock(state->queue_lock);
+#endif
    }
 }
 
@@ -123,7 +117,9 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
          || !state->queue[state->queue_read_index].title)
       return;
 
-   SLOCK_LOCK(state->queue_lock);
+#ifdef HAVE_THREADS
+   slock_lock(state->queue_lock);
+#endif
 
    {
       static float pure_white[16]          = {
@@ -266,7 +262,9 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       }
    }
 
-   SLOCK_UNLOCK(state->queue_lock);
+#ifdef HAVE_THREADS
+   slock_unlock(state->queue_lock);
+#endif
 }
 
 static void gfx_widget_achievement_popup_free_current(
@@ -297,7 +295,9 @@ static void gfx_widget_achievement_popup_next(void* userdata)
 {
    gfx_widget_achievement_popup_state_t *state = &p_w_achievement_popup_st;
 
-   SLOCK_LOCK(state->queue_lock);
+#ifdef HAVE_THREADS
+   slock_lock(state->queue_lock);
+#endif
 
    if (state->queue_read_index >= 0)
    {
@@ -309,7 +309,9 @@ static void gfx_widget_achievement_popup_next(void* userdata)
          gfx_widget_achievement_popup_start(state);
    }
 
-   SLOCK_UNLOCK(state->queue_lock);
+#ifdef HAVE_THREADS
+   slock_unlock(state->queue_lock);
+#endif
 }
 
 static void gfx_widget_achievement_popup_dismiss(void *userdata)
@@ -429,14 +431,18 @@ void gfx_widgets_push_achievement(const char *title, const char* subtitle, const
 #endif
    }
 
-   SLOCK_LOCK(state->queue_lock);
+#ifdef HAVE_THREADS
+   slock_lock(state->queue_lock);
+#endif
 
    if (state->queue_write_index == state->queue_read_index)
    {
       if (state->queue[state->queue_write_index].title)
       {
          /* queue full */
-         SLOCK_UNLOCK(state->queue_lock);
+#ifdef HAVE_THREADS
+         slock_unlock(state->queue_lock);
+#endif
          return;
       }
 
@@ -454,7 +460,9 @@ void gfx_widgets_push_achievement(const char *title, const char* subtitle, const
    if (start_notification)
       gfx_widget_achievement_popup_start(state);
 
-   SLOCK_UNLOCK(state->queue_lock);
+#ifdef HAVE_THREADS
+   slock_unlock(state->queue_lock);
+#endif
 }
 
 const gfx_widget_t gfx_widget_achievement_popup = {

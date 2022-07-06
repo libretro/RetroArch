@@ -39,14 +39,6 @@
 #include "../tasks/task_content.h"
 #include "../tasks/tasks_internal.h"
 
-#ifdef HAVE_THREADS
-#define SLOCK_LOCK(x) slock_lock(x)
-#define SLOCK_UNLOCK(x) slock_unlock(x)
-#else
-#define SLOCK_LOCK(x)
-#define SLOCK_UNLOCK(x)
-#endif
-
 #define BASE_FONT_SIZE 32.0f
 
 #define MSG_QUEUE_FONT_SIZE (BASE_FONT_SIZE * 0.69f)
@@ -457,7 +449,9 @@ static void gfx_widgets_msg_queue_move(dispgfx_widget_t *p_dispwidget)
    /* there should always be one and only one unfolded message */
    disp_widget_msg_t *unfold        = NULL; 
 
-   SLOCK_LOCK(p_dispwidget->current_msgs_lock);
+#ifdef HAVE_THREADS
+   slock_lock(p_dispwidget->current_msgs_lock);
+#endif
 
    for (i = (int)(p_dispwidget->current_msgs_size - 1); i >= 0; i--)
    {
@@ -490,7 +484,9 @@ static void gfx_widgets_msg_queue_move(dispgfx_widget_t *p_dispwidget)
       }
    }
 
-   SLOCK_UNLOCK(p_dispwidget->current_msgs_lock);
+#ifdef HAVE_THREADS
+   slock_unlock(p_dispwidget->current_msgs_lock);
+#endif
 }
 
 static void gfx_widgets_msg_queue_free(
@@ -539,10 +535,11 @@ static void gfx_widgets_msg_queue_kill_end(void *userdata)
    disp_widget_msg_t* msg;
    dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
 
-   SLOCK_LOCK(p_dispwidget->current_msgs_lock);
+#ifdef HAVE_THREADS
+   slock_lock(p_dispwidget->current_msgs_lock);
+#endif
 
-   msg = p_dispwidget->current_msgs[p_dispwidget->msg_queue_kill];
-   if (msg)
+   if ((msg = p_dispwidget->current_msgs[p_dispwidget->msg_queue_kill]))
    {
       /* Remove it from the list */
       for (i = p_dispwidget->msg_queue_kill; i < p_dispwidget->current_msgs_size - 1; i++)
@@ -558,7 +555,9 @@ static void gfx_widgets_msg_queue_kill_end(void *userdata)
       free(msg);
    }
 
-   SLOCK_UNLOCK(p_dispwidget->current_msgs_lock);
+#ifdef HAVE_THREADS
+   slock_unlock(p_dispwidget->current_msgs_lock);
+#endif
 }
 
 static void gfx_widgets_msg_queue_kill(
@@ -988,7 +987,9 @@ void gfx_widgets_iterate(
    {
       disp_widget_msg_t *msg_widget = NULL;
 
-      SLOCK_LOCK(p_dispwidget->current_msgs_lock);
+#ifdef HAVE_THREADS
+      slock_lock(p_dispwidget->current_msgs_lock);
+#endif
 
       if (p_dispwidget->current_msgs_size < ARRAY_SIZE(p_dispwidget->current_msgs))
       {
@@ -1015,7 +1016,9 @@ void gfx_widgets_iterate(
          }
       }
 
-      SLOCK_UNLOCK(p_dispwidget->current_msgs_lock);
+#ifdef HAVE_THREADS
+      slock_unlock(p_dispwidget->current_msgs_lock);
+#endif
 
       if (msg_widget)
       {
@@ -1744,7 +1747,9 @@ void gfx_widgets_frame(void *data)
    /* Draw all messages */
    if (p_dispwidget->current_msgs_size)
    {
-      SLOCK_LOCK(p_dispwidget->current_msgs_lock);
+#ifdef HAVE_THREADS
+      slock_lock(p_dispwidget->current_msgs_lock);
+#endif
 
       for (i = 0; i < p_dispwidget->current_msgs_size; i++)
       {
@@ -1769,7 +1774,9 @@ void gfx_widgets_frame(void *data)
                video_width, video_height);
       }
 
-      SLOCK_UNLOCK(p_dispwidget->current_msgs_lock);
+#ifdef HAVE_THREADS
+      slock_unlock(p_dispwidget->current_msgs_lock);
+#endif
    }
 
    /* Ensure all text is flushed */
@@ -1831,7 +1838,9 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
    fifo_deinitialize(&p_dispwidget->msg_queue);
 
    /* Purge everything from the list */
-   SLOCK_LOCK(p_dispwidget->current_msgs_lock);
+#ifdef HAVE_THREADS
+   slock_lock(p_dispwidget->current_msgs_lock);
+#endif
 
    p_dispwidget->current_msgs_size = 0;
    for (i = 0; i < ARRAY_SIZE(p_dispwidget->current_msgs); i++)
@@ -1852,9 +1861,9 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
 
       gfx_widgets_msg_queue_free(p_dispwidget, msg);
    }
-   SLOCK_UNLOCK(p_dispwidget->current_msgs_lock);
-
 #ifdef HAVE_THREADS
+   slock_unlock(p_dispwidget->current_msgs_lock);
+
    slock_free(p_dispwidget->current_msgs_lock);
    p_dispwidget->current_msgs_lock = NULL;
 #endif

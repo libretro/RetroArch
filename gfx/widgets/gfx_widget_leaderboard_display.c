@@ -20,14 +20,6 @@
 
 #include "../cheevos/cheevos.h"
 
-#ifdef HAVE_THREADS
-#define SLOCK_LOCK(x) slock_lock(x)
-#define SLOCK_UNLOCK(x) slock_unlock(x)
-#else
-#define SLOCK_LOCK(x)
-#define SLOCK_UNLOCK(x)
-#endif
-
 #define CHEEVO_LBOARD_ARRAY_SIZE 4
 #define CHEEVO_CHALLENGE_ARRAY_SIZE 8
 
@@ -53,8 +45,8 @@ struct gfx_widget_leaderboard_display_state
 #endif
    const dispgfx_widget_t *dispwidget_ptr;
    struct leaderboard_display_info tracker_info[CHEEVO_LBOARD_ARRAY_SIZE];
-   unsigned tracker_count;
    struct challenge_display_info challenge_info[CHEEVO_CHALLENGE_ARRAY_SIZE];
+   unsigned tracker_count;
    unsigned challenge_count;
 };
 
@@ -104,7 +96,10 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
    if (state->tracker_count == 0 && state->challenge_count == 0)
       return;
 
-   SLOCK_LOCK(state->array_lock);
+#ifdef HAVE_THREADS
+   slock_lock(state->array_lock);
+#endif
+
    {
       static float pure_white[16] = {
          1.00, 1.00, 1.00, 1.00,
@@ -216,7 +211,9 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
       }
    }
 
-   SLOCK_UNLOCK(state->array_lock);
+#ifdef HAVE_THREADS
+   slock_unlock(state->array_lock);
+#endif
 }
 
 void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
@@ -224,7 +221,9 @@ void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
    unsigned i;
    gfx_widget_leaderboard_display_state_t *state = &p_w_leaderboard_display_st;
 
-   SLOCK_LOCK(state->array_lock);
+#ifdef HAVE_THREADS
+   slock_lock(state->array_lock);
+#endif
 
    for (i = 0; i < state->tracker_count; ++i)
    {
@@ -261,7 +260,9 @@ void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
       }
    }
 
-   SLOCK_UNLOCK(state->array_lock);
+#ifdef HAVE_THREADS
+   slock_unlock(state->array_lock);
+#endif
 }
 
 void gfx_widgets_set_challenge_display(unsigned id, const char* badge)
@@ -271,10 +272,12 @@ void gfx_widgets_set_challenge_display(unsigned id, const char* badge)
 
    /* important - this must be done outside the lock because it has the potential to need to
     * lock the video thread, which may be waiting for the popup queue lock to render popups */
-   uintptr_t badge_id = badge ? rcheevos_get_badge_texture(badge, 0) : 0;
+   uintptr_t badge_id     = badge ? rcheevos_get_badge_texture(badge, 0) : 0;
    uintptr_t old_badge_id = 0;
 
-   SLOCK_LOCK(state->array_lock);
+#ifdef HAVE_THREADS
+   slock_lock(state->array_lock);
+#endif
 
    for (i = 0; i < state->challenge_count; ++i)
    {
@@ -319,7 +322,9 @@ void gfx_widgets_set_challenge_display(unsigned id, const char* badge)
       }
    }
 
-   SLOCK_UNLOCK(state->array_lock);
+#ifdef HAVE_THREADS
+   slock_unlock(state->array_lock);
+#endif
 
    if (old_badge_id)
       video_driver_texture_unload(&old_badge_id);
