@@ -43,16 +43,6 @@ gfx_display_t *disp_get_ptr(void)
    return &dispgfx_st;
 }
 
-static bool gfx_display_font_init_first(
-      void **font_handle, void *video_data,
-      const char *font_path, float font_size,
-      bool is_threaded, enum font_driver_render_api font_type)
-{
-   font_data_t **handle = (font_data_t**)font_handle;
-   return ((*handle = font_driver_init_first(video_data,
-         font_path, font_size, true, is_threaded, font_type)));
-}
-
 static const float *null_get_default_matrix(void)
 {
    static float dummy[16] = {0.0f};
@@ -472,25 +462,23 @@ font_data_t *gfx_display_font_file(
       gfx_display_t *p_disp,
       char* fontpath, float menu_font_size, bool is_threaded)
 {
-   font_data_t            *font_data = NULL;
-   float                  font_size  = menu_font_size;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
-   if (!dispctx)
-      return NULL;
-
-   /* Font size must be at least 2, or font_init_first()
-    * will generate a heap-buffer-overflow when using
-    * many font drivers */
-   if (font_size < 2.0f)
-      font_size = 2.0f;
-
-   if (!gfx_display_font_init_first((void**)&font_data,
-            video_driver_get_ptr(),
-            fontpath, font_size, is_threaded, dispctx->font_type))
-      return NULL;
-
-   return font_data;
+   if (dispctx)
+   {
+      font_data_t        *font_data  = NULL;
+      float               font_size  = menu_font_size;
+      /* Font size must be at least 2, or font_init_first()
+       * will generate a heap-buffer-overflow when using
+       * many font drivers */
+      if (font_size < 2.0f)
+         font_size = 2.0f;
+      if ((font_data = font_driver_init_first(video_driver_get_ptr(),
+                  fontpath, font_size, true, is_threaded,
+                  dispctx->font_type)))
+         return font_data;
+   }
+   return NULL;
 }
 
 /* Draw text on top of the screen */
@@ -1287,18 +1275,6 @@ void gfx_display_init(void)
 
    p_disp->has_windowed          = video_driver_has_windowed();
    p_dispca->allocated           =  0;
-}
-
-bool gfx_display_driver_exists(const char *s)
-{
-   unsigned i;
-   for (i = 0; i < ARRAY_SIZE(gfx_display_ctx_drivers); i++)
-   {
-      if (string_is_equal(s, gfx_display_ctx_drivers[i]->ident))
-         return true;
-   }
-
-   return false;
 }
 
 bool gfx_display_init_first_driver(gfx_display_t *p_disp,
