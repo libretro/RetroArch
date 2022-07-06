@@ -63,7 +63,7 @@ struct gfx_widget_load_content_animation_state
    unsigned bg_width;
    unsigned bg_height;
 
-   gfx_timer_t timer;      /* float alignment */
+   float timer;      /* float alignment */
    float bg_x;
    float bg_y;
    float alpha;

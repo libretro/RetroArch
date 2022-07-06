@@ -180,8 +180,6 @@ typedef struct gfx_animation_ctx_line_ticker_smooth
    bool fade_enabled;
 } gfx_animation_ctx_line_ticker_smooth_t;
 
-typedef float gfx_timer_t;
-
 typedef struct gfx_timer_ctx_entry
 {
    tween_cb cb;
@@ -192,7 +190,7 @@ typedef struct gfx_timer_ctx_entry
 typedef struct gfx_delayed_animation
 {
    gfx_animation_ctx_entry_t entry; /* pointer alignment */
-   gfx_timer_t timer;
+   float timer;
 } gfx_delayed_animation_t;
 
 typedef float (*easing_cb) (float, float, float, float);
@@ -234,7 +232,7 @@ struct gfx_animation
 
 typedef struct gfx_animation gfx_animation_t;
 
-void gfx_animation_timer_start(gfx_timer_t *timer,
+void gfx_animation_timer_start(float *timer,
       gfx_timer_ctx_entry_t *timer_entry);
 
 bool gfx_animation_update(

@@ -41,7 +41,7 @@ struct gfx_widget_screenshot_state
    float scale_factor;
    float y;
    float alpha;
-   gfx_timer_t timer;         /* float alignment */
+   float timer;         /* float alignment */
 
    char shotname[256];
    char filename[256];

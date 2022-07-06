@@ -57,7 +57,7 @@ struct gfx_widget_volume_state
    float text_alpha;
    float db;
    float percent;
-   gfx_timer_t timer;   /* float alignment */
+   float timer;   /* float alignment */
 
    bool mute;
 };

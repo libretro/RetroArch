@@ -35,7 +35,7 @@ struct gfx_widget_progress_message_state
 
    unsigned priority;
 
-   gfx_timer_t timer;      /* float alignment */
+   float timer;      /* float alignment */
    float alpha;
    float widget_x;
    float widget_y;

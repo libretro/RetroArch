@@ -2221,7 +2221,7 @@ void gfx_animation_deinit(void)
    memset(p_anim, 0, sizeof(*p_anim));
 }
 
-void gfx_animation_timer_start(gfx_timer_t *timer, gfx_timer_ctx_entry_t *timer_entry)
+void gfx_animation_timer_start(float *timer, gfx_timer_ctx_entry_t *timer_entry)
 {
    gfx_animation_ctx_entry_t entry;
    uintptr_t tag        = (uintptr_t) timer;

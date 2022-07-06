@@ -50,7 +50,7 @@ struct gfx_widget_achievement_popup_state
    int queue_write_index;
    unsigned width;
    unsigned height;
-   gfx_timer_t timer;   /* float alignment */
+   float timer;   /* float alignment */
    float unfold;
    float y;
 };
