@@ -805,7 +805,9 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                   state->icon_texture,
                   icon_x,
                   state->icon_y,
-                  0.0f,
+                  0.0f, /* rad */
+                  1.0f, /* cos(rad)   = cos(0)  = 1.0f */
+                  0.0f, /* sine(rad)  = sine(0) = 0.0f */
                   state->icon_color);
 
             if (dispctx && dispctx->blend_end)

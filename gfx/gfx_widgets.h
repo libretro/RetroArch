@@ -286,7 +286,9 @@ void gfx_widgets_draw_icon(
       unsigned icon_height,
       uintptr_t texture,
       float x, float y,
-      float rotation,
+      float radians,
+      float cosine,
+      float sine,
       float *color);
 
 void gfx_widgets_draw_text(

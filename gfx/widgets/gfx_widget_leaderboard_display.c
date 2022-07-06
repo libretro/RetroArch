@@ -174,12 +174,21 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                   if (dispctx && dispctx->blend_begin)
                      dispctx->blend_begin(video_info->userdata);
 
-                  gfx_widgets_draw_icon(video_info->userdata,
-                        p_disp, video_width, video_height,
-                        widget_size, widget_size,
+                  gfx_widgets_draw_icon(
+                        video_info->userdata,
+                        p_disp,
+                        video_width,
+                        video_height,
+                        widget_size,
+                        widget_size,
                         p_dispwidget->gfx_widgets_icons_textures[
                               MENU_WIDGETS_ICON_ACHIEVEMENT],
-                        x, y, 0, pure_white);
+                        x,
+                        y,
+                        0.0f, /* rad */
+                        1.0f, /* cos(rad)   = cos(0)  = 1.0f */
+                        0.0f, /* sine(rad)  = sine(0) = 0.0f */
+                        pure_white);
 
                   if (dispctx && dispctx->blend_end)
                      dispctx->blend_end(video_info->userdata);
@@ -188,11 +197,20 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
             else
             {
                /* achievement badge */
-               gfx_widgets_draw_icon(video_info->userdata,
-                     p_disp, video_width, video_height,
-                     widget_size, widget_size,
+               gfx_widgets_draw_icon(
+                     video_info->userdata,
+                     p_disp,
+                     video_width,
+                     video_height,
+                     widget_size,
+                     widget_size,
                      state->challenge_info[i].image,
-                     x, y, 0, pure_white);
+                     x,
+                     y,
+                     0.0f, /* rad */
+                     1.0f, /* cos(rad)   = cos(0)  = 1.0f */
+                     0.0f, /* sine(rad)  = sine(0) = 0.0f */
+                     pure_white);
             }
          }
       }

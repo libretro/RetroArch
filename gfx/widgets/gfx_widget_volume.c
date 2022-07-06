@@ -198,8 +198,12 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
                video_height,
                icon_size, icon_size,
                volume_icon,
-               0, 0,
-               0, pure_white
+               0,
+               0,
+               0.0f, /* rad */
+               1.0f, /* cos(rad)   = cos(0)  = 1.0f */
+               0.0f, /* sine(rad)  = sine(0) = 0.0f */
+               pure_white
                );
          if (dispctx && dispctx->blend_end)
             dispctx->blend_end(userdata);

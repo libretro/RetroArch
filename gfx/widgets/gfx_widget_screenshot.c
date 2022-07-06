@@ -240,8 +240,12 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
             state->thumbnail_width,
             state->thumbnail_height,
             state->texture,
-            0, state->y,
-            0, pure_white
+            0,
+            state->y,
+            0.0f, /* rad */
+            1.0f, /* cos(rad)   = cos(0)  = 1.0f */
+            0.0f, /* sine(rad)  = sine(0) = 0.0f */
+            pure_white
             );
 
       gfx_widgets_draw_text(font_regular,

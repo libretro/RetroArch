@@ -610,6 +610,8 @@ void gfx_widgets_draw_icon(
       uintptr_t texture,
       float x, float y,
       float radians,
+      float cosine,
+      float sine,
       float *color)
 {
    gfx_display_ctx_draw_t draw;
@@ -622,11 +624,7 @@ void gfx_widgets_draw_icon(
       return;
 
    if (!p_disp->dispctx->handles_transform)
-   {
-      float cosine             = cosf(radians);
-      float sine               = sinf(radians);
       gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
-   }
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -1103,9 +1101,13 @@ static int gfx_widgets_draw_indicator(
             p_disp,
             video_width,
             video_height,
-            width, height,
-            icon, top_right_x_advance - width, y,
-            0,
+            width,
+            height,
+            icon,
+            top_right_x_advance - width, y,
+            0.0f, /* rad */
+            1.0f, /* cos(rad)   = cos(0)  = 1.0f */
+            0.0f, /* sine(rad)  = sine(0) = 0.0f */
             p_dispwidget->pure_white
             );
       if (dispctx && dispctx->blend_end)
@@ -1255,21 +1257,34 @@ static void gfx_widgets_draw_task_msg(
    gfx_display_set_alpha(p_dispwidget->pure_white, msg->alpha);
    if (dispctx && dispctx->blend_begin)
       dispctx->blend_begin(userdata);
-   gfx_widgets_draw_icon(
-         userdata,
-         p_disp,
-         video_width,
-         video_height,
-         p_dispwidget->msg_queue_height / 2,
-         p_dispwidget->msg_queue_height / 2,
-         p_dispwidget->gfx_widgets_icons_textures[
-         msg->task_finished 
-         ? MENU_WIDGETS_ICON_CHECK 
-         : MENU_WIDGETS_ICON_HOURGLASS],
-         p_dispwidget->msg_queue_task_hourglass_x,
-         video_height - msg->offset_y,
-         msg->task_finished ? 0 : msg->hourglass_rotation,
-         p_dispwidget->pure_white);
+   {
+      float radians = 0.0f; /* rad                        */
+      float cosine  = 0.0f; /* cos(rad)  = cos(0)  = 1.0f */
+      float sine    = 1.0f; /* sine(rad) = sine(0) = 0.0f */
+      if (!msg->task_finished)
+      {
+         radians    = msg->hourglass_rotation;
+         cosine     = cosf(radians);
+         sine       = sinf(radians);
+      }
+      gfx_widgets_draw_icon(
+            userdata,
+            p_disp,
+            video_width,
+            video_height,
+            p_dispwidget->msg_queue_height / 2,
+            p_dispwidget->msg_queue_height / 2,
+            p_dispwidget->gfx_widgets_icons_textures[
+            msg->task_finished 
+            ? MENU_WIDGETS_ICON_CHECK 
+            : MENU_WIDGETS_ICON_HOURGLASS],
+            p_dispwidget->msg_queue_task_hourglass_x,
+            video_height - msg->offset_y,
+            radians,
+            cosine,
+            sine,
+            p_dispwidget->pure_white);
+   }
    if (dispctx && dispctx->blend_end)
       dispctx->blend_end(userdata);
 
@@ -1451,7 +1466,9 @@ static void gfx_widgets_draw_regular_msg(
             p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_INFO],
             p_dispwidget->msg_queue_spacing,
             video_height - msg->offset_y  - p_dispwidget->msg_queue_icon_offset_y,
-            0,
+            0.0f, /* rad                         */
+            1.0f, /* cos(rad)   = cos(0)  = 1.0f */
+            0.0f, /* sine(rad)  = sine(0) = 0.0f */
             msg_queue_info);
 
       if (dispctx && dispctx->blend_end)
@@ -1532,7 +1549,9 @@ void gfx_widgets_frame(void *data)
                p_dispwidget->ai_service_overlay_texture,
                0,
                0,
-               0,
+               0.0f, /* rad                         */
+               1.0f, /* cos(rad)   = cos(0)  = 1.0f */
+               0.0f, /* sine(rad)  = sine(0) = 0.0f */
                p_dispwidget->pure_white
                );
          if (dispctx->blend_end)
