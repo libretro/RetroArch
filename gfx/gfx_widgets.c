@@ -1259,8 +1259,8 @@ static void gfx_widgets_draw_task_msg(
       dispctx->blend_begin(userdata);
    {
       float radians = 0.0f; /* rad                        */
-      float cosine  = 0.0f; /* cos(rad)  = cos(0)  = 1.0f */
-      float sine    = 1.0f; /* sine(rad) = sine(0) = 0.0f */
+      float cosine  = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
+      float sine    = 0.0f; /* sine(rad) = sine(0) = 0.0f */
       if (!msg->task_finished)
       {
          radians    = msg->hourglass_rotation;
