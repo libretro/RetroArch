@@ -1105,7 +1105,6 @@ void gfx_display_draw_keyboard(
       0.00, 0.00, 0.00, 0.85,
       0.00, 0.00, 0.00, 0.85,
    };
-   math_matrix_4x4 mymat;
 
 #ifdef HAVE_MIST
    if(steam_has_osk_open())
@@ -1131,13 +1130,6 @@ void gfx_display_draw_keyboard(
 
    if (ptr_width >= ptr_height)
       ptr_width = ptr_height;
-
-   if (!p_disp->dispctx->handles_transform)
-   {
-      float cosine       = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
-      float sine         = 0.0f; /* sine(rad) = sine(0) = 0.0f */
-      gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
-   }
 
    for (i = 0; i < 44; i++)
    {
