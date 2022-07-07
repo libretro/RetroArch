@@ -127,6 +127,7 @@
 #define NETPLAY_MAGIC 0x52414E50 /* RANP */
 #define FULL_MAGIC    0x46554C4C /* FULL */
 #define POKE_MAGIC    0x504F4B45 /* POKE */
+#define BANNED_MAGIC  0x44454E59 /* DENY */
 
 /* Discovery magics */
 #define DISCOVERY_QUERY_MAGIC    0x52414E51 /* RANQ */
@@ -135,6 +136,7 @@
 /* MITM magics */
 #define MITM_SESSION_MAGIC 0x52415453 /* RATS */
 #define MITM_LINK_MAGIC    0x5241544C /* RATL */
+#define MITM_ADDR_MAGIC    0x52415441 /* RATA */
 #define MITM_PING_MAGIC    0x52415450 /* RATP */
 
 #define ANNOUNCE_FRAMES      1200
@@ -934,15 +936,16 @@ bool netplay_handshake_init(netplay_t *netplay,
 
    if (netplay->is_server)
    {
-      /* Poking the server for information? Just disconnect */
-      if (netplay_magic == POKE_MAGIC)
+      switch (netplay_magic)
       {
-         send_info_and_disconnect(netplay, connection);
-         return true;
-      }
-      else if (netplay_magic != NETPLAY_MAGIC)
-      {
-         return false;
+         case NETPLAY_MAGIC:
+            break;
+         case POKE_MAGIC:
+            /* Poking the server for information? Just disconnect */
+            send_info_and_disconnect(netplay, connection);
+            return true;
+         default:
+            return false;
       }
    }
    else
@@ -950,17 +953,22 @@ bool netplay_handshake_init(netplay_t *netplay,
       /* Only the client is able to estimate latency at this point. */
       SET_PING(connection)
 
-      if (netplay_magic == FULL_MAGIC)
+      switch (netplay_magic)
       {
-         dmsg = msg_hash_to_str(MSG_NETPLAY_HOST_FULL);
-         RARCH_ERR("[Netplay] %s\n", dmsg);
-         goto error;
-      }
-      else if (netplay_magic != NETPLAY_MAGIC)
-      {
-         dmsg = msg_hash_to_str(MSG_NETPLAY_NOT_RETROARCH);
-         RARCH_ERR("[Netplay] %s\n", dmsg);
-         goto error;
+         case NETPLAY_MAGIC:
+            break;
+         case FULL_MAGIC:
+            dmsg = msg_hash_to_str(MSG_NETPLAY_HOST_FULL);
+            RARCH_ERR("[Netplay] %s\n", dmsg);
+            goto error;
+         case BANNED_MAGIC:
+            dmsg = msg_hash_to_str(MSG_NETPLAY_BANNED);
+            RARCH_ERR("[Netplay] %s\n", dmsg);
+            goto error;
+         default:
+            dmsg = msg_hash_to_str(MSG_NETPLAY_NOT_RETROARCH);
+            RARCH_ERR("[Netplay] %s\n", dmsg);
+            goto error;
       }
    }
 
@@ -2483,7 +2491,7 @@ void netplay_recv_flush(struct socket_buffer *sbuf)
    sbuf->start = sbuf->read;
 }
 
-static bool netplay_full(netplay_t *netplay, int sockfd)
+static bool netplay_full(netplay_t *netplay, int fd)
 {
    size_t i;
    settings_t *settings     = config_get_ptr();
@@ -2504,25 +2512,50 @@ static bool netplay_full(netplay_t *netplay, int sockfd)
 
    if (total >= max_connections)
    {
-      /* We send a header to let the client 
-         know we are full */
+      /* We send a header to let the client know we are full. */
       uint32_t header[6];
 
-      /* The only parameter that we need to set is 
-         netplay magic;
-         we set the protocol version parameter 
-         too for backwards compatibility */
+      /* The only parameter that we need to set is netplay magic;
+         we set the protocol version parameter too
+         for backwards compatibility. */
       memset(header, 0, sizeof(header));
       header[0] = htonl(FULL_MAGIC);
       header[4] = htonl(HIGH_NETPLAY_PROTOCOL_VERSION);
 
-      /* The kernel might close the socket before 
-         sending our data.
-         This is fine; the header is just a warning 
-         for the client. */
-      socket_send_all_nonblocking(sockfd, header, sizeof(header), true);
+      /* The kernel might close the socket before sending our data.
+         This is fine; the header is just a warning for the client. */
+      socket_send_all_nonblocking(fd, header, sizeof(header), true);
 
       return true;
+   }
+
+   return false;
+}
+
+static bool netplay_banned(netplay_t *netplay, int fd, netplay_address_t *addr)
+{
+   size_t i;
+
+   for (i = 0; i < netplay->ban_list.size; i++)
+   {
+      if (!memcmp(addr, &netplay->ban_list.list[i], sizeof(*addr)))
+      {
+         /* We send a header to let the client know it's banned. */
+         uint32_t header[6];
+
+         /* The only parameter that we need to set is netplay magic;
+            we set the protocol version parameter too
+            for backwards compatibility. */
+         memset(header, 0, sizeof(header));
+         header[0] = htonl(BANNED_MAGIC);
+         header[4] = htonl(HIGH_NETPLAY_PROTOCOL_VERSION);
+
+         /* The kernel might close the socket before sending our data.
+            This is fine; the header is just a warning for the client. */
+         socket_send_all_nonblocking(fd, header, sizeof(header), true);
+
+         return true;
+      }
    }
 
    return false;
@@ -3107,13 +3140,15 @@ static void netplay_handle_frame_hash(netplay_t *netplay,
 /**
  * handle_connection
  * @netplay : pointer to netplay object
+ * @addr    : value of pointer is set to the address of the peer on a completed connection
  * @error   : value of pointer is set to true if a critical error occurs
  *
  * Accepts a new client connection.
  *
  * Returns: fd of a new connection or -1 if there was no new connection.
  */
-static int handle_connection(netplay_t *netplay, bool *error)
+static int handle_connection(netplay_t *netplay, netplay_address_t *addr,
+      bool *error)
 {
    int new_fd;
    struct sockaddr_storage their_addr;
@@ -3128,6 +3163,40 @@ static int handle_connection(netplay_t *netplay, bool *error)
 
       return -1;
    }
+
+#define INET_TO_NETPLAY(in_addr, out_addr) \
+   { \
+      uint16_t *preffix = (uint16_t*)&(out_addr)->addr[10]; \
+      uint32_t *addr4   = (uint32_t*)&(out_addr)->addr[12]; \
+      memset(&(out_addr)->addr[0], 0, 10); \
+      *preffix = 0xffff; \
+      memcpy(addr4, &((struct sockaddr_in*)(in_addr))->sin_addr, \
+         sizeof(*addr4)); \
+   }
+
+#ifdef HAVE_INET6
+   switch (their_addr.ss_family)
+   {
+      case AF_INET:
+         /* For IPv4, we need to write the address as:
+            ::ffff:a.b.c.d */
+         INET_TO_NETPLAY(&their_addr, addr)
+         break;
+      case AF_INET6:
+         /* For IPv6, we just copy the address data. */
+         memcpy(addr, &((struct sockaddr_in6*)&their_addr)->sin6_addr,
+            sizeof(*addr));
+         break;
+      default:
+         /* We can't handle this. Not a critical error though. */
+         socket_close(new_fd);
+         return -1;
+   }
+#else
+   INET_TO_NETPLAY(&their_addr, addr)
+#endif
+
+#undef INET_TO_NETPLAY
 
    /* Set the socket nonblocking */
    if (!socket_nonblock(new_fd))
@@ -3164,6 +3233,7 @@ static bool netplay_tunnel_connect(int fd, const struct addrinfo *addr)
 /**
  * handle_mitm_connection
  * @netplay : pointer to netplay object
+ * @addr    : value of pointer is set to the address of the peer on a completed connection
  * @error   : value of pointer is set to true if a critical error occurs
  *
  * Do three things here.
@@ -3175,18 +3245,16 @@ static bool netplay_tunnel_connect(int fd, const struct addrinfo *addr)
  *
  * Returns: fd of a new completed connection or -1 if no connection was completed.
  */
-static int handle_mitm_connection(netplay_t *netplay, bool *error)
+static int handle_mitm_connection(netplay_t *netplay, netplay_address_t *addr,
+      bool *error)
 {
-   size_t  i;
-   void*   recv_buf;
-   size_t  recv_len;
-   ssize_t recvd;
+   size_t i;
    int new_fd         = -1;
    retro_time_t ctime = cpu_features_get_time_usec();
 
-   for (i = 0; i < NETPLAY_MITM_MAX_PENDING; i++)
+   for (i = 0; i < ARRAY_SIZE(netplay->mitm_handler->pending); i++)
    {
-      int fd = netplay->mitm_pending->fds[i];
+      int fd = netplay->mitm_handler->pending[i].fd;
 
       if (fd >= 0)
       {
@@ -3199,29 +3267,37 @@ static int handle_mitm_connection(netplay_t *netplay, bool *error)
          }
          else if (ready)
          {
-            /* Connection is ready.
-               Send the linking id. */
-            mitm_id_t *lid = &netplay->mitm_pending->ids[i];
+            /* Connection is ready. */
+            mitm_id_t *id = &netplay->mitm_handler->pending[i].id;
 
-            if (socket_send_all_nonblocking(fd, lid, sizeof(*lid), true) ==
-                  sizeof(*lid))
+            /* Check to see if the tunnel server has already reported
+               the peer's address. */
+            if (!netplay->mitm_handler->pending[i].has_addr)
+               continue;
+
+            /* Now send the linking id. */
+            if (socket_send_all_nonblocking(fd, id, sizeof(*id), true) ==
+                  sizeof(*id))
             {
                new_fd = fd;
+               memcpy(addr, &netplay->mitm_handler->pending[i].addr,
+                  sizeof(*addr));
                RARCH_LOG("[Netplay] Tunnel link connection completed.\n");
             }
             else
             {
-               /* We couldn't send our id in one call. Assume error. */
+               /* We couldn't send the peer id in one call. Assume error. */
                socket_close(fd);
                RARCH_ERR("[Netplay] Tunnel link connection failed after handshake.\n");
             }
-            netplay->mitm_pending->fds[i] = -1;
+
+            netplay->mitm_handler->pending[i].fd = -1;
             break;
          }
          else
          {
             /* Check if the connection timeouted. */
-            retro_time_t timeout = netplay->mitm_pending->timeouts[i];
+            retro_time_t timeout = netplay->mitm_handler->pending[i].timeout;
 
             if (ctime < timeout)
                continue;
@@ -3230,65 +3306,121 @@ static int handle_mitm_connection(netplay_t *netplay, bool *error)
          }
 
          socket_close(fd);
-         netplay->mitm_pending->fds[i] = -1;
+         netplay->mitm_handler->pending[i].fd = -1;
       }
    }
 
-   recv_buf = ((uint8_t*)&netplay->mitm_pending->id_buf) +
-      netplay->mitm_pending->id_recvd;
-   if (netplay->mitm_pending->id_recvd <
-         sizeof(netplay->mitm_pending->id_buf.magic))
-      recv_len = sizeof(netplay->mitm_pending->id_buf.magic) -
-         netplay->mitm_pending->id_recvd;
-   else
-      recv_len = sizeof(netplay->mitm_pending->id_buf) -
-         netplay->mitm_pending->id_recvd;
-
-   recvd = socket_receive_all_nonblocking(netplay->listen_fd,
-      error, recv_buf, recv_len);
-
-   if (recvd < 0 || (size_t)recvd > recv_len)
+   if (netplay->mitm_handler->id_recvd < sizeof(netplay->mitm_handler->id_buf))
    {
-      RARCH_ERR("[Netplay] Tunnel server error.\n");
-      goto critical_failure;
+      /* We haven't received a full id yet. */
+      ssize_t recvd;
+      size_t  len;
+
+      /* Size depends on whether we've received the magic or not. */
+      if (netplay->mitm_handler->id_recvd <
+            sizeof(netplay->mitm_handler->id_buf.magic))
+         len = sizeof(netplay->mitm_handler->id_buf.magic) -
+            netplay->mitm_handler->id_recvd;
+      else
+         len = sizeof(netplay->mitm_handler->id_buf) -
+            netplay->mitm_handler->id_recvd;
+
+      recvd = socket_receive_all_nonblocking(netplay->listen_fd, error,
+         (((uint8_t*)&netplay->mitm_handler->id_buf) +
+            netplay->mitm_handler->id_recvd),
+         len);
+      if (recvd < 0 || (size_t)recvd > len)
+      {
+         RARCH_ERR("[Netplay] Tunnel server error.\n");
+         goto critical_failure;
+      }
+
+      netplay->mitm_handler->id_recvd += recvd;
+   }
+   else
+   {
+      /* We've received a full id, receive any additional data now. */
+      switch (ntohl(netplay->mitm_handler->id_buf.magic))
+      {
+         case MITM_ADDR_MAGIC:
+         {
+            ssize_t recvd;
+            size_t  len = sizeof(netplay->mitm_handler->addr_buf) -
+               netplay->mitm_handler->addr_recvd;
+
+            recvd = socket_receive_all_nonblocking(netplay->listen_fd, error,
+               (((uint8_t*)&netplay->mitm_handler->addr_buf) +
+                  netplay->mitm_handler->addr_recvd),
+               len);
+            if (recvd < 0 || (size_t)recvd > len)
+            {
+               RARCH_ERR("[Netplay] Tunnel server error.\n");
+               goto critical_failure;
+            }
+
+            netplay->mitm_handler->addr_recvd += recvd;
+
+            break;
+         }
+         default:
+            RARCH_ERR("[Netplay] Received unknown additional data from tunnel server.\n");
+            goto critical_failure;
+      }
    }
 
-   netplay->mitm_pending->id_recvd += recvd;
-   if (netplay->mitm_pending->id_recvd >=
-         sizeof(netplay->mitm_pending->id_buf.magic))
+   if (netplay->mitm_handler->id_recvd >=
+         sizeof(netplay->mitm_handler->id_buf.magic))
    {
-      switch (ntohl(netplay->mitm_pending->id_buf.magic))
+      switch (ntohl(netplay->mitm_handler->id_buf.magic))
       {
          case MITM_LINK_MAGIC:
          {
-            if (netplay->mitm_pending->id_recvd <
-                  sizeof(netplay->mitm_pending->id_buf))
+            if (netplay->mitm_handler->id_recvd <
+                  sizeof(netplay->mitm_handler->id_buf))
                break;
 
-            netplay->mitm_pending->id_recvd = 0;
+            netplay->mitm_handler->id_recvd = 0;
 
             /* Find a free spot to allocate this connection. */
-            for (i = 0; i < NETPLAY_MITM_MAX_PENDING; i++)
-               if (netplay->mitm_pending->fds[i] < 0)
+            for (i = 0; i < ARRAY_SIZE(netplay->mitm_handler->pending); i++)
+               if (netplay->mitm_handler->pending[i].fd < 0)
                   break;
-            if (i < NETPLAY_MITM_MAX_PENDING)
+            if (i < ARRAY_SIZE(netplay->mitm_handler->pending))
             {
                int fd = socket(
-                  netplay->mitm_pending->addr->ai_family,
-                  netplay->mitm_pending->addr->ai_socktype,
-                  netplay->mitm_pending->addr->ai_protocol
+                  netplay->mitm_handler->addr->ai_family,
+                  netplay->mitm_handler->addr->ai_socktype,
+                  netplay->mitm_handler->addr->ai_protocol
                );
 
                if (fd >= 0)
                {
-                  if (netplay_tunnel_connect(fd, netplay->mitm_pending->addr))
+                  if (netplay_tunnel_connect(fd, netplay->mitm_handler->addr))
                   {
-                     netplay->mitm_pending->fds[i] = fd;
-                     memcpy(&netplay->mitm_pending->ids[i],
-                        &netplay->mitm_pending->id_buf,
-                        sizeof(*netplay->mitm_pending->ids));
-                     /* 30 seconds */
-                     netplay->mitm_pending->timeouts[i] = ctime + 30000000;
+                     mitm_id_t req_addr;
+
+                     /* Make sure to request the address of this peer. */
+                     req_addr.magic = htonl(MITM_ADDR_MAGIC);
+                     memcpy(req_addr.unique,
+                        netplay->mitm_handler->id_buf.unique,
+                        sizeof(req_addr.unique));
+                     if (socket_send_all_nonblocking(netplay->listen_fd,
+                              &req_addr, sizeof(req_addr), true) !=
+                           sizeof(req_addr))
+                     {
+                        socket_close(fd);
+                        RARCH_ERR("[Netplay] Tunnel peer address request failed.\n");
+                        goto critical_failure;
+                     }
+
+                     /* Now queue the connection. */
+                     netplay->mitm_handler->pending[i].fd       = fd;
+                     netplay->mitm_handler->pending[i].has_addr = false;
+                     memcpy(&netplay->mitm_handler->pending[i].id,
+                        &netplay->mitm_handler->id_buf,
+                        sizeof(netplay->mitm_handler->pending[i].id));
+                     netplay->mitm_handler->pending[i].timeout  =
+                        ctime + 15000000; /* 15 seconds */
                      RARCH_LOG("[Netplay] Queued tunnel link connection.\n");
                   }
                   else
@@ -3309,16 +3441,53 @@ static int handle_mitm_connection(netplay_t *netplay, bool *error)
 
             break;
          }
+         case MITM_ADDR_MAGIC:
+         {
+            if (netplay->mitm_handler->id_recvd <
+                  sizeof(netplay->mitm_handler->id_buf))
+               break;
+            if (netplay->mitm_handler->addr_recvd <
+                  sizeof(netplay->mitm_handler->addr_buf))
+               break;
+
+            netplay->mitm_handler->id_recvd   = 0;
+            netplay->mitm_handler->addr_recvd = 0;
+
+            /* Find the pending connection this address belongs to.
+               If we can't find a pending connection, just ignore this data. */
+            for (i = 0; i < ARRAY_SIZE(netplay->mitm_handler->pending); i++)
+            {
+               if (netplay->mitm_handler->pending[i].fd < 0)
+                  continue;
+               if (netplay->mitm_handler->pending[i].has_addr)
+                  continue;
+
+               if (!memcmp(netplay->mitm_handler->pending[i].id.unique,
+                     netplay->mitm_handler->id_buf.unique,
+                     sizeof(netplay->mitm_handler->pending[i].id.unique)))
+               {
+                  /* Now copy the received address into the
+                     correct pending connection. */
+                  memcpy(&netplay->mitm_handler->pending[i].addr,
+                     &netplay->mitm_handler->addr_buf,
+                     sizeof(netplay->mitm_handler->pending[i].addr));
+                  netplay->mitm_handler->pending[i].has_addr = true;
+                  break;
+               }
+            }
+
+            break;
+         }
          case MITM_PING_MAGIC:
          {
             /* Tunnel server requested for us to reply to a ping request. */
-            void *ping = &netplay->mitm_pending->id_buf.magic;
-            size_t len = sizeof(netplay->mitm_pending->id_buf.magic);
+            void *ping = &netplay->mitm_handler->id_buf.magic;
+            size_t len = sizeof(netplay->mitm_handler->id_buf.magic);
 
-            netplay->mitm_pending->id_recvd = 0;
+            netplay->mitm_handler->id_recvd = 0;
 
             if (socket_send_all_nonblocking(netplay->listen_fd,
-               ping, len, true) != len)
+                  ping, len, true) != len)
             {
                /* We couldn't send our ping reply in one call. Assume error. */
                RARCH_ERR("[Netplay] Tunnel ping reply failed.\n");
@@ -3487,13 +3656,14 @@ static bool netplay_sync_pre_frame(netplay_t *netplay, bool *disconnect)
 
    if (netplay->is_server)
    {
-      int new_fd        = -1;
-      bool server_error = false;
+      int               new_fd   = -1;
+      netplay_address_t new_addr = {0};
+      bool server_error          = false;
 
-      if (netplay->mitm_pending)
-         new_fd = handle_mitm_connection(netplay, &server_error);
+      if (netplay->mitm_handler)
+         new_fd = handle_mitm_connection(netplay, &new_addr, &server_error);
       else
-         new_fd = handle_connection(netplay, &server_error);
+         new_fd = handle_connection(netplay, &new_addr, &server_error);
 
       if (server_error)
       {
@@ -3502,6 +3672,13 @@ static bool netplay_sync_pre_frame(netplay_t *netplay, bool *disconnect)
       else if (new_fd >= 0)
       {
          struct netplay_connection *connection;
+
+         if (netplay_banned(netplay, new_fd, &new_addr))
+         {
+            /* Client is banned. */
+            socket_close(new_fd);
+            goto process;
+         }
 
          if (netplay_full(netplay, new_fd))
          {
@@ -3533,6 +3710,8 @@ static bool netplay_sync_pre_frame(netplay_t *netplay, bool *disconnect)
          connection->active = true;
          connection->fd     = new_fd;
          connection->mode   = NETPLAY_CONNECTION_INIT;
+
+         memcpy(&connection->addr, &new_addr, sizeof(connection->addr));
       }
    }
 
@@ -6472,13 +6651,16 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *addr,
                      sizeof(netplay->mitm_session_id.unique)))
             {
                /* Initialize data for handling tunneled client connections. */
-               netplay->mitm_pending = (struct netplay_mitm_pending*)
-                  calloc(1, sizeof(*netplay->mitm_pending));
-               if (netplay->mitm_pending)
+               netplay->mitm_handler = (struct netplay_mitm_handler*)
+                  calloc(1, sizeof(*netplay->mitm_handler));
+               if (netplay->mitm_handler)
                {
-                  memset(netplay->mitm_pending->fds, -1,
-                     sizeof(netplay->mitm_pending->fds));
-                  netplay->mitm_pending->addr = addr;
+                  size_t i;
+
+                  netplay->mitm_handler->addr = addr;
+
+                  for (i = 0; i < ARRAY_SIZE(netplay->mitm_handler->pending); i++)
+                     netplay->mitm_handler->pending[i].fd = -1;
 
                   return fd;
                }
@@ -6635,8 +6817,8 @@ try_ipv4:
          break;
    } while ((tmp_info = tmp_info->ai_next));
 
-   if (netplay->mitm_pending && netplay->mitm_pending->addr)
-      netplay->mitm_pending->base_addr = addr;
+   if (netplay->mitm_handler && netplay->mitm_handler->addr)
+      netplay->mitm_handler->base_addr = addr;
    else
       freeaddrinfo_retro(addr);
    addr = NULL;
@@ -6849,18 +7031,18 @@ static void netplay_free(netplay_t *netplay)
    if (netplay->listen_fd >= 0)
       socket_close(netplay->listen_fd);
 
-   if (netplay->mitm_pending)
+   if (netplay->mitm_handler)
    {
-      for (i = 0; i < NETPLAY_MITM_MAX_PENDING; i++)
+      for (i = 0; i < ARRAY_SIZE(netplay->mitm_handler->pending); i++)
       {
-         int fd = netplay->mitm_pending->fds[i];
+         int fd = netplay->mitm_handler->pending[i].fd;
 
          if (fd >= 0)
             socket_close(fd);
       }
 
-      freeaddrinfo_retro(netplay->mitm_pending->base_addr);
-      free(netplay->mitm_pending);
+      freeaddrinfo_retro(netplay->mitm_handler->base_addr);
+      free(netplay->mitm_handler);
    }
 
    for (i = 0; i < netplay->connections_size; i++)
@@ -8335,7 +8517,7 @@ static bool netplay_pre_frame(netplay_t *netplay)
       settings_t *settings = config_get_ptr();
 
 #ifdef HAVE_NETPLAYDISCOVERY
-      if (!netplay->mitm_pending)
+      if (!netplay->mitm_handler)
       {
          net_driver_state_t *net_st = &networking_driver_st;
 
@@ -8607,7 +8789,40 @@ static size_t retrieve_client_info(netplay_t *netplay, netplay_client_info_t *bu
    return j;
 }
 
-static bool kick_client_by_id(netplay_t *netplay, int client_id)
+static bool ban_client(netplay_t *netplay,
+      struct netplay_connection *connection)
+{
+   if (netplay->ban_list.size >= netplay->ban_list.allocated)
+   {
+      if (!netplay->ban_list.size)
+      {
+         netplay->ban_list.list =
+            (netplay_address_t*)malloc(2 * sizeof(*netplay->ban_list.list));
+         if (!netplay->ban_list.list)
+            return false;
+         netplay->ban_list.allocated = 2;
+      }
+      else
+      {
+         size_t             new_allocated = netplay->ban_list.allocated + 4;
+         netplay_address_t *new_list      = (netplay_address_t*)realloc(
+            netplay->ban_list.list, new_allocated * sizeof(*new_list));
+
+         if (!new_list)
+            return false;
+
+         netplay->ban_list.allocated = new_allocated;
+         netplay->ban_list.list      = new_list;
+      }
+   }
+
+   memcpy(&netplay->ban_list.list[netplay->ban_list.size++], &connection->addr,
+      sizeof(*netplay->ban_list.list));
+
+   return true;
+}
+
+static bool kick_client_by_id(netplay_t *netplay, int client_id, bool ban)
 {
    struct netplay_connection *connection = NULL;
 
@@ -8620,12 +8835,16 @@ static bool kick_client_by_id(netplay_t *netplay, int client_id)
    if (!connection->active || connection->mode < NETPLAY_CONNECTION_CONNECTED)
       return false;
 
+   if (ban && !ban_client(netplay, connection))
+      return false;
+
    netplay_hangup(netplay, connection);
 
    return true;
 }
 
-static bool kick_client_by_name(netplay_t *netplay, const char *client_name)
+static bool kick_client_by_name(netplay_t *netplay, const char *client_name,
+      bool ban)
 {
    size_t i;
 
@@ -8641,6 +8860,9 @@ static bool kick_client_by_name(netplay_t *netplay, const char *client_name)
       /* Kick the first client with a matched name. */
       if (string_is_equal(client_name, connection->nick))
       {
+         if (ban && !ban_client(netplay, connection))
+            return false;
+
          netplay_hangup(netplay, connection);
 
          return true;
@@ -8651,7 +8873,7 @@ static bool kick_client_by_name(netplay_t *netplay, const char *client_name)
 }
 
 static bool kick_client_by_id_and_name(netplay_t *netplay,
-      int client_id, const char *client_name)
+      int client_id, const char *client_name, bool ban)
 {
    struct netplay_connection *connection = NULL;
 
@@ -8666,6 +8888,9 @@ static bool kick_client_by_id_and_name(netplay_t *netplay,
 
    /* Make sure the name matches. */
    if (!string_is_equal(client_name, connection->nick))
+      return false;
+
+   if (ban && !ban_client(netplay, connection))
       return false;
 
    netplay_hangup(netplay, connection);
@@ -8866,11 +9091,35 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
             }
             if (client->id >= 0 && !string_is_empty(client->name))
                ret = kick_client_by_id_and_name(netplay,
-                  client->id, client->name);
+                  client->id, client->name, false);
             else if (client->id >= 0)
-               ret = kick_client_by_id(netplay, client->id);
+               ret = kick_client_by_id(netplay, client->id, false);
             else if (!string_is_empty(client->name))
-               ret = kick_client_by_name(netplay, client->name);
+               ret = kick_client_by_name(netplay, client->name, false);
+            else
+               ret = false;
+         }
+         else
+            ret = false;
+         break;
+
+      case RARCH_NETPLAY_CTL_BAN_CLIENT:
+         /* Only the server should be able to ban others. */
+         if (netplay && netplay->is_server)
+         {
+            netplay_client_info_t *client = (netplay_client_info_t*)data;
+            if (!client)
+            {
+               ret = false;
+               break;
+            }
+            if (client->id >= 0 && !string_is_empty(client->name))
+               ret = kick_client_by_id_and_name(netplay,
+                  client->id, client->name, true);
+            else if (client->id >= 0)
+               ret = kick_client_by_id(netplay, client->id, true);
+            else if (!string_is_empty(client->name))
+               ret = kick_client_by_name(netplay, client->name, true);
             else
                ret = false;
          }
