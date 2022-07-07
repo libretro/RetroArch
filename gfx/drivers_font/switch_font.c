@@ -115,7 +115,6 @@ static void switch_font_render_line(
       float scale, const unsigned int color, float pos_x,
       float pos_y, unsigned text_align)
 {
-   const struct font_glyph* glyph_q = NULL;
    int delta_x        = 0;
    int delta_y        = 0;
    unsigned fb_width  = sw->vp.full_width;

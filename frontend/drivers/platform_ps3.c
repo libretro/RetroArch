@@ -68,9 +68,11 @@ SYS_PROCESS_PARAM(1001, 0x100000)
 SYS_PROCESS_PARAM(1001, 0x200000)
 #endif
 
+#ifndef __PSL1GHT__
 #ifdef HAVE_MULTIMAN
 #define MULTIMAN_SELF_FILE "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF"
 static bool multiman_detected  = false;
+#endif
 #endif
 
 #ifdef HAVE_MEMINFO
