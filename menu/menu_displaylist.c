@@ -10700,6 +10700,41 @@ static unsigned menu_displaylist_netplay_kick(file_list_t *list)
 
    return count;
 }
+
+static unsigned menu_displaylist_netplay_ban(file_list_t *list)
+{
+   unsigned count = 0;
+
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_REFRESH_CLIENT_INFO, NULL))
+   {
+      size_t i;
+      char client_id[4];
+      netplay_client_info_t *client;
+      net_driver_state_t *net_st = networking_state_get_ptr();
+
+      for (i = 0; i < net_st->client_info_count; i++)
+      {
+         client = &net_st->client_info[i];
+
+         snprintf(client_id, sizeof(client_id), "%d", client->id);
+         if (menu_entries_append_enum(list, client->name, client_id,
+               MENU_ENUM_LABEL_NETPLAY_BAN_CLIENT,
+               MENU_NETPLAY_BAN,
+               0, i))
+            count++;
+      }
+   }
+
+   if (count == 0)
+      if (menu_entries_append_enum(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND),
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_NETPLAY_CLIENTS_FOUND),
+            MENU_ENUM_LABEL_NO_NETPLAY_CLIENTS_FOUND,
+            0, 0, 0))
+         count++;
+
+   return count;
+}
 #endif
 
 bool menu_displaylist_has_subsystems(void)
@@ -10771,11 +10806,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_ENUM_LABEL_NETPLAY_DISCONNECT,
                      MENU_SETTING_ACTION, 0, 0);
                   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+                  {
                      menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_KICK),
                         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_KICK),
                         MENU_ENUM_LABEL_NETPLAY_KICK,
                         MENU_SETTING_ACTION, 0, 0);
+                     menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_BAN),
+                        msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_BAN),
+                        MENU_ENUM_LABEL_NETPLAY_BAN,
+                        MENU_SETTING_ACTION, 0, 0);
+                  }
                }
             }
             else
@@ -10823,6 +10865,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef HAVE_NETWORKING
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_netplay_kick(info->list);
+#endif
+         info->need_push    = true;
+         info->need_refresh = true;
+         break;
+      case DISPLAYLIST_NETPLAY_BAN_LIST:
+#ifdef HAVE_NETWORKING
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         count = menu_displaylist_netplay_ban(info->list);
 #endif
          info->need_push    = true;
          info->need_refresh = true;

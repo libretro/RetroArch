@@ -1055,6 +1055,10 @@ MSG_HASH(
    "deferred_netplay_kick_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_NETPLAY_BAN_LIST,
+   "deferred_netplay_ban_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_NETPLAY_LOBBY_FILTERS_LIST,
    "deferred_netplay_lobby_filters_list"
    )
@@ -2045,6 +2049,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_KICK,
    "menu_netplay_kick"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_BAN,
+   "menu_netplay_ban"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES,

@@ -6673,6 +6673,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_KICK,
    "Kick a client from your currently hosted room."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_BAN,
+   "Ban Client"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_BAN,
+   "Ban a client from your currently hosted room."
+   )
 
 /* Import Content */
 
@@ -11690,6 +11698,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
    "Failed to kick client: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED_CLIENT_S,
+   "Client banned: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
+   "Failed to ban client: \"%s\""
    )
 MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
