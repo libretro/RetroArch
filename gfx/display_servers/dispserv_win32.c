@@ -102,7 +102,10 @@ static void *win32_display_server_init(void)
    else
    {
       if (FAILED(ITaskbarList3_HrInit(dispserv->taskbar_list)))
+      {
          RARCH_ERR("[dispserv]: HrInit of ITaskbarList3 failed.\n");
+         dispserv->taskbar_list = NULL;
+      }
    }
 #endif
 
