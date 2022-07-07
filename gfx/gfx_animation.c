@@ -85,10 +85,10 @@ static float easing_linear(float t, float b, float c, float d)
 
 static float easing_in_out_quad(float t, float b, float c, float d)
 {
-   t = t / d * 2;
-   if (t < 1)
-      return c / 2 * t * t + b;
-   return -c / 2 * ((t - 1) * (t - 3) - 1) + b;
+   t = t / d * 2.0f;
+   if (t < 1.0f)
+      return c / 2.0f * t * t + b;
+   return -c / 2.0f * ((t - 1.0f) * (t - 3.0f) - 1.0f) + b;
 }
 
 static float easing_in_quad(float t, float b, float c, float d)
@@ -100,14 +100,14 @@ static float easing_in_quad(float t, float b, float c, float d)
 static float easing_out_quad(float t, float b, float c, float d)
 {
    t = t / d;
-   return -c * t * (t - 2) + b;
+   return -c * t * (t - 2.0f) + b;
 }
 
 static float easing_out_in_quad(float t, float b, float c, float d)
 {
-   if (t < d / 2)
-      return easing_out_quad(t * 2, b, c / 2, d);
-   return easing_in_quad((t * 2) - d, b + c / 2, c / 2, d);
+   if (t < d / 2.0f)
+      return easing_out_quad(t * 2.0f, b, c / 2.0f, d);
+   return easing_in_quad((t * 2.0f) - d, b + c / 2.0f, c / 2.0f, d);
 }
 
 static float easing_in_cubic(float t, float b, float c, float d)
@@ -118,24 +118,24 @@ static float easing_in_cubic(float t, float b, float c, float d)
 
 static float easing_out_cubic(float t, float b, float c, float d)
 {
-   float base = t / d - 1;
-   return c * ((base * base * base) + 1) + b;
+   float base = t / d - 1.0f;
+   return c * ((base * base * base) + 1.0f) + b;
 }
 
 static float easing_in_out_cubic(float t, float b, float c, float d)
 {
-   t = t / d * 2;
-   if (t < 1)
-      return c / 2 * t * t * t + b;
-   t = t - 2;
-   return c / 2 * (t * t * t + 2) + b;
+   t = t / d * 2.0f;
+   if (t < 1.0f)
+      return c / 2.0f * t * t * t + b;
+   t = t - 2.0f;
+   return c / 2.0f * (t * t * t + 2.0f) + b;
 }
 
 static float easing_out_in_cubic(float t, float b, float c, float d)
 {
-   if (t < d / 2)
-      return easing_out_cubic(t * 2, b, c / 2, d);
-   return easing_in_cubic((t * 2) - d, b + c / 2, c / 2, d);
+   if (t < d / 2.0f)
+      return easing_out_cubic(t * 2.0f, b, c / 2.0f, d);
+   return easing_in_cubic((t * 2.0f) - d, b + c / 2.0f, c / 2.0f, d);
 }
 
 static float easing_in_quart(float t, float b, float c, float d)
@@ -146,25 +146,25 @@ static float easing_in_quart(float t, float b, float c, float d)
 
 static float easing_out_quart(float t, float b, float c, float d)
 {
-   float base = t / d - 1;
-   return -c * ((base * base * base * base) - 1) + b;
+   float base = t / d - 1.0f;
+   return -c * ((base * base * base * base) - 1.0f) + b;
 }
 
 static float easing_in_out_quart(float t, float b, float c, float d)
 {
    float base;
-   t = t / d * 2;
-   if (t < 1)
-      return c / 2 * (t * t * t * t) + b;
-   base = t - 2;
-   return -c / 2 * ((base * base * base * base) - 2) + b;
+   t = t / d * 2.0f;
+   if (t < 1.0f)
+      return c / 2.0f * (t * t * t * t) + b;
+   base = t - 2.0f;
+   return -c / 2.0f * ((base * base * base * base) - 2.0f) + b;
 }
 
 static float easing_out_in_quart(float t, float b, float c, float d)
 {
-   if (t < d / 2)
-      return easing_out_quart(t * 2, b, c / 2, d);
-   return easing_in_quart((t * 2) - d, b + c / 2, c / 2, d);
+   if (t < d / 2.0f)
+      return easing_out_quart(t * 2.0f, b, c / 2.0f, d);
+   return easing_in_quart((t * 2.0f) - d, b + c / 2.0f, c / 2.0f, d);
 }
 
 static float easing_in_quint(float t, float b, float c, float d)
@@ -175,52 +175,52 @@ static float easing_in_quint(float t, float b, float c, float d)
 
 static float easing_out_quint(float t, float b, float c, float d)
 {
-   float base = t / d - 1;
-   return c * ((base * base * base * base * base) + 1) + b;
+   float base = t / d - 1.0f;
+   return c * ((base * base * base * base * base) + 1.0f) + b;
 }
 
 static float easing_in_out_quint(float t, float b, float c, float d)
 {
    float base;
-   t = t / d * 2;
-   if (t < 1)
-      return c / 2 * (t * t * t * t * t) + b;
-   base = t - 2;
-   return c / 2 * ((base * base * base * base * base) + 2) + b;
+   t = t / d * 2.0f;
+   if (t < 1.0f)
+      return c / 2.0f * (t * t * t * t * t) + b;
+   base = t - 2.0f;
+   return c / 2.0f * ((base * base * base * base * base) + 2.0f) + b;
 }
 
 static float easing_out_in_quint(float t, float b, float c, float d)
 {
-   if (t < d / 2)
-      return easing_out_quint(t * 2, b, c / 2, d);
-   return easing_in_quint((t * 2) - d, b + c / 2, c / 2, d);
+   if (t < d / 2.0f)
+      return easing_out_quint(t * 2.0f, b, c / 2.0f, d);
+   return easing_in_quint((t * 2.0f) - d, b + c / 2.0f, c / 2.0f, d);
 }
 
 static float easing_in_sine(float t, float b, float c, float d)
 {
-   return -c * cos(t / d * (M_PI / 2)) + c + b;
+   return -c * cos(t / d * (M_PI / 2.0f)) + c + b;
 }
 
 static float easing_out_sine(float t, float b, float c, float d)
 {
-   return c * sin(t / d * (M_PI / 2)) + b;
+   return c * sin(t / d * (M_PI / 2.0f)) + b;
 }
 
 static float easing_in_out_sine(float t, float b, float c, float d)
 {
-   return -c / 2 * (cos(M_PI * t / d) - 1) + b;
+   return -c / 2.0f * (cos(M_PI * t / d) - 1.0f) + b;
 }
 
 static float easing_out_in_sine(float t, float b, float c, float d)
 {
-   if (t < d / 2)
-      return easing_out_sine(t * 2, b, c / 2, d);
-   return easing_in_sine((t * 2) -d, b + c / 2, c / 2, d);
+   if (t < d / 2.0f)
+      return easing_out_sine(t * 2.0f, b, c / 2.0f, d);
+   return easing_in_sine((t * 2.0f) -d, b + c / 2.0f, c / 2.0f, d);
 }
 
 static float easing_in_expo(float t, float b, float c, float d)
 {
-   if (t == 0)
+   if (t == 0.0f)
       return b;
    return c * powf(2, 10 * (t / d - 1)) + b - c * 0.001;
 }
@@ -238,17 +238,17 @@ static float easing_in_out_expo(float t, float b, float c, float d)
       return b;
    if (t == d)
       return b + c;
-   t = t / d * 2;
-   if (t < 1)
-      return c / 2 * powf(2, 10 * (t - 1)) + b - c * 0.0005;
-   return c / 2 * 1.0005 * (-powf(2, -10 * (t - 1)) + 2) + b;
+   t = t / d * 2.0f;
+   if (t < 1.0f)
+      return c / 2.0f * powf(2, 10 * (t - 1)) + b - c * 0.0005;
+   return c / 2.0f * 1.0005 * (-powf(2, -10 * (t - 1)) + 2) + b;
 }
 
 static float easing_out_in_expo(float t, float b, float c, float d)
 {
-   if (t < d / 2)
-      return easing_out_expo(t * 2, b, c / 2, d);
-   return easing_in_expo((t * 2) - d, b + c / 2, c / 2, d);
+   if (t < d / 2.0f)
+      return easing_out_expo(t * 2.0f, b, c / 2.0f, d);
+   return easing_in_expo((t * 2.0f) - d, b + c / 2.0f, c / 2.0f, d);
 }
 
 static float easing_in_circ(float t, float b, float c, float d)
@@ -265,18 +265,18 @@ static float easing_out_circ(float t, float b, float c, float d)
 
 static float easing_in_out_circ(float t, float b, float c, float d)
 {
-   t = t / d * 2;
-   if (t < 1)
+   t = t / d * 2.0f;
+   if (t < 1.0f)
       return -c / 2 * (sqrtf(1.0f - t * t) - 1.0f) + b;
-   t = t - 2;
-   return c / 2 * (sqrtf(1.0f - t * t) + 1.0f) + b;
+   t = t - 2.0f;
+   return c / 2.0f * (sqrtf(1.0f - t * t) + 1.0f) + b;
 }
 
 static float easing_out_in_circ(float t, float b, float c, float d)
 {
-   if (t < d / 2)
-      return easing_out_circ(t * 2, b, c / 2, d);
-   return easing_in_circ((t * 2) - d, b + c / 2, c / 2, d);
+   if (t < d / 2.0f)
+      return easing_out_circ(t * 2.0f, b, c / 2.0f, d);
+   return easing_in_circ((t * 2.0f) - d, b + c / 2.0f, c / 2.0f, d);
 }
 
 static float easing_out_bounce(float t, float b, float c, float d)
@@ -305,16 +305,16 @@ static float easing_in_bounce(float t, float b, float c, float d)
 
 static float easing_in_out_bounce(float t, float b, float c, float d)
 {
-   if (t < d / 2)
-      return easing_in_bounce(t * 2, 0, c, d) * 0.5f + b;
-   return easing_out_bounce(t * 2 - d, 0, c, d) * 0.5f + c * .5f + b;
+   if (t < d / 2.0f)
+      return easing_in_bounce(t * 2.0f,   0.0f, c, d) * 0.5f + b;
+   return easing_out_bounce(t * 2.0f - d, 0.0f, c, d) * 0.5f + c * .5f + b;
 }
 
 static float easing_out_in_bounce(float t, float b, float c, float d)
 {
-   if (t < d / 2)
-      return easing_out_bounce(t * 2, b, c / 2, d);
-   return easing_in_bounce((t * 2) - d, b + c / 2, c / 2, d);
+   if (t < d / 2.0f)
+      return easing_out_bounce(t * 2.0f, b, c / 2.0f, d);
+   return easing_in_bounce((t * 2.0f) - d, b + c / 2.0f, c / 2.0f, d);
 }
 
 static size_t gfx_animation_ticker_generic(uint64_t idx,
@@ -361,12 +361,15 @@ static void gfx_animation_ticker_loop(uint64_t idx,
     */
    
    /* String 1 */
-   int offset = (phase < (int)str_width) ? phase : 0;
+   int offset = 0;
    int width  = (int)(str_width - phase);
    if (width < 0)
       width   = 0;
    else if ((width > (int)max_width))
       width   = (int)max_width;
+  
+   if (phase < (int)str_width)
+      offset  = phase;
    
    *offset1   = offset;
    *width1    = width;
@@ -376,8 +379,9 @@ static void gfx_animation_ticker_loop(uint64_t idx,
    if (offset < 0)
       offset  = 0;
    width      = (int)(max_width - *width1);
-   width      = (width > (int)spacer_width) ? (int)spacer_width : width;
-   width      = width - offset;
+   if (width > (int)spacer_width)
+      width   = (int)spacer_width;
+   width     -= offset;
    
    *offset2   = offset;
    *width2    = width;
@@ -638,8 +642,9 @@ static void ticker_smooth_scan_characters(
     * (x offset + text width + end padding) */
    if (display_width)
    {
-      *display_width = *x_offset + text_width;
-      *display_width = (*display_width > field_width) ? field_width : *display_width;
+      *display_width    = *x_offset + text_width;
+      if (*display_width > field_width)
+         *display_width = field_width;
    }
 }
 
@@ -891,10 +896,15 @@ static void gfx_animation_line_ticker_smooth_generic(uint64_t idx,
    bool pause           = false;
    bool scroll_up       = true;
 
-   /* Pause on first line */
-   if (phase < scroll_ticks)
-      pause = true;
-   phase = (phase >= scroll_ticks) ? phase - scroll_ticks : 0;
+   if (phase >= scroll_ticks)
+      phase            -= scroll_ticks;
+   else
+   {
+      /* Pause on first line */
+      pause             = true;
+      phase             = 0;
+   }
+
    /* Pause on last line and change direction */
    if (phase >= excess_lines * scroll_ticks)
    {
@@ -1623,7 +1633,6 @@ static bool gfx_animation_ticker_smooth_fw(
    p_anim->ticker_is_active = true;
 
 end:
-
    if (!success)
    {
       *ticker->x_offset = 0;
@@ -2008,10 +2017,8 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
     *   character and hope for the best. (We choose 'a' because
     *   this is what Ozone uses for spacing calculations, and
     *   it is proven to work quite well) */
-   glyph_width = font_driver_get_message_width(
-         line_ticker->font, "a", 1, line_ticker->font_scale);
-
-   if (glyph_width <= 0)
+   if ((glyph_width = font_driver_get_message_width(
+         line_ticker->font, "a", 1, line_ticker->font_scale)) <= 0)
       goto end;
 
    if (wideglyph_str)
