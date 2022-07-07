@@ -7073,6 +7073,7 @@ static void netplay_free(netplay_t *netplay)
    }
 
    free(netplay->connections);
+   free(netplay->ban_list.list);
 
    if (netplay->buffer)
    {
