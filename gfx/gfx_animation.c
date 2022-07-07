@@ -87,13 +87,14 @@ static float easing_in_out_quad(float t, float b, float c, float d)
 {
    t = t / d * 2;
    if (t < 1)
-      return c / 2 * pow(t, 2) + b;
+      return c / 2 * t * t + b;
    return -c / 2 * ((t - 1) * (t - 3) - 1) + b;
 }
 
 static float easing_in_quad(float t, float b, float c, float d)
 {
-   return c * pow(t / d, 2) + b;
+   float base = t / d;
+   return c * (base * base) + b;
 }
 
 static float easing_out_quad(float t, float b, float c, float d)
@@ -111,12 +112,14 @@ static float easing_out_in_quad(float t, float b, float c, float d)
 
 static float easing_in_cubic(float t, float b, float c, float d)
 {
-   return c * pow(t / d, 3) + b;
+   float base =  t / d;
+   return c * (base * base * base) + b;
 }
 
 static float easing_out_cubic(float t, float b, float c, float d)
 {
-   return c * (pow(t / d - 1, 3) + 1) + b;
+   float base = t / d - 1;
+   return c * ((base * base * base) + 1) + b;
 }
 
 static float easing_in_out_cubic(float t, float b, float c, float d)
@@ -137,20 +140,24 @@ static float easing_out_in_cubic(float t, float b, float c, float d)
 
 static float easing_in_quart(float t, float b, float c, float d)
 {
-   return c * pow(t / d, 4) + b;
+   float base = t / d;
+   return c * (base * base * base * base) + b;
 }
 
 static float easing_out_quart(float t, float b, float c, float d)
 {
-   return -c * (pow(t / d - 1, 4) - 1) + b;
+   float base = t / d - 1;
+   return -c * ((base * base * base * base) - 1) + b;
 }
 
 static float easing_in_out_quart(float t, float b, float c, float d)
 {
+   float base;
    t = t / d * 2;
    if (t < 1)
-      return c / 2 * pow(t, 4) + b;
-   return -c / 2 * (pow(t - 2, 4) - 2) + b;
+      return c / 2 * (t * t * t * t) + b;
+   base = t - 2;
+   return -c / 2 * ((base * base * base * base) - 2) + b;
 }
 
 static float easing_out_in_quart(float t, float b, float c, float d)
@@ -162,20 +169,24 @@ static float easing_out_in_quart(float t, float b, float c, float d)
 
 static float easing_in_quint(float t, float b, float c, float d)
 {
-   return c * pow(t / d, 5) + b;
+   float base = t / d;
+   return c * (base * base * base * base * base) + b;
 }
 
 static float easing_out_quint(float t, float b, float c, float d)
 {
-   return c * (pow(t / d - 1, 5) + 1) + b;
+   float base = t / d - 1;
+   return c * ((base * base * base * base * base) + 1) + b;
 }
 
 static float easing_in_out_quint(float t, float b, float c, float d)
 {
+   float base;
    t = t / d * 2;
    if (t < 1)
-      return c / 2 * pow(t, 5) + b;
-   return c / 2 * (pow(t - 2, 5) + 2) + b;
+      return c / 2 * (t * t * t * t * t) + b;
+   base = t - 2;
+   return c / 2 * ((base * base * base * base * base) + 2) + b;
 }
 
 static float easing_out_in_quint(float t, float b, float c, float d)
@@ -242,21 +253,23 @@ static float easing_out_in_expo(float t, float b, float c, float d)
 
 static float easing_in_circ(float t, float b, float c, float d)
 {
-   return(-c * (sqrt(1 - powf(t / d, 2)) - 1) + b);
+   float base = t / d;
+   return(-c * (sqrtf(1.0f - (base * base)) - 1.0f) + b);
 }
 
 static float easing_out_circ(float t, float b, float c, float d)
 {
-   return(c * sqrt(1 - powf(t / d - 1, 2)) + b);
+   float base = t / d - 1;
+   return(c * sqrtf(1.0f - (base * base)) + b);
 }
 
 static float easing_in_out_circ(float t, float b, float c, float d)
 {
    t = t / d * 2;
    if (t < 1)
-      return -c / 2 * (sqrt(1 - t * t) - 1) + b;
+      return -c / 2 * (sqrtf(1.0f - t * t) - 1.0f) + b;
    t = t - 2;
-   return c / 2 * (sqrt(1 - t * t) + 1) + b;
+   return c / 2 * (sqrtf(1.0f - t * t) + 1.0f) + b;
 }
 
 static float easing_out_in_circ(float t, float b, float c, float d)
@@ -269,20 +282,20 @@ static float easing_out_in_circ(float t, float b, float c, float d)
 static float easing_out_bounce(float t, float b, float c, float d)
 {
    t = t / d;
-   if (t < 1 / 2.75)
-      return c * (7.5625 * t * t) + b;
-   if (t < 2 / 2.75)
+   if (t < 1 / 2.75f)
+      return c * (7.5625f * t * t) + b;
+   if (t < 2 / 2.75f)
    {
-      t = t - (1.5 / 2.75);
-      return c * (7.5625 * t * t + 0.75) + b;
+      t = t - (1.5f / 2.75f);
+      return c * (7.5625f * t * t + 0.75f) + b;
    }
-   else if (t < 2.5 / 2.75)
+   else if (t < 2.5f / 2.75f)
    {
-      t = t - (2.25 / 2.75);
-      return c * (7.5625 * t * t + 0.9375) + b;
+      t = t - (2.25f / 2.75f);
+      return c * (7.5625f * t * t + 0.9375f) + b;
    }
-   t = t - (2.625 / 2.75);
-   return c * (7.5625 * t * t + 0.984375) + b;
+   t = t - (2.625f / 2.75f);
+   return c * (7.5625f * t * t + 0.984375f) + b;
 }
 
 static float easing_in_bounce(float t, float b, float c, float d)
@@ -293,8 +306,8 @@ static float easing_in_bounce(float t, float b, float c, float d)
 static float easing_in_out_bounce(float t, float b, float c, float d)
 {
    if (t < d / 2)
-      return easing_in_bounce(t * 2, 0, c, d) * 0.5 + b;
-   return easing_out_bounce(t * 2 - d, 0, c, d) * 0.5 + c * .5 + b;
+      return easing_in_bounce(t * 2, 0, c, d) * 0.5f + b;
+   return easing_out_bounce(t * 2 - d, 0, c, d) * 0.5f + c * .5f + b;
 }
 
 static float easing_out_in_bounce(float t, float b, float c, float d)
@@ -383,10 +396,10 @@ static void gfx_animation_ticker_loop(uint64_t idx,
 static unsigned get_ticker_smooth_generic_scroll_offset(
       uint64_t idx, unsigned str_width, unsigned field_width)
 {
-   unsigned scroll_width   = str_width - field_width;
-   unsigned pause_duration = 32;
-   unsigned ticker_period  = 2 * (scroll_width + pause_duration);
-   unsigned phase          = idx % ticker_period;
+   const unsigned pause_duration = 32;
+   unsigned scroll_width         = str_width - field_width;
+   unsigned ticker_period        = 2 * (scroll_width + pause_duration);
+   unsigned phase                = idx % ticker_period;
 
    /* Determine scroll offset */
    if (phase < pause_duration)
