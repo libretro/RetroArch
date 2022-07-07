@@ -148,10 +148,11 @@ static void ps2_font_render_line(
    int y            = roundf((1.0f - pos_y) * height);
    int delta_x      = 0;
    int delta_y      = 0;
-   int colorR, colorG, colorB, colorA;
-
-   if (!ps2)
-      return;
+   /* We need to >> 1, because GS_SETREG_RGBAQ expects 0x80 as max color */
+   int colorA       = (int)(((color & 0xFF000000) >> 24) >> 2);
+   int colorB       = (int)(((color & 0x00FF0000) >> 16) >> 1);
+   int colorG       = (int)(((color & 0x0000FF00) >> 8)  >> 1);
+   int colorR       = (int)(((color & 0x000000FF) >> 0)  >> 1);
 
    /* Enable Alpha for font */
    gsKit_set_primalpha(ps2->gsGlobal, GS_SETREG_ALPHA(0, 1, 0, 1, 0), 0);
@@ -169,11 +170,6 @@ static void ps2_font_render_line(
          break;
    }
 
-   /* We need to >> 1, because GS_SETREG_RGBAQ expect 0x80 as max color */
-   colorA  = (int)(((color & 0xFF000000) >> 24) >> 2);
-   colorB  = (int)(((color & 0x00FF0000) >> 16) >> 1);
-   colorG  = (int)(((color & 0x0000FF00) >> 8) >> 1);
-   colorR  = (int)(((color & 0x000000FF) >> 0) >> 1);
    glyph_q = font->font_driver->get_glyph(font->font_data, '?');
 
    for (i = 0; i < msg_len; i++)
@@ -202,8 +198,7 @@ static void ps2_font_render_line(
       height = glyph->height;
 
       /* The -0.5 is needed to achieve pixel perfect. 
-       * More info here (PS2 uses
-       * same logic as Direct3D 9)
+       * More info here (PS2 GSKit uses same logic as Direct3D9)
        * https://docs.microsoft.com/en-us/windows/win32/direct3d10/d3d10-graphics-programming-guide-resources-coordinates
       */
       x1     = -0.5f + x + (off_x + delta_x) * scale;

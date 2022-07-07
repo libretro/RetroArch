@@ -282,7 +282,7 @@ static void gl2_raster_font_draw_vertices(gl2_raster_t *font,
    glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
 }
 
-static void gl2_raster_font_render_line(
+static void gl2_raster_font_render_line(gl2_t *gl,
       gl2_raster_t *font, const char *msg, unsigned msg_len,
       GLfloat scale, const GLfloat color[4], GLfloat pos_x,
       GLfloat pos_y, unsigned text_align)
@@ -294,7 +294,6 @@ static void gl2_raster_font_render_line(
    GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_lut_tex_coord[2 * 6 * MAX_MSG_LEN_CHUNK];
-   gl2_t      *gl       = font->gl;
    const char* msg_end  = msg + msg_len;
    int x                = roundf(pos_x * gl->vp.width);
    int y                = roundf(pos_y * gl->vp.height);
@@ -302,8 +301,8 @@ static void gl2_raster_font_render_line(
    int delta_y          = 0;
    float inv_tex_size_x = 1.0f / font->tex_width;
    float inv_tex_size_y = 1.0f / font->tex_height;
-   float inv_win_width  = 1.0f / font->gl->vp.width;
-   float inv_win_height = 1.0f / font->gl->vp.height;
+   float inv_win_width  = 1.0f / gl->vp.width;
+   float inv_win_height = 1.0f / gl->vp.height;
 
    switch (text_align)
    {
@@ -379,7 +378,7 @@ static void gl2_raster_font_render_message(
    if (!font->font_driver->get_line_metrics ||
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
-      gl2_raster_font_render_line(font,
+      gl2_raster_font_render_line(font->gl, font,
             msg, (unsigned)strlen(msg), scale, color, pos_x,
             pos_y, text_align);
       return;
@@ -394,7 +393,7 @@ static void gl2_raster_font_render_message(
          ? (unsigned)(delim - msg) : (unsigned)strlen(msg);
 
       /* Draw the line */
-      gl2_raster_font_render_line(font,
+      gl2_raster_font_render_line(font->gl, font,
             msg, msg_len, scale, color, pos_x,
             pos_y - (float)lines*line_height, text_align);
 
@@ -436,8 +435,8 @@ static void gl2_raster_font_render_msg(
    enum text_alignment text_align    = TEXT_ALIGN_LEFT;
    bool full_screen                  = false ;
    gl2_raster_t                *font = (gl2_raster_t*)data;
-   unsigned width                   = font->gl->video_width;
-   unsigned height                  = font->gl->video_height;
+   unsigned width                    = font->gl->video_width;
+   unsigned height                   = font->gl->video_height;
 
    if (!font || string_is_empty(msg))
       return;

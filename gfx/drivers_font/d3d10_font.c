@@ -131,22 +131,15 @@ static void d3d10_font_render_line(
       unsigned            height,
       unsigned            text_align)
 {
-   int                      x, y;
    unsigned                 i, count;
-   void*                    mapped_vbo;
-   d3d10_sprite_t*          v;
+   void *                   mapped_vbo;
+   d3d10_sprite_t *         v;
    const struct font_glyph* glyph_q = NULL;
-
-   if (  !d3d10                  ||
-         !d3d10->sprites.enabled ||
-         msg_len > (unsigned)d3d10->sprites.capacity)
-      return;
+   int x                            = roundf(pos_x * width);
+   int y                            = roundf((1.0 - pos_y) * height);
 
    if (d3d10->sprites.offset + msg_len > (unsigned)d3d10->sprites.capacity)
       d3d10->sprites.offset = 0;
-
-   x = roundf(pos_x * width);
-   y = roundf((1.0 - pos_y) * height);
 
    switch (text_align)
    {
@@ -167,10 +160,10 @@ static void d3d10_font_render_line(
 
    for (i = 0; i < msg_len; i++)
    {
-      const struct font_glyph* glyph;
-      const char *msg_tmp= &msg[i];
-      unsigned   code    = utf8_walk(&msg_tmp);
-      unsigned   skip    = msg_tmp - &msg[i];
+      const struct font_glyph *glyph;
+      const char *msg_tmp = &msg[i];
+      unsigned   code     = utf8_walk(&msg_tmp);
+      unsigned   skip     = msg_tmp - &msg[i];
 
       if (skip > 1)
          i += skip - 1;
@@ -250,14 +243,18 @@ static void d3d10_font_render_message(
 
    if (!msg || !*msg)
       return;
+   if (!d3d10 || !d3d10->sprites.enabled)
+      return;
 
    /* If font line metrics are not supported just draw as usual */
    if (!font->font_driver->get_line_metrics ||
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
-      d3d10_font_render_line(d3d10,
-            font, msg, strlen(msg), scale, color, pos_x, pos_y,
-            width, height, text_align);
+      unsigned msg_len = strlen(msg);
+      if (msg_len <= (unsigned)d3d10->sprites.capacity)
+         d3d10_font_render_line(d3d10,
+               font, msg, msg_len, scale, color, pos_x, pos_y,
+               width, height, text_align);
       return;
    }
 
@@ -270,10 +267,11 @@ static void d3d10_font_render_message(
          (unsigned)(delim - msg) : strlen(msg);
 
       /* Draw the line */
-      d3d10_font_render_line(d3d10,
-            font, msg, msg_len, scale, color, pos_x,
-            pos_y - (float)lines * line_height,
-            width, height, text_align);
+      if (msg_len <= (unsigned)d3d10->sprites.capacity)
+         d3d10_font_render_line(d3d10,
+               font, msg, msg_len, scale, color, pos_x,
+               pos_y - (float)lines * line_height,
+               width, height, text_align);
 
       if (!delim)
          break;

@@ -130,22 +130,15 @@ static void d3d11_font_render_line(
       unsigned            height,
       unsigned            text_align)
 {
-   int x, y;
    unsigned i, count;
    D3D11_MAPPED_SUBRESOURCE mapped_vbo;
    d3d11_sprite_t *v = NULL;
    const struct font_glyph* glyph_q = NULL;
-
-   if (  !d3d11                  ||
-         !d3d11->sprites.enabled ||
-         msg_len > (unsigned)d3d11->sprites.capacity)
-      return;
+   int x = roundf(pos_x * width);
+   int y = roundf((1.0 - pos_y) * height);
 
    if (d3d11->sprites.offset + msg_len > (unsigned)d3d11->sprites.capacity)
       d3d11->sprites.offset = 0;
-
-   x = roundf(pos_x * width);
-   y = roundf((1.0 - pos_y) * height);
 
    switch (text_align)
    {
@@ -254,14 +247,18 @@ static void d3d11_font_render_message(
 
    if (!msg || !*msg)
       return;
+   if (!d3d11->sprites.enabled)
+      return;
 
    /* If font line metrics are not supported just draw as usual */
    if (!font->font_driver->get_line_metrics ||
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
-      d3d11_font_render_line(d3d11,
-            font, msg, strlen(msg), scale, color, pos_x, pos_y,
-            width, height, text_align);
+      unsigned msg_len = strlen(msg);
+      if (msg_len <= (unsigned)d3d11->sprites.capacity)
+         d3d11_font_render_line(d3d11,
+               font, msg, strlen(msg), scale, color, pos_x, pos_y,
+               width, height, text_align);
       return;
    }
 
@@ -274,10 +271,11 @@ static void d3d11_font_render_message(
          (unsigned)(delim - msg) : strlen(msg);
 
       /* Draw the line */
-      d3d11_font_render_line(d3d11,
-            font, msg, msg_len, scale, color, pos_x,
-            pos_y - (float)lines * line_height,
-            width, height, text_align);
+      if (msg_len <= (unsigned)d3d11->sprites.capacity)
+         d3d11_font_render_line(d3d11,
+               font, msg, msg_len, scale, color, pos_x,
+               pos_y - (float)lines * line_height,
+               width, height, text_align);
 
       if (!delim)
          break;

@@ -131,24 +131,17 @@ static void d3d12_font_render_line(
       unsigned            height,
       unsigned            text_align)
 {
-   int x, y;
+   D3D12_RANGE     range;
    unsigned        i, count;
    const struct font_glyph* glyph_q = NULL;
    void*           mapped_vbo       = NULL;
    d3d12_sprite_t* v                = NULL;
    d3d12_sprite_t* vbo_start        = NULL;
-   D3D12_RANGE     range;
-
-   if (  !d3d12                  ||
-         !d3d12->sprites.enabled ||
-         msg_len > (unsigned)d3d12->sprites.capacity)
-      return;
+   int x                            = roundf(pos_x * width);
+   int y                            = roundf((1.0 - pos_y) * height);
 
    if (d3d12->sprites.offset + msg_len > (unsigned)d3d12->sprites.capacity)
       d3d12->sprites.offset = 0;
-
-   x           = roundf(pos_x * width);
-   y           = roundf((1.0 - pos_y) * height);
 
    switch (text_align)
    {
@@ -256,14 +249,18 @@ static void d3d12_font_render_message(
 
    if (!msg || !*msg)
       return;
+   if (!d3d12 || !d3d12->sprites.enabled)
+      return;
 
    /* If font line metrics are not supported just draw as usual */
    if (!font->font_driver->get_line_metrics ||
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
-      d3d12_font_render_line(d3d12,
-            font, msg, strlen(msg),
-            scale, color, pos_x, pos_y, width, height, text_align);
+      unsigned msg_len = strlen(msg);
+      if (msg_len <= (unsigned)d3d12->sprites.capacity)
+         d3d12_font_render_line(d3d12,
+               font, msg, msg_len,
+               scale, color, pos_x, pos_y, width, height, text_align);
       return;
    }
 
@@ -276,9 +273,10 @@ static void d3d12_font_render_message(
          (unsigned)(delim - msg) : strlen(msg);
 
       /* Draw the line */
-      d3d12_font_render_line(d3d12,
-            font, msg, msg_len, scale, color, pos_x,
-            pos_y - (float)lines * line_height, width, height, text_align);
+      if (msg_len <= (unsigned)d3d12->sprites.capacity)
+         d3d12_font_render_line(d3d12,
+               font, msg, msg_len, scale, color, pos_x,
+               pos_y - (float)lines * line_height, width, height, text_align);
 
       if (!delim)
          break;

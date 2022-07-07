@@ -75,7 +75,8 @@ static void rsx_font_free(void *data,
    if (font->font_driver && font->font_data)
       font->font_driver->free(font->font_data);
 
-   if (is_threaded) {
+   if (is_threaded)
+   {
       if (
             font->rsx &&
             font->rsx->ctx_driver &&
@@ -158,28 +159,28 @@ static void *rsx_font_init(void *data,
             font->rsx->ctx_driver->make_current)
          font->rsx->ctx_driver->make_current(false);
 
-   font->atlas      = font->font_driver->get_atlas(font->font_data);
+   font->atlas        = font->font_driver->get_atlas(font->font_data);
 
-   font->vpo = font->rsx->vpo;
-   font->fpo = font->rsx->fpo;
-   font->fp_ucode = font->rsx->fp_ucode;
-   font->vp_ucode = font->rsx->vp_ucode;
-   font->fp_offset = font->rsx->fp_offset;
+   font->vpo          = font->rsx->vpo;
+   font->fpo          = font->rsx->fpo;
+   font->fp_ucode     = font->rsx->fp_ucode;
+   font->vp_ucode     = font->rsx->vp_ucode;
+   font->fp_offset    = font->rsx->fp_offset;
 
-   font->proj_matrix = font->rsx->proj_matrix;
-   font->pos_index = font->rsx->pos_index;
-   font->uv_index = font->rsx->uv_index;
-   font->col_index = font->rsx->col_index;
-   font->tex_unit = font->rsx->tex_unit;
+   font->proj_matrix  = font->rsx->proj_matrix;
+   font->pos_index    = font->rsx->pos_index;
+   font->uv_index     = font->rsx->uv_index;
+   font->col_index    = font->rsx->col_index;
+   font->tex_unit     = font->rsx->tex_unit;
 
-   font->vertices = (rsx_vertex_t *)rsxMemalign(128, MAX_MSG_LEN_CHUNK*sizeof(rsx_vertex_t)*6);
+   font->vertices     = (rsx_vertex_t *)rsxMemalign(128, MAX_MSG_LEN_CHUNK*sizeof(rsx_vertex_t)*6);
 
    rsxAddressToOffset(&font->vertices[0].x, &font->pos_offset);
    rsxAddressToOffset(&font->vertices[0].u, &font->uv_offset);
    rsxAddressToOffset(&font->vertices[0].r, &font->col_offset);
 
-   font->tex_width = font->atlas->width;
-   font->tex_height = font->atlas->height;
+   font->tex_width    = font->atlas->width;
+   font->tex_height   = font->atlas->height;
    font->texture.data = (u8 *)rsxMemalign(128, (font->tex_height * font->tex_width));
    rsxAddressToOffset(font->texture.data, &font->texture.offset);
 
@@ -421,7 +422,7 @@ static void rsx_font_render_msg(
    float x, y, scale, drop_mod, drop_alpha;
    enum text_alignment text_align   = TEXT_ALIGN_LEFT;
    bool full_screen                 = false ;
-   rsx_font_t           *font = (rsx_font_t*)data;
+   rsx_font_t *font                 = (rsx_font_t*)data;
    unsigned width                   = font->rsx->width;
    unsigned height                  = font->rsx->height;
    settings_t *settings             = config_get_ptr();

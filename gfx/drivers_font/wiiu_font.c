@@ -154,16 +154,11 @@ static void wiiu_font_render_line(
       unsigned width, unsigned height, unsigned text_align)
 {
    unsigned i;
-   int count, x, y;
+   int count;
    sprite_vertex_t *v;
    const struct font_glyph* glyph_q = NULL;
-
-   if(  !wiiu ||
-         wiiu->vertex_cache.current + (msg_len * 4) > wiiu->vertex_cache.size)
-      return;
-
-   x                  = roundf(pos_x * width);
-   y                  = roundf((1.0 - pos_y) * height);
+   int x                            = roundf(pos_x * width);
+   int y                            = roundf((1.0 - pos_y) * height);
 
    switch (text_align)
    {
@@ -257,14 +252,18 @@ static void wiiu_font_render_message(
 
    if (!msg || !*msg)
       return;
+   if (!wiiu)
+      return;
 
    /* If font line metrics are not supported just draw as usual */
    if (!font->font_driver->get_line_metrics ||
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
-      wiiu_font_render_line(wiiu, font, msg, strlen(msg),
-            scale, color, pos_x, pos_y,
-            width, height, text_align);
+      unsigned msg_len = strlen(msg);
+      if (wiiu->vertex_cache.current + (msg_len * 4) <= wiiu->vertex_cache.size) 
+         wiiu_font_render_line(wiiu, font, msg, msg_len,
+               scale, color, pos_x, pos_y,
+               width, height, text_align);
       return;
    }
 
@@ -277,9 +276,10 @@ static void wiiu_font_render_message(
          (unsigned)(delim - msg) : strlen(msg);
 
       /* Draw the line */
-      wiiu_font_render_line(wiiu, font, msg, msg_len,
-            scale, color, pos_x, pos_y - (float)lines * line_height,
-            width, height, text_align);
+      if (wiiu->vertex_cache.current + (msg_len * 4) <= wiiu->vertex_cache.size) 
+         wiiu_font_render_line(wiiu, font, msg, msg_len,
+               scale, color, pos_x, pos_y - (float)lines * line_height,
+               width, height, text_align);
 
       if (!delim)
          break;

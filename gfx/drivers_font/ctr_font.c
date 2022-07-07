@@ -163,17 +163,12 @@ static void ctr_font_render_line(
       unsigned width, unsigned height, unsigned text_align)
 {
    unsigned i;
-   int x, y;
    const struct font_glyph* glyph_q = NULL;
    ctr_vertex_t* v  = NULL;
    int delta_x      = 0;
    int delta_y      = 0;
-
-   if (!ctr)
-      return;
-
-   x                = roundf(pos_x * width);
-   y                = roundf((1.0f - pos_y) * height);
+   int x            = roundf(pos_x * width);
+   int y            = roundf((1.0f - pos_y) * height);
 
    switch (text_align)
    {
@@ -312,7 +307,8 @@ static void ctr_font_render_message(
    if (!font->font_driver->get_line_metrics ||
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
-      ctr_font_render_line(ctr, font, msg, strlen(msg),
+      unsigned msg_len = strlen(msg);
+      ctr_font_render_line(ctr, font, msg, msg_len,
                            scale, color, pos_x, pos_y,
                            width, height, text_align);
       return;

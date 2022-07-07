@@ -148,28 +148,27 @@ static int vulkan_get_message_width(void *data, const char *msg,
    return delta_x * scale;
 }
 
-static void vulkan_font_render_line(
+static void vulkan_font_render_line(vk_t *vk,
       vulkan_raster_t *font, const char *msg, unsigned msg_len,
       float scale, const float color[4], float pos_x,
       float pos_y, unsigned text_align)
 {
    struct vk_color vk_color;
    const struct font_glyph* glyph_q = NULL;
-   vk_t *vk             = font->vk;
-   const char* msg_end  = msg + msg_len;
-   int x                = roundf(pos_x * vk->vp.width);
-   int y                = roundf((1.0f - pos_y) * vk->vp.height);
-   int delta_x          = 0;
-   int delta_y          = 0;
-   float inv_tex_size_x = 1.0f / font->texture.width;
-   float inv_tex_size_y = 1.0f / font->texture.height;
-   float inv_win_width  = 1.0f / font->vk->vp.width;
-   float inv_win_height = 1.0f / font->vk->vp.height;
+   const char* msg_end              = msg + msg_len;
+   int x                            = roundf(pos_x * vk->vp.width);
+   int y                            = roundf((1.0f - pos_y) * vk->vp.height);
+   int delta_x                      = 0;
+   int delta_y                      = 0;
+   float inv_tex_size_x             = 1.0f / font->texture.width;
+   float inv_tex_size_y             = 1.0f / font->texture.height;
+   float inv_win_width              = 1.0f / font->vk->vp.width;
+   float inv_win_height             = 1.0f / font->vk->vp.height;
 
-   vk_color.r           = color[0];
-   vk_color.g           = color[1];
-   vk_color.b           = color[2];
-   vk_color.a           = color[3];
+   vk_color.r                       = color[0];
+   vk_color.g                       = color[1];
+   vk_color.b                       = color[2];
+   vk_color.a                       = color[3];
 
    switch (text_align)
    {
@@ -187,7 +186,7 @@ static void vulkan_font_render_line(
    {
       const struct font_glyph *glyph;
       int off_x, off_y, tex_x, tex_y, width, height;
-      unsigned code                  = utf8_walk(&msg);
+      unsigned code = utf8_walk(&msg);
 
       /* Do something smarter here ... */
       if (!(glyph =
@@ -249,7 +248,7 @@ static void vulkan_font_render_message(
    if (!font->font_driver->get_line_metrics ||
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
-      vulkan_font_render_line(font, msg, strlen(msg),
+      vulkan_font_render_line(font->vk, font, msg, strlen(msg),
             scale, color, pos_x, pos_y, text_align);
       return;
    }
@@ -263,7 +262,7 @@ static void vulkan_font_render_message(
          ? (unsigned)(delim - msg) : (unsigned)strlen(msg);
 
       /* Draw the line */
-      vulkan_font_render_line(font, msg, msg_len,
+      vulkan_font_render_line(font->vk, font, msg, msg_len,
             scale, color, pos_x, pos_y - (float)lines * line_height,
             text_align);
 
