@@ -5250,7 +5250,6 @@ bool input_remapping_save_file(const char *path)
       "up", "down", "left", "right",
       "a", "x", "l", "r", "l2", "r2",
       "l3", "r3", "l_x+", "l_x-", "l_y+", "l_y-", "r_x+", "r_x-", "r_y+", "r_y-" };
-   const char      *remap_file = path;
    config_file_t         *conf = NULL;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    settings_t        *settings = config_st;
@@ -5258,11 +5257,11 @@ bool input_remapping_save_file(const char *path)
 
    remap_file_dir[0]           = '\0';
 
-   if (string_is_empty(remap_file))
+   if (string_is_empty(path))
       return false;
 
    /* Create output directory, if required */
-   strlcpy(remap_file_dir, remap_file, sizeof(remap_file_dir));
+   strlcpy(remap_file_dir, path, sizeof(remap_file_dir));
    path_parent_dir(remap_file_dir);
 
    if (!string_is_empty(remap_file_dir) &&
@@ -5271,11 +5270,8 @@ bool input_remapping_save_file(const char *path)
       return false;
 
    /* Attempt to load file */
-   if (!(conf = config_file_new_from_path_to_string(remap_file)))
-   {
-      if (!(conf = config_file_new_alloc()))
-         return false;
-   }
+   if (!(conf = config_file_new_alloc()))
+      return false;
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -5395,18 +5391,18 @@ bool input_remapping_save_file(const char *path)
       config_set_int(conf, s1, settings->uints.input_remap_ports[i]);
    }
 
-   ret = config_file_write(conf, remap_file, true);
+   ret = config_file_write(conf, path, true);
    config_file_free(conf);
 
    /* Cache remap file path
     * > Must guard against the case where
     *   runloop_st->name.remapfile itself
     *   is passed to this function... */
-   if (runloop_st->name.remapfile != remap_file)
+   if (runloop_st->name.remapfile != path)
    {
       if (runloop_st->name.remapfile)
          free(runloop_st->name.remapfile);
-      runloop_st->name.remapfile = strdup(remap_file);
+      runloop_st->name.remapfile = strdup(path);
    }
 
    return ret;
