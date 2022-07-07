@@ -789,6 +789,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_enable_host,                
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_enable_client,                 MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_disconnect,                    MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_kick,                          MENU_ENUM_SUBLABEL_NETPLAY_KICK)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_ban,                           MENU_ENUM_SUBLABEL_NETPLAY_BAN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_scan_file,                             MENU_ENUM_SUBLABEL_SCAN_FILE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_scan_directory,                        MENU_ENUM_SUBLABEL_SCAN_DIRECTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_swap_interval,                   MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL)
@@ -1636,7 +1637,7 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
 
    if (client->ping >= 0)
    {
-      snprintf(buf, sizeof(buf), "\nPing: %u", (unsigned)client->ping);
+      snprintf(buf, sizeof(buf), "\nPing: %u ms", (unsigned)client->ping);
       strlcat(s, buf, len);
    }
 
@@ -3168,6 +3169,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_NETPLAY_KICK:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_kick);
             break;
+         case MENU_ENUM_LABEL_NETPLAY_BAN:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_ban);
+            break;
          case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_disconnect);
             break;
@@ -4061,6 +4065,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_room);
             break;
          case MENU_ENUM_LABEL_NETPLAY_KICK_CLIENT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_kick_client);
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_BAN_CLIENT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_kick_client);
             break;
 #endif
