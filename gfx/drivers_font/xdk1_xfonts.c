@@ -67,10 +67,10 @@ static void xfonts_free(void *data, bool is_threaded)
 {
    xfonts_t *font = (xfonts_t*)data;
 
-   if (font)
-      free(font);
+   if (!font)
+      return;
 
-   font = NULL;
+   free(font);
 }
 
 static void xfonts_render_msg(

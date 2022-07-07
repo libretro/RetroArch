@@ -31,8 +31,8 @@
 
 typedef struct
 {
-   const font_renderer_driver_t *caca_font_driver;
-   void *caca_font_data;
+   const font_renderer_driver_t *font_driver;
+   void *font_data;
    caca_t *caca;
 } caca_raster_t;
 
@@ -48,8 +48,8 @@ static void *caca_font_init(void *data,
    font->caca = (caca_t*)data;
 
    if (!font_renderer_create_default(
-            &font->caca_font_driver,
-            &font->caca_font_data, font_path, font_size))
+            &font->font_driver,
+            &font->font_data, font_path, font_size))
    {
       RARCH_WARN("Couldn't initialize font renderer.\n");
       return NULL;
@@ -58,7 +58,18 @@ static void *caca_font_init(void *data,
    return font;
 }
 
-static void caca_font_free(void *data, bool is_threaded) { }
+static void caca_font_free(void *data, bool is_threaded)
+{
+  caca_raster_t *font = (caca_raster_t*)data;
+
+  if (!font)
+     return;
+
+  if (font->font_driver && font->font_data && font->font_driver->free)
+     font->font_driver->free(font->font_data);
+
+  free(font);
+}
 
 static int caca_font_get_message_width(void *data, const char *msg,
       unsigned msg_len, float scale)
