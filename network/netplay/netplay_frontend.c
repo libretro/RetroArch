@@ -4740,7 +4740,15 @@ static void handle_play_spectate(netplay_t *netplay,
                      continue;
 
                   if (!netplay->device_clients[i])
+                  {
+                     retro_ctx_controller_info_t pad;
+
+                     pad.port   = (unsigned)i;
+                     pad.device = netplay->config_devices[i];
+                     core_set_controller_port_device(&pad);
+
                      netplay->device_share_modes[i] = share_mode;
+                  }
 
                   netplay->device_clients[i] |= client_mask;
                }
@@ -4793,7 +4801,14 @@ static void handle_play_spectate(netplay_t *netplay,
                }
                else
                {
+                  retro_ctx_controller_info_t pad;
+
                   devices = 1 << i;
+
+                  pad.port   = (unsigned)i;
+                  pad.device = netplay->config_devices[i];
+                  core_set_controller_port_device(&pad);
+
                   netplay->device_share_modes[i] = share_mode;
                }
                netplay->device_clients[i] |= client_mask;
@@ -7130,8 +7145,35 @@ static netplay_t *netplay_new(const char *server, const char *mitm,
    if (netplay->stateless_mode)
       netplay->quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
 
+   netplay_key_init(netplay);
+
    if (netplay->is_server)
    {
+      unsigned i;
+
+      for (i = 0; i < MAX_INPUT_DEVICES; i++)
+      {
+         uint32_t device = input_config_get_device(i);
+
+         netplay->config_devices[i] = device;
+
+         switch (device & RETRO_DEVICE_MASK)
+         {
+            case RETRO_DEVICE_KEYBOARD:
+               netplay->have_updown_device = true;
+            case RETRO_DEVICE_JOYPAD:
+            case RETRO_DEVICE_MOUSE:
+            case RETRO_DEVICE_LIGHTGUN:
+            case RETRO_DEVICE_ANALOG:
+            case RETRO_DEVICE_NONE:
+               break;
+            default:
+               RARCH_WARN("[Netplay] Netplay does not support input device %u.\n",
+                  i + 1);
+               break;
+         }
+      }
+
       netplay->allow_pausing =
          settings->bools.netplay_allow_pausing;
       netplay->input_latency_frames_min = 
@@ -7143,7 +7185,8 @@ static netplay_t *netplay_new(const char *server, const char *mitm,
          netplay->input_latency_frames_min +
          settings->uints.netplay_input_latency_frames_range;
 
-      netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
+      netplay->self_mode  = NETPLAY_CONNECTION_SPECTATING;
+      netplay->reannounce = ANNOUNCE_FRAME_START;
    }
    else
    {
@@ -7175,6 +7218,8 @@ static netplay_t *netplay_new(const char *server, const char *mitm,
       }
 
       netplay->allow_pausing = true;
+
+      /* Clients get device info from the server. */
    }
 
    strlcpy(netplay->nick,
@@ -7185,31 +7230,7 @@ static netplay_t *netplay_new(const char *server, const char *mitm,
          !netplay_init_buffers(netplay))
       goto failure;
 
-   netplay_key_init(netplay);
-
-   if (netplay->is_server)
-   {
-      unsigned i;
-
-      /* Clients get device info from the server */
-      for (i = 0; i < MAX_INPUT_DEVICES; i++)
-      {
-         uint32_t dtype = input_config_get_device(i);
-
-         netplay->config_devices[i] = dtype;
-
-         if ((dtype & RETRO_DEVICE_MASK) == RETRO_DEVICE_KEYBOARD)
-            netplay->have_updown_device = true;
-
-         if (dtype != RETRO_DEVICE_NONE &&
-               !netplay_expected_input_size(netplay, 1 << i))
-            RARCH_WARN("[Netplay] Netplay does not support input device %u\n",
-               i + 1);
-      }
-
-      netplay->reannounce = ANNOUNCE_FRAME_START;
-   }
-   else
+   if (!netplay->is_server)
    {
       /* Start our handshake */
       netplay_handshake_init_send(netplay, &netplay->connections[0],
