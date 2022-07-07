@@ -966,7 +966,7 @@ FloatSlider::FloatSlider(rarch_setting_t *setting, QWidget *parent) :
    if (match.hasMatch())
       m_precision = pow(10, match.captured(1).toInt());
    else
-      m_precision = pow(10, 3);
+      m_precision = 10 * 10 * 10;
 
    setMinimum(setting->enforce_minrange ? setting->min * m_precision : 0.00 * m_precision);
    setMaximum(setting->enforce_maxrange ? setting->max * m_precision : 999.00 * m_precision);

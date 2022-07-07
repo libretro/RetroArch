@@ -1029,7 +1029,8 @@ static void scan_finished_handler(retro_task_t *task,
 static double expScale(double inputValue, double midValue, double maxValue)
 {
    double           M = maxValue / midValue;
-   double           C = log(pow(M - 1, 2));
+   double        base = M - 1;
+   double           C = log(base * base);
    double           B = maxValue / (exp(C) - 1);
    double           A = -1 * B;
    double returnValue = A + B * exp(C * inputValue);
