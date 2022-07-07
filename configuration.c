@@ -4536,15 +4536,10 @@ bool config_save_autoconf_profile(const
             sanitised_name, ".cfg", sizeof(autoconf_file));
 
    /* Open config file */
-   conf = config_file_new_from_path_to_string(autoconf_file);
-
-   if (!conf)
-   {
-      conf = config_file_new_alloc();
-
-      if (!conf)
-         goto end;
-   }
+   if (     !(conf = config_file_new_from_path_to_string(autoconf_file))
+         && !(conf = config_file_new_alloc())
+      )
+      goto end;
 
    /* Update config file */
    config_set_string(conf, "input_driver",
@@ -5467,7 +5462,7 @@ void config_load_file_salamander(void)
 
 void config_save_file_salamander(void)
 {
-   config_file_t *config     = NULL;
+   config_file_t *conf       = NULL;
    const char *libretro_path = path_get(RARCH_PATH_CORE);
    bool success              = false;
    char config_path[PATH_MAX_LENGTH];
@@ -5484,20 +5479,17 @@ void config_save_file_salamander(void)
       return;
 
    /* Open config file */
-   config = config_file_new_from_path_to_string(config_path);
-
-   if (!config)
-      config = config_file_new_alloc();
-
-   if (!config)
+   if (     !(conf = config_file_new_from_path_to_string(config_path))
+         && !(conf = config_file_new_alloc())
+      )
       goto end;
 
    /* Update config file */
-   config_set_path(config, "libretro_path", libretro_path);
+   config_set_path(conf, "libretro_path", libretro_path);
 
    /* Save config file
     * > Only one entry - no need to sort */
-   success = config_file_write(config, config_path, false);
+   success = config_file_write(conf, config_path, false);
 
 end:
    if (success)
@@ -5507,8 +5499,8 @@ end:
       RARCH_ERR("[Config]: Failed to create new salamander config file in: \"%s\".\n",
             config_path);
 
-   if (config)
-      config_file_free(config);
+   if (conf)
+      config_file_free(conf);
 }
 #endif
 
