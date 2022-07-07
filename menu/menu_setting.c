@@ -14452,14 +14452,13 @@ static bool setting_append_list(
             &settings->uints.input_block_timeout,
             MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT,
             MENU_ENUM_LABEL_VALUE_INPUT_BLOCK_TIMEOUT,
-            1,
+            0,
             &group_info,
             &subgroup_info,
             parent_group,
             general_write_handler,
             general_read_handler);
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-         (*list)[list_info->index - 1].offset_by = 1;
          menu_settings_list_current_add_range(list, list_info, 0, 4, 1, true, true);
 #endif
 
