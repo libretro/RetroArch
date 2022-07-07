@@ -75,7 +75,7 @@ static void* ps2_font_init(void* data, const char* font_path,
 
    /* Create 8bit CLUT */
    clut_size           = gsKit_texture_size_ee(16, 16, GS_PSM_CT32);
-   clut32              = (uint32_t*)malloc(clutSize);
+   clut32              = (uint32_t*)malloc(clut_size);
    for (j = 0; j < 256; j++)
       clut32[j]        = 0x01010101 * j;
    font->texture->Clut = (u32 *)clut32;
