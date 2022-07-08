@@ -120,6 +120,29 @@ DECL_AXIS(r_x_plus,  +2) \
 DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus,  -3) \
 DECL_AXIS(r_y_minus, +3)
+
+#define XPERIA_PLAY_DEFAULT_BINDS \
+DECL_BTN_EX(a, 4, "Circle") \
+DECL_BTN_EX(b, 23, "Cross") \
+DECL_BTN_EX(x, 100, "Triangle") \
+DECL_BTN_EX(y, 99, "Square") \
+DECL_BTN_EX(start, 108, "Start") \
+DECL_BTN_EX(select, 109, "Select") \
+DECL_BTN_EX(up, 19, "D-Pad Up") \
+DECL_BTN_EX(down, 20, "D-Pad Down") \
+DECL_BTN_EX(left, 21, "D-Pad Left") \
+DECL_BTN_EX(right, 22, "D-Pad Right") \
+DECL_BTN_EX(l, 102, "L") \
+DECL_BTN_EX(r, 103, "R") \
+DECL_BTN_EX(menu_toggle, 82, "Menu") \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  -1) \
+DECL_AXIS(l_y_minus, +1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  -3) \
+DECL_AXIS(r_y_minus, +3)
 #endif
 
 #ifdef __QNX__
@@ -726,6 +749,7 @@ const char* const input_builtin_autoconfs[] =
 #endif
 #if defined(ANDROID)
    DECL_AUTOCONF_DEVICE("Android Gamepad", "android", ANDROID_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("XPERIA Play", "android", XPERIA_PLAY_DEFAULT_BINDS),
 #endif
 #ifdef __QNX__
    DECL_AUTOCONF_DEVICE("QNX Controller", "qnx", QNX_DEFAULT_BINDS),
