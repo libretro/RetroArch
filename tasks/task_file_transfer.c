@@ -80,8 +80,8 @@ void task_file_load_handler(retro_task_t *task)
                   nbio_begin_read(handle);
                   return;
                }
-               else
-                  task_set_cancelled(task, true);
+
+               task_set_cancelled(task, true);
             }
             break;
          case NBIO_STATUS_TRANSFER_PARSE:
