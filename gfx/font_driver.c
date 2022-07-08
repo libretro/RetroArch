@@ -24,9 +24,6 @@
 #include "font_driver.h"
 #include "video_thread_wrapper.h"
 
-#include "../retroarch.h"
-#include "../verbosity.h"
-
 /* TODO/FIXME - global */
 static void *video_font_driver = NULL;
 
@@ -66,15 +63,9 @@ int font_renderer_create_default(
       *handle = font_backends[i]->init(path, font_size);
       if (*handle)
       {
-         if (!video_font_driver)
-            RARCH_LOG("[Font]: Using font rendering backend: \"%s\".\n",
-                  font_backends[i]->ident);
          *drv = font_backends[i];
          return 1;
       }
-
-      RARCH_ERR("[Font]: Failed to create rendering backend: \"%s\".\n",
-            font_backends[i]->ident);
    }
 
    *drv    = NULL;
@@ -617,7 +608,6 @@ static bool font_init_first(
 }
 
 #ifdef HAVE_LANGEXTRA
-
 /* ASCII:       0xxxxxxx  (c & 0x80) == 0x00
  * other start: 11xxxxxx  (c & 0xC0) == 0xC0
  * other cont:  10xxxxxx  (c & 0xC0) == 0x80
@@ -641,142 +631,6 @@ static bool font_init_first(
 #define IS_RTL(p)          (IS_HEBREW(p) || IS_ARABIC(p))
 #define GET_ID_ARABIC(p)   (((unsigned char)(p)[0] << 6) | ((unsigned char)(p)[1] & 0x3F))
 
-/* 0x0620 to 0x064F */
-static const unsigned arabic_shape_map[0x100][0x4] = {
-   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0600 */
-   { 0 }, { 0 }, { 0 }, { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-
-   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0610 */
-   { 0 }, { 0 }, { 0 }, { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-
-   { 0 },                               /* 0x0620 */
-   { 0xFE80 },
-   { 0xFE81, 0xFE82 },
-   { 0xFE83, 0xFE84 },
-   { 0xFE85, 0xFE86 },
-   { 0xFE87, 0xFE88 },
-   { 0xFE89, 0xFE8A, 0xFE8B, 0xFE8C },
-   { 0xFE8D, 0xFE8E },
-
-   { 0xFE8F, 0xFE90, 0xFE91, 0xFE92 },
-   { 0xFE93, 0xFE94 },
-   { 0xFE95, 0xFE96, 0xFE97, 0xFE98 },
-   { 0xFE99, 0xFE9A, 0xFE9B, 0xFE9C },
-   { 0xFE9D, 0xFE9E, 0xFE9F, 0xFEA0 },
-   { 0xFEA1, 0xFEA2, 0xFEA3, 0xFEA4 },
-   { 0xFEA5, 0xFEA6, 0xFEA7, 0xFEA8 },
-   { 0xFEA9, 0xFEAA },
-
-   { 0xFEAB, 0xFEAC },                  /* 0x0630 */
-   { 0xFEAD, 0xFEAE },
-   { 0xFEAF, 0xFEB0 },
-   { 0xFEB1, 0xFEB2, 0xFEB3, 0xFEB4 },
-   { 0xFEB5, 0xFEB6, 0xFEB7, 0xFEB8 },
-   { 0xFEB9, 0xFEBA, 0xFEBB, 0xFEBC },
-   { 0xFEBD, 0xFEBE, 0xFEBF, 0xFEC0 },
-   { 0xFEC1, 0xFEC2, 0xFEC3, 0xFEC4 },
-
-   { 0xFEC5, 0xFEC6, 0xFEC7, 0xFEC8 },
-   { 0xFEC9, 0xFECA, 0xFECB, 0xFECC },
-   { 0xFECD, 0xFECE, 0xFECF, 0xFED0 },
-   { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-
-   { 0 },                               /* 0x0640 */
-   { 0xFED1, 0xFED2, 0xFED3, 0xFED4 },
-   { 0xFED5, 0xFED6, 0xFED7, 0xFED8 },
-   { 0xFED9, 0xFEDA, 0xFEDB, 0xFEDC },
-   { 0xFEDD, 0xFEDE, 0xFEDF, 0xFEE0 },
-   { 0xFEE1, 0xFEE2, 0xFEE3, 0xFEE4 },
-   { 0xFEE5, 0xFEE6, 0xFEE7, 0xFEE8 },
-   { 0xFEE9, 0xFEEA, 0xFEEB, 0xFEEC },
-
-   { 0xFEED, 0xFEEE },
-   { 0xFEEF, 0xFEF0, 0xFBE8, 0xFBE9 },
-   { 0xFEF1, 0xFEF2, 0xFEF3, 0xFEF4 },
-   { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-
-   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0650 */
-   { 0 }, { 0 }, { 0 }, { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-
-
-   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0660 */
-   { 0 }, { 0 }, { 0 }, { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-
-
-   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0670 */
-   { 0 }, { 0 }, { 0 }, { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-
-   { 0 }, { 0 },
-   { 0xFB56, 0xFB57, 0xFB58, 0xFB59 },
-   { 0 },
-
-
-   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0680 */
-   { 0 }, { 0 }, { 0 }, { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-
-
-   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0690 */
-   { 0 }, { 0 }, { 0 }, { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-
-
-   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06A0 */
-   { 0 }, { 0 }, { 0 }, { 0 },
-
-   { 0 },
-   { 0xFB8E, 0xFB8F, 0xFB90, 0xFB91 },
-   { 0 }, { 0 },
-
-   { 0 }, { 0 }, { 0 },
-   { 0xFB92, 0xFB93, 0xFB94, 0xFB95 },
-
-
-   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06B0 */
-   { 0 }, { 0 }, { 0 }, { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-
-
-   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06C0 */
-   { 0 }, { 0 }, { 0 }, { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-
-   { 0xFBFC, 0xFBFD, 0xFBFE, 0xFBFF },
-   { 0 }, { 0 }, { 0 },
-
-
-   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06D0 */
-   { 0 }, { 0 }, { 0 }, { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-
-
-   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06E0 */
-   { 0 }, { 0 }, { 0 }, { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-
-
-   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06F0 */
-   { 0 }, { 0 }, { 0 }, { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-   { 0 }, { 0 }, { 0 }, { 0 },
-};
-/* clang-format on */
 
 /* Checks for miscellaneous whitespace characters in the range U+2000 to U+200D */
 static INLINE unsigned is_misc_ws(const unsigned char* src)
@@ -794,107 +648,235 @@ static INLINE unsigned is_misc_ws(const unsigned char* src)
    return res;
 }
 
-static INLINE unsigned font_get_replacement(
+static INLINE unsigned font_get_arabic_replacement(
       const char* src, const char* start)
 {
-   if (IS_ARABIC(src)) /* 0x0600 to 0x06FF */
-   {
-      unsigned      result         = 0;
-      bool          prev_connected = false;
-      bool          next_connected = false;
-      unsigned char id             = GET_ID_ARABIC(src);
-      const char*   prev           = src - 2;
-      const char*   next           = src + 2;
+   /* 0x0620 to 0x064F */
+   static const unsigned arabic_shape_map[0x100][0x4] = {
+      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0600 */
+      { 0 }, { 0 }, { 0 }, { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
 
-      if ((prev >= start) && IS_ARABIC(prev))
+      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0610 */
+      { 0 }, { 0 }, { 0 }, { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+
+      { 0 },                               /* 0x0620 */
+      { 0xFE80 },
+      { 0xFE81, 0xFE82 },
+      { 0xFE83, 0xFE84 },
+      { 0xFE85, 0xFE86 },
+      { 0xFE87, 0xFE88 },
+      { 0xFE89, 0xFE8A, 0xFE8B, 0xFE8C },
+      { 0xFE8D, 0xFE8E },
+
+      { 0xFE8F, 0xFE90, 0xFE91, 0xFE92 },
+      { 0xFE93, 0xFE94 },
+      { 0xFE95, 0xFE96, 0xFE97, 0xFE98 },
+      { 0xFE99, 0xFE9A, 0xFE9B, 0xFE9C },
+      { 0xFE9D, 0xFE9E, 0xFE9F, 0xFEA0 },
+      { 0xFEA1, 0xFEA2, 0xFEA3, 0xFEA4 },
+      { 0xFEA5, 0xFEA6, 0xFEA7, 0xFEA8 },
+      { 0xFEA9, 0xFEAA },
+
+      { 0xFEAB, 0xFEAC },                  /* 0x0630 */
+      { 0xFEAD, 0xFEAE },
+      { 0xFEAF, 0xFEB0 },
+      { 0xFEB1, 0xFEB2, 0xFEB3, 0xFEB4 },
+      { 0xFEB5, 0xFEB6, 0xFEB7, 0xFEB8 },
+      { 0xFEB9, 0xFEBA, 0xFEBB, 0xFEBC },
+      { 0xFEBD, 0xFEBE, 0xFEBF, 0xFEC0 },
+      { 0xFEC1, 0xFEC2, 0xFEC3, 0xFEC4 },
+
+      { 0xFEC5, 0xFEC6, 0xFEC7, 0xFEC8 },
+      { 0xFEC9, 0xFECA, 0xFECB, 0xFECC },
+      { 0xFECD, 0xFECE, 0xFECF, 0xFED0 },
+      { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+
+      { 0 },                               /* 0x0640 */
+      { 0xFED1, 0xFED2, 0xFED3, 0xFED4 },
+      { 0xFED5, 0xFED6, 0xFED7, 0xFED8 },
+      { 0xFED9, 0xFEDA, 0xFEDB, 0xFEDC },
+      { 0xFEDD, 0xFEDE, 0xFEDF, 0xFEE0 },
+      { 0xFEE1, 0xFEE2, 0xFEE3, 0xFEE4 },
+      { 0xFEE5, 0xFEE6, 0xFEE7, 0xFEE8 },
+      { 0xFEE9, 0xFEEA, 0xFEEB, 0xFEEC },
+
+      { 0xFEED, 0xFEEE },
+      { 0xFEEF, 0xFEF0, 0xFBE8, 0xFBE9 },
+      { 0xFEF1, 0xFEF2, 0xFEF3, 0xFEF4 },
+      { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+
+      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0650 */
+      { 0 }, { 0 }, { 0 }, { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+
+
+      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0660 */
+      { 0 }, { 0 }, { 0 }, { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+
+
+      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0670 */
+      { 0 }, { 0 }, { 0 }, { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+
+      { 0 }, { 0 },
+      { 0xFB56, 0xFB57, 0xFB58, 0xFB59 },
+      { 0 },
+
+
+      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0680 */
+      { 0 }, { 0 }, { 0 }, { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+
+
+      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0690 */
+      { 0 }, { 0 }, { 0 }, { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+
+
+      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06A0 */
+      { 0 }, { 0 }, { 0 }, { 0 },
+
+      { 0 },
+      { 0xFB8E, 0xFB8F, 0xFB90, 0xFB91 },
+      { 0 }, { 0 },
+
+      { 0 }, { 0 }, { 0 },
+      { 0xFB92, 0xFB93, 0xFB94, 0xFB95 },
+
+
+      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06B0 */
+      { 0 }, { 0 }, { 0 }, { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+
+
+      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06C0 */
+      { 0 }, { 0 }, { 0 }, { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+
+      { 0xFBFC, 0xFBFD, 0xFBFE, 0xFBFF },
+      { 0 }, { 0 }, { 0 },
+
+
+      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06D0 */
+      { 0 }, { 0 }, { 0 }, { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+
+
+      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06E0 */
+      { 0 }, { 0 }, { 0 }, { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+
+
+      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06F0 */
+      { 0 }, { 0 }, { 0 }, { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+      { 0 }, { 0 }, { 0 }, { 0 },
+   };
+   unsigned      result         = 0;
+   bool          prev_connected = false;
+   bool          next_connected = false;
+   unsigned char id             = GET_ID_ARABIC(src);
+   const char*   prev           = src - 2;
+   const char*   next           = src + 2;
+
+   if (IS_ARABIC(prev) && (prev >= start))
+   {
+      unsigned char prev_id = GET_ID_ARABIC(prev);
+
+      /* nonspacing diacritics 0x4b -- 0x5f */
+      while (prev_id > 0x4A && prev_id < 0x60)
       {
-         unsigned char prev_id = GET_ID_ARABIC(prev);
+         prev -= 2;
+         if ((prev >= start) && IS_ARABIC(prev))
+            prev_id = GET_ID_ARABIC(prev);
+         else
+            break;
+      }
+
+      if (prev_id == 0x44) /* Arabic Letter Lam */
+      {
+         unsigned char prev2_id = 0;
+         const char*   prev2    = prev - 2;
+
+         if (prev2 >= start)
+            prev2_id            = (prev2[0] << 6) | (prev2[1] & 0x3F);
 
          /* nonspacing diacritics 0x4b -- 0x5f */
-         while (prev_id > 0x4A && prev_id < 0x60)
+         while (prev2_id > 0x4A && prev2_id < 0x60)
          {
-            prev -= 2;
-            if ((prev >= start) && IS_ARABIC(prev))
-               prev_id = GET_ID_ARABIC(prev);
+            prev2 -= 2;
+            if ((prev2 >= start) && IS_ARABIC(prev2))
+               prev2_id = GET_ID_ARABIC(prev2);
             else
                break;
          }
 
+         prev_connected = !!arabic_shape_map[prev2_id][2];
 
-         if (prev_id == 0x44) /* Arabic Letter Lam */
+         switch (id)
          {
-            unsigned char prev2_id = 0;
-            const char*   prev2    = prev - 2;
-
-            if (prev2 >= start)
-               prev2_id = (prev2[0] << 6) | (prev2[1] & 0x3F);
-
-            /* nonspacing diacritics 0x4b -- 0x5f */
-            while (prev2_id > 0x4A && prev2_id < 0x60)
-            {
-               prev2 -= 2;
-               if ((prev2 >= start) && IS_ARABIC(prev2))
-                  prev2_id = GET_ID_ARABIC(prev2);
-               else
-                  break;
-            }
-
-            prev_connected = !!arabic_shape_map[prev2_id][2];
-
-            switch (id)
-            {
-               case 0x22: /* Arabic Letter Alef with Madda Above */
-                  return 0xFEF5 + prev_connected;
-               case 0x23: /* Arabic Letter Alef with Hamza Above */
-                  return 0xFEF7 + prev_connected;
-               case 0x25: /* Arabic Letter Alef with Hamza Below */
-                  return 0xFEF9 + prev_connected;
-               case 0x27: /* Arabic Letter Alef */
-                  return 0xFEFB + prev_connected;
-            }
+            case 0x22: /* Arabic Letter Alef with Madda Above */
+               return 0xFEF5 + prev_connected;
+            case 0x23: /* Arabic Letter Alef with Hamza Above */
+               return 0xFEF7 + prev_connected;
+            case 0x25: /* Arabic Letter Alef with Hamza Below */
+               return 0xFEF9 + prev_connected;
+            case 0x27: /* Arabic Letter Alef */
+               return 0xFEFB + prev_connected;
          }
-         prev_connected = !!arabic_shape_map[prev_id][2];
       }
-
-      if (IS_ARABIC(next))
-      {
-         unsigned char next_id = GET_ID_ARABIC(next);
-
-         /* nonspacing diacritics 0x4b -- 0x5f */
-         while (next_id > 0x4A && next_id < 0x60)
-         {
-            next += 2;
-            if (!IS_ARABIC(next))
-               break;
-            next_id = GET_ID_ARABIC(next);
-         }
-
-         next_connected = !!arabic_shape_map[next_id][1];
-      }
-      if ((result = 
-               arabic_shape_map[id][prev_connected | (next_connected <<
-                  1)]))
-         return result;
-      return arabic_shape_map[id][prev_connected];
+      prev_connected = !!arabic_shape_map[prev_id][2];
    }
 
-   return 0;
+   if (IS_ARABIC(next))
+   {
+      unsigned char next_id = GET_ID_ARABIC(next);
+
+      /* nonspacing diacritics 0x4b -- 0x5f */
+      while (next_id > 0x4A && next_id < 0x60)
+      {
+         next += 2;
+         if (!IS_ARABIC(next))
+            break;
+         next_id = GET_ID_ARABIC(next);
+      }
+
+      next_connected = !!arabic_shape_map[next_id][1];
+   }
+
+   if ((result = 
+            arabic_shape_map[id][prev_connected | (next_connected <<
+               1)]))
+      return result;
+   return arabic_shape_map[id][prev_connected];
 }
+/* clang-format on */
 
 static char* font_driver_reshape_msg(const char* msg, unsigned char *buffer, size_t buffer_size)
 {
-   unsigned char*       dst_buffer = buffer;
-   const unsigned char* src        = (const unsigned char*)msg;
-   unsigned char*       dst;
+   const unsigned char *src        = (const unsigned char*)msg;
    bool                 reverse    = false;
    size_t              msg_size    = (strlen(msg) * 2) + 1;
-
-   /* fallback to heap allocated buffer if the buffer is too small */
+   /* Fallback to heap allocated buffer if the buffer is too small */
    /* worst case transformations are 2 bytes to 4 bytes -- aliaspider */
-   if (buffer_size < msg_size)
-      dst_buffer = (unsigned char*)malloc(msg_size);
-
-   dst = (unsigned char*)dst_buffer;
+   unsigned char*       dst_buffer = (buffer_size < msg_size) 
+                                   ? (unsigned char*)malloc(msg_size)
+                                   : buffer;
+   unsigned char *dst              = (unsigned char*)dst_buffer;
 
    while (*src || reverse)
    {
@@ -906,37 +888,40 @@ static char* font_driver_reshape_msg(const char* msg, unsigned char *buffer, siz
 
          if (src >= (const unsigned char*)msg && (IS_RTL(src) || IS_DIR_NEUTRAL(src) || is_misc_ws(src)))
          {
-            unsigned replacement = font_get_replacement(
-                  (const char*)src, msg);
-
-            if (replacement)
+            if (IS_ARABIC(src))
             {
-               if (replacement < 0x80)
-                  *dst++ = replacement;
-               else if (replacement < 0x800)
-               {
-                  *dst++ = 0xC0 | (replacement >> 6);
-                  *dst++ = 0x80 | (replacement & 0x3F);
-               }
-               else if (replacement < 0x10000)
-               {
-                  /* merged glyphs */
-                  if ((replacement >= 0xFEF5) && (replacement <= 0xFEFC))
-                     src -= 2;
+               unsigned replacement = font_get_arabic_replacement(
+                     (const char*)src, msg);
 
-                  *dst++ = 0xE0 | (replacement >> 12);
-                  *dst++ = 0x80 | ((replacement >> 6) & 0x3F);
-                  *dst++ = 0x80 | (replacement & 0x3F);
-               }
-               else
+               if (replacement)
                {
-                  *dst++ = 0xF0 | (replacement >> 18);
-                  *dst++ = 0x80 | ((replacement >> 12) & 0x3F);
-                  *dst++ = 0x80 | ((replacement >> 6) & 0x3F);
-                  *dst++ = 0x80 | (replacement & 0x3F);
-               }
+                  if (replacement < 0x80)
+                     *dst++ = replacement;
+                  else if (replacement < 0x800)
+                  {
+                     *dst++ = 0xC0 | (replacement >> 6);
+                     *dst++ = 0x80 | (replacement & 0x3F);
+                  }
+                  else if (replacement < 0x10000)
+                  {
+                     /* merged glyphs */
+                     if ((replacement >= 0xFEF5) && (replacement <= 0xFEFC))
+                        src -= 2;
 
-               continue;
+                     *dst++ = 0xE0 | ( replacement >> 12);
+                     *dst++ = 0x80 | ((replacement >> 6) & 0x3F);
+                     *dst++ = 0x80 | ( replacement       & 0x3F);
+                  }
+                  else
+                  {
+                     *dst++ = 0xF0 |  (replacement >> 18);
+                     *dst++ = 0x80 | ((replacement >> 12) & 0x3F);
+                     *dst++ = 0x80 | ((replacement >> 6)  & 0x3F);
+                     *dst++ = 0x80 | ( replacement        & 0x3F);
+                  }
+
+                  continue;
+               }
             }
 
             *dst++ = *src++;
@@ -1165,15 +1150,10 @@ void font_driver_init_osd(
       enum font_driver_render_api api)
 {
    const video_info_t *video_info = (const video_info_t*)video_info_data;
-   if (video_font_driver || !video_info)
-      return;
-
-   video_font_driver = font_driver_init_first(video_data,
-         *video_info->path_font ? video_info->path_font : NULL,
-         video_info->font_size, threading_hint, is_threaded, api);
-
-   if (!video_font_driver)
-      RARCH_ERR("[Font]: Failed to initialize OSD font.\n");
+   if (!video_font_driver && video_info)
+      video_font_driver = font_driver_init_first(video_data,
+            *video_info->path_font ? video_info->path_font : NULL,
+            video_info->font_size, threading_hint, is_threaded, api);
 }
 
 void font_driver_free_osd(void)
