@@ -468,9 +468,17 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
                data->core, content_path);
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
-            command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
-               data->hostname);
+
+            if (string_is_empty(data->hostname))
+            {
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
+            }
+            else
+            {
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+               command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
+                  data->hostname);
+            }
 
             task_push_load_new_core(data->core,
                NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
@@ -502,7 +510,11 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
                data->core, subsystem);
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+
+            if (string_is_empty(data->hostname))
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
+            else
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
             task_push_load_new_core(data->core,
                NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
@@ -517,8 +529,9 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
                for (i = 0; i < subsystem_content->size; i++)
                   content_add_subsystem(subsystem_content->elems[i].data);
 
-               command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
-                  data->hostname);
+               if (!string_is_empty(data->hostname))
+                  command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
+                     data->hostname);
 
                task_push_load_subsystem_with_core(NULL,
                   &content_info, CORE_TYPE_PLAIN, NULL, NULL);
@@ -545,9 +558,17 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
             RARCH_LOG("[Lobby] Loading contentless core '%s'.\n", data->core);
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
-            command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
-               data->hostname);
+
+            if (string_is_empty(data->hostname))
+            {
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
+            }
+            else
+            {
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+               command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
+                  data->hostname);
+            }
 
             task_push_load_new_core(data->core,
                NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
@@ -562,9 +583,17 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
                command_event(CMD_EVENT_UNLOAD_CORE, NULL);
 
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-               netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
-               command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
-                  data->hostname);
+
+               if (string_is_empty(data->hostname))
+               {
+                  netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
+               }
+               else
+               {
+                  netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+                  command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
+                     data->hostname);
+               }
 
                task_push_load_new_core(data->core,
                   NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
@@ -754,7 +783,10 @@ bool task_push_netplay_content_reload(const char *hostname)
    scan_state.state = STATE_RELOAD;
 
    strlcpy(data->core, pcore, sizeof(data->core));
-   strlcpy(data->hostname, hostname, sizeof(data->hostname));
+
+   /* Hostname being NULL indicates this is a host. */
+   if (hostname)
+      strlcpy(data->hostname, hostname, sizeof(data->hostname));
 
    content_get_status(&contentless, &is_inited);
    if (contentless)

@@ -2883,61 +2883,45 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_NETPLAY_ENABLE_HOST:
          {
-#ifdef HAVE_MENU
-            bool contentless = false;
-            bool is_inited   = false;
-
-            content_get_status(&contentless, &is_inited);
-
-            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-               command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
-
-            /* If we haven't yet started, this will load on its own */
-            if (!is_inited)
+            if (!task_push_netplay_content_reload(NULL))
             {
+               command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
+
                runloop_msg_queue_push(
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
-                     1, 480, true,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
+                  1, 480, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
                return false;
             }
-
-            /* Enable Netplay itself */
-            if (!command_event(CMD_EVENT_NETPLAY_INIT, NULL))
-               return false;
-#endif
-            break;
          }
+         break;
       case CMD_EVENT_NETPLAY_DISCONNECT:
          {
+            bool rewind_enable         = settings->bools.rewind_enable;
+            unsigned autosave_interval = settings->uints.autosave_interval;
+
             netplay_driver_ctl(RARCH_NETPLAY_CTL_DISCONNECT, NULL);
             netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
 
-            {
-               bool rewind_enable                  = settings->bools.rewind_enable;
-               unsigned autosave_interval          = settings->uints.autosave_interval;
-
 #ifdef HAVE_REWIND
-               /* Re-enable rewind if it was enabled
-                * TODO/FIXME: Add a setting for these tweaks */
-               if (rewind_enable)
-                  command_event(CMD_EVENT_REWIND_INIT, NULL);
+            /* Re-enable rewind if it was enabled
+             * TODO/FIXME: Add a setting for these tweaks */
+            if (rewind_enable)
+               command_event(CMD_EVENT_REWIND_INIT, NULL);
 #endif
-               if (autosave_interval != 0)
-                  command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
-            }
-
-            break;
+            if (autosave_interval != 0)
+               command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
          }
+         break;
       case CMD_EVENT_NETPLAY_HOST_TOGGLE:
-         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
-               netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
-            command_event(CMD_EVENT_NETPLAY_DISCONNECT, NULL);
-         else if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
-               !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL) &&
-               netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
-            command_event(CMD_EVENT_NETPLAY_DISCONNECT, NULL);
+         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+         {
+            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL) ||
+                  netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
+               command_event(CMD_EVENT_NETPLAY_DISCONNECT, NULL);
+         }
          else
             command_event(CMD_EVENT_NETPLAY_ENABLE_HOST, NULL);
 
