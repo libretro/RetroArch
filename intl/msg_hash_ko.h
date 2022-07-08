@@ -986,7 +986,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
-   "출시 년도"
+   "출시 연도"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
@@ -5575,6 +5575,26 @@ MSG_HASH(
    "사용자 정의 릴레이 서버의 주소를 입력합니다. 포맷: 주소 또는 주소|포트."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
+   "북아메리카 (동부, 미국)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2,
+   "유럽 서부"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3,
+   "남아메리카 (남동부, 브라질)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
+   "동남아시아"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
+   "사용자"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
    "서버 주소"
    )
@@ -6559,6 +6579,10 @@ MSG_HASH(
    "연결 가능한 방만 표시"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
+   "코어가 설치되어있는 방만 표시"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
    "비밀번호 설정된 방"
    )
@@ -6600,6 +6624,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_KICK,
    "호스트 중인 방에서 이 클라이언트를 강제로 퇴장시킵니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_BAN,
+   "클라이언트 차단"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_BAN,
+   "호스트 중인 방에서 이 클라이언트를 차단합니다."
    )
 
 /* Import Content */
@@ -11048,12 +11080,24 @@ MSG_HASH(
    "클라이언트 강제 퇴장 실패함: \"%s\""
    )
 MSG_HASH(
+   MSG_NETPLAY_BANNED_CLIENT_S,
+   "클라이언트 차단됨: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
+   "클라이언트 차단 실패함: \"%s\""
+   )
+MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
    "실행 중"
    )
 MSG_HASH(
    MSG_NETPLAY_STATUS_SPECTATING,
    "관전 중"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CLIENT_DEVICES,
+   "장치"
    )
 MSG_HASH(
    MSG_NETPLAY_CHAT_SUPPORTED,
@@ -12311,6 +12355,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_HOST_FULL,
    "넷플레이 호스트가 가득 참"
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "이 호스트에서 차단되었습니다"
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,

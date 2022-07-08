@@ -861,14 +861,6 @@ MSG_HASH(
    "Έκδοση του Περιοδικού Edge"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
-   "Μήνας Κυκλοφορίας"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
-   "Έτος Κυκλοφορίας"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
    "Βαθμολογία BBFC"
    )

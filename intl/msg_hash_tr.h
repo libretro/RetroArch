@@ -974,11 +974,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
-   "Çıkış tarihi Ay"
+   "Çıkış Tarihi Ay"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
-   "Çıkış tarihi Yıl"
+   "Çıkış Tarihi Yıl"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
@@ -5535,6 +5535,26 @@ MSG_HASH(
    "Özel geçiş sunucunuzun adresini buraya girin. Biçim: adres veya adres|port."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
+   "Kuzey Amerika (Doğu Kıyısı, ABD)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2,
+   "Batı Avrupa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3,
+   "Güney Amerika (Güneydoğu, Brezilya)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
+   "Güneydoğu Asya"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
+   "Özel"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
    "Sunucu Adresi"
    )
@@ -6564,6 +6584,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_KICK,
    "Şu anda barındırılan odanızdan bir oyuncuyu atın."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_BAN,
+   "İstemciyi Yasakla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_BAN,
+   "Şu anda barındırılan odanızdan bir oyuncuyu yasaklayın."
    )
 
 /* Import Content */
@@ -11044,12 +11072,24 @@ MSG_HASH(
    "İstemci atılamadı: \"%s\""
    )
 MSG_HASH(
+   MSG_NETPLAY_BANNED_CLIENT_S,
+   "İstemci yasaklandı: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
+   "İstemci yasaklanamadı: \"%s\""
+   )
+MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
    "Oynanıyor"
    )
 MSG_HASH(
    MSG_NETPLAY_STATUS_SPECTATING,
    "İzleyici"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CLIENT_DEVICES,
+   "Cihazlar"
    )
 MSG_HASH(
    MSG_NETPLAY_CHAT_SUPPORTED,
@@ -12307,6 +12347,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_HOST_FULL,
    "Netplay ana bilgisayarı dolu"
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "Bu sunucu üstünde yasaklandınız"
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,

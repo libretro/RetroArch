@@ -961,14 +961,6 @@ MSG_HASH(
    "Número de la revista Edge"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
-   "Mes de la data de publicació"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
-   "Any de la publicació"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
    "Clasificació BBFC"
    )
@@ -4074,6 +4066,10 @@ MSG_HASH(
 
 /* Settings > Network */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
+   "Personalitzat"
+   )
 
 /* Settings > Network > Updater */
 
@@ -5858,14 +5854,6 @@ MSG_HASH(
    "Base de dades - Filtre: màxim d’usuaris"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_MONTH,
-   "Base de dades - Filtre: mes de publicació"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_YEAR,
-   "Base de dades - Filtre: any de publicació"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_ISSUE,
    "Base de dades - Filtre: número de la revista Edge"
    )
@@ -6119,6 +6107,74 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_OPTIONS_FLUSH_FAILED,
    "No s’han pogut desar les opcions del nucli a:"
+   )
+MSG_HASH(
+   MSG_CUSTOM_TIMING_GIVEN,
+   "Temps personalitzat donat"
+   )
+MSG_HASH(
+   MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
+   "La descompressió ja està en curs."
+   )
+MSG_HASH(
+   MSG_DECOMPRESSION_FAILED,
+   "La descompressió ha fallat."
+   )
+MSG_HASH(
+   MSG_DETECTED_VIEWPORT_OF,
+   "S’ha detectat una àrea de visualització de"
+   )
+MSG_HASH(
+   MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
+   "No s’ha trobat cap pedaç de contingut vàlid."
+   )
+MSG_HASH(
+   MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
+   "Desconnecta el dispositiu d’un port vàlid."
+   )
+MSG_HASH(
+   MSG_DISK_CLOSED,
+   "S’ha tancat la safata de disc virtual."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "S’ha expulsat la safata de disc virtual."
+   )
+MSG_HASH(
+   MSG_DOWNLOADING,
+   "S’està baixant"
+   )
+MSG_HASH(
+   MSG_INDEX_FILE,
+   "índex"
+   )
+MSG_HASH(
+   MSG_DOWNLOAD_FAILED,
+   "Ha fallat la baixada"
+   )
+MSG_HASH(
+   MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT,
+   "El nucli de libretro necessita contingut, però no n’heu donat cap."
+   )
+MSG_HASH(
+   MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT,
+   "El nucli de libretro necessita contingut especial, però no n’heu donat cap."
+   )
+MSG_HASH(
+   MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS,
+   "El nucli no és compatible amb VFS i ha fallat la càrrega des d’una còpia local"
+   )
+MSG_HASH(
+   MSG_ERROR_PARSING_ARGUMENTS,
+   "S’ha produït un error en analitzar els arguments."
+   )
+MSG_HASH(
+   MSG_ERROR_SAVING_CORE_OPTIONS_FILE,
+   "S’ha produït un error en desar el fitxer d’opcions del nucli."
+   )
+MSG_HASH(
+   MSG_ERROR_REMOVING_CORE_OPTIONS_FILE,
+   "S’ha produït un error en suprimir el fitxer d’opcions del nucli."
    )
 MSG_HASH(
    MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,

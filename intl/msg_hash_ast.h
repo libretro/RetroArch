@@ -685,14 +685,6 @@ MSG_HASH(
    "Clasificación de TGDB"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
-   "Mes de la data de llanzamientu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
-   "Añu de la data de llanzamientu"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
    "Clasificación de BBFC"
    )
@@ -3214,6 +3206,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,
    "El to nomatu camudó a «%s»"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CLIENT_DEVICES,
+   "Preseos"
    )
 
 MSG_HASH(
