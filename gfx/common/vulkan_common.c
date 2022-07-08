@@ -174,7 +174,7 @@ static VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(
       struct vulkan_emulated_mailbox *mailbox,
       unsigned *index)
 {
-   VkResult res;
+   VkResult res = VK_SUCCESS;
 
    slock_lock(mailbox->lock);
 
@@ -1786,9 +1786,9 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type)
 {
    unsigned i;
-   VkResult res;
    PFN_vkGetInstanceProcAddr GetInstanceProcAddr;
    const char *instance_extensions[4];
+   VkResult res                         = VK_SUCCESS;
    bool use_instance_ext                = false;
    VkInstanceCreateInfo info            = { VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
    VkApplicationInfo app                = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
@@ -2678,9 +2678,9 @@ static void vulkan_create_wait_fences(gfx_ctx_vulkan_data_t *vk)
 void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
 {
    unsigned index;
-   VkResult err;
    VkFenceCreateInfo fence_info;
    VkSemaphoreCreateInfo sem_info;
+   VkResult err                   = VK_SUCCESS;
    VkFence fence                  = VK_NULL_HANDLE;
    VkSemaphore semaphore          = VK_NULL_HANDLE;
    bool is_retrying               = false;
@@ -2899,19 +2899,15 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
                !vk->emulating_mailbox 
             &&  vk->mailbox.swapchain != VK_NULL_HANDLE)
       {
-         VkResult res;
+         VkResult res = VK_SUCCESS;
          /* We are tearing down, and entering a state 
           * where we are supposed to have
           * acquired an image, so block until we have acquired. */
-         if (vk->context.has_acquired_swapchain)
-            res    = VK_SUCCESS;
-         else
-         {
+         if (!vk->context.has_acquired_swapchain)
             if (vk->mailbox.swapchain != VK_NULL_HANDLE)
                res = vulkan_emulated_mailbox_acquire_next_image_blocking(
                      &vk->mailbox,
                      &vk->context.current_swapchain_index);
-         }
 
          vulkan_emulated_mailbox_deinit(&vk->mailbox);
 
