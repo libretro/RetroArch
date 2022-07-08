@@ -94,9 +94,7 @@ static int cb_http_conn_default(void *data_, size_t len)
    if (!network_init())
       return -1;
 
-   http->handle = net_http_new(http->connection.handle);
-
-   if (!http->handle)
+   if (!(http->handle = net_http_new(http->connection.handle)))
    {
       http->error = true;
       return -1;
@@ -191,12 +189,10 @@ task_finished:
             free(tmp);
 
          if (task_get_cancelled(task))
-         {
             task_set_error(task, strdup("Task cancelled."));
-         }
          else
          {
-            data = (http_transfer_data_t*)malloc(sizeof(*data));
+            data         = (http_transfer_data_t*)malloc(sizeof(*data));
             data->data   = NULL;
             data->len    = 0;
             data->status = net_http_status(http->handle);
@@ -209,7 +205,7 @@ task_finished:
       }
       else
       {
-         data = (http_transfer_data_t*)malloc(sizeof(*data));
+         data         = (http_transfer_data_t*)malloc(sizeof(*data));
          data->data   = tmp;
          data->len    = len;
          data->status = net_http_status(http->handle);
@@ -238,24 +234,15 @@ static void task_http_transfer_cleanup(retro_task_t *task)
 static bool task_http_finder(retro_task_t *task, void *user_data)
 {
    http_handle_t *http = NULL;
-
-   if (!task || (task->handler != task_http_transfer_handler))
-      return false;
-
-   if (!user_data)
-      return false;
-
-   http = (http_handle_t*)task->state;
-   if (!http)
-      return false;
-
-   return string_is_equal(http->connection_url, (const char*)user_data);
+   if (task && (task->handler == task_http_transfer_handler) && user_data)
+      if ((http = (http_handle_t*)task->state))
+         return string_is_equal(http->connection_url, (const char*)user_data);
+   return false;
 }
 
 static bool task_http_retriever(retro_task_t *task, void *data)
 {
    http_transfer_info_t *info = (http_transfer_info_t*)data;
-
    /* Extract HTTP handle and return already if invalid */
    http_handle_t        *http = (http_handle_t *)task->state;
    if (!http)
@@ -275,7 +262,7 @@ static void http_transfer_progress_cb(retro_task_t *task)
 #endif
 }
 
-static void* task_push_http_transfer_generic(
+static void *task_push_http_transfer_generic(
       struct http_connection_t *conn,
       const char *url, bool mute, const char *type,
       retro_task_callback_t cb, void *user_data)
@@ -299,7 +286,7 @@ static void* task_push_http_transfer_generic(
    else
    {
       task_finder_data_t find_data;
-      find_data.func = task_http_finder;
+      find_data.func     = task_http_finder;
       find_data.userdata = (void*)url;
 
       /* Concurrent download of the same file is not allowed */
@@ -310,9 +297,7 @@ static void* task_push_http_transfer_generic(
       }
    }
 
-   http                    = (http_handle_t*)malloc(sizeof(*http));
-
-   if (!http)
+   if (!(http = (http_handle_t*)malloc(sizeof(*http))))
       goto error;
 
    http->connection.handle   = conn;
@@ -330,9 +315,8 @@ static void* task_push_http_transfer_generic(
    strlcpy(http->connection_url, url, sizeof(http->connection_url));
 
    http->status            = HTTP_STATUS_CONNECTION_TRANSFER;
-   t                       = task_init();
 
-   if (!t)
+   if (!(t = task_init()))
       goto error;
 
    t->handler              = task_http_transfer_handler;
@@ -361,12 +345,11 @@ void* task_push_http_transfer(const char *url, bool mute,
       const char *type,
       retro_task_callback_t cb, void *user_data)
 {
-   if (string_is_empty(url))
-      return NULL;
-
-   return task_push_http_transfer_generic(
-         net_http_connection_new(url, "GET", NULL),
-         url, mute, type, cb, user_data);
+   if (!string_is_empty(url))
+      return task_push_http_transfer_generic(
+            net_http_connection_new(url, "GET", NULL),
+            url, mute, type, cb, user_data);
+   return NULL;
 }
 
 void* task_push_http_transfer_file(const char* url, bool mute,
@@ -380,11 +363,9 @@ void* task_push_http_transfer_file(const char* url, bool mute,
    if (string_is_empty(url))
       return NULL;
 
-   t = (retro_task_t*)task_push_http_transfer_generic(
+   if (!(t = (retro_task_t*)task_push_http_transfer_generic(
          net_http_connection_new(url, "GET", NULL),
-         url, mute, type, cb, transfer_data);
-
-   if (!t)
+         url, mute, type, cb, transfer_data)))
       return NULL;
 
    if (transfer_data)
@@ -414,11 +395,10 @@ void* task_push_http_transfer_with_user_agent(const char *url, bool mute,
    if (string_is_empty(url))
       return NULL;
 
-   conn = net_http_connection_new(url, "GET", NULL);
-   if (!conn)
+   if (!(conn = net_http_connection_new(url, "GET", NULL)))
       return NULL;
 
-   if (user_agent != NULL)
+   if (user_agent)
       net_http_connection_set_user_agent(conn, user_agent);
 
    /* assert: task_push_http_transfer_generic will free conn on failure */
@@ -434,11 +414,10 @@ void* task_push_http_transfer_with_headers(const char *url, bool mute,
    if (string_is_empty(url))
       return NULL;
 
-   conn = net_http_connection_new(url, "GET", NULL);
-   if (!conn)
+   if (!(conn = net_http_connection_new(url, "GET", NULL)))
       return NULL;
 
-   if (headers != NULL)
+   if (headers)
       net_http_connection_set_headers(conn, headers);
 
    /* assert: task_push_http_transfer_generic will free conn on failure */
@@ -449,11 +428,11 @@ void* task_push_http_post_transfer(const char *url,
       const char *post_data, bool mute,
       const char *type, retro_task_callback_t cb, void *user_data)
 {
-   if (string_is_empty(url))
-      return NULL;
-   return task_push_http_transfer_generic(
-         net_http_connection_new(url, "POST", post_data),
-         url, mute, type, cb, user_data);
+   if (!string_is_empty(url))
+      return task_push_http_transfer_generic(
+            net_http_connection_new(url, "POST", post_data),
+            url, mute, type, cb, user_data);
+   return NULL;
 }
 
 void* task_push_http_post_transfer_with_user_agent(const char *url,
@@ -466,11 +445,10 @@ void* task_push_http_post_transfer_with_user_agent(const char *url,
    if (string_is_empty(url))
       return NULL;
 
-   conn = net_http_connection_new(url, "POST", post_data);
-   if (!conn)
+   if (!(conn = net_http_connection_new(url, "POST", post_data)))
       return NULL;
 
-   if (user_agent != NULL)
+   if (user_agent)
       net_http_connection_set_user_agent(conn, user_agent);
 
    /* assert: task_push_http_transfer_generic will free conn on failure */
@@ -487,11 +465,10 @@ void* task_push_http_post_transfer_with_headers(const char *url,
    if (string_is_empty(url))
       return NULL;
 
-   conn = net_http_connection_new(url, "POST", post_data);
-   if (!conn)
+   if (!(conn = net_http_connection_new(url, "POST", post_data)))
       return NULL;
 
-   if (headers != NULL)
+   if (headers)
       net_http_connection_set_headers(conn, headers);
 
    /* assert: task_push_http_transfer_generic will free conn on failure */
