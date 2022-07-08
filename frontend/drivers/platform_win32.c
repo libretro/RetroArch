@@ -866,10 +866,7 @@ static const char *accessibility_win_language_id(const char* language)
       return "415";
    else if (string_is_equal(language,"cs")) 
       return "405";
-   else
-      return "";
-
-
+   return "";
 }
 
 static const char *accessibility_win_language_code(const char* language)
@@ -934,8 +931,7 @@ static const char *accessibility_win_language_code(const char* language)
       return "Microsoft Adam Desktop";
    else if (string_is_equal(language,"cs")) 
       return "Microsoft Jakub Desktop";
-   else
-      return "";
+   return "";
 }
 
 static bool terminate_win32_process(PROCESS_INFORMATION pi)
@@ -968,10 +964,10 @@ static bool create_win32_process(char* cmd, const char * input)
       WriteFile(wr, input, strlen(input), &dummy, NULL);
       CloseHandle(wr);
       
-      si.dwFlags |= STARTF_USESTDHANDLES;
-      si.hStdInput = rd;
-      si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
-      si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+      si.dwFlags    |= STARTF_USESTDHANDLES;
+      si.hStdInput   = rd;
+      si.hStdOutput  = GetStdHandle(STD_OUTPUT_HANDLE);
+      si.hStdError   = GetStdHandle(STD_ERROR_HANDLE);
    }
 
    ret = CreateProcess(NULL, cmd, NULL, NULL, TRUE, CREATE_NO_WINDOW,
@@ -1041,11 +1037,11 @@ static bool accessibility_speak_windows(int speed,
    const char *langid     = accessibility_win_language_id(voice);
    bool res               = false;
    const char* speeds[10] = {"-10", "-7.5", "-5", "-2.5", "0", "2", "4", "6", "8", "10"};
-   size_t nbytes_cmd = 0;
+   size_t nbytes_cmd      = 0;
    if (speed < 1)
-      speed = 1;
+      speed               = 1;
    else if (speed > 10)
-      speed = 10;
+      speed               = 10;
 
    if (priority < 10)
    {
