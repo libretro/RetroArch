@@ -151,14 +151,12 @@ static void frontend_qnx_get_env_settings(int *argc, char *argv[],
    {
       char copy_command[PATH_MAX] = {0};
 
-      RARCH_LOG( "Copying application assets to data directory...\n" );
-
       snprintf(copy_command,
             sizeof(copy_command),
             "cp -r %s/. %s", assets_path, data_path);
 
       if(system(copy_command) == -1)
-         RARCH_LOG( "Asset copy failed: Shell could not be run.\n" );
+         RARCH_ERR("Asset copy failed: Shell could not be run.\n" );
       else
          RARCH_LOG( "Asset copy successful.\n");
    }

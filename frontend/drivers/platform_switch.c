@@ -97,14 +97,12 @@ static void on_applet_hook(AppletHookType hook, void *param)
    switch (hook)
    {
       case AppletHookType_OnExitRequest:
-         RARCH_LOG("Got AppletHook OnExitRequest, exiting.\n");
          retroarch_main_quit();
          break;
 
          /* Focus state*/
       case AppletHookType_OnFocusState:
          focus_state = appletGetFocusState();
-         RARCH_LOG("Got AppletHook OnFocusState - new focus state is %d\n", focus_state);
          platform_switch_has_focus = focus_state == AppletFocusState_InFocus;
 
          if (!platform_switch_has_focus)
@@ -179,7 +177,6 @@ static void frontend_switch_get_env(
 #endif
 
    fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], SD_PREFIX "/retroarch/retroarch_switch.nro", sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
-   RARCH_LOG("port dir: [%s]\n", g_defaults.dirs[DEFAULT_DIR_PORT]);
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
@@ -307,14 +304,9 @@ static void frontend_switch_exec(const char *path, bool should_load_game)
    char game_path[PATH_MAX-4];
    game_path[0]       = '\0';
 
-   RARCH_LOG("Attempt to load core: [%s].\n", path);
-
 #ifndef IS_SALAMANDER
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
-   {
       strlcpy(game_path, path_get(RARCH_PATH_CONTENT), sizeof(game_path));
-      RARCH_LOG("content path: [%s].\n", path_get(RARCH_PATH_CONTENT));
-   }
 #endif
 
    if (path && path[0])
@@ -353,15 +345,12 @@ static bool frontend_switch_set_fork(enum frontend_fork fork_mode)
    switch (fork_mode)
    {
    case FRONTEND_FORK_CORE:
-      RARCH_LOG("FRONTEND_FORK_CORE\n");
       switch_fork_mode = fork_mode;
       break;
    case FRONTEND_FORK_CORE_WITH_ARGS:
-      RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
       switch_fork_mode = fork_mode;
       break;
    case FRONTEND_FORK_RESTART:
-      RARCH_LOG("FRONTEND_FORK_RESTART\n");
       /*  NOTE: We don't implement Salamander, so just turn
              this into FRONTEND_FORK_CORE. */
       switch_fork_mode = FRONTEND_FORK_CORE;

@@ -146,8 +146,6 @@ void system_exec_wii(const char *_path, bool should_load_game)
 #endif
    }
 
-   RARCH_LOG("Attempt to load executable: [%s]\n", path);
-
    fp = fopen(path, "rb");
    if (!fp)
    {
@@ -188,7 +186,6 @@ void system_exec_wii(const char *_path, bool should_load_game)
    memcpy(BOOTER_ADDR, booter_start, booter_size);
    DCFlushRange(BOOTER_ADDR, booter_size);
 
-   RARCH_LOG("jumping to %08x\n", (unsigned) BOOTER_ADDR);
    SYS_ResetSystem(SYS_SHUTDOWN,0,0);
    __lwp_thread_stopmultitasking((void (*)(void)) BOOTER_ADDR);
 

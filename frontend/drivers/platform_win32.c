@@ -771,8 +771,6 @@ static void frontend_win32_respawn(char *s, size_t len, char *args)
    fill_pathname_application_path(executable_path,
          sizeof(executable_path));
    path_set(RARCH_PATH_CORE, executable_path);
-   RARCH_LOG("Restarting RetroArch with commandline: %s and %s\n",
-      executable_path, args);
 
    memset(&si, 0, sizeof(si));
    si.cb = sizeof(si);
@@ -781,7 +779,7 @@ static void frontend_win32_respawn(char *s, size_t len, char *args)
    if (!CreateProcess( executable_path, args,
       NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
    {
-      RARCH_LOG("Failed to restart RetroArch\n");
+      RARCH_ERR("Failed to restart RetroArch\n");
    }
 }
 
@@ -1011,7 +1009,7 @@ static bool is_narrator_running_windows(void)
          /* The running nvda service wasn't found, so revert
             back to the powershell method
          */
-         RARCH_LOG("Error communicating with NVDA\n");
+         RARCH_ERR("Error communicating with NVDA\n");
          USE_POWERSHELL = true;
          USE_NVDA       = false;
 	 return false;
@@ -1080,7 +1078,7 @@ static bool accessibility_speak_windows(int speed,
 
       if (!wc || res != 0) 
       {
-         RARCH_LOG("Error communicating with NVDA\n");
+         RARCH_ERR("Error communicating with NVDA\n");
          if (wc)
             free(wc);
          return false;

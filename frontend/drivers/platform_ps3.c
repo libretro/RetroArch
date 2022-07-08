@@ -251,10 +251,7 @@ static void frontend_ps3_get_env(int *argc, char *argv[],
    /* second param is multiMAN SELF file */
    if (     path_is_valid(argv[2]) && *argc > 1
          && (string_is_equal(argv[2], EMULATOR_CONTENT_DIR)))
-   {
       multiman_detected = true;
-      RARCH_LOG("Started from multiMAN, auto-game start enabled.\n");
-   }
    else
 #endif
 #ifndef IS_SALAMANDER
@@ -275,12 +272,6 @@ static void frontend_ps3_get_env(int *argc, char *argv[],
             args->state_path     = NULL;
             args->content_path   = path;
             args->libretro_path  = NULL;
-
-            RARCH_LOG("argv[0]: %s\n", argv[0]);
-            RARCH_LOG("argv[1]: %s\n", argv[1]);
-            RARCH_LOG("argv[2]: %s\n", argv[2]);
-
-            RARCH_LOG("Auto-start game %s.\n", argv[1]);
          }
       }
       else
@@ -299,24 +290,12 @@ static void frontend_ps3_get_env(int *argc, char *argv[],
    {
       char content_info_path[PATH_MAX_LENGTH] = {0};
 
-      RARCH_LOG("cellGameBootCheck() OK.\n");
-      RARCH_LOG("Directory name: [%s].\n", dirName);
-      RARCH_LOG(" HDD Free Size (in KB) = [%d] Size (in KB) = [%d] System Size (in KB) = [%d].\n",
-            size.hddFreeSizeKB, size.sizeKB, size.sysSizeKB);
-
       switch(get_type)
       {
          case CELL_GAME_GAMETYPE_DISC:
-            RARCH_LOG("RetroArch was launched on Optical Disc Drive.\n");
-            break;
          case CELL_GAME_GAMETYPE_HDD:
-            RARCH_LOG("RetroArch was launched on HDD.\n");
             break;
       }
-
-      if ((get_attributes & CELL_GAME_ATTRIBUTE_APP_HOME)
-            == CELL_GAME_ATTRIBUTE_APP_HOME)
-         RARCH_LOG("RetroArch was launched from host machine (APP_HOME).\n");
 
       ret = cellGameContentPermit(content_info_path, g_defaults.dirs[DEFAULT_DIR_PORT]);
 
@@ -324,15 +303,6 @@ static void frontend_ps3_get_env(int *argc, char *argv[],
       if (multiman_detected)
          use_app_path(content_info_path);
 #endif
-
-      if (ret < 0)
-         RARCH_ERR("cellGameContentPermit() Error: 0x%x\n", ret);
-      else
-      {
-         RARCH_LOG("cellGameContentPermit() OK.\n");
-         RARCH_LOG("content_info_path : [%s].\n", content_info_path);
-         RARCH_LOG("usrDirPath : [%s].\n", g_defaults.dirs[DEFAULT_DIR_PORT]);
-      }
 
       fill_derived_paths();
    }
@@ -351,7 +321,6 @@ static void frontend_ps3_init(void *data)
 {
    (void)data;
 #ifdef HAVE_SYSUTILS
-   RARCH_LOG("Registering system utility callback...\n");
    cellSysutilRegisterCallback(0, callback_sysutil_exit, NULL);
 #endif
 
@@ -444,15 +413,12 @@ static bool frontend_ps3_set_fork(enum frontend_fork fork_mode)
    switch (fork_mode)
    {
       case FRONTEND_FORK_CORE:
-         RARCH_LOG("FRONTEND_FORK_CORE\n");
          ps3_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_CORE_WITH_ARGS:
-         RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
          ps3_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_RESTART:
-         RARCH_LOG("FRONTEND_FORK_RESTART\n");
          /* NOTE: We don't implement Salamander, so just turn
           * this into FRONTEND_FORK_CORE. */
          ps3_fork_mode  = FRONTEND_FORK_CORE;
@@ -505,9 +471,6 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
 #endif
 
    (void)should_load_game;
-
-   RARCH_LOG("Attempt to load executable: [%s].\n", path);
-
 #ifndef IS_SALAMANDER
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
    {

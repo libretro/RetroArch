@@ -111,8 +111,6 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
    strlcpy(g_defaults.dirs[DEFAULT_DIR_PORT], eboot_path, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
    strlcpy(user_path, USER_PATH, sizeof(user_path));
 
-   RARCH_LOG("port dir: [%s]\n", g_defaults.dirs[DEFAULT_DIR_PORT]);
-
    /* bundle data */
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], CORE_PATH,
          CORE_DIR, sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
@@ -182,8 +180,6 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
          args->state_path     = NULL;
          args->content_path   = path;
          args->libretro_path  = NULL;
-
-         RARCH_LOG("Auto-start game %s.\n", argv[CONTENT_PATH_ARG_INDEX]);
       }
    }
 
@@ -230,7 +226,6 @@ static void frontend_orbis_exec(const char *path, bool should_load_game)
          NULL
       };
       args = 2;
-      RARCH_LOG("Attempt to load executable: %d [%s].\n", args, argp);
    }
 #endif
 }
@@ -241,15 +236,12 @@ static bool frontend_orbis_set_fork(enum frontend_fork fork_mode)
    switch (fork_mode)
    {
       case FRONTEND_FORK_CORE:
-         RARCH_LOG("FRONTEND_FORK_CORE\n");
          orbis_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_CORE_WITH_ARGS:
-         RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
          orbis_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_RESTART:
-         RARCH_LOG("FRONTEND_FORK_RESTART\n");
          /* NOTE: We don't implement Salamander, so just turn
           * this into FRONTEND_FORK_CORE. */
          orbis_fork_mode  = FRONTEND_FORK_CORE;

@@ -139,8 +139,6 @@ static bool vga_gfx_frame(void *data, const void *frame,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    unsigned width, height, bits;
-   size_t len                = 0;
-   void *buffer              = NULL;
    const void *frame_to_copy = frame;
    bool draw                 = true;
    vga_t *vga                = (vga_t*)data;

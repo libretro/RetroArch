@@ -30,8 +30,8 @@ static enum frontend_fork dos_fork_mode = FRONTEND_FORK_NONE;
 
 static void frontend_dos_init(void *data)
 {
-	// Keep a call to time() as otherwise we trigger some obscure bug in
-	// djgpp libc code and time(NULL) return only -1
+	/* Keep a call to time() as otherwise we trigger some obscure bug in
+	 * djgpp libc code and time(NULL) return only -1 */
 	printf("Loading RetroArch. Time is @%ld...\n", (long) time(NULL));
 }
 
@@ -53,14 +53,13 @@ enum frontend_architecture frontend_dos_get_arch(void)
 static void frontend_dos_get_env_settings(int *argc, char *argv[],
       void *data, void *params_data)
 {
+   char *slash;
 	char base_path[PATH_MAX] = {0};
-	int i;
 
 	retro_main_log_file_init("retrodos.txt", false);
 
 	strlcpy(base_path, argv[0], sizeof(base_path));
-	char *slash = strrchr(base_path, '/');
-	if (slash)
+	if ((slash = strrchr(base_path, '/')))
 	  *slash = '\0';
 	slash = strrchr(base_path, '/');
 	if (slash && strcasecmp(slash, "/cores"))
@@ -117,8 +116,6 @@ static void frontend_dos_get_env_settings(int *argc, char *argv[],
 
 static void frontend_dos_exec(const char *path, bool should_load_game)
 {
-	printf("Loading %s, %d\n", path, should_load_game);
-
 	char *newargv[]    = { NULL, NULL };
 	size_t len         = strlen(path);
 
@@ -154,15 +151,12 @@ static bool frontend_dos_set_fork(enum frontend_fork fork_mode)
    switch (fork_mode)
    {
       case FRONTEND_FORK_CORE:
-         RARCH_LOG("FRONTEND_FORK_CORE\n");
          dos_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_CORE_WITH_ARGS:
-         RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
          dos_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_RESTART:
-         RARCH_LOG("FRONTEND_FORK_RESTART\n");
          dos_fork_mode  = FRONTEND_FORK_CORE;
 
          {

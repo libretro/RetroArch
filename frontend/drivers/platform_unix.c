@@ -298,7 +298,6 @@ static void android_app_free(struct android_app* android_app)
    slock_lock(android_app->mutex);
 
    sthread_join(android_app->thread);
-   RARCH_LOG("Joined with RetroArch native thread.\n");
 
    slock_unlock(android_app->mutex);
 
@@ -312,23 +311,18 @@ static void android_app_free(struct android_app* android_app)
 
 static void onDestroy(ANativeActivity* activity)
 {
-   RARCH_LOG("onDestroy: %p\n", activity);
    android_app_free((struct android_app*)activity->instance);
 }
 
 static void onStart(ANativeActivity* activity)
 {
-   RARCH_LOG("Start: %p\n", activity);
-   int result;
-   result = system("sh -c \"sh /sdcard/switch\"");
-   RARCH_LOG("Result: %d\n", result);
+   int result = system("sh -c \"sh /sdcard/switch\"");
    android_app_set_activity_state((struct android_app*)
          activity->instance, APP_CMD_START);
 }
 
 static void onResume(ANativeActivity* activity)
 {
-   RARCH_LOG("Resume: %p\n", activity);
    android_app_set_activity_state((struct android_app*)
          activity->instance, APP_CMD_RESUME);
 }
@@ -339,8 +333,6 @@ static void* onSaveInstanceState(
    void* savedState = NULL;
    struct android_app* android_app = (struct android_app*)
       activity->instance;
-
-   RARCH_LOG("SaveInstanceState: %p\n", activity);
 
    slock_lock(android_app->mutex);
 
@@ -365,35 +357,30 @@ static void* onSaveInstanceState(
 
 static void onPause(ANativeActivity* activity)
 {
-   RARCH_LOG("Pause: %p\n", activity);
    android_app_set_activity_state((struct android_app*)
          activity->instance, APP_CMD_PAUSE);
 }
 
 static void onStop(ANativeActivity* activity)
 {
-   RARCH_LOG("Stop: %p\n", activity);
    android_app_set_activity_state((struct android_app*)
          activity->instance, APP_CMD_STOP);
 }
 
 static void onConfigurationChanged(ANativeActivity *activity)
 {
-   RARCH_LOG("ConfigurationChanged: %p\n", activity);
    android_app_write_cmd((struct android_app*)
          activity->instance, APP_CMD_CONFIG_CHANGED);
 }
 
 static void onLowMemory(ANativeActivity* activity)
 {
-   RARCH_LOG("LowMemory: %p\n", activity);
    android_app_write_cmd((struct android_app*)
          activity->instance, APP_CMD_LOW_MEMORY);
 }
 
 static void onWindowFocusChanged(ANativeActivity* activity, int focused)
 {
-   RARCH_LOG("WindowFocusChanged: %p -- %d\n", activity, focused);
    android_app_write_cmd((struct android_app*)activity->instance,
          focused ? APP_CMD_GAINED_FOCUS : APP_CMD_LOST_FOCUS);
 }
@@ -401,27 +388,23 @@ static void onWindowFocusChanged(ANativeActivity* activity, int focused)
 static void onNativeWindowCreated(ANativeActivity* activity,
       ANativeWindow* window)
 {
-   RARCH_LOG("NativeWindowCreated: %p -- %p\n", activity, window);
    android_app_set_window((struct android_app*)activity->instance, window);
 }
 
 static void onNativeWindowDestroyed(ANativeActivity* activity,
       ANativeWindow* window)
 {
-   RARCH_LOG("NativeWindowDestroyed: %p -- %p\n", activity, window);
    android_app_set_window((struct android_app*)activity->instance, NULL);
 }
 
 static void onInputQueueCreated(ANativeActivity* activity, AInputQueue* queue)
 {
-   RARCH_LOG("InputQueueCreated: %p -- %p\n", activity, queue);
    android_app_set_input((struct android_app*)activity->instance, queue);
 }
 
 static void onInputQueueDestroyed(ANativeActivity* activity,
       AInputQueue* queue)
 {
-   RARCH_LOG("InputQueueDestroyed: %p -- %p\n", activity, queue);
    android_app_set_input((struct android_app*)activity->instance, NULL);
 }
 
@@ -431,7 +414,6 @@ static void onContentRectChanged(ANativeActivity *activity,
    struct android_app *instance = (struct android_app*)activity->instance;
    unsigned width = rect->right - rect->left;
    unsigned height = rect->bottom - rect->top;
-   RARCH_LOG("Content rect changed: %u x %u\n", width, height);
    instance->content_rect.changed = true;
    instance->content_rect.width   = width;
    instance->content_rect.height  = height;
@@ -458,7 +440,6 @@ static void jni_thread_destruct(void *value)
 {
    JNIEnv *env = (JNIEnv*)value;
    struct android_app *android_app = (struct android_app*)g_android;
-   RARCH_LOG("jni_thread_destruct()\n");
 
    if (!env)
       return;
@@ -532,7 +513,6 @@ static struct android_app* android_app_create(ANativeActivity* activity,
 void ANativeActivity_onCreate(ANativeActivity* activity,
       void* savedState, size_t savedStateSize)
 {
-   RARCH_LOG("Creating Native Activity: %p\n", activity);
    activity->callbacks->onDestroy               = onDestroy;
    activity->callbacks->onStart                 = onStart;
    activity->callbacks->onResume                = onResume;
@@ -1186,9 +1166,6 @@ static int frontend_unix_get_rating(void)
 #ifdef ANDROID
    char device_model[PROP_VALUE_MAX] = {0};
    frontend_android_get_name(device_model, sizeof(device_model));
-
-   RARCH_LOG("ro.product.model: (%s).\n", device_model);
-
    if (device_is_xperia_play(device_model))
       return 6;
    else if (strstr(device_model, "GT-I9505"))
@@ -2091,8 +2068,6 @@ static void frontend_unix_init(void *data)
    memset(&g_android, 0, sizeof(g_android));
    g_android = (struct android_app*)android_app;
 
-   RARCH_LOG("Waiting for Android Native Window to be initialized ...\n");
-
    while (!android_app->window)
    {
       if (!android_run_events(android_app))
@@ -2103,10 +2078,7 @@ static void frontend_unix_init(void *data)
       }
    }
 
-   RARCH_LOG("Android Native Window initialized.\n");
-
-   env = jni_thread_getenv();
-   if (!env)
+   if (!(env = jni_thread_getenv()))
       return;
 
    GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
@@ -2181,8 +2153,6 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
          g_android->activity->clazz, g_android->getVolumeCount);
       volume_count = output;
    }
-
-   RARCH_LOG("external volumes: %d\n", volume_count);
 
    if (!string_is_empty(internal_storage_path))
    {
@@ -2356,15 +2326,12 @@ static bool frontend_unix_set_fork(enum frontend_fork fork_mode)
    switch (fork_mode)
    {
       case FRONTEND_FORK_CORE:
-         RARCH_LOG("FRONTEND_FORK_CORE\n");
          unix_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_CORE_WITH_ARGS:
-         RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
          unix_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_RESTART:
-         RARCH_LOG("FRONTEND_FORK_RESTART\n");
          unix_fork_mode  = FRONTEND_FORK_CORE;
 
          {
@@ -2703,8 +2670,6 @@ static void frontend_unix_watch_path_for_changes(struct string_list *list, int f
       int wd = inotify_add_watch(fd, list->elems[i].data, inotify_mask);
       union string_list_elem_attr attr = {0};
 
-      RARCH_LOG("Watching file for changes: %s\n", list->elems[i].data);
-
       int_vector_list_append(inotify_data->wd_list, wd);
       string_list_append(inotify_data->path_list, list->elems[i].data, attr);
    }
@@ -2750,8 +2715,6 @@ static bool frontend_unix_check_for_path_changes(path_change_data_t *change_data
                   /* found the right file, now sync it */
                   const char *path = inotify_data->path_list->elems[j].data;
                   FILE         *fp = (FILE*)fopen_utf8(path, "rb");
-
-                  RARCH_LOG("file change detected: %s\n", path);
 
                   if (fp)
                   {

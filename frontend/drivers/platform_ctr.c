@@ -95,7 +95,6 @@ static void frontend_ctr_get_env(int* argc, char* argv[],
       void* args, void* params_data)
 {
    fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], elf_path_cst, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
-   RARCH_LOG("port dir: [%s]\n", g_defaults.dirs[DEFAULT_DIR_PORT]);
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
@@ -219,7 +218,6 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
    arg_data[args + 1] = NULL;
    args++;
 
-   RARCH_LOG("Attempt to load core: [%s].\n", path);
 #ifndef IS_SALAMANDER
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
    {
@@ -227,7 +225,6 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
       arg_data[args] = game_path;
       arg_data[args + 1] = NULL;
       args++;
-      RARCH_LOG("content path: [%s].\n", path_get(RARCH_PATH_CONTENT));
    }
 #endif
 
@@ -283,15 +280,12 @@ static bool frontend_ctr_set_fork(enum frontend_fork fork_mode)
    switch (fork_mode)
    {
       case FRONTEND_FORK_CORE:
-         RARCH_LOG("FRONTEND_FORK_CORE\n");
          ctr_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_CORE_WITH_ARGS:
-         RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
          ctr_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_RESTART:
-         RARCH_LOG("FRONTEND_FORK_RESTART\n");
          /*  NOTE: We don't implement Salamander, so just turn
              this into FRONTEND_FORK_CORE. */
          ctr_fork_mode  = FRONTEND_FORK_CORE;

@@ -203,11 +203,6 @@ static void frontend_wiiu_exec(const char *path, bool should_load_content)
    int len     = 0;
    param->argc = 0;
 
-   if (!path || !*path)
-   {
-      RARCH_LOG("No executable path provided, cannot Restart\n");
-   }
-
    DEBUG_STR(path);
 
    strcpy(param->args + len, elf_path_cst);
@@ -215,7 +210,6 @@ static void frontend_wiiu_exec(const char *path, bool should_load_content)
    len += strlen(param->args + len) + 1;
    param->argc++;
 
-   RARCH_LOG("Attempt to load core: [%s].\n", path);
 #ifndef IS_SALAMANDER
    if (should_load_content && !path_is_empty(RARCH_PATH_CONTENT))
    {
@@ -223,8 +217,6 @@ static void frontend_wiiu_exec(const char *path, bool should_load_content)
       param->argv[param->argc] = param->args + len;
       len += strlen(param->args + len) + 1;
       param->argc++;
-
-      RARCH_LOG("content path: [%s].\n", path_get(RARCH_PATH_CONTENT));
    }
 #endif
    param->argv[param->argc] = NULL;
@@ -249,15 +241,12 @@ static bool frontend_wiiu_set_fork(enum frontend_fork fork_mode)
    switch (fork_mode)
    {
       case FRONTEND_FORK_CORE:
-         RARCH_LOG("FRONTEND_FORK_CORE\n");
          wiiu_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_CORE_WITH_ARGS:
-         RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
          wiiu_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_RESTART:
-         RARCH_LOG("FRONTEND_FORK_RESTART\n");
          /* NOTE: We don't implement Salamander, so just turn
           * this into FRONTEND_FORK_CORE. */
          wiiu_fork_mode  = FRONTEND_FORK_CORE;

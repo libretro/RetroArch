@@ -81,6 +81,7 @@ static void vga_font_render_msg(
       void *data, const char *msg,
       const struct font_params *params)
 {
+#if 0
    float x, y, scale;
    unsigned width, height;
    unsigned new_x, new_y;
@@ -131,6 +132,7 @@ static void vga_font_render_msg(
    }
 
    /* TODO/FIXME - implement */
+#endif
 }
 
 font_renderer_t vga_font = {
