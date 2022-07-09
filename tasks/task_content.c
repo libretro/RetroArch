@@ -420,8 +420,6 @@ static content_file_list_t *content_file_list_init(size_t size)
 {
    content_file_list_t *file_list = NULL;
 
-   if (size < 1)
-      return NULL;
    if (!(file_list = (content_file_list_t *)malloc(sizeof(*file_list))))
       return NULL;
 
