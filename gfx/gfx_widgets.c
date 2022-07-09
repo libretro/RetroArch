@@ -1645,7 +1645,8 @@ void gfx_widgets_frame(void *data)
          - p_dispwidget->simple_widget_padding - text_width;
       /* Ensure that left hand side of text does
        * not bleed off the edge of the screen */
-      status_text_x         = (status_text_x < 0) ? 0 : status_text_x;
+      if (status_text_x < 0)
+         status_text_x      = 0;
 
       gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
 

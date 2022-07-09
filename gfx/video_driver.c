@@ -1180,15 +1180,17 @@ void video_switch_refresh_rate_maybe(
    bool all_fullscreen                = settings->bools.video_fullscreen || settings->bools.video_windowed_fullscreen;
 
    /* Roundings to PAL & NTSC standards */
-   refresh_rate = (refresh_rate > 54 && refresh_rate < 60) ? 59.94f : refresh_rate;
-   refresh_rate = (refresh_rate > 49 && refresh_rate < 55) ? 50.00f : refresh_rate;
+   if (refresh_rate > 54 && refresh_rate < 60)
+      refresh_rate = 59.94f;
+   else if (refresh_rate > 49 && refresh_rate < 55)
+      refresh_rate = 50.00f;
 
    /* Black frame insertion + swap interval multiplier */
-   refresh_rate = (refresh_rate * (video_bfi + 1.0f) * video_swap_interval);
+   refresh_rate    = (refresh_rate * (video_bfi + 1.0f) * video_swap_interval);
 
    /* Fallback when target refresh rate is not exposed or when below standards */
    if (!video_display_server_has_refresh_rate(refresh_rate) || refresh_rate < 50)
-      refresh_rate = video_refresh_rate;
+      refresh_rate       = video_refresh_rate;
 
    *refresh_rate_suggest = refresh_rate;
 
@@ -1203,10 +1205,10 @@ void video_switch_refresh_rate_maybe(
     * - 'CRT SwitchRes' OFF & 'Sync to Exact Content Framerate' OFF
     * - Automatic refresh rate switching not OFF
     */
-    if (refresh_rate != video_refresh_rate &&
-        !crt_switch_resolution &&
-        !vrr_runloop_enable &&
-        (autoswitch_refresh_rate != AUTOSWITCH_REFRESH_RATE_OFF))
+    if (    refresh_rate != video_refresh_rate
+        && !crt_switch_resolution
+        && !vrr_runloop_enable
+        && (autoswitch_refresh_rate != AUTOSWITCH_REFRESH_RATE_OFF))
     {
       *video_switch_refresh_rate = (
           ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN) && exclusive_fullscreen) ||
@@ -3346,7 +3348,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
             settings->uints.window_position_width &&
             settings->uints.window_position_height)
          {
-            width = settings->uints.window_position_width;
+            width  = settings->uints.window_position_width;
             height = settings->uints.window_position_height;
          }
          else
@@ -3396,26 +3398,30 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
             /* Cap window size to maximum allowed values */
             if ((width > max_win_width) || (height > max_win_height))
             {
-               unsigned geom_width = (width > 0) ? width : 1;
+               unsigned geom_width  = (width > 0)  ? width  : 1;
                unsigned geom_height = (height > 0) ? height : 1;
-               float geom_aspect = (float)geom_width / (float)geom_height;
+               float geom_aspect    = (float)geom_width    / (float)geom_height;
                float max_win_aspect = (float)max_win_width / (float)max_win_height;
 
                if (geom_aspect > max_win_aspect)
                {
-                  width = max_win_width;
+                  width  = max_win_width;
                   height = geom_height * max_win_width / geom_width;
                   /* Account for any possible rounding errors... */
-                  height = (height < 1) ? 1 : height;
-                  height = (height > max_win_height) ? max_win_height : height;
+                  if (height < 1)
+                     height = 1;
+                  else if (height > max_win_height)
+                     height = max_win_height;
                }
                else
                {
                   height = max_win_height;
-                  width = geom_width * max_win_height / geom_height;
+                  width  = geom_width * max_win_height / geom_height;
                   /* Account for any possible rounding errors... */
-                  width = (width < 1) ? 1 : width;
-                  width = (width > max_win_width) ? max_win_width : width;
+                  if (width < 1)
+                     width = 1;
+                  else if (width > max_win_width)
+                     width = max_win_width;
                }
             }
          }

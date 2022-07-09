@@ -1020,7 +1020,7 @@ int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
    int ptr_width  = width / 11;
    int ptr_height = height / 10;
 
-   if (ptr_width >= ptr_height)
+   if (ptr_width > ptr_height)
       ptr_width = ptr_height;
 
    for (i = 0; i < 44; i++)
@@ -1116,7 +1116,7 @@ void gfx_display_draw_keyboard(
    ptr_width  = video_width  / 11;
    ptr_height = video_height / 10;
 
-   if (ptr_width >= ptr_height)
+   if (ptr_width > ptr_height)
       ptr_width = ptr_height;
 
    for (i = 0; i < 44; i++)
