@@ -5450,23 +5450,32 @@ bool runloop_event_init_core(
    float fastforward_ratio         = 0.0f;
    rarch_system_info_t *sys_info   = &runloop_st->system;
 
-#if defined(HAVE_NETWORKING) && defined(HAVE_UPDATE_CORES)
-   /* If netplay is enabled, update the core before initializing. */
+#ifdef HAVE_NETWORKING
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
    {
+#ifdef HAVE_UPDATE_CORES
+      /* If netplay is enabled, update the core before initializing. */
       const char *path_core = path_get(RARCH_PATH_CORE);
 
       if (!string_is_empty(path_core) &&
             !string_is_equal(path_core, "builtin"))
       {
-         task_push_update_single_core(path_core,
-            settings->bools.core_updater_auto_backup,
-            settings->uints.core_updater_auto_backup_history_size,
-            settings->paths.directory_libretro,
-            settings->paths.directory_core_assets);
-         /* We must wait for the update to finish before starting the core. */
-         task_update_installed_cores_wait();
+         if (task_push_update_single_core(path_core,
+               settings->bools.core_updater_auto_backup,
+               settings->uints.core_updater_auto_backup_history_size,
+               settings->paths.directory_libretro,
+               settings->paths.directory_core_assets))
+            /* We must wait for the update to finish
+               before starting the core. */
+            task_queue_wait(NULL, NULL);
       }
+#endif
+
+      /* We need this in order for core_info_current_supports_netplay
+         to work correctly at init_netplay,
+         called later at event_init_content. */
+      command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+      command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
    }
 #endif
 
