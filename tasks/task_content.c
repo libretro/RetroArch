@@ -1992,7 +1992,6 @@ bool task_push_load_content_from_playlist_from_menu(
 
    content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
-   char *error_string                         = NULL;
    settings_t *settings                       = config_get_ptr();
    runloop_state_t *runloop_st                = runloop_state_get_ptr();
    rarch_system_info_t *sys_info              = &runloop_st->system;
@@ -2106,16 +2105,7 @@ bool task_push_load_content_from_playlist_from_menu(
 end:
    /* Handle load content failure */
    if (!ret)
-   {
-      if (error_string)
-      {
-         runloop_msg_queue_push(error_string, 2, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_ERR("[Content]: %s\n", error_string);
-         free(error_string);
-      }
-
       retroarch_menu_running();
-   }
 
    if (content_ctx.name_ips)
       free(content_ctx.name_ips);
