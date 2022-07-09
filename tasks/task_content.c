@@ -420,41 +420,37 @@ static content_file_list_t *content_file_list_init(size_t size)
 {
    content_file_list_t *file_list = NULL;
 
-   if (!(file_list = (content_file_list_t *)malloc(sizeof(*file_list))))
-      return NULL;
+   if ((file_list = (content_file_list_t *)malloc(sizeof(*file_list))))
+   {
+      /* Set initial 'values' */
+      file_list->entries         = NULL;
+      file_list->size            = 0;
+      file_list->game_info       = NULL;
+      file_list->game_info_ext   = NULL;
+      file_list->temporary_files = string_list_new();
 
-   /* Set initial 'values' */
-   file_list->entries         = NULL;
-   file_list->size            = 0;
-   file_list->temporary_files = string_list_new();
-   file_list->game_info       = NULL;
-   file_list->game_info_ext   = NULL;
+      if (file_list->temporary_files)
+      {
+         /* Create entries list */
+         if ((file_list->entries             = (content_file_info_t *)
+               calloc(size, sizeof(content_file_info_t))))
+         {
+            file_list->size                  = size;
+            /* Create retro_game_info object */
+            if ((file_list->game_info        = (struct retro_game_info *)
+                     calloc(size, sizeof(struct retro_game_info))))
+            {
+               /* Create retro_game_info_ext object */
+               if ((file_list->game_info_ext = 
+                        (struct retro_game_info_ext *)
+                        calloc(size, sizeof(struct retro_game_info_ext))))
+                  return file_list;
+            }
+         }
+      }
+   }
 
-   if (!file_list->temporary_files)
-      goto error;
-
-   /* Create entries list */
-   if (!(file_list->entries   = (content_file_info_t *)
-         calloc(size, sizeof(content_file_info_t))))
-      goto error;
-
-   file_list->size            = size;
-
-   /* Create retro_game_info object */
-   if (!(file_list->game_info = (struct retro_game_info *)
-         calloc(size, sizeof(struct retro_game_info))))
-      goto error;
-
-   /* Create retro_game_info_ext object */
-   if (!(file_list->game_info_ext   = (struct retro_game_info_ext *)
-         calloc(size, sizeof(struct retro_game_info_ext))))
-      goto error;
-
-   return file_list;
-
-error:
-   if (file_list)
-      content_file_list_free(file_list);
+   content_file_list_free(file_list);
    return NULL;
 }
 
@@ -1027,7 +1023,7 @@ static bool content_file_load(
                 !is_path_accessible_using_standard_io(content_path))
             {
                /* Try copy ACL to file first. If successful, this should mean that cores using standard I/O can still access them
-               *  It would be better to set the acl to allow full access for all application packages. However,
+               *  It would be better to set the ACL to allow full access for all application packages. However,
                *  this is substantially easier than writing out new functions to do this
                *  Copy ACL from localstate
                *  I am genuinely really proud of these work arounds 
@@ -1312,22 +1308,25 @@ static bool content_file_init(
    content_file_set_attributes(content, special, content_ctx, error_string);
 
    if (content->size > 0)
-      p_content->content_list = content_file_list_init(content->size);
-
-   if (p_content->content_list)
    {
-      ret = content_file_load(p_content, content, content_ctx,
-            error_enum, error_string, special);
+      content_file_list_t *file_list = content_file_list_init(content->size);
+      if (file_list)
+      {
+         p_content->content_list     = file_list;
+         ret = content_file_load(p_content, content, content_ctx,
+               error_enum, error_string, special);
 
-      content_file_list_free_transient_data(p_content->content_list);
+         content_file_list_free_transient_data(p_content->content_list);
+         return ret;
+      }
    }
-   else if (!special)
+
+   if (!special)
    {
       *error_enum = MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT;
       return false;
    }
-
-   return ret;
+   return true;
 }
 
 /******************************/
