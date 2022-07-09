@@ -699,21 +699,23 @@ static void frontend_win32_attach_console(void)
    bool need_stderr = (GetFileType(GetStdHandle(STD_ERROR_HANDLE))
          == FILE_TYPE_UNKNOWN);
 
+   if (config_get_ptr()->bools.log_to_file)
+      return;
+
    if (need_stdout || need_stderr)
    {
-      if (!AttachConsole( ATTACH_PARENT_PROCESS))
+      if (!AttachConsole(ATTACH_PARENT_PROCESS))
          AllocConsole();
 
       SetConsoleTitle("Log Console");
 
       if (need_stdout)
-         freopen( "CONOUT$", "w", stdout );
+         freopen("CONOUT$", "w", stdout);
       if (need_stderr)
-         freopen( "CONOUT$", "w", stderr );
+         freopen("CONOUT$", "w", stderr);
 
       console_needs_free = true;
    }
-
 #endif
 #endif
 }
