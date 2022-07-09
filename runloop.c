@@ -3214,12 +3214,14 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       {
          /* Try to use the polled refresh rate first.  */
          float target_refresh_rate = video_driver_get_refresh_rate();
-         float video_refresh_rate  = settings ? settings->floats.video_refresh_rate : 0.0;
 
          /* If the above function failed [possibly because it is not
           * implemented], use the refresh rate set in the config instead. */
-         if (target_refresh_rate == 0.0f && video_refresh_rate != 0.0f)
-            target_refresh_rate = video_refresh_rate;
+         if (target_refresh_rate == 0.0f)
+         {
+            if (settings)
+               target_refresh_rate = settings->floats.video_refresh_rate;
+         }
 
          *(float *)data = target_refresh_rate;
          break;
@@ -6430,9 +6432,8 @@ static enum runloop_state_enum runloop_check_state(
    {
       bool input_active = bits_any_set(current_bits.data, ARRAY_SIZE(current_bits.data));
 
-      menu_st->input_driver_flushing_input = input_active
-         ? menu_st->input_driver_flushing_input
-         : (menu_st->input_driver_flushing_input - 1);
+      if (!input_active)
+         menu_st->input_driver_flushing_input = (menu_st->input_driver_flushing_input - 1);
 
       if (input_active || (menu_st->input_driver_flushing_input > 0))
       {
@@ -6755,18 +6756,20 @@ static enum runloop_state_enum runloop_check_state(
       else
 #endif
       {
-         focused = pause_nonactive ? is_focused : true;
-         focused = focused && !uico_st->is_on_foreground;
+         if (pause_nonactive)
+            focused = is_focused && !uico_st->is_on_foreground;
+         else
+            focused = !uico_st->is_on_foreground;
       }
 
       if (action == old_action)
       {
-	      retro_time_t press_time           = current_time;
+	      retro_time_t press_time          = current_time;
 
 	      if (action == MENU_ACTION_NOOP)
-		      menu_st->noop_press_time   = press_time - menu_st->noop_start_time;
+		      menu_st->noop_press_time      = press_time - menu_st->noop_start_time;
 	      else
-		      menu_st->action_press_time = press_time - menu_st->action_start_time;
+		      menu_st->action_press_time    = press_time - menu_st->action_start_time;
       }
       else
       {
