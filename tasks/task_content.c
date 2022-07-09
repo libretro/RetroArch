@@ -490,8 +490,8 @@ static bool content_file_list_set_info(
    struct retro_game_info *game_info         = NULL;
    struct retro_game_info_ext *game_info_ext = NULL;
 
-   if (!file_list ||
-       (idx >= file_list->size))
+   if (  !file_list
+       || (idx >= file_list->size))
       return false;
 
    if (!(file_info = &file_list->entries[idx]))
@@ -540,23 +540,23 @@ static bool content_file_list_set_info(
     *   extended path info to cores */
    if (!string_is_empty(path))
    {
+      char dir [PATH_MAX_LENGTH];
+      char name[NAME_MAX_LENGTH];
       const char *archive_delim = NULL;
       const char *ext           = NULL;
-      char dir[PATH_MAX_LENGTH];
-      char name[NAME_MAX_LENGTH];
 
-      dir[0]  = '\0';
-      name[0] = '\0';
+      dir[0]                    = '\0';
+      name[0]                   = '\0';
 
       /* 'Full' path - may point to a file
        * inside an archive */
-      file_info->full_path = strdup(path);
+      file_info->full_path      = strdup(path);
 
       /* File extension - may be used core-side
        * to differentiate content types */
       if ((ext = path_get_extension(path)))
       {
-         file_info->ext = strdup(ext);
+         file_info->ext         = strdup(ext);
          /* File extension is always presented
           * core-side in lowercase format */
          string_to_lower(file_info->ext);
@@ -567,13 +567,14 @@ static bool content_file_list_set_info(
       if ((archive_delim = path_get_archive_delim(path)))
       {
          char archive_path[PATH_MAX_LENGTH];
-         size_t len;
+         size_t len      = 0;
 
          archive_path[0] = '\0';
 
          /* Extract path of parent archive */
-         len = (size_t)(1 + archive_delim - path);
-         len = (len < PATH_MAX_LENGTH) ? len : PATH_MAX_LENGTH;
+         if ((len = (size_t)(1 + archive_delim - path))
+                 >= PATH_MAX_LENGTH)
+            len = PATH_MAX_LENGTH;
 
          strlcpy(archive_path, path, len * sizeof(char));
          if (!string_is_empty(archive_path))
@@ -614,16 +615,16 @@ static bool content_file_list_set_info(
       if (!string_is_empty(dir))
       {
          /* Remove any trailing slash */
-         char *last_slash = find_last_slash(dir);
+         char *last_slash         = find_last_slash(dir);
          if (last_slash && (last_slash[1] == '\0'))
-            *last_slash = '\0';
+            *last_slash           = '\0';
 
          if (!string_is_empty(dir))
-            file_info->dir = strdup(dir);
+            file_info->dir        = strdup(dir);
       }
 
       if (!string_is_empty(name))
-         file_info->name = strdup(name);
+         file_info->name          = strdup(name);
    }
 
    /* Assign retro_game_info pointers */
@@ -693,8 +694,8 @@ static bool content_file_load_into_memory(
    uint8_t *content_data = NULL;
    int64_t content_size  = 0;
 
-   *data      = NULL;
-   *data_size = 0;
+   *data                 = NULL;
+   *data_size            = 0;
 
    RARCH_LOG("[Content]: %s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_CONTENT_FILE), content_path);
@@ -782,7 +783,7 @@ static bool content_file_extract_from_archive(
    char tmp_path[PATH_MAX_LENGTH];
    char msg[1024];
 
-   tmp_path[0] = '\0';
+   tmp_path[0]  = '\0';
    msg[0]       = '\0';
 
    RARCH_LOG("[Content]: Core requires uncompressed content - "
@@ -1818,8 +1819,8 @@ static bool command_event_cmd_exec(
       content_state_t *p_content,
       const char *data,
       content_information_ctx_t *content_ctx,
-      bool launched_from_cli,
-      char **error_string)
+      bool launched_from_cli
+      )
 {
    if (path_get(RARCH_PATH_CONTENT) != data)
    {
@@ -1909,7 +1910,6 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    content_information_ctx_t content_ctx;
    content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
-   char *error_string                         = NULL;
    settings_t *settings                       = config_get_ptr();
    runloop_state_t *runloop_st                = runloop_state_get_ptr();
    rarch_system_info_t *sys_info              = &runloop_st->system;
@@ -1966,17 +1966,6 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    /* Loads content into currently selected core. */
    if ((ret = content_load(content_info, p_content)))
       task_push_to_history_list(p_content, false, false, false);
-
-   /* Handle load content failure */
-   if (!ret)
-   {
-      if (error_string)
-      {
-         runloop_msg_queue_push(error_string, 2, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_ERR("[Content]: %s\n", error_string);
-         free(error_string);
-      }
-   }
 
    if (content_ctx.name_ips)
       free(content_ctx.name_ips);
@@ -2097,7 +2086,7 @@ bool task_push_load_content_from_playlist_from_menu(
     * > On targets that do not support dynamic core loading,
     *   command_event_cmd_exec() will fork a new instance */
    if (!(ret = command_event_cmd_exec(p_content,
-         fullpath, &content_ctx, false, &error_string)))
+         fullpath, &content_ctx, false)))
       goto end;
 
 #ifdef HAVE_COCOATOUCH
@@ -2147,7 +2136,6 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
 
    content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
-   char *error_string                         = NULL;
    settings_t *settings                       = config_get_ptr();
    runloop_state_t *runloop_st                = runloop_state_get_ptr();
    const char *path_dir_system                = settings->paths.directory_system;
@@ -2210,13 +2198,6 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    if (!(ret = content_load(content_info, p_content)) ||
        !(ret = (runloop_st->current_core_type != CORE_TYPE_DUMMY)))
    {
-      if (error_string)
-      {
-         runloop_msg_queue_push(error_string, 2, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_ERR("[Content]: %s\n", error_string);
-         free(error_string);
-      }
-
 #ifdef HAVE_MENU
       retroarch_menu_running();
 #endif
@@ -2279,7 +2260,6 @@ bool task_push_load_contentless_core_from_menu(
    content_information_ctx_t content_ctx = {0};
    content_state_t *p_content            = content_state_get_ptr();
    bool ret                              = true;
-   char *error_string                    = NULL;
 #if defined(HAVE_DYNAMIC)
    runloop_state_t *runloop_st           = runloop_state_get_ptr();
 #endif
@@ -2322,15 +2302,6 @@ bool task_push_load_contentless_core_from_menu(
    if (!(ret = content_load(&content_info, p_content)) ||
        !(ret = (runloop_st->current_core_type != CORE_TYPE_DUMMY)))
    {
-      if (error_string)
-      {
-         runloop_msg_queue_push(error_string, 2, 90,
-               true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
-               MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_ERR("[Content]: %s\n", error_string);
-         free(error_string);
-      }
-
       retroarch_menu_running();
       goto end;
    }
@@ -2346,7 +2317,7 @@ bool task_push_load_contentless_core_from_menu(
     * future devs who may wish to implement this... */
    command_event_cmd_exec(p_content,
          path_get(RARCH_PATH_CONTENT), &content_ctx,
-         false, &error_string);
+         false);
    command_event(CMD_EVENT_QUIT, NULL);
 #endif
 
@@ -2380,7 +2351,6 @@ bool task_push_load_content_with_new_core_from_menu(
 
    content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
-   char *error_string                         = NULL;
    settings_t *settings                       = config_get_ptr();
    runloop_state_t *runloop_st                = runloop_state_get_ptr();
    bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
@@ -2449,13 +2419,6 @@ bool task_push_load_content_with_new_core_from_menu(
    /* Loads content into currently selected core. */
    if (!(ret = content_load(content_info, p_content)))
    {
-      if (error_string)
-      {
-         runloop_msg_queue_push(error_string, 2, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_ERR("[Content]: %s\n", error_string);
-         free(error_string);
-      }
-
       retroarch_menu_running();
       goto end;
    }
@@ -2464,7 +2427,7 @@ bool task_push_load_content_with_new_core_from_menu(
 #else
    command_event_cmd_exec(p_content,
          path_get(RARCH_PATH_CONTENT), &content_ctx,
-         false, &error_string);
+         false);
    command_event(CMD_EVENT_QUIT, NULL);
 #endif
 
@@ -2498,7 +2461,6 @@ static bool task_load_content_internal(
 
    content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = false;
-   char *error_string                         = NULL;
    runloop_state_t *runloop_st                = runloop_state_get_ptr();
    rarch_system_info_t *sys_info              = &runloop_st->system;
    settings_t *settings                       = config_get_ptr();
@@ -2591,19 +2553,7 @@ end:
    if (content_ctx.valid_extensions)
       free(content_ctx.valid_extensions);
 
-   if (!ret)
-   {
-      if (error_string)
-      {
-         runloop_msg_queue_push(error_string, 2, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_ERR("[Content]: %s\n", error_string);
-         free(error_string);
-      }
-
-      return false;
-   }
-
-   return true;
+   return ret;
 }
 
 bool task_push_load_content_with_new_core_from_companion_ui(
