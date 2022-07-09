@@ -824,24 +824,26 @@ static void win32_save_position(void)
 {
    RECT rect;
    WINDOWPLACEMENT placement;
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-   settings_t *settings          = config_get_ptr();
-   bool window_save_positions    = settings->bools.video_window_save_positions;
-   bool video_fullscreen         = settings->bools.video_fullscreen;
-   bool ui_menubar_enable        = settings->bools.ui_menubar_enable;
-   bool window_show_decor        = settings->bools.video_window_show_decorations;
-   int border_thickness          = window_show_decor ? GetSystemMetrics(SM_CXSIZEFRAME) : 0;
-   int title_bar_height          = window_show_decor ? GetSystemMetrics(SM_CYCAPTION) : 0;
-   int menu_bar_height           = ui_menubar_enable ? GetSystemMetrics(SM_CYMENU) : 0;
+   win32_common_state_t *g_win32     = (win32_common_state_t*)&win32_st;
+   settings_t *settings              = config_get_ptr();
+   bool window_save_positions        = settings->bools.video_window_save_positions;
 
-   memset(&placement, 0, sizeof(placement));
-
-   placement.length = sizeof(placement);
+   placement.length                  = sizeof(placement);
+   placement.flags                   = 0;
+   placement.showCmd                 = 0;
+   placement.ptMinPosition.x         = 0;
+   placement.ptMinPosition.y         = 0;
+   placement.ptMaxPosition.x         = 0;
+   placement.ptMaxPosition.y         = 0;
+   placement.rcNormalPosition.left   = 0;
+   placement.rcNormalPosition.top    = 0;
+   placement.rcNormalPosition.right  = 0;
+   placement.rcNormalPosition.bottom = 0;
 
    if (GetWindowPlacement(main_window.hwnd, &placement))
    {
-      g_win32->pos_x = placement.rcNormalPosition.left;
-      g_win32->pos_y = placement.rcNormalPosition.top;
+      g_win32->pos_x      = placement.rcNormalPosition.left;
+      g_win32->pos_y      = placement.rcNormalPosition.top;
    }
 
    if (GetWindowRect(main_window.hwnd, &rect))
@@ -853,15 +855,31 @@ static void win32_save_position(void)
    if (window_save_positions)
    {
       video_driver_state_t *video_st = video_state_get_ptr();
+      bool video_fullscreen          = settings->bools.video_fullscreen;
 
       if (  !video_fullscreen && 
             !video_st->force_fullscreen &&
             !video_st->is_switching_display_mode)
       {
+         bool ui_menubar_enable = settings->bools.ui_menubar_enable;
+         bool window_show_decor = settings->bools.video_window_show_decorations;
          settings->uints.window_position_x      = g_win32->pos_x;
          settings->uints.window_position_y      = g_win32->pos_y;
-         settings->uints.window_position_width  = g_win32->pos_width - border_thickness * 2;
-         settings->uints.window_position_height = g_win32->pos_height - border_thickness * 2 - title_bar_height - menu_bar_height;
+         settings->uints.window_position_width  = g_win32->pos_width;
+         settings->uints.window_position_height = g_win32->pos_height;
+         if (window_show_decor)
+         {
+            int border_thickness  = GetSystemMetrics(SM_CXSIZEFRAME);
+            int title_bar_height  = GetSystemMetrics(SM_CYCAPTION);
+            settings->uints.window_position_width  -= border_thickness * 2;
+            settings->uints.window_position_height -= border_thickness * 2;
+            settings->uints.window_position_height -= title_bar_height;
+         }
+         if (ui_menubar_enable)
+         {
+            int menu_bar_height   = GetSystemMetrics(SM_CYMENU);
+            settings->uints.window_position_height -= menu_bar_height;
+         }
       }
    }
 }
