@@ -165,10 +165,7 @@ static void content_file_override_free(
    {
       content_file_override_t *override =
             &p_content->content_override_list[i];
-
-      if (!override)
-         continue;
-      if (override->ext)
+      if (override && override->ext)
          free(override->ext);
    }
 
@@ -185,30 +182,28 @@ static bool content_file_override_get_ext(
    size_t num_overrides;
    size_t i;
 
-   if (!p_content || string_is_empty(ext))
-      return false;
-
-   num_overrides = RBUF_LEN(p_content->content_override_list);
-
-   if (num_overrides < 1)
-      return false;
-
-   for (i = 0; i < num_overrides; i++)
+   if (p_content && !string_is_empty(ext))
    {
-      content_file_override_t *content_override =
-            &p_content->content_override_list[i];
-
-      if (!content_override ||
-          !content_override->ext)
-         continue;
-
-      if (string_is_equal_noncase(
-            content_override->ext, ext))
+      if ((num_overrides = RBUF_LEN(p_content->content_override_list)) >= 1)
       {
-         if (override)
-            *override = content_override;
+         for (i = 0; i < num_overrides; i++)
+         {
+            content_file_override_t *content_override =
+               &p_content->content_override_list[i];
 
-         return true;
+            if (!content_override ||
+                  !content_override->ext)
+               continue;
+
+            if (string_is_equal_noncase(
+                     content_override->ext, ext))
+            {
+               if (override)
+                  *override = content_override;
+
+               return true;
+            }
+         }
       }
    }
 
@@ -426,11 +421,9 @@ static content_file_list_t *content_file_list_init(size_t size)
    content_file_list_t *file_list = NULL;
 
    if (size < 1)
-      goto error;
-
-   file_list = (content_file_list_t *)malloc(sizeof(*file_list));
-   if (!file_list)
-      goto error;
+      return NULL;
+   if (!(file_list = (content_file_list_t *)malloc(sizeof(*file_list))))
+      return NULL;
 
    /* Set initial 'values' */
    file_list->entries         = NULL;
@@ -443,23 +436,20 @@ static content_file_list_t *content_file_list_init(size_t size)
       goto error;
 
    /* Create entries list */
-   file_list->entries         = (content_file_info_t *)
-         calloc(size, sizeof(content_file_info_t));
-   if (!file_list->entries)
+   if (!(file_list->entries   = (content_file_info_t *)
+         calloc(size, sizeof(content_file_info_t))))
       goto error;
 
    file_list->size            = size;
 
    /* Create retro_game_info object */
-   file_list->game_info       = (struct retro_game_info *)
-         calloc(size, sizeof(struct retro_game_info));
-   if (!file_list->game_info)
+   if (!(file_list->game_info = (struct retro_game_info *)
+         calloc(size, sizeof(struct retro_game_info))))
       goto error;
 
    /* Create retro_game_info_ext object */
-   file_list->game_info_ext   = (struct retro_game_info_ext *)
-         calloc(size, sizeof(struct retro_game_info_ext));
-   if (!file_list->game_info_ext)
+   if (!(file_list->game_info_ext   = (struct retro_game_info_ext *)
+         calloc(size, sizeof(struct retro_game_info_ext))))
       goto error;
 
    return file_list;
@@ -510,25 +500,22 @@ static bool content_file_list_set_info(
        (idx >= file_list->size))
       return false;
 
-   file_info = &file_list->entries[idx];
-   if (!file_info)
+   if (!(file_info = &file_list->entries[idx]))
       return false;
 
-   game_info = &file_list->game_info[idx];
-   if (!game_info)
+   if (!(game_info = &file_list->game_info[idx]))
       return false;
 
-   game_info_ext = &file_list->game_info_ext[idx];
-   if (!game_info_ext)
+   if (!(game_info_ext = &file_list->game_info_ext[idx]))
       return false;
 
    /* Clear any existing info */
    content_file_list_free_entry(file_info);
 
-   game_info->path = NULL;
-   game_info->data = NULL;
-   game_info->size = 0;
-   game_info->meta = NULL;
+   game_info->path                = NULL;
+   game_info->data                = NULL;
+   game_info->size                = 0;
+   game_info->meta                = NULL;
 
    game_info_ext->full_path       = NULL;
    game_info_ext->archive_path    = NULL;
@@ -573,8 +560,7 @@ static bool content_file_list_set_info(
 
       /* File extension - may be used core-side
        * to differentiate content types */
-      ext = path_get_extension(path);
-      if (ext)
+      if ((ext = path_get_extension(path)))
       {
          file_info->ext = strdup(ext);
          /* File extension is always presented
@@ -584,9 +570,7 @@ static bool content_file_list_set_info(
 
       /* Check whether path corresponds to a file
        * inside an archive */
-      archive_delim = path_get_archive_delim(path);
-
-      if (archive_delim)
+      if ((archive_delim = path_get_archive_delim(path)))
       {
          char archive_path[PATH_MAX_LENGTH];
          size_t len;
@@ -649,10 +633,10 @@ static bool content_file_list_set_info(
    }
 
    /* Assign retro_game_info pointers */
-   game_info->path = file_info->full_path;
-   game_info->data = file_info->data;
-   game_info->size = file_info->data_size;
-   game_info->meta = file_info->meta;
+   game_info->path                = file_info->full_path;
+   game_info->data                = file_info->data;
+   game_info->size                = file_info->data_size;
+   game_info->meta                = file_info->meta;
 
    /* Assign retro_game_info_ext pointers */
    game_info_ext->full_path       = file_info->full_path;
@@ -827,9 +811,8 @@ static bool content_file_extract_from_archive(
    /* Add path of extracted file to temporary content
     * list (so it can be deleted when deinitialising
     * the core) */
-   tmp_path_ptr = content_file_list_append_temporary(
-         p_content->content_list, tmp_path);
-   if (!tmp_path_ptr)
+   if (!(tmp_path_ptr = content_file_list_append_temporary(
+         p_content->content_list, tmp_path)))
       return false;
 
    /* Update content path pointer */
@@ -921,9 +904,6 @@ static void content_file_apply_overrides(
 {
    const content_file_override_t *override = NULL;
 
-   if (!p_content->content_override_list)
-      return;
-
    /* Check whether an override has been set
     * for files of this type */
    if (content_file_override_get_ext(p_content,
@@ -1012,7 +992,8 @@ static bool content_file_load(
 
          /* Apply any file-type-specific content
           * handling overrides */
-         content_file_apply_overrides(p_content, content, i, content_path);
+         if (p_content->content_override_list)
+            content_file_apply_overrides(p_content, content, i, content_path);
 
          /* If core does not require 'fullpath', load
           * the content into memory */
@@ -1047,15 +1028,18 @@ static bool content_file_load(
             if (!system->supports_vfs &&
                 !is_path_accessible_using_standard_io(content_path))
             {
-               /* Try copy acl to file first, if successfull this should mean that cores using standard io can still access them
-               *  it would be better to set the acl to allow full access for all application packages however this is substantially easier than writing out new functions to do this
-               *  Copy acl from localstate*/
-               // I am genuinely really proud of these work arounds
+               /* Try copy ACL to file first. If successful, this should mean that cores using standard I/O can still access them
+               *  It would be better to set the acl to allow full access for all application packages. However,
+               *  this is substantially easier than writing out new functions to do this
+               *  Copy ACL from localstate
+               *  I am genuinely really proud of these work arounds 
+               */
                wchar_t wcontent_path[MAX_PATH];
                mbstowcs(wcontent_path, content_path, MAX_PATH);
                uwp_set_acl(wcontent_path, L"S-1-15-2-1");
                if (!is_path_accessible_using_standard_io(content_path))
                {
+                  wchar_t wnew_path[MAX_PATH];
                   /* Fallback to a file copy into an accessible directory */
                   char new_basedir[PATH_MAX_LENGTH];
                   char new_path[PATH_MAX_LENGTH];
@@ -1074,24 +1058,22 @@ static bool content_file_load(
                      !path_is_directory(new_basedir) ||
                      !is_path_accessible_using_standard_io(new_basedir))
                   {
+                     DWORD basedir_attribs;
                      RARCH_WARN("[Content]: Tried copying to cache directory, "
                         "but cache directory was not set or found. "
                         "Setting cache directory to root of writable app directory...\n");
                      strlcpy(new_basedir, uwp_dir_data, sizeof(new_basedir));
                      strcat(new_basedir, "VFSCACHE\\");
-                     DWORD dwAttrib = GetFileAttributes(new_basedir);
-                     if ((dwAttrib == INVALID_FILE_ATTRIBUTES) || (!(dwAttrib & FILE_ATTRIBUTE_DIRECTORY)))
+                     basedir_attribs = GetFileAttributes(new_basedir);
+                     if ((basedir_attribs == INVALID_FILE_ATTRIBUTES) || (!(basedir_attribs & FILE_ATTRIBUTE_DIRECTORY)))
                      {
                         if (!CreateDirectoryA(new_basedir, NULL))
-                        {
                            strlcpy(new_basedir, uwp_dir_data, sizeof(new_basedir));
-                        }
                      }
                   }
                   fill_pathname_join(new_path, new_basedir,
                      path_basename(content_path), sizeof(new_path));
 
-                  wchar_t wnew_path[MAX_PATH];
                   mbstowcs(wnew_path, new_path, MAX_PATH);
                   /* TODO: This may fail on very large files...
                    * but copying large files is not a good idea anyway
@@ -1344,7 +1326,7 @@ static bool content_file_init(
    else if (!special)
    {
       *error_enum = MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT;
-      ret         = false;
+      return false;
    }
 
    return ret;
@@ -1365,8 +1347,7 @@ static bool content_file_init(
  **/
 static void content_load_init_wrap(
       const struct rarch_main_wrap *args,
-      int *argc, char **argv,
-      bool print_args)
+      int *argc, char **argv)
 {
    *argc = 0;
    argv[(*argc)++] = strdup("retroarch");
@@ -1413,13 +1394,6 @@ static void content_load_init_wrap(
 
    if (args->verbose)
       argv[(*argc)++] = strdup("-v");
-
-   if (print_args)
-   {
-      int i;
-      for (i = 0; i < *argc; i++)
-         RARCH_LOG("[Core]: Arg #%d: %s\n", i, argv[i]);
-   }
 }
 
 /**
@@ -1467,8 +1441,7 @@ static bool content_load(content_ctx_info_t *info,
 
    if (wrap_args->touched)
    {
-      content_load_init_wrap(wrap_args, &rarch_argc, rarch_argv,
-            false);
+      content_load_init_wrap(wrap_args, &rarch_argc, rarch_argv);
       memcpy(argv_copy, rarch_argv, sizeof(rarch_argv));
       rarch_argv_ptr = (char**)rarch_argv;
       rarch_argc_ptr = (int*)&rarch_argc;
@@ -1589,12 +1562,13 @@ static void task_push_to_history_list(
       tmp[0] = '\0';
 
       if (!string_is_empty(path_content))
+      {
          strlcpy(tmp, path_content, sizeof(tmp));
-
-      /* Path can be relative here.
-       * Ensure we're pushing absolute path. */
-      if (!launched_from_menu && !string_is_empty(tmp))
-         path_resolve_realpath(tmp, sizeof(tmp), true);
+         /* Path can be relative here.
+          * Ensure we're pushing absolute path. */
+         if (!launched_from_menu)
+            path_resolve_realpath(tmp, sizeof(tmp), true);
+      }
 
 #ifdef HAVE_MENU
       /* Push quick menu onto menu stack */
@@ -2063,11 +2037,11 @@ bool task_push_load_content_from_playlist_from_menu(
    content_ctx.subsystem.size                 = 0;
 
    if (!string_is_empty(runloop_st->name.ips))
-      content_ctx.name_ips                 = strdup(runloop_st->name.ips);
+      content_ctx.name_ips                    = strdup(runloop_st->name.ips);
    if (!string_is_empty(runloop_st->name.bps))
-      content_ctx.name_bps                 = strdup(runloop_st->name.bps);
+      content_ctx.name_bps                    = strdup(runloop_st->name.bps);
    if (!string_is_empty(runloop_st->name.ups))
-      content_ctx.name_ups                 = strdup(runloop_st->name.ups);
+      content_ctx.name_ups                    = strdup(runloop_st->name.ups);
    if (label)
       strlcpy(runloop_st->name.label, label, sizeof(runloop_st->name.label));
    else
@@ -2078,9 +2052,9 @@ bool task_push_load_content_from_playlist_from_menu(
 
    /* Is content required by this core? */
    if (fullpath)
-      sys_info->load_no_content = false;
+      sys_info->load_no_content               = false;
    else
-      sys_info->load_no_content = true;
+      sys_info->load_no_content               = true;
 
 #ifndef HAVE_DYNAMIC
    /* Check whether specified core is already loaded
@@ -2098,9 +2072,7 @@ bool task_push_load_content_from_playlist_from_menu(
          path_set(RARCH_PATH_CONTENT, fullpath);
 
       /* Load content */
-      ret = content_load(content_info, p_content);
-
-      if (!ret)
+      if (!(ret = content_load(content_info, p_content)))
          goto end;
 
       /* Update content history */
@@ -2713,20 +2685,18 @@ bool task_push_start_builtin_core(
    runloop_set_current_core_type(type, true);
 
    /* Load content */
+#ifdef HAVE_MENU
    if (!task_load_content_internal(content_info, true, false, false))
    {
-#ifdef HAVE_MENU
       retroarch_menu_running();
-#endif
       return false;
    }
-
    /* Push quick menu onto menu stack */
-#ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-#endif
-
    return true;
+#else
+   return task_load_content_internal(content_info, true, false, false);
+#endif
 }
 
 bool task_push_load_content_with_core(
@@ -2737,23 +2707,20 @@ bool task_push_load_content_with_core(
       void *user_data)
 {
    path_set(RARCH_PATH_CONTENT, fullpath);
-
    /* Load content */
+#ifdef HAVE_MENU
    if (!task_load_content_internal(content_info, true, false, false))
    {
-#ifdef HAVE_MENU
       retroarch_menu_running();
-#endif
       return false;
    }
-
-#ifdef HAVE_MENU
    /* Push quick menu onto menu stack */
    if (type != CORE_TYPE_DUMMY)
       menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-#endif
-
    return true;
+#else
+   return task_load_content_internal(content_info, true, false, false);
+#endif
 }
 
 bool task_push_load_content_with_current_core_from_companion_ui(
@@ -2777,21 +2744,19 @@ bool task_push_load_content_with_current_core_from_companion_ui(
    path_set(RARCH_PATH_CONTENT, fullpath);
 
    /* Load content */
+#ifdef HAVE_MENU
    if (!task_load_content_internal(content_info, true, false, false))
    {
-#ifdef HAVE_MENU
       retroarch_menu_running();
-#endif
       return false;
    }
-
-#ifdef HAVE_MENU
    /* Push quick menu onto menu stack */
    if (type != CORE_TYPE_DUMMY)
       menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-#endif
-
    return true;
+#else
+   return task_load_content_internal(content_info, true, false, false);
+#endif
 }
 
 
@@ -2805,23 +2770,20 @@ bool task_push_load_subsystem_with_core(
    content_state_t  *p_content = content_state_get_ptr();
 
    p_content->pending_subsystem_init = true;
-
    /* Load content */
+#ifdef HAVE_MENU
    if (!task_load_content_internal(content_info, true, false, false))
    {
-#ifdef HAVE_MENU
       retroarch_menu_running();
-#endif
       return false;
    }
-
-#ifdef HAVE_MENU
    /* Push quick menu onto menu stack */
    if (type != CORE_TYPE_DUMMY)
       menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-#endif
-
    return true;
+#else
+   return task_load_content_internal(content_info, true, false, false);
+#endif
 }
 
 void content_get_status(
