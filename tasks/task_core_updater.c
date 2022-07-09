@@ -1582,21 +1582,6 @@ static bool task_update_installed_cores_finder(retro_task_t *task, void *user_da
    return false;
 }
 
-static bool task_update_installed_cores_waiter(void *data)
-{
-   task_finder_data_t find_data;
-
-   find_data.func     = task_update_installed_cores_finder;
-   find_data.userdata = NULL;
-
-   return task_queue_find(&find_data);
-}
-
-void task_update_installed_cores_wait(void)
-{
-   task_queue_wait(task_update_installed_cores_waiter, NULL);
-}
-
 void task_push_update_installed_cores(
       bool auto_backup, size_t auto_backup_history_size,
       const char *path_dir_libretro,
@@ -1677,7 +1662,7 @@ error:
    free_update_installed_cores_handle(update_installed_handle);
 }
 
-void task_push_update_single_core(
+bool task_push_update_single_core(
       const char *path_core, bool auto_backup, size_t auto_backup_history_size,
       const char *path_dir_libretro, const char *path_dir_core_assets)
 {
@@ -1687,19 +1672,19 @@ void task_push_update_single_core(
    retro_task_t *task;
 
    if (string_is_empty(path_core) || string_is_empty(path_dir_libretro))
-      return;
+      return false;
 
 #ifdef ANDROID
    /* Regular core updater is disabled in Play Store builds. */
    if (play_feature_delivery_enabled())
-      return;
+      return false;
 #endif
 
    /* Only one instance of this task may run at a time. */
    find_data.func     = task_update_installed_cores_finder;
    find_data.userdata = NULL;
    if (task_queue_find(&find_data))
-      return;
+      return false;
 
    core_list = core_updater_list_init();
    handle    = (update_single_core_handle_t*)malloc(sizeof(*handle));
@@ -1710,7 +1695,7 @@ void task_push_update_single_core(
       free(handle);
       free(task);
 
-      return;
+      return false;
    }
 
    /* Configure handle */
@@ -1734,6 +1719,8 @@ void task_push_update_single_core(
 
    /* Push task */
    task_queue_push(task);
+
+   return true;
 }
 
 #if defined(ANDROID)
