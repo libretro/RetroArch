@@ -5777,10 +5777,6 @@ MSG_HASH(
    "lata"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
-   "temu"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
    "Pokaż indeks wpisów playlisty"
    )

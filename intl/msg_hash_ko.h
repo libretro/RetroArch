@@ -5985,10 +5985,6 @@ MSG_HASH(
    "년"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
-   "전"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
    "실행목록 항목 번호 표시"
    )

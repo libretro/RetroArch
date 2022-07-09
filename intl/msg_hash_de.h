@@ -5821,10 +5821,6 @@ MSG_HASH(
    "Jahre"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
-   "zuvor"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
    "Wiedergabelisteneintragsnummer anzeigen"
    )

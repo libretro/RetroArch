@@ -5893,10 +5893,6 @@ MSG_HASH(
    "anni"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
-   "fa"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
    "Mostra l'Indice Voce della scaletta"
    )
