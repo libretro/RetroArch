@@ -1103,7 +1103,6 @@ static void audio_mixer_menu_stop_cb(
          }
          break;
       case AUDIO_MIXER_SOUND_STOPPED:
-         break;
       case AUDIO_MIXER_SOUND_REPEATED:
          break;
    }
@@ -1153,7 +1152,6 @@ static void audio_mixer_play_stop_sequential_cb(
          }
          break;
       case AUDIO_MIXER_SOUND_STOPPED:
-         break;
       case AUDIO_MIXER_SOUND_REPEATED:
          break;
    }
@@ -1167,8 +1165,8 @@ static bool audio_driver_mixer_get_free_stream_slot(
 
    if (type == AUDIO_STREAM_TYPE_USER)
    {
-      i     = 0;
-      count = AUDIO_MIXER_MAX_STREAMS;
+      i                        = 0;
+      count                    = AUDIO_MIXER_MAX_STREAMS;
    }
 
    for (; i < count; i++)
@@ -1189,7 +1187,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    audio_mixer_voice_t *voice    = NULL;
    audio_mixer_sound_t *handle   = NULL;
    audio_mixer_stop_cb_t stop_cb = audio_mixer_play_stop_cb;
-   bool looped                   = false;
+   bool looped                   = (params->state == AUDIO_STREAM_STATE_PLAYING_LOOPED);
    void *buf                     = NULL;
 
    if (params->stream_type == AUDIO_STREAM_TYPE_NONE)
@@ -1209,18 +1207,14 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
          break;
       case AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC:
       default:
-         if (!audio_driver_mixer_get_free_stream_slot(
-                  &free_slot, params->stream_type))
-            return false;
-         break;
+         return audio_driver_mixer_get_free_stream_slot(
+                  &free_slot, params->stream_type);
    }
 
    if (params->state == AUDIO_STREAM_STATE_NONE)
       return false;
 
-   buf = malloc(params->bufsize);
-
-   if (!buf)
+   if (!(buf = malloc(params->bufsize)))
       return false;
 
    memcpy(buf, params->buf, params->bufsize);
@@ -1266,19 +1260,11 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
 
    switch (params->state)
    {
-      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
-         looped = true;
-         voice = audio_mixer_play(handle, looped, params->volume,
-               audio_driver_st.resampler_ident,
-               audio_driver_st.resampler_quality, stop_cb);
-         break;
-      case AUDIO_STREAM_STATE_PLAYING:
-         voice = audio_mixer_play(handle, looped, params->volume,
-               audio_driver_st.resampler_ident,
-               audio_driver_st.resampler_quality, stop_cb);
-         break;
       case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
          stop_cb = audio_mixer_play_stop_sequential_cb;
+         /* fall-through */
+      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
+      case AUDIO_STREAM_STATE_PLAYING:
          voice = audio_mixer_play(handle, looped, params->volume,
                audio_driver_st.resampler_ident,
                audio_driver_st.resampler_quality, stop_cb);
