@@ -174,7 +174,8 @@ function_t dylib_proc(dylib_t lib, const char *proc)
    void *ptr_sym = NULL;
    sym = NULL;
 
-   if (lib) {
+   if (lib)
+   {
      sceKernelDlsym((SceKernelModule)lib, proc, &ptr_sym);
      memcpy(&sym, &ptr_sym, sizeof(void*));
    }
