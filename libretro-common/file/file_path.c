@@ -254,10 +254,9 @@ bool path_is_compressed_file(const char* path)
 {
    const char *ext = path_get_extension(path);
    if (!string_is_empty(ext))
-      if (  string_is_equal_noncase(ext, "zip") ||
-            string_is_equal_noncase(ext, "apk") ||
-            string_is_equal_noncase(ext, "7z"))
-         return true;
+      return (   string_is_equal_noncase(ext, "zip")
+              || string_is_equal_noncase(ext, "apk")
+              || string_is_equal_noncase(ext, "7z"));
    return false;
 }
 
@@ -457,7 +456,6 @@ void fill_pathname_basedir_noext(char *out_dir,
 bool fill_pathname_parent_dir_name(char *out_dir,
       const char *in_dir, size_t size)
 {
-   bool success = false;
    char *temp   = strdup(in_dir);
    char *last   = find_last_slash(temp);
 
@@ -473,26 +471,24 @@ bool fill_pathname_parent_dir_name(char *out_dir,
       *last     = '\0';
 
    /* Point in_dir to the address of the last slash. */
-   in_dir       = find_last_slash(temp);
-
    /* If find_last_slash returns NULL, it means there was no slash in temp,
       so use temp as-is. */
-   if (!in_dir)
+   if (!(in_dir = find_last_slash(temp)))
        in_dir   = temp;
 
-   success      = in_dir && in_dir[1];
-
-   if (success)
+   if (in_dir && in_dir[1])
    {
        /* If path starts with an slash, eliminate it. */
        if (path_is_absolute(in_dir))
            strlcpy(out_dir, in_dir + 1, size);
        else
            strlcpy(out_dir, in_dir, size);
+       free(temp);
+       return true;
    }
 
    free(temp);
-   return success;
+   return false;
 }
 
 /**
@@ -591,9 +587,7 @@ void path_basedir(char *path)
    if (strlen(path) < 2)
       return;
 
-   last = find_last_slash(path);
-
-   if (last)
+   if ((last = find_last_slash(path)))
       last[1] = '\0';
    else
       strlcpy(path, "." PATH_DEFAULT_SLASH(), 3);
@@ -690,15 +684,13 @@ bool path_is_absolute(const char *path)
 #if defined(_WIN32)
    /* Many roads lead to Rome...
     * Note: Drive letter can only be 1 character long */
-   if (string_starts_with_size(path,     "\\\\", STRLEN_CONST("\\\\")) ||
-       string_starts_with_size(path + 1, ":/",   STRLEN_CONST(":/"))   ||
-       string_starts_with_size(path + 1, ":\\",  STRLEN_CONST(":\\")))
-      return true;
+   return ( string_starts_with_size(path,     "\\\\", STRLEN_CONST("\\\\"))
+         || string_starts_with_size(path + 1, ":/",   STRLEN_CONST(":/")) 
+         || string_starts_with_size(path + 1, ":\\",  STRLEN_CONST(":\\")));
 #elif defined(__wiiu__) || defined(VITA)
    {
       const char *seperator = strchr(path, ':');
-      if (seperator && (seperator[1] == '/'))
-         return true;
+      return (seperator && (seperator[1] == '/'));
    }
 #endif
 
@@ -804,8 +796,7 @@ char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks)
     * if there are no slashes, they point relative to where one would be */
    do
    {
-      next = strchr(p, '/');
-      if (!next)
+      if (!(next = strchr(p, '/')))
          next = buf_end;
 
       if ((next - p == 2 && p[0] == '.' && p[1] == '.'))

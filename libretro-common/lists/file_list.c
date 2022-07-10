@@ -75,9 +75,7 @@ bool file_list_reserve(file_list_t *list, size_t nitems)
    if (nitems < list->capacity || nitems > (size_t)-1/item_size)
       return false;
 
-   new_data = (struct item_file*)realloc(list->list, nitems * item_size);
-
-   if (!new_data)
+   if (!(new_data = (struct item_file*)realloc(list->list, nitems * item_size)))
       return false;
 
    memset(&new_data[list->capacity], 0, item_size * (nitems - list->capacity));
@@ -430,8 +428,7 @@ bool file_list_search(const file_list_t *list, const char *needle, size_t *idx)
             continue;
       }
 
-      str = (const char *)strcasestr(alt, needle);
-      if (str == alt)
+      if ((str = (const char *)strcasestr(alt, needle)) == alt)
       {
          /* Found match with first chars, best possible match. */
          *idx = i;

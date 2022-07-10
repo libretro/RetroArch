@@ -364,16 +364,12 @@ void gfx_thumbnail_request_file(
    thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
 
    /* Check if file path is valid */
-   if (string_is_empty(file_path))
-      return;
-
-   if (!path_is_valid(file_path))
+   if (   string_is_empty(file_path)
+       || !path_is_valid(file_path))
       return;
 
    /* Load thumbnail */
-   thumbnail_tag = (gfx_thumbnail_tag_t*)malloc(sizeof(gfx_thumbnail_tag_t));
-
-   if (!thumbnail_tag)
+   if (!(thumbnail_tag = (gfx_thumbnail_tag_t*)malloc(sizeof(gfx_thumbnail_tag_t))))
       return;
 
    /* Configure user data */
@@ -788,17 +784,22 @@ void gfx_thumbnail_get_draw_dimensions(
       unsigned width, unsigned height, float scale_factor,
       float *draw_width, float *draw_height)
 {
-   video_driver_state_t *video_st = video_state_get_ptr();
+   float core_aspect;
    float display_aspect;
    float thumbnail_aspect;
-   float core_aspect;
+   video_driver_state_t *video_st = video_state_get_ptr();
 
    /* Sanity check */
-   if (!thumbnail || (width < 1) || (height < 1))
-      goto error;
-
-   if ((thumbnail->width < 1) || (thumbnail->height < 1))
-      goto error;
+   if (   !thumbnail 
+       || (width             < 1) 
+       || (height            < 1)
+       || (thumbnail->width  < 1) 
+       || (thumbnail->height < 1))
+   {
+      *draw_width  = 0.0f;
+      *draw_height = 0.0f;
+      return;
+   }
 
    /* Account for display/thumbnail/core aspect ratio
     * differences */
@@ -842,11 +843,6 @@ void gfx_thumbnail_get_draw_dimensions(
     *   without scaling manually... */
    *draw_width  *= scale_factor;
    *draw_height *= scale_factor;
-   return;
-
-error:
-   *draw_width  = 0.0f;
-   *draw_height = 0.0f;
 }
 
 /* Draws specified thumbnail with specified alignment
@@ -872,10 +868,14 @@ void gfx_thumbnail_draw(
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    /* Sanity check */
-   if (!thumbnail ||
-       (width < 1) || (height < 1) || (alpha <= 0.0f) || (scale_factor <= 0.0f))
-      return;
-   if (!dispctx)
+   if (
+            !thumbnail
+         || !dispctx
+         || (width         < 1)
+         || (height        < 1)
+         || (alpha        <= 0.0f)
+         || (scale_factor <= 0.0f)
+      )
       return;
 
    /* Only draw thumbnail if it is available... */

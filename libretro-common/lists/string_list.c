@@ -182,8 +182,7 @@ bool string_list_append(struct string_list *list, const char *elem,
                (list->cap > 0) ? (list->cap * 2) : 32))
       return false;
 
-   data_dup = strdup(elem);
-   if (!data_dup)
+   if (!(data_dup = strdup(elem)))
       return false;
 
    list->elems[list->size].data = data_dup;
@@ -213,9 +212,7 @@ bool string_list_append_n(struct string_list *list, const char *elem,
          !string_list_capacity(list, list->cap * 2))
       return false;
 
-   data_dup = (char*)malloc(length + 1);
-
-   if (!data_dup)
+   if (!(data_dup = (char*)malloc(length + 1)))
       return false;
 
    strlcpy(data_dup, elem, length + 1);
@@ -298,8 +295,7 @@ struct string_list *string_split(const char *str, const char *delim)
    if (!list)
       return NULL;
 
-   copy = strdup(str);
-   if (!copy)
+   if (!(copy = strdup(str)))
       goto error;
 
    tmp = strtok_r(copy, delim, &save);
@@ -334,8 +330,7 @@ bool string_split_noalloc(struct string_list *list,
    if (!list)
       return false;
 
-   copy            = strdup(str);
-   if (!copy)
+   if (!(copy = strdup(str)))
       return false;
 
    tmp             = strtok_r(copy, delim, &save);
@@ -377,15 +372,13 @@ struct string_list *string_separate(char *str, const char *delim)
 
    /* Sanity check */
    if (!str || string_is_empty(delim))
-      goto error;
+      return NULL;
+   if (!(list = string_list_new()))
+	   return NULL;
 
    str_ptr = &str;
-   list    = string_list_new();
+   token   = string_tokenize(str_ptr, delim);
 
-   if (!list)
-      goto error;
-
-   token = string_tokenize(str_ptr, delim);
    while (token)
    {
       union string_list_elem_attr attr;
@@ -393,22 +386,17 @@ struct string_list *string_separate(char *str, const char *delim)
       attr.i = 0;
 
       if (!string_list_append(list, token, attr))
-         goto error;
+      {
+         free(token);
+         string_list_free(list);
+         return NULL;
+      }
 
       free(token);
-      token = NULL;
-
       token = string_tokenize(str_ptr, delim);
    }
 
    return list;
-
-error:
-   if (token)
-      free(token);
-   if (list)
-      string_list_free(list);
-   return NULL;
 }
 
 bool string_separate_noalloc(
@@ -455,15 +443,14 @@ bool string_separate_noalloc(
  */
 int string_list_find_elem(const struct string_list *list, const char *elem)
 {
-   size_t i;
-
-   if (!list)
-      return false;
-
-   for (i = 0; i < list->size; i++)
+   if (list)
    {
-      if (string_is_equal_noncase(list->elems[i].data, elem))
-         return (int)(i + 1);
+      size_t i;
+      for (i = 0; i < list->size; i++)
+      {
+         if (string_is_equal_noncase(list->elems[i].data, elem))
+            return (int)(i + 1);
+      }
    }
 
    return false;
@@ -496,16 +483,15 @@ bool string_list_find_elem_prefix(const struct string_list *list,
 
    for (i = 0; i < list->size; i++)
    {
-      if (string_is_equal_noncase(list->elems[i].data, elem) ||
-            string_is_equal_noncase(list->elems[i].data, prefixed))
+      if (     string_is_equal_noncase(list->elems[i].data, elem)
+            || string_is_equal_noncase(list->elems[i].data, prefixed))
          return true;
    }
 
    return false;
 }
 
-struct string_list *string_list_clone(
-      const struct string_list *src)
+struct string_list *string_list_clone(const struct string_list *src)
 {
    unsigned i;
    struct string_list_elem 
@@ -519,14 +505,13 @@ struct string_list *string_list_clone(
 
    dest->elems            = NULL;
    dest->size             = src->size;
-   dest->cap              = src->cap;
-   if (dest->cap < dest->size)
+   if (src->cap < dest->size)
       dest->cap           = dest->size;
+   else 
+      dest->cap           = src->cap;
 
-   elems                  = (struct string_list_elem*)
-      calloc(dest->cap, sizeof(struct string_list_elem));
-
-   if (!elems)
+   if (!(elems = (struct string_list_elem*)
+      calloc(dest->cap, sizeof(struct string_list_elem))))
    {
       free(dest);
       return NULL;
@@ -536,11 +521,11 @@ struct string_list *string_list_clone(
 
    for (i = 0; i < src->size; i++)
    {
-      const char *_src    = src->elems[i].data;
-      size_t      len     = _src ? strlen(_src) : 0;
+      const char *_src       = src->elems[i].data;
+      size_t      len        = _src ? strlen(_src) : 0;
 
-      dest->elems[i].data = NULL;
-      dest->elems[i].attr = src->elems[i].attr;
+      dest->elems[i].data    = NULL;
+      dest->elems[i].attr    = src->elems[i].attr;
 
       if (len != 0)
       {

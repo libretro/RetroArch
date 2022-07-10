@@ -373,10 +373,8 @@ static void *win32_display_server_get_resolution_list(
    }
 
    *len = count;
-   conf = (struct video_display_config*)
-      calloc(*len, sizeof(struct video_display_config));
-
-   if (!conf)
+   if (!(conf = (struct video_display_config*)
+      calloc(*len, sizeof(struct video_display_config))))
       return NULL;
 
    for (i = 0, j = 0; win32_get_video_output(&dm, i, sizeof(dm)); i++)

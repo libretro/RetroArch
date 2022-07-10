@@ -114,9 +114,8 @@ char *string_replace_substring(const char *in,
    }
 
    outlen          = strlen(in) - pattern_len*numhits + replacement_len*numhits;
-   out             = (char *)malloc(outlen+1);
 
-   if (!out)
+   if (!(out = (char *)malloc(outlen+1)))
       return NULL;
 
    outat           = out;
@@ -305,9 +304,7 @@ void word_wrap_wideglyph(char *dst, size_t dst_size, const char *src, int line_w
 
    while (*src != '\0')
    {
-      unsigned char_len;
-
-      char_len = (unsigned)(utf8skip(src, 1) - src);
+      unsigned char_len   = (unsigned)(utf8skip(src, 1) - src);
       counter_normalized += 100;
 
       /* Prevent buffer overflow */
@@ -315,7 +312,7 @@ void word_wrap_wideglyph(char *dst, size_t dst_size, const char *src, int line_w
          break;
 
       if (*src == ' ')
-         lastspace = dst; /* Remember the location of the whitespace */
+         lastspace        = dst; /* Remember the location of the whitespace */
       else if (*src == '\n')
       {
          /* If newlines embedded in the input,
@@ -419,25 +416,20 @@ char* string_tokenize(char **str, const char *delim)
    if (!str || string_is_empty(delim))
       return NULL;
 
-   str_ptr = *str;
 
    /* Note: we don't check string_is_empty() here,
     * empty strings are valid */
-   if (!str_ptr)
+   if (!(str_ptr = *str))
       return NULL;
 
    /* Search for delimiter */
-   delim_ptr = strstr(str_ptr, delim);
-
-   if (delim_ptr)
+   if ((delim_ptr = strstr(str_ptr, delim)))
       token_len = delim_ptr - str_ptr;
    else
       token_len = strlen(str_ptr);
 
    /* Allocate token string */
-   token = (char *)malloc((token_len + 1) * sizeof(char));
-
-   if (!token)
+   if (!(token = (char *)malloc((token_len + 1) * sizeof(char))))
       return NULL;
 
    /* Copy token */
@@ -475,13 +467,13 @@ void string_remove_all_chars(char *str, char c)
  * with character 'replace' */
 void string_replace_all_chars(char *str, char find, char replace)
 {
-   char *str_ptr = str;
+   if (!string_is_empty(str))
+   {
+      char *str_ptr = str;
+	   while ((str_ptr = strchr(str_ptr, find)))
+		   *str_ptr++ = replace;
+   }
 
-   if (string_is_empty(str))
-      return;
-
-   while ((str_ptr = strchr(str_ptr, find)))
-      *str_ptr++ = replace;
 }
 
 /* Converts string to unsigned integer.
@@ -515,9 +507,7 @@ unsigned string_hex_to_unsigned(const char *str)
       return 0;
 
    /* Remove leading '0x', if required */
-   len = strlen(str);
-
-   if (len >= 2)
+   if ((len = strlen(str)) >= 2)
       if ((str[0] == '0') &&
           ((str[1] == 'x') || (str[1] == 'X')))
          hex_str = str + 2;
@@ -543,7 +533,8 @@ int string_count_occurrences_single_character(char *str, char t)
    int ctr = 0;
    int i;
 
-   for (i = 0; str[i] != '\0'; ++i) {
+   for (i = 0; str[i] != '\0'; ++i)
+   {
       if (t == str[i])
          ++ctr;
    }
@@ -556,8 +547,8 @@ int string_count_occurrences_single_character(char *str, char t)
  */
 void string_replace_whitespace_with_single_character(char *str, char t)
 {
-
-   while (*str) {
+   while (*str)
+   {
       if (isspace(*str))
          *str = t;
       str++;
@@ -604,10 +595,9 @@ void string_remove_all_whitespace(char* str_trimmed, const char* str_untrimmed)
  */
 int string_index_last_occurance(char *str, char t)
 {
-   const char * ret = strrchr(str, t);
+   const char *ret = strrchr(str, t);
    if (ret)
       return ret-str;
-
    return -1;
 }
 
@@ -616,16 +606,11 @@ int string_index_last_occurance(char *str, char t)
  */
 int string_find_index_substring_string(const char* str1, const char* str2)
 {
-   int index;
-
    if (str1[0] != '\0')
    {
       const char *pfound = strstr(str1, str2);
-      if (pfound != NULL)
-      {
-         index = (pfound - str1);
-         return index;
-      }
+      if (pfound)
+         return (pfound - str1);
    }
 
    return -1;

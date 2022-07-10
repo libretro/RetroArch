@@ -323,17 +323,15 @@ static struct retro_task_impl impl_regular = {
 static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
 {
    retro_task_t     *t = NULL;
-   retro_task_t *front = NULL;
-
-   front = queue->front;
+   retro_task_t *front = queue->front;
 
    /* Remove first element if needed */
    if (task == front)
    {
-      queue->front = task->next;
+      queue->front     = task->next;
       if (queue->back == task) /* if only element, also update back */
-         queue->back = NULL;
-      task->next   = NULL;
+         queue->back   = NULL;
+      task->next       = NULL;
       return;
    }
 
@@ -485,8 +483,7 @@ static void threaded_worker(void *userdata)
       slock_lock(running_lock);
 
       /* Get first task to run */
-      task = tasks_running.front;
-      if (!task)
+      if (!(task = tasks_running.front))
       {
          scond_wait(worker_cond, running_lock);
          slock_unlock(running_lock);
