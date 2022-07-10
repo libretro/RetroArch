@@ -929,6 +929,14 @@ MSG_HASH(
    "Edge-Magazine-Ausgabe"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   "Veröffentlichungsmonat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
+   "Veröffentlichungsjahr"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
    "BBFC-Bewertung"
    )
@@ -5435,6 +5443,22 @@ MSG_HASH(
    "Hier die Adresse eines eigenen Relayservers eingeben. Format: Adresse oder Adresse|Port."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
+   "Nordamerika (Ostküste, USA)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2,
+   "Westeuropa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3,
+   "Südamerika (Südosten, Brasilien)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
+   "Südostasien"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
    "Benutzerdefiniert"
    )
@@ -6420,6 +6444,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_KICK,
    "Einen Client aus dem aktuell gehosteten Raum schmeißen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_BAN,
+   "Client sperren"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_BAN,
+   "Einen Client aus dem aktuell gehosteten Raum verbannen."
    )
 
 /* Import Content */
@@ -10318,6 +10350,14 @@ MSG_HASH(
    "Datenbank - Filter: Max. Spieler"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_MONTH,
+   "Datenbank - Filter: Veröffentlichungsdatum nach Monat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_YEAR,
+   "Datenbank - Filter: Veröffentlichungsdatum nach Jahr"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_ISSUE,
    "Datenbank - Filter: Edge-Zeitschriftenausgabe"
    )
@@ -10632,12 +10672,24 @@ MSG_HASH(
    "Client konnte nicht rausgeschmissen werden: „%s“"
    )
 MSG_HASH(
+   MSG_NETPLAY_BANNED_CLIENT_S,
+   "Client gesperrt: „%s“"
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
+   "Fehler beim Sperren des Clients: „%s“"
+   )
+MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
    "Im Spiel"
    )
 MSG_HASH(
    MSG_NETPLAY_STATUS_SPECTATING,
    "Zuschauer"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CLIENT_DEVICES,
+   "Geräte"
    )
 MSG_HASH(
    MSG_NETPLAY_CHAT_SUPPORTED,
@@ -11891,6 +11943,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_HOST_FULL,
    "Netzwerkspiel voll"
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "Du wurdest aus diesem Host ausgeschlossen"
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
