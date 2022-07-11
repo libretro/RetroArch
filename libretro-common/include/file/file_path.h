@@ -520,42 +520,6 @@ int32_t path_get_size(const char *path);
 
 bool is_path_accessible_using_standard_io(const char *path);
 
-/* Deprecated functions */
-size_t fill_pathname_join_concat(char *out_path,
-      const char *dir, const char *path,
-      const char *concat,
-      size_t size);
-
-void fill_pathname_join_noext(char *out_path,
-      const char *dir, const char *path, size_t size);
-
-void fill_short_pathname_representation_noext(char* out_rep,
-      const char *in_path, size_t size);
-
-size_t fill_pathname_join_delim_concat(char *out_path, const char *dir,
-      const char *path, const char delim, const char *concat,
-      size_t size);
-
-/**
- * fill_pathname_noext:
- * @out_path           : output path
- * @in_path            : input  path
- * @replace            : what to replace
- * @size               : buffer size of output path
- *
- * Appends a filename extension 'replace' to 'in_path', and outputs
- * result in 'out_path'.
- *
- * Assumes in_path has no extension. If an extension is still
- * present in 'in_path', it will be ignored.
- *
- */
-size_t fill_pathname_noext(char *out_path, const char *in_path,
-      const char *replace, size_t size);
-
-void fill_pathname_base_noext(char *out_dir,
-      const char *in_path, size_t size);
-
 RETRO_END_DECLS
 
 #endif
