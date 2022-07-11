@@ -4265,8 +4265,9 @@ static void save_keybind_joykey(config_file_t *conf,
 
    key[0] = '\0';
 
-   fill_pathname_join_delim_concat(key, prefix,
-         base, '_', "_btn", sizeof(key));
+   fill_pathname_join_delim(key, prefix,
+         base, '_', sizeof(key));
+   strlcat(key, "_btn", sizeof(key));
 
    if (bind->joykey == NO_BTN)
    {
@@ -4288,12 +4289,10 @@ static void save_keybind_axis(config_file_t *conf,
    unsigned axis   = 0;
    char dir        = '\0';
 
-   key[0] = '\0';
+   key[0]          = '\0';
 
-   fill_pathname_join_delim_concat(key,
-         prefix, base, '_',
-         "_axis",
-         sizeof(key));
+   fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
+   strlcat(key, "_axis", sizeof(key));
 
    if (bind->joyaxis == AXIS_NONE)
    {
@@ -4331,8 +4330,9 @@ static void save_keybind_mbutton(config_file_t *conf,
 
    key[0] = '\0';
 
-   fill_pathname_join_delim_concat(key, prefix,
-      base, '_', "_mbtn", sizeof(key));
+   fill_pathname_join_delim(key, prefix,
+      base, '_', sizeof(key));
+   strlcat(key, "_mbtn", sizeof(key));
 
    switch (bind->mbutton)
    {
@@ -4529,11 +4529,12 @@ bool config_save_autoconf_profile(const
    fill_pathname_join(buf, autoconf_dir, joypad_driver, sizeof(buf));
 
    if (path_is_directory(buf))
-      fill_pathname_join_concat(autoconf_file, buf,
-            sanitised_name, ".cfg", sizeof(autoconf_file));
+      fill_pathname_join(autoconf_file, buf,
+            sanitised_name, sizeof(autoconf_file));
    else
-      fill_pathname_join_concat(autoconf_file, autoconf_dir,
-            sanitised_name, ".cfg", sizeof(autoconf_file));
+      fill_pathname_join(autoconf_file, autoconf_dir,
+            sanitised_name, sizeof(autoconf_file));
+   strlcat(autoconf_file, ".cfg", sizeof(autoconf_file));
 
    /* Open config file */
    if (     !(conf = config_file_new_from_path_to_string(autoconf_file))

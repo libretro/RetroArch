@@ -528,14 +528,15 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
             newrdb.playlist_crcs  = NULL;
             newrdb.playlist_names = NULL;
 
-            systemname_len = db_ext - db_name;
+            systemname_len        = db_ext - db_name;
             if (systemname_len >= sizeof(newrdb.systemname))
                systemname_len = sizeof(newrdb.systemname)-1;
             memcpy(newrdb.systemname, db_name, systemname_len);
             newrdb.systemname[systemname_len] = '\0';
 
-            fill_pathname_join_noext(
+            fill_pathname_join(
                   tmp, directory_database, db_name, sizeof(tmp));
+            path_remove_extension(tmp);
             strlcat(tmp, ".rdb", sizeof(tmp));
 
             if (libretrodb_open(tmp, newrdb.handle) != 0)

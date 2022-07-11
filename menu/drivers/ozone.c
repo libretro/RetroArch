@@ -4379,13 +4379,17 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 
          fill_pathname_base_noext(sysname, path, sizeof(sysname));
 
-         fill_pathname_join_concat(texturepath, icons_path, sysname,
-               ".png", sizeof(texturepath));
+         fill_pathname_join(texturepath, icons_path, sysname,
+               sizeof(texturepath));
+         strlcat(texturepath, ".png", sizeof(texturepath));
 
          /* If the playlist icon doesn't exist return default */
          if (!path_is_valid(texturepath))
-            fill_pathname_join_concat(texturepath, icons_path, "default",
-                  ".png", sizeof(texturepath));
+         {
+            fill_pathname_join(texturepath, icons_path, "default",
+                  sizeof(texturepath));
+            strlcat(texturepath, ".png", sizeof(texturepath));
+         }
 
          ti.width         = 0;
          ti.height        = 0;

@@ -172,10 +172,11 @@ bool cheat_manager_save(
    if (!cheat_database)
       strlcpy(cheats_file, path, sizeof(cheats_file));
    else
-      fill_pathname_join_concat(cheats_file,
-            cheat_database, path,
-            ".cht",
-            sizeof(cheats_file));
+   {
+      fill_pathname_join(cheats_file,
+            cheat_database, path, sizeof(cheats_file));
+      strlcat(cheats_file, ".cht", sizeof(cheats_file));
+   }
 
    if (!overwrite)
       conf = config_file_new_from_path_to_string(cheats_file);

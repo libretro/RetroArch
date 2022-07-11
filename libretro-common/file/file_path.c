@@ -964,22 +964,6 @@ size_t fill_pathname_join_concat_noext(char *out_path,
    return strlcat(out_path, concat, size);
 }
 
-size_t fill_pathname_join_concat(char *out_path,
-      const char *dir, const char *path,
-      const char *concat,
-      size_t size)
-{
-   fill_pathname_join(out_path, dir, path, size);
-   return strlcat(out_path, concat, size);
-}
-
-void fill_pathname_join_noext(char *out_path,
-      const char *dir, const char *path, size_t size)
-{
-   fill_pathname_join(out_path, dir, path, size);
-   path_remove_extension(out_path);
-}
-
 /**
  * fill_pathname_join_delim:
  * @out_path           : output path
@@ -1009,14 +993,6 @@ size_t fill_pathname_join_delim(char *out_path, const char *dir,
    return copied;
 }
 
-size_t fill_pathname_join_delim_concat(char *out_path, const char *dir,
-      const char *path, const char delim, const char *concat,
-      size_t size)
-{
-   fill_pathname_join_delim(out_path, dir, path, delim, size);
-   return strlcat(out_path, concat, size);
-}
-
 /**
  * fill_short_pathname_representation:
  * @out_rep            : output representation
@@ -1043,13 +1019,6 @@ size_t fill_short_pathname_representation(char* out_rep,
             sizeof(path_short));
 
    return strlcpy(out_rep, path_short, size);
-}
-
-void fill_short_pathname_representation_noext(char* out_rep,
-      const char *in_path, size_t size)
-{
-   fill_short_pathname_representation(out_rep, in_path, size);
-   path_remove_extension(out_rep);
 }
 
 void fill_pathname_expand_special(char *out_path,
@@ -1443,4 +1412,36 @@ bool is_path_accessible_using_standard_io(const char *path)
 #else
    return true;
 #endif
+}
+
+/* Deprecated functions */
+size_t fill_pathname_join_concat(char *out_path,
+      const char *dir, const char *path,
+      const char *concat,
+      size_t size)
+{
+   fill_pathname_join(out_path, dir, path, size);
+   return strlcat(out_path, concat, size);
+}
+
+void fill_pathname_join_noext(char *out_path,
+      const char *dir, const char *path, size_t size)
+{
+   fill_pathname_join(out_path, dir, path, size);
+   path_remove_extension(out_path);
+}
+
+size_t fill_pathname_join_delim_concat(char *out_path, const char *dir,
+      const char *path, const char delim, const char *concat,
+      size_t size)
+{
+   fill_pathname_join_delim(out_path, dir, path, delim, size);
+   return strlcat(out_path, concat, size);
+}
+
+void fill_short_pathname_representation_noext(char* out_rep,
+      const char *in_path, size_t size)
+{
+   fill_short_pathname_representation(out_rep, in_path, size);
+   path_remove_extension(out_rep);
 }

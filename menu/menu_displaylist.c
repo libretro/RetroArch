@@ -2414,8 +2414,9 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    if (!db_info)
       goto error;
 
-   fill_short_pathname_representation_noext(path_base, info->path,
+   fill_short_pathname_representation(path_base, info->path,
          sizeof(path_base));
+   path_remove_extension(path_base);
 
    menu_driver_set_thumbnail_system(path_base, sizeof(path_base));
 
@@ -4715,10 +4716,11 @@ static unsigned menu_displaylist_parse_content_information(
 
       db_path[0] = '\0';
 
-      fill_pathname_join_noext(db_path,
+      fill_pathname_join(db_path,
             settings->paths.path_content_database,
             db_name,
             sizeof(db_path));
+      path_remove_extension(db_path);
       strlcat(db_path, ".rdb", sizeof(db_path));
 
       if (path_is_valid(db_path))

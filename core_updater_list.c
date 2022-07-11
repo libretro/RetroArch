@@ -486,11 +486,12 @@ static bool core_updater_list_set_paths(
    entry->local_core_path = strdup(local_core_path);
 
    /* local_info_path */
-   fill_pathname_join_noext(
+   fill_pathname_join(
          local_info_path,
          path_libretro_info,
          filename_str,
          sizeof(local_info_path));
+   path_remove_extension(local_info_path);
 
    if (is_archive)
       path_remove_extension(local_info_path);

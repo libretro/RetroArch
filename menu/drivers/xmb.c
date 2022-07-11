@@ -1093,11 +1093,12 @@ static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
 
    if (tmp)
    {
-      fill_pathname_join_noext(
+      fill_pathname_join(
             path,
             dir_dynamic_wallpapers,
             tmp,
             sizeof(path));
+      path_remove_extension(path);
       free(tmp);
    }
 
@@ -2265,14 +2266,19 @@ static void xmb_context_reset_horizontal_list(
          fill_pathname_application_special(iconpath, sizeof(iconpath),
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
-         fill_pathname_join_concat(texturepath, iconpath, sysname,
-               FILE_PATH_PNG_EXTENSION, sizeof(texturepath));
+         fill_pathname_join(texturepath, iconpath, sysname,
+               sizeof(texturepath));
+         strlcat(texturepath, FILE_PATH_PNG_EXTENSION, sizeof(texturepath));
 
          /* If the playlist icon doesn't exist return default */
 
          if (!path_is_valid(texturepath))
-               fill_pathname_join_concat(texturepath, iconpath, "default",
-               FILE_PATH_PNG_EXTENSION, sizeof(texturepath));
+         {
+               fill_pathname_join(texturepath, iconpath, "default",
+               sizeof(texturepath));
+               strlcat(texturepath, FILE_PATH_PNG_EXTENSION,
+                     sizeof(texturepath));
+         }
 
          ti.width         = 0;
          ti.height        = 0;

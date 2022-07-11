@@ -2230,8 +2230,11 @@ void input_config_get_bind_string_joykey(
       if (bind->joykey_label &&
             !string_is_empty(bind->joykey_label)
             && input_descriptor_label_show)
-         fill_pathname_join_delim_concat(buf, prefix,
-               bind->joykey_label, ' ', " (hat)", size);
+      {
+         fill_pathname_join_delim(buf, prefix,
+               bind->joykey_label, ' ', size);
+         strlcat(buf, " (hat)", size);
+      }
       else
       {
          const char *dir = "?";
@@ -2263,8 +2266,11 @@ void input_config_get_bind_string_joykey(
       if (bind->joykey_label &&
             !string_is_empty(bind->joykey_label)
             && input_descriptor_label_show)
-         fill_pathname_join_delim_concat(buf, prefix,
-               bind->joykey_label, ' ', " (btn)", size);
+      {
+         fill_pathname_join_delim(buf, prefix,
+               bind->joykey_label, ' ', size);
+         strlcat(buf, " (btn)", size);
+      }
       else
          snprintf(buf, size, "%s%u (%s)", prefix, (unsigned)bind->joykey,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
@@ -2279,8 +2285,11 @@ void input_config_get_bind_string_joyaxis(
    if (bind->joyaxis_label &&
          !string_is_empty(bind->joyaxis_label)
          && input_descriptor_label_show)
-      fill_pathname_join_delim_concat(buf, prefix,
-            bind->joyaxis_label, ' ', " (axis)", size);
+   {
+      fill_pathname_join_delim(buf, prefix,
+            bind->joyaxis_label, ' ', size);
+      strlcat(buf, " (axis)", size);
+   }
    else
    {
       unsigned axis        = 0;
