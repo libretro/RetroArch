@@ -415,7 +415,6 @@ void net_http_urlencode_full(char *dest,
 
 static int net_http_new_socket(struct http_connection_t *conn)
 {
-   int ret;
    struct addrinfo *addr = NULL, *next_addr = NULL;
    int fd                = socket_init(
          (void**)&addr, conn->port, conn->domain, SOCKET_TYPE_STREAM);
@@ -434,8 +433,8 @@ static int net_http_new_socket(struct http_connection_t *conn)
 #ifdef HAVE_SSL
       if (conn->sock_state.ssl)
       {
-         if ((ret = ssl_socket_connect(conn->sock_state.ssl_ctx,
-               (void*)next_addr, true, true)) >= 0)
+         if (ssl_socket_connect(conn->sock_state.ssl_ctx,
+               (void*)next_addr, true, true) >= 0)
             break;
 
          ssl_socket_close(conn->sock_state.ssl_ctx);
@@ -443,7 +442,7 @@ static int net_http_new_socket(struct http_connection_t *conn)
       else
 #endif
       {
-         if (     (ret = socket_connect(fd, (void*)next_addr, true)) >= 0
+         if (     socket_connect(fd, (void*)next_addr, true) >= 0
                && socket_nonblock(fd))
             break;
 

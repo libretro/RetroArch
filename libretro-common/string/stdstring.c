@@ -501,15 +501,15 @@ unsigned string_hex_to_unsigned(const char *str)
 {
    const char *hex_str = str;
    const char *ptr     = NULL;
-   size_t len;
 
    if (string_is_empty(str))
       return 0;
 
    /* Remove leading '0x', if required */
-   if ((len = strlen(str)) >= 2)
-      if ((str[0] == '0') &&
-          ((str[1] == 'x') || (str[1] == 'X')))
+   if (strlen(str) >= 2)
+      if ( (str[0] == '0') &&
+          ((str[1] == 'x') || 
+           (str[1] == 'X')))
          hex_str = str + 2;
 
    if (string_is_empty(hex_str))
