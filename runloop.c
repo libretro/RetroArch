@@ -5492,10 +5492,14 @@ bool runloop_event_init_core(
    if (!sys_info->info.library_version)
       sys_info->info.library_version = "v0";
 
-   fill_pathname_join_concat_noext(
+   strlcpy(
          video_st->title_buf,
          msg_hash_to_str(MSG_PROGRAM),
+         sizeof(video_st->title_buf));
+   strlcat(video_st->title_buf,
          " ",
+         sizeof(video_st->title_buf));
+   strlcat(video_st->title_buf,
          sys_info->info.library_name,
          sizeof(video_st->title_buf));
    strlcat(video_st->title_buf, " ",

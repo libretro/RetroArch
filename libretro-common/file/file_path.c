@@ -284,7 +284,7 @@ void fill_pathname(char *out_path, const char *in_path,
       const char *replace, size_t size)
 {
    char tmp_path[PATH_MAX_LENGTH];
-   char *tok                      = NULL;
+   char *tok   = NULL;
 
    tmp_path[0] = '\0';
 
@@ -379,15 +379,6 @@ size_t fill_pathname_base(char *out, const char *in_path, size_t size)
    if (ptr)
       return strlcpy(out, ptr, size);
    return strlcpy(out, in_path, size);
-}
-
-size_t fill_pathname_base_ext(char *out,
-      const char *in_path, const char *ext,
-      size_t size)
-{
-   fill_pathname_base(out, in_path, size);
-   path_remove_extension(out);
-   return strlcat(out, ext, size);
 }
 
 /**
@@ -524,7 +515,7 @@ size_t fill_dated_filename(char *out_filename,
 void fill_str_dated_filename(char *out_filename,
       const char *in_str, const char *ext, size_t size)
 {
-   char format[256];
+   char format[NAME_MAX_LENGTH];
    struct tm tm_;
    time_t cur_time = time(NULL);
 
@@ -541,10 +532,9 @@ void fill_str_dated_filename(char *out_filename,
    else
    {
       strftime(format, sizeof(format), "-%y%m%d-%H%M%S.", &tm_);
-
-      fill_pathname_join_concat_noext(out_filename,
-            in_str, format, ext,
-            size);
+      strlcpy(out_filename, in_str, size);
+      strlcat(out_filename, format, size);
+      strlcat(out_filename, ext,    size);
    }
 }
 
@@ -922,16 +912,6 @@ size_t fill_pathname_join_special_ext(char *out_path,
 
    strlcat(out_path, last, size);
    return strlcat(out_path, ext, size);
-}
-
-size_t fill_pathname_join_concat_noext(char *out_path,
-      const char *dir, const char *path,
-      const char *concat,
-      size_t size)
-{
-   strlcpy(out_path, dir, size);
-   strlcat(out_path, path, size);
-   return strlcat(out_path, concat, size);
 }
 
 /**

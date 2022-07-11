@@ -308,10 +308,6 @@ size_t fill_pathname_dir(char *in_dir, const char *in_basename,
  **/
 size_t fill_pathname_base(char *out_path, const char *in_path, size_t size);
 
-size_t fill_pathname_base_ext(char *out,
-      const char *in_path, const char *ext,
-      size_t size);
-
 /**
  * fill_pathname_basedir:
  * @out_dir            : output directory
@@ -385,11 +381,6 @@ size_t fill_pathname_join(char *out_path, const char *dir,
 size_t fill_pathname_join_special_ext(char *out_path,
       const char *dir,  const char *path,
       const char *last, const char *ext,
-      size_t size);
-
-size_t fill_pathname_join_concat_noext(char *out_path,
-      const char *dir, const char *path,
-      const char *concat,
       size_t size);
 
 /**
