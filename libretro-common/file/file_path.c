@@ -114,18 +114,17 @@ void path_linked_list_add_path(struct path_linked_list *in_path_linked_list, cha
       the path for the first item
    */
    if (!in_path_linked_list->path)
-   {
       in_path_linked_list->path = strdup(path);
-   }
    else
    {  
-      struct path_linked_list *head = in_path_linked_list;
       struct path_linked_list *node = (struct path_linked_list*) malloc(sizeof(*node));
 
       if (node)
       {
-         node->next        = NULL;
-         node->path        = strdup(path);
+         struct path_linked_list *head = in_path_linked_list;
+
+         node->next                    = NULL;
+         node->path                    = strdup(path);
 
          if (head)
          {
@@ -396,11 +395,9 @@ size_t fill_pathname_dir(char *in_dir, const char *in_basename,
 size_t fill_pathname_base(char *out, const char *in_path, size_t size)
 {
    const char     *ptr = path_basename(in_path);
-
-   if (!ptr)
-      ptr = in_path;
-
-   return strlcpy(out, ptr, size);
+   if (ptr)
+      return strlcpy(out, ptr, size);
+   return strlcpy(out, in_path, size);
 }
 
 void fill_pathname_base_noext(char *out,
@@ -719,11 +716,12 @@ char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks)
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
 #ifdef _WIN32
    char *ret = NULL;
-   wchar_t abs_path[PATH_MAX_LENGTH];
    wchar_t *rel_path = utf8_to_utf16_string_alloc(buf);
 
    if (rel_path)
    {
+      wchar_t abs_path[PATH_MAX_LENGTH];
+
       if (_wfullpath(abs_path, rel_path, PATH_MAX_LENGTH))
       {
          char *tmp = utf16_to_utf8_string_alloc(abs_path);
@@ -764,7 +762,7 @@ char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks)
       return buf;
    }
 
-   t = 0; /* length of output */
+   t       = 0; /* length of output */
    buf_end = buf + strlen(buf);
 
    if (!path_is_absolute(buf))
@@ -827,9 +825,8 @@ char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks)
          while (p <= next)
             tmp[t++] = *p++;
       }
-
-   }
-   while (next < buf_end);
+   }while(next < buf_end);
+   
 
 end:
    tmp[t] = '\0';
@@ -997,7 +994,7 @@ size_t fill_pathname_join_delim(char *out_path, const char *dir,
    out_path[copied+1] = '\0';
 
    if (path)
-      copied = strlcat(out_path, path, size);
+      return strlcat(out_path, path, size);
    return copied;
 }
 
@@ -1283,14 +1280,11 @@ void path_basedir_wrapper(char *path)
 
 #ifdef HAVE_COMPRESSION
    /* We want to find the directory with the archive in basedir. */
-   last = (char*)path_get_archive_delim(path);
-   if (last)
+   if ((last = (char*)path_get_archive_delim(path)))
       *last = '\0';
 #endif
 
-   last = find_last_slash(path);
-
-   if (last)
+   if ((last = find_last_slash(path)))
       last[1] = '\0';
    else
       strlcpy(path, "." PATH_DEFAULT_SLASH(), 3);
@@ -1395,9 +1389,8 @@ void fill_pathname_application_path(char *s, size_t len)
 
          snprintf(link_path, sizeof(link_path), "/proc/%u/%s",
                (unsigned)pid, exts[i]);
-         ret = readlink(link_path, s, len - 1);
 
-         if (ret >= 0)
+         if ((ret = readlink(link_path, s, len - 1)) >= 0)
          {
             s[ret] = '\0';
             return;
