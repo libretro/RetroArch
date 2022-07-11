@@ -320,9 +320,6 @@ size_t fill_pathname_base(char *out_path, const char *in_path, size_t size);
  **/
 void fill_pathname_basedir(char *out_path, const char *in_path, size_t size);
 
-void fill_pathname_basedir_noext(char *out_dir,
-      const char *in_path, size_t size);
-
 /**
  * fill_pathname_parent_dir_name:
  * @out_dir            : output directory

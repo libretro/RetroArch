@@ -399,15 +399,6 @@ void fill_pathname_basedir(char *out_dir,
    path_basedir(out_dir);
 }
 
-void fill_pathname_basedir_noext(char *out_dir,
-      const char *in_path, size_t size)
-{
-   if (out_dir != in_path)
-      strlcpy(out_dir, in_path, size);
-   path_basedir(out_dir);
-   path_remove_extension(out_dir);
-}
-
 /**
  * fill_pathname_parent_dir_name:
  * @out_dir            : output directory
