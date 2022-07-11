@@ -6547,11 +6547,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_BAN,
-   "Expulsar usuário"
+   "Banir usuário"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_BAN,
-   "Expulsa um usuário da sua sala."
+   "Bane um usuário da sua sala."
    )
 
 /* Import Content */
@@ -10869,11 +10869,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_BANNED_CLIENT_S,
-   "Usuário expulso: \"%s\""
+   "Usuário banido: \"%s\""
    )
 MSG_HASH(
    MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
-   "Falha ao expulsar usuário: \"%s\""
+   "Falha ao banir usuário: \"%s\""
    )
 MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
@@ -12130,7 +12130,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_BANNED,
-   "Você foi expulso desta sala"
+   "Você está banido desta sala"
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
