@@ -406,24 +406,6 @@ size_t fill_pathname_join_concat_noext(char *out_path,
 size_t fill_pathname_join_delim(char *out_path, const char *dir,
       const char *path, const char delim, size_t size);
 
-/**
- * fill_short_pathname_representation:
- * @out_rep            : output representation
- * @in_path            : input path
- * @size               : size of output representation
- *
- * Generates a short representation of path. It should only
- * be used for displaying the result; the output representation is not
- * binding in any meaningful way (for a normal path, this is the same as basename)
- * In case of more complex URLs, this should cut everything except for
- * the main image file.
- *
- * E.g.: "/path/to/game.img" -> game.img
- *       "/path/to/myarchive.7z#folder/to/game.img" -> game.img
- */
-size_t fill_short_pathname_representation(char* out_rep,
-      const char *in_path, size_t size);
-
 void fill_pathname_expand_special(char *out_path,
       const char *in_path, size_t size);
 

@@ -3283,7 +3283,7 @@ static int xmb_draw_item(
       entry_path[0] = '\0';
       strlcpy(entry_path, entry.path, sizeof(entry_path));
 
-      fill_short_pathname_representation(entry_path, entry_path,
+      fill_pathname(entry_path, path_basename(entry_path), "",
             sizeof(entry_path));
 
       if (!string_is_empty(entry_path))

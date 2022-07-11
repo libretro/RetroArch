@@ -963,34 +963,6 @@ size_t fill_pathname_join_delim(char *out_path, const char *dir,
    return copied;
 }
 
-/**
- * fill_short_pathname_representation:
- * @out_rep            : output representation
- * @in_path            : input path
- * @size               : size of output representation
- *
- * Generates a short representation of path. It should only
- * be used for displaying the result; the output representation is not
- * binding in any meaningful way (for a normal path, this is the same as basename)
- * In case of more complex URLs, this should cut everything except for
- * the main image file.
- *
- * E.g.: "/path/to/game.img" -> game.img
- *       "/path/to/myarchive.7z#folder/to/game.img" -> game.img
- */
-size_t fill_short_pathname_representation(char* out_rep,
-      const char *in_path, size_t size)
-{
-   char path_short[NAME_MAX_LENGTH];
-
-   path_short[0] = '\0';
-
-   fill_pathname(path_short, path_basename(in_path), "",
-            sizeof(path_short));
-
-   return strlcpy(out_rep, path_short, size);
-}
-
 void fill_pathname_expand_special(char *out_path,
       const char *in_path, size_t size)
 {
@@ -1133,7 +1105,7 @@ void pathname_conform_slashes_to_os(char *path)
          *p = PATH_DEFAULT_SLASH_C();
 }
 
-/* Change all shashes to forward so they are more portable between windows and linux */
+/* Change all shashes to forward so they are more portable between Windows and Linux */
 void pathname_make_slashes_portable(char *path)
 {
    /* Conform slashes to os standard so we get proper matching */

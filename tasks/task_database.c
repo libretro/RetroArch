@@ -756,8 +756,8 @@ static int database_info_list_iterate_found_match(
    db_playlist_base_str[0]        = '\0';
    entry_path_str[0]              = '\0';
 
-   fill_short_pathname_representation(db_playlist_base_str,
-         db_path, str_len);
+   fill_pathname(db_playlist_base_str,
+         path_basename(db_path), "", str_len);
    path_remove_extension(db_playlist_base_str);
 
    strlcat(db_playlist_base_str, ".lpl", str_len);
@@ -1012,8 +1012,8 @@ static int task_database_iterate_playlist_lutro(
 
       game_title[0]               = '\0';
 
-      fill_short_pathname_representation(game_title,
-            path, sizeof(game_title));
+      fill_pathname(game_title,
+            path_basename(path), "", sizeof(game_title));
       path_remove_extension(game_title);
 
       /* the push function reads our entry as const, 

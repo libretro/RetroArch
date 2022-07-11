@@ -2210,7 +2210,9 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
           *   no further action is necessary */
 
          if (string_is_empty(entry->label))
-            fill_short_pathname_representation(menu_entry_label, entry->path, sizeof(menu_entry_label));
+            fill_pathname(menu_entry_label,
+                  path_basename(entry->path),
+                  "", sizeof(menu_entry_label));
          else
             strlcpy(menu_entry_label, entry->label, sizeof(menu_entry_label));
 
@@ -2411,11 +2413,10 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    database_info_build_query_enum(query, sizeof(query),
          DATABASE_QUERY_ENTRY, info->path_b);
 
-   db_info = database_info_list_new(info->path, query);
-   if (!db_info)
+   if (!(db_info = database_info_list_new(info->path, query)))
       goto error;
 
-   fill_short_pathname_representation(path_base, info->path,
+   fill_pathname(path_base, path_basename(info->path), "",
          sizeof(path_base));
    path_remove_extension(path_base);
 
@@ -2427,9 +2428,8 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
          sizeof(path_playlist));
 
    playlist_config_set_path(&playlist_config, path_playlist);
-   playlist = playlist_init(&playlist_config);
 
-   if (playlist)
+   if ((playlist = playlist_init(&playlist_config)))
       strlcpy(menu->db_playlist_file, path_playlist,
             sizeof(menu->db_playlist_file));
 

@@ -1312,8 +1312,8 @@ static bool manual_content_scan_get_playlist_content_label(
 
    /* In most cases, content label is just the
     * filename without extension */
-   fill_short_pathname_representation(
-         content_label, content_path, len);
+   fill_pathname(content_label, path_basename(content_path), 
+         "", len);
 
    if (string_is_empty(content_label))
       return false;

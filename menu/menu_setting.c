@@ -1292,7 +1292,8 @@ static void setting_get_string_representation_st_path(rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (setting)
-      fill_short_pathname_representation(s, setting->value.target.string, len);
+      fill_pathname(s, path_basename(setting->value.target.string),
+            "", len);
 }
 
 static void setting_get_string_representation_st_string(rarch_setting_t *setting,
@@ -3069,7 +3070,8 @@ static void setting_get_string_representation_video_filter(rarch_setting_t *sett
    if (!setting)
       return;
 
-   fill_short_pathname_representation(s, setting->value.target.string, len);
+   fill_pathname(s, path_basename(setting->value.target.string),
+         "", len);
 }
 
 static void setting_get_string_representation_state_slot(rarch_setting_t *setting,

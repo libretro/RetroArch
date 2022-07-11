@@ -493,8 +493,9 @@ bool gfx_thumbnail_set_content_playlist(
       strlcpy(path_data->content_label,
             content_label, sizeof(path_data->content_label));
    else
-      fill_short_pathname_representation(path_data->content_label,
-            content_path, sizeof(path_data->content_label));
+      fill_pathname(path_data->content_label,
+            path_basename(content_path),
+            "", sizeof(path_data->content_label));
    
    /* Determine content image name */
    fill_content_img(path_data);

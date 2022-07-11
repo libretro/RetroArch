@@ -5441,8 +5441,9 @@ static int action_ok_add_to_favorites(const char *path,
 
       /* Label is empty - use file name instead */
       if (string_is_empty(content_label))
-         fill_short_pathname_representation(content_label,
-               content_path, sizeof(content_label));
+         fill_pathname(content_label,
+               path_basename(content_path), "",
+               sizeof(content_label));
 
       /* > core_path + core_name */
       if (system)
@@ -5579,7 +5580,9 @@ static int action_ok_add_to_favorites_playlist(const char *path,
          /* Label is empty - use file name instead */
          char fallback_content_label[PATH_MAX_LENGTH];
          fallback_content_label[0] = '\0';
-         fill_short_pathname_representation(fallback_content_label, entry->path, sizeof(fallback_content_label));
+         fill_pathname(fallback_content_label,
+               path_basename(entry->path), "",
+               sizeof(fallback_content_label));
          string_list_append(str_list, fallback_content_label, attr);
       }
 
