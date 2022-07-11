@@ -6322,15 +6322,127 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    "Reiniciar RetroArch"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
+   "Brillantor de la pantalla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL,
+   "Augmenta o redueix la brillantor de la pantalla."
+   )
 
 #ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
+   "Força la GPU"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
+   "Augmenta o redueix la velocitat de rellotge de la GPU de la Switch."
+   )
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
+   "Força la CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
+   "Augmenta la velocitat de rellotge de la CPU de la Switch."
+   )
 #endif
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
+   "Determina l’estat del Bluetooth."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
+   "Serveis"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
+   "Gestiona els serveis del sistema operatiu."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
+   "Comparteix carpetes de xarxa mitjançant el protocol SMB."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SSH_ENABLE,
+   "Usa SSH per accedir a la línia d’ordres remotament."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
+   "Punt d’accés Wi-Fi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOCALAP_ENABLE,
+   "Activa o desactiva el punt d’accés Wi-Fi."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEZONE,
+   "Zona horària"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIMEZONE,
+   "Seleccioneu la zona horària per ajustar la data i l’hora a la vostra ubicació."
+   )
+MSG_HASH(
+   MSG_LOCALAP_SWITCHING_OFF,
+   "S’està apagant el punt d’accés Wi-Fi."
+   )
+MSG_HASH(
+   MSG_WIFI_DISCONNECT_FROM,
+   "S’està desconnectat de la Wi-Fi «%s»"
+   )
+MSG_HASH(
+   MSG_WIFI_CONNECTING_TO,
+   "S’està connectant a la Wi-Fi «%s»"
+   )
+MSG_HASH(
+   MSG_WIFI_EMPTY_SSID,
+   "[Sense SSID]"
+   )
+MSG_HASH(
+   MSG_LOCALAP_ALREADY_RUNNING,
+   "El punt d’accés Wi-Fi ja està actiu"
+   )
+MSG_HASH(
+   MSG_LOCALAP_NOT_RUNNING,
+   "El punt d’accés Wi-Fi no està actiu"
+   )
+MSG_HASH(
+   MSG_LOCALAP_STARTING,
+   "S’està iniciant el punt d’accés Wi-Fi amb SSID=%s i contrasenya=%s"
+   )
+MSG_HASH(
+   MSG_LOCALAP_ERROR_CONFIG_CREATE,
+   "No s’ha pogut crear el fitxer de configuració del punt d’accés Wi-Fi."
+   )
+MSG_HASH(
+   MSG_LOCALAP_ERROR_CONFIG_PARSE,
+   "Fitxer de configuració erroni — no s’han trobat APNAME ni PASSWORD a %s"
+   )
 #endif
 #ifdef GEKKO
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_SCALE,
+   "Escala del ratolí"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
+   "Ajusta l’escala x/y per la velocitat de la pistola de llum del Wiimote."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
+   "Escala tàctil"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
+   "Ajusta l’escala x/y de les coordenades de la pantalla tàctil per adaptar-les a l’escala de visualització del sistema operatiu."
+   )
 #ifdef HAVE_ODROIDGO2
 #else
 #endif
