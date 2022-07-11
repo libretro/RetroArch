@@ -625,30 +625,21 @@ void runtime_log_get_last_played_time(runtime_log_t *runtime_log,
    mktime(time_info);
 }
 
-static void last_played_strftime(runtime_log_t *runtime_log,
-      char *str, size_t len, const char *format)
+static void last_played_strftime(char *s, size_t len, const char *format,
+      const struct tm *timeptr)
 {
-   struct tm time_info;
    char *local = NULL;
-
-   if (!runtime_log)
-      return;
-
-   /* Get time */
-   runtime_log_get_last_played_time(runtime_log, &time_info);
 
    /* Ensure correct locale is set */
    setlocale(LC_TIME, "");
 
    /* Generate string */
-#if defined(__linux__) && !defined(ANDROID)
-   strftime(str, len, format, &time_info);
-#else
-   strftime(str, len, format, &time_info);
-   local = local_to_utf8_string_alloc(str);
+   strftime(s, len, format, timeptr);
+#if !(defined(__linux__) && !defined(ANDROID))
+   local = local_to_utf8_string_alloc(s);
 
    if (!string_is_empty(local))
-      strlcpy(str, local, len);
+      strlcpy(s, local, len);
 
    if (local)
    {
@@ -860,7 +851,13 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
 
       if (has_am_pm)
       {
-         last_played_strftime(runtime_log, tmp, sizeof(tmp), format_str);
+         if (runtime_log)
+         {
+            /* Get time */
+            struct tm time_info;
+            runtime_log_get_last_played_time(runtime_log, &time_info);
+            last_played_strftime(tmp, sizeof(tmp), format_str, &time_info);
+         }
          snprintf(str, len, "%s%s",
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),

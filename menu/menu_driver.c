@@ -638,7 +638,7 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
 
 /* Time format strings with AM-PM designation require special
  * handling due to platform dependence */
-static void strftime_am_pm(char* ptr, size_t maxsize, const char* format,
+static void strftime_am_pm(char *s, size_t len, const char* format,
       const struct tm* timeptr)
 {
    char *local = NULL;
@@ -647,12 +647,12 @@ static void strftime_am_pm(char* ptr, size_t maxsize, const char* format,
     * > Required for localised AM/PM strings */
    setlocale(LC_TIME, "");
 
-   strftime(ptr, maxsize, format, timeptr);
+   strftime(s, len, format, timeptr);
 #if !(defined(__linux__) && !defined(ANDROID))
-   local = local_to_utf8_string_alloc(ptr);
+   local = local_to_utf8_string_alloc(s);
 
    if (!string_is_empty(local))
-      strlcpy(ptr, local, maxsize);
+      strlcpy(s, local, len);
 
    if (local)
    {
