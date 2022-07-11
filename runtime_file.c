@@ -637,12 +637,11 @@ static void last_played_strftime(char *s, size_t len, const char *format,
    strftime(s, len, format, timeptr);
 #if !(defined(__linux__) && !defined(ANDROID))
    local = local_to_utf8_string_alloc(s);
-
-   if (!string_is_empty(local))
-      strlcpy(s, local, len);
-
    if (local)
    {
+      if (!string_is_empty(local))
+         strlcpy(s, local, len);
+
       free(local);
       local = NULL;
    }
