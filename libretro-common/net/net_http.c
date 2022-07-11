@@ -434,10 +434,8 @@ static int net_http_new_socket(struct http_connection_t *conn)
 #ifdef HAVE_SSL
       if (conn->sock_state.ssl)
       {
-         ret = ssl_socket_connect(conn->sock_state.ssl_ctx,
-               (void*)next_addr, true, true);
-
-         if (ret >= 0)
+         if ((ret = ssl_socket_connect(conn->sock_state.ssl_ctx,
+               (void*)next_addr, true, true)) >= 0)
             break;
 
          ssl_socket_close(conn->sock_state.ssl_ctx);
@@ -445,9 +443,8 @@ static int net_http_new_socket(struct http_connection_t *conn)
       else
 #endif
       {
-         ret = socket_connect(fd, (void*)next_addr, true);
-
-         if (ret >= 0 && socket_nonblock(fd))
+         if (     (ret = socket_connect(fd, (void*)next_addr, true)) >= 0
+               && socket_nonblock(fd))
             break;
 
          socket_close(fd);
@@ -490,17 +487,13 @@ static void net_http_send_str(
 struct http_connection_t *net_http_connection_new(const char *url,
       const char *method, const char *data)
 {
-   struct http_connection_t *conn = (struct http_connection_t*)malloc(
-         sizeof(*conn));
-
-   if (!conn)
-      return NULL;
+   struct http_connection_t *conn = NULL;
 
    if (!url)
-   {
-      free(conn);
       return NULL;
-   }
+   if (!(conn = (struct http_connection_t*)malloc(
+         sizeof(*conn))))
+      return NULL;
 
    conn->domain            = NULL;
    conn->location          = NULL;
@@ -522,8 +515,7 @@ struct http_connection_t *net_http_connection_new(const char *url,
    if (data)
       conn->postdatacopy   = strdup(data);
 
-   conn->urlcopy           = strdup(url);
-   if (!conn->urlcopy)
+   if (!(conn->urlcopy = strdup(url)))
       goto error;
 
    if (!strncmp(url, "http://", STRLEN_CONST("http://")))
@@ -584,7 +576,7 @@ bool net_http_connection_done(struct http_connection_t *conn)
          return false;
 
       conn->port = (int)strtoul(conn->scan, &conn->scan, 10);
-      has_port = 1;
+      has_port   = 1;
    }
    else if (conn->port == 0)
    {
@@ -628,11 +620,8 @@ bool net_http_connection_done(struct http_connection_t *conn)
          conn->domain        = conn->urlcopy = urlcopy;
          conn->location      = conn->scan    = urlcopy + domain_len + 1;
       }
-      else
-      {
-         /* there was a port, so overwriting the : will terminate the domain and we can just point at the ? */
+      else /* There was a port, so overwriting the : will terminate the domain and we can just point at the ? */
          conn->location      = conn->scan;
-      }
 
       return true;
    }
@@ -711,9 +700,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    if (!conn)
       goto error;
 
-   fd = net_http_new_socket(conn);
-
-   if (fd < 0)
+   if ((fd = net_http_new_socket(conn)) < 0)
       goto error;
 
    error = false;
@@ -820,9 +807,8 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    state->pos        = 0;
    state->len        = 0;
    state->buflen     = 512;
-   state->data       = (char*)malloc(state->buflen);
 
-   if (!state->data)
+   if (!(state->data = (char*)malloc(state->buflen)))
       goto error;
 
    return state;
@@ -834,9 +820,9 @@ error:
          free(conn->methodcopy);
       if (conn->contenttypecopy)
          free(conn->contenttypecopy);
-      conn->methodcopy = NULL;
+      conn->methodcopy      = NULL;
       conn->contenttypecopy = NULL;
-      conn->postdatacopy = NULL;
+      conn->postdatacopy    = NULL;
    }
 #ifdef HAVE_SSL
    if (conn && conn->sock_state.ssl && conn->sock_state.ssl_ctx && fd >= 0)
@@ -865,29 +851,43 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 {
    ssize_t newlen = 0;
 
-   if (!state || state->error)
-      goto fail;
+   if (!state)
+      return true;
+   if (state->error)
+   {
+      state->part   = P_ERROR;
+      state->status = -1;
+      return true;
+   }
 
    if (state->part < P_BODY)
    {
       if (state->error)
-         newlen = -1;
-      else
       {
-#ifdef HAVE_SSL
-         if (state->sock_state.ssl && state->sock_state.ssl_ctx)
-            newlen = ssl_socket_receive_all_nonblocking(state->sock_state.ssl_ctx, &state->error,
-               (uint8_t*)state->data + state->pos,
-               state->buflen - state->pos);
-         else
-#endif
-            newlen = socket_receive_all_nonblocking(state->sock_state.fd, &state->error,
-               (uint8_t*)state->data + state->pos,
-               state->buflen - state->pos);
+         newlen        = -1;
+         state->part   = P_ERROR;
+         state->status = -1;
+         return true;
       }
 
+#ifdef HAVE_SSL
+      if (state->sock_state.ssl && state->sock_state.ssl_ctx)
+         newlen = ssl_socket_receive_all_nonblocking(state->sock_state.ssl_ctx, &state->error,
+               (uint8_t*)state->data + state->pos,
+               state->buflen - state->pos);
+      else
+#endif
+         newlen = socket_receive_all_nonblocking(state->sock_state.fd, &state->error,
+               (uint8_t*)state->data + state->pos,
+               state->buflen - state->pos);
+
       if (newlen < 0)
-         goto fail;
+      {
+         state->error  = true;
+         state->part   = P_ERROR;
+         state->status = -1;
+         return true;
+      }
 
       if (state->pos + newlen >= state->buflen - 64)
       {
@@ -912,10 +912,15 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
          if (state->part == P_HEADER_TOP)
          {
             if (strncmp(state->data, "HTTP/1.", STRLEN_CONST("HTTP/1."))!=0)
-               goto fail;
-            state->status = (int)strtoul(state->data 
+            {
+               state->error  = true;
+               state->part   = P_ERROR;
+               state->status = -1;
+               return true;
+            }
+            state->status    = (int)strtoul(state->data 
                   + STRLEN_CONST("HTTP/1.1 "), NULL, 10);
-            state->part   = P_HEADER;
+            state->part      = P_HEADER;
          }
          else
          {
@@ -943,9 +948,10 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
          memmove(state->data, lineend + 1, dataend-(lineend+1));
          state->pos = (dataend-(lineend + 1));
       }
+
       if (state->part >= P_BODY)
       {
-         newlen = state->pos;
+         newlen     = state->pos;
          state->pos = 0;
       }
    }
@@ -976,20 +982,22 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 
          if (newlen < 0)
          {
-            if (state->bodytype == T_FULL)
+            if (state->bodytype != T_FULL)
             {
-               state->part = P_DONE;
-               state->data = (char*)realloc(state->data, state->len);
+               state->error  = true;
+               state->part   = P_ERROR;
+               state->status = -1;
+               return true;
             }
-            else
-               goto fail;
-            newlen=0;
+            state->part      = P_DONE;
+            state->data      = (char*)realloc(state->data, state->len);
+            newlen           = 0;
          }
 
          if (state->pos + newlen >= state->buflen - 64)
          {
-            state->buflen *= 2;
-            state->data = (char*)realloc(state->data, state->buflen);
+            state->buflen   *= 2;
+            state->data      = (char*)realloc(state->data, state->buflen);
          }
       }
 
@@ -998,7 +1006,8 @@ parse_again:
       {
          if (state->part == P_BODY_CHUNKLEN)
          {
-            state->pos += newlen;
+            state->pos      += newlen;
+
             if (state->pos - state->len >= 2)
             {
                /*
@@ -1008,7 +1017,7 @@ parse_again:
 
                char *fullend = state->data + state->pos;
                char *end     = (char*)memchr(state->data + state->len + 2, '\n',
-                                             state->pos - state->len - 2);
+                     state->pos - state->len - 2);
 
                if (end)
                {
@@ -1048,24 +1057,26 @@ parse_again:
                state->part = P_BODY_CHUNKLEN;
                goto parse_again;
             }
-            else
-            {
-               state->pos += newlen;
-               state->len -= newlen;
-            }
+            state->pos += newlen;
+            state->len -= newlen;
          }
       }
       else
       {
          state->pos += newlen;
 
-         if (state->pos == state->len)
-         {
-            state->part = P_DONE;
-            state->data = (char*)realloc(state->data, state->len);
-         }
          if (state->pos > state->len)
-            goto fail;
+         {
+            state->error  = true;
+            state->part   = P_ERROR;
+            state->status = -1;
+            return true;
+         }
+         else if (state->pos == state->len)
+         {
+            state->part   = P_DONE;
+            state->data   = (char*)realloc(state->data, state->len);
+         }
       }
    }
 
@@ -1075,22 +1086,12 @@ parse_again:
    if (total)
    {
       if (state->bodytype == T_LEN)
-         *total=state->len;
+         *total = state->len;
       else
-         *total=0;
+         *total = 0;
    }
 
    return (state->part == P_DONE);
-
-fail:
-   if (state)
-   {
-      state->error  = true;
-      state->part   = P_ERROR;
-      state->status = -1;
-   }
-
-   return true;
 }
 
 int net_http_status(struct http_t *state)
@@ -1108,12 +1109,12 @@ uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_error)
    if (!accept_error && net_http_error(state))
    {
       if (len)
-         *len=0;
+         *len = 0;
       return NULL;
    }
 
    if (len)
-      *len=state->len;
+      *len    = state->len;
 
    return (uint8_t*)state->data;
 }
