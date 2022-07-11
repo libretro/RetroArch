@@ -269,23 +269,6 @@ void fill_str_dated_filename(char *out_filename,
       const char *in_str, const char *ext, size_t size);
 
 /**
- * fill_pathname_noext:
- * @out_path           : output path
- * @in_path            : input  path
- * @replace            : what to replace
- * @size               : buffer size of output path
- *
- * Appends a filename extension 'replace' to 'in_path', and outputs
- * result in 'out_path'.
- *
- * Assumes in_path has no extension. If an extension is still
- * present in 'in_path', it will be ignored.
- *
- */
-size_t fill_pathname_noext(char *out_path, const char *in_path,
-      const char *replace, size_t size);
-
-/**
  * find_last_slash:
  * @str : input path
  *
@@ -555,6 +538,23 @@ void fill_short_pathname_representation_noext(char* out_rep,
 size_t fill_pathname_join_delim_concat(char *out_path, const char *dir,
       const char *path, const char delim, const char *concat,
       size_t size);
+
+/**
+ * fill_pathname_noext:
+ * @out_path           : output path
+ * @in_path            : input  path
+ * @replace            : what to replace
+ * @size               : buffer size of output path
+ *
+ * Appends a filename extension 'replace' to 'in_path', and outputs
+ * result in 'out_path'.
+ *
+ * Assumes in_path has no extension. If an extension is still
+ * present in 'in_path', it will be ignored.
+ *
+ */
+size_t fill_pathname_noext(char *out_path, const char *in_path,
+      const char *replace, size_t size);
 
 RETRO_END_DECLS
 

@@ -296,26 +296,6 @@ void fill_pathname(char *out_path, const char *in_path,
    strlcat(out_path, replace, size);
 }
 
-/**
- * fill_pathname_noext:
- * @out_path           : output path
- * @in_path            : input  path
- * @replace            : what to replace
- * @size               : buffer size of output path
- *
- * Appends a filename extension 'replace' to 'in_path', and outputs
- * result in 'out_path'.
- *
- * Assumes in_path has no extension. If an extension is still
- * present in 'in_path', it will be ignored.
- *
- */
-size_t fill_pathname_noext(char *out_path, const char *in_path,
-      const char *replace, size_t size)
-{
-   strlcpy(out_path, in_path, size);
-   return strlcat(out_path, replace, size);
-}
 
 char *find_last_slash(const char *str)
 {
@@ -1444,4 +1424,25 @@ void fill_short_pathname_representation_noext(char* out_rep,
 {
    fill_short_pathname_representation(out_rep, in_path, size);
    path_remove_extension(out_rep);
+}
+
+/**
+ * fill_pathname_noext:
+ * @out_path           : output path
+ * @in_path            : input  path
+ * @replace            : what to replace
+ * @size               : buffer size of output path
+ *
+ * Appends a filename extension 'replace' to 'in_path', and outputs
+ * result in 'out_path'.
+ *
+ * Assumes in_path has no extension. If an extension is still
+ * present in 'in_path', it will be ignored.
+ *
+ */
+size_t fill_pathname_noext(char *out_path, const char *in_path,
+      const char *replace, size_t size)
+{
+   strlcpy(out_path, in_path, size);
+   return strlcat(out_path, replace, size);
 }
