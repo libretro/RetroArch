@@ -1367,7 +1367,8 @@ int generic_action_ok_displaylist_push(const char *path,
                   settings->paths.path_content_database,
                   path, sizeof(tmp));
 
-            fill_pathname_base_noext(lpl_basename, path, sizeof(lpl_basename));
+            fill_pathname_base(lpl_basename, path, sizeof(lpl_basename));
+            path_remove_extension(lpl_basename);
             menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
 
             info.directory_ptr = idx;

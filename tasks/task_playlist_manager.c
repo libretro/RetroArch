@@ -211,7 +211,8 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
                   char entry_name[PATH_MAX_LENGTH];
                   entry_name[0] = '\0';
                   
-                  fill_pathname_base_noext(entry_name, entry->path, sizeof(entry_name));
+                  fill_pathname_base(entry_name, entry->path, sizeof(entry_name));
+                  path_remove_extension(entry_name);
                   strlcat(task_title, entry_name, sizeof(task_title));
                }
                
@@ -305,8 +306,9 @@ bool task_push_pl_manager_reset_cores(const playlist_config_t *playlist_config)
    if (string_is_empty(playlist_config->path))
       goto error;
    
-   fill_pathname_base_noext(playlist_name,
+   fill_pathname_base(playlist_name,
          playlist_config->path, sizeof(playlist_name));
+   path_remove_extension(playlist_name);
    
    if (string_is_empty(playlist_name))
       goto error;
@@ -735,8 +737,9 @@ bool task_push_pl_manager_clean_playlist(
    if (string_is_empty(playlist_config->path))
       goto error;
    
-   fill_pathname_base_noext(playlist_name,
+   fill_pathname_base(playlist_name,
          playlist_config->path, sizeof(playlist_name));
+   path_remove_extension(playlist_name);
    
    if (string_is_empty(playlist_name))
       goto error;

@@ -381,22 +381,12 @@ size_t fill_pathname_base(char *out, const char *in_path, size_t size)
    return strlcpy(out, in_path, size);
 }
 
-void fill_pathname_base_noext(char *out,
-      const char *in_path, size_t size)
-{
-   const char     *ptr = path_basename(in_path);
-   if (ptr)
-      strlcpy(out, ptr, size);
-   else
-      strlcpy(out, in_path, size);
-   path_remove_extension(out);
-}
-
 size_t fill_pathname_base_ext(char *out,
       const char *in_path, const char *ext,
       size_t size)
 {
-   fill_pathname_base_noext(out, in_path, size);
+   fill_pathname_base(out, in_path, size);
+   path_remove_extension(out);
    return strlcat(out, ext, size);
 }
 
@@ -1445,4 +1435,15 @@ size_t fill_pathname_noext(char *out_path, const char *in_path,
 {
    strlcpy(out_path, in_path, size);
    return strlcat(out_path, replace, size);
+}
+
+void fill_pathname_base_noext(char *out,
+      const char *in_path, size_t size)
+{
+   const char     *ptr = path_basename(in_path);
+   if (ptr)
+      strlcpy(out, ptr, size);
+   else
+      strlcpy(out, in_path, size);
+   path_remove_extension(out);
 }

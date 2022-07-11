@@ -1405,7 +1405,8 @@ void audio_driver_load_system_sounds(void)
       if (audio_driver_mixer_extension_supported(ext))
       {
          basename_noext[0] = '\0';
-         fill_pathname_base_noext(basename_noext, path, sizeof(basename_noext));
+         fill_pathname_base(basename_noext, path, sizeof(basename_noext));
+         path_remove_extension(basename_noext);
 
          if (string_is_equal_noncase(basename_noext, "ok"))
             path_ok = path;

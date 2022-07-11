@@ -1457,10 +1457,8 @@ bool command_event_save_core_config(
       char tmp[PATH_MAX_LENGTH + 8];
       RARCH_LOG("[Config]: %s\n", msg_hash_to_str(MSG_USING_CORE_NAME_FOR_NEW_CONFIG));
 
-      fill_pathname_base_noext(
-            config_name,
-            core_path,
-            sizeof(config_name));
+      fill_pathname_base(config_name, core_path, sizeof(config_name));
+      path_remove_extension(config_name);
       fill_pathname_join(config_path, config_dir, config_name,
             sizeof(config_path));
 

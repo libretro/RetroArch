@@ -4252,8 +4252,9 @@ static void ozone_init_horizontal_list(ozone_handle_t *ozone,
       }
 
       /* Remove extension */
-      fill_pathname_base_noext(playlist_file_noext,
+      fill_pathname_base(playlist_file_noext,
             playlist_file, sizeof(playlist_file_noext));
+      path_remove_extension(playlist_file_noext);
 
       console_name = playlist_file_noext;
 
@@ -4377,7 +4378,8 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 
          sysname[0] = texturepath[0] = content_texturepath[0] = '\0';
 
-         fill_pathname_base_noext(sysname, path, sizeof(sysname));
+         fill_pathname_base(sysname, path, sizeof(sysname));
+         path_remove_extension(sysname);
 
          fill_pathname_join(texturepath, icons_path, sysname,
                sizeof(texturepath));

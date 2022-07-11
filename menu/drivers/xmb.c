@@ -1937,8 +1937,9 @@ static void xmb_set_title(xmb_handle_t *xmb)
       if (!path)
          return;
 
-      fill_pathname_base_noext(
+      fill_pathname_base(
             xmb->title_name, path, sizeof(xmb->title_name));
+      path_remove_extension(xmb->title_name);
 
       /* Add current search terms */
       menu_entries_search_append_terms_string(
@@ -2262,7 +2263,8 @@ static void xmb_context_reset_horizontal_list(
          iconpath[0]       = sysname[0]             =
             texturepath[0] = content_texturepath[0] = '\0';
 
-         fill_pathname_base_noext(sysname, path, sizeof(sysname));
+         fill_pathname_base(sysname, path, sizeof(sysname));
+         path_remove_extension(sysname);
          fill_pathname_application_special(iconpath, sizeof(iconpath),
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 

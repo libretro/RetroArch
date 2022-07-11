@@ -308,9 +308,6 @@ size_t fill_pathname_dir(char *in_dir, const char *in_basename,
  **/
 size_t fill_pathname_base(char *out_path, const char *in_path, size_t size);
 
-void fill_pathname_base_noext(char *out_dir,
-      const char *in_path, size_t size);
-
 size_t fill_pathname_base_ext(char *out,
       const char *in_path, const char *ext,
       size_t size);
@@ -555,6 +552,9 @@ size_t fill_pathname_join_delim_concat(char *out_path, const char *dir,
  */
 size_t fill_pathname_noext(char *out_path, const char *in_path,
       const char *replace, size_t size);
+
+void fill_pathname_base_noext(char *out_dir,
+      const char *in_path, size_t size);
 
 RETRO_END_DECLS
 

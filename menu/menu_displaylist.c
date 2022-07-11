@@ -2157,7 +2157,8 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       char lpl_basename[256];
       lpl_basename[0] = '\0';
 
-      fill_pathname_base_noext(lpl_basename, info->path, sizeof(lpl_basename));
+      fill_pathname_base(lpl_basename, info->path, sizeof(lpl_basename));
+      path_remove_extension(lpl_basename);
       menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
    }
 
@@ -3300,7 +3301,8 @@ static int menu_displaylist_parse_horizontal_list(
 
       /* Thumbnail system must be set *after* playlist
        * is loaded/cached */
-      fill_pathname_base_noext(lpl_basename, item->path, sizeof(lpl_basename));
+      fill_pathname_base(lpl_basename, item->path, sizeof(lpl_basename));
+      path_remove_extension(lpl_basename);
       menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
    }
 
