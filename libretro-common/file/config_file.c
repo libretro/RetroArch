@@ -201,24 +201,8 @@ static char *config_file_strip_comment(char *str)
    return NULL;
 }
 
-static char *config_file_extract_value(char *line, bool is_value)
+static char *config_file_extract_value(char *line)
 {
-   size_t idx  = 0;
-   char *value = NULL;
-
-   if (is_value)
-   {
-      while (ISSPACE((int)*line))
-         line++;
-
-      /* If we don't have an equal sign here,
-       * we've got an invalid string. */
-      if (*line != '=')
-         return NULL;
-
-      line++;
-   }
-
    while (ISSPACE((int)*line))
       line++;
 
@@ -233,35 +217,38 @@ static char *config_file_extract_value(char *line, bool is_value)
     * literal */
    if (*line == '"')
    {
+      size_t idx  = 0;
+      char *value = NULL;
       /* Skip to next character */
       line++;
 
       /* If this a ("), then value string is empty */
-      if (*line == '"')
-         return strdup("");
+      if (*line != '"')
+      {
+         /* Find the next (") character */
+         while (line[idx] && (line[idx] != '\"'))
+            idx++;
 
-      /* Find the next (") character */
-      while (line[idx] && (line[idx] != '\"'))
-         idx++;
-
-      line[idx] = '\0';
-      value     = line;
+         line[idx] = '\0';
+         if ((value = line) && *value)
+            return strdup(value);
+      }
    }
    /* This is not a string literal - just read
     * until the next space is found
     * > Note: Skip this if line is empty */
    else if (*line != '\0')
    {
+      size_t idx  = 0;
+      char *value = NULL;
       /* Find next space character */
       while (line[idx] && isgraph((int)line[idx]))
          idx++;
 
       line[idx] = '\0';
-      value     = line;
+      if ((value = line) && *value)
+         return strdup(value);
    }
-
-   if (value && *value)
-      return strdup(value);
 
    return strdup("");
 }
@@ -433,11 +420,10 @@ static int config_file_load_internal(
 
    conf->path          = new_path;
    conf->include_depth = depth;
-   file                = filestream_open(path,
-         RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
-   if (!file)
+   if (!(file = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE)))
    {
       free(conf->path);
       return 1;
@@ -520,11 +506,7 @@ static bool config_file_parse_line(config_file_t *conf,
    /* Check whether entire line is a comment */
    if (comment)
    {
-      config_file_t sub_conf;
-      char real_path[PATH_MAX_LENGTH];
       char *path               = NULL;
-      char *include_line       = NULL;
-      char *reference_line     = NULL;
       bool include_found       = string_starts_with_size(comment,
             "include ",
             STRLEN_CONST("include "));
@@ -541,12 +523,14 @@ static bool config_file_parse_line(config_file_t *conf,
        * appends a sub-config file */
       if (include_found)
       {
-         include_line = comment + STRLEN_CONST("include ");
+         config_file_t sub_conf;
+         char real_path[PATH_MAX_LENGTH];
+         char *include_line = comment + STRLEN_CONST("include ");
 
          if (string_is_empty(include_line))
             return false;
 
-         if (!(path = config_file_extract_value(include_line, false)))
+         if (!(path = config_file_extract_value(include_line)))
             return false;
 
          if (     string_is_empty(path)
@@ -582,12 +566,12 @@ static bool config_file_parse_line(config_file_t *conf,
        * sets the reference path */
       if (reference_found)
       {
-         reference_line = comment + STRLEN_CONST("reference ");
+         char *reference_line = comment + STRLEN_CONST("reference ");
 
          if (string_is_empty(reference_line))
             return false;
 
-         if (!(path = config_file_extract_value(reference_line, false)))
+         if (!(path = config_file_extract_value(reference_line)))
             return false;
 
          config_file_add_reference(conf, path);
@@ -634,14 +618,28 @@ static bool config_file_parse_line(config_file_t *conf,
    list->key     = key;
 
    /* An entry without a value is invalid */
-   if (!(list->value   = config_file_extract_value(line, true)))
+   while (ISSPACE((int)*line))
+      line++;
+
+   /* If we don't have an equal sign here,
+    * we've got an invalid string. */
+   if (*line != '=')
    {
-      list->key = NULL;
-      free(key);
-      return false;
+      list->value = NULL;
+      goto error;
    }
 
+   line++;
+
+   if (!(list->value   = config_file_extract_value(line)))
+      goto error;
+
    return true;
+
+error:
+   list->key   = NULL;
+   free(key);
+   return false;
 }
 
 static int config_file_from_string_internal(
