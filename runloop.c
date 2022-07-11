@@ -5795,10 +5795,14 @@ bool runloop_path_init_subsystem(void)
       from the main SRAM location. */
    if (!retroarch_override_setting_is_set(
             RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
-      fill_pathname_noext(runloop_st->name.savefile,
+   {
+      strlcpy(runloop_st->name.savefile,
             runloop_st->runtime_content_path_basename,
+            sizeof(runloop_st->name.savefile));
+      strlcat(runloop_st->name.savefile,
             ".srm",
             sizeof(runloop_st->name.savefile));
+   }
 
    if (path_is_directory(runloop_st->name.savefile))
    {
@@ -5833,22 +5837,34 @@ void runloop_path_fill_names(void)
       return;
 
    if (string_is_empty(runloop_st->name.ups))
-      fill_pathname_noext(runloop_st->name.ups,
+   {
+      strlcpy(runloop_st->name.ups,
             runloop_st->runtime_content_path_basename,
+            sizeof(runloop_st->name.ups));
+      strlcat(runloop_st->name.ups,
             ".ups",
             sizeof(runloop_st->name.ups));
+   }
 
    if (string_is_empty(runloop_st->name.bps))
-      fill_pathname_noext(runloop_st->name.bps,
+   {
+      strlcpy(runloop_st->name.bps,
             runloop_st->runtime_content_path_basename,
+            sizeof(runloop_st->name.bps));
+      strlcat(runloop_st->name.bps,
             ".bps",
             sizeof(runloop_st->name.bps));
+   }
 
    if (string_is_empty(runloop_st->name.ips))
-      fill_pathname_noext(runloop_st->name.ips,
+   {
+      strlcpy(runloop_st->name.ips,
             runloop_st->runtime_content_path_basename,
+            sizeof(runloop_st->name.ips));
+      strlcat(runloop_st->name.ips,
             ".ips",
             sizeof(runloop_st->name.ips));
+   }
 }
 
 
@@ -8494,20 +8510,35 @@ void runloop_path_set_names(void)
    runloop_state_t *runloop_st = &runloop_state;
    if (!retroarch_override_setting_is_set(
             RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
-      fill_pathname_noext(runloop_st->name.savefile,
+   {
+      strlcpy(runloop_st->name.savefile,
             runloop_st->runtime_content_path_basename,
-            ".srm", sizeof(runloop_st->name.savefile));
+            sizeof(runloop_st->name.savefile));
+      strlcat(runloop_st->name.savefile,
+            ".srm",
+            sizeof(runloop_st->name.savefile));
+   }
 
    if (!retroarch_override_setting_is_set(
             RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
-      fill_pathname_noext(runloop_st->name.savestate,
+   {
+      strlcpy(runloop_st->name.savestate,
             runloop_st->runtime_content_path_basename,
-            ".state", sizeof(runloop_st->name.savestate));
+            sizeof(runloop_st->name.savestate));
+      strlcat(runloop_st->name.savestate,
+            ".state",
+            sizeof(runloop_st->name.savestate));
+   }
 
 #ifdef HAVE_CHEATS
    if (!string_is_empty(runloop_st->runtime_content_path_basename))
-      fill_pathname_noext(runloop_st->name.cheatfile,
+   {
+      strlcpy(runloop_st->name.cheatfile,
             runloop_st->runtime_content_path_basename,
-            ".cht", sizeof(runloop_st->name.cheatfile));
+            sizeof(runloop_st->name.cheatfile));
+      strlcat(runloop_st->name.cheatfile,
+            ".cht",
+            sizeof(runloop_st->name.cheatfile));
+   }
 #endif
 }

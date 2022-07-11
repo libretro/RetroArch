@@ -8971,10 +8971,12 @@ static bool setting_append_list_input_player_options(
 
    for (j = 0; j < RARCH_BIND_LIST_END; j++)
    {
-      char label[255];
-      char name[255];
+      char label[NAME_MAX_LENGTH];
+      char name[NAME_MAX_LENGTH];
 
-      i = (j < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[j] : j;
+      i =  (j < RARCH_ANALOG_BIND_LIST_END) 
+         ? input_config_bind_order[j] 
+         : j;
 
       if (input_config_bind_map_get_meta(i))
          continue;
@@ -8982,9 +8984,10 @@ static bool setting_append_list_input_player_options(
       label[0] = name[0]          = '\0';
 
       if (!string_is_empty(buffer[user]))
-         fill_pathname_noext(label, buffer[user],
-               " ",
-               sizeof(label));
+      {
+         strlcpy(label, buffer[user], sizeof(label));
+         strlcat(label, " ", sizeof(label));
+      }
 
       if (
             settings->bools.input_descriptor_label_show

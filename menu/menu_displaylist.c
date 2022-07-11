@@ -555,10 +555,10 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
 
    if (core_info->categories_list)
    {
-      fill_pathname_noext(tmp,
+      strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES),
-            ": ",
             sizeof(tmp));
+      strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->categories_list, ", ");
       if (menu_entries_append_enum(info->list, tmp, "",
@@ -568,10 +568,10 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
 
    if (core_info->authors_list)
    {
-      fill_pathname_noext(tmp,
+      strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS),
-            ": ",
             sizeof(tmp));
+      strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->authors_list, ", ");
       if (menu_entries_append_enum(info->list, tmp, "",
@@ -581,10 +581,10 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
 
    if (core_info->permissions_list)
    {
-      fill_pathname_noext(tmp,
+      strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS),
-            ": ",
             sizeof(tmp));
+      strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->permissions_list, ", ");
       if (menu_entries_append_enum(info->list, tmp, "",
@@ -594,10 +594,10 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
 
    if (core_info->licenses_list)
    {
-      fill_pathname_noext(tmp,
+      strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
-            ": ",
             sizeof(tmp));
+      strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->licenses_list, ", ");
       if (menu_entries_append_enum(info->list, tmp, "",
@@ -607,10 +607,11 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
 
    if (core_info->supported_extensions_list)
    {
-      fill_pathname_noext(tmp,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS),
-            ": ",
+      strlcpy(tmp,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS),
             sizeof(tmp));
+      strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->supported_extensions_list, ", ");
       if (menu_entries_append_enum(info->list, tmp, "",
@@ -620,10 +621,10 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
 
    if (core_info->required_hw_api)
    {
-      fill_pathname_noext(tmp,
+      strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API),
-            ": ",
             sizeof(tmp));
+      strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->required_hw_api_list, ", ");
       if (menu_entries_append_enum(info->list, tmp, "",
@@ -682,11 +683,10 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
 
       if (update_missing_firmware)
       {
-         fill_pathname_noext(tmp,
+         strlcpy(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE),
-               ": ",
                sizeof(tmp));
-
+         strlcat(tmp, ": ", sizeof(tmp));
          if (menu_entries_append_enum(info->list, tmp, "",
                MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
@@ -1655,15 +1655,15 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
 #endif
    {
-      char cpu_str[255];
+      char cpu_str[NAME_MAX_LENGTH];
       const char *model = frontend_driver_get_cpu_model_name();
 
       cpu_str[0] = '\0';
 
-      fill_pathname_noext(cpu_str,
+      strlcpy(cpu_str,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL),
-            ": ",
             sizeof(cpu_str));
+      strlcat(cpu_str, ": ", sizeof(cpu_str));
 
       if (string_is_empty(model))
          strlcat(cpu_str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), sizeof(cpu_str));
@@ -1676,14 +1676,15 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    }
 
    {
-      char cpu_str[255];
+      char cpu_str[NAME_MAX_LENGTH];
 
       cpu_str[0] = '\0';
 
-      fill_pathname_noext(cpu_str,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES),
-            ": ",
+      strlcpy(cpu_str,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES),
             sizeof(cpu_str));
+      strlcat(cpu_str, ": ", sizeof(cpu_str));
 
       retroarch_get_capabilities(RARCH_CAPABILITIES_CPU,
             cpu_str, sizeof(cpu_str));
@@ -2005,7 +2006,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
    {
       unsigned i;
-      char feat_str[255];
+      char feat_str[NAME_MAX_LENGTH];
       typedef struct menu_features_info
       {
          bool enabled;
@@ -8078,7 +8079,8 @@ unsigned menu_displaylist_build_list(
 
                setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION);
                if (setting )
-                  setting->max = cheat_manager_state.working_cheat.memory_search_size<3 ? 255 : 0 ;
+                  setting->max =
+(cheat_manager_state.working_cheat.memory_search_size < 3) ? 255 : 0 ;
 
                setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY);
                if (setting )
@@ -13888,7 +13890,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                break;
             case DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE:
                {
-                  char ext_names[255];
+                  char ext_names[NAME_MAX_LENGTH];
                   ext_names[0] = '\0';
 
                   info->type_default = FILE_TYPE_SIDELOAD_CORE;

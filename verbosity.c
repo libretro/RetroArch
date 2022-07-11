@@ -446,16 +446,12 @@ void rarch_log_file_init(
     * log files, since user may decide to switch at any moment...) */
    if (string_is_empty(timestamped_log_file_name))
    {
-      char format[256];
       struct tm tm_;
       time_t cur_time = time(NULL);
 
       rtime_localtime(&cur_time, &tm_);
-
-      format[0] = '\0';
-      strftime(format, sizeof(format), "retroarch__%Y_%m_%d__%H_%M_%S", &tm_);
-      fill_pathname_noext(timestamped_log_file_name, format,
-            ".log",
+      strftime(timestamped_log_file_name, sizeof(timestamped_log_file_name), "retroarch__%Y_%m_%d__%H_%M_%S", &tm_);
+      strlcat(timestamped_log_file_name, ".log",
             sizeof(timestamped_log_file_name));
    }
 
