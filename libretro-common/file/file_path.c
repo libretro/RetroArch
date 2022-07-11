@@ -292,7 +292,8 @@ void fill_pathname(char *out_path, const char *in_path,
    if ((tok = (char*)strrchr(path_basename(tmp_path), '.')))
       *tok = '\0';
 
-   fill_pathname_noext(out_path, tmp_path, replace, size);
+   strlcpy(out_path, tmp_path, size);
+   strlcat(out_path, replace, size);
 }
 
 /**
@@ -403,7 +404,11 @@ size_t fill_pathname_base(char *out, const char *in_path, size_t size)
 void fill_pathname_base_noext(char *out,
       const char *in_path, size_t size)
 {
-   fill_pathname_base(out, in_path, size);
+   const char     *ptr = path_basename(in_path);
+   if (ptr)
+      strlcpy(out, ptr, size);
+   else
+      strlcpy(out, in_path, size);
    path_remove_extension(out);
 }
 
@@ -436,7 +441,9 @@ void fill_pathname_basedir(char *out_dir,
 void fill_pathname_basedir_noext(char *out_dir,
       const char *in_path, size_t size)
 {
-   fill_pathname_basedir(out_dir, in_path, size);
+   if (out_dir != in_path)
+      strlcpy(out_dir, in_path, size);
+   path_basedir(out_dir);
    path_remove_extension(out_dir);
 }
 
@@ -558,7 +565,8 @@ void fill_str_dated_filename(char *out_filename,
    if (string_is_empty(ext))
    {
       strftime(format, sizeof(format), "-%y%m%d-%H%M%S", &tm_);
-      fill_pathname_noext(out_filename, in_str, format, size);
+      strlcpy(out_filename, in_str, size);
+      strlcat(out_filename, format, size);
    }
    else
    {
@@ -903,7 +911,9 @@ void fill_pathname_resolve_relative(char *out_path,
       return;
    }
 
-   fill_pathname_basedir(out_path, in_refpath, size);
+   if (out_path != in_refpath)
+      strlcpy(out_path, in_refpath, size);
+   path_basedir(out_path);
    strlcat(out_path, in_path, size);
    path_resolve_realpath(out_path, size, false);
 }
@@ -949,7 +959,8 @@ size_t fill_pathname_join_concat_noext(char *out_path,
       const char *concat,
       size_t size)
 {
-   fill_pathname_noext(out_path, dir, path, size);
+   strlcpy(out_path, dir, size);
+   strlcat(out_path, path, size);
    return strlcat(out_path, concat, size);
 }
 
