@@ -183,10 +183,8 @@ struct video_shader
  *
  * Resolves all shader parameters belonging to shaders
  * from the #pragma parameter lines in the shader for each pass.
- * 
- * Returns: true (1) if successful, otherwise false (0).
  **/
-bool video_shader_resolve_parameters(struct video_shader *shader);
+void video_shader_resolve_parameters(struct video_shader *shader);
 
 
 /**
