@@ -528,18 +528,15 @@ unsigned string_hex_to_unsigned(const char *str)
 /**
  * Get the total number of occurrences of a character in the given string.
  */
-int string_count_occurrences_single_character(char *str, char t)
+int string_count_occurrences_single_character(const char *str, char c)
 {
-   int ctr = 0;
-   int i;
+   int count = 0;
 
-   for (i = 0; str[i] != '\0'; ++i)
-   {
-      if (t == str[i])
-         ++ctr;
-   }
+   for (; *str; str++)
+      if (*str == c)
+         count++;
 
-   return ctr;
+   return count;
 }
 
 /**
@@ -586,46 +583,34 @@ void string_remove_all_whitespace(char *str_trimmed, const char *str)
 /**
  * Retrieve the last occurance of the given character in a string.
  */
-int string_index_last_occurance(char *str, char t)
+int string_index_last_occurance(const char *str, char c)
 {
-   const char *ret = strrchr(str, t);
-   if (ret)
-      return ret-str;
-   return -1;
+   const char *pos = strrchr(str, c);
+
+   return pos ? (pos - str) : -1;
 }
 
 /**
  * Find the position of a substring in a string.
  */
-int string_find_index_substring_string(const char* str1, const char* str2)
+int string_find_index_substring_string(const char *str, const char *substr)
 {
-   if (str1[0] != '\0')
+   if (!string_is_empty(str))
    {
-      const char *pfound = strstr(str1, str2);
-      if (pfound)
-         return (pfound - str1);
+      const char *pos = strstr(str, substr);
+
+      if (pos)
+         return pos - str;
    }
 
    return -1;
 }
 
 /* Strips non-ASCII characters from a string. */
-void string_copy_only_ascii(char *str_stripped, const char* str)
+void string_copy_only_ascii(char *str_stripped, const char *str)
 {
-   if (!string_is_empty(str))
-   {
-      unsigned i = 0;
-      unsigned j = 0;
-
-      for (i = 0; i < strlen(str); i++)
-      {
-         if (str[i] > 0x1F && str[i] < 0x80)
-         {
-            str_stripped[j] = str[i];
-            j++;
-         }
-      }
-
-      str_stripped[j] = '\0';
-   }
+   for (; *str; str++)
+      if (*str > 0x1F && *str < 0x7F)
+         *str_stripped++ = *str;
+   *str_stripped = '\0';
 }
