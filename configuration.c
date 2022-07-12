@@ -3884,7 +3884,7 @@ bool config_load_override(void *data)
    {
       fill_pathname_parent_dir_name(content_dir_name,
             rarch_path_basename, sizeof(content_dir_name));
-      game_name = path_basename(rarch_path_basename);
+      game_name = path_basename_nocompression(rarch_path_basename);
 
       fill_pathname_join_special_ext(game_path,
             config_directory, core_name,
@@ -4096,7 +4096,7 @@ bool config_load_remap(const char *directory_input_remapping,
    {
       fill_pathname_parent_dir_name(content_dir_name,
             rarch_path_basename, sizeof(content_dir_name));
-      game_name = path_basename(rarch_path_basename);
+      game_name = path_basename_nocompression(rarch_path_basename);
 
       fill_pathname_join_special_ext(game_path,
             directory_input_remapping, core_name,
@@ -5013,7 +5013,7 @@ bool config_save_overrides(enum override_type type, void *data)
             ret = config_file_write(conf, core_path, true);
             break;
          case OVERRIDE_GAME:
-            game_name = path_basename(rarch_path_basename);
+            game_name = path_basename_nocompression(rarch_path_basename);
             fill_pathname_join_special_ext(game_path,
                   config_directory, core_name,
                   game_name,

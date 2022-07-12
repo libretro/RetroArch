@@ -972,7 +972,8 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
       msg[0] = '\0';
 
       strlcpy(msg, msg_hash_to_str(MSG_CORE_RESTORATION_INVALID_CONTENT), sizeof(msg));
-      strlcat(msg, backup_filename ? backup_filename : "", sizeof(msg));
+      if (backup_filename)
+         strlcat(msg, backup_filename, sizeof(msg));
 
       RARCH_ERR("[core restore] Invalid core file selected: %s\n", backup_path);
       runloop_msg_queue_push(msg, 1, 100, true,
@@ -1002,9 +1003,9 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
       msg[0] = '\0';
 
       strlcpy(msg,
-            (backup_type == CORE_BACKUP_TYPE_ARCHIVE) ?
-                  msg_hash_to_str(MSG_CORE_RESTORATION_DISABLED) :
-                        msg_hash_to_str(MSG_CORE_INSTALLATION_DISABLED),
+            (backup_type == CORE_BACKUP_TYPE_ARCHIVE)
+                  ? msg_hash_to_str(MSG_CORE_RESTORATION_DISABLED)
+                  : msg_hash_to_str(MSG_CORE_INSTALLATION_DISABLED),
             sizeof(msg));
       strlcat(msg, core_name, sizeof(msg));
 
@@ -1023,9 +1024,7 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
       goto error;
 
    /* Configure handle */
-   backup_handle = (core_backup_handle_t*)calloc(1, sizeof(core_backup_handle_t));
-
-   if (!backup_handle)
+   if (!(backup_handle = (core_backup_handle_t*)calloc(1, sizeof(core_backup_handle_t))))
       goto error;
 
    backup_handle->dir_core_assets            = NULL;
@@ -1050,9 +1049,7 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
    backup_handle->status                     = CORE_RESTORE_GET_CORE_CRC;
 
    /* Create task */
-   task = task_init();
-
-   if (!task)
+   if (!(task = task_init()))
       goto error;
 
    /* Get initial task title */

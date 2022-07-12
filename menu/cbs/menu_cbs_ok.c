@@ -3677,7 +3677,7 @@ static int action_ok_remap_file_flush(const char *path,
       success = input_remapping_save_file(path_remapfile);
 
       /* Get remap file name for display purposes */
-      remapfile = path_basename(path_remapfile);
+      remapfile = path_basename_nocompression(path_remapfile);
    }
 
    if (string_is_empty(remapfile))

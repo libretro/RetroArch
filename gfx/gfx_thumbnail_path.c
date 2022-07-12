@@ -431,10 +431,10 @@ bool gfx_thumbnail_set_content_image(
 bool gfx_thumbnail_set_content_playlist(
       gfx_thumbnail_path_data_t *path_data, playlist_t *playlist, size_t idx)
 {
-   const char *content_path  = NULL;
-   const char *content_label = NULL;
-   const char *core_name     = NULL;
-   const char *db_name       = NULL;
+   const char *content_path           = NULL;
+   const char *content_label          = NULL;
+   const char *core_name              = NULL;
+   const char *db_name                = NULL;
    const struct playlist_entry *entry = NULL;
    
    if (!path_data)
@@ -442,19 +442,19 @@ bool gfx_thumbnail_set_content_playlist(
    
    /* When content is updated, must regenerate right/left
     * thumbnail paths */
-   path_data->right_path[0]        = '\0';
-   path_data->left_path[0]         = '\0';
+   path_data->right_path[0]           = '\0';
+   path_data->left_path[0]            = '\0';
    
    /* 'Reset' path_data content strings */
-   path_data->content_path[0]      = '\0';
-   path_data->content_label[0]     = '\0';
-   path_data->content_core_name[0] = '\0';
-   path_data->content_db_name[0]   = '\0';
-   path_data->content_img[0]       = '\0';
+   path_data->content_path[0]         = '\0';
+   path_data->content_label[0]        = '\0';
+   path_data->content_core_name[0]    = '\0';
+   path_data->content_db_name[0]      = '\0';
+   path_data->content_img[0]          = '\0';
    
    /* Must also reset playlist thumbnail display modes */
-   path_data->playlist_right_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
-   path_data->playlist_left_mode   = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_right_mode     = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_left_mode      = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    
    if (!playlist)
       return false;
@@ -494,7 +494,7 @@ bool gfx_thumbnail_set_content_playlist(
             content_label, sizeof(path_data->content_label));
    else
       fill_pathname(path_data->content_label,
-            path_basename(content_path),
+            path_basename_nocompression(content_path),
             "", sizeof(path_data->content_label));
    
    /* Determine content image name */
@@ -560,11 +560,9 @@ bool gfx_thumbnail_update_path(
 {
    char content_dir[PATH_MAX_LENGTH];
    settings_t *settings       = config_get_ptr();
-   const char *type           = gfx_thumbnail_get_type(settings,
-         path_data, thumbnail_id);
    const char *system_name    = NULL;
    char *thumbnail_path       = NULL;
-   const char *dir_thumbnails = settings ? settings->paths.directory_thumbnails : NULL;
+   const char *dir_thumbnails = NULL;
    
    if (!path_data)
       return false;
@@ -584,6 +582,9 @@ bool gfx_thumbnail_update_path(
    
    thumbnail_path[0] = '\0';
    content_dir[0]    = '\0';
+
+   if (settings)
+      dir_thumbnails = settings->paths.directory_thumbnails;
    
    /* Sundry error checking */
    if (string_is_empty(dir_thumbnails))
@@ -595,10 +596,10 @@ bool gfx_thumbnail_update_path(
    /* Generate new path */
    
    /* > Check path_data for empty strings */
-   if (string_is_empty(path_data->content_path) ||
-       string_is_empty(path_data->content_img) ||
-         (string_is_empty(path_data->system) &&
-          string_is_empty(path_data->content_db_name)))
+   if (       string_is_empty(path_data->content_path) 
+       ||     string_is_empty(path_data->content_img)
+       || (   string_is_empty(path_data->system)
+           && string_is_empty(path_data->content_db_name)))
       return false;
    
    /* > Get current system */
@@ -636,6 +637,9 @@ bool gfx_thumbnail_update_path(
    else
    {
       char tmp_buf[PATH_MAX_LENGTH];
+      const char *type           = gfx_thumbnail_get_type(settings,
+            path_data, thumbnail_id);
+
       tmp_buf[0] = '\0';
       
       /* > Normal content: assemble path */
@@ -799,9 +803,7 @@ bool gfx_thumbnail_get_content_dir(
    if (!path_data || string_is_empty(path_data->content_path))
       return false;
    
-   last_slash = find_last_slash(path_data->content_path);
-   
-   if (!last_slash)
+   if (!(last_slash = find_last_slash(path_data->content_path)))
       return false;
    
    path_length = last_slash + 1 - path_data->content_path;
