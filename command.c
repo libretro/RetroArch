@@ -1199,7 +1199,6 @@ void command_event_load_auto_state(void)
 {
    char savestate_name_auto[PATH_MAX_LENGTH];
    runloop_state_t *runloop_st     = runloop_state_get_ptr();
-   bool ret                        = false;
 
    if (!core_info_current_supports_savestate())
       return;
@@ -1237,7 +1236,6 @@ void command_event_load_auto_state(void)
       RARCH_LOG("[State]: %s \"%s\" %s.\n",
             msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
             savestate_name_auto, "failed");
-
 }
 
 void command_event_set_savestate_auto_index(settings_t *settings)
