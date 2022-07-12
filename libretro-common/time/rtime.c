@@ -27,7 +27,13 @@
 #endif
 
 #include <string.h>
+#include <locale.h>
 #include <time/rtime.h>
+#include <string/stdstring.h>
+
+#if !(defined(__linux__) && !defined(ANDROID))
+#include <encodings/utf.h>
+#endif
 
 #ifdef HAVE_THREADS
 /* TODO/FIXME - global */
@@ -78,4 +84,28 @@ struct tm *rtime_localtime(const time_t *timep, struct tm *result)
 #endif
 
    return result;
+}
+
+/* Time format strings with AM-PM designation require special
+ * handling due to platform dependence */
+void strftime_am_pm(char *s, size_t len, const char* format,
+      const struct tm* timeptr)
+{
+   char *local = NULL;
+
+   /* Ensure correct locale is set
+    * > Required for localised AM/PM strings */
+   setlocale(LC_TIME, "");
+
+   strftime(s, len, format, timeptr);
+#if !(defined(__linux__) && !defined(ANDROID))
+   if ((local = local_to_utf8_string_alloc(s)))
+   {
+	   if (!string_is_empty(local))
+		   strlcpy(s, local, len);
+
+      free(local);
+      local = NULL;
+   }
+#endif
 }
