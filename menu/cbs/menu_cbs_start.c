@@ -635,7 +635,7 @@ static int action_start_core_lock(
          core_name = core_info->display_name;
       /* If not, use core file name */
       else
-         core_name = path_basename(core_path);
+         core_name = path_basename_nocompression(core_path);
 
       /* Build error message */
       strlcpy(msg, msg_hash_to_str(MSG_CORE_UNLOCK_FAILED), sizeof(msg));
@@ -696,7 +696,7 @@ static int action_start_core_set_standalone_exempt(
          core_name = core_info->display_name;
       /* If not, use core file name */
       else
-         core_name = path_basename(core_path);
+         core_name = path_basename_nocompression(core_path);
 
       /* Build error message */
       strlcpy(msg,

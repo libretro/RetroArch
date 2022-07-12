@@ -275,7 +275,7 @@ static const char *ctr_texture_path(unsigned id)
             snprintf(texture_path, sizeof(texture_path),
                   "%s.png", state_path);
 
-            return path_basename(texture_path);
+            return path_basename_nocompression(texture_path);
          }
       default:
          break;

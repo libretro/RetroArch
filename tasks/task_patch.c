@@ -637,7 +637,7 @@ static bool apply_patch_content(uint8_t **buf,
       /* Show an OSD message */
       if (show_notification)
       {
-         const char *patch_filename = path_basename(patch_path);
+         const char *patch_filename = path_basename_nocompression(patch_path);
          char msg[256];
 
          msg[0] = '\0';

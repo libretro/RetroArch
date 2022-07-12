@@ -1097,7 +1097,7 @@ static bool validate_game_options(
       const char *core_name,
       char *s, size_t len, bool mkdir)
 {
-   const char *game_name = path_basename(path_get(RARCH_PATH_BASENAME));
+   const char *game_name = path_basename_nocompression(path_get(RARCH_PATH_BASENAME));
    return validate_per_core_options(s, len, mkdir,
          core_name, game_name);
 }
@@ -4310,8 +4310,9 @@ static void *input_list_element_constructor(void)
    element->port               = 0;
    element->device             = 0;
    element->index              = 0;
-   element->state              = (int16_t*)calloc(256, sizeof(int16_t));
-   element->state_size         = 256;
+   element->state              = (int16_t*)calloc(NAME_MAX_LENGTH,
+         sizeof(int16_t));
+   element->state_size         = NAME_MAX_LENGTH;
 
    return ptr;
 }
@@ -6215,7 +6216,7 @@ void core_options_flush(void)
 
    /* Get options file name for display purposes */
    if (!string_is_empty(path_core_options))
-      core_options_file = path_basename(path_core_options);
+      core_options_file = path_basename_nocompression(path_core_options);
 
    if (string_is_empty(core_options_file))
       core_options_file = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN);

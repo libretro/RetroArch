@@ -757,7 +757,7 @@ static int database_info_list_iterate_found_match(
    entry_path_str[0]              = '\0';
 
    fill_pathname(db_playlist_base_str,
-         path_basename(db_path), "", str_len);
+         path_basename_nocompression(db_path), "", str_len);
    path_remove_extension(db_playlist_base_str);
 
    strlcat(db_playlist_base_str, ".lpl", str_len);

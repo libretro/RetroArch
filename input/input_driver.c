@@ -2950,7 +2950,7 @@ void input_config_set_device_config_path(unsigned port, const char *path)
       if (fill_pathname_parent_dir_name(parent_dir_name,
                path, sizeof(parent_dir_name)))
          fill_pathname_join(input_st->input_device_info[port].config_path,
-               parent_dir_name, path_basename(path),
+               parent_dir_name, path_basename_nocompression(path),
                sizeof(input_st->input_device_info[port].config_path));
    }
 }
@@ -3036,8 +3036,8 @@ const char *input_config_get_mouse_display_name(unsigned port)
 
 void input_config_set_mouse_display_name(unsigned port, const char *name)
 {
+   char name_ascii[NAME_MAX_LENGTH];
    input_driver_state_t *input_st = &input_driver_st;
-   char name_ascii[256];
 
    name_ascii[0] = '\0';
 
@@ -3081,7 +3081,7 @@ void config_read_keybinds_conf(void *data)
 
       for (j = 0; input_config_bind_map_get_valid(j); j++)
       {
-         char str[256];
+         char str[NAME_MAX_LENGTH];
          const struct input_bind_map *keybind =
             (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(j);
          struct retro_keybind *bind = &input_config_binds[i][j];

@@ -301,14 +301,14 @@ static bool screenshot_dump(
                   screenshot_name = system_info.library_name;
             }
             else
-               screenshot_name = path_basename(name_base);
+               screenshot_name = path_basename_nocompression(name_base);
 
             fill_str_dated_filename(state->shotname, screenshot_name,
                   IMG_EXT, sizeof(state->shotname));
          }
          else
          {
-            strlcpy(state->shotname, path_basename(name_base),
+            strlcpy(state->shotname, path_basename_nocompression(name_base),
                   sizeof(state->shotname));
             strlcat(state->shotname, ".png", sizeof(state->shotname));
          }
