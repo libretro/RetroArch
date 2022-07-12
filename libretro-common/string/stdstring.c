@@ -545,14 +545,11 @@ int string_count_occurrences_single_character(char *str, char t)
 /**
  * Replaces all spaces with the given character.
  */
-void string_replace_whitespace_with_single_character(char *str, char t)
+void string_replace_whitespace_with_single_character(char *str, char c)
 {
-   while (*str)
-   {
-      if (isspace(*str))
-         *str = t;
-      str++;
-   }
+   for (; *str; str++)
+      if (ISSPACE(*str))
+         *str = c;
 }
 
 /**
@@ -560,33 +557,29 @@ void string_replace_whitespace_with_single_character(char *str, char t)
  */
 void string_replace_multi_space_with_single_space(char *str)
 {
-   char *dest = str;
+   char *str_trimmed  = str;
+   bool prev_is_space = false;
+   bool curr_is_space = false;
 
-   while (*str != '\0')
+   for (; *str; str++)
    {
-      while (*str == ' ' && *(str + 1) == ' ')
-         str++;
-
-      *dest++ = *str++;
+      curr_is_space  = ISSPACE(*str);
+      if (prev_is_space && curr_is_space)
+         continue;
+      *str_trimmed++ = *str;
+      prev_is_space  = curr_is_space;
    }
-
-   *dest = '\0';
+   *str_trimmed = '\0';
 }
 
 /**
  * Remove all spaces from the given string.
  */
-void string_remove_all_whitespace(char* str_trimmed, const char* str_untrimmed)
+void string_remove_all_whitespace(char *str_trimmed, const char *str)
 {
-   while (*str_untrimmed != '\0')
-   {
-      if(!isspace(*str_untrimmed))
-      {
-         *str_trimmed = *str_untrimmed;
-         str_trimmed++;
-      }
-      str_untrimmed++;
-   }
+   for (; *str; str++)
+      if (!ISSPACE(*str))
+         *str_trimmed++ = *str;
    *str_trimmed = '\0';
 }
 

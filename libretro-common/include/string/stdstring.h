@@ -268,13 +268,13 @@ extern const unsigned char lr_char_props[256];
 int string_count_occurrences_single_character(char *str, char t);
 
 /* Replaces all spaces with the given character. */
-void string_replace_whitespace_with_single_character(char *str, char t);
+void string_replace_whitespace_with_single_character(char *str, char c);
 
 /* Replaces multiple spaces with a single space in a string. */
 void string_replace_multi_space_with_single_space(char *str);
 
 /* Remove all spaces from the given string. */
-void string_remove_all_whitespace(char* str_trimmed, const char* str_untrimmed);
+void string_remove_all_whitespace(char *str_trimmed, const char *str);
 
 /* Retrieve the last occurance of the given character in a string. */
 int string_index_last_occurance(char str[], char t);
