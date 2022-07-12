@@ -62,9 +62,11 @@ static bool RtlJSONObjectMemberHandler(void *ctx, const char *s, size_t len)
 {
    RtlJSONContext *p_ctx = (RtlJSONContext*)ctx;
 
-   /* something went wrong */
    if (p_ctx->current_entry_val)
+   {
+      /* something went wrong */
       return false;
+   }
 
    if (len)
    {
@@ -127,7 +129,8 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    }
 
    /* Initialise JSON parser */
-   if (!(parser = rjson_open_rfile(file)))
+   parser = rjson_open_rfile(file);
+   if (!parser)
    {
       RARCH_ERR("Failed to create JSON parser.\n");
       goto end;
@@ -374,8 +377,9 @@ runtime_log_t *runtime_log_init(
 
    /* Phew... If we get this far then all is well.
     * > Create 'runtime_log' object */
-   if (!(runtime_log = (runtime_log_t*)
-      malloc(sizeof(*runtime_log))))
+   runtime_log                     = (runtime_log_t*)
+      malloc(sizeof(*runtime_log));
+   if (!runtime_log)
       return NULL;
 
    /* > Populate default values */
@@ -621,6 +625,29 @@ void runtime_log_get_last_played_time(runtime_log_t *runtime_log,
    mktime(time_info);
 }
 
+static void last_played_strftime(char *s, size_t len, const char *format,
+      const struct tm *timeptr)
+{
+   char *local = NULL;
+
+   /* Ensure correct locale is set */
+   setlocale(LC_TIME, "");
+
+   /* Generate string */
+   strftime(s, len, format, timeptr);
+#if !(defined(__linux__) && !defined(ANDROID))
+   local = local_to_utf8_string_alloc(s);
+   if (local)
+   {
+      if (!string_is_empty(local))
+         strlcpy(s, local, len);
+
+      free(local);
+      local = NULL;
+   }
+#endif
+}
+
 static void last_played_human(runtime_log_t *runtime_log,
       char *str, size_t len)
 {
@@ -828,7 +855,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
             /* Get time */
             struct tm time_info;
             runtime_log_get_last_played_time(runtime_log, &time_info);
-            strftime_am_pm(tmp, sizeof(tmp), format_str, &time_info);
+            last_played_strftime(tmp, sizeof(tmp), format_str, &time_info);
          }
          snprintf(str, len, "%s%s",
                msg_hash_to_str(

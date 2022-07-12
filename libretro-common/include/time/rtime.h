@@ -40,11 +40,6 @@ void rtime_init(void);
 /* Must be called upon program termination */
 void rtime_deinit(void);
 
-/* Time format strings with AM-PM designation require special
- * handling due to platform dependence */
-void strftime_am_pm(char *s, size_t len, const char* format,
-      const struct tm* timeptr);
-
 /* Thread-safe wrapper for localtime() */
 struct tm *rtime_localtime(const time_t *timep, struct tm *result);
 
