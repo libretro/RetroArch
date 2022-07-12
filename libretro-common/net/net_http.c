@@ -863,7 +863,6 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
    {
       if (state->error)
       {
-         newlen        = -1;
          state->part   = P_ERROR;
          state->status = -1;
          return true;

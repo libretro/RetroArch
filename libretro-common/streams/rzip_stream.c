@@ -717,7 +717,6 @@ error:
 static bool rzipstream_write_chunk(rzipstream_t *stream)
 {
    unsigned i;
-   int64_t length;
    uint8_t chunk_header_bytes[RZIP_CHUNK_HEADER_SIZE];
    uint32_t deflate_read;
    uint32_t deflate_written;
@@ -760,14 +759,14 @@ static bool rzipstream_write_chunk(rzipstream_t *stream)
    chunk_header_bytes[1] = (deflate_written >>  8) & 0xFF;
    chunk_header_bytes[0] =  deflate_written        & 0xFF;
 
-   if ((length = filestream_write(
-         stream->file, chunk_header_bytes, sizeof(chunk_header_bytes))) !=
+   if (filestream_write(
+         stream->file, chunk_header_bytes, sizeof(chunk_header_bytes)) !=
          RZIP_CHUNK_HEADER_SIZE)
       return false;
 
    /* Write compressed data to file */
-   if ((length = filestream_write(
-         stream->file, stream->out_buf, deflate_written)) != deflate_written)
+   if (filestream_write(
+         stream->file, stream->out_buf, deflate_written) != deflate_written)
       return false;
 
    /* Reset input buffer pointer */

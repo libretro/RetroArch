@@ -10417,7 +10417,6 @@ static void ozone_populate_entries(void *data,
 static void ozone_toggle(void *userdata, bool menu_on)
 {
    settings_t *settings  = NULL;
-   bool tmp              = false;
    ozone_handle_t *ozone = (ozone_handle_t*) userdata;
 
    if (!ozone)
@@ -10434,7 +10433,7 @@ static void ozone_toggle(void *userdata, bool menu_on)
    }
 
    settings              = config_get_ptr();
-   if ((tmp = !menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL)))
+   if ((!menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL)))
       menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    else
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
