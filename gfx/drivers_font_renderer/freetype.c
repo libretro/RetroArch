@@ -259,25 +259,27 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
       calloc(1, sizeof(*handle));
 
    if (!handle)
-      goto error;
+      return NULL;
 
    if (font_size < 1.0)
       goto error;
 
-   err = FT_Init_FreeType(&handle->lib);
-   if (err)
+   if ((err = FT_Init_FreeType(&handle->lib)))
       goto error;
 
 #ifdef WIIU
    if (!*font_path)
    {
-      void* font_data    = NULL;
-      uint32_t font_size = 0;
+      void* font_data         = NULL;
+      uint32_t font_data_size = 0;
 
-      if (!OSGetSharedData(SHARED_FONT_DEFAULT, 0, &font_data, &font_size))
+      if (!OSGetSharedData(SHARED_FONT_DEFAULT, 0,
+               &font_data, &font_data_size))
          goto error;
 
-      err = FT_New_Memory_Face(handle->lib, (const FT_Byte*)font_data, (FT_Long)font_size, (FT_Long)0, &handle->face);
+      if ((err = FT_New_Memory_Face(handle->lib, (const FT_Byte*)font_data,
+            (FT_Long)font_data_size, (FT_Long)0, &handle->face)))
+         goto error;
    }
    else
 #elif defined(HAVE_FONTCONFIG_SUPPORT)
@@ -285,18 +287,18 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
    if (!*font_path || strstr(font_path, "fallback"))
    {
       FcValue locale_boxed;
-      uint8_t* font_data    = NULL;
-      int64_t font_size     = 0;
-      FcPattern *found     = NULL;
-      FcConfig* config     = FcInitLoadConfigAndFonts();
-      FcResult result      = FcResultNoMatch;
-      FcChar8 *_font_path  = NULL;
-      int face_index       = 0;
+      uint8_t* font_data     = NULL;
+      int64_t font_data_size = 0;
+      FcPattern *found       = NULL;
+      FcConfig* config       = FcInitLoadConfigAndFonts();
+      FcResult result        = FcResultNoMatch;
+      FcChar8 *_font_path    = NULL;
+      int face_index         = 0;
       /* select Sans fonts */
-      FcPattern* pattern   = FcNameParse((const FcChar8*)"Sans");
+      FcPattern* pattern     = FcNameParse((const FcChar8*)"Sans");
       /* since fontconfig uses LL-TT style, we need to normalize 
        * locale names */
-      FcChar8* locale      = FcLangNormalize((const FcChar8*)get_user_language_iso639_1(false));
+      FcChar8* locale        = FcLangNormalize((const FcChar8*)get_user_language_iso639_1(false));
       /* configure fontconfig substitute policies, this 
        * will increase the search scope */
       FcConfigSubstitute(config, pattern, FcMatchPattern);
@@ -317,43 +319,49 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
       /* uh-oh, for some reason, we can't find any font */
       if (result != FcResultMatch)
          goto error;
-      if (FcPatternGetString(found, FC_FILE, 0, &_font_path) != FcResultMatch)
+      if (FcPatternGetString(found, FC_FILE, 0,
+               &_font_path) != FcResultMatch)
          goto error;
-      if (FcPatternGetInteger(found, FC_INDEX, 0, &face_index) != FcResultMatch)
+      if (FcPatternGetInteger(found, FC_INDEX, 0,
+               &face_index) != FcResultMatch)
          goto error;
-      if (!filestream_read_file((const char*)_font_path, (void**)&font_data, &font_size))
+      if (!filestream_read_file((const char*)_font_path,
+               (void**)&font_data,
+               &font_data_size))
          goto error;
 
       /* Initialize font renderer */
-      err = FT_New_Memory_Face(handle->lib, (const FT_Byte*)font_data, (FT_Long)font_size, (FT_Long)face_index, &handle->face);
+      err = FT_New_Memory_Face(handle->lib, (const FT_Byte*)font_data,
+            (FT_Long)font_data_size, (FT_Long)face_index, &handle->face);
 
       /* free up fontconfig internal structures */
       FcPatternDestroy(pattern);
       FcPatternDestroy(found);
       FcStrFree(locale);
       FcConfigDestroy(config);
+      
+      if (err)
+         goto error;
    }
    else
 #endif
    {
-      uint8_t* font_data    = NULL;
-      int64_t font_size     = 0;
+      uint8_t* font_data     = NULL;
+      int64_t font_data_size = 0;
       if (!path_is_valid(font_path))
          goto error;
-      if (!filestream_read_file(font_path, (void**)&font_data, &font_size))
+      if (!filestream_read_file(font_path,
+               (void**)&font_data, &font_data_size))
          goto error;
-      err = FT_New_Memory_Face(handle->lib, (const FT_Byte*)font_data, (FT_Long)font_size, (FT_Long)0, &handle->face);
+      if ((err = FT_New_Memory_Face(handle->lib, (const FT_Byte*)font_data,
+            (FT_Long)font_data_size, (FT_Long)0, &handle->face)))
+         goto error;
    }
 
-   if (err)
+   if ((err = FT_Select_Charmap(handle->face, FT_ENCODING_UNICODE)))
       goto error;
 
-   err = FT_Select_Charmap(handle->face, FT_ENCODING_UNICODE);
-   if (err)
-      goto error;
-
-   err = FT_Set_Pixel_Sizes(handle->face, 0, font_size);
-   if (err)
+   if ((err = FT_Set_Pixel_Sizes(handle->face, 0, font_size)))
       goto error;
 
    if (!font_renderer_create_atlas(handle, font_size))
