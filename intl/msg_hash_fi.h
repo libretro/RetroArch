@@ -6319,6 +6319,10 @@ MSG_HASH(
    "Vain yhdistettävissä olevat huoneet"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
+   "Vain asennetut ytimet"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
    "Salasanalliset huoneet"
    )
@@ -6360,6 +6364,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_KICK,
    "Potkaise asiakas tällä hetkellä isännöisimästäsi huoneesta."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_BAN,
+   "Anna porttikielto asiakkaalle"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_BAN,
+   "Anna porttikielto asiakkaalle tällä hetkellä isännöimääsi huoneeseen."
    )
 
 /* Import Content */
@@ -10140,6 +10152,18 @@ MSG_HASH(
    "Nimimerkki: %s"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_LOOK,
+   "Etsitään yhteensopivaa sisältöä..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_CORE,
+   "Ydintä ei löydy"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_PLAYLISTS,
+   "Soittolistoja ei löydy"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
    "Yhteensopivaa sisältöä löytynyt"
    )
@@ -10752,12 +10776,24 @@ MSG_HASH(
    "Epäonnistuttiin potkimaan asakas: \"%s\""
    )
 MSG_HASH(
+   MSG_NETPLAY_BANNED_CLIENT_S,
+   "Asiakkaalle annettu porttikielto: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
+   "Porttikiellon antaminen asiakkaalle epäonnistui: \"%s\""
+   )
+MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
    "Pelaa"
    )
 MSG_HASH(
    MSG_NETPLAY_STATUS_SPECTATING,
    "Katsomassa"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CLIENT_DEVICES,
+   "Laitteet"
    )
 MSG_HASH(
    MSG_NETPLAY_CHAT_SUPPORTED,
@@ -11999,6 +12035,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_HOST_FULL,
    "Verkkopelin isäntä on täynnä"
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "Sinulla on porttikielto tästä palvelimesta"
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
