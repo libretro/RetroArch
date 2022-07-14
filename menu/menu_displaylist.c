@@ -469,10 +469,8 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
    const char *core_path         = NULL;
    const char *savestate_support = NULL;
    bool kiosk_mode_enable        = settings->bools.kiosk_mode_enable;
-#if !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
 #if defined(HAVE_NETWORKING) && defined(HAVE_ONLINE_UPDATER)
    bool menu_show_core_updater   = settings->bools.menu_show_core_updater;
-#endif
 #endif
 #if defined(HAVE_DYNAMIC)
    enum menu_contentless_cores_display_type
@@ -766,7 +764,6 @@ end:
    }
 #endif
 
-#if !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
    if (!string_is_empty(core_path) && !kiosk_mode_enable)
    {
       /* Check whether core is currently locked */
@@ -836,7 +833,6 @@ end:
             count++;
 #endif
    }
-#endif
 
    return count;
 }
@@ -945,9 +941,7 @@ static unsigned menu_displaylist_parse_core_manager_list(
 {
    unsigned count                   = 0;
    core_info_list_t *core_info_list = NULL;
-#if !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
    bool kiosk_mode_enable           = settings->bools.kiosk_mode_enable;
-#endif
 
    /* Get core list */
    core_info_get_list(&core_info_list);
@@ -1012,7 +1006,6 @@ static unsigned menu_displaylist_parse_core_manager_list(
    }
 
    /* Add 'sideload core' entry */
-#if !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
    if (!kiosk_mode_enable)
       if (menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST),
@@ -1020,7 +1013,6 @@ static unsigned menu_displaylist_parse_core_manager_list(
             MENU_ENUM_LABEL_SIDELOAD_CORE_LIST,
             MENU_SETTING_ACTION, 0, 0))
          count++;
-#endif
 
    return count;
 }
@@ -5556,7 +5548,7 @@ static void wifi_scan_callback(retro_task_t *task,
 bool menu_displaylist_process(menu_displaylist_info_t *info)
 {
    size_t                              idx   = 0;
-#if defined(HAVE_NETWORKING)
+#ifdef HAVE_NETWORKING
    settings_t              *settings         = config_get_ptr();
 #endif
 
@@ -5575,9 +5567,7 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
    if (info->need_sort)
       file_list_sort_on_alt(info->list);
 
-#if defined(HAVE_NETWORKING)
-#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
-#else
+#ifdef HAVE_NETWORKING
    if (settings->bools.menu_show_core_updater && !settings->bools.kiosk_mode_enable)
    {
       if (info->download_core)
@@ -5597,7 +5587,6 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
                MENU_SETTING_ACTION, 0, 0);
       }
    }
-#endif
 #endif
 
    if (info->push_builtin_cores)
@@ -13142,8 +13131,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                count++;
 
 #elif defined(HAVE_NETWORKING)
-#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
-#else
 #ifdef HAVE_UPDATE_CORES
             if (settings->bools.menu_show_core_updater)
             {
@@ -13185,7 +13172,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         count++;
                }
             }
-#endif
 #endif
 
 #if defined(HAVE_COMPRESSION) && !defined(HAVE_MIST)
