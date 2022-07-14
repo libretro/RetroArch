@@ -1626,9 +1626,9 @@ static const bool enable_device_vibration    = false;
 #endif
 #else
 #if defined(__x86_64__) || defined(_M_X64)
-#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/x64/latest/"
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows/x86_64/latest/"
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
-#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/x86/latest/"
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows/x86/latest/"
 #elif defined(__arm__) || defined(_M_ARM)
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/arm/latest/"
 #elif defined(__aarch64__) || defined(_M_ARM64)
