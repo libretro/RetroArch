@@ -35,7 +35,7 @@ static bool translate_addr(struct sockaddr_in *addr,
 {
 #ifndef HAVE_SOCKET_LEGACY
    if (getnameinfo((struct sockaddr *) addr, sizeof(*addr),
-         host, hostlen, port, portlen,
+         host, (socklen_t)hostlen, (socklen_t)port, (socklen_t)portlen,
          NI_NUMERICHOST | NI_NUMERICSERV))
       return false;
 #else
