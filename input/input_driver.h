@@ -275,10 +275,14 @@ struct input_driver
     * the sensor entirely, etc. This function pointer may be set to NULL if
     * setting sensor values is not supported.
     * 
-    * @param data    The input state struct
+    * @param data    
+    * The input state struct
     * @param port
-    * @param effect  Sensor action
-    * @param rate    Sensor rate update
+    * The port of the device
+    * @param effect  
+    * Sensor action
+    * @param rate    
+    * Sensor rate update
     * 
     * @return true if the operation is successful.
    **/
@@ -290,9 +294,12 @@ struct input_driver
     * function pointer may be set to NULL if retreiving sensor state is not
     * supported.
     * 
-    * @param data  The input state struct
+    * @param data  
+    * The input state struct
     * @param port
-    * @param id    Sensor ID
+    * The port of the device
+    * @param id    
+    * Sensor ID
     * 
     * @return The current state associated with the port and ID as a float
     **/
@@ -461,10 +468,13 @@ const char* config_get_input_driver_options(void);
  * Sets the rumble state.
  * 
  * @param driver_state
- * @param port          User number.
+ * @param port          
+ * User number.
  * @param joy_idx
- * @param effect        Rumble effect.
- * @param strength      Strength of rumble effect.
+ * @param effect        
+ * Rumble effect.
+ * @param strength      
+ * Strength of rumble effect.
  *
  * @return true if the rumble state has been successfully set
  **/
@@ -487,9 +497,12 @@ bool input_driver_set_rumble_gain(
  * Sets the sensor state.
  * 
  * @param port
+ * User number.
  * @param sensors_enable
- * @param effect        Sensor action
- * @param rate          Sensor rate update
+ * @param effect        
+ * Sensor action
+ * @param rate          
+ * Sensor rate update
  *
  * @return true if the sensor state has been successfully set
  **/
@@ -502,7 +515,8 @@ bool input_driver_set_sensor(
  * 
  * @param port
  * @param sensors_enable
- * @param id            Sensor ID
+ * @param id            
+ * Sensor ID
  *
  * @return The current state associated with the port and ID as a float
  **/
@@ -573,8 +587,10 @@ const input_device_driver_t *input_joypad_init_driver(
 /**
  * Registers a newly connected pad with RetroArch.
  * 
- * @param port    Joystick number
- * @param driver  Handle for joypad driver handling joystick's input
+ * @param port    
+ * Joystick number
+ * @param driver  
+ * Handle for joypad driver handling joystick's input
  **/
 void input_pad_connect(unsigned port, input_device_driver_t *driver);
 
@@ -582,10 +598,14 @@ void input_pad_connect(unsigned port, input_device_driver_t *driver);
  * Called by drivers when keyboard events are fired. Interfaces with the global
  * driver struct and libretro callbacks.
  * 
- * @param down       Was Keycode pressed down?
- * @param code       Keycode.
- * @param character  Character inputted.
- * @param mod        TODO/FIXME/???
+ * @param down       
+ * Was Keycode pressed down?
+ * @param code       
+ * Keycode.
+ * @param character  
+ * Character inputted.
+ * @param mod        
+ * TODO/FIXME/???
  **/
 void input_keyboard_event(bool down, unsigned code, uint32_t character,
       uint16_t mod, unsigned device);
@@ -631,6 +651,7 @@ void hid_driver_reset_data(void);
  * Set the name of the device in the specified port
  * 
  * @param port
+ * The port of the device to be assigned to
  */
 void input_config_set_device_name(unsigned port, const char *name);
 
@@ -638,6 +659,7 @@ void input_config_set_device_name(unsigned port, const char *name);
  * Set the formatted "display name" of the device in the specified port
  * 
  * @param port
+ * The port of the device to be assigned to
  */
 void input_config_set_device_display_name(unsigned port, const char *name);
 void input_config_set_mouse_display_name(unsigned port, const char *name);
@@ -646,7 +668,9 @@ void input_config_set_mouse_display_name(unsigned port, const char *name);
  * Set the configuration path for the device in the specified port
  * 
  * @param port
- * @param path The path of the device config.
+ * The port of the device to be assigned to
+ * @param path 
+ * The path of the device config.
  */
 void input_config_set_device_config_path(unsigned port, const char *path);
 
@@ -654,7 +678,9 @@ void input_config_set_device_config_path(unsigned port, const char *path);
  * Set the configuration name for the device in the specified port
  * 
  * @param port
- * @param name The name of the config to set.
+ * The port of the device to be assigned to
+ * @param name 
+ * The name of the config to set.
  */
 void input_config_set_device_config_name(unsigned port, const char *name);
 
@@ -662,7 +688,9 @@ void input_config_set_device_config_name(unsigned port, const char *name);
  * Set the joypad driver for the device in the specified port
  * 
  * @param port
- * @param driver The driver to set the given port to.
+ * The port of the device to be assigned to
+ * @param driver 
+ * The driver to set the given port to.
  */
 void input_config_set_device_joypad_driver(unsigned port, const char *driver);
 
@@ -670,7 +698,9 @@ void input_config_set_device_joypad_driver(unsigned port, const char *driver);
  * Set the vendor ID (vid) for the device in the specified port
  * 
  * @param port
- * @param vid The VID to set the given device port to.
+ * The port of the device to be assigned to
+ * @param vid 
+ * The VID to set the given device port to.
  */
 void input_config_set_device_vid(unsigned port, uint16_t vid);
 
@@ -678,7 +708,9 @@ void input_config_set_device_vid(unsigned port, uint16_t vid);
  * Set the pad ID (pid) for the device in the specified port
  * 
  * @param port
- * @param pid The PID to set the given device port to.
+ * The port of the device to be assigned to
+ * @param pid 
+ * The PID to set the given device port to.
  */
 void input_config_set_device_pid(unsigned port, uint16_t pid);
 
@@ -686,7 +718,9 @@ void input_config_set_device_pid(unsigned port, uint16_t pid);
  * Sets the autoconfigured flag for the device in the specified port
  *
  * @param port
- * @param autoconfigured Whether or nor the device is configured automatically.
+ * The port of the device to be assigned to
+ * @param autoconfigured 
+ * Whether or nor the device is configured automatically.
  */
 void input_config_set_device_autoconfigured(unsigned port, bool autoconfigured);
 
@@ -694,7 +728,9 @@ void input_config_set_device_autoconfigured(unsigned port, bool autoconfigured);
  * Sets the name index number for the device in the specified port
  *
  * @param port
- * @param name_index The name index to set the device to use.
+ * The port of the device to be assigned to
+ * @param name_index 
+ * The name index to set the device to use.
  */
 void input_config_set_device_name_index(unsigned port, unsigned name_index);
 
@@ -702,7 +738,9 @@ void input_config_set_device_name_index(unsigned port, unsigned name_index);
  * Sets the device type of the specified port
  * 
  * @param port
- * @param id The device type (RETRO_DEVICE_JOYPAD, RETRO_DEVICE_MOUSE, etc)
+ * The port of the device to be assigned to
+ * @param id 
+ * The device type (RETRO_DEVICE_JOYPAD, RETRO_DEVICE_MOUSE, etc)
  */
 void input_config_set_device(unsigned port, unsigned id);
 
@@ -731,6 +769,7 @@ const char *input_config_get_device_joypad_driver(unsigned port);
  * Retrieves the vendor id (vid) of a connected controller
  * 
  * @param port
+ * The port of the device
  *
  * @return the vendor id VID of the device
  */
@@ -740,6 +779,7 @@ uint16_t input_config_get_device_vid(unsigned port);
  * Retrieves the pad id (pad) of a connected controller
  * 
  * @param port
+ * The port of the device
  *
  * @return the port id PID of the device
  */
@@ -758,6 +798,7 @@ bool input_config_get_device_autoconfigured(unsigned port);
  * Get the name index number for the device in this port
  * 
  * @param port
+ * The port of the device
  *
  * @return the name index for this device
  */
@@ -774,6 +815,7 @@ unsigned input_config_get_device_name_index(unsigned port);
  * low-level access is not required.
  * 
  * @param port
+ * The port of the device
  *
  * @return a pointer to the device name on the specified port
  */
@@ -787,6 +829,7 @@ char *input_config_get_device_name_ptr(unsigned port);
  * low-level access is not required.
  * 
  * @param port
+ * The port of the device
  *
  * @return the size of the device name on the specified port
  */
