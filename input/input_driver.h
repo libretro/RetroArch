@@ -467,10 +467,10 @@ const char* config_get_input_driver_options(void);
 /**
  * Sets the rumble state.
  * 
- * @param driver_state
  * @param port          
  * User number.
  * @param joy_idx
+ * TODO/FIXME ???
  * @param effect        
  * Rumble effect.
  * @param strength      
@@ -484,8 +484,10 @@ bool input_driver_set_rumble(
 /**
  * Sets the rumble gain.
  *
- * @param gain             Rumble gain, 0-100 [%]
+ * @param gain             
+ * Rumble gain, 0-100 [%]
  * @param input_max_users
+ * TODO/FIXME - ???
  *
  * @return true if the rumble gain has been successfully set
  **/
@@ -499,6 +501,7 @@ bool input_driver_set_rumble_gain(
  * @param port
  * User number.
  * @param sensors_enable
+ * TODO/FIXME - ???
  * @param effect        
  * Sensor action
  * @param rate          
@@ -514,7 +517,9 @@ bool input_driver_set_sensor(
  * Retrieves the sensor state associated with the provided port and ID. 
  * 
  * @param port
+ * Port of the device
  * @param sensors_enable
+ * TODO/FIXME - ???
  * @param id            
  * Sensor ID
  *
@@ -789,6 +794,7 @@ uint16_t input_config_get_device_pid(unsigned port);
  * Returns the value of the autoconfigured flag for the specified device
  *
  * @param port
+ * The port of the device
  *
  * @return the autoconfigured flag
  */

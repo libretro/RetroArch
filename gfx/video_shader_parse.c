@@ -65,16 +65,18 @@ static path_change_data_t *file_change_data = NULL;
 
 /**
  * fill_pathname_expanded_and_absolute:
- * @out_path              : string to write into
- * @in_refpath            : used to get the base path if in_path is relative
- * @in_path               : path to turn into an absolute path
+ * @param out_path
+ * String to write into.
+ * @param in_refpath
+ * Used to get the base path if in_path is relative.
+ * @param in_path
+ * Path to turn into an absolute path.
  *
- * Takes a path and returns an absolute path, 
- * It will expand it if the path was using the root path format  
+ * Takes a path and returns an absolute path.
+ * It will expand it if the path was using the root path format.
  * e.g. :\shaders
  * If the path was relative it will take this path and get the 
- * absolute path using in_refpath 
- * as the path to extract a base path
+ * absolute path using in_refpath as the path to extract a base path.
  *
  * out_path is filled with the absolute path
  **/
@@ -133,11 +135,12 @@ static void gather_reference_path_list(
 
 /**
  * wrap_mode_to_str:
- * @type              : Wrap type.
+ * @param type
+ * Wrap type.
  *
  * Translates wrap mode to human-readable string identifier.
  *
- * Returns: human-readable string identifier of wrap mode.
+ * @return human-readable string identifier of wrap mode.
  **/
 static const char *wrap_mode_to_str(enum gfx_wrap_type type)
 {
@@ -160,11 +163,12 @@ static const char *wrap_mode_to_str(enum gfx_wrap_type type)
 
 /**
  * wrap_str_to_mode:
- * @type              : Wrap type in human-readable string format.
+ * @param type
+ * Wrap type in human-readable string format.
  *
  * Translates wrap mode from human-readable string to enum mode value.
  *
- * Returns: enum mode value of wrap type.
+ * @return enum mode value of wrap type.
  **/
 static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
 {
@@ -185,13 +189,16 @@ static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
 
 /**
  * video_shader_parse_pass:
- * @conf              : Preset file to read from.
- * @pass              : Shader passes handle.
- * @i                 : Index of shader pass.
+ * @param conf
+ * Preset file to read from.
+ * @param pass
+ * Shader passes handle.
+ * @param i
+ * Index of shader pass.
  *
  * Parses shader pass from preset file.
  *
- * Returns: true (1) if successful, otherwise false (0).
+ * @return true if successful, otherwise false.
  **/
 static bool video_shader_parse_pass(config_file_t *conf,
       struct video_shader_pass *pass, unsigned i)
@@ -390,12 +397,14 @@ static bool video_shader_parse_pass(config_file_t *conf,
 
 /**
  * video_shader_parse_textures:
- * @conf              : Preset file to read from.
- * @shader            : Shader pass handle.
+ * @param conf
+ * Preset file to read from.
+ * @param shader
+ * Shader pass handle.
  *
  * Parses shader textures.
  *
- * Returns: true (1) if successful, otherwise false (0).
+ * @return true if successful, otherwise false.
  **/
 static bool video_shader_parse_textures(config_file_t *conf,
       struct video_shader *shader)
@@ -482,13 +491,16 @@ static bool video_shader_parse_textures(config_file_t *conf,
 
 /**
  * video_shader_parse_find_parameter:
- * @params            : Shader parameter handle.
- * @num_params        : Number of shader params in @params.
- * @id                : Identifier to search for.
+ * @param params
+ * Shader parameter handle.
+ * @param num_params
+ * Number of shader params in @params.
+ * param id
+ * Identifier to search for.
  *
  * Finds a shader parameter with identifier @id in @params..
  *
- * Returns: handle to shader parameter if successful, otherwise NULL.
+ * @return Handle to shader parameter if successful, otherwise NULL.
  **/
 static struct video_shader_parameter *video_shader_parse_find_parameter(
       struct video_shader_parameter *params,
@@ -624,13 +636,15 @@ void video_shader_resolve_parameters(struct video_shader *shader)
 
 /**
  * video_shader_load_current_parameter_values:
- * @conf              : Preset file to read from.
- * @shader            : Shader passes handle.
+ * @param conf
+ * Preset file to read from.
+ * @param shader
+ * Shader passes handle.
  *
  * For each parameter in the shader, if a value is set in the config file
  * load this value to the parameter's current value.
  *
- * Returns: true (1) if successful, otherwise false (0).
+ * @return true (1) if successful, otherwise false (0).
  **/
 bool video_shader_load_current_parameter_values(
       config_file_t *conf, struct video_shader *shader)
@@ -928,29 +942,35 @@ static config_file_t *video_shader_get_root_preset_config(const char *path)
 
 /**
  * video_shader_check_reference_chain:
- * @path_to_save              : Path of the preset we want to validate is safe to save 
- *                              as a simple preset
- * @reference_path            : Path of the reference which we would want to write into 
- *                              the new preset
+ * @param path_to_save
+ * Path of the preset we want to validate is safe to save as 
+ * a simple preset.
+ * @param reference_path
+ * Path of the reference which we would want to write into 
+ * the new preset.
  * 
- * Checks to see if we can save a valid simple preset (preset with a #reference in it) 
- * to this path
+ * Checks to see if we can save a valid simple preset 
+ * (preset with a #reference in it) to this path.
  * 
- * This takes into account reference links which can't be loaded and if saving 
- * this file would create a creating circular reference chain because some link in 
- * the chain references the file path we want to save to
+ * This takes into account reference links which can't be 
+ * loaded and if saving this file would create a creating 
+ * circular reference chain, because some link in
+ * the chain references the file path we want to save to.
  * 
  * Checks each preset in the chain of presets with #reference
- * Starts with reference_path, If it has no reference then our check is valid
- * If it has a #reference then check that the reference path is not the same as path_to_save
- * If it is not the same path then go the the next nested reference
+ * Starts with reference_path. If it has no reference, then 
+ * our check is valid.
+ * If it has a #reference, then check that the reference path 
+ * is not the same as path_to_save.
+
+ * If it is not the same path, then go the the next nested reference
  * 
  * Continues this until it finds a preset without #reference in it, 
  * or it hits the maximum recursion depth (at that point
  * it is probably in a self referential cycle)
  * 
- * Returns: true (1) if it was able to load all presets and found a full preset
- *          otherwise false (0).
+ * @return true (1) if it was able to load all presets and 
+ * found a full preset, otherwise false (0).
  **/
 static bool video_shader_check_reference_chain_for_save(
       const char *path_to_save, const char *ref_path)
@@ -1030,16 +1050,18 @@ static bool video_shader_check_reference_chain_for_save(
 
 /**
  * video_shader_write_referenced_preset:
- * @path              : File to write to
- * @shader            : Shader preset to write
+ * @param path
+ * File to write to
+ * @param shader
+ * Shader preset to write
  *
  * Writes a referenced preset to disk
- *    A referenced preset is a preset which includes the #reference directive
- *    as it's first line to specify a root preset and can also 
- *    include parameter and texture values to override the values 
- *    of the root preset
+ * A referenced preset is a preset which includes the #reference directive
+ * as it's first line to specify a root preset and can also 
+ * include parameter and texture values to override the values 
+ * of the root preset
  *
- * Returns false if a referenced preset cannot be saved
+ * @return false if a referenced preset cannot be saved
  **/
 static bool video_shader_write_referenced_preset(
       const char *path_to_save,
@@ -1476,12 +1498,15 @@ end:
 
 /**
  * video_shader_load_root_config_into_shader:
- * @conf              : Preset file to read from.
- * @shader            : Shader handle.
+ * @param conf
+ * Preset file to read from.
+ * @param shader
+ * Shader handle.
  *
- * Loads preset file and all associated state (passes, textures, imports, etc).
+ * Loads preset file and all associated state 
+ * (passes, textures, imports, etc).
  *
- * Returns: true (1) if successful, otherwise false (0).
+ * @return true (1) if successful, otherwise false (0).
  **/
 static bool video_shader_load_root_config_into_shader(
       config_file_t *conf, 
@@ -1588,13 +1613,14 @@ static bool video_shader_load_root_config_into_shader(
 
 /**
  * override_shader_values:
- * @override_conf     : Config file who's values will be copied on top of conf
- * @shader            : Shader to be affected
+ * @param override_conf
+ * Config file who's values will be copied on top of conf
+ * @param shader
+ * Shader to be affected
  *
  * Takes values from override_config and overrides values of the shader
  *
- * Returns 0 if nothing is overridden 
- * Returns 1 if something is overridden
+ * @return 0 if nothing is overridden , 1 if something is overridden
  **/
 static bool override_shader_values(config_file_t *override_conf,
       struct video_shader *shader)
@@ -1686,13 +1712,17 @@ static bool override_shader_values(config_file_t *override_conf,
 
 /**
  * video_shader_write_preset:
- * @path              : File to write to
- * @shader            : Shader to write
- * @reference         : Whether a simple preset should be written 
- * with the #reference to another preset in it
+ * @param path
+ * File to write to
+ * @param shader
+ * Shader to write
+ * @param reference
+ * Whether a simple preset should be written 
+ * with the #reference to another preset in it.
  *
  * Writes a preset to disk. Can be written as a simple preset 
  * (With the #reference directive in it) or a full preset.
+ * @return true on success, otherwise false on failure
  **/
 bool video_shader_write_preset(const char *path,
       const char *shader_dir,
@@ -1726,18 +1756,18 @@ bool video_shader_write_preset(const char *path,
    return false;
 }
 
-
-
 /**
  * video_shader_load_preset_into_shader:
- * @path              : Path to preset file, could be a 
- * Simple Preset (including a #reference) or Full Preset
- * @shader            : Shader
+ * @param path
+ * Path to preset file, could be a 
+ * Simple Preset (including a #reference) or Full Preset.
+ * @param shader
+ * Shader.
  *
  * Loads preset file to a shader including passes, textures 
  * and parameters
  *
- * Returns: true (1) if successful, otherwise false (0).
+ * @return true on success, otherwise false on failure.
  **/
 bool video_shader_load_preset_into_shader(const char *path,
       struct video_shader *shader)
@@ -1894,6 +1924,8 @@ const char *video_shader_type_to_str(enum rarch_shader_type type)
  * video_shader_is_supported:
  * Tests if a shader type is supported.
  * This is only accurate once the context driver was initialized.
+
+ * @return true on success, otherwise false on failure.
  **/
 bool video_shader_is_supported(enum rarch_shader_type type)
 {
