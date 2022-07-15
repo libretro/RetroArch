@@ -68,6 +68,7 @@ typedef struct freetype_renderer
    struct font_atlas atlas;                          /* ptr alignment   */
    freetype_atlas_slot_t atlas_slots[FT_ATLAS_SIZE]; /* ptr alignment   */
    freetype_atlas_slot_t* uc_map[0x100];             /* ptr alignment   */
+   void *file_data;                                  /* ptr alignment   */
    unsigned max_glyph_width;
    unsigned max_glyph_height;
    unsigned usage_counter;
@@ -92,6 +93,9 @@ static void font_renderer_ft_free(void *data)
 
    if (handle->face)
       FT_Done_Face(handle->face);
+   if (handle->file_data)
+      free(handle->file_data);
+   handle->file_data = NULL;
    if (handle->lib)
       FT_Done_FreeType(handle->lib);
    free(handle);
@@ -280,6 +284,7 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
       if ((err = FT_New_Memory_Face(handle->lib, (const FT_Byte*)font_data,
             (FT_Long)font_data_size, (FT_Long)0, &handle->face)))
          goto error;
+      handle->file_data = font_data;
    }
    else
 #elif defined(HAVE_FONTCONFIG_SUPPORT)
@@ -342,6 +347,7 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
       
       if (err)
          goto error;
+      handle->file_data = font_data;
    }
    else
 #endif
@@ -356,6 +362,7 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
       if ((err = FT_New_Memory_Face(handle->lib, (const FT_Byte*)font_data,
             (FT_Long)font_data_size, (FT_Long)0, &handle->face)))
          goto error;
+      handle->file_data = font_data;
    }
 
    if ((err = FT_Select_Charmap(handle->face, FT_ENCODING_UNICODE)))
