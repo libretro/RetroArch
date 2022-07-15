@@ -404,7 +404,7 @@ void net_http_urlencode_full(char *dest,
          strlen(tmp) + 1
          );
 
-   tmp            = NULL;
+   tmp             = NULL;
    net_http_urlencode(&tmp, url_path);
    buf_pos         = strlcpy(dest, url_domain, size);
    dest[buf_pos]   = '/';
@@ -461,12 +461,11 @@ static int net_http_new_socket(struct http_connection_t *conn)
 }
 
 static void net_http_send_str(
-      struct http_socket_state_t *sock_state, bool *error, const char *text)
+      struct http_socket_state_t *sock_state, bool *error,
+      const char *text, size_t text_size)
 {
-   size_t text_size;
    if (*error)
       return;
-   text_size = strlen(text);
 #ifdef HAVE_SSL
    if (sock_state->ssl)
    {
@@ -707,19 +706,26 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    /* This is a bit lazy, but it works. */
    if (conn->methodcopy)
    {
-      net_http_send_str(&conn->sock_state, &error, conn->methodcopy);
-      net_http_send_str(&conn->sock_state, &error, " /");
+      net_http_send_str(&conn->sock_state, &error, conn->methodcopy,
+            strlen(conn->methodcopy));
+      net_http_send_str(&conn->sock_state, &error, " /",
+            STRLEN_CONST(" /"));
    }
    else
    {
-      net_http_send_str(&conn->sock_state, &error, "GET /");
+      net_http_send_str(&conn->sock_state, &error, "GET /",
+            STRLEN_CONST("GET /"));
    }
 
-   net_http_send_str(&conn->sock_state, &error, conn->location);
-   net_http_send_str(&conn->sock_state, &error, " HTTP/1.1\r\n");
+   net_http_send_str(&conn->sock_state, &error, conn->location,
+         strlen(conn->location));
+   net_http_send_str(&conn->sock_state, &error, " HTTP/1.1\r\n",
+         STRLEN_CONST(" HTTP/1.1\r\n"));
 
-   net_http_send_str(&conn->sock_state, &error, "Host: ");
-   net_http_send_str(&conn->sock_state, &error, conn->domain);
+   net_http_send_str(&conn->sock_state, &error, "Host: ",
+         STRLEN_CONST("Host: "));
+   net_http_send_str(&conn->sock_state, &error, conn->domain,
+         strlen(conn->domain));
 
    if (conn->port)
    {
@@ -728,20 +734,26 @@ struct http_t *net_http_new(struct http_connection_t *conn)
       portstr[0] = '\0';
 
       snprintf(portstr, sizeof(portstr), ":%i", conn->port);
-      net_http_send_str(&conn->sock_state, &error, portstr);
+      net_http_send_str(&conn->sock_state, &error, portstr,
+            strlen(portstr));
    }
 
-   net_http_send_str(&conn->sock_state, &error, "\r\n");
+   net_http_send_str(&conn->sock_state, &error, "\r\n",
+         STRLEN_CONST("\r\n"));
 
    /* Pre-formatted headers */
    if (conn->headerscopy)
-      net_http_send_str(&conn->sock_state, &error, conn->headerscopy);
+      net_http_send_str(&conn->sock_state, &error, conn->headerscopy,
+            strlen(conn->headerscopy));
    /* This is not being set anywhere yet */
    else if (conn->contenttypecopy)
    {
-      net_http_send_str(&conn->sock_state, &error, "Content-Type: ");
-      net_http_send_str(&conn->sock_state, &error, conn->contenttypecopy);
-      net_http_send_str(&conn->sock_state, &error, "\r\n");
+      net_http_send_str(&conn->sock_state, &error, "Content-Type: ",
+            STRLEN_CONST("Content-Type: "));
+      net_http_send_str(&conn->sock_state, &error,
+            conn->contenttypecopy, strlen(conn->contenttypecopy));
+      net_http_send_str(&conn->sock_state, &error, "\r\n",
+            STRLEN_CONST("\r\n"));
    }
 
    if (conn->methodcopy && (string_is_equal(conn->methodcopy, "POST")))
@@ -756,10 +768,14 @@ struct http_t *net_http_new(struct http_connection_t *conn)
       {
          if (!conn->contenttypecopy)
             net_http_send_str(&conn->sock_state, &error,
-                  "Content-Type: application/x-www-form-urlencoded\r\n");
+                  "Content-Type: application/x-www-form-urlencoded\r\n",
+                  STRLEN_CONST(
+                     "Content-Type: application/x-www-form-urlencoded\r\n"
+                     ));
       }
 
-      net_http_send_str(&conn->sock_state, &error, "Content-Length: ");
+      net_http_send_str(&conn->sock_state, &error, "Content-Length: ",
+            STRLEN_CONST("Content-Length: "));
 
       post_len = strlen(conn->postdatacopy);
 #ifdef _WIN32
@@ -774,24 +790,33 @@ struct http_t *net_http_new(struct http_connection_t *conn)
 
       len_str[len] = '\0';
 
-      net_http_send_str(&conn->sock_state, &error, len_str);
-      net_http_send_str(&conn->sock_state, &error, "\r\n");
+      net_http_send_str(&conn->sock_state, &error, len_str,
+            strlen(len_str));
+      net_http_send_str(&conn->sock_state, &error, "\r\n",
+            STRLEN_CONST("\r\n"));
 
       free(len_str);
    }
 
-   net_http_send_str(&conn->sock_state, &error, "User-Agent: ");
+   net_http_send_str(&conn->sock_state, &error, "User-Agent: ",
+         STRLEN_CONST("User-Agent: "));
    if (conn->useragentcopy)
-      net_http_send_str(&conn->sock_state, &error, conn->useragentcopy);
+      net_http_send_str(&conn->sock_state, &error,
+            conn->useragentcopy, strlen(conn->useragentcopy));
    else
-      net_http_send_str(&conn->sock_state, &error, "libretro");
-   net_http_send_str(&conn->sock_state, &error, "\r\n");
+      net_http_send_str(&conn->sock_state, &error, "libretro",
+            STRLEN_CONST("libretro"));
+   net_http_send_str(&conn->sock_state, &error, "\r\n",
+         STRLEN_CONST("\r\n"));
 
-   net_http_send_str(&conn->sock_state, &error, "Connection: close\r\n");
-   net_http_send_str(&conn->sock_state, &error, "\r\n");
+   net_http_send_str(&conn->sock_state, &error,
+         "Connection: close\r\n", STRLEN_CONST("Connection: close\r\n"));
+   net_http_send_str(&conn->sock_state, &error, "\r\n",
+         STRLEN_CONST("\r\n"));
 
    if (conn->methodcopy && (string_is_equal(conn->methodcopy, "POST")))
-      net_http_send_str(&conn->sock_state, &error, conn->postdatacopy);
+      net_http_send_str(&conn->sock_state, &error, conn->postdatacopy,
+            strlen(conn->postdatacopy));
 
    if (error)
       goto error;
