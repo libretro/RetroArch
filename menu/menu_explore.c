@@ -379,12 +379,14 @@ static void explore_load_icons(explore_state_t *state)
    if (!state)
       return;
 
-   system_count = RBUF_LEN(state->by[EXPLORE_BY_SYSTEM]);
+   if ((system_count = RBUF_LEN(state->by[EXPLORE_BY_SYSTEM])) <= 0)
+      return;
 
    /* unload any icons that could exist from a previous call to this */
    explore_unload_icons(state);
 
-   /* RBUF_RESIZE leaves memory uninitialised, have to zero it 'manually' */
+   /* RBUF_RESIZE leaves memory uninitialised, 
+      have to zero it 'manually' */
    RBUF_RESIZE(state->icons, system_count);
    memset(state->icons, 0, RBUF_SIZEOF(state->icons));
 
@@ -757,7 +759,9 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
 
       RHMAP_FREE(cat_maps[i]);
    }
-   qsort(explore->entries,
+   /* NULL is not a valid value as a first argument for qsort */
+   if (explore->entries)
+      qsort(explore->entries,
          RBUF_LEN(explore->entries),
          sizeof(*explore->entries), explore_qsort_func_entries);
    return explore;
