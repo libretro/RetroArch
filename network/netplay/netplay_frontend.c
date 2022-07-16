@@ -1546,7 +1546,8 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
    {
       if (!netplay->is_server)
       {
-         dmsg = msg_hash_to_str(MSG_NETPLAY_INCORRECT_PASSWORD);
+         const char *dmsg = 
+            msg_hash_to_str(MSG_NETPLAY_INCORRECT_PASSWORD);
          RARCH_ERR("[Netplay] %s\n", dmsg);
          runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -1598,7 +1599,7 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
             info_buf.core_name, system->library_name))
       {
          /* Wrong core! */
-         dmsg = msg_hash_to_str(MSG_NETPLAY_DIFFERENT_CORES);
+         const char *dmsg = msg_hash_to_str(MSG_NETPLAY_DIFFERENT_CORES);
          RARCH_ERR("[Netplay] %s\n", dmsg);
          if (!netplay->is_server)
             runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
@@ -1609,7 +1610,8 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
       if (!string_is_equal_case_insensitive(
             info_buf.core_version, system->library_version))
       {
-         dmsg = msg_hash_to_str(MSG_NETPLAY_DIFFERENT_CORE_VERSIONS);
+         const char *dmsg = msg_hash_to_str(
+               MSG_NETPLAY_DIFFERENT_CORE_VERSIONS);
          RARCH_WARN("[Netplay] %s\n", dmsg);
          if (!netplay->is_server && extra_notifications)
             runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
@@ -1622,7 +1624,7 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
 
    if (content_crc && ntohl(info_buf.content_crc) != content_crc)
    {
-      dmsg = msg_hash_to_str(MSG_CONTENT_CRC32S_DIFFER);
+      const char *dmsg = msg_hash_to_str(MSG_CONTENT_CRC32S_DIFFER);
       RARCH_WARN("[Netplay] %s\n", dmsg);
       if (!netplay->is_server && extra_notifications)
          runloop_msg_queue_push(dmsg, 1, 180, false, NULL,

@@ -4479,7 +4479,6 @@ static bool bsv_movie_init_playback(
       bsv_movie_t *handle, const char *path)
 {
    uint32_t state_size       = 0;
-   uint32_t content_crc      = 0;
    uint32_t header[4]        = {0};
    intfstream_t *file        = intfstream_open_file(path,
          RETRO_VFS_FILE_ACCESS_READ,
@@ -4503,12 +4502,6 @@ static bool bsv_movie_init_playback(
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE));
       return false;
    }
-
-   content_crc               = content_get_crc();
-
-   if (content_crc != 0)
-      if (swap_if_big32(header[CRC_INDEX]) != content_crc)
-         RARCH_WARN("%s.\n", msg_hash_to_str(MSG_CRC32_CHECKSUM_MISMATCH));
 
    state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
 
