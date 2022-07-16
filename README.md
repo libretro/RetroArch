@@ -178,8 +178,8 @@ Your videocard needs to at least support the OpenGL 3.2 core feature spec.
 ***Menu driver support:*** MaterialUI, XMB, Ozone and RGUI should all work correctly.
 
 ### Direct3D 11 ###
-Your vudeocard needs to least supports Direct3D11 Feature Level 11.0. The card
-also needs to support at least Shader Model 4.0.
+Your videocard needs to at least support the Direct3D11 11.0 spec. The card
+also needs to support at least the Shader Model 4.0.
 
 ***Shaders:*** You will be able to use modern Slang shaders with this driver.
 
