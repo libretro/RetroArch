@@ -281,6 +281,7 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/streams/file_stream_transforms.o \
        $(LIBRETRO_COMM_DIR)/streams/interface_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/memory_stream.o \
+       $(LIBRETRO_COMM_DIR)/streams/network_stream.o \
        $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.o
 
 OBJ += \
