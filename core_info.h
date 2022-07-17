@@ -202,8 +202,6 @@ void core_info_qsort(core_info_list_t *core_info_list, enum core_info_list_qsort
 bool core_info_list_get_info(core_info_list_t *core_info_list,
       core_info_t *out_info, const char *core_path);
 
-bool core_info_hw_api_supported(core_info_t *info);
-
 /* Convenience wrapper functions used to interpret
  * the 'savestate_support_level' parameter of
  * the currently loaded core. If no core is
