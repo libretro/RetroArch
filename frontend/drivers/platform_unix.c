@@ -577,12 +577,11 @@ static void frontend_android_get_version_sdk(int32_t *sdk)
 {
    char os_version_str[PROP_VALUE_MAX] = {0};
    system_property_get("getprop", "ro.build.version.sdk", os_version_str);
-
    *sdk = 0;
    if (os_version_str[0])
    {
-      int num_read = sscanf(os_version_str, "%d", sdk);
-      (void) num_read;
+      char *ptr = NULL;
+      sdk = (int32_t)strtol(os_version_str, &ptr, 10);
    }
 }
 
