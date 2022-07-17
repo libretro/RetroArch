@@ -725,9 +725,9 @@ static void shader_write_fbo(config_file_t *conf,
    key[0] = '\0';
 
    snprintf(key, sizeof(key), "float_framebuffer%u", i);
-   config_set_bool(conf, key, fbo->fp_fbo);
+   config_set_string(conf, key, fbo->fp_fbo ? "true" : "false");
    snprintf(key, sizeof(key), "srgb_framebuffer%u", i);
-   config_set_bool(conf, key, fbo->srgb_fbo);
+   config_set_string(conf, key, fbo->srgb_fbo ? "true" : "false");
 
    if (!fbo->valid)
       return;
@@ -795,7 +795,10 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
       if (pass->filter != RARCH_FILTER_UNSPEC)
       {
          snprintf(key, sizeof(key), "filter_linear%u", i);
-         config_set_bool(conf, key, pass->filter == RARCH_FILTER_LINEAR);
+         config_set_string(conf, key,
+               (pass->filter == RARCH_FILTER_LINEAR)
+               ? "true"
+               : "false");
       }
 
       snprintf(key, sizeof(key), "wrap_mode%u", i);
@@ -808,7 +811,7 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
       }
 
       snprintf(key, sizeof(key), "mipmap_input%u", i);
-      config_set_bool(conf, key, pass->mipmap);
+      config_set_string(conf, key, pass->mipmap ? "true" : "false");
 
       snprintf(key, sizeof(key), "alias%u", i);
       config_set_string(conf, key, pass->alias);
@@ -855,8 +858,10 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
             k[0]  = '\0';
             strlcpy(k, shader->lut[i].id, sizeof(k));
             strlcat(k, "_linear", sizeof(k));
-            config_set_bool(conf, k, 
-                  shader->lut[i].filter == RARCH_FILTER_LINEAR);
+            config_set_string(conf, k, 
+                  (shader->lut[i].filter == RARCH_FILTER_LINEAR)
+                  ? "true"
+                  : "false");
          }
 
          /* Wrap Mode */
@@ -875,7 +880,9 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
             k[0]  = '\0';
             strlcpy(k, shader->lut[i].id, sizeof(k));
             strlcat(k, "_mipmap", sizeof(k));
-            config_set_bool(conf, k, shader->lut[i].mipmap);
+            config_set_string(conf, k, shader->lut[i].mipmap
+                  ? "true"
+                  : "false");
          }
       }
    }

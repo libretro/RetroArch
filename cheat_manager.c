@@ -211,8 +211,15 @@ bool cheat_manager_save(
          config_set_string(conf, desc_key, cheat_st->cheats[i].code);
 
       config_set_string(conf, code_key, cheat_st->cheats[i].code);
-      config_set_bool(conf, enable_key, cheat_st->cheats[i].state);
-      config_set_bool(conf, endian_key, cheat_st->cheats[i].big_endian);
+      config_set_string(conf, enable_key,
+               cheat_st->cheats[i].state 
+            ? "true" 
+            : "false");
+      config_set_string(conf, endian_key,
+               cheat_st->cheats[i].big_endian
+            ? "true"
+            : "false"
+            );
 
       data_ptrs[0]  = &cheat_st->cheats[i].handler;
       data_ptrs[1]  = &cheat_st->cheats[i].memory_search_size;

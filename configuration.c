@@ -3092,7 +3092,7 @@ static config_file_t *open_default_config_file(void)
           * safely use config_save_on_exit. */
          fill_pathname_resolve_relative(conf_path, app_path,
                FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
-         config_set_bool(conf, "config_save_on_exit", true);
+         config_set_string(conf, "config_save_on_exit", "true");
          saved = config_file_write(conf, conf_path, true);
       }
 
@@ -3127,7 +3127,7 @@ static config_file_t *open_default_config_file(void)
 
       if (conf)
       {
-         config_set_bool(conf, "config_save_on_exit", true);
+         config_set_string(conf, "config_save_on_exit", "true");
          saved = config_file_write(conf, conf_path, true);
       }
 
@@ -3200,7 +3200,7 @@ static config_file_t *open_default_config_file(void)
          {
             /* Since this is a clean config file, we can
              * safely use config_save_on_exit. */
-            config_set_bool(conf, "config_save_on_exit", true);
+            config_set_string(conf, "config_save_on_exit", "true");
             saved = config_file_write(conf, conf_path, true);
          }
 
@@ -4208,10 +4208,14 @@ static void video_driver_save_settings(global_t *global, config_file_t *conf)
 {
    config_set_int(conf, "gamma_correction",
          global->console.screen.gamma_correction);
-   config_set_bool(conf, "flicker_filter_enable",
-         global->console.flickerfilter_enable);
-   config_set_bool(conf, "soft_filter_enable",
-         global->console.softfilter_enable);
+   config_set_string(conf, "flicker_filter_enable",
+           global->console.flickerfilter_enable
+         ? "true"
+         : "false");
+   config_set_string(conf, "soft_filter_enable",
+           global->console.softfilter_enable
+         ? "true"
+         : "false");
 
    config_set_int(conf, "soft_filter_index",
          global->console.screen.soft_filter_index);
@@ -4736,8 +4740,9 @@ bool config_save_file(const char *path)
       for (i = 0; i < (unsigned)bool_settings_size; i++)
          if (!bool_settings[i].override ||
              !retroarch_override_setting_is_set(bool_settings[i].override, NULL))
-            config_set_bool(conf, bool_settings[i].ident,
-                  *bool_settings[i].ptr);
+            config_set_string(conf, bool_settings[i].ident,
+                  *bool_settings[i].ptr
+                  ? "true" : "false");
 
       free(bool_settings);
    }
@@ -4750,16 +4755,19 @@ bool config_save_file(const char *path)
       tmp[0] = '\0';
 
       snprintf(tmp, sizeof(tmp), "network_remote_enable_user_p%u", i + 1);
-      config_set_bool(conf, tmp, settings->bools.network_remote_enable_user[i]);
+      config_set_string(conf, tmp,
+            settings->bools.network_remote_enable_user[i]
+            ? "true" : "false");
    }
 #endif
 
    /* Verbosity isn't in bool_settings since it needs to be loaded differently */
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL))
-      config_set_bool(conf, "log_verbosity",
-            verbosity_is_enabled());
-   config_set_bool(conf, "perfcnt_enable",
-         retroarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL));
+      config_set_string(conf, "log_verbosity",
+            verbosity_is_enabled() ? "true" : "false");
+   config_set_string(conf, "perfcnt_enable",
+            retroarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL) 
+         ? "true" : "false");
 
    msg_color = (((int)(settings->floats.video_msg_color_r * 255.0f) & 0xff) << 16) +
                (((int)(settings->floats.video_msg_color_g * 255.0f) & 0xff) <<  8) +
@@ -4919,8 +4927,8 @@ bool config_save_overrides(enum override_type type, void *data)
       for (i = 0; i < (unsigned)bool_settings_size; i++)
       {
          if ((*bool_settings[i].ptr) != (*bool_overrides[i].ptr))
-            config_set_bool(conf, bool_overrides[i].ident,
-                  (*bool_overrides[i].ptr));
+            config_set_string(conf, bool_overrides[i].ident,
+                  (*bool_overrides[i].ptr) ? "true" : "false");
       }
       for (i = 0; i < (unsigned)int_settings_size; i++)
       {
