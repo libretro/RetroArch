@@ -803,7 +803,6 @@ static void menu_action_setting_disp_set_label_input_desc(
 {
    unsigned remap_idx;
    settings_t *settings   = config_get_ptr();
-   const char* descriptor = NULL;
    unsigned user_idx      = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
    unsigned btn_idx       = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
 
@@ -816,15 +815,15 @@ static void menu_action_setting_disp_set_label_input_desc(
    if ((remap_idx   = settings->uints.input_remap_ids[user_idx][btn_idx]) !=
          RARCH_UNMAPPED)
    {
-      unsigned mapped_port = settings->uints.input_remap_ports[user_idx];
-      descriptor           = runloop_state_get_ptr()->system.input_desc_btn[mapped_port][remap_idx];
+      unsigned mapped_port   = settings->uints.input_remap_ports[user_idx];
+      const char *descriptor = runloop_state_get_ptr()->system.input_desc_btn[mapped_port][remap_idx];
       if (!string_is_empty(descriptor))
       {
          if (remap_idx < RARCH_FIRST_CUSTOM_BIND)
             strlcpy(s, descriptor, len);
-         else if (!string_is_empty(descriptor) && remap_idx % 2 == 0)
+         else if (remap_idx % 2 == 0)
             snprintf(s, len, "%s %c", descriptor, '+');
-         else if (remap_idx % 2 != 0)
+         else
             snprintf(s, len, "%s %c", descriptor, '-');
          return;
       }
