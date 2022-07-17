@@ -389,9 +389,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       else
 #endif
       {
-         fp = (FILE*)fopen_utf8(path, mode_str);
-
-         if (!fp)
+         if (!(fp = (FILE*)fopen_utf8(path, mode_str)))
             goto error;
 
          stream->fp  = fp;
@@ -527,9 +525,7 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
    }
 
    if (stream->fd > 0)
-   {
       close(stream->fd);
-   }
 #ifdef HAVE_CDROM
 end:
    if (stream->cdrom.cue_buf)
@@ -564,18 +560,14 @@ int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream)
 
 int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file *stream, int64_t length)
 {
-   if (!stream)
-      return -1;
-
 #ifdef _WIN32
-   if (_chsize(_fileno(stream->fp), length) != 0)
-      return -1;
+   if (stream && _chsize(_fileno(stream->fp), length) == 0)
+	   return 0;
 #elif !defined(VITA) && !defined(PSP) && !defined(PS2) && !defined(ORBIS) && (!defined(SWITCH) || defined(HAVE_LIBNX))
-   if (ftruncate(fileno(stream->fp), (off_t)length) != 0)
-      return -1;
+   if (stream && ftruncate(fileno(stream->fp), (off_t)length) == 0)
+      return 0;
 #endif
-
-   return 0;
+   return -1;
 }
 
 int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
@@ -670,10 +662,7 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, cons
       return -1;
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-   {
       return fwrite(s, 1, (size_t)len, stream->fp);
-   }
-
 #ifdef HAVE_MMAP
    if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
       return -1;
@@ -683,9 +672,9 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, cons
 
 int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream)
 {
-   if (!stream)
-      return -1;
-   return fflush(stream->fp) == 0 ? 0 : -1;
+   if (stream && fflush(stream->fp) == 0)
+      return 0;
+   return -1;
 }
 
 int retro_vfs_file_remove_impl(const char *path)
@@ -701,9 +690,7 @@ int retro_vfs_file_remove_impl(const char *path)
    if (!path || !*path)
       return -1;
 #if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500
-   path_local = utf8_to_local_string_alloc(path);
-
-   if (path_local)
+   if ((path_local = utf8_to_local_string_alloc(path)))
    {
       int ret = remove(path_local);
       free(path_local);
@@ -712,9 +699,7 @@ int retro_vfs_file_remove_impl(const char *path)
          return 0;
    }
 #else
-   path_wide = utf8_to_utf16_string_alloc(path);
-
-   if (path_wide)
+   if ((path_wide = utf8_to_utf16_string_alloc(path)))
    {
       int ret = _wremove(path_wide);
       free(path_wide);
@@ -723,12 +708,11 @@ int retro_vfs_file_remove_impl(const char *path)
          return 0;
    }
 #endif
-   return -1;
 #else
    if (remove(path) == 0)
       return 0;
-   return -1;
 #endif
+   return -1;
 }
 
 int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
@@ -890,12 +874,10 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
    if (string_is_empty(path))
       return 0;
 
-   path_buf = strdup(path);
-   if (!path_buf)
+   if (!(path_buf = strdup(path)))
       return 0;
 
-   len = strlen(path_buf);
-   if (len > 0)
+   if ((len = strlen(path_buf)) > 0)
       if (path_buf[len - 1] == '/')
          path_buf[len - 1] = '\0';
 
@@ -1051,8 +1033,8 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
       return NULL;
 
    /*Allocate RDIR struct. Tidied later with retro_closedir*/
-   rdir = (libretro_vfs_implementation_dir*)calloc(1, sizeof(*rdir));
-   if (!rdir)
+   if (!(rdir = (libretro_vfs_implementation_dir*)
+            calloc(1, sizeof(*rdir))))
       return NULL;
 
    rdir->orig_path       = strdup(name);
