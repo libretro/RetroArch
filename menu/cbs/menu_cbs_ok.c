@@ -6048,10 +6048,9 @@ static void netplay_refresh_rooms_cb(retro_task_t *task, void *task_data,
    {
       int room_count;
 
-      netplay_rooms_parse(room_data);
+      netplay_rooms_parse(room_data, strlen(room_data));
 
-      room_count = netplay_rooms_get_count();
-      if (room_count > 0)
+      if ((room_count = netplay_rooms_get_count()) > 0)
       {
          net_st->room_list = (struct netplay_room*)calloc(room_count,
             sizeof(*net_st->room_list));

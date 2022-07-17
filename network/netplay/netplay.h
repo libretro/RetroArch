@@ -265,7 +265,7 @@ bool netplay_decode_hostname(const char *hostname,
    char *address, unsigned *port, char *session, size_t len);
 bool netplay_is_lan_address(struct sockaddr_in *addr);
 
-int netplay_rooms_parse(const char *buf);
+int netplay_rooms_parse(const char *buf, size_t len);
 int netplay_rooms_get_count(void);
 struct netplay_room *netplay_room_get(int index);
 void netplay_rooms_free(void);

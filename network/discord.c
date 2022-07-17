@@ -169,17 +169,15 @@ static void handle_discord_join_cb(retro_task_t *task, void *task_data,
    if (data->status != 200)
       goto done;
 
-   room_data = (char*)malloc(data->len + 1);
-   if (!room_data)
+   if (!(room_data = (char*)malloc(data->len + 1)))
       goto done;
    memcpy(room_data, data->data, data->len);
    room_data[data->len] = '\0';
 
-   netplay_rooms_parse(room_data);
+   netplay_rooms_parse(room_data, strlen(room_data));
    free(room_data);
 
-   room = netplay_room_get(0);
-   if (room)
+   if ((room = netplay_room_get(0)))
    {
       if (room->host_method == NETPLAY_HOST_METHOD_MITM)
          snprintf(hostname, sizeof(hostname), "%s|%d|%s",
@@ -204,14 +202,15 @@ done:
 
 static void handle_discord_join(const char *secret)
 {
+   int room_id;
    char url[512];
-   discord_state_t *discord_st = &discord_state_st;
-   int room_id                 = (int)strtol(secret, NULL, 10);
 
-   if (room_id)
+   if ((room_id = (int)strtol(secret, NULL, 10)))
    {
-      snprintf(discord_st->peer_party_id, sizeof(discord_st->peer_party_id),
-         "%d", room_id);
+      discord_state_t *discord_st = &discord_state_st;
+      snprintf(discord_st->peer_party_id,
+            sizeof(discord_st->peer_party_id),
+            "%d", room_id);
 
       strlcpy(url, FILE_PATH_LOBBY_LIBRETRO_URL, sizeof(url));
       strlcat(url, discord_st->peer_party_id, sizeof(url));

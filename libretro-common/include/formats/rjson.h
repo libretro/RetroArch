@@ -69,7 +69,7 @@ struct RFILE;
 rjson_t *rjson_open_stream(struct intfstream_internal *stream);
 rjson_t *rjson_open_rfile(struct RFILE *rfile);
 rjson_t *rjson_open_buffer(const void *buffer, size_t size);
-rjson_t *rjson_open_string(const char *string);
+rjson_t *rjson_open_string(const char *string, size_t len);
 rjson_t *rjson_open_user(rjson_io_t io, void *user_data, int io_block_size);
 
 /* Free the parser instance created with rjson_open_* */
@@ -157,7 +157,7 @@ enum rjson_type rjson_parse(rjson_t *json, void* context,
 /* A simpler interface to parse a JSON in memory. This will avoid any memory
  * allocations unless the document contains strings longer than 512 characters.
  * In the error handler, error will be "" if any of the other handlers aborted. */
-bool rjson_parse_quick(const char *string, void* context, char option_flags,
+bool rjson_parse_quick(const char *string, size_t len, void* context, char option_flags,
       bool (*object_member_handler)(void *context, const char *str, size_t len),
       bool (*string_handler       )(void *context, const char *str, size_t len),
       bool (*number_handler       )(void *context, const char *str, size_t len),
