@@ -198,24 +198,24 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
    *w = 19;
    strlcpy(s2, path, len2);
 
-   if (!shader_pass)
-      return;
-
-  switch (shader_pass->filter)
-  {
-     case 0:
-        strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE),
-              len);
-        break;
-     case 1:
-        strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LINEAR),
-              len);
-        break;
-     case 2:
-        strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NEAREST),
-              len);
-        break;
-  }
+   if (shader_pass)
+   {
+      switch (shader_pass->filter)
+      {
+         case 0:
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE),
+                  len);
+            break;
+         case 1:
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LINEAR),
+                  len);
+            break;
+         case 2:
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NEAREST),
+                  len);
+            break;
+      }
+   }
 }
 
 static void menu_action_setting_disp_set_label_shader_watch_for_changes(
@@ -249,8 +249,6 @@ static void menu_action_setting_disp_set_label_shader_num_passes(
 {
    struct video_shader *shader = menu_shader_get();
    unsigned pass_count         = shader ? shader->passes : 0;
-
-   *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
    snprintf(s, len, "%u", pass_count);
@@ -1521,7 +1519,6 @@ static void menu_action_setting_disp_set_label_playlist_right_thumbnail_mode(
 {
    playlist_t *playlist  = playlist_get_cached();
 
-   *s = '\0';
    *w = 19;
 
    strlcpy(s2, path, len2);
@@ -1531,6 +1528,8 @@ static void menu_action_setting_disp_set_label_playlist_right_thumbnail_mode(
             s,
             get_playlist_thumbnail_mode_value(playlist, PLAYLIST_THUMBNAIL_RIGHT),
             len);
+   else
+      *s = '\0';
 }
 
 static void menu_action_setting_disp_set_label_playlist_left_thumbnail_mode(
@@ -1543,7 +1542,6 @@ static void menu_action_setting_disp_set_label_playlist_left_thumbnail_mode(
 {
    playlist_t *playlist  = playlist_get_cached();
 
-   *s = '\0';
    *w = 19;
 
    strlcpy(s2, path, len2);
@@ -1553,6 +1551,8 @@ static void menu_action_setting_disp_set_label_playlist_left_thumbnail_mode(
             s,
             get_playlist_thumbnail_mode_value(playlist, PLAYLIST_THUMBNAIL_LEFT),
             len);
+   else
+      *s = '\0';
 }
 
 static void menu_action_setting_disp_set_label_playlist_sort_mode(
@@ -1633,16 +1633,14 @@ static void menu_action_setting_disp_set_label_core_option(
       char *s2, size_t len2)
 {
    core_option_manager_t *coreopts = NULL;
-   const char *coreopt_label       = NULL;
 
    *s = '\0';
    *w = 19;
 
    if (retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
    {
-      coreopt_label = core_option_manager_get_val_label(coreopts,
+      const char *coreopt_label    = core_option_manager_get_val_label(coreopts,
             type - MENU_SETTINGS_CORE_OPTION_START);
-
       if (!string_is_empty(coreopt_label))
          strlcpy(s, coreopt_label, len);
    }
@@ -1661,12 +1659,12 @@ static void menu_action_setting_disp_set_label_achievement_information(
    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
       list->list[i].actiondata;
    rarch_setting_t *setting  = cbs->setting;
-
-   *s                        = '\0';
    *w                        = 2;
 
    if (setting && setting->get_string_representation)
       setting->get_string_representation(setting, s, len);
+   else
+      *s                     = '\0';
 
    strlcpy(s2, path, len2);
 }
@@ -1800,8 +1798,7 @@ static void menu_action_setting_disp_set_label_setting_string(file_list_t* list,
    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
       list->list[i].actiondata;
    rarch_setting_t *setting  = cbs->setting;
-
-   *w = 19;
+   *w                        = 19;
 
    if (setting->value.target.string)
       strlcpy(s, setting->value.target.string, len);
@@ -1819,9 +1816,8 @@ static void menu_action_setting_disp_set_label_setting_path(file_list_t* list,
    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
       list->list[i].actiondata;
    rarch_setting_t *setting  = cbs->setting;
-   const char *basename     = setting ? path_basename(setting->value.target.string) : NULL;
-
-   *w = 19;
+   const char *basename      = setting ? path_basename(setting->value.target.string) : NULL;
+   *w                        = 19;
 
    if (!string_is_empty(basename))
       strlcpy(s, basename, len);
