@@ -1072,7 +1072,11 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          }
          break;
       case ST_FLOAT:
+#if defined(_MSC_VER) && _MSC_VER < 1800
+         sscanf(value, "%f", setting->value.target.fraction);
+#else
          *setting->value.target.fraction = strtof(value, &ptr);
+#endif
          if (flags & SD_FLAG_HAS_RANGE)
          {
             if (setting->enforce_minrange && *setting->value.target.fraction < min)
