@@ -828,6 +828,7 @@ build-static-retroarch-djgpp:
     -  retroarch-precompiled/
     expire_in: 10 min
   dependencies: []
+  needs: []
   script:
     # Allow failure since we don't have a core
     - "make -f Makefile.dos -j$NUMPROC ||:"
@@ -865,6 +866,7 @@ build-static-retroarch-ctr-legacy:
     -  retroarch-precompiled/
     expire_in: 10 min
   dependencies: []
+  needs: []
   script:
     # Allow failure since we don't have a core
     - "make -f Makefile.ctr -j$NUMPROC ||:"
