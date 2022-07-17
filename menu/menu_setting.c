@@ -1011,6 +1011,7 @@ static void setting_get_string_representation_int(rarch_setting_t *setting,
 int setting_set_with_string_representation(rarch_setting_t* setting,
       const char* value)
 {
+   char *ptr;
    double min, max;
    uint64_t flags;
    if (!setting || !value)
@@ -1023,7 +1024,7 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
    switch (setting->type)
    {
       case ST_INT:
-         sscanf(value, "%d", setting->value.target.integer);
+         *setting->value.target.integer = (int)strtol(value, &ptr, 10);
          if (flags & SD_FLAG_HAS_RANGE)
          {
             if (setting->enforce_minrange && *setting->value.target.integer < min)
@@ -1039,7 +1040,7 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          }
          break;
       case ST_UINT:
-         sscanf(value, "%u", setting->value.target.unsigned_integer);
+         *setting->value.target.unsigned_integer = (unsigned int)strtoul(value, &ptr, 10);
          if (flags & SD_FLAG_HAS_RANGE)
          {
             if (setting->enforce_minrange && *setting->value.target.unsigned_integer < min)
@@ -1071,7 +1072,7 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          }
          break;
       case ST_FLOAT:
-         sscanf(value, "%f", setting->value.target.fraction);
+         *setting->value.target.fraction = strtof(value, &ptr);
          if (flags & SD_FLAG_HAS_RANGE)
          {
             if (setting->enforce_minrange && *setting->value.target.fraction < min)
