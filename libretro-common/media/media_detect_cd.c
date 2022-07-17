@@ -149,8 +149,8 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
 
          if (!string_is_empty(track))
          {
-            unsigned track_number = 0;
-            sscanf(track, "%d", (int*)&track_number);
+            char *ptr             = NULL;
+            unsigned track_number = (unsigned)strtol(track, &ptr, 10);
 #ifdef MEDIA_CUE_PARSE_DEBUG
             printf("Found track: %d\n", track_number);
             fflush(stdout);
@@ -185,8 +185,8 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
 
          if (!string_is_empty(index))
          {
-            unsigned index_number = 0;
-            sscanf(index, "%d", (int*)&index_number);
+            char *ptr             = NULL;
+            unsigned index_number = (unsigned)strtol(index, &ptr, 10);
 
             if (index_number == 1)
             {
