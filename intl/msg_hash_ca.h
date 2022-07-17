@@ -6297,6 +6297,70 @@ MSG_HASH(
    "Desconegut"
    )
 MSG_HASH(
+   MSG_BLUETOOTH_SCAN_COMPLETE,
+   "S’ha completat la cerca de Bluetooth."
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_PAIRING_REMOVED,
+   "S’ha eliminat l’emparellament. Reinicieu el RetroArch per tornar a connectar o emparellar un dispositiu."
+   )
+MSG_HASH(
+   MSG_WIFI_SCAN_COMPLETE,
+   "S’ha completat la cerca de Wi-Fi."
+   )
+MSG_HASH(
+   MSG_SCANNING_BLUETOOTH_DEVICES,
+   "S’estan cercant dispositius Bluetooth..."
+   )
+MSG_HASH(
+   MSG_SCANNING_WIRELESS_NETWORKS,
+   "S’estan cercant xarxes sense fil..."
+   )
+MSG_HASH(
+   MSG_ENABLING_WIRELESS,
+   "S’està activant la Wi-Fi..."
+   )
+MSG_HASH(
+   MSG_DISABLING_WIRELESS,
+   "S’està desactivant la Wi-Fi..."
+   )
+MSG_HASH(
+   MSG_DISCONNECTING_WIRELESS,
+   "S’està desconnectant la Wi-Fi..."
+   )
+MSG_HASH(
+   MSG_NETPLAY_LAN_SCANNING,
+   "S’estan cercant amfitrions pel joc en xarxa..."
+   )
+MSG_HASH(
+   MSG_PREPARING_FOR_CONTENT_SCAN,
+   "S’està preparant per cercar contingut..."
+   )
+MSG_HASH(
+   MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
+   "Introduïu la contrasenya"
+   )
+MSG_HASH(
+   MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
+   "Contrasenya correcta."
+   )
+MSG_HASH(
+   MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
+   "Contrasenya incorrecta."
+   )
+MSG_HASH(
+   MSG_INPUT_KIOSK_MODE_PASSWORD,
+   "Introduïu la contrasenya"
+   )
+MSG_HASH(
+   MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
+   "Contrasenya correcta."
+   )
+MSG_HASH(
+   MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
+   "Contrasenya incorrecta."
+   )
+MSG_HASH(
    MSG_CORE_INSTALLATION_FAILED,
    "Ha fallat la instal·lació del nucli: "
    )
