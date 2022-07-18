@@ -1280,13 +1280,14 @@ static void frontend_unix_get_os(char *s,
 
    strcpy_literal(s, "Android");
 #else
-   unsigned krel;
+   char *ptr;
    struct utsname buffer;
 
    if (uname(&buffer) != 0)
       return;
 
-   sscanf(buffer.release, "%d.%d.%u", major, minor, &krel);
+   *major = (int)strtol(buffer.release, &ptr, 10);
+   *minor = (int)strtol(++ptr, NULL, 10);
 #if defined(__FreeBSD__)
    strcpy_literal(s, "FreeBSD");
 #elif defined(__NetBSD__)
