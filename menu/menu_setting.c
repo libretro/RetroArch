@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2014-2017 - Jean-AndrÃ© Santoni
+ *  Copyright (C) 2014-2017 - Jean-André Santoni
  *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -348,10 +348,14 @@ static void menu_input_st_uint_cb(void *userdata, const char *str)
 {
    if (str && *str)
    {
+      const char        *label = menu_input_dialog_get_label_setting_buffer();
+      rarch_setting_t *setting = menu_setting_find(label);
+
       const char *ptr          = NULL;
       unsigned value           = 0;
       int chars_read           = 0;
       int ret                  = 0;
+      bool minus_found         = false;
 
       /* Ensure that input string contains a valid
        * unsigned value
@@ -362,20 +366,16 @@ static void menu_input_st_uint_cb(void *userdata, const char *str)
       {
          if (*ptr == '-')
          {
-            menu_input_dialog_end();
-            return;
+            minus_found = true;
+            break;
          }
       }
 
-      ret = sscanf(str, "%u %n", &value, &chars_read);
+      if (!minus_found)
+         ret = sscanf(str, "%u %n", &value, &chars_read);
 
       if ((ret == 1) && !str[chars_read])
-      {
-         const char        *label = 
-            menu_input_dialog_get_label_setting_buffer();
-         rarch_setting_t *setting = menu_setting_find(label);
          setting_set_with_string_representation(setting, str);
-      }
    }
 
    menu_input_dialog_end();
@@ -385,20 +385,19 @@ static void menu_input_st_int_cb(void *userdata, const char *str)
 {
    if (str && *str)
    {
-      int value         = 0;
-      int chars_read    = 0;
+      const char        *label = menu_input_dialog_get_label_setting_buffer();
+      rarch_setting_t *setting = menu_setting_find(label);
+
+      int value                = 0;
+      int chars_read           = 0;
+      int ret                  = 0;
+
       /* Ensure that input string contains a valid
        * unsigned value */
-      int ret           = sscanf(str, "%d %n", &value, &chars_read);
+      ret = sscanf(str, "%d %n", &value, &chars_read);
 
       if ((ret == 1) && !str[chars_read])
-      {
-         const char *label = 
-            menu_input_dialog_get_label_setting_buffer();
-         rarch_setting_t 
-            *setting       = menu_setting_find(label);
          setting_set_with_string_representation(setting, str);
-      }
    }
 
    menu_input_dialog_end();
@@ -461,19 +460,19 @@ static void menu_input_st_float_cb(void *userdata, const char *str)
 {
    if (str && *str)
    {
-      float value     = 0.0f;
-      int chars_read  = 0;
+      const char        *label = menu_input_dialog_get_label_setting_buffer();
+      rarch_setting_t *setting = menu_setting_find(label);
+
+      float value              = 0.0f;
+      int chars_read           = 0;
+      int ret                  = 0;
+
       /* Ensure that input string contains a valid
        * floating point value */
-      int ret         = sscanf(str, "%f %n", &value, &chars_read);
+      ret = sscanf(str, "%f %n", &value, &chars_read);
 
       if ((ret == 1) && !str[chars_read])
-      {
-         const char        *label = 
-            menu_input_dialog_get_label_setting_buffer();
-         rarch_setting_t *setting = menu_setting_find(label);
          setting_set_with_string_representation(setting, str);
-      }
    }
 
    menu_input_dialog_end();
@@ -483,18 +482,17 @@ static void menu_input_st_string_cb(void *userdata, const char *str)
 {
    if (str && *str)
    {
-      const char *label = menu_input_dialog_get_label_setting_buffer();
+      rarch_setting_t *setting = NULL;
+      const char        *label = menu_input_dialog_get_label_setting_buffer();
 
       if (!string_is_empty(label))
-      {
-         rarch_setting_t *setting = NULL;
-         if ((setting = menu_setting_find(label)))
-         {
-            setting_set_with_string_representation(setting, str);
-            menu_setting_generic(setting, 0, false);
-         }
-      }
+         setting = menu_setting_find(label);
 
+      if (setting)
+      {
+         setting_set_with_string_representation(setting, str);
+         menu_setting_generic(setting, 0, false);
+      }
    }
 
    menu_input_dialog_end();
@@ -657,7 +655,8 @@ static int setting_bind_action_start(rarch_setting_t *setting)
    if (!setting)
       return -1;
 
-   if (!(keybind = (struct retro_keybind*)setting->value.target.keybind))
+   keybind = (struct retro_keybind*)setting->value.target.keybind;
+   if (!keybind)
       return -1;
 
    keybind->joykey  = NO_BTN;
@@ -667,10 +666,10 @@ static int setting_bind_action_start(rarch_setting_t *setting)
    input_keyboard_mapping_bits(0, keybind->key);
 
    if (setting->index_offset)
-      def_binds     = (struct retro_keybind*)retro_keybinds_rest;
+      def_binds = (struct retro_keybind*)retro_keybinds_rest;
 
-   bind_type        = setting_get_bind_type(setting);
-   keybind->key     = def_binds[bind_type - MENU_SETTINGS_BIND_BEGIN].key;
+   bind_type    = setting_get_bind_type(setting);
+   keybind->key = def_binds[bind_type - MENU_SETTINGS_BIND_BEGIN].key;
 
    keybind->mbutton = NO_BTN;
 
@@ -690,13 +689,12 @@ static void setting_get_string_representation_hex(rarch_setting_t *setting,
 }
 #endif
 
-void setting_get_string_representation_hex_and_uint(
-      rarch_setting_t *setting, char *s, size_t len)
+void setting_get_string_representation_hex_and_uint(rarch_setting_t *setting,
+      char *s, size_t len)
 {
    if (setting)
       snprintf(s, len, "%u (%08X)",
-            *setting->value.target.unsigned_integer,
-            *setting->value.target.unsigned_integer);
+            *setting->value.target.unsigned_integer, *setting->value.target.unsigned_integer);
 }
 
 void setting_get_string_representation_uint(rarch_setting_t *setting,
@@ -707,16 +705,16 @@ void setting_get_string_representation_uint(rarch_setting_t *setting,
             *setting->value.target.unsigned_integer);
 }
 
-void setting_get_string_representation_size(
-      rarch_setting_t *setting, char *s, size_t len)
+void setting_get_string_representation_size(rarch_setting_t *setting,
+      char *s, size_t len)
 {
    if (setting)
       snprintf(s, len, "%" PRI_SIZET,
             *setting->value.target.sizet);
 }
 
-void setting_get_string_representation_size_in_mb(
-      rarch_setting_t *setting, char *s, size_t len)
+void setting_get_string_representation_size_in_mb(rarch_setting_t *setting,
+      char *s, size_t len)
 {
    if (setting)
       snprintf(s, len, "%" PRI_SIZET,
@@ -725,7 +723,8 @@ void setting_get_string_representation_size_in_mb(
 
 #ifdef HAVE_CHEATS
 static void setting_get_string_representation_uint_as_enum(
-      rarch_setting_t *setting, char *s, size_t len)
+      rarch_setting_t *setting,
+      char *s, size_t len)
 {
    if (setting)
       snprintf(s, len, "%s",
@@ -760,33 +759,33 @@ static float recalc_step_based_on_length_of_action(rarch_setting_t *setting)
 int setting_uint_action_left_default(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
+   double               min        = 0.0f;
    bool                 overflowed = false;
    float                step       = 0.0f;
 
    if (!setting)
       return -1;
 
-   step = recalc_step_based_on_length_of_action(setting);
+   min = setting->min;
 
-   if (step > *setting->value.target.unsigned_integer)
-      overflowed = true;
-   else
+   (void)wraparound; /* TODO/FIXME - handle this */
+
+   step       = recalc_step_based_on_length_of_action(setting);
+   overflowed = step > *setting->value.target.unsigned_integer;
+
+   if (!overflowed)
       *setting->value.target.unsigned_integer =
          *setting->value.target.unsigned_integer - step;
 
    if (setting->enforce_minrange)
    {
-      double min = setting->min;
       if (overflowed || *setting->value.target.unsigned_integer < min)
       {
          settings_t *settings = config_get_ptr();
+         double           max = setting->max;
 
-         if (settings && 
-             settings->bools.menu_navigation_wraparound_enable)
-         {
-            double max = setting->max;
+         if (settings && settings->bools.menu_navigation_wraparound_enable)
             *setting->value.target.unsigned_integer = max;
-         }
          else
             *setting->value.target.unsigned_integer = min;
       }
@@ -798,12 +797,14 @@ int setting_uint_action_left_default(
 int setting_uint_action_right_default(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
+   double               max  = 0.0f;
    float                step = 0.0f;
 
    if (!setting)
       return -1;
 
-   step                                    =
+   max                       = setting->max;
+   step                      =
       recalc_step_based_on_length_of_action(setting);
 
    *setting->value.target.unsigned_integer =
@@ -811,7 +812,6 @@ int setting_uint_action_right_default(
 
    if (setting->enforce_maxrange)
    {
-      double max = setting->max;
       if (*setting->value.target.unsigned_integer > max)
       {
          settings_t *settings = config_get_ptr();
@@ -870,9 +870,8 @@ int setting_bool_action_left_with_refresh(
 int setting_uint_action_left_with_refresh(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   int retval   = setting_uint_action_left_default(
-                  setting, idx, wraparound);
-   bool refresh = false;
+   int retval = setting_uint_action_left_default(setting, idx, wraparound);
+   bool refresh      = false;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
@@ -884,20 +883,25 @@ int setting_uint_action_left_with_refresh(
 static int setting_size_action_left_default(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
+   double               min        = 0.0f;
    bool                 overflowed = false;
    float                step       = 0.0f;
 
    if (!setting)
       return -1;
 
-   step       = recalc_step_based_on_length_of_action(setting);
+   min = setting->min;
 
-   if (!(overflowed = step > *setting->value.target.sizet))
+   (void)wraparound; /* TODO/FIXME - handle this */
+
+   step       = recalc_step_based_on_length_of_action(setting);
+   overflowed = step > *setting->value.target.sizet;
+
+   if (!overflowed)
       *setting->value.target.sizet = *setting->value.target.sizet - step;
 
    if (setting->enforce_minrange)
    {
-      double min = setting->min;
       if (overflowed || *setting->value.target.sizet < min)
       {
          settings_t *settings = config_get_ptr();
@@ -916,10 +920,15 @@ static int setting_size_action_left_default(
 static int setting_size_action_right_default(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
+   double               max  = 0.0f;
    float                step = 0.0f;
 
    if (!setting)
       return -1;
+
+   max = setting->max;
+
+   (void)wraparound; /* TODO/FIXME - handle this */
 
    step = recalc_step_based_on_length_of_action(setting);
 
@@ -928,7 +937,6 @@ static int setting_size_action_right_default(
 
    if (setting->enforce_maxrange)
    {
-      double max = setting->max;
       if (*setting->value.target.sizet > max)
       {
          settings_t *settings = config_get_ptr();
@@ -949,6 +957,8 @@ int setting_generic_action_ok_default(
 {
    if (!setting)
       return -1;
+
+   (void)wraparound; /* TODO/FIXME - handle this */
 
    if (setting->cmd_trigger_idx != CMD_EVENT_NONE)
       setting->cmd_trigger_event_triggered = true;
@@ -983,8 +993,7 @@ static void setting_get_string_representation_int_gpu_index(rarch_setting_t *set
    }
 }
 
-static void setting_get_string_representation_int(
-      rarch_setting_t *setting,
+static void setting_get_string_representation_int(rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (setting)
@@ -1002,7 +1011,6 @@ static void setting_get_string_representation_int(
 int setting_set_with_string_representation(rarch_setting_t* setting,
       const char* value)
 {
-   char *ptr;
    double min, max;
    uint64_t flags;
    if (!setting || !value)
@@ -1015,7 +1023,7 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
    switch (setting->type)
    {
       case ST_INT:
-         *setting->value.target.integer = (int)strtol(value, &ptr, 10);
+         sscanf(value, "%d", setting->value.target.integer);
          if (flags & SD_FLAG_HAS_RANGE)
          {
             if (setting->enforce_minrange && *setting->value.target.integer < min)
@@ -1031,7 +1039,7 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          }
          break;
       case ST_UINT:
-         *setting->value.target.unsigned_integer = (unsigned int)strtoul(value, &ptr, 10);
+         sscanf(value, "%u", setting->value.target.unsigned_integer);
          if (flags & SD_FLAG_HAS_RANGE)
          {
             if (setting->enforce_minrange && *setting->value.target.unsigned_integer < min)
@@ -1063,11 +1071,7 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          }
          break;
       case ST_FLOAT:
-#if defined(_MSC_VER) && _MSC_VER < 1800
          sscanf(value, "%f", setting->value.target.fraction);
-#else
-         *setting->value.target.fraction = strtof(value, &ptr);
-#endif
          if (flags & SD_FLAG_HAS_RANGE)
          {
             if (setting->enforce_minrange && *setting->value.target.fraction < min)
@@ -1109,15 +1113,19 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
 static int setting_fraction_action_left_default(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
+   double               min = 0.0f;
+
    if (!setting)
       return -1;
 
-   *setting->value.target.fraction = 
-      *setting->value.target.fraction - setting->step;
+   min = setting->min;
+
+   (void)wraparound; /* TODO/FIXME - handle this */
+
+   *setting->value.target.fraction = *setting->value.target.fraction - setting->step;
 
    if (setting->enforce_minrange)
    {
-      double min = setting->min;
       if (*setting->value.target.fraction < min)
       {
          settings_t *settings = config_get_ptr();
@@ -1136,15 +1144,20 @@ static int setting_fraction_action_left_default(
 static int setting_fraction_action_right_default(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
+   double               max = 0.0f;
+
    if (!setting)
       return -1;
+
+   max = setting->max;
+
+   (void)wraparound; /* TODO/FIXME - handle this */
 
    *setting->value.target.fraction =
       *setting->value.target.fraction + setting->step;
 
    if (setting->enforce_maxrange)
    {
-      double max = setting->max;
       if (*setting->value.target.fraction > max)
       {
          settings_t *settings = config_get_ptr();
@@ -1244,10 +1257,8 @@ static void setting_get_string_representation_st_bool(rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (setting)
-      strlcpy(s, *setting->value.target.boolean 
-            ? setting->boolean.on_label
-            : setting->boolean.off_label,
-            len);
+      strlcpy(s, *setting->value.target.boolean ? setting->boolean.on_label :
+            setting->boolean.off_label, len);
 }
 
 /**
@@ -1272,9 +1283,8 @@ static void setting_get_string_representation_st_dir(rarch_setting_t *setting,
 {
    if (setting)
       strlcpy(s,
-             *setting->value.target.string
-            ? setting->value.target.string 
-            : setting->dir.empty_path,
+            *setting->value.target.string ?
+            setting->value.target.string : setting->dir.empty_path,
             len);
 }
 
@@ -1317,8 +1327,12 @@ static int setting_action_action_ok(
 {
    if (!setting)
       return -1;
+
+   (void)wraparound; /* TODO/FIXME - handle this */
+
    if (setting->cmd_trigger_idx != CMD_EVENT_NONE)
       command_event(setting->cmd_trigger_idx, NULL);
+
    return 0;
 }
 
@@ -1847,21 +1861,25 @@ static rarch_setting_t setting_bind_setting(const char* name,
 static int setting_int_action_left_default(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
+   double               min = 0.0f;
+
    if (!setting)
       return -1;
+
+   min = setting->min;
+
+   (void)wraparound; /* TODO/FIXME - handle this */
 
    *setting->value.target.integer = *setting->value.target.integer - setting->step;
 
    if (setting->enforce_minrange)
    {
-      double min = setting->min;
       if (*setting->value.target.integer < min)
       {
          settings_t *settings = config_get_ptr();
          double           max = setting->max;
 
-         if (   settings
-             && settings->bools.menu_navigation_wraparound_enable)
+         if (settings && settings->bools.menu_navigation_wraparound_enable)
             *setting->value.target.integer = max;
          else
             *setting->value.target.integer = min;
@@ -1877,10 +1895,10 @@ static int setting_bool_action_ok_default(
    if (!setting)
       return -1;
 
+   (void)wraparound; /* TODO/FIXME - handle this */
+
    setting_set_with_string_representation(setting,
-          *setting->value.target.boolean 
-         ? "false" 
-         : "true");
+         *setting->value.target.boolean ? "false" : "true");
 
    return 0;
 }
@@ -1891,10 +1909,10 @@ static int setting_bool_action_toggle_default(
    if (!setting)
       return -1;
 
+   (void)wraparound; /* TODO/FIXME - handle this */
+
    setting_set_with_string_representation(setting,
-          *setting->value.target.boolean 
-         ? "false" 
-         : "true");
+         *setting->value.target.boolean ? "false" : "true");
 
    return 0;
 }
@@ -3049,9 +3067,11 @@ static void setting_get_string_representation_video_record_quality(rarch_setting
 static void setting_get_string_representation_video_filter(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   if (setting)
-      fill_pathname(s, path_basename(setting->value.target.string),
-            "", len);
+   if (!setting)
+      return;
+
+   fill_pathname(s, path_basename(setting->value.target.string),
+         "", len);
 }
 
 static void setting_get_string_representation_state_slot(rarch_setting_t *setting,
@@ -3077,15 +3097,19 @@ static void setting_get_string_representation_percentage(rarch_setting_t *settin
 static void setting_get_string_representation_float_video_msg_color(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   if (setting)
-      snprintf(s, len, "%d", (int)(*setting->value.target.fraction * 255.0f));
+   if (!setting)
+      return;
+
+   snprintf(s, len, "%d", (int)(*setting->value.target.fraction * 255.0f));
 }
 
 static void setting_get_string_representation_max_users(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   if (setting)
-      snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
+   if (!setting)
+      return;
+
+   snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
 }
 
 #ifdef HAVE_CHEEVOS
