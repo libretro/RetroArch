@@ -1949,12 +1949,11 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                if (!string_is_empty(fullpath))
                {
                   char tmp_path[PATH_MAX_LENGTH];
-                  tmp_path[0]     = '\0';
-
                   if (string_is_empty(dir_system))
                      RARCH_WARN("[Environ]: SYSTEM DIR is empty, assume CONTENT DIR %s\n",
                            fullpath);
-                  fill_pathname_basedir(tmp_path, fullpath, sizeof(tmp_path));
+                  strlcpy(tmp_path, fullpath, sizeof(tmp_path));
+                  path_basedir(tmp_path);
                   dir_set(RARCH_DIR_SYSTEM, tmp_path);
                }
 

@@ -8959,13 +8959,15 @@ static bool setting_append_list_input_player_options(
       if (input_config_bind_map_get_meta(i))
          continue;
 
-      label[0] = name[0]          = '\0';
+      name[0]          = '\0';
 
       if (!string_is_empty(buffer[user]))
       {
          strlcpy(label, buffer[user], sizeof(label));
          strlcat(label, " ", sizeof(label));
       }
+      else
+         label[0] = '\0';
 
       if (
             settings->bools.input_descriptor_label_show

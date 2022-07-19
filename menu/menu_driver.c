@@ -2874,10 +2874,12 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
    config_directory[0]         = '\0';
 
    if (!path_is_empty(RARCH_PATH_CONFIG))
-      fill_pathname_basedir(
-            config_directory,
+   {
+      strlcpy(config_directory,
             path_get(RARCH_PATH_CONFIG),
             sizeof(config_directory));
+      path_basedir(config_directory);
+   }
 
    preset_dirs[0] = dir_video_shader;
    preset_dirs[1] = dir_menu_config;
@@ -3889,10 +3891,12 @@ bool menu_shader_manager_operate_auto_preset(
       return false;
 
    if (!path_is_empty(RARCH_PATH_CONFIG))
-      fill_pathname_basedir(
-            config_directory,
+   {
+      strlcpy(config_directory,
             path_get(RARCH_PATH_CONFIG),
             sizeof(config_directory));
+      path_basedir(config_directory);
+   }
 
    /* We are only including this directory for compatibility purposes with
     * versions 1.8.7 and older. */

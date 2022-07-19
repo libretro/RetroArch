@@ -330,15 +330,11 @@ static bool screenshot_dump(
 
          if (  string_is_empty(new_screenshot_dir) || 
                settings->bools.screenshots_in_content_dir)
-         {
             fill_pathname_basedir(new_screenshot_dir, name_base,
                   sizeof(new_screenshot_dir));
-            fill_pathname_join(state->filename, new_screenshot_dir,
-                  state->shotname, sizeof(state->filename));
-         }
-         else
-            fill_pathname_join(state->filename, new_screenshot_dir,
-                  state->shotname, sizeof(state->filename));
+
+         fill_pathname_join(state->filename, new_screenshot_dir,
+               state->shotname, sizeof(state->filename));
 
          /* Create screenshot directory, if required */
          if (!path_is_directory(new_screenshot_dir))

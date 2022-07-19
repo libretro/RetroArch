@@ -84,9 +84,6 @@ static void fill_pathname_expanded_and_absolute(char *out_path,
       const char *in_refpath, const char *in_path)
 {
    char expanded_path[PATH_MAX_LENGTH];
-
-   expanded_path[0] = '\0';
-
    /* Expand paths which start with :\ to an absolute path */
    fill_pathname_expand_special(expanded_path,
          in_path, sizeof(expanded_path));
@@ -2276,8 +2273,6 @@ void dir_check_shader(
          if (shader && !string_is_empty(shader->loaded_preset_path))
          {
             char last_shader_path[PATH_MAX_LENGTH];
-            last_shader_path[0] = '\0';
-
             fill_pathname_join(last_shader_path,
                   last_shader_preset_dir, last_shader_preset_file_name,
                   sizeof(last_shader_path));
@@ -2386,8 +2381,6 @@ bool load_shader_preset(settings_t *settings, const char *core_name,
 
    shader_path[0]                     = '\0';
    content_dir_name[0]                = '\0';
-   config_file_directory[0]           = '\0';
-   old_presets_directory[0]           = '\0';
 
    if (has_content)
    {
@@ -2397,12 +2390,17 @@ bool load_shader_preset(settings_t *settings, const char *core_name,
    }
 
    if (!path_is_empty(RARCH_PATH_CONFIG))
-      fill_pathname_basedir(config_file_directory,
+   {
+      strlcpy(config_file_directory,
             path_get(RARCH_PATH_CONFIG), sizeof(config_file_directory));
+      path_basedir(config_file_directory);
+   }
 
    if (!string_is_empty(video_shader_directory))
       fill_pathname_join(old_presets_directory,
          video_shader_directory, "presets", sizeof(old_presets_directory));
+   else
+      old_presets_directory[0]        = '\0';
 
    dirs[0]                            = menu_config_directory;
    dirs[1]                            = config_file_directory;

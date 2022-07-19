@@ -1199,8 +1199,6 @@ bool gfx_display_reset_textures_list(
    char texpath[PATH_MAX_LENGTH];
    struct texture_image ti;
 
-   texpath[0]                    = '\0';
-
    ti.width                      = 0;
    ti.height                     = 0;
    ti.pixels                     = NULL;
