@@ -148,7 +148,6 @@ void path_linked_list_add_path(struct path_linked_list *in_path_linked_list, cha
 const char *path_get_archive_delim(const char *path)
 {
    char buf[5];
-   const char *delim      = NULL;
    /* Find delimiter position
     * > Since filenames may contain '#' characters,
     *   must loop until we find the first '#' that
