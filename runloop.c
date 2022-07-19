@@ -370,7 +370,7 @@ void runloop_performance_counter_register(struct retro_perf_counter *perf)
 void runloop_log_counters(
       struct retro_perf_counter **counters, unsigned num)
 {
-   unsigned i;
+   int i;
    for (i = 0; i < num; i++)
    {
       if (counters[i]->call_cnt)
@@ -403,7 +403,7 @@ static bool runloop_environ_cb_get_system_info(unsigned cmd, void *data)
          break;
       case RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO:
       {
-         unsigned i, j, size;
+         size_t i, j, size;
          const struct retro_subsystem_info *info =
             (const struct retro_subsystem_info*)data;
          settings_t *settings    = config_get_ptr();
@@ -3332,10 +3332,8 @@ bool libretro_get_system_info(
    dummy_info.block_extract     = false;
 
 #ifdef HAVE_DYNAMIC
-   lib                         = libretro_get_system_info_lib(
-         path, &dummy_info, load_no_content);
-
-   if (!lib)
+   if (!(lib = libretro_get_system_info_lib(
+         path, &dummy_info, load_no_content)))
    {
       RARCH_ERR("%s: \"%s\"\n",
             msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
@@ -3641,14 +3639,14 @@ static void uninit_libretro_symbols(
 static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id)
 {
-   unsigned i;
+   int i;
    runloop_state_t      *runloop_st = &runloop_state;
 
    if (!runloop_st->input_state_list)
       return 0;
 
    /* find list item */
-   for (i = 0; i < (unsigned)runloop_st->input_state_list->size; i++)
+   for (i = 0; i < runloop_st->input_state_list->size; i++)
    {
       input_list_element *element =
          (input_list_element*)runloop_st->input_state_list->data[i];
@@ -3858,8 +3856,7 @@ static char *get_tmpdir_alloc(const char *override_dir)
 static bool write_file_with_random_name(char **temp_dll_path,
       const char *tmp_path, const void* data, ssize_t dataSize)
 {
-   int ext_len;
-   unsigned i;
+   int i, ext_len;
    char number_buf[32];
    bool okay                = false;
    const char *prefix       = "tmp";
@@ -3938,8 +3935,7 @@ static char *copy_core_to_temp_file(
    if (strlen(core_base_name) == 0)
       return NULL;
 
-   tmpdir                      = get_tmpdir_alloc(dir_libretro);
-   if (!tmpdir)
+   if (!(tmpdir = get_tmpdir_alloc(dir_libretro)))
       return NULL;
 
    tmp_path[0]                 = '\0';
@@ -4014,7 +4010,7 @@ static bool runloop_environment_secondary_core_hook(
 
 static void runloop_clear_controller_port_map(void)
 {
-   unsigned port;
+   int port;
    runloop_state_t *runloop_st   = &runloop_state;
    for (port = 0; port < MAX_USERS; port++)
       runloop_st->port_map[port] = -1;
@@ -4023,7 +4019,6 @@ static void runloop_clear_controller_port_map(void)
 static bool secondary_core_create(runloop_state_t *runloop_st,
       settings_t *settings)
 {
-   unsigned port;
    bool contentless            = false;
    bool is_inited              = false;
    const enum rarch_core_type
@@ -4106,6 +4101,8 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
          runloop_st->secondary_callbacks.poll_cb);
 
    if (info)
+   {
+      int port;
       for (port = 0; port < MAX_USERS; port++)
       {
          if (port < info->ports.size)
@@ -4117,6 +4114,7 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
                   port, device);
          }
       }
+   }
 
    runloop_clear_controller_port_map();
 
@@ -5737,18 +5735,15 @@ bool runloop_path_init_subsystem(void)
    bool subsystem_path_empty               = path_is_empty(RARCH_PATH_SUBSYSTEM);
    const char                *savefile_dir = runloop_st->savefile_dir;
 
-
    if (!system || subsystem_path_empty)
       return false;
-   /* For subsystems, we know exactly which RAM types are supported. */
 
-   info = libretro_find_subsystem_info(
+   /* For subsystems, we know exactly which RAM types are supported. */
+   /* We'll handle this error gracefully later. */
+   if ((info = libretro_find_subsystem_info(
          system->subsystem.data,
          system->subsystem.size,
-         path_get(RARCH_PATH_SUBSYSTEM));
-
-   /* We'll handle this error gracefully later. */
-   if (info)
+         path_get(RARCH_PATH_SUBSYSTEM))))
    {
       unsigned num_content = MIN(info->num_roms,
             subsystem_path_empty ?
@@ -5879,9 +5874,7 @@ void runloop_path_init_savefile(void)
    bool    should_sram_be_used = runloop_st->use_sram
       && !runloop_st->is_sram_save_disabled;
 
-   runloop_st->use_sram     = should_sram_be_used;
-
-   if (!runloop_st->use_sram)
+   if (!(runloop_st->use_sram = should_sram_be_used))
    {
       RARCH_LOG("[SRAM]: %s\n",
             msg_hash_to_str(MSG_SRAM_WILL_NOT_BE_SAVED));
@@ -5901,7 +5894,16 @@ bool core_options_create_override(bool game_specific)
 
    options_path[0]             = '\0';
 
-   if (!game_specific)
+   if (game_specific)
+   {
+      /* Get options file path (game-specific) */
+      if (!validate_game_options(
+               runloop_st->system.info.library_name,
+               options_path,
+               sizeof(options_path), true))
+         goto error;
+   }
+   else
    {
       /* Sanity check - cannot create a folder-specific
        * override if a game-specific override is
@@ -5911,15 +5913,6 @@ bool core_options_create_override(bool game_specific)
 
       /* Get options file path (folder-specific) */
       if (!validate_folder_options(
-               options_path,
-               sizeof(options_path), true))
-         goto error;
-   }
-   else
-   {
-      /* Get options file path (game-specific) */
-      if (!validate_game_options(
-               runloop_st->system.info.library_name,
                options_path,
                sizeof(options_path), true))
          goto error;
@@ -6048,15 +6041,13 @@ bool core_options_remove_override(bool game_specific)
 
       for (i = 0; i < coreopts->size; i++)
       {
-         struct core_option *option      = NULL;
          struct config_entry_list *entry = NULL;
-
-         option = (struct core_option*)&coreopts->opts[i];
+         struct core_option      *option = (struct core_option*)&coreopts->opts[i];
          if (!option)
             continue;
-
-         entry = config_get_entry(conf, option->key);
-         if (!entry || string_is_empty(entry->value))
+         if (!(entry = config_get_entry(conf, option->key)))
+            continue;
+         if (string_is_empty(entry->value))
             continue;
 
          /* Set current config value from file entry */
@@ -6172,9 +6163,10 @@ void core_options_flush(void)
    if (!string_is_empty(path_core_options))
    {
       config_file_t *conf_tmp = NULL;
+      bool path_valid         = path_is_valid(path_core_options); 
 
       /* Attempt to load existing file */
-      if (path_is_valid(path_core_options))
+      if (path_valid)
          conf_tmp = config_file_new_from_path_to_string(path_core_options);
 
       /* Create new file if required */
@@ -6221,17 +6213,28 @@ void core_options_flush(void)
    if (string_is_empty(core_options_file))
       core_options_file = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN);
 
-   /* Log result */
-   RARCH_LOG(success ?
-         "[Core]: Saved core options to \"%s\".\n" :
-               "[Core]: Failed to save core options to \"%s\".\n",
+   if (success)
+   {
+      /* Log result */
+      RARCH_LOG(
+            "[Core]: Saved core options to \"%s\".\n",
             path_core_options ? path_core_options : "UNKNOWN");
 
-   snprintf(msg, sizeof(msg), "%s \"%s\"",
-         success ?
-               msg_hash_to_str(MSG_CORE_OPTIONS_FLUSHED) :
-                     msg_hash_to_str(MSG_CORE_OPTIONS_FLUSH_FAILED),
-         core_options_file);
+      snprintf(msg, sizeof(msg), "%s \"%s\"",
+            msg_hash_to_str(MSG_CORE_OPTIONS_FLUSHED),
+            core_options_file);
+   }
+   else
+   {
+      /* Log result */
+      RARCH_LOG(
+            "[Core]: Failed to save core options to \"%s\".\n",
+            path_core_options ? path_core_options : "UNKNOWN");
+
+      snprintf(msg, sizeof(msg), "%s \"%s\"",
+            msg_hash_to_str(MSG_CORE_OPTIONS_FLUSH_FAILED),
+            core_options_file);
+   }
 
    runloop_msg_queue_push(
          msg, 1, 100, true,
@@ -6771,7 +6774,7 @@ static enum runloop_state_enum runloop_check_state(
       unsigned screensaver_timeout  = settings->uints.menu_screensaver_timeout;
 
       /* Get current time */
-      menu_st->current_time_us       = current_time;
+      menu_st->current_time_us      = current_time;
 
       cbs->poll_cb();
 
@@ -7541,7 +7544,7 @@ static enum runloop_state_enum runloop_check_state(
  **/
 int runloop_iterate(void)
 {
-   unsigned i;
+   int i;
    enum analog_dpad_mode dpad_mode[MAX_USERS];
    input_driver_state_t               *input_st = input_state_get_ptr();
    audio_driver_state_t               *audio_st = audio_state_get_ptr();
@@ -7715,7 +7718,7 @@ int runloop_iterate(void)
             camera_st->cb.frame_opengl_texture);
 
    /* Update binds for analog dpad modes. */
-   for (i = 0; i < max_users; i++)
+   for (i = 0; i < (int)max_users; i++)
    {
       dpad_mode[i] = (enum analog_dpad_mode)
             settings->uints.input_analog_dpad_mode[i];
@@ -7784,7 +7787,7 @@ int runloop_iterate(void)
       }
    }
 
-   if (input_st && !input_st->nonblocking_flag)
+   if (!input_st->nonblocking_flag)
    {
       if (settings->bools.video_frame_delay_auto)
       {
@@ -7899,7 +7902,7 @@ int runloop_iterate(void)
    {
       if (dpad_mode[i] != ANALOG_DPAD_NONE)
       {
-         unsigned j;
+         int j;
          unsigned joy_idx                    = settings->uints.input_joypad_index[i];
          struct retro_keybind *general_binds = input_config_binds[joy_idx];
          struct retro_keybind *auto_binds    = input_autoconf_binds[joy_idx];
