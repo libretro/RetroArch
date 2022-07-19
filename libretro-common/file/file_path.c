@@ -74,7 +74,7 @@
  * Create a new linked list with one node in it
  * The path on this node will be set to NULL
 **/
-struct path_linked_list* path_linked_list_new()
+struct path_linked_list* path_linked_list_new(void)
 {
    struct path_linked_list* paths_list = (struct path_linked_list*)malloc(sizeof(*paths_list));
    paths_list->next = NULL;
@@ -83,23 +83,19 @@ struct path_linked_list* path_linked_list_new()
 }
 
 /* Free the entire linked list */
-bool path_linked_list_free(struct path_linked_list *in_path_linked_list)
+void path_linked_list_free(struct path_linked_list *in_path_linked_list)
 {
-   struct path_linked_list *node_tmp = NULL;
-
-   node_tmp = (struct path_linked_list*)in_path_linked_list;
+   struct path_linked_list *node_tmp = (struct path_linked_list*)in_path_linked_list;
    while (node_tmp)
    {
       struct path_linked_list *hold = NULL;
       if (node_tmp->path)
          free(node_tmp->path);
-      hold    = (struct path_linked_list*)node_tmp;
+      hold     = (struct path_linked_list*)node_tmp;
       node_tmp = node_tmp->next;
       if (hold)
          free(hold);
    }
-
-   return true;
 }
 
 /**
@@ -151,16 +147,13 @@ void path_linked_list_add_path(struct path_linked_list *in_path_linked_list, cha
  */
 const char *path_get_archive_delim(const char *path)
 {
-   const char *delim      = NULL;
    char buf[5];
-
-   buf[0] = '\0';
-
+   const char *delim      = NULL;
    /* Find delimiter position
     * > Since filenames may contain '#' characters,
     *   must loop until we find the first '#' that
     *   is directly *after* a compression extension */
-   delim = strchr(path, '#');
+   const char *delim      = strchr(path, '#');
 
    while (delim)
    {
