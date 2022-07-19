@@ -278,9 +278,6 @@ void fill_pathname(char *out_path, const char *in_path,
 {
    char tmp_path[PATH_MAX_LENGTH];
    char *tok   = NULL;
-
-   tmp_path[0] = '\0';
-
    strlcpy(tmp_path, in_path, sizeof(tmp_path));
    if ((tok = (char*)strrchr(path_basename(tmp_path), '.')))
       *tok = '\0';
@@ -502,8 +499,6 @@ void fill_str_dated_filename(char *out_filename,
    char format[NAME_MAX_LENGTH];
    struct tm tm_;
    time_t cur_time = time(NULL);
-
-   format[0]       = '\0';
 
    rtime_localtime(&cur_time, &tm_);
 
@@ -934,9 +929,6 @@ void fill_pathname_expand_special(char *out_path,
    if (in_path[0] == '~')
    {
       char *home_dir = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-
-      home_dir[0] = '\0';
-
       fill_pathname_home_dir(home_dir,
          PATH_MAX_LENGTH * sizeof(char));
 
@@ -1009,7 +1001,6 @@ void fill_pathname_abbreviate_special(char *out_path,
    char home_dir[PATH_MAX_LENGTH];
 
    application_dir[0] = '\0';
-   home_dir[0]        = '\0';
 
    /* application_dir could be zero-string. Safeguard against this.
     *
