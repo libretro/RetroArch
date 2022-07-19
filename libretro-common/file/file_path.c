@@ -1087,7 +1087,7 @@ void pathname_make_slashes_portable(char *path)
 }
 
 /* Get the number of slashes in a path, returns an integer */
-int get_pathname_num_slashes(const char *in_path)
+static int get_pathname_num_slashes(const char *in_path)
 {
    int num_slashes = 0;
    int i = 0;
@@ -1320,8 +1320,7 @@ void fill_pathname_home_dir(char *s, size_t len)
 bool is_path_accessible_using_standard_io(const char *path)
 {
 #ifdef __WINRT__
-   DWORD trygetattrbs = GetFileAttributesA(path);
-   return trygetattrbs != INVALID_FILE_ATTRIBUTES;
+   return GetFileAttributesA(path) != INVALID_FILE_ATTRIBUTES;
 #else
    return true;
 #endif
