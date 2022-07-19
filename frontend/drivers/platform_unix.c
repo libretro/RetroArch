@@ -579,7 +579,7 @@ static void frontend_android_get_version_sdk(int32_t *sdk)
    system_property_get("getprop", "ro.build.version.sdk", os_version_str);
    *sdk = 0;
    if (os_version_str[0])
-      sscanf(os_version_str, "%d", sdk);
+      *sdk = (int32_t)strtol(os_version_str, NULL, 10);
 }
 
 static bool device_is_xperia_play(const char *name)
