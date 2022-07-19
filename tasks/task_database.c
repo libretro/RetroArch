@@ -537,9 +537,6 @@ static void gdi_prune(database_info_handle_t *db, const char *name)
 static enum msg_file_type extension_to_file_type(const char *ext)
 {
    char ext_lower[6];
-
-   ext_lower[0] = '\0';
-
    /* Copy and convert to lower case */
    strlcpy(ext_lower, ext, sizeof(ext_lower));
    string_to_lower(ext_lower);
@@ -677,7 +674,6 @@ static int database_info_list_iterate_end_no_match(
                      + 1 < PATH_MAX_LENGTH)
             {
                char new_path[PATH_MAX_LENGTH];
-               new_path[0] = '\0';
                strlcpy(new_path, path, sizeof(new_path));
                new_path[path_len] = '#';
                strlcpy(new_path + path_len + 1,

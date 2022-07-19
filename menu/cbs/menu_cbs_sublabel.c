@@ -172,14 +172,13 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
       {
          size_t n = 0;
          char tmp[64];
-
-         tmp[0] = '\0';
-
          if (display_licenses)
          {
             tmp[0  ] = '\n';
             tmp[1  ] = '\0';
          }
+         else
+            tmp[0]   = '\0';
          n           = strlcat(tmp, entry->runtime.runtime_str, sizeof(tmp));
 
          if (n < 64 - 1)

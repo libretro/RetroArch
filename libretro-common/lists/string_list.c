@@ -258,7 +258,7 @@ void string_list_join_concat(char *buffer, size_t size,
    /* If buffer is already 'full', nothing
     * further can be added
     * > This condition will also be triggered
-    *   if buffer is not NUL-terminated,
+    *   if buffer is not NULL-terminated,
     *   in which case any attempt to increment
     *   buffer or decrement size would lead to
     *   undefined behaviour */
@@ -434,66 +434,66 @@ bool string_separate_noalloc(
 
 /**
  * string_list_find_elem:
- * @list             : pointer to string list
- * @elem             : element to find inside the string list.
+ *
+ * @param list
+ * Pointer to string list
+ * @param elem
+ * Element to find inside the string list.
  *
  * Searches for an element (@elem) inside the string list.
  *
- * Returns: true (1) if element could be found, otherwise false (0).
+ * @return number of element found, otherwise 0.
  */
 int string_list_find_elem(const struct string_list *list, const char *elem)
 {
    if (list)
    {
-      size_t i;
+      int i;
       for (i = 0; i < list->size; i++)
       {
          if (string_is_equal_noncase(list->elems[i].data, elem))
-            return (int)(i + 1);
+            return (i + 1);
       }
    }
-
-   return false;
+   return 0;
 }
 
 /**
  * string_list_find_elem_prefix:
- * @list             : pointer to string list
- * @prefix           : prefix to append to @elem
- * @elem             : element to find inside the string list.
+ *
+ * @param list
+ * Pointer to string list
+ * @param prefix
+ * Prefix to append to @elem
+ * @param elem
+ * Element to find inside the string list.
  *
  * Searches for an element (@elem) inside the string list. Will
  * also search for the same element prefixed by @prefix.
  *
- * Returns: true (1) if element could be found, otherwise false (0).
+ * @return true if element could be found, otherwise false.
  */
 bool string_list_find_elem_prefix(const struct string_list *list,
       const char *prefix, const char *elem)
 {
    size_t i;
    char prefixed[255];
-
    if (!list)
       return false;
-
-   prefixed[0] = '\0';
-
    strlcpy(prefixed, prefix, sizeof(prefixed));
    strlcat(prefixed, elem,   sizeof(prefixed));
-
    for (i = 0; i < list->size; i++)
    {
       if (     string_is_equal_noncase(list->elems[i].data, elem)
             || string_is_equal_noncase(list->elems[i].data, prefixed))
          return true;
    }
-
    return false;
 }
 
 struct string_list *string_list_clone(const struct string_list *src)
 {
-   unsigned i;
+   size_t i;
    struct string_list_elem 
       *elems              = NULL;
    struct string_list 

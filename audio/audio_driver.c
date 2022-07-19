@@ -927,8 +927,7 @@ bool audio_driver_dsp_filter_init(const char *device)
    if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
       return false;
 
-   plugs = dir_list_new(basedir, ext_name, false, true, false, false);
-   if (!plugs)
+   if (!(plugs = dir_list_new(basedir, ext_name, false, true, false, false)))
       return false;
 #endif
    audio_driver_dsp = retro_dsp_filter_new(

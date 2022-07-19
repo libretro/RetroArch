@@ -64,7 +64,7 @@ struct path_linked_list
 struct path_linked_list* path_linked_list_new(void);
 
 /* Free the entire linked list */
-bool path_linked_list_free(struct path_linked_list *in_path_linked_list);
+void path_linked_list_free(struct path_linked_list *in_path_linked_list);
 
 /**
  * Add a node to the linked list with this path

@@ -3322,9 +3322,6 @@ static bool config_load_file(global_t *global,
        * variable. */
       char tmp_append_path[PATH_MAX_LENGTH];
       const char *extra_path = NULL;
-
-      tmp_append_path[0] = '\0';
-
       strlcpy(tmp_append_path, path_get(RARCH_PATH_CONFIG_APPEND),
             sizeof(tmp_append_path));
       extra_path = strtok_r(tmp_append_path, "|", &save);
@@ -3941,10 +3938,7 @@ bool config_load_override(void *data)
                   );
          }
          else
-         {
-            tmp_path[0]    = '\0';
             strlcpy(tmp_path, content_path, sizeof(tmp_path));
-         }
 
          path_set(RARCH_PATH_CONFIG_APPEND, tmp_path);
 
@@ -3973,10 +3967,7 @@ bool config_load_override(void *data)
                   );
          }
          else
-         {
-            tmp_path[0]    = '\0';
             strlcpy(tmp_path, game_path, sizeof(tmp_path));
-         }
 
          path_set(RARCH_PATH_CONFIG_APPEND, tmp_path);
 
@@ -5258,8 +5249,6 @@ bool input_remapping_save_file(const char *path)
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    settings_t        *settings = config_st;
    unsigned          max_users = settings->uints.input_max_users;
-
-   remap_file_dir[0]           = '\0';
 
    if (string_is_empty(path))
       return false;

@@ -438,7 +438,6 @@ void rarch_log_file_init(
    static char timestamped_log_file_name[64] = {0};
    bool logging_to_file                      = g_verbosity->initialized;
 
-   log_directory[0]                          = '\0';
    log_file_path[0]                          = '\0';
 
    /* If this is the first run, generate a timestamped log

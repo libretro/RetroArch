@@ -393,8 +393,7 @@ const char* config_get_joypad_driver_options(void)
  **/
 static const input_device_driver_t *input_joypad_init_first(void *data)
 {
-   unsigned i;
-
+   int i;
    for (i = 0; joypad_drivers[i]; i++)
    {
       if (     joypad_drivers[i]
@@ -429,7 +428,6 @@ bool input_driver_set_rumble(
 
    if (primary_joypad && primary_joypad->set_rumble)
       rumble_state = primary_joypad->set_rumble(joy_idx, effect, strength);
-   
    /* if sec_joypad exists, this set_rumble() return value will replace primary_joypad's return */
    if (sec_joypad     && sec_joypad->set_rumble)
       rumble_state = sec_joypad->set_rumble(joy_idx, effect, strength);
@@ -441,12 +439,12 @@ bool input_driver_set_rumble_gain(
          unsigned gain,
          unsigned input_max_users)
 {
-   unsigned i;
+   int i;
 
    if (  input_driver_st.primary_joypad
       && input_driver_st.primary_joypad->set_rumble_gain)
    {
-      for (i = 0; i < input_max_users; i++)
+      for (i = 0; i < (int)input_max_users; i++)
          input_driver_st.primary_joypad->set_rumble_gain(i, gain);
       return true;
    }
@@ -458,14 +456,9 @@ bool input_driver_set_sensor(
          enum retro_sensor_action action, unsigned rate)
 {
    const input_driver_t *current_driver;
-   void *current_data;
 
    if (!input_driver_st.current_data)
       return false;
-
-   current_driver = input_driver_st.current_driver;
-   current_data   = input_driver_st.current_data;
-
    /* If sensors are disabled, inhibit any enable
     * actions (but always allow disable actions) */
    if (!sensors_enable &&
@@ -473,10 +466,13 @@ bool input_driver_set_sensor(
         (action == RETRO_SENSOR_GYROSCOPE_ENABLE) ||
         (action == RETRO_SENSOR_ILLUMINANCE_ENABLE)))
       return false;
-
-   if (current_driver && current_driver->set_sensor_state)
+   if (   (current_driver = input_driver_st.current_driver)
+       &&  current_driver->set_sensor_state)
+   {
+      void *current_data = input_driver_st.current_data;
       return current_driver->set_sensor_state(current_data,
             port, action, rate);
+   }
 
    return false;
 }
@@ -486,17 +482,15 @@ bool input_driver_set_sensor(
 float input_driver_get_sensor(
          unsigned port, bool sensors_enable, unsigned id)
 {
-   const input_driver_t *current_driver;
-   void *current_data;
-
-   if (!input_driver_st.current_data)
-      return 0.0f;
-
-   current_driver = input_driver_st.current_driver;
-   current_data   = input_driver_st.current_data;
-
-   if (sensors_enable && current_driver->get_sensor_input)
-      return current_driver->get_sensor_input(current_data, port, id);
+   if (input_driver_st.current_data)
+   {
+      const input_driver_t *current_driver = input_driver_st.current_driver;
+      if (sensors_enable && current_driver->get_sensor_input)
+      {
+         void *current_data = input_driver_st.current_data;
+         return current_driver->get_sensor_input(current_data, port, id);
+      }
+   }
 
    return 0.0f;
 }
@@ -504,10 +498,9 @@ float input_driver_get_sensor(
 const input_device_driver_t *input_joypad_init_driver(
       const char *ident, void *data)
 {
-   unsigned i;
-
    if (ident && *ident)
    {
+      int i;
       for (i = 0; joypad_drivers[i]; i++)
       {
          if (string_is_equal(ident, joypad_drivers[i]->ident)
@@ -984,8 +977,8 @@ bool input_keyboard_line_append(
       struct input_keyboard_line *keyboard_line,
       const char *word)
 {
-   unsigned i                  = 0;
-   unsigned len                = (unsigned)strlen(word);
+   int i;
+   size_t len                  = strlen(word);
    char *newbuf                = (char*)realloc(
          keyboard_line->buffer,
          keyboard_line->size + len * 2);
@@ -1032,8 +1025,7 @@ static bool input_remote_init_network(input_remote_t *handle,
 {
    int fd;
    struct addrinfo *res  = NULL;
-
-   port = port + user;
+   port                  = port + user;
 
    if (!network_init())
       return false;
@@ -1041,9 +1033,7 @@ static bool input_remote_init_network(input_remote_t *handle,
    RARCH_LOG("Bringing up remote interface on port %hu.\n",
          (unsigned short)port);
 
-   fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM);
-
-   if (fd < 0)
+   if ((fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM)) < 0)
       goto error;
 
    handle->net_fd[user] = fd;
@@ -1068,10 +1058,9 @@ error:
 
 void input_remote_free(input_remote_t *handle, unsigned max_users)
 {
-   unsigned user;
-   for (user = 0; user < max_users; user ++)
+   int user;
+   for (user = 0; user < (int)max_users; user ++)
       socket_close(handle->net_fd[user]);
-
    free(handle);
 }
 
@@ -1079,14 +1068,14 @@ static input_remote_t *input_remote_new(
       settings_t *settings,
       uint16_t port, unsigned max_users)
 {
-   unsigned user;
+   int user;
    input_remote_t      *handle = (input_remote_t*)
       calloc(1, sizeof(*handle));
 
    if (!handle)
       return NULL;
 
-   for (user = 0; user < max_users; user ++)
+   for (user = 0; user < (int)max_users; user++)
    {
       handle->net_fd[user] = -1;
       if (settings->bools.network_remote_enable_user[user])
@@ -1138,7 +1127,7 @@ bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
    {
       case OVERLAY_TYPE_BUTTONS:
          {
-            unsigned i;
+            int i;
             bool all_buttons_pressed        = false;
 
             /* Check each bank of the mask */
@@ -1181,36 +1170,31 @@ bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
       case OVERLAY_TYPE_ANALOG_LEFT:
       case OVERLAY_TYPE_ANALOG_RIGHT:
          {
-            float analog_x;
-            float analog_y;
-            float dx;
-            float dy;
-
+            float dx, dy;
             if (ol_state)
             {
                unsigned index_offset = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ? 2 : 0;
-               analog_x              = (float)ol_state->analog[index_offset];
-               analog_y              = (float)ol_state->analog[index_offset + 1];
+               float analog_x        = (float)ol_state->analog[index_offset];
+               float analog_y        = (float)ol_state->analog[index_offset + 1];
+
+               dx                    = (analog_x / (float)0x8000) * (desc->range_x / 2.0f);
+               dy                    = (analog_y / (float)0x8000) * (desc->range_y / 2.0f);
             }
             else
             {
                unsigned index        = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ?
                   RETRO_DEVICE_INDEX_ANALOG_RIGHT : RETRO_DEVICE_INDEX_ANALOG_LEFT;
-
-               analog_x              = input_state_internal(port, RETRO_DEVICE_ANALOG,
+               float analog_x        = input_state_internal(port, RETRO_DEVICE_ANALOG,
                      index, RETRO_DEVICE_ID_ANALOG_X);
-               analog_y              = input_state_internal(port, RETRO_DEVICE_ANALOG,
+               float analog_y        = input_state_internal(port, RETRO_DEVICE_ANALOG,
                      index, RETRO_DEVICE_ID_ANALOG_Y);
-            }
 
-            dx = (analog_x / (float)0x8000) * (desc->range_x / 2.0f);
-            dy = (analog_y / (float)0x8000) * (desc->range_y / 2.0f);
+               dx                    = (analog_x / (float)0x8000) * (desc->range_x / 2.0f);
+               dy                    = (analog_y / (float)0x8000) * (desc->range_y / 2.0f);
 
-            /* Only modify overlay delta_x/delta_y values
-             * if we are monitoring input from a physical
-             * controller */
-            if (!ol_state)
-            {
+               /* Only modify overlay delta_x/delta_y values
+                * if we are monitoring input from a physical
+                * controller */
                desc->delta_x = dx;
                desc->delta_y = dy;
             }
@@ -1242,7 +1226,7 @@ bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
 bool input_overlay_add_inputs(input_overlay_t *ol,
       bool show_touched, unsigned port)
 {
-   unsigned i;
+   size_t i;
    bool button_pressed             = false;
    input_overlay_state_t *ol_state = &ol->overlay_state;
 
@@ -1273,9 +1257,6 @@ bool input_overlay_add_inputs(input_overlay_t *ol,
  **/
 static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
 {
-   if (!desc)
-      return false;
-
    switch (desc->hitbox)
    {
       case OVERLAY_HITBOX_RADIAL:
@@ -1286,13 +1267,11 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
          float sq_dist = x_dist * x_dist + y_dist * y_dist;
          return (sq_dist <= 1.0f);
       }
-
       case OVERLAY_HITBOX_RECT:
          return
             (fabs(x - desc->x_shift) <= desc->range_x_mod) &&
             (fabs(y - desc->y_shift) <= desc->range_y_mod);
    }
-
    return false;
 }
 
@@ -1333,7 +1312,7 @@ void input_overlay_poll(
       unsigned int base         = 0;
       struct overlay_desc *desc = &ol->active->descs[i];
 
-      if (!inside_hitbox(desc, x, y))
+      if (!desc || !inside_hitbox(desc, x, y))
          continue;
 
       desc->updated = true;
@@ -1508,7 +1487,7 @@ void input_overlay_scale(struct overlay *ol,
       else if (desc->x > (0.5f + 0.0001f))
          x_shift_offset = layout->x_separation;
 
-      desc->x_shift = desc->x + x_shift_offset;
+      desc->x_shift     = desc->x + x_shift_offset;
 
       /* Apply 'y separation' factor */
       if (desc->y < (0.5f - 0.0001f))
@@ -1516,17 +1495,17 @@ void input_overlay_scale(struct overlay *ol,
       else if (desc->y > (0.5f + 0.0001f))
          y_shift_offset = layout->y_separation;
 
-      desc->y_shift = desc->y + y_shift_offset;
+      desc->y_shift     = desc->y + y_shift_offset;
 
-      scale_w       = ol->mod_w * desc->range_x;
-      scale_h       = ol->mod_h * desc->range_y;
-      adj_center_x  = ol->mod_x + desc->x_shift * ol->mod_w;
-      adj_center_y  = ol->mod_y + desc->y_shift * ol->mod_h;
+      scale_w           = ol->mod_w * desc->range_x;
+      scale_h           = ol->mod_h * desc->range_y;
+      adj_center_x      = ol->mod_x + desc->x_shift * ol->mod_w;
+      adj_center_y      = ol->mod_y + desc->y_shift * ol->mod_h;
 
-      desc->mod_w   = 2.0f * scale_w;
-      desc->mod_h   = 2.0f * scale_h;
-      desc->mod_x   = adj_center_x - scale_w;
-      desc->mod_y   = adj_center_y - scale_h;
+      desc->mod_w       = 2.0f * scale_w;
+      desc->mod_h       = 2.0f * scale_h;
+      desc->mod_x       = adj_center_x - scale_w;
+      desc->mod_y       = adj_center_y - scale_h;
    }
 }
 
@@ -1659,22 +1638,21 @@ void input_overlay_set_vertex_geom(input_overlay_t *ol)
 {
    size_t i;
 
+   if (!ol->iface->vertex_geom)
+      return;
+
    if (ol->active->image.pixels)
       ol->iface->vertex_geom(ol->iface_data, 0,
             ol->active->mod_x, ol->active->mod_y,
             ol->active->mod_w, ol->active->mod_h);
 
-   if (ol->iface->vertex_geom)
-      for (i = 0; i < ol->active->size; i++)
-      {
-         struct overlay_desc *desc = &ol->active->descs[i];
-
-         if (!desc->image.pixels)
-            continue;
-
+   for (i = 0; i < ol->active->size; i++)
+   {
+      struct overlay_desc *desc = &ol->active->descs[i];
+      if (desc->image.pixels)
          ol->iface->vertex_geom(ol->iface_data, desc->image_index,
                desc->mod_x, desc->mod_y, desc->mod_w, desc->mod_h);
-      }
+   }
 }
 
 
@@ -1819,10 +1797,10 @@ void input_overlay_auto_rotate_(
          active_overlay_orientation = OVERLAY_ORIENTATION_LANDSCAPE;
       else if (strstr(ol->active->name, "portrait"))
          active_overlay_orientation = OVERLAY_ORIENTATION_PORTRAIT;
+      else /* Sanity check */
+         return;
    }
-
-   /* Sanity check */
-   if (active_overlay_orientation == OVERLAY_ORIENTATION_NONE)
+   else /* Sanity check */
       return;
 
    /* If screen and overlay have the same orientation,
@@ -1871,7 +1849,7 @@ void input_poll_overlay(
       float axis_threshold)
 {
    input_overlay_state_t old_key_state;
-   unsigned i, j;
+   int i, j;
    input_overlay_t *ol                     = (input_overlay_t*)ol_data;
    uint16_t key_mod                        = 0;
    bool polled                             = false;
@@ -5339,7 +5317,7 @@ void input_remapping_set_defaults(bool clear_cache)
 void input_driver_collect_system_input(input_driver_state_t *input_st,
       settings_t *settings, input_bits_t *current_bits)
 {
-   unsigned port;
+   int port;
    rarch_joypad_info_t joypad_info;
    int block_delay                     = settings->uints.input_hotkey_block_delay;
    const input_device_driver_t *joypad = input_st->primary_joypad;
@@ -5362,9 +5340,8 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
    joypad_info.axis_threshold          = settings->floats.input_axis_threshold;
 
    /* Gather input from each (enabled) joypad */
-   for(port = 0; port < max_users; port++)
+   for (port = 0; port < (int)max_users; port++)
    {
-      unsigned i;
       input_bits_t tmp_bits;
       input_bits_t *loop_bits                = NULL;
       const struct retro_keybind *binds_norm = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
@@ -5385,7 +5362,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 #ifdef HAVE_MENU
       if (menu_is_alive)
       {
-         unsigned k;
+         int k;
          unsigned x_plus  = RARCH_ANALOG_LEFT_X_PLUS;
          unsigned y_plus  = RARCH_ANALOG_LEFT_Y_PLUS;
          unsigned x_minus = RARCH_ANALOG_LEFT_X_MINUS;
@@ -5434,8 +5411,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 #ifdef HAVE_MENU
       if (menu_is_alive)
       {
-         unsigned j;
-
+         int j;
          /* Restores analog D-pad binds temporarily overridden. */
          for (j = RETRO_DEVICE_ID_JOYPAD_UP; j <= RETRO_DEVICE_ID_JOYPAD_RIGHT; j++)
          {
@@ -5448,6 +5424,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
       /* we write port 0 directly to input_bits to save one iteration of this loop */
       if (port != 0)
       {
+         int i;
          /* Update compound 'current_bits' record
           * Note: Only digital inputs are considered */
          for(i = 0; i < sizeof(current_bits->data) / sizeof(current_bits->data[0]); i++)
@@ -5455,7 +5432,6 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
       }
       else if (!all_users_control_menu)
          break;
-
    }
 
 #ifdef HAVE_MENU
@@ -5525,10 +5501,8 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 #if defined(HAVE_ACCESSIBILITY) && defined(HAVE_TRANSLATE)
       if (settings->bools.ai_service_enable)
       {
-         unsigned i;
-
+         int i;
          input_st->gamepad_input_override = 0;
-
          for (i = 0; i < MAX_USERS; i++)
          {
             /* Set gamepad input override */

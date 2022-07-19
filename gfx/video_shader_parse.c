@@ -293,7 +293,6 @@ static bool video_shader_parse_pass(config_file_t *conf,
    snprintf(scale_name_buf, sizeof(scale_name_buf), "scale_type_y%u", i);
    config_get_array(conf, scale_name_buf, scale_type_y, sizeof(scale_type_y));
 
-
    if (*scale_type)
    {
       strlcpy(scale_type_x, scale_type, sizeof(scale_type_x));
@@ -438,8 +437,6 @@ static bool video_shader_parse_textures(config_file_t *conf,
       bool smooth         = false;
       struct config_entry_list 
          *entry           = NULL;
-
-      id_filter[0] = id_wrap[0] = id_mipmap[0] = '\0';
 
       if (!(entry = config_get_entry(conf, id)) ||
             string_is_empty(entry->value))
@@ -828,9 +825,6 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
    if (shader->luts)
    {
       char textures[4096];
-
-      textures[0] = '\0';
-
       /* Names of the textures */
       strlcpy(textures, shader->lut[0].id, sizeof(textures));
 
@@ -855,7 +849,6 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
          if (shader->lut[i].filter != RARCH_FILTER_UNSPEC)
          {
             char k[128];
-            k[0]  = '\0';
             strlcpy(k, shader->lut[i].id, sizeof(k));
             strlcat(k, "_linear", sizeof(k));
             config_set_string(conf, k, 
@@ -867,7 +860,6 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
          /* Wrap Mode */
          {
             char k[128];
-            k[0]  = '\0';
             strlcpy(k, shader->lut[i].id, sizeof(k));
             strlcat(k, "_wrap_mode", sizeof(k));
             config_set_string(conf, k,
@@ -877,7 +869,6 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
          /* Mipmap On or Off */
          {
             char k[128];
-            k[0]  = '\0';
             strlcpy(k, shader->lut[i].id, sizeof(k));
             strlcat(k, "_mipmap", sizeof(k));
             config_set_string(conf, k, shader->lut[i].mipmap
@@ -1095,7 +1086,6 @@ static bool video_shader_write_referenced_preset(
    config_dir[0]                          = '\0';
    relative_tmp_ref_path[0]               = '\0';
    abs_tmp_ref_path[0]                    = '\0';
-   path_to_ref[0]                         = '\0';
 
    path_basedir(new_preset_basedir);
 
@@ -1688,10 +1678,8 @@ static bool override_shader_values(config_file_t *override_conf,
        * for each in the override config */
       for (i = 0; i < shader->luts; i++)
       {
-         entry = config_get_entry(override_conf, shader->lut[i].id);
-
          /* If the texture is defined in the reference config */
-         if (entry)
+         if ((entry = config_get_entry(override_conf, shader->lut[i].id)))
          {
             /* Texture path from shader the config */
             config_get_path(override_conf, shader->lut[i].id,
@@ -2424,20 +2412,23 @@ bool load_shader_preset(settings_t *settings, const char *core_name,
    {
       if (string_is_empty(dirs[i]))
          continue;
-      /* Game-specific shader preset found? */
-      if (has_content && retroarch_load_shader_preset_internal(
-               shader_path,
-               sizeof(shader_path),
-               dirs[i], core_name,
-               game_name))
-         goto success;
-      /* Folder-specific shader preset found? */
-      if (has_content && retroarch_load_shader_preset_internal(
-               shader_path,
-               sizeof(shader_path),
-               dirs[i], core_name,
-               content_dir_name))
-         goto success;
+      if (has_content)
+      {
+         /* Game-specific shader preset found? */
+         if (retroarch_load_shader_preset_internal(
+                  shader_path,
+                  sizeof(shader_path),
+                  dirs[i], core_name,
+                  game_name))
+            goto success;
+         /* Folder-specific shader preset found? */
+         if (retroarch_load_shader_preset_internal(
+                  shader_path,
+                  sizeof(shader_path),
+                  dirs[i], core_name,
+                  content_dir_name))
+            goto success;
+      }
       /* Core-specific shader preset found? */
       if (retroarch_load_shader_preset_internal(
                shader_path,

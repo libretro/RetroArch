@@ -531,7 +531,6 @@ static void gfx_widgets_msg_queue_free(
 
 static void gfx_widgets_msg_queue_kill_end(void *userdata)
 {
-   unsigned i;
    disp_widget_msg_t* msg;
    dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
 
@@ -541,6 +540,7 @@ static void gfx_widgets_msg_queue_kill_end(void *userdata)
 
    if ((msg = p_dispwidget->current_msgs[p_dispwidget->msg_queue_kill]))
    {
+      int i;
       /* Remove it from the list */
       for (i = p_dispwidget->msg_queue_kill; i < p_dispwidget->current_msgs_size - 1; i++)
          p_dispwidget->current_msgs[i] = p_dispwidget->current_msgs[i + 1];
@@ -2013,7 +2013,7 @@ bool gfx_widgets_init(
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path)
 {
-   unsigned i;
+   size_t i;
    unsigned color                              = 0x222222;
    dispgfx_widget_t *p_dispwidget              = &dispwidget_st;
    gfx_display_t *p_disp                       = (gfx_display_t*)data_disp;
@@ -2047,8 +2047,6 @@ bool gfx_widgets_init(
 
    if (!p_dispwidget->inited)
    {
-      size_t i;
-
       p_dispwidget->gfx_widgets_frame_count = 0;
 
       for (i = 0; i < ARRAY_SIZE(widgets); i++)
@@ -2160,33 +2158,6 @@ void gfx_widgets_ai_service_overlay_unload(void)
       p_dispwidget->ai_service_overlay_texture = 0;
       p_dispwidget->ai_service_overlay_state   = 0;
    }
-}
-#endif
-
-#ifdef HAVE_SCREENSHOTS
-void task_screenshot_callback(retro_task_t *task,
-      void *task_data,
-      void *user_data, const char *error)
-{
-   screenshot_task_state_t *state = NULL;
-
-   if (!task)
-      return;
-
-   state = (screenshot_task_state_t*)task->state;
-
-   if (!state)
-      return;
-
-   if (!state->silence && state->widgets_ready)
-      gfx_widget_screenshot_taken(&dispwidget_st,
-            state->shotname, state->filename);
-
-   free(state);
-   /* Must explicitly set task->state to NULL here,
-    * to avoid potential heap-use-after-free errors */
-   state       = NULL;
-   task->state = NULL;
 }
 #endif
 

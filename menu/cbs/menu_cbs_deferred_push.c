@@ -313,8 +313,6 @@ static int deferred_push_cursor_manager_list_deferred(
       return -1;
    }
 
-   rdb_path[0] = '\0';
-
    settings = config_get_ptr();
    
    fill_pathname_join(rdb_path,
@@ -426,10 +424,6 @@ static int general_push(menu_displaylist_info_t *info,
          {
             char tmp_str[PATH_MAX_LENGTH];
             char tmp_str2[PATH_MAX_LENGTH];
-
-            tmp_str[0] = '\0';
-            tmp_str2[0] = '\0';
-
             fill_pathname_join(tmp_str, menu->scratch2_buf,
                   menu->scratch_buf, sizeof(tmp_str));
             fill_pathname_join(tmp_str2, menu->scratch2_buf,
