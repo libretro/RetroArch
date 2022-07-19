@@ -120,8 +120,6 @@ bool config_append_file(config_file_t *conf, const char *path);
 /* All extract functions return true when value is valid and exists.
  * Returns false otherwise. */
 
-bool config_entry_exists(config_file_t *conf, const char *entry);
-
 struct config_entry_list
 {
    char *key;

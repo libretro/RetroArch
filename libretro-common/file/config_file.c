@@ -1369,11 +1369,6 @@ void config_file_dump(config_file_t *conf, FILE *file, bool sort)
    }
 }
 
-bool config_entry_exists(config_file_t *conf, const char *entry)
-{
-   return (bool)RHMAP_HAS_STR(conf->entries_map, entry);
-}
-
 bool config_get_entry_list_head(config_file_t *conf,
       struct config_file_entry *entry)
 {

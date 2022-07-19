@@ -27,6 +27,7 @@
 #include <retro_assert.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
+#include <array/rhmap.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -3778,7 +3779,7 @@ static bool config_load_file(global_t *global,
    frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
    recording_driver_update_streaming_url();
 
-   if (!config_entry_exists(conf, "user_language"))
+   if (!(bool)RHMAP_HAS_STR(conf->entries_map, "user_language"))
       msg_hash_set_uint(MSG_HASH_USER_LANGUAGE, frontend_driver_get_user_language());
 
    if (frontend_driver_has_gamemode() &&
@@ -3796,8 +3797,8 @@ static bool config_load_file(global_t *global,
     * history playlist size limit. (Have to do this, otherwise
     * users with large custom history size limits may lose
     * favourites entries when updating RetroArch...) */
-   if ( config_entry_exists(conf, "content_history_size") &&
-       !config_entry_exists(conf, "content_favorites_size"))
+   if ( (bool)RHMAP_HAS_STR(conf->entries_map, "content_history_size") &&
+       !(bool)RHMAP_HAS_STR(conf->entries_map, "content_favorites_size"))
    {
       if (settings->uints.content_history_size > 999)
          settings->ints.content_favorites_size = -1;
