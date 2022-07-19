@@ -295,14 +295,10 @@ void *task_push_decompress(
    if (task_check_decompress(source_file))
       return NULL;
 
-   s              = (decompress_state_t*)calloc(1, sizeof(*s));
-
-   if (!s)
+   if (!(s = (decompress_state_t*)calloc(1, sizeof(*s))))
       return NULL;
 
-   t                   = (retro_task_t*)calloc(1, sizeof(*t));
-
-   if (!t)
+   if (!(t = (retro_task_t*)calloc(1, sizeof(*t))))
    {
       free(s);
       return NULL;

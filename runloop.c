@@ -5760,8 +5760,6 @@ bool runloop_path_init_subsystem(void)
             const struct retro_subsystem_memory_info *mem =
                (const struct retro_subsystem_memory_info*)
                &info->roms[i].memory[j];
-
-            path[0] = ext[0] = '\0';
             ext[0]  = '.';
             ext[1]  = '\0';
             strlcat(ext, mem->extension, sizeof(ext));

@@ -208,9 +208,7 @@ void word_wrap(char *dst, size_t dst_size, const char *src, int line_width, int 
 
    while (*src != '\0')
    {
-      unsigned char_len;
-
-      char_len = (unsigned)(utf8skip(src, 1) - src);
+      unsigned char_len = (unsigned)(utf8skip(src, 1) - src);
       counter++;
 
       if (*src == ' ')

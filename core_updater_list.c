@@ -278,14 +278,9 @@ bool core_updater_list_get_core(
    size_t i;
    char real_core_path[PATH_MAX_LENGTH];
 
-   real_core_path[0] = '\0';
-
    if (!core_list || !entry || string_is_empty(local_core_path))
       return false;
-
-   num_entries = RBUF_LEN(core_list->entries);
-
-   if (num_entries < 1)
+   if ((num_entries = RBUF_LEN(core_list->entries)) < 1)
       return false;
 
    /* Resolve absolute pathname of local_core_path */
@@ -771,13 +766,10 @@ static void core_updater_list_qsort(core_updater_list_t *core_list)
 
    if (!core_list)
       return;
-
-   num_entries = RBUF_LEN(core_list->entries);
-
-   if (num_entries < 2)
+   if ((num_entries = RBUF_LEN(core_list->entries)) < 2)
       return;
-
-   qsort(
+   if (core_list->entries)
+      qsort(
          core_list->entries, num_entries,
          sizeof(core_updater_list_entry_t),
          (int (*)(const void *, const void *))
@@ -809,9 +801,7 @@ bool core_updater_list_parse_network_data(
 
    /* Input data string is not terminated - have
     * to copy it to a temporary buffer... */
-   data_buf = (char*)malloc((len + 1) * sizeof(char));
-
-   if (!data_buf)
+   if (!(data_buf = (char*)malloc((len + 1) * sizeof(char))))
       goto error;
 
    memcpy(data_buf, data, len * sizeof(char));

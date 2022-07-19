@@ -261,8 +261,6 @@ static playlist_path_id_t *playlist_path_id_init(const char *path)
    const char *archive_delim   = NULL;
    char real_path[PATH_MAX_LENGTH];
 
-   real_path[0] = '\0';
-
    if (!path_id)
       return NULL;
 
@@ -326,8 +324,6 @@ static bool playlist_path_equal(const char *real_path,
    bool real_path_is_compressed;
    bool entry_real_path_is_compressed;
    char entry_real_path[PATH_MAX_LENGTH];
-
-   entry_real_path[0] = '\0';
 
    /* Sanity check */
    if (string_is_empty(real_path)  ||
@@ -513,8 +509,6 @@ static bool playlist_path_matches_entry(playlist_path_id_t *path_id,
 static bool playlist_core_path_equal(const char *real_core_path, const char *entry_core_path, const playlist_config_t *config)
 {
    char entry_real_core_path[PATH_MAX_LENGTH];
-
-   entry_real_core_path[0] = '\0';
 
    /* Sanity check */
    if (string_is_empty(real_core_path) || string_is_empty(entry_core_path))
@@ -965,11 +959,8 @@ bool playlist_push_runtime(playlist_t *playlist,
       goto error;
    }
 
-   real_core_path[0] = '\0';
-
    /* Get path ID */
-   path_id = playlist_path_id_init(entry->path);
-   if (!path_id)
+   if (!(path_id = playlist_path_id_init(entry->path)))
       goto error;
 
    /* Get 'real' core path */
@@ -1237,8 +1228,6 @@ bool playlist_push(playlist_t *playlist,
    const char *core_name       = entry->core_name;
    bool entry_updated          = false;
 
-   real_core_path[0] = '\0';
-
    if (!playlist || !entry)
       goto error;
 
@@ -1249,8 +1238,7 @@ bool playlist_push(playlist_t *playlist,
    }
 
    /* Get path ID */
-   path_id = playlist_path_id_init(entry->path);
-   if (!path_id)
+   if (!(path_id = playlist_path_id_init(entry->path)))
       goto error;
 
    /* Get 'real' core path */
@@ -1338,13 +1326,13 @@ bool playlist_push(playlist_t *playlist,
          {
             char real_rom_path[PATH_MAX_LENGTH];
 
-            real_rom_path[0] = '\0';
-
             if (!string_is_empty(entry->subsystem_roms->elems[j].data))
             {
                strlcpy(real_rom_path, entry->subsystem_roms->elems[j].data, sizeof(real_rom_path));
                path_resolve_realpath(real_rom_path, sizeof(real_rom_path), true);
             }
+            else
+               real_rom_path[0] = '\0';
 
             if (!playlist_path_equal(real_rom_path, roms->elems[j].data,
                      &playlist->config))
@@ -3104,9 +3092,6 @@ bool playlist_entries_are_equal(
    char real_path_a[PATH_MAX_LENGTH];
    char real_core_path_a[PATH_MAX_LENGTH];
 
-   real_path_a[0]      = '\0';
-   real_core_path_a[0] = '\0';
-
    /* Sanity check */
    if (!entry_a || !entry_b || !config)
       return false;
@@ -3123,6 +3108,8 @@ bool playlist_entries_are_equal(
       strlcpy(real_path_a, entry_a->path, sizeof(real_path_a));
       path_resolve_realpath(real_path_a, sizeof(real_path_a), true);
    }
+   else
+      real_path_a[0]      = '\0';
 
    if (!playlist_path_equal(
          real_path_a, entry_b->path, config))
@@ -3137,6 +3124,8 @@ bool playlist_entries_are_equal(
          playlist_resolve_path(PLAYLIST_SAVE, true,
                real_core_path_a, sizeof(real_core_path_a));
    }
+   else
+      real_core_path_a[0] = '\0';
 
    return playlist_core_path_equal(real_core_path_a, entry_b->core_path, config);
 }
@@ -3312,8 +3301,6 @@ void playlist_set_default_core_path(playlist_t *playlist, const char *core_path)
 
    if (!playlist || string_is_empty(core_path))
       return;
-
-   real_core_path[0] = '\0';
 
    /* Get 'real' core path */
    strlcpy(real_core_path, core_path, sizeof(real_core_path));

@@ -568,9 +568,6 @@ static bool content_file_list_set_info(
       {
          char archive_path[PATH_MAX_LENGTH];
          size_t len      = 0;
-
-         archive_path[0] = '\0';
-
          /* Extract path of parent archive */
          if ((len = (size_t)(1 + archive_delim - path))
                  >= PATH_MAX_LENGTH)
@@ -961,9 +958,9 @@ static bool content_file_load(
       const char *content_path = NULL;
       uint8_t *content_data    = NULL;
       size_t content_size      = 0;
-      const char *valid_exts   = special ?
-            special->roms[i].valid_extensions :
-                  content_ctx->valid_extensions;
+      const char *valid_exts   = special
+            ? special->roms[i].valid_extensions
+            : content_ctx->valid_extensions;
       bool content_compressed  = false;
 
       /* Get content path */
@@ -1025,7 +1022,7 @@ static bool content_file_load(
             if (!system->supports_vfs &&
                 !is_path_accessible_using_standard_io(content_path))
             {
-               /* Try copy ACL to file first. If successful, this should mean that cores using standard I/O can still access them
+               /* Try to copy ACL to file first. If successful, this should mean that cores using standard I/O can still access them
                *  It would be better to set the ACL to allow full access for all application packages. However,
                *  this is substantially easier than writing out new functions to do this
                *  Copy ACL from localstate
@@ -1042,7 +1039,6 @@ static bool content_file_load(
                   char new_path[PATH_MAX_LENGTH];
 
                   new_path[0] = '\0';
-                  new_basedir[0] = '\0';
 
                   RARCH_LOG("[Content]: Core does not support VFS"
                      " - copying to cache directory.\n");
@@ -1050,6 +1046,8 @@ static bool content_file_load(
                   if (!string_is_empty(content_ctx->directory_cache))
                      strlcpy(new_basedir, content_ctx->directory_cache,
                         sizeof(new_basedir));
+                  else
+                     new_basedir[0] = '\0';
 
                   if (string_is_empty(new_basedir) ||
                      !path_is_directory(new_basedir) ||
@@ -1559,8 +1557,6 @@ static void task_push_to_history_list(
       const char *path_content       = path_get(RARCH_PATH_CONTENT);
       struct retro_system_info *info = &runloop_state_get_ptr()->system.info;
 
-      tmp[0] = '\0';
-
       if (!string_is_empty(path_content))
       {
          strlcpy(tmp, path_content, sizeof(tmp));
@@ -1569,6 +1565,8 @@ static void task_push_to_history_list(
          if (!launched_from_menu)
             path_resolve_realpath(tmp, sizeof(tmp), true);
       }
+      else
+         tmp[0] = '\0';
 
 #ifdef HAVE_MENU
       /* Push quick menu onto menu stack */
