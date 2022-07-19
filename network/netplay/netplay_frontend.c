@@ -1403,9 +1403,7 @@ static bool netplay_handshake_pre_nick(netplay_t *netplay,
       const char *dmsg = NULL;
 
       if (netplay->is_server)
-      {
          dmsg = msg_hash_to_str(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT);
-      }
       else
       {
          dmsg = msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST);
@@ -1537,7 +1535,6 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
    ssize_t recvd;
    uint32_t content_crc             = 0;
    int32_t  ping                    = 0;
-   const char *dmsg                 = NULL;
    struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
    settings_t *settings             = config_get_ptr();
    bool extra_notifications         = settings->bools.notification_show_netplay_extra;
