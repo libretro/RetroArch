@@ -5697,7 +5697,11 @@ void input_config_parse_joy_axis(
             && tmp[3] == '\0'
          )
          bind->joyaxis = AXIS_NONE;
-      else if (strlen(tmp) >= 2 && (*tmp == '+' || *tmp == '-'))
+      else if 
+         (     tmp[0] != '\0'   
+          &&   tmp[1] != '\0'
+          && (*tmp    == '+' 
+          ||  *tmp    == '-'))
       {
          int i_axis = (int)strtol(tmp + 1, NULL, 0);
          if (*tmp == '+')

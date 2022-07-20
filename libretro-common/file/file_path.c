@@ -526,7 +526,6 @@ void fill_str_dated_filename(char *out_filename,
 void path_basedir(char *path)
 {
    char *last = NULL;
-   /* was strlen(path) < 2 before */
    if (!path || path[0] == '\0' || path[1] == '\0')
       return;
 
@@ -809,9 +808,9 @@ size_t path_relative_to(char *out,
             path
          && base
          && path[0] != '\0' 
-         && path[1] != '\0' /* was strlen(path) >= 2 before */
+         && path[1] != '\0'
          && base[0] != '\0'
-         && base[1] != '\0' /* was strlen(base) >= 2 before */
+         && base[1] != '\0'
          && path[1] == ':' 
          && base[1] == ':'
          && path[0] != base[0])
@@ -1158,7 +1157,6 @@ void fill_pathname_abbreviated_or_relative(char *out_path, const char *in_refpat
 void path_basedir_wrapper(char *path)
 {
    char *last = NULL;
-   /* was strlen(path) < 2 before */
    if (!path || path[0] == '\0' || path[1] == '\0')
       return;
 

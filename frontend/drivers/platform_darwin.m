@@ -950,13 +950,13 @@ static bool accessibility_speak_macos(int speed,
    else
    { 
       /* child process: replace process with the say command */ 
-      if (strlen(language_speaker)> 0)
+      if (language_speaker && language_speaker[0] != '\0')
       {
          char* cmd[] = {"say", "-v", NULL, 
                         NULL, "-r", NULL, NULL};
-         cmd[2] = language_speaker;
-         cmd[3] = (char *) speak_text;
-         cmd[5] = speeds[speed-1];
+         cmd[2]      = language_speaker;
+         cmd[3]      = (char *) speak_text;
+         cmd[5]      = speeds[speed-1];
          execvp("say", cmd);
       }
       else

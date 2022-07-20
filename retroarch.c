@@ -647,7 +647,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
                                      "cut -f3 | "
                                      "sort", "r");
 
-            if (zones_file != NULL)
+            if (zones_file)
             {
                char zone_desc[TIMEZONE_LENGTH];
                while (fgets(zone_desc, TIMEZONE_LENGTH, zones_file))
@@ -658,7 +658,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
                      if (zone_desc[--zone_desc_len] == '\n')
                         zone_desc[zone_desc_len] = '\0';
 
-                  if (strlen(zone_desc) > 0)
+                  if (zone_desc && zone_desc[0] != '\0')
                   {
                      const char *opt  = zone_desc;
                      *len            += strlen(opt) + 1;
@@ -4537,7 +4537,7 @@ static bool retroarch_parse_input_and_config(
       string_trim_whitespace_left(p_rarch->launch_arguments);
       string_trim_whitespace_right(p_rarch->launch_arguments);
 
-      first_run = false;
+      first_run  = false;
 
       /* Command line interface is only considered
        * to be 'active' (i.e. used by a third party)

@@ -950,7 +950,7 @@ static bool create_win32_process(char* cmd, const char * input)
 {
    STARTUPINFO si;
    HANDLE rd = NULL;
-   bool ret;
+   bool ret  = false;
    memset(&si, 0, sizeof(si));
    si.cb = sizeof(si);
    memset(&g_pi, 0, sizeof(g_pi));
@@ -959,11 +959,13 @@ static bool create_win32_process(char* cmd, const char * input)
    {
       DWORD dummy;
       HANDLE wr;
-      if (!CreatePipe(&rd, &wr, NULL, strlen(input))) return false;
+      size_t input_len = strlen(input);
+      if (!CreatePipe(&rd, &wr, NULL, input_len))
+         return false;
       
       SetHandleInformation(rd, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
       
-      WriteFile(wr, input, strlen(input), &dummy, NULL);
+      WriteFile(wr, input, input_len, &dummy, NULL);
       CloseHandle(wr);
       
       si.dwFlags    |= STARTF_USESTDHANDLES;
@@ -974,7 +976,8 @@ static bool create_win32_process(char* cmd, const char * input)
 
    ret = CreateProcess(NULL, cmd, NULL, NULL, TRUE, CREATE_NO_WINDOW,
                       NULL, NULL, &si, &g_pi);
-   if (rd) CloseHandle(rd);
+   if (rd)
+      CloseHandle(rd);
    return ret;
 }
 
@@ -987,20 +990,17 @@ static bool is_narrator_running_windows(void)
 
    if (USE_POWERSHELL)
    {
-      if (pi_set == false)
+      if (!pi_set)
          return false;
       if (GetExitCodeProcess(g_pi.hProcess, &status))
-      {
          if (status == STILL_ACTIVE)
             return true;
-      }
       return false;
    }
 #ifdef HAVE_NVDA
    else if (USE_NVDA)
    {
-      long res;
-      res = nvdaController_testIfRunning_func();
+      long res = nvdaController_testIfRunning_func();
 
       if (res != 0) 
       {
@@ -1010,7 +1010,7 @@ static bool is_narrator_running_windows(void)
          RARCH_ERR("Error communicating with NVDA\n");
          USE_POWERSHELL = true;
          USE_NVDA       = false;
-	 return false;
+         return false;
       }
       return false;
    }
@@ -1059,7 +1059,7 @@ static bool accessibility_speak_windows(int speed,
    {
       const char * template_lang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak($input);\"";
       const char * template_nolang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak($input);\"";
-      if (strlen(language) > 0)
+      if (language && language[0] != '\0')
          snprintf(cmd, sizeof(cmd), template_lang, language, speeds[speed-1]);
       else
          snprintf(cmd, sizeof(cmd), template_nolang, speeds[speed-1]);

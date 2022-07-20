@@ -78,15 +78,16 @@ static void connmanctl_refresh_services(connman_t *connman)
    while (fgets(line, 512, serv_file))
    {
       int i;
-      struct string_list* list = NULL;
+      size_t ssid_len;
       wifi_network_info_t entry;
-      size_t len = strlen(line);
+      struct string_list* list = NULL;
+      size_t len               = strlen(line);
       if (len > 0 && line[len-1] == '\n')
          line[--len] = '\0';
 
       /* Parse lines directly and store net info directly */
       memset(&entry, 0, sizeof(entry));
-      entry.connected = (line[2] == 'R' || line[2] == 'O');
+      entry.connected      = (line[2] == 'R' || line[2] == 'O');
       entry.saved_password = (line[0] == '*');
 
       /* connmanctl services outputs a 4 character prefixed lines,
@@ -95,8 +96,7 @@ static void connmanctl_refresh_services(connman_t *connman)
        *     '*A0 SSID some_unique_id'
        *     '    SSID some_another_unique_id'
        */
-      list = string_split(&line[4], " ");
-      if (!list)
+      if (!(list = string_split(&line[4], " ")))
          break;
 
       if (list->size == 0)
@@ -107,8 +107,8 @@ static void connmanctl_refresh_services(connman_t *connman)
          strlcat(entry.ssid, list->elems[i].data, sizeof(entry.ssid));
          strlcat(entry.ssid, " ", sizeof(entry.ssid)-1);
       }
-      if (strlen(entry.ssid))
-         entry.ssid[strlen(entry.ssid)-1] = 0;
+      if ((ssid_len = strlen(entry.ssid)) > 0)
+         entry.ssid[ssid_len - 1] = 0;
 
       /* Store the connman network id here, for later */
       strlcpy(entry.netid, list->elems[list->size-1].data, sizeof(entry.netid));
@@ -162,7 +162,7 @@ static bool connmanctl_tether_status(connman_t *connman)
 
    fgets(ln, sizeof(ln), command_file);
 
-   ln_size = strlen(ln)-1;
+   ln_size = strlen(ln) - 1;
    if (ln[ln_size] == '\n')
       ln[ln_size] = '\0';
 
@@ -343,6 +343,7 @@ static bool connmanctl_connect_ssid(
 
    if (!netinfo->saved_password)
    {
+      size_t ssid_len;
       FILE *settings_file = fopen(settings_path, "w");
       if (!settings_file)
          return false;
@@ -350,7 +351,8 @@ static bool connmanctl_connect_ssid(
       fprintf(settings_file, "Name=%s\n", netinfo->ssid);
       fprintf(settings_file, "SSID=");
 
-      for (i = 0; i < strlen(netinfo->ssid); i++)
+      ssid_len = strlen(netinfo->ssid);
+      for (i = 0; i < ssid_len; i++)
          fprintf(settings_file, "%02x", (unsigned int) netinfo->ssid[i]);
       fprintf(settings_file, "\n");
 
