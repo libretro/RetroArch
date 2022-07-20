@@ -332,14 +332,14 @@ static bool connmanctl_connect_ssid(
    bool widgets_active                 = 
       connman->connmanctl_widgets_supported;
 #endif
-   strlcat(netid, netinfo->netid, sizeof(netid));
-   strlcat(settings_dir, LAKKA_CONNMAN_DIR, sizeof(settings_dir));
-   strlcat(settings_dir, netid, sizeof(settings_dir));
+   strlcpy(netid, netinfo->netid, sizeof(netid));
+   fill_pathname_join(settings_dir, LAKKA_CONNMAN_DIR, 
+         netid, sizeof(settings_dir));
 
    path_mkdir(settings_dir);
 
-   strlcat(settings_path, settings_dir, sizeof(settings_path));
-   strlcat(settings_path, "/settings", sizeof(settings_path));
+   fill_pathname_join(settings_path, settings_dir, "settings",
+         sizeof(settings_path));
 
    if (!netinfo->saved_password)
    {
