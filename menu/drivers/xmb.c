@@ -1154,6 +1154,8 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
    if (!((xmb->is_quick_menu || xmb->is_state_slot) && xmb->libretro_running))
       return;
 
+   xmb->fullscreen_thumbnails_available = false;
+
    if (savestate_thumbnail_enable)
    {
       menu_entry_t entry;
@@ -2540,13 +2542,25 @@ static void xmb_populate_entries(void *data,
     *   inside xmb_set_thumbnail_content() */
    xmb->fullscreen_thumbnails_available =
          (xmb->is_playlist || xmb->is_db_manager_list || xmb->is_file_list) &&
-         !xmb->is_quick_menu &&
          !((xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS) && (xmb->depth > 2));
 
-   if ((xmb->is_quick_menu &&
-         (!string_is_empty(xmb->savestate_thumbnail_file_path) || !xmb->libretro_running)) ||
-               xmb->is_state_slot)
+   if (xmb->is_state_slot || (xmb->is_quick_menu &&
+         !string_is_empty(xmb->savestate_thumbnail_file_path)))
       xmb->fullscreen_thumbnails_available = true;
+
+   if (xmb->is_quick_menu && xmb->depth < 3)
+   {
+      const char *thumbnail_content_path = NULL;
+      runloop_state_t *runloop_st        = runloop_state_get_ptr();
+      gfx_thumbnail_get_content_path(xmb->thumbnail_path_data, &thumbnail_content_path);
+
+      if (xmb->libretro_running)
+         xmb->fullscreen_thumbnails_available = false;
+
+      if (!string_is_empty(thumbnail_content_path) &&
+            !string_is_equal(thumbnail_content_path, runloop_st->runtime_content_path))
+         xmb->fullscreen_thumbnails_available = true;
+   }
 
    /* Hack: XMB gets into complete muddle when
     * performing 'complex' directory navigation
@@ -4046,7 +4060,7 @@ static enum menu_action xmb_parse_menu_entry_action(
     * valid menu action will disable it... */
    if (xmb->show_fullscreen_thumbnails)
    {
-      if (action != MENU_ACTION_NOOP)
+      if (action != MENU_ACTION_NOOP && action != MENU_ACTION_TOGGLE)
       {
          xmb_hide_fullscreen_thumbnails(xmb, true);
 
@@ -4107,8 +4121,9 @@ static enum menu_action xmb_parse_menu_entry_action(
          }
          break;
       case MENU_ACTION_START:
-         if ((xmb->is_quick_menu && xmb->libretro_running) ||
-               xmb->is_state_slot)
+         if (xmb->is_state_slot ||
+               (xmb->is_quick_menu &&
+                  (!string_is_empty(xmb->savestate_thumbnail_file_path) || xmb->depth > 2)))
             break;
 
          /* If this is a menu with thumbnails, attempt
@@ -4128,8 +4143,8 @@ static enum menu_action xmb_parse_menu_entry_action(
          break;
       case MENU_ACTION_SCAN:
          if (xmb->fullscreen_thumbnails_available &&
-               ((xmb->is_quick_menu && !string_is_empty(xmb->savestate_thumbnail_file_path)) ||
-                (xmb->is_state_slot)))
+               ((xmb->is_state_slot) ||
+                (xmb->is_quick_menu && !string_is_empty(xmb->savestate_thumbnail_file_path))))
          {
             xmb_hide_fullscreen_thumbnails(xmb, false);
             xmb_show_fullscreen_thumbnails(xmb, menu_navigation_get_selection());
@@ -4738,9 +4753,11 @@ static void xmb_draw_fullscreen_thumbnails(
 
       /* Do nothing if both thumbnails are missing
        * > Note: Baring inexplicable internal errors, this
-       *   can never happen... */
+       *   can never happen...
+       * > Return instead of error to keep fullscreen
+       *   mode after menu/fullscreen toggle */
       if (num_thumbnails < 1)
-         goto error;
+         return;
 
       /* Get base thumbnail dimensions + draw positions */
 
@@ -5213,7 +5230,17 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    /**************************/
    /* Draw thumbnails: START */
    /**************************/
-   xmb->libretro_running = libretro_running;
+
+   /* Reset thumbnail bar when starting/closing content */
+   if (xmb->libretro_running != libretro_running)
+   {
+      xmb->libretro_running = libretro_running;
+
+      if (xmb->is_quick_menu && libretro_running)
+         xmb->fullscreen_thumbnails_available = false;
+      else if (xmb->is_quick_menu && !libretro_running)
+         xmb->fullscreen_thumbnails_available = true;
+   }
 
    /* Note: This is incredibly ugly, but there are
     * so many combinations here that we would go insane
@@ -5243,12 +5270,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             GFX_THUMBNAIL_ALIGN_CENTRE,
             1.0f, 1.0f, &thumbnail_shadow);
    }
-   /* This is used for hiding thumbnails when going into sub-levels in the
-    * Quick Menu as well as when selecting "Information" for a playlist entry.
-    * NOTE: This is currently a pretty crude check, simply going by menu depth
-    * and not specifically identifying which menu we're actually in. */
-   else if (!((xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS) &&
-         ((xmb->depth > 1 && libretro_running) || (xmb->depth > 2 && !libretro_running))))
+   else if (xmb->fullscreen_thumbnails_available)
    {
       bool show_right_thumbnail =
             (xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_AVAILABLE) ||
@@ -7109,7 +7131,12 @@ static void xmb_toggle(void *userdata, bool menu_on)
     * thumbnail won't update after selecting
     * 'save state' option */
    if (xmb->is_quick_menu)
+   {
       gfx_thumbnail_reset(&xmb->thumbnails.savestate);
+
+      if (xmb->libretro_running)
+         xmb->fullscreen_thumbnails_available = false;
+   }
 
    entry.duration     = XMB_DELAY * 2;
    entry.target_value = 1.0f;
