@@ -760,7 +760,6 @@ bool patch_content(
    bool allow_ups   = !is_bps_pref && !is_ips_pref;
    bool allow_ips   = !is_ups_pref && !is_bps_pref;
    bool allow_bps   = !is_ups_pref && !is_ips_pref;
-   bool patch_found = false;
 
    if (    (unsigned)is_ips_pref
          + (unsigned)is_bps_pref
@@ -833,12 +832,8 @@ bool patch_content(
       free(name_bps_indexed);
       free(name_ups_indexed);
 
-      patch_found = true;
+      return true;
    }
 
-   if(!patch_found)
-      RARCH_LOG("[Content]: %s\n",
-            msg_hash_to_str(MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH));
-
-   return patch_found;
+   return false;
 }

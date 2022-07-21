@@ -3914,9 +3914,6 @@ bool config_load_override(void *data)
 
       should_append = true;
    }
-   else
-      RARCH_LOG("[Overrides]: No core-specific overrides found at \"%s\".\n",
-            core_path);
 
    if (has_content)
    {
@@ -3945,9 +3942,6 @@ bool config_load_override(void *data)
 
          should_append = true;
       }
-      else
-         RARCH_LOG("[Overrides]: No content-dir-specific overrides found at \"%s\".\n",
-            content_path);
 
       /* per-game overrides */
       /* Create a new config file from game_path */
@@ -3974,9 +3968,6 @@ bool config_load_override(void *data)
 
          should_append = true;
       }
-      else
-         RARCH_LOG("[Overrides]: No game-specific overrides found at \"%s\".\n",
-               game_path);
    }
 
    if (!should_append)
@@ -4079,8 +4070,6 @@ bool config_load_remap(const char *directory_input_remapping,
    if (string_is_empty(core_name) ||
        string_is_empty(directory_input_remapping))
       return false;
-
-   RARCH_LOG("[Remaps]: Remap directory: \"%s\".\n", directory_input_remapping);
 
    /* Concatenate strings into full paths for core_path,
     * game_path, content_path */
