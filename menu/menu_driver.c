@@ -3751,6 +3751,7 @@ bool menu_shader_manager_save_preset_internal(
 {
    char fullname[PATH_MAX_LENGTH];
    char buffer[PATH_MAX_LENGTH];
+   const char *preset_ext         = NULL;
    bool ret                       = false;
    enum rarch_shader_type type    = RARCH_SHADER_NONE;
    char *preset_path              = NULL;
@@ -3764,48 +3765,23 @@ bool menu_shader_manager_save_preset_internal(
    if ((type = menu_shader_manager_get_type(shader)) == RARCH_SHADER_NONE)
       return false;
 
+   preset_ext = video_shader_get_preset_extension(type);
+
    if (!string_is_empty(basename))
    {
-      /* We are comparing against a fixed list of file
-       * extensions, the longest (slangp) being 6 characters
-       * in length. We therefore only need to extract the first
-       * 7 characters from the extension of the input path
-       * to correctly validate a match */
-      const char *ext = NULL;
-
       strlcpy(fullname, basename, sizeof(fullname));
-
-      /* Get file extension */
-      ext = strrchr(basename, '.');
-
-      /* Copy and convert to lower case */
-      if (ext && (*(++ext) != '\0'))
-      {
-         char ext_lower[8];
-         strlcpy(ext_lower, ext, sizeof(ext_lower));
-         string_to_lower(ext_lower);
-         /* Append extension automatically as appropriate. */
-         if (     !string_is_equal(ext_lower, "cgp")
-               && !string_is_equal(ext_lower, "glslp")
-               && !string_is_equal(ext_lower, "slangp"))
-         {
-            const char *preset_ext = video_shader_get_preset_extension(type);
-            strlcat(fullname, preset_ext, sizeof(fullname));
-         }
-      }
+      strlcat(fullname, preset_ext, sizeof(fullname));
    }
    else
       snprintf(fullname, sizeof(fullname), "retroarch%s",
-            video_shader_get_preset_extension(type));
+            preset_ext);
 
    if (path_is_absolute(fullname))
    {
       preset_path = fullname;
-      ret         = video_shader_write_preset(preset_path,
+      if ((ret    = video_shader_write_preset(preset_path,
             dir_video_shader,
-            shader, save_reference);
-
-      if (ret)
+            shader, save_reference)))
          RARCH_LOG("[Shaders]: Saved shader preset to \"%s\".\n", preset_path);
       else
          RARCH_ERR("[Shaders]: Failed writing shader preset to \"%s\".\n", preset_path);
