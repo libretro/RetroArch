@@ -139,7 +139,6 @@ static int dir_list_read(const char *dir,
             continue;
       }
 
-      file_path[0] = '\0';
       fill_pathname_join(file_path, dir, name, sizeof(file_path));
 
       if (retro_dirent_is_dir(entry, NULL))
@@ -273,8 +272,8 @@ bool dir_list_initialize(struct string_list *list,
       bool include_hidden, bool include_compressed,
       bool recursive)
 {
-   if (!list || !string_list_initialize(list))
-      return false;
-   return dir_list_append(list, dir, ext, include_dirs,
+   if (list && string_list_initialize(list))
+      return dir_list_append(list, dir, ext, include_dirs,
             include_hidden, include_compressed, recursive);
+   return false;
 }

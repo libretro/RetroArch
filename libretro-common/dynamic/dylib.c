@@ -150,21 +150,19 @@ function_t dylib_proc(dylib_t lib, const char *proc)
 
 #ifdef _WIN32
    HMODULE mod = (HMODULE)lib;
-#ifndef __WINRT__
-   if (!mod)
-      mod = GetModuleHandle(NULL);
-#else
-   /* GetModuleHandle is not available on UWP */
    if (!mod)
    {
+#ifdef __WINRT__
+      /* GetModuleHandle is not available on UWP */
       /* It's not possible to lookup symbols in current executable
        * on UWP. */
       DebugBreak();
       return NULL;
-   }
+#else
+      mod = GetModuleHandle(NULL);
 #endif
-   sym = (function_t)GetProcAddress(mod, proc);
-   if (!sym)
+   }
+   if (!(sym = (function_t)GetProcAddress(mod, proc)))
    {
       set_dl_error();
       return NULL;

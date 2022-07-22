@@ -77,9 +77,8 @@ void label_sanitize(char *label, bool (*left)(char*), bool (*right)(char*))
       {
          /* check for the start of the range */
          if ((*left)(&label[lindex]))
-            copy = false;
-
-         if (copy)
+            copy                = false;
+         else
             new_label[rindex++] = label[lindex];
       }
       else if ((*right)(&label[lindex]))
