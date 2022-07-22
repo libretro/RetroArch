@@ -461,8 +461,10 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
             const char *content_path        = (state->state & STATE_RELOAD) ?
                data->current.content_path : data->content_paths.elems[0].data;
 
+#ifdef HAVE_DYNAMIC
             if (data->current.core_loaded)
                command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+#endif
 
             RARCH_LOG("[Lobby] Loading core '%s' with content file '%s'.\n",
                data->core, content_path);
@@ -492,8 +494,10 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
             const char *subsystem;
             struct string_list *subsystem_content;
 
+#ifdef HAVE_DYNAMIC
             if (data->current.core_loaded)
                command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+#endif
 
             if (state->state & STATE_RELOAD)
             {
@@ -543,7 +547,9 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
                /* Disable netplay if we don't have the subsystem. */
                netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
 
+#ifdef HAVE_DYNAMIC
                command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+#endif
             }
          }
          break;
@@ -552,8 +558,10 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
          {
             content_ctx_info_t content_info = {0};
 
+#ifdef HAVE_DYNAMIC
             if (data->current.core_loaded)
                command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+#endif
 
             RARCH_LOG("[Lobby] Loading contentless core '%s'.\n", data->core);
 
@@ -580,7 +588,9 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
          {
             if (data->current.core_loaded && (state->state & STATE_RELOAD))
             {
+#ifdef HAVE_DYNAMIC
                command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+#endif
 
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
@@ -812,7 +822,7 @@ bool task_push_netplay_content_reload(const char *hostname)
                scan_state.state |= STATE_LOAD_SUBSYSTEM;
          }
       }
-      else if (!string_is_empty(path_get(RARCH_PATH_BASENAME)))
+      else if (!path_is_empty(RARCH_PATH_BASENAME))
       {
          const char *pcontent = path_get(RARCH_PATH_CONTENT);
 
