@@ -293,8 +293,6 @@ bool gfx_widget_start_load_content_animation(void)
 
    char icon_path[PATH_MAX_LENGTH];
 
-   icon_path[0] = '\0';
-
    /* To ensure we leave the widget in a well defined
     * state, perform a reset before parsing variables */
    gfx_widget_load_content_animation_reset();

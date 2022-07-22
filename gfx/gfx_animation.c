@@ -1406,12 +1406,9 @@ static void build_line_ticker_string(
    {
       size_t offset     = i + line_offset;
       size_t line_index = offset % (lines->size + 1);
-      bool line_valid   = true;
 
-      if (line_index >= lines->size)
-         line_valid = false;
-
-      if (line_valid)
+      /* Is line valid? */
+      if (line_index < lines->size)
          strlcat(dest_str, lines->elems[line_index].data, dest_str_len);
 
       if (i < num_display_lines - 1)
@@ -1563,8 +1560,7 @@ static bool gfx_animation_ticker_smooth_fw(
       ticker->spacer     = TICKER_SPACER_DEFAULT;
 
    /* Get length + width of spacer */
-   spacer_len            = utf8len(ticker->spacer);
-   if (spacer_len < 1)
+   if ((spacer_len = utf8len(ticker->spacer)) < 1)
       goto end;
 
    spacer_width          = spacer_len * glyph_width;
@@ -1673,16 +1669,14 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
 
    /* Find the display width of each character in
     * the src string + total width */
-   src_str_len = utf8len(ticker->src_str);
-   if (src_str_len < 1)
+   if ((src_str_len = utf8len(ticker->src_str)) < 1)
       goto end;
 
    src_char_widths = small_src_char_widths;
 
    if (src_str_len > ARRAY_SIZE(small_src_char_widths))
    {
-      src_char_widths = (unsigned*)calloc(src_str_len, sizeof(unsigned));
-      if (!src_char_widths)
+      if (!(src_char_widths = (unsigned*)calloc(src_str_len, sizeof(unsigned))))
          goto end;
    }
 
@@ -1772,12 +1766,10 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
 
    /* Find the display width of each character in
     * the spacer */
-   spacer_len = utf8len(ticker->spacer);
-   if (spacer_len < 1)
+   if ((spacer_len = utf8len(ticker->spacer)) < 1)
       goto end;
 
-   spacer_char_widths = (unsigned*)calloc(spacer_len,  sizeof(unsigned));
-   if (!spacer_char_widths)
+   if (!(spacer_char_widths = (unsigned*)calloc(spacer_len,  sizeof(unsigned))))
       goto end;
 
    str_ptr = ticker->spacer;
@@ -1901,8 +1893,7 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
 
    /* Line wrap input string */
    wrapped_str_len = strlen(line_ticker->str) + 1 + 10; /* 10 bytes use for inserting '\n' */
-   wrapped_str = (char*)malloc(wrapped_str_len);
-   if (!wrapped_str)
+   if (!(wrapped_str = (char*)malloc(wrapped_str_len)))
       goto end;
    wrapped_str[0] = '\0';
 
@@ -2034,10 +2025,8 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
    }
 
    /* > Height */
-   glyph_height = font_driver_get_line_height(
-         line_ticker->font, line_ticker->font_scale);
-
-   if (glyph_height <= 0)
+   if ((glyph_height = font_driver_get_line_height(
+         line_ticker->font, line_ticker->font_scale)) <= 0)
       goto end;
 
    /* Determine line wrap parameters */
@@ -2049,8 +2038,7 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
 
    /* Line wrap input string */
    wrapped_str_len = strlen(line_ticker->src_str) + 1 + 10; /* 10 bytes use for inserting '\n' */
-   wrapped_str = (char*)malloc(wrapped_str_len);
-   if (!wrapped_str)
+   if (!(wrapped_str = (char*)malloc(wrapped_str_len)))
       goto end;
    wrapped_str[0] = '\0';
 
