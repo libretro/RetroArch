@@ -23,7 +23,6 @@
 #include "netplay_protocol.h"
 
 #include <libretro.h>
-#include <retro_miscellaneous.h>
 
 #include <streams/trans_stream.h>
 

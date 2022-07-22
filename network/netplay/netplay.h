@@ -28,6 +28,8 @@
 #include "../../config.h"
 #endif
 
+#include <retro_miscellaneous.h>
+
 #include <net/net_compat.h>
 
 #include "../../msg_hash.h"
@@ -56,6 +58,11 @@ enum rarch_netplay_ctl_state
    RARCH_NETPLAY_CTL_ENABLE_SERVER,
    RARCH_NETPLAY_CTL_ENABLE_CLIENT,
    RARCH_NETPLAY_CTL_DISABLE,
+#ifndef HAVE_DYNAMIC
+   RARCH_NETPLAY_CTL_GET_FORK_ARGS,
+   RARCH_NETPLAY_CTL_SET_FORK_ARGS,
+   RARCH_NETPLAY_CTL_CLEAR_FORK_ARGS,
+#endif
    RARCH_NETPLAY_CTL_REFRESH_CLIENT_INFO,
    RARCH_NETPLAY_CTL_IS_ENABLED,
    RARCH_NETPLAY_CTL_IS_REPLAYING,
@@ -247,6 +254,9 @@ typedef struct
    unsigned server_port_deferred;
    char server_address_deferred[256];
    char server_session_deferred[32];
+#ifndef HAVE_DYNAMIC
+   char netplay_fork_args[PATH_MAX_LENGTH];
+#endif
    bool netplay_client_deferred;
    /* Only used before init_netplay */
    bool netplay_enabled;
