@@ -3756,25 +3756,19 @@ bool menu_shader_manager_save_preset_internal(
    enum rarch_shader_type type    = RARCH_SHADER_NONE;
    char *preset_path              = NULL;
    size_t i                       = 0;
-
-   fullname[0] = buffer[0]        = '\0';
-
    if (!shader || !shader->passes)
       return false;
-
    if ((type = menu_shader_manager_get_type(shader)) == RARCH_SHADER_NONE)
       return false;
 
+   buffer[0]  = '\0';
    preset_ext = video_shader_get_preset_extension(type);
 
    if (!string_is_empty(basename))
-   {
       strlcpy(fullname, basename, sizeof(fullname));
-      strlcat(fullname, preset_ext, sizeof(fullname));
-   }
    else
-      snprintf(fullname, sizeof(fullname), "retroarch%s",
-            preset_ext);
+      strlcpy(fullname, "retroarch", sizeof(fullname));
+   strlcat(fullname, preset_ext, sizeof(fullname));
 
    if (path_is_absolute(fullname))
    {
