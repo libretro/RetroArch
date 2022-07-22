@@ -705,8 +705,6 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
 
    /* Check whether a 'force refresh' file
     * is present */
-   file_path[0] = '\0';
-
    if (string_is_empty(info_dir))
       strlcpy(file_path,
             FILE_PATH_CORE_INFO_CACHE_REFRESH, sizeof(file_path));
@@ -719,8 +717,6 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
       return core_info_cache_list_new();
 
    /* Open info cache file */
-   file_path[0] = '\0';
-
    if (string_is_empty(info_dir))
       strlcpy(file_path, FILE_PATH_CORE_INFO_CACHE, sizeof(file_path));
    else
@@ -740,8 +736,7 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
       return core_info_cache_list_new();
 
    /* Parse info cache file */
-   parser = rjson_open_stream(file);
-   if (!parser)
+   if (!(parser = rjson_open_stream(file)))
    {
       RARCH_ERR("[Core Info] Failed to create JSON parser\n");
       goto end;
@@ -826,8 +821,6 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
    char file_path[PATH_MAX_LENGTH];
    size_t i, j;
 
-   file_path[0] = '\0';
-
    if (!list)
       return false;
 
@@ -854,8 +847,7 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
    }
 
    /* Write info cache */
-   writer = rjsonwriter_open_stream(file);
-   if (!writer)
+   if (!(writer = rjsonwriter_open_stream(file)))
    {
       RARCH_ERR("[Core Info] Failed to create JSON writer\n");
       goto end;
@@ -1166,8 +1158,6 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
    success = true;
 
    /* Remove 'force refresh' file, if required */
-   file_path[0] = '\0';
-
    if (string_is_empty(info_dir))
       strlcpy(file_path,
             FILE_PATH_CORE_INFO_CACHE_REFRESH, sizeof(file_path));
@@ -1216,8 +1206,6 @@ static void core_info_check_uninstalled(core_info_cache_list_t *list)
 bool core_info_cache_force_refresh(const char *path_info)
 {
    char file_path[PATH_MAX_LENGTH];
-
-   file_path[0] = '\0';
 
    /* Get 'force refresh' file path */
    if (string_is_empty(path_info))
@@ -1341,14 +1329,11 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
    char exts[32];
    size_t i;
 
-   exts[0] = '\0';
-
    if (string_is_empty(core_exts) ||
        !path_list)
       goto error;
 
-   core_ext_list = string_split(core_exts, "|");
-   if (!core_ext_list)
+   if (!(core_ext_list = string_split(core_exts, "|")))
       goto error;
 
    /* Allocate list containers */
@@ -1478,13 +1463,13 @@ static bool core_info_path_is_locked(
    uint32_t hash;
    char lock_filename[NAME_MAX_LENGTH];
 
-   lock_filename[0] = '\0';
-
    if (lock_list->size < 1)
       return false;
 
-   snprintf(lock_filename, sizeof(lock_filename),
-         "%s" FILE_PATH_LOCK_EXTENSION, core_file_name);
+   strlcpy(lock_filename, core_file_name,
+         sizeof(lock_filename));
+   strlcat(lock_filename, FILE_PATH_LOCK_EXTENSION,
+         sizeof(lock_filename));
 
    hash = core_info_hash_string(lock_filename);
 
@@ -1508,14 +1493,13 @@ static bool core_info_path_is_standalone_exempt(
    uint32_t hash;
    char exempt_filename[NAME_MAX_LENGTH];
 
-   exempt_filename[0] = '\0';
-
    if (exempt_list->size < 1)
       return false;
 
-   snprintf(exempt_filename, sizeof(exempt_filename),
-         "%s" FILE_PATH_STANDALONE_EXEMPT_EXTENSION,
-         core_file_name);
+   strlcpy(exempt_filename, core_file_name,
+         sizeof(exempt_filename));
+   strlcat(exempt_filename, FILE_PATH_STANDALONE_EXEMPT_EXTENSION,
+         sizeof(exempt_filename));
 
    hash = core_info_hash_string(exempt_filename);
 
@@ -1563,8 +1547,6 @@ static core_info_t *core_info_find_internal(
    size_t i;
    uint32_t hash;
    char core_file_id[256];
-
-   core_file_id[0] = '\0';
 
    if (!list ||
        string_is_empty(core_path) ||
@@ -1653,7 +1635,6 @@ static config_file_t *core_info_get_config_file(
             "%s" ".info", core_file_id);
    else
    {
-      info_path[0] = '\0';
       fill_pathname_join(info_path, info_dir, core_file_id,
             sizeof(info_path));
       strlcat(info_path, ".info", sizeof(info_path));
@@ -2026,8 +2007,6 @@ static core_info_list_t *core_info_list_new(const char *path,
       const char *core_filename   = core_file->filename;
       config_file_t *conf         = NULL;
       char core_file_id[256];
-
-      core_file_id[0] = '\0';
 
       if (!core_info_get_file_id(core_filename, core_file_id,
                sizeof(core_file_id)))
@@ -2496,9 +2475,6 @@ bool core_info_core_file_id_is_equal(const char *core_path_a,
    char core_file_id_a[256];
    char core_file_id_b[256];
 
-   core_file_id_a[0] = '\0';
-   core_file_id_b[0] = '\0';
-
    if (   string_is_empty(core_path_a)
        || string_is_empty(core_path_b)
        || !core_info_get_file_id(
@@ -2900,8 +2876,6 @@ bool core_info_set_core_lock(const char *core_path, bool lock)
    core_info_t *core_info = NULL;
    char lock_file_path[PATH_MAX_LENGTH];
 
-   lock_file_path[0] = '\0';
-
 #if defined(ANDROID)
    /* Play Store builds do not support
     * core locking */
@@ -2916,8 +2890,8 @@ bool core_info_set_core_lock(const char *core_path, bool lock)
       return false;
 
    /* Get lock file path */
-   snprintf(lock_file_path, sizeof(lock_file_path),
-         "%s" FILE_PATH_LOCK_EXTENSION, core_info->path);
+   strlcpy(lock_file_path, core_info->path, sizeof(lock_file_path));
+   strlcat(lock_file_path, FILE_PATH_LOCK_EXTENSION, sizeof(lock_file_path));
 
    /* Create or delete lock file, as required */
    if (!core_info_update_core_aux_file(lock_file_path, lock))
@@ -2946,8 +2920,6 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
    bool is_locked             = false;
    char lock_file_path[PATH_MAX_LENGTH];
 
-   lock_file_path[0] = '\0';
-
 #if defined(ANDROID)
    /* Play Store builds do not support
     * core locking */
@@ -2973,8 +2945,10 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
       return false;
 
    /* Get lock file path */
-   snprintf(lock_file_path, sizeof(lock_file_path),
-         "%s" FILE_PATH_LOCK_EXTENSION, core_file_path);
+   strlcpy(lock_file_path, core_file_path,
+         sizeof(lock_file_path));
+   strlcat(lock_file_path, FILE_PATH_LOCK_EXTENSION,
+         sizeof(lock_file_path));
 
    /* Check whether lock file exists */
    is_locked = path_is_valid(lock_file_path);
@@ -3003,8 +2977,6 @@ bool core_info_set_core_standalone_exempt(const char *core_path, bool exempt)
    core_info_t *core_info = NULL;
    char exempt_file_path[PATH_MAX_LENGTH];
 
-   exempt_file_path[0] = '\0';
-
    /* Search for specified core */
    if (string_is_empty(core_path) ||
        !core_info_find(core_path, &core_info) ||
@@ -3013,9 +2985,10 @@ bool core_info_set_core_standalone_exempt(const char *core_path, bool exempt)
       return false;
 
    /* Get 'standalone exempt' file path */
-   snprintf(exempt_file_path, sizeof(exempt_file_path),
-         "%s" FILE_PATH_STANDALONE_EXEMPT_EXTENSION,
-         core_info->path);
+   strlcpy(exempt_file_path, core_info->path,
+         sizeof(exempt_file_path));
+   strlcat(exempt_file_path, FILE_PATH_STANDALONE_EXEMPT_EXTENSION,
+         sizeof(exempt_file_path));
 
    /* Create or delete 'standalone exempt' file, as required */
    if (!core_info_update_core_aux_file(exempt_file_path, exempt))
@@ -3045,8 +3018,6 @@ bool core_info_get_core_standalone_exempt(const char *core_path)
    bool is_exempt         = false;
    char exempt_file_path[PATH_MAX_LENGTH];
 
-   exempt_file_path[0] = '\0';
-
    /* Search for specified core */
    if (string_is_empty(core_path) ||
        !core_info_find(core_path, &core_info) ||
@@ -3055,9 +3026,10 @@ bool core_info_get_core_standalone_exempt(const char *core_path)
       return false;
 
    /* Get 'standalone exempt' file path */
-   snprintf(exempt_file_path, sizeof(exempt_file_path),
-         "%s" FILE_PATH_STANDALONE_EXEMPT_EXTENSION,
-         core_info->path);
+   strlcpy(exempt_file_path, core_info->path,
+         sizeof(exempt_file_path));
+   strlcat(exempt_file_path, FILE_PATH_STANDALONE_EXEMPT_EXTENSION,
+         sizeof(exempt_file_path));
 
    /* Check whether 'standalone exempt' file exists */
    is_exempt = path_is_valid(exempt_file_path);

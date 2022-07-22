@@ -55,9 +55,6 @@ static bool core_backup_get_backup_dir(
    char core_file_id[PATH_MAX_LENGTH];
    char tmp[PATH_MAX_LENGTH];
 
-   core_file_id[0] = '\0';
-   tmp[0]          = '\0';
-
    /* Extract core file 'ID' (name without extension + suffix)
     * from core path */
    if (string_is_empty(dir_libretro) ||
@@ -113,8 +110,10 @@ static bool core_backup_get_backup_dir(
 /* Generates a timestamped core backup file path from
  * the specified core path. Returns true if successful */
 bool core_backup_get_backup_path(
-      const char *core_path, uint32_t crc, enum core_backup_mode backup_mode,
-      const char *dir_core_assets, char *backup_path, size_t len)
+      const char *core_path, uint32_t crc,
+      enum core_backup_mode backup_mode,
+      const char *dir_core_assets,
+      char *backup_path, size_t len)
 {
    time_t current_time;
    struct tm time_info;
@@ -123,7 +122,6 @@ bool core_backup_get_backup_path(
    char backup_dir[PATH_MAX_LENGTH];
    char backup_filename[PATH_MAX_LENGTH];
 
-   core_dir[0]        = '\0'; 
    backup_dir[0]      = '\0';
    backup_filename[0] = '\0';
 

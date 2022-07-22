@@ -191,9 +191,9 @@ static void command_network_poll(command_t *handle)
    {
       netcmd->cmd_source_len = sizeof(netcmd->cmd_source);
 
-      ret = recvfrom(netcmd->net_fd, buf, sizeof(buf) - 1, 0,
-         (struct sockaddr*)&netcmd->cmd_source, &netcmd->cmd_source_len);
-      if (ret <= 0)
+      if ((ret = recvfrom(netcmd->net_fd, buf, sizeof(buf) - 1, 0,
+                  (struct sockaddr*)&netcmd->cmd_source,
+                  &netcmd->cmd_source_len)) <= 0)
          return;
 
       buf[ret] = '\0';
@@ -1101,8 +1101,6 @@ bool command_event_save_auto_state(
       return false;
 #endif
 
-   savestate_name_auto[0]      = '\0';
-
    strlcpy(savestate_name_auto,
          runloop_st->name.savestate,
          sizeof(savestate_name_auto));
@@ -1172,8 +1170,9 @@ bool command_event_load_entry_state(void)
 
    entry_state_path[0] = '\0';
 
-   if (!retroarch_get_entry_state_path(entry_state_path, sizeof(entry_state_path),
-         runloop_st->entry_state_slot))
+   if (!retroarch_get_entry_state_path(
+            entry_state_path, sizeof(entry_state_path),
+            runloop_st->entry_state_slot))
       return false;
 
    entry_path_stats = path_stat(entry_state_path);
@@ -1211,8 +1210,6 @@ void command_event_load_auto_state(void)
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
       return;
 #endif
-
-   savestate_name_auto[0] = '\0';
 
    strlcpy(savestate_name_auto,
          runloop_st->name.savestate,
@@ -1252,8 +1249,6 @@ void command_event_set_savestate_auto_index(settings_t *settings)
 
    if (!savestate_auto_index)
       return;
-
-   state_dir[0] = state_base[0]      = '\0';
 
    /* Find the file in the same directory as runloop_st->savestate_name
     * with the largest numeral suffix.
@@ -1317,9 +1312,6 @@ void command_event_set_savestate_garbage_collect(
    unsigned min_idx                  = UINT_MAX;
    const char *oldest_save           = NULL;
 
-   state_dir[0]                      = '\0';
-   state_base[0]                     = '\0';
-
    /* Similar to command_event_set_savestate_auto_index(),
     * this will find the lowest numbered save-state */
    fill_pathname_basedir(state_dir, runloop_st->name.savestate,
@@ -1341,8 +1333,6 @@ void command_event_set_savestate_garbage_collect(
       const char *ext                 = NULL;
       const char *end                 = NULL;
       const char *dir_elem            = dir_list->elems[i].data;
-
-      elem_base[0]                    = '\0';
 
       if (string_is_empty(dir_elem))
          continue;
@@ -1429,7 +1419,6 @@ bool command_event_save_core_config(
    runloop_state_t *runloop_st     = runloop_state_get_ptr();
 
    msg[0]                          = '\0';
-   config_dir[0]                   = '\0';
 
    if (!string_is_empty(dir_menu_config))
       strlcpy(config_dir, dir_menu_config, sizeof(config_dir));
@@ -1519,8 +1508,7 @@ void command_event_save_current_config(enum override_type type)
             if (path_is_empty(RARCH_PATH_CONFIG))
             {
                char msg[128];
-               msg[0] = '\0';
-               strcpy_literal(msg, "[Config]: Config directory not set, cannot save configuration.");
+               strlcpy(msg, "[Config]: Config directory not set, cannot save configuration.", sizeof(msg));
                runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             }
             else
@@ -1537,7 +1525,6 @@ void command_event_save_current_config(enum override_type type)
       case OVERRIDE_CONTENT_DIR:
          {
             char msg[128];
-            msg[0] = '\0';
             if (config_save_overrides(type, &runloop_st->system))
             {
                strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_SAVED_SUCCESSFULLY), sizeof(msg));
