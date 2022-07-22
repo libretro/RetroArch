@@ -865,9 +865,14 @@ static void gfx_widgets_layout(
 
    if (p_dispwidget->msg_queue_has_icons)
    {
+#if 0
       p_dispwidget->msg_queue_icon_size_y         = p_dispwidget->msg_queue_height 
          * 1.2347826087f; /* original image is 280x284 */
       p_dispwidget->msg_queue_icon_size_x         = 0.98591549295f * p_dispwidget->msg_queue_icon_size_y;
+#else
+      p_dispwidget->msg_queue_icon_size_y         = p_dispwidget->msg_queue_height * 1.2f;
+      p_dispwidget->msg_queue_icon_size_x         = p_dispwidget->msg_queue_icon_size_y;
+#endif
    }
    else
    {
@@ -875,7 +880,7 @@ static void gfx_widgets_layout(
       p_dispwidget->msg_queue_icon_size_y         = 0;
    }
 
-   p_dispwidget->msg_queue_spacing                = p_dispwidget->msg_queue_height / 3;
+   p_dispwidget->msg_queue_spacing                = p_dispwidget->msg_queue_height / 3.3f;
    p_dispwidget->msg_queue_rect_start_x           = p_dispwidget->msg_queue_spacing + p_dispwidget->msg_queue_icon_size_x;
    p_dispwidget->msg_queue_internal_icon_size     = p_dispwidget->msg_queue_icon_size_y;
    p_dispwidget->msg_queue_internal_icon_offset   = (p_dispwidget->msg_queue_icon_size_y - p_dispwidget->msg_queue_internal_icon_size) / 2;
@@ -1232,7 +1237,7 @@ static void gfx_widgets_draw_task_msg(
          rect_width, rect_height,
          video_width, video_height,
          msg_queue_current_background,
-	 NULL
+         NULL
          );
 
    /* Progress bar */
@@ -1252,7 +1257,7 @@ static void gfx_widgets_draw_task_msg(
             bar_width, rect_height,
             video_width, video_height,
             msg_queue_current_bar,
-	    NULL
+            NULL
             );
    }
 
@@ -1359,8 +1364,8 @@ static void gfx_widgets_draw_regular_msg(
       unsigned video_width,
       unsigned video_height)
 {
-   static float msg_queue_info[16]                          =
-      COLOR_HEX_TO_FLOAT(0x12ACF8, 1.0f);
+   static float msg_queue_info[16] = COLOR_HEX_TO_FLOAT(0x12ACF8, 1.0f);
+   static float msg_queue_bar[16]  = COLOR_HEX_TO_FLOAT(0xDDDDDD, 1.0f);
    unsigned bar_width;
    unsigned bar_margin;
    unsigned text_color;
@@ -1387,7 +1392,6 @@ static void gfx_widgets_draw_regular_msg(
       gfx_widgets_flush_text(video_width, video_height,
             &p_dispwidget->gfx_widget_fonts.msg_queue);
 
-
      gfx_display_scissor_begin(p_disp,
            userdata,
            video_width, video_height,
@@ -1399,22 +1403,7 @@ static void gfx_widgets_draw_regular_msg(
 
    /* Background */
    bar_width  = p_dispwidget->simple_widget_padding + msg->width + p_dispwidget->msg_queue_icon_size_x;
-   bar_margin = 4;
-
-   gfx_display_draw_quad(
-         p_disp,
-         userdata,
-         video_width,
-         video_height,
-         p_dispwidget->msg_queue_rect_start_x - p_dispwidget->msg_queue_icon_size_x + bar_margin,
-         video_height - msg->offset_y,
-         bar_width - bar_margin,
-         p_dispwidget->msg_queue_height,
-         video_width,
-         video_height,
-         p_dispwidget->msg_queue_bg,
-	 NULL
-         );
+   bar_margin = p_dispwidget->msg_queue_icon_size_x * 0.04f;
 
    gfx_display_draw_quad(
          p_disp,
@@ -1423,11 +1412,26 @@ static void gfx_widgets_draw_regular_msg(
          video_height,
          p_dispwidget->msg_queue_rect_start_x - p_dispwidget->msg_queue_icon_size_x,
          video_height - msg->offset_y,
+         bar_width - bar_margin,
+         p_dispwidget->msg_queue_height,
+         video_width,
+         video_height,
+         p_dispwidget->msg_queue_bg,
+         NULL
+         );
+
+   gfx_display_draw_quad(
+         p_disp,
+         userdata,
+         video_width,
+         video_height,
+         p_dispwidget->msg_queue_rect_start_x - p_dispwidget->msg_queue_icon_size_x - bar_margin,
+         video_height - msg->offset_y,
          bar_margin,
          p_dispwidget->msg_queue_height,
          video_width,
          video_height,
-         p_dispwidget->pure_white,
+         msg_queue_bar,
          NULL
          );
 
@@ -1572,7 +1576,7 @@ void gfx_widgets_frame(void *data)
             video_width,
             video_height,
             outline_color,
-	    NULL
+            NULL
             );
       /* bottom line */
       gfx_display_draw_quad(
@@ -1586,7 +1590,7 @@ void gfx_widgets_frame(void *data)
             video_width,
             video_height,
             outline_color,
-	    NULL
+            NULL
             );
       /* left line */
       gfx_display_draw_quad(
@@ -1601,7 +1605,7 @@ void gfx_widgets_frame(void *data)
             video_width,
             video_height,
             outline_color,
-	    NULL
+            NULL
             );
       /* right line */
       gfx_display_draw_quad(
@@ -1615,7 +1619,7 @@ void gfx_widgets_frame(void *data)
             video_width,
             video_height,
             outline_color,
-	    NULL
+            NULL
             );
 
       if (p_dispwidget->ai_service_overlay_state == 2)
@@ -1661,7 +1665,7 @@ void gfx_widgets_frame(void *data)
             video_width,
             video_height,
             p_dispwidget->backdrop_orig,
-	    NULL
+            NULL
             );
 
       gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
@@ -2014,7 +2018,7 @@ bool gfx_widgets_init(
       const char *dir_assets, char *font_path)
 {
    size_t i;
-   unsigned color                              = 0x222222;
+   unsigned color                              = 0x1A1A1A;
    dispgfx_widget_t *p_dispwidget              = &dispwidget_st;
    gfx_display_t *p_disp                       = (gfx_display_t*)data_disp;
    gfx_animation_t *p_anim                     = (gfx_animation_t*)data_anim;
