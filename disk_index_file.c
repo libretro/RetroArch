@@ -222,8 +222,6 @@ bool disk_index_file_init(
    char disk_index_file_dir[PATH_MAX_LENGTH];
    char disk_index_file_path[PATH_MAX_LENGTH];
 
-   disk_index_file_path[0] = '\0';
-
    /* Sanity check */
    if (!disk_index_file)
       return false;

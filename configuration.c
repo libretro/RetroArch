@@ -2890,9 +2890,6 @@ void config_set_defaults(void *data)
 #if TARGET_OS_IPHONE
       {
          char config_file_path[PATH_MAX_LENGTH];
-
-         config_file_path[0]           = '\0';
-
          fill_pathname_join(config_file_path,
                settings->paths.directory_menu_config,
                FILE_PATH_MAIN_CONFIG,
@@ -3168,11 +3165,7 @@ static config_file_t *open_default_config_file(void)
    {
       bool dir_created = false;
       char basedir[PATH_MAX_LENGTH];
-
-      basedir[0]       = '\0';
-
       /* Try to create a new config file. */
-
       fill_pathname_basedir(basedir, application_data, sizeof(basedir));
       fill_pathname_join(conf_path, application_data,
             FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
@@ -3183,16 +3176,11 @@ static config_file_t *open_default_config_file(void)
       {
          char skeleton_conf[PATH_MAX_LENGTH];
          bool saved          = false;
-
-         skeleton_conf[0] = '\0';
-
          /* Build a retroarch.cfg path from the
           * global config directory (/etc). */
          fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR,
             FILE_PATH_MAIN_CONFIG, sizeof(skeleton_conf));
-
-         conf = config_file_new_from_path_to_string(skeleton_conf);
-         if (conf)
+         if ((conf = config_file_new_from_path_to_string(skeleton_conf)))
             RARCH_WARN("[Config]: Using skeleton config \"%s\" as base for a new config file.\n", skeleton_conf);
          else
             conf = config_file_new_alloc();
@@ -4247,9 +4235,6 @@ static void save_keybind_joykey(config_file_t *conf,
       const struct retro_keybind *bind, bool save_empty)
 {
    char key[64];
-
-   key[0] = '\0';
-
    fill_pathname_join_delim(key, prefix,
          base, '_', sizeof(key));
    strlcat(key, "_btn", sizeof(key));
@@ -4271,11 +4256,6 @@ static void save_keybind_axis(config_file_t *conf,
       const struct retro_keybind *bind, bool save_empty)
 {
    char key[64];
-   unsigned axis   = 0;
-   char dir        = '\0';
-
-   key[0]          = '\0';
-
    fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
    strlcat(key, "_axis", sizeof(key));
 
@@ -4286,22 +4266,16 @@ static void save_keybind_axis(config_file_t *conf,
    }
    else if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
    {
-      dir = '-';
-      axis = AXIS_NEG_GET(bind->joyaxis);
+      char config[16];
+      config[0] = '\0';
+      snprintf(config, sizeof(config), "-%u", AXIS_NEG_GET(bind->joyaxis));
+      config_set_string(conf, key, config);
    }
    else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
    {
-      dir = '+';
-      axis = AXIS_POS_GET(bind->joyaxis);
-   }
-
-   if (dir)
-   {
       char config[16];
-
       config[0] = '\0';
-
-      snprintf(config, sizeof(config), "%c%u", dir, axis);
+      snprintf(config, sizeof(config), "+%u", AXIS_POS_GET(bind->joyaxis));
       config_set_string(conf, key, config);
    }
 }
@@ -4312,9 +4286,6 @@ static void save_keybind_mbutton(config_file_t *conf,
       const struct retro_keybind *bind, bool save_empty)
 {
    char key[64];
-
-   key[0] = '\0';
-
    fill_pathname_join_delim(key, prefix,
       base, '_', sizeof(key));
    strlcat(key, "_mbtn", sizeof(key));
@@ -4434,7 +4405,7 @@ static void input_config_save_keybinds_user(config_file_t *conf, unsigned user)
          continue;
 
       base                                 = keybind->base;
-      key[0] = btn[0]                      = '\0';
+      btn[0]                               = '\0';
 
       fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
 
@@ -4471,9 +4442,6 @@ bool config_save_autoconf_profile(const
    const char *joypad_driver_fallback   = settings->arrays.input_joypad_driver;
    const char *joypad_driver            = NULL;
    char *sanitised_name                 = NULL;
-
-   buf[0]                               = '\0';
-   autoconf_file[0]                     = '\0';
 
    if (string_is_empty(device_name))
       goto end;
@@ -4840,7 +4808,6 @@ bool config_save_overrides(enum override_type type, void *data)
    bool has_content                            = !string_is_empty(rarch_path_basename);
 
    config_directory[0]   = '\0';
-   override_directory[0] = '\0';
    core_path[0]          = '\0';
    game_path[0]          = '\0';
    content_path[0]       = '\0';
@@ -5142,8 +5109,6 @@ bool input_remapping_load_file(void *data, const char *path)
             char btn_ident[128];
             char key_ident[128];
 
-            btn_ident[0] = key_ident[0] = '\0';
-
             fill_pathname_join_delim(btn_ident, s1,
                   key_string, '_', sizeof(btn_ident));
             fill_pathname_join_delim(key_ident, s2,
@@ -5170,9 +5135,6 @@ bool input_remapping_load_file(void *data, const char *path)
             char key_ident[128];
             int stk_remap = -1;
             int key_remap = -1;
-
-            stk_ident[0]  = '\0';
-            key_ident[0]  = '\0';
 
             fill_pathname_join_delim(stk_ident, s3,
                   key_string, '_', sizeof(stk_ident));
@@ -5300,9 +5262,6 @@ bool input_remapping_save_file(const char *path)
          unsigned remap_id      = settings->uints.input_remap_ids[i][j];
          unsigned keymap_id     = settings->uints.input_keymapper_ids[i][j];
 
-         btn_ident[0]           = '\0';
-         key_ident[0]           = '\0';
-
          fill_pathname_join_delim(btn_ident, s1,
                key_string, '_', sizeof(btn_ident));
          fill_pathname_join_delim(key_ident, s2,
@@ -5335,9 +5294,6 @@ bool input_remapping_save_file(const char *path)
          const char *key_string = key_strings[j];
          unsigned remap_id      = settings->uints.input_remap_ids[i][j];
          unsigned keymap_id     = settings->uints.input_keymapper_ids[i][j];
-
-         stk_ident[0]           = '\0';
-         key_ident[0]           = '\0';
 
          fill_pathname_join_delim(stk_ident, s3,
                key_string, '_', sizeof(stk_ident));
@@ -5429,9 +5385,7 @@ void config_load_file_salamander(void)
       return;
 
    /* Open config file */
-   config = config_file_new_from_path_to_string(config_path);
-
-   if (!config)
+   if (!(config = config_file_new_from_path_to_string(config_path)))
       return;
 
    /* Read 'libretro_path' value and update
@@ -5582,8 +5536,6 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
       {
          char str[256];
          const char *base = keybind->base;
-         str[0]                     = '\0';
-
          fill_pathname_join_delim(str, "input", base,  '_', sizeof(str));
 
          input_config_parse_joy_button(str, config, "input", base, &binds[i]);
@@ -5603,7 +5555,7 @@ void input_config_parse_mouse_button(
    config_file_t *conf        = (config_file_t*)conf_data;
    struct retro_keybind *bind = (struct retro_keybind*)bind_data;
 
-   tmp[0] = key[0]     = '\0';
+   tmp[0] = '\0';
 
    fill_pathname_join_delim(key, s, "mbtn", '_', sizeof(key));
 
@@ -5671,7 +5623,7 @@ void input_config_parse_joy_axis(
    struct retro_keybind *bind              = (struct retro_keybind*)bind_data;
    struct config_entry_list *tmp_a         = NULL;
 
-   tmp[0] = key[0] = key_label[0] = '\0';
+   tmp[0] = '\0';
 
    fill_pathname_join_delim(key, s,
          "axis", '_', sizeof(key));
@@ -5762,7 +5714,7 @@ void input_config_parse_joy_button(
    struct retro_keybind *bind              = (struct retro_keybind*)bind_data;
    struct config_entry_list *tmp_a         = NULL;
 
-   tmp[0] = key[0] = key_label[0] = '\0';
+   tmp[0]                                  = '\0';
 
    fill_pathname_join_delim(key, s,
          "btn", '_', sizeof(key));

@@ -184,10 +184,7 @@ void fill_pathname_application_special(char *s,
          {
             char s1[PATH_MAX_LENGTH];
             char s2[PATH_MAX_LENGTH];
-
             s1[0]    = '\0';
-            s2[0]    = '\0';
-
             fill_pathname_application_special(s1, sizeof(s1),
                   APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
             fill_pathname_join(s2, s1, "png", sizeof(s2));
@@ -340,9 +337,6 @@ void fill_pathname_application_special(char *s,
             char rgui_dir[PATH_MAX_LENGTH];
             settings_t *settings     = config_get_ptr();
             const char *dir_assets   = settings->paths.directory_assets;
-
-            rgui_dir[0] = '\0';
-
             fill_pathname_join(rgui_dir, dir_assets, "rgui",
                   sizeof(rgui_dir));
             fill_pathname_join(s,
@@ -357,9 +351,6 @@ void fill_pathname_application_special(char *s,
             char s1[PATH_MAX_LENGTH];
             settings_t *settings     = config_get_ptr();
             const char *dir_assets   = settings->paths.directory_assets;
-
-            s1[0] = '\0';
-
             fill_pathname_join(s1, dir_assets, "xmb", sizeof(s1));
             fill_pathname_join(s,
                   s1, xmb_theme_ident(), len);
@@ -462,13 +453,8 @@ void fill_pathname_application_special(char *s,
         char s2[PATH_MAX_LENGTH];
         settings_t *settings       = config_get_ptr();
         const char *dir_thumbnails = settings->paths.directory_thumbnails;
-
-        s1[0]                = '\0';
-        s2[0]                = '\0';
-
         fill_pathname_join(s1, dir_thumbnails, "discord", sizeof(s1));
-        fill_pathname_join(s2,
-              s1, "avatars", sizeof(s2));
+        fill_pathname_join(s2, s1, "avatars", sizeof(s2));
         fill_pathname_slash(s2, sizeof(s2));
         strlcpy(s, s2, len);
       }
@@ -480,13 +466,8 @@ void fill_pathname_application_special(char *s,
         char s2[PATH_MAX_LENGTH];
         settings_t *settings       = config_get_ptr();
         const char *dir_thumbnails = settings->paths.directory_thumbnails;
-
-        s1[0]                      = '\0';
-        s2[0]                      = '\0';
-
         fill_pathname_join(s1, dir_thumbnails, "cheevos", len);
-        fill_pathname_join(s2,
-              s1, "badges", sizeof(s2));
+        fill_pathname_join(s2, s1, "badges", sizeof(s2));
         fill_pathname_slash(s2, sizeof(s2));
         strlcpy(s, s2, len);
       }

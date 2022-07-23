@@ -400,19 +400,15 @@ static bool core_updater_list_set_paths(
     * source files have non-standard file names (which
     * will not be recognised by regular core handling
     * routines) */
-   bool resolve_symlinks                  = (list_type != CORE_UPDATER_LIST_TYPE_PFD);
    char remote_core_path[PATH_MAX_LENGTH];
    char local_core_path[PATH_MAX_LENGTH];
    char local_info_path[PATH_MAX_LENGTH];
+   bool resolve_symlinks = (list_type != CORE_UPDATER_LIST_TYPE_PFD);
 
-   remote_core_path[0] = '\0';
-   local_core_path[0]  = '\0';
-   local_info_path[0]  = '\0';
-
-   if (!entry ||
-       string_is_empty(filename_str) ||
-       string_is_empty(path_dir_libretro) ||
-       string_is_empty(path_libretro_info))
+   if (  !entry
+       || string_is_empty(filename_str)
+       || string_is_empty(path_dir_libretro)
+       || string_is_empty(path_libretro_info))
       return false;
 
    /* Only buildbot cores require the buildbot URL */
@@ -459,7 +455,6 @@ static bool core_updater_list_set_paths(
 
    entry->remote_core_path = strdup(remote_core_path);
 
-   /* local_core_path */
    fill_pathname_join(
          local_core_path,
          path_dir_libretro,
@@ -480,7 +475,6 @@ static bool core_updater_list_set_paths(
 
    entry->local_core_path = strdup(local_core_path);
 
-   /* local_info_path */
    fill_pathname_join(
          local_info_path,
          path_libretro_info,
@@ -529,9 +523,9 @@ static bool core_updater_list_set_core_info(
 {
    core_updater_info_t *core_info = NULL;
 
-   if (!entry ||
-       string_is_empty(local_info_path) ||
-       string_is_empty(filename_str))
+   if (  !entry
+       || string_is_empty(local_info_path)
+       || string_is_empty(filename_str))
       return false;
 
    /* Clear any existing core info */
@@ -563,9 +557,7 @@ static bool core_updater_list_set_core_info(
     *   Would be better to cache this globally
     *   (at present, we only cache info for
     *    *installed* cores...) */
-   core_info = core_info_get_core_updater_info(local_info_path);
-
-   if (core_info)
+   if ((core_info = core_info_get_core_updater_info(local_info_path)))
    {
       /* display_name + is_experimental */
       if (!string_is_empty(core_info->display_name))
@@ -687,9 +679,9 @@ static void core_updater_list_add_entry(
    crc_str      = network_core_entry_list->elems[1].data;
    filename_str = network_core_entry_list->elems[2].data;
 
-   if (string_is_empty(date_str) ||
-       string_is_empty(crc_str) ||
-       string_is_empty(filename_str))
+   if (   string_is_empty(date_str)
+       || string_is_empty(crc_str)
+       || string_is_empty(filename_str))
       goto error;
 
    /* Check whether core file is already included

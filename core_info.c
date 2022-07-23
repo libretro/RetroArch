@@ -2220,8 +2220,6 @@ static bool core_info_list_update_missing_firmware_internal(
    if (!info)
       return false;
 
-   path[0]                = '\0';
-
    for (i = 0; i < info->firmware_count; i++)
    {
       if (string_is_empty(info->firmware[i].path))
