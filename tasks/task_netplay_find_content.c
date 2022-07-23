@@ -38,6 +38,11 @@
 #include "../content.h"
 #include "../runloop.h"
 
+#ifndef HAVE_DYNAMIC
+#include "../retroarch.h"
+#include "../frontend/frontend_driver.h"
+#endif
+
 #include "task_content.h"
 #include "tasks_internal.h"
 
@@ -445,6 +450,59 @@ finished:
    task_set_finished(task, true);
 }
 
+#ifndef HAVE_DYNAMIC
+static void static_load(const char *core, const char *subsystem,
+      const void *content, const char *hostname)
+{
+   char buf[512];
+   char args[PATH_MAX_LENGTH];
+
+   path_set(RARCH_PATH_CORE, core);
+
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_CLEAR_FORK_ARGS, NULL);
+
+   if (string_is_empty(hostname))
+   {
+      strlcpy(args, "-H", sizeof(args));
+   }
+   else
+   {
+      strlcpy(args, "-C ", sizeof(args));
+      strlcat(args, hostname, sizeof(args));
+   }
+
+   if (!string_is_empty(subsystem))
+   {
+      snprintf(buf, sizeof(buf), "\"%s\"", subsystem);
+      strlcat(args, " --subsystem ", sizeof(args));
+      strlcat(args, buf, sizeof(args));
+
+      if (content)
+      {
+         size_t i;
+         const struct string_list *subsystem_content =
+            (const struct string_list*)content;
+
+         for (i = 0; i < subsystem_content->size; i++)
+         {
+            snprintf(buf, sizeof(buf), " \"%s\"",
+               subsystem_content->elems[i].data);
+            strlcat(args, buf, sizeof(args));
+         }
+      }
+   }
+   else if (content)
+   {
+      snprintf(buf, sizeof(buf), " \"%s\"", (const char*)content);
+      strlcat(args, buf, sizeof(args));
+   }
+
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_SET_FORK_ARGS, args);
+   frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
+   retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+}
+#endif
+
 static void task_netplay_crc_scan_callback(retro_task_t *task,
       void *task_data, void *user_data, const char *error)
 {
@@ -457,14 +515,13 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
    {
       case STATE_LOAD:
          {
-            content_ctx_info_t content_info = {0};
             const char *content_path        = (state->state & STATE_RELOAD) ?
                data->current.content_path : data->content_paths.elems[0].data;
-
 #ifdef HAVE_DYNAMIC
+            content_ctx_info_t content_info = {0};
+
             if (data->current.core_loaded)
                command_event(CMD_EVENT_UNLOAD_CORE, NULL);
-#endif
 
             RARCH_LOG("[Lobby] Loading core '%s' with content file '%s'.\n",
                data->core, content_path);
@@ -486,6 +543,10 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
                NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
             task_push_load_content_with_core(content_path,
                &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+#else
+
+            static_load(data->core, NULL, content_path, data->hostname);
+#endif
          }
          break;
 
@@ -493,11 +554,6 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
          {
             const char *subsystem;
             struct string_list *subsystem_content;
-
-#ifdef HAVE_DYNAMIC
-            if (data->current.core_loaded)
-               command_event(CMD_EVENT_UNLOAD_CORE, NULL);
-#endif
 
             if (state->state & STATE_RELOAD)
             {
@@ -509,6 +565,10 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
                subsystem         = data->subsystem;
                subsystem_content = &data->content_paths;
             }
+
+#ifdef HAVE_DYNAMIC
+            if (data->current.core_loaded)
+               command_event(CMD_EVENT_UNLOAD_CORE, NULL);
 
             RARCH_LOG("[Lobby] Loading core '%s' with subsystem '%s'.\n",
                data->core, subsystem);
@@ -547,21 +607,22 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
                /* Disable netplay if we don't have the subsystem. */
                netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
 
-#ifdef HAVE_DYNAMIC
                command_event(CMD_EVENT_UNLOAD_CORE, NULL);
-#endif
             }
+#else
+            static_load(data->core, subsystem, subsystem_content,
+               data->hostname);
+#endif
          }
          break;
 
       case STATE_LOAD_CONTENTLESS:
          {
+#ifdef HAVE_DYNAMIC
             content_ctx_info_t content_info = {0};
 
-#ifdef HAVE_DYNAMIC
             if (data->current.core_loaded)
                command_event(CMD_EVENT_UNLOAD_CORE, NULL);
-#endif
 
             RARCH_LOG("[Lobby] Loading contentless core '%s'.\n", data->core);
 
@@ -581,6 +642,9 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
             task_push_load_new_core(data->core,
                NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
             task_push_start_current_core(&content_info);
+#else
+            static_load(data->core, NULL, NULL, data->hostname);
+#endif
          }
          break;
 
@@ -590,7 +654,6 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
             {
 #ifdef HAVE_DYNAMIC
                command_event(CMD_EVENT_UNLOAD_CORE, NULL);
-#endif
 
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
@@ -613,6 +676,10 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
                   content_clear_subsystem();
                   content_set_subsystem_by_name(data->current.subsystem);
                }
+#else
+               static_load(data->core, data->current.subsystem, NULL,
+                  data->hostname);
+#endif
 
                runloop_msg_queue_push(
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),

@@ -8987,6 +8987,28 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 #endif
          break;
 
+#ifndef HAVE_DYNAMIC
+      case RARCH_NETPLAY_CTL_GET_FORK_ARGS:
+         if (data && !string_is_empty(net_st->netplay_fork_args))
+            strlcpy((char*)data, net_st->netplay_fork_args,
+               sizeof(net_st->netplay_fork_args));
+         else
+            ret = false;
+         break;
+
+      case RARCH_NETPLAY_CTL_SET_FORK_ARGS:
+         if (data)
+            strlcpy(net_st->netplay_fork_args, (const char*)data,
+               sizeof(net_st->netplay_fork_args));
+         else
+            ret = false;
+         break;
+
+      case RARCH_NETPLAY_CTL_CLEAR_FORK_ARGS:
+         *net_st->netplay_fork_args = '\0';
+         break;
+#endif
+
       case RARCH_NETPLAY_CTL_REFRESH_CLIENT_INFO:
          if (!netplay || !netplay->is_server)
          {
