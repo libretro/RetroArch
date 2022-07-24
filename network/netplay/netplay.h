@@ -36,6 +36,10 @@
 
 #include "../natt.h"
 
+#ifndef HAVE_DYNAMIC
+#define NETPLAY_FORK_MAX_ARGS 64
+#endif
+
 #define NETPLAY_NICK_LEN         32
 #define NETPLAY_HOST_STR_LEN     32
 #define NETPLAY_HOST_LONGSTR_LEN 256
@@ -59,8 +63,8 @@ enum rarch_netplay_ctl_state
    RARCH_NETPLAY_CTL_ENABLE_CLIENT,
    RARCH_NETPLAY_CTL_DISABLE,
 #ifndef HAVE_DYNAMIC
+   RARCH_NETPLAY_CTL_ADD_FORK_ARG,
    RARCH_NETPLAY_CTL_GET_FORK_ARGS,
-   RARCH_NETPLAY_CTL_SET_FORK_ARGS,
    RARCH_NETPLAY_CTL_CLEAR_FORK_ARGS,
 #endif
    RARCH_NETPLAY_CTL_REFRESH_CLIENT_INFO,
@@ -162,6 +166,14 @@ typedef struct mitm_server
    enum msg_hash_enums description;
 } mitm_server_t;
 
+#ifndef HAVE_DYNAMIC
+struct netplay_fork_args
+{
+   size_t size;
+   char   args[PATH_MAX_LENGTH];
+};
+#endif
+
 struct netplay_room
 {
    struct netplay_room *next;
@@ -230,6 +242,9 @@ struct netplay_chat_buffer
 
 typedef struct
 {
+#ifndef HAVE_DYNAMIC
+   struct netplay_fork_args fork_args;
+#endif
    /* NAT traversal info (if NAT traversal is used and serving) */
    struct nat_traversal_data nat_traversal_request;
 #ifdef HAVE_NETPLAYDISCOVERY
@@ -254,9 +269,6 @@ typedef struct
    unsigned server_port_deferred;
    char server_address_deferred[256];
    char server_session_deferred[32];
-#ifndef HAVE_DYNAMIC
-   char netplay_fork_args[PATH_MAX_LENGTH];
-#endif
    bool netplay_client_deferred;
    /* Only used before init_netplay */
    bool netplay_enabled;
