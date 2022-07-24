@@ -206,8 +206,6 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
                else if (!string_is_empty(entry->path))
                {
                   char entry_name[PATH_MAX_LENGTH];
-                  entry_name[0] = '\0';
-                  
                   fill_pathname_base(entry_name, entry->path, sizeof(entry_name));
                   path_remove_extension(entry_name);
                   strlcat(task_title, entry_name, sizeof(task_title));
@@ -286,13 +284,9 @@ bool task_push_pl_manager_reset_cores(const playlist_config_t *playlist_config)
    retro_task_t *task              = task_init();
    pl_manager_handle_t *pl_manager = (pl_manager_handle_t*)
       calloc(1, sizeof(pl_manager_handle_t));
-   
-   playlist_name[0] = '\0';
-   
    /* Sanity check */
    if (!playlist_config || !task || !pl_manager)
       goto error;
-   
    if (string_is_empty(playlist_config->path))
       goto error;
    
@@ -712,13 +706,9 @@ bool task_push_pl_manager_clean_playlist(
    retro_task_t *task              = task_init();
    pl_manager_handle_t *pl_manager = (pl_manager_handle_t*)
       calloc(1, sizeof(pl_manager_handle_t));
-   
-   playlist_name[0] = '\0';
-   
    /* Sanity check */
    if (!playlist_config || !task || !pl_manager)
       goto error;
-   
    if (string_is_empty(playlist_config->path))
       goto error;
    

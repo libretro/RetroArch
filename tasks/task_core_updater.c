@@ -305,11 +305,8 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
             const char *net_buildbot_url = 
                settings->paths.network_buildbot_url;
 
-            buildbot_url[0]              = '\0';
-
             /* Reset core updater list */
             core_updater_list_reset(list_handle->core_list);
-
             /* Get core listing URL */
             if (!settings)
                goto task_finished;
@@ -571,11 +568,8 @@ void cb_http_task_core_updater_download(
    core_updater_download_handle_t *download_handle = NULL;
    char output_dir[PATH_MAX_LENGTH];
 
-   output_dir[0] = '\0';
-
    if (!data || !transf)
       goto finish;
-
    if (!data->data || string_is_empty(transf->path))
       goto finish;
 
@@ -749,8 +743,6 @@ static void task_core_updater_download_handler(retro_task_t *task)
             {
                char task_title[PATH_MAX_LENGTH];
 
-               task_title[0] = '\0';
-
                /* Update task title */
                task_free_title(task);
 
@@ -814,8 +806,6 @@ static void task_core_updater_download_handler(retro_task_t *task)
          {
             file_transfer_t *transf = NULL;
             char task_title[PATH_MAX_LENGTH];
-
-            task_title[0] = '\0';
 
             /* Configure file transfer object */
             if (!(transf = (file_transfer_t*)calloc(1,
@@ -885,8 +875,6 @@ static void task_core_updater_download_handler(retro_task_t *task)
             {
                char task_title[PATH_MAX_LENGTH];
 
-               task_title[0] = '\0';
-
                /* Update task title */
                task_free_title(task);
 
@@ -944,8 +932,6 @@ static void task_core_updater_download_handler(retro_task_t *task)
       case CORE_UPDATER_DOWNLOAD_END:
          {
             char task_title[PATH_MAX_LENGTH];
-
-            task_title[0] = '\0';
 
             /* Set final task title */
             task_free_title(task);
@@ -1042,9 +1028,6 @@ void *task_push_core_updater_download(
       if (!mute)
       {
          char msg[PATH_MAX_LENGTH];
-
-         msg[0] = '\0';
-
          strlcpy(msg, msg_hash_to_str(MSG_CORE_UPDATE_DISABLED), sizeof(msg));
          strlcat(msg, list_entry->display_name, sizeof(msg));
 
@@ -1248,9 +1231,6 @@ static void task_update_installed_cores_handler(retro_task_t *task)
             if (core_installed)
             {
                char task_title[PATH_MAX_LENGTH];
-
-               task_title[0] = '\0';
-
                strlcpy(
                      task_title, msg_hash_to_str(MSG_CHECKING_CORE),
                      sizeof(task_title));
@@ -1345,9 +1325,6 @@ static void task_update_installed_cores_handler(retro_task_t *task)
             else
             {
                char task_title[PATH_MAX_LENGTH];
-
-               task_title[0] = '\0';
-
                /* Update task title */
                task_free_title(task);
 
@@ -1766,15 +1743,14 @@ static void task_play_feature_delivery_core_install_handler(
                char backup_core_path[PATH_MAX_LENGTH];
                bool backup_successful = false;
 
-               backup_core_path[0] = '\0';
-
                /* Have to create a backup, in case install
                 * process fails
                 * > Note: since only one install task can
                 *   run at a time, a UID is not required */
 
                /* Generate backup file name */
-               strlcpy(backup_core_path, pfd_install_handle->local_core_path,
+               strlcpy(backup_core_path,
+                     pfd_install_handle->local_core_path,
                      sizeof(backup_core_path));
                strlcat(backup_core_path, FILE_PATH_BACKUP_EXTENSION,
                      sizeof(backup_core_path));
@@ -1818,15 +1794,11 @@ static void task_play_feature_delivery_core_install_handler(
          break;
       case PLAY_FEATURE_DELIVERY_INSTALL_WAIT:
          {
-            bool install_active;
             enum play_feature_delivery_install_status install_status;
             unsigned install_progress;
             char task_title[PATH_MAX_LENGTH];
-
-            task_title[0] = '\0';
-
             /* Get current install status */
-            install_active = play_feature_delivery_download_status(
+            bool install_active = play_feature_delivery_download_status(
                   &install_status, &install_progress);
 
             /* In all cases, update task progress */
@@ -1872,8 +1844,6 @@ static void task_play_feature_delivery_core_install_handler(
          {
             const char *msg_str = msg_hash_to_str(MSG_CORE_INSTALL_FAILED);
             char task_title[PATH_MAX_LENGTH];
-
-            task_title[0] = '\0';
 
             /* Set final task title */
             task_free_title(task);
@@ -1952,8 +1922,6 @@ void *task_push_play_feature_delivery_core_install(
    retro_task_t *task                                         = NULL;
    play_feature_delivery_install_handle_t *pfd_install_handle = (play_feature_delivery_install_handle_t*)
          calloc(1, sizeof(play_feature_delivery_install_handle_t));
-
-   task_title[0] = '\0';
 
    /* Sanity check */
    if (   !core_list
@@ -2150,14 +2118,10 @@ static void task_play_feature_delivery_switch_cores_handler(
             if (core_installed)
             {
                char task_title[PATH_MAX_LENGTH];
-
-               task_title[0] = '\0';
-
                strlcpy(task_title, msg_hash_to_str(MSG_CHECKING_CORE),
                      sizeof(task_title));
                strlcat(task_title, list_entry->display_name,
                      sizeof(task_title));
-
                task_set_title(task, strdup(task_title));
             }
             else
@@ -2217,8 +2181,6 @@ static void task_play_feature_delivery_switch_cores_handler(
             else
             {
                char task_title[PATH_MAX_LENGTH];
-
-               task_title[0] = '\0';
 
                /* Update task title */
                task_free_title(task);

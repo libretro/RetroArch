@@ -424,7 +424,6 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
    bool match_found                       = false;
    const char *device_display_name        = NULL;
    char task_title[NAME_MAX_LENGTH + 16];
-
    task_title[0] = '\0';
 
    if (!task)
@@ -643,8 +642,6 @@ bool input_autoconfigure_connect(
       if (driver_valid)
       {
          char dir_driver_autoconfig[PATH_MAX_LENGTH];
-         dir_driver_autoconfig[0] = '\0';
-
          /* Generate driver-specific autoconfig directory */
          fill_pathname_join(dir_driver_autoconfig, dir_autoconfig,
                autoconfig_handle->device_info.joypad_driver,

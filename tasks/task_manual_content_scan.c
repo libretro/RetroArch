@@ -305,8 +305,6 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                const char *entry_file_ext = NULL;
                char task_title[PATH_MAX_LENGTH];
 
-               task_title[0] = '\0';
-
                /* Update progress display */
                task_free_title(task);
 
@@ -369,8 +367,6 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                char task_title[PATH_MAX_LENGTH];
                const char *content_file = path_basename(content_path);
 
-               task_title[0] = '\0';
-
                /* Update progress display */
                task_free_title(task);
 
@@ -430,8 +426,6 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                const char *m3u_name = path_basename_nocompression(m3u_path);
                m3u_file_t *m3u_file = NULL;
 
-               task_title[0] = '\0';
-
                /* Update progress display */
                task_free_title(task);
 
@@ -476,8 +470,6 @@ static void task_manual_content_scan_handler(retro_task_t *task)
       case MANUAL_SCAN_END:
          {
             char task_title[PATH_MAX_LENGTH];
-
-            task_title[0] = '\0';
 
             /* Ensure playlist is alphabetically sorted
              * > Override user settings here */
@@ -534,8 +526,6 @@ bool task_push_manual_content_scan(
    char task_title[PATH_MAX_LENGTH];
    retro_task_t *task                = NULL;
    manual_scan_handle_t *manual_scan = NULL;
-
-   task_title[0] = '\0';
 
    /* Sanity check */
    if (  !playlist_config

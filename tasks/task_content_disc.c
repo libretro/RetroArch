@@ -150,8 +150,6 @@ static void task_cdrom_dump_handler(retro_task_t *task)
             int64_t cue_size     = filestream_get_size(state->file);
             char *cue_data       = (char*)calloc(1, cue_size);
 
-            output_file[0]       = cue_filename[0] = '\0';
-
             filestream_read(state->file, cue_data, cue_size);
 
             state->stream        = filestream_get_vfs_handle(state->file);
@@ -162,7 +160,8 @@ static void task_cdrom_dump_handler(retro_task_t *task)
 
             filestream_close(state->file);
 
-            snprintf(cue_filename, sizeof(cue_filename), "%s.cue", state->title);
+            strlcpy(cue_filename, state->title, sizeof(cue_filename));
+            strlcat(cue_filename, ".cue", sizeof(cue_filename));
 
             fill_pathname_join(output_file,
                   directory_core_assets, cue_filename, sizeof(output_file));
@@ -256,7 +255,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
                char output_path[PATH_MAX_LENGTH];
                char track_filename[PATH_MAX_LENGTH];
 
-               output_path[0] = track_filename[0] = '\0';
+               track_filename[0] = '\0';
 
                snprintf(track_filename, sizeof(track_filename), "%s (Track %02d).bin", state->title, state->cur_track);
 
@@ -265,9 +264,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
                fill_pathname_join(output_path,
                      directory_core_assets, track_filename, sizeof(output_path));
 
-               state->output_file = filestream_open(output_path, RETRO_VFS_FILE_ACCESS_WRITE, 0);
-
-               if (!state->output_file)
+               if (!(state->output_file = filestream_open(output_path, RETRO_VFS_FILE_ACCESS_WRITE, 0)))
                {
                   RARCH_ERR("[CDROM]: Error opening file for writing: %s\n", output_path);
                   task_set_progress(task, 100);

@@ -282,9 +282,6 @@ static bool screenshot_dump(
                 !string_is_empty(content_dir))
             {
                char content_dir_name[PATH_MAX_LENGTH];
-
-               content_dir_name[0] = '\0';
-
                fill_pathname_parent_dir_name(content_dir_name,
                      content_dir, sizeof(content_dir_name));
                fill_pathname_join(

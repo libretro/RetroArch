@@ -468,20 +468,15 @@ bool task_push_audio_mixer_load_and_play(
    const char *ext                    = NULL;
    char ext_lower[6];
 
-   ext_lower[0] = '\0';
-
    if (!t || !user)
       goto error;
 
-   nbio               = (nbio_handle_t*)calloc(1, sizeof(*nbio));
-
-   if (!nbio)
+   if (!(nbio = (nbio_handle_t*)calloc(1, sizeof(*nbio))))
       goto error;
 
    nbio->path         = strdup(fullpath);
 
-   mixer              = (struct audio_mixer_handle*)calloc(1, sizeof(*mixer));
-   if (!mixer)
+   if (!(mixer = (struct audio_mixer_handle*)calloc(1, sizeof(*mixer))))
       goto error;
 
    mixer->is_finished = false;
@@ -492,7 +487,7 @@ bool task_push_audio_mixer_load_and_play(
    mixer->type        = AUDIO_MIXER_TYPE_NONE;
 
    /* Get file extension */
-   ext = strrchr(fullpath, '.');
+   ext                = strrchr(fullpath, '.');
 
    if (!ext || (*(++ext) == '\0'))
       goto error;
@@ -599,20 +594,15 @@ bool task_push_audio_mixer_load(
    const char *ext                    = NULL;
    char ext_lower[6];
 
-   ext_lower[0] = '\0';
-
    if (!t || !user)
       goto error;
 
-   nbio               = (nbio_handle_t*)calloc(1, sizeof(*nbio));
-
-   if (!nbio)
+   if (!(nbio = (nbio_handle_t*)calloc(1, sizeof(*nbio))))
       goto error;
 
    nbio->path         = strdup(fullpath);
 
-   mixer              = (struct audio_mixer_handle*)calloc(1, sizeof(*mixer));
-   if (!mixer)
+   if (!(mixer = (struct audio_mixer_handle*)calloc(1, sizeof(*mixer))))
       goto error;
 
    mixer->is_finished = false;

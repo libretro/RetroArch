@@ -545,9 +545,6 @@ static bool content_file_list_set_info(
       const char *archive_delim = NULL;
       const char *ext           = NULL;
 
-      dir[0]                    = '\0';
-      name[0]                   = '\0';
-
       /* 'Full' path - may point to a file
        * inside an archive */
       file_info->full_path      = strdup(path);
@@ -1037,8 +1034,6 @@ static bool content_file_load(
                   /* Fallback to a file copy into an accessible directory */
                   char new_basedir[PATH_MAX_LENGTH];
                   char new_path[PATH_MAX_LENGTH];
-
-                  new_path[0] = '\0';
 
                   RARCH_LOG("[Content]: Core does not support VFS"
                      " - copying to cache directory.\n");

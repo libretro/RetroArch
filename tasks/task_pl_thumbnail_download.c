@@ -100,7 +100,6 @@ static bool get_thumbnail_paths(
    const char *system_name = NULL;
    
    content_dir[0]          = '\0';
-   tmp_buf[0]              = '\0';
    
    if (!pl_thumb->thumbnail_path_data)
       return false;

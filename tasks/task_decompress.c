@@ -47,13 +47,9 @@ static int file_decompressed_subdir(const char *name,
    char path[PATH_MAX_LENGTH];
    size_t name_len            = strlen(name);
    char last_char             = name[name_len - 1];
-
-   path_dir[0] = path[0] = '\0';
-
    /* Ignore directories, go to next file. */
    if (last_char == '/' || last_char == '\\')
       return 1;
-
    if (strstr(name, userdata->dec->subdir) != name)
       return 1;
 
@@ -89,13 +85,9 @@ static int file_decompressed(const char *name, const char *valid_exts,
    decompress_state_t    *dec = userdata->dec;
    size_t name_len            = strlen(name);
    char last_char             = name[name_len - 1];
-
-   path[0] = '\0';
-
    /* Ignore directories, go to next file. */
    if (last_char == '/' || last_char == '\\')
       return 1;
-
    /* Make directory */
    fill_pathname_join(path, dec->target_dir, name, sizeof(path));
    path_basedir_wrapper(path);
