@@ -8988,24 +8988,49 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          break;
 
 #ifndef HAVE_DYNAMIC
-      case RARCH_NETPLAY_CTL_GET_FORK_ARGS:
-         if (data && !string_is_empty(net_st->netplay_fork_args))
-            strlcpy((char*)data, net_st->netplay_fork_args,
-               sizeof(net_st->netplay_fork_args));
+      case RARCH_NETPLAY_CTL_ADD_FORK_ARG:
+         if (data && net_st->fork_args.size < sizeof(net_st->fork_args.args))
+         {
+            size_t new_size = strlcpy(
+               net_st->fork_args.args + net_st->fork_args.size,
+               (const char*)data,
+               sizeof(net_st->fork_args.args) - net_st->fork_args.size);
+            new_size       += 1; /* NULL terminator */
+            new_size       += net_st->fork_args.size;
+            if (new_size > sizeof(net_st->fork_args.args))
+            {
+               ret = false;
+               break;
+            }
+            net_st->fork_args.size = new_size;
+         }
          else
             ret = false;
          break;
 
-      case RARCH_NETPLAY_CTL_SET_FORK_ARGS:
-         if (data)
-            strlcpy(net_st->netplay_fork_args, (const char*)data,
-               sizeof(net_st->netplay_fork_args));
+      case RARCH_NETPLAY_CTL_GET_FORK_ARGS:
+         if (data && net_st->fork_args.size)
+         {
+            size_t offset   = 0;
+            char  *args     = net_st->fork_args.args;
+            size_t args_sz  = net_st->fork_args.size;
+            char **args_cur = (char**)data;
+            char **args_end = &args_cur[NETPLAY_FORK_MAX_ARGS - 1];
+            for (; offset < args_sz && args_cur != args_end; args_cur++)
+            {
+               *args_cur = args + offset;
+               offset   += strlen(*args_cur) + 1;
+            }
+            /* Ensure that the final entry is NULL. */
+            *args_cur = NULL;
+         }
          else
             ret = false;
          break;
 
       case RARCH_NETPLAY_CTL_CLEAR_FORK_ARGS:
-         *net_st->netplay_fork_args = '\0';
+         net_st->fork_args.size  = 0;
+         *net_st->fork_args.args = '\0';
          break;
 #endif
 

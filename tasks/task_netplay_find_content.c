@@ -451,31 +451,29 @@ finished:
 }
 
 #ifndef HAVE_DYNAMIC
-static void static_load(const char *core, const char *subsystem,
+static bool static_load(const char *core, const char *subsystem,
       const void *content, const char *hostname)
 {
-   char buf[512];
-   char args[PATH_MAX_LENGTH];
-
-   path_set(RARCH_PATH_CORE, core);
-
+#define ARG(arg) (void*)(arg)
    netplay_driver_ctl(RARCH_NETPLAY_CTL_CLEAR_FORK_ARGS, NULL);
 
    if (string_is_empty(hostname))
    {
-      strlcpy(args, "-H", sizeof(args));
+      if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG, ARG("-H")))
+         goto failure;
    }
    else
    {
-      strlcpy(args, "-C ", sizeof(args));
-      strlcat(args, hostname, sizeof(args));
+      if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG, ARG("-C")) ||
+            !netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG, ARG(hostname)))
+         goto failure;
    }
 
    if (!string_is_empty(subsystem))
    {
-      snprintf(buf, sizeof(buf), "\"%s\"", subsystem);
-      strlcat(args, " --subsystem ", sizeof(args));
-      strlcat(args, buf, sizeof(args));
+      if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG, ARG("--subsystem")) ||
+            !netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG, ARG(subsystem)))
+         goto failure;
 
       if (content)
       {
@@ -485,21 +483,35 @@ static void static_load(const char *core, const char *subsystem,
 
          for (i = 0; i < subsystem_content->size; i++)
          {
-            snprintf(buf, sizeof(buf), " \"%s\"",
-               subsystem_content->elems[i].data);
-            strlcat(args, buf, sizeof(args));
+            if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG,
+                  ARG(subsystem_content->elems[i].data)))
+               goto failure;
          }
       }
    }
    else if (content)
    {
-      snprintf(buf, sizeof(buf), " \"%s\"", (const char*)content);
-      strlcat(args, buf, sizeof(args));
+      if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG, ARG(content)))
+         goto failure;
    }
 
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_SET_FORK_ARGS, args);
-   frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
+   if (!frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS))
+      goto failure;
+
+   path_set(RARCH_PATH_CORE, core);
+
    retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+
+   return true;
+
+failure:
+   RARCH_ERR("[Lobby] Failed to fork RetroArch for netplay.\n");
+
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_CLEAR_FORK_ARGS, NULL);
+
+   return false;
+
+#undef ARG
 }
 #endif
 
@@ -677,10 +689,9 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
                   content_set_subsystem_by_name(data->current.subsystem);
                }
 #else
-               static_load(data->core, data->current.subsystem, NULL,
-                  data->hostname);
+               if (static_load(data->core, data->current.subsystem, NULL,
+                     data->hostname))
 #endif
-
                runloop_msg_queue_push(
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
                   1, 480, true, NULL,
