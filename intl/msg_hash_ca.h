@@ -5747,6 +5747,18 @@ MSG_HASH(
    "Ajuda"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT,
+   "S’està carregant el contingut"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
+   "S’està cercant contingut"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
+   "Què és un nucli?"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
    "Envia informació de depuració"
    )
@@ -5775,12 +5787,44 @@ MSG_HASH(
    "Limita la velocitat màxima d’execució"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_START_SEARCH,
+   "Cerca un truc nou"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_START_SEARCH,
+   "Cerca un truc nou. Es pot canviar el nombre de bits."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_CONTINUE_SEARCH,
    "Continua la cerca"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_CONTINUE_SEARCH,
+   "Continua cercant un truc nou."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
+   "Assoliments (Hardcore)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_DETAILS,
+   "Detalls del truc"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_DETAILS,
+   "Gestiona la configuració dels detalls dels trucs."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_SEARCH,
    "Comença o continua la cerca de trucs"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_SEARCH,
+   "Comença o continua la cerca de trucs."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES,
+   "Passades de trucs"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_NUM_PASSES,
@@ -5852,6 +5896,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_MAX_USERS,
    "Base de dades - Filtre: màxim d’usuaris"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_MONTH,
+   "Base de dades - Filtre: mes de publicació"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_YEAR,
+   "Base de dades - Filtre: any de publicació"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_ISSUE,
@@ -5956,6 +6008,14 @@ MSG_HASH(
 /* Notifications */
 
 MSG_HASH( /* FIXME Should be MSG_ */
+   MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
+   "El joc en línia començarà quan s’hagi carregat el contingut."
+   )
+MSG_HASH( /* FIXME Should be MSG_ */
+   MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+   "No s’ha pogut trobar cap nucli o fitxer de contingut adequats, carregueu-los manualment."
+   )
+MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    "El vostre controlador de gràfics no és compatible amb el controlador de vídeo actual del RetroArch, s’usarà el controlador %s com a alternativa. Reinicieu el RetroArch per aplicar els canvis."
    )
@@ -5994,6 +6054,34 @@ MSG_HASH(
 MSG_HASH(
    MSG_PRESS_ONE_MORE_TIME_TO_SEND_DEBUG_INFO,
    "Premeu una vegada més per enviar informació de diagnòstic a l’equip del RetroArch."
+   )
+MSG_HASH(
+   MSG_AUDIO_MIXER_VOLUME,
+   "Volum del mesclador d’àudio global"
+   )
+MSG_HASH(
+   MSG_NETPLAY_LAN_SCAN_COMPLETE,
+   "S’ha completat la cerca de partides en línia."
+   )
+MSG_HASH(
+   MSG_NATIVE,
+   "Nativa"
+   )
+MSG_HASH(
+   MSG_DEVICE_DISCONNECTED_FROM_PORT,
+   "S’ha desconnectat el dispositiu del port"
+   )
+MSG_HASH(
+   MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
+   "S’ha rebut una ordre de joc en línia desconeguda"
+   )
+MSG_HASH(
+   MSG_GOT_CONNECTION_FROM,
+   "S’ha rebut una connexió de: «%s»"
+   )
+MSG_HASH(
+   MSG_GOT_CONNECTION_FROM_NAME,
+   "S’ha rebut una connexió de: «%s (%s)»"
    )
 MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
