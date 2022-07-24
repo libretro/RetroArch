@@ -773,6 +773,20 @@ static float ozone_sidebar_gradient_bottom_solarized_light[16]        = {
       1.0000000, 1.0000000, 0.9294118, 1.0f,
 };
 
+static float ozone_sidebar_gradient_top_purple_rain[16] = {
+      0.0862745, 0.0, 0.1294117, 1.0f,
+      0.0862745, 0.0, 0.1294117, 1.0f,
+      0.0862745, 0.0, 0.1294117, 1.0f,
+      0.0862745, 0.0, 0.1294117, 1.0f,
+};
+
+static float ozone_sidebar_gradient_bottom_purple_rain[16] = {
+      0.0862745, 0.0, 0.1294117, 1.0f,
+      0.0862745, 0.0, 0.1294117, 1.0f,
+      0.0862745, 0.0, 0.1294117, 1.0f,
+      0.0862745, 0.0, 0.1294117, 1.0f,
+};
+
 static float ozone_sidebar_background_gray[16]                        = 
 COLOR_HEX_TO_FLOAT(0x101010, 0.0f);
 
@@ -844,6 +858,13 @@ static float ozone_sidebar_background_solarized_light[16]             = {
       1.0000000, 1.0000000, 0.9294118, 1.0f,
       1.0000000, 1.0000000, 0.9294118, 1.0f,
       1.0000000, 1.0000000, 0.9294118, 1.0f,
+};
+
+static float ozone_sidebar_background_purple_rain[16] = {
+      0.0862745, 0.0, 0.1294117, 1.0f,
+      0.0862745, 0.0, 0.1294117, 1.0f,
+      0.0862745, 0.0, 0.1294117, 1.0f,
+      0.0862745, 0.0, 0.1294117, 1.0f,
 };
 
 static float ozone_background_libretro_running_gray[16]               = 
@@ -919,6 +940,13 @@ static float ozone_background_libretro_running_solarized_light[16]    = {
       1.0000000, 1.0000000, 0.9294118, 1.0f,
 };
 
+static float ozone_background_libretro_running_purple_rain[16] = {
+      0.0862745, 0.0, 0.1294117, 0.75f,
+      0.0862745, 0.0, 0.1294117, 0.75f,
+      0.0862745, 0.0, 0.1294117, 1.0f,
+      0.0862745, 0.0, 0.1294117, 1.0f,
+};
+
 static float ozone_border_gray[16]                 = COLOR_HEX_TO_FLOAT(0x303030, 1.0f);
 
 static float ozone_border_0_light[16]              = COLOR_HEX_TO_FLOAT(0x50EFD9, 1.00);
@@ -950,6 +978,9 @@ static float ozone_border_1_solarized_dark[16]     = COLOR_HEX_TO_FLOAT(0x2AA198
 
 static float ozone_border_0_solarized_light[16]    = COLOR_HEX_TO_FLOAT(0x8F120F, 1.0f);
 static float ozone_border_1_solarized_light[16]    = COLOR_HEX_TO_FLOAT(0xDC322F, 1.0f);
+
+static float ozone_border_0_purple_rain[16] = COLOR_HEX_TO_FLOAT(0xC3A0E0, 1.0f);
+static float ozone_border_1_purple_rain[16] = COLOR_HEX_TO_FLOAT(0x8C3DCC, 1.0f);
 
 static ozone_theme_t ozone_theme_light = {
    COLOR_HEX_TO_FLOAT(0xEBEBEB, 1.00),                   /* background */
@@ -1399,6 +1430,45 @@ static ozone_theme_t ozone_theme_gray_light = {
    NULL,                                                 /* name */
 };
 
+static ozone_theme_t ozone_theme_purple_rain = {
+    /* Background color */
+    COLOR_HEX_TO_FLOAT(0x160021, 1.0f),                   /* background */
+    ozone_background_libretro_running_purple_rain,               /* background_libretro_running */
+
+    /* Float colors for quads and icons */
+    COLOR_HEX_TO_FLOAT(0xAA00CC, 1.0f),                   /* header_footer_separator */
+    COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.0f),                   /* text */
+    COLOR_HEX_TO_FLOAT(0x660099, 1.0f),                   /* selection */
+    COLOR_HEX_TO_FLOAT(0x660099, 1.0f),                   /* selection_border */
+    COLOR_HEX_TO_FLOAT(0xAA00CC, 1.0f),                   /* entries_border */
+    COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.0f),                   /* entries_icon */
+    COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.0f),                   /* text_selected */
+    COLOR_HEX_TO_FLOAT(0x660099, 1.0f),                   /* message_background */
+
+    /* RGBA colors for text */
+    0xFFFFFFFF,                                           /* text_rgba */
+    0xFFFFFFFF,                                           /* text_sidebar_rgba */
+    0xFFFFFFFF,                                           /* text_selected_rgba */
+    0xFFFFFFFF,                                           /* text_sublabel_rgba */
+
+    /* Screensaver 'tint' (RGB24) */
+    0xFFFFFF,                                             /* screensaver_tint */
+
+    /* Sidebar color */
+    ozone_sidebar_background_purple_rain,                        /* sidebar_background */
+    ozone_sidebar_background_purple_rain,                        /* sidebar_top_gradient */
+    ozone_sidebar_background_purple_rain,                        /* sidebar_bottom_gradient */
+
+    /* Fancy cursor colors */
+    ozone_border_0_purple_rain,                                    /* cursor_border_0 */
+    ozone_border_1_purple_rain,                                    /* cursor_border_1 */
+
+    {0},                                                  /* textures */
+
+    /* No theme assets */
+    "purple_rain",                                                 /* name */
+};
+
 static ozone_theme_t *ozone_themes[] = {
    &ozone_theme_light,
    &ozone_theme_dark,
@@ -1411,7 +1481,8 @@ static ozone_theme_t *ozone_themes[] = {
    &ozone_theme_solarized_dark,
    &ozone_theme_solarized_light,
    &ozone_theme_gray_dark,
-   &ozone_theme_gray_light
+   &ozone_theme_gray_light,
+   &ozone_theme_purple_rain
 };
 
 /* TODO/FIXME - global variables referenced outside */
@@ -1540,6 +1611,9 @@ static void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
          break;
       case OZONE_COLOR_THEME_GRAY_LIGHT:
          theme = &ozone_theme_gray_light;
+         break;
+      case OZONE_COLOR_THEME_PURPLE_RAIN:
+         theme = &ozone_theme_purple_rain;
          break;
       default:
          break;
@@ -4244,6 +4318,8 @@ static void ozone_init_horizontal_list(ozone_handle_t *ozone,
       char *console_name        = NULL;
       const char *playlist_file = ozone->horizontal_list.list[i].path;
 
+      playlist_file_noext[0] = '\0';
+
       if (!playlist_file)
       {
          file_list_set_alt_at_offset(&ozone->horizontal_list, i, NULL);
@@ -4375,6 +4451,8 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 
          strlcpy(icons_path, ozone->icons_path, sizeof(icons_path));
 
+         sysname[0] = texturepath[0] = content_texturepath[0] = '\0';
+
          fill_pathname_base(sysname, path, sizeof(sysname));
          path_remove_extension(sysname);
 
@@ -4409,7 +4487,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 
          fill_pathname_join_delim(sysname, sysname,
                "content.png", '-', sizeof(sysname));
-         strlcpy(content_texturepath, icons_path, sizeof(content_texturepath));
+         strlcat(content_texturepath, icons_path, sizeof(content_texturepath));
          strlcat(content_texturepath, PATH_DEFAULT_SLASH(), sizeof(content_texturepath));
          strlcat(content_texturepath, sysname, sizeof(content_texturepath));
 
@@ -7859,7 +7937,7 @@ static void ozone_set_layout(
    bool font_inited    = false;
    float scale_factor  = ozone->last_scale_factor;
 
-   s1[0]               = '\0';
+   font_path[0]        = s1[0]= '\0';
 
    /* Calculate dimensions */
    ozone->dimensions.header_height                 = HEADER_HEIGHT * scale_factor;
@@ -8032,6 +8110,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
       for (i = 0; i < OZONE_TEXTURE_LAST; i++)
       {
          char filename[64];
+         filename[0] = '\0';
 #if 0
          if (i == OZONE_TEXTURE_DISCORD_OWN_AVATAR && discord_avatar_is_ready())
             strlcpy(filename, discord_get_own_avatar(), sizeof(filename));
@@ -8066,6 +8145,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
       for (i = 0; i < OZONE_TAB_TEXTURE_LAST; i++)
       {
          char filename[64];
+         filename[0]        = '\0';
          strlcpy(filename,
                OZONE_TAB_TEXTURES_FILES[i], sizeof(filename));
          strlcat(filename, FILE_PATH_PNG_EXTENSION, sizeof(filename));
