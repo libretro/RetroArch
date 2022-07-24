@@ -1089,7 +1089,6 @@ static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
    char       *tmp                    = string_replace_substring(xmb->title_name, "/", " ");
    settings_t *settings               = config_get_ptr();
    const char *dir_dynamic_wallpapers = settings->paths.directory_dynamic_wallpapers;
-   path[0]                            = '\0';
 
    if (tmp)
    {
@@ -2261,9 +2260,7 @@ static void xmb_context_reset_horizontal_list(
 
          /* Add current node to playlist database name map */
          RHMAP_SET_STR(xmb->playlist_db_node_map, path, node);
-
-         iconpath[0]       = sysname[0]             =
-            texturepath[0] = content_texturepath[0] = '\0';
+	 iconpath[0]            = '\0';
 
          fill_pathname_base(sysname, path, sizeof(sysname));
          path_remove_extension(sysname);
@@ -2304,7 +2301,7 @@ static void xmb_context_reset_horizontal_list(
          fill_pathname_join_delim(sysname, sysname,
                FILE_PATH_CONTENT_BASENAME, '-',
                sizeof(sysname));
-         strlcat(content_texturepath, iconpath, sizeof(content_texturepath));
+         strlcpy(content_texturepath, iconpath, sizeof(content_texturepath));
          strlcat(content_texturepath, sysname,  sizeof(content_texturepath));
 
          /* If the content icon doesn't exist return default-content */
@@ -3294,12 +3291,9 @@ static int xmb_draw_item(
    if (entry_type == FILE_TYPE_CONTENTLIST_ENTRY)
    {
       char entry_path[PATH_MAX_LENGTH];
-      entry_path[0] = '\0';
       strlcpy(entry_path, entry.path, sizeof(entry_path));
-
       fill_pathname(entry_path, path_basename(entry_path), "",
             sizeof(entry_path));
-
       if (!string_is_empty(entry_path))
          strlcpy(entry.path, entry_path, sizeof(entry.path));
    }
@@ -3933,7 +3927,7 @@ static void xmb_show_fullscreen_thumbnails(
     * and all thumbnails for current selection are already
     * loaded/available */
    gfx_thumbnail_get_core_name(xmb->thumbnail_path_data, &core_name);
-   if (string_is_equal(core_name, "imageviewer") ||
+   if (   string_is_equal(core_name, "imageviewer") ||
          !string_is_empty(xmb->savestate_thumbnail_file_path))
    {
       /* imageviewer content requires special treatment,
@@ -4907,11 +4901,11 @@ static void xmb_draw_fullscreen_thumbnails(
          {
             char title_buf[255];
             gfx_animation_ctx_ticker_smooth_t ticker_smooth;
-            int title_x               = 0;
-            unsigned ticker_x_offset  = 0;
-            unsigned ticker_str_width = 0;
+            int title_x                 = 0;
+            unsigned ticker_x_offset    = 0;
+            unsigned ticker_str_width   = 0;
 
-            title_buf[0] = '\0';
+            title_buf[0]                = '\0';
 
             ticker_smooth.idx           = p_anim->ticker_pixel_idx;
             ticker_smooth.font          = xmb->font;

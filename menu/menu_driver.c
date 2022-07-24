@@ -3761,7 +3761,6 @@ bool menu_shader_manager_save_preset_internal(
    if ((type = menu_shader_manager_get_type(shader)) == RARCH_SHADER_NONE)
       return false;
 
-   buffer[0]  = '\0';
    preset_ext = video_shader_get_preset_extension(type);
 
    if (!string_is_empty(basename))

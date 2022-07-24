@@ -457,13 +457,9 @@ static bool menu_screensaver_update_state(
        !screensaver->font_data.font &&
        screensaver->font_enabled)
    {
-#if defined(HAVE_FREETYPE) || (defined(__APPLE__) && defined(HAVE_CORETEXT)) || defined(HAVE_STB_FONT)
       char font_file[PATH_MAX_LENGTH];
+#if defined(HAVE_FREETYPE) || (defined(__APPLE__) && defined(HAVE_CORETEXT)) || defined(HAVE_STB_FONT)
       char pkg_path[PATH_MAX_LENGTH];
-
-      font_file[0] = '\0';
-      pkg_path[0]  = '\0';
-
       /* Get font file path */
       if (!string_is_empty(dir_assets))
          fill_pathname_join(pkg_path, dir_assets, MENU_SS_PKG_DIR, sizeof(pkg_path));
@@ -483,7 +479,6 @@ static bool menu_screensaver_update_state(
       /* On platforms without TTF support, there is
        * no need to generate a font path (a bitmap
        * font will be created automatically) */
-      char font_file[PATH_MAX_LENGTH];
       font_file[0] = '\0';
 #endif
 

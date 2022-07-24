@@ -4244,8 +4244,6 @@ static void ozone_init_horizontal_list(ozone_handle_t *ozone,
       char *console_name        = NULL;
       const char *playlist_file = ozone->horizontal_list.list[i].path;
 
-      playlist_file_noext[0] = '\0';
-
       if (!playlist_file)
       {
          file_list_set_alt_at_offset(&ozone->horizontal_list, i, NULL);
@@ -4377,8 +4375,6 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 
          strlcpy(icons_path, ozone->icons_path, sizeof(icons_path));
 
-         sysname[0] = texturepath[0] = content_texturepath[0] = '\0';
-
          fill_pathname_base(sysname, path, sizeof(sysname));
          path_remove_extension(sysname);
 
@@ -4413,7 +4409,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 
          fill_pathname_join_delim(sysname, sysname,
                "content.png", '-', sizeof(sysname));
-         strlcat(content_texturepath, icons_path, sizeof(content_texturepath));
+         strlcpy(content_texturepath, icons_path, sizeof(content_texturepath));
          strlcat(content_texturepath, PATH_DEFAULT_SLASH(), sizeof(content_texturepath));
          strlcat(content_texturepath, sysname, sizeof(content_texturepath));
 
@@ -7863,7 +7859,7 @@ static void ozone_set_layout(
    bool font_inited    = false;
    float scale_factor  = ozone->last_scale_factor;
 
-   font_path[0]        = s1[0]= '\0';
+   s1[0]               = '\0';
 
    /* Calculate dimensions */
    ozone->dimensions.header_height                 = HEADER_HEIGHT * scale_factor;
@@ -8036,7 +8032,6 @@ static void ozone_context_reset(void *data, bool is_threaded)
       for (i = 0; i < OZONE_TEXTURE_LAST; i++)
       {
          char filename[64];
-         filename[0] = '\0';
 #if 0
          if (i == OZONE_TEXTURE_DISCORD_OWN_AVATAR && discord_avatar_is_ready())
             strlcpy(filename, discord_get_own_avatar(), sizeof(filename));
@@ -8071,7 +8066,6 @@ static void ozone_context_reset(void *data, bool is_threaded)
       for (i = 0; i < OZONE_TAB_TEXTURE_LAST; i++)
       {
          char filename[64];
-         filename[0]        = '\0';
          strlcpy(filename,
                OZONE_TAB_TEXTURES_FILES[i], sizeof(filename));
          strlcat(filename, FILE_PATH_PNG_EXTENSION, sizeof(filename));

@@ -2306,8 +2306,6 @@ static void materialui_refresh_playlist_icon_list(
       const char *playlist_file = NULL;
       char image_file[PATH_MAX_LENGTH];
 
-      image_file[0] = '\0';
-
       /* We used malloc() to create the icons
        * array - ensure struct members are
        * correctly initialised */
