@@ -1466,7 +1466,7 @@ static ozone_theme_t ozone_theme_purple_rain = {
    {0},                                                  /* textures */
 
    /* No theme assets */
-   "purple_rain",                                                 /* name */
+   "purple_rain"                                                 /* name */
 };
 
 static ozone_theme_t *ozone_themes[] = {
@@ -1611,6 +1611,9 @@ static void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
          break;
       case OZONE_COLOR_THEME_GRAY_LIGHT:
          theme = &ozone_theme_gray_light;
+         break;
+      case OZONE_COLOR_THEME_PURPLE_RAIN:
+         theme = &ozone_theme_purple_rain;
          break;
       default:
          break;
