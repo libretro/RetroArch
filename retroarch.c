@@ -1220,7 +1220,7 @@ static void path_clear_all(void)
    path_clear(RARCH_PATH_BASENAME);
 }
 
-void ram_state_to_file(void)
+static void ram_state_to_file(void)
 {
    char state_path[PATH_MAX_LENGTH];
 
@@ -1748,14 +1748,12 @@ bool command_event(enum event_command cmd, void *data)
             bool success                        = false;
             runloop_st->subsystem_current_count = 0;
             content_clear_subsystem();
-            success = command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
-            (void)success;
-
-#ifndef HAVE_DYNAMIC
-            command_event(CMD_EVENT_QUIT, NULL);
-#else
-            if (!success)
+#ifdef HAVE_DYNAMIC
+            if (!(command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL)))
                return false;
+#else
+            command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+            command_event(CMD_EVENT_QUIT, NULL);
 #endif
             break;
          }
@@ -1843,10 +1841,9 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_SAVE_STATE:
       case CMD_EVENT_SAVE_STATE_TO_RAM:
          {
-            bool savestate_auto_index = settings->bools.savestate_auto_index;
             int state_slot            = settings->ints.state_slot;
 
-            if (savestate_auto_index)
+            if (settings->bools.savestate_auto_index)
             {
                int new_state_slot = state_slot + 1;
                configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
