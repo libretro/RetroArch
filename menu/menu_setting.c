@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2014-2017 - Jean-André Santoni
+ *  Copyright (C) 2014-2017 - Jean-AndrÃ© Santoni
  *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -4820,6 +4820,11 @@ static void setting_get_string_representation_uint_ozone_menu_color_theme(
          strlcpy(s,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT), len);
+         break;
+      case OZONE_COLOR_THEME_PURPLE_RAIN:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_PURPLE_RAIN), len);
          break;
       case OZONE_COLOR_THEME_BASIC_WHITE:
       default:
