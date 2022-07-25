@@ -1633,10 +1633,9 @@ static bool override_shader_values(config_file_t *override_conf,
        * see if there is an entry for each in the override config */
       for (i = 0; i < shader->num_parameters; i++)
       {
-         entry = config_get_entry(override_conf, shader->parameters[i].id);
-
          /* If the parameter is in the reference config */
-         if (entry)
+         if ((entry = config_get_entry(
+                     override_conf, shader->parameters[i].id)))
          {
             struct video_shader_parameter *parameter = 
                (struct video_shader_parameter*)

@@ -295,9 +295,6 @@ bool gfx_thumbnail_set_system(gfx_thumbnail_path_data_t *path_data,
           * matches the database name */
          char *playlist_name = NULL;
          char tmp[PATH_MAX_LENGTH];
-         
-         tmp[0] = '\0';
-         
          strlcpy(tmp, playlist_file, sizeof(tmp));
          playlist_name  = path_remove_extension(tmp);
          playlist_valid = string_is_equal(playlist_name, system);
@@ -517,8 +514,6 @@ bool gfx_thumbnail_set_content_playlist(
       {
          char *db_name_no_ext = NULL;
          char tmp_buf[PATH_MAX_LENGTH];
-         tmp_buf[0] = '\0';
-         
          /* Remove .lpl extension
           * > path_remove_extension() requires a char * (not const)
           *   so have to use a temporary buffer... */
@@ -580,7 +575,6 @@ bool gfx_thumbnail_update_path(
          return false;
    }
    
-   thumbnail_path[0] = '\0';
    content_dir[0]    = '\0';
 
    if (settings)
@@ -639,9 +633,6 @@ bool gfx_thumbnail_update_path(
       char tmp_buf[PATH_MAX_LENGTH];
       const char *type           = gfx_thumbnail_get_type(settings,
             path_data, thumbnail_id);
-
-      tmp_buf[0] = '\0';
-      
       /* > Normal content: assemble path */
       
       /* >> Base + system name */
@@ -811,8 +802,6 @@ bool gfx_thumbnail_get_content_dir(
    if (!((path_length > 1) && (path_length < PATH_MAX_LENGTH)))
       return false;
 
-   tmp_buf[0] = '\0';
-   
    strlcpy(tmp_buf, path_data->content_path, path_length * sizeof(char));
    strlcpy(content_dir, path_basename_nocompression(tmp_buf), len);
    
