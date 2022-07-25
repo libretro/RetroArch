@@ -9112,6 +9112,10 @@ MSG_HASH(
    "Hellgrau"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_PURPLE_RAIN,
+   "Violetter Regen"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
    "Zweites Vorschaubild"
    )

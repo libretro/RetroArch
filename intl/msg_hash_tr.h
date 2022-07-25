@@ -9420,6 +9420,10 @@ MSG_HASH(
    "Açık Gri"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_PURPLE_RAIN,
+   "Mor Yağmur"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
    "İkinci Küçük Resim"
    )

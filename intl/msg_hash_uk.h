@@ -5480,6 +5480,10 @@ MSG_HASH(
    "Solarized світла"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_PURPLE_RAIN,
+   "Фіолетовий Дощ"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
    "Додаткова мініатюра"
    )
