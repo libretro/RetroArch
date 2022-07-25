@@ -423,7 +423,10 @@ int socket_poll(struct pollfd *fds, unsigned nfds, int timeout)
 #undef ALLOC_EVENTS
 
    /* Vita's epoll takes a microsecond timeout parameter. */
-   ret = sceNetEpollWait(epoll_fd, events, event_count, timeout * 1000);
+   if (timeout > 0)
+      timeout *= 1000;
+
+   ret = sceNetEpollWait(epoll_fd, events, event_count, timeout);
    if (ret <= 0)
       goto done;
 
