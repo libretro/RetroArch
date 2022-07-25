@@ -280,7 +280,7 @@ int detect_ps1_game(intfstream_t *fd, char *game_id, const char *filename)
    strcpy(game_id, "XXXXXXXXXX");
    game_id[10] = '\0';
    cue_append_multi_disc_suffix(game_id, filename);
-   return true;
+   return false;
 }
 
 int detect_psp_game(intfstream_t *fd, char *game_id, const char *filename)
