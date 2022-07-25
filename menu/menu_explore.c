@@ -807,7 +807,10 @@ static int explore_action_sublabel_spacer(
     *   unnecessarily blank out the fallback
     *   core title text in the sublabel area */
    if (string_is_equal(menu_driver, "ozone"))
-      strlcpy(s, " ", len);
+   {
+      s[0] = ' ';
+      s[1] = '\0';
+   }
 
    return 1; /* 1 means it'll never change and can be cached */
 }

@@ -381,10 +381,10 @@ void net_http_urlencode(char **dest, const char *source)
 void net_http_urlencode_full(char *dest,
       const char *source, size_t size)
 {
+   char url_domain[256];
+   char url_path[PATH_MAX_LENGTH];
    size_t buf_pos                    = 0;
    char *tmp                         = NULL;
-   char url_domain[256]              = {0};
-   char url_path[PATH_MAX_LENGTH]    = {0};
    int count                         = 0;
 
    strlcpy(url_path, source, sizeof(url_path));

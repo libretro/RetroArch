@@ -3080,8 +3080,6 @@ void config_read_keybinds_conf(void *data)
          if (!btn || !prefix)
             continue;
 
-         str[0]                     = '\0';
-
          fill_pathname_join_delim(str, prefix, btn,  '_', sizeof(str));
 
          /* Clear old mapping bit */
@@ -5675,8 +5673,8 @@ void input_keyboard_event(bool down, unsigned code,
 
          if (say_char)
          {
-            char c    = (char) character;
-            *say_char = c;
+            char c      = (char) character;
+            *say_char   = c;
             say_char[1] = '\0';
 
             if (character == 127 || character == 8)
