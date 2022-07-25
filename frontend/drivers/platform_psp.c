@@ -323,13 +323,13 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
 #elif defined(VITA)
 #ifndef IS_SALAMANDER
 #ifdef HAVE_NETWORKING
-   const char *arg_data[NETPLAY_FORK_MAX_ARGS];
+   char *arg_data[NETPLAY_FORK_MAX_ARGS];
 #else
-   const char *arg_data[2];
+   char *arg_data[2];
 #endif
    char game_path[PATH_MAX_LENGTH];
 #else
-   const char *arg_data[2];
+   char *arg_data[2];
    char boot_params[PATH_MAX_LENGTH];
 #endif
 
