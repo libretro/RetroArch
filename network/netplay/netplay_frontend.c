@@ -277,7 +277,7 @@ static bool netplay_lan_ad_client_query(void)
    bool ret                   = false;
 
    /* Get the broadcast address (IPv4 only for now) */
-   snprintf(port, sizeof(port), "%hu", (unsigned short)RARCH_DEFAULT_PORT);
+   snprintf(port, sizeof(port), "%hu", (unsigned short)RARCH_DISCOVERY_PORT);
    hints.ai_family   = AF_INET;
    hints.ai_socktype = SOCK_DGRAM;
    if (getaddrinfo_retro("255.255.255.255", port, &hints, &addr))
@@ -455,7 +455,7 @@ static bool init_lan_ad_server_socket(void)
 {
    struct addrinfo *addr      = NULL;
    net_driver_state_t *net_st = &networking_driver_st;
-   int fd                     = socket_init((void**)&addr, RARCH_DEFAULT_PORT,
+   int fd                     = socket_init((void**)&addr, RARCH_DISCOVERY_PORT,
       NULL, SOCKET_TYPE_DATAGRAM);
    bool ret                   = fd >= 0 && addr &&
       socket_bind(fd, addr) && socket_nonblock(fd);
