@@ -246,9 +246,6 @@ runtime_log_t *runtime_log_init(
 
    content_name[0]            = '\0';
    core_name[0]               = '\0';
-   log_file_dir[0]            = '\0';
-   log_file_path[0]           = '\0';
-   tmp_buf[0]                 = '\0';
 
    if (  string_is_empty(dir_runtime_log) &&
          string_is_empty(dir_playlist))
@@ -281,17 +278,15 @@ runtime_log_t *runtime_log_init(
    if (string_is_empty(core_name))
       return NULL;
 
-   /* Get runtime log directory */
+   /* Get runtime log directory
+    * If 'custom' runtime log path is undefined,
+    * use default 'playlists/logs' directory... */
    if (string_is_empty(dir_runtime_log))
-   {
-      /* If 'custom' runtime log path is undefined,
-       * use default 'playlists/logs' directory... */
       fill_pathname_join(
             tmp_buf,
             dir_playlist,
             "logs",
             sizeof(tmp_buf));
-   }
    else
       strlcpy(tmp_buf, dir_runtime_log, sizeof(tmp_buf));
 
@@ -1362,14 +1357,12 @@ void runtime_update_playlist(
    playlist_get_index(playlist, idx, &entry);
 
    /* Attempt to open log file */
-   runtime_log = runtime_log_init(
+   if ((runtime_log = runtime_log_init(
          entry->path,
          entry->core_path,
          dir_runtime_log,
          dir_playlist,
-         log_per_core);
-
-   if (runtime_log)
+         log_per_core)))
    {
       /* Check whether a non-zero runtime has been recorded */
       if (runtime_log_has_runtime(runtime_log))

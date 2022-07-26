@@ -499,8 +499,7 @@ int detect_scd_game(intfstream_t *fd, char *game_id, const char *filename)
    {
       if (!strcmp(region_id, "U") || !strcmp(region_id, "J"))
       {
-         index = string_index_last_occurance(pre_game_id, hyphen);
-         if (index == -1)
+         if ((index = string_index_last_occurance(pre_game_id, hyphen)) == -1)
             return false;
          strncpy(game_id, pre_game_id, index);
          game_id[index] = '\0';
@@ -509,8 +508,7 @@ int detect_scd_game(intfstream_t *fd, char *game_id, const char *filename)
       }
       else
       {
-         index = string_index_last_occurance(pre_game_id, hyphen);
-         if (index == -1)
+         if ((index = string_index_last_occurance(pre_game_id, hyphen)) == -1)
             return false;
          strncpy(lgame_id, pre_game_id, index);
          lgame_id[index] = '\0';
@@ -522,8 +520,7 @@ int detect_scd_game(intfstream_t *fd, char *game_id, const char *filename)
    }
    else if (!strcmp(check_prefix_g_hyp, "G-"))
    {
-      index = string_index_last_occurance(pre_game_id, hyphen);
-      if (index == -1)
+      if ((index = string_index_last_occurance(pre_game_id, hyphen)) == -1)
          return false;
       strncpy(game_id, pre_game_id, index);
       game_id[index] = '\0';

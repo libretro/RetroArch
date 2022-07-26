@@ -919,14 +919,10 @@ bool audio_driver_dsp_filter_init(const char *device)
 #if defined(HAVE_DYLIB) && !defined(HAVE_FILTERS_BUILTIN)
    char ext_name[32];
    char basedir[256];
-
-   basedir[0] = ext_name[0]             = '\0';
-
+   ext_name[0]             = '\0';
    fill_pathname_basedir(basedir, device, sizeof(basedir));
-
    if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
       return false;
-
    if (!(plugs = dir_list_new(basedir, ext_name, false, true, false, false)))
       return false;
 #endif
@@ -1358,8 +1354,7 @@ void audio_driver_load_system_sounds(void)
    if (!audio_enable_menu && !audio_enable_cheevo_unlock)
       goto end;
 
-   sounds_path[0] = sounds_fallback_path[0] =
-                          basename_noext[0] ='\0';
+   sounds_path[0] = basename_noext[0] ='\0';
 
    fill_pathname_join(
          sounds_fallback_path,

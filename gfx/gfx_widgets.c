@@ -797,13 +797,8 @@ static void gfx_widgets_layout(
    {
       char ozone_path[PATH_MAX_LENGTH];
       char font_file[PATH_MAX_LENGTH];
-
-      ozone_path[0] = '\0';
-      font_file[0]  = '\0';
-
       /* Base path */
       fill_pathname_join(ozone_path, dir_assets, "ozone", sizeof(ozone_path));
-
       /* Create regular font */
       fill_pathname_join(font_file, ozone_path, "regular.ttf", sizeof(font_file));
       gfx_widgets_font_init(p_disp, p_dispwidget,
@@ -1899,35 +1894,24 @@ static void gfx_widgets_context_reset(
    char monochrome_png_path[PATH_MAX_LENGTH];
    char gfx_widgets_path[PATH_MAX_LENGTH];
    char theme_path[PATH_MAX_LENGTH];
-
-   xmb_path[0]            = '\0';
-   monochrome_png_path[0] = '\0';
-   gfx_widgets_path[0]    = '\0';
-   theme_path[0]          = '\0';
-
-   /* Textures paths */
    fill_pathname_join(
       gfx_widgets_path,
       dir_assets,
       "menu_widgets",
       sizeof(gfx_widgets_path)
    );
-
    fill_pathname_join(
       xmb_path,
       dir_assets,
       "xmb",
       sizeof(xmb_path)
    );
-
-   /* Monochrome */
    fill_pathname_join(
       theme_path,
       xmb_path,
       "monochrome",
       sizeof(theme_path)
    );
-
    fill_pathname_join(
       monochrome_png_path,
       theme_path,
