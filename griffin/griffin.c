@@ -1335,7 +1335,7 @@ NETPLAY
 #include "../libretro-common/net/net_compat.c"
 #include "../libretro-common/net/net_socket.c"
 #include "../libretro-common/net/net_http.c"
-#if !defined(HAVE_SOCKET_LEGACY)
+#if !defined(HAVE_SOCKET_LEGACY) || defined(VITA)
 #include "../libretro-common/net/net_ifinfo.c"
 #endif
 #include "../tasks/task_http.c"
