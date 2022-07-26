@@ -56,8 +56,6 @@ int action_scan_file(const char *path,
    const char *directory_playlist = settings->paths.directory_playlist;
    const char *path_content_db    = settings->paths.path_content_database;
 
-   fullpath[0]                    = '\0';
-
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
    fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
@@ -81,8 +79,6 @@ int action_scan_directory(const char *path,
    bool show_hidden_files         = settings->bools.show_hidden_files;
    const char *directory_playlist = settings->paths.directory_playlist;
    const char *path_content_db    = settings->paths.path_content_database;
-
-   fullpath[0]                    = '\0';
 
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 

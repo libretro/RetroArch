@@ -515,7 +515,6 @@ static int general_push(menu_displaylist_info_t *info,
             struct retro_system_info *system = 
                &runloop_state_get_ptr()->system.info;
 
-            newstring[0]                     = '\0';
             attr.i                           = 0;
 
             string_list_initialize(&str_list2);

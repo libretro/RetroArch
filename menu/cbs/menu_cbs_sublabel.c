@@ -76,8 +76,6 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
        core_info->licenses_list)
    {
       char tmp[MENU_SUBLABEL_MAX_LENGTH];
-      tmp[0]  = '\0';
-
       /* Add license text */
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->licenses_list, ", ");
@@ -172,13 +170,9 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
       {
          size_t n = 0;
          char tmp[64];
+         tmp[0  ]    = '\n';
          if (display_licenses)
-         {
-            tmp[0  ] = '\n';
             tmp[1  ] = '\0';
-         }
-         else
-            tmp[0]   = '\0';
          n           = strlcat(tmp, entry->runtime.runtime_str, sizeof(tmp));
 
          if (n < 64 - 1)
@@ -1310,8 +1304,6 @@ static int action_bind_sublabel_subsystem_load(
    unsigned j = 0;
    char buf[4096];
 
-   buf[0] = '\0';
-
    for (j = 0; j < content_get_subsystem_rom_id(); j++)
    {
       strlcat(buf, "   ", sizeof(buf));
@@ -1842,8 +1834,6 @@ static int action_bind_sublabel_core_updater_entry(
        entry->licenses_list)
    {
       char tmp[MENU_SUBLABEL_MAX_LENGTH];
-      tmp[0] = '\0';
-
       /* Add license text */
       string_list_join_concat(tmp, sizeof(tmp),
             entry->licenses_list, ", ");

@@ -187,13 +187,9 @@ static GLint gl_glsl_get_uniform(glsl_shader_data_t *glsl,
    unsigned i;
    GLint loc;
    char buf[80];
-
-   buf[0] = '\0';
-
    strlcpy(buf, glsl->shader->prefix, sizeof(buf));
    strlcat(buf, base, sizeof(buf));
-   loc = glGetUniformLocation(prog, buf);
-   if (loc >= 0)
+   if ((loc = glGetUniformLocation(prog, buf)) >= 0)
       return loc;
 
    for (i = 0; i < ARRAY_SIZE(glsl_prefixes); i++)
@@ -201,8 +197,7 @@ static GLint gl_glsl_get_uniform(glsl_shader_data_t *glsl,
       buf[0] = '\0';
       strlcpy(buf, glsl_prefixes[i], sizeof(buf));
       strlcat(buf, base, sizeof(buf));
-      loc = glGetUniformLocation(prog, buf);
-      if (loc >= 0)
+      if ((loc = glGetUniformLocation(prog, buf)) >= 0)
          return loc;
    }
 
@@ -215,21 +210,16 @@ static GLint gl_glsl_get_attrib(glsl_shader_data_t *glsl,
    unsigned i;
    GLint loc;
    char buf[80];
-
-   buf[0] = '\0';
-
    strlcpy(buf, glsl->shader->prefix, sizeof(buf));
    strlcat(buf, base, sizeof(buf));
-   loc = glGetUniformLocation(prog, buf);
-   if (loc >= 0)
+   if ((loc = glGetUniformLocation(prog, buf)) >= 0)
       return loc;
 
    for (i = 0; i < ARRAY_SIZE(glsl_prefixes); i++)
    {
       strlcpy(buf, glsl_prefixes[i], sizeof(buf));
       strlcat(buf, base, sizeof(buf));
-      loc = glGetAttribLocation(prog, buf);
-      if (loc >= 0)
+      if ((loc = glGetAttribLocation(prog, buf)) >= 0)
          return loc;
    }
 
@@ -700,8 +690,6 @@ static void gl_glsl_find_uniforms_frame(glsl_shader_data_t *glsl,
    char texture_size[64];
    char input_size[64];
    char tex_coord[64];
-
-   texture[0] = texture_size[0] = input_size[0] = tex_coord[0] = '\0';
 
    strlcpy(texture,      base,          sizeof(texture));
    strlcat(texture,      "Texture",     sizeof(texture));
