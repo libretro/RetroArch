@@ -8550,7 +8550,9 @@ static bool netplay_pre_frame(netplay_t *netplay)
    {
       settings_t *settings = config_get_ptr();
 
-#ifdef HAVE_NETPLAYDISCOVERY
+/* Vita can't bind to our discovery port;
+   do not try to answer discovery queries there. */
+#if defined(HAVE_NETPLAYDISCOVERY) && !defined(VITA)
       if (!netplay->mitm_handler)
       {
          net_driver_state_t *net_st = &networking_driver_st;

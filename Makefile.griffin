@@ -345,6 +345,7 @@ else ifeq ($(platform), vita)
    HAVE_7ZIP                := 1
    HAVE_VITA2D              := 1
    HAVE_NETWORKING          := 1
+   HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
    HAVE_VIDEO_LAYOUT        := 0
    HAVE_MATERIALUI          := 1
