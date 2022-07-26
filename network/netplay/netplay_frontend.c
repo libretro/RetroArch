@@ -450,6 +450,7 @@ bool netplay_discovery_driver_ctl(
    return true;
 }
 
+#ifndef VITA
 /** Initialize Netplay discovery */
 static bool init_lan_ad_server_socket(void)
 {
@@ -479,6 +480,7 @@ static bool init_lan_ad_server_socket(void)
 
    return ret;
 }
+#endif
 
 /** Deinitialize Netplay discovery */
 static void deinit_lan_ad_server_socket(void)
@@ -492,6 +494,7 @@ static void deinit_lan_ad_server_socket(void)
    }
 }
 
+#ifndef VITA
 /**
  * netplay_lan_ad_server
  *
@@ -620,6 +623,8 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
 
    return true;
 }
+#endif
+
 #endif
 
 /**
