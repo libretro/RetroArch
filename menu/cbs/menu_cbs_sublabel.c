@@ -96,11 +96,11 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
 static int menu_action_sublabel_contentless_core(file_list_t *list,
       unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len)
 {
+   char tmp[64];
    const char *core_path                      = path;
    core_info_t *core_info                     = NULL;
    const contentless_core_info_entry_t *entry = NULL;
    const char *menu_ident                     = menu_driver_ident();
-   bool display_licenses                      = true;
    bool display_runtime                       = true;
    settings_t *settings                       = config_get_ptr();
    bool playlist_show_sublabels               = settings->bools.playlist_show_sublabels;
@@ -147,10 +147,14 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
    /* > License info is always displayed unless
     *   we are using GLUI with runtime info enabled */
    if (display_runtime && string_is_equal(menu_ident, "glui"))
-      display_licenses = false;
-
-   if (display_licenses)
+      tmp[0  ] = '\0';
+   else
+   {
+      /* Display licenses */
       strlcpy(s, entry->licenses_str, len);
+      tmp[0  ] = '\n';
+      tmp[1  ] = '\0';
+   }
 
    if (display_runtime)
    {
@@ -168,12 +172,7 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
       /* Check whether runtime info is valid */
       if (entry->runtime.status == CONTENTLESS_CORE_RUNTIME_VALID)
       {
-         size_t n = 0;
-         char tmp[64];
-         tmp[0  ]    = '\n';
-         if (display_licenses)
-            tmp[1  ] = '\0';
-         n           = strlcat(tmp, entry->runtime.runtime_str, sizeof(tmp));
+         size_t n    = strlcat(tmp, entry->runtime.runtime_str, sizeof(tmp));
 
          if (n < 64 - 1)
          {
