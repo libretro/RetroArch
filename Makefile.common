@@ -2126,7 +2126,7 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    ifneq ($(HAVE_SOCKET_LEGACY),1)
       OBJ += $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
-   else ifeq ($(platform), vita)
+   else ifeq ($(TARGET), retroarch_vita)
       OBJ += $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
    endif
 
