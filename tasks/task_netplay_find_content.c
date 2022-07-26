@@ -471,15 +471,16 @@ static bool static_load(const char *core, const char *subsystem,
 
    if (!string_is_empty(subsystem))
    {
+      const struct string_list *subsystem_content =
+         (const struct string_list*)content;
+
       if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG, ARG("--subsystem")) ||
             !netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG, ARG(subsystem)))
          goto failure;
 
-      if (content)
+      if (subsystem_content && subsystem_content->size > 0)
       {
          size_t i;
-         const struct string_list *subsystem_content =
-            (const struct string_list*)content;
 
          for (i = 0; i < subsystem_content->size; i++)
          {
@@ -488,11 +489,28 @@ static bool static_load(const char *core, const char *subsystem,
                goto failure;
          }
       }
+#ifdef HAVE_MENU
+      else
+      {
+         if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG, ARG("--menu")))
+            goto failure;
+      }
+#endif
    }
-   else if (content)
+   else
    {
-      if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG, ARG(content)))
-         goto failure;
+      if (content)
+      {
+         if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG, ARG(content)))
+            goto failure;
+      }
+#ifdef HAVE_MENU
+      else
+      {
+         if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG, ARG("--menu")))
+            goto failure;
+      }
+#endif
    }
 
    if (!frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS))
@@ -688,14 +706,17 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
                   content_clear_subsystem();
                   content_set_subsystem_by_name(data->current.subsystem);
                }
-#else
-               if (static_load(data->core, data->current.subsystem, NULL,
-                     data->hostname))
-#endif
+
                runloop_msg_queue_push(
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
                   1, 480, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#else
+               runloop_msg_queue_push(
+                  msg_hash_to_str(MSG_NETPLAY_NEED_CONTENT_LOADED),
+                  1, 480, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#endif
             }
             else
                RARCH_WARN("[Lobby] Nothing to load.\n");
