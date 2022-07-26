@@ -2876,6 +2876,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             if (!task_push_netplay_content_reload(NULL))
             {
+#ifdef HAVE_DYNAMIC
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
 
@@ -2883,6 +2884,12 @@ bool command_event(enum event_command cmd, void *data)
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
                   1, 480, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#else
+               runloop_msg_queue_push(
+                  msg_hash_to_str(MSG_NETPLAY_NEED_CONTENT_LOADED),
+                  1, 480, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#endif
 
                return false;
             }

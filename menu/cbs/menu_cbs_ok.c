@@ -7367,6 +7367,7 @@ static void action_ok_netplay_enable_client_hostname_cb(void *userdata,
    {
       if (!task_push_netplay_content_reload(line))
       {
+#ifdef HAVE_DYNAMIC
          command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
          netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
          command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, (void*)line);
@@ -7375,10 +7376,20 @@ static void action_ok_netplay_enable_client_hostname_cb(void *userdata,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
             1, 480, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      }
+#else
+         runloop_msg_queue_push(
+            msg_hash_to_str(MSG_NETPLAY_NEED_CONTENT_LOADED),
+            1, 480, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#endif
 
-      menu_input_dialog_end();
-      retroarch_menu_running_finished(false);
+         menu_input_dialog_end();
+      }
+      else
+      {
+         menu_input_dialog_end();
+         retroarch_menu_running_finished(false);
+      }
    }
    else
       menu_input_dialog_end();
