@@ -6449,6 +6449,54 @@ MSG_HASH(
    "Contrasenya incorrecta."
    )
 MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
+   "No s’ha pogut crear el codi"
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
+   "S’ha suprimit la coincidència"
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
+   "No queda espai. El màxim són 100 trucs simultanis."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_TOP_SUCCESS,
+   "S’ha afegit un nou truc al capdamunt de la llista."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_BOTTOM_SUCCESS,
+   "S’ha afegit un nou truc al capdavall de la llista."
+   )
+MSG_HASH(
+   MSG_CHEAT_DELETE_ALL_SUCCESS,
+   "S’han suprimit tots els trucs."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_BEFORE_SUCCESS,
+   "S’ha afegit un nou truc abans d’aquest."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_AFTER_SUCCESS,
+   "S’ha afegit un nou truc després d’aquest."
+   )
+MSG_HASH(
+   MSG_CHEAT_COPY_BEFORE_SUCCESS,
+   "S’ha copiat un truc abans d’aquest."
+   )
+MSG_HASH(
+   MSG_CHEAT_COPY_AFTER_SUCCESS,
+   "S’ha copiat un truc després d’aquest."
+   )
+MSG_HASH(
+   MSG_CHEAT_DELETE_SUCCESS,
+   "S’ha suprimit el truc."
+   )
+MSG_HASH(
+   MSG_DEVICE_CONFIGURED_IN_PORT,
+   "Configurat al port:"
+   )
+MSG_HASH(
    MSG_CORE_INSTALLATION_FAILED,
    "Ha fallat la instal·lació del nucli: "
    )
