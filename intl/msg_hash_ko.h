@@ -10863,6 +10863,10 @@ MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
    "컨텐츠가 불러와지면 넷플레이가 시작됩니다."
    )
+MSG_HASH(
+   MSG_NETPLAY_NEED_CONTENT_LOADED,
+   "넷플레이를 시작하기 전에 컨텐츠를 불러와야 합니다."
+   )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
    "적합한 코어 또는 컨텐츠 파일을 찾지 못했습니다. 수동으로 불러오십시오."

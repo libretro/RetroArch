@@ -10459,6 +10459,10 @@ MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
    "Netzwerkspiel wird gestartet, sobald der Inhalt geladen ist."
    )
+MSG_HASH(
+   MSG_NETPLAY_NEED_CONTENT_LOADED,
+   "Der Inhalt muss geladen werden, bevor das Netzwerkspiel gestartet wird."
+   )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
    "Konnte keinen geeigneten Core oder Inhalt finden, lade manuell."
