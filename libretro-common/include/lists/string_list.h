@@ -164,6 +164,8 @@ void string_list_free(struct string_list *list);
  *
  * A string list will be joined/concatenated as a
  * string to @buffer, delimited by @delim.
+ *
+ * NOTE: @buffer must be NULL-terminated.
  */
 void string_list_join_concat(char *buffer, size_t size,
       const struct string_list *list, const char *sep);
