@@ -76,6 +76,7 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
        core_info->licenses_list)
    {
       char tmp[MENU_SUBLABEL_MAX_LENGTH];
+      tmp[0] = '\0';
       /* Add license text */
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->licenses_list, ", ");
@@ -1833,6 +1834,7 @@ static int action_bind_sublabel_core_updater_entry(
        entry->licenses_list)
    {
       char tmp[MENU_SUBLABEL_MAX_LENGTH];
+      tmp[0] = '\0';
       /* Add license text */
       string_list_join_concat(tmp, sizeof(tmp),
             entry->licenses_list, ", ");

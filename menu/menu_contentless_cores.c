@@ -131,6 +131,7 @@ static void contentless_cores_init_info_entries(
          if (core_info->licenses_list)
          {
             char tmp_str[MENU_SUBLABEL_MAX_LENGTH - 2];
+            tmp_str[0] = '\0';
             string_list_join_concat(tmp_str, sizeof(tmp_str),
                   core_info->licenses_list, ", ");
             snprintf(licenses_str, sizeof(licenses_str), "%s: %s",
