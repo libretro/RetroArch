@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/iosupport.h>
 
 #include <gccore.h>
@@ -161,142 +162,163 @@ static void gx_devthread(void *a)
 extern char gx_rom_path[PATH_MAX_LENGTH];
 #endif
 
-static void frontend_gx_get_env(
-      int *argc, char *argv[],
+static void frontend_gx_get_env(int *argc, char *argv[],
       void *args, void *params_data)
 {
-   char *last_slash = NULL;
-   char *device_end = NULL;
-#if defined(HAVE_LOGGER) && !defined(IS_SALAMANDER)
-   logger_init();
-#endif
+   char *slash;
 #ifndef IS_SALAMANDER
-
-   /* This situation can happen on some loaders so we really need some
-      fake args or else retroarch will just crash on parsing NULL pointers */
-   if(*argc == 0 || !argv)
-   {
-      struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
-      if (args)
-      {
-         args->touched        = true;
-         args->no_content     = false;
-         args->verbose        = false;
-         args->config_path    = NULL;
-         args->sram_path      = NULL;
-         args->state_path     = NULL;
-         args->content_path   = NULL;
-         args->libretro_path  = NULL;
-      }
-   }
+   struct rarch_main_wrap *params = (struct rarch_main_wrap*)params_data;
 #endif
 
 #ifdef HW_DOL
    chdir("carda:/retroarch");
 #endif
-   getcwd(g_defaults.dirs[DEFAULT_DIR_CORE], PATH_MAX_LENGTH);
-#if defined(HW_RVL) && !defined(IS_SALAMANDER)
-   /* When using external loaders(Wiiflow etc.), getcwd doesn't return the path correctly and
-    * as a result the cfg file is not found. */
-   if (*argc > 2 && argv[1] != NULL && argv[2] != NULL)
+
+   getcwd(g_defaults.dirs[DEFAULT_DIR_CORE],
+      sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+
+#ifndef IS_SALAMANDER
+#ifdef HAVE_LOGGER
+   logger_init();
+#endif
+
+   /* This situation can happen on some loaders so we really need some fake
+      args or else RetroArch will just crash on parsing NULL pointers. */
+   if (*argc <= 0 || !argv)
    {
-      if (strncmp("usb1", argv[0], 4) == 0 || strncmp("usb2", argv[0], 4) == 0)
+      if (params)
       {
-         strncpy(g_defaults.dirs[DEFAULT_DIR_CORE],argv[0], strlen(argv[0]));
-         strncpy(g_defaults.dirs[DEFAULT_DIR_CORE]," usb", 4);
-         memmove(g_defaults.dirs[DEFAULT_DIR_CORE], g_defaults.dirs[DEFAULT_DIR_CORE]+1, strlen(g_defaults.dirs[DEFAULT_DIR_CORE]));
-      }
-      if(gx_devices[GX_DEVICE_SD].mounted)
-      {
-         chdir("sd:/");
-      }
-      else if(gx_devices[GX_DEVICE_USB].mounted)
-      {
-         chdir("usb:/");
+         params->content_path  = NULL;
+         params->sram_path     = NULL;
+         params->state_path    = NULL;
+         params->config_path   = NULL;
+         params->libretro_path = NULL;
+         params->verbose       = false;
+         params->no_content    = false;
+         params->touched       = true;
       }
    }
+#ifdef HW_RVL
+   else if (*argc > 2 &&
+         !string_is_empty(argv[1]) && !string_is_empty(argv[2]))
+   {
+#ifdef HAVE_NETWORKING
+      /* If the process was forked for netplay purposes,
+         DO NOT touch the arguments. */
+      if (!string_is_equal(argv[1], "-H") && !string_is_equal(argv[1], "-C"))
 #endif
-   last_slash = strrchr(g_defaults.dirs[DEFAULT_DIR_CORE], '/');
-   if (last_slash)
-      *last_slash = 0;
-   device_end = strchr(g_defaults.dirs[DEFAULT_DIR_CORE], '/');
-   if (device_end)
-      snprintf(g_defaults.dirs[DEFAULT_DIR_PORT], sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]),
-            "%.*s/retroarch", device_end - g_defaults.dirs[DEFAULT_DIR_CORE],
-            g_defaults.dirs[DEFAULT_DIR_CORE]);
-   else
-      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PORT], g_defaults.dirs[DEFAULT_DIR_PORT],
-            "retroarch", sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
+      {
+         /* When using external loaders (Wiiflow, etc),
+            getcwd doesn't return the path correctly and as a result,
+            the cfg file is not found. */
+         if (string_starts_with(argv[0], "usb1") ||
+               string_starts_with(argv[0], "usb2"))
+         {
+            strcpy_literal(g_defaults.dirs[DEFAULT_DIR_CORE], "usb");
+            strlcat(g_defaults.dirs[DEFAULT_DIR_CORE], argv[0] + 4,
+               sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+         }
 
-   /* System paths */
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], g_defaults.dirs[DEFAULT_DIR_CORE],
-         "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], g_defaults.dirs[DEFAULT_DIR_CORE],
-         "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], g_defaults.dirs[DEFAULT_DIR_CORE],
-         "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
-#ifdef HAVE_VIDEO_LAYOUT
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT], g_defaults.dirs[DEFAULT_DIR_CORE],
-         "layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
+         /* Needed on Wii; loaders follow a dumb standard where the path and
+            filename are separate in the argument list. */
+         if (params)
+         {
+            static char path[PATH_MAX_LENGTH];
+
+            fill_pathname_join(path, argv[1], argv[2], sizeof(path));
+
+            params->content_path  = path;
+            params->sram_path     = NULL;
+            params->state_path    = NULL;
+            params->config_path   = NULL;
+            params->libretro_path = NULL;
+            params->verbose       = false;
+            params->no_content    = false;
+            params->touched       = true;
+         }
+      }
+
+      if (gx_devices[GX_DEVICE_SD].mounted)
+         chdir("sd:/");
+      else if (gx_devices[GX_DEVICE_USB].mounted)
+         chdir("usb:/");
+   }
 #endif
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], g_defaults.dirs[DEFAULT_DIR_CORE],
-         "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], g_defaults.dirs[DEFAULT_DIR_CORE],
-         "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], g_defaults.dirs[DEFAULT_DIR_CORE],
-         "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], g_defaults.dirs[DEFAULT_DIR_CORE],
-         "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
-
-   /* User paths */
-   fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_CORE],
-         "retroarch.cfg", sizeof(g_defaults.path_config));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], g_defaults.dirs[DEFAULT_DIR_PORT],
-         "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM], g_defaults.dirs[DEFAULT_DIR_PORT],
-         "savefiles", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE], g_defaults.dirs[DEFAULT_DIR_PORT],
-         "savestates", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], g_defaults.dirs[DEFAULT_DIR_PORT],
-         "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], g_defaults.dirs[DEFAULT_DIR_PORT],
-         "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_PORT],
-         "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], g_defaults.dirs[DEFAULT_DIR_PORT],
-         "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
-
-#ifdef IS_SALAMANDER
-   if (*argc > 2 && argv[1] != NULL && argv[2] != NULL)
+#else
+   if (*argc > 2 && argv &&
+         !string_is_empty(argv[1]) && !string_is_empty(argv[2]))
       fill_pathname_join(gx_rom_path, argv[1], argv[2], sizeof(gx_rom_path));
    else
-      gx_rom_path[0] = '\0';
-#else
-#ifdef HW_RVL
-   /* needed on Wii; loaders follow a dumb standard where the path and
-    * filename are separate in the argument list */
-   if (*argc > 2 && argv[1] != NULL && argv[2] != NULL)
-   {
-      static char path[PATH_MAX_LENGTH];
-      struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
-
-      *path = '\0';
-
-      if (args)
-      {
-         fill_pathname_join(path, argv[1], argv[2], sizeof(path));
-
-         args->touched        = true;
-         args->no_content     = false;
-         args->verbose        = false;
-         args->config_path    = NULL;
-         args->sram_path      = NULL;
-         args->state_path     = NULL;
-         args->content_path   = path;
-         args->libretro_path  = NULL;
-      }
-   }
+      *gx_rom_path = '\0';
 #endif
+
+   slash = strrchr(g_defaults.dirs[DEFAULT_DIR_CORE], '/');
+   if (slash)
+      *slash = '\0';
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_PORT],
+      g_defaults.dirs[DEFAULT_DIR_CORE],
+      sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
+   slash = strchr(g_defaults.dirs[DEFAULT_DIR_PORT], '/');
+   if (slash)
+      *slash = '\0';
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PORT],
+      g_defaults.dirs[DEFAULT_DIR_PORT], "retroarch",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
+
+   /* System paths */
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
+      g_defaults.dirs[DEFAULT_DIR_CORE], "info",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
+      g_defaults.dirs[DEFAULT_DIR_CORE], "autoconfig",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY],
+      g_defaults.dirs[DEFAULT_DIR_CORE], "overlays",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+#ifdef HAVE_VIDEO_LAYOUT
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
+      g_defaults.dirs[DEFAULT_DIR_CORE], "layouts",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
+#endif
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
+      g_defaults.dirs[DEFAULT_DIR_CORE], "filters/video",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
+      g_defaults.dirs[DEFAULT_DIR_CORE], "filters/audio",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
+      g_defaults.dirs[DEFAULT_DIR_CORE], "assets",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
+      g_defaults.dirs[DEFAULT_DIR_CORE], "cheats",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+   /* User paths */
+   fill_pathname_join(g_defaults.path_config,
+      g_defaults.dirs[DEFAULT_DIR_CORE], "retroarch.cfg",
+      sizeof(g_defaults.path_config));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+      g_defaults.dirs[DEFAULT_DIR_PORT], "system",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM],
+      g_defaults.dirs[DEFAULT_DIR_PORT], "savefiles",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
+      g_defaults.dirs[DEFAULT_DIR_PORT], "savestates",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
+      g_defaults.dirs[DEFAULT_DIR_PORT], "playlists",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS],
+      g_defaults.dirs[DEFAULT_DIR_PORT], "logs",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
+      g_defaults.dirs[DEFAULT_DIR_PORT], "remaps",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
+      g_defaults.dirs[DEFAULT_DIR_PORT], "config",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+
+#ifndef IS_SALAMANDER
    dir_check_defaults("custom.ini");
 #endif
 }
