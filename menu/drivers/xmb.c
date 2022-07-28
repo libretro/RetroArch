@@ -72,7 +72,7 @@
 #define XMB_DELAY 166.66667f
 #endif
 
-#define XMB_THUMBNAIL_STREAM_DELAY 166.66667f
+#define XMB_THUMBNAIL_STREAM_DELAY 5 * 16.66667f
 
 /* Specifies minimum period (in usec) between
  * tab switch events when input repeat is
@@ -409,6 +409,7 @@ typedef struct xmb_handle
 
    bool fullscreen_thumbnails_available;
    bool show_fullscreen_thumbnails;
+   bool skip_thumbnail_reset;
    bool show_mouse;
    bool show_screensaver;
    bool use_ps3_layout;
@@ -1130,6 +1131,20 @@ static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb)
    path = NULL;
 }
 
+static bool xmb_is_running_quick_menu(void)
+{
+   menu_entry_t entry;
+
+   MENU_ENTRY_INIT(entry);
+   entry.path_enabled     = false;
+   entry.value_enabled    = false;
+   entry.sublabel_enabled = false;
+   menu_entry_get(&entry, 0, 0, NULL, true);
+
+   return string_is_equal(entry.label, "resume_content") ||
+          string_is_equal(entry.label, "state_slot");
+}
+
 static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 {
    settings_t *settings = config_get_ptr();
@@ -1146,11 +1161,14 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
          xmb->savestate_thumbnail_file_path,
          sizeof(xmb->prev_savestate_thumbnail_file_path));
 
+   if (xmb->skip_thumbnail_reset)
+      return;
+
    xmb->savestate_thumbnail_file_path[0] = '\0';
 
    /* Savestate thumbnails are only relevant
     * when viewing the running quick menu or state slots */
-   if (!((xmb->is_quick_menu || xmb->is_state_slot) && xmb->libretro_running))
+   if (!((xmb->is_quick_menu && xmb_is_running_quick_menu()) || xmb->is_state_slot))
       return;
 
    xmb->fullscreen_thumbnails_available = false;
@@ -1181,7 +1199,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
             /* State slot dropdown */
             if (string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
             {
-               state_slot = menu_navigation_get_selection() - 1;
+               state_slot         = i - 1;
                xmb->is_state_slot = true;
             }
 
@@ -1219,8 +1237,12 @@ static void xmb_update_thumbnail_image(void *data)
 
    xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
    gfx_thumbnail_cancel_pending_requests();
-   gfx_thumbnail_reset(&xmb->thumbnails.right);
-   gfx_thumbnail_reset(&xmb->thumbnails.left);
+
+   if (!xmb->skip_thumbnail_reset)
+   {
+      gfx_thumbnail_reset(&xmb->thumbnails.right);
+      gfx_thumbnail_reset(&xmb->thumbnails.left);
+   }
 
    /* imageviewer content requires special treatment... */
    gfx_thumbnail_get_core_name(xmb->thumbnail_path_data, &core_name);
@@ -1426,12 +1448,12 @@ static void xmb_update_savestate_thumbnail_image(void *data)
    settings_t *settings = config_get_ptr();
    unsigned thumbnail_upscale_threshold
                         = settings->uints.gfx_thumbnail_upscale_threshold;
-   if (!xmb)
+   if (!xmb || xmb->skip_thumbnail_reset)
       return;
 
    /* Savestate thumbnails are only relevant
     * when viewing the running quick menu or state slots */
-   if (!((xmb->is_quick_menu || xmb->is_state_slot) && xmb->libretro_running))
+   if (!((xmb->is_quick_menu && xmb_is_running_quick_menu()) || xmb->is_state_slot))
       return;
 
    /* If path is empty, just reset thumbnail */
@@ -1523,10 +1545,15 @@ static void xmb_selection_pointer_changed(
             }
             /* Database list updates
              * (pointless nuisance...) */
-            else if (depth == 4 && xmb->is_db_manager_list)
+            else if (xmb->is_db_manager_list && depth <= 4)
             {
                xmb_set_thumbnail_content(xmb, NULL);
-               update_thumbnails = true;
+               update_thumbnails         = true;
+               xmb->skip_thumbnail_reset = false;
+            }
+            else if (xmb->is_db_manager_list && depth == 5)
+            {
+               xmb->skip_thumbnail_reset = true;
             }
             /* Filebrowser image updates */
             else if (xmb->is_file_list)
@@ -1555,6 +1582,7 @@ static void xmb_selection_pointer_changed(
                    * content + right/left thumbnails
                    * (otherwise last loaded thumbnail will
                    * persist, and be shown on the wrong entry) */
+                  xmb->fullscreen_thumbnails_available = false;
                   xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
                   gfx_thumbnail_set_content(xmb->thumbnail_path_data, NULL);
                   gfx_thumbnail_cancel_pending_requests();
@@ -1758,7 +1786,6 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       }
    }
 
-   xmb->old_depth = xmb->depth;
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &skip);
 
    xmb_system_tab = xmb_get_system_tab(xmb,
@@ -1769,17 +1796,16 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       if (  gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_RIGHT) ||
             gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
       {
-         /* This code is horrible, full of hacks...
-          * This hack ensures that thumbnails are not cleared
-          * when selecting an entry from a collection via
-          * 'load content'... */
-         if (xmb->depth != 5)
-            xmb_unload_thumbnail_textures(xmb);
-
          if (xmb->is_playlist || xmb->is_db_manager_list)
          {
-            xmb_set_thumbnail_content(xmb, NULL);
-            xmb_update_thumbnail_image(xmb);
+            if (xmb->is_db_manager_list && xmb->depth < 5)
+               xmb_unload_thumbnail_textures(xmb);
+
+            if (!(xmb->is_playlist && xmb->depth == 4 && xmb->old_depth == 5))
+            {
+               xmb_set_thumbnail_content(xmb, NULL);
+               xmb_update_thumbnail_image(xmb);
+            }
          }
       }
    }
@@ -1790,9 +1816,11 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
    {
       /* This shows savestate thumbnail after
        * opening savestate submenu */
-      xmb_update_savestate_thumbnail_path(xmb, menu_navigation_get_selection());
+      xmb_update_savestate_thumbnail_path(xmb, current);
       xmb_update_savestate_thumbnail_image(xmb);
    }
+
+   xmb->old_depth = xmb->depth;
 }
 
 static xmb_node_t *xmb_node_allocate_userdata(
@@ -2459,6 +2487,7 @@ static void xmb_populate_entries(void *data,
    bool menu_dynamic_wallpaper_enable =
       settings ? settings->bools.menu_dynamic_wallpaper_enable : false;
    bool show_entry_idx  = settings ? settings->bools.playlist_show_entry_idx : false;
+   bool was_db_manager_list    = false;
    unsigned    depth    = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
    if (!xmb)
       return;
@@ -2485,7 +2514,15 @@ static void xmb_populate_entries(void *data,
    xmb->is_playlist = xmb->is_playlist && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL));
 
    /* Determine whether this is a database manager list */
+   was_db_manager_list     = xmb->is_db_manager_list && depth >= 4;
    xmb->is_db_manager_list = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST));
+
+   xmb->skip_thumbnail_reset    = false;
+   if (was_db_manager_list)
+   {
+      xmb->is_db_manager_list   = true;
+      xmb->skip_thumbnail_reset = true;
+   }
 
    /* Determine whether this is the contentless cores menu */
    xmb->is_contentless_cores = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB)) ||
@@ -2541,11 +2578,12 @@ static void xmb_populate_entries(void *data,
          (xmb->is_playlist || xmb->is_db_manager_list || xmb->is_file_list) &&
          !((xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS) && (xmb->depth > 2));
 
-   if (xmb->is_state_slot || (xmb->is_quick_menu &&
-         !string_is_empty(xmb->savestate_thumbnail_file_path)))
+   if ((xmb->is_quick_menu || xmb->is_state_slot) &&
+         !string_is_empty(xmb->savestate_thumbnail_file_path))
+   {
       xmb->fullscreen_thumbnails_available = true;
-
-   if (xmb->is_quick_menu && xmb->depth < 3)
+   }
+   else if (xmb->is_quick_menu && xmb->depth < 6)
    {
       const char *thumbnail_content_path = NULL;
       runloop_state_t *runloop_st        = runloop_state_get_ptr();
@@ -2566,6 +2604,7 @@ static void xmb_populate_entries(void *data,
     * file list is populated... */
    if (xmb->is_file_list)
    {
+      xmb->fullscreen_thumbnails_available = false;
       xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
       gfx_thumbnail_set_content(xmb->thumbnail_path_data, NULL);
       gfx_thumbnail_cancel_pending_requests();
@@ -4145,6 +4184,24 @@ static enum menu_action xmb_parse_menu_entry_action(
             new_action = MENU_ACTION_NOOP;
          }
          break;
+      case MENU_ACTION_OK:
+         if (xmb->is_state_slot)
+            xmb->skip_thumbnail_reset = true;
+
+         /* Open fullscreen thumbnail with Ok when core is running
+            to prevent accidental imageviewer core launch */
+         if (xmb->libretro_running && xmb->is_file_list &&
+               xmb->fullscreen_thumbnails_available)
+         {
+            xmb_hide_fullscreen_thumbnails(xmb, false);
+            xmb_show_fullscreen_thumbnails(xmb, menu_navigation_get_selection());
+            new_action = MENU_ACTION_NOOP;
+         }
+         break;
+      case MENU_ACTION_CANCEL:
+         if (xmb->is_state_slot)
+            xmb->skip_thumbnail_reset = true;
+         break;
       default:
          /* In all other cases, pass through input
           * menu action without intervention */
@@ -4930,7 +4987,7 @@ static void xmb_draw_fullscreen_thumbnails(
                   xmb->font,
                   title_buf,
                   title_x,
-                  xmb->font_size,
+                  xmb->font_size * 1.33f,
                   (unsigned)view_width,
                   (unsigned)view_height,
                   title_color,
@@ -4949,7 +5006,7 @@ static void xmb_draw_fullscreen_thumbnails(
                   xmb->font,
                   xmb->fullscreen_thumbnail_label,
                   view_width >> 1,
-                  xmb->font_size,
+                  xmb->font_size * 1.33f,
                   (unsigned)view_width,
                   (unsigned)view_height,
                   title_color,
@@ -5225,7 +5282,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    /* Draw thumbnails: START */
    /**************************/
 
-   /* Reset thumbnail bar when starting/closing content */
+   /* Reset thumbnails when starting/closing content */
    if (xmb->libretro_running != libretro_running)
    {
       xmb->libretro_running = libretro_running;
@@ -6142,6 +6199,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    xmb->fullscreen_thumbnails_available       = false;
    xmb->show_fullscreen_thumbnails            = false;
+   xmb->skip_thumbnail_reset                  = false;
    xmb->fullscreen_thumbnail_alpha            = 0.0f;
    xmb->fullscreen_thumbnail_selection        = 0;
    xmb->fullscreen_thumbnail_label[0]         = '\0';
