@@ -51,6 +51,10 @@
 #include "../../verbosity.h"
 #include "../../paths.h"
 
+#if !defined(IS_SALAMANDER) && defined(HAVE_NETWORKING)
+#include "../../network/netplay/netplay.h"
+#endif
+
 #ifdef __PSL1GHT__
 #define EMULATOR_CONTENT_DIR "SSNE10001"
 #else
@@ -191,131 +195,92 @@ static void use_app_path(char *content_info_path)
 		       "USRDIR", sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
 }
 
-#ifdef __PSL1GHT__
 static void frontend_ps3_get_env(int *argc, char *argv[],
       void *args, void *params_data)
 {
-#ifndef IS_SALAMANDER
-   bool original_verbose = verbosity_is_enabled();
-   verbosity_enable();
-#endif
-
-   (void)args;
-#if defined(HAVE_LOGGER) && !defined(IS_SALAMANDER)
-   logger_init();
-#elif defined(HAVE_FILE_LOGGER)
-#ifndef IS_SALAMANDER
-   retro_main_log_file_init("/dev_hdd0/game/" EMULATOR_CONTENT_DIR "/USRDIR/retroarch-log.txt", false);
-#else
-   retro_main_log_file_init("/dev_hdd0/game/" EMULATOR_CONTENT_DIR "/USRDIR/retroarch-log-salamander.txt", false);
-#endif
-#endif
-
-   char content_info_path[PATH_MAX_LENGTH] = {0};
-
-   use_app_path(content_info_path);
-   fill_derived_paths();
-
-#ifndef IS_SALAMANDER
-   if (original_verbose)
-      verbosity_enable();
-   else
-      verbosity_disable();
-
-   dir_check_defaults("custom.ini");
-#endif
-}
-
-#else
-static void frontend_ps3_get_env(int *argc, char *argv[],
-      void *args, void *params_data)
-{
-   int ret;
-   unsigned int get_type;
-   unsigned int get_attributes;
+   char content_info_path[PATH_MAX_LENGTH];
+#ifndef __PSL1GHT__
    CellGameContentSize size;
-   char dirName[CELL_GAME_DIRNAME_SIZE]  = {0};
-
+   unsigned int type, attributes;
+   char dirname[CELL_GAME_DIRNAME_SIZE];
 #ifndef IS_SALAMANDER
-   bool original_verbose                 = verbosity_is_enabled();
+   struct rarch_main_wrap *params = (struct rarch_main_wrap*)params_data;
+#endif
+#endif
+#ifndef IS_SALAMANDER
+   bool verbosity = verbosity_is_enabled();
+
    verbosity_enable();
+
 #if defined(HAVE_LOGGER)
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
+#ifdef __PSL1GHT__
+   retro_main_log_file_init("/dev_hdd0/game/"
+      EMULATOR_CONTENT_DIR "/USRDIR/retroarch-log.txt", false);
+#else
    retro_main_log_file_init("/dev_hdd0/retroarch-log.txt", false);
 #endif
 #endif
+#elif defined(__PSL1GHT__)
+#ifdef HAVE_FILE_LOGGER
+   retro_main_log_file_init("/dev_hdd0/game/"
+      EMULATOR_CONTENT_DIR "/USRDIR/retroarch-log-salamander.txt", false);
+#endif
+#endif
+
+#ifdef __PSL1GHT__
+   use_app_path(content_info_path);
+#else
+   memset(&size, 0, sizeof(size));
+   cellGameBootCheck(&type, &attributes, &size, dirname);
+   cellGameContentPermit(content_info_path,
+      g_defaults.dirs[DEFAULT_DIR_PORT]);
 
 #ifdef HAVE_MULTIMAN
-   /* not launched from external launcher, set default path */
-   /* second param is multiMAN SELF file */
-   if (     path_is_valid(argv[2]) && *argc > 1
-         && (string_is_equal(argv[2], EMULATOR_CONTENT_DIR)))
+   /* Not launched from external launcher, set default path.
+      Second parameter is multiMAN SELF file. */
+   if (*argc > 2 && string_is_equal(argv[2], EMULATOR_CONTENT_DIR) &&
+         path_is_valid(argv[2]))
+   {
       multiman_detected = true;
+      use_app_path(content_info_path);
+   }
+#ifndef IS_SALAMANDER
    else
 #endif
+#endif
 #ifndef IS_SALAMANDER
-      if (*argc > 1 && !string_is_empty(argv[1]))
-      {
-         static char path[PATH_MAX_LENGTH] = {0};
-         struct rarch_main_wrap      *args = (struct rarch_main_wrap*)params_data;
-
-         if (args)
-         {
-            strlcpy(path, argv[1], sizeof(path));
-
-            args->touched        = true;
-            args->no_content     = false;
-            args->verbose        = false;
-            args->config_path    = NULL;
-            args->sram_path      = NULL;
-            args->state_path     = NULL;
-            args->content_path   = path;
-            args->libretro_path  = NULL;
-         }
-      }
-      else
-         RARCH_WARN("Started from Salamander, auto-game start disabled.\n");
+   if (params && *argc > 1 && !string_is_empty(argv[1]))
+#ifdef HAVE_NETWORKING
+   /* If the process was forked for netplay purposes,
+      DO NOT touch the arguments. */
+   if (!string_is_equal(argv[1], "-H") && !string_is_equal(argv[1], "-C"))
+#endif
+   {
+      params->content_path  = argv[1];
+      params->sram_path     = NULL;
+      params->state_path    = NULL;
+      params->config_path   = NULL;
+      params->libretro_path = NULL;
+      params->verbose       = false;
+      params->no_content    = false;
+      params->touched       = true;
+   }
+#endif
 #endif
 
-   memset(&size, 0x00, sizeof(CellGameContentSize));
-
-   ret = cellGameBootCheck(&get_type, &get_attributes, &size, dirName);
-
-   if (ret < 0)
-   {
-      RARCH_ERR("cellGameBootCheck() Error: 0x%x.\n", ret);
-   }
-   else
-   {
-      char content_info_path[PATH_MAX_LENGTH] = {0};
-
-      switch(get_type)
-      {
-         case CELL_GAME_GAMETYPE_DISC:
-         case CELL_GAME_GAMETYPE_HDD:
-            break;
-      }
-
-      ret = cellGameContentPermit(content_info_path, g_defaults.dirs[DEFAULT_DIR_PORT]);
-
-#ifdef HAVE_MULTIMAN
-      if (multiman_detected)
-         use_app_path(content_info_path);
-#endif
-
-      fill_derived_paths();
-   }
+   fill_derived_paths();
 
 #ifndef IS_SALAMANDER
-   if (original_verbose)
+   if (verbosity)
       verbosity_enable();
    else
       verbosity_disable();
+
    dir_check_defaults("custom.ini");
 #endif
 }
-#endif
 
 static void frontend_ps3_init(void *data)
 {
@@ -466,31 +431,40 @@ static int frontend_ps3_exec_exitspawn(const char *path,
 static void frontend_ps3_exec(const char *path, bool should_load_game)
 {
 #ifndef IS_SALAMANDER
-   bool original_verbose = verbosity_is_enabled();
+#ifdef HAVE_NETWORKING
+   char *arg_data[NETPLAY_FORK_MAX_ARGS];
+#else
+   char *arg_data[2];
+#endif
+   char game_path[PATH_MAX_LENGTH];
+   bool verbosity = verbosity_is_enabled();
+
    verbosity_enable();
+#else
+   char *arg_data[1];
 #endif
 
-   (void)should_load_game;
+   arg_data[0] = NULL;
+
 #ifndef IS_SALAMANDER
-   if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
+   if (should_load_game)
    {
-      char game_path[256];
-      strlcpy(game_path, path_get(RARCH_PATH_CONTENT), sizeof(game_path));
+      const char *content = path_get(RARCH_PATH_CONTENT);
 
-      const char * const spawn_argv[] = {
-         game_path,
-         NULL
-      };
-
-      frontend_ps3_exec_exitspawn(path,
-            (const char** const)spawn_argv, NULL);
-   }
-   else
+#ifdef HAVE_NETWORKING
+      if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_GET_FORK_ARGS,
+            (void*)arg_data))
 #endif
-   {
-      frontend_ps3_exec_exitspawn(path,
-            NULL, NULL);
+      if (!string_is_empty(content))
+      {
+         strlcpy(game_path, content, sizeof(game_path));
+         arg_data[0] = game_path;
+         arg_data[1] = NULL;
+      }
    }
+#endif
+
+   frontend_ps3_exec_exitspawn(path, arg_data[0] ? arg_data : NULL, NULL);
 
 #ifndef __PSL1GHT__
    sceNpTerm();
@@ -500,7 +474,7 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
    cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
 
 #ifndef IS_SALAMANDER
-   if (original_verbose)
+   if (verbosity)
       verbosity_enable();
    else
       verbosity_disable();
