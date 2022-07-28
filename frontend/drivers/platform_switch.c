@@ -322,7 +322,7 @@ static void frontend_switch_exec(const char *path, bool should_load_game)
                (void*)arg_data))
          {
             char buf[PATH_MAX];
-            const char **arg = arg_data;
+            char **arg = arg_data;
 
             do
             {
