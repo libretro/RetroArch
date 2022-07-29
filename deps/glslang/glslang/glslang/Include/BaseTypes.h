@@ -390,6 +390,19 @@ __inline const char* GetPrecisionQualifierString(TPrecisionQualifier p)
     }
 }
 
+__inline bool isTypeSignedInt(TBasicType type)
+{
+    switch (type) {
+    case EbtInt8:
+    case EbtInt16:
+    case EbtInt:
+    case EbtInt64:
+        return true;
+    default:
+        return false;
+    }
+}
+
 __inline bool isTypeUnsignedInt(TBasicType type)
 {
     switch (type) {
@@ -401,6 +414,11 @@ __inline bool isTypeUnsignedInt(TBasicType type)
     default:
         return false;
     }
+}
+
+__inline bool isTypeInt(TBasicType type)
+{
+    return isTypeSignedInt(type) || isTypeUnsignedInt(type);
 }
 
 __inline bool isTypeFloat(TBasicType type)

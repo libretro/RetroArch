@@ -71,13 +71,7 @@ namespace glslang {
 class TAllocation {
 public:
     TAllocation(size_t size, unsigned char* mem, TAllocation* prev = 0) :
-        size(size), mem(mem), prevAlloc(prev) {
-        // Allocations are bracketed:
-        //    [allocationHeader][initialGuardBlock][userData][finalGuardBlock]
-        // This would be cleaner with if (guardBlockSize)..., but that
-        // makes the compiler print warnings about 0 length memsets,
-        // even with the if() protecting them.
-    }
+        size(size), mem(mem) { }
 
     // Return total size needed to accommodate user buffer of 'size',
     // plus our tracking data.
@@ -98,7 +92,6 @@ private:
 
     size_t size;                  // size of the user data area
     unsigned char* mem;           // beginning of our allocation (pts to header)
-    TAllocation* prevAlloc;       // prior allocation in the chain
 
     const static unsigned char guardBlockBeginVal;
     const static unsigned char guardBlockEndVal;

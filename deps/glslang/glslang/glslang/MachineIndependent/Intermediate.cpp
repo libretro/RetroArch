@@ -51,24 +51,6 @@
 
 namespace glslang {
 
-static __inline bool isTypeSignedInt(TBasicType type)
-{
-    switch (type) {
-    case EbtInt8:
-    case EbtInt16:
-    case EbtInt:
-    case EbtInt64:
-        return true;
-    default:
-        return false;
-    }
-}
-
-static __inline bool isTypeInt(TBasicType type)
-{
-    return isTypeSignedInt(type) || isTypeUnsignedInt(type);
-}
-
 static __inline int getTypeRank(TBasicType type)
 {
     int res = -1;
