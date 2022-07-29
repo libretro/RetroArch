@@ -1091,6 +1091,11 @@ static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
    char       *tmp                    = string_replace_substring(xmb->title_name, "/", " ");
    settings_t *settings               = config_get_ptr();
    const char *dir_dynamic_wallpapers = settings->paths.directory_dynamic_wallpapers;
+   unsigned depth                     = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
+
+   /* Do not update wallpaper in "Load Content" playlists */
+   if (xmb->categories_selection_ptr == 0 && depth > 4)
+      return strdup(xmb->bg_file_path);
 
    if (tmp)
    {
@@ -1099,7 +1104,6 @@ static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
             dir_dynamic_wallpapers,
             tmp,
             sizeof(path));
-      path_remove_extension(path);
       free(tmp);
    }
 
@@ -6806,7 +6810,8 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
          sizeof(bg_file_path),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
 
-   if (!string_is_empty(bg_file_path))
+   /* Do not reset wallpaper in "Load Content" playlists. */
+   if (!string_is_empty(bg_file_path) && xmb->depth < 4)
    {
       if (!string_is_empty(xmb->bg_file_path))
          free(xmb->bg_file_path);
