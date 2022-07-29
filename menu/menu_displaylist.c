@@ -1697,7 +1697,6 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
       strlcpy(cpu_str, cpu_text_str, sizeof(cpu_str));
       strlcat(cpu_str, ": ", sizeof(cpu_str));
-      strlcat(cpu_str, " ", sizeof(cpu_str));
       strlcat(cpu_str, cpu_arch_str, sizeof(cpu_str));
 
       if (menu_entries_append_enum(list, cpu_str,
