@@ -12731,10 +12731,6 @@ MSG_HASH(
    "블루투스 장비를 검색하고 연결합니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
-   "Wi-Fi 드라이버"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
    "무선 네트워크를 검색하고 연결합니다."
    )
@@ -13054,7 +13050,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_WIFI_CONNECTING_TO,
-   "'%s' Wi-Fi에 연결 중"
+   "Wi-Fi '%s'에 연결 중"
    )
 MSG_HASH(
    MSG_WIFI_EMPTY_SSID,
