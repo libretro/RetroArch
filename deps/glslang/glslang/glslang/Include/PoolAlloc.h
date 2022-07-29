@@ -37,10 +37,6 @@
 #ifndef _POOLALLOC_INCLUDED_
 #define _POOLALLOC_INCLUDED_
 
-#ifdef _DEBUG
-#  define GUARD_BLOCKS  // define to enable guard block sanity checking
-#endif
-
 //
 // This header defines an allocator that can be used to efficiently
 // allocate a large number of small requests for heap memory, with the
@@ -81,37 +77,23 @@ public:
         // This would be cleaner with if (guardBlockSize)..., but that
         // makes the compiler print warnings about 0 length memsets,
         // even with the if() protecting them.
-#       ifdef GUARD_BLOCKS
-            memset(preGuard(),  guardBlockBeginVal, guardBlockSize);
-            memset(data(),      userDataFill,       size);
-            memset(postGuard(), guardBlockEndVal,   guardBlockSize);
-#       endif
     }
-
-    void check() const {
-        checkGuardBlock(preGuard(),  guardBlockBeginVal, "before");
-        checkGuardBlock(postGuard(), guardBlockEndVal,   "after");
-    }
-
-    void checkAllocList() const;
 
     // Return total size needed to accommodate user buffer of 'size',
     // plus our tracking data.
     inline static size_t allocationSize(size_t size) {
-        return size + 2 * guardBlockSize + headerSize();
+        return size + 2 * 0 + headerSize();
     }
 
     // Offset from surrounding buffer to get to user data buffer.
     inline static unsigned char* offsetAllocation(unsigned char* m) {
-        return m + guardBlockSize + headerSize();
+        return m + headerSize();
     }
 
 private:
-    void checkGuardBlock(unsigned char* blockMem, unsigned char val, const char* locText) const;
-
     // Find offsets to pre and post guard blocks, and user data buffer
     unsigned char* preGuard()  const { return mem + headerSize(); }
-    unsigned char* data()      const { return preGuard() + guardBlockSize; }
+    unsigned char* data()      const { return preGuard(); }
     unsigned char* postGuard() const { return data() + size; }
 
     size_t size;                  // size of the user data area
@@ -122,12 +104,7 @@ private:
     const static unsigned char guardBlockEndVal;
     const static unsigned char userDataFill;
 
-    const static size_t guardBlockSize;
-#   ifdef GUARD_BLOCKS
-    inline static size_t headerSize() { return sizeof(TAllocation); }
-#   else
     inline static size_t headerSize() { return 0; }
-#   endif
 };
 
 //
@@ -166,11 +143,6 @@ public:
     void pop();
 
     //
-    // Call popAll() to free all memory allocated.
-    //
-    void popAll();
-
-    //
     // Call allocate() to actually acquire memory.  Returns 0 if no memory
     // available, otherwise a properly aligned pointer to 'numBytes' of memory.
     //
@@ -188,21 +160,11 @@ protected:
 
     struct tHeader {
         tHeader(tHeader* nextPage, size_t pageCount) :
-#ifdef GUARD_BLOCKS
-        lastAllocation(0),
-#endif
         nextPage(nextPage), pageCount(pageCount) { }
 
         ~tHeader() {
-#ifdef GUARD_BLOCKS
-            if (lastAllocation)
-                lastAllocation->checkAllocList();
-#endif
         }
 
-#ifdef GUARD_BLOCKS
-        TAllocation* lastAllocation;
-#endif
         tHeader* nextPage;
         size_t pageCount;
     };
@@ -214,15 +176,7 @@ protected:
     typedef std::vector<tAllocState> tAllocStack;
 
     // Track allocations if and only if we're using guard blocks
-#ifndef GUARD_BLOCKS
     void* initializeAllocation(tHeader*, unsigned char* memory, size_t) {
-#else
-    void* initializeAllocation(tHeader* block, unsigned char* memory, size_t numBytes) {
-        new(memory) TAllocation(numBytes, memory, block->lastAllocation);
-        block->lastAllocation = reinterpret_cast<TAllocation*>(memory);
-#endif
-
-        // This is optimized entirely away if GUARD_BLOCKS is not defined.
         return TAllocation::offsetAllocation(memory);
     }
 

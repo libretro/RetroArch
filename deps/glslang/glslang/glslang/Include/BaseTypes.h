@@ -390,19 +390,6 @@ __inline const char* GetPrecisionQualifierString(TPrecisionQualifier p)
     }
 }
 
-__inline bool isTypeSignedInt(TBasicType type)
-{
-    switch (type) {
-    case EbtInt8:
-    case EbtInt16:
-    case EbtInt:
-    case EbtInt64:
-        return true;
-    default:
-        return false;
-    }
-}
-
 __inline bool isTypeUnsignedInt(TBasicType type)
 {
     switch (type) {
@@ -416,11 +403,6 @@ __inline bool isTypeUnsignedInt(TBasicType type)
     }
 }
 
-__inline bool isTypeInt(TBasicType type)
-{
-    return isTypeSignedInt(type) || isTypeUnsignedInt(type);
-}
-
 __inline bool isTypeFloat(TBasicType type)
 {
     switch (type) {
@@ -431,32 +413,6 @@ __inline bool isTypeFloat(TBasicType type)
     default:
         return false;
     }
-}
-
-__inline int getTypeRank(TBasicType type) {
-    int res = -1;
-    switch(type) {
-    case EbtInt8:
-    case EbtUint8:
-        res = 0;
-        break;
-    case EbtInt16:
-    case EbtUint16:
-        res = 1;
-        break;
-    case EbtInt:
-    case EbtUint:
-        res = 2;
-        break;
-    case EbtInt64:
-    case EbtUint64:
-        res = 3;
-        break;
-    default:
-        assert(false);
-        break;
-    }
-    return res;
 }
 
 } // end namespace glslang
