@@ -1696,6 +1696,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             cpu_arch_str, sizeof(cpu_arch_str));
 
       strlcpy(cpu_str, cpu_text_str, sizeof(cpu_str));
+      strlcat(cpu_str, ": ", sizeof(cpu_str));
       strlcat(cpu_str, " ", sizeof(cpu_str));
       strlcat(cpu_str, cpu_arch_str, sizeof(cpu_str));
 
