@@ -42,7 +42,6 @@
 // This should not be included by driver code.
 //
 
-#define SH_EXPORTING
 #include "../Public/ShaderLang.h"
 #include "../MachineIndependent/Versions.h"
 #include "InfoSink.h"
@@ -151,26 +150,5 @@ protected:
     int excludedCount;
     ShBindingTable* uniformBindings;                // created by the linker
 };
-
-//
-// This is the interface between the machine independent code
-// and the machine dependent code.
-//
-// The machine dependent code should derive from the classes
-// above. Then Construct*() and Delete*() will create and
-// destroy the machine dependent objects, which contain the
-// above machine independent information.
-//
-TCompiler* ConstructCompiler(EShLanguage, int);
-
-TShHandleBase* ConstructLinker(EShExecutable, int);
-TShHandleBase* ConstructBindings();
-void DeleteLinker(TShHandleBase*);
-void DeleteBindingList(TShHandleBase* bindingList);
-
-TUniformMap* ConstructUniformMap();
-void DeleteCompiler(TCompiler*);
-
-void DeleteUniformMap(TUniformMap*);
 
 #endif // _SHHANDLE_INCLUDED_

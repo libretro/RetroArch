@@ -1867,7 +1867,6 @@ ifeq ($(HAVE_BUILTINGLSLANG), 1)
 		$(DEPS_DIR)/glslang/glslang/SPIRV/InReadableOrder.cpp \
 		$(DEPS_DIR)/glslang/glslang/SPIRV/Logger.cpp \
 		$(DEPS_DIR)/glslang/glslang/SPIRV/SpvBuilder.cpp \
-      $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/GenericCodeGen/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/OGLCompilersDLL/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/preprocessor/*.cpp) \

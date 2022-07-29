@@ -63,43 +63,6 @@ static void DetachThreadLinux(void *)
 }
 
 //
-// Registers cleanup handler, sets cancel type and state, and executes the thread specific
-// cleanup handler.  This function will be called in the Standalone.cpp for regression
-// testing.  When OpenGL applications are run with the driver code, Linux OS does the
-// thread cleanup.
-//
-void OS_CleanupThreadData(void)
-{
-#ifdef __ANDROID__
-    DetachThreadLinux(NULL);
-#else
-    int old_cancel_state, old_cancel_type;
-    void *cleanupArg = NULL;
-
-    //
-    // Set thread cancel state and push cleanup handler.
-    //
-    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_cancel_state);
-    pthread_cleanup_push(DetachThreadLinux, (void *) cleanupArg);
-
-    //
-    // Put the thread in deferred cancellation mode.
-    //
-    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, &old_cancel_type);
-
-    //
-    // Pop cleanup handler and execute it prior to unregistering the cleanup handler.
-    //
-    pthread_cleanup_pop(1);
-
-    //
-    // Restore the thread's previous cancellation mode.
-    //
-    pthread_setcanceltype(old_cancel_state, NULL);
-#endif
-}
-
-//
 // Thread Local Storage Operations
 //
 inline OS_TLSIndex PthreadKeyToTLSIndex(pthread_key_t key)
@@ -119,50 +82,36 @@ OS_TLSIndex OS_AllocTLSIndex()
     //
     // Create global pool key.
     //
-    if ((pthread_key_create(&pPoolIndex, NULL)) != 0) {
-        assert(0 && "OS_AllocTLSIndex(): Unable to allocate Thread Local Storage");
+    if ((pthread_key_create(&pPoolIndex, NULL)) != 0)
         return OS_INVALID_TLS_INDEX;
-    }
-    else
-        return PthreadKeyToTLSIndex(pPoolIndex);
+    return PthreadKeyToTLSIndex(pPoolIndex);
 }
 
 bool OS_SetTLSValue(OS_TLSIndex nIndex, void *lpvValue)
 {
-    if (nIndex == OS_INVALID_TLS_INDEX) {
-        assert(0 && "OS_SetTLSValue(): Invalid TLS Index");
+    if (nIndex == OS_INVALID_TLS_INDEX)
         return false;
-    }
-
-    if (pthread_setspecific(TLSIndexToPthreadKey(nIndex), lpvValue) == 0)
-        return true;
-    else
+    if (pthread_setspecific(TLSIndexToPthreadKey(nIndex), lpvValue) != 0)
         return false;
+    return true;
 }
 
 void* OS_GetTLSValue(OS_TLSIndex nIndex)
 {
-    //
     // This function should return 0 if nIndex is invalid.
-    //
     assert(nIndex != OS_INVALID_TLS_INDEX);
     return pthread_getspecific(TLSIndexToPthreadKey(nIndex));
 }
 
 bool OS_FreeTLSIndex(OS_TLSIndex nIndex)
 {
-    if (nIndex == OS_INVALID_TLS_INDEX) {
-        assert(0 && "OS_SetTLSValue(): Invalid TLS Index");
+    if (nIndex == OS_INVALID_TLS_INDEX)
         return false;
-    }
 
-    //
     // Delete the global pool key.
-    //
-    if (pthread_key_delete(TLSIndexToPthreadKey(nIndex)) == 0)
-        return true;
-    else
+    if (pthread_key_delete(TLSIndexToPthreadKey(nIndex)) != 0)
         return false;
+    return true;
 }
 
 namespace {
@@ -185,20 +134,6 @@ void GetGlobalLock()
 void ReleaseGlobalLock()
 {
   pthread_mutex_unlock(&gMutex);
-}
-
-// #define DUMP_COUNTERS
-
-void OS_DumpMemoryCounters()
-{
-#ifdef DUMP_COUNTERS
-    struct rusage usage;
-
-    if (getrusage(RUSAGE_SELF, &usage) == 0)
-        printf("Working set size: %ld\n", usage.ru_maxrss * 1024);
-#else
-    printf("Recompile with DUMP_COUNTERS defined to see counters.\n");
-#endif
 }
 
 } // end namespace glslang

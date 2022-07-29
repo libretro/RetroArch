@@ -44,11 +44,6 @@
 
 #ifdef _WIN32
 #define C_DECL __cdecl
-//#ifdef SH_EXPORTING
-//    #define SH_IMPORT_EXPORT __declspec(dllexport)
-//#else
-//    #define SH_IMPORT_EXPORT __declspec(dllimport)
-//#endif
 #define SH_IMPORT_EXPORT
 #else
 #define SH_IMPORT_EXPORT
@@ -243,65 +238,6 @@ typedef struct {
 //
 typedef void* ShHandle;
 
-//
-// Driver calls these to create and destroy compiler/linker
-// objects.
-//
-SH_IMPORT_EXPORT ShHandle ShConstructCompiler(const EShLanguage, int debugOptions);  // one per shader
-SH_IMPORT_EXPORT ShHandle ShConstructLinker(const EShExecutable, int debugOptions);  // one per shader pair
-SH_IMPORT_EXPORT ShHandle ShConstructUniformMap();                 // one per uniform namespace (currently entire program object)
-SH_IMPORT_EXPORT void ShDestruct(ShHandle);
-
-//
-// The return value of ShCompile is boolean, non-zero indicating
-// success.
-//
-// The info-log should be written by ShCompile into
-// ShHandle, so it can answer future queries.
-//
-SH_IMPORT_EXPORT int ShCompile(
-    const ShHandle,
-    const char* const shaderStrings[],
-    const int numStrings,
-    const int* lengths,
-    const EShOptimizationLevel,
-    const TBuiltInResource *resources,
-    int debugOptions,
-    int defaultVersion = 110,            // use 100 for ES environment, overridden by #version in shader
-    bool forwardCompatible = false,      // give errors for use of deprecated features
-    EShMessages messages = EShMsgDefault // warnings and errors
-    );
-
-SH_IMPORT_EXPORT int ShLinkExt(
-    const ShHandle,               // linker object
-    const ShHandle h[],           // compiler objects to link together
-    const int numHandles);
-
-//
-// ShSetEncrpytionMethod is a place-holder for specifying
-// how source code is encrypted.
-//
-SH_IMPORT_EXPORT void ShSetEncryptionMethod(ShHandle);
-
-//
-// All the following return 0 if the information is not
-// available in the object passed down, or the object is bad.
-//
-SH_IMPORT_EXPORT const char* ShGetInfoLog(const ShHandle);
-SH_IMPORT_EXPORT const void* ShGetExecutable(const ShHandle);
-SH_IMPORT_EXPORT int ShSetVirtualAttributeBindings(const ShHandle, const ShBindingTable*);   // to detect user aliasing
-SH_IMPORT_EXPORT int ShSetFixedAttributeBindings(const ShHandle, const ShBindingTable*);     // to force any physical mappings
-//
-// Tell the linker to never assign a vertex attribute to this list of physical attributes
-//
-SH_IMPORT_EXPORT int ShExcludeAttributes(const ShHandle, int *attributes, int count);
-
-//
-// Returns the location ID of the named uniform.
-// Returns -1 if error.
-//
-SH_IMPORT_EXPORT int ShGetUniformLocation(const ShHandle uniformMap, const char* name);
-
 #ifdef __cplusplus
     }  // end extern "C"
 #endif
@@ -398,7 +334,6 @@ public:
     void setAutoMapBindings(bool map);
     void setAutoMapLocations(bool map);
     void setInvertY(bool invert);
-    void setHlslIoMapping(bool hlslIoMap);
     void setFlattenUniformArrays(bool flatten);
     void setNoStorageFormat(bool useUnknownFormat);
     void setTextureSamplerTransformMode(EShTextureSamplerTransformMode mode);
@@ -575,7 +510,6 @@ private:
 };
 
 class TReflection;
-class TIoMapper;
 
 // Allows to customize the binding layout after linking.
 // All used uniform variables will invoke at least validateBinding.
@@ -661,37 +595,6 @@ public:
     const char* getInfoDebugLog();
 
     TIntermediate* getIntermediate(EShLanguage stage) const { return intermediate[stage]; }
-
-    // Reflection Interface
-    bool buildReflection();                          // call first, to do liveness analysis, index mapping, etc.; returns false on failure
-    int getNumLiveUniformVariables() const;                // can be used for glGetProgramiv(GL_ACTIVE_UNIFORMS)
-    int getNumLiveUniformBlocks() const;                   // can be used for glGetProgramiv(GL_ACTIVE_UNIFORM_BLOCKS)
-    const char* getUniformName(int index) const;           // can be used for "name" part of glGetActiveUniform()
-    const char* getUniformBlockName(int blockIndex) const; // can be used for glGetActiveUniformBlockName()
-    int getUniformBlockSize(int blockIndex) const;         // can be used for glGetActiveUniformBlockiv(UNIFORM_BLOCK_DATA_SIZE)
-    int getUniformIndex(const char* name) const;           // can be used for glGetUniformIndices()
-    int getUniformBinding(int index) const;                // returns the binding number
-    int getUniformBlockBinding(int index) const;           // returns the block binding number
-    int getUniformBlockIndex(int index) const;             // can be used for glGetActiveUniformsiv(GL_UNIFORM_BLOCK_INDEX)
-    int getUniformBlockCounterIndex(int index) const;      // returns block index of associated counter.
-    int getUniformType(int index) const;                   // can be used for glGetActiveUniformsiv(GL_UNIFORM_TYPE)
-    int getUniformBufferOffset(int index) const;           // can be used for glGetActiveUniformsiv(GL_UNIFORM_OFFSET)
-    int getUniformArraySize(int index) const;              // can be used for glGetActiveUniformsiv(GL_UNIFORM_SIZE)
-    int getNumLiveAttributes() const;                      // can be used for glGetProgramiv(GL_ACTIVE_ATTRIBUTES)
-    unsigned getLocalSize(int dim) const;                  // return dim'th local size
-    const char *getAttributeName(int index) const;         // can be used for glGetActiveAttrib()
-    int getAttributeType(int index) const;                 // can be used for glGetActiveAttrib()
-    const TType* getUniformTType(int index) const;         // returns a TType*
-    const TType* getUniformBlockTType(int index) const;    // returns a TType*
-    const TType* getAttributeTType(int index) const;       // returns a TType*
-
-    void dumpReflection();
-
-    // I/O mapping: apply base offsets and map live unbound variables
-    // If resolver is not provided it uses the previous approach
-    // and respects auto assignment and offsets.
-    bool mapIO(TIoMapResolver* resolver = NULL);
-
 protected:
     bool linkStage(EShLanguage, EShMessages);
 
@@ -700,8 +603,6 @@ protected:
     TIntermediate* intermediate[EShLangCount];
     bool newedIntermediate[EShLangCount];      // track which intermediate were "new" versus reusing a singleton unit in a stage
     TInfoSink* infoSink;
-    TReflection* reflection;
-    TIoMapper* ioMapper;
     bool linked;
 
 private:

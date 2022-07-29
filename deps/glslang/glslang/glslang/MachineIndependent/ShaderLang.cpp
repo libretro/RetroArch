@@ -61,10 +61,7 @@
 
 #include "preprocessor/PpContext.h"
 
-#define SH_EXPORTING
 #include "../Public/ShaderLang.h"
-#include "reflection.h"
-#include "iomapper.h"
 #include "Initialize.h"
 
 namespace { // anonymous namespace for file-local functions and symbols
@@ -76,7 +73,7 @@ int NumberOfClients = 0;
 using namespace glslang;
 
 // Create a language specific version of parseables.
-TBuiltInParseables* CreateBuiltInParseables(TInfoSink& infoSink, EShSource source)
+static TBuiltInParseables* CreateBuiltInParseables(TInfoSink& infoSink, EShSource source)
 {
     switch (source) {
     case EShSourceGlsl: return new TBuiltIns();              // GLSL builtIns
@@ -91,7 +88,7 @@ TBuiltInParseables* CreateBuiltInParseables(TInfoSink& infoSink, EShSource sourc
 }
 
 // Create a language specific version of a parse context.
-TParseContextBase* CreateParseContext(TSymbolTable& symbolTable, TIntermediate& intermediate,
+static TParseContextBase* CreateParseContext(TSymbolTable& symbolTable, TIntermediate& intermediate,
                                       int version, EProfile profile, EShSource source,
                                       EShLanguage language, TInfoSink& infoSink,
                                       SpvVersion spvVersion, bool forwardCompatible, EShMessages messages,
@@ -120,7 +117,7 @@ TParseContextBase* CreateParseContext(TSymbolTable& symbolTable, TIntermediate& 
 
 const int VersionCount = 17;  // index range in MapVersionToIndex
 
-int MapVersionToIndex(int version)
+static int MapVersionToIndex(int version)
 {
     int index = 0;
 
@@ -169,7 +166,7 @@ int MapSpvVersionToIndex(const SpvVersion& spvVersion)
 
 const int ProfileCount = 4;   // index range in MapProfileToIndex
 
-int MapProfileToIndex(EProfile profile)
+static int MapProfileToIndex(EProfile profile)
 {
     int index = 0;
 
@@ -188,7 +185,7 @@ int MapProfileToIndex(EProfile profile)
 
 const int SourceCount = 2;
 
-int MapSourceToIndex(EShSource source)
+static int MapSourceToIndex(EShSource source)
 {
     int index = 0;
 
@@ -271,7 +268,7 @@ bool InitializeSymbolTable(const TString& builtIns, int version, EProfile profil
     return true;
 }
 
-int CommonIndex(EProfile profile, EShLanguage language)
+static int CommonIndex(EProfile profile, EShLanguage language)
 {
     return (profile == EEsProfile && language == EShLangFragment) ? EPcFragment : EPcGeneral;
 }
@@ -1159,7 +1156,7 @@ bool PreprocessDeferred(
 // return:  the tree and other information is filled into the intermediate argument,
 //          and true is returned by the function for success.
 //
-bool CompileDeferred(
+static bool CompileDeferred(
     TCompiler* compiler,
     const char* const shaderStrings[],
     const int numStrings,
@@ -1214,56 +1211,6 @@ int ShInitialize()
 }
 
 //
-// Driver calls these to create and destroy compiler/linker
-// objects.
-//
-
-ShHandle ShConstructCompiler(const EShLanguage language, int debugOptions)
-{
-    if (!InitThread())
-        return 0;
-
-    TShHandleBase* base = static_cast<TShHandleBase*>(ConstructCompiler(language, debugOptions));
-
-    return reinterpret_cast<void*>(base);
-}
-
-ShHandle ShConstructLinker(const EShExecutable executable, int debugOptions)
-{
-    if (!InitThread())
-        return 0;
-
-    TShHandleBase* base = static_cast<TShHandleBase*>(ConstructLinker(executable, debugOptions));
-
-    return reinterpret_cast<void*>(base);
-}
-
-ShHandle ShConstructUniformMap()
-{
-    if (!InitThread())
-        return 0;
-
-    TShHandleBase* base = static_cast<TShHandleBase*>(ConstructUniformMap());
-
-    return reinterpret_cast<void*>(base);
-}
-
-void ShDestruct(ShHandle handle)
-{
-    if (handle == 0)
-        return;
-
-    TShHandleBase* base = static_cast<TShHandleBase*>(handle);
-
-    if (base->getAsCompiler())
-        DeleteCompiler(base->getAsCompiler());
-    else if (base->getAsLinker())
-        DeleteLinker(base->getAsLinker());
-    else if (base->getAsUniformMap())
-        DeleteUniformMap(base->getAsUniformMap());
-}
-
-//
 // Cleanup symbol tables
 //
 int __fastcall ShFinalize()
@@ -1314,245 +1261,6 @@ int __fastcall ShFinalize()
 
     DetachProcess();
     return 1;
-}
-
-//
-// Do a full compile on the given strings for a single compilation unit
-// forming a complete stage.  The result of the machine dependent compilation
-// is left in the provided compile object.
-//
-// Return:  The return value is really boolean, indicating
-// success (1) or failure (0).
-//
-int ShCompile(
-    const ShHandle handle,
-    const char* const shaderStrings[],
-    const int numStrings,
-    const int* inputLengths,
-    const EShOptimizationLevel optLevel,
-    const TBuiltInResource* resources,
-    int /*debugOptions*/,
-    int defaultVersion,        // use 100 for ES environment, 110 for desktop
-    bool forwardCompatible,    // give errors for use of deprecated features
-    EShMessages messages       // warnings/errors/AST; things to print out
-    )
-{
-    // Map the generic handle to the C++ object
-    if (handle == 0)
-        return 0;
-
-    TShHandleBase* base = reinterpret_cast<TShHandleBase*>(handle);
-    TCompiler* compiler = base->getAsCompiler();
-    if (compiler == 0)
-        return 0;
-
-    SetThreadPoolAllocator(compiler->getPool());
-
-    compiler->infoSink.info.erase();
-    compiler->infoSink.debug.erase();
-
-    TIntermediate intermediate(compiler->getLanguage());
-    TShader::ForbidIncluder includer;
-    bool success = CompileDeferred(compiler, shaderStrings, numStrings, inputLengths, nullptr,
-                                   "", optLevel, resources, defaultVersion, ENoProfile, false,
-                                   forwardCompatible, messages, intermediate, includer);
-
-    //
-    // Call the machine dependent compiler
-    //
-    if (success && intermediate.getTreeRoot() && optLevel != EShOptNoGeneration)
-        success = compiler->compile(intermediate.getTreeRoot(), intermediate.getVersion(), intermediate.getProfile());
-
-    intermediate.removeTree();
-
-    // Throw away all the temporary memory used by the compilation process.
-    // The push was done in the CompileDeferred() call above.
-    GetThreadPoolAllocator().pop();
-
-    return success ? 1 : 0;
-}
-
-//
-// Link the given compile objects.
-//
-// Return:  The return value of is really boolean, indicating
-// success or failure.
-//
-int ShLinkExt(
-    const ShHandle linkHandle,
-    const ShHandle compHandles[],
-    const int numHandles)
-{
-    if (linkHandle == 0 || numHandles == 0)
-        return 0;
-
-    THandleList cObjects;
-
-    for (int i = 0; i < numHandles; ++i) {
-        if (compHandles[i] == 0)
-            return 0;
-        TShHandleBase* base = reinterpret_cast<TShHandleBase*>(compHandles[i]);
-        if (base->getAsLinker()) {
-            cObjects.push_back(base->getAsLinker());
-        }
-        if (base->getAsCompiler())
-            cObjects.push_back(base->getAsCompiler());
-
-        if (cObjects[i] == 0)
-            return 0;
-    }
-
-    TShHandleBase* base = reinterpret_cast<TShHandleBase*>(linkHandle);
-    TLinker* linker = static_cast<TLinker*>(base->getAsLinker());
-
-    SetThreadPoolAllocator(linker->getPool());
-
-    if (linker == 0)
-        return 0;
-
-    linker->infoSink.info.erase();
-
-    for (int i = 0; i < numHandles; ++i) {
-        if (cObjects[i]->getAsCompiler()) {
-            if (! cObjects[i]->getAsCompiler()->linkable()) {
-                linker->infoSink.info.message(EPrefixError, "Not all shaders have valid object code.");
-                return 0;
-            }
-        }
-    }
-
-    bool ret = linker->link(cObjects);
-
-    return ret ? 1 : 0;
-}
-
-//
-// ShSetEncrpytionMethod is a place-holder for specifying
-// how source code is encrypted.
-//
-void ShSetEncryptionMethod(ShHandle handle)
-{
-    if (handle == 0)
-        return;
-}
-
-//
-// Return any compiler/linker/uniformmap log of messages for the application.
-//
-const char* ShGetInfoLog(const ShHandle handle)
-{
-    if (handle == 0)
-        return 0;
-
-    TShHandleBase* base = static_cast<TShHandleBase*>(handle);
-    TInfoSink* infoSink;
-
-    if (base->getAsCompiler())
-        infoSink = &(base->getAsCompiler()->getInfoSink());
-    else if (base->getAsLinker())
-        infoSink = &(base->getAsLinker()->getInfoSink());
-    else
-        return 0;
-
-    infoSink->info << infoSink->debug.c_str();
-    return infoSink->info.c_str();
-}
-
-//
-// Return the resulting binary code from the link process.  Structure
-// is machine dependent.
-//
-const void* ShGetExecutable(const ShHandle handle)
-{
-    if (handle == 0)
-        return 0;
-
-    TShHandleBase* base = reinterpret_cast<TShHandleBase*>(handle);
-
-    TLinker* linker = static_cast<TLinker*>(base->getAsLinker());
-    if (linker == 0)
-        return 0;
-
-    return linker->getObjectCode();
-}
-
-//
-// Let the linker know where the application said it's attributes are bound.
-// The linker does not use these values, they are remapped by the ICD or
-// hardware.  It just needs them to know what's aliased.
-//
-// Return:  The return value of is really boolean, indicating
-// success or failure.
-//
-int ShSetVirtualAttributeBindings(const ShHandle handle, const ShBindingTable* table)
-{
-    if (handle == 0)
-        return 0;
-
-    TShHandleBase* base = reinterpret_cast<TShHandleBase*>(handle);
-    TLinker* linker = static_cast<TLinker*>(base->getAsLinker());
-
-    if (linker == 0)
-        return 0;
-
-    linker->setAppAttributeBindings(table);
-
-    return 1;
-}
-
-//
-// Let the linker know where the predefined attributes have to live.
-//
-int ShSetFixedAttributeBindings(const ShHandle handle, const ShBindingTable* table)
-{
-    if (handle == 0)
-        return 0;
-
-    TShHandleBase* base = reinterpret_cast<TShHandleBase*>(handle);
-    TLinker* linker = static_cast<TLinker*>(base->getAsLinker());
-
-    if (linker == 0)
-        return 0;
-
-    linker->setFixedAttributeBindings(table);
-    return 1;
-}
-
-//
-// Some attribute locations are off-limits to the linker...
-//
-int ShExcludeAttributes(const ShHandle handle, int *attributes, int count)
-{
-    if (handle == 0)
-        return 0;
-
-    TShHandleBase* base = reinterpret_cast<TShHandleBase*>(handle);
-    TLinker* linker = static_cast<TLinker*>(base->getAsLinker());
-    if (linker == 0)
-        return 0;
-
-    linker->setExcludedAttributes(attributes, count);
-
-    return 1;
-}
-
-//
-// Return the index for OpenGL to use for knowing where a uniform lives.
-//
-// Return:  The return value of is really boolean, indicating
-// success or failure.
-//
-int ShGetUniformLocation(const ShHandle handle, const char* name)
-{
-    if (handle == 0)
-        return -1;
-
-    TShHandleBase* base = reinterpret_cast<TShHandleBase*>(handle);
-    TUniformMap* uniformMap= base->getAsUniformMap();
-    if (uniformMap == 0)
-        return -1;
-
-    return uniformMap->getLocation(name);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -1696,8 +1404,6 @@ void TShader::setAutoMapBindings(bool map)              { intermediate->setAutoM
 void TShader::setInvertY(bool invert)                   { intermediate->setInvertY(invert); }
 // Fragile: currently within one stage: simple auto-assignment of location
 void TShader::setAutoMapLocations(bool map)             { intermediate->setAutoMapLocations(map); }
-// See comment above TDefaultHlslIoMapper in iomapper.cpp:
-void TShader::setHlslIoMapping(bool hlslIoMap)          { intermediate->setHlslIoMapping(hlslIoMap); }
 void TShader::setFlattenUniformArrays(bool flatten)     { intermediate->setFlattenUniformArrays(flatten); }
 void TShader::setNoStorageFormat(bool useUnknownFormat) { intermediate->setNoStorageFormat(useUnknownFormat); }
 void TShader::setResourceSetBinding(const std::vector<std::string>& base)   { intermediate->setResourceSetBinding(base); }
@@ -1757,7 +1463,7 @@ const char* TShader::getInfoDebugLog()
     return infoSink->debug.c_str();
 }
 
-TProgram::TProgram() : reflection(0), ioMapper(nullptr), linked(false)
+TProgram::TProgram() : linked(false)
 {
     pool = new TPoolAllocator;
     infoSink = new TInfoSink;
@@ -1769,9 +1475,7 @@ TProgram::TProgram() : reflection(0), ioMapper(nullptr), linked(false)
 
 TProgram::~TProgram()
 {
-    delete ioMapper;
     delete infoSink;
-    delete reflection;
 
     for (int s = 0; s < EShLangCount; ++s)
         if (newedIntermediate[s])
@@ -1881,70 +1585,6 @@ const char* TProgram::getInfoLog()
 const char* TProgram::getInfoDebugLog()
 {
     return infoSink->debug.c_str();
-}
-
-//
-// Reflection implementation.
-//
-
-bool TProgram::buildReflection()
-{
-    if (! linked || reflection)
-        return false;
-
-    reflection = new TReflection;
-
-    for (int s = 0; s < EShLangCount; ++s) {
-        if (intermediate[s]) {
-            if (! reflection->addStage((EShLanguage)s, *intermediate[s]))
-                return false;
-        }
-    }
-
-    return true;
-}
-
-int TProgram::getNumLiveUniformVariables() const             { return reflection->getNumUniforms(); }
-int TProgram::getNumLiveUniformBlocks() const                { return reflection->getNumUniformBlocks(); }
-const char* TProgram::getUniformName(int index) const        { return reflection->getUniform(index).name.c_str(); }
-const char* TProgram::getUniformBlockName(int index) const   { return reflection->getUniformBlock(index).name.c_str(); }
-int TProgram::getUniformBlockSize(int index) const           { return reflection->getUniformBlock(index).size; }
-int TProgram::getUniformIndex(const char* name) const        { return reflection->getIndex(name); }
-int TProgram::getUniformBinding(int index) const             { return reflection->getUniform(index).getBinding(); }
-int TProgram::getUniformBlockBinding(int index) const        { return reflection->getUniformBlock(index).getBinding(); }
-int TProgram::getUniformBlockIndex(int index) const          { return reflection->getUniform(index).index; }
-int TProgram::getUniformBlockCounterIndex(int index) const   { return reflection->getUniformBlock(index).counterIndex; }
-int TProgram::getUniformType(int index) const                { return reflection->getUniform(index).glDefineType; }
-int TProgram::getUniformBufferOffset(int index) const        { return reflection->getUniform(index).offset; }
-int TProgram::getUniformArraySize(int index) const           { return reflection->getUniform(index).size; }
-int TProgram::getNumLiveAttributes() const                   { return reflection->getNumAttributes(); }
-const char* TProgram::getAttributeName(int index) const      { return reflection->getAttribute(index).name.c_str(); }
-int TProgram::getAttributeType(int index) const              { return reflection->getAttribute(index).glDefineType; }
-const TType* TProgram::getAttributeTType(int index) const    { return reflection->getAttribute(index).getType(); }
-const TType* TProgram::getUniformTType(int index) const      { return reflection->getUniform(index).getType(); }
-const TType* TProgram::getUniformBlockTType(int index) const { return reflection->getUniformBlock(index).getType(); }
-unsigned TProgram::getLocalSize(int dim) const               { return reflection->getLocalSize(dim); }
-
-void TProgram::dumpReflection()                      { reflection->dump(); }
-
-//
-// I/O mapping implementation.
-//
-bool TProgram::mapIO(TIoMapResolver* resolver)
-{
-    if (! linked || ioMapper)
-        return false;
-
-    ioMapper = new TIoMapper;
-
-    for (int s = 0; s < EShLangCount; ++s) {
-        if (intermediate[s]) {
-            if (! ioMapper->addStage((EShLanguage)s, *intermediate[s], *infoSink, resolver))
-                return false;
-        }
-    }
-
-    return true;
 }
 
 } // end namespace glslang

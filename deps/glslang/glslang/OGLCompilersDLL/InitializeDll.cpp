@@ -32,8 +32,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 
-#define SH_EXPORTING
-
 #include <cassert>
 
 #include "InitializeDll.h"
