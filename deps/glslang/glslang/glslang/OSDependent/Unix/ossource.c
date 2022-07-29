@@ -73,7 +73,7 @@ bool OS_SetTLSValue(OS_TLSIndex nIndex, void *lpvValue)
 
 void *OS_GetTLSValue(OS_TLSIndex nIndex)
 {
-     * This function should return 0 if nIndex is invalid.
+    /* This function should return 0 if nIndex is invalid. */
     assert(nIndex != OS_INVALID_TLS_INDEX);
     return pthread_getspecific(TLS_INDEX_TO_PTHREAD_KEY(nIndex));
 }
@@ -83,7 +83,7 @@ bool OS_FreeTLSIndex(OS_TLSIndex nIndex)
     if (nIndex == OS_INVALID_TLS_INDEX)
         return false;
 
-     * Delete the global pool key.
+    /* Delete the global pool key. */
     if (pthread_key_delete(TLS_INDEX_TO_PTHREAD_KEY(nIndex)) != 0)
         return false;
     return true;
