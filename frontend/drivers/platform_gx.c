@@ -54,6 +54,10 @@
 #include "../frontend_driver.h"
 #include "../../defaults.h"
 
+#ifndef IS_SALAMANDER
+#include "../../menu/menu_entries.h"
+#endif
+
 #ifdef HW_RVL
 #include <ogc/ios.h>
 #include <ogc/usbstorage.h>

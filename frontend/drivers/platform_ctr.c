@@ -205,54 +205,54 @@ static void frontend_ctr_deinit(void* data)
 
 static void frontend_ctr_exec(const char *path, bool should_load_game)
 {
-#ifndef IS_SALAMANDER
-#ifdef HAVE_NETWORKING
-   const char *arg_data[NETPLAY_FORK_MAX_ARGS + 1];
-#else
-   const char *arg_data[3];
-#endif
-   char game_path[PATH_MAX];
-#else
-   const char *arg_data[2];
-#endif
-
    DEBUG_VAR(path);
    DEBUG_STR(path);
 
-   arg_data[0] = elf_path_cst;
-   arg_data[1] = NULL;
-
-#ifndef IS_SALAMANDER
-   if (should_load_game)
-   {
-      const char *content = path_get(RARCH_PATH_CONTENT);
-
-#ifdef HAVE_NETWORKING
-      if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_GET_FORK_ARGS,
-            (void*)&arg_data[1]))
-#endif
-      if (!string_is_empty(content))
-      {
-         strlcpy(game_path, content, sizeof(game_path));
-         arg_data[1] = game_path;
-         arg_data[2] = NULL;
-      }
-   }
-#endif
-
    if (!string_is_empty(path))
    {
-#ifdef IS_SALAMANDER
-      struct stat sbuff;
+#ifndef IS_SALAMANDER
+#ifdef HAVE_NETWORKING
+      char *arg_data[NETPLAY_FORK_MAX_ARGS + 1];
+#else
+      char *arg_data[3];
+#endif
+      char game_path[PATH_MAX];
+#else
+      char *arg_data[2];
+#endif
 
-      if (stat(path, &sbuff))
+      arg_data[0] = elf_path_cst;
+      arg_data[1] = NULL;
+
+#ifndef IS_SALAMANDER
+      if (should_load_game)
       {
-         char core_path[PATH_MAX];
+         const char *content = path_get(RARCH_PATH_CONTENT);
 
-         get_first_valid_core(core_path, sizeof(core_path));
+#ifdef HAVE_NETWORKING
+         if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_GET_FORK_ARGS,
+               (void*)&arg_data[1]))
+#endif
+         if (!string_is_empty(content))
+         {
+            strlcpy(game_path, content, sizeof(game_path));
+            arg_data[1] = game_path;
+            arg_data[2] = NULL;
+         }
+      }
+#else
+      {
+         struct stat sbuff;
 
-         if (string_is_empty(core_path))
-            error_and_quit("There are no cores installed, install a core to continue.");
+         if (stat(path, &sbuff))
+         {
+            char core_path[PATH_MAX];
+
+            get_first_valid_core(core_path, sizeof(core_path));
+
+            if (string_is_empty(core_path))
+               error_and_quit("There are no cores installed, install a core to continue.");
+         }
       }
 #endif
 
@@ -271,6 +271,7 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
          RARCH_WARN("card may be corrupted!\n");
          RARCH_WARN("\n");
          RARCH_WARN("\n");
+
          exec_cia(path, arg_data);
       }
 
