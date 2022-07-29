@@ -38,82 +38,60 @@
 #define STRICT
 #define VC_EXTRALEAN 1
 #include <windows.h>
-#include <cassert>
 #include <process.h>
 #include <psapi.h>
-#include <cstdio>
-#include <cstdint>
+#include <stdio.h>
+#include <stdint.h>
 
-//
-// This file contains the Window-OS-specific functions
-//
+static HANDLE glslang_global_lock;
 
-#if !(defined(_WIN32) || defined(_WIN64))
-#error Trying to build a windows specific file in a non windows build.
-#endif
+/* This file contains the Window-OS-specific functions */
 
-namespace glslang {
+#define TO_NATIVE_TLS_INDEX(nIndex) ((DWORD)((uintptr_t)(nIndex) - 1))
 
-inline OS_TLSIndex ToGenericTLSIndex (DWORD handle)
-{
-    return (OS_TLSIndex)((uintptr_t)handle + 1);
-}
-
-inline DWORD ToNativeTLSIndex (OS_TLSIndex nIndex)
-{
-    return (DWORD)((uintptr_t)nIndex - 1);
-}
-
-//
-// Thread Local Storage Operations
-//
-OS_TLSIndex OS_AllocTLSIndex()
+/* Thread Local Storage Operations */
+OS_TLSIndex OS_AllocTLSIndex(void)
 {
     DWORD dwIndex = TlsAlloc();
     if (dwIndex == TLS_OUT_OF_INDEXES)
         return OS_INVALID_TLS_INDEX;
-    return ToGenericTLSIndex(dwIndex);
+    return (OS_TLSIndex)((uintptr_t)dwIndex + 1);
 }
 
 bool OS_SetTLSValue(OS_TLSIndex nIndex, void *lpvValue)
 {
     if (nIndex == OS_INVALID_TLS_INDEX)
         return false;
-    if (!TlsSetValue(ToNativeTLSIndex(nIndex), lpvValue))
+    if (!TlsSetValue(TO_NATIVE_TLS_INDEX(nIndex), lpvValue))
         return false;
     return true;
 }
 
-void* OS_GetTLSValue(OS_TLSIndex nIndex)
+void *OS_GetTLSValue(OS_TLSIndex nIndex)
 {
-    assert(nIndex != OS_INVALID_TLS_INDEX);
-    return TlsGetValue(ToNativeTLSIndex(nIndex));
+    return TlsGetValue(TO_NATIVE_TLS_INDEX(nIndex));
 }
 
 bool OS_FreeTLSIndex(OS_TLSIndex nIndex)
 {
     if (nIndex == OS_INVALID_TLS_INDEX)
         return false;
-    if (!TlsFree(ToNativeTLSIndex(nIndex)))
+    if (!TlsFree(TO_NATIVE_TLS_INDEX(nIndex)))
         return false;
     return true;
 }
 
-HANDLE GlobalLock;
-
-void InitGlobalLock()
+void InitGlobalLock(void)
 {
-    GlobalLock = CreateMutex(0, false, 0);
+    glslang_global_lock = CreateMutex(0, false, 0);
 }
 
-void GetGlobalLock()
+void GetGlobalLock(void)
 {
-    WaitForSingleObject(GlobalLock, INFINITE);
+    WaitForSingleObject(glslang_global_lock, INFINITE);
 }
 
-void ReleaseGlobalLock()
+void ReleaseGlobalLock(void)
 {
-    ReleaseMutex(GlobalLock);
+    ReleaseMutex(glslang_global_lock);
 }
-
-} // namespace glslang

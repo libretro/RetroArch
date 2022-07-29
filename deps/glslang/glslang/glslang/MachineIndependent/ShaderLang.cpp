@@ -374,7 +374,7 @@ void SetupBuiltinSymbolTable(int version, EProfile profile, const SpvVersion& sp
     TInfoSink infoSink;
 
     // Make sure only one thread tries to do this at a time
-    glslang::GetGlobalLock();
+    GetGlobalLock();
 
     // See if it's already been done for this version/profile combination
     int versionIndex = MapVersionToIndex(version);
@@ -382,8 +382,7 @@ void SetupBuiltinSymbolTable(int version, EProfile profile, const SpvVersion& sp
     int profileIndex = MapProfileToIndex(profile);
     int sourceIndex = MapSourceToIndex(source);
     if (CommonSymbolTable[versionIndex][spvVersionIndex][profileIndex][sourceIndex][EPcGeneral]) {
-        glslang::ReleaseGlobalLock();
-
+        ReleaseGlobalLock();
         return;
     }
 
@@ -433,7 +432,7 @@ void SetupBuiltinSymbolTable(int version, EProfile profile, const SpvVersion& sp
     delete builtInPoolAllocator;
     SetThreadPoolAllocator(&previousAllocator);
 
-    glslang::ReleaseGlobalLock();
+    ReleaseGlobalLock();
 }
 
 // Return true if the shader was correctly specified for version/profile/stage.
@@ -1188,16 +1187,16 @@ static bool CompileDeferred(
 //
 // ShInitialize() should be called exactly once per process, not per thread.
 //
-int ShInitialize()
+int ShInitialize(void)
 {
-    glslang::InitGlobalLock();
+    InitGlobalLock();
 
     if (! InitProcess())
         return 0;
 
-    glslang::GetGlobalLock();
+    GetGlobalLock();
     ++NumberOfClients;
-    glslang::ReleaseGlobalLock();
+    ReleaseGlobalLock();
 
     if (PerProcessGPA == nullptr)
         PerProcessGPA = new TPoolAllocator();
@@ -1213,13 +1212,13 @@ int ShInitialize()
 //
 // Cleanup symbol tables
 //
-int __fastcall ShFinalize()
+int __fastcall ShFinalize(void)
 {
-    glslang::GetGlobalLock();
+    GetGlobalLock();
     --NumberOfClients;
     assert(NumberOfClients >= 0);
     bool finalize = NumberOfClients == 0;
-    glslang::ReleaseGlobalLock();
+    ReleaseGlobalLock();
     if (! finalize)
         return 1;
 
