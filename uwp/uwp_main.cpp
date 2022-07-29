@@ -710,7 +710,7 @@ void App::ParseProtocolArgs(Windows::ApplicationModel::Activation::IActivatedEve
 				//this allows a frotend to quit RetroArch, which in turn allows it to launch a different game.
 				CoreApplication::Exit();
 			}
-			else if (arg->Name == "cmd" && m_initalized == false)
+			else if (arg->Name == "cmd" && m_initialized == false)
 			{
 				std::wstring wsValue(arg->Value->ToString()->Data());
 				std::string strValue(wsValue.begin(), wsValue.end());
