@@ -54,7 +54,7 @@
 
 namespace spv {
 
-Builder::Builder(unsigned int spvVersion, unsigned int magicNumber, SpvBuildLogger* buildLogger) :
+Builder::Builder(unsigned int spvVersion, unsigned int magicNumber) :
     spvVersion(spvVersion),
     source(SourceLanguageUnknown),
     sourceVersion(0),
@@ -67,8 +67,7 @@ Builder::Builder(unsigned int spvVersion, unsigned int magicNumber, SpvBuildLogg
     buildPoint(0),
     uniqueId(0),
     entryPointFunction(0),
-    generatingOpCodeForSpecConst(false),
-    logger(buildLogger)
+    generatingOpCodeForSpecConst(false)
 {
     clearAccessChain();
 }
