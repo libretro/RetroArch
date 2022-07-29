@@ -4,7 +4,7 @@ set(SOURCES
     Logger.cpp
     SpvBuilder.cpp
     doc.cpp
-    disassemble.cpp)
+    )
 
 set(SPVREMAP_SOURCES
     SPVRemapper.cpp

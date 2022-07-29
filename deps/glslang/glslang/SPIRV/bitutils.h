@@ -47,35 +47,6 @@ struct SetBits<T, Last, 0> {
   const static T get = T(0);
 };
 
-// This is all compile-time so we can put our tests right here.
-static_assert(SetBits<uint32_t, 0, 0>::get == uint32_t(0x00000000),
-              "SetBits failed");
-static_assert(SetBits<uint32_t, 0, 1>::get == uint32_t(0x00000001),
-              "SetBits failed");
-static_assert(SetBits<uint32_t, 31, 1>::get == uint32_t(0x80000000),
-              "SetBits failed");
-static_assert(SetBits<uint32_t, 1, 2>::get == uint32_t(0x00000006),
-              "SetBits failed");
-static_assert(SetBits<uint32_t, 30, 2>::get == uint32_t(0xc0000000),
-              "SetBits failed");
-static_assert(SetBits<uint32_t, 0, 31>::get == uint32_t(0x7FFFFFFF),
-              "SetBits failed");
-static_assert(SetBits<uint32_t, 0, 32>::get == uint32_t(0xFFFFFFFF),
-              "SetBits failed");
-static_assert(SetBits<uint32_t, 16, 16>::get == uint32_t(0xFFFF0000),
-              "SetBits failed");
-
-static_assert(SetBits<uint64_t, 0, 1>::get == uint64_t(0x0000000000000001LL),
-              "SetBits failed");
-static_assert(SetBits<uint64_t, 63, 1>::get == uint64_t(0x8000000000000000LL),
-              "SetBits failed");
-static_assert(SetBits<uint64_t, 62, 2>::get == uint64_t(0xc000000000000000LL),
-              "SetBits failed");
-static_assert(SetBits<uint64_t, 31, 1>::get == uint64_t(0x0000000080000000LL),
-              "SetBits failed");
-static_assert(SetBits<uint64_t, 16, 16>::get == uint64_t(0x00000000FFFF0000LL),
-              "SetBits failed");
-
 }  // namespace spvutils
 
 #endif  // LIBSPIRV_UTIL_BITUTILS_H_
