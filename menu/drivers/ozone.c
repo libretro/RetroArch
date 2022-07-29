@@ -9069,6 +9069,7 @@ static void ozone_render(void *data,
                      /* If this is a playlist, must update thumbnails */
                      if (ozone->is_playlist && (ozone->depth == 1 || ozone->depth == 4))
                      {
+                        ozone->skip_thumbnail_reset = false;
                         ozone_set_thumbnail_content(ozone, "");
                         ozone_update_thumbnail_image(ozone);
                      }
