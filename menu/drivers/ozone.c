@@ -454,6 +454,7 @@ struct ozone_handle
    size_t categories_selection_ptr; /* active tab id  */
    size_t categories_active_idx_old;
    size_t playlist_index;
+   size_t playlist_collection_offset;
 
    size_t selection; /* currently selected entry */
    size_t selection_old; /* previously selected entry (for fancy animation) */
@@ -2089,6 +2090,8 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case FILE_TYPE_CORE:
       case FILE_TYPE_DIRECT_LOAD:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE];
+      case FILE_TYPE_PLAYLIST_COLLECTION:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FILE];
       case FILE_TYPE_RDB:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RDB];
       case FILE_TYPE_RDB_ENTRY:
@@ -5333,10 +5336,38 @@ border_iterate:
          {
             ozone_node_t *sidebar_node = (ozone_node_t*) file_list_get_userdata_at_offset(&ozone->horizontal_list, ozone->categories_selection_ptr - ozone->system_tab_end-1);
 
-            if (!sidebar_node || !sidebar_node->content_icon)
-               texture = tex;
-            else
+            if (sidebar_node && sidebar_node->content_icon)
                texture = sidebar_node->content_icon;
+         }
+         /* "Load Content" playlists */
+         else if (ozone->tabs[ozone->categories_selection_ptr] == OZONE_SYSTEM_TAB_MAIN)
+         {
+            if (ozone_is_load_content_playlist(ozone))
+            {
+               const struct playlist_entry *pl_entry = NULL;
+               ozone_node_t *db_node                 = NULL;
+
+               playlist_get_index(playlist_get_cached(),
+                     entry.entry_idx, &pl_entry);
+
+               if (pl_entry &&
+                     !string_is_empty(pl_entry->db_name) &&
+                     (db_node = RHMAP_GET_STR(ozone->playlist_db_node_map, pl_entry->db_name)))
+                  texture = db_node->content_icon;
+            }
+            else if (ozone->depth == 3 && entry.type == FILE_TYPE_PLAYLIST_COLLECTION)
+            {
+               size_t i_playlist = 0;
+               ozone_node_t *sidebar_node;
+
+               if (i >= ozone->playlist_collection_offset)
+                  i_playlist = i - ozone->playlist_collection_offset;
+
+               sidebar_node = (ozone_node_t*) file_list_get_userdata_at_offset(&ozone->horizontal_list, i_playlist);
+
+               if (sidebar_node && sidebar_node->icon)
+                  texture = sidebar_node->icon;
+            }
          }
          /* History/Favorite console specific content icons */
          else if (   entry.type == FILE_TYPE_RPL_ENTRY
@@ -10593,6 +10624,23 @@ static void ozone_populate_entries(void *data,
       ozone->is_db_manager_list   = true;
       ozone->skip_thumbnail_reset = true;
    }
+
+   /* Determine the first playlist item under "Load Content > Playlists" */
+   ozone->playlist_collection_offset = 0;
+   if (settings->uints.menu_content_show_add_entry)
+      ozone->playlist_collection_offset++;
+   if (settings->uints.menu_content_show_contentless_cores)
+      ozone->playlist_collection_offset++;
+   if (settings->bools.menu_content_show_explore)
+      ozone->playlist_collection_offset++;
+   if (settings->bools.menu_content_show_favorites)
+      ozone->playlist_collection_offset++;
+   if (settings->bools.menu_content_show_images)
+      ozone->playlist_collection_offset++;
+   if (settings->bools.menu_content_show_music)
+      ozone->playlist_collection_offset++;
+   if (settings->bools.menu_content_show_video)
+      ozone->playlist_collection_offset++;
 
    if (animate)
       if (ozone->categories_selection_ptr == ozone->categories_active_idx_old)

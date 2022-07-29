@@ -341,6 +341,7 @@ typedef struct xmb_handle
    size_t selection_ptr_old;
    size_t fullscreen_thumbnail_selection;
    size_t playlist_index;
+   size_t playlist_collection_offset;
 
    /* size of the current list */
    size_t list_size;
@@ -2542,6 +2543,23 @@ static void xmb_populate_entries(void *data,
                         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_LIST));
    xmb->is_state_slot = string_to_unsigned(path) == MENU_ENUM_LABEL_STATE_SLOT;
 
+   /* Determine the first playlist item under "Load Content > Playlists" */
+   xmb->playlist_collection_offset = 0;
+   if (settings->uints.menu_content_show_add_entry)
+      xmb->playlist_collection_offset++;
+   if (settings->uints.menu_content_show_contentless_cores)
+      xmb->playlist_collection_offset++;
+   if (settings->bools.menu_content_show_explore)
+      xmb->playlist_collection_offset++;
+   if (settings->bools.menu_content_show_favorites)
+      xmb->playlist_collection_offset++;
+   if (settings->bools.menu_content_show_images)
+      xmb->playlist_collection_offset++;
+   if (settings->bools.menu_content_show_music)
+      xmb->playlist_collection_offset++;
+   if (settings->bools.menu_content_show_video)
+      xmb->playlist_collection_offset++;
+
    xmb_set_title(xmb);
    if (menu_dynamic_wallpaper_enable)
       xmb_update_dynamic_wallpaper(xmb);
@@ -2979,12 +2997,35 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case FILE_TYPE_IN_CARCHIVE:
          return xmb->textures.list[XMB_TEXTURE_FILE];
       case FILE_TYPE_RPL_ENTRY:
+      case FILE_TYPE_PLAYLIST_COLLECTION:
          if (core_node)
             return core_node->content_icon;
 
          switch (xmb_get_system_tab(xmb,
                   (unsigned)xmb->categories_selection_ptr))
          {
+            case XMB_SYSTEM_TAB_MAIN:
+               {
+                  const struct playlist_entry *pl_entry = NULL;
+                  xmb_node_t *db_node                   = NULL;
+
+                  playlist_get_index(playlist_get_cached(),
+                        0, &pl_entry);
+
+                  if (pl_entry &&
+                        !string_is_empty(pl_entry->db_name) &&
+                        (db_node = RHMAP_GET_STR(xmb->playlist_db_node_map, pl_entry->db_name)))
+                  {
+                     switch (type)
+                     {
+                        case FILE_TYPE_RPL_ENTRY:
+                           return db_node->content_icon;
+                        case FILE_TYPE_PLAYLIST_COLLECTION:
+                           return db_node->icon;
+                     }
+                  }
+               }
+               break;
             case XMB_SYSTEM_TAB_FAVORITES:
                return xmb->textures.list[XMB_TEXTURE_FAVORITE];
             case XMB_SYSTEM_TAB_MUSIC:
@@ -3691,8 +3732,22 @@ static int xmb_draw_item(
       float y                  = icon_y;
       float scale_factor       = node->zoom;
 
+      /* "Load Content" playlists */
+      if (xmb->depth == 3 && entry_type == FILE_TYPE_PLAYLIST_COLLECTION)
+      {
+         size_t i_playlist = 0;
+         xmb_node_t *sidebar_node;
+
+         if (i >= xmb->playlist_collection_offset)
+            i_playlist = i - xmb->playlist_collection_offset;
+
+         sidebar_node = (xmb_node_t*) file_list_get_userdata_at_offset(&xmb->horizontal_list, i_playlist);
+
+         if (sidebar_node && sidebar_node->icon)
+            texture = sidebar_node->icon;
+      }
       /* History/Favorite console specific content icons */
-      if (  entry_type == FILE_TYPE_RPL_ENTRY
+      else if (entry_type == FILE_TYPE_RPL_ENTRY
             && show_history_icons != PLAYLIST_SHOW_HISTORY_ICONS_DEFAULT)
       {
          switch (xmb_get_system_tab(xmb, xmb->categories_selection_ptr))
