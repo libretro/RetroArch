@@ -35,11 +35,15 @@
 #ifndef __INITIALIZE_GLOBALS_INCLUDED_
 #define __INITIALIZE_GLOBALS_INCLUDED_
 
-namespace glslang {
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-bool InitializePoolIndex();
-bool DeinitializePoolIndex();
+bool InitializePoolIndex(void);
+bool DeinitializePoolIndex(void);
 
-} // end namespace glslang
+#ifdef __cplusplus
+}
+#endif
 
 #endif // __INITIALIZE_GLOBALS_INCLUDED_

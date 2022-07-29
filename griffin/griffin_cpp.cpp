@@ -105,16 +105,6 @@ VIDEO DRIVER
 /*============================================================
 FONTS
 ============================================================ */
-#ifdef WANT_GLSLANG
-#ifdef _WIN32
-#include "../deps/glslang/glslang/glslang/OSDependent/Windows/ossource.cpp"
-#endif
-
-#if defined(__linux__)
-#include "../deps/glslang/glslang/glslang/OSDependent/Unix/ossource.cpp"
-#endif
-#endif
-
 #if defined(HAVE_DISCORD)
 #include "../deps/discord-rpc/src/discord_rpc.cpp"
 #include "../deps/discord-rpc/src/rpc_connection.cpp"

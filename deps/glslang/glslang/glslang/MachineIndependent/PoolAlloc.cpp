@@ -56,7 +56,7 @@ void SetThreadPoolAllocator(TPoolAllocator* poolAllocator)
 }
 
 // Process-wide set up of the TLS pool storage.
-bool InitializePoolIndex()
+extern "C" bool InitializePoolIndex(void)
 {
     // Allocate a TLS index.
     if ((PoolIndex = OS_AllocTLSIndex()) == OS_INVALID_TLS_INDEX)
@@ -65,7 +65,7 @@ bool InitializePoolIndex()
     return true;
 }
 
-bool DeinitializePoolIndex()
+extern "C" bool DeinitializePoolIndex(void)
 {
     if (PoolIndex == OS_INVALID_TLS_INDEX)
         return false;
