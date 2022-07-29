@@ -1901,7 +1901,7 @@ bool TGlslangToSpvTraverser::visitAggregate(glslang::TVisit visit, glslang::TInt
         // Map the operation to a binary
         binOp = node->getOp();
         reduceComparison = false;
-        switch (node->getOp()) {
+        switch (binOp) {
         case glslang::EOpVectorEqual:     binOp = glslang::EOpVectorEqual;      break;
         case glslang::EOpVectorNotEqual:  binOp = glslang::EOpVectorNotEqual;   break;
         default:                          binOp = node->getOp();                break;

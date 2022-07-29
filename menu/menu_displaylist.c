@@ -2390,7 +2390,6 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    database_info_list_t *db_info       = NULL;
    bool show_advanced_settings         = settings->bools.menu_show_advanced_settings;
    const char *dir_playlist            = settings->paths.directory_playlist;
-   const char *menu_driver             = menu_driver_ident();
 
    playlist_config.capacity            = COLLECTION_SIZE;
    playlist_config.old_format          = settings->bools.playlist_use_old_format;

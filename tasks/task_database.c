@@ -257,11 +257,10 @@ static int task_database_cue_get_serial(const char *name, char* serial)
    char track_path[PATH_MAX_LENGTH];
    uint64_t offset                  = 0;
    uint64_t size                    = 0;
-   int rv                           = 0;
 
    track_path[0]                    = '\0';
 
-   if ((rv = cue_find_track(name, true, &offset, &size, track_path, sizeof(track_path))) < 0)
+   if ((cue_find_track(name, true, &offset, &size, track_path, sizeof(track_path))) < 0)
    {
 #ifdef DEBUG
       RARCH_LOG("%s: %s\n",

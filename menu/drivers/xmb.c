@@ -5188,7 +5188,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    float pseudo_font_length                = 0.0f;
    xmb_handle_t *xmb                       = (xmb_handle_t*)data;
    settings_t *settings                    = config_get_ptr();
-   unsigned xmb_system_tab                 = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
    bool fade_tab_icons                     = false;
    float fade_tab_icons_x_threshold        = 0.0f;
    bool menu_core_enable                   = settings->bools.menu_core_enable;

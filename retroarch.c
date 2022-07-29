@@ -1744,19 +1744,16 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_LOAD_CORE:
-         {
-            bool success                        = false;
-            runloop_st->subsystem_current_count = 0;
-            content_clear_subsystem();
+         runloop_st->subsystem_current_count = 0;
+         content_clear_subsystem();
 #ifdef HAVE_DYNAMIC
-            if (!(command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL)))
-               return false;
+         if (!(command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL)))
+            return false;
 #else
-            command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
-            command_event(CMD_EVENT_QUIT, NULL);
+         command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+         command_event(CMD_EVENT_QUIT, NULL);
 #endif
-            break;
-         }
+         break;
 #if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
       case CMD_EVENT_LOAD_SECOND_CORE:
          if (!runloop_st->core_running ||

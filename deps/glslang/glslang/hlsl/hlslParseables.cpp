@@ -376,7 +376,6 @@ glslang::TString& AppendTypeName(glslang::TString& s, const char* argOrder, cons
 inline bool IsValid(const char* cname, char retOrder, char retType, char argOrder, char argType, int dim0, int dim1)
 {
     const bool isVec = (argOrder == 'V');
-    const bool isMat = (argOrder == 'M');
 
     const std::string name(cname);
 
@@ -387,10 +386,10 @@ inline bool IsValid(const char* cname, char retOrder, char retType, char argOrde
     if (!IsTextureType(argOrder) && (isVec && dim0 == 1)) // avoid vec1
         return false;
 
-    if (UseHlslTypes) {
-        // NO further restrictions for HLSL
-    } else {
+    if (!UseHlslTypes)
+    {
         // GLSL parser restrictions
+        const bool isMat = (argOrder == 'M');
         if ((isMat && (argType == 'I' || argType == 'U' || argType == 'B')) ||
             (retOrder == 'M' && (retType == 'I' || retType == 'U' || retType == 'B')))
             return false;
