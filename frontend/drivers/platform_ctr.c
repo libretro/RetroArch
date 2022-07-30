@@ -221,7 +221,7 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
       char *arg_data[2];
 #endif
 
-      arg_data[0] = elf_path_cst;
+      arg_data[0] = (char*)elf_path_cst;
       arg_data[1] = NULL;
 
 #ifndef IS_SALAMANDER
@@ -258,7 +258,7 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
 
       if (envIsHomebrew())
       {
-         exec_3dsx_no_path_in_args(path, arg_data);
+         exec_3dsx_no_path_in_args(path, (const char**)arg_data);
       }
       else
       {
@@ -272,7 +272,7 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
          RARCH_WARN("\n");
          RARCH_WARN("\n");
 
-         exec_cia(path, arg_data);
+         exec_cia(path, (const char**)arg_data);
       }
 
       /* couldnt launch new core, but context
