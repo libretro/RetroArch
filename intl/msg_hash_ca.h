@@ -587,10 +587,6 @@ MSG_HASH(
    "Característiques de la CPU"
    )
 MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   "Arquitectura de la CPU:"
-   )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "Nuclis de la CPU:"
    )
@@ -6263,6 +6259,114 @@ MSG_HASH(
 MSG_HASH(
    MSG_ERROR_REMOVING_CORE_OPTIONS_FILE,
    "S’ha produït un error en suprimir el fitxer d’opcions del nucli."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
+   "No s’ha pogut assignar memòria pel contingut apedaçat..."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPLY_SHADER,
+   "No s’ha pogut aplicar el shader."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPLY_SHADER_PRESET,
+   "No s’ha pogut aplicar el valor predefinit del shader:"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_BIND_SOCKET,
+   "No s’ha pogut vincular el sòcol."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CREATE_THE_DIRECTORY,
+   "No s’ha pogut crear el directori."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
+   "No s’ha pogut extreure el contingut del fitxer comprimit"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
+   "No s’ha pogut obtenir el sobrenom del client."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD,
+   "No s’ha pogut carregar"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_CONTENT,
+   "No s’ha pogut carregar el contingut"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_MOVIE_FILE,
+   "No s’ha pogut carregar el fitxer de pel·lícula"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_OVERLAY,
+   "No s’ha pogut carregar la superposició."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_STATE,
+   "No s’ha pogut carregar l’estat de"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
+   "No s’ha pogut obrir el nucli de libretro"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_PATCH,
+   "No s’ha pogut aplicar el pedaç"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT,
+   "No s’ha pogut rebre la capçalera del client."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_NICKNAME,
+   "No s’ha pogut rebre el sobrenom."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST,
+   "No s’ha pogut rebre el sobrenom de l’amfitrió."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_NICKNAME_SIZE_FROM_HOST,
+   "No s’ha pogut rebre la mida del sobrenom de l’amfitrió."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
+   "No s’han pogut rebre les dades de SRAM de l’amfitrió."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "No s’ha pogut treure el disc de la safata."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
+   "No s’ha pogut eliminar el fitxer temporal"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SAVE_SRAM,
+   "No s’ha pogut desar la SRAM"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_SRAM,
+   "No s’ha pogut carregar la SRAM"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SAVE_STATE_TO,
+   "No s’ha pogut desar l’estat a"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_NICKNAME,
+   "No s’ha pogut enviar el sobrenom."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_NICKNAME_SIZE,
+   "No s’ha pogut enviar la mida del sobrenom."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT,
+   "No s’ha pogut enviar el sobrenom al client."
    )
 MSG_HASH(
    MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
