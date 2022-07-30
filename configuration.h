@@ -702,6 +702,8 @@ typedef struct settings
       bool menu_use_preferred_system_color_theme;
       bool menu_preferred_system_color_theme_set;
       bool menu_unified_controls;
+      bool menu_disable_info_button;
+      bool menu_disable_search_button;
       bool menu_ticker_smooth;
       bool settings_show_drivers;
       bool settings_show_video;

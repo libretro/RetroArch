@@ -4163,6 +4163,14 @@ MSG_HASH(
    "unified_menu_controls"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_DISABLE_INFO_BUTTON,
+   "disable_info_button"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_DISABLE_SEARCH_BUTTON,
+   "disable_search_button"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_QUIT_PRESS_TWICE,
    "quit_press_twice"
    )

@@ -6887,6 +6887,14 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_MENU_SCROLL_DELAY,
                   PARSE_ONLY_UINT, false) == 0)
             count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_INPUT_DISABLE_INFO_BUTTON,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_INPUT_DISABLE_SEARCH_BUTTON,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
 
          break;
       case DISPLAYLIST_INPUT_SETTINGS_LIST:
