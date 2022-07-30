@@ -261,6 +261,14 @@ int detect_ps1_game(intfstream_t *fd, char *game_id, const char *filename)
                raw_game_id[8] = raw_game_id[9];
                raw_game_id[9] = raw_game_id[10];
             }
+            /* A few games have their serial in the form of xx.xxx */
+            /* Tanaka Torahiko no Ultra-ryuu Shougi - Ibisha Anaguma-hen (Japan) -> SLPS_02.261 */
+            else if (string_is_equal_fast(&raw_game_id[7], ".", 1))
+            {
+               raw_game_id[7] = raw_game_id[8];
+               raw_game_id[8] = raw_game_id[9];
+               raw_game_id[9] = raw_game_id[10];
+            }
             raw_game_id[10] = '\0';
 
             string_remove_all_whitespace(game_id, raw_game_id);
