@@ -1744,19 +1744,16 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_LOAD_CORE:
-         {
-            bool success                        = false;
-            runloop_st->subsystem_current_count = 0;
-            content_clear_subsystem();
+         runloop_st->subsystem_current_count = 0;
+         content_clear_subsystem();
 #ifdef HAVE_DYNAMIC
-            if (!(command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL)))
-               return false;
+         if (!(command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL)))
+            return false;
 #else
-            command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
-            command_event(CMD_EVENT_QUIT, NULL);
+         command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+         command_event(CMD_EVENT_QUIT, NULL);
 #endif
-            break;
-         }
+         break;
 #if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
       case CMD_EVENT_LOAD_SECOND_CORE:
          if (!runloop_st->core_running ||
@@ -2876,6 +2873,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             if (!task_push_netplay_content_reload(NULL))
             {
+#ifdef HAVE_DYNAMIC
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
 
@@ -2883,6 +2881,12 @@ bool command_event(enum event_command cmd, void *data)
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
                   1, 480, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#else
+               runloop_msg_queue_push(
+                  msg_hash_to_str(MSG_NETPLAY_NEED_CONTENT_LOADED),
+                  1, 480, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#endif
 
                return false;
             }

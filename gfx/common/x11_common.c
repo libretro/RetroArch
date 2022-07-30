@@ -203,31 +203,32 @@ static void xdg_screensaver_inhibit(Window wnd)
 {
    int  ret;
    char cmd[64];
-   char title[128];
 
    cmd[0] = '\0';
-   title[0] = '\0';
 
    RARCH_LOG("[X11]: Suspending screensaver (X11, xdg-screensaver).\n");
 
    if (g_x11_dpy && g_x11_win)
    {
+      char title[128];
+      size_t title_len;
       /* Make sure the window has a title, even if it's a bogus one, otherwise
        * xdg-screensaver will fail and report to stderr, framing RA for its bug.
        * A single space character is used so that the title bar stays visibly
        * the same, as if there's no title at all. */
       video_driver_get_window_title(title, sizeof(title));
-      if (strlen(title) == 0)
-         snprintf(title, sizeof(title), " ");
+      if ((title_len = strlen(title)) == 0)
+      {
+         title[0] = ' ';
+         title[1] = '\0';
+      }
       XChangeProperty(g_x11_dpy, g_x11_win, XA_WM_NAME, XA_STRING,
-            8, PropModeReplace, (const unsigned char*) title,
-            strlen(title));
+            8, PropModeReplace, (const unsigned char*) title, title_len);
    }
 
    snprintf(cmd, sizeof(cmd), "xdg-screensaver suspend 0x%x", (int)wnd);
 
-   ret = system(cmd);
-   if (ret == -1)
+   if ((ret = system(cmd)) == -1)
    {
       xdg_screensaver_available = false;
       RARCH_WARN("Failed to launch xdg-screensaver.\n");
@@ -519,18 +520,15 @@ static void x11_handle_key_event(unsigned keycode, XEvent *event, XIC ic, bool f
          keybuf[0] = '\0';
 #ifdef X_HAVE_UTF8_STRING
          status = 0;
-
          /* XwcLookupString doesn't seem to work. */
          num = Xutf8LookupString(ic, &event->xkey, keybuf,
                ARRAY_SIZE(keybuf), &keysym, &status);
-
          /* libc functions need UTF-8 locale to work properly,
           * which makes mbrtowc a bit impractical.
           *
           * Use custom UTF8 -> UTF-32 conversion. */
          num = utf8_conv_utf32(chars, ARRAY_SIZE(chars), keybuf, num);
 #else
-         (void)ic;
          num = XLookupString(&event->xkey, keybuf,
                sizeof(keybuf), &keysym, NULL); /* ASCII only. */
          for (i = 0; i < num; i++)
@@ -584,7 +582,7 @@ bool x11_alive(void *data)
       /* IMPORTANT - Get keycode before XFilterEvent
          because the event is localizated after the call */
       keycode = event.xkey.keycode;
-      filter = XFilterEvent(&event, g_x11_win);
+      filter  = XFilterEvent(&event, g_x11_win);
 
       switch (event.type)
       {
@@ -769,11 +767,7 @@ bool x11_connect(void)
 void x11_update_title(void *data)
 {
    char title[128];
-
-   title[0] = '\0';
-
    video_driver_get_window_title(title, sizeof(title));
-
    if (title[0])
       XChangeProperty(g_x11_dpy, g_x11_win, XA_WM_NAME, XA_STRING,
             8, PropModeReplace, (const unsigned char*)title,

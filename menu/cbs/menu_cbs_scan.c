@@ -56,8 +56,6 @@ int action_scan_file(const char *path,
    const char *directory_playlist = settings->paths.directory_playlist;
    const char *path_content_db    = settings->paths.path_content_database;
 
-   fullpath[0]                    = '\0';
-
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
    fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
@@ -81,8 +79,6 @@ int action_scan_directory(const char *path,
    bool show_hidden_files         = settings->bools.show_hidden_files;
    const char *directory_playlist = settings->paths.directory_playlist;
    const char *path_content_db    = settings->paths.path_content_database;
-
-   fullpath[0]                    = '\0';
 
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
@@ -123,7 +119,7 @@ int action_switch_thumbnail(const char *path,
     * GLUI is a special case where thumbnail 'switch' corresponds to
     * changing thumbnail view mode.
     * For other menu drivers, we cycle through available thumbnail
-    * types. */
+    * types and skip if already visible. */
    if (!switch_enabled)
       return 0;
 
@@ -133,9 +129,19 @@ int action_switch_thumbnail(const char *path,
             settings->uints.menu_left_thumbnails,
             settings->uints.menu_left_thumbnails + 1);
 
+      if (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
+         configuration_set_uint(settings,
+               settings->uints.menu_left_thumbnails,
+               settings->uints.menu_left_thumbnails + 1);
+
       if (settings->uints.menu_left_thumbnails > 3)
          configuration_set_uint(settings,
                settings->uints.menu_left_thumbnails, 1);
+
+      if (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
+         configuration_set_uint(settings,
+               settings->uints.menu_left_thumbnails,
+               settings->uints.menu_left_thumbnails + 1);
    }
    else
    {
@@ -143,9 +149,19 @@ int action_switch_thumbnail(const char *path,
             settings->uints.gfx_thumbnails,
             settings->uints.gfx_thumbnails + 1);
 
+      if (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
+         configuration_set_uint(settings,
+               settings->uints.gfx_thumbnails,
+               settings->uints.gfx_thumbnails + 1);
+
       if (settings->uints.gfx_thumbnails > 3)
          configuration_set_uint(settings,
                settings->uints.gfx_thumbnails, 1);
+
+      if (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
+         configuration_set_uint(settings,
+               settings->uints.gfx_thumbnails,
+               settings->uints.gfx_thumbnails + 1);
    }
 
    menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);

@@ -231,7 +231,6 @@ public:
         useUnknownFormat(false),
         hlslOffsets(false),
         useStorageBuffer(false),
-        hlslIoMapping(false),
         textureSamplerTransformMode(EShTexSampTransKeep),
         needToLegalize(false),
         binaryDoubleOutput(false)
@@ -356,13 +355,6 @@ public:
         processes.addProcess("use-storage-buffer");
     }
     bool usingStorageBuffer() const { return useStorageBuffer; }
-    void setHlslIoMapping(bool b)
-    {
-        hlslIoMapping = b;
-        if (hlslIoMapping)
-            processes.addProcess("hlsl-iomap");
-    }
-    bool usingHlslIoMapping() { return hlslIoMapping; }
 
     template<class T> T addCounterBufferName(const T& name) const { return name + implicitCounterName; }
     bool hasCounterBufferName(const TString& name) const {
@@ -724,7 +716,6 @@ protected:
     bool useUnknownFormat;
     bool hlslOffsets;
     bool useStorageBuffer;
-    bool hlslIoMapping;
 
     typedef std::list<TCall> TGraph;
     TGraph callGraph;

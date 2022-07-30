@@ -32,39 +32,66 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 
-#ifndef _SHHANDLE_INCLUDED_
-#define _SHHANDLE_INCLUDED_
+#include "../osinclude.h"
 
-//
-// Machine independent part of the compiler private objects
-// sent as ShHandle to the driver.
-//
-// This should not be included by driver code.
-//
+#undef  STRICT
+#define STRICT
+#define VC_EXTRALEAN 1
+#include <windows.h>
+#include <process.h>
+#include <psapi.h>
+#include <stdio.h>
+#include <stdint.h>
 
-#include "../Public/ShaderLang.h"
-#include "../MachineIndependent/Versions.h"
-#include "InfoSink.h"
+static HANDLE glslang_global_lock;
 
-class TIntermNode;
+/* This file contains the Window-OS-specific functions */
 
-//
-// The base class for the machine dependent compiler to derive from
-// for managing object code from the compile.
-//
-class TCompiler {
-public:
-    TCompiler(EShLanguage l, TInfoSink& sink) : infoSink(sink) , language(l) { }
-    virtual ~TCompiler() { }
-    EShLanguage getLanguage() { return language; }
+#define TO_NATIVE_TLS_INDEX(nIndex) ((DWORD)((uintptr_t)(nIndex) - 1))
 
-    virtual bool compile(TIntermNode* root, int version = 0, EProfile profile = ENoProfile) = 0;
+/* Thread Local Storage Operations */
+OS_TLSIndex OS_AllocTLSIndex(void)
+{
+    DWORD dwIndex = TlsAlloc();
+    if (dwIndex == TLS_OUT_OF_INDEXES)
+        return OS_INVALID_TLS_INDEX;
+    return (OS_TLSIndex)((uintptr_t)dwIndex + 1);
+}
 
-    TInfoSink& infoSink;
-protected:
-    TCompiler& operator=(TCompiler&);
+bool OS_SetTLSValue(OS_TLSIndex nIndex, void *lpvValue)
+{
+    if (nIndex == OS_INVALID_TLS_INDEX)
+        return false;
+    if (!TlsSetValue(TO_NATIVE_TLS_INDEX(nIndex), lpvValue))
+        return false;
+    return true;
+}
 
-    EShLanguage language;
-};
+void *OS_GetTLSValue(OS_TLSIndex nIndex)
+{
+    return TlsGetValue(TO_NATIVE_TLS_INDEX(nIndex));
+}
 
-#endif // _SHHANDLE_INCLUDED_
+bool OS_FreeTLSIndex(OS_TLSIndex nIndex)
+{
+    if (nIndex == OS_INVALID_TLS_INDEX)
+        return false;
+    if (!TlsFree(TO_NATIVE_TLS_INDEX(nIndex)))
+        return false;
+    return true;
+}
+
+void InitGlobalLock(void)
+{
+    glslang_global_lock = CreateMutex(0, false, 0);
+}
+
+void GetGlobalLock(void)
+{
+    WaitForSingleObject(glslang_global_lock, INFINITE);
+}
+
+void ReleaseGlobalLock(void)
+{
+    ReleaseMutex(glslang_global_lock);
+}

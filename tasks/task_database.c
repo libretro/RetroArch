@@ -254,16 +254,15 @@ error:
 
 static int task_database_cue_get_serial(const char *name, char* serial)
 {
+   int rv;
    char track_path[PATH_MAX_LENGTH];
    uint64_t offset                  = 0;
    uint64_t size                    = 0;
-   int rv                           = 0;
 
    track_path[0]                    = '\0';
 
-   rv = cue_find_track(name, true, &offset, &size, track_path, sizeof(track_path));
-
-   if (rv < 0)
+   if ((rv = cue_find_track(name, true, &offset, &size, track_path,
+sizeof(track_path))) < 0)
    {
 #ifdef DEBUG
       RARCH_LOG("%s: %s\n",
@@ -287,9 +286,8 @@ static int task_database_gdi_get_serial(const char *name, char* serial)
 
    track_path[0]                    = '\0';
 
-   rv = gdi_find_track(name, true, track_path, sizeof(track_path));
-
-   if (rv < 0)
+   if ((rv = gdi_find_track(name, true,
+               track_path, sizeof(track_path))) < 0)
    {
 #ifdef DEBUG
       RARCH_LOG("%s: %s\n",
@@ -391,10 +389,8 @@ static int task_database_cue_get_crc(const char *name, uint32_t *crc)
 
    track_path[0]    = '\0';
 
-   rv               = cue_find_track(name, false, &offset, &size,
-         track_path, sizeof(track_path));
-
-   if (rv < 0)
+   if ((rv = cue_find_track(name, false, &offset, &size,
+         track_path, sizeof(track_path))) < 0)
    {
 #ifdef DEBUG
       RARCH_LOG("%s: %s\n",
@@ -424,9 +420,8 @@ static int task_database_gdi_get_crc(const char *name, uint32_t *crc)
 
    track_path[0] = '\0';
 
-   rv            = gdi_find_track(name, true, track_path, sizeof(track_path));
-
-   if (rv < 0)
+   if ((rv = gdi_find_track(name, true,
+               track_path, sizeof(track_path))) < 0)
    {
 #ifdef DEBUG
       RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK),
@@ -749,7 +744,6 @@ static int database_info_list_iterate_found_match(
 
    db_crc[0]                      = '\0';
    db_playlist_path[0]            = '\0';
-   db_playlist_base_str[0]        = '\0';
    entry_path_str[0]              = '\0';
 
    fill_pathname(db_playlist_base_str,
@@ -771,9 +765,7 @@ static int database_info_list_iterate_found_match(
          RARCH_ERR("Serial string encoding error\n");
    }
    else
-   {
       snprintf(db_crc, str_len, "%08lX|crc", (unsigned long)db_info_entry->crc32);
-   }
 
    if (entry_path)
       strlcpy(entry_path_str, entry_path, str_len);
@@ -1005,9 +997,6 @@ static int task_database_iterate_playlist_lutro(
    {
       struct playlist_entry entry;
       char game_title[PATH_MAX_LENGTH];
-
-      game_title[0]               = '\0';
-
       fill_pathname(game_title,
             path_basename(path), "", sizeof(game_title));
       path_remove_extension(game_title);

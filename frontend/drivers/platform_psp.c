@@ -60,6 +60,10 @@
 #include "../../paths.h"
 #include "../../verbosity.h"
 
+#if !defined(IS_SALAMANDER) && defined(HAVE_NETWORKING)
+#include "../../network/netplay/netplay.h"
+#endif
+
 #if defined(PSP) && defined(HAVE_KERNEL_PRX)
 #include "../../bootstrap/psp1/kernel_functions.h"
 #endif
@@ -85,128 +89,123 @@ static enum frontend_fork psp_fork_mode = FRONTEND_FORK_NONE;
 static void frontend_psp_get_env_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
-   struct rarch_main_wrap *params = NULL;
+#ifndef IS_SALAMANDER
+   struct rarch_main_wrap *params = (struct rarch_main_wrap*)params_data;
+#endif
+
 #ifdef VITA
    strcpy_literal(eboot_path, "app0:/");
-   strlcpy(g_defaults.dirs[DEFAULT_DIR_PORT], eboot_path, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
    strcpy_literal(user_path, "ux0:/data/retroarch/");
+
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_PORT], eboot_path,
+      sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
+   /* bundle data*/
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE],
+      g_defaults.dirs[DEFAULT_DIR_PORT], "",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
+      g_defaults.dirs[DEFAULT_DIR_PORT], "info",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   /* user data*/
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], user_path, "assets",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], user_path,
+      "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR], user_path,
+      "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], user_path, "cheats",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], user_path,
+      "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], user_path,
+      "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], user_path,
+      "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], user_path, "remaps",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM], user_path,
+      "savefiles", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE], user_path,
+      "savestates", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], user_path, "system",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], user_path, "temp",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], user_path,
+      "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+#ifdef HAVE_VIDEO_LAYOUT
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT], user_path,
+      "layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
+#endif
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], user_path,
+      "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], user_path, "logs",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY], user_path,
+      sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
+   fill_pathname_join(g_defaults.path_config, user_path, FILE_PATH_MAIN_CONFIG,
+      sizeof(g_defaults.path_config));
 #else
    strlcpy(eboot_path, argv[0], sizeof(eboot_path));
    /* for PSP, use uppercase directories, and no trailing slashes
       otherwise mkdir fails */
    strcpy_literal(user_path, "ms0:/PSP/RETROARCH");
-   fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], argv[0], sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
-#endif
 
-#ifdef VITA
+   fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], argv[0],
+      sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
    /* bundle data*/
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], g_defaults.dirs[DEFAULT_DIR_PORT],
-         "", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], g_defaults.dirs[DEFAULT_DIR_PORT],
-         "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
-   /* user data*/
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], user_path,
-         "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], user_path,
-         "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR], user_path,
-         "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], user_path,
-         "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], user_path,
-         "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], user_path,
-         "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], user_path,
-         "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], user_path,
-         "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM], user_path,
-         "savefiles", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE], user_path,
-         "savestates", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], user_path,
-         "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], user_path,
-         "temp", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], user_path,
-         "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
-#ifdef HAVE_VIDEO_LAYOUT
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT], user_path,
-         "layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
-#endif
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], user_path,
-         "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], user_path,
-         "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
-   strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
-         user_path, sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
-   fill_pathname_join(g_defaults.path_config, user_path,
-         FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
-#else
-
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], g_defaults.dirs[DEFAULT_DIR_PORT],
-         "CORES", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], g_defaults.dirs[DEFAULT_DIR_PORT],
-         "INFO", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
-
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE],
+      g_defaults.dirs[DEFAULT_DIR_PORT], "CORES",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
+      g_defaults.dirs[DEFAULT_DIR_PORT], "INFO",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    /* user data */
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], user_path,
-         "CHEATS", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], user_path, "CHEATS",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], user_path,
-         "CONFIG", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+      "CONFIG", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], user_path,
-         "DOWNLOADS", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+      "DOWNLOADS", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], user_path,
-         "PLAYLISTS", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
-         "REMAPS", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+      "PLAYLISTS", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
+      g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "REMAPS",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM], user_path,
-         "SAVEFILES", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+      "SAVEFILES", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE], user_path,
-         "SAVESTATES", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+      "SAVESTATES", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT], user_path,
-         "SCREENSHOTS", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], user_path,
-         "SYSTEM", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], user_path,
-         "LOGS", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
-
-   /* cache dir */
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], user_path,
-         "TEMP", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
-
-   /* history and main config */
-   strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
-         user_path, sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
-   fill_pathname_join(g_defaults.path_config, user_path,
-         FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
+      "SCREENSHOTS", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], user_path, "SYSTEM",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], user_path, "LOGS",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], user_path, "TEMP",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY], user_path,
+      sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
+   fill_pathname_join(g_defaults.path_config, user_path, FILE_PATH_MAIN_CONFIG,
+      sizeof(g_defaults.path_config));
 #endif
 
 #ifndef IS_SALAMANDER
-#ifdef VITA
-   params          = (struct rarch_main_wrap*)params_data;
-   params->verbose = true;
+   if (params && *argc > 1 && !string_is_empty(argv[1]))
+#ifdef HAVE_NETWORKING
+   /* If the process was forked for netplay purposes,
+      DO NOT touch the arguments. */
+   if (!string_is_equal(argv[1], "-H") && !string_is_equal(argv[1], "-C"))
 #endif
-   if (!string_is_empty(argv[1]))
    {
-      static char path[PATH_MAX_LENGTH] = {0};
-      struct rarch_main_wrap      *args =
-         (struct rarch_main_wrap*)params_data;
-
-      if (args)
-      {
-         strlcpy(path, argv[1], sizeof(path));
-
-         args->touched        = true;
-         args->no_content     = false;
-         args->verbose        = false;
-         args->config_path    = NULL;
-         args->sram_path      = NULL;
-         args->state_path     = NULL;
-         args->content_path   = path;
-         args->libretro_path  = NULL;
-      }
+      params->content_path  = argv[1];
+      params->sram_path     = NULL;
+      params->state_path    = NULL;
+      params->config_path   = NULL;
+      params->libretro_path = NULL;
+      params->verbose       = false;
+      params->no_content    = false;
+      params->touched       = true;
    }
 
    dir_check_defaults("custom.ini");
@@ -303,69 +302,92 @@ static void frontend_psp_init(void *data)
 
 static void frontend_psp_exec(const char *path, bool should_load_game)
 {
-#ifdef IS_SALAMANDER
-   char boot_params[1024];
-   char core_name[256];
-#endif
-   char argp[512] = {0};
-   SceSize   args = 0;
-
 #if defined(PSP)
-   strlcpy(argp, eboot_path, sizeof(argp));
-   args = strlen(argp) + 1;
-#endif
+#ifdef HAVE_KERNEL_PRX
+   char    argp[PATH_MAX_LENGTH];
+   SceSize args = strlcpy(argp, eboot_path, sizeof(argp)) + 1;
 
 #ifndef IS_SALAMANDER
-   if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
+   if (args < sizeof(argp) && should_load_game)
    {
-      argp[args] = '\0';
-      strlcat(argp + args, path_get(RARCH_PATH_CONTENT), sizeof(argp) - args);
-      args += strlen(argp + args) + 1;
+      const char *content = path_get(RARCH_PATH_CONTENT);
+
+      if (!string_is_empty(content))
+         args += strlcpy(argp + args, content, sizeof(argp) - args) + 1;
    }
 #endif
 
-#if defined(VITA)
-#ifdef IS_SALAMANDER
+   if (args > sizeof(argp))
+      args = sizeof(argp);
+
+   exitspawn_kernel(path, args, argp);
+#endif
+#elif defined(VITA)
+#ifndef IS_SALAMANDER
+#ifdef HAVE_NETWORKING
+   char *arg_data[NETPLAY_FORK_MAX_ARGS];
+#else
+   char *arg_data[2];
+#endif
+   char game_path[PATH_MAX_LENGTH];
+#else
+   char *arg_data[2];
+   char boot_params[PATH_MAX_LENGTH];
+#endif
+
+   arg_data[0] = NULL;
+
+#ifndef IS_SALAMANDER
+   if (should_load_game)
+   {
+      const char *content = path_get(RARCH_PATH_CONTENT);
+
+#ifdef HAVE_NETWORKING
+      if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_GET_FORK_ARGS,
+            (void*)arg_data))
+#endif
+      if (!string_is_empty(content))
+      {
+         strlcpy(game_path, content, sizeof(game_path));
+         arg_data[0] = game_path;
+         arg_data[1] = NULL;
+      }
+   }
+#else
    sceAppMgrGetAppParam(boot_params);
-   if (strstr(boot_params,"psgm:play"))
+   if (strstr(boot_params, "psgm:play"))
    {
       char *param1 = strstr(boot_params, "&param=");
       char *param2 = strstr(boot_params, "&param2=");
 
-      /* copy path to core_name for normal boot */
-      strlcpy(core_name, path, sizeof(core_name));
-
-      if (param1 != NULL && param2 != NULL)
+      if (param1 && param2)
       {
-         if (param2 > param1 && (param2 - (param1+7) < sizeof(core_name)) && strlen(param2+8) < sizeof(argp))
+         char *delim;
+
+         param1 += STRLEN_CONST("&param=");
+         param2 += STRLEN_CONST("&param2=");
+
+         delim = strchr(param1, '&');
+         if (delim)
+            *delim = '\0';
+         delim = strchr(param2, '&');
+         if (delim)
+            *delim = '\0';
+
+         if (!string_is_empty(param1))
          {
-            /* handle case where param2 follows param1 */
-            param1 += 7;
-            memcpy(core_name, param1, param2 - param1);
-            core_name[param2-param1] = 0;
-            strlcpy(argp, param2 + 8, sizeof(argp));
-            args = strlen(argp);
-         }
-         else if (param1 > param2 && (param1 - (param2+8) < sizeof(argp)) && strlen(param1+7) < sizeof(core_name))
-         {
-            /* handle case where param1 follows param2 */
-            param2 += 8;
-            memcpy(argp, param2, param1 - param2);
-            argp[param1-param2] = 0;
-            strlcpy(core_name, param1 + 7, sizeof(core_name));
-            args = strlen(argp);
+            path = param1;
+
+            if (!string_is_empty(param2))
+            {
+               arg_data[0] = param2;
+               arg_data[1] = NULL;
+            }
          }
       }
-      
-      int ret =  sceAppMgrLoadExec(core_name, args == 0 ? NULL : (char * const*)((const char*[]){argp, 0}), NULL);
    }
-   else
 #endif
-   {
-      int ret =  sceAppMgrLoadExec(path, args == 0 ? NULL : (char * const*)((const char*[]){argp, 0}), NULL);
-   }
-#elif defined(PSP) && defined(HAVE_KERNEL_PRX)
-   exitspawn_kernel(path, args, argp);
+   sceAppMgrLoadExec(path, arg_data[0] ? arg_data : NULL, NULL);
 #endif
 }
 

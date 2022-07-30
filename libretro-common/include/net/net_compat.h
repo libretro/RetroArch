@@ -58,13 +58,19 @@
 
 #define socklen_t int
 
-#ifndef h_addr
-#define h_addr h_addr_list[0] /* for backward compatibility */
-#endif
-
 #ifndef SO_KEEPALIVE
 #define SO_KEEPALIVE 0 /* verify if correct */
 #endif
+
+struct hostent
+{
+   char *h_name;
+   char **h_aliases;
+   int  h_addrtype;
+   int  h_length;
+   char **h_addr_list;
+   char *h_addr;
+};
 
 #elif defined(GEKKO)
 #include <network.h>
@@ -85,6 +91,7 @@
 #define recv(a,b,c,d) net_recv(a,b,c,d)
 #define recvfrom(a,b,c,d,e,f) net_recvfrom(a,b,c,d,e,f)
 #define select(a,b,c,d,e) net_select(a,b,c,d,e)
+#define gethostbyname(a) net_gethostbyname(a)
 
 #elif defined(VITA)
 #include <psp2/net/net.h>
@@ -251,7 +258,7 @@ struct addrinfo
    int ai_family;
    int ai_socktype;
    int ai_protocol;
-   size_t ai_addrlen;
+   socklen_t ai_addrlen;
    struct sockaddr *ai_addr;
    char *ai_canonname;
    struct addrinfo *ai_next;

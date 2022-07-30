@@ -587,10 +587,6 @@ MSG_HASH(
    "Característiques de la CPU"
    )
 MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   "Arquitectura de la CPU:"
-   )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "Nuclis de la CPU:"
    )
@@ -6265,6 +6261,114 @@ MSG_HASH(
    "S’ha produït un error en suprimir el fitxer d’opcions del nucli."
    )
 MSG_HASH(
+   MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
+   "No s’ha pogut assignar memòria pel contingut apedaçat..."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPLY_SHADER,
+   "No s’ha pogut aplicar el shader."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPLY_SHADER_PRESET,
+   "No s’ha pogut aplicar el valor predefinit del shader:"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_BIND_SOCKET,
+   "No s’ha pogut vincular el sòcol."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CREATE_THE_DIRECTORY,
+   "No s’ha pogut crear el directori."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
+   "No s’ha pogut extreure el contingut del fitxer comprimit"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
+   "No s’ha pogut obtenir el sobrenom del client."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD,
+   "No s’ha pogut carregar"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_CONTENT,
+   "No s’ha pogut carregar el contingut"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_MOVIE_FILE,
+   "No s’ha pogut carregar el fitxer de pel·lícula"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_OVERLAY,
+   "No s’ha pogut carregar la superposició."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_STATE,
+   "No s’ha pogut carregar l’estat de"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
+   "No s’ha pogut obrir el nucli de libretro"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_PATCH,
+   "No s’ha pogut aplicar el pedaç"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT,
+   "No s’ha pogut rebre la capçalera del client."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_NICKNAME,
+   "No s’ha pogut rebre el sobrenom."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST,
+   "No s’ha pogut rebre el sobrenom de l’amfitrió."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_NICKNAME_SIZE_FROM_HOST,
+   "No s’ha pogut rebre la mida del sobrenom de l’amfitrió."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
+   "No s’han pogut rebre les dades de SRAM de l’amfitrió."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "No s’ha pogut treure el disc de la safata."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
+   "No s’ha pogut eliminar el fitxer temporal"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SAVE_SRAM,
+   "No s’ha pogut desar la SRAM"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_SRAM,
+   "No s’ha pogut carregar la SRAM"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SAVE_STATE_TO,
+   "No s’ha pogut desar l’estat a"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_NICKNAME,
+   "No s’ha pogut enviar el sobrenom."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_NICKNAME_SIZE,
+   "No s’ha pogut enviar la mida del sobrenom."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT,
+   "No s’ha pogut enviar el sobrenom al client."
+   )
+MSG_HASH(
    MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
    "No s'ha pogut enviar el sobrenom a l'amfitrió."
    )
@@ -6447,6 +6551,54 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
    "Contrasenya incorrecta."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
+   "No s’ha pogut crear el codi"
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
+   "S’ha suprimit la coincidència"
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
+   "No queda espai. El màxim són 100 trucs simultanis."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_TOP_SUCCESS,
+   "S’ha afegit un nou truc al capdamunt de la llista."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_BOTTOM_SUCCESS,
+   "S’ha afegit un nou truc al capdavall de la llista."
+   )
+MSG_HASH(
+   MSG_CHEAT_DELETE_ALL_SUCCESS,
+   "S’han suprimit tots els trucs."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_BEFORE_SUCCESS,
+   "S’ha afegit un nou truc abans d’aquest."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_AFTER_SUCCESS,
+   "S’ha afegit un nou truc després d’aquest."
+   )
+MSG_HASH(
+   MSG_CHEAT_COPY_BEFORE_SUCCESS,
+   "S’ha copiat un truc abans d’aquest."
+   )
+MSG_HASH(
+   MSG_CHEAT_COPY_AFTER_SUCCESS,
+   "S’ha copiat un truc després d’aquest."
+   )
+MSG_HASH(
+   MSG_CHEAT_DELETE_SUCCESS,
+   "S’ha suprimit el truc."
+   )
+MSG_HASH(
+   MSG_DEVICE_CONFIGURED_IN_PORT,
+   "Configurat al port:"
    )
 MSG_HASH(
    MSG_CORE_INSTALLATION_FAILED,

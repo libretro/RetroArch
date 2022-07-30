@@ -46,7 +46,7 @@
 
 namespace {
 
-bool IsInfinity(double x) {
+static bool IsInfinity(double x) {
 #ifdef _MSC_VER
     switch (_fpclass(x)) {
     case _FPCLASS_NINF:
@@ -60,15 +60,16 @@ bool IsInfinity(double x) {
 #endif
 }
 
-bool IsNan(double x) {
+static bool IsNan(double x) {
 #ifdef _MSC_VER
     switch (_fpclass(x)) {
     case _FPCLASS_SNAN:
     case _FPCLASS_QNAN:
         return true;
     default:
-        return false;
+	break;
     }
+  return false;
 #else
   return std::isnan(x);
 #endif

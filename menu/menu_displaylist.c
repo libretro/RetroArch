@@ -137,7 +137,7 @@
 #define BYTES_TO_GB(bytes) (((bytes) / 1024) / 1024 / 1024)
 
 #ifdef HAVE_NETWORKING
-#if !defined(HAVE_SOCKET_LEGACY) || defined(GEKKO)
+#if !defined(HAVE_SOCKET_LEGACY) || defined(VITA) || defined(GEKKO)
 #include <net/net_ifinfo.h>
 #endif
 #endif
@@ -190,6 +190,7 @@ static void filebrowser_parse(
    enum menu_displaylist_ctl_state type         = (enum menu_displaylist_ctl_state)type_data;
    enum filebrowser_enums filebrowser_type      = filebrowser_get_type();
    const char *path                             = info->path;
+   bool allow_parent_directory                  = true;
    bool path_is_compressed                      = !string_is_empty(path) ?
          path_is_compressed_file(path) : false;
    menu_search_terms_t *search_terms            = menu_entries_search_get_terms();
@@ -226,6 +227,10 @@ static void filebrowser_parse(
       if (string_is_equal(info->label,
                msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)))
          filter_ext = false;
+
+      if (string_is_equal(info->label, "database_manager_list") ||
+          string_is_equal(info->label, "cursor_manager_list"))
+         allow_parent_directory = false;
 
       if (filebrowser_type == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
       {
@@ -452,7 +457,7 @@ static void filebrowser_parse(
    }
 
 end:
-   if (!path_is_compressed)
+   if (!path_is_compressed && allow_parent_directory)
       menu_entries_prepend(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY),
             path,
@@ -1691,7 +1696,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             cpu_arch_str, sizeof(cpu_arch_str));
 
       strlcpy(cpu_str, cpu_text_str, sizeof(cpu_str));
-      strlcat(cpu_str, " ", sizeof(cpu_str));
+      strlcat(cpu_str, ": ", sizeof(cpu_str));
       strlcat(cpu_str, cpu_arch_str, sizeof(cpu_str));
 
       if (menu_entries_append_enum(list, cpu_str,
@@ -2385,7 +2390,6 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    database_info_list_t *db_info       = NULL;
    bool show_advanced_settings         = settings->bools.menu_show_advanced_settings;
    const char *dir_playlist            = settings->paths.directory_playlist;
-   const char *menu_driver             = menu_driver_ident();
 
    playlist_config.capacity            = COLLECTION_SIZE;
    playlist_config.old_format          = settings->bools.playlist_use_old_format;
@@ -2428,30 +2432,6 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
       crc_str[0] = tmp[0] = thumbnail_content[0] = '\0';
 
       snprintf(crc_str, sizeof(crc_str), "%08lX", (unsigned long)db_info_entry->crc32);
-
-      /* This allows thumbnails to be shown while viewing database
-       * entries...
-       * It only makes sense to do this for the first info entry,
-       * since menu drivers cannot handle multiple successive
-       * calls of menu_driver_set_thumbnail_content()...
-       * Note that thumbnail updates must be disabled when using
-       * RGUI and GLUI, since this functionality is handled elsewhere
-       * (and doing it here creates harmful conflicts) */
-      if ((i == 0) &&
-          !string_is_equal(menu_driver, "rgui") &&
-          !string_is_equal(menu_driver, "glui"))
-      {
-         if (!string_is_empty(db_info_entry->name))
-            strlcpy(thumbnail_content, db_info_entry->name,
-                  sizeof(thumbnail_content));
-
-         if (!string_is_empty(thumbnail_content))
-            menu_driver_set_thumbnail_content(thumbnail_content,
-                  sizeof(thumbnail_content));
-
-         menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
-         menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
-      }
 
       if (playlist)
       {
@@ -3899,7 +3879,7 @@ static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
 #endif
 
 #ifdef HAVE_NETWORKING
-#if !defined(HAVE_SOCKET_LEGACY) || defined(GEKKO)
+#if !defined(HAVE_SOCKET_LEGACY) || defined(VITA) || defined(GEKKO)
    if (menu_entries_append_enum(info_list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION),
          msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_INFORMATION),
@@ -7165,7 +7145,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_NETWORK_INFO:
 #ifdef HAVE_NETWORKING
-#if !defined(HAVE_SOCKET_LEGACY) || defined(GEKKO)
+#if !defined(HAVE_SOCKET_LEGACY) || defined(VITA) || defined(GEKKO)
          {
             net_ifinfo_t interfaces = {0};
 

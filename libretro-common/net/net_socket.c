@@ -222,7 +222,7 @@ int socket_select(int nfds, fd_set *readfds, fd_set *writefds,
    int epoll_fd;
    SceNetEpollEvent *events     = NULL;
    int              event_count = 0;
-   int              timeout_ms  = -1;
+   int              timeout_us  = -1;
    int              ret         = -1;
 
    if (nfds < 0 || nfds > 1024)
@@ -319,10 +319,11 @@ int socket_select(int nfds, fd_set *readfds, fd_set *writefds,
    if (errorfds)
       FD_ZERO(errorfds);
 
+   /* Vita's epoll takes a microsecond timeout parameter. */
    if (timeout)
-      timeout_ms = (int)((timeout->tv_usec / 1000) + (timeout->tv_sec * 1000));
+      timeout_us = (int)(timeout->tv_usec + (timeout->tv_sec * 1000000));
 
-   ret = sceNetEpollWait(epoll_fd, events, event_count, timeout_ms);
+   ret = sceNetEpollWait(epoll_fd, events, event_count, timeout_us);
    if (ret <= 0)
       goto done;
 
@@ -420,6 +421,10 @@ int socket_poll(struct pollfd *fds, unsigned nfds, int timeout)
    }
 
 #undef ALLOC_EVENTS
+
+   /* Vita's epoll takes a microsecond timeout parameter. */
+   if (timeout > 0)
+      timeout *= 1000;
 
    ret = sceNetEpollWait(epoll_fd, events, event_count, timeout);
    if (ret <= 0)

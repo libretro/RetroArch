@@ -2135,7 +2135,7 @@ void input_config_get_bind_string(
          )
          *key = '\0';
       /*empty?*/
-      if (*key != '\0')
+      else if (*key != '\0')
       {
          char keybuf[64];
 
@@ -2922,9 +2922,6 @@ void input_config_set_device_config_path(unsigned port, const char *path)
    {
       char parent_dir_name[128];
       input_driver_state_t *input_st = &input_driver_st;
-
-      parent_dir_name[0] = '\0';
-
       if (fill_pathname_parent_dir_name(parent_dir_name,
                path, sizeof(parent_dir_name)))
          fill_pathname_join(input_st->input_device_info[port].config_path,
@@ -3079,8 +3076,6 @@ void config_read_keybinds_conf(void *data)
          prefix                     = input_config_get_prefix(i, meta);
          if (!btn || !prefix)
             continue;
-
-         str[0]                     = '\0';
 
          fill_pathname_join_delim(str, prefix, btn,  '_', sizeof(str));
 
@@ -4653,9 +4648,7 @@ static bool runloop_check_movie_init(input_driver_state_t *input_st,
          msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
          path);
 
-   state = bsv_movie_init_internal(path, RARCH_MOVIE_RECORD);
-
-   if (!state)
+   if (!(state = bsv_movie_init_internal(path, RARCH_MOVIE_RECORD)))
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
@@ -5675,8 +5668,8 @@ void input_keyboard_event(bool down, unsigned code,
 
          if (say_char)
          {
-            char c    = (char) character;
-            *say_char = c;
+            char c      = (char) character;
+            *say_char   = c;
             say_char[1] = '\0';
 
             if (character == 127 || character == 8)

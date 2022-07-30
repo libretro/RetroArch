@@ -1649,8 +1649,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       char driver_version[64];
       char api_version[64];
       char version_str[128];
-      int pos       = 0;
-      device_str[0] = driver_version[0] = api_version[0] = version_str[0] = '\0';
+      int pos           = 0;
+      driver_version[0] = api_version[0] = '\0';
 
       strlcpy(device_str, vk->context.gpu_properties.deviceName, sizeof(device_str));
       strlcat(device_str, " ", sizeof(device_str));
@@ -1675,7 +1675,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       strlcat(api_version, ".", sizeof(api_version));
       pos += snprintf(api_version + pos, sizeof(api_version) - pos, "%u", VK_VERSION_PATCH(vk->context.gpu_properties.apiVersion));
 
-      strlcat(version_str, api_version, sizeof(device_str));
+      strlcpy(version_str, api_version, sizeof(device_str));
 
       video_driver_set_gpu_device_string(device_str);
       video_driver_set_gpu_api_version_string(version_str);

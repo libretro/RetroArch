@@ -1335,7 +1335,7 @@ NETPLAY
 #include "../libretro-common/net/net_compat.c"
 #include "../libretro-common/net/net_socket.c"
 #include "../libretro-common/net/net_http.c"
-#if !defined(HAVE_SOCKET_LEGACY)
+#if !defined(HAVE_SOCKET_LEGACY) || defined(VITA)
 #include "../libretro-common/net/net_ifinfo.c"
 #endif
 #include "../tasks/task_http.c"
@@ -1710,4 +1710,19 @@ ANDROID PLAY FEATURE DELIVERY
 ============================================================ */
 #if defined(ANDROID)
 #include "../play_feature_delivery/play_feature_delivery.c"
+#endif
+
+/*============================================================
+GLSLANG
+============================================================ */
+#ifdef WANT_GLSLANG
+
+#if defined(__linux__) || defined(__APPLE__)
+#include "../deps/glslang/glslang/glslang/OSDependent/Unix/ossource.c"
+#endif
+
+#ifdef _WIN32
+#include "../deps/glslang/glslang/glslang/OSDependent/Windows/ossource.c"
+#endif
+
 #endif

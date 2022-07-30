@@ -1418,7 +1418,11 @@ static const int default_content_favorites_size = 200;
 #define DEFAULT_LIBRETRO_LOG_LEVEL 1
 
 #ifndef RARCH_DEFAULT_PORT
+#ifndef VITA
 #define RARCH_DEFAULT_PORT 55435
+#else
+#define RARCH_DEFAULT_PORT 19492
+#endif
 #endif
 
 #ifndef RARCH_STREAM_DEFAULT_PORT

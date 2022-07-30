@@ -625,8 +625,6 @@ static int action_start_core_lock(
       core_info_t *core_info = NULL;
       char msg[PATH_MAX_LENGTH];
 
-      msg[0] = '\0';
-
       /* Need to fetch core name for error message */
 
       /* If core is found, use display name */
@@ -685,8 +683,6 @@ static int action_start_core_set_standalone_exempt(
       const char *core_name  = NULL;
       core_info_t *core_info = NULL;
       char msg[PATH_MAX_LENGTH];
-
-      msg[0] = '\0';
 
       /* Need to fetch core name for error message */
 

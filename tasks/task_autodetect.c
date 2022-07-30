@@ -98,51 +98,49 @@ static unsigned input_autoconfigure_get_config_file_affinity(
       autoconfig_handle_t *autoconfig_handle,
       config_file_t *config)
 {
-   int tmp_int                     = 0;
-   uint16_t config_vid             = 0;
-   uint16_t config_pid             = 0;
-   bool pid_match                  = false;
-   unsigned affinity               = 0;
-   struct config_entry_list *entry = NULL;
-      
+   int tmp_int         = 0;
+   uint16_t config_vid = 0;
+   uint16_t config_pid = 0;
+   bool pid_match      = false;
+   unsigned affinity   = 0;
+   struct config_entry_list 
+      *entry           = NULL;
 
    /* Parse config file */
    if (config_get_int(config, "input_vendor_id", &tmp_int))
-      config_vid                   = (uint16_t)tmp_int;
+      config_vid = (uint16_t)tmp_int;
 
    if (config_get_int(config, "input_product_id", &tmp_int))
-      config_pid                   = (uint16_t)tmp_int;
+      config_pid = (uint16_t)tmp_int;
 
    /* > Bliss-Box shenanigans... */
 #ifdef HAVE_BLISSBOX
    if (autoconfig_handle->device_info.vid == BLISSBOX_VID)
-      config_pid                   = BLISSBOX_PID;
+      config_pid = BLISSBOX_PID;
 #endif
 
    /* Check for matching VID+PID */
-   pid_match                       =
-                     (autoconfig_handle->device_info.vid == config_vid)
-                  && (autoconfig_handle->device_info.pid == config_pid)
-                  && (autoconfig_handle->device_info.vid != 0)
-                  && (autoconfig_handle->device_info.pid != 0);
+   pid_match = (autoconfig_handle->device_info.vid == config_vid) &&
+               (autoconfig_handle->device_info.pid == config_pid) &&
+               (autoconfig_handle->device_info.vid != 0)          &&
+               (autoconfig_handle->device_info.pid != 0);
 
    /* > More Bliss-Box shenanigans... */
 #ifdef HAVE_BLISSBOX
-   if (pid_match)
-      pid_match                   = 
-                  (autoconfig_handle->device_info.vid != BLISSBOX_VID)
-               && (autoconfig_handle->device_info.pid != BLISSBOX_PID);
+   pid_match = pid_match &&
+               (autoconfig_handle->device_info.vid != BLISSBOX_VID) &&
+               (autoconfig_handle->device_info.pid != BLISSBOX_PID);
 #endif
 
    if (pid_match)
-      affinity                   += 3;
+      affinity += 3;
 
    /* Check for matching device name */
    if (      (entry  = config_get_entry(config, "input_device"))
          && !string_is_empty(entry->value)
          &&  string_is_equal(entry->value,
              autoconfig_handle->device_info.name))
-      affinity                   += 2;
+      affinity += 2;
 
    return affinity;
 }
@@ -195,12 +193,14 @@ static bool input_autoconfigure_scan_config_files_external(
    const char *dir_autoconfig           = autoconfig_handle->dir_autoconfig;
    const char *dir_driver_autoconfig    = autoconfig_handle->dir_driver_autoconfig;
    struct string_list *config_file_list = NULL;
+   config_file_t *best_config           = NULL;
+   unsigned max_affinity                = 0;
    bool match_found                     = false;
 
    /* Attempt to fetch file listing from driver-specific
     * autoconfig directory */
-   if (  !string_is_empty  (dir_driver_autoconfig)
-       && path_is_directory(dir_driver_autoconfig))
+   if (!string_is_empty(dir_driver_autoconfig) &&
+       path_is_directory(dir_driver_autoconfig))
       config_file_list = dir_list_new_special(
             dir_driver_autoconfig, DIR_LIST_AUTOCONFIG,
             "cfg", false);
@@ -215,69 +215,74 @@ static bool input_autoconfigure_scan_config_files_external(
          config_file_list = NULL;
       }
 
-      if (  !string_is_empty  (dir_autoconfig)
-          && path_is_directory(dir_autoconfig))
+      if (!string_is_empty(dir_autoconfig) &&
+          path_is_directory(dir_autoconfig))
          config_file_list = dir_list_new_special(
                dir_autoconfig, DIR_LIST_AUTOCONFIG,
                "cfg", false);
    }
 
-   if (config_file_list && (config_file_list->size >= 1))
+   if (!config_file_list || (config_file_list->size < 1))
+      goto end;
+
+   /* Loop through external config files */
+   for (i = 0; i < config_file_list->size; i++)
    {
-      config_file_t *best_config      = NULL;
-      unsigned max_affinity           = 0;
+      const char *config_file_path = config_file_list->elems[i].data;
+      config_file_t *config        = NULL;
+      unsigned affinity            = 0;
 
-      /* Loop through external config files */
-      for (i = 0; i < config_file_list->size; i++)
+      if (string_is_empty(config_file_path))
+         continue;
+
+      /* Load autoconfig file */
+      if (!(config = config_file_new_from_path_to_string(config_file_path)))
+         continue;
+
+      /* Check for a match */
+      if (autoconfig_handle && config)
+         affinity = input_autoconfigure_get_config_file_affinity(
+               autoconfig_handle, config);
+
+      if (affinity > max_affinity)
       {
-         const char *config_file_path = config_file_list->elems[i].data;
-         config_file_t *config        = NULL;
-         unsigned affinity            = 0;
-
-         if (string_is_empty(config_file_path))
-            continue;
-
-         /* Load autoconfig file */
-         if (!(config = config_file_new_from_path_to_string(config_file_path)))
-            continue;
-
-         /* Check for a match */
-         if ((affinity = input_autoconfigure_get_config_file_affinity(
-                     autoconfig_handle, config)) > max_affinity)
+         if (best_config)
          {
-            if (best_config)
-            {
-               config_file_free(best_config);
-               best_config = NULL;
-            }
-
-            /* 'Cache' config file for later processing */
-            best_config  = config;
-            config       = NULL;
-            max_affinity = affinity;
-
-            /* An affinity of 5 is a 'perfect' match,
-             * and means we can return immediately */
-            if (affinity == 5)
-               break;
+            config_file_free(best_config);
+            best_config = NULL;
          }
-         /* No match - just clean up config file */
-         else
-         {
-            config_file_free(config);
-            config       = NULL;
-         }
+
+         /* 'Cache' config file for later processing */
+         best_config  = config;
+         config       = NULL;
+         max_affinity = affinity;
+
+         /* An affinity of 5 is a 'perfect' match,
+          * and means we can return immediately */
+         if (affinity == 5)
+            break;
       }
-
-      /* If we reach this point and a config file has
-       * been cached, then we have a match */
-      if (best_config)
+      /* No match - just clean up config file */
+      else
       {
+         config_file_free(config);
+         config = NULL;
+      }
+   }
+
+   /* If we reach this point and a config file has
+    * been cached, then we have a match */
+   if (best_config)
+   {
+      if (autoconfig_handle && best_config)
          input_autoconfigure_set_config_file(
                autoconfig_handle, best_config);
-         match_found = true;
-      }
+      match_found = true;
+   }
 
+end:
+   if (config_file_list)
+   {
       string_list_free(config_file_list);
       config_file_list = NULL;
    }
@@ -300,6 +305,7 @@ static bool input_autoconfigure_scan_config_files_internal(
    {
       char *autoconfig_str  = NULL;
       config_file_t *config = NULL;
+      unsigned affinity     = 0;
 
       if (string_is_empty(input_builtin_autoconfs[i]))
          continue;
@@ -313,20 +319,24 @@ static bool input_autoconfigure_scan_config_files_internal(
       free(autoconfig_str);
       autoconfig_str = NULL;
 
-      if (config)
+      /* Check for a match */
+      if (autoconfig_handle && config)
+         affinity = input_autoconfigure_get_config_file_affinity(
+               autoconfig_handle, config);
+
+      /* > In the case of internal autoconfigs, any kind
+       *   of match is considered to be a success */
+      if (affinity > 0)
       {
-         /* Check for a match */
-         if (input_autoconfigure_get_config_file_affinity(
-               autoconfig_handle, config) > 0)
-         {
-            /* > In the case of internal autoconfigs, any kind
-             *   of match is considered to be a success */
+         if (autoconfig_handle && config)
             input_autoconfigure_set_config_file(
                   autoconfig_handle, config);
-            return true;
-         }
+         return true;
+      }
 
-         /* No match - clean up */
+      /* No match - clean up */
+      if (config)
+      {
          config_file_free(config);
          config = NULL;
       }
@@ -424,27 +434,18 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
    bool match_found                       = false;
    const char *device_display_name        = NULL;
    char task_title[NAME_MAX_LENGTH + 16];
+
    task_title[0] = '\0';
 
    if (!task)
-      return;
+      goto task_finished;
 
    autoconfig_handle = (autoconfig_handle_t*)task->state;
 
    if (!autoconfig_handle ||
        string_is_empty(autoconfig_handle->device_info.name) ||
        !autoconfig_handle->autoconfig_enabled)
-   {
-      task_set_finished(task, true);
-      return;
-   }
-
-   /* Get display name for task status message */
-   device_display_name = autoconfig_handle->device_info.display_name;
-   if (string_is_empty(device_display_name))
-      device_display_name = autoconfig_handle->device_info.name;
-   if (string_is_empty(device_display_name))
-      device_display_name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
+      goto task_finished;
 
    /* Annoyingly, we have to scan all the autoconfig
     * files (and in-built configs) in a single shot
@@ -458,56 +459,59 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
     * - Internal autoconfig definitions */
    if (!(match_found = input_autoconfigure_scan_config_files_external(
          autoconfig_handle)))
+      match_found = input_autoconfigure_scan_config_files_internal(
+         autoconfig_handle);
+
+   /* If no match was found, attempt to use
+    * fallback mapping
+    * > Only enabled for certain drivers */
+   if (!match_found)
    {
-      if (!(match_found = input_autoconfigure_scan_config_files_internal(
-         autoconfig_handle)))
+      const char *fallback_device_name = NULL;
+
+      /* Preset fallback device names - must match
+       * those set in 'input_autodetect_builtin.c' */
+      if (string_is_equal(autoconfig_handle->device_info.joypad_driver,
+            "android"))
+         fallback_device_name = "Android Gamepad";
+      else if (string_is_equal(autoconfig_handle->device_info.joypad_driver,
+            "xinput"))
+         fallback_device_name = "XInput Controller";
+      else if (string_is_equal(autoconfig_handle->device_info.joypad_driver,
+            "sdl2"))
+         fallback_device_name = "Standard Gamepad";
+
+      if (!string_is_empty(fallback_device_name) &&
+          !string_is_equal(autoconfig_handle->device_info.name,
+               fallback_device_name))
       {
-         /* If no match was found, attempt to use
-          * fallback mapping
-          * > Only enabled for certain drivers */
-         const char *fallback_device_name = NULL;
+         char *name_backup = strdup(autoconfig_handle->device_info.name);
 
-         /* Preset fallback device names - must match
-          * those set in 'input_autodetect_builtin.c' */
-         if (string_is_equal(
-                  autoconfig_handle->device_info.joypad_driver,
-                  "android"))
-            fallback_device_name = "Android Gamepad";
-         else if (string_is_equal(
-                  autoconfig_handle->device_info.joypad_driver,
-                  "xinput"))
-            fallback_device_name = "XInput Controller";
-         else if (string_is_equal(
-                  autoconfig_handle->device_info.joypad_driver,
-                  "sdl2"))
-            fallback_device_name = "Standard Gamepad";
+         strlcpy(autoconfig_handle->device_info.name,
+               fallback_device_name,
+               sizeof(autoconfig_handle->device_info.name));
 
-         if (!string_is_empty(fallback_device_name) &&
-               !string_is_equal(autoconfig_handle->device_info.name,
-                  fallback_device_name))
-         {
-            char *name_backup = strdup(autoconfig_handle->device_info.name);
+         /* This is not a genuine match - leave
+          * match_found set to 'false' regardless
+          * of the outcome */
+         input_autoconfigure_scan_config_files_internal(
+               autoconfig_handle);
 
-            strlcpy(autoconfig_handle->device_info.name,
-                  fallback_device_name,
-                  sizeof(autoconfig_handle->device_info.name));
+         strlcpy(autoconfig_handle->device_info.name,
+               name_backup,
+               sizeof(autoconfig_handle->device_info.name));
 
-            /* This is not a genuine match - leave
-             * match_found set to 'false' regardless
-             * of the outcome */
-            input_autoconfigure_scan_config_files_internal(
-                  autoconfig_handle);
-
-            strlcpy(autoconfig_handle->device_info.name,
-                  name_backup,
-                  sizeof(autoconfig_handle->device_info.name));
-
-            free(name_backup);
-            name_backup = NULL;
-         }
+         free(name_backup);
+         name_backup = NULL;
       }
    }
 
+   /* Get display name for task status message */
+   device_display_name = autoconfig_handle->device_info.display_name;
+   if (string_is_empty(device_display_name))
+      device_display_name = autoconfig_handle->device_info.name;
+   if (string_is_empty(device_display_name))
+      device_display_name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
 
    /* Generate task status message
     * > Note that 'connection successful' messages
@@ -546,21 +550,29 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
    if (!string_is_empty(task_title))
       task_set_title(task, strdup(task_title));
 
-   task_set_finished(task, true);
+task_finished:
+
+   if (task)
+      task_set_finished(task, true);
 }
 
 static bool autoconfigure_connect_finder(retro_task_t *task, void *user_data)
 {
-   if (task && user_data && task->handler == input_autoconfigure_connect_handler)
-   {
-      autoconfig_handle_t *autoconfig_handle = NULL;
-      if ((autoconfig_handle = (autoconfig_handle_t*)task->state))
-      {
-         unsigned *port = (unsigned*)user_data;
-         return (*port == autoconfig_handle->port);
-      }
-   }
-   return false;
+   autoconfig_handle_t *autoconfig_handle = NULL;
+   unsigned *port                         = NULL;
+
+   if (!task || !user_data)
+      return false;
+
+   if (task->handler != input_autoconfigure_connect_handler)
+      return false;
+
+   autoconfig_handle = (autoconfig_handle_t*)task->state;
+   if (!autoconfig_handle)
+      return false;
+
+   port = (unsigned*)user_data;
+   return (*port == autoconfig_handle->port);
 }
 
 bool input_autoconfigure_connect(
@@ -571,7 +583,6 @@ bool input_autoconfigure_connect(
       unsigned vid,
       unsigned pid)
 {
-   task_finder_data_t find_data;
    retro_task_t *task                     = NULL;
    autoconfig_handle_t *autoconfig_handle = NULL;
    bool driver_valid                      = false;
@@ -582,9 +593,10 @@ bool input_autoconfigure_connect(
          settings->paths.directory_autoconfig : NULL;
    bool notification_show_autoconfig      = settings ?
          settings->bools.notification_show_autoconfig : true;
+   task_finder_data_t find_data;
 
    if (port >= MAX_INPUT_DEVICES)
-      return false;
+      goto error;
 
    /* Cannot connect a device that is currently
     * being connected */
@@ -592,12 +604,11 @@ bool input_autoconfigure_connect(
    find_data.userdata = (void*)&port;
 
    if (task_queue_find(&find_data))
-      return false;
+      goto error;
 
    /* Configure handle */
-   if (!(autoconfig_handle =
-            (autoconfig_handle_t*)malloc(sizeof(autoconfig_handle_t))))
-      return false;
+   if (!(autoconfig_handle = (autoconfig_handle_t*)malloc(sizeof(autoconfig_handle_t))))
+      goto error;
 
    autoconfig_handle->port                         = port;
    autoconfig_handle->device_info.vid              = vid;
@@ -687,13 +698,10 @@ bool input_autoconfigure_connect(
    }
 
    /* Configure task */
-   if (!(task = task_init()))
-   {
-      if (autoconfig_handle)
-         free_autoconfig_handle(autoconfig_handle);
-      autoconfig_handle = NULL;
-      return false;
-   }
+   task = task_init();
+
+   if (!task)
+      goto error;
 
    task->handler  = input_autoconfigure_connect_handler;
    task->state    = autoconfig_handle;
@@ -705,6 +713,19 @@ bool input_autoconfigure_connect(
    task_queue_push(task);
 
    return true;
+
+error:
+
+   if (task)
+   {
+      free(task);
+      task = NULL;
+   }
+
+   if (autoconfig_handle)
+      free_autoconfig_handle(autoconfig_handle);
+   autoconfig_handle = NULL;
+   return false;
 }
 
 /****************************/
@@ -743,48 +764,53 @@ static void cb_input_autoconfigure_disconnect(
 static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 {
    autoconfig_handle_t *autoconfig_handle = NULL;
+   char task_title[NAME_MAX_LENGTH + 16];
+
+   task_title[0] = '\0';
 
    if (!task)
-      return;
+      goto task_finished;
 
    if (!(autoconfig_handle = (autoconfig_handle_t*)task->state))
-   {
-      task_set_finished(task, true);
-      return;
-   }
+      goto task_finished;
+
+   /* Set task title */
+   if (!string_is_empty(autoconfig_handle->device_info.name))
+      snprintf(task_title, sizeof(task_title), "%s %u (%s)",
+            msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
+            autoconfig_handle->port + 1,
+            autoconfig_handle->device_info.name);
+   else
+      snprintf(task_title, sizeof(task_title), "%s %u",
+            msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
+            autoconfig_handle->port + 1);
 
    task_free_title(task);
    if (!autoconfig_handle->suppress_notifcations)
-   {
-      char task_title[NAME_MAX_LENGTH + 16];
-      /* Set task title */
-      if (!string_is_empty(autoconfig_handle->device_info.name))
-         snprintf(task_title, sizeof(task_title), "%s %u (%s)",
-               msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
-               autoconfig_handle->port + 1,
-               autoconfig_handle->device_info.name);
-      else
-         snprintf(task_title, sizeof(task_title), "%s %u",
-               msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
-               autoconfig_handle->port + 1);
       task_set_title(task, strdup(task_title));
-   }
 
-   task_set_finished(task, true);
+task_finished:
+
+   if (task)
+      task_set_finished(task, true);
 }
 
 static bool autoconfigure_disconnect_finder(retro_task_t *task, void *user_data)
 {
-   if (task && user_data && task->handler == input_autoconfigure_disconnect_handler)
-   {
-      autoconfig_handle_t *autoconfig_handle = NULL;
-      if ((autoconfig_handle = (autoconfig_handle_t*)task->state))
-      {
-         unsigned *port = (unsigned*)user_data;
-         return (*port == autoconfig_handle->port);
-      }
-   }
-   return false;
+   autoconfig_handle_t *autoconfig_handle = NULL;
+   unsigned *port                         = NULL;
+
+   if (!task || !user_data)
+      return false;
+
+   if (task->handler != input_autoconfigure_disconnect_handler)
+      return false;
+
+   if (!(autoconfig_handle = (autoconfig_handle_t*)task->state))
+      return false;
+
+   port = (unsigned*)user_data;
+   return (*port == autoconfig_handle->port);
 }
 
 /* Note: There is no real need for autoconfigure
@@ -798,15 +824,15 @@ static bool autoconfigure_disconnect_finder(retro_task_t *task, void *user_data)
  *   we ensure uniformity of OSD status messages */
 bool input_autoconfigure_disconnect(unsigned port, const char *name)
 {
-   task_finder_data_t find_data;
    retro_task_t *task                     = NULL;
    autoconfig_handle_t *autoconfig_handle = NULL;
+   task_finder_data_t find_data;
    settings_t *settings                   = config_get_ptr();
    bool notification_show_autoconfig      = settings ?
          settings->bools.notification_show_autoconfig : true;
 
    if (port >= MAX_INPUT_DEVICES)
-      return false;
+      goto error;
 
    /* Cannot disconnect a device that is currently
     * being disconnected */
@@ -814,12 +840,13 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
    find_data.userdata = (void*)&port;
 
    if (task_queue_find(&find_data))
-      return false;
+      goto error;
 
    /* Configure handle */
-   if (!(autoconfig_handle = (autoconfig_handle_t*)calloc(1,
-               sizeof(autoconfig_handle_t))))
-      return false;
+   autoconfig_handle = (autoconfig_handle_t*)calloc(1, sizeof(autoconfig_handle_t));
+
+   if (!autoconfig_handle)
+      goto error;
 
    autoconfig_handle->port                  = port;
    autoconfig_handle->suppress_notifcations = !notification_show_autoconfig;
@@ -829,13 +856,10 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
             name, sizeof(autoconfig_handle->device_info.name));
 
    /* Configure task */
-   if (!(task = task_init()))
-   {
-      if (autoconfig_handle)
-         free_autoconfig_handle(autoconfig_handle);
-      autoconfig_handle = NULL;
-      return false;
-   }
+   task = task_init();
+
+   if (!task)
+      goto error;
 
    task->handler  = input_autoconfigure_disconnect_handler;
    task->state    = autoconfig_handle;
@@ -846,4 +870,17 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
    task_queue_push(task);
 
    return true;
+
+error:
+
+   if (task)
+   {
+      free(task);
+      task = NULL;
+   }
+
+   free_autoconfig_handle(autoconfig_handle);
+   autoconfig_handle = NULL;
+
+   return false;
 }
