@@ -33,52 +33,48 @@
 #include <retro_timers.h>
 #include <compat/strl.h>
 
-#ifdef GEKKO
-#define gethostbyname net_gethostbyname
-#elif defined(_XBOX)
-/* TODO - implement h_length and h_addrtype */
-struct hostent
-{
-   int h_addrtype;     /* host address type   */
-   int h_length;       /* length of addresses */
-   char **h_addr_list; /* list of addresses   */
-};
-
+#if defined(_XBOX)
 struct hostent *gethostbyname(const char *name)
 {
-   WSAEVENT event;
-   static struct hostent he;
    static struct in_addr addr;
-   static char *addr_ptr      = NULL;
-   XNDNS *dns                 = NULL;
-
-   he.h_addr_list             = &addr_ptr;
-   addr_ptr                   = (char*)&addr;
+   static struct hostent he = {0};
+   WSAEVENT event;
+   XNDNS          *dns = NULL;
+   struct hostent *ret = NULL;
 
    if (!name)
       return NULL;
 
    event = WSACreateEvent();
+
    XNetDnsLookup(name, event, &dns);
    if (!dns)
-      goto error;
+      goto done;
 
    WaitForSingleObject((HANDLE)event, INFINITE);
+
    if (dns->iStatus)
-      goto error;
+      goto done;
 
    memcpy(&addr, dns->aina, sizeof(addr));
 
+   he.h_name      = NULL;
+   he.h_aliases   = NULL;
+   he.h_addrtype  = AF_INET;
+   he.h_length    = sizeof(addr);
+   he.h_addr_list = &he.h_addr;
+   he.h_addr      = (char*)&addr;
+
+   ret = &he;
+
+done:
    WSACloseEvent(event);
-   XNetDnsRelease(dns);
+   if (dns)
+      XNetDnsRelease(dns);
 
-   return &he;
-
-error:
-   if (event)
-      WSACloseEvent(event);
-   return NULL;
+   return ret;
 }
+
 #elif defined(VITA)
 #define COMPAT_NET_INIT_SIZE 512*1024
 #define MAX_NAME 512
@@ -176,83 +172,51 @@ int inet_aton(const char *cp, struct in_addr *inp)
 int getaddrinfo_retro(const char *node, const char *service,
       struct addrinfo *hints, struct addrinfo **res)
 {
-   struct sockaddr_in *in_addr = NULL;
-   struct addrinfo *info       = NULL;
+#if defined(HAVE_SOCKET_LEGACY) || defined(WIIU)
+   struct addrinfo default_hints = {0};
 
-   (void)in_addr;
-   (void)info;
-
+   if (!hints)
+      hints            = &default_hints;
    if (!hints->ai_family)
-   {
-#if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY) || defined(WIIU)
-      hints->ai_family    = AF_INET;
-#else
-      hints->ai_family    = AF_UNSPEC;
-#endif
-   }
+      hints->ai_family = AF_INET;
 
-#if defined(WIIU)
    if (!node)
-   {
-      /* Wii U's socket library chokes on NULL node */
-      if (hints->ai_flags & AI_PASSIVE)
-         node = "0.0.0.0";
-      else
-         node = "127.0.0.1";
-   }
+      node = (hints->ai_flags & AI_PASSIVE) ? "0.0.0.0" : "127.0.0.1";
 #endif
 
 #ifdef HAVE_SOCKET_LEGACY
-   info = (struct addrinfo*)calloc(1, sizeof(*info));
-   if (!info)
-      goto error;
-
-   info->ai_family     = AF_INET;
-   info->ai_socktype   = hints->ai_socktype;
-   in_addr             = (struct sockaddr_in*)
-      calloc(1, sizeof(*in_addr));
-
-   if (!in_addr)
-      goto error;
-
-   info->ai_addrlen    = sizeof(*in_addr);
-   in_addr->sin_family = AF_INET;
-   in_addr->sin_port   = inet_htons(strtoul(service, NULL, 0));
-
-   if (!node && (hints->ai_flags & AI_PASSIVE))
-      in_addr->sin_addr.s_addr = INADDR_ANY;
-   else if (node && isdigit((unsigned char)*node))
-      in_addr->sin_addr.s_addr = inet_addr(node);
-   else if (node && !isdigit((unsigned char)*node))
    {
-      struct hostent *host = (struct hostent*)gethostbyname(node);
+      struct addrinfo    *info = (struct addrinfo*)calloc(1, sizeof(*info));
+      struct sockaddr_in *addr = (struct sockaddr_in*)malloc(sizeof(*addr));
+      struct hostent     *host = gethostbyname(node);
 
-      if (!host || !host->h_addr_list[0])
-         goto error;
+      if (!info || !addr || !host || !host->h_addr)
+      {
+         free(addr);
+         free(info);
 
-      in_addr->sin_family = host->h_addrtype;
+         return -1;
+      }
 
-#if defined(AF_INET6) && !defined(__PS3__) || defined(VITA)
-      /* TODO/FIXME - In case we ever want to support IPv6 */
-      in_addr->sin_addr.s_addr = inet_addr(host->h_addr_list[0]);
+      info->ai_family   = AF_INET;
+      info->ai_socktype = hints->ai_socktype;
+      info->ai_protocol = hints->ai_protocol;
+      info->ai_addrlen  = sizeof(*addr);
+      info->ai_addr     = (struct sockaddr*)addr;
+
+      addr->sin_family      = AF_INET;
+      if (service)
+         addr->sin_port     = inet_htons((uint16_t)strtoul(service, NULL, 10));
+#ifdef VITA
+      addr->sin_addr.s_addr = inet_addr(host->h_addr);
 #else
-      memcpy(&in_addr->sin_addr, host->h_addr, host->h_length);
+      memcpy(&addr->sin_addr, host->h_addr, sizeof(addr->sin_addr));
 #endif
+
+      *res = info;
+
+      return 0;
    }
-   else
-      goto error;
-
-   info->ai_addr = (struct sockaddr*)in_addr;
-   *res          = info;
-
-   return 0;
-
-error:
-   if (in_addr)
-      free(in_addr);
-   if (info)
-      free(info);
-   return -1;
 #else
    return getaddrinfo(node, service, hints, res);
 #endif
