@@ -82,6 +82,7 @@ static void vga_font_render_msg(
       const struct font_params *params)
 {
 #if 0
+   size_t msg_len;
    float x, y, scale;
    unsigned width, height;
    unsigned new_x, new_y;
@@ -115,6 +116,7 @@ static void vga_font_render_msg(
    width    = VGA_WIDTH;
    height   = VGA_HEIGHT;
    new_y    = height - (y * height * scale);
+   msg_len  = strlen(msg);
 
    switch (align)
    {
@@ -122,10 +124,10 @@ static void vga_font_render_msg(
          new_x = x * width * scale;
          break;
       case TEXT_ALIGN_RIGHT:
-         new_x = (x * width * scale) - strlen(msg);
+         new_x = (x * width * scale) - msg_len;
          break;
       case TEXT_ALIGN_CENTER:
-         new_x = (x * width * scale) - (strlen(msg) / 2);
+         new_x = (x * width * scale) - (msg_len / 2);
          break;
       default:
          break;

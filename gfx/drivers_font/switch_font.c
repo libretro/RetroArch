@@ -203,7 +203,7 @@ static void switch_font_render_message(
    {
       int msg_len = strlen(msg);
       if (msg_len <= AVG_GLPYH_LIMIT)
-         switch_font_render_line(sw, font, msg, strlen(msg),
+         switch_font_render_line(sw, font, msg, msg_len,
                scale, color, pos_x, pos_y, text_align);
       return;
    }

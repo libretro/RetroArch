@@ -257,7 +257,7 @@ static void d3d11_font_render_message(
       unsigned msg_len = strlen(msg);
       if (msg_len <= (unsigned)d3d11->sprites.capacity)
          d3d11_font_render_line(d3d11,
-               font, msg, strlen(msg), scale, color, pos_x, pos_y,
+               font, msg, msg_len, scale, color, pos_x, pos_y,
                width, height, text_align);
       return;
    }
