@@ -658,6 +658,7 @@ typedef struct materialui_handle
    enum materialui_landscape_layout_optimization_type
          last_landscape_layout_optimization;
    enum materialui_list_view_type list_view_type;
+   char icons_path[PATH_MAX_LENGTH];
    char msgbox[1024];
    char menu_title[255];
    char fullscreen_thumbnail_label[255];
@@ -2205,14 +2206,8 @@ static void materialui_context_reset_playlist_icons(
       materialui_handle_t *mui)
 {
    size_t i;
-   char icon_path[PATH_MAX_LENGTH];
-   icon_path[0] = '\0';
-   /* Get icon directory */
-   fill_pathname_application_special(
-         icon_path, sizeof(icon_path),
-         APPLICATION_SPECIAL_DIRECTORY_ASSETS_SYSICONS);
 
-   if (string_is_empty(icon_path))
+   if (string_is_empty(mui->icons_path))
       return;
 
    /* Load icons
@@ -2226,7 +2221,7 @@ static void materialui_context_reset_playlist_icons(
          continue;
 
       gfx_display_reset_textures_list(
-            image_file, icon_path,
+            image_file, mui->icons_path,
             &mui->textures.playlist.icons[i].image,
             TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
    }
@@ -2397,23 +2392,16 @@ static uintptr_t materialui_get_playlist_icon(
 static void materialui_context_reset_textures(materialui_handle_t *mui)
 {
    bool has_all_assets = true;
-   char icon_path[PATH_MAX_LENGTH];
    unsigned i;
-
-   icon_path[0] = '\0';
-
-   fill_pathname_application_special(
-         icon_path, sizeof(icon_path),
-         APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS);
 
    /* Loop through all textures */
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
    {
       if (!gfx_display_reset_textures_list(
-            materialui_texture_path(i), icon_path, &mui->textures.list[i],
+            materialui_texture_path(i), mui->icons_path, &mui->textures.list[i],
             TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
       {
-         RARCH_WARN("[GLUI]: Asset missing: \"%s%s%s\".\n", icon_path,
+         RARCH_WARN("[GLUI]: Asset missing: \"%s%s%s\".\n", mui->icons_path,
                PATH_DEFAULT_SLASH(), materialui_texture_path(i));
          has_all_assets = false;
       }
@@ -8057,6 +8045,10 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
          settings->paths.directory_playlist,
          settings->bools.menu_materialui_icons_enable,
          settings->bools.menu_materialui_playlist_icons_enable);
+
+   fill_pathname_application_special(mui->icons_path, 
+         sizeof(mui->icons_path),
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS);
 
    p_anim->updatetime_cb = materialui_menu_animation_update_time;
 
