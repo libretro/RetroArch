@@ -47,8 +47,6 @@ namespace glslang {
 void C_DECL TParseContextBase::error(const TSourceLoc& loc, const char* szReason, const char* szToken,
                                      const char* szExtraInfoFormat, ...)
 {
-    if (messages & EShMsgOnlyPreprocessor)
-        return;
     va_list args;
     va_start(args, szExtraInfoFormat);
     const int maxSize = MaxTokenLength + 200;

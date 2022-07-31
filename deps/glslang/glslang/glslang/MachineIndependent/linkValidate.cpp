@@ -389,7 +389,7 @@ void TIntermediate::mergeErrorCheck(TInfoSink& infoSink, const TIntermSymbol& sy
 //
 // Also, lock in defaults of things not set, including array sizes.
 //
-void TIntermediate::finalCheck(TInfoSink& infoSink, bool keepUncalled)
+void TIntermediate::finalCheck(TInfoSink& infoSink)
 {
     if (getTreeRoot() == nullptr)
         return;
@@ -406,7 +406,7 @@ void TIntermediate::finalCheck(TInfoSink& infoSink, bool keepUncalled)
 
     // recursion and missing body checking
     checkCallGraphCycles(infoSink);
-    checkCallGraphBodies(infoSink, keepUncalled);
+    checkCallGraphBodies(infoSink);
 
     // overlap/alias/missing I/O, etc.
     inOutLocationCheck(infoSink);
@@ -614,7 +614,7 @@ void TIntermediate::checkCallGraphCycles(TInfoSink& infoSink)
 // Reachable ones with missing bodies are errors.
 // Unreachable bodies are dead code.
 //
-void TIntermediate::checkCallGraphBodies(TInfoSink& infoSink, bool keepUncalled)
+void TIntermediate::checkCallGraphBodies(TInfoSink& infoSink)
 {
     // Clear fields we'll use for this.
     for (TGraph::iterator call = callGraph.begin(); call != callGraph.end(); ++call) {
@@ -679,13 +679,11 @@ void TIntermediate::checkCallGraphBodies(TInfoSink& infoSink, bool keepUncalled)
     // Bodies in the AST not reached by the call graph are dead;
     // clear them out, since they can't be reached and also can't
     // be translated further due to possibility of being ill defined.
-    if (! keepUncalled) {
         for (int f = 0; f < (int)functionSequence.size(); ++f) {
             if (! reachable[f])
                 functionSequence[f] = nullptr;
         }
         functionSequence.erase(std::remove(functionSequence.begin(), functionSequence.end(), nullptr), functionSequence.end());
-    }
 }
 
 //

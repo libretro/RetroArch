@@ -704,8 +704,6 @@ static void RecordProcesses(TIntermediate& intermediate, EShMessages messages, c
         intermediate.processes.processes.push_back("relaxed-errors");
     if ((messages & EShMsgSuppressWarnings) != 0)
         intermediate.processes.processes.push_back("suppress-warnings");
-    if ((messages & EShMsgKeepUncalled) != 0)
-        intermediate.processes.processes.push_back("keep-uncalled");
     if (sourceEntryPointName.size() > 0) {
         intermediate.processes.processes.push_back("source-entrypoint");
         intermediate.addProcessArgument(sourceEntryPointName);
@@ -1496,7 +1494,7 @@ bool TProgram::linkStage(EShLanguage stage, EShMessages messages)
             intermediate[stage]->merge(*infoSink, *(*it)->intermediate);
     }
 
-    intermediate[stage]->finalCheck(*infoSink, (messages & EShMsgKeepUncalled) != 0);
+    intermediate[stage]->finalCheck(*infoSink);
 
     return intermediate[stage]->getNumErrors() == 0;
 }

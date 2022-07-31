@@ -471,7 +471,7 @@ public:
 
     void addToCallGraph(TInfoSink&, const TString& caller, const TString& callee);
     void merge(TInfoSink&, TIntermediate&);
-    void finalCheck(TInfoSink&, bool keepUncalled);
+    void finalCheck(TInfoSink&);
 
     void addIoAccessed(const TString& name) { ioAccessed.insert(name); }
     bool inIoAccessed(const TString& name) const { return ioAccessed.find(name) != ioAccessed.end(); }
@@ -531,7 +531,7 @@ protected:
     void mergeImplicitArraySizes(TType&, const TType&);
     void mergeErrorCheck(TInfoSink&, const TIntermSymbol&, const TIntermSymbol&, bool crossStage);
     void checkCallGraphCycles(TInfoSink&);
-    void checkCallGraphBodies(TInfoSink&, bool keepUncalled);
+    void checkCallGraphBodies(TInfoSink&);
     void inOutLocationCheck(TInfoSink&);
     TIntermSequence& findLinkerObjects() const;
     bool userOutputUsed() const;

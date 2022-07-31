@@ -214,20 +214,6 @@ enum EShMessages {
 };
 
 //
-// Build a table for bindings.  This can be used for locating
-// attributes, uniforms, globals, etc., as needed.
-//
-typedef struct {
-    const char* name;
-    int binding;
-} ShBinding;
-
-typedef struct {
-    int numBindings;
-    ShBinding* bindings;  // array of bindings
-} ShBindingTable;
-
-//
 // ShHandle held by but opaque to the driver.  It is allocated,
 // managed, and de-allocated by the compiler/linker. It's contents
 // are defined by and used by the compiler and linker.  For example,
@@ -260,7 +246,6 @@ typedef void* ShHandle;
 
 #include <list>
 #include <string>
-#include <utility>
 
 class TCompiler;
 class TInfoSink;
@@ -446,74 +431,6 @@ protected:
 
 private:
     TShader& operator=(TShader&);
-};
-
-class TReflection;
-
-// Allows to customize the binding layout after linking.
-// All used uniform variables will invoke at least validateBinding.
-// If validateBinding returned true then the other resolveBinding,
-// resolveSet, and resolveLocation are invoked to resolve the binding
-// and descriptor set index respectively.
-//
-// Invocations happen in a particular order:
-// 1) all shader inputs
-// 2) all shader outputs
-// 3) all uniforms with binding and set already defined
-// 4) all uniforms with binding but no set defined
-// 5) all uniforms with set but no binding defined
-// 6) all uniforms with no binding and no set defined
-//
-// mapIO will use this resolver in two phases. The first
-// phase is a notification phase, calling the corresponging
-// notifiy callbacks, this phase ends with a call to endNotifications.
-// Phase two starts directly after the call to endNotifications
-// and calls all other callbacks to validate and to get the
-// bindings, sets, locations, component and color indices. 
-//
-// NOTE: that still limit checks are applied to bindings and sets
-// and may result in an error.
-class TIoMapResolver
-{
-public:
-  virtual ~TIoMapResolver() {}
-
-  // Should return true if the resulting/current binding would be okay.
-  // Basic idea is to do aliasing binding checks with this.
-  virtual bool validateBinding(EShLanguage stage, const char* name, const TType& type, bool is_live) = 0;
-  // Should return a value >= 0 if the current binding should be overridden.
-  // Return -1 if the current binding (including no binding) should be kept.
-  virtual int resolveBinding(EShLanguage stage, const char* name, const TType& type, bool is_live) = 0;
-  // Should return a value >= 0 if the current set should be overridden.
-  // Return -1 if the current set (including no set) should be kept.
-  virtual int resolveSet(EShLanguage stage, const char* name, const TType& type, bool is_live) = 0;
-  // Should return a value >= 0 if the current location should be overridden.
-  // Return -1 if the current location (including no location) should be kept.
-  virtual int resolveUniformLocation(EShLanguage stage, const char* name, const TType& type, bool is_live) = 0;
-  // Should return true if the resulting/current setup would be okay.
-  // Basic idea is to do aliasing checks and reject invalid semantic names.
-  virtual bool validateInOut(EShLanguage stage, const char* name, const TType& type, bool is_live) = 0;
-  // Should return a value >= 0 if the current location should be overridden.
-  // Return -1 if the current location (including no location) should be kept.
-  virtual int resolveInOutLocation(EShLanguage stage, const char* name, const TType& type, bool is_live) = 0;
-  // Should return a value >= 0 if the current component index should be overridden.
-  // Return -1 if the current component index (including no index) should be kept.
-  virtual int resolveInOutComponent(EShLanguage stage, const char* name, const TType& type, bool is_live) = 0;
-  // Should return a value >= 0 if the current color index should be overridden.
-  // Return -1 if the current color index (including no index) should be kept.
-  virtual int resolveInOutIndex(EShLanguage stage, const char* name, const TType& type, bool is_live) = 0;
-  // Notification of a uniform variable
-  virtual void notifyBinding(EShLanguage stage, const char* name, const TType& type, bool is_live) = 0;
-  // Notification of a in or out variable
-  virtual void notifyInOut(EShLanguage stage, const char* name, const TType& type, bool is_live) = 0;
-  // Called by mapIO when it has finished the notify pass
-  virtual void endNotifications(EShLanguage stage) = 0;
-  // Called by mapIO when it starts its notify pass for the given stage
-  virtual void beginNotifications(EShLanguage stage) = 0;
-  // Called by mipIO when it starts its resolve pass for the given stage
-  virtual void beginResolve(EShLanguage stage) = 0;
-  // Called by mapIO when it has finished the resolve pass
-  virtual void endResolve(EShLanguage stage) = 0;
 };
 
 // Make one TProgram per set of shaders that will get linked together.  Add all
