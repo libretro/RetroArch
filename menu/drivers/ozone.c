@@ -2563,11 +2563,11 @@ static void ozone_unload_theme_textures(ozone_handle_t *ozone)
 static bool ozone_reset_theme_textures(ozone_handle_t *ozone)
 {
    static const char *OZONE_THEME_TEXTURES_FILES[OZONE_THEME_TEXTURE_LAST] = {
-      "switch",
-      "check",
+      "switch.png",
+      "check.png",
 
-      "cursor_noborder",
-      "cursor_static"
+      "cursor_noborder.png",
+      "cursor_static.png"
    };
    unsigned i, j;
    char theme_path[255];
@@ -2589,12 +2589,7 @@ static bool ozone_reset_theme_textures(ozone_handle_t *ozone)
 
       for (i = 0; i < OZONE_THEME_TEXTURE_LAST; i++)
       {
-         char filename[64];
-         strlcpy(filename, OZONE_THEME_TEXTURES_FILES[i],
-               sizeof(filename));
-         strlcat(filename, FILE_PATH_PNG_EXTENSION, sizeof(filename));
-
-         if (!gfx_display_reset_textures_list(filename, theme_path, &theme->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
+         if (!gfx_display_reset_textures_list(OZONE_THEME_TEXTURES_FILES[i], theme_path, &theme->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
             result = false;
       }
    }
@@ -8210,21 +8205,21 @@ static void ozone_set_layout(
 static void ozone_context_reset(void *data, bool is_threaded)
 {
    static const char *OZONE_TAB_TEXTURES_FILES[OZONE_TAB_TEXTURE_LAST] = {
-      "retroarch", /* MAIN_MENU */
-      "settings",  /* SETTINGS_TAB */
-      "history",   /* HISTORY_TAB */
-      "favorites", /* FAVORITES_TAB */
-      "music",     /* MUSIC_TAB */
-      "video",     /* VIDEO_TAB */
-      "image",     /* IMAGES_TAB */
-      "netplay",   /* NETPLAY_TAB */
-      "add",       /* ADD_TAB */
-      "retroarch", /* EXPLORE_TAB */
-      "retroarch"  /* CONTENTLESS_CORES_TAB */
+      "retroarch.png", /* MAIN_MENU */
+      "settings.png",  /* SETTINGS_TAB */
+      "history.png",   /* HISTORY_TAB */
+      "favorites.png", /* FAVORITES_TAB */
+      "music.png",     /* MUSIC_TAB */
+      "video.png",     /* VIDEO_TAB */
+      "image.png",     /* IMAGES_TAB */
+      "netplay.png",   /* NETPLAY_TAB */
+      "add.png",       /* ADD_TAB */
+      "retroarch.png", /* EXPLORE_TAB */
+      "retroarch.png"  /* CONTENTLESS_CORES_TAB */
    };
    static const char *OZONE_TEXTURES_FILES[OZONE_TEXTURE_LAST]         = {
-      "retroarch",
-      "cursor_border"
+      "retroarch.png",
+      "cursor_border.png"
    };
    unsigned i;
    ozone_handle_t *ozone = (ozone_handle_t*) data;
@@ -8241,12 +8236,15 @@ static void ozone_context_reset(void *data, bool is_threaded)
          char filename[64];
 #if 0
          if (i == OZONE_TEXTURE_DISCORD_OWN_AVATAR && discord_avatar_is_ready())
+         {
             strlcpy(filename, discord_get_own_avatar(), sizeof(filename));
+            strlcat(filename, FILE_PATH_PNG_EXTENSION, sizeof(filename));
+         }
          else
 #endif
+         {
             strlcpy(filename, OZONE_TEXTURES_FILES[i], sizeof(filename));
-
-         strlcat(filename, FILE_PATH_PNG_EXTENSION, sizeof(filename));
+         }
 
 #if 0
          if (i == OZONE_TEXTURE_DISCORD_OWN_AVATAR && discord_avatar_is_ready())
@@ -8272,16 +8270,11 @@ static void ozone_context_reset(void *data, bool is_threaded)
       /* Sidebar textures */
       for (i = 0; i < OZONE_TAB_TEXTURE_LAST; i++)
       {
-         char filename[64];
-         strlcpy(filename,
-               OZONE_TAB_TEXTURES_FILES[i], sizeof(filename));
-         strlcat(filename, FILE_PATH_PNG_EXTENSION, sizeof(filename));
-
-         if (!gfx_display_reset_textures_list(filename, ozone->tab_path, &ozone->tab_textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
+         if (!gfx_display_reset_textures_list(OZONE_TAB_TEXTURES_FILES[i], ozone->tab_path, &ozone->tab_textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
          {
             ozone->has_all_assets = false;
             RARCH_WARN("[OZONE]: Asset missing: \"%s%s%s\".\n", ozone->tab_path,
-                  PATH_DEFAULT_SLASH(), filename);
+                  PATH_DEFAULT_SLASH(), OZONE_TAB_TEXTURES_FILES[i]);
          }
       }
 
