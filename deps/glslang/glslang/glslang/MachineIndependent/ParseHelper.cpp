@@ -2213,14 +2213,8 @@ bool TParseContext::lineContinuationCheck(const TSourceLoc& loc, bool endOfComme
         return lineContinuationAllowed;
     }
 
-    if (relaxedErrors()) {
-        if (! lineContinuationAllowed)
-            warn(loc, "not allowed in this version", message, "");
-        return true;
-    } else {
-        profileRequires(loc, EEsProfile, 300, nullptr, message);
-        profileRequires(loc, ~EEsProfile, 420, E_GL_ARB_shading_language_420pack, message);
-    }
+    profileRequires(loc, EEsProfile, 300, nullptr, message);
+    profileRequires(loc, ~EEsProfile, 420, E_GL_ARB_shading_language_420pack, message);
 
     return lineContinuationAllowed;
 }
@@ -3001,10 +2995,7 @@ void TParseContext::precisionQualifierCheck(const TSourceLoc& loc, TBasicType ba
 
     if (baseType == EbtFloat || baseType == EbtUint || baseType == EbtInt || baseType == EbtSampler || baseType == EbtAtomicUint) {
         if (qualifier.precision == EpqNone) {
-            if (relaxedErrors())
-                warn(loc, "type requires declaration of default precision qualifier", TType::getBasicString(baseType), "substituting 'mediump'");
-            else
-                error(loc, "type requires declaration of default precision qualifier", TType::getBasicString(baseType), "");
+            error(loc, "type requires declaration of default precision qualifier", TType::getBasicString(baseType), "");
             qualifier.precision = EpqMedium;
             defaultPrecision[baseType] = EpqMedium;
         }
@@ -5585,10 +5576,7 @@ TIntermNode* TParseContext::executeInitializer(const TSourceLoc& loc, TIntermTyp
         if (symbolTable.atGlobalLevel() && ! initializer->getType().getQualifier().isConstant()) {
             const char* initFeature = "non-constant global initializer (needs GL_EXT_shader_non_constant_global_initializers)";
             if (profile == EEsProfile) {
-                if (relaxedErrors() && ! extensionTurnedOn(E_GL_EXT_shader_non_constant_global_initializers))
-                    warn(loc, "not allowed in this version", initFeature, "");
-                else
-                    profileRequires(loc, EEsProfile, 0, E_GL_EXT_shader_non_constant_global_initializers, initFeature);
+                profileRequires(loc, EEsProfile, 0, E_GL_EXT_shader_non_constant_global_initializers, initFeature);
             }
         }
     }
@@ -6740,7 +6728,7 @@ TIntermNode* TParseContext::addSwitch(const TSourceLoc& loc, TIntermTyped* expre
         // "it is an error to have no statement between a label and the end of the switch statement."
         // The specifications were updated to remove this (being ill-defined what a "statement" was),
         // so, this became a warning.  However, 3.0 tests still check for the error.
-        if (profile == EEsProfile && version <= 300 && ! relaxedErrors())
+        if (profile == EEsProfile && version <= 300)
             error(loc, "last case/default label not followed by statements", "switch", "");
         else
             warn(loc, "last case/default label not followed by statements", "switch", "");

@@ -612,13 +612,6 @@ bool TParseVersions::checkExtensionsRequested(const TSourceLoc& loc, int numExte
     bool warned = false;
     for (int i = 0; i < numExtensions; ++i) {
         TExtensionBehavior behavior = getExtensionBehavior(extensions[i]);
-        if (behavior == EBhDisable && relaxedErrors()) {
-            infoSink.info.append("WARNING: ");
-	    infoSink.info.location(loc);
-            infoSink.info.append("The following extension must be enabled to use this feature:");
-            infoSink.info.append("\n");
-            behavior = EBhWarn;
-        }
         if (behavior == EBhWarn) {
             infoSink.info.append("WARNING: ");
 	    infoSink.info.location(loc);

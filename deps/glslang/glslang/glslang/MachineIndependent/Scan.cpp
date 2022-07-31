@@ -1307,12 +1307,8 @@ int TScanContext::tokenizeIdentifier()
         afterType = true;
         if (_parseContext.profile == EEsProfile)
             reservedWord();
-        else if (_parseContext.version < 140 && ! _parseContext.symbolTable.atBuiltInLevel() && ! _parseContext.extensionTurnedOn(E_GL_ARB_texture_rectangle)) {
-            if (_parseContext.relaxedErrors())
-                _parseContext.requireExtensions(loc, 1, &E_GL_ARB_texture_rectangle, "texture-rectangle sampler keyword");
-            else
-                reservedWord();
-        }
+        else if (_parseContext.version < 140 && ! _parseContext.symbolTable.atBuiltInLevel() && ! _parseContext.extensionTurnedOn(E_GL_ARB_texture_rectangle))
+            reservedWord();
         return keyword;
 
     case SAMPLER1DARRAY:

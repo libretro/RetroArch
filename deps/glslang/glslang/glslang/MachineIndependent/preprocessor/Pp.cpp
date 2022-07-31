@@ -315,10 +315,7 @@ int TPpContext::extraTokenCheck(int contextAtom, TPpToken* ppToken, int token)
         else
             label = "";
 
-        if (_parseContext.relaxedErrors())
-            _parseContext.ppWarn(ppToken->loc, message, label, "");
-        else
-            _parseContext.ppError(ppToken->loc, message, label, "");
+        _parseContext.ppError(ppToken->loc, message, label, "");
 
         while (token != '\n' && token != EndOfInput)
             token = scanToken(ppToken);
@@ -400,11 +397,7 @@ int TPpContext::eval(int token, int precedence, bool shortCircuit, int& res, boo
     if (token == PpAtomIdentifier) {
         if (strcmp("defined", ppToken->name) == 0) {
             if (! _parseContext.isReadingHLSL() && isMacroInput()) {
-                if (_parseContext.relaxedErrors())
-                    _parseContext.ppWarn(ppToken->loc, "nonportable when expanded from macros for preprocessor expression",
-                                                      "defined", "");
-                else
-                    _parseContext.ppError(ppToken->loc, "cannot use in preprocessor expression when expanded from macros",
+                _parseContext.ppError(ppToken->loc, "cannot use in preprocessor expression when expanded from macros",
                                                        "defined", "");
             }
             bool needclose = 0;
@@ -526,10 +519,7 @@ int TPpContext::evalToToken(int token, bool shortCircuit, int& res, bool& err, T
         if (macroReturn == -1) {
             if (! shortCircuit && _parseContext.profile == EEsProfile) {
                 const char* message = "undefined macro in expression not allowed in es profile";
-                if (_parseContext.relaxedErrors())
-                    _parseContext.ppWarn(ppToken->loc, message, "preprocessor evaluation", ppToken->name);
-                else
-                    _parseContext.ppError(ppToken->loc, message, "preprocessor evaluation", ppToken->name);
+                _parseContext.ppError(ppToken->loc, message, "preprocessor evaluation", ppToken->name);
             }
         }
         token = scanToken(ppToken);

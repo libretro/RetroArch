@@ -700,8 +700,6 @@ static void TranslateEnvironment(const TEnvironment* environment, EShMessages& m
 // These are the few that are not.
 static void RecordProcesses(TIntermediate& intermediate, EShMessages messages, const std::string& sourceEntryPointName)
 {
-    if ((messages & EShMsgRelaxedErrors) != 0)
-        intermediate.processes.processes.push_back("relaxed-errors");
     if ((messages & EShMsgSuppressWarnings) != 0)
         intermediate.processes.processes.push_back("suppress-warnings");
     if (sourceEntryPointName.size() > 0) {
@@ -821,12 +819,8 @@ static bool ProcessDeferred(
                                             versionNotFirst, defaultVersion, source, version, profile, spvVersion);
     bool versionWillBeError = (versionNotFound || (profile == EEsProfile && version >= 300 && versionNotFirst));
     bool warnVersionNotFirst = false;
-    if (! versionWillBeError && versionNotFirstToken) {
-        if (messages & EShMsgRelaxedErrors)
-            warnVersionNotFirst = true;
-        else
-            versionWillBeError = true;
-    }
+    if (! versionWillBeError && versionNotFirstToken)
+	    versionWillBeError = true;
 
     intermediate.setSource(source);
     intermediate.setVersion(version);
