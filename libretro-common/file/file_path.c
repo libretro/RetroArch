@@ -449,9 +449,12 @@ bool fill_pathname_parent_dir_name(char *out_dir,
 void fill_pathname_parent_dir(char *out_dir,
       const char *in_dir, size_t size)
 {
+   size_t len = 0;
    if (out_dir != in_dir)
-      strlcpy(out_dir, in_dir, size);
-   path_parent_dir(out_dir);
+      len = strlcpy(out_dir, in_dir, size);
+   else
+      len = strlen(out_dir);
+   path_parent_dir(out_dir, len);
 }
 
 /**
@@ -538,20 +541,17 @@ void path_basedir(char *path)
 /**
  * path_parent_dir:
  * @path               : path
+ * @len                : length of @path
  *
  * Extracts parent directory by mutating path.
  * Assumes that path is a directory. Keeps trailing '/'.
  * If the path was already at the root directory, returns empty string
  **/
-void path_parent_dir(char *path)
+void path_parent_dir(char *path, size_t len)
 {
-   size_t len = 0;
-
    if (!path)
       return;
    
-   len = strlen(path);
-
    if (len && PATH_CHAR_IS_SLASH(path[len - 1]))
    {
       bool path_was_absolute = path_is_absolute(path);

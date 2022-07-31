@@ -161,12 +161,13 @@ void path_basedir(char *path);
 /**
  * path_parent_dir:
  * @path               : path
+ * @len                : length of @path
  *
  * Extracts parent directory by mutating path.
  * Assumes that path is a directory. Keeps trailing '/'.
  * If the path was already at the root directory, returns empty string
  **/
-void path_parent_dir(char *path);
+void path_parent_dir(char *path, size_t len);
 
 /**
  * path_resolve_realpath:

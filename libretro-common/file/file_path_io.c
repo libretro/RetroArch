@@ -121,7 +121,7 @@ bool path_mkdir(const char *dir)
    if (!(basedir = strdup(dir)))
       return false;
 
-   path_parent_dir(basedir);
+   path_parent_dir(basedir, strlen(basedir));
 
    if (!*basedir || !strcmp(basedir, dir))
    {
