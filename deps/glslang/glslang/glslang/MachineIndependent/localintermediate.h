@@ -222,7 +222,6 @@ public:
     void setLimits(const TBuiltInResource& r) { resources = r; }
 
     bool postProcess(TIntermNode*, EShLanguage);
-    void output(TInfoSink&, bool tree);
 
     void setSource(EShSource s) { source = s; }
     EShSource getSource() const { return source; }
@@ -511,10 +510,6 @@ public:
         return semanticNameSet.insert(name).first->c_str();
     }
 
-    void setSourceFile(const char* file) { if (file != nullptr) sourceFile = file; }
-    const std::string& getSourceFile() const { return sourceFile; }
-    void addSourceText(const char* text) { sourceText = sourceText + text; }
-    const std::string& getSourceText() const { return sourceText; }
     void addProcessArgument(const std::string& arg) { processes.addArgument(arg.c_str()); }
     void setNeedsLegalization() { needToLegalize = true; }
     bool needsLegalization() const { return needToLegalize; }
@@ -554,7 +549,6 @@ protected:
     TIntermUnary* createConversion(TBasicType convertTo, TIntermTyped* node) const;
     std::tuple<TBasicType, TBasicType> getConversionDestinatonType(TBasicType type0, TBasicType type1, TOperator op) const;
     bool extensionRequested(const char *extension) const {return requestedExtensions.find(extension) != requestedExtensions.end();}
-    static const char* getResourceName(TResourceType);
 
     const EShLanguage language;  // stage, known at construction time
     EShSource source;            // source language, known a bit later
@@ -616,10 +610,6 @@ protected:
     std::set<TString> semanticNameSet;
 
     EShTextureSamplerTransformMode textureSamplerTransformMode;
-
-    // source code of shader, useful as part of debug information
-    std::string sourceFile;
-    std::string sourceText;
 
     bool needToLegalize;
     bool binaryDoubleOutput;

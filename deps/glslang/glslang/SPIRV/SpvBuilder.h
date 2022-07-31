@@ -73,14 +73,6 @@ public:
         source = lang;
         sourceVersion = version;
     }
-    void setSourceFile(const std::string& file)
-    {
-        Instruction* fileString = new Instruction(getUniqueId(), NoType, OpString);
-        fileString->addStringOperand(file.c_str());
-        sourceFileStringId = fileString->getResultId();
-        strings.push_back(std::unique_ptr<Instruction>(fileString));
-    }
-    void setSourceText(const std::string& text) { sourceText = text; }
     void addSourceExtension(const char* ext) { sourceExtensions.push_back(ext); }
     void addModuleProcessed(const std::string& p) { moduleProcesses.push_back(p.c_str()); }
     void setEmitOpLines() { emitOpLines = true; }
@@ -598,8 +590,6 @@ public:
     unsigned int spvVersion;     // the version of SPIR-V to emit in the header
     SourceLanguage source;
     int sourceVersion;
-    spv::Id sourceFileStringId;
-    std::string sourceText;
     int currentLine;
     bool emitOpLines;
     std::set<std::string> extensions;

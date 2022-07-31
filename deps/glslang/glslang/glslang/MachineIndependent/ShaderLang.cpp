@@ -839,11 +839,6 @@ static bool ProcessDeferred(
         intermediate.setOriginUpperLeft();
     if ((messages & EShMsgHlslOffsets) || source == EShSourceHlsl)
         intermediate.setHlslOffsets();
-    if (messages & EShMsgDebugInfo) {
-        intermediate.setSourceFile(names[numPre]);
-        for (int s = 0; s < numStrings; ++s)
-            intermediate.addSourceText(strings[numPre + s]);
-    }
     SetupBuiltinSymbolTable(version, profile, spvVersion, source);
 
     TSymbolTable* cachedTable = SharedSymbolTables[MapVersionToIndex(version)]
@@ -1135,9 +1130,6 @@ struct DoFullParse{
             _parseContext.infoSink.info.append("ERROR: ");
             _parseContext.infoSink.info << _parseContext.getNumErrors() << " compilation errors.  No code generated.\n\n";
         }
-
-        if (messages & EShMsgAST)
-            intermediate.output(_parseContext.infoSink, true);
 
         return success;
     }
@@ -1498,9 +1490,6 @@ bool TProgram::linkStage(EShLanguage stage, EShMessages messages)
         newedIntermediate[stage] = true;
     }
 
-    if (messages & EShMsgAST)
-        infoSink->info << "\nLinked " << StageName(stage) << " stage:\n\n";
-
     if (stages[stage].size() > 1) {
         std::list<TShader*>::const_iterator it;
         for (it = stages[stage].begin(); it != stages[stage].end(); ++it)
@@ -1508,9 +1497,6 @@ bool TProgram::linkStage(EShLanguage stage, EShMessages messages)
     }
 
     intermediate[stage]->finalCheck(*infoSink, (messages & EShMsgKeepUncalled) != 0);
-
-    if (messages & EShMsgAST)
-        intermediate[stage]->output(*infoSink, true);
 
     return intermediate[stage]->getNumErrors() == 0;
 }
