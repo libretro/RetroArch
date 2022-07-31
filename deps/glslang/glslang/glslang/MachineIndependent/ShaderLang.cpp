@@ -143,25 +143,18 @@ static int MapVersionToIndex(int version)
     default:  assert(0);  break;
     }
 
-    assert(index < VersionCount);
-
     return index;
 }
 
 const int SpvVersionCount = 3;  // index range in MapSpvVersionToIndex
 
-int MapSpvVersionToIndex(const SpvVersion& spvVersion)
+static int MapSpvVersionToIndex(const SpvVersion& spvVersion)
 {
-    int index = 0;
-
     if (spvVersion.openGl > 0)
-        index = 1;
+        return 1;
     else if (spvVersion.vulkan > 0)
-        index = 2;
-
-    assert(index < SpvVersionCount);
-
-    return index;
+        return 2;
+    return 0;
 }
 
 const int ProfileCount = 4;   // index range in MapProfileToIndex
@@ -223,7 +216,7 @@ TPoolAllocator* PerProcessGPA = nullptr;
 //
 // Parse and add to the given symbol table the content of the given shader string.
 //
-bool InitializeSymbolTable(const TString& builtIns, int version, EProfile profile, const SpvVersion& spvVersion, EShLanguage language,
+static bool InitializeSymbolTable(const TString& builtIns, int version, EProfile profile, const SpvVersion& spvVersion, EShLanguage language,
                            EShSource source, TInfoSink& infoSink, TSymbolTable& symbolTable)
 {
     TIntermediate intermediate(language, version, profile);
@@ -257,11 +250,9 @@ bool InitializeSymbolTable(const TString& builtIns, int version, EProfile profil
         return true;
 
     TInputScanner input(1, builtInShaders, builtInLengths);
-    if (! _parseContext->parseShaderStrings(ppContext, input) != 0) {
+    if (! _parseContext->parseShaderStrings(ppContext, input) != 0)
+    {
         infoSink.info.message(EPrefixInternalError, "Unable to parse built-ins");
-        printf("Unable to parse built-ins\n%s\n", infoSink.info.c_str());
-        printf("%s\n", builtInShaders[0]);
-
         return false;
     }
 
@@ -276,7 +267,7 @@ static int CommonIndex(EProfile profile, EShLanguage language)
 //
 // To initialize per-stage shared tables, with the common table already complete.
 //
-void InitializeStageSymbolTable(TBuiltInParseables& builtInParseables, int version, EProfile profile, const SpvVersion& spvVersion,
+static void InitializeStageSymbolTable(TBuiltInParseables& builtInParseables, int version, EProfile profile, const SpvVersion& spvVersion,
                                 EShLanguage language, EShSource source, TInfoSink& infoSink, TSymbolTable** commonTable,
                                 TSymbolTable** symbolTables)
 {
@@ -294,7 +285,7 @@ void InitializeStageSymbolTable(TBuiltInParseables& builtInParseables, int versi
 // Initialize the full set of shareable symbol tables;
 // The common (cross-stage) and those shareable per-stage.
 //
-bool InitializeSymbolTables(TInfoSink& infoSink, TSymbolTable** commonTable,  TSymbolTable** symbolTables, int version, EProfile profile, const SpvVersion& spvVersion, EShSource source)
+static bool InitializeSymbolTables(TInfoSink& infoSink, TSymbolTable** commonTable,  TSymbolTable** symbolTables, int version, EProfile profile, const SpvVersion& spvVersion, EShSource source)
 {
     std::unique_ptr<TBuiltInParseables> builtInParseables(CreateBuiltInParseables(infoSink, source));
 
@@ -342,7 +333,7 @@ bool InitializeSymbolTables(TInfoSink& infoSink, TSymbolTable** commonTable,  TS
     return true;
 }
 
-bool AddContextSpecificSymbols(const TBuiltInResource* resources, TInfoSink& infoSink, TSymbolTable& symbolTable, int version,
+static bool AddContextSpecificSymbols(const TBuiltInResource* resources, TInfoSink& infoSink, TSymbolTable& symbolTable, int version,
                                EProfile profile, const SpvVersion& spvVersion, EShLanguage language, EShSource source)
 {
     std::unique_ptr<TBuiltInParseables> builtInParseables(CreateBuiltInParseables(infoSink, source));
@@ -369,7 +360,7 @@ bool AddContextSpecificSymbols(const TBuiltInResource* resources, TInfoSink& inf
 // This only gets done the first time any thread needs a particular symbol table
 // (lazy evaluation).
 //
-void SetupBuiltinSymbolTable(int version, EProfile profile, const SpvVersion& spvVersion, EShSource source)
+static void SetupBuiltinSymbolTable(int version, EProfile profile, const SpvVersion& spvVersion, EShSource source)
 {
     TInfoSink infoSink;
 
@@ -436,7 +427,7 @@ void SetupBuiltinSymbolTable(int version, EProfile profile, const SpvVersion& sp
 }
 
 // Return true if the shader was correctly specified for version/profile/stage.
-bool DeduceVersionProfile(TInfoSink& infoSink, EShLanguage stage, bool versionNotFirst, int defaultVersion,
+static bool DeduceVersionProfile(TInfoSink& infoSink, EShLanguage stage, bool versionNotFirst, int defaultVersion,
                           EShSource source, int& version, EProfile& profile, const SpvVersion& spvVersion)
 {
     const int FirstProfileVersion = 150;
@@ -610,7 +601,7 @@ bool DeduceVersionProfile(TInfoSink& infoSink, EShLanguage stage, bool versionNo
 // TEnvironment takes precedence, for what it sets, so sort all this out.
 // Ideally, the internal code could be made to use TEnvironment, but for
 // now, translate it to the historically used parameters.
-void TranslateEnvironment(const TEnvironment* environment, EShMessages& messages, EShSource& source,
+static void TranslateEnvironment(const TEnvironment* environment, EShMessages& messages, EShSource& source,
                           EShLanguage& stage, SpvVersion& spvVersion)
 {
     // Set up environmental defaults, first ignoring 'environment'.
@@ -675,7 +666,7 @@ void TranslateEnvironment(const TEnvironment* environment, EShMessages& messages
 
 // Most processes are recorded when set in the intermediate representation,
 // These are the few that are not.
-void RecordProcesses(TIntermediate& intermediate, EShMessages messages, const std::string& sourceEntryPointName)
+static void RecordProcesses(TIntermediate& intermediate, EShMessages messages, const std::string& sourceEntryPointName)
 {
     if ((messages & EShMsgRelaxedErrors) != 0)
         intermediate.addProcess("relaxed-errors");
@@ -699,7 +690,7 @@ void RecordProcesses(TIntermediate& intermediate, EShMessages messages, const st
 // Which returns false if a failure was detected and true otherwise.
 //
 template<typename ProcessingContext>
-bool ProcessDeferred(
+static bool ProcessDeferred(
     TCompiler* compiler,
     const char* const shaderStrings[],
     const int numStrings,
@@ -995,15 +986,17 @@ struct DoPreprocessing {
             lineSync.syncToLine(curLineNum);
             outputBuffer += "#line ";
             outputBuffer += std::to_string(newLineNum);
-            if (hasSource) {
+            if (hasSource)
+	    {
                 outputBuffer += ' ';
-                if (sourceName != nullptr) {
+                if (sourceName != nullptr)
+		{
                     outputBuffer += '\"';
                     outputBuffer += sourceName;
                     outputBuffer += '\"';
-                } else {
-                    outputBuffer += std::to_string(sourceNum);
                 }
+		else
+                    outputBuffer += std::to_string(sourceNum);
             }
             if (_parseContext.lineDirectiveShouldSetNextLine()) {
                 // newLineNum is the new line number for the line following the #line
@@ -1118,7 +1111,7 @@ struct DoFullParse{
 // Return: True if there were no issues found in preprocessing,
 //         False if during preprocessing any unknown version, pragmas or
 //         extensions were found.
-bool PreprocessDeferred(
+static bool PreprocessDeferred(
     TCompiler* compiler,
     const char* const shaderStrings[],
     const int numStrings,
@@ -1275,32 +1268,12 @@ int __fastcall ShFinalize(void)
 
 namespace glslang {
 
-#include "../Include/revision.h"
-
-#define QUOTE(s) #s
-#define STR(n) QUOTE(n)
-
-const char* GetEsslVersionString()
-{
-    return "OpenGL ES GLSL 3.20 glslang Khronos. " STR(GLSLANG_MINOR_VERSION) "." STR(GLSLANG_PATCH_LEVEL);
-}
-
-const char* GetGlslVersionString()
-{
-    return "4.60 glslang Khronos. " STR(GLSLANG_MINOR_VERSION) "." STR(GLSLANG_PATCH_LEVEL);
-}
-
-int GetKhronosToolId()
-{
-    return 8;
-}
-
-bool InitializeProcess()
+bool InitializeProcess(void)
 {
     return ShInitialize() != 0;
 }
 
-void FinalizeProcess()
+void FinalizeProcess(void)
 {
     ShFinalize();
 }

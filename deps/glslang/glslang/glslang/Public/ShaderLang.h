@@ -267,10 +267,6 @@ class TInfoSink;
 
 namespace glslang {
 
-const char* GetEsslVersionString();
-const char* GetGlslVersionString();
-int GetKhronosToolId();
-
 class TIntermediate;
 class TProgram;
 class TPoolAllocator;
