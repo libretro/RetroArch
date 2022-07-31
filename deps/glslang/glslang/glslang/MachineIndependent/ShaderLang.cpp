@@ -701,13 +701,13 @@ static void TranslateEnvironment(const TEnvironment* environment, EShMessages& m
 static void RecordProcesses(TIntermediate& intermediate, EShMessages messages, const std::string& sourceEntryPointName)
 {
     if ((messages & EShMsgRelaxedErrors) != 0)
-        intermediate.addProcess("relaxed-errors");
+        intermediate.processes.processes.push_back("relaxed-errors");
     if ((messages & EShMsgSuppressWarnings) != 0)
-        intermediate.addProcess("suppress-warnings");
+        intermediate.processes.processes.push_back("suppress-warnings");
     if ((messages & EShMsgKeepUncalled) != 0)
-        intermediate.addProcess("keep-uncalled");
+        intermediate.processes.processes.push_back("keep-uncalled");
     if (sourceEntryPointName.size() > 0) {
-        intermediate.addProcess("source-entrypoint");
+        intermediate.processes.processes.push_back("source-entrypoint");
         intermediate.addProcessArgument(sourceEntryPointName);
     }
 }
@@ -1321,7 +1321,7 @@ public:
 };
 
 TShader::TShader(EShLanguage s)
-    : stage(s), lengths(nullptr), stringNames(nullptr), preamble("")
+    : stage(s), lengths(nullptr), stringNames(nullptr)
 {
     pool = new TPoolAllocator;
     infoSink = new TInfoSink;
@@ -1351,72 +1351,6 @@ void TShader::setStrings(const char* const* s, int n)
     lengths = nullptr;
 }
 
-void TShader::setStringsWithLengths(const char* const* s, const int* l, int n)
-{
-    strings = s;
-    numStrings = n;
-    lengths = l;
-}
-
-void TShader::setStringsWithLengthsAndNames(
-    const char* const* s, const int* l, const char* const* names, int n)
-{
-    strings = s;
-    numStrings = n;
-    lengths = l;
-    stringNames = names;
-}
-
-void TShader::setEntryPoint(const char* entryPoint)
-{
-    intermediate->setEntryPointName(entryPoint);
-}
-
-void TShader::setSourceEntryPoint(const char* name)
-{
-    sourceEntryPointName = name;
-}
-
-void TShader::addProcesses(const std::vector<std::string>& p)
-{
-    intermediate->addProcesses(p);
-}
-
-// Set binding base for given resource type
-void TShader::setShiftBinding(TResourceType res, unsigned int base) {
-    intermediate->setShiftBinding(res, base);
-}
-
-// Set binding base for given resource type for a given binding set.
-void TShader::setShiftBindingForSet(TResourceType res, unsigned int base, unsigned int set) {
-    intermediate->setShiftBindingForSet(res, base, set);
-}
-
-// Set binding base for sampler types
-void TShader::setShiftSamplerBinding(unsigned int base) { setShiftBinding(EResSampler, base); }
-// Set binding base for texture types (SRV)
-void TShader::setShiftTextureBinding(unsigned int base) { setShiftBinding(EResTexture, base); }
-// Set binding base for image types
-void TShader::setShiftImageBinding(unsigned int base)   { setShiftBinding(EResImage, base); }
-// Set binding base for uniform buffer objects (CBV)
-void TShader::setShiftUboBinding(unsigned int base)     { setShiftBinding(EResUbo, base); }
-// Synonym for setShiftUboBinding, to match HLSL language.
-void TShader::setShiftCbufferBinding(unsigned int base) { setShiftBinding(EResUbo, base); }
-// Set binding base for UAV (unordered access view)
-void TShader::setShiftUavBinding(unsigned int base)     { setShiftBinding(EResUav, base); }
-// Set binding base for SSBOs
-void TShader::setShiftSsboBinding(unsigned int base)    { setShiftBinding(EResSsbo, base); }
-// Enables binding automapping using TIoMapper
-void TShader::setAutoMapBindings(bool map)              { intermediate->setAutoMapBindings(map); }
-// Enables position.Y output negation in vertex shader
-void TShader::setInvertY(bool invert)                   { intermediate->setInvertY(invert); }
-// Fragile: currently within one stage: simple auto-assignment of location
-void TShader::setAutoMapLocations(bool map)             { intermediate->setAutoMapLocations(map); }
-void TShader::setFlattenUniformArrays(bool flatten)     { intermediate->setFlattenUniformArrays(flatten); }
-void TShader::setNoStorageFormat(bool useUnknownFormat) { intermediate->setNoStorageFormat(useUnknownFormat); }
-void TShader::setResourceSetBinding(const std::vector<std::string>& base)   { intermediate->setResourceSetBinding(base); }
-void TShader::setTextureSamplerTransformMode(EShTextureSamplerTransformMode mode) { intermediate->setTextureSamplerTransformMode(mode); }
-
 //
 // Turn the shader strings into a parse tree in the TIntermediate.
 //
@@ -1428,14 +1362,10 @@ bool TShader::parse(const TBuiltInResource* builtInResources, int defaultVersion
     if (! InitThread())
         return false;
     SetThreadPoolAllocator(pool);
-
-    if (! preamble)
-        preamble = "";
-
     return CompileDeferred(compiler, strings, numStrings, lengths, stringNames,
-                           preamble, EShOptNone, builtInResources, defaultVersion,
+                           "", EShOptNone, builtInResources, defaultVersion,
                            defaultProfile, forceDefaultVersionAndProfile,
-                           forwardCompatible, messages, *intermediate, includer, sourceEntryPointName,
+			   forwardCompatible, messages, *intermediate, includer, "",
                            &environment);
 }
 
@@ -1451,11 +1381,7 @@ bool TShader::preprocess(const TBuiltInResource* builtInResources,
     if (! InitThread())
         return false;
     SetThreadPoolAllocator(pool);
-
-    if (! preamble)
-        preamble = "";
-
-    return PreprocessDeferred(compiler, strings, numStrings, lengths, stringNames, preamble,
+    return PreprocessDeferred(compiler, strings, numStrings, lengths, stringNames, "",
                               EShOptNone, builtInResources, defaultVersion,
                               defaultProfile, forceDefaultVersionAndProfile,
                               forwardCompatible, message, includer, *intermediate, output_string);

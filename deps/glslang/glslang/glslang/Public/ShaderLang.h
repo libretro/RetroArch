@@ -289,10 +289,8 @@ enum TResourceType {
 };
 
 // Make one TShader per shader that you will link into a program. Then
-//  - provide the shader through setStrings() or setStringsWithLengths()
+//  - provide the shader through setStrings()
 //  - optionally call setEnv*(), see below for more detail
-//  - optionally use setPreamble() to set a special shader string that will be
-//    processed before all others but won't affect the validity of #version
 //  - call parse(): source language and target environment must be selected
 //    either by correct setting of EShMessages sent to parse(), or by
 //    explicitly calling setEnv*()
@@ -308,55 +306,6 @@ public:
     explicit TShader(EShLanguage);
     virtual ~TShader();
     void setStrings(const char* const* s, int n);
-    void setStringsWithLengths(const char* const* s, const int* l, int n);
-    void setStringsWithLengthsAndNames(
-        const char* const* s, const int* l, const char* const* names, int n);
-    void setPreamble(const char* s) { preamble = s; }
-    void setEntryPoint(const char* entryPoint);
-    void setSourceEntryPoint(const char* sourceEntryPointName);
-    void addProcesses(const std::vector<std::string>&);
-
-    // IO resolver binding data: see comments in ShaderLang.cpp
-    void setShiftBinding(TResourceType res, unsigned int base);
-    void setShiftSamplerBinding(unsigned int base);  // DEPRECATED: use setShiftBinding
-    void setShiftTextureBinding(unsigned int base);  // DEPRECATED: use setShiftBinding
-    void setShiftImageBinding(unsigned int base);    // DEPRECATED: use setShiftBinding
-    void setShiftUboBinding(unsigned int base);      // DEPRECATED: use setShiftBinding
-    void setShiftUavBinding(unsigned int base);      // DEPRECATED: use setShiftBinding
-    void setShiftCbufferBinding(unsigned int base);  // synonym for setShiftUboBinding
-    void setShiftSsboBinding(unsigned int base);     // DEPRECATED: use setShiftBinding
-    void setShiftBindingForSet(TResourceType res, unsigned int base, unsigned int set);
-    void setResourceSetBinding(const std::vector<std::string>& base);
-    void setAutoMapBindings(bool map);
-    void setAutoMapLocations(bool map);
-    void setInvertY(bool invert);
-    void setFlattenUniformArrays(bool flatten);
-    void setNoStorageFormat(bool useUnknownFormat);
-    void setTextureSamplerTransformMode(EShTextureSamplerTransformMode mode);
-
-    // For setting up the environment (cleared to nothingness in the constructor).
-    // These must be called so that parsing is done for the right source language and
-    // target environment, either indirectly through TranslateEnvironment() based on
-    // EShMessages et. al., or directly by the user.
-    void setEnvInput(EShSource lang, EShLanguage envStage, EShClient client, int version)
-    {
-        environment.input.languageFamily = lang;
-        environment.input.stage = envStage;
-        environment.input.dialect = client;
-        environment.input.dialectVersion = version;
-    }
-    void setEnvClient(EShClient client, EShTargetClientVersion version)
-    {
-        environment.client.client = client;
-        environment.client.version = version;
-    }
-    void setEnvTarget(EShTargetLanguage lang, EShTargetLanguageVersion version)
-    {
-        environment.target.language = lang;
-        environment.target.version = version;
-    }
-    void setEnvTargetHlslFunctionality1() { environment.target.hlslFunctionality1 = true; }
-    bool getEnvTargetHlslFunctionality1() const { return environment.target.hlslFunctionality1; }
 
     // Interface to #include handlers.
     //
@@ -470,8 +419,6 @@ public:
 
     const char* getInfoLog();
     const char* getInfoDebugLog();
-    EShLanguage getStage() const { return stage; }
-    TIntermediate* getIntermediate() const { return intermediate; }
 
 protected:
     TPoolAllocator* pool;
@@ -491,11 +438,7 @@ protected:
     const char* const* strings;
     const int* lengths;
     const char* const* stringNames;
-    const char* preamble;
     int numStrings;
-
-    // a function in the source string can be renamed FROM this TO the name given in setEntryPoint.
-    std::string sourceEntryPointName;
 
     TEnvironment environment;
 
