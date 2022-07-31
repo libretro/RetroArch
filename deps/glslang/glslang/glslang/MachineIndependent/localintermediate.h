@@ -223,7 +223,6 @@ public:
 
     bool postProcess(TIntermNode*, EShLanguage);
     void output(TInfoSink&, bool tree);
-    void removeTree();
 
     void setSource(EShSource s) { source = s; }
     EShSource getSource() const { return source; }

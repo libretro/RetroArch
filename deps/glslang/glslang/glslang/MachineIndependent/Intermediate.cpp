@@ -41,7 +41,6 @@
 //
 
 #include "localintermediate.h"
-#include "RemoveTree.h"
 #include "SymbolTable.h"
 #include "propagateNoContraction.h"
 
@@ -2627,15 +2626,6 @@ void TIntermediate::addToCallGraph(TInfoSink& /*infoSink*/, const TString& calle
     }
 
     callGraph.push_front(TCall(caller, callee));
-}
-
-//
-// This deletes the tree.
-//
-void TIntermediate::removeTree()
-{
-    if (treeRoot)
-        RemoveAllTreeNodes(treeRoot);
 }
 
 //

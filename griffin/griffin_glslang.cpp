@@ -30,7 +30,6 @@
 #include "../deps/glslang/glslang/glslang/MachineIndependent/ParseHelper.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/PoolAlloc.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/propagateNoContraction.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/RemoveTree.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/Scan.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/ShaderLang.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/SymbolTable.cpp"
