@@ -90,7 +90,8 @@ bool natt_init(struct natt_discovery *discovery)
    if (!msearch_addr)
       goto failure;
 
-   fd = socket_init((void **) &bind_addr, 0, NULL, SOCKET_TYPE_DATAGRAM);
+   fd = socket_init((void**)&bind_addr, 0, NULL,
+      SOCKET_TYPE_DATAGRAM, AF_INET);
    if (fd < 0)
       goto failure;
    if (!bind_addr)

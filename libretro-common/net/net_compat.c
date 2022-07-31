@@ -36,8 +36,8 @@
 #if defined(_XBOX)
 struct hostent *gethostbyname(const char *name)
 {
-   static struct in_addr addr;
-   static struct hostent he = {0};
+   static struct in_addr addr = {0};
+   static struct hostent he   = {0};
    WSAEVENT event;
    XNDNS          *dns = NULL;
    struct hostent *ret = NULL;
@@ -114,30 +114,34 @@ unsigned int inet_addr(const char *cp)
 
 struct hostent *gethostbyname(const char *name)
 {
-   int err;
-   static struct hostent ent;
-   static char sname[MAX_NAME]      = {0};
-   static struct SceNetInAddr saddr = {0};
-   static char *addrlist[2]         = {(char *) &saddr, NULL };
-   int rid = sceNetResolverCreate("resolver", NULL, 0);
+   static struct SceNetInAddr addr = {0};
+   static struct hostent      he   = {0};
+   int rid;
+   struct hostent *ret = NULL;
 
+   if (!name)
+      return NULL;
+
+   rid = sceNetResolverCreate("resolver", NULL, 0);
    if(rid < 0)
       return NULL;
 
-   err = sceNetResolverStartNtoa(rid, name, &saddr, 0,0,0);
+   if (sceNetResolverStartNtoa(rid, name, &addr, 0, 0, 0) < 0)
+      goto done;
+
+   he.h_name      = NULL;
+   he.h_aliases   = NULL;
+   he.h_addrtype  = AF_INET;
+   he.h_length    = sizeof(addr);
+   he.h_addr_list = &he.h_addr;
+   he.h_addr      = (char*)&addr;
+
+   ret = &he;
+
+done:
    sceNetResolverDestroy(rid);
-   if(err < 0)
-      return NULL;
 
-   addrlist[0]     = inet_ntoa(saddr);
-   ent.h_name      = sname;
-   ent.h_aliases   = 0;
-   ent.h_addrtype  = AF_INET;
-   ent.h_length    = sizeof(struct in_addr);
-   ent.h_addr_list = addrlist;
-   ent.h_addr      = addrlist[0];
-
-   return &ent;
+   return ret;
 }
 
 #elif defined(_3DS)
@@ -207,11 +211,7 @@ int getaddrinfo_retro(const char *node, const char *service,
       addr->sin_family      = AF_INET;
       if (service)
          addr->sin_port     = inet_htons((uint16_t)strtoul(service, NULL, 10));
-#ifdef VITA
-      addr->sin_addr.s_addr = inet_addr(host->h_addr);
-#else
       memcpy(&addr->sin_addr, host->h_addr, sizeof(addr->sin_addr));
-#endif
 
       *res = info;
 
