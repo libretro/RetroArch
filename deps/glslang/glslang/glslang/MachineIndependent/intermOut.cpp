@@ -675,7 +675,11 @@ bool TOutputTraverser::visitUnary(TVisit /* visit */, TIntermUnary* node)
     case EOpSubpassLoad:   out.debug << "subpassLoad";   break;
     case EOpSubpassLoadMS: out.debug << "subpassLoadMS"; break;
 
-    default: out.debug.message(EPrefixError, "Bad unary op");
+    default:
+			   out.debug.append("ERROR: ");
+			   out.debug.append("Bad unary op");
+			   out.debug.append("\n");
+			   break;
     }
 
     out.debug << " (" << node->getCompleteString() << ")";
@@ -690,7 +694,9 @@ bool TOutputTraverser::visitAggregate(TVisit /* visit */, TIntermAggregate* node
     TInfoSink& out = infoSink;
 
     if (node->getOp() == EOpNull) {
-        out.debug.message(EPrefixError, "node is still EOpNull!");
+	out.debug.append("ERROR: ");
+        out.debug.append("node is still EOpNull!");
+	out.debug.append("\n");
         return true;
     }
 
@@ -1039,7 +1045,11 @@ bool TOutputTraverser::visitAggregate(TVisit /* visit */, TIntermAggregate* node
     case EOpSubpassLoad:   out.debug << "subpassLoad";   break;
     case EOpSubpassLoadMS: out.debug << "subpassLoadMS"; break;
 
-    default: out.debug.message(EPrefixError, "Bad aggregation op");
+    default:
+			   out.debug.append("ERROR: ");
+			   out.debug.append("Bad aggregation op");
+			   out.debug.append("\n");
+			   break;
     }
 
     if (node->getOp() != EOpSequence && node->getOp() != EOpParameters)

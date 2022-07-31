@@ -92,7 +92,11 @@ TParseContext::TParseContext(TSymbolTable& symbolTable, TIntermediate& interm, b
         globalOutputDefaults.layoutStream = 0;
 
     if (entryPoint != nullptr && entryPoint->size() > 0 && *entryPoint != "main")
-        infoSink.info.message(EPrefixError, "Source entry point must be \"main\"");
+    {
+        infoSink.info.append("ERROR: ");
+        infoSink.info.append("Source entry point must be \"main\"");
+	infoSink.info.append("\n");
+    }
 }
 
 TParseContext::~TParseContext()

@@ -88,17 +88,11 @@ public:
         }
     }
     void location(const TSourceLoc& loc) {
-        const int maxSize = 24;
-        char locText[maxSize];
-        snprintf(locText, maxSize, ":%d", loc.line);
+        char locText[24];
+        snprintf(locText, 24, ":%d", loc.line);
         append(loc.getStringNameOrNum(false).c_str());
         append(locText);
         append(": ");
-    }
-    void message(TPrefixType message, const char* s) {
-        prefix(message);
-        append(s);
-        append("\n");
     }
     void message(TPrefixType message, const char* s, const TSourceLoc& loc) {
         prefix(message);
@@ -107,7 +101,6 @@ public:
         append("\n");
     }
 
-protected:
     void append(const char* s);
 
     void append(int count, char c);
@@ -116,7 +109,7 @@ protected:
 
     void checkMem(size_t growth) { if (sink.capacity() < sink.size() + growth + 2)
                                        sink.reserve(sink.capacity() +  sink.capacity() / 2); }
-    void appendToStream(const char* s);
+protected:
     TPersistString sink;
 };
 

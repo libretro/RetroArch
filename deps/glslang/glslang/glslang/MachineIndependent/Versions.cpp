@@ -633,7 +633,10 @@ void TParseVersions::requireExtensions(const TSourceLoc& loc, int numExtensions,
     else {
         error(loc, "required extension not requested:", featureDesc, "Possible extensions include:");
         for (int i = 0; i < numExtensions; ++i)
-            infoSink.info.message(EPrefixNone, extensions[i]);
+        {
+            infoSink.info.append(extensions[i]);
+            infoSink.info.append("\n");
+        }
     }
 }
 
@@ -652,7 +655,10 @@ void TParseVersions::ppRequireExtensions(const TSourceLoc& loc, int numExtension
     else {
         ppError(loc, "required extension not requested:", featureDesc, "Possible extensions include:");
         for (int i = 0; i < numExtensions; ++i)
-            infoSink.info.message(EPrefixNone, extensions[i]);
+	{
+            infoSink.info.append(extensions[i]);
+            infoSink.info.append("\n");
+	}
     }
 }
 
