@@ -117,7 +117,7 @@ static void *network_gfx_init(const video_info_t *video,
 
    RARCH_LOG("[Network]: Connecting to host %s:%d\n", network->address, network->port);
 try_connect:
-   fd = socket_init((void**)&addr, network->port, network->address, SOCKET_TYPE_STREAM);
+   fd = socket_init((void**)&addr, network->port, network->address, SOCKET_TYPE_STREAM, 0);
 
    next_addr = addr;
 

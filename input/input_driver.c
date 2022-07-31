@@ -1033,7 +1033,7 @@ static bool input_remote_init_network(input_remote_t *handle,
    RARCH_LOG("Bringing up remote interface on port %hu.\n",
          (unsigned short)port);
 
-   if ((fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM)) < 0)
+   if ((fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM, AF_INET)) < 0)
       goto error;
 
    handle->net_fd[user] = fd;

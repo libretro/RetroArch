@@ -70,6 +70,7 @@ struct hostent
    int  h_length;
    char **h_addr_list;
    char *h_addr;
+   char *h_end;
 };
 
 #elif defined(GEKKO)
@@ -172,6 +173,7 @@ struct hostent
    int  h_length;
    char **h_addr_list;
    char *h_addr;
+   char *h_end;
 };
 
 struct SceNetInAddr inet_aton(const char *ip_addr);
