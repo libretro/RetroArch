@@ -361,6 +361,8 @@ size_t fill_pathname_dir(char *in_dir, const char *in_basename,
  * @size               : size of output path
  *
  * Copies basename of @in_path into @out_path.
+ *
+ * @return length of the string copied into @out
  **/
 size_t fill_pathname_base(char *out, const char *in_path, size_t size)
 {
@@ -535,7 +537,11 @@ void path_basedir(char *path)
    if ((last = find_last_slash(path)))
       last[1] = '\0';
    else
-      strlcpy(path, "." PATH_DEFAULT_SLASH(), 3);
+   {
+      path[0] = '.';
+      path[1] = PATH_DEFAULT_SLASH_C();
+      path[2] = '\0';
+   }
 }
 
 /**
