@@ -512,10 +512,8 @@ public:
 
     void addProcessArgument(const std::string& arg) { processes.addArgument(arg.c_str()); }
     void setNeedsLegalization() { needToLegalize = true; }
-    bool needsLegalization() const { return needToLegalize; }
 
     void setBinaryDoubleOutput() { binaryDoubleOutput = true; }
-    bool getBinaryDoubleOutput() { return binaryDoubleOutput; }
 
     const char* const implicitThisName;
     const char* const implicitCounterName;
