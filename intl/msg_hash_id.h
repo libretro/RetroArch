@@ -92,6 +92,14 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    "Mengambil data dari cakram media fisik ke penyimpanan internal. Akan disimpan sebagai berkas image."
    )
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "Keluarkan Cakram"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_EJECT_DISC,
+   "Keluarkan cakram dari kandar CD/DVD fisik."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
@@ -553,6 +561,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
    "Fitur CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
+   "Arsitektur CPU"
    )
 MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_CORES,

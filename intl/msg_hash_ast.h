@@ -398,6 +398,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
    "Carauterístiques de la CPU"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
+   "Arquiteutura de la CPU"
+   )
 MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "Nucleos de la CPU:"
