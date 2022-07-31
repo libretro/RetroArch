@@ -471,8 +471,7 @@ void TBuiltInParseablesHlsl::createMatTimesMat()
 
                 // Create a mat * mat of the appropriate dimensions
                 AppendTypeName(s, "M", "F", retRows, retCols);  // add return type
-                s.append(" ");                                  // space between type and name
-                s.append("mul");                                // intrinsic name
+                s.append(" mul"); // space between type and name, intrinsic name
                 s.append("(");                                  // open paren
 
                 AppendTypeName(s, "M", "F", xRows, xCols);      // add X input
@@ -484,8 +483,7 @@ void TBuiltInParseablesHlsl::createMatTimesMat()
 
             // Create M*V
             AppendTypeName(s, "V", "F", xRows, 1);          // add return type
-            s.append(" ");                                  // space between type and name
-            s.append("mul");                                // intrinsic name
+            s.append(" mul"); // space between type and name, intrinsic name
             s.append("(");                                  // open paren
 
             AppendTypeName(s, "M", "F", xRows, xCols);      // add X input
@@ -496,8 +494,7 @@ void TBuiltInParseablesHlsl::createMatTimesMat()
 
             // Create V*M
             AppendTypeName(s, "V", "F", xCols, 1);          // add return type
-            s.append(" ");                                  // space between type and name
-            s.append("mul");                                // intrinsic name
+            s.append(" mul"); // space between type and name, intrinsic name
             s.append("(");                                  // open paren
 
             AppendTypeName(s, "V", "F", xRows, 1);          // add Y input

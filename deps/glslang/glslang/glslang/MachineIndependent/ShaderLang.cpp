@@ -82,9 +82,7 @@ static TBuiltInParseables* CreateBuiltInParseables(TInfoSink& infoSink, EShSourc
 #endif
 
     default:
-        infoSink.info.append("INTERNAL ERROR: ");
-        infoSink.info.append("Unable to determine source language");
-        infoSink.info.append("\n");
+        infoSink.info.append("INTERNAL ERROR: Unable to determine source language\n");
         return nullptr;
     }
 }
@@ -110,9 +108,7 @@ static TParseContextBase* CreateParseContext(TSymbolTable& symbolTable, TInterme
                                     language, infoSink, sourceEntryPointName.c_str(), forwardCompatible, messages);
 #endif
     default:
-        infoSink.info.append("INTERNAL ERROR: ");
-        infoSink.info.append("Unable to determine source language");
-        infoSink.info.append("\n");
+        infoSink.info.append("INTERNAL ERROR: Unable to determine source language\n");
         return nullptr;
     }
 }
@@ -256,9 +252,7 @@ static bool InitializeSymbolTable(const TString& builtIns, int version, EProfile
     TInputScanner input(1, builtInShaders, builtInLengths);
     if (! _parseContext->parseShaderStrings(ppContext, input) != 0)
     {
-        infoSink.info.append("INTERNAL ERROR: ");
-        infoSink.info.append("Unable to parse built-ins");
-        infoSink.info.append("\n");
+        infoSink.info.append("INTERNAL ERROR: Unable to parse built-ins\n");
         return false;
     }
 
@@ -453,9 +447,7 @@ static bool DeduceVersionProfile(TInfoSink& infoSink, EShLanguage stage, bool ve
     if (profile == ENoProfile) {
         if (version == 300 || version == 310 || version == 320) {
             correct = false;
-	    infoSink.info.append("ERROR: ");
-	    infoSink.info.append("#version: versions 300, 310, and 320 require specifying the 'es' profile");
-	    infoSink.info.append("\n");
+	    infoSink.info.append("ERROR: #version: versions 300, 310, and 320 require specifying the 'es' profile\n");
             profile = EEsProfile;
         } else if (version == 100)
             profile = EEsProfile;
@@ -467,9 +459,7 @@ static bool DeduceVersionProfile(TInfoSink& infoSink, EShLanguage stage, bool ve
         // a profile was provided...
         if (version < 150) {
             correct = false;
-	    infoSink.info.append("ERROR: ");
-            infoSink.info.append("#version: versions before 150 do not allow a profile token");
-	    infoSink.info.append("\n");
+	    infoSink.info.append("ERROR: #version: versions before 150 do not allow a profile token\n");
             if (version == 100)
                 profile = EEsProfile;
             else
@@ -477,17 +467,13 @@ static bool DeduceVersionProfile(TInfoSink& infoSink, EShLanguage stage, bool ve
         } else if (version == 300 || version == 310 || version == 320) {
             if (profile != EEsProfile) {
                 correct = false;
-		infoSink.info.append("ERROR: ");
-                infoSink.info.append("#version: versions 300, 310, and 320 support only the es profile");
-		infoSink.info.append("\n");
+		infoSink.info.append("ERROR: #version: versions 300, 310, and 320 support only the es profile\n");
             }
             profile = EEsProfile;
         } else {
             if (profile == EEsProfile) {
                 correct = false;
-		infoSink.info.append("ERROR: ");
-                infoSink.info.append("#version: only version 300, 310, and 320 support the es profile");
-		infoSink.info.append("\n");
+		infoSink.info.append("ERROR: #version: only version 300, 310, and 320 support the es profile\n");
                 if (version >= FirstProfileVersion)
                     profile = ECoreProfile;
                 else
@@ -523,9 +509,7 @@ static bool DeduceVersionProfile(TInfoSink& infoSink, EShLanguage stage, bool ve
     // unknown version
     default:
         correct = false;
-	infoSink.info.append("ERROR: ");
-        infoSink.info.append("version not supported");
-	infoSink.info.append("\n");
+	infoSink.info.append("ERROR: version not supported\n");
         if (profile == EEsProfile)
             version = 310;
         else {
@@ -541,9 +525,7 @@ static bool DeduceVersionProfile(TInfoSink& infoSink, EShLanguage stage, bool ve
         if ((profile == EEsProfile && version < 310) ||
             (profile != EEsProfile && version < 150)) {
             correct = false;
-	    infoSink.info.append("ERROR: ");
-            infoSink.info.append("#version: geometry shaders require es profile with version 310 or non-es profile with version 150 or above");
-	    infoSink.info.append("\n");
+	    infoSink.info.append("ERROR: #version: geometry shaders require es profile with version 310 or non-es profile with version 150 or above\n");
             version = (profile == EEsProfile) ? 310 : 150;
             if (profile == EEsProfile || profile == ENoProfile)
                 profile = ECoreProfile;
@@ -554,9 +536,7 @@ static bool DeduceVersionProfile(TInfoSink& infoSink, EShLanguage stage, bool ve
         if ((profile == EEsProfile && version < 310) ||
             (profile != EEsProfile && version < 150)) {
             correct = false;
-	    infoSink.info.append("ERROR: ");
-            infoSink.info.append("#version: tessellation shaders require es profile with version 310 or non-es profile with version 150 or above");
-	    infoSink.info.append("\n");
+	    infoSink.info.append("ERROR: #version: tessellation shaders require es profile with version 310 or non-es profile with version 150 or above\n");
             version = (profile == EEsProfile) ? 310 : 400; // 150 supports the extension, correction is to 400 which does not
             if (profile == EEsProfile || profile == ENoProfile)
                 profile = ECoreProfile;
@@ -566,9 +546,7 @@ static bool DeduceVersionProfile(TInfoSink& infoSink, EShLanguage stage, bool ve
         if ((profile == EEsProfile && version < 310) ||
             (profile != EEsProfile && version < 420)) {
             correct = false;
-	    infoSink.info.append("ERROR: ");
-            infoSink.info.append("#version: compute shaders require es profile with version 310 or above, or non-es profile with version 420 or above");
-	    infoSink.info.append("\n");
+	    infoSink.info.append("ERROR: #version: compute shaders require es profile with version 310 or above, or non-es profile with version 420 or above\n");
             version = profile == EEsProfile ? 310 : 420;
         }
         break;
@@ -578,9 +556,7 @@ static bool DeduceVersionProfile(TInfoSink& infoSink, EShLanguage stage, bool ve
 
     if (profile == EEsProfile && version >= 300 && versionNotFirst) {
         correct = false;
-	infoSink.info.append("ERROR: ");
-        infoSink.info.append("#version: statement must appear first in es-profile shader; before comments or newlines");
-	infoSink.info.append("\n");
+	infoSink.info.append("ERROR: #version: statement must appear first in es-profile shader; before comments or newlines\n");
     }
 
     // Check for SPIR-V compatibility
@@ -589,37 +565,27 @@ static bool DeduceVersionProfile(TInfoSink& infoSink, EShLanguage stage, bool ve
         case  EEsProfile:
             if (spvVersion.vulkan > 0 && version < 310) {
                 correct = false;
-		infoSink.info.append("ERROR: ");
-                infoSink.info.append("#version: ES shaders for Vulkan SPIR-V require version 310 or higher");
-		infoSink.info.append("\n");
+		infoSink.info.append("ERROR: #version: ES shaders for Vulkan SPIR-V require version 310 or higher\n");
                 version = 310;
             }
             if (spvVersion.openGl >= 100) {
                 correct = false;
-		infoSink.info.append("ERROR: ");
-                infoSink.info.append("#version: ES shaders for OpenGL SPIR-V are not supported");
-		infoSink.info.append("\n");
+		infoSink.info.append("ERROR: #version: ES shaders for OpenGL SPIR-V are not supported\n");
                 version = 310;
             }
             break;
         case ECompatibilityProfile:
-	    infoSink.info.append("ERROR: ");
-	    infoSink.info.append("#version: compilation for SPIR-V does not support the compatibility profile");
-	    infoSink.info.append("\n");
+	    infoSink.info.append("ERROR: #version: compilation for SPIR-V does not support the compatibility profile\n");
             break;
         default:
             if (spvVersion.vulkan > 0 && version < 140) {
                 correct = false;
-		infoSink.info.append("ERROR: ");
-                infoSink.info.append("#version: Desktop shaders for Vulkan SPIR-V require version 140 or higher");
-		infoSink.info.append("\n");
+		infoSink.info.append("ERROR: #version: Desktop shaders for Vulkan SPIR-V require version 140 or higher\n");
                 version = 140;
             }
             if (spvVersion.openGl >= 100 && version < 330) {
                 correct = false;
-		infoSink.info.append("ERROR: ");
-                infoSink.info.append("#version: Desktop shaders for OpenGL SPIR-V require version 330 or higher");
-		infoSink.info.append("\n");
+		infoSink.info.append("ERROR: #version: Desktop shaders for OpenGL SPIR-V require version 330 or higher\n");
                 version = 330;
             }
             break;
@@ -1112,9 +1078,7 @@ struct DoFullParse{
         if (success && intermediate.getTreeRoot()) {
             if (optLevel == EShOptNoGeneration)
             {
-		_parseContext.infoSink.info.append("ERROR: ");
-                _parseContext.infoSink.info.append("No errors.  No code generation or linking was requested.");
-		_parseContext.infoSink.info.append("\n");
+		_parseContext.infoSink.info.append("ERROR: No errors.  No code generation or linking was requested.\n");
 	    }
             else
                 success = intermediate.postProcess(intermediate.getTreeRoot(), _parseContext.getLanguage());
@@ -1448,14 +1412,10 @@ bool TProgram::linkStage(EShLanguage stage, EShMessages messages)
     }
 
     if (numEsShaders > 0 && numNonEsShaders > 0) {
-	    infoSink->info.append("ERROR: ");
-	    infoSink->info.append("Cannot mix ES profile with non-ES profile shaders");
-	    infoSink->info.append("\n");
+	    infoSink->info.append("ERROR: Cannot mix ES profile with non-ES profile shaders\n");
 	    return false;
     } else if (numEsShaders > 1) {
-	    infoSink->info.append("ERROR: ");
-	    infoSink->info.append("Cannot attach multiple ES shaders of the same type to a single program");
-	    infoSink->info.append("\n");
+	    infoSink->info.append("ERROR: Cannot attach multiple ES shaders of the same type to a single program\n");
 	    return false;
     }
 

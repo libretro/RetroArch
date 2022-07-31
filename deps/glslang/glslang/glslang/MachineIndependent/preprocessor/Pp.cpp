@@ -633,9 +633,14 @@ int TPpContext::CPPinclude(TPpToken* ppToken)
             const bool forNextLine = _parseContext.lineDirectiveShouldSetNextLine();
             std::ostringstream prologue;
             std::ostringstream epilogue;
-            prologue << "#line " << forNextLine << " " << "\"" << res->headerName << "\"\n";
-            epilogue << (res->headerData[res->headerLength - 1] == '\n'? "" : "\n") <<
-                "#line " << directiveLoc.line + forNextLine << " " << directiveLoc.getStringNameOrNum() << "\n";
+            prologue << "#line ";
+	    prologue << forNextLine;
+	    prologue << " \"";
+	    prologue << res->headerName;
+	    prologue << "\"\n";
+            epilogue << (res->headerData[res->headerLength - 1] == '\n'? "" : "\n");
+	    epilogue << "#line ";
+            epilogue << directiveLoc.line + forNextLine << " " << directiveLoc.getStringNameOrNum() << "\n";
             pushInput(new TokenizableIncludeFile(directiveLoc, prologue.str(), res, epilogue.str(), this));
             // There's no "current" location anymore.
             _parseContext.setCurrentColumn(0);

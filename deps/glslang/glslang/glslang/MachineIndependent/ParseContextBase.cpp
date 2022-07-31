@@ -54,7 +54,13 @@ void C_DECL TParseContextBase::error(const TSourceLoc& loc, const char* szReason
     safe_vsprintf(szExtraInfo, maxSize, szExtraInfoFormat, args);
     infoSink.info.append("ERROR: ");
     infoSink.info.location(loc);
-    infoSink.info << "'" << szToken <<  "' : " << szReason << " " << szExtraInfo << "\n";
+    infoSink.info.append("'");
+    infoSink.info << szToken;
+    infoSink.info.append("' : ");
+    infoSink.info << szReason;
+    infoSink.info.append(" ");
+    infoSink.info << szExtraInfo;
+    infoSink.info.append("\n");
     ++numErrors;
     va_end(args);
 
@@ -74,7 +80,13 @@ void C_DECL TParseContextBase::warn(const TSourceLoc& loc, const char* szReason,
     safe_vsprintf(szExtraInfo, maxSize, szExtraInfoFormat, args);
     infoSink.info.append("WARNING: ");
     infoSink.info.location(loc);
-    infoSink.info << "'" << szToken <<  "' : " << szReason << " " << szExtraInfo << "\n";
+    infoSink.info.append("'");
+    infoSink.info << szToken;
+    infoSink.info.append("' : ");
+    infoSink.info << szReason;
+    infoSink.info.append(" ");
+    infoSink.info << szExtraInfo;
+    infoSink.info.append("\n");
     va_end(args);
 }
 
@@ -88,7 +100,13 @@ void C_DECL TParseContextBase::ppError(const TSourceLoc& loc, const char* szReas
     safe_vsprintf(szExtraInfo, maxSize, szExtraInfoFormat, args);
     infoSink.info.append("ERROR: ");
     infoSink.info.location(loc);
-    infoSink.info << "'" << szToken <<  "' : " << szReason << " " << szExtraInfo << "\n";
+    infoSink.info.append("'");
+    infoSink.info << szToken;
+    infoSink.info.append("' : ");
+    infoSink.info << szReason;
+    infoSink.info.append(" ");
+    infoSink.info << szExtraInfo;
+    infoSink.info.append("\n");
     ++numErrors;
     va_end(args);
 
@@ -106,7 +124,13 @@ void C_DECL TParseContextBase::ppWarn(const TSourceLoc& loc, const char* szReaso
     safe_vsprintf(szExtraInfo, maxSize, szExtraInfoFormat, args);
     infoSink.info.append("WARNING: ");
     infoSink.info.location(loc);
-    infoSink.info << "'" << szToken <<  "' : " << szReason << " " << szExtraInfo << "\n";
+    infoSink.info.append("'");
+    infoSink.info << szToken;
+    infoSink.info.append("' : ");
+    infoSink.info << szReason;
+    infoSink.info.append(" ");
+    infoSink.info << szExtraInfo;
+    infoSink.info.append("\n");
     va_end(args);
 }
 

@@ -857,8 +857,7 @@ EHlslTokenClass HlslScanContext::tokenizeIdentifier()
     default:
         _parseContext.infoSink.info.append("INTERNAL ERROR: ");
         _parseContext.infoSink.info.location(loc);
-        _parseContext.infoSink.info.append("Unknown glslang keyword");
-        _parseContext.infoSink.info.append("\n");
+        _parseContext.infoSink.info.append("Unknown glslang keyword" "\n");
         return EHTokNone;
     }
 }
