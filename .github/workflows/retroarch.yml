@@ -27,3 +27,7 @@ jobs:
         run: ./configure
       - name: Build
         run: make C89_BUILD=1
+      - name: Build Debug
+        run: |
+          make clean # making sure we don't have leftovers from previous build
+          make DEBUG=1 GL_DEBUG=1 C89_BUILD=1
