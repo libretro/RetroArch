@@ -1251,7 +1251,10 @@ static void OutputConstantUnion(TInfoSink& out, const TIntermTyped* node, const 
             }
             break;
         default:
-            out.info.message(EPrefixInternalError, "Unknown constant", node->getLoc());
+	    out.info.append("INTERNAL ERROR: ");
+	    out.info.location(node->getLoc());
+            out.info.append("Unknown constant");
+            out.info.append("\n");
             break;
         }
     }

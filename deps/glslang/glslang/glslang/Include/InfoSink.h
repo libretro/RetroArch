@@ -76,29 +76,12 @@ public:
     TInfoSinkBase& operator<<(const TString& t)        { append(t); return *this; }
     TInfoSinkBase& operator+(const char* s)            { append(s); return *this; }
     const char* c_str() const { return sink.c_str(); }
-    void prefix(TPrefixType message) {
-        switch(message) {
-        case EPrefixNone:                                      break;
-        case EPrefixWarning:       append("WARNING: ");        break;
-        case EPrefixError:         append("ERROR: ");          break;
-        case EPrefixInternalError: append("INTERNAL ERROR: "); break;
-        case EPrefixUnimplemented: append("UNIMPLEMENTED: ");  break;
-        case EPrefixNote:          append("NOTE: ");           break;
-        default:                   append("UNKNOWN ERROR: ");   break;
-        }
-    }
     void location(const TSourceLoc& loc) {
         char locText[24];
         snprintf(locText, 24, ":%d", loc.line);
         append(loc.getStringNameOrNum(false).c_str());
         append(locText);
         append(": ");
-    }
-    void message(TPrefixType message, const char* s, const TSourceLoc& loc) {
-        prefix(message);
-        location(loc);
-        append(s);
-        append("\n");
     }
 
     void append(const char* s);

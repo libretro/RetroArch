@@ -1101,7 +1101,7 @@ struct DoPreprocessing {
         bool success = true;
         if (_parseContext.getNumErrors() > 0) {
             success = false;
-            _parseContext.infoSink.info.prefix(EPrefixError);
+            _parseContext.infoSink.info.append("ERROR: ");
             _parseContext.infoSink.info << _parseContext.getNumErrors() << " compilation errors.  No code generated.\n\n";
         }
         return success;
@@ -1132,7 +1132,7 @@ struct DoFullParse{
             else
                 success = intermediate.postProcess(intermediate.getTreeRoot(), _parseContext.getLanguage());
         } else if (! success) {
-            _parseContext.infoSink.info.prefix(EPrefixError);
+            _parseContext.infoSink.info.append("ERROR: ");
             _parseContext.infoSink.info << _parseContext.getNumErrors() << " compilation errors.  No code generated.\n\n";
         }
 

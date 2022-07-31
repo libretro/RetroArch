@@ -55,7 +55,7 @@ namespace glslang {
 //
 void TIntermediate::error(TInfoSink& infoSink, const char* message)
 {
-    infoSink.info.prefix(EPrefixError);
+    infoSink.info.append("ERROR: ");
     infoSink.info << "Linking " << StageName(language) << " stage: " << message << "\n";
 
     ++numErrors;
@@ -64,7 +64,7 @@ void TIntermediate::error(TInfoSink& infoSink, const char* message)
 // Link-time warning.
 void TIntermediate::warn(TInfoSink& infoSink, const char* message)
 {
-    infoSink.info.prefix(EPrefixWarning);
+    infoSink.info.append("WARNING: ");
     infoSink.info << "Linking " << StageName(language) << " stage: " << message << "\n";
 }
 
@@ -435,7 +435,7 @@ void TIntermediate::finalCheck(TInfoSink& infoSink, bool keepUncalled)
         // compile-time or link-time error to have different values specified for the stride for the same buffer."
         if (xfbBuffers[b].stride != TQualifier::layoutXfbStrideEnd && xfbBuffers[b].implicitStride > xfbBuffers[b].stride) {
             error(infoSink, "xfb_stride is too small to hold all buffer entries:");
-            infoSink.info.prefix(EPrefixError);
+	    infoSink.info.append("ERROR: ");
             infoSink.info << "    xfb_buffer " << (unsigned int)b << ", xfb_stride " << xfbBuffers[b].stride << ", minimum stride needed: " << xfbBuffers[b].implicitStride << "\n";
         }
         if (xfbBuffers[b].stride == TQualifier::layoutXfbStrideEnd)
@@ -446,11 +446,11 @@ void TIntermediate::finalCheck(TInfoSink& infoSink, bool keepUncalled)
         // multiple of 4, or a compile-time or link-time error results."
         if (xfbBuffers[b].containsDouble && ! IsMultipleOfPow2(xfbBuffers[b].stride, 8)) {
             error(infoSink, "xfb_stride must be multiple of 8 for buffer holding a double:");
-            infoSink.info.prefix(EPrefixError);
+	    infoSink.info.append("ERROR: ");
             infoSink.info << "    xfb_buffer " << (unsigned int)b << ", xfb_stride " << xfbBuffers[b].stride << "\n";
         } else if (! IsMultipleOfPow2(xfbBuffers[b].stride, 4)) {
             error(infoSink, "xfb_stride must be multiple of 4:");
-            infoSink.info.prefix(EPrefixError);
+	    infoSink.info.append("ERROR: ");
             infoSink.info << "    xfb_buffer " << (unsigned int)b << ", xfb_stride " << xfbBuffers[b].stride << "\n";
         }
 
@@ -458,7 +458,7 @@ void TIntermediate::finalCheck(TInfoSink& infoSink, bool keepUncalled)
         // implementation-dependent constant gl_MaxTransformFeedbackInterleavedComponents."
         if (xfbBuffers[b].stride > (unsigned int)(4 * resources.maxTransformFeedbackInterleavedComponents)) {
             error(infoSink, "xfb_stride is too large:");
-            infoSink.info.prefix(EPrefixError);
+	    infoSink.info.append("ERROR: ");
             infoSink.info << "    xfb_buffer " << (unsigned int)b << ", components (1/4 stride) needed are " << xfbBuffers[b].stride/4 << ", gl_MaxTransformFeedbackInterleavedComponents is " << resources.maxTransformFeedbackInterleavedComponents << "\n";
         }
     }
