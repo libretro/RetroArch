@@ -53,12 +53,6 @@ enum TPrefixType {
     EPrefixNote
 };
 
-enum TOutputStream {
-    ENull = 0,
-    EDebugger = 0x01,
-    EStdOut = 0x02,
-    EString = 0x04,
-};
 //
 // Encapsulate info logs for all objects that have them.
 //
@@ -67,8 +61,7 @@ enum TOutputStream {
 //
 class TInfoSinkBase {
 public:
-    TInfoSinkBase() : outputStream(4) {}
-    void erase() { sink.erase(); }
+    TInfoSinkBase() {}
     TInfoSinkBase& operator<<(const TPersistString& t) { append(t); return *this; }
     TInfoSinkBase& operator<<(char c)                  { append(1, c); return *this; }
     TInfoSinkBase& operator<<(const char* s)           { append(s); return *this; }
@@ -114,11 +107,6 @@ public:
         append("\n");
     }
 
-    void setOutputStream(int output = 4)
-    {
-        outputStream = output;
-    }
-
 protected:
     void append(const char* s);
 
@@ -130,7 +118,6 @@ protected:
                                        sink.reserve(sink.capacity() +  sink.capacity() / 2); }
     void appendToStream(const char* s);
     TPersistString sink;
-    int outputStream;
 };
 
 } // end namespace glslang

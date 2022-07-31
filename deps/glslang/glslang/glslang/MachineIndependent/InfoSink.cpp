@@ -40,38 +40,30 @@ namespace glslang {
 
 void TInfoSinkBase::append(const char* s)
 {
-    if (outputStream & EString) {
         if (s == nullptr)
             sink.append("(null)");
         else {
             checkMem(strlen(s));
             sink.append(s);
         }
-    }
 }
 
 void TInfoSinkBase::append(int count, char c)
 {
-    if (outputStream & EString) {
         checkMem(count);
         sink.append(count, c);
-    }
 }
 
 void TInfoSinkBase::append(const TPersistString& t)
 {
-    if (outputStream & EString) {
         checkMem(t.size());
         sink.append(t);
-    }
 }
 
 void TInfoSinkBase::append(const TString& t)
 {
-    if (outputStream & EString) {
         checkMem(t.size());
         sink.append(t.c_str());
-    }
 }
 
 } // end namespace glslang
