@@ -1169,7 +1169,11 @@ void path_basedir_wrapper(char *path)
    if ((last = find_last_slash(path)))
       last[1] = '\0';
    else
-      strlcpy(path, "." PATH_DEFAULT_SLASH(), 3);
+   {
+      path[0] = '.';
+      path[1] = PATH_DEFAULT_SLASH_C();
+      path[2] = '\0';
+   }
 }
 
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
