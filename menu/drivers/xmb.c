@@ -2255,6 +2255,8 @@ static void xmb_context_reset_horizontal_list(
       xmb_handle_t *xmb)
 {
    unsigned i;
+   char iconpath[PATH_MAX_LENGTH];
+   char icons_path_default[PATH_MAX_LENGTH];
    int depth                       = 1; /* keep this integer */
    size_t list_size                =
       xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL);
@@ -2268,6 +2270,12 @@ static void xmb_context_reset_horizontal_list(
    xmb->x                          = xmb->icon_size * -(depth * 2 - 2);
 
    RHMAP_FREE(xmb->playlist_db_node_map);
+
+   iconpath[0]            = '\0';
+   fill_pathname_application_special(iconpath, sizeof(iconpath),
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
+   fill_pathname_join(icons_path_default, iconpath,
+         "default", sizeof(icons_path_default));
 
    for (i = 0; i < list_size; i++)
    {
@@ -2287,18 +2295,14 @@ static void xmb_context_reset_horizontal_list(
       {
          struct texture_image ti;
          char sysname[PATH_MAX_LENGTH];
-         char iconpath[PATH_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
          char content_texturepath[PATH_MAX_LENGTH];
 
          /* Add current node to playlist database name map */
          RHMAP_SET_STR(xmb->playlist_db_node_map, path, node);
-	 iconpath[0]            = '\0';
 
          fill_pathname_base(sysname, path, sizeof(sysname));
          path_remove_extension(sysname);
-         fill_pathname_application_special(iconpath, sizeof(iconpath),
-               APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
          fill_pathname_join(texturepath, iconpath, sysname,
                sizeof(texturepath));
@@ -2334,17 +2338,14 @@ static void xmb_context_reset_horizontal_list(
          fill_pathname_join_delim(sysname, sysname,
                FILE_PATH_CONTENT_BASENAME, '-',
                sizeof(sysname));
-         strlcpy(content_texturepath, iconpath, sizeof(content_texturepath));
-         strlcat(content_texturepath, sysname,  sizeof(content_texturepath));
+         fill_pathname_join(content_texturepath, iconpath, sysname,
+               sizeof(content_texturepath));
 
          /* If the content icon doesn't exist return default-content */
 
          if (!path_is_valid(content_texturepath))
-         {
-            strlcat(iconpath, "default", sizeof(iconpath));
-            fill_pathname_join_delim(content_texturepath, iconpath,
+            fill_pathname_join_delim(content_texturepath, icons_path_default,
                   FILE_PATH_CONTENT_BASENAME, '-', sizeof(content_texturepath));
-         }
 
          if (image_texture_load(&ti, content_texturepath))
          {
