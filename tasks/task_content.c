@@ -752,6 +752,9 @@ static bool content_file_load_into_memory(
          }
          else
          {
+            /* We don't have the content ready inside a memory buffer,
+               so we have to read it from file later (deferred)
+               and then encode the CRC32 hash */
             strlcpy(p_content->pending_rom_crc_path, content_path,
                   sizeof(p_content->pending_rom_crc_path));
             p_content->pending_rom_crc = true;
@@ -2860,12 +2863,66 @@ void content_unset_does_not_need_content(void)
    p_content->core_does_not_need_content = false;
 }
 
+#ifndef CRC32_BUFFER_SIZE
+#define CRC32_BUFFER_SIZE 1048576
+#endif
+
+#ifndef CRC32_MAX_MB
+#define CRC32_MAX_MB 64
+#endif
+
+/**
+ * Calculate a CRC32 from the first part of the given file.
+ * "first part" being the first (CRC32_BUFFER_SIZE * CRC32_MAX_MB)
+ * bytes.
+ *
+ * @return The calculated CRC32 hash, or 0 if there was an error.
+ */
+static uint32_t file_crc32(uint32_t crc, const char *path)
+{
+   unsigned i;
+   RFILE *file        = NULL;
+   unsigned char *buf = NULL;
+   if (!path)
+      return 0;
+
+   if (!(file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, 0)))
+      return 0;
+
+   if (!(buf = (unsigned char*)malloc(CRC32_BUFFER_SIZE)))
+   {
+      filestream_close(file);
+      return 0;
+   }
+
+   for (i = 0; i < CRC32_MAX_MB; i++)
+   {
+      int64_t nread = filestream_read(file, buf, CRC32_BUFFER_SIZE);
+      if (nread < 0)		
+      {
+         free(buf);
+         filestream_close(file);
+         return 0;
+      }
+
+      crc = encoding_crc32(crc, buf, (size_t)nread);
+      if (filestream_eof(file))
+         break;
+   }
+   free(buf);
+   filestream_close(file);
+   return crc;
+}
+
 uint32_t content_get_crc(void)
 {
    content_state_t *p_content = content_state_get_ptr();
    if (p_content->pending_rom_crc)
    {
       p_content->pending_rom_crc   = false;
+      /* TODO/FIXME - file_crc32 has a 64MB max limit -
+       * get rid of this function and find a better
+       * way to calculate CRC based on the file */
       p_content->rom_crc           = file_crc32(0,
             (const char*)p_content->pending_rom_crc_path);
       RARCH_LOG("[Content]: CRC32: 0x%x.\n",
