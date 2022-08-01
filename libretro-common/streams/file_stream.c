@@ -161,7 +161,7 @@ int64_t filestream_truncate(RFILE *stream, int64_t length)
  * @hints              :
  *
  * Opens a file for reading or writing, depending on the requested mode.
- * Returns a pointer to an RFILE if opened successfully, otherwise NULL.
+ * @return A pointer to an RFILE if opened successfully, otherwise NULL.
  **/
 RFILE* filestream_open(const char *path, unsigned mode, unsigned hints)
 {
@@ -539,7 +539,7 @@ int filestream_close(RFILE *stream)
  *
  * Read the contents of a file into @buf.
  *
- * Returns: non zero on success.
+ * @return Non-zero on success.
  */
 int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
 {
@@ -556,9 +556,7 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
       return 0;
    }
 
-   content_buf_size = filestream_get_size(file);
-
-   if (content_buf_size < 0)
+   if ((content_buf_size = filestream_get_size(file)) < 0)
       goto error;
 
    if (!(content_buf = malloc((size_t)(content_buf_size + 1))))
@@ -603,8 +601,8 @@ error:
  *
  * Writes data to a file.
  *
- * Returns: true (1) on success, false (0) otherwise.
- */
+ * @return true on success, otherwise false.
+ **/
 bool filestream_write_file(const char *path, const void *data, int64_t size)
 {
    int64_t ret   = 0;
@@ -619,8 +617,12 @@ bool filestream_write_file(const char *path, const void *data, int64_t size)
    return (ret == size);
 }
 
-/* Returned pointer must be freed by the caller. */
-char* filestream_getline(RFILE *stream)
+/**
+ * filestream_getline:
+ *
+ * Returned pointer must be freed by the caller.
+ **/
+char *filestream_getline(RFILE *stream)
 {
    char *newline_tmp  = NULL;
    size_t cur_size    = 8;
@@ -635,7 +637,7 @@ char* filestream_getline(RFILE *stream)
       return NULL;
    }
 
-   in                 = filestream_getc(stream);
+   in = filestream_getc(stream);
 
    while (in != EOF && in != '\n')
    {

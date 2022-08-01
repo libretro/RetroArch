@@ -316,7 +316,7 @@ bool addr_6to4(struct sockaddr_storage *addr);
  *
  * Platform specific socket library initialization.
  *
- * Returns: true (1) if successful, otherwise false (0).
+ * @return true if successful, otherwise false.
  **/
 bool network_init(void);
 

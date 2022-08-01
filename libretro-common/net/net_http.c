@@ -88,8 +88,12 @@ struct http_connection_t
    int port;
 };
 
-/* URL Encode a string
-   caller is responsible for deleting the destination buffer */
+/**
+ * net_http_urlencode:
+ *
+ * URL Encode a string
+ * caller is responsible for deleting the destination buffer
+ **/
 void net_http_urlencode(char **dest, const char *source)
 {
    static const char urlencode_lut[256] = 
@@ -377,7 +381,11 @@ void net_http_urlencode(char **dest, const char *source)
    (*dest)[len - 1] = '\0';
 }
 
-/* Re-encode a full URL */
+/**
+ * net_http_urlencode_full:
+ *
+ * Re-encode a full URL
+ **/
 void net_http_urlencode_full(char *dest,
       const char *source, size_t size)
 {
@@ -547,6 +555,11 @@ error:
    return NULL;
 }
 
+/**
+ * net_http_connection_iterate:
+ *
+ * Leaf function.
+ **/
 bool net_http_connection_iterate(struct http_connection_t *conn)
 {
    if (!conn)
@@ -864,6 +877,14 @@ error:
    return NULL;
 }
 
+/**
+ * net_http_fd:
+ *
+ * Leaf function.
+ *
+ * You can use this to call net_http_update
+ * only when something will happen; select() it for reading.
+ **/
 int net_http_fd(struct http_t *state)
 {
    if (!state)
@@ -871,6 +892,12 @@ int net_http_fd(struct http_t *state)
    return state->sock_state.fd;
 }
 
+/**
+ * net_http_update:
+ *
+ * @return true if it's done, or if something broke.
+ * @total will be 0 if it's not known.
+ **/
 bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 {
    ssize_t newlen = 0;
@@ -1117,6 +1144,15 @@ parse_again:
    return (state->part == P_DONE);
 }
 
+/**
+ * net_http_status:
+ *
+ * Report HTTP status. 200, 404, or whatever.
+ *
+ * Leaf function.
+ * 
+ * @return HTTP status code.
+ **/
 int net_http_status(struct http_t *state)
 {
    if (!state)
@@ -1124,12 +1160,21 @@ int net_http_status(struct http_t *state)
    return state->status;
 }
 
+/**
+ * net_http_data:
+ *
+ * Leaf function.
+ *
+ * @return the downloaded data. The returned buffer is owned by the
+ * HTTP handler; it's freed by net_http_delete().
+ * If the status is not 20x and accept_error is false, it returns NULL.
+ **/
 uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_error)
 {
    if (!state)
       return NULL;
 
-   if (!accept_error && net_http_error(state))
+   if (!accept_error && (state->error || state->status < 200 || state->status > 299))
    {
       if (len)
          *len = 0;
@@ -1142,6 +1187,11 @@ uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_error)
    return (uint8_t*)state->data;
 }
 
+/**
+ * net_http_delete:
+ *
+ * Cleans up all memory.
+ **/
 void net_http_delete(struct http_t *state)
 {
    if (!state)
@@ -1161,7 +1211,12 @@ void net_http_delete(struct http_t *state)
    free(state);
 }
 
+/**
+ * net_http_error:
+ *
+ * Leaf function
+ **/
 bool net_http_error(struct http_t *state)
 {
-   return (state->error || state->status<200 || state->status>299);
+   return (state->error || state->status < 200 || state->status > 299);
 }

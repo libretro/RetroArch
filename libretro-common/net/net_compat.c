@@ -269,7 +269,7 @@ static char netmask[16] = {0};
  *
  * Platform specific socket library initialization.
  *
- * Returns: true (1) if successful, otherwise false (0).
+ * @return true if successful, otherwise false.
  **/
 bool network_init(void)
 {
@@ -483,7 +483,11 @@ struct in_addr6_compat
 /* Taken from https://github.com/skywind3000/easenet/blob/master/inetbase.c
  */
 
-/* convert presentation format to network format */
+/**
+ * inet_ntop4x:
+ *
+ * Convert presentation format to network format.
+ **/
 static const char *
 inet_ntop4x(const unsigned char *src, char *dst, size_t size)
 {
@@ -503,7 +507,11 @@ error:
    return NULL;
 }
 
-/* convert presentation format to network format */
+/**
+ * inet_ntop6x:
+ *
+ * Convert presentation format to network format.
+ **/
 static const char *
 inet_ntop6x(const unsigned char *src, char *dst, size_t size)
 {
@@ -593,8 +601,12 @@ error:
    return NULL;
 }
 
-/* convert network format to presentation format */
-/* another inet_ntop, supports AF_INET/AF_INET6 */
+/* 
+ * isockaddr_ntop:
+ *
+ * Convert network format to presentation format.
+ * Another inet_ntop, supports AF_INET/AF_INET6
+ **/
 static const char *isockaddr_ntop(int af,
       const void *src, char *dst, size_t size)
 {

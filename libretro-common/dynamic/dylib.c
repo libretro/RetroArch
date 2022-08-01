@@ -75,7 +75,7 @@ static void set_dl_error(void)
  *
  * Platform independent dylib loading.
  *
- * Returns: library handle on success, otherwise NULL.
+ * @return Library handle on success, otherwise NULL.
  **/
 dylib_t dylib_load(const char *path)
 {
