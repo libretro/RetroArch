@@ -92,16 +92,20 @@ static INLINE bool string_ends_with_size(const char *str, const char *suffix,
 
 static INLINE bool string_ends_with(const char *str, const char *suffix)
 {
-   if (!str || !suffix)
-      return false;
-   return string_ends_with_size(str, suffix, strlen(str), strlen(suffix));
+   return str && suffix && string_ends_with_size(str, suffix, strlen(str), strlen(suffix));
 }
 
-/* Returns the length of 'str' (c.f. strlen()), but only
+/**
+ * strlen_size:
+ *
+ * Leaf function.
+ *
+ * @return the length of 'str' (c.f. strlen()), but only
  * checks the first 'size' characters
  * - If 'str' is NULL, returns 0
  * - If 'str' is not NULL and no '\0' character is found
- *   in the first 'size' characters, returns 'size' */
+ *   in the first 'size' characters, returns 'size'
+ **/
 static INLINE size_t strlen_size(const char *str, size_t size)
 {
    size_t i = 0;
@@ -158,16 +162,30 @@ char *string_ucwords(char *s);
 char *string_replace_substring(const char *in, const char *pattern,
       const char *by);
 
-/* Remove leading whitespaces */
+/**
+ * string_trim_whitespace_left:
+ *
+ * Remove leading whitespaces
+ **/
 char *string_trim_whitespace_left(char *const s);
 
-/* Remove trailing whitespaces */
+/**
+ * string_trim_whitespace_right:
+ *
+ * Remove trailing whitespaces
+ **/
 char *string_trim_whitespace_right(char *const s);
 
-/* Remove leading and trailing whitespaces */
+/**
+ * string_trim_whitespace:
+ *
+ * Remove leading and trailing whitespaces
+ **/
 char *string_trim_whitespace(char *const s);
 
-/*
+/**
+ * word_wrap:
+ *
  * Wraps string specified by 'src' to destination buffer
  * specified by 'dst' and 'dst_size'.
  * This function assumes that all glyphs in the string
@@ -184,11 +202,13 @@ char *string_trim_whitespace(char *const s);
  *                        compatibility with word_wrap_wideglyph().
  * @param max_lines       max lines of destination string.
  *                        0 means no limit.
- */
+ **/
 void word_wrap(char *dst, size_t dst_size, const char *src,
       int line_width, int wideglyph_width, unsigned max_lines);
 
-/*
+/**
+ * word_wrap_wideglyph:
+ *
  * Wraps string specified by 'src' to destination buffer
  * specified by 'dst' and 'dst_size'.
  * This function assumes that all glyphs in the string
@@ -219,14 +239,17 @@ void word_wrap(char *dst, size_t dst_size, const char *src,
  *                          would be 200
  * @param max_lines       max lines of destination string.
  *                        0 means no limit.
- */
+ **/
 void word_wrap_wideglyph(char *dst, size_t dst_size, const char *src,
       int line_width, int wideglyph_width, unsigned max_lines);
 
-/* Splits string into tokens seperated by 'delim'
+/**
+ * string_tokenize:
+ *
+ * Splits string into tokens seperated by @delim
  * > Returned token string must be free()'d
  * > Returns NULL if token is not found
- * > After each call, 'str' is set to the position after the
+ * > After each call, @str is set to the position after the
  *   last found token
  * > Tokens *include* empty strings
  * Usage example:
@@ -239,48 +262,118 @@ void word_wrap_wideglyph(char *dst, size_t dst_size, const char *src,
  *        free(token);
  *        token = NULL;
  *    }
- */
+ **/
 char* string_tokenize(char **str, const char *delim);
 
-/* Removes every instance of character 'c' from 'str' */
+/**
+ * string_remove_all_chars:
+ * @str                : input string (must be non-NULL, otherwise UB)
+ *
+ * Leaf function.
+ *
+ * Removes every instance of character @c from @str
+ **/
 void string_remove_all_chars(char *str, char c);
 
-/* Replaces every instance of character 'find' in 'str'
- * with character 'replace' */
+/**
+ * string_replace_all_chars:
+ * @str                : input string (must be non-NULL, otherwise UB)
+ * @find               : character to find
+ * @replace            : character to replace @find with
+ *
+ * Hidden non-leaf function cost:
+ * - Calls strchr (in a loop)
+ *
+ * Replaces every instance of character @find in @str
+ * with character @replace
+ **/
 void string_replace_all_chars(char *str, char find, char replace);
 
-/* Converts string to unsigned integer.
- * Returns 0 if string is invalid  */
+/**
+ * string_to_unsigned:
+ * @str                : input string
+ *
+ * Converts string to unsigned integer.
+ *
+ * @return 0 if string is invalid, otherwise > 0
+ **/
 unsigned string_to_unsigned(const char *str);
 
-/* Converts hexadecimal string to unsigned integer.
+/**
+ * string_hex_to_unsigned:
+ * @str                : input string (must be non-NULL, otherwise UB)
+ *
+ * Converts hexadecimal string to unsigned integer.
  * Handles optional leading '0x'.
- * Returns 0 if string is invalid  */
+ *
+ * @return 0 if string is invalid, otherwise > 0
+ **/
 unsigned string_hex_to_unsigned(const char *str);
 
 char *string_init(const char *src);
 
 void string_set(char **string, const char *src);
 
-/* Get the total number of occurrences of a character in the given string. */
+/**
+ * string_count_occurrences_single_character:
+ *
+ * Leaf function.
+ *
+ * Get the total number of occurrences of character @c in @str.
+ *
+ * @return Total number of occurrences of character @c
+ */
 int string_count_occurrences_single_character(const char *str, char c);
 
-/* Replaces all spaces with the given character. */
+/**
+ * string_replace_whitespace_with_single_character:
+ * 
+ * Leaf function.
+ *
+ * Replaces all spaces with given character @c.
+ **/
 void string_replace_whitespace_with_single_character(char *str, char c);
 
-/* Replaces multiple spaces with a single space in a string. */
+/**
+ * string_replace_multi_space_with_single_space:
+ *
+ * Leaf function.
+ *
+ * Replaces multiple spaces with a single space in a string.
+ **/
 void string_replace_multi_space_with_single_space(char *str);
 
-/* Remove all spaces from the given string. */
+/**
+ * string_remove_all_whitespace:
+ *
+ * Leaf function.
+ *
+ * Remove all spaces from the given string.
+ **/
 void string_remove_all_whitespace(char *str_trimmed, const char *str);
 
 /* Retrieve the last occurance of the given character in a string. */
 int string_index_last_occurance(const char *str, char c);
 
-/* Find the position of a substring in a string. */
+/**
+ * string_find_index_substring_string:
+ * @str                : input string (must be non-NULL, otherwise UB)
+ * @substr             : substring to find in @str
+ *
+ * Hidden non-leaf function cost:
+ * - Calls strstr
+ *
+ * Find the position of substring @substr in string @str.
+ **/
 int string_find_index_substring_string(const char *str, const char *substr);
 
-/* Strips non-ASCII characters from a string. */
+/**
+ * string_copy_only_ascii:
+ *
+ * Leaf function.
+ *
+ * Strips non-ASCII characters from a string.
+ **/
 void string_copy_only_ascii(char *str_stripped, const char *str);
 
 extern const unsigned char lr_char_props[256];

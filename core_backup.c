@@ -279,9 +279,7 @@ bool core_backup_get_backup_crc(char *backup_path, uint32_t *crc)
                goto error;
 
             /* Convert to an integer */
-            *crc = (uint32_t)string_hex_to_unsigned(crc_str);
-
-            if (*crc == 0)
+            if ((*crc = (uint32_t)string_hex_to_unsigned(crc_str)) == 0)
                goto error;
 
             string_list_free(metadata_list);

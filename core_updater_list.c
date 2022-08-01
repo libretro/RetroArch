@@ -371,9 +371,7 @@ static bool core_updater_list_set_crc(
    if (!entry || string_is_empty(crc_str))
       return false;
 
-   crc = (uint32_t)string_hex_to_unsigned(crc_str);
-
-   if (crc == 0)
+   if ((crc = (uint32_t)string_hex_to_unsigned(crc_str)) == 0)
       return false;
 
    entry->crc = crc;
