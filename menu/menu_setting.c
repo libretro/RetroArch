@@ -13401,7 +13401,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler,
-                  SD_FLAG_NONE
+                  SD_FLAG_ADVANCED
                   );
 
             CONFIG_BOOL(
@@ -13417,7 +13417,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler,
-                  SD_FLAG_NONE
+                  SD_FLAG_ADVANCED
                   );
 
             CONFIG_BOOL(
