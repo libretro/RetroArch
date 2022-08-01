@@ -136,10 +136,8 @@
 #define BYTES_TO_MB(bytes) ((bytes) / 1024 / 1024)
 #define BYTES_TO_GB(bytes) (((bytes) / 1024) / 1024 / 1024)
 
-#ifdef HAVE_NETWORKING
-#if !defined(HAVE_SOCKET_LEGACY) || defined(VITA) || defined(GEKKO)
+#if defined(HAVE_NETWORKING) && defined(HAVE_IFINFO)
 #include <net/net_ifinfo.h>
-#endif
 #endif
 
 /* TODO/FIXME - globals - need to find a way to
@@ -3878,15 +3876,13 @@ static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
    }
 #endif
 
-#ifdef HAVE_NETWORKING
-#if !defined(HAVE_SOCKET_LEGACY) || defined(VITA) || defined(GEKKO)
+#if defined(HAVE_NETWORKING) && defined(HAVE_IFINFO)
    if (menu_entries_append_enum(info_list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION),
          msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_INFORMATION),
          MENU_ENUM_LABEL_NETWORK_INFORMATION,
          MENU_SETTING_ACTION, 0, 0))
       count++;
-#endif
 #endif
 
    if (menu_entries_append_enum(info_list,
@@ -7144,8 +7140,7 @@ unsigned menu_displaylist_build_list(
             count++;
          break;
       case DISPLAYLIST_NETWORK_INFO:
-#ifdef HAVE_NETWORKING
-#if !defined(HAVE_SOCKET_LEGACY) || defined(VITA) || defined(GEKKO)
+#if defined(HAVE_NETWORKING) && defined(HAVE_IFINFO)
          {
             net_ifinfo_t interfaces = {0};
 
@@ -7171,7 +7166,6 @@ unsigned menu_displaylist_build_list(
                net_ifinfo_free(&interfaces);
             }
          }
-#endif
 #endif
          break;
       case DISPLAYLIST_OPTIONS_CHEATS:
