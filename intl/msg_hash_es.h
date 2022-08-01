@@ -5949,10 +5949,6 @@ MSG_HASH(
    "años"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
-   "atrás"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
    "Mostrar índice de elemento en la lista de reproducción"
    )

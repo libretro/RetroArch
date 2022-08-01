@@ -5945,10 +5945,6 @@ MSG_HASH(
    "yıl"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
-   "önce"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
    "Oynatma Listesi Giriş Dizinini Göster"
    )

@@ -653,7 +653,7 @@ static void last_played_human(runtime_log_t *runtime_log,
    unsigned i;
    char tmp[32];
 
-   unsigned units[7][2] =
+   const unsigned units[7][2] =
    {
       {MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE, MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL},
       {MENU_ENUM_LABEL_VALUE_TIME_UNIT_MINUTES_SINGLE, MENU_ENUM_LABEL_VALUE_TIME_UNIT_MINUTES_PLURAL},
@@ -664,7 +664,9 @@ static void last_played_human(runtime_log_t *runtime_log,
       {MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_SINGLE, MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_PLURAL},
    };
 
-   float periods[6] = {60.0f, 60.0f, 24.0f, 7.0f, 4.35f, 12.0f};
+   const int number_periods = 6;
+   /*                     s->min, min->h, h->d, d->week, week->month, month->a */
+   const float periods[6] = {60.0f, 60.0f, 24.0f, 7.0f, 4.35f, 12.0f};
 
    if (!runtime_log)
    {
@@ -685,15 +687,12 @@ static void last_played_human(runtime_log_t *runtime_log,
       return;
    }
 
-   for (i = 0; delta >= periods[i] && i < sizeof(periods) - 1; i++)
+   for (i = 0; delta >= periods[i] && i < number_periods; i++)
       delta /= periods[i];
 
    /* Generate string */
-   snprintf(tmp, sizeof(tmp), "%u %s",
-         (int)delta, msg_hash_to_str((delta == 1) ? units[i][0] : units[i][1]));
-   strlcat(str, tmp, len);
-   strlcat(str, " ", len);
-   strlcat(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO), len);
+   snprintf(str, len, msg_hash_to_str((delta == 1) ? units[i][0] : units[i][1]),
+         (int)delta);
 }
 
 /* Gets last played entry value as a pre-formatted string */

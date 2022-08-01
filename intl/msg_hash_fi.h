@@ -5737,10 +5737,6 @@ MSG_HASH(
    "vuotta"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
-   "sitten"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
    "Näytä soittolistan kohteen Indeksi"
    )

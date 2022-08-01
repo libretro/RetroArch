@@ -5913,10 +5913,6 @@ MSG_HASH(
    "ans"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
-   "dans le passé"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
    "Afficher l'index des entrées de la liste de lecture"
    )

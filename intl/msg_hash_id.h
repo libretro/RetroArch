@@ -2708,10 +2708,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_PLURAL,
    "tahun"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
-   "lalu"
-   )
 
 /* Settings > Playlists > Playlist Management */
 

@@ -5861,10 +5861,6 @@ MSG_HASH(
    "roky"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
-   "před"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
    "Zobrazit Rejstřík Položek Playlistu"
    )
