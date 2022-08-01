@@ -38,8 +38,12 @@
 /* Configuration */
 /*****************/
 
-/* Sets all disk interface callback functions
- * to NULL */
+/**
+ * disk_control_reset_callback:
+ *
+ * Sets all disk interface callback functions
+ * to NULL
+ **/
 static void disk_control_reset_callback(
       disk_control_interface_t *disk_control)
 {
@@ -50,7 +54,11 @@ static void disk_control_reset_callback(
          sizeof(struct retro_disk_control_ext_callback));
 }
 
-/* Set v0 disk interface callback functions */
+/**
+ * disk_control_set_callback:
+ *
+ * Set v0 disk interface callback functions
+ **/
 void disk_control_set_callback(
       disk_control_interface_t *disk_control,
       const struct retro_disk_control_callback *cb)
@@ -72,7 +80,11 @@ void disk_control_set_callback(
    disk_control->cb.add_image_index     = cb->add_image_index;
 }
 
-/* Set v1+ disk interface callback functions */
+/**
+ * disk_control_set_ext_callback:
+ *
+ * Set v1+ disk interface callback functions
+ **/
 void disk_control_set_ext_callback(
       disk_control_interface_t *disk_control,
       const struct retro_disk_control_ext_callback *cb)
@@ -102,13 +114,18 @@ void disk_control_set_ext_callback(
 /* Status */
 /**********/
 
-/* Returns true if core supports basic disk
- * control functionality
+/**
+ * disk_control_enabled:
+ *
+ * Leaf function.
+ *
+ * @return true if core supports basic disk control functionality
  * - set_eject_state
  * - get_eject_state
  * - get_image_index
  * - set_image_index
- * - get_num_images */
+ * - get_num_images
+ **/
 bool disk_control_enabled(
       disk_control_interface_t *disk_control)
 {
@@ -125,48 +142,55 @@ bool disk_control_enabled(
    return false;
 }
 
-/* Returns true if core supports disk append
- * functionality
+/**
+ * disk_control_append_enabled:
+ *
+ * Leaf function.
+ *
+ * @return true if core supports disk append functionality
  * - replace_image_index
- * - add_image_index */
+ * - add_image_index
+ **/
 bool disk_control_append_enabled(
       disk_control_interface_t *disk_control)
 {
-   if (!disk_control)
-      return false;
-
-   if (disk_control->cb.replace_image_index &&
-       disk_control->cb.add_image_index)
+   if (     disk_control
+         && disk_control->cb.replace_image_index 
+         && disk_control->cb.add_image_index)
       return true;
-
    return false;
 }
 
-/* Returns true if core supports image
- * labels
- * - get_image_label */
+/**
+ * disk_control_image_label_enabled:
+ *
+ * Leaf function.
+ *
+ * @return true if core supports image labels 
+ * - get_image_label
+ **/
 bool disk_control_image_label_enabled(
       disk_control_interface_t *disk_control)
 {
-   if (!disk_control || !disk_control->cb.get_image_label)
-      return false;
-   return true;
+   return disk_control && disk_control->cb.get_image_label;
 }
 
-/* Returns true if core supports setting
- * initial disk index
+/**
+ * disk_control_initial_image_enabled:
+ *
+ * Leaf function.
+ *
+ * @return true if core supports setting initial disk index
  * - set_initial_image
- * - get_image_path */
+ * - get_image_path
+ **/
 bool disk_control_initial_image_enabled(
       disk_control_interface_t *disk_control)
 {
-   if (!disk_control)
-      return false;
-
-   if (disk_control->cb.set_initial_image &&
-       disk_control->cb.get_image_path)
+   if (     disk_control 
+         && disk_control->cb.set_initial_image
+         && disk_control->cb.get_image_path)
       return true;
-
    return false;
 }
 
@@ -174,7 +198,11 @@ bool disk_control_initial_image_enabled(
 /* Getters */
 /***********/
 
-/* Returns true if disk is currently ejected */
+/**
+ * disk_control_get_eject_state:
+ *
+ * @return true if disk is currently ejected
+ **/
 bool disk_control_get_eject_state(
       disk_control_interface_t *disk_control)
 {
@@ -183,8 +211,11 @@ bool disk_control_get_eject_state(
    return disk_control->cb.get_eject_state();
 }
 
-/* Returns number of disk images registered
- * by the core */
+/**
+ * disk_control_get_num_images:
+ *
+ * @return number of disk images registered by the core
+ **/
 unsigned disk_control_get_num_images(
       disk_control_interface_t *disk_control)
 {
@@ -193,7 +224,11 @@ unsigned disk_control_get_num_images(
    return disk_control->cb.get_num_images();
 }
 
-/* Returns currently selected disk image index */
+/**
+ * disk_control_get_image_index:
+ *
+ * @return currently selected disk image index
+ **/
 unsigned disk_control_get_image_index(
       disk_control_interface_t *disk_control)
 {
@@ -202,9 +237,13 @@ unsigned disk_control_get_image_index(
    return disk_control->cb.get_image_index();
 }
 
-/* Fetches core-provided disk image label
+/**
+ * disk_control_get_image_label:
+ *
+ * Fetches core-provided disk image label
  * (label is set to an empty string if core
- * does not support image labels) */
+ * does not support image labels)
+ **/
 void disk_control_get_image_label(
       disk_control_interface_t *disk_control,
       unsigned index, char *label, size_t len)
@@ -231,8 +270,12 @@ error:
 /* Setters */
 /***********/
 
-/* Generates an appropriate log/notification message
- * for a disk index change event */
+/**
+ * disk_control_get_index_set_msg:
+ *
+ * Generates an appropriate log/notification message
+ * for a disk index change event
+ **/
 static void disk_control_get_index_set_msg(
       disk_control_interface_t *disk_control,
       unsigned num_images, unsigned index, bool success,
@@ -286,7 +329,11 @@ static void disk_control_get_index_set_msg(
             len);
 }
 
-/* Sets the eject state of the virtual disk tray */
+/**
+ * disk_control_set_eject_state:
+ *
+ * Sets the eject state of the virtual disk tray
+ **/
 bool disk_control_set_eject_state(
       disk_control_interface_t *disk_control,
       bool eject, bool verbosity)
@@ -346,8 +393,13 @@ bool disk_control_set_eject_state(
    return !error;
 }
 
-/* Sets currently selected disk index
- * NOTE: Will fail if disk is not currently ejected */
+/**
+ * disk_control_set_index:
+ *
+ * Sets currently selected disk index
+ *
+ * NOTE: Will fail if disk is not currently ejected
+ **/
 bool disk_control_set_index(
       disk_control_interface_t *disk_control,
       unsigned index, bool verbosity)
@@ -430,7 +482,11 @@ bool disk_control_set_index(
    return !error;
 }
 
-/* Increments selected disk index */
+/**
+ * disk_control_set_index_next:
+ *
+ * Increments selected disk index
+ **/
 bool disk_control_set_index_next(
       disk_control_interface_t *disk_control,
       bool verbosity)
@@ -448,6 +504,7 @@ bool disk_control_set_index_next(
 
    num_images  = disk_control->cb.get_num_images();
    image_index = disk_control->cb.get_image_index();
+
    /* Would seem more sensible to check (num_images > 1)
     * here, but seems we need to be able to cycle the
     * same image for legacy reasons... */
@@ -465,7 +522,11 @@ bool disk_control_set_index_next(
    return disk_control_set_index(disk_control, image_index, verbosity);
 }
 
-/* Decrements selected disk index */
+/**
+ * disk_control_set_index_prev:
+ *
+ * Decrements selected disk index
+ **/
 bool disk_control_set_index_prev(
       disk_control_interface_t *disk_control,
       bool verbosity)
@@ -481,8 +542,8 @@ bool disk_control_set_index_prev(
        !disk_control->cb.get_image_index)
       return false;
 
-   num_images  = disk_control->cb.get_num_images();
-   image_index = disk_control->cb.get_image_index();
+   num_images       = disk_control->cb.get_num_images();
+   image_index      = disk_control->cb.get_image_index();
    /* Would seem more sensible to check (num_images > 1)
     * here, but seems we need to be able to cycle the
     * same image for legacy reasons... */
@@ -500,7 +561,11 @@ bool disk_control_set_index_prev(
    return disk_control_set_index(disk_control, image_index, verbosity);
 }
 
-/* Appends specified image file to disk image list */
+/**
+ * disk_control_append_image:
+ *
+ * Appends specified image file to disk image list
+ **/
 bool disk_control_append_image(
       disk_control_interface_t *disk_control,
       const char *image_path)
@@ -539,7 +604,7 @@ bool disk_control_append_image(
    initial_disk_ejected = disk_control_get_eject_state(disk_control);
 
    /* Cache initial image index */
-   initial_index = disk_control->cb.get_image_index();
+   initial_index        = disk_control->cb.get_image_index();
 
    /* If tray is currently closed, eject disk */
    if (!initial_disk_ejected &&
@@ -550,8 +615,7 @@ bool disk_control_append_image(
    if (!disk_control->cb.add_image_index())
       goto error;
 
-   new_index = disk_control->cb.get_num_images();
-   if (new_index < 1)
+   if ((new_index = disk_control->cb.get_num_images()) < 1)
       goto error;
    new_index--;
 
@@ -565,8 +629,8 @@ bool disk_control_append_image(
 
    /* If tray was initially closed, insert disk
     * (i.e. leave system in the state we found it) */
-   if (!initial_disk_ejected &&
-       !disk_control_set_eject_state(disk_control, false, false))
+   if (   !initial_disk_ejected
+       && !disk_control_set_eject_state(disk_control, false, false))
       goto error;
 
    /* Display log */
@@ -615,14 +679,18 @@ error:
 /* 'Initial index' functions */
 /*****************************/
 
-/* Attempts to set current core's initial disk index.
+/**
+ * disk_control_set_initial_index:
+ *
+ * Attempts to set current core's initial disk index.
  * > disk_control->record_enabled will be set to
  *   'false' if core does not support initial
  *   index functionality
  * > disk_control->index_record will be loaded
  *   from file (if an existing record is found)
  * NOTE: Must be called immediately before
- * loading content */
+ * loading content
+ **/
 bool disk_control_set_initial_index(
       disk_control_interface_t *disk_control,
       const char *content_path,
@@ -675,12 +743,16 @@ error:
    return false;
 }
 
-/* Checks that initial index has been set correctly
+/**
+ * disk_control_verify_initial_index:
+ *
+ * Checks that initial index has been set correctly
  * and provides user notification.
  * > Sets disk_control->initial_num_images if
  *   if functionality is supported by core
  * NOTE: Must be called immediately after
- * loading content */
+ * loading content
+ **/
 bool disk_control_verify_initial_index(
       disk_control_interface_t *disk_control,
       bool verbosity)
@@ -735,7 +807,8 @@ bool disk_control_verify_initial_index(
    if (!success)
    {
       RARCH_ERR(
-               "[Disc]: Failed to set initial disk index:\n> Expected [%u] %s\n> Detected [%u] %s\n",
+               "[Disc]: Failed to set initial disk index:\n> Expected"
+               " [%u] %s\n> Detected [%u] %s\n",
                disk_control->index_record.image_index + 1,
                disk_control->index_record.image_path,
                image_index + 1,
@@ -801,8 +874,12 @@ bool disk_control_verify_initial_index(
    return success;
 }
 
-/* Saves current disk index to file, if supported
- * by current core */
+/**
+ * disk_control_save_image_index:
+ *
+ * Saves current disk index to file, if supported
+ * by current core
+ **/
 bool disk_control_save_image_index(
       disk_control_interface_t *disk_control)
 {

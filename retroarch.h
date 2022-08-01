@@ -105,7 +105,7 @@ const char* retroarch_get_shader_preset(void);
  *
  * Initializes the program.
  *
- * Returns: 1 (true) on success, otherwise false (0) if there was an error.
+ * @return true on success, otherwise false if there was an error.
  **/
 bool retroarch_main_init(int argc, char *argv[]);
 

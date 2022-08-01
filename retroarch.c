@@ -3978,7 +3978,9 @@ const struct retro_subsystem_info *libretro_find_subsystem_info(
  *
  * Search for a controller of type @id in @info.
  *
- * Returns: controller description of found controller on success,
+ * Leaf function.
+ *
+ * @return controller description of found controller on success,
  * otherwise NULL.
  **/
 const struct retro_controller_description *
@@ -5139,10 +5141,14 @@ static bool retroarch_parse_input_and_config(
    return verbosity_enabled;
 }
 
-/* Validates CPU features for given processor architecture.
+/**
+ * retroarch_validate_cpu_features:
+ *
+ * Validates CPU features for given processor architecture.
  * Make sure we haven't compiled for something we cannot run.
  * Ideally, code would get swapped out depending on CPU support,
- * but this will do for now. */
+ * but this will do for now.
+ **/
 static void retroarch_validate_cpu_features(void)
 {
    uint64_t cpu = cpu_features_get();
@@ -5173,7 +5179,7 @@ static void retroarch_validate_cpu_features(void)
  *
  * Initializes the program.
  *
- * Returns: true on success, otherwise false if there was an error.
+ * @return true on success, otherwise false if there was an error.
  **/
 bool retroarch_main_init(int argc, char *argv[])
 {

@@ -1102,9 +1102,8 @@ static bool validate_game_options(
 /**
  * game_specific_options:
  *
- * Returns: true (1) if a game specific core
- * options path has been found,
- * otherwise false (0).
+ * @return true if a game specific core
+ * options path has been found, otherwise false.
  **/
 static bool validate_game_specific_options(char **output)
 {
@@ -1150,9 +1149,8 @@ static bool validate_folder_options(
 /**
  * validate_folder_specific_options:
  *
- * Returns: true (1) if a folder specific core
- * options path has been found,
- * otherwise false (0).
+ * @return true if a folder specific core
+ * options path has been found, otherwise false.
  **/
 static bool validate_folder_specific_options(
       char **output)
@@ -1173,7 +1171,10 @@ static bool validate_folder_specific_options(
    return true;
 }
 
-/* Fetches core options path for current core/content
+/**
+ * runloop_init_core_options_path:
+ *
+ * Fetches core options path for current core/content
  * - path: path from which options should be read
  *   from/saved to
  * - src_path: in the event that 'path' file does not
@@ -1182,7 +1183,8 @@ static bool validate_folder_specific_options(
  *
  *   NOTE: caller must ensure 
  *   path and src_path are NULL-terminated
- *  */
+ *
+ **/
 static void runloop_init_core_options_path(
       settings_t *settings,
       char *path, size_t len,
@@ -1307,7 +1309,6 @@ static core_option_manager_t *runloop_init_core_options(
             categories_enabled);
    return NULL;
 }
-
 
 static core_option_manager_t *runloop_init_core_variables(
       settings_t *settings, const struct retro_variable *vars)
@@ -3389,13 +3390,14 @@ bool libretro_get_system_info(
 }
 
 /**
- * load_symbols:
+ * init_libretro_symbols_custom:
  * @type                        : Type of core to be loaded.
  *                                If CORE_TYPE_DUMMY, will
  *                                load dummy symbols.
  *
- * Setup libretro callback symbols. Returns true on success,
- * or false if symbols could not be loaded.
+ * Setup libretro callback symbols.
+ * 
+ * @return true on success, or false if symbols could not be loaded.
  **/
 static bool init_libretro_symbols_custom(
       runloop_state_t *runloop_st,
@@ -3505,8 +3507,9 @@ static bool init_libretro_symbols_custom(
  *                                load dummy symbols.
  *
  * Initializes libretro symbols and
- * setups environment callback functions. Returns true on success,
- * or false if symbols could not be loaded.
+ * setups environment callback functions.
+ *
+ * @return true on success, or false if symbols could not be loaded.
  **/
 static bool init_libretro_symbols(
       runloop_state_t *runloop_st,
@@ -3566,13 +3569,12 @@ void runloop_system_info_free(void)
 }
 
 /**
- * uninit_libretro_sym:
+ * uninit_libretro_symbols:
  *
  * Frees libretro core.
  *
- * Frees all core options,
- * associated state, and
- * unbind all libretro callback symbols.
+ * Frees all core options, associated state, and
+ * unbinds all libretro callback symbols.
  **/
 static void uninit_libretro_symbols(
       struct retro_core_t *current_core)
