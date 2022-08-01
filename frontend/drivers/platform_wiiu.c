@@ -57,6 +57,10 @@
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
+
+#ifdef HAVE_NETWORKING
+#include "../../network/netplay/netplay.h"
+#endif
 #endif
 
 #define WIIU_SD_PATH "sd:/"
@@ -197,41 +201,74 @@ static void frontend_wiiu_exec(const char *path, bool should_load_content)
    {
       u32 magic;
       u32 argc;
-      char * argv[3];
-      char args[];
-   }*param     = getApplicationEndAddr();
-   int len     = 0;
-   param->argc = 0;
+#ifndef IS_SALAMANDER
+#ifdef HAVE_NETWORKING
+      char *argv[NETPLAY_FORK_MAX_ARGS + 1];
+#else
+      char *argv[3];
+#endif
+#else
+      char *argv[2];
+#endif
+      char  args[];
+   } *param  = getApplicationEndAddr();
+   char *arg = param->args;
 
    DEBUG_STR(path);
 
-   strcpy(param->args + len, elf_path_cst);
-   param->argv[param->argc] = param->args + len;
-   len += strlen(param->args + len) + 1;
-   param->argc++;
+   param->argc    = 1;
+   param->argv[0] = arg;
+   arg += strlcpy(arg, elf_path_cst, PATH_MAX_LENGTH);
+   arg += 1;
+
+   param->argv[1] = NULL;
 
 #ifndef IS_SALAMANDER
-   if (should_load_content && !path_is_empty(RARCH_PATH_CONTENT))
+   if (should_load_content)
    {
-      strcpy(param->args + len, path_get(RARCH_PATH_CONTENT));
-      param->argv[param->argc] = param->args + len;
-      len += strlen(param->args + len) + 1;
-      param->argc++;
+      const char *content = path_get(RARCH_PATH_CONTENT);
+#ifdef HAVE_NETWORKING
+      char *arg_data[NETPLAY_FORK_MAX_ARGS];
+
+      if (netplay_driver_ctl(RARCH_NETPLAY_CTL_GET_FORK_ARGS, (void*)arg_data))
+      {
+         char **cur_arg = arg_data;
+
+         do
+         {
+            param->argv[param->argc++] = arg;
+            arg += strlcpy(arg, *cur_arg, PATH_MAX_LENGTH);
+            arg += 1;
+         }
+         while (*(++cur_arg));
+
+         param->argv[param->argc] = NULL;
+      }
+      else
+#endif
+      if (!string_is_empty(content))
+      {
+         param->argc    = 2;
+         param->argv[1] = arg;
+         arg += strlcpy(arg, content, PATH_MAX_LENGTH);
+         arg += 1;
+
+         param->argv[2] = NULL;
+      }
    }
 #endif
-   param->argv[param->argc] = NULL;
 
+   if (HBL_loadToMemory(path, (u32)arg - (u32)param) < 0)
    {
-      if (HBL_loadToMemory(path, (u32)param->args - (u32)param + len) < 0)
-         RARCH_LOG("Failed to load core\n");
-      else
-      {
-         param->magic = ARGV_MAGIC;
-         ARGV_PTR = param;
-         DEBUG_VAR(param->argc);
-         DEBUG_VAR(param->argv);
+      RARCH_ERR("Failed to load core\n");
+   }
+   else
+   {
+      param->magic = ARGV_MAGIC;
+      ARGV_PTR     = param;
 
-      }
+      DEBUG_VAR(param->argc);
+      DEBUG_VAR(param->argv);
    }
 }
 

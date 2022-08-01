@@ -4577,13 +4577,10 @@ static int action_ok_core_updater_list(const char *path,
 static void cb_net_generic_subdir(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
+   http_transfer_data_t *data   = (http_transfer_data_t*)task_data;
 #if 0
    char subdir_path[PATH_MAX_LENGTH];
-#endif
-   http_transfer_data_t *data   = (http_transfer_data_t*)task_data;
    file_transfer_t *state       = (file_transfer_t*)user_data;
-
-#if 0
    subdir_path[0]               = '\0';
 #endif
 

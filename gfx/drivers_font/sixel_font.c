@@ -83,6 +83,7 @@ static void sixel_font_render_msg(
    /* TODO/FIXME: add text drawing support */
 #if 0
    float x, y, scale;
+   size_t msg_len;
    unsigned width, height, new_x, new_y, align;
    sixel_raster_t              *font = (sixel_raster_t*)data;
    const struct font_params *params  = (const struct font_params*)_params;
@@ -114,14 +115,15 @@ static void sixel_font_render_msg(
    width    = font->sixel->screen_width;
    height   = font->sixel->screen_height;
    new_y    = height - (y * height * scale);
+   msg_len  = strlen(msg);
 
    switch (align)
    {
       case TEXT_ALIGN_RIGHT:
-         new_x = (x * width * scale) - strlen(msg);
+         new_x = (x * width * scale) - msg_len;
          break;
       case TEXT_ALIGN_CENTER:
-         new_x =  (x * width * scale) - (strlen(msg) / 2);
+         new_x =  (x * width * scale) - (msg_len / 2);
          break;
       case TEXT_ALIGN_LEFT:
       default:

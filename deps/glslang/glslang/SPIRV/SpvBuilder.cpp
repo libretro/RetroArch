@@ -54,11 +54,10 @@
 
 namespace spv {
 
-Builder::Builder(unsigned int spvVersion, unsigned int magicNumber, SpvBuildLogger* buildLogger) :
+Builder::Builder(unsigned int spvVersion, unsigned int magicNumber) :
     spvVersion(spvVersion),
     source(SourceLanguageUnknown),
     sourceVersion(0),
-    sourceFileStringId(NoResult),
     currentLine(0),
     emitOpLines(false),
     addressModel(AddressingModelLogical),
@@ -67,8 +66,7 @@ Builder::Builder(unsigned int spvVersion, unsigned int magicNumber, SpvBuildLogg
     buildPoint(0),
     uniqueId(0),
     entryPointFunction(0),
-    generatingOpCodeForSpecConst(false),
-    logger(buildLogger)
+    generatingOpCodeForSpecConst(false)
 {
     clearAccessChain();
 }
@@ -93,7 +91,7 @@ void Builder::setLine(int lineNum)
     if (lineNum != 0 && lineNum != currentLine) {
         currentLine = lineNum;
         if (emitOpLines)
-            addLine(sourceFileStringId, currentLine, 0);
+            addLine(NoResult, currentLine, 0);
     }
 }
 
@@ -2731,30 +2729,7 @@ void Builder::dumpSourceInstructions(std::vector<unsigned int>& out) const
         sourceInst.addImmediateOperand(source);
         sourceInst.addImmediateOperand(sourceVersion);
         // File operand
-        if (sourceFileStringId != NoResult) {
-            sourceInst.addIdOperand(sourceFileStringId);
-            // Source operand
-            if (sourceText.size() > 0) {
-                int nextByte = 0;
-                std::string subString;
-                while ((int)sourceText.size() - nextByte > 0) {
-                    subString = sourceText.substr(nextByte, nonNullBytesPerInstruction);
-                    if (nextByte == 0) {
-                        // OpSource
-                        sourceInst.addStringOperand(subString.c_str());
-                        sourceInst.dump(out);
-                    } else {
-                        // OpSourcContinued
-                        Instruction sourceContinuedInst(OpSourceContinued);
-                        sourceContinuedInst.addStringOperand(subString.c_str());
-                        sourceContinuedInst.dump(out);
-                    }
-                    nextByte += nonNullBytesPerInstruction;
-                }
-            } else
-                sourceInst.dump(out);
-        } else
-            sourceInst.dump(out);
+        sourceInst.dump(out);
     }
 }
 

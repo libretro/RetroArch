@@ -32,15 +32,22 @@
 
 #include <net/net_socket.h>
 
-int socket_init(void **address, uint16_t port, const char *server, enum socket_type type)
+int socket_init(void **address, uint16_t port, const char *server,
+      enum socket_type type, int family)
 {
    char port_buf[6];
    struct addrinfo hints      = {0};
    struct addrinfo **addrinfo = (struct addrinfo**)address;
    struct addrinfo *addr      = NULL;
 
-   if (!network_init())
-      return -1;
+   if (!family)
+#if defined(HAVE_SOCKET_LEGACY) || defined(WIIU)
+      family = AF_INET;
+#else
+      family = AF_UNSPEC;
+#endif
+
+   hints.ai_family = family;
 
    switch (type)
    {
@@ -50,13 +57,15 @@ int socket_init(void **address, uint16_t port, const char *server, enum socket_t
       case SOCKET_TYPE_STREAM:
          hints.ai_socktype = SOCK_STREAM;
          break;
-      case SOCKET_TYPE_SEQPACKET:
-         /* TODO/FIXME - implement? */
-         break;
+      default:
+         return -1;
    }
 
    if (!server)
       hints.ai_flags = AI_PASSIVE;
+
+   if (!network_init())
+      return -1;
 
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
 

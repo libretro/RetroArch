@@ -361,6 +361,8 @@ size_t fill_pathname_dir(char *in_dir, const char *in_basename,
  * @size               : size of output path
  *
  * Copies basename of @in_path into @out_path.
+ *
+ * @return length of the string copied into @out
  **/
 size_t fill_pathname_base(char *out, const char *in_path, size_t size)
 {
@@ -449,9 +451,12 @@ bool fill_pathname_parent_dir_name(char *out_dir,
 void fill_pathname_parent_dir(char *out_dir,
       const char *in_dir, size_t size)
 {
+   size_t len = 0;
    if (out_dir != in_dir)
-      strlcpy(out_dir, in_dir, size);
-   path_parent_dir(out_dir);
+      len = strlcpy(out_dir, in_dir, size);
+   else
+      len = strlen(out_dir);
+   path_parent_dir(out_dir, len);
 }
 
 /**
@@ -532,26 +537,27 @@ void path_basedir(char *path)
    if ((last = find_last_slash(path)))
       last[1] = '\0';
    else
-      strlcpy(path, "." PATH_DEFAULT_SLASH(), 3);
+   {
+      path[0] = '.';
+      path[1] = PATH_DEFAULT_SLASH_C();
+      path[2] = '\0';
+   }
 }
 
 /**
  * path_parent_dir:
  * @path               : path
+ * @len                : length of @path
  *
  * Extracts parent directory by mutating path.
  * Assumes that path is a directory. Keeps trailing '/'.
  * If the path was already at the root directory, returns empty string
  **/
-void path_parent_dir(char *path)
+void path_parent_dir(char *path, size_t len)
 {
-   size_t len = 0;
-
    if (!path)
       return;
    
-   len = strlen(path);
-
    if (len && PATH_CHAR_IS_SLASH(path[len - 1]))
    {
       bool path_was_absolute = path_is_absolute(path);
@@ -1169,7 +1175,11 @@ void path_basedir_wrapper(char *path)
    if ((last = find_last_slash(path)))
       last[1] = '\0';
    else
-      strlcpy(path, "." PATH_DEFAULT_SLASH(), 3);
+   {
+      path[0] = '.';
+      path[1] = PATH_DEFAULT_SLASH_C();
+      path[2] = '\0';
+   }
 }
 
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)

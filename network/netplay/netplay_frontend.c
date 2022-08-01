@@ -214,7 +214,7 @@ bool init_netplay_discovery(void)
    struct addrinfo *addr      = NULL;
    net_driver_state_t *net_st = &networking_driver_st;
    int fd                     = socket_init((void**)&addr, 0, NULL,
-      SOCKET_TYPE_DATAGRAM);
+      SOCKET_TYPE_DATAGRAM, AF_INET);
    bool ret                   = fd >= 0 && addr;
 
    if (ret)
@@ -457,7 +457,7 @@ static bool init_lan_ad_server_socket(void)
    struct addrinfo *addr      = NULL;
    net_driver_state_t *net_st = &networking_driver_st;
    int fd                     = socket_init((void**)&addr, RARCH_DISCOVERY_PORT,
-      NULL, SOCKET_TYPE_DATAGRAM);
+      NULL, SOCKET_TYPE_DATAGRAM, AF_INET);
    bool ret                   = fd >= 0 && addr &&
       socket_bind(fd, addr) && socket_nonblock(fd);
 

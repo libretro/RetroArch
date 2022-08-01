@@ -55,8 +55,11 @@ namespace glslang {
 //
 void TIntermediate::error(TInfoSink& infoSink, const char* message)
 {
-    infoSink.info.prefix(EPrefixError);
-    infoSink.info << "Linking " << StageName(language) << " stage: " << message << "\n";
+    infoSink.info.append("ERROR: Linking");
+    infoSink.info << StageName(language);
+    infoSink.info.append(" stage: ");
+    infoSink.info << message;
+    infoSink.info.append("\n");
 
     ++numErrors;
 }
@@ -64,8 +67,11 @@ void TIntermediate::error(TInfoSink& infoSink, const char* message)
 // Link-time warning.
 void TIntermediate::warn(TInfoSink& infoSink, const char* message)
 {
-    infoSink.info.prefix(EPrefixWarning);
-    infoSink.info << "Linking " << StageName(language) << " stage: " << message << "\n";
+    infoSink.info.append("WARNING: Linking");
+    infoSink.info << StageName(language);
+    infoSink.info.append(" stage: ");
+    infoSink.info << message;
+    infoSink.info.append("\n");
 }
 
 // TODO: 4.4 offset/align:  "Two blocks linked together in the same program with the same block
@@ -215,7 +221,9 @@ void TIntermediate::mergeBodies(TInfoSink& infoSink, TIntermSequence& globals, c
             TIntermAggregate* unitBody = unitGlobals[unitChild]->getAsAggregate();
             if (body && unitBody && body->getOp() == EOpFunction && unitBody->getOp() == EOpFunction && body->getName() == unitBody->getName()) {
                 error(infoSink, "Multiple function bodies in multiple compilation units for the same signature in the same stage:");
-                infoSink.info << "    " << globals[child]->getAsAggregate()->getName() << "\n";
+                infoSink.info.append("    ");
+		infoSink.info << globals[child]->getAsAggregate()->getName();
+		infoSink.info.append("\n");
             }
         }
     }
@@ -373,14 +381,23 @@ void TIntermediate::mergeErrorCheck(TInfoSink& infoSink, const TIntermSymbol& sy
         if (! symbol.getConstArray().empty() && ! unitSymbol.getConstArray().empty()) {
             if (symbol.getConstArray() != unitSymbol.getConstArray()) {
                 error(infoSink, "Initializers must match:");
-                infoSink.info << "    " << symbol.getName() << "\n";
+                infoSink.info.append("    ");
+		infoSink.info << symbol.getName();
+		infoSink.info.append("\n");
             }
         }
     }
 
     if (writeTypeComparison)
-        infoSink.info << "    " << symbol.getName() << ": \"" << symbol.getType().getCompleteString() << "\" versus \"" <<
-                                                             unitSymbol.getType().getCompleteString() << "\"\n";
+    {
+	    infoSink.info.append("    ");
+	    infoSink.info << symbol.getName();
+	    infoSink.info.append(": \"");
+	    infoSink.info << symbol.getType().getCompleteString();
+	    infoSink.info.append("\" versus \"");
+	    infoSink.info << unitSymbol.getType().getCompleteString();
+	    infoSink.info.append("\"\n");
+    }
 }
 
 //
@@ -389,7 +406,7 @@ void TIntermediate::mergeErrorCheck(TInfoSink& infoSink, const TIntermSymbol& sy
 //
 // Also, lock in defaults of things not set, including array sizes.
 //
-void TIntermediate::finalCheck(TInfoSink& infoSink, bool keepUncalled)
+void TIntermediate::finalCheck(TInfoSink& infoSink)
 {
     if (getTreeRoot() == nullptr)
         return;
@@ -406,7 +423,7 @@ void TIntermediate::finalCheck(TInfoSink& infoSink, bool keepUncalled)
 
     // recursion and missing body checking
     checkCallGraphCycles(infoSink);
-    checkCallGraphBodies(infoSink, keepUncalled);
+    checkCallGraphBodies(infoSink);
 
     // overlap/alias/missing I/O, etc.
     inOutLocationCheck(infoSink);
@@ -435,8 +452,8 @@ void TIntermediate::finalCheck(TInfoSink& infoSink, bool keepUncalled)
         // compile-time or link-time error to have different values specified for the stride for the same buffer."
         if (xfbBuffers[b].stride != TQualifier::layoutXfbStrideEnd && xfbBuffers[b].implicitStride > xfbBuffers[b].stride) {
             error(infoSink, "xfb_stride is too small to hold all buffer entries:");
-            infoSink.info.prefix(EPrefixError);
-            infoSink.info << "    xfb_buffer " << (unsigned int)b << ", xfb_stride " << xfbBuffers[b].stride << ", minimum stride needed: " << xfbBuffers[b].implicitStride << "\n";
+	    infoSink.info.append("ERROR:     xfb_buffer ");
+            infoSink.info << (unsigned int)b << ", xfb_stride " << xfbBuffers[b].stride << ", minimum stride needed: " << xfbBuffers[b].implicitStride << "\n";
         }
         if (xfbBuffers[b].stride == TQualifier::layoutXfbStrideEnd)
             xfbBuffers[b].stride = xfbBuffers[b].implicitStride;
@@ -446,20 +463,20 @@ void TIntermediate::finalCheck(TInfoSink& infoSink, bool keepUncalled)
         // multiple of 4, or a compile-time or link-time error results."
         if (xfbBuffers[b].containsDouble && ! IsMultipleOfPow2(xfbBuffers[b].stride, 8)) {
             error(infoSink, "xfb_stride must be multiple of 8 for buffer holding a double:");
-            infoSink.info.prefix(EPrefixError);
-            infoSink.info << "    xfb_buffer " << (unsigned int)b << ", xfb_stride " << xfbBuffers[b].stride << "\n";
+	    infoSink.info.append("ERROR:     xfb_buffer ");
+            infoSink.info << (unsigned int)b << ", xfb_stride " << xfbBuffers[b].stride << "\n";
         } else if (! IsMultipleOfPow2(xfbBuffers[b].stride, 4)) {
             error(infoSink, "xfb_stride must be multiple of 4:");
-            infoSink.info.prefix(EPrefixError);
-            infoSink.info << "    xfb_buffer " << (unsigned int)b << ", xfb_stride " << xfbBuffers[b].stride << "\n";
+	    infoSink.info.append("ERROR:     xfb_buffer ");
+            infoSink.info << (unsigned int)b << ", xfb_stride " << xfbBuffers[b].stride << "\n";
         }
 
         // "The resulting stride (implicit or explicit), when divided by 4, must be less than or equal to the
         // implementation-dependent constant gl_MaxTransformFeedbackInterleavedComponents."
         if (xfbBuffers[b].stride > (unsigned int)(4 * resources.maxTransformFeedbackInterleavedComponents)) {
             error(infoSink, "xfb_stride is too large:");
-            infoSink.info.prefix(EPrefixError);
-            infoSink.info << "    xfb_buffer " << (unsigned int)b << ", components (1/4 stride) needed are " << xfbBuffers[b].stride/4 << ", gl_MaxTransformFeedbackInterleavedComponents is " << resources.maxTransformFeedbackInterleavedComponents << "\n";
+	    infoSink.info.append("ERROR:     xfb_buffer ");
+            infoSink.info << (unsigned int)b << ", components (1/4 stride) needed are " << xfbBuffers[b].stride/4 << ", gl_MaxTransformFeedbackInterleavedComponents is " << resources.maxTransformFeedbackInterleavedComponents << "\n";
         }
     }
 
@@ -587,7 +604,11 @@ void TIntermediate::checkCallGraphCycles(TInfoSink& infoSink)
                         // Then, we found a back edge
                         if (! child->errorGiven) {
                             error(infoSink, "Recursion detected:");
-                            infoSink.info << "    " << call->callee << " calling " << child->callee << "\n";
+                            infoSink.info.append("    ");
+			    infoSink.info << call->callee;
+			    infoSink.info.append(" calling ");
+			    infoSink.info << child->callee;
+			    infoSink.info.append("\n");
                             child->errorGiven = true;
                             recursive = true;
                         }
@@ -614,7 +635,7 @@ void TIntermediate::checkCallGraphCycles(TInfoSink& infoSink)
 // Reachable ones with missing bodies are errors.
 // Unreachable bodies are dead code.
 //
-void TIntermediate::checkCallGraphBodies(TInfoSink& infoSink, bool keepUncalled)
+void TIntermediate::checkCallGraphBodies(TInfoSink& infoSink)
 {
     // Clear fields we'll use for this.
     for (TGraph::iterator call = callGraph.begin(); call != callGraph.end(); ++call) {
@@ -670,7 +691,9 @@ void TIntermediate::checkCallGraphBodies(TInfoSink& infoSink, bool keepUncalled)
         if (call->visited) {
             if (call->calleeBodyPosition == -1) {
                 error(infoSink, "No function definition (body) found: ");
-                infoSink.info << "    " << call->callee << "\n";
+                infoSink.info.append("    ");
+		infoSink.info << call->callee;
+		infoSink.info.append("\n");
             } else
                 reachable[call->calleeBodyPosition] = true;
         }
@@ -679,13 +702,11 @@ void TIntermediate::checkCallGraphBodies(TInfoSink& infoSink, bool keepUncalled)
     // Bodies in the AST not reached by the call graph are dead;
     // clear them out, since they can't be reached and also can't
     // be translated further due to possibility of being ill defined.
-    if (! keepUncalled) {
         for (int f = 0; f < (int)functionSequence.size(); ++f) {
             if (! reachable[f])
                 functionSequence[f] = nullptr;
         }
         functionSequence.erase(std::remove(functionSequence.begin(), functionSequence.end(), nullptr), functionSequence.end());
-    }
 }
 
 //

@@ -370,8 +370,9 @@ static void frontend_ps2_init(void *data)
 
    getcwd(cwd, sizeof(cwd));
 #if !defined(IS_SALAMANDER) && !defined(DEBUG)
-   // If it is not salamander we need to go one level up for set the CWD.
-   path_parent_dir(cwd);
+   /* If it is not Salamander, we need to go one level 
+    * up for setting the CWD. */
+   path_parent_dir(cwd, strlen(cwd));
 #endif
    if (pfsModuleLoaded)
       hddMounted = mount_hdd_partition();

@@ -92,6 +92,7 @@ static void caca_font_render_msg(
    unsigned width, height;
    unsigned newX, newY;
    unsigned align;
+   size_t msg_len;
    caca_raster_t              *font = (caca_raster_t*)data;
    settings_t *settings             = config_get_ptr();
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
@@ -122,14 +123,15 @@ static void caca_font_render_msg(
    width    = caca_get_canvas_width(font->caca->cv);
    height   = caca_get_canvas_height(font->caca->cv);
    newY     = height - (y * height * scale);
+   msg_len  = strlen(msg);
 
    switch (align)
    {
       case TEXT_ALIGN_RIGHT:
-         newX = (x * width * scale) - strlen(msg);
+         newX = (x * width * scale) - msg_len;
          break;
       case TEXT_ALIGN_CENTER:
-         newX = (x * width * scale) - (strlen(msg) / 2);
+         newX = (x * width * scale) - (msg_len / 2);
          break;
       case TEXT_ALIGN_LEFT:
       default:

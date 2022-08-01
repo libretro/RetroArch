@@ -1621,7 +1621,6 @@ static bool override_shader_values(config_file_t *override_conf,
 {
    unsigned i;
    bool return_val                     = false;
-   struct config_entry_list *entry     = NULL;
 
    if (!shader || !override_conf) 
       return 0;
@@ -1634,7 +1633,7 @@ static bool override_shader_values(config_file_t *override_conf,
       for (i = 0; i < shader->num_parameters; i++)
       {
          /* If the parameter is in the reference config */
-         if ((entry = config_get_entry(
+         if ((config_get_entry(
                      override_conf, shader->parameters[i].id)))
          {
             struct video_shader_parameter *parameter = 
@@ -1675,7 +1674,7 @@ static bool override_shader_values(config_file_t *override_conf,
       for (i = 0; i < shader->luts; i++)
       {
          /* If the texture is defined in the reference config */
-         if ((entry = config_get_entry(override_conf, shader->lut[i].id)))
+         if (config_get_entry(override_conf, shader->lut[i].id))
          {
             /* Texture path from shader the config */
             config_get_path(override_conf, shader->lut[i].id,

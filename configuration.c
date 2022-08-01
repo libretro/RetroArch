@@ -5207,7 +5207,7 @@ bool input_remapping_save_file(const char *path)
 
    /* Create output directory, if required */
    strlcpy(remap_file_dir, path, sizeof(remap_file_dir));
-   path_parent_dir(remap_file_dir);
+   path_parent_dir(remap_file_dir, strlen(remap_file_dir));
 
    if (!string_is_empty(remap_file_dir) &&
        !path_is_directory(remap_file_dir) &&

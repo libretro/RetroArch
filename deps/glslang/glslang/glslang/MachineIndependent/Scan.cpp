@@ -1307,12 +1307,8 @@ int TScanContext::tokenizeIdentifier()
         afterType = true;
         if (_parseContext.profile == EEsProfile)
             reservedWord();
-        else if (_parseContext.version < 140 && ! _parseContext.symbolTable.atBuiltInLevel() && ! _parseContext.extensionTurnedOn(E_GL_ARB_texture_rectangle)) {
-            if (_parseContext.relaxedErrors())
-                _parseContext.requireExtensions(loc, 1, &E_GL_ARB_texture_rectangle, "texture-rectangle sampler keyword");
-            else
-                reservedWord();
-        }
+        else if (_parseContext.version < 140 && ! _parseContext.symbolTable.atBuiltInLevel() && ! _parseContext.extensionTurnedOn(E_GL_ARB_texture_rectangle))
+            reservedWord();
         return keyword;
 
     case SAMPLER1DARRAY:
@@ -1506,7 +1502,10 @@ int TScanContext::tokenizeIdentifier()
     }
 
     default:
-        _parseContext.infoSink.info.message(EPrefixInternalError, "Unknown glslang keyword", loc);
+        _parseContext.infoSink.info.append("INTERNAL ERROR: ");
+        _parseContext.infoSink.info.location(loc);
+        _parseContext.infoSink.info.append("Unknown glslang keyword");
+        _parseContext.infoSink.info.append("\n");
         return 0;
     }
 }

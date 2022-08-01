@@ -417,7 +417,7 @@ static int net_http_new_socket(struct http_connection_t *conn)
 {
    struct addrinfo *addr = NULL, *next_addr = NULL;
    int fd                = socket_init(
-         (void**)&addr, conn->port, conn->domain, SOCKET_TYPE_STREAM);
+         (void**)&addr, conn->port, conn->domain, SOCKET_TYPE_STREAM, 0);
 #ifdef HAVE_SSL
    if (conn->sock_state.ssl)
    {

@@ -89,7 +89,9 @@ static enum frontend_fork psp_fork_mode = FRONTEND_FORK_NONE;
 static void frontend_psp_get_env_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
+#ifndef IS_SALAMANDER
    struct rarch_main_wrap *params = (struct rarch_main_wrap*)params_data;
+#endif
 
 #ifdef VITA
    strcpy_literal(eboot_path, "app0:/");

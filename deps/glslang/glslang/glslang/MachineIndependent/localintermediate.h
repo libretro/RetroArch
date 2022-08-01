@@ -162,14 +162,6 @@ public:
     TProcesses() {}
     ~TProcesses() {}
 
-    void addProcess(const char* process)
-    {
-        processes.push_back(process);
-    }
-    void addProcess(const std::string& process)
-    {
-        processes.push_back(process);
-    }
     void addArgument(int arg)
     {
         processes.back().append(" ");
@@ -181,22 +173,6 @@ public:
         processes.back().append(" ");
         processes.back().append(arg);
     }
-    void addArgument(const std::string& arg)
-    {
-        processes.back().append(" ");
-        processes.back().append(arg);
-    }
-    void addIfNonZero(const char* process, int value)
-    {
-        if (value != 0) {
-            addProcess(process);
-            addArgument(value);
-        }
-    }
-
-    const std::vector<std::string>& getProcesses() const { return processes; }
-
-private:
     std::vector<std::string> processes;
 };
 
@@ -231,7 +207,6 @@ public:
         useUnknownFormat(false),
         hlslOffsets(false),
         useStorageBuffer(false),
-        hlslIoMapping(false),
         textureSamplerTransformMode(EShTexSampTransKeep),
         needToLegalize(false),
         binaryDoubleOutput(false)
@@ -243,126 +218,43 @@ public:
         localSizeSpecId[1] = TQualifier::layoutNotSet;
         localSizeSpecId[2] = TQualifier::layoutNotSet;
         xfbBuffers.resize(TQualifier::layoutXfbBufferEnd);
-
-        shiftBinding.fill(0);
     }
     void setLimits(const TBuiltInResource& r) { resources = r; }
 
     bool postProcess(TIntermNode*, EShLanguage);
-    void output(TInfoSink&, bool tree);
-    void removeTree();
 
     void setSource(EShSource s) { source = s; }
     EShSource getSource() const { return source; }
     void setEntryPointName(const char* ep)
     {
         entryPointName = ep;
-        processes.addProcess("entry-point");
-        processes.addArgument(entryPointName);
+        processes.processes.push_back("entry-point");
+        processes.addArgument(entryPointName.c_str());
     }
     void setEntryPointMangledName(const char* ep) { entryPointMangledName = ep; }
     const std::string& getEntryPointName() const { return entryPointName; }
     const std::string& getEntryPointMangledName() const { return entryPointMangledName; }
 
-    void setShiftBinding(TResourceType res, unsigned int shift)
-    {
-        shiftBinding[res] = shift;
-
-        const char* name = getResourceName(res);
-        if (name != nullptr)
-            processes.addIfNonZero(name, shift);
-    }
-
-    unsigned int getShiftBinding(TResourceType res) const { return shiftBinding[res]; }
-
-    void setShiftBindingForSet(TResourceType res, unsigned int shift, unsigned int set)
-    {
-        if (shift == 0) // ignore if there's no shift: it's a no-op.
-            return;
-
-        shiftBindingForSet[res][set] = shift;
-
-        const char* name = getResourceName(res);
-        if (name != nullptr) {
-            processes.addProcess(name);
-            processes.addArgument(shift);
-            processes.addArgument(set);
-        }
-    }
-
-    int getShiftBindingForSet(TResourceType res, unsigned int set) const
-    {
-        const auto shift = shiftBindingForSet[res].find(set);
-        return shift == shiftBindingForSet[res].end() ? -1 : shift->second;
-    }
-    bool hasShiftBindingForSet(TResourceType res) const { return !shiftBindingForSet[res].empty(); }
-
-    void setResourceSetBinding(const std::vector<std::string>& shift)
-    {
-        resourceSetBinding = shift;
-        if (shift.size() > 0) {
-            processes.addProcess("resource-set-binding");
-            for (int s = 0; s < (int)shift.size(); ++s)
-                processes.addArgument(shift[s]);
-        }
-    }
     const std::vector<std::string>& getResourceSetBinding() const { return resourceSetBinding; }
-    void setAutoMapBindings(bool map)
-    {
-        autoMapBindings = map;
-        if (autoMapBindings)
-            processes.addProcess("auto-map-bindings");
-    }
     bool getAutoMapBindings() const { return autoMapBindings; }
-    void setAutoMapLocations(bool map)
-    {
-        autoMapLocations = map;
-        if (autoMapLocations)
-            processes.addProcess("auto-map-locations");
-    }
     bool getAutoMapLocations() const { return autoMapLocations; }
-    void setInvertY(bool invert)
-    {
-        invertY = invert;
-        if (invertY)
-            processes.addProcess("invert-y");
-    }
     bool getInvertY() const { return invertY; }
 
-    void setFlattenUniformArrays(bool flatten)
-    {
-        flattenUniformArrays = flatten;
-        if (flattenUniformArrays)
-            processes.addProcess("flatten-uniform-arrays");
-    }
     bool getFlattenUniformArrays() const { return flattenUniformArrays; }
-    void setNoStorageFormat(bool b)
-    {
-        useUnknownFormat = b;
-        if (useUnknownFormat)
-            processes.addProcess("no-storage-format");
-    }
     bool getNoStorageFormat() const { return useUnknownFormat; }
     void setHlslOffsets()
     {
         hlslOffsets = true;
         if (hlslOffsets)
-            processes.addProcess("hlsl-offsets");
+            processes.processes.push_back("hlsl-offsets");
     }
     bool usingHlslOFfsets() const { return hlslOffsets; }
     void setUseStorageBuffer()
     {
         useStorageBuffer = true;
-        processes.addProcess("use-storage-buffer");
+        processes.processes.push_back("use-storage-buffer");
     }
     bool usingStorageBuffer() const { return useStorageBuffer; }
-    void setHlslIoMapping(bool b)
-    {
-        hlslIoMapping = b;
-        if (hlslIoMapping)
-            processes.addProcess("hlsl-iomap");
-    }
-    bool usingHlslIoMapping() { return hlslIoMapping; }
 
     template<class T> T addCounterBufferName(const T& name) const { return name + implicitCounterName; }
     bool hasCounterBufferName(const TString& name) const {
@@ -370,8 +262,6 @@ public:
         return name.size() > len &&
                name.compare(name.size() - len, len, implicitCounterName) == 0;
     }
-
-    void setTextureSamplerTransformMode(EShTextureSamplerTransformMode mode) { textureSamplerTransformMode = mode; }
 
     void setVersion(int v) { version = v; }
     int getVersion() const { return version; }
@@ -383,17 +273,17 @@ public:
 
         // client processes
         if (spvVersion.vulkan > 0)
-            processes.addProcess("client vulkan100");
+            processes.processes.push_back("client vulkan100");
         if (spvVersion.openGl > 0)
-            processes.addProcess("client opengl100");
+            processes.processes.push_back("client opengl100");
 
         // target-environment processes
         if (spvVersion.vulkan > 0)
-            processes.addProcess("target-env vulkan1.0");
+            processes.processes.push_back("target-env vulkan1.0");
         else if (spvVersion.vulkan > 0)
-            processes.addProcess("target-env vulkanUnknown");
+            processes.processes.push_back("target-env vulkanUnknown");
         if (spvVersion.openGl > 0)
-            processes.addProcess("target-env opengl");
+            processes.processes.push_back("target-env opengl");
     }
     const SpvVersion& getSpv() const { return spvVersion; }
     EShLanguage getStage() const { return language; }
@@ -581,7 +471,7 @@ public:
 
     void addToCallGraph(TInfoSink&, const TString& caller, const TString& callee);
     void merge(TInfoSink&, TIntermediate&);
-    void finalCheck(TInfoSink&, bool keepUncalled);
+    void finalCheck(TInfoSink&);
 
     void addIoAccessed(const TString& name) { ioAccessed.insert(name); }
     bool inIoAccessed(const TString& name) const { return ioAccessed.find(name) != ioAccessed.end(); }
@@ -620,26 +510,15 @@ public:
         return semanticNameSet.insert(name).first->c_str();
     }
 
-    void setSourceFile(const char* file) { if (file != nullptr) sourceFile = file; }
-    const std::string& getSourceFile() const { return sourceFile; }
-    void addSourceText(const char* text) { sourceText = sourceText + text; }
-    const std::string& getSourceText() const { return sourceText; }
-    void addProcesses(const std::vector<std::string>& p) {
-        for (int i = 0; i < (int)p.size(); ++i)
-            processes.addProcess(p[i]);
-    }
-    void addProcess(const std::string& process) { processes.addProcess(process); }
-    void addProcessArgument(const std::string& arg) { processes.addArgument(arg); }
-    const std::vector<std::string>& getProcesses() const { return processes.getProcesses(); }
-
+    void addProcessArgument(const std::string& arg) { processes.addArgument(arg.c_str()); }
     void setNeedsLegalization() { needToLegalize = true; }
-    bool needsLegalization() const { return needToLegalize; }
 
     void setBinaryDoubleOutput() { binaryDoubleOutput = true; }
-    bool getBinaryDoubleOutput() { return binaryDoubleOutput; }
 
     const char* const implicitThisName;
     const char* const implicitCounterName;
+    // for OpModuleProcessed, or equivalent
+    TProcesses processes;
 
 protected:
     TIntermSymbol* addSymbol(int Id, const TString&, const TType&, const TConstUnionArray&, TIntermTyped* subtree, const TSourceLoc&);
@@ -650,7 +529,7 @@ protected:
     void mergeImplicitArraySizes(TType&, const TType&);
     void mergeErrorCheck(TInfoSink&, const TIntermSymbol&, const TIntermSymbol&, bool crossStage);
     void checkCallGraphCycles(TInfoSink&);
-    void checkCallGraphBodies(TInfoSink&, bool keepUncalled);
+    void checkCallGraphBodies(TInfoSink&);
     void inOutLocationCheck(TInfoSink&);
     TIntermSequence& findLinkerObjects() const;
     bool userOutputUsed() const;
@@ -668,7 +547,6 @@ protected:
     TIntermUnary* createConversion(TBasicType convertTo, TIntermTyped* node) const;
     std::tuple<TBasicType, TBasicType> getConversionDestinatonType(TBasicType type0, TBasicType type1, TOperator op) const;
     bool extensionRequested(const char *extension) const {return requestedExtensions.find(extension) != requestedExtensions.end();}
-    static const char* getResourceName(TResourceType);
 
     const EShLanguage language;  // stage, known at construction time
     EShSource source;            // source language, known a bit later
@@ -710,12 +588,6 @@ protected:
     bool geoPassthroughEXT;
 #endif
 
-    // Base shift values
-    std::array<unsigned int, EResCount> shiftBinding;
-
-    // Per-descriptor-set shift values
-    std::array<std::map<int, int>, EResCount>  shiftBindingForSet;
-
     std::vector<std::string> resourceSetBinding;
     bool autoMapBindings;
     bool autoMapLocations;
@@ -724,7 +596,6 @@ protected:
     bool useUnknownFormat;
     bool hlslOffsets;
     bool useStorageBuffer;
-    bool hlslIoMapping;
 
     typedef std::list<TCall> TGraph;
     TGraph callGraph;
@@ -737,13 +608,6 @@ protected:
     std::set<TString> semanticNameSet;
 
     EShTextureSamplerTransformMode textureSamplerTransformMode;
-
-    // source code of shader, useful as part of debug information
-    std::string sourceFile;
-    std::string sourceText;
-
-    // for OpModuleProcessed, or equivalent
-    TProcesses processes;
 
     bool needToLegalize;
     bool binaryDoubleOutput;

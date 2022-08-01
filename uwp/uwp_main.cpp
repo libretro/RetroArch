@@ -405,16 +405,16 @@ void App::Uninitialize()
 
 void App::OnActivated(CoreApplicationView^ applicationView, IActivatedEventArgs^ args)
 {
+	int argc = NULL;
+	std::vector<char*> argv;
+	std::vector<std::string> argvTmp; //using std::string as temp buf instead of char* array to avoid manual char allocations
+	ParseProtocolArgs(args, &argc, &argv, &argvTmp);
+	
 	//start only if not already initialized. If there is a game in progress, just return
 	if (m_initialized == true)
 	{
 		return;
 	}
-
-	int argc = NULL;
-	std::vector<char*> argv;
-	std::vector<std::string> argvTmp; //using std::string as temp buf instead of char* array to avoid manual char allocations
-	ParseProtocolArgs(args, &argc, &argv, &argvTmp);
 
 	int ret = rarch_main(argc, argv.data(), NULL);
 	if (ret != 0)
@@ -705,7 +705,12 @@ void App::ParseProtocolArgs(Windows::ApplicationModel::Activation::IActivatedEve
 			IWwwFormUrlDecoderEntry^ arg = query->GetAt(i);
 
 			//parse RetroArch command line string
-			if (arg->Name == "cmd")
+			if (arg->Name == "forceExit")
+			{
+				//this allows a frotend to quit RetroArch, which in turn allows it to launch a different game.
+				CoreApplication::Exit();
+			}
+			else if (arg->Name == "cmd" && m_initialized == false)
 			{
 				std::wstring wsValue(arg->Value->ToString()->Data());
 				std::string strValue(wsValue.begin(), wsValue.end());
@@ -725,14 +730,17 @@ void App::ParseProtocolArgs(Windows::ApplicationModel::Activation::IActivatedEve
 			}
 		}
 	}
-
-	(*argc) = argvTmp->size();
-	//convert to char* array compatible with argv
-	for (int i = 0; i < argvTmp->size(); i++)
+	
+	if (m_initialized == false)
 	{
-		argv->push_back((char*)(argvTmp->at(i)).c_str());
+		(*argc) = argvTmp->size();
+		//convert to char* array compatible with argv
+		for (int i = 0; i < argvTmp->size(); i++)
+		{
+			argv->push_back((char*)(argvTmp->at(i)).c_str());
+		}
+		argv->push_back(nullptr);
 	}
-	argv->push_back(nullptr);
 }
 
 /* Implement UWP equivalents of various win32_* functions */

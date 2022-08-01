@@ -1711,3 +1711,18 @@ ANDROID PLAY FEATURE DELIVERY
 #if defined(ANDROID)
 #include "../play_feature_delivery/play_feature_delivery.c"
 #endif
+
+/*============================================================
+GLSLANG
+============================================================ */
+#ifdef WANT_GLSLANG
+
+#if defined(__linux__) || defined(__APPLE__)
+#include "../deps/glslang/glslang/glslang/OSDependent/Unix/ossource.c"
+#endif
+
+#ifdef _WIN32
+#include "../deps/glslang/glslang/glslang/OSDependent/Windows/ossource.c"
+#endif
+
+#endif

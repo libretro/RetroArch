@@ -185,7 +185,6 @@ static int rc_test_condset_internal(rc_condset_t* self, int processing_pause, rc
   measured_value.type = RC_VALUE_TYPE_NONE;
   measured_from_hits = 0;
   can_measure = 1;
-  total_hits = 0;
 
   eval_state->primed = 1;
   set_valid = 1;
