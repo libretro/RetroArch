@@ -1506,129 +1506,129 @@ void playlist_write_runtime_file(playlist_t *playlist)
       goto end;
    }
 
-   rjsonwriter_add_start_object(writer);
-   rjsonwriter_add_newline(writer);
+   rjsonwriter_raw(writer, "{", 1);
+   rjsonwriter_raw(writer, "\n", 1);
    rjsonwriter_add_spaces(writer, 2);
    rjsonwriter_add_string(writer, "version");
-   rjsonwriter_add_colon(writer);
-   rjsonwriter_add_space(writer);
+   rjsonwriter_raw(writer, ":", 1);
+   rjsonwriter_raw(writer, " ", 1);
    rjsonwriter_add_string(writer, "1.0");
-   rjsonwriter_add_comma(writer);
-   rjsonwriter_add_newline(writer);
+   rjsonwriter_raw(writer, ",", 1);
+   rjsonwriter_raw(writer, "\n", 1);
    rjsonwriter_add_spaces(writer, 2);
    rjsonwriter_add_string(writer, "items");
-   rjsonwriter_add_colon(writer);
-   rjsonwriter_add_space(writer);
-   rjsonwriter_add_start_array(writer);
-   rjsonwriter_add_newline(writer);
+   rjsonwriter_raw(writer, ":", 1);
+   rjsonwriter_raw(writer, " ", 1);
+   rjsonwriter_raw(writer, "[", 1);
+   rjsonwriter_raw(writer, "\n", 1);
 
    for (i = 0, len = RBUF_LEN(playlist->entries); i < len; i++)
    {
       rjsonwriter_add_spaces(writer, 4);
-      rjsonwriter_add_start_object(writer);
+      rjsonwriter_raw(writer, "{", 1);
 
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, "\n", 1);
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "path");
-      rjsonwriter_add_colon(writer);
-      rjsonwriter_add_space(writer);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_add_string(writer, playlist->entries[i].path);
-      rjsonwriter_add_comma(writer);
+      rjsonwriter_raw(writer, ",", 1);
 
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, "\n", 1);
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "core_path");
-      rjsonwriter_add_colon(writer);
-      rjsonwriter_add_space(writer);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_add_string(writer, playlist->entries[i].core_path);
-      rjsonwriter_add_comma(writer);
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "runtime_hours");
-      rjsonwriter_add_colon(writer);
-      rjsonwriter_add_space(writer);
-      rjsonwriter_add_unsigned(writer, playlist->entries[i].runtime_hours);
-      rjsonwriter_add_comma(writer);
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_rawf(writer, "%u", playlist->entries[i].runtime_hours);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "runtime_minutes");
-      rjsonwriter_add_colon(writer);
-      rjsonwriter_add_space(writer);
-      rjsonwriter_add_unsigned(writer, playlist->entries[i].runtime_minutes);
-      rjsonwriter_add_comma(writer);
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_rawf(writer, "%u", playlist->entries[i].runtime_minutes);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "runtime_seconds");
-      rjsonwriter_add_colon(writer);
-      rjsonwriter_add_space(writer);
-      rjsonwriter_add_unsigned(writer, playlist->entries[i].runtime_seconds);
-      rjsonwriter_add_comma(writer);
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_rawf(writer, "%u", playlist->entries[i].runtime_seconds);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "last_played_year");
-      rjsonwriter_add_colon(writer);
-      rjsonwriter_add_space(writer);
-      rjsonwriter_add_unsigned(writer, playlist->entries[i].last_played_year);
-      rjsonwriter_add_comma(writer);
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_rawf(writer, "%u", playlist->entries[i].last_played_year);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "last_played_month");
-      rjsonwriter_add_colon(writer);
-      rjsonwriter_add_space(writer);
-      rjsonwriter_add_unsigned(writer, playlist->entries[i].last_played_month);
-      rjsonwriter_add_comma(writer);
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_rawf(writer, "%u", playlist->entries[i].last_played_month);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "last_played_day");
-      rjsonwriter_add_colon(writer);
-      rjsonwriter_add_space(writer);
-      rjsonwriter_add_unsigned(writer, playlist->entries[i].last_played_day);
-      rjsonwriter_add_comma(writer);
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_rawf(writer, "%u", playlist->entries[i].last_played_day);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "last_played_hour");
-      rjsonwriter_add_colon(writer);
-      rjsonwriter_add_space(writer);
-      rjsonwriter_add_unsigned(writer, playlist->entries[i].last_played_hour);
-      rjsonwriter_add_comma(writer);
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_rawf(writer, "%u", playlist->entries[i].last_played_hour);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "last_played_minute");
-      rjsonwriter_add_colon(writer);
-      rjsonwriter_add_space(writer);
-      rjsonwriter_add_unsigned(writer, playlist->entries[i].last_played_minute);
-      rjsonwriter_add_comma(writer);
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_rawf(writer, "%u", playlist->entries[i].last_played_minute);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "last_played_second");
-      rjsonwriter_add_colon(writer);
-      rjsonwriter_add_space(writer);
-      rjsonwriter_add_unsigned(writer, playlist->entries[i].last_played_second);
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_rawf(writer, "%u", playlist->entries[i].last_played_second);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 4);
-      rjsonwriter_add_end_object(writer);
+      rjsonwriter_raw(writer, "}", 1);
 
       if (i < len - 1)
-         rjsonwriter_add_comma(writer);
+         rjsonwriter_raw(writer, ",", 1);
 
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, "\n", 1);
    }
 
    rjsonwriter_add_spaces(writer, 2);
-   rjsonwriter_add_end_array(writer);
-   rjsonwriter_add_newline(writer);
-   rjsonwriter_add_end_object(writer);
-   rjsonwriter_add_newline(writer);
+   rjsonwriter_raw(writer, "]", 1);
+   rjsonwriter_raw(writer, "\n", 1);
+   rjsonwriter_raw(writer, "}", 1);
+   rjsonwriter_raw(writer, "\n", 1);
    rjsonwriter_free(writer);
 
    playlist->modified        = false;
@@ -1730,216 +1730,225 @@ void playlist_write_file(playlist_t *playlist)
          rjsonwriter_set_options(writer, RJSONWRITER_OPTION_SKIP_WHITESPACE);
       }
 
-      rjsonwriter_add_start_object(writer);
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, "{", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 2);
       rjsonwriter_add_string(writer, "version");
-      rjsonwriter_add_colon(writer);
-      rjsonwriter_add_space(writer);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_add_string(writer, "1.5");
-      rjsonwriter_add_comma(writer);
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 2);
       rjsonwriter_add_string(writer, "default_core_path");
-      rjsonwriter_add_colon(writer);
-      rjsonwriter_add_space(writer);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_add_string(writer, playlist->default_core_path);
-      rjsonwriter_add_comma(writer);
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 2);
       rjsonwriter_add_string(writer, "default_core_name");
-      rjsonwriter_add_colon(writer);
-      rjsonwriter_add_space(writer);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_add_string(writer, playlist->default_core_name);
-      rjsonwriter_add_comma(writer);
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       if (!string_is_empty(playlist->base_content_directory))
       {
          rjsonwriter_add_spaces(writer, 2);
          rjsonwriter_add_string(writer, "base_content_directory");
-         rjsonwriter_add_colon(writer);
-         rjsonwriter_add_space(writer);
+         rjsonwriter_raw(writer, ":", 1);
+         rjsonwriter_raw(writer, " ", 1);
          rjsonwriter_add_string(writer, playlist->base_content_directory);
-         rjsonwriter_add_comma(writer);
-         rjsonwriter_add_newline(writer);
+         rjsonwriter_raw(writer, ",", 1);
+         rjsonwriter_raw(writer, "\n", 1);
       }
 
       rjsonwriter_add_spaces(writer, 2);
       rjsonwriter_add_string(writer, "label_display_mode");
-      rjsonwriter_add_colon(writer);
-      rjsonwriter_add_space(writer);
-      rjsonwriter_add_int(writer, (int)playlist->label_display_mode);
-      rjsonwriter_add_comma(writer);
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_rawf(writer, "%d", (int)playlist->label_display_mode);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 2);
       rjsonwriter_add_string(writer, "right_thumbnail_mode");
-      rjsonwriter_add_colon(writer);
-      rjsonwriter_add_space(writer);
-      rjsonwriter_add_int(writer, (int)playlist->right_thumbnail_mode);
-      rjsonwriter_add_comma(writer);
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_rawf(writer, "%d", (int)playlist->right_thumbnail_mode);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 2);
       rjsonwriter_add_string(writer, "left_thumbnail_mode");
-      rjsonwriter_add_colon(writer);
-      rjsonwriter_add_space(writer);
-      rjsonwriter_add_int(writer, (int)playlist->left_thumbnail_mode);
-      rjsonwriter_add_comma(writer);
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_rawf(writer, "%d", (int)playlist->left_thumbnail_mode);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 2);
       rjsonwriter_add_string(writer, "sort_mode");
-      rjsonwriter_add_colon(writer);
-      rjsonwriter_add_space(writer);
-      rjsonwriter_add_int(writer, (int)playlist->sort_mode);
-      rjsonwriter_add_comma(writer);
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_rawf(writer, "%d", (int)playlist->sort_mode);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       if (!string_is_empty(playlist->scan_record.content_dir))
       {
          rjsonwriter_add_spaces(writer, 2);
          rjsonwriter_add_string(writer, "scan_content_dir");
-         rjsonwriter_add_colon(writer);
-         rjsonwriter_add_space(writer);
+         rjsonwriter_raw(writer, ":", 1);
+         rjsonwriter_raw(writer, " ", 1);
          rjsonwriter_add_string(writer, playlist->scan_record.content_dir);
-         rjsonwriter_add_comma(writer);
-         rjsonwriter_add_newline(writer);
+         rjsonwriter_raw(writer, ",", 1);
+         rjsonwriter_raw(writer, "\n", 1);
 
          rjsonwriter_add_spaces(writer, 2);
          rjsonwriter_add_string(writer, "scan_file_exts");
-         rjsonwriter_add_colon(writer);
-         rjsonwriter_add_space(writer);
+         rjsonwriter_raw(writer, ":", 1);
+         rjsonwriter_raw(writer, " ", 1);
          rjsonwriter_add_string(writer, playlist->scan_record.file_exts);
-         rjsonwriter_add_comma(writer);
-         rjsonwriter_add_newline(writer);
+         rjsonwriter_raw(writer, ",", 1);
+         rjsonwriter_raw(writer, "\n", 1);
 
          rjsonwriter_add_spaces(writer, 2);
          rjsonwriter_add_string(writer, "scan_dat_file_path");
-         rjsonwriter_add_colon(writer);
-         rjsonwriter_add_space(writer);
+         rjsonwriter_raw(writer, ":", 1);
+         rjsonwriter_raw(writer, " ", 1);
          rjsonwriter_add_string(writer, playlist->scan_record.dat_file_path);
-         rjsonwriter_add_comma(writer);
-         rjsonwriter_add_newline(writer);
+         rjsonwriter_raw(writer, ",", 1);
+         rjsonwriter_raw(writer, "\n", 1);
 
          rjsonwriter_add_spaces(writer, 2);
          rjsonwriter_add_string(writer, "scan_search_recursively");
-         rjsonwriter_add_colon(writer);
-         rjsonwriter_add_space(writer);
-         rjsonwriter_add_bool(writer, playlist->scan_record.search_recursively);
-         rjsonwriter_add_comma(writer);
-         rjsonwriter_add_newline(writer);
+         rjsonwriter_raw(writer, ":", 1);
+         rjsonwriter_raw(writer, " ", 1);
+         {
+            bool value = playlist->scan_record.search_recursively;
+            rjsonwriter_raw(writer, (value ? "true" : "false"), (value ? 4 : 5));
+         }
+         rjsonwriter_raw(writer, ",", 1);
+         rjsonwriter_raw(writer, "\n", 1);
 
          rjsonwriter_add_spaces(writer, 2);
          rjsonwriter_add_string(writer, "scan_search_archives");
-         rjsonwriter_add_colon(writer);
-         rjsonwriter_add_space(writer);
-         rjsonwriter_add_bool(writer, playlist->scan_record.search_archives);
-         rjsonwriter_add_comma(writer);
-         rjsonwriter_add_newline(writer);
+         rjsonwriter_raw(writer, ":", 1);
+         rjsonwriter_raw(writer, " ", 1);
+         {
+            bool value = playlist->scan_record.search_archives;
+            rjsonwriter_raw(writer, (value ? "true" : "false"), (value ? 4 : 5));
+         }
+         rjsonwriter_raw(writer, ",", 1);
+         rjsonwriter_raw(writer, "\n", 1);
 
          rjsonwriter_add_spaces(writer, 2);
          rjsonwriter_add_string(writer, "scan_filter_dat_content");
-         rjsonwriter_add_colon(writer);
-         rjsonwriter_add_space(writer);
-         rjsonwriter_add_bool(writer, playlist->scan_record.filter_dat_content);
-         rjsonwriter_add_comma(writer);
-         rjsonwriter_add_newline(writer);
+         rjsonwriter_raw(writer, ":", 1);
+         rjsonwriter_raw(writer, " ", 1);
+         {
+            bool value = playlist->scan_record.filter_dat_content;
+            rjsonwriter_raw(writer, (value ? "true" : "false"), (value ? 4 : 5));
+         }
+         rjsonwriter_raw(writer, ",", 1);
+         rjsonwriter_raw(writer, "\n", 1);
       }
 
       rjsonwriter_add_spaces(writer, 2);
       rjsonwriter_add_string(writer, "items");
-      rjsonwriter_add_colon(writer);
-      rjsonwriter_add_space(writer);
-      rjsonwriter_add_start_array(writer);
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_raw(writer, "[", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       for (i = 0, len = RBUF_LEN(playlist->entries); i < len; i++)
       {
          rjsonwriter_add_spaces(writer, 4);
-         rjsonwriter_add_start_object(writer);
+         rjsonwriter_raw(writer, "{", 1);
 
-         rjsonwriter_add_newline(writer);
+         rjsonwriter_raw(writer, "\n", 1);
          rjsonwriter_add_spaces(writer, 6);
          rjsonwriter_add_string(writer, "path");
-         rjsonwriter_add_colon(writer);
-         rjsonwriter_add_space(writer);
+         rjsonwriter_raw(writer, ":", 1);
+         rjsonwriter_raw(writer, " ", 1);
          rjsonwriter_add_string(writer, playlist->entries[i].path);
-         rjsonwriter_add_comma(writer);
+         rjsonwriter_raw(writer, ",", 1);
 
          if (playlist->entries[i].entry_slot)
          {
-            rjsonwriter_add_newline(writer);
+            rjsonwriter_raw(writer, "\n", 1);
             rjsonwriter_add_spaces(writer, 6);
             rjsonwriter_add_string(writer, "entry_slot");
-            rjsonwriter_add_colon(writer);
-            rjsonwriter_add_space(writer);
-            rjsonwriter_add_int(writer, (int)playlist->entries[i].entry_slot);
-            rjsonwriter_add_comma(writer);
+            rjsonwriter_raw(writer, ":", 1);
+            rjsonwriter_raw(writer, " ", 1);
+            rjsonwriter_rawf(writer, "%d", (int)playlist->entries[i].entry_slot);
+            rjsonwriter_raw(writer, ",", 1);
          }
 
-         rjsonwriter_add_newline(writer);
+         rjsonwriter_raw(writer, "\n", 1);
          rjsonwriter_add_spaces(writer, 6);
          rjsonwriter_add_string(writer, "label");
-         rjsonwriter_add_colon(writer);
-         rjsonwriter_add_space(writer);
+         rjsonwriter_raw(writer, ":", 1);
+         rjsonwriter_raw(writer, " ", 1);
          rjsonwriter_add_string(writer, playlist->entries[i].label);
-         rjsonwriter_add_comma(writer);
+         rjsonwriter_raw(writer, ",", 1);
 
-         rjsonwriter_add_newline(writer);
+         rjsonwriter_raw(writer, "\n", 1);
          rjsonwriter_add_spaces(writer, 6);
          rjsonwriter_add_string(writer, "core_path");
-         rjsonwriter_add_colon(writer);
-         rjsonwriter_add_space(writer);
+         rjsonwriter_raw(writer, ":", 1);
+         rjsonwriter_raw(writer, " ", 1);
          rjsonwriter_add_string(writer, playlist->entries[i].core_path);
-         rjsonwriter_add_comma(writer);
+         rjsonwriter_raw(writer, ",", 1);
 
-         rjsonwriter_add_newline(writer);
+         rjsonwriter_raw(writer, "\n", 1);
          rjsonwriter_add_spaces(writer, 6);
          rjsonwriter_add_string(writer, "core_name");
-         rjsonwriter_add_colon(writer);
-         rjsonwriter_add_space(writer);
+         rjsonwriter_raw(writer, ":", 1);
+         rjsonwriter_raw(writer, " ", 1);
          rjsonwriter_add_string(writer, playlist->entries[i].core_name);
-         rjsonwriter_add_comma(writer);
+         rjsonwriter_raw(writer, ",", 1);
 
-         rjsonwriter_add_newline(writer);
+         rjsonwriter_raw(writer, "\n", 1);
          rjsonwriter_add_spaces(writer, 6);
          rjsonwriter_add_string(writer, "crc32");
-         rjsonwriter_add_colon(writer);
-         rjsonwriter_add_space(writer);
+         rjsonwriter_raw(writer, ":", 1);
+         rjsonwriter_raw(writer, " ", 1);
          rjsonwriter_add_string(writer, playlist->entries[i].crc32);
-         rjsonwriter_add_comma(writer);
+         rjsonwriter_raw(writer, ",", 1);
 
-         rjsonwriter_add_newline(writer);
+         rjsonwriter_raw(writer, "\n", 1);
          rjsonwriter_add_spaces(writer, 6);
          rjsonwriter_add_string(writer, "db_name");
-         rjsonwriter_add_colon(writer);
-         rjsonwriter_add_space(writer);
+         rjsonwriter_raw(writer, ":", 1);
+         rjsonwriter_raw(writer, " ", 1);
          rjsonwriter_add_string(writer, playlist->entries[i].db_name);
 
          if (!string_is_empty(playlist->entries[i].subsystem_ident))
          {
-            rjsonwriter_add_comma(writer);
-            rjsonwriter_add_newline(writer);
+            rjsonwriter_raw(writer, ",", 1);
+            rjsonwriter_raw(writer, "\n", 1);
             rjsonwriter_add_spaces(writer, 6);
             rjsonwriter_add_string(writer, "subsystem_ident");
-            rjsonwriter_add_colon(writer);
-            rjsonwriter_add_space(writer);
+            rjsonwriter_raw(writer, ":", 1);
+            rjsonwriter_raw(writer, " ", 1);
             rjsonwriter_add_string(writer, playlist->entries[i].subsystem_ident);
          }
 
          if (!string_is_empty(playlist->entries[i].subsystem_name))
          {
-            rjsonwriter_add_comma(writer);
-            rjsonwriter_add_newline(writer);
+            rjsonwriter_raw(writer, ",", 1);
+            rjsonwriter_raw(writer, "\n", 1);
             rjsonwriter_add_spaces(writer, 6);
             rjsonwriter_add_string(writer, "subsystem_name");
-            rjsonwriter_add_colon(writer);
-            rjsonwriter_add_space(writer);
+            rjsonwriter_raw(writer, ":", 1);
+            rjsonwriter_raw(writer, " ", 1);
             rjsonwriter_add_string(writer, playlist->entries[i].subsystem_name);
          }
 
@@ -1948,14 +1957,14 @@ void playlist_write_file(playlist_t *playlist)
          {
             unsigned j;
 
-            rjsonwriter_add_comma(writer);
-            rjsonwriter_add_newline(writer);
+            rjsonwriter_raw(writer, ",", 1);
+            rjsonwriter_raw(writer, "\n", 1);
             rjsonwriter_add_spaces(writer, 6);
             rjsonwriter_add_string(writer, "subsystem_roms");
-            rjsonwriter_add_colon(writer);
-            rjsonwriter_add_space(writer);
-            rjsonwriter_add_start_array(writer);
-            rjsonwriter_add_newline(writer);
+            rjsonwriter_raw(writer, ":", 1);
+            rjsonwriter_raw(writer, " ", 1);
+            rjsonwriter_raw(writer, "[", 1);
+            rjsonwriter_raw(writer, "\n", 1);
 
             for (j = 0; j < playlist->entries[i].subsystem_roms->size; j++)
             {
@@ -1968,32 +1977,32 @@ void playlist_write_file(playlist_t *playlist)
 
                if (j < playlist->entries[i].subsystem_roms->size - 1)
                {
-                  rjsonwriter_add_comma(writer);
-                  rjsonwriter_add_newline(writer);
+                  rjsonwriter_raw(writer, ",", 1);
+                  rjsonwriter_raw(writer, "\n", 1);
                }
             }
 
-            rjsonwriter_add_newline(writer);
+            rjsonwriter_raw(writer, "\n", 1);
             rjsonwriter_add_spaces(writer, 6);
-            rjsonwriter_add_end_array(writer);
+            rjsonwriter_raw(writer, "]", 1);
          }
 
-         rjsonwriter_add_newline(writer);
+         rjsonwriter_raw(writer, "\n", 1);
 
          rjsonwriter_add_spaces(writer, 4);
-         rjsonwriter_add_end_object(writer);
+         rjsonwriter_raw(writer, "}", 1);
 
          if (i < len - 1)
-            rjsonwriter_add_comma(writer);
+            rjsonwriter_raw(writer, ",", 1);
 
-         rjsonwriter_add_newline(writer);
+         rjsonwriter_raw(writer, "\n", 1);
       }
 
       rjsonwriter_add_spaces(writer, 2);
-      rjsonwriter_add_end_array(writer);
-      rjsonwriter_add_newline(writer);
-      rjsonwriter_add_end_object(writer);
-      rjsonwriter_add_newline(writer);
+      rjsonwriter_raw(writer, "]", 1);
+      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, "}", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       if (!rjsonwriter_free(writer))
       {

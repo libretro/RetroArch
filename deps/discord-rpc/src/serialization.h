@@ -52,9 +52,10 @@ class JsonWriter
 
    static int writer_io(const void* inbuf, int inlen, void *user_data)
    {
-       JsonWriter* self = (JsonWriter*)user_data;
+       JsonWriter* self  = (JsonWriter*)user_data;
        size_t buf_remain = (self->buf_cap - self->buf_len);
-       if ((size_t)inlen > buf_remain) inlen = (int)buf_remain;
+       if ((size_t)inlen > buf_remain)
+          inlen = (int)buf_remain;
        memcpy(self->buf + self->buf_len, inbuf, inlen);
        self->buf_len += inlen;
        self->buf[self->buf_len - (self->buf_len == self->buf_cap ? 1 : 0)] = '\0';
@@ -82,40 +83,41 @@ class JsonWriter
 
       void WriteComma()
       {
-          if (!need_comma) return;
-          rjsonwriter_add_comma(writer);
+          if (!need_comma)
+             return;
+          rjsonwriter_raw(writer, ",", 1);
           need_comma = false;
       }
 
       void StartObject()
       {
           WriteComma();
-          rjsonwriter_add_start_object(writer);
+          rjsonwriter_raw(writer, "{", 1);
       }
 
       void StartArray()
       {
-          WriteComma();
-          rjsonwriter_add_start_array(writer);
+         WriteComma();
+         rjsonwriter_raw(writer, "[", 1);
       }
 
       void EndObject()
       {
-          rjsonwriter_add_end_object(writer);
-          need_comma = true;
+         rjsonwriter_raw(writer, "}", 1);
+         need_comma = true;
       }
 
       void EndArray()
       {
-          rjsonwriter_add_end_array(writer);
-          need_comma = true;
+         rjsonwriter_raw(writer, "]", 1);
+         need_comma = true;
       }
 
       void Key(const char* key)
       {
           WriteComma();
           rjsonwriter_add_string(writer, key);
-          rjsonwriter_add_colon(writer);
+          rjsonwriter_raw(writer, ":", 1);
       }
 
       void String(const char* val)
@@ -125,10 +127,10 @@ class JsonWriter
           need_comma = true;
       }
 
-      void Int(int val)
+      void Int(int value)
       {
           WriteComma();
-          rjsonwriter_add_int(writer, val);
+          rjsonwriter_rawf(writer, "%d", value);
           need_comma = true;
       }
 
@@ -155,10 +157,10 @@ class JsonWriter
           need_comma = true;
       }
 
-      void Bool(bool val)
+      void Bool(bool value)
       {
           WriteComma();
-          rjsonwriter_add_bool(writer, val);
+          rjsonwriter_raw(writer, (value ? "true" : "false"), (value ? 4 : 5));
           need_comma = true;
       }
 };
