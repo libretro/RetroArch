@@ -254,7 +254,12 @@ bool gfx_thumbnail_set_system(gfx_thumbnail_path_data_t *path_data,
    /* Hack: There is only one MAME thumbnail repo,
     * so filter any input starting with 'MAME...' */
    if (strncmp(system, "MAME", 4) == 0)
-      strlcpy(path_data->system, "MAME", sizeof(path_data->system));
+   {
+      path_data->system[0] = path_data->system[2] = 'M';
+      path_data->system[1] = 'A';
+      path_data->system[3] = 'E';
+      path_data->system[4] = '\0';
+   }
    else
       strlcpy(path_data->system, system, sizeof(path_data->system));
    
@@ -508,8 +513,12 @@ bool gfx_thumbnail_set_content_playlist(
       /* Hack: There is only one MAME thumbnail repo,
        * so filter any input starting with 'MAME...' */
       if (strncmp(db_name, "MAME", 4) == 0)
-         strlcpy(path_data->content_db_name, "MAME",
-               sizeof(path_data->content_db_name));
+      {
+         path_data->content_db_name[0] = path_data->content_db_name[2] = 'M';
+         path_data->content_db_name[1] = 'A';
+         path_data->content_db_name[3] = 'E';
+         path_data->content_db_name[4] = '\0';
+      }
       else
       {
          char *db_name_no_ext = NULL;

@@ -1986,8 +1986,7 @@ static core_info_list_t *core_info_list_new(const char *path,
    if (!path_list)
       goto error;
 
-   core_info_list = (core_info_list_t*)malloc(sizeof(*core_info_list));
-   if (!core_info_list)
+   if (!(core_info_list = (core_info_list_t*)malloc(sizeof(*core_info_list))))
       goto error;
 
    core_info_list->list       = NULL;
@@ -1995,10 +1994,8 @@ static core_info_list_t *core_info_list_new(const char *path,
    core_info_list->info_count = 0;
    core_info_list->all_ext    = NULL;
 
-   core_info = (core_info_t*)calloc(path_list->core_list->size,
-         sizeof(*core_info));
-
-   if (!core_info)
+   if (!(core_info = (core_info_t*)calloc(path_list->core_list->size,
+         sizeof(*core_info))))
    {
       core_info_list_free(core_info_list);
       goto error;
@@ -2074,7 +2071,7 @@ static core_info_list_t *core_info_list_new(const char *path,
       }
 
       /* Cache core path */
-      info->path = strdup(base_path);
+      info->path              = strdup(base_path);
 
       /* Get core lock status */
       info->is_locked         = core_info_path_is_locked(
@@ -2085,9 +2082,7 @@ static core_info_list_t *core_info_list_new(const char *path,
       info->core_file_id.hash = core_info_hash_string(core_file_id);
 
       /* Parse core info file */
-      conf = core_info_get_config_file(core_file_id, info_dir);
-
-      if (conf)
+      if ((conf = core_info_get_config_file(core_file_id, info_dir)))
       {
          core_info_parse_config_file(core_info_list, info, conf);
          config_file_free(conf);
@@ -2232,10 +2227,8 @@ static bool core_info_list_update_missing_firmware_internal(
    if (!core_info_list)
       return false;
 
-   info                   = core_info_find_internal(
-         core_info_list, core_path);
-
-   if (!info)
+   if (!(info = core_info_find_internal(
+         core_info_list, core_path)))
       return false;
 
    for (i = 0; i < info->firmware_count; i++)
@@ -2359,21 +2352,21 @@ bool core_info_get_list(core_info_list_t **core)
 size_t core_info_count(void)
 {
    core_info_state_t *p_coreinfo          = &core_info_st;
-   if (!p_coreinfo || !p_coreinfo->curr_list)
-      return 0;
-   return p_coreinfo->curr_list->count;
+   if (p_coreinfo && p_coreinfo->curr_list)
+      return p_coreinfo->curr_list->count;
+   return 0;
 }
 
 bool core_info_list_update_missing_firmware(
       core_info_ctx_firmware_t *info, bool *set_missing_bios)
 {
    core_info_state_t *p_coreinfo          = &core_info_st;
-   if (!info)
-      return false;
-   return core_info_list_update_missing_firmware_internal(
-         p_coreinfo->curr_list,
-         info->path, info->directory.system,
-         set_missing_bios);
+   if (info)
+      return core_info_list_update_missing_firmware_internal(
+            p_coreinfo->curr_list,
+            info->path, info->directory.system,
+            set_missing_bios);
+   return false;
 }
 
 bool core_info_load(const char *core_path)
@@ -2405,9 +2398,7 @@ bool core_info_find(const char *core_path,
    if (!core_info || !p_coreinfo->curr_list)
       return false;
 
-   info = core_info_find_internal(p_coreinfo->curr_list, core_path);
-
-   if (!info)
+   if (!(info = core_info_find_internal(p_coreinfo->curr_list, core_path)))
       return false;
 
    *core_info = info;
@@ -2624,15 +2615,11 @@ core_updater_info_t *core_info_get_core_updater_info(
       return NULL;
 
    /* Read config file */
-   conf = config_file_new_from_path_to_string(info_path);
-
-   if (!conf)
+   if (!(conf = config_file_new_from_path_to_string(info_path)))
       return NULL;
 
    /* Create info struct */
-   info = (core_updater_info_t*)malloc(sizeof(*info));
-
-   if (!info)
+   if (!(info = (core_updater_info_t*)malloc(sizeof(*info))))
       return NULL;
 
    info->is_experimental     = false;
@@ -2700,49 +2687,42 @@ void core_info_free_core_updater_info(core_updater_info_t *info)
 static int core_info_qsort_func_path(const core_info_t *a,
       const core_info_t *b)
 {
-   if (!a || !b)
+   if (!a || !b || string_is_empty(a->path) || string_is_empty(b->path))
       return 0;
-
-   if (string_is_empty(a->path) || string_is_empty(b->path))
-      return 0;
-
    return strcasecmp(a->path, b->path);
 }
 
 static int core_info_qsort_func_display_name(const core_info_t *a,
       const core_info_t *b)
 {
-   if (!a || !b)
-      return 0;
-
-   if (     string_is_empty(a->display_name) 
+   if (     !a
+         || !b
+         || string_is_empty(a->display_name) 
          || string_is_empty(b->display_name))
       return 0;
-
    return strcasecmp(a->display_name, b->display_name);
 }
 
 static int core_info_qsort_func_core_name(const core_info_t *a,
       const core_info_t *b)
 {
-   if (!a || !b)
+   if (     !a
+         || !b
+         || string_is_empty(a->core_name) 
+         || string_is_empty(b->core_name))
       return 0;
-
-   if (string_is_empty(a->core_name) || string_is_empty(b->core_name))
-      return 0;
-
    return strcasecmp(a->core_name, b->core_name);
 }
 
 static int core_info_qsort_func_system_name(const core_info_t *a,
       const core_info_t *b)
 {
-   if (!a || !b)
+   if (
+            !a
+         || !b
+         || string_is_empty(a->systemname) 
+         || string_is_empty(b->systemname))
       return 0;
-
-   if (string_is_empty(a->systemname) || string_is_empty(b->systemname))
-      return 0;
-
    return strcasecmp(a->systemname, b->systemname);
 }
 
@@ -2900,9 +2880,10 @@ bool core_info_set_core_lock(const char *core_path, bool lock)
 #endif
 
    /* Search for specified core */
-   if (string_is_empty(core_path) ||
-       !core_info_find(core_path, &core_info) ||
-       string_is_empty(core_info->path))
+   if (
+           string_is_empty(core_path)
+       || !core_info_find(core_path, &core_info)
+       || string_is_empty(core_info->path))
       return false;
 
    /* Get lock file path */
@@ -2994,10 +2975,10 @@ bool core_info_set_core_standalone_exempt(const char *core_path, bool exempt)
    char exempt_file_path[PATH_MAX_LENGTH];
 
    /* Search for specified core */
-   if (string_is_empty(core_path) ||
-       !core_info_find(core_path, &core_info) ||
-       string_is_empty(core_info->path) ||
-       !core_info->supports_no_game)
+   if (    string_is_empty(core_path)
+       || !core_info_find(core_path, &core_info)
+       || string_is_empty(core_info->path)
+       || !core_info->supports_no_game)
       return false;
 
    /* Get 'standalone exempt' file path */
@@ -3035,10 +3016,10 @@ bool core_info_get_core_standalone_exempt(const char *core_path)
    char exempt_file_path[PATH_MAX_LENGTH];
 
    /* Search for specified core */
-   if (string_is_empty(core_path) ||
-       !core_info_find(core_path, &core_info) ||
-       string_is_empty(core_info->path) ||
-       !core_info->supports_no_game)
+   if (    string_is_empty(core_path)
+       || !core_info_find(core_path, &core_info)
+       ||  string_is_empty(core_info->path)
+       || !core_info->supports_no_game)
       return false;
 
    /* Get 'standalone exempt' file path */
