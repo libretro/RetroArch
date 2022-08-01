@@ -910,11 +910,25 @@ void fill_pathname_resolve_relative(char *out_path,
 size_t fill_pathname_join(char *out_path,
       const char *dir, const char *path, size_t size)
 {
+   size_t len = 0;
    if (out_path != dir)
-      strlcpy(out_path, dir, size);
+      len = strlcpy(out_path, dir, size);
 
    if (*out_path)
-      fill_pathname_slash(out_path, size);
+   {
+      const char *last_slash = find_last_slash(out_path);
+      if (last_slash)
+      {
+         /* Try to preserve slash type. */
+         if (last_slash != (out_path + len - 1))
+         {
+            out_path[len]   = last_slash[0];
+            out_path[len+1] = '\0';
+         }
+      }
+      else
+         strlcat(out_path, PATH_DEFAULT_SLASH(), size);
+   }
 
    return strlcat(out_path, path, size);
 }

@@ -446,12 +446,12 @@ void fill_pathname_resolve_relative(char *out_path, const char *in_refpath,
  * @size               : size of output path
  *
  * Joins a directory (@dir) and path (@path) together.
- * Makes sure not to get  two consecutive slashes
+ * Makes sure not to get two consecutive slashes
  * between directory and path.
  * 
  * Hidden non-leaf function cost: 
  * - calls strlcpy
- * - calls fill_pathname_slash()
+ * - calls find_last_slash()
  * - calls strlcat
  **/
 size_t fill_pathname_join(char *out_path, const char *dir,
