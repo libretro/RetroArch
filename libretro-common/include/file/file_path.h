@@ -119,7 +119,7 @@ const char *path_get_archive_delim(const char *path);
  * after the last slash are considered.
  *
  * Hidden non-leaf function cost:
- * - calls string_is_empty
+ * - calls string_is_empty()
  * - calls strrchr
  *
  * @return extension part from the path.
@@ -153,7 +153,7 @@ char *path_remove_extension(char *path);
  *
  * Hidden non-leaf function cost:
  * - Calls path_get_archive_delim()
- *   - can call find_last_slash once if it returns NULL
+ *   - can call find_last_slash() once if it returns NULL
  *
  * @return basename from path.
  **/
@@ -167,7 +167,7 @@ const char *path_basename(const char *path);
  * Get basename from @path.
  *
  * Hidden non-leaf function cost:
- * - Calls find_last_slash
+ * - Calls find_last_slash()
  *
  * @return basename from path.
  **/
@@ -304,9 +304,9 @@ size_t fill_dated_filename(char *out_filename,
  *
  * Hidden non-leaf function cost:
  * - Calls time
- * - Calls rtime_localtime
+ * - Calls rtime_localtime()
  * - Calls strlcpy
- * - Calls string_is_empty
+ * - Calls string_is_empty()
  * - Calls strftime
  * - Calls strlcat at least 2x
  **/
@@ -397,7 +397,7 @@ void fill_pathname_basedir(char *out_path, const char *in_path, size_t size);
  *
  * Hidden non-leaf function cost:
  * - Calls strdup
- * - Calls find_last_slash x times
+ * - Calls find_last_slash() x times
  * - Can call strlcpy
  *
  * @return true on success, false if a slash was not found in the path.
@@ -587,6 +587,15 @@ void fill_pathname_home_dir(char *buf, size_t size);
  * @dir                : directory
  *
  * Create directory on filesystem.
+ *
+ * Recursive function.
+ *
+ * Hidden non-leaf function cost:
+ * - Calls strdup
+ * - Calls path_parent_dir()
+ * - Calls strcmp
+ * - Calls path_is_directory()
+ * - Calls path_mkdir()
  *
  * @return true if directory could be created, otherwise false.
  **/

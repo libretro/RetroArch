@@ -137,7 +137,10 @@ static struct config_entry_list* config_file_merge_sort_linked_list(
    return result;
 }
 
-/* Searches input string for a comment ('#') entry
+/**
+ * config_file_strip_comment:
+ *
+ * Searches input string for a comment ('#') entry
  * > If first character is '#', then entire line is
  *   a comment and may correspond to a directive
  *   (command action - e.g. include sub-config file).
@@ -151,7 +154,8 @@ static struct config_entry_list* config_file_merge_sort_linked_list(
  * > If a '#' character is found anywhere else, then the
  *   comment text is a suffix of the input string and
  *   has no programmatic value. In this case, the comment
- *   is removed from the end of 'str' and NULL is returned */
+ *   is removed from the end of 'str' and NULL is returned
+ **/
 static char *config_file_strip_comment(char *str)
 {
    /* Search for a comment (#) character */
@@ -254,7 +258,8 @@ static char *config_file_extract_value(char *line)
 }
 
 /* Move semantics? */
-static void config_file_add_child_list(config_file_t *parent, config_file_t *child)
+static void config_file_add_child_list(config_file_t *parent,
+      config_file_t *child)
 {
    struct config_entry_list *list = child->entries;
    bool merge_hash_map            = false;
@@ -750,17 +755,27 @@ bool config_file_deinitialize(config_file_t *conf)
    return true;
 }
 
+/**
+ * config_file_free:
+ *
+ * Frees config file.
+ **/
 void config_file_free(config_file_t *conf)
 {
    if (config_file_deinitialize(conf))
       free(conf);
 }
 
+/**
+ * config_append_file:
+ *
+ * Loads a new config, and appends its data to @conf.
+ * The key-value pairs of the new config file takes priority over the old.
+ **/
 bool config_append_file(config_file_t *conf, const char *path)
 {
+   size_t i, cap;
    config_file_t *new_conf = config_file_new_from_path_to_string(path);
-   size_t i;
-   size_t cap;
 
    if (!new_conf)
       return false;
@@ -791,6 +806,15 @@ bool config_append_file(config_file_t *conf, const char *path)
    return true;
 }
 
+/**
+ * config_file_new_from_string:
+ *
+ * Load a config file from a string.
+ *
+ * NOTE: This will modify @from_string.
+ * Pass a copy of source string if original
+ * contents must be preserved
+ **/
 config_file_t *config_file_new_from_string(char *from_string,
       const char *path)
 {
@@ -829,6 +853,15 @@ config_file_t *config_file_new_from_path_to_string(const char *path)
    return NULL;
 }
 
+/**
+ * config_file_new_with_callback:
+ *
+ * Loads a config file.
+ * If @path is NULL, will create an empty config file.
+ * Includes cb callbacks  to run custom code during config file processing.
+ *
+ * @return Returns NULL if file doesn't exist.
+ **/
 config_file_t *config_file_new_with_callback(
       const char *path, config_file_cb_t *cb)
 {
@@ -849,6 +882,14 @@ config_file_t *config_file_new_with_callback(
    return conf;
 }
 
+/**
+ * config_file_new:
+ *
+ * Loads a config file.
+ * If @path is NULL, will create an empty config file.
+ *
+ * @return Returns NULL if file doesn't exist.
+ **/
 config_file_t *config_file_new(const char *path)
 {
    int ret                  = 0;
@@ -868,6 +909,11 @@ config_file_t *config_file_new(const char *path)
    return conf;
 }
 
+/**
+ * config_file_initialize:
+ *
+ * Leaf function.
+ **/
 void config_file_initialize(struct config_file *conf)
 {
    if (!conf)
@@ -894,6 +940,11 @@ config_file_t *config_file_new_alloc(void)
    return conf;
 }
 
+/**
+ * config_get_entry_internal:
+ *
+ * Leaf function.
+ **/
 static struct config_entry_list *config_get_entry_internal(
       const config_file_t *conf,
       const char *key, struct config_entry_list **prev)
@@ -921,6 +972,13 @@ struct config_entry_list *config_get_entry(
    return RHMAP_GET_STR(conf->entries_map, key);
 }
 
+/**
+ * config_get_double:
+ *
+ * Extracts a double from config file.
+ *
+ * @return true if found, otherwise false.
+ **/
 bool config_get_double(config_file_t *conf, const char *key, double *in)
 {
    const struct config_entry_list *entry = config_get_entry(conf, key);
@@ -932,6 +990,13 @@ bool config_get_double(config_file_t *conf, const char *key, double *in)
    return true;
 }
 
+/**
+ * config_get_float:
+ *
+ * Extracts a float from config file.
+ *
+ * @return true if found, otherwise false.
+ **/
 bool config_get_float(config_file_t *conf, const char *key, float *in)
 {
    const struct config_entry_list *entry = config_get_entry(conf, key);
@@ -1039,6 +1104,14 @@ bool config_get_hex(config_file_t *conf, const char *key, unsigned *in)
    return false;
 }
 
+/**
+ * config_get_char:
+ *
+ * Extracts a single char from config file.
+ * If value consists of several chars, this is an error.
+ *
+ * @return true if found, otherwise false.
+ **/
 bool config_get_char(config_file_t *conf, const char *key, char *in)
 {
    const struct config_entry_list *entry = config_get_entry(conf, key);
@@ -1055,6 +1128,14 @@ bool config_get_char(config_file_t *conf, const char *key, char *in)
    return false;
 }
 
+/**
+ * config_get_string:
+ *
+ * Extracts an allocated string in *in. This must be free()-d if
+ * this function succeeds.
+ *
+ * @return true if found, otherwise false.
+ **/
 bool config_get_string(config_file_t *conf, const char *key, char **str)
 {
    const struct config_entry_list *entry = config_get_entry(conf, key);
@@ -1066,6 +1147,12 @@ bool config_get_string(config_file_t *conf, const char *key, char **str)
    return true;
 }
 
+/**
+  * config_get_config_path:
+  *
+  * Extracts a string to a preallocated buffer.
+  * Avoid memory allocation.
+  **/
 bool config_get_config_path(config_file_t *conf, char *s, size_t len)
 {
    if (conf)
@@ -1090,7 +1177,6 @@ bool config_get_path(config_file_t *conf, const char *key,
       return true;
 #else
    const struct config_entry_list *entry = config_get_entry(conf, key);
-
    if (entry)
    {
       fill_pathname_expand_special(buf, entry->value, size);
@@ -1100,6 +1186,15 @@ bool config_get_path(config_file_t *conf, const char *key,
    return false;
 }
 
+/**
+ * config_get_bool:
+ * 
+ * Extracts a boolean from config.
+ * Valid boolean true are "true" and "1". Valid false are "false" and "0".
+ * Other values will be treated as an error.
+ *
+ * @return true if preconditions are true, otherwise false.
+ **/
 bool config_get_bool(config_file_t *conf, const char *key, bool *in)
 {
    const struct config_entry_list *entry = config_get_entry(conf, key);
@@ -1146,9 +1241,7 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
    }
    else
    {
-      entry                        = config_get_entry_internal(
-            conf, key, &last);
-      if (entry)
+      if ((entry = config_get_entry_internal(conf, key, &last)))
       {
          /* An entry corresponding to 'key' already exists
           * > Check whether value is currently set */
@@ -1175,8 +1268,7 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
 
    /* Entry corresponding to 'key' does not exist
     * > Create new entry */
-   entry = (struct config_entry_list*)malloc(sizeof(*entry));
-   if (!entry)
+   if (!(entry = (struct config_entry_list*)malloc(sizeof(*entry))))
       return;
 
    entry->readonly  = false;
@@ -1287,11 +1379,21 @@ void config_set_char(config_file_t *conf, const char *key, char val)
    config_set_string(conf, key, buf);
 }
 
+/**
+ * config_set_bool:
+
+ * TODO/FIXME - could be turned into a trivial macro or removed
+ **/
 void config_set_bool(config_file_t *conf, const char *key, bool val)
 {
    config_set_string(conf, key, val ? "true" : "false");
 }
 
+/**
+ * config_file_write:
+ *
+ * Write the current config to a file.
+ **/
 bool config_file_write(config_file_t *conf, const char *path, bool sort)
 {
    if (!conf)
@@ -1327,6 +1429,12 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
    return true;
 }
 
+/**
+ * config_file_dump:
+ *
+ * Dump the current config to an already opened file.
+ * Does not close the file.
+ **/
 void config_file_dump(config_file_t *conf, FILE *file, bool sort)
 {
    struct config_entry_list       *list = NULL;
@@ -1369,6 +1477,11 @@ void config_file_dump(config_file_t *conf, FILE *file, bool sort)
    }
 }
 
+/**
+ * config_get_entry_list_head:
+ *
+ * Leaf function.
+ **/
 bool config_get_entry_list_head(config_file_t *conf,
       struct config_file_entry *entry)
 {
@@ -1383,6 +1496,11 @@ bool config_get_entry_list_head(config_file_t *conf,
    return true;
 }
 
+/**
+ * config_get_entry_list_next:
+ *
+ * Leaf function.
+ **/
 bool config_get_entry_list_next(struct config_file_entry *entry)
 {
    const struct config_entry_list *next = entry->next;

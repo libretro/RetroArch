@@ -51,9 +51,12 @@ static unsigned leading_ones(uint8_t c)
    return ones;
 }
 
-/* Simple implementation. Assumes the sequence is
- * properly synchronized and terminated. */
-
+/**
+ * utf8_conv_utf32:
+ *
+ * Simple implementation. Assumes the sequence is
+ * properly synchronized and terminated.
+ **/
 size_t utf8_conv_utf32(uint32_t *out, size_t out_chars,
       const char *in, size_t in_size)
 {
@@ -79,7 +82,7 @@ size_t utf8_conv_utf32(uint32_t *out, size_t out_chars,
       for (i = 0; i < extra; i++, in++, shift -= 6)
          c |= (*in & 0x3f) << shift;
 
-      *out++ = c;
+      *out++   = c;
       in_size -= 1 + extra;
       out_chars--;
       ret++;
@@ -88,6 +91,11 @@ size_t utf8_conv_utf32(uint32_t *out, size_t out_chars,
    return ret;
 }
 
+/**
+ * utf16_conv_utf8:
+ *
+ * Leaf function.
+ **/
 bool utf16_conv_utf8(uint8_t *out, size_t *out_chars,
      const uint16_t *in, size_t in_size)
 {
@@ -148,16 +156,20 @@ bool utf16_conv_utf8(uint8_t *out, size_t *out_chars,
    return false;
 }
 
-/* Acts mostly like strlcpy.
+/**
+ * utf8cpy:
+ *
+ * Acts mostly like strlcpy.
  *
  * Copies the given number of UTF-8 characters,
- * but at most d_len bytes.
+ * but at most @d_len bytes.
  *
- * Always NULL terminates.
- * Does not copy half a character.
+ * Always NULL terminates. Does not copy half a character.
+ * @s is assumed valid UTF-8.
+ * Use only if @chars is considerably less than @d_len. 
  *
- * Returns number of bytes. 's' is assumed valid UTF-8.
- * Use only if 'chars' is considerably less than 'd_len'. */
+ * @return Number of bytes. 
+ **/
 size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars)
 {
    const uint8_t *sb     = (const uint8_t*)s;
@@ -186,6 +198,11 @@ size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars)
    return sb-sb_org;
 }
 
+/**
+ * utf8skip:
+ *
+ * Leaf function
+ **/
 const char *utf8skip(const char *str, size_t chars)
 {
    const uint8_t *strb = (const uint8_t*)str;
@@ -204,6 +221,11 @@ const char *utf8skip(const char *str, size_t chars)
    return (const char*)strb;
 }
 
+/**
+ * utf8len:
+ *
+ * Leaf function.
+ **/
 size_t utf8len(const char *string)
 {
    size_t ret = 0;
@@ -220,7 +242,15 @@ size_t utf8len(const char *string)
    return ret;
 }
 
-/* Does not validate the input, returns garbage if it's not UTF-8. */
+/** 
+ * utf8_walk:
+ *
+ * Does not validate the input.
+ *
+ * Leaf function.
+ *
+ * @return Returns garbage if it's not UTF-8.
+ **/
 uint32_t utf8_walk(const char **string)
 {
    uint8_t first = UTF8_WALKBYTE(string);
@@ -248,23 +278,23 @@ static bool utf16_to_char(uint8_t **utf_data,
       size_t *dest_len, const uint16_t *in)
 {
    unsigned len    = 0;
-
    while (in[len] != '\0')
       len++;
-
    utf16_conv_utf8(NULL, dest_len, in, len);
    *dest_len  += 1;
-   *utf_data   = (uint8_t*)malloc(*dest_len);
-   if (*utf_data != 0)
+   if ((*utf_data = (uint8_t*)malloc(*dest_len)) != 0)
       return utf16_conv_utf8(*utf_data, dest_len, in, len);
    return false;
 }
 
+/**
+ * utf16_to_char_string:
+ **/
 bool utf16_to_char_string(const uint16_t *in, char *s, size_t len)
 {
-   size_t     dest_len  = 0;
-   uint8_t *utf16_data  = NULL;
-   bool            ret  = utf16_to_char(&utf16_data, &dest_len, in);
+   size_t     dest_len     = 0;
+   uint8_t *utf16_data     = NULL;
+   bool            ret     = utf16_to_char(&utf16_data, &dest_len, in);
 
    if (ret)
    {
@@ -273,13 +303,17 @@ bool utf16_to_char_string(const uint16_t *in, char *s, size_t len)
    }
 
    free(utf16_data);
-   utf16_data = NULL;
+   utf16_data              = NULL;
 
    return ret;
 }
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(UNICODE)
-/* Returned pointer MUST be freed by the caller if non-NULL. */
+/**
+ * mb_to_mb_string_alloc:
+ *
+ * @return Returned pointer MUST be freed by the caller if non-NULL.
+ **/
 static char *mb_to_mb_string_alloc(const char *str,
       enum CodePage cp_in, enum CodePage cp_out)
 {
@@ -344,35 +378,43 @@ static char *mb_to_mb_string_alloc(const char *str,
 }
 #endif
 
-/* Returned pointer MUST be freed by the caller if non-NULL. */
+/**
+ * utf8_to_local_string_alloc:
+ *
+ * @return Returned pointer MUST be freed by the caller if non-NULL.
+ **/
 char* utf8_to_local_string_alloc(const char *str)
 {
-#if defined(_WIN32) && !defined(_XBOX) && !defined(UNICODE)
    if (str && *str)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(UNICODE)
       return mb_to_mb_string_alloc(str, CODEPAGE_UTF8, CODEPAGE_LOCAL);
 #else
-   /* Assume string needs no modification if not on Windows */
-   if (str && *str)
-      return strdup(str);
+      return strdup(str); /* Assume string needs no modification if not on Windows */
 #endif
    return NULL;
 }
 
-/* Returned pointer MUST be freed by the caller if non-NULL. */
-char* local_to_utf8_string_alloc(const char *str)
+/**
+ * local_to_utf8_string_alloc:
+ *
+ * @return Returned pointer MUST be freed by the caller if non-NULL.
+ **/
+char *local_to_utf8_string_alloc(const char *str)
 {
-#if defined(_WIN32) && !defined(_XBOX) && !defined(UNICODE)
 	if (str && *str)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(UNICODE)
 		return mb_to_mb_string_alloc(str, CODEPAGE_LOCAL, CODEPAGE_UTF8);
 #else
-	/* Assume string needs no modification if not on Windows */
-   if (str && *str)
-      return strdup(str);
+      return strdup(str); /* Assume string needs no modification if not on Windows */
 #endif
 	return NULL;
 }
 
-/* Returned pointer MUST be freed by the caller if non-NULL. */
+/**
+ * utf8_to_utf16_string_alloc:
+ * 
+ * @return Returned pointer MUST be freed by the caller if non-NULL.
+ **/
 wchar_t* utf8_to_utf16_string_alloc(const char *str)
 {
 #ifdef _WIN32
@@ -430,7 +472,11 @@ wchar_t* utf8_to_utf16_string_alloc(const char *str)
    return buf;
 }
 
-/* Returned pointer MUST be freed by the caller if non-NULL. */
+/**
+ * utf16_to_utf8_string_alloc:
+ *
+ * @return Returned pointer MUST be freed by the caller if non-NULL.
+ **/
 char* utf16_to_utf8_string_alloc(const wchar_t *str)
 {
 #ifdef _WIN32

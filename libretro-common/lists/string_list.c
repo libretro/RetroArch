@@ -62,7 +62,7 @@ static bool string_list_deinitialize_internal(struct string_list *list)
  *
  * Change maximum capacity of string list's size.
  *
- * Returns: true (1) if successful, otherwise false (0).
+ * @return true if successful, otherwise false.
  **/
 static bool string_list_capacity(struct string_list *list, size_t cap)
 {
@@ -85,7 +85,7 @@ static bool string_list_capacity(struct string_list *list, size_t cap)
  * @list             : pointer to string list object
  *
  * Frees a string list.
- */
+ **/
 void string_list_free(struct string_list *list)
 {
    if (!list)
@@ -113,8 +113,8 @@ bool string_list_deinitialize(struct string_list *list)
  *
  * Creates a new string list. Has to be freed manually.
  *
- * Returns: new string list if successful, otherwise NULL.
- */
+ * @return New string list if successful, otherwise NULL.
+ **/
 struct string_list *string_list_new(void)
 {
    struct string_list_elem *
@@ -164,7 +164,7 @@ bool string_list_initialize(struct string_list *list)
  *
  * Appends a new element to the string list.
  *
- * Returns: true (1) if successful, otherwise false (0).
+ * @return true if successful, otherwise false.
  **/
 bool string_list_append(struct string_list *list, const char *elem,
       union string_list_elem_attr attr)
@@ -201,7 +201,7 @@ bool string_list_append(struct string_list *list, const char *elem,
  *
  * Appends a new element to the string list.
  *
- * Returns: true (1) if successful, otherwise false (0).
+ * @return true if successful, otherwise false.
  **/
 bool string_list_append_n(struct string_list *list, const char *elem,
       unsigned length, union string_list_elem_attr attr)
@@ -248,7 +248,7 @@ void string_list_set(struct string_list *list,
  *
  * A string list will be joined/concatenated as a
  * string to @buffer, delimited by @delim.
- */
+ **/
 void string_list_join_concat(char *buffer, size_t size,
       const struct string_list *list, const char *delim)
 {
@@ -362,8 +362,8 @@ bool string_split_noalloc(struct string_list *list,
  * Includes empty strings - i.e. two adjacent delimiters will resolve
  * to a string list element of "".
  *
- * Returns: new string list if successful, otherwise NULL.
- */
+ * @return New string list if successful, otherwise NULL.
+ **/
 struct string_list *string_separate(char *str, const char *delim)
 {
    char *token              = NULL;
@@ -442,7 +442,7 @@ bool string_separate_noalloc(
  *
  * Searches for an element (@elem) inside the string list.
  *
- * @return number of element found, otherwise 0.
+ * @return Number of elements found, otherwise 0.
  */
 int string_list_find_elem(const struct string_list *list, const char *elem)
 {

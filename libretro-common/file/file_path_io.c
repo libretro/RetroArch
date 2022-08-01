@@ -74,7 +74,7 @@ int path_stat(const char *path)
  *
  * Checks if path is a directory.
  *
- * Returns: true (1) if path is a directory, otherwise false (0).
+ * @return true if path is a directory, otherwise false.
  */
 bool path_is_directory(const char *path)
 {
@@ -105,8 +105,10 @@ int32_t path_get_size(const char *path)
  * @dir                : directory
  *
  * Create directory on filesystem.
+ * 
+ * Recursive function.
  *
- * Returns: true (1) if directory could be created, otherwise false (0).
+ * @return true if directory could be created, otherwise false.
  **/
 bool path_mkdir(const char *dir)
 {
