@@ -215,6 +215,14 @@ typedef struct dispgfx_widget
    unsigned ai_service_overlay_height;
 #endif
 
+   char assets_pkg_dir[PATH_MAX_LENGTH];
+   char xmb_path[PATH_MAX_LENGTH];                /* TODO/FIXME - decouple from XMB */
+   char ozone_path[PATH_MAX_LENGTH];              /* TODO/FIXME - decouple from Ozone */
+   char ozone_regular_font_path[PATH_MAX_LENGTH]; /* TODO/FIXME - decouple from Ozone */
+   char ozone_bold_font_path[PATH_MAX_LENGTH];    /* TODO/FIXME - decouple from Ozone */
+
+   char monochrome_png_path[PATH_MAX_LENGTH];
+   char gfx_widgets_path[PATH_MAX_LENGTH];
    char gfx_widgets_status_text[255];
 
    /* There can only be one message animation at a time to 

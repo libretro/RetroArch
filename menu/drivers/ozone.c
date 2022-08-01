@@ -563,6 +563,7 @@ struct ozone_handle
    char assets_path[PATH_MAX_LENGTH];
    char png_path[PATH_MAX_LENGTH];
    char icons_path[PATH_MAX_LENGTH];
+   char icons_path_default[PATH_MAX_LENGTH];
    char tab_path[PATH_MAX_LENGTH];
    char fullscreen_thumbnail_label[255];
 
@@ -4445,13 +4446,9 @@ static ozone_node_t *ozone_alloc_node(void)
 static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 {
    unsigned i;
-   char icons_path_default[PATH_MAX_LENGTH];
    size_t list_size = ozone_list_get_size(ozone, MENU_LIST_HORIZONTAL);
 
    RHMAP_FREE(ozone->playlist_db_node_map);
-
-   fill_pathname_join(icons_path_default, ozone->icons_path,
-         "default", sizeof(icons_path_default));
 
    for (i = 0; i < list_size; i++)
    {
@@ -4516,7 +4513,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 
          /* If the content icon doesn't exist, return default-content */
          if (!path_is_valid(content_texturepath))
-            fill_pathname_join_delim(content_texturepath, icons_path_default,
+            fill_pathname_join_delim(content_texturepath, ozone->icons_path_default,
                   "content.png", '-', sizeof(content_texturepath));
 
          if (image_texture_load(&ti, content_texturepath))
@@ -7845,6 +7842,8 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    fill_pathname_application_special(ozone->icons_path,
        sizeof(ozone->icons_path),
        APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE_ICONS);
+   fill_pathname_join(ozone->icons_path_default, ozone->icons_path,
+		   "default", sizeof(ozone->icons_path_default));
 
    ozone_last_use_preferred_system_color_theme = settings->bools.menu_use_preferred_system_color_theme;
    p_anim->updatetime_cb                       = ozone_menu_animation_update_time;
