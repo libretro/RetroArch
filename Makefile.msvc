@@ -58,6 +58,7 @@ HAVE_RBMP                := 1
 HAVE_RTGA                := 1
 HAVE_7ZIP                := 1
 HAVE_NETWORKING          := 1
+HAVE_IFINFO              := 1
 HAVE_NETWORK_CMD         := 1
 HAVE_OVERLAY             := 1
 HAVE_VIDEO_LAYOUT        := 0

@@ -26,7 +26,7 @@
 
 #ifdef HAVE_NETWORKING
 
-#if !defined(HAVE_SOCKET_LEGACY) || defined(VITA) || defined(GEKKO)
+#ifdef HAVE_IFINFO
 #include <net/net_ifinfo.h>
 #endif
 
@@ -39,7 +39,7 @@ static bool find_local_address(struct natt_device *device,
 {
    bool ret = false;
 
-#if !defined(HAVE_SOCKET_LEGACY) || defined(VITA) || defined(GEKKO)
+#ifdef HAVE_IFINFO
    struct net_ifinfo interfaces = {0};
    struct addrinfo **addrs      = NULL;
    uint32_t *scores             = NULL;
