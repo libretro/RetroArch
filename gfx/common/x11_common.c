@@ -216,11 +216,11 @@ static void xdg_screensaver_inhibit(Window wnd)
        * xdg-screensaver will fail and report to stderr, framing RA for its bug.
        * A single space character is used so that the title bar stays visibly
        * the same, as if there's no title at all. */
-      video_driver_get_window_title(title, sizeof(title));
-      if (strlen(title) == 0)
-         snprintf(title, sizeof(title), " ");
+      size_t title_len = video_driver_get_window_title(title, sizeof(title));
+      if (title_len == 0)
+         title_len = strlcpy(title, " ", sizeof(title));
       XChangeProperty(g_x11_dpy, g_x11_win, XA_WM_NAME, XA_STRING,
-            8, PropModeReplace, (const unsigned char*) title, strlen(title));
+            8, PropModeReplace, (const unsigned char*) title, title_len);
    }
 
    snprintf(cmd, sizeof(cmd), "xdg-screensaver suspend 0x%x", (int)wnd);

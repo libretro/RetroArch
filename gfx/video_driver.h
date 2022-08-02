@@ -868,6 +868,7 @@ typedef struct
    uintptr_t window;
 
    size_t frame_cache_pitch;
+   size_t window_title_len;
 
 #ifdef HAVE_VIDEO_FILTER
    unsigned state_scale;
@@ -1234,7 +1235,7 @@ void video_driver_build_info(video_frame_info_t *video_info);
 
 void video_driver_reinit(int flags);
 
-void video_driver_get_window_title(char *buf, unsigned len);
+size_t video_driver_get_window_title(char *buf, unsigned len);
 
 bool *video_driver_get_threaded(void);
 

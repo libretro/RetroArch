@@ -2684,7 +2684,7 @@ bool video_driver_has_focus(void)
    return VIDEO_HAS_FOCUS(video_st);
 }
 
-void video_driver_get_window_title(char *buf, unsigned len)
+size_t video_driver_get_window_title(char *buf, unsigned len)
 {
    video_driver_state_t *video_st = &video_driver_st;
    if (buf && video_st->window_title_update)
@@ -2692,6 +2692,7 @@ void video_driver_get_window_title(char *buf, unsigned len)
       strlcpy(buf, video_st->window_title, len);
       video_st->window_title_update = false;
    }
+   return video_st->window_title_len;
 }
 
 void video_driver_build_info(video_frame_info_t *video_info)
@@ -3783,15 +3784,15 @@ void video_driver_frame(const void *data, unsigned width,
          last_fps = TIME_TO_FPS(curr_time, new_time,
                fps_update_interval);
 
-         strlcpy(video_st->window_title,
+         video_st->window_title_len = strlcpy(video_st->window_title,
                video_st->title_buf,
                sizeof(video_st->window_title));
 
          if (!string_is_empty(status_text))
          {
-            strlcat(video_st->window_title,
+            video_st->window_title_len += strlcat(video_st->window_title,
                   " || ", sizeof(video_st->window_title));
-            strlcat(video_st->window_title,
+            video_st->window_title_len += strlcat(video_st->window_title,
                   status_text, sizeof(video_st->window_title));
          }
 
@@ -3803,7 +3804,8 @@ void video_driver_frame(const void *data, unsigned width,
    {
       curr_time = fps_time = new_time;
 
-      strlcpy(video_st->window_title,
+      video_st->window_title_len = strlcpy(
+            video_st->window_title,
             video_st->title_buf,
             sizeof(video_st->window_title));
 
