@@ -589,7 +589,7 @@ static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *i
          break;
       case PNG_FILTER_PAETH:
          for (i = 0; i < pngp->bpp; i++)
-            pngp->decoded_scanline[i] = paeth(0, pngp->prev_scanline[i], 0) + pngp->inflate_buf[i];
+            pngp->decoded_scanline[i] = pngp->prev_scanline[i] + pngp->inflate_buf[i];
          for (i = pngp->bpp; i < pngp->pitch; i++)
             pngp->decoded_scanline[i] = paeth(pngp->decoded_scanline[i - pngp->bpp],
                   pngp->prev_scanline[i], pngp->prev_scanline[i - pngp->bpp]) + pngp->inflate_buf[i];
