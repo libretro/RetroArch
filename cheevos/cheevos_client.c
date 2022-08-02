@@ -973,8 +973,8 @@ static void rcheevos_client_fetch_game_badge(const char* badge_name, rcheevos_as
 {
 #if defined(HAVE_GFX_WIDGETS) /* don't need game badge unless widgets are enabled */
    char badge_fullpath[PATH_MAX_LENGTH] = "";
-   char* badge_fullname = NULL;
-   size_t badge_fullname_size = 0;
+   char *badge_fullname                 = NULL;
+   size_t badge_fullname_size           = 0;
 
    /* make sure the directory exists */
    fill_pathname_application_special(badge_fullpath,
@@ -988,7 +988,7 @@ static void rcheevos_client_fetch_game_badge(const char* badge_name, rcheevos_as
    }
 
    fill_pathname_slash(badge_fullpath, sizeof(badge_fullpath));
-   badge_fullname = badge_fullpath + strlen(badge_fullpath);
+   badge_fullname      = badge_fullpath + strlen(badge_fullpath);
    badge_fullname_size = sizeof(badge_fullpath) -
       (badge_fullname - badge_fullpath);
 

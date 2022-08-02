@@ -264,39 +264,21 @@ void fill_pathname_application_special(char *s,
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE_ICONS:
 #ifdef HAVE_OZONE
          {
+            char tmp[PATH_MAX_LENGTH];
+            char tmp2[PATH_MAX_LENGTH];
             settings_t *settings     = config_get_ptr();
             const char *dir_assets   = settings->paths.directory_assets;
 
-            strlcpy(s, dir_assets, len);
-            fill_pathname_slash(s, len);
-
 #if defined(WIIU) || defined(VITA)
-            /* Smaller 46x46 icons look better on low-dpi devices */
-            /* ozone */
-            strlcat(s, "ozone", len);
-            fill_pathname_slash(s, len);
-
-            /* png */
-            strlcat(s, "png", len);
-            fill_pathname_slash(s, len);
-
-            /* Icons path */
-            strlcat(s, "icons", len);
-            fill_pathname_slash(s, len);
+            /* Smaller 46x46 icons look better on low-DPI devices */
+            fill_pathname_join(tmp, dir_assets, "ozone", sizeof(tmp));
+            fill_pathname_join(tmp2, "png", "icons", sizeof(tmp2));
 #else
             /* Otherwise, use large 256x256 icons */
-            /* xmb */
-            strlcat(s, "xmb", len);
-            fill_pathname_slash(s, len);
-
-            /* monochrome */
-            strlcat(s, "monochrome", len);
-            fill_pathname_slash(s, len);
-
-            /* Icons path */
-            strlcat(s, "png", len);
-            fill_pathname_slash(s, len);
+            fill_pathname_join(tmp, dir_assets, "xmb", sizeof(tmp));
+            fill_pathname_join(tmp2, "monochrome", "png", sizeof(tmp2));
 #endif
+            fill_pathname_join(s, tmp, tmp2, len);
          }
 #endif
          break;
