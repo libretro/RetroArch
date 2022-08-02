@@ -566,35 +566,36 @@ static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *i
          memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
          break;
       case PNG_FILTER_SUB:
-         for (i = 0; i < pngp->bpp; i++)
-            pngp->decoded_scanline[i] = pngp->inflate_buf[i];
+         memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
          for (i = pngp->bpp; i < pngp->pitch; i++)
-            pngp->decoded_scanline[i] = pngp->decoded_scanline[i - pngp->bpp] + pngp->inflate_buf[i];
+            pngp->decoded_scanline[i] += pngp->decoded_scanline[i - pngp->bpp];
          break;
       case PNG_FILTER_UP:
+         memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
          for (i = 0; i < pngp->pitch; i++)
-            pngp->decoded_scanline[i] = pngp->prev_scanline[i] + pngp->inflate_buf[i];
+            pngp->decoded_scanline[i] += pngp->prev_scanline[i];
          break;
       case PNG_FILTER_AVERAGE:
+         memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
          for (i = 0; i < pngp->bpp; i++)
          {
             uint8_t avg = pngp->prev_scanline[i] >> 1;
-            pngp->decoded_scanline[i] = avg + pngp->inflate_buf[i];
+            pngp->decoded_scanline[i] += avg;
          }
          for (i = pngp->bpp; i < pngp->pitch; i++)
          {
             uint8_t avg = (pngp->decoded_scanline[i - pngp->bpp] + pngp->prev_scanline[i]) >> 1;
-            pngp->decoded_scanline[i] = avg + pngp->inflate_buf[i];
+            pngp->decoded_scanline[i] += avg;
          }
          break;
       case PNG_FILTER_PAETH:
+         memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
          for (i = 0; i < pngp->bpp; i++)
-            pngp->decoded_scanline[i] = pngp->prev_scanline[i] + pngp->inflate_buf[i];
+            pngp->decoded_scanline[i] += pngp->prev_scanline[i];
          for (i = pngp->bpp; i < pngp->pitch; i++)
-            pngp->decoded_scanline[i] = paeth(pngp->decoded_scanline[i - pngp->bpp],
-                  pngp->prev_scanline[i], pngp->prev_scanline[i - pngp->bpp]) + pngp->inflate_buf[i];
+            pngp->decoded_scanline[i] += paeth(pngp->decoded_scanline[i - pngp->bpp],
+                  pngp->prev_scanline[i], pngp->prev_scanline[i - pngp->bpp]);
          break;
-
       default:
          return IMAGE_PROCESS_ERROR_END;
    }
@@ -629,16 +630,16 @@ static int png_reverse_filter_regular_iterate(uint32_t **data, const struct png_
       struct rpng_process *pngp)
 {
    int ret = IMAGE_PROCESS_END;
-
    if (pngp->h < ihdr->height)
    {
-      unsigned filter = *pngp->inflate_buf++;
+      unsigned filter         = *pngp->inflate_buf++;
       pngp->restore_buf_size += 1;
-      ret = png_reverse_filter_copy_line(*data,
+      ret                     = png_reverse_filter_copy_line(*data,
             ihdr, pngp, filter);
+      if (ret == IMAGE_PROCESS_END || ret == IMAGE_PROCESS_ERROR_END)
+         goto end;
    }
-
-   if (ret == IMAGE_PROCESS_END || ret == IMAGE_PROCESS_ERROR_END)
+   else
       goto end;
 
    pngp->h++;
@@ -670,11 +671,9 @@ static int png_reverse_filter_adam7_iterate(uint32_t **data_,
    if (!to_next)
       return IMAGE_PROCESS_END;
 
-   ret = png_reverse_filter_init(ihdr, pngp);
-
-   if (ret == 1)
+   if ((ret = png_reverse_filter_init(ihdr, pngp)) == 1)
       return IMAGE_PROCESS_NEXT;
-   if (ret == -1)
+   else if (ret == -1)
       return IMAGE_PROCESS_ERROR_END;
 
    if (png_reverse_filter_init(&pngp->ihdr, pngp) == -1)
