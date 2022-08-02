@@ -260,6 +260,7 @@ void fill_pathname_application_special(char *s,
             settings_t *settings   = config_get_ptr();
             const char *menu_ident = settings->arrays.menu_driver;
 
+#ifdef HAVE_XMB
             if      (string_is_equal(menu_ident, "xmb"))
             {
                char s1[PATH_MAX_LENGTH];
@@ -270,7 +271,9 @@ void fill_pathname_application_special(char *s,
                fill_pathname_join(s1, s8, xmb_theme_ident(), sizeof(s1));
                fill_pathname_join(s, s1, "png", len);
             }
-            else if (    string_is_equal(menu_ident, "ozone")
+            else
+#endif
+		    if (    string_is_equal(menu_ident, "ozone")
                       || string_is_equal(menu_ident, "glui"))
             {
                char s5[PATH_MAX_LENGTH];
