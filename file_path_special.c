@@ -168,13 +168,12 @@ void fill_pathname_application_special(char *s,
 #ifdef HAVE_XMB
          {
             char s1[PATH_MAX_LENGTH];
-            char s2[PATH_MAX_LENGTH];
-            s1[0]    = '\0';
-            fill_pathname_application_special(s1, sizeof(s1),
-                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
-            fill_pathname_join(s2, s1, "png", sizeof(s2));
-            fill_pathname_slash(s2, sizeof(s2));
-            strlcpy(s, s2, len);
+            char s8[PATH_MAX_LENGTH];
+            settings_t *settings     = config_get_ptr();
+            const char *dir_assets   = settings->paths.directory_assets;
+            fill_pathname_join(s8, dir_assets, "xmb", sizeof(s8));
+            fill_pathname_join(s1, s8, xmb_theme_ident(), sizeof(s1));
+            fill_pathname_join(s, s1, "png", len);
          }
 #endif
          break;
@@ -188,12 +187,14 @@ void fill_pathname_application_special(char *s,
                strlcpy(s, path_menu_wallpaper, len);
             else
             {
+               char s1[PATH_MAX_LENGTH];
+               char s8[PATH_MAX_LENGTH];
                char s3[PATH_MAX_LENGTH];
-
-               s3[0] = '\0';
-
-               fill_pathname_application_special(s3, sizeof(s3),
-                     APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
+               settings_t *settings     = config_get_ptr();
+               const char *dir_assets   = settings->paths.directory_assets;
+               fill_pathname_join(s8, dir_assets, "xmb", sizeof(s8));
+               fill_pathname_join(s1, s8, xmb_theme_ident(), sizeof(s1));
+               fill_pathname_join(s3, s1, "png", sizeof(s3));
                fill_pathname_join(s, s3, FILE_PATH_BACKGROUND_IMAGE, len);
             }
          }
@@ -207,13 +208,13 @@ void fill_pathname_application_special(char *s,
             const char *menu_ident = settings->arrays.menu_driver;
             const char *dir_assets = settings->paths.directory_assets;
 
-            s4[0]                  = '\0';
-
             if (string_is_equal(menu_ident, "xmb"))
             {
-               fill_pathname_application_special(s4, sizeof(s4),
-                     APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
-
+               char s8[PATH_MAX_LENGTH];
+               settings_t *settings     = config_get_ptr();
+               const char *dir_assets   = settings->paths.directory_assets;
+               fill_pathname_join(s8, dir_assets, "xmb", sizeof(s8));
+               fill_pathname_join(s4, s8, xmb_theme_ident(), sizeof(s4));
                if (!string_is_empty(s4))
                   strlcat(s4, "/sounds", sizeof(s4));
             }
@@ -234,6 +235,8 @@ void fill_pathname_application_special(char *s,
                if (!string_is_empty(s4))
                   strlcat(s4, "/sounds", sizeof(s4));
             }
+            else
+               s4[0] = '\0';
 
             if (string_is_empty(s4))
                fill_pathname_join(
@@ -251,10 +254,34 @@ void fill_pathname_application_special(char *s,
             const char *menu_ident = settings->arrays.menu_driver;
 
             if      (string_is_equal(menu_ident, "xmb"))
-               fill_pathname_application_special(s, len, APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
+            {
+               char s1[PATH_MAX_LENGTH];
+               char s8[PATH_MAX_LENGTH];
+               settings_t *settings     = config_get_ptr();
+               const char *dir_assets   = settings->paths.directory_assets;
+               fill_pathname_join(s8, dir_assets, "xmb", sizeof(s8));
+               fill_pathname_join(s1, s8, xmb_theme_ident(), sizeof(s1));
+               fill_pathname_join(s, s1, "png", len);
+            }
             else if (    string_is_equal(menu_ident, "ozone")
                       || string_is_equal(menu_ident, "glui"))
-               fill_pathname_application_special(s, len, APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE_ICONS);
+            {
+               char s5[PATH_MAX_LENGTH];
+               char s6[PATH_MAX_LENGTH];
+               settings_t *settings     = config_get_ptr();
+               const char *dir_assets   = settings->paths.directory_assets;
+
+#if defined(WIIU) || defined(VITA)
+               /* Smaller 46x46 icons look better on low-DPI devices */
+               fill_pathname_join(s5, dir_assets, "ozone", sizeof(s5));
+               fill_pathname_join(s6, "png", "icons", sizeof(s6));
+#else
+               /* Otherwise, use large 256x256 icons */
+               fill_pathname_join(s5, dir_assets, "xmb", sizeof(s5));
+               fill_pathname_join(s6, "monochrome", "png", sizeof(s6));
+#endif
+               fill_pathname_join(s, s5, s6, len);
+            }
             else if (len)
                s[0] = '\0';
 #endif
@@ -339,9 +366,15 @@ void fill_pathname_application_special(char *s,
                      fill_pathname_join(s, s9, "korean-fallback-font.ttf", len);
                      break;
                   default:
-                     fill_pathname_application_special(s9, sizeof(s9),
-                           APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
-                     fill_pathname_join(s, s9, FILE_PATH_TTF_FONT, len);
+                     {
+                        char s8[PATH_MAX_LENGTH];
+                        settings_t *settings     = config_get_ptr();
+                        const char *dir_assets   = settings->paths.directory_assets;
+                        fill_pathname_join(s8, dir_assets, "xmb", sizeof(s8));
+                        fill_pathname_join(s9, s8, xmb_theme_ident(), sizeof(s9));
+                        fill_pathname_join(s, s9, FILE_PATH_TTF_FONT, len);
+                     }
+                     break;
                }
             }
          }
@@ -350,13 +383,10 @@ void fill_pathname_application_special(char *s,
       case APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS:
       {
         char s10[PATH_MAX_LENGTH];
-        char s11[PATH_MAX_LENGTH];
         settings_t *settings       = config_get_ptr();
         const char *dir_thumbnails = settings->paths.directory_thumbnails;
         fill_pathname_join(s10, dir_thumbnails, "discord", sizeof(s10));
-        fill_pathname_join(s11, s10, "avatars", sizeof(s11));
-        fill_pathname_slash(s11, sizeof(s11));
-        strlcpy(s, s11, len);
+        fill_pathname_join(s, s10, "avatars", len);
       }
       break;
 
@@ -367,9 +397,7 @@ void fill_pathname_application_special(char *s,
         settings_t *settings       = config_get_ptr();
         const char *dir_thumbnails = settings->paths.directory_thumbnails;
         fill_pathname_join(s12, dir_thumbnails, "cheevos", len);
-        fill_pathname_join(s13, s12, "badges", sizeof(s13));
-        fill_pathname_slash(s13, sizeof(s13));
-        strlcpy(s, s13, len);
+        fill_pathname_join(s, s12, "badges", len);
       }
       break;
 
