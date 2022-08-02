@@ -151,14 +151,6 @@ void fill_pathname_application_special(char *s,
 {
    switch (type)
    {
-      case APPLICATION_SPECIAL_DIRECTORY_AUTOCONFIG:
-         {
-            settings_t *settings       = config_get_ptr();
-            const char *dir_autoconfig = settings->paths.directory_autoconfig;
-            const char *joypad_driver  = settings->arrays.input_joypad_driver;
-            fill_pathname_join(s, dir_autoconfig, joypad_driver, len);
-         }
-         break;
       case APPLICATION_SPECIAL_DIRECTORY_CONFIG:
          {
             settings_t *settings        = config_get_ptr();
@@ -234,16 +226,17 @@ void fill_pathname_application_special(char *s,
             }
             else if (string_is_equal(menu_ident, "glui"))
             {
-               fill_pathname_application_special(s1, sizeof(s1),
-                     APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
+               const char *dir_assets = settings->paths.directory_assets;
+               fill_pathname_join(s1, dir_assets, "glui", sizeof(s1));
 
                if (!string_is_empty(s1))
                   strlcat(s1, "/sounds", sizeof(s1));
             }
             else if (string_is_equal(menu_ident, "ozone"))
             {
-               fill_pathname_application_special(s1, sizeof(s1),
-                     APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE);
+               const char *dir_assets   = settings->paths.directory_assets;
+               fill_pathname_join(s1, dir_assets, "ozone",
+                     sizeof(s1));
 
                if (!string_is_empty(s1))
                   strlcat(s1, "/sounds", sizeof(s1));
@@ -264,32 +257,16 @@ void fill_pathname_application_special(char *s,
             settings_t *settings   = config_get_ptr();
             const char *menu_ident = settings->arrays.menu_driver;
 
-            if (string_is_equal(menu_ident, "xmb"))
+            if      (string_is_equal(menu_ident, "xmb"))
                fill_pathname_application_special(s, len, APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
-            else if (string_is_equal(menu_ident, "glui"))
-            {
-               /* Type APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS
-                * contains no core system icons so we use the icon directory
-                * from ozone here */
-               fill_pathname_application_special(s, len, APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE_ICONS);
-            }
-            else if (string_is_equal(menu_ident, "ozone"))
+            else if (    string_is_equal(menu_ident, "ozone")
+                      || string_is_equal(menu_ident, "glui"))
                fill_pathname_application_special(s, len, APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE_ICONS);
             else if (len)
                s[0] = '\0';
 #endif
          }
 
-         break;
-      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE:
-#ifdef HAVE_OZONE
-         {
-            settings_t *settings     = config_get_ptr();
-            const char *dir_assets   = settings->paths.directory_assets;
-            fill_pathname_join(s, dir_assets, "ozone",
-                  len);
-         }
-#endif
          break;
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE_ICONS:
 #ifdef HAVE_OZONE
@@ -337,10 +314,8 @@ void fill_pathname_application_special(char *s,
             char rgui_dir[PATH_MAX_LENGTH];
             settings_t *settings     = config_get_ptr();
             const char *dir_assets   = settings->paths.directory_assets;
-            fill_pathname_join(rgui_dir, dir_assets, "rgui",
-                  sizeof(rgui_dir));
-            fill_pathname_join(s,
-                  rgui_dir, "font", len);
+            fill_pathname_join(rgui_dir, dir_assets, "rgui", sizeof(rgui_dir));
+            fill_pathname_join(s, rgui_dir, "font", len);
          }
 #endif
          break;
@@ -352,57 +327,7 @@ void fill_pathname_application_special(char *s,
             settings_t *settings     = config_get_ptr();
             const char *dir_assets   = settings->paths.directory_assets;
             fill_pathname_join(s1, dir_assets, "xmb", sizeof(s1));
-            fill_pathname_join(s,
-                  s1, xmb_theme_ident(), len);
-         }
-#endif
-         break;
-      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI:
-#ifdef HAVE_MATERIALUI
-         {
-            settings_t *settings   = config_get_ptr();
-            const char *dir_assets = settings->paths.directory_assets;
-
-            fill_pathname_join(s, dir_assets, "glui", len);
-         }
-#endif
-         break;
-      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS:
-#ifdef HAVE_MATERIALUI
-         fill_pathname_application_special(s, len,
-               APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
-#endif
-         break;
-      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT:
-#ifdef HAVE_MATERIALUI
-         {
-            char s1[PATH_MAX_LENGTH];
-            s1[0] = '\0';
-
-            switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
-            {
-               case RETRO_LANGUAGE_ARABIC:
-               case RETRO_LANGUAGE_PERSIAN:
-                  fill_pathname_application_special(s1, sizeof(s1),
-                        APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
-                  fill_pathname_join(s, s1, "fallback-font.ttf", len);
-                  break;
-               case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
-               case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-                  fill_pathname_application_special(s1, sizeof(s1),
-                        APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
-                  fill_pathname_join(s, s1, "chinese-fallback-font.ttf", len);
-                  break;
-               case RETRO_LANGUAGE_KOREAN:
-                  fill_pathname_application_special(s1, sizeof(s1),
-                        APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
-                  fill_pathname_join(s, s1, "korean-fallback-font.ttf", len);
-                  break;
-               default:
-                  fill_pathname_application_special(s1, sizeof(s1),
-                        APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
-                  fill_pathname_join(s, s1, FILE_PATH_TTF_FONT, len);
-            }
+            fill_pathname_join(s, s1, xmb_theme_ident(), len);
          }
 #endif
          break;

@@ -7729,6 +7729,8 @@ static void materialui_init_font(
 {
    char fontpath[PATH_MAX_LENGTH];
    const char *wideglyph_str = msg_hash_get_wideglyph_str();
+   settings_t *settings      = config_get_ptr();
+   const char *dir_assets    = settings->paths.directory_assets;
    fontpath[0]               = '\0';
 
    /* We assume the average glyph aspect ratio is close to 3:4 */
@@ -7739,8 +7741,40 @@ static void materialui_init_font(
       gfx_display_font_free(font_data->font);
       font_data->font = NULL;
    }
-   fill_pathname_application_special(
-         fontpath, sizeof(fontpath), APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT);
+   {
+      char s1[PATH_MAX_LENGTH];
+      s1[0] = '\0';
+
+      switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
+      {
+         case RETRO_LANGUAGE_ARABIC:
+         case RETRO_LANGUAGE_PERSIAN:
+            fill_pathname_application_special(s1, sizeof(s1),
+                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+            fill_pathname_join(fontpath, s1, "fallback-font.ttf",
+                  sizeof(fontpath));
+            break;
+         case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
+         case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
+            fill_pathname_application_special(s1, sizeof(s1),
+                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+            fill_pathname_join(fontpath, s1, "chinese-fallback-font.ttf",
+                  sizeof(fontpath));
+            break;
+         case RETRO_LANGUAGE_KOREAN:
+            fill_pathname_application_special(s1, sizeof(s1),
+                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+            fill_pathname_join(fontpath, s1, "korean-fallback-font.ttf",
+                  sizeof(fontpath));
+            break;
+         default:
+            fill_pathname_join(s1, dir_assets, "glui", sizeof(s1));
+            fill_pathname_join(fontpath, s1, FILE_PATH_TTF_FONT,
+                  sizeof(fontpath));
+            break;
+      }
+   }
+
    font_data->font = gfx_display_font_file(p_disp,
          fontpath, font_size, video_is_threaded);
 
@@ -7926,6 +7960,7 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    gfx_display_t *p_disp                  = disp_get_ptr();
    menu_handle_t *menu                    = (menu_handle_t*)
       calloc(1, sizeof(*menu));
+   const char *dir_assets                 = NULL;
 
    if (!menu)
       return NULL;
@@ -7936,17 +7971,15 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
       return NULL;
    }
 
-   mui                                    = (materialui_handle_t*)
-      calloc(1, sizeof(materialui_handle_t));
+   dir_assets                             = settings->paths.directory_assets;
 
-   if (!mui)
+   if (!(mui = (materialui_handle_t*)calloc(1, sizeof(materialui_handle_t))))
       goto error;
 
    *userdata = mui;
 
    /* Initialise thumbnail path data */
-   mui->thumbnail_path_data               = gfx_thumbnail_path_init();
-   if (!mui->thumbnail_path_data)
+   if (!(mui->thumbnail_path_data = gfx_thumbnail_path_init()))
       goto error;
 
    /* Get DPI/screen-size-aware base unit size for
@@ -7986,8 +8019,7 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    materialui_prepare_colors(mui, (enum materialui_color_theme)mui->color_theme);
 
    /* Initialise screensaver */
-   mui->screensaver                       = menu_screensaver_init();
-   if (!mui->screensaver)
+   if (!(mui->screensaver = menu_screensaver_init()))
       goto error;
 
    /* Initial ticker configuration */
@@ -8052,14 +8084,13 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    fill_pathname_application_special(mui->sysicons_path, 
          sizeof(mui->sysicons_path),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE_ICONS);
-   fill_pathname_application_special(mui->icons_path, 
-         sizeof(mui->icons_path),
-         APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
+   fill_pathname_join(mui->icons_path, dir_assets, "glui",
+         sizeof(mui->icons_path));
 
    p_anim->updatetime_cb = materialui_menu_animation_update_time;
 
    /* set word_wrap function pointer */
-   mui->word_wrap = msg_hash_get_wideglyph_str() ? word_wrap_wideglyph : word_wrap;
+   mui->word_wrap        = msg_hash_get_wideglyph_str() ? word_wrap_wideglyph : word_wrap;
 
    return menu;
 error:
