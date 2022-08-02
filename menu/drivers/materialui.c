@@ -658,6 +658,7 @@ typedef struct materialui_handle
    enum materialui_landscape_layout_optimization_type
          last_landscape_layout_optimization;
    enum materialui_list_view_type list_view_type;
+   char sysicons_path[PATH_MAX_LENGTH];
    char icons_path[PATH_MAX_LENGTH];
    char msgbox[1024];
    char menu_title[255];
@@ -2207,7 +2208,7 @@ static void materialui_context_reset_playlist_icons(
 {
    size_t i;
 
-   if (string_is_empty(mui->icons_path))
+   if (string_is_empty(mui->sysicons_path))
       return;
 
    /* Load icons
@@ -2221,7 +2222,7 @@ static void materialui_context_reset_playlist_icons(
          continue;
 
       gfx_display_reset_textures_list(
-            image_file, mui->icons_path,
+            image_file, mui->sysicons_path,
             &mui->textures.playlist.icons[i].image,
             TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
    }
@@ -8046,9 +8047,14 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
          settings->bools.menu_materialui_icons_enable,
          settings->bools.menu_materialui_playlist_icons_enable);
 
+   /* NOTE: There are no MaterialUI system icons,
+      so we just reuse the Ozone icon directory instead here */
+   fill_pathname_application_special(mui->sysicons_path, 
+         sizeof(mui->sysicons_path),
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE_ICONS);
    fill_pathname_application_special(mui->icons_path, 
          sizeof(mui->icons_path),
-         APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS);
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
 
    p_anim->updatetime_cb = materialui_menu_animation_update_time;
 
