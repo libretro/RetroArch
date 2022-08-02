@@ -1620,10 +1620,15 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
       }
    }
 
-   snprintf(buf, sizeof(buf), "%s: %s",
+   snprintf(buf, sizeof(buf), "%s: %s\n",
       msg_hash_to_str(MSG_NETPLAY_CHAT_SUPPORTED),
       msg_hash_to_str((client->protocol >= 6) ?
          MENU_ENUM_LABEL_VALUE_YES : MENU_ENUM_LABEL_VALUE_NO));
+   strlcat(s, buf, len);
+
+   snprintf(buf, sizeof(buf), "%s: %lu",
+      msg_hash_to_str(MSG_NETPLAY_SLOWDOWNS_CAUSED),
+      (unsigned long)client->slowdowns);
    strlcat(s, buf, len);
 
    if (client->ping >= 0)

@@ -11731,6 +11731,10 @@ MSG_HASH(
    MSG_NETPLAY_CHAT_SUPPORTED,
    "Chat Supported"
    )
+MSG_HASH(
+   MSG_NETPLAY_SLOWDOWNS_CAUSED,
+   "Slowdowns Caused"
+   )
 
 MSG_HASH(
    MSG_AUDIO_VOLUME,
