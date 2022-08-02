@@ -365,9 +365,6 @@ typedef struct netplay_address
 /* Each connection gets a connection struct */
 struct netplay_connection
 {
-   /* Is this connection stalling? */
-   retro_time_t stall_time;
-
    /* Timer used to estimate a connection's latency */
    retro_time_t ping_timer;
 
@@ -398,6 +395,10 @@ struct netplay_connection
     * this client to stall?
     * For the client: How many frames of stall do we have left? */
    uint32_t stall_frame;
+
+   /* How many times has this connection caused a stall because it's running
+      too slow? */
+   uint32_t stall_slow;
 
    /* What latency is this connection running on? 
     * Network latency has limited precision as we estimate it

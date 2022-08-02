@@ -7793,225 +7793,238 @@ static bool get_self_input_state(
 static bool netplay_poll(netplay_t *netplay, bool block_libretro_input)
 {
    size_t i;
-   int res;
-   uint32_t client;
 
    if (!get_self_input_state(block_libretro_input, netplay))
       goto catastrophe;
 
-   /* If we're not connected, we're done */
+   /* If we're not connected, we're done. */
    if (netplay->self_mode == NETPLAY_CONNECTION_NONE)
       return true;
 
-   /* Read Netplay input, block if we're configured to stall for input every
-    * frame */
    netplay_update_unread_ptr(netplay);
-   if (netplay->stateless_mode &&
-       (netplay->connected_players>1) &&
-       netplay->unread_frame_count <= netplay->run_frame_count)
-      res = netplay_poll_net_input(netplay, true);
-   else
-      res = netplay_poll_net_input(netplay, false);
-   if (res == -1)
-      goto catastrophe;
 
-   /* Resolve and/or simulate the input if we don't have real input */
+   /* Read netplay input,
+      block if we're configured to stall for input every frame. */
+   {
+      bool block = netplay->stateless_mode && netplay->connected_players > 1 &&
+         netplay->unread_frame_count <= netplay->run_frame_count;
+
+      if (netplay_poll_net_input(netplay, block) == -1)
+         goto catastrophe;
+   }
+
+   /* Resolve and/or simulate the input if we don't have real input. */
    netplay_resolve_input(netplay, netplay->run_ptr, false);
 
-   /* Handle any slaves */
+   /* Handle slaves. */
    if (netplay->is_server && netplay->connected_slaves)
       netplay_handle_slaves(netplay);
 
    netplay_update_unread_ptr(netplay);
 
-   /* Figure out how many frames of input latency we should be using to hide
-    * network latency */
-   if (netplay->frame_run_time_avg || netplay->stateless_mode)
+   /* Figure out how many frames of input latency we should be using to
+      hide network latency. */
+   if (netplay->stateless_mode)
+   {
+      int input_latency_frames_min = (int)netplay->input_latency_frames_min;
+      int input_latency_frames_max = (int)netplay->input_latency_frames_max;
+
+      /* In stateless mode, we adjust up if we're "close"
+         and down if we have a lot of slack. */
+      if (netplay->input_latency_frames < input_latency_frames_min ||
+            (netplay->unread_frame_count == (netplay->run_frame_count + 1) &&
+               netplay->input_latency_frames < input_latency_frames_max))
+         netplay->input_latency_frames++;
+      else if (netplay->input_latency_frames > input_latency_frames_max ||
+            (netplay->unread_frame_count > (netplay->run_frame_count + 2) &&
+               netplay->input_latency_frames > input_latency_frames_min))
+         netplay->input_latency_frames--;
+   }
+   else if (netplay->frame_run_time_avg)
    {
       /* FIXME: Using fixed 60fps for this calculation */
       unsigned frames_per_frame    = netplay->frame_run_time_avg ?
-         (16666 / netplay->frame_run_time_avg) :
-         0;
-      unsigned frames_ahead        = (netplay->run_frame_count > netplay->unread_frame_count) ?
-         (netplay->run_frame_count - netplay->unread_frame_count) :
-         0;
-      int input_latency_frames_min = netplay->input_latency_frames_min;
-      int input_latency_frames_max = netplay->input_latency_frames_max;
+         (unsigned)(16666 / netplay->frame_run_time_avg) : 0;
+      unsigned frames_ahead        =
+         (netplay->run_frame_count > netplay->unread_frame_count) ?
+            (unsigned)(netplay->run_frame_count - netplay->unread_frame_count)
+            : 0;
+      int input_latency_frames_min = (int)netplay->input_latency_frames_min;
+      int input_latency_frames_max = (int)netplay->input_latency_frames_max;
 
-      /* Assume we need a couple frames worth of time to actually run the
-       * current frame */
+      /* Assume we need a couple frames worth of time
+         to actually run the current frame. */
       if (frames_per_frame > 2)
          frames_per_frame -= 2;
       else
-         frames_per_frame = 0;
+         frames_per_frame  = 0;
 
-      /* Shall we adjust our latency? */
-      if (netplay->stateless_mode)
-      {
-         /* In stateless mode, we adjust up if we're "close" and down if we
-          * have a lot of slack */
-         if (netplay->input_latency_frames < input_latency_frames_min ||
-               (netplay->unread_frame_count == netplay->run_frame_count + 1 &&
-                netplay->input_latency_frames < input_latency_frames_max))
-            netplay->input_latency_frames++;
-         else if (netplay->input_latency_frames > input_latency_frames_max ||
-               (netplay->unread_frame_count > netplay->run_frame_count + 2 &&
-                netplay->input_latency_frames > input_latency_frames_min))
-            netplay->input_latency_frames--;
-      }
-      else if (netplay->input_latency_frames < input_latency_frames_min ||
-               (frames_per_frame < frames_ahead &&
-                netplay->input_latency_frames < input_latency_frames_max))
-      {
-         /* We can't hide this much network latency with replay, so hide some
-          * with input latency */
+      /* We can't hide this much network latency with replay,
+         so hide some with input latency. */
+      if (netplay->input_latency_frames < input_latency_frames_min ||
+            (frames_per_frame < frames_ahead &&
+               netplay->input_latency_frames < input_latency_frames_max))
          netplay->input_latency_frames++;
-      }
+      /* We don't need this much latency (any more). */
       else if (netplay->input_latency_frames > input_latency_frames_max ||
-               (frames_per_frame > frames_ahead + 2 &&
-                netplay->input_latency_frames > input_latency_frames_min))
-      {
-         /* We don't need this much latency (any more) */
+            (frames_per_frame > (frames_ahead + 2) &&
+               netplay->input_latency_frames > input_latency_frames_min))
          netplay->input_latency_frames--;
-      }
    }
 
-   /* If we're stalled, consider unstalling */
+   /* If we're stalled, consider unstalling. */
    switch (netplay->stall)
    {
       case NETPLAY_STALL_RUNNING_FAST:
-         if (netplay->unread_frame_count + NETPLAY_MAX_STALL_FRAMES - 2
-               > netplay->self_frame_count)
+         if ((netplay->unread_frame_count + NETPLAY_MAX_STALL_FRAMES - 2) >
+               netplay->self_frame_count)
          {
-            netplay->stall = NETPLAY_STALL_NONE;
+            struct netplay_connection *connection;
+
             for (i = 0; i < netplay->connections_size; i++)
             {
-               struct netplay_connection *connection = &netplay->connections[i];
-               if (connection->active && connection->stall)
+               connection = &netplay->connections[i];
+               if (connection->active)
                   connection->stall = NETPLAY_STALL_NONE;
             }
+
+            netplay->stall = NETPLAY_STALL_NONE;
          }
          break;
-
       case NETPLAY_STALL_SPECTATOR_WAIT:
-         if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING || netplay->unread_frame_count > netplay->self_frame_count)
+         if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING ||
+               netplay->unread_frame_count > netplay->self_frame_count)
             netplay->stall = NETPLAY_STALL_NONE;
          break;
-
       case NETPLAY_STALL_INPUT_LATENCY:
-         /* Just let it recalculate momentarily */
+         /* Just let it recalculate momentarily. */
          netplay->stall = NETPLAY_STALL_NONE;
          break;
-
       case NETPLAY_STALL_SERVER_REQUESTED:
-         /* See if the stall is done */
-         if (netplay->connections[0].stall_frame == 0)
          {
-            /* Stop stalling! */
-            netplay->connections[0].stall = NETPLAY_STALL_NONE;
-            netplay->stall = NETPLAY_STALL_NONE;
+            struct netplay_connection *connection = &netplay->connections[0];
+
+            /* See if the stall is done. */
+            if (!connection->stall_frame)
+            {
+               /* Stop stalling! */
+               connection->stall = NETPLAY_STALL_NONE;
+               netplay->stall    = NETPLAY_STALL_NONE;
+            }
+            else
+               connection->stall_frame--;
          }
-         else
-            netplay->connections[0].stall_frame--;
          break;
       case NETPLAY_STALL_NO_CONNECTION:
-         /* We certainly haven't fixed this */
+         /* We certainly haven't fixed this. */
          break;
-      default: /* not stalling */
+      default:
+         /* Not stalling. */
          break;
    }
 
-   /* If we're not stalled, consider stalling */
-   if (!netplay->stall)
+   /* If we're not stalled, consider stalling. */
+   if (netplay->stall == NETPLAY_STALL_NONE)
    {
-      /* Have we not read enough latency frames? */
-      if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING &&
-          netplay->connected_players &&
-          netplay->run_frame_count + netplay->input_latency_frames > netplay->self_frame_count)
+      switch (netplay->self_mode)
       {
-         netplay->stall = NETPLAY_STALL_INPUT_LATENCY;
-         netplay->stall_time = 0;
+         case NETPLAY_CONNECTION_SPECTATING:
+         case NETPLAY_CONNECTION_SLAVE:
+            /* If we're a spectator, are we ahead at all? */
+            if (!netplay->is_server &&
+                  netplay->unread_frame_count <= netplay->self_frame_count)
+            {
+               netplay->stall      = NETPLAY_STALL_SPECTATOR_WAIT;
+               netplay->stall_time = cpu_features_get_time_usec();
+            }
+            break;
+         case NETPLAY_CONNECTION_PLAYING:
+            /* Have we not read enough latency frames? */
+            if (netplay->connected_players &&
+                  (netplay->run_frame_count + netplay->input_latency_frames) >
+                     netplay->self_frame_count)
+            {
+               netplay->stall      = NETPLAY_STALL_INPUT_LATENCY;
+               netplay->stall_time = 0;
+            }
+            break;
+         default:
+            break;
       }
 
       /* Are we too far ahead? */
-      if (netplay->unread_frame_count + NETPLAY_MAX_STALL_FRAMES
-            <= netplay->self_frame_count)
+      if (netplay->stall == NETPLAY_STALL_NONE &&
+            netplay->self_frame_count > NETPLAY_MAX_STALL_FRAMES)
       {
-         netplay->stall      = NETPLAY_STALL_RUNNING_FAST;
-         netplay->stall_time = cpu_features_get_time_usec();
+         uint32_t min_frame_count = netplay->self_frame_count -
+            NETPLAY_MAX_STALL_FRAMES;
 
-         /* Figure out who to blame */
-         if (netplay->is_server)
+         if (netplay->unread_frame_count <= min_frame_count)
          {
-            for (client = 1; client < MAX_CLIENTS; client++)
+            netplay->stall      = NETPLAY_STALL_RUNNING_FAST;
+            netplay->stall_time = cpu_features_get_time_usec();
+
+            /* Figure out who to blame. */
+            if (netplay->is_server)
             {
                struct netplay_connection *connection;
-               if (!(netplay->connected_players & (1 << client)))
-                  continue;
-               if (netplay->read_frame_count[client] > netplay->unread_frame_count)
-                  continue;
-               connection = &netplay->connections[client-1];
-               if (connection->active &&
-                   connection->mode == NETPLAY_CONNECTION_PLAYING)
+
+               for (i = 0; i < netplay->connections_size; i++)
                {
-                  connection->stall = NETPLAY_STALL_RUNNING_FAST;
-                  connection->stall_time = netplay->stall_time;
+                  connection = &netplay->connections[i];
+                  if (!connection->active ||
+                        connection->mode != NETPLAY_CONNECTION_PLAYING)
+                     continue;
+                  if (netplay->read_frame_count[i + 1] < min_frame_count)
+                  {
+                     connection->stall = NETPLAY_STALL_RUNNING_FAST;
+                     connection->stall_slow++;
+                  }
                }
             }
          }
-
-      }
-
-      /* If we're a spectator, are we ahead at all? */
-      if (!netplay->is_server &&
-          (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING ||
-           netplay->self_mode == NETPLAY_CONNECTION_SLAVE) &&
-          netplay->unread_frame_count <= netplay->self_frame_count)
-      {
-         netplay->stall = NETPLAY_STALL_SPECTATOR_WAIT;
-         netplay->stall_time = cpu_features_get_time_usec();
       }
    }
 
-   /* If we're stalling, consider disconnection */
-   if (netplay->stall && netplay->stall_time)
+   /* If we're stalling, consider disconnection. */
+   if (netplay->stall != NETPLAY_STALL_NONE && netplay->stall_time)
    {
       retro_time_t now = cpu_features_get_time_usec();
 
-      /* Don't stall out while they're paused */
-      if (netplay->remote_paused)
-         netplay->stall_time = now;
-      else if (now - netplay->stall_time >=
-               (netplay->is_server ? MAX_SERVER_STALL_TIME_USEC :
-                                          MAX_CLIENT_STALL_TIME_USEC))
+      if (!netplay->remote_paused)
       {
-         /* Stalled out! */
+         retro_time_t delta = now - netplay->stall_time;
+
          if (netplay->is_server)
          {
-            bool fixed = false;
-            for (i = 0; i < netplay->connections_size; i++)
+            if (delta >= MAX_SERVER_STALL_TIME_USEC)
             {
-               struct netplay_connection *connection = &netplay->connections[i];
-               if (connection->active &&
-                   connection->mode == NETPLAY_CONNECTION_PLAYING &&
-                   connection->stall)
-               {
-                  netplay_hangup(netplay, connection);
-                  fixed = true;
-               }
-            }
+               /* Stalled out! */
+               struct netplay_connection *connection;
 
-            if (fixed)
-            {
-               /* Not stalled now :) */
+               for (i = 0; i < netplay->connections_size; i++)
+               {
+                  connection = &netplay->connections[i];
+                  if (!connection->active ||
+                        connection->mode != NETPLAY_CONNECTION_PLAYING)
+                     continue;
+                  if (connection->stall != NETPLAY_STALL_NONE)
+                     netplay_hangup(netplay, connection);
+               }
+
                netplay->stall = NETPLAY_STALL_NONE;
-               return true;
             }
          }
          else
-            goto catastrophe;
-         return false;
+         {
+            if (delta >= MAX_CLIENT_STALL_TIME_USEC)
+               /* Stalled out! */
+               goto catastrophe;
+         }
       }
+      else
+         /* Don't stall out while they're paused. */
+         netplay->stall_time = now;
    }
 
    return true;
@@ -8019,6 +8032,7 @@ static bool netplay_poll(netplay_t *netplay, bool block_libretro_input)
 catastrophe:
    for (i = 0; i < netplay->connections_size; i++)
       netplay_hangup(netplay, &netplay->connections[i]);
+
    return false;
 }
 
@@ -8818,11 +8832,12 @@ static size_t retrieve_client_info(netplay_t *netplay, netplay_client_info_t *bu
       {
          netplay_client_info_t *info = &buf[j++];
 
-         info->id       = (int)i;
-         info->protocol = connection->netplay_protocol;
-         info->mode     = connection->mode;
-         info->ping     = connection->ping;
-         info->devices  = netplay->client_devices[i + 1];
+         info->id        = (int)i;
+         info->protocol  = connection->netplay_protocol;
+         info->mode      = connection->mode;
+         info->ping      = connection->ping;
+         info->slowdowns = connection->stall_slow;
+         info->devices   = netplay->client_devices[i + 1];
          strlcpy(info->name, connection->nick, sizeof(info->name));
       }
    }
