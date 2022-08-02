@@ -635,15 +635,14 @@ static bool win32_browser(
       char new_title[PATH_MAX];
       char new_file[32768];
 
+      new_title[0] = '\0';
+      new_file[0]  = '\0';
+
       if (!string_is_empty(title))
          strlcpy(new_title, title, sizeof(new_title));
-      else
-         new_title[0] = '\0';
 
       if (filename && *filename)
          strlcpy(new_file, filename, sizeof(new_file));
-      else
-         new_file[0]         = '\0';
 
       /* OPENFILENAME.lpstrFilters is actually const,
        * so this cast should be safe */
@@ -2346,6 +2345,7 @@ void win32_update_title(void)
    if (window)
    {
       char title[128];
+      title[0] = '\0';
       video_driver_get_window_title(title, sizeof(title));
       update_title_wait = g_win32_refresh_rate;
       if (title[0])
