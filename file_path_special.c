@@ -354,7 +354,6 @@ void fill_pathname_application_special(char *s,
             else
             {
                char s9[PATH_MAX_LENGTH];
-               s9[0] = '\0';
 
                switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
                {
@@ -403,7 +402,6 @@ void fill_pathname_application_special(char *s,
       case APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES:
       {
         char s12[PATH_MAX_LENGTH];
-        char s13[PATH_MAX_LENGTH];
         settings_t *settings       = config_get_ptr();
         const char *dir_thumbnails = settings->paths.directory_thumbnails;
         fill_pathname_join(s12, dir_thumbnails, "cheevos", len);
