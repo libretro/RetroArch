@@ -208,6 +208,7 @@ void fill_pathname_application_special(char *s,
             const char *menu_ident = settings->arrays.menu_driver;
             const char *dir_assets = settings->paths.directory_assets;
 
+#ifdef HAVE_XMB
             if (string_is_equal(menu_ident, "xmb"))
             {
                char s8[PATH_MAX_LENGTH];
@@ -218,7 +219,10 @@ void fill_pathname_application_special(char *s,
                if (!string_is_empty(s4))
                   strlcat(s4, "/sounds", sizeof(s4));
             }
-            else if (string_is_equal(menu_ident, "glui"))
+            else
+#endif
+#ifdef HAVE_MATERIALUI
+               if (string_is_equal(menu_ident, "glui"))
             {
                const char *dir_assets = settings->paths.directory_assets;
                fill_pathname_join(s4, dir_assets, "glui", sizeof(s4));
@@ -226,6 +230,8 @@ void fill_pathname_application_special(char *s,
                if (!string_is_empty(s4))
                   strlcat(s4, "/sounds", sizeof(s4));
             }
+#endif
+#ifdef HAVE_OZONE
             else if (string_is_equal(menu_ident, "ozone"))
             {
                const char *dir_assets   = settings->paths.directory_assets;
@@ -236,6 +242,7 @@ void fill_pathname_application_special(char *s,
                   strlcat(s4, "/sounds", sizeof(s4));
             }
             else
+#endif
                s4[0] = '\0';
 
             if (string_is_empty(s4))
