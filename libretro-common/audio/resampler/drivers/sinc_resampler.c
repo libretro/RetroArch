@@ -752,12 +752,13 @@ static void sinc_init_table_kaiser(rarch_sinc_resampler_t *resamp,
    {
       for (j = 0; j < taps; j++)
       {
+         float val;
          double sinc_phase;
          int               n = j * phases + i;
          double window_phase = (double)n / (phases * taps); /* [0, 1). */
          window_phase        = 2.0 * window_phase - 1.0; /* [-1, 1) */
          sinc_phase          = sidelobes * window_phase;
-         float val           = cutoff * sinc(M_PI * sinc_phase * cutoff) *
+         val                 = cutoff * sinc(M_PI * sinc_phase * cutoff) *
               besseli0(kaiser_beta * sqrtf(1 - window_phase * window_phase))
             / window_mod;
          phase_table[i * stride * taps + j] = val;
