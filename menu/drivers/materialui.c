@@ -7749,21 +7749,21 @@ static void materialui_init_font(
       {
          case RETRO_LANGUAGE_ARABIC:
          case RETRO_LANGUAGE_PERSIAN:
-            fill_pathname_application_special(s1, sizeof(s1),
-                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+            fill_pathname_join(s1,
+                  settings->paths.directory_assets, "pkg", sizeof(s1));
             fill_pathname_join(fontpath, s1, "fallback-font.ttf",
                   sizeof(fontpath));
             break;
          case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
          case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-            fill_pathname_application_special(s1, sizeof(s1),
-                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+            fill_pathname_join(s1,
+                  settings->paths.directory_assets, "pkg", sizeof(s1));
             fill_pathname_join(fontpath, s1, "chinese-fallback-font.ttf",
                   sizeof(fontpath));
             break;
          case RETRO_LANGUAGE_KOREAN:
-            fill_pathname_application_special(s1, sizeof(s1),
-                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+            fill_pathname_join(s1,
+                  settings->paths.directory_assets, "pkg", sizeof(s1));
             fill_pathname_join(fontpath, s1, "korean-fallback-font.ttf",
                   sizeof(fontpath));
             break;

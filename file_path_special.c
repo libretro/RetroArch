@@ -164,13 +164,6 @@ void fill_pathname_application_special(char *s,
                fill_pathname_basedir(s, path_get(RARCH_PATH_CONFIG), len);
          }
          break;
-      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG:
-         {
-            settings_t *settings   = config_get_ptr();
-            const char *dir_assets = settings->paths.directory_assets;
-            fill_pathname_join(s, dir_assets, "pkg", len);
-         }
-         break;
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS:
 #ifdef HAVE_XMB
          {
@@ -348,19 +341,19 @@ void fill_pathname_application_special(char *s,
                {
                   case RETRO_LANGUAGE_ARABIC:
                   case RETRO_LANGUAGE_PERSIAN:
-                     fill_pathname_application_special(s1, sizeof(s1),
-                           APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+                     fill_pathname_join(s1,
+                           settings->paths.directory_assets, "pkg", sizeof(s1));
                      fill_pathname_join(s, s1, "fallback-font.ttf", len);
                      break;
                   case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
                   case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-                     fill_pathname_application_special(s1, sizeof(s1),
-                           APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+                     fill_pathname_join(s1,
+                           settings->paths.directory_assets, "pkg", sizeof(s1));
                      fill_pathname_join(s, s1, "chinese-fallback-font.ttf", len);
                      break;
                   case RETRO_LANGUAGE_KOREAN:
-                     fill_pathname_application_special(s1, sizeof(s1),
-                           APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+                     fill_pathname_join(s1,
+                           settings->paths.directory_assets, "pkg", sizeof(s1));
                      fill_pathname_join(s, s1, "korean-fallback-font.ttf", len);
                      break;
                   default:

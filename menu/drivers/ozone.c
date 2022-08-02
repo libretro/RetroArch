@@ -8057,10 +8057,11 @@ static void ozone_set_layout(
 {
    char s1[PATH_MAX_LENGTH];
    char font_path[PATH_MAX_LENGTH];
-   bool font_inited    = false;
-   float scale_factor  = ozone->last_scale_factor;
+   settings_t *settings  = config_get_ptr();
+   bool font_inited      = false;
+   float scale_factor    = ozone->last_scale_factor;
 
-   s1[0]               = '\0';
+   s1[0]                 = '\0';
 
    /* Calculate dimensions */
    ozone->dimensions.header_height                 = HEADER_HEIGHT * scale_factor;
@@ -8119,19 +8120,19 @@ static void ozone_set_layout(
    {
       case RETRO_LANGUAGE_ARABIC:
       case RETRO_LANGUAGE_PERSIAN:
-         fill_pathname_application_special(s1, sizeof(s1),
-               APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+         fill_pathname_join(s1,
+               settings->paths.directory_assets, "pkg", sizeof(s1));
          fill_pathname_join(font_path, s1, "fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
       case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-         fill_pathname_application_special(s1, sizeof(s1),
-               APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+         fill_pathname_join(s1,
+               settings->paths.directory_assets, "pkg", sizeof(s1));
          fill_pathname_join(font_path, s1, "chinese-fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_KOREAN:
-         fill_pathname_application_special(s1, sizeof(s1),
-               APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+         fill_pathname_join(s1,
+               settings->paths.directory_assets, "pkg", sizeof(s1));
          fill_pathname_join(font_path, s1, "korean-fallback-font.ttf", sizeof(font_path));
          break;
       default:
@@ -8146,19 +8147,19 @@ static void ozone_set_layout(
    {
       case RETRO_LANGUAGE_ARABIC:
       case RETRO_LANGUAGE_PERSIAN:
-         fill_pathname_application_special(s1, sizeof(s1),
-               APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+         fill_pathname_join(s1,
+               settings->paths.directory_assets, "pkg", sizeof(s1));
          fill_pathname_join(font_path, s1, "fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
       case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-         fill_pathname_application_special(s1, sizeof(s1),
-               APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+         fill_pathname_join(s1,
+               settings->paths.directory_assets, "pkg", sizeof(s1));
          fill_pathname_join(font_path, s1, "chinese-fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_KOREAN:
-         fill_pathname_application_special(s1, sizeof(s1),
-               APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+         fill_pathname_join(s1,
+               settings->paths.directory_assets, "pkg", sizeof(s1));
          fill_pathname_join(font_path, s1, "korean-fallback-font.ttf", sizeof(font_path));
          break;
       default:

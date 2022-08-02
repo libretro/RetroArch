@@ -2054,9 +2054,9 @@ bool gfx_widgets_init(
             "png",
             sizeof(p_dispwidget->monochrome_png_path)
             );
-      fill_pathname_application_special(
-            p_dispwidget->assets_pkg_dir, sizeof(p_dispwidget->assets_pkg_dir),
-            APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+      fill_pathname_join(p_dispwidget->assets_pkg_dir,
+            settings->paths.directory_assets, "pkg",
+            sizeof(p_dispwidget->assets_pkg_dir));
 
       p_dispwidget->inited = true;
    }
