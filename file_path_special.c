@@ -218,15 +218,16 @@ void fill_pathname_application_special(char *s,
             else
 #endif
 #ifdef HAVE_MATERIALUI
-               if (string_is_equal(menu_ident, "glui"))
+            if (string_is_equal(menu_ident, "glui"))
             {
                char s4[PATH_MAX_LENGTH];
                fill_pathname_join(s4, dir_assets, "glui", sizeof(s4));
                fill_pathname_join(s, s4, "sounds", len);
             }
+            else
 #endif
 #ifdef HAVE_OZONE
-            else if (string_is_equal(menu_ident, "ozone"))
+            if (string_is_equal(menu_ident, "ozone"))
             {
                char s4[PATH_MAX_LENGTH];
                fill_pathname_join(s4, dir_assets, "ozone",
