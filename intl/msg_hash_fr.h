@@ -10979,6 +10979,10 @@ MSG_HASH(
    MSG_NETPLAY_CHAT_SUPPORTED,
    "Chat pris en charge"
    )
+MSG_HASH(
+   MSG_NETPLAY_SLOWDOWNS_CAUSED,
+   "Ralentissements causés"
+   )
 
 MSG_HASH(
    MSG_AUDIO_VOLUME,

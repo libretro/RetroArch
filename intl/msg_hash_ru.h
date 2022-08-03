@@ -6561,6 +6561,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_BAN,
    "Забанить клиента"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_BAN,
+   "Отключить клиента от текущей комнаты."
+   )
 
 /* Import Content */
 

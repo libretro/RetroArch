@@ -10823,6 +10823,10 @@ MSG_HASH(
    MSG_NETPLAY_CHAT_SUPPORTED,
    "Podporován Chat"
    )
+MSG_HASH(
+   MSG_NETPLAY_SLOWDOWNS_CAUSED,
+   "Příčiny Zpomalení"
+   )
 
 MSG_HASH(
    MSG_AUDIO_VOLUME,

@@ -11103,6 +11103,10 @@ MSG_HASH(
    MSG_NETPLAY_CHAT_SUPPORTED,
    "Sohbet Desteği"
    )
+MSG_HASH(
+   MSG_NETPLAY_SLOWDOWNS_CAUSED,
+   "Yavaşlama Nedenleri"
+   )
 
 MSG_HASH(
    MSG_AUDIO_VOLUME,
