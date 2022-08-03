@@ -1984,7 +1984,7 @@ enum rarch_shader_type video_shader_get_type_from_ext(
    if (string_is_empty(ext))
       return RARCH_SHADER_NONE;
 
-   if (strlen(ext) > 1 && ext[0] == '.')
+   if (ext[0] == '.' && ext[1] != '\0')
       ext++;
 
    if (is_preset)
