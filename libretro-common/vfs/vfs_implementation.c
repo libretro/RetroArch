@@ -26,8 +26,6 @@
 #include <errno.h>
 #include <sys/types.h>
 
-#include <string/stdstring.h>
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -248,19 +246,6 @@ int64_t retro_vfs_file_seek_internal(
 libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       const char *path, unsigned mode, unsigned hints)
 {
-#if defined(VFS_FRONTEND) || defined(HAVE_CDROM)
-   int                             path_len = (int)strlen(path);
-#endif
-#ifdef VFS_FRONTEND
-   const char                 *dumb_prefix  = "vfsonly://";
-   size_t                   dumb_prefix_siz = STRLEN_CONST("vfsonly://");
-   int                      dumb_prefix_len = (int)dumb_prefix_siz;
-#endif
-#ifdef HAVE_CDROM
-   const char *cdrom_prefix                 = "cdrom://";
-   size_t cdrom_prefix_siz                  = STRLEN_CONST("cdrom://");
-   int cdrom_prefix_len                     = (int)cdrom_prefix_siz;
-#endif
    int                                flags = 0;
    const char                     *mode_str = NULL;
    libretro_vfs_implementation_file *stream = 
@@ -285,9 +270,18 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    stream->scheme                 = VFS_SCHEME_NONE;
 
 #ifdef VFS_FRONTEND
-   if (path_len >= dumb_prefix_len)
-      if (!memcmp(path, dumb_prefix, dumb_prefix_len))
-         path             += dumb_prefix_siz;
+   if (     path
+         && path[0] == 'v'
+         && path[1] == 'f'
+         && path[2] == 's'
+         && path[3] == 'o'
+         && path[4] == 'n'
+         && path[5] == 'l'
+         && path[6] == 'y'
+         && path[7] == ':'
+         && path[8] == '/'
+         && path[9] == '/')
+         path             += sizeof("vfsonly://")-1;
 #endif
 
 #ifdef HAVE_CDROM
@@ -304,13 +298,19 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    stream->cdrom.last_frame[0]    = '\0';
    stream->cdrom.last_frame_valid = false;
 
-   if (path_len > cdrom_prefix_len)
+   if (     path
+         && path[0] == 'c'
+         && path[1] == 'd'
+         && path[2] == 'r'
+         && path[3] == 'o'
+         && path[4] == 'm'
+         && path[5] == ':'
+         && path[6] == '/'
+         && path[7] == '/'
+         && path[8] != '\0')
    {
-      if (!memcmp(path, cdrom_prefix, cdrom_prefix_len))
-      {
-         path             += cdrom_prefix_siz;
-         stream->scheme    = VFS_SCHEME_CDROM;
-      }
+      path             += sizeof("cdrom://")-1;
+      stream->scheme    = VFS_SCHEME_CDROM;
    }
 #endif
 
