@@ -26,6 +26,8 @@
 #include <errno.h>
 #include <sys/types.h>
 
+#include <string/stdstring.h> /* string_is_empty */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
