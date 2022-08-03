@@ -927,7 +927,10 @@ size_t fill_pathname_join(char *out_path,
          }
       }
       else
-         strlcat(out_path, PATH_DEFAULT_SLASH(), size);
+      {
+         out_path[len]      = PATH_DEFAULT_SLASH_C();
+         out_path[len+1]    = '\0';
+      }
    }
 
    return strlcat(out_path, path, size);
