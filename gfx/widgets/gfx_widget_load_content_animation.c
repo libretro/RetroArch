@@ -393,15 +393,17 @@ bool gfx_widget_start_load_content_animation(void)
 
          if (!string_is_empty(playlist_path))
          {
+            size_t system_name_len;
             fill_pathname_base(state->system_name, playlist_path,
                   sizeof(state->system_name));
             path_remove_extension(state->system_name);
 
+            system_name_len = strlen(state->system_name);
             /* Exclude history and favourites playlists */
             if (string_ends_with_size(state->system_name, "_history",
-                     strlen(state->system_name), STRLEN_CONST("_history")) ||
+                     system_name_len, STRLEN_CONST("_history")) ||
                 string_ends_with_size(state->system_name, "_favorites",
-                     strlen(state->system_name), STRLEN_CONST("_favorites")))
+                     system_name_len, STRLEN_CONST("_favorites")))
                state->system_name[0] = '\0';
 
             /* Check whether a valid system name was found */
@@ -474,9 +476,6 @@ bool gfx_widget_start_load_content_animation(void)
       if (!string_is_empty(core_db_name) &&
           !string_is_equal(core_db_name, state->system_name))
       {
-         state->icon_file[0] = '\0';
-         icon_path[0]        = '\0';
-
          strlcpy(state->icon_file, core_db_name,
                sizeof(state->icon_file));
          strlcat(state->icon_file, ".png",
@@ -494,11 +493,7 @@ bool gfx_widget_start_load_content_animation(void)
     *   use default 'retroarch' icon as a fallback */
    if (!state->has_icon)
    {
-      state->icon_file[0] = '\0';
-      icon_path[0]        = '\0';
-
-      strcpy_literal(state->icon_file, "retroarch.png");
-
+      strlcpy(state->icon_file, "retroarch.png", sizeof(state->icon_file));
       fill_pathname_join(icon_path,
             state->icon_directory, state->icon_file,
             sizeof(icon_path));
