@@ -394,6 +394,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 
          stream->fp  = fp;
       }
+
       /* Regarding setvbuf:
        *
        * https://www.freebsd.org/cgi/man.cgi?query=setvbuf&apropos=0&sektion=0&manpath=FreeBSD+11.1-RELEASE&arch=default&format=html
@@ -417,13 +418,10 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 #elif defined(WIIU)
       if (stream->scheme != VFS_SCHEME_CDROM)
       {
-         const int bufsize = 128*1024;
+         const int bufsize = 128 * 1024;
          stream->buf = (char*)memalign(0x40, bufsize);
          if (stream->fp)
             setvbuf(stream->fp, stream->buf, _IOFBF, bufsize);
-      }
-      if (stream->scheme != VFS_SCHEME_CDROM)
-      {
          stream->buf = (char*)calloc(1, 0x4000);
          if (stream->fp)
             setvbuf(stream->fp, stream->buf, _IOFBF, 0x4000);
@@ -463,10 +461,8 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 
          retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
 
-         stream->mapped = (uint8_t*)mmap((void*)0,
-               stream->mapsize, PROT_READ,  MAP_SHARED, stream->fd, 0);
-
-         if (stream->mapped == MAP_FAILED)
+         if ((stream->mapped = (uint8_t*)mmap((void*)0,
+               stream->mapsize, PROT_READ,  MAP_SHARED, stream->fd, 0)) == MAP_FAILED)
             stream->hints &= ~RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS;
       }
 #endif
