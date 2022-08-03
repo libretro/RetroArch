@@ -42,11 +42,13 @@ static sr_mode srm;
 #include "../config.h"
 #endif
 
-/* Global local variables */
+/* Forward declarations */
 static void crt_check_hh_core(videocrt_switch_t *p_switch);
 static void crt_adjust_sr_ini(videocrt_switch_t *p_switch);
+
+/* Global local variables */
 static bool ini_overrides_loaded = false;
-static char core_name[256]; /* Same size as library_name on retroarch_data.h */
+static char core_name[NAME_MAX_LENGTH]; /* Same size as library_name on retroarch_data.h */
 static char content_dir[PATH_MAX_LENGTH];
 
 #if defined(HAVE_VIDEOCORE) /* Need to add video core to SR2 */
@@ -229,8 +231,8 @@ static void switch_res_crt(
       unsigned crt_mode, unsigned native_width,
       int monitor_index, int super_width)
 {
-   char current_core_name[sizeof(core_name)];
-   char current_content_dir[sizeof(content_dir)];
+   char current_core_name[NAME_MAX_LENGTH];
+   char current_content_dir[PATH_MAX_LENGTH];
    unsigned char interlace = 0,   ret;
    const char *err_msg     = NULL;
    int w                   = native_width;
@@ -398,7 +400,7 @@ void crt_adjust_sr_ini(videocrt_switch_t *p_switch)
          ini_overrides_loaded = false;
       }
 
-      if (strlen(core_name) > 0)
+      if (core_name[0] != '\0')
       {
          /* Then we look for config/Core Name/Core Name.switchres.ini 
             and load it, overriding any variables it specifies */
