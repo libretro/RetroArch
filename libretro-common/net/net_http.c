@@ -389,6 +389,8 @@ void net_http_urlencode(char **dest, const char *source)
 void net_http_urlencode_full(char *dest,
       const char *source, size_t size)
 {
+   size_t tmp_len;
+   size_t url_domain_len;
    char url_domain[256];
    char url_path[PATH_MAX_LENGTH];
    size_t buf_pos                    = 0;
@@ -405,11 +407,11 @@ void net_http_urlencode_full(char *dest,
       tmp++;
    }
 
-   strlcpy(url_domain, source, tmp - url_path);
-
+   tmp_len        = strlen(tmp);
+   url_domain_len = ((strlcpy(url_domain, source, tmp - url_path)) - tmp_len) - 1;
    strlcpy(url_path,
-         source + strlen(url_domain) + 1,
-         strlen(tmp) + 1
+         source + url_domain_len + 1,
+         tmp_len + 1
          );
 
    tmp             = NULL;
