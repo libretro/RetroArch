@@ -264,9 +264,13 @@ static bool screenshot_dump(
    {
       if (savestate)
       {
-         strlcpy(state->filename,
+         size_t len             = strlcpy(state->filename,
                name_base, sizeof(state->filename));
-         strlcat(state->filename, ".png", sizeof(state->filename));
+         state->filename[len  ] = '.';
+         state->filename[len+1] = 'p';
+         state->filename[len+2] = 'n';
+         state->filename[len+3] = 'g';
+         state->filename[len+4] = '\0';
       }
       else
       {
@@ -320,9 +324,14 @@ static bool screenshot_dump(
          }
          else
          {
-            strlcpy(state->shotname, path_basename_nocompression(name_base),
+            size_t len             = strlcpy(
+                  state->shotname, path_basename_nocompression(name_base),
                   sizeof(state->shotname));
-            strlcat(state->shotname, ".png", sizeof(state->shotname));
+            state->shotname[len  ] = '.';
+            state->shotname[len+1] = 'p';
+            state->shotname[len+2] = 'n';
+            state->shotname[len+3] = 'g';
+            state->shotname[len+4] = '\0';
          }
 
          if (  string_is_empty(new_screenshot_dir) || 

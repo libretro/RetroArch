@@ -1403,6 +1403,7 @@ void MainWindow::deleteCurrentPlaylistItem()
 
 QString MainWindow::getPlaylistDefaultCore(QString plName)
 {
+   size_t len;
    playlist_config_t playlist_config;
    char playlistPath[PATH_MAX_LENGTH];
    QByteArray plNameByteArray          = plName.toUtf8();
@@ -1419,17 +1420,19 @@ QString MainWindow::getPlaylistDefaultCore(QString plName)
    playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
    playlist_config_set_base_content_directory(&playlist_config, settings->bools.playlist_portable_paths ? settings->paths.directory_menu_content : NULL);
 
-   playlistPath[0] = '\0';
-
    if (!settings || string_is_empty(plNameCString))
       return corePath;
 
    /* Get playlist path */
-   fill_pathname_join(
-      playlistPath,
-      settings->paths.directory_playlist, plNameCString,
-      sizeof(playlistPath));
-   strlcat(playlistPath, ".lpl", sizeof(playlistPath));
+   len                 = fill_pathname_join(
+         playlistPath,
+         settings->paths.directory_playlist, plNameCString,
+         sizeof(playlistPath));
+   playlistPath[len  ] = '.';
+   playlistPath[len+1] = 'l';
+   playlistPath[len+2] = 'p';
+   playlistPath[len+3] = 'l';
+   playlistPath[len+4] = '\0';
 
    /* Load playlist, if required */
    if (cachedPlaylist)

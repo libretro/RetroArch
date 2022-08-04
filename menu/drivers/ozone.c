@@ -4466,6 +4466,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
       if (string_ends_with_size(path, ".lpl",
                strlen(path), STRLEN_CONST(".lpl")))
       {
+         size_t len;
          struct texture_image ti;
          char sysname[PATH_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
@@ -4477,16 +4478,24 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          fill_pathname_base(sysname, path, sizeof(sysname));
          path_remove_extension(sysname);
 
-         fill_pathname_join(texturepath, ozone->icons_path, sysname,
+         len = fill_pathname_join(texturepath, ozone->icons_path, sysname,
                sizeof(texturepath));
-         strlcat(texturepath, ".png", sizeof(texturepath));
+         texturepath[len]   = '.';
+         texturepath[len+1] = 'p';
+         texturepath[len+2] = 'n';
+         texturepath[len+3] = 'g';
+         texturepath[len+4] = '\0';
 
          /* If the playlist icon doesn't exist return default */
          if (!path_is_valid(texturepath))
          {
-            fill_pathname_join(texturepath, ozone->icons_path, "default",
+            len = fill_pathname_join(texturepath, ozone->icons_path, "default",
                   sizeof(texturepath));
-            strlcat(texturepath, ".png", sizeof(texturepath));
+            texturepath[len]   = '.';
+            texturepath[len+1] = 'p';
+            texturepath[len+2] = 'n';
+            texturepath[len+3] = 'g';
+            texturepath[len+4] = '\0';
          }
 
          ti.width         = 0;

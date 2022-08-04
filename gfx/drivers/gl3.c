@@ -1261,11 +1261,9 @@ static void *gl3_init(const video_info_t *video,
 
    {
       char device_str[128];
-
-      device_str[0] = '\0';
-
-      strlcpy(device_str, vendor, sizeof(device_str));
-      strlcat(device_str, " ", sizeof(device_str));
+      size_t len        = strlcpy(device_str, vendor, sizeof(device_str));
+      device_str[len  ] = ' ';
+      device_str[len+1] = '\0';
       strlcat(device_str, renderer, sizeof(device_str));
 
       video_driver_set_gpu_device_string(device_str);

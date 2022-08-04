@@ -3727,8 +3727,9 @@ static void *gl2_init(const video_info_t *video,
 
       if (!string_is_empty(vendor))
       {
-        strlcpy(device_str, vendor, sizeof(device_str));
-        strlcat(device_str, " ", sizeof(device_str));
+        size_t len        = strlcpy(device_str, vendor, sizeof(device_str));
+        device_str[len  ] = ' ';
+        device_str[len+1] = '\0';
       }
 
       if (!string_is_empty(renderer))

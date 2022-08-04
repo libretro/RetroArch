@@ -1477,17 +1477,20 @@ static bool core_info_path_is_locked(
       core_aux_file_path_list_t *lock_list,
       const char *core_file_name)
 {
-   size_t i;
+   size_t i, len;
    uint32_t hash;
    char lock_filename[NAME_MAX_LENGTH];
 
    if (lock_list->size < 1)
       return false;
 
-   strlcpy(lock_filename, core_file_name,
+   len                  = strlcpy(lock_filename, core_file_name,
          sizeof(lock_filename));
-   strlcat(lock_filename, FILE_PATH_LOCK_EXTENSION,
-         sizeof(lock_filename));
+   lock_filename[len  ] = '.';
+   lock_filename[len+1] = 'l';
+   lock_filename[len+2] = 'c';
+   lock_filename[len+3] = 'k';
+   lock_filename[len+4] = '\0';
 
    hash = core_info_hash_string(lock_filename);
 
@@ -1653,9 +1656,14 @@ static config_file_t *core_info_get_config_file(
             "%s" ".info", core_file_id);
    else
    {
-      fill_pathname_join(info_path, info_dir, core_file_id,
+      size_t len     = fill_pathname_join(info_path, info_dir, core_file_id,
             sizeof(info_path));
-      strlcat(info_path, ".info", sizeof(info_path));
+      info_path[len]   = '.';
+      info_path[len+1] = 'i';
+      info_path[len+2] = 'n';
+      info_path[len+3] = 'f';
+      info_path[len+4] = 'o';
+      info_path[len+5] = '\0';
    }
 
    return config_file_new_from_path_to_string(info_path);
@@ -2869,6 +2877,7 @@ static bool core_info_update_core_aux_file(const char *path, bool create)
  *   core info list this is *not* thread safe */
 bool core_info_set_core_lock(const char *core_path, bool lock)
 {
+   size_t len;
    core_info_t *core_info = NULL;
    char lock_file_path[PATH_MAX_LENGTH];
 
@@ -2887,8 +2896,13 @@ bool core_info_set_core_lock(const char *core_path, bool lock)
       return false;
 
    /* Get lock file path */
-   strlcpy(lock_file_path, core_info->path, sizeof(lock_file_path));
-   strlcat(lock_file_path, FILE_PATH_LOCK_EXTENSION, sizeof(lock_file_path));
+   len                   = strlcpy(
+         lock_file_path, core_info->path, sizeof(lock_file_path));
+   lock_file_path[len  ] = '.';
+   lock_file_path[len+1] = 'l';
+   lock_file_path[len+2] = 'c';
+   lock_file_path[len+3] = 'k';
+   lock_file_path[len+4] = '\0';
 
    /* Create or delete lock file, as required */
    if (!core_info_update_core_aux_file(lock_file_path, lock))
@@ -2912,6 +2926,7 @@ bool core_info_set_core_lock(const char *core_path, bool lock)
  *   must be checked externally */
 bool core_info_get_core_lock(const char *core_path, bool validate_path)
 {
+   size_t len;
    core_info_t *core_info     = NULL;
    const char *core_file_path = NULL;
    bool is_locked             = false;
@@ -2942,10 +2957,14 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
       return false;
 
    /* Get lock file path */
-   strlcpy(lock_file_path, core_file_path,
+   len                   = strlcpy(
+         lock_file_path, core_file_path,
          sizeof(lock_file_path));
-   strlcat(lock_file_path, FILE_PATH_LOCK_EXTENSION,
-         sizeof(lock_file_path));
+   lock_file_path[len  ] = '.';
+   lock_file_path[len+1] = 'l';
+   lock_file_path[len+2] = 'c';
+   lock_file_path[len+3] = 'k';
+   lock_file_path[len+4] = '\0';
 
    /* Check whether lock file exists */
    is_locked = path_is_valid(lock_file_path);
