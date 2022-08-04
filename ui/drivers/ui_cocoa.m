@@ -332,33 +332,6 @@ static ui_application_t ui_application_cocoa = {
    "cocoa"
 };
 
-@interface CommandPerformer : NSObject
-@end // @interface CommandPerformer
-
-@implementation CommandPerformer {
-   void *data;
-   enum event_command cmd;
-}
-
-- (id)initWithData:(void *)data command:(enum event_command)cmd
-{
-   self = [super init];
-   if (!self)
-      return self;
-
-   self->data = data;
-   self->cmd = cmd;
-
-   return self;
-}
-
-- (void)perform
-{
-   command_event(self->cmd, self->data);
-}
-
-@end // @implementation CommandPerformer
-
 #if defined(HAVE_COCOA_METAL)
 @interface RAWindow : NSWindow
 @end
@@ -904,12 +877,6 @@ static void open_document_handler(
       case 20:
          cmd = CMD_EVENT_FULLSCREEN_TOGGLE;
          break;
-      case 21:
-         cmd = CMD_EVENT_TAKE_SCREENSHOT;
-         break;
-      case 22:
-         cmd = CMD_EVENT_AUDIO_MUTE_TOGGLE;
-         break;
       default:
          break;
    }
@@ -954,12 +921,7 @@ static void ui_companion_cocoa_deinit(void *data)
 static void *ui_companion_cocoa_init(void) { return (void*)-1; }
 static void ui_companion_cocoa_notify_content_loaded(void *data) { }
 static void ui_companion_cocoa_toggle(void *data, bool force) { }
-static void ui_companion_cocoa_event_command(void *data, enum event_command cmd)
-{
-   id performer = [[CommandPerformer alloc] initWithData:data command:cmd];
-   [performer performSelectorOnMainThread:@selector(perform) withObject:nil waitUntilDone:NO];
-   [performer release];
-}
+static void ui_companion_cocoa_event_command(void *data, enum event_command cmd) { }
 static void ui_companion_cocoa_notify_list_pushed(void *data,
     file_list_t *list, file_list_t *menu_list) { }
 
