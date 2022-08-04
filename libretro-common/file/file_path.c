@@ -30,7 +30,6 @@
 
 #include <boolean.h>
 #include <file/file_path.h>
-#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
 #include <time/rtime.h>
@@ -1009,59 +1008,35 @@ size_t fill_pathname_join_delim(char *out_path, const char *dir,
    return copied;
 }
 
-void fill_pathname_expand_special(char *out_path,
+size_t fill_pathname_expand_special(char *out_path,
       const char *in_path, size_t size)
 {
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
+   char *app_dir = NULL;
    if (in_path[0] == '~')
    {
-      char *home_dir = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-      fill_pathname_home_dir(home_dir,
-         PATH_MAX_LENGTH * sizeof(char));
-
-      if (*home_dir)
-      {
-         size_t src_size = strlcpy(out_path, home_dir, size);
-         retro_assert(src_size < size);
-
-         out_path  += src_size;
-         size      -= src_size;
-
-         if (!PATH_CHAR_IS_SLASH(out_path[-1]))
-         {
-            src_size = strlcpy(out_path, PATH_DEFAULT_SLASH(), size);
-            retro_assert(src_size < size);
-
-            out_path += src_size;
-            size     -= src_size;
-         }
-
-         in_path += 2;
-      }
-
-      free(home_dir);
+      app_dir    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      fill_pathname_home_dir(app_dir, PATH_MAX_LENGTH * sizeof(char));
    }
    else if (in_path[0] == ':')
    {
-      char *application_dir = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      app_dir    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      app_dir[0] = '\0';
+      fill_pathname_application_dir(app_dir, PATH_MAX_LENGTH * sizeof(char));
+   }
 
-      application_dir[0]    = '\0';
-
-      fill_pathname_application_dir(application_dir,
-            PATH_MAX_LENGTH * sizeof(char));
-
-      if (*application_dir)
+   if (app_dir)
+   {
+      if (*app_dir)
       {
-         size_t src_size   = strlcpy(out_path, application_dir, size);
-         retro_assert(src_size < size);
+         size_t src_size = strlcpy(out_path, app_dir, size);
 
-         out_path  += src_size;
-         size      -= src_size;
+         out_path       += src_size;
+         size           -= src_size;
 
          if (!PATH_CHAR_IS_SLASH(out_path[-1]))
          {
-            src_size = strlcpy(out_path, PATH_DEFAULT_SLASH(), size);
-            retro_assert(src_size < size);
+            src_size  = strlcpy(out_path, PATH_DEFAULT_SLASH(), size);
 
             out_path += src_size;
             size     -= src_size;
@@ -1070,14 +1045,13 @@ void fill_pathname_expand_special(char *out_path,
          in_path += 2;
       }
 
-      free(application_dir);
+      free(app_dir);
    }
 #endif
-
-   retro_assert(strlcpy(out_path, in_path, size) < size);
+   return strlcpy(out_path, in_path, size);
 }
 
-void fill_pathname_abbreviate_special(char *out_path,
+size_t fill_pathname_abbreviate_special(char *out_path,
       const char *in_path, size_t size)
 {
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
@@ -1114,8 +1088,6 @@ void fill_pathname_abbreviate_special(char *out_path,
       {
          size_t src_size  = strlcpy(out_path, notations[i], size);
 
-         retro_assert(src_size < size);
-
          out_path        += src_size;
          size            -= src_size;
          in_path         += strlen(candidates[i]);
@@ -1130,10 +1102,8 @@ void fill_pathname_abbreviate_special(char *out_path,
          break; /* Don't allow more abbrevs to take place. */
       }
    }
-
 #endif
-
-   retro_assert(strlcpy(out_path, in_path, size) < size);
+   return strlcpy(out_path, in_path, size);
 }
 
 /**
@@ -1353,7 +1323,7 @@ void fill_pathname_application_path(char *s, size_t len)
 #ifndef HAVE_COCOATOUCH
       /* Not sure what this does but it breaks 
        * stuff for iOS, so skipping */
-      retro_assert(strlcat(s, "nobin", len) < len);
+      strlcat(s, "nobin", len);
 #endif
       return;
    }

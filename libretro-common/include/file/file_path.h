@@ -512,10 +512,10 @@ size_t fill_pathname_join_special_ext(char *out_path,
 size_t fill_pathname_join_delim(char *out_path, const char *dir,
       const char *path, const char delim, size_t size);
 
-void fill_pathname_expand_special(char *out_path,
+size_t fill_pathname_expand_special(char *out_path,
       const char *in_path, size_t size);
 
-void fill_pathname_abbreviate_special(char *out_path,
+size_t fill_pathname_abbreviate_special(char *out_path,
       const char *in_path, size_t size);
 
 /**
