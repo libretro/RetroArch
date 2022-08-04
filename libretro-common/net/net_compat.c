@@ -20,18 +20,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdlib.h>
 #include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <string.h>
+
+#include <compat/strl.h>
+#include <retro_timers.h>
 
 #include <net/net_compat.h>
-#include <net/net_socket.h>
-#include <retro_timers.h>
-#include <compat/strl.h>
 
 #if defined(_XBOX)
 struct hostent *gethostbyname(const char *name)
@@ -76,40 +71,27 @@ done:
 }
 
 #elif defined(VITA)
-#define COMPAT_NET_INIT_SIZE 512*1024
-#define MAX_NAME 512
+#define COMPAT_NET_INIT_SIZE 0x80000
 
-typedef uint32_t in_addr_t;
-
-struct in_addr
-{
-   in_addr_t s_addr;
-};
-
-static void *_net_compat_net_memory = NULL;
-
-char *inet_ntoa(struct SceNetInAddr in)
+char *inet_ntoa(struct in_addr in)
 {
    static char ip_addr[16];
 
-   if (!inet_ntop_compat(AF_INET, &in, ip_addr, sizeof(ip_addr)))
-      strlcpy(ip_addr, "Invalid", sizeof(ip_addr));
+   sceNetInetNtop(AF_INET, &in, ip_addr, sizeof(ip_addr));
 
    return ip_addr;
 }
 
-struct SceNetInAddr inet_aton(const char *ip_addr)
+int inet_aton(const char *cp, struct in_addr *inp)
 {
-   SceNetInAddr inaddr;
-
-   inet_ptrton(AF_INET, ip_addr, &inaddr);
-
-   return inaddr;
+   return sceNetInetPton(AF_INET, cp, inp);
 }
 
-unsigned int inet_addr(const char *cp)
+uint32_t inet_addr(const char *cp)
 {
-   return inet_aton(cp).s_addr;
+   struct in_addr in;
+
+   return (sceNetInetPton(AF_INET, cp, &in) == 1) ? in.s_addr : INADDR_NONE;
 }
 
 struct hostent *gethostbyname(const char *name)
@@ -144,33 +126,58 @@ done:
    return ret;
 }
 
+#elif defined(GEKKO)
+const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
+{
+   const char *addr_str = inet_ntoa(*(struct in_addr*)src);
+
+   if (addr_str)
+   {
+      strlcpy(dst, addr_str, size);
+
+      return dst;
+   }
+
+   return NULL;
+}
+
+int inet_pton(int af, const char *src, void *dst)
+{
+   if (inet_aton(src, (struct in_addr*)dst))
+      return 1;
+
+   return 0;
+}
+
+#elif defined(WIIU)
+#include <malloc.h>
+
+static int _net_compat_thread_entry(int argc, const char **argv)
+{
+   void *buf = memalign(128, WIIU_RCVBUF + WIIU_SNDBUF);
+
+   if (!buf)
+      return -1;
+
+   somemopt(1, buf, WIIU_RCVBUF + WIIU_SNDBUF, 0);
+
+   free(buf);
+
+   return 0;
+}
+
+static void _net_compat_thread_cleanup(OSThread *thread, void *stack)
+{
+   free(stack);
+}
+
 #elif defined(_3DS)
 #include <malloc.h>
 #include <3ds/types.h>
 #include <3ds/services/soc.h>
 
-#define SOC_ALIGN       0x1000
-#define SOC_BUFFERSIZE  0x100000
-
-static u32* _net_compat_net_memory = NULL;
-#endif
-
-#if defined(_WIN32)
-int inet_aton(const char *cp, struct in_addr *inp)
-{
-	uint32_t addr = 0;
-#ifndef _XBOX
-	if (cp == 0 || inp == 0)
-		return -1;
-#endif
-
-	addr = inet_addr(cp);
-	if (addr == INADDR_NONE || addr == INADDR_ANY)
-		return -1;
-
-	inp->s_addr = addr;
-   return 1;
-}
+#define SOC_ALIGN      0x1000
+#define SOC_BUFFERSIZE 0x100000
 #endif
 
 int getaddrinfo_retro(const char *node, const char *service,
@@ -192,30 +199,55 @@ int getaddrinfo_retro(const char *node, const char *service,
    {
       struct addrinfo    *info = (struct addrinfo*)calloc(1, sizeof(*info));
       struct sockaddr_in *addr = (struct sockaddr_in*)malloc(sizeof(*addr));
-      struct hostent     *host = gethostbyname(node);
 
-      if (!info || !addr || !host || !host->h_addr)
-      {
-         free(addr);
-         free(info);
-
-         return -1;
-      }
+      if (!info || !addr)
+         goto failure;
 
       info->ai_family   = AF_INET;
       info->ai_socktype = hints->ai_socktype;
       info->ai_protocol = hints->ai_protocol;
       info->ai_addrlen  = sizeof(*addr);
       info->ai_addr     = (struct sockaddr*)addr;
+      /* We ignore AI_CANONNAME; ai_canonname is always NULL. */
 
-      addr->sin_family      = AF_INET;
+      addr->sin_family = AF_INET;
+
       if (service)
-         addr->sin_port     = inet_htons((uint16_t)strtoul(service, NULL, 10));
-      memcpy(&addr->sin_addr, host->h_addr, sizeof(addr->sin_addr));
+      {
+         /* We can only handle numeric ports; ignore AI_NUMERICSERV. */
+         char *service_end = NULL;
+         uint16_t port     = (uint16_t)strtoul(service, &service_end, 10);
+
+         if (service_end == service || *service_end)
+            goto failure;
+
+         addr->sin_port = htons(port);
+      }
+
+      if (hints->ai_flags & AI_NUMERICHOST)
+      {
+         if (!inet_aton(node, &addr->sin_addr))
+            goto failure;
+      }
+      else
+      {
+         struct hostent *host = gethostbyname(node);
+
+         if (!host || !host->h_addr)
+            goto failure;
+
+         memcpy(&addr->sin_addr, host->h_addr, sizeof(addr->sin_addr));
+      }
 
       *res = info;
 
       return 0;
+
+failure:
+      free(addr);
+      free(info);
+
+      return -1;
    }
 #else
    return getaddrinfo(node, service, hints, res);
@@ -235,193 +267,37 @@ void freeaddrinfo_retro(struct addrinfo *res)
 #endif
 }
 
-#if defined(WIIU)
-#include <malloc.h>
-
-static OSThread wiiu_net_cmpt_thread;
-
-static void wiiu_net_cmpt_thread_cleanup(OSThread *thread, void *stack)
+int getnameinfo_retro(const struct sockaddr *addr, socklen_t addrlen,
+      char *host, socklen_t hostlen, char *serv, socklen_t servlen, int flags)
 {
-   free(stack);
-}
+#ifdef HAVE_SOCKET_LEGACY
+   const struct sockaddr_in *addr4 = (const struct sockaddr_in*)addr;
 
-static int wiiu_net_cmpt_thread_entry(int argc, const char** argv)
-{
-   const int buf_size = WIIU_RCVBUF + WIIU_SNDBUF;
-   void* buf = memalign(128, buf_size);
-   if (!buf) return -1;
+   /* We cannot perform reverse DNS lookups here; ignore the following flags:
+      NI_NAMEREQD
+      NI_NOFQDN
+      NI_NUMERICHOST (always enforced)
+    */
+   if (host && hostlen)
+   {
+      const char *_host = inet_ntoa(addr4->sin_addr);
 
-   somemopt(1, buf, buf_size, 0);
+      if (!_host)
+         return -1;
 
-   free(buf);
+      strlcpy(host, _host, hostlen);
+   }
+
+   /* We cannot get service names here; ignore the following flags:
+      NI_DGRAM
+      NI_NUMERICSERV (always enforced)
+    */
+   if (serv && servlen)
+      snprintf(serv, servlen, "%hu", (unsigned short)addr4->sin_port);
+
    return 0;
-}
-#endif
-
-#if defined(GEKKO)
-static char localip[16] = {0};
-static char gateway[16] = {0};
-static char netmask[16] = {0};
-#endif
-
-/**
- * network_init:
- *
- * Platform specific socket library initialization.
- *
- * @return true if successful, otherwise false.
- **/
-bool network_init(void)
-{
-   static bool inited = false;
-
-#if defined(_WIN32)
-   WSADATA wsaData;
-#elif defined(__PSL1GHT__) || defined(__PS3__)
-   int timeout_count = 10;
-#elif defined(WIIU)
-   void* stack;
-#endif
-
-   if (inited)
-      return true;
-
-#if defined(_WIN32)
-   if (WSAStartup(MAKEWORD(2, 2), &wsaData))
-      goto failure;
-#elif defined(__PSL1GHT__) || defined(__PS3__)
-   sysModuleLoad(SYSMODULE_NET);
-   netInitialize();
-   if (netCtlInit() < 0)
-      goto failure;
-
-   for (;;)
-   {
-      int state;
-
-      if (netCtlGetState(&state) < 0)
-         goto failure;
-      if (state == NET_CTL_STATE_IPObtained)
-         break;
-
-      if (!(timeout_count--))
-         goto failure;
-
-      retro_sleep(500);
-   }
-#elif defined(VITA)
-   if (sceNetShowNetstat() == SCE_NET_ERROR_ENOTINIT)
-   {
-      SceNetInitParam param;
-
-      _net_compat_net_memory = malloc(COMPAT_NET_INIT_SIZE);
-      if (!_net_compat_net_memory)
-         goto failure;
-
-      param.memory           = _net_compat_net_memory;
-      param.size             = COMPAT_NET_INIT_SIZE;
-      param.flags            = 0;
-      if (sceNetInit(&param) < 0)
-         goto failure;
-      if (sceNetCtlInit() < 0)
-         goto failure;
-   }
-#elif defined(GEKKO)
-   if (if_config(localip, netmask, gateway, true, 10) < 0)
-      goto failure;
-#elif defined(WIIU)
-   stack = malloc(4096);
-   if (!stack)
-      goto failure;
-
-   socket_lib_init();
-
-   if (OSCreateThread(&wiiu_net_cmpt_thread, wiiu_net_cmpt_thread_entry,
-         0, NULL, stack+4096, 4096, 3,
-         OS_THREAD_ATTRIB_AFFINITY_ANY))
-   {
-      OSSetThreadName(&wiiu_net_cmpt_thread, "Network compat thread");
-      OSSetThreadDeallocator(&wiiu_net_cmpt_thread,
-         wiiu_net_cmpt_thread_cleanup);
-      OSResumeThread(&wiiu_net_cmpt_thread);
-   }
-   else
-   {
-      free(stack);
-      goto failure;
-   }
-#elif defined(_3DS)
-   _net_compat_net_memory = (u32*)memalign(SOC_ALIGN, SOC_BUFFERSIZE);
-   if (!_net_compat_net_memory)
-      goto failure;
-
-   /* WIFI init */
-   if (socInit(_net_compat_net_memory, SOC_BUFFERSIZE))
-      goto failure;
 #else
-   signal(SIGPIPE, SIG_IGN); /* Do not like SIGPIPE killing our app. */
-#endif
-
-   inited = true;
-
-   return true;
-
-#if defined(_WIN32) || defined(__PSL1GHT__) || defined(__PS3__) || defined(VITA) || defined(GEKKO) || defined(WIIU) || defined(_3DS)
-failure:
-   network_deinit();
-
-   return false;
-#endif
-}
-
-/**
- * network_deinit:
- *
- * Deinitialize platform specific socket libraries.
- **/
-void network_deinit(void)
-{
-#if defined(_WIN32)
-   WSACleanup();
-#elif defined(__PSL1GHT__) || defined(__PS3__)
-   netCtlTerm();
-   netFinalizeNetwork();
-   sysModuleUnload(SYSMODULE_NET);
-#elif defined(VITA)
-   sceNetCtlTerm();
-   sceNetTerm();
-
-   free(_net_compat_net_memory);
-   _net_compat_net_memory = NULL;
-#elif defined(GEKKO) && !defined(HW_DOL)
-   net_deinit();
-#elif defined(_3DS)
-   socExit();
-
-   free(_net_compat_net_memory);
-   _net_compat_net_memory = NULL;
-#endif
-}
-
-uint16_t inet_htons(uint16_t hostshort)
-{
-#if defined(VITA)
-   return sceNetHtons(hostshort);
-#else
-   return htons(hostshort);
-#endif
-}
-
-
-int inet_ptrton(int af, const char *src, void *dst)
-{
-#if defined(VITA)
-   return sceNetInetPton(af, src, dst);
-#elif defined(GEKKO) || defined(_WIN32)
-   /* TODO/FIXME - should use InetPton on Vista and later */
-   return inet_aton(src, (struct in_addr*)dst);
-#else
-   return inet_pton(af, src, dst);
+   return getnameinfo(addr, addrlen, host, hostlen, serv, servlen, flags);
 #endif
 }
 
@@ -454,6 +330,7 @@ bool addr_6to4(struct sockaddr_storage *addr)
    port = addr6->sin6_port;
 
    memset(addr, 0, sizeof(*addr));
+
    addr4->sin_family = AF_INET;
    addr4->sin_port   = port;
    memcpy(&addr4->sin_addr, &address, sizeof(addr4->sin_addr));
@@ -462,271 +339,188 @@ bool addr_6to4(struct sockaddr_storage *addr)
    return true;
 }
 
-struct in_addr6_compat
-{
-   unsigned char ip_addr[16];
-};
-
-#ifdef _XBOX
-
-#ifndef IM_IN6ADDRSZ
-#define	IM_IN6ADDRSZ	16
-#endif
-
-#ifndef IM_INT16SZ
-#define	IM_INT16SZ		2
-#endif
-
-#ifndef IM_INADDRSZ
-#define	IM_INADDRSZ		4
-#endif
-/* Taken from https://github.com/skywind3000/easenet/blob/master/inetbase.c
- */
-
 /**
- * inet_ntop4x:
+ * network_init:
  *
- * Convert presentation format to network format.
- **/
-static const char *
-inet_ntop4x(const unsigned char *src, char *dst, size_t size)
-{
-   char tmp[64];
-   size_t len = snprintf(tmp,
-         sizeof(tmp),
-         "%u.%u.%u.%u", src[0], src[1], src[2], src[3]);
-
-   if (len >= size)
-      goto error;
-
-   memcpy(dst, tmp, len + 1);
-   return dst;
-
-error:
-   errno = ENOSPC;
-   return NULL;
-}
-
-/**
- * inet_ntop6x:
+ * Platform specific socket library initialization.
  *
- * Convert presentation format to network format.
+ * @return true if successful, otherwise false.
  **/
-static const char *
-inet_ntop6x(const unsigned char *src, char *dst, size_t size)
+bool network_init(void)
 {
-   char tmp[64], *tp;
-   int i, inc;
-   struct { int base, len; } best, cur;
-   unsigned int words[IM_IN6ADDRSZ / IM_INT16SZ];
+#if defined(_WIN32)
+   static bool initialized = false;
 
-   memset(words, '\0', sizeof(words));
-   best.base = best.len = 0;
-   cur.base  = cur.len  = 0;
-
-   for (i = 0; i < IM_IN6ADDRSZ; i++)
-      words[i / 2] |= (src[i] << ((1 - (i % 2)) << 3));
-
-   best.base = -1;
-   cur.base  = -1;
-
-   for (i = 0; i < (IM_IN6ADDRSZ / IM_INT16SZ); i++)
+   if (!initialized)
    {
-      if (words[i] == 0)
-      {
-         if (cur.base == -1)
-         {
-            cur.base = i;
-            cur.len  = 1;
-         }
-         else cur.len++;
-      }
-      else
-      {
-         if (cur.base != -1)
-         {
-            if (best.base == -1 || cur.len > best.len)
-               best = cur;
-            cur.base = -1;
-         }
-      }
-   }
-   if (cur.base != -1)
-   {
-      if (best.base == -1 || cur.len > best.len)
-         best = cur;
-   }
-   if (best.base != -1 && best.len < 2)
-      best.base = -1;
+      WSADATA wsaData;
 
-   tp = tmp;
-   for (i = 0; i < (IM_IN6ADDRSZ / IM_INT16SZ); i++)
-   {
-      if (best.base != -1 && i >= best.base &&
-            i < (best.base + best.len))
+      if (WSAStartup(MAKEWORD(2, 2), &wsaData))
       {
-         if (i == best.base)
-            *tp++ = ':';
-         continue;
+         WSACleanup();
+
+         return false;
       }
 
-      if (i != 0)
-         *tp++ = ':';
-      if (i == 6 && best.base == 0 &&
-            (best.len == 6 || (best.len == 5 && words[5] == 0xffff)))
+      initialized = true;
+   }
+
+   return true;
+#elif defined(__PSL1GHT__) || defined(__PS3__)
+   static bool initialized = false;
+
+   if (!initialized)
+   {
+      int tries;
+
+      sysModuleLoad(SYSMODULE_NET);
+
+      netInitialize();
+      if (netCtlInit() < 0)
+         goto failure;
+
+      for (tries = 10;;)
       {
-         if (!inet_ntop4x(src+12, tp, sizeof(tmp) - (tp - tmp)))
-            return NULL;
-         tp += strlen(tp);
-         break;
+         int state;
+
+         if (netCtlGetState(&state) < 0)
+            goto failure;
+         if (state == NET_CTL_STATE_IPObtained)
+            break;
+
+         if (!(--tries))
+            goto failure;
+
+         retro_sleep(500);
       }
-      inc = sprintf(tp, "%x", words[i]);
-      tp += inc;
+
+      initialized = true;
    }
 
-   if (best.base != -1 && (best.base + best.len) ==
-         (IM_IN6ADDRSZ / IM_INT16SZ))
-      *tp++ = ':';
+   return true;
 
-   *tp++ = '\0';
+failure:
+   netCtlTerm();
+   netFinalizeNetwork();
 
-   if ((size_t)(tp - tmp) > size)
-      goto error;
+   sysModuleUnload(SYSMODULE_NET);
 
-   memcpy(dst, tmp, tp - tmp);
-   return dst;
-
-error:
-   errno = ENOSPC;
-   return NULL;
-}
-
-/* 
- * isockaddr_ntop:
- *
- * Convert network format to presentation format.
- * Another inet_ntop, supports AF_INET/AF_INET6
- **/
-static const char *isockaddr_ntop(int af,
-      const void *src, char *dst, size_t size)
-{
-   switch (af)
+   return false;
+#elif defined(VITA)
+   if (sceNetShowNetstat() == SCE_NET_ERROR_ENOTINIT)
    {
-      case AF_INET:
-         return inet_ntop4x((const unsigned char*)src, dst, size);
-#ifdef AF_INET6
-      case AF_INET6:
-         return inet_ntop6x((const unsigned char*)src, dst, size);
-#endif
-      default:
-         if (af == -6)
-            return inet_ntop6x((const unsigned char*)src, dst, size);
-         errno = EAFNOSUPPORT;
-         return NULL;
-   }
-}
-#endif
+      SceNetInitParam param;
+      void *net_compat_memory = malloc(COMPAT_NET_INIT_SIZE);
 
-const char *inet_ntop_compat(int af, const void *src, char *dst, socklen_t cnt)
-{
-#if defined(VITA)
-   return sceNetInetNtop(af,src,dst,cnt);
-#elif defined(WIIU)
-   return inet_ntop(af, src, dst, cnt);
-#elif defined(GEKKO)
-   if (af == AF_INET)
-   {
-      const char *addr_str = inet_ntoa(*(struct in_addr*)src);
+      if (!net_compat_memory)
+         return false;
 
-      if (addr_str)
-      {
-         strlcpy(dst, addr_str, cnt);
+      param.memory = net_compat_memory;
+      param.size   = COMPAT_NET_INIT_SIZE;
+      param.flags  = 0;
 
-         return dst;
-      }
-   }
+      if (sceNetInit(&param) < 0)
+         goto failure;
+      if (sceNetCtlInit() < 0)
+         goto failure;
 
-   return NULL;
-#elif defined(_XBOX)
-   return isockaddr_ntop(af, src, dst, cnt);
-#elif defined(_WIN32)
-   if (af == AF_INET)
-   {
-      struct sockaddr_in in;
-      memset(&in, 0, sizeof(in));
-      in.sin_family = AF_INET;
-      memcpy(&in.sin_addr, src, sizeof(struct in_addr));
-      getnameinfo((struct sockaddr *)&in, sizeof(struct
-               sockaddr_in), dst, cnt, NULL, 0, NI_NUMERICHOST);
-      return dst;
-   }
-#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
-   else if (af == AF_INET6)
-   {
-      struct sockaddr_in6 in;
-      memset(&in, 0, sizeof(in));
-      in.sin6_family = AF_INET6;
-      memcpy(&in.sin6_addr, src, sizeof(struct in_addr6_compat));
-      getnameinfo((struct sockaddr *)&in, sizeof(struct
-               sockaddr_in6), dst, cnt, NULL, 0, NI_NUMERICHOST);
-      return dst;
-   }
-#endif
-   else
-      return NULL;
-#else
-   return inet_ntop(af, src, dst, cnt);
-#endif
-}
+      return true;
 
-bool udp_send_packet(const char *host,
-      uint16_t port, const char *msg)
-{
-   char port_buf[16]           = {0};
-   struct addrinfo hints       = {0};
-   struct addrinfo *res        = NULL;
-   const struct addrinfo *tmp  = NULL;
-   int fd                      = -1;
-   bool ret                    = true;
+failure:
+      sceNetCtlTerm();
+      sceNetTerm();
 
-   hints.ai_socktype           = SOCK_DGRAM;
+      free(net_compat_memory);
 
-   snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
-
-   if (getaddrinfo_retro(host, port_buf, &hints, &res) != 0)
       return false;
-
-   /* Send to all possible targets.
-    * "localhost" might resolve to several different IPs. */
-   tmp = (const struct addrinfo*)res;
-   while (tmp)
-   {
-      ssize_t len, ret_len;
-
-      fd = socket(tmp->ai_family, tmp->ai_socktype, tmp->ai_protocol);
-      if (fd < 0)
-      {
-         ret = false;
-         goto end;
-      }
-
-      len     = strlen(msg);
-      ret_len = sendto(fd, msg, len, 0, tmp->ai_addr, tmp->ai_addrlen);
-
-      if (ret_len < len)
-      {
-         ret = false;
-         goto end;
-      }
-
-      socket_close(fd);
-      fd = -1;
-      tmp = tmp->ai_next;
    }
 
-end:
-   freeaddrinfo_retro(res);
-   if (fd >= 0)
-      socket_close(fd);
-   return ret;
+   return true;
+#elif defined(GEKKO)
+   static bool initialized = false;
+
+   if (!initialized)
+   {
+      char localip[16] = {0};
+      char netmask[16] = {0};
+      char gateway[16] = {0};
+
+      if (if_config(localip, netmask, gateway, true, 10) < 0)
+      {
+         net_deinit();
+
+         return false;
+      }
+
+      initialized = true;
+   }
+
+   return true;
+#elif defined(WIIU)
+   static bool initialized = false;
+
+   if (!initialized)
+   {
+      OSThread net_compat_thread;
+      void *stack = malloc(0x1000);
+
+      if (!stack)
+         return false;
+
+      socket_lib_init();
+
+      if (!OSCreateThread(&net_compat_thread, _net_compat_thread_entry,
+            0, NULL, (void*)((size_t)stack + 0x1000), 0x1000, 3,
+            OS_THREAD_ATTRIB_AFFINITY_ANY))
+      {
+         free(stack);
+
+         return false;
+      }
+
+      OSSetThreadName(&net_compat_thread, "Network compat thread");
+      OSSetThreadDeallocator(&net_compat_thread, _net_compat_thread_cleanup);
+      OSResumeThread(&net_compat_thread);
+
+      initialized = true;
+   }
+
+   return true;
+#elif defined(_3DS)
+   static bool initialized = false;
+
+   if (!initialized)
+   {
+      u32 *net_compat_memory = (u32*)memalign(SOC_ALIGN, SOC_BUFFERSIZE);
+
+      if (!net_compat_memory)
+         return false;
+
+      /* WIFI init */
+      if (socInit(net_compat_memory, SOC_BUFFERSIZE))
+      {
+         socExit();
+
+         free(net_compat_memory);
+
+         return false;
+      }
+
+      initialized = true;
+   }
+
+   return true;
+#else
+   static bool initialized = false;
+
+   if (!initialized)
+   {
+      /* Do not like SIGPIPE killing our app. */
+      signal(SIGPIPE, SIG_IGN);
+
+      initialized = true;
+   }
+
+   return true;
+#endif
 }

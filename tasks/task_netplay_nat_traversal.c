@@ -59,6 +59,7 @@ static bool find_local_address(struct natt_device *device,
          goto done;
 
       hints.ai_family = AF_INET;
+      hints.ai_flags  = AI_NUMERICHOST;
 
       /* Score interfaces based on how "close" their address
          is from the device's address. */
