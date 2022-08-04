@@ -1088,6 +1088,7 @@ static void xmb_render_messagebox_internal(
 static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
 {
    char path[PATH_MAX_LENGTH];
+   size_t len                         = 0;
    char       *tmp                    = string_replace_substring(xmb->title_name, "/", " ");
    settings_t *settings               = config_get_ptr();
    const char *dir_dynamic_wallpapers = settings->paths.directory_dynamic_wallpapers;
@@ -1099,16 +1100,20 @@ static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
 
    if (tmp)
    {
-      fill_pathname_join(
+      len = fill_pathname_join(
             path,
             dir_dynamic_wallpapers,
             tmp,
             sizeof(path));
       free(tmp);
    }
-
-   strlcat(path, FILE_PATH_PNG_EXTENSION, sizeof(path));
-
+  
+   path[len  ] = '.';
+   path[len+1] = 'p';
+   path[len+2] = 'n';
+   path[len+3] = 'g';
+   path[len+4] = '\0';
+   
    if (!path_is_valid(path))
       fill_pathname_application_special(path, sizeof(path),
             APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
@@ -2293,6 +2298,7 @@ static void xmb_context_reset_horizontal_list(
       if (string_ends_with_size(path, ".lpl",
                strlen(path), STRLEN_CONST(".lpl")))
       {
+         size_t len;
          struct texture_image ti;
          char sysname[PATH_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
@@ -2304,18 +2310,25 @@ static void xmb_context_reset_horizontal_list(
          fill_pathname_base(sysname, path, sizeof(sysname));
          path_remove_extension(sysname);
 
-         fill_pathname_join(texturepath, iconpath, sysname,
+         len = fill_pathname_join(texturepath, iconpath, sysname,
                sizeof(texturepath));
-         strlcat(texturepath, FILE_PATH_PNG_EXTENSION, sizeof(texturepath));
+         texturepath[len  ] = '.';
+         texturepath[len+1] = 'p';
+         texturepath[len+2] = 'n';
+         texturepath[len+3] = 'g';
+         texturepath[len+4] = '\0';
 
          /* If the playlist icon doesn't exist return default */
 
          if (!path_is_valid(texturepath))
          {
-               fill_pathname_join(texturepath, iconpath, "default",
+               len = fill_pathname_join(texturepath, iconpath, "default",
                sizeof(texturepath));
-               strlcat(texturepath, FILE_PATH_PNG_EXTENSION,
-                     sizeof(texturepath));
+               texturepath[len  ] = '.';
+               texturepath[len+1] = 'p';
+               texturepath[len+2] = 'n';
+               texturepath[len+3] = 'g';
+               texturepath[len+4] = '\0';
          }
 
          ti.width         = 0;

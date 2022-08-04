@@ -2901,10 +2901,13 @@ static void update_dynamic_theme_path(rgui_t *rgui, const char *theme_dir)
 
    if (rgui->is_playlist && !string_is_empty(rgui->menu_title))
    {
-      fill_pathname_join(rgui->theme_dynamic_path, theme_dir,
+      size_t len = fill_pathname_join(rgui->theme_dynamic_path, theme_dir,
             rgui->menu_title, sizeof(rgui->theme_dynamic_path));
-      strlcat(rgui->theme_dynamic_path, FILE_PATH_CONFIG_EXTENSION,
-            sizeof(rgui->theme_dynamic_path));
+      rgui->theme_dynamic_path[len  ] = '.';
+      rgui->theme_dynamic_path[len+1] = 'c';
+      rgui->theme_dynamic_path[len+2] = 'f';
+      rgui->theme_dynamic_path[len+3] = 'g';
+      rgui->theme_dynamic_path[len+4] = '\0';
 
       use_playlist_theme = path_is_valid(rgui->theme_dynamic_path);
    }

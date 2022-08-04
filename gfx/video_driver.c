@@ -3614,6 +3614,7 @@ void video_driver_frame(const void *data, unsigned width,
    bool render_frame             = true;
    retro_time_t new_time;
    video_frame_info_t video_info;
+   size_t buf_pos                = 1;
    video_driver_state_t *video_st= &video_driver_st;
    runloop_state_t *runloop_st   = runloop_state_get_ptr();
    const enum retro_pixel_format
@@ -3733,7 +3734,6 @@ void video_driver_frame(const void *data, unsigned width,
          video_info.fps_update_interval;
       unsigned memory_update_interval              =
          video_info.memory_update_interval;
-      size_t buf_pos                               = 1;
       /* set this to 1 to avoid an offset issue */
       unsigned write_index                         =
          video_st->frame_time_count++ &
@@ -3752,7 +3752,13 @@ void video_driver_frame(const void *data, unsigned width,
       {
          char frames_text[64];
          if (status_text[buf_pos-1] != '\0')
-            strlcat(status_text, " || ", sizeof(status_text));
+         {
+            status_text[buf_pos  ] = ' ';
+            status_text[buf_pos+1] = '|';
+            status_text[buf_pos+2] = '|';
+            status_text[buf_pos+3] = ' ';
+            status_text[buf_pos+4] = '\0';
+         }
          snprintf(frames_text,
                sizeof(frames_text),
                "%s: %" PRIu64, msg_hash_to_str(MSG_FRAMES),
@@ -3775,8 +3781,14 @@ void video_driver_frame(const void *data, unsigned width,
                mem, sizeof(mem), "MEM: %.2f/%.2fMB", last_used_memory / (1024.0f * 1024.0f),
                last_total_memory / (1024.0f * 1024.0f));
          if (status_text[buf_pos-1] != '\0')
-            strlcat(status_text, " || ", sizeof(status_text));
-         strlcat(status_text, mem, sizeof(status_text));
+         {
+            status_text[buf_pos  ] = ' ';
+            status_text[buf_pos+1] = '|';
+            status_text[buf_pos+2] = '|';
+            status_text[buf_pos+3] = ' ';
+            status_text[buf_pos+4] = '\0';
+         }
+         buf_pos = strlcat(status_text, mem, sizeof(status_text));
       }
 
       if ((video_st->frame_count % fps_update_interval) == 0)
@@ -3790,9 +3802,12 @@ void video_driver_frame(const void *data, unsigned width,
 
          if (!string_is_empty(status_text))
          {
-            video_st->window_title_len += strlcat(video_st->window_title,
-                  " || ", sizeof(video_st->window_title));
-            video_st->window_title_len += strlcat(video_st->window_title,
+            video_st->window_title[video_st->window_title_len  ] = ' ';
+            video_st->window_title[video_st->window_title_len+1] = '|';
+            video_st->window_title[video_st->window_title_len+2] = '|';
+            video_st->window_title[video_st->window_title_len+3] = ' ';
+            video_st->window_title[video_st->window_title_len+4] = '\0';
+            video_st->window_title_len = strlcat(video_st->window_title,
                   status_text, sizeof(video_st->window_title));
          }
 
@@ -3810,7 +3825,7 @@ void video_driver_frame(const void *data, unsigned width,
             sizeof(video_st->window_title));
 
       if (video_info.fps_show)
-         strlcpy(status_text,
+         buf_pos = strlcpy(status_text,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                sizeof(status_text));
 
@@ -3847,14 +3862,17 @@ void video_driver_frame(const void *data, unsigned width,
           * message at the end */
          if (!string_is_empty(status_text))
          {
-            strlcat(status_text,
-                  " || ", sizeof(status_text));
-            strlcat(status_text,
+            status_text[buf_pos  ] = ' ';
+            status_text[buf_pos+1] = '|';
+            status_text[buf_pos+2] = '|';
+            status_text[buf_pos+3] = ' ';
+            status_text[buf_pos+4] = '\0';
+            buf_pos                = strlcat(status_text,
                   runloop_st->core_status_msg.str,
                   sizeof(status_text));
          }
          else
-            strlcpy(status_text,
+            buf_pos                = strlcpy(status_text,
                   runloop_st->core_status_msg.str,
                   sizeof(status_text));
       }
