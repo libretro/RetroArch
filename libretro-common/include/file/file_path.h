@@ -225,6 +225,8 @@ char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks);
  * Both @path and @base are assumed to be absolute paths without "." or "..".
  *
  * E.g. path /a/b/e/f.cgp with base /a/b/c/d/ turns into ../../e/f.cgp
+ *
+ * @return Length of the string copied into @out
  **/
 size_t path_relative_to(char *out, const char *path, const char *base,
       size_t size);
@@ -311,8 +313,10 @@ size_t fill_dated_filename(char *out_filename,
  * - Calls string_is_empty()
  * - Calls strftime
  * - Calls strlcat at least 2x
+ *
+ * @return Length of the string copied into @out_path
  **/
-void fill_str_dated_filename(char *out_filename,
+size_t fill_str_dated_filename(char *out_filename,
       const char *in_str, const char *ext, size_t size);
 
 /**
