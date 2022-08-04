@@ -540,6 +540,48 @@ static bool command_verify(const char *cmd)
    return false;
 }
 
+static bool udp_send_packet(const char *host, uint16_t port, const char *msg)
+{
+   char port_buf[6];
+   const struct addrinfo *tmp_info;
+   struct addrinfo *addr = NULL;
+   struct addrinfo hints = {0};
+   size_t          len   = strlen(msg);
+   bool            ret   = false;
+
+   snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
+
+   hints.ai_socktype = SOCK_DGRAM;
+   hints.ai_flags    = AI_NUMERICSERV;
+
+   if (getaddrinfo_retro(host, port_buf, &hints, &addr))
+      return false;
+   if (!addr)
+      return false;
+
+   /* Send to all possible targets. */
+   tmp_info = addr;
+
+   do
+   {
+      int fd = socket(tmp_info->ai_family,
+         tmp_info->ai_socktype, tmp_info->ai_protocol);
+
+      if (fd < 0)
+         continue;
+
+      if (sendto(fd, msg, len, 0, tmp_info->ai_addr, tmp_info->ai_addrlen) ==
+            (ssize_t)len)
+         ret = true;
+
+      socket_close(fd);
+   } while ((tmp_info = tmp_info->ai_next));
+
+   freeaddrinfo_retro(addr);
+
+   return ret;
+}
+
 bool command_network_send(const char *cmd_)
 {
    char *command        = NULL;

@@ -133,7 +133,7 @@ bool net_ifinfo_new(net_ifinfo_t *list)
 
       do
       {
-         if (getnameinfo(unicast_addr->Address.lpSockaddr,
+         if (getnameinfo_retro(unicast_addr->Address.lpSockaddr,
                unicast_addr->Address.iSockaddrLength,
                entry->host, sizeof(entry->host), NULL, 0, NI_NUMERICHOST))
             continue;
@@ -304,7 +304,7 @@ failure:
             continue;
       }
 
-      if (getnameinfo(addr->ifa_addr, addrlen,
+      if (getnameinfo_retro(addr->ifa_addr, addrlen,
             entry->host, sizeof(entry->host), NULL, 0, NI_NUMERICHOST))
          continue;
 

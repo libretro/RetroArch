@@ -280,6 +280,7 @@ static bool netplay_lan_ad_client_query(void)
    snprintf(port, sizeof(port), "%hu", (unsigned short)RARCH_DISCOVERY_PORT);
    hints.ai_family   = AF_INET;
    hints.ai_socktype = SOCK_DGRAM;
+   hints.ai_flags    = AI_NUMERICHOST | AI_NUMERICSERV;
    if (getaddrinfo_retro("255.255.255.255", port, &hints, &addr))
       return ret;
    if (!addr)
@@ -337,20 +338,9 @@ static bool netplay_lan_ad_client_response(void)
       if (!netplay_is_lan_address((struct sockaddr_in*)&their_addr))
          continue;
 
-#ifndef HAVE_SOCKET_LEGACY
-      if (getnameinfo((struct sockaddr*)&their_addr, sizeof(their_addr),
+      if (getnameinfo_retro((struct sockaddr*)&their_addr, sizeof(their_addr),
             address, sizeof(address), NULL, 0, NI_NUMERICHOST))
          continue;
-#else
-      /* We need to convert the address manually */
-      {
-         uint8_t *addr8 =
-            (uint8_t*)&((struct sockaddr_in*)&their_addr)->sin_addr;
-
-         snprintf(address, sizeof(address), "%d.%d.%d.%d",
-            (int)addr8[0], (int)addr8[1], (int)addr8[2], (int)addr8[3]);
-      }
-#endif
 
       /* Allocate space for it */
       if (net_st->discovered_hosts.size >= net_st->discovered_hosts.allocated)
@@ -6552,47 +6542,35 @@ static void netplay_handle_slaves(netplay_t *netplay)
 static void netplay_announce_nat_traversal(netplay_t *netplay,
       uint16_t ext_port)
 {
-   char msg[512];
-   const char *dmsg           = NULL;
    net_driver_state_t *net_st = &networking_driver_st;
   
    if (net_st->nat_traversal_request.status == NAT_TRAVERSAL_STATUS_OPENED)
    {
+      char msg[512];
       char host[256], port[6];
 
       netplay->ext_tcp_port = ext_port;
 
-#ifndef HAVE_SOCKET_LEGACY
-      if (!getnameinfo(
+      if (!getnameinfo_retro(
             (struct sockaddr*)&net_st->nat_traversal_request.request.addr,
             sizeof(net_st->nat_traversal_request.request.addr),
             host, sizeof(host), port, sizeof(port),
             NI_NUMERICHOST | NI_NUMERICSERV))
-#else
-      {
-         uint8_t *addr8  =
-            (uint8_t*)&net_st->nat_traversal_request.request.addr.sin_addr;
-         uint16_t port16 =
-            ntohs(net_st->nat_traversal_request.request.addr.sin_port);
-
-         snprintf(host, sizeof(host), "%d.%d.%d.%d",
-            (int)addr8[0], (int)addr8[1], (int)addr8[2], (int)addr8[3]);
-         snprintf(port, sizeof(port), "%hu", (unsigned short)port16);
-      }
-#endif
-      {
          snprintf(msg, sizeof(msg), "%s: %s:%s",
             msg_hash_to_str(MSG_PUBLIC_ADDRESS), host, port);
-         dmsg = msg;
-      }
+      else
+         strlcpy(msg, msg_hash_to_str(MSG_PUBLIC_ADDRESS), sizeof(msg));
+
+      RARCH_LOG("[Netplay] %s\n", msg);
+      runloop_msg_queue_push(msg, 1, 180, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
    else
-      dmsg = msg_hash_to_str(MSG_UPNP_FAILED);
-
-   if (dmsg)
    {
-      RARCH_LOG("[Netplay] %s\n", dmsg);
-      runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
+      const char *msg = msg_hash_to_str(MSG_UPNP_FAILED);
+
+      RARCH_ERR("[Netplay] %s\n", msg);
+      runloop_msg_queue_push(msg, 1, 180, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 }
@@ -6620,10 +6598,8 @@ static void netplay_deinit_nat_traversal(void)
 static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *addr,
       bool is_server, bool is_mitm)
 {
-#ifndef HAVE_SOCKET_LEGACY
    char msg[512];
    char host[256], port[6];
-#endif
    const char *dmsg = NULL;
    int fd           = socket(addr->ai_family, addr->ai_socktype,
       addr->ai_protocol);
@@ -6647,8 +6623,7 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *addr,
             return fd;
       }
 
-#ifndef HAVE_SOCKET_LEGACY
-      if (!getnameinfo(addr->ai_addr, addr->ai_addrlen,
+      if (!getnameinfo_retro(addr->ai_addr, addr->ai_addrlen,
             host, sizeof(host), port, sizeof(port),
             NI_NUMERICHOST | NI_NUMERICSERV))
       {
@@ -6658,7 +6633,6 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *addr,
          dmsg = msg;
       }
       else
-#endif
          dmsg = "Failed to connect to host.";
    }
    else if (is_mitm)
@@ -6703,8 +6677,7 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *addr,
       }
       else
       {
-#ifndef HAVE_SOCKET_LEGACY
-         if (!getnameinfo(addr->ai_addr, addr->ai_addrlen,
+         if (!getnameinfo_retro(addr->ai_addr, addr->ai_addrlen,
                host, sizeof(host), port, sizeof(port),
                NI_NUMERICHOST | NI_NUMERICSERV))
          {
@@ -6714,19 +6687,19 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *addr,
             dmsg = msg;
          }
          else
-#endif
             dmsg = "Failed to connect to relay server.";
       }
    }
    else
    {
 #if defined(HAVE_INET6) && defined(IPV6_V6ONLY)
-      /* Make sure we accept connections on both IPv6 and IPv4 */
+      /* Make sure we accept connections on both IPv6 and IPv4. */
       if (addr->ai_family == AF_INET6)
       {
          int on = 0;
+
          if (setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY,
-               (const char*) &on, sizeof(on)) < 0)
+               (const char*)&on, sizeof(on)) < 0)
             RARCH_WARN("[Netplay] Failed to listen on both IPv6 and IPv4.\n");
       }
 #endif
@@ -6738,8 +6711,7 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *addr,
       }
       else
       {
-#ifndef HAVE_SOCKET_LEGACY
-         if (!getnameinfo(addr->ai_addr, addr->ai_addrlen,
+         if (!getnameinfo_retro(addr->ai_addr, addr->ai_addrlen,
                NULL, 0, port, sizeof(port), NI_NUMERICSERV))
          {
             snprintf(msg, sizeof(msg),
@@ -6748,7 +6720,6 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *addr,
             dmsg = msg;
          }
          else
-#endif
             dmsg = "Failed to bind port.";
       }
    }
@@ -6794,7 +6765,8 @@ static bool init_tcp_socket(netplay_t *netplay,
    }
    hints.ai_socktype = SOCK_STREAM;
 
-   snprintf(port_buf, sizeof(port_buf), "%hu", port);
+   snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
+   hints.ai_flags |= AI_NUMERICSERV;
 
    if (getaddrinfo_retro(is_mitm ? mitm : server, port_buf,
       &hints, &addr))

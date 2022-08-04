@@ -76,9 +76,7 @@ void logger_init(void)
 
 void logger_shutdown(void)
 {
-   if (socket_close(g_sid) < 0) { }
-
-   network_deinit();
+   socket_close(g_sid);
 }
 
 void logger_send(const char *__format,...)
