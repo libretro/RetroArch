@@ -910,7 +910,7 @@ void fill_pathname_resolve_relative(char *out_path,
  * Deprecated. Use fill_pathname_join_special() instead
  * if you can ensure @dir and @out_path won't overlap.
  *
- * @return The length of @out_path (NOT @size)
+ * @return Length of the string copied into @out_path
  **/
 size_t fill_pathname_join(char *out_path,
       const char *dir, const char *path, size_t size)
@@ -938,7 +938,7 @@ size_t fill_pathname_join(char *out_path,
  * Makes sure not to get  two consecutive slashes
  * between directory and path.
  *
- * @return The length of @out_path (NOT @size)
+ * @return Length of the string copied into @out_path
  **/
 size_t fill_pathname_join_special(char *out_path,
       const char *dir, const char *path, size_t size)
@@ -1208,8 +1208,10 @@ static int get_pathname_num_slashes(const char *in_path)
  * If lengths of abbreviated and relative paths are the same,
  * the relative path will be used
  * @in_path can be an absolute, relative or abbreviated path
+ *
+ * @return Length of the string copied into @out_path
  **/
-void fill_pathname_abbreviated_or_relative(char *out_path,
+size_t fill_pathname_abbreviated_or_relative(char *out_path,
       const char *in_refpath, const char *in_path, size_t size)
 {
    char in_path_conformed[PATH_MAX_LENGTH];
@@ -1254,9 +1256,8 @@ void fill_pathname_abbreviated_or_relative(char *out_path,
    /* Use the shortest path, preferring the relative path*/
    if (  get_pathname_num_slashes(relative_path) <= 
          get_pathname_num_slashes(abbreviated_path))
-      retro_assert(strlcpy(out_path, relative_path, size) < size);
-   else
-      retro_assert(strlcpy(out_path, abbreviated_path, size) < size);
+      return strlcpy(out_path, relative_path, size);
+   return strlcpy(out_path, abbreviated_path, size);
 }
 
 /**

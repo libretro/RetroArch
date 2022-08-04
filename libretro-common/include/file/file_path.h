@@ -457,7 +457,7 @@ void fill_pathname_resolve_relative(char *out_path, const char *in_refpath,
  * Deprecated. Use fill_pathname_join_special() instead
  * if you can ensure @dir != @out_path
  *
- * @return The length of @out_path (NOT @size)
+ * @return Length of the string copied into @out_path
  **/
 size_t fill_pathname_join(char *out_path, const char *dir,
       const char *path, size_t size);
@@ -483,7 +483,7 @@ size_t fill_pathname_join(char *out_path, const char *dir,
  * - calls find_last_slash()
  * - calls strlcat
  *
- * @return The length of @out_path (NOT @size)
+ * @return Length of the string copied into @out_path
  **/
 size_t fill_pathname_join_special(char *out_path,
       const char *dir, const char *path, size_t size);
@@ -527,8 +527,10 @@ void fill_pathname_abbreviate_special(char *out_path,
  * If lengths of abbreviated and relative paths are the same,
  * the relative path will be used
  * @in_path can be an absolute, relative or abbreviated path
+ *
+ * @return Length of the string copied into @out_path
  **/
-void fill_pathname_abbreviated_or_relative(char *out_path,
+size_t fill_pathname_abbreviated_or_relative(char *out_path,
 		const char *in_refpath, const char *in_path, size_t size);
 
 /**
