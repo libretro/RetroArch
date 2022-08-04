@@ -264,8 +264,10 @@ bool path_is_absolute(const char *path);
  * - calls strlcpy 2x
  * - calls strrchr
  * - calls strlcat
+ *
+ * @return Length of the string copied into @out
  */
-void fill_pathname(char *out_path, const char *in_path,
+size_t fill_pathname(char *out_path, const char *in_path,
       const char *replace, size_t size);
 
 /**

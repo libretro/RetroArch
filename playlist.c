@@ -1499,8 +1499,7 @@ void playlist_write_runtime_file(playlist_t *playlist)
       return;
    }
 
-   writer = rjsonwriter_open_stream(file);
-   if (!writer)
+   if (!(writer = rjsonwriter_open_stream(file)))
    {
       RARCH_ERR("Failed to create JSON writer\n");
       goto end;
@@ -1722,13 +1721,11 @@ void playlist_write_file(playlist_t *playlist)
          RARCH_ERR("Failed to create JSON writer\n");
          goto end;
       }
+      /*  When compressing playlists, human readability
+       *   is not a factor - can skip all indentation
+       *   and new line characters */
       if (compressed)
-      {
-         /*  When compressing playlists, human readability
-          *   is not a factor - can skip all indentation
-          *   and new line characters */
          rjsonwriter_set_options(writer, RJSONWRITER_OPTION_SKIP_WHITESPACE);
-      }
 
       rjsonwriter_raw(writer, "{", 1);
       rjsonwriter_raw(writer, "\n", 1);
@@ -2142,13 +2139,9 @@ static bool JSONEndArrayHandler(void *context)
    pCtx->array_depth--;
 
    if (pCtx->in_items && pCtx->array_depth == 0 && pCtx->object_depth <= 1)
-   {
       pCtx->in_items = false;
-   }
    else if (pCtx->in_subsystem_roms && pCtx->array_depth <= 1 && pCtx->object_depth <= 2)
-   {
       pCtx->in_subsystem_roms = false;
-   }
 
    return true;
 }
@@ -2498,9 +2491,8 @@ static bool playlist_read_file(playlist_t *playlist)
     *   non-whitespace ASCII character */
    do
    {
-      test_char = intfstream_getc(file);
-
-      if (test_char == EOF) /* read error or end of file */
+	   /* Read error or EOF (end of file) */
+      if ((test_char = intfstream_getc(file)) == EOF)
          goto end;
    }while (!isgraph(test_char) || test_char > 0x7F);
 
@@ -2975,9 +2967,7 @@ static int playlist_qsort_func(const struct playlist_entry *a,
     * have no other option...) */
    if (string_is_empty(a_str))
    {
-      a_fallback_label = (char*)calloc(PATH_MAX_LENGTH, sizeof(char));
-
-      if (!a_fallback_label)
+      if (!(a_fallback_label = (char*)calloc(PATH_MAX_LENGTH, sizeof(char))))
          goto end;
 
       if (!string_is_empty(a->path))
@@ -3000,9 +2990,7 @@ static int playlist_qsort_func(const struct playlist_entry *a,
 
    if (string_is_empty(b_str))
    {
-      b_fallback_label = (char*)calloc(PATH_MAX_LENGTH, sizeof(char));
-
-      if (!b_fallback_label)
+      if (!(b_fallback_label = (char*)calloc(PATH_MAX_LENGTH, sizeof(char))))
          goto end;
 
       if (!string_is_empty(b->path))

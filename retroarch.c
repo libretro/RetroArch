@@ -1450,7 +1450,6 @@ void dir_check_defaults(const char *custom_ini_path)
       if (string_is_empty(dir_path))
          continue;
 
-      new_path[0] = '\0';
       fill_pathname_expand_special(new_path,
             dir_path, sizeof(new_path));
 
