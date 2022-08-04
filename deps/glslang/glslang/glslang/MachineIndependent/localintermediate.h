@@ -68,11 +68,7 @@ public:
         if (size_ < MaxSwizzleSelectors)
             components[size_++] = comp;
     }
-    void resize(int s)
-    {
-        assert(s <= size_);
-        size_ = s;
-    }
+    void resize(int s) { size_ = s; }
     int size() const { return size_; }
     selectorType operator[](int i) const
     {
@@ -82,7 +78,7 @@ public:
 
 private:
     int size_;
-    selectorType components[MaxSwizzleSelectors];
+    selectorType components[MaxSwizzleSelectors+1];
 };
 
 //

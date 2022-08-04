@@ -2719,10 +2719,6 @@ void Builder::createConditionalBranch(Id condition, Block* thenBlock, Block* els
 // ...
 void Builder::dumpSourceInstructions(std::vector<unsigned int>& out) const
 {
-    const int maxWordCount = 0xFFFF;
-    const int opSourceWordCount = 4;
-    const int nonNullBytesPerInstruction = 4 * (maxWordCount - opSourceWordCount) - 1;
-
     if (source != SourceLanguageUnknown) {
         // OpSource Language Version File Source
         Instruction sourceInst(NoResult, NoType, OpSource);

@@ -1114,7 +1114,6 @@ bool run_translation_service(settings_t *settings, bool paused)
          snprintf(temp_string,
                sizeof(temp_string),
                "%coutput=%s", separator, mode_chr);
-         separator = '&';
 
          strlcat(new_ai_service_url, temp_string,
                  sizeof(new_ai_service_url));

@@ -5317,9 +5317,6 @@ TIntermTyped* HlslParseContext::handleFunctionCall(const TSourceLoc& loc, TFunct
             if (arguments && !builtIn)
                 expandArguments(loc, *fnCandidate, arguments);
 
-            // Expansion may have changed the form of arguments
-            aggregate = arguments ? arguments->getAsAggregate() : nullptr;
-
             op = fnCandidate->getBuiltInOp();
             if (builtIn && op != EOpNull) {
                 // A function call mapped to a built-in operation.
