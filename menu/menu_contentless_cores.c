@@ -265,8 +265,6 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
    char icon_path[PATH_MAX_LENGTH];
    size_t i;
 
-   icon_directory[0] = '\0';
-
    if (!state)
       return;
 
@@ -289,7 +287,7 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
       return;
 
    /* Load fallback icon */
-   fill_pathname_join(icon_path, icon_directory,
+   fill_pathname_join_special(icon_path, icon_directory,
          CONTENTLESS_CORE_ICON_DEFAULT, sizeof(icon_path));
 
    if (path_is_valid(icon_path))
@@ -325,14 +323,19 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
           core_info->databases_list &&
           (core_info->databases_list->size > 0))
       {
+         size_t len;
          const char *icon_name   =
                core_info->databases_list->elems[0].data;
          struct texture_image ti = {0};
          ti.supports_rgba        = rgba_supported;
 
-         fill_pathname_join(icon_path, icon_directory,
+         fill_pathname_join_special(icon_path, icon_directory,
                icon_name, sizeof(icon_path));
-         strlcat(icon_path, ".png", sizeof(icon_path));
+         icon_path[len  ] = '.';
+         icon_path[len+1] = 'p';
+         icon_path[len+2] = 'n';
+         icon_path[len+3] = 'g';
+         icon_path[len+4] = '\0';
 
          if (!path_is_valid(icon_path))
             continue;

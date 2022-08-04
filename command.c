@@ -1437,7 +1437,7 @@ bool command_set_shader(command_t *cmd, const char *arg)
       {
          char abs_arg[PATH_MAX_LENGTH];
          const char *ref_path = settings->paths.directory_video_shader;
-         fill_pathname_join(abs_arg, ref_path, arg, sizeof(abs_arg));
+         fill_pathname_join_special(abs_arg, ref_path, arg, sizeof(abs_arg));
          return apply_shader(settings, type, abs_arg, true);
       }
    }
@@ -1476,8 +1476,6 @@ bool command_event_save_core_config(
    }
 
    core_path                       = path_get(RARCH_PATH_CORE);
-   config_name[0]                  = '\0';
-   config_path[0]                  = '\0';
 
    /* Infer file name based on libretro core. */
    if (path_is_valid(core_path))
@@ -1488,7 +1486,7 @@ bool command_event_save_core_config(
 
       fill_pathname_base(config_name, core_path, sizeof(config_name));
       path_remove_extension(config_name);
-      fill_pathname_join(config_path, config_dir, config_name,
+      fill_pathname_join_special(config_path, config_dir, config_name,
             sizeof(config_path));
 
       /* In case of collision, find an alternative name. */
@@ -1513,7 +1511,7 @@ bool command_event_save_core_config(
       RARCH_WARN("[Config]: %s\n",
             msg_hash_to_str(MSG_CANNOT_INFER_NEW_CONFIG_PATH));
       fill_dated_filename(config_name, ".cfg", sizeof(config_name));
-      fill_pathname_join(config_path, config_dir, config_name,
+      fill_pathname_join_special(config_path, config_dir, config_name,
             sizeof(config_path));
    }
 

@@ -1158,7 +1158,7 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
       return false;
 #endif
    /* dirent struct doesn't have d_type, do it the slow way ... */
-   fill_pathname_join(path, rdir->orig_path, retro_vfs_dirent_get_name_impl(rdir), sizeof(path));
+   fill_pathname_join_special(path, rdir->orig_path, retro_vfs_dirent_get_name_impl(rdir), sizeof(path));
    if (stat(path, &buf) < 0)
       return false;
    return S_ISDIR(buf.st_mode);

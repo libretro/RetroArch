@@ -161,9 +161,9 @@ int system_property_get(const char *command,
       const char *args, char *value)
 {
    FILE *pipe;
+   char cmd[NAME_MAX_LENGTH];
    int length                   = 0;
    char buffer[PATH_MAX_LENGTH] = {0};
-   char cmd[NAME_MAX_LENGTH]    = {0};
    char *curpos                 = NULL;
    size_t buf_pos               = strlcpy(cmd, command, sizeof(cmd));
 
@@ -622,13 +622,13 @@ static bool device_is_android_tv()
 
 bool test_permissions(const char *path)
 {
+   char buf[PATH_MAX_LENGTH];
    bool ret                  = false;
-   char buf[PATH_MAX_LENGTH] = {0};
 
    __android_log_print(ANDROID_LOG_INFO,
       "RetroArch", "Testing permissions for %s\n",path);
 
-   fill_pathname_join(buf, path, ".retroarch", sizeof(buf));
+   fill_pathname_join_special(buf, path, ".retroarch", sizeof(buf));
    ret = path_mkdir(buf);
 
    __android_log_print(ANDROID_LOG_INFO,
@@ -2156,7 +2156,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
       if (storage_permissions == INTERNAL_STORAGE_WRITABLE)
       {
          char user_data_path[PATH_MAX_LENGTH];
-         fill_pathname_join(user_data_path,
+         fill_pathname_join_special(user_data_path,
                internal_storage_path, "RetroArch",
                sizeof(user_data_path));
 
@@ -2390,9 +2390,7 @@ static uint64_t frontend_unix_get_total_mem(void)
    line[0] = '\0';
 
    /* Open /proc/meminfo */
-   meminfo_file = fopen(PROC_MEMINFO_PATH, "r");
-
-   if (!meminfo_file)
+   if (!(meminfo_file = fopen(PROC_MEMINFO_PATH, "r")))
       return 0;
 
    /* Parse lines
@@ -2438,9 +2436,7 @@ static uint64_t frontend_unix_get_free_mem(void)
    line[0] = '\0';
 
    /* Open /proc/meminfo */
-   meminfo_file = fopen(PROC_MEMINFO_PATH, "r");
-
-   if (!meminfo_file)
+   if (!(meminfo_file = fopen(PROC_MEMINFO_PATH, "r")))
       return 0;
 
    /* Parse lines

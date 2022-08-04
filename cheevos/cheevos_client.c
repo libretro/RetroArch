@@ -1445,9 +1445,10 @@ static void rcheevos_async_write_badge(retro_task_t* task)
    rcheevos_fetch_badge_data* badge_data =
       (rcheevos_fetch_badge_data*)task->user_data;
 
-   fill_pathname_join(badge_fullpath, badge_data->state->badge_directory,
-      badge_data->state->requested_badges[badge_data->request_index],
-      sizeof(badge_fullpath));
+   fill_pathname_join_special(badge_fullpath,
+         badge_data->state->badge_directory,
+         badge_data->state->requested_badges[badge_data->request_index],
+         sizeof(badge_fullpath));
 
    if (!filestream_write_file(badge_fullpath, badge_data->data, badge_data->data_len))
    {

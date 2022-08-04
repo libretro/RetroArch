@@ -483,7 +483,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
       if (!fext || strcasecmp(fext, ".lpl"))
          continue;
 
-      fill_pathname_join(playlist_config.path,
+      fill_pathname_join_special(playlist_config.path,
             directory_playlist, fname, sizeof(playlist_config.path));
       playlist_config.capacity          = COLLECTION_SIZE;
       playlist                          = playlist_init(&playlist_config);
@@ -536,7 +536,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
             memcpy(newrdb.systemname, db_name, systemname_len);
             newrdb.systemname[systemname_len] = '\0';
 
-            fill_pathname_join(
+            fill_pathname_join_special(
                   tmp, directory_database, db_name, sizeof(tmp));
             path_remove_extension(tmp);
             strlcat(tmp, ".rdb", sizeof(tmp));

@@ -2451,7 +2451,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
    strlcat(path_base, ".lpl", sizeof(path_base));
 
-   fill_pathname_join(path_playlist, dir_playlist, path_base,
+   fill_pathname_join_special(path_playlist, dir_playlist, path_base,
          sizeof(path_playlist));
 
    playlist_config_set_path(&playlist_config, path_playlist);
@@ -3298,7 +3298,7 @@ static int menu_displaylist_parse_horizontal_list(
       char path_playlist[PATH_MAX_LENGTH];
       const char *dir_playlist  = settings->paths.directory_playlist;
 
-      fill_pathname_join(path_playlist, dir_playlist, item->path,
+      fill_pathname_join_special(path_playlist, dir_playlist, item->path,
             sizeof(path_playlist));
 
       /* Horizontal lists are always 'collections'
@@ -4312,7 +4312,7 @@ static unsigned menu_displaylist_parse_cores(
             char display_name[PATH_MAX_LENGTH];
             display_name[0]    = '\0';
 
-            fill_pathname_join(core_path, dir, path, sizeof(core_path));
+            fill_pathname_join_special(core_path, dir, path, sizeof(core_path));
 
             if (core_info_list_get_display_name(list,
                      core_path, display_name, sizeof(display_name)))
@@ -4713,9 +4713,7 @@ static unsigned menu_displaylist_parse_content_information(
    {
       char db_path[PATH_MAX_LENGTH];
 
-      db_path[0] = '\0';
-
-      fill_pathname_join(db_path,
+      fill_pathname_join_special(db_path,
             settings->paths.path_content_database,
             db_name,
             sizeof(db_path));
@@ -11509,7 +11507,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                char combined_path[PATH_MAX_LENGTH];
                const char *ext  = NULL;
 
-               fill_pathname_join(combined_path, menu->scratch2_buf,
+               fill_pathname_join_special(combined_path, menu->scratch2_buf,
                      menu->scratch_buf, sizeof(combined_path));
 
                ext = path_get_extension(combined_path);
@@ -11934,7 +11932,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             const char *
                network_buildbot_assets_url = settings->paths.network_buildbot_assets_url;
 
-            fill_pathname_join(new_label,
+            fill_pathname_join_special(new_label,
                   network_buildbot_assets_url,
                   "cores", sizeof(new_label));
 
@@ -12140,7 +12138,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             char path_playlist[PATH_MAX_LENGTH];
             playlist_t *playlist            = NULL;
             const char *dir_playlist        = settings->paths.directory_playlist;
-            fill_pathname_join(
+            fill_pathname_join_special(
                   path_playlist,
                   dir_playlist,
                   info->path,

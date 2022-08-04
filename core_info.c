@@ -709,7 +709,7 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
       strlcpy(file_path,
             FILE_PATH_CORE_INFO_CACHE_REFRESH, sizeof(file_path));
    else
-      fill_pathname_join(file_path,
+      fill_pathname_join_special(file_path,
             info_dir, FILE_PATH_CORE_INFO_CACHE_REFRESH,
             sizeof(file_path));
 
@@ -720,7 +720,8 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
    if (string_is_empty(info_dir))
       strlcpy(file_path, FILE_PATH_CORE_INFO_CACHE, sizeof(file_path));
    else
-      fill_pathname_join(file_path, info_dir, FILE_PATH_CORE_INFO_CACHE,
+      fill_pathname_join_special(file_path, info_dir,
+            FILE_PATH_CORE_INFO_CACHE,
             sizeof(file_path));
 
 #if defined(HAVE_ZLIB)
@@ -828,7 +829,8 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
    if (string_is_empty(info_dir))
       strlcpy(file_path, FILE_PATH_CORE_INFO_CACHE, sizeof(file_path));
    else
-      fill_pathname_join(file_path, info_dir, FILE_PATH_CORE_INFO_CACHE,
+      fill_pathname_join_special(file_path, info_dir,
+            FILE_PATH_CORE_INFO_CACHE,
             sizeof(file_path));
 
 #if defined(CORE_INFO_CACHE_COMPRESS)
@@ -1180,7 +1182,7 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
       strlcpy(file_path,
             FILE_PATH_CORE_INFO_CACHE_REFRESH, sizeof(file_path));
    else
-      fill_pathname_join(file_path,
+      fill_pathname_join_special(file_path,
             info_dir, FILE_PATH_CORE_INFO_CACHE_REFRESH,
             sizeof(file_path));
 
@@ -1230,7 +1232,7 @@ bool core_info_cache_force_refresh(const char *path_info)
       strlcpy(file_path,
             FILE_PATH_CORE_INFO_CACHE_REFRESH, sizeof(file_path));
    else
-      fill_pathname_join(file_path,
+      fill_pathname_join_special(file_path,
             path_info, FILE_PATH_CORE_INFO_CACHE_REFRESH,
             sizeof(file_path));
 
@@ -1656,7 +1658,8 @@ static config_file_t *core_info_get_config_file(
             "%s" ".info", core_file_id);
    else
    {
-      size_t len     = fill_pathname_join(info_path, info_dir, core_file_id,
+      size_t len     = fill_pathname_join_special(info_path, info_dir,
+            core_file_id,
             sizeof(info_path));
       info_path[len]   = '.';
       info_path[len+1] = 'i';

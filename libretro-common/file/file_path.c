@@ -906,13 +906,44 @@ void fill_pathname_resolve_relative(char *out_path,
  * Joins a directory (@dir) and path (@path) together.
  * Makes sure not to get  two consecutive slashes
  * between directory and path.
+ *
+ * Deprecated. Use fill_pathname_join_special() instead
+ * if you can ensure @dir and @out_path won't overlap.
+ *
+ * @return The length of @out_path (NOT @size)
  **/
 size_t fill_pathname_join(char *out_path,
       const char *dir, const char *path, size_t size)
 {
-   size_t len = 0;
    if (out_path != dir)
-      len = strlcpy(out_path, dir, size);
+      strlcpy(out_path, dir, size);
+   if (*out_path)
+      fill_pathname_slash(out_path, size);
+   return strlcat(out_path, path, size);
+}
+
+/**
+ * fill_pathname_join_special:
+ * @out_path           : output path
+ * @dir                : directory. Cannot be identical to @out_path
+ * @path               : path
+ * @size               : size of output path
+ *
+ *
+ * Specialized version of fill_pathname_join.
+ * Unlike fill_pathname_join(),
+ * @dir and @out_path CANNOT be identical.
+ *
+ * Joins a directory (@dir) and path (@path) together.
+ * Makes sure not to get  two consecutive slashes
+ * between directory and path.
+ *
+ * @return The length of @out_path (NOT @size)
+ **/
+size_t fill_pathname_join_special(char *out_path,
+      const char *dir, const char *path, size_t size)
+{
+   size_t len = strlcpy(out_path, dir, size);
 
    if (*out_path)
    {

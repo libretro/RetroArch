@@ -453,7 +453,7 @@ bool gfx_widget_start_load_content_animation(void)
       state->icon_file[len+3] = 'g';
       state->icon_file[len+4] = '\0';
 
-      fill_pathname_join(icon_path,
+      fill_pathname_join_special(icon_path,
             state->icon_directory, state->icon_file,
             sizeof(icon_path));
 
@@ -487,7 +487,7 @@ bool gfx_widget_start_load_content_animation(void)
          state->icon_file[len+3] = 'g';
          state->icon_file[len+4] = '\0';
 
-         fill_pathname_join(icon_path,
+         fill_pathname_join_special(icon_path,
                state->icon_directory, state->icon_file,
                sizeof(icon_path));
 
@@ -500,7 +500,7 @@ bool gfx_widget_start_load_content_animation(void)
    if (!state->has_icon)
    {
       strlcpy(state->icon_file, "retroarch.png", sizeof(state->icon_file));
-      fill_pathname_join(icon_path,
+      fill_pathname_join_special(icon_path,
             state->icon_directory, state->icon_file,
             sizeof(icon_path));
 

@@ -7743,33 +7743,32 @@ static void materialui_init_font(
    }
    {
       char s1[PATH_MAX_LENGTH];
-      s1[0] = '\0';
 
       switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
       {
          case RETRO_LANGUAGE_ARABIC:
          case RETRO_LANGUAGE_PERSIAN:
-            fill_pathname_join(s1,
+            fill_pathname_join_special(s1,
                   settings->paths.directory_assets, "pkg", sizeof(s1));
-            fill_pathname_join(fontpath, s1, "fallback-font.ttf",
+            fill_pathname_join_special(fontpath, s1, "fallback-font.ttf",
                   sizeof(fontpath));
             break;
          case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
          case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-            fill_pathname_join(s1,
+            fill_pathname_join_special(s1,
                   settings->paths.directory_assets, "pkg", sizeof(s1));
-            fill_pathname_join(fontpath, s1, "chinese-fallback-font.ttf",
+            fill_pathname_join_special(fontpath, s1, "chinese-fallback-font.ttf",
                   sizeof(fontpath));
             break;
          case RETRO_LANGUAGE_KOREAN:
-            fill_pathname_join(s1,
+            fill_pathname_join_special(s1,
                   settings->paths.directory_assets, "pkg", sizeof(s1));
-            fill_pathname_join(fontpath, s1, "korean-fallback-font.ttf",
+            fill_pathname_join_special(fontpath, s1, "korean-fallback-font.ttf",
                   sizeof(fontpath));
             break;
          default:
-            fill_pathname_join(s1, dir_assets, "glui", sizeof(s1));
-            fill_pathname_join(fontpath, s1, FILE_PATH_TTF_FONT,
+            fill_pathname_join_special(s1, dir_assets, "glui", sizeof(s1));
+            fill_pathname_join_special(fontpath, s1, FILE_PATH_TTF_FONT,
                   sizeof(fontpath));
             break;
       }
@@ -8084,7 +8083,7 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    fill_pathname_application_special(mui->sysicons_path, 
          sizeof(mui->sysicons_path),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE_ICONS);
-   fill_pathname_join(mui->icons_path, dir_assets, "glui",
+   fill_pathname_join_special(mui->icons_path, dir_assets, "glui",
          sizeof(mui->icons_path));
 
    p_anim->updatetime_cb = materialui_menu_animation_update_time;

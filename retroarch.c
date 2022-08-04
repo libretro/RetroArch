@@ -745,7 +745,7 @@ void retroarch_path_set_redirect(settings_t *settings)
          {
             /* Append content directory name to save location */
             if (sort_savefiles_by_content_enable)
-               fill_pathname_join(
+               fill_pathname_join_special(
                      new_savefile_dir,
                      old_savefile_dir,
                      content_dir_name,
@@ -753,7 +753,7 @@ void retroarch_path_set_redirect(settings_t *settings)
 
             /* Append library_name to the save location */
             if (sort_savefiles_enable)
-               fill_pathname_join(
+               fill_pathname_join_special(
                      new_savefile_dir,
                      new_savefile_dir,
                      system->library_name,
@@ -778,7 +778,7 @@ void retroarch_path_set_redirect(settings_t *settings)
          {
             /* Append content directory name to savestate location */
             if (sort_savestates_by_content_enable)
-               fill_pathname_join(
+               fill_pathname_join_special(
                      new_savestate_dir,
                      old_savestate_dir,
                      content_dir_name,
@@ -787,7 +787,7 @@ void retroarch_path_set_redirect(settings_t *settings)
             /* Append library_name to the savestate location */
             if (sort_savestates_enable)
             {
-               fill_pathname_join(
+               fill_pathname_join_special(
                      new_savestate_dir,
                      new_savestate_dir,
                      system->library_name,
@@ -843,7 +843,7 @@ void retroarch_path_set_redirect(settings_t *settings)
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
          !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
    {
-      fill_pathname_join(new_savefile_dir, new_savefile_dir, ".netplay",
+      fill_pathname_join_special(new_savefile_dir, new_savefile_dir, ".netplay",
          sizeof(new_savefile_dir));
 
       if (!path_is_directory(new_savefile_dir) &&
@@ -4379,7 +4379,7 @@ static void retroarch_parse_input_libretro_path(const char *path)
           !string_is_equal(path_ext, core_ext))
          goto end;
 
-      fill_pathname_join(tmp_path, settings->paths.directory_libretro,
+      fill_pathname_join_special(tmp_path, settings->paths.directory_libretro,
             path, sizeof(tmp_path));
 
       if (string_is_empty(tmp_path))
@@ -4825,7 +4825,7 @@ static bool retroarch_parse_input_and_config(
                   strlcpy(video_st->cli_shader_path, optarg,
                         sizeof(video_st->cli_shader_path));
                else
-                  fill_pathname_join(video_st->cli_shader_path,
+                  fill_pathname_join_special(video_st->cli_shader_path,
                         settings->paths.directory_video_shader,
                         optarg, sizeof(video_st->cli_shader_path));
 #endif

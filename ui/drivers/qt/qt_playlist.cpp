@@ -1424,10 +1424,9 @@ QString MainWindow::getPlaylistDefaultCore(QString plName)
       return corePath;
 
    /* Get playlist path */
-   len                 = fill_pathname_join(
-         playlistPath,
-         settings->paths.directory_playlist, plNameCString,
-         sizeof(playlistPath));
+   len                 = fill_pathname_join_special(
+         playlistPath,  settings->paths.directory_playlist,
+         plNameCString, sizeof(playlistPath));
    playlistPath[len  ] = '.';
    playlistPath[len+1] = 'l';
    playlistPath[len+2] = 'p';

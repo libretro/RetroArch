@@ -438,7 +438,6 @@ void rarch_log_file_init(
    static char timestamped_log_file_name[64] = {0};
    bool logging_to_file                      = g_verbosity->initialized;
 
-   log_file_path[0]                          = '\0';
 
    /* If this is the first run, generate a timestamped log
     * file name (do this even when not outputting timestamped
@@ -503,13 +502,15 @@ void rarch_log_file_init(
       strlcpy(log_directory, log_dir, sizeof(log_directory));
 
       /* Get log file path */
-      fill_pathname_join(log_file_path,
+      fill_pathname_join_special(log_file_path,
             log_dir,
             log_to_file_timestamp
             ? timestamped_log_file_name
             : "retroarch.log",
             sizeof(log_file_path));
    }
+   else
+	   log_file_path[0] = '\0';
 
    /* > Attempt to initialise log file */
    if (!string_is_empty(log_file_path))

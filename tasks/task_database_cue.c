@@ -1083,7 +1083,7 @@ int cue_find_track(const char *cue_path, bool first,
          }
 
          get_token(fd, tmp_token, sizeof(tmp_token));
-         fill_pathname_join(last_file, cue_dir,
+         fill_pathname_join_special(last_file, cue_dir,
                tmp_token, sizeof(last_file));
 
          file_size = intfstream_get_file_size(last_file);
@@ -1175,7 +1175,8 @@ bool cue_next_file(intfstream_t *fd,
       if (string_is_equal_noncase(tmp_token, "FILE"))
       {
          get_token(fd, tmp_token, sizeof(tmp_token));
-         fill_pathname_join(path, cue_dir, tmp_token, (size_t)max_len);
+         fill_pathname_join_special(path, cue_dir,
+               tmp_token, (size_t)max_len);
          rv = true;
          break;
       }
@@ -1265,15 +1266,11 @@ int gdi_find_track(const char *gdi_path, bool first,
          char last_file[PATH_MAX_LENGTH];
          char gdi_dir[PATH_MAX_LENGTH];
 
-         gdi_dir[0]        = last_file[0] = '\0';
-
          fill_pathname_basedir(gdi_dir, gdi_path, sizeof(gdi_dir));
-
-         fill_pathname_join(last_file,
+         fill_pathname_join_special(last_file,
                gdi_dir, tmp_token, sizeof(last_file));
-         file_size = intfstream_get_file_size(last_file);
 
-         if (file_size < 0)
+         if ((file_size = intfstream_get_file_size(last_file)) < 0)
             goto error;
 
          if ((uint64_t)file_size > largest)
@@ -1332,11 +1329,8 @@ bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
    {
       char gdi_dir[PATH_MAX_LENGTH];
 
-      gdi_dir[0]      = '\0';
-
       fill_pathname_basedir(gdi_dir, gdi_path, sizeof(gdi_dir));
-
-      fill_pathname_join(path, gdi_dir, tmp_token, (size_t)max_len);
+      fill_pathname_join_special(path, gdi_dir, tmp_token, (size_t)max_len);
 
       rv              = true;
 

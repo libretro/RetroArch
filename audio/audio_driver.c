@@ -1356,7 +1356,7 @@ void audio_driver_load_system_sounds(void)
 
    sounds_path[0] = basename_noext[0] ='\0';
 
-   fill_pathname_join(
+   fill_pathname_join_special(
          sounds_fallback_path,
          dir_assets,
          "sounds",

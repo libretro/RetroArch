@@ -1776,7 +1776,7 @@ bool video_shader_write_preset(const char *path,
    if (!shader || string_is_empty(path))
       return false;
 
-   fill_pathname_join(preset_dir, shader_dir, "presets", sizeof(preset_dir));
+   fill_pathname_join_special(preset_dir, shader_dir, "presets", sizeof(preset_dir));
 
    /* If we should still save a referenced preset do it now */
    if (reference)
@@ -2320,7 +2320,7 @@ void dir_check_shader(
          if (shader && !string_is_empty(shader->loaded_preset_path))
          {
             char last_shader_path[PATH_MAX_LENGTH];
-            fill_pathname_join(last_shader_path,
+            fill_pathname_join_special(last_shader_path,
                   last_shader_preset_dir, last_shader_preset_file_name,
                   sizeof(last_shader_path));
 
@@ -2398,7 +2398,7 @@ static bool retroarch_load_shader_preset_internal(
          if (string_is_empty(special_name))
             break;
 
-         fill_pathname_join(s, shader_directory, special_name, len);
+         fill_pathname_join_special(s, shader_directory, special_name, len);
          strlcat(s, video_shader_get_preset_extension(types[i]), len);
       }
 
@@ -2444,7 +2444,7 @@ bool load_shader_preset(settings_t *settings, const char *core_name,
    }
 
    if (!string_is_empty(video_shader_directory))
-      fill_pathname_join(old_presets_directory,
+      fill_pathname_join_special(old_presets_directory,
          video_shader_directory, "presets", sizeof(old_presets_directory));
    else
       old_presets_directory[0]        = '\0';

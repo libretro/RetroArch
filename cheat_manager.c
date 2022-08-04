@@ -164,8 +164,6 @@ bool cheat_manager_save(
       (char*)"cheat%u_repeat_add_to_address"
    };
 
-   cheats_file[0] = '\0';
-
    if (!cheat_st->cheats || cheat_st->size == 0)
       return false;
 
@@ -173,9 +171,13 @@ bool cheat_manager_save(
       strlcpy(cheats_file, path, sizeof(cheats_file));
    else
    {
-      fill_pathname_join(cheats_file,
+      size_t len         = fill_pathname_join_special(cheats_file,
             cheat_database, path, sizeof(cheats_file));
-      strlcat(cheats_file, ".cht", sizeof(cheats_file));
+      cheats_file[len  ] = '.';
+      cheats_file[len+1] = 'c';
+      cheats_file[len+2] = 'h';
+      cheats_file[len+3] = 't';
+      cheats_file[len+4] = '\0';
    }
 
    if (!overwrite)
@@ -710,8 +712,6 @@ static bool cheat_manager_get_game_specific_filename(
    const char *core_name       = NULL;
    const char *game_name       = NULL;
 
-   s1[0]                       = '\0';
-
    if (!core_get_system_info(&system_info))
       return false;
 
@@ -723,9 +723,7 @@ static bool cheat_manager_get_game_specific_filename(
          string_is_empty(game_name))
       return false;
 
-   s[0] = '\0';
-
-   fill_pathname_join(s1,
+   fill_pathname_join_special(s1,
          path_cheat_database, core_name,
          sizeof(s1));
 
@@ -736,7 +734,7 @@ static bool cheat_manager_get_game_specific_filename(
          path_mkdir(s1);
    }
 
-   fill_pathname_join(s, s1, game_name, len);
+   fill_pathname_join_special(s, s1, game_name, len);
 
    return true;
 }

@@ -2924,7 +2924,8 @@ void input_config_set_device_config_path(unsigned port, const char *path)
       input_driver_state_t *input_st = &input_driver_st;
       if (fill_pathname_parent_dir_name(parent_dir_name,
                path, sizeof(parent_dir_name)))
-         fill_pathname_join(input_st->input_device_info[port].config_path,
+         fill_pathname_join_special(
+               input_st->input_device_info[port].config_path,
                parent_dir_name, path_basename_nocompression(path),
                sizeof(input_st->input_device_info[port].config_path));
    }

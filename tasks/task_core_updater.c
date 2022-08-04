@@ -314,7 +314,7 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
             if (string_is_empty(net_buildbot_url))
                goto task_finished;
 
-            fill_pathname_join(
+            fill_pathname_join_special(
                   buildbot_url,
                   net_buildbot_url,
                   ".index-extended",
@@ -1042,7 +1042,7 @@ void *task_push_core_updater_download(
    if (string_is_empty(path_dir_libretro))
       goto error;
 
-   fill_pathname_join(
+   fill_pathname_join_special(
          local_download_path,
          path_dir_libretro,
          list_entry->remote_filename,

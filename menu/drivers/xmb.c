@@ -1100,7 +1100,7 @@ static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
 
    if (tmp)
    {
-      len = fill_pathname_join(
+      len = fill_pathname_join_special(
             path,
             dir_dynamic_wallpapers,
             tmp,
@@ -2276,10 +2276,9 @@ static void xmb_context_reset_horizontal_list(
 
    RHMAP_FREE(xmb->playlist_db_node_map);
 
-   iconpath[0]            = '\0';
    fill_pathname_application_special(iconpath, sizeof(iconpath),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
-   fill_pathname_join(icons_path_default, iconpath,
+   fill_pathname_join_special(icons_path_default, iconpath,
          "default", sizeof(icons_path_default));
 
    for (i = 0; i < list_size; i++)
@@ -2310,7 +2309,7 @@ static void xmb_context_reset_horizontal_list(
          fill_pathname_base(sysname, path, sizeof(sysname));
          path_remove_extension(sysname);
 
-         len = fill_pathname_join(texturepath, iconpath, sysname,
+         len = fill_pathname_join_special(texturepath, iconpath, sysname,
                sizeof(texturepath));
          texturepath[len  ] = '.';
          texturepath[len+1] = 'p';
@@ -2322,7 +2321,7 @@ static void xmb_context_reset_horizontal_list(
 
          if (!path_is_valid(texturepath))
          {
-               len = fill_pathname_join(texturepath, iconpath, "default",
+               len = fill_pathname_join_special(texturepath, iconpath, "default",
                sizeof(texturepath));
                texturepath[len  ] = '.';
                texturepath[len+1] = 'p';
@@ -2351,7 +2350,7 @@ static void xmb_context_reset_horizontal_list(
          fill_pathname_join_delim(sysname, sysname,
                FILE_PATH_CONTENT_BASENAME, '-',
                sizeof(sysname));
-         fill_pathname_join(content_texturepath, iconpath, sysname,
+         fill_pathname_join_special(content_texturepath, iconpath, sysname,
                sizeof(content_texturepath));
 
          /* If the content icon doesn't exist return default-content */
@@ -6797,7 +6796,7 @@ static void xmb_context_reset_background(xmb_handle_t *xmb, const char *iconpath
    }
    else if (!string_is_empty(iconpath))
    {
-      fill_pathname_join(path, iconpath,
+      fill_pathname_join_special(path, iconpath,
             FILE_PATH_BACKGROUND_IMAGE, sizeof(path));
 
       if (path_is_valid(path))

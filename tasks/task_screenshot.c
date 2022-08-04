@@ -288,7 +288,7 @@ static bool screenshot_dump(
                char content_dir_name[PATH_MAX_LENGTH];
                fill_pathname_parent_dir_name(content_dir_name,
                      content_dir, sizeof(content_dir_name));
-               fill_pathname_join(
+               fill_pathname_join_special(
                      new_screenshot_dir,
                      screenshot_dir,
                      content_dir_name,
@@ -339,7 +339,7 @@ static bool screenshot_dump(
             fill_pathname_basedir(new_screenshot_dir, name_base,
                   sizeof(new_screenshot_dir));
 
-         fill_pathname_join(state->filename, new_screenshot_dir,
+         fill_pathname_join_special(state->filename, new_screenshot_dir,
                state->shotname, sizeof(state->filename));
 
          /* Create screenshot directory, if required */

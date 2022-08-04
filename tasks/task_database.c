@@ -753,7 +753,7 @@ static int database_info_list_iterate_found_match(
    strlcat(db_playlist_base_str, ".lpl", str_len);
 
    if (!string_is_empty(_db->playlist_directory))
-      fill_pathname_join(db_playlist_path, _db->playlist_directory,
+      fill_pathname_join_special(db_playlist_path, _db->playlist_directory,
             db_playlist_base_str, str_len);
 
    playlist_config_set_path(&_db->playlist_config, db_playlist_path);
@@ -986,7 +986,7 @@ static int task_database_iterate_playlist_lutro(
    db_playlist_path[0]     = '\0';
 
    if (!string_is_empty(_db->playlist_directory))
-      fill_pathname_join(db_playlist_path,
+      fill_pathname_join_special(db_playlist_path,
             _db->playlist_directory,
             "Lutro.lpl", sizeof(db_playlist_path));
 

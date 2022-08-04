@@ -321,10 +321,10 @@ static bool connmanctl_connect_ssid(
       void *data, const wifi_network_info_t *netinfo)
 {
    unsigned i;
-   bool success = false;
-   char settings_dir[PATH_MAX_LENGTH]  = {0};
-   char settings_path[PATH_MAX_LENGTH] = {0};
-   char netid[160]                     = {0};
+   char netid[160];
+   char settings_dir[PATH_MAX_LENGTH];
+   char settings_path[PATH_MAX_LENGTH];
+   bool success                        = false;
    connman_t *connman                  = (connman_t*)data;
    settings_t *settings                = config_get_ptr();
    static struct string_list* list     = NULL;
@@ -333,12 +333,12 @@ static bool connmanctl_connect_ssid(
       connman->connmanctl_widgets_supported;
 #endif
    strlcpy(netid, netinfo->netid, sizeof(netid));
-   fill_pathname_join(settings_dir, LAKKA_CONNMAN_DIR, 
+   fill_pathname_join_special(settings_dir, LAKKA_CONNMAN_DIR, 
          netid, sizeof(settings_dir));
 
    path_mkdir(settings_dir);
 
-   fill_pathname_join(settings_path, settings_dir, "settings",
+   fill_pathname_join_special(settings_path, settings_dir, "settings",
          sizeof(settings_path));
 
    if (!netinfo->saved_password)

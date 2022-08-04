@@ -283,7 +283,7 @@ runtime_log_t *runtime_log_init(
     * If 'custom' runtime log path is undefined,
     * use default 'playlists/logs' directory... */
    if (string_is_empty(dir_runtime_log))
-      fill_pathname_join(
+      fill_pathname_join_special(
             tmp_buf,
             dir_playlist,
             "logs",
@@ -295,7 +295,7 @@ runtime_log_t *runtime_log_init(
       return NULL;
 
    if (log_per_core)
-      fill_pathname_join(
+      fill_pathname_join_special(
             log_file_dir,
             tmp_buf,
             core_name,
@@ -363,7 +363,7 @@ runtime_log_t *runtime_log_init(
       return NULL;
 
    /* Build final log file path */
-   len = fill_pathname_join(log_file_path, log_file_dir,
+   len = fill_pathname_join_special(log_file_path, log_file_dir,
          content_name, sizeof(log_file_path));
    log_file_path[len  ] = '.';
    log_file_path[len+1] = 'l';

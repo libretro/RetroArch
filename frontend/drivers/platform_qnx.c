@@ -56,17 +56,21 @@ static void frontend_qnx_get_env_settings(int *argc, char *argv[],
       void *data, void *params_data)
 {
    unsigned i;
-   char data_assets_path[PATH_MAX] = {0};
-   char assets_path[PATH_MAX]      = {0};
-   char data_path[PATH_MAX]        = {0};
-   char user_path[PATH_MAX]        = {0};
-   char tmp_path[PATH_MAX]         = {0};
+   char assets_path[PATH_MAX];
+   char data_path[PATH_MAX];
+   char user_path[PATH_MAX];
+   char tmp_path[PATH_MAX];
+   char data_assets_path[PATH_MAX];
    char workdir[PATH_MAX]          = {0};
 
    getcwd(workdir, sizeof(workdir));
 
    if(!string_is_empty(workdir))
    {
+      assets_path[0]               = '\0';
+      data_path[0]                 = '\0';
+      user_path[0]                 = '\0';
+      tmp_path[0]                  = '\0';
       snprintf(assets_path, sizeof(data_path),
             "%s/app/native/assets", workdir);
       snprintf(data_path, sizeof(data_path),
@@ -78,10 +82,10 @@ static void frontend_qnx_get_env_settings(int *argc, char *argv[],
    }
    else
    {
-      snprintf(assets_path, sizeof(data_path), "app/native/assets");
-      snprintf(data_path, sizeof(data_path), "data");
-      snprintf(user_path, sizeof(user_path), "shared/misc/retroarch");
-      snprintf(tmp_path, sizeof(user_path), "tmp");
+      strlcpy(assets_path, "app/native/assets", sizeof(assets_path));
+      strlcpy(data_path, "data", sizeof(data_path));
+      strlcpy(user_path, "shared/misc/retroarch", sizeof(user_path));
+      strlcpy(tmp_path, "tmp", sizeof(user_path));
    }
 
    /* app data */
@@ -143,9 +147,8 @@ static void frontend_qnx_get_env_settings(int *argc, char *argv[],
          FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
 
    /* bundle copy */
-   snprintf(data_assets_path,
-         sizeof(data_assets_path),
-         "%s/%s", data_path, "assets");
+   fill_pathname_join_special(data_assets_path,
+		   data_path, "assets", sizeof(data_assets_path));
 
    if (!filestream_exists(data_assets_path))
    {
@@ -162,7 +165,7 @@ static void frontend_qnx_get_env_settings(int *argc, char *argv[],
    }
 
    /* set GLUI as default menu */
-   snprintf(g_defaults.settings_menu, sizeof(g_defaults.settings_menu), "glui");
+   strlcpy(g_defaults.settings_menu, "glui", sizeof(g_defaults.settings_menu));
 
 #ifndef IS_SALAMANDER
    dir_check_defaults("custom.ini");

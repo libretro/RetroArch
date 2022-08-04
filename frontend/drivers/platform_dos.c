@@ -54,7 +54,7 @@ static void frontend_dos_get_env_settings(int *argc, char *argv[],
       void *data, void *params_data)
 {
    char *slash;
-	char base_path[PATH_MAX] = {0};
+	char base_path[PATH_MAX];
 
 	retro_main_log_file_init("retrodos.txt", false);
 

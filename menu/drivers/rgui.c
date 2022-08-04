@@ -2901,7 +2901,7 @@ static void update_dynamic_theme_path(rgui_t *rgui, const char *theme_dir)
 
    if (rgui->is_playlist && !string_is_empty(rgui->menu_title))
    {
-      size_t len = fill_pathname_join(rgui->theme_dynamic_path, theme_dir,
+      size_t len = fill_pathname_join_special(rgui->theme_dynamic_path, theme_dir,
             rgui->menu_title, sizeof(rgui->theme_dynamic_path));
       rgui->theme_dynamic_path[len  ] = '.';
       rgui->theme_dynamic_path[len+1] = 'c';
@@ -2913,7 +2913,7 @@ static void update_dynamic_theme_path(rgui_t *rgui, const char *theme_dir)
    }
 
    if (!use_playlist_theme)
-      fill_pathname_join(rgui->theme_dynamic_path, theme_dir,
+      fill_pathname_join_special(rgui->theme_dynamic_path, theme_dir,
             "default.cfg", sizeof(rgui->theme_dynamic_path));
 }
 

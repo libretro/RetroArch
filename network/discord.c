@@ -107,7 +107,7 @@ static bool discord_download_avatar(
    fill_pathname_application_special(buf,
             sizeof(buf),
             APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS);
-   fill_pathname_join(full_path, buf, avatar_id, sizeof(full_path));
+   fill_pathname_join_special(full_path, buf, avatar_id, sizeof(full_path));
    strlcpy(discord_st->user_avatar,
          avatar_id, sizeof(discord_st->user_avatar));
 

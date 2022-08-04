@@ -405,7 +405,7 @@ bool gfx_thumbnail_set_content_image(
             path_data->content_img, sizeof(path_data->content_label));
    
    /* Set file path */
-   fill_pathname_join(path_data->content_path,
+   fill_pathname_join_special(path_data->content_path,
       img_dir, img_name, sizeof(path_data->content_path));
    
    /* Set core name to "imageviewer" */
@@ -645,15 +645,15 @@ bool gfx_thumbnail_update_path(
       /* > Normal content: assemble path */
       
       /* >> Base + system name */
-      fill_pathname_join(thumbnail_path, dir_thumbnails,
+      fill_pathname_join_special(thumbnail_path, dir_thumbnails,
             system_name, PATH_MAX_LENGTH * sizeof(char));
       
       /* >> Add type */
-      fill_pathname_join(tmp_buf, thumbnail_path, type, sizeof(tmp_buf));
+      fill_pathname_join_special(tmp_buf, thumbnail_path, type, sizeof(tmp_buf));
       
       /* >> Add content image */
       thumbnail_path[0] = '\0';
-      fill_pathname_join(thumbnail_path, tmp_buf,
+      fill_pathname_join_special(thumbnail_path, tmp_buf,
             path_data->content_img, PATH_MAX_LENGTH * sizeof(char));
    }
    

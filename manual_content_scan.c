@@ -1056,7 +1056,7 @@ bool manual_content_scan_get_task_config(
    if (string_is_empty(path_dir_playlist))
       return false;
 
-   fill_pathname_join(
+   fill_pathname_join_special(
          task_config->playlist_file,
          path_dir_playlist,
          task_config->database_name,

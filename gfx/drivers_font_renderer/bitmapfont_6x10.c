@@ -67,9 +67,6 @@ bitmapfont_lut_t *bitmapfont_6x10_load(unsigned language)
    size_t symbol_index;
    size_t i, j;
 
-   font_dir[0]  = '\0';
-   font_path[0] = '\0';
-
    /* Get font file associated with
     * specified language */
    switch (language)
@@ -131,7 +128,7 @@ bitmapfont_lut_t *bitmapfont_6x10_load(unsigned language)
    /* Get font path */
    fill_pathname_application_special(font_dir, sizeof(font_dir),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_RGUI_FONT);
-   fill_pathname_join(font_path, font_dir, font_file,
+   fill_pathname_join_special(font_path, font_dir, font_file,
          sizeof(font_path));
 
    /* Attempt to read bitmap file */
@@ -153,8 +150,7 @@ bitmapfont_lut_t *bitmapfont_6x10_load(unsigned language)
    num_glyphs  = (glyph_max - glyph_min) + 1;
 
    /* Initialise font struct */
-   font = (bitmapfont_lut_t*)calloc(1, sizeof(bitmapfont_lut_t));
-   if (!font)
+   if (!(font = (bitmapfont_lut_t*)calloc(1, sizeof(bitmapfont_lut_t))))
       goto error;
 
    font->glyph_min = glyph_min;
@@ -163,8 +159,7 @@ bitmapfont_lut_t *bitmapfont_6x10_load(unsigned language)
    /* Note: Need to use a calloc() here, otherwise
     * we'll get undefined behaviour when calling
     * bitmapfont_free_lut() if the following loop fails */
-   font->lut = (bool**)calloc(1, num_glyphs * sizeof(bool*));
-   if (!font->lut)
+   if (!(font->lut = (bool**)calloc(1, num_glyphs * sizeof(bool*))))
       goto error;
 
    /* Loop over all possible characters */

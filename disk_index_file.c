@@ -267,7 +267,7 @@ bool disk_index_file_init(
    }
 
    /* > Generate final path */
-   fill_pathname_join(
+   fill_pathname_join_special(
          disk_index_file_path, disk_index_file_dir,
          content_name, sizeof(disk_index_file_path));
    strlcat(

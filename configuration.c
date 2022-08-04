@@ -2863,12 +2863,10 @@ void config_set_defaults(void *data)
             sizeof(settings->paths.directory_overlay));
 #ifdef RARCH_MOBILE
       if (string_is_empty(settings->paths.path_overlay))
-      {
-         fill_pathname_join(settings->paths.path_overlay,
+         fill_pathname_join_special(settings->paths.path_overlay,
                settings->paths.directory_overlay,
                FILE_PATH_DEFAULT_OVERLAY,
                sizeof(settings->paths.path_overlay));
-      }
 #endif
    }
 #endif
@@ -2890,7 +2888,7 @@ void config_set_defaults(void *data)
 #if TARGET_OS_IPHONE
       {
          char config_file_path[PATH_MAX_LENGTH];
-         fill_pathname_join(config_file_path,
+         fill_pathname_join_special(config_file_path,
                settings->paths.directory_menu_config,
                FILE_PATH_MAIN_CONFIG,
                sizeof(config_file_path));
@@ -3052,7 +3050,7 @@ static config_file_t *open_default_config_file(void)
    application_data[0] = '\0';
    #endif
 
-   conf_path[0] = app_path[0] = '\0';
+   app_path[0] = '\0';
 
 #if defined(_WIN32) && !defined(_XBOX)
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
@@ -3071,7 +3069,7 @@ static config_file_t *open_default_config_file(void)
       if (fill_pathname_application_data(application_data,
             sizeof(application_data)))
       {
-         fill_pathname_join(conf_path, application_data,
+         fill_pathname_join_special(conf_path, application_data,
                FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
          conf = config_file_new_from_path_to_string(conf_path);
       }
@@ -3114,7 +3112,7 @@ static config_file_t *open_default_config_file(void)
 
    path_mkdir(application_data);
 
-   fill_pathname_join(conf_path, application_data,
+   fill_pathname_join_special(conf_path, application_data,
          FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
    conf = config_file_new_from_path_to_string(conf_path);
 
@@ -3146,7 +3144,7 @@ static config_file_t *open_default_config_file(void)
 
    if (has_application_data)
    {
-      fill_pathname_join(conf_path, application_data,
+      fill_pathname_join_special(conf_path, application_data,
             FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
       RARCH_LOG("[Config]: Looking for config in: \"%s\".\n", conf_path);
       conf = config_file_new_from_path_to_string(conf_path);
@@ -3155,7 +3153,7 @@ static config_file_t *open_default_config_file(void)
    /* Fallback to $HOME/.retroarch.cfg. */
    if (!conf && getenv("HOME"))
    {
-      fill_pathname_join(conf_path, getenv("HOME"),
+      fill_pathname_join_special(conf_path, getenv("HOME"),
             "." FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
       RARCH_LOG("[Config]: Looking for config in: \"%s\".\n", conf_path);
       conf = config_file_new_from_path_to_string(conf_path);
@@ -3167,7 +3165,7 @@ static config_file_t *open_default_config_file(void)
       char basedir[PATH_MAX_LENGTH];
       /* Try to create a new config file. */
       fill_pathname_basedir(basedir, application_data, sizeof(basedir));
-      fill_pathname_join(conf_path, application_data,
+      fill_pathname_join_special(conf_path, application_data,
             FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
 
       dir_created = path_mkdir(basedir);
@@ -3178,7 +3176,7 @@ static config_file_t *open_default_config_file(void)
          bool saved          = false;
          /* Build a retroarch.cfg path from the
           * global config directory (/etc). */
-         fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR,
+         fill_pathname_join_special(skeleton_conf, GLOBAL_CONFIG_DIR,
             FILE_PATH_MAIN_CONFIG, sizeof(skeleton_conf));
          if ((conf = config_file_new_from_path_to_string(skeleton_conf)))
             RARCH_WARN("[Config]: Using skeleton config \"%s\" as base for a new config file.\n", skeleton_conf);
@@ -3532,7 +3530,7 @@ static bool config_load_file(global_t *global,
                FILE_PATH_CONTENT_FAVORITES,
                sizeof(settings->paths.path_content_favorites));
    else
-         fill_pathname_join(
+         fill_pathname_join_special(
                settings->paths.path_content_favorites,
                settings->paths.directory_content_favorites,
                FILE_PATH_CONTENT_FAVORITES,
@@ -3548,7 +3546,7 @@ static bool config_load_file(global_t *global,
                FILE_PATH_CONTENT_HISTORY,
                sizeof(settings->paths.path_content_history));
    else
-         fill_pathname_join(
+         fill_pathname_join_special(
                settings->paths.path_content_history,
                settings->paths.directory_content_history,
                FILE_PATH_CONTENT_HISTORY,
@@ -3564,7 +3562,7 @@ static bool config_load_file(global_t *global,
                FILE_PATH_CONTENT_IMAGE_HISTORY,
                sizeof(settings->paths.path_content_image_history));
    else
-         fill_pathname_join(
+         fill_pathname_join_special(
                settings->paths.path_content_image_history,
                settings->paths.directory_content_image_history,
                FILE_PATH_CONTENT_IMAGE_HISTORY,
@@ -3580,7 +3578,7 @@ static bool config_load_file(global_t *global,
                FILE_PATH_CONTENT_MUSIC_HISTORY,
                sizeof(settings->paths.path_content_music_history));
    else
-         fill_pathname_join(
+         fill_pathname_join_special(
                settings->paths.path_content_music_history,
                settings->paths.directory_content_music_history,
                FILE_PATH_CONTENT_MUSIC_HISTORY,
@@ -3596,7 +3594,7 @@ static bool config_load_file(global_t *global,
                FILE_PATH_CONTENT_VIDEO_HISTORY,
                sizeof(settings->paths.path_content_video_history));
    else
-         fill_pathname_join(
+         fill_pathname_join_special(
                settings->paths.path_content_video_history,
                settings->paths.directory_content_video_history,
                FILE_PATH_CONTENT_VIDEO_HISTORY,
@@ -4430,6 +4428,7 @@ bool config_save_autoconf_profile(const
       "~", "#", "%", "&", "*", "{", "}", "\\", ":", "[", "]", "?", "/", "|", "\'", "\"",
       NULL
    };
+   size_t len;
    unsigned i;
    char buf[PATH_MAX_LENGTH];
    char autoconf_file[PATH_MAX_LENGTH];
@@ -4479,15 +4478,19 @@ bool config_save_autoconf_profile(const
    }
 
    /* Generate autoconfig file path */
-   fill_pathname_join(buf, autoconf_dir, joypad_driver, sizeof(buf));
+   fill_pathname_join_special(buf, autoconf_dir, joypad_driver, sizeof(buf));
 
    if (path_is_directory(buf))
-      fill_pathname_join(autoconf_file, buf,
+      len = fill_pathname_join_special(autoconf_file, buf,
             sanitised_name, sizeof(autoconf_file));
    else
-      fill_pathname_join(autoconf_file, autoconf_dir,
+      len = fill_pathname_join_special(autoconf_file, autoconf_dir,
             sanitised_name, sizeof(autoconf_file));
-   strlcat(autoconf_file, ".cfg", sizeof(autoconf_file));
+   autoconf_file[len  ] = '.';
+   autoconf_file[len+1] = 'c';
+   autoconf_file[len+2] = 'f';
+   autoconf_file[len+3] = 'g';
+   autoconf_file[len+4] = '\0';
 
    /* Open config file */
    if (     !(conf = config_file_new_from_path_to_string(autoconf_file))
@@ -4807,7 +4810,6 @@ bool config_save_overrides(enum override_type type, void *data)
    const char *game_name                       = NULL;
    bool has_content                            = !string_is_empty(rarch_path_basename);
 
-   config_directory[0]   = '\0';
    core_path[0]          = '\0';
    game_path[0]          = '\0';
    content_path[0]       = '\0';
@@ -4828,7 +4830,7 @@ bool config_save_overrides(enum override_type type, void *data)
          sizeof(config_directory),
          APPLICATION_SPECIAL_DIRECTORY_CONFIG);
 
-   fill_pathname_join(override_directory,
+   fill_pathname_join_special(override_directory,
       config_directory, core_name,
       sizeof(override_directory));
 
