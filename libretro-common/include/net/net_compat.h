@@ -275,6 +275,38 @@ struct addrinfo
 };
 
 /* gai_strerror() not used, so we skip that. */
+
+#else
+/* Ensure that getaddrinfo and getnameinfo flags are always defined. */
+#ifndef AI_PASSIVE
+#define AI_PASSIVE 0
+#endif
+#ifndef AI_CANONNAME
+#define AI_CANONNAME 0
+#endif
+#ifndef AI_NUMERICHOST
+#define AI_NUMERICHOST 0
+#endif
+#ifndef AI_NUMERICSERV
+#define AI_NUMERICSERV 0
+#endif
+
+#ifndef NI_NUMERICHOST
+#define NI_NUMERICHOST 0
+#endif
+#ifndef NI_NUMERICSERV
+#define NI_NUMERICSERV 0
+#endif
+#ifndef NI_NOFQDN
+#define NI_NOFQDN 0
+#endif
+#ifndef NI_NAMEREQD
+#define NI_NAMEREQD 0
+#endif
+#ifndef NI_DGRAM
+#define NI_DGRAM 0
+#endif
+
 #endif
 
 static INLINE bool isagain(int val)
