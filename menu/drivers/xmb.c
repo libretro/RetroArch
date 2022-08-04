@@ -2347,9 +2347,7 @@ static void xmb_context_reset_horizontal_list(
             image_texture_free(&ti);
          }
 
-         fill_pathname_join_delim(sysname, sysname,
-               FILE_PATH_CONTENT_BASENAME, '-',
-               sizeof(sysname));
+         strlcat(sysname, "-content.png", sizeof(sysname));
          fill_pathname_join_special(content_texturepath, iconpath, sysname,
                sizeof(content_texturepath));
 

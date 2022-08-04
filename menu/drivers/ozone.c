@@ -4515,8 +4515,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
             image_texture_free(&ti);
          }
 
-         fill_pathname_join_delim(sysname, sysname,
-               "content.png", '-', sizeof(sysname));
+         strlcat(sysname, "-content.png", sizeof(sysname));
          fill_pathname_join_special(content_texturepath, ozone->icons_path, sysname,
                sizeof(content_texturepath));
 
