@@ -3041,18 +3041,12 @@ static bool check_menu_driver_compatibility(settings_t *settings)
 static config_file_t *open_default_config_file(void)
 {
    char conf_path[PATH_MAX_LENGTH];
-   char app_path[PATH_MAX_LENGTH];
    config_file_t *conf                    = NULL;
-
-   #ifndef RARCH_CONSOLE
-   char application_data[PATH_MAX_LENGTH];
-   bool has_application_data              = false;
-   application_data[0] = '\0';
-   #endif
-
-   app_path[0] = '\0';
-
+#ifndef RARCH_CONSOLE
+   char application_data[PATH_MAX_LENGTH] = {0};
+#endif
 #if defined(_WIN32) && !defined(_XBOX)
+   char app_path[PATH_MAX_LENGTH]         = {0};
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
    /* On UWP, the app install directory is not writable so use the writable LocalState dir instead */
    fill_pathname_home_dir(app_path, sizeof(app_path));
@@ -3138,7 +3132,7 @@ static config_file_t *open_default_config_file(void)
       RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
    }
 #elif !defined(RARCH_CONSOLE)
-   has_application_data =
+   bool has_application_data =
       fill_pathname_application_data(application_data,
             sizeof(application_data));
 

@@ -98,6 +98,8 @@ void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
 {
    int width, height;
    struct libdecor_state *state = NULL;
+   enum libdecor_window_state window_state;
+#if 0
    static const enum
       libdecor_window_state tiled_states = (
          LIBDECOR_WINDOW_STATE_TILED_LEFT
@@ -105,9 +107,9 @@ void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
        | LIBDECOR_WINDOW_STATE_TILED_TOP
        | LIBDECOR_WINDOW_STATE_TILED_BOTTOM
    );
-   enum libdecor_window_state window_state;
    bool focused   = false;
    bool tiled     = false;
+#endif
 
    wl->fullscreen = false;
    wl->maximized  = false;
@@ -117,8 +119,10 @@ void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
    {
       wl->fullscreen = (window_state & LIBDECOR_WINDOW_STATE_FULLSCREEN) != 0;
       wl->maximized  = (window_state & LIBDECOR_WINDOW_STATE_MAXIMIZED) != 0;
+#if 0
       focused        = (window_state & LIBDECOR_WINDOW_STATE_ACTIVE) != 0;
       tiled          = (window_state & tiled_states) != 0;
+#endif
    }
 
    if (!wl->libdecor_configuration_get_content_size(configuration, frame,

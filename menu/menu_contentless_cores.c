@@ -329,7 +329,8 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
          struct texture_image ti = {0};
          ti.supports_rgba        = rgba_supported;
 
-         fill_pathname_join_special(icon_path, icon_directory,
+         len                     = fill_pathname_join_special(
+               icon_path, icon_directory,
                icon_name, sizeof(icon_path));
          icon_path[len  ] = '.';
          icon_path[len+1] = 'p';
