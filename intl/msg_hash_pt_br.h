@@ -590,6 +590,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
    "Características da CPU"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
+   "Arquitetura da CPU"
+   )
 MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "Núcleos da CPU:"
@@ -6663,6 +6667,10 @@ MSG_HASH(
    "Filtro DAT de arcade"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
+   "Ao usar um arquivo DAT de arcade, o conteúdo só será adicionado a lista de reprodução se for encontrada uma entrada correspondente. "
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
    "Substituir lista de reprodução existente"
    )
@@ -6880,8 +6888,16 @@ MSG_HASH(
    "Definir associação do núcleo"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SET_CORE_ASSOCIATION,
+   "Define o núcleo associado a este conteúdo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
    "Redefinir associação do núcleo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_CORE_ASSOCIATION,
+   "Restaurar o núcleo associado a este conteúdo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,
@@ -10248,6 +10264,10 @@ MSG_HASH(
    "Apelido: %s"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_LOOK,
+   "Procurando por conteúdo compatível..."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_CORE,
    "Nenhum núcleo encontrado"
    )
@@ -10880,8 +10900,16 @@ MSG_HASH(
    "Assistindo"
    )
 MSG_HASH(
+   MSG_NETPLAY_CLIENT_DEVICES,
+   "Dispositivos"
+   )
+MSG_HASH(
    MSG_NETPLAY_CHAT_SUPPORTED,
    "Bate-papo compatível"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SLOWDOWNS_CAUSED,
+   "Lentidões Causadas"
    )
 
 MSG_HASH(
@@ -12126,7 +12154,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_BANNED,
-   "Você está banido desta sala"
+   "Você foi expulso desta sala"
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
@@ -12555,6 +12583,10 @@ MSG_HASH(
    "Desempenho (gerenciado)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
+   "O modo padrão e recomendado. Providencia desempenho total em jogos enquanto economiza energia ao pausar o jogo ou navegar pelos menus."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
    "Gerenciamento personalizado"
    )
@@ -12581,6 +12613,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
    "Balanceado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   "Se adapta à carga de trabalho atual. Economiza energia e funciona bem com a maioria dos dispositivos e emuladores. Os jogos e núcleos mais exigentes podem sofrer quedas de desempenho em alguns dispositivos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,
