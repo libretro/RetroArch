@@ -1,4 +1,4 @@
-name: CI ORBIS
+name: CI PS4/ORBIS
 
 on:
   push:
