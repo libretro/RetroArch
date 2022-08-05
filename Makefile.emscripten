@@ -1,3 +1,4 @@
+HAVE_STATIC_DUMMY ?= 0
 ifeq ($(TARGET),)
 ifeq ($(LIBRETRO),)
 TARGET := retroarch.js
@@ -85,7 +86,14 @@ endif
 include Makefile.common
 
 CFLAGS += $(DEF_FLAGS) -Ideps -Ideps/stb
-libretro = libretro_emscripten.bc
+
+libretro :=
+
+ifeq ($(HAVE_STATIC_DUMMY),1)
+  DEFINES += -DHAVE_STATIC_DUMMY
+else
+  libretro += libretro_emscripten.bc
+endif
 
 ifneq ($(V), 1)
    Q := @
