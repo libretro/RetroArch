@@ -9,6 +9,7 @@ TOPDIR ?= $(CURDIR)
 
 DEBUG                  ?= 0
 WHOLE_ARCHIVE_LINK      = 0
+HAVE_STATIC_DUMMY ?= 0
 GRIFFIN_BUILD           = 0
 
 OBJ :=
@@ -183,6 +184,14 @@ ifneq ($(ROMFS),)
 	export NROFLAGS += --romfsdir=$(CURDIR)/$(ROMFS)
 endif
 
+LIB_CORE :=
+
+ifeq ($(HAVE_STATIC_DUMMY),1)
+  DEFINES += -DHAVE_STATIC_DUMMY
+else
+  LIB_CORE += -lretro_dos
+endif
+
 DEPENDS_TMP  := $(OFILES:.o=.d)
 DEPENDS      := $(filter-out libretro_libnx.a,$(DEPENDS_TMP))
 
@@ -194,7 +203,7 @@ DEPENDS      := $(filter-out libretro_libnx.a,$(DEPENDS_TMP))
 all	:	$(OUTPUT)
 
 $(OUTPUT): $(OBJ)
-	$(CXX) -o $@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(PLATEXTRA) -L. -lretro_dos $(LIBS)
+	$(CXX) -o $@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(PLATEXTRA) -L. $(LIB_CORE) $(LIBS)
 
 %.o: %.c
 	$(CC) -c -o $@ $(CFLAGS) $<
