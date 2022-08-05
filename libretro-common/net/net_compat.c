@@ -28,7 +28,90 @@
 
 #include <net/net_compat.h>
 
-#if defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX)
+#if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0600
+const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
+{
+   struct sockaddr_storage addr;
+
+   switch (af)
+   {
+      case AF_INET:
+         memcpy(&((struct sockaddr_in*)&addr)->sin_addr, src,
+            sizeof(struct in_addr));
+         break;
+#ifdef HAVE_INET6
+      case AF_INET6:
+         memcpy(&((struct sockaddr_in6*)&addr)->sin6_addr, src,
+            sizeof(struct in6_addr));
+         break;
+#endif
+      default:
+         return NULL;
+   }
+
+   addr.ss_family = af;
+   if (getnameinfo((struct sockaddr*)&addr, sizeof(addr), dst, size, NULL, 0,
+         NI_NUMERICHOST))
+      return NULL;
+
+   return dst;
+}
+
+int inet_pton(int af, const char *src, void *dst)
+{
+   struct addrinfo *addr = NULL;
+   struct addrinfo hints = {0};
+
+   switch (af)
+   {
+      case AF_INET:
+#ifdef HAVE_INET6
+      case AF_INET6:
+#endif
+         break;
+      default:
+         return -1;
+   }
+
+   hints.ai_family = af;
+   hints.ai_flags  = AI_NUMERICHOST;
+   switch (getaddrinfo(src, NULL, &hints, &addr))
+   {
+      case 0:
+         break;
+      case EAI_NONAME:
+         return 0;
+      default:
+         return -1;
+   }
+
+   if (!addr)
+      return -1;
+
+   switch (af)
+   {
+      case AF_INET:
+         memcpy(dst, &((struct sockaddr_in*)addr->ai_addr)->sin_addr,
+            sizeof(struct in_addr));
+         break;
+#ifdef HAVE_INET6
+      case AF_INET6:
+         memcpy(dst, &((struct sockaddr_in6*)addr->ai_addr)->sin6_addr,
+            sizeof(struct in6_addr));
+         break;
+#endif
+      default:
+         break;
+   }
+
+   freeaddrinfo(addr);
+
+   return 1;
+}
+#endif
+
+#elif defined(_XBOX)
 struct hostent *gethostbyname(const char *name)
 {
    static struct in_addr addr = {0};

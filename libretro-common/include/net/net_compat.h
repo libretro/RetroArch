@@ -36,8 +36,6 @@
 
 #include <retro_common_api.h>
 
-RETRO_BEGIN_DECLS
-
 #if defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN
 
@@ -60,19 +58,6 @@ RETRO_BEGIN_DECLS
 #endif
 
 #define socklen_t unsigned int
-
-struct hostent
-{
-   char *h_name;
-   char **h_aliases;
-   int  h_addrtype;
-   int  h_length;
-   char **h_addr_list;
-   char *h_addr;
-   char *h_end;
-};
-
-struct hostent *gethostbyname(const char *name);
 
 #elif defined(VITA)
 #include <psp2/net/net.h>
@@ -140,31 +125,6 @@ struct hostent *gethostbyname(const char *name);
 #define inet_ntop sceNetInetNtop
 #define inet_pton sceNetInetPton
 
-struct pollfd
-{
-   int fd;
-   unsigned events;
-   unsigned revents;
-   unsigned __pad; /* Align to 64-bits boundary */
-};
-
-struct hostent
-{
-   char *h_name;
-   char **h_aliases;
-   int  h_addrtype;
-   int  h_length;
-   char **h_addr_list;
-   char *h_addr;
-   char *h_end;
-};
-
-char *inet_ntoa(struct in_addr in);
-int inet_aton(const char *cp, struct in_addr *inp);
-uint32_t inet_addr(const char *cp);
-
-struct hostent *gethostbyname(const char *name);
-
 #elif defined(GEKKO)
 #include <network.h>
 
@@ -185,9 +145,6 @@ struct hostent *gethostbyname(const char *name);
 #define recvfrom(a,b,c,d,e,f) net_recvfrom(a,b,c,d,e,f)
 #define select(a,b,c,d,e) net_select(a,b,c,d,e)
 #define gethostbyname(a) net_gethostbyname(a)
-
-const char *inet_ntop(int af, const void *src, char *dst, socklen_t size);
-int inet_pton(int af, const char *src, void *dst);
 
 #else
 #include <sys/types.h>
@@ -244,6 +201,8 @@ int inet_pton(int af, const char *src, void *dst);
 #define NET_POLL_EVENT(sockev, sockfds) (sockfds)->events |= (sockev)
 #define NET_POLL_HAS_EVENT(sockev, sockfds) ((sockfds)->revents & (sockev))
 #endif
+
+RETRO_BEGIN_DECLS
 
 /* Compatibility layer for legacy or incomplete BSD socket implementations.
  * Only for IPv4. Mostly useful for the consoles which do not support
@@ -309,6 +268,40 @@ struct addrinfo
 
 #endif
 
+#if defined(_XBOX)
+struct hostent
+{
+   char *h_name;
+   char **h_aliases;
+   int  h_addrtype;
+   int  h_length;
+   char **h_addr_list;
+   char *h_addr;
+   char *h_end;
+};
+
+#elif defined(VITA)
+struct pollfd
+{
+   int fd;
+   unsigned events;
+   unsigned revents;
+   unsigned __pad; /* Align to 64-bits boundary */
+};
+
+struct hostent
+{
+   char *h_name;
+   char **h_aliases;
+   int  h_addrtype;
+   int  h_length;
+   char **h_addr_list;
+   char *h_addr;
+   char *h_end;
+};
+
+#endif
+
 static INLINE bool isagain(int val)
 {
 #if defined(_WIN32)
@@ -338,6 +331,28 @@ static INLINE bool isinprogress(int val)
    return (val < 0) && (errno == EINPROGRESS);
 #endif
 }
+
+#if defined(_WIN32) && !defined(_XBOX)
+#if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0600
+const char *inet_ntop(int af, const void *src, char *dst, socklen_t size);
+int inet_pton(int af, const char *src, void *dst);
+#endif
+
+#elif defined(_XBOX)
+struct hostent *gethostbyname(const char *name);
+
+#elif defined(VITA)
+char *inet_ntoa(struct in_addr in);
+int inet_aton(const char *cp, struct in_addr *inp);
+uint32_t inet_addr(const char *cp);
+
+struct hostent *gethostbyname(const char *name);
+
+#elif defined(GEKKO)
+const char *inet_ntop(int af, const void *src, char *dst, socklen_t size);
+int inet_pton(int af, const char *src, void *dst);
+
+#endif
 
 int getaddrinfo_retro(const char *node, const char *service,
       struct addrinfo *hints, struct addrinfo **res);
