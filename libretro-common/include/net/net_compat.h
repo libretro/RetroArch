@@ -210,6 +210,35 @@ RETRO_BEGIN_DECLS
 #ifdef HAVE_SOCKET_LEGACY
 #define sockaddr_storage sockaddr_in
 
+#ifdef AI_PASSIVE
+#undef AI_PASSIVE
+#endif
+#ifdef AI_CANONNAME
+#undef AI_CANONNAME
+#endif
+#ifdef AI_NUMERICHOST
+#undef AI_NUMERICHOST
+#endif
+#ifdef AI_NUMERICSERV
+#undef AI_NUMERICSERV
+#endif
+
+#ifdef NI_NUMERICHOST
+#undef NI_NUMERICHOST
+#endif
+#ifdef NI_NUMERICSERV
+#undef NI_NUMERICSERV
+#endif
+#ifdef NI_NOFQDN
+#undef NI_NOFQDN
+#endif
+#ifdef NI_NAMEREQD
+#undef NI_NAMEREQD
+#endif
+#ifdef NI_DGRAM
+#undef NI_DGRAM
+#endif
+
 #define AI_PASSIVE     1
 #define AI_CANONNAME   2
 #define AI_NUMERICHOST 4
