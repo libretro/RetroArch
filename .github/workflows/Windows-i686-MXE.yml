@@ -1,4 +1,4 @@
-name: CI MXE Windows i686
+name: CI Windows i686 (MXE)
 
 on:
   push:
