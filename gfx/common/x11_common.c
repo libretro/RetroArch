@@ -383,7 +383,31 @@ static void x11_init_keyboard_lut(void)
       x11_keysym_rlut_size = 0;
 }
 
-bool x11_create_input_context(Display *dpy, Window win, XIM *xim, XIC *xic)
+static void x11_destroy_input_context(XIM *xim, XIC *xic)
+{
+   if (*xic)
+   {
+      XDestroyIC(*xic);
+      *xic = NULL;
+   }
+
+   if (*xim)
+   {
+      XCloseIM(*xim);
+      *xim = NULL;
+   }
+
+   memset(x11_keysym_lut, 0, sizeof(x11_keysym_lut));
+   if (x11_keysym_rlut)
+   {
+      free(x11_keysym_rlut);
+      x11_keysym_rlut = NULL;
+   }
+   x11_keysym_rlut_size = 0;
+}
+
+
+static bool x11_create_input_context(Display *dpy, Window win, XIM *xim, XIC *xic)
 {
    x11_destroy_input_context(xim, xic);
    x11_init_keyboard_lut();
@@ -408,29 +432,6 @@ bool x11_create_input_context(Display *dpy, Window win, XIM *xim, XIC *xic)
 
    XSetICFocus(*xic);
    return true;
-}
-
-void x11_destroy_input_context(XIM *xim, XIC *xic)
-{
-   if (*xic)
-   {
-      XDestroyIC(*xic);
-      *xic = NULL;
-   }
-
-   if (*xim)
-   {
-      XCloseIM(*xim);
-      *xim = NULL;
-   }
-
-   memset(x11_keysym_lut, 0, sizeof(x11_keysym_lut));
-   if (x11_keysym_rlut)
-   {
-      free(x11_keysym_rlut);
-      x11_keysym_rlut = NULL;
-   }
-   x11_keysym_rlut_size = 0;
 }
 
 bool x11_get_metrics(void *data,
