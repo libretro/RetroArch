@@ -753,7 +753,7 @@ void retroarch_path_set_redirect(settings_t *settings)
 
             /* Append library_name to the save location */
             if (sort_savefiles_enable)
-               fill_pathname_join_special(
+               fill_pathname_join(
                      new_savefile_dir,
                      new_savefile_dir,
                      system->library_name,
@@ -787,7 +787,7 @@ void retroarch_path_set_redirect(settings_t *settings)
             /* Append library_name to the savestate location */
             if (sort_savestates_enable)
             {
-               fill_pathname_join_special(
+               fill_pathname_join(
                      new_savestate_dir,
                      new_savestate_dir,
                      system->library_name,
@@ -843,7 +843,7 @@ void retroarch_path_set_redirect(settings_t *settings)
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
          !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
    {
-      fill_pathname_join_special(new_savefile_dir, new_savefile_dir, ".netplay",
+      fill_pathname_join(new_savefile_dir, new_savefile_dir, ".netplay",
          sizeof(new_savefile_dir));
 
       if (!path_is_directory(new_savefile_dir) &&
