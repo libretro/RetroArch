@@ -245,8 +245,10 @@ enum dxgi_swapchain_bit_depth
 #define _Analysis_assume_(expr)
 #define _Analysis_assume_nullterminated_(expr)
 
+#ifndef RARCH_INTERNAL
 #define __in
 #define __out
+#endif
 
 #define __in_bcount(size)
 #define __in_ecount(size)

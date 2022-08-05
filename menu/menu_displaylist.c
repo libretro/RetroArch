@@ -7889,7 +7889,7 @@ unsigned menu_displaylist_build_list(
             {
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      (enum msg_hash_enums)
-                        MENU_ENUM_LABEL_NETPLAY_REQUEST_DEVICE_1 + user,
+                        (MENU_ENUM_LABEL_NETPLAY_REQUEST_DEVICE_1 + user),
                      PARSE_ONLY_BOOL, false) == 0)
                   count++;
             }
@@ -7923,7 +7923,7 @@ unsigned menu_displaylist_build_list(
                {
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         (enum msg_hash_enums)
-                           MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE + user,
+                           (MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE + user),
                         PARSE_ONLY_BOOL, false) == 0)
                      count++;
                }

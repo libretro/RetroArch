@@ -695,7 +695,9 @@ static void last_played_human(runtime_log_t *runtime_log,
 
    /* Generate string */
    snprintf(tmp, sizeof(tmp), "%u %s",
-         (int)delta, msg_hash_to_str((delta == 1) ? units[i][0] : units[i][1]));
+         (int)delta, msg_hash_to_str((delta == 1) 
+            ? (enum msg_hash_enums)units[i][0] 
+            : (enum msg_hash_enums)units[i][1]));
    strlcat(str, tmp, len);
    strlcat(str, " ", len);
    strlcat(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO), len);

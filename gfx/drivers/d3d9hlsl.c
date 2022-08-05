@@ -238,8 +238,8 @@ static void hlsl_d3d9_renderchain_set_shader_params(
    float video_size[2];
    float texture_size[2];
    float output_size[2];
-   void *fprg                               = pass->ftable;
-   void *vprg                               = pass->vtable;
+   LPD3DXCONSTANTTABLE fprg                 = (LPD3DXCONSTANTTABLE)pass->ftable;
+   LPD3DXCONSTANTTABLE vprg                 = (LPD3DXCONSTANTTABLE)pass->vtable;
 
    video_size[0]                            = video_w;
    video_size[1]                            = video_h;
@@ -362,7 +362,7 @@ static void hlsl_d3d9_renderchain_calc_and_set_shader_mvp(
    d3d_matrix_multiply(&proj, &ortho, &rot);
    d3d_matrix_transpose(&matrix, &proj);
 
-   d3d9_hlsl_set_param_matrix(pass->vtable,
+   d3d9_hlsl_set_param_matrix((LPD3DXCONSTANTTABLE)pass->vtable,
          chain->chain.dev, "modelViewProj", (const void*)&matrix);
 }
 
@@ -883,7 +883,7 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
 
    if (
          !hlsl_d3d9_renderchain_init(
-            d3d, d3d->renderchain_data,
+            d3d, (hlsl_renderchain_t*)d3d->renderchain_data,
             d3d->dev, &d3d->final_viewport, &link_info,
             rgb32
             ? RETRO_PIXEL_FORMAT_XRGB8888 
@@ -915,7 +915,7 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
       current_height  = out_height;
 
       if (!hlsl_d3d9_renderchain_add_pass(
-               d3d->renderchain_data, &link_info))
+               (hlsl_renderchain_t*)d3d->renderchain_data, &link_info))
       {
          RARCH_ERR("[D3D9]: Failed to add pass.\n");
          return false;

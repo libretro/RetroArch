@@ -1412,11 +1412,7 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
          if (FAILED(DXGIEnumAdapters(d3d12->factory, i, &adapter)))
             break;
 #endif
-#ifdef __cplusplus
-         adapter->GetDesc(adapter, &desc);
-#else
          adapter->lpVtbl->GetDesc(adapter, &desc);
-#endif
 
          utf16_to_char_string((const uint16_t*)desc.Description, str, sizeof(str));
 

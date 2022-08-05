@@ -256,7 +256,7 @@ void *d3d9_texture_new_from_file(void *_dev,
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
    void *buf             = NULL;
    if (SUCCEEDED(D3D9CreateTextureFromFile((LPDIRECT3DDEVICE9)dev,
-               path, width, height, miplevels, usage, format,
+               path, width, height, miplevels, usage, (D3DFORMAT)format,
                (D3DPOOL)pool, filter, mipfilter, color_key,
                (D3DXIMAGE_INFO*)src_info_data,
                palette, (struct IDirect3DTexture9**)&buf)))
