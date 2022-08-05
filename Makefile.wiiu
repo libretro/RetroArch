@@ -5,6 +5,7 @@ BUILD_RPX                  = 1
 DEBUG                      = 0
 GRIFFIN_BUILD              = 0
 SALAMANDER_BUILD           = 0
+HAVE_STATIC_DUMMY ?= 0
 WHOLE_ARCHIVE_LINK         = 0
 WIIU_HID                   = 1
 HAVE_HID                   = 1
@@ -224,7 +225,16 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
    WHOLE_END := -Wl,--no-whole-archive
 endif
 
-LIBS := $(WHOLE_START) -lretro_wiiu $(WHOLE_END) -lm
+LIB_CORE :=
+
+ifeq ($(HAVE_STATIC_DUMMY),1)
+  DEFINES += -DHAVE_STATIC_DUMMY
+else
+  LIB_CORE += -lretro_wiiu
+endif
+
+
+LIBS := $(WHOLE_START) $(LIB_CORE) $(WHOLE_END) -lm
 
 # Use portlibs zlib if deps/ isn't being used
 ifeq ($(HAVE_ZLIB),1)
