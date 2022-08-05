@@ -323,6 +323,9 @@ TFunction::TFunction(const TFunction& copyOf) : TSymbol(copyOf)
 {
     for (unsigned int i = 0; i < copyOf.parameters.size(); ++i) {
         TParameter param;
+ 	param.name         = NULL;
+ 	param.type         = NULL;
+ 	param.defaultValue = NULL;
         parameters.push_back(param);
         parameters.back().copyParam(copyOf.parameters[i]);
     }
