@@ -10,6 +10,7 @@ PC_DEVELOPMENT_IP_ADDRESS  = 255.255.255.255
 PC_DEVELOPMENT_UDP_PORT    = 3490
 RARCH_CONSOLE              = 0
 USBGECKO                   = 0
+HAVE_STATIC_DUMMY ?= 0
 
 SPACE      :=
 SPACE      := $(SPACE) $(SPACE)
@@ -44,7 +45,15 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
    WHOLE_END       := -Wl,--no-whole-archive
 endif
 
-LIBS               := $(WHOLE_START) -lretro_ngc $(WHOLE_END)
+LIB_CORE :=
+
+ifeq ($(HAVE_STATIC_DUMMY),1)
+  DEFINES += -DHAVE_STATIC_DUMMY
+else
+  LIB_CORE += -lretro_ngc
+endif
+
+LIBS               := $(WHOLE_START) $(LIB_CORE) $(WHOLE_END)
 
 libogc_platform    := 1
 
