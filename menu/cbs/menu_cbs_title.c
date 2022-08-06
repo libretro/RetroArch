@@ -789,21 +789,22 @@ static int action_get_title_generic(char *s, size_t len,
       string_list_initialize(&list_path);
       if (string_split_noalloc(&list_path, path, "|"))
       {
+         size_t _len;
          char elem0_path[255];
          if (list_path.size > 0)
             strlcpy(elem0_path, list_path.elems[0].data,
                   sizeof(elem0_path));
          string_list_deinitialize(&list_path);
 
+         _len      = strlcpy(s, text, len);
          if (!string_is_empty(elem0_path))
          {
             path_remove_extension(elem0_path);
-            snprintf(s, len, "%s: %s",
-                  text,
-                  path_basename(elem0_path));
+            s[_len  ] = ':';
+            s[_len+1] = ' ';
+            s[_len+2] = '\0';
+            strlcat(s, path_basename(elem0_path), len);
          }
-         else
-            strlcpy(s, text, len);
          return 0;
       }
    }

@@ -4466,7 +4466,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
       if (string_ends_with_size(path, ".lpl",
                strlen(path), STRLEN_CONST(".lpl")))
       {
-         size_t len;
+         size_t len, _len;
          struct texture_image ti;
          char sysname[PATH_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
@@ -4475,10 +4475,16 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          /* Add current node to playlist database name map */
          RHMAP_SET_STR(ozone->playlist_db_node_map, path, node);
 
-         fill_pathname_base(sysname, path, sizeof(sysname));
-         path_remove_extension(sysname);
-
-         len = fill_pathname_join_special(texturepath, ozone->icons_path, sysname,
+         _len               = fill_pathname_base(
+               sysname, path, sizeof(sysname));
+         /* Manually strip the extension (and dot) from sysname */
+            sysname[_len-4] = 
+            sysname[_len-3] = 
+            sysname[_len-2] = 
+            sysname[_len-1] = '\0';
+         _len               = _len-4;
+         len                = fill_pathname_join_special(texturepath,
+               ozone->icons_path, sysname,
                sizeof(texturepath));
          texturepath[len]   = '.';
          texturepath[len+1] = 'p';
@@ -4486,10 +4492,11 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          texturepath[len+3] = 'g';
          texturepath[len+4] = '\0';
 
-         /* If the playlist icon doesn't exist return default */
+         /* If the playlist icon doesn't exist, return default */
          if (!path_is_valid(texturepath))
          {
-            len = fill_pathname_join_special(texturepath, ozone->icons_path, "default",
+            len                = fill_pathname_join_special(
+                  texturepath, ozone->icons_path, "default",
                   sizeof(texturepath));
             texturepath[len]   = '.';
             texturepath[len+1] = 'p';
@@ -4515,8 +4522,23 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
             image_texture_free(&ti);
          }
 
-         strlcat(sysname, "-content.png", sizeof(sysname));
-         fill_pathname_join_special(content_texturepath, ozone->icons_path, sysname,
+         /* Manually append '-content.png' to end of sysname string */
+         sysname[_len   ] = '-';
+         sysname[_len+1 ] = 'c';
+         sysname[_len+2 ] = 'o';
+         sysname[_len+3 ] = 'n';
+         sysname[_len+4 ] = 't';
+         sysname[_len+5 ] = 'e';
+         sysname[_len+6 ] = 'n';
+         sysname[_len+7 ] = 't';
+         sysname[_len+8 ] = '.';
+         sysname[_len+9 ] = 'p';
+         sysname[_len+10] = 'n';
+         sysname[_len+11] = 'g';
+         sysname[_len+12] = '\0';
+         /* Assemble new icon path */
+         fill_pathname_join_special(
+               content_texturepath, ozone->icons_path, sysname,
                sizeof(content_texturepath));
 
          /* If the content icon doesn't exist, return default-content */
