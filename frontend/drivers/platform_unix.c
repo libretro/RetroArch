@@ -161,9 +161,9 @@ int system_property_get(const char *command,
       const char *args, char *value)
 {
    FILE *pipe;
+   char buffer[PROP_VALUE_MAX;
    char cmd[NAME_MAX_LENGTH];
    int length                   = 0;
-   char buffer[PATH_MAX_LENGTH] = {0};
    char *curpos                 = NULL;
    size_t buf_pos               = strlcpy(cmd, command, sizeof(cmd));
 
@@ -172,16 +172,17 @@ int system_property_get(const char *command,
 
    buf_pos                      = strlcat(cmd, args, sizeof(cmd));
 
-   pipe                         = popen(cmd, "r");
-
-   if (!pipe)
-      goto error;
+   if (!(pipe = popen(cmd, "r")))
+   {
+      RARCH_ERR("Could not create pipe.\n");
+      return 0;
+   }
 
    curpos = value;
 
    while (!feof(pipe))
    {
-      if (fgets(buffer, 128, pipe))
+      if (fgets(buffer, sizeof(buffer), pipe))
       {
          int curlen = strlen(buffer);
 
@@ -197,10 +198,6 @@ int system_property_get(const char *command,
    pclose(pipe);
 
    return length;
-
-error:
-   RARCH_ERR("Could not create pipe.\n");
-   return 0;
 }
 
 #ifdef ANDROID
