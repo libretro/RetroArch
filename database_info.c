@@ -34,13 +34,13 @@ int database_info_build_query_enum(char *s, size_t len,
       enum database_query_type type,
       const char *path)
 {
-   size_t pos      = 0;
+   size_t pos = 0;
 
    switch (type)
    {
       case DATABASE_QUERY_ENTRY:
-	      s[0]       = '{';
-	      s[1]       = '\'';
+         s[0]       = '{';
+         s[1]       = '\'';
          s[2]       = 'n';
          s[3]       = 'a';
          s[4]       = 'm';
@@ -55,8 +55,8 @@ int database_info_build_query_enum(char *s, size_t len,
          s[pos+2]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_PUBLISHER:
-	      s[0]       = '{';
-	      s[1]       = '\'';
+         s[0]       = '{';
+         s[1]       = '\'';
          s[2]       = 'p';
          s[3]       = 'u';
          s[4]       = 'b';
@@ -76,8 +76,8 @@ int database_info_build_query_enum(char *s, size_t len,
          s[pos+2]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_DEVELOPER:
-	      s[0]       = '{';
-	      s[1]       = '\'';
+         s[0]       = '{';
+         s[1]       = '\'';
          s[2]       = 'd';
          s[3]       = 'e';
          s[4]       = 'v';
@@ -105,7 +105,7 @@ int database_info_build_query_enum(char *s, size_t len,
          s[pos+4]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_ORIGIN:
-	      s[0]       = '{';
+         s[0]       = '{';
 	      s[1]       = '\'';
          s[2]       = 'o';
          s[3]       = 'r';
@@ -123,8 +123,8 @@ int database_info_build_query_enum(char *s, size_t len,
          s[pos+2]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_FRANCHISE:
-	      s[0]       = '{';
-	      s[1]       = '\'';
+         s[0]       = '{';
+         s[1]       = '\'';
          s[2]       = 'f';
          s[3]       = 'r';
          s[4]       = 'a';
@@ -144,8 +144,8 @@ int database_info_build_query_enum(char *s, size_t len,
          s[pos+2]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_RATING:
-	      s[0]       = '{';
-	      s[1]       = '\'';
+         s[0]       = '{';
+         s[1]       = '\'';
          s[2]       = 'e';
          s[3]       = 's';
          s[4]       = 'r';
@@ -166,8 +166,8 @@ int database_info_build_query_enum(char *s, size_t len,
          s[pos+2]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_BBFC_RATING:
-	      s[0]       = '{';
-	      s[1]       = '\'';
+         s[0]       = '{';
+         s[1]       = '\'';
          s[2]       = 'b';
          s[3]       = 'b';
          s[4]       = 'f';
@@ -189,8 +189,8 @@ int database_info_build_query_enum(char *s, size_t len,
          s[pos+2]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_ELSPA_RATING:
-	      s[0]       = '{';
-	      s[1]       = '\'';
+         s[0]       = '{';
+         s[1]       = '\'';
          s[2]       = 'e';
          s[3]       = 'l';
          s[4]       = 's';
@@ -213,8 +213,8 @@ int database_info_build_query_enum(char *s, size_t len,
          s[pos+2]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_ESRB_RATING:
-	      s[0]       = '{';
-	      s[1]       = '\'';
+         s[0]       = '{';
+         s[1]       = '\'';
          s[2]       = 'e';
          s[3]       = 's';
          s[4]       = 'r';
@@ -236,8 +236,8 @@ int database_info_build_query_enum(char *s, size_t len,
          s[pos+2]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_PEGI_RATING:
-	      s[0]       = '{';
-	      s[1]       = '\'';
+         s[0]       = '{';
+         s[1]       = '\'';
          s[2]       = 'p';
          s[3]       = 'e';
          s[4]       = 'g';
@@ -259,8 +259,8 @@ int database_info_build_query_enum(char *s, size_t len,
          s[pos+2]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_CERO_RATING:
-	      s[0]       = '{';
-	      s[1]       = '\'';
+         s[0]       = '{';
+         s[1]       = '\'';
          s[2]       = 'c';
          s[3]       = 'e';
          s[4]       = 'r';
@@ -282,8 +282,8 @@ int database_info_build_query_enum(char *s, size_t len,
          s[pos+2]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_ENHANCEMENT_HW:
-	      s[0]       = '{';
-	      s[1]       = '\'';
+         s[0]       = '{';
+         s[1]       = '\'';
          s[2]       = 'e';
          s[3]       = 'n';
          s[4]       = 'h';
@@ -308,8 +308,8 @@ int database_info_build_query_enum(char *s, size_t len,
          s[pos+2]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_RATING:
-	      s[0]       = '{';
-	      s[1]       = '\'';
+         s[0]       = '{';
+         s[1]       = '\'';
          s[2]       = 'e';
          s[3]       = 'd';
          s[4]       = 'g';
@@ -329,8 +329,8 @@ int database_info_build_query_enum(char *s, size_t len,
          s[pos+1]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_ISSUE:
-	      s[0]       = '{';
-	      s[1]       = '\'';
+         s[0]       = '{';
+         s[1]       = '\'';
          s[2]       = 'e';
          s[3]       = 'd';
          s[4]       = 'g';
@@ -349,8 +349,8 @@ int database_info_build_query_enum(char *s, size_t len,
          s[pos+1]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_FAMITSU_MAGAZINE_RATING:
-	      s[0]       = '{';
-	      s[1]       = '\'';
+         s[0]       = '{';
+         s[1]       = '\'';
          s[2]       = 'f';
          s[3]       = 'a';
          s[4]       = 'm';
@@ -373,8 +373,8 @@ int database_info_build_query_enum(char *s, size_t len,
          s[pos+1]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_RELEASEDATE_MONTH:
-	      s[0]       = '{';
-	      s[1]       = '\'';
+         s[0]       = '{';
+         s[1]       = '\'';
          s[2]       = 'r';
          s[3]       = 'e';
          s[4]       = 'l';
@@ -416,8 +416,8 @@ int database_info_build_query_enum(char *s, size_t len,
          s[pos+1]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_MAX_USERS:
-	      s[0]       = '{';
-	      s[1]       = '\'';
+         s[0]       = '{';
+         s[1]       = '\'';
          s[2]       = 'u';
          s[3]       = 's';
          s[4]       = 'e';

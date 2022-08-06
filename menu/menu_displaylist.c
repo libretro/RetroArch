@@ -2420,9 +2420,9 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
       menu_displaylist_info_t *info)
 {
    unsigned i, j, k;
+   char query[256];
    char path_playlist[PATH_MAX_LENGTH];
-   char path_base[PATH_MAX_LENGTH];
-   char query[PATH_MAX_LENGTH];
+   char path_base[NAME_MAX_LENGTH];
    playlist_config_t playlist_config;
    playlist_t *playlist                = NULL;
    database_info_list_t *db_info       = NULL;
@@ -2434,8 +2434,6 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    playlist_config.compress            = settings->bools.playlist_compression;
    playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
    playlist_config_set_base_content_directory(&playlist_config, settings->bools.playlist_portable_paths ? settings->paths.directory_menu_content : NULL);
-
-   query[0] = '\0';
 
    database_info_build_query_enum(query, sizeof(query),
          DATABASE_QUERY_ENTRY, info->path_b);
@@ -2462,12 +2460,11 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
    for (i = 0; i < db_info->count; i++)
    {
-      char tmp[PATH_MAX_LENGTH];
-      char thumbnail_content[PATH_MAX_LENGTH];
       char crc_str[20];
+      char tmp[PATH_MAX_LENGTH];
       database_info_t *db_info_entry = &db_info->list[i];
 
-      crc_str[0] = tmp[0] = thumbnail_content[0] = '\0';
+      crc_str[0] = tmp[0] = '\0';
 
       snprintf(crc_str, sizeof(crc_str), "%08lX", (unsigned long)db_info_entry->crc32);
 
