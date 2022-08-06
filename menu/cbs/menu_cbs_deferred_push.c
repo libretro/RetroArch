@@ -342,7 +342,7 @@ static int deferred_push_cursor_manager_list_deferred(
 static int deferred_push_cursor_manager_list_generic(
       menu_displaylist_info_t *info, enum database_query_type type)
 {
-   char query[PATH_MAX_LENGTH];
+   char query[256];
    int ret                       = -1;
    const char *path              = info->path;
    struct string_list str_list   = {0};
@@ -353,8 +353,6 @@ static int deferred_push_cursor_manager_list_generic(
 
    string_list_initialize(&str_list);
    string_split_noalloc(&str_list, path, "|");
-
-   query[0] = '\0';
 
    database_info_build_query_enum(query, sizeof(query), type,
          str_list.elems[0].data);

@@ -3108,14 +3108,12 @@ static config_file_t *open_default_config_file(void)
 
    fill_pathname_join_special(conf_path, application_data,
          FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
-   conf = config_file_new_from_path_to_string(conf_path);
 
-   if (!conf)
+   if (!(conf = config_file_new_from_path_to_string(conf_path)))
    {
       bool saved = false;
-      conf       = config_file_new_alloc();
 
-      if (conf)
+      if ((conf = config_file_new_alloc()))
       {
          config_set_string(conf, "config_save_on_exit", "true");
          saved = config_file_write(conf, conf_path, true);
@@ -4227,9 +4225,13 @@ static void save_keybind_joykey(config_file_t *conf,
       const struct retro_keybind *bind, bool save_empty)
 {
    char key[64];
-   fill_pathname_join_delim(key, prefix,
+   size_t len = fill_pathname_join_delim(key, prefix,
          base, '_', sizeof(key));
-   strlcat(key, "_btn", sizeof(key));
+   key[len  ] = '_';
+   key[len+1] = 'b';
+   key[len+2] = 't';
+   key[len+3] = 'n';
+   key[len+4] = '\0';
 
    if (bind->joykey == NO_BTN)
    {
@@ -4248,8 +4250,13 @@ static void save_keybind_axis(config_file_t *conf,
       const struct retro_keybind *bind, bool save_empty)
 {
    char key[64];
-   fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
-   strlcat(key, "_axis", sizeof(key));
+   size_t len = fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
+   key[len  ] = '_';
+   key[len+1] = 'a';
+   key[len+2] = 'x';
+   key[len+3] = 'i';
+   key[len+4] = 's';
+   key[len+4] = '\0';
 
    if (bind->joyaxis == AXIS_NONE)
    {
@@ -4278,9 +4285,14 @@ static void save_keybind_mbutton(config_file_t *conf,
       const struct retro_keybind *bind, bool save_empty)
 {
    char key[64];
-   fill_pathname_join_delim(key, prefix,
+   size_t len = fill_pathname_join_delim(key, prefix,
       base, '_', sizeof(key));
-   strlcat(key, "_mbtn", sizeof(key));
+   key[len  ] = '_';
+   key[len+1] = 'm';
+   key[len+2] = 'b';
+   key[len+3] = 't';
+   key[len+4] = 'n';
+   key[len+4] = '\0';
 
    switch (bind->mbutton)
    {
