@@ -161,7 +161,7 @@ int system_property_get(const char *command,
       const char *args, char *value)
 {
    FILE *pipe;
-   char buffer[PROP_VALUE_MAX;
+   char buffer[BUFSIZ];
    char cmd[NAME_MAX_LENGTH];
    int length                   = 0;
    char *curpos                 = NULL;
