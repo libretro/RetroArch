@@ -6589,8 +6589,16 @@ MSG_HASH(
    "Według gatunku"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_LANGUAGE,
+   "Według języka"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,
    "Według regionu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLATFORM_EXCLUSIVE,
+   "Według platformy"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,
@@ -10648,6 +10656,10 @@ MSG_HASH(
    "Nie udało się wyrzucić klienta: \"%s\""
    )
 MSG_HASH(
+   MSG_NETPLAY_BANNED_CLIENT_S,
+   "Zbanowano: \"%s\""
+   )
+MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
    "Granie"
    )
@@ -11611,6 +11623,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNPAUSED,
    "Anulowano."
+   )
+MSG_HASH(
+   MSG_UNRECOGNIZED_COMMAND,
+   "Nieznane polecenie \"%s\".\n"
    )
 MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
