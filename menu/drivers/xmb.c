@@ -2299,7 +2299,7 @@ static void xmb_context_reset_horizontal_list(
       if (string_ends_with_size(path, ".lpl",
                strlen(path), STRLEN_CONST(".lpl")))
       {
-         size_t len;
+         size_t len, _len;
          struct texture_image ti;
          char sysname[PATH_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
@@ -2308,11 +2308,17 @@ static void xmb_context_reset_horizontal_list(
          /* Add current node to playlist database name map */
          RHMAP_SET_STR(xmb->playlist_db_node_map, path, node);
 
-         fill_pathname_base(sysname, path, sizeof(sysname));
-         path_remove_extension(sysname);
-
-         len = fill_pathname_join_special(texturepath, iconpath, sysname,
-               sizeof(texturepath));
+         _len               = fill_pathname_base(
+               sysname, path, sizeof(sysname));
+         /* Manually strip the extension (and dot) from sysname */
+            sysname[_len-4] = 
+            sysname[_len-3] = 
+            sysname[_len-2] = 
+            sysname[_len-1] = '\0';
+         _len               = _len-4;
+         len                = fill_pathname_join_special(
+			 texturepath, iconpath, sysname,
+			 sizeof(texturepath));
          texturepath[len  ] = '.';
          texturepath[len+1] = 'p';
          texturepath[len+2] = 'n';
@@ -2349,7 +2355,21 @@ static void xmb_context_reset_horizontal_list(
             image_texture_free(&ti);
          }
 
-         strlcat(sysname, "-content.png", sizeof(sysname));
+         /* Manually append '-content.png' to end of sysname string */
+         sysname[_len   ] = '-';
+         sysname[_len+1 ] = 'c';
+         sysname[_len+2 ] = 'o';
+         sysname[_len+3 ] = 'n';
+         sysname[_len+4 ] = 't';
+         sysname[_len+5 ] = 'e';
+         sysname[_len+6 ] = 'n';
+         sysname[_len+7 ] = 't';
+         sysname[_len+8 ] = '.';
+         sysname[_len+9 ] = 'p';
+         sysname[_len+10] = 'n';
+         sysname[_len+11] = 'g';
+         sysname[_len+12] = '\0';
+         /* Assemble new icon path */
          fill_pathname_join_special(content_texturepath, iconpath, sysname,
                sizeof(content_texturepath));
 

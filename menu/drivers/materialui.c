@@ -2298,9 +2298,10 @@ static void materialui_refresh_playlist_icon_list(
 
    for (i = 0; i < file_list->size; i++)
    {
+      size_t _len;
       const char *path          = file_list->elems[i].data;
       const char *playlist_file = NULL;
-      char image_file[PATH_MAX_LENGTH];
+      char image_file[256];
 
       /* We used malloc() to create the icons
        * array - ensure struct members are
@@ -2331,12 +2332,12 @@ static void materialui_refresh_playlist_icon_list(
          continue;
 
       /* Playlist is valid - generate image file name */
-      strlcpy(image_file, playlist_file, sizeof(image_file));
-      path_remove_extension(image_file);
-      strlcat(image_file, FILE_PATH_PNG_EXTENSION, sizeof(image_file));
-
-      if (string_is_empty(image_file))
-         continue;
+      _len                  = strlcpy(image_file,
+            playlist_file, sizeof(image_file));
+      /* Manually rename extension 'lpl' to 'png' in string */
+      image_file[_len-3]    = 'p';
+      image_file[_len-2]    = 'n';
+      image_file[_len-1]    = 'g';
 
       /* All good - cache paths */
       mui->textures.playlist.icons[i].playlist_file = strdup(playlist_file);
