@@ -217,8 +217,9 @@ bool disk_index_file_init(
       const char *content_path,
       const char *dir_savefile)
 {
+   size_t len;
    const char *content_file = NULL;
-   char content_name[PATH_MAX_LENGTH];
+   char content_name[256];
    char disk_index_file_dir[PATH_MAX_LENGTH];
    char disk_index_file_path[PATH_MAX_LENGTH];
 
@@ -267,13 +268,15 @@ bool disk_index_file_init(
    }
 
    /* > Generate final path */
-   fill_pathname_join_special(
+   len = fill_pathname_join_special(
          disk_index_file_path, disk_index_file_dir,
          content_name, sizeof(disk_index_file_path));
-   strlcat(
-         disk_index_file_path,
-         FILE_PATH_DISK_CONTROL_INDEX_EXTENSION,
-         sizeof(disk_index_file_path));
+   disk_index_file_path[len  ] = '.';
+   disk_index_file_path[len+1] = 'l';
+   disk_index_file_path[len+2] = 'd';
+   disk_index_file_path[len+3] = 'c';
+   disk_index_file_path[len+4] = 'i';
+   disk_index_file_path[len+5] = '\0';
    if (string_is_empty(disk_index_file_path))
       goto error;
 
