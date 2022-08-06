@@ -127,6 +127,20 @@ const char *path_get_archive_delim(const char *path);
 const char *path_get_extension(const char *path);
 
 /**
+ * path_get_extension_mutable:
+ * @path               : path
+ *
+ * Specialized version of path_get_extension(). Return
+ * value is mutable.
+ *
+ * Gets extension of file. Only '.'s
+ * after the last slash are considered.
+ *
+ * @return extension part from the path.
+ **/
+char *path_get_extension_mutable(const char *path);
+
+/**
  * path_remove_extension:
  * @path               : path
  *
