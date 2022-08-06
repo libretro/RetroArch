@@ -1435,9 +1435,12 @@ bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
 
    if (!ticker->selected)
    {
-      utf8cpy(ticker->s,
+      size_t len = utf8cpy(ticker->s,
             PATH_MAX_LENGTH, ticker->str, ticker->len - 3);
-      strlcat(ticker->s, "...", ticker->len);
+      ticker->s[len  ] = '.';
+      ticker->s[len+1] = '.';
+      ticker->s[len+2] = '.';
+      ticker->s[len+3] = '\0';
       return false;
    }
 
@@ -1530,6 +1533,7 @@ static bool gfx_animation_ticker_smooth_fw(
     * and add '...' suffix */
    if (!ticker->selected)
    {
+      size_t _len;
       unsigned num_chars    = 0;
       unsigned suffix_len   = 3;
       unsigned suffix_width = suffix_len * glyph_width;
@@ -1542,8 +1546,11 @@ static bool gfx_animation_ticker_smooth_fw(
       num_chars = (ticker->field_width - suffix_width) / glyph_width;
 
       /* Copy string segment + add suffix */
-      utf8cpy(ticker->dst_str, ticker->dst_str_len, ticker->src_str, num_chars);
-      strlcat(ticker->dst_str, "...", ticker->dst_str_len);
+      _len = utf8cpy(ticker->dst_str, ticker->dst_str_len, ticker->src_str, num_chars);
+      ticker->dst_str[_len  ] = '.';
+      ticker->dst_str[_len+1] = '.';
+      ticker->dst_str[_len+2] = '.';
+      ticker->dst_str[_len+3] = '\0';
 
       if (ticker->dst_str_width)
          *ticker->dst_str_width = (num_chars * glyph_width) + suffix_width;
@@ -1713,6 +1720,7 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
     * and add '...' suffix */
    if (!ticker->selected)
    {
+      size_t _len;
       unsigned text_width;
       unsigned current_width = 0;
       unsigned num_chars     = 0;
@@ -1746,9 +1754,12 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
       }
 
       /* Copy string segment + add suffix */
-      utf8cpy(ticker->dst_str, ticker->dst_str_len,
+      _len = utf8cpy(ticker->dst_str, ticker->dst_str_len,
             ticker->src_str, num_chars);
-      strlcat(ticker->dst_str, "...", ticker->dst_str_len);
+      ticker->dst_str[_len  ] = '.';
+      ticker->dst_str[_len+1] = '.';
+      ticker->dst_str[_len+2] = '.';
+      ticker->dst_str[_len+3] = '\0';
 
       if (ticker->dst_str_width)
          *ticker->dst_str_width = current_width + (3 * period_width);

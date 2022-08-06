@@ -976,6 +976,7 @@ bool manual_content_scan_get_task_config(
       const char *path_dir_playlist
       )
 {
+   size_t len;
    if (!task_config)
       return false;
 
@@ -1041,15 +1042,15 @@ bool manual_content_scan_get_task_config(
 
    /* Now we have a valid system name, can generate
     * a 'database' name... */
-   strlcpy(
+   len = strlcpy(
          task_config->database_name,
          task_config->system_name,
          sizeof(task_config->database_name));
-
-   strlcat(
-         task_config->database_name,
-         FILE_PATH_LPL_EXTENSION,
-         sizeof(task_config->database_name));
+   task_config->database_name[len  ] = '.';
+   task_config->database_name[len+1] = 'l';
+   task_config->database_name[len+2] = 'p';
+   task_config->database_name[len+3] = 'l';
+   task_config->database_name[len+4] = '\0';
 
    /* ...which can in turn be used to generate the
     * playlist path */
@@ -1215,8 +1216,9 @@ error:
 static bool manual_content_scan_get_playlist_content_path(
       manual_content_scan_task_config_t *task_config,
       const char *content_path, int content_type,
-      char *playlist_content_path, size_t len)
+      char *s, size_t len)
 {
+   size_t _len;
    struct string_list *archive_list = NULL;
 
    /* Sanity check */
@@ -1227,8 +1229,8 @@ static bool manual_content_scan_get_playlist_content_path(
       return false;
 
    /* In all cases, base content path must be
-    * copied to playlist_content_path */
-   strlcpy(playlist_content_path, content_path, len);
+    * copied to @s */
+   _len = strlcpy(s, content_path, len);
 
    /* Check whether this is an archive file
     * requiring special attention... */
@@ -1252,10 +1254,8 @@ static bool manual_content_scan_get_playlist_content_path(
        *   complexity of the following code... */
 
       /* Get archive file contents */
-      archive_list = file_archive_get_file_list(
-            content_path, filter_exts ? task_config->file_exts : NULL);
-
-      if (!archive_list)
+      if (!(archive_list = file_archive_get_file_list(
+            content_path, filter_exts ? task_config->file_exts : NULL)))
          goto error;
 
       if (archive_list->size < 1)
@@ -1281,8 +1281,9 @@ static bool manual_content_scan_get_playlist_content_path(
       if (filter_exts || (archive_list->size == 1))
       {
          /* Build path to file inside archive */
-         strlcat(playlist_content_path, "#", len);
-         strlcat(playlist_content_path, archive_file, len);
+         s[_len  ] = '#';
+         s[_len+1] = '\0';
+         strlcat(s, archive_file, len);
       }
 
       string_list_free(archive_list);
@@ -1362,8 +1363,6 @@ void manual_content_scan_add_content_to_playlist(
       int content_type, logiqx_dat_t *dat_file)
 {
    char playlist_content_path[PATH_MAX_LENGTH];
-
-   playlist_content_path[0] = '\0';
 
    /* Sanity check */
    if (!task_config || !playlist)
