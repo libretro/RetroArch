@@ -5494,11 +5494,11 @@ bool runloop_event_init_core(
          sizeof(video_st->title_buf));
    video_st->title_buf[len  ] = ' ';
    video_st->title_buf[len+1] = '\0';
-   strlcat(video_st->title_buf,
+   len = strlcat(video_st->title_buf,
          sys_info->info.library_name,
          sizeof(video_st->title_buf));
-   strlcat(video_st->title_buf, " ",
-         sizeof(video_st->title_buf));
+   video_st->title_buf[len  ] = ' ';
+   video_st->title_buf[len+1] = '\0';
    strlcat(video_st->title_buf,
          sys_info->info.library_version,
          sizeof(video_st->title_buf));

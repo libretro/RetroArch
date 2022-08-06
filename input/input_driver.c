@@ -2209,9 +2209,15 @@ void input_config_get_bind_string_joykey(
             !string_is_empty(bind->joykey_label)
             && input_descriptor_label_show)
       {
-         fill_pathname_join_delim(buf, prefix,
+         size_t len = fill_pathname_join_delim(buf, prefix,
                bind->joykey_label, ' ', size);
-         strlcat(buf, " (hat)", size);
+         buf[len  ] = ' ';
+         buf[len+1] = '(';
+         buf[len+2] = 'h';
+         buf[len+3] = 'a';
+         buf[len+4] = 't';
+         buf[len+5] = ')';
+         buf[len+6] = '\0';
       }
       else
       {
@@ -2245,9 +2251,15 @@ void input_config_get_bind_string_joykey(
             !string_is_empty(bind->joykey_label)
             && input_descriptor_label_show)
       {
-         fill_pathname_join_delim(buf, prefix,
+         size_t len = fill_pathname_join_delim(buf, prefix,
                bind->joykey_label, ' ', size);
-         strlcat(buf, " (btn)", size);
+         buf[len  ] = ' ';
+         buf[len+1] = '(';
+         buf[len+2] = 'b';
+         buf[len+3] = 't';
+         buf[len+4] = 'n';
+         buf[len+5] = ')';
+         buf[len+6] = '\0';
       }
       else
          snprintf(buf, size, "%s%u (%s)", prefix, (unsigned)bind->joykey,
@@ -2264,9 +2276,16 @@ void input_config_get_bind_string_joyaxis(
          !string_is_empty(bind->joyaxis_label)
          && input_descriptor_label_show)
    {
-      fill_pathname_join_delim(buf, prefix,
+      size_t len = fill_pathname_join_delim(buf, prefix,
             bind->joyaxis_label, ' ', size);
-      strlcat(buf, " (axis)", size);
+      buf[len  ] = ' ';
+      buf[len+1] = '(';
+      buf[len+2] = 'a';
+      buf[len+3] = 'x';
+      buf[len+4] = 'i';
+      buf[len+5] = 's';
+      buf[len+6] = ')';
+      buf[len+7] = '\0';
    }
    else
    {
