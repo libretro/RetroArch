@@ -27,6 +27,10 @@
 #include "wayland_common.h"
 #include "../../frontend/frontend_driver.h"
 
+#ifdef HAVE_DBUS
+#include "dbus_common.h"
+#endif
+
 #define SPLASH_SHM_NAME "retroarch-wayland-vk-splash"
 
 #ifdef HAVE_LIBDECOR_H
@@ -226,6 +230,12 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
       xdg_toplevel_destroy(wl->xdg_toplevel);
    if (wl->idle_inhibit_manager)
       zwp_idle_inhibit_manager_v1_destroy(wl->idle_inhibit_manager);
+   else {
+#ifdef HAVE_DBUS
+      dbus_screensaver_uninhibit();
+      dbus_close_connection();
+#endif
+   }
    if (wl->deco)
       zxdg_toplevel_decoration_v1_destroy(wl->deco);
    if (wl->deco_manager)
@@ -520,6 +530,9 @@ bool gfx_ctx_wl_init_common(
    if (!wl->idle_inhibit_manager)
    {
       RARCH_LOG("[Wayland]: Compositor doesn't support zwp_idle_inhibit_manager_v1 protocol\n");
+#ifdef HAVE_DBUS
+      dbus_ensure_connection();
+#endif
    }
 
    if (!wl->deco_manager)
@@ -707,8 +720,15 @@ bool gfx_ctx_wl_suppress_screensaver(void *data, bool state)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   if (!wl->idle_inhibit_manager)
+   if (!wl->idle_inhibit_manager) {
+#ifdef HAVE_DBUS
+      /* Some Wayland compositors (e.g. Phoc) don't implement Wayland's Idle protocol.
+       * They instead rely on things like Gnome Screensaver. */
+      return dbus_suspend_screensaver(state);
+#else
       return false;
+#endif
+   }
    if (state == (!!wl->idle_inhibitor))
       return true;
 
