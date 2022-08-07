@@ -4176,6 +4176,30 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
    "Darrera partida:"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
+   "Cerca sense coincidència de nucli"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
+   "Permet cercar contingut i afegir-lo a una llista de reproducció encara que no hi hagi un nucli instal·lat que l’admeti."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
+   "Gestiona les llistes de reproducció"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
+   "Du a terme tasques de manteniment a les llistes de reproducció."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
+   "Llistes de reproducció portàtils"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
+   "Quan s’activa i també se selecciona el directori del «navegador de fitxers», el valor actual del paràmetre «navegador de fitxers» es desa a la llista de reproducció. Quan es carrega la llista en un altre sistema on s’hagi activat la mateixa opció, el valor del paràmetre «navegador de fitxers» es compara amb el valor de la llista de reproducció; si són diferents els camins de les entrades de la llista s’arreglen automàticament."
+   )
 
 /* Settings > Playlists > Playlist Management */
 
