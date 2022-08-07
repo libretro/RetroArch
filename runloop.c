@@ -8384,7 +8384,7 @@ bool core_unserialize(retro_ctx_serialize_info_t *info)
    if (!info || !runloop_st->current_core.retro_unserialize(info->data_const, info->size))
       return false;
 
-#if HAVE_NETWORKING
+#ifdef HAVE_NETWORKING
    netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, info);
 #endif
 
