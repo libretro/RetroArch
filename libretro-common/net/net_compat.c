@@ -540,11 +540,11 @@ failure:
 
    return true;
 #elif defined(WIIU)
+   static OSThread net_compat_thread;
    static bool initialized = false;
 
    if (!initialized)
    {
-      OSThread net_compat_thread;
       void *stack = malloc(0x1000);
 
       if (!stack)
