@@ -1826,7 +1826,7 @@ bool command_event(enum event_command cmd, void *data)
          rcheevos_reset_game(false);
 #endif
 #endif
-#if HAVE_NETWORKING
+#ifdef HAVE_NETWORKING
          netplay_driver_ctl(RARCH_NETPLAY_CTL_RESET, NULL);
 #endif
          /* Recalibrate frame delay target */
