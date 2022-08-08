@@ -5259,22 +5259,23 @@ static int menu_displaylist_parse_input_description_list(
       if (!string_is_empty(input_desc_btn))
       {
          char input_description[256];
-
-         input_description[0] = '\0';
-
          /* > Up to RARCH_FIRST_CUSTOM_BIND, inputs
           *   are buttons - description can be used
           *   directly
           * > Above RARCH_FIRST_CUSTOM_BIND, inputs
           *   are analog axes - have to add +/-
           *   indicators */
-         if (i < RARCH_FIRST_CUSTOM_BIND)
-            strlcpy(input_description, input_desc_btn,
-                  sizeof(input_description));
-         else
-            snprintf(input_description, sizeof(input_description),
-                     "%s %c", input_desc_btn,
-                     ((i % 2) == 0) ? '+' : '-');
+	 size_t _len = strlcpy(input_description, input_desc_btn,
+			 sizeof(input_description));
+         if (i >= RARCH_FIRST_CUSTOM_BIND)
+         {
+            input_description   [_len  ] = ' ';
+            if ((i % 2) == 0)
+               input_description[_len+1] = '+';
+            else
+               input_description[_len+1] = '-';
+	    input_description   [_len+2] = '\0';
+         }
 
          if (string_is_empty(input_description))
             continue;
@@ -7266,11 +7267,16 @@ unsigned menu_displaylist_build_list(
             {
                /* On/off key strings may be required,
                 * so populate them... */
-               snprintf(on_string, sizeof(on_string), ".%s",
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON));
-
-               snprintf(off_string, sizeof(off_string), ".%s",
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF));
+               on_string [0] = '.';
+               on_string [1] = '\0';
+               off_string[0] = '.';
+               off_string[1] = '\0';
+               strlcat(on_string,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+		     sizeof(on_string));
+               strlcat(off_string,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+		     sizeof(off_string));
             }
             else
             {

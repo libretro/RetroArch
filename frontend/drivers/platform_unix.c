@@ -910,10 +910,7 @@ static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
    int64_t length   = 0;
    char     *buf    = NULL;
    const char *base = proc_acpi_sysfs_ac_adapter_path;
-
-   path[0]          = '\0';
-
-   snprintf(path, sizeof(path), "%s/%s", base, "online");
+   fill_pathname_join_special(path, base, "online", sizeof(path));
    if (!filestream_exists(path))
       return;
 
@@ -1788,7 +1785,7 @@ static void frontend_unix_get_env(int *argc,
       strlcat(base_path, "/.config/retroarch", sizeof(base_path));
    }
    else
-      strcpy_literal(base_path, "retroarch");
+      strlcpy(base_path, "retroarch", sizeof(base_path));
 #endif
 
    if (!string_is_empty(libretro_directory))
@@ -2804,10 +2801,14 @@ static bool accessibility_speak_unix(int speed,
    else if (speed > 10)
       speed = 10;
 
-   strcpy_literal(voice_out, "-v");
+   voice_out[0] = '-';
+   voice_out[1] = 'v';
+   voice_out[2] = '\0';
    strlcat(voice_out, language, 5);
 
-   strcpy_literal(speed_out, "-s");
+   speed_out[0] = '-';
+   speed_out[1] = 's';
+   speed_out[2] = '\0';
    strlcat(speed_out, speeds[speed-1], 6);
 
    if (priority < 10 && speak_pid > 0)
