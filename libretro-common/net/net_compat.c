@@ -376,7 +376,7 @@ int getnameinfo_retro(const struct sockaddr *addr, socklen_t addrlen,
       NI_NUMERICSERV (always enforced)
     */
    if (serv && servlen)
-      snprintf(serv, servlen, "%hu", (unsigned short)addr4->sin_port);
+      snprintf(serv, servlen, "%hu", (unsigned short)ntohs(addr4->sin_port));
 
    return 0;
 #else
