@@ -9336,6 +9336,11 @@ static void gfx_widget_netplay_chat_iterate(void *user_data,
 
       /* Move the messages to a thread-safe buffer
          before drawing them. */
+      chat_buffer->color_name =
+         (uint32_t)settings->uints.netplay_chat_color_name << 8;
+      chat_buffer->color_msg  =
+         (uint32_t)settings->uints.netplay_chat_color_msg << 8;
+
       for (i = 0; i < ARRAY_SIZE(chat->messages); i++)
       {
          uint32_t *frames = &chat->messages[i].frames;
@@ -9399,6 +9404,8 @@ static void gfx_widget_netplay_chat_frame(void *data, void *userdata)
    int line_height                          =
       font->line_height + p_dispwidget->simple_widget_padding / 3.0f;
    int height                               = video_info->height - line_height;
+   uint32_t color_name                      = chat_buffer->color_name;
+   uint32_t color_msg                       = chat_buffer->color_msg;
 
    for (i = 0; i < ARRAY_SIZE(chat_buffer->messages); i++)
    {
@@ -9425,7 +9432,7 @@ static void gfx_widget_netplay_chat_frame(void *data, void *userdata)
          height,
          video_info->width,
          video_info->height,
-         (unsigned)alpha | NETPLAY_CHAT_NICKNAME_COLOR,
+         color_name | (uint32_t)alpha,
          TEXT_ALIGN_LEFT,
          true);
       /* Now draw the message. */
@@ -9436,7 +9443,7 @@ static void gfx_widget_netplay_chat_frame(void *data, void *userdata)
          height,
          video_info->width,
          video_info->height,
-         (unsigned)alpha | NETPLAY_CHAT_MESSAGE_COLOR,
+         color_msg | (uint32_t)alpha,
          TEXT_ALIGN_LEFT,
          true);
 

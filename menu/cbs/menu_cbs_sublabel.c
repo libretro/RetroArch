@@ -742,6 +742,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_password,              MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_spectate_password,     MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_start_as_spectator,    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_fade_chat,             MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_chat_color_name,       MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_NAME)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_chat_color_msg,        MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_MSG)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_allow_pausing,         MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_allow_slaves,          MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_require_slaves,        MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES)
@@ -3271,6 +3273,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_NETPLAY_FADE_CHAT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_fade_chat);
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_CHAT_COLOR_NAME:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_chat_color_name);
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_CHAT_COLOR_MSG:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_chat_color_msg);
             break;
          case MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_allow_pausing);

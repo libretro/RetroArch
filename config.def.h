@@ -1215,6 +1215,10 @@ static const bool netplay_start_as_spectator = false;
 /* Netplay chat fading toggle */
 static const bool netplay_fade_chat = true;
 
+/* Netplay chat colors */
+static const unsigned netplay_chat_color_name = 0x008000;
+static const unsigned netplay_chat_color_msg  = 0xFFFFFF;
+
 /* Allow players to pause */
 static const bool netplay_allow_pausing = false;
 

@@ -707,6 +707,14 @@ void setting_get_string_representation_uint(rarch_setting_t *setting,
             *setting->value.target.unsigned_integer);
 }
 
+void setting_get_string_representation_color_rgb(rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (setting)
+      snprintf(s, len, "#%06X",
+         *setting->value.target.unsigned_integer & 0xFFFFFF);
+}
+
 void setting_get_string_representation_size(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -2841,6 +2849,51 @@ static int setting_action_ok_uint(
          NULL, NULL, 0, idx, 0,
          ACTION_OK_DL_DROPDOWN_BOX_LIST);
    return 1;
+}
+
+static void setting_action_ok_color_rgb_cb(void *userdata, const char *line)
+{
+   if (!string_is_empty(line))
+   {
+      rarch_setting_t *setting =
+         menu_setting_find(menu_input_dialog_get_label_setting_buffer());
+
+      if (setting)
+      {
+         unsigned rgb;
+         char    *rgb_end = NULL;
+
+         if (*line == '#')
+            line++;
+
+         rgb = (unsigned)strtoul(line, &rgb_end, 16);
+
+         if (!(*rgb_end) && (rgb_end - line) == STRLEN_CONST("RRGGBB"))
+            *setting->value.target.unsigned_integer = rgb;
+      }
+   }
+
+   menu_input_dialog_end();
+}
+
+static int setting_action_ok_color_rgb(rarch_setting_t *setting, size_t idx,
+      bool wraparound)
+{
+   menu_input_ctx_line_t line;
+
+   if (!setting)
+      return -1;
+
+   line.label         = setting->short_description;
+   line.label_setting = setting->name;
+   line.type          = 0;
+   line.idx           = 0;
+   line.cb            = setting_action_ok_color_rgb_cb;
+
+   if (!menu_input_dialog_start(&line))
+      return -1;
+
+   return 0;
 }
 
 static int setting_action_ok_libretro_device_type(
@@ -19919,6 +19972,42 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.netplay_chat_color_name,
+                  MENU_ENUM_LABEL_NETPLAY_CHAT_COLOR_NAME,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_NAME,
+                  netplay_chat_color_name,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok     = &setting_action_ok_color_rgb;
+            (*list)[list_info->index - 1].action_select = &setting_action_ok_color_rgb;
+            (*list)[list_info->index - 1].action_left   = NULL;
+            (*list)[list_info->index - 1].action_right  = NULL;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_color_rgb;
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.netplay_chat_color_msg,
+                  MENU_ENUM_LABEL_NETPLAY_CHAT_COLOR_MSG,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_MSG,
+                  netplay_chat_color_msg,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok     = &setting_action_ok_color_rgb;
+            (*list)[list_info->index - 1].action_select = &setting_action_ok_color_rgb;
+            (*list)[list_info->index - 1].action_left   = NULL;
+            (*list)[list_info->index - 1].action_right  = NULL;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_color_rgb;
 
             CONFIG_BOOL(
                   list, list_info,
