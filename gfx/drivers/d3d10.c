@@ -466,18 +466,16 @@ static bool d3d10_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d10_vertex_t, texcoord),
                D3D10_INPUT_PER_VERTEX_DATA, 0 },
          };
-         static const char vs_ext[] = ".vs.hlsl";
-         static const char ps_ext[] = ".ps.hlsl";
-         char              vs_path[PATH_MAX_LENGTH] = {0};
-         char              ps_path[PATH_MAX_LENGTH] = {0};
-         const char*       slang_path = d3d10->shader_preset->pass[i].source.path;
-         const char*       vs_src     = d3d10->shader_preset->pass[i].source.string.vertex;
-         const char*       ps_src     = d3d10->shader_preset->pass[i].source.string.fragment;
+         char vs_path[PATH_MAX_LENGTH];
+         char ps_path[PATH_MAX_LENGTH];
+         const char *slang_path = d3d10->shader_preset->pass[i].source.path;
+         const char *vs_src     = d3d10->shader_preset->pass[i].source.string.vertex;
+         const char *ps_src     = d3d10->shader_preset->pass[i].source.string.fragment;
 
          strlcpy(vs_path, slang_path, sizeof(vs_path));
          strlcpy(ps_path, slang_path, sizeof(ps_path));
-         strlcat(vs_path, vs_ext, sizeof(vs_path));
-         strlcat(ps_path, ps_ext, sizeof(ps_path));
+         strlcat(vs_path, ".vs.hlsl", sizeof(vs_path));
+         strlcat(ps_path, ".ps.hlsl", sizeof(ps_path));
 
          if (!d3d10_init_shader(
                   d3d10->device, vs_src, 0, vs_path, "main", NULL, NULL, desc, countof(desc),
