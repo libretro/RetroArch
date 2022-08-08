@@ -1917,6 +1917,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
       if (frontend->get_powerstate)
       {
+         size_t _len;
          int seconds    = 0, percent = 0;
          char tmp2[128];
          enum frontend_powerstate state =
@@ -1969,11 +1970,13 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
                break;
          }
 
-         strlcpy(tmp,
+         _len        = strlcpy(tmp,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE),
                sizeof(tmp));
-         strlcat(tmp, ": ", sizeof(tmp));
+         tmp[_len  ] = ':';
+         tmp[_len+1] = ' ';
+         tmp[_len+2] = '\0';
          strlcat(tmp, tmp2, sizeof(tmp));
          if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
@@ -1986,17 +1989,19 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    video_context_driver_get_ident(&ident_info);
    tmp_string = ident_info.ident;
 
-   strlcpy(tmp,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER),
-         sizeof(tmp));
-   strlcat(tmp,
-         ": ",
-         sizeof(tmp));
-   strlcat(tmp,
-         tmp_string ? tmp_string
-         : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-         sizeof(tmp));
+   {
+	   size_t _len = strlcpy(tmp,
+			   msg_hash_to_str(
+				   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER),
+			   sizeof(tmp));
+      tmp[_len  ] = ':';
+      tmp[_len+1] = ' ';
+      tmp[_len+2] = '\0';
+	   strlcat(tmp,
+			   tmp_string ? tmp_string
+			   : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+			   sizeof(tmp));
+   }
    if (menu_entries_append_enum(list, tmp, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
@@ -7273,10 +7278,10 @@ unsigned menu_displaylist_build_list(
                off_string[1] = '\0';
                strlcat(on_string,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
-		     sizeof(on_string));
+                     sizeof(on_string));
                strlcat(off_string,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
-		     sizeof(off_string));
+                     sizeof(off_string));
             }
             else
             {

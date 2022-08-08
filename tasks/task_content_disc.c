@@ -144,6 +144,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
          }
       case DUMP_STATE_WRITE_CUE:
          {
+            size_t _len;
             char output_file[PATH_MAX_LENGTH];
             char cue_filename[PATH_MAX_LENGTH];
             /* write cuesheet to a file */
@@ -160,8 +161,13 @@ static void task_cdrom_dump_handler(retro_task_t *task)
 
             filestream_close(state->file);
 
-            strlcpy(cue_filename, state->title, sizeof(cue_filename));
-            strlcat(cue_filename, ".cue", sizeof(cue_filename));
+            _len                 = strlcpy(cue_filename,
+                                   state->title, sizeof(cue_filename));
+            cue_filename[_len  ] = '.';
+            cue_filename[_len+1] = 'c';
+            cue_filename[_len+2] = 'u';
+            cue_filename[_len+3] = 'e';
+            cue_filename[_len+4] = '\0';
 
             fill_pathname_join_special(output_file,
                   directory_core_assets, cue_filename, sizeof(output_file));

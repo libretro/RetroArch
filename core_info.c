@@ -1347,7 +1347,7 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
    struct string_list *core_ext_list = NULL;
    bool dir_list_ok                  = false;
    char exts[32];
-   size_t i;
+   size_t i, len;
 
    if (string_is_empty(core_exts) ||
        !path_list)
@@ -1373,13 +1373,21 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
 
    /* Get list of file extensions to include
     * > core + lock */
-   strlcpy(exts, core_exts, sizeof(exts));
-   strlcat(exts, "|" FILE_PATH_LOCK_EXTENSION_NO_DOT,
-         sizeof(exts));
+   len = strlcpy(exts, core_exts, sizeof(exts));
+   exts[len  ] = '|';
+   exts[len+1] = 'l';
+   exts[len+2] = 'c';
+   exts[len+3] = 'k';
 #if defined(HAVE_DYNAMIC)
    /* > 'standalone exempt' */
-   strlcat(exts, "|" FILE_PATH_STANDALONE_EXEMPT_EXTENSION_NO_DOT,
-         sizeof(exts));
+   exts[len+4] = '|';
+   exts[len+5] = 'l';
+   exts[len+6] = 's';
+   exts[len+7] = 'a';
+   exts[len+8] = 'e';
+   exts[len+9] = '\0';
+#else
+   exts[len+4] = '\0';
 #endif
 
    /* Fetch core directory listing */
@@ -1512,17 +1520,21 @@ static bool core_info_path_is_standalone_exempt(
       core_aux_file_path_list_t *exempt_list,
       const char *core_file_name)
 {
-   size_t i;
+   size_t i, len;
    uint32_t hash;
    char exempt_filename[NAME_MAX_LENGTH];
 
    if (exempt_list->size < 1)
       return false;
 
-   strlcpy(exempt_filename, core_file_name,
+   len                    = strlcpy(exempt_filename, core_file_name,
          sizeof(exempt_filename));
-   strlcat(exempt_filename, FILE_PATH_STANDALONE_EXEMPT_EXTENSION,
-         sizeof(exempt_filename));
+   exempt_filename[len  ] = '.';
+   exempt_filename[len+1] = 'l';
+   exempt_filename[len+2] = 's';
+   exempt_filename[len+3] = 'a';
+   exempt_filename[len+4] = 'e';
+   exempt_filename[len+5] = '\0';
 
    hash = core_info_hash_string(exempt_filename);
 
@@ -1882,6 +1894,7 @@ static void core_info_parse_config_file(
 static void core_info_list_resolve_all_extensions(
       core_info_list_t *core_info_list)
 {
+   size_t _len           = 0;
    size_t i              = 0;
    size_t all_ext_len    = 0;
    char *all_ext         = NULL;
@@ -1895,9 +1908,7 @@ static void core_info_list_resolve_all_extensions(
 
    all_ext_len += STRLEN_CONST("7z|") + STRLEN_CONST("zip|");
 
-   all_ext      = (char*)calloc(1, all_ext_len);
-
-   if (!all_ext)
+   if (!(all_ext      = (char*)calloc(1, all_ext_len)))
       return;
 
    core_info_list->all_ext = all_ext;
@@ -1907,15 +1918,23 @@ static void core_info_list_resolve_all_extensions(
       if (!core_info_list->list[i].supported_extensions)
          continue;
 
-      strlcat(core_info_list->all_ext,
+      _len = strlcat(core_info_list->all_ext,
             core_info_list->list[i].supported_extensions, all_ext_len);
-      strlcat(core_info_list->all_ext, "|", all_ext_len);
+      _len = strlcat(core_info_list->all_ext, "|", all_ext_len);
    }
 #ifdef HAVE_7ZIP
-   strlcat(core_info_list->all_ext, "7z|", all_ext_len);
+   core_info_list->all_ext[_len  ] = '7';
+   core_info_list->all_ext[_len+1] = 'z';
+   core_info_list->all_ext[_len+2] = '|';
+   core_info_list->all_ext[_len+3] = '\0';
+   _len                           += 3;
 #endif
 #ifdef HAVE_ZLIB
-   strlcat(core_info_list->all_ext, "zip|", all_ext_len);
+   core_info_list->all_ext[_len  ] = 'z';
+   core_info_list->all_ext[_len+1] = 'i';
+   core_info_list->all_ext[_len+2] = 'p';
+   core_info_list->all_ext[_len+3] = '|';
+   core_info_list->all_ext[_len+3] = '\0';
 #endif
 }
 
@@ -2993,6 +3012,7 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
 bool core_info_set_core_standalone_exempt(const char *core_path, bool exempt)
 {
 #if defined(HAVE_DYNAMIC)
+   size_t _len;
    core_info_t *core_info = NULL;
    char exempt_file_path[PATH_MAX_LENGTH];
 
@@ -3004,10 +3024,14 @@ bool core_info_set_core_standalone_exempt(const char *core_path, bool exempt)
       return false;
 
    /* Get 'standalone exempt' file path */
-   strlcpy(exempt_file_path, core_info->path,
+   _len = strlcpy(exempt_file_path, core_info->path,
          sizeof(exempt_file_path));
-   strlcat(exempt_file_path, FILE_PATH_STANDALONE_EXEMPT_EXTENSION,
-         sizeof(exempt_file_path));
+   exempt_file_path[_len  ] = '.';
+   exempt_file_path[_len+1] = 'l';
+   exempt_file_path[_len+2] = 's';
+   exempt_file_path[_len+3] = 'a';
+   exempt_file_path[_len+4] = 'e';
+   exempt_file_path[_len+5] = '\0';
 
    /* Create or delete 'standalone exempt' file, as required */
    if (!core_info_update_core_aux_file(exempt_file_path, exempt))
@@ -3033,6 +3057,7 @@ bool core_info_set_core_standalone_exempt(const char *core_path, bool exempt)
 bool core_info_get_core_standalone_exempt(const char *core_path)
 {
 #if defined(HAVE_DYNAMIC)
+   size_t _len;
    core_info_t *core_info = NULL;
    bool is_exempt         = false;
    char exempt_file_path[PATH_MAX_LENGTH];
@@ -3045,10 +3070,15 @@ bool core_info_get_core_standalone_exempt(const char *core_path)
       return false;
 
    /* Get 'standalone exempt' file path */
-   strlcpy(exempt_file_path, core_info->path,
+   _len                     = strlcpy(
+         exempt_file_path, core_info->path,
          sizeof(exempt_file_path));
-   strlcat(exempt_file_path, FILE_PATH_STANDALONE_EXEMPT_EXTENSION,
-         sizeof(exempt_file_path));
+   exempt_file_path[_len  ] = '.';
+   exempt_file_path[_len+1] = 'l';
+   exempt_file_path[_len+2] = 's';
+   exempt_file_path[_len+3] = 'a';
+   exempt_file_path[_len+4] = 'e';
+   exempt_file_path[_len+5] = '\0';
 
    /* Check whether 'standalone exempt' file exists */
    is_exempt = path_is_valid(exempt_file_path);
