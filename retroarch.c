@@ -4191,6 +4191,8 @@ static void retroarch_print_help(const char *arg0)
          "  1. The full path to a core shared object library: path/to/<core_name>_libretro.<lib_ext>\n"
          "                                 "
          "  2. A core shared object library 'file name' (*): <core_name>_libretro.<lib_ext>\n"
+         , sizeof(buf));
+   strlcat(buf,
          "                                 "
          "  3. A core 'short name' (*): <core_name>_libretro OR <core_name>\n"
          "                                 "
@@ -4212,6 +4214,8 @@ static void retroarch_print_help(const char *arg0)
          "                                 "
          "  particular subsystem used. See verbose log output to learn\n"
          "                                 "
+         , sizeof(buf));
+   strlcat(buf,
          "  how a particular subsystem wants content to be loaded.\n"
          "  -f, --fullscreen               "
          "Start the program in fullscreen regardless of config setting.\n"
