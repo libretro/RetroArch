@@ -625,7 +625,8 @@ void runtime_log_get_last_played_time(runtime_log_t *runtime_log,
    mktime(time_info);
 }
 
-static void last_played_strftime(char *s, size_t len, const char *format,
+static void runtime_last_played_strftime(
+		char *s, size_t len, const char *format,
       const struct tm *timeptr)
 {
    char *local = NULL;
@@ -636,8 +637,7 @@ static void last_played_strftime(char *s, size_t len, const char *format,
    /* Generate string */
    strftime(s, len, format, timeptr);
 #if !(defined(__linux__) && !defined(ANDROID))
-   local = local_to_utf8_string_alloc(s);
-   if (local)
+   if ((local = local_to_utf8_string_alloc(s)))
    {
       if (!string_is_empty(local))
          strlcpy(s, local, len);
@@ -648,7 +648,7 @@ static void last_played_strftime(char *s, size_t len, const char *format,
 #endif
 }
 
-static void last_played_human(runtime_log_t *runtime_log,
+static bool runtime_last_played_human(runtime_log_t *runtime_log,
       char *str, size_t len)
 {
    struct tm time_info;
@@ -672,23 +672,16 @@ static void last_played_human(runtime_log_t *runtime_log,
    float periods[6] = {60.0f, 60.0f, 24.0f, 7.0f, 4.35f, 12.0f};
 
    if (!runtime_log)
-   {
-      strlcat(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER), len);
-      return;
-   }
+      return false;
 
    /* Get time */
    runtime_log_get_last_played_time(runtime_log, &time_info);
 
    last_played = mktime(&time_info);
    current     = time(NULL);
-   delta       = current - last_played;
 
-   if (delta <= 0)
-   {
-      strlcat(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER), len);
-      return;
-   }
+   if ((delta = current - last_played) <= 0)
+      return false;
 
    for (i = 0; delta >= periods[i] && i < sizeof(periods) - 1; i++)
       delta /= periods[i];
@@ -701,6 +694,8 @@ static void last_played_human(runtime_log_t *runtime_log,
    strlcat(str, tmp, len);
    strlcat(str, " ", len);
    strlcat(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO), len);
+
+   return true;
 }
 
 /* Gets last played entry value as a pre-formatted string */
@@ -857,7 +852,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
             /* Get time */
             struct tm time_info;
             runtime_log_get_last_played_time(runtime_log, &time_info);
-            last_played_strftime(tmp, sizeof(tmp), format_str, &time_info);
+            runtime_last_played_strftime(tmp, sizeof(tmp), format_str, &time_info);
          }
          snprintf(str, len, "%s%s",
                msg_hash_to_str(
@@ -1140,7 +1135,11 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
                   runtime_log->last_played.day, runtime_log->last_played.month);
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_AGO:
-            last_played_human(runtime_log, tmp, sizeof(tmp));
+            if (!(runtime_last_played_human(runtime_log, tmp, sizeof(tmp))))
+               strlcat(tmp,
+                     msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER),
+                     sizeof(tmp));
             snprintf(str, len, "%s %s",
                   msg_hash_to_str(
                      MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),

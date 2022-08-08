@@ -4119,24 +4119,29 @@ static void retroarch_print_help(const char *arg0)
 
    fprintf(stdout, "Usage: %s [OPTIONS]... [FILE]\n\n", arg0);
 
-   strlcat(buf, "  -h, --help                     "
-         "Show this help message.\n", sizeof(buf));
-   strlcat(buf, "  -v, --verbose                  "
-         "Verbose logging.\n", sizeof(buf));
-   strlcat(buf, "      --log-file=FILE            "
-         "Log messages to FILE.\n", sizeof(buf));
-   strlcat(buf, "      --version                  "
-         "Show version.\n", sizeof(buf));
-   strlcat(buf, "      --features                 "
-         "Print available features compiled into program.\n", sizeof(buf));
-
+   strlcat(buf,
+         "  -h, --help                     "
+         "Show this help message.\n"
+         "  -v, --verbose                  "
+         "Verbose logging.\n"
+         "      --log-file=FILE            "
+         "Log messages to FILE.\n"
+         "      --version                  "
+         "Show version.\n"
+         "      --features                 "
+         "Print available features compiled into program.\n"
+         ,
+         sizeof(buf));
 #ifdef HAVE_MENU
-   strlcat(buf, "      --menu                     "
-         "Do not require content or libretro core to be loaded,\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  starts directly in menu. If no arguments are passed to\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  the program, it is equivalent to using --menu as only argument.\n", sizeof(buf));
+   strlcat(buf,
+         "      --menu                     "
+         "Do not require content or libretro core to be loaded,\n"
+         "                                 "
+         "  starts directly in menu. If no arguments are passed to\n"
+         "                                 "
+         "  the program, it is equivalent to using --menu as only argument.\n"
+         ,
+         sizeof(buf));
 #endif
 
 #ifdef HAVE_CONFIGFILE
@@ -4144,72 +4149,79 @@ static void retroarch_print_help(const char *arg0)
          "Path for config file.\n", sizeof(buf));
 #ifdef _WIN32
    strlcat(buf, "                                 "
-         "  Defaults to retroarch.cfg in same directory as retroarch.exe.\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  If a default config is not found, the program will attempt to create one.\n", sizeof(buf));
+         "  Defaults to retroarch.cfg in same directory as retroarch.exe.\n"
+         "                                 "
+         "  If a default config is not found, the program will attempt to create one.\n"
+         , sizeof(buf));
 #else
-   strlcat(buf, "                                 "
-         "  By default looks for config in\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  $XDG_CONFIG_HOME/retroarch/retroarch.cfg,\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  $HOME/.config/retroarch/retroarch.cfg, and\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  $HOME/.retroarch.cfg.\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  If a default config is not found, the program will attempt to create one\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  based on the skeleton config (" GLOBAL_CONFIG_DIR "/retroarch.cfg).\n", sizeof(buf));
+   strlcat(buf,
+         "                                 "
+         "  By default looks for config in\n"
+         "                                 "
+         "  $XDG_CONFIG_HOME/retroarch/retroarch.cfg,\n"
+         "                                 "
+         "  $HOME/.config/retroarch/retroarch.cfg, and\n"
+         "                                 "
+         "  $HOME/.retroarch.cfg.\n"
+         "                                 "
+         "  If a default config is not found, the program will attempt to create one\n"
+         "                                 "
+         "  based on the skeleton config (" GLOBAL_CONFIG_DIR "/retroarch.cfg).\n"
+         , sizeof(buf));
 #endif
    strlcat(buf, "      --appendconfig=FILE        "
-         "Extra config files are loaded in, and take priority over\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  config selected in -c (or default). Multiple configs are\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  delimited by '|'.\n", sizeof(buf));
+         "Extra config files are loaded in, and take priority over\n"
+         "                                 "
+         "  config selected in -c (or default). Multiple configs are\n"
+         "                                 "
+         "  delimited by '|'.\n"
+         , sizeof(buf));
 #endif
 
    fputs(buf, stdout);
    buf[0] = '\0';
 
 #ifdef HAVE_DYNAMIC
-   strlcat(buf, "  -L, --libretro=FILE            "
-         "Path to libretro implementation. Overrides any config setting.\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  FILE may be one of the following:\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  1. The full path to a core shared object library: path/to/<core_name>_libretro.<lib_ext>\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  2. A core shared object library 'file name' (*): <core_name>_libretro.<lib_ext>\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  3. A core 'short name' (*): <core_name>_libretro OR <core_name>\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  (*) If 'file name' or 'short name' do not correspond to an existing full file path,\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  the configured frontend 'cores' directory will be searched for a match.\n", sizeof(buf));
+   strlcat(buf,
+         "  -L, --libretro=FILE            "
+         "Path to libretro implementation. Overrides any config setting.\n"
+         "                                 "
+         "  FILE may be one of the following:\n"
+         "                                 "
+         "  1. The full path to a core shared object library: path/to/<core_name>_libretro.<lib_ext>\n"
+         "                                 "
+         "  2. A core shared object library 'file name' (*): <core_name>_libretro.<lib_ext>\n"
+         "                                 "
+         "  3. A core 'short name' (*): <core_name>_libretro OR <core_name>\n"
+         "                                 "
+         "  (*) If 'file name' or 'short name' do not correspond to an existing full file path,\n"
+         "                                 "
+         "  the configured frontend 'cores' directory will be searched for a match.\n"
+         , sizeof(buf));
 #endif
 
-   strlcat(buf, "      --subsystem=NAME           "
-         "Use a subsystem of the libretro core. Multiple content\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  files are loaded as multiple arguments. If a content\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  file is skipped, use a blank (\"\") command line argument.\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  Content must be loaded in an order which depends on the\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  particular subsystem used. See verbose log output to learn\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  how a particular subsystem wants content to be loaded.\n", sizeof(buf));
-
-   strlcat(buf, "  -f, --fullscreen               "
-         "Start the program in fullscreen regardless of config setting.\n", sizeof(buf));
-   strlcat(buf, "      --set-shader=PATH          "
-         "Path to a shader (preset) that will be loaded each time content is loaded.\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  Effectively overrides automatic shader presets.\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  An empty argument \"\" will disable automatic shader presets.\n", sizeof(buf));
+   strlcat(buf,
+         "      --subsystem=NAME           "
+         "Use a subsystem of the libretro core. Multiple content\n"
+         "                                 "
+         "  files are loaded as multiple arguments. If a content\n"
+         "                                 "
+         "  file is skipped, use a blank (\"\") command line argument.\n"
+         "                                 "
+         "  Content must be loaded in an order which depends on the\n"
+         "                                 "
+         "  particular subsystem used. See verbose log output to learn\n"
+         "                                 "
+         "  how a particular subsystem wants content to be loaded.\n"
+         "  -f, --fullscreen               "
+         "Start the program in fullscreen regardless of config setting.\n"
+         "      --set-shader=PATH          "
+         "Path to a shader (preset) that will be loaded each time content is loaded.\n"
+         "                                 "
+         "  Effectively overrides automatic shader presets.\n"
+         "                                 "
+         "  An empty argument \"\" will disable automatic shader presets.\n"
+         , sizeof(buf));
 
    fputs(buf, stdout);
    buf[0] = '\0';
@@ -4220,77 +4232,88 @@ static void retroarch_print_help(const char *arg0)
          "Connect a DualAnalog controller to PORT (1 to %d).\n", MAX_USERS);
    printf(      "  -d, --device=PORT:ID           "
          "Connect a generic device into PORT of the device (1 to %d).\n", MAX_USERS);
-   strlcat(buf, "                                 "
-         "  Format is PORT:ID, where ID is a number corresponding to the particular device.\n", sizeof(buf));
-
-   strlcat(buf, "  -M, --sram-mode=MODE           "
-         "SRAM handling mode. MODE can be:\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  'noload-nosave', 'noload-save', 'load-nosave' or 'load-save'.\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  Note: 'noload-save' implies that save files *WILL BE OVERWRITTEN*.\n", sizeof(buf));
+   strlcat(buf,
+         "                                 "
+         "  Format is PORT:ID, where ID is a number corresponding to the particular device.\n"
+         "  -M, --sram-mode=MODE           "
+         "SRAM handling mode. MODE can be:\n"
+         "                                 "
+         "  'noload-nosave', 'noload-save', 'load-nosave' or 'load-save'.\n"
+         "                                 "
+         "  Note: 'noload-save' implies that save files *WILL BE OVERWRITTEN*.\n"
+         , sizeof(buf));
 
 #ifdef HAVE_NETWORKING
-   strlcat(buf, "  -H, --host                     "
-         "Host netplay as user 1.\n", sizeof(buf));
-   strlcat(buf, "  -C, --connect=HOST             "
-         "Connect to netplay server as user 2.\n", sizeof(buf));
-   strlcat(buf, "      --port=PORT                "
-         "Port used to netplay. Default is 55435.\n", sizeof(buf));
-   strlcat(buf, "      --nick=NICK                "
-         "Picks a username (for use with netplay). Not mandatory.\n", sizeof(buf));
-   /*strlcat(buf, "      --stateless                "
-         "Use \"stateless\" mode for netplay (requires a very fast network).\n", sizeof(buf));*/
-   strlcat(buf, "      --check-frames=NUMBER      "
-         "Check frames when using netplay.\n", sizeof(buf));
+   strlcat(buf,
+         "  -H, --host                     "
+         "Host netplay as user 1.\n"
+         "  -C, --connect=HOST             "
+         "Connect to netplay server as user 2.\n"
+         "      --port=PORT                "
+         "Port used to netplay. Default is 55435.\n"
+         "      --nick=NICK                "
+         "Picks a username (for use with netplay). Not mandatory.\n"
+         "      --check-frames=NUMBER      "
+         "Check frames when using netplay.\n"
+         , sizeof(buf));
 #ifdef HAVE_NETWORK_CMD
    strlcat(buf, "      --command                  "
-         "Sends a command over UDP to an already running program process.\n", sizeof(buf));
-   strlcat(buf, "                                 "
-         "  Available commands are listed if command is invalid.\n", sizeof(buf));
+         "Sends a command over UDP to an already running program process.\n"
+         "                                 "
+         "  Available commands are listed if command is invalid.\n"
+         , sizeof(buf));
 #endif
 #endif
 
 #ifdef HAVE_BSV_MOVIE
-   strlcat(buf, "  -P, --bsvplay=FILE             "
-         "Playback a BSV movie file.\n", sizeof(buf));
-   strlcat(buf, "  -R, --bsvrecord=FILE           "
-         "Start recording a BSV movie file from the beginning.\n", sizeof(buf));
-   strlcat(buf, "      --eof-exit                 "
-         "Exit upon reaching the end of the BSV movie file.\n", sizeof(buf));
+   strlcat(buf,
+         "  -P, --bsvplay=FILE             "
+         "Playback a BSV movie file.\n"
+         "  -R, --bsvrecord=FILE           "
+         "Start recording a BSV movie file from the beginning.\n"
+         "      --eof-exit                 "
+         "Exit upon reaching the end of the BSV movie file.\n"
+         , sizeof(buf));
 #endif
 
    strlcat(buf, "  -r, --record=FILE              "
-         "Path to record video file. Using mkv extension is recommended.\n", sizeof(buf));
-   strlcat(buf, "      --recordconfig             "
-         "Path to settings used during recording.\n", sizeof(buf));
-   strlcat(buf, "      --size=WIDTHxHEIGHT        "
-         "Overrides output video size when recording.\n", sizeof(buf));
+         "Path to record video file. Using mkv extension is recommended.\n"
+         "      --recordconfig             "
+         "Path to settings used during recording.\n"
+         "      --size=WIDTHxHEIGHT        "
+         "Overrides output video size when recording.\n"
+         ,
+         sizeof(buf));
 
    fputs(buf, stdout);
    buf[0] = '\0';
 
    strlcat(buf, "  -D, --detach                   "
-         "Detach program from the running console. Not relevant for all platforms.\n", sizeof(buf));
-   strlcat(buf, "      --max-frames=NUMBER        "
-         "Runs for the specified number of frames, then exits.\n", sizeof(buf));
+         "Detach program from the running console. Not relevant for all platforms.\n"
+         "      --max-frames=NUMBER        "
+         "Runs for the specified number of frames, then exits.\n"
+         , sizeof(buf));
 
 #ifdef HAVE_PATCH
-   strlcat(buf, "  -U, --ups=FILE                 "
-         "Specifies path for UPS patch that will be applied to content.\n", sizeof(buf));
-   strlcat(buf, "      --bps=FILE                 "
-         "Specifies path for BPS patch that will be applied to content.\n", sizeof(buf));
-   strlcat(buf, "      --ips=FILE                 "
-         "Specifies path for IPS patch that will be applied to content.\n", sizeof(buf));
-   strlcat(buf, "      --no-patch                 "
-         "Disables all forms of content patching.\n", sizeof(buf));
+   strlcat(buf,
+         "  -U, --ups=FILE                 "
+         "Specifies path for UPS patch that will be applied to content.\n"
+         "      --bps=FILE                 "
+         "Specifies path for BPS patch that will be applied to content.\n"
+         "      --ips=FILE                 "
+         "Specifies path for IPS patch that will be applied to content.\n"
+         "      --no-patch                 "
+         "Disables all forms of content patching.\n"
+         , sizeof(buf));
 #endif
 
 #ifdef HAVE_SCREENSHOTS
-   strlcat(buf, "      --max-frames-ss            "
-         "Takes a screenshot at the end of max-frames.\n", sizeof(buf));
-   strlcat(buf, "      --max-frames-ss-path=FILE  "
-         "Path to save the screenshot to at the end of max-frames.\n", sizeof(buf));
+   strlcat(buf,
+         "      --max-frames-ss            "
+         "Takes a screenshot at the end of max-frames.\n"
+         "      --max-frames-ss-path=FILE  "
+         "Path to save the screenshot to at the end of max-frames.\n"
+         , sizeof(buf));
 #endif
 
 #ifdef HAVE_ACCESSIBILITY
@@ -4298,15 +4321,17 @@ static void retroarch_print_help(const char *arg0)
          "Enables accessibilty for blind users using text-to-speech.\n", sizeof(buf));
 #endif
 
-   strlcat(buf, "      --load-menu-on-error       "
-         "Open menu instead of quitting if specified core or content fails to load.\n", sizeof(buf));
-   strlcat(buf, "  -e, --entryslot=NUMBER         "
-         "Slot from which to load an entry state.\n", sizeof(buf));
-
-   strlcat(buf, "  -s, --save=PATH                "
-         "Path for save files (*.srm). (DEPRECATED, use --appendconfig and savefile_directory)\n", sizeof(buf));
-   strlcat(buf, "  -S, --savestate=PATH           "
-         "Path for the save state files (*.state). (DEPRECATED, use --appendconfig and savestate_directory)\n", sizeof(buf));
+   strlcat(buf,
+         "      --load-menu-on-error       "
+         "Open menu instead of quitting if specified core or content fails to load.\n"
+         "  -e, --entryslot=NUMBER         "
+         "Slot from which to load an entry state.\n"
+         "  -s, --save=PATH                "
+         "Path for save files (*.srm). (DEPRECATED, use --appendconfig and savefile_directory)\n"
+         "  -S, --savestate=PATH           "
+         "Path for the save state files (*.state). (DEPRECATED, use --appendconfig and savestate_directory)\n"
+         ,
+         sizeof(buf));
 
    fputs(buf, stdout);
    fputs("\n", stdout);
@@ -4396,6 +4421,7 @@ static void retroarch_parse_input_libretro_path(const char *path)
    }
    else
    {
+      size_t _len;
       /* If path has no extension and contains no path
        * delimiters, check if it is a core 'name', matching
        * an existing file in the cores directory */
@@ -4404,11 +4430,22 @@ static void retroarch_parse_input_libretro_path(const char *path)
 
       command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
 
-      strlcpy(tmp_path, path, sizeof(tmp_path));
+      _len = strlcpy(tmp_path, path, sizeof(tmp_path));
 
       if (!string_ends_with_size(tmp_path, "_libretro",
             strlen(tmp_path), STRLEN_CONST("_libretro")))
-         strlcat(tmp_path, "_libretro", sizeof(tmp_path));
+      {
+         tmp_path[_len  ] = '_';
+         tmp_path[_len+1] = 'l';
+         tmp_path[_len+2] = 'i';
+         tmp_path[_len+3] = 'b';
+         tmp_path[_len+4] = 'r';
+         tmp_path[_len+5] = 'e';
+         tmp_path[_len+6] = 't';
+         tmp_path[_len+7] = 'r';
+         tmp_path[_len+8] = 'o';
+         tmp_path[_len+9] = '\0';
+      }
 
       if (!core_info_find(tmp_path, &core_info) ||
           string_is_empty(core_info->path))
@@ -5255,9 +5292,10 @@ bool retroarch_main_init(int argc, char *argv[])
 
          if (!string_is_empty(cpu_model))
          {
-            strlcat(str_output, FILE_PATH_LOG_INFO " CPU Model Name: ", sizeof(str_output));
-            strlcat(str_output, cpu_model, sizeof(str_output));
-            strlcat(str_output, "\n", sizeof(str_output));
+            size_t _len        = strlcat(str_output, FILE_PATH_LOG_INFO " CPU Model Name: ", sizeof(str_output));
+            _len               = strlcat(str_output, cpu_model, sizeof(str_output));
+            str_output[_len  ] = '\n';
+            str_output[_len+1] = '\0';
          }
 
          RARCH_LOG_OUTPUT("%s", str_output);
