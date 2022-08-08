@@ -88,7 +88,7 @@ RETRO_BEGIN_DECLS
 bool retroarch_ctl(enum rarch_ctl_state state, void *data);
 
 int retroarch_get_capabilities(enum rarch_capabilities type,
-      char *s, size_t len);
+      char *s, size_t len, size_t _len);
 
 void retroarch_override_setting_set(enum rarch_override_setting enum_idx, void *data);
 
