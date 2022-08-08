@@ -2268,6 +2268,8 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT);
    SETTING_UINT("netplay_max_connections",      &settings->uints.netplay_max_connections, true, netplay_max_connections, false);
    SETTING_UINT("netplay_max_ping",             &settings->uints.netplay_max_ping, true, netplay_max_ping, false);
+   SETTING_UINT("netplay_chat_color_name",      &settings->uints.netplay_chat_color_name, true, netplay_chat_color_name, false);
+   SETTING_UINT("netplay_chat_color_msg",       &settings->uints.netplay_chat_color_msg, true, netplay_chat_color_msg, false);
    SETTING_UINT("netplay_input_latency_frames_min",&settings->uints.netplay_input_latency_frames_min, true, 0, false);
    SETTING_UINT("netplay_input_latency_frames_range",&settings->uints.netplay_input_latency_frames_range, true, 0, false);
    SETTING_UINT("netplay_share_digital",        &settings->uints.netplay_share_digital, true, netplay_share_digital, false);

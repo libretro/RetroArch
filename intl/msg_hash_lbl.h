@@ -2107,6 +2107,14 @@ MSG_HASH(
    "netplay_fade_chat"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_CHAT_COLOR_NAME,
+   "netplay_chat_color_name"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_CHAT_COLOR_MSG,
+   "netplay_chat_color_msg"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING,
    "netplay_allow_pausing"
    )

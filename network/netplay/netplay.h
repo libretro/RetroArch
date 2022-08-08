@@ -49,8 +49,6 @@
 #define NETPLAY_CHAT_MAX_MESSAGES   5
 #define NETPLAY_CHAT_MAX_SIZE       96
 #define NETPLAY_CHAT_FRAME_TIME     900
-#define NETPLAY_CHAT_NICKNAME_COLOR 0x00800000
-#define NETPLAY_CHAT_MESSAGE_COLOR  0xFFFFFF00
 
 enum rarch_netplay_ctl_state
 {
@@ -239,6 +237,8 @@ struct netplay_chat_buffer
       char    nick[NETPLAY_NICK_LEN];
       char    msg[NETPLAY_CHAT_MAX_SIZE];
    } messages[NETPLAY_CHAT_MAX_MESSAGES];
+   uint32_t color_name;
+   uint32_t color_msg;
 };
 
 typedef struct

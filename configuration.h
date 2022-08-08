@@ -179,6 +179,8 @@ typedef struct settings
       unsigned netplay_port;
       unsigned netplay_max_connections;
       unsigned netplay_max_ping;
+      unsigned netplay_chat_color_name;
+      unsigned netplay_chat_color_msg;
       unsigned netplay_input_latency_frames_min;
       unsigned netplay_input_latency_frames_range;
       unsigned netplay_share_digital;
