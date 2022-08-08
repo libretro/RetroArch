@@ -1516,12 +1516,19 @@ static unsigned menu_displaylist_parse_supported_cores(menu_displaylist_info_t *
        * to the displaylist */
       if (core_is_pending)
       {
+         size_t _len;
          char entry_alt_text[256];
-         entry_alt_text[0] = '\0';
-
-         snprintf(entry_alt_text, sizeof(entry_alt_text), "%s (%s)",
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE),
-               pending_core_name);
+         _len                   = strlcpy(entry_alt_text,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE),
+               sizeof(entry_alt_text));
+         entry_alt_text[_len  ] = ' ';
+         entry_alt_text[_len+1] = '(';
+         entry_alt_text[_len+2] = '\0';
+         _len                   = strlcat(entry_alt_text,
+               pending_core_name, sizeof(entry_alt_text));
+         entry_alt_text[_len  ] = ')';
+         entry_alt_text[_len+1] = '\0';
 
          menu_entries_prepend(info->list, pending_core_path,
                msg_hash_to_str(current_core_enum_label),
@@ -1630,11 +1637,13 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    const char *tmp_string                = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
    const char *menu_driver               = menu_driver_ident();
-
-   tmp[0] = '\0';
-
-   snprintf(tmp, sizeof(tmp), "%s: %s",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE), __DATE__);
+   size_t _len                           = strlcpy(tmp,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE),
+         sizeof(tmp));
+   tmp[_len  ]                           = ':';
+   tmp[_len+1]                           = ' ';
+   tmp[_len+2]                           = '\0';
+   strlcat(tmp, __DATE__, sizeof(tmp));
 
    if (menu_entries_append_enum(list, tmp, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
@@ -1664,11 +1673,10 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
 #ifdef ANDROID
    perms = test_permissions(internal_storage_path);
-
-   snprintf(tmp, sizeof(tmp), "%s",
+   strlcpy(tmp,
          perms
          ? msg_hash_to_str(MSG_READ_WRITE)
-         : msg_hash_to_str(MSG_READ_ONLY));
+         : msg_hash_to_str(MSG_READ_ONLY), sizeof(tmp));
    if (menu_entries_append_enum(list, tmp, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
       count++;
@@ -1767,18 +1775,22 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #ifdef HAVE_RGUI
          if (string_is_equal(menu_driver, "rgui"))
          {
-            snprintf(tmp, sizeof(tmp), " Device display name: %s",
+            strlcpy(tmp, " Device display name: ", sizeof(tmp));
+            strlcat(tmp, 
                input_config_get_device_display_name(controller) ?
                input_config_get_device_display_name(controller) :
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+               sizeof(tmp));
             if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
                count++;
-            snprintf(tmp, sizeof(tmp), " Device config name: %s",
+            strlcpy(tmp, " Device config name: ", sizeof(tmp));
+            strlcat(tmp, 
                input_config_get_device_config_name(controller) ?
                input_config_get_device_config_name(controller)  :
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+               sizeof(tmp));
             if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
@@ -2408,11 +2420,21 @@ static int create_string_list_rdb_entry_int(
 
 static enum msg_file_type extension_to_file_hash_type(const char *ext)
 {
-   if (string_is_equal(ext, "sha1"))
+   if (     ext[0] == 's' 
+         && ext[1] == 'h'
+         && ext[2] == 'a'
+         && ext[3] == '1'
+         && ext[4] == '\0')
       return FILE_TYPE_SHA1;
-   else if (string_is_equal(ext, "crc"))
+   else if (     ext[0] == 'c' 
+              && ext[1] == 'r' 
+              && ext[2] == 'c' 
+              && ext[3] == '\0')
       return FILE_TYPE_CRC;
-   else if (string_is_equal(ext, "md5"))
+   else if (     ext[0] == 'm' 
+              && ext[1] == 'd' 
+              && ext[2] == '5' 
+              && ext[3] == '\0')
       return FILE_TYPE_MD5;
    return FILE_TYPE_NONE;
 }
@@ -4876,12 +4898,13 @@ static unsigned menu_displaylist_parse_content_information(
    if (settings->bools.cheevos_enable && settings->arrays.cheevos_token[0] &&
       !string_is_empty(loaded_content_path))
    {
-      tmp[0]   = '\0';
-      snprintf(tmp, sizeof(tmp),
-            "%s: %s",
+      size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH),
-            rcheevos_get_hash()
-            );
+            sizeof(tmp));
+      tmp[_len  ] = ':';
+      tmp[_len+1] = ' ';
+      tmp[_len+2] = '\n';
+      strlcat(tmp, rcheevos_get_hash(), sizeof(tmp));
       if (menu_entries_append_enum(info->list, tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH),
             MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH,
@@ -5411,9 +5434,9 @@ static int menu_displaylist_parse_input_description_kbd_list(
    /* Loop over keyboard keys */
    for (i = 0; i < RARCH_MAX_KEYS; i++)
    {
+      char input_description[256];
       unsigned key_id       = key_descriptors[i].key;
       const char *key_label = key_descriptors[i].desc;
-      char input_description[256];
 
       if (string_is_empty(key_label))
          continue;
@@ -5421,12 +5444,16 @@ static int menu_displaylist_parse_input_description_kbd_list(
       /* TODO/FIXME: Localise 'Keyboard' */
       if (key_id == RETROK_FIRST)
       {
-         input_description[0] = '\0';
-         strcpy_literal(input_description, "---");
+         input_description[0] = '-';
+         input_description[1] = '-';
+         input_description[2] = '-';
+         input_description[3] = '\0';
       }
       else
-         snprintf(input_description, sizeof(input_description),
-               "Keyboard %s", key_label);
+      {
+         strlcpy(input_description, "Keyboard ", sizeof(input_description));
+         strlcat(input_description, key_label, sizeof(input_description));
+      }
 
       /* Add menu entry */
       if (menu_entries_append_enum(info->list,
@@ -5479,13 +5506,9 @@ static void menu_displaylist_parse_playlist_generic(
    menu_displaylist_set_new_playlist(menu, settings,
          playlist_path, sort_enabled);
 
-   playlist             = playlist_get_cached();
-
-   if (!playlist)
-      return;
-
-   *ret                 = menu_displaylist_parse_playlist(info,
-         playlist, settings, playlist_name, is_collection);
+   if ((playlist = playlist_get_cached()))
+      *ret = menu_displaylist_parse_playlist(info,
+            playlist, settings, playlist_name, is_collection);
 }
 
 #ifdef HAVE_BLUETOOTH
@@ -5907,8 +5930,13 @@ static unsigned menu_displaylist_populate_subsystem(
    /* Select appropriate 'star' marker for subsystem menu entries
     * (i.e. RGUI does not support unicode, so use a 'standard'
     * character fallback) */
-   snprintf(star_char, sizeof(star_char),
-         "%s", is_rgui ? "*" : utf8_star_char);
+   if (is_rgui)
+   {
+      star_char[0] = '*';
+      star_char[1] = '\0';
+   }
+   else
+      strlcpy(star_char, utf8_star_char, sizeof(star_char));
 
    if (menu_displaylist_has_subsystems())
    {
@@ -6018,9 +6046,7 @@ static unsigned menu_displaylist_populate_subsystem(
          }
          else
          {
-            snprintf(s, sizeof(s),
-               "Load %s",
-               subsystem->desc);
+            snprintf(s, sizeof(s),"Load %s", subsystem->desc);
 
             /* If using RGUI with sublabels disabled, add the
              * appropriate text to the menu entry itself... */
@@ -10542,7 +10568,6 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
       {
          if (!show_passworded)
             continue;
-
          snprintf(passworded, sizeof(passworded), "[%s] ",
             msg_hash_to_str(MSG_ROOM_PASSWORDED));
       }
@@ -10946,9 +10971,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      {
                         const struct retro_keybind *keyptr =
                            &input_config_binds[port][retro_id];
-
-                        snprintf(desc_label, sizeof(desc_label),
-                              "%s %s", msg_hash_to_str(keyptr->enum_idx), descriptor);
+                        size_t _len        = strlcpy(desc_label,
+					msg_hash_to_str(keyptr->enum_idx),
+					sizeof(desc_label));
+                        desc_label[_len  ] = ' '; 
+                        desc_label[_len+1] = '\0'; 
+                        strlcat(desc_label, descriptor, sizeof(desc_label));
                         strlcpy(descriptor, desc_label, sizeof(descriptor));
                      }
 
@@ -10998,9 +11026,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      {
                         const struct retro_keybind *keyptr =
                            &input_config_binds[port][retro_id];
-
-                        snprintf(desc_label, sizeof(desc_label),
-                              "%s %s", msg_hash_to_str(keyptr->enum_idx), descriptor);
+                        size_t _len        = strlcpy(desc_label,
+					msg_hash_to_str(keyptr->enum_idx),
+					sizeof(desc_label));
+                        desc_label[_len  ] = ' '; 
+                        desc_label[_len+1] = '\0'; 
+                        strlcat(desc_label, descriptor, sizeof(desc_label));
                         strlcpy(descriptor, desc_label, sizeof(descriptor));
                      }
 
@@ -11096,7 +11127,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   if (!string_is_empty(cd_info.system))
                   {
                      char system[256];
-                     snprintf(system, sizeof(system), "System: %s", cd_info.system);
+                     strlcpy(system, "System: ", sizeof(system));
+                     strlcat(system, cd_info.system, sizeof(system));
 
                      if (menu_entries_append_enum(info->list,
                            system,
@@ -11338,56 +11370,56 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
             switch (get_cpu_scaling_mode(NULL))
             {
-            case CPUSCALING_MANUAL:
-               while (*drivers)
-               {
-                  char policyid[16];
-                  snprintf(policyid, sizeof(policyid), "%u", count++);
+               case CPUSCALING_MANUAL:
+                  while (*drivers)
+                  {
+                     char policyid[16];
+                     snprintf(policyid, sizeof(policyid), "%u", count++);
+                     menu_entries_append_enum(info->list,
+                           policyid,
+                           policyid,
+                           MENU_ENUM_LABEL_CPU_POLICY_ENTRY,
+                           0, 0, 0);
+                     drivers++;
+                  }
+                  break;
+               case CPUSCALING_MANAGED_PER_CONTEXT:
+                  /* Allows user to pick two governors */
                   menu_entries_append_enum(info->list,
-                     policyid,
-                     policyid,
-                     MENU_ENUM_LABEL_CPU_POLICY_ENTRY,
-                     0, 0, 0);
-                  drivers++;
-               }
-               break;
-            case CPUSCALING_MANAGED_PER_CONTEXT:
-               /* Allows user to pick two governors */
-               menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_POLICY_CORE_GOVERNOR),
-                  "0",
-                  MENU_ENUM_LABEL_CPU_POLICY_CORE_GOVERNOR,
-                  0, 0, 0);
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_POLICY_CORE_GOVERNOR),
+                        "0",
+                        MENU_ENUM_LABEL_CPU_POLICY_CORE_GOVERNOR,
+                        0, 0, 0);
 
-               menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_POLICY_MENU_GOVERNOR),
-                  "1",
-                  MENU_ENUM_LABEL_CPU_POLICY_MENU_GOVERNOR,
-                  0, 0, 0);
+                  menu_entries_append_enum(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_POLICY_MENU_GOVERNOR),
+                        "1",
+                        MENU_ENUM_LABEL_CPU_POLICY_MENU_GOVERNOR,
+                        0, 0, 0);
 
-               /* fallthrough */
-            case CPUSCALING_MANAGED_PERFORMANCE:
-               /* Allow users to choose max/min frequencies */
-               menu_entries_append_enum(info->list,
-                  "0",
-                  "0",
-                  MENU_ENUM_LABEL_CPU_MANAGED_MIN_FREQ,
-                  MENU_SETTINGS_CPU_MANAGED_SET_MINFREQ,
-                  0, 0);
+                  /* fallthrough */
+               case CPUSCALING_MANAGED_PERFORMANCE:
+                  /* Allow users to choose max/min frequencies */
+                  menu_entries_append_enum(info->list,
+                        "0",
+                        "0",
+                        MENU_ENUM_LABEL_CPU_MANAGED_MIN_FREQ,
+                        MENU_SETTINGS_CPU_MANAGED_SET_MINFREQ,
+                        0, 0);
 
-               menu_entries_append_enum(info->list,
-                  "1",
-                  "1",
-                  MENU_ENUM_LABEL_CPU_MANAGED_MAX_FREQ,
-                  MENU_SETTINGS_CPU_MANAGED_SET_MAXFREQ,
-                  0, 0);
+                  menu_entries_append_enum(info->list,
+                        "1",
+                        "1",
+                        MENU_ENUM_LABEL_CPU_MANAGED_MAX_FREQ,
+                        MENU_SETTINGS_CPU_MANAGED_SET_MAXFREQ,
+                        0, 0);
 
-               break;
-            case CPUSCALING_MAX_PERFORMANCE:
-            case CPUSCALING_MIN_POWER:
-            case CPUSCALING_BALANCED:
-               /* No settings for these modes */
-               break;
+                  break;
+               case CPUSCALING_MAX_PERFORMANCE:
+               case CPUSCALING_MIN_POWER:
+               case CPUSCALING_BALANCED:
+                  /* No settings for these modes */
+                  break;
             };
          }
 
