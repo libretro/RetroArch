@@ -4258,7 +4258,7 @@ static void save_keybind_axis(config_file_t *conf,
    key[len+2] = 'x';
    key[len+3] = 'i';
    key[len+4] = 's';
-   key[len+4] = '\0';
+   key[len+5] = '\0';
 
    if (bind->joyaxis == AXIS_NONE)
    {
@@ -4294,7 +4294,7 @@ static void save_keybind_mbutton(config_file_t *conf,
    key[len+2] = 'b';
    key[len+3] = 't';
    key[len+4] = 'n';
-   key[len+4] = '\0';
+   key[len+5] = '\0';
 
    switch (bind->mbutton)
    {
