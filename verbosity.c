@@ -502,7 +502,7 @@ void rarch_log_file_init(
       strlcpy(log_directory, log_dir, sizeof(log_directory));
 
       /* Get log file path */
-      fill_pathname_join_special(log_file_path,
+      fill_pathname_join(log_file_path,
             log_dir,
             log_to_file_timestamp
             ? timestamped_log_file_name

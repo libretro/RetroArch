@@ -9022,9 +9022,8 @@ static bool setting_append_list_input_player_options(
 
       if (!string_is_empty(buffer[user]))
       {
-         size_t _len   = strlcpy(label, buffer[user], sizeof(label));
-         label[_len  ] = ' ';
-         label[_len+1] = '\0';
+         strlcpy(label, buffer[user], sizeof(label));
+         strlcat(label, " ", sizeof(label));
       }
       else
          label[0] = '\0';

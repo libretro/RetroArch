@@ -2581,7 +2581,7 @@ static bool ozone_reset_theme_textures(ozone_handle_t *ozone)
       if (!theme->name)
          continue;
 
-      fill_pathname_join_special(
+      fill_pathname_join(
          theme_path,
          ozone->png_path,
          theme->name,
@@ -4482,27 +4482,18 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
             sysname[_len-3] = 
             sysname[_len-2] = 
             sysname[_len-1] = '\0';
-         _len               = _len-4;
-         len                = fill_pathname_join_special(texturepath,
+         fill_pathname_join(texturepath,
                ozone->icons_path, sysname,
                sizeof(texturepath));
-         texturepath[len]   = '.';
-         texturepath[len+1] = 'p';
-         texturepath[len+2] = 'n';
-         texturepath[len+3] = 'g';
-         texturepath[len+4] = '\0';
+         strlcat(texturepath, ".png", sizeof(texturepath));
 
          /* If the playlist icon doesn't exist, return default */
          if (!path_is_valid(texturepath))
          {
-            len                = fill_pathname_join_special(
+            fill_pathname_join(
                   texturepath, ozone->icons_path, "default",
                   sizeof(texturepath));
-            texturepath[len]   = '.';
-            texturepath[len+1] = 'p';
-            texturepath[len+2] = 'n';
-            texturepath[len+3] = 'g';
-            texturepath[len+4] = '\0';
+            strlcat(texturepath, ".png", sizeof(texturepath));
          }
 
          ti.width         = 0;
@@ -4537,7 +4528,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          sysname[_len+11] = 'g';
          sysname[_len+12] = '\0';
          /* Assemble new icon path */
-         fill_pathname_join_special(
+         fill_pathname_join(
                content_texturepath, ozone->icons_path, sysname,
                sizeof(content_texturepath));
 
@@ -7845,7 +7836,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->last_onscreen_category       = 0;
 
    /* Assets path */
-   fill_pathname_join_special(
+   fill_pathname_join(
       ozone->assets_path,
       directory_assets,
       "ozone",
@@ -7853,7 +7844,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    );
 
    /* PNG path */
-   fill_pathname_join_special(
+   fill_pathname_join(
       ozone->png_path,
       ozone->assets_path,
       "png",
@@ -7861,7 +7852,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    );
 
    /* Sidebar path */
-   fill_pathname_join_special(
+   fill_pathname_join(
       ozone->tab_path,
       ozone->png_path,
       "sidebar",
@@ -7872,7 +7863,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    fill_pathname_application_special(ozone->icons_path,
        sizeof(ozone->icons_path),
        APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE_ICONS);
-   fill_pathname_join_special(ozone->icons_path_default, ozone->icons_path,
+   fill_pathname_join(ozone->icons_path_default, ozone->icons_path,
 		   "default", sizeof(ozone->icons_path_default));
 
    ozone_last_use_preferred_system_color_theme = settings->bools.menu_use_preferred_system_color_theme;
@@ -8148,23 +8139,23 @@ static void ozone_set_layout(
    {
       case RETRO_LANGUAGE_ARABIC:
       case RETRO_LANGUAGE_PERSIAN:
-         fill_pathname_join_special(s1,
+         fill_pathname_join(s1,
                settings->paths.directory_assets, "pkg", sizeof(s1));
-         fill_pathname_join_special(font_path, s1, "fallback-font.ttf", sizeof(font_path));
+         fill_pathname_join(font_path, s1, "fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
       case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-         fill_pathname_join_special(s1,
+         fill_pathname_join(s1,
                settings->paths.directory_assets, "pkg", sizeof(s1));
-         fill_pathname_join_special(font_path, s1, "chinese-fallback-font.ttf", sizeof(font_path));
+         fill_pathname_join(font_path, s1, "chinese-fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_KOREAN:
-         fill_pathname_join_special(s1,
+         fill_pathname_join(s1,
                settings->paths.directory_assets, "pkg", sizeof(s1));
-         fill_pathname_join_special(font_path, s1, "korean-fallback-font.ttf", sizeof(font_path));
+         fill_pathname_join(font_path, s1, "korean-fallback-font.ttf", sizeof(font_path));
          break;
       default:
-         fill_pathname_join_special(font_path, ozone->assets_path, "bold.ttf", sizeof(font_path));
+         fill_pathname_join(font_path, ozone->assets_path, "bold.ttf", sizeof(font_path));
    }
 
    font_inited = ozone_init_font(&ozone->fonts.title,
@@ -8175,23 +8166,23 @@ static void ozone_set_layout(
    {
       case RETRO_LANGUAGE_ARABIC:
       case RETRO_LANGUAGE_PERSIAN:
-         fill_pathname_join_special(s1,
+         fill_pathname_join(s1,
                settings->paths.directory_assets, "pkg", sizeof(s1));
-         fill_pathname_join_special(font_path, s1, "fallback-font.ttf", sizeof(font_path));
+         fill_pathname_join(font_path, s1, "fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
       case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-         fill_pathname_join_special(s1,
+         fill_pathname_join(s1,
                settings->paths.directory_assets, "pkg", sizeof(s1));
-         fill_pathname_join_special(font_path, s1, "chinese-fallback-font.ttf", sizeof(font_path));
+         fill_pathname_join(font_path, s1, "chinese-fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_KOREAN:
-         fill_pathname_join_special(s1,
+         fill_pathname_join(s1,
                settings->paths.directory_assets, "pkg", sizeof(s1));
-         fill_pathname_join_special(font_path, s1, "korean-fallback-font.ttf", sizeof(font_path));
+         fill_pathname_join(font_path, s1, "korean-fallback-font.ttf", sizeof(font_path));
          break;
       default:
-         fill_pathname_join_special(font_path, ozone->assets_path, "regular.ttf", sizeof(font_path));
+         fill_pathname_join(font_path, ozone->assets_path, "regular.ttf", sizeof(font_path));
    }
 
    font_inited = ozone_init_font(&ozone->fonts.footer,

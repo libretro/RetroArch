@@ -1403,7 +1403,6 @@ void MainWindow::deleteCurrentPlaylistItem()
 
 QString MainWindow::getPlaylistDefaultCore(QString plName)
 {
-   size_t len;
    playlist_config_t playlist_config;
    char playlistPath[PATH_MAX_LENGTH];
    QByteArray plNameByteArray          = plName.toUtf8();
@@ -1424,14 +1423,10 @@ QString MainWindow::getPlaylistDefaultCore(QString plName)
       return corePath;
 
    /* Get playlist path */
-   len                 = fill_pathname_join_special(
-         playlistPath,  settings->paths.directory_playlist,
-         plNameCString, sizeof(playlistPath));
-   playlistPath[len  ] = '.';
-   playlistPath[len+1] = 'l';
-   playlistPath[len+2] = 'p';
-   playlistPath[len+3] = 'l';
-   playlistPath[len+4] = '\0';
+   fill_pathname_join(
+		   playlistPath,  settings->paths.directory_playlist,
+		   plNameCString, sizeof(playlistPath));
+   strlcat(playlistPath, ".lpl", sizeof(playlistPath));
 
    /* Load playlist, if required */
    if (cachedPlaylist)

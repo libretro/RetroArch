@@ -2209,15 +2209,9 @@ void input_config_get_bind_string_joykey(
             !string_is_empty(bind->joykey_label)
             && input_descriptor_label_show)
       {
-         size_t len = fill_pathname_join_delim(buf, prefix,
+         fill_pathname_join_delim(buf, prefix,
                bind->joykey_label, ' ', size);
-         buf[len  ] = ' ';
-         buf[len+1] = '(';
-         buf[len+2] = 'h';
-         buf[len+3] = 'a';
-         buf[len+4] = 't';
-         buf[len+5] = ')';
-         buf[len+6] = '\0';
+         strlcat(buf, " (hat)", size);
       }
       else
       {
@@ -2251,15 +2245,9 @@ void input_config_get_bind_string_joykey(
             !string_is_empty(bind->joykey_label)
             && input_descriptor_label_show)
       {
-         size_t len = fill_pathname_join_delim(buf, prefix,
+         fill_pathname_join_delim(buf, prefix,
                bind->joykey_label, ' ', size);
-         buf[len  ] = ' ';
-         buf[len+1] = '(';
-         buf[len+2] = 'b';
-         buf[len+3] = 't';
-         buf[len+4] = 'n';
-         buf[len+5] = ')';
-         buf[len+6] = '\0';
+         strlcat(buf, " (btn)", size);
       }
       else
          snprintf(buf, size, "%s%u (%s)", prefix, (unsigned)bind->joykey,
@@ -2276,16 +2264,9 @@ void input_config_get_bind_string_joyaxis(
          !string_is_empty(bind->joyaxis_label)
          && input_descriptor_label_show)
    {
-      size_t len = fill_pathname_join_delim(buf, prefix,
+      fill_pathname_join_delim(buf, prefix,
             bind->joyaxis_label, ' ', size);
-      buf[len  ] = ' ';
-      buf[len+1] = '(';
-      buf[len+2] = 'a';
-      buf[len+3] = 'x';
-      buf[len+4] = 'i';
-      buf[len+5] = 's';
-      buf[len+6] = ')';
-      buf[len+7] = '\0';
+      strlcat(buf, " (axis)", size);
    }
    else
    {
@@ -2943,7 +2924,7 @@ void input_config_set_device_config_path(unsigned port, const char *path)
       input_driver_state_t *input_st = &input_driver_st;
       if (fill_pathname_parent_dir_name(parent_dir_name,
                path, sizeof(parent_dir_name)))
-         fill_pathname_join_special(
+         fill_pathname_join(
                input_st->input_device_info[port].config_path,
                parent_dir_name, path_basename_nocompression(path),
                sizeof(input_st->input_device_info[port].config_path));

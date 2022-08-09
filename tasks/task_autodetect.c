@@ -654,7 +654,7 @@ bool input_autoconfigure_connect(
       {
          char dir_driver_autoconfig[PATH_MAX_LENGTH];
          /* Generate driver-specific autoconfig directory */
-         fill_pathname_join_special(dir_driver_autoconfig,
+         fill_pathname_join(dir_driver_autoconfig,
                dir_autoconfig,
                autoconfig_handle->device_info.joypad_driver,
                sizeof(dir_driver_autoconfig));

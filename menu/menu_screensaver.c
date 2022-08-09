@@ -462,11 +462,11 @@ static bool menu_screensaver_update_state(
       char pkg_path[PATH_MAX_LENGTH];
       /* Get font file path */
       if (!string_is_empty(dir_assets))
-         fill_pathname_join_special(pkg_path, dir_assets, MENU_SS_PKG_DIR, sizeof(pkg_path));
+         fill_pathname_join(pkg_path, dir_assets, MENU_SS_PKG_DIR, sizeof(pkg_path));
       else
          strlcpy(pkg_path, MENU_SS_PKG_DIR, sizeof(pkg_path));
 
-      fill_pathname_join_special(font_file, pkg_path, MENU_SS_FONT_FILE,
+      fill_pathname_join(font_file, pkg_path, MENU_SS_FONT_FILE,
             sizeof(font_file));
 
       /* Warn if font file is missing */

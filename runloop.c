@@ -1080,7 +1080,7 @@ static bool validate_per_core_options(char *s,
    if (mkdir && !path_is_valid(s))
    {
       char new_path[PATH_MAX_LENGTH];
-      fill_pathname_join_special(new_path,
+      fill_pathname_join(new_path,
             config_directory, core_name, sizeof(new_path));
       if (!path_is_directory(new_path))
          path_mkdir(new_path);
@@ -3935,8 +3935,7 @@ static char *copy_core_to_temp_file(
    if (!(tmpdir = get_tmpdir_alloc(dir_libretro)))
       return NULL;
 
-   fill_pathname_join_special(tmp_path,
-         tmpdir, "retroarch_temp",
+   fill_pathname_join(tmp_path, tmpdir, "retroarch_temp",
          sizeof(tmp_path));
 
    if (!path_mkdir(tmp_path))

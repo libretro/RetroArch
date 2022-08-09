@@ -625,7 +625,7 @@ bool test_permissions(const char *path)
    __android_log_print(ANDROID_LOG_INFO,
       "RetroArch", "Testing permissions for %s\n",path);
 
-   fill_pathname_join_special(buf, path, ".retroarch", sizeof(buf));
+   fill_pathname_join(buf, path, ".retroarch", sizeof(buf));
    ret = path_mkdir(buf);
 
    __android_log_print(ANDROID_LOG_INFO,
@@ -910,7 +910,7 @@ static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
    int64_t length   = 0;
    char     *buf    = NULL;
    const char *base = proc_acpi_sysfs_ac_adapter_path;
-   fill_pathname_join_special(path, base, "online", sizeof(path));
+   fill_pathname_join(path, base, "online", sizeof(path));
    if (!filestream_exists(path))
       return;
 
@@ -2150,7 +2150,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
       if (storage_permissions == INTERNAL_STORAGE_WRITABLE)
       {
          char user_data_path[PATH_MAX_LENGTH];
-         fill_pathname_join_special(user_data_path,
+         fill_pathname_join(user_data_path,
                internal_storage_path, "RetroArch",
                sizeof(user_data_path));
 

@@ -112,7 +112,7 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
       }
 
       if (userdata->extraction_directory)
-         fill_pathname_join_special(new_path, userdata->extraction_directory,
+         fill_pathname_join(new_path, userdata->extraction_directory,
                path_basename(name), sizeof(new_path));
       else
          fill_pathname_resolve_relative(new_path, userdata->archive_path,

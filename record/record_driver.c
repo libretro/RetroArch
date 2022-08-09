@@ -260,27 +260,27 @@ bool recording_init(void)
          {
             fill_str_dated_filename(buf, game_name,
                      "mkv", sizeof(buf));
-            fill_pathname_join_special(output, recording_st->output_dir, buf, sizeof(output));
+            fill_pathname_join(output, recording_st->output_dir, buf, sizeof(output));
          }
          else if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST
                && video_record_quality < RECORD_CONFIG_TYPE_RECORDING_GIF)
          {
             fill_str_dated_filename(buf, game_name,
                      "webm", sizeof(buf));
-            fill_pathname_join_special(output, recording_st->output_dir, buf, sizeof(output));
+            fill_pathname_join(output, recording_st->output_dir, buf, sizeof(output));
          }
          else if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_GIF
                && video_record_quality < RECORD_CONFIG_TYPE_RECORDING_APNG)
          {
             fill_str_dated_filename(buf, game_name,
                      "gif", sizeof(buf));
-            fill_pathname_join_special(output, recording_st->output_dir, buf, sizeof(output));
+            fill_pathname_join(output, recording_st->output_dir, buf, sizeof(output));
          }
          else
          {
             fill_str_dated_filename(buf, game_name,
                      "png", sizeof(buf));
-            fill_pathname_join_special(output, recording_st->output_dir, buf, sizeof(output));
+            fill_pathname_join(output, recording_st->output_dir, buf, sizeof(output));
          }
       }
    }

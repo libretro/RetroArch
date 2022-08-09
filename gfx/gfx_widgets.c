@@ -810,14 +810,14 @@ static void gfx_widgets_layout(
       {
          case RETRO_LANGUAGE_ARABIC:
          case RETRO_LANGUAGE_PERSIAN:
-            fill_pathname_join_special(font_file, p_dispwidget->assets_pkg_dir, "fallback-font.ttf", sizeof(font_file));
+            fill_pathname_join(font_file, p_dispwidget->assets_pkg_dir, "fallback-font.ttf", sizeof(font_file));
             break;
          case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
          case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-            fill_pathname_join_special(font_file, p_dispwidget->assets_pkg_dir, "chinese-fallback-font.ttf", sizeof(font_file));
+            fill_pathname_join(font_file, p_dispwidget->assets_pkg_dir, "chinese-fallback-font.ttf", sizeof(font_file));
             break;
          case RETRO_LANGUAGE_KOREAN:
-            fill_pathname_join_special(font_file, p_dispwidget->assets_pkg_dir, "korean-fallback-font.ttf", sizeof(font_file));
+            fill_pathname_join(font_file, p_dispwidget->assets_pkg_dir, "korean-fallback-font.ttf", sizeof(font_file));
             break;
          default:
             strlcpy(font_file, p_dispwidget->ozone_regular_font_path, sizeof(font_file));
@@ -2019,42 +2019,42 @@ bool gfx_widgets_init(
       p_dispwidget->current_msgs_lock = slock_new();
 #endif
 
-      fill_pathname_join_special(
+      fill_pathname_join(
             p_dispwidget->gfx_widgets_path,
             dir_assets,
             "menu_widgets",
             sizeof(p_dispwidget->gfx_widgets_path)
             );
-      fill_pathname_join_special(
+      fill_pathname_join(
             p_dispwidget->xmb_path,
             dir_assets,
             "xmb",
             sizeof(p_dispwidget->xmb_path)
             );
       /* Base path */
-      fill_pathname_join_special(p_dispwidget->ozone_path,
+      fill_pathname_join(p_dispwidget->ozone_path,
             dir_assets,
             "ozone",
             sizeof(p_dispwidget->ozone_path));
-      fill_pathname_join_special(p_dispwidget->ozone_regular_font_path,
+      fill_pathname_join(p_dispwidget->ozone_regular_font_path,
             p_dispwidget->ozone_path, "regular.ttf",
             sizeof(p_dispwidget->ozone_regular_font_path));
-      fill_pathname_join_special(p_dispwidget->ozone_bold_font_path,
+      fill_pathname_join(p_dispwidget->ozone_bold_font_path,
             p_dispwidget->ozone_path, "bold.ttf",
             sizeof(p_dispwidget->ozone_bold_font_path));
-      fill_pathname_join_special(
+      fill_pathname_join(
             theme_path,
             p_dispwidget->xmb_path,
             "monochrome",
             sizeof(theme_path)
             );
-      fill_pathname_join_special(
+      fill_pathname_join(
             p_dispwidget->monochrome_png_path,
             theme_path,
             "png",
             sizeof(p_dispwidget->monochrome_png_path)
             );
-      fill_pathname_join_special(p_dispwidget->assets_pkg_dir,
+      fill_pathname_join(p_dispwidget->assets_pkg_dir,
             settings->paths.directory_assets, "pkg",
             sizeof(p_dispwidget->assets_pkg_dir));
 

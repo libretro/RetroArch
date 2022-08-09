@@ -1090,7 +1090,6 @@ static void xmb_render_messagebox_internal(
 static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
 {
    char path[PATH_MAX_LENGTH];
-   size_t len                         = 0;
    char       *tmp                    = string_replace_substring(xmb->title_name, "/", " ");
    settings_t *settings               = config_get_ptr();
    const char *dir_dynamic_wallpapers = settings->paths.directory_dynamic_wallpapers;
@@ -1102,7 +1101,7 @@ static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
 
    if (tmp)
    {
-      len = fill_pathname_join_special(
+      fill_pathname_join(
             path,
             dir_dynamic_wallpapers,
             tmp,
@@ -1110,11 +1109,7 @@ static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
       free(tmp);
    }
   
-   path[len  ] = '.';
-   path[len+1] = 'p';
-   path[len+2] = 'n';
-   path[len+3] = 'g';
-   path[len+4] = '\0';
+   strlcat(path, ".png", sizeof(path));
    
    if (!path_is_valid(path))
       fill_pathname_application_special(path, sizeof(path),
@@ -2280,7 +2275,7 @@ static void xmb_context_reset_horizontal_list(
 
    fill_pathname_application_special(iconpath, sizeof(iconpath),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
-   fill_pathname_join_special(icons_path_default, iconpath,
+   fill_pathname_join(icons_path_default, iconpath,
          "default", sizeof(icons_path_default));
 
    for (i = 0; i < list_size; i++)
@@ -2315,28 +2310,17 @@ static void xmb_context_reset_horizontal_list(
             sysname[_len-3] = 
             sysname[_len-2] = 
             sysname[_len-1] = '\0';
-         _len               = _len-4;
-         len                = fill_pathname_join_special(
-			 texturepath, iconpath, sysname,
-			 sizeof(texturepath));
-         texturepath[len  ] = '.';
-         texturepath[len+1] = 'p';
-         texturepath[len+2] = 'n';
-         texturepath[len+3] = 'g';
-         texturepath[len+4] = '\0';
+
+            fill_pathname_join(
+                  texturepath, iconpath, sysname,
+                  sizeof(texturepath));
+            strlcat(texturepath, ".png", sizeof(texturepath));
 
          /* If the playlist icon doesn't exist return default */
 
          if (!path_is_valid(texturepath))
-         {
-               len = fill_pathname_join_special(texturepath, iconpath, "default",
+               fill_pathname_join(texturepath, iconpath, "default.png",
                sizeof(texturepath));
-               texturepath[len  ] = '.';
-               texturepath[len+1] = 'p';
-               texturepath[len+2] = 'n';
-               texturepath[len+3] = 'g';
-               texturepath[len+4] = '\0';
-         }
 
          ti.width         = 0;
          ti.height        = 0;
@@ -2356,21 +2340,9 @@ static void xmb_context_reset_horizontal_list(
          }
 
          /* Manually append '-content.png' to end of sysname string */
-         sysname[_len   ] = '-';
-         sysname[_len+1 ] = 'c';
-         sysname[_len+2 ] = 'o';
-         sysname[_len+3 ] = 'n';
-         sysname[_len+4 ] = 't';
-         sysname[_len+5 ] = 'e';
-         sysname[_len+6 ] = 'n';
-         sysname[_len+7 ] = 't';
-         sysname[_len+8 ] = '.';
-         sysname[_len+9 ] = 'p';
-         sysname[_len+10] = 'n';
-         sysname[_len+11] = 'g';
-         sysname[_len+12] = '\0';
+         strlcat(sysname, "-content.png", sizeof(sysname));
          /* Assemble new icon path */
-         fill_pathname_join_special(content_texturepath, iconpath, sysname,
+         fill_pathname_join(content_texturepath, iconpath, sysname,
                sizeof(content_texturepath));
 
          /* If the content icon doesn't exist return default-content */
@@ -6816,7 +6788,7 @@ static void xmb_context_reset_background(xmb_handle_t *xmb, const char *iconpath
    }
    else if (!string_is_empty(iconpath))
    {
-      fill_pathname_join_special(path, iconpath,
+      fill_pathname_join(path, iconpath,
             FILE_PATH_BACKGROUND_IMAGE, sizeof(path));
 
       if (path_is_valid(path))

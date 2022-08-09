@@ -727,16 +727,12 @@ const char *x11_display_server_get_output_options(void *data)
 
    for (i = 0; i < res->noutput; i++)
    {
-      size_t _len;
       if (!(info = XRRGetOutputInfo(dpy, res, res->outputs[i])))
          return NULL;
 
-      _len = strlcat(s, info->name, sizeof(s));
+      strlcat(s, info->name, sizeof(s));
       if ((i+1) < res->noutput)
-      {
-         s[_len  ] = '|';
-         s[_len+1] = '\0';
-      }
+         strlcat(s, "|", sizeof(s));
    }
 
    return s;

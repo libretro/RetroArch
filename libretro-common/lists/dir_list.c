@@ -137,7 +137,7 @@ static int dir_list_read(const char *dir,
             continue;
       }
 
-      fill_pathname_join_special(file_path, dir, name, sizeof(file_path));
+      fill_pathname_join(file_path, dir, name, sizeof(file_path));
 
       if (retro_dirent_is_dir(entry, NULL))
       {

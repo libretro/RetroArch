@@ -3870,7 +3870,7 @@ bool menu_shader_manager_operate_auto_preset(
    /* We are only including this directory for compatibility purposes with
     * versions 1.8.7 and older. */
    if (op != AUTO_SHADER_OP_SAVE && !string_is_empty(dir_video_shader))
-      fill_pathname_join_special(
+      fill_pathname_join(
             old_presets_directory,
             dir_video_shader,
             "presets",
@@ -3886,19 +3886,19 @@ bool menu_shader_manager_operate_auto_preset(
          strcpy_literal(file, "global");
          break;
       case SHADER_PRESET_CORE:
-         fill_pathname_join_special(file, core_name, core_name, sizeof(file));
+         fill_pathname_join(file, core_name, core_name, sizeof(file));
          break;
       case SHADER_PRESET_PARENT:
          fill_pathname_parent_dir_name(tmp,
                rarch_path_basename, sizeof(tmp));
-         fill_pathname_join_special(file, core_name, tmp, sizeof(file));
+         fill_pathname_join(file, core_name, tmp, sizeof(file));
          break;
       case SHADER_PRESET_GAME:
          {
             const char *game_name = path_basename(rarch_path_basename);
             if (string_is_empty(game_name))
                return false;
-            fill_pathname_join_special(file, core_name, game_name, sizeof(file));
+            fill_pathname_join(file, core_name, game_name, sizeof(file));
             break;
          }
       default:

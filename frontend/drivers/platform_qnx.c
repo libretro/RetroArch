@@ -147,8 +147,7 @@ static void frontend_qnx_get_env_settings(int *argc, char *argv[],
          FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
 
    /* bundle copy */
-   fill_pathname_join_special(data_assets_path,
-		   data_path, "assets", sizeof(data_assets_path));
+   fill_pathname_join(data_assets_path, data_path, "assets", sizeof(data_assets_path));
 
    if (!filestream_exists(data_assets_path))
    {

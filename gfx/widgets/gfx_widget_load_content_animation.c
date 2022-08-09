@@ -445,15 +445,11 @@ bool gfx_widget_start_load_content_animation(void)
     * > Use db_name, if available */
    if (has_db_name)
    {
-      size_t len = strlcpy(state->icon_file, state->system_name,
+      strlcpy(state->icon_file, state->system_name,
             sizeof(state->icon_file));
-      state->icon_file[len]   = '.';
-      state->icon_file[len+1] = 'p';
-      state->icon_file[len+2] = 'n';
-      state->icon_file[len+3] = 'g';
-      state->icon_file[len+4] = '\0';
+      strlcat(state->icon_file, ".png", sizeof(state->icon_file));
 
-      fill_pathname_join_special(icon_path,
+      fill_pathname_join(icon_path,
             state->icon_directory, state->icon_file,
             sizeof(icon_path));
 
@@ -479,15 +475,10 @@ bool gfx_widget_start_load_content_animation(void)
       if (!string_is_empty(core_db_name) &&
           !string_is_equal(core_db_name, state->system_name))
       {
-         size_t len = strlcpy(state->icon_file, core_db_name,
+         strlcpy(state->icon_file, core_db_name,
                sizeof(state->icon_file));
-         state->icon_file[len]   = '.';
-         state->icon_file[len+1] = 'p';
-         state->icon_file[len+2] = 'n';
-         state->icon_file[len+3] = 'g';
-         state->icon_file[len+4] = '\0';
-
-         fill_pathname_join_special(icon_path,
+	 strlcat(state->icon_file, ".png", sizeof(state->icon_file));
+         fill_pathname_join(icon_path,
                state->icon_directory, state->icon_file,
                sizeof(icon_path));
 
@@ -500,7 +491,7 @@ bool gfx_widget_start_load_content_animation(void)
    if (!state->has_icon)
    {
       strlcpy(state->icon_file, "retroarch.png", sizeof(state->icon_file));
-      fill_pathname_join_special(icon_path,
+      fill_pathname_join(icon_path,
             state->icon_directory, state->icon_file,
             sizeof(icon_path));
 

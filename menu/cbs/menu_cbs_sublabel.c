@@ -1874,23 +1874,10 @@ static int action_bind_sublabel_core_backup_entry(
       ? list->list[i].alt
       : list->list[i].path;
    /* Set sublabel prefix */
-   size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_BACKUP_CRC), len);
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_BACKUP_CRC), len);
 
    /* Add crc string */
-   if (string_is_empty(crc))
-   {
-      s[_len  ] = '0';
-      s[_len+1] = '0';
-      s[_len+2] = '0';
-      s[_len+3] = '0';
-      s[_len+4] = '0';
-      s[_len+5] = '0';
-      s[_len+6] = '0';
-      s[_len+7] = '0';
-      s[_len+8] = '\0';
-   }
-   else
-      strlcat(s, crc, len);
+   strlcat(s, (string_is_empty(crc) ? "00000000" : crc), len);
 
    return 1;
 }

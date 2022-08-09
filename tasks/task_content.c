@@ -1064,7 +1064,7 @@ static bool content_file_load(
                            strlcpy(new_basedir, uwp_dir_data, sizeof(new_basedir));
                      }
                   }
-                  fill_pathname_join_special(new_path, new_basedir,
+                  fill_pathname_join(new_path, new_basedir,
                      path_basename(content_path), sizeof(new_path));
 
                   mbstowcs(wnew_path, new_path, MAX_PATH);

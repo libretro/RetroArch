@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
          tmp_str[0] = '.';
 
          if (!string_is_empty(in_file_dir))
-            fill_pathname_join_special(out_file_path, in_file_dir,
+            fill_pathname_join(out_file_path, in_file_dir,
                   tmp_str, sizeof(out_file_path));
          else
             strlcpy(out_file_path, tmp_str, sizeof(out_file_path));

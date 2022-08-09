@@ -333,12 +333,12 @@ static bool connmanctl_connect_ssid(
       connman->connmanctl_widgets_supported;
 #endif
    strlcpy(netid, netinfo->netid, sizeof(netid));
-   fill_pathname_join_special(settings_dir, LAKKA_CONNMAN_DIR, 
+   fill_pathname_join(settings_dir, LAKKA_CONNMAN_DIR, 
          netid, sizeof(settings_dir));
 
    path_mkdir(settings_dir);
 
-   fill_pathname_join_special(settings_path, settings_dir, "settings",
+   fill_pathname_join(settings_path, settings_dir, "settings",
          sizeof(settings_path));
 
    if (!netinfo->saved_password)

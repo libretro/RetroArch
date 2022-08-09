@@ -141,10 +141,10 @@ static bool get_thumbnail_paths(
       system_name = db_name;
    
    /* Generate local path */
-   fill_pathname_join_special(path, pl_thumb->dir_thumbnails,
+   fill_pathname_join(path, pl_thumb->dir_thumbnails,
          system_name, path_size);
-   fill_pathname_join_special(tmp_buf, path, sub_dir, sizeof(tmp_buf));
-   fill_pathname_join_special(path, tmp_buf, img_name, path_size);
+   fill_pathname_join(tmp_buf, path, sub_dir, sizeof(tmp_buf));
+   fill_pathname_join(path, tmp_buf, img_name, path_size);
    
    if (string_is_empty(path))
       return false;

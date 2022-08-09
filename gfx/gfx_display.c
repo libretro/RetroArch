@@ -1207,7 +1207,7 @@ bool gfx_display_reset_textures_list(
    if (string_is_empty(texture_path))
       return false;
 
-   fill_pathname_join_special(texpath,
+   fill_pathname_join(texpath,
          iconpath, texture_path, sizeof(texpath));
 
    if (!image_texture_load(&ti, texpath))

@@ -235,7 +235,6 @@ runtime_log_t *runtime_log_init(
       const char *dir_playlist,
       bool log_per_core)
 {
-   size_t len;
    char content_name[PATH_MAX_LENGTH];
    char core_name[PATH_MAX_LENGTH];
    char log_file_dir[PATH_MAX_LENGTH];
@@ -283,7 +282,7 @@ runtime_log_t *runtime_log_init(
     * If 'custom' runtime log path is undefined,
     * use default 'playlists/logs' directory... */
    if (string_is_empty(dir_runtime_log))
-      fill_pathname_join_special(
+      fill_pathname_join(
             tmp_buf,
             dir_playlist,
             "logs",
@@ -295,7 +294,7 @@ runtime_log_t *runtime_log_init(
       return NULL;
 
    if (log_per_core)
-      fill_pathname_join_special(
+      fill_pathname_join(
             log_file_dir,
             tmp_buf,
             core_name,
@@ -363,14 +362,9 @@ runtime_log_t *runtime_log_init(
       return NULL;
 
    /* Build final log file path */
-   len = fill_pathname_join_special(log_file_path, log_file_dir,
+   fill_pathname_join(log_file_path, log_file_dir,
          content_name, sizeof(log_file_path));
-   log_file_path[len  ] = '.';
-   log_file_path[len+1] = 'l';
-   log_file_path[len+2] = 'r';
-   log_file_path[len+3] = 't';
-   log_file_path[len+4] = 'l';
-   log_file_path[len+5] = '\0';
+   strlcat(log_file_path, ".lrtl", sizeof(log_file_path));
 
    if (string_is_empty(log_file_path))
       return NULL;

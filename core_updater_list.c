@@ -430,7 +430,7 @@ static bool core_updater_list_set_paths(
     * > Leave blank if this is not a buildbot core */
    if (list_type == CORE_UPDATER_LIST_TYPE_BUILDBOT)
    {
-      fill_pathname_join_special(
+      fill_pathname_join(
             remote_core_path,
             network_buildbot_url,
             filename_str,
@@ -453,7 +453,7 @@ static bool core_updater_list_set_paths(
 
    entry->remote_core_path = strdup(remote_core_path);
 
-   fill_pathname_join_special(
+   fill_pathname_join(
          local_core_path,
          path_dir_libretro,
          filename_str,
@@ -473,7 +473,7 @@ static bool core_updater_list_set_paths(
 
    entry->local_core_path = strdup(local_core_path);
 
-   fill_pathname_join_special(
+   fill_pathname_join(
          local_info_path,
          path_libretro_info,
          filename_str,

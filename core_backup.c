@@ -84,13 +84,13 @@ static bool core_backup_get_backup_dir(
    /* Get core backup directory
     * > If no assets directory is defined, use
     *   core directory as a base */
-   fill_pathname_join_special(tmp,
+   fill_pathname_join(tmp,
          string_is_empty(dir_core_assets)
          ? dir_libretro 
          : dir_core_assets,
                "core_backups", sizeof(tmp));
 
-   fill_pathname_join_special(backup_dir, tmp,
+   fill_pathname_join(backup_dir, tmp,
          core_file_id, len);
 
    if (string_is_empty(backup_dir))
@@ -165,7 +165,7 @@ bool core_backup_get_backup_path(
          FILE_PATH_CORE_BACKUP_EXTENSION);
 
    /* Build final path */
-   fill_pathname_join_special(backup_path, backup_dir,
+   fill_pathname_join(backup_path, backup_dir,
          backup_filename, len);
 
    return true;
@@ -381,7 +381,7 @@ enum core_backup_type core_backup_get_core_path(
                break;
 
             /* All good - build core path */
-            fill_pathname_join_special(core_path, dir_libretro,
+            fill_pathname_join(core_path, dir_libretro,
                   core_filename, len);
 
             backup_type = CORE_BACKUP_TYPE_ARCHIVE;
@@ -389,7 +389,7 @@ enum core_backup_type core_backup_get_core_path(
          break;
       case CORE_BACKUP_TYPE_LIB:
          /* This is a plain dynamic library file */
-         fill_pathname_join_special(core_path, dir_libretro,
+         fill_pathname_join(core_path, dir_libretro,
                backup_filename, len);
          backup_type = CORE_BACKUP_TYPE_LIB;
          break;

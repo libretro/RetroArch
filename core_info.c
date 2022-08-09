@@ -709,7 +709,7 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
       strlcpy(file_path,
             FILE_PATH_CORE_INFO_CACHE_REFRESH, sizeof(file_path));
    else
-      fill_pathname_join_special(file_path,
+      fill_pathname_join(file_path,
             info_dir, FILE_PATH_CORE_INFO_CACHE_REFRESH,
             sizeof(file_path));
 
@@ -720,7 +720,7 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
    if (string_is_empty(info_dir))
       strlcpy(file_path, FILE_PATH_CORE_INFO_CACHE, sizeof(file_path));
    else
-      fill_pathname_join_special(file_path, info_dir,
+      fill_pathname_join(file_path, info_dir,
             FILE_PATH_CORE_INFO_CACHE,
             sizeof(file_path));
 
@@ -829,7 +829,7 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
    if (string_is_empty(info_dir))
       strlcpy(file_path, FILE_PATH_CORE_INFO_CACHE, sizeof(file_path));
    else
-      fill_pathname_join_special(file_path, info_dir,
+      fill_pathname_join(file_path, info_dir,
             FILE_PATH_CORE_INFO_CACHE,
             sizeof(file_path));
 
@@ -1182,7 +1182,7 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
       strlcpy(file_path,
             FILE_PATH_CORE_INFO_CACHE_REFRESH, sizeof(file_path));
    else
-      fill_pathname_join_special(file_path,
+      fill_pathname_join(file_path,
             info_dir, FILE_PATH_CORE_INFO_CACHE_REFRESH,
             sizeof(file_path));
 
@@ -1232,7 +1232,7 @@ bool core_info_cache_force_refresh(const char *path_info)
       strlcpy(file_path,
             FILE_PATH_CORE_INFO_CACHE_REFRESH, sizeof(file_path));
    else
-      fill_pathname_join_special(file_path,
+      fill_pathname_join(file_path,
             path_info, FILE_PATH_CORE_INFO_CACHE_REFRESH,
             sizeof(file_path));
 
@@ -1347,7 +1347,7 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
    struct string_list *core_ext_list = NULL;
    bool dir_list_ok                  = false;
    char exts[32];
-   size_t i, len;
+   size_t i;
 
    if (string_is_empty(core_exts) ||
        !path_list)
@@ -1373,21 +1373,13 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
 
    /* Get list of file extensions to include
     * > core + lock */
-   len = strlcpy(exts, core_exts, sizeof(exts));
-   exts[len  ] = '|';
-   exts[len+1] = 'l';
-   exts[len+2] = 'c';
-   exts[len+3] = 'k';
+   strlcpy(exts, core_exts, sizeof(exts));
+   strlcat(exts, "|" FILE_PATH_LOCK_EXTENSION_NO_DOT,
+         sizeof(exts));
 #if defined(HAVE_DYNAMIC)
    /* > 'standalone exempt' */
-   exts[len+4] = '|';
-   exts[len+5] = 'l';
-   exts[len+6] = 's';
-   exts[len+7] = 'a';
-   exts[len+8] = 'e';
-   exts[len+9] = '\0';
-#else
-   exts[len+4] = '\0';
+   strlcat(exts, "|" FILE_PATH_STANDALONE_EXEMPT_EXTENSION_NO_DOT,
+         sizeof(exts));
 #endif
 
    /* Fetch core directory listing */
@@ -1487,20 +1479,15 @@ static bool core_info_path_is_locked(
       core_aux_file_path_list_t *lock_list,
       const char *core_file_name)
 {
-   size_t i, len;
+   size_t i;
    uint32_t hash;
    char lock_filename[NAME_MAX_LENGTH];
 
    if (lock_list->size < 1)
       return false;
 
-   len                  = strlcpy(lock_filename, core_file_name,
-         sizeof(lock_filename));
-   lock_filename[len  ] = '.';
-   lock_filename[len+1] = 'l';
-   lock_filename[len+2] = 'c';
-   lock_filename[len+3] = 'k';
-   lock_filename[len+4] = '\0';
+   strlcpy(lock_filename, core_file_name, sizeof(lock_filename));
+   strlcat(lock_filename, ".lck", sizeof(lock_filename));
 
    hash = core_info_hash_string(lock_filename);
 
@@ -1520,21 +1507,17 @@ static bool core_info_path_is_standalone_exempt(
       core_aux_file_path_list_t *exempt_list,
       const char *core_file_name)
 {
-   size_t i, len;
+   size_t i;
    uint32_t hash;
    char exempt_filename[NAME_MAX_LENGTH];
 
    if (exempt_list->size < 1)
       return false;
 
-   len                    = strlcpy(exempt_filename, core_file_name,
+   strlcpy(exempt_filename, core_file_name,
          sizeof(exempt_filename));
-   exempt_filename[len  ] = '.';
-   exempt_filename[len+1] = 'l';
-   exempt_filename[len+2] = 's';
-   exempt_filename[len+3] = 'a';
-   exempt_filename[len+4] = 'e';
-   exempt_filename[len+5] = '\0';
+   strlcat(exempt_filename, FILE_PATH_STANDALONE_EXEMPT_EXTENSION,
+         sizeof(exempt_filename));
 
    hash = core_info_hash_string(exempt_filename);
 
@@ -1670,15 +1653,10 @@ static config_file_t *core_info_get_config_file(
             "%s" ".info", core_file_id);
    else
    {
-      size_t len     = fill_pathname_join_special(info_path, info_dir,
+      fill_pathname_join(info_path, info_dir,
             core_file_id,
             sizeof(info_path));
-      info_path[len]   = '.';
-      info_path[len+1] = 'i';
-      info_path[len+2] = 'n';
-      info_path[len+3] = 'f';
-      info_path[len+4] = 'o';
-      info_path[len+5] = '\0';
+      strlcat(info_path, ".info", sizeof(info_path));
    }
 
    return config_file_new_from_path_to_string(info_path);
@@ -1894,7 +1872,6 @@ static void core_info_parse_config_file(
 static void core_info_list_resolve_all_extensions(
       core_info_list_t *core_info_list)
 {
-   size_t _len           = 0;
    size_t i              = 0;
    size_t all_ext_len    = 0;
    char *all_ext         = NULL;
@@ -1918,23 +1895,15 @@ static void core_info_list_resolve_all_extensions(
       if (!core_info_list->list[i].supported_extensions)
          continue;
 
-      _len = strlcat(core_info_list->all_ext,
+      strlcat(core_info_list->all_ext,
             core_info_list->list[i].supported_extensions, all_ext_len);
-      _len = strlcat(core_info_list->all_ext, "|", all_ext_len);
+      strlcat(core_info_list->all_ext, "|", all_ext_len);
    }
 #ifdef HAVE_7ZIP
-   core_info_list->all_ext[_len  ] = '7';
-   core_info_list->all_ext[_len+1] = 'z';
-   core_info_list->all_ext[_len+2] = '|';
-   core_info_list->all_ext[_len+3] = '\0';
-   _len                           += 3;
+   strlcat(core_info_list->all_ext, "7z|", all_ext_len);
 #endif
 #ifdef HAVE_ZLIB
-   core_info_list->all_ext[_len  ] = 'z';
-   core_info_list->all_ext[_len+1] = 'i';
-   core_info_list->all_ext[_len+2] = 'p';
-   core_info_list->all_ext[_len+3] = '|';
-   core_info_list->all_ext[_len+3] = '\0';
+   strlcat(core_info_list->all_ext, "zip|", all_ext_len);
 #endif
 }
 
@@ -2899,7 +2868,6 @@ static bool core_info_update_core_aux_file(const char *path, bool create)
  *   core info list this is *not* thread safe */
 bool core_info_set_core_lock(const char *core_path, bool lock)
 {
-   size_t len;
    core_info_t *core_info = NULL;
    char lock_file_path[PATH_MAX_LENGTH];
 
@@ -2918,13 +2886,8 @@ bool core_info_set_core_lock(const char *core_path, bool lock)
       return false;
 
    /* Get lock file path */
-   len                   = strlcpy(
-         lock_file_path, core_info->path, sizeof(lock_file_path));
-   lock_file_path[len  ] = '.';
-   lock_file_path[len+1] = 'l';
-   lock_file_path[len+2] = 'c';
-   lock_file_path[len+3] = 'k';
-   lock_file_path[len+4] = '\0';
+   strlcpy(lock_file_path, core_info->path, sizeof(lock_file_path));
+   strlcat(lock_file_path, ".lck", sizeof(lock_file_path));
 
    /* Create or delete lock file, as required */
    if (!core_info_update_core_aux_file(lock_file_path, lock))
@@ -2948,7 +2911,6 @@ bool core_info_set_core_lock(const char *core_path, bool lock)
  *   must be checked externally */
 bool core_info_get_core_lock(const char *core_path, bool validate_path)
 {
-   size_t len;
    core_info_t *core_info     = NULL;
    const char *core_file_path = NULL;
    bool is_locked             = false;
@@ -2979,14 +2941,9 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
       return false;
 
    /* Get lock file path */
-   len                   = strlcpy(
-         lock_file_path, core_file_path,
+   strlcpy(lock_file_path, core_file_path,
          sizeof(lock_file_path));
-   lock_file_path[len  ] = '.';
-   lock_file_path[len+1] = 'l';
-   lock_file_path[len+2] = 'c';
-   lock_file_path[len+3] = 'k';
-   lock_file_path[len+4] = '\0';
+   strlcat(lock_file_path, ".lck", sizeof(lock_file_path));
 
    /* Check whether lock file exists */
    is_locked = path_is_valid(lock_file_path);
@@ -3012,7 +2969,6 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
 bool core_info_set_core_standalone_exempt(const char *core_path, bool exempt)
 {
 #if defined(HAVE_DYNAMIC)
-   size_t _len;
    core_info_t *core_info = NULL;
    char exempt_file_path[PATH_MAX_LENGTH];
 
@@ -3024,14 +2980,9 @@ bool core_info_set_core_standalone_exempt(const char *core_path, bool exempt)
       return false;
 
    /* Get 'standalone exempt' file path */
-   _len = strlcpy(exempt_file_path, core_info->path,
+   strlcpy(exempt_file_path, core_info->path,
          sizeof(exempt_file_path));
-   exempt_file_path[_len  ] = '.';
-   exempt_file_path[_len+1] = 'l';
-   exempt_file_path[_len+2] = 's';
-   exempt_file_path[_len+3] = 'a';
-   exempt_file_path[_len+4] = 'e';
-   exempt_file_path[_len+5] = '\0';
+   strlcat(exempt_file_path, ".lsae", sizeof(exempt_file_path));
 
    /* Create or delete 'standalone exempt' file, as required */
    if (!core_info_update_core_aux_file(exempt_file_path, exempt))
@@ -3057,7 +3008,6 @@ bool core_info_set_core_standalone_exempt(const char *core_path, bool exempt)
 bool core_info_get_core_standalone_exempt(const char *core_path)
 {
 #if defined(HAVE_DYNAMIC)
-   size_t _len;
    core_info_t *core_info = NULL;
    bool is_exempt         = false;
    char exempt_file_path[PATH_MAX_LENGTH];
@@ -3070,15 +3020,10 @@ bool core_info_get_core_standalone_exempt(const char *core_path)
       return false;
 
    /* Get 'standalone exempt' file path */
-   _len                     = strlcpy(
+   strlcpy(
          exempt_file_path, core_info->path,
          sizeof(exempt_file_path));
-   exempt_file_path[_len  ] = '.';
-   exempt_file_path[_len+1] = 'l';
-   exempt_file_path[_len+2] = 's';
-   exempt_file_path[_len+3] = 'a';
-   exempt_file_path[_len+4] = 'e';
-   exempt_file_path[_len+5] = '\0';
+   strlcat(exempt_file_path, ".lsae", sizeof(exempt_file_path));
 
    /* Check whether 'standalone exempt' file exists */
    is_exempt = path_is_valid(exempt_file_path);

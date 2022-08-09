@@ -745,7 +745,7 @@ void retroarch_path_set_redirect(settings_t *settings)
          {
             /* Append content directory name to save location */
             if (sort_savefiles_by_content_enable)
-               fill_pathname_join_special(
+               fill_pathname_join(
                      new_savefile_dir,
                      old_savefile_dir,
                      content_dir_name,
@@ -778,7 +778,7 @@ void retroarch_path_set_redirect(settings_t *settings)
          {
             /* Append content directory name to savestate location */
             if (sort_savestates_by_content_enable)
-               fill_pathname_join_special(
+               fill_pathname_join(
                      new_savestate_dir,
                      old_savestate_dir,
                      content_dir_name,
@@ -4095,7 +4095,7 @@ static void retroarch_print_version(void)
 #else
    printf("\n");
 #endif
-   retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, str, sizeof(str), 0);
+   retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, str, sizeof(str));
    strlcat(str, " Built: " __DATE__, sizeof(str));
    fprintf(stdout, "%s\n", str);
 }
@@ -4407,7 +4407,7 @@ static void retroarch_parse_input_libretro_path(const char *path)
           !string_is_equal(path_ext, core_ext))
          goto end;
 
-      fill_pathname_join_special(tmp_path, settings->paths.directory_libretro,
+      fill_pathname_join(tmp_path, settings->paths.directory_libretro,
             path, sizeof(tmp_path));
 
       if (string_is_empty(tmp_path))
@@ -4425,7 +4425,6 @@ static void retroarch_parse_input_libretro_path(const char *path)
    }
    else
    {
-      size_t _len;
       /* If path has no extension and contains no path
        * delimiters, check if it is a core 'name', matching
        * an existing file in the cores directory */
@@ -4434,22 +4433,11 @@ static void retroarch_parse_input_libretro_path(const char *path)
 
       command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
 
-      _len = strlcpy(tmp_path, path, sizeof(tmp_path));
+      strlcpy(tmp_path, path, sizeof(tmp_path));
 
       if (!string_ends_with_size(tmp_path, "_libretro",
             strlen(tmp_path), STRLEN_CONST("_libretro")))
-      {
-         tmp_path[_len  ] = '_';
-         tmp_path[_len+1] = 'l';
-         tmp_path[_len+2] = 'i';
-         tmp_path[_len+3] = 'b';
-         tmp_path[_len+4] = 'r';
-         tmp_path[_len+5] = 'e';
-         tmp_path[_len+6] = 't';
-         tmp_path[_len+7] = 'r';
-         tmp_path[_len+8] = 'o';
-         tmp_path[_len+9] = '\0';
-      }
+         strlcat(tmp_path, "_libretro", sizeof(tmp_path));
 
       if (!core_info_find(tmp_path, &core_info) ||
           string_is_empty(core_info->path))
@@ -4865,7 +4853,7 @@ static bool retroarch_parse_input_and_config(
                   strlcpy(video_st->cli_shader_path, optarg,
                         sizeof(video_st->cli_shader_path));
                else
-                  fill_pathname_join_special(video_st->cli_shader_path,
+                  fill_pathname_join(video_st->cli_shader_path,
                         settings->paths.directory_video_shader,
                         optarg, sizeof(video_st->cli_shader_path));
 #endif
@@ -5296,10 +5284,9 @@ bool retroarch_main_init(int argc, char *argv[])
 
          if (!string_is_empty(cpu_model))
          {
-            size_t _len        = strlcat(str_output, FILE_PATH_LOG_INFO " CPU Model Name: ", sizeof(str_output));
-            _len               = strlcat(str_output, cpu_model, sizeof(str_output));
-            str_output[_len  ] = '\n';
-            str_output[_len+1] = '\0';
+            strlcat(str_output, FILE_PATH_LOG_INFO " CPU Model Name: ", sizeof(str_output));
+            strlcat(str_output, cpu_model, sizeof(str_output));
+            strlcat(str_output, "\n", sizeof(str_output));
          }
 
          RARCH_LOG_OUTPUT("%s", str_output);
@@ -5307,7 +5294,7 @@ bool retroarch_main_init(int argc, char *argv[])
       {
          char str_output[256];
          char str[128];
-         retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str), 0);
+         retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));
 
 #ifdef HAVE_GIT_VERSION
          snprintf(str_output, sizeof(str_output),
@@ -5946,7 +5933,7 @@ bool retroarch_override_setting_is_set(
 }
 
 int retroarch_get_capabilities(enum rarch_capabilities type,
-      char *s, size_t len, size_t _len)
+      char *s, size_t len)
 {
    switch (type)
    {
@@ -5955,170 +5942,41 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
             uint64_t cpu = cpu_features_get();
 
             if (cpu & RETRO_SIMD_MMX)
-            {
-               s[_len++] = ' ';
-               s[_len++] = 'M';
-               s[_len++] = 'M';
-               s[_len++] = 'X';
-               s[_len+1] = '\0';
-            }
+               strlcat(s, " MMX", len);
             if (cpu & RETRO_SIMD_MMXEXT)
-            {
-               s[_len++] = ' ';
-               s[_len++] = 'M';
-               s[_len++] = 'M';
-               s[_len++] = 'X';
-               s[_len++] = 'E';
-               s[_len++] = 'X';
-               s[_len++] = 'T';
-               s[_len+1] = '\0';
-            }
+               strlcat(s, " MMXEXT", len);
             if (cpu & RETRO_SIMD_SSE)
-            {
-               s[_len++] = ' ';
-               s[_len++] = 'S';
-               s[_len++] = 'S';
-               s[_len++] = 'E';
-               s[_len+1] = '\0';
-            }
+               strlcat(s, " SSE", len);
             if (cpu & RETRO_SIMD_SSE2)
-            {
-               s[_len++] = ' ';
-               s[_len++] = 'S';
-               s[_len++] = 'S';
-               s[_len++] = 'E';
-               s[_len++] = '2';
-               s[_len+1] = '\0';
-            }
+               strlcat(s, " SSE2", len);
             if (cpu & RETRO_SIMD_SSE3)
-            {
-               s[_len++] = ' ';
-               s[_len++] = 'S';
-               s[_len++] = 'S';
-               s[_len++] = 'E';
-               s[_len++] = '3';
-               s[_len+1] = '\0';
-            }
+               strlcat(s, " SSE3", len);
             if (cpu & RETRO_SIMD_SSE4)
-            {
-               s[_len++] = ' ';
-               s[_len++] = 'S';
-               s[_len++] = 'S';
-               s[_len++] = 'E';
-               s[_len++] = '4';
-               s[_len+1] = '\0';
-            }
+               strlcat(s, " SSE4", len);
             if (cpu & RETRO_SIMD_SSE42)
-            {
-               s[_len++] = ' ';
-               s[_len++] = 'S';
-               s[_len++] = 'S';
-               s[_len++] = 'E';
-               s[_len++] = '4';
-               s[_len++] = '.';
-               s[_len++] = '2';
-               s[_len+1] = '\0';
-            }
+               strlcat(s, " SSE4.2", len);
             if (cpu & RETRO_SIMD_AES)
-            {
-               s[_len++] = ' ';
-               s[_len++] = 'A';
-               s[_len++] = 'E';
-               s[_len++] = 'S';
-               s[_len+1] = '\0';
-            }
+               strlcat(s, " AES", len);
             if (cpu & RETRO_SIMD_AVX)
-            {
-               s[_len++] = ' ';
-               s[_len++] = 'A';
-               s[_len++] = 'V';
-               s[_len++] = 'X';
-               s[_len+1] = '\0';
-            }
+               strlcat(s, " AVX", len);
             if (cpu & RETRO_SIMD_AVX2)
-            {
-               s[_len++] = ' ';
-               s[_len++] = 'A';
-               s[_len++] = 'V';
-               s[_len++] = 'X';
-               s[_len++] = '2';
-               s[_len+1] = '\0';
-            }
+               strlcat(s, " AVX2", len);
             if (cpu & RETRO_SIMD_NEON)
-            {
-               s[_len++] = ' ';
-               s[_len++] = 'N';
-               s[_len++] = 'E';
-               s[_len++] = 'O';
-               s[_len++] = 'N';
-               s[_len+1] = '\0';
-            }
+               strlcat(s, " NEON", len);
             if (cpu & RETRO_SIMD_VFPV3)
-            {
-               s[_len++] = ' ';
-               s[_len++] = 'V';
-               s[_len++] = 'F';
-               s[_len++] = 'P';
-               s[_len++] = 'v';
-               s[_len++] = '3';
-               s[_len+1] = '\0';
-            }
+               strlcat(s, " VFPv3", len);
             if (cpu & RETRO_SIMD_VFPV4)
-            {
-               s[_len++] = ' ';
-               s[_len++] = 'V';
-               s[_len++] = 'F';
-               s[_len++] = 'P';
-               s[_len++] = 'v';
-               s[_len++] = '4';
-               s[_len+1] = '\0';
-            }
+               strlcat(s, " VFPv4", len);
             if (cpu & RETRO_SIMD_VMX)
-            {
-               s[_len++] = ' ';
-               s[_len++] = 'V';
-               s[_len++] = 'M';
-               s[_len++] = 'X';
-               s[_len+1] = '\0';
-            }
+               strlcat(s, " VMX", len);
             if (cpu & RETRO_SIMD_VMX128)
-            {
-               s[_len++] = ' ';
-               s[_len++] = 'V';
-               s[_len++] = 'M';
-               s[_len++] = 'X';
-               s[_len++] = '1';
-               s[_len++] = '2';
-               s[_len++] = '8';
-               s[_len+1] = '\0';
-            }
+               strlcat(s, " VMX128", len);
             if (cpu & RETRO_SIMD_VFPU)
-            {
-               s[_len++] = ' ';
-               s[_len++] = 'V';
-               s[_len++] = 'F';
-               s[_len++] = 'P';
-               s[_len++] = 'U';
-               s[_len+1] = '\0';
-            }
+               strlcat(s, " VFPU", len);
             if (cpu & RETRO_SIMD_PS)
-            {
-               s[_len++] = ' ';
-               s[_len++] = 'P';
-               s[_len++] = 'S';
-               s[_len+1] = '\0';
-            }
+               strlcat(s, " PS", len);
             if (cpu & RETRO_SIMD_ASIMD)
-            {
-               s[_len++] = ' ';
-               s[_len++] = 'A';
-               s[_len++] = 'S';
-               s[_len++] = 'I';
-               s[_len++] = 'M';
-               s[_len++] = 'D';
-               s[_len+1] = '\0';
-            }
-            s[_len++] = '\0';
+               strlcat(s, " ASIMD", len);
          }
          break;
       case RARCH_CAPABILITIES_COMPILER:

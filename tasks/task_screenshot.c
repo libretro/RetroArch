@@ -264,13 +264,9 @@ static bool screenshot_dump(
    {
       if (savestate)
       {
-         size_t len             = strlcpy(state->filename,
+         strlcpy(state->filename,
                name_base, sizeof(state->filename));
-         state->filename[len  ] = '.';
-         state->filename[len+1] = 'p';
-         state->filename[len+2] = 'n';
-         state->filename[len+3] = 'g';
-         state->filename[len+4] = '\0';
+         strlcat(state->filename, ".png", sizeof(state->filename));
       }
       else
       {
@@ -288,7 +284,7 @@ static bool screenshot_dump(
                char content_dir_name[PATH_MAX_LENGTH];
                fill_pathname_parent_dir_name(content_dir_name,
                      content_dir, sizeof(content_dir_name));
-               fill_pathname_join_special(
+               fill_pathname_join(
                      new_screenshot_dir,
                      screenshot_dir,
                      content_dir_name,
@@ -324,14 +320,10 @@ static bool screenshot_dump(
          }
          else
          {
-            size_t len             = strlcpy(
+            strlcpy(
                   state->shotname, path_basename_nocompression(name_base),
                   sizeof(state->shotname));
-            state->shotname[len  ] = '.';
-            state->shotname[len+1] = 'p';
-            state->shotname[len+2] = 'n';
-            state->shotname[len+3] = 'g';
-            state->shotname[len+4] = '\0';
+            strlcat(state->shotname, ".png", sizeof(state->shotname));
          }
 
          if (  string_is_empty(new_screenshot_dir) || 
@@ -339,7 +331,7 @@ static bool screenshot_dump(
             fill_pathname_basedir(new_screenshot_dir, name_base,
                   sizeof(new_screenshot_dir));
 
-         fill_pathname_join_special(state->filename, new_screenshot_dir,
+         fill_pathname_join(state->filename, new_screenshot_dir,
                state->shotname, sizeof(state->filename));
 
          /* Create screenshot directory, if required */

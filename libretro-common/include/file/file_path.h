@@ -474,39 +474,10 @@ void fill_pathname_resolve_relative(char *out_path, const char *in_refpath,
  * - calls fill_pathname_slash()
  * - calls strlcat
  *
- * Deprecated. Use fill_pathname_join_special() instead
- * if you can ensure @dir != @out_path
- *
  * @return Length of the string copied into @out_path
  **/
 size_t fill_pathname_join(char *out_path, const char *dir,
       const char *path, size_t size);
-
-/**
- * fill_pathname_join_special:
- * @out_path           : output path
- * @dir                : directory. Cannot be identical to @out_path
- * @path               : path
- * @size               : size of output path
- *
- *
- * Specialized version of fill_pathname_join.
- * Unlike fill_pathname_join(),
- * @dir and @out_path CANNOT be identical.
- *
- * Joins a directory (@dir) and path (@path) together.
- * Makes sure not to get two consecutive slashes
- * between directory and path.
- *
- * Hidden non-leaf function cost: 
- * - calls strlcpy
- * - calls find_last_slash()
- * - calls strlcat
- *
- * @return Length of the string copied into @out_path
- **/
-size_t fill_pathname_join_special(char *out_path,
-      const char *dir, const char *path, size_t size);
 
 size_t fill_pathname_join_special_ext(char *out_path,
       const char *dir,  const char *path,

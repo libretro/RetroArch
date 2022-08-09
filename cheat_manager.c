@@ -171,13 +171,9 @@ bool cheat_manager_save(
       strlcpy(cheats_file, path, sizeof(cheats_file));
    else
    {
-      size_t len         = fill_pathname_join_special(cheats_file,
+      fill_pathname_join(cheats_file,
             cheat_database, path, sizeof(cheats_file));
-      cheats_file[len  ] = '.';
-      cheats_file[len+1] = 'c';
-      cheats_file[len+2] = 'h';
-      cheats_file[len+3] = 't';
-      cheats_file[len+4] = '\0';
+      strlcat(cheats_file, ".cht", sizeof(cheats_file));
    }
 
    if (!overwrite)
@@ -723,7 +719,7 @@ static bool cheat_manager_get_game_specific_filename(
          string_is_empty(game_name))
       return false;
 
-   fill_pathname_join_special(s1,
+   fill_pathname_join(s1,
          path_cheat_database, core_name,
          sizeof(s1));
 
@@ -734,7 +730,7 @@ static bool cheat_manager_get_game_specific_filename(
          path_mkdir(s1);
    }
 
-   fill_pathname_join_special(s, s1, game_name, len);
+   fill_pathname_join(s, s1, game_name, len);
 
    return true;
 }
