@@ -1934,7 +1934,7 @@ static void core_info_list_resolve_all_extensions(
    core_info_list->all_ext[_len+1] = 'i';
    core_info_list->all_ext[_len+2] = 'p';
    core_info_list->all_ext[_len+3] = '|';
-   core_info_list->all_ext[_len+3] = '\0';
+   core_info_list->all_ext[_len+4] = '\0';
 #endif
 }
 
