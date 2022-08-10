@@ -787,10 +787,6 @@ bool patch_content(
        * for subsequent patches starts at 1 */
       size_t patch_index     = 1;
 
-      name_ips_indexed[0] = '\0';
-      name_bps_indexed[0] = '\0';
-      name_ups_indexed[0] = '\0';
-
       strlcpy(name_ips_indexed, name_ips, (name_ips_len + 1) * sizeof(char));
       strlcpy(name_bps_indexed, name_bps, (name_bps_len + 1) * sizeof(char));
       strlcpy(name_ups_indexed, name_ups, (name_ups_len + 1) * sizeof(char));
