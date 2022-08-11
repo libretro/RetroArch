@@ -620,11 +620,15 @@ char* rzipstream_gets(rzipstream_t *stream, char *s, size_t len)
       c = rzipstream_getc(stream);
 
       /* Check for newline and EOF */
-      if ((c == '\n') || (c == EOF))
+      if (c == EOF)
          break;
 
       /* Copy character to string buffer */
       *str_ptr++ = c;
+
+      /* Check for newline and EOF */
+      if (c == '\n')
+          break;
    }
 
    /* Add NUL termination */
