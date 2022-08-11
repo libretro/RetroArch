@@ -747,7 +747,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_chat_color_msg,        MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_allow_pausing,         MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_allow_slaves,          MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_require_slaves,        MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_stateless_mode,        MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_check_frames,          MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_nat_traversal,         MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_stdin_cmd_enable,              MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE)
@@ -3300,9 +3299,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_require_slaves);
-            break;
-         case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_stateless_mode);
             break;
          case MENU_ENUM_LABEL_NETPLAY_PASSWORD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_password);

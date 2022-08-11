@@ -995,14 +995,6 @@ MSG_HASH(
    "Allow players to pause during net-play."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
-   "Net-play Stateless Mode"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,
-   "Start net-play in a mode not requiring save states. A very fast network is required, but no rewinding is performed, so there will be no net-play jitter."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
    "Net-play Check Frames"
    )

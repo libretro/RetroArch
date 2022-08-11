@@ -3399,14 +3399,6 @@ MSG_HASH(
    "Запустити мережеву гру в режимі споглядача."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
-   "Режим без стану у мережевій грі"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,
-   "Запускати мережеву гру в режимі, який не вимагає збереження станів. Потрібна дуже швидка мережа, але перемотування не виконується, тому не буде тремтіння мережевої гри."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
    "Перевірка кадрів мережевою грою"
    )

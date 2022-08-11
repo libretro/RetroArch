@@ -5683,14 +5683,6 @@ MSG_HASH(
    "슬레이브 모드가 아닌 연결을 허용하지 않습니다. 낮은 성능의 컴퓨터와 매우 빠른 네트워크가 있는 경우를 제외하고는 권장하지 않습니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
-   "넷플레이 상태저장금지 모드"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,
-   "상태저장이 필요 없는 모드로 넷플레이를 실행할지 여부를 선택합니다. 매우 빠른 네트워크가 필요하지만 뒤로 감기가 수행되지 않아 지터링이 발생하지 않습니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
    "넷플레이 체크 프레임"
    )

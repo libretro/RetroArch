@@ -5611,14 +5611,6 @@ MSG_HASH(
    "Non consentire connessioni non in modalità slave. Non consigliato, tranne per reti molto veloci con macchine molto deboli."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
-   "Modalità senza stato del Netplay"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,
-   "Avvia netplay in una modalità che non richiede stati di salvataggio. È necessaria una rete molto veloce, ma non viene eseguito alcun riavvolgimento, quindi non ci sarà alcun jitter del netplay."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
    "Controllo Netplay Frames"
    )

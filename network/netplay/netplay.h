@@ -277,7 +277,6 @@ typedef struct
    bool has_set_netplay_mode;
    bool has_set_netplay_ip_address;
    bool has_set_netplay_ip_port;
-   bool has_set_netplay_stateless_mode;
    bool has_set_netplay_check_frames;
 } net_driver_state_t;
 

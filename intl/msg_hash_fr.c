@@ -1712,15 +1712,6 @@ int msg_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Non recommandé sauf pour les réseaux très rapides \n"
                              "avec des machines très faibles. \n");
             break;
-        case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE:
-            snprintf(s, len,
-                     "Faire tourner le jeu en réseau dans un mode\n"
-                             "ne nécessitant pas de sauvegardes instantanées. \n"
-                             " \n"
-                             "Si cette option est activée, un réseau très rapide est requis,\n"
-                             "mais aucun rembobinage n'est effectué. Il n'y aura donc\n"
-                             "pas de variations de la latence sur le jeu en réseau.\n");
-            break;
         case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
             snprintf(s, len,
                      "Fréquence en images avec laquelle le jeu\n"

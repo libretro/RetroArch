@@ -5391,14 +5391,6 @@ MSG_HASH(
    "不允许非从属模式连接。一般不推荐，除非您的网络极快但硬件性能极差。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
-   "联机无状态模式"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,
-   "在没有即时存档的模式下开始联机游戏。需要非常快的网络，但是不进行回溯处理，因此不会有联机卡顿。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
    "在线游戏检查帧数"
    )

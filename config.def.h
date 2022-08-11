@@ -1228,9 +1228,6 @@ static const bool netplay_allow_slaves = true;
 /* Require connections only in slave mode */
 static const bool netplay_require_slaves = false;
 
-/* Netplay without savestates/rewind */
-static const bool netplay_stateless_mode = false;
-
 /* When being client over netplay, use keybinds for
  * user 1 rather than user 2. */
 static const bool netplay_client_swap_input = true;

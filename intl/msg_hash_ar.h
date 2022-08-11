@@ -3795,10 +3795,6 @@ MSG_HASH(
    "عدم السماح للعملاء في وضع غير الرق"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
-   "وضع عديم الجنسية للشبكة"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
    "إطارات التحقق من الشبكة"
    )

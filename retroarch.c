@@ -262,7 +262,6 @@
 enum
 {
    RA_OPT_MENU = 256, /* must be outside the range of a char */
-   RA_OPT_STATELESS,
    RA_OPT_CHECK_FRAMES,
    RA_OPT_PORT,
    RA_OPT_SPECTATE,
@@ -3473,9 +3472,6 @@ void retroarch_override_setting_set(
       case RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT:
          net_st->has_set_netplay_ip_port = true;
          break;
-      case RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE:
-         net_st->has_set_netplay_stateless_mode = true;
-         break;
       case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
          net_st->has_set_netplay_check_frames = true;
          break;
@@ -3549,9 +3545,6 @@ void retroarch_override_setting_unset(
          break;
       case RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT:
          net_st->has_set_netplay_ip_port = false;
-         break;
-      case RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE:
-         net_st->has_set_netplay_stateless_mode = false;
          break;
       case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
          net_st->has_set_netplay_check_frames = false;
@@ -4538,7 +4531,6 @@ static bool retroarch_parse_input_and_config(
 #ifdef HAVE_NETWORKING
       { "host",               0, NULL, 'H' },
       { "connect",            1, NULL, 'C' },
-      { "stateless",          0, NULL, RA_OPT_STATELESS },
       { "check-frames",       1, NULL, RA_OPT_CHECK_FRAMES },
       { "port",               1, NULL, RA_OPT_PORT },
 #ifdef HAVE_NETWORK_CMD
@@ -4931,14 +4923,6 @@ static bool retroarch_parse_input_and_config(
                      RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
                netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
                p_rarch->connect_host = strdup(optarg);
-               break;
-
-            case RA_OPT_STATELESS:
-               configuration_set_bool(settings,
-                     settings->bools.netplay_stateless_mode, true);
-
-               retroarch_override_setting_set(
-                     RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE, NULL);
                break;
 
             case RA_OPT_CHECK_FRAMES:
@@ -5922,8 +5906,6 @@ bool retroarch_override_setting_is_set(
          return net_st->has_set_netplay_ip_address;
       case RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT:
          return net_st->has_set_netplay_ip_port;
-      case RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE:
-         return net_st->has_set_netplay_stateless_mode;
       case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
          return net_st->has_set_netplay_check_frames;
 #endif

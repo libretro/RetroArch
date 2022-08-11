@@ -2607,10 +2607,6 @@ MSG_HASH(
    "Palavra-passe do servidor para espectador"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
-   "Modo sem estado"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
    "Verificação dos fotogramas de Netplay"
    )

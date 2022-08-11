@@ -5579,14 +5579,6 @@ MSG_HASH(
    "Zakázat připojení, která nejsou v podřízeném režimu. Nedoporučuje se s výjimkou velmi rychlých sítí s velmi slabými stroji."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
-   "Bezstavový Režim Netplay"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,
-   "Spusťte hru po síti v režimu, který nevyžaduje uložení pozic. Je vyžadována velmi rychlá síť, ale neprovádí se žádné převíjení, takže nedochází k žádnému trhání při přehrávání v síti."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
    "Kontrolní Snímky Netplay"
    )

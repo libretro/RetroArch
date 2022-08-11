@@ -2907,10 +2907,6 @@ MSG_HASH(
    "伺服器圍觀的密碼"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
-   "連線遊戲無狀態模式"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
    "連線遊戲檢查幀數"
    )
