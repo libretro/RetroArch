@@ -1138,10 +1138,6 @@ static void netplay_handshake_ready(netplay_t *netplay,
    if (!netplay->is_server || settings->bools.notification_show_netplay_extra)
       runloop_msg_queue_push(msg, 1, 180, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-   /* Unstall if we were waiting for this */
-   if (netplay->stall == NETPLAY_STALL_NO_CONNECTION)
-      netplay->stall = NETPLAY_STALL_NONE;
 }
 
 /**
@@ -3568,16 +3564,17 @@ static struct netplay_connection *allocate_connection(netplay_t *netplay)
 /**
  * netplay_sync_pre_frame
  * @netplay              : pointer to netplay object
- * @disconnect           : disconnect netplay
  *
  * Pre-frame for Netplay synchronization.
  */
-static bool netplay_sync_pre_frame(netplay_t *netplay, bool *disconnect)
+static bool netplay_sync_pre_frame(netplay_t *netplay)
 {
+   bool ret = true;
+
    if (netplay->run_frame_count > 0 && netplay_delta_frame_ready(netplay,
          &netplay->buffer[netplay->run_ptr], netplay->run_frame_count))
    {
-      /* Don't serialize until it's safe */
+      /* Don't serialize until it's safe. */
       if (!(netplay->quirks & NETPLAY_QUIRK_INITIALIZATION))
       {
          retro_ctx_serialize_info_t serial_info = {0};
@@ -3618,7 +3615,7 @@ static bool netplay_sync_pre_frame(netplay_t *netplay, bool *disconnect)
          }
          else
          {
-            *disconnect = true;
+            ret = false;
             goto process;
          }
       }
@@ -3634,12 +3631,13 @@ static bool netplay_sync_pre_frame(netplay_t *netplay, bool *disconnect)
          new_fd = handle_mitm_connection(netplay, &new_addr, &server_error);
       else
          new_fd = handle_connection(netplay, &new_addr, &server_error);
-
       if (server_error)
       {
-         *disconnect = true;
+         ret = false;
+         goto process;
       }
-      else if (new_fd >= 0)
+
+      if (new_fd >= 0)
       {
          struct netplay_connection *connection;
 
@@ -3688,7 +3686,7 @@ static bool netplay_sync_pre_frame(netplay_t *netplay, bool *disconnect)
 process:
    input_poll_net(netplay);
 
-   return netplay->stall != NETPLAY_STALL_NO_CONNECTION;
+   return ret;
 }
 
 /**
@@ -7739,9 +7737,6 @@ static bool netplay_poll(netplay_t *netplay, bool block_libretro_input)
                connection->stall_frame--;
          }
          break;
-      case NETPLAY_STALL_NO_CONNECTION:
-         /* We certainly haven't fixed this. */
-         break;
       default:
          /* Not stalling. */
          break;
@@ -8365,14 +8360,11 @@ static void netplay_disconnect(netplay_t *netplay)
  * Pre-frame for Netplay.
  * Call this before running retro_run().
  *
- * Returns: true (1) if the frontend is cleared to emulate the frame,
- * false (0) if we're stalled or paused
+ * Returns: true if the frontend is cleared to emulate the frame,
+ * false if we're stalled or paused
  **/
 static bool netplay_pre_frame(netplay_t *netplay)
 {
-   bool force_disconnect = false;
-   bool sync_stalled     = false;
-
    /* FIXME: This is an ugly way to learn we're not paused anymore */
    if (netplay->local_paused)
       netplay_frontend_paused(netplay, false);
@@ -8381,9 +8373,7 @@ static bool netplay_pre_frame(netplay_t *netplay)
    if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
       netplay_try_init_serialization(netplay);
 
-   sync_stalled = !netplay_sync_pre_frame(netplay, &force_disconnect);
-
-   if (force_disconnect)
+   if (!netplay_sync_pre_frame(netplay))
    {
       netplay_disconnect(netplay);
       return true;
@@ -8411,14 +8401,14 @@ static bool netplay_pre_frame(netplay_t *netplay)
          if (++netplay->reannounce % ANNOUNCE_FRAMES == 0)
             netplay_announce(netplay);
       }
-      /* Make sure that if announcement is turned on mid-game,
-         it gets announced */
       else
+         /* Make sure that if announcement is turned on mid-game,
+            it gets announced. */
          netplay->reannounce = -1;
    }
    else
    {
-      /* If we're disconnected, deinitialize */
+      /* If we're disconnected, deinitialize. */
       if (!netplay->connections[0].active)
       {
          netplay_disconnect(netplay);
@@ -8429,11 +8419,11 @@ static bool netplay_pre_frame(netplay_t *netplay)
          request_ping(netplay, &netplay->connections[0]);
    }
 
-   if (sync_stalled || ((netplay->stall || netplay->remote_paused) &&
-         (!netplay->is_server || netplay->connected_players > 1)))
+   if ((netplay->stall || netplay->remote_paused) &&
+         (!netplay->is_server || netplay->connected_players > 1))
    {
       /* We may have received data even if we're stalled,
-       * so run post-frame sync */
+       * so run post-frame sync. */
       netplay_sync_post_frame(netplay, true);
       return false;
    }
