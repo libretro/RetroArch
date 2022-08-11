@@ -258,10 +258,7 @@ enum rarch_netplay_stall_reason
    NETPLAY_STALL_INPUT_LATENCY,
 
    /* The server asked us to stall */
-   NETPLAY_STALL_SERVER_REQUESTED,
-
-   /* We have no connection and must have one to proceed */
-   NETPLAY_STALL_NO_CONNECTION
+   NETPLAY_STALL_SERVER_REQUESTED
 };
 
 /* Input state for a particular client-device pair */
