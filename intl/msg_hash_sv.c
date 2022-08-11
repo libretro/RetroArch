@@ -1793,15 +1793,6 @@ int msg_hash_get_help_sv_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Not recommended except for very fast networks \n"
                              "with very weak machines.");
             break;
-        case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE:
-            snprintf(s, len,
-                     "Whether to run netplay in a mode not requiring"
-                             "save states. \n"
-                             " \n"
-                             "If set to true, a very fast network is required, \n"
-                             "but no rewinding is performed, so there will be \n"
-                             "no netplay jitter. \n");
-            break;
         case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
             snprintf(s, len,
                      "The frequency in frames with which netplay \n"

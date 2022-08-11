@@ -1766,16 +1766,6 @@ int msg_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Não recomendado, exceto para redes muito \n"
                              "rápidas com máquinas muito lentas. \n");
             break;
-        case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE:
-            snprintf(s, len,
-                     "Define se o jogo em rede deve executar em um modo \n"
-                             "que não utilize jogos salvos. \n"
-                             " \n"
-                             "Se definido como verdadeiro, uma rede muito \n"
-                             "rápida é necessária, mas Voltar Atrás não é \n"
-                             "permitido, então não haverá oscilação \n"
-                             "no jogo em rede.");
-            break;
         case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
             snprintf(s, len,
                      "Frequência em quadros na qual o jogo em rede \n"

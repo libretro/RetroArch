@@ -5439,14 +5439,6 @@ MSG_HASH(
    "Estä yhteydet jotka eivät ole slave-tilassa. Ei suositella, paitsi erittäin nopeissa verkoissa, joissa erittäin heikot koneet."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
-   "Pelitilaton verkkopelin tila"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,
-   "Käynnistä verkkopeli tilassa, joka ei vaadi pelitilatallennuksia. Erittäin nopea verkkoyhteys tarvitaan, mutta taaksekelausta ei suoriteta, joten verkkopeli ei takkua."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
    "Verkkopelin tarkistuskuvat"
    )

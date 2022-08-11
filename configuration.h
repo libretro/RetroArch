@@ -769,7 +769,6 @@ typedef struct settings
       bool netplay_allow_pausing;
       bool netplay_allow_slaves;
       bool netplay_require_slaves;
-      bool netplay_stateless_mode;
       bool netplay_nat_traversal;
       bool netplay_use_mitm_server;
       bool netplay_request_devices[MAX_USERS];

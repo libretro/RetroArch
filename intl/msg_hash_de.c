@@ -1597,15 +1597,6 @@ int msg_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Nicht empfohlen, außer für sehr schnelle \n"
                              "Netzwerke mit sehr schwachen Geräten. \n");
             break;
-      case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE: /* Maybe FIXME*/
-         snprintf(s, len,
-               "Legt fest, ob Netplay in einem Modus laufen soll, der keine\n"
-               "Savestates benötigt. \n"
-               " \n"
-               "Wenn diese Option eingeschaltet wird, wird ein sehr \n"
-               "schnelles Netzwerk benötigt. Da kein Rücklauf benötigt wird, \n"
-               "tritt keine Netplay-Verzögerung auf.\n");
-         break;
       case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
          {
             /* Work around C89 limitations */
