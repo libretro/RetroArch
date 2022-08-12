@@ -543,10 +543,6 @@ MSG_HASH(
    "Características da CPU"
    )
 MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   "Arquitectura da CPU:"
-   )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "Núcleos da CPU:"
    )
@@ -821,6 +817,10 @@ MSG_HASH(
    "Xénero"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
+   "Logros"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
    "Editor"
    )
@@ -855,14 +855,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
    "Tema de Edge Magazine"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
-   "Mes, data de lanzamento"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
-   "Ano, data de lanzamento"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
@@ -1144,6 +1136,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
    "Cambia os directorios predeterminados onde se atopan os ficheiros."
    )
+
+#ifdef HAVE_MIST
+#endif
 
 /* Settings > Drivers */
 
@@ -1444,6 +1439,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    "Elixe qué monitor usar."
    )
+#if defined (WIIU)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
    "Rotación de vídeo"
@@ -1580,6 +1577,7 @@ MSG_HASH(
 /* Settings > Input > Menu Controls */
 
 
+
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(
@@ -1609,7 +1607,15 @@ MSG_HASH(
    )
 #ifndef HAVE_DYNAMIC
 #endif
+#ifdef HAVE_MIST
 
+
+
+
+
+
+
+#endif
 /* Settings > Configuration */
 
 
@@ -1687,6 +1693,7 @@ MSG_HASH(
 /* Settings > User Interface > Views > Settings */
 
 
+
 /* Settings > User Interface > Appearance */
 
 
@@ -1761,6 +1768,13 @@ MSG_HASH(
    "Listaxes de reprodución"
    )
 
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+#endif
+
 /* Music */
 
 /* Music > Quick Menu */
@@ -1830,7 +1844,10 @@ MSG_HASH(
 /* Quick Menu > Controls */
 
 
-/* Quick Menu > Controls > Load Remap File */
+/* Quick Menu > Controls > Manage Remap Files */
+
+
+/* Quick Menu > Controls > Manage Remap Files > Load Remap File */
 
 
 /* Quick Menu > Cheats */
@@ -2129,6 +2146,7 @@ MSG_HASH(
 
 
 /* Notifications */
+
 
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,

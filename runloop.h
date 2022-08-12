@@ -219,6 +219,7 @@ struct runloop
    unsigned perf_ptr_libretro;
    unsigned subsystem_current_count;
    unsigned entry_state_slot;
+   unsigned video_swap_interval_auto;
 
    fastmotion_overrides_t fastmotion_override; /* float alignment */
 
@@ -232,7 +233,7 @@ struct runloop
 #endif
 
    char runtime_content_path_basename[8192];
-   char current_library_name[256];
+   char current_library_name[NAME_MAX_LENGTH];
    char current_library_version[256];
    char current_valid_extensions[256];
    char subsystem_path[256];
@@ -287,10 +288,12 @@ struct runloop
    bool has_variable_update;
    bool input_is_dirty;
    bool runahead_save_state_size_known;
-   bool request_fast_savestate;
    bool runahead_available;
    bool runahead_secondary_core_available;
    bool runahead_force_input_dirty;
+#endif
+#if defined(HAVE_RUNAHEAD) || defined(HAVE_NETWORKING)
+   bool request_fast_savestate;
 #endif
 #ifdef HAVE_PATCH
    bool patch_blocked;
@@ -414,6 +417,16 @@ float runloop_set_frame_limit(
 float runloop_get_fastforward_ratio(
       settings_t *settings,
       struct retro_fastforwarding_override *fastmotion_override);
+
+void runloop_set_video_swap_interval(
+      bool vrr_runloop_enable,
+      bool crt_switching_active,
+      unsigned swap_interval_config,
+      float audio_max_timing_skew,
+      float video_refresh_rate,
+      double input_fps);
+unsigned runloop_get_video_swap_interval(
+      unsigned swap_interval_config);
 
 void runloop_task_msg_queue_push(
       retro_task_t *task, const char *msg,

@@ -87,10 +87,11 @@ bool task_push_wifi_disable(retro_task_callback_t cb);
 bool task_push_wifi_disconnect(retro_task_callback_t cb);
 bool task_push_wifi_connect(retro_task_callback_t cb, void*);
 
-bool task_push_netplay_lan_scan(retro_task_callback_t cb);
+bool task_push_netplay_lan_scan(void (*cb)(const void*), unsigned timeout);
 
-bool task_push_netplay_crc_scan(uint32_t crc, char* name,
-      const char *hostname, const char *corename, const char* subsystem);
+bool task_push_netplay_crc_scan(uint32_t crc, const char *content,
+      const char *subsystem, const char *core, const char *hostname);
+bool task_push_netplay_content_reload(const char *hostname);
 
 bool task_push_netplay_nat_traversal(void *data, uint16_t port);
 bool task_push_netplay_nat_close(void *data);
@@ -111,6 +112,9 @@ void task_push_update_installed_cores(
       bool auto_backup, size_t auto_backup_history_size,
       const char *path_dir_libretro,
       const char *path_dir_core_assets);
+bool task_push_update_single_core(
+      const char *path_core, bool auto_backup, size_t auto_backup_history_size,
+      const char *path_dir_libretro, const char *path_dir_core_assets);
 #if defined(ANDROID)
 void *task_push_play_feature_delivery_core_install(
       core_updater_list_t* core_list,
@@ -229,7 +233,7 @@ struct screenshot_task_state
    unsigned pixel_format_type;
 
    char filename[PATH_MAX_LENGTH];
-   char shotname[256];
+   char shotname[NAME_MAX_LENGTH];
 
    bool bgr24;
    bool silence;
@@ -258,7 +262,7 @@ void path_init_savefile_new(void);
 extern const char* const input_builtin_autoconfs[];
 void input_autoconfigure_blissbox_override_handler(
       int vid, int pid, char *device_name, size_t len);
-void input_autoconfigure_connect(
+bool input_autoconfigure_connect(
       const char *name,
       const char *display_name,
       const char *driver,

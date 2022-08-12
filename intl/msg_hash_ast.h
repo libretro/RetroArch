@@ -45,6 +45,10 @@ MSG_HASH(
    "Esploración"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
+   "Nucleos independientes"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Importación"
    )
@@ -218,6 +222,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
    "Restola tol conteníu que concase cola base de datos per una interfaz de busca per estayes."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
+   "Nucleos independientes"
+   )
 
 /* Main Menu > Online Updater */
 
@@ -277,12 +285,32 @@ MSG_HASH(
 /* Main Menu > Information */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+   "Visualiza la información de los discos multimedia inxertaos."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
+   "Información de la rede"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
+   "Visualiza les interfaces de rede y les direiciones IP asociaes."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
    "Información del sistema"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
+   "Visualiza la información específica del preséu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
    "Xestor de bases de datos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
+   "Visualiza les bases de datos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
@@ -302,6 +330,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
    "Etiqueta del nucleu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
+   "Versión del nucleu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
@@ -366,9 +398,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
    "Carauterístiques de la CPU"
    )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   "Arquiteutura de la CPU:"
+   "Arquiteutura de la CPU"
    )
 MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
@@ -401,6 +433,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
    "Compatibilidá con LibretroDB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT,
+   "Compatibilidá cola interfaz de comandos"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT,
@@ -595,6 +631,38 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
    "Xéneru"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
+   "Llogros"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
+   "Categoría"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
+   "Llingua"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
+   "Rexón"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
+   "Puntuación"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
+   "Estilu artísticu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY,
+   "Estilu de xuegu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
+   "Perspeutiva"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
@@ -797,6 +865,9 @@ MSG_HASH(
    "Direutoriu"
    )
 
+#ifdef HAVE_MIST
+#endif
+
 /* Settings > Drivers */
 
 MSG_HASH(
@@ -847,6 +918,10 @@ MSG_HASH(
    "Mou en ventana"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   "Escala"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    "Sincronización"
    )
@@ -868,6 +943,8 @@ MSG_HASH(
 
 /* Settings > Video > Output */
 
+#if defined (WIIU)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
    "Orientación de la pantalla"
@@ -1074,12 +1151,20 @@ MSG_HASH(
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #endif
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
+   "Entrada de los sensores auxiliares"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
    "NON"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
    "SÍ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
+   "Detectar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
@@ -1099,6 +1184,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
    "Tolos usuarios controlen el menú"
    )
+
 
 /* Settings > Input > Hotkeys */
 
@@ -1197,7 +1283,19 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
    "Xestión de nucleos"
    )
+#ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
+   "Xestión de nucleos"
+   )
 
+
+
+
+
+
+
+#endif
 /* Settings > Configuration */
 
 MSG_HASH(
@@ -1407,6 +1505,7 @@ MSG_HASH(
 /* Settings > User Interface > Views > Settings */
 
 
+
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
@@ -1534,6 +1633,62 @@ MSG_HASH(
    "Tiempu d'execución:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE,
+   "segundu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
+   "segundos"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_MINUTES_SINGLE,
+   "minutu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_MINUTES_PLURAL,
+   "minutos"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_SINGLE,
+   "hora"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_PLURAL,
+   "hores"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_SINGLE,
+   "día"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_PLURAL,
+   "díes"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_WEEKS_SINGLE,
+   "selmana"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_WEEKS_PLURAL,
+   "selmanes"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_MONTHS_SINGLE,
+   "mes"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_MONTHS_PLURAL,
+   "meses"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_SINGLE,
+   "añu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_PLURAL,
+   "años"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
    "Fai xeres de caltenimientu nes llistes."
    )
@@ -1645,9 +1800,20 @@ MSG_HASH(
    "Llistes"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
+   "Puntos de guardáu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    "Caché"
    )
+
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+#endif
 
 /* Music */
 
@@ -1659,6 +1825,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS,
    "Agospiu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
+   "Sales con contraseña"
    )
 
 /* Netplay > Host */
@@ -1743,12 +1913,36 @@ MSG_HASH(
    "Pol xéneru"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,
-   "Pol orixe"
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ACHIEVEMENTS,
+   "Polos llogros"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CATEGORY,
+   "Pola categoría"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_LANGUAGE,
+   "Pola llingua"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,
    "Pola rexón"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SCORE,
+   "Pola puntuación"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_NARRATIVE,
+   "Pola narrativa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PERSPECTIVE,
+   "Pola perspeutiva"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,
+   "Pol orixe"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,
@@ -1831,8 +2025,16 @@ MSG_HASH(
    "Zarrar el conteníu"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_LIST,
+   "Puntos de guardáu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_LIST,
+   "Accede a les opciones de los puntos de guardáu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
-   "Opciones"
+   "Opciones del nucleu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
@@ -1866,7 +2068,10 @@ MSG_HASH(
 /* Quick Menu > Controls */
 
 
-/* Quick Menu > Controls > Load Remap File */
+/* Quick Menu > Controls > Manage Remap Files */
+
+
+/* Quick Menu > Controls > Manage Remap Files > Load Remap File */
 
 
 /* Quick Menu > Cheats */
@@ -1974,10 +2179,6 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
-   "Nun se puen activar los llogros con esti nucleu"
-)
 
 /* Quick Menu > Information */
 
@@ -2835,6 +3036,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
    "Les miniatures baxáronse con ésitu."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
+   "Opciones del nucleu"
+   )
 
 /* Unsorted */
 
@@ -3011,6 +3216,11 @@ MSG_HASH(
    "El to nomatu camudó a «%s»"
    )
 MSG_HASH(
+   MSG_NETPLAY_CLIENT_DEVICES,
+   "Preseos"
+   )
+
+MSG_HASH(
    MSG_FETCHING_CORE_LIST,
    "Diendo en cata de la llista de nucleos…"
    )
@@ -3052,7 +3262,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_COULD_NOT_OPEN_DATA_TRACK,
-   "nun se pudo abrir la pista de datos"
+   "Nun se pudo abrir la pista de datos"
    )
 MSG_HASH(
    MSG_COULD_NOT_READ_MOVIE_HEADER,

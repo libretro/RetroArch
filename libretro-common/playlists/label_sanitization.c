@@ -61,9 +61,11 @@ const char *region_strings[REGION_STRINGS_LENGTH] = {
    "(USA, Europe)"
 };
 
-/*
- * Does not work with nested blocks.
- */
+/**
+ * label_sanitize:
+ *
+ * NOTE: Does not work with nested blocks.
+ **/
 void label_sanitize(char *label, bool (*left)(char*), bool (*right)(char*))
 {
    bool copy = true;
@@ -77,9 +79,8 @@ void label_sanitize(char *label, bool (*left)(char*), bool (*right)(char*))
       {
          /* check for the start of the range */
          if ((*left)(&label[lindex]))
-            copy = false;
-
-         if (copy)
+            copy                = false;
+         else
             new_label[rindex++] = label[lindex];
       }
       else if ((*right)(&label[lindex]))

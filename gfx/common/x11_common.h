@@ -40,9 +40,6 @@ void x11_move_window(Display *dpy, Window win,
 /* Set icon, class, default stuff. */
 void x11_set_window_attr(Display *dpy, Window win);
 
-bool x11_create_input_context(Display *dpy, Window win, XIM *xim, XIC *xic);
-void x11_destroy_input_context(XIM *xim, XIC *xic);
-
 bool x11_get_metrics(void *data,
       enum display_metric_types type, float *value);
 

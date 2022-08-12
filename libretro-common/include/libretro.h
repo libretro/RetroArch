@@ -286,6 +286,9 @@ enum retro_language
    RETRO_LANGUAGE_INDONESIAN          = 24,
    RETRO_LANGUAGE_SWEDISH             = 25,
    RETRO_LANGUAGE_UKRAINIAN           = 26,
+   RETRO_LANGUAGE_CZECH               = 27,
+   RETRO_LANGUAGE_CATALAN_VALENCIA    = 28,
+   RETRO_LANGUAGE_CATALAN             = 29,
    RETRO_LANGUAGE_LAST,
 
    /* Ensure sizeof(enum) == sizeof(int) */
@@ -1756,6 +1759,12 @@ enum retro_mod
                                             * the frontend is attempting to call retro_run().
                                             */
 
+#define RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT (72 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* int * --
+                                            * Tells the core about the context the frontend is asking for savestate.
+                                            * (see enum retro_savestate_context)
+                                            */
+
 /* VFS functionality */
 
 /* File paths:
@@ -2991,6 +3000,35 @@ enum retro_pixel_format
 
    /* Ensure sizeof() == sizeof(int). */
    RETRO_PIXEL_FORMAT_UNKNOWN  = INT_MAX
+};
+
+enum retro_savestate_context
+{
+   /* Standard savestate written to disk. */
+   RETRO_SAVESTATE_CONTEXT_NORMAL                 = 0,
+
+   /* Savestate where you are guaranteed that the same instance will load the save state.
+    * You can store internal pointers to code or data.
+    * It's still a full serialization and deserialization, and could be loaded or saved at any time. 
+    * It won't be written to disk or sent over the network.
+    */
+   RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_INSTANCE = 1,
+
+   /* Savestate where you are guaranteed that the same emulator binary will load that savestate.
+    * You can skip anything that would slow down saving or loading state but you can not store internal pointers. 
+    * It won't be written to disk or sent over the network.
+    * Example: "Second Instance" runahead
+    */
+   RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_BINARY   = 2,
+
+   /* Savestate used within a rollback netplay feature.
+    * You should skip anything that would unnecessarily increase bandwidth usage.
+    * It won't be written to disk but it will be sent over the network.
+    */
+   RETRO_SAVESTATE_CONTEXT_ROLLBACK_NETPLAY       = 3,
+
+   /* Ensure sizeof() == sizeof(int). */
+   RETRO_SAVESTATE_CONTEXT_UNKNOWN                = INT_MAX
 };
 
 struct retro_message

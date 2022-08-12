@@ -63,7 +63,7 @@ struct gfx_widget_load_content_animation_state
    unsigned bg_width;
    unsigned bg_height;
 
-   gfx_timer_t timer;      /* float alignment */
+   float timer;      /* float alignment */
    float bg_x;
    float bg_y;
    float alpha;
@@ -293,8 +293,6 @@ bool gfx_widget_start_load_content_animation(void)
 
    char icon_path[PATH_MAX_LENGTH];
 
-   icon_path[0] = '\0';
-
    /* To ensure we leave the widget in a well defined
     * state, perform a reset before parsing variables */
    gfx_widget_load_content_animation_reset();
@@ -395,14 +393,17 @@ bool gfx_widget_start_load_content_animation(void)
 
          if (!string_is_empty(playlist_path))
          {
-            fill_pathname_base_noext(state->system_name, playlist_path,
+            size_t system_name_len;
+            fill_pathname_base(state->system_name, playlist_path,
                   sizeof(state->system_name));
+            path_remove_extension(state->system_name);
 
+            system_name_len = strlen(state->system_name);
             /* Exclude history and favourites playlists */
             if (string_ends_with_size(state->system_name, "_history",
-                     strlen(state->system_name), STRLEN_CONST("_history")) ||
+                     system_name_len, STRLEN_CONST("_history")) ||
                 string_ends_with_size(state->system_name, "_favorites",
-                     strlen(state->system_name), STRLEN_CONST("_favorites")))
+                     system_name_len, STRLEN_CONST("_favorites")))
                state->system_name[0] = '\0';
 
             /* Check whether a valid system name was found */
@@ -418,8 +419,11 @@ bool gfx_widget_start_load_content_animation(void)
    /* If we haven't yet set the content name,
     * use content file name as a fallback */
    if (!has_content)
-      fill_pathname_base_noext(state->content_name, content_path,
+   {
+      fill_pathname_base(state->content_name, content_path,
             sizeof(state->content_name));
+      path_remove_extension(state->content_name);
+   }
 
    /* Check whether system name has been set */
    if (!has_system)
@@ -441,12 +445,15 @@ bool gfx_widget_start_load_content_animation(void)
     * > Use db_name, if available */
    if (has_db_name)
    {
-      strlcpy(state->icon_file, state->system_name,
+      size_t len = strlcpy(state->icon_file, state->system_name,
             sizeof(state->icon_file));
-      strlcat(state->icon_file, ".png",
-            sizeof(state->icon_file));
+      state->icon_file[len]   = '.';
+      state->icon_file[len+1] = 'p';
+      state->icon_file[len+2] = 'n';
+      state->icon_file[len+3] = 'g';
+      state->icon_file[len+4] = '\0';
 
-      fill_pathname_join(icon_path,
+      fill_pathname_join_special(icon_path,
             state->icon_directory, state->icon_file,
             sizeof(icon_path));
 
@@ -472,15 +479,15 @@ bool gfx_widget_start_load_content_animation(void)
       if (!string_is_empty(core_db_name) &&
           !string_is_equal(core_db_name, state->system_name))
       {
-         state->icon_file[0] = '\0';
-         icon_path[0]        = '\0';
-
-         strlcpy(state->icon_file, core_db_name,
+         size_t len = strlcpy(state->icon_file, core_db_name,
                sizeof(state->icon_file));
-         strlcat(state->icon_file, ".png",
-               sizeof(state->icon_file));
+         state->icon_file[len]   = '.';
+         state->icon_file[len+1] = 'p';
+         state->icon_file[len+2] = 'n';
+         state->icon_file[len+3] = 'g';
+         state->icon_file[len+4] = '\0';
 
-         fill_pathname_join(icon_path,
+         fill_pathname_join_special(icon_path,
                state->icon_directory, state->icon_file,
                sizeof(icon_path));
 
@@ -492,12 +499,8 @@ bool gfx_widget_start_load_content_animation(void)
     *   use default 'retroarch' icon as a fallback */
    if (!state->has_icon)
    {
-      state->icon_file[0] = '\0';
-      icon_path[0]        = '\0';
-
-      strcpy_literal(state->icon_file, "retroarch.png");
-
-      fill_pathname_join(icon_path,
+      strlcpy(state->icon_file, "retroarch.png", sizeof(state->icon_file));
+      fill_pathname_join_special(icon_path,
             state->icon_directory, state->icon_file,
             sizeof(icon_path));
 
@@ -805,8 +808,9 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                   state->icon_texture,
                   icon_x,
                   state->icon_y,
-                  0.0f,
-                  1.0f,
+                  0.0f, /* rad */
+                  1.0f, /* cos(rad)   = cos(0)  = 1.0f */
+                  0.0f, /* sine(rad)  = sine(0) = 0.0f */
                   state->icon_color);
 
             if (dispctx && dispctx->blend_end)

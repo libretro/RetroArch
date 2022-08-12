@@ -40,6 +40,27 @@
 #ifndef _XBOX
 #include "../../ui/drivers/ui_win32_resource.h"
 #include "../../ui/drivers/ui_win32.h"
+
+#if (defined(_MSC_VER) && (_MSC_VER >= 1400)) || defined(__MINGW32__)
+#ifndef HAVE_CLIP_WINDOW
+#define HAVE_CLIP_WINDOW
+#endif
+#endif
+
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* Windows 2000 and higher */
+
+/* Supports taskbar */
+#ifndef HAVE_TASKBAR
+#define HAVE_TASKBAR
+#endif
+
+/* Supports window transparency */
+#ifndef HAVE_WINDOW_TRANSP
+#define HAVE_WINDOW_TRANSP
+#endif
+
+#endif
+
 #endif
 
 RETRO_BEGIN_DECLS
@@ -61,9 +82,13 @@ int win32_change_display_settings(const char *str, void *devmode_data,
 
 void create_wgl_context(HWND hwnd, bool *quit);
 
+#if defined(HAVE_VULKAN)
 void create_vk_context(HWND hwnd, bool *quit);
+#endif
 
+#if defined(HAVE_GDI)
 void create_gdi_context(HWND hwnd, bool *quit);
+#endif
 
 bool win32_get_video_output(DEVMODE *dm, int mode, size_t len);
 
@@ -74,9 +99,8 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 	unsigned *width, unsigned *height, bool fullscreen, bool windowed_full,
 	RECT *rect, RECT *mon_rect, DWORD *style);
 #endif
-#endif
-
 void win32_monitor_from_window(void);
+#endif
 
 void win32_monitor_init(void);
 
@@ -103,7 +127,9 @@ bool is_running_on_xbox(void);
 
 bool win32_has_focus(void *data);
 
+#ifdef HAVE_CLIP_WINDOW
 void win32_clip_window(bool grab);
+#endif
 
 void win32_check_window(void *data,
       bool *quit,
@@ -156,12 +182,14 @@ LRESULT CALLBACK wnd_proc_vk_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 #endif
 
+#if defined(HAVE_GDI)
 LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 LRESULT CALLBACK wnd_proc_gdi_winraw(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 LRESULT CALLBACK wnd_proc_gdi_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
+#endif
 
 #ifdef _XBOX
 BOOL IsIconic(HWND hwnd);
@@ -170,10 +198,6 @@ BOOL IsIconic(HWND hwnd);
 bool win32_load_content_from_gui(const char *szFilename);
 
 void win32_setup_pixel_format(HDC hdc, bool supports_gl);
-
-void win32_unset_input_userdata(void);
-
-void win32_set_input_userdata(void *data);
 
 void win32_update_title(void);
 

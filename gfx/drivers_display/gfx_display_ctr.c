@@ -22,7 +22,6 @@
 #include "../gfx_display.h"
 
 #include "../../retroarch.h"
-#include "../font_driver.h"
 #include "../common/ctr_common.h"
 #include "../drivers/ctr_gu.h"
 #include "../../ctr/gpu_old.h"
@@ -127,24 +126,6 @@ static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
    }
 
    GPU_SetTexEnv(0, GPU_TEXTURE0, GPU_TEXTURE0, 0, 0, GPU_REPLACE, GPU_REPLACE, 0);
-#if 0
-   printf("(%i,%i,%i,%i) , (%i,%i)\n", (int)draw->x,
-         (int)draw->y, (int)draw->width, (int)draw->height,
-         texture->width, texture->height);
-#endif
-}
-
-static bool gfx_display_ctr_font_init_first(
-      void **font_handle, void *video_data,
-      const char *font_path, float font_size,
-      bool is_threaded)
-{
-   font_data_t **handle = (font_data_t**)font_handle;
-   *handle = font_driver_init_first(video_data,
-         font_path, font_size, true,
-         is_threaded,
-         FONT_DRIVER_RENDER_CTR);
-   return *handle;
 }
 
 gfx_display_ctx_driver_t gfx_display_ctx_ctr = {
@@ -155,7 +136,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_ctr = {
    NULL,                                     /* get_default_mvp        */
    NULL,                                     /* get_default_vertices   */
    NULL,                                     /* get_default_tex_coords */
-   gfx_display_ctr_font_init_first,
+   FONT_DRIVER_RENDER_CTR,
    GFX_VIDEO_DRIVER_CTR,
    "ctr",
    true,

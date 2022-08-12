@@ -39,18 +39,12 @@ HRESULT WINAPI D3D11CreateDevice(
    static PFN_D3D11_CREATE_DEVICE                fp;
 
    if (!d3d11_dll)
-      d3d11_dll = dylib_load("d3d11.dll");
-
-   if (!d3d11_dll)
-      return TYPE_E_CANTLOADLIBRARY;
-
+      if (!(d3d11_dll = dylib_load("d3d11.dll")))
+         return TYPE_E_CANTLOADLIBRARY;
    if (!fp)
-      fp = (PFN_D3D11_CREATE_DEVICE)dylib_proc(
-            d3d11_dll, "D3D11CreateDevice");
-
-   if (!fp)
-      return TYPE_E_DLLFUNCTIONNOTFOUND;
-
+      if (!(fp = (PFN_D3D11_CREATE_DEVICE)dylib_proc(
+            d3d11_dll, "D3D11CreateDevice")))
+         return TYPE_E_DLLFUNCTIONNOTFOUND;
    return fp(
          pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion,
          ppDevice, pFeatureLevel, ppImmediateContext);
@@ -74,18 +68,12 @@ HRESULT WINAPI D3D11CreateDeviceAndSwapChain(
    static PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN fp;
 
    if (!d3d11_dll)
-      d3d11_dll = dylib_load("d3d11.dll");
-
-   if (!d3d11_dll)
-      return TYPE_E_CANTLOADLIBRARY;
-
+      if (!(d3d11_dll = dylib_load("d3d11.dll")))
+         return TYPE_E_CANTLOADLIBRARY;
    if (!fp)
-      fp = (PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN)dylib_proc(
-            d3d11_dll, "D3D11CreateDeviceAndSwapChain");
-
-   if (!fp)
-      return TYPE_E_DLLFUNCTIONNOTFOUND;
-
+      if (!(fp = (PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN)dylib_proc(
+            d3d11_dll, "D3D11CreateDeviceAndSwapChain")))
+         return TYPE_E_DLLFUNCTIONNOTFOUND;
    return fp(
          pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion,
          pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
@@ -94,10 +82,8 @@ HRESULT WINAPI D3D11CreateDeviceAndSwapChain(
 
 void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
 {
-   bool is_render_target = texture->desc.BindFlags & D3D11_BIND_RENDER_TARGET;
-   UINT format_support   = D3D11_FORMAT_SUPPORT_TEXTURE2D | D3D11_FORMAT_SUPPORT_SHADER_SAMPLE;
-
-   d3d11_release_texture(texture);
+   bool is_render_target            = texture->desc.BindFlags & D3D11_BIND_RENDER_TARGET;
+   UINT format_support              = D3D11_FORMAT_SUPPORT_TEXTURE2D | D3D11_FORMAT_SUPPORT_SHADER_SAMPLE;
 
    texture->desc.MipLevels          = 1;
    texture->desc.ArraySize          = 1;
@@ -112,12 +98,12 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
       unsigned width, height;
 
       texture->desc.BindFlags |= D3D11_BIND_RENDER_TARGET;
-      width                    = texture->desc.Width >> 5;
+      width                    = texture->desc.Width  >> 5;
       height                   = texture->desc.Height >> 5;
 
       while (width && height)
       {
-         width >>= 1;
+         width  >>= 1;
          height >>= 1;
          texture->desc.MipLevels++;
       }
@@ -128,19 +114,22 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
 
    texture->desc.Format = d3d11_get_closest_match(device, texture->desc.Format, format_support);
 
-   D3D11CreateTexture2D(device, &texture->desc, NULL, &texture->handle);
+   device->lpVtbl->CreateTexture2D(device, &texture->desc, NULL,
+         &texture->handle);
 
    {
-      D3D11_SHADER_RESOURCE_VIEW_DESC view_desc = { DXGI_FORMAT_UNKNOWN };
+      D3D11_SHADER_RESOURCE_VIEW_DESC view_desc;
       view_desc.Format                          = texture->desc.Format;
       view_desc.ViewDimension                   = D3D_SRV_DIMENSION_TEXTURE2D;
       view_desc.Texture2D.MostDetailedMip       = 0;
       view_desc.Texture2D.MipLevels             = -1;
-      D3D11CreateTexture2DShaderResourceView(device, texture->handle, &view_desc, &texture->view);
+      device->lpVtbl->CreateShaderResourceView(device,
+            (D3D11Resource)texture->handle, &view_desc, &texture->view);
    }
 
    if (is_render_target)
-      D3D11CreateTexture2DRenderTargetView(device, texture->handle, NULL, &texture->rt_view);
+      device->lpVtbl->CreateRenderTargetView(device,
+            (D3D11Resource)texture->handle, NULL, &texture->rt_view);
    else
    {
       D3D11_TEXTURE2D_DESC desc = texture->desc;
@@ -149,7 +138,7 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
       desc.MiscFlags            = 0;
       desc.Usage                = D3D11_USAGE_STAGING;
       desc.CPUAccessFlags       = D3D11_CPU_ACCESS_WRITE;
-      D3D11CreateTexture2D(device, &desc, NULL, &texture->staging);
+      device->lpVtbl->CreateTexture2D(device, &desc, NULL, &texture->staging);
    }
 
    texture->size_data.x = texture->desc.Width;
@@ -168,31 +157,29 @@ void d3d11_update_texture(
       d3d11_texture_t*   texture)
 {
    D3D11_MAPPED_SUBRESOURCE mapped_texture;
-   D3D11_BOX                frame_box = { 0, 0, 0, width, height, 1 };
+   D3D11_BOX frame_box;
 
-   if (!texture || !texture->staging)
-      return;
+   ctx->lpVtbl->Map(
+         ctx, (D3D11Resource)texture->staging, 0, D3D11_MAP_WRITE, 0, &mapped_texture);
 
-   D3D11MapTexture2D(ctx, texture->staging,
-         0, D3D11_MAP_WRITE, 0, &mapped_texture);
-
-#if 0
-   conv_rgb565_argb8888(mapped_texture.pData, data, width, height,
-         mapped_texture.RowPitch, pitch);
-#else
    dxgi_copy(
          width, height, format, pitch, data,
          texture->desc.Format, mapped_texture.RowPitch,
          mapped_texture.pData);
-#endif
 
-   D3D11UnmapTexture2D(ctx, texture->staging, 0);
-
-   D3D11CopyTexture2DSubresourceRegion(
-         ctx, texture->handle, 0, 0, 0, 0, texture->staging, 0, &frame_box);
+   frame_box.left   = 0;
+   frame_box.top    = 0;
+   frame_box.front  = 0;
+   frame_box.right  = width;
+   frame_box.bottom = height;
+   frame_box.back   = 1;
+   ctx->lpVtbl->Unmap(ctx, (D3D11Resource)texture->staging, 0);
+   ctx->lpVtbl->CopySubresourceRegion(
+         ctx, (D3D11Resource)texture->handle, 0, 0, 0, 0,
+         (D3D11Resource)texture->staging, 0, &frame_box);
 
    if (texture->desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
-      D3D11GenerateMips(ctx, texture->view);
+      ctx->lpVtbl->GenerateMips(ctx, texture->view);
 }
 
    DXGI_FORMAT
@@ -207,7 +194,8 @@ d3d11_get_closest_match(D3D11Device device, DXGI_FORMAT desired_format, UINT des
    while (*format != DXGI_FORMAT_UNKNOWN)
    {
       UINT         format_support;
-      if (SUCCEEDED(D3D11CheckFormatSupport(device, *format, &format_support)) &&
+      if (SUCCEEDED(device->lpVtbl->CheckFormatSupport(device, *format,
+                  &format_support)) &&
             ((format_support & desired_format_support) == desired_format_support))
          break;
       format++;
@@ -275,22 +263,29 @@ bool d3d11_init_shader(
          success = false;
    }
 
-   if (vs_code)
-      D3D11CreateVertexShader(
-            device, D3DGetBufferPointer(vs_code), D3DGetBufferSize(vs_code), NULL, &out->vs);
-
    if (ps_code)
-      D3D11CreatePixelShader(
-            device, D3DGetBufferPointer(ps_code), D3DGetBufferSize(ps_code), NULL, &out->ps);
+      device->lpVtbl->CreatePixelShader(
+            device,
+            ps_code->lpVtbl->GetBufferPointer(ps_code),
+            ps_code->lpVtbl->GetBufferSize(ps_code),
+            NULL, &out->ps);
 
    if (gs_code)
-      D3D11CreateGeometryShader(
-            device, D3DGetBufferPointer(gs_code), D3DGetBufferSize(gs_code), NULL, &out->gs);
+      device->lpVtbl->CreateGeometryShader(
+            device,
+            gs_code->lpVtbl->GetBufferPointer(gs_code),
+            gs_code->lpVtbl->GetBufferSize(gs_code),
+            NULL, &out->gs);
 
-   if (vs_code && input_element_descs)
-      D3D11CreateInputLayout(
-            device, input_element_descs, num_elements, D3DGetBufferPointer(vs_code),
-            D3DGetBufferSize(vs_code), &out->layout);
+   if (vs_code)
+   {
+      LPVOID buf_ptr  = vs_code->lpVtbl->GetBufferPointer(vs_code);
+      SIZE_T buf_size = vs_code->lpVtbl->GetBufferSize(vs_code);
+      device->lpVtbl->CreateVertexShader(device, buf_ptr, buf_size, NULL, &out->vs);
+      if (input_element_descs)
+         device->lpVtbl->CreateInputLayout(device, input_element_descs, num_elements,
+               buf_ptr, buf_size, &out->layout);
+   }
 
    Release(vs_code);
    Release(ps_code);

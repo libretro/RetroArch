@@ -179,6 +179,7 @@ static void gfx_ctx_mali_fbdev_destroy(void *data)
       gfx_ctx_mali_fbdev_global=NULL;
       gfx_ctx_mali_fbdev_restart_pending=true;
    }else if (gfx_ctx_mali_fbdev_was_threaded!=*video_driver_get_threaded()){
+      gfx_ctx_mali_fbdev_global=NULL;
       command_event(CMD_EVENT_RESTART_RETROARCH,NULL);
    }
 }

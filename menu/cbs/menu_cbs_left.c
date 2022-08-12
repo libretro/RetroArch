@@ -54,6 +54,7 @@
 
 /* Forward declarations */
 int action_ok_core_lock(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx);
+int action_ok_core_set_standalone_exempt(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx);
 
 extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
 
@@ -305,9 +306,10 @@ static int action_left_shader_scale_pass(unsigned type, const char *label,
    if (!shader_pass)
       return menu_cbs_exit();
 
+   /* A 20x scale is used to support scaling handheld border shaders up to 8K resolutions */
    current_scale            = shader_pass->fbo.scale_x;
-   delta                    = 5;
-   current_scale            = (current_scale + delta) % 6;
+   delta                    = 20;
+   current_scale            = (current_scale + delta) % 21;
 
    shader_pass->fbo.valid   = current_scale;
    shader_pass->fbo.scale_x = current_scale;
@@ -811,6 +813,12 @@ static int action_left_core_lock(unsigned type, const char *label,
    return action_ok_core_lock(label, label, type, 0, 0);
 }
 
+static int action_left_core_set_standalone_exempt(unsigned type, const char *label,
+      bool wraparound)
+{
+   return action_ok_core_set_standalone_exempt(label, label, type, 0, 0);
+}
+
 static int disk_options_disk_idx_left(unsigned type, const char *label,
       bool wraparound)
 {
@@ -938,6 +946,21 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
       default:
          break;
    }
+
+   return 0;
+}
+
+static int action_left_state_slot(unsigned type, const char *label,
+      bool wraparound)
+{
+   settings_t           *settings = config_get_ptr();
+
+   settings->ints.state_slot--;
+   if (settings->ints.state_slot < -1)
+      settings->ints.state_slot = 999;
+
+   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
+   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
 
    return 0;
 }
@@ -1240,6 +1263,13 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_ACTION_CORE_LOCK:
             BIND_ACTION_LEFT(cbs, action_left_core_lock);
+            break;
+         case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:
+            BIND_ACTION_LEFT(cbs, action_left_core_set_standalone_exempt);
+            break;
+         case MENU_SETTING_ACTION_SAVESTATE:
+         case MENU_SETTING_ACTION_LOADSTATE:
+            BIND_ACTION_LEFT(cbs, action_left_state_slot);
             break;
          case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION:
          case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION_KBD:

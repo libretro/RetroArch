@@ -47,19 +47,15 @@ static int file_decompressed_subdir(const char *name,
    char path[PATH_MAX_LENGTH];
    size_t name_len            = strlen(name);
    char last_char             = name[name_len - 1];
-
-   path_dir[0] = path[0] = '\0';
-
    /* Ignore directories, go to next file. */
    if (last_char == '/' || last_char == '\\')
       return 1;
-
    if (strstr(name, userdata->dec->subdir) != name)
       return 1;
 
    name += strlen(userdata->dec->subdir) + 1;
 
-   fill_pathname_join(path,
+   fill_pathname_join_special(path,
          userdata->dec->target_dir, name, sizeof(path));
    fill_pathname_basedir(path_dir, path, sizeof(path_dir));
 
@@ -89,21 +85,17 @@ static int file_decompressed(const char *name, const char *valid_exts,
    decompress_state_t    *dec = userdata->dec;
    size_t name_len            = strlen(name);
    char last_char             = name[name_len - 1];
-
-   path[0] = '\0';
-
    /* Ignore directories, go to next file. */
    if (last_char == '/' || last_char == '\\')
       return 1;
-
    /* Make directory */
-   fill_pathname_join(path, dec->target_dir, name, sizeof(path));
+   fill_pathname_join_special(path, dec->target_dir, name, sizeof(path));
    path_basedir_wrapper(path);
 
    if (!path_mkdir(path))
       goto error;
 
-   fill_pathname_join(path, dec->target_dir, name, sizeof(path));
+   fill_pathname_join_special(path, dec->target_dir, name, sizeof(path));
 
    if (!file_archive_perform_mode(path, valid_exts,
             cdata, cmode, csize, size, crc32, userdata))
@@ -295,14 +287,10 @@ void *task_push_decompress(
    if (task_check_decompress(source_file))
       return NULL;
 
-   s              = (decompress_state_t*)calloc(1, sizeof(*s));
-
-   if (!s)
+   if (!(s = (decompress_state_t*)calloc(1, sizeof(*s))))
       return NULL;
 
-   t                   = (retro_task_t*)calloc(1, sizeof(*t));
-
-   if (!t)
+   if (!(t = (retro_task_t*)calloc(1, sizeof(*t))))
    {
       free(s);
       return NULL;

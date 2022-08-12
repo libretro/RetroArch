@@ -10,6 +10,7 @@ PC_DEVELOPMENT_IP_ADDRESS  = 255.255.255.255
 PC_DEVELOPMENT_UDP_PORT    = 3490
 RARCH_CONSOLE              = 0
 USBGECKO                   = 0
+HAVE_STATIC_DUMMY ?= 0
 
 SPACE      :=
 SPACE      := $(SPACE) $(SPACE)
@@ -44,7 +45,15 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
    WHOLE_END       := -Wl,--no-whole-archive
 endif
 
-LIBS               := $(WHOLE_START) -lretro_ngc $(WHOLE_END)
+LIB_CORE :=
+
+ifeq ($(HAVE_STATIC_DUMMY),1)
+  DEFINES += -DHAVE_STATIC_DUMMY
+else
+  LIB_CORE += -lretro_ngc
+endif
+
+LIBS               := $(WHOLE_START) $(LIB_CORE) $(WHOLE_END)
 
 libogc_platform    := 1
 
@@ -63,16 +72,18 @@ ifeq ("$(wildcard $(ELF2DOL))","")
    ELF2DOL = $(DEVKITPRO)/tools/bin/elf2dol$(EXE_EXT)
 endif
 
-INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Iwii/libogc/include
+INCLUDE += -I.
 
 ifeq ($(EXTERNAL_LIBOGC), 1)
    CFLAGS   += -DEXTERNAL_LIBOGC
    CXXFLAGS += -DEXTERNAL_LIBOGC
    LIBDIRS += -L$(DEVKITPRO)/libogc/lib/cube
+   INCLUDE += -I$(DEVKITPRO)/libogc/include
 else
    CFLAGS   += -DINTERNAL_LIBOGC
    CXXFLAGS += -DINTERNAL_LIBOGC
    LIBDIRS += -Lwii/libogc/libs/cube
+   INCLUDE += -Iwii/libogc/include
 endif
 
 ifeq ($(GX_PTHREAD_LEGACY), 1)
@@ -127,17 +138,30 @@ HAVE_RWAV                := 1
 RARCH_CONSOLE             = 1
 HAVE_CHEATS              := 1
 HAVE_CORE_INFO_CACHE     := 1
+HAVE_MENU_COMMON         := 1
+HAVE_MENU                := 1
+HAVE_BUILTINZLIB         := 1
+HAVE_STATIC_AUDIO_FILTERS := 1
+HAVE_STATIC_VIDEO_FILTERS := 1
+HAVE_XMB                 := 0
+HAVE_OZONE               := 0
+HAVE_RGUI                := 1
+HAVE_MATERIALUI          := 0
 
-CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(PLATCFLAGS) $(INCLUDE)
 INCLUDE += -I./libretro-common/include \
            -Ideps \
            -Ideps/stb
+CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(PLATCFLAGS) $(INCLUDE)
 
-OBJ = griffin/griffin.o  $(PLATOBJS)
+OBJ =  $(PLATOBJS) audio/drivers/gx_audio.o gfx/drivers/gx_gfx.o input/drivers/gx_input.o frontend/drivers/platform_gx.o input/drivers_joypad/gx_joypad.o
 
-ifeq ($(HAVE_GRIFFIN_CPP), 1)
-   OBJ += griffin/griffin_cpp.o
+ifeq ($(EXTERNAL_LIBOGC), 0)
+   OBJ += wii/libogc/libfat/libfat.o wii/libogc/libfat/fatfile.o wii/libogc/libfat/file_allocation_table.o wii/libogc/libfat/cache.o wii/libogc/libfat/fatdir.o wii/libogc/libfat/partition.o wii/libogc/libfat/directory.o wii/libogc/libfat/filetime.o wii/libogc/libfat/disc.o
 endif
+
+include Makefile.common
+
+CFLAGS += $(DEFINES)
 
 ifeq ($(WANT_GLSLANG), 1)
 	OBJ += griffin/griffin_glslang.o
@@ -156,16 +180,8 @@ ifeq ($(HAVE_WIIUSB_HID), 1)
    CFLAGS      += -DHAVE_WIIUSB_HID -DHAVE_HID
 endif
 
-ifeq ($(HAVE_LIBRETRODB), 1)
-   CFLAGS      += -DHAVE_LIBRETRODB
-endif
-
 ifeq ($(BIG_STACK),1)
    CFLAGS      += -DBIG_STACK
-endif
-
-ifeq ($(HAVE_RJPEG), 1)
-   CFLAGS      += -DHAVE_RJPEG
 endif
 
 ifeq ($(HAVE_FILE_LOGGER), 1)
@@ -181,66 +197,6 @@ ifeq ($(HAVE_ZLIB), 1)
    CFLAGS      += -I./libretro-common/include/compat/zlib
 endif
 
-ifeq ($(HAVE_RPNG), 1)
-   CFLAGS      += -DHAVE_RPNG
-endif
-
-ifeq ($(HAVE_RBMP), 1)
-   CFLAGS      += -DHAVE_RBMP
-endif
-
-ifeq ($(HAVE_RTGA), 1)
-   CFLAGS      += -DHAVE_RTGA
-endif
-
-ifeq ($(HAVE_IMAGEVIEWER), 1)
-   CFLAGS      += -DHAVE_IMAGEVIEWER
-endif
-
-ifeq ($(HAVE_BSV_MOVIE), 1)
-   CFLAGS      += -DHAVE_BSV_MOVIE
-endif
-
-ifeq ($(HAVE_RUNAHEAD), 1)
-   CFLAGS      += -DHAVE_RUNAHEAD
-endif
-
-ifeq ($(HAVE_7ZIP), 1)
-   CFLAGS      += -DHAVE_7ZIP -D_7ZIP_ST
-endif
-
-ifeq ($(HAVE_SCREENSHOTS), 1)
-	CFLAGS      += -DHAVE_SCREENSHOTS
-endif
-
-ifeq ($(HAVE_REWIND), 1)
-	CFLAGS      += -DHAVE_REWIND
-endif
-
-ifeq ($(HAVE_AUDIOMIXER), 1)
-   CFLAGS      += -DHAVE_AUDIOMIXER
-endif
-
-ifeq ($(HAVE_RWAV), 1)
-   CFLAGS      += -DHAVE_RWAV
-endif
-
-ifeq ($(HAVE_OVERLAY), 1)
-   CFLAGS      += -DHAVE_OVERLAY
-endif
-
-ifeq ($(HAVE_VIDEO_LAYOUT), 1)
-   CFLAGS      += -DHAVE_VIDEO_LAYOUT
-endif
-
-ifeq ($(HAVE_NETWORKING), 1)
-   CFLAGS      += -DHAVE_NETWORKING
-endif
-
-ifeq ($(HAVE_NETPLAYDISCOVERY), 1)
-   CFLAGS      += -DHAVE_NETPLAYDISCOVERY
-endif
-
 ifeq ($(RARCH_CONSOLE), 1)
    CFLAGS += -DRARCH_CONSOLE
 endif
@@ -251,48 +207,8 @@ endif
 
 CFLAGS += -std=gnu99 -DHAVE_RGUI -DHAVE_MENU -DHAVE_GRIFFIN=1 -Wno-char-subscripts -DRARCH_INTERNAL
 
-ifeq ($(HAVE_MATERIALUI), 1)
-   CFLAGS += -DHAVE_MATERIALUI
-endif
-
-ifeq ($(HAVE_XMB), 1)
-   CFLAGS += -DHAVE_XMB
-endif
-
-ifeq ($(HAVE_STB_FONT), 1)
-   CFLAGS += -DHAVE_STB_FONT
-endif
-
-ifeq ($(HAVE_LANGEXTRA), 1)
-   CFLAGS += -DHAVE_LANGEXTRA
-endif
-
-ifeq ($(HAVE_DSP_FILTER), 1)
-   CFLAGS += -DHAVE_DSP_FILTER
-endif
-
-ifeq ($(HAVE_VIDEO_FILTER), 1)
-   CFLAGS += -DHAVE_VIDEO_FILTER
-endif
-
 ifeq ($(HAVE_FILTERS_BUILTIN), 1)
    CFLAGS += -DHAVE_FILTERS_BUILTIN
-endif
-
-ifeq ($(HAVE_THREADS), 1)
-   CFLAGS += -DHAVE_THREADS
-endif
-
-ifeq ($(HAVE_CONFIGFILE), 1)
-   CFLAGS += -DHAVE_CONFIGFILE
-endif
-
-ifeq ($(HAVE_PATCH), 1)
-   CFLAGS += -DHAVE_PATCH
-endif
-
-ifeq ($(HAVE_CHEATS), 1)
-	CFLAGS += -DHAVE_CHEATS
 endif
 
 ifeq ($(HAVE_RSOUND), 1)
@@ -303,28 +219,12 @@ ifeq ($(HAVE_GETOPT_LONG), 1)
    CFLAGS += -DHAVE_GETOPT_LONG=1
 endif
 
-ifeq ($(HAVE_DYLIB), 1)
-   CFLAGS += -DHAVE_DYLIB
-endif
-
 ifeq ($(HAVE_NETWORK_CMD), 1)
    CFLAGS += -DHAVE_NETWORK_CMD
 endif
 
-ifeq ($(HAVE_COMMAND), 1)
-   CFLAGS += -DHAVE_COMMAND
-endif
-
-ifeq ($(HAVE_STDIN_CMD), 1)
-   CFLAGS += -DHAVE_STDIN_CMD
-endif
-
 ifeq ($(HAVE_DYNAMIC), 1)
    CFLAGS += -DHAVE_DYNAMIC
-endif
-
-ifeq ($(HAVE_CORE_INFO_CACHE), 1)
-   CFLAGS += -DHAVE_CORE_INFO_CACHE
 endif
 
 ifeq ($(DEBUG), 1)

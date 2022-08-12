@@ -543,10 +543,6 @@ MSG_HASH(
    "Karakteristike procesora"
    )
 MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   "Arhitektura procesora:"
-   )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "Jezgra procesora:"
    )
@@ -821,6 +817,10 @@ MSG_HASH(
    "Žanr"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
+   "Dostignuća"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
    "Izdavač"
    )
@@ -851,14 +851,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
    "Broj Edž časopisa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
-   "Mesec izlaska"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
-   "Godina izlaska"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
@@ -1136,6 +1128,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
    "Izmeni podrazumevane direktorijume i lokacije datoteka."
    )
+
+#ifdef HAVE_MIST
+#endif
 
 /* Settings > Drivers */
 
@@ -1444,6 +1439,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    "Odaberi ekran za korišćenje."
    )
+#if defined (WIIU)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
    "Video rotacija"
@@ -1659,14 +1656,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "Odnos ekrana"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "Specifičan odnos ekrana"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Decimalna vrednost za odnos širine i visine slike, koristi se ako je opcija 'Odnos ekrana' postavljena na 'Konfiguracija'."
-   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
@@ -1820,6 +1809,7 @@ MSG_HASH(
 /* Settings > Input > Menu Controls */
 
 
+
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(
@@ -1841,7 +1831,15 @@ MSG_HASH(
 
 #ifndef HAVE_DYNAMIC
 #endif
+#ifdef HAVE_MIST
 
+
+
+
+
+
+
+#endif
 /* Settings > Configuration */
 
 
@@ -1905,6 +1903,7 @@ MSG_HASH(
 
 
 /* Settings > User Interface > Views > Settings */
+
 
 
 /* Settings > User Interface > Appearance */
@@ -1981,6 +1980,13 @@ MSG_HASH(
    "Liste"
    )
 
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+#endif
+
 /* Music */
 
 /* Music > Quick Menu */
@@ -2046,7 +2052,10 @@ MSG_HASH(
 /* Quick Menu > Controls */
 
 
-/* Quick Menu > Controls > Load Remap File */
+/* Quick Menu > Controls > Manage Remap Files */
+
+
+/* Quick Menu > Controls > Manage Remap Files > Load Remap File */
 
 
 /* Quick Menu > Cheats */
@@ -2237,6 +2246,7 @@ MSG_HASH(
 
 
 /* Notifications */
+
 
 
 /* Lakka */

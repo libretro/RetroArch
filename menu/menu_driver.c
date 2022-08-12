@@ -80,6 +80,10 @@
 #include "../switch_performance_profiles.h"
 #endif
 
+#ifdef HAVE_MIST
+#include "../steam/steam.h"
+#endif
+
 #ifdef HAVE_LIBNX
 #define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
 
@@ -634,7 +638,7 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
 
 /* Time format strings with AM-PM designation require special
  * handling due to platform dependence */
-static void strftime_am_pm(char* ptr, size_t maxsize, const char* format,
+static void strftime_am_pm(char *s, size_t len, const char* format,
       const struct tm* timeptr)
 {
    char *local = NULL;
@@ -643,15 +647,14 @@ static void strftime_am_pm(char* ptr, size_t maxsize, const char* format,
     * > Required for localised AM/PM strings */
    setlocale(LC_TIME, "");
 
-   strftime(ptr, maxsize, format, timeptr);
+   strftime(s, len, format, timeptr);
 #if !(defined(__linux__) && !defined(ANDROID))
-   local = local_to_utf8_string_alloc(ptr);
-
-   if (!string_is_empty(local))
-      strlcpy(ptr, local, maxsize);
-
+   local = local_to_utf8_string_alloc(s);
    if (local)
    {
+	   if (!string_is_empty(local))
+		   strlcpy(s, local, len);
+
       free(local);
       local = NULL;
    }
@@ -2871,10 +2874,12 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
    config_directory[0]         = '\0';
 
    if (!path_is_empty(RARCH_PATH_CONFIG))
-      fill_pathname_basedir(
-            config_directory,
+   {
+      strlcpy(config_directory,
             path_get(RARCH_PATH_CONFIG),
             sizeof(config_directory));
+      path_basedir(config_directory);
+   }
 
    preset_dirs[0] = dir_video_shader;
    preset_dirs[1] = dir_menu_config;
@@ -3460,18 +3465,18 @@ bool rarch_menu_init(
 
 #ifdef HAVE_COMPRESSION
    if (      settings->bools.bundle_assets_extract_enable
-         && !string_is_empty(settings->arrays.bundle_assets_src)
-         && !string_is_empty(settings->arrays.bundle_assets_dst)
+         && !string_is_empty(settings->paths.bundle_assets_src)
+         && !string_is_empty(settings->paths.bundle_assets_dst)
          && (settings->uints.bundle_assets_extract_version_current
             != settings->uints.bundle_assets_extract_last_version)
       )
    {
       p_dialog->current_type         = MENU_DIALOG_HELP_EXTRACT;
       task_push_decompress(
-            settings->arrays.bundle_assets_src,
-            settings->arrays.bundle_assets_dst,
+            settings->paths.bundle_assets_src,
+            settings->paths.bundle_assets_dst,
             NULL,
-            settings->arrays.bundle_assets_dst_subdir,
+            settings->paths.bundle_assets_dst_subdir,
             NULL,
             bundle_decompressed,
             NULL,
@@ -3651,8 +3656,6 @@ bool menu_entries_search_push(const char *search_term)
    menu_search_terms_t *search = menu_entries_search_get_terms_internal();
    char search_term_clipped[MENU_SEARCH_FILTER_MAX_LENGTH];
 
-   search_term_clipped[0] = '\0';
-
    /* Sanity check + verify whether we have reached
     * the maximum number of allowed search terms */
    if (!search ||
@@ -3748,66 +3751,30 @@ bool menu_shader_manager_save_preset_internal(
 {
    char fullname[PATH_MAX_LENGTH];
    char buffer[PATH_MAX_LENGTH];
+   const char *preset_ext         = NULL;
    bool ret                       = false;
    enum rarch_shader_type type    = RARCH_SHADER_NONE;
    char *preset_path              = NULL;
    size_t i                       = 0;
-
-   fullname[0] = buffer[0]        = '\0';
-
    if (!shader || !shader->passes)
       return false;
-
-   type = menu_shader_manager_get_type(shader);
-
-   if (type == RARCH_SHADER_NONE)
+   if ((type = menu_shader_manager_get_type(shader)) == RARCH_SHADER_NONE)
       return false;
 
+   preset_ext = video_shader_get_preset_extension(type);
+
    if (!string_is_empty(basename))
-   {
-      /* We are comparing against a fixed list of file
-       * extensions, the longest (slangp) being 6 characters
-       * in length. We therefore only need to extract the first
-       * 7 characters from the extension of the input path
-       * to correctly validate a match */
-      char ext_lower[8];
-      const char *ext = NULL;
-
-      ext_lower[0]    = '\0';
-
       strlcpy(fullname, basename, sizeof(fullname));
-
-      /* Get file extension */
-      ext = strrchr(basename, '.');
-
-      /* Copy and convert to lower case */
-      if (ext && (*(++ext) != '\0'))
-      {
-         strlcpy(ext_lower, ext, sizeof(ext_lower));
-         string_to_lower(ext_lower);
-      }
-
-      /* Append extension automatically as appropriate. */
-      if (     !string_is_equal(ext_lower, "cgp")
-            && !string_is_equal(ext_lower, "glslp")
-            && !string_is_equal(ext_lower, "slangp"))
-      {
-         const char *preset_ext = video_shader_get_preset_extension(type);
-         strlcat(fullname, preset_ext, sizeof(fullname));
-      }
-   }
    else
-      snprintf(fullname, sizeof(fullname), "retroarch%s",
-            video_shader_get_preset_extension(type));
+      strlcpy(fullname, "retroarch", sizeof(fullname));
+   strlcat(fullname, preset_ext, sizeof(fullname));
 
    if (path_is_absolute(fullname))
    {
       preset_path = fullname;
-      ret         = video_shader_write_preset(preset_path,
+      if ((ret    = video_shader_write_preset(preset_path,
             dir_video_shader,
-            shader, save_reference);
-
-      if (ret)
+            shader, save_reference)))
          RARCH_LOG("[Shaders]: Saved shader preset to \"%s\".\n", preset_path);
       else
          RARCH_ERR("[Shaders]: Failed writing shader preset to \"%s\".\n", preset_path);
@@ -3829,9 +3796,7 @@ bool menu_shader_manager_save_preset_internal(
 
          if (!path_is_directory(basedir))
          {
-            ret = path_mkdir(basedir);
-
-            if (!ret)
+            if (!(ret = path_mkdir(basedir)))
             {
                RARCH_WARN("[Shaders]: Failed to create preset directory \"%s\".\n", basedir);
                continue;
@@ -3840,11 +3805,9 @@ bool menu_shader_manager_save_preset_internal(
 
          preset_path = buffer;
 
-         ret = video_shader_write_preset(preset_path,
+         if ((ret = video_shader_write_preset(preset_path,
                dir_video_shader,
-               shader, save_reference);
-
-         if (ret)
+               shader, save_reference)))
          {
             RARCH_LOG("[Shaders]: Saved shader preset to \"%s\".\n", preset_path);
             break;
@@ -3882,23 +3845,32 @@ bool menu_shader_manager_operate_auto_preset(
       RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG
    };
    const char *core_name            = system ? system->library_name : NULL;
+   const char *rarch_path_basename  = path_get(RARCH_PATH_BASENAME);
    const char *auto_preset_dirs[3]  = {0};
+   bool has_content                 = !string_is_empty(rarch_path_basename);
 
    old_presets_directory[0] = config_directory[0] = tmp[0] = file[0] = '\0';
 
    if (type != SHADER_PRESET_GLOBAL && string_is_empty(core_name))
       return false;
 
+   if (!has_content &&
+       ((type == SHADER_PRESET_GAME) ||
+            (type == SHADER_PRESET_PARENT)))
+      return false;
+
    if (!path_is_empty(RARCH_PATH_CONFIG))
-      fill_pathname_basedir(
-            config_directory,
+   {
+      strlcpy(config_directory,
             path_get(RARCH_PATH_CONFIG),
             sizeof(config_directory));
+      path_basedir(config_directory);
+   }
 
    /* We are only including this directory for compatibility purposes with
     * versions 1.8.7 and older. */
    if (op != AUTO_SHADER_OP_SAVE && !string_is_empty(dir_video_shader))
-      fill_pathname_join(
+      fill_pathname_join_special(
             old_presets_directory,
             dir_video_shader,
             "presets",
@@ -3914,20 +3886,19 @@ bool menu_shader_manager_operate_auto_preset(
          strcpy_literal(file, "global");
          break;
       case SHADER_PRESET_CORE:
-         fill_pathname_join(file, core_name, core_name, sizeof(file));
+         fill_pathname_join_special(file, core_name, core_name, sizeof(file));
          break;
       case SHADER_PRESET_PARENT:
          fill_pathname_parent_dir_name(tmp,
-               path_get(RARCH_PATH_BASENAME), sizeof(tmp));
-         fill_pathname_join(file, core_name, tmp, sizeof(file));
+               rarch_path_basename, sizeof(tmp));
+         fill_pathname_join_special(file, core_name, tmp, sizeof(file));
          break;
       case SHADER_PRESET_GAME:
          {
-            const char *game_name =
-               path_basename(path_get(RARCH_PATH_BASENAME));
+            const char *game_name = path_basename(rarch_path_basename);
             if (string_is_empty(game_name))
                return false;
-            fill_pathname_join(file, core_name, game_name, sizeof(file));
+            fill_pathname_join_special(file, core_name, game_name, sizeof(file));
             break;
          }
       default:
@@ -4055,10 +4026,8 @@ void menu_driver_set_last_shader_path_int(
       return;
 
    /* Get shader type */
-   *type = video_shader_parse_type(shader_path);
-
    /* If type is invalid, do nothing */
-   if (*type == RARCH_SHADER_NONE)
+   if ((*type = video_shader_parse_type(shader_path)) == RARCH_SHADER_NONE)
       return;
 
    /* Cache parent directory */
@@ -4199,13 +4168,9 @@ void menu_driver_set_pending_selection(const char *pending_selection)
 
    /* Reset existing cache */
    selection[0] = '\0';
-
-   /* If path is empty, do nothing */
-   if (string_is_empty(pending_selection))
-      return;
-
-   strlcpy(selection, pending_selection,
-         sizeof(menu_st->pending_selection));
+   if (!string_is_empty(pending_selection))
+      strlcpy(selection, pending_selection,
+            sizeof(menu_st->pending_selection));
 }
 
 void menu_input_search_cb(void *userdata, const char *str)
@@ -4320,17 +4285,13 @@ void menu_driver_set_last_start_content(const char *start_content_path)
          start_content_path, sizeof(menu->last_start_content.directory));
 
    /* Cache file name */
-   archive_delim      = path_get_archive_delim(start_content_path);
-   if (archive_delim)
+   if ((archive_delim = path_get_archive_delim(start_content_path)))
    {
       /* If path references a file inside an
        * archive, must extract the string segment
        * before the archive delimiter (i.e. path of
        * 'parent' archive file) */
-      size_t len;
-
-      archive_path[0] = '\0';
-      len             = (size_t)(1 + archive_delim - start_content_path);
+      size_t len      = (size_t)(1 + archive_delim - start_content_path);
       len             = (len < PATH_MAX_LENGTH) ? len : PATH_MAX_LENGTH;
 
       strlcpy(archive_path, start_content_path, len * sizeof(char));
@@ -4405,10 +4366,9 @@ void menu_entries_append(
       free(list_info.fullpath);
 
    file_list_free_actiondata(list, idx);
-   cbs                             = (menu_file_list_cbs_t*)
-      malloc(sizeof(menu_file_list_cbs_t));
 
-   if (!cbs)
+   if (!(cbs = (menu_file_list_cbs_t*)
+      malloc(sizeof(menu_file_list_cbs_t))))
       return;
 
    cbs->action_sublabel_cache[0]   = '\0';
@@ -4552,7 +4512,7 @@ void menu_entries_prepend(file_list_t *list,
    if (!list || !label)
       return;
 
-   file_list_prepend(list, path, label, type, directory_ptr, entry_idx);
+   file_list_insert(list, path, label, type, directory_ptr, entry_idx, 0);
    file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
          &menu_path, NULL, NULL, NULL);
 
@@ -5928,6 +5888,11 @@ unsigned menu_event(
 
    if (display_kb)
    {
+#ifdef HAVE_MIST
+      /* Do not process input events if the Steam OSK is open */
+      if (!steam_has_osk_open())
+      {
+#endif
       bool show_osk_symbols = input_event_osk_show_symbol_pages(menu_st->driver_data);
 
       input_event_osk_iterate(input_st->osk_grid, input_st->osk_idx);
@@ -6004,6 +5969,10 @@ unsigned menu_event(
       /* send return key to close keyboard input window */
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START))
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+
+#ifdef HAVE_MIST
+      }
+#endif
 
       BIT256_CLEAR_ALL_PTR(p_trigger_input);
    }
@@ -6398,6 +6367,11 @@ static int menu_input_pointer_post_iterate(
          /* On screen keyboard overrides normal menu input... */
          if (osk_active)
          {
+#ifdef HAVE_MIST
+         /* Disable OSK pointer input if the Steam OSK is used */
+         if (!steam_has_osk_open())
+         {
+#endif
             /* If pointer has been 'dragged', then it counts as
              * a miss. Only register 'release' event if pointer
              * has remained stationary */
@@ -6419,6 +6393,9 @@ static int menu_input_pointer_post_iterate(
                         input_st->osk_grid[input_st->osk_ptr]);
                }
             }
+#ifdef HAVE_MIST
+            }
+#endif
          }
          /* Message boxes override normal menu input...
           * > If a message box is shown, any kind of pointer
@@ -6699,7 +6676,6 @@ void menu_driver_toggle(
    bool input_overlay_enable          = false;
 #endif
    bool video_adaptive_vsync          = false;
-   bool video_swap_interval           = false;
 
    if (settings)
    {
@@ -6717,7 +6693,6 @@ void menu_driver_toggle(
       input_overlay_enable            = settings->bools.input_overlay_enable;
 #endif
       video_adaptive_vsync            = settings->bools.video_adaptive_vsync;
-      video_swap_interval             = settings->uints.video_swap_interval;
    }
 
    if (on) 
@@ -6769,15 +6744,18 @@ void menu_driver_toggle(
 
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
-      /* Menu should always run with vsync on. */
+      /* Menu should always run with vsync on and
+       * a video swap interval of 1 */
       if (current_video->set_nonblock_state)
+      {
          current_video->set_nonblock_state(
                video_driver_data,
                false,
                video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
                video_adaptive_vsync,
-               video_swap_interval
+               1
                );
+      }
       /* Stop all rumbling before entering the menu. */
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
@@ -8034,23 +8012,73 @@ int generic_menu_entry_action(
    }
 #endif
 
-   if (menu_st->pending_close_content)
+   if (menu_st->pending_close_content ||
+       menu_st->pending_env_shutdown_flush)
    {
-      const char *content_path  = path_get(RARCH_PATH_CONTENT);
-      const char *menu_flush_to = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
+      const char *content_path  = menu_st->pending_env_shutdown_flush ?
+            menu_st->pending_env_shutdown_content_path :
+            path_get(RARCH_PATH_CONTENT);
+      const char *deferred_path = menu ? menu->deferred_path : NULL;
+      const char *flush_target  = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
+      size_t stack_offset       = 1;
+      bool reset_navigation     = true;
 
-      /* Flush to playlist entry menu if launched via playlist */
-      if (menu &&
-          !string_is_empty(menu->deferred_path) &&
-          !string_is_empty(content_path) &&
-          string_is_equal(menu->deferred_path, content_path))
-         menu_flush_to = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
+      /* Loop backwards through the menu stack to
+       * find a known reference point */
+      while (menu_stack && (menu_stack->size >= stack_offset))
+      {
+         const char *parent_label = NULL;
 
-      command_event(CMD_EVENT_UNLOAD_CORE, NULL);
-      menu_entries_flush_stack(menu_flush_to, 0);
+         file_list_get_at_offset(menu_stack,
+               menu_stack->size - stack_offset,
+               NULL, &parent_label, NULL, NULL);
+
+         if (string_is_empty(parent_label))
+            continue;
+
+         /* If core was launched via a playlist, flush
+          * to playlist entry menu */
+         if (string_is_equal(parent_label,
+                  msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)) &&
+             (!string_is_empty(deferred_path) &&
+              !string_is_empty(content_path) &&
+              string_is_equal(deferred_path, content_path)))
+         {
+            flush_target = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
+            break;
+         }
+         /* If core was launched via standalone cores menu,
+          * flush to standalone cores menu */
+         else if (string_is_equal(parent_label,
+                        msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB)) ||
+                  string_is_equal(parent_label,
+                        msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST)))
+         {
+            flush_target     = parent_label;
+            reset_navigation = false;
+            break;
+         }
+
+         stack_offset++;
+      }
+
+      if (!menu_st->pending_env_shutdown_flush)
+         command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+
+      menu_entries_flush_stack(flush_target, 0);
+      /* An annoyance - some menu drivers (Ozone...) call
+       * RARCH_MENU_CTL_SET_PREVENT_POPULATE in awkward
+       * places, which can cause breakage here when flushing
+       * the menu stack. We therefore have to force a
+       * RARCH_MENU_CTL_UNSET_PREVENT_POPULATE */
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
-      menu_st->selection_ptr         = 0;
-      menu_st->pending_close_content = false;
+
+      if (reset_navigation)
+         menu_st->selection_ptr = 0;
+
+      menu_st->pending_close_content                = false;
+      menu_st->pending_env_shutdown_flush           = false;
+      menu_st->pending_env_shutdown_content_path[0] = '\0';
    }
 
    return ret;
@@ -8092,6 +8120,9 @@ bool menu_input_dialog_start_search(void)
    if (!menu)
       return false;
 
+#ifdef HAVE_MIST
+   steam_open_osk();
+#endif
    menu_st->input_dialog_kb_display = true;
    strlcpy(menu_st->input_dialog_kb_label,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
@@ -8140,6 +8171,9 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    if (!line || !menu)
       return false;
 
+#ifdef HAVE_MIST
+   steam_open_osk();
+#endif
    menu_st->input_dialog_kb_display = true;
 
    /* Only copy over the menu label and setting if they exist. */

@@ -252,6 +252,6 @@ font_renderer_driver_t stb_font_renderer = {
    font_renderer_stb_get_glyph,
    font_renderer_stb_free,
    font_renderer_stb_get_default_font,
-   "stb",
+   "font_renderer_stb",
    font_renderer_stb_get_line_metrics
 };

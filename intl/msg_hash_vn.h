@@ -479,10 +479,6 @@ MSG_HASH(
    "Tính năng CPU"
    )
 MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   "Kiến trúc CPU:"
-   )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "Số lõi CPU:"
    )
@@ -687,6 +683,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
    "Miêu tả"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
+   "Kích hoạt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
+   "Điều khiển"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
@@ -925,6 +929,9 @@ MSG_HASH(
    "Thay đổi thư mục mặc định đặt file."
    )
 
+#ifdef HAVE_MIST
+#endif
+
 /* Settings > Drivers */
 
 MSG_HASH(
@@ -1012,6 +1019,8 @@ MSG_HASH(
 
 /* Settings > Video > Output */
 
+#if defined (WIIU)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
    "Rotation"
@@ -1059,6 +1068,14 @@ MSG_HASH(
 
 /* Settings > Video > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
+   "Tự động"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   "Tự động"
+   )
 
 /* Settings > Audio */
 
@@ -1208,6 +1225,7 @@ MSG_HASH(
 /* Settings > Input > Menu Controls */
 
 
+
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(
@@ -1273,7 +1291,15 @@ MSG_HASH(
    )
 #ifndef HAVE_DYNAMIC
 #endif
+#ifdef HAVE_MIST
 
+
+
+
+
+
+
+#endif
 /* Settings > Configuration */
 
 MSG_HASH(
@@ -1387,10 +1413,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
    "Kích hoạt UI Companion"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
-   "Menubar"
-   )
 
 /* Settings > User Interface > Menu Item Visibility */
 
@@ -1409,6 +1431,10 @@ MSG_HASH(
    "Trình đơn chính"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
+   "Tùy chỉnh"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
    "Hiển thị tên của core"
    )
@@ -1417,6 +1443,7 @@ MSG_HASH(
 
 
 /* Settings > User Interface > Views > Settings */
+
 
 
 /* Settings > User Interface > Appearance */
@@ -1455,6 +1482,10 @@ MSG_HASH(
 
 /* Settings > Network */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
+   "Tùy chỉnh"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
    "Enable stdin command interface."
@@ -1593,6 +1624,25 @@ MSG_HASH(
    "Danh mục cache"
    )
 
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
+   "Mục nội dung"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CORE,
+   "Tên của Core"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_SYSTEM,
+   "Tên hệ thống"
+   )
+#endif
+
 /* Music */
 
 /* Music > Quick Menu */
@@ -1683,10 +1733,6 @@ MSG_HASH(
    "Undo Tải State"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
-   "Options\" \"Tùy chọn"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
    "Điều khiển"
    )
@@ -1709,12 +1755,15 @@ MSG_HASH(
 
 /* Quick Menu > Controls */
 
+
+/* Quick Menu > Controls > Manage Remap Files */
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
    "Tải Remap File"
    )
 
-/* Quick Menu > Controls > Load Remap File */
+/* Quick Menu > Controls > Manage Remap Files > Load Remap File */
 
 
 /* Quick Menu > Cheats */
@@ -1879,10 +1928,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
    "Select a different theme for the icon. Changes will take effect after you restart the program."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-   "Kích hoạt Icon Shadows"
    )
 
 /* XMB: Settings Options */
@@ -2126,6 +2171,7 @@ MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Đang đợi máy khách  ..."
    )
+
 MSG_HASH(
    MSG_AUDIO_VOLUME,
    "Âm lượng âm thanh"

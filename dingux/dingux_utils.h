@@ -23,6 +23,8 @@
 
 #include <boolean.h>
 
+#include <frontend/frontend_driver.h>
+
 RETRO_BEGIN_DECLS
 
 /* Specifies all possible image filtering
@@ -100,6 +102,9 @@ bool dingux_ipu_reset(void);
 
 /* Fetches internal battery level */
 int dingux_get_battery_level(void);
+
+/* Fetches internal battery level */
+int retrofw_get_battery_level(enum frontend_powerstate *source);
 
 /* Fetches the path of the base 'retroarch'
  * directory */

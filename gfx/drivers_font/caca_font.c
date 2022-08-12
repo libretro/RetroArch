@@ -31,12 +31,12 @@
 
 typedef struct
 {
-   const font_renderer_driver_t *caca_font_driver;
-   void *caca_font_data;
+   const font_renderer_driver_t *font_driver;
+   void *font_data;
    caca_t *caca;
 } caca_raster_t;
 
-static void *caca_init_font(void *data,
+static void *caca_font_init(void *data,
       const char *font_path, float font_size,
       bool is_threaded)
 {
@@ -48,8 +48,8 @@ static void *caca_init_font(void *data,
    font->caca = (caca_t*)data;
 
    if (!font_renderer_create_default(
-            &font->caca_font_driver,
-            &font->caca_font_data, font_path, font_size))
+            &font->font_driver,
+            &font->font_data, font_path, font_size))
    {
       RARCH_WARN("Couldn't initialize font renderer.\n");
       return NULL;
@@ -58,13 +58,20 @@ static void *caca_init_font(void *data,
    return font;
 }
 
-static void caca_render_free_font(void *data, bool is_threaded)
+static void caca_font_free(void *data, bool is_threaded)
 {
-   (void)data;
-   (void)is_threaded;
+  caca_raster_t *font = (caca_raster_t*)data;
+
+  if (!font)
+     return;
+
+  if (font->font_driver && font->font_data && font->font_driver->free)
+     font->font_driver->free(font->font_data);
+
+  free(font);
 }
 
-static int caca_get_message_width(void *data, const char *msg,
+static int caca_font_get_message_width(void *data, const char *msg,
       unsigned msg_len, float scale)
 {
    return 0;
@@ -76,7 +83,7 @@ static const struct font_glyph *caca_font_get_glyph(
    return NULL;
 }
 
-static void caca_render_msg(
+static void caca_font_render_msg(
       void *userdata,
       void *data, const char *msg,
       const struct font_params *params)
@@ -85,6 +92,7 @@ static void caca_render_msg(
    unsigned width, height;
    unsigned newX, newY;
    unsigned align;
+   size_t msg_len;
    caca_raster_t              *font = (caca_raster_t*)data;
    settings_t *settings             = config_get_ptr();
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
@@ -115,14 +123,15 @@ static void caca_render_msg(
    width    = caca_get_canvas_width(font->caca->cv);
    height   = caca_get_canvas_height(font->caca->cv);
    newY     = height - (y * height * scale);
+   msg_len  = strlen(msg);
 
    switch (align)
    {
       case TEXT_ALIGN_RIGHT:
-         newX = (x * width * scale) - strlen(msg);
+         newX = (x * width * scale) - msg_len;
          break;
       case TEXT_ALIGN_CENTER:
-         newX = (x * width * scale) - (strlen(msg) / 2);
+         newX = (x * width * scale) - (msg_len / 2);
          break;
       case TEXT_ALIGN_LEFT:
       default:
@@ -136,13 +145,13 @@ static void caca_render_msg(
 }
 
 font_renderer_t caca_font = {
-   caca_init_font,
-   caca_render_free_font,
-   caca_render_msg,
+   caca_font_init,
+   caca_font_free,
+   caca_font_render_msg,
    "caca font",
-   caca_font_get_glyph,       /* get_glyph */
+   caca_font_get_glyph,
    NULL,                      /* bind_block */
    NULL,                      /* flush */
-   caca_get_message_width,    /* get_message_width */
+   caca_font_get_message_width,
    NULL                       /* get_line_metrics */
 };

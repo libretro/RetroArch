@@ -468,6 +468,26 @@ MSG_HASH(
    "Nødvendig grafikk API"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
+   "Lagretilstand Støtte"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
+   "Ingen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
+   "Grunnleggende (lagre/laste inn)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
+   "Serialisert (lagre, laste inn, spol tilbake)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
+   "Deterministisk (lagre, laste inn, spol tilbake, spol framover, nettspill)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
    "Fastvare"
    )
@@ -549,10 +569,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
    "CPU funksjoner"
-   )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   "CPU arkitektur:"
    )
 MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
@@ -829,6 +845,10 @@ MSG_HASH(
    "Sjanger"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
+   "Prestasjoner"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
    "Utgiver"
    )
@@ -863,14 +883,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
    "Edge magasin nummer"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
-   "Utgivelsesmåned"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
-   "Utgivelsesår"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
@@ -1136,6 +1148,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
    "Endre standardmapper hvor filer er plassert."
    )
+
+#ifdef HAVE_MIST
+#endif
 
 /* Settings > Drivers */
 
@@ -1436,6 +1451,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    "Velg hvilken skjerm som skal brukes."
    )
+#if defined (WIIU)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
    "Videorotasjon"
@@ -1651,14 +1668,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "Størrelsesforhold"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "Egendefinert størrelsesforhold"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Flytpunktverdi for bildestørrelsesforhold (bredde / høyde), brukt hvis \"størrelsesforhold\" er satt til \"konfigurasjon\"."
-   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
@@ -1748,9 +1757,17 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "Utvidet gamut"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "Når fargespekteret er konvertert til lineært rom, bestem om vi skal bruke et utvidet fargegamut for å nå HDR10."
+   )
 
 /* Settings > Video > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   "Vertikal synkronisering (VSync)"
+   )
 
 /* Settings > Audio */
 
@@ -1812,6 +1829,7 @@ MSG_HASH(
 /* Settings > Input > Menu Controls */
 
 
+
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(
@@ -1837,7 +1855,15 @@ MSG_HASH(
 
 #ifndef HAVE_DYNAMIC
 #endif
+#ifdef HAVE_MIST
 
+
+
+
+
+
+
+#endif
 /* Settings > Configuration */
 
 
@@ -1905,6 +1931,7 @@ MSG_HASH(
 
 
 /* Settings > User Interface > Views > Settings */
+
 
 
 /* Settings > User Interface > Appearance */
@@ -1981,6 +2008,13 @@ MSG_HASH(
    "Spillelister"
    )
 
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+#endif
+
 /* Music */
 
 /* Music > Quick Menu */
@@ -2046,7 +2080,10 @@ MSG_HASH(
 /* Quick Menu > Controls */
 
 
-/* Quick Menu > Controls > Load Remap File */
+/* Quick Menu > Controls > Manage Remap Files */
+
+
+/* Quick Menu > Controls > Manage Remap Files > Load Remap File */
 
 
 /* Quick Menu > Cheats */
@@ -2103,6 +2140,18 @@ MSG_HASH(
 
 /* Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
+   "Ingen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NONE,
+   "Ingen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
+   "Ingen"
+   )
 
 /* RGUI: Settings > User Interface > Appearance */
 
@@ -2112,6 +2161,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
    "Bilineær"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
+   "Ingen"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
@@ -2233,6 +2286,7 @@ MSG_HASH(
 
 
 /* Notifications */
+
 
 
 /* Lakka */

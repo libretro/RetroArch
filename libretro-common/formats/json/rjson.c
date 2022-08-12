@@ -24,7 +24,7 @@
 
 #include <stdio.h>  /* snprintf, vsnprintf */
 #include <stdarg.h> /* va_list */
-#include <string.h> /* memcpy, strlen */
+#include <string.h> /* memcpy */
 #include <stdint.h> /* int64_t */
 #include <stdlib.h> /* malloc, realloc, atof, atoi */
 
@@ -871,9 +871,9 @@ rjson_t *rjson_open_buffer(const void *buffer, size_t size)
    return json;
 }
 
-rjson_t *rjson_open_string(const char *string)
+rjson_t *rjson_open_string(const char *string, size_t len)
 {
-   return rjson_open_buffer(string, strlen(string));
+   return rjson_open_buffer(string, len);
 }
 
 static int _rjson_stream_io(void* buf, int len, void *user)
@@ -1123,7 +1123,7 @@ enum rjson_type rjson_parse(rjson_t *json, void* context,
    }
 }
 
-bool rjson_parse_quick(const char *string, void* context, char option_flags,
+bool rjson_parse_quick(const char *string, size_t len, void* context, char option_flags,
       bool (*object_member_handler)(void *context, const char *str, size_t len),
       bool (*string_handler       )(void *context, const char *str, size_t len),
       bool (*number_handler       )(void *context, const char *str, size_t len),
@@ -1138,7 +1138,7 @@ bool rjson_parse_quick(const char *string, void* context, char option_flags,
    const char *user_data[2];
    rjson_t json;
    user_data[0] = string;
-   user_data[1] = string + strlen(string);
+   user_data[1] = string + len;
    _rjson_setup(&json, _rjson_buffer_io, (void*)user_data, sizeof(json.input_buf));
    rjson_set_options(&json, option_flags);
    if (rjson_parse(&json, context,

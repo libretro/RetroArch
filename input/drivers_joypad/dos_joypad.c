@@ -163,7 +163,7 @@ static void *dos_joypad_init(void *data)
 static int32_t dos_joypad_button_state(
       uint16_t *buf, uint16_t joykey)
 {
-   switch (key)
+   switch (joykey)
    {
       case RETRO_DEVICE_ID_JOYPAD_A:
          return buf[DOSKEY_x];

@@ -519,10 +519,6 @@ MSG_HASH(
    "Nodweddion CPU"
    )
 MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   "Pensaernïaeth CPU:"
-   )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "Creiddiau CPU:"
    )
@@ -793,6 +789,10 @@ MSG_HASH(
    "Disgrifiad"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
+   "Llwyddiannau"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
    "Cyhoeddwr"
    )
@@ -827,14 +827,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
    "Rhifyn Cylchgrawn Edge"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
-   "Mis rhyddhau"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
-   "Blwyddyn rhyddhau"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
@@ -997,6 +989,9 @@ MSG_HASH(
    "Newid cyfeirlyfrau diofyn lle mae ffeiliau wedi'u lleoli."
    )
 
+#ifdef HAVE_MIST
+#endif
+
 /* Settings > Drivers */
 
 MSG_HASH(
@@ -1020,6 +1015,8 @@ MSG_HASH(
 
 /* Settings > Video > Output */
 
+#if defined (WIIU)
+#endif
 #if defined(DINGUX) && defined(DINGUX_BETA)
 #endif
 
@@ -1096,6 +1093,7 @@ MSG_HASH(
 /* Settings > Input > Menu Controls */
 
 
+
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(
@@ -1117,7 +1115,15 @@ MSG_HASH(
 
 #ifndef HAVE_DYNAMIC
 #endif
+#ifdef HAVE_MIST
 
+
+
+
+
+
+
+#endif
 /* Settings > Configuration */
 
 
@@ -1185,6 +1191,7 @@ MSG_HASH(
 
 
 /* Settings > User Interface > Views > Settings */
+
 
 
 /* Settings > User Interface > Appearance */
@@ -1256,6 +1263,13 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
    "Rhestri Chwarae"
    )
+
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+#endif
 
 /* Music */
 
@@ -1334,7 +1348,10 @@ MSG_HASH(
 /* Quick Menu > Controls */
 
 
-/* Quick Menu > Controls > Load Remap File */
+/* Quick Menu > Controls > Manage Remap Files */
+
+
+/* Quick Menu > Controls > Manage Remap Files > Load Remap File */
 
 
 /* Quick Menu > Cheats */
@@ -1605,6 +1622,7 @@ MSG_HASH(
 
 
 /* Notifications */
+
 
 MSG_HASH(
    MSG_TO,

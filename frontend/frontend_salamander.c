@@ -125,7 +125,6 @@ static void salamander_init(char *s, size_t len)
    char config_path[PATH_MAX_LENGTH];
    char config_dir[PATH_MAX_LENGTH];
 
-   config_path[0] = '\0';
    config_dir[0]  = '\0';
 
    /* Get salamander config file path */
@@ -135,7 +134,7 @@ static void salamander_init(char *s, size_t len)
             FILE_PATH_SALAMANDER_CONFIG,
             sizeof(config_path));
    else
-      strcpy_literal(config_path, FILE_PATH_SALAMANDER_CONFIG);
+      strlcpy(config_path, FILE_PATH_SALAMANDER_CONFIG, sizeof(config_path));
 
    /* Ensure that config directory exists */
    fill_pathname_parent_dir(config_dir, config_path, sizeof(config_dir));
@@ -144,9 +143,7 @@ static void salamander_init(char *s, size_t len)
       path_mkdir(config_dir);
 
    /* Attempt to open config file */
-   config = config_file_new_from_path_to_string(config_path);
-
-   if (config)
+   if ((config = config_file_new_from_path_to_string(config_path)))
    {
       char libretro_path[PATH_MAX_LENGTH];
 

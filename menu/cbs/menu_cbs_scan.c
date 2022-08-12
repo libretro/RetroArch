@@ -56,11 +56,9 @@ int action_scan_file(const char *path,
    const char *directory_playlist = settings->paths.directory_playlist;
    const char *path_content_db    = settings->paths.path_content_database;
 
-   fullpath[0]                    = '\0';
-
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
-   fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
+   fill_pathname_join_special(fullpath, menu_path, path, sizeof(fullpath));
 
    task_push_dbscan(
          directory_playlist,
@@ -82,12 +80,10 @@ int action_scan_directory(const char *path,
    const char *directory_playlist = settings->paths.directory_playlist;
    const char *path_content_db    = settings->paths.path_content_database;
 
-   fullpath[0]                    = '\0';
-
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
    if (path)
-      fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
+      fill_pathname_join_special(fullpath, menu_path, path, sizeof(fullpath));
    else
       strlcpy(fullpath, menu_path, sizeof(fullpath));
 
@@ -123,7 +119,7 @@ int action_switch_thumbnail(const char *path,
     * GLUI is a special case where thumbnail 'switch' corresponds to
     * changing thumbnail view mode.
     * For other menu drivers, we cycle through available thumbnail
-    * types. */
+    * types and skip if already visible. */
    if (!switch_enabled)
       return 0;
 
@@ -133,9 +129,19 @@ int action_switch_thumbnail(const char *path,
             settings->uints.menu_left_thumbnails,
             settings->uints.menu_left_thumbnails + 1);
 
+      if (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
+         configuration_set_uint(settings,
+               settings->uints.menu_left_thumbnails,
+               settings->uints.menu_left_thumbnails + 1);
+
       if (settings->uints.menu_left_thumbnails > 3)
          configuration_set_uint(settings,
                settings->uints.menu_left_thumbnails, 1);
+
+      if (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
+         configuration_set_uint(settings,
+               settings->uints.menu_left_thumbnails,
+               settings->uints.menu_left_thumbnails + 1);
    }
    else
    {
@@ -143,9 +149,19 @@ int action_switch_thumbnail(const char *path,
             settings->uints.gfx_thumbnails,
             settings->uints.gfx_thumbnails + 1);
 
+      if (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
+         configuration_set_uint(settings,
+               settings->uints.gfx_thumbnails,
+               settings->uints.gfx_thumbnails + 1);
+
       if (settings->uints.gfx_thumbnails > 3)
          configuration_set_uint(settings,
                settings->uints.gfx_thumbnails, 1);
+
+      if (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
+         configuration_set_uint(settings,
+               settings->uints.gfx_thumbnails,
+               settings->uints.gfx_thumbnails + 1);
    }
 
    menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
@@ -192,7 +208,7 @@ static int action_scan_input_desc(const char *path,
       inp_desc_user      = (unsigned)(player_no_str - 1);
       /* This hardcoded value may cause issues if any entries are added on
          top of the input binds */
-      key                = (unsigned)(idx - 7);
+      key                = (unsigned)(idx - 6);
       /* Select the reorderer bind */
       key                =
             (key < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[key] : key;

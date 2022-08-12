@@ -3,6 +3,7 @@ DEBUG               ?= 0
 HAVE_FILE_LOGGER	= 1
 GRIFFIN_BUILD        = 0
 WHOLE_ARCHIVE_LINK   = 0
+HAVE_STATIC_DUMMY ?= 0
 
 VITA_TITLE_ID	:= RETROARCH
 VITA_TITLE_NAME	:= RetroArch
@@ -75,6 +76,8 @@ else
 	HAVE_VITAGL		:= 0
    endif
 	HAVE_NETWORKING		:= 1
+	HAVE_IFINFO		:= 1
+	HAVE_NETPLAYDISCOVERY	:= 1
 	HAVE_SOCKET_LEGACY	:= 1
 	HAVE_MENU		:= 1
 	HAVE_MENU_COMMON	:= 1
@@ -179,7 +182,15 @@ else
    FSELF_FLAGS := -s
 endif
 
-LIBS	:= $(WHOLE_START) -lretro_vita $(WHOLE_END) $(VITA_LIBS) -lm -lc
+LIBS	:= $(WHOLE_START) 
+
+ifeq ($(HAVE_STATIC_DUMMY),1)
+  DEFINES += -DHAVE_STATIC_DUMMY
+else
+  LIBS += -lretro_vita
+endif
+
+LIBS    += $(WHOLE_END) $(VITA_LIBS) -lm -lc
 
 TARGETS := $(TARGET).vpk
 
@@ -216,7 +227,7 @@ liblibScePiglet_stub.a:
 	make -C deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet ARCH=arm-vita-eabi
 	cp deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet/liblibScePiglet_stub.a .
 
-$(TARGET).elf: $(OBJ) libretro_vita.a liblibScePiglet_stub.a
+$(TARGET).elf: $(OBJ) liblibScePiglet_stub.a
 	$(LD) $(OBJ) $(LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
 
 %.velf: %.elf

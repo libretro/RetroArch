@@ -32,13 +32,6 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
     settings_t *settings = config_get_ptr();
 
-    if (msg == MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM)
-    {
-       snprintf(s, len,
-             "TODO/FIXME - Fill in message here."
-             );
-       return 0;
-    }
     if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
         msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
     {
@@ -66,6 +59,10 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
           case RARCH_SLOWMOTION_HOLD_KEY:
              snprintf(s, len,
                    "Hold for slowmotion.");
+             break;
+          case RARCH_VRR_RUNLOOP_TOGGLE:
+             snprintf(s, len,
+                   "Toggle exact content framerate sync.");
              break;
           case RARCH_PAUSE_TOGGLE:
              snprintf(s, len,
@@ -1792,15 +1789,6 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Not recommended except for very fast networks \n"
                              "with very weak machines.");
             break;
-        case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE:
-            snprintf(s, len,
-                     "Whether to run netplay in a mode not requiring"
-                             "save states. \n"
-                             " \n"
-                             "If set to true, a very fast network is required, \n"
-                             "but no rewinding is performed, so there will be \n"
-                             "no netplay jitter. \n");
-            break;
         case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
             snprintf(s, len,
                      "The frequency in frames with which netplay \n"
@@ -1858,6 +1846,14 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Specifies the man-in-the-middle server \n"
                              "to use for netplay. A server that is \n"
+                             "located closer to you may have less latency. \n");
+            break;
+        case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER_LOCATION:
+            snprintf(s, len,
+                     "Man-in-the-middle server location \n"
+                             " \n"
+                             "Picks which man-in-the-middle server \n"
+                             "will be used for netplay. A server that is \n"
                              "located closer to you may have less latency. \n");
             break;
         case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:

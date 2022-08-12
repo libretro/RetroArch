@@ -710,11 +710,11 @@ static bool x11_display_server_set_window_decorations(void *data, bool on)
 const char *x11_display_server_get_output_options(void *data)
 {
 #ifdef HAVE_XRANDR
+   int i;
    Display *dpy;
    XRRScreenResources *res;
    XRROutputInfo *info;
    Window root;
-   int i;
    static char s[PATH_MAX_LENGTH];
 
    if (!(dpy = XOpenDisplay(0)))
@@ -727,12 +727,16 @@ const char *x11_display_server_get_output_options(void *data)
 
    for (i = 0; i < res->noutput; i++)
    {
+      size_t _len;
       if (!(info = XRRGetOutputInfo(dpy, res, res->outputs[i])))
          return NULL;
 
-      strlcat(s, info->name, sizeof(s));
+      _len = strlcat(s, info->name, sizeof(s));
       if ((i+1) < res->noutput)
-         strlcat(s, "|", sizeof(s));
+      {
+         s[_len  ] = '|';
+         s[_len+1] = '\0';
+      }
    }
 
    return s;

@@ -48,13 +48,6 @@ int msg_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
     settings_t *settings = config_get_ptr();
 
-    if (msg == MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM)
-    {
-       snprintf(s, len,
-             "PENDIENTE: Rellenar este mensaje."
-             );
-       return 0;
-    }
     if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
         msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
     {
@@ -1842,16 +1835,6 @@ int msg_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      " \n"
                      "No se recomienda su uso salvo en redes\n"
                      "muy rápidas con máquinas poco potentes.");
-            break;
-        case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE:
-            snprintf(s, len,
-                     "Ejecuta el juego en red en un modo\n"
-                     "que no utiliza guardados rápidos.\n"
-                     " \n"
-                     "La activación de esta opción requiere\n"
-                     "de una red muy rápida, pero no se realizarán\n"
-                     "rebobinados, de modo que no habrá tirones\n"
-                     "durante la sesión.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES: {
             /* Work around C89 limitations */

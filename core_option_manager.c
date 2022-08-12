@@ -70,9 +70,8 @@ struct retro_core_options_v2 *core_option_manager_convert_v1(
       return NULL;
 
    /* Allocate output retro_core_options_v2 struct */
-   options_v2 = (struct retro_core_options_v2 *)
-         malloc(sizeof(*options_v2));
-   if (!options_v2)
+   if (!(options_v2 = (struct retro_core_options_v2 *)
+         malloc(sizeof(*options_v2))))
       return NULL;
 
    /* Note: v1 options have no concept of
@@ -85,10 +84,8 @@ struct retro_core_options_v2 *core_option_manager_convert_v1(
     * > One extra entry required for terminating NULL entry
     * > Note that calloc() sets terminating NULL entry and
     *   correctly 'nullifies' each values array */
-   option_v2_defs = (struct retro_core_option_v2_definition *)
-         calloc(num_options + 1, sizeof(*option_v2_defs));
-
-   if (!option_v2_defs)
+   if (!(option_v2_defs = (struct retro_core_option_v2_definition *)
+         calloc(num_options + 1, sizeof(*option_v2_defs))))
    {
       free(options_v2);
       return NULL;
@@ -103,7 +100,7 @@ struct retro_core_options_v2 *core_option_manager_convert_v1(
       size_t num_values = 0;
 
       /* Set key */
-      option_v2_defs[i].key = options_v1[i].key;
+      option_v2_defs[i].key           = options_v1[i].key;
 
       /* Set default value */
       option_v2_defs[i].default_value = options_v1[i].default_value;
@@ -186,9 +183,8 @@ struct retro_core_options_v2 *core_option_manager_convert_v1_intl(
       return NULL;
 
    /* Allocate output retro_core_options_v2 struct */
-   options_v2 = (struct retro_core_options_v2 *)
-         malloc(sizeof(*options_v2));
-   if (!options_v2)
+   if (!(options_v2 = (struct retro_core_options_v2 *)
+         malloc(sizeof(*options_v2))))
       return NULL;
 
    /* Note: v1 options have no concept of
@@ -201,10 +197,8 @@ struct retro_core_options_v2 *core_option_manager_convert_v1_intl(
     * > One extra entry required for terminating NULL entry
     * > Note that calloc() sets terminating NULL entry and
     *   correctly 'nullifies' each values array */
-   option_v2_defs = (struct retro_core_option_v2_definition *)
-         calloc(num_options + 1, sizeof(*option_v2_defs));
-
-   if (!option_v2_defs)
+   if (!(option_v2_defs = (struct retro_core_option_v2_definition *)
+         calloc(num_options + 1, sizeof(*option_v2_defs))))
    {
       core_option_manager_free_converted(options_v2);
       return NULL;
@@ -374,9 +368,8 @@ struct retro_core_options_v2 *core_option_manager_convert_v2_intl(
       return NULL;
 
    /* Allocate output retro_core_options_v2 struct */
-   options_v2 = (struct retro_core_options_v2 *)
-         malloc(sizeof(*options_v2));
-   if (!options_v2)
+   if (!(options_v2 = (struct retro_core_options_v2 *)
+         malloc(sizeof(*options_v2))))
       return NULL;
 
    options_v2->categories  = NULL;
@@ -387,10 +380,8 @@ struct retro_core_options_v2 *core_option_manager_convert_v2_intl(
     * > Note that calloc() sets terminating NULL entry */
    if (num_categories > 0)
    {
-      option_v2_cats = (struct retro_core_option_v2_category *)
-            calloc(num_categories + 1, sizeof(*option_v2_cats));
-
-      if (!option_v2_cats)
+      if (!(option_v2_cats = (struct retro_core_option_v2_category *)
+            calloc(num_categories + 1, sizeof(*option_v2_cats))))
       {
          core_option_manager_free_converted(options_v2);
          return NULL;
@@ -403,10 +394,8 @@ struct retro_core_options_v2 *core_option_manager_convert_v2_intl(
     * > One extra entry required for terminating NULL entry
     * > Note that calloc() sets terminating NULL entry and
     *   correctly 'nullifies' each values array */
-   option_v2_defs = (struct retro_core_option_v2_definition *)
-         calloc(num_options + 1, sizeof(*option_v2_defs));
-
-   if (!option_v2_defs)
+   if (!(option_v2_defs = (struct retro_core_option_v2_definition *)
+         calloc(num_options + 1, sizeof(*option_v2_defs))))
    {
       core_option_manager_free_converted(options_v2);
       return NULL;
@@ -737,12 +726,12 @@ static bool core_option_manager_parse_variable(
             value, NULL);
 
       /* Set value hash */
-      *value_hash = core_option_manager_hash_string(value);
+      *value_hash                     = core_option_manager_hash_string(value);
       option->vals->elems[i].userdata = (void*)value_hash;
 
       /* Redundant safely check... */
-      value_label = string_is_empty(value_label) ?
-            value : value_label;
+      if (string_is_empty(value_label))
+         value_label = value;
 
       /* Append value label string */
       string_list_append(option->val_labels, value_label, attr);
@@ -819,9 +808,7 @@ core_option_manager_t *core_option_manager_new_vars(
    if (!vars)
       return NULL;
 
-   opt = (core_option_manager_t*)malloc(sizeof(*opt));
-
-   if (!opt)
+   if (!(opt = (core_option_manager_t*)malloc(sizeof(*opt))))
       return NULL;
 
    opt->conf                        = NULL;
@@ -859,8 +846,7 @@ core_option_manager_t *core_option_manager_new_vars(
       goto error;
 
    /* Create options array */
-   opt->opts = (struct core_option*)calloc(size, sizeof(*opt->opts));
-   if (!opt->opts)
+   if (!(opt->opts = (struct core_option*)calloc(size, sizeof(*opt->opts))))
       goto error;
 
    opt->size = size;
@@ -1028,8 +1014,8 @@ static bool core_option_manager_parse_option(
             value, value_label);
 
       /* > Redundant safely check... */
-      value_label = string_is_empty(value_label) ?
-            value : value_label;
+      if (string_is_empty(value_label))
+         value_label = value;
 
       /* Append value label string */
       string_list_append(option->val_labels, value_label, attr);
@@ -1113,9 +1099,7 @@ core_option_manager_t *core_option_manager_new(
    option_cats = options_v2->categories;
    option_defs = options_v2->definitions;
 
-   opt = (core_option_manager_t*)malloc(sizeof(*opt));
-
-   if (!opt)
+   if (!(opt = (core_option_manager_t*)malloc(sizeof(*opt))))
       return NULL;
 
    opt->conf                         = NULL;
@@ -1166,8 +1150,8 @@ core_option_manager_t *core_option_manager_new(
    /* Create categories array */
    if (cats_size > 0)
    {
-      opt->cats = (struct core_catagory*)calloc(size, sizeof(*opt->cats));
-      if (!opt->cats)
+      if (!(opt->cats = (struct core_category*)calloc(size,
+                  sizeof(*opt->cats))))
          goto error;
 
       opt->cats_size = cats_size;
@@ -1190,8 +1174,7 @@ core_option_manager_t *core_option_manager_new(
    }
 
    /* Create options array */
-   opt->opts = (struct core_option*)calloc(size, sizeof(*opt->opts));
-   if (!opt->opts)
+   if (!(opt->opts = (struct core_option*)calloc(size, sizeof(*opt->opts))))
       goto error;
 
    opt->size = size;
@@ -1338,21 +1321,21 @@ const char *core_option_manager_get_category_desc(core_option_manager_t *opt,
    uint32_t key_hash;
    size_t i;
 
-   if (!opt ||
-       string_is_empty(key))
+   if (  !opt
+       || string_is_empty(key))
       return NULL;
 
    key_hash = core_option_manager_hash_string(key);
 
    for (i = 0; i < opt->cats_size; i++)
    {
-      struct core_catagory *catagory = &opt->cats[i];
+      struct core_category *category = &opt->cats[i];
 
-      if ((key_hash == catagory->key_hash) &&
-          !string_is_empty(catagory->key) &&
-          string_is_equal(key, catagory->key))
+      if ((key_hash == category->key_hash) &&
+          !string_is_empty(category->key) &&
+          string_is_equal(key, category->key))
       {
-         return catagory->desc;
+         return category->desc;
       }
    }
 
@@ -1387,13 +1370,13 @@ const char *core_option_manager_get_category_info(core_option_manager_t *opt,
 
    for (i = 0; i < opt->cats_size; i++)
    {
-      struct core_catagory *catagory = &opt->cats[i];
+      struct core_category *category = &opt->cats[i];
 
-      if ((key_hash == catagory->key_hash) &&
-          !string_is_empty(catagory->key) &&
-          string_is_equal(key, catagory->key))
+      if ((key_hash == category->key_hash) &&
+          !string_is_empty(category->key) &&
+          string_is_equal(key, category->key))
       {
-         return catagory->info;
+         return category->info;
       }
    }
 
@@ -1412,7 +1395,7 @@ const char *core_option_manager_get_category_info(core_option_manager_t *opt,
  * be visible if at least one of the options
  * in the category is visible)
  *
- * Returns: true if option category should be
+ * @return true if option category should be
  * displayed by the frontend, otherwise false.
  **/
 bool core_option_manager_get_category_visible(core_option_manager_t *opt,
@@ -1429,16 +1412,12 @@ bool core_option_manager_get_category_visible(core_option_manager_t *opt,
       return false;
 
    /* Fetch category item from map */
-   category_item = nested_list_get_item(opt->option_map,
-         key, NULL);
-
-   if (!category_item)
+   if (!(category_item = nested_list_get_item(opt->option_map,
+         key, NULL)))
       return false;
 
    /* Get child options of specified category */
-   option_list = nested_list_item_get_children(category_item);
-
-   if (!option_list)
+   if (!(option_list = nested_list_item_get_children(category_item)))
       return false;
 
    /* Loop over child options */
@@ -1472,7 +1451,7 @@ bool core_option_manager_get_category_visible(core_option_manager_t *opt,
  * Fetches the index of the core option identified
  * by the specified @key.
  *
- * Returns: true if option matching the specified
+ * @return true if option matching the specified
  * key was found, otherwise false.
  **/
 bool core_option_manager_get_idx(core_option_manager_t *opt,
@@ -1703,8 +1682,8 @@ const char *core_option_manager_get_val_label(core_option_manager_t *opt,
 bool core_option_manager_get_visible(core_option_manager_t *opt,
       size_t idx)
 {
-   if (!opt ||
-       (idx >= opt->size))
+   if (    !opt
+       || (idx >= opt->size))
       return false;
 
    return opt->opts[idx].visible;

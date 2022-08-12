@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2017 - Jean-André Santoni
  *  Copyright (C) 2017-2019 - Andrés Suárez
+ *  Copyright (C) 2021-2022 - Roberto V. Rampim
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,506 +15,949 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <string.h>
-#include <errno.h>
-#include <file/nbio.h>
-#include <formats/image.h>
-#include <compat/strl.h>
-#include <retro_assert.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 #include <retro_miscellaneous.h>
-#include <lists/string_list.h>
-#include <lrc_hash.h>
+
 #include <string/stdstring.h>
+#include <lists/string_list.h>
 #include <file/file_path.h>
 #include <lists/dir_list.h>
-#include <queues/task_queue.h>
+
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
+#include "../verbosity.h"
+#include "../configuration.h"
+#include "../paths.h"
+#include "../command.h"
+#include "../playlist.h"
+#include "../core_info.h"
+#include "../content.h"
+#include "../runloop.h"
+
+#ifndef HAVE_DYNAMIC
+#include "../retroarch.h"
+#include "../frontend/frontend_driver.h"
+#endif
 
 #include "task_content.h"
 #include "tasks_internal.h"
-#include "../file_path_special.h"
-#include "../verbosity.h"
-#include "../configuration.h"
-#include "../playlist.h"
-#include "../command.h"
-#include "../core_info.h"
-#include "../../retroarch.h"
-#include "../../menu/menu_driver.h"
 
-typedef struct
+#ifdef HAVE_NETWORKING
+
+#include "../network/netplay/netplay.h"
+
+enum
 {
-   struct string_list *lpl_list;
-   playlist_config_t playlist_config; /* size_t alignment */
+   /* values */
+   STATE_NONE             = 0,
+   STATE_LOAD,
+   STATE_LOAD_SUBSYSTEM,
+   STATE_LOAD_CONTENTLESS,
+   /* values mask */
+   STATE_MASK             = 0xFF,
+   /* flags */
+   STATE_RELOAD           = 0x100
+};
+
+struct netplay_crc_scan_state
+{
+   int  state;
+   bool running;
+};
+
+struct netplay_crc_scan_data
+{
+   struct
+   {
+      struct string_list *subsystem_content;
+      uint32_t crc;
+      char content[NETPLAY_HOST_LONGSTR_LEN];
+      char content_path[PATH_MAX_LENGTH];
+      char subsystem[NETPLAY_HOST_LONGSTR_LEN];
+      char extension[32];
+      bool core_loaded;
+   } current;
+   struct string_list content_paths;
+   playlist_config_t playlist_config;
+   struct string_list *playlists;
+   struct string_list *extensions;
+   uint32_t crc;
+   char content[NETPLAY_HOST_LONGSTR_LEN];
+   char subsystem[NETPLAY_HOST_LONGSTR_LEN];
+   char core[PATH_MAX_LENGTH];
    char hostname[512];
-   char subsystem_name[512];
-   char content_crc[PATH_MAX_LENGTH];
-   char content_path[PATH_MAX_LENGTH];
-   char core_name[PATH_MAX_LENGTH];
-   char core_path[PATH_MAX_LENGTH];
-   char core_extensions[PATH_MAX_LENGTH];
-   bool found;
-   bool current;
-   bool contentless;
-} netplay_crc_handle_t;
+};
 
-static void netplay_crc_scan_callback(retro_task_t *task,
-      void *task_data,
-      void *user_data, const char *error)
+static struct netplay_crc_scan_state scan_state = {0};
+
+static bool find_content_by_crc(playlist_config_t *playlist_config,
+      const struct string_list *playlists, uint32_t crc,
+      struct string_list *paths, bool first_only)
 {
-   netplay_crc_handle_t *state     = (netplay_crc_handle_t*)task_data;
-   content_ctx_info_t content_info = {0};
+   size_t i, j;
+   char crc_ident[16];
+   playlist_t *playlist;
+   union string_list_elem_attr attr;
+   bool ret = false;
 
-   if (!state)
-      return;
+   snprintf(crc_ident, sizeof(crc_ident), "%08lX|crc", (unsigned long)crc);
+   attr.i = 0;
 
-   fflush(stdout);
-
-   if (!string_is_empty(state->subsystem_name) && !string_is_equal(state->subsystem_name, "N/A"))
+   for (i = 0; i < playlists->size; i++)
    {
-      content_ctx_info_t content_info  = {0};
-      struct string_list *game_list = string_split(state->content_path, "|");
-      unsigned i = 0;
+      playlist_config_set_path(playlist_config, playlists->elems[i].data);
 
-      task_push_load_new_core(state->core_path, NULL,
-            &content_info, CORE_TYPE_PLAIN, NULL, NULL);
-      content_clear_subsystem();
-      if (!content_set_subsystem_by_name(state->subsystem_name))
-         RARCH_LOG("[Lobby]: Subsystem not found in implementation\n");
+      playlist = playlist_init(playlist_config);
+      if (!playlist)
+         continue;
 
-      for (i = 0; i < game_list->size; i++)
-         content_add_subsystem(game_list->elems[i].data);
-      task_push_load_subsystem_with_core(
-         NULL, &content_info,
-         CORE_TYPE_PLAIN, NULL, NULL);
-      string_list_free(game_list);
-      return;
-   }
-
-   /* regular core with content file */
-   if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path)
-      && !state->contentless && !state->current)
-   {
-      struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
-
-      RARCH_LOG("[Lobby]: Loading core %s with content file %s\n",
-         state->core_path, state->content_path);
-
-      command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
-
-      if (system && string_is_equal(system->library_name, state->core_name))
-         task_push_load_content_with_core(
-               state->content_path, &content_info,
-               CORE_TYPE_PLAIN, NULL, NULL);
-      else
+      for (j = 0; j < playlist_get_size(playlist); j++)
       {
-         task_push_load_new_core(state->core_path, NULL,
-               &content_info, CORE_TYPE_PLAIN, NULL, NULL);
-         task_push_load_content_with_core(
-               state->content_path, &content_info,
-               CORE_TYPE_PLAIN, NULL, NULL);
+         const struct playlist_entry *entry = NULL;
+
+         playlist_get_index(playlist, j, &entry);
+         if (!entry)
+            continue;
+
+         if (string_is_equal(entry->crc32, crc_ident) &&
+               !string_is_empty(entry->path))
+         {
+            if (!string_list_append(paths, entry->path, attr))
+            {
+               playlist_free(playlist);
+               return false;
+            }
+
+            if (first_only)
+            {
+               playlist_free(playlist);
+               return true;
+            }
+
+            ret = true;
+         }
       }
 
-   }
-   else
-
-   /* contentless core */
-   if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path)
-      && state->contentless)
-   {
-      content_ctx_info_t content_info  = {0};
-      struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
-
-      RARCH_LOG("[Lobby]: Loading contentless core %s\n", state->core_path);
-
-      command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
-
-      if (!string_is_equal(system->library_name, state->core_name))
-         task_push_load_new_core(state->core_path, NULL,
-               &content_info, CORE_TYPE_PLAIN, NULL, NULL);
-
-      task_push_start_current_core(&content_info);
-   }
-   /* regular core with current content */
-   else if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path)
-      && state->current)
-   {
-      RARCH_LOG("[Lobby]: Loading core %s with current content\n", state->core_path);
-      command_event(CMD_EVENT_NETPLAY_INIT_DIRECT, state->hostname);
-      command_event(CMD_EVENT_RESUME, NULL);
-   }
-   /* no match found */
-   else
-   {
-      RARCH_LOG("[Lobby]: Couldn't find a suitable %s\n",
-         string_is_empty(state->content_path) ? "content file" : "core");
-      runloop_msg_queue_push(
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY),
-            1, 480, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      playlist_free(playlist);
    }
 
-   free(state);
+   return ret;
 }
 
-static void begin_task(retro_task_t *task, const char *title)
+static bool find_content_by_name(playlist_config_t *playlist_config,
+      const struct string_list *playlists, const struct string_list *names,
+      const struct string_list *extensions, struct string_list *paths,
+      bool with_extension)
 {
-   task_set_progress(task, 0);
-   task_free_title(task);
-   task_set_title(task, strdup(title));
-   task_set_finished(task, false);
-}
+   size_t i, j, k;
+   char buf[PATH_MAX_LENGTH];
+   bool has_extensions;
+   union string_list_elem_attr attr;
+   bool err                   = false;
+   playlist_t *playlist       = NULL;
+   playlist_t **playlist_ptrs =
+      (playlist_t**)calloc(playlists->size, sizeof(*playlist_ptrs));
 
-static void finish_task(retro_task_t *task, const char *title)
-{
-   task_set_progress(task, 100);
-   task_free_title(task);
-   task_set_title(task, strdup(title));
-   task_set_finished(task, true);
-}
+   if (!playlist_ptrs)
+      return false;
 
-#define core_requires_content(state) string_is_not_equal(state->content_path, "N/A")
+   has_extensions = extensions && extensions->size > 0;
+   attr.i         = 0;
 
-/**
- * Given a path to a content file, return the base name without the
- * path or the file extension.
- *
- * e.g. /home/user/foo.rom => foo
- */
-static void get_entry(char *entry, int len, const char *path)
-{
-   const char *buf = path_basename(path);
-   entry[0]        = '\0';
+   for (i = 0; i < names->size && !err; i++)
+   {
+      bool found       = false;
+      const char *name = names->elems[i].data;
 
-   strlcpy(entry, buf, len);
-   path_remove_extension(entry);
+      for (j = 0; j < playlists->size; j++)
+      {
+         /* We do it like this
+            because we want names and paths to have the same order;
+            we also want to read and parse a playlist only the first time. */
+         playlist = playlist_ptrs[j];
+         if (!playlist)
+         {
+            playlist_config_set_path(playlist_config,
+               playlists->elems[j].data);
+
+            playlist = playlist_init(playlist_config);
+            if (!playlist)
+               continue;
+            playlist_ptrs[j] = playlist;
+         }
+
+         for (k = 0; k < playlist_get_size(playlist); k++)
+         {
+            const struct playlist_entry *entry = NULL;
+
+            playlist_get_index(playlist, k, &entry);
+            if (!entry)
+               continue;
+
+            /* If we don't have an extensions list, accept anything,
+               as long as the name matches. */
+            if (has_extensions)
+            {
+               const char *extension = path_get_extension(entry->path);
+
+               if (string_is_empty(extension) || !string_list_find_elem(
+                     extensions, extension))
+                  continue;
+            }
+
+            strlcpy(buf, path_basename(entry->path), sizeof(buf));
+            if (!with_extension)
+               path_remove_extension(buf);
+
+            if (string_is_equal_case_insensitive(buf, name))
+            {
+               found = true;
+
+               if (!string_list_append(paths, entry->path, attr))
+                  err = true;
+
+               break;
+            }
+         }
+
+         if (found)
+            break;
+      }
+
+      if (!found)
+         break;
+   }
+
+   for (j = 0; j < playlists->size; j++)
+      playlist_free(playlist_ptrs[j]);
+   free(playlist_ptrs);
+
+   return !err && i == names->size;
 }
 
 /**
  * Execute a search for compatible content for netplay.
  * We prioritize a CRC match, if we have a CRC to match against.
- * If we don't have a CRC, or if there's no CRC match found, fall
- * back to a filename match and hope for the best.
+ * If we don't have a CRC, or if there's no CRC match found,
+ * fall back to a filename match and hope for the best.
  */
 static void task_netplay_crc_scan_handler(retro_task_t *task)
 {
-   size_t i, j, k;
-   char entry[PATH_MAX_LENGTH];
-   bool have_crc               = false;
-   netplay_crc_handle_t *state = (netplay_crc_handle_t*)task->state;
+   struct netplay_crc_scan_state *state =
+      (struct netplay_crc_scan_state*)task->state;
+   struct netplay_crc_scan_data  *data  =
+      (struct netplay_crc_scan_data*)task->task_data;
+   const char                    *title = NULL;
+   struct string_list content_list      = {0};
 
-   begin_task(task, "Looking for compatible content...");
+   if (state->state != STATE_NONE)
+      goto finished; /* We already have what we need. */
 
-   /* start by checking cases that don't require a search */
-
-   /* the core doesn't have any content to match, so fast-succeed */
-   if (!core_requires_content(state))
+   /* We really can't do much without the core's path. */
+   if (string_is_empty(data->core))
    {
-      state->found = true;
-      state->contentless = true;
-      task_set_data(task, state);
-      finish_task(task, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND));
-      return;
+      title =
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_CORE);
+      goto finished;
    }
 
-   /* if this list is null, it means that RA failed to open the playlist directory */
-   if (!state->lpl_list)
+   if (string_is_empty(data->content) ||
+         string_is_equal_case_insensitive(data->content, "N/A"))
    {
-      finish_task(task, "Playlist directory not found");
-      free(state);
-      return;
+      title        =
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND);
+      state->state = STATE_LOAD_CONTENTLESS;
+
+      if (data->current.core_loaded)
+         state->state |= STATE_RELOAD;
+
+      goto finished;
    }
 
-   /* We opened the playlist directory, but there's nothing there. Nothing to do. */
-   if (state->lpl_list->size == 0 && core_requires_content(state))
+   if (data->current.core_loaded && data->crc > 0 && data->current.crc > 0)
    {
-      string_list_free(state->lpl_list);
-      finish_task(task, "There are no playlists available; cannot execute search");
-      command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
-      free(state);
-      return;
-   }
+      RARCH_LOG("[Lobby] Testing CRC matching for: %08lX\n",
+         (unsigned long)data->crc);
+      RARCH_LOG("[Lobby] Current content CRC: %08lX\n",
+         (unsigned long)data->current.crc);
 
-   have_crc = !string_is_equal(state->content_crc, "00000000|crc");
-
-   /* if content is already loaded and the lobby gave us a CRC, check the loaded content first */
-   if (have_crc && content_get_crc() > 0)
-   {
-      char current[PATH_MAX_LENGTH];
-
-      RARCH_LOG("[Lobby]: Testing CRC matching for: %s\n", state->content_crc);
-
-      snprintf(current, sizeof(current), "%lX|crc", (unsigned long)content_get_crc());
-      RARCH_LOG("[Lobby]: Current content CRC: %s\n", current);
-
-      if (string_is_equal(current, state->content_crc))
+      if (data->current.crc == data->crc)
       {
-         RARCH_LOG("[Lobby]: CRC match %s with currently loaded content\n", current);
-         strcpy_literal(state->content_path, "N/A");
-         state->found   = true;
-         state->current = true;
-         task_set_data(task, state);
-         finish_task(task, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND));
-         string_list_free(state->lpl_list);
-         return;
+         RARCH_LOG("[Lobby] CRC match with currently loaded content.\n");
+
+         title        = msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND);
+         state->state = STATE_LOAD | STATE_RELOAD;
+         goto finished;
       }
    }
 
-   /* now let's do the search */
-   if (string_is_empty(state->subsystem_name) || string_is_equal(state->subsystem_name, "N/A"))
+   if (string_is_empty(data->subsystem) ||
+         string_is_equal_case_insensitive(data->subsystem, "N/A"))
    {
-      for (i = 0; i < state->lpl_list->size; i++)
+      if (data->current.core_loaded && data->extensions &&
+            !string_is_empty(data->current.content) &&
+            !string_is_empty(data->current.extension))
       {
-         playlist_t *playlist   = NULL;
-         unsigned playlist_size = 0;
-         const char *lpl_path   = state->lpl_list->elems[i].data;
-
-         /* skip files without .lpl file extension */
-         if (!string_ends_with_size(lpl_path, ".lpl",
-                  strlen(lpl_path),
-                  STRLEN_CONST(".lpl")))
-            continue;
-
-         RARCH_LOG("[Lobby]: Searching playlist: %s\n", lpl_path);
-         playlist_config_set_path(&state->playlist_config, lpl_path);
-         playlist      = playlist_init(&state->playlist_config);
-         playlist_size = playlist_get_size(playlist);
-
-         for (j = 0; j < playlist_size; j++)
+         if (!data->current.subsystem_content ||
+               !data->current.subsystem_content->size)
          {
-            const char *playlist_path     = NULL;
-            const char *playlist_crc32    = NULL;
-            const struct playlist_entry *playlist_entry = NULL;
-
-            playlist_get_index(playlist, j, &playlist_entry);
-
-            playlist_path = playlist_entry->path;
-            playlist_crc32 = playlist_entry->crc32;
-
-            if (have_crc && string_is_equal(playlist_crc32, state->content_crc))
+            if (string_is_equal_case_insensitive(
+                     data->current.content, data->content) &&
+                  string_list_find_elem(
+                     data->extensions, data->current.extension))
             {
-               RARCH_LOG("[Lobby]: CRC match %s\n", playlist_crc32);
-               strlcpy(state->content_path, playlist_path, sizeof(state->content_path));
-               state->found = true;
-               task_set_data(task, state);
-               finish_task(task, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND));
-               string_list_free(state->lpl_list);
-               playlist_free(playlist);
-               return;
+               RARCH_LOG("[Lobby] Filename match with currently loaded content.\n");
+
+               title        = msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND);
+               state->state = STATE_LOAD | STATE_RELOAD;
+               goto finished;
             }
-
-            get_entry(entry, sizeof(entry), playlist_path);
-
-            /* See if the filename is a match. The response depends on whether or not we are doing a CRC
-            * search.
-            * Otherwise, on match we complete the task and mark it as successful immediately.
-            */
-
-            if (!string_is_empty(entry) &&
-               string_is_equal(entry, state->content_path) &&
-               strstr(state->core_extensions, path_get_extension(playlist_path)))
-            {
-               RARCH_LOG("[Lobby]: Filename match %s\n", playlist_path);
-
-               strlcpy(state->content_path, playlist_path, sizeof(state->content_path));
-               state->found = true;
-               task_set_data(task, state);
-               finish_task(task, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND));
-               string_list_free(state->lpl_list);
-               playlist_free(playlist);
-               return;
-            }
-
-            task_set_progress(task, (int)(j / playlist_size * 100.0));
          }
+      }
 
-         playlist_free(playlist);
+      if (!data->playlists || !data->playlists->size)
+      {
+         title = msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_PLAYLISTS);
+         goto finished;
+      }
+
+      if (!string_list_initialize(&data->content_paths))
+         goto finished;
+
+      /* We try a CRC match first. */
+      if (data->crc > 0 && find_content_by_crc(&data->playlist_config,
+            data->playlists, data->crc, &data->content_paths, true))
+      {
+         RARCH_LOG("[Lobby] Playlist CRC match.\n");
+
+         title        = msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND);
+         state->state = STATE_LOAD;
+         goto finished;
+      }
+      else
+      {
+         union string_list_elem_attr attr;
+
+         if (!string_list_initialize(&content_list))
+            goto finished;
+
+         attr.i = 0;
+         if (!string_list_append(&content_list, data->content, attr))
+            goto finished;
+
+         /* Now we try a filename match as a last resort. */
+         if (find_content_by_name(&data->playlist_config, data->playlists,
+               &content_list, data->extensions, &data->content_paths, false))
+         {
+            RARCH_LOG("[Lobby] Playlist filename match.\n");
+
+            title        = msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND);
+            state->state = STATE_LOAD;
+            goto finished;
+         }
       }
    }
    else
    {
-      bool found[100];
-      struct string_list *game_list = string_split(state->content_path, "|");
+      if (!string_list_initialize(&content_list))
+         goto finished;
+      if (!string_split_noalloc(&content_list, data->content, "|"))
+         goto finished;
 
-      for (i = 0; i < game_list->size; i++)
+      if (data->current.core_loaded && data->current.subsystem_content &&
+            data->current.subsystem_content->size > 0 &&
+            string_is_equal_case_insensitive(data->current.subsystem,
+               data->subsystem))
       {
-         found[i] = false;
-
-         for (j = 0; j < state->lpl_list->size && !found[i]; j++)
+         if (content_list.size == data->current.subsystem_content->size)
          {
-            playlist_t *playlist   = NULL;
-            unsigned playlist_size = 0;
-            const char *lpl_path   = state->lpl_list->elems[j].data;
+            size_t i;
+            bool loaded = true;
 
-            /* skip files without .lpl file extension */
-            if (!string_ends_with_size(lpl_path, ".lpl",
-                     strlen(lpl_path),
-                     STRLEN_CONST(".lpl")))
-               continue;
-
-            RARCH_LOG("[Lobby]: Searching content %d/%d (%s) in playlist: %s\n", i + 1, game_list->size, game_list->elems[i].data, lpl_path);
-            playlist_config_set_path(&state->playlist_config, lpl_path);
-            playlist      = playlist_init(&state->playlist_config);
-            playlist_size = playlist_get_size(playlist);
-
-            for (k = 0; k < playlist_size && !found[i]; k++)
+            for (i = 0; i < content_list.size; i++)
             {
-               const struct playlist_entry *playlist_entry = NULL;
+               const char *local_content  = path_basename(
+                  data->current.subsystem_content->elems[i].data);
+               const char *remote_content = content_list.elems[i].data;
 
-               playlist_get_index(playlist, k, &playlist_entry);
-
-               get_entry(entry, sizeof(entry), playlist_entry->path);
-
-               if (!string_is_empty(entry) &&
-                  strstr(game_list->elems[i].data, entry) &&
-                  strstr(state->core_extensions, path_get_extension(playlist_entry->path)))
+               if (!string_is_equal_case_insensitive(local_content,
+                     remote_content))
                {
-                  RARCH_LOG("[Lobby]: Filename match %s\n", playlist_entry->path);
-
-                  if (i == 0)
-                  {
-                     state->content_path[0] = '\0';
-                     strlcpy(state->content_path, playlist_entry->path, sizeof(state->content_path));
-                  }
-                  else
-                  {
-                     strlcat(state->content_path, "|", sizeof(state->content_path));
-                     strlcat(state->content_path, playlist_entry->path, sizeof(state->content_path));
-                  }
-
-                  found[i] = true;
+                  loaded = false;
+                  break;
                }
-
-               task_set_progress(task, (int)(j / playlist_size * 100.0));
             }
 
-            playlist_free(playlist);
+            if (loaded)
+            {
+               RARCH_LOG("[Lobby] Subsystem match with currently loaded content.\n");
+
+               title        = msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND);
+               state->state = STATE_LOAD_SUBSYSTEM | STATE_RELOAD;
+               goto finished;
+            }
          }
       }
 
-      for (i = 0; i < game_list->size; i++)
+      if (!data->playlists || !data->playlists->size)
       {
-         state->found = true;
-         if (!found[i])
-         {
-            state->found = false;
-            break;
-         }
+         title = msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_PLAYLISTS);
+         goto finished;
       }
 
-      if (state->found)
-      {
-         RARCH_LOG("[Lobby]: Subsystem matching set found %s\n", state->content_path);
-         task_set_data(task, state);
-         finish_task(task, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND));
-      }
+      if (!string_list_initialize(&data->content_paths))
+         goto finished;
 
-      string_list_free(state->lpl_list);
-      string_list_free(game_list);
-      return;
+      /* Subsystems won't have a CRC.
+         Must always match by filename(s). */
+      if (find_content_by_name(&data->playlist_config, data->playlists,
+            &content_list, data->extensions, &data->content_paths, true))
+      {
+         RARCH_LOG("[Lobby] Playlist subsystem match.\n");
+
+         title        = msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND);
+         state->state = STATE_LOAD_SUBSYSTEM;
+         goto finished;
+      }
    }
 
-   /* end of the line. no matches at all. */
-   string_list_free(state->lpl_list);
-   finish_task(task, "Failed to locate matching content by either CRC or filename.");
-   command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
-   free(state);
+   title =
+      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NOT_FOUND);
+
+finished:
+   string_list_deinitialize(&content_list);
+
+   task_set_progress(task, 100);
+
+   if (title)
+   {
+      task_free_title(task);
+      task_set_title(task, strdup(title));
+   }
+
+   task_set_finished(task, true);
 }
 
-bool task_push_netplay_crc_scan(uint32_t crc, char* name,
-      const char *hostname, const char *core_name, const char *subsystem)
+#ifndef HAVE_DYNAMIC
+static bool static_load(const char *core, const char *subsystem,
+      const void *content, const char *hostname)
 {
-   unsigned i;
-   union string_list_elem_attr attr;
-   struct string_list *lpl_list = NULL;
-   core_info_list_t *info       = NULL;
-   settings_t        *settings  = config_get_ptr();
-   retro_task_t          *task  = task_init();
-   netplay_crc_handle_t *state  = (netplay_crc_handle_t*)
-      calloc(1, sizeof(*state));
+#define ARG(arg) (void*)(arg)
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_CLEAR_FORK_ARGS, NULL);
 
-   if (!task || !state)
-      goto error;
-
-   state->playlist_config.capacity            = COLLECTION_SIZE;
-   state->playlist_config.old_format          = settings->bools.playlist_use_old_format;
-   state->playlist_config.compress            = settings->bools.playlist_compression;
-   state->playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
-   playlist_config_set_base_content_directory(&state->playlist_config, settings->bools.playlist_portable_paths ? settings->paths.directory_menu_content : NULL);
-
-   state->content_crc[0]    = '\0';
-   state->content_path[0]   = '\0';
-   state->hostname[0]       = '\0';
-   state->core_name[0]      = '\0';
-   state->subsystem_name[0] = '\0';
-   attr.i = 0;
-
-   snprintf(state->content_crc,
-         sizeof(state->content_crc),
-         "%08lX|crc", (unsigned long)crc);
-
-   strlcpy(state->content_path,
-         name, sizeof(state->content_path));
-   strlcpy(state->hostname,
-         hostname, sizeof(state->hostname));
-   strlcpy(state->subsystem_name,
-         subsystem, sizeof(state->subsystem_name));
-   strlcpy(state->core_name,
-         core_name, sizeof(state->core_name));
-
-   lpl_list = dir_list_new(settings->paths.directory_playlist,
-         NULL, true, true, true, false);
-
-   if (!lpl_list)
-      goto error;
-
-   state->lpl_list = lpl_list;
-
-   string_list_append(state->lpl_list,
-         settings->paths.path_content_history, attr);
-   state->found = false;
-
-   core_info_get_list(&info);
-
-   for (i = 0; i < info->count; i++)
+   if (string_is_empty(hostname))
    {
-      /* check if the core name matches.
-         TO-DO :we could try to load the core too to check
-         if the version string matches too */
-#if 0
-      printf("Info: %s State: %s", info->list[i].core_name, state->core_name);
-#endif
-      if (string_is_equal(info->list[i].core_name, state->core_name))
-      {
-         strlcpy(state->core_path,
-               info->list[i].path, sizeof(state->core_path));
+      if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG, ARG("-H")))
+         goto failure;
+   }
+   else
+   {
+      if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG, ARG("-C")) ||
+            !netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG, ARG(hostname)))
+         goto failure;
+   }
 
-         if (string_is_not_equal(state->content_path, "N/A") &&
-            !string_is_empty(info->list[i].supported_extensions))
+   if (!string_is_empty(subsystem))
+   {
+      const struct string_list *subsystem_content =
+         (const struct string_list*)content;
+
+      if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG, ARG("--subsystem")) ||
+            !netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG, ARG(subsystem)))
+         goto failure;
+
+      if (subsystem_content && subsystem_content->size > 0)
+      {
+         size_t i;
+
+         for (i = 0; i < subsystem_content->size; i++)
          {
-            strlcpy(state->core_extensions,
-                  info->list[i].supported_extensions,
-                  sizeof(state->core_extensions));
+            if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG,
+                  ARG(subsystem_content->elems[i].data)))
+               goto failure;
          }
+      }
+#ifdef HAVE_MENU
+      else
+      {
+         if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG, ARG("--menu")))
+            goto failure;
+      }
+#endif
+   }
+   else
+   {
+      if (content)
+      {
+         if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG, ARG(content)))
+            goto failure;
+      }
+#ifdef HAVE_MENU
+      else
+      {
+         if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG, ARG("--menu")))
+            goto failure;
+      }
+#endif
+   }
+
+   if (!frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS))
+      goto failure;
+
+   path_set(RARCH_PATH_CORE, core);
+
+   retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+
+   return true;
+
+failure:
+   RARCH_ERR("[Lobby] Failed to fork RetroArch for netplay.\n");
+
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_CLEAR_FORK_ARGS, NULL);
+
+   return false;
+
+#undef ARG
+}
+#endif
+
+static void task_netplay_crc_scan_callback(retro_task_t *task,
+      void *task_data, void *user_data, const char *error)
+{
+   struct netplay_crc_scan_state *state =
+      (struct netplay_crc_scan_state*)task->state;
+   struct netplay_crc_scan_data  *data  =
+      (struct netplay_crc_scan_data*)task_data;
+
+   switch (state->state & STATE_MASK)
+   {
+      case STATE_LOAD:
+         {
+            const char *content_path        = (state->state & STATE_RELOAD) ?
+               data->current.content_path : data->content_paths.elems[0].data;
+#ifdef HAVE_DYNAMIC
+            content_ctx_info_t content_info = {0};
+
+            if (data->current.core_loaded)
+               command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+
+            RARCH_LOG("[Lobby] Loading core '%s' with content file '%s'.\n",
+               data->core, content_path);
+
+            command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+
+            if (string_is_empty(data->hostname))
+            {
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
+            }
+            else
+            {
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+               command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
+                  data->hostname);
+            }
+
+            task_push_load_new_core(data->core,
+               NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
+            task_push_load_content_with_core(content_path,
+               &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+#else
+
+            static_load(data->core, NULL, content_path, data->hostname);
+#endif
+         }
+         break;
+
+      case STATE_LOAD_SUBSYSTEM:
+         {
+            const char *subsystem;
+            struct string_list *subsystem_content;
+
+            if (state->state & STATE_RELOAD)
+            {
+               subsystem         = data->current.subsystem;
+               subsystem_content = data->current.subsystem_content;
+            }
+            else
+            {
+               subsystem         = data->subsystem;
+               subsystem_content = &data->content_paths;
+            }
+
+#ifdef HAVE_DYNAMIC
+            if (data->current.core_loaded)
+               command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+
+            RARCH_LOG("[Lobby] Loading core '%s' with subsystem '%s'.\n",
+               data->core, subsystem);
+
+            command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+
+            if (string_is_empty(data->hostname))
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
+            else
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+
+            task_push_load_new_core(data->core,
+               NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
+
+            content_clear_subsystem();
+
+            if (content_set_subsystem_by_name(subsystem))
+            {
+               size_t i;
+               content_ctx_info_t content_info = {0};
+
+               for (i = 0; i < subsystem_content->size; i++)
+                  content_add_subsystem(subsystem_content->elems[i].data);
+
+               if (!string_is_empty(data->hostname))
+                  command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
+                     data->hostname);
+
+               task_push_load_subsystem_with_core(NULL,
+                  &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+            }
+            else
+            {
+               RARCH_ERR("[Lobby] Subsystem not found.\n");
+
+               /* Disable netplay if we don't have the subsystem. */
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
+
+               command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+            }
+#else
+            static_load(data->core, subsystem, subsystem_content,
+               data->hostname);
+#endif
+         }
+         break;
+
+      case STATE_LOAD_CONTENTLESS:
+         {
+#ifdef HAVE_DYNAMIC
+            content_ctx_info_t content_info = {0};
+
+            if (data->current.core_loaded)
+               command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+
+            RARCH_LOG("[Lobby] Loading contentless core '%s'.\n", data->core);
+
+            command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+
+            if (string_is_empty(data->hostname))
+            {
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
+            }
+            else
+            {
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+               command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
+                  data->hostname);
+            }
+
+            task_push_load_new_core(data->core,
+               NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
+            task_push_start_current_core(&content_info);
+#else
+            static_load(data->core, NULL, NULL, data->hostname);
+#endif
+         }
+         break;
+
+      case STATE_NONE:
+         {
+            if (data->current.core_loaded && (state->state & STATE_RELOAD))
+            {
+#ifdef HAVE_DYNAMIC
+               command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+
+               command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+
+               if (string_is_empty(data->hostname))
+               {
+                  netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
+               }
+               else
+               {
+                  netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+                  command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
+                     data->hostname);
+               }
+
+               task_push_load_new_core(data->core,
+                  NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
+
+               if (!string_is_empty(data->current.subsystem))
+               {
+                  content_clear_subsystem();
+                  content_set_subsystem_by_name(data->current.subsystem);
+               }
+
+               runloop_msg_queue_push(
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
+                  1, 480, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#else
+               runloop_msg_queue_push(
+                  msg_hash_to_str(MSG_NETPLAY_NEED_CONTENT_LOADED),
+                  1, 480, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#endif
+            }
+            else
+               RARCH_WARN("[Lobby] Nothing to load.\n");
+         }
+         break;
+
+      default:
+         break;
+   }
+}
+
+static void task_netplay_crc_scan_cleanup(retro_task_t *task)
+{
+   struct netplay_crc_scan_state *state =
+      (struct netplay_crc_scan_state*)task->state;
+   struct netplay_crc_scan_data  *data  =
+      (struct netplay_crc_scan_data*)task->task_data;
+
+   string_list_deinitialize(&data->content_paths);
+
+   string_list_free(data->current.subsystem_content);
+   string_list_free(data->playlists);
+   string_list_free(data->extensions);
+
+   free(data);
+
+   state->running = false;
+}
+
+bool task_push_netplay_crc_scan(uint32_t crc, const char *content,
+      const char *subsystem, const char *core, const char *hostname)
+{
+   size_t i;
+   struct netplay_crc_scan_data *data;
+   retro_task_t *task;
+   const char *pbasename, *pcontent, *psubsystem;
+   core_info_list_t         *coreinfos = NULL;
+   settings_t               *settings  = config_get_ptr();
+   struct retro_system_info *system    = &runloop_state_get_ptr()->system.info;
+
+   /* Do not run more than one CRC scan task at a time. */
+   if (scan_state.running)
+      return false;
+
+   data = (struct netplay_crc_scan_data*)calloc(1, sizeof(*data));
+   task = task_init();
+
+   if (!data || !task)
+   {
+      free(data);
+      free(task);
+
+      return false;
+   }
+
+   data->crc = crc;
+
+   strlcpy(data->content, content, sizeof(data->content));
+   strlcpy(data->subsystem, subsystem, sizeof(data->subsystem));
+   strlcpy(data->hostname, hostname, sizeof(data->hostname));
+
+   core_info_get_list(&coreinfos);
+   for (i = 0; i < coreinfos->count; i++)
+   {
+      core_info_t *coreinfo = &coreinfos->list[i];
+
+      if (string_is_equal_case_insensitive(coreinfo->core_name, core))
+      {
+         strlcpy(data->core, coreinfo->path, sizeof(data->core));
+
+         if (coreinfo->supported_extensions_list)
+            data->extensions =
+               string_list_clone(coreinfo->supported_extensions_list);
+
          break;
       }
    }
 
-   /* blocking means no other task can run while this one is running,
-    * which is the default */
-   task->type           = TASK_TYPE_BLOCKING;
-   task->state          = state;
-   task->handler        = task_netplay_crc_scan_handler;
-   task->callback       = netplay_crc_scan_callback;
-   task->title          = strdup("Looking for matching content...");
+   data->playlist_config.capacity            = COLLECTION_SIZE;
+   data->playlist_config.old_format          =
+      settings->bools.playlist_use_old_format;
+   data->playlist_config.compress            =
+      settings->bools.playlist_compression;
+   data->playlist_config.fuzzy_archive_match =
+      settings->bools.playlist_fuzzy_archive_match;
+   playlist_config_set_base_content_directory(&data->playlist_config,
+      settings->bools.playlist_portable_paths ?
+         settings->paths.directory_menu_content : NULL);
+
+   data->playlists = dir_list_new(settings->paths.directory_playlist, "lpl",
+      false, true, false, false);
+   if (!data->playlists)
+      data->playlists = string_list_new();
+   if (data->playlists)
+   {
+      union string_list_elem_attr attr;
+
+      attr.i = RARCH_PLAIN_FILE;
+      string_list_append(data->playlists,
+         settings->paths.path_content_history, attr);
+   }
+
+   data->current.crc = content_get_crc();
+
+   pbasename  = path_get(RARCH_PATH_BASENAME);
+   if (!string_is_empty(pbasename))
+      strlcpy(data->current.content, path_basename(pbasename),
+         sizeof(data->current.content));
+
+   pcontent   = path_get(RARCH_PATH_CONTENT);
+   if (!string_is_empty(pcontent))
+   {
+      strlcpy(data->current.content_path, pcontent,
+         sizeof(data->current.content_path));
+      strlcpy(data->current.extension, path_get_extension(pcontent),
+         sizeof(data->current.extension));
+   }
+
+   psubsystem = path_get(RARCH_PATH_SUBSYSTEM);
+   if (!string_is_empty(psubsystem))
+      strlcpy(data->current.subsystem, psubsystem,
+         sizeof(data->current.subsystem));
+
+   if (path_get_subsystem_list())
+      data->current.subsystem_content =
+         string_list_clone(path_get_subsystem_list());
+
+   data->current.core_loaded =
+      string_is_equal_case_insensitive(system->library_name, core);
+
+   scan_state.state   = STATE_NONE;
+   scan_state.running = true;
+
+   task->handler   = task_netplay_crc_scan_handler;
+   task->callback  = task_netplay_crc_scan_callback;
+   task->cleanup   = task_netplay_crc_scan_cleanup;
+   task->task_data = data;
+   task->state     = &scan_state;
+   task->title     = strdup(
+      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_LOOK));
 
    task_queue_push(task);
 
    return true;
+}
 
-error:
-   if (state)
-      free(state);
-   if (task)
+bool task_push_netplay_content_reload(const char *hostname)
+{
+   struct netplay_crc_scan_data *data;
+   retro_task_t *task;
+   const char *pcore;
+   bool contentless, is_inited;
+
+   /* Do not run more than one CRC scan task at a time. */
+   if (scan_state.running)
+      return false;
+
+   pcore = path_get(RARCH_PATH_CORE);
+   if (string_is_empty(pcore) || string_is_equal(pcore, "builtin"))
+      return false; /* Nothing to reload. */
+
+   data = (struct netplay_crc_scan_data*)calloc(1, sizeof(*data));
+   task = task_init();
+
+   if (!data || !task)
+   {
+      free(data);
       free(task);
 
+      return false;
+   }
+
+   scan_state.state = STATE_RELOAD;
+
+   strlcpy(data->core, pcore, sizeof(data->core));
+
+   /* Hostname being NULL indicates this is a host. */
+   if (hostname)
+      strlcpy(data->hostname, hostname, sizeof(data->hostname));
+
+   content_get_status(&contentless, &is_inited);
+   if (contentless)
+   {
+      scan_state.state |= STATE_LOAD_CONTENTLESS;
+   }
+   else if (is_inited)
+   {
+      const char *psubsystem = path_get(RARCH_PATH_SUBSYSTEM);
+
+      if (!string_is_empty(psubsystem))
+      {
+         strlcpy(data->current.subsystem, psubsystem,
+            sizeof(data->current.subsystem));
+
+         if (path_get_subsystem_list())
+         {
+            data->current.subsystem_content =
+               string_list_clone(path_get_subsystem_list());
+
+            if (data->current.subsystem_content &&
+                  data->current.subsystem_content->size > 0)
+               scan_state.state |= STATE_LOAD_SUBSYSTEM;
+         }
+      }
+      else if (!path_is_empty(RARCH_PATH_BASENAME))
+      {
+         const char *pcontent = path_get(RARCH_PATH_CONTENT);
+
+         if (!string_is_empty(pcontent))
+         {
+            strlcpy(data->current.content_path, pcontent,
+               sizeof(data->current.content_path));
+
+            scan_state.state |= STATE_LOAD;
+         }
+      }
+   }
+
+   data->current.core_loaded = true;
+
+   scan_state.running = true;
+
+   task->handler   = task_netplay_crc_scan_handler;
+   task->callback  = task_netplay_crc_scan_callback;
+   task->cleanup   = task_netplay_crc_scan_cleanup;
+   task->task_data = data;
+   task->state     = &scan_state;
+
+   task_queue_push(task);
+
+   return true;
+}
+#else
+bool task_push_netplay_crc_scan(uint32_t crc, const char *content,
+      const char *subsystem, const char *core, const char *hostname)
+{
    return false;
 }
+
+bool task_push_netplay_content_reload(const char *hostname)
+{
+   return false;
+}
+#endif

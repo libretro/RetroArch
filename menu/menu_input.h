@@ -266,6 +266,7 @@ void menu_input_set_pointer_selection(unsigned selection);
  * drivers typically set acceleration to zero when populating entries.
  * 
  * @param y_accel
+ * The Y acceleration value that we want to apply
  **/
 void menu_input_set_pointer_y_accel(float y_accel);
 

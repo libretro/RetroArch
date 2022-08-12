@@ -30,12 +30,12 @@
 
 typedef struct
 {
-   const font_renderer_driver_t *sixel_font_driver;
-   void *sixel_font_data;
+   const font_renderer_driver_t *font_driver;
+   void *font_data;
    sixel_t *sixel;
 } sixel_raster_t;
 
-static void *sixel_init_font(void *data,
+static void *sixel_font_init(void *data,
       const char *font_path, float font_size,
       bool is_threaded)
 {
@@ -47,8 +47,8 @@ static void *sixel_init_font(void *data,
    font->sixel = (sixel_t*)data;
 
    if (!font_renderer_create_default(
-            &font->sixel_font_driver,
-            &font->sixel_font_data, font_path, font_size))
+            &font->font_driver,
+            &font->font_data, font_path, font_size))
    {
       RARCH_WARN("Couldn't initialize font renderer.\n");
       return NULL;
@@ -57,56 +57,56 @@ static void *sixel_init_font(void *data,
    return font;
 }
 
-static void sixel_render_free_font(void *data, bool is_threaded)
+static void sixel_font_free(void *data, bool is_threaded)
 {
-   (void)data;
-   (void)is_threaded;
+  sixel_raster_t *font  = (sixel_raster_t*)data;
+  if (!font)
+     return;
+
+  if (font->font_driver && font->font_data && font->font_driver->free)
+     font->font_driver->free(font->font_data);
+
+  free(font);
 }
 
-static int sixel_get_message_width(void *data, const char *msg,
-      unsigned msg_len, float scale)
-{
-   return 0;
-}
-
+static int sixel_font_get_message_width(void *data, const char *msg,
+      unsigned msg_len, float scale) { return 0; }
 static const struct font_glyph *sixel_font_get_glyph(
-      void *data, uint32_t code)
-{
-   return NULL;
-}
+      void *data, uint32_t code) { return NULL; }
 
-static void sixel_render_msg(
+static void sixel_font_render_msg(
       void *userdata,
       void *data,
       const char *msg,
       const struct font_params *_params)
 {
+   /* TODO/FIXME: add text drawing support */
+#if 0
    float x, y, scale;
-   unsigned width, height;
-   unsigned new_x, new_y;
-   unsigned align;
+   size_t msg_len;
+   unsigned width, height, new_x, new_y, align;
    sixel_raster_t              *font = (sixel_raster_t*)data;
    const struct font_params *params  = (const struct font_params*)_params;
-   settings_t *settings              = config_get_ptr();
-   float video_msg_pos_x             = settings->floats.video_msg_pos_x;
-   float video_msg_pos_y             = settings->floats.video_msg_pos_y;
 
    if (!font || string_is_empty(msg))
       return;
 
    if (params)
    {
-      x     = params->x;
-      y     = params->y;
-      scale = params->scale;
-      align = params->text_align;
+      x                              = params->x;
+      y                              = params->y;
+      scale                          = params->scale;
+      align                          = params->text_align;
    }
    else
    {
-      x     = video_msg_pos_x;
-      y     = video_msg_pos_y;
-      scale = 1.0f;
-      align = TEXT_ALIGN_LEFT;
+      settings_t *settings           = config_get_ptr();
+      float video_msg_pos_x          = settings->floats.video_msg_pos_x;
+      float video_msg_pos_y          = settings->floats.video_msg_pos_y;
+      x                              = video_msg_pos_x;
+      y                              = video_msg_pos_y;
+      scale                          = 1.0f;
+      align                          = TEXT_ALIGN_LEFT;
    }
 
    if (!font->sixel)
@@ -115,32 +115,32 @@ static void sixel_render_msg(
    width    = font->sixel->screen_width;
    height   = font->sixel->screen_height;
    new_y    = height - (y * height * scale);
+   msg_len  = strlen(msg);
 
    switch (align)
    {
       case TEXT_ALIGN_RIGHT:
-         new_x = (x * width * scale) - strlen(msg);
+         new_x = (x * width * scale) - msg_len;
          break;
       case TEXT_ALIGN_CENTER:
-         new_x =  (x * width * scale) - (strlen(msg) / 2);
+         new_x =  (x * width * scale) - (msg_len / 2);
          break;
       case TEXT_ALIGN_LEFT:
       default:
          new_x = x * width * scale;
          break;
    }
-
-   /* FIXME: add text drawing support */
+#endif
 }
 
 font_renderer_t sixel_font = {
-   sixel_init_font,
-   sixel_render_free_font,
-   sixel_render_msg,
-   "sixel font",
-   sixel_font_get_glyph,       /* get_glyph */
+   sixel_font_init,
+   sixel_font_free,
+   sixel_font_render_msg,
+   "sixel_font",
+   sixel_font_get_glyph,
    NULL,                       /* bind_block */
    NULL,                       /* flush */
-   sixel_get_message_width,    /* get_message_width */
+   sixel_font_get_message_width,
    NULL                        /* get_line_metrics */
 };

@@ -314,12 +314,12 @@ static void fft_init(fft_t *fft)
 
    window = (GLushort*)calloc(fft->size, sizeof(GLushort));
 
-   window_mod = 1.0 / kaiser_window_function(0.0, KAISER_BETA);
+   window_mod = 1.0 / besseli0(KAISER_BETA);
 
    for (i = 0; i < fft->size; i++)
    {
       double phase = (double)(i - (int)(fft->size) / 2) / ((int)(fft->size) / 2);
-      double     w = kaiser_window_function(phase, KAISER_BETA);
+      double     w = besseli0(KAISER_BETA * sqrtf(1 - phase * phase));
       window[i]    = round(0xffff * w * window_mod);
    }
    glBindTexture(GL_TEXTURE_2D, fft->window_tex);

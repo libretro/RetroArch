@@ -34,8 +34,7 @@ typedef struct
    struct font_atlas*            atlas;
 } d3d12_font_t;
 
-static void*
-d3d12_font_init_font(void* data, const char* font_path,
+static void * d3d12_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
@@ -59,6 +58,7 @@ d3d12_font_init_font(void* data, const char* font_path,
    font->texture.desc.Height = font->atlas->height;
    font->texture.desc.Format = DXGI_FORMAT_A8_UNORM;
    font->texture.srv_heap    = &d3d12->desc.srv_heap;
+   d3d12_release_texture(&font->texture);
    d3d12_init_texture(d3d12->device, &font->texture);
    d3d12_update_texture(
          font->atlas->width, font->atlas->height,
@@ -69,7 +69,7 @@ d3d12_font_init_font(void* data, const char* font_path,
    return font;
 }
 
-static void d3d12_font_free_font(void* data, bool is_threaded)
+static void d3d12_font_free(void* data, bool is_threaded)
 {
    d3d12_font_t* font = (d3d12_font_t*)data;
 
@@ -87,33 +87,32 @@ static void d3d12_font_free_font(void* data, bool is_threaded)
 static int d3d12_font_get_message_width(void* data,
       const char* msg, unsigned msg_len, float scale)
 {
-   d3d12_font_t* font = (d3d12_font_t*)data;
-
    unsigned i;
-   int      delta_x = 0;
+   int delta_x                      = 0;
+   const struct font_glyph* glyph_q = NULL;
+   d3d12_font_t* font               = (d3d12_font_t*)data;
 
    if (!font)
       return 0;
 
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+
    for (i = 0; i < msg_len; i++)
    {
       const struct font_glyph* glyph;
-      const char*              msg_tmp = &msg[i];
-      unsigned                 code    = utf8_walk(&msg_tmp);
-      unsigned                 skip    = msg_tmp - &msg[i];
+      const char *msg_tmp = &msg[i];
+      unsigned    code    = utf8_walk(&msg_tmp);
+      unsigned    skip    = msg_tmp - &msg[i];
 
       if (skip > 1)
          i += skip - 1;
 
-      glyph = font->font_driver->get_glyph(font->font_data, code);
+      /* Do something smarter here ... */
+      if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
 
-      if (!glyph) /* Do something smarter here ... */
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
-
-      if (!glyph)
-         continue;
-
-      delta_x += glyph->advance_x;
+      delta_x            += glyph->advance_x;
    }
 
    return delta_x * scale;
@@ -132,18 +131,14 @@ static void d3d12_font_render_line(
       unsigned            height,
       unsigned            text_align)
 {
+   D3D12_RANGE     range;
    unsigned        i, count;
-   void*           mapped_vbo = NULL;
-   d3d12_sprite_t* v          = NULL;
-   d3d12_sprite_t* vbo_start  = NULL;
-   int             x          = roundf(pos_x * width);
-   int             y          = roundf((1.0 - pos_y) * height);
-   D3D12_RANGE     range      = { 0, 0 };
-
-   if (  !d3d12                  ||
-         !d3d12->sprites.enabled ||
-         msg_len > (unsigned)d3d12->sprites.capacity)
-      return;
+   const struct font_glyph* glyph_q = NULL;
+   void*           mapped_vbo       = NULL;
+   d3d12_sprite_t* v                = NULL;
+   d3d12_sprite_t* vbo_start        = NULL;
+   int x                            = roundf(pos_x * width);
+   int y                            = roundf((1.0 - pos_y) * height);
 
    if (d3d12->sprites.offset + msg_len > (unsigned)d3d12->sprites.capacity)
       d3d12->sprites.offset = 0;
@@ -159,51 +154,51 @@ static void d3d12_font_render_line(
          break;
    }
 
+   range.Begin = 0;
+   range.End   = 0;
    D3D12Map(d3d12->sprites.vbo, 0, &range, (void**)&vbo_start);
 
    v           = vbo_start + d3d12->sprites.offset;
    range.Begin = (uintptr_t)v - (uintptr_t)vbo_start;
+   glyph_q     = font->font_driver->get_glyph(font->font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
       const struct font_glyph* glyph;
-      const char*              msg_tmp = &msg[i];
-      unsigned                 code    = utf8_walk(&msg_tmp);
-      unsigned                 skip    = msg_tmp - &msg[i];
+      const char *msg_tmp= &msg[i];
+      unsigned   code    = utf8_walk(&msg_tmp);
+      unsigned   skip    = msg_tmp - &msg[i];
 
       if (skip > 1)
          i += skip - 1;
 
-      glyph = font->font_driver->get_glyph(font->font_data, code);
+      /* Do something smarter here ... */
+      if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
 
-      if (!glyph) /* Do something smarter here ... */
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
+      v->pos.x           = (x + (glyph->draw_offset_x * scale)) / (float)d3d12->chain.viewport.Width;
+      v->pos.y           = (y + (glyph->draw_offset_y * scale)) / (float)d3d12->chain.viewport.Height;
+      v->pos.w           = glyph->width * scale  / (float)d3d12->chain.viewport.Width;
+      v->pos.h           = glyph->height * scale / (float)d3d12->chain.viewport.Height;
 
-      if (!glyph)
-         continue;
-
-      v->pos.x = (x + (glyph->draw_offset_x * scale)) / (float)d3d12->chain.viewport.Width;
-      v->pos.y = (y + (glyph->draw_offset_y * scale)) / (float)d3d12->chain.viewport.Height;
-      v->pos.w = glyph->width * scale  / (float)d3d12->chain.viewport.Width;
-      v->pos.h = glyph->height * scale / (float)d3d12->chain.viewport.Height;
-
-      v->coords.u = glyph->atlas_offset_x / (float)font->texture.desc.Width;
-      v->coords.v = glyph->atlas_offset_y / (float)font->texture.desc.Height;
-      v->coords.w = glyph->width          / (float)font->texture.desc.Width;
-      v->coords.h = glyph->height         / (float)font->texture.desc.Height;
+      v->coords.u        = glyph->atlas_offset_x / (float)font->texture.desc.Width;
+      v->coords.v        = glyph->atlas_offset_y / (float)font->texture.desc.Height;
+      v->coords.w        = glyph->width          / (float)font->texture.desc.Width;
+      v->coords.h        = glyph->height         / (float)font->texture.desc.Height;
 
       v->params.scaling  = 1;
       v->params.rotation = 0;
 
-      v->colors[0] = color;
-      v->colors[1] = color;
-      v->colors[2] = color;
-      v->colors[3] = color;
+      v->colors[0]       = color;
+      v->colors[1]       = color;
+      v->colors[2]       = color;
+      v->colors[3]       = color;
 
       v++;
 
-      x += glyph->advance_x * scale;
-      y += glyph->advance_y * scale;
+      x                 += glyph->advance_x * scale;
+      y                 += glyph->advance_y * scale;
    }
 
    range.End = (uintptr_t)v - (uintptr_t)vbo_start;
@@ -254,14 +249,18 @@ static void d3d12_font_render_message(
 
    if (!msg || !*msg)
       return;
+   if (!d3d12 || !d3d12->sprites.enabled)
+      return;
 
    /* If font line metrics are not supported just draw as usual */
    if (!font->font_driver->get_line_metrics ||
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
-      d3d12_font_render_line(d3d12,
-            font, msg, strlen(msg),
-            scale, color, pos_x, pos_y, width, height, text_align);
+      unsigned msg_len = strlen(msg);
+      if (msg_len <= (unsigned)d3d12->sprites.capacity)
+         d3d12_font_render_line(d3d12,
+               font, msg, msg_len,
+               scale, color, pos_x, pos_y, width, height, text_align);
       return;
    }
 
@@ -274,9 +273,10 @@ static void d3d12_font_render_message(
          (unsigned)(delim - msg) : strlen(msg);
 
       /* Draw the line */
-      d3d12_font_render_line(d3d12,
-            font, msg, msg_len, scale, color, pos_x,
-            pos_y - (float)lines * line_height, width, height, text_align);
+      if (msg_len <= (unsigned)d3d12->sprites.capacity)
+         d3d12_font_render_line(d3d12,
+               font, msg, msg_len, scale, color, pos_x,
+               pos_y - (float)lines * line_height, width, height, text_align);
 
       if (!delim)
          break;
@@ -295,18 +295,11 @@ static void d3d12_font_render_msg(
    float                     x, y, scale, drop_mod, drop_alpha;
    int                       drop_x, drop_y;
    enum text_alignment       text_align;
-   unsigned                  color, color_dark, r, g, b,
-                             alpha, r_dark, g_dark, b_dark, alpha_dark;
+   unsigned                  color, r, g, b, alpha;
    d3d12_video_t           *d3d12   = (d3d12_video_t*)userdata;
    d3d12_font_t*             font   = (d3d12_font_t*)data;
    unsigned                  width  = d3d12->vp.full_width;
    unsigned                  height = d3d12->vp.full_height;
-   settings_t *settings             = config_get_ptr();
-   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
-   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
-   float video_msg_color_r          = settings->floats.video_msg_color_r;
-   float video_msg_color_g          = settings->floats.video_msg_color_g;
-   float video_msg_color_b          = settings->floats.video_msg_color_b;
 
    if (!font || !msg || !*msg)
       return;
@@ -330,30 +323,36 @@ static void d3d12_font_render_msg(
    }
    else
    {
-      x          = video_msg_pos_x;
-      y          = video_msg_pos_y;
-      scale      = 1.0f;
-      text_align = TEXT_ALIGN_LEFT;
+      settings_t *settings      = config_get_ptr();
+      float video_msg_pos_x     = settings->floats.video_msg_pos_x;
+      float video_msg_pos_y     = settings->floats.video_msg_pos_y;
+      float video_msg_color_r   = settings->floats.video_msg_color_r;
+      float video_msg_color_g   = settings->floats.video_msg_color_g;
+      float video_msg_color_b   = settings->floats.video_msg_color_b;
+      x                         = video_msg_pos_x;
+      y                         = video_msg_pos_y;
+      scale                     = 1.0f;
+      text_align                = TEXT_ALIGN_LEFT;
 
-      r          = (video_msg_color_r * 255);
-      g          = (video_msg_color_g * 255);
-      b          = (video_msg_color_b * 255);
-      alpha      = 255;
-      color      = DXGI_COLOR_RGBA(r, g, b, alpha);
+      r                         = (video_msg_color_r * 255);
+      g                         = (video_msg_color_g * 255);
+      b                         = (video_msg_color_b * 255);
+      alpha                     = 255;
+      color                     = DXGI_COLOR_RGBA(r, g, b, alpha);
 
-      drop_x     = -2;
-      drop_y     = -2;
-      drop_mod   = 0.3f;
-      drop_alpha = 1.0f;
+      drop_x                    = -2;
+      drop_y                    = -2;
+      drop_mod                  = 0.3f;
+      drop_alpha                = 1.0f;
    }
 
    if (drop_x || drop_y)
    {
-      r_dark     = r * drop_mod;
-      g_dark     = g * drop_mod;
-      b_dark     = b * drop_mod;
-      alpha_dark = alpha * drop_alpha;
-      color_dark = DXGI_COLOR_RGBA(r_dark, g_dark, b_dark, alpha_dark);
+      unsigned r_dark           = r * drop_mod;
+      unsigned g_dark           = g * drop_mod;
+      unsigned b_dark           = b * drop_mod;
+      unsigned alpha_dark       = alpha * drop_alpha;
+      unsigned color_dark       = DXGI_COLOR_RGBA(r_dark, g_dark, b_dark, alpha_dark);
 
       d3d12_font_render_message(d3d12,
             font, msg, scale, color_dark,
@@ -371,31 +370,24 @@ static const struct font_glyph* d3d12_font_get_glyph(
       void* data, uint32_t code)
 {
    d3d12_font_t* font = (d3d12_font_t*)data;
-
-   if (!font || !font->font_driver)
-      return NULL;
-
-   if (!font->font_driver->ident)
-      return NULL;
-
-   return font->font_driver->get_glyph((void*)font->font_driver, code);
+   if (font && font->font_driver && font->font_driver->ident)
+      return font->font_driver->get_glyph((void*)font->font_driver, code);
+   return NULL;
 }
 
 static bool d3d12_font_get_line_metrics(void* data, struct font_line_metrics **metrics)
 {
    d3d12_font_t* font = (d3d12_font_t*)data;
-
-   if (!font || !font->font_driver || !font->font_data)
-      return -1;
-
-   return font->font_driver->get_line_metrics(font->font_data, metrics);
+   if (font && font->font_driver && font->font_data)
+      return font->font_driver->get_line_metrics(font->font_data, metrics);
+   return false;
 }
 
 font_renderer_t d3d12_font = {
-   d3d12_font_init_font,
-   d3d12_font_free_font,
+   d3d12_font_init,
+   d3d12_font_free,
    d3d12_font_render_msg,
-   "d3d12font",
+   "d3d12_font",
    d3d12_font_get_glyph,
    NULL, /* bind_block */
    NULL, /* flush */

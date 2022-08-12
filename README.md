@@ -66,7 +66,17 @@ RetroArch also emphasizes being easy to integrate into various launcher frontend
 RetroArch has been ported to the following platforms:
 
    - DOS
-   - Windows
+   - Windows 11
+   - Windows 10
+   - Windows 8
+   - Windows 7
+   - Windows Vista
+   - Windows XP
+   - Windows Millennium
+   - Windows 2000
+   - Windows NT 3.5
+   - Windows 98
+   - Windows 95
    - Linux
    - Emscripten (WebAssembly and JavaScript)
    - FreeBSD
@@ -74,13 +84,19 @@ RetroArch has been ported to the following platforms:
    - OpenBSD
    - Haiku
    - Solaris
-   - macOS (PPC, x86-32 and x86-64)
-   - PlayStation 2
-   - PlayStation 3
+   - Apple macOS (PPC, x86-32 and x86-64)
+   - Apple iOS
+   - Apple tvOS
+   - Android (2.x to most recent version)
+   - PlayStation2
+   - PlayStation3
+   - PlayStation4
    - PlayStation Portable
    - PlayStation Vita
    - Original Microsoft Xbox
    - Microsoft Xbox 360 (Libxenon/XeXDK)
+   - Microsoft Xbox One
+   - Microsoft Xbox Series S/X
    - Nintendo GameCube
    - Nintendo Wii
    - Nintendo Wii U
@@ -88,9 +104,11 @@ RetroArch has been ported to the following platforms:
    - Nintendo Switch
    - Nintendo NES/SNES Classic Edition
    - Raspberry Pi
-   - Android
-   - iOS
    - Blackberry
+   - OpenDingux
+   - Miyoo
+   - RS90
+   - RetroFW
 
 ## Dependencies (PC)
 
@@ -132,6 +150,47 @@ dynamically, it's not required at build time.
 
 Console ports have their own dependencies, but generally do not require
 anything other than what the respective SDKs provide.
+
+## Requirements
+
+### OpenGL1 ###
+Your videocard needs to at least support the OpenGL 1.1 spec.
+
+***Shaders***: N/A
+
+**Menu driver support**: MaterialUI, XMB, Ozone and RGUI should all work correctly.
+XMB won't have shader pipeline effects because of the aforementioned lack of shader
+support.
+
+### OpenGL2 ###
+Your videocard needs to at least support the OpenGL 2.1 spec.
+
+***Shaders:*** You can choose between either NVIDIA Cg shaders (deprecated, requires separate runtime
+to be installed on your system), or GLSL shaders.
+
+***Menu driver support:*** MaterialUI, XMB, Ozone and RGUI should all work correctly.
+
+### OpenGL3 ###
+Your videocard needs to at least support the OpenGL 3.2 core feature spec.
+
+***Shaders:*** You will be able to use modern Slang shaders with this driver.
+
+***Menu driver support:*** MaterialUI, XMB, Ozone and RGUI should all work correctly.
+
+### Direct3D 11 ###
+Your videocard needs to at least support the Direct3D11 11.0 spec. The card
+also needs to support at least the Shader Model 4.0.
+
+***Shaders:*** You will be able to use modern Slang shaders with this driver.
+
+***Menu driver support:*** MaterialUI, XMB, Ozone and RGUI should all work correctly.
+
+### Vulkan ###
+Your videocard needs to at least support the Vulkan 1.0 spec.
+
+***Shaders:*** You will be able to use modern Slang shaders with this driver.
+
+***Menu driver support:*** MaterialUI, XMB, Ozone and RGUI should all work correctly.
 
 ## Configuring
 

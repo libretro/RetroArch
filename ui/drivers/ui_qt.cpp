@@ -44,20 +44,11 @@
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QtConcurrentRun>
-#include <QtNetwork>
 
 #include "ui_qt.h"
 #include "qt/gridview.h"
 #include "qt/ui_qt_load_core_window.h"
-#include "qt/coreinfodialog.h"
-#include "qt/playlistentrydialog.h"
-#if defined(HAVE_MENU)
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-#include "qt/shaderparamsdialog.h"
-#endif
-#endif
-#include "qt/coreoptionsdialog.h"
-#include "qt/viewoptionsdialog.h"
+#include "qt/qt_dialogs.h"
 
 #ifndef CXX_BUILD
 extern "C" {
@@ -1038,7 +1029,8 @@ static void scan_finished_handler(retro_task_t *task,
 static double expScale(double inputValue, double midValue, double maxValue)
 {
    double           M = maxValue / midValue;
-   double           C = log(pow(M - 1, 2));
+   double        base = M - 1;
+   double           C = log(base * base);
    double           B = maxValue / (exp(C) - 1);
    double           A = -1 * B;
    double returnValue = A + B * exp(C * inputValue);

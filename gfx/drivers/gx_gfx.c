@@ -22,6 +22,7 @@
 #include <ogcsys.h>
 
 #include <libretro.h>
+#include <verbosity.h>
 #include <streams/interface_stream.h>
 
 #ifdef HAVE_CONFIG_H
@@ -327,9 +328,16 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    g_draw_done                 = false;
    /* wait for next even field */
    /* this prevents screen artifacts when switching
-    * between interlaced & non-interlaced modes */
-   do VIDEO_WaitVSync();
-   while (!VIDEO_GetNextField());
+    * between interlaced & non-interlaced modes.
+    *
+    * But move on if it takes over 3 frames as sometimes under dolphin
+    * this stays at constant value.
+    */
+   for (i = 0; i < 3; i++) {
+     VIDEO_WaitVSync();
+     if (VIDEO_GetNextField())
+       break;
+   }
 
    VIDEO_SetBlack(true);
    VIDEO_Flush();
@@ -620,8 +628,9 @@ static void gx_get_video_output_size(void *data,
 
 static void setup_video_mode(gx_video_t *gx)
 {
-   unsigned width, height;
-   char desc[64] = {0};
+   unsigned width  = 0;
+   unsigned height = 0;
+   char desc[64]   = {0};
 
    if (!gx->framebuf[0])
    {

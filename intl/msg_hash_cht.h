@@ -551,10 +551,6 @@ MSG_HASH(
    "中央處理器功能"
    )
 MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   "中央處理器架構:"
-   )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "中央處理器核心:"
    )
@@ -829,6 +825,18 @@ MSG_HASH(
    "類型"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
+   "Retro 成就"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
+   "語言"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
+   "控制"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
    "發行商"
    )
@@ -863,14 +871,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
    "Edge 雜誌期數"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
-   "發行月份"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
-   "發行年份"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
@@ -1157,6 +1157,9 @@ MSG_HASH(
    "變更預設目錄"
    )
 
+#ifdef HAVE_MIST
+#endif
+
 /* Settings > Drivers */
 
 MSG_HASH(
@@ -1424,6 +1427,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    "選擇使用哪一個顯示屏"
    )
+#if defined (WIIU)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
    "旋轉"
@@ -1575,10 +1580,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "長寬比"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "自定義畫面比例"
-   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
@@ -1632,16 +1633,20 @@ MSG_HASH(
    "垂直同步 (Vsync)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
+   "自動"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
    "自適應同步"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "幀延時"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "自動畫格延遲"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   "自動"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
@@ -2056,6 +2061,7 @@ MSG_HASH(
    "所有用戶都能控制選單"
    )
 
+
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(
@@ -2385,7 +2391,23 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
    "管理模擬器核心"
    )
+#ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
+   "管理模擬器核心"
+   )
 
+
+
+
+
+MSG_HASH(
+   MSG_CORE_STEAM_INSTALLING,
+   "正在安裝核心: "
+)
+
+
+#endif
 /* Settings > Configuration */
 
 MSG_HASH(
@@ -2752,10 +2774,6 @@ MSG_HASH(
    "UI Companion Enable"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
-   "選單列"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
    "桌面選單(需要重新啟動)"
    )
@@ -2779,6 +2797,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    "主選單"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
+   "自定義"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
@@ -2805,6 +2827,7 @@ MSG_HASH( /* FIXME Not RGUI specific */
 
 
 /* Settings > User Interface > Views > Settings */
+
 
 
 /* Settings > User Interface > Appearance */
@@ -2864,6 +2887,10 @@ MSG_HASH(
 /* Settings > Network */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
+   "自定義"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
    "服務器地址"
    )
@@ -2878,10 +2905,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
    "伺服器圍觀的密碼"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
-   "連線遊戲無狀態模式"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
@@ -2960,6 +2983,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME,
    "運行時間:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
+   "秒"
    )
 
 /* Settings > Playlists > Playlist Management */
@@ -3088,6 +3115,25 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    "快取"
    )
+
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
+   "遊戲內容目錄"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CORE,
+   "核心名稱"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_SYSTEM,
+   "系統名稱"
+   )
+#endif
 
 /* Music */
 
@@ -3284,7 +3330,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
-   "選項"
+   "核心選項"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
@@ -3317,6 +3363,9 @@ MSG_HASH(
 
 /* Quick Menu > Controls */
 
+
+/* Quick Menu > Controls > Manage Remap Files */
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
    "載入重新映射檔案"
@@ -3330,7 +3379,7 @@ MSG_HASH(
    "儲存遊戲重映射文件"
    )
 
-/* Quick Menu > Controls > Load Remap File */
+/* Quick Menu > Controls > Manage Remap Files > Load Remap File */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE,
@@ -3883,10 +3932,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
    "Select a different theme for the icon. Changes will take effect after you restart the program."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-   "啟用圖示陰影"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
@@ -4467,11 +4512,15 @@ MSG_HASH(
    "使用內建的圖像瀏覽器"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   "最大交換鏈圖像數"
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "強制顯示驅動程序使用特定的緩衝模式。"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   "強制同步CPU和GPU，以性能為代價換取低延遲。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    "強制顯示驅動程序使用特定的緩衝模式。"
    )
 MSG_HASH(
@@ -4834,6 +4883,7 @@ MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,
    "你的暱稱已修改為 \"%s\""
    )
+
 MSG_HASH(
    MSG_AUDIO_VOLUME,
    "聲音音量"
@@ -4985,10 +5035,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_COULD_NOT_FIND_VALID_DATA_TRACK,
    "無法找到有效的數據軌"
-   )
-MSG_HASH(
-   MSG_COULD_NOT_OPEN_DATA_TRACK,
-   "無法打開數據軌"
    )
 MSG_HASH(
    MSG_COULD_NOT_READ_CONTENT_FILE,

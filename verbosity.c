@@ -438,24 +438,18 @@ void rarch_log_file_init(
    static char timestamped_log_file_name[64] = {0};
    bool logging_to_file                      = g_verbosity->initialized;
 
-   log_directory[0]                          = '\0';
-   log_file_path[0]                          = '\0';
 
    /* If this is the first run, generate a timestamped log
     * file name (do this even when not outputting timestamped
     * log files, since user may decide to switch at any moment...) */
    if (string_is_empty(timestamped_log_file_name))
    {
-      char format[256];
       struct tm tm_;
       time_t cur_time = time(NULL);
 
       rtime_localtime(&cur_time, &tm_);
-
-      format[0] = '\0';
-      strftime(format, sizeof(format), "retroarch__%Y_%m_%d__%H_%M_%S", &tm_);
-      fill_pathname_noext(timestamped_log_file_name, format,
-            ".log",
+      strftime(timestamped_log_file_name, sizeof(timestamped_log_file_name), "retroarch__%Y_%m_%d__%H_%M_%S", &tm_);
+      strlcat(timestamped_log_file_name, ".log",
             sizeof(timestamped_log_file_name));
    }
 
@@ -508,13 +502,15 @@ void rarch_log_file_init(
       strlcpy(log_directory, log_dir, sizeof(log_directory));
 
       /* Get log file path */
-      fill_pathname_join(log_file_path,
+      fill_pathname_join_special(log_file_path,
             log_dir,
             log_to_file_timestamp
             ? timestamped_log_file_name
             : "retroarch.log",
             sizeof(log_file_path));
    }
+   else
+	   log_file_path[0] = '\0';
 
    /* > Attempt to initialise log file */
    if (!string_is_empty(log_file_path))

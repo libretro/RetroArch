@@ -23,6 +23,7 @@
 
 #include "menu_driver.h"
 #include "menu_displaylist.h"
+#include "../file_path_special.h"
 #include "../retroarch.h"
 #include "../core_info.h"
 #include "../configuration.h"
@@ -84,6 +85,7 @@ static void contentless_cores_free_info_entries(
 
          if (entry->licenses_str)
             free(entry->licenses_str);
+         entry->licenses_str = NULL;
 
          contentless_cores_free_runtime_info(&entry->runtime);
 
@@ -128,10 +130,8 @@ static void contentless_cores_init_info_entries(
          /* Populate licences string */
          if (core_info->licenses_list)
          {
-            char tmp_str[MENU_SUBLABEL_MAX_LENGTH];
-
+            char tmp_str[MENU_SUBLABEL_MAX_LENGTH - 2];
             tmp_str[0] = '\0';
-
             string_list_join_concat(tmp_str, sizeof(tmp_str),
                   core_info->licenses_list, ", ");
             snprintf(licenses_str, sizeof(licenses_str), "%s: %s",
@@ -265,9 +265,6 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
    char icon_path[PATH_MAX_LENGTH];
    size_t i;
 
-   icon_directory[0] = '\0';
-   icon_path[0]      = '\0';
-
    if (!state)
       return;
 
@@ -290,7 +287,7 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
       return;
 
    /* Load fallback icon */
-   fill_pathname_join(icon_path, icon_directory,
+   fill_pathname_join_special(icon_path, icon_directory,
          CONTENTLESS_CORE_ICON_DEFAULT, sizeof(icon_path));
 
    if (path_is_valid(icon_path))
@@ -326,14 +323,20 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
           core_info->databases_list &&
           (core_info->databases_list->size > 0))
       {
+         size_t len;
          const char *icon_name   =
                core_info->databases_list->elems[0].data;
          struct texture_image ti = {0};
          ti.supports_rgba        = rgba_supported;
 
-         fill_pathname_join(icon_path, icon_directory,
+         len                     = fill_pathname_join_special(
+               icon_path, icon_directory,
                icon_name, sizeof(icon_path));
-         strlcat(icon_path, ".png", sizeof(icon_path));
+         icon_path[len  ] = '.';
+         icon_path[len+1] = 'p';
+         icon_path[len+2] = 'n';
+         icon_path[len+3] = 'g';
+         icon_path[len+4] = '\0';
 
          if (!path_is_valid(icon_path))
             continue;
@@ -439,6 +442,10 @@ unsigned menu_displaylist_contentless_cores(file_list_t *list, settings_t *setti
                case MENU_CONTENTLESS_CORES_DISPLAY_SINGLE_PURPOSE:
                   core_valid = core_info->supports_no_game &&
                         core_info->single_purpose;
+                  break;
+               case MENU_CONTENTLESS_CORES_DISPLAY_CUSTOM:
+                  core_valid = core_info->supports_no_game &&
+                        !core_info->is_standalone_exempt;
                   break;
                default:
                   break;

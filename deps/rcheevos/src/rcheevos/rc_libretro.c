@@ -14,6 +14,16 @@
 #include <ctype.h>
 #include <string.h>
 
+/* internal helper functions in hash.c */
+extern void* rc_file_open(const char* path);
+extern void rc_file_seek(void* file_handle, int64_t offset, int origin);
+extern int64_t rc_file_tell(void* file_handle);
+extern size_t rc_file_read(void* file_handle, void* buffer, int requested_bytes);
+extern void rc_file_close(void* file_handle);
+extern int rc_path_compare_extension(const char* path, const char* ext);
+extern int rc_hash_error(const char* message);
+
+
 static rc_libretro_message_callback rc_libretro_verbose_message_callback = NULL;
 
 /* a value that starts with a comma is a CSV.
@@ -229,6 +239,41 @@ const rc_disallowed_setting_t* rc_libretro_get_disallowed_settings(const char* l
   return NULL;
 }
 
+typedef struct rc_disallowed_core_systems_t
+{
+    const char* library_name;
+    const int disallowed_consoles[4];
+} rc_disallowed_core_systems_t;
+
+static const rc_disallowed_core_systems_t rc_disallowed_core_systems[] = {
+  /* https://github.com/libretro/Mesen-S/issues/8 */
+  { "Mesen-S", { RC_CONSOLE_GAMEBOY, RC_CONSOLE_GAMEBOY_COLOR, 0 }},
+  { NULL, { 0 } }
+};
+
+int rc_libretro_is_system_allowed(const char* library_name, int console_id) {
+  const rc_disallowed_core_systems_t* core_filter = rc_disallowed_core_systems;
+  size_t library_name_length;
+  size_t i;
+
+  if (!library_name || !library_name[0])
+    return 1;
+
+  library_name_length = strlen(library_name) + 1;
+  while (core_filter->library_name) {
+    if (memcmp(core_filter->library_name, library_name, library_name_length) == 0) {
+      for (i = 0; i < sizeof(core_filter->disallowed_consoles) / sizeof(core_filter->disallowed_consoles[0]); ++i) {
+        if (core_filter->disallowed_consoles[i] == console_id)
+          return 0;
+      }
+      break;
+    }
+
+    ++core_filter;
+  }
+
+  return 1;
+}
 
 unsigned char* rc_libretro_memory_find(const rc_libretro_memory_regions_t* regions, unsigned address) {
   unsigned i;
@@ -343,11 +388,24 @@ static const struct retro_memory_descriptor* rc_libretro_memory_get_descriptor(c
       /* otherwise, attempt to match the address by matching the select bits */
       /* address is in the block if (addr & select) == (start & select) */
       if (((desc->start ^ real_address) & desc->select) == 0) {
-        /* calculate the offset within the descriptor, removing any disconnected bits */
-        *offset = (real_address & ~desc->disconnect) - desc->start;
+        /* get the relative offset of the address from the start of the memory block */
+        unsigned reduced_address = real_address - (unsigned)desc->start;
+
+        /* remove any bits from the reduced_address that correspond to the bits in the disconnect
+         * mask and collapse the remaining bits. this code was copied from the mmap_reduce function
+         * in RetroArch. i'm not exactly sure how it works, but it does. */
+        unsigned disconnect_mask = (unsigned)desc->disconnect;
+        while (disconnect_mask) {
+          const unsigned tmp = (disconnect_mask - 1) & ~disconnect_mask;
+          reduced_address = (reduced_address & tmp) | ((reduced_address >> 1) & ~tmp);
+          disconnect_mask = (disconnect_mask & (disconnect_mask - 1)) >> 1;
+        }
+
+        /* calculate the offset within the descriptor */
+        *offset = reduced_address;
 
         /* sanity check - make sure the descriptor is large enough to hold the target address */
-        if (*offset < desc->len)
+        if (reduced_address < desc->len)
           return desc;
       }
     }
@@ -370,6 +428,7 @@ static void rc_libretro_memory_init_from_memory_map(rc_libretro_memory_regions_t
     const rc_memory_region_t* console_region = &console_regions->region[i];
     size_t console_region_size = console_region->end_address - console_region->start_address + 1;
     unsigned real_address = console_region->real_address;
+    unsigned disconnect_size = 0;
 
     while (console_region_size > 0) {
       const struct retro_memory_descriptor* desc = rc_libretro_memory_get_descriptor(mmap, real_address, &offset);
@@ -378,6 +437,14 @@ static void rc_libretro_memory_init_from_memory_map(rc_libretro_memory_regions_t
           snprintf(description, sizeof(description), "Could not map region starting at $%06X",
                    real_address - console_region->real_address + console_region->start_address);
           rc_libretro_verbose(description);
+        }
+
+        if (disconnect_size && console_region_size > disconnect_size) {
+          rc_libretro_memory_register_region(regions, console_region->type, NULL, disconnect_size, "null filler");
+          console_region_size -= disconnect_size;
+          real_address += disconnect_size;
+          disconnect_size = 0;
+          continue;
         }
 
         rc_libretro_memory_register_region(regions, console_region->type, NULL, console_region_size, "null filler");
@@ -396,6 +463,13 @@ static void rc_libretro_memory_init_from_memory_map(rc_libretro_memory_regions_t
       }
 
       desc_size = desc->len - offset;
+      if (desc->disconnect && desc_size > desc->disconnect) {
+        /* if we need to extract a disconnect bit, the largest block we can read is up to
+         * the next time that bit flips */
+        /* https://stackoverflow.com/questions/12247186/find-the-lowest-set-bit */
+        disconnect_size = (desc->disconnect & -((int)desc->disconnect));
+        desc_size = disconnect_size - (real_address & (disconnect_size - 1));
+      }
 
       if (console_region_size > desc_size) {
         if (desc_size == 0) {
@@ -526,4 +600,169 @@ int rc_libretro_memory_init(rc_libretro_memory_regions_t* regions, const struct 
 
 void rc_libretro_memory_destroy(rc_libretro_memory_regions_t* regions) {
   memset(regions, 0, sizeof(*regions));
+}
+
+void rc_libretro_hash_set_init(struct rc_libretro_hash_set_t* hash_set,
+                               const char* m3u_path, rc_libretro_get_image_path_func get_image_path) {
+  char image_path[1024];
+  char* m3u_contents;
+  char* ptr;
+  size_t file_len;
+  void* file_handle;
+  int index = 0;
+
+  memset(hash_set, 0, sizeof(*hash_set));
+
+  if (!rc_path_compare_extension(m3u_path, "m3u"))
+    return;
+
+  file_handle = rc_file_open(m3u_path);
+  if (!file_handle)
+  {
+    rc_hash_error("Could not open playlist");
+    return;
+  }
+
+  rc_file_seek(file_handle, 0, SEEK_END);
+  file_len = rc_file_tell(file_handle);
+  rc_file_seek(file_handle, 0, SEEK_SET);
+
+  m3u_contents = (char*)malloc(file_len + 1);
+  rc_file_read(file_handle, m3u_contents, (int)file_len);
+  m3u_contents[file_len] = '\0';
+
+  rc_file_close(file_handle);
+
+  ptr = m3u_contents;
+  do
+  {
+    /* ignore whitespace */
+    while (isspace((int)*ptr))
+      ++ptr;
+
+    if (*ptr == '#')
+    {
+      /* ignore comment unless it's the special SAVEDISK extension */
+      if (memcmp(ptr, "#SAVEDISK:", 10) == 0)
+      {
+        /* get the path to the save disk from the frontend, assign it a bogus hash so
+         * it doesn't get hashed later */
+        if (get_image_path(index, image_path, sizeof(image_path)))
+        {
+          const char save_disk_hash[33] = "[SAVE DISK]";
+          rc_libretro_hash_set_add(hash_set, image_path, -1, save_disk_hash);
+          ++index;
+        }
+      }
+    }
+    else
+    {
+      /* non-empty line, tally a file */
+      ++index;
+    }
+
+    /* find the end of the line */
+    while (*ptr && *ptr != '\n')
+      ++ptr;
+
+  } while (*ptr);
+
+  free(m3u_contents);
+
+  if (hash_set->entries_count > 0)
+  {
+    /* at least one save disk was found. make sure the core supports the #SAVEDISK: extension by
+     * asking for the last expected disk. if it's not found, assume no #SAVEDISK: support */
+    if (!get_image_path(index - 1, image_path, sizeof(image_path)))
+      hash_set->entries_count = 0;
+  }
+}
+
+void rc_libretro_hash_set_destroy(struct rc_libretro_hash_set_t* hash_set) {
+  if (hash_set->entries)
+    free(hash_set->entries);
+  memset(hash_set, 0, sizeof(*hash_set));
+}
+
+static unsigned rc_libretro_djb2(const char* input)
+{
+  unsigned result = 5381;
+  char c;
+
+  while ((c = *input++) != '\0')
+    result = ((result << 5) + result) + c; /* result = result * 33 + c */
+
+  return result;
+}
+
+void rc_libretro_hash_set_add(struct rc_libretro_hash_set_t* hash_set,
+                              const char* path, int game_id, const char hash[33]) {
+  const unsigned path_djb2 = (path != NULL) ? rc_libretro_djb2(path) : 0;
+  struct rc_libretro_hash_entry_t* entry = NULL;
+  struct rc_libretro_hash_entry_t* scan;
+  struct rc_libretro_hash_entry_t* stop = hash_set->entries + hash_set->entries_count;;
+
+  if (path_djb2)
+  {
+    /* attempt to match the path */
+    for (scan = hash_set->entries; scan < stop; ++scan)
+    {
+      if (scan->path_djb2 == path_djb2)
+      {
+        entry = scan;
+        break;
+      }
+    }
+  }
+
+  if (!entry)
+  {
+    /* entry not found, allocate a new one */
+    if (hash_set->entries_size == 0)
+    {
+      hash_set->entries_size = 4;
+      hash_set->entries = (struct rc_libretro_hash_entry_t*)
+          malloc(hash_set->entries_size * sizeof(struct rc_libretro_hash_entry_t));
+    }
+    else if (hash_set->entries_count == hash_set->entries_size)
+    {
+      hash_set->entries_size += 4;
+      hash_set->entries = (struct rc_libretro_hash_entry_t*)realloc(hash_set->entries,
+          hash_set->entries_size * sizeof(struct rc_libretro_hash_entry_t));
+    }
+
+    entry = hash_set->entries + hash_set->entries_count++;
+  }
+
+  /* update the entry */
+  entry->path_djb2 = path_djb2;
+  entry->game_id = game_id;
+  memcpy(entry->hash, hash, sizeof(entry->hash));
+}
+
+const char* rc_libretro_hash_set_get_hash(const struct rc_libretro_hash_set_t* hash_set, const char* path)
+{
+  const unsigned path_djb2 = rc_libretro_djb2(path);
+  struct rc_libretro_hash_entry_t* scan = hash_set->entries;
+  struct rc_libretro_hash_entry_t* stop = scan + hash_set->entries_count;
+  for (; scan < stop; ++scan)
+  {
+    if (scan->path_djb2 == path_djb2)
+      return scan->hash;
+  }
+
+  return NULL;
+}
+
+int rc_libretro_hash_set_get_game_id(const struct rc_libretro_hash_set_t* hash_set, const char* hash)
+{
+  struct rc_libretro_hash_entry_t* scan = hash_set->entries;
+  struct rc_libretro_hash_entry_t* stop = scan + hash_set->entries_count;
+  for (; scan < stop; ++scan)
+  {
+    if (memcmp(scan->hash, hash, sizeof(scan->hash)) == 0)
+      return scan->game_id;
+  }
+
+  return 0;
 }

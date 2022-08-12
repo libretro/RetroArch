@@ -144,13 +144,12 @@ static void task_cdrom_dump_handler(retro_task_t *task)
          }
       case DUMP_STATE_WRITE_CUE:
          {
+            size_t _len;
             char output_file[PATH_MAX_LENGTH];
             char cue_filename[PATH_MAX_LENGTH];
             /* write cuesheet to a file */
             int64_t cue_size     = filestream_get_size(state->file);
             char *cue_data       = (char*)calloc(1, cue_size);
-
-            output_file[0]       = cue_filename[0] = '\0';
 
             filestream_read(state->file, cue_data, cue_size);
 
@@ -162,9 +161,15 @@ static void task_cdrom_dump_handler(retro_task_t *task)
 
             filestream_close(state->file);
 
-            snprintf(cue_filename, sizeof(cue_filename), "%s.cue", state->title);
+            _len                 = strlcpy(cue_filename,
+                                   state->title, sizeof(cue_filename));
+            cue_filename[_len  ] = '.';
+            cue_filename[_len+1] = 'c';
+            cue_filename[_len+2] = 'u';
+            cue_filename[_len+3] = 'e';
+            cue_filename[_len+4] = '\0';
 
-            fill_pathname_join(output_file,
+            fill_pathname_join_special(output_file,
                   directory_core_assets, cue_filename, sizeof(output_file));
 
             {
@@ -256,18 +261,16 @@ static void task_cdrom_dump_handler(retro_task_t *task)
                char output_path[PATH_MAX_LENGTH];
                char track_filename[PATH_MAX_LENGTH];
 
-               output_path[0] = track_filename[0] = '\0';
+               track_filename[0] = '\0';
 
                snprintf(track_filename, sizeof(track_filename), "%s (Track %02d).bin", state->title, state->cur_track);
 
                state->cur_track_bytes = filestream_get_size(state->file);
 
-               fill_pathname_join(output_path,
+               fill_pathname_join_special(output_path,
                      directory_core_assets, track_filename, sizeof(output_path));
 
-               state->output_file = filestream_open(output_path, RETRO_VFS_FILE_ACCESS_WRITE, 0);
-
-               if (!state->output_file)
+               if (!(state->output_file = filestream_open(output_path, RETRO_VFS_FILE_ACCESS_WRITE, 0)))
                {
                   RARCH_ERR("[CDROM]: Error opening file for writing: %s\n", output_path);
                   task_set_progress(task, 100);

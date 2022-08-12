@@ -53,7 +53,7 @@ extern "C"
 }
 #endif
 
-static discord_state_t discord_state_st; /* int64_t alignment */
+static discord_state_t discord_state_st = {0}; /* int64_t alignment */
 
 discord_state_t *discord_state_get_ptr(void)
 {
@@ -107,7 +107,7 @@ static bool discord_download_avatar(
    fill_pathname_application_special(buf,
             sizeof(buf),
             APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS);
-   fill_pathname_join(full_path, buf, avatar_id, sizeof(full_path));
+   fill_pathname_join_special(full_path, buf, avatar_id, sizeof(full_path));
    strlcpy(discord_st->user_avatar,
          avatar_id, sizeof(discord_st->user_avatar));
 
@@ -153,99 +153,107 @@ static void handle_discord_error(int errcode, const char* message)
 {
 }
 
-static void handle_discord_join_cb(retro_task_t *task,
-      void *task_data, void *user_data, const char *err)
+static void handle_discord_join_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
 {
-   char join_hostname[PATH_MAX_LENGTH];
-   struct netplay_room *room         = NULL;
-   http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
-   discord_state_t *discord_st       = &discord_state_st;
-
-   if (!data || err || !data->data || !data->len)
-      goto finish;
-
-   data->data                        = (char*)realloc(data->data, data->len + 1);
-   data->data[data->len]             = '\0';
-
-   netplay_rooms_parse(data->data);
-   room                              = netplay_room_get(0);
-
-   if (room)
-   {
-      if (room->host_method == NETPLAY_HOST_METHOD_MITM)
-         snprintf(join_hostname, sizeof(join_hostname), "%s|%d|%s",
-            room->mitm_address, room->mitm_port, room->mitm_session);
-      else
-         snprintf(join_hostname, sizeof(join_hostname), "%s|%d",
-            room->address, room->port);
-
-      if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-         deinit_netplay();
-      netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
-
-      task_push_netplay_crc_scan(room->gamecrc,
-         room->gamename, join_hostname, room->corename, room->subsystem_name);
-      discord_st->connecting = true;
-      if (discord_st->ready)
-         discord_update(DISCORD_PRESENCE_NETPLAY_CLIENT);
-   }
-
-finish:
-   if (user_data)
-      free(user_data);
-}
-
-static void handle_discord_join(const char* secret)
-{
-   char url[2048];
-   struct string_list    *list = string_split(secret, "|");
+   char hostname[512];
+   struct netplay_room *room;
+   char *room_data             = NULL;
+   http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
    discord_state_t *discord_st = &discord_state_st;
 
-   strlcpy(discord_st->peer_party_id,
-         list->elems[0].data, sizeof(discord_st->peer_party_id));
-   snprintf(url, sizeof(url), FILE_PATH_LOBBY_LIBRETRO_URL "%s/",
-         discord_st->peer_party_id);
+   if (error)
+      goto done;
+   if (!data || !data->data || !data->len)
+      goto done;
+   if (data->status != 200)
+      goto done;
 
-   task_push_http_transfer(url, true, NULL, handle_discord_join_cb, NULL);
+   if (!(room_data = (char*)malloc(data->len + 1)))
+      goto done;
+   memcpy(room_data, data->data, data->len);
+   room_data[data->len] = '\0';
+
+   netplay_rooms_parse(room_data, strlen(room_data));
+   free(room_data);
+
+   if ((room = netplay_room_get(0)))
+   {
+      if (room->host_method == NETPLAY_HOST_METHOD_MITM)
+         snprintf(hostname, sizeof(hostname), "%s|%d|%s",
+            room->mitm_address, room->mitm_port, room->mitm_session);
+      else
+         snprintf(hostname, sizeof(hostname), "%s|%d",
+            room->address, room->port);
+
+      discord_st->connecting = true;
+      if (discord_st->ready)
+         discord_update(PRESENCE_NETPLAY_CLIENT);
+
+      task_push_netplay_crc_scan(room->gamecrc, room->gamename,
+         room->subsystem_name, room->corename, hostname);
+   }
+
+   netplay_rooms_free();
+
+done:
+   free(user_data);
 }
 
-static void handle_discord_spectate(const char* secret)
+static void handle_discord_join(const char *secret)
+{
+   int room_id;
+   char url[512];
+
+   if ((room_id = (int)strtol(secret, NULL, 10)))
+   {
+      discord_state_t *discord_st = &discord_state_st;
+      snprintf(discord_st->peer_party_id,
+            sizeof(discord_st->peer_party_id),
+            "%d", room_id);
+
+      strlcpy(url, FILE_PATH_LOBBY_LIBRETRO_URL, sizeof(url));
+      strlcat(url, discord_st->peer_party_id, sizeof(url));
+
+      task_push_http_transfer(url, true, NULL, handle_discord_join_cb, NULL);
+   }
+}
+
+static void handle_discord_spectate(const char *secret)
 {
 }
 
-#ifdef HAVE_MENU
 #if 0
+#ifdef HAVE_MENU
 static void handle_discord_join_response(void *ignore, const char *line)
 {
    /* TODO/FIXME: needs in-game widgets */
    if (strstr(line, "yes"))
       Discord_Respond(user_id, DISCORD_REPLY_YES);
 
-#ifdef HAVE_MENU
    menu_input_dialog_end();
    retroarch_menu_running_finished(false);
-#endif
 }
 #endif
 #endif
 
-static void handle_discord_join_request(const DiscordUser* request)
+static void handle_discord_join_request(const DiscordUser *request)
 {
 #ifdef HAVE_MENU
 #if 0
    char buf[PATH_MAX_LENGTH];
-   menu_input_ctx_line_t line;
+   menu_input_ctx_line_t line = {0};
 #endif
    discord_state_t *discord_st = &discord_state_st;
+
    discord_download_avatar(discord_st, request->userId, request->avatar);
 
 #if 0
    /* TODO/FIXME: Needs in-game widgets */
    retroarch_menu_running();
 
-   memset(&line, 0, sizeof(line));
    snprintf(buf, sizeof(buf), "%s %s?",
-         msg_hash_to_str(MSG_DISCORD_CONNECTION_REQUEST), request->username);
+      msg_hash_to_str(MSG_DISCORD_CONNECTION_REQUEST), request->username);
    line.label         = buf;
    line.label_setting = "no_setting";
    line.cb            = handle_discord_join_response;
@@ -261,7 +269,7 @@ static void handle_discord_join_request(const DiscordUser* request)
 #endif
 }
 
-void discord_update(enum discord_presence presence)
+void discord_update(enum presence presence)
 {
    discord_state_t *discord_st = &discord_state_st;
 #ifdef HAVE_CHEEVOS
@@ -273,8 +281,8 @@ void discord_update(enum discord_presence presence)
 
    if (!discord_st->connecting
          &&
-         (   presence == DISCORD_PRESENCE_NONE
-          || presence == DISCORD_PRESENCE_MENU))
+         (   presence == PRESENCE_NONE
+          || presence == PRESENCE_MENU))
    {
       memset(&discord_st->presence,
             0, sizeof(discord_st->presence));
@@ -283,7 +291,7 @@ void discord_update(enum discord_presence presence)
 
    switch (presence)
    {
-      case DISCORD_PRESENCE_MENU:
+      case PRESENCE_MENU:
          discord_st->presence.details        = msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU);
          discord_st->presence.largeImageKey  = "base";
@@ -291,7 +299,7 @@ void discord_update(enum discord_presence presence)
                MENU_ENUM_LABEL_VALUE_NO_CORE);
          discord_st->presence.instance       = 0;
          break;
-      case DISCORD_PRESENCE_GAME_PAUSED:
+      case PRESENCE_GAME_PAUSED:
          discord_st->presence.smallImageKey  = "paused";
          discord_st->presence.smallImageText = msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED);
@@ -302,7 +310,7 @@ void discord_update(enum discord_presence presence)
                discord_st->start_time);
          discord_st->presence.startTimestamp = discord_st->pause_time;
          break;
-      case DISCORD_PRESENCE_GAME:
+      case PRESENCE_GAME:
          {
             core_info_t      *core_info     = NULL;
             core_info_get_current_core(&core_info);
@@ -372,7 +380,7 @@ void discord_update(enum discord_presence presence)
             }
          }
          break;
-      case DISCORD_PRESENCE_NETPLAY_HOSTING:
+      case PRESENCE_NETPLAY_HOSTING:
          {
             char join_secret[128];
             struct netplay_room *room   = &networking_state_get_ptr()->host_room;
@@ -394,10 +402,10 @@ void discord_update(enum discord_presence presence)
             discord_st->presence.partySize      = 1;
          }
          break;
-      case DISCORD_PRESENCE_NETPLAY_CLIENT:
+      case PRESENCE_NETPLAY_CLIENT:
          discord_st->presence.partyId    = strdup(discord_st->peer_party_id);
          break;
-      case DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED:
+      case PRESENCE_NETPLAY_NETPLAY_STOPPED:
          {
             if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
             !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
@@ -412,16 +420,16 @@ void discord_update(enum discord_presence presence)
          }
          break;
 #ifdef HAVE_CHEEVOS
-      case DISCORD_PRESENCE_RETROACHIEVEMENTS:
+      case PRESENCE_RETROACHIEVEMENTS:
          if (discord_st->pause_time)
             return;
 
          if (rcheevos_get_richpresence(cheevos_richpresence, sizeof(cheevos_richpresence)) > 0)
             discord_st->presence.details = cheevos_richpresence;
-         presence = DISCORD_PRESENCE_GAME;
+         presence = PRESENCE_GAME;
          break;
 #endif
-      case DISCORD_PRESENCE_SHUTDOWN:
+      case PRESENCE_SHUTDOWN:
             discord_st->presence.partyId    = NULL;
             discord_st->presence.partyMax   = 0;
             discord_st->presence.partySize  = 0;

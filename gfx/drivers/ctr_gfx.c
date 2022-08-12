@@ -275,7 +275,7 @@ static const char *ctr_texture_path(unsigned id)
             snprintf(texture_path, sizeof(texture_path),
                   "%s.png", state_path);
 
-            return path_basename(texture_path);
+            return path_basename_nocompression(texture_path);
          }
       default:
          break;
@@ -659,15 +659,11 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
    }
 }
 
-static void font_driver_render_msg_bottom(
-      void *data,         
-      const char *msg,    
-      const void *_params,
-      void *font_data)    
+static void font_driver_render_msg_bottom(ctr_video_t *ctr,
+      const char *msg, const void *_params)
 {
-   ctr_video_t *ctr        = (ctr_video_t*)data;
    ctr->render_font_bottom = true;
-   font_driver_render_msg(ctr, msg, _params, font_data);
+   font_driver_render_msg(ctr, msg, _params, NULL);
    ctr->render_font_bottom = false;
 }
 
@@ -691,7 +687,7 @@ static void ctr_render_bottom_screen(void *data)
 
          font_driver_render_msg_bottom(ctr,
                msg_hash_to_str(MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND),
-               &params, NULL);
+               &params);
          break;
       case CTR_BOTTOM_MENU_DEFAULT:
          params.scale = 1.6f;
@@ -700,7 +696,7 @@ static void ctr_render_bottom_screen(void *data)
 
          font_driver_render_msg_bottom(ctr,
                msg_hash_to_str(MSG_3DS_BOTTOM_MENU_DEFAULT),
-               &params, NULL);
+               &params);
          break;
       case CTR_BOTTOM_MENU_SELECT:
          {
@@ -755,7 +751,7 @@ static void ctr_render_bottom_screen(void *data)
                   font_driver_render_msg_bottom(ctr, 
                      msg_hash_to_str(
                         MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL),
-                     &params, NULL);
+                     &params);
                }
             }
             else
@@ -765,7 +761,7 @@ static void ctr_render_bottom_screen(void *data)
                font_driver_render_msg_bottom(ctr, 
                   msg_hash_to_str(
                      MSG_3DS_BOTTOM_MENU_NO_STATE_DATA),
-                  &params, NULL);
+                  &params);
             }
 
             /* draw bottom menu */
@@ -803,7 +799,7 @@ static void ctr_render_bottom_screen(void *data)
 
             font_driver_render_msg_bottom(ctr, 
                msg_hash_to_str(MSG_3DS_BOTTOM_MENU_RESUME),
-               &params, NULL);
+               &params);
 
             /* draw create restore point */
             params.x = -0.178f;
@@ -811,7 +807,7 @@ static void ctr_render_bottom_screen(void *data)
 
             font_driver_render_msg_bottom(ctr, 
                msg_hash_to_str(MSG_3DS_BOTTOM_MENU_SAVE_STATE),
-               &params, NULL);
+               &params);
 
             /* draw load restore point */
             params.x = 0.266f;
@@ -819,13 +815,13 @@ static void ctr_render_bottom_screen(void *data)
 
             font_driver_render_msg_bottom(ctr, 
                msg_hash_to_str(MSG_3DS_BOTTOM_MENU_LOAD_STATE),
-               &params, NULL);
+               &params);
 
             /* draw date */
             params.x = 0.266f;
             params.y = 0.87f;
             font_driver_render_msg_bottom(ctr, ctr->state_date,
-               &params, NULL);
+               &params);
          }
          break;
    }
@@ -835,6 +831,7 @@ static void ctr_render_bottom_screen(void *data)
 // https://github.com/smealum/3ds_hb_menu/blob/master/source/gfx.c
 void ctr_fade_bottom_screen(gfxScreen_t screen, gfx3dSide_t side, u32 f)
 {
+#ifndef CONSOLE_LOG
    int i;
    u16 fbWidth, fbHeight;
    u8* fbAdr = gfxGetFramebuffer(screen, side, &fbWidth, &fbHeight);
@@ -854,6 +851,7 @@ void ctr_fade_bottom_screen(gfxScreen_t screen, gfx3dSide_t side, u32 f)
       *fbAdr = (*fbAdr * f) >> 8;
       fbAdr++;
    }
+#endif
 }
 
 static void ctr_set_bottom_screen_idle(ctr_video_t * ctr)
@@ -893,6 +891,7 @@ static void ctr_set_bottom_screen_idle(ctr_video_t * ctr)
 
 static void ctr_set_bottom_screen_enable(bool enabled, bool idle)
 {
+#ifndef CONSOLE_LOG
    Handle lcd_handle;
    u8 not_2DS;
 
@@ -905,7 +904,7 @@ static void ctr_set_bottom_screen_enable(bool enabled, bool idle)
       svcSendSyncRequest(lcd_handle);
       svcCloseHandle(lcd_handle);
    }
-
+#endif
    if (!idle)
       ctr_bottom_screen_enabled = enabled;
 }
@@ -1033,6 +1032,7 @@ static void* ctr_init(const video_info_t* video,
    void* ctrinput       = NULL;
    settings_t *settings = config_get_ptr();
    bool lcd_bottom      = settings->bools.video_3ds_lcd_bottom;
+   bool speedup_enable  = settings->bools.new3ds_speedup_enable;
    ctr_video_t* ctr     = (ctr_video_t*)linearAlloc(sizeof(ctr_video_t));
 
    if (!ctr)
@@ -1219,6 +1219,8 @@ static void* ctr_init(const video_info_t* video,
 
    gspSetEventCallback(GSPGPU_EVENT_VBlank0,
          (ThreadFunc)ctr_vsync_hook, ctr, false);
+
+   osSetSpeedupEnable(speedup_enable);
 
    return ctr;
 }

@@ -120,24 +120,16 @@ typedef struct rcheevos_load_info_t
 #endif
 } rcheevos_load_info_t;
 
-typedef struct rcheevos_hash_entry_t
-{
-   uint32_t                      path_djb2;
-   int                           game_id;
-   struct rcheevos_hash_entry_t* next;
-   char                          hash[33];
-} rcheevos_hash_entry_t;
-
 typedef struct rcheevos_game_info_t
 {
    int   id;
    int   console_id;
    char* title;
    char  badge_name[16];
-   char* hash;
+   const char* hash;
    bool  mastery_placard_shown;
 
-   rcheevos_hash_entry_t* hashes;
+   rc_libretro_hash_set_t hashes;
 
    rcheevos_racheevo_t* achievements;
    rcheevos_ralboard_t* leaderboards;
@@ -169,6 +161,7 @@ typedef struct rcheevos_locals_t
    enum event_command queued_command; /* action queued by background thread to be run on main thread */
 #endif
 
+   char displayname[32];              /* name to display in messages */
    char username[32];                 /* case-corrected username */
    char token[32];                    /* user's session token */
    char user_agent_prefix[128];       /* RetroArch/OS version information */
@@ -196,14 +189,6 @@ int rcheevos_end_load_state(void);
 bool rcheevos_load_aborted(void);
 
 void rcheevos_show_mastery_placard(void);
-
-#ifdef HAVE_THREADS
- #define CHEEVOS_LOCK(l)   do { slock_lock(l); } while (0)
- #define CHEEVOS_UNLOCK(l) do { slock_unlock(l); } while (0)
-#else
- #define CHEEVOS_LOCK(l)
- #define CHEEVOS_UNLOCK(l)
-#endif
 
 RETRO_END_DECLS
 

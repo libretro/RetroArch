@@ -28,75 +28,27 @@
 
 #include "../../verbosity.h"
 
-#ifdef HAVE_D3DX
-#include <d3dx8core.h>
-#include <d3dx8tex.h>
-#endif
-
 #include "d3d8_common.h"
 
-#ifdef _XBOX
-#include <xgraphics.h>
-#endif
-
 /* TODO/FIXME - static globals */
-static UINT SDKVersion        = 0;
 #ifdef HAVE_DYNAMIC_D3D
 static dylib_t g_d3d8_dll;
-#ifdef HAVE_D3DX
-static dylib_t g_d3d8x_dll;
-#endif
 static bool dylib_initialized = false;
 #endif
 
 typedef IDirect3D8 *(__stdcall *D3DCreate_t)(UINT);
-#ifdef HAVE_D3DX
-typedef HRESULT (__stdcall
-    *D3DCreateTextureFromFile_t)(
-        LPDIRECT3DDEVICE8         pDevice,
-        LPCSTR                    pSrcFile,
-        UINT                      Width,
-        UINT                      Height,
-        UINT                      MipLevels,
-        DWORD                     Usage,
-        D3DFORMAT                 Format,
-        D3DPOOL                   Pool,
-        DWORD                     Filter,
-        DWORD                     MipFilter,
-        D3DCOLOR                  ColorKey,
-        D3DXIMAGE_INFO*           pSrcInfo,
-        PALETTEENTRY*             pPalette,
-        LPDIRECT3DTEXTURE8*       ppTexture);
 
-typedef HRESULT (__stdcall
-    *D3DXCreateFontIndirect_t)(
-        LPDIRECT3DDEVICE8       pDevice,
-        CONST LOGFONT*   pDesc,
-        LPD3DXFONT*             ppFont);
-#endif
-
-#ifdef HAVE_D3DX
-static D3DXCreateFontIndirect_t   D3DCreateFontIndirect;
-static D3DCreateTextureFromFile_t D3DCreateTextureFromFile;
-#endif
 static D3DCreate_t D3DCreate;
 
 void *d3d8_create(void)
 {
-   return D3DCreate(SDKVersion);
-}
-
-#ifdef HAVE_DYNAMIC_D3D
-#ifdef HAVE_D3DX
-static dylib_t dylib_load_d3dx(void)
-{
-   dylib_t dll           = NULL;
-
-   return dll;
-}
+#ifdef _XBOX
+   UINT ver = 0;
+#else
+   UINT ver = 220;
 #endif
-
-#endif
+   return D3DCreate(ver);
+}
 
 bool d3d8_initialize_symbols(enum gfx_ctx_api api)
 {
@@ -114,31 +66,15 @@ bool d3d8_initialize_symbols(enum gfx_ctx_api api)
       return false;
 #endif
 
-   SDKVersion               = 220;
 #ifdef HAVE_DYNAMIC_D3D
    D3DCreate                = (D3DCreate_t)dylib_proc(g_d3d8_dll, "Direct3DCreate8");
-#ifdef HAVE_D3DX
-#ifdef UNICODE
-   D3DCreateFontIndirect    = (D3DXCreateFontIndirect_t)dylib_proc(g_d3d8x_dll, "D3DXCreateFontIndirectW");
-#else
-   D3DCreateFontIndirect    = (D3DXCreateFontIndirect_t)dylib_proc(g_d3d8x_dll, "D3DXCreateFontIndirectA");
-#endif
-   D3DCreateTextureFromFile = (D3DCreateTextureFromFile_t)dylib_proc(g_d3d8x_dll, "D3DXCreateTextureFromFileExA");
-#endif
 #else
    D3DCreate                = Direct3DCreate8;
-#ifdef HAVE_D3DX
-   D3DCreateFontIndirect    = D3DXCreateFontIndirect;
-   D3DCreateTextureFromFile = D3DXCreateTextureFromFileExA;
-#endif
 #endif
 
    if (!D3DCreate)
       goto error;
 
-#ifdef _XBOX
-   SDKVersion        = 0;
-#endif
 #ifdef HAVE_DYNAMIC_D3D
    dylib_initialized = true;
 #endif
@@ -155,93 +91,25 @@ void d3d8_deinitialize_symbols(void)
 #ifdef HAVE_DYNAMIC_D3D
    if (g_d3d8_dll)
       dylib_close(g_d3d8_dll);
-#ifdef HAVE_D3DX
-   if (g_d3d8x_dll)
-      dylib_close(g_d3d8x_dll);
-   g_d3d8x_dll        = NULL;
-#endif
    g_d3d8_dll         = NULL;
-
    dylib_initialized = false;
 #endif
 }
 
-#ifdef HAVE_D3DX
-static void *d3d8_texture_new_from_file(
-      LPDIRECT3DDEVICE8 dev,
-      const char *path, unsigned width, unsigned height,
-      unsigned miplevels, unsigned usage, D3DFORMAT format,
-      D3DPOOL pool, unsigned filter, unsigned mipfilter,
-      INT32 color_key, void *src_info_data,
-      PALETTEENTRY *palette)
-{
-   void *buf  = NULL;
-   if (FAILED(D3DCreateTextureFromFile(dev,
-         path, width, height, miplevels, usage, format,
-         pool, filter, mipfilter, color_key, src_info_data,
-         palette, (struct IDirect3DTeture8**)&buf)))
-      return NULL;
-   return buf;
-}
-#endif
-
 void *d3d8_texture_new(LPDIRECT3DDEVICE8 dev,
-      const char *path, unsigned width, unsigned height,
+      unsigned width, unsigned height,
       unsigned miplevels, unsigned usage, INT32 format,
       INT32 pool, unsigned filter, unsigned mipfilter,
       INT32 color_key, void *src_info_data,
       PALETTEENTRY *palette, bool want_mipmap)
 {
    void *buf             = NULL;
-
-   if (path)
-   {
-#ifdef HAVE_D3DX
-      return d3d8_texture_new_from_file(_dev,
-            path, width, height, miplevels,
-            usage, (D3DFORMAT)format,
-            (D3DPOOL)pool, filter, mipfilter,
-            color_key, src_info_data, palette);
-#else
-      return NULL;
-#endif
-   }
-
-   if (FAILED(IDirect3DDevice8_CreateTexture(dev,
+   if (SUCCEEDED(IDirect3DDevice8_CreateTexture(dev,
                width, height, miplevels, usage,
                (D3DFORMAT)format, (D3DPOOL)pool,
                (struct IDirect3DTexture8**)&buf)))
-      return NULL;
-
-   return buf;
-}
-
-void d3d8_frame_postprocess(void *data)
-{
-#if defined(_XBOX)
-   global_t        *global = global_get_ptr();
-   D3DDevice_SetFlickerFilter(global->console.screen.flicker_filter_index);
-   D3DDevice_SetSoftDisplayFilter(global->console.softfilter_enable);
-#endif
-}
-
-static bool d3d8_reset_internal(LPDIRECT3DDEVICE8 dev,
-      D3DPRESENT_PARAMETERS *d3dpp
-      )
-{
-   if (dev &&
-         IDirect3DDevice8_Reset(dev, d3dpp) == D3D_OK)
-      return true;
-   return false;
-}
-
-static HRESULT d3d8_test_cooperative_level(LPDIRECT3DDEVICE8 dev)
-{
-#ifndef _XBOX
-   if (dev)
-      return IDirect3DDevice8_TestCooperativeLevel(dev);
-#endif
-   return E_FAIL;
+      return buf;
+   return NULL;
 }
 
 static bool d3d8_create_device_internal(
@@ -286,18 +154,17 @@ bool d3d8_create_device(void *dev,
    return true;
 }
 
-bool d3d8_reset(void *dev, void *d3dpp)
+bool d3d8_reset(void *data, void *d3dpp)
 {
-   const char *err = NULL;
-
-   if (d3d8_reset_internal(dev, (D3DPRESENT_PARAMETERS*)d3dpp))
+   const char       *err = NULL;
+   LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)data;
+   if (dev && IDirect3DDevice8_Reset(dev, (D3DPRESENT_PARAMETERS*)d3dpp) ==
+         D3D_OK)
       return true;
-
-   RARCH_WARN("[D3D]: Attempting to recover from dead state...\n");
-
 #ifndef _XBOX
+   RARCH_WARN("[D3D]: Attempting to recover from dead state...\n");
    /* Try to recreate the device completely. */
-   switch (d3d8_test_cooperative_level(dev))
+   switch (IDirect3DDevice8_TestCooperativeLevel(dev))
    {
       case D3DERR_DEVICELOST:
          err = "DEVICELOST";
@@ -316,50 +183,5 @@ bool d3d8_reset(void *dev, void *d3dpp)
    }
    RARCH_WARN("[D3D]: recovering from dead state: (%s).\n", err);
 #endif
-
    return false;
-}
-
-bool d3d8x_create_font_indirect(LPDIRECT3DDEVICE8 dev,
-      void *desc, void **font_data)
-{
-#ifdef HAVE_D3DX
-   if (SUCCEEDED(D3DCreateFontIndirect(
-               dev, (CONST LOGFONT*)desc,
-               (struct ID3DXFont**)font_data)))
-      return true;
-#endif
-   return false;
-}
-
-void d3d8x_font_draw_text(void *data,
-      void *sprite_data, void *string_data,
-      unsigned count, void *rect_data,
-      unsigned format, unsigned color)
-{
-#ifdef HAVE_D3DX
-   ID3DXFont *font = (ID3DXFont*)data;
-   if (font)
-      font->lpVtbl->DrawText(font, (LPD3DXSPRITE)sprite_data,
-            (LPCTSTR)string_data, count, (LPRECT)rect_data,
-            (DWORD)format, (D3DCOLOR)color);
-#endif
-}
-
-void d3d8x_font_release(void *data)
-{
-#ifdef HAVE_D3DX
-   ID3DXFont *font = (ID3DXFont*)data;
-   if (font)
-      font->lpVtbl->Release(font);
-#endif
-}
-
-void d3d8x_font_get_text_metrics(void *data, void *metrics)
-{
-#ifdef HAVE_D3DX
-   ID3DXFont *font = (ID3DXFont*)data;
-   if (font)
-      font->lpVtbl->GetTextMetrics(font, (TEXTMETRICA*)metrics);
-#endif
 }

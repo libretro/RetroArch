@@ -139,6 +139,7 @@ struct retro_core_option_definition *option_defs_intl[RETRO_LANGUAGE_LAST] = {
    NULL,           /* RETRO_LANGUAGE_INDONESIAN */
    NULL,           /* RETRO_LANGUAGE_SWEDISH */
    NULL,           /* RETRO_LANGUAGE_UKRAINIAN */
+   NULL,           /* RETRO_LANGUAGE_CZECH */
 };
 #endif
 

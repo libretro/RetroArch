@@ -29,12 +29,12 @@
 
 typedef struct
 {
-   const font_renderer_driver_t *vga_font_driver;
-   void *vga_font_data;
+   const font_renderer_driver_t *font_driver;
+   void *font_data;
    vga_t *vga;
 } vga_raster_t;
 
-static void *vga_init_font(void *data,
+static void *vga_font_init(void *data,
       const char *font_path, float font_size,
       bool is_threaded)
 {
@@ -48,8 +48,8 @@ static void *vga_init_font(void *data,
    font_size = 1;
 
    if (!font_renderer_create_default(
-            &font->vga_font_driver,
-            &font->vga_font_data, font_path, font_size))
+            &font->font_driver,
+            &font->font_data, font_path, font_size))
    {
       RARCH_WARN("Couldn't initialize font renderer.\n");
       return NULL;
@@ -58,54 +58,56 @@ static void *vga_init_font(void *data,
    return font;
 }
 
-static void vga_render_free_font(void *data, bool is_threaded)
+static void vga_font_render_free(void *data, bool is_threaded)
 {
-   (void)data;
-   (void)is_threaded;
+  vga_raster_t *font  = (vga_raster_t*)data;
+
+  if (!font)
+     return;
+
+  if (font->font_driver && font->font_data && font->font_driver->free)
+     font->font_driver->free(font->font_data);
+
+  free(font);
 }
 
-static int vga_get_message_width(void *data, const char *msg,
-      unsigned msg_len, float scale)
-{
-   return 0;
-}
-
+static int vga_font_get_message_width(void *data, const char *msg,
+      unsigned msg_len, float scale) { return 0; }
 static const struct font_glyph *vga_font_get_glyph(
-      void *data, uint32_t code)
-{
-   return NULL;
-}
+      void *data, uint32_t code) { return NULL; }
 
-static void vga_render_msg(
+static void vga_font_render_msg(
       void *userdata,
       void *data, const char *msg,
       const struct font_params *params)
 {
+#if 0
+   size_t msg_len;
    float x, y, scale;
    unsigned width, height;
    unsigned new_x, new_y;
    unsigned align;
-   vga_raster_t              *font = (vga_raster_t*)data;
-   settings_t *settings            = config_get_ptr();
-   float video_msg_pos_x           = settings->floats.video_msg_pos_x;
-   float video_msg_pos_y           = settings->floats.video_msg_pos_y;
+   vga_raster_t *font = (vga_raster_t*)data;
 
    if (!font || string_is_empty(msg))
       return;
 
    if (params)
    {
-      x     = params->x;
-      y     = params->y;
-      scale = params->scale;
-      align = params->text_align;
+      x                            = params->x;
+      y                            = params->y;
+      scale                        = params->scale;
+      align                        = params->text_align;
    }
    else
    {
-      x     = video_msg_pos_x;
-      y     = video_msg_pos_y;
-      scale = 1.0f;
-      align = TEXT_ALIGN_LEFT;
+      settings_t *settings         = config_get_ptr();
+      float video_msg_pos_x        = settings->floats.video_msg_pos_x;
+      float video_msg_pos_y        = settings->floats.video_msg_pos_y;
+      x                            = video_msg_pos_x;
+      y                            = video_msg_pos_y;
+      scale                        = 1.0f;
+      align                        = TEXT_ALIGN_LEFT;
    }
 
    if (!font->vga)
@@ -114,6 +116,7 @@ static void vga_render_msg(
    width    = VGA_WIDTH;
    height   = VGA_HEIGHT;
    new_y    = height - (y * height * scale);
+   msg_len  = strlen(msg);
 
    switch (align)
    {
@@ -121,26 +124,27 @@ static void vga_render_msg(
          new_x = x * width * scale;
          break;
       case TEXT_ALIGN_RIGHT:
-         new_x = (x * width * scale) - strlen(msg);
+         new_x = (x * width * scale) - msg_len;
          break;
       case TEXT_ALIGN_CENTER:
-         new_x = (x * width * scale) - (strlen(msg) / 2);
+         new_x = (x * width * scale) - (msg_len / 2);
          break;
       default:
          break;
    }
 
    /* TODO/FIXME - implement */
+#endif
 }
 
 font_renderer_t vga_font = {
-   vga_init_font,
-   vga_render_free_font,
-   vga_render_msg,
-   "vga font",
-   vga_font_get_glyph,       /* get_glyph */
-   NULL,                     /* bind_block */
-   NULL,                     /* flush */
-   vga_get_message_width,    /* get_message_width */
-   NULL                      /* get_line_metrics */
+   vga_font_init,
+   vga_font_render_free,
+   vga_font_render_msg,
+   "vga_font",
+   vga_font_get_glyph,         /* get_glyph */
+   NULL,                       /* bind_block */
+   NULL,                       /* flush */
+   vga_font_get_message_width, /* get_message_width */
+   NULL                        /* get_line_metrics */
 };

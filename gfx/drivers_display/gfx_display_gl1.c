@@ -21,7 +21,6 @@
 #endif
 
 #include "../../retroarch.h"
-#include "../font_driver.h"
 #include "../common/gl1_common.h"
 
 #include "../gfx_display.h"
@@ -167,20 +166,6 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
    gl1->coords.color = gl1->white_color_ptr;
 }
 
-static bool gfx_display_gl1_font_init_first(
-      void **font_handle, void *video_data,
-      const char *font_path, float menu_font_size,
-      bool is_threaded)
-{
-   font_data_t **handle = (font_data_t**)font_handle;
-   if (!(*handle = font_driver_init_first(video_data,
-         font_path, menu_font_size, true,
-         is_threaded,
-         FONT_DRIVER_RENDER_OPENGL1_API)))
-       return false;
-   return true;
-}
-
 static void gfx_display_gl1_scissor_begin(void *data,
       unsigned video_width,
       unsigned video_height,
@@ -208,7 +193,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl1 = {
    gfx_display_gl1_get_default_mvp,
    gfx_display_gl1_get_default_vertices,
    gfx_display_gl1_get_default_tex_coords,
-   gfx_display_gl1_font_init_first,
+   FONT_DRIVER_RENDER_OPENGL1_API,
    GFX_VIDEO_DRIVER_OPENGL1,
    "gl1",
    false,

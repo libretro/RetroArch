@@ -34,7 +34,7 @@ typedef struct
    struct font_atlas *atlas;
 } vita_font_t;
 
-static void *vita2d_font_init_font(void *data,
+static void *vita2d_font_init(void *data,
       const char *font_path, float font_size,
       bool is_threaded)
 {
@@ -91,7 +91,7 @@ error:
    return NULL;
 }
 
-static void vita2d_font_free_font(void *data, bool is_threaded)
+static void vita2d_font_free(void *data, bool is_threaded)
 {
    vita_font_t *font = (vita_font_t*)data;
    if (!font)
@@ -110,11 +110,14 @@ static int vita2d_font_get_message_width(void *data, const char *msg,
       unsigned msg_len, float scale)
 {
    unsigned i;
+   const struct font_glyph* glyph_q = NULL;
    int delta_x       = 0;
    vita_font_t *font = (vita_font_t*)data;
 
    if (!font)
       return 0;
+
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
@@ -126,13 +129,10 @@ static int vita2d_font_get_message_width(void *data, const char *msg,
       if (skip > 1)
          i += skip - 1;
 
-      glyph = font->font_driver->get_glyph(font->font_data, code);
-
-      if (!glyph) /* Do something smarter here ... */
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
-
-      if (!glyph)
-         continue;
+      /* Do something smarter here ... */
+      if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
 
       delta_x += glyph->advance_x;
    }
@@ -147,6 +147,7 @@ static void vita2d_font_render_line(
       unsigned width, unsigned height, unsigned text_align)
 {
    unsigned i;
+   const struct font_glyph* glyph_q = NULL;
    int x           = roundf(pos_x * width);
    int y           = roundf((1.0f - pos_y) * height);
    int delta_x     = 0;
@@ -162,6 +163,8 @@ static void vita2d_font_render_line(
          break;
    }
 
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+
    for (i = 0; i < msg_len; i++)
    {
       int off_x, off_y, tex_x, tex_y, width, height;
@@ -176,13 +179,10 @@ static void vita2d_font_render_line(
       if (skip > 1)
          i += skip - 1;
 
-      glyph = font->font_driver->get_glyph(font->font_data, code);
-
-      if (!glyph) /* Do something smarter here ... */
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
-
-      if (!glyph)
-         continue;
+      /* Do something smarter here ... */
+      if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
 
       off_x  = glyph->draw_offset_x;
       off_y  = glyph->draw_offset_y;
@@ -268,21 +268,13 @@ static void vita2d_font_render_msg(
 {
    float x, y, scale, drop_mod, drop_alpha;
    int drop_x, drop_y;
-   unsigned max_glyphs;
    enum text_alignment text_align;
+   unsigned color, r, g, b, alpha;
    bool full_screen                 = false ;
-   unsigned color, color_dark, r, g, b,
-            alpha, r_dark, g_dark, b_dark, alpha_dark;
    vita_video_t             *vita   = (vita_video_t *)userdata;
    vita_font_t                *font = (vita_font_t *)data;
    unsigned width                   = vita->video_width;
    unsigned height                  = vita->video_height;
-   settings_t *settings             = config_get_ptr();
-   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
-   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
-   float video_msg_color_r          = settings->floats.video_msg_color_r;
-   float video_msg_color_g          = settings->floats.video_msg_color_g;
-   float video_msg_color_b          = settings->floats.video_msg_color_b;
 
    if (!font || !msg || !*msg)
       return;
@@ -306,38 +298,39 @@ static void vita2d_font_render_msg(
    }
    else
    {
-      x              = video_msg_pos_x;
-      y              = video_msg_pos_y;
-      scale          = 1.0f;
-      full_screen    = true;
-      text_align     = TEXT_ALIGN_LEFT;
+      settings_t *settings    = config_get_ptr();
+      float video_msg_pos_x   = settings->floats.video_msg_pos_x;
+      float video_msg_pos_y   = settings->floats.video_msg_pos_y;
+      float video_msg_color_r = settings->floats.video_msg_color_r;
+      float video_msg_color_g = settings->floats.video_msg_color_g;
+      float video_msg_color_b = settings->floats.video_msg_color_b;
+      x                       = video_msg_pos_x;
+      y                       = video_msg_pos_y;
+      scale                   = 1.0f;
+      full_screen             = true;
+      text_align              = TEXT_ALIGN_LEFT;
 
-      r              = (video_msg_color_r * 255);
-      g              = (video_msg_color_g * 255);
-      b              = (video_msg_color_b * 255);
-      alpha			   = 255;
-      color 		   = RGBA8(r,g,b,alpha);
+      r                       = (video_msg_color_r * 255);
+      g                       = (video_msg_color_g * 255);
+      b                       = (video_msg_color_b * 255);
+      alpha			            = 255;
+      color 		            = RGBA8(r,g,b,alpha);
 
-      drop_x         = -2;
-      drop_y         = -2;
-      drop_mod       = 0.3f;
-      drop_alpha     = 1.0f;
+      drop_x                  = -2;
+      drop_y                  = -2;
+      drop_mod                = 0.3f;
+      drop_alpha              = 1.0f;
    }
 
    video_driver_set_viewport(width, height, full_screen, false);
 
-   max_glyphs        = strlen(msg);
-
-   if (drop_x || drop_y)
-      max_glyphs    *= 2;
-
    if (drop_x || drop_y)
    {
-      r_dark         = r * drop_mod;
-      g_dark         = g * drop_mod;
-      b_dark         = b * drop_mod;
-      alpha_dark		= alpha * drop_alpha;
-      color_dark     = RGBA8(r_dark,g_dark,b_dark,alpha_dark);
+      unsigned r_dark         = r * drop_mod;
+      unsigned g_dark         = g * drop_mod;
+      unsigned b_dark         = b * drop_mod;
+      unsigned alpha_dark     = alpha * drop_alpha;
+      unsigned color_dark     = RGBA8(r_dark,g_dark,b_dark,alpha_dark);
 
       vita2d_font_render_message(font, msg, scale, color_dark,
             x + scale * drop_x / width, y +
@@ -352,27 +345,24 @@ static const struct font_glyph *vita2d_font_get_glyph(
       void *data, uint32_t code)
 {
    vita_font_t *font = (vita_font_t*)data;
-
-   if (!font || !font->font_driver || !font->font_driver->ident)
-       return NULL;
-   return font->font_driver->get_glyph((void*)font->font_driver, code);
+   if (font && font->font_driver && font->font_driver->ident)
+      return font->font_driver->get_glyph((void*)font->font_driver, code);
+   return NULL;
 }
 
 static bool vita2d_font_get_line_metrics(void* data, struct font_line_metrics **metrics)
 {
    vita_font_t *font = (vita_font_t*)data;
-
-   if (!font || !font->font_driver || !font->font_data)
-      return -1;
-
-   return font->font_driver->get_line_metrics(font->font_data, metrics);
+   if (font && font->font_driver && font->font_data)
+      return font->font_driver->get_line_metrics(font->font_data, metrics);
+   return false;
 }
 
 font_renderer_t vita2d_vita_font = {
-   vita2d_font_init_font,
-   vita2d_font_free_font,
+   vita2d_font_init,
+   vita2d_font_free,
    vita2d_font_render_msg,
-   "vita2dfont",
+   "vita2d_font",
    vita2d_font_get_glyph,
    NULL,                      /* bind_block */
    NULL,                      /* flush */

@@ -531,10 +531,6 @@ MSG_HASH(
    "CPU jellemzők"
    )
 MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   "CPU architektúra:"
-   )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "CPU magok:"
    )
@@ -797,6 +793,18 @@ MSG_HASH(
    "Műfaj"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
+   "Eredmények"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
+   "Nyelv"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
+   "Terület"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
    "Kiadó"
    )
@@ -827,14 +835,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
    "Edge Magazine probléma"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
-   "Megjelenés dátuma Hónap"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
-   "Megjelenés dátuma Év"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
@@ -1117,6 +1117,9 @@ MSG_HASH(
    "Módosítsa az alapértelmezett könyvtárakat, ahol a fájlok találhatók."
    )
 
+#ifdef HAVE_MIST
+#endif
+
 /* Settings > Drivers */
 
 MSG_HASH(
@@ -1344,6 +1347,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    "Válassza ki a használni kívánt képernyőt."
    )
+#if defined (WIIU)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
    "Képernyő elforgatás"
@@ -1527,10 +1532,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "Képarány"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "Egyedi Képarány"
-   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
@@ -1684,6 +1685,7 @@ MSG_HASH(
 /* Settings > Input > Menu Controls */
 
 
+
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(
@@ -1729,7 +1731,15 @@ MSG_HASH(
 
 #ifndef HAVE_DYNAMIC
 #endif
+#ifdef HAVE_MIST
 
+
+
+
+
+
+
+#endif
 /* Settings > Configuration */
 
 
@@ -1821,6 +1831,7 @@ MSG_HASH(
 
 
 /* Settings > User Interface > Views > Settings */
+
 
 
 /* Settings > User Interface > Appearance */
@@ -1949,6 +1960,17 @@ MSG_HASH(
    "Lejátszási listák"
    )
 
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
+   "Tartalom"
+   )
+#endif
+
 /* Music */
 
 /* Music > Quick Menu */
@@ -2063,10 +2085,6 @@ MSG_HASH(
    "Kedvencekhez ad"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
-   "Beállítások"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
    "Eredmények"
    )
@@ -2082,7 +2100,10 @@ MSG_HASH(
 /* Quick Menu > Controls */
 
 
-/* Quick Menu > Controls > Load Remap File */
+/* Quick Menu > Controls > Manage Remap Files */
+
+
+/* Quick Menu > Controls > Manage Remap Files > Load Remap File */
 
 
 /* Quick Menu > Cheats */
@@ -2570,6 +2591,11 @@ MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
    "Csatlakoztál mint %u"
    )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_PLAYING,
+   "Lejátszás"
+   )
+
 MSG_HASH(
    MSG_AUDIO_VOLUME,
    "Hangerő"

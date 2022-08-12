@@ -371,7 +371,13 @@ static bool gl2_recreate_fbo(
 static void gl2_set_projection(gl2_t *gl,
       struct video_ortho *ortho, bool allow_rotate)
 {
-   math_matrix_4x4 rot;
+   static math_matrix_4x4 rot     = {
+      { 0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    1.0f }
+   };
+   float radians, cosine, sine;
 
    /* Calculate projection. */
    matrix_4x4_ortho(gl->mvp_no_rot, ortho->left, ortho->right,
@@ -383,7 +389,13 @@ static void gl2_set_projection(gl2_t *gl,
       return;
    }
 
-   matrix_4x4_rotate_z(rot, M_PI * gl->rotation / 180.0f);
+   radians                 = M_PI * gl->rotation / 180.0f;
+   cosine                  = cosf(radians);
+   sine                    = sinf(radians);
+   MAT_ELEM_4X4(rot, 0, 0) = cosine;
+   MAT_ELEM_4X4(rot, 0, 1) = -sine;
+   MAT_ELEM_4X4(rot, 1, 0) = sine;
+   MAT_ELEM_4X4(rot, 1, 1) = cosine;
    matrix_4x4_multiply(gl->mvp, rot, gl->mvp_no_rot);
 }
 
@@ -3320,9 +3332,10 @@ static bool gl2_resolve_extensions(gl2_t *gl, const char *context_ident, const v
    if (gl->core_context_in_use)
    {
 #ifdef GL_NUM_EXTENSIONS
+      GLint i;
       GLint exts = 0;
       glGetIntegerv(GL_NUM_EXTENSIONS, &exts);
-      for (GLint i = 0; i < exts; i++)
+      for (i = 0; i < exts; i++)
       {
          const char *ext = (const char*)glGetStringi(GL_EXTENSIONS, i);
          if (ext)
@@ -3714,8 +3727,9 @@ static void *gl2_init(const video_info_t *video,
 
       if (!string_is_empty(vendor))
       {
-        strlcpy(device_str, vendor, sizeof(device_str));
-        strlcat(device_str, " ", sizeof(device_str));
+        size_t len        = strlcpy(device_str, vendor, sizeof(device_str));
+        device_str[len  ] = ' ';
+        device_str[len+1] = '\0';
       }
 
       if (!string_is_empty(renderer))
@@ -4014,9 +4028,9 @@ static bool gl2_alive(void *data)
 #ifdef __WINRT__
    if (is_running_on_xbox())
    {
-      //we can set it to 1920x1080 as xbox uwp windowsize is guaranteed to be 1920x1080 and currently there is now way to set angle to use a variable resolution swapchain so regardless of the size the window is always 1080p
-      temp_width = 1920;
-      temp_height = 1080;
+      //match the output res to the display res
+      temp_width = uwp_get_width();
+      temp_height = uwp_get_height();
    }
 #endif
    if (quit)

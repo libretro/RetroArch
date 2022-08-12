@@ -518,6 +518,13 @@ int rc_json_get_string(const char** out, rc_api_buffer_t* buffer, const rc_json_
           continue;
         }
 
+        if (*src == 't') {
+          /* tab */
+          ++src;
+          *dst++ = '\t';
+          continue;
+        }
+
         /* just an escaped character, fallthrough to normal copy */
       }
 

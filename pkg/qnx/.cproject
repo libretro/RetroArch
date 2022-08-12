@@ -74,6 +74,7 @@
 									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="HAVE_NETWORKING"/>
+									<listOptionValue builtIn="false" value="HAVE_IFINFO"/>
 									<listOptionValue builtIn="false" value="HAVE_ONLINE_UPDATER"/>
 									<listOptionValue builtIn="false" value="HAVE_UPDATE_CORES"/>
 									<listOptionValue builtIn="false" value="HAVE_UPDATE_ASSETS"/>
@@ -145,6 +146,7 @@
 									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="HAVE_NETWORKING"/>
+									<listOptionValue builtIn="false" value="HAVE_IFINFO"/>
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.assembler.1280447837" superClass="com.qnx.qcc.inputType.assembler"/>
@@ -254,6 +256,7 @@
 									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="HAVE_NETWORKING"/>
+									<listOptionValue builtIn="false" value="HAVE_IFINFO"/>
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.pie.927304226" name="Position Independent Executable (-fPIE)" superClass="com.qnx.qcc.option.compiler.pie" value="true" valueType="boolean"/>
@@ -322,6 +325,7 @@
 									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="HAVE_NETWORKING"/>
+									<listOptionValue builtIn="false" value="HAVE_IFINFO"/>
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.assembler.1962946740" superClass="com.qnx.qcc.inputType.assembler"/>
@@ -434,6 +438,7 @@
 									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="HAVE_NETWORKING"/>
+									<listOptionValue builtIn="false" value="HAVE_IFINFO"/>
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.qccoptions.1706952064" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
@@ -502,6 +507,7 @@
 									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="HAVE_NETWORKING"/>
+									<listOptionValue builtIn="false" value="HAVE_IFINFO"/>
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.assembler.267052623" superClass="com.qnx.qcc.inputType.assembler"/>
@@ -611,6 +617,7 @@
 									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="HAVE_NETWORKING"/>
+									<listOptionValue builtIn="false" value="HAVE_IFINFO"/>
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.pie.2014727633" name="Position Independent Executable (-fPIE)" superClass="com.qnx.qcc.option.compiler.pie" value="true" valueType="boolean"/>
@@ -679,6 +686,7 @@
 									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="HAVE_NETWORKING"/>
+									<listOptionValue builtIn="false" value="HAVE_IFINFO"/>
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.assembler.1338834046" superClass="com.qnx.qcc.inputType.assembler"/>

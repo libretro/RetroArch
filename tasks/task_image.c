@@ -97,12 +97,10 @@ static int task_image_process(
    if (!image_transfer_is_valid(image->handle, image->type))
       return IMAGE_PROCESS_ERROR;
 
-   retval = image_transfer_process(
+   if ((retval = image_transfer_process(
          image->handle,
          image->type,
-         &image->ti.pixels, image->size, width, height);
-
-   if (retval == IMAGE_PROCESS_ERROR)
+         &image->ti.pixels, image->size, width, height)) == IMAGE_PROCESS_ERROR)
       return IMAGE_PROCESS_ERROR;
 
    image->ti.width  = *width;
@@ -140,9 +138,7 @@ static int task_image_iterate_process_transfer(struct nbio_image_handle *image)
 
    do
    {
-      retval = task_image_process(image, &width, &height);
-
-      if (retval != IMAGE_PROCESS_NEXT)
+      if ((retval = task_image_process(image, &width, &height)) != IMAGE_PROCESS_NEXT)
          break;
    }while (cpu_features_get_time_usec() - start_time 
          < image->frame_duration);
@@ -162,8 +158,8 @@ static void task_image_cleanup(nbio_handle_t *nbio)
    {
       image_transfer_free(image->handle, image->type);
 
-      image->handle                 = NULL;
-      image->cb                     = NULL;
+      image->handle  = NULL;
+      image->cb      = NULL;
    }
    if (!string_is_empty(nbio->path))
       free(nbio->path);
@@ -177,7 +173,7 @@ static void task_image_cleanup(nbio_handle_t *nbio)
 
 static void task_image_load_free(retro_task_t *task)
 {
-   nbio_handle_t       *nbio  = task ? (nbio_handle_t*)task->state : NULL;
+   nbio_handle_t *nbio  = task ? (nbio_handle_t*)task->state : NULL;
 
    if (nbio)
    {
@@ -236,8 +232,7 @@ static bool upscale_image(
       struct texture_image *image_dst)
 {
    uint32_t x_ratio, y_ratio;
-   unsigned x_src, y_src;
-   unsigned x_dst, y_dst;
+   unsigned y_dst;
 
    /* Sanity check */
    if ((scale_factor < 1) || !image_src || !image_dst)
@@ -247,12 +242,11 @@ static bool upscale_image(
       return false;
 
    /* Get output dimensions */
-   image_dst->width = image_src->width * scale_factor;
+   image_dst->width  = image_src->width * scale_factor;
    image_dst->height = image_src->height * scale_factor;
 
    /* Allocate pixel buffer */
-   image_dst->pixels = (uint32_t*)calloc(image_dst->width * image_dst->height, sizeof(uint32_t));
-   if (!image_dst->pixels)
+   if (!(image_dst->pixels = (uint32_t*)calloc(image_dst->width * image_dst->height, sizeof(uint32_t))))
       return false;
 
    /* Perform nearest neighbour resampling */
@@ -261,10 +255,11 @@ static bool upscale_image(
 
    for (y_dst = 0; y_dst < image_dst->height; y_dst++)
    {
-      y_src = (y_dst * y_ratio) >> 16;
+      unsigned x_dst;
+      unsigned y_src = (y_dst * y_ratio) >> 16;
       for (x_dst = 0; x_dst < image_dst->width; x_dst++)
       {
-         x_src = (x_dst * x_ratio) >> 16;
+         unsigned x_src = (x_dst * x_ratio) >> 16;
          image_dst->pixels[(y_dst * image_dst->width) + x_dst] = image_src->pixels[(y_src * image_src->width) + x_src];
       }
    }
@@ -391,9 +386,7 @@ bool task_push_image_load(const char *fullpath,
    if (!t)
       return false;
 
-   nbio                = (nbio_handle_t*)malloc(sizeof(*nbio));
-
-   if (!nbio)
+   if (!(nbio = (nbio_handle_t*)malloc(sizeof(*nbio))))
    {
       free(t);
       return false;
@@ -411,8 +404,7 @@ bool task_push_image_load(const char *fullpath,
    if (supports_rgba)
       BIT32_SET(nbio->status_flags, NBIO_FLAG_IMAGE_SUPPORTS_RGBA);
 
-   image              = (struct nbio_image_handle*)malloc(sizeof(*image));
-   if (!image)
+   if (!(image = (struct nbio_image_handle*)malloc(sizeof(*image))))
    {
       free(nbio);
       free(t);

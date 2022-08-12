@@ -152,7 +152,6 @@ enum rarch_override_setting
    RARCH_OVERRIDE_SETTING_NETPLAY_MODE,
    RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS,
    RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT,
-   RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE,
    RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES,
 #endif
    RARCH_OVERRIDE_SETTING_UPS_PREF,
@@ -172,7 +171,7 @@ enum runloop_action
 typedef struct rarch_memory_descriptor
 {
    struct retro_memory_descriptor core;        /* uint64_t alignment */
-   size_t disconnect_mask;
+   /* Retroarch can have additional context here */
 } rarch_memory_descriptor_t;
 
 typedef struct rarch_memory_map

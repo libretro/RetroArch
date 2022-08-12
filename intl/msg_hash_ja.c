@@ -39,13 +39,6 @@ int msg_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
    settings_t *settings = config_get_ptr();
 
-    if (msg == MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM)
-    {
-       snprintf(s, len,
-             "TODO/FIXME - Fill in message here."
-             );
-       return 0;
-    }
    if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
          msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
    {
@@ -1688,15 +1681,6 @@ int msg_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                   " \n"
                   "Not recommended except for very fast networks \n"
                   "with very weak machines. \n");
-         break;
-      case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE:
-         snprintf(s, len,
-                  "Whether to run netplay in a mode not requiring\n"
-                  "save states. \n"
-                  " \n"
-                  "If set to true, a very fast network is required,\n"
-                  "but no rewinding is performed, so there will be\n"
-                  "no netplay jitter.\n");
          break;
       case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
          snprintf(s, len,

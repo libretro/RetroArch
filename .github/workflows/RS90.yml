@@ -1,0 +1,35 @@
+name: CI RS90 Odbeta MIPS32
+
+on:
+  push:
+  pull_request:
+  repository_dispatch:
+    types: [run_build]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: 
+      image: git.libretro.com:5050/libretro-infrastructure/libretro-build-dingux:odbeta
+      options: --user root
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Compile RA
+      run: |
+        make -j$(getconf _NPROCESSORS_ONLN) -f Makefile.rs90 clean
+        make -j$(getconf _NPROCESSORS_ONLN) -f Makefile.rs90
+
+    - name: Get short SHA
+      id: slug
+      run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
+    
+    - uses: actions/upload-artifact@v3
+      with:
+        name: retroarch_rs90_mips32${{ steps.slug.outputs.sha8 }}
+        path: |
+          retroarch_rs90_odbeta.opk

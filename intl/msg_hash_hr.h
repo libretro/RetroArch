@@ -419,10 +419,6 @@ MSG_HASH(
    "Značajke procesora"
    )
 MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   "Arhitektura procesora:"
-   )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "Jezgre procesora:"
    )
@@ -443,6 +439,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
    "Žanr"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
+   "Postignuća"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
@@ -513,6 +513,9 @@ MSG_HASH(
    "Mape"
    )
 
+#ifdef HAVE_MIST
+#endif
+
 /* Settings > Drivers */
 
 MSG_HASH(
@@ -536,6 +539,8 @@ MSG_HASH(
 
 /* Settings > Video > Output */
 
+#if defined (WIIU)
+#endif
 #if defined(DINGUX) && defined(DINGUX_BETA)
 #endif
 
@@ -620,6 +625,7 @@ MSG_HASH(
 /* Settings > Input > Menu Controls */
 
 
+
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(
@@ -637,7 +643,15 @@ MSG_HASH(
 
 #ifndef HAVE_DYNAMIC
 #endif
+#ifdef HAVE_MIST
 
+
+
+
+
+
+
+#endif
 /* Settings > Configuration */
 
 
@@ -701,6 +715,7 @@ MSG_HASH(
 
 
 /* Settings > User Interface > Views > Settings */
+
 
 
 /* Settings > User Interface > Appearance */
@@ -773,6 +788,13 @@ MSG_HASH(
    "Popisi za reprodukciju"
    )
 
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+#endif
+
 /* Music */
 
 /* Music > Quick Menu */
@@ -838,7 +860,10 @@ MSG_HASH(
 /* Quick Menu > Controls */
 
 
-/* Quick Menu > Controls > Load Remap File */
+/* Quick Menu > Controls > Manage Remap Files */
+
+
+/* Quick Menu > Controls > Manage Remap Files > Load Remap File */
 
 
 /* Quick Menu > Cheats */
@@ -1005,6 +1030,7 @@ MSG_HASH(
 
 
 /* Notifications */
+
 
 
 /* Lakka */

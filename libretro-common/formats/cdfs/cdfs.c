@@ -458,12 +458,12 @@ static cdfs_track_t* cdfs_open_cue_track(
       }
       else if (!strncasecmp(line, "TRACK", 5))
       {
+         char *ptr             = NULL;
          unsigned track_number = 0;
-
-         const char *track = line + 5;
+         const char *track     = line + 5;
          cdfs_skip_spaces(&track);
 
-         sscanf(track, "%d", (int*)&track_number);
+         track_number = (unsigned)strtol(track, &ptr, 10);
          while (*track && *track != ' ' && *track != '\n')
             ++track;
 
@@ -479,11 +479,8 @@ static cdfs_track_t* cdfs_open_cue_track(
 
             sector_size = atoi(track + 6);
          }
-         else
-         {
-            /* assume AUDIO */
+         else /* assume AUDIO */
             sector_size = 2352;
-         }
       }
       else if (!strncasecmp(line, "INDEX", 5))
       {
@@ -634,10 +631,6 @@ cdfs_track_t* cdfs_open_raw_track(const char* path)
             track = NULL;
          }
       }
-   }
-   else
-   {
-      /* unsupported file type */
    }
 
    return track;

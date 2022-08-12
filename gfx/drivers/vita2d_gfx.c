@@ -370,7 +370,13 @@ static bool vita2d_gfx_set_shader(void *data,
 static void vita2d_set_projection(vita_video_t *vita,
       struct video_ortho *ortho, bool allow_rotate)
 {
-   math_matrix_4x4 rot;
+   static math_matrix_4x4 rot     = {
+      { 0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    1.0f }
+   };
+   float radians, cosine, sine;
 
    /* Calculate projection. */
    matrix_4x4_ortho(vita->mvp_no_rot, ortho->left, ortho->right,
@@ -382,7 +388,13 @@ static void vita2d_set_projection(vita_video_t *vita,
       return;
    }
 
-   matrix_4x4_rotate_z(rot, M_PI * vita->rotation / 180.0f);
+   radians                 = M_PI * vita->rotation / 180.0f;
+   cosine                  = cosf(radians);
+   sine                    = sinf(radians);
+   MAT_ELEM_4X4(rot, 0, 0) = cosine;
+   MAT_ELEM_4X4(rot, 0, 1) = -sine;
+   MAT_ELEM_4X4(rot, 1, 0) = sine;
+   MAT_ELEM_4X4(rot, 1, 1) = cosine;
    matrix_4x4_multiply(vita->mvp, rot, vita->mvp_no_rot);
 }
 

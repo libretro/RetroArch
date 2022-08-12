@@ -105,19 +105,9 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file* stream)
     if (!stream)
         return -1;
 
-    /*if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-    {
-        if (stream->fp)
-            fclose(stream->fp);
-    }*/
-
     if (stream->fp)
         fclose(stream->fp);
 
-    /*if (stream->fd > 0)
-    {
-        fclose(stream->fd);
-    }*/
     if (stream->buf != NULL)
     {
         free(stream->buf);
@@ -131,7 +121,6 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file* stream)
     return 0;
 }
 
-
 int retro_vfs_file_error_impl(libretro_vfs_implementation_file* stream)
 {
     return ferror(stream->fp);
@@ -144,18 +133,12 @@ int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file* stream)
     return 0;
 }
 
-
 int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file* stream, int64_t length)
 {
-    if (!stream)
-        return -1;
-
-    if (_chsize(_fileno(stream->fp), length) != 0)
-        return -1;
-
-    return 0;
+   if (stream && _chsize(_fileno(stream->fp), length) == 0)
+      return 0;
+   return -1;
 }
-
 
 int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file* stream)
 {
@@ -163,9 +146,7 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file* stream)
         return -1;
 
     if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-    {
         return _ftelli64(stream->fp);
-    }
     if (lseek(stream->fd, 0, SEEK_CUR) < 0)
         return -1;
 
@@ -180,11 +161,7 @@ int64_t retro_vfs_file_seek_internal(
         return -1;
 
     if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-    {
         return _fseeki64(stream->fp, offset, whence);
-    }
-
-
     if (lseek(stream->fd, (off_t)offset, whence) < 0)
         return -1;
 
@@ -235,7 +212,6 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file* stream, cons
     if (!stream || (!stream->fp && stream->fh == INVALID_HANDLE_VALUE) || !s)
         return -1;
 
-
     if (stream->fh != INVALID_HANDLE_VALUE)
     {
         DWORD bytes_written;
@@ -244,19 +220,16 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file* stream, cons
     }
 
     if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-    {
         return fwrite(s, 1, (size_t)len, stream->fp);
-    }
 
     return write(stream->fd, s, (size_t)len);
-    //return write(stream->fd, s, (size_t)len);
 }
 
 int retro_vfs_file_flush_impl(libretro_vfs_implementation_file* stream)
 {
-    if (!stream)
-        return -1;
-    return fflush(stream->fp) == 0 ? 0 : -1;
+    if (stream && fflush(stream->fp) == 0)
+       return 0;
+    return -1;
 }
 
 int retro_vfs_file_remove_impl(const char *path)
@@ -282,6 +255,10 @@ int retro_vfs_file_remove_impl(const char *path)
 libretro_vfs_implementation_file* retro_vfs_file_open_impl(
     const char* path, unsigned mode, unsigned hints)
 {
+    HANDLE file_handle;
+    std::wstring path_wstring;
+    DWORD desireAccess;
+    DWORD creationDisposition;
 #if defined(VFS_FRONTEND) || defined(HAVE_CDROM)
     int                             path_len = (int)strlen(path);
 #endif
@@ -290,9 +267,9 @@ libretro_vfs_implementation_file* retro_vfs_file_open_impl(
     size_t                   dumb_prefix_siz = STRLEN_CONST("vfsonly://");
     int                      dumb_prefix_len = (int)dumb_prefix_siz;
 #endif
-    wchar_t* path_wide;
+    wchar_t                       *path_wide = NULL;
     int                                flags = 0;
-    const char* mode_str = NULL;
+    const char                     *mode_str = NULL;
     libretro_vfs_implementation_file* stream =
         (libretro_vfs_implementation_file*)
         malloc(sizeof(*stream));
@@ -300,17 +277,17 @@ libretro_vfs_implementation_file* retro_vfs_file_open_impl(
     if (!stream)
         return NULL;
 
-    stream->fd = 0;
-    stream->hints = hints;
-    stream->size = 0;
-    stream->buf = NULL;
-    stream->fp = NULL;
-    stream->fh = 0;
+    stream->fd        = 0;
+    stream->hints     = hints;
+    stream->size      = 0;
+    stream->buf       = NULL;
+    stream->fp        = NULL;
+    stream->fh        = 0;
     stream->orig_path = NULL;
-    stream->mappos = 0;
-    stream->mapsize = 0;
-    stream->mapped = NULL;
-    stream->scheme = VFS_SCHEME_NONE;
+    stream->mappos    = 0;
+    stream->mapsize   = 0;
+    stream->mapped    = NULL;
+    stream->scheme    = VFS_SCHEME_NONE;
 
 #ifdef VFS_FRONTEND
     if (path_len >= dumb_prefix_len)
@@ -318,96 +295,86 @@ libretro_vfs_implementation_file* retro_vfs_file_open_impl(
             path += dumb_prefix_siz;
 #endif
 
-    path_wide = utf8_to_utf16_string_alloc(path);
+    path_wide    = utf8_to_utf16_string_alloc(path);
     windowsize_path(path_wide);
-    std::wstring path_wstring = path_wide;
+    path_wstring = path_wide;
     free(path_wide);
-    while (true) {
-        size_t p = path_wstring.find(L"\\\\");
-        if (p == std::wstring::npos) break;
-        path_wstring.replace(p, 2, L"\\");
+
+    for (;;)
+    {
+       size_t p = path_wstring.find(L"\\\\");
+       if (p == std::wstring::npos)
+          break;
+       path_wstring.replace(p, 2, L"\\");
     }
 
-    path_wstring = L"\\\\?\\" + path_wstring;
+    path_wstring      = L"\\\\?\\" + path_wstring;
     stream->orig_path = strdup(path);
 
-    stream->hints &= ~RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS;
-
-    DWORD desireAccess;
-    DWORD creationDisposition;
+    stream->hints    &= ~RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS;
 
     switch (mode)
     {
-    case RETRO_VFS_FILE_ACCESS_READ:
-        mode_str = "rb";
-        flags = O_RDONLY | O_BINARY;
-        break;
+       case RETRO_VFS_FILE_ACCESS_READ:
+          mode_str = "rb";
+          flags    = O_RDONLY | O_BINARY;
+          break;
 
-    case RETRO_VFS_FILE_ACCESS_WRITE:
-        mode_str = "wb";
-        flags = O_WRONLY | O_CREAT | O_TRUNC | O_BINARY;
-        break;
+       case RETRO_VFS_FILE_ACCESS_WRITE:
+          mode_str = "wb";
+          flags    = O_WRONLY | O_CREAT | O_TRUNC | O_BINARY;
+          break;
 
-    case RETRO_VFS_FILE_ACCESS_READ_WRITE:
-        mode_str = "w+b";
-        flags = O_RDWR | O_CREAT | O_TRUNC | O_BINARY;
-        break;
+       case RETRO_VFS_FILE_ACCESS_READ_WRITE:
+          mode_str = "w+b";
+          flags    = O_RDWR | O_CREAT | O_TRUNC | O_BINARY;
+          break;
 
-    case RETRO_VFS_FILE_ACCESS_WRITE | RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING:
-    case RETRO_VFS_FILE_ACCESS_READ_WRITE | RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING:
-        mode_str = "r+b";
-        flags = O_RDWR | O_BINARY;
-        break;
+       case RETRO_VFS_FILE_ACCESS_WRITE | RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING:
+       case RETRO_VFS_FILE_ACCESS_READ_WRITE | RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING:
+          mode_str = "r+b";
+          flags    = O_RDWR | O_BINARY;
+          break;
 
-    default:
-        goto error;
+       default:
+          goto error;
     }
 
     switch (mode)
     {
-    case RETRO_VFS_FILE_ACCESS_READ_WRITE:
-        desireAccess = GENERIC_READ | GENERIC_WRITE;
-        break;
-    case RETRO_VFS_FILE_ACCESS_WRITE:
-        desireAccess = GENERIC_WRITE;
-        break;
-    case RETRO_VFS_FILE_ACCESS_READ:
-        desireAccess = GENERIC_READ;
-        break;
+       case RETRO_VFS_FILE_ACCESS_READ_WRITE:
+          desireAccess = GENERIC_READ | GENERIC_WRITE;
+          break;
+       case RETRO_VFS_FILE_ACCESS_WRITE:
+          desireAccess = GENERIC_WRITE;
+          break;
+       case RETRO_VFS_FILE_ACCESS_READ:
+          desireAccess = GENERIC_READ;
+          break;
     }
     if (mode == RETRO_VFS_FILE_ACCESS_READ)
-    {
         creationDisposition = OPEN_EXISTING;
-    }
     else
-    {
-        creationDisposition = (mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING) != 0 ?
-            OPEN_ALWAYS : CREATE_ALWAYS;
-    }
-    HANDLE file_handle = CreateFile2FromAppW(path_wstring.data(), desireAccess, FILE_SHARE_READ, creationDisposition, NULL);
-    if (file_handle != INVALID_HANDLE_VALUE)
-    {
-        stream->fh = file_handle;
-    }
-    else
-    {
+        creationDisposition = (mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING) != 0 
+           ? OPEN_ALWAYS
+           : CREATE_ALWAYS;
+
+    if ((file_handle = CreateFile2FromAppW(path_wstring.data(), desireAccess,
+                FILE_SHARE_READ, creationDisposition, NULL)) == INVALID_HANDLE_VALUE)
+       goto error;
+
+    stream->fh      = file_handle;
+    if ((stream->fd = _open_osfhandle((uint64)stream->fh, flags)) == -1)
         goto error;
-    }
-    stream->fd = _open_osfhandle((uint64)stream->fh, flags);
-    if (stream->fd == -1)
-        goto error;
-    else
+
     {
-        FILE* fp;
-        fp = _fdopen(stream->fd, mode_str);
+        FILE *fp = _fdopen(stream->fd, mode_str);
 
         if (!fp)
-        {
-            int gamingerror = errno;
             goto error;
-        }
         stream->fp = fp;
     }
+
     /* Regarding setvbuf:
         *
         * https://www.freebsd.org/cgi/man.cgi?query=setvbuf&apropos=0&sektion=0&manpath=FreeBSD+11.1-RELEASE&arch=default&format=html
@@ -428,15 +395,13 @@ libretro_vfs_implementation_file* retro_vfs_file_open_impl(
             setvbuf(stream->fp, stream->buf, _IOFBF, 0x4000);
     }
 
+    retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
+    retro_vfs_file_seek_internal(stream, 0, SEEK_END);
 
-    {
-        retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
-        retro_vfs_file_seek_internal(stream, 0, SEEK_END);
+    stream->size = retro_vfs_file_tell_impl(stream);
 
-        stream->size = retro_vfs_file_tell_impl(stream);
+    retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
 
-        retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
-    }
     return stream;
 
 error:
@@ -444,133 +409,29 @@ error:
     return NULL;
 }
 
-//this is enables you to copy access permissions from one file/folder to another
-//however depending on the target and where the file is being transferred to and from it may not be needed.
-//(use disgression)
-int uwp_copy_acl(const wchar_t* source, const wchar_t* target)
-{
-    PSECURITY_DESCRIPTOR sidOwnerDescriptor = nullptr;
-    PSECURITY_DESCRIPTOR sidGroupDescriptor = nullptr;
-    PSECURITY_DESCRIPTOR daclDescriptor = nullptr;
-    PSID sidOwner;
-    PSID sidGroup;
-    PACL dacl;
-    PACL sacl;
-    DWORD result;
-    HANDLE original_file = CreateFileFromAppW(source, GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
-    if (original_file != INVALID_HANDLE_VALUE)
-    {
-        result = GetSecurityInfo(original_file, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, &sidOwner, &sidGroup, &dacl, &sacl, &daclDescriptor);
-        if (result != 0)
-        {
-            LocalFree(daclDescriptor);
-            CloseHandle(original_file);
-            return result;
-        }
-
-        result = GetSecurityInfo(original_file, SE_FILE_OBJECT, OWNER_SECURITY_INFORMATION, &sidOwner, &sidGroup, &dacl, &sacl, &sidOwnerDescriptor);
-        if (result != 0)
-        {
-            LocalFree(sidOwnerDescriptor);
-            LocalFree(daclDescriptor);
-            CloseHandle(original_file);
-            return result;
-        }
-
-        result = GetSecurityInfo(original_file, SE_FILE_OBJECT, GROUP_SECURITY_INFORMATION, &sidOwner, &sidGroup, &dacl, &sacl, &sidGroupDescriptor);
-
-        //close file handle regardless of result
-        CloseHandle(original_file);
-
-        if (result != 0)
-        {
-            LocalFree(sidOwnerDescriptor);
-            LocalFree(sidGroupDescriptor);
-            LocalFree(daclDescriptor);
-            return result;
-        }
-    }
-    else
-    {
-        result = GetNamedSecurityInfoW(source, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, &sidOwner, &sidGroup, &dacl, &sacl, &daclDescriptor);
-        if (result != 0)
-        {
-            LocalFree(daclDescriptor);
-            return result;
-        }
-        result = GetNamedSecurityInfoW(source, SE_FILE_OBJECT, OWNER_SECURITY_INFORMATION, &sidOwner, &sidGroup, &dacl, &sacl, &sidOwnerDescriptor);
-        if (result != 0)
-        {
-            LocalFree(sidOwnerDescriptor);
-            LocalFree(daclDescriptor);
-            return result;
-        }
-        result = GetNamedSecurityInfoW(source, SE_FILE_OBJECT, GROUP_SECURITY_INFORMATION, &sidOwner, &sidGroup, &dacl, &sacl, &sidGroupDescriptor);
-        if (result != 0)
-        {
-            LocalFree(sidOwnerDescriptor);
-            LocalFree(sidGroupDescriptor);
-            LocalFree(daclDescriptor);
-            return result;
-        }
-    }
-    SECURITY_INFORMATION info = DACL_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION;
-    HANDLE target_file = CreateFileFromAppW(target, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
-    if (target_file != INVALID_HANDLE_VALUE)
-    {
-        result = SetSecurityInfo(target_file, SE_FILE_OBJECT, info, sidOwner, sidGroup, dacl, sacl);
-        CloseHandle(target_file);
-    }
-    else
-    {
-        wchar_t* temp = wcsdup(target);
-        result = SetNamedSecurityInfoW(temp, SE_FILE_OBJECT, info, sidOwner, sidGroup, dacl, sacl);
-        free(temp);
-    }
-
-    if (result != 0)
-    {
-        LocalFree(sidOwnerDescriptor);
-        LocalFree(sidGroupDescriptor);
-        LocalFree(daclDescriptor);
-        return result;
-    }
-
-    if ((sidOwnerDescriptor != nullptr && LocalFree(sidOwnerDescriptor) != nullptr) || (daclDescriptor != nullptr && LocalFree(daclDescriptor) != nullptr) || (daclDescriptor != nullptr && LocalFree(daclDescriptor) != nullptr))
-    {
-        //an error occured but idk what error code is right so we just return -1
-        return -1;
-    }
-
-    //woo we made it all the way to the end so we can return success
-    return 0;
-}
-
 int uwp_mkdir_impl(std::experimental::filesystem::path dir)
 {
-    //I feel like this should create the directory recursively but the existing implementation does not so this update won't
-    //I put in the work but I just commented out the stuff you would need
+    /*I feel like this should create the directory recursively but the existing implementation does not so this update won't
+     *I put in the work but I just commented out the stuff you would need */
     WIN32_FILE_ATTRIBUTE_DATA lpFileInfo;
     bool parent_dir_exists = false;
 
     if (dir.empty())
         return -1;
 
-    //check if file attributes can be gotten successfully 
+    /* Check if file attributes can be gotten successfully  */
     if (GetFileAttributesExFromAppW(dir.parent_path().wstring().c_str(), GetFileExInfoStandard, &lpFileInfo))
     {
-        //check that the files attributes are not null or empty
+        /* Check that the files attributes are not null or empty */
         if (lpFileInfo.dwFileAttributes != INVALID_FILE_ATTRIBUTES && lpFileInfo.dwFileAttributes != 0)
         {
             if (lpFileInfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-            {
                 parent_dir_exists = true;
-            }
         }
     }
     if (!parent_dir_exists)
     {
-        //try to create parent dir
+        /* Try to create parent dir */
         int success = uwp_mkdir_impl(dir.parent_path());
         if (success != 0 && success != -2)
             return success;
@@ -578,9 +439,7 @@ int uwp_mkdir_impl(std::experimental::filesystem::path dir)
 
 
     /* Try Win32 first, this should work in AppData */
-    bool create_dir = CreateDirectoryFromAppW(dir.wstring().c_str(), NULL);
-
-    if (create_dir)
+    if (CreateDirectoryFromAppW(dir.wstring().c_str(), NULL))
         return 0;
 
     if (GetLastError() == ERROR_ALREADY_EXISTS)
@@ -594,9 +453,11 @@ int retro_vfs_mkdir_impl(const char* dir)
     return uwp_mkdir_impl(std::filesystem::path(dir));
 }
 
-//the first run paramater is used to avoid error checking when doing recursion
-//unlike the initial implementation this can move folders even empty ones when you want to move a directory structure
-//this will fail even if a single file cannot be moved
+/* The first run paramater is used to avoid error checking when doing recursion.
+ * Unlike the initial implementation this can move folders even empty ones when you want to move a directory structure.
+ *
+ * This will fail even if a single file cannot be moved.
+ */
 int uwp_move_path(std::filesystem::path old_path, std::filesystem::path new_path,  bool firstrun = true)
 {
     if (old_path.empty() || new_path.empty())
@@ -607,70 +468,52 @@ int uwp_move_path(std::filesystem::path old_path, std::filesystem::path new_path
         WIN32_FILE_ATTRIBUTE_DATA lpFileInfo, targetfileinfo;
         bool parent_dir_exists = false;
 
-
-        //make sure that parent path exists
+        /* Make sure that parent path exists */
         if (GetFileAttributesExFromAppW(new_path.parent_path().wstring().c_str(), GetFileExInfoStandard, &lpFileInfo))
         {
-            //check that the files attributes are not null or empty
+            /* Check that the files attributes are not null or empty */
             if (lpFileInfo.dwFileAttributes != INVALID_FILE_ATTRIBUTES && lpFileInfo.dwFileAttributes != 0)
             {
+               /* Parent path doesn't exist, so we gotta create it  */
                 if (!(lpFileInfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-                {
-                    //parent path doesn't exist ;-; so we gotta create it 
                     uwp_mkdir_impl(new_path.parent_path());
-                }
             }
         }
 
-        //make sure that source path exists
+        /* Make sure that source path exists */
         if (GetFileAttributesExFromAppW(old_path.wstring().c_str(), GetFileExInfoStandard, &lpFileInfo))
         {
-            //check that the files attributes are not null or empty
+            /* Check that the files attributes are not null or empty */
             if (lpFileInfo.dwFileAttributes != INVALID_FILE_ATTRIBUTES && lpFileInfo.dwFileAttributes != 0)
             {
-                //check if source path is a dir
+                /* Check if source path is a dir */
                 if (lpFileInfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
                 {
-                    //create the target dir
-                    CreateDirectoryFromAppW(new_path.wstring().c_str(), NULL);
-                    //call move function again but with first run disabled in order to move the folder
-                    int result = uwp_move_path(old_path, new_path, false);
-                    if (result != 0)
-                    {
-                        //return the error 
-                        return result;
-                    }
+                   int result;
+                   /* create the target dir */
+                   CreateDirectoryFromAppW(new_path.wstring().c_str(), NULL);
+                   /* Call move function again but with first run disabled in
+                    * order to move the folder */
+                   if ((result = uwp_move_path(old_path, new_path, false)) != 0)
+                      return result;
                 }
                 else
                 {
-                    //the file that we want to move exists so we can copy it now
-                    //check if target file already exists
+                    /* The file that we want to move exists so we can copy it now
+                     * check if target file already exists. */
                     if (GetFileAttributesExFromAppW(new_path.wstring().c_str(), GetFileExInfoStandard, &targetfileinfo))
                     {
                         if (targetfileinfo.dwFileAttributes != INVALID_FILE_ATTRIBUTES && targetfileinfo.dwFileAttributes != 0 && (!(targetfileinfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)))
                         {
-                            //delete target file
                             if (DeleteFileFromAppW(new_path.wstring().c_str()))
-                            {
-                                //return an error if we can't successfully delete the target file 
                                 return -1;
-                            }
                         }
                     }
 
-                    //move the file
                     if (!MoveFileFromAppW(old_path.wstring().c_str(), new_path.wstring().c_str()))
-                    {
-                        //failed to move the file
                         return -1;
-                    }
-                    //set acl - this step fucking sucks or at least to before I made a whole ass function
-                    //idk if we actually "need" to set the acl though
-                    if (uwp_copy_acl(new_path.parent_path().wstring().c_str(), new_path.wstring().c_str()) != 0)
-                    {
-                        //setting acl failed
-                        return -1;
-                    }
+                    /* Set ACL */
+                    uwp_set_acl(new_path.wstring().c_str(), L"S-1-15-2-1");
                 }
             }
         }
@@ -678,8 +521,8 @@ int uwp_move_path(std::filesystem::path old_path, std::filesystem::path new_path
     }
     else
     {
-        //we are bypassing error checking and moving a dir
-        //first we gotta get a list of files in the dir
+        /* We are bypassing error checking and moving a dir.
+         * First we have to get a list of files in the dir. */
         wchar_t* filteredPath = wcsdup(old_path.wstring().c_str());
         wcscat_s(filteredPath, sizeof(L"\\*.*"), L"\\*.*");
         WIN32_FIND_DATA findDataResult;
@@ -698,42 +541,30 @@ int uwp_move_path(std::filesystem::path old_path, std::filesystem::path new_path
                     if (findDataResult.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
                     {
                         CreateDirectoryFromAppW(temp_new.wstring().c_str(), NULL);
-                        int result = uwp_move_path(temp_old, temp_new, false);
-                        if (result != 0)
+                        if (uwp_move_path(temp_old, temp_new, false) != 0)
                             fail = true;
-                        
                     }
                     else
                     {
                         WIN32_FILE_ATTRIBUTE_DATA targetfileinfo;
-                        //the file that we want to move exists so we can copy it now
-                        //check if target file already exists
+                        /* The file that we want to move exists so we can copy
+                         * it now.
+                         * Check if target file already exists. */
                         if (GetFileAttributesExFromAppW(temp_new.wstring().c_str(), GetFileExInfoStandard, &targetfileinfo))
                         {
                             if (targetfileinfo.dwFileAttributes != INVALID_FILE_ATTRIBUTES && targetfileinfo.dwFileAttributes != 0 && (!(targetfileinfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)))
                             {
-                                //delete target file
                                 if (DeleteFileFromAppW(temp_new.wstring().c_str()))
-                                {
-                                    //return an error if we can't successfully delete the target file 
                                     fail = true;
-                                }
                             }
                         }
 
-                        //move the file
                         if (!MoveFileFromAppW(temp_old.wstring().c_str(), temp_new.wstring().c_str()))
-                        {
-                            //failed to move the file
                             fail = true;
-                        }
-                        //set acl - this step fucking sucks or at least to before I made a whole ass function
-                        //idk if we actually "need" to set the acl though
-                        if (uwp_copy_acl(new_path.wstring().c_str(), temp_new.wstring().c_str()) != 0)
-                        {
-                            //setting acl failed
-                            fail = true;
-                        }
+                        /* Set ACL - this step sucks or at least to before I made a whole function
+                         * Don't know if we actually "need" to set the ACL
+                         * though */
+                        uwp_set_acl(temp_new.wstring().c_str(), L"S-1-15-2-1");
                     }
                 }
             } while (FindNextFile(searchResults, &findDataResult));
@@ -743,13 +574,12 @@ int uwp_move_path(std::filesystem::path old_path, std::filesystem::path new_path
         }
         free(filteredPath);
     }
-    //yooooooo we finally made it all the way to the end
-    //we can now return success
     return 0;
 }
 
-//c doesn't support default arguments so we wrap it up in a shell to enable us to use default arguments
-//default arguments mean that we can do better recursion
+/* C doesn't support default arguments so we wrap it up in a shell to enable 
+ * us to use default arguments.
+ * Default arguments mean that we can do better recursion */
 int retro_vfs_file_rename_impl(const char* old_path, const char* new_path)
 {
     return uwp_move_path(std::filesystem::path(old_path), std::filesystem::path(old_path));
@@ -790,7 +620,9 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
                }
            }
            free(path_wide);
-           return (attribdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY : RETRO_VFS_STAT_IS_VALID;
+           return (attribdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) 
+              ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY 
+              : RETRO_VFS_STAT_IS_VALID;
        }
    }
    free(path_wide);
@@ -824,26 +656,26 @@ libretro_vfs_implementation_dir* retro_vfs_opendir_impl(
         return NULL;
 
     /*Allocate RDIR struct. Tidied later with retro_closedir*/
-    rdir = (libretro_vfs_implementation_dir*)calloc(1, sizeof(*rdir));
-    if (!rdir)
+    if (!(rdir = (libretro_vfs_implementation_dir*)calloc(1, sizeof(*rdir))))
         return NULL;
 
     rdir->orig_path = strdup(name);
 
-    path_buf[0] = '\0';
-    path_len = strlen(name);
+    path_buf[0]     = '\0';
+    path_len        = strlen(name);
 
-    copied = strlcpy(path_buf, name, sizeof(path_buf));
+    copied          = strlcpy(path_buf, name, sizeof(path_buf));
 
     /* Non-NT platforms don't like extra slashes in the path */
     if (name[path_len - 1] != '\\')
         path_buf[copied++] = '\\';
 
-    path_buf[copied] = '*';
-    path_buf[copied + 1] = '\0';
+    path_buf[copied]       = '*';
+    path_buf[copied + 1]   = '\0';
 
-    path_wide = utf8_to_utf16_string_alloc(path_buf);
-    rdir->directory = FindFirstFileExFromAppW(path_wide, FindExInfoStandard, &rdir->entry, FindExSearchNameMatch, nullptr, FIND_FIRST_EX_LARGE_FETCH);
+    path_wide              = utf8_to_utf16_string_alloc(path_buf);
+    rdir->directory        = FindFirstFileExFromAppW(path_wide, FindExInfoStandard, &rdir->entry,
+          FindExSearchNameMatch, nullptr, FIND_FIRST_EX_LARGE_FETCH);
 
     if (path_wide)
         free(path_wide);
@@ -902,19 +734,19 @@ int retro_vfs_closedir_impl(libretro_vfs_implementation_dir* rdir)
 void uwp_set_acl(const wchar_t* path, const wchar_t* AccessString)
 {
     PSECURITY_DESCRIPTOR SecurityDescriptor = nullptr;
-    EXPLICIT_ACCESSW ExplicitAccess = { 0 };
+    EXPLICIT_ACCESSW ExplicitAccess         = { 0 };
+    ACL* AccessControlCurrent               = nullptr;
+    ACL* AccessControlNew                   = nullptr;
+    SECURITY_INFORMATION SecurityInfo       = DACL_SECURITY_INFORMATION;
+    PSID SecurityIdentifier                 = nullptr;
+    HANDLE original_file                    = CreateFileFromAppW(path,
+          GENERIC_READ | GENERIC_WRITE | WRITE_DAC, FILE_SHARE_READ | FILE_SHARE_WRITE,
+          nullptr, OPEN_EXISTING, 0, nullptr);
 
-    ACL* AccessControlCurrent = nullptr;
-    ACL* AccessControlNew = nullptr;
-
-    SECURITY_INFORMATION SecurityInfo = DACL_SECURITY_INFORMATION;
-    PSID SecurityIdentifier = nullptr;
-
-    HANDLE original_file = CreateFileFromAppW(path, GENERIC_READ | GENERIC_WRITE | WRITE_DAC, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
-
-    if (original_file != INVALID_HANDLE_VALUE) {
-        if (
-            GetSecurityInfo(
+    if (original_file != INVALID_HANDLE_VALUE)
+    {
+       if (
+             GetSecurityInfo(
                 original_file,
                 SE_FILE_OBJECT,
                 DACL_SECURITY_INFORMATION,
@@ -923,48 +755,44 @@ void uwp_set_acl(const wchar_t* path, const wchar_t* AccessString)
                 &AccessControlCurrent,
                 nullptr,
                 &SecurityDescriptor
-            ) == ERROR_SUCCESS
-            )
-        {
-            ConvertStringSidToSidW(AccessString, &SecurityIdentifier);
-            if (SecurityIdentifier != nullptr)
-            {
-                ExplicitAccess.grfAccessPermissions = GENERIC_READ | GENERIC_EXECUTE | GENERIC_WRITE;
-                ExplicitAccess.grfAccessMode = SET_ACCESS;
-                ExplicitAccess.grfInheritance = SUB_CONTAINERS_AND_OBJECTS_INHERIT;
-                ExplicitAccess.Trustee.TrusteeForm = TRUSTEE_IS_SID;
-                ExplicitAccess.Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-                ExplicitAccess.Trustee.ptstrName = reinterpret_cast<wchar_t*>(SecurityIdentifier);
+                ) == ERROR_SUCCESS
+          )
+       {
+          ConvertStringSidToSidW(AccessString, &SecurityIdentifier);
+          if (SecurityIdentifier != nullptr)
+          {
+             ExplicitAccess.grfAccessPermissions = GENERIC_READ | GENERIC_EXECUTE | GENERIC_WRITE;
+             ExplicitAccess.grfAccessMode = SET_ACCESS;
+             ExplicitAccess.grfInheritance = SUB_CONTAINERS_AND_OBJECTS_INHERIT;
+             ExplicitAccess.Trustee.TrusteeForm = TRUSTEE_IS_SID;
+             ExplicitAccess.Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+             ExplicitAccess.Trustee.ptstrName = reinterpret_cast<wchar_t*>(SecurityIdentifier);
 
-                if (
-                    SetEntriesInAclW(
-                        1,
-                        &ExplicitAccess,
-                        AccessControlCurrent,
-                        &AccessControlNew
-                    ) == ERROR_SUCCESS
-                    )
-                {
-                    SetSecurityInfo(
-                        original_file,
-                        SE_FILE_OBJECT,
-                        SecurityInfo,
-                        nullptr,
-                        nullptr,
-                        AccessControlNew,
-                        nullptr
-                    );
-                }
-            }
-        }
-        if (SecurityDescriptor)
-        {
-            LocalFree(reinterpret_cast<HLOCAL>(SecurityDescriptor));
-        }
-        if (AccessControlNew)
-        {
-            LocalFree(reinterpret_cast<HLOCAL>(AccessControlNew));
-        }
-        CloseHandle(original_file);
+             if (
+                   SetEntriesInAclW(
+                      1,
+                      &ExplicitAccess,
+                      AccessControlCurrent,
+                      &AccessControlNew
+                      ) == ERROR_SUCCESS
+                )
+             {
+                SetSecurityInfo(
+                      original_file,
+                      SE_FILE_OBJECT,
+                      SecurityInfo,
+                      nullptr,
+                      nullptr,
+                      AccessControlNew,
+                      nullptr
+                      );
+             }
+          }
+       }
+       if (SecurityDescriptor)
+          LocalFree(reinterpret_cast<HLOCAL>(SecurityDescriptor));
+       if (AccessControlNew)
+          LocalFree(reinterpret_cast<HLOCAL>(AccessControlNew));
+       CloseHandle(original_file);
     }
 }

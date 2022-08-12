@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <retro_endianness.h>
 #include "../include/wiiu/hid.h"
 #include <wiiu/os/atomic.h>
 #include <string/stdstring.h>
@@ -83,7 +84,21 @@ static int16_t wiiu_hid_joypad_axis(void *data, unsigned slot, uint32_t joyaxis)
    if (!pad)
       return 0;
 
-   return pad->iface->get_axis(pad->connection, joyaxis);
+   if (AXIS_NEG_GET(joyaxis) < 4)
+   {
+      int16_t val = pad->iface->get_axis(pad->connection, AXIS_NEG_GET(joyaxis));
+
+      if (val < 0)
+         return val;
+   }
+   else if (AXIS_POS_GET(joyaxis) < 4)
+   {
+      int16_t val = pad->iface->get_axis(pad->connection, AXIS_POS_GET(joyaxis));
+
+      if (val > 0)
+         return val;
+   }
+   return 0;
 }
 
 static int16_t wiiu_hid_joypad_state(
@@ -385,8 +400,8 @@ static void log_device(HIDDevice *device)
 
    RARCH_LOG("                handle: %d\n", device->handle);
    RARCH_LOG("  physical_device_inst: %d\n", device->physical_device_inst);
-   RARCH_LOG("                   vid: 0x%x\n", device->vid);
-   RARCH_LOG("                   pid: 0x%x\n", device->pid);
+   RARCH_LOG("                   vid: 0x%04x\n", SWAP_IF_BIG(device->vid));
+   RARCH_LOG("                   pid: 0x%04x\n", SWAP_IF_BIG(device->pid));
    RARCH_LOG("       interface_index: %d\n", device->interface_index);
    RARCH_LOG("             sub_class: %d\n", device->sub_class);
    RARCH_LOG("              protocol: %d\n", device->protocol);
@@ -411,9 +426,11 @@ static uint8_t try_init_driver(wiiu_adapter_t *adapter)
 
    entry = find_connection_entry(adapter->vendor_id, adapter->product_id, adapter->device_name);
    if(!entry) {
-      RARCH_LOG("Failed to find entry for vid: 0x%x, pid: 0x%x, name: %s\n", adapter->vendor_id, adapter->product_id, adapter->device_name);
+      RARCH_LOG("Failed to find entry for vid: 0x%04x, pid: 0x%04x, name: %s\n", SWAP_IF_BIG(adapter->vendor_id), SWAP_IF_BIG(adapter->product_id), adapter->device_name);
       return ADAPTER_STATE_DONE;
    }
+   else
+      RARCH_LOG("Found entry for: vid: 0x%04x, pid: 0x%04x, name: %s\n", SWAP_IF_BIG(adapter->vendor_id), SWAP_IF_BIG(adapter->product_id), adapter->device_name);
 
    adapter->pad_driver = entry->iface;
    
@@ -607,7 +624,10 @@ static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t error,
 
       if (error == 0)
       {
-         adapter->pad_driver->packet_handler(adapter->pad_driver_data, buffer, buffer_size);
+         /* NOTE: packet_handler() expects that packet[1] is the first byte, so added -1.
+          * The Wii version puts the slot number in packet[0], which is not possible here:
+          * packet[0] is undefined! */
+         adapter->pad_driver->packet_handler(adapter->pad_driver_data, buffer-1, buffer_size+1);
       }
    }
 }
@@ -874,13 +894,20 @@ static void delete_adapter(wiiu_adapter_t *adapter)
 static void get_device_name(HIDDevice *device, wiiu_attach_event *event)
 {
    int32_t result;
-   uint8_t *name_buffer = alloc_zeroed(4, device->max_packet_size_rx);
+   uint8_t name_buffer_size = 46; /* enough to detect WiiU Pro controller */
+   uint8_t *name_buffer = alloc_zeroed(4, name_buffer_size);
    uint8_t *top = &event->device_name[0];
 
    if(name_buffer == NULL) {
       return;
    }
-   result = HIDGetDescriptor(device->handle, 3, 2, 0, name_buffer, device->max_packet_size_rx, NULL, NULL);
+
+   /* HIDGetDescriptor() fills name_buffer in this way:
+    * - First two bytes are empty
+    * - Every second byte is empty
+    * - Maximum name_buffer size is unknown (with 63 it starts to fail with one of my controllers)
+    * - Truncates device names if name_buffer is too small */
+   result = HIDGetDescriptor(device->handle, 3, 2, 0, name_buffer, name_buffer_size, NULL, NULL);
    if(result > 0) {
       for(int i = 2; i < result; i += 2) {
          top[0] = name_buffer[i];

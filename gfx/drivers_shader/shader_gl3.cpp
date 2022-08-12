@@ -37,6 +37,26 @@
 #include "../../verbosity.h"
 #include "../../msg_hash.h"
 
+static void gl3_build_default_matrix(float *data)
+{
+   data[0]  =  2.0f;
+   data[1]  =  0.0f;
+   data[2]  =  0.0f;
+   data[3]  =  0.0f;
+   data[4]  =  0.0f;
+   data[5]  =  2.0f;
+   data[6]  =  0.0f;
+   data[7]  =  0.0f;
+   data[8]  =  0.0f;
+   data[9]  =  0.0f;
+   data[10] =  2.0f;
+   data[11] =  0.0f;
+   data[12] = -1.0f;
+   data[13] = -1.0f;
+   data[14] =  0.0f;
+   data[15] =  1.0f;
+}
+
 GLuint gl3_cross_compile_program(
       const uint32_t *vertex, size_t vertex_size,
       const uint32_t *fragment, size_t fragment_size,

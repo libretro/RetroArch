@@ -43,7 +43,7 @@ struct gfx_widget_libretro_message_state
 
    unsigned message_duration;
 
-   gfx_timer_t timer;   /* float alignment */
+   float timer;   /* float alignment */
 
    float bg_x;
    float bg_y_start;

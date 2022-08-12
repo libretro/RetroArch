@@ -117,6 +117,9 @@ MSG_HASH(
 /* Settings */
 
 
+#ifdef HAVE_MIST
+#endif
+
 /* Settings > Drivers */
 
 
@@ -132,6 +135,8 @@ MSG_HASH(
 
 /* Settings > Video > Output */
 
+#if defined (WIIU)
+#endif
 #if defined(DINGUX) && defined(DINGUX_BETA)
 #endif
 
@@ -184,6 +189,7 @@ MSG_HASH(
 /* Settings > Input > Menu Controls */
 
 
+
 /* Settings > Input > Hotkeys */
 
 
@@ -197,7 +203,15 @@ MSG_HASH(
 
 #ifndef HAVE_DYNAMIC
 #endif
+#ifdef HAVE_MIST
 
+
+
+
+
+
+
+#endif
 /* Settings > Configuration */
 
 
@@ -255,6 +269,7 @@ MSG_HASH(
 /* Settings > User Interface > Views > Settings */
 
 
+
 /* Settings > User Interface > Appearance */
 
 
@@ -309,6 +324,13 @@ MSG_HASH(
 /* Settings > Directory */
 
 
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+#endif
+
 /* Music */
 
 /* Music > Quick Menu */
@@ -358,7 +380,10 @@ MSG_HASH(
 /* Quick Menu > Controls */
 
 
-/* Quick Menu > Controls > Load Remap File */
+/* Quick Menu > Controls > Manage Remap Files */
+
+
+/* Quick Menu > Controls > Manage Remap Files > Load Remap File */
 
 
 /* Quick Menu > Cheats */
@@ -461,6 +486,7 @@ MSG_HASH(
 
 
 /* Notifications */
+
 
 
 /* Lakka */

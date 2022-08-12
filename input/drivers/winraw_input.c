@@ -35,6 +35,10 @@ extern "C" {
 #include "../../gfx/common/win32_common.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #include "../input_keymaps.h"
 
 #include "../../configuration.h"
@@ -53,6 +57,7 @@ typedef struct
    LONG x, y, dlt_x, dlt_y;
    LONG whl_u, whl_d;
    bool btn_l, btn_m, btn_r, btn_b4, btn_b5;
+   int device;
 } winraw_mouse_t;
 
 struct winraw_pointer_status
@@ -371,18 +376,16 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
    {
       if (wr->rect_delay < 10)
       {
-          RARCH_DBG("[CRT][WinRaw]: Resize RECT delay for absolute co-ords - %d \n", wr->rect_delay);
           winraw_init_mouse_xy_mapping(wr); /* Triggering fewer times seems to fix the issue. Forcing resize while resolution is changing */
           wr->rect_delay ++;
       }
       else
       {
-	      int bottom = wr->prev_rect.bottom;
-	      int right = wr->prev_rect.right;
-	      RARCH_DBG("[CRT][WinRaw]: Resizing RECT for absolute coordinates to match new resolution - %dx%d\n", right ,bottom);
+	      int bottom      = wr->prev_rect.bottom;
+	      int right       = wr->prev_rect.right;
 	      wr->active_rect = wr->prev_rect;
 	      winraw_init_mouse_xy_mapping(wr);
-	      wr->rect_delay = 0;
+	      wr->rect_delay  = 0;
       }
    }
 
@@ -402,18 +405,53 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
    }
    else if (state->lLastX || state->lLastY)
    {
-      InterlockedExchangeAdd(&mouse->dlt_x, state->lLastX);
-      InterlockedExchangeAdd(&mouse->dlt_y, state->lLastY);
+      /* Menu and pointer require GetCursorPos() for
+       * positioning, but using that always will
+       * break multiple mice positions */
+      bool getcursorpos = (mouse->device == RETRO_DEVICE_POINTER) ? true : false;
+#ifdef HAVE_MENU
+      if (menu_state_get_ptr()->alive)
+         getcursorpos = true;
+#endif
 
-      if (!GetCursorPos(&crs_pos))
-         RARCH_DBG("[WinRaw]: GetCursorPos failed with error %lu.\n", GetLastError());
-      else if (!ScreenToClient((HWND)video_driver_window_get(), &crs_pos))
-         RARCH_DBG("[WinRaw]: ScreenToClient failed with error %lu.\n", GetLastError());
+      if (getcursorpos)
+      {
+         if (!GetCursorPos(&crs_pos))
+            RARCH_DBG("[WinRaw]: GetCursorPos failed with error %lu.\n", GetLastError());
+         else if (!ScreenToClient((HWND)video_driver_window_get(), &crs_pos))
+            RARCH_DBG("[WinRaw]: ScreenToClient failed with error %lu.\n", GetLastError());
+      }
       else
       {
-         mouse->x = crs_pos.x;
-         mouse->y = crs_pos.y;
+         /* Handle different sensitivity for lightguns */
+         if (mouse->device == RETRO_DEVICE_LIGHTGUN)
+         {
+            InterlockedExchange(&mouse->dlt_x, state->lLastX);
+            InterlockedExchange(&mouse->dlt_y, state->lLastY);
+         }
+         else
+         {
+            InterlockedExchangeAdd(&mouse->dlt_x, state->lLastX);
+            InterlockedExchangeAdd(&mouse->dlt_y, state->lLastY);
+         }
+
+         crs_pos.x = mouse->x + mouse->dlt_x;
+         crs_pos.y = mouse->y + mouse->dlt_y;
+
+         /* Prevent travel outside active window */
+         if (crs_pos.x < wr->active_rect.left)
+            crs_pos.x = wr->active_rect.left;
+         else if (crs_pos.x > wr->active_rect.right)
+            crs_pos.x = wr->active_rect.right;
+
+         if (crs_pos.y < wr->active_rect.top)
+            crs_pos.y = wr->active_rect.top;
+         else if (crs_pos.y > wr->active_rect.bottom)
+            crs_pos.y = wr->active_rect.bottom;
       }
+
+      mouse->x = crs_pos.x;
+      mouse->y = crs_pos.y;
    }
 
    if (state->usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
@@ -603,7 +641,7 @@ static void winraw_poll(void *data)
    }
 
    /* Prevent LAlt sticky after unfocusing with Alt-Tab */
-   if (    !winraw_focus
+   if (     !winraw_focus
          && wr->keyboard.keys[SC_LALT] 
          && !(GetKeyState(VK_MENU) & 0x8000))
    {
@@ -612,6 +650,9 @@ static void winraw_poll(void *data)
             input_keymaps_translate_keysym_to_rk(SC_LALT),
             0, 0, RETRO_DEVICE_KEYBOARD);
    }
+   /* Clear all keyboard key states when unfocused */
+   else if (!winraw_focus && !(GetKeyState(VK_MENU) & 0x8000))
+      memset(wr->keyboard.keys, 0, SC_LAST);
 }
 
 static unsigned winraw_retro_id_to_rarch(unsigned id)
@@ -661,6 +702,7 @@ static int16_t winraw_input_state(
       unsigned idx,
       unsigned id)
 {
+   int16_t ret           = 0;
    settings_t *settings  = NULL;
    winraw_mouse_t *mouse = NULL;
    winraw_input_t *wr    = (winraw_input_t*)data;
@@ -669,7 +711,8 @@ static int16_t winraw_input_state(
       || (device == RETRO_DEVICE_MOUSE)
       || (device == RARCH_DEVICE_MOUSE_SCREEN)
       || (device == RETRO_DEVICE_LIGHTGUN)
-      || (device == RETRO_DEVICE_POINTER);
+      || (device == RETRO_DEVICE_POINTER)
+      || (device == RARCH_DEVICE_POINTER_SCREEN);
 
    if (port >= MAX_USERS)
       return 0;
@@ -683,6 +726,8 @@ static int16_t winraw_input_state(
          if (i == settings->uints.input_mouse_index[port])
          {
             mouse = &wr->mice[i];
+            if (mouse && device > RETRO_DEVICE_JOYPAD)
+               g_mice[i].device = device;
             break;
          }
       }
@@ -694,7 +739,6 @@ static int16_t winraw_input_state(
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = 0;
 
             if (mouse)
             {
@@ -743,13 +787,11 @@ static int16_t winraw_input_state(
          }
          break;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
          {
             int id_minus_key      = 0;
             int id_plus_key       = 0;
             unsigned id_minus     = 0;
             unsigned id_plus      = 0;
-            int16_t ret           = 0;
             bool id_plus_valid    = false;
             bool id_minus_valid   = false;
 
@@ -770,9 +812,8 @@ static int16_t winraw_input_state(
                if (WINRAW_KEYBOARD_PRESSED(wr, id_minus_key))
                   ret += -0x7fff;
             }
-            return ret;
          }
-         break;
+         return ret;
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && WINRAW_KEYBOARD_PRESSED(wr, id);
       case RETRO_DEVICE_MOUSE:

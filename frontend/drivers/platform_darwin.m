@@ -326,6 +326,7 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
 static void frontend_darwin_get_env(int *argc, char *argv[],
       void *args, void *params_data)
 {
+   char assets_zip_path[PATH_MAX_LENGTH];
    CFURLRef bundle_url;
    CFStringRef bundle_path;
    CFURLRef resource_url;
@@ -339,7 +340,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    char temp_dir[PATH_MAX_LENGTH]        = {0};
    char bundle_path_buf[PATH_MAX_LENGTH] = {0};
    char resource_path_buf[PATH_MAX_LENGTH] = {0};
-   char full_resource_path_buf[PATH_MAX_LENGTH] = {0};
+   char full_resource_path_buf[PATH_MAX_LENGTH];
    char home_dir_buf[PATH_MAX_LENGTH]    = {0};
    CFBundleRef bundle                    = CFBundleGetMainBundle();
 
@@ -359,7 +360,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    CFStringGetCString(resource_path,
          resource_path_buf, sizeof(resource_path_buf), kCFStringEncodingUTF8);
    CFRelease(resource_path);
-   fill_pathname_join(full_resource_path_buf, bundle_path_buf, resource_path_buf, sizeof(full_resource_path_buf));
+   fill_pathname_join_special(full_resource_path_buf, bundle_path_buf, resource_path_buf, sizeof(full_resource_path_buf));
    CFSearchPathForDirectoriesInDomains(
          home_dir_buf, sizeof(home_dir_buf));
 
@@ -454,7 +455,6 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
 
 #endif
 
-    char assets_zip_path[PATH_MAX_LENGTH];
 #if TARGET_OS_IOS
     {
        int major, minor;
@@ -465,19 +465,19 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
 #endif
 
 #if TARGET_OS_IOS
-    fill_pathname_join(assets_zip_path, bundle_path_buf, "assets.zip", sizeof(assets_zip_path));
+    fill_pathname_join_special(assets_zip_path, bundle_path_buf, "assets.zip", sizeof(assets_zip_path));
 #else
-    fill_pathname_join(assets_zip_path, full_resource_path_buf, "assets.zip", sizeof(assets_zip_path));
+    fill_pathname_join_special(assets_zip_path, full_resource_path_buf, "assets.zip", sizeof(assets_zip_path));
 #endif
 
     if (path_is_valid(assets_zip_path))
     {
        settings_t *settings = config_get_ptr();
        configuration_set_string(settings,
-             settings->arrays.bundle_assets_src,
+             settings->paths.bundle_assets_src,
              assets_zip_path);
        configuration_set_string(settings,
-             settings->arrays.bundle_assets_dst,
+             settings->paths.bundle_assets_dst,
 #if TARGET_OS_IOS || TARGET_OS_TV
              home_dir_buf
 #else
@@ -950,13 +950,13 @@ static bool accessibility_speak_macos(int speed,
    else
    { 
       /* child process: replace process with the say command */ 
-      if (strlen(language_speaker)> 0)
+      if (language_speaker && language_speaker[0] != '\0')
       {
          char* cmd[] = {"say", "-v", NULL, 
                         NULL, "-r", NULL, NULL};
-         cmd[2] = language_speaker;
-         cmd[3] = (char *) speak_text;
-         cmd[5] = speeds[speed-1];
+         cmd[2]      = language_speaker;
+         cmd[3]      = (char *) speak_text;
+         cmd[5]      = speeds[speed-1];
          execvp("say", cmd);
       }
       else

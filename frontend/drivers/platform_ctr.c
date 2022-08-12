@@ -56,6 +56,10 @@
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
+
+#ifdef HAVE_NETWORKING
+#include "../../network/netplay/netplay.h"
+#endif
 #endif
 
 static enum frontend_fork ctr_fork_mode = FRONTEND_FORK_NONE;
@@ -95,7 +99,6 @@ static void frontend_ctr_get_env(int* argc, char* argv[],
       void* args, void* params_data)
 {
    fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], elf_path_cst, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
-   RARCH_LOG("port dir: [%s]\n", g_defaults.dirs[DEFAULT_DIR_PORT]);
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
@@ -200,61 +203,63 @@ static void frontend_ctr_deinit(void* data)
 #endif
 }
 
-static void frontend_ctr_exec(const char* path, bool should_load_game)
+static void frontend_ctr_exec(const char *path, bool should_load_game)
 {
-   char game_path[PATH_MAX];
-   const char* arg_data[3];
-   errorConf error_dialog;
-   char error_string[200 + PATH_MAX];
-   int args           = 0;
-   int error          = 0;
-
    DEBUG_VAR(path);
    DEBUG_STR(path);
 
-   game_path[0]       = '\0';
-   arg_data[0]        = NULL;
-
-   arg_data[args]     = elf_path_cst;
-   arg_data[args + 1] = NULL;
-   args++;
-
-   RARCH_LOG("Attempt to load core: [%s].\n", path);
-#ifndef IS_SALAMANDER
-   if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
+   if (!string_is_empty(path))
    {
-      strlcpy(game_path, path_get(RARCH_PATH_CONTENT), sizeof(game_path));
-      arg_data[args] = game_path;
-      arg_data[args + 1] = NULL;
-      args++;
-      RARCH_LOG("content path: [%s].\n", path_get(RARCH_PATH_CONTENT));
-   }
+#ifndef IS_SALAMANDER
+#ifdef HAVE_NETWORKING
+      char *arg_data[NETPLAY_FORK_MAX_ARGS + 1];
+#else
+      char *arg_data[3];
+#endif
+      char game_path[PATH_MAX];
+#else
+      char *arg_data[2];
 #endif
 
-   if (path && path[0])
-   {
-#ifdef IS_SALAMANDER
-      struct stat sbuff;
-      bool file_exists = stat(path, &sbuff) == 0;
+      arg_data[0] = (char*)elf_path_cst;
+      arg_data[1] = NULL;
 
-      if (!file_exists)
+#ifndef IS_SALAMANDER
+      if (should_load_game)
       {
-         char core_path[PATH_MAX];
+         const char *content = path_get(RARCH_PATH_CONTENT);
 
-         core_path[0] = '\0';
-
-         /* find first valid core and load it if the target core doesnt exist */
-         get_first_valid_core(&core_path[0], sizeof(core_path));
-
-         if (core_path[0] == '\0')
+#ifdef HAVE_NETWORKING
+         if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_GET_FORK_ARGS,
+               (void*)&arg_data[1]))
+#endif
+         if (!string_is_empty(content))
          {
-            error_and_quit("There are no cores installed, install a core to continue.");
+            strlcpy(game_path, content, sizeof(game_path));
+            arg_data[1] = game_path;
+            arg_data[2] = NULL;
+         }
+      }
+#else
+      {
+         struct stat sbuff;
+
+         if (stat(path, &sbuff))
+         {
+            char core_path[PATH_MAX];
+
+            get_first_valid_core(core_path, sizeof(core_path));
+
+            if (string_is_empty(core_path))
+               error_and_quit("There are no cores installed, install a core to continue.");
          }
       }
 #endif
 
       if (envIsHomebrew())
-         exec_3dsx_no_path_in_args(path, arg_data);
+      {
+         exec_3dsx_no_path_in_args(path, (const char**)arg_data);
+      }
       else
       {
          RARCH_WARN("\n");
@@ -266,14 +271,18 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
          RARCH_WARN("card may be corrupted!\n");
          RARCH_WARN("\n");
          RARCH_WARN("\n");
-         exec_cia(path, arg_data);
+
+         exec_cia(path, (const char**)arg_data);
       }
 
       /* couldnt launch new core, but context
-      is corrupt so we have to quit */
-      snprintf(error_string, sizeof(error_string),
-            "Can't launch core:%s", path);
-      error_and_quit(error_string);
+         is corrupt so we have to quit */
+      {
+         char error[PATH_MAX + 32];
+
+         snprintf(error, sizeof(error), "Can't launch core: %s", path);
+         error_and_quit(error);
+      }
    }
 }
 
@@ -283,15 +292,12 @@ static bool frontend_ctr_set_fork(enum frontend_fork fork_mode)
    switch (fork_mode)
    {
       case FRONTEND_FORK_CORE:
-         RARCH_LOG("FRONTEND_FORK_CORE\n");
          ctr_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_CORE_WITH_ARGS:
-         RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
          ctr_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_RESTART:
-         RARCH_LOG("FRONTEND_FORK_RESTART\n");
          /*  NOTE: We don't implement Salamander, so just turn
              this into FRONTEND_FORK_CORE. */
          ctr_fork_mode  = FRONTEND_FORK_CORE;

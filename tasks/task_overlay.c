@@ -87,9 +87,6 @@ static void task_overlay_load_desc_image(
    {
       struct texture_image image_tex;
       char path[PATH_MAX_LENGTH];
-
-      path[0] = '\0';
-
       fill_pathname_resolve_relative(path, loader->overlay_path,
             image_path, sizeof(path));
 

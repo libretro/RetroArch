@@ -26,21 +26,20 @@
 
 #ifdef HAVE_NETWORKING
 
-#ifndef HAVE_SOCKET_LEGACY
+#ifdef HAVE_IFINFO
 #include <net/net_ifinfo.h>
 #endif
 
-#include <net/net_natt.h>
+#include "../network/natt.h"
 #include "../network/netplay/netplay.h"
 
 /* Find the most suitable address within the device's network. */
 static bool find_local_address(struct natt_device *device,
-   struct natt_request *request)
+      struct natt_request *request)
 {
-   bool ret                     = false;
-/* TODO/FIXME: Find a way to get the network's interface on
-   HAVE_SOCKET_LEGACY platforms */
-#ifndef HAVE_SOCKET_LEGACY
+   bool ret = false;
+
+#ifdef HAVE_IFINFO
    struct net_ifinfo interfaces = {0};
    struct addrinfo **addrs      = NULL;
    uint32_t *scores             = NULL;
@@ -50,16 +49,17 @@ static bool find_local_address(struct natt_device *device,
       size_t i, j, k;
       uint32_t highest_score = 0;
       struct addrinfo hints  = {0};
-      uint8_t *dev_addr8     = (uint8_t *) &device->addr.sin_addr;
+      uint8_t *dev_addr8     = (uint8_t*)&device->addr.sin_addr;
 
-      addrs  = calloc(interfaces.size, sizeof(*addrs));
+      addrs  = (struct addrinfo**)calloc(interfaces.size, sizeof(*addrs));
       if (!addrs)
          goto done;
-      scores = calloc(interfaces.size, sizeof(*scores));
+      scores = (uint32_t*)calloc(interfaces.size, sizeof(*scores));
       if (!scores)
          goto done;
 
       hints.ai_family = AF_INET;
+      hints.ai_flags  = AI_NUMERICHOST;
 
       /* Score interfaces based on how "close" their address
          is from the device's address. */
@@ -67,15 +67,16 @@ static bool find_local_address(struct natt_device *device,
       {
          struct net_ifinfo_entry *entry = &interfaces.entries[i];
          struct addrinfo         **addr = &addrs[i];
-         uint32_t                *score = &scores[i];       
+         uint32_t                *score = &scores[i];
 
          if (getaddrinfo_retro(entry->host, NULL, &hints, addr))
             continue;
 
-         if (*addr)
+         /* Sanity check */
+         if (*addr && (*addr)->ai_family == AF_INET)
          {
-            uint8_t *addr8 = (uint8_t *)
-               &((struct sockaddr_in *) (*addr)->ai_addr)->sin_addr;
+            uint8_t *addr8 =
+               (uint8_t*)&((struct sockaddr_in*)(*addr)->ai_addr)->sin_addr;
             bool stop_score = false;
 
             for (j = 0; j < sizeof(device->addr.sin_addr) && !stop_score; j++)
@@ -120,7 +121,7 @@ static bool find_local_address(struct natt_device *device,
       {
          /* Copy the interface's address to our request. */
          memcpy(&request->addr.sin_addr,
-            &((struct sockaddr_in *) addrs[i]->ai_addr)->sin_addr,
+            &((struct sockaddr_in*)addrs[i]->ai_addr)->sin_addr,
             sizeof(request->addr.sin_addr));
          ret = true;
       }
@@ -133,6 +134,31 @@ done:
    free(scores);
    free(addrs);
    net_ifinfo_free(&interfaces);
+#else
+   int dummy_fd = socket_create("dummy",
+      SOCKET_DOMAIN_INET, SOCKET_TYPE_DATAGRAM, SOCKET_PROTOCOL_UDP);
+
+   if (dummy_fd >= 0)
+   {
+      struct sockaddr_in addr    = {0};
+      socklen_t          addrlen = sizeof(addr);
+
+      if (!connect(dummy_fd, (struct sockaddr*)&device->addr,
+               sizeof(device->addr)) &&
+            !getsockname(dummy_fd, (struct sockaddr*)&addr, &addrlen))
+      {
+         /* Make sure this is not "0.0.0.0". */
+         if (addr.sin_addr.s_addr)
+         {
+            /* Copy the address to our request. */
+            memcpy(&request->addr.sin_addr, &addr.sin_addr,
+               sizeof(request->addr.sin_addr));
+            ret = true;
+         }
+      }
+
+      socket_close(dummy_fd);
+   }
 #endif
 
    return ret;
@@ -140,9 +166,9 @@ done:
 
 static void task_netplay_nat_traversal_handler(retro_task_t *task)
 {
-   static struct natt_discovery discovery = {-1};
+   static struct natt_discovery discovery = {-1, -1};
    static struct natt_device    device    = {0};
-   struct nat_traversal_data *data = task->task_data;
+   struct nat_traversal_data   *data      = (struct nat_traversal_data*)task->task_data;
 
    /* Try again on the next call. */
    if (device.busy)
@@ -273,10 +299,14 @@ finished:
    task_set_finished(task, true);
 }
 
-static void netplay_nat_traversal_callback(retro_task_t *task,
-   void *task_data, void *user_data, const char *error)
+static void task_netplay_nat_traversal_callback(retro_task_t *task,
+      void *task_data, void *user_data, const char *error)
 {
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_FINISHED_NAT_TRAVERSAL, NULL);
+   struct nat_traversal_data *data = (struct nat_traversal_data*)task_data;
+   uintptr_t ext_port              = ntohs(data->request.addr.sin_port);
+
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_FINISHED_NAT_TRAVERSAL,
+      (void*)ext_port);
 }
 
 static bool nat_task_finder(retro_task_t *task, void *userdata)
@@ -296,25 +326,25 @@ static bool nat_task_queued(void *data)
 
 bool task_push_netplay_nat_traversal(void *data, uint16_t port)
 {
-   retro_task_t *task;
-   struct nat_traversal_data *natt_data = data;
+   retro_task_t *task                   = NULL;
+   struct nat_traversal_data *natt_data = (struct nat_traversal_data*)data;
 
    /* Do not run more than one NAT task at a time. */
    task_queue_wait(nat_task_queued, NULL);
 
-   task = task_init();
+   task                                 = task_init();
    if (!task)
       return false;
 
-   natt_data->request.addr.sin_family = AF_INET;
-   natt_data->request.addr.sin_port   = htons(port);
-   natt_data->request.proto           = SOCKET_PROTOCOL_TCP;
-   natt_data->request.device          = NULL;
-   natt_data->status                  = NAT_TRAVERSAL_STATUS_DISCOVERY;
+   natt_data->request.addr.sin_family   = AF_INET;
+   natt_data->request.addr.sin_port     = htons(port);
+   natt_data->request.proto             = SOCKET_PROTOCOL_TCP;
+   natt_data->request.device            = NULL;
+   natt_data->status                    = NAT_TRAVERSAL_STATUS_DISCOVERY;
 
-   task->handler   = task_netplay_nat_traversal_handler;
-   task->callback  = netplay_nat_traversal_callback;
-   task->task_data = data;
+   task->handler                        = task_netplay_nat_traversal_handler;
+   task->callback                       = task_netplay_nat_traversal_callback;
+   task->task_data                      = data;
 
    task_queue_push(task);
 
@@ -323,8 +353,8 @@ bool task_push_netplay_nat_traversal(void *data, uint16_t port)
 
 bool task_push_netplay_nat_close(void *data)
 {
-   retro_task_t *task;
-   struct nat_traversal_data *natt_data = data;
+   retro_task_t *task                   = NULL;
+   struct nat_traversal_data *natt_data = (struct nat_traversal_data*)data;
 
    /* Do not run more than one NAT task at a time. */
    task_queue_wait(nat_task_queued, NULL);
@@ -346,8 +376,8 @@ bool task_push_netplay_nat_close(void *data)
 
    natt_data->status = NAT_TRAVERSAL_STATUS_CLOSE;
 
-   task->handler   = task_netplay_nat_traversal_handler;
-   task->task_data = data;
+   task->handler     = task_netplay_nat_traversal_handler;
+   task->task_data   = data;
 
    task_queue_push(task);
 

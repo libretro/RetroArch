@@ -868,6 +868,7 @@ typedef struct
    uintptr_t window;
 
    size_t frame_cache_pitch;
+   size_t window_title_len;
 
 #ifdef HAVE_VIDEO_FILTER
    unsigned state_scale;
@@ -1177,6 +1178,7 @@ bool video_driver_monitor_adjust_system_rates(
       float video_refresh_rate,
       bool vrr_runloop_enable,
       float audio_max_timing_skew,
+      unsigned video_swap_interval,
       double input_fps);
 
 void crt_switch_driver_refresh(void);
@@ -1233,7 +1235,7 @@ void video_driver_build_info(video_frame_info_t *video_info);
 
 void video_driver_reinit(int flags);
 
-void video_driver_get_window_title(char *buf, unsigned len);
+size_t video_driver_get_window_title(char *buf, unsigned len);
 
 bool *video_driver_get_threaded(void);
 
@@ -1439,7 +1441,8 @@ extern video_driver_t video_ctr;
 extern video_driver_t video_gcm;
 extern video_driver_t video_switch;
 extern video_driver_t video_d3d8;
-extern video_driver_t video_d3d9;
+extern video_driver_t video_d3d9_cg;
+extern video_driver_t video_d3d9_hlsl;
 extern video_driver_t video_d3d10;
 extern video_driver_t video_d3d11;
 extern video_driver_t video_d3d12;

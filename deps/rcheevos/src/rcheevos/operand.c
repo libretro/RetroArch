@@ -187,13 +187,16 @@ int rc_parse_operand(rc_operand_t* self, const char** memaddr, int is_indirect, 
           return RC_INVALID_FP_OPERAND;
 
         do {
-          fraction *= 10;
-          fraction += (*aux - '0');
-          shift *= 10;
+          /* only keep as many digits as will fit in a 32-bit value to prevent overflow.
+           * float only has around 7 digits of precision anyway. */
+          if (shift < 1000000000) {
+            fraction *= 10;
+            fraction += (*aux - '0');
+            shift *= 10;
+          }
           ++aux;
         } while (*aux >= '0' && *aux <= '9');
 
-        /* if fractional part is 0, convert to an integer constant */
         if (fraction != 0) {
           /* non-zero fractional part, convert to double and merge in integer portion */
           const double dbl_fraction = ((double)fraction) / ((double)shift);
@@ -203,6 +206,7 @@ int rc_parse_operand(rc_operand_t* self, const char** memaddr, int is_indirect, 
             self->value.dbl = (double)value + dbl_fraction;
         }
         else {
+          /* fractional part is 0, just convert the integer portion */
           if (negative)
             self->value.dbl = (double)(-((long)value));
           else

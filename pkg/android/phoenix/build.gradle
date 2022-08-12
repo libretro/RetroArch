@@ -104,8 +104,21 @@ android {
       jni.srcDirs = []
       res.srcDirs = ['res', '../phoenix-common/res']
     }
+    normal {
+      java.srcDirs += ['../play-core-stub']
+    }
     aarch64 {
+      java.srcDirs += ['../play-core-stub']
       res.srcDirs = ['res', 'res64']
+    }
+    ra32 {
+      java.srcDirs += ['../play-core-stub']
+    }
+    playStoreNormal {
+      java.srcDirs += ['../play-core-impl']
+    }
+    playStorePlus {
+      java.srcDirs += ['../play-core-impl']
     }
   }
 
@@ -140,8 +153,11 @@ android {
   }
 }
 
+def playCore = 'com.google.android.play:core:1.8.0'
+
 dependencies {
-  implementation 'com.google.android.play:core:1.8.0'
+  playStoreNormalImplementation playCore
+  playStorePlusImplementation playCore
 }
 
 def dynamicFeatures = file("dynamic_features.gradle")

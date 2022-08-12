@@ -36,6 +36,11 @@ struct http_connection_t;
 
 struct http_connection_t *net_http_connection_new(const char *url, const char *method, const char *data);
 
+/**
+ * net_http_connection_iterate:
+ *
+ * Leaf function.
+ **/
 bool net_http_connection_iterate(struct http_connection_t *conn);
 
 bool net_http_connection_done(struct http_connection_t *conn);
@@ -52,32 +57,73 @@ const char* net_http_connection_method(struct http_connection_t* conn);
 
 struct http_t *net_http_new(struct http_connection_t *conn);
 
-/* You can use this to call net_http_update
- * only when something will happen; select() it for reading. */
+/**
+ * net_http_fd:
+ *
+ * Leaf function.
+ *
+ * You can use this to call net_http_update
+ * only when something will happen; select() it for reading.
+ **/
 int net_http_fd(struct http_t *state);
 
-/* Returns true if it's done, or if something broke.
- * 'total' will be 0 if it's not known. */
+/**
+ * net_http_update:
+ *
+ * @return true if it's done, or if something broke.
+ * @total will be 0 if it's not known.
+ **/
 bool net_http_update(struct http_t *state, size_t* progress, size_t* total);
 
-/* 200, 404, or whatever.  */
+/**
+ * net_http_status:
+ *
+ * Report HTTP status. 200, 404, or whatever.
+ *
+ * Leaf function.
+ * 
+ * @return HTTP status code.
+ **/
 int net_http_status(struct http_t *state);
 
+/**
+ * net_http_error:
+ *
+ * Leaf function
+ **/
 bool net_http_error(struct http_t *state);
 
-/* Returns the downloaded data. The returned buffer is owned by the
- * HTTP handler; it's freed by net_http_delete.
+/**
+ * net_http_data:
  *
- * If the status is not 20x and accept_error is false, it returns NULL. */
+ * Leaf function.
+ *
+ * @return the downloaded data. The returned buffer is owned by the
+ * HTTP handler; it's freed by net_http_delete.
+ * If the status is not 20x and accept_error is false, it returns NULL.
+ **/
 uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_error);
 
-/* Cleans up all memory. */
+/**
+ * net_http_delete:
+ *
+ * Cleans up all memory.
+ **/
 void net_http_delete(struct http_t *state);
 
-/* URL Encode a string */
+/**
+ * net_http_urlencode:
+ *
+ * URL Encode a string
+ * caller is responsible for deleting the destination buffer
+ **/
 void net_http_urlencode(char **dest, const char *source);
 
-/* Re-encode a full URL */
+/**
+ * net_http_urlencode_full:
+ *
+ * Re-encode a full URL
+ **/
 void net_http_urlencode_full(char *dest, const char *source, size_t size);
 
 RETRO_END_DECLS

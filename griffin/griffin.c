@@ -419,16 +419,16 @@ VIDEO DRIVER
 #endif
 
 #if defined(HAVE_D3D9)
-#include "../gfx/drivers/d3d9.c"
 #include "../gfx/common/d3d9_common.c"
-#include "../gfx/drivers_display/gfx_display_d3d9.c"
 
 #ifdef HAVE_HLSL
-#include "../gfx/drivers_renderchain/d3d9_hlsl_renderchain.c"
+#include "../gfx/drivers/d3d9hlsl.c"
+#include "../gfx/drivers_display/gfx_display_d3d9hlsl.c"
 #endif
 
 #ifdef HAVE_CG
-#include "../gfx/drivers_renderchain/d3d9_cg_renderchain.c"
+#include "../gfx/drivers/d3d9cg.c"
+#include "../gfx/drivers_display/gfx_display_d3d9cg.c"
 #endif
 
 #endif
@@ -536,6 +536,7 @@ VIDEO DRIVER
 
 #if defined(__PSL1GHT__)
 #include "../gfx/drivers/rsx_gfx.c"
+#include "../gfx/drivers_display/gfx_display_rsx.c"
 #elif defined(GEKKO)
 #include "../gfx/drivers/gx_gfx.c"
 #elif defined(PSP)
@@ -583,7 +584,12 @@ FONTS
 ============================================================ */
 
 #include "../gfx/drivers_font_renderer/bitmapfont.c"
+
+#ifdef HAVE_LANGEXTRA
 #include "../gfx/drivers_font_renderer/bitmapfont_10x10.c"
+#include "../gfx/drivers_font_renderer/bitmapfont_6x10.c"
+#endif
+
 #include "../gfx/font_driver.c"
 
 #if defined(HAVE_D3D9) && defined(HAVE_D3DX)
@@ -633,6 +639,10 @@ FONTS
 
 #if defined(WIIU)
 #include "../gfx/drivers_font/wiiu_font.c"
+#endif
+
+#if defined(__PSL1GHT__)
+#include "../gfx/drivers_font/rsx_font.c"
 #endif
 
 #if defined(HAVE_CACA)
@@ -704,7 +714,10 @@ INPUT
 #elif defined(PS2)
 #include "../input/drivers/ps2_input.c"
 #include "../input/drivers_joypad/ps2_joypad.c"
-#elif defined(__PS3__) || defined(__PSL1GHT__)
+#elif defined(__PSL1GHT__)
+#include "../input/drivers/psl1ght_input.c"
+#include "../input/drivers_joypad/ps3_joypad.c"
+#elif defined(__PS3__)
 #include "../input/drivers/ps3_input.c"
 #include "../input/drivers_joypad/ps3_joypad.c"
 #elif defined(ORBIS)
@@ -1044,6 +1057,7 @@ FILTERS
 #include "../gfx/video_filters/upscale_256x_320x240.c"
 #include "../gfx/video_filters/picoscale_256x_320x240.c"
 #include "../gfx/video_filters/upscale_240x160_320x240.c"
+#include "../gfx/video_filters/upscale_mix_240x160_320x240.c"
 #endif
 
 #ifdef HAVE_DSP_FILTER
@@ -1099,6 +1113,7 @@ FILE
 #include "../libretro-common/streams/file_stream_transforms.c"
 #include "../libretro-common/streams/interface_stream.c"
 #include "../libretro-common/streams/memory_stream.c"
+#include "../libretro-common/streams/network_stream.c"
 #ifndef __WINRT__
 #include "../libretro-common/vfs/vfs_implementation.c"
 #endif
@@ -1119,9 +1134,6 @@ FILE
 #endif
 #if defined(HAVE_MMAP_WIN32)
 #include "../libretro-common/file/nbio/nbio_windowsmmap.c"
-#endif
-#if defined(ORBIS)
-#include "../libretro-common/file/nbio/nbio_orbis.c"
 #endif
 #include "../libretro-common/file/nbio/nbio_intf.c"
 
@@ -1256,6 +1268,9 @@ RETROARCH
 #include "../intl/msg_hash_id.c"
 #include "../intl/msg_hash_sv.c"
 #include "../intl/msg_hash_uk.c"
+#include "../intl/msg_hash_cs.c"
+#include "../intl/msg_hash_val.c"
+#include "../intl/msg_hash_ca.c"
 #endif
 
 #include "../intl/msg_hash_us.c"
@@ -1314,13 +1329,13 @@ THREAD
 NETPLAY
 ============================================================ */
 #ifdef HAVE_NETWORKING
+#include "../network/natt.c"
 #include "../network/netplay/netplay_frontend.c"
 #include "../network/netplay/netplay_room_parse.c"
 #include "../libretro-common/net/net_compat.c"
 #include "../libretro-common/net/net_socket.c"
 #include "../libretro-common/net/net_http.c"
-#include "../libretro-common/net/net_natt.c"
-#if !defined(HAVE_SOCKET_LEGACY)
+#ifdef HAVE_IFINFO
 #include "../libretro-common/net/net_ifinfo.c"
 #endif
 #include "../tasks/task_http.c"

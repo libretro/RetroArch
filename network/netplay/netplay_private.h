@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2017 - Gregor Richards
- *  Copyright (C) 2021-2021 - Roberto V. Rampim
+ *  Copyright (C) 2021-2022 - Roberto V. Rampim
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -20,38 +20,42 @@
 #define __RARCH_NETPLAY_PRIVATE_H
 
 #include "netplay.h"
+#include "netplay_protocol.h"
 
-#include <net/net_compat.h>
-#include <features/features_cpu.h>
+#include <libretro.h>
+
 #include <streams/trans_stream.h>
 
-#include "../../msg_hash.h"
-#include "../../verbosity.h"
+#include "../../retroarch_types.h"
 
-#define RARCH_DEFAULT_PORT 55435
-#define RARCH_DEFAULT_NICK "Anonymous"
+#ifndef VITA
+#define RARCH_DEFAULT_PORT   55435
+#else
+#define RARCH_DEFAULT_PORT   19492
+#endif
+#define RARCH_DISCOVERY_PORT 55435
+#define RARCH_DEFAULT_NICK   "Anonymous"
 
 #define NETPLAY_PASS_LEN      128
 #define NETPLAY_PASS_HASH_LEN 64 /* length of a SHA-256 hash */
 
-#define MAX_SERVER_STALL_TIME_USEC  (5*1000*1000)
-#define MAX_CLIENT_STALL_TIME_USEC  (10*1000*1000)
-#define CATCH_UP_CHECK_TIME_USEC    (500*1000)
-#define MAX_RETRIES                 16
-#define RETRY_MS                    500
-#define MAX_INPUT_DEVICES           16
+#define MAX_SERVER_STALL_TIME_USEC (5*1000*1000)
+#define MAX_CLIENT_STALL_TIME_USEC (10*1000*1000)
+#define CATCH_UP_CHECK_TIME_USEC   (500*1000)
+#define MAX_RETRIES                16
+#define RETRY_MS                   500
+#define MAX_INPUT_DEVICES          16
 
 /* We allow only 32 clients to fit into a 32-bit bitmap */
-#define MAX_CLIENTS                 32
-typedef uint32_t client_bitmap_t;
+#define MAX_CLIENTS 32
 
 /* Because the callback keyboard reverses some assumptions, when the keyboard
  * callbacks are in use, we assign a pseudodevice for it */
 #define RETRO_DEVICE_NETPLAY_KEYBOARD RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_KEYBOARD, 65535)
 
-#define NETPLAY_MAX_STALL_FRAMES       60
-#define NETPLAY_FRAME_RUN_TIME_WINDOW  120
-#define NETPLAY_MAX_REQ_STALL_TIME     60
+#define NETPLAY_MAX_STALL_FRAMES        60
+#define NETPLAY_FRAME_RUN_TIME_WINDOW   120
+#define NETPLAY_MAX_REQ_STALL_TIME      60
 #define NETPLAY_MAX_REQ_STALL_FREQUENCY 120
 
 #define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
@@ -59,30 +63,9 @@ typedef uint32_t client_bitmap_t;
 
 /* Quirks mandated by how particular cores save states. This is distilled from
  * the larger set of quirks that the quirks environment can communicate. */
-#define NETPLAY_QUIRK_NO_SAVESTATES (1<<0)
-#define NETPLAY_QUIRK_NO_TRANSMISSION (1<<1)
-#define NETPLAY_QUIRK_INITIALIZATION (1<<2)
-#define NETPLAY_QUIRK_ENDIAN_DEPENDENT (1<<3)
-#define NETPLAY_QUIRK_PLATFORM_DEPENDENT (1<<4)
-
-/* Mapping of serialization quirks to netplay quirks. */
-#define NETPLAY_QUIRK_MAP_UNDERSTOOD \
-   (RETRO_SERIALIZATION_QUIRK_INCOMPLETE \
-   |RETRO_SERIALIZATION_QUIRK_CORE_VARIABLE_SIZE \
-   |RETRO_SERIALIZATION_QUIRK_MUST_INITIALIZE \
-   |RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION \
-   |RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT \
-   |RETRO_SERIALIZATION_QUIRK_PLATFORM_DEPENDENT)
-#define NETPLAY_QUIRK_MAP_NO_SAVESTATES \
-   (RETRO_SERIALIZATION_QUIRK_INCOMPLETE)
-#define NETPLAY_QUIRK_MAP_NO_TRANSMISSION \
-   (RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION)
-#define NETPLAY_QUIRK_MAP_INITIALIZATION \
-   (RETRO_SERIALIZATION_QUIRK_MUST_INITIALIZE)
-#define NETPLAY_QUIRK_MAP_ENDIAN_DEPENDENT \
-   (RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT)
-#define NETPLAY_QUIRK_MAP_PLATFORM_DEPENDENT \
-   (RETRO_SERIALIZATION_QUIRK_PLATFORM_DEPENDENT)
+#define NETPLAY_QUIRK_INITIALIZATION     (1 << 0)
+#define NETPLAY_QUIRK_ENDIAN_DEPENDENT   (1 << 1)
+#define NETPLAY_QUIRK_PLATFORM_DEPENDENT (1 << 2)
 
 /* Compression protocols supported */
 #define NETPLAY_COMPRESSION_ZLIB (1<<0)
@@ -91,6 +74,18 @@ typedef uint32_t client_bitmap_t;
 #else
 #define NETPLAY_COMPRESSION_SUPPORTED 0
 #endif
+
+/* The keys supported by netplay */
+enum netplay_keys
+{
+   NETPLAY_KEY_UNKNOWN = 0,
+#define K(k) NETPLAY_KEY_ ## k,
+#define KL(k,l) K(k)
+#include "netplay_keys.h"
+#undef KL
+#undef K
+   NETPLAY_KEY_LAST
+};
 
 enum netplay_cmd
 {
@@ -197,11 +192,11 @@ enum netplay_cmd
    NETPLAY_CMD_SETTING_INPUT_LATENCY_FRAMES = 0x2001
 };
 
-#define NETPLAY_CMD_SYNC_BIT_PAUSED    (1U<<31)
-#define NETPLAY_CMD_PLAY_BIT_SLAVE     (1U<<31)
-#define NETPLAY_CMD_MODE_BIT_YOU       (1U<<31)
-#define NETPLAY_CMD_MODE_BIT_PLAYING   (1U<<30)
-#define NETPLAY_CMD_MODE_BIT_SLAVE     (1U<<29)
+#define NETPLAY_CMD_SYNC_BIT_PAUSED  (1U<<31)
+#define NETPLAY_CMD_PLAY_BIT_SLAVE   (1U<<31)
+#define NETPLAY_CMD_MODE_BIT_YOU     (1U<<31)
+#define NETPLAY_CMD_MODE_BIT_PLAYING (1U<<30)
+#define NETPLAY_CMD_MODE_BIT_SLAVE   (1U<<29)
 
 /* These are the reasons given for mode changes to be rejected */
 enum netplay_cmd_mode_reasons
@@ -227,46 +222,23 @@ enum rarch_netplay_share_preference
 {
    /* Prefer not to share, shouldn't be set 
       as a sharing mode for an shared device */
-   NETPLAY_SHARE_NO_SHARING = 0x0,
+   NETPLAY_SHARE_NO_SHARING     = 0x00,
 
    /* No preference. Only for requests.
       Set if sharing is requested but either
     * digital or analog doesn't have a preference. */
-   NETPLAY_SHARE_NO_PREFERENCE = 0x1,
+   NETPLAY_SHARE_NO_PREFERENCE  = 0x01,
 
    /* For digital devices */
-   NETPLAY_SHARE_DIGITAL_BITS = 0x1C,
-   NETPLAY_SHARE_DIGITAL_OR = 0x4,
-   NETPLAY_SHARE_DIGITAL_XOR = 0x8,
-   NETPLAY_SHARE_DIGITAL_VOTE = 0xC,
+   NETPLAY_SHARE_DIGITAL_BITS   = 0x1C,
+   NETPLAY_SHARE_DIGITAL_OR     = 0x04,
+   NETPLAY_SHARE_DIGITAL_XOR    = 0x08,
+   NETPLAY_SHARE_DIGITAL_VOTE   = 0x0C,
 
    /* For analog devices */
-   NETPLAY_SHARE_ANALOG_BITS = 0xE0,
-   NETPLAY_SHARE_ANALOG_MAX = 0x20,
+   NETPLAY_SHARE_ANALOG_BITS    = 0xE0,
+   NETPLAY_SHARE_ANALOG_MAX     = 0x20,
    NETPLAY_SHARE_ANALOG_AVERAGE = 0x40
-};
-
-/* The current status of a connection */
-enum rarch_netplay_connection_mode
-{
-   NETPLAY_CONNECTION_NONE = 0,
-
-   NETPLAY_CONNECTION_DELAYED_DISCONNECT, 
-   /* The connection is dead, but data
-      is still waiting to be forwarded */
-
-   /* Initialization: */
-   NETPLAY_CONNECTION_INIT,         /* Waiting for header */
-   NETPLAY_CONNECTION_PRE_NICK,     /* Waiting for nick */
-   NETPLAY_CONNECTION_PRE_PASSWORD, /* Waiting for password */
-   NETPLAY_CONNECTION_PRE_INFO,     /* Waiting for core/content info */
-   NETPLAY_CONNECTION_PRE_SYNC,     /* Waiting for sync */
-
-   /* Ready: */
-   NETPLAY_CONNECTION_CONNECTED, /* Modes above this are connected */
-   NETPLAY_CONNECTION_SPECTATING, /* Spectator mode */
-   NETPLAY_CONNECTION_SLAVE, /* Playing in slave mode */
-   NETPLAY_CONNECTION_PLAYING /* Normal ready state */
 };
 
 enum rarch_netplay_stall_reason
@@ -286,10 +258,7 @@ enum rarch_netplay_stall_reason
    NETPLAY_STALL_INPUT_LATENCY,
 
    /* The server asked us to stall */
-   NETPLAY_STALL_SERVER_REQUESTED,
-
-   /* We have no connection and must have one to proceed */
-   NETPLAY_STALL_NO_CONNECTION
+   NETPLAY_STALL_SERVER_REQUESTED
 };
 
 /* Input state for a particular client-device pair */
@@ -326,7 +295,7 @@ struct delta_frame
 
    /* The simulated input. is_real here means the simulation is done, i.e.,
     * it's a real simulation, not real input. */
-   netplay_input_state_t simlated_input[MAX_INPUT_DEVICES];
+   netplay_input_state_t simulated_input[MAX_INPUT_DEVICES];
 
    /* The serialized state of the core at this frame, before input */
    void *state;
@@ -356,23 +325,37 @@ struct socket_buffer
    size_t read;
 };
 
+/* We do it like this instead of using sockaddr_storage
+   in order to have relay server IPv6 support on platforms
+   that do not support IPv6. */
+typedef struct netplay_address
+{
+   /* Can hold an IPv6 address aswell as an IPv4 address in the
+      ::ffff:a.b.c.d format. */
+   uint8_t addr[16];
+} netplay_address_t;
+
 /* Each connection gets a connection struct */
 struct netplay_connection
 {
-   /* Is this connection stalling? */
-   retro_time_t stall_time;
-
    /* Timer used to estimate a connection's latency */
    retro_time_t ping_timer;
 
-   /* Address of peer */
-   struct sockaddr_storage addr;
+   /* Connection's address */
+   netplay_address_t addr;
 
    /* Buffers for sending and receiving data */
-   struct socket_buffer send_packet_buffer, recv_packet_buffer;
+   struct socket_buffer send_packet_buffer;
+   struct socket_buffer recv_packet_buffer;
 
-   /* fd associated with this connection */
-   int fd;
+   /* What compression does this peer support? */
+   uint32_t compression_supported;
+
+   /* Salt associated with password transaction */
+   uint32_t salt;
+
+   /* Which netplay protocol is this connection running? */
+   uint32_t netplay_protocol;
 
    /* If the mode is a DELAYED_DISCONNECT or SPECTATOR, 
     * the transmission of the mode change may have to 
@@ -381,42 +364,40 @@ struct netplay_connection
     * is active. */
    uint32_t delay_frame;
 
-   /* What compression does this peer support? */
-   uint32_t compression_supported;
-
    /* For the server: When was the last time we requested 
     * this client to stall?
     * For the client: How many frames of stall do we have left? */
    uint32_t stall_frame;
 
-   /* Salt associated with password transaction */
-   uint32_t salt;
-
-   /* Which netplay protocol is this connection running? */
-   uint32_t netplay_protocol;
+   /* How many times has this connection caused a stall because it's running
+      too slow? */
+   uint32_t stall_slow;
 
    /* What latency is this connection running on? 
     * Network latency has limited precision as we estimate it
     * once every pre-frame. */
    int32_t ping;
 
-   /* Is this connection stalling? */
-   enum rarch_netplay_stall_reason stall;
+   /* fd associated with this connection */
+   int fd;
 
    /* Mode of the connection */
    enum rarch_netplay_connection_mode mode;
 
+   /* Is this connection stalling? */
+   enum rarch_netplay_stall_reason stall;
+
    /* Nickname of peer */
    char nick[NETPLAY_NICK_LEN];
+
+   /* Is this connection buffer in use? */
+   bool active;
 
    /* Is this player paused? */
    bool paused;
 
    /* Is this connection allowed to play (server only)? */
    bool can_play;
-
-   /* Is this connection buffer in use? */
-   bool active;
 
    /* Did we request a ping response? */
    bool ping_requested;
@@ -426,8 +407,8 @@ struct netplay_connection
 struct compression_transcoder
 {
    const struct trans_stream_backend *compression_backend;
-   void *compression_stream;
    const struct trans_stream_backend *decompression_backend;
+   void *compression_stream;
    void *decompression_stream;
 };
 
@@ -438,53 +419,78 @@ typedef struct mitm_id
 } mitm_id_t;
 
 #define NETPLAY_MITM_MAX_PENDING 8
-struct netplay_mitm_pending
+struct netplay_mitm_handler
 {
-   retro_time_t timeouts[NETPLAY_MITM_MAX_PENDING];
-   mitm_id_t ids[NETPLAY_MITM_MAX_PENDING];
+   struct
+   {
+      retro_time_t timeout;
+      mitm_id_t id;
+      netplay_address_t addr;
+      int fd;
+      bool has_addr;
+   } pending[NETPLAY_MITM_MAX_PENDING];
+
    mitm_id_t id_buf;
+   netplay_address_t addr_buf;
    struct addrinfo *base_addr;
    const struct addrinfo *addr;
    size_t id_recvd;
-   int fds[NETPLAY_MITM_MAX_PENDING];
+   size_t addr_recvd;
+};
+
+struct netplay_ban_list
+{
+   netplay_address_t *list;
+   size_t size;
+   size_t allocated;
+};
+
+struct netplay_chat
+{
+   struct
+   {
+      uint32_t frames;
+      char     nick[NETPLAY_NICK_LEN];
+      char     msg[NETPLAY_CHAT_MAX_SIZE];
+   } messages[NETPLAY_CHAT_MAX_MESSAGES];
 };
 
 struct netplay
 {
-   /* Quirks in the savestate implementation */
-   uint64_t quirks;
+   /* We stall if we're far enough ahead that we
+    * couldn't transparently rewind.
+    * To know if we could transparently rewind,
+    * we need to know how long running a frame takes.
+    * We record that every frame and get a running (window) average. */
+   retro_time_t frame_run_time[NETPLAY_FRAME_RUN_TIME_WINDOW];
+   retro_time_t frame_run_time_sum;
+   retro_time_t frame_run_time_avg;
 
    /* When did we start falling behind? */
    retro_time_t catch_up_time;
    /* How long have we been stalled? */
    retro_time_t stall_time;
 
-   /* We stall if we're far enough ahead that we 
-    * couldn't transparently rewind.
-    * To know if we could transparently rewind, 
-    * we need to know how long running a frame takes.
-    * We record that every frame and get a running (window) average. */
-   retro_time_t frame_run_time[NETPLAY_FRAME_RUN_TIME_WINDOW];
-   retro_time_t frame_run_time_sum, frame_run_time_avg;
-
    struct retro_callbacks cbs;
 
    /* Compression transcoder */
-   struct compression_transcoder compress_nil,
-                                 compress_zlib;
+   struct compression_transcoder compress_nil;
+   struct compression_transcoder compress_zlib;
 
    /* MITM session id */
    mitm_id_t mitm_session_id;
 
-   struct netplay_connection one_connection; /* Client only */
-   /* All of our connections */
-   struct netplay_connection *connections;
+   /* Banned addresses */
+   struct netplay_ban_list ban_list;
+
+   /* Chat messages */
+   struct netplay_chat chat;
 
    /* MITM connection handler */
-   struct netplay_mitm_pending *mitm_pending;
+   struct netplay_mitm_handler *mitm_handler;
 
-   /* Our local socket info */
-   struct addrinfo *addr;
+   /* All of our connections */
+   struct netplay_connection *connections;
 
    struct delta_frame *buffer;
 
@@ -501,21 +507,21 @@ struct netplay
 
    /* The frame we're currently inputting */
    size_t self_ptr;
-   /* The frame we're currently running, which may be 
+   /* The frame we're currently running, which may be
     * behind the frame we're currently inputting if
     * we're using input latency */
    size_t run_ptr;
    /* The first frame at which some data might be unreliable */
    size_t other_ptr;
-   /* Pointer to the first frame for which we're missing 
+   /* Pointer to the first frame for which we're missing
     * the data of at least one connected player excluding ourself.
-    * Generally, other_ptr <= unread_ptr <= self_ptr, 
-    * but unread_ptr can get ahead of self_ptr if the peer 
+    * Generally, other_ptr <= unread_ptr <= self_ptr,
+    * but unread_ptr can get ahead of self_ptr if the peer
     * is running fast. */
    size_t unread_ptr;
    /* Pointer to the next frame to read from each client */
    size_t read_ptr[MAX_CLIENTS];
-   /* Pointer to the next frame to read from the server 
+   /* Pointer to the next frame to read from the server
     * (as it might not be a player but still synchronizes)
     */
    size_t server_ptr;
@@ -525,8 +531,8 @@ struct netplay
    /* Pseudo random seed */
    unsigned long simple_rand_next;
 
-   /* TCP connection for listening (server only) */
-   int listen_fd;
+   /* Quirks in the savestate implementation */
+   uint32_t quirks;
 
    /* Our client number */
    uint32_t self_client_num;
@@ -542,14 +548,10 @@ struct netplay
    uint32_t client_devices[MAX_CLIENTS];
 
    /* For each device, the bitmap of clients connected */
-   client_bitmap_t device_clients[MAX_INPUT_DEVICES];
+   uint32_t device_clients[MAX_INPUT_DEVICES];
 
    /* Our own device bitmap */
    uint32_t self_devices;
-
-   /* Number of desync operations we're currently performing. 
-    * If set, we don't attempt to stay in sync. */
-   uint32_t desync;
 
    /* The device types for every connected device. 
     * We store them and ignore any menu changes,
@@ -564,30 +566,42 @@ struct netplay
    uint32_t server_frame_count;
    uint32_t replay_frame_count;
 
-   int frame_run_time_ptr;
-
-   /* Counter for timeouts */
-   unsigned timeout_cnt;
-
-   /* Latency frames; positive to hide network latency, 
-    * negative to hide input latency */
-   int input_latency_frames;
-
-   /* Frequency with which to check CRCs */
-   int check_frames;
-
    /* How far behind did we fall? */
    uint32_t catch_up_behind;
+
+   /* Number of desync operations we're currently performing. 
+    * If set, we don't attempt to stay in sync. */
+   uint32_t desync;
 
    /* Host settings */
    int32_t input_latency_frames_min;
    int32_t input_latency_frames_max;
 
-   /* Are we stalled? */
-   enum rarch_netplay_stall_reason stall;
+   /* TCP connection for listening (server only) */
+   int listen_fd;
+
+   int frame_run_time_ptr;
+
+   /* Frequency with which to check CRCs */
+   int check_frames;
+
+   /* Latency frames; positive to hide network latency, 
+    * negative to hide input latency */
+   int input_latency_frames;
+
+   int reannounce;
+
+   int reping;
 
    /* Our mode and status */
    enum rarch_netplay_connection_mode self_mode;
+
+   /* Are we stalled? */
+   enum rarch_netplay_stall_reason stall;
+
+   /* Keyboard mapping (network and host) */
+   uint16_t mapping_hton[RETROK_LAST];
+   uint16_t mapping_ntoh[NETPLAY_KEY_LAST];
 
    /* TCP port (only set if serving) */
    uint16_t tcp_port;
@@ -599,8 +613,6 @@ struct netplay
    /* Our nickname */
    char nick[NETPLAY_NICK_LEN];
 
-   bool nat_traversal;
-
    /* Set to true if we have a device that most cores 
     * translate to "up/down" actions, typically a keyboard.
     * We need to keep track of this because with such a device,
@@ -609,11 +621,26 @@ struct netplay
     * up/down states will proceed as expected. */
    bool have_updown_device;
 
+   /* Are we the server? */
+   bool is_server;
+
+   bool nat_traversal;
+
+   /* Have we checked whether CRCs are valid at all? */
+   bool crc_validity_checked;
+
+   /* Are they valid? */
+   bool crcs_valid;
+
+   /* Netplay pausing */
+   bool local_paused;
+   bool remote_paused;
+
    /* Are we replaying old frames? */
    bool is_replay;
 
-   /* We don't want to poll several times on a frame. */
-   bool can_poll;
+   /* Opposite of stalling, should we be catching up? */
+   bool catch_up;
 
    /* Force a rewind to other_frame_count/other_ptr. 
     * This is for synchronized events, such as restarting 
@@ -629,32 +656,16 @@ struct netplay
    /* Have we requested a savestate as a sync point? */
    bool savestate_request_outstanding;
 
-   /* Netplay pausing */
-   bool local_paused;
-   bool remote_paused;
-
-   /* If true, never progress without peer input 
-    * (stateless/rewindless mode) */
-   bool stateless_mode;
-
-   /* Opposite of stalling, should we be catching up? */
-   bool catch_up;
-
-   /* Have we checked whether CRCs are valid at all? */
-   bool crc_validity_checked;
-
-   /* Are they valid? */
-   bool crcs_valid;
-
-   /* Are we the server? */
-   bool is_server;
-
-   /* Are we the connected? */
-   bool is_connected;
-
    /* Host settings */
    bool allow_pausing;
 };
+
+void video_frame_net(const void *data,
+   unsigned width, unsigned height, size_t pitch);
+void audio_sample_net(int16_t left, int16_t right);
+size_t audio_sample_batch_net(const int16_t *data, size_t frames);
+int16_t input_state_net(unsigned port, unsigned device,
+   unsigned idx, unsigned id);
 
 /***************************************************************
  * NETPLAY-BUF.C
@@ -725,68 +736,21 @@ bool netplay_delta_frame_ready(netplay_t *netplay,
       struct delta_frame *delta,
       uint32_t frame);
 
-/**
- * netplay_input_state_for
- *
- * Get an input state for a particular client
- */
-netplay_input_state_t netplay_input_state_for(
-      netplay_input_state_t *list,
-      uint32_t client_num, size_t size,
-      bool must_create, bool must_not_create);
-
-/**
- * netplay_expected_input_size
- *
- * Size in words for a given set of devices.
- */
-uint32_t netplay_expected_input_size(netplay_t *netplay,
-      uint32_t devices);
-
 /***************************************************************
  * NETPLAY-FRONTEND.C
  **************************************************************/
 
 /**
  * input_poll_net
+ * @netplay              : pointer to netplay object
  *
  * Poll the network if necessary.
  */
-void input_poll_net(void);
-
-/***************************************************************
- * NETPLAY-HANDSHAKE.C
- **************************************************************/
-
-/**
- * netplay_handshake_init_send
- *
- * Initialize our handshake and send the first 
- * part of the handshake protocol.
- */
-bool netplay_handshake_init_send(netplay_t *netplay,
-   struct netplay_connection *connection, uint32_t protocol);
-
-/**
- * netplay_handshake
- *
- * Data receiver for all handshake states.
- */
-bool netplay_handshake(netplay_t *netplay,
-   struct netplay_connection *connection, bool *had_input);
+void input_poll_net(netplay_t *netplay);
 
 /***************************************************************
  * NETPLAY-INIT.C
  **************************************************************/
-
-/**
- * netplay_try_init_serialization
- *
- * Try to initialize serialization. For quirky cores.
- *
- * Returns true if serialization is now ready, false otherwise.
- */
-bool netplay_try_init_serialization(netplay_t *netplay);
 
 /**
  * netplay_wait_and_init_serialization
@@ -798,58 +762,9 @@ bool netplay_try_init_serialization(netplay_t *netplay);
  */
 bool netplay_wait_and_init_serialization(netplay_t *netplay);
 
-/**
- * netplay_new:
- * @server               : IP address of server.
- * @mitm                 : IP address of the MITM/tunnel server.
- * @port                 : Port of server.
- * @mitm_session         : Session id for MITM/tunnel.
- * @stateless_mode       : Shall we run in stateless mode?
- * @check_frames         : Frequency with which to check CRCs.
- * @cb                   : Libretro callbacks.
- * @nat_traversal        : If true, attempt NAT traversal.
- * @nick                 : Nickname of user.
- * @quirks               : Netplay quirks required for this session.
- *
- * Creates a new netplay handle. A NULL server means we're
- * hosting.
- *
- * Returns: new netplay data.
- */
-netplay_t *netplay_new(const char *server, const char *mitm, uint16_t port,
-      const char *mitm_session,
-      bool stateless_mode, int check_frames,
-      const struct retro_callbacks *cb,
-      bool nat_traversal, const char *nick,
-      uint64_t quirks);
-
-/**
- * netplay_free
- * @netplay              : pointer to netplay object
- *
- * Frees netplay data/
- */
-void netplay_free(netplay_t *netplay);
-
 /***************************************************************
  * NETPLAY-IO.C
  **************************************************************/
-
-/**
- * netplay_hangup:
- *
- * Disconnects an active Netplay connection due to an error
- */
-void netplay_hangup(netplay_t *netplay,
-      struct netplay_connection *connection);
-
-/**
- * netplay_delayed_state_change:
- *
- * Handle any pending state changes which are ready as 
- * of the beginning of the current frame.
- */
-void netplay_delayed_state_change(netplay_t *netplay);
 
 /**
  * netplay_send_cur_input
@@ -892,92 +807,20 @@ void netplay_send_raw_cmd_all(netplay_t *netplay,
 bool netplay_cmd_mode(netplay_t *netplay,
    enum rarch_netplay_connection_mode mode);
 
-/**
- * netplay_poll_net_input
- *
- * Poll input from the network
- */
-int netplay_poll_net_input(netplay_t *netplay, bool block);
-
-/**
- * netplay_handle_slaves
- *
- * Handle any slave connections
- */
-void netplay_handle_slaves(netplay_t *netplay);
-
-/**
- * netplay_announce_nat_traversal
- *
- * Announce successful NAT traversal.
- */
-void netplay_announce_nat_traversal(netplay_t *netplay);
-
-/**
- * netplay_init_nat_traversal
- *
- * Initialize the NAT traversal library and try to open a port
- */
-void netplay_init_nat_traversal(netplay_t *netplay);
-
-void netplay_deinit_nat_traversal(void);
-
-/***************************************************************
- * NETPLAY-KEYBOARD.C
- **************************************************************/
-
-/* The mapping of keys from libretro (host) to netplay (network) */
-uint32_t netplay_key_hton(unsigned key);
-
-/* Because the hton keymapping has to be generated, 
- * call this before using netplay_key_hton */
-void netplay_key_hton_init(void);
-
 /***************************************************************
  * NETPLAY-SYNC.C
  **************************************************************/
 
 /**
- * netplay_update_unread_ptr
- *
- * Update the global unread_ptr and unread_frame_count to 
- * correspond to the earliest unread frame count of any
- * connected player.
- */
-void netplay_update_unread_ptr(netplay_t *netplay);
-
-/**
- * netplay_resolve_input
- * @netplay             : pointer to netplay object
- * @sim_ptr             : frame pointer for which to resolve input
- * @resim               : are we resimulating, or simulating this 
- *                        frame for the first time?
- *
- * "Simulate" input by assuming it hasn't changed since the 
- * last read input.
- * Returns true if the resolved input changed from the 
- * last time it was resolved.
- */
-bool netplay_resolve_input(netplay_t *netplay,
-      size_t sim_ptr, bool resim);
-
-/**
- * netplay_sync_pre_frame
+ * netplay_load_savestate
  * @netplay              : pointer to netplay object
- * @disconnect           : disconnect netplay
+ * @serial_info          : the savestate being loaded, NULL means
+ *                         "load it yourself"
+ * @save                 : Whether to save the provided serial_info
+ *                         into the frame buffer
  *
- * Pre-frame for Netplay synchronization.
- */
-bool netplay_sync_pre_frame(netplay_t *netplay, bool *disconnect);
-
-/**
- * netplay_sync_post_frame
- * @netplay              : pointer to netplay object
- * @stalled              : true if we're currently stalled
- *
- * Post-frame for Netplay synchronization.
- * We check if we have new input and replay from recorded input.
- */
-void netplay_sync_post_frame(netplay_t *netplay, bool stalled);
-
+ * Inform Netplay of a savestate load and send it to the other side
+ **/
+void netplay_load_savestate(netplay_t *netplay,
+      retro_ctx_serialize_info_t *serial_info, bool save);
 #endif

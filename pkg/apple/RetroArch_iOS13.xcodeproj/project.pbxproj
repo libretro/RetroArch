@@ -45,8 +45,18 @@
 		926C77EB21FD20C400103EDE /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
 		926C77EF21FD263800103EDE /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 926C77EE21FD263800103EDE /* AudioToolbox.framework */; };
 		926C77F121FD26E800103EDE /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 926C77F021FD26E800103EDE /* GameController.framework */; };
-		9289D20A25E40D7B004B5D52 /* EmulatorKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9289D20925E40D7B004B5D52 /* EmulatorKeyboard.swift */; };
+		9289D20A25E40D7B004B5D52 /* EmulatorKeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9289D20925E40D7B004B5D52 /* EmulatorKeyboardView.swift */; };
 		9289D22825E88A63004B5D52 /* CocoaView+KeyboardSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9289D22725E88A63004B5D52 /* CocoaView+KeyboardSupport.swift */; };
+		928F7B1327C39F8C00377C40 /* CocoaView+HelperBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 928F7B1227C39F8C00377C40 /* CocoaView+HelperBar.swift */; };
+		928F7B1827CC6CF000377C40 /* HelperBarViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 928F7B1727CC6CF000377C40 /* HelperBarViewController.swift */; };
+		928F7B1B27CF1B7100377C40 /* HelperBarItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 928F7B1A27CF1B7100377C40 /* HelperBarItem.swift */; };
+		928F7B1D27CF1BC500377C40 /* HelperBarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 928F7B1C27CF1BC500377C40 /* HelperBarViewModel.swift */; };
+		928F7B2027CFC95C00377C40 /* CocoaView+MouseSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 928F7B1F27CFC95C00377C40 /* CocoaView+MouseSupport.swift */; };
+		928F7B2327CFF25100377C40 /* CocoaView+Utilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 928F7B2227CFF25100377C40 /* CocoaView+Utilities.swift */; };
+		928F7B2527D1952500377C40 /* EmulatorKeyboardButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 928F7B2427D1952500377C40 /* EmulatorKeyboardButton.swift */; };
+		928F7B2727D196D100377C40 /* EmulatorKeyCoded.swift in Sources */ = {isa = PBXBuildFile; fileRef = 928F7B2627D196D100377C40 /* EmulatorKeyCoded.swift */; };
+		928F7B2927D197B400377C40 /* EmulatorKeyboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 928F7B2827D197B400377C40 /* EmulatorKeyboardViewModel.swift */; };
+		928F7B2B27D198C000377C40 /* EmulatorKeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 928F7B2A27D198C000377C40 /* EmulatorKeyboardViewController.swift */; };
 		929784502200EEE400989A60 /* iOS/Resources/Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */; };
 		92A1F81827006CAE00DEAD2A /* JITSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 92A1F81727006CAE00DEAD2A /* JITSupport.m */; };
 		92CC05A221FE3C1700FF79F0 /* GCDWebServerResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC058221FE3C1700FF79F0 /* GCDWebServerResponse.m */; };
@@ -116,8 +126,18 @@
 		926C77EE21FD263800103EDE /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS12.1.sdk/System/Library/Frameworks/AudioToolbox.framework; sourceTree = DEVELOPER_DIR; };
 		926C77F021FD26E800103EDE /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS12.1.sdk/System/Library/Frameworks/GameController.framework; sourceTree = DEVELOPER_DIR; };
 		9289D20825E40D7A004B5D52 /* RetroArch-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "RetroArch-Bridging-Header.h"; sourceTree = "<group>"; };
-		9289D20925E40D7B004B5D52 /* EmulatorKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulatorKeyboard.swift; sourceTree = "<group>"; };
+		9289D20925E40D7B004B5D52 /* EmulatorKeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulatorKeyboardView.swift; sourceTree = "<group>"; };
 		9289D22725E88A63004B5D52 /* CocoaView+KeyboardSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CocoaView+KeyboardSupport.swift"; sourceTree = "<group>"; };
+		928F7B1227C39F8C00377C40 /* CocoaView+HelperBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CocoaView+HelperBar.swift"; sourceTree = "<group>"; };
+		928F7B1727CC6CF000377C40 /* HelperBarViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperBarViewController.swift; sourceTree = "<group>"; };
+		928F7B1A27CF1B7100377C40 /* HelperBarItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperBarItem.swift; sourceTree = "<group>"; };
+		928F7B1C27CF1BC500377C40 /* HelperBarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperBarViewModel.swift; sourceTree = "<group>"; };
+		928F7B1F27CFC95C00377C40 /* CocoaView+MouseSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CocoaView+MouseSupport.swift"; sourceTree = "<group>"; };
+		928F7B2227CFF25100377C40 /* CocoaView+Utilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CocoaView+Utilities.swift"; sourceTree = "<group>"; };
+		928F7B2427D1952500377C40 /* EmulatorKeyboardButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulatorKeyboardButton.swift; sourceTree = "<group>"; };
+		928F7B2627D196D100377C40 /* EmulatorKeyCoded.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulatorKeyCoded.swift; sourceTree = "<group>"; };
+		928F7B2827D197B400377C40 /* EmulatorKeyboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulatorKeyboardViewModel.swift; sourceTree = "<group>"; };
+		928F7B2A27D198C000377C40 /* EmulatorKeyboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulatorKeyboardViewController.swift; sourceTree = "<group>"; };
 		92A1F81727006CAE00DEAD2A /* JITSupport.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = JITSupport.m; sourceTree = "<group>"; };
 		92A1F81927006CCB00DEAD2A /* JITSupport.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = JITSupport.h; sourceTree = "<group>"; };
 		92B9EB5724E0518700E6CFB2 /* base64.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = base64.h; sourceTree = "<group>"; };
@@ -150,7 +170,6 @@
 		92B9EB7A24E0518700E6CFB2 /* net_ifinfo.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_ifinfo.h; sourceTree = "<group>"; };
 		92B9EB7B24E0518700E6CFB2 /* net_compat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_compat.h; sourceTree = "<group>"; };
 		92B9EB7C24E0518700E6CFB2 /* net_socket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_socket.h; sourceTree = "<group>"; };
-		92B9EB7D24E0518700E6CFB2 /* net_natt.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_natt.h; sourceTree = "<group>"; };
 		92B9EB7E24E0518700E6CFB2 /* net_socket_ssl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_socket_ssl.h; sourceTree = "<group>"; };
 		92B9EB7F24E0518700E6CFB2 /* net_http.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_http.h; sourceTree = "<group>"; };
 		92B9EB8024E0518700E6CFB2 /* net_http_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_http_parse.h; sourceTree = "<group>"; };
@@ -416,17 +435,51 @@
 			path = tvOS;
 			sourceTree = "<group>";
 		};
+		928F7B1927CF1B4600377C40 /* HelperBar */ = {
+			isa = PBXGroup;
+			children = (
+				928F7B1A27CF1B7100377C40 /* HelperBarItem.swift */,
+				928F7B1C27CF1BC500377C40 /* HelperBarViewModel.swift */,
+				928F7B1727CC6CF000377C40 /* HelperBarViewController.swift */,
+				928F7B1227C39F8C00377C40 /* CocoaView+HelperBar.swift */,
+			);
+			path = HelperBar;
+			sourceTree = "<group>";
+		};
+		928F7B1E27CFC91700377C40 /* MouseEmulation */ = {
+			isa = PBXGroup;
+			children = (
+				92DAF33E277A370600FE2A9E /* EmulatorTouchMouse.swift */,
+				928F7B1F27CFC95C00377C40 /* CocoaView+MouseSupport.swift */,
+			);
+			path = MouseEmulation;
+			sourceTree = "<group>";
+		};
+		928F7B2127CFD29000377C40 /* OnScreenKeyboard */ = {
+			isa = PBXGroup;
+			children = (
+				928F7B2627D196D100377C40 /* EmulatorKeyCoded.swift */,
+				928F7B2427D1952500377C40 /* EmulatorKeyboardButton.swift */,
+				928F7B2827D197B400377C40 /* EmulatorKeyboardViewModel.swift */,
+				928F7B2A27D198C000377C40 /* EmulatorKeyboardViewController.swift */,
+				9289D20925E40D7B004B5D52 /* EmulatorKeyboardView.swift */,
+				9289D22725E88A63004B5D52 /* CocoaView+KeyboardSupport.swift */,
+			);
+			path = OnScreenKeyboard;
+			sourceTree = "<group>";
+		};
 		92B9EAE024E04F8800E6CFB2 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
 				92B9EC9324E0536200E6CFB2 /* core */,
 				92B9EAE524E0518600E6CFB2 /* libretro-common */,
-				9289D20925E40D7B004B5D52 /* EmulatorKeyboard.swift */,
-				92DAF33E277A370600FE2A9E /* EmulatorTouchMouse.swift */,
-				9289D22725E88A63004B5D52 /* CocoaView+KeyboardSupport.swift */,
+				928F7B1927CF1B4600377C40 /* HelperBar */,
+				928F7B2127CFD29000377C40 /* OnScreenKeyboard */,
+				928F7B1E27CFC91700377C40 /* MouseEmulation */,
 				9289D20825E40D7A004B5D52 /* RetroArch-Bridging-Header.h */,
 				92A1F81927006CCB00DEAD2A /* JITSupport.h */,
 				92A1F81727006CAE00DEAD2A /* JITSupport.m */,
+				928F7B2227CFF25100377C40 /* CocoaView+Utilities.swift */,
 			);
 			name = Sources;
 			sourceTree = "<group>";
@@ -583,7 +636,6 @@
 				92B9EB7A24E0518700E6CFB2 /* net_ifinfo.h */,
 				92B9EB7B24E0518700E6CFB2 /* net_compat.h */,
 				92B9EB7C24E0518700E6CFB2 /* net_socket.h */,
-				92B9EB7D24E0518700E6CFB2 /* net_natt.h */,
 				92B9EB7E24E0518700E6CFB2 /* net_socket_ssl.h */,
 				92B9EB7F24E0518700E6CFB2 /* net_http.h */,
 				92B9EB8024E0518700E6CFB2 /* net_http_parse.h */,
@@ -1120,13 +1172,13 @@
 				ORGANIZATIONNAME = RetroArch;
 				TargetAttributes = {
 					9204BE091D319EF300BD49DB = {
-						DevelopmentTeam = R72X3BF4KE;
+						DevelopmentTeam = UK699V5ZS8;
 						DevelopmentTeamName = RetroArch;
 						LastSwiftMigration = 1240;
 					};
 					926C77D621FD1E6500103EDE = {
 						CreatedOnToolsVersion = 10.1;
-						DevelopmentTeam = R72X3BF4KE;
+						DevelopmentTeam = UK699V5ZS8;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -1217,11 +1269,15 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				928F7B1327C39F8C00377C40 /* CocoaView+HelperBar.swift in Sources */,
 				92CC05B821FE3C1700FF79F0 /* GCDWebServerDataRequest.m in Sources */,
 				92CC05A421FE3C1700FF79F0 /* GCDWebServerRequest.m in Sources */,
 				92CC05AA21FE3C1700FF79F0 /* GCDWebServerConnection.m in Sources */,
 				92A1F81827006CAE00DEAD2A /* JITSupport.m in Sources */,
+				928F7B2727D196D100377C40 /* EmulatorKeyCoded.swift in Sources */,
+				928F7B2927D197B400377C40 /* EmulatorKeyboardViewModel.swift in Sources */,
 				92CC05BE21FE3C1700FF79F0 /* GCDWebUploader.m in Sources */,
+				928F7B1B27CF1B7100377C40 /* HelperBarItem.swift in Sources */,
 				92CC05B621FE3C1700FF79F0 /* GCDWebServerMultiPartFormRequest.m in Sources */,
 				92CC05AC21FE3C1700FF79F0 /* GCDWebServerErrorResponse.m in Sources */,
 				92CC05A621FE3C1700FF79F0 /* GCDWebServerFunctions.m in Sources */,
@@ -1229,17 +1285,23 @@
 				92CC05A821FE3C1700FF79F0 /* GCDWebServer.m in Sources */,
 				9204BE0D1D319EF300BD49DB /* griffin_objc.m in Sources */,
 				9204BE101D319EF300BD49DB /* griffin.c in Sources */,
+				928F7B2B27D198C000377C40 /* EmulatorKeyboardViewController.swift in Sources */,
 				92CC05B421FE3C1700FF79F0 /* GCDWebServerURLEncodedFormRequest.m in Sources */,
+				928F7B1D27CF1BC500377C40 /* HelperBarViewModel.swift in Sources */,
 				92DAF33F277A370600FE2A9E /* EmulatorTouchMouse.swift in Sources */,
 				92CC05B021FE3C1700FF79F0 /* GCDWebServerDataResponse.m in Sources */,
 				92CC05C221FE3C6D00FF79F0 /* WebServer.m in Sources */,
+				928F7B1827CC6CF000377C40 /* HelperBarViewController.swift in Sources */,
+				928F7B2027CFC95C00377C40 /* CocoaView+MouseSupport.swift in Sources */,
 				9289D22825E88A63004B5D52 /* CocoaView+KeyboardSupport.swift in Sources */,
 				9210C2FC24B4CB4900E6FE7C /* menu_pipeline.metal in Sources */,
 				9210C2FE24B4CB4900E6FE7C /* Shaders.metal in Sources */,
 				92CC05BA21FE3C1700FF79F0 /* GCDWebServerFileRequest.m in Sources */,
 				92CC05AE21FE3C1700FF79F0 /* GCDWebServerFileResponse.m in Sources */,
 				9210C2F624B3A32D00E6FE7C /* griffin_cpp.cpp in Sources */,
-				9289D20A25E40D7B004B5D52 /* EmulatorKeyboard.swift in Sources */,
+				928F7B2327CFF25100377C40 /* CocoaView+Utilities.swift in Sources */,
+				928F7B2527D1952500377C40 /* EmulatorKeyboardButton.swift in Sources */,
+				9289D20A25E40D7B004B5D52 /* EmulatorKeyboardView.swift in Sources */,
 				92CC05B221FE3C1700FF79F0 /* GCDWebServerStreamedResponse.m in Sources */,
 				92CC05A221FE3C1700FF79F0 /* GCDWebServerResponse.m in Sources */,
 			);
@@ -1300,7 +1362,7 @@
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
 				CURRENT_PROJECT_VERSION = 1.9.8;
 				DEPS_DIR = "$(SRCBASE)/deps";
-				DEVELOPMENT_TEAM = R72X3BF4KE;
+				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
@@ -1332,6 +1394,7 @@
 					"-DHAVE_STB_FONT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
+					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
@@ -1399,6 +1462,7 @@
 					"-DHAVE_PATCH",
 					"-DHAVE_IOS_CUSTOMKEYBOARD",
 					"-DHAVE_IOS_TOUCHMOUSE",
+					"-DHAVE_IOS_SWIFT",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
 				PRODUCT_NAME = RetroArch;
@@ -1428,7 +1492,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1.9.8;
 				DEPS_DIR = "$(SRCBASE)/deps";
-				DEVELOPMENT_TEAM = R72X3BF4KE;
+				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
@@ -1461,6 +1525,7 @@
 					"-DHAVE_STB_FONT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
+					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
@@ -1510,6 +1575,7 @@
 					"-DHAVE_PATCH",
 					"-DHAVE_IOS_CUSTOMKEYBOARD",
 					"-DHAVE_IOS_TOUCHMOUSE",
+					"-DHAVE_IOS_SWIFT",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
@@ -1519,6 +1585,7 @@
 					"-DHAVE_STB_FONT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
+					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
@@ -1587,6 +1654,7 @@
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_IOS_CUSTOMKEYBOARD",
 					"-DHAVE_IOS_TOUCHMOUSE",
+					"-DHAVE_IOS_SWIFT",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
 				PRODUCT_NAME = RetroArch;
@@ -1635,7 +1703,7 @@
 				CURRENT_PROJECT_VERSION = 1.9.3;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEPS_DIR = "$(SRCBASE)/deps";
-				DEVELOPMENT_TEAM = R72X3BF4KE;
+				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -1671,6 +1739,7 @@
 					"-DHAVE_STB_FONT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
+					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
@@ -1772,7 +1841,7 @@
 				CURRENT_PROJECT_VERSION = 1.9.3;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPS_DIR = "$(SRCBASE)/deps";
-				DEVELOPMENT_TEAM = R72X3BF4KE;
+				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -1809,6 +1878,7 @@
 					"-DHAVE_STB_FONT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
+					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
@@ -1917,6 +1987,7 @@
 					"-DHAVE_STB_FONT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
+					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
@@ -1994,6 +2065,7 @@
 					"-DHAVE_STB_FONT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
+					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",

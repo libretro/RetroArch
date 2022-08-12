@@ -450,9 +450,9 @@ static int16_t udev_mouse_get_pointer_y(const udev_input_mouse_t *mouse, bool sc
          src_min = vp.y;
          src_height = vp.height;
       }
+      y = -32767.0 + 65535.0 / src_height * (mouse->y_abs - src_min);
    }
 
-   y = -32767.0 + 65535.0 / src_height * (mouse->y_abs - src_min);
    y += (y < 0 ? -0.5 : 0.5);
 
    if (y < -0x7fff)

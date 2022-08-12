@@ -699,21 +699,23 @@ static void frontend_win32_attach_console(void)
    bool need_stderr = (GetFileType(GetStdHandle(STD_ERROR_HANDLE))
          == FILE_TYPE_UNKNOWN);
 
+   if (config_get_ptr()->bools.log_to_file)
+      return;
+
    if (need_stdout || need_stderr)
    {
-      if (!AttachConsole( ATTACH_PARENT_PROCESS))
+      if (!AttachConsole(ATTACH_PARENT_PROCESS))
          AllocConsole();
 
       SetConsoleTitle("Log Console");
 
       if (need_stdout)
-         freopen( "CONOUT$", "w", stdout );
+         freopen("CONOUT$", "w", stdout);
       if (need_stderr)
-         freopen( "CONOUT$", "w", stderr );
+         freopen("CONOUT$", "w", stderr);
 
       console_needs_free = true;
    }
-
 #endif
 #endif
 }
@@ -771,8 +773,6 @@ static void frontend_win32_respawn(char *s, size_t len, char *args)
    fill_pathname_application_path(executable_path,
          sizeof(executable_path));
    path_set(RARCH_PATH_CORE, executable_path);
-   RARCH_LOG("Restarting RetroArch with commandline: %s and %s\n",
-      executable_path, args);
 
    memset(&si, 0, sizeof(si));
    si.cb = sizeof(si);
@@ -781,7 +781,7 @@ static void frontend_win32_respawn(char *s, size_t len, char *args)
    if (!CreateProcess( executable_path, args,
       NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
    {
-      RARCH_LOG("Failed to restart RetroArch\n");
+      RARCH_ERR("Failed to restart RetroArch\n");
    }
 }
 
@@ -868,10 +868,7 @@ static const char *accessibility_win_language_id(const char* language)
       return "415";
    else if (string_is_equal(language,"cs")) 
       return "405";
-   else
-      return "";
-
-
+   return "";
 }
 
 static const char *accessibility_win_language_code(const char* language)
@@ -936,8 +933,7 @@ static const char *accessibility_win_language_code(const char* language)
       return "Microsoft Adam Desktop";
    else if (string_is_equal(language,"cs")) 
       return "Microsoft Jakub Desktop";
-   else
-      return "";
+   return "";
 }
 
 static bool terminate_win32_process(PROCESS_INFORMATION pi)
@@ -954,7 +950,7 @@ static bool create_win32_process(char* cmd, const char * input)
 {
    STARTUPINFO si;
    HANDLE rd = NULL;
-   bool ret;
+   bool ret  = false;
    memset(&si, 0, sizeof(si));
    si.cb = sizeof(si);
    memset(&g_pi, 0, sizeof(g_pi));
@@ -963,22 +959,25 @@ static bool create_win32_process(char* cmd, const char * input)
    {
       DWORD dummy;
       HANDLE wr;
-      if (!CreatePipe(&rd, &wr, NULL, strlen(input))) return false;
+      size_t input_len = strlen(input);
+      if (!CreatePipe(&rd, &wr, NULL, input_len))
+         return false;
       
       SetHandleInformation(rd, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
       
-      WriteFile(wr, input, strlen(input), &dummy, NULL);
+      WriteFile(wr, input, input_len, &dummy, NULL);
       CloseHandle(wr);
       
-      si.dwFlags |= STARTF_USESTDHANDLES;
-      si.hStdInput = rd;
-      si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
-      si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+      si.dwFlags    |= STARTF_USESTDHANDLES;
+      si.hStdInput   = rd;
+      si.hStdOutput  = GetStdHandle(STD_OUTPUT_HANDLE);
+      si.hStdError   = GetStdHandle(STD_ERROR_HANDLE);
    }
 
    ret = CreateProcess(NULL, cmd, NULL, NULL, TRUE, CREATE_NO_WINDOW,
                       NULL, NULL, &si, &g_pi);
-   if (rd) CloseHandle(rd);
+   if (rd)
+      CloseHandle(rd);
    return ret;
 }
 
@@ -991,30 +990,27 @@ static bool is_narrator_running_windows(void)
 
    if (USE_POWERSHELL)
    {
-      if (pi_set == false)
+      if (!pi_set)
          return false;
       if (GetExitCodeProcess(g_pi.hProcess, &status))
-      {
          if (status == STILL_ACTIVE)
             return true;
-      }
       return false;
    }
 #ifdef HAVE_NVDA
    else if (USE_NVDA)
    {
-      long res;
-      res = nvdaController_testIfRunning_func();
+      long res = nvdaController_testIfRunning_func();
 
       if (res != 0) 
       {
          /* The running nvda service wasn't found, so revert
             back to the powershell method
          */
-         RARCH_LOG("Error communicating with NVDA\n");
+         RARCH_ERR("Error communicating with NVDA\n");
          USE_POWERSHELL = true;
          USE_NVDA       = false;
-	 return false;
+         return false;
       }
       return false;
    }
@@ -1043,11 +1039,11 @@ static bool accessibility_speak_windows(int speed,
    const char *langid     = accessibility_win_language_id(voice);
    bool res               = false;
    const char* speeds[10] = {"-10", "-7.5", "-5", "-2.5", "0", "2", "4", "6", "8", "10"};
-   size_t nbytes_cmd = 0;
+   size_t nbytes_cmd      = 0;
    if (speed < 1)
-      speed = 1;
+      speed               = 1;
    else if (speed > 10)
-      speed = 10;
+      speed               = 10;
 
    if (priority < 10)
    {
@@ -1063,7 +1059,7 @@ static bool accessibility_speak_windows(int speed,
    {
       const char * template_lang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak($input);\"";
       const char * template_nolang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak($input);\"";
-      if (strlen(language) > 0)
+      if (language && language[0] != '\0')
          snprintf(cmd, sizeof(cmd), template_lang, language, speeds[speed-1]);
       else
          snprintf(cmd, sizeof(cmd), template_nolang, speeds[speed-1]);
@@ -1080,7 +1076,7 @@ static bool accessibility_speak_windows(int speed,
 
       if (!wc || res != 0) 
       {
-         RARCH_LOG("Error communicating with NVDA\n");
+         RARCH_ERR("Error communicating with NVDA\n");
          if (wc)
             free(wc);
          return false;

@@ -29,6 +29,11 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#ifdef HAVE_GFX_WIDGETS
+#include "../gfx_widgets.h"
+#endif
+
+#include "../common/rsx_common.h"
 #include "../font_driver.h"
 
 #include "../../configuration.h"
@@ -63,69 +68,15 @@
 #include <time.h>
 #include <math.h>
 
-#define MAX_BUFFERS 2
-
 #define rsx_context_bind_hw_render(rsx, enable) \
    if (rsx->shared_context_use) \
       rsx->ctx_driver->bind_hw_render(rsx->ctx_data, enable)
 
-typedef struct
-{
-   int height;
-   int width;
-   int id;
-   uint32_t *ptr;
-   /* Internal stuff */
-   uint32_t offset;
-} rsxBuffer;
-
-typedef struct
-{
-   float v;
-   float u;
-   float y;
-   float x;
-} rsx_scale_vector_t;
-
-typedef struct
-{
-   s16 x0, y0, x1, y1;
-   s16 u0, v0, u1, v1;
-} rsx_vertex_t;
-
-typedef struct {
-   video_viewport_t vp;
-   rsxBuffer buffers[MAX_BUFFERS];
-   rsxBuffer menuBuffers[MAX_BUFFERS];
-   int currentBuffer, menuBuffer;
-   gcmContextData* context;
-   u16 width;
-   u16 height;
-   bool menu_frame_enable;
-   bool rgb32;
-   bool vsync;
-   u32 depth_pitch;
-   u32 depth_offset;
-   u32* depth_buffer;
-
-   bool smooth;
-   unsigned rotation;
-   bool keep_aspect;
-   bool should_resize;
-   bool msg_rendering_enabled;
-
-   const shader_backend_t* shader;
-   void* shader_data;
-   void* renderchain_data;
-   void* ctx_data;
-   const gfx_ctx_driver_t* ctx_driver;
-   bool shared_context_use;
-
-   video_info_t video_info;
-   struct video_tex_info tex_info;                    /* unsigned int alignment */
-   struct video_tex_info prev_info[GFX_MAX_TEXTURES]; /* unsigned alignment */
-   struct video_fbo_rect fbo_rect[GFX_MAX_SHADERS];   /* unsigned alignment */
-} rsx_t;
+static void rsx_set_viewport(void *data, unsigned viewport_width,
+      unsigned viewport_height, bool force_full, bool allow_rotate);
+static void rsx_load_texture_data(rsx_t* rsx, rsx_texture_t *texture,
+      const void *frame, unsigned width, unsigned height, unsigned pitch,
+      bool rgb32, bool menu, enum texture_filter_type filter_type);
 
 static const gfx_ctx_driver_t* rsx_get_context(rsx_t* rsx)
 {
@@ -327,6 +278,106 @@ static void rsx_wait_rsx_idle(gcmContextData *context)
   waitFinish(context, sLabelVal);
 }
 
+static void rsx_init_render_target(rsx_t *rsx, rsxBuffer * buffer, int id)
+{
+   memset(&rsx->surface[id], 0, sizeof(gcmSurface));
+   rsx->surface[id].colorFormat		= GCM_SURFACE_X8R8G8B8;
+   rsx->surface[id].colorTarget		= GCM_SURFACE_TARGET_0;
+   rsx->surface[id].colorLocation[0]	= GCM_LOCATION_RSX;
+   rsx->surface[id].colorOffset[0]	= buffer->offset;
+   rsx->surface[id].colorPitch[0]	= rsx->width * 4;
+   for(u32 i=1; i < GCM_MAX_MRT_COUNT; i++) {
+      rsx->surface[id].colorLocation[i]	= GCM_LOCATION_RSX;
+      rsx->surface[id].colorOffset[i]		= buffer->offset;
+      rsx->surface[id].colorPitch[i]		= 64;
+   }
+   rsx->surface[id].depthFormat		= GCM_SURFACE_ZETA_Z24S8;
+   rsx->surface[id].depthLocation	= GCM_LOCATION_RSX;
+   rsx->surface[id].depthOffset		= rsx->depth_offset;
+   rsx->surface[id].depthPitch		= rsx->width * 4;
+   rsx->surface[id].type			= GCM_SURFACE_TYPE_LINEAR;
+   rsx->surface[id].antiAlias		= GCM_SURFACE_CENTER_1;
+   rsx->surface[id].width			= rsx->width;
+   rsx->surface[id].height			= rsx->height;
+   rsx->surface[id].x				= 0;
+   rsx->surface[id].y				= 0;
+}
+
+static void rsx_init_vertices(rsx_t *rsx)
+{
+   rsx->vertices = (rsx_vertex_t *)rsxMemalign(128, sizeof(rsx_vertex_t) * 4);
+
+   rsx->vertices[0].x = 0.0f;
+   rsx->vertices[0].y = 0.0f;
+   rsx->vertices[0].z = 0.0f;
+   rsx->vertices[0].u = 0.0f;
+   rsx->vertices[0].v = 1.0f;
+   rsx->vertices[0].r = 1.0f;
+   rsx->vertices[0].g = 1.0f;
+   rsx->vertices[0].b = 1.0f;
+   rsx->vertices[0].a = 1.0f;
+
+   rsx->vertices[1].x = 1.0f;
+   rsx->vertices[1].y = 0.0f;
+   rsx->vertices[1].z = 0.0f;
+   rsx->vertices[1].u = 1.0f;
+   rsx->vertices[1].v = 1.0f;
+   rsx->vertices[1].r = 1.0f;
+   rsx->vertices[1].g = 1.0f;
+   rsx->vertices[1].b = 1.0f;
+   rsx->vertices[1].a = 1.0f;
+
+   rsx->vertices[2].x = 0.0f;
+   rsx->vertices[2].y = 1.0f;
+   rsx->vertices[2].z = 0.0f;
+   rsx->vertices[2].u = 0.0f;
+   rsx->vertices[2].v = 0.0f;
+   rsx->vertices[2].r = 1.0f;
+   rsx->vertices[2].g = 1.0f;
+   rsx->vertices[2].b = 1.0f;
+   rsx->vertices[2].a = 1.0f;
+
+   rsx->vertices[3].x = 1.0f;
+   rsx->vertices[3].y = 1.0f;
+   rsx->vertices[3].z = 0.0f;
+   rsx->vertices[3].u = 1.0f;
+   rsx->vertices[3].v = 0.0f;
+   rsx->vertices[3].r = 1.0f;
+   rsx->vertices[3].g = 1.0f;
+   rsx->vertices[3].b = 1.0f;
+   rsx->vertices[3].a = 1.0f;
+
+   rsxAddressToOffset(&rsx->vertices[0].x, &rsx->pos_offset);
+   rsxAddressToOffset(&rsx->vertices[0].u, &rsx->uv_offset);
+   rsxAddressToOffset(&rsx->vertices[0].r, &rsx->col_offset);
+}
+
+static void rsx_init_shader(rsx_t *rsx)
+{
+   u32 fpsize = 0;
+   u32 vpsize = 0;
+   rsx->vp_ucode = NULL;
+   rsx->fp_ucode = NULL;
+   rsx->vpo = (rsxVertexProgram *)vpshader_basic_vpo;
+   rsx->fpo = (rsxFragmentProgram *)fpshader_basic_fpo;
+   rsxVertexProgramGetUCode(rsx->vpo, &rsx->vp_ucode, &vpsize);
+   rsxFragmentProgramGetUCode(rsx->fpo, &rsx->fp_ucode, &fpsize);
+   rsx->fp_buffer = (u32 *)rsxMemalign(64, fpsize);
+   if (!rsx->fp_buffer)
+   {
+      RARCH_LOG("failed to allocate fp_buffer\n");
+      return;
+   }
+   memcpy(rsx->fp_buffer, rsx->fp_ucode, fpsize);
+   rsxAddressToOffset(rsx->fp_buffer ,&rsx->fp_offset);
+
+   rsx->proj_matrix = rsxVertexProgramGetConst(rsx->vpo, "modelViewProj");
+   rsx->pos_index = rsxVertexProgramGetAttrib(rsx->vpo, "position");
+   rsx->col_index = rsxVertexProgramGetAttrib(rsx->vpo, "color");
+   rsx->uv_index = rsxVertexProgramGetAttrib(rsx->vpo, "texcoord");
+   rsx->tex_unit = rsxFragmentProgramGetAttrib(rsx->fpo, "texture");
+}
+
 static void* rsx_init(const video_info_t* video,
       input_driver_t** input, void** input_data)
 {
@@ -337,6 +388,9 @@ static void* rsx_init(const video_info_t* video,
       return NULL;
 
    memset(rsx, 0, sizeof(rsx_t));
+
+   rsx->texture.data = NULL;
+   rsx->menu_texture.data = NULL;
 
    rsx->context = rsx_init_screen(rsx);
    const gfx_ctx_driver_t* ctx_driver = rsx_get_context(rsx);
@@ -349,10 +403,26 @@ static void* rsx_init(const video_info_t* video,
    rsx->video_info = *video;
 
    for (i = 0; i < MAX_BUFFERS; i++)
+   {
       rsx_make_buffer(&rsx->buffers[i], rsx->width, rsx->height, i);
+      rsx_init_render_target(rsx, &rsx->buffers[i], i);
+   }
 
-   for (i = 0; i < MAX_BUFFERS; i++)
-      rsx_make_buffer(&rsx->menuBuffers[i], rsx->width, rsx->height, i + MAX_BUFFERS);
+#if defined(HAVE_MENU_BUFFER)
+   for (i = 0; i < MAX_MENU_BUFFERS; i++)
+   {
+      rsx_make_buffer(&rsx->menuBuffers[i], rsx->width, rsx->height, i+MAX_BUFFERS);
+      rsx_init_render_target(rsx, &rsx->menuBuffers[i], i+MAX_BUFFERS);
+   }
+#endif
+
+   rsx->texture.height = rsx->height;
+   rsx->texture.width = rsx->width;
+   rsx->menu_texture.height = rsx->height;
+   rsx->menu_texture.width = rsx->width;
+
+   rsx_init_shader(rsx);
+   rsx_init_vertices(rsx);
 
    rsx_flip(rsx->context, MAX_BUFFERS - 1);
 
@@ -364,6 +434,7 @@ static void* rsx_init(const video_info_t* video,
    rsx->vp.full_height = rsx->height;
    rsx->rgb32 = video->rgb32;
    video_driver_set_size(rsx->vp.width, rsx->vp.height);
+   rsx_set_viewport(rsx, rsx->vp.width, rsx->vp.height, false, true);
 
    if (input && input_data)
    {
@@ -374,7 +445,204 @@ static void* rsx_init(const video_info_t* video,
 
    rsx_context_bind_hw_render(rsx, true);
 
+   if (video->font_enable)
+   {
+      font_driver_init_osd(rsx,
+            video,
+            false,
+            video->is_threaded,
+            FONT_DRIVER_RENDER_RSX);
+      rsx->msg_rendering_enabled = true;
+   }
+
    return rsx;
+}
+
+static void rsx_set_projection(rsx_t *rsx,
+      struct video_ortho *ortho, bool allow_rotate)
+{
+   static math_matrix_4x4 rot     = {
+      { 0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    1.0f }
+   };
+   float radians, cosine, sine;
+
+   /* Calculate projection. */
+   matrix_4x4_ortho(rsx->mvp_no_rot, ortho->left, ortho->right,
+         ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
+
+   if (!allow_rotate)
+   {
+      rsx->mvp = rsx->mvp_no_rot;
+      return;
+   }
+
+   radians                 = M_PI * rsx->rotation / 180.0f;
+   cosine                  = cosf(radians);
+   sine                    = sinf(radians);
+   MAT_ELEM_4X4(rot, 0, 0) = cosine;
+   MAT_ELEM_4X4(rot, 0, 1) = -sine;
+   MAT_ELEM_4X4(rot, 1, 0) = sine;
+   MAT_ELEM_4X4(rot, 1, 1) = cosine;
+   matrix_4x4_multiply(rsx->mvp, rot, rsx->mvp_no_rot);
+}
+
+static void rsx_set_viewport(void *data, unsigned viewport_width,
+      unsigned viewport_height, bool force_full, bool allow_rotate)
+{
+   int x                     = 0;
+   int y                     = 0;
+   float device_aspect       = (float)viewport_width / viewport_height;
+   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
+   settings_t *settings      = config_get_ptr();
+   rsx_t *rsx        = (rsx_t*)data;
+   bool video_scale_integer  = settings->bools.video_scale_integer;
+   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
+   rsx_viewport_t vp;
+
+   if (video_scale_integer && !force_full)
+   {
+      video_viewport_get_scaled_integer(&rsx->vp,
+            viewport_width, viewport_height,
+            video_driver_get_aspect_ratio(), rsx->keep_aspect);
+      viewport_width  = rsx->vp.width;
+      viewport_height = rsx->vp.height;
+   }
+   else if (rsx->keep_aspect && !force_full)
+   {
+      float desired_aspect = video_driver_get_aspect_ratio();
+
+#if defined(HAVE_MENU)
+      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      {
+         const struct video_viewport *custom = video_viewport_get_custom();
+
+         x               = custom->x;
+         y               = custom->y;
+         viewport_width  = custom->width;
+         viewport_height = custom->height;
+      }
+      else
+#endif
+      {
+         float delta;
+
+         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
+         {
+            /* If the aspect ratios of screen and desired aspect
+             * ratio are sufficiently equal (floating point stuff),
+             * assume they are actually equal.
+             */
+         }
+         else if (device_aspect > desired_aspect)
+         {
+            delta          = (desired_aspect / device_aspect - 1.0f)
+               / 2.0f + 0.5f;
+            x              = (int)roundf(viewport_width * (0.5f - delta));
+            viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
+         }
+         else
+         {
+            delta           = (device_aspect / desired_aspect - 1.0f)
+               / 2.0f + 0.5f;
+            y               = (int)roundf(viewport_height * (0.5f - delta));
+            viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
+         }
+      }
+
+      rsx->vp.x      = x;
+      rsx->vp.y      = y;
+      rsx->vp.width  = viewport_width;
+      rsx->vp.height = viewport_height;
+   }
+   else
+   {
+      rsx->vp.x      = 0;
+      rsx->vp.y      = 0;
+      rsx->vp.width  = viewport_width;
+      rsx->vp.height = viewport_height;
+   }
+
+   vp.min = 0.0f;
+   vp.max = 1.0f;
+   vp.x = rsx->vp.x;
+   vp.y = rsx->height - rsx->vp.y - rsx->vp.height;
+   vp.w = rsx->vp.width;
+   vp.h = rsx->vp.height;
+   vp.scale[0] = vp.w*0.5f;
+   vp.scale[1] = vp.h*-0.5f;
+   vp.scale[2] = (vp.max - vp.min)*0.5f;
+   vp.scale[3] = 0.0f;
+   vp.offset[0] = vp.x + vp.w*0.5f;
+   vp.offset[1] = vp.y + vp.h*0.5f;
+   vp.offset[2] = (vp.max + vp.min)*0.5f;
+   vp.offset[3] = 0.0f;
+
+   rsxSetViewport(rsx->context, vp.x, vp.y, vp.w, vp.h, vp.min, vp.max, vp.scale, vp.offset);
+   for(int i = 0; i < 8; i++)
+      rsxSetViewportClip(rsx->context, i, rsx->width, rsx->height);
+   rsxSetScissor(rsx->context, vp.x, vp.y, vp.w, vp.h);
+
+   rsx_set_projection(rsx, &ortho, allow_rotate);
+
+   /* Set last backbuffer viewport. */
+   if (!force_full)
+   {
+      rsx->vp.width  = viewport_width;
+      rsx->vp.height = viewport_height;
+   }
+
+#if 0
+   RARCH_LOG("Setting viewport @ %ux%u\n", viewport_width, viewport_height);
+#endif
+}
+
+static unsigned rsx_wrap_type_to_enum(enum gfx_wrap_type type)
+{
+   switch (type)
+   {
+      case RARCH_WRAP_BORDER:
+      case RARCH_WRAP_EDGE:
+         return GCM_TEXTURE_CLAMP_TO_EDGE;
+      case RARCH_WRAP_REPEAT:
+         return GCM_TEXTURE_REPEAT;
+      case RARCH_WRAP_MIRRORED_REPEAT:
+         return GCM_TEXTURE_MIRRORED_REPEAT;
+      default:
+	       break;
+   }
+
+   return 0;
+}
+
+static uintptr_t rsx_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type)
+{
+   rsx_t *rsx = (rsx_t *)video_data;
+   struct texture_image *image    = (struct texture_image*)data;
+
+   rsx_texture_t *texture = (rsx_texture_t *)malloc(sizeof(rsx_texture_t));
+
+   texture->width = image->width;
+   texture->height = image->height;
+   texture->data = (u32*)rsxMemalign(128, (image->height * image->width*4));
+	 rsxAddressToOffset(texture->data, &texture->offset);
+   rsx_load_texture_data(rsx, texture, image->pixels, image->width, image->height, image->width*4, true, false, filter_type);
+
+   return (uintptr_t)texture;;
+}
+
+static void rsx_unload_texture(void *data,
+      bool threaded, uintptr_t handle)
+{
+   rsx_texture_t *texture = (rsx_texture_t *)handle;
+   if (texture) {
+      if(texture->data)
+         rsxFree(texture->data);
+      free(texture);
+   }
 }
 
 static void rsx_fill_black(uint32_t *dst, uint32_t *dst_end, size_t sz)
@@ -504,14 +772,202 @@ static void rsx_blit_buffer(
       memset(dst, 0, 4 * (dst_end - dst));
 }
 
+static void rsx_load_texture_data(rsx_t* rsx, rsx_texture_t *texture,
+      const void *frame, unsigned width, unsigned height, unsigned pitch,
+      bool rgb32, bool menu, enum texture_filter_type filter_type)
+{
+   u32 mag_filter, min_filter;
+
+   if (!texture->data)
+   {
+      texture->data = (u32 *)rsxMemalign(128, texture->height * pitch);
+      rsxAddressToOffset(texture->data, &texture->offset);
+   }
+
+   u8 *texbuffer = (u8 *)texture->data;
+   const u8 *data = (u8 *)frame;
+   memcpy(texbuffer, data, height * pitch);
+
+	 texture->tex.format = (rgb32 ? GCM_TEXTURE_FORMAT_A8R8G8B8 :
+                           menu ? GCM_TEXTURE_FORMAT_A4R4G4B4 : GCM_TEXTURE_FORMAT_R5G6B5) | GCM_TEXTURE_FORMAT_LIN;
+	 texture->tex.mipmap = 1;
+	 texture->tex.dimension = GCM_TEXTURE_DIMS_2D;
+	 texture->tex.cubemap = GCM_FALSE;
+   texture->tex.remap = ((GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_B_SHIFT) |
+                         (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_G_SHIFT) |
+                         (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_R_SHIFT) |
+                         (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_A_SHIFT) |
+                         (GCM_TEXTURE_REMAP_COLOR_B << GCM_TEXTURE_REMAP_COLOR_B_SHIFT) |
+                         (GCM_TEXTURE_REMAP_COLOR_G << GCM_TEXTURE_REMAP_COLOR_G_SHIFT) |
+                         (GCM_TEXTURE_REMAP_COLOR_R << GCM_TEXTURE_REMAP_COLOR_R_SHIFT) |
+                         (GCM_TEXTURE_REMAP_COLOR_A << GCM_TEXTURE_REMAP_COLOR_A_SHIFT));
+   texture->tex.width = width;
+   texture->tex.height = height;
+   texture->tex.depth = 1;
+   texture->tex.location = GCM_LOCATION_RSX;
+   texture->tex.pitch = pitch;
+   texture->tex.offset = texture->offset;
+
+   switch (filter_type)
+   {
+      case TEXTURE_FILTER_MIPMAP_NEAREST:
+      case TEXTURE_FILTER_NEAREST:
+         min_filter = GCM_TEXTURE_NEAREST;
+         mag_filter = GCM_TEXTURE_NEAREST;
+         break;
+      case TEXTURE_FILTER_MIPMAP_LINEAR:
+      case TEXTURE_FILTER_LINEAR:
+         default:
+         min_filter = GCM_TEXTURE_LINEAR;
+         mag_filter = GCM_TEXTURE_LINEAR;
+         break;
+   }
+   texture->min_filter = min_filter;
+   texture->mag_filter = mag_filter;
+   texture->wrap_s = GCM_TEXTURE_CLAMP_TO_EDGE;
+   texture->wrap_t = GCM_TEXTURE_CLAMP_TO_EDGE;
+}
+
+static void rsx_set_texture(rsx_t* rsx, rsx_texture_t *texture)
+{
+   rsxInvalidateTextureCache(rsx->context, GCM_INVALIDATE_TEXTURE);
+   rsxLoadTexture(rsx->context, rsx->tex_unit->index, &texture->tex);
+   rsxTextureControl(rsx->context, rsx->tex_unit->index, GCM_TRUE, 0 << 8, 12 << 8, GCM_TEXTURE_MAX_ANISO_1);
+   rsxTextureFilter(rsx->context, rsx->tex_unit->index, 0, texture->min_filter, texture->mag_filter, GCM_TEXTURE_CONVOLUTION_QUINCUNX);
+   rsxTextureWrapMode(rsx->context, rsx->tex_unit->index, texture->wrap_s, texture->wrap_t, GCM_TEXTURE_CLAMP_TO_EDGE, 0, GCM_TEXTURE_ZFUNC_LESS, 0);
+}
+
+static void rsx_clear_surface(rsx_t* rsx)
+{
+   rsxSetColorMask(rsx->context,
+               GCM_COLOR_MASK_R |
+               GCM_COLOR_MASK_G |
+               GCM_COLOR_MASK_B |
+               GCM_COLOR_MASK_A);
+
+   rsxSetColorMaskMrt(rsx->context, 0);
+
+   rsxSetUserClipPlaneControl(rsx->context,
+               GCM_USER_CLIP_PLANE_DISABLE,
+               GCM_USER_CLIP_PLANE_DISABLE,
+               GCM_USER_CLIP_PLANE_DISABLE,
+               GCM_USER_CLIP_PLANE_DISABLE,
+               GCM_USER_CLIP_PLANE_DISABLE,
+               GCM_USER_CLIP_PLANE_DISABLE);
+
+   rsxSetClearColor(rsx->context, 0);
+   rsxSetClearDepthStencil(rsx->context, 0xffffff00);
+   rsxClearSurface(rsx->context,
+                  GCM_CLEAR_R |
+                  GCM_CLEAR_G |
+                  GCM_CLEAR_B |
+                  GCM_CLEAR_A |
+                  GCM_CLEAR_S |
+                  GCM_CLEAR_Z);
+   rsxSetZControl(rsx->context, 0, 1, 1);
+}
+
+static void rsx_draw_vertices(rsx_t* rsx)
+{
+   if (rsx->should_resize)
+      rsx_set_viewport(rsx, rsx->width, rsx->height, false, true);
+
+   rsx->vertices[0].r = 1.0f;
+   rsx->vertices[0].g = 1.0f;
+   rsx->vertices[0].b = 1.0f;
+   rsx->vertices[0].a = 1.0f;
+   rsx->vertices[1].r = 1.0f;
+   rsx->vertices[1].g = 1.0f;
+   rsx->vertices[1].b = 1.0f;
+   rsx->vertices[1].a = 1.0f;
+   rsx->vertices[2].r = 1.0f;
+   rsx->vertices[2].g = 1.0f;
+   rsx->vertices[2].b = 1.0f;
+   rsx->vertices[2].a = 1.0f;
+   rsx->vertices[3].r = 1.0f;
+   rsx->vertices[3].g = 1.0f;
+   rsx->vertices[3].b = 1.0f;
+   rsx->vertices[3].a = 1.0f;
+
+   rsxBindVertexArrayAttrib(rsx->context, rsx->pos_index->index, 0, rsx->pos_offset, sizeof(rsx_vertex_t), 3, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
+   rsxBindVertexArrayAttrib(rsx->context, rsx->uv_index->index, 0, rsx->uv_offset, sizeof(rsx_vertex_t), 2, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
+   rsxBindVertexArrayAttrib(rsx->context, rsx->col_index->index, 0, rsx->col_offset, sizeof(rsx_vertex_t), 4, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
+
+   rsxLoadVertexProgram(rsx->context, rsx->vpo, rsx->vp_ucode);
+   rsxSetVertexProgramParameter(rsx->context, rsx->vpo, rsx->proj_matrix, (float *)&rsx->mvp_no_rot);
+   rsxLoadFragmentProgramLocation(rsx->context, rsx->fpo, rsx->fp_offset, GCM_LOCATION_RSX);
+
+   rsxClearSurface(rsx->context, GCM_CLEAR_Z);
+   rsxDrawVertexArray(rsx->context, GCM_TYPE_TRIANGLE_STRIP, 0, 4);
+}
+
+#if defined(HAVE_MENU)
+static void rsx_draw_menu_vertices(rsx_t* rsx)
+{
+   if (rsx->should_resize)
+      rsx_set_viewport(rsx, rsx->width, rsx->height, false, true);
+
+   rsx->vertices[0].r = 1.0f;
+   rsx->vertices[0].g = 1.0f;
+   rsx->vertices[0].b = 1.0f;
+   rsx->vertices[0].a = rsx->menu_texture_alpha;
+   rsx->vertices[1].r = 1.0f;
+   rsx->vertices[1].g = 1.0f;
+   rsx->vertices[1].b = 1.0f;
+   rsx->vertices[1].a = rsx->menu_texture_alpha;
+   rsx->vertices[2].r = 1.0f;
+   rsx->vertices[2].g = 1.0f;
+   rsx->vertices[2].b = 1.0f;
+   rsx->vertices[2].a = rsx->menu_texture_alpha;
+   rsx->vertices[3].r = 1.0f;
+   rsx->vertices[3].g = 1.0f;
+   rsx->vertices[3].b = 1.0f;
+   rsx->vertices[3].a = rsx->menu_texture_alpha;
+
+   rsxBindVertexArrayAttrib(rsx->context, rsx->pos_index->index, 0, rsx->pos_offset, sizeof(rsx_vertex_t), 3, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
+   rsxBindVertexArrayAttrib(rsx->context, rsx->uv_index->index, 0, rsx->uv_offset, sizeof(rsx_vertex_t), 2, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
+   rsxBindVertexArrayAttrib(rsx->context, rsx->col_index->index, 0, rsx->col_offset, sizeof(rsx_vertex_t), 4, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
+
+   rsxLoadVertexProgram(rsx->context, rsx->vpo, rsx->vp_ucode);
+   rsxSetVertexProgramParameter(rsx->context, rsx->vpo, rsx->proj_matrix, (float *)&rsx->mvp_no_rot);
+   rsxLoadFragmentProgramLocation(rsx->context, rsx->fpo, rsx->fp_offset, GCM_LOCATION_RSX);
+
+   rsxSetBlendEnable(rsx->context, GCM_TRUE);
+   rsxSetBlendFunc(rsx->context, GCM_SRC_ALPHA, GCM_ONE_MINUS_SRC_ALPHA, GCM_SRC_ALPHA, GCM_ONE_MINUS_SRC_ALPHA);
+   rsxSetBlendEquation(rsx->context, GCM_FUNC_ADD, GCM_FUNC_ADD);
+
+   rsxClearSurface(rsx->context, GCM_CLEAR_Z);
+   rsxDrawVertexArray(rsx->context, GCM_TYPE_TRIANGLE_STRIP, 0, 4);
+
+   rsxSetBlendEnable(rsx->context, GCM_FALSE);
+}
+#endif
+
 static void rsx_update_screen(rsx_t* gcm)
 {
-   rsxBuffer *buffer = gcm->menu_frame_enable
-      ? &gcm->menuBuffers[gcm->menuBuffer]
-      : &gcm->buffers[gcm->currentBuffer];
+   rsxBuffer *buffer;
+
+#if defined(HAVE_MENU_BUFFER)
+   if (gcm->menu_frame_enable) {
+      buffer = &gcm->menuBuffers[gcm->menuBuffer];
+      gcm->menuBuffer = (gcm->menuBuffer+1)%MAX_MENU_BUFFERS;
+      gcm->nextBuffer = MAX_BUFFERS + gcm->menuBuffer;
+   } else {
+      buffer = &gcm->buffers[gcm->currentBuffer];
+      gcm->currentBuffer = (gcm->currentBuffer+1)%MAX_BUFFERS;
+      gcm->nextBuffer = gcm->currentBuffer;
+   }
+#else
+   buffer = &gcm->buffers[gcm->currentBuffer];
+   gcm->currentBuffer = (gcm->currentBuffer+1)%MAX_BUFFERS;
+   gcm->nextBuffer = gcm->currentBuffer;
+#endif
+
+
    rsx_flip(gcm->context, buffer->id);
    if (gcm->vsync)
       rsx_wait_flip();
+   rsxSetSurface(gcm->context, &gcm->surface[gcm->nextBuffer]);
 #ifdef HAVE_SYSUTILS
    cellSysutilCheckCallback();
 #endif
@@ -527,24 +983,31 @@ static bool rsx_frame(void* data, const void* frame,
    bool statistics_show           = video_info->statistics_show;
    struct font_params *osd_params = (struct font_params*)
       &video_info->osd_stat_params;
+   bool menu_is_alive               = video_info->menu_is_alive;
+#endif
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_active              = video_info->widgets_active;
 #endif
 
    if(frame && width && height)
    {
-      gcm->currentBuffer++;
-      if (gcm->currentBuffer >= MAX_BUFFERS)
-         gcm->currentBuffer = 0;
-      rsx_blit_buffer(
-            &gcm->buffers[gcm->currentBuffer], frame, width, height, pitch,
-            gcm->rgb32, true);
+      rsx_load_texture_data(gcm, &gcm->texture, frame, width, height, pitch, gcm->rgb32, false,
+                            gcm->smooth ? TEXTURE_FILTER_LINEAR : TEXTURE_FILTER_NEAREST);
+      rsx_set_texture(gcm, &gcm->texture);
+      rsx_draw_vertices(gcm);
    }
 
-   /* TODO: translucid menu */
-   rsx_update_screen(gcm);
-
-   return true;
-
 #ifdef HAVE_MENU
+   if (gcm->menu_frame_enable && menu_is_alive)
+   {
+      menu_driver_frame(menu_is_alive, video_info);
+      if (gcm->menu_texture.data)
+      {
+         rsx_set_texture(gcm, &gcm->menu_texture);
+         rsx_draw_menu_vertices(gcm);
+      }
+   };
+
    if (statistics_show)
       if (osd_params)
          font_driver_render_msg(gcm,
@@ -552,8 +1015,20 @@ static bool rsx_frame(void* data, const void* frame,
                osd_params, NULL);
 #endif
 
+#ifdef HAVE_GFX_WIDGETS
+   if (widgets_active)
+      gfx_widgets_frame(video_info);
+#endif
+
    if (msg)
       font_driver_render_msg(gcm, msg, NULL, NULL);
+
+#if 0
+   /* TODO: translucid menu */
+#endif
+   rsx_update_screen(gcm);
+   rsx_clear_surface(gcm);
+
    return true;
 }
 
@@ -593,11 +1068,25 @@ static void rsx_free(void* data)
    if (!gcm)
       return;
 
+   rsxClearSurface(gcm->context, GCM_CLEAR_Z);
    gcmSetWaitFlip(gcm->context);
    for (i = 0; i < MAX_BUFFERS; i++)
      rsxFree(gcm->buffers[i].ptr);
-   for (i = 0; i < MAX_BUFFERS; i++)
+#if defined(HAVE_MENU_BUFFER)
+   for (i = 0; i < MAX_MENU_BUFFERS; i++)
      rsxFree(gcm->menuBuffers[i].ptr);
+#endif
+
+   if (gcm->vertices)
+      rsxFree(gcm->vertices);
+   if (gcm->texture.data)
+     rsxFree(gcm->texture.data);
+   if (gcm->menu_texture.data)
+     rsxFree(gcm->menu_texture.data);
+   if (gcm->depth_buffer)
+     rsxFree(gcm->depth_buffer);
+   if (gcm->fp_buffer)
+     rsxFree(gcm->fp_buffer);
 
 #if 0
    rsxFinish(gcm->context, 1);
@@ -610,17 +1099,12 @@ static void rsx_set_texture_frame(void* data, const void* frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
    rsx_t* gcm = (rsx_t*)data;
-  int newBuffer    = gcm->menuBuffer + 1;
 
-  if (newBuffer >= MAX_BUFFERS)
-    newBuffer = 0;
-
-  /* TODO: respect alpha */
-  rsx_blit_buffer(&gcm->menuBuffers[newBuffer], frame, width, height,
-	     width * (rgb32 ? 4 : 2), rgb32, true);
-  gcm->menuBuffer = newBuffer;
-
-  rsx_update_screen(gcm);
+   gcm->menu_texture_alpha = alpha;
+   gcm->menu_width = width;
+   gcm->menu_height = height;
+   rsx_load_texture_data(gcm, &gcm->menu_texture, frame, width, height, width * (rgb32 ? 4 : 2),
+                         rgb32, true, gcm->smooth ? TEXTURE_FILTER_LINEAR : TEXTURE_FILTER_NEAREST);
 }
 
 static void rsx_set_texture_enable(void* data, bool state, bool full_screen)
@@ -629,23 +1113,24 @@ static void rsx_set_texture_enable(void* data, bool state, bool full_screen)
 
    if (!gcm)
      return;
-   
-   gcm->menu_frame_enable = state;
 
-   rsx_update_screen(gcm);
+   gcm->menu_frame_enable = state;
 }
 
 static void rsx_set_rotation(void* data, unsigned rotation)
 {
    rsx_t* gcm = (rsx_t*)data;
+   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
 
    if (!gcm)
       return;
 
-   gcm->rotation = rotation;
+   gcm->rotation = 90 * rotation;
    gcm->should_resize = true;
+   rsx_set_projection(gcm, &ortho, true);
 }
-static void rsx_set_filtering(void* data, unsigned index, bool smooth)
+
+static void rsx_set_filtering(void* data, unsigned index, bool smooth, bool ctx_scaling)
 {
    rsx_t* gcm = (rsx_t*)data;
 
@@ -701,8 +1186,8 @@ static uint32_t rsx_get_flags(void *data)
 
 static const video_poke_interface_t rsx_poke_interface = {
    rsx_get_flags,
-   NULL,                                  /* load_texture */
-   NULL,                                  /* unload_texture */
+   rsx_load_texture,
+   rsx_unload_texture,
    NULL,
    NULL,
    rsx_set_filtering,
@@ -715,7 +1200,7 @@ static const video_poke_interface_t rsx_poke_interface = {
    rsx_apply_state_changes,
    rsx_set_texture_frame,
    rsx_set_texture_enable,
-   rsx_set_osd_msg,
+   font_driver_render_msg,
    NULL,                   /* show_mouse */
    NULL,                   /* grab_mouse_toggle */
    NULL,                   /* get_current_shader */
@@ -744,6 +1229,14 @@ static bool rsx_set_shader(void* data,
    return false;
 }
 
+#ifdef HAVE_GFX_WIDGETS
+static bool rsx_widgets_enabled(void *data)
+{
+   (void)data;
+   return true;
+}
+#endif
+
 video_driver_t video_gcm =
 {
    rsx_init,
@@ -756,7 +1249,7 @@ video_driver_t video_gcm =
    rsx_set_shader,
    rsx_free,
    "rsx",
-   NULL, /* set_viewport */
+   rsx_set_viewport,
    rsx_set_rotation,
    rsx_viewport_info,
    NULL, /* read_viewport  */
@@ -767,5 +1260,9 @@ video_driver_t video_gcm =
 #ifdef HAVE_VIDEO_LAYOUT
   NULL,
 #endif
-   rsx_get_poke_interface
+   rsx_get_poke_interface,
+   rsx_wrap_type_to_enum,
+#ifdef HAVE_GFX_WIDGETS
+   rsx_widgets_enabled
+#endif
 };

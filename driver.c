@@ -308,6 +308,18 @@ static void driver_adjust_system_rates(
    double input_sample_rate               = info->sample_rate;
    double input_fps                       = info->fps;
 
+   /* Update video swap interval if automatic
+    * switching is enabled */
+   runloop_set_video_swap_interval(
+         vrr_runloop_enable,
+         video_st->crt_switching_active,
+         video_swap_interval,
+         audio_max_timing_skew,
+         video_refresh_rate,
+         input_fps);
+   video_swap_interval = runloop_get_video_swap_interval(
+         video_swap_interval);
+
    if (input_sample_rate > 0.0)
    {
       audio_driver_state_t *audio_st      = audio_state_get_ptr();
@@ -341,6 +353,7 @@ static void driver_adjust_system_rates(
          video_refresh_rate,
          vrr_runloop_enable,
          audio_max_timing_skew,
+         video_swap_interval,
          input_fps))
       {
          /* We won't be able to do VSync reliably 
@@ -389,7 +402,8 @@ void driver_set_nonblock_state(void)
    bool audio_sync             = settings->bools.audio_sync;
    bool video_vsync            = settings->bools.video_vsync;
    bool adaptive_vsync         = settings->bools.video_adaptive_vsync;
-   unsigned swap_interval      = settings->uints.video_swap_interval;
+   unsigned swap_interval      = runloop_get_video_swap_interval(
+         settings->uints.video_swap_interval);
    bool video_driver_active    = video_st->active;
    bool audio_driver_active    = audio_st->active;
    bool runloop_force_nonblock = runloop_st->force_nonblock;
@@ -506,24 +520,33 @@ void drivers_init(
    {
       struct retro_system_av_info *av_info = &video_st->av_info;
       float refresh_rate                   = av_info->timing.fps;
-
+      unsigned autoswitch_refresh_rate     = settings->uints.video_autoswitch_refresh_rate;
+      bool exclusive_fullscreen            = settings->bools.video_fullscreen && !settings->bools.video_windowed_fullscreen;
+      bool windowed_fullscreen             = settings->bools.video_fullscreen && settings->bools.video_windowed_fullscreen;
+      bool all_fullscreen                  = settings->bools.video_fullscreen || settings->bools.video_windowed_fullscreen;
+   
       if (  refresh_rate > 0.0 &&
             !settings->uints.crt_switch_resolution &&
             !settings->bools.vrr_runloop_enable &&
-            !settings->bools.video_windowed_fullscreen &&
-            settings->bools.video_fullscreen &&
+            video_display_server_has_resolution_list() &&
+            (autoswitch_refresh_rate != AUTOSWITCH_REFRESH_RATE_OFF) &&
             fabs(settings->floats.video_refresh_rate - refresh_rate) > 1)
       {
-         bool video_switch_refresh_rate = false;
-
-         video_switch_refresh_rate_maybe(&refresh_rate, &video_switch_refresh_rate);
-
-         if (video_switch_refresh_rate && video_display_server_set_refresh_rate(refresh_rate))
+         if (((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN) && exclusive_fullscreen) ||
+             ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN) && windowed_fullscreen)   ||
+             ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN) && all_fullscreen))
          {
-            int reinit_flags = DRIVER_AUDIO_MASK;
-            video_monitor_set_refresh_rate(refresh_rate);
-            /* Audio must reinit after successful rate switch */
-            command_event(CMD_EVENT_REINIT, &reinit_flags);
+            bool video_switch_refresh_rate = false;
+   
+            video_switch_refresh_rate_maybe(&refresh_rate, &video_switch_refresh_rate);
+   
+            if (video_switch_refresh_rate && video_display_server_set_refresh_rate(refresh_rate))
+            {
+               int reinit_flags = DRIVER_AUDIO_MASK;
+               video_monitor_set_refresh_rate(refresh_rate);
+               /* Audio must reinit after successful rate switch */
+               command_event(CMD_EVENT_REINIT, &reinit_flags);
+            }
          }
       }
    }
@@ -810,18 +833,19 @@ void retroarch_deinit_drivers(struct retro_callbacks *cbs)
    audio_state_get_ptr()->active                    = false;
    audio_state_get_ptr()->current_audio             = NULL;
 
-   /* Input */
-   input_st->keyboard_linefeed_enable               = false;
-   input_st->block_hotkey                           = false;
-   input_st->block_libretro_input                   = false;
-
    if (input_st)
-      input_st->nonblocking_flag                    = false;
+   {
+      /* Input */
+      input_st->keyboard_linefeed_enable = false;
+      input_st->block_hotkey             = false;
+      input_st->block_libretro_input     = false;
+      input_st->nonblocking_flag         = false;
 
-   memset(&input_st->turbo_btns, 0, sizeof(turbo_buttons_t));
-   memset(&input_st->analog_requested, 0,
+      memset(&input_st->turbo_btns, 0, sizeof(turbo_buttons_t));
+      memset(&input_st->analog_requested, 0,
          sizeof(input_st->analog_requested));
-   input_st->current_driver                         = NULL;
+      input_st->current_driver           = NULL;
+   }
 
 #ifdef HAVE_MENU
    menu_driver_destroy(

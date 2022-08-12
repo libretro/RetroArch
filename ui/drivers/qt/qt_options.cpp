@@ -4,7 +4,7 @@
 #include <QButtonGroup>
 
 #include "qt_options.h"
-#include "viewoptionsdialog.h"
+#include "qt_dialogs.h"
 
 #ifndef CXX_BUILD
 extern "C" {
@@ -354,6 +354,8 @@ QWidget *LatencyPage::widget()
    }
 
    layout->add(MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES);
+   layout->add(MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS);
+   layout->add(MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY);
 
    layout->add(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY);
    layout->add(MENU_ENUM_LABEL_AUDIO_LATENCY);
@@ -433,7 +435,6 @@ QWidget *NetplayPage::widget()
    slaveGroup->add(MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES);
    slaveGroup->add(MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES);
 
-   syncGroup->add(MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE);
    syncGroup->add(MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES);
    syncGroup->add(MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN);
    syncGroup->add(MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE);
@@ -472,36 +473,36 @@ QWidget *NetplayPage::widget()
 
 QGroupBox *NetplayPage::createMitmServerGroup()
 {
-   unsigned i;
+   size_t i;
+   const char *netplay_mitm_server;
    CheckableSettingsGroup *groupBox = new CheckableSettingsGroup(
-         MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER);
+      MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER);
    QButtonGroup *buttonGroup        = new QButtonGroup(this);
-   unsigned list_len                = ARRAY_SIZE(netplay_mitm_server_list);
    rarch_setting_t *setting         = menu_setting_find_enum(
-         MENU_ENUM_LABEL_NETPLAY_MITM_SERVER);
+      MENU_ENUM_LABEL_NETPLAY_MITM_SERVER);
 
    if (!setting)
       return nullptr;
 
-   for (i = 0; i < list_len; i++)
-   {
-      QRadioButton *radioButton = new QRadioButton(
-            netplay_mitm_server_list[i].description);
+   netplay_mitm_server = setting->value.target.string;
 
-      /* find the currently selected server in the list */
-      if (string_is_equal(setting->value.target.string,
-               netplay_mitm_server_list[i].name))
+   for (i = 0; i < ARRAY_SIZE(netplay_mitm_server_list); i++)
+   {
+      const mitm_server_t *server      = &netplay_mitm_server_list[i];
+      QRadioButton        *radioButton = new QRadioButton(
+         msg_hash_to_str(server->description));
+
+      if (string_is_equal(server->name, netplay_mitm_server))
          radioButton->setChecked(true);
 
       buttonGroup->addButton(radioButton, i);
-
       groupBox->addRow(radioButton);
    }
 
    groupBox->add(MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER);
 
-   connect(buttonGroup, SIGNAL(buttonClicked(int)),
-         this, SLOT(onRadioButtonClicked(int)));
+   connect(buttonGroup, SIGNAL(buttonClicked(int)), this,
+      SLOT(onRadioButtonClicked(int)));
 
    return groupBox;
 }
@@ -1282,6 +1283,7 @@ QWidget *VideoPage::widget()
    outputGroup->add(MENU_ENUM_LABEL_VIDEO_ROTATION);
    outputGroup->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION), m_resolutionCombo);
    outputGroup->add(MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE);
+   outputGroup->add(MENU_ENUM_LABEL_VIDEO_AUTOSWITCH_REFRESH_RATE);
 
    fullscreenGroup->add(MENU_ENUM_LABEL_VIDEO_FULLSCREEN);
    fullscreenGroup->add(MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN);
@@ -1318,17 +1320,13 @@ QWidget *VideoPage::widget()
    windowedGroup->addRow(savePosGroup);
 
    windowedGroup->add(MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS);
-
-   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_ENABLE);
-   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS);
-   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS);
-   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST);
-   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT);
-
+   windowedGroup->add(MENU_ENUM_LABEL_UI_MENUBAR_ENABLE);
+   
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL);
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION);
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC);
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY);
+   vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO);
    syncGroup->addRow(vSyncGroup);
 
    rarch_setting_t *hardSyncSetting = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_HARD_SYNC);
@@ -1343,6 +1341,9 @@ QWidget *VideoPage::widget()
    }
 
    syncGroup->add(MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES);
+   syncGroup->add(MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS);
+   syncGroup->add(MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY);
+   syncGroup->add(MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE);
 
    miscGroup->add(MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_THREADED);
@@ -1351,7 +1352,16 @@ QWidget *VideoPage::widget()
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_CTX_SCALING);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_DELAY);
 
-   hdrLayout->addWidget(hdrGroup);
+   if (video_driver_supports_hdr())
+   {
+      hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_ENABLE);
+      hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS);
+      hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS);
+      hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST);
+      hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT);
+
+      hdrLayout->addWidget(hdrGroup);
+   }
 
    syncMiscLayout->addWidget(syncGroup);
    syncMiscLayout->addWidget(miscGroup);

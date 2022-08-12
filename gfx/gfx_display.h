@@ -30,10 +30,11 @@
 #include <gfx/math/matrix_4x4.h>
 
 #include "../retroarch.h"
-#include "../file_path_special.h"
 #include "../gfx/font_driver.h"
 
 RETRO_BEGIN_DECLS
+
+#define GFX_SHADOW_ALPHA 0.50f
 
 /* Number of pixels corner-to-corner on a 1080p
  * display:
@@ -94,7 +95,8 @@ enum gfx_display_driver_type
    GFX_VIDEO_DRIVER_VULKAN,
    GFX_VIDEO_DRIVER_METAL,
    GFX_VIDEO_DRIVER_DIRECT3D8,
-   GFX_VIDEO_DRIVER_DIRECT3D9,
+   GFX_VIDEO_DRIVER_DIRECT3D9_CG,
+   GFX_VIDEO_DRIVER_DIRECT3D9_HLSL,
    GFX_VIDEO_DRIVER_DIRECT3D10,
    GFX_VIDEO_DRIVER_DIRECT3D11,
    GFX_VIDEO_DRIVER_DIRECT3D12,
@@ -102,7 +104,8 @@ enum gfx_display_driver_type
    GFX_VIDEO_DRIVER_CTR,
    GFX_VIDEO_DRIVER_WIIU,
    GFX_VIDEO_DRIVER_GDI,
-   GFX_VIDEO_DRIVER_SWITCH
+   GFX_VIDEO_DRIVER_SWITCH,
+   GFX_VIDEO_DRIVER_RSX
 };
 
 typedef struct gfx_display_frame_info
@@ -133,11 +136,7 @@ typedef struct gfx_display_ctx_driver
    const float *(*get_default_vertices)(void);
    /* Get the default texture coordinates matrix */
    const float *(*get_default_tex_coords)(void);
-   /* Initialize the first compatible font driver for this menu driver. */
-   bool (*font_init_first)(
-         void **font_handle, void *video_data,
-         const char *font_path, float font_size,
-         bool is_threaded);
+   enum font_driver_render_api  font_type;
    enum gfx_display_driver_type type;
    const char *ident;
    bool handles_transform;
@@ -170,16 +169,6 @@ struct gfx_display_ctx_draw
    enum gfx_display_prim_type prim_type;
    bool pipeline_active;
 };
-
-typedef struct gfx_display_ctx_rotate_draw
-{
-   math_matrix_4x4 *matrix;
-   float rotation;
-   float scale_x;
-   float scale_y;
-   float scale_z;
-   bool scale_enable;
-} gfx_display_ctx_rotate_draw_t;
 
 typedef struct gfx_display_ctx_coord_draw
 {
@@ -243,12 +232,6 @@ void gfx_display_draw_text(
       float scale_factor, bool shadows_enable, float shadow_offset,
       bool draw_outside);
 
-font_data_t *gfx_display_font(
-      gfx_display_t *p_disp,
-      enum application_special_type type,
-      float font_size,
-      bool video_is_threaded);
-
 void gfx_display_scissor_begin(
       gfx_display_t *p_disp,
       void *userdata,
@@ -307,15 +290,27 @@ void gfx_display_draw_texture_slice(
       math_matrix_4x4 *mymat);
 
 void gfx_display_rotate_z(gfx_display_t *p_disp,
-      gfx_display_ctx_rotate_draw_t *draw, void *data);
+      math_matrix_4x4 *matrix, float cosine, float sine, void *data);
 
 font_data_t *gfx_display_font_file(gfx_display_t *p_disp,
       char* fontpath, float font_size, bool is_threaded);
 
 bool gfx_display_reset_textures_list(
-      const char *texture_path, const char *iconpath,
-      uintptr_t *item, enum texture_filter_type filter_type,
-      unsigned *width, unsigned *height);
+      const char *texture_path,
+      const char *iconpath,
+      uintptr_t *item,
+      enum texture_filter_type filter_type,
+      unsigned *width,
+      unsigned *height);
+
+bool gfx_display_reset_textures_list_buffer(
+        uintptr_t *item,
+        enum texture_filter_type filter_type,
+        void* buffer,
+        unsigned buffer_len,
+        enum image_type_enum image_type,
+        unsigned *width,
+        unsigned *height);
 
 /* Returns the OSK key at a given position */
 int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
@@ -338,8 +333,6 @@ void gfx_display_deinit_white_texture(void);
 
 void gfx_display_init_white_texture(void);
 
-bool gfx_display_driver_exists(const char *s);
-
 bool gfx_display_init_first_driver(gfx_display_t *p_disp,
       bool video_is_threaded);
 
@@ -349,7 +342,8 @@ extern gfx_display_ctx_driver_t gfx_display_ctx_gl1;
 extern gfx_display_ctx_driver_t gfx_display_ctx_vulkan;
 extern gfx_display_ctx_driver_t gfx_display_ctx_metal;
 extern gfx_display_ctx_driver_t gfx_display_ctx_d3d8;
-extern gfx_display_ctx_driver_t gfx_display_ctx_d3d9;
+extern gfx_display_ctx_driver_t gfx_display_ctx_d3d9_cg;
+extern gfx_display_ctx_driver_t gfx_display_ctx_d3d9_hlsl;
 extern gfx_display_ctx_driver_t gfx_display_ctx_d3d10;
 extern gfx_display_ctx_driver_t gfx_display_ctx_d3d11;
 extern gfx_display_ctx_driver_t gfx_display_ctx_d3d12;
@@ -358,6 +352,7 @@ extern gfx_display_ctx_driver_t gfx_display_ctx_ctr;
 extern gfx_display_ctx_driver_t gfx_display_ctx_wiiu;
 extern gfx_display_ctx_driver_t gfx_display_ctx_gdi;
 extern gfx_display_ctx_driver_t gfx_display_ctx_switch;
+extern gfx_display_ctx_driver_t gfx_display_ctx_rsx;
 
 RETRO_END_DECLS
 

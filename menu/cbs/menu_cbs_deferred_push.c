@@ -127,6 +127,8 @@ GENERIC_DEFERRED_PUSH(deferred_push_core_counters,                  DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_frontend_counters,              DISPLAYLIST_PERFCOUNTERS_FRONTEND)
 GENERIC_DEFERRED_PUSH(deferred_push_core_cheat_options,             DISPLAYLIST_OPTIONS_CHEATS)
 GENERIC_DEFERRED_PUSH(deferred_push_core_input_remapping_options,   DISPLAYLIST_OPTIONS_REMAPPINGS)
+GENERIC_DEFERRED_PUSH(deferred_push_remap_file_manager,             DISPLAYLIST_REMAP_FILE_MANAGER)
+GENERIC_DEFERRED_PUSH(deferred_push_savestate_list,                 DISPLAYLIST_SAVESTATE_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_core_options,                   DISPLAYLIST_CORE_OPTIONS)
 GENERIC_DEFERRED_PUSH(deferred_push_core_option_override_list,      DISPLAYLIST_CORE_OPTION_OVERRIDE_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_disk_options,                   DISPLAYLIST_OPTIONS_DISK)
@@ -203,8 +205,11 @@ GENERIC_DEFERRED_PUSH(deferred_push_bluetooth_settings_list,        DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_wifi_settings_list,             DISPLAYLIST_WIFI_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_wifi_networks_list,             DISPLAYLIST_WIFI_NETWORKS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_network_settings_list,          DISPLAYLIST_NETWORK_SETTINGS_LIST)
-GENERIC_DEFERRED_PUSH(deferred_push_subsystem_settings_list,          DISPLAYLIST_SUBSYSTEM_SETTINGS_LIST)
-GENERIC_DEFERRED_PUSH(deferred_push_network_hosting_settings_list,          DISPLAYLIST_NETWORK_HOSTING_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_subsystem_settings_list,        DISPLAYLIST_SUBSYSTEM_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_network_hosting_settings_list,  DISPLAYLIST_NETWORK_HOSTING_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_netplay_kick_list,              DISPLAYLIST_NETPLAY_KICK_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_netplay_ban_list,               DISPLAYLIST_NETPLAY_BAN_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_netplay_lobby_filters_list,     DISPLAYLIST_NETPLAY_LOBBY_FILTERS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_lakka_services_list,            DISPLAYLIST_LAKKA_SERVICES_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_user_settings_list,             DISPLAYLIST_USER_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_directory_settings_list,        DISPLAYLIST_DIRECTORY_SETTINGS_LIST)
@@ -271,6 +276,12 @@ GENERIC_DEFERRED_PUSH(deferred_push_core_delete_backup_list,        DISPLAYLIST_
 
 GENERIC_DEFERRED_PUSH(deferred_push_core_manager_list,              DISPLAYLIST_CORE_MANAGER_LIST)
 
+#ifdef HAVE_MIST
+GENERIC_DEFERRED_PUSH(deferred_push_steam_settings_list,            DISPLAYLIST_STEAM_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_core_manager_steam_list,        DISPLAYLIST_CORE_MANAGER_STEAM_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_core_information_steam_list,    DISPLAYLIST_CORE_INFORMATION_STEAM_LIST)
+#endif
+
 GENERIC_DEFERRED_PUSH(deferred_push_file_browser_select_sideload_core, DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE)
 
 static int deferred_push_cursor_manager_list_deferred(
@@ -302,11 +313,9 @@ static int deferred_push_cursor_manager_list_deferred(
       return -1;
    }
 
-   rdb_path[0] = '\0';
-
    settings = config_get_ptr();
    
-   fill_pathname_join(rdb_path,
+   fill_pathname_join_special(rdb_path,
          settings->paths.path_content_database,
          rdb_entry->value, sizeof(rdb_path));
    
@@ -333,7 +342,7 @@ static int deferred_push_cursor_manager_list_deferred(
 static int deferred_push_cursor_manager_list_generic(
       menu_displaylist_info_t *info, enum database_query_type type)
 {
-   char query[PATH_MAX_LENGTH];
+   char query[256];
    int ret                       = -1;
    const char *path              = info->path;
    struct string_list str_list   = {0};
@@ -344,8 +353,6 @@ static int deferred_push_cursor_manager_list_generic(
 
    string_list_initialize(&str_list);
    string_split_noalloc(&str_list, path, "|");
-
-   query[0] = '\0';
 
    database_info_build_query_enum(query, sizeof(query), type,
          str_list.elems[0].data);
@@ -415,13 +422,9 @@ static int general_push(menu_displaylist_info_t *info,
          {
             char tmp_str[PATH_MAX_LENGTH];
             char tmp_str2[PATH_MAX_LENGTH];
-
-            tmp_str[0] = '\0';
-            tmp_str2[0] = '\0';
-
-            fill_pathname_join(tmp_str, menu->scratch2_buf,
+            fill_pathname_join_special(tmp_str, menu->scratch2_buf,
                   menu->scratch_buf, sizeof(tmp_str));
-            fill_pathname_join(tmp_str2, menu->scratch2_buf,
+            fill_pathname_join_special(tmp_str2, menu->scratch2_buf,
                   menu->scratch_buf, sizeof(tmp_str2));
 
             if (!string_is_empty(info->path))
@@ -464,30 +467,27 @@ static int general_push(menu_displaylist_info_t *info,
          break;
       case PUSH_DEFAULT:
          {
-            bool new_exts_allocated               = false;
-            char *new_exts                        = NULL;
+            const char *valid_extensions     = NULL;
+            struct retro_system_info *system = NULL;
 
             if (menu_setting_get_browser_selection_type(info->setting) 
-                  == ST_DIR) { }
-            else
+                  != ST_DIR)
             {
-               struct retro_system_info *system = 
-                  &runloop_state_get_ptr()->system.info;
+               system = &runloop_state_get_ptr()->system.info;
+
                if (system && !string_is_empty(system->valid_extensions))
-               {
-                  new_exts           = strdup(system->valid_extensions);
-                  new_exts_allocated = true;
-               }
+                  valid_extensions = system->valid_extensions;
             }
 
-            if (!new_exts)
-               new_exts = info->exts;
+            if (!valid_extensions)
+               valid_extensions = info->exts;
 
-            if (!string_is_empty(new_exts))
+            if (!string_is_empty(valid_extensions))
             {
-               struct string_list str_list3   = {0};
+               struct string_list str_list3 = {0};
+
                string_list_initialize(&str_list3);
-               string_split_noalloc(&str_list3, new_exts, "|");
+               string_split_noalloc(&str_list3, valid_extensions, "|");
 
 #ifdef HAVE_IBXM
                {
@@ -502,14 +502,6 @@ static int general_push(menu_displaylist_info_t *info,
                      &str_list3, "|");
                string_list_deinitialize(&str_list3);
             }
-
-            if (new_exts_allocated)
-            {
-               free(new_exts);
-
-               if (new_exts == info->exts)
-                  info->exts = NULL;
-            }
          }
          break;
       case PUSH_ARCHIVE_OPEN_DETECT_CORE:
@@ -521,7 +513,6 @@ static int general_push(menu_displaylist_info_t *info,
             struct retro_system_info *system = 
                &runloop_state_get_ptr()->system.info;
 
-            newstring[0]                     = '\0';
             attr.i                           = 0;
 
             string_list_initialize(&str_list2);
@@ -629,7 +620,7 @@ static int general_push(menu_displaylist_info_t *info,
 
    if (!string_is_empty(newstring2))
    {
-      if (!string_is_empty(info->exts))
+      if (info->exts)
          free(info->exts);
       info->exts = strdup(newstring2);
    }
@@ -667,6 +658,9 @@ GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_device_type,
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_device_index, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DEVICE_INDEX)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_description, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_description_kbd, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION_KBD)
+#ifdef HAVE_NETWORKING
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_netplay_mitm_server, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_NETPLAY_MITM_SERVER)
+#endif
 
 static int menu_cbs_init_bind_deferred_push_compare_label(
       menu_file_list_cbs_t *cbs,
@@ -702,6 +696,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_INDEX, deferred_push_dropdown_box_list_input_device_index},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION, deferred_push_dropdown_box_list_input_description},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD, deferred_push_dropdown_box_list_input_description_kbd},
+#ifdef HAVE_NETWORKING
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER, deferred_push_dropdown_box_list_netplay_mitm_server},
+#endif
       {MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_LIST, deferred_push_browse_url_list},
       {MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_START, deferred_push_browse_url_start},
       {MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST, deferred_push_core_settings_list},
@@ -737,6 +734,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_NETWORK_SETTINGS_LIST, deferred_push_network_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_SUBSYSTEM_SETTINGS_LIST, deferred_push_subsystem_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_NETWORK_HOSTING_SETTINGS_LIST, deferred_push_network_hosting_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_NETPLAY_KICK_LIST, deferred_push_netplay_kick_list},
+      {MENU_ENUM_LABEL_DEFERRED_NETPLAY_BAN_LIST, deferred_push_netplay_ban_list},
+      {MENU_ENUM_LABEL_DEFERRED_NETPLAY_LOBBY_FILTERS_LIST, deferred_push_netplay_lobby_filters_list},
       {MENU_ENUM_LABEL_DEFERRED_BLUETOOTH_SETTINGS_LIST, deferred_push_bluetooth_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST, deferred_push_wifi_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_WIFI_NETWORKS_LIST, deferred_push_wifi_networks_list},
@@ -800,6 +800,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST, deferred_push_accounts_list},
       {MENU_ENUM_LABEL_CORE_LIST, deferred_push_core_list},
       {MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY, deferred_push_history_list},
+      {MENU_ENUM_LABEL_SAVESTATE_LIST, deferred_push_savestate_list},
       {MENU_ENUM_LABEL_CORE_OPTIONS, deferred_push_core_options},
       {MENU_ENUM_LABEL_DEFERRED_CORE_OPTION_OVERRIDE_LIST, deferred_push_core_option_override_list},
       {MENU_ENUM_LABEL_NETWORK_INFORMATION, deferred_push_network_information},
@@ -863,6 +864,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE, deferred_push_video_shader_preset_save},
       {MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS, deferred_push_core_cheat_options},
       {MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS, deferred_push_core_input_remapping_options},
+      {MENU_ENUM_LABEL_DEFERRED_REMAP_FILE_MANAGER_LIST, deferred_push_remap_file_manager},
       {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET, deferred_push_video_shader_preset},
       {MENU_ENUM_LABEL_VIDEO_SHADER_PASS, deferred_push_video_shader_pass},
       {MENU_ENUM_LABEL_VIDEO_FILTER, deferred_push_video_filter},
@@ -891,6 +893,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_CORE_RESTORE_BACKUP_LIST, deferred_push_core_restore_backup_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_DELETE_BACKUP_LIST, deferred_push_core_delete_backup_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST, deferred_push_core_manager_list},
+#ifdef HAVE_MIST
+      {MENU_ENUM_LABEL_DEFERRED_STEAM_SETTINGS_LIST, deferred_push_steam_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_STEAM_LIST, deferred_push_core_manager_steam_list},
+      {MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_STEAM_LIST, deferred_push_core_information_steam_list},
+#endif
       {MENU_ENUM_LABEL_SIDELOAD_CORE_LIST, deferred_push_file_browser_select_sideload_core},
       {MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE, deferred_archive_action_detect_core},
       {MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION, deferred_archive_action},
@@ -1159,6 +1166,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_ENUM_LABEL_SETTINGS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_settings);
             break;
+         case MENU_ENUM_LABEL_SAVESTATE_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_savestate_list);
+            break;
          case MENU_ENUM_LABEL_CORE_OPTIONS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_options);
             break;
@@ -1170,6 +1180,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_input_remapping_options);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_REMAP_FILE_MANAGER_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_remap_file_manager);
             break;
          case MENU_ENUM_LABEL_CORE_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_list);
@@ -1318,6 +1331,14 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_manager_list);
             break;
+#ifdef HAVE_MIST
+         case MENU_ENUM_LABEL_DEFERRED_STEAM_SETTINGS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_steam_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_STEAM_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_manager_steam_list);
+            break;
+#endif
          case MENU_ENUM_LABEL_SIDELOAD_CORE_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_file_browser_select_sideload_core);
             break;

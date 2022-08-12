@@ -129,8 +129,8 @@ typedef struct disp_widget_msg
    float alpha;
    float unfold;
    float hourglass_rotation;
-   gfx_timer_t hourglass_timer; /* float alignment */
-   gfx_timer_t expiration_timer; /* float alignment */
+   float hourglass_timer; /* float alignment */
+   float expiration_timer; /* float alignment */
 
    int8_t task_progress;
    /* How many tasks have used this notification? */
@@ -215,6 +215,14 @@ typedef struct dispgfx_widget
    unsigned ai_service_overlay_height;
 #endif
 
+   char assets_pkg_dir[PATH_MAX_LENGTH];
+   char xmb_path[PATH_MAX_LENGTH];                /* TODO/FIXME - decouple from XMB */
+   char ozone_path[PATH_MAX_LENGTH];              /* TODO/FIXME - decouple from Ozone */
+   char ozone_regular_font_path[PATH_MAX_LENGTH]; /* TODO/FIXME - decouple from Ozone */
+   char ozone_bold_font_path[PATH_MAX_LENGTH];    /* TODO/FIXME - decouple from Ozone */
+
+   char monochrome_png_path[PATH_MAX_LENGTH];
+   char gfx_widgets_path[PATH_MAX_LENGTH];
    char gfx_widgets_status_text[255];
 
    /* There can only be one message animation at a time to 
@@ -286,7 +294,9 @@ void gfx_widgets_draw_icon(
       unsigned icon_height,
       uintptr_t texture,
       float x, float y,
-      float rotation, float scale_factor,
+      float radians,
+      float cosine,
+      float sine,
       float *color);
 
 void gfx_widgets_draw_text(

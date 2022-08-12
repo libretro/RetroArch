@@ -1,0 +1,227 @@
+include version.all
+
+#---------------------------------------------------------------------------------
+.SUFFIXES:
+#---------------------------------------------------------------------------------
+
+TOPDIR ?= $(CURDIR)
+
+
+DEBUG                  ?= 0
+WHOLE_ARCHIVE_LINK      = 0
+HAVE_STATIC_DUMMY ?= 0
+GRIFFIN_BUILD           = 0
+
+OBJ :=
+
+DEFINES := -DHAVE_DJGPP=1 -U__linux__ -U__linux -DRARCH_INTERNAL -DHAVE_STB_VORBIS
+CC := i586-pc-msdosdjgpp-gcc
+CXX := i586-pc-msdosdjgpp-g++
+TARGET := retrodos.exe
+
+RARCH_CONSOLE = 0
+HAVE_SHADERPIPELINE = 1
+HAVE_SPIRV_CROSS = 0
+HAVE_PATCH = 1
+HAVE_LUA = 0
+HAVE_CONFIGFILE = 1
+HAVE_GFX_WIDGETS = 1
+HAVE_LANGEXTRA = 1
+HAVE_DR_MP3 = 1
+HAVE_TRANSLATE = 0
+HAVE_SCREENSHOTS = 1
+HAVE_REWIND = 1
+HAVE_AUDIOMIXER = 1
+HAVE_CC_RESAMPLER = 1
+HAVE_MENU_COMMON = 1
+HAVE_RTGA = 1
+HAVE_RPNG = 1
+HAVE_RJPEG = 1
+HAVE_RBMP = 1
+HAVE_7ZIP = 1
+HAVE_ZLIB = 1
+HAVE_IMAGEVIEWER = 1
+HAVE_BUILTINZLIB = 1
+HAVE_LIBRETRODB = 1
+HAVE_DSP_FILTER = 1
+HAVE_VIDEO_FILTER = 1
+HAVE_STATIC_VIDEO_FILTERS = 1
+HAVE_STATIC_AUDIO_FILTERS = 1
+HAVE_FILTERS_BUILTIN = 1
+HAVE_MENU = 1
+HAVE_CONFIGFILE = 1
+HAVE_PATCH = 1
+HAVE_CHEATS = 1
+HAVE_RUNAHEAD = 1
+HAVE_NETWORKING = 0
+HAVE_IFINFO = 0
+HAVE_NETPLAYDISCOVERY = 0
+HAVE_OVERLAY             := 1
+HAVE_STB_FONT = 1
+HAVE_COMMAND             := 1
+HAVE_STDIN_CMD           := 1
+HAVE_CMD                 := 1
+HAVE_CHEEVOS = 0
+HAVE_CHD = 0 # disabled due to static libretro-common and libchdr conflicts between different cores
+HAVE_STB_VORBIS = 1
+HAVE_IBXM = 1
+HAVE_CORE_INFO_CACHE = 1
+
+HAVE_RGUI = 1
+HAVE_MATERIALUI = 0
+HAVE_XMB = 0
+HAVE_OZONE = 0
+
+
+OBJ := \
+    frontend/drivers/platform_dos.o \
+    gfx/drivers/vga_gfx.o gfx/drivers_font/vga_font.o \
+    input/drivers/dos_input.o input/drivers_joypad/dos_joypad.o
+
+include Makefile.common
+
+#---------------------------------------------------------------------------------
+# TARGET is the name of the output
+# BUILD is the directory where object files & intermediate files will be placed
+# SOURCES is a list of directories containing source code
+# DATA is a list of directories containing data files
+# INCLUDES is a list of directories containing header files
+# EXEFS_SRC is the optional input directory containing data copied into exefs, if anything this normally should only contain "main.npdm".
+# ROMFS is the directory containing data to be added to RomFS, relative to the Makefile (Optional)
+#
+# NO_ICON: if set to anything, do not use icon.
+# NO_NACP: if set to anything, no .nacp file is generated.
+# APP_TITLE is the name of the app stored in the .nacp file (Optional)
+# APP_AUTHOR is the author of the app stored in the .nacp file (Optional)
+# APP_VERSION is the version of the app stored in the .nacp file (Optional)
+# APP_TITLEID is the titleID of the app stored in the .nacp file (Optional)
+# ICON is the filename of the icon (.jpg), relative to the project folder.
+#   If not set, it attempts to use one of the following (in this order):
+#     - <Project name>.jpg
+#     - icon.jpg
+#     - <libnx folder>/default_icon.jpg
+#---------------------------------------------------------------------------------
+BUILD := build
+SOURCES := $(CURDIR)/source
+DATA := data
+INCLUDES :=	include
+EXEFS_SRC := exefs_src
+
+APP_TITLE := RetroArch
+APP_VERSION := $(RARCH_VERSION)
+APP_AUTHOR := libretro Team
+APP_ICON := pkg/libnx/retroarch.jpg
+
+#---------------------------------------------------------------------------------
+# options for code generation
+#---------------------------------------------------------------------------------
+ARCH	:=
+
+CFLAGS := -g -Wall -O3 -fcommon -ffast-math -ffunction-sections \
+          $(ARCH) $(DEFINES) $(INCLUDE_DIRS)
+
+CFLAGS += $(INCLUDE)
+
+ifeq ($(HAVE_FILTERS_BUILTIN), 1)
+  CFLAGS += -DHAVE_FILTERS_BUILTIN
+endif
+
+ifeq ($(strip $(HAVE_STATIC_DUMMY)),1)
+  CFLAGS	+=	-DHAVE_STATIC_DUMMY=1
+endif
+
+CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
+
+ASFLAGS	:=	-g $(ARCH)
+LDFLAGS	=	$(ARCH) -Wl,--allow-multiple-definition -Wl,-Map,$(notdir $*.map)
+
+# add things from Makefile.common
+CFLAGS += $(DEF_FLAGS)
+
+LIBS	:= -lstdc++ -lm
+
+#---------------------------------------------------------------------------------
+# no real need to edit anything past this point unless you need to add additional
+# rules for different file extensions
+#---------------------------------------------------------------------------------
+ifneq ($(BUILD),$(notdir $(CURDIR)))
+#---------------------------------------------------------------------------------
+
+export OUTPUT	:=	$(TARGET)
+export TOPDIR	:=	$(CURDIR)
+
+export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
+			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
+
+export DEPSDIR	:=	$(CURDIR)/
+
+CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
+CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
+SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
+BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
+
+export OFILES 	:=	$(OBJ)
+
+ifeq ($(strip $(HAVE_STATIC_DUMMY)),)
+  OFILES += libretro_libnx.a
+endif
+
+export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
+
+export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
+			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
+			-I$(CURDIR)/$(BUILD)
+
+export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
+
+export BUILD_EXEFS_SRC := $(TOPDIR)/$(EXEFS_SRC)
+
+ifneq ($(APP_TITLEID),)
+	export NACPFLAGS += --titleid=$(APP_TITLEID)
+endif
+
+ifneq ($(ROMFS),)
+	export NROFLAGS += --romfsdir=$(CURDIR)/$(ROMFS)
+endif
+
+LIB_CORE :=
+
+ifeq ($(HAVE_STATIC_DUMMY),1)
+  DEFINES += -DHAVE_STATIC_DUMMY
+else
+  LIB_CORE += -lretro_dos
+endif
+
+DEPENDS_TMP  := $(OFILES:.o=.d)
+DEPENDS      := $(filter-out libretro_libnx.a,$(DEPENDS_TMP))
+
+.PHONY: clean all
+
+#---------------------------------------------------------------------------------
+# main targets
+#---------------------------------------------------------------------------------
+all	:	$(OUTPUT)
+
+$(OUTPUT): $(OBJ)
+	$(CXX) -o $@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(PLATEXTRA) -L. $(LIB_CORE) $(LIBS)
+
+%.o: %.c
+	$(CC) -c -o $@ $(CFLAGS) $<
+
+%.o: %.cpp
+	$(CXX) -c -o $@ $(CFLAGS) $<
+
+clean:
+	rm -f $(DEPENDS) $(OBJ) $(OUTPUT)
+
+#---------------------------------------------------------------------------------
+# you need a rule like this for each extension you use as binary data
+#---------------------------------------------------------------------------------
+%.bin.o	%_bin.h :	%.bin
+#---------------------------------------------------------------------------------
+	@echo $(notdir $<)
+	@$(bin2o)
+
+#---------------------------------------------------------------------------------------
+endif
+#---------------------------------------------------------------------------------------

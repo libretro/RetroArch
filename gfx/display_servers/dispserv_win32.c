@@ -37,8 +37,6 @@
 
 #include "../video_display_server.h"
 #include "../common/win32_common.h"
-#include "../../retroarch.h"
-#include "../../verbosity.h"
 
 #ifdef __ITaskbarList3_INTERFACE_DEFINED__
 #define HAS_TASKBAR_EXT
@@ -54,14 +52,23 @@
 #define ITaskbarList3_SetProgressValue(a, b, c, d) (a)->SetProgressValue(b, c, d)
 #endif
 
+/*
+   NOTE: When an application displays a window, 
+   its taskbar button is created by the system.
+   When the button is in place, the taskbar sends a
+   TaskbarButtonCreated message to the window. 
+
+   Its value is computed by calling RegisterWindowMessage(
+   L("TaskbarButtonCreated")).
+   That message must be received by your application before 
+   it calls any ITaskbarList3 method.
+ */
 #endif
 
 typedef struct
 {
    bool decorations;
-   int progress;
    int crt_center;
-   unsigned opacity;
    unsigned orig_width;
    unsigned orig_height;
    unsigned orig_refresh;
@@ -70,13 +77,6 @@ typedef struct
 #endif
 } dispserv_win32_t;
 
-/*
-   NOTE: When an application displays a window, its taskbar button is created
-   by the system. When the button is in place, the taskbar sends a
-   TaskbarButtonCreated message to the window. Its value is computed by
-   calling RegisterWindowMessage(L("TaskbarButtonCreated")). That message must
-   be received by your application before it calls any ITaskbarList3 method.
- */
 
 static void *win32_display_server_init(void)
 {
@@ -87,24 +87,25 @@ static void *win32_display_server_init(void)
 
 #ifdef HAS_TASKBAR_EXT
 #ifdef __cplusplus
-   /* When compiling in C++ mode, GUIDs are references instead of pointers */
+   /* When compiling in C++ mode, GUIDs 
+      are references instead of pointers */
    if (FAILED(CoCreateInstance(CLSID_TaskbarList, NULL,
          CLSCTX_INPROC_SERVER, IID_ITaskbarList3,
          (void**)&dispserv->taskbar_list)))
 #else
-   /* Mingw GUIDs are pointers instead of references since we're in C mode */
+   /* Mingw GUIDs are pointers 
+      instead of references since we're in C mode */
    if (FAILED(CoCreateInstance(&CLSID_TaskbarList, NULL,
          CLSCTX_INPROC_SERVER, &IID_ITaskbarList3,
          (void**)&dispserv->taskbar_list)))
 #endif
    {
       dispserv->taskbar_list = NULL;
-      RARCH_ERR("[dispserv]: CoCreateInstance of ITaskbarList3 failed.\n");
    }
    else
    {
       if (FAILED(ITaskbarList3_HrInit(dispserv->taskbar_list)))
-         RARCH_ERR("[dispserv]: HrInit of ITaskbarList3 failed.\n");
+         dispserv->taskbar_list = NULL;
    }
 #endif
 
@@ -114,6 +115,9 @@ static void *win32_display_server_init(void)
 static void win32_display_server_destroy(void *data)
 {
    dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
+
+   if (!dispserv)
+      return;
 
    if (dispserv->orig_width > 0 && dispserv->orig_height > 0)
       video_display_server_set_resolution(
@@ -131,20 +135,15 @@ static void win32_display_server_destroy(void *data)
    }
 #endif
 
-   if (dispserv)
-      free(dispserv);
+   free(dispserv);
 }
 
 static bool win32_display_server_set_window_opacity(
       void *data, unsigned opacity)
 {
+#ifdef HAVE_WINDOW_TRANSP
    HWND              hwnd = win32_get_window();
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
-
-   if (serv)
-      serv->opacity       = opacity;
-
-#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
    /* Set window transparency on Windows 2000 and above */
    if (opacity < 100)
    {
@@ -170,8 +169,8 @@ static bool win32_display_server_set_window_progress(
    HWND              hwnd = win32_get_window();
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
 
-   if (serv)
-      serv->progress      = progress;
+   if (!serv)
+      return false;
 
 #ifdef HAS_TASKBAR_EXT
    if (!serv->taskbar_list || !win32_taskbar_is_created())
@@ -208,8 +207,10 @@ static bool win32_display_server_set_window_decorations(void *data, bool on)
 {
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
 
-   if (serv)
-      serv->decorations = on;
+   if (!serv)
+      return false;
+
+   serv->decorations = on;
 
    /* menu_setting performs a reinit instead to properly
     * apply decoration changes */
@@ -289,7 +290,6 @@ static bool win32_display_server_set_resolution(void *data,
             switch (res)
             {
                case DISP_CHANGE_SUCCESSFUL:
-                  return true;
                case DISP_CHANGE_NOTUPDATED:
                   return true;
                default:
@@ -316,6 +316,8 @@ static int resolution_list_qsort_func(
    if (!a || !b)
       return 0;
 
+   str_a[0] = str_b[0] = '\0';
+
    snprintf(str_a, sizeof(str_a), "%04dx%04d (%d Hz)",
          a->width,
          a->height,
@@ -333,7 +335,9 @@ static void *win32_display_server_get_resolution_list(
       void *data, unsigned *len)
 {
    DEVMODE dm                        = {0};
-   unsigned i, j, count              = 0;
+   unsigned i                        = 0;
+   unsigned j                        = 0;
+   unsigned count                    = 0;
    unsigned curr_width               = 0;
    unsigned curr_height              = 0;
    unsigned curr_bpp                 = 0;
@@ -369,10 +373,8 @@ static void *win32_display_server_get_resolution_list(
    }
 
    *len = count;
-   conf = (struct video_display_config*)
-      calloc(*len, sizeof(struct video_display_config));
-
-   if (!conf)
+   if (!(conf = (struct video_display_config*)
+      calloc(*len, sizeof(struct video_display_config))))
       return NULL;
 
    for (i = 0, j = 0; win32_get_video_output(&dm, i, sizeof(dm)); i++)
@@ -416,28 +418,22 @@ static void *win32_display_server_get_resolution_list(
 enum rotation win32_display_server_get_screen_orientation(void *data)
 {
    DEVMODE dm = {0};
-   enum rotation rotation;
-
    win32_get_video_output(&dm, -1, sizeof(dm));
 
    switch (dm.dmDisplayOrientation)
    {
+      case DMDO_90:
+         return ORIENTATION_FLIPPED_ROTATED;
+      case DMDO_180:
+         return ORIENTATION_FLIPPED;
+      case DMDO_270:
+         return ORIENTATION_VERTICAL;
       case DMDO_DEFAULT:
       default:
-         rotation = ORIENTATION_NORMAL;
-         break;
-      case DMDO_90:
-         rotation = ORIENTATION_FLIPPED_ROTATED;
-         break;
-      case DMDO_180:
-         rotation = ORIENTATION_FLIPPED;
-         break;
-      case DMDO_270:
-         rotation = ORIENTATION_VERTICAL;
          break;
    }
 
-   return rotation;
+   return ORIENTATION_NORMAL;
 }
 
 void win32_display_server_set_screen_orientation(void *data,

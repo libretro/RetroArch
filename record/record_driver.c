@@ -60,7 +60,7 @@ recording_state_t *recording_state_get_ptr(void)
  *
  * Get an enumerated list of all record driver names, separated by '|'.
  *
- * Returns: string listing of all record driver names, separated by '|'.
+ * @return string listing of all record driver names, separated by '|'.
  **/
 const char* config_get_record_driver_options(void)
 {
@@ -134,13 +134,16 @@ static void recording_driver_free_state(void)
 
 /**
  * gfx_ctx_init_first:
- * @backend                 : Recording backend handle.
- * @data                    : Recording data handle.
- * @params                  : Recording info parameters.
+ * @param backend
+ * Recording backend handle.
+ * @param data
+ * Recording data handle.
+ * @param params
+ * Recording info parameters.
  *
  * Finds first suitable recording context driver and initializes.
  *
- * Returns: true (1) if successful, otherwise false (0).
+ * @return true if successful, otherwise false.
  **/
 static bool record_driver_init_first(
       const record_driver_t **backend, void **data,
@@ -257,27 +260,27 @@ bool recording_init(void)
          {
             fill_str_dated_filename(buf, game_name,
                      "mkv", sizeof(buf));
-            fill_pathname_join(output, recording_st->output_dir, buf, sizeof(output));
+            fill_pathname_join_special(output, recording_st->output_dir, buf, sizeof(output));
          }
          else if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST
                && video_record_quality < RECORD_CONFIG_TYPE_RECORDING_GIF)
          {
             fill_str_dated_filename(buf, game_name,
                      "webm", sizeof(buf));
-            fill_pathname_join(output, recording_st->output_dir, buf, sizeof(output));
+            fill_pathname_join_special(output, recording_st->output_dir, buf, sizeof(output));
          }
          else if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_GIF
                && video_record_quality < RECORD_CONFIG_TYPE_RECORDING_APNG)
          {
             fill_str_dated_filename(buf, game_name,
                      "gif", sizeof(buf));
-            fill_pathname_join(output, recording_st->output_dir, buf, sizeof(output));
+            fill_pathname_join_special(output, recording_st->output_dir, buf, sizeof(output));
          }
          else
          {
             fill_str_dated_filename(buf, game_name,
                      "png", sizeof(buf));
-            fill_pathname_join(output, recording_st->output_dir, buf, sizeof(output));
+            fill_pathname_join_special(output, recording_st->output_dir, buf, sizeof(output));
          }
       }
    }

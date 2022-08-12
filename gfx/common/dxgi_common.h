@@ -2,6 +2,7 @@
 #define _DXGI_COMMON_H
 
 #include <retro_inline.h>
+#include <retro_common_api.h>
 
 #ifndef HAVE_DXGI_HDR
 #define HAVE_DXGI_HDR
@@ -17,6 +18,8 @@
 #endif
 
 #include <gfx/math/matrix_4x4.h>
+
+RETRO_BEGIN_DECLS
 
 typedef struct ALIGN(16)
 {
@@ -242,8 +245,10 @@ enum dxgi_swapchain_bit_depth
 #define _Analysis_assume_(expr)
 #define _Analysis_assume_nullterminated_(expr)
 
+#ifndef RARCH_INTERNAL
 #define __in
 #define __out
+#endif
 
 #define __in_bcount(size)
 #define __in_ecount(size)
