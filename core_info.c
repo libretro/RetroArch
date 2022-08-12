@@ -1342,6 +1342,7 @@ static void core_info_path_list_free(core_path_list_t *path_list)
 static core_path_list_t *core_info_path_list_new(const char *core_dir,
       const char *core_exts, bool show_hidden_files)
 {
+   union string_list_elem_attr attr;
    core_path_list_t *path_list       = (core_path_list_t*)
          calloc(1, sizeof(*path_list));
    struct string_list *core_ext_list = NULL;
@@ -1355,6 +1356,13 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
 
    if (!(core_ext_list = string_split(core_exts, "|")))
       goto error;
+   if (!string_list_append(core_ext_list, "lck", attr))
+      goto error;
+#if defined(HAVE_DYNAMIC)
+   /* > 'standalone exempt' */
+   if (!string_list_append(core_ext_list, "lsae", attr))
+      goto error;
+#endif
 
    /* Allocate list containers */
    path_list->dir_list               = string_list_new();
@@ -1373,22 +1381,7 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
 
    /* Get list of file extensions to include
     * > core + lock */
-   len = strlcpy(exts, core_exts, sizeof(exts));
-   exts[len  ] = '|';
-   exts[len+1] = 'l';
-   exts[len+2] = 'c';
-   exts[len+3] = 'k';
-#if defined(HAVE_DYNAMIC)
-   /* > 'standalone exempt' */
-   exts[len+4] = '|';
-   exts[len+5] = 'l';
-   exts[len+6] = 's';
-   exts[len+7] = 'a';
-   exts[len+8] = 'e';
-   exts[len+9] = '\0';
-#else
-   exts[len+4] = '\0';
-#endif
+   strlcpy(exts, core_exts, sizeof(exts));
 
    /* Fetch core directory listing */
    dir_list_ok = dir_list_append(path_list->dir_list,
@@ -1660,38 +1653,24 @@ static void core_info_resolve_firmware(
 }
 
 static config_file_t *core_info_get_config_file(
-      const char *core_file_id,
-      const char *info_dir)
+      const char *core_file_id, const char *info_dir)
 {
-   char info_path[PATH_MAX_LENGTH];
-
-   if (string_is_empty(info_dir))
-      snprintf(info_path, sizeof(info_path),
-            "%s" ".info", core_file_id);
-   else
+   if (!string_is_empty(info_dir))
    {
-      size_t len     = fill_pathname_join_special(info_path, info_dir,
-            core_file_id,
-            sizeof(info_path));
-      info_path[len]   = '.';
-      info_path[len+1] = 'i';
-      info_path[len+2] = 'n';
-      info_path[len+3] = 'f';
-      info_path[len+4] = 'o';
-      info_path[len+5] = '\0';
+      char info_path[PATH_MAX_LENGTH];
+      fill_pathname_join_special(info_path, info_dir,
+            core_file_id, sizeof(info_path));
+      return config_file_new_from_path_to_string(info_path);
    }
-
-   return config_file_new_from_path_to_string(info_path);
+   return config_file_new_from_path_to_string(core_file_id);
 }
 
 static void core_info_parse_config_file(
       core_info_list_t *list, core_info_t *info,
       config_file_t *conf)
 {
-   struct config_entry_list *entry = NULL;
    bool tmp_bool                   = false;
-
-   entry = config_get_entry(conf, "display_name");
+   struct config_entry_list *entry = config_get_entry(conf, "display_name");
 
    if (entry && !string_is_empty(entry->value))
    {
@@ -2110,6 +2089,8 @@ static core_info_list_t *core_info_list_new(const char *path,
       /* Cache core file 'id' */
       info->core_file_id.str  = strdup(core_file_id);
       info->core_file_id.hash = core_info_hash_string(core_file_id);
+
+      strlcat(core_file_id, ".info", sizeof(core_file_id));
 
       /* Parse core info file */
       if ((conf = core_info_get_config_file(core_file_id, info_dir)))
