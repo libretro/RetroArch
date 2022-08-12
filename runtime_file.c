@@ -324,7 +324,10 @@ runtime_log_t *runtime_log_init(
        * no content is provided, 'content' is simply
        * the name of the core itself */
       if (supports_no_game)
+      {
          strlcpy(content_name, core_name, sizeof(content_name));
+         strlcat(content_name, ".lrtl", sizeof(content_name));
+      }
    }
    /* NOTE: TyrQuake requires a specific hack, since all
     * content has the same name... */
@@ -341,6 +344,7 @@ runtime_log_t *runtime_log_init(
                   content_path, path_length * sizeof(char));
             strlcpy(content_name,
                   path_basename(tmp_buf), sizeof(content_name));
+            strlcat(content_name, ".lrtl", sizeof(content_name));
          }
       }
    }
@@ -357,20 +361,15 @@ runtime_log_t *runtime_log_init(
          return NULL;
 
       strlcpy(content_name, tmp_buf_no_ext, sizeof(content_name));
+      strlcat(content_name, ".lrtl", sizeof(content_name));
    }
 
    if (string_is_empty(content_name))
       return NULL;
 
    /* Build final log file path */
-   len = fill_pathname_join_special(log_file_path, log_file_dir,
+   fill_pathname_join_special(log_file_path, log_file_dir,
          content_name, sizeof(log_file_path));
-   log_file_path[len  ] = '.';
-   log_file_path[len+1] = 'l';
-   log_file_path[len+2] = 'r';
-   log_file_path[len+3] = 't';
-   log_file_path[len+4] = 'l';
-   log_file_path[len+5] = '\0';
 
    if (string_is_empty(log_file_path))
       return NULL;
