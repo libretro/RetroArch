@@ -292,9 +292,7 @@ struct runloop
    bool runahead_secondary_core_available;
    bool runahead_force_input_dirty;
 #endif
-#if defined(HAVE_RUNAHEAD) || defined(HAVE_NETWORKING)
-   bool request_fast_savestate;
-#endif
+   bool request_special_savestate;
 #ifdef HAVE_PATCH
    bool patch_blocked;
 #endif
