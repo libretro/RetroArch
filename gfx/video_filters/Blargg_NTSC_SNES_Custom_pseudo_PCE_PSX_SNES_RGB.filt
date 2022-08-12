@@ -1,3 +1,7 @@
+# This filter preset was created by Cyber for use with their shader presets.
+# It is labeled "pseudo" because it reuses the SNES version of blargg's NTSC
+# filter to work with other consoles' video output
+
 filter = blargg_ntsc_snes
 
 blargg_ntsc_snes_tvtype = "custom"
@@ -17,7 +21,7 @@ blargg_ntsc_snes_saturation = 0.1
 blargg_ntsc_snes_contrast = 0
 # -1 = dark (0.5)       +1 = light (1.5)
 
-blargg_ntsc_snes_brightness = 0.0
+blargg_ntsc_snes_brightness = 0
 # -1 = dark (0.5)       +1 = light (1.5)
 
 blargg_ntsc_snes_sharpness = 0.2
@@ -26,7 +30,7 @@ blargg_ntsc_snes_sharpness = 0.2
 blargg_ntsc_snes_gamma = 0.2
 # -1 = dark (1.5)       +1 = light (0.5)
 
-blargg_ntsc_snes_resolution = 0.1
+blargg_ntsc_snes_resolution = 0.5
 # image resolution (composite 0 - svideo 0.2 - rgb 0.7)
 
 blargg_ntsc_snes_artifacts = -0.9
