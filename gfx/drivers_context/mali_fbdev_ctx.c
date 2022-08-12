@@ -127,6 +127,27 @@ static void gfx_ctx_mali_fbdev_clear_screen(void)
       }
 }
 
+static void gfx_ctx_mali_fbdev_destroy_really(void)
+{
+   if (gfx_ctx_mali_fbdev_global)
+   {
+#ifdef HAVE_EGL
+      egl_destroy(&gfx_ctx_mali_fbdev_global->egl);
+#endif
+      gfx_ctx_mali_fbdev_global->resize=false;
+      free(gfx_ctx_mali_fbdev_global);
+      gfx_ctx_mali_fbdev_global=NULL;
+   }
+}
+
+static void gfx_ctx_mali_fbdev_maybe_restart(void)
+{
+   runloop_state_t *runloop_st   = runloop_state_get_ptr();
+
+   if (!runloop_st->shutdown_initiated)
+      frontend_driver_set_fork(FRONTEND_FORK_RESTART);
+}
+
 /*TODO FIXME
 As egl_destroy does not work properly with libmali (big fps drop after destroy and initialization/creation of new context/surface), it is not used.
 A global pointers is initialized at startup in gfx_ctx_mali_fbdev_init, and returned each time gfx_ctx_mali_fbdev_init is called.
@@ -137,31 +158,25 @@ All these workarounds should be reverted when and if egl_destroy issues in libma
 */
 static void gfx_ctx_mali_fbdev_destroy(void *data)
 {
-/*   mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
-
-   if (mali)
-   {
-#ifdef HAVE_EGL
-       egl_destroy(&mali->egl);
-#endif
-
-       mali->resize       = false;
-       free(mali);
-   }
-*/
    runloop_state_t *runloop_st   = runloop_state_get_ptr();
 
-   if (runloop_st->shutdown_initiated && gfx_ctx_mali_fbdev_was_threaded==*video_driver_get_threaded() && !gfx_ctx_mali_fbdev_hw_ctx_trigger)
+   if (runloop_st->shutdown_initiated)
    {
-      gfx_ctx_mali_fbdev_clear_screen();
-   }else if (gfx_ctx_mali_fbdev_hw_ctx_trigger)
+      if (!gfx_ctx_mali_fbdev_restart_pending)
+      {
+         gfx_ctx_mali_fbdev_destroy_really();
+         gfx_ctx_mali_fbdev_clear_screen();
+      }
+   }
+   else
    {
-      video_context_driver_reset();
-      gfx_ctx_mali_fbdev_global=NULL;
-      gfx_ctx_mali_fbdev_restart_pending=true;
-   }else if (gfx_ctx_mali_fbdev_was_threaded!=*video_driver_get_threaded()){
-      gfx_ctx_mali_fbdev_global=NULL;
-      command_event(CMD_EVENT_RESTART_RETROARCH,NULL);
+      if (gfx_ctx_mali_fbdev_hw_ctx_trigger || gfx_ctx_mali_fbdev_was_threaded!=*video_driver_get_threaded())
+      {
+         gfx_ctx_mali_fbdev_destroy_really();
+         gfx_ctx_mali_fbdev_restart_pending=true;
+         if (!gfx_ctx_mali_fbdev_hw_ctx_trigger)
+            gfx_ctx_mali_fbdev_maybe_restart();
+      }
    }
 }
 
@@ -244,7 +259,7 @@ static void gfx_ctx_mali_fbdev_check_window(void *data, bool *quit,
    *quit   = (bool)frontend_driver_get_signal_handler_state();
 
    if (gfx_ctx_mali_fbdev_restart_pending)
-      command_event(CMD_EVENT_RESTART_RETROARCH,NULL);
+      gfx_ctx_mali_fbdev_maybe_restart();
 }
 
 static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
